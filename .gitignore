@@ -38,3 +38,8 @@ node_modules
 /playwright-report
 
 tmp/
+
+# Environment configurations
+.env
+.env.*
+*.env
