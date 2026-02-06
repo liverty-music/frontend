@@ -43,3 +43,4 @@ tmp/
 .env
 .env.*
 *.env
+.vite
