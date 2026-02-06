@@ -1,48 +1,57 @@
-import { BrowserPlatform } from '@aurelia/platform-browser';
-import { setPlatform, onFixtureCreated, type IFixture } from '@aurelia/testing';
-import { beforeAll, afterEach } from 'vitest';
-import { JSDOM } from 'jsdom';
+import { BrowserPlatform } from '@aurelia/platform-browser'
+import { type IFixture, onFixtureCreated, setPlatform } from '@aurelia/testing'
+import { JSDOM } from 'jsdom'
+import { afterEach, beforeAll } from 'vitest'
 
 const jsdom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
-  url: 'http://localhost'
-});
+	url: 'http://localhost',
+})
 
-const { window } = jsdom;
-const { document, navigator, Node, HTMLElement, HTMLAnchorElement, CustomEvent } = window;
+const { window } = jsdom
+const {
+	document,
+	navigator,
+	Node,
+	HTMLElement,
+	HTMLAnchorElement,
+	CustomEvent,
+} = window
 
 // Fix for "document is not defined" or "window is not defined"
 Object.assign(globalThis, {
-  window,
-  document,
-  navigator,
-  Node,
-  HTMLElement,
-  HTMLAnchorElement,
-  CustomEvent,
-});
+	window,
+	document,
+	navigator,
+	Node,
+	HTMLElement,
+	HTMLAnchorElement,
+	CustomEvent,
+})
 
 // Sets up the Aurelia environment for testing
 function bootstrapTextEnv() {
-  const platform = new BrowserPlatform(window as unknown as Window & typeof globalThis);
-  setPlatform(platform);
-  BrowserPlatform.set(globalThis, platform);
+	const platform = new BrowserPlatform(
+		window as unknown as Window & typeof globalThis,
+	)
+	setPlatform(platform)
+	BrowserPlatform.set(globalThis, platform)
 }
 
-const fixtures: IFixture<object>[] = [];
+const fixtures: IFixture<object>[] = []
 beforeAll(() => {
-  bootstrapTextEnv();
-  onFixtureCreated(fixture => {
-    fixtures.push(fixture);
-  });
-});
+	bootstrapTextEnv()
+	onFixtureCreated((fixture) => {
+		fixtures.push(fixture)
+	})
+})
 
 afterEach(() => {
-  fixtures.forEach(async f => {
-    try {
-      await f.stop(true);
-    } catch {
-      // ignore
-    }
-  });
-  fixtures.length = 0;
-});
+	fixtures.forEach(async (f) => {
+		try {
+			await f.stop(true)
+		} catch {
+			// ignore
+		}
+	})
+	fixtures.length = 0
+})
