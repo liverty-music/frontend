@@ -1,0 +1,9 @@
+<div class="flex items-center justify-center min-h-screen">
+  <div class="text-center">
+    <div if.bind="message" class="text-lg">${message}</div>
+    <div if.bind="error" class="text-red-500 font-bold whitespace-pre-wrap">${error}</div>
+    <a if.bind="error" href="/" class="mt-4 block text-blue-500 underline"
+      >Return Home</a
+    >
+  </div>
+</div>

@@ -1,0 +1,17 @@
+<div class="flex items-center gap-4">
+  <div if.bind="auth.isAuthenticated" class="flex items-center gap-2">
+    <!-- Show name or fallback -->
+    <span>Welcome, ${auth.user.profile.name || auth.user.profile.preferred_username || 'User'}</span>
+    <button click.trigger="signOut()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition">
+      Sign Out
+    </button>
+  </div>
+  <div if.bind="!auth.isAuthenticated" class="flex gap-2">
+    <button click.trigger="signIn()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition">
+      Sign In
+    </button>
+    <button click.trigger="signUp()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition">
+      Sign Up
+    </button>
+  </div>
+</div>
