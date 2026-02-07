@@ -1,0 +1,8 @@
+# Ignore generated files from specification
+src/protocolbuffers/
+src/connectrpc/
+*.pb.ts
+*.connect.ts
+node_modules/
+dist/
+.env*
