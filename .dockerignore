@@ -1,0 +1,41 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build artifacts
+dist
+.cache
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Testing
+coverage
+.nyc_output
+
+# Environment
+# Note: .env and .env.development are committed and needed for Docker build
+.env.local
+.env.*.local
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
+
+# Documentation
+README.md
+CHANGELOG.md
+
+# CI/CD
+.github
+.gemini
+.agent
