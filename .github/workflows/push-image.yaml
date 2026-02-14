@@ -17,7 +17,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'dev' || 'prod' }}
+      name: dev
     permissions:
       contents: read
       id-token: write

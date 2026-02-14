@@ -23,7 +23,7 @@ FROM caddy:2-alpine
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /srv
 
-# Copy Caddyfile (will be created in next task group)
+# Copy Caddyfile
 COPY Caddyfile /etc/caddy/Caddyfile
 
 # Expose port 80
