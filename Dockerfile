@@ -9,12 +9,13 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code (including .env)
+# Copy source code (including .env files)
 COPY . .
 
-# Build the application
-# Vite automatically reads .env and embeds VITE_* variables in the bundle
-RUN npm run build
+# Build the application with mode-specific env vars
+# ARG is available only during build time
+ARG BUILD_MODE=development
+RUN npm run build -- --mode ${BUILD_MODE}
 
 #----------------------------
 

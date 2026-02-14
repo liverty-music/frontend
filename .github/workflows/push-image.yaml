@@ -60,3 +60,5 @@ jobs:
           tags: ${{ env.IMAGE_URI }}:latest,${{ env.IMAGE_URI }}:${{ github.sha }},${{ env.IMAGE_URI }}:main
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_MODE=${{ github.ref == 'refs/heads/main' && 'development' || 'production' }}
