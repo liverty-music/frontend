@@ -22,7 +22,7 @@ coverage
 .nyc_output
 
 # Environment
-.env
+# Note: .env and .env.development are committed and needed for Docker build
 .env.local
 .env.*.local
 
