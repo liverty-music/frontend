@@ -40,7 +40,8 @@ node_modules
 tmp/
 
 # Environment configurations
-.env
-.env.*
-*.env
+# Note: .env is committed to git since frontend env vars are public
+# (embedded in client bundle and visible in browser)
+.env.local
+.env.*.local
 .vite

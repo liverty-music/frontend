@@ -9,17 +9,11 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy source code (including .env)
 COPY . .
 
-# Build-time environment variables for Vite
-# These are embedded in the client bundle and visible in browser
-ARG VITE_ZITADEL_ISSUER=https://liverty-music-dev-b4bclr.zitadel.cloud
-ARG VITE_ZITADEL_CLIENT_ID=293623653829906440@liverty-music
-ENV VITE_ZITADEL_ISSUER=$VITE_ZITADEL_ISSUER
-ENV VITE_ZITADEL_CLIENT_ID=$VITE_ZITADEL_CLIENT_ID
-
 # Build the application
+# Vite automatically reads .env and embeds VITE_* variables in the bundle
 RUN npm run build
 
 #----------------------------
