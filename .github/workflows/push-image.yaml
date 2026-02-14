@@ -60,3 +60,6 @@ jobs:
           tags: ${{ env.IMAGE_URI }}:latest,${{ env.IMAGE_URI }}:${{ github.sha }},${{ env.IMAGE_URI }}:main
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            VITE_ZITADEL_ISSUER=${{ vars.VITE_ZITADEL_ISSUER || 'https://liverty-music-dev-b4bclr.zitadel.cloud' }}
+            VITE_ZITADEL_CLIENT_ID=${{ vars.VITE_ZITADEL_CLIENT_ID || '293623653829906440@liverty-music' }}
