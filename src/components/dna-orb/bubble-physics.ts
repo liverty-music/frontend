@@ -2,7 +2,7 @@ import type Matter from 'matter-js'
 import type { ArtistBubble } from '../../services/artist-discovery-service'
 
 export interface PhysicsBubble {
-	body: this.Matter!.Body
+	body: Matter.Body
 	artist: ArtistBubble
 	scale: number
 	opacity: number
@@ -12,9 +12,9 @@ export interface PhysicsBubble {
 
 export class BubblePhysics {
 	private Matter: typeof Matter | null = null
-	private engine: this.Matter!.Engine | null = null
-	private world: this.Matter!.World | null = null
-	private walls: this.Matter!.Body[] = []
+	private engine: Matter.Engine | null = null
+	private world: Matter.World | null = null
+	private walls: Matter.Body[] = []
 	private bubbleMap = new Map<string, PhysicsBubble>()
 
 	private width = 0
@@ -26,10 +26,10 @@ export class BubblePhysics {
 	}
 
 	public async init(width: number, height: number): Promise<void> {
-		// Lazy-load this.Matter!.js on first init call
+		// Lazy-load Matter.js on first init call
 		if (!this.Matter) {
 			this.Matter = (await import('matter-js')).default
-			this.engine = this.this.Matter!.Engine.create({
+			this.engine = this.Matter!.Engine.create({
 				gravity: { x: 0, y: 0.15, scale: 0.001 },
 			})
 			this.world = this.engine.world
