@@ -5,7 +5,7 @@ import { route } from '@aurelia/router'
 		{
 			path: ['', 'welcome'],
 			component: import('./welcome-page'),
-			title: 'Welcome',
+			title: 'Liverty Music',
 		},
 		{
 			path: 'about',
@@ -18,9 +18,14 @@ import { route } from '@aurelia/router'
 			title: 'Auth Callback',
 		},
 		{
-			path: 'artist-discovery',
+			path: 'onboarding/discover',
 			component: import('./routes/artist-discovery/artist-discovery-page'),
 			title: 'Discover Artists',
+		},
+		{
+			path: 'dashboard',
+			component: import('./routes/dashboard'),
+			title: 'Dashboard',
 		},
 	],
 })

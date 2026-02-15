@@ -19,12 +19,7 @@ export class BubblePhysics {
 
 	private width = 0
 	private height = 0
-	private initialized = false
 	private initPromise: Promise<void> | null = null
-
-	constructor() {
-		// Engine creation deferred to init() for lazy loading
-	}
 
 	public async init(width: number, height: number): Promise<void> {
 		if (this.initPromise) return this.initPromise
@@ -33,7 +28,7 @@ export class BubblePhysics {
 			// Lazy-load Matter.js on first init call
 			if (!this.Matter) {
 				this.Matter = (await import('matter-js')).default
-				this.engine = this.Matter!.Engine.create({
+				this.engine = this.Matter?.Engine.create({
 					gravity: { x: 0, y: 0.15, scale: 0.001 },
 				})
 				this.world = this.engine.world
@@ -44,22 +39,22 @@ export class BubblePhysics {
 			this.height = height
 
 		for (const wall of this.walls) {
-			this.Matter!.Composite.remove(this.world, wall)
+			this.Matter?.Composite.remove(this.world, wall)
 		}
 
 			const wallThickness = 50
 			const orbZoneHeight = 160
 			this.walls = [
 				// Top
-				this.Matter!.Bodies.rectangle(width / 2, -wallThickness / 2, width, wallThickness, { isStatic: true }),
+				this.Matter?.Bodies.rectangle(width / 2, -wallThickness / 2, width, wallThickness, { isStatic: true }),
 				// Left
-				this.Matter!.Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
+				this.Matter?.Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
 				// Right
-				this.Matter!.Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
+				this.Matter?.Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
 				// Bottom (above orb zone)
-				this.Matter!.Bodies.rectangle(width / 2, height - orbZoneHeight + wallThickness / 2, width, wallThickness, { isStatic: true }),
+				this.Matter?.Bodies.rectangle(width / 2, height - orbZoneHeight + wallThickness / 2, width, wallThickness, { isStatic: true }),
 			]
-			this.Matter!.Composite.add(this.world, this.walls)
+			this.Matter?.Composite.add(this.world, this.walls)
 		})()
 
 		return this.initPromise
@@ -71,14 +66,14 @@ export class BubblePhysics {
 
 			const x = Math.random() * (this.width - 100) + 50
 			const y = Math.random() * (this.height * 0.5) + 50
-			const body = this.Matter!.Bodies.circle(x, y, artist.radius, {
+			const body = this.Matter?.Bodies.circle(x, y, artist.radius, {
 				restitution: 0.6,
 				friction: 0.1,
 				frictionAir: 0.02,
 				density: 0.001,
 			})
 
-			this.Matter!.Composite.add(this.world, body)
+			this.Matter?.Composite.add(this.world, body)
 			this.bubbleMap.set(artist.id, {
 				body,
 				artist,
@@ -94,7 +89,7 @@ export class BubblePhysics {
 		for (const artist of artists) {
 			if (this.bubbleMap.has(artist.id)) continue
 
-			const body = this.Matter!.Bodies.circle(fromX, fromY, artist.radius, {
+			const body = this.Matter?.Bodies.circle(fromX, fromY, artist.radius, {
 				restitution: 0.6,
 				friction: 0.1,
 				frictionAir: 0.02,
@@ -104,12 +99,12 @@ export class BubblePhysics {
 			// Apply outward force for "pop" effect
 			const angle = Math.random() * Math.PI * 2
 			const force = 0.002 + Math.random() * 0.003
-			this.Matter!.Body.applyForce(body, body.position, {
+			this.Matter?.Body.applyForce(body, body.position, {
 				x: Math.cos(angle) * force,
 				y: Math.sin(angle) * force,
 			})
 
-			this.Matter!.Composite.add(this.world, body)
+			this.Matter?.Composite.add(this.world, body)
 			this.bubbleMap.set(artist.id, {
 				body,
 				artist,
@@ -125,7 +120,7 @@ export class BubblePhysics {
 		const bubble = this.bubbleMap.get(artistId)
 		if (!bubble) return undefined
 
-		this.Matter!.Composite.remove(this.world, bubble.body)
+		this.Matter?.Composite.remove(this.world, bubble.body)
 		this.bubbleMap.delete(artistId)
 		return bubble
 	}
@@ -144,7 +139,7 @@ export class BubblePhysics {
 	}
 
 	public update(delta: number): void {
-		this.Matter!.Engine.update(this.engine, delta)
+		this.Matter?.Engine.update(this.engine, delta)
 
 		for (const bubble of this.bubbleMap.values()) {
 			if (bubble.isSpawning) {
@@ -169,8 +164,8 @@ export class BubblePhysics {
 	}
 
 	public destroy(): void {
-		this.Matter!.Engine.clear(this.engine)
-		this.Matter!.Composite.clear(this.world, false)
+		this.Matter?.Engine.clear(this.engine)
+		this.Matter?.Composite.clear(this.world, false)
 		this.bubbleMap.clear()
 	}
 }

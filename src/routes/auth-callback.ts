@@ -1,19 +1,17 @@
 import { Code, ConnectError } from '@connectrpc/connect'
-import { IRouter } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb'
 import { IAuthService } from '../services/auth-service'
 import { IUserService } from '../services/user-service'
-
-const ONBOARDING_COMPLETE_KEY = 'liverty:onboarding_complete'
+import { IOnboardingService } from '../services/onboarding-service'
 
 export class AuthCallback {
 	public message = 'Verifying authentication...'
 	public error = ''
 
-	private authService = resolve(IAuthService)
-	private userService = resolve(IUserService)
-	private router = resolve(IRouter)
+	private readonly authService = resolve(IAuthService)
+	private readonly userService = resolve(IUserService)
+	private readonly onboardingService = resolve(IOnboardingService)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallback')
 
 	constructor() {
@@ -35,7 +33,7 @@ export class AuthCallback {
 				await this.provisionUser(user.profile.email)
 			}
 
-			await this.redirectAfterAuth()
+			await this.onboardingService.redirectBasedOnStatus()
 		} catch (err) {
 			this.logger.error('Auth callback error:', err)
 
@@ -44,7 +42,7 @@ export class AuthCallback {
 				this.logger.warn(
 					'User is already authenticated. Redirecting despite callback error...',
 				)
-				await this.redirectAfterAuth()
+				await this.onboardingService.redirectBasedOnStatus()
 				return
 			}
 
@@ -80,17 +78,6 @@ export class AuthCallback {
 				{ email, error: err },
 			)
 			// Do not throw - allow authentication to succeed even if provisioning fails
-		}
-	}
-
-	private async redirectAfterAuth(): Promise<void> {
-		const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_COMPLETE_KEY)
-		if (hasCompletedOnboarding) {
-			this.logger.info('Returning user, redirecting to dashboard')
-			await this.router.load('/')
-		} else {
-			this.logger.info('New user, redirecting to artist discovery')
-			await this.router.load('artist-discovery')
 		}
 	}
 }
