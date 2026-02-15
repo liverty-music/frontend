@@ -37,8 +37,11 @@ export class EventDetailSheet {
 			String(e.date.getMonth() + 1).padStart(2, '0'),
 			String(e.date.getDate()).padStart(2, '0'),
 		].join('')
-		const startStr = e.startTime.replace(':', '') + '00'
-		return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.title)}&dates=${dateStr}T${startStr}/${dateStr}T${startStr}&location=${encodeURIComponent(e.venueName)}`
+		const startTime = e.startTime || '19:00'
+		const startStr = startTime.replace(':', '') + '00'
+		const [hours, mins] = startTime.split(':').map(Number)
+		const endStr = `${String((hours + 2) % 24).padStart(2, '0')}${String(mins).padStart(2, '0')}00`
+		return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.title)}&dates=${dateStr}T${startStr}/${dateStr}T${endStr}&location=${encodeURIComponent(e.venueName)}`
 	}
 
 	public open(event: LiveEvent): void {
