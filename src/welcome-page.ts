@@ -1,37 +1,32 @@
+import type { IRouteViewModel } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
-import { IRouter } from '@aurelia/router'
 import { IAuthService } from './services/auth-service'
-import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
-import { createPromiseClient } from '@connectrpc/connect'
-import { transport } from './services/grpc-transport'
+import { IOnboardingService } from './services/onboarding-service'
 
-const artistClient = createPromiseClient(ArtistService, transport)
+export class WelcomePage implements IRouteViewModel {
+	private readonly authService = resolve(IAuthService)
+	private readonly onboardingService = resolve(IOnboardingService)
+	private readonly logger = resolve(ILogger).scopeTo('WelcomePage')
 
-export class LandingPage {
-	private authService = resolve(IAuthService)
-	private router = resolve(IRouter)
-	private readonly logger = resolve(ILogger).scopeTo('LandingPage')
+	/**
+	 * Router lifecycle hook - called before the component is loaded
+	 * Prevents flash of unauthenticated content by checking auth status before rendering
+	 */
+	async canLoad(): Promise<boolean> {
+		this.logger.debug('Checking if landing page can load')
 
-	async attached(): Promise<void> {
-		// Redirect authenticated users away from landing page
+		// Wait for auth service to initialize
+		await this.authService.ready
+
+		// If user is authenticated, redirect and prevent landing page from loading
 		if (this.authService.isAuthenticated) {
-			try {
-				this.logger.info('User is authenticated, checking onboarding status')
-				const response = await artistClient.listFollowed({})
-				const followedCount = response.artists.length
-
-				if (followedCount >= 1) {
-					this.logger.info('Redirecting to dashboard', { followedCount })
-					await this.router.load('dashboard')
-				} else {
-					this.logger.info('Redirecting to artist discovery')
-					await this.router.load('onboarding/discover')
-				}
-			} catch (err) {
-				this.logger.error('Failed to check onboarding status, redirecting to discovery', err)
-				await this.router.load('onboarding/discover')
-			}
+			this.logger.info('User is authenticated, redirecting based on onboarding status')
+			await this.onboardingService.redirectBasedOnStatus()
+			return false // Prevent landing page from loading
 		}
+
+		// User not authenticated, show landing page
+		return true
 	}
 
 	async handleSignUp(): Promise<void> {
