@@ -59,7 +59,7 @@ export class LoadingSequence {
 
 	private phaseTimer: number | null = null
 	private startTime = 0
-	private readonly FADE_DURATION_MS = 300
+	private readonly FADE_DURATION_MS = 800
 
 	private readonly phases = [
 		{ duration: 2000, message: 'あなたのMusic DNAを構築中...' },
@@ -179,15 +179,15 @@ export class LoadingSequence {
 			this.isPhaseVisible = false
 
 			// Wait for fade-out animation, then update message and fade in
-			setTimeout(() => {
+			this.phaseTimer = window.setTimeout(() => {
 				this.currentPhase++
 				if (this.currentPhase <= this.phases.length) {
 					this.currentPhaseMessage = this.phases[this.currentPhase - 1].message
 					// Trigger fade-in
-					setTimeout(() => {
+					this.phaseTimer = window.setTimeout(() => {
 						this.isPhaseVisible = true
+						this.scheduleNextPhase()
 					}, 50)
-					this.scheduleNextPhase()
 				}
 			}, this.FADE_DURATION_MS)
 		}, currentPhaseConfig.duration)

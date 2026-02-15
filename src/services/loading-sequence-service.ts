@@ -69,7 +69,7 @@ export class LoadingSequenceService {
 		while (attempt <= maxRetries) {
 			try {
 				this.logger.info('Fetching followed artists', { attempt })
-				const followed = await this.artistDiscoveryService.listFollowedFromBackend()
+				const followed = await this.artistDiscoveryService.listFollowedFromBackend(signal)
 				const artists = followed.map(
 					(a) => ({
 						id: a.id,
@@ -87,7 +87,7 @@ export class LoadingSequenceService {
 					throw err
 				}
 				this.logger.warn('Retrying followed artists fetch', { attempt })
-				await this.delay(500)
+				await this.delay(500, signal)
 			}
 		}
 
@@ -104,6 +104,7 @@ export class LoadingSequenceService {
 
 		// Process in batches of BATCH_SIZE sequentially
 		for (let i = 0; i < artists.length; i += BATCH_SIZE) {
+			if (signal.aborted) break
 			const batch = artists.slice(i, i + BATCH_SIZE)
 			this.logger.info('Processing batch', {
 				batchIndex: i / BATCH_SIZE,
@@ -130,7 +131,13 @@ export class LoadingSequenceService {
 		this.logger.info('All concert searches completed')
 	}
 
-	private delay(ms: number): Promise<void> {
-		return new Promise((resolve) => setTimeout(resolve, ms))
+	private delay(ms: number, signal?: AbortSignal): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const timeoutId = setTimeout(resolve, ms)
+			signal?.addEventListener('abort', () => {
+				clearTimeout(timeoutId)
+				reject(new Error('Aborted'))
+			}, { once: true })
+		})
 	}
 }
