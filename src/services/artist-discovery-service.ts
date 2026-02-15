@@ -106,7 +106,7 @@ export class ArtistDiscoveryService {
 		const name = artist.name?.value ?? ''
 		const mbid = artist.mbid?.value ?? ''
 		return {
-			id: id || mbid || `${name}-${Date.now()}-${Math.random()}`,
+			id: id || mbid || crypto.randomUUID(),
 			name,
 			mbid,
 			imageUrl: '',

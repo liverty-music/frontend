@@ -20,42 +20,49 @@ export class BubblePhysics {
 	private width = 0
 	private height = 0
 	private initialized = false
+	private initPromise: Promise<void> | null = null
 
 	constructor() {
 		// Engine creation deferred to init() for lazy loading
 	}
 
 	public async init(width: number, height: number): Promise<void> {
-		// Lazy-load Matter.js on first init call
-		if (!this.Matter) {
-			this.Matter = (await import('matter-js')).default
-			this.engine = this.Matter!.Engine.create({
-				gravity: { x: 0, y: 0.15, scale: 0.001 },
-			})
-			this.world = this.engine.world
-			this.initialized = true
-		}
+		if (this.initPromise) return this.initPromise
 
-		this.width = width
-		this.height = height
+		this.initPromise = (async () => {
+			// Lazy-load Matter.js on first init call
+			if (!this.Matter) {
+				this.Matter = (await import('matter-js')).default
+				this.engine = this.Matter!.Engine.create({
+					gravity: { x: 0, y: 0.15, scale: 0.001 },
+				})
+				this.world = this.engine.world
+				this.initialized = true
+			}
+
+			this.width = width
+			this.height = height
 
 		for (const wall of this.walls) {
 			this.Matter!.Composite.remove(this.world, wall)
 		}
 
-		const wallThickness = 50
-		const orbZoneHeight = 160
-		this.walls = [
-			// Top
-			this.Matter!.Bodies.rectangle(width / 2, -wallThickness / 2, width, wallThickness, { isStatic: true }),
-			// Left
-			this.Matter!.Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
-			// Right
-			this.Matter!.Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
-			// Bottom (above orb zone)
-			this.Matter!.Bodies.rectangle(width / 2, height - orbZoneHeight + wallThickness / 2, width, wallThickness, { isStatic: true }),
-		]
-		this.Matter!.Composite.add(this.world, this.walls)
+			const wallThickness = 50
+			const orbZoneHeight = 160
+			this.walls = [
+				// Top
+				this.Matter!.Bodies.rectangle(width / 2, -wallThickness / 2, width, wallThickness, { isStatic: true }),
+				// Left
+				this.Matter!.Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
+				// Right
+				this.Matter!.Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
+				// Bottom (above orb zone)
+				this.Matter!.Bodies.rectangle(width / 2, height - orbZoneHeight + wallThickness / 2, width, wallThickness, { isStatic: true }),
+			]
+			this.Matter!.Composite.add(this.world, this.walls)
+		})()
+
+		return this.initPromise
 	}
 
 	public addBubbles(artists: ArtistBubble[]): void {

@@ -7,6 +7,8 @@ import {
 	IArtistDiscoveryService,
 } from '../../services/artist-discovery-service'
 
+const ONBOARDING_COMPLETE_KEY = 'liverty:onboarding_complete'
+
 @useShadowDOM()
 export class ArtistDiscoveryPage {
 	static dependencies = [
@@ -123,7 +125,7 @@ export class ArtistDiscoveryPage {
 		this.logger.info('Navigating to live schedule', {
 			followedCount: this.followedCount,
 		})
-		localStorage.setItem('liverty:onboarding_complete', 'true')
+		localStorage.setItem(ONBOARDING_COMPLETE_KEY, 'true')
 		await this.router.load('/')
 	}
 }

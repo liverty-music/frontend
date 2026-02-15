@@ -1,1 +1,1 @@
-/home/pannpers/dev/src/worktrees/frontend-artist-discovery-ui/github.com/liverty-music/frontend/AGENTS.md
+AGENTS.md

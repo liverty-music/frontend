@@ -1,5 +1,5 @@
 import { bindable, ILogger, INode, resolve, shadowCSS, useShadowDOM } from 'aurelia'
-import { IArtistDiscoveryService } from '../../services/artist-discovery-service'
+import { type ArtistBubble, IArtistDiscoveryService } from '../../services/artist-discovery-service'
 import { AbsorptionAnimator } from './absorption-animator'
 import { BubblePhysics, type PhysicsBubble } from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'
@@ -68,7 +68,7 @@ export class DnaOrbCanvas {
 		this.canvas.addEventListener('keydown', this.onKeyDown)
 
 		this.physics.addBubbles(this.discoveryService.availableBubbles)
-		this.preloadImages()
+		this.preloadImages(this.discoveryService.availableBubbles)
 
 		this.lastTime = performance.now()
 		this.animFrameId = requestAnimationFrame(this.loop)
@@ -81,6 +81,7 @@ export class DnaOrbCanvas {
 		this.canvas.removeEventListener('touchstart', this.onTouch)
 		this.canvas.removeEventListener('keydown', this.onKeyDown)
 		this.physics.destroy()
+		this.imageCache.clear()
 	}
 
 	private async resize(): Promise<void> {
@@ -98,9 +99,12 @@ export class DnaOrbCanvas {
 		this.orbRenderer.init(rect.width, rect.height)
 	}
 
+	private resizeTimeout = 0
 	private readonly onResize = (): void => {
-		// Fire and forget - resize will be applied asynchronously
-		void this.resize()
+		window.clearTimeout(this.resizeTimeout)
+		this.resizeTimeout = window.setTimeout(() => {
+			void this.resize()
+		}, 150)
 	}
 
 	private readonly onClick = (e: MouseEvent): void => {
@@ -185,7 +189,7 @@ export class DnaOrbCanvas {
 			const similar = await this.discoveryService.getSimilarArtists(artist.name, artist.id)
 			if (similar.length > 0) {
 				this.physics.spawnBubblesAt(similar, pos.x, pos.y)
-				this.preloadImages()
+				this.preloadImages(similar)
 			} else {
 				// No similar artists found - notify parent for user feedback
 				this.element.dispatchEvent(
@@ -327,8 +331,8 @@ export class DnaOrbCanvas {
 		this.ctx.restore()
 	}
 
-	private preloadImages(): void {
-		for (const bubble of this.discoveryService.availableBubbles) {
+	private preloadImages(bubbles: ArtistBubble[]): void {
+		for (const bubble of bubbles) {
 			if (!bubble.imageUrl || this.imageCache.has(bubble.id)) continue
 			const img = new Image()
 			img.crossOrigin = 'anonymous'
