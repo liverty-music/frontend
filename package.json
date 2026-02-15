@@ -9,7 +9,7 @@
 	"license": "UNLICENSED",
 	"dependencies": {
 		"@aurelia/router": "latest",
-		"@buf/liverty-music_schema.connectrpc_es": "^1.6.1-20260207160400-34dc4120b4bc.2",
+		"@buf/liverty-music_schema.connectrpc_es": "^1.6.1-20260215094654-e27d4c474eb1.2",
 		"@connectrpc/connect": "^1.7.0",
 		"@connectrpc/connect-web": "^1.7.0",
 		"aurelia": "latest",
