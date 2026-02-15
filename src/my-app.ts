@@ -17,6 +17,11 @@ import { route } from '@aurelia/router'
 			component: import('./routes/auth-callback'),
 			title: 'Auth Callback',
 		},
+		{
+			path: 'artist-discovery',
+			component: import('./routes/artist-discovery/artist-discovery-page'),
+			title: 'Discover Artists',
+		},
 	],
 })
 export class MyApp {}

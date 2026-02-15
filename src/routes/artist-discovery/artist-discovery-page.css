@@ -1,0 +1,42 @@
+.container {
+	position: relative;
+	width: 100%;
+	height: 100vh;
+	overflow: hidden;
+	background: linear-gradient(to bottom, rgb(3, 7, 18), rgb(49, 46, 129), rgb(3, 7, 18));
+}
+
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+.complete-button-wrapper {
+	position: absolute;
+	bottom: 2rem;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 20;
+}
+
+.complete-button {
+	padding: 0.75rem 1.5rem;
+	background-color: rgb(79, 70, 229);
+	color: white;
+	font-weight: 600;
+	border-radius: 9999px;
+	box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+	transition: all 300ms;
+}
+
+.complete-button:hover {
+	background-color: rgb(99, 102, 241);
+	transform: scale(1.05);
+}
