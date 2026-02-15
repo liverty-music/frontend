@@ -1,8 +1,10 @@
 import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
+import type { PromiseClient } from '@connectrpc/connect'
 import { createPromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
-import { transport } from './grpc-transport'
+import { createTransport } from './grpc-transport'
+import { IAuthService } from './auth-service'
 
 export interface ArtistBubble {
 	id: string
@@ -21,10 +23,17 @@ export const IArtistDiscoveryService =
 
 export interface IArtistDiscoveryService extends ArtistDiscoveryService {}
 
-const artistClient = createPromiseClient(ArtistService, transport)
-
 export class ArtistDiscoveryService {
 	private readonly logger = resolve(ILogger).scopeTo('ArtistDiscoveryService')
+	private readonly artistClient: PromiseClient<typeof ArtistService>
+
+	constructor() {
+		const authService = resolve(IAuthService)
+		this.artistClient = createPromiseClient(
+			ArtistService,
+			createTransport(authService),
+		)
+	}
 
 	public availableBubbles: ArtistBubble[] = []
 	public followedArtists: ArtistBubble[] = []
@@ -34,7 +43,7 @@ export class ArtistDiscoveryService {
 
 	public async loadInitialArtists(country = 'Japan'): Promise<void> {
 		this.logger.info('Loading initial artists', { country })
-		const resp = await artistClient.listTop({ country })
+		const resp = await this.artistClient.listTop({ country })
 		const bubbles = resp.artists.map((a) => this.toBubble(a))
 		this.availableBubbles = bubbles
 		for (const b of this.availableBubbles) {
@@ -68,7 +77,7 @@ export class ArtistDiscoveryService {
 	): Promise<ArtistBubble[]> {
 		this.logger.info('Getting similar artists', { artistName, artistId })
 
-		const resp = await artistClient.listSimilar({
+		const resp = await this.artistClient.listSimilar({
 			artistId: new ArtistId({ value: artistId }),
 		})
 

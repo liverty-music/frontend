@@ -5,6 +5,13 @@ import { IAuthService } from '../services/auth-service'
 import { IUserService } from '../services/user-service'
 import { IOnboardingService } from '../services/onboarding-service'
 
+/**
+ * OIDC state object structure for tracking registration flow
+ */
+interface AuthState {
+	isRegistration?: boolean
+}
+
 export class AuthCallback {
 	public message = 'Verifying authentication...'
 	public error = ''
@@ -27,7 +34,7 @@ export class AuthCallback {
 			this.logger.info('handleCallback success!')
 
 			// Check if this was a registration flow
-			const state = user.state as { isRegistration?: boolean } | undefined
+			const state = user.state as AuthState | undefined
 			if (state?.isRegistration) {
 				this.logger.info('Registration detected, provisioning user in backend')
 				await this.provisionUser(user.profile.email)

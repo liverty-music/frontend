@@ -5,6 +5,7 @@ import { IToastService } from './components/toast-notification/toast-notificatio
 import { MyApp } from './my-app'
 import { IArtistDiscoveryService } from './services/artist-discovery-service'
 import { IAuthService } from './services/auth-service'
+import { IUserService } from './services/user-service'
 
 // Css files imported in this main file should be imported with ?inline query
 // to get CSS as string for sharedStyles in shadowDOM.
@@ -25,6 +26,7 @@ Aurelia
 		}),
 	)
 	.register(IAuthService)
+	.register(IUserService)
 	.register(IArtistDiscoveryService)
 	.register(IToastService)
 	// Register components globally or locally. Global is easier for AuthStatus used in shell.
