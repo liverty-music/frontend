@@ -1,7 +1,8 @@
 <div class="fixed top-0 left-0 right-0 z-50 flex flex-col items-center gap-2 pt-4 pointer-events-none">
   <div
     repeat.for="toast of toasts"
-    class="px-5 py-3 bg-gray-900/90 backdrop-blur-sm text-white rounded-xl shadow-lg transition-all duration-400 pointer-events-auto ${toast.visible ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}"
+    role="status"
+    class="px-5 py-3 bg-gray-900/90 backdrop-blur-sm text-white rounded-xl shadow-lg transition-[transform,opacity] duration-400 pointer-events-auto ${toast.visible ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}"
   >
     ${toast.message}
   </div>
