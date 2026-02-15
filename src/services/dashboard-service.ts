@@ -108,7 +108,11 @@ export class DashboardService {
 		const groups = new Map<string, DateGroup>()
 
 		for (const event of events) {
-			const dateKey = event.date.toISOString().split('T')[0]
+			const dateKey = [
+				event.date.getFullYear(),
+				String(event.date.getMonth() + 1).padStart(2, '0'),
+				String(event.date.getDate()).padStart(2, '0'),
+			].join('-')
 			const label = event.date.toLocaleDateString('ja-JP', {
 				month: 'long',
 				day: 'numeric',

@@ -40,8 +40,15 @@ export class EventDetailSheet {
 		const startTime = e.startTime || '19:00'
 		const startStr = startTime.replace(':', '') + '00'
 		const [hours, mins] = startTime.split(':').map(Number)
-		const endStr = `${String((hours + 2) % 24).padStart(2, '0')}${String(mins).padStart(2, '0')}00`
-		return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.title)}&dates=${dateStr}T${startStr}/${dateStr}T${endStr}&location=${encodeURIComponent(e.venueName)}`
+		const endDate = new Date(e.date)
+		endDate.setHours(hours + 2, mins)
+		const endDateStr = [
+			endDate.getFullYear(),
+			String(endDate.getMonth() + 1).padStart(2, '0'),
+			String(endDate.getDate()).padStart(2, '0'),
+		].join('')
+		const endStr = `${String(endDate.getHours()).padStart(2, '0')}${String(endDate.getMinutes()).padStart(2, '0')}00`
+		return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.title)}&dates=${dateStr}T${startStr}/${endDateStr}T${endStr}&location=${encodeURIComponent(e.venueName)}`
 	}
 
 	public open(event: LiveEvent): void {
