@@ -26,13 +26,25 @@ export interface IAuthService extends AuthService {}
 export class AuthService {
 	private userManager: UserManager
 	private readonly logger = resolve(ILogger).scopeTo('AuthService')
+	private readyResolve?: (value: undefined) => void
+	public readonly ready: Promise<void>
 
 	constructor() {
 		this.logger.debug('Initializing AuthService')
 		this.userManager = new UserManager(settings)
+
+		// Create a promise that resolves when initial auth state is loaded
+		this.ready = new Promise((resolve) => {
+			this.readyResolve = resolve
+		})
+
 		this.userManager.events.addUserLoaded((user) => this.updateState(user))
 		this.userManager.events.addUserUnloaded(() => this.updateState(null))
-		this.userManager.getUser().then((user) => this.updateState(user))
+		this.userManager.getUser().then((user) => {
+			this.updateState(user)
+			// Resolve the ready promise after initial user state is loaded
+			this.readyResolve?.()
+		})
 	}
 
 	public user: User | null = null

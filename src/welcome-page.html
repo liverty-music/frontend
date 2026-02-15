@@ -1,4 +1,24 @@
-<div class="bg-white rounded-md border p-4">
-  <h1 class="text-2xl font-semibold text-gray-900 mb-2">${message}</h1>
-  <p class="text-gray-600">Routing is configured and working.</p>
+<div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+  <div class="text-center max-w-md w-full">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+      大好きなあのバンドのライブ、もう二度と見逃さない。
+    </h1>
+    <p class="text-lg text-gray-600 mb-8">
+      あなたの推しアーティストを登録するだけで、全国のライブ日程を自動収集。
+    </p>
+    <div class="space-y-3 w-full">
+      <button
+        click.trigger="handleSignUp()"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors min-h-[48px]"
+      >
+        Sign Up
+      </button>
+      <button
+        click.trigger="handleSignIn()"
+        class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors min-h-[48px]"
+      >
+        Sign In
+      </button>
+    </div>
+  </div>
 </div>
