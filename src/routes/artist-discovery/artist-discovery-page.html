@@ -1,0 +1,37 @@
+<template>
+  <import from="../../components/dna-orb/dna-orb-canvas"></import>
+  <import from="../../components/toast-notification/toast-notification"></import>
+
+  <div class="container">
+    <toast-notification></toast-notification>
+
+    <dna-orb-canvas
+      component.ref="dnaOrbCanvas"
+      followed-count.bind="followedCount"
+      artist-selected.trigger="onArtistSelected($event)"
+      similar-artists-unavailable.trigger="onSimilarArtistsUnavailable($event)"
+      similar-artists-error.trigger="onSimilarArtistsError($event)"
+    ></dna-orb-canvas>
+
+    <div
+      if.bind="showCompleteButton"
+      class="complete-button-wrapper"
+    >
+      <button
+        click.trigger="onViewSchedule()"
+        class="complete-button"
+      >
+        View Live Schedule (${followedCount} artists)
+      </button>
+    </div>
+
+    <div
+      role="status"
+      aria-live="polite"
+      class="sr-only"
+    >
+      Artist discovery: ${dnaOrbCanvas?.bubbleCount ?? 0} artists available, ${followedCount} followed.
+      Tap bubbles to follow artists and build your Music DNA.
+    </div>
+  </div>
+</template>
