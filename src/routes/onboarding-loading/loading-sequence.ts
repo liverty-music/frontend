@@ -81,8 +81,9 @@ export class LoadingSequence {
 
 		// Check if user has already completed onboarding by fetching followed artists from backend
 		try {
+			const abortController = new AbortController()
 			const backendFollowedArtists =
-				await this.artistDiscoveryService.listFollowedFromBackend()
+				await this.artistDiscoveryService.listFollowedFromBackend(abortController.signal)
 
 			if (backendFollowedArtists.length > 0) {
 				// User has already completed onboarding, redirect to dashboard
@@ -133,7 +134,7 @@ export class LoadingSequence {
 		}
 	}
 
-	public loading(): void {
+	public binding(): void {
 		this.logger.info('Loading sequence started')
 		this.currentPhase = 1
 		this.currentPhaseMessage = this.phases[0].message
