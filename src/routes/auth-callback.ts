@@ -1,6 +1,6 @@
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb'
+import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { IAuthService } from '../services/auth-service'
 import { IUserService } from '../services/user-service'
 import { IOnboardingService } from '../services/onboarding-service'
