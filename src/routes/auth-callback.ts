@@ -1,15 +1,13 @@
-import { IRouter } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import { IAuthService } from '../services/auth-service'
-
-const ONBOARDING_COMPLETE_KEY = 'liverty:onboarding_complete'
+import { IOnboardingService } from '../services/onboarding-service'
 
 export class AuthCallback {
 	public message = 'Verifying authentication...'
 	public error = ''
 
-	private authService = resolve(IAuthService)
-	private router = resolve(IRouter)
+	private readonly authService = resolve(IAuthService)
+	private readonly onboardingService = resolve(IOnboardingService)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallback')
 
 	constructor() {
@@ -23,7 +21,7 @@ export class AuthCallback {
 			this.logger.info('Calling handleCallback...')
 			await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
-			await this.redirectAfterAuth()
+			await this.onboardingService.redirectBasedOnStatus()
 		} catch (err) {
 			this.logger.error('Auth callback error:', err)
 
@@ -32,23 +30,12 @@ export class AuthCallback {
 				this.logger.warn(
 					'User is already authenticated. Redirecting despite callback error...',
 				)
-				await this.redirectAfterAuth()
+				await this.onboardingService.redirectBasedOnStatus()
 				return
 			}
 
 			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
 			this.message = ''
-		}
-	}
-
-	private async redirectAfterAuth(): Promise<void> {
-		const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_COMPLETE_KEY)
-		if (hasCompletedOnboarding) {
-			this.logger.info('Returning user, redirecting to dashboard')
-			await this.router.load('/')
-		} else {
-			this.logger.info('New user, redirecting to artist discovery')
-			await this.router.load('artist-discovery')
 		}
 	}
 }
