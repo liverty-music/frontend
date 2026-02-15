@@ -69,10 +69,8 @@ export class LoadingSequenceService {
 		while (attempt <= maxRetries) {
 			try {
 				this.logger.info('Fetching followed artists', { attempt })
-				// Note: The current ArtistDiscoveryService doesn't have a backend call yet
-				// For now, use the local followedArtists state
-				// TODO: Replace with actual ArtistService.ListFollowed RPC when implemented
-				const artists = this.artistDiscoveryService.followedArtists.map(
+				const followed = await this.artistDiscoveryService.listFollowedFromBackend()
+				const artists = followed.map(
 					(a) => ({
 						id: a.id,
 						name: a.name,
