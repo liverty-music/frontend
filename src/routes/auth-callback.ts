@@ -28,7 +28,7 @@ export class AuthCallback {
 			const user = await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
 
-			// Check if this was a registration flow (Task 4.2)
+			// Check if this was a registration flow
 			const state = user.state as { isRegistration?: boolean } | undefined
 			if (state?.isRegistration) {
 				this.logger.info('Registration detected, provisioning user in backend')
@@ -53,7 +53,7 @@ export class AuthCallback {
 		}
 	}
 
-	// Tasks 4.3-4.5: Call Create RPC with error handling
+	// Call Create RPC with error handling
 	private async provisionUser(email: string | undefined): Promise<void> {
 		if (!email) {
 			this.logger.error('User email is missing, cannot provision user')
@@ -66,7 +66,7 @@ export class AuthCallback {
 			})
 			this.logger.info('User provisioned successfully', { email })
 		} catch (err) {
-			// Task 4.4: Handle ALREADY_EXISTS gracefully (treat as success)
+			// Handle ALREADY_EXISTS gracefully (treat as success)
 			if (err instanceof ConnectError && err.code === Code.AlreadyExists) {
 				this.logger.info('User already exists in backend, continuing...', {
 					email,
@@ -74,7 +74,7 @@ export class AuthCallback {
 				return
 			}
 
-			// Task 4.5: Handle other failures gracefully — log error but complete auth flow
+			// Handle other failures gracefully — log error but complete auth flow
 			this.logger.error(
 				'Failed to provision user in backend, continuing auth flow anyway',
 				{ email, error: err },
