@@ -97,6 +97,19 @@ export class ArtistDiscoveryService {
 		return hash % 3 === 0
 	}
 
+	public async listFollowedFromBackend(): Promise<ArtistBubble[]> {
+		this.logger.info('Fetching followed artists from backend')
+		try {
+			const resp = await artistClient.listFollowed({})
+			const bubbles = resp.artists.map((a) => this.toBubble(a))
+			this.logger.info('Followed artists fetched', { count: bubbles.length })
+			return bubbles
+		} catch (err) {
+			this.logger.error('Failed to fetch followed artists', err)
+			throw err
+		}
+	}
+
 	private toBubble(artist: {
 		id?: { value: string }
 		name?: { value: string }

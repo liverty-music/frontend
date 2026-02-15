@@ -22,6 +22,11 @@ import { route } from '@aurelia/router'
 			component: import('./routes/artist-discovery/artist-discovery-page'),
 			title: 'Discover Artists',
 		},
+		{
+			path: 'onboarding/loading',
+			component: import('./routes/onboarding-loading/loading-sequence'),
+			title: 'Loading',
+		},
 	],
 })
 export class MyApp {}
