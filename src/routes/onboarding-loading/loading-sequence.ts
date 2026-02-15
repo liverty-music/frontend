@@ -58,7 +58,6 @@ export class LoadingSequence {
 	public isPhaseVisible = true
 
 	private phaseTimer: number | null = null
-	private startTime = 0
 	private readonly FADE_DURATION_MS = 800
 
 	private readonly phases = [
@@ -134,14 +133,16 @@ export class LoadingSequence {
 		}
 	}
 
-	public async loading(): Promise<void> {
+	public loading(): void {
 		this.logger.info('Loading sequence started')
-		this.startTime = Date.now()
 		this.currentPhase = 1
 		this.currentPhaseMessage = this.phases[0].message
+	}
+
+	public async attached(): Promise<void> {
 		this.startPhaseAnimation()
 
-		// Start data aggregation in parallel with animation
+		// Start data aggregation after component is rendered
 		try {
 			await this.loadingService.aggregateData()
 			this.logger.info('Data aggregation completed, navigating to dashboard')

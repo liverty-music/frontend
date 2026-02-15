@@ -133,11 +133,21 @@ export class LoadingSequenceService {
 
 	private delay(ms: number, signal?: AbortSignal): Promise<void> {
 		return new Promise((resolve, reject) => {
-			const timeoutId = setTimeout(resolve, ms)
-			signal?.addEventListener('abort', () => {
+			if (signal?.aborted) {
+				return reject(new Error('Aborted'))
+			}
+
+			const onAbort = () => {
 				clearTimeout(timeoutId)
 				reject(new Error('Aborted'))
-			}, { once: true })
+			}
+
+			const timeoutId = setTimeout(() => {
+				signal?.removeEventListener('abort', onAbort)
+				resolve()
+			}, ms)
+
+			signal?.addEventListener('abort', onAbort, { once: true })
 		})
 	}
 }
