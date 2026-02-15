@@ -1,6 +1,21 @@
-<div class="flex items-center justify-center min-h-screen">
-  <div class="text-center">
-    <h1 class="text-3xl font-bold text-gray-900 mb-4">${message}</h1>
-    <p class="text-gray-600">Your personalized concert dashboard will appear here.</p>
+<div class="h-screen flex flex-col">
+  <!-- Header -->
+  <div class="shrink-0 px-4 py-3 border-b border-gray-100">
+    <div class="flex items-center justify-between">
+      <h1 class="text-lg font-bold text-gray-900">Live Highway</h1>
+      <div class="grid grid-cols-3 text-[10px] text-gray-400 gap-x-3">
+        <span>My City</span>
+        <span>Region</span>
+        <span>Others</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Highway -->
+  <div class="flex-1 min-h-0">
+    <live-highway
+      date-groups.bind="dateGroups"
+      loading.bind="isLoading"
+    ></live-highway>
   </div>
 </div>

@@ -1,0 +1,87 @@
+<template>
+  <!-- Backdrop -->
+  <div
+    if.bind="isOpen"
+    click.trigger="onBackdropClick()"
+    class="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300"
+  ></div>
+
+  <!-- Sheet -->
+  <div
+    click.trigger="onBackdropClick()"
+    class="fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}"
+  >
+    <div
+      click.trigger="onSheetClick($event)"
+      class="bg-white rounded-t-3xl shadow-2xl max-h-[70vh] overflow-y-auto"
+    >
+      <!-- Handle bar -->
+      <div class="flex justify-center pt-3 pb-2">
+        <div class="w-10 h-1 rounded-full bg-gray-300"></div>
+      </div>
+
+      <div if.bind="event" class="px-6 pb-8">
+        <!-- Artist name header with dynamic color -->
+        <div
+          style="background-color: ${backgroundColor}"
+          class="rounded-2xl p-5 mb-5"
+        >
+          <h2 class="text-white font-extrabold text-2xl leading-tight">
+            ${event.artistName}
+          </h2>
+          <p class="text-white/80 text-sm mt-1">${event.title}</p>
+        </div>
+
+        <!-- Event details -->
+        <div class="space-y-4">
+          <!-- Date & Time -->
+          <div class="flex items-start gap-3">
+            <span class="text-gray-400 text-lg mt-0.5">&#x1F4C5;</span>
+            <div>
+              <p class="text-gray-900 font-medium">${formattedDate}</p>
+              <p class="text-gray-500 text-sm">
+                Open ${event.openTime || '—'} / Start ${event.startTime}
+              </p>
+            </div>
+          </div>
+
+          <!-- Venue -->
+          <div class="flex items-start gap-3">
+            <span class="text-gray-400 text-lg mt-0.5">&#x1F4CD;</span>
+            <div>
+              <p class="text-gray-900 font-medium">${event.venueName}</p>
+              <a
+                href.bind="googleMapsUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-blue-600 text-sm underline"
+              >
+                Open in Google Maps
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="mt-6 flex flex-col gap-3">
+          <a
+            href.bind="event.sourceUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center justify-center gap-2 py-3 px-4 bg-gray-900 text-white rounded-xl font-medium text-sm transition-colors hover:bg-gray-800 active:bg-gray-700"
+          >
+            &#x1F517; View Official Info
+          </a>
+          <a
+            href.bind="calendarUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center justify-center gap-2 py-3 px-4 border-2 border-gray-200 text-gray-900 rounded-xl font-medium text-sm transition-colors hover:bg-gray-50 active:bg-gray-100"
+          >
+            &#x1F4C5; Add to Calendar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
