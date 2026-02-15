@@ -57,7 +57,11 @@ export class AuthService {
 	public async register(): Promise<void> {
 		this.logger.info('Starting registration flow')
 		// Zitadel supports prompt=create to default to registration form
-		await this.userManager.signinRedirect({ prompt: 'create' })
+		// Pass state to detect registration flow in callback
+		await this.userManager.signinRedirect({
+			prompt: 'create',
+			state: { isRegistration: true },
+		})
 	}
 
 	public async signOut(): Promise<void> {
