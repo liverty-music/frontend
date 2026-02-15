@@ -23,6 +23,11 @@ import { route } from '@aurelia/router'
 			title: 'Discover Artists',
 		},
 		{
+			path: 'onboarding/loading',
+			component: import('./routes/onboarding-loading/loading-sequence'),
+			title: 'Loading',
+		},
+		{
 			path: 'dashboard',
 			component: import('./routes/dashboard'),
 			title: 'Dashboard',
