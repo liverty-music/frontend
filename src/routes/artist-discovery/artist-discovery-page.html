@@ -5,6 +5,14 @@
   <div class="container">
     <toast-notification></toast-notification>
 
+    <!-- Onboarding guidance overlay -->
+    <div
+      if.bind="showGuidance"
+      class="guidance-overlay ${guidanceHiding ? 'hiding' : ''}"
+    >
+      Tap bubbles to follow artists
+    </div>
+
     <dna-orb-canvas
       component.ref="dnaOrbCanvas"
       followed-count.bind="followedCount"
@@ -12,6 +20,11 @@
       similar-artists-unavailable.trigger="onSimilarArtistsUnavailable($event)"
       similar-artists-error.trigger="onSimilarArtistsError($event)"
     ></dna-orb-canvas>
+
+    <!-- Orb label -->
+    <div class="orb-label">
+      Music DNA ${followedCount > 0 ? '· ' + followedCount : ''}
+    </div>
 
     <div
       if.bind="showCompleteButton"

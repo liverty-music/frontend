@@ -6,6 +6,34 @@
 	background: linear-gradient(to bottom, rgb(3 7 18), rgb(49 46 129), rgb(3 7 18));
 }
 
+/* Starfield background layer */
+.container::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image:
+		radial-gradient(1px 1px at 10% 15%, rgba(255 255 255 / 0.4), transparent),
+		radial-gradient(1px 1px at 25% 35%, rgba(255 255 255 / 0.3), transparent),
+		radial-gradient(1.5px 1.5px at 40% 10%, rgba(255 255 255 / 0.5), transparent),
+		radial-gradient(1px 1px at 55% 60%, rgba(255 255 255 / 0.25), transparent),
+		radial-gradient(1px 1px at 70% 25%, rgba(255 255 255 / 0.35), transparent),
+		radial-gradient(1.5px 1.5px at 85% 50%, rgba(255 255 255 / 0.4), transparent),
+		radial-gradient(1px 1px at 15% 70%, rgba(255 255 255 / 0.3), transparent),
+		radial-gradient(1px 1px at 50% 85%, rgba(255 255 255 / 0.2), transparent),
+		radial-gradient(1.5px 1.5px at 90% 80%, rgba(255 255 255 / 0.35), transparent),
+		radial-gradient(1px 1px at 30% 90%, rgba(255 255 255 / 0.25), transparent),
+		radial-gradient(1px 1px at 65% 5%, rgba(255 255 255 / 0.3), transparent),
+		radial-gradient(1px 1px at 5% 45%, rgba(255 255 255 / 0.2), transparent);
+	pointer-events: none;
+	z-index: 0;
+	animation: starfield-twinkle 8s ease-in-out infinite alternate;
+}
+
+@keyframes starfield-twinkle {
+	0% { opacity: 0.6; }
+	100% { opacity: 1; }
+}
+
 .sr-only {
 	position: absolute;
 	width: 1px;
@@ -30,6 +58,7 @@
 	padding: 0.75rem 1.5rem;
 	background-color: rgb(79 70 229);
 	color: white;
+	font-family: var(--font-display);
 	font-weight: 600;
 	border-radius: 9999px;
 	box-shadow: 0 10px 15px -3px rgb(79 70 229 / 30%);
@@ -39,4 +68,66 @@
 .complete-button:hover {
 	background-color: rgb(99 102 241);
 	transform: scale(1.05);
+}
+
+/* Onboarding guidance overlay */
+.guidance-overlay {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 30;
+	padding: 1rem 1.5rem;
+	background: rgba(0 0 0 / 0.7);
+	backdrop-filter: blur(8px);
+	border-radius: 1rem;
+	border: 1px solid rgba(255 255 255 / 0.1);
+	color: white;
+	font-family: var(--font-display);
+	font-size: 1rem;
+	font-weight: 500;
+	text-align: center;
+	pointer-events: none;
+	animation: guidance-fade 600ms ease-out both;
+}
+
+.guidance-overlay.hiding {
+	animation: guidance-fade-out 400ms ease-in both;
+}
+
+@keyframes guidance-fade {
+	from {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
+	}
+}
+
+@keyframes guidance-fade-out {
+	from {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(0.9);
+	}
+}
+
+/* Orb label */
+.orb-label {
+	position: absolute;
+	bottom: 10rem;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 15;
+	color: rgba(255 255 255 / 0.6);
+	font-family: var(--font-display);
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.15em;
 }

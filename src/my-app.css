@@ -1,20 +1,88 @@
 @import "tailwindcss";
 
-nav {
-	background: #eee;
-	display: flex;
+@theme {
+	/* Brand colors */
+	--color-brand-primary: oklch(0.585 0.233 277);
+	--color-brand-secondary: oklch(0.541 0.281 293);
+	--color-brand-accent: oklch(0.789 0.154 211);
+
+	/* Surface colors (dark theme) */
+	--color-surface-base: oklch(0.145 0.014 286);
+	--color-surface-raised: oklch(0.178 0.014 286);
+	--color-surface-overlay: oklch(0.21 0.014 286);
+
+	/* Text colors */
+	--color-text-primary: oklch(0.985 0 0);
+	--color-text-secondary: oklch(0.788 0.013 286);
+	--color-text-muted: oklch(0.556 0.014 286);
+
+	/* Typography */
+	--font-display: "Outfit", system-ui, sans-serif;
+	--font-body: system-ui, -apple-system, sans-serif;
+
+	/* Radius */
+	--radius-card: 1rem;
+	--radius-button: 0.75rem;
+	--radius-sheet: 1.5rem;
+
+	/* Shadows */
+	--shadow-card-glow: 0 4px 24px -4px oklch(0.585 0.233 277 / 0.2);
+	--shadow-sheet: 0 -8px 32px -4px oklch(0 0 0 / 0.5);
+	--shadow-button: 0 4px 16px -2px oklch(0.585 0.233 277 / 0.3);
 }
 
-a {
-	padding: 10px;
-	text-decoration: none;
-	color: black;
+/* Page transition animation */
+au-viewport > * {
+	animation: page-enter 300ms ease-out both;
 }
 
-a:hover {
-	background-color: darkgray;
+@keyframes page-enter {
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
-.active {
-	background-color: lightgray;
+/* Hero entrance animations */
+@keyframes fade-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+@keyframes fade-slide-up {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Spring bounce for toasts */
+@keyframes bounce-in {
+	0% {
+		opacity: 0;
+		transform: translateY(-20px) scale(0.95);
+	}
+	60% {
+		opacity: 1;
+		transform: translateY(4px) scale(1.02);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	au-viewport > *,
+	[class*="animate-"] {
+		animation: none !important;
+	}
 }

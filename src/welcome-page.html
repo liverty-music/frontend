@@ -1,21 +1,29 @@
-<div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+<div class="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-gradient-to-b from-surface-base via-brand-primary/10 to-surface-base">
   <div class="text-center max-w-md w-full">
-    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+    <!-- Brand wordmark -->
+    <p class="font-display text-sm font-semibold tracking-[0.2em] uppercase text-brand-accent mb-8 animate-[fade-in_600ms_ease-out_both]">
+      Liverty Music
+    </p>
+
+    <!-- Hero copy -->
+    <h1 class="font-display text-4xl md:text-5xl font-extrabold text-text-primary leading-tight mb-5 animate-[fade-slide-up_600ms_ease-out_200ms_both]">
       大好きなあのバンドのライブ、もう二度と見逃さない。
     </h1>
-    <p class="text-lg text-gray-600 mb-8">
+    <p class="text-lg text-text-secondary mb-10 animate-[fade-slide-up_600ms_ease-out_400ms_both]">
       あなたの推しアーティストを登録するだけで、全国のライブ日程を自動収集。
     </p>
-    <div class="space-y-3 w-full">
+
+    <!-- CTA buttons -->
+    <div class="space-y-3 w-full animate-[fade-slide-up_600ms_ease-out_600ms_both]">
       <button
         click.trigger="handleSignUp()"
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors min-h-[48px]"
+        class="w-full bg-brand-primary hover:bg-brand-secondary text-white font-semibold py-3.5 px-6 rounded-[var(--radius-button)] transition-all min-h-[48px] shadow-[var(--shadow-button)] hover:shadow-[0_6px_24px_-2px_oklch(0.585_0.233_277/0.4)] hover:scale-[1.02] active:scale-[0.98]"
       >
         Sign Up
       </button>
       <button
         click.trigger="handleSignIn()"
-        class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors min-h-[48px]"
+        class="w-full border border-white/20 hover:border-white/40 text-text-secondary hover:text-text-primary font-semibold py-3.5 px-6 rounded-[var(--radius-button)] transition-all min-h-[48px] hover:bg-white/5 active:scale-[0.98]"
       >
         Sign In
       </button>

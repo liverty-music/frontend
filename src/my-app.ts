@@ -1,4 +1,5 @@
-import { route } from '@aurelia/router'
+import { IRouter, route } from '@aurelia/router'
+import { resolve } from 'aurelia'
 
 @route({
 	routes: [
@@ -34,4 +35,13 @@ import { route } from '@aurelia/router'
 		},
 	],
 })
-export class MyApp {}
+export class MyApp {
+	private readonly router = resolve(IRouter)
+
+	private readonly fullscreenRoutes = ['', 'welcome', 'onboarding/discover', 'onboarding/loading', 'auth/callback']
+
+	public get showNav(): boolean {
+		const path = this.router.activeNavigation?.path ?? ''
+		return !this.fullscreenRoutes.some(r => path === r || path === `/${r}`)
+	}
+}

@@ -1,12 +1,12 @@
 <template>
-  <!-- Main lane: mega-typography, artist name only -->
+  <!-- Main lane: mega-typography, card glow, entrance animation -->
   <div
     if.bind="lane === 'main'"
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}"
-    class="rounded-2xl p-5 mb-3 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[120px] flex items-end"
+    class="rounded-[var(--radius-card)] p-5 mb-3 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[120px] flex items-end shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] animate-[fade-slide-up_400ms_ease-out_both]"
   >
-    <span class="text-white font-extrabold text-3xl leading-tight break-words">
+    <span class="text-white font-display font-extrabold text-4xl leading-tight break-words drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
       ${event.artistName}
     </span>
   </div>
@@ -16,9 +16,9 @@
     if.bind="lane === 'region'"
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}"
-    class="rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[80px] flex flex-col justify-end"
+    class="rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[80px] flex flex-col justify-end shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)] animate-[fade-slide-up_400ms_ease-out_both]"
   >
-    <span class="text-white font-bold text-lg leading-snug break-words">
+    <span class="text-white font-display font-bold text-lg leading-snug break-words">
       ${event.artistName}
     </span>
     <span class="text-white/70 text-xs mt-1">
@@ -30,16 +30,16 @@
   <div
     if.bind="lane === 'other'"
     click.trigger="onClick()"
-    class="py-2 px-2 mb-1 cursor-pointer rounded-lg transition-colors duration-200 hover:bg-gray-100 active:bg-gray-200 flex items-center gap-2"
+    class="py-2 px-2 mb-1 cursor-pointer rounded-lg transition-colors duration-200 hover:bg-white/5 active:bg-white/10 flex items-center gap-2 animate-[fade-slide-up_400ms_ease-out_both]"
   >
     <span
       style="background-color: ${backgroundColor}"
       class="w-2 h-2 rounded-full shrink-0"
     ></span>
-    <span class="text-gray-900 text-sm font-medium truncate">
+    <span class="text-text-primary text-sm font-medium truncate">
       ${event.artistName}
     </span>
-    <span class="text-gray-400 text-xs shrink-0">
+    <span class="text-text-muted text-xs shrink-0">
       ${event.locationLabel}
     </span>
   </div>
