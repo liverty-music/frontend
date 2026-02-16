@@ -82,6 +82,11 @@ export class EventDetailSheet {
 
 	public onTouchMove(e: TouchEvent): void {
 		if (!this.isDragging) return
+		const scrollable = this.element.querySelector('.overflow-y-auto')
+		if (scrollable && scrollable.scrollTop > 0) {
+			this.isDragging = false
+			return
+		}
 		const deltaY = e.touches[0].clientY - this.touchStartY
 		this.dragOffset = Math.max(0, deltaY)
 	}

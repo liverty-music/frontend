@@ -131,13 +131,16 @@ export class LoadingSequence {
 		}
 
 		this.phaseTimer = window.setTimeout(() => {
+			if (this.phaseTimer === null) return
 			this.isPhaseVisible = false
 
 			this.phaseTimer = window.setTimeout(() => {
+				if (this.phaseTimer === null) return
 				this.currentPhase++
 				if (this.currentPhase <= this.phases.length) {
 					this.currentPhaseMessage = this.phases[this.currentPhase - 1].message
 					this.phaseTimer = window.setTimeout(() => {
+						if (this.phaseTimer === null) return
 						this.isPhaseVisible = true
 						this.scheduleNextPhase()
 					}, 50)

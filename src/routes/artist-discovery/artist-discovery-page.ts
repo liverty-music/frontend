@@ -52,7 +52,7 @@ export class ArtistDiscoveryPage {
 	}
 
 	private dismissGuidance(): void {
-		if (!this.showGuidance) return
+		if (!this.showGuidance || this.guidanceHiding) return
 		this.guidanceHiding = true
 		window.setTimeout(() => {
 			this.showGuidance = false
