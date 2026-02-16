@@ -1,5 +1,5 @@
-const SATURATION = 70
-const LIGHTNESS = 45
+const SATURATION = 65
+const LIGHTNESS = 60
 
 export function artistColor(name: string): string {
 	let hash = 0

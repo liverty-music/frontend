@@ -1,47 +1,47 @@
 <template>
-  <div event-selected.trigger="onEventSelected($event)" class="flex flex-col h-full bg-white">
+  <div event-selected.trigger="onEventSelected($event)" class="flex flex-col h-full bg-surface-base">
     <!-- Loading state -->
     <div if.bind="loading" class="flex items-center justify-center h-full">
-      <p class="text-gray-400 text-sm animate-pulse">Loading events...</p>
+      <p class="text-text-muted text-sm animate-pulse">Loading events...</p>
     </div>
 
     <!-- Empty state -->
     <div if.bind="!loading && isEmpty" class="flex flex-col items-center justify-center h-full px-6">
-      <p class="text-gray-500 text-lg font-semibold mb-2">No upcoming events</p>
-      <p class="text-gray-400 text-sm text-center">Follow more artists to see their upcoming concerts here.</p>
+      <p class="text-text-secondary text-lg font-display font-semibold mb-2">No upcoming events</p>
+      <p class="text-text-muted text-sm text-center">Follow more artists to see their upcoming concerts here.</p>
     </div>
 
     <!-- Highway layout -->
     <div if.bind="!loading && !isEmpty" class="flex-1 overflow-y-auto overflow-x-hidden">
       <div repeat.for="group of dateGroups">
         <!-- Sticky date separator -->
-        <div class="sticky top-0 z-20 bg-gray-50 border-b border-gray-200 px-3 py-1.5">
-          <span class="text-xs font-bold text-gray-600 uppercase tracking-wider">${group.label}</span>
+        <div class="sticky top-0 z-20 bg-surface-raised/90 backdrop-blur-sm border-b border-white/10 px-3 py-2">
+          <span class="text-xs font-display font-bold text-brand-accent uppercase tracking-wider">${group.label}</span>
         </div>
 
         <!-- Three-lane grid -->
         <div class="grid grid-cols-[50%_30%_20%] min-h-[80px]">
           <!-- Main lane: My City -->
-          <div class="px-2 py-2 border-r border-gray-100">
+          <div class="px-2 py-2 border-r border-white/5">
             <event-card
               repeat.for="ev of group.main"
               event.bind="ev"
               lane="main"
             ></event-card>
             <div if.bind="group.main.length === 0" class="py-4">
-              <p class="text-gray-300 text-xs text-center">—</p>
+              <p class="text-text-muted/30 text-xs text-center">—</p>
             </div>
           </div>
 
           <!-- Region lane: My Region -->
-          <div class="px-1 py-2 border-r border-gray-100">
+          <div class="px-1 py-2 border-r border-white/5">
             <event-card
               repeat.for="ev of group.region"
               event.bind="ev"
               lane="region"
             ></event-card>
             <div if.bind="group.region.length === 0" class="py-4">
-              <p class="text-gray-300 text-xs text-center">—</p>
+              <p class="text-text-muted/30 text-xs text-center">—</p>
             </div>
           </div>
 
@@ -53,7 +53,7 @@
               lane="other"
             ></event-card>
             <div if.bind="group.other.length === 0" class="py-4">
-              <p class="text-gray-300 text-xs text-center">—</p>
+              <p class="text-text-muted/30 text-xs text-center">—</p>
             </div>
           </div>
         </div>

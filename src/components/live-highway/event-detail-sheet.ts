@@ -6,8 +6,12 @@ export class EventDetailSheet {
 	@bindable public event: LiveEvent | null = null
 
 	public isOpen = false
+	public dragOffset = 0
 
 	private readonly element = resolve(INode) as HTMLElement
+	private touchStartY = 0
+	private isDragging = false
+	private readonly DISMISS_THRESHOLD = 100
 
 	public get backgroundColor(): string {
 		if (!this.event) return 'hsl(0, 0%, 20%)'
@@ -54,10 +58,12 @@ export class EventDetailSheet {
 	public open(event: LiveEvent): void {
 		this.event = event
 		this.isOpen = true
+		this.dragOffset = 0
 	}
 
 	public close(): void {
 		this.isOpen = false
+		this.dragOffset = 0
 	}
 
 	public onBackdropClick(): void {
@@ -66,5 +72,28 @@ export class EventDetailSheet {
 
 	public onSheetClick(e: Event): void {
 		e.stopPropagation()
+	}
+
+	public onTouchStart(e: TouchEvent): void {
+		if (!this.isOpen) return
+		this.touchStartY = e.touches[0].clientY
+		this.isDragging = true
+	}
+
+	public onTouchMove(e: TouchEvent): void {
+		if (!this.isDragging) return
+		const deltaY = e.touches[0].clientY - this.touchStartY
+		this.dragOffset = Math.max(0, deltaY)
+	}
+
+	public onTouchEnd(): void {
+		if (!this.isDragging) return
+		this.isDragging = false
+
+		if (this.dragOffset > this.DISMISS_THRESHOLD) {
+			this.close()
+		} else {
+			this.dragOffset = 0
+		}
 	}
 }

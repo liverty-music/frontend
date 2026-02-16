@@ -1,5 +1,17 @@
 <div class="container">
+	<!-- Pulsing orb visual -->
+	<div class="pulsing-orb"></div>
+
+	<!-- Phase message -->
 	<div class="message-container">
 		<p class="loading-message ${getPhaseClass()}">${currentPhaseMessage}</p>
 	</div>
+
+	<!-- Step dots progress indicator -->
+	<div class="step-dots">
+		<div repeat.for="i of totalPhases" class="step-dot ${getStepDotClass(i)}"></div>
+	</div>
+
+	<!-- Step label -->
+	<p class="step-label">${currentPhase} / ${totalPhases}</p>
 </div>

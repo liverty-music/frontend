@@ -267,6 +267,14 @@ export class DnaOrbCanvas {
 		this.orbRenderer.render(this.ctx, this.discoveryService.orbIntensity)
 	}
 
+	private artistHue(name: string): number {
+		let hash = 0
+		for (const ch of name) {
+			hash = ((hash << 5) - hash + ch.charCodeAt(0)) | 0
+		}
+		return ((hash % 360) + 360) % 360
+	}
+
 	private renderBubble(bubble: PhysicsBubble, focused: boolean): void {
 		const { body, artist, scale, opacity } = bubble
 		const x = body.position.x
@@ -289,14 +297,15 @@ export class DnaOrbCanvas {
 			this.ctx.setLineDash([])
 		}
 
-		// Bubble gradient
+		// Per-artist color bubble gradient
+		const hue = this.artistHue(artist.name)
 		const grad = this.ctx.createRadialGradient(
 			x - r * 0.3, y - r * 0.3, 0,
 			x, y, r,
 		)
-		grad.addColorStop(0, 'hsla(260, 60%, 75%, 0.9)')
-		grad.addColorStop(0.7, 'hsla(250, 50%, 55%, 0.8)')
-		grad.addColorStop(1, 'hsla(240, 40%, 40%, 0.6)')
+		grad.addColorStop(0, `hsla(${hue}, 60%, 75%, 0.9)`)
+		grad.addColorStop(0.7, `hsla(${hue}, 50%, 55%, 0.8)`)
+		grad.addColorStop(1, `hsla(${(hue + 20) % 360}, 40%, 40%, 0.6)`)
 		this.ctx.fillStyle = grad
 		this.ctx.beginPath()
 		this.ctx.arc(x, y, r, 0, Math.PI * 2)
