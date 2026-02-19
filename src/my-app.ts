@@ -7,16 +7,19 @@ import { resolve } from 'aurelia'
 			path: ['', 'welcome'],
 			component: import('./welcome-page'),
 			title: 'Liverty Music',
+			data: { auth: false },
 		},
 		{
 			path: 'about',
 			component: import('./about-page'),
 			title: 'About',
+			data: { auth: false },
 		},
 		{
 			path: 'auth/callback',
 			component: import('./routes/auth-callback'),
 			title: 'Auth Callback',
+			data: { auth: false },
 		},
 		{
 			path: 'onboarding/discover',

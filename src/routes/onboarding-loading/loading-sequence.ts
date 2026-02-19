@@ -2,7 +2,6 @@ import { IRouter } from '@aurelia/router'
 import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
 import css from './loading-sequence.css?raw'
 import { IArtistDiscoveryService } from '../../services/artist-discovery-service'
-import { IAuthService } from '../../services/auth-service'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
 
 @useShadowDOM()
@@ -12,7 +11,6 @@ export class LoadingSequence {
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequence')
 	private readonly loadingService = resolve(ILoadingSequenceService)
-	private readonly authService = resolve(IAuthService)
 	private readonly artistDiscoveryService = resolve(IArtistDiscoveryService)
 
 	public currentPhase = 1
@@ -33,15 +31,7 @@ export class LoadingSequence {
 	}
 
 	public async canLoad(): Promise<boolean> {
-		this.logger.info('Checking navigation guard', {
-			isAuthenticated: this.authService.isAuthenticated,
-		})
-
-		if (!this.authService.isAuthenticated) {
-			this.logger.info('Unauthenticated, redirecting to landing page')
-			await this.router.load('/')
-			return false
-		}
+		// Onboarding state guard (authentication is enforced by the global AuthHook)
 
 		try {
 			const abortController = new AbortController()
