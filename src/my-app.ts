@@ -51,7 +51,7 @@ export class MyApp {
 
 	public get showNav(): boolean {
 		const path =
-			(this.router as unknown as { activeNavigation?: { path: string } })
+			(this.router as IRouter & { activeNavigation?: { path: string } })
 				.activeNavigation?.path ?? ''
 		return !this.fullscreenRoutes.some((r) => path === r || path === `/${r}`)
 	}

@@ -17,7 +17,6 @@ export class BubblePhysics {
 	private walls: Matter.Body[] = []
 	private bubbleMap = new Map<string, PhysicsBubble>()
 
-	private initialized = false
 	private width = 0
 	private height = 0
 	private initPromise: Promise<void> | null = null
@@ -33,7 +32,6 @@ export class BubblePhysics {
 					gravity: { x: 0, y: 0.15, scale: 0.001 },
 				})
 				this.world = this.engine.world
-				this.initialized = true
 			}
 
 			this.width = width
