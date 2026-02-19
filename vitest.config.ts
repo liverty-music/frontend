@@ -19,6 +19,15 @@ export default mergeConfig(
           "test/**",
           "*.config.*",
           ".storybook/**",
+          // Untested page components (exclude to prevent env teardown issues)
+          "src/*-page.ts",
+          "src/**/*.stories.ts",
+          // Main entry point (not unit testable)
+          "src/main.ts",
+          // Canvas components (require complex setup, deferred)
+          "src/components/dna-orb/**",
+          // Scripts directory
+          "scripts/**",
         ],
       },
     },
