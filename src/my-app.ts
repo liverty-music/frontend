@@ -44,7 +44,7 @@ export class MyApp {
 	private readonly fullscreenRoutes = ['', 'welcome', 'onboarding/discover', 'onboarding/loading', 'auth/callback']
 
 	public get showNav(): boolean {
-		const path = this.router.activeNavigation?.path ?? ''
+		const path = (this.router as unknown as { activeNavigation?: { path: string } }).activeNavigation?.path ?? ''
 		return !this.fullscreenRoutes.some(r => path === r || path === `/${r}`)
 	}
 }

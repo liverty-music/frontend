@@ -17,6 +17,7 @@ export class BubblePhysics {
 	private walls: Matter.Body[] = []
 	private bubbleMap = new Map<string, PhysicsBubble>()
 
+	private initialized = false
 	private width = 0
 	private height = 0
 	private initPromise: Promise<void> | null = null
