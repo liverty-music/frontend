@@ -41,7 +41,7 @@ jobs:
         run: npm ci
 
       - name: Run linter
-        run: npm run lint
+        run: npx biome lint src test && npm run lint:css
 
       - name: Check formatting
         run: npx biome format src test
