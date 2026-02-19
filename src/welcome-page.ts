@@ -30,7 +30,7 @@ export class WelcomePage implements IRouteViewModel {
 	}
 
 	async handleSignUp(): Promise<void> {
-		await this.authService.register()
+		await this.authService.signUp()
 	}
 
 	async handleSignIn(): Promise<void> {

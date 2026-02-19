@@ -49,6 +49,13 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
       },
     },
+    {
+      name: 'chromium-authenticated',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/storageState.json',
+      },
+    },
 
     // {
     //   name: 'firefox',

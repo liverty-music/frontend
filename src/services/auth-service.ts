@@ -3,6 +3,7 @@ import {
 	type User,
 	UserManager,
 	type UserManagerSettings,
+	WebStorageStateStore,
 } from 'oidc-client-ts'
 
 const settings: UserManagerSettings = {
@@ -14,6 +15,8 @@ const settings: UserManagerSettings = {
 	scope: 'openid profile email offline_access', // offline_access for refresh tokens
 	// PKCE is standard/default for 'code' flow in newer oidc-client-ts versions
 	loadUserInfo: true,
+	// Use localStorage instead of sessionStorage for better compatibility with Playwright storageState
+	userStore: new WebStorageStateStore({ store: window.localStorage }),
 }
 
 export const IAuthService = DI.createInterface<IAuthService>(
@@ -26,7 +29,7 @@ export interface IAuthService extends AuthService {}
 export class AuthService {
 	private userManager: UserManager
 	private readonly logger = resolve(ILogger).scopeTo('AuthService')
-	private readyResolve?: (value: undefined) => void
+	private readyResolve?: () => void
 	public readonly ready: Promise<void>
 
 	constructor() {
@@ -66,13 +69,13 @@ export class AuthService {
 		await this.userManager.signinRedirect()
 	}
 
-	public async register(): Promise<void> {
-		this.logger.info('Starting registration flow')
-		// Zitadel supports prompt=create to default to registration form
-		// Pass state to detect registration flow in callback
+	public async signUp(): Promise<void> {
+		this.logger.info('Starting sign-up flow')
+		// Zitadel supports prompt=create to default to sign-up form
+		// Pass state to detect sign-up flow in callback
 		await this.userManager.signinRedirect({
 			prompt: 'create',
-			state: { isRegistration: true },
+			state: { isSignUp: true },
 		})
 	}
 

@@ -6,10 +6,10 @@ import { IUserService } from '../services/user-service'
 import { IOnboardingService } from '../services/onboarding-service'
 
 /**
- * OIDC state object structure for tracking registration flow
+ * OIDC state object structure for tracking sign-up flow
  */
 interface AuthState {
-	isRegistration?: boolean
+	isSignUp?: boolean
 }
 
 export class AuthCallback {
@@ -33,10 +33,10 @@ export class AuthCallback {
 			const user = await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
 
-			// Check if this was a registration flow
+			// Check if this was a sign-up flow
 			const state = user.state as AuthState | undefined
-			if (state?.isRegistration) {
-				this.logger.info('Registration detected, provisioning user in backend')
+			if (state?.isSignUp) {
+				this.logger.info('Sign-up detected, provisioning user in backend')
 				await this.provisionUser(user.profile.email)
 			}
 
