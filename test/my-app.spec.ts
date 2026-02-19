@@ -13,6 +13,9 @@ describe('my-app', () => {
 		// Consider integration tests or refactoring to inject the RPC client as a dependency.
 	})
 
+	// TODO(#24): Unskip once createFixture-based integration tests are supported.
+	// Requires full router bootstrapping and viewport mocking that is out of scope
+	// for this unit test PR. Tracked in: https://github.com/liverty-music/frontend/issues/24
 	it.skip('should have a layout with navigation and viewport', async () => {
 		const { appHost } = await createFixture('<my-app></my-app>', {}, [MyApp])
 			.started
