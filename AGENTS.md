@@ -232,6 +232,20 @@ this.logger.warn('Potential issue', error)
 this.logger.error('Failed operation', error)
 ```
 
+## Playwright MCP (Authenticated E2E Testing)
+
+All routes require authentication by default (`AuthHook` in `src/hooks/auth-hook.ts`). Public routes explicitly set `data: { auth: false }` in route config.
+
+Before using the `playwright-auth` MCP server to test protected routes:
+
+```bash
+npx tsx scripts/capture-auth-state.ts
+```
+
+This opens a browser for manual OIDC login and saves the session to `.auth/storageState.json`. The `playwright-auth` MCP server (configured in `.claude/settings.json`) uses this file automatically.
+
+If navigation to a protected route redirects to `/`, the storageState has likely expired. Re-run the capture script.
+
 ## Development Commands
 
 ```bash
