@@ -1,8 +1,21 @@
 import { IRouter } from '@aurelia/router'
-import { createFixture } from '@aurelia/testing'
 import { DI, Registration } from 'aurelia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MyApp } from '../src/my-app'
+
+// Mock all dynamic imports used by the @route decorator on MyApp.
+// Without these mocks, the imports resolve after Vitest tears down the jsdom
+// environment, causing "document is not defined" unhandled rejections.
+vi.mock('../src/welcome-page', () => ({ WelcomePage: class WelcomePage {} }))
+vi.mock('../src/about-page', () => ({ AboutPage: class AboutPage {} }))
+vi.mock('../src/routes/auth-callback', () => ({ AuthCallback: class AuthCallback {} }))
+vi.mock('../src/routes/artist-discovery/artist-discovery-page', () => ({
+	ArtistDiscoveryPage: class ArtistDiscoveryPage {},
+}))
+vi.mock('../src/routes/onboarding-loading/loading-sequence', () => ({
+	LoadingSequence: class LoadingSequence {},
+}))
+vi.mock('../src/routes/dashboard', () => ({ Dashboard: class Dashboard {} }))
 
 describe('my-app', () => {
 	// TODO: Fix landing page test - requires complex mocking of auth service and RPC client
@@ -17,6 +30,7 @@ describe('my-app', () => {
 	// Requires full router bootstrapping and viewport mocking that is out of scope
 	// for this unit test PR. Tracked in: https://github.com/liverty-music/frontend/issues/24
 	it.skip('should have a layout with navigation and viewport', async () => {
+		const { createFixture } = await import('@aurelia/testing')
 		const { appHost } = await createFixture('<my-app></my-app>', {}, [MyApp])
 			.started
 
