@@ -34,6 +34,8 @@ export default mergeConfig(
           "src/components/dna-orb/**",
           // Scripts directory
           "scripts/**",
+          // Browser-env dependencies (window.location at module level)
+          "src/services/auth-service.ts",
         ],
       },
     },

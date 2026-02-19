@@ -10,7 +10,12 @@
 	justify-content: center;
 
 	/* Match Artist Discovery background for visual continuity */
-	background: linear-gradient(to bottom, rgb(3 7 18), rgb(49 46 129), rgb(3 7 18));
+	background: linear-gradient(
+		to bottom,
+		rgb(3 7 18),
+		rgb(49 46 129),
+		rgb(3 7 18)
+	);
 }
 
 /* Starfield layer — same as Artist Discovery for visual continuity */
@@ -21,13 +26,25 @@
 	background-image:
 		radial-gradient(1px 1px at 10% 15%, rgba(255 255 255 / 40%), transparent),
 		radial-gradient(1px 1px at 25% 35%, rgba(255 255 255 / 30%), transparent),
-		radial-gradient(1.5px 1.5px at 40% 10%, rgba(255 255 255 / 50%), transparent),
+		radial-gradient(
+			1.5px 1.5px at 40% 10%,
+			rgba(255 255 255 / 50%),
+			transparent
+		),
 		radial-gradient(1px 1px at 55% 60%, rgba(255 255 255 / 25%), transparent),
 		radial-gradient(1px 1px at 70% 25%, rgba(255 255 255 / 35%), transparent),
-		radial-gradient(1.5px 1.5px at 85% 50%, rgba(255 255 255 / 40%), transparent),
+		radial-gradient(
+			1.5px 1.5px at 85% 50%,
+			rgba(255 255 255 / 40%),
+			transparent
+		),
 		radial-gradient(1px 1px at 15% 70%, rgba(255 255 255 / 30%), transparent),
 		radial-gradient(1px 1px at 50% 85%, rgba(255 255 255 / 20%), transparent),
-		radial-gradient(1.5px 1.5px at 90% 80%, rgba(255 255 255 / 35%), transparent),
+		radial-gradient(
+			1.5px 1.5px at 90% 80%,
+			rgba(255 255 255 / 35%),
+			transparent
+		),
 		radial-gradient(1px 1px at 30% 90%, rgba(255 255 255 / 25%), transparent);
 	pointer-events: none;
 	z-index: 0;
@@ -35,8 +52,12 @@
 }
 
 @keyframes starfield-twinkle {
-	0% { opacity: 0.6; }
-	100% { opacity: 1; }
+	0% {
+		opacity: 0.6;
+	}
+	100% {
+		opacity: 1;
+	}
 }
 
 /* Pulsing orb — animated visual element */
@@ -46,7 +67,8 @@
 	width: 120px;
 	height: 120px;
 	border-radius: 50%;
-	background: radial-gradient(circle at 35% 35%,
+	background: radial-gradient(
+		circle at 35% 35%,
 		rgba(255 255 255 / 15%),
 		oklch(58.5% 0.233 277deg / 50%) 40%,
 		oklch(54.1% 0.281 293deg / 40%) 70%,
@@ -65,7 +87,8 @@
 	position: absolute;
 	inset: 8px;
 	border-radius: 50%;
-	background: radial-gradient(circle at 30% 30%,
+	background: radial-gradient(
+		circle at 30% 30%,
 		rgba(255 255 255 / 20%),
 		transparent 60%
 	);
@@ -73,7 +96,8 @@
 }
 
 @keyframes orb-pulse {
-	0%, 100% {
+	0%,
+	100% {
 		transform: scale(1);
 		box-shadow:
 			0 0 40px 8px oklch(58.5% 0.233 277deg / 30%),
@@ -91,8 +115,12 @@
 }
 
 @keyframes orb-shimmer {
-	0% { opacity: 0.5; }
-	100% { opacity: 1; }
+	0% {
+		opacity: 0.5;
+	}
+	100% {
+		opacity: 1;
+	}
 }
 
 /* Message container */
@@ -133,7 +161,10 @@
 	height: 10px;
 	border-radius: 50%;
 	background: rgba(255 255 255 / 20%);
-	transition: background 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+	transition:
+		background 0.4s ease,
+		box-shadow 0.4s ease,
+		transform 0.4s ease;
 }
 
 .step-dot.completed {
@@ -149,7 +180,8 @@
 }
 
 @keyframes dot-glow {
-	0%, 100% {
+	0%,
+	100% {
 		box-shadow: 0 0 12px 4px oklch(78.9% 0.154 211deg / 50%);
 	}
 

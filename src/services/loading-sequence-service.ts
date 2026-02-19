@@ -2,10 +2,10 @@ import { DI, ILogger, resolve } from 'aurelia'
 import { IArtistDiscoveryService } from './artist-discovery-service'
 import { IConcertService } from './concert-service'
 
-export const ILoadingSequenceService = DI.createInterface<ILoadingSequenceService>(
-	'ILoadingSequenceService',
-	(x) => x.singleton(LoadingSequenceService),
-)
+export const ILoadingSequenceService =
+	DI.createInterface<ILoadingSequenceService>('ILoadingSequenceService', (x) =>
+		x.singleton(LoadingSequenceService),
+	)
 
 export interface ILoadingSequenceService extends LoadingSequenceService {}
 
@@ -29,8 +29,9 @@ export class LoadingSequenceService {
 
 		try {
 			// Get followed artists with retry logic
-			const followedArtists =
-				await this.getFollowedArtistsWithRetry(abortController.signal)
+			const followedArtists = await this.getFollowedArtistsWithRetry(
+				abortController.signal,
+			)
 
 			if (followedArtists.length === 0) {
 				this.logger.info('No followed artists found, skipping concert search')
@@ -69,13 +70,12 @@ export class LoadingSequenceService {
 		while (attempt <= maxRetries) {
 			try {
 				this.logger.info('Fetching followed artists', { attempt })
-				const followed = await this.artistDiscoveryService.listFollowedFromBackend(signal)
-				const artists = followed.map(
-					(a) => ({
-						id: a.id,
-						name: a.name,
-					}),
-				)
+				const followed =
+					await this.artistDiscoveryService.listFollowedFromBackend(signal)
+				const artists = followed.map((a) => ({
+					id: a.id,
+					name: a.name,
+				}))
 				this.logger.info('Followed artists retrieved', {
 					count: artists.length,
 				})
@@ -83,7 +83,10 @@ export class LoadingSequenceService {
 			} catch (err) {
 				attempt++
 				if (attempt > maxRetries) {
-					this.logger.error('Failed to fetch followed artists after retries', err)
+					this.logger.error(
+						'Failed to fetch followed artists after retries',
+						err,
+					)
 					throw err
 				}
 				this.logger.warn('Retrying followed artists fetch', { attempt })

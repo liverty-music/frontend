@@ -52,10 +52,14 @@ export class OnboardingService {
 		const hasCompleted = await this.hasCompletedOnboarding()
 
 		if (hasCompleted) {
-			this.logger.info('User has completed onboarding, redirecting to dashboard')
+			this.logger.info(
+				'User has completed onboarding, redirecting to dashboard',
+			)
 			await this.router.load('dashboard')
 		} else {
-			this.logger.info('User has not completed onboarding, redirecting to discovery')
+			this.logger.info(
+				'User has not completed onboarding, redirecting to discovery',
+			)
 			await this.router.load('onboarding/discover')
 		}
 	}

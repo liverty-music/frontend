@@ -16,7 +16,10 @@ export interface IConcertService extends ConcertServiceClient {}
 export class ConcertServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('ConcertService')
 	private readonly authService = resolve(IAuthService)
-	private readonly concertClient = createClient(ConcertService, createTransport(this.authService))
+	private readonly concertClient = createClient(
+		ConcertService,
+		createTransport(this.authService),
+	)
 
 	public async listConcerts(
 		artistId: string,

@@ -39,21 +39,45 @@ export class BubblePhysics {
 			this.width = width
 			this.height = height
 
-		for (const wall of this.walls) {
-			this.Matter?.Composite.remove(this.world, wall)
-		}
+			for (const wall of this.walls) {
+				this.Matter?.Composite.remove(this.world, wall)
+			}
 
 			const wallThickness = 50
 			const orbZoneHeight = 160
 			this.walls = [
 				// Top
-				this.Matter?.Bodies.rectangle(width / 2, -wallThickness / 2, width, wallThickness, { isStatic: true }),
+				this.Matter?.Bodies.rectangle(
+					width / 2,
+					-wallThickness / 2,
+					width,
+					wallThickness,
+					{ isStatic: true },
+				),
 				// Left
-				this.Matter?.Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
+				this.Matter?.Bodies.rectangle(
+					-wallThickness / 2,
+					height / 2,
+					wallThickness,
+					height,
+					{ isStatic: true },
+				),
 				// Right
-				this.Matter?.Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height, { isStatic: true }),
+				this.Matter?.Bodies.rectangle(
+					width + wallThickness / 2,
+					height / 2,
+					wallThickness,
+					height,
+					{ isStatic: true },
+				),
 				// Bottom (above orb zone)
-				this.Matter?.Bodies.rectangle(width / 2, height - orbZoneHeight + wallThickness / 2, width, wallThickness, { isStatic: true }),
+				this.Matter?.Bodies.rectangle(
+					width / 2,
+					height - orbZoneHeight + wallThickness / 2,
+					width,
+					wallThickness,
+					{ isStatic: true },
+				),
 			]
 			this.Matter?.Composite.add(this.world, this.walls)
 		})()
@@ -86,7 +110,11 @@ export class BubblePhysics {
 		}
 	}
 
-	public spawnBubblesAt(artists: ArtistBubble[], fromX: number, fromY: number): void {
+	public spawnBubblesAt(
+		artists: ArtistBubble[],
+		fromX: number,
+		fromY: number,
+	): void {
 		for (const artist of artists) {
 			if (this.bubbleMap.has(artist.id)) continue
 
