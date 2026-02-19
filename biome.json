@@ -18,10 +18,31 @@
 			"recommended": true
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["test/**/*.ts", "test/**/*.spec.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noNonNullAssertion": "off"
+					},
+					"suspicious": {
+						"noExplicitAny": "off"
+					}
+				}
+			}
+		}
+	],
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "single",
 			"semicolons": "asNeeded"
+		}
+	},
+	"css": {
+		"parser": {
+			"cssModules": false,
+			"tailwindDirectives": true
 		}
 	},
 	"assist": {

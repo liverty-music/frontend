@@ -10,7 +10,26 @@ export default mergeConfig(
       watch: false,
       exclude: [...configDefaults.exclude, "e2e/*"],
       root: fileURLToPath(new URL("./", import.meta.url)),
-      setupFiles: ["./test/setup.ts"]
+      setupFiles: ["./test/setup.ts"],
+      coverage: {
+        provider: "v8",
+        reporter: ["text", "html", "json-summary"],
+        exclude: [
+          ...configDefaults.coverage.exclude,
+          "test/**",
+          "*.config.*",
+          ".storybook/**",
+          // Untested page components (exclude to prevent env teardown issues)
+          "src/*-page.ts",
+          "src/**/*.stories.ts",
+          // Main entry point (not unit testable)
+          "src/main.ts",
+          // Canvas components (require complex setup, deferred)
+          "src/components/dna-orb/**",
+          // Scripts directory
+          "scripts/**",
+        ],
+      },
     },
   }),
 );

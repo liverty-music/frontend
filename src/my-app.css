@@ -2,19 +2,19 @@
 
 @theme {
 	/* Brand colors */
-	--color-brand-primary: oklch(0.585 0.233 277);
-	--color-brand-secondary: oklch(0.541 0.281 293);
-	--color-brand-accent: oklch(0.789 0.154 211);
+	--color-brand-primary: oklch(58.5% 0.233 277deg);
+	--color-brand-secondary: oklch(54.1% 0.281 293deg);
+	--color-brand-accent: oklch(78.9% 0.154 211deg);
 
 	/* Surface colors (dark theme) */
-	--color-surface-base: oklch(0.145 0.014 286);
-	--color-surface-raised: oklch(0.178 0.014 286);
-	--color-surface-overlay: oklch(0.21 0.014 286);
+	--color-surface-base: oklch(14.5% 0.014 286deg);
+	--color-surface-raised: oklch(17.8% 0.014 286deg);
+	--color-surface-overlay: oklch(21% 0.014 286deg);
 
 	/* Text colors */
-	--color-text-primary: oklch(0.985 0 0);
-	--color-text-secondary: oklch(0.788 0.013 286);
-	--color-text-muted: oklch(0.556 0.014 286);
+	--color-text-primary: oklch(98.5% 0 0deg);
+	--color-text-secondary: oklch(78.8% 0.013 286deg);
+	--color-text-muted: oklch(55.6% 0.014 286deg);
 
 	/* Typography */
 	--font-display: "Outfit", system-ui, sans-serif;
@@ -26,9 +26,9 @@
 	--radius-sheet: 1.5rem;
 
 	/* Shadows */
-	--shadow-card-glow: 0 4px 24px -4px oklch(0.585 0.233 277 / 0.2);
-	--shadow-sheet: 0 -8px 32px -4px oklch(0 0 0 / 0.5);
-	--shadow-button: 0 4px 16px -2px oklch(0.585 0.233 277 / 0.3);
+	--shadow-card-glow: 0 4px 24px -4px oklch(58.5% 0.233 277deg / 20%);
+	--shadow-sheet: 0 -8px 32px -4px oklch(0% 0 0deg / 50%);
+	--shadow-button: 0 4px 16px -2px oklch(58.5% 0.233 277deg / 30%);
 }
 
 /* Page transition animation */
@@ -41,6 +41,7 @@ au-viewport > * {
 		opacity: 0;
 		transform: translateY(12px);
 	}
+
 	to {
 		opacity: 1;
 		transform: translateY(0);
@@ -58,6 +59,7 @@ au-viewport > * {
 		opacity: 0;
 		transform: translateY(16px);
 	}
+
 	to {
 		opacity: 1;
 		transform: translateY(0);
@@ -70,10 +72,12 @@ au-viewport > * {
 		opacity: 0;
 		transform: translateY(-20px) scale(0.95);
 	}
+
 	60% {
 		opacity: 1;
 		transform: translateY(4px) scale(1.02);
 	}
+
 	100% {
 		opacity: 1;
 		transform: translateY(0) scale(1);
@@ -83,6 +87,6 @@ au-viewport > * {
 @media (prefers-reduced-motion: reduce) {
 	au-viewport > *,
 	[class*="animate-"] {
-		animation: none !important;
+		animation: none;
 	}
 }

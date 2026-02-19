@@ -109,7 +109,7 @@ export class ArtistDiscoveryService {
 	public async listFollowedFromBackend(signal?: AbortSignal): Promise<ArtistBubble[]> {
 		this.logger.info('Fetching followed artists from backend')
 		try {
-			const resp = await artistClient.listFollowed({}, { signal })
+			const resp = await this.artistClient.listFollowed({}, { signal })
 			const bubbles = resp.artists.map((a) => this.toBubble(a))
 			this.logger.info('Followed artists fetched', { count: bubbles.length })
 			return bubbles

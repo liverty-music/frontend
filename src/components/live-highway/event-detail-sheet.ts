@@ -42,7 +42,7 @@ export class EventDetailSheet {
 			String(e.date.getDate()).padStart(2, '0'),
 		].join('')
 		const startTime = e.startTime || '19:00'
-		const startStr = startTime.replace(':', '') + '00'
+		const startStr = `${startTime.replace(':', '')}00`
 		const [hours, mins] = startTime.split(':').map(Number)
 		const endDate = new Date(e.date)
 		endDate.setHours(hours + 2, mins)
