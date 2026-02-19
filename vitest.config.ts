@@ -10,7 +10,17 @@ export default mergeConfig(
       watch: false,
       exclude: [...configDefaults.exclude, "e2e/*"],
       root: fileURLToPath(new URL("./", import.meta.url)),
-      setupFiles: ["./test/setup.ts"]
+      setupFiles: ["./test/setup.ts"],
+      coverage: {
+        provider: "v8",
+        reporter: ["text", "html", "json-summary"],
+        exclude: [
+          ...configDefaults.coverage.exclude,
+          "test/**",
+          "*.config.*",
+          ".storybook/**",
+        ],
+      },
     },
   }),
 );

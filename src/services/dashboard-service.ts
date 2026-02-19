@@ -51,7 +51,6 @@ export class DashboardService {
 		artists: Array<{ id: string; name: string }>,
 		signal?: AbortSignal,
 	): Promise<LiveEvent[]> {
-		const artistMap = new Map(artists.map((a) => [a.id, a.name]))
 		const results: LiveEvent[] = []
 
 		const settled = await Promise.allSettled(
@@ -119,17 +118,18 @@ export class DashboardService {
 				weekday: 'short',
 			})
 
-			if (!groups.has(dateKey)) {
-				groups.set(dateKey, {
+			let group = groups.get(dateKey)
+			if (!group) {
+				group = {
 					label,
 					dateKey,
 					main: [],
 					region: [],
 					other: [],
-				})
+				}
+				groups.set(dateKey, group)
 			}
 
-			const group = groups.get(dateKey)!
 			// MVP: assign all events to main lane since venue location data is not yet available
 			group.main.push(event)
 		}

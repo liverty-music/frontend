@@ -8,7 +8,6 @@ vi.mock('oidc-client-ts')
 
 describe('AuthService', () => {
 	let sut: IAuthService
-	// biome-ignore lint/suspicious/noExplicitAny: mock
 	let userManagerMock: any
 
 	beforeEach(() => {
@@ -24,7 +23,6 @@ describe('AuthService', () => {
 				addUserUnloaded: vi.fn(),
 			},
 		}
-		// biome-ignore lint/suspicious/noExplicitAny: mock
 		;(UserManager as any).mockImplementation(() => userManagerMock)
 
 		const container = DI.createContainer()
@@ -64,10 +62,11 @@ describe('AuthService', () => {
 		expect(userManagerMock.signinRedirect).toHaveBeenCalled()
 	})
 
-	it('register calls signinRedirect with prompt=create', async () => {
-		await sut.register()
+	it('signUp calls signinRedirect with prompt=create', async () => {
+		await sut.signUp()
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
 			prompt: 'create',
+			state: { isSignUp: true },
 		})
 	})
 
