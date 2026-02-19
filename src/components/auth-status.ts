@@ -12,7 +12,7 @@ export class AuthStatus {
 
 	public async signUp(): Promise<void> {
 		this.logger.debug('Sign Up clicked')
-		await this.auth.register()
+		await this.auth.signUp()
 	}
 
 	public async signOut(): Promise<void> {
