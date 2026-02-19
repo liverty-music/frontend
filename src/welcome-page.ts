@@ -20,7 +20,9 @@ export class WelcomePage implements IRouteViewModel {
 
 		// If user is authenticated, redirect and prevent landing page from loading
 		if (this.authService.isAuthenticated) {
-			this.logger.info('User is authenticated, redirecting based on onboarding status')
+			this.logger.info(
+				'User is authenticated, redirecting based on onboarding status',
+			)
 			await this.onboardingService.redirectBasedOnStatus()
 			return false // Prevent landing page from loading
 		}

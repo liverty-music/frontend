@@ -71,12 +71,9 @@ export class ArtistDiscoveryPage {
 		await this.discoveryService.followArtist(artist)
 
 		try {
-			const hasEvents =
-				await this.discoveryService.checkLiveEvents(artist.name)
+			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
 			if (hasEvents) {
-				this.toastService.show(
-					`${artist.name} has upcoming live events!`,
-				)
+				this.toastService.show(`${artist.name} has upcoming live events!`)
 			}
 		} catch (err) {
 			this.logger.warn('Failed to check live events', err)
@@ -98,9 +95,7 @@ export class ArtistDiscoveryPage {
 			artistName,
 			error: event.detail.error,
 		})
-		this.toastService.show(
-			`Couldn't find similar artists for ${artistName}`,
-		)
+		this.toastService.show(`Couldn't find similar artists for ${artistName}`)
 	}
 
 	public async onViewSchedule(): Promise<void> {

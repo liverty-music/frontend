@@ -4,10 +4,10 @@ import { DI, ILogger, resolve } from 'aurelia'
 import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
 import { IAuthService } from './auth-service'
 
-export const IArtistServiceClient =
-	DI.createInterface<IArtistServiceClient>('IArtistServiceClient', (x) =>
-		x.singleton(ArtistServiceClient),
-	)
+export const IArtistServiceClient = DI.createInterface<IArtistServiceClient>(
+	'IArtistServiceClient',
+	(x) => x.singleton(ArtistServiceClient),
+)
 
 export interface IArtistServiceClient extends ArtistServiceClient {}
 
@@ -28,7 +28,10 @@ export class ArtistServiceClient {
 				(next) => async (req) => {
 					// Add Bearer token if user is authenticated
 					if (this.authService.user?.access_token) {
-						req.header.set('Authorization', `Bearer ${this.authService.user.access_token}`)
+						req.header.set(
+							'Authorization',
+							`Bearer ${this.authService.user.access_token}`,
+						)
 					}
 					return await next(req)
 				},

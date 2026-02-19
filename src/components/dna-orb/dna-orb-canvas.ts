@@ -1,5 +1,15 @@
-import { bindable, ILogger, INode, resolve, shadowCSS, useShadowDOM } from 'aurelia'
-import { type ArtistBubble, IArtistDiscoveryService } from '../../services/artist-discovery-service'
+import {
+	bindable,
+	ILogger,
+	INode,
+	resolve,
+	shadowCSS,
+	useShadowDOM,
+} from 'aurelia'
+import {
+	type ArtistBubble,
+	IArtistDiscoveryService,
+} from '../../services/artist-discovery-service'
 import { AbsorptionAnimator } from './absorption-animator'
 import { BubblePhysics, type PhysicsBubble } from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'
@@ -142,7 +152,10 @@ export class DnaOrbCanvas {
 			case 'Enter':
 			case ' ': {
 				e.preventDefault()
-				if (this.focusedBubbleIndex >= 0 && this.focusedBubbleIndex < bubbles.length) {
+				if (
+					this.focusedBubbleIndex >= 0 &&
+					this.focusedBubbleIndex < bubbles.length
+				) {
 					const bubble = bubbles[this.focusedBubbleIndex]
 					const pos = bubble.body.position
 					this.handleInteraction(pos.x, pos.y)
@@ -186,7 +199,10 @@ export class DnaOrbCanvas {
 
 		// Spawn similar artists
 		try {
-			const similar = await this.discoveryService.getSimilarArtists(artist.name, artist.id)
+			const similar = await this.discoveryService.getSimilarArtists(
+				artist.name,
+				artist.id,
+			)
 			if (similar.length > 0) {
 				this.physics.spawnBubblesAt(similar, pos.x, pos.y)
 				this.preloadImages(similar)
@@ -300,8 +316,12 @@ export class DnaOrbCanvas {
 		// Per-artist color bubble gradient
 		const hue = this.artistHue(artist.name)
 		const grad = this.ctx.createRadialGradient(
-			x - r * 0.3, y - r * 0.3, 0,
-			x, y, r,
+			x - r * 0.3,
+			y - r * 0.3,
+			0,
+			x,
+			y,
+			r,
 		)
 		grad.addColorStop(0, `hsla(${hue}, 60%, 75%, 0.9)`)
 		grad.addColorStop(0.7, `hsla(${hue}, 50%, 55%, 0.8)`)

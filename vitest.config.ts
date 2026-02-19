@@ -13,7 +13,13 @@ export default mergeConfig(
       setupFiles: ["./test/setup.ts"],
       coverage: {
         provider: "v8",
-        reporter: ["text", "html", "json-summary"],
+        reporter: ["text", "html", "json-summary", "json"],
+        thresholds: {
+          statements: 20,
+          branches: 70,
+          functions: 30,
+          lines: 20,
+        },
         exclude: [
           ...configDefaults.coverage.exclude,
           "test/**",
@@ -28,6 +34,8 @@ export default mergeConfig(
           "src/components/dna-orb/**",
           // Scripts directory
           "scripts/**",
+          // Browser-env dependencies (window.location at module level)
+          "src/services/auth-service.ts",
         ],
       },
     },

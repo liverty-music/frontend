@@ -1,6 +1,9 @@
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
-import type { DateGroup, LiveEvent } from '../components/live-highway/live-event'
+import type {
+	DateGroup,
+	LiveEvent,
+} from '../components/live-highway/live-event'
 import { IArtistServiceClient } from './artist-service-client'
 import { IConcertService } from './concert-service'
 
@@ -16,9 +19,7 @@ export class DashboardService {
 	private readonly concertService = resolve(IConcertService)
 	private readonly artistService = resolve(IArtistServiceClient)
 
-	public async loadDashboardEvents(
-		signal?: AbortSignal,
-	): Promise<DateGroup[]> {
+	public async loadDashboardEvents(signal?: AbortSignal): Promise<DateGroup[]> {
 		this.logger.info('Loading dashboard events')
 
 		const artists = await this.fetchFollowedArtists(signal)

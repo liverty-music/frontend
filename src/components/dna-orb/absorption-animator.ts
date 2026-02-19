@@ -33,18 +33,21 @@ export class AbsorptionAnimator {
 		// Pre-allocate particle pool to avoid GC pressure
 		for (let i = 0; i < POOL_SIZE; i++) {
 			this.particlePool.push({
-				x: 0, y: 0, vx: 0, vy: 0,
-				size: 0, opacity: 0, hue: 0, life: 0,
+				x: 0,
+				y: 0,
+				vx: 0,
+				vy: 0,
+				size: 0,
+				opacity: 0,
+				hue: 0,
+				life: 0,
 				active: false,
 			})
 		}
 	}
 
 	public get isAnimating(): boolean {
-		return (
-			this.animations.length > 0 ||
-			this.particlePool.some((p) => p.active)
-		)
+		return this.animations.length > 0 || this.particlePool.some((p) => p.active)
 	}
 
 	public startAbsorption(
@@ -105,7 +108,8 @@ export class AbsorptionAnimator {
 			const t = easeInCubic(anim.progress)
 
 			// Bezier curve path: start -> control point (above midpoint) -> end
-			const cpX = (anim.startX + anim.endX) / 2 + (anim.startX - anim.endX) * 0.3
+			const cpX =
+				(anim.startX + anim.endX) / 2 + (anim.startX - anim.endX) * 0.3
 			const cpY = Math.min(anim.startY, anim.endY) - 80
 
 			const x = bezierPoint(anim.startX, cpX, anim.endX, t)
@@ -129,8 +133,12 @@ export class AbsorptionAnimator {
 
 			// Bubble body
 			const grad = ctx.createRadialGradient(
-				x - radius * 0.3, y - radius * 0.3, 0,
-				x, y, radius,
+				x - radius * 0.3,
+				y - radius * 0.3,
+				0,
+				x,
+				y,
+				radius,
 			)
 			grad.addColorStop(0, 'hsla(260, 70%, 80%, 0.9)')
 			grad.addColorStop(1, 'hsla(250, 60%, 50%, 0.7)')

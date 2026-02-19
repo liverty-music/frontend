@@ -106,7 +106,9 @@ export class ArtistDiscoveryService {
 		return hash % 3 === 0
 	}
 
-	public async listFollowedFromBackend(signal?: AbortSignal): Promise<ArtistBubble[]> {
+	public async listFollowedFromBackend(
+		signal?: AbortSignal,
+	): Promise<ArtistBubble[]> {
 		this.logger.info('Fetching followed artists from backend')
 		try {
 			const resp = await this.artistClient.listFollowed({}, { signal })

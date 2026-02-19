@@ -9,9 +9,7 @@ import { IAuthService } from '../services/auth-service'
 import { IToastService } from '../components/toast-notification/toast-notification'
 
 @lifecycleHooks()
-export class AuthHook
-	implements ILifecycleHooks<IRouteViewModel, 'canLoad'>
-{
+export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 	private readonly authService = resolve(IAuthService)
 	private readonly toastService = resolve(IToastService)
 

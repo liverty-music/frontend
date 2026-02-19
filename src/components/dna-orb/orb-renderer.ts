@@ -61,11 +61,18 @@ export class OrbRenderer {
 		ctx.save()
 
 		// Outer glow (boosted during pulse)
-		const effectiveIntensity = Math.min(1, intensity + this.pulseIntensity * 0.4)
+		const effectiveIntensity = Math.min(
+			1,
+			intensity + this.pulseIntensity * 0.4,
+		)
 		const glowSize = this.orbRadius * (1.2 + effectiveIntensity * 0.4)
 		const glowGrad = ctx.createRadialGradient(
-			this.orbX, this.orbY, this.orbRadius * 0.5,
-			this.orbX, this.orbY, glowSize,
+			this.orbX,
+			this.orbY,
+			this.orbRadius * 0.5,
+			this.orbX,
+			this.orbY,
+			glowSize,
 		)
 		const glowAlpha = 0.1 + effectiveIntensity * 0.25
 		glowGrad.addColorStop(0, `hsla(260, 80%, 60%, ${glowAlpha})`)
@@ -87,9 +94,15 @@ export class OrbRenderer {
 		)
 		const baseAlpha = 0.15 + intensity * 0.25
 		const saturation = 40 + intensity * 40
-		orbGrad.addColorStop(0, `hsla(260, ${saturation}%, 80%, ${baseAlpha + 0.2})`)
+		orbGrad.addColorStop(
+			0,
+			`hsla(260, ${saturation}%, 80%, ${baseAlpha + 0.2})`,
+		)
 		orbGrad.addColorStop(0.6, `hsla(250, ${saturation}%, 50%, ${baseAlpha})`)
-		orbGrad.addColorStop(1, `hsla(240, ${saturation}%, 30%, ${baseAlpha - 0.05})`)
+		orbGrad.addColorStop(
+			1,
+			`hsla(240, ${saturation}%, 30%, ${baseAlpha - 0.05})`,
+		)
 
 		ctx.fillStyle = orbGrad
 		ctx.beginPath()
@@ -97,7 +110,9 @@ export class OrbRenderer {
 		ctx.fill()
 
 		// Inner swirling particles (scaled by performance quality)
-		const visibleParticles = Math.floor(this.maxParticles * this.particleScale * (0.1 + intensity * 0.9))
+		const visibleParticles = Math.floor(
+			this.maxParticles * this.particleScale * (0.1 + intensity * 0.9),
+		)
 		for (let i = 0; i < visibleParticles; i++) {
 			const p = this.particles[i]
 			const px = this.orbX + Math.cos(p.angle) * p.radius

@@ -41,10 +41,18 @@ import { resolve } from 'aurelia'
 export class MyApp {
 	private readonly router = resolve(IRouter)
 
-	private readonly fullscreenRoutes = ['', 'welcome', 'onboarding/discover', 'onboarding/loading', 'auth/callback']
+	private readonly fullscreenRoutes = [
+		'',
+		'welcome',
+		'onboarding/discover',
+		'onboarding/loading',
+		'auth/callback',
+	]
 
 	public get showNav(): boolean {
-		const path = this.router.activeNavigation?.path ?? ''
-		return !this.fullscreenRoutes.some(r => path === r || path === `/${r}`)
+		const path =
+			(this.router as IRouter & { activeNavigation?: { path: string } })
+				.activeNavigation?.path ?? ''
+		return !this.fullscreenRoutes.some((r) => path === r || path === `/${r}`)
 	}
 }

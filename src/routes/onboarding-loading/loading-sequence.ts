@@ -36,7 +36,9 @@ export class LoadingSequence {
 		try {
 			const abortController = new AbortController()
 			const backendFollowedArtists =
-				await this.artistDiscoveryService.listFollowedFromBackend(abortController.signal)
+				await this.artistDiscoveryService.listFollowedFromBackend(
+					abortController.signal,
+				)
 
 			if (backendFollowedArtists.length > 0) {
 				this.logger.info(
@@ -63,15 +65,16 @@ export class LoadingSequence {
 			})
 			return true
 		} catch (err) {
-			this.logger.warn('Failed to fetch backend followed artists, using local state', err)
+			this.logger.warn(
+				'Failed to fetch backend followed artists, using local state',
+				err,
+			)
 
 			const localFollowedCount =
 				this.artistDiscoveryService.followedArtists.length
 
 			if (localFollowedCount === 0) {
-				this.logger.info(
-					'No local followed artists, redirecting to discovery',
-				)
+				this.logger.info('No local followed artists, redirecting to discovery')
 				await this.router.load('/onboarding/discover')
 				return false
 			}
@@ -94,7 +97,10 @@ export class LoadingSequence {
 			this.logger.info('Data aggregation completed, navigating to dashboard')
 			await this.router.load('/dashboard')
 		} catch (err) {
-			this.logger.error('Data aggregation failed, navigating to dashboard anyway', err)
+			this.logger.error(
+				'Data aggregation failed, navigating to dashboard anyway',
+				err,
+			)
 			await this.router.load('/dashboard')
 		}
 	}
