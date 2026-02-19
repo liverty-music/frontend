@@ -8,7 +8,9 @@ import { MyApp } from '../src/my-app'
 // environment, causing "document is not defined" unhandled rejections.
 vi.mock('../src/welcome-page', () => ({ WelcomePage: class WelcomePage {} }))
 vi.mock('../src/about-page', () => ({ AboutPage: class AboutPage {} }))
-vi.mock('../src/routes/auth-callback', () => ({ AuthCallback: class AuthCallback {} }))
+vi.mock('../src/routes/auth-callback', () => ({
+	AuthCallback: class AuthCallback {},
+}))
 vi.mock('../src/routes/artist-discovery/artist-discovery-page', () => ({
 	ArtistDiscoveryPage: class ArtistDiscoveryPage {},
 }))
