@@ -62,8 +62,10 @@ export class ArtistDiscoveryService {
 		this.followedArtists.push(artist)
 		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 
-		// TODO: Call backend ArtistService.Follow via Connect-RPC when TS clients are generated
-		// await artistClient.follow({ artistId: new ArtistId({ value: artist.id }) })
+		// Fire-and-forget: persist follow to backend without blocking UI
+		this.artistClient
+			.follow({ artistId: new ArtistId({ value: artist.id }) })
+			.catch((err) => this.logger.error('Failed to follow artist via RPC', err))
 
 		this.logger.info('Artist followed', {
 			followed: this.followedArtists.length,
