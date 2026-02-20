@@ -1,4 +1,4 @@
-import type { IRouteViewModel } from '@aurelia/router'
+import type { IRouteViewModel, NavigationInstruction } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import { IAuthService } from './services/auth-service'
 import { IOnboardingService } from './services/onboarding-service'
@@ -10,21 +10,20 @@ export class WelcomePage implements IRouteViewModel {
 
 	/**
 	 * Router lifecycle hook - called before the component is loaded
-	 * Prevents flash of unauthenticated content by checking auth status before rendering
+	 * Prevents flash of unauthenticated content by checking auth status before rendering.
+	 * Returns a redirect instruction instead of calling router.load() to avoid
+	 * re-entrant navigation while the viewport is not yet registered (AUR3174).
 	 */
-	async canLoad(): Promise<boolean> {
+	async canLoad(): Promise<NavigationInstruction | boolean> {
 		this.logger.debug('Checking if landing page can load')
 
 		// Wait for auth service to initialize
 		await this.authService.ready
 
-		// If user is authenticated, redirect and prevent landing page from loading
+		// If user is authenticated, return a redirect instruction
 		if (this.authService.isAuthenticated) {
-			this.logger.info(
-				'User is authenticated, redirecting based on onboarding status',
-			)
-			await this.onboardingService.redirectBasedOnStatus()
-			return false // Prevent landing page from loading
+			this.logger.info('User is authenticated, determining redirect target')
+			return await this.onboardingService.getRedirectTarget()
 		}
 
 		// User not authenticated, show landing page
