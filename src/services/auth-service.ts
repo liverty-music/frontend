@@ -12,7 +12,15 @@ const settings: UserManagerSettings = {
 	redirect_uri: `${window.location.origin}/auth/callback`,
 	post_logout_redirect_uri: window.location.origin,
 	response_type: 'code',
-	scope: 'openid profile email offline_access', // offline_access for refresh tokens
+	scope: [
+		'openid profile email offline_access',
+		// Include org scope so Zitadel applies the Org-level login policy (passkey only)
+		import.meta.env.VITE_ZITADEL_ORG_ID
+			? `urn:zitadel:iam:org:id:${import.meta.env.VITE_ZITADEL_ORG_ID}`
+			: '',
+	]
+		.filter(Boolean)
+		.join(' '),
 	// PKCE is standard/default for 'code' flow in newer oidc-client-ts versions
 	loadUserInfo: true,
 	// Use localStorage instead of sessionStorage for better compatibility with Playwright storageState
