@@ -12,10 +12,8 @@ RUN npm ci
 # Copy source code (including .env files)
 COPY . .
 
-# Build the application with mode-specific env vars
-# ARG is available only during build time
-ARG BUILD_MODE=development
-RUN npm run build -- --mode ${BUILD_MODE}
+# Build the application
+RUN npm run build
 
 #----------------------------
 
