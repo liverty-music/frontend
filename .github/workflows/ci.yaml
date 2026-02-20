@@ -4,15 +4,7 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
   pull_request:
-    branches:
-      - main
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
 
 permissions:
   contents: read
@@ -23,7 +15,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'src/**'
+              - 'test/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'tsconfig*.json'
+              - 'vite.config.ts'
+              - 'biome.json'
+              - '.github/workflows/ci.yaml'
+
   lint:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -46,7 +60,17 @@ jobs:
       - name: Check formatting
         run: npx biome format src test
 
+  lint-skip:
+    needs: changes
+    if: needs.changes.outputs.src == 'false'
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No relevant changes, skipping lint"
+
   typecheck:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     name: Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -66,7 +90,17 @@ jobs:
       - name: Run type check
         run: npx tsc --noEmit
 
+  typecheck-skip:
+    needs: changes
+    if: needs.changes.outputs.src == 'false'
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No relevant changes, skipping typecheck"
+
   test:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -103,7 +137,17 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  test-skip:
+    needs: changes
+    if: needs.changes.outputs.src == 'false'
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No relevant changes, skipping tests"
+
   security:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     name: Security Audit
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -123,10 +167,18 @@ jobs:
       - name: Run security audit
         run: npm audit --omit=dev --audit-level=moderate
 
+  security-skip:
+    needs: changes
+    if: needs.changes.outputs.src == 'false'
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No relevant changes, skipping security audit"
+
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, test, security]
+    needs: [lint, lint-skip, typecheck, typecheck-skip, test, test-skip, security, security-skip]
     if: always()
     steps:
       - name: Check all jobs passed
