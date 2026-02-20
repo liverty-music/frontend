@@ -9,24 +9,22 @@ export class WelcomePage implements IRouteViewModel {
 	private readonly logger = resolve(ILogger).scopeTo('WelcomePage')
 
 	/**
-	 * Router lifecycle hook - called before the component is loaded
-	 * Prevents flash of unauthenticated content by checking auth status before rendering.
-	 * Returns a redirect instruction instead of calling router.load() to avoid
-	 * re-entrant navigation while the viewport is not yet registered (AUR3174).
+	 * Router lifecycle hook - the canonical Aurelia 2 way to redirect.
+	 * Returns a NavigationInstruction (string route path) to redirect authenticated users,
+	 * or true to allow the welcome page to load for unauthenticated users.
+	 *
+	 * Note: router.load() must NOT be called from any lifecycle hook; the correct
+	 * pattern is to return the target instruction from canLoad.
+	 * Redirect targets must have @customElement to be resolvable by the router.
 	 */
 	async canLoad(): Promise<NavigationInstruction | boolean> {
-		this.logger.debug('Checking if landing page can load')
-
-		// Wait for auth service to initialize
 		await this.authService.ready
 
-		// If user is authenticated, return a redirect instruction
 		if (this.authService.isAuthenticated) {
 			this.logger.info('User is authenticated, determining redirect target')
 			return await this.onboardingService.getRedirectTarget()
 		}
 
-		// User not authenticated, show landing page
 		return true
 	}
 
