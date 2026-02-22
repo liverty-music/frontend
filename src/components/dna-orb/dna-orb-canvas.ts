@@ -52,6 +52,7 @@ export class DnaOrbCanvas {
 
 	private imageCache = new Map<string, HTMLImageElement>()
 	private focusedBubbleIndex = -1
+	private reloadGeneration = 0
 
 	// Performance monitoring
 	private frameTimes: number[] = []
@@ -112,9 +113,12 @@ export class DnaOrbCanvas {
 	}
 
 	public reloadBubbles(artists: ArtistBubble[]): void {
+		const gen = ++this.reloadGeneration
 		this.physics.reset()
 		const rect = this.element.getBoundingClientRect()
+		if (rect.width === 0 || rect.height === 0) return
 		void this.physics.init(rect.width, rect.height).then(() => {
+			if (gen !== this.reloadGeneration) return // stale
 			this.physics.addBubbles(artists)
 			this.preloadImages(artists)
 			this.focusedBubbleIndex = -1
