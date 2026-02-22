@@ -22,6 +22,7 @@ vi.mock(
 				this.value = opts.value
 			}
 		},
+		PassionLevel: { MUST_GO: 1, LOCAL_ONLY: 2, KEEP_AN_EYE: 3 },
 	}),
 )
 
@@ -29,14 +30,14 @@ const { MyArtistsPage } = await import(
 	'../../src/routes/my-artists/my-artists-page'
 )
 
-function makeFollowedArtist(id: string, name: string) {
+function makeFollowedArtist(id: string, name: string, passionLevel = 2) {
 	return {
 		artist: {
 			id: { value: id },
 			name: { value: name },
 			mbid: { value: `mbid-${id}` },
 		},
-		passionLevel: 0,
+		passionLevel,
 	}
 }
 

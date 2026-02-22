@@ -12,6 +12,7 @@ export interface LiveEvent {
 	openTime?: string
 	title: string
 	sourceUrl: string
+	isMustGo: boolean
 }
 
 export interface DateGroup {
