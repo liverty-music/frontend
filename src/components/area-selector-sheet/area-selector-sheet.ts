@@ -8,7 +8,10 @@ export interface Region {
 
 const REGIONS: Region[] = [
 	{ name: '北海道', prefectures: ['北海道'] },
-	{ name: '東北', prefectures: ['青森', '岩手', '宮城', '秋田', '山形', '福島'] },
+	{
+		name: '東北',
+		prefectures: ['青森', '岩手', '宮城', '秋田', '山形', '福島'],
+	},
 	{
 		name: '関東',
 		prefectures: ['茨城', '栃木', '群馬', '埼玉', '千葉', '東京', '神奈川'],
