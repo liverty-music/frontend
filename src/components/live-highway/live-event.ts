@@ -6,6 +6,7 @@ export interface LiveEvent {
 	artistId: string
 	venueName: string
 	locationLabel: string
+	adminArea?: string
 	date: Date
 	startTime: string
 	openTime?: string

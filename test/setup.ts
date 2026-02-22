@@ -26,6 +26,7 @@ Object.assign(globalThis, {
 	HTMLElement,
 	HTMLAnchorElement,
 	CustomEvent,
+	localStorage: window.localStorage,
 })
 
 // Sets up the Aurelia environment for testing

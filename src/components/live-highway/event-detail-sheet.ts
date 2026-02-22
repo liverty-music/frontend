@@ -30,7 +30,10 @@ export class EventDetailSheet {
 
 	public get googleMapsUrl(): string {
 		if (!this.event) return '#'
-		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(this.event.venueName)}`
+		const query = this.event.adminArea
+			? `${this.event.venueName} ${this.event.adminArea}`
+			: this.event.venueName
+		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 	}
 
 	public get calendarUrl(): string {
@@ -59,11 +62,13 @@ export class EventDetailSheet {
 		this.event = event
 		this.isOpen = true
 		this.dragOffset = 0
+		history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 	}
 
 	public close(): void {
 		this.isOpen = false
 		this.dragOffset = 0
+		history.replaceState(null, '', '/dashboard')
 	}
 
 	public onBackdropClick(): void {
