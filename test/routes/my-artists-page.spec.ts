@@ -29,11 +29,14 @@ const { MyArtistsPage } = await import(
 	'../../src/routes/my-artists/my-artists-page'
 )
 
-function makeArtist(id: string, name: string) {
+function makeFollowedArtist(id: string, name: string) {
 	return {
-		id: { value: id },
-		name: { value: name },
-		mbid: { value: `mbid-${id}` },
+		artist: {
+			id: { value: id },
+			name: { value: name },
+			mbid: { value: `mbid-${id}` },
+		},
+		passionLevel: 0,
 	}
 }
 
@@ -56,9 +59,9 @@ describe('MyArtistsPage', () => {
 		mockClient = {
 			listFollowed: vi.fn().mockResolvedValue({
 				artists: [
-					makeArtist('id-1', 'RADWIMPS'),
-					makeArtist('id-2', 'ONE OK ROCK'),
-					makeArtist('id-3', 'Aimer'),
+					makeFollowedArtist('id-1', 'RADWIMPS'),
+					makeFollowedArtist('id-2', 'ONE OK ROCK'),
+					makeFollowedArtist('id-3', 'Aimer'),
 				],
 			}),
 			unfollow: vi.fn().mockResolvedValue({}),

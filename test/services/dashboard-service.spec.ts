@@ -57,8 +57,14 @@ describe('DashboardService', () => {
 
 	it('should load and group concerts for multiple artists', async () => {
 		// Arrange
-		const artist1 = { id: { value: 'artist-1' }, name: { value: 'Artist One' } }
-		const artist2 = { id: { value: 'artist-2' }, name: { value: 'Artist Two' } }
+		const artist1 = {
+			artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
+			passionLevel: 0,
+		}
+		const artist2 = {
+			artist: { id: { value: 'artist-2' }, name: { value: 'Artist Two' } },
+			passionLevel: 0,
+		}
 
 		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
 			artists: [artist1, artist2],
@@ -127,8 +133,14 @@ describe('DashboardService', () => {
 
 	it('should handle partial RPC failure using Promise.allSettled', async () => {
 		// Arrange
-		const artist1 = { id: { value: 'artist-1' }, name: { value: 'Artist One' } }
-		const artist2 = { id: { value: 'artist-2' }, name: { value: 'Artist Two' } }
+		const artist1 = {
+			artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
+			passionLevel: 0,
+		}
+		const artist2 = {
+			artist: { id: { value: 'artist-2' }, name: { value: 'Artist Two' } },
+			passionLevel: 0,
+		}
 
 		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
 			artists: [artist1, artist2],
@@ -162,7 +174,10 @@ describe('DashboardService', () => {
 
 	it('should format concert times correctly', async () => {
 		// Arrange
-		const artist = { id: { value: 'artist-1' }, name: { value: 'Artist' } }
+		const artist = {
+			artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
+			passionLevel: 0,
+		}
 		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
 			artists: [artist],
 		})
@@ -193,7 +208,10 @@ describe('DashboardService', () => {
 
 	it('should skip concerts without localDate', async () => {
 		// Arrange
-		const artist = { id: { value: 'artist-1' }, name: { value: 'Artist' } }
+		const artist = {
+			artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
+			passionLevel: 0,
+		}
 		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
 			artists: [artist],
 		})
@@ -229,7 +247,10 @@ describe('DashboardService', () => {
 
 	it('should sort events chronologically within load', async () => {
 		// Arrange
-		const artist = { id: { value: 'artist-1' }, name: { value: 'Artist' } }
+		const artist = {
+			artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
+			passionLevel: 0,
+		}
 		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
 			artists: [artist],
 		})
@@ -267,7 +288,10 @@ describe('DashboardService', () => {
 		// Arrange — set user region in localStorage
 		localStorage.setItem('liverty-music:user-region', '東京')
 
-		const artist = { id: { value: 'artist-1' }, name: { value: 'Artist' } }
+		const artist = {
+			artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
+			passionLevel: 0,
+		}
 		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
 			artists: [artist],
 		})
