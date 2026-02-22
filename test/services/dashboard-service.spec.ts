@@ -175,7 +175,7 @@ describe('DashboardService', () => {
 			title: { value: 'Concert' },
 			localDate: makeDate(2026, 5, 1),
 			startTime: makeTimestamp(1746090300), // 09:05 UTC
-			openTime: makeTimestamp(1746088200),  // 08:30 UTC
+			openTime: makeTimestamp(1746088200), // 08:30 UTC
 			sourceUrl: { value: 'https://example.com' },
 		}
 
@@ -277,7 +277,10 @@ describe('DashboardService', () => {
 			artistId: { value: 'artist-1' },
 			title: { value: 'Tokyo Concert' },
 			localDate: makeDate(2026, 5, 1),
-			venue: { name: { value: 'Zepp DiverCity' }, adminArea: { value: '東京都' } },
+			venue: {
+				name: { value: 'Zepp DiverCity' },
+				adminArea: { value: '東京都' },
+			},
 			sourceUrl: { value: 'https://example.com/1' },
 		}
 
@@ -286,7 +289,10 @@ describe('DashboardService', () => {
 			artistId: { value: 'artist-1' },
 			title: { value: 'Osaka Concert' },
 			localDate: makeDate(2026, 5, 1),
-			venue: { name: { value: 'Zepp Namba' }, adminArea: { value: '大阪府' } },
+			venue: {
+				name: { value: 'Zepp Namba' },
+				adminArea: { value: '大阪府' },
+			},
 			sourceUrl: { value: 'https://example.com/2' },
 		}
 
