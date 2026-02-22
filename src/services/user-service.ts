@@ -1,8 +1,8 @@
-import { DI, resolve } from 'aurelia'
-import { type PromiseClient, createClient } from '@connectrpc/connect'
 import { UserService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/user/v1/user_service_connect.js'
-import { createTransport } from './grpc-transport'
+import { createClient, type PromiseClient } from '@connectrpc/connect'
+import { DI, resolve } from 'aurelia'
 import { IAuthService } from './auth-service'
+import { createTransport } from './grpc-transport'
 
 export const IUserService = DI.createInterface<IUserService>(
 	'IUserService',

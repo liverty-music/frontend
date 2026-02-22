@@ -36,17 +36,12 @@ export class DashboardService {
 	private async fetchFollowedArtists(
 		signal?: AbortSignal,
 	): Promise<Array<{ id: string; name: string }>> {
-		try {
-			const client = this.artistService.getClient()
-			const response = await client.listFollowed({}, { signal })
-			return response.artists.map((a) => ({
-				id: a.id?.value ?? '',
-				name: a.name?.value ?? '',
-			}))
-		} catch (err) {
-			this.logger.warn('Failed to fetch followed artists', { error: err })
-			return []
-		}
+		const client = this.artistService.getClient()
+		const response = await client.listFollowed({}, { signal })
+		return response.artists.map((a) => ({
+			id: a.id?.value ?? '',
+			name: a.name?.value ?? '',
+		}))
 	}
 
 	private async fetchConcertsForArtists(

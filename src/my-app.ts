@@ -1,5 +1,6 @@
-import { IRouter, route } from '@aurelia/router'
-import { resolve } from 'aurelia'
+import { IRouter, IRouterEvents, route } from '@aurelia/router'
+import { type IDisposable, ILogger, resolve } from 'aurelia'
+import { IErrorBoundaryService } from './services/error-boundary-service'
 
 @route({
 	routes: [
@@ -62,9 +63,15 @@ import { resolve } from 'aurelia'
 			title: 'Settings',
 		},
 	],
+	fallback: import('./routes/not-found/not-found-page'),
 })
 export class MyApp {
 	private readonly router = resolve(IRouter)
+	private readonly routerEvents = resolve(IRouterEvents)
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
+	private readonly logger = resolve(ILogger).scopeTo('MyApp')
+
+	private readonly subscriptions: IDisposable[] = []
 
 	private readonly fullscreenRoutes = [
 		'',
@@ -88,5 +95,37 @@ export class MyApp {
 	public get showNav(): boolean {
 		const path = this.currentPath
 		return !this.fullscreenRoutes.some((r) => path === r)
+	}
+
+	public binding(): void {
+		this.subscriptions.push(
+			this.routerEvents.subscribe('au:router:navigation-error', (event) => {
+				this.logger.error('Navigation error', { event })
+				this.errorBoundary.captureError(
+					(event as unknown as { error?: unknown }).error ??
+						'Navigation failed',
+					'router:navigation-error',
+				)
+			}),
+		)
+
+		this.subscriptions.push(
+			this.routerEvents.subscribe('au:router:navigation-end', (event) => {
+				const instruction = (
+					event as unknown as {
+						instructions?: Array<{ component?: { name?: string } }>
+					}
+				).instructions
+				const name = instruction?.[0]?.component?.name ?? 'unknown'
+				this.errorBoundary.addBreadcrumb('navigation', name)
+			}),
+		)
+	}
+
+	public unbinding(): void {
+		for (const sub of this.subscriptions) {
+			sub.dispose()
+		}
+		this.subscriptions.length = 0
 	}
 }

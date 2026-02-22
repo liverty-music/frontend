@@ -20,18 +20,12 @@ export class OnboardingService {
 	 * Check if the user has completed onboarding by verifying they follow at least one artist
 	 */
 	public async hasCompletedOnboarding(): Promise<boolean> {
-		try {
-			this.logger.info('Checking onboarding status via ListFollowed RPC')
-			const response = await this.artistServiceClient
-				.getClient()
-				.listFollowed({ limit: 1 }) // Only need to check if at least 1 exists
+		this.logger.info('Checking onboarding status via ListFollowed RPC')
+		const response = await this.artistServiceClient
+			.getClient()
+			.listFollowed({ limit: 1 }) // Only need to check if at least 1 exists
 
-			return response.artists.length >= 1
-		} catch (err) {
-			this.logger.error('Failed to check onboarding status', err)
-			// On error, assume not completed (safer default)
-			return false
-		}
+		return response.artists.length >= 1
 	}
 
 	/**

@@ -3,8 +3,8 @@ import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_musi
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
-import { createTransport } from './grpc-transport'
 import { IAuthService } from './auth-service'
+import { createTransport } from './grpc-transport'
 
 export const IConcertService = DI.createInterface<IConcertService>(
 	'IConcertService',

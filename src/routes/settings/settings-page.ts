@@ -1,5 +1,6 @@
 import { ILogger, resolve } from 'aurelia'
 import { AreaSelectorSheet } from '../../components/area-selector-sheet/area-selector-sheet'
+import { IToastService } from '../../components/toast-notification/toast-notification'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
@@ -11,6 +12,7 @@ export class SettingsPage {
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
 	private readonly logger = resolve(ILogger).scopeTo('SettingsPage')
+	private readonly toastService = resolve(IToastService)
 
 	public currentArea: string | null = null
 	public notificationsEnabled = false
@@ -66,6 +68,11 @@ export class SettingsPage {
 	}
 
 	public async signOut(): Promise<void> {
-		await this.auth.signOut()
+		try {
+			await this.auth.signOut()
+		} catch (err) {
+			this.logger.error('Sign-out failed', { error: err })
+			this.toastService.show('Sign-out failed. Please try again.')
+		}
 	}
 }

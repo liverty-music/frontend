@@ -5,8 +5,9 @@ import { IDashboardService } from '../services/dashboard-service'
 
 export class Dashboard {
 	public dateGroups: DateGroup[] = []
-	public isLoading = true
 	public needsRegion = false
+	public loadError: unknown = null
+	public isStale = false
 
 	public regionSheet!: RegionSetupSheet
 
@@ -14,25 +15,43 @@ export class Dashboard {
 	private readonly dashboardService = resolve(IDashboardService)
 	private abortController: AbortController | null = null
 
-	public async loading(): Promise<void> {
-		this.isLoading = true
-		this.needsRegion = !RegionSetupSheet.getStoredRegion()
-		this.abortController = new AbortController()
+	public dataPromise: Promise<DateGroup[]> | null = null
 
-		try {
-			this.dateGroups = await this.dashboardService.loadDashboardEvents(
-				this.abortController.signal,
-			)
-			this.logger.info('Dashboard loaded', {
-				groups: this.dateGroups.length,
+	public async loading(): Promise<void> {
+		this.needsRegion = !RegionSetupSheet.getStoredRegion()
+		this.loadData()
+	}
+
+	public loadData(): void {
+		this.abortController?.abort()
+		this.abortController = new AbortController()
+		this.loadError = null
+		this.isStale = false
+
+		this.dataPromise = this.dashboardService
+			.loadDashboardEvents(this.abortController.signal)
+			.then((groups) => {
+				this.dateGroups = groups
+				this.loadError = null
+				this.logger.info('Dashboard loaded', { groups: groups.length })
+				return groups
 			})
-		} catch (err) {
-			if ((err as Error).name !== 'AbortError') {
+			.catch((err) => {
+				if ((err as Error).name === 'AbortError') {
+					throw err
+				}
+				this.loadError = err
 				this.logger.error('Failed to load dashboard', { error: err })
-			}
-		} finally {
-			this.isLoading = false
-		}
+				// If we have previous data, mark as stale instead of clearing
+				if (this.dateGroups.length > 0) {
+					this.isStale = true
+				}
+				throw err
+			})
+	}
+
+	public retry(): void {
+		this.loadData()
 	}
 
 	public attached(): void {

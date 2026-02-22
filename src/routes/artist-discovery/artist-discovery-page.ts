@@ -33,9 +33,30 @@ export class ArtistDiscoveryPage {
 		return this.followedCount > 0
 	}
 
+	public loadFailed = false
+
 	public async loading(): Promise<void> {
 		this.logger.info('Loading artist discovery page')
-		await this.discoveryService.loadInitialArtists()
+		try {
+			await this.discoveryService.loadInitialArtists()
+		} catch (err) {
+			this.logger.error('Failed to load initial artists', { error: err })
+			this.loadFailed = true
+			this.toastService.show('Failed to load artists. Tap retry to try again.')
+		}
+	}
+
+	public async retryLoad(): Promise<void> {
+		this.loadFailed = false
+		try {
+			await this.discoveryService.loadInitialArtists()
+		} catch (err) {
+			this.logger.error('Retry failed to load initial artists', { error: err })
+			this.loadFailed = true
+			this.toastService.show(
+				'Still unable to load artists. Please try again later.',
+			)
+		}
 	}
 
 	public attached(): void {
@@ -68,7 +89,18 @@ export class ArtistDiscoveryPage {
 
 		this.dismissGuidance()
 
-		await this.discoveryService.followArtist(artist)
+		try {
+			await this.discoveryService.followArtist(artist)
+		} catch (err) {
+			this.logger.error('Failed to follow artist', {
+				artist: artist.name,
+				error: err,
+			})
+			this.toastService.show(
+				`Failed to follow ${artist.name}. Please try again.`,
+			)
+			return
+		}
 
 		try {
 			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)

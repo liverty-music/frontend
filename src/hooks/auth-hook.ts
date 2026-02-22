@@ -5,8 +5,8 @@ import type {
 	RouteNode,
 } from '@aurelia/router'
 import { type ILifecycleHooks, lifecycleHooks, resolve } from 'aurelia'
-import { IAuthService } from '../services/auth-service'
 import { IToastService } from '../components/toast-notification/toast-notification'
+import { IAuthService } from '../services/auth-service'
 
 @lifecycleHooks()
 export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
