@@ -1,0 +1,76 @@
+<template>
+  <!-- Backdrop -->
+  <div
+    if.bind="isOpen"
+    click.trigger="close()"
+    class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+  ></div>
+
+  <!-- Sheet -->
+  <div
+    touchstart.trigger="onTouchStart($event)"
+    touchmove.trigger="onTouchMove($event)"
+    touchend.trigger="onTouchEnd()"
+    class="fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}"
+    style.bind="sheetTransform"
+  >
+    <div class="bg-surface-raised rounded-t-[var(--radius-sheet)] shadow-[var(--shadow-sheet)] max-h-[80vh] overflow-y-auto">
+      <!-- Handle bar -->
+      <div class="flex justify-center pt-3 pb-2">
+        <div class="w-10 h-1 rounded-full bg-white/20"></div>
+      </div>
+
+      <div class="px-6 pb-8">
+        <!-- Step 1: Region selection -->
+        <div if.bind="!selectedRegion">
+          <h2 class="font-display text-xl font-bold text-text-primary mb-2">
+            エリアを変更
+          </h2>
+          <p class="text-text-secondary text-sm mb-6">
+            地方を選んでください
+          </p>
+
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              repeat.for="region of regionNames"
+              click.trigger="selectRegion(region)"
+              class="py-3 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
+            >
+              ${region}
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Prefecture selection -->
+        <div if.bind="selectedRegion">
+          <div class="flex items-center gap-3 mb-4">
+            <button
+              click.trigger="goBackToRegions()"
+              class="text-text-muted hover:text-text-primary transition-colors"
+            >
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <h2 class="font-display text-xl font-bold text-text-primary">
+              ${selectedRegion}
+            </h2>
+          </div>
+          <p class="text-text-secondary text-sm mb-6">
+            都道府県を選んでください
+          </p>
+
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              repeat.for="pref of prefectures"
+              click.trigger="selectPrefecture(pref)"
+              class="py-3 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
+            >
+              ${pref}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
