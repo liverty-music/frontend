@@ -82,7 +82,7 @@
   </div>
 
   <!-- Proof generation progress overlay -->
-  <div if.bind="isGenerating" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div if.bind="isGenerating" role="alert" aria-live="polite" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 p-6 mx-4 max-w-sm w-full text-center">
       <div class="w-10 h-10 mx-auto border-3 border-brand-accent/30 border-t-brand-accent rounded-full animate-spin"></div>
       <p class="mt-4 text-sm font-semibold text-text-primary">Generating Entry Code</p>
@@ -92,9 +92,9 @@
   </div>
 
   <!-- QR Code modal -->
-  <div if.bind="qrDataUrl" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div if.bind="qrDataUrl" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title" keydown.trigger="$event.key === 'Escape' && dismissQr()" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 p-6 mx-4 max-w-sm w-full text-center">
-      <h2 class="font-display text-lg font-bold text-text-primary">Entry Code</h2>
+      <h2 id="qr-modal-title" class="font-display text-lg font-bold text-text-primary">Entry Code</h2>
       <p class="mt-1 text-xs text-text-muted">Present this QR code at the venue entrance.</p>
       <div class="mt-4 bg-white rounded-lg p-3 inline-block">
         <img src.bind="qrDataUrl" alt="Entry QR Code" class="w-[280px] h-[280px]" />

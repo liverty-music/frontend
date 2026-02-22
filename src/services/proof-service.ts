@@ -77,6 +77,11 @@ export class ProofServiceClient {
 		onProgress?: (stage: string) => void,
 		signal?: AbortSignal,
 	): Promise<{ proof: unknown; publicSignals: string[] }> {
+		if (signal?.aborted) {
+			return Promise.reject(
+				new DOMException('Proof generation aborted', 'AbortError'),
+			)
+		}
 		return new Promise((resolve, reject) => {
 			const worker = new Worker(
 				new URL('../workers/proof.worker.ts', import.meta.url),
@@ -84,14 +89,17 @@ export class ProofServiceClient {
 			)
 
 			const cleanup = () => {
+				signal?.removeEventListener('abort', onAbort)
 				worker.terminate()
 			}
 
+			const onAbort = () => {
+				cleanup()
+				reject(new DOMException('Proof generation aborted', 'AbortError'))
+			}
+
 			if (signal) {
-				signal.addEventListener('abort', () => {
-					cleanup()
-					reject(new DOMException('Proof generation aborted', 'AbortError'))
-				})
+				signal.addEventListener('abort', onAbort)
 			}
 
 			worker.onmessage = (event: MessageEvent<ProofMessage>) => {
