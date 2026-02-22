@@ -28,8 +28,13 @@ export class NotificationPrompt {
 		this.isLoading = true
 		try {
 			await this.pushService.subscribe()
-			this.isVisible = false
-			localStorage.setItem(DISMISSED_KEY, 'true')
+			// Only hide the prompt and persist dismissal when the user actually
+			// granted the permission. If denied, the prompt stays visible so the
+			// template's `denied` block can guide the user to browser settings.
+			if (this.notificationManager.permission === 'granted') {
+				this.isVisible = false
+				localStorage.setItem(DISMISSED_KEY, 'true')
+			}
 		} catch (err) {
 			this.logger.error('Failed to enable push notifications', err)
 		} finally {

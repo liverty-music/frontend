@@ -1,9 +1,13 @@
 // Service Worker for Liverty Music push notifications
 self.addEventListener('push', (event) => {
-	const data = event.data?.json() ?? {
-		title: 'Liverty Music',
-		body: 'New notification',
-	};
+	let data;
+	try {
+		data = event.data?.json();
+	} catch {
+		// Malformed payload — fall back to defaults
+		data = undefined;
+	}
+	data = data ?? { title: 'Liverty Music', body: 'New notification' };
 
 	const options = {
 		body: data.body,
@@ -13,7 +17,12 @@ self.addEventListener('push', (event) => {
 		data: { url: data.url || '/' },
 	};
 
-	event.waitUntil(self.registration.showNotification(data.title, options));
+	event.waitUntil(
+		self.registration.showNotification(
+			data.title || 'Liverty Music',
+			options,
+		),
+	);
 });
 
 self.addEventListener('notificationclick', (event) => {

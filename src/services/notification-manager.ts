@@ -1,4 +1,4 @@
-import { DI, ILogger, resolve } from 'aurelia'
+import { DI, ILogger, observable, resolve } from 'aurelia'
 
 export const INotificationManager = DI.createInterface<INotificationManager>(
 	'INotificationManager',
@@ -10,7 +10,7 @@ export interface INotificationManager extends NotificationManager {}
 export class NotificationManager {
 	private readonly logger = resolve(ILogger).scopeTo('NotificationManager')
 
-	public permission: NotificationPermission = 'default'
+	@observable public permission: NotificationPermission = 'default'
 
 	constructor() {
 		this.initPermissionWatch()
@@ -25,12 +25,18 @@ export class NotificationManager {
 		this.permission = Notification.permission
 
 		try {
-			const status = await navigator.permissions.query({
+			const status = await navigator.permissions?.query({
 				name: 'notifications',
 			})
-			this.permission = status.state as NotificationPermission
+			if (!status) {
+				this.logger.debug(
+					'navigator.permissions not available, using Notification.permission',
+				)
+				return
+			}
+			this.permission = this.mapPermissionState(status.state)
 			status.addEventListener('change', () => {
-				this.permission = status.state as NotificationPermission
+				this.permission = this.mapPermissionState(status.state)
 				this.logger.info('Notification permission changed', {
 					permission: this.permission,
 				})
@@ -42,6 +48,15 @@ export class NotificationManager {
 				'permissions.query not supported, using Notification.permission',
 			)
 		}
+	}
+
+	// The Permissions API returns 'prompt' while the Notification API uses
+	// 'default' for the same undecided state. Map accordingly.
+	private mapPermissionState(state: PermissionState): NotificationPermission {
+		if (state === 'prompt') {
+			return 'default'
+		}
+		return state as NotificationPermission
 	}
 
 	public async requestPermission(): Promise<NotificationPermission> {
