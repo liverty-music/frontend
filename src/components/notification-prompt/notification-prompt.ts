@@ -18,8 +18,8 @@ export class NotificationPrompt {
 			return
 		}
 
-		// Show prompt only when permission has not been decided yet
-		if (this.notificationManager.permission === 'default') {
+		// Show prompt when permission is undecided (soft ask) or denied (settings guidance)
+		if (this.notificationManager.permission !== 'granted') {
 			this.isVisible = true
 		}
 	}
