@@ -1,5 +1,8 @@
 import { IRouter } from '@aurelia/router'
-import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
+import {
+	ArtistId,
+	PassionLevel,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../components/live-highway/color-generator'
 import { IArtistServiceClient } from '../../services/artist-service-client'
@@ -8,13 +11,37 @@ export interface FollowedArtist {
 	id: string
 	name: string
 	color: string
+	passionLevel: PassionLevel
+}
+
+export const PASSION_LEVEL_META: Record<
+	number,
+	{ label: string; icon: string }
+> = {
+	[PassionLevel.MUST_GO]: { label: 'Must Go', icon: '🔥🔥' },
+	[PassionLevel.LOCAL_ONLY]: { label: 'Local Only', icon: '🔥' },
+	[PassionLevel.KEEP_AN_EYE]: { label: 'Keep an Eye', icon: '👀' },
 }
 
 const UNDO_TIMEOUT_MS = 5000
 
+export const PASSION_LEVELS = [
+	PassionLevel.MUST_GO,
+	PassionLevel.LOCAL_ONLY,
+	PassionLevel.KEEP_AN_EYE,
+] as const
+
+export type ViewMode = 'list' | 'grid'
+
 export class MyArtistsPage {
 	public artists: FollowedArtist[] = []
 	public isLoading = true
+
+	// View toggle
+	public viewMode: ViewMode = 'list'
+
+	// Grid context menu state
+	public contextMenuArtist: FollowedArtist | null = null
 
 	// Swipe state
 	public swipedArtistId = ''
@@ -33,6 +60,11 @@ export class MyArtistsPage {
 	public undoVisible = false
 	private undoTimer: ReturnType<typeof setTimeout> | null = null
 	private undoIndex = -1
+
+	// Passion level selector state
+	public selectorArtist: FollowedArtist | null = null
+	public readonly passionLevels = PASSION_LEVELS
+	public readonly passionLevelMeta = PASSION_LEVEL_META
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsPage')
 	private readonly artistService = resolve(IArtistServiceClient)
@@ -53,6 +85,7 @@ export class MyArtistsPage {
 				id: fa.artist?.id?.value ?? '',
 				name: fa.artist?.name?.value ?? '',
 				color: artistColor(fa.artist?.name?.value ?? ''),
+				passionLevel: fa.passionLevel ?? PassionLevel.LOCAL_ONLY,
 			}))
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,
@@ -217,6 +250,123 @@ export class MyArtistsPage {
 		this.swipedArtistId = ''
 		this.isSwiping = false
 		this.swipeTarget = null
+	}
+
+	// --- Passion level selector ---
+
+	public openPassionSelector(artist: FollowedArtist): void {
+		this.selectorArtist = artist
+	}
+
+	public closePassionSelector(): void {
+		this.selectorArtist = null
+	}
+
+	public selectPassionLevel(level: PassionLevel): void {
+		if (!this.selectorArtist) return
+
+		const prev = this.selectorArtist.passionLevel
+		if (prev === level) {
+			this.closePassionSelector()
+			return
+		}
+
+		// Optimistic update
+		this.selectorArtist.passionLevel = level
+		const artistId = this.selectorArtist.id
+		this.closePassionSelector()
+
+		// Fire-and-forget RPC
+		const client = this.artistService.getClient()
+		client
+			.setPassionLevel({
+				artistId: new ArtistId({ value: artistId }),
+				passionLevel: level,
+			})
+			.then(() => {
+				this.logger.info('Passion level updated', {
+					artistId,
+					level,
+				})
+			})
+			.catch((err) => {
+				this.logger.error('Failed to update passion level', { error: err })
+				// Rollback on failure
+				const artist = this.artists.find((a) => a.id === artistId)
+				if (artist) artist.passionLevel = prev
+			})
+	}
+
+	public passionIcon(artist: FollowedArtist): string {
+		return PASSION_LEVEL_META[artist.passionLevel]?.icon ?? '🔥'
+	}
+
+	// --- View toggle ---
+
+	public toggleView(): void {
+		this.viewMode = this.viewMode === 'list' ? 'grid' : 'list'
+	}
+
+	// --- Grid context menu ---
+
+	public onGridLongPress(artist: FollowedArtist): void {
+		this.contextMenuArtist = artist
+	}
+
+	public closeContextMenu(): void {
+		this.contextMenuArtist = null
+	}
+
+	public contextMenuSetLevel(level: PassionLevel): void {
+		if (!this.contextMenuArtist) return
+		const artist = this.contextMenuArtist
+		this.closeContextMenu()
+
+		const prev = artist.passionLevel
+		if (prev === level) return
+
+		artist.passionLevel = level
+		const client = this.artistService.getClient()
+		client
+			.setPassionLevel({
+				artistId: new ArtistId({ value: artist.id }),
+				passionLevel: level,
+			})
+			.catch((err) => {
+				this.logger.error('Failed to update passion level', { error: err })
+				artist.passionLevel = prev
+			})
+	}
+
+	public contextMenuUnfollow(): void {
+		if (!this.contextMenuArtist) return
+		const artist = this.contextMenuArtist
+		this.closeContextMenu()
+		this.unfollowArtist(artist)
+	}
+
+	public tileSpan(artist: FollowedArtist): string {
+		return artist.passionLevel === PassionLevel.MUST_GO
+			? 'col-span-2 row-span-2'
+			: ''
+	}
+
+	// --- Grid long-press touch handler ---
+
+	private gridLongPressTimer: ReturnType<typeof setTimeout> | null = null
+
+	public onGridTouchStart(artist: FollowedArtist): void {
+		this.gridLongPressTimer = setTimeout(() => {
+			this.gridLongPressTimer = null
+			this.onGridLongPress(artist)
+		}, this.LONG_PRESS_MS)
+	}
+
+	public onGridTouchEnd(): void {
+		if (this.gridLongPressTimer !== null) {
+			clearTimeout(this.gridLongPressTimer)
+			this.gridLongPressTimer = null
+		}
 	}
 
 	// --- Navigation ---
