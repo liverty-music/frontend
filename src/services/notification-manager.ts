@@ -1,9 +1,9 @@
 import { DI, ILogger, resolve } from 'aurelia'
 
-export const INotificationManager =
-	DI.createInterface<INotificationManager>('INotificationManager', (x) =>
-		x.singleton(NotificationManager),
-	)
+export const INotificationManager = DI.createInterface<INotificationManager>(
+	'INotificationManager',
+	(x) => x.singleton(NotificationManager),
+)
 
 export interface INotificationManager extends NotificationManager {}
 
@@ -46,9 +46,7 @@ export class NotificationManager {
 
 	public async requestPermission(): Promise<NotificationPermission> {
 		if (!('Notification' in globalThis)) {
-			this.logger.warn(
-				'Notification API not available, returning denied',
-			)
+			this.logger.warn('Notification API not available, returning denied')
 			return 'denied'
 		}
 
