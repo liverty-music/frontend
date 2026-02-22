@@ -27,6 +27,9 @@ vi.mock('../src/routes/my-artists/my-artists-page', () => ({
 vi.mock('../src/routes/settings/settings-page', () => ({
 	SettingsPage: class SettingsPage {},
 }))
+vi.mock('../src/routes/not-found/not-found-page', () => ({
+	NotFoundPage: class NotFoundPage {},
+}))
 
 describe('my-app', () => {
 	// TODO: Fix landing page test - requires complex mocking of auth service and RPC client
