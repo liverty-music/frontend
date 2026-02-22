@@ -69,7 +69,9 @@ export class AreaSelectorSheet {
 	}
 
 	public open(): void {
-		this.previouslyFocused = document.activeElement as HTMLElement | null
+		if (!this.isOpen) {
+			this.previouslyFocused = document.activeElement as HTMLElement | null
+		}
 		this.isOpen = true
 		this.selectedRegion = null
 		requestAnimationFrame(() => {
@@ -80,7 +82,9 @@ export class AreaSelectorSheet {
 	public close(): void {
 		this.isOpen = false
 		setTimeout(() => {
-			this.selectedRegion = null
+			if (!this.isOpen) {
+				this.selectedRegion = null
+			}
 		}, CLOSE_ANIMATION_MS)
 		this.previouslyFocused?.focus()
 	}
