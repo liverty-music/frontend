@@ -18,6 +18,15 @@ vi.mock('../src/routes/onboarding-loading/loading-sequence', () => ({
 	LoadingSequence: class LoadingSequence {},
 }))
 vi.mock('../src/routes/dashboard', () => ({ Dashboard: class Dashboard {} }))
+vi.mock('../src/routes/discover/discover-page', () => ({
+	DiscoverPage: class DiscoverPage {},
+}))
+vi.mock('../src/routes/my-artists/my-artists-page', () => ({
+	MyArtistsPage: class MyArtistsPage {},
+}))
+vi.mock('../src/routes/settings/settings-page', () => ({
+	SettingsPage: class SettingsPage {},
+}))
 
 describe('my-app', () => {
 	// TODO: Fix landing page test - requires complex mocking of auth service and RPC client
@@ -49,14 +58,21 @@ describe('my-app', () => {
 	})
 
 	describe('showNav', () => {
-		let mockRouter: Partial<IRouter>
+		let mockRouter: Record<string, unknown>
 		let container: ReturnType<typeof DI.createContainer>
 		let sut: MyApp
 
-		beforeEach(() => {
-			mockRouter = {
-				activeNavigation: { path: '' },
+		function setCurrentPath(path: string) {
+			mockRouter.routeTree = {
+				root: {
+					children: [{ computeAbsolutePath: () => path }],
+				},
 			}
+		}
+
+		beforeEach(() => {
+			mockRouter = {}
+			setCurrentPath('')
 			container = DI.createContainer()
 			container.register(Registration.instance(IRouter, mockRouter as IRouter))
 			container.register(MyApp)
@@ -64,47 +80,42 @@ describe('my-app', () => {
 		})
 
 		it('should return false for empty path (root)', () => {
-			mockRouter.activeNavigation = { path: '' }
+			setCurrentPath('')
 			expect(sut.showNav).toBe(false)
 		})
 
-		it('should return false for /welcome route', () => {
-			mockRouter.activeNavigation = { path: '/welcome' }
-			expect(sut.showNav).toBe(false)
-		})
-
-		it('should return false for welcome route without leading slash', () => {
-			mockRouter.activeNavigation = { path: 'welcome' }
+		it('should return false for welcome route', () => {
+			setCurrentPath('welcome')
 			expect(sut.showNav).toBe(false)
 		})
 
 		it('should return false for onboarding/discover route', () => {
-			mockRouter.activeNavigation = { path: 'onboarding/discover' }
+			setCurrentPath('onboarding/discover')
 			expect(sut.showNav).toBe(false)
 		})
 
 		it('should return false for onboarding/loading route', () => {
-			mockRouter.activeNavigation = { path: 'onboarding/loading' }
+			setCurrentPath('onboarding/loading')
 			expect(sut.showNav).toBe(false)
 		})
 
 		it('should return false for auth/callback route', () => {
-			mockRouter.activeNavigation = { path: 'auth/callback' }
+			setCurrentPath('auth/callback')
 			expect(sut.showNav).toBe(false)
 		})
 
 		it('should return true for dashboard route', () => {
-			mockRouter.activeNavigation = { path: 'dashboard' }
+			setCurrentPath('dashboard')
 			expect(sut.showNav).toBe(true)
 		})
 
 		it('should return true for about route', () => {
-			mockRouter.activeNavigation = { path: 'about' }
+			setCurrentPath('about')
 			expect(sut.showNav).toBe(true)
 		})
 
 		it('should return true for unknown route', () => {
-			mockRouter.activeNavigation = { path: 'some/other/route' }
+			setCurrentPath('some/other/route')
 			expect(sut.showNav).toBe(true)
 		})
 	})

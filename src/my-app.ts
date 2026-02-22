@@ -70,7 +70,13 @@ export class MyApp {
 	]
 
 	public get currentPath(): string {
-		const tree = (this.router as IRouter & { routeTree?: { root?: { children?: Array<{ computeAbsolutePath?: () => string }> } } }).routeTree
+		const tree = (
+			this.router as IRouter & {
+				routeTree?: {
+					root?: { children?: Array<{ computeAbsolutePath?: () => string }> }
+				}
+			}
+		).routeTree
 		return tree?.root?.children?.[0]?.computeAbsolutePath?.() ?? ''
 	}
 
