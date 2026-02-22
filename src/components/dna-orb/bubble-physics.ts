@@ -40,6 +40,7 @@ export class BubblePhysics {
 			for (const wall of this.walls) {
 				this.Matter?.Composite.remove(this.world, wall)
 			}
+			this.walls = []
 
 			const wallThickness = 50
 			const orbZoneHeight = 160
@@ -78,7 +79,9 @@ export class BubblePhysics {
 				),
 			]
 			this.Matter?.Composite.add(this.world, this.walls)
-		})()
+		})().finally(() => {
+			this.initPromise = null
+		})
 
 		return this.initPromise
 	}
