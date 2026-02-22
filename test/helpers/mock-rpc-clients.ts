@@ -23,6 +23,7 @@ export function createMockArtistServiceClient(): Partial<IArtistServiceClient> {
 			getTopArtists: vi.fn().mockResolvedValue({ artists: [] }),
 			getSimilarArtists: vi.fn().mockResolvedValue({ artists: [] }),
 			followArtist: vi.fn().mockResolvedValue({}),
+			unfollow: vi.fn().mockResolvedValue({}),
 		}),
 	}
 }
