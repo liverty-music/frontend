@@ -109,7 +109,6 @@ export class MyArtistsPage {
 			}
 		}
 
-		e.preventDefault()
 		// Only allow left swipe (negative deltaX)
 		this.swipeOffset = Math.min(0, deltaX)
 		this.swipedArtistId = this.swipeTarget.id
