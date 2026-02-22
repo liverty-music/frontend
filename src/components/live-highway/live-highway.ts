@@ -1,6 +1,6 @@
 import { bindable } from 'aurelia'
-import type { DateGroup, LiveEvent } from './live-event'
 import type { EventDetailSheet } from './event-detail-sheet'
+import type { DateGroup, LiveEvent } from './live-event'
 
 export class LiveHighway {
 	@bindable public dateGroups: DateGroup[] = []

@@ -1,7 +1,7 @@
+import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
 import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 import { DI, ILogger, resolve } from 'aurelia'
-import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
 import { IAuthService } from './auth-service'
 
 export const IArtistServiceClient = DI.createInterface<IArtistServiceClient>(

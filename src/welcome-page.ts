@@ -23,7 +23,13 @@ export class WelcomePage implements IRouteViewModel {
 		// If user is authenticated, return a redirect instruction
 		if (this.authService.isAuthenticated) {
 			this.logger.info('User is authenticated, determining redirect target')
-			return await this.onboardingService.getRedirectTarget()
+			try {
+				return await this.onboardingService.getRedirectTarget()
+			} catch (err) {
+				this.logger.error('Failed to determine redirect target', { error: err })
+				// Fall through to show landing page rather than crashing
+				return true
+			}
 		}
 
 		// User not authenticated, show landing page

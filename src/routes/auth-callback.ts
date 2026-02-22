@@ -1,9 +1,9 @@
+import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { IAuthService } from '../services/auth-service'
-import { IUserService } from '../services/user-service'
 import { IOnboardingService } from '../services/onboarding-service'
+import { IUserService } from '../services/user-service'
 
 /**
  * OIDC state object structure for tracking sign-up flow
@@ -49,7 +49,17 @@ export class AuthCallback {
 				this.logger.warn(
 					'User is already authenticated. Redirecting despite callback error...',
 				)
-				await this.onboardingService.redirectBasedOnStatus()
+				try {
+					await this.onboardingService.redirectBasedOnStatus()
+				} catch (redirectErr) {
+					this.logger.error(
+						'Post-auth redirect also failed, falling back to dashboard',
+						{ error: redirectErr },
+					)
+					this.error =
+						'Authentication succeeded but navigation failed. Please go to the dashboard manually.'
+					this.message = ''
+				}
 				return
 			}
 

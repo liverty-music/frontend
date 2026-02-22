@@ -9,6 +9,11 @@ export const ILoadingSequenceService =
 
 export interface ILoadingSequenceService extends LoadingSequenceService {}
 
+export type AggregationResult =
+	| { status: 'success' }
+	| { status: 'partial'; failedCount: number; totalCount: number }
+	| { status: 'failed'; error: unknown }
+
 const GLOBAL_TIMEOUT_MS = 10000
 const MINIMUM_DISPLAY_MS = 3000
 const BATCH_SIZE = 5
@@ -18,7 +23,7 @@ export class LoadingSequenceService {
 	private readonly concertService = resolve(IConcertService)
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequenceService')
 
-	public async aggregateData(): Promise<void> {
+	public async aggregateData(): Promise<AggregationResult> {
 		const startTime = Date.now()
 
 		const abortController = new AbortController()
@@ -35,11 +40,11 @@ export class LoadingSequenceService {
 
 			if (followedArtists.length === 0) {
 				this.logger.info('No followed artists found, skipping concert search')
-				return
+				return { status: 'success' }
 			}
 
 			// Search concerts in batches
-			await this.searchConcertsInBatches(
+			const failedCount = await this.searchConcertsInBatches(
 				followedArtists,
 				abortController.signal,
 			)
@@ -53,9 +58,18 @@ export class LoadingSequenceService {
 				})
 				await this.delay(remaining)
 			}
+
+			if (failedCount > 0) {
+				return {
+					status: 'partial',
+					failedCount,
+					totalCount: followedArtists.length,
+				}
+			}
+			return { status: 'success' }
 		} catch (err) {
 			this.logger.error('Data aggregation failed', err)
-			// Gracefully proceed to dashboard even on error
+			return { status: 'failed', error: err }
 		} finally {
 			clearTimeout(timeoutId)
 		}
@@ -100,10 +114,12 @@ export class LoadingSequenceService {
 	private async searchConcertsInBatches(
 		artists: Array<{ id: string; name: string }>,
 		signal: AbortSignal,
-	): Promise<void> {
+	): Promise<number> {
 		this.logger.info('Starting concert searches', {
 			totalArtists: artists.length,
 		})
+
+		let failedCount = 0
 
 		// Process in batches of BATCH_SIZE sequentially
 		for (let i = 0; i < artists.length; i += BATCH_SIZE) {
@@ -124,6 +140,7 @@ export class LoadingSequenceService {
 							artistName: artist.name,
 							error: err,
 						})
+						failedCount++
 						return null
 					}),
 			)
@@ -131,7 +148,8 @@ export class LoadingSequenceService {
 			await Promise.allSettled(promises)
 		}
 
-		this.logger.info('All concert searches completed')
+		this.logger.info('All concert searches completed', { failedCount })
+		return failedCount
 	}
 
 	private delay(ms: number, signal?: AbortSignal): Promise<void> {

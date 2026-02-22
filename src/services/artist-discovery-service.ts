@@ -97,6 +97,8 @@ export class ArtistDiscoveryService {
 	public async followArtist(artist: ArtistBubble): Promise<void> {
 		if (this.isFollowed(artist.id)) return
 		this.logger.info('Following artist', { artist: artist.name })
+
+		// Optimistic UI update
 		this.availableBubbles = this.availableBubbles.filter(
 			(b) => b.id !== artist.id,
 		)
@@ -104,15 +106,27 @@ export class ArtistDiscoveryService {
 		this.followedArtists.push(artist)
 		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 
-		// Fire-and-forget: persist follow to backend without blocking UI
-		this.artistClient
-			.follow({ artistId: new ArtistId({ value: artist.id }) })
-			.catch((err) => this.logger.error('Failed to follow artist via RPC', err))
+		// Persist follow to backend — throw on failure so caller can rollback
+		try {
+			await this.artistClient.follow({
+				artistId: new ArtistId({ value: artist.id }),
+			})
+			this.logger.info('Artist followed', {
+				followed: this.followedArtists.length,
+				orbIntensity: this.orbIntensity,
+			})
+		} catch (err) {
+			this.logger.error('Failed to follow artist via RPC', err)
 
-		this.logger.info('Artist followed', {
-			followed: this.followedArtists.length,
-			orbIntensity: this.orbIntensity,
-		})
+			// Rollback optimistic update
+			this.followedArtists = this.followedArtists.filter(
+				(b) => b.id !== artist.id,
+			)
+			this.availableBubbles.push(artist)
+			this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
+
+			throw err
+		}
 	}
 
 	public async getSimilarArtists(

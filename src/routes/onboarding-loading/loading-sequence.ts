@@ -1,8 +1,10 @@
 import { IRouter } from '@aurelia/router'
 import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
-import css from './loading-sequence.css?raw'
+import { IToastService } from '../../components/toast-notification/toast-notification'
 import { IArtistDiscoveryService } from '../../services/artist-discovery-service'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
+import css from './loading-sequence.css?raw'
 
 @useShadowDOM()
 export class LoadingSequence {
@@ -12,6 +14,8 @@ export class LoadingSequence {
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequence')
 	private readonly loadingService = resolve(ILoadingSequenceService)
 	private readonly artistDiscoveryService = resolve(IArtistDiscoveryService)
+	private readonly toastService = resolve(IToastService)
+	private readonly errorBoundary = resolve(IErrorBoundaryService)
 
 	public currentPhase = 1
 	public currentPhaseMessage = ''
@@ -92,17 +96,33 @@ export class LoadingSequence {
 	public async attached(): Promise<void> {
 		this.startPhaseAnimation()
 
-		try {
-			await this.loadingService.aggregateData()
-			this.logger.info('Data aggregation completed, navigating to dashboard')
-			await this.router.load('/dashboard')
-		} catch (err) {
-			this.logger.error(
-				'Data aggregation failed, navigating to dashboard anyway',
-				err,
-			)
-			await this.router.load('/dashboard')
+		const result = await this.loadingService.aggregateData()
+
+		switch (result.status) {
+			case 'success':
+				this.logger.info('Data aggregation completed, navigating to dashboard')
+				break
+			case 'partial':
+				this.logger.warn('Partial data aggregation failure', {
+					failedCount: result.failedCount,
+					totalCount: result.totalCount,
+				})
+				this.toastService.show(
+					`Some artist schedules couldn't be loaded (${result.failedCount}/${result.totalCount})`,
+				)
+				break
+			case 'failed':
+				this.logger.error('Complete data aggregation failure', {
+					error: result.error,
+				})
+				this.errorBoundary.captureError(
+					result.error,
+					'LoadingSequence:aggregateData',
+				)
+				break
 		}
+
+		await this.router.load('/dashboard')
 	}
 
 	public unbinding(): void {

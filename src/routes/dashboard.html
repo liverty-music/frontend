@@ -1,5 +1,6 @@
 <import from="../components/notification-prompt/notification-prompt"></import>
 <import from="../components/region-setup-sheet/region-setup-sheet"></import>
+<import from="../components/inline-error/inline-error"></import>
 
 <div class="h-screen flex flex-col bg-surface-base pb-14">
   <!-- Header -->
@@ -17,12 +18,67 @@
   <!-- Notification opt-in prompt (soft ask) -->
   <notification-prompt></notification-prompt>
 
-  <!-- Highway (blur when region not set) -->
-  <div class="flex-1 min-h-0 transition-[filter] duration-500 ${needsRegion ? 'blur-sm pointer-events-none' : ''}">
-    <live-highway
-      date-groups.bind="dateGroups"
-      loading.bind="isLoading"
-    ></live-highway>
+  <!-- Stale data warning -->
+  <div if.bind="isStale" class="px-4 py-2 bg-amber-900/30 border-b border-amber-500/20">
+    <div class="flex items-center gap-2 text-sm text-amber-300">
+      <svg class="w-4 h-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+      </svg>
+      <span>Data may be outdated.</span>
+      <button click.trigger="retry()" class="underline hover:text-amber-200 transition-colors">Retry</button>
+    </div>
+  </div>
+
+  <!-- Highway content with promise.bind -->
+  <div class="flex-1 min-h-0 transition-[filter] duration-500 ${needsRegion ? 'blur-sm pointer-events-none' : ''}" promise.bind="dataPromise">
+    <!-- Loading skeleton -->
+    <div pending class="flex-1 min-h-0">
+      <live-highway
+        date-groups.bind="dateGroups"
+        loading.bind="true"
+      ></live-highway>
+    </div>
+
+    <!-- Success state -->
+    <div then.from-view="data" class="flex-1 min-h-0">
+      <!-- Empty state -->
+      <div if.bind="dateGroups.length === 0" class="flex flex-col items-center justify-center h-full px-6 text-center">
+        <svg class="w-16 h-16 text-text-muted mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+        <p class="text-lg font-display font-bold text-text-secondary mb-1">No upcoming events</p>
+        <p class="text-sm text-text-muted mb-4">Follow more artists to see their live schedules here.</p>
+        <a href="/discover" class="text-sm px-4 py-2 rounded-lg border border-white/10 hover:border-white/20 text-text-secondary hover:text-text-primary transition-colors">
+          Discover Artists
+        </a>
+      </div>
+
+      <!-- Data loaded -->
+      <live-highway
+        if.bind="dateGroups.length > 0"
+        date-groups.bind="dateGroups"
+        loading.bind="false"
+      ></live-highway>
+    </div>
+
+    <!-- Error state (only when no stale data) -->
+    <div catch.from-view="err" class="flex-1 min-h-0">
+      <div if.bind="!isStale" class="flex items-center justify-center h-full px-4">
+        <inline-error
+          message="Failed to load live events"
+          error.bind="err"
+          retry-action.bind="() => retry()"
+        ></inline-error>
+      </div>
+
+      <!-- Stale data: show previous results despite error -->
+      <live-highway
+        if.bind="isStale"
+        date-groups.bind="dateGroups"
+        loading.bind="false"
+      ></live-highway>
+    </div>
   </div>
 </div>
 
