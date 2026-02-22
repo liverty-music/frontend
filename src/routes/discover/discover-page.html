@@ -1,8 +1,113 @@
-<div class="flex flex-col items-center justify-center h-screen bg-surface-base text-text-primary pb-14">
-  <svg class="w-12 h-12 text-text-muted mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="11" cy="11" r="8"></circle>
-    <path d="M21 21l-4.35-4.35"></path>
-  </svg>
-  <h1 class="font-display text-xl font-bold tracking-tight mb-2">Discover</h1>
-  <p class="text-sm text-text-muted">Coming soon</p>
-</div>
+<template>
+  <import from="../../components/dna-orb/dna-orb-canvas"></import>
+  <import from="../../components/toast-notification/toast-notification"></import>
+
+  <div class="container">
+    <toast-notification></toast-notification>
+
+    <!-- Search bar -->
+    <div class="search-bar">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search artists..."
+        value.bind="searchQuery"
+        input.trigger="onSearchInput()"
+        aria-label="Search artists"
+      >
+      <button
+        if.bind="searchQuery"
+        class="clear-button"
+        click.trigger="clearSearch()"
+        aria-label="Clear search"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18"></path>
+          <path d="m6 6 12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Genre chips (hidden during search) -->
+    <div class="genre-chips ${isSearchMode ? 'hidden' : ''}">
+      <button
+        repeat.for="tag of genreTags"
+        class="genre-chip ${activeTag === tag ? 'active' : ''}"
+        click.trigger="onGenreSelected(tag)"
+        disabled.bind="isLoadingTag"
+        aria-pressed.bind="activeTag === tag"
+      >
+        ${tag}
+      </button>
+    </div>
+
+    <!-- Bubble UI (hidden during search) -->
+    <div class="bubble-area ${isSearchMode ? 'hidden' : ''}">
+      <dna-orb-canvas
+        component.ref="dnaOrbCanvas"
+        followed-count.bind="followedCount"
+        show-followed-indicator.bind="true"
+        artist-selected.trigger="onArtistSelected($event)"
+        similar-artists-unavailable.trigger="onSimilarArtistsUnavailable($event)"
+        similar-artists-error.trigger="onSimilarArtistsError($event)"
+      ></dna-orb-canvas>
+
+      <!-- Orb label -->
+      <div class="orb-label">
+        Music DNA ${followedCount > 0 ? '· ' + followedCount : ''}
+      </div>
+    </div>
+
+    <!-- Search results (shown during search) -->
+    <div class="search-results ${isSearchMode ? '' : 'hidden'}">
+      <div if.bind="isSearching" class="search-status">
+        Searching...
+      </div>
+
+      <div if.bind="!isSearching && isSearchMode && searchResults.length === 0 && searchQuery.trim().length > 0" class="search-status">
+        No artists found
+      </div>
+
+      <div class="results-list">
+        <div
+          repeat.for="artist of searchResults"
+          class="result-item"
+        >
+          <div class="result-info">
+            <div class="result-avatar">
+              ${artist.name.charAt(0)}
+            </div>
+            <span class="result-name">${artist.name}</span>
+          </div>
+          <button
+            class="follow-button ${isArtistFollowed(artist.id) ? 'followed' : ''}"
+            click.trigger="onFollowFromSearch(artist)"
+            disabled.bind="isArtistFollowed(artist.id)"
+            aria-label="${isArtistFollowed(artist.id) ? 'Already following ' + artist.name : 'Follow ' + artist.name}"
+          >
+            <svg if.bind="!isArtistFollowed(artist.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 5v14"></path>
+              <path d="M5 12h14"></path>
+            </svg>
+            <svg if.bind="isArtistFollowed(artist.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M20 6 9 17l-5-5"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen reader status -->
+    <div
+      role="status"
+      aria-live="polite"
+      class="sr-only"
+    >
+      Discover page: ${isSearchMode ? searchResults.length + ' search results' : (dnaOrbCanvas?.bubbleCount ?? 0) + ' artists available'}. ${followedCount} followed.
+    </div>
+  </div>
+</template>

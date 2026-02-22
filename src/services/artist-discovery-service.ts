@@ -3,8 +3,8 @@ import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_m
 import type { PromiseClient } from '@connectrpc/connect'
 import { createPromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
-import { createTransport } from './grpc-transport'
 import { IAuthService } from './auth-service'
+import { createTransport } from './grpc-transport'
 
 export interface ArtistBubble {
 	id: string
@@ -40,11 +40,20 @@ export class ArtistDiscoveryService {
 	public orbIntensity = 0
 
 	private readonly seenArtistNames = new Set<string>()
+	private readonly followedIds = new Set<string>()
 
-	public async loadInitialArtists(country = 'Japan'): Promise<void> {
-		this.logger.info('Loading initial artists', { country })
+	public async loadInitialArtists(country = 'Japan', tag = ''): Promise<void> {
+		this.logger.info('Loading initial artists', { country, tag })
+		this.seenArtistNames.clear()
+		for (const f of this.followedArtists) {
+			this.seenArtistNames.add(f.name.toLowerCase())
+		}
+		// NOTE: `tag` field requires BSR proto publish (specification#73).
+		// Once ListTopRequest includes `tag`, add it to the request object.
 		const resp = await this.artistClient.listTop({ country })
-		const bubbles = resp.artists.map((a) => this.toBubble(a))
+		const bubbles = resp.artists
+			.map((a) => this.toBubble(a))
+			.filter((b) => !this.seenArtistNames.has(b.name.toLowerCase()))
 		this.availableBubbles = bubbles
 		for (const b of this.availableBubbles) {
 			this.seenArtistNames.add(b.name.toLowerCase())
@@ -54,11 +63,44 @@ export class ArtistDiscoveryService {
 		})
 	}
 
+	public async reloadWithTag(tag: string, country = 'Japan'): Promise<void> {
+		this.logger.info('Reloading artists with tag', { tag, country })
+		this.seenArtistNames.clear()
+		for (const f of this.followedArtists) {
+			this.seenArtistNames.add(f.name.toLowerCase())
+		}
+		// NOTE: `tag` field requires BSR proto publish (specification#73).
+		const resp = await this.artistClient.listTop({ country })
+		const bubbles = resp.artists
+			.map((a) => this.toBubble(a))
+			.filter((b) => !this.seenArtistNames.has(b.name.toLowerCase()))
+		this.availableBubbles = bubbles
+		for (const b of this.availableBubbles) {
+			this.seenArtistNames.add(b.name.toLowerCase())
+		}
+		this.logger.info('Reloaded artists with tag', {
+			tag,
+			count: this.availableBubbles.length,
+		})
+	}
+
+	public async searchArtists(query: string): Promise<ArtistBubble[]> {
+		this.logger.info('Searching artists', { query })
+		const resp = await this.artistClient.search({ query })
+		return resp.artists.map((a) => this.toBubble(a))
+	}
+
+	public isFollowed(artistId: string): boolean {
+		return this.followedIds.has(artistId)
+	}
+
 	public async followArtist(artist: ArtistBubble): Promise<void> {
+		if (this.isFollowed(artist.id)) return
 		this.logger.info('Following artist', { artist: artist.name })
 		this.availableBubbles = this.availableBubbles.filter(
 			(b) => b.id !== artist.id,
 		)
+		this.followedIds.add(artist.id)
 		this.followedArtists.push(artist)
 		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 
@@ -115,7 +157,9 @@ export class ArtistDiscoveryService {
 		try {
 			const resp = await this.artistClient.listFollowed({}, { signal })
 			const bubbles = resp.artists.map((a) => this.toBubble(a))
-			this.logger.info('Followed artists fetched', { count: bubbles.length })
+			this.logger.info('Followed artists fetched', {
+				count: bubbles.length,
+			})
 			return bubbles
 		} catch (err) {
 			this.logger.error('Failed to fetch followed artists', err)

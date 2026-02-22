@@ -20,11 +20,19 @@ export class BubblePhysics {
 	private width = 0
 	private height = 0
 	private initPromise: Promise<void> | null = null
+	private initGeneration = 0
 
 	public async init(width: number, height: number): Promise<void> {
-		if (this.initPromise) return this.initPromise
+		if (this.initPromise) {
+			this.width = width
+			this.height = height
+			return this.initPromise
+		}
 
-		this.initPromise = (async () => {
+		this.width = width
+		this.height = height
+		const gen = ++this.initGeneration
+		const promise = (async () => {
 			// Lazy-load Matter.js on first init call
 			if (!this.Matter) {
 				this.Matter = (await import('matter-js')).default
@@ -34,51 +42,59 @@ export class BubblePhysics {
 				this.world = this.engine.world
 			}
 
-			this.width = width
-			this.height = height
+			// Use this.width/this.height so concurrent callers' updates are picked up
+			const w = this.width
+			const h = this.height
 
 			for (const wall of this.walls) {
 				this.Matter?.Composite.remove(this.world, wall)
 			}
+			this.walls = []
 
 			const wallThickness = 50
 			const orbZoneHeight = 160
 			this.walls = [
 				// Top
 				this.Matter?.Bodies.rectangle(
-					width / 2,
+					w / 2,
 					-wallThickness / 2,
-					width,
+					w,
 					wallThickness,
 					{ isStatic: true },
 				),
 				// Left
 				this.Matter?.Bodies.rectangle(
 					-wallThickness / 2,
-					height / 2,
+					h / 2,
 					wallThickness,
-					height,
+					h,
 					{ isStatic: true },
 				),
 				// Right
 				this.Matter?.Bodies.rectangle(
-					width + wallThickness / 2,
-					height / 2,
+					w + wallThickness / 2,
+					h / 2,
 					wallThickness,
-					height,
+					h,
 					{ isStatic: true },
 				),
 				// Bottom (above orb zone)
 				this.Matter?.Bodies.rectangle(
-					width / 2,
-					height - orbZoneHeight + wallThickness / 2,
-					width,
+					w / 2,
+					h - orbZoneHeight + wallThickness / 2,
+					w,
 					wallThickness,
 					{ isStatic: true },
 				),
 			]
+			if (gen !== this.initGeneration) return
 			this.Matter?.Composite.add(this.world, this.walls)
-		})()
+		})().finally(() => {
+			if (this.initPromise === promise) {
+				this.initPromise = null
+			}
+		})
+		this.initPromise = promise
 
 		return this.initPromise
 	}
@@ -190,10 +206,24 @@ export class BubblePhysics {
 		return this.bubbleMap.size
 	}
 
-	public destroy(): void {
-		this.Matter?.Engine.clear(this.engine)
-		this.Matter?.Composite.clear(this.world, false)
+	public reset(): void {
+		if (this.Matter && this.world) {
+			this.Matter.Composite.clear(this.world, false)
+		}
 		this.bubbleMap.clear()
+		this.walls = []
+		this.initGeneration++
+		this.initPromise = null
+	}
+
+	public destroy(): void {
+		if (this.Matter && this.engine && this.world) {
+			this.Matter.Engine.clear(this.engine)
+			this.Matter.Composite.clear(this.world, false)
+		}
+		this.bubbleMap.clear()
+		this.walls = []
+		this.initPromise = null
 	}
 }
 
