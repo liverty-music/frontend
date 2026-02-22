@@ -11,6 +11,7 @@ const tabs: NavTab[] = [
 	{ path: 'dashboard', label: 'Home', icon: 'home' },
 	{ path: 'discover', label: 'Discover', icon: 'discover' },
 	{ path: 'my-artists', label: 'My Artists', icon: 'my-artists' },
+	{ path: 'tickets', label: 'Tickets', icon: 'ticket' },
 	{ path: 'settings', label: 'Settings', icon: 'settings' },
 ]
 
