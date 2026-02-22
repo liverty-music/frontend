@@ -26,12 +26,16 @@ describe('AreaSelectorSheet', () => {
 			expect(sut.selectedRegion).toBeNull()
 		})
 
-		it('should close the sheet and reset selectedRegion', () => {
+		it('should close the sheet and defer selectedRegion reset', () => {
+			vi.useFakeTimers()
 			sut.open()
 			sut.selectRegion(sut.regions[0])
 			sut.close()
 			expect(sut.isOpen).toBe(false)
+			expect(sut.selectedRegion).not.toBeNull()
+			vi.advanceTimersByTime(300)
 			expect(sut.selectedRegion).toBeNull()
+			vi.useRealTimers()
 		})
 	})
 
@@ -64,7 +68,7 @@ describe('AreaSelectorSheet', () => {
 			sut.onAreaSelected = callback
 			sut.selectPrefecture('大阪')
 
-			expect(callback).toHaveBeenCalledWith('大阪')
+			expect(callback).toHaveBeenCalledWith({ $event: '大阪' })
 		})
 	})
 

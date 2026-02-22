@@ -15,6 +15,7 @@ export class SettingsPage {
 	public currentArea: string | null = null
 	public notificationsEnabled = false
 	public areaSheet!: AreaSelectorSheet
+	private isToggling = false
 
 	public loading(): void {
 		this.currentArea = AreaSelectorSheet.getStoredArea()
@@ -34,10 +35,13 @@ export class SettingsPage {
 	}
 
 	public async toggleNotifications(): Promise<void> {
-		const newValue = !this.notificationsEnabled
+		if (this.isToggling) return
+		this.isToggling = true
 
-		if (newValue) {
-			try {
+		try {
+			const newValue = !this.notificationsEnabled
+
+			if (newValue) {
 				await this.pushService.subscribe()
 				if (this.notificationManager.permission !== 'granted') {
 					this.logger.info('Notification permission not granted, keeping OFF')
@@ -45,17 +49,19 @@ export class SettingsPage {
 				}
 				this.notificationsEnabled = true
 				localStorage.setItem(NOTIFICATION_PREF_KEY, 'true')
-			} catch (err) {
-				this.logger.error('Failed to enable push notifications', err)
+			} else {
+				try {
+					await this.pushService.unsubscribe()
+				} catch (err) {
+					this.logger.error('Failed to unsubscribe push notifications', err)
+				}
+				this.notificationsEnabled = false
+				localStorage.setItem(NOTIFICATION_PREF_KEY, 'false')
 			}
-		} else {
-			try {
-				await this.pushService.unsubscribe()
-			} catch (err) {
-				this.logger.error('Failed to unsubscribe push notifications', err)
-			}
-			this.notificationsEnabled = false
-			localStorage.setItem(NOTIFICATION_PREF_KEY, 'false')
+		} catch (err) {
+			this.logger.error('Failed to toggle push notifications', err)
+		} finally {
+			this.isToggling = false
 		}
 	}
 

@@ -51,13 +51,17 @@ const REGIONS: Region[] = [
 	},
 ]
 
+const CLOSE_ANIMATION_MS = 300
+
 export class AreaSelectorSheet {
-	@bindable public onAreaSelected?: (area: string) => void
+	@bindable public onAreaSelected?: (args: { $event: string }) => void
 
 	public isOpen = false
 	public regions = REGIONS
 	public selectedRegion: Region | null = null
 
+	private sheetElement?: HTMLElement
+	private previouslyFocused: HTMLElement | null = null
 	private readonly logger = resolve(ILogger).scopeTo('AreaSelectorSheet')
 
 	public static getStoredArea(): string | null {
@@ -65,13 +69,20 @@ export class AreaSelectorSheet {
 	}
 
 	public open(): void {
+		this.previouslyFocused = document.activeElement as HTMLElement | null
 		this.isOpen = true
 		this.selectedRegion = null
+		requestAnimationFrame(() => {
+			this.sheetElement?.focus()
+		})
 	}
 
 	public close(): void {
 		this.isOpen = false
-		this.selectedRegion = null
+		setTimeout(() => {
+			this.selectedRegion = null
+		}, CLOSE_ANIMATION_MS)
+		this.previouslyFocused?.focus()
 	}
 
 	public selectRegion(region: Region): void {
@@ -86,6 +97,6 @@ export class AreaSelectorSheet {
 		this.logger.info('Area selected', { prefecture })
 		localStorage.setItem(REGION_STORAGE_KEY, prefecture)
 		this.close()
-		this.onAreaSelected?.(prefecture)
+		this.onAreaSelected?.({ $event: prefecture })
 	}
 }
