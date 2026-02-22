@@ -47,7 +47,12 @@ export class DiscoverPage {
 
 	public async loading(): Promise<void> {
 		this.logger.info('Loading discover page')
-		await this.discoveryService.loadInitialArtists('Japan', '')
+		try {
+			await this.discoveryService.loadInitialArtists('Japan', '')
+		} catch (err) {
+			this.logger.error('Failed to load initial artists', err)
+			this.toastService.show('Failed to load discovery data')
+		}
 	}
 
 	public attached(): void {
@@ -63,7 +68,7 @@ export class DiscoverPage {
 	private readonly onVisibilityChange = (): void => {
 		if (document.hidden) {
 			this.dnaOrbCanvas?.pause()
-		} else {
+		} else if (!this.isSearchMode) {
 			this.dnaOrbCanvas?.resume()
 		}
 	}
@@ -93,6 +98,7 @@ export class DiscoverPage {
 			if (this.abortController.signal.aborted) return
 			this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
 		} catch (err) {
+			this.activeTag = ''
 			this.logger.warn('Failed to load genre artists', err)
 			this.toastService.show(`Couldn't load ${tag} artists`)
 		} finally {
@@ -153,6 +159,7 @@ export class DiscoverPage {
 		event: CustomEvent<{ artist: ArtistBubble }>,
 	): Promise<void> {
 		const artist = event.detail.artist
+		if (this.discoveryService.isFollowed(artist.id)) return
 		this.logger.info('Artist selected from bubbles', { artist: artist.name })
 
 		await this.discoveryService.followArtist(artist)
