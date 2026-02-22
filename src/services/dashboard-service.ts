@@ -1,4 +1,5 @@
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import { PassionLevel } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
 import type {
 	DateGroup,
@@ -35,17 +36,18 @@ export class DashboardService {
 
 	private async fetchFollowedArtists(
 		signal?: AbortSignal,
-	): Promise<Array<{ id: string; name: string }>> {
+	): Promise<Array<{ id: string; name: string; isMustGo: boolean }>> {
 		const client = this.artistService.getClient()
 		const response = await client.listFollowed({}, { signal })
 		return response.artists.map((fa) => ({
 			id: fa.artist?.id?.value ?? '',
 			name: fa.artist?.name?.value ?? '',
+			isMustGo: fa.passionLevel === PassionLevel.MUST_GO,
 		}))
 	}
 
 	private async fetchConcertsForArtists(
-		artists: Array<{ id: string; name: string }>,
+		artists: Array<{ id: string; name: string; isMustGo: boolean }>,
 		signal?: AbortSignal,
 	): Promise<LiveEvent[]> {
 		const results: LiveEvent[] = []
@@ -61,7 +63,7 @@ export class DashboardService {
 			if (result.status === 'fulfilled') {
 				const artist = artists[i]
 				for (const concert of result.value) {
-					const event = this.concertToLiveEvent(concert, artist.name)
+					const event = this.concertToLiveEvent(concert, artist.name, artist.isMustGo)
 					if (event) results.push(event)
 				}
 			}
@@ -74,6 +76,7 @@ export class DashboardService {
 	private concertToLiveEvent(
 		concert: Concert,
 		artistName: string,
+		isMustGo: boolean,
 	): LiveEvent | null {
 		const localDate = concert.localDate?.value
 		if (!localDate) return null
@@ -103,6 +106,7 @@ export class DashboardService {
 			openTime,
 			title: concert.title?.value ?? '',
 			sourceUrl: concert.sourceUrl?.value ?? '',
+			isMustGo,
 		}
 	}
 

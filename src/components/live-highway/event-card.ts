@@ -12,6 +12,10 @@ export class EventCard {
 		return artistColor(this.event.artistName)
 	}
 
+	public get isMutated(): boolean {
+		return this.event.isMustGo && this.lane !== 'main'
+	}
+
 	public get formattedDate(): string {
 		return this.event.date.toLocaleDateString('ja-JP', {
 			month: 'short',
