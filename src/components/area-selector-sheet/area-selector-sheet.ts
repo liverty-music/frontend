@@ -96,9 +96,14 @@ export class AreaSelectorSheet {
 			this.dragOffset = 0
 			return
 		}
-		e.preventDefault()
 		const deltaY = e.touches[0].clientY - this.touchStartY
-		this.dragOffset = Math.max(0, deltaY)
+		if (deltaY <= 0) {
+			this.isDragging = false
+			this.dragOffset = 0
+			return
+		}
+		e.preventDefault()
+		this.dragOffset = deltaY
 	}
 
 	public onTouchEnd(): void {

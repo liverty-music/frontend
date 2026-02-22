@@ -130,7 +130,7 @@ describe('AreaSelectorSheet', () => {
 			expect(sut.sheetTransform).toBe('transform: translateY(100%)')
 		})
 
-		it('should call preventDefault on touchmove when dragging', () => {
+		it('should call preventDefault only on downward drag', () => {
 			sut.open()
 			sut.onTouchStart(makeTouchEvent(100))
 			const moveEvent = makeTouchEvent(150)
@@ -158,12 +158,15 @@ describe('AreaSelectorSheet', () => {
 			expect(sut.sheetTransform).toBe('')
 		})
 
-		it('should not allow negative drag offset', () => {
+		it('should cancel drag and allow scroll on upward gesture', () => {
 			sut.open()
 			sut.onTouchStart(makeTouchEvent(200))
-			sut.onTouchMove(makeTouchEvent(100))
+			const moveEvent = makeTouchEvent(100)
+			sut.onTouchMove(moveEvent)
 
+			expect(sut.isDragging).toBe(false)
 			expect(sut.sheetTransform).toBe('')
+			expect(moveEvent.preventDefault).not.toHaveBeenCalled()
 		})
 
 		it('should stop dragging and reset dragOffset if scrollable has scroll position', () => {
