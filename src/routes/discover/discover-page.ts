@@ -83,6 +83,9 @@ export class DiscoverPage {
 				await this.discoveryService.reloadWithTag('')
 				if (this.abortController.signal.aborted) return
 				this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
+			} catch (err) {
+				this.logger.error('Failed to clear genre tag', err)
+				this.toastService.show('Failed to reset discovery view')
 			} finally {
 				this.isLoadingTag = false
 			}
