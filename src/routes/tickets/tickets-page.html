@@ -65,17 +65,46 @@
         <!-- Generate Entry Code button -->
         <button
           click.trigger="generateEntryCode(ticket)"
-          class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-button)] bg-brand-accent text-surface-base text-xs font-semibold hover:brightness-110 transition-all"
+          disabled.bind="isGenerating"
+          class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[var(--radius-button)] bg-brand-accent text-surface-base text-xs font-semibold hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg if.bind="!isGenerating || generatingTicketId !== ticket.id?.value" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7"></rect>
             <rect x="14" y="3" width="7" height="7"></rect>
             <rect x="14" y="14" width="7" height="7"></rect>
             <rect x="3" y="14" width="7" height="7"></rect>
           </svg>
+          <div if.bind="isGenerating && generatingTicketId === ticket.id?.value" class="w-4 h-4 border-2 border-surface-base/30 border-t-surface-base rounded-full animate-spin"></div>
           Entry
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Proof generation progress overlay -->
+  <div if.bind="isGenerating" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 p-6 mx-4 max-w-sm w-full text-center">
+      <div class="w-10 h-10 mx-auto border-3 border-brand-accent/30 border-t-brand-accent rounded-full animate-spin"></div>
+      <p class="mt-4 text-sm font-semibold text-text-primary">Generating Entry Code</p>
+      <p class="mt-1 text-xs text-text-muted">${proofProgress}</p>
+      <p class="mt-3 text-[10px] text-text-muted">This may take up to 30 seconds on mobile devices.</p>
+    </div>
+  </div>
+
+  <!-- QR Code modal -->
+  <div if.bind="qrDataUrl" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 p-6 mx-4 max-w-sm w-full text-center">
+      <h2 class="font-display text-lg font-bold text-text-primary">Entry Code</h2>
+      <p class="mt-1 text-xs text-text-muted">Present this QR code at the venue entrance.</p>
+      <div class="mt-4 bg-white rounded-lg p-3 inline-block">
+        <img src.bind="qrDataUrl" alt="Entry QR Code" class="w-[280px] h-[280px]" />
+      </div>
+      <button
+        click.trigger="dismissQr()"
+        class="mt-4 w-full py-2.5 rounded-[var(--radius-button)] border border-white/10 text-sm font-semibold text-text-primary hover:bg-white/5 transition-colors"
+      >
+        Close
+      </button>
     </div>
   </div>
 </div>

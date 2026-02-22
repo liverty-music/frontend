@@ -18,6 +18,17 @@ declare module '*.css?inline' {
 
 declare module '*.css'
 
+// snarkjs does not ship type declarations.
+declare module 'snarkjs' {
+	export namespace groth16 {
+		function fullProve(
+			input: Record<string, unknown>,
+			wasmFile: string,
+			zkeyFile: string,
+		): Promise<{ proof: unknown; publicSignals: string[] }>
+	}
+}
+
 // Temporary stub for push notification service until the proto is published to BSR.
 // Remove this declaration once @buf/liverty-music_schema.connectrpc_es includes
 // the push_notification/v1 package.
