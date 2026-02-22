@@ -49,10 +49,10 @@ export class MyArtistsPage {
 				{},
 				{ signal: this.abortController.signal },
 			)
-			this.artists = response.artists.map((a) => ({
-				id: a.id?.value ?? '',
-				name: a.name?.value ?? '',
-				color: artistColor(a.name?.value ?? ''),
+			this.artists = response.artists.map((fa) => ({
+				id: fa.artist?.id?.value ?? '',
+				name: fa.artist?.name?.value ?? '',
+				color: artistColor(fa.artist?.name?.value ?? ''),
 			}))
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,

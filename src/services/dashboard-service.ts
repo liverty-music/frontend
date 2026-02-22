@@ -38,9 +38,9 @@ export class DashboardService {
 	): Promise<Array<{ id: string; name: string }>> {
 		const client = this.artistService.getClient()
 		const response = await client.listFollowed({}, { signal })
-		return response.artists.map((a) => ({
-			id: a.id?.value ?? '',
-			name: a.name?.value ?? '',
+		return response.artists.map((fa) => ({
+			id: fa.artist?.id?.value ?? '',
+			name: fa.artist?.name?.value ?? '',
 		}))
 	}
 
