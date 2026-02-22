@@ -41,9 +41,12 @@ export class ArtistDiscoveryService {
 
 	private readonly seenArtistNames = new Set<string>()
 
-	public async loadInitialArtists(country = 'Japan'): Promise<void> {
-		this.logger.info('Loading initial artists', { country })
-		const resp = await this.artistClient.listTop({ country })
+	public async loadInitialArtists(
+		country = 'Japan',
+		tag = '',
+	): Promise<void> {
+		this.logger.info('Loading initial artists', { country, tag })
+		const resp = await this.artistClient.listTop({ country, tag })
 		const bubbles = resp.artists.map((a) => this.toBubble(a))
 		this.availableBubbles = bubbles
 		for (const b of this.availableBubbles) {
@@ -52,6 +55,34 @@ export class ArtistDiscoveryService {
 		this.logger.info('Loaded initial artists', {
 			count: this.availableBubbles.length,
 		})
+	}
+
+	public async reloadWithTag(tag: string, country = 'Japan'): Promise<void> {
+		this.logger.info('Reloading artists with tag', { tag, country })
+		this.seenArtistNames.clear()
+		for (const f of this.followedArtists) {
+			this.seenArtistNames.add(f.name.toLowerCase())
+		}
+		const resp = await this.artistClient.listTop({ country, tag })
+		const bubbles = resp.artists.map((a) => this.toBubble(a))
+		this.availableBubbles = bubbles
+		for (const b of this.availableBubbles) {
+			this.seenArtistNames.add(b.name.toLowerCase())
+		}
+		this.logger.info('Reloaded artists with tag', {
+			tag,
+			count: this.availableBubbles.length,
+		})
+	}
+
+	public async searchArtists(query: string): Promise<ArtistBubble[]> {
+		this.logger.info('Searching artists', { query })
+		const resp = await this.artistClient.search({ query })
+		return resp.artists.map((a) => this.toBubble(a))
+	}
+
+	public isFollowed(artistId: string): boolean {
+		return this.followedArtists.some((a) => a.id === artistId)
 	}
 
 	public async followArtist(artist: ArtistBubble): Promise<void> {
