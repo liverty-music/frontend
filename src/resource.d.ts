@@ -17,3 +17,40 @@ declare module '*.css?inline' {
 }
 
 declare module '*.css'
+
+// Temporary stub for push notification service until the proto is published to BSR.
+// Remove this declaration once @buf/liverty-music_schema.connectrpc_es includes
+// the push_notification/v1 package.
+declare module '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/push_notification/v1/push_notification_service_connect.js' {
+	import type { MethodKind } from '@bufbuild/protobuf'
+
+	interface SubscribeRequest {
+		endpoint: string
+		p256dh: string
+		auth: string
+	}
+
+	interface SubscribeResponse {}
+
+	interface UnsubscribeRequest {}
+
+	interface UnsubscribeResponse {}
+
+	export const PushNotificationService: {
+		readonly typeName: 'liverty_music.rpc.push_notification.v1.PushNotificationService'
+		readonly methods: {
+			readonly subscribe: {
+				readonly name: 'Subscribe'
+				readonly I: typeof SubscribeRequest
+				readonly O: typeof SubscribeResponse
+				readonly kind: MethodKind.Unary
+			}
+			readonly unsubscribe: {
+				readonly name: 'Unsubscribe'
+				readonly I: typeof UnsubscribeRequest
+				readonly O: typeof UnsubscribeResponse
+				readonly kind: MethodKind.Unary
+			}
+		}
+	}
+}
