@@ -74,9 +74,7 @@ export class DiscoverPage {
 			this.isLoadingTag = true
 			try {
 				await this.discoveryService.reloadWithTag('')
-				this.dnaOrbCanvas.reloadBubbles(
-					this.discoveryService.availableBubbles,
-				)
+				this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
 			} finally {
 				this.isLoadingTag = false
 			}
@@ -89,9 +87,7 @@ export class DiscoverPage {
 
 		try {
 			await this.discoveryService.reloadWithTag(tag.toLowerCase())
-			this.dnaOrbCanvas.reloadBubbles(
-				this.discoveryService.availableBubbles,
-			)
+			this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
 		} catch (err) {
 			this.logger.warn('Failed to load genre artists', err)
 			this.toastService.show(`Couldn't load ${tag} artists`)
@@ -152,9 +148,7 @@ export class DiscoverPage {
 		await this.discoveryService.followArtist(artist)
 
 		try {
-			const hasEvents = await this.discoveryService.checkLiveEvents(
-				artist.name,
-			)
+			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
 			if (hasEvents) {
 				this.toastService.show(`${artist.name} has upcoming live events!`)
 			}
@@ -173,9 +167,7 @@ export class DiscoverPage {
 		await this.discoveryService.followArtist(artist)
 
 		try {
-			const hasEvents = await this.discoveryService.checkLiveEvents(
-				artist.name,
-			)
+			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
 			if (hasEvents) {
 				this.toastService.show(`${artist.name} has upcoming live events!`)
 			}

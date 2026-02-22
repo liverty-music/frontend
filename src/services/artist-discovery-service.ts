@@ -41,10 +41,7 @@ export class ArtistDiscoveryService {
 
 	private readonly seenArtistNames = new Set<string>()
 
-	public async loadInitialArtists(
-		country = 'Japan',
-		tag = '',
-	): Promise<void> {
+	public async loadInitialArtists(country = 'Japan', tag = ''): Promise<void> {
 		this.logger.info('Loading initial artists', { country, tag })
 		// NOTE: `tag` field requires BSR proto publish (specification#73).
 		// Once ListTopRequest includes `tag`, add it to the request object.
