@@ -9,6 +9,8 @@ import { IArtistServiceClient } from './services/artist-service-client'
 import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
 import { IDashboardService } from './services/dashboard-service'
+import { INotificationManager } from './services/notification-manager'
+import { IPushService } from './services/push-service'
 import { IUserService } from './services/user-service'
 
 // Css files imported in this main file should be imported with ?inline query
@@ -35,6 +37,8 @@ Aurelia
 	.register(IConcertService)
 	.register(IArtistDiscoveryService)
 	.register(IDashboardService)
+	.register(INotificationManager)
+	.register(IPushService)
 	.register(IToastService)
 	// Register components globally or locally. Global is easier for AuthStatus used in shell.
 	.register(AuthStatus)
@@ -44,3 +48,10 @@ Aurelia
 	// .register(RouterConfiguration.customize({ useUrlFragmentHash: false }))
 	.app(MyApp)
 	.start()
+
+// Register Service Worker for push notifications after Aurelia bootstrap
+if ('serviceWorker' in navigator) {
+	navigator.serviceWorker.register('/sw.js').catch((err) => {
+		console.warn('Service Worker registration failed:', err)
+	})
+}
