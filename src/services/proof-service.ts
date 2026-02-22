@@ -47,13 +47,17 @@ export class ProofServiceClient {
 		const wasmUrl = `${CIRCUIT_BASE_URL}/ticketcheck.wasm`
 		const zkeyUrl = `${CIRCUIT_BASE_URL}/ticketcheck.zkey`
 
+		// Convert eventId to a field element for the circuit.
+		// Use the same encoding as the backend: treat UUID bytes as big-endian integer.
+		const eventIdField = uuidToFieldElement(eventId)
+
 		const proofInput: ProofRequest = {
 			wasmUrl,
 			zkeyUrl,
 			input: {
 				trapdoor: leaf,
-				nullifierSecret: leaf,
 				merkleRoot,
+				eventId: eventIdField,
 				pathElements,
 				pathIndices,
 			},
@@ -142,5 +146,11 @@ function bytesToDecimal(bytes: Uint8Array): string {
 	// snarkjs circuit inputs are decimal strings.
 	const hex = bytesToHex(bytes)
 	if (hex === '') return '0'
+	return BigInt(`0x${hex}`).toString(10)
+}
+
+function uuidToFieldElement(uuid: string): string {
+	// Strip hyphens and convert UUID hex to a decimal field element.
+	const hex = uuid.replace(/-/g, '')
 	return BigInt(`0x${hex}`).toString(10)
 }

@@ -10,23 +10,23 @@ include "node_modules/circomlib/circuits/poseidon.circom";
 //
 // Private inputs:
 //   trapdoor        - secret value; Poseidon(trapdoor) = identity commitment (leaf)
-//   nullifierSecret - secret for nullifier computation
 //   pathElements[]  - Merkle proof sibling hashes
 //   pathIndices[]   - binary path indices (0 = left, 1 = right)
 //
 // Public inputs:
 //   merkleRoot      - expected root of the identity commitment tree
-//   nullifierHash   - Poseidon(nullifierSecret); verified off-chain for double-entry
+//   eventId         - event identifier; binds the nullifier to a specific event
+//   nullifierHash   - Poseidon(trapdoor, eventId); deterministic per user per event
 
 template TicketCheck(depth) {
     // Private inputs
     signal input trapdoor;
-    signal input nullifierSecret;
     signal input pathElements[depth];
     signal input pathIndices[depth];
 
     // Public inputs
     signal input merkleRoot;
+    signal input eventId;
     signal input nullifierHash;
 
     // Step 1: Compute identity commitment = Poseidon(trapdoor)
@@ -35,10 +35,12 @@ template TicketCheck(depth) {
     identityHasher.inputs[0] <== trapdoor;
     signal identityCommitment <== identityHasher.out;
 
-    // Step 2: Compute nullifier hash = Poseidon(nullifierSecret)
-    // Constrain it to equal the public nullifierHash input.
-    component nullifierHasher = Poseidon(1);
-    nullifierHasher.inputs[0] <== nullifierSecret;
+    // Step 2: Compute nullifier hash = Poseidon(trapdoor, eventId)
+    // Binding the nullifier to both the identity secret and the event ID ensures
+    // it is deterministic per user per event, preventing double-entry bypass.
+    component nullifierHasher = Poseidon(2);
+    nullifierHasher.inputs[0] <== trapdoor;
+    nullifierHasher.inputs[1] <== eventId;
     nullifierHash === nullifierHasher.out;
 
     // Step 3: Verify Merkle path from identityCommitment to merkleRoot.
@@ -67,4 +69,4 @@ template TicketCheck(depth) {
 }
 
 // Instantiate with depth 20 (supports up to 2^20 = ~1M attendees per event).
-component main {public [merkleRoot, nullifierHash]} = TicketCheck(20);
+component main {public [merkleRoot, eventId, nullifierHash]} = TicketCheck(20);
