@@ -39,6 +39,7 @@
         class="genre-chip ${activeTag === tag ? 'active' : ''}"
         click.trigger="onGenreSelected(tag)"
         disabled.bind="isLoadingTag"
+        aria-pressed.bind="activeTag === tag"
       >
         ${tag}
       </button>

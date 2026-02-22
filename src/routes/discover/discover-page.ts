@@ -39,6 +39,7 @@ export class DiscoverPage {
 	public searchResults: ArtistBubble[] = []
 	public isSearching = false
 	private searchDebounceTimer = 0
+	private abortController = new AbortController()
 
 	public get followedCount(): number {
 		return this.discoveryService.followedArtists.length
@@ -54,6 +55,7 @@ export class DiscoverPage {
 	}
 
 	public detaching(): void {
+		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		window.clearTimeout(this.searchDebounceTimer)
 	}
@@ -74,6 +76,7 @@ export class DiscoverPage {
 			this.isLoadingTag = true
 			try {
 				await this.discoveryService.reloadWithTag('')
+				if (this.abortController.signal.aborted) return
 				this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
 			} finally {
 				this.isLoadingTag = false
@@ -87,6 +90,7 @@ export class DiscoverPage {
 
 		try {
 			await this.discoveryService.reloadWithTag(tag.toLowerCase())
+			if (this.abortController.signal.aborted) return
 			this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
 		} catch (err) {
 			this.logger.warn('Failed to load genre artists', err)
@@ -106,12 +110,14 @@ export class DiscoverPage {
 		}
 
 		this.isSearchMode = true
+		this.dnaOrbCanvas?.pause()
 		this.searchDebounceTimer = window.setTimeout(() => {
 			void this.performSearch(query)
 		}, 300)
 	}
 
 	public clearSearch(): void {
+		window.clearTimeout(this.searchDebounceTimer)
 		this.searchQuery = ''
 		this.exitSearchMode()
 	}
@@ -120,6 +126,7 @@ export class DiscoverPage {
 		this.isSearchMode = false
 		this.searchResults = []
 		this.isSearching = false
+		this.dnaOrbCanvas?.resume()
 	}
 
 	private async performSearch(query: string): Promise<void> {
@@ -129,7 +136,10 @@ export class DiscoverPage {
 		this.logger.info('Searching artists', { query })
 
 		try {
-			this.searchResults = await this.discoveryService.searchArtists(query)
+			const results = await this.discoveryService.searchArtists(query)
+			if (this.abortController.signal.aborted) return
+			if (this.searchQuery.trim() !== query) return // stale response
+			this.searchResults = results
 		} catch (err) {
 			this.logger.warn('Search failed', err)
 			this.toastService.show('Search failed, please try again')
@@ -146,9 +156,11 @@ export class DiscoverPage {
 		this.logger.info('Artist selected from bubbles', { artist: artist.name })
 
 		await this.discoveryService.followArtist(artist)
+		if (this.abortController.signal.aborted) return
 
 		try {
 			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
+			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
 				this.toastService.show(`${artist.name} has upcoming live events!`)
 			}
@@ -165,9 +177,11 @@ export class DiscoverPage {
 		})
 
 		await this.discoveryService.followArtist(artist)
+		if (this.abortController.signal.aborted) return
 
 		try {
 			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
+			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
 				this.toastService.show(`${artist.name} has upcoming live events!`)
 			}
