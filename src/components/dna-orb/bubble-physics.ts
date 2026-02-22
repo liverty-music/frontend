@@ -190,10 +190,19 @@ export class BubblePhysics {
 		return this.bubbleMap.size
 	}
 
+	public reset(): void {
+		this.Matter?.Composite.clear(this.world, false)
+		this.bubbleMap.clear()
+		this.walls = []
+		this.initPromise = null
+	}
+
 	public destroy(): void {
 		this.Matter?.Engine.clear(this.engine)
 		this.Matter?.Composite.clear(this.world, false)
 		this.bubbleMap.clear()
+		this.walls = []
+		this.initPromise = null
 	}
 }
 

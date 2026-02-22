@@ -34,12 +34,14 @@ export class DnaOrbCanvas {
 		`),
 	]
 	@bindable public followedCount = 0
+	@bindable public showFollowedIndicator = false
 
 	private readonly element = resolve(INode) as HTMLElement
 	private canvas!: HTMLCanvasElement
 	private ctx!: CanvasRenderingContext2D
 	private animFrameId = 0
 	private lastTime = 0
+	private paused = false
 
 	private physics = new BubblePhysics()
 	private orbRenderer = new OrbRenderer()
@@ -92,6 +94,31 @@ export class DnaOrbCanvas {
 		this.canvas.removeEventListener('keydown', this.onKeyDown)
 		this.physics.destroy()
 		this.imageCache.clear()
+	}
+
+	public pause(): void {
+		if (this.paused) return
+		this.paused = true
+		cancelAnimationFrame(this.animFrameId)
+		this.logger.info('Physics paused')
+	}
+
+	public resume(): void {
+		if (!this.paused) return
+		this.paused = false
+		this.lastTime = performance.now()
+		this.animFrameId = requestAnimationFrame(this.loop)
+		this.logger.info('Physics resumed')
+	}
+
+	public reloadBubbles(artists: ArtistBubble[]): void {
+		this.physics.reset()
+		const rect = this.element.getBoundingClientRect()
+		void this.physics.init(rect.width, rect.height).then(() => {
+			this.physics.addBubbles(artists)
+			this.preloadImages(artists)
+			this.focusedBubbleIndex = -1
+		})
 	}
 
 	private async resize(): Promise<void> {
@@ -296,11 +323,14 @@ export class DnaOrbCanvas {
 		const x = body.position.x
 		const y = body.position.y
 		const r = artist.radius * scale
+		const isFollowed =
+			this.showFollowedIndicator &&
+			this.discoveryService.isFollowed(artist.id)
 
 		if (r < 1 || opacity < 0.01) return
 
 		this.ctx.save()
-		this.ctx.globalAlpha = opacity
+		this.ctx.globalAlpha = isFollowed ? opacity * 0.4 : opacity
 
 		// Focus ring for keyboard navigation
 		if (focused) {
@@ -356,6 +386,32 @@ export class DnaOrbCanvas {
 		this.ctx.beginPath()
 		this.ctx.arc(x, y, r, 0, Math.PI * 2)
 		this.ctx.stroke()
+
+		// Checkmark for already-followed artists
+		if (isFollowed) {
+			const checkSize = Math.max(8, r * 0.35)
+			this.ctx.globalAlpha = 0.9
+			this.ctx.fillStyle = 'rgba(74, 222, 128, 0.9)'
+			this.ctx.beginPath()
+			this.ctx.arc(x + r * 0.55, y - r * 0.55, checkSize, 0, Math.PI * 2)
+			this.ctx.fill()
+			this.ctx.strokeStyle = 'white'
+			this.ctx.lineWidth = 2
+			this.ctx.beginPath()
+			this.ctx.moveTo(
+				x + r * 0.55 - checkSize * 0.3,
+				y - r * 0.55,
+			)
+			this.ctx.lineTo(
+				x + r * 0.55 - checkSize * 0.05,
+				y - r * 0.55 + checkSize * 0.25,
+			)
+			this.ctx.lineTo(
+				x + r * 0.55 + checkSize * 0.3,
+				y - r * 0.55 - checkSize * 0.2,
+			)
+			this.ctx.stroke()
+		}
 
 		this.ctx.restore()
 	}
