@@ -23,7 +23,11 @@ export class BubblePhysics {
 	private initGeneration = 0
 
 	public async init(width: number, height: number): Promise<void> {
-		if (this.initPromise) return this.initPromise
+		if (this.initPromise) {
+			this.width = width
+			this.height = height
+			return this.initPromise
+		}
 
 		const gen = ++this.initGeneration
 		this.initPromise = (async () => {

@@ -115,11 +115,12 @@ export class DnaOrbCanvas {
 	}
 
 	public reloadBubbles(artists: ArtistBubble[]): void {
+		const rect = this.element.getBoundingClientRect()
+		if (rect.width === 0 || rect.height === 0) return
+
 		const gen = ++this.reloadGeneration
 		this.physics.reset()
 		this.imageCache.clear()
-		const rect = this.element.getBoundingClientRect()
-		if (rect.width === 0 || rect.height === 0) return
 		void this.physics.init(rect.width, rect.height).then(() => {
 			if (gen !== this.reloadGeneration) return // stale
 			this.physics.addBubbles(artists)
