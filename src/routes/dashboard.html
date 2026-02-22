@@ -1,3 +1,4 @@
+<import from="../components/notification-prompt/notification-prompt"></import>
 <import from="../components/region-setup-sheet/region-setup-sheet"></import>
 
 <div class="h-screen flex flex-col bg-surface-base">
@@ -12,6 +13,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Notification opt-in prompt (soft ask) -->
+  <notification-prompt></notification-prompt>
 
   <!-- Highway (blur when region not set) -->
   <div class="flex-1 min-h-0 transition-[filter] duration-500 ${needsRegion ? 'blur-sm pointer-events-none' : ''}">
