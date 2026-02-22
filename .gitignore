@@ -43,6 +43,10 @@ tmp/*
 # Authenticated browser state for E2E testing
 .auth/
 
+# ZK circuit build artifacts (regenerated via circom compile + snarkjs setup)
+circuits/*/build/
+circuits/*/node_modules/
+
 # Environment configurations
 # Note: .env is committed to git since frontend env vars are public
 # (embedded in client bundle and visible in browser)
