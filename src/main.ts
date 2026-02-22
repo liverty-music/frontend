@@ -9,7 +9,9 @@ import { IArtistServiceClient } from './services/artist-service-client'
 import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
 import { IDashboardService } from './services/dashboard-service'
+import { IEntryService } from './services/entry-service'
 import { INotificationManager } from './services/notification-manager'
+import { IProofService } from './services/proof-service'
 import { IPushService } from './services/push-service'
 import { ITicketService } from './services/ticket-service'
 import { IUserService } from './services/user-service'
@@ -41,6 +43,8 @@ Aurelia
 	.register(INotificationManager)
 	.register(IPushService)
 	.register(ITicketService)
+	.register(IEntryService)
+	.register(IProofService)
 	.register(IToastService)
 	.register(BottomNavBar)
 	.register(AuthHook)
