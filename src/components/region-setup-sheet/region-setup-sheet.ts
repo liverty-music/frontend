@@ -1,6 +1,6 @@
 import { bindable, ILogger, resolve } from 'aurelia'
 
-const REGION_STORAGE_KEY = 'liverty-music:user-region'
+export const REGION_STORAGE_KEY = 'liverty-music:user-region'
 
 const PREFECTURES = [
 	'北海道',
