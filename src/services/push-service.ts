@@ -1,8 +1,8 @@
-import { DI, ILogger, resolve } from 'aurelia'
-import { createClient } from '@connectrpc/connect'
 import { PushNotificationService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/push_notification/v1/push_notification_service_connect.js'
-import { createTransport } from './grpc-transport'
+import { createClient } from '@connectrpc/connect'
+import { DI, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './auth-service'
+import { createTransport } from './grpc-transport'
 import { INotificationManager } from './notification-manager'
 
 export const IPushService = DI.createInterface<IPushService>(
@@ -13,6 +13,8 @@ export const IPushService = DI.createInterface<IPushService>(
 export interface IPushService extends PushServiceClient {}
 
 export class PushServiceClient {
+	private static readonly SW_READY_TIMEOUT_MS = 10_000
+
 	private readonly logger = resolve(ILogger).scopeTo('PushService')
 	private readonly authService = resolve(IAuthService)
 	private readonly notificationManager = resolve(INotificationManager)
@@ -23,6 +25,16 @@ export class PushServiceClient {
 
 	// VAPID public key injected via Vite build environment variable
 	private readonly vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY ?? ''
+
+	private async getRegistration(): Promise<ServiceWorkerRegistration> {
+		const timeout = new Promise<never>((_, reject) =>
+			setTimeout(
+				() => reject(new Error('Service Worker ready timed out')),
+				PushServiceClient.SW_READY_TIMEOUT_MS,
+			),
+		)
+		return Promise.race([navigator.serviceWorker.ready, timeout])
+	}
 
 	public async subscribe(): Promise<void> {
 		if (!this.vapidPublicKey) {
@@ -40,7 +52,7 @@ export class PushServiceClient {
 			return
 		}
 
-		const registration = await navigator.serviceWorker.ready
+		const registration = await this.getRegistration()
 		let subscription = await registration.pushManager.getSubscription()
 
 		if (!subscription) {
@@ -71,7 +83,7 @@ export class PushServiceClient {
 	}
 
 	public async unsubscribe(): Promise<void> {
-		const registration = await navigator.serviceWorker.ready
+		const registration = await this.getRegistration()
 		const subscription = await registration.pushManager.getSubscription()
 
 		if (subscription) {
