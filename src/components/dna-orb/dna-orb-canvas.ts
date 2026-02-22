@@ -77,7 +77,9 @@ export class DnaOrbCanvas {
 		await this.resize()
 		window.addEventListener('resize', this.onResize)
 		this.canvas.addEventListener('click', this.onClick)
-		this.canvas.addEventListener('touchstart', this.onTouch, { passive: true })
+		this.canvas.addEventListener('touchstart', this.onTouch, {
+			passive: true,
+		})
 		this.canvas.addEventListener('keydown', this.onKeyDown)
 
 		this.physics.addBubbles(this.discoveryService.availableBubbles)
@@ -115,6 +117,7 @@ export class DnaOrbCanvas {
 	public reloadBubbles(artists: ArtistBubble[]): void {
 		const gen = ++this.reloadGeneration
 		this.physics.reset()
+		this.imageCache.clear()
 		const rect = this.element.getBoundingClientRect()
 		if (rect.width === 0 || rect.height === 0) return
 		void this.physics.init(rect.width, rect.height).then(() => {
@@ -157,7 +160,10 @@ export class DnaOrbCanvas {
 		const touch = e.touches[0]
 		if (!touch) return
 		const rect = this.canvas.getBoundingClientRect()
-		this.handleInteraction(touch.clientX - rect.left, touch.clientY - rect.top)
+		this.handleInteraction(
+			touch.clientX - rect.left,
+			touch.clientY - rect.top,
+		)
 	}
 
 	private readonly onKeyDown = (e: KeyboardEvent): void => {
@@ -168,7 +174,8 @@ export class DnaOrbCanvas {
 			case 'ArrowRight':
 			case 'ArrowDown': {
 				e.preventDefault()
-				this.focusedBubbleIndex = (this.focusedBubbleIndex + 1) % bubbles.length
+				this.focusedBubbleIndex =
+					(this.focusedBubbleIndex + 1) % bubbles.length
 				break
 			}
 			case 'ArrowLeft':
@@ -328,7 +335,8 @@ export class DnaOrbCanvas {
 		const y = body.position.y
 		const r = artist.radius * scale
 		const isFollowed =
-			this.showFollowedIndicator && this.discoveryService.isFollowed(artist.id)
+			this.showFollowedIndicator &&
+			this.discoveryService.isFollowed(artist.id)
 
 		if (r < 1 || opacity < 0.01) return
 

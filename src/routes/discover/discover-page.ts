@@ -61,7 +61,10 @@ export class DiscoverPage {
 
 	public detaching(): void {
 		this.abortController.abort()
-		document.removeEventListener('visibilitychange', this.onVisibilityChange)
+		document.removeEventListener(
+			'visibilitychange',
+			this.onVisibilityChange,
+		)
 		window.clearTimeout(this.searchDebounceTimer)
 	}
 
@@ -82,7 +85,9 @@ export class DiscoverPage {
 			try {
 				await this.discoveryService.reloadWithTag('')
 				if (this.abortController.signal.aborted) return
-				this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
+				this.dnaOrbCanvas.reloadBubbles(
+					this.discoveryService.availableBubbles,
+				)
 			} finally {
 				this.isLoadingTag = false
 			}
@@ -96,7 +101,9 @@ export class DiscoverPage {
 		try {
 			await this.discoveryService.reloadWithTag(tag.toLowerCase())
 			if (this.abortController.signal.aborted) return
-			this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
+			this.dnaOrbCanvas.reloadBubbles(
+				this.discoveryService.availableBubbles,
+			)
 		} catch (err) {
 			this.activeTag = ''
 			this.logger.warn('Failed to load genre artists', err)
@@ -151,7 +158,9 @@ export class DiscoverPage {
 			this.toastService.show('Search failed, please try again')
 			this.searchResults = []
 		} finally {
-			this.isSearching = false
+			if (this.searchQuery.trim() === query) {
+				this.isSearching = false
+			}
 		}
 	}
 
@@ -160,16 +169,22 @@ export class DiscoverPage {
 	): Promise<void> {
 		const artist = event.detail.artist
 		if (this.discoveryService.isFollowed(artist.id)) return
-		this.logger.info('Artist selected from bubbles', { artist: artist.name })
+		this.logger.info('Artist selected from bubbles', {
+			artist: artist.name,
+		})
 
 		await this.discoveryService.followArtist(artist)
 		if (this.abortController.signal.aborted) return
 
 		try {
-			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
+			const hasEvents = await this.discoveryService.checkLiveEvents(
+				artist.name,
+			)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
-				this.toastService.show(`${artist.name} has upcoming live events!`)
+				this.toastService.show(
+					`${artist.name} has upcoming live events!`,
+				)
 			}
 		} catch (err) {
 			this.logger.warn('Failed to check live events', err)
@@ -187,10 +202,14 @@ export class DiscoverPage {
 		if (this.abortController.signal.aborted) return
 
 		try {
-			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
+			const hasEvents = await this.discoveryService.checkLiveEvents(
+				artist.name,
+			)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
-				this.toastService.show(`${artist.name} has upcoming live events!`)
+				this.toastService.show(
+					`${artist.name} has upcoming live events!`,
+				)
 			}
 		} catch (err) {
 			this.logger.warn('Failed to check live events', err)

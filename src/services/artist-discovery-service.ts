@@ -3,8 +3,8 @@ import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_m
 import type { PromiseClient } from '@connectrpc/connect'
 import { createPromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
-import { createTransport } from './grpc-transport'
 import { IAuthService } from './auth-service'
+import { createTransport } from './grpc-transport'
 
 export interface ArtistBubble {
 	id: string
@@ -17,8 +17,9 @@ export interface ArtistBubble {
 }
 
 export const IArtistDiscoveryService =
-	DI.createInterface<IArtistDiscoveryService>('IArtistDiscoveryService', (x) =>
-		x.singleton(ArtistDiscoveryService),
+	DI.createInterface<IArtistDiscoveryService>(
+		'IArtistDiscoveryService',
+		(x) => x.singleton(ArtistDiscoveryService),
 	)
 
 export interface IArtistDiscoveryService extends ArtistDiscoveryService {}
@@ -42,8 +43,15 @@ export class ArtistDiscoveryService {
 	private readonly seenArtistNames = new Set<string>()
 	private readonly followedIds = new Set<string>()
 
-	public async loadInitialArtists(country = 'Japan', tag = ''): Promise<void> {
+	public async loadInitialArtists(
+		country = 'Japan',
+		tag = '',
+	): Promise<void> {
 		this.logger.info('Loading initial artists', { country, tag })
+		this.seenArtistNames.clear()
+		for (const f of this.followedArtists) {
+			this.seenArtistNames.add(f.name.toLowerCase())
+		}
 		// NOTE: `tag` field requires BSR proto publish (specification#73).
 		// Once ListTopRequest includes `tag`, add it to the request object.
 		const resp = await this.artistClient.listTop({ country })
@@ -103,7 +111,9 @@ export class ArtistDiscoveryService {
 		// Fire-and-forget: persist follow to backend without blocking UI
 		this.artistClient
 			.follow({ artistId: new ArtistId({ value: artist.id }) })
-			.catch((err) => this.logger.error('Failed to follow artist via RPC', err))
+			.catch((err) =>
+				this.logger.error('Failed to follow artist via RPC', err),
+			)
 
 		this.logger.info('Artist followed', {
 			followed: this.followedArtists.length,
@@ -123,7 +133,10 @@ export class ArtistDiscoveryService {
 
 		const newBubbles = resp.artists
 			.filter(
-				(a) => !this.seenArtistNames.has((a.name?.value ?? '').toLowerCase()),
+				(a) =>
+					!this.seenArtistNames.has(
+						(a.name?.value ?? '').toLowerCase(),
+					),
 			)
 			.map((a) => this.toBubble(a))
 
@@ -153,7 +166,9 @@ export class ArtistDiscoveryService {
 		try {
 			const resp = await this.artistClient.listFollowed({}, { signal })
 			const bubbles = resp.artists.map((a) => this.toBubble(a))
-			this.logger.info('Followed artists fetched', { count: bubbles.length })
+			this.logger.info('Followed artists fetched', {
+				count: bubbles.length,
+			})
 			return bubbles
 		} catch (err) {
 			this.logger.error('Failed to fetch followed artists', err)

@@ -20,10 +20,12 @@ export class BubblePhysics {
 	private width = 0
 	private height = 0
 	private initPromise: Promise<void> | null = null
+	private initGeneration = 0
 
 	public async init(width: number, height: number): Promise<void> {
 		if (this.initPromise) return this.initPromise
 
+		const gen = ++this.initGeneration
 		this.initPromise = (async () => {
 			// Lazy-load Matter.js on first init call
 			if (!this.Matter) {
@@ -78,6 +80,7 @@ export class BubblePhysics {
 					{ isStatic: true },
 				),
 			]
+			if (gen !== this.initGeneration) return
 			this.Matter?.Composite.add(this.world, this.walls)
 		})().finally(() => {
 			this.initPromise = null
@@ -119,12 +122,17 @@ export class BubblePhysics {
 		for (const artist of artists) {
 			if (this.bubbleMap.has(artist.id)) continue
 
-			const body = this.Matter?.Bodies.circle(fromX, fromY, artist.radius, {
-				restitution: 0.6,
-				friction: 0.1,
-				frictionAir: 0.02,
-				density: 0.001,
-			})
+			const body = this.Matter?.Bodies.circle(
+				fromX,
+				fromY,
+				artist.radius,
+				{
+					restitution: 0.6,
+					friction: 0.1,
+					frictionAir: 0.02,
+					density: 0.001,
+				},
+			)
 
 			// Apply outward force for "pop" effect
 			const angle = Math.random() * Math.PI * 2
@@ -173,7 +181,10 @@ export class BubblePhysics {
 
 		for (const bubble of this.bubbleMap.values()) {
 			if (bubble.isSpawning) {
-				bubble.spawnProgress = Math.min(1, bubble.spawnProgress + delta * 0.004)
+				bubble.spawnProgress = Math.min(
+					1,
+					bubble.spawnProgress + delta * 0.004,
+				)
 				bubble.scale = easeOutBack(bubble.spawnProgress)
 				bubble.opacity = bubble.spawnProgress
 				if (bubble.spawnProgress >= 1) {
@@ -197,6 +208,7 @@ export class BubblePhysics {
 		this.Matter?.Composite.clear(this.world, false)
 		this.bubbleMap.clear()
 		this.walls = []
+		this.initGeneration++
 		this.initPromise = null
 	}
 
