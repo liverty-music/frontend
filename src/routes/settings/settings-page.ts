@@ -1,8 +1,63 @@
-import { resolve } from 'aurelia'
+import { ILogger, resolve } from 'aurelia'
+import { AreaSelectorSheet } from '../../components/area-selector-sheet/area-selector-sheet'
 import { IAuthService } from '../../services/auth-service'
+import { INotificationManager } from '../../services/notification-manager'
+import { IPushService } from '../../services/push-service'
+
+const NOTIFICATION_PREF_KEY = 'liverty-music:notifications-enabled'
 
 export class SettingsPage {
 	public readonly auth = resolve(IAuthService)
+	private readonly notificationManager = resolve(INotificationManager)
+	private readonly pushService = resolve(IPushService)
+	private readonly logger = resolve(ILogger).scopeTo('SettingsPage')
+
+	public currentArea: string | null = null
+	public notificationsEnabled = false
+	public areaSheet!: AreaSelectorSheet
+
+	public loading(): void {
+		this.currentArea = AreaSelectorSheet.getStoredArea()
+		const storedPref = localStorage.getItem(NOTIFICATION_PREF_KEY) === 'true'
+		// If the browser permission was revoked externally, override the stored preference
+		this.notificationsEnabled =
+			storedPref && this.notificationManager.permission === 'granted'
+	}
+
+	public openAreaSelector(): void {
+		this.areaSheet.open()
+	}
+
+	public onAreaSelected(area: string): void {
+		this.currentArea = area
+		this.logger.info('Area updated from settings', { area })
+	}
+
+	public async toggleNotifications(): Promise<void> {
+		const newValue = !this.notificationsEnabled
+
+		if (newValue) {
+			try {
+				await this.pushService.subscribe()
+				if (this.notificationManager.permission !== 'granted') {
+					this.logger.info('Notification permission not granted, keeping OFF')
+					return
+				}
+				this.notificationsEnabled = true
+				localStorage.setItem(NOTIFICATION_PREF_KEY, 'true')
+			} catch (err) {
+				this.logger.error('Failed to enable push notifications', err)
+			}
+		} else {
+			try {
+				await this.pushService.unsubscribe()
+			} catch (err) {
+				this.logger.error('Failed to unsubscribe push notifications', err)
+			}
+			this.notificationsEnabled = false
+			localStorage.setItem(NOTIFICATION_PREF_KEY, 'false')
+		}
+	}
 
 	public async signOut(): Promise<void> {
 		await this.auth.signOut()
