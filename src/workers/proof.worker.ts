@@ -5,8 +5,8 @@ export interface ProofRequest {
 	zkeyUrl: string
 	input: {
 		trapdoor: string
-		nullifierSecret: string
 		merkleRoot: string
+		eventId: string
 		pathElements: string[]
 		pathIndices: number[]
 	}
