@@ -3,6 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AreaSelectorSheet } from '../../src/components/area-selector-sheet/area-selector-sheet'
 import { createTestContainer } from '../helpers/create-container'
 
+function makeTouchEvent(clientY: number): TouchEvent {
+	return {
+		touches: [{ clientY }],
+		preventDefault: vi.fn(),
+	} as unknown as TouchEvent
+}
+
 describe('AreaSelectorSheet', () => {
 	let sut: AreaSelectorSheet
 	let mockElement: HTMLElement
@@ -107,10 +114,9 @@ describe('AreaSelectorSheet', () => {
 		})
 
 		it('should return drag offset when dragging', () => {
-			sut.isOpen = true
-			// Simulate drag via touch handlers
-			sut.onTouchStart({ touches: [{ clientY: 100 }] } as unknown as TouchEvent)
-			sut.onTouchMove({ touches: [{ clientY: 150 }] } as unknown as TouchEvent)
+			sut.open()
+			sut.onTouchStart(makeTouchEvent(100))
+			sut.onTouchMove(makeTouchEvent(150))
 
 			expect(sut.sheetTransform).toBe('transform: translateY(50px)')
 		})
@@ -119,25 +125,33 @@ describe('AreaSelectorSheet', () => {
 	describe('touch interactions', () => {
 		it('should ignore touch start when closed', () => {
 			sut.isOpen = false
-			sut.onTouchStart({ touches: [{ clientY: 100 }] } as unknown as TouchEvent)
-			sut.onTouchMove({ touches: [{ clientY: 200 }] } as unknown as TouchEvent)
-			// dragOffset should remain 0
+			sut.onTouchStart(makeTouchEvent(100))
+			sut.onTouchMove(makeTouchEvent(200))
 			expect(sut.sheetTransform).toBe('transform: translateY(100%)')
 		})
 
+		it('should call preventDefault on touchmove when dragging', () => {
+			sut.open()
+			sut.onTouchStart(makeTouchEvent(100))
+			const moveEvent = makeTouchEvent(150)
+			sut.onTouchMove(moveEvent)
+
+			expect(moveEvent.preventDefault).toHaveBeenCalled()
+		})
+
 		it('should dismiss when drag exceeds threshold', () => {
-			sut.isOpen = true
-			sut.onTouchStart({ touches: [{ clientY: 100 }] } as unknown as TouchEvent)
-			sut.onTouchMove({ touches: [{ clientY: 250 }] } as unknown as TouchEvent)
+			sut.open()
+			sut.onTouchStart(makeTouchEvent(100))
+			sut.onTouchMove(makeTouchEvent(250))
 			sut.onTouchEnd()
 
 			expect(sut.isOpen).toBe(false)
 		})
 
 		it('should snap back when drag is below threshold', () => {
-			sut.isOpen = true
-			sut.onTouchStart({ touches: [{ clientY: 100 }] } as unknown as TouchEvent)
-			sut.onTouchMove({ touches: [{ clientY: 150 }] } as unknown as TouchEvent)
+			sut.open()
+			sut.onTouchStart(makeTouchEvent(100))
+			sut.onTouchMove(makeTouchEvent(150))
 			sut.onTouchEnd()
 
 			expect(sut.isOpen).toBe(true)
@@ -145,26 +159,29 @@ describe('AreaSelectorSheet', () => {
 		})
 
 		it('should not allow negative drag offset', () => {
-			sut.isOpen = true
-			sut.onTouchStart({ touches: [{ clientY: 200 }] } as unknown as TouchEvent)
-			sut.onTouchMove({ touches: [{ clientY: 100 }] } as unknown as TouchEvent)
+			sut.open()
+			sut.onTouchStart(makeTouchEvent(200))
+			sut.onTouchMove(makeTouchEvent(100))
 
 			expect(sut.sheetTransform).toBe('')
 		})
 
-		it('should stop dragging if scrollable content has scroll position', () => {
-			sut.isOpen = true
+		it('should stop dragging and reset dragOffset if scrollable has scroll position', () => {
 			const scrollable = document.createElement('div')
 			scrollable.classList.add('overflow-y-auto')
 			Object.defineProperty(scrollable, 'scrollTop', { value: 10 })
 			mockElement.appendChild(scrollable)
 
-			sut.onTouchStart({ touches: [{ clientY: 100 }] } as unknown as TouchEvent)
-			sut.onTouchMove({ touches: [{ clientY: 250 }] } as unknown as TouchEvent)
+			// open() caches the scrollable element
+			sut.open()
+			sut.onTouchStart(makeTouchEvent(100))
+			sut.onTouchMove(makeTouchEvent(150))
+			// dragOffset should be reset even though we moved
+			sut.onTouchMove(makeTouchEvent(250))
 			sut.onTouchEnd()
 
-			// Should not dismiss because dragging was cancelled
 			expect(sut.isOpen).toBe(true)
+			expect(sut.sheetTransform).toBe('')
 		})
 	})
 })

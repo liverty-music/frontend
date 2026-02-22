@@ -36,6 +36,8 @@
       <button
         click.trigger="toggleNotifications()"
         disabled.bind="isTogglingNotifications"
+        role="switch"
+        aria-checked.bind="notificationsEnabled"
         class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition-colors disabled:opacity-60"
       >
         <div class="flex items-center gap-3">

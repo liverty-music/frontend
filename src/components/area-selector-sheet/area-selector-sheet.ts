@@ -37,8 +37,9 @@ export class AreaSelectorSheet {
 	private readonly logger = resolve(ILogger).scopeTo('AreaSelectorSheet')
 	private readonly element = resolve(INode) as HTMLElement
 	private touchStartY = 0
-	private isDragging = false
+	public isDragging = false
 	private dragOffset = 0
+	private scrollableEl: Element | null = null
 	private readonly DISMISS_THRESHOLD = 100
 
 	public static getStoredArea(): string | null {
@@ -50,6 +51,7 @@ export class AreaSelectorSheet {
 		this.selectedRegion = ''
 		this.prefectures = []
 		this.dragOffset = 0
+		this.scrollableEl = this.element.querySelector('.overflow-y-auto')
 	}
 
 	public close(): void {
@@ -89,11 +91,12 @@ export class AreaSelectorSheet {
 
 	public onTouchMove(e: TouchEvent): void {
 		if (!this.isDragging) return
-		const scrollable = this.element.querySelector('.overflow-y-auto')
-		if (scrollable && scrollable.scrollTop > 0) {
+		if (this.scrollableEl && this.scrollableEl.scrollTop > 0) {
 			this.isDragging = false
+			this.dragOffset = 0
 			return
 		}
+		e.preventDefault()
 		const deltaY = e.touches[0].clientY - this.touchStartY
 		this.dragOffset = Math.max(0, deltaY)
 	}

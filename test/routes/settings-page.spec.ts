@@ -82,10 +82,18 @@ describe('SettingsPage', () => {
 			expect(sut.currentArea).toBe('')
 		})
 
-		it('should load notification pref from localStorage', () => {
+		it('should enable when localStorage is true and permission is granted', () => {
 			localStorage.setItem('liverty-music:notification-enabled', 'true')
+			mockNotificationManager.permission = 'granted'
 			sut.attached()
 			expect(sut.notificationsEnabled).toBe(true)
+		})
+
+		it('should disable when localStorage is true but permission is revoked', () => {
+			localStorage.setItem('liverty-music:notification-enabled', 'true')
+			mockNotificationManager.permission = 'denied'
+			sut.attached()
+			expect(sut.notificationsEnabled).toBe(false)
 		})
 
 		it('should fall back to notification permission when no stored pref', () => {

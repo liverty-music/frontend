@@ -61,7 +61,8 @@ export class SettingsPage {
 
 	private loadNotificationPref(): boolean {
 		const stored = localStorage.getItem(NOTIFICATION_PREF_KEY)
-		if (stored !== null) return stored === 'true'
-		return this.notificationManager.permission === 'granted'
+		const hasPermission = this.notificationManager.permission === 'granted'
+		if (stored !== null) return stored === 'true' && hasPermission
+		return hasPermission
 	}
 }

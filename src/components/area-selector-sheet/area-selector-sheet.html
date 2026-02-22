@@ -11,7 +11,7 @@
     touchstart.trigger="onTouchStart($event)"
     touchmove.trigger="onTouchMove($event)"
     touchend.trigger="onTouchEnd()"
-    class="fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}"
+    class="fixed inset-x-0 bottom-0 z-50 ${isDragging ? '' : 'transition-transform duration-300 ease-out'} ${isOpen ? 'translate-y-0' : 'translate-y-full'}"
     style.bind="sheetTransform"
   >
     <div class="bg-surface-raised rounded-t-[var(--radius-sheet)] shadow-[var(--shadow-sheet)] max-h-[80vh] overflow-y-auto">
