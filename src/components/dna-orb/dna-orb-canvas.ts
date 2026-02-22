@@ -324,8 +324,7 @@ export class DnaOrbCanvas {
 		const y = body.position.y
 		const r = artist.radius * scale
 		const isFollowed =
-			this.showFollowedIndicator &&
-			this.discoveryService.isFollowed(artist.id)
+			this.showFollowedIndicator && this.discoveryService.isFollowed(artist.id)
 
 		if (r < 1 || opacity < 0.01) return
 
@@ -398,10 +397,7 @@ export class DnaOrbCanvas {
 			this.ctx.strokeStyle = 'white'
 			this.ctx.lineWidth = 2
 			this.ctx.beginPath()
-			this.ctx.moveTo(
-				x + r * 0.55 - checkSize * 0.3,
-				y - r * 0.55,
-			)
+			this.ctx.moveTo(x + r * 0.55 - checkSize * 0.3, y - r * 0.55)
 			this.ctx.lineTo(
 				x + r * 0.55 - checkSize * 0.05,
 				y - r * 0.55 + checkSize * 0.25,

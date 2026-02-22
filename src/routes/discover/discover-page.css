@@ -257,7 +257,11 @@
 	width: 2.5rem;
 	height: 2.5rem;
 	border-radius: 50%;
-	background: linear-gradient(135deg, rgba(99 102 241 / 60%), rgba(168 85 247 / 60%));
+	background: linear-gradient(
+		135deg,
+		rgba(99 102 241 / 60%),
+		rgba(168 85 247 / 60%)
+	);
 	display: flex;
 	align-items: center;
 	justify-content: center;
