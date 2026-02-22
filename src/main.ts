@@ -1,6 +1,6 @@
 import { RouterConfiguration } from '@aurelia/router'
 import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
-import { AuthStatus } from './components/auth-status'
+import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { AuthHook } from './hooks/auth-hook'
 import { IToastService } from './components/toast-notification/toast-notification'
 import { MyApp } from './my-app'
@@ -40,8 +40,7 @@ Aurelia
 	.register(INotificationManager)
 	.register(IPushService)
 	.register(IToastService)
-	// Register components globally or locally. Global is easier for AuthStatus used in shell.
-	.register(AuthStatus)
+	.register(BottomNavBar)
 	.register(AuthHook)
 	// To use HTML5 pushState routes, replace previous line with the following
 	// customized router config.

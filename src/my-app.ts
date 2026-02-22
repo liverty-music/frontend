@@ -41,6 +41,21 @@ import { resolve } from 'aurelia'
 			component: import('./routes/dashboard'),
 			title: 'Concert',
 		},
+		{
+			path: 'discover',
+			component: import('./routes/discover/discover-page'),
+			title: 'Discover',
+		},
+		{
+			path: 'my-artists',
+			component: import('./routes/my-artists/my-artists-page'),
+			title: 'My Artists',
+		},
+		{
+			path: 'settings',
+			component: import('./routes/settings/settings-page'),
+			title: 'Settings',
+		},
 	],
 })
 export class MyApp {
@@ -54,10 +69,19 @@ export class MyApp {
 		'auth/callback',
 	]
 
+	public get currentPath(): string {
+		const tree = (
+			this.router as IRouter & {
+				routeTree?: {
+					root?: { children?: Array<{ computeAbsolutePath?: () => string }> }
+				}
+			}
+		).routeTree
+		return tree?.root?.children?.[0]?.computeAbsolutePath?.() ?? ''
+	}
+
 	public get showNav(): boolean {
-		const path =
-			(this.router as IRouter & { activeNavigation?: { path: string } })
-				.activeNavigation?.path ?? ''
-		return !this.fullscreenRoutes.some((r) => path === r || path === `/${r}`)
+		const path = this.currentPath
+		return !this.fullscreenRoutes.some((r) => path === r)
 	}
 }
