@@ -49,6 +49,7 @@
           touchstart.trigger="onTouchStart(artist, $event)"
           touchmove.trigger="onTouchMove($event)"
           touchend.trigger="onTouchEnd()"
+          touchcancel.trigger="onTouchEnd()"
           class="relative flex items-center gap-3 px-4 py-3.5 bg-surface-raised border border-white/10 transition-transform ${swipedArtistId === artist.id && swipeOffset < 0 ? '' : 'transition-transform duration-200'}"
           style="transform: translateX(${swipedArtistId === artist.id ? swipeOffset : 0}px)"
         >
@@ -70,7 +71,7 @@
     if.bind="undoVisible"
     class="absolute bottom-16 left-4 right-4 bg-surface-overlay border border-white/10 rounded-[var(--radius-card)] px-4 py-3 flex items-center justify-between shadow-lg"
   >
-    <span class="text-sm text-text-primary">${undoArtist.name} unfollowed</span>
+    <span class="text-sm text-text-primary">${undoArtist?.name} unfollowed</span>
     <button
       click.trigger="undo()"
       class="text-sm font-semibold text-brand-primary hover:text-brand-primary/80 transition-colors ml-4"

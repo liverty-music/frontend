@@ -76,6 +76,7 @@ export class MyArtistsPage {
 	// --- Swipe-to-unfollow ---
 
 	public onTouchStart(artist: FollowedArtist, e: TouchEvent): void {
+		if (this.swipeTarget) return
 		this.touchStartX = e.touches[0].clientX
 		this.touchStartY = e.touches[0].clientY
 		this.isSwiping = false
