@@ -63,7 +63,11 @@ export class DashboardService {
 			if (result.status === 'fulfilled') {
 				const artist = artists[i]
 				for (const concert of result.value) {
-					const event = this.concertToLiveEvent(concert, artist.name, artist.isMustGo)
+					const event = this.concertToLiveEvent(
+						concert,
+						artist.name,
+						artist.isMustGo,
+					)
 					if (event) results.push(event)
 				}
 			}
