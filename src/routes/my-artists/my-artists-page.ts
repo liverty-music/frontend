@@ -69,7 +69,7 @@ export class MyArtistsPage {
 	public detaching(): void {
 		this.abortController?.abort()
 		this.abortController = null
-		this.clearUndoTimer()
+		this.commitPendingUnfollow()
 		this.clearLongPressTimer()
 	}
 
