@@ -36,6 +36,11 @@ import { resolve } from 'aurelia'
 			component: import('./routes/dashboard'),
 			title: 'Dashboard',
 		},
+		{
+			path: 'concerts/:id',
+			component: import('./routes/dashboard'),
+			title: 'Concert',
+		},
 	],
 })
 export class MyApp {

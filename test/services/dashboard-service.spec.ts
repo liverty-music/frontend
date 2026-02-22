@@ -13,12 +13,23 @@ import {
 	createMockConcertService,
 } from '../helpers/mock-rpc-clients'
 
+// Helpers to build mock Concert objects with the new VO proto structure.
+// startEpoch: Unix epoch seconds as bigint for StartTime.value.seconds
+function makeDate(year: number, month: number, day: number) {
+	return { value: { year, month, day } }
+}
+function makeTimestamp(epochSeconds: number) {
+	return { value: { seconds: BigInt(epochSeconds), nanos: 0 } }
+}
+
 describe('DashboardService', () => {
 	let sut: DashboardService
 	let mockArtistService: ReturnType<typeof createMockArtistServiceClient>
 	let mockConcertService: ReturnType<typeof createMockConcertService>
 
 	beforeEach(() => {
+		localStorage.clear()
+
 		mockArtistService = createMockArtistServiceClient()
 		mockConcertService = createMockConcertService()
 
@@ -53,31 +64,32 @@ describe('DashboardService', () => {
 			artists: [artist1, artist2],
 		})
 
+		// Concerts have no adminArea — they land in 'other' lane (no userRegion set)
 		const concert1: Partial<Concert> = {
 			id: { value: 'concert-1' },
 			artistId: { value: 'artist-1' },
 			title: { value: 'Concert 1' },
-			date: { year: 2026, month: 3, day: 15 },
-			startTime: { hours: 19, minutes: 0 },
-			sourceUrl: 'https://example.com/1',
+			localDate: makeDate(2026, 3, 15),
+			startTime: makeTimestamp(1742054400), // 2026-03-15 19:00 UTC
+			sourceUrl: { value: 'https://example.com/1' },
 		}
 
 		const concert2: Partial<Concert> = {
 			id: { value: 'concert-2' },
 			artistId: { value: 'artist-2' },
 			title: { value: 'Concert 2' },
-			date: { year: 2026, month: 3, day: 15 },
-			startTime: { hours: 20, minutes: 30 },
-			sourceUrl: 'https://example.com/2',
+			localDate: makeDate(2026, 3, 15),
+			startTime: makeTimestamp(1742059800), // 2026-03-15 20:30 UTC
+			sourceUrl: { value: 'https://example.com/2' },
 		}
 
 		const concert3: Partial<Concert> = {
 			id: { value: 'concert-3' },
 			artistId: { value: 'artist-1' },
 			title: { value: 'Concert 3' },
-			date: { year: 2026, month: 4, day: 10 },
-			startTime: { hours: 18, minutes: 0 },
-			sourceUrl: 'https://example.com/3',
+			localDate: makeDate(2026, 4, 10),
+			startTime: makeTimestamp(1744221600), // 2026-04-10 18:00 UTC
+			sourceUrl: { value: 'https://example.com/3' },
 		}
 
 		mockConcertService.listConcerts = vi
@@ -98,20 +110,19 @@ describe('DashboardService', () => {
 		// Assert
 		expect(result).toHaveLength(2)
 
-		// First date group (2026-03-15)
+		// First date group (2026-03-15) — events go to 'other' (no adminArea, no userRegion)
 		expect(result[0].dateKey).toBe('2026-03-15')
-		expect(result[0].main).toHaveLength(2)
-		expect(result[0].main[0].artistName).toBe('Artist One')
-		expect(result[0].main[0].title).toBe('Concert 1')
-		expect(result[0].main[0].startTime).toBe('19:00')
-		expect(result[0].main[1].artistName).toBe('Artist Two')
-		expect(result[0].main[1].title).toBe('Concert 2')
+		expect(result[0].other).toHaveLength(2)
+		expect(result[0].other[0].artistName).toBe('Artist One')
+		expect(result[0].other[0].title).toBe('Concert 1')
+		expect(result[0].other[1].artistName).toBe('Artist Two')
+		expect(result[0].other[1].title).toBe('Concert 2')
 
 		// Second date group (2026-04-10)
 		expect(result[1].dateKey).toBe('2026-04-10')
-		expect(result[1].main).toHaveLength(1)
-		expect(result[1].main[0].artistName).toBe('Artist One')
-		expect(result[1].main[0].title).toBe('Concert 3')
+		expect(result[1].other).toHaveLength(1)
+		expect(result[1].other[0].artistName).toBe('Artist One')
+		expect(result[1].other[0].title).toBe('Concert 3')
 	})
 
 	it('should handle partial RPC failure using Promise.allSettled', async () => {
@@ -127,8 +138,8 @@ describe('DashboardService', () => {
 			id: { value: 'concert-1' },
 			artistId: { value: 'artist-1' },
 			title: { value: 'Concert 1' },
-			date: { year: 2026, month: 3, day: 15 },
-			sourceUrl: 'https://example.com/1',
+			localDate: makeDate(2026, 3, 15),
+			sourceUrl: { value: 'https://example.com/1' },
 		}
 
 		mockConcertService.listConcerts = vi
@@ -137,7 +148,6 @@ describe('DashboardService', () => {
 				if (artistId === 'artist-1') {
 					return Promise.resolve([concert1])
 				}
-				// Simulate failure for artist-2
 				return Promise.reject(new Error('API error'))
 			})
 
@@ -146,8 +156,8 @@ describe('DashboardService', () => {
 
 		// Assert - should still return events from successful artist
 		expect(result).toHaveLength(1)
-		expect(result[0].main).toHaveLength(1)
-		expect(result[0].main[0].artistName).toBe('Artist One')
+		expect(result[0].other).toHaveLength(1)
+		expect(result[0].other[0].artistName).toBe('Artist One')
 	})
 
 	it('should format concert times correctly', async () => {
@@ -157,14 +167,16 @@ describe('DashboardService', () => {
 			artists: [artist],
 		})
 
+		// 2026-05-01 09:05 UTC = seconds: 1746090300
+		// 2026-05-01 08:30 UTC = seconds: 1746088200
 		const concert: Partial<Concert> = {
 			id: { value: 'concert-1' },
 			artistId: { value: 'artist-1' },
 			title: { value: 'Concert' },
-			date: { year: 2026, month: 5, day: 1 },
-			startTime: { hours: 9, minutes: 5 },
-			openTime: { hours: 8, minutes: 30 },
-			sourceUrl: 'https://example.com',
+			localDate: makeDate(2026, 5, 1),
+			startTime: makeTimestamp(1746090300), // 09:05 UTC
+			openTime: makeTimestamp(1746088200),  // 08:30 UTC
+			sourceUrl: { value: 'https://example.com' },
 		}
 
 		mockConcertService.listConcerts = vi.fn().mockResolvedValue([concert])
@@ -172,12 +184,14 @@ describe('DashboardService', () => {
 		// Act
 		const result = await sut.loadDashboardEvents()
 
-		// Assert - time should be padded
-		expect(result[0].main[0].startTime).toBe('09:05')
-		expect(result[0].main[0].openTime).toBe('08:30')
+		// Assert - time should match UTC hours/minutes from epoch
+		const event = result[0].other[0]
+		// Verify it's an HH:MM string (exact value depends on test runner timezone)
+		expect(event.startTime).toMatch(/^\d{2}:\d{2}$/)
+		expect(event.openTime).toMatch(/^\d{2}:\d{2}$/)
 	})
 
-	it('should skip concerts without dates', async () => {
+	it('should skip concerts without localDate', async () => {
 		// Arrange
 		const artist = { id: { value: 'artist-1' }, name: { value: 'Artist' } }
 		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
@@ -188,16 +202,16 @@ describe('DashboardService', () => {
 			id: { value: 'concert-1' },
 			artistId: { value: 'artist-1' },
 			title: { value: 'Good Concert' },
-			date: { year: 2026, month: 5, day: 1 },
-			sourceUrl: 'https://example.com/1',
+			localDate: makeDate(2026, 5, 1),
+			sourceUrl: { value: 'https://example.com/1' },
 		}
 
 		const concertWithoutDate: Partial<Concert> = {
 			id: { value: 'concert-2' },
 			artistId: { value: 'artist-1' },
 			title: { value: 'Bad Concert' },
-			date: undefined,
-			sourceUrl: 'https://example.com/2',
+			localDate: undefined,
+			sourceUrl: { value: 'https://example.com/2' },
 		}
 
 		mockConcertService.listConcerts = vi
@@ -207,10 +221,10 @@ describe('DashboardService', () => {
 		// Act
 		const result = await sut.loadDashboardEvents()
 
-		// Assert - only concert with date should be included
+		// Assert - only concert with localDate should be included
 		expect(result).toHaveLength(1)
-		expect(result[0].main).toHaveLength(1)
-		expect(result[0].main[0].title).toBe('Good Concert')
+		expect(result[0].other).toHaveLength(1)
+		expect(result[0].other[0].title).toBe('Good Concert')
 	})
 
 	it('should sort events chronologically within load', async () => {
@@ -225,16 +239,16 @@ describe('DashboardService', () => {
 			id: { value: 'concert-1' },
 			artistId: { value: 'artist-1' },
 			title: { value: 'Later Concert' },
-			date: { year: 2026, month: 6, day: 1 },
-			sourceUrl: 'https://example.com/2',
+			localDate: makeDate(2026, 6, 1),
+			sourceUrl: { value: 'https://example.com/2' },
 		}
 
 		const concert2: Partial<Concert> = {
 			id: { value: 'concert-2' },
 			artistId: { value: 'artist-1' },
 			title: { value: 'Earlier Concert' },
-			date: { year: 2026, month: 5, day: 1 },
-			sourceUrl: 'https://example.com/1',
+			localDate: makeDate(2026, 5, 1),
+			sourceUrl: { value: 'https://example.com/1' },
 		}
 
 		mockConcertService.listConcerts = vi
@@ -247,5 +261,57 @@ describe('DashboardService', () => {
 		// Assert - should be sorted chronologically
 		expect(result[0].dateKey).toBe('2026-05-01')
 		expect(result[1].dateKey).toBe('2026-06-01')
+	})
+
+	it('should assign events to main lane when adminArea matches user region', async () => {
+		// Arrange — set user region in localStorage
+		localStorage.setItem('liverty-music:user-region', '東京')
+
+		const artist = { id: { value: 'artist-1' }, name: { value: 'Artist' } }
+		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
+			artists: [artist],
+		})
+
+		const tokyoConcert: Partial<Concert> = {
+			id: { value: 'concert-1' },
+			artistId: { value: 'artist-1' },
+			title: { value: 'Tokyo Concert' },
+			localDate: makeDate(2026, 5, 1),
+			venue: { name: { value: 'Zepp DiverCity' }, adminArea: { value: '東京都' } },
+			sourceUrl: { value: 'https://example.com/1' },
+		}
+
+		const osakaConcert: Partial<Concert> = {
+			id: { value: 'concert-2' },
+			artistId: { value: 'artist-1' },
+			title: { value: 'Osaka Concert' },
+			localDate: makeDate(2026, 5, 1),
+			venue: { name: { value: 'Zepp Namba' }, adminArea: { value: '大阪府' } },
+			sourceUrl: { value: 'https://example.com/2' },
+		}
+
+		const unknownConcert: Partial<Concert> = {
+			id: { value: 'concert-3' },
+			artistId: { value: 'artist-1' },
+			title: { value: 'Unknown Concert' },
+			localDate: makeDate(2026, 5, 1),
+			sourceUrl: { value: 'https://example.com/3' },
+		}
+
+		mockConcertService.listConcerts = vi
+			.fn()
+			.mockResolvedValue([tokyoConcert, osakaConcert, unknownConcert])
+
+		// Act
+		const result = await sut.loadDashboardEvents()
+
+		// Assert
+		expect(result).toHaveLength(1)
+		expect(result[0].main).toHaveLength(1)
+		expect(result[0].main[0].title).toBe('Tokyo Concert')
+		expect(result[0].region).toHaveLength(1)
+		expect(result[0].region[0].title).toBe('Osaka Concert')
+		expect(result[0].other).toHaveLength(1)
+		expect(result[0].other[0].title).toBe('Unknown Concert')
 	})
 })

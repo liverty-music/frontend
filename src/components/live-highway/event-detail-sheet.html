@@ -57,6 +57,7 @@
             <span class="text-text-muted mt-0.5"><icon-map-pin></icon-map-pin></span>
             <div>
               <p class="text-text-primary font-medium">${event.venueName}</p>
+              <p if.bind="event.adminArea" class="text-text-secondary text-sm">${event.adminArea}</p>
               <a
                 href.bind="googleMapsUrl"
                 target="_blank"

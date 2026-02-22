@@ -4,6 +4,7 @@ import type {
 	DateGroup,
 	LiveEvent,
 } from '../components/live-highway/live-event'
+import { RegionSetupSheet } from '../components/region-setup-sheet/region-setup-sheet'
 import { IArtistServiceClient } from './artist-service-client'
 import { IConcertService } from './concert-service'
 
@@ -79,33 +80,40 @@ export class DashboardService {
 		concert: Concert,
 		artistName: string,
 	): LiveEvent | null {
-		const date = concert.date
-		if (!date) return null
+		const localDate = concert.localDate?.value
+		if (!localDate) return null
 
-		const jsDate = new Date(date.year, date.month - 1, date.day)
-		const startTime = concert.startTime
-			? `${String(concert.startTime.hours).padStart(2, '0')}:${String(concert.startTime.minutes).padStart(2, '0')}`
+		const jsDate = new Date(localDate.year, localDate.month - 1, localDate.day)
+
+		const startTime = concert.startTime?.value
+			? timestampToTimeString(Number(concert.startTime.value.seconds))
 			: ''
-		const openTime = concert.openTime
-			? `${String(concert.openTime.hours).padStart(2, '0')}:${String(concert.openTime.minutes).padStart(2, '0')}`
+		const openTime = concert.openTime?.value
+			? timestampToTimeString(Number(concert.openTime.value.seconds))
 			: undefined
+
+		const venueName =
+			concert.venue?.name?.value ?? concert.listedVenueName?.value ?? ''
+		const adminArea = concert.venue?.adminArea?.value
 
 		return {
 			id: concert.id?.value ?? '',
 			artistName,
 			artistId: concert.artistId?.value ?? '',
-			venueName: 'Venue TBD',
-			locationLabel: '',
+			venueName,
+			locationLabel: adminArea ?? '',
+			adminArea,
 			date: jsDate,
 			startTime,
 			openTime,
 			title: concert.title?.value ?? '',
-			sourceUrl: concert.sourceUrl ?? '',
+			sourceUrl: concert.sourceUrl?.value ?? '',
 		}
 	}
 
 	private groupByDate(events: LiveEvent[]): DateGroup[] {
 		const groups = new Map<string, DateGroup>()
+		const userRegion = RegionSetupSheet.getStoredRegion()
 
 		for (const event of events) {
 			const dateKey = [
@@ -131,12 +139,33 @@ export class DashboardService {
 				groups.set(dateKey, group)
 			}
 
-			// MVP: assign all events to main lane since venue location data is not yet available
-			group.main.push(event)
+			const lane = assignLane(event.adminArea, userRegion)
+			group[lane].push(event)
 		}
 
 		return Array.from(groups.values()).sort((a, b) =>
 			a.dateKey.localeCompare(b.dateKey),
 		)
 	}
+}
+
+// assignLane determines which dashboard lane an event belongs to.
+// - main: event adminArea matches the user's stored region
+// - region: event has an adminArea but differs from the user's region
+// - other: event has no adminArea
+function assignLane(
+	adminArea: string | undefined,
+	userRegion: string | null,
+): 'main' | 'region' | 'other' {
+	if (!adminArea) return 'other'
+	if (!userRegion) return 'region'
+	// Normalize: strip trailing 県/都/道/府 before comparing
+	const normalize = (s: string) => s.replace(/[県都道府]$/, '')
+	return normalize(adminArea) === normalize(userRegion) ? 'main' : 'region'
+}
+
+// timestampToTimeString converts Unix epoch seconds to a local "HH:MM" string.
+function timestampToTimeString(epochSeconds: number): string {
+	const d = new Date(epochSeconds * 1000)
+	return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
