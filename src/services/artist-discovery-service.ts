@@ -46,7 +46,9 @@ export class ArtistDiscoveryService {
 		tag = '',
 	): Promise<void> {
 		this.logger.info('Loading initial artists', { country, tag })
-		const resp = await this.artistClient.listTop({ country, tag })
+		// NOTE: `tag` field requires BSR proto publish (specification#73).
+		// Once ListTopRequest includes `tag`, add it to the request object.
+		const resp = await this.artistClient.listTop({ country })
 		const bubbles = resp.artists.map((a) => this.toBubble(a))
 		this.availableBubbles = bubbles
 		for (const b of this.availableBubbles) {
@@ -63,7 +65,8 @@ export class ArtistDiscoveryService {
 		for (const f of this.followedArtists) {
 			this.seenArtistNames.add(f.name.toLowerCase())
 		}
-		const resp = await this.artistClient.listTop({ country, tag })
+		// NOTE: `tag` field requires BSR proto publish (specification#73).
+		const resp = await this.artistClient.listTop({ country })
 		const bubbles = resp.artists.map((a) => this.toBubble(a))
 		this.availableBubbles = bubbles
 		for (const b of this.availableBubbles) {

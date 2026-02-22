@@ -301,6 +301,10 @@
 	height: 1.125rem;
 }
 
+.follow-button:disabled {
+	opacity: 0.8;
+}
+
 .follow-button:hover:not(:disabled) {
 	background: rgba(99 102 241 / 80%);
 	transform: scale(1.1);
@@ -310,8 +314,4 @@
 	background: rgba(74 222 128 / 30%);
 	color: rgba(74 222 128 / 90%);
 	cursor: default;
-}
-
-.follow-button:disabled {
-	opacity: 0.8;
 }
