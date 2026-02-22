@@ -10,11 +10,18 @@ import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
 import { IDashboardService } from './services/dashboard-service'
 import { IEntryService } from './services/entry-service'
+import { IErrorBoundaryService } from './services/error-boundary-service'
+import { GlobalErrorHandlingTask } from './services/global-error-handler'
 import { INotificationManager } from './services/notification-manager'
+import { initOtel } from './services/otel-init'
+import { OtelLogSink } from './services/otel-log-sink'
 import { IProofService } from './services/proof-service'
 import { IPushService } from './services/push-service'
 import { ITicketService } from './services/ticket-service'
 import { IUserService } from './services/user-service'
+
+// Initialize OpenTelemetry before Aurelia startup
+initOtel()
 
 // Css files imported in this main file should be imported with ?inline query
 // to get CSS as string for sharedStyles in shadowDOM.
@@ -27,13 +34,19 @@ Aurelia
     sharedStyles: [shared]
   }))
   */
-	.register(RouterConfiguration)
+	.register(
+		RouterConfiguration.customize({
+			restorePreviousRouteTreeOnError: !import.meta.env.DEV,
+		}),
+	)
 	.register(
 		LoggerConfiguration.create({
 			level: LogLevel.debug,
-			sinks: [ConsoleSink],
+			sinks: [ConsoleSink, OtelLogSink],
 		}),
 	)
+	.register(IErrorBoundaryService)
+	.register(GlobalErrorHandlingTask)
 	.register(IAuthService)
 	.register(IUserService)
 	.register(IArtistServiceClient)
