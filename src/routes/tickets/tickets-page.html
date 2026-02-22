@@ -92,7 +92,7 @@
   </div>
 
   <!-- QR Code modal -->
-  <div if.bind="qrDataUrl" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title" keydown.trigger="$event.key === 'Escape' && dismissQr()" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div if.bind="qrDataUrl" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title" tabindex="-1" ref="qrModal" keydown.trigger="$event.key === 'Escape' && dismissQr()" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 p-6 mx-4 max-w-sm w-full text-center">
       <h2 id="qr-modal-title" class="font-display text-lg font-bold text-text-primary">Entry Code</h2>
       <p class="mt-1 text-xs text-text-muted">Present this QR code at the venue entrance.</p>

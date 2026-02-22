@@ -13,6 +13,7 @@ export class TicketsPage {
 	public proofProgress = ''
 	public qrDataUrl = ''
 	public generatingTicketId = ''
+	public qrModal: HTMLElement | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('TicketsPage')
 	private readonly ticketService = resolve(ITicketService)
@@ -84,8 +85,8 @@ export class TicketsPage {
 
 			const payload = JSON.stringify({
 				eventId,
-				proof: proofOutput.proofJson,
-				publicSignals: proofOutput.publicSignalsJson,
+				proof: JSON.parse(proofOutput.proofJson),
+				publicSignals: JSON.parse(proofOutput.publicSignalsJson),
 			})
 			const encoded = btoa(payload)
 
@@ -97,6 +98,9 @@ export class TicketsPage {
 
 			this.proofProgress = ''
 			this.logger.info('Entry code generated', { eventId })
+
+			// Focus the modal for keyboard accessibility
+			requestAnimationFrame(() => this.qrModal?.focus())
 		} catch (err) {
 			if ((err as Error).name !== 'AbortError') {
 				this.logger.error('Proof generation failed', { error: err })
