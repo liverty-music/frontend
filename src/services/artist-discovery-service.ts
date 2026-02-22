@@ -170,9 +170,9 @@ export class ArtistDiscoveryService {
 		this.logger.info('Fetching followed artists from backend')
 		try {
 			const resp = await this.artistClient.listFollowed({}, { signal })
-			const bubbles = resp.artists
-				.filter((fa) => fa.artist != null)
-				.map((fa) => this.toBubble(fa.artist!))
+			const bubbles = resp.artists.flatMap((fa) =>
+				fa.artist ? [this.toBubble(fa.artist)] : [],
+			)
 			this.logger.info('Followed artists fetched', {
 				count: bubbles.length,
 			})
