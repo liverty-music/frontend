@@ -1,4 +1,4 @@
-import { DI, ILogger, LoggerConfiguration, LogLevel } from 'aurelia'
+import { DI, LoggerConfiguration, LogLevel } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AreaSelectorSheet } from '../../src/components/area-selector-sheet/area-selector-sheet'
 import { REGION_STORAGE_KEY } from '../../src/components/region-setup-sheet/region-setup-sheet'
@@ -9,9 +9,7 @@ describe('AreaSelectorSheet', () => {
 	beforeEach(() => {
 		localStorage.clear()
 		const container = DI.createContainer()
-		container.register(
-			LoggerConfiguration.create({ level: LogLevel.none }),
-		)
+		container.register(LoggerConfiguration.create({ level: LogLevel.none }))
 		container.register(AreaSelectorSheet)
 		sut = container.get(AreaSelectorSheet)
 	})
