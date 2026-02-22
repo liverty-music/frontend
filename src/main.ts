@@ -1,8 +1,8 @@
 import { RouterConfiguration } from '@aurelia/router'
 import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
-import { AuthHook } from './hooks/auth-hook'
 import { IToastService } from './components/toast-notification/toast-notification'
+import { AuthHook } from './hooks/auth-hook'
 import { MyApp } from './my-app'
 import { IArtistDiscoveryService } from './services/artist-discovery-service'
 import { IArtistServiceClient } from './services/artist-service-client'
@@ -11,6 +11,7 @@ import { IConcertService } from './services/concert-service'
 import { IDashboardService } from './services/dashboard-service'
 import { INotificationManager } from './services/notification-manager'
 import { IPushService } from './services/push-service'
+import { ITicketService } from './services/ticket-service'
 import { IUserService } from './services/user-service'
 
 // Css files imported in this main file should be imported with ?inline query
@@ -39,6 +40,7 @@ Aurelia
 	.register(IDashboardService)
 	.register(INotificationManager)
 	.register(IPushService)
+	.register(ITicketService)
 	.register(IToastService)
 	.register(BottomNavBar)
 	.register(AuthHook)

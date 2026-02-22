@@ -52,6 +52,11 @@ import { resolve } from 'aurelia'
 			title: 'My Artists',
 		},
 		{
+			path: 'tickets',
+			component: import('./routes/tickets/tickets-page'),
+			title: 'My Tickets',
+		},
+		{
 			path: 'settings',
 			component: import('./routes/settings/settings-page'),
 			title: 'Settings',
