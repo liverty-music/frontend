@@ -1,15 +1,7 @@
 <div class="min-h-screen bg-surface-base text-text-primary">
-  <nav if.bind="showNav" class="bg-surface-raised border-b border-white/10">
-    <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center gap-6">
-        <span class="font-display text-lg font-bold text-text-primary tracking-tight">Liverty Music</span>
-        <a href="dashboard" class="text-sm font-medium text-text-secondary hover:text-brand-accent transition-colors">Dashboard</a>
-      </div>
-      <auth-status></auth-status>
-    </div>
-  </nav>
-
-  <main class="${showNav ? 'max-w-5xl mx-auto' : ''}">
+  <main>
     <au-viewport></au-viewport>
   </main>
+
+  <bottom-nav-bar if.bind="showNav"></bottom-nav-bar>
 </div>
