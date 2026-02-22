@@ -22,8 +22,7 @@ export class PushServiceClient {
 	)
 
 	// VAPID public key injected via Vite build environment variable
-	private readonly vapidPublicKey =
-		import.meta.env.VITE_VAPID_PUBLIC_KEY ?? ''
+	private readonly vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY ?? ''
 
 	public async subscribe(): Promise<void> {
 		if (!this.vapidPublicKey) {
@@ -82,14 +81,9 @@ export class PushServiceClient {
 
 		try {
 			await this.pushClient.unsubscribe({})
-			this.logger.info(
-				'Push subscription removed from backend successfully',
-			)
+			this.logger.info('Push subscription removed from backend successfully')
 		} catch (err) {
-			this.logger.error(
-				'Failed to remove push subscription from backend',
-				err,
-			)
+			this.logger.error('Failed to remove push subscription from backend', err)
 			throw err
 		}
 	}
