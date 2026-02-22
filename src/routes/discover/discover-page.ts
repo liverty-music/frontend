@@ -61,10 +61,7 @@ export class DiscoverPage {
 
 	public detaching(): void {
 		this.abortController.abort()
-		document.removeEventListener(
-			'visibilitychange',
-			this.onVisibilityChange,
-		)
+		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		window.clearTimeout(this.searchDebounceTimer)
 	}
 
@@ -85,9 +82,7 @@ export class DiscoverPage {
 			try {
 				await this.discoveryService.reloadWithTag('')
 				if (this.abortController.signal.aborted) return
-				this.dnaOrbCanvas.reloadBubbles(
-					this.discoveryService.availableBubbles,
-				)
+				this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
 			} finally {
 				this.isLoadingTag = false
 			}
@@ -101,9 +96,7 @@ export class DiscoverPage {
 		try {
 			await this.discoveryService.reloadWithTag(tag.toLowerCase())
 			if (this.abortController.signal.aborted) return
-			this.dnaOrbCanvas.reloadBubbles(
-				this.discoveryService.availableBubbles,
-			)
+			this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
 		} catch (err) {
 			this.activeTag = ''
 			this.logger.warn('Failed to load genre artists', err)
@@ -177,14 +170,10 @@ export class DiscoverPage {
 		if (this.abortController.signal.aborted) return
 
 		try {
-			const hasEvents = await this.discoveryService.checkLiveEvents(
-				artist.name,
-			)
+			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
-				this.toastService.show(
-					`${artist.name} has upcoming live events!`,
-				)
+				this.toastService.show(`${artist.name} has upcoming live events!`)
 			}
 		} catch (err) {
 			this.logger.warn('Failed to check live events', err)
@@ -202,14 +191,10 @@ export class DiscoverPage {
 		if (this.abortController.signal.aborted) return
 
 		try {
-			const hasEvents = await this.discoveryService.checkLiveEvents(
-				artist.name,
-			)
+			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
-				this.toastService.show(
-					`${artist.name} has upcoming live events!`,
-				)
+				this.toastService.show(`${artist.name} has upcoming live events!`)
 			}
 		} catch (err) {
 			this.logger.warn('Failed to check live events', err)

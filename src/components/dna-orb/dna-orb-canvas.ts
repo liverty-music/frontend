@@ -160,10 +160,7 @@ export class DnaOrbCanvas {
 		const touch = e.touches[0]
 		if (!touch) return
 		const rect = this.canvas.getBoundingClientRect()
-		this.handleInteraction(
-			touch.clientX - rect.left,
-			touch.clientY - rect.top,
-		)
+		this.handleInteraction(touch.clientX - rect.left, touch.clientY - rect.top)
 	}
 
 	private readonly onKeyDown = (e: KeyboardEvent): void => {
@@ -174,8 +171,7 @@ export class DnaOrbCanvas {
 			case 'ArrowRight':
 			case 'ArrowDown': {
 				e.preventDefault()
-				this.focusedBubbleIndex =
-					(this.focusedBubbleIndex + 1) % bubbles.length
+				this.focusedBubbleIndex = (this.focusedBubbleIndex + 1) % bubbles.length
 				break
 			}
 			case 'ArrowLeft':
@@ -335,8 +331,7 @@ export class DnaOrbCanvas {
 		const y = body.position.y
 		const r = artist.radius * scale
 		const isFollowed =
-			this.showFollowedIndicator &&
-			this.discoveryService.isFollowed(artist.id)
+			this.showFollowedIndicator && this.discoveryService.isFollowed(artist.id)
 
 		if (r < 1 || opacity < 0.01) return
 

@@ -17,9 +17,8 @@ export interface ArtistBubble {
 }
 
 export const IArtistDiscoveryService =
-	DI.createInterface<IArtistDiscoveryService>(
-		'IArtistDiscoveryService',
-		(x) => x.singleton(ArtistDiscoveryService),
+	DI.createInterface<IArtistDiscoveryService>('IArtistDiscoveryService', (x) =>
+		x.singleton(ArtistDiscoveryService),
 	)
 
 export interface IArtistDiscoveryService extends ArtistDiscoveryService {}
@@ -43,10 +42,7 @@ export class ArtistDiscoveryService {
 	private readonly seenArtistNames = new Set<string>()
 	private readonly followedIds = new Set<string>()
 
-	public async loadInitialArtists(
-		country = 'Japan',
-		tag = '',
-	): Promise<void> {
+	public async loadInitialArtists(country = 'Japan', tag = ''): Promise<void> {
 		this.logger.info('Loading initial artists', { country, tag })
 		this.seenArtistNames.clear()
 		for (const f of this.followedArtists) {
@@ -111,9 +107,7 @@ export class ArtistDiscoveryService {
 		// Fire-and-forget: persist follow to backend without blocking UI
 		this.artistClient
 			.follow({ artistId: new ArtistId({ value: artist.id }) })
-			.catch((err) =>
-				this.logger.error('Failed to follow artist via RPC', err),
-			)
+			.catch((err) => this.logger.error('Failed to follow artist via RPC', err))
 
 		this.logger.info('Artist followed', {
 			followed: this.followedArtists.length,
@@ -133,10 +127,7 @@ export class ArtistDiscoveryService {
 
 		const newBubbles = resp.artists
 			.filter(
-				(a) =>
-					!this.seenArtistNames.has(
-						(a.name?.value ?? '').toLowerCase(),
-					),
+				(a) => !this.seenArtistNames.has((a.name?.value ?? '').toLowerCase()),
 			)
 			.map((a) => this.toBubble(a))
 
