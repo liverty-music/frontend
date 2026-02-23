@@ -5,6 +5,7 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../components/live-highway/color-generator'
+import { IToastService } from '../../components/toast-notification/toast-notification'
 import { IArtistServiceClient } from '../../services/artist-service-client'
 
 export interface FollowedArtist {
@@ -69,6 +70,7 @@ export class MyArtistsPage {
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsPage')
 	private readonly artistService = resolve(IArtistServiceClient)
 	private readonly router = resolve(IRouter)
+	private readonly toast = resolve(IToastService)
 	private abortController: AbortController | null = null
 
 	public async loading(): Promise<void> {
@@ -220,21 +222,40 @@ export class MyArtistsPage {
 
 		this.clearUndoTimer()
 		const artist = this.undoArtist
+		const originalIndex = this.undoIndex
 		this.undoArtist = null
 		this.undoVisible = false
 
-		// Fire-and-forget RPC
+		// Fire-and-forget RPC with 1 retry
 		const client = this.artistService.getClient()
+		const req = { artistId: new ArtistId({ value: artist.id }) }
 		client
-			.unfollow({ artistId: new ArtistId({ value: artist.id }) })
+			.unfollow(req)
 			.then(() => {
 				this.logger.info('Unfollow committed', { name: artist.name })
 			})
-			.catch((err) => {
-				this.logger.error('Failed to unfollow artist', {
+			.catch((firstErr) => {
+				this.logger.warn('Unfollow failed, retrying', {
 					name: artist.name,
-					error: err,
+					error: firstErr,
 				})
+				client
+					.unfollow(req)
+					.then(() => {
+						this.logger.info('Unfollow committed on retry', {
+							name: artist.name,
+						})
+					})
+					.catch((retryErr) => {
+						this.logger.error('Failed to unfollow artist after retry', {
+							name: artist.name,
+							error: retryErr,
+						})
+						// Revert optimistic removal
+						const insertAt = Math.min(originalIndex, this.artists.length)
+						this.artists.splice(insertAt, 0, artist)
+						this.toast.show(`Failed to unfollow ${artist.name}`)
+					})
 			})
 	}
 
@@ -276,24 +297,38 @@ export class MyArtistsPage {
 		const artistId = this.selectorArtist.id
 		this.closePassionSelector()
 
-		// Fire-and-forget RPC
+		// Fire-and-forget RPC with 1 retry
 		const client = this.artistService.getClient()
+		const req = {
+			artistId: new ArtistId({ value: artistId }),
+			passionLevel: level,
+		}
 		client
-			.setPassionLevel({
-				artistId: new ArtistId({ value: artistId }),
-				passionLevel: level,
-			})
+			.setPassionLevel(req)
 			.then(() => {
-				this.logger.info('Passion level updated', {
-					artistId,
-					level,
-				})
+				this.logger.info('Passion level updated', { artistId, level })
 			})
-			.catch((err) => {
-				this.logger.error('Failed to update passion level', { error: err })
-				// Rollback on failure
-				const artist = this.artists.find((a) => a.id === artistId)
-				if (artist) artist.passionLevel = prev
+			.catch((firstErr) => {
+				this.logger.warn('Passion level update failed, retrying', {
+					artistId,
+					error: firstErr,
+				})
+				client
+					.setPassionLevel(req)
+					.then(() => {
+						this.logger.info('Passion level updated on retry', {
+							artistId,
+							level,
+						})
+					})
+					.catch((retryErr) => {
+						this.logger.error('Failed to update passion level after retry', {
+							error: retryErr,
+						})
+						const artist = this.artists.find((a) => a.id === artistId)
+						if (artist) artist.passionLevel = prev
+						this.toast.show('Failed to update passion level')
+					})
 			})
 	}
 
@@ -327,14 +362,23 @@ export class MyArtistsPage {
 
 		artist.passionLevel = level
 		const client = this.artistService.getClient()
+		const req = {
+			artistId: new ArtistId({ value: artist.id }),
+			passionLevel: level,
+		}
 		client
-			.setPassionLevel({
-				artistId: new ArtistId({ value: artist.id }),
-				passionLevel: level,
-			})
-			.catch((err) => {
-				this.logger.error('Failed to update passion level', { error: err })
-				artist.passionLevel = prev
+			.setPassionLevel(req)
+			.catch((firstErr) => {
+				this.logger.warn('Passion level update failed, retrying', {
+					error: firstErr,
+				})
+				client.setPassionLevel(req).catch((retryErr) => {
+					this.logger.error('Failed to update passion level after retry', {
+						error: retryErr,
+					})
+					artist.passionLevel = prev
+					this.toast.show('Failed to update passion level')
+				})
 			})
 	}
 
