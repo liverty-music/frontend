@@ -17,7 +17,7 @@ export class TicketServiceClient {
 	private readonly authService = resolve(IAuthService)
 	private readonly ticketClient = createClient(
 		TicketService,
-		createTransport(this.authService),
+		createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
 	)
 
 	public async listTickets(signal?: AbortSignal): Promise<Ticket[]> {
