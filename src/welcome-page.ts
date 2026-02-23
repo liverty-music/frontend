@@ -1,11 +1,9 @@
 import type { IRouteViewModel, NavigationInstruction } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import { IAuthService } from './services/auth-service'
-import { IOnboardingService } from './services/onboarding-service'
 
 export class WelcomePage implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
-	private readonly onboardingService = resolve(IOnboardingService)
 	private readonly logger = resolve(ILogger).scopeTo('WelcomePage')
 
 	/**
@@ -20,16 +18,10 @@ export class WelcomePage implements IRouteViewModel {
 		// Wait for auth service to initialize
 		await this.authService.ready
 
-		// If user is authenticated, return a redirect instruction
+		// If user is authenticated, always redirect to dashboard
 		if (this.authService.isAuthenticated) {
-			this.logger.info('User is authenticated, determining redirect target')
-			try {
-				return await this.onboardingService.getRedirectTarget()
-			} catch (err) {
-				this.logger.error('Failed to determine redirect target', { error: err })
-				// Fall through to show landing page rather than crashing
-				return true
-			}
+			this.logger.info('User is authenticated, redirecting to dashboard')
+			return 'dashboard'
 		}
 
 		// User not authenticated, show landing page

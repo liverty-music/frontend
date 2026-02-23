@@ -1,8 +1,8 @@
+import { IRouter } from '@aurelia/router'
 import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { IAuthService } from '../services/auth-service'
-import { IOnboardingService } from '../services/onboarding-service'
 import { IUserService } from '../services/user-service'
 
 /**
@@ -18,7 +18,7 @@ export class AuthCallback {
 
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
-	private readonly onboardingService = resolve(IOnboardingService)
+	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallback')
 
 	constructor() {
@@ -38,9 +38,10 @@ export class AuthCallback {
 			if (state?.isSignUp) {
 				this.logger.info('Sign-up detected, provisioning user in backend')
 				await this.provisionUser(user.profile.email)
+				await this.router.load('/onboarding/discover')
+			} else {
+				await this.router.load('/dashboard')
 			}
-
-			await this.onboardingService.redirectBasedOnStatus()
 		} catch (err) {
 			this.logger.error('Auth callback error:', err)
 
@@ -50,7 +51,7 @@ export class AuthCallback {
 					'User is already authenticated. Redirecting despite callback error...',
 				)
 				try {
-					await this.onboardingService.redirectBasedOnStatus()
+					await this.router.load('/dashboard')
 				} catch (redirectErr) {
 					this.logger.error(
 						'Post-auth redirect also failed, falling back to dashboard',
