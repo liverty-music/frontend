@@ -27,6 +27,8 @@ export class ProofServiceClient {
 		onProgress?: (stage: string) => void,
 		signal?: AbortSignal,
 	): Promise<ProofOutput> {
+		const start = performance.now()
+
 		onProgress?.('Fetching Merkle path...')
 
 		const merklePath = await this.entryService.getMerklePath(
@@ -63,16 +65,23 @@ export class ProofServiceClient {
 			},
 		}
 
-		const result = await this.runWorker(proofInput, onProgress, signal)
+		try {
+			const result = await this.runWorker(proofInput, onProgress, signal)
+			const durationMs = Math.round(performance.now() - start)
 
-		this.logger.info('Proof generated', {
-			eventId,
-			publicSignals: result.publicSignals,
-		})
+			this.logger.info('proof generation complete', {
+				eventId,
+				durationMs,
+			})
 
-		return {
-			proofJson: JSON.stringify(result.proof),
-			publicSignalsJson: JSON.stringify(result.publicSignals),
+			return {
+				proofJson: JSON.stringify(result.proof),
+				publicSignalsJson: JSON.stringify(result.publicSignals),
+			}
+		} catch (err) {
+			const durationMs = Math.round(performance.now() - start)
+			this.logger.error('proof generation failed', { eventId, durationMs, err })
+			throw err
 		}
 	}
 

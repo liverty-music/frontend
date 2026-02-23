@@ -1,5 +1,10 @@
 import { RouterConfiguration } from '@aurelia/router'
-import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
+import Aurelia, {
+	ConsoleSink,
+	ILogger,
+	LoggerConfiguration,
+	LogLevel,
+} from 'aurelia'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { IToastService } from './components/toast-notification/toast-notification'
 import { AuthHook } from './hooks/auth-hook'
@@ -66,10 +71,12 @@ Aurelia
 	// .register(RouterConfiguration.customize({ useUrlFragmentHash: false }))
 	.app(MyApp)
 	.start()
-
-// Register Service Worker for push notifications after Aurelia bootstrap
-if ('serviceWorker' in navigator) {
-	navigator.serviceWorker.register('/sw.js').catch((err) => {
-		console.warn('Service Worker registration failed:', err)
+	.then((au) => {
+		// Register Service Worker for push notifications after Aurelia bootstrap
+		if ('serviceWorker' in navigator) {
+			const logger = au.container.get(ILogger).scopeTo('ServiceWorker')
+			navigator.serviceWorker.register('/sw.js').catch((err) => {
+				logger.warn('Service Worker registration failed', err)
+			})
+		}
 	})
-}

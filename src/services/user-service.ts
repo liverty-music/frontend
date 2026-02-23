@@ -1,6 +1,6 @@
 import { UserService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/user/v1/user_service_connect.js'
 import { createClient, type PromiseClient } from '@connectrpc/connect'
-import { DI, resolve } from 'aurelia'
+import { DI, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
 
@@ -18,6 +18,6 @@ export class UserServiceClient implements IUserService {
 
 	constructor() {
 		const authService = resolve(IAuthService)
-		this.client = createClient(UserService, createTransport(authService))
+		this.client = createClient(UserService, createTransport(authService, resolve(ILogger).scopeTo('Transport')))
 	}
 }

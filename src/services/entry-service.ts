@@ -17,7 +17,7 @@ export class EntryServiceClient {
 	private readonly authService = resolve(IAuthService)
 	private readonly entryClient = createClient(
 		EntryService,
-		createTransport(this.authService),
+		createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
 	)
 
 	public async getMerklePath(

@@ -20,7 +20,7 @@ export class PushServiceClient {
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushClient = createClient(
 		PushNotificationService,
-		createTransport(this.authService),
+		createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
 	)
 
 	// VAPID public key injected via Vite build environment variable

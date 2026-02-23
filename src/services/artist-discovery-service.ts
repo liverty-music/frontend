@@ -3,6 +3,7 @@ import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_m
 import type { PromiseClient } from '@connectrpc/connect'
 import { createPromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IToastService } from '../components/toast-notification/toast-notification'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
 
@@ -25,13 +26,14 @@ export interface IArtistDiscoveryService extends ArtistDiscoveryService {}
 
 export class ArtistDiscoveryService {
 	private readonly logger = resolve(ILogger).scopeTo('ArtistDiscoveryService')
+	private readonly toast = resolve(IToastService)
 	private readonly artistClient: PromiseClient<typeof ArtistService>
 
 	constructor() {
 		const authService = resolve(IAuthService)
 		this.artistClient = createPromiseClient(
 			ArtistService,
-			createTransport(authService),
+			createTransport(authService, resolve(ILogger).scopeTo('Transport')),
 		)
 	}
 
@@ -106,26 +108,38 @@ export class ArtistDiscoveryService {
 		this.followedArtists.push(artist)
 		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 
-		// Persist follow to backend — throw on failure so caller can rollback
+		// Persist follow to backend with 1 retry
+		const req = { artistId: new ArtistId({ value: artist.id }) }
 		try {
-			await this.artistClient.follow({
-				artistId: new ArtistId({ value: artist.id }),
-			})
+			await this.artistClient.follow(req)
 			this.logger.info('Artist followed', {
 				followed: this.followedArtists.length,
 				orbIntensity: this.orbIntensity,
 			})
-		} catch (err) {
-			this.logger.error('Failed to follow artist via RPC', err)
+		} catch (firstErr) {
+			this.logger.warn('Follow failed, retrying', {
+				artist: artist.name,
+				error: firstErr,
+			})
+			try {
+				await this.artistClient.follow(req)
+				this.logger.info('Artist followed on retry', {
+					artist: artist.name,
+				})
+			} catch (retryErr) {
+				this.logger.error('Failed to follow artist after retry', retryErr)
 
-			// Rollback optimistic update
-			this.followedArtists = this.followedArtists.filter(
-				(b) => b.id !== artist.id,
-			)
-			this.availableBubbles.push(artist)
-			this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
+				// Rollback optimistic update
+				this.followedArtists = this.followedArtists.filter(
+					(b) => b.id !== artist.id,
+				)
+				this.followedIds.delete(artist.id)
+				this.availableBubbles.push(artist)
+				this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 
-			throw err
+				this.toast.show(`Failed to follow ${artist.name}`)
+				throw retryErr
+			}
 		}
 	}
 

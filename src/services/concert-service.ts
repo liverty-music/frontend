@@ -18,7 +18,7 @@ export class ConcertServiceClient {
 	private readonly authService = resolve(IAuthService)
 	private readonly concertClient = createClient(
 		ConcertService,
-		createTransport(this.authService),
+		createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
 	)
 
 	public async listConcerts(
