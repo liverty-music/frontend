@@ -72,6 +72,7 @@ export class RegionSetupSheet {
 	public quickCities = QUICK_SELECT_CITIES
 	public selectedPrefecture = ''
 
+	private dialogElement?: HTMLDialogElement
 	private readonly logger = resolve(ILogger).scopeTo('RegionSetupSheet')
 
 	public static getStoredRegion(): string | null {
@@ -79,12 +80,20 @@ export class RegionSetupSheet {
 	}
 
 	public open(): void {
-		this.isOpen = true
 		this.selectedPrefecture = ''
+		this.dialogElement?.showModal()
+		this.isOpen = true
 	}
 
 	public close(): void {
+		this.dialogElement?.close()
 		this.isOpen = false
+	}
+
+	public handleBackdropClick(event: MouseEvent): void {
+		if (event.target === this.dialogElement) {
+			this.close()
+		}
 	}
 
 	public selectQuickCity(city: string): void {
