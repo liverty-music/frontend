@@ -123,5 +123,5 @@
 <!-- Area Selector Bottom Sheet -->
 <area-selector-sheet
   view-model.ref="areaSheet"
-  on-area-selected.bind="({ $event }) => onAreaSelected($event)"
+  on-area-selected.bind="(area) => onAreaSelected(area)"
 ></area-selector-sheet>

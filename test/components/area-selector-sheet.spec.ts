@@ -80,7 +80,7 @@ describe('AreaSelectorSheet', () => {
 			sut.onAreaSelected = callback
 			sut.selectPrefecture('大阪')
 
-			expect(callback).toHaveBeenCalledWith({ $event: '大阪' })
+			expect(callback).toHaveBeenCalledWith('大阪')
 		})
 	})
 
