@@ -87,6 +87,7 @@ export class TicketsPage {
 				eventId,
 				proof: JSON.parse(proofOutput.proofJson),
 				publicSignals: JSON.parse(proofOutput.publicSignalsJson),
+				exp: Date.now() + 5 * 60 * 1000, // 5-minute expiry
 			})
 			const encoded = btoa(payload)
 
