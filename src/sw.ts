@@ -69,7 +69,10 @@ self.addEventListener('notificationclick', (event) => {
 						return client.focus()
 					}
 				}
-				return self.clients.openWindow(url)
+				// Only open same-origin URLs to prevent external redirects.
+				const safeUrl =
+					targetUrl.origin === self.location.origin ? targetUrl.href : '/'
+				return self.clients.openWindow(safeUrl)
 			}),
 	)
 })

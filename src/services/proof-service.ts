@@ -5,6 +5,15 @@ import { IEntryService } from './entry-service'
 const CIRCUIT_BASE_URL =
 	import.meta.env.VITE_CIRCUIT_BASE_URL ?? '/circuits/ticketcheck-v1'
 
+// SHA-256 hashes of known-good circuit files for integrity verification.
+// Recompute after each circuit rebuild: sha256sum build/ticketcheck_js/ticketcheck.wasm build/ticketcheck_final.zkey
+const CIRCUIT_HASHES: Record<string, string> = {
+	'ticketcheck.wasm':
+		'08de2f44c53230cefcb7d5b4dda5ff829e6afd1fbc52666cb12464a00f5e2f03',
+	'ticketcheck.zkey':
+		'f6cadb4cdeee3c49a5b9b86ae9ac954ee68b52a97ed21f013ff023bfc444a25e',
+}
+
 export interface ProofOutput {
 	proofJson: string
 	publicSignalsJson: string
@@ -47,6 +56,10 @@ export class ProofServiceClient {
 		const wasmUrl = `${CIRCUIT_BASE_URL}/ticketcheck.wasm`
 		const zkeyUrl = `${CIRCUIT_BASE_URL}/ticketcheck.zkey`
 
+		// Verify circuit file integrity before proof generation.
+		await this.verifyCircuitIntegrity(wasmUrl, 'ticketcheck.wasm')
+		await this.verifyCircuitIntegrity(zkeyUrl, 'ticketcheck.zkey')
+
 		// Convert eventId to a field element for the circuit.
 		// Use the same encoding as the backend: treat UUID bytes as big-endian integer.
 		const eventIdField = uuidToFieldElement(eventId)
@@ -73,6 +86,30 @@ export class ProofServiceClient {
 		return {
 			proofJson: JSON.stringify(result.proof),
 			publicSignalsJson: JSON.stringify(result.publicSignals),
+		}
+	}
+
+	private async verifyCircuitIntegrity(
+		url: string,
+		filename: string,
+	): Promise<void> {
+		const expectedHash = CIRCUIT_HASHES[filename]
+		if (!expectedHash) return // Skip verification if hash not configured
+
+		const response = await fetch(url)
+		if (!response.ok) throw new Error(`Failed to fetch circuit file: ${url}`)
+
+		const buffer = await response.arrayBuffer()
+		const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+		const hashArray = Array.from(new Uint8Array(hashBuffer))
+		const hashHex = hashArray
+			.map((b) => b.toString(16).padStart(2, '0'))
+			.join('')
+
+		if (hashHex !== expectedHash) {
+			throw new Error(
+				`Circuit file integrity check failed for ${filename}: expected ${expectedHash}, got ${hashHex}`,
+			)
 		}
 	}
 
