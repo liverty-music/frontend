@@ -72,8 +72,10 @@ Aurelia
 	.app(MyApp)
 	.start()
 
-// Register Service Worker for push notifications after Aurelia bootstrap
-if ('serviceWorker' in navigator) {
+// Register Service Worker for push notifications (production only).
+// In dev mode, vite-plugin-node-polyfills injects Buffer/global/process shims
+// into the SW bundle, which breaks ServiceWorker evaluation.
+if ('serviceWorker' in navigator && !import.meta.env.DEV) {
 	navigator.serviceWorker.register('/sw.js').catch((err) => {
 		console.warn('Service Worker registration failed:', err)
 	})
