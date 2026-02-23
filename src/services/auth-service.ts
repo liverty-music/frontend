@@ -65,11 +65,11 @@ export class AuthService {
 	}
 
 	private updateState(user: User | null): void {
+		this.user = user
 		this.logger.info('Auth state updated', {
 			isAuthenticated: this.isAuthenticated,
 			user: user?.profile.preferred_username,
 		})
-		this.user = user
 	}
 
 	public async signIn(): Promise<void> {
