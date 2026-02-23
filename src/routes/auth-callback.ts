@@ -90,12 +90,14 @@ export class AuthCallback {
 				return
 			}
 
-			// Handle other failures gracefully — log error but complete auth flow
-			this.logger.error(
-				'Failed to provision user in backend, continuing auth flow anyway',
-				{ email, error: err },
-			)
-			// Do not throw - allow authentication to succeed even if provisioning fails
+			// Non-AlreadyExists errors must halt the auth flow. Silently continuing
+			// would leave the user without a backend record, causing all subsequent
+			// RPC calls to fail.
+			this.logger.error('Failed to provision user in backend', {
+				email,
+				error: err,
+			})
+			throw err
 		}
 	}
 }
