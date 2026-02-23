@@ -30,7 +30,7 @@ export default defineConfig({
       },
       manifest: false, // Use public/manifest.json directly
       devOptions: {
-        enabled: true,
+        enabled: false,
       },
     }),
   ],
