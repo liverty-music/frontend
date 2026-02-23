@@ -39,14 +39,14 @@ describe('AuthCallback', () => {
 		sut = container.get(AuthCallback)
 	})
 
-	describe('loading', () => {
+	describe('attached', () => {
 		it('should redirect to discover on sign-up', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				state: { isSignUp: true },
 				profile: { email: 'new@example.com' },
 			})
 
-			await sut.loading({})
+			await sut.attached()
 
 			expect(mockUserService.client.create).toHaveBeenCalled()
 			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
@@ -58,7 +58,7 @@ describe('AuthCallback', () => {
 				profile: { email: 'existing@example.com' },
 			})
 
-			await sut.loading({})
+			await sut.attached()
 
 			expect(mockUserService.client.create).not.toHaveBeenCalled()
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
@@ -69,7 +69,7 @@ describe('AuthCallback', () => {
 				profile: { email: 'existing@example.com' },
 			})
 
-			await sut.loading({})
+			await sut.attached()
 
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
 		})
@@ -80,7 +80,7 @@ describe('AuthCallback', () => {
 				.mockRejectedValue(new Error('callback error'))
 			mockAuth.isAuthenticated = true
 
-			await sut.loading({})
+			await sut.attached()
 
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
 			expect(sut.error).toBe('')
@@ -92,7 +92,7 @@ describe('AuthCallback', () => {
 				.mockRejectedValue(new Error('auth failed'))
 			mockAuth.isAuthenticated = false
 
-			await sut.loading({})
+			await sut.attached()
 
 			expect(mockRouter.load).not.toHaveBeenCalled()
 			expect(sut.error).toBe('Login failed: auth failed')
@@ -107,7 +107,7 @@ describe('AuthCallback', () => {
 				.fn()
 				.mockRejectedValue(new ConnectError('exists', Code.AlreadyExists))
 
-			await sut.loading({})
+			await sut.attached()
 
 			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
 		})
@@ -121,7 +121,7 @@ describe('AuthCallback', () => {
 				.fn()
 				.mockRejectedValue(new Error('server error'))
 
-			await sut.loading({})
+			await sut.attached()
 
 			expect(mockRouter.load).not.toHaveBeenCalled()
 			expect(sut.error).toBe('Login failed: server error')
@@ -133,7 +133,7 @@ describe('AuthCallback', () => {
 				profile: {},
 			})
 
-			await sut.loading({})
+			await sut.attached()
 
 			expect(mockUserService.client.create).not.toHaveBeenCalled()
 			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
