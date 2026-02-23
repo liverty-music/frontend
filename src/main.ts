@@ -71,12 +71,10 @@ Aurelia
 	// .register(RouterConfiguration.customize({ useUrlFragmentHash: false }))
 	.app(MyApp)
 	.start()
-	.then((au) => {
-		// Register Service Worker for push notifications after Aurelia bootstrap
-		if ('serviceWorker' in navigator) {
-			const logger = au.container.get(ILogger).scopeTo('ServiceWorker')
-			navigator.serviceWorker.register('/sw.js').catch((err) => {
-				logger.warn('Service Worker registration failed', err)
-			})
-		}
+
+// Register Service Worker for push notifications after Aurelia bootstrap
+if ('serviceWorker' in navigator) {
+	navigator.serviceWorker.register('/sw.js').catch((err) => {
+		console.warn('Service Worker registration failed:', err)
 	})
+}

@@ -59,7 +59,12 @@ export const createTransport = (auth: IAuthService, logger: ILogger) => {
 		} catch (err) {
 			const durationMs = Math.round(performance.now() - start)
 			if (err instanceof ConnectError) {
-				logger.error('RPC error', method, `${durationMs}ms`, err.code.toString())
+				logger.error(
+					'RPC error',
+					method,
+					`${durationMs}ms`,
+					err.code.toString(),
+				)
 			} else {
 				logger.error('RPC error', method, `${durationMs}ms`, err)
 			}

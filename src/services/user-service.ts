@@ -18,6 +18,9 @@ export class UserServiceClient implements IUserService {
 
 	constructor() {
 		const authService = resolve(IAuthService)
-		this.client = createClient(UserService, createTransport(authService, resolve(ILogger).scopeTo('Transport')))
+		this.client = createClient(
+			UserService,
+			createTransport(authService, resolve(ILogger).scopeTo('Transport')),
+		)
 	}
 }
