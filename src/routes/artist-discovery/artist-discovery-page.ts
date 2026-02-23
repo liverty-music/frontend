@@ -40,7 +40,10 @@ export class ArtistDiscoveryPage {
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', { error: err })
 			this.loadFailed = true
-			this.toastService.show('Failed to load artists. Tap retry to try again.')
+			this.toastService.show(
+				'Failed to load artists. Tap retry to try again.',
+				'error',
+			)
 		}
 	}
 
@@ -53,6 +56,7 @@ export class ArtistDiscoveryPage {
 			this.loadFailed = true
 			this.toastService.show(
 				'Still unable to load artists. Please try again later.',
+				'error',
 			)
 		}
 	}
@@ -96,6 +100,7 @@ export class ArtistDiscoveryPage {
 			})
 			this.toastService.show(
 				`Failed to follow ${artist.name}. Please try again.`,
+				'error',
 			)
 			return
 		}
@@ -125,7 +130,10 @@ export class ArtistDiscoveryPage {
 			artistName,
 			error: event.detail.error,
 		})
-		this.toastService.show(`Couldn't find similar artists for ${artistName}`)
+		this.toastService.show(
+			`Couldn't find similar artists for ${artistName}`,
+			'warning',
+		)
 	}
 
 	public async onViewSchedule(): Promise<void> {

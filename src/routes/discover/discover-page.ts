@@ -51,7 +51,7 @@ export class DiscoverPage {
 			await this.discoveryService.loadInitialArtists('Japan', '')
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
-			this.toastService.show('Failed to load discovery data')
+			this.toastService.show('Failed to load discovery data', 'error')
 		}
 	}
 
@@ -85,7 +85,7 @@ export class DiscoverPage {
 				this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
 			} catch (err) {
 				this.logger.error('Failed to clear genre tag', err)
-				this.toastService.show('Failed to reset discovery view')
+				this.toastService.show('Failed to reset discovery view', 'error')
 			} finally {
 				this.isLoadingTag = false
 			}
@@ -103,7 +103,7 @@ export class DiscoverPage {
 		} catch (err) {
 			this.activeTag = ''
 			this.logger.warn('Failed to load genre artists', err)
-			this.toastService.show(`Couldn't load ${tag} artists`)
+			this.toastService.show(`Couldn't load ${tag} artists`, 'error')
 		} finally {
 			this.isLoadingTag = false
 		}
@@ -151,7 +151,7 @@ export class DiscoverPage {
 			this.searchResults = results
 		} catch (err) {
 			this.logger.warn('Search failed', err)
-			this.toastService.show('Search failed, please try again')
+			this.toastService.show('Search failed, please try again', 'warning')
 			this.searchResults = []
 		} finally {
 			if (this.searchQuery.trim() === query) {
@@ -169,7 +169,19 @@ export class DiscoverPage {
 			artist: artist.name,
 		})
 
-		await this.discoveryService.followArtist(artist)
+		try {
+			await this.discoveryService.followArtist(artist)
+		} catch (err) {
+			this.logger.error('Failed to follow artist', {
+				artist: artist.name,
+				error: err,
+			})
+			this.toastService.show(
+				`Failed to follow ${artist.name}. Please try again.`,
+				'error',
+			)
+			return
+		}
 		if (this.abortController.signal.aborted) return
 
 		try {
@@ -190,7 +202,19 @@ export class DiscoverPage {
 			artist: artist.name,
 		})
 
-		await this.discoveryService.followArtist(artist)
+		try {
+			await this.discoveryService.followArtist(artist)
+		} catch (err) {
+			this.logger.error('Failed to follow artist from search', {
+				artist: artist.name,
+				error: err,
+			})
+			this.toastService.show(
+				`Failed to follow ${artist.name}. Please try again.`,
+				'error',
+			)
+			return
+		}
 		if (this.abortController.signal.aborted) return
 
 		try {
@@ -225,6 +249,7 @@ export class DiscoverPage {
 		})
 		this.toastService.show(
 			`Couldn't find similar artists for ${event.detail.artistName}`,
+			'warning',
 		)
 	}
 }

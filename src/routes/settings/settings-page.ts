@@ -72,7 +72,7 @@ export class SettingsPage {
 			await this.auth.signOut()
 		} catch (err) {
 			this.logger.error('Sign-out failed', { error: err })
-			this.toastService.show('Sign-out failed. Please try again.')
+			this.toastService.show('Sign-out failed. Please try again.', 'error')
 		}
 	}
 }
