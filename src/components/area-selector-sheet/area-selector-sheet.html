@@ -1,18 +1,9 @@
-<!-- Backdrop -->
-<div
-  if.bind="isOpen"
-  click.trigger="close()"
-  class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
-></div>
-
-<!-- Sheet -->
-<div
-  ref="sheetElement"
-  tabindex="-1"
-  role="dialog"
+<dialog
+  ref="dialogElement"
   aria-label="Change My Area"
-  inert.bind="!isOpen"
-  class="fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}"
+  click.trigger="handleBackdropClick($event)"
+  cancel.trigger="handleCancel($event)"
+  class="area-selector-sheet"
 >
   <div class="bg-surface-raised rounded-t-[var(--radius-sheet)] shadow-[var(--shadow-sheet)] max-h-[80vh] overflow-y-auto">
     <!-- Handle bar -->
@@ -73,4 +64,4 @@
       </template>
     </div>
   </div>
-</div>
+</dialog>

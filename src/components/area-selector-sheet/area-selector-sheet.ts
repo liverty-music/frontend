@@ -51,8 +51,6 @@ const REGIONS: Region[] = [
 	},
 ]
 
-const CLOSE_ANIMATION_MS = 300
-
 export class AreaSelectorSheet {
 	@bindable public onAreaSelected?: (area: string) => void
 
@@ -60,8 +58,7 @@ export class AreaSelectorSheet {
 	public regions = REGIONS
 	public selectedRegion: Region | null = null
 
-	private sheetElement?: HTMLElement
-	private previouslyFocused: HTMLElement | null = null
+	private dialogElement?: HTMLDialogElement
 	private readonly logger = resolve(ILogger).scopeTo('AreaSelectorSheet')
 
 	public static getStoredArea(): string | null {
@@ -69,24 +66,26 @@ export class AreaSelectorSheet {
 	}
 
 	public open(): void {
-		if (!this.isOpen) {
-			this.previouslyFocused = document.activeElement as HTMLElement | null
-		}
-		this.isOpen = true
 		this.selectedRegion = null
-		requestAnimationFrame(() => {
-			this.sheetElement?.focus()
-		})
+		this.dialogElement?.showModal()
+		this.isOpen = true
 	}
 
 	public close(): void {
+		this.dialogElement?.close()
 		this.isOpen = false
-		setTimeout(() => {
-			if (!this.isOpen) {
-				this.selectedRegion = null
-			}
-		}, CLOSE_ANIMATION_MS)
-		this.previouslyFocused?.focus()
+		this.selectedRegion = null
+	}
+
+	public handleBackdropClick(event: MouseEvent): void {
+		if (event.target === this.dialogElement) {
+			this.close()
+		}
+	}
+
+	public handleCancel(event: Event): void {
+		event.preventDefault()
+		this.close()
 	}
 
 	public selectRegion(region: Region): void {

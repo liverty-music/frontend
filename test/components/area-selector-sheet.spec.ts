@@ -26,28 +26,12 @@ describe('AreaSelectorSheet', () => {
 			expect(sut.selectedRegion).toBeNull()
 		})
 
-		it('should close the sheet and defer selectedRegion reset', () => {
-			vi.useFakeTimers()
+		it('should close the sheet and reset selectedRegion immediately', () => {
 			sut.open()
 			sut.selectRegion(sut.regions[0])
 			sut.close()
 			expect(sut.isOpen).toBe(false)
-			expect(sut.selectedRegion).not.toBeNull()
-			vi.advanceTimersByTime(300)
 			expect(sut.selectedRegion).toBeNull()
-			vi.useRealTimers()
-		})
-
-		it('should not reset selectedRegion if reopened before timer fires', () => {
-			vi.useFakeTimers()
-			sut.open()
-			sut.selectRegion(sut.regions[2])
-			sut.close()
-			sut.open()
-			sut.selectRegion(sut.regions[1])
-			vi.advanceTimersByTime(300)
-			expect(sut.selectedRegion).toBe(sut.regions[1])
-			vi.useRealTimers()
 		})
 	})
 
