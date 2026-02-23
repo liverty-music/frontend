@@ -25,9 +25,16 @@ export class AuthCallback {
 		this.logger.info('Constructor called')
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: Params are dynamic
-	public async loading(params: any): Promise<void> {
-		this.logger.info('Starting loading hook...', params)
+	/**
+	 * Navigate after the component is attached to the DOM.
+	 *
+	 * Aurelia's `loading()` hook runs while a navigation is still in progress.
+	 * Calling `router.load()` from within `loading()` silently blocks because
+	 * the router is already mid-transition.  Moving the logic to `attached()`
+	 * ensures the current navigation has settled before we trigger a new one.
+	 */
+	public async attached(): Promise<void> {
+		this.logger.info('Attached, starting auth callback processing...')
 		try {
 			this.logger.info('Calling handleCallback...')
 			const user = await this.authService.handleCallback()
