@@ -233,10 +233,7 @@ export class BubblePhysics {
 					this.Matter?.Composite.remove(this.world, bubble.body)
 					this.bubbleMap.delete(bubble.artist.id)
 					this.fadeOutPendingIds.delete(bubble.artist.id)
-					if (
-						this.fadeOutPendingIds.size === 0 &&
-						this.fadeOutResolve
-					) {
+					if (this.fadeOutPendingIds.size === 0 && this.fadeOutResolve) {
 						this.fadeOutResolve()
 						this.fadeOutResolve = null
 					}
