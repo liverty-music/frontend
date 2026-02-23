@@ -3,6 +3,10 @@ import { ConnectError } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 import { SpanStatusCode, trace } from '@opentelemetry/api'
 import type { IAuthService } from './auth-service'
+import {
+	createAuthRetryInterceptor,
+	createRetryInterceptor,
+} from './connect-error-router'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
@@ -80,6 +84,11 @@ export const createTransport = (auth: IAuthService) => {
 
 	return createConnectTransport({
 		baseUrl,
-		interceptors: [otelInterceptor, authInterceptor],
+		interceptors: [
+			otelInterceptor,
+			authInterceptor,
+			createAuthRetryInterceptor(auth),
+			createRetryInterceptor(),
+		],
 	})
 }

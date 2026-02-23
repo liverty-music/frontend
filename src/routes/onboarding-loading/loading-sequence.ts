@@ -109,6 +109,7 @@ export class LoadingSequence {
 				})
 				this.toastService.show(
 					`Some artist schedules couldn't be loaded (${result.failedCount}/${result.totalCount})`,
+					'warning',
 				)
 				break
 			case 'failed':

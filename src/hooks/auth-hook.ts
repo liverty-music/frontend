@@ -26,7 +26,7 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 		await this.authService.ready
 
 		if (!this.authService.isAuthenticated) {
-			this.toastService.show('ログインが必要です')
+			this.toastService.show('ログインが必要です', 'warning')
 			return ''
 		}
 

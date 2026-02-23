@@ -29,7 +29,10 @@ export class ErrorBanner {
 
 		const now = Date.now()
 		if (now - this.lastReportTime < ErrorBanner.REPORT_COOLDOWN_MS) {
-			this.toastService.show('Please wait before reporting another issue')
+			this.toastService.show(
+				'Please wait before reporting another issue',
+				'warning',
+			)
 			return
 		}
 		this.lastReportTime = now
