@@ -24,57 +24,47 @@ export class DashboardService {
 	public async loadDashboardEvents(signal?: AbortSignal): Promise<DateGroup[]> {
 		this.logger.info('Loading dashboard events')
 
-		const artists = await this.fetchFollowedArtists(signal)
-		if (artists.length === 0) {
-			this.logger.info('No followed artists found')
+		// Fetch followed artists (for name/passion mapping) and concerts in parallel
+		const [artistMap, concerts] = await Promise.all([
+			this.fetchFollowedArtistMap(signal),
+			this.concertService.listByFollower(signal),
+		])
+
+		if (concerts.length === 0) {
+			this.logger.info('No concerts found for followed artists')
 			return []
 		}
 
-		const allEvents = await this.fetchConcertsForArtists(artists, signal)
+		const allEvents: LiveEvent[] = []
+		for (const concert of concerts) {
+			const artistId = concert.artistId?.value ?? ''
+			const artist = artistMap.get(artistId)
+			const event = this.concertToLiveEvent(
+				concert,
+				artist?.name ?? '',
+				artist?.isMustGo ?? false,
+			)
+			if (event) allEvents.push(event)
+		}
+
+		allEvents.sort((a, b) => a.date.getTime() - b.date.getTime())
 		return this.groupByDate(allEvents)
 	}
 
-	private async fetchFollowedArtists(
+	private async fetchFollowedArtistMap(
 		signal?: AbortSignal,
-	): Promise<Array<{ id: string; name: string; isMustGo: boolean }>> {
+	): Promise<Map<string, { name: string; isMustGo: boolean }>> {
 		const client = this.artistService.getClient()
 		const response = await client.listFollowed({}, { signal })
-		return response.artists.map((fa) => ({
-			id: fa.artist?.id?.value ?? '',
-			name: fa.artist?.name?.value ?? '',
-			isMustGo: fa.passionLevel === PassionLevel.MUST_GO,
-		}))
-	}
-
-	private async fetchConcertsForArtists(
-		artists: Array<{ id: string; name: string; isMustGo: boolean }>,
-		signal?: AbortSignal,
-	): Promise<LiveEvent[]> {
-		const results: LiveEvent[] = []
-
-		const settled = await Promise.allSettled(
-			artists.map((artist) =>
-				this.concertService.listConcerts(artist.id, signal),
-			),
-		)
-
-		for (let i = 0; i < settled.length; i++) {
-			const result = settled[i]
-			if (result.status === 'fulfilled') {
-				const artist = artists[i]
-				for (const concert of result.value) {
-					const event = this.concertToLiveEvent(
-						concert,
-						artist.name,
-						artist.isMustGo,
-					)
-					if (event) results.push(event)
-				}
-			}
+		const map = new Map<string, { name: string; isMustGo: boolean }>()
+		for (const fa of response.artists) {
+			const id = fa.artist?.id?.value ?? ''
+			map.set(id, {
+				name: fa.artist?.name?.value ?? '',
+				isMustGo: fa.passionLevel === PassionLevel.MUST_GO,
+			})
 		}
-
-		results.sort((a, b) => a.date.getTime() - b.date.getTime())
-		return results
+		return map
 	}
 
 	private concertToLiveEvent(
