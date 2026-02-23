@@ -54,7 +54,7 @@ const REGIONS: Region[] = [
 const CLOSE_ANIMATION_MS = 300
 
 export class AreaSelectorSheet {
-	@bindable public onAreaSelected?: (args: { $event: string }) => void
+	@bindable public onAreaSelected?: (area: string) => void
 
 	public isOpen = false
 	public regions = REGIONS
@@ -101,6 +101,6 @@ export class AreaSelectorSheet {
 		this.logger.info('Area selected', { prefecture })
 		localStorage.setItem(REGION_STORAGE_KEY, prefecture)
 		this.close()
-		this.onAreaSelected?.({ $event: prefecture })
+		this.onAreaSelected?.(prefecture)
 	}
 }
