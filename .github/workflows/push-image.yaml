@@ -63,5 +63,7 @@ jobs:
           context: .
           push: true
           tags: ${{ env.IMAGE_URI }}:latest,${{ env.IMAGE_URI }}:${{ github.sha }},${{ env.IMAGE_URI }}:main
+          build-args: |
+            VITE_VAPID_PUBLIC_KEY=${{ vars.VITE_VAPID_PUBLIC_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
