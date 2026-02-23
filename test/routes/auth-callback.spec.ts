@@ -112,7 +112,7 @@ describe('AuthCallback', () => {
 			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
 		})
 
-		it('should continue to discover even if provisionUser fails', async () => {
+		it('should show error when provisionUser fails with non-AlreadyExists error', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				state: { isSignUp: true },
 				profile: { email: 'new@example.com' },
@@ -123,7 +123,8 @@ describe('AuthCallback', () => {
 
 			await sut.loading({})
 
-			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
+			expect(mockRouter.load).not.toHaveBeenCalled()
+			expect(sut.error).toBe('Login failed: server error')
 		})
 
 		it('should skip provisionUser when email is missing', async () => {
