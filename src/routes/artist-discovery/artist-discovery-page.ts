@@ -8,8 +8,6 @@ import {
 } from '../../services/artist-discovery-service'
 import css from './artist-discovery-page.css?raw'
 
-const ONBOARDING_COMPLETE_KEY = 'liverty:onboarding_complete'
-
 @useShadowDOM()
 export class ArtistDiscoveryPage {
 	static dependencies = [shadowCSS(css)]
@@ -134,7 +132,6 @@ export class ArtistDiscoveryPage {
 		this.logger.info('Navigating to live schedule', {
 			followedCount: this.followedCount,
 		})
-		localStorage.setItem(ONBOARDING_COMPLETE_KEY, 'true')
 		await this.router.load('/')
 	}
 }

@@ -282,6 +282,6 @@ Last.fm API is called directly from the frontend (client-side). The API key is p
 
 State is managed through singleton DI services, not Redux/MobX. Aurelia's DI container provides clean lifecycle management. External state libraries are over-engineering for the current scope.
 
-### 4. Onboarding Flow via localStorage Flag
+### 4. Onboarding Flow via OIDC Sign-Up Detection
 
-New vs returning users are distinguished by `localStorage.getItem('liverty:onboarding_complete')`. The auth callback checks this flag to route users to artist discovery or the dashboard.
+New vs returning users are distinguished by the `isSignUp` flag in the OIDC state. The auth callback routes sign-up users to artist discovery and sign-in users directly to the dashboard.
