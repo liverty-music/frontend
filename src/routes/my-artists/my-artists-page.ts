@@ -366,20 +366,18 @@ export class MyArtistsPage {
 			artistId: new ArtistId({ value: artist.id }),
 			passionLevel: level,
 		}
-		client
-			.setPassionLevel(req)
-			.catch((firstErr) => {
-				this.logger.warn('Passion level update failed, retrying', {
-					error: firstErr,
-				})
-				client.setPassionLevel(req).catch((retryErr) => {
-					this.logger.error('Failed to update passion level after retry', {
-						error: retryErr,
-					})
-					artist.passionLevel = prev
-					this.toast.show('Failed to update passion level')
-				})
+		client.setPassionLevel(req).catch((firstErr) => {
+			this.logger.warn('Passion level update failed, retrying', {
+				error: firstErr,
 			})
+			client.setPassionLevel(req).catch((retryErr) => {
+				this.logger.error('Failed to update passion level after retry', {
+					error: retryErr,
+				})
+				artist.passionLevel = prev
+				this.toast.show('Failed to update passion level')
+			})
+		})
 	}
 
 	public contextMenuUnfollow(): void {
