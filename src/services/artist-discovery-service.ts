@@ -40,49 +40,56 @@ export class ArtistDiscoveryService {
 	public availableBubbles: ArtistBubble[] = []
 	public followedArtists: ArtistBubble[] = []
 	public orbIntensity = 0
+	public maxBubbles = 0
 
 	private readonly seenArtistNames = new Set<string>()
+	private readonly seenArtistIds = new Set<string>()
+	private readonly seenArtistMbids = new Set<string>()
 	private readonly followedIds = new Set<string>()
 
 	public async loadInitialArtists(country = 'Japan', tag = ''): Promise<void> {
 		this.logger.info('Loading initial artists', { country, tag })
-		this.seenArtistNames.clear()
+		this.clearSeenSets()
 		for (const f of this.followedArtists) {
-			this.seenArtistNames.add(f.name.toLowerCase())
+			this.trackSeen(f)
 		}
 		// NOTE: `tag` field requires BSR proto publish (specification#73).
 		// Once ListTopRequest includes `tag`, add it to the request object.
 		const resp = await this.artistClient.listTop({ country })
 		const bubbles = resp.artists
 			.map((a) => this.toBubble(a))
-			.filter((b) => !this.seenArtistNames.has(b.name.toLowerCase()))
+			.filter((b) => !this.isSeen(b))
 		this.availableBubbles = bubbles
+		this.maxBubbles = bubbles.length
 		for (const b of this.availableBubbles) {
-			this.seenArtistNames.add(b.name.toLowerCase())
+			this.trackSeen(b)
 		}
 		this.logger.info('Loaded initial artists', {
 			count: this.availableBubbles.length,
+			maxBubbles: this.maxBubbles,
 		})
 	}
 
 	public async reloadWithTag(tag: string, country = 'Japan'): Promise<void> {
 		this.logger.info('Reloading artists with tag', { tag, country })
-		this.seenArtistNames.clear()
+		this.clearSeenSets()
 		for (const f of this.followedArtists) {
-			this.seenArtistNames.add(f.name.toLowerCase())
+			this.trackSeen(f)
 		}
 		// NOTE: `tag` field requires BSR proto publish (specification#73).
 		const resp = await this.artistClient.listTop({ country })
 		const bubbles = resp.artists
 			.map((a) => this.toBubble(a))
-			.filter((b) => !this.seenArtistNames.has(b.name.toLowerCase()))
+			.filter((b) => !this.isSeen(b))
 		this.availableBubbles = bubbles
+		this.maxBubbles = bubbles.length
 		for (const b of this.availableBubbles) {
-			this.seenArtistNames.add(b.name.toLowerCase())
+			this.trackSeen(b)
 		}
 		this.logger.info('Reloaded artists with tag', {
 			tag,
 			count: this.availableBubbles.length,
+			maxBubbles: this.maxBubbles,
 		})
 	}
 
@@ -154,17 +161,21 @@ export class ArtistDiscoveryService {
 		})
 
 		const newBubbles = resp.artists
-			.filter(
-				(a) => !this.seenArtistNames.has((a.name?.value ?? '').toLowerCase()),
-			)
 			.map((a) => this.toBubble(a))
+			.filter((b) => !this.isSeen(b))
 
 		for (const b of newBubbles) {
-			this.seenArtistNames.add(b.name.toLowerCase())
+			this.trackSeen(b)
 			this.availableBubbles.push(b)
 		}
 
 		return newBubbles
+	}
+
+	public evictOldest(count: number): ArtistBubble[] {
+		if (count <= 0) return []
+		const evicted = this.availableBubbles.splice(0, count)
+		return evicted
 	}
 
 	public async checkLiveEvents(artistName: string): Promise<boolean> {
@@ -195,6 +206,29 @@ export class ArtistDiscoveryService {
 			this.logger.error('Failed to fetch followed artists', err)
 			throw err
 		}
+	}
+
+	private normalizeName(name: string): string {
+		return name.trim().replace(/\s+/g, ' ').toLowerCase()
+	}
+
+	private isSeen(bubble: ArtistBubble): boolean {
+		if (this.seenArtistNames.has(this.normalizeName(bubble.name))) return true
+		if (bubble.id && this.seenArtistIds.has(bubble.id)) return true
+		if (bubble.mbid && this.seenArtistMbids.has(bubble.mbid)) return true
+		return false
+	}
+
+	private trackSeen(bubble: ArtistBubble): void {
+		this.seenArtistNames.add(this.normalizeName(bubble.name))
+		if (bubble.id) this.seenArtistIds.add(bubble.id)
+		if (bubble.mbid) this.seenArtistMbids.add(bubble.mbid)
+	}
+
+	private clearSeenSets(): void {
+		this.seenArtistNames.clear()
+		this.seenArtistIds.clear()
+		this.seenArtistMbids.clear()
 	}
 
 	private toBubble(artist: {

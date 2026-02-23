@@ -232,13 +232,22 @@ export class DnaOrbCanvas {
 			}),
 		)
 
-		// Spawn similar artists
+		// Spawn similar artists with pool cap enforcement
 		try {
 			const similar = await this.discoveryService.getSimilarArtists(
 				artist.name,
 				artist.id,
 			)
 			if (similar.length > 0) {
+				// Evict oldest bubbles if adding new ones would exceed the cap
+				const currentCount = this.discoveryService.availableBubbles.length
+				const maxBubbles = this.discoveryService.maxBubbles
+				const overflow = currentCount - maxBubbles
+				if (overflow > 0) {
+					const evicted = this.discoveryService.evictOldest(overflow)
+					const evictedIds = evicted.map((b) => b.id)
+					await this.physics.fadeOutBubbles(evictedIds)
+				}
 				this.physics.spawnBubblesAt(similar, pos.x, pos.y)
 				this.preloadImages(similar)
 			} else {
