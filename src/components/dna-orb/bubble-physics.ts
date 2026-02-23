@@ -8,6 +8,8 @@ export interface PhysicsBubble {
 	opacity: number
 	isSpawning: boolean
 	spawnProgress: number
+	isFadingOut: boolean
+	fadeOutProgress: number
 }
 
 export class BubblePhysics {
@@ -21,6 +23,8 @@ export class BubblePhysics {
 	private height = 0
 	private initPromise: Promise<void> | null = null
 	private initGeneration = 0
+	private fadeOutResolve: (() => void) | null = null
+	private fadeOutPendingIds = new Set<string>()
 
 	public async init(width: number, height: number): Promise<void> {
 		if (this.initPromise) {
@@ -120,6 +124,8 @@ export class BubblePhysics {
 				opacity: 1,
 				isSpawning: false,
 				spawnProgress: 1,
+				isFadingOut: false,
+				fadeOutProgress: 0,
 			})
 		}
 	}
@@ -155,6 +161,8 @@ export class BubblePhysics {
 				opacity: 0,
 				isSpawning: true,
 				spawnProgress: 0,
+				isFadingOut: false,
+				fadeOutProgress: 0,
 			})
 		}
 	}
@@ -168,8 +176,27 @@ export class BubblePhysics {
 		return bubble
 	}
 
+	public fadeOutBubble(artistId: string): void {
+		const bubble = this.bubbleMap.get(artistId)
+		if (!bubble || bubble.isFadingOut) return
+		bubble.isFadingOut = true
+		bubble.fadeOutProgress = 0
+	}
+
+	public fadeOutBubbles(artistIds: string[]): Promise<void> {
+		if (artistIds.length === 0) return Promise.resolve()
+		for (const id of artistIds) {
+			this.fadeOutBubble(id)
+		}
+		return new Promise<void>((resolve) => {
+			this.fadeOutResolve = resolve
+			this.fadeOutPendingIds = new Set(artistIds)
+		})
+	}
+
 	public getBubbleAt(x: number, y: number): PhysicsBubble | undefined {
 		for (const bubble of this.bubbleMap.values()) {
+			if (bubble.isFadingOut) continue
 			const pos = bubble.body.position
 			const dx = pos.x - x
 			const dy = pos.y - y
@@ -184,6 +211,8 @@ export class BubblePhysics {
 	public update(delta: number): void {
 		this.Matter?.Engine.update(this.engine, delta)
 
+		const FADE_OUT_SPEED = 0.0033 // ~300ms to complete
+
 		for (const bubble of this.bubbleMap.values()) {
 			if (bubble.isSpawning) {
 				bubble.spawnProgress = Math.min(1, bubble.spawnProgress + delta * 0.004)
@@ -193,6 +222,24 @@ export class BubblePhysics {
 					bubble.isSpawning = false
 					bubble.scale = 1
 					bubble.opacity = 1
+				}
+			} else if (bubble.isFadingOut) {
+				bubble.fadeOutProgress = Math.min(
+					1,
+					bubble.fadeOutProgress + delta * FADE_OUT_SPEED,
+				)
+				bubble.opacity = 1 - bubble.fadeOutProgress
+				if (bubble.fadeOutProgress >= 1) {
+					this.Matter?.Composite.remove(this.world, bubble.body)
+					this.bubbleMap.delete(bubble.artist.id)
+					this.fadeOutPendingIds.delete(bubble.artist.id)
+					if (
+						this.fadeOutPendingIds.size === 0 &&
+						this.fadeOutResolve
+					) {
+						this.fadeOutResolve()
+						this.fadeOutResolve = null
+					}
 				}
 			}
 		}
