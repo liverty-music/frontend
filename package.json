@@ -9,8 +9,8 @@
 	"license": "UNLICENSED",
 	"dependencies": {
 		"@aurelia/router": "latest",
-		"@buf/liverty-music_schema.bufbuild_es": "^1.10.0-20260222131540-3918c694a0b3.1",
-		"@buf/liverty-music_schema.connectrpc_es": "^1.6.1-20260222131540-3918c694a0b3.2",
+		"@buf/liverty-music_schema.bufbuild_es": "^1.10.0-20260223014019-197931621823.1",
+		"@buf/liverty-music_schema.connectrpc_es": "^1.6.1-20260223014019-197931621823.2",
 		"@bufbuild/protobuf": "^1.10.1",
 		"@connectrpc/connect": "^1.7.0",
 		"@connectrpc/connect-web": "^1.7.0",
