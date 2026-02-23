@@ -40,6 +40,17 @@ export class ConcertServiceClient {
 		}
 	}
 
+	public async listByFollower(signal?: AbortSignal): Promise<Concert[]> {
+		this.logger.info('Listing concerts by follower')
+		try {
+			const response = await this.concertClient.listByFollower({}, { signal })
+			return response.concerts
+		} catch (err) {
+			this.logger.warn('Concert listByFollower failed', { error: err })
+			throw err
+		}
+	}
+
 	public async searchNewConcerts(
 		artistId: string,
 		signal?: AbortSignal,
