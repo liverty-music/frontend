@@ -46,13 +46,13 @@ describe('DashboardService', () => {
 		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
 			artists: [],
 		})
+		mockConcertService.listByFollower = vi.fn().mockResolvedValue([])
 
 		// Act
 		const result = await sut.loadDashboardEvents()
 
 		// Assert
 		expect(result).toEqual([])
-		expect(mockConcertService.listConcerts).not.toHaveBeenCalled()
 	})
 
 	it('should load and group concerts for multiple artists', async () => {
@@ -98,17 +98,10 @@ describe('DashboardService', () => {
 			sourceUrl: { value: 'https://example.com/3' },
 		}
 
-		mockConcertService.listConcerts = vi
+		// listByFollower returns all concerts at once
+		mockConcertService.listByFollower = vi
 			.fn()
-			.mockImplementation((artistId: string) => {
-				if (artistId === 'artist-1') {
-					return Promise.resolve([concert1, concert3])
-				}
-				if (artistId === 'artist-2') {
-					return Promise.resolve([concert2])
-				}
-				return Promise.resolve([])
-			})
+			.mockResolvedValue([concert1, concert2, concert3])
 
 		// Act
 		const result = await sut.loadDashboardEvents()
@@ -131,45 +124,23 @@ describe('DashboardService', () => {
 		expect(result[1].other[0].title).toBe('Concert 3')
 	})
 
-	it('should handle partial RPC failure using Promise.allSettled', async () => {
+	it('should handle listByFollower RPC failure gracefully', async () => {
 		// Arrange
 		const artist1 = {
 			artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
 			passionLevel: 0,
 		}
-		const artist2 = {
-			artist: { id: { value: 'artist-2' }, name: { value: 'Artist Two' } },
-			passionLevel: 0,
-		}
 
 		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
-			artists: [artist1, artist2],
+			artists: [artist1],
 		})
 
-		const concert1: Partial<Concert> = {
-			id: { value: 'concert-1' },
-			artistId: { value: 'artist-1' },
-			title: { value: 'Concert 1' },
-			localDate: makeDate(2026, 3, 15),
-			sourceUrl: { value: 'https://example.com/1' },
-		}
-
-		mockConcertService.listConcerts = vi
+		mockConcertService.listByFollower = vi
 			.fn()
-			.mockImplementation((artistId: string) => {
-				if (artistId === 'artist-1') {
-					return Promise.resolve([concert1])
-				}
-				return Promise.reject(new Error('API error'))
-			})
+			.mockRejectedValue(new Error('API error'))
 
-		// Act
-		const result = await sut.loadDashboardEvents()
-
-		// Assert - should still return events from successful artist
-		expect(result).toHaveLength(1)
-		expect(result[0].other).toHaveLength(1)
-		expect(result[0].other[0].artistName).toBe('Artist One')
+		// Act & Assert - Promise.all rejects when listByFollower fails
+		await expect(sut.loadDashboardEvents()).rejects.toThrow('API error')
 	})
 
 	it('should format concert times correctly', async () => {
@@ -194,7 +165,7 @@ describe('DashboardService', () => {
 			sourceUrl: { value: 'https://example.com' },
 		}
 
-		mockConcertService.listConcerts = vi.fn().mockResolvedValue([concert])
+		mockConcertService.listByFollower = vi.fn().mockResolvedValue([concert])
 
 		// Act
 		const result = await sut.loadDashboardEvents()
@@ -232,7 +203,7 @@ describe('DashboardService', () => {
 			sourceUrl: { value: 'https://example.com/2' },
 		}
 
-		mockConcertService.listConcerts = vi
+		mockConcertService.listByFollower = vi
 			.fn()
 			.mockResolvedValue([concertWithDate, concertWithoutDate])
 
@@ -272,7 +243,7 @@ describe('DashboardService', () => {
 			sourceUrl: { value: 'https://example.com/1' },
 		}
 
-		mockConcertService.listConcerts = vi
+		mockConcertService.listByFollower = vi
 			.fn()
 			.mockResolvedValue([concert1, concert2])
 
@@ -328,7 +299,7 @@ describe('DashboardService', () => {
 			sourceUrl: { value: 'https://example.com/3' },
 		}
 
-		mockConcertService.listConcerts = vi
+		mockConcertService.listByFollower = vi
 			.fn()
 			.mockResolvedValue([tokyoConcert, osakaConcert, unknownConcert])
 

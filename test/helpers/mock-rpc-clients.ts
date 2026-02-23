@@ -9,6 +9,7 @@ import type { IConcertService } from '../../src/services/concert-service'
 export function createMockConcertService(): Partial<IConcertService> {
 	return {
 		listConcerts: vi.fn().mockResolvedValue([]),
+		listByFollower: vi.fn().mockResolvedValue([]),
 		searchNewConcerts: vi.fn().mockResolvedValue(undefined),
 	}
 }
