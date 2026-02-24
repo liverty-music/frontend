@@ -50,9 +50,7 @@ export class ArtistDiscoveryService {
 		for (const f of this.followedArtists) {
 			this.seenArtistNames.add(f.name.toLowerCase())
 		}
-		// NOTE: `tag` field requires BSR proto publish (specification#73).
-		// Once ListTopRequest includes `tag`, add it to the request object.
-		const resp = await this.artistClient.listTop({ country })
+		const resp = await this.artistClient.listTop({ country, tag })
 		const bubbles = resp.artists
 			.map((a) => this.toBubble(a))
 			.filter((b) => !this.seenArtistNames.has(b.name.toLowerCase()))
@@ -71,8 +69,7 @@ export class ArtistDiscoveryService {
 		for (const f of this.followedArtists) {
 			this.seenArtistNames.add(f.name.toLowerCase())
 		}
-		// NOTE: `tag` field requires BSR proto publish (specification#73).
-		const resp = await this.artistClient.listTop({ country })
+		const resp = await this.artistClient.listTop({ country, tag })
 		const bubbles = resp.artists
 			.map((a) => this.toBubble(a))
 			.filter((b) => !this.seenArtistNames.has(b.name.toLowerCase()))
