@@ -29,11 +29,35 @@
 	--shadow-card-glow: 0 4px 24px -4px oklch(58.5% 0.233 277deg / 20%);
 	--shadow-sheet: 0 -8px 32px -4px oklch(0% 0 0deg / 50%);
 	--shadow-button: 0 4px 16px -2px oklch(58.5% 0.233 277deg / 30%);
+
+	/* Container query breakpoints */
+	--container-sm: 320px;
+	--container-md: 480px;
+	--container-lg: 640px;
+
+	/* View transition tokens */
+	--transition-route-duration: 200ms;
+	--transition-route-easing: ease-out;
 }
 
-/* Page transition animation */
-au-viewport > * {
-	animation: page-enter 300ms ease-out both;
+/* View Transitions API for route animations */
+@supports (view-transition-name: x) {
+	::view-transition-old(root) {
+		animation: var(--transition-route-duration) var(--transition-route-easing)
+			both fade-out;
+	}
+
+	::view-transition-new(root) {
+		animation: var(--transition-route-duration) var(--transition-route-easing)
+			both fade-in;
+	}
+}
+
+/* Fallback for browsers without View Transitions */
+@supports not (view-transition-name: x) {
+	au-viewport > * {
+		animation: page-enter 300ms ease-out both;
+	}
 }
 
 @keyframes page-enter {
@@ -56,6 +80,16 @@ au-viewport > * {
 
 	to {
 		opacity: 1;
+	}
+}
+
+@keyframes fade-out {
+	from {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
 	}
 }
 
@@ -89,9 +123,41 @@ au-viewport > * {
 	}
 }
 
+/* Container query responsive rules for event cards */
+@container (min-width: 320px) {
+	.event-card-responsive {
+		padding: 1.25rem;
+		min-height: 120px;
+	}
+}
+
+@container (min-width: 480px) {
+	.event-card-responsive {
+		padding: 1.5rem;
+		min-height: 140px;
+	}
+
+	.event-card-responsive .event-card-title {
+		font-size: 2.5rem;
+	}
+}
+
+/* Fallback for browsers without Container Queries */
+@supports not (container-type: inline-size) {
+	.event-card-responsive {
+		padding: 1.25rem;
+		min-height: 120px;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	au-viewport > *,
 	[class*="animate-"] {
+		animation: none;
+	}
+
+	::view-transition-old(root),
+	::view-transition-new(root) {
 		animation: none;
 	}
 }

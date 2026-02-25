@@ -1,4 +1,4 @@
-import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
+import { ILogger, resolve, shadowCSS, useShadowDOM, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { IToastService } from '../../components/toast-notification/toast-notification'
 import {
@@ -109,9 +109,10 @@ export class DiscoverPage {
 		}
 	}
 
-	public onSearchInput(): void {
+	@watch('searchQuery')
+	protected onSearchQueryChanged(newValue: string): void {
 		window.clearTimeout(this.searchDebounceTimer)
-		const query = this.searchQuery.trim()
+		const query = newValue.trim()
 
 		if (query.length === 0) {
 			this.exitSearchMode()
@@ -126,9 +127,7 @@ export class DiscoverPage {
 	}
 
 	public clearSearch(): void {
-		window.clearTimeout(this.searchDebounceTimer)
 		this.searchQuery = ''
-		this.exitSearchMode()
 	}
 
 	private exitSearchMode(): void {

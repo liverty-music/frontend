@@ -9,7 +9,7 @@
 
 	<!-- Step dots progress indicator -->
 	<div class="step-dots">
-		<div repeat.for="i of totalPhases" class="step-dot ${getStepDotClass(i)}"></div>
+		<div repeat.for="i of totalPhases; key.bind: i" class="step-dot ${getStepDotClass(i)}"></div>
 	</div>
 
 	<!-- Step label -->

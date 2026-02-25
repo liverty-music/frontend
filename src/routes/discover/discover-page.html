@@ -16,7 +16,6 @@
         class="search-input"
         placeholder="Search artists..."
         value.bind="searchQuery"
-        input.trigger="onSearchInput()"
         aria-label="Search artists"
       >
       <button
@@ -35,7 +34,7 @@
     <!-- Genre chips (hidden during search) -->
     <div class="genre-chips ${isSearchMode ? 'hidden' : ''}">
       <button
-        repeat.for="tag of genreTags"
+        repeat.for="tag of genreTags; key.bind: tag"
         class="genre-chip ${activeTag === tag ? 'active' : ''}"
         click.trigger="onGenreSelected(tag)"
         disabled.bind="isLoadingTag"
@@ -74,7 +73,7 @@
 
       <div class="results-list">
         <div
-          repeat.for="artist of searchResults"
+          repeat.for="artist of searchResults; key.bind: artist.id"
           class="result-item"
         >
           <div class="result-info">

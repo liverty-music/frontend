@@ -3,11 +3,12 @@ import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 
 @route({
+	title: 'Liverty Music',
 	routes: [
 		{
 			path: ['', 'welcome'],
 			component: import('./welcome-page'),
-			title: 'Liverty Music',
+			title: 'Welcome',
 			data: { auth: false },
 		},
 		{
@@ -19,7 +20,7 @@ import { IErrorBoundaryService } from './services/error-boundary-service'
 		{
 			path: 'auth/callback',
 			component: import('./routes/auth-callback'),
-			title: 'Auth Callback',
+			title: 'Signing In',
 			data: { auth: false },
 		},
 		{
@@ -55,7 +56,7 @@ import { IErrorBoundaryService } from './services/error-boundary-service'
 		{
 			path: 'tickets',
 			component: import('./routes/tickets/tickets-page'),
-			title: 'My Tickets',
+			title: 'Tickets',
 		},
 		{
 			path: 'settings',

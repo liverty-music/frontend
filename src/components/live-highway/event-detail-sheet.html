@@ -45,7 +45,7 @@
           <div class="flex items-start gap-3">
             <span class="text-text-muted mt-0.5"><icon-calendar></icon-calendar></span>
             <div>
-              <p class="text-text-primary font-medium">${formattedDate}</p>
+              <p class="text-text-primary font-medium">${event.date | date:'long'}</p>
               <p class="text-text-secondary text-sm">
                 Open ${event.openTime || '—'} / Start ${event.startTime}
               </p>
