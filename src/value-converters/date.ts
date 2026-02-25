@@ -17,7 +17,7 @@ export class DateValueConverter {
 
 		const options: Intl.DateTimeFormatOptions =
 			format === 'long'
-				? { year: 'numeric', month: 'long', day: 'numeric' }
+				? { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }
 				: { month: 'numeric', day: 'numeric' }
 
 		return new Intl.DateTimeFormat('ja-JP', options).format(date)

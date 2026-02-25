@@ -111,17 +111,6 @@ export class MyApp {
 		)
 
 		this.subscriptions.push(
-			this.routerEvents.subscribe('au:router:navigation-start', () => {
-				if (
-					'startViewTransition' in document &&
-					typeof document.startViewTransition === 'function'
-				) {
-					document.startViewTransition(() => Promise.resolve())
-				}
-			}),
-		)
-
-		this.subscriptions.push(
 			this.routerEvents.subscribe('au:router:navigation-end', (event) => {
 				const instruction = (
 					event as unknown as {

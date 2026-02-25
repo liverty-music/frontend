@@ -28,10 +28,11 @@ describe('DateValueConverter', () => {
 	})
 
 	describe('toView - long format', () => {
-		it('should format a Date to long ja-JP format', () => {
-			const date = new Date(2026, 1, 25) // Feb 25, 2026
+		it('should format a Date to long ja-JP format with weekday', () => {
+			const date = new Date(2026, 1, 25) // Feb 25, 2026 (Wednesday)
 			const result = converter.toView(date, 'long')
-			expect(result).toBe('2026年2月25日')
+			expect(result).toMatch(/2026年2月25日/)
+			expect(result).toMatch(/水/)
 		})
 
 		it('should format a date string to long format', () => {
