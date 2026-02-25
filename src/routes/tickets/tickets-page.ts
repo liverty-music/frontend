@@ -40,15 +40,10 @@ export class TicketsPage {
 		}
 	}
 
-	public formatDate(ticket: Ticket): string {
+	public mintDate(ticket: Ticket): Date | null {
 		const ts = ticket.mintTime
-		if (!ts) return ''
-		const date = new Date(Number(ts.seconds) * 1000 + ts.nanos / 1_000_000)
-		return date.toLocaleDateString(undefined, {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-		})
+		if (!ts) return null
+		return new Date(Number(ts.seconds) * 1000 + ts.nanos / 1_000_000)
 	}
 
 	public formatTokenId(ticket: Ticket): string {

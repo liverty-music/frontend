@@ -18,16 +18,6 @@ export class EventDetailSheet {
 		return artistColor(this.event.artistName)
 	}
 
-	public get formattedDate(): string {
-		if (!this.event) return ''
-		return this.event.date.toLocaleDateString('ja-JP', {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-			weekday: 'short',
-		})
-	}
-
 	public get googleMapsUrl(): string {
 		if (!this.event) return '#'
 		const query = this.event.adminArea

@@ -123,6 +123,33 @@
 	}
 }
 
+/* Container query responsive rules for event cards */
+@container (min-width: 320px) {
+	.event-card-responsive {
+		padding: 1.25rem;
+		min-height: 120px;
+	}
+}
+
+@container (min-width: 480px) {
+	.event-card-responsive {
+		padding: 1.5rem;
+		min-height: 140px;
+	}
+
+	.event-card-responsive .event-card-title {
+		font-size: 2.5rem;
+	}
+}
+
+/* Fallback for browsers without Container Queries */
+@supports not (container-type: inline-size) {
+	.event-card-responsive {
+		padding: 1.25rem;
+		min-height: 120px;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	au-viewport > *,
 	[class*="animate-"] {
