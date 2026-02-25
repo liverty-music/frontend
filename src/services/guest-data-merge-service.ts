@@ -5,8 +5,8 @@ import {
 import { DI, ILogger, resolve } from 'aurelia'
 import { IArtistServiceClient } from './artist-service-client'
 import {
-	type LocalFollowedArtist,
 	ILocalArtistClient,
+	type LocalFollowedArtist,
 } from './local-artist-client'
 import { IOnboardingService } from './onboarding-service'
 

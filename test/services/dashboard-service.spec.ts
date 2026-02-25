@@ -43,9 +43,7 @@ describe('DashboardService', () => {
 
 	it('should return empty array when no followed artists', async () => {
 		// Arrange
-		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
-			artists: [],
-		})
+		mockArtistService.listFollowed = vi.fn().mockResolvedValue([])
 		mockConcertService.listByFollower = vi.fn().mockResolvedValue([])
 
 		// Act
@@ -57,18 +55,10 @@ describe('DashboardService', () => {
 
 	it('should load and group concerts for multiple artists', async () => {
 		// Arrange
-		const artist1 = {
-			artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
-			passionLevel: 0,
-		}
-		const artist2 = {
-			artist: { id: { value: 'artist-2' }, name: { value: 'Artist Two' } },
-			passionLevel: 0,
-		}
-
-		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
-			artists: [artist1, artist2],
-		})
+		mockArtistService.listFollowed = vi.fn().mockResolvedValue([
+			{ id: 'artist-1', name: 'Artist One', passionLevel: 0 },
+			{ id: 'artist-2', name: 'Artist Two', passionLevel: 0 },
+		])
 
 		// Concerts have no adminArea — they land in 'other' lane (no userRegion set)
 		const concert1: Partial<Concert> = {
@@ -126,14 +116,11 @@ describe('DashboardService', () => {
 
 	it('should handle listByFollower RPC failure gracefully', async () => {
 		// Arrange
-		const artist1 = {
-			artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
-			passionLevel: 0,
-		}
-
-		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
-			artists: [artist1],
-		})
+		mockArtistService.listFollowed = vi
+			.fn()
+			.mockResolvedValue([
+				{ id: 'artist-1', name: 'Artist One', passionLevel: 0 },
+			])
 
 		mockConcertService.listByFollower = vi
 			.fn()
@@ -145,13 +132,9 @@ describe('DashboardService', () => {
 
 	it('should format concert times correctly', async () => {
 		// Arrange
-		const artist = {
-			artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
-			passionLevel: 0,
-		}
-		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
-			artists: [artist],
-		})
+		mockArtistService.listFollowed = vi
+			.fn()
+			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', passionLevel: 0 }])
 
 		// 2026-05-01 09:05 UTC = seconds: 1746090300
 		// 2026-05-01 08:30 UTC = seconds: 1746088200
@@ -179,13 +162,9 @@ describe('DashboardService', () => {
 
 	it('should skip concerts without localDate', async () => {
 		// Arrange
-		const artist = {
-			artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
-			passionLevel: 0,
-		}
-		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
-			artists: [artist],
-		})
+		mockArtistService.listFollowed = vi
+			.fn()
+			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', passionLevel: 0 }])
 
 		const concertWithDate: Partial<Concert> = {
 			id: { value: 'concert-1' },
@@ -218,13 +197,9 @@ describe('DashboardService', () => {
 
 	it('should sort events chronologically within load', async () => {
 		// Arrange
-		const artist = {
-			artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
-			passionLevel: 0,
-		}
-		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
-			artists: [artist],
-		})
+		mockArtistService.listFollowed = vi
+			.fn()
+			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', passionLevel: 0 }])
 
 		// Return concerts in reverse chronological order
 		const concert1: Partial<Concert> = {
@@ -259,13 +234,9 @@ describe('DashboardService', () => {
 		// Arrange — set user region in localStorage
 		localStorage.setItem('liverty-music:user-region', '東京')
 
-		const artist = {
-			artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
-			passionLevel: 0,
-		}
-		mockArtistService.getClient!().listFollowed = vi.fn().mockResolvedValue({
-			artists: [artist],
-		})
+		mockArtistService.listFollowed = vi
+			.fn()
+			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', passionLevel: 0 }])
 
 		const tokyoConcert: Partial<Concert> = {
 			id: { value: 'concert-1' },

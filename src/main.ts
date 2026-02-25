@@ -1,9 +1,5 @@
 import { RouterConfiguration } from '@aurelia/router'
-import Aurelia, {
-	ConsoleSink,
-	LoggerConfiguration,
-	LogLevel,
-} from 'aurelia'
+import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { IToastService } from './components/toast-notification/toast-notification'
 import { AuthHook } from './hooks/auth-hook'

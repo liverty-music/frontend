@@ -3,8 +3,8 @@ import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
 import { IToastService } from '../../components/toast-notification/toast-notification'
 import { IArtistDiscoveryService } from '../../services/artist-discovery-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
-import { ILocalArtistClient } from '../../services/local-artist-client'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
+import { ILocalArtistClient } from '../../services/local-artist-client'
 import {
 	IOnboardingService,
 	OnboardingStep,

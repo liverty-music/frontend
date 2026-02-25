@@ -57,10 +57,7 @@ export class ArtistDiscoveryPage {
 	}
 
 	public get progressPercent(): number {
-		return Math.min(
-			(this.followedCount / TUTORIAL_FOLLOW_TARGET) * 100,
-			100,
-		)
+		return Math.min((this.followedCount / TUTORIAL_FOLLOW_TARGET) * 100, 100)
 	}
 
 	public loadFailed = false

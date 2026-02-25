@@ -4,6 +4,8 @@ import { createTestContainer } from '../helpers/create-container'
 
 const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
 const mockIRouter = DI.createInterface('IRouter')
+const mockIOnboardingService = DI.createInterface('IOnboardingService')
+const mockIToastService = DI.createInterface('IToastService')
 
 vi.mock('../../src/services/artist-service-client', () => ({
 	IArtistServiceClient: mockIArtistServiceClient,
@@ -11,6 +13,24 @@ vi.mock('../../src/services/artist-service-client', () => ({
 
 vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
+}))
+
+vi.mock('../../src/services/onboarding-service', () => ({
+	IOnboardingService: mockIOnboardingService,
+	OnboardingStep: {
+		LP: 0,
+		DISCOVER: 1,
+		LOADING: 2,
+		DASHBOARD: 3,
+		DETAIL: 4,
+		MY_ARTISTS: 5,
+		SIGNUP: 6,
+		COMPLETED: 7,
+	},
+}))
+
+vi.mock('../../src/components/toast-notification/toast-notification', () => ({
+	IToastService: mockIToastService,
 }))
 
 vi.mock(
@@ -30,15 +50,8 @@ const { MyArtistsPage } = await import(
 	'../../src/routes/my-artists/my-artists-page'
 )
 
-function makeFollowedArtist(id: string, name: string, passionLevel = 2) {
-	return {
-		artist: {
-			id: { value: id },
-			name: { value: name },
-			mbid: { value: `mbid-${id}` },
-		},
-		passionLevel,
-	}
+function makeFollowedArtistInfo(id: string, name: string, passionLevel = 2) {
+	return { id, name, passionLevel }
 }
 
 function makeTouchEvent(clientX: number, clientY = 0): TouchEvent {
@@ -50,30 +63,48 @@ function makeTouchEvent(clientX: number, clientY = 0): TouchEvent {
 
 describe('MyArtistsPage', () => {
 	let sut: InstanceType<typeof MyArtistsPage>
-	let mockClient: {
-		listFollowed: ReturnType<typeof vi.fn>
+	let mockGrpcClient: {
 		unfollow: ReturnType<typeof vi.fn>
+		setPassionLevel: ReturnType<typeof vi.fn>
+	}
+	let mockArtistService: {
+		listFollowed: ReturnType<typeof vi.fn>
+		getClient: () => typeof mockGrpcClient
 	}
 	let mockRouter: { load: ReturnType<typeof vi.fn> }
 
 	beforeEach(() => {
-		mockClient = {
-			listFollowed: vi.fn().mockResolvedValue({
-				artists: [
-					makeFollowedArtist('id-1', 'RADWIMPS'),
-					makeFollowedArtist('id-2', 'ONE OK ROCK'),
-					makeFollowedArtist('id-3', 'Aimer'),
-				],
-			}),
+		mockGrpcClient = {
 			unfollow: vi.fn().mockResolvedValue({}),
+			setPassionLevel: vi.fn().mockResolvedValue({}),
 		}
 
-		const mockService = { getClient: () => mockClient }
+		mockArtistService = {
+			listFollowed: vi
+				.fn()
+				.mockResolvedValue([
+					makeFollowedArtistInfo('id-1', 'RADWIMPS'),
+					makeFollowedArtistInfo('id-2', 'ONE OK ROCK'),
+					makeFollowedArtistInfo('id-3', 'Aimer'),
+				]),
+			getClient: () => mockGrpcClient,
+		}
 		mockRouter = { load: vi.fn().mockResolvedValue(undefined) }
 
+		const mockOnboarding = {
+			currentStep: 7, // COMPLETED
+			isOnboarding: false,
+			setStep: vi.fn(),
+			complete: vi.fn(),
+		}
+
+		const mockToast = { show: vi.fn() }
+
 		const container = createTestContainer(
-			Registration.instance(mockIArtistServiceClient, mockService),
+			Registration.instance(mockIArtistServiceClient, mockArtistService),
 			Registration.instance(mockIRouter, mockRouter),
+			Registration.instance(mockIOnboardingService, mockOnboarding),
+			Registration.instance(mockIToastService, mockToast),
 		)
 		container.register(MyArtistsPage)
 		sut = container.get(MyArtistsPage)
@@ -91,7 +122,7 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should handle empty response', async () => {
-			mockClient.listFollowed.mockResolvedValue({ artists: [] })
+			mockArtistService.listFollowed.mockResolvedValue([])
 			await sut.loading()
 
 			expect(sut.artists).toHaveLength(0)
@@ -99,7 +130,9 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should handle RPC errors gracefully', async () => {
-			mockClient.listFollowed.mockRejectedValue(new Error('Network error'))
+			mockArtistService.listFollowed.mockRejectedValue(
+				new Error('Network error'),
+			)
 			await sut.loading()
 
 			expect(sut.isLoading).toBe(false)
@@ -229,7 +262,7 @@ describe('MyArtistsPage', () => {
 			vi.advanceTimersByTime(5000)
 			await vi.runAllTimersAsync()
 
-			expect(mockClient.unfollow).toHaveBeenCalledWith({
+			expect(mockGrpcClient.unfollow).toHaveBeenCalledWith({
 				artistId: expect.objectContaining({ value: 'id-1' }),
 			})
 			expect(sut.undoVisible).toBe(false)
@@ -246,7 +279,7 @@ describe('MyArtistsPage', () => {
 			sut.undo()
 			vi.advanceTimersByTime(5000)
 
-			expect(mockClient.unfollow).not.toHaveBeenCalled()
+			expect(mockGrpcClient.unfollow).not.toHaveBeenCalled()
 
 			vi.useRealTimers()
 		})
