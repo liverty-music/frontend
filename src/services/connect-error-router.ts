@@ -4,7 +4,9 @@ import type { IAuthService } from './auth-service'
 /**
  * Creates a Connect interceptor that handles Unauthenticated errors
  * by attempting a silent token refresh and retrying the original request.
- * If the refresh fails, the user is redirected to the landing page.
+ * If the refresh fails and the user was previously authenticated, they are
+ * redirected to the landing page. Guest/tutorial users are never redirected
+ * because they have no session to recover.
  */
 export const createAuthRetryInterceptor = (auth: IAuthService): Interceptor => {
 	return (next) => async (req) => {
@@ -13,6 +15,13 @@ export const createAuthRetryInterceptor = (auth: IAuthService): Interceptor => {
 		} catch (err) {
 			if (!(err instanceof ConnectError)) throw err
 			if (err.code !== Code.Unauthenticated) throw err
+
+			// If the user was never authenticated (guest/tutorial mode),
+			// skip silent refresh and redirect — just propagate the error
+			// so the caller can handle it gracefully.
+			if (!auth.user) {
+				throw err
+			}
 
 			// Attempt silent token refresh via OIDC signinSilent
 			try {

@@ -100,6 +100,20 @@ export class ArtistDiscoveryService {
 		return this.followedIds.has(artistId)
 	}
 
+	/**
+	 * Update UI state to reflect that an artist has been followed.
+	 * Does NOT persist to any backend — call ArtistServiceClient.follow() for that.
+	 */
+	public markFollowed(artist: ArtistBubble): void {
+		if (this.isFollowed(artist.id)) return
+		this.availableBubbles = this.availableBubbles.filter(
+			(b) => b.id !== artist.id,
+		)
+		this.followedIds.add(artist.id)
+		this.followedArtists.push(artist)
+		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
+	}
+
 	public async followArtist(artist: ArtistBubble): Promise<void> {
 		if (this.isFollowed(artist.id)) return
 		this.logger.info('Following artist', { artist: artist.name })

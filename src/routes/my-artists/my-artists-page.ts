@@ -7,6 +7,10 @@ import { ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../components/live-highway/color-generator'
 import { IToastService } from '../../components/toast-notification/toast-notification'
 import { IArtistServiceClient } from '../../services/artist-service-client'
+import {
+	IOnboardingService,
+	OnboardingStep,
+} from '../../services/onboarding-service'
 
 export interface FollowedArtist {
 	id: string
@@ -69,25 +73,35 @@ export class MyArtistsPage {
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsPage')
 	private readonly artistService = resolve(IArtistServiceClient)
+	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly toast = resolve(IToastService)
 	private abortController: AbortController | null = null
+
+	// Tutorial state
+	public showPassionExplanation = false
+
+	public get isTutorialStep5(): boolean {
+		return this.onboarding.currentStep === OnboardingStep.MY_ARTISTS
+	}
+
+	public get isOnboarding(): boolean {
+		return this.onboarding.isOnboarding
+	}
 
 	public async loading(): Promise<void> {
 		this.isLoading = true
 		this.abortController = new AbortController()
 
 		try {
-			const client = this.artistService.getClient()
-			const response = await client.listFollowed(
-				{},
-				{ signal: this.abortController.signal },
+			const followed = await this.artistService.listFollowed(
+				this.abortController.signal,
 			)
-			this.artists = response.artists.map((fa) => ({
-				id: fa.artist?.id?.value ?? '',
-				name: fa.artist?.name?.value ?? '',
-				color: artistColor(fa.artist?.name?.value ?? ''),
-				passionLevel: fa.passionLevel ?? PassionLevel.LOCAL_ONLY,
+			this.artists = followed.map((fa) => ({
+				id: fa.id,
+				name: fa.name,
+				color: artistColor(fa.name),
+				passionLevel: fa.passionLevel,
 			}))
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,
@@ -182,6 +196,9 @@ export class MyArtistsPage {
 	// --- Unfollow with undo ---
 
 	private unfollowArtist(artist: FollowedArtist): void {
+		// Block unfollow during onboarding
+		if (this.isOnboarding) return
+
 		// Clear any previous undo (commits it)
 		this.commitPendingUnfollow()
 
@@ -292,6 +309,26 @@ export class MyArtistsPage {
 			return
 		}
 
+		// During onboarding step 5: visual demo only, no persistence
+		if (this.isTutorialStep5) {
+			this.selectorArtist.passionLevel = level
+			this.closePassionSelector()
+
+			// Show notification explanation, then advance to Step 6
+			this.showPassionExplanation = true
+			setTimeout(() => {
+				this.showPassionExplanation = false
+				this.onboarding.setStep(OnboardingStep.SIGNUP)
+			}, 3000)
+			return
+		}
+
+		// Block passion level changes during other onboarding steps
+		if (this.isOnboarding) {
+			this.closePassionSelector()
+			return
+		}
+
 		// Optimistic update
 		this.selectorArtist.passionLevel = level
 		const artistId = this.selectorArtist.id
@@ -356,6 +393,9 @@ export class MyArtistsPage {
 		if (!this.contextMenuArtist) return
 		const artist = this.contextMenuArtist
 		this.closeContextMenu()
+
+		// Block during onboarding (no backend RPC available)
+		if (this.isOnboarding) return
 
 		const prev = artist.passionLevel
 		if (prev === level) return

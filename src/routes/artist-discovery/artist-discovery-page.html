@@ -5,6 +5,14 @@
   <div class="container">
     <toast-notification></toast-notification>
 
+    <!-- Tutorial progress bar -->
+    <div if.bind="isOnboarding" class="progress-bar-container">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" style="width: ${progressPercent}%"></div>
+      </div>
+      <span class="progress-bar-label">${progressText}</span>
+    </div>
+
     <!-- Onboarding guidance overlay -->
     <div
       if.bind="showGuidance"
@@ -32,9 +40,9 @@
     >
       <button
         click.trigger="onViewSchedule()"
-        class="complete-button"
+        class="complete-button ${isOnboarding ? 'tutorial-cta' : ''}"
       >
-        View Live Schedule (${followedCount} artists)
+        ${isOnboarding ? '\uD83D\uDC49 \u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u3092\u751F\u6210\u3059\u308B' : 'View Live Schedule (' + followedCount + ' artists)'}
       </button>
     </div>
 

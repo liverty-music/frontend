@@ -25,6 +25,10 @@ const settings: UserManagerSettings = {
 	loadUserInfo: true,
 	// Use localStorage instead of sessionStorage for better compatibility with Playwright storageState
 	userStore: new WebStorageStateStore({ store: window.localStorage }),
+	// Disable session monitor in dev: Zitadel's check_session_iframe returns
+	// frame-ancestors 'none', causing oidc-client-ts to fire userUnloaded
+	// repeatedly (~10s) which re-bootstraps the entire Aurelia app.
+	monitorSession: !import.meta.env.DEV,
 }
 
 export const IAuthService = DI.createInterface<IAuthService>(
@@ -80,10 +84,9 @@ export class AuthService {
 	public async signUp(): Promise<void> {
 		this.logger.info('Starting sign-up flow')
 		// Zitadel supports prompt=create to default to sign-up form
-		// Pass state to detect sign-up flow in callback
+		// Tutorial vs login detection is handled via onboardingStep in LocalStorage
 		await this.userManager.signinRedirect({
 			prompt: 'create',
-			state: { isSignUp: true },
 		})
 	}
 

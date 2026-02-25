@@ -1,4 +1,8 @@
 import { bindable, INode, resolve } from 'aurelia'
+import {
+	IOnboardingService,
+	OnboardingStep,
+} from '../../services/onboarding-service'
 import { artistColor } from './color-generator'
 import type { LiveEvent } from './live-event'
 
@@ -9,9 +13,14 @@ export class EventDetailSheet {
 	public dragOffset = 0
 
 	private readonly element = resolve(INode) as HTMLElement
+	private readonly onboarding = resolve(IOnboardingService)
 	private touchStartY = 0
 	private isDragging = false
 	private readonly DISMISS_THRESHOLD = 100
+
+	private get isDismissBlocked(): boolean {
+		return this.onboarding.currentStep === OnboardingStep.DETAIL
+	}
 
 	public get backgroundColor(): string {
 		if (!this.event) return 'hsl(0, 0%, 20%)'
@@ -62,6 +71,7 @@ export class EventDetailSheet {
 	}
 
 	public onBackdropClick(): void {
+		if (this.isDismissBlocked) return
 		this.close()
 	}
 
@@ -77,6 +87,7 @@ export class EventDetailSheet {
 
 	public onTouchMove(e: TouchEvent): void {
 		if (!this.isDragging) return
+		if (this.isDismissBlocked) return
 		const scrollable = this.element.querySelector('.overflow-y-auto')
 		if (scrollable && scrollable.scrollTop > 0) {
 			this.isDragging = false
@@ -89,6 +100,11 @@ export class EventDetailSheet {
 	public onTouchEnd(): void {
 		if (!this.isDragging) return
 		this.isDragging = false
+
+		if (this.isDismissBlocked) {
+			this.dragOffset = 0
+			return
+		}
 
 		if (this.dragOffset > this.DISMISS_THRESHOLD) {
 			this.close()

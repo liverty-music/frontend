@@ -1,8 +1,11 @@
-<div class="flex items-center justify-center min-h-screen">
-  <div class="text-center">
-    <div if.bind="!error" class="text-lg">Verifying authentication...</div>
-    <div if.bind="error" class="text-red-500 font-bold whitespace-pre-wrap">${error}</div>
-    <a if.bind="error" href="/" class="mt-4 block text-blue-500 underline"
+<div class="flex items-center justify-center min-h-screen bg-surface-base">
+  <div class="text-center px-6">
+    <div if.bind="!error" class="flex flex-col items-center gap-4">
+      <div class="w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+      <div class="text-lg text-text-primary">${isMerging ? 'Syncing your data...' : 'Verifying authentication...'}</div>
+    </div>
+    <div if.bind="error" class="text-red-400 font-bold whitespace-pre-wrap">${error}</div>
+    <a if.bind="error" href="/" class="mt-4 block text-brand-primary underline"
       >Return Home</a
     >
   </div>

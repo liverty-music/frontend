@@ -1,7 +1,13 @@
+import { IRouter } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import type { DateGroup } from '../components/live-highway/live-event'
 import { RegionSetupSheet } from '../components/region-setup-sheet/region-setup-sheet'
 import { IDashboardService } from '../services/dashboard-service'
+import { ILocalArtistClient } from '../services/local-artist-client'
+import {
+	IOnboardingService,
+	OnboardingStep,
+} from '../services/onboarding-service'
 
 export class Dashboard {
 	public dateGroups: DateGroup[] = []
@@ -13,9 +19,24 @@ export class Dashboard {
 
 	private readonly logger = resolve(ILogger).scopeTo('Dashboard')
 	private readonly dashboardService = resolve(IDashboardService)
+	private readonly onboarding = resolve(IOnboardingService)
+	private readonly localClient = resolve(ILocalArtistClient)
+	private readonly router = resolve(IRouter)
 	private abortController: AbortController | null = null
 
 	public dataPromise: Promise<DateGroup[]> | null = null
+
+	public get isTutorialStep3(): boolean {
+		return this.onboarding.currentStep === OnboardingStep.DASHBOARD
+	}
+
+	public get isTutorialStep4(): boolean {
+		return this.onboarding.currentStep === OnboardingStep.DETAIL
+	}
+
+	public get isOnboarding(): boolean {
+		return this.onboarding.isOnboarding
+	}
 
 	public async loading(): Promise<void> {
 		this.needsRegion = !RegionSetupSheet.getStoredRegion()
@@ -63,6 +84,24 @@ export class Dashboard {
 	public onRegionSelected(region: string): void {
 		this.logger.info('Region configured', { region })
 		this.needsRegion = false
+		if (this.isOnboarding) {
+			this.localClient.setRegion(region)
+		}
+	}
+
+	public onTutorialCardTapped(): void {
+		if (this.isTutorialStep3) {
+			this.logger.info('Tutorial: concert card tapped, advancing to Step 4')
+			this.onboarding.setStep(OnboardingStep.DETAIL)
+		}
+	}
+
+	public async onTutorialMyArtistsTapped(): Promise<void> {
+		if (this.isTutorialStep4) {
+			this.logger.info('Tutorial: My Artists tab tapped, advancing to Step 5')
+			this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
+			await this.router.load('my-artists')
+		}
 	}
 
 	public detaching(): void {

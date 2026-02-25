@@ -5,6 +5,8 @@ import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
+import { ILocalArtistClient } from './local-artist-client'
+import { IOnboardingService } from './onboarding-service'
 
 export const IConcertService = DI.createInterface<IConcertService>(
 	'IConcertService',
@@ -16,6 +18,8 @@ export interface IConcertService extends ConcertServiceClient {}
 export class ConcertServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('ConcertService')
 	private readonly authService = resolve(IAuthService)
+	private readonly localClient = resolve(ILocalArtistClient)
+	private readonly onboarding = resolve(IOnboardingService)
 	private readonly concertClient = createClient(
 		ConcertService,
 		createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
@@ -41,6 +45,9 @@ export class ConcertServiceClient {
 	}
 
 	public async listByFollower(signal?: AbortSignal): Promise<Concert[]> {
+		if (this.onboarding.isOnboarding) {
+			return this.listByFollowerOnboarding(signal)
+		}
 		this.logger.info('Listing concerts by follower')
 		try {
 			const response = await this.concertClient.listByFollower({}, { signal })
@@ -49,6 +56,33 @@ export class ConcertServiceClient {
 			this.logger.warn('Concert listByFollower failed', { error: err })
 			throw err
 		}
+	}
+
+	/**
+	 * During onboarding, read artist IDs from LocalArtistClient and call
+	 * ConcertService/List per artist (public RPC), merging results.
+	 */
+	private async listByFollowerOnboarding(
+		signal?: AbortSignal,
+	): Promise<Concert[]> {
+		const artists = this.localClient.listFollowed()
+		this.logger.info('Onboarding: listing concerts for local artists', {
+			count: artists.length,
+		})
+		const results = await Promise.allSettled(
+			artists.map((a) => this.listConcerts(a.id, signal)),
+		)
+		const concerts: Concert[] = []
+		for (const result of results) {
+			if (result.status === 'fulfilled') {
+				concerts.push(...result.value)
+			} else {
+				this.logger.warn('Onboarding: concert list failed for an artist', {
+					error: result.reason,
+				})
+			}
+		}
+		return concerts
 	}
 
 	public async searchNewConcerts(
