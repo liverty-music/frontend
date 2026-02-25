@@ -24,7 +24,7 @@
         <p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3">主要都市</p>
         <div class="grid grid-cols-3 gap-2">
           <button
-            repeat.for="city of quickCities"
+            repeat.for="city of quickCities; key.bind: city"
             click.trigger="selectQuickCity(city)"
             class="py-2.5 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
           >
@@ -42,7 +42,7 @@
             class="flex-1 py-2.5 px-3 bg-surface-overlay text-text-primary rounded-[var(--radius-button)] border border-white/10 focus:border-brand-accent focus:outline-none text-sm appearance-none"
           >
             <option value="">選択してください</option>
-            <option repeat.for="pref of prefectures" value.bind="pref">${pref}</option>
+            <option repeat.for="pref of prefectures; key.bind: pref" value.bind="pref">${pref}</option>
           </select>
           <button
             click.trigger="selectPrefecture()"

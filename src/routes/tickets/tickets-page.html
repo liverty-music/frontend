@@ -39,7 +39,7 @@
   <!-- Ticket list -->
   <div if.bind="!isLoading && !error && tickets.length > 0" class="flex-1 overflow-y-auto px-4 py-4 space-y-3">
     <div
-      repeat.for="ticket of tickets"
+      repeat.for="ticket of tickets; key.bind: ticket.id?.value"
       class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 p-4"
     >
       <div class="flex items-start justify-between gap-3">

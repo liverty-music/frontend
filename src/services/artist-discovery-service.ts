@@ -2,7 +2,7 @@ import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/en
 import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
 import type { PromiseClient } from '@connectrpc/connect'
 import { createPromiseClient } from '@connectrpc/connect'
-import { DI, ILogger, resolve } from 'aurelia'
+import { batch, DI, ILogger, resolve } from 'aurelia'
 import { IToastService } from '../components/toast-notification/toast-notification'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
@@ -133,13 +133,15 @@ export class ArtistDiscoveryService {
 			} catch (retryErr) {
 				this.logger.error('Failed to follow artist after retry', retryErr)
 
-				// Rollback optimistic update
-				this.followedArtists = this.followedArtists.filter(
-					(b) => b.id !== artist.id,
-				)
-				this.followedIds.delete(artist.id)
-				this.availableBubbles.push(artist)
-				this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
+				// Rollback optimistic update atomically to avoid intermediate UI flicker
+				batch(() => {
+					this.followedArtists = this.followedArtists.filter(
+						(b) => b.id !== artist.id,
+					)
+					this.followedIds.delete(artist.id)
+					this.availableBubbles.push(artist)
+					this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
+				})
 
 				this.toast.show(`Failed to follow ${artist.name}`)
 				throw retryErr

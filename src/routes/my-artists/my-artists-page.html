@@ -52,7 +52,7 @@
   <div if.bind="!isLoading && artists.length > 0 && viewMode === 'list'" class="flex-1 overflow-y-auto">
     <div class="px-4 py-3">
       <div
-        repeat.for="artist of artists"
+        repeat.for="artist of artists; key.bind: artist.id"
         class="relative overflow-hidden rounded-[var(--radius-card)] mb-2"
       >
         <!-- Delete zone (behind the row) -->
@@ -66,10 +66,12 @@
         <!-- Artist row (swipeable) -->
         <div
           touchstart.trigger="onTouchStart(artist, $event)"
-          touchmove.trigger="onTouchMove($event)"
+          touchmove.trigger="onTouchMove($event) & throttle:16"
           touchend.trigger="onTouchEnd()"
           touchcancel.trigger="onTouchEnd()"
-          class="relative flex items-center gap-3 px-4 py-3.5 bg-surface-raised border border-white/10 touch-pan-y transition-transform ${swipedArtistId === artist.id && swipeOffset < 0 ? '' : 'transition-transform duration-200'}"
+          class="relative flex items-center gap-3 px-4 py-3.5 bg-surface-raised border border-white/10 touch-pan-y transition-transform"
+          transition-transform.class="swipedArtistId !== artist.id || swipeOffset >= 0"
+          duration-200.class="swipedArtistId !== artist.id || swipeOffset >= 0"
           style="transform: translateX(${swipedArtistId === artist.id ? swipeOffset : 0}px)"
         >
           <!-- Color accent dot -->
@@ -96,7 +98,7 @@
   <div if.bind="!isLoading && artists.length > 0 && viewMode === 'grid'" class="flex-1 overflow-y-auto">
     <div class="px-4 py-3 grid grid-cols-3 auto-rows-[minmax(6rem,auto)] gap-2">
       <div
-        repeat.for="artist of artists"
+        repeat.for="artist of artists; key.bind: artist.id"
         touchstart.trigger="onGridTouchStart(artist)"
         touchend.trigger="onGridTouchEnd()"
         touchcancel.trigger="onGridTouchEnd()"
@@ -126,7 +128,7 @@
       <div class="text-sm text-text-muted mb-3 truncate">${contextMenuArtist.name}</div>
       <div class="flex flex-col gap-1">
         <button
-          repeat.for="level of passionLevels"
+          repeat.for="level of passionLevels; key.bind: level"
           click.trigger="contextMenuSetLevel(level)"
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${contextMenuArtist.passionLevel === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
         >
@@ -181,7 +183,7 @@
       <div class="text-sm text-text-muted mb-3 truncate">${selectorArtist.name}</div>
       <div class="flex flex-col gap-1">
         <button
-          repeat.for="level of passionLevels"
+          repeat.for="level of passionLevels; key.bind: level"
           click.trigger="selectPassionLevel(level)"
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${selectorArtist.passionLevel === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
         >
