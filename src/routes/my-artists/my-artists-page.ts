@@ -80,6 +80,7 @@ export class MyArtistsPage {
 
 	// Tutorial state
 	public showPassionExplanation = false
+	private tutorialTimer: ReturnType<typeof setTimeout> | null = null
 
 	public get isTutorialStep5(): boolean {
 		return this.onboarding.currentStep === OnboardingStep.MY_ARTISTS
@@ -120,6 +121,10 @@ export class MyArtistsPage {
 		this.abortController = null
 		this.commitPendingUnfollow()
 		this.clearLongPressTimer()
+		if (this.tutorialTimer !== null) {
+			clearTimeout(this.tutorialTimer)
+			this.tutorialTimer = null
+		}
 	}
 
 	// --- Swipe-to-unfollow ---
@@ -316,9 +321,11 @@ export class MyArtistsPage {
 
 			// Show notification explanation, then advance to Step 6
 			this.showPassionExplanation = true
-			setTimeout(() => {
+			this.tutorialTimer = setTimeout(() => {
+				this.tutorialTimer = null
 				this.showPassionExplanation = false
 				this.onboarding.setStep(OnboardingStep.SIGNUP)
+				void this.router.load('')
 			}, 3000)
 			return
 		}

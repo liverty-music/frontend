@@ -1,0 +1,12 @@
+<import from="./coach-mark.css"></import>
+
+<div
+  if.bind="visible"
+  class="coach-mark-overlay"
+  click.trigger="onOverlayClick($event)"
+>
+  <div class="coach-mark-spotlight" ref="spotlightEl"></div>
+  <div class="coach-mark-tooltip" ref="tooltipEl">
+    <p>${message}</p>
+  </div>
+</div>

@@ -1,27 +1,13 @@
-import { bindable, customElement, ILogger, resolve } from 'aurelia'
+import { bindable, ILogger, resolve } from 'aurelia'
 
 const MAX_RETRY_MS = 5000
 const INITIAL_RETRY_MS = 100
 
-@customElement({
-	name: 'coach-mark',
-	template: `<template>
-    <div
-      if.bind="visible"
-      class="coach-mark-overlay"
-      click.trigger="onOverlayClick($event)"
-    >
-      <div class="coach-mark-spotlight" ref="spotlightEl"></div>
-      <div class="coach-mark-tooltip" ref="tooltipEl">
-        <p>\${message}</p>
-      </div>
-    </div>
-  </template>`,
-})
 export class CoachMark {
 	@bindable public targetSelector = ''
 	@bindable public message = ''
 	@bindable public active = false
+	@bindable public onTap?: () => void
 
 	public visible = false
 
@@ -40,7 +26,7 @@ export class CoachMark {
 		}
 	}
 
-	public attaching(): void {
+	public bound(): void {
 		if (this.active) {
 			this.findAndHighlight()
 		}
@@ -111,6 +97,32 @@ export class CoachMark {
 			this.tooltipEl.style.top = `${tooltipTop}px`
 			this.tooltipEl.style.left = `${tooltipLeft}px`
 		}
+	}
+
+	public onOverlayClick(event: MouseEvent): void {
+		const target = document.querySelector(this.targetSelector)
+		if (target instanceof HTMLElement) {
+			const rect = target.getBoundingClientRect()
+			const x = event.clientX
+			const y = event.clientY
+			const padding = 8
+
+			// Check if click is inside the spotlight area
+			if (
+				x >= rect.left - padding &&
+				x <= rect.right + padding &&
+				y >= rect.top - padding &&
+				y <= rect.bottom + padding
+			) {
+				// Forward click to the target element
+				target.click()
+				this.onTap?.()
+				return
+			}
+		}
+
+		// Block clicks outside the spotlight
+		event.stopPropagation()
 	}
 
 	private hide(): void {
