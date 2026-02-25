@@ -1,4 +1,4 @@
-import { IRouter } from '@aurelia/router'
+import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
@@ -12,71 +12,55 @@ interface AuthState {
 	isSignUp?: boolean
 }
 
+/**
+ * OIDC callback handler that processes the authorization code exchange
+ * and redirects to the appropriate destination.
+ *
+ * Uses canLoad() to return a NavigationInstruction, which the Aurelia Router
+ * handles internally within the transition pipeline. This avoids calling
+ * router.load() from attached(), which can hang because attached() fires
+ * during the _swap phase when _isNavigating is still true.
+ */
 export class AuthCallback {
-	public message = 'Verifying authentication...'
 	public error = ''
 
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
-	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallback')
 
-	constructor() {
-		this.logger.info('Constructor called')
-	}
-
-	/**
-	 * Navigate after the component is attached to the DOM.
-	 *
-	 * Aurelia's `loading()` hook runs while a navigation is still in progress.
-	 * Calling `router.load()` from within `loading()` silently blocks because
-	 * the router is already mid-transition.  Moving the logic to `attached()`
-	 * ensures the current navigation has settled before we trigger a new one.
-	 */
-	public async attached(): Promise<void> {
-		this.logger.info('Attached, starting auth callback processing...')
+	public async canLoad(
+		_params: Params,
+		_next: RouteNode,
+	): Promise<boolean | NavigationInstruction> {
+		this.logger.info('Processing OIDC callback...')
 		try {
-			this.logger.info('Calling handleCallback...')
 			const user = await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
 
-			// Check if this was a sign-up flow
 			const state = user.state as AuthState | undefined
 			if (state?.isSignUp) {
 				this.logger.info('Sign-up detected, provisioning user in backend')
 				await this.provisionUser(user.profile.email)
-				await this.router.load('/onboarding/discover')
-			} else {
-				await this.router.load('/dashboard')
+				return '/onboarding/discover'
 			}
+
+			return '/dashboard'
 		} catch (err) {
 			this.logger.error('Auth callback error:', err)
 
-			// If we are already authenticated (e.g. valid session exists), ignore the error and redirect
 			if (this.authService.isAuthenticated) {
 				this.logger.warn(
 					'User is already authenticated. Redirecting despite callback error...',
 				)
-				try {
-					await this.router.load('/dashboard')
-				} catch (redirectErr) {
-					this.logger.error(
-						'Post-auth redirect also failed, falling back to dashboard',
-						{ error: redirectErr },
-					)
-					this.error =
-						'Authentication succeeded but navigation failed. Please go to the dashboard manually.'
-					this.message = ''
-				}
-				return
+				return '/dashboard'
 			}
 
+			// Let the component render with the error message
 			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
-			this.message = ''
+			return true
 		}
 	}
 
-	// Call Create RPC with error handling
 	private async provisionUser(email: string | undefined): Promise<void> {
 		if (!email) {
 			this.logger.error('User email is missing, cannot provision user')
@@ -89,7 +73,6 @@ export class AuthCallback {
 			})
 			this.logger.info('User provisioned successfully', { email })
 		} catch (err) {
-			// Handle ALREADY_EXISTS gracefully (treat as success)
 			if (err instanceof ConnectError && err.code === Code.AlreadyExists) {
 				this.logger.info('User already exists in backend, continuing...', {
 					email,
@@ -97,9 +80,6 @@ export class AuthCallback {
 				return
 			}
 
-			// Non-AlreadyExists errors must halt the auth flow. Silently continuing
-			// would leave the user without a backend record, causing all subsequent
-			// RPC calls to fail.
 			this.logger.error('Failed to provision user in backend', {
 				email,
 				error: err,

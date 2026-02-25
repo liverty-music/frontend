@@ -1,4 +1,4 @@
-import { IRouter } from '@aurelia/router'
+import type { RouteNode } from '@aurelia/router'
 import { Registration } from 'aurelia'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,7 +20,6 @@ describe('AuthCallback', () => {
 	let sut: AuthCallback
 	let mockAuth: ReturnType<typeof createMockAuth>
 	let mockUserService: ReturnType<typeof createMockUserService>
-	let mockRouter: { load: ReturnType<typeof vi.fn> }
 
 	beforeEach(() => {
 		mockAuth = createMockAuth({
@@ -28,28 +27,26 @@ describe('AuthCallback', () => {
 			ready: Promise.resolve(),
 		})
 		mockUserService = createMockUserService()
-		mockRouter = { load: vi.fn().mockResolvedValue(true) }
 
 		const container = createTestContainer(
 			Registration.instance(IAuthService, mockAuth as IAuthService),
 			Registration.instance(IUserService, mockUserService as IUserService),
-			Registration.instance(IRouter, mockRouter as IRouter),
 		)
 		container.register(AuthCallback)
 		sut = container.get(AuthCallback)
 	})
 
-	describe('attached', () => {
+	describe('canLoad', () => {
 		it('should redirect to discover on sign-up', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				state: { isSignUp: true },
 				profile: { email: 'new@example.com' },
 			})
 
-			await sut.attached()
+			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.client.create).toHaveBeenCalled()
-			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
+			expect(result).toBe('/onboarding/discover')
 		})
 
 		it('should redirect to dashboard on sign-in', async () => {
@@ -58,10 +55,10 @@ describe('AuthCallback', () => {
 				profile: { email: 'existing@example.com' },
 			})
 
-			await sut.attached()
+			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.client.create).not.toHaveBeenCalled()
-			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
+			expect(result).toBe('/dashboard')
 		})
 
 		it('should redirect to dashboard when state is undefined', async () => {
@@ -69,9 +66,9 @@ describe('AuthCallback', () => {
 				profile: { email: 'existing@example.com' },
 			})
 
-			await sut.attached()
+			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
+			expect(result).toBe('/dashboard')
 		})
 
 		it('should redirect to dashboard on error if already authenticated', async () => {
@@ -80,9 +77,9 @@ describe('AuthCallback', () => {
 				.mockRejectedValue(new Error('callback error'))
 			mockAuth.isAuthenticated = true
 
-			await sut.attached()
+			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
+			expect(result).toBe('/dashboard')
 			expect(sut.error).toBe('')
 		})
 
@@ -92,9 +89,9 @@ describe('AuthCallback', () => {
 				.mockRejectedValue(new Error('auth failed'))
 			mockAuth.isAuthenticated = false
 
-			await sut.attached()
+			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockRouter.load).not.toHaveBeenCalled()
+			expect(result).toBe(true)
 			expect(sut.error).toBe('Login failed: auth failed')
 		})
 
@@ -107,9 +104,9 @@ describe('AuthCallback', () => {
 				.fn()
 				.mockRejectedValue(new ConnectError('exists', Code.AlreadyExists))
 
-			await sut.attached()
+			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
+			expect(result).toBe('/onboarding/discover')
 		})
 
 		it('should show error when provisionUser fails with non-AlreadyExists error', async () => {
@@ -121,9 +118,9 @@ describe('AuthCallback', () => {
 				.fn()
 				.mockRejectedValue(new Error('server error'))
 
-			await sut.attached()
+			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockRouter.load).not.toHaveBeenCalled()
+			expect(result).toBe(true)
 			expect(sut.error).toBe('Login failed: server error')
 		})
 
@@ -133,10 +130,10 @@ describe('AuthCallback', () => {
 				profile: {},
 			})
 
-			await sut.attached()
+			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.client.create).not.toHaveBeenCalled()
-			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
+			expect(result).toBe('/onboarding/discover')
 		})
 	})
 })
