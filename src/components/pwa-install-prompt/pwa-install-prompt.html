@@ -1,0 +1,31 @@
+<template>
+  <div if.bind="pwaInstall.canShow"
+    class="mx-4 mb-4 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 shadow-[var(--shadow-card-glow)]"
+    data-testid="pwa-install-banner">
+    <div class="flex items-start gap-3">
+      <div class="shrink-0 w-5 h-5 text-text-secondary" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-display font-bold text-text-primary text-sm">Add to Home Screen</p>
+        <p class="text-text-secondary text-xs mt-0.5">Install Liverty Music for faster access and offline browsing.</p>
+        <div class="flex gap-2 mt-3">
+          <button click.trigger="dismiss()"
+            class="px-3 py-1.5 text-xs text-text-muted border border-white/10 rounded-[var(--radius-button)] transition-colors hover:bg-white/5"
+            data-testid="pwa-install-dismiss">
+            Not now
+          </button>
+          <button click.trigger="install()"
+            class="px-3 py-1.5 text-xs font-medium text-white bg-brand-primary rounded-[var(--radius-button)] transition-colors hover:bg-brand-secondary shadow-[var(--shadow-button)]"
+            data-testid="pwa-install-button">
+            Install
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

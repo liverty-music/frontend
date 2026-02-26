@@ -3,19 +3,27 @@ declare const self: ServiceWorkerGlobalScope & {
 	__WB_MANIFEST: Array<{ url: string; revision: string | null }>
 }
 
+import { BackgroundSyncPlugin } from 'workbox-background-sync'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
-import { CacheFirst } from 'workbox-strategies'
+import { CacheFirst, NetworkFirst } from 'workbox-strategies'
 
+// ---------------------------------------------------------------------------
 // Precache app shell assets injected by vite-plugin-pwa at build time.
+// ---------------------------------------------------------------------------
 precacheAndRoute(self.__WB_MANIFEST)
 
-// Cache ZK circuit artifacts (.wasm and .zkey) with a long-lived CacheFirst strategy.
+// ---------------------------------------------------------------------------
+// ZK circuit artifacts — CacheFirst with 30-day TTL.
+// ---------------------------------------------------------------------------
+const ZK_CACHE = 'zk-circuits-v1'
+const CIRCUIT_URLS = ['/ticketcheck.wasm', '/ticketcheck.zkey']
+
 registerRoute(
 	({ url }) => url.pathname.endsWith('.wasm') || url.pathname.endsWith('.zkey'),
 	new CacheFirst({
-		cacheName: 'zk-circuits-v1',
+		cacheName: ZK_CACHE,
 		plugins: [
 			new ExpirationPlugin({
 				maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
@@ -24,7 +32,87 @@ registerRoute(
 	}),
 )
 
-// Push notification handler (merged from public/sw.js).
+// Pre-cache circuit files during SW install (non-blocking on failure).
+self.addEventListener('install', (event) => {
+	event.waitUntil(
+		caches.open(ZK_CACHE).then(async (cache) => {
+			const existing = await cache.keys()
+			const cached = new Set(existing.map((r) => new URL(r.url).pathname))
+			const missing = CIRCUIT_URLS.filter((u) => !cached.has(u))
+			if (missing.length === 0) return
+			try {
+				await cache.addAll(missing)
+			} catch (err) {
+				console.warn(
+					'[SW] Circuit pre-cache failed (will retry at runtime):',
+					err,
+				)
+			}
+		}),
+	)
+})
+
+// ---------------------------------------------------------------------------
+// Concert list API — NetworkFirst with 3s timeout, 24h cache.
+// ---------------------------------------------------------------------------
+const CONCERT_CACHE = 'concert-api-v1'
+
+registerRoute(
+	({ url }) =>
+		url.pathname.includes('liverty_music.rpc.concert.v1.ConcertService'),
+	new NetworkFirst({
+		cacheName: CONCERT_CACHE,
+		networkTimeoutSeconds: 3,
+		plugins: [
+			new ExpirationPlugin({
+				maxEntries: 50,
+				maxAgeSeconds: 24 * 60 * 60, // 24 hours
+			}),
+		],
+		fetchOptions: {},
+	}),
+)
+
+// ---------------------------------------------------------------------------
+// Background Sync for artist operations (follow / unfollow / passion level).
+// ---------------------------------------------------------------------------
+registerRoute(
+	({ url }) =>
+		url.pathname.includes('liverty_music.rpc.artist.v1.ArtistService'),
+	new NetworkFirst({
+		cacheName: 'artist-api-v1',
+		plugins: [
+			new BackgroundSyncPlugin('artist-ops-queue', {
+				maxRetentionTime: 7 * 24 * 60, // 7 days (minutes)
+			}),
+		],
+	}),
+	'POST',
+)
+
+// ---------------------------------------------------------------------------
+// Periodic Background Sync — refresh concert cache.
+// The SW cannot obtain fresh OIDC tokens (no access to UserManager), so it
+// delegates the actual re-fetch to the main thread via postMessage.
+// ---------------------------------------------------------------------------
+self.addEventListener(
+	'periodicsync',
+	(event: ExtendableEvent & { tag?: string }) => {
+		if (event.tag !== 'concert-refresh') return
+
+		event.waitUntil(
+			self.clients.matchAll({ type: 'window' }).then((clients) => {
+				for (const client of clients) {
+					client.postMessage({ type: 'REFRESH_CONCERT_CACHE' })
+				}
+			}),
+		)
+	},
+)
+
+// ---------------------------------------------------------------------------
+// Push notification handler.
+// ---------------------------------------------------------------------------
 self.addEventListener('push', (event) => {
 	let data:
 		| { title?: string; body?: string; tag?: string; url?: string }

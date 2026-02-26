@@ -16,6 +16,7 @@ export class SettingsPage {
 
 	public currentArea: string | null = null
 	public notificationsEnabled = false
+	public vapidAvailable = !!(import.meta.env.VITE_VAPID_PUBLIC_KEY ?? '')
 	public areaSheet!: AreaSelectorSheet
 	private isToggling = false
 

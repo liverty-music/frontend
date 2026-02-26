@@ -24,7 +24,8 @@
 		"matter-js": "^0.20.0",
 		"oidc-client-ts": "^3.4.1",
 		"qrcode": "^1.5.4",
-		"snarkjs": "^0.7.6"
+		"snarkjs": "^0.7.6",
+		"workbox-background-sync": "^7.4.0"
 	},
 	"devDependencies": {
 		"@aurelia/storybook": "^2.2.1",
