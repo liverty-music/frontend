@@ -1,5 +1,5 @@
 import { DI, Registration } from 'aurelia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 
 const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
@@ -206,14 +206,16 @@ describe('MyArtistsPage', () => {
 			await sut.loading()
 		})
 
+		afterEach(() => {
+			vi.useRealTimers()
+		})
+
 		it('should unfollow after long press', () => {
 			sut.onTouchStart(sut.artists[1], makeTouchEvent(100))
 			vi.advanceTimersByTime(500)
 
 			expect(sut.artists).toHaveLength(2)
 			expect(sut.undoArtist?.name).toBe('ONE OK ROCK')
-
-			vi.useRealTimers()
 		})
 
 		it('should cancel long press on touch move', () => {
@@ -223,8 +225,6 @@ describe('MyArtistsPage', () => {
 
 			// long-press cancelled by movement, but swipe threshold not met
 			expect(sut.artists).toHaveLength(3)
-
-			vi.useRealTimers()
 		})
 	})
 
@@ -232,6 +232,10 @@ describe('MyArtistsPage', () => {
 		beforeEach(async () => {
 			vi.useFakeTimers()
 			await sut.loading()
+		})
+
+		afterEach(() => {
+			vi.useRealTimers()
 		})
 
 		it('should re-insert artist at original position', () => {
@@ -249,8 +253,6 @@ describe('MyArtistsPage', () => {
 			expect(sut.artists).toHaveLength(3)
 			expect(sut.artists[1].name).toBe('ONE OK ROCK')
 			expect(sut.undoVisible).toBe(false)
-
-			vi.useRealTimers()
 		})
 
 		it('should commit unfollow RPC after undo timer expires', async () => {
@@ -266,8 +268,6 @@ describe('MyArtistsPage', () => {
 				artistId: expect.objectContaining({ value: 'id-1' }),
 			})
 			expect(sut.undoVisible).toBe(false)
-
-			vi.useRealTimers()
 		})
 
 		it('should not call RPC when undo is pressed', () => {
@@ -280,8 +280,6 @@ describe('MyArtistsPage', () => {
 			vi.advanceTimersByTime(5000)
 
 			expect(mockGrpcClient.unfollow).not.toHaveBeenCalled()
-
-			vi.useRealTimers()
 		})
 	})
 
