@@ -1,6 +1,5 @@
 import { DI, ILogger, resolve } from 'aurelia'
-
-const STORAGE_KEY = 'liverty:onboardingStep'
+import { StorageKeys } from '../constants/storage-keys'
 
 /**
  * Onboarding step values.
@@ -102,7 +101,7 @@ export class OnboardingService {
 	}
 
 	private readStep(): OnboardingStepValue {
-		const raw = localStorage.getItem(STORAGE_KEY)
+		const raw = localStorage.getItem(StorageKeys.onboardingStep)
 		if (raw === null) {
 			return OnboardingStep.LP
 		}
@@ -111,13 +110,13 @@ export class OnboardingService {
 			this.logger.warn('Invalid onboardingStep value, resetting to 0', {
 				raw,
 			})
-			localStorage.setItem(STORAGE_KEY, '0')
+			localStorage.setItem(StorageKeys.onboardingStep, '0')
 			return OnboardingStep.LP
 		}
 		return parsed as OnboardingStepValue
 	}
 
 	private writeStep(step: OnboardingStepValue): void {
-		localStorage.setItem(STORAGE_KEY, String(step))
+		localStorage.setItem(StorageKeys.onboardingStep, String(step))
 	}
 }

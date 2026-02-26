@@ -1,11 +1,10 @@
 import { ILogger, resolve } from 'aurelia'
 import { AreaSelectorSheet } from '../../components/area-selector-sheet/area-selector-sheet'
 import { IToastService } from '../../components/toast-notification/toast-notification'
+import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
-
-const NOTIFICATION_PREF_KEY = 'liverty-music:notifications-enabled'
 
 export class SettingsPage {
 	public readonly auth = resolve(IAuthService)
@@ -22,7 +21,8 @@ export class SettingsPage {
 
 	public loading(): void {
 		this.currentArea = AreaSelectorSheet.getStoredArea()
-		const storedPref = localStorage.getItem(NOTIFICATION_PREF_KEY) === 'true'
+		const storedPref =
+			localStorage.getItem(StorageKeys.userNotificationsEnabled) === 'true'
 		// If the browser permission was revoked externally, override the stored preference
 		this.notificationsEnabled =
 			storedPref && this.notificationManager.permission === 'granted'
@@ -51,7 +51,7 @@ export class SettingsPage {
 					return
 				}
 				this.notificationsEnabled = true
-				localStorage.setItem(NOTIFICATION_PREF_KEY, 'true')
+				localStorage.setItem(StorageKeys.userNotificationsEnabled, 'true')
 			} else {
 				try {
 					await this.pushService.unsubscribe()
@@ -59,7 +59,7 @@ export class SettingsPage {
 					this.logger.error('Failed to unsubscribe push notifications', err)
 				}
 				this.notificationsEnabled = false
-				localStorage.setItem(NOTIFICATION_PREF_KEY, 'false')
+				localStorage.setItem(StorageKeys.userNotificationsEnabled, 'false')
 			}
 		} catch (err) {
 			this.logger.error('Failed to toggle push notifications', err)

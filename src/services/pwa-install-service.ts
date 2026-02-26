@@ -1,7 +1,5 @@
 import { DI, ILogger, observable, resolve } from 'aurelia'
-
-const SESSION_COUNT_KEY = 'liverty-music:session-count'
-const DISMISSED_KEY = 'liverty-music:install-prompt-dismissed'
+import { StorageKeys } from '../constants/storage-keys'
 
 export const IPwaInstallService = DI.createInterface<IPwaInstallService>(
 	'IPwaInstallService',
@@ -23,16 +21,19 @@ export class PwaInstallService {
 	}
 
 	private incrementSessionCount(): void {
-		const count = Number(localStorage.getItem(SESSION_COUNT_KEY) || '0') + 1
-		localStorage.setItem(SESSION_COUNT_KEY, String(count))
+		const count =
+			Number(localStorage.getItem(StorageKeys.pwaSessionCount) || '0') + 1
+		localStorage.setItem(StorageKeys.pwaSessionCount, String(count))
 	}
 
 	private get sessionCount(): number {
-		return Number(localStorage.getItem(SESSION_COUNT_KEY) || '0')
+		return Number(localStorage.getItem(StorageKeys.pwaSessionCount) || '0')
 	}
 
 	private get isDismissed(): boolean {
-		return localStorage.getItem(DISMISSED_KEY) === 'true'
+		return (
+			localStorage.getItem(StorageKeys.pwaInstallPromptDismissed) === 'true'
+		)
 	}
 
 	private listenForInstallPrompt(): void {
@@ -65,7 +66,7 @@ export class PwaInstallService {
 	}
 
 	public dismiss(): void {
-		localStorage.setItem(DISMISSED_KEY, 'true')
+		localStorage.setItem(StorageKeys.pwaInstallPromptDismissed, 'true')
 		this.canShow = false
 		this.logger.info('PWA install prompt dismissed')
 	}

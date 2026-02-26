@@ -3,8 +3,8 @@ import { expect, test } from '@playwright/test'
 // The dashboard requires auth or onboarding step >= 3.
 // Set onboarding step and region to bypass auth and region-setup dialog.
 const ONBOARDING_SETUP = () => {
-	localStorage.setItem('liverty:onboardingStep', '3')
-	localStorage.setItem('liverty-music:user-region', 'Tokyo')
+	localStorage.setItem('onboardingStep', '3')
+	localStorage.setItem('user.adminArea', 'Tokyo')
 }
 
 test.describe('PWA Install Prompt', () => {
@@ -23,7 +23,7 @@ test.describe('PWA Install Prompt', () => {
 		await page.addInitScript(ONBOARDING_SETUP)
 		await page.addInitScript(() => {
 			// Set session count to 1; PwaInstallService constructor increments to 2
-			localStorage.setItem('liverty-music:session-count', '1')
+			localStorage.setItem('pwa.sessionCount', '1')
 		})
 
 		await page.goto('/dashboard')
@@ -47,7 +47,7 @@ test.describe('PWA Install Prompt', () => {
 	test('dismiss hides banner and persists', async ({ page }) => {
 		await page.addInitScript(ONBOARDING_SETUP)
 		await page.addInitScript(() => {
-			localStorage.setItem('liverty-music:session-count', '1')
+			localStorage.setItem('pwa.sessionCount', '1')
 		})
 
 		await page.goto('/dashboard')
@@ -72,7 +72,7 @@ test.describe('PWA Install Prompt', () => {
 		).not.toBeVisible()
 
 		const dismissed = await page.evaluate(() =>
-			localStorage.getItem('liverty-music:install-prompt-dismissed'),
+			localStorage.getItem('pwa.installPromptDismissed'),
 		)
 		expect(dismissed).toBe('true')
 	})
@@ -80,7 +80,7 @@ test.describe('PWA Install Prompt', () => {
 	test('install button triggers deferred prompt', async ({ page }) => {
 		await page.addInitScript(ONBOARDING_SETUP)
 		await page.addInitScript(() => {
-			localStorage.setItem('liverty-music:session-count', '1')
+			localStorage.setItem('pwa.sessionCount', '1')
 		})
 
 		await page.goto('/dashboard')

@@ -1,5 +1,5 @@
 import { bindable, ILogger, resolve } from 'aurelia'
-import { REGION_STORAGE_KEY } from '../region-setup-sheet/region-setup-sheet'
+import { StorageKeys } from '../../constants/storage-keys'
 
 export interface Region {
 	name: string
@@ -62,7 +62,7 @@ export class AreaSelectorSheet {
 	private readonly logger = resolve(ILogger).scopeTo('AreaSelectorSheet')
 
 	public static getStoredArea(): string | null {
-		return localStorage.getItem(REGION_STORAGE_KEY)
+		return localStorage.getItem(StorageKeys.userAdminArea)
 	}
 
 	public open(): void {
@@ -98,7 +98,7 @@ export class AreaSelectorSheet {
 
 	public selectPrefecture(prefecture: string): void {
 		this.logger.info('Area selected', { prefecture })
-		localStorage.setItem(REGION_STORAGE_KEY, prefecture)
+		localStorage.setItem(StorageKeys.userAdminArea, prefecture)
 		this.close()
 		this.onAreaSelected?.(prefecture)
 	}

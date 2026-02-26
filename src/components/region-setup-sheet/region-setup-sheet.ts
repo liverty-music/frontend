@@ -1,6 +1,5 @@
 import { bindable, ILogger, resolve } from 'aurelia'
-
-export const REGION_STORAGE_KEY = 'liverty-music:user-region'
+import { StorageKeys } from '../../constants/storage-keys'
 
 const PREFECTURES = [
 	'北海道',
@@ -76,7 +75,7 @@ export class RegionSetupSheet {
 	private readonly logger = resolve(ILogger).scopeTo('RegionSetupSheet')
 
 	public static getStoredRegion(): string | null {
-		return localStorage.getItem(REGION_STORAGE_KEY)
+		return localStorage.getItem(StorageKeys.userAdminArea)
 	}
 
 	public open(): void {
@@ -108,7 +107,7 @@ export class RegionSetupSheet {
 
 	private saveRegion(prefecture: string): void {
 		this.logger.info('Region selected', { prefecture })
-		localStorage.setItem(REGION_STORAGE_KEY, prefecture)
+		localStorage.setItem(StorageKeys.userAdminArea, prefecture)
 		this.close()
 		this.onRegionSelected?.(prefecture)
 	}

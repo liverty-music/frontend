@@ -85,7 +85,7 @@ export class Dashboard {
 		this.logger.info('Region configured', { region })
 		this.needsRegion = false
 		if (this.isOnboarding) {
-			this.localClient.setRegion(region)
+			this.localClient.setAdminArea(region)
 		}
 	}
 

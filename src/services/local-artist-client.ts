@@ -1,8 +1,5 @@
 import { DI, ILogger, resolve } from 'aurelia'
-
-const FOLLOWED_ARTISTS_KEY = 'liverty:guest:followedArtists'
-const REGION_KEY = 'liverty:guest:region'
-const GUEST_KEY_PREFIX = 'liverty:guest:'
+import { StorageKeys } from '../constants/storage-keys'
 
 export interface LocalFollowedArtist {
 	id: string
@@ -24,7 +21,7 @@ export class LocalArtistClient {
 	 * List all locally followed artists.
 	 */
 	public listFollowed(): LocalFollowedArtist[] {
-		const raw = localStorage.getItem(FOLLOWED_ARTISTS_KEY)
+		const raw = localStorage.getItem(StorageKeys.guestFollowedArtists)
 		if (!raw) return []
 		try {
 			return JSON.parse(raw) as LocalFollowedArtist[]
@@ -46,7 +43,10 @@ export class LocalArtistClient {
 			return
 		}
 		artists.push({ id, name, passionLevel: 'LOCAL_ONLY' })
-		localStorage.setItem(FOLLOWED_ARTISTS_KEY, JSON.stringify(artists))
+		localStorage.setItem(
+			StorageKeys.guestFollowedArtists,
+			JSON.stringify(artists),
+		)
 		this.logger.info('Local artist followed', {
 			id,
 			name,
@@ -64,7 +64,10 @@ export class LocalArtistClient {
 			this.logger.debug('Artist not found locally for unfollow', { id })
 			return
 		}
-		localStorage.setItem(FOLLOWED_ARTISTS_KEY, JSON.stringify(filtered))
+		localStorage.setItem(
+			StorageKeys.guestFollowedArtists,
+			JSON.stringify(filtered),
+		)
 		this.logger.info('Local artist unfollowed', { id })
 	}
 
@@ -84,23 +87,26 @@ export class LocalArtistClient {
 			return
 		}
 		artist.passionLevel = level
-		localStorage.setItem(FOLLOWED_ARTISTS_KEY, JSON.stringify(artists))
+		localStorage.setItem(
+			StorageKeys.guestFollowedArtists,
+			JSON.stringify(artists),
+		)
 		this.logger.info('Local passion level set', { artistId, level })
 	}
 
 	/**
-	 * Get the locally stored region.
+	 * Get the locally stored admin area.
 	 */
-	public getRegion(): string | null {
-		return localStorage.getItem(REGION_KEY)
+	public getAdminArea(): string | null {
+		return localStorage.getItem(StorageKeys.guestAdminArea)
 	}
 
 	/**
-	 * Store the selected region locally.
+	 * Store the selected admin area locally.
 	 */
-	public setRegion(region: string): void {
-		localStorage.setItem(REGION_KEY, region)
-		this.logger.info('Local region set', { region })
+	public setAdminArea(adminArea: string): void {
+		localStorage.setItem(StorageKeys.guestAdminArea, adminArea)
+		this.logger.info('Local admin area set', { adminArea })
 	}
 
 	/**
@@ -117,7 +123,7 @@ export class LocalArtistClient {
 		const keysToRemove: string[] = []
 		for (let i = 0; i < localStorage.length; i++) {
 			const key = localStorage.key(i)
-			if (key?.startsWith(GUEST_KEY_PREFIX)) {
+			if (key?.startsWith(StorageKeys.guestKeyPrefix)) {
 				keysToRemove.push(key)
 			}
 		}

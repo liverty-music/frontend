@@ -39,11 +39,11 @@ describe('PwaInstallService', () => {
 	})
 
 	it('should increment session count on construction', () => {
-		expect(localStorage.getItem('liverty-music:session-count')).toBe('1')
+		expect(localStorage.getItem('pwa.sessionCount')).toBe('1')
 	})
 
 	it('should accumulate session count across instances', () => {
-		localStorage.setItem('liverty-music:session-count', '5')
+		localStorage.setItem('pwa.sessionCount', '5')
 		const container2 = DI.createContainer()
 		container2.register(
 			Registration.instance(
@@ -62,7 +62,7 @@ describe('PwaInstallService', () => {
 		)
 		container2.register(PwaInstallService)
 		container2.get(IPwaInstallService)
-		expect(localStorage.getItem('liverty-music:session-count')).toBe('6')
+		expect(localStorage.getItem('pwa.sessionCount')).toBe('6')
 	})
 
 	it('should register beforeinstallprompt listener', () => {
@@ -77,7 +77,7 @@ describe('PwaInstallService', () => {
 	})
 
 	it('should show prompt when session >= 2 and event fires', () => {
-		localStorage.setItem('liverty-music:session-count', '2')
+		localStorage.setItem('pwa.sessionCount', '2')
 
 		const call = addEventListenerSpy.mock.calls.find(
 			(c) => c[0] === 'beforeinstallprompt',
@@ -96,8 +96,8 @@ describe('PwaInstallService', () => {
 	})
 
 	it('should not show prompt when dismissed', () => {
-		localStorage.setItem('liverty-music:session-count', '2')
-		localStorage.setItem('liverty-music:install-prompt-dismissed', 'true')
+		localStorage.setItem('pwa.sessionCount', '2')
+		localStorage.setItem('pwa.installPromptDismissed', 'true')
 
 		const call = addEventListenerSpy.mock.calls.find(
 			(c) => c[0] === 'beforeinstallprompt',
@@ -114,7 +114,7 @@ describe('PwaInstallService', () => {
 	})
 
 	it('should call prompt on install()', async () => {
-		localStorage.setItem('liverty-music:session-count', '2')
+		localStorage.setItem('pwa.sessionCount', '2')
 
 		const call = addEventListenerSpy.mock.calls.find(
 			(c) => c[0] === 'beforeinstallprompt',
@@ -142,7 +142,7 @@ describe('PwaInstallService', () => {
 	it('should persist dismissal and hide banner', () => {
 		sut.dismiss()
 
-		expect(localStorage.getItem('liverty-music:install-prompt-dismissed')).toBe(
+		expect(localStorage.getItem('pwa.installPromptDismissed')).toBe(
 			'true',
 		)
 		expect(sut.canShow).toBe(false)
