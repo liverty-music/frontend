@@ -84,7 +84,7 @@ describe('LoadingSequence', () => {
 	}
 	let mockLocalClient: {
 		followedCount: number
-		setRegion: ReturnType<typeof vi.fn>
+		setAdminArea: ReturnType<typeof vi.fn>
 	}
 
 	beforeEach(() => {
@@ -103,7 +103,7 @@ describe('LoadingSequence', () => {
 		}
 		mockLocalClient = {
 			followedCount: 0,
-			setRegion: vi.fn(),
+			setAdminArea: vi.fn(),
 		}
 
 		const container = createTestContainer(

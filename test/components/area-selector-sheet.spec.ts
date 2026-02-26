@@ -1,7 +1,7 @@
 import { DI, LoggerConfiguration, LogLevel } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AreaSelectorSheet } from '../../src/components/area-selector-sheet/area-selector-sheet'
-import { REGION_STORAGE_KEY } from '../../src/components/region-setup-sheet/region-setup-sheet'
+import { StorageKeys } from '../../src/constants/storage-keys'
 
 describe('AreaSelectorSheet', () => {
 	let sut: AreaSelectorSheet
@@ -55,7 +55,7 @@ describe('AreaSelectorSheet', () => {
 			sut.open()
 			sut.selectPrefecture('東京')
 
-			expect(localStorage.getItem(REGION_STORAGE_KEY)).toBe('東京')
+			expect(localStorage.getItem(StorageKeys.userAdminArea)).toBe('東京')
 			expect(sut.isOpen).toBe(false)
 		})
 
@@ -74,7 +74,7 @@ describe('AreaSelectorSheet', () => {
 		})
 
 		it('should return stored area', () => {
-			localStorage.setItem(REGION_STORAGE_KEY, '愛知')
+			localStorage.setItem(StorageKeys.userAdminArea, '愛知')
 			expect(AreaSelectorSheet.getStoredArea()).toBe('愛知')
 		})
 	})

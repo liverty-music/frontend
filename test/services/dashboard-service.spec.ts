@@ -232,7 +232,7 @@ describe('DashboardService', () => {
 
 	it('should assign events to main lane when adminArea matches user region', async () => {
 		// Arrange — set user region in localStorage
-		localStorage.setItem('liverty-music:user-region', '東京')
+		localStorage.setItem('user.adminArea', '東京')
 
 		mockArtistService.listFollowed = vi
 			.fn()

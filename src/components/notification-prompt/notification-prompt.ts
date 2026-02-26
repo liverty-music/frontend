@@ -1,8 +1,7 @@
 import { ILogger, resolve } from 'aurelia'
+import { StorageKeys } from '../../constants/storage-keys'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
-
-const DISMISSED_KEY = 'liverty-music:notification-prompt-dismissed'
 
 export class NotificationPrompt {
 	public isVisible = false
@@ -13,7 +12,9 @@ export class NotificationPrompt {
 	private readonly pushService = resolve(IPushService)
 
 	public attached(): void {
-		const dismissed = localStorage.getItem(DISMISSED_KEY)
+		const dismissed = localStorage.getItem(
+			StorageKeys.uiNotificationPromptDismissed,
+		)
 		if (dismissed) {
 			return
 		}
@@ -33,7 +34,7 @@ export class NotificationPrompt {
 			// template's `denied` block can guide the user to browser settings.
 			if (this.notificationManager.permission === 'granted') {
 				this.isVisible = false
-				localStorage.setItem(DISMISSED_KEY, 'true')
+				localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')
 			}
 		} catch (err) {
 			this.logger.error('Failed to enable push notifications', err)
@@ -44,6 +45,6 @@ export class NotificationPrompt {
 
 	public dismiss(): void {
 		this.isVisible = false
-		localStorage.setItem(DISMISSED_KEY, 'true')
+		localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')
 	}
 }
