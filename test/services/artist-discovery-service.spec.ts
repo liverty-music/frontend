@@ -59,7 +59,7 @@ function makeArtist(id: string, name: string, mbid = '') {
 	}
 }
 
-function _makeBubble(id: string, name: string, mbid = ''): ArtistBubble {
+function makeBubble(id: string, name: string, mbid = ''): ArtistBubble {
 	return {
 		id,
 		name,
@@ -102,7 +102,7 @@ describe('ArtistDiscoveryService', () => {
 	})
 
 	describe('loadInitialArtists', () => {
-		it('should populate availableBubbles from listTop response', async () => {
+		it('should fetch top artists when no followed artists (Step 1-a)', async () => {
 			mockClient.listTop.mockResolvedValue({
 				artists: [
 					makeArtist('a1', 'Artist One'),
@@ -114,10 +114,9 @@ describe('ArtistDiscoveryService', () => {
 
 			expect(sut.availableBubbles).toHaveLength(2)
 			expect(sut.availableBubbles[0].name).toBe('Artist One')
-			expect(sut.maxBubbles).toBe(2)
 		})
 
-		it('should pass country and tag to listTop', async () => {
+		it('should pass limit=50, country, and tag to listTop', async () => {
 			mockClient.listTop.mockResolvedValue({ artists: [] })
 
 			await sut.loadInitialArtists('US', 'rock')
@@ -125,6 +124,7 @@ describe('ArtistDiscoveryService', () => {
 			expect(mockClient.listTop).toHaveBeenCalledWith({
 				country: 'US',
 				tag: 'rock',
+				limit: ArtistDiscoveryService.MAX_BUBBLES,
 			})
 		})
 
@@ -136,20 +136,92 @@ describe('ArtistDiscoveryService', () => {
 			expect(mockClient.listTop).toHaveBeenCalledWith({
 				country: 'Japan',
 				tag: '',
+				limit: ArtistDiscoveryService.MAX_BUBBLES,
 			})
+		})
+
+		it('should fetch similar artists from seeds when followed > 0 (Step 1-b)', async () => {
+			// Pre-populate followedArtists
+			mockClient.listTop.mockResolvedValue({
+				artists: [makeArtist('f1', 'Followed One')],
+			})
+			await sut.loadInitialArtists()
+			await sut.followArtist(sut.availableBubbles[0])
+
+			mockClient.listSimilar.mockResolvedValue({
+				artists: [
+					makeArtist('s1', 'Similar One'),
+					makeArtist('s2', 'Similar Two'),
+				],
+			})
+
+			await sut.loadInitialArtists()
+
+			// Should have called listSimilar instead of listTop
+			// (listTop was called once in setup, listSimilar once for seed)
+			expect(mockClient.listSimilar).toHaveBeenCalled()
+			expect(sut.availableBubbles.length).toBeGreaterThan(0)
+		})
+
+		it('should split limit evenly across seed artists (Step 1-b)', async () => {
+			// Pre-populate with 2 followed artists
+			mockClient.listTop.mockResolvedValue({
+				artists: [
+					makeArtist('f1', 'Followed One'),
+					makeArtist('f2', 'Followed Two'),
+				],
+			})
+			await sut.loadInitialArtists()
+			await sut.followArtist(sut.availableBubbles[0])
+			await sut.followArtist(sut.availableBubbles[0])
+
+			mockClient.listSimilar.mockResolvedValue({ artists: [] })
+
+			await sut.loadInitialArtists()
+
+			// Both seeds should use limit = floor(50/2) = 25
+			for (const call of mockClient.listSimilar.mock.calls) {
+				expect(call[0].limit).toBe(25)
+			}
+		})
+
+		it('should cap availableBubbles at MAX_BUBBLES', async () => {
+			const artists = Array.from({ length: 60 }, (_, i) =>
+				makeArtist(`a${i}`, `Artist ${i}`),
+			)
+			mockClient.listTop.mockResolvedValue({ artists })
+
+			await sut.loadInitialArtists()
+
+			expect(sut.availableBubbles.length).toBeLessThanOrEqual(
+				ArtistDiscoveryService.MAX_BUBBLES,
+			)
+		})
+
+		it('should exclude followed artists from pool (Step 2)', async () => {
+			mockClient.listTop.mockResolvedValueOnce({
+				artists: [makeArtist('a1', 'Will Follow')],
+			})
+			await sut.loadInitialArtists()
+			await sut.followArtist(sut.availableBubbles[0])
+
+			mockClient.listTop.mockResolvedValueOnce({
+				artists: [makeArtist('a1', 'Will Follow')],
+			})
+			await sut.loadInitialArtists()
+
+			expect(sut.availableBubbles).toHaveLength(0)
 		})
 	})
 
 	describe('deduplication', () => {
 		it('should exclude followed artists from available bubbles on reload', async () => {
-			// Follow an artist first
 			mockClient.listTop.mockResolvedValueOnce({
 				artists: [makeArtist('a1', 'Followed Artist')],
 			})
 			await sut.loadInitialArtists()
 			await sut.followArtist(sut.availableBubbles[0])
 
-			// Reload — followed artist should be deduped via name/id
 			mockClient.listTop.mockResolvedValueOnce({
 				artists: [makeArtist('a1', 'Followed Artist')],
 			})
@@ -261,8 +333,39 @@ describe('ArtistDiscoveryService', () => {
 		})
 	})
 
+	describe('markFollowed', () => {
+		it('should move artist from available to followed via array reassignment', async () => {
+			mockClient.listTop.mockResolvedValue({
+				artists: [makeArtist('a1', 'Artist One')],
+			})
+			await sut.loadInitialArtists()
+			const original = sut.availableBubbles
+			const artist = sut.availableBubbles[0]
+
+			sut.markFollowed(artist)
+
+			// Array should be a new reference (Aurelia observation)
+			expect(sut.availableBubbles).not.toBe(original)
+			expect(sut.availableBubbles).toHaveLength(0)
+			expect(sut.followedArtists).toHaveLength(1)
+		})
+
+		it('should be a no-op for already followed artist', async () => {
+			mockClient.listTop.mockResolvedValue({
+				artists: [makeArtist('a1', 'Artist One')],
+			})
+			await sut.loadInitialArtists()
+			const artist = sut.availableBubbles[0]
+
+			sut.markFollowed(artist)
+			sut.markFollowed(artist)
+
+			expect(sut.followedArtists).toHaveLength(1)
+		})
+	})
+
 	describe('reloadWithTag', () => {
-		it('should reload available bubbles with new tag', async () => {
+		it('should reload available bubbles with new tag and limit', async () => {
 			mockClient.listTop.mockResolvedValue({
 				artists: [makeArtist('a1', 'Rock Artist')],
 			})
@@ -272,38 +375,14 @@ describe('ArtistDiscoveryService', () => {
 			expect(mockClient.listTop).toHaveBeenCalledWith({
 				country: 'Japan',
 				tag: 'rock',
+				limit: ArtistDiscoveryService.MAX_BUBBLES,
 			})
 			expect(sut.availableBubbles).toHaveLength(1)
-		})
-	})
-
-	describe('evictOldest', () => {
-		it('should remove the first N bubbles from availableBubbles', async () => {
-			mockClient.listTop.mockResolvedValue({
-				artists: [
-					makeArtist('a1', 'A1'),
-					makeArtist('a2', 'A2'),
-					makeArtist('a3', 'A3'),
-				],
-			})
-			await sut.loadInitialArtists()
-
-			const evicted = sut.evictOldest(2)
-
-			expect(evicted).toHaveLength(2)
-			expect(evicted[0].id).toBe('a1')
-			expect(sut.availableBubbles).toHaveLength(1)
-			expect(sut.availableBubbles[0].id).toBe('a3')
-		})
-
-		it('should return empty array for count <= 0', () => {
-			const evicted = sut.evictOldest(0)
-			expect(evicted).toHaveLength(0)
 		})
 	})
 
 	describe('getSimilarArtists', () => {
-		it('should fetch and append similar artists to availableBubbles', async () => {
+		it('should return new bubbles WITHOUT modifying the pool', async () => {
 			mockClient.listSimilar.mockResolvedValue({
 				artists: [
 					makeArtist('s1', 'Similar One'),
@@ -314,7 +393,28 @@ describe('ArtistDiscoveryService', () => {
 			const result = await sut.getSimilarArtists('Base Artist', 'a1')
 
 			expect(result).toHaveLength(2)
-			expect(sut.availableBubbles).toHaveLength(2)
+			// Pool should NOT be modified by getSimilarArtists
+			expect(sut.availableBubbles).toHaveLength(0)
+		})
+
+		it('should pass limit parameter to listSimilar RPC', async () => {
+			mockClient.listSimilar.mockResolvedValue({ artists: [] })
+
+			await sut.getSimilarArtists('Base', 'a1', 15)
+
+			expect(mockClient.listSimilar).toHaveBeenCalledWith(
+				expect.objectContaining({ limit: 15 }),
+			)
+		})
+
+		it('should use default limit of 30 when not specified', async () => {
+			mockClient.listSimilar.mockResolvedValue({ artists: [] })
+
+			await sut.getSimilarArtists('Base', 'a1')
+
+			expect(mockClient.listSimilar).toHaveBeenCalledWith(
+				expect.objectContaining({ limit: 30 }),
+			)
 		})
 
 		it('should filter out already-seen similar artists', async () => {
@@ -335,6 +435,79 @@ describe('ArtistDiscoveryService', () => {
 
 			expect(result).toHaveLength(1)
 			expect(result[0].name).toBe('New Artist')
+		})
+
+		it('should filter out followed artists from results', async () => {
+			mockClient.listTop.mockResolvedValue({
+				artists: [makeArtist('a1', 'Followed')],
+			})
+			await sut.loadInitialArtists()
+			await sut.followArtist(sut.availableBubbles[0])
+
+			mockClient.listSimilar.mockResolvedValue({
+				artists: [
+					makeArtist('a1', 'Followed'),
+					makeArtist('s1', 'Not Followed'),
+				],
+			})
+
+			const result = await sut.getSimilarArtists('Base', 'b1')
+			expect(result).toHaveLength(1)
+			expect(result[0].name).toBe('Not Followed')
+		})
+	})
+
+	describe('addToPool', () => {
+		it('should add bubbles to availableBubbles', () => {
+			const bubbles = [makeBubble('a1', 'One'), makeBubble('a2', 'Two')]
+
+			const evictedIds = sut.addToPool(bubbles)
+
+			expect(evictedIds).toHaveLength(0)
+			expect(sut.availableBubbles).toHaveLength(2)
+		})
+
+		it('should evict oldest bubbles when exceeding MAX_BUBBLES', async () => {
+			// Fill pool to MAX_BUBBLES
+			const initial = Array.from(
+				{ length: ArtistDiscoveryService.MAX_BUBBLES },
+				(_, i) => makeArtist(`a${i}`, `Artist ${i}`),
+			)
+			mockClient.listTop.mockResolvedValue({ artists: initial })
+			await sut.loadInitialArtists()
+
+			expect(sut.availableBubbles).toHaveLength(
+				ArtistDiscoveryService.MAX_BUBBLES,
+			)
+
+			// Add 5 more — should evict 5 oldest
+			const newBubbles = Array.from({ length: 5 }, (_, i) =>
+				makeBubble(`new${i}`, `New ${i}`),
+			)
+
+			const evictedIds = sut.addToPool(newBubbles)
+
+			expect(evictedIds).toHaveLength(5)
+			expect(evictedIds[0]).toBe('a0') // oldest first
+			expect(evictedIds[4]).toBe('a4')
+			expect(sut.availableBubbles).toHaveLength(
+				ArtistDiscoveryService.MAX_BUBBLES,
+			)
+			// Last element should be the last new bubble
+			expect(sut.availableBubbles[sut.availableBubbles.length - 1].name).toBe(
+				'New 4',
+			)
+		})
+
+		it('should reassign array reference for Aurelia observation', () => {
+			const before = sut.availableBubbles
+			sut.addToPool([makeBubble('a1', 'One')])
+			expect(sut.availableBubbles).not.toBe(before)
+		})
+
+		it('should return empty array when no eviction needed', () => {
+			const evictedIds = sut.addToPool([makeBubble('a1', 'One')])
+			expect(evictedIds).toHaveLength(0)
 		})
 	})
 

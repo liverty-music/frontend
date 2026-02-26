@@ -45,7 +45,11 @@ export function createMockArtistDiscoveryService(): Partial<IArtistDiscoveryServ
 		followArtist: vi.fn().mockResolvedValue(undefined),
 		markFollowed: vi.fn(),
 		getSimilarArtists: vi.fn().mockResolvedValue([]),
+		addToPool: vi.fn().mockReturnValue([]),
 		checkLiveEvents: vi.fn().mockResolvedValue(false),
 		listFollowedFromBackend: vi.fn().mockResolvedValue([]),
+		isFollowed: vi.fn().mockReturnValue(false),
+		searchArtists: vi.fn().mockResolvedValue([]),
+		reloadWithTag: vi.fn().mockResolvedValue(undefined),
 	}
 }
