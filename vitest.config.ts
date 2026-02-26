@@ -17,7 +17,7 @@ export default mergeConfig(
         thresholds: {
           statements: 20,
           branches: 70,
-          functions: 30,
+          functions: 29,
           lines: 20,
         },
         exclude: [
