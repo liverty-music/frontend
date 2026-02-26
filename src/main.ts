@@ -20,6 +20,7 @@ import { initOtel } from './services/otel-init'
 import { OtelLogSink } from './services/otel-log-sink'
 import { IProofService } from './services/proof-service'
 import { IPushService } from './services/push-service'
+import { IPwaInstallService } from './services/pwa-install-service'
 import { ITicketService } from './services/ticket-service'
 import { IUserService } from './services/user-service'
 import { DateValueConverter } from './value-converters/date'
@@ -62,6 +63,7 @@ Aurelia
 	.register(IGuestDataMergeService)
 	.register(INotificationManager)
 	.register(IPushService)
+	.register(IPwaInstallService)
 	.register(ITicketService)
 	.register(IEntryService)
 	.register(IProofService)
@@ -79,7 +81,23 @@ Aurelia
 // In dev mode, vite-plugin-node-polyfills injects Buffer/global/process shims
 // into the SW bundle, which breaks ServiceWorker evaluation.
 if ('serviceWorker' in navigator && !import.meta.env.DEV) {
-	navigator.serviceWorker.register('/sw.js').catch((err) => {
-		console.warn('Service Worker registration failed:', err)
-	})
+	navigator.serviceWorker
+		.register('/sw.js')
+		.then(async (registration) => {
+			// Register Periodic Background Sync for concert data refresh (Chromium only).
+			if ('periodicSync' in registration) {
+				try {
+					await (registration as ServiceWorkerRegistration & {
+						periodicSync: { register(tag: string, options: { minInterval: number }): Promise<void> }
+					}).periodicSync.register('concert-refresh', {
+						minInterval: 12 * 60 * 60 * 1000, // 12 hours
+					})
+				} catch {
+					// Periodic sync not granted or not supported — silent fallback.
+				}
+			}
+		})
+		.catch((err) => {
+			console.warn('Service Worker registration failed:', err)
+		})
 }

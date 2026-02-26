@@ -1,6 +1,9 @@
 <import from="./components/error-banner/error-banner"></import>
+<import from="./components/pwa-install-prompt/pwa-install-prompt"></import>
 
 <div class="min-h-screen bg-surface-base text-text-primary">
+  <pwa-install-prompt if.bind="showNav"></pwa-install-prompt>
+
   <main>
     <au-viewport></au-viewport>
   </main>
