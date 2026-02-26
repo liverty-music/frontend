@@ -12,9 +12,7 @@ test.describe('PWA Install Prompt', () => {
 		await page.addInitScript(ONBOARDING_SETUP)
 		await page.goto('/dashboard')
 		await page.waitForTimeout(2000)
-		await expect(
-			page.getByTestId('pwa-install-banner'),
-		).not.toBeVisible()
+		await expect(page.getByTestId('pwa-install-banner')).not.toBeVisible()
 	})
 
 	test('shows banner on second session when beforeinstallprompt fires', async ({
@@ -67,9 +65,7 @@ test.describe('PWA Install Prompt', () => {
 		})
 
 		await page.getByTestId('pwa-install-dismiss').click()
-		await expect(
-			page.getByTestId('pwa-install-banner'),
-		).not.toBeVisible()
+		await expect(page.getByTestId('pwa-install-banner')).not.toBeVisible()
 
 		const dismissed = await page.evaluate(() =>
 			localStorage.getItem('pwa.installPromptDismissed'),
@@ -87,11 +83,14 @@ test.describe('PWA Install Prompt', () => {
 		await page.waitForTimeout(2000)
 
 		await page.evaluate(() => {
-			;(window as unknown as { __pwaPromptCalled: boolean }).__pwaPromptCalled = false
+			;(window as unknown as { __pwaPromptCalled: boolean }).__pwaPromptCalled =
+				false
 			const event = new Event('beforeinstallprompt', { cancelable: true })
 			Object.assign(event, {
 				prompt: () => {
-					;(window as unknown as { __pwaPromptCalled: boolean }).__pwaPromptCalled = true
+					;(
+						window as unknown as { __pwaPromptCalled: boolean }
+					).__pwaPromptCalled = true
 					return Promise.resolve()
 				},
 				userChoice: Promise.resolve({ outcome: 'accepted' }),
@@ -112,8 +111,6 @@ test.describe('PWA Install Prompt', () => {
 		)
 		expect(promptCalled).toBe(true)
 
-		await expect(
-			page.getByTestId('pwa-install-banner'),
-		).not.toBeVisible()
+		await expect(page.getByTestId('pwa-install-banner')).not.toBeVisible()
 	})
 })

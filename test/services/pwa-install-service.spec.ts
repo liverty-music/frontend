@@ -142,9 +142,7 @@ describe('PwaInstallService', () => {
 	it('should persist dismissal and hide banner', () => {
 		sut.dismiss()
 
-		expect(localStorage.getItem('pwa.installPromptDismissed')).toBe(
-			'true',
-		)
+		expect(localStorage.getItem('pwa.installPromptDismissed')).toBe('true')
 		expect(sut.canShow).toBe(false)
 	})
 })
