@@ -1,9 +1,14 @@
-import { IRouter } from '@aurelia/router'
+import { IRouter, type NavigationInstruction } from '@aurelia/router'
 import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
 import { IToastService } from '../../components/toast-notification/toast-notification'
 import { IArtistDiscoveryService } from '../../services/artist-discovery-service'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
+import { ILocalArtistClient } from '../../services/local-artist-client'
+import {
+	IOnboardingService,
+	OnboardingStep,
+} from '../../services/onboarding-service'
 import css from './loading-sequence.css?raw'
 
 @useShadowDOM()
@@ -14,6 +19,8 @@ export class LoadingSequence {
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequence')
 	private readonly loadingService = resolve(ILoadingSequenceService)
 	private readonly artistDiscoveryService = resolve(IArtistDiscoveryService)
+	private readonly localClient = resolve(ILocalArtistClient)
+	private readonly onboarding = resolve(IOnboardingService)
 	private readonly toastService = resolve(IToastService)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 
@@ -21,6 +28,7 @@ export class LoadingSequence {
 	public currentPhaseMessage = ''
 	public isPhaseVisible = true
 
+	private nextRoute: string | null = null
 	private phaseTimer: number | null = null
 	private readonly FADE_DURATION_MS = 600
 
@@ -34,9 +42,21 @@ export class LoadingSequence {
 		return this.phases.length
 	}
 
-	public async canLoad(): Promise<boolean> {
-		// Onboarding state guard (authentication is enforced by the global AuthHook)
+	public async canLoad(): Promise<NavigationInstruction | boolean> {
+		// Tutorial mode: check guest data instead of backend
+		if (this.onboarding.isOnboarding) {
+			const guestCount = this.localClient.followedCount
+			if (guestCount === 0) {
+				this.logger.info(
+					'Tutorial: no guest followed artists, redirecting to discovery',
+				)
+				return 'onboarding/discover'
+			}
+			this.logger.info('Tutorial: allowing loading sequence', { guestCount })
+			return true
+		}
 
+		// Authenticated mode: check backend
 		try {
 			const abortController = new AbortController()
 			const backendFollowedArtists =
@@ -49,8 +69,7 @@ export class LoadingSequence {
 					'User has followed artists in backend, redirecting to dashboard',
 					{ count: backendFollowedArtists.length },
 				)
-				await this.router.load('/dashboard')
-				return false
+				return 'dashboard'
 			}
 
 			const localFollowedCount =
@@ -60,8 +79,7 @@ export class LoadingSequence {
 				this.logger.info(
 					'User has no followed artists, redirecting to discovery',
 				)
-				await this.router.load('/onboarding/discover')
-				return false
+				return 'onboarding/discover'
 			}
 
 			this.logger.info('Allowing access to loading sequence', {
@@ -79,8 +97,7 @@ export class LoadingSequence {
 
 			if (localFollowedCount === 0) {
 				this.logger.info('No local followed artists, redirecting to discovery')
-				await this.router.load('/onboarding/discover')
-				return false
+				return 'onboarding/discover'
 			}
 
 			return true
@@ -93,8 +110,20 @@ export class LoadingSequence {
 		this.currentPhaseMessage = this.phases[0].message
 	}
 
-	public async attached(): Promise<void> {
+	/**
+	 * loading() is awaited by the router's transition pipeline, so we perform
+	 * all async work (animation delay, data aggregation) here and store the
+	 * navigation target for attached() to pick up.
+	 */
+	public async loading(): Promise<void> {
 		this.startPhaseAnimation()
+
+		if (this.onboarding.isOnboarding) {
+			await new Promise((r) => setTimeout(r, 3000))
+			this.onboarding.setStep(OnboardingStep.DASHBOARD)
+			this.nextRoute = '/dashboard'
+			return
+		}
 
 		const result = await this.loadingService.aggregateData()
 
@@ -123,7 +152,24 @@ export class LoadingSequence {
 				break
 		}
 
-		await this.router.load('/dashboard')
+		this.nextRoute = '/dashboard'
+	}
+
+	/**
+	 * attached() is NOT awaited by the router's batch chain (_swap).
+	 * Calling router.load() synchronously here would enqueue a transition that
+	 * may be orphaned because _runNextTransition() has already completed.
+	 * Deferring to a macrotask (setTimeout) ensures the current transition
+	 * pipeline finishes before the new navigation starts.
+	 */
+	public attached(): void {
+		if (this.nextRoute) {
+			const route = this.nextRoute
+			this.nextRoute = null
+			setTimeout(() => {
+				this.router.load(route)
+			}, 0)
+		}
 	}
 
 	public unbinding(): void {

@@ -1,3 +1,5 @@
+<import from="../../components/coach-mark/coach-mark"></import>
+
 <div class="h-screen flex flex-col bg-surface-base text-text-primary pb-14">
   <!-- Header -->
   <div class="shrink-0 px-4 py-4 border-b border-white/10 bg-surface-raised">
@@ -86,6 +88,7 @@
           <!-- Passion level indicator -->
           <button
             click.trigger="openPassionSelector(artist)"
+            data-passion-button
             class="shrink-0 text-base leading-none px-1.5 py-1 rounded-md hover:bg-white/10 transition-colors"
             aria-label="Change passion level"
           >${passionIcon(artist)}</button>
@@ -190,6 +193,32 @@
           <span class="text-base w-8 text-center">${passionLevelMeta[level].icon}</span>
           <span class="text-sm font-medium">${passionLevelMeta[level].label}</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tutorial Step 5: Coach mark on first artist's passion button -->
+  <coach-mark
+    target-selector="[data-passion-button]"
+    message="熱量を設定してみましょう"
+    active.bind="isTutorialStep5 && !isLoading && artists.length > 0"
+  ></coach-mark>
+
+  <!-- Tutorial: Passion level notification explanation -->
+  <div
+    if.bind="showPassionExplanation"
+    class="absolute inset-0 z-[60] flex items-center justify-center bg-black/70"
+  >
+    <div class="mx-6 bg-surface-raised border border-white/10 rounded-2xl p-6 max-w-sm">
+      <div class="text-center">
+        <div class="text-3xl mb-3">🔔</div>
+        <h3 class="font-display text-lg font-bold text-text-primary mb-2">通知コントロール</h3>
+        <p class="text-sm text-text-muted leading-relaxed">
+          熱量レベルに応じて通知の頻度が変わります。
+          「Must Go」のアーティストは全公演を通知、
+          「Local Only」は近くの公演のみ、
+          「Keep an Eye」は注目公演だけお知らせします。
+        </p>
       </div>
     </div>
   </div>

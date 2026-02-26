@@ -19,12 +19,16 @@ export function createMockConcertService(): Partial<IConcertService> {
  */
 export function createMockArtistServiceClient(): Partial<IArtistServiceClient> {
 	return {
+		listFollowed: vi.fn().mockResolvedValue([]),
+		follow: vi.fn().mockResolvedValue(undefined),
+		unfollow: vi.fn().mockResolvedValue(undefined),
 		getClient: vi.fn().mockReturnValue({
 			listFollowed: vi.fn().mockResolvedValue({ artists: [] }),
 			getTopArtists: vi.fn().mockResolvedValue({ artists: [] }),
 			getSimilarArtists: vi.fn().mockResolvedValue({ artists: [] }),
 			followArtist: vi.fn().mockResolvedValue({}),
 			unfollow: vi.fn().mockResolvedValue({}),
+			setPassionLevel: vi.fn().mockResolvedValue({}),
 		}),
 	}
 }

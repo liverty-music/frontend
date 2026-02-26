@@ -1,3 +1,5 @@
+<import from="./components/signup-modal/signup-modal"></import>
+
 <div class="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-gradient-to-b from-surface-base via-brand-primary/10 to-surface-base">
   <div class="text-center max-w-md w-full">
     <!-- Brand wordmark -->
@@ -14,19 +16,37 @@
     </p>
 
     <!-- CTA buttons -->
-    <div class="space-y-3 w-full animate-[fade-slide-up_600ms_ease-out_600ms_both]">
+    <div class="space-y-3 w-full animate-[fade-slide-up_600ms_ease-out_600ms_both]" if.bind="!showSignUpModal">
+      <!-- Primary: Get Started (new users / tutorial in progress) -->
       <button
-        click.trigger="handleSignUp()"
+        if.bind="showGetStarted"
+        click.trigger="handleGetStarted()"
         class="w-full bg-brand-primary hover:bg-brand-secondary text-white font-semibold py-3.5 px-6 rounded-[var(--radius-button)] transition-all min-h-[48px] shadow-[var(--shadow-button)] hover:shadow-[0_6px_24px_-2px_oklch(0.585_0.233_277/0.4)] hover:scale-[1.02] active:scale-[0.98]"
       >
-        Sign Up
+        使ってみる
       </button>
+
+      <!-- Primary: Login (returning users with COMPLETED step) -->
       <button
-        click.trigger="handleSignIn()"
-        class="w-full border border-white/20 hover:border-white/40 text-text-secondary hover:text-text-primary font-semibold py-3.5 px-6 rounded-[var(--radius-button)] transition-all min-h-[48px] hover:bg-white/5 active:scale-[0.98]"
+        if.bind="!showGetStarted"
+        click.trigger="handleLogin()"
+        class="w-full bg-brand-primary hover:bg-brand-secondary text-white font-semibold py-3.5 px-6 rounded-[var(--radius-button)] transition-all min-h-[48px] shadow-[var(--shadow-button)] hover:shadow-[0_6px_24px_-2px_oklch(0.585_0.233_277/0.4)] hover:scale-[1.02] active:scale-[0.98]"
       >
-        Sign In
+        ログイン
       </button>
+
+      <!-- Secondary: Login link (visible alongside Get Started for new users) -->
+      <p if.bind="showGetStarted" class="mt-4">
+        <a
+          click.trigger="handleLogin()"
+          class="text-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors underline underline-offset-4"
+        >
+          アカウントをお持ちの方はログイン
+        </a>
+      </p>
     </div>
+
+    <!-- Step 6: Non-dismissible SignUp modal -->
+    <signup-modal active.bind="showSignUpModal"></signup-modal>
   </div>
 </div>

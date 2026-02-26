@@ -27,16 +27,19 @@ import { IErrorBoundaryService } from './services/error-boundary-service'
 			path: 'onboarding/discover',
 			component: import('./routes/artist-discovery/artist-discovery-page'),
 			title: 'Discover Artists',
+			data: { auth: false, tutorialStep: 1 },
 		},
 		{
 			path: 'onboarding/loading',
 			component: import('./routes/onboarding-loading/loading-sequence'),
 			title: 'Loading',
+			data: { auth: false, tutorialStep: 2 },
 		},
 		{
 			path: 'dashboard',
 			component: import('./routes/dashboard'),
 			title: 'Dashboard',
+			data: { tutorialStep: 3 },
 		},
 		{
 			path: 'concerts/:id',
@@ -52,6 +55,7 @@ import { IErrorBoundaryService } from './services/error-boundary-service'
 			path: 'my-artists',
 			component: import('./routes/my-artists/my-artists-page'),
 			title: 'My Artists',
+			data: { tutorialStep: 5 },
 		},
 		{
 			path: 'tickets',

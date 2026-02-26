@@ -1,6 +1,7 @@
 <import from="../components/notification-prompt/notification-prompt"></import>
 <import from="../components/region-setup-sheet/region-setup-sheet"></import>
 <import from="../components/inline-error/inline-error"></import>
+<import from="../components/coach-mark/coach-mark"></import>
 
 <div class="h-screen flex flex-col bg-surface-base pb-14">
   <!-- Header -->
@@ -30,7 +31,7 @@
   </div>
 
   <!-- Highway content with promise.bind -->
-  <div class="flex-1 min-h-0 transition-[filter] duration-500 ${needsRegion ? 'blur-sm pointer-events-none' : ''}" promise.bind="dataPromise">
+  <div class="flex-1 min-h-0 transition-[filter] duration-500 ${needsRegion ? 'blur-sm pointer-events-none overflow-hidden' : ''}" promise.bind="dataPromise">
     <!-- Loading skeleton -->
     <div pending class="flex-1 min-h-0">
       <live-highway
@@ -87,3 +88,19 @@
   view-model.ref="regionSheet"
   on-region-selected.bind="(region) => onRegionSelected(region)"
 ></region-setup-sheet>
+
+<!-- Tutorial Step 3: Spotlight on first concert card -->
+<coach-mark
+  target-selector="[data-live-card]:first-child"
+  message="見つかりました！カードをタップして詳細を見てみましょう"
+  active.bind="isTutorialStep3 && !needsRegion"
+  on-tap.bind="() => onTutorialCardTapped()"
+></coach-mark>
+
+<!-- Tutorial Step 4: Highlight My Artists tab -->
+<coach-mark
+  target-selector="[data-nav-my-artists]"
+  message="通知のカスタマイズはアーティスト画面から行えます 👉"
+  active.bind="isTutorialStep4"
+  on-tap.bind="() => onTutorialMyArtistsTapped()"
+></coach-mark>

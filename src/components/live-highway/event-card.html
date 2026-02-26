@@ -2,6 +2,7 @@
   <!-- Main lane: mega-typography, card glow, entrance animation -->
   <div
     if.bind="lane === 'main'"
+    data-live-card
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}"
     class="rounded-[var(--radius-card)] p-5 mb-3 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[120px] flex items-end shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] animate-[fade-slide-up_400ms_ease-out_both]"
@@ -14,6 +15,7 @@
   <!-- Region lane: medium card with artist + prefecture -->
   <div
     if.bind="lane === 'region' && !isMutated"
+    data-live-card
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}"
     class="rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[80px] flex flex-col justify-end shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)] animate-[fade-slide-up_400ms_ease-out_both]"
@@ -29,6 +31,7 @@
   <!-- Region lane MUTATED: expanded Must Go card -->
   <div
     if.bind="lane === 'region' && isMutated"
+    data-live-card
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}; box-shadow: 0 0 16px ${backgroundColor}66"
     class="relative rounded-xl p-4 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[100px] flex flex-col justify-end shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] animate-[fade-slide-up_400ms_ease-out_both] ring-1 ring-white/20"
@@ -45,6 +48,7 @@
   <!-- Other lane: text-only list item -->
   <div
     if.bind="lane === 'other' && !isMutated"
+    data-live-card
     click.trigger="onClick()"
     class="py-2 px-2 mb-1 cursor-pointer rounded-lg transition-colors duration-200 hover:bg-white/5 active:bg-white/10 flex items-center gap-2 animate-[fade-slide-up_400ms_ease-out_both]"
   >
@@ -63,6 +67,7 @@
   <!-- Other lane MUTATED: promoted to card style -->
   <div
     if.bind="lane === 'other' && isMutated"
+    data-live-card
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}"
     class="relative rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[60px] flex flex-col justify-end shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)] animate-[fade-slide-up_400ms_ease-out_both] ring-1 ring-white/20"

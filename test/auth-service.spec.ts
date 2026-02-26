@@ -66,7 +66,6 @@ describe('AuthService', () => {
 		await sut.signUp()
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
 			prompt: 'create',
-			state: { isSignUp: true },
 		})
 	})
 

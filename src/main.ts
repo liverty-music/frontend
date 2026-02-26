@@ -1,10 +1,5 @@
 import { RouterConfiguration } from '@aurelia/router'
-import Aurelia, {
-	ConsoleSink,
-	ILogger,
-	LoggerConfiguration,
-	LogLevel,
-} from 'aurelia'
+import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { IToastService } from './components/toast-notification/toast-notification'
 import { AuthHook } from './hooks/auth-hook'
@@ -17,7 +12,10 @@ import { IDashboardService } from './services/dashboard-service'
 import { IEntryService } from './services/entry-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
+import { IGuestDataMergeService } from './services/guest-data-merge-service'
+import { ILocalArtistClient } from './services/local-artist-client'
 import { INotificationManager } from './services/notification-manager'
+import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
 import { OtelLogSink } from './services/otel-log-sink'
 import { IProofService } from './services/proof-service'
@@ -59,6 +57,9 @@ Aurelia
 	.register(IConcertService)
 	.register(IArtistDiscoveryService)
 	.register(IDashboardService)
+	.register(IOnboardingService)
+	.register(ILocalArtistClient)
+	.register(IGuestDataMergeService)
 	.register(INotificationManager)
 	.register(IPushService)
 	.register(ITicketService)

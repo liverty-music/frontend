@@ -54,13 +54,11 @@ export class DashboardService {
 	private async fetchFollowedArtistMap(
 		signal?: AbortSignal,
 	): Promise<Map<string, { name: string; isMustGo: boolean }>> {
-		const client = this.artistService.getClient()
-		const response = await client.listFollowed({}, { signal })
+		const followed = await this.artistService.listFollowed(signal)
 		const map = new Map<string, { name: string; isMustGo: boolean }>()
-		for (const fa of response.artists) {
-			const id = fa.artist?.id?.value ?? ''
-			map.set(id, {
-				name: fa.artist?.name?.value ?? '',
+		for (const fa of followed) {
+			map.set(fa.id, {
+				name: fa.name,
 				isMustGo: fa.passionLevel === PassionLevel.MUST_GO,
 			})
 		}

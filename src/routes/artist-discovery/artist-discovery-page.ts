@@ -6,13 +6,24 @@ import {
 	type ArtistBubble,
 	IArtistDiscoveryService,
 } from '../../services/artist-discovery-service'
+import { IArtistServiceClient } from '../../services/artist-service-client'
+import { ILocalArtistClient } from '../../services/local-artist-client'
+import {
+	IOnboardingService,
+	OnboardingStep,
+} from '../../services/onboarding-service'
 import css from './artist-discovery-page.css?raw'
+
+const TUTORIAL_FOLLOW_TARGET = 3
 
 @useShadowDOM()
 export class ArtistDiscoveryPage {
 	static dependencies = [shadowCSS(css)]
 
 	private readonly discoveryService = resolve(IArtistDiscoveryService)
+	private readonly artistService = resolve(IArtistServiceClient)
+	private readonly localClient = resolve(ILocalArtistClient)
+	private readonly onboarding = resolve(IOnboardingService)
 	private readonly toastService = resolve(IToastService)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('ArtistDiscoveryPage')
@@ -23,12 +34,30 @@ export class ArtistDiscoveryPage {
 	public guidanceHiding = false
 	private guidanceTimer: number | null = null
 
+	public get isOnboarding(): boolean {
+		return this.onboarding.isOnboarding
+	}
+
 	public get followedCount(): number {
+		if (this.isOnboarding) {
+			return this.localClient.followedCount
+		}
 		return this.discoveryService.followedArtists.length
 	}
 
 	public get showCompleteButton(): boolean {
+		if (this.isOnboarding) {
+			return this.followedCount >= TUTORIAL_FOLLOW_TARGET
+		}
 		return this.followedCount > 0
+	}
+
+	public get progressText(): string {
+		return `${Math.min(this.followedCount, TUTORIAL_FOLLOW_TARGET)}/${TUTORIAL_FOLLOW_TARGET}`
+	}
+
+	public get progressPercent(): number {
+		return Math.min((this.followedCount / TUTORIAL_FOLLOW_TARGET) * 100, 100)
 	}
 
 	public loadFailed = false
@@ -92,7 +121,10 @@ export class ArtistDiscoveryPage {
 		this.dismissGuidance()
 
 		try {
-			await this.discoveryService.followArtist(artist)
+			// ArtistServiceClient.follow() handles onboarding vs authenticated transparently
+			await this.artistService.follow(artist.id, artist.name)
+			// Update discovery service UI state (remove from available, add to followed)
+			this.discoveryService.markFollowed(artist)
 		} catch (err) {
 			this.logger.error('Failed to follow artist', {
 				artist: artist.name,
@@ -105,13 +137,17 @@ export class ArtistDiscoveryPage {
 			return
 		}
 
-		try {
-			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
-			if (hasEvents) {
-				this.toastService.show(`${artist.name} has upcoming live events!`)
+		if (!this.isOnboarding) {
+			try {
+				const hasEvents = await this.discoveryService.checkLiveEvents(
+					artist.name,
+				)
+				if (hasEvents) {
+					this.toastService.show(`${artist.name} has upcoming live events!`)
+				}
+			} catch (err) {
+				this.logger.warn('Failed to check live events', err)
 			}
-		} catch (err) {
-			this.logger.warn('Failed to check live events', err)
 		}
 	}
 
@@ -137,6 +173,15 @@ export class ArtistDiscoveryPage {
 	}
 
 	public async onViewSchedule(): Promise<void> {
+		if (this.isOnboarding) {
+			this.logger.info('Tutorial: advancing to loading step', {
+				followedCount: this.followedCount,
+			})
+			this.onboarding.setStep(OnboardingStep.LOADING)
+			await this.router.load('onboarding/loading')
+			return
+		}
+
 		this.logger.info('Navigating to live schedule', {
 			followedCount: this.followedCount,
 		})

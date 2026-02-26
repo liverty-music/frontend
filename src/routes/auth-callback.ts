@@ -3,14 +3,12 @@ import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/e
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { IAuthService } from '../services/auth-service'
+import { IGuestDataMergeService } from '../services/guest-data-merge-service'
+import {
+	IOnboardingService,
+	OnboardingStep,
+} from '../services/onboarding-service'
 import { IUserService } from '../services/user-service'
-
-/**
- * OIDC state object structure for tracking sign-up flow
- */
-interface AuthState {
-	isSignUp?: boolean
-}
 
 /**
  * OIDC callback handler that processes the authorization code exchange
@@ -26,6 +24,8 @@ export class AuthCallback {
 
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
+	private readonly mergeService = resolve(IGuestDataMergeService)
+	private readonly onboarding = resolve(IOnboardingService)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallback')
 
 	public async canLoad(
@@ -37,11 +37,27 @@ export class AuthCallback {
 			const user = await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
 
-			const state = user.state as AuthState | undefined
-			if (state?.isSignUp) {
-				this.logger.info('Sign-up detected, provisioning user in backend')
+			// Detect tutorial-originated signup via onboardingStep (not OIDC state)
+			const isTutorialSignup =
+				this.onboarding.currentStep === OnboardingStep.SIGNUP
+
+			if (isTutorialSignup) {
+				this.logger.info(
+					'Tutorial signup detected, provisioning user and merging guest data',
+				)
 				await this.provisionUser(user.profile.email)
-				return '/onboarding/discover'
+
+				await this.mergeService.merge()
+
+				return '/dashboard'
+			}
+
+			// Login flow (from LP login link or returning user)
+			await this.provisionUser(user.profile.email)
+
+			// If onboarding was in progress but user logged in, mark as completed
+			if (this.onboarding.isOnboarding) {
+				this.onboarding.complete()
 			}
 
 			return '/dashboard'
@@ -61,6 +77,7 @@ export class AuthCallback {
 		}
 	}
 
+	// Call Create RPC with ALREADY_EXISTS handling
 	private async provisionUser(email: string | undefined): Promise<void> {
 		if (!email) {
 			this.logger.error('User email is missing, cannot provision user')
