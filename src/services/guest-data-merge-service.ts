@@ -81,9 +81,10 @@ export class GuestDataMergeService {
 			}
 		}
 
-		// Mark onboarding as completed and clear guest data
-		this.onboarding.complete()
+		// Clear guest data before marking onboarding as completed.
+		// If clearAll() throws, the step remains SIGNUP so the merge can retry.
 		this.localClient.clearAll()
+		this.onboarding.complete()
 		this.logger.info('Guest data merge completed')
 	}
 
