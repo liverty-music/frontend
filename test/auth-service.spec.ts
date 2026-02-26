@@ -1,14 +1,28 @@
-import { DI, ILogger, Registration } from 'aurelia'
+import type { UserManager as UserManagerType } from 'oidc-client-ts'
 import { UserManager } from 'oidc-client-ts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthService, IAuthService } from '../src/services/auth-service'
+import { createTestContainer } from './helpers/create-container'
 
 // Mock oidc-client-ts
 vi.mock('oidc-client-ts')
 
+interface MockUserManagerEvents {
+	addUserLoaded: ReturnType<typeof vi.fn>
+	addUserUnloaded: ReturnType<typeof vi.fn>
+}
+
+interface MockUserManager {
+	signinRedirect: ReturnType<typeof vi.fn>
+	signinCallback: ReturnType<typeof vi.fn>
+	signoutRedirect: ReturnType<typeof vi.fn>
+	getUser: ReturnType<typeof vi.fn>
+	events: MockUserManagerEvents
+}
+
 describe('AuthService', () => {
 	let sut: IAuthService
-	let userManagerMock: any
+	let userManagerMock: MockUserManager
 
 	beforeEach(() => {
 		userManagerMock = {
@@ -23,18 +37,11 @@ describe('AuthService', () => {
 				addUserUnloaded: vi.fn(),
 			},
 		}
-		;(UserManager as any).mockImplementation(() => userManagerMock)
-
-		const container = DI.createContainer()
-		container.register(
-			Registration.instance(ILogger, {
-				scopeTo: vi.fn().mockReturnThis(),
-				debug: vi.fn(),
-				info: vi.fn(),
-				warn: vi.fn(),
-				error: vi.fn(),
-			}),
+		vi.mocked(UserManager).mockImplementation(
+			() => userManagerMock as unknown as UserManagerType,
 		)
+
+		const container = createTestContainer()
 		container.register(AuthService)
 		sut = container.get(IAuthService)
 	})
@@ -46,8 +53,8 @@ describe('AuthService', () => {
 	it('isAuthenticated should reflect user state', async () => {
 		expect(sut.isAuthenticated).toBe(false)
 
-		// Simulate user loaded
-		// @ts-expect-error - access private for test or use events
+		// Simulate user loaded via the events callback registered in constructor
+		// @ts-expect-error - access private for test
 		sut.user = { expired: false }
 		expect(sut.isAuthenticated).toBe(true)
 
