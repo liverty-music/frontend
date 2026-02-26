@@ -15,10 +15,10 @@ export default mergeConfig(
         provider: "v8",
         reporter: ["text", "html", "json-summary", "json"],
         thresholds: {
-          statements: 20,
-          branches: 70,
-          functions: 29,
-          lines: 20,
+          statements: 55,
+          branches: 75,
+          functions: 55,
+          lines: 55,
         },
         exclude: [
           ...configDefaults.coverage.exclude,
