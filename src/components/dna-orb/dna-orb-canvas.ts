@@ -232,26 +232,21 @@ export class DnaOrbCanvas {
 			}),
 		)
 
-		// Spawn similar artists with pool cap enforcement
+		// Step 4: Fetch similar artists and add to pool (evict oldest first)
 		try {
 			const similar = await this.discoveryService.getSimilarArtists(
 				artist.name,
 				artist.id,
 			)
 			if (similar.length > 0) {
-				// Evict oldest bubbles if adding new ones would exceed the cap
-				const currentCount = this.discoveryService.availableBubbles.length
-				const maxBubbles = this.discoveryService.maxBubbles
-				const overflow = currentCount - maxBubbles
-				if (overflow > 0) {
-					const evicted = this.discoveryService.evictOldest(overflow)
-					const evictedIds = evicted.map((b) => b.id)
+				// addToPool handles eviction internally, returns evicted IDs
+				const evictedIds = this.discoveryService.addToPool(similar)
+				if (evictedIds.length > 0) {
 					await this.physics.fadeOutBubbles(evictedIds)
 				}
 				this.physics.spawnBubblesAt(similar, pos.x, pos.y)
 				this.preloadImages(similar)
 			} else {
-				// No similar artists found - notify parent for user feedback
 				this.element.dispatchEvent(
 					new CustomEvent('similar-artists-unavailable', {
 						bubbles: true,
@@ -261,7 +256,6 @@ export class DnaOrbCanvas {
 			}
 		} catch (err) {
 			this.logger.warn('Failed to load similar artists', err)
-			// Notify parent about error for user feedback
 			this.element.dispatchEvent(
 				new CustomEvent('similar-artists-error', {
 					bubbles: true,

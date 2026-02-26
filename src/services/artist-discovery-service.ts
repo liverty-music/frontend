@@ -37,56 +37,81 @@ export class ArtistDiscoveryService {
 		)
 	}
 
+	public static readonly MAX_BUBBLES = 50
+	private static readonly SIMILAR_LIMIT_ON_TAP = 30
+	private static readonly MAX_SEED_ARTISTS = 5
+
 	public availableBubbles: ArtistBubble[] = []
 	public followedArtists: ArtistBubble[] = []
 	public orbIntensity = 0
-	public maxBubbles = 0
 
 	private readonly seenArtistNames = new Set<string>()
 	private readonly seenArtistIds = new Set<string>()
 	private readonly seenArtistMbids = new Set<string>()
 	private readonly followedIds = new Set<string>()
 
+	/**
+	 * Step 1: Load the initial bubble pool.
+	 *
+	 * 1-a. If the user follows nobody, fetch top artists via ListTop(limit=50).
+	 * 1-b. If the user follows artists, randomly pick up to 5 seed artists and
+	 *      fetch ListSimilar for each, splitting the limit evenly to fill MAX_BUBBLES.
+	 *
+	 * Step 2: Deduplicate and exclude already-followed artists.
+	 */
 	public async loadInitialArtists(country = 'Japan', tag = ''): Promise<void> {
 		this.logger.info('Loading initial artists', { country, tag })
 		this.clearSeenSets()
-		for (const f of this.followedArtists) {
-			this.trackSeen(f)
+		this.markFollowedAsSeen()
+
+		let bubbles: ArtistBubble[]
+
+		if (this.followedArtists.length === 0) {
+			// Step 1-a: No followed artists — fetch top chart
+			const resp = await this.artistClient.listTop({
+				country,
+				tag,
+				limit: ArtistDiscoveryService.MAX_BUBBLES,
+			})
+			bubbles = resp.artists.map((a) => this.toBubble(a))
+		} else {
+			// Step 1-b: Seed from followed artists
+			bubbles = await this.fetchSeedSimilarArtists()
 		}
-		const resp = await this.artistClient.listTop({ country, tag })
-		const bubbles = resp.artists
-			.map((a) => this.toBubble(a))
-			.filter((b) => !this.isSeen(b))
+
+		// Step 2: Deduplicate and exclude followed
+		bubbles = this.dedup(bubbles).slice(0, ArtistDiscoveryService.MAX_BUBBLES)
+
 		this.availableBubbles = bubbles
-		this.maxBubbles = bubbles.length
-		for (const b of this.availableBubbles) {
+		for (const b of bubbles) {
 			this.trackSeen(b)
 		}
 		this.logger.info('Loaded initial artists', {
 			count: this.availableBubbles.length,
-			maxBubbles: this.maxBubbles,
 		})
 	}
 
 	public async reloadWithTag(tag: string, country = 'Japan'): Promise<void> {
 		this.logger.info('Reloading artists with tag', { tag, country })
 		this.clearSeenSets()
-		for (const f of this.followedArtists) {
-			this.trackSeen(f)
-		}
-		const resp = await this.artistClient.listTop({ country, tag })
-		const bubbles = resp.artists
-			.map((a) => this.toBubble(a))
-			.filter((b) => !this.isSeen(b))
+		this.markFollowedAsSeen()
+
+		const resp = await this.artistClient.listTop({
+			country,
+			tag,
+			limit: ArtistDiscoveryService.MAX_BUBBLES,
+		})
+		const bubbles = this.dedup(
+			resp.artists.map((a) => this.toBubble(a)),
+		).slice(0, ArtistDiscoveryService.MAX_BUBBLES)
+
 		this.availableBubbles = bubbles
-		this.maxBubbles = bubbles.length
-		for (const b of this.availableBubbles) {
+		for (const b of bubbles) {
 			this.trackSeen(b)
 		}
 		this.logger.info('Reloaded artists with tag', {
 			tag,
 			count: this.availableBubbles.length,
-			maxBubbles: this.maxBubbles,
 		})
 	}
 
@@ -110,7 +135,7 @@ export class ArtistDiscoveryService {
 			(b) => b.id !== artist.id,
 		)
 		this.followedIds.add(artist.id)
-		this.followedArtists.push(artist)
+		this.followedArtists = [...this.followedArtists, artist]
 		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 	}
 
@@ -123,7 +148,7 @@ export class ArtistDiscoveryService {
 			(b) => b.id !== artist.id,
 		)
 		this.followedIds.add(artist.id)
-		this.followedArtists.push(artist)
+		this.followedArtists = [...this.followedArtists, artist]
 		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 
 		// Persist follow to backend with 1 retry
@@ -153,7 +178,7 @@ export class ArtistDiscoveryService {
 						(b) => b.id !== artist.id,
 					)
 					this.followedIds.delete(artist.id)
-					this.availableBubbles.push(artist)
+					this.availableBubbles = [...this.availableBubbles, artist]
 					this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 				})
 
@@ -163,32 +188,56 @@ export class ArtistDiscoveryService {
 		}
 	}
 
+	/**
+	 * Step 4: Fetch similar artists for a tapped artist.
+	 *
+	 * Returns new (unseen, unfollowed) bubbles WITHOUT modifying the pool.
+	 * The caller is responsible for eviction and insertion.
+	 */
 	public async getSimilarArtists(
 		artistName: string,
 		artistId: string,
+		limit = ArtistDiscoveryService.SIMILAR_LIMIT_ON_TAP,
 	): Promise<ArtistBubble[]> {
-		this.logger.info('Getting similar artists', { artistName, artistId })
+		this.logger.info('Getting similar artists', { artistName, artistId, limit })
 
 		const resp = await this.artistClient.listSimilar({
 			artistId: new ArtistId({ value: artistId }),
+			limit,
 		})
 
-		const newBubbles = resp.artists
-			.map((a) => this.toBubble(a))
-			.filter((b) => !this.isSeen(b))
+		const newBubbles = this.dedup(
+			resp.artists.map((a) => this.toBubble(a)),
+		)
 
 		for (const b of newBubbles) {
 			this.trackSeen(b)
-			this.availableBubbles.push(b)
 		}
 
 		return newBubbles
 	}
 
-	public evictOldest(count: number): ArtistBubble[] {
-		if (count <= 0) return []
-		const evicted = this.availableBubbles.splice(0, count)
-		return evicted
+	/**
+	 * Add bubbles to the pool, evicting oldest first if it would exceed MAX_BUBBLES.
+	 * Returns the list of evicted bubble IDs (for physics fade-out).
+	 */
+	public addToPool(newBubbles: ArtistBubble[]): string[] {
+		const max = ArtistDiscoveryService.MAX_BUBBLES
+		const total = this.availableBubbles.length + newBubbles.length
+		const overflow = total - max
+		let evictedIds: string[] = []
+
+		if (overflow > 0) {
+			evictedIds = this.availableBubbles.slice(0, overflow).map((b) => b.id)
+			this.availableBubbles = [
+				...this.availableBubbles.slice(overflow),
+				...newBubbles,
+			]
+		} else {
+			this.availableBubbles = [...this.availableBubbles, ...newBubbles]
+		}
+
+		return evictedIds
 	}
 
 	public async checkLiveEvents(artistName: string): Promise<boolean> {
@@ -236,6 +285,67 @@ export class ArtistDiscoveryService {
 		this.seenArtistNames.add(this.normalizeName(bubble.name))
 		if (bubble.id) this.seenArtistIds.add(bubble.id)
 		if (bubble.mbid) this.seenArtistMbids.add(bubble.mbid)
+	}
+
+	private markFollowedAsSeen(): void {
+		for (const f of this.followedArtists) {
+			this.trackSeen(f)
+		}
+	}
+
+	/**
+	 * Step 1-b helper: pick up to MAX_SEED_ARTISTS random followed artists
+	 * and fetch similar artists for each, splitting the limit evenly.
+	 */
+	private async fetchSeedSimilarArtists(): Promise<ArtistBubble[]> {
+		const seeds = this.pickRandomSeeds()
+		const limitPerSeed = Math.floor(
+			ArtistDiscoveryService.MAX_BUBBLES / seeds.length,
+		)
+		this.logger.info('Fetching seed similar artists', {
+			seedCount: seeds.length,
+			limitPerSeed,
+		})
+
+		const results = await Promise.all(
+			seeds.map((seed) =>
+				this.artistClient
+					.listSimilar({
+						artistId: new ArtistId({ value: seed.id }),
+						limit: limitPerSeed,
+					})
+					.then((resp) => resp.artists.map((a) => this.toBubble(a)))
+					.catch((err) => {
+						this.logger.warn('Seed similar fetch failed', {
+							seed: seed.name,
+							error: err,
+						})
+						return [] as ArtistBubble[]
+					}),
+			),
+		)
+
+		return results.flat()
+	}
+
+	private pickRandomSeeds(): ArtistBubble[] {
+		const max = ArtistDiscoveryService.MAX_SEED_ARTISTS
+		if (this.followedArtists.length <= max) {
+			return [...this.followedArtists]
+		}
+		const shuffled = [...this.followedArtists]
+		for (let i = shuffled.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1))
+			;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+		}
+		return shuffled.slice(0, max)
+	}
+
+	/**
+	 * Deduplicate bubbles: remove seen artists and already-followed artists.
+	 */
+	private dedup(bubbles: ArtistBubble[]): ArtistBubble[] {
+		return bubbles.filter((b) => !this.isSeen(b) && !this.isFollowed(b.id))
 	}
 
 	private clearSeenSets(): void {
