@@ -43,7 +43,10 @@ self.addEventListener('install', (event) => {
 			try {
 				await cache.addAll(missing)
 			} catch (err) {
-				console.warn('[SW] Circuit pre-cache failed (will retry at runtime):', err)
+				console.warn(
+					'[SW] Circuit pre-cache failed (will retry at runtime):',
+					err,
+				)
 			}
 		}),
 	)
@@ -89,27 +92,23 @@ registerRoute(
 
 // ---------------------------------------------------------------------------
 // Periodic Background Sync — refresh concert cache.
+// The SW cannot obtain fresh OIDC tokens (no access to UserManager), so it
+// delegates the actual re-fetch to the main thread via postMessage.
 // ---------------------------------------------------------------------------
-self.addEventListener('periodicsync', (event: ExtendableEvent & { tag?: string }) => {
-	if (event.tag !== 'concert-refresh') return
+self.addEventListener(
+	'periodicsync',
+	(event: ExtendableEvent & { tag?: string }) => {
+		if (event.tag !== 'concert-refresh') return
 
-	event.waitUntil(
-		caches.open(CONCERT_CACHE).then(async (cache) => {
-			const keys = await cache.keys()
-			// Re-fetch each cached concert API request to refresh the data.
-			for (const request of keys) {
-				try {
-					const response = await fetch(request)
-					if (response.ok) {
-						await cache.put(request, response)
-					}
-				} catch {
-					// Silent failure — will retry at next periodic sync interval.
+		event.waitUntil(
+			self.clients.matchAll({ type: 'window' }).then((clients) => {
+				for (const client of clients) {
+					client.postMessage({ type: 'REFRESH_CONCERT_CACHE' })
 				}
-			}
-		}),
-	)
-})
+			}),
+		)
+	},
+)
 
 // ---------------------------------------------------------------------------
 // Push notification handler.
