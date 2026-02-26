@@ -16,6 +16,8 @@ const mockILoadingSequenceService = DI.createInterface(
 )
 const mockIToastService = DI.createInterface('IToastService')
 const mockIErrorBoundaryService = DI.createInterface('IErrorBoundaryService')
+const mockILocalArtistClient = DI.createInterface('ILocalArtistClient')
+const mockIOnboardingService = DI.createInterface('IOnboardingService')
 
 vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
@@ -37,6 +39,24 @@ vi.mock('../../src/services/error-boundary-service', () => ({
 	IErrorBoundaryService: mockIErrorBoundaryService,
 }))
 
+vi.mock('../../src/services/local-artist-client', () => ({
+	ILocalArtistClient: mockILocalArtistClient,
+}))
+
+vi.mock('../../src/services/onboarding-service', () => ({
+	IOnboardingService: mockIOnboardingService,
+	OnboardingStep: {
+		LP: 0,
+		DISCOVER: 1,
+		LOADING: 2,
+		DASHBOARD: 3,
+		DETAIL: 4,
+		MY_ARTISTS: 5,
+		SIGNUP: 6,
+		COMPLETED: 7,
+	},
+}))
+
 vi.mock('./loading-sequence.css?raw', () => ({
 	default: '',
 }))
@@ -56,6 +76,16 @@ describe('LoadingSequence', () => {
 	let mockLoadingService: ReturnType<typeof createMockLoadingSequenceService>
 	let mockToast: ReturnType<typeof createMockToastService>
 	let mockErrorBoundary: ReturnType<typeof createMockErrorBoundary>
+	let mockOnboarding: {
+		currentStep: number
+		isOnboarding: boolean
+		setStep: ReturnType<typeof vi.fn>
+		complete: ReturnType<typeof vi.fn>
+	}
+	let mockLocalClient: {
+		followedCount: number
+		setRegion: ReturnType<typeof vi.fn>
+	}
 
 	beforeEach(() => {
 		vi.useFakeTimers()
@@ -65,6 +95,16 @@ describe('LoadingSequence', () => {
 		mockLoadingService = createMockLoadingSequenceService()
 		mockToast = createMockToastService()
 		mockErrorBoundary = createMockErrorBoundary()
+		mockOnboarding = {
+			currentStep: 7,
+			isOnboarding: false,
+			setStep: vi.fn(),
+			complete: vi.fn(),
+		}
+		mockLocalClient = {
+			followedCount: 0,
+			setRegion: vi.fn(),
+		}
 
 		const container = createTestContainer(
 			Registration.instance(mockIRouter, mockRouter),
@@ -72,6 +112,8 @@ describe('LoadingSequence', () => {
 			Registration.instance(mockILoadingSequenceService, mockLoadingService),
 			Registration.instance(mockIToastService, mockToast),
 			Registration.instance(mockIErrorBoundaryService, mockErrorBoundary),
+			Registration.instance(mockILocalArtistClient, mockLocalClient),
+			Registration.instance(mockIOnboardingService, mockOnboarding),
 		)
 		container.register(LoadingSequence)
 		sut = container.get(LoadingSequence)
@@ -90,8 +132,7 @@ describe('LoadingSequence', () => {
 
 			const result = await sut.canLoad()
 
-			expect(result).toBe(false)
-			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
+			expect(result).toBe('dashboard')
 		})
 
 		it('should redirect to discovery when no followed artists anywhere', async () => {
@@ -100,8 +141,7 @@ describe('LoadingSequence', () => {
 
 			const result = await sut.canLoad()
 
-			expect(result).toBe(false)
-			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
+			expect(result).toBe('onboarding/discover')
 		})
 
 		it('should allow access when local followed artists exist but none in backend', async () => {
@@ -152,12 +192,11 @@ describe('LoadingSequence', () => {
 
 			const result = await sut.canLoad()
 
-			expect(result).toBe(false)
-			expect(mockRouter.load).toHaveBeenCalledWith('/onboarding/discover')
+			expect(result).toBe('onboarding/discover')
 		})
 	})
 
-	describe('attached - aggregation result handling', () => {
+	describe('loading - aggregation result handling', () => {
 		it('should navigate to dashboard on success', async () => {
 			;(
 				mockLoadingService.aggregateData as ReturnType<typeof vi.fn>
@@ -166,9 +205,11 @@ describe('LoadingSequence', () => {
 			})
 
 			sut.binding()
-			const promise = sut.attached()
-			await vi.advanceTimersByTimeAsync(100)
-			await promise
+			await sut.loading()
+
+			// attached() defers navigation via setTimeout
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(1)
 
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
 		})
@@ -183,14 +224,16 @@ describe('LoadingSequence', () => {
 			})
 
 			sut.binding()
-			const promise = sut.attached()
-			await vi.advanceTimersByTimeAsync(100)
-			await promise
+			await sut.loading()
 
 			expect(mockToast.show).toHaveBeenCalledWith(
 				expect.stringContaining('2/5'),
 				'warning',
 			)
+
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(1)
+
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
 		})
 
@@ -204,14 +247,16 @@ describe('LoadingSequence', () => {
 			})
 
 			sut.binding()
-			const promise = sut.attached()
-			await vi.advanceTimersByTimeAsync(100)
-			await promise
+			await sut.loading()
 
 			expect(mockErrorBoundary.captureError).toHaveBeenCalledWith(
 				testError,
 				'LoadingSequence:aggregateData',
 			)
+
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(1)
+
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
 		})
 	})
@@ -223,7 +268,8 @@ describe('LoadingSequence', () => {
 			).mockReturnValue(new Promise(() => {}))
 
 			sut.binding()
-			sut.attached()
+			// loading() calls startPhaseAnimation() which sets phaseTimer
+			sut.loading()
 
 			const clearSpy = vi.spyOn(global, 'clearTimeout')
 			sut.unbinding()

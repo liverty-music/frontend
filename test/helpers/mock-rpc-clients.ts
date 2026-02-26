@@ -43,6 +43,7 @@ export function createMockArtistDiscoveryService(): Partial<IArtistDiscoveryServ
 		orbIntensity: 0,
 		loadInitialArtists: vi.fn().mockResolvedValue(undefined),
 		followArtist: vi.fn().mockResolvedValue(undefined),
+		markFollowed: vi.fn(),
 		getSimilarArtists: vi.fn().mockResolvedValue([]),
 		checkLiveEvents: vi.fn().mockResolvedValue(false),
 		listFollowedFromBackend: vi.fn().mockResolvedValue([]),

@@ -46,6 +46,9 @@ describe('createAuthRetryInterceptor', () => {
 			)
 			.mockResolvedValue(response)
 
+		// auth.user must be truthy to attempt silent refresh
+		mockAuth.user = { access_token: 'old-token' } as any
+
 		const mockUserManager = {
 			signinSilent: vi.fn().mockResolvedValue({ access_token: 'new-token' }),
 			removeUser: vi.fn(),
@@ -64,12 +67,29 @@ describe('createAuthRetryInterceptor', () => {
 		expect(next).toHaveBeenCalledTimes(2)
 	})
 
+	it('should propagate Unauthenticated error for guest users without refresh', async () => {
+		const error = new ConnectError('unauthenticated', Code.Unauthenticated)
+		const next = vi.fn().mockRejectedValue(error)
+
+		// auth.user is null (guest/tutorial mode)
+		mockAuth.user = null
+
+		const interceptor = createAuthRetryInterceptor(mockAuth as any)
+		const handler = interceptor(next)
+
+		await expect(handler(makeRequest())).rejects.toThrow(error)
+		expect(mockAuth.getUserManager).not.toHaveBeenCalled()
+	})
+
 	it('should remove user and rethrow when token refresh fails', async () => {
 		const next = vi
 			.fn()
 			.mockRejectedValue(
 				new ConnectError('unauthenticated', Code.Unauthenticated),
 			)
+
+		// auth.user must be truthy to attempt silent refresh
+		mockAuth.user = { access_token: 'old-token' } as any
 
 		const mockUserManager = {
 			signinSilent: vi.fn().mockRejectedValue(new Error('refresh failed')),

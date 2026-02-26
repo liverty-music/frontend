@@ -2,14 +2,20 @@ import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
-import { createMockArtistDiscoveryService } from '../helpers/mock-rpc-clients'
+import {
+	createMockArtistDiscoveryService,
+	createMockArtistServiceClient,
+} from '../helpers/mock-rpc-clients'
 import { createMockToastService } from '../helpers/mock-toast'
 
 const mockIArtistDiscoveryService = DI.createInterface(
 	'IArtistDiscoveryService',
 )
+const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
 const mockIToastService = DI.createInterface('IToastService')
 const mockIRouter = DI.createInterface('IRouter')
+const mockIOnboardingService = DI.createInterface('IOnboardingService')
+const mockILocalArtistClient = DI.createInterface('ILocalArtistClient')
 
 vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
@@ -19,8 +25,30 @@ vi.mock('../../src/services/artist-discovery-service', () => ({
 	IArtistDiscoveryService: mockIArtistDiscoveryService,
 }))
 
+vi.mock('../../src/services/artist-service-client', () => ({
+	IArtistServiceClient: mockIArtistServiceClient,
+}))
+
 vi.mock('../../src/components/toast-notification/toast-notification', () => ({
 	IToastService: mockIToastService,
+}))
+
+vi.mock('../../src/services/onboarding-service', () => ({
+	IOnboardingService: mockIOnboardingService,
+	OnboardingStep: {
+		LP: 0,
+		DISCOVER: 1,
+		LOADING: 2,
+		DASHBOARD: 3,
+		DETAIL: 4,
+		MY_ARTISTS: 5,
+		SIGNUP: 6,
+		COMPLETED: 7,
+	},
+}))
+
+vi.mock('../../src/services/local-artist-client', () => ({
+	ILocalArtistClient: mockILocalArtistClient,
 }))
 
 vi.mock(
@@ -37,20 +65,45 @@ const { ArtistDiscoveryPage } = await import(
 describe('ArtistDiscoveryPage', () => {
 	let sut: InstanceType<typeof ArtistDiscoveryPage>
 	let mockDiscovery: ReturnType<typeof createMockArtistDiscoveryService>
+	let mockArtistService: ReturnType<typeof createMockArtistServiceClient>
 	let mockToast: ReturnType<typeof createMockToastService>
 	let mockRouter: ReturnType<typeof createMockRouter>
+	let mockOnboarding: {
+		currentStep: number
+		isOnboarding: boolean
+		setStep: ReturnType<typeof vi.fn>
+		complete: ReturnType<typeof vi.fn>
+	}
+	let mockLocalClient: {
+		followedCount: number
+		setRegion: ReturnType<typeof vi.fn>
+	}
 
 	beforeEach(() => {
 		vi.useFakeTimers()
 
 		mockDiscovery = createMockArtistDiscoveryService()
+		mockArtistService = createMockArtistServiceClient()
 		mockToast = createMockToastService()
 		mockRouter = createMockRouter()
+		mockOnboarding = {
+			currentStep: 7,
+			isOnboarding: false,
+			setStep: vi.fn(),
+			complete: vi.fn(),
+		}
+		mockLocalClient = {
+			followedCount: 0,
+			setRegion: vi.fn(),
+		}
 
 		const container = createTestContainer(
 			Registration.instance(mockIArtistDiscoveryService, mockDiscovery),
+			Registration.instance(mockIArtistServiceClient, mockArtistService),
 			Registration.instance(mockIToastService, mockToast),
 			Registration.instance(mockIRouter, mockRouter),
+			Registration.instance(mockIOnboardingService, mockOnboarding),
+			Registration.instance(mockILocalArtistClient, mockLocalClient),
 		)
 		container.register(ArtistDiscoveryPage)
 		sut = container.get(ArtistDiscoveryPage)
@@ -128,32 +181,32 @@ describe('ArtistDiscoveryPage', () => {
 				mockDiscovery.checkLiveEvents as ReturnType<typeof vi.fn>
 			).mockResolvedValue(true)
 
+			const artist = {
+				id: 'a1',
+				name: 'Test Artist',
+				mbid: '',
+				imageUrl: '',
+				x: 0,
+				y: 0,
+				radius: 30,
+			}
 			const event = new CustomEvent('artist-selected', {
-				detail: {
-					artist: {
-						id: 'a1',
-						name: 'Test Artist',
-						mbid: '',
-						imageUrl: '',
-						x: 0,
-						y: 0,
-						radius: 30,
-					},
-				},
+				detail: { artist },
 			})
 
 			await sut.onArtistSelected(event)
 
-			expect(mockDiscovery.followArtist).toHaveBeenCalled()
+			expect(mockArtistService.follow).toHaveBeenCalledWith('a1', 'Test Artist')
+			expect(mockDiscovery.markFollowed).toHaveBeenCalledWith(artist)
 			expect(mockToast.show).toHaveBeenCalledWith(
 				expect.stringContaining('upcoming live events'),
 			)
 		})
 
 		it('should show error toast on follow failure', async () => {
-			;(
-				mockDiscovery.followArtist as ReturnType<typeof vi.fn>
-			).mockRejectedValue(new Error('fail'))
+			;(mockArtistService.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
+				new Error('fail'),
+			)
 
 			const event = new CustomEvent('artist-selected', {
 				detail: {
