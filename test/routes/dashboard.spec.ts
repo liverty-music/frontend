@@ -158,9 +158,11 @@ describe('Dashboard', () => {
 			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 			sut.loadData()
 
+			const abortSpy = vi.spyOn(AbortController.prototype, 'abort')
 			sut.detaching()
-			// No error — abort controller is cleaned up
-			expect(true).toBe(true)
+
+			expect(abortSpy).toHaveBeenCalled()
+			abortSpy.mockRestore()
 		})
 	})
 })

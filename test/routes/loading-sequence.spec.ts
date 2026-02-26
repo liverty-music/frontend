@@ -218,10 +218,18 @@ describe('LoadingSequence', () => {
 
 	describe('unbinding', () => {
 		it('should clear phase timer', () => {
+			;(
+				mockLoadingService.aggregateData as ReturnType<typeof vi.fn>
+			).mockReturnValue(new Promise(() => {}))
+
 			sut.binding()
+			sut.attached()
+
+			const clearSpy = vi.spyOn(global, 'clearTimeout')
 			sut.unbinding()
-			// No error thrown — timer is cleared
-			expect(true).toBe(true)
+
+			expect(clearSpy).toHaveBeenCalled()
+			clearSpy.mockRestore()
 		})
 	})
 
