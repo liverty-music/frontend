@@ -76,7 +76,7 @@ describe('ArtistDiscoveryPage', () => {
 	}
 	let mockLocalClient: {
 		followedCount: number
-		setRegion: ReturnType<typeof vi.fn>
+		setAdminArea: ReturnType<typeof vi.fn>
 	}
 
 	beforeEach(() => {
@@ -94,7 +94,7 @@ describe('ArtistDiscoveryPage', () => {
 		}
 		mockLocalClient = {
 			followedCount: 0,
-			setRegion: vi.fn(),
+			setAdminArea: vi.fn(),
 		}
 
 		const container = createTestContainer(

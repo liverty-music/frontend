@@ -59,7 +59,7 @@ describe('Dashboard', () => {
 	}
 	let mockLocalClient: {
 		followedCount: number
-		setRegion: ReturnType<typeof vi.fn>
+		setAdminArea: ReturnType<typeof vi.fn>
 	}
 
 	beforeEach(() => {
@@ -75,7 +75,7 @@ describe('Dashboard', () => {
 		}
 		mockLocalClient = {
 			followedCount: 0,
-			setRegion: vi.fn(),
+			setAdminArea: vi.fn(),
 		}
 
 		const container = createTestContainer(
