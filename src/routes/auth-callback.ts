@@ -21,7 +21,6 @@ import { IUserService } from '../services/user-service'
  */
 export class AuthCallback {
 	public error = ''
-	public isMerging = false
 
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
@@ -48,9 +47,7 @@ export class AuthCallback {
 				)
 				await this.provisionUser(user.profile.email)
 
-				this.isMerging = true
 				await this.mergeService.merge()
-				this.isMerging = false
 
 				return '/dashboard'
 			}
@@ -66,7 +63,6 @@ export class AuthCallback {
 			return '/dashboard'
 		} catch (err) {
 			this.logger.error('Auth callback error:', err)
-			this.isMerging = false
 
 			if (this.authService.isAuthenticated) {
 				this.logger.warn(

@@ -2,7 +2,7 @@
   <div class="text-center px-6">
     <div if.bind="!error" class="flex flex-col items-center gap-4">
       <div class="w-8 h-8 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-      <div class="text-lg text-text-primary">${isMerging ? 'Syncing your data...' : 'Verifying authentication...'}</div>
+      <div class="text-lg text-text-primary">Verifying authentication...</div>
     </div>
     <div if.bind="error" class="text-red-400 font-bold whitespace-pre-wrap">${error}</div>
     <a if.bind="error" href="/" class="mt-4 block text-brand-primary underline"
