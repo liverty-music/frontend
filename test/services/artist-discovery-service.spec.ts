@@ -469,13 +469,16 @@ describe('ArtistDiscoveryService', () => {
 
 		it('should evict oldest bubbles when exceeding MAX_BUBBLES', async () => {
 			// Fill pool to MAX_BUBBLES
-			const initial = Array.from({ length: ArtistDiscoveryService.MAX_BUBBLES }, (_, i) =>
-				makeArtist(`a${i}`, `Artist ${i}`),
+			const initial = Array.from(
+				{ length: ArtistDiscoveryService.MAX_BUBBLES },
+				(_, i) => makeArtist(`a${i}`, `Artist ${i}`),
 			)
 			mockClient.listTop.mockResolvedValue({ artists: initial })
 			await sut.loadInitialArtists()
 
-			expect(sut.availableBubbles).toHaveLength(ArtistDiscoveryService.MAX_BUBBLES)
+			expect(sut.availableBubbles).toHaveLength(
+				ArtistDiscoveryService.MAX_BUBBLES,
+			)
 
 			// Add 5 more — should evict 5 oldest
 			const newBubbles = Array.from({ length: 5 }, (_, i) =>
@@ -487,9 +490,13 @@ describe('ArtistDiscoveryService', () => {
 			expect(evictedIds).toHaveLength(5)
 			expect(evictedIds[0]).toBe('a0') // oldest first
 			expect(evictedIds[4]).toBe('a4')
-			expect(sut.availableBubbles).toHaveLength(ArtistDiscoveryService.MAX_BUBBLES)
+			expect(sut.availableBubbles).toHaveLength(
+				ArtistDiscoveryService.MAX_BUBBLES,
+			)
 			// Last element should be the last new bubble
-			expect(sut.availableBubbles[sut.availableBubbles.length - 1].name).toBe('New 4')
+			expect(sut.availableBubbles[sut.availableBubbles.length - 1].name).toBe(
+				'New 4',
+			)
 		})
 
 		it('should reassign array reference for Aurelia observation', () => {
