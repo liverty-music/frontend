@@ -2,6 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve } from 'aurelia'
 import { AreaSelectorSheet } from '../../components/area-selector-sheet/area-selector-sheet'
 import { IToastService } from '../../components/toast-notification/toast-notification'
+import { shortDisplayName } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
@@ -34,7 +35,8 @@ export class SettingsPage {
 	}
 
 	public loading(): void {
-		this.currentArea = AreaSelectorSheet.getStoredArea()
+		const code = AreaSelectorSheet.getStoredArea()
+		this.currentArea = code ? shortDisplayName(code) : null
 		const storedPref =
 			localStorage.getItem(StorageKeys.userNotificationsEnabled) === 'true'
 		// If the browser permission was revoked externally, override the stored preference
@@ -46,9 +48,9 @@ export class SettingsPage {
 		this.areaSheet.open()
 	}
 
-	public onAreaSelected(area: string): void {
-		this.currentArea = area
-		this.logger.info('Area updated from settings', { area })
+	public onAreaSelected(code: string): void {
+		this.currentArea = shortDisplayName(code)
+		this.logger.info('Area updated from settings', { code })
 	}
 
 	public async cycleLanguage(): Promise<void> {
