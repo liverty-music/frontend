@@ -71,7 +71,6 @@ export class ArtistDiscoveryService {
 			const resp = await this.artistClient.listTop({
 				country,
 				tag,
-				// @ts-expect-error limit field added in proto but not yet regenerated from BSR
 				limit: ArtistDiscoveryService.MAX_BUBBLES,
 			})
 			bubbles = resp.artists.map((a) => this.toBubble(a))
@@ -100,7 +99,6 @@ export class ArtistDiscoveryService {
 		const resp = await this.artistClient.listTop({
 			country,
 			tag,
-			// @ts-expect-error limit field added in proto but not yet regenerated from BSR
 			limit: ArtistDiscoveryService.MAX_BUBBLES,
 		})
 		const bubbles = this.dedup(resp.artists.map((a) => this.toBubble(a))).slice(
@@ -206,7 +204,6 @@ export class ArtistDiscoveryService {
 
 		const resp = await this.artistClient.listSimilar({
 			artistId: new ArtistId({ value: artistId }),
-			// @ts-expect-error limit field added in proto but not yet regenerated from BSR
 			limit,
 		})
 
@@ -314,7 +311,6 @@ export class ArtistDiscoveryService {
 				this.artistClient
 					.listSimilar({
 						artistId: new ArtistId({ value: seed.id }),
-						// @ts-expect-error limit field added in proto but not yet regenerated from BSR
 						limit: limitPerSeed,
 					})
 					.then((resp) => resp.artists.map((a) => this.toBubble(a)))
