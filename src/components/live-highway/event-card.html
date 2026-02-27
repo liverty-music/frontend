@@ -1,7 +1,7 @@
 <template>
-  <!-- Main lane: mega-typography, card glow, entrance animation -->
+  <!-- Home lane: mega-typography, card glow, entrance animation -->
   <div
-    if.bind="lane === 'main'"
+    if.bind="lane === 'home'"
     data-live-card
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}"
@@ -12,9 +12,9 @@
     </span>
   </div>
 
-  <!-- Region lane: medium card with artist + prefecture -->
+  <!-- Nearby lane: medium card with artist + prefecture -->
   <div
-    if.bind="lane === 'region' && !isMutated"
+    if.bind="lane === 'nearby' && !isMutated"
     data-live-card
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}"
@@ -28,9 +28,9 @@
     </span>
   </div>
 
-  <!-- Region lane MUTATED: expanded Must Go card -->
+  <!-- Nearby lane MUTATED: expanded Must Go card -->
   <div
-    if.bind="lane === 'region' && isMutated"
+    if.bind="lane === 'nearby' && isMutated"
     data-live-card
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}; box-shadow: 0 0 16px ${backgroundColor}66"
@@ -45,9 +45,9 @@
     </span>
   </div>
 
-  <!-- Other lane: text-only list item -->
+  <!-- Away lane: text-only list item -->
   <div
-    if.bind="lane === 'other' && !isMutated"
+    if.bind="lane === 'away' && !isMutated"
     data-live-card
     click.trigger="onClick()"
     class="py-2 px-2 mb-1 cursor-pointer rounded-lg transition-colors duration-200 hover:bg-white/5 active:bg-white/10 flex items-center gap-2 animate-[fade-slide-up_400ms_ease-out_both]"
@@ -64,9 +64,9 @@
     </span>
   </div>
 
-  <!-- Other lane MUTATED: promoted to card style -->
+  <!-- Away lane MUTATED: promoted to card style -->
   <div
-    if.bind="lane === 'other' && isMutated"
+    if.bind="lane === 'away' && isMutated"
     data-live-card
     click.trigger="onClick()"
     style="background-color: ${backgroundColor}"

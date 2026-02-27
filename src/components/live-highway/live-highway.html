@@ -21,38 +21,38 @@
 
         <!-- Three-lane grid -->
         <div class="grid grid-cols-[50%_30%_20%] min-h-[80px]">
-          <!-- Main lane: My City -->
+          <!-- Home lane: My City -->
           <div class="[container-type:inline-size] px-2 py-2 border-r border-white/5">
             <event-card
-              repeat.for="ev of group.main; key.bind: ev.id"
+              repeat.for="ev of group.home; key.bind: ev.id"
               event.bind="ev"
-              lane="main"
+              lane="home"
             ></event-card>
-            <div if.bind="group.main.length === 0" class="py-4">
+            <div if.bind="group.home.length === 0" class="py-4">
               <p class="text-text-muted/30 text-xs text-center">—</p>
             </div>
           </div>
 
-          <!-- Region lane: My Region -->
+          <!-- Nearby lane: My Region -->
           <div class="[container-type:inline-size] px-1 py-2 border-r border-white/5">
             <event-card
-              repeat.for="ev of group.region; key.bind: ev.id"
+              repeat.for="ev of group.nearby; key.bind: ev.id"
               event.bind="ev"
-              lane="region"
+              lane="nearby"
             ></event-card>
-            <div if.bind="group.region.length === 0" class="py-4">
+            <div if.bind="group.nearby.length === 0" class="py-4">
               <p class="text-text-muted/30 text-xs text-center">—</p>
             </div>
           </div>
 
-          <!-- Other lane: Others -->
+          <!-- Away lane: Others -->
           <div class="[container-type:inline-size] px-1 py-2">
             <event-card
-              repeat.for="ev of group.other; key.bind: ev.id"
+              repeat.for="ev of group.away; key.bind: ev.id"
               event.bind="ev"
-              lane="other"
+              lane="away"
             ></event-card>
-            <div if.bind="group.other.length === 0" class="py-4">
+            <div if.bind="group.away.length === 0" class="py-4">
               <p class="text-text-muted/30 text-xs text-center">—</p>
             </div>
           </div>

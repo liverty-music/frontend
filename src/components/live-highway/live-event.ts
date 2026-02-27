@@ -1,4 +1,4 @@
-export type LaneType = 'main' | 'region' | 'other'
+export type LaneType = 'home' | 'nearby' | 'away'
 
 export interface LiveEvent {
 	id: string
@@ -18,7 +18,7 @@ export interface LiveEvent {
 export interface DateGroup {
 	label: string
 	dateKey: string
-	main: LiveEvent[]
-	region: LiveEvent[]
-	other: LiveEvent[]
+	home: LiveEvent[]
+	nearby: LiveEvent[]
+	away: LiveEvent[]
 }

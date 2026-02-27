@@ -4,7 +4,7 @@ import type { LaneType, LiveEvent } from './live-event'
 
 export class EventCard {
 	@bindable public event!: LiveEvent
-	@bindable public lane: LaneType = 'main'
+	@bindable public lane: LaneType = 'home'
 
 	private readonly element = resolve(INode) as HTMLElement
 
@@ -13,7 +13,7 @@ export class EventCard {
 	}
 
 	public get isMutated(): boolean {
-		return this.event.isMustGo && this.lane !== 'main'
+		return this.event.isMustGo && this.lane !== 'home'
 	}
 
 	public get formattedDate(): string {

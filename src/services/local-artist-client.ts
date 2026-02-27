@@ -95,18 +95,18 @@ export class LocalArtistClient {
 	}
 
 	/**
-	 * Get the locally stored admin area.
+	 * Get the locally stored home area (ISO 3166-2 code).
 	 */
-	public getAdminArea(): string | null {
-		return localStorage.getItem(StorageKeys.guestAdminArea)
+	public getHome(): string | null {
+		return localStorage.getItem(StorageKeys.guestHome)
 	}
 
 	/**
-	 * Store the selected admin area locally.
+	 * Store the selected home area locally (ISO 3166-2 code).
 	 */
-	public setAdminArea(adminArea: string): void {
-		localStorage.setItem(StorageKeys.guestAdminArea, adminArea)
-		this.logger.info('Local admin area set', { adminArea })
+	public setHome(home: string): void {
+		localStorage.setItem(StorageKeys.guestHome, home)
+		this.logger.info('Local home set', { home })
 	}
 
 	/**
