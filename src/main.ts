@@ -28,9 +28,13 @@ import { IPwaInstallService } from './services/pwa-install-service'
 import { ITicketService } from './services/ticket-service'
 import { IUserService } from './services/user-service'
 import { DateValueConverter } from './value-converters/date'
+import { migrateStorageKeys } from './constants/storage-keys'
 
 // Initialize OpenTelemetry before Aurelia startup
 initOtel()
+
+// Migrate legacy localStorage keys (safe to call multiple times)
+migrateStorageKeys()
 
 // Css files imported in this main file should be imported with ?inline query
 // to get CSS as string for sharedStyles in shadowDOM.
