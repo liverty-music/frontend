@@ -1,87 +1,27 @@
 import { I18N } from '@aurelia/i18n'
 import { bindable, ILogger, resolve } from 'aurelia'
 import { StorageKeys } from '../../constants/storage-keys'
-
-const PREFECTURE_KEYS = [
-	'hokkaido',
-	'aomori',
-	'iwate',
-	'miyagi',
-	'akita',
-	'yamagata',
-	'fukushima',
-	'ibaraki',
-	'tochigi',
-	'gunma',
-	'saitama',
-	'chiba',
-	'tokyo',
-	'kanagawa',
-	'niigata',
-	'toyama',
-	'ishikawa',
-	'fukui',
-	'yamanashi',
-	'nagano',
-	'gifu',
-	'shizuoka',
-	'aichi',
-	'mie',
-	'shiga',
-	'kyoto',
-	'osaka',
-	'hyogo',
-	'nara',
-	'wakayama',
-	'tottori',
-	'shimane',
-	'okayama',
-	'hiroshima',
-	'yamaguchi',
-	'tokushima',
-	'kagawa',
-	'ehime',
-	'kochi',
-	'fukuoka',
-	'saga',
-	'nagasaki',
-	'kumamoto',
-	'oita',
-	'miyazaki',
-	'kagoshima',
-	'okinawa',
-]
-
-const QUICK_SELECT_CITY_KEYS = [
-	'tokyo',
-	'osaka',
-	'nagoya',
-	'fukuoka',
-	'sapporo',
-	'sendai',
-]
-
-// Map quick-select city keys to their prefecture key
-const CITY_TO_PREFECTURE: Record<string, string> = {
-	tokyo: 'tokyo',
-	osaka: 'osaka',
-	nagoya: 'aichi',
-	fukuoka: 'fukuoka',
-	sapporo: 'hokkaido',
-	sendai: 'miyagi',
-}
+import {
+	JP_PREFECTURE_OPTIONS,
+	QUICK_SELECT_CITIES,
+	codeToHome,
+} from '../../constants/iso3166'
+import { IAuthService } from '../../services/auth-service'
+import { IUserService } from '../../services/user-service'
 
 export class RegionSetupSheet {
 	@bindable public onRegionSelected?: (region: string) => void
 
 	public isOpen = false
-	public prefectureKeys = PREFECTURE_KEYS
-	public cityKeys = QUICK_SELECT_CITY_KEYS
-	public selectedPrefecture = ''
+	public prefectures = JP_PREFECTURE_OPTIONS
+	public quickCities = QUICK_SELECT_CITIES
+	public selectedCode = ''
 
 	private dialogElement?: HTMLDialogElement
 	private readonly logger = resolve(ILogger).scopeTo('RegionSetupSheet')
 	private readonly i18n = resolve(I18N)
+	private readonly authService = resolve(IAuthService)
+	private readonly userService = resolve(IUserService)
 
 	public trPrefecture(key: string): string {
 		return this.i18n.tr(`region.prefectures.${key}`)
@@ -92,11 +32,11 @@ export class RegionSetupSheet {
 	}
 
 	public static getStoredRegion(): string | null {
-		return localStorage.getItem(StorageKeys.userAdminArea)
+		return localStorage.getItem(StorageKeys.guestHome)
 	}
 
 	public open(): void {
-		this.selectedPrefecture = ''
+		this.selectedCode = ''
 		this.dialogElement?.showModal()
 		this.isOpen = true
 	}
@@ -112,20 +52,29 @@ export class RegionSetupSheet {
 		}
 	}
 
-	public selectQuickCity(cityKey: string): void {
-		const prefectureKey = CITY_TO_PREFECTURE[cityKey] ?? cityKey
-		this.saveRegion(prefectureKey)
+	public selectQuickCity(code: string): void {
+		this.saveRegion(code)
 	}
 
 	public selectPrefecture(): void {
-		if (!this.selectedPrefecture) return
-		this.saveRegion(this.selectedPrefecture)
+		if (!this.selectedCode) return
+		this.saveRegion(this.selectedCode)
 	}
 
-	private saveRegion(prefecture: string): void {
-		this.logger.info('Region selected', { prefecture })
-		localStorage.setItem(StorageKeys.userAdminArea, prefecture)
+	private async saveRegion(code: string): Promise<void> {
+		this.logger.info('Region selected', { code })
+
+		if (this.authService.isAuthenticated) {
+			try {
+				await this.userService.updateHome(codeToHome(code))
+			} catch (err) {
+				this.logger.error('Failed to update home via RPC', err)
+			}
+		} else {
+			localStorage.setItem(StorageKeys.guestHome, code)
+		}
+
 		this.close()
-		this.onRegionSelected?.(prefecture)
+		this.onRegionSelected?.(code)
 	}
 }

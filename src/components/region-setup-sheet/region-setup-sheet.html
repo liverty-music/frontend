@@ -20,11 +20,11 @@
         <p t="region.majorCities" class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3"></p>
         <div class="grid grid-cols-3 gap-2">
           <button
-            repeat.for="cityKey of cityKeys; key.bind: cityKey"
-            click.trigger="selectQuickCity(cityKey)"
+            repeat.for="city of quickCities; key.bind: city.code"
+            click.trigger="selectQuickCity(city.code)"
             class="py-2.5 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
           >
-            ${trCity(cityKey)}
+            ${trCity(city.key)}
           </button>
         </div>
       </div>
@@ -34,15 +34,15 @@
         <p t="region.selectByPrefecture" class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3"></p>
         <div class="flex gap-3">
           <select
-            value.bind="selectedPrefecture"
+            value.bind="selectedCode"
             class="flex-1 py-2.5 px-3 bg-surface-overlay text-text-primary rounded-[var(--radius-button)] border border-white/10 focus:border-brand-accent focus:outline-none text-sm appearance-none"
           >
             <option value="" t="region.placeholder"></option>
-            <option repeat.for="prefKey of prefectureKeys; key.bind: prefKey" value.bind="prefKey">${trPrefecture(prefKey)}</option>
+            <option repeat.for="pref of prefectures; key.bind: pref.code" value.bind="pref.code">${trPrefecture(pref.key)}</option>
           </select>
           <button
             click.trigger="selectPrefecture()"
-            disabled.bind="!selectedPrefecture"
+            disabled.bind="!selectedCode"
             t="region.confirm"
             class="py-2.5 px-5 bg-brand-primary hover:bg-brand-secondary disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-[var(--radius-button)] transition-colors shadow-[var(--shadow-button)]"
           ></button>
