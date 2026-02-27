@@ -53,7 +53,9 @@ export class SettingsPage {
 
 	public async cycleLanguage(): Promise<void> {
 		const current = this.i18n.getLocale()
-		const idx = SUPPORTED_LANGUAGES.indexOf(current as typeof SUPPORTED_LANGUAGES[number])
+		const idx = SUPPORTED_LANGUAGES.indexOf(
+			current as (typeof SUPPORTED_LANGUAGES)[number],
+		)
 		const next = SUPPORTED_LANGUAGES[(idx + 1) % SUPPORTED_LANGUAGES.length]
 		await this.i18n.setLocale(next)
 		localStorage.setItem('language', next)

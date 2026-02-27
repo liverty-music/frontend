@@ -71,10 +71,7 @@ export class ArtistDiscoveryPage {
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', { error: err })
 			this.loadFailed = true
-			this.toastService.show(
-				this.i18n.tr('discovery.loadFailed'),
-				'error',
-			)
+			this.toastService.show(this.i18n.tr('discovery.loadFailed'), 'error')
 		}
 	}
 
@@ -85,10 +82,7 @@ export class ArtistDiscoveryPage {
 		} catch (err) {
 			this.logger.error('Retry failed to load initial artists', { error: err })
 			this.loadFailed = true
-			this.toastService.show(
-				this.i18n.tr('discovery.retryFailed'),
-				'error',
-			)
+			this.toastService.show(this.i18n.tr('discovery.retryFailed'), 'error')
 		}
 	}
 
@@ -145,7 +139,9 @@ export class ArtistDiscoveryPage {
 					artist.name,
 				)
 				if (hasEvents) {
-					this.toastService.show(this.i18n.tr('discovery.hasUpcomingEvents', { name: artist.name }))
+					this.toastService.show(
+						this.i18n.tr('discovery.hasUpcomingEvents', { name: artist.name }),
+					)
 				}
 			} catch (err) {
 				this.logger.warn('Failed to check live events', err)

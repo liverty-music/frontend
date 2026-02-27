@@ -11,11 +11,26 @@ const REGIONS: Region[] = [
 	{ key: 'hokkaido', prefectureKeys: ['hokkaido'] },
 	{
 		key: 'tohoku',
-		prefectureKeys: ['aomori', 'iwate', 'miyagi', 'akita', 'yamagata', 'fukushima'],
+		prefectureKeys: [
+			'aomori',
+			'iwate',
+			'miyagi',
+			'akita',
+			'yamagata',
+			'fukushima',
+		],
 	},
 	{
 		key: 'kanto',
-		prefectureKeys: ['ibaraki', 'tochigi', 'gunma', 'saitama', 'chiba', 'tokyo', 'kanagawa'],
+		prefectureKeys: [
+			'ibaraki',
+			'tochigi',
+			'gunma',
+			'saitama',
+			'chiba',
+			'tokyo',
+			'kanagawa',
+		],
 	},
 	{
 		key: 'chubu',
@@ -33,9 +48,20 @@ const REGIONS: Region[] = [
 	},
 	{
 		key: 'kinki',
-		prefectureKeys: ['mie', 'shiga', 'kyoto', 'osaka', 'hyogo', 'nara', 'wakayama'],
+		prefectureKeys: [
+			'mie',
+			'shiga',
+			'kyoto',
+			'osaka',
+			'hyogo',
+			'nara',
+			'wakayama',
+		],
 	},
-	{ key: 'chugoku', prefectureKeys: ['tottori', 'shimane', 'okayama', 'hiroshima', 'yamaguchi'] },
+	{
+		key: 'chugoku',
+		prefectureKeys: ['tottori', 'shimane', 'okayama', 'hiroshima', 'yamaguchi'],
+	},
 	{ key: 'shikoku', prefectureKeys: ['tokushima', 'kagawa', 'ehime', 'kochi'] },
 	{
 		key: 'kyushu',

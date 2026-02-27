@@ -141,7 +141,10 @@ export class LoadingSequence {
 					totalCount: result.totalCount,
 				})
 				this.toastService.show(
-					this.i18n.tr('loading.partialFailure', { failed: result.failedCount, total: result.totalCount }),
+					this.i18n.tr('loading.partialFailure', {
+						failed: result.failedCount,
+						total: result.totalCount,
+					}),
 					'warning',
 				)
 				break

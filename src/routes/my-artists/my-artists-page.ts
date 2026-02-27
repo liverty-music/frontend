@@ -26,7 +26,10 @@ export const PASSION_LEVEL_META: Record<
 > = {
 	[PassionLevel.MUST_GO]: { labelKey: 'passionLevel.mustGo', icon: '🔥🔥' },
 	[PassionLevel.LOCAL_ONLY]: { labelKey: 'passionLevel.localOnly', icon: '🔥' },
-	[PassionLevel.KEEP_AN_EYE]: { labelKey: 'passionLevel.keepAnEye', icon: '👀' },
+	[PassionLevel.KEEP_AN_EYE]: {
+		labelKey: 'passionLevel.keepAnEye',
+		icon: '👀',
+	},
 }
 
 const UNDO_TIMEOUT_MS = 5000
@@ -283,7 +286,9 @@ export class MyArtistsPage {
 						// Revert optimistic removal
 						const insertAt = Math.min(originalIndex, this.artists.length)
 						this.artists.splice(insertAt, 0, artist)
-						this.toast.show(this.i18n.tr('myArtists.failedUnfollow', { name: artist.name }))
+						this.toast.show(
+							this.i18n.tr('myArtists.failedUnfollow', { name: artist.name }),
+						)
 					})
 			})
 	}

@@ -105,7 +105,10 @@ export class DiscoverPage {
 		} catch (err) {
 			this.activeTag = ''
 			this.logger.warn('Failed to load genre artists', err)
-			this.toastService.show(this.i18n.tr('discover.genreLoadFailed', { tag }), 'error')
+			this.toastService.show(
+				this.i18n.tr('discover.genreLoadFailed', { tag }),
+				'error',
+			)
 		} finally {
 			this.isLoadingTag = false
 		}
@@ -189,7 +192,9 @@ export class DiscoverPage {
 			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
-				this.toastService.show(this.i18n.tr('discover.hasUpcomingEvents', { name: artist.name }))
+				this.toastService.show(
+					this.i18n.tr('discover.hasUpcomingEvents', { name: artist.name }),
+				)
 			}
 		} catch (err) {
 			this.logger.warn('Failed to check live events', err)
@@ -222,7 +227,9 @@ export class DiscoverPage {
 			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
-				this.toastService.show(this.i18n.tr('discover.hasUpcomingEvents', { name: artist.name }))
+				this.toastService.show(
+					this.i18n.tr('discover.hasUpcomingEvents', { name: artist.name }),
+				)
 			}
 		} catch (err) {
 			this.logger.warn('Failed to check live events', err)
@@ -249,7 +256,9 @@ export class DiscoverPage {
 			error: event.detail.error,
 		})
 		this.toastService.show(
-			this.i18n.tr('discover.similarArtistsError', { name: event.detail.artistName }),
+			this.i18n.tr('discover.similarArtistsError', {
+				name: event.detail.artistName,
+			}),
 			'warning',
 		)
 	}
