@@ -227,7 +227,7 @@ describe('LoadingSequence', () => {
 			await sut.loading()
 
 			expect(mockToast.show).toHaveBeenCalledWith(
-				expect.stringContaining('2/5'),
+				expect.stringContaining('loading.partialFailure'),
 				'warning',
 			)
 

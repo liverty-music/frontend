@@ -7,6 +7,7 @@ import { createMockToastService } from '../helpers/mock-toast'
 
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIToastService = DI.createInterface('IToastService')
+const mockIOnboardingService = DI.createInterface('IOnboardingService')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
@@ -14,6 +15,21 @@ vi.mock('../../src/services/auth-service', () => ({
 
 vi.mock('../../src/components/toast-notification/toast-notification', () => ({
 	IToastService: mockIToastService,
+}))
+
+vi.mock('../../src/services/onboarding-service', () => ({
+	IOnboardingService: mockIOnboardingService,
+	OnboardingStep: {
+		LP: 0,
+		DISCOVER: 1,
+		LOADING: 2,
+		DASHBOARD: 3,
+		DETAIL: 4,
+		MY_ARTISTS: 5,
+		SIGNUP: 6,
+		COMPLETED: 7,
+	},
+	STEP_ROUTE_MAP: {},
 }))
 
 const { AuthHook } = await import('../../src/hooks/auth-hook')
@@ -34,6 +50,12 @@ describe('AuthHook', () => {
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIToastService, mockToast),
+			Registration.instance(mockIOnboardingService, {
+				currentStep: 7,
+				isOnboarding: false,
+				setStep: vi.fn(),
+				complete: vi.fn(),
+			}),
 		)
 		container.register(AuthHook)
 		sut = container.get(AuthHook)
@@ -59,6 +81,12 @@ describe('AuthHook', () => {
 			const container = createTestContainer(
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(mockIToastService, mockToast),
+				Registration.instance(mockIOnboardingService, {
+					currentStep: 7,
+					isOnboarding: false,
+					setStep: vi.fn(),
+					complete: vi.fn(),
+				}),
 			)
 			container.register(AuthHook)
 			sut = container.get(AuthHook)
@@ -68,7 +96,7 @@ describe('AuthHook', () => {
 
 			expect(result).toBe('')
 			expect(mockToast.show).toHaveBeenCalledWith(
-				'ログインが必要です',
+				'auth.loginRequired',
 				'warning',
 			)
 		})
@@ -86,6 +114,12 @@ describe('AuthHook', () => {
 			const container = createTestContainer(
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(mockIToastService, mockToast),
+				Registration.instance(mockIOnboardingService, {
+					currentStep: 7,
+					isOnboarding: false,
+					setStep: vi.fn(),
+					complete: vi.fn(),
+				}),
 			)
 			container.register(AuthHook)
 			sut = container.get(AuthHook)
