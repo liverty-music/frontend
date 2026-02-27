@@ -18,7 +18,7 @@
       if.bind="showGuidance"
       class="guidance-overlay ${guidanceHiding ? 'hiding' : ''}"
     >
-      Tap bubbles to follow artists
+      ${$this.i18n?.tr('discovery.guidance') ?? 'Tap bubbles to follow artists'}
     </div>
 
     <dna-orb-canvas
@@ -31,7 +31,7 @@
 
     <!-- Orb label -->
     <div class="orb-label">
-      Music DNA ${followedCount > 0 ? '· ' + followedCount : ''}
+      ${$this.i18n?.tr('discovery.orbLabel') ?? 'Music DNA'} ${followedCount > 0 ? '· ' + followedCount : ''}
     </div>
 
     <div
@@ -42,7 +42,7 @@
         click.trigger="onViewSchedule()"
         class="complete-button ${isOnboarding ? 'tutorial-cta' : ''}"
       >
-        ${isOnboarding ? '\uD83D\uDC49 \u30C0\u30C3\u30B7\u30E5\u30DC\u30FC\u30C9\u3092\u751F\u6210\u3059\u308B' : 'View Live Schedule (' + followedCount + ' artists)'}
+        ${isOnboarding ? $this.i18n?.tr('discovery.generateDashboard') ?? '' : $this.i18n?.tr('discovery.viewSchedule', { count: followedCount }) ?? ''}
       </button>
     </div>
 
@@ -51,8 +51,7 @@
       aria-live="polite"
       class="sr-only"
     >
-      Artist discovery: ${dnaOrbCanvas?.bubbleCount ?? 0} artists available, ${followedCount} followed.
-      Tap bubbles to follow artists and build your Music DNA.
+      ${$this.i18n?.tr('discovery.srStatus', { available: dnaOrbCanvas?.bubbleCount ?? 0, followed: followedCount }) ?? ''}
     </div>
   </div>
 </template>

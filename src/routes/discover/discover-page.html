@@ -14,15 +14,15 @@
       <input
         type="text"
         class="search-input"
-        placeholder="Search artists..."
+        placeholder.bind="$this.i18n?.tr('discover.searchPlaceholder') ?? ''"
         value.bind="searchQuery"
-        aria-label="Search artists"
+        aria-label.bind="$this.i18n?.tr('discover.searchPlaceholder') ?? ''"
       >
       <button
         if.bind="searchQuery"
         class="clear-button"
         click.trigger="clearSearch()"
-        aria-label="Clear search"
+        aria-label.bind="$this.i18n?.tr('discover.clearSearch') ?? ''"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 6 6 18"></path>
@@ -63,12 +63,10 @@
 
     <!-- Search results (shown during search) -->
     <div class="search-results ${isSearchMode ? '' : 'hidden'}">
-      <div if.bind="isSearching" class="search-status">
-        Searching...
+      <div if.bind="isSearching" class="search-status" t="discover.searching">
       </div>
 
-      <div if.bind="!isSearching && isSearchMode && searchResults.length === 0 && searchQuery.trim().length > 0" class="search-status">
-        No artists found
+      <div if.bind="!isSearching && isSearchMode && searchResults.length === 0 && searchQuery.trim().length > 0" class="search-status" t="discover.noResults">
       </div>
 
       <div class="results-list">
@@ -86,7 +84,7 @@
             class="follow-button ${isArtistFollowed(artist.id) ? 'followed' : ''}"
             click.trigger="onFollowFromSearch(artist)"
             disabled.bind="isArtistFollowed(artist.id)"
-            aria-label="${isArtistFollowed(artist.id) ? 'Already following ' + artist.name : 'Follow ' + artist.name}"
+            aria-label.bind="isArtistFollowed(artist.id) ? ($this.i18n?.tr('discover.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discover.followArtist', { name: artist.name }) ?? '')"
           >
             <svg if.bind="!isArtistFollowed(artist.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M12 5v14"></path>
@@ -106,7 +104,7 @@
       aria-live="polite"
       class="sr-only"
     >
-      Discover page: ${isSearchMode ? searchResults.length + ' search results' : (dnaOrbCanvas?.bubbleCount ?? 0) + ' artists available'}. ${followedCount} followed.
+      ${isSearchMode ? ($this.i18n?.tr('discover.srSearchResults', { count: searchResults.length }) ?? '') : ($this.i18n?.tr('discover.srArtistsAvailable', { count: dnaOrbCanvas?.bubbleCount ?? 0 }) ?? '')}. ${$this.i18n?.tr('discover.srFollowed', { count: followedCount }) ?? ''}
     </div>
   </div>
 </template>

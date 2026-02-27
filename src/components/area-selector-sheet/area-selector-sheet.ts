@@ -1,52 +1,53 @@
+import { I18N } from '@aurelia/i18n'
 import { bindable, ILogger, resolve } from 'aurelia'
 import { StorageKeys } from '../../constants/storage-keys'
 
 export interface Region {
-	name: string
-	prefectures: string[]
+	key: string
+	prefectureKeys: string[]
 }
 
 const REGIONS: Region[] = [
-	{ name: '北海道', prefectures: ['北海道'] },
+	{ key: 'hokkaido', prefectureKeys: ['hokkaido'] },
 	{
-		name: '東北',
-		prefectures: ['青森', '岩手', '宮城', '秋田', '山形', '福島'],
+		key: 'tohoku',
+		prefectureKeys: ['aomori', 'iwate', 'miyagi', 'akita', 'yamagata', 'fukushima'],
 	},
 	{
-		name: '関東',
-		prefectures: ['茨城', '栃木', '群馬', '埼玉', '千葉', '東京', '神奈川'],
+		key: 'kanto',
+		prefectureKeys: ['ibaraki', 'tochigi', 'gunma', 'saitama', 'chiba', 'tokyo', 'kanagawa'],
 	},
 	{
-		name: '中部',
-		prefectures: [
-			'新潟',
-			'富山',
-			'石川',
-			'福井',
-			'山梨',
-			'長野',
-			'岐阜',
-			'静岡',
-			'愛知',
+		key: 'chubu',
+		prefectureKeys: [
+			'niigata',
+			'toyama',
+			'ishikawa',
+			'fukui',
+			'yamanashi',
+			'nagano',
+			'gifu',
+			'shizuoka',
+			'aichi',
 		],
 	},
 	{
-		name: '近畿',
-		prefectures: ['三重', '滋賀', '京都', '大阪', '兵庫', '奈良', '和歌山'],
+		key: 'kinki',
+		prefectureKeys: ['mie', 'shiga', 'kyoto', 'osaka', 'hyogo', 'nara', 'wakayama'],
 	},
-	{ name: '中国', prefectures: ['鳥取', '島根', '岡山', '広島', '山口'] },
-	{ name: '四国', prefectures: ['徳島', '香川', '愛媛', '高知'] },
+	{ key: 'chugoku', prefectureKeys: ['tottori', 'shimane', 'okayama', 'hiroshima', 'yamaguchi'] },
+	{ key: 'shikoku', prefectureKeys: ['tokushima', 'kagawa', 'ehime', 'kochi'] },
 	{
-		name: '九州',
-		prefectures: [
-			'福岡',
-			'佐賀',
-			'長崎',
-			'熊本',
-			'大分',
-			'宮崎',
-			'鹿児島',
-			'沖縄',
+		key: 'kyushu',
+		prefectureKeys: [
+			'fukuoka',
+			'saga',
+			'nagasaki',
+			'kumamoto',
+			'oita',
+			'miyazaki',
+			'kagoshima',
+			'okinawa',
 		],
 	},
 ]
@@ -60,6 +61,15 @@ export class AreaSelectorSheet {
 
 	private dialogElement?: HTMLDialogElement
 	private readonly logger = resolve(ILogger).scopeTo('AreaSelectorSheet')
+	private readonly i18n = resolve(I18N)
+
+	public trRegion(key: string): string {
+		return this.i18n.tr(`region.regions.${key}`)
+	}
+
+	public trPrefecture(key: string): string {
+		return this.i18n.tr(`region.prefectures.${key}`)
+	}
 
 	public static getStoredArea(): string | null {
 		return localStorage.getItem(StorageKeys.userAdminArea)
@@ -96,10 +106,10 @@ export class AreaSelectorSheet {
 		this.selectedRegion = null
 	}
 
-	public selectPrefecture(prefecture: string): void {
-		this.logger.info('Area selected', { prefecture })
-		localStorage.setItem(StorageKeys.userAdminArea, prefecture)
+	public selectPrefecture(prefectureKey: string): void {
+		this.logger.info('Area selected', { prefecture: prefectureKey })
+		localStorage.setItem(StorageKeys.userAdminArea, prefectureKey)
 		this.close()
-		this.onAreaSelected?.(prefecture)
+		this.onAreaSelected?.(prefectureKey)
 	}
 }

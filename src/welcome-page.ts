@@ -3,6 +3,7 @@ import {
 	type IRouteViewModel,
 	type NavigationInstruction,
 } from '@aurelia/router'
+import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve } from 'aurelia'
 import { IToastService } from './components/toast-notification/toast-notification'
 import { IAuthService } from './services/auth-service'
@@ -19,6 +20,7 @@ export class WelcomePage implements IRouteViewModel {
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('WelcomePage')
 	private readonly toast = resolve(IToastService)
+	private readonly i18n = resolve(I18N)
 
 	/**
 	 * Whether to show the [Get Started] primary CTA.
@@ -77,7 +79,7 @@ export class WelcomePage implements IRouteViewModel {
 			await this.router.load('onboarding/discover')
 		} catch (err) {
 			this.logger.error('Failed to navigate to discover', { error: err })
-			this.toast.show('画面遷移に失敗しました。もう一度お試しください。')
+			this.toast.show(this.i18n.tr('welcome.error.navigation'))
 		}
 	}
 
@@ -87,7 +89,7 @@ export class WelcomePage implements IRouteViewModel {
 			await this.authService.signIn()
 		} catch (err) {
 			this.logger.error('Failed to start sign-in flow', { error: err })
-			this.toast.show('ログインの開始に失敗しました。もう一度お試しください。')
+			this.toast.show(this.i18n.tr('welcome.error.login'))
 		}
 	}
 }

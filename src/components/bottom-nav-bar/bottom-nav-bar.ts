@@ -1,24 +1,30 @@
 import { IRouter } from '@aurelia/router'
+import { I18N } from '@aurelia/i18n'
 import { resolve } from 'aurelia'
 
 interface NavTab {
 	path: string
-	label: string
+	labelKey: string
 	icon: string
 }
 
 const tabs: NavTab[] = [
-	{ path: 'dashboard', label: 'Home', icon: 'home' },
-	{ path: 'discover', label: 'Discover', icon: 'discover' },
-	{ path: 'my-artists', label: 'My Artists', icon: 'my-artists' },
-	{ path: 'tickets', label: 'Tickets', icon: 'ticket' },
-	{ path: 'settings', label: 'Settings', icon: 'settings' },
+	{ path: 'dashboard', labelKey: 'nav.home', icon: 'home' },
+	{ path: 'discover', labelKey: 'nav.discover', icon: 'discover' },
+	{ path: 'my-artists', labelKey: 'nav.myArtists', icon: 'my-artists' },
+	{ path: 'tickets', labelKey: 'nav.tickets', icon: 'ticket' },
+	{ path: 'settings', labelKey: 'nav.settings', icon: 'settings' },
 ]
 
 export class BottomNavBar {
 	public readonly tabs = tabs
 
 	private readonly router = resolve(IRouter)
+	private readonly i18n = resolve(I18N)
+
+	public trLabel(key: string): string {
+		return this.i18n.tr(key)
+	}
 
 	private get currentPath(): string {
 		const tree = (

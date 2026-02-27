@@ -4,7 +4,7 @@
   <!-- Header -->
   <div class="shrink-0 px-4 py-4 border-b border-white/10 bg-surface-raised">
     <div class="flex items-center justify-between">
-      <h1 class="font-display text-xl font-bold tracking-tight">My Artists</h1>
+      <h1 t="nav.myArtists" class="font-display text-xl font-bold tracking-tight"></h1>
       <div class="flex items-center gap-2">
         <span if.bind="!isLoading && artists.length > 0" class="text-sm text-text-muted">(${artists.length})</span>
         <button
@@ -40,14 +40,13 @@
       <circle cx="6" cy="18" r="3"></circle>
       <circle cx="18" cy="16" r="3"></circle>
     </svg>
-    <h2 class="font-display text-lg font-bold mb-2">No artists followed yet</h2>
-    <p class="text-sm text-text-muted text-center mb-6">Discover and follow artists to see them here.</p>
+    <h2 t="myArtists.empty.title" class="font-display text-lg font-bold mb-2"></h2>
+    <p t="myArtists.empty.subtitle" class="text-sm text-text-muted text-center mb-6"></p>
     <button
       click.trigger="goToDiscover()"
+      t="myArtists.empty.discoverButton"
       class="px-6 py-2.5 bg-brand-primary text-white font-display font-semibold text-sm rounded-[var(--radius-button)] hover:bg-brand-primary/80 transition-colors"
-    >
-      Discover Artists
-    </button>
+    ></button>
   </div>
 
   <!-- Artist list view -->
@@ -136,7 +135,7 @@
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${contextMenuArtist.passionLevel === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
         >
           <span class="text-base w-8 text-center">${passionLevelMeta[level].icon}</span>
-          <span class="text-sm font-medium">${passionLevelMeta[level].label}</span>
+          <span class="text-sm font-medium">${trPassionLabel(level)}</span>
         </button>
         <div class="border-t border-white/10 my-1"></div>
         <button
@@ -149,7 +148,7 @@
               <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
             </svg>
           </span>
-          <span class="text-sm font-medium">Unfollow</span>
+          <span t="myArtists.unfollow" class="text-sm font-medium"></span>
         </button>
       </div>
     </div>
@@ -161,13 +160,12 @@
     role="status"
     class="absolute bottom-16 left-4 right-4 bg-surface-overlay border border-white/10 rounded-[var(--radius-card)] px-4 py-3 flex items-center justify-between shadow-lg"
   >
-    <span class="text-sm text-text-primary">${undoArtist?.name} unfollowed</span>
+    <span class="text-sm text-text-primary">${$this.i18n?.tr('myArtists.unfollowed', { name: undoArtist?.name }) ?? ''}</span>
     <button
       click.trigger="undo()"
+      t="myArtists.undo"
       class="text-sm font-semibold text-brand-primary hover:text-brand-primary/80 transition-colors ml-4"
-    >
-      Undo
-    </button>
+    ></button>
   </div>
 
   <!-- Passion level selector overlay -->
@@ -191,7 +189,7 @@
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${selectorArtist.passionLevel === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
         >
           <span class="text-base w-8 text-center">${passionLevelMeta[level].icon}</span>
-          <span class="text-sm font-medium">${passionLevelMeta[level].label}</span>
+          <span class="text-sm font-medium">${trPassionLabel(level)}</span>
         </button>
       </div>
     </div>
@@ -200,7 +198,7 @@
   <!-- Tutorial Step 5: Coach mark on first artist's passion button -->
   <coach-mark
     target-selector="[data-passion-button]"
-    message="熱量を設定してみましょう"
+    message.bind="$this.i18n?.tr('myArtists.coachMark.setPassion') ?? ''"
     active.bind="isTutorialStep5 && !isLoading && artists.length > 0"
   ></coach-mark>
 
@@ -212,13 +210,8 @@
     <div class="mx-6 bg-surface-raised border border-white/10 rounded-2xl p-6 max-w-sm">
       <div class="text-center">
         <div class="text-3xl mb-3">🔔</div>
-        <h3 class="font-display text-lg font-bold text-text-primary mb-2">通知コントロール</h3>
-        <p class="text-sm text-text-muted leading-relaxed">
-          熱量レベルに応じて通知の頻度が変わります。
-          「Must Go」のアーティストは全公演を通知、
-          「Local Only」は近くの公演のみ、
-          「Keep an Eye」は注目公演だけお知らせします。
-        </p>
+        <h3 t="myArtists.passionExplanation.title" class="font-display text-lg font-bold text-text-primary mb-2"></h3>
+        <p t="myArtists.passionExplanation.description" class="text-sm text-text-muted leading-relaxed"></p>
       </div>
     </div>
   </div>

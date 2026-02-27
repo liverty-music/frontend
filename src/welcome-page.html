@@ -8,12 +8,8 @@
     </p>
 
     <!-- Hero copy -->
-    <h1 class="font-display text-4xl md:text-5xl font-extrabold text-text-primary leading-tight mb-5 animate-[fade-slide-up_600ms_ease-out_200ms_both]">
-      大好きなあのバンドのライブ、もう二度と見逃さない。
-    </h1>
-    <p class="text-lg text-text-secondary mb-10 animate-[fade-slide-up_600ms_ease-out_400ms_both]">
-      あなたの推しアーティストを登録するだけで、全国のライブ日程を自動収集。
-    </p>
+    <h1 t="welcome.hero.title" class="font-display text-4xl md:text-5xl font-extrabold text-text-primary leading-tight mb-5 animate-[fade-slide-up_600ms_ease-out_200ms_both]"></h1>
+    <p t="welcome.hero.subtitle" class="text-lg text-text-secondary mb-10 animate-[fade-slide-up_600ms_ease-out_400ms_both]"></p>
 
     <!-- CTA buttons -->
     <div class="space-y-3 w-full animate-[fade-slide-up_600ms_ease-out_600ms_both]" if.bind="!showSignUpModal">
@@ -22,27 +18,24 @@
         if.bind="showGetStarted"
         click.trigger="handleGetStarted()"
         class="w-full bg-brand-primary hover:bg-brand-secondary text-white font-semibold py-3.5 px-6 rounded-[var(--radius-button)] transition-all min-h-[48px] shadow-[var(--shadow-button)] hover:shadow-[0_6px_24px_-2px_oklch(0.585_0.233_277/0.4)] hover:scale-[1.02] active:scale-[0.98]"
-      >
-        使ってみる
-      </button>
+        t="welcome.cta.getStarted"
+      ></button>
 
       <!-- Primary: Login (returning users with COMPLETED step) -->
       <button
         if.bind="!showGetStarted"
         click.trigger="handleLogin()"
         class="w-full bg-brand-primary hover:bg-brand-secondary text-white font-semibold py-3.5 px-6 rounded-[var(--radius-button)] transition-all min-h-[48px] shadow-[var(--shadow-button)] hover:shadow-[0_6px_24px_-2px_oklch(0.585_0.233_277/0.4)] hover:scale-[1.02] active:scale-[0.98]"
-      >
-        ログイン
-      </button>
+        t="welcome.cta.login"
+      ></button>
 
       <!-- Secondary: Login link (visible alongside Get Started for new users) -->
       <p if.bind="showGetStarted" class="mt-4">
         <a
           click.trigger="handleLogin()"
           class="text-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors underline underline-offset-4"
-        >
-          アカウントをお持ちの方はログイン
-        </a>
+          t="welcome.cta.loginHint"
+        ></a>
       </p>
     </div>
 

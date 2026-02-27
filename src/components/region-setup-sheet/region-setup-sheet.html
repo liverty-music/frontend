@@ -1,6 +1,6 @@
 <dialog
   ref="dialogElement"
-  aria-label="あなたのエリアを教えてください"
+  t="[aria-label]region.title"
   click.trigger="handleBackdropClick($event)"
   class="region-setup-sheet"
 >
@@ -12,45 +12,40 @@
 
     <div class="px-6 pb-8">
       <!-- Heading -->
-      <h2 class="font-display text-xl font-bold text-text-primary mb-2">
-        あなたのエリアを教えてください
-      </h2>
-      <p class="text-text-secondary text-sm mb-6">
-        近くのライブイベントを見つけるために、お住まいの地域を選んでください。
-      </p>
+      <h2 t="region.title" class="font-display text-xl font-bold text-text-primary mb-2"></h2>
+      <p t="region.description" class="text-text-secondary text-sm mb-6"></p>
 
       <!-- Quick-select cities -->
       <div class="mb-6">
-        <p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3">主要都市</p>
+        <p t="region.majorCities" class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3"></p>
         <div class="grid grid-cols-3 gap-2">
           <button
-            repeat.for="city of quickCities; key.bind: city"
-            click.trigger="selectQuickCity(city)"
+            repeat.for="cityKey of cityKeys; key.bind: cityKey"
+            click.trigger="selectQuickCity(cityKey)"
             class="py-2.5 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
           >
-            ${city}
+            ${trCity(cityKey)}
           </button>
         </div>
       </div>
 
       <!-- Prefecture dropdown -->
       <div>
-        <p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3">都道府県から選ぶ</p>
+        <p t="region.selectByPrefecture" class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3"></p>
         <div class="flex gap-3">
           <select
             value.bind="selectedPrefecture"
             class="flex-1 py-2.5 px-3 bg-surface-overlay text-text-primary rounded-[var(--radius-button)] border border-white/10 focus:border-brand-accent focus:outline-none text-sm appearance-none"
           >
-            <option value="">選択してください</option>
-            <option repeat.for="pref of prefectures; key.bind: pref" value.bind="pref">${pref}</option>
+            <option value="" t="region.placeholder"></option>
+            <option repeat.for="prefKey of prefectureKeys; key.bind: prefKey" value.bind="prefKey">${trPrefecture(prefKey)}</option>
           </select>
           <button
             click.trigger="selectPrefecture()"
             disabled.bind="!selectedPrefecture"
+            t="region.confirm"
             class="py-2.5 px-5 bg-brand-primary hover:bg-brand-secondary disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-[var(--radius-button)] transition-colors shadow-[var(--shadow-button)]"
-          >
-            決定
-          </button>
+          ></button>
         </div>
       </div>
     </div>
