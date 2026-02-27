@@ -186,7 +186,7 @@
 		"followArtist": "Follow {{name}}",
 		"srSearchResults": "{{count}} search results",
 		"srArtistsAvailable": "{{count}} artists available",
-		"srFollowed": "Followed {{name}}",
+		"srFollowed": "{{count}} artists followed",
 		"loadFailed": "Failed to load discovery data",
 		"resetFailed": "Failed to reset discovery view",
 		"genreLoadFailed": "Couldn't load {{tag}} artists",

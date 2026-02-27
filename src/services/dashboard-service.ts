@@ -1,3 +1,4 @@
+import { I18N } from '@aurelia/i18n'
 import { PassionLevel } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -18,6 +19,7 @@ export interface IDashboardService extends DashboardService {}
 
 export class DashboardService {
 	private readonly logger = resolve(ILogger).scopeTo('DashboardService')
+	private readonly i18n = resolve(I18N)
 	private readonly concertService = resolve(IConcertService)
 	private readonly artistService = resolve(IArtistServiceClient)
 
@@ -104,7 +106,11 @@ export class DashboardService {
 
 	private groupByDate(events: LiveEvent[]): DateGroup[] {
 		const groups = new Map<string, DateGroup>()
-		const userRegion = RegionSetupSheet.getStoredRegion()
+		const storedKey = RegionSetupSheet.getStoredRegion()
+		// Resolve romanized key (e.g. "tokyo") to localized name (e.g. "東京")
+		const userRegion = storedKey
+			? this.i18n.tr(`region.prefectures.${storedKey}`)
+			: null
 
 		for (const event of events) {
 			const dateKey = [

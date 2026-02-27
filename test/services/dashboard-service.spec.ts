@@ -1,3 +1,4 @@
+import { I18N } from '@aurelia/i18n'
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,6 +25,7 @@ function makeTimestamp(epochSeconds: number) {
 
 describe('DashboardService', () => {
 	let sut: DashboardService
+	let container: ReturnType<typeof createTestContainer>
 	let mockArtistService: ReturnType<typeof createMockArtistServiceClient>
 	let mockConcertService: ReturnType<typeof createMockConcertService>
 
@@ -33,7 +35,7 @@ describe('DashboardService', () => {
 		mockArtistService = createMockArtistServiceClient()
 		mockConcertService = createMockConcertService()
 
-		const container = createTestContainer(
+		container = createTestContainer(
 			Registration.instance(IArtistServiceClient, mockArtistService),
 			Registration.instance(IConcertService, mockConcertService),
 		)
@@ -231,8 +233,17 @@ describe('DashboardService', () => {
 	})
 
 	it('should assign events to main lane when adminArea matches user region', async () => {
-		// Arrange — set user region in localStorage
-		localStorage.setItem('user.adminArea', '東京')
+		// Arrange — set user region in localStorage (romanized key)
+		localStorage.setItem('user.adminArea', 'tokyo')
+
+		// Mock i18n.tr to resolve prefecture key to Japanese name
+		const mockI18n = container.get(I18N)
+		;(mockI18n.tr as ReturnType<typeof vi.fn>).mockImplementation(
+			(key: string) => {
+				if (key === 'region.prefectures.tokyo') return '東京'
+				return key
+			},
+		)
 
 		mockArtistService.listFollowed = vi
 			.fn()

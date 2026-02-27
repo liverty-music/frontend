@@ -186,7 +186,7 @@
 		"followArtist": "{{name}}をフォロー",
 		"srSearchResults": "{{count}}件の検索結果",
 		"srArtistsAvailable": "{{count}}件のアーティストが利用可能",
-		"srFollowed": "{{name}}をフォローしました",
+		"srFollowed": "{{count}}アーティストをフォロー中",
 		"loadFailed": "ディスカバリーデータの読み込みに失敗しました",
 		"resetFailed": "ディスカバリービューのリセットに失敗しました",
 		"genreLoadFailed": "{{tag}}のアーティストを読み込めませんでした",
