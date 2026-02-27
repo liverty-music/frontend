@@ -1,0 +1,232 @@
+{
+	"welcome": {
+		"hero": {
+			"title": "大好きなあのバンドのライブ、もう二度と見逃さない。",
+			"subtitle": "あなたの推しアーティストを登録するだけで、全国のライブ日程を自動収集。"
+		},
+		"cta": {
+			"getStarted": "使ってみる",
+			"login": "ログイン",
+			"loginHint": "アカウントをお持ちの方はログイン"
+		},
+		"error": {
+			"navigation": "画面遷移に失敗しました。もう一度お試しください。",
+			"login": "ログインの開始に失敗しました。もう一度お試しください。"
+		}
+	},
+	"signup": {
+		"title": "アカウントを作成しよう",
+		"description": "チュートリアルお疲れさまでした！<br>Passkeyで安全にアカウントを作成して、<br>フォローしたアーティストの情報を保存しましょう。",
+		"button": "Passkeyでアカウント作成",
+		"error": "アカウント作成に失敗しました。もう一度お試しください。"
+	},
+	"region": {
+		"title": "あなたのエリアを教えてください",
+		"description": "近くのライブイベントを見つけるために、お住まいの地域を選んでください。",
+		"majorCities": "主要都市",
+		"selectByPrefecture": "都道府県から選ぶ",
+		"placeholder": "選択してください",
+		"confirm": "決定",
+		"cities": {
+			"tokyo": "東京",
+			"osaka": "大阪",
+			"nagoya": "名古屋",
+			"fukuoka": "福岡",
+			"sapporo": "札幌",
+			"sendai": "仙台"
+		},
+		"prefectures": {
+			"hokkaido": "北海道",
+			"aomori": "青森",
+			"iwate": "岩手",
+			"miyagi": "宮城",
+			"akita": "秋田",
+			"yamagata": "山形",
+			"fukushima": "福島",
+			"ibaraki": "茨城",
+			"tochigi": "栃木",
+			"gunma": "群馬",
+			"saitama": "埼玉",
+			"chiba": "千葉",
+			"tokyo": "東京",
+			"kanagawa": "神奈川",
+			"niigata": "新潟",
+			"toyama": "富山",
+			"ishikawa": "石川",
+			"fukui": "福井",
+			"yamanashi": "山梨",
+			"nagano": "長野",
+			"gifu": "岐阜",
+			"shizuoka": "静岡",
+			"aichi": "愛知",
+			"mie": "三重",
+			"shiga": "滋賀",
+			"kyoto": "京都",
+			"osaka": "大阪",
+			"hyogo": "兵庫",
+			"nara": "奈良",
+			"wakayama": "和歌山",
+			"tottori": "鳥取",
+			"shimane": "島根",
+			"okayama": "岡山",
+			"hiroshima": "広島",
+			"yamaguchi": "山口",
+			"tokushima": "徳島",
+			"kagawa": "香川",
+			"ehime": "愛媛",
+			"kochi": "高知",
+			"fukuoka": "福岡",
+			"saga": "佐賀",
+			"nagasaki": "長崎",
+			"kumamoto": "熊本",
+			"oita": "大分",
+			"miyazaki": "宮崎",
+			"kagoshima": "鹿児島",
+			"okinawa": "沖縄"
+		},
+		"regions": {
+			"hokkaido": "北海道",
+			"tohoku": "東北",
+			"kanto": "関東",
+			"chubu": "中部",
+			"kinki": "近畿",
+			"chugoku": "中国",
+			"shikoku": "四国",
+			"kyushu": "九州"
+		}
+	},
+	"areaSelector": {
+		"title": "エリアを変更",
+		"description": "地域を選んで近くの都道府県を探しましょう。",
+		"selectPrefecture": "都道府県を選んでください。"
+	},
+	"dashboard": {
+		"header": {
+			"myCity": "マイシティ",
+			"region": "地域",
+			"others": "その他"
+		},
+		"coachMark": {
+			"tapCard": "見つかりました！カードをタップして詳細を見てみましょう",
+			"customizeNotifications": "通知のカスタマイズはアーティスト画面から行えます 👉"
+		},
+		"empty": {
+			"title": "予定されているイベントはありません",
+			"subtitle": "アーティストをフォローしてライブスケジュールを確認しましょう。",
+			"discoverLink": "アーティストを探す"
+		},
+		"stale": {
+			"message": "データが古い可能性があります。",
+			"retry": "再読み込み"
+		},
+		"error": {
+			"load": "ライブイベントの読み込みに失敗しました"
+		}
+	},
+	"notification": {
+		"title": "ライブイベントを見逃さない",
+		"description": "フォローしたアーティストの新しいコンサートが見つかったら通知を受け取れます。",
+		"notNow": "今はしない",
+		"enable": "通知を有効にする",
+		"enabling": "有効化中…",
+		"blocked": {
+			"title": "通知がブロックされています",
+			"description": "コンサートのお知らせを受け取るには、ブラウザの設定でこのサイトの通知を有効にしてください。",
+			"dismiss": "閉じる"
+		}
+	},
+	"passionLevel": {
+		"mustGo": "絶対行く",
+		"localOnly": "近場なら行く",
+		"keepAnEye": "チェックしておく"
+	},
+	"myArtists": {
+		"coachMark": {
+			"setPassion": "熱量を設定してみましょう"
+		},
+		"passionExplanation": {
+			"title": "通知コントロール",
+			"description": "熱量レベルに応じて通知の頻度が変わります。「Must Go」のアーティストは全公演を通知、「Local Only」は近くの公演のみ、「Keep an Eye」は注目公演だけお知らせします。"
+		},
+		"empty": {
+			"title": "フォロー中のアーティストはいません",
+			"subtitle": "アーティストを探してフォローしましょう。",
+			"discoverButton": "アーティストを探す"
+		},
+		"unfollowed": "{{name}}のフォローを解除しました",
+		"undo": "元に戻す",
+		"unfollow": "フォロー解除",
+		"failedUnfollow": "{{name}}のフォロー解除に失敗しました",
+		"failedPassionLevel": "熱量レベルの更新に失敗しました"
+	},
+	"loading": {
+		"phase1": "あなたのMusic DNAを構築中...",
+		"phase2": "全国のライブスケジュールと照合中...",
+		"phase3": "AIが最新のツアー情報を検索中... 🤖",
+		"partialFailure": "一部のアーティストのスケジュールを読み込めませんでした（{{failed}}/{{total}}）"
+	},
+	"discovery": {
+		"guidance": "バブルをタップしてアーティストをフォロー",
+		"generateDashboard": "👉 ダッシュボードを生成する",
+		"viewSchedule": "ライブスケジュールを見る（{{count}}アーティスト）",
+		"orbLabel": "Music DNA",
+		"loadFailed": "アーティストの読み込みに失敗しました。リトライしてください。",
+		"retryFailed": "読み込みに失敗しました。後ほど再度お試しください。",
+		"followFailed": "{{name}}のフォローに失敗しました。もう一度お試しください。",
+		"hasUpcomingEvents": "{{name}}のライブが近日開催予定です！",
+		"similarArtistsError": "{{name}}の類似アーティストが見つかりませんでした",
+		"srStatus": "アーティスト探索: {{available}}アーティスト表示中、{{followed}}フォロー済み"
+	},
+	"discover": {
+		"searchPlaceholder": "アーティストを検索...",
+		"clearSearch": "検索をクリア",
+		"searching": "検索中...",
+		"noResults": "アーティストが見つかりません",
+		"alreadyFollowing": "フォロー済み",
+		"followArtist": "{{name}}をフォロー",
+		"srSearchResults": "{{count}}件の検索結果",
+		"srArtistsAvailable": "{{count}}件のアーティストが利用可能",
+		"srFollowed": "{{name}}をフォローしました",
+		"loadFailed": "ディスカバリーデータの読み込みに失敗しました",
+		"resetFailed": "ディスカバリービューのリセットに失敗しました",
+		"genreLoadFailed": "{{tag}}のアーティストを読み込めませんでした",
+		"searchFailed": "検索に失敗しました。もう一度お試しください",
+		"followFailed": "{{name}}のフォローに失敗しました。もう一度お試しください。",
+		"hasUpcomingEvents": "{{name}}のライブが近日開催予定です！",
+		"similarArtistsError": "{{name}}の類似アーティストが見つかりませんでした"
+	},
+	"errorBanner": {
+		"copied": "エラー詳細をコピーしました",
+		"reportCooldown": "しばらくお待ちください"
+	},
+	"auth": {
+		"loginRequired": "ログインが必要です"
+	},
+	"settings": {
+		"title": "設定",
+		"preferences": "環境設定",
+		"myArea": "マイエリア",
+		"notSet": "未設定",
+		"pushNotifications": "プッシュ通知",
+		"notAvailable": "この環境では利用できません",
+		"language": "言語",
+		"about": "情報",
+		"termsOfService": "利用規約",
+		"privacyPolicy": "プライバシーポリシー",
+		"ossLicenses": "OSSライセンス",
+		"account": "アカウント",
+		"signOut": "サインアウト",
+		"signOutError": "サインアウトに失敗しました。もう一度お試しください。"
+	},
+	"nav": {
+		"home": "Home",
+		"discover": "Discover",
+		"myArtists": "My Artists",
+		"tickets": "Tickets",
+		"settings": "Settings"
+	},
+	"languages": {
+		"ja": "日本語",
+		"en": "English"
+	}
+}

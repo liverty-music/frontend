@@ -1,0 +1,232 @@
+{
+	"welcome": {
+		"hero": {
+			"title": "Never miss a live show from the bands you love.",
+			"subtitle": "Just follow your favorite artists and we'll automatically collect live schedules nationwide."
+		},
+		"cta": {
+			"getStarted": "Get Started",
+			"login": "Log In",
+			"loginHint": "Already have an account? Log in"
+		},
+		"error": {
+			"navigation": "Navigation failed. Please try again.",
+			"login": "Failed to start login. Please try again."
+		}
+	},
+	"signup": {
+		"title": "Create Your Account",
+		"description": "Great job completing the tutorial!<br>Create a secure account with Passkey<br>to save the artists you follow.",
+		"button": "Create Account with Passkey",
+		"error": "Account creation failed. Please try again."
+	},
+	"region": {
+		"title": "Tell Us Your Area",
+		"description": "Select your area to find live events nearby.",
+		"majorCities": "Major Cities",
+		"selectByPrefecture": "Select by Prefecture",
+		"placeholder": "Select",
+		"confirm": "Confirm",
+		"cities": {
+			"tokyo": "Tokyo",
+			"osaka": "Osaka",
+			"nagoya": "Nagoya",
+			"fukuoka": "Fukuoka",
+			"sapporo": "Sapporo",
+			"sendai": "Sendai"
+		},
+		"prefectures": {
+			"hokkaido": "Hokkaido",
+			"aomori": "Aomori",
+			"iwate": "Iwate",
+			"miyagi": "Miyagi",
+			"akita": "Akita",
+			"yamagata": "Yamagata",
+			"fukushima": "Fukushima",
+			"ibaraki": "Ibaraki",
+			"tochigi": "Tochigi",
+			"gunma": "Gunma",
+			"saitama": "Saitama",
+			"chiba": "Chiba",
+			"tokyo": "Tokyo",
+			"kanagawa": "Kanagawa",
+			"niigata": "Niigata",
+			"toyama": "Toyama",
+			"ishikawa": "Ishikawa",
+			"fukui": "Fukui",
+			"yamanashi": "Yamanashi",
+			"nagano": "Nagano",
+			"gifu": "Gifu",
+			"shizuoka": "Shizuoka",
+			"aichi": "Aichi",
+			"mie": "Mie",
+			"shiga": "Shiga",
+			"kyoto": "Kyoto",
+			"osaka": "Osaka",
+			"hyogo": "Hyogo",
+			"nara": "Nara",
+			"wakayama": "Wakayama",
+			"tottori": "Tottori",
+			"shimane": "Shimane",
+			"okayama": "Okayama",
+			"hiroshima": "Hiroshima",
+			"yamaguchi": "Yamaguchi",
+			"tokushima": "Tokushima",
+			"kagawa": "Kagawa",
+			"ehime": "Ehime",
+			"kochi": "Kochi",
+			"fukuoka": "Fukuoka",
+			"saga": "Saga",
+			"nagasaki": "Nagasaki",
+			"kumamoto": "Kumamoto",
+			"oita": "Oita",
+			"miyazaki": "Miyazaki",
+			"kagoshima": "Kagoshima",
+			"okinawa": "Okinawa"
+		},
+		"regions": {
+			"hokkaido": "Hokkaido",
+			"tohoku": "Tohoku",
+			"kanto": "Kanto",
+			"chubu": "Chubu",
+			"kinki": "Kinki",
+			"chugoku": "Chugoku",
+			"shikoku": "Shikoku",
+			"kyushu": "Kyushu"
+		}
+	},
+	"areaSelector": {
+		"title": "Change My Area",
+		"description": "Select a region to find prefectures near you.",
+		"selectPrefecture": "Select your prefecture."
+	},
+	"dashboard": {
+		"header": {
+			"myCity": "My City",
+			"region": "Region",
+			"others": "Others"
+		},
+		"coachMark": {
+			"tapCard": "Found! Tap the card to see details",
+			"customizeNotifications": "Customize notifications from the Artists screen 👉"
+		},
+		"empty": {
+			"title": "No upcoming events",
+			"subtitle": "Follow more artists to see their live schedules here.",
+			"discoverLink": "Discover Artists"
+		},
+		"stale": {
+			"message": "Data may be outdated.",
+			"retry": "Retry"
+		},
+		"error": {
+			"load": "Failed to load live events"
+		}
+	},
+	"notification": {
+		"title": "Never miss a live event",
+		"description": "Get notified when new concerts are found for artists you follow.",
+		"notNow": "Not now",
+		"enable": "Enable notifications",
+		"enabling": "Enabling…",
+		"blocked": {
+			"title": "Notifications blocked",
+			"description": "To receive concert alerts, enable notifications in your browser settings for this site.",
+			"dismiss": "Dismiss"
+		}
+	},
+	"passionLevel": {
+		"mustGo": "Must Go",
+		"localOnly": "Local Only",
+		"keepAnEye": "Keep an Eye"
+	},
+	"myArtists": {
+		"coachMark": {
+			"setPassion": "Try setting a passion level"
+		},
+		"passionExplanation": {
+			"title": "Notification Control",
+			"description": "Notification frequency varies by passion level. \"Must Go\" artists notify for all shows, \"Local Only\" for nearby shows only, and \"Keep an Eye\" for notable shows only."
+		},
+		"empty": {
+			"title": "No artists followed yet",
+			"subtitle": "Discover and follow artists to see them here.",
+			"discoverButton": "Discover Artists"
+		},
+		"unfollowed": "{{name}} unfollowed",
+		"undo": "Undo",
+		"unfollow": "Unfollow",
+		"failedUnfollow": "Failed to unfollow {{name}}",
+		"failedPassionLevel": "Failed to update passion level"
+	},
+	"loading": {
+		"phase1": "Building your Music DNA...",
+		"phase2": "Matching with live schedules nationwide...",
+		"phase3": "AI searching for the latest tour info... 🤖",
+		"partialFailure": "Some artist schedules couldn't be loaded ({{failed}}/{{total}})"
+	},
+	"discovery": {
+		"guidance": "Tap bubbles to follow artists",
+		"generateDashboard": "👉 Generate Dashboard",
+		"viewSchedule": "View Live Schedule ({{count}} artists)",
+		"orbLabel": "Music DNA",
+		"loadFailed": "Failed to load artists. Tap retry to try again.",
+		"retryFailed": "Still unable to load artists. Please try again later.",
+		"followFailed": "Failed to follow {{name}}. Please try again.",
+		"hasUpcomingEvents": "{{name}} has upcoming live events!",
+		"similarArtistsError": "Couldn't find similar artists for {{name}}",
+		"srStatus": "Artist discovery: {{available}} artists available, {{followed}} followed."
+	},
+	"discover": {
+		"searchPlaceholder": "Search artists...",
+		"clearSearch": "Clear search",
+		"searching": "Searching...",
+		"noResults": "No artists found",
+		"alreadyFollowing": "Already following",
+		"followArtist": "Follow {{name}}",
+		"srSearchResults": "{{count}} search results",
+		"srArtistsAvailable": "{{count}} artists available",
+		"srFollowed": "Followed {{name}}",
+		"loadFailed": "Failed to load discovery data",
+		"resetFailed": "Failed to reset discovery view",
+		"genreLoadFailed": "Couldn't load {{tag}} artists",
+		"searchFailed": "Search failed, please try again",
+		"followFailed": "Failed to follow {{name}}. Please try again.",
+		"hasUpcomingEvents": "{{name}} has upcoming live events!",
+		"similarArtistsError": "Couldn't find similar artists for {{name}}"
+	},
+	"errorBanner": {
+		"copied": "Error details copied",
+		"reportCooldown": "Please wait before reporting another issue"
+	},
+	"auth": {
+		"loginRequired": "Login required"
+	},
+	"settings": {
+		"title": "Settings",
+		"preferences": "Preferences",
+		"myArea": "My Area",
+		"notSet": "Not set",
+		"pushNotifications": "Push Notifications",
+		"notAvailable": "Not available in this environment",
+		"language": "Language",
+		"about": "About",
+		"termsOfService": "Terms of Service",
+		"privacyPolicy": "Privacy Policy",
+		"ossLicenses": "OSS Licenses",
+		"account": "Account",
+		"signOut": "Sign Out",
+		"signOutError": "Sign-out failed. Please try again."
+	},
+	"nav": {
+		"home": "Home",
+		"discover": "Discover",
+		"myArtists": "My Artists",
+		"tickets": "Tickets",
+		"settings": "Settings"
+	},
+	"languages": {
+		"ja": "日本語",
+		"en": "English"
+	}
+}
