@@ -29,10 +29,11 @@ export class DashboardService {
 	public async loadDashboardEvents(signal?: AbortSignal): Promise<DateGroup[]> {
 		this.logger.info('Loading dashboard events')
 
-		// Fetch followed artists (for name/passion mapping) and concerts in parallel
-		const [artistMap, concerts] = await Promise.all([
+		// Fetch followed artists, concerts, and user home in parallel
+		const [artistMap, concerts, userHome] = await Promise.all([
 			this.fetchFollowedArtistMap(signal),
 			this.concertService.listByFollower(signal),
+			this.fetchUserHome(),
 		])
 
 		if (concerts.length === 0) {
@@ -53,7 +54,7 @@ export class DashboardService {
 		}
 
 		allEvents.sort((a, b) => a.date.getTime() - b.date.getTime())
-		return this.groupByDate(allEvents)
+		return this.groupByDate(allEvents, userHome)
 	}
 
 	private async fetchFollowedArtistMap(
@@ -108,23 +109,24 @@ export class DashboardService {
 		}
 	}
 
-	private getUserHome(): string | null {
+	private async fetchUserHome(): Promise<string | null> {
 		if (this.authService.isAuthenticated) {
-			// For authenticated users, read from cached user entity
-			// The user's home is synced to the server via UpdateHome RPC
 			try {
-				const user = (this.authService as { user?: { home?: { level1?: string } } }).user
-				if (user?.home?.level1) return user.home.level1
+				const resp = await this.userService.client.get({})
+				const level1 = resp.user?.home?.level1
+				if (level1) return level1
 			} catch {
-				// Fall through to guest storage
+				this.logger.warn('Failed to fetch user home from backend')
 			}
 		}
 		return localStorage.getItem(StorageKeys.guestHome)
 	}
 
-	private groupByDate(events: LiveEvent[]): DateGroup[] {
+	private groupByDate(
+		events: LiveEvent[],
+		userHome: string | null,
+	): DateGroup[] {
 		const groups = new Map<string, DateGroup>()
-		const userHome = this.getUserHome()
 
 		for (const event of events) {
 			const dateKey = [

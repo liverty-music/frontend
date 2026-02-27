@@ -1,7 +1,9 @@
 import { vi } from 'vitest'
 import type { IArtistDiscoveryService } from '../../src/services/artist-discovery-service'
 import type { IArtistServiceClient } from '../../src/services/artist-service-client'
+import type { IAuthService } from '../../src/services/auth-service'
 import type { IConcertService } from '../../src/services/concert-service'
+import type { IUserService } from '../../src/services/user-service'
 
 /**
  * Creates a mock implementation of IConcertService for testing.
@@ -30,6 +32,32 @@ export function createMockArtistServiceClient(): Partial<IArtistServiceClient> {
 			unfollow: vi.fn().mockResolvedValue({}),
 			setPassionLevel: vi.fn().mockResolvedValue({}),
 		}),
+	}
+}
+
+/**
+ * Creates a mock implementation of IAuthService for testing.
+ * Defaults to unauthenticated (guest) state.
+ */
+export function createMockAuthService(): Partial<IAuthService> {
+	return {
+		isAuthenticated: false,
+		login: vi.fn().mockResolvedValue(undefined),
+		logout: vi.fn().mockResolvedValue(undefined),
+	}
+}
+
+/**
+ * Creates a mock implementation of IUserService for testing.
+ */
+export function createMockUserService(): Partial<IUserService> {
+	return {
+		client: {
+			get: vi.fn().mockResolvedValue({ user: undefined }),
+			updateHome: vi.fn().mockResolvedValue({}),
+			create: vi.fn().mockResolvedValue({}),
+		} as unknown as IUserService['client'],
+		updateHome: vi.fn().mockResolvedValue(undefined),
 	}
 }
 

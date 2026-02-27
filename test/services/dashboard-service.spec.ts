@@ -2,15 +2,19 @@ import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_musi
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IArtistServiceClient } from '../../src/services/artist-service-client'
+import { IAuthService } from '../../src/services/auth-service'
 import { IConcertService } from '../../src/services/concert-service'
 import {
 	DashboardService,
 	IDashboardService,
 } from '../../src/services/dashboard-service'
+import { IUserService } from '../../src/services/user-service'
 import { createTestContainer } from '../helpers/create-container'
 import {
 	createMockArtistServiceClient,
+	createMockAuthService,
 	createMockConcertService,
+	createMockUserService,
 } from '../helpers/mock-rpc-clients'
 
 // Helpers to build mock Concert objects with the new VO proto structure.
@@ -36,7 +40,9 @@ describe('DashboardService', () => {
 
 		container = createTestContainer(
 			Registration.instance(IArtistServiceClient, mockArtistService),
+			Registration.instance(IAuthService, createMockAuthService()),
 			Registration.instance(IConcertService, mockConcertService),
+			Registration.instance(IUserService, createMockUserService()),
 		)
 		container.register(DashboardService)
 		sut = container.get(IDashboardService)
