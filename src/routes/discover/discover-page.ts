@@ -1,3 +1,4 @@
+import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve, shadowCSS, useShadowDOM, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { IToastService } from '../../components/toast-notification/toast-notification'
@@ -27,6 +28,7 @@ export class DiscoverPage {
 	private readonly discoveryService = resolve(IArtistDiscoveryService)
 	private readonly toastService = resolve(IToastService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoverPage')
+	public readonly i18n = resolve(I18N)
 
 	public dnaOrbCanvas!: DnaOrbCanvas
 
@@ -51,7 +53,7 @@ export class DiscoverPage {
 			await this.discoveryService.loadInitialArtists('Japan', '')
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
-			this.toastService.show('Failed to load discovery data', 'error')
+			this.toastService.show(this.i18n.tr('discover.loadFailed'), 'error')
 		}
 	}
 
@@ -85,7 +87,7 @@ export class DiscoverPage {
 				this.dnaOrbCanvas.reloadBubbles(this.discoveryService.availableBubbles)
 			} catch (err) {
 				this.logger.error('Failed to clear genre tag', err)
-				this.toastService.show('Failed to reset discovery view', 'error')
+				this.toastService.show(this.i18n.tr('discover.resetFailed'), 'error')
 			} finally {
 				this.isLoadingTag = false
 			}
@@ -103,7 +105,10 @@ export class DiscoverPage {
 		} catch (err) {
 			this.activeTag = ''
 			this.logger.warn('Failed to load genre artists', err)
-			this.toastService.show(`Couldn't load ${tag} artists`, 'error')
+			this.toastService.show(
+				this.i18n.tr('discover.genreLoadFailed', { tag }),
+				'error',
+			)
 		} finally {
 			this.isLoadingTag = false
 		}
@@ -150,7 +155,7 @@ export class DiscoverPage {
 			this.searchResults = results
 		} catch (err) {
 			this.logger.warn('Search failed', err)
-			this.toastService.show('Search failed, please try again', 'warning')
+			this.toastService.show(this.i18n.tr('discover.searchFailed'), 'warning')
 			this.searchResults = []
 		} finally {
 			if (this.searchQuery.trim() === query) {
@@ -176,7 +181,7 @@ export class DiscoverPage {
 				error: err,
 			})
 			this.toastService.show(
-				`Failed to follow ${artist.name}. Please try again.`,
+				this.i18n.tr('discover.followFailed', { name: artist.name }),
 				'error',
 			)
 			return
@@ -187,7 +192,9 @@ export class DiscoverPage {
 			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
-				this.toastService.show(`${artist.name} has upcoming live events!`)
+				this.toastService.show(
+					this.i18n.tr('discover.hasUpcomingEvents', { name: artist.name }),
+				)
 			}
 		} catch (err) {
 			this.logger.warn('Failed to check live events', err)
@@ -209,7 +216,7 @@ export class DiscoverPage {
 				error: err,
 			})
 			this.toastService.show(
-				`Failed to follow ${artist.name}. Please try again.`,
+				this.i18n.tr('discover.followFailed', { name: artist.name }),
 				'error',
 			)
 			return
@@ -220,7 +227,9 @@ export class DiscoverPage {
 			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
-				this.toastService.show(`${artist.name} has upcoming live events!`)
+				this.toastService.show(
+					this.i18n.tr('discover.hasUpcomingEvents', { name: artist.name }),
+				)
 			}
 		} catch (err) {
 			this.logger.warn('Failed to check live events', err)
@@ -247,7 +256,9 @@ export class DiscoverPage {
 			error: event.detail.error,
 		})
 		this.toastService.show(
-			`Couldn't find similar artists for ${event.detail.artistName}`,
+			this.i18n.tr('discover.similarArtistsError', {
+				name: event.detail.artistName,
+			}),
 			'warning',
 		)
 	}

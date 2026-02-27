@@ -4,16 +4,17 @@
     <div class="flex items-start gap-3">
       <div class="shrink-0 text-2xl" aria-hidden="true">🔔</div>
       <div class="flex-1 min-w-0">
-        <p class="font-display font-bold text-text-primary text-sm">Never miss a live event</p>
-        <p class="text-text-secondary text-xs mt-0.5">Get notified when new concerts are found for artists you follow.</p>
+        <p t="notification.title" class="font-display font-bold text-text-primary text-sm"></p>
+        <p t="notification.description" class="text-text-secondary text-xs mt-0.5"></p>
         <div class="flex gap-2 mt-3">
           <button click.trigger="dismiss()"
+            t="notification.notNow"
             class="px-3 py-1.5 text-xs text-text-muted border border-white/10 rounded-[var(--radius-button)] transition-colors hover:bg-white/5">
-            Not now
           </button>
           <button click.trigger="enable()" disabled.bind="isLoading"
             class="px-3 py-1.5 text-xs font-medium text-white bg-brand-primary rounded-[var(--radius-button)] transition-colors hover:bg-brand-secondary shadow-[var(--shadow-button)] disabled:opacity-40 disabled:cursor-not-allowed">
-            ${isLoading ? 'Enabling…' : 'Enable notifications'}
+            <span if.bind="isLoading" t="notification.enabling"></span>
+            <span if.bind="!isLoading" t="notification.enable"></span>
           </button>
         </div>
       </div>
@@ -25,11 +26,11 @@
     <div class="flex items-start gap-3">
       <div class="shrink-0 text-2xl" aria-hidden="true">🔕</div>
       <div class="flex-1 min-w-0">
-        <p class="font-display font-bold text-text-primary text-sm">Notifications blocked</p>
-        <p class="text-text-secondary text-xs mt-0.5">To receive concert alerts, enable notifications in your browser settings for this site.</p>
+        <p t="notification.blocked.title" class="font-display font-bold text-text-primary text-sm"></p>
+        <p t="notification.blocked.description" class="text-text-secondary text-xs mt-0.5"></p>
         <button click.trigger="dismiss()"
+          t="notification.blocked.dismiss"
           class="mt-3 px-3 py-1.5 text-xs text-text-muted border border-white/10 rounded-[var(--radius-button)] transition-colors hover:bg-white/5">
-          Dismiss
         </button>
       </div>
     </div>

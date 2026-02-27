@@ -1,11 +1,23 @@
+import { I18N } from '@aurelia/i18n'
+import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DateValueConverter } from '../../src/value-converters/date'
+import { createTestContainer } from '../helpers/create-container'
 
 describe('DateValueConverter', () => {
 	let converter: DateValueConverter
 
 	beforeEach(() => {
-		converter = new DateValueConverter()
+		// I18N mock returns 'ja' by default from createTestContainer
+		const container = createTestContainer(
+			Registration.instance(I18N, {
+				tr: vi.fn(),
+				getLocale: vi.fn(() => 'ja'),
+				setLocale: vi.fn(),
+			}),
+		)
+		container.register(DateValueConverter)
+		converter = container.get(DateValueConverter)
 	})
 
 	describe('toView - short format', () => {

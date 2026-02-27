@@ -1,4 +1,5 @@
 import { IRouter, type NavigationInstruction } from '@aurelia/router'
+import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
 import { IToastService } from '../../components/toast-notification/toast-notification'
 import { IArtistDiscoveryService } from '../../services/artist-discovery-service'
@@ -23,6 +24,7 @@ export class LoadingSequence {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly toastService = resolve(IToastService)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
+	private readonly i18n = resolve(I18N)
 
 	public currentPhase = 1
 	public currentPhaseMessage = ''
@@ -32,11 +34,13 @@ export class LoadingSequence {
 	private phaseTimer: number | null = null
 	private readonly FADE_DURATION_MS = 600
 
-	private readonly phases = [
-		{ duration: 2000, message: 'あなたのMusic DNAを構築中...' },
-		{ duration: 3000, message: '全国のライブスケジュールと照合中...' },
-		{ duration: Infinity, message: 'AIが最新のツアー情報を検索中... 🤖' },
-	]
+	private get phases() {
+		return [
+			{ duration: 2000, message: this.i18n.tr('loading.phase1') },
+			{ duration: 3000, message: this.i18n.tr('loading.phase2') },
+			{ duration: Infinity, message: this.i18n.tr('loading.phase3') },
+		]
+	}
 
 	public get totalPhases(): number {
 		return this.phases.length
@@ -137,7 +141,10 @@ export class LoadingSequence {
 					totalCount: result.totalCount,
 				})
 				this.toastService.show(
-					`Some artist schedules couldn't be loaded (${result.failedCount}/${result.totalCount})`,
+					this.i18n.tr('loading.partialFailure', {
+						failed: result.failedCount,
+						total: result.totalCount,
+					}),
 					'warning',
 				)
 				break

@@ -1,4 +1,5 @@
 import { IRouter } from '@aurelia/router'
+import { I18N } from '@aurelia/i18n'
 import {
 	ArtistId,
 	PassionLevel,
@@ -21,11 +22,14 @@ export interface FollowedArtist {
 
 export const PASSION_LEVEL_META: Record<
 	number,
-	{ label: string; icon: string }
+	{ labelKey: string; icon: string }
 > = {
-	[PassionLevel.MUST_GO]: { label: 'Must Go', icon: '🔥🔥' },
-	[PassionLevel.LOCAL_ONLY]: { label: 'Local Only', icon: '🔥' },
-	[PassionLevel.KEEP_AN_EYE]: { label: 'Keep an Eye', icon: '👀' },
+	[PassionLevel.MUST_GO]: { labelKey: 'passionLevel.mustGo', icon: '🔥🔥' },
+	[PassionLevel.LOCAL_ONLY]: { labelKey: 'passionLevel.localOnly', icon: '🔥' },
+	[PassionLevel.KEEP_AN_EYE]: {
+		labelKey: 'passionLevel.keepAnEye',
+		icon: '👀',
+	},
 }
 
 const UNDO_TIMEOUT_MS = 5000
@@ -72,6 +76,12 @@ export class MyArtistsPage {
 	public readonly passionLevelMeta = PASSION_LEVEL_META
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsPage')
+	public readonly i18n = resolve(I18N)
+
+	public trPassionLabel(level: number): string {
+		const meta = PASSION_LEVEL_META[level]
+		return meta ? this.i18n.tr(meta.labelKey) : ''
+	}
 	private readonly artistService = resolve(IArtistServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
@@ -276,7 +286,9 @@ export class MyArtistsPage {
 						// Revert optimistic removal
 						const insertAt = Math.min(originalIndex, this.artists.length)
 						this.artists.splice(insertAt, 0, artist)
-						this.toast.show(`Failed to unfollow ${artist.name}`)
+						this.toast.show(
+							this.i18n.tr('myArtists.failedUnfollow', { name: artist.name }),
+						)
 					})
 			})
 	}
@@ -371,7 +383,7 @@ export class MyArtistsPage {
 						})
 						const artist = this.artists.find((a) => a.id === artistId)
 						if (artist) artist.passionLevel = prev
-						this.toast.show('Failed to update passion level')
+						this.toast.show(this.i18n.tr('myArtists.failedPassionLevel'))
 					})
 			})
 	}
@@ -422,7 +434,7 @@ export class MyArtistsPage {
 					error: retryErr,
 				})
 				artist.passionLevel = prev
-				this.toast.show('Failed to update passion level')
+				this.toast.show(this.i18n.tr('myArtists.failedPassionLevel'))
 			})
 		})
 	}

@@ -132,7 +132,7 @@ describe('ArtistDiscoveryPage', () => {
 
 			expect(sut.loadFailed).toBe(true)
 			expect(mockToast.show).toHaveBeenCalledWith(
-				expect.stringContaining('Failed'),
+				'discovery.loadFailed',
 				'error',
 			)
 		})
@@ -199,7 +199,7 @@ describe('ArtistDiscoveryPage', () => {
 			expect(mockArtistService.follow).toHaveBeenCalledWith('a1', 'Test Artist')
 			expect(mockDiscovery.markFollowed).toHaveBeenCalledWith(artist)
 			expect(mockToast.show).toHaveBeenCalledWith(
-				expect.stringContaining('upcoming live events'),
+				expect.stringContaining('discovery.hasUpcomingEvents'),
 			)
 		})
 
@@ -225,7 +225,7 @@ describe('ArtistDiscoveryPage', () => {
 			await sut.onArtistSelected(event)
 
 			expect(mockToast.show).toHaveBeenCalledWith(
-				expect.stringContaining('Failed to follow'),
+				expect.stringContaining('discovery.followFailed'),
 				'error',
 			)
 		})

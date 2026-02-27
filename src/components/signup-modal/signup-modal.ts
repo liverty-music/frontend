@@ -1,3 +1,4 @@
+import { I18N } from '@aurelia/i18n'
 import { bindable, ILogger, resolve } from 'aurelia'
 import { IAuthService } from '../../services/auth-service'
 
@@ -9,6 +10,7 @@ export class SignupModal {
 
 	private readonly authService = resolve(IAuthService)
 	private readonly logger = resolve(ILogger).scopeTo('SignupModal')
+	private readonly i18n = resolve(I18N)
 
 	public async handleSignUp(): Promise<void> {
 		if (this.isSigningUp) return
@@ -22,8 +24,7 @@ export class SignupModal {
 			// signUp redirects to Zitadel, so we won't reach here normally
 		} catch (err) {
 			this.logger.error('Signup failed', { error: err })
-			this.signUpError =
-				'アカウント作成に失敗しました。もう一度お試しください。'
+			this.signUpError = this.i18n.tr('signup.error')
 			this.isSigningUp = false
 		}
 	}

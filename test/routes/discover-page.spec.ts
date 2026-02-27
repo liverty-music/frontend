@@ -166,7 +166,7 @@ describe('DiscoverPage', () => {
 
 			expect(mockDiscovery.followArtist).toHaveBeenCalled()
 			expect(mockToast.show).toHaveBeenCalledWith(
-				expect.stringContaining('upcoming live events'),
+				expect.stringContaining('discover.hasUpcomingEvents'),
 			)
 		})
 

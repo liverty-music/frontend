@@ -1,5 +1,9 @@
+import { I18nConfiguration } from '@aurelia/i18n'
 import { RouterConfiguration } from '@aurelia/router'
+import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
+import en from './locales/en/translation.json'
+import ja from './locales/ja/translation.json'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { IToastService } from './components/toast-notification/toast-notification'
 import { AuthHook } from './hooks/auth-hook'
@@ -39,6 +43,26 @@ Aurelia
     sharedStyles: [shared]
   }))
   */
+	.register(
+		I18nConfiguration.customize((options) => {
+			options.initOptions = {
+				resources: {
+					ja: { translation: ja },
+					en: { translation: en },
+				},
+				fallbackLng: 'ja',
+				supportedLngs: ['ja', 'en'],
+				interpolation: { escapeValue: false },
+				detection: {
+					order: ['querystring', 'localStorage', 'navigator'],
+					lookupQuerystring: 'lang',
+					lookupLocalStorage: 'language',
+					caches: [],
+				},
+				plugins: [i18nextBrowserLanguageDetector],
+			}
+		}),
+	)
 	.register(
 		RouterConfiguration.customize({
 			restorePreviousRouteTreeOnError: !import.meta.env.DEV,

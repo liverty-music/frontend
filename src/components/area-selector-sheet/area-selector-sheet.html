@@ -1,6 +1,6 @@
 <dialog
   ref="dialogElement"
-  aria-label="Change My Area"
+  t="[aria-label]areaSelector.title"
   click.trigger="handleBackdropClick($event)"
   cancel.trigger="handleCancel($event)"
   class="area-selector-sheet"
@@ -14,20 +14,16 @@
     <div class="px-6 pb-8">
       <!-- Step 1: Region selection -->
       <template if.bind="!selectedRegion">
-        <h2 class="font-display text-xl font-bold text-text-primary mb-2">
-          Change My Area
-        </h2>
-        <p class="text-text-secondary text-sm mb-6">
-          Select a region to find prefectures near you.
-        </p>
+        <h2 t="areaSelector.title" class="font-display text-xl font-bold text-text-primary mb-2"></h2>
+        <p t="areaSelector.description" class="text-text-secondary text-sm mb-6"></p>
 
         <div class="grid grid-cols-3 gap-2">
           <button
-            repeat.for="region of regions; key.bind: region.name"
+            repeat.for="region of regions; key.bind: region.key"
             click.trigger="selectRegion(region)"
             class="py-3 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
           >
-            ${region.name}
+            ${trRegion(region.key)}
           </button>
         </div>
       </template>
@@ -45,20 +41,18 @@
             </svg>
           </button>
           <h2 class="font-display text-xl font-bold text-text-primary">
-            ${selectedRegion.name}
+            ${trRegion(selectedRegion.key)}
           </h2>
         </div>
-        <p class="text-text-secondary text-sm mb-6">
-          Select your prefecture.
-        </p>
+        <p t="areaSelector.selectPrefecture" class="text-text-secondary text-sm mb-6"></p>
 
         <div class="grid grid-cols-3 gap-2">
           <button
-            repeat.for="pref of selectedRegion.prefectures; key.bind: pref"
-            click.trigger="selectPrefecture(pref)"
+            repeat.for="prefKey of selectedRegion.prefectureKeys; key.bind: prefKey"
+            click.trigger="selectPrefecture(prefKey)"
             class="py-3 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
           >
-            ${pref}
+            ${trPrefecture(prefKey)}
           </button>
         </div>
       </template>

@@ -1,7 +1,9 @@
-import { DI, LoggerConfiguration, LogLevel } from 'aurelia'
+import { DI, LoggerConfiguration, LogLevel, Registration } from 'aurelia'
+import { I18N } from '@aurelia/i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AreaSelectorSheet } from '../../src/components/area-selector-sheet/area-selector-sheet'
 import { StorageKeys } from '../../src/constants/storage-keys'
+import { createMockI18n } from '../helpers/mock-i18n'
 
 describe('AreaSelectorSheet', () => {
 	let sut: AreaSelectorSheet
@@ -10,6 +12,7 @@ describe('AreaSelectorSheet', () => {
 		localStorage.clear()
 		const container = DI.createContainer()
 		container.register(LoggerConfiguration.create({ level: LogLevel.none }))
+		container.register(Registration.instance(I18N, createMockI18n()))
 		container.register(AreaSelectorSheet)
 		sut = container.get(AreaSelectorSheet)
 	})
@@ -40,7 +43,7 @@ describe('AreaSelectorSheet', () => {
 			const kanto = sut.regions[2]
 			sut.selectRegion(kanto)
 			expect(sut.selectedRegion).toBe(kanto)
-			expect(sut.selectedRegion?.name).toBe('関東')
+			expect(sut.selectedRegion?.key).toBe('kanto')
 		})
 
 		it('should go back to regions list', () => {
@@ -51,20 +54,20 @@ describe('AreaSelectorSheet', () => {
 	})
 
 	describe('prefecture selection', () => {
-		it('should save prefecture to localStorage and close', () => {
+		it('should save prefecture key to localStorage and close', () => {
 			sut.open()
-			sut.selectPrefecture('東京')
+			sut.selectPrefecture('tokyo')
 
-			expect(localStorage.getItem(StorageKeys.userAdminArea)).toBe('東京')
+			expect(localStorage.getItem(StorageKeys.userAdminArea)).toBe('tokyo')
 			expect(sut.isOpen).toBe(false)
 		})
 
-		it('should invoke onAreaSelected callback', () => {
+		it('should invoke onAreaSelected callback with prefecture key', () => {
 			const callback = vi.fn()
 			sut.onAreaSelected = callback
-			sut.selectPrefecture('大阪')
+			sut.selectPrefecture('osaka')
 
-			expect(callback).toHaveBeenCalledWith('大阪')
+			expect(callback).toHaveBeenCalledWith('osaka')
 		})
 	})
 
@@ -74,8 +77,8 @@ describe('AreaSelectorSheet', () => {
 		})
 
 		it('should return stored area', () => {
-			localStorage.setItem(StorageKeys.userAdminArea, '愛知')
-			expect(AreaSelectorSheet.getStoredArea()).toBe('愛知')
+			localStorage.setItem(StorageKeys.userAdminArea, 'aichi')
+			expect(AreaSelectorSheet.getStoredArea()).toBe('aichi')
 		})
 	})
 
@@ -86,7 +89,7 @@ describe('AreaSelectorSheet', () => {
 
 		it('should cover all 47 prefectures', () => {
 			const total = sut.regions.reduce(
-				(sum, r) => sum + r.prefectures.length,
+				(sum, r) => sum + r.prefectureKeys.length,
 				0,
 			)
 			expect(total).toBe(47)

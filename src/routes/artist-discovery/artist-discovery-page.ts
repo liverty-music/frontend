@@ -1,4 +1,5 @@
 import { IRouter } from '@aurelia/router'
+import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { IToastService } from '../../components/toast-notification/toast-notification'
@@ -27,6 +28,7 @@ export class ArtistDiscoveryPage {
 	private readonly toastService = resolve(IToastService)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('ArtistDiscoveryPage')
+	public readonly i18n = resolve(I18N)
 
 	public dnaOrbCanvas!: DnaOrbCanvas
 
@@ -69,10 +71,7 @@ export class ArtistDiscoveryPage {
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', { error: err })
 			this.loadFailed = true
-			this.toastService.show(
-				'Failed to load artists. Tap retry to try again.',
-				'error',
-			)
+			this.toastService.show(this.i18n.tr('discovery.loadFailed'), 'error')
 		}
 	}
 
@@ -83,10 +82,7 @@ export class ArtistDiscoveryPage {
 		} catch (err) {
 			this.logger.error('Retry failed to load initial artists', { error: err })
 			this.loadFailed = true
-			this.toastService.show(
-				'Still unable to load artists. Please try again later.',
-				'error',
-			)
+			this.toastService.show(this.i18n.tr('discovery.retryFailed'), 'error')
 		}
 	}
 
@@ -131,7 +127,7 @@ export class ArtistDiscoveryPage {
 				error: err,
 			})
 			this.toastService.show(
-				`Failed to follow ${artist.name}. Please try again.`,
+				this.i18n.tr('discovery.followFailed', { name: artist.name }),
 				'error',
 			)
 			return
@@ -143,7 +139,9 @@ export class ArtistDiscoveryPage {
 					artist.name,
 				)
 				if (hasEvents) {
-					this.toastService.show(`${artist.name} has upcoming live events!`)
+					this.toastService.show(
+						this.i18n.tr('discovery.hasUpcomingEvents', { name: artist.name }),
+					)
 				}
 			} catch (err) {
 				this.logger.warn('Failed to check live events', err)
@@ -167,7 +165,7 @@ export class ArtistDiscoveryPage {
 			error: event.detail.error,
 		})
 		this.toastService.show(
-			`Couldn't find similar artists for ${artistName}`,
+			this.i18n.tr('discovery.similarArtistsError', { name: artistName }),
 			'warning',
 		)
 	}
