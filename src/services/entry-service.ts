@@ -22,15 +22,13 @@ export class EntryServiceClient {
 
 	public async getMerklePath(
 		eventId: string,
-		userId: string,
 		signal?: AbortSignal,
 	): Promise<GetMerklePathResponse> {
-		this.logger.info('Fetching Merkle path', { eventId, userId })
+		this.logger.info('Fetching Merkle path', { eventId })
 		try {
 			const response = await this.entryClient.getMerklePath(
 				{
 					eventId: { value: eventId },
-					userId: { value: userId },
 				},
 				{ signal },
 			)
