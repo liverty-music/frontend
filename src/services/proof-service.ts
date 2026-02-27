@@ -40,10 +40,7 @@ export class ProofServiceClient {
 
 		onProgress?.('Fetching Merkle path...')
 
-		const merklePath = await this.entryService.getMerklePath(
-			eventId,
-			signal,
-		)
+		const merklePath = await this.entryService.getMerklePath(eventId, signal)
 
 		const pathElements = merklePath.pathElements.map((bytes) =>
 			bytesToDecimal(bytes),
