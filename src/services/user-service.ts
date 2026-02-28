@@ -1,5 +1,5 @@
-import { UserService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/user/v1/user_service_connect.js'
 import type { User } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
+import { UserService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/user/v1/user_service_connect.js'
 import { createClient, type PromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './auth-service'

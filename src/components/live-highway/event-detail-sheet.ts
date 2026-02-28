@@ -1,9 +1,9 @@
 import { bindable, INode, resolve } from 'aurelia'
+import { displayName } from '../../constants/iso3166'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
-import { displayName } from '../../constants/iso3166'
 import { artistColor } from './color-generator'
 import type { LiveEvent } from './live-event'
 

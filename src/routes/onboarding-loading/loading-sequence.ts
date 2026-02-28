@@ -1,5 +1,5 @@
-import { IRouter, type NavigationInstruction } from '@aurelia/router'
 import { I18N } from '@aurelia/i18n'
+import { IRouter, type NavigationInstruction } from '@aurelia/router'
 import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
 import { IToastService } from '../../components/toast-notification/toast-notification'
 import { IArtistDiscoveryService } from '../../services/artist-discovery-service'

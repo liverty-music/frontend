@@ -1,5 +1,5 @@
-import { IRouter } from '@aurelia/router'
 import { I18N } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import type { DateGroup } from '../components/live-highway/live-event'
 import { RegionSetupSheet } from '../components/region-setup-sheet/region-setup-sheet'

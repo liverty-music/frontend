@@ -1,11 +1,11 @@
 import { I18N } from '@aurelia/i18n'
 import { bindable, ILogger, resolve } from 'aurelia'
-import { StorageKeys } from '../../constants/storage-keys'
 import {
-	type RegionGroup,
-	REGION_GROUPS,
 	codeToHome,
+	REGION_GROUPS,
+	type RegionGroup,
 } from '../../constants/iso3166'
+import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { IUserService } from '../../services/user-service'
 
