@@ -1,10 +1,10 @@
+import { I18N } from '@aurelia/i18n'
 import type {
 	IRouteViewModel,
 	NavigationInstruction,
 	Params,
 	RouteNode,
 } from '@aurelia/router'
-import { I18N } from '@aurelia/i18n'
 import { type ILifecycleHooks, lifecycleHooks, resolve } from 'aurelia'
 import { IToastService } from '../components/toast-notification/toast-notification'
 import { IAuthService } from '../services/auth-service'

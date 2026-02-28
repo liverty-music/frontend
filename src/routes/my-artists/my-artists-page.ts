@@ -1,5 +1,5 @@
-import { IRouter } from '@aurelia/router'
 import { I18N } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import {
 	ArtistId,
 	PassionLevel,

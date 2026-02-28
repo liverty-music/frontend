@@ -1,9 +1,9 @@
+import { I18N } from '@aurelia/i18n'
 import {
 	IRouter,
 	type IRouteViewModel,
 	type NavigationInstruction,
 } from '@aurelia/router'
-import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve } from 'aurelia'
 import { IToastService } from './components/toast-notification/toast-notification'
 import { IAuthService } from './services/auth-service'

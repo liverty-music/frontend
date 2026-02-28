@@ -1,4 +1,5 @@
 import { bindable, INode, resolve } from 'aurelia'
+import { displayName } from '../../constants/iso3166'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -29,8 +30,9 @@ export class EventDetailSheet {
 
 	public get googleMapsUrl(): string {
 		if (!this.event) return '#'
-		const query = this.event.adminArea
-			? `${this.event.venueName} ${this.event.adminArea}`
+		const area = this.event.adminArea ? displayName(this.event.adminArea) : ''
+		const query = area
+			? `${this.event.venueName} ${area}`
 			: this.event.venueName
 		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
 	}

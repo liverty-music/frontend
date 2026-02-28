@@ -1,5 +1,5 @@
-import { IRouter } from '@aurelia/router'
 import { I18N } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { IToastService } from '../../components/toast-notification/toast-notification'

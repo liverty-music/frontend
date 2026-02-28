@@ -1,17 +1,20 @@
-import { I18N } from '@aurelia/i18n'
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IArtistServiceClient } from '../../src/services/artist-service-client'
+import { IAuthService } from '../../src/services/auth-service'
 import { IConcertService } from '../../src/services/concert-service'
 import {
 	DashboardService,
 	IDashboardService,
 } from '../../src/services/dashboard-service'
+import { IUserService } from '../../src/services/user-service'
 import { createTestContainer } from '../helpers/create-container'
 import {
 	createMockArtistServiceClient,
+	createMockAuthService,
 	createMockConcertService,
+	createMockUserService,
 } from '../helpers/mock-rpc-clients'
 
 // Helpers to build mock Concert objects with the new VO proto structure.
@@ -37,7 +40,9 @@ describe('DashboardService', () => {
 
 		container = createTestContainer(
 			Registration.instance(IArtistServiceClient, mockArtistService),
+			Registration.instance(IAuthService, createMockAuthService()),
 			Registration.instance(IConcertService, mockConcertService),
+			Registration.instance(IUserService, createMockUserService()),
 		)
 		container.register(DashboardService)
 		sut = container.get(IDashboardService)
@@ -62,7 +67,7 @@ describe('DashboardService', () => {
 			{ id: 'artist-2', name: 'Artist Two', passionLevel: 0 },
 		])
 
-		// Concerts have no adminArea — they land in 'other' lane (no userRegion set)
+		// Concerts have no adminArea — they land in 'away' lane (no userHome set)
 		const concert1: Partial<Concert> = {
 			id: { value: 'concert-1' },
 			artistId: { value: 'artist-1' },
@@ -101,19 +106,19 @@ describe('DashboardService', () => {
 		// Assert
 		expect(result).toHaveLength(2)
 
-		// First date group (2026-03-15) — events go to 'other' (no adminArea, no userRegion)
+		// First date group (2026-03-15) — events go to 'away' (no adminArea, no userHome)
 		expect(result[0].dateKey).toBe('2026-03-15')
-		expect(result[0].other).toHaveLength(2)
-		expect(result[0].other[0].artistName).toBe('Artist One')
-		expect(result[0].other[0].title).toBe('Concert 1')
-		expect(result[0].other[1].artistName).toBe('Artist Two')
-		expect(result[0].other[1].title).toBe('Concert 2')
+		expect(result[0].away).toHaveLength(2)
+		expect(result[0].away[0].artistName).toBe('Artist One')
+		expect(result[0].away[0].title).toBe('Concert 1')
+		expect(result[0].away[1].artistName).toBe('Artist Two')
+		expect(result[0].away[1].title).toBe('Concert 2')
 
 		// Second date group (2026-04-10)
 		expect(result[1].dateKey).toBe('2026-04-10')
-		expect(result[1].other).toHaveLength(1)
-		expect(result[1].other[0].artistName).toBe('Artist One')
-		expect(result[1].other[0].title).toBe('Concert 3')
+		expect(result[1].away).toHaveLength(1)
+		expect(result[1].away[0].artistName).toBe('Artist One')
+		expect(result[1].away[0].title).toBe('Concert 3')
 	})
 
 	it('should handle listByFollower RPC failure gracefully', async () => {
@@ -156,7 +161,7 @@ describe('DashboardService', () => {
 		const result = await sut.loadDashboardEvents()
 
 		// Assert - time should match UTC hours/minutes from epoch
-		const event = result[0].other[0]
+		const event = result[0].away[0]
 		// Verify it's an HH:MM string (exact value depends on test runner timezone)
 		expect(event.startTime).toMatch(/^\d{2}:\d{2}$/)
 		expect(event.openTime).toMatch(/^\d{2}:\d{2}$/)
@@ -193,8 +198,8 @@ describe('DashboardService', () => {
 
 		// Assert - only concert with localDate should be included
 		expect(result).toHaveLength(1)
-		expect(result[0].other).toHaveLength(1)
-		expect(result[0].other[0].title).toBe('Good Concert')
+		expect(result[0].away).toHaveLength(1)
+		expect(result[0].away[0].title).toBe('Good Concert')
 	})
 
 	it('should sort events chronologically within load', async () => {
@@ -232,18 +237,9 @@ describe('DashboardService', () => {
 		expect(result[1].dateKey).toBe('2026-06-01')
 	})
 
-	it('should assign events to main lane when adminArea matches user region', async () => {
-		// Arrange — set user region in localStorage (romanized key)
-		localStorage.setItem('user.adminArea', 'tokyo')
-
-		// Mock i18n.tr to resolve prefecture key to Japanese name
-		const mockI18n = container.get(I18N)
-		;(mockI18n.tr as ReturnType<typeof vi.fn>).mockImplementation(
-			(key: string) => {
-				if (key === 'region.prefectures.tokyo') return '東京'
-				return key
-			},
-		)
+	it('should assign events to home lane when adminArea matches user home', async () => {
+		// Arrange — set user home in localStorage (ISO 3166-2 code)
+		localStorage.setItem('guest.home', 'JP-13')
 
 		mockArtistService.listFollowed = vi
 			.fn()
@@ -256,7 +252,7 @@ describe('DashboardService', () => {
 			localDate: makeDate(2026, 5, 1),
 			venue: {
 				name: { value: 'Zepp DiverCity' },
-				adminArea: { value: '東京都' },
+				adminArea: { value: 'JP-13' },
 			},
 			sourceUrl: { value: 'https://example.com/1' },
 		}
@@ -268,7 +264,7 @@ describe('DashboardService', () => {
 			localDate: makeDate(2026, 5, 1),
 			venue: {
 				name: { value: 'Zepp Namba' },
-				adminArea: { value: '大阪府' },
+				adminArea: { value: 'JP-27' },
 			},
 			sourceUrl: { value: 'https://example.com/2' },
 		}
@@ -290,11 +286,11 @@ describe('DashboardService', () => {
 
 		// Assert
 		expect(result).toHaveLength(1)
-		expect(result[0].main).toHaveLength(1)
-		expect(result[0].main[0].title).toBe('Tokyo Concert')
-		expect(result[0].region).toHaveLength(1)
-		expect(result[0].region[0].title).toBe('Osaka Concert')
-		expect(result[0].other).toHaveLength(1)
-		expect(result[0].other[0].title).toBe('Unknown Concert')
+		expect(result[0].home).toHaveLength(1)
+		expect(result[0].home[0].title).toBe('Tokyo Concert')
+		expect(result[0].nearby).toHaveLength(1)
+		expect(result[0].nearby[0].title).toBe('Osaka Concert')
+		expect(result[0].away).toHaveLength(1)
+		expect(result[0].away[0].title).toBe('Unknown Concert')
 	})
 })

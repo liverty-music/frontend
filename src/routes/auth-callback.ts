@@ -2,6 +2,8 @@ import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
+import { codeToHome } from '../constants/iso3166'
+import { StorageKeys } from '../constants/storage-keys'
 import { IAuthService } from '../services/auth-service'
 import { IGuestDataMergeService } from '../services/guest-data-merge-service'
 import {
@@ -77,7 +79,9 @@ export class AuthCallback {
 		}
 	}
 
-	// Call Create RPC with ALREADY_EXISTS handling
+	// Call Create RPC with ALREADY_EXISTS handling.
+	// If the guest selected a home during onboarding, include it in the
+	// CreateRequest so it is persisted atomically with account creation.
 	private async provisionUser(email: string | undefined): Promise<void> {
 		if (!email) {
 			this.logger.error('User email is missing, cannot provision user')
@@ -85,8 +89,10 @@ export class AuthCallback {
 		}
 
 		try {
+			const guestHome = localStorage.getItem(StorageKeys.guestHome)
 			await this.userService.client.create({
 				email: new UserEmail({ value: email }),
+				...(guestHome ? { home: codeToHome(guestHome) } : {}),
 			})
 			this.logger.info('User provisioned successfully', { email })
 		} catch (err) {
