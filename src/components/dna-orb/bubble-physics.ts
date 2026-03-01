@@ -185,12 +185,18 @@ export class BubblePhysics {
 
 	public fadeOutBubbles(artistIds: string[]): Promise<void> {
 		if (artistIds.length === 0) return Promise.resolve()
+		// Only track IDs that actually exist in the physics engine
+		const validIds: string[] = []
 		for (const id of artistIds) {
-			this.fadeOutBubble(id)
+			if (this.bubbleMap.has(id)) {
+				this.fadeOutBubble(id)
+				validIds.push(id)
+			}
 		}
+		if (validIds.length === 0) return Promise.resolve()
 		return new Promise<void>((resolve) => {
 			this.fadeOutResolve = resolve
-			this.fadeOutPendingIds = new Set(artistIds)
+			this.fadeOutPendingIds = new Set(validIds)
 		})
 	}
 

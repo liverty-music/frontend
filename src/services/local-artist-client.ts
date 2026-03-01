@@ -1,4 +1,4 @@
-import { DI, ILogger, resolve } from 'aurelia'
+import { DI, ILogger, observable, resolve } from 'aurelia'
 import { StorageKeys } from '../constants/storage-keys'
 
 export interface LocalFollowedArtist {
@@ -16,6 +16,12 @@ export interface ILocalArtistClient extends LocalArtistClient {}
 
 export class LocalArtistClient {
 	private readonly logger = resolve(ILogger).scopeTo('LocalArtistClient')
+
+	@observable public followedCount = 0
+
+	constructor() {
+		this.followedCount = this.listFollowed().length
+	}
 
 	/**
 	 * List all locally followed artists.
@@ -47,6 +53,7 @@ export class LocalArtistClient {
 			StorageKeys.guestFollowedArtists,
 			JSON.stringify(artists),
 		)
+		this.followedCount = artists.length
 		this.logger.info('Local artist followed', {
 			id,
 			name,
@@ -68,6 +75,7 @@ export class LocalArtistClient {
 			StorageKeys.guestFollowedArtists,
 			JSON.stringify(filtered),
 		)
+		this.followedCount = filtered.length
 		this.logger.info('Local artist unfollowed', { id })
 	}
 
@@ -110,13 +118,6 @@ export class LocalArtistClient {
 	}
 
 	/**
-	 * Get the count of locally followed artists.
-	 */
-	public get followedCount(): number {
-		return this.listFollowed().length
-	}
-
-	/**
 	 * Clear all guest/local data from LocalStorage.
 	 */
 	public clearAll(): void {
@@ -130,6 +131,7 @@ export class LocalArtistClient {
 		for (const key of keysToRemove) {
 			localStorage.removeItem(key)
 		}
+		this.followedCount = 0
 		this.logger.info('Local data cleared', { keysRemoved: keysToRemove.length })
 	}
 }

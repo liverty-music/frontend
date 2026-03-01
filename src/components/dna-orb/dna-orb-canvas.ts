@@ -232,21 +232,46 @@ export class DnaOrbCanvas {
 			}),
 		)
 
-		// Step 4: Fetch similar artists and add to pool (evict oldest first)
+		// Fetch similar artists and spawn replacements
 		try {
-			const similar = await this.discoveryService.getSimilarArtists(
+			let newBubbles = await this.discoveryService.getSimilarArtists(
 				artist.name,
 				artist.id,
 			)
-			if (similar.length > 0) {
-				// addToPool handles eviction internally, returns evicted IDs
-				const evictedIds = this.discoveryService.addToPool(similar)
-				if (evictedIds.length > 0) {
-					await this.physics.fadeOutBubbles(evictedIds)
+			if (newBubbles.length === 0) {
+				// Similar artists exhausted — fall back to top-artist pool
+				newBubbles = await this.discoveryService.loadReplacementBubbles()
+			}
+
+			if (newBubbles.length > 0) {
+				// Use physics bubble count (not service availableBubbles.length)
+				// to avoid state divergence that causes the fade-out promise to hang
+				const maxBubbles = this.discoveryService.maxBubbles
+				const currentPhysics = this.physics.bubbleCount
+				const spawnSlots = Math.max(0, maxBubbles - currentPhysics)
+
+				// Evict oldest physics bubbles if we need more room than available
+				if (newBubbles.length > spawnSlots) {
+					const evictCount = Math.min(
+						newBubbles.length - spawnSlots,
+						currentPhysics,
+					)
+					if (evictCount > 0) {
+						const evicted = this.discoveryService.evictOldest(evictCount)
+						const evictedIds = evicted.map((b) => b.id)
+						await this.physics.fadeOutBubbles(evictedIds)
+					}
 				}
-				this.physics.spawnBubblesAt(similar, pos.x, pos.y)
-				this.preloadImages(similar)
+
+				// Only spawn up to the cap
+				const finalSlots = Math.max(0, maxBubbles - this.physics.bubbleCount)
+				const toSpawn = newBubbles.slice(0, finalSlots)
+				if (toSpawn.length > 0) {
+					this.physics.spawnBubblesAt(toSpawn, pos.x, pos.y)
+					this.preloadImages(toSpawn)
+				}
 			} else {
+				// Both similar and replacement pools exhausted
 				this.element.dispatchEvent(
 					new CustomEvent('similar-artists-unavailable', {
 						bubbles: true,
