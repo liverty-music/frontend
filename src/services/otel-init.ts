@@ -11,8 +11,9 @@ import {
 	ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions'
 
-const OTEL_EXPORTER_URL =
-	import.meta.env.VITE_OTEL_EXPORTER_URL ?? 'http://localhost:4318/v1/traces'
+const OTEL_EXPORTER_URL = import.meta.env.VITE_OTEL_EXPORTER_URL as
+	| string
+	| undefined
 
 const API_BASE_URL =
 	import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
@@ -20,6 +21,9 @@ const API_BASE_URL =
 /**
  * Initialize OpenTelemetry browser SDK with OTLP/HTTP exporter
  * and automatic fetch instrumentation for traceparent propagation.
+ *
+ * When VITE_OTEL_EXPORTER_URL is not set, trace export is disabled
+ * to avoid CSP violations from the localhost fallback.
  */
 export function initOtel(): WebTracerProvider {
 	const resource = resourceFromAttributes({
@@ -27,13 +31,17 @@ export function initOtel(): WebTracerProvider {
 		[ATTR_SERVICE_VERSION]: '0.1.0',
 	})
 
-	const exporter = new OTLPTraceExporter({
-		url: OTEL_EXPORTER_URL,
-	})
+	const spanProcessors: BatchSpanProcessor[] = []
+	if (OTEL_EXPORTER_URL) {
+		const exporter = new OTLPTraceExporter({
+			url: OTEL_EXPORTER_URL,
+		})
+		spanProcessors.push(new BatchSpanProcessor(exporter))
+	}
 
 	const provider = new WebTracerProvider({
 		resource,
-		spanProcessors: [new BatchSpanProcessor(exporter)],
+		spanProcessors,
 	})
 
 	provider.register()
