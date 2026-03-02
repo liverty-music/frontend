@@ -53,6 +53,7 @@ export class DnaOrbCanvas {
 	private imageCache = new Map<string, HTMLImageElement>()
 	private focusedBubbleIndex = -1
 	private reloadGeneration = 0
+	private isProcessing = false
 
 	// Performance monitoring
 	private frameTimes: number[] = []
@@ -205,88 +206,94 @@ export class DnaOrbCanvas {
 	}
 
 	private async handleInteraction(x: number, y: number): Promise<void> {
-		const bubble = this.physics.getBubbleAt(x, y)
-		if (!bubble) return
-
-		const pos = bubble.body.position
-		const artist = bubble.artist
-
-		// Remove from physics and start absorption
-		this.physics.removeBubble(artist.id)
-		this.absorptionAnimator.startAbsorption(
-			artist.id,
-			artist.name,
-			pos.x,
-			pos.y,
-			this.orbRenderer.orbX,
-			this.orbRenderer.orbY,
-			artist.radius,
-			artist.imageUrl,
-		)
-
-		// Notify parent via DOM event
-		this.element.dispatchEvent(
-			new CustomEvent('artist-selected', {
-				bubbles: true,
-				detail: { artist },
-			}),
-		)
-
-		// Fetch similar artists and spawn replacements
+		if (this.isProcessing) return
+		this.isProcessing = true
 		try {
-			let newBubbles = await this.discoveryService.getSimilarArtists(
-				artist.name,
+			const bubble = this.physics.getBubbleAt(x, y)
+			if (!bubble) return
+
+			const pos = bubble.body.position
+			const artist = bubble.artist
+
+			// Remove from physics and start absorption
+			this.physics.removeBubble(artist.id)
+			this.absorptionAnimator.startAbsorption(
 				artist.id,
+				artist.name,
+				pos.x,
+				pos.y,
+				this.orbRenderer.orbX,
+				this.orbRenderer.orbY,
+				artist.radius,
+				artist.imageUrl,
 			)
-			if (newBubbles.length === 0) {
-				// Similar artists exhausted — fall back to top-artist pool
-				newBubbles = await this.discoveryService.loadReplacementBubbles()
-			}
 
-			if (newBubbles.length > 0) {
-				// Use physics bubble count (not service availableBubbles.length)
-				// to avoid state divergence that causes the fade-out promise to hang
-				const maxBubbles = this.discoveryService.maxBubbles
-				const currentPhysics = this.physics.bubbleCount
-				const spawnSlots = Math.max(0, maxBubbles - currentPhysics)
+			// Notify parent via DOM event
+			this.element.dispatchEvent(
+				new CustomEvent('artist-selected', {
+					bubbles: true,
+					detail: { artist },
+				}),
+			)
 
-				// Evict oldest physics bubbles if we need more room than available
-				if (newBubbles.length > spawnSlots) {
-					const evictCount = Math.min(
-						newBubbles.length - spawnSlots,
-						currentPhysics,
-					)
-					if (evictCount > 0) {
-						const evicted = this.discoveryService.evictOldest(evictCount)
-						const evictedIds = evicted.map((b) => b.id)
-						await this.physics.fadeOutBubbles(evictedIds)
+			// Fetch similar artists and spawn replacements
+			try {
+				let newBubbles = await this.discoveryService.getSimilarArtists(
+					artist.name,
+					artist.id,
+				)
+				if (newBubbles.length === 0) {
+					// Similar artists exhausted — fall back to top-artist pool
+					newBubbles = await this.discoveryService.loadReplacementBubbles()
+				}
+
+				if (newBubbles.length > 0) {
+					// Use physics bubble count (not service availableBubbles.length)
+					// to avoid state divergence that causes the fade-out promise to hang
+					const maxBubbles = this.discoveryService.maxBubbles
+					const currentPhysics = this.physics.bubbleCount
+					const spawnSlots = Math.max(0, maxBubbles - currentPhysics)
+
+					// Evict oldest physics bubbles if we need more room than available
+					if (newBubbles.length > spawnSlots) {
+						const evictCount = Math.min(
+							newBubbles.length - spawnSlots,
+							currentPhysics,
+						)
+						if (evictCount > 0) {
+							const evicted = this.discoveryService.evictOldest(evictCount)
+							const evictedIds = evicted.map((b) => b.id)
+							await this.physics.fadeOutBubbles(evictedIds)
+						}
 					}
-				}
 
-				// Only spawn up to the cap
-				const finalSlots = Math.max(0, maxBubbles - this.physics.bubbleCount)
-				const toSpawn = newBubbles.slice(0, finalSlots)
-				if (toSpawn.length > 0) {
-					this.physics.spawnBubblesAt(toSpawn, pos.x, pos.y)
-					this.preloadImages(toSpawn)
+					// Only spawn up to the cap
+					const finalSlots = Math.max(0, maxBubbles - this.physics.bubbleCount)
+					const toSpawn = newBubbles.slice(0, finalSlots)
+					if (toSpawn.length > 0) {
+						this.physics.spawnBubblesAt(toSpawn, pos.x, pos.y)
+						this.preloadImages(toSpawn)
+					}
+				} else {
+					// Both similar and replacement pools exhausted
+					this.element.dispatchEvent(
+						new CustomEvent('similar-artists-unavailable', {
+							bubbles: true,
+							detail: { artistName: artist.name },
+						}),
+					)
 				}
-			} else {
-				// Both similar and replacement pools exhausted
+			} catch (err) {
+				this.logger.warn('Failed to load similar artists', err)
 				this.element.dispatchEvent(
-					new CustomEvent('similar-artists-unavailable', {
+					new CustomEvent('similar-artists-error', {
 						bubbles: true,
-						detail: { artistName: artist.name },
+						detail: { artistName: artist.name, error: err },
 					}),
 				)
 			}
-		} catch (err) {
-			this.logger.warn('Failed to load similar artists', err)
-			this.element.dispatchEvent(
-				new CustomEvent('similar-artists-error', {
-					bubbles: true,
-					detail: { artistName: artist.name, error: err },
-				}),
-			)
+		} finally {
+			this.isProcessing = false
 		}
 	}
 

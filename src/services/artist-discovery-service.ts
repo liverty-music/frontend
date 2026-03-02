@@ -246,6 +246,9 @@ export class ArtistDiscoveryService {
 	/**
 	 * Load replacement bubbles from top artists when similar artists are exhausted.
 	 * Resets the seen sets (keeping followed + currently available) and fetches fresh.
+	 *
+	 * Returns new bubbles WITHOUT modifying the pool (consistent with getSimilarArtists).
+	 * The caller is responsible for pool management.
 	 */
 	public async loadReplacementBubbles(): Promise<ArtistBubble[]> {
 		this.logger.info('Loading replacement bubbles from top artists')
@@ -262,7 +265,6 @@ export class ArtistDiscoveryService {
 
 		for (const b of fresh) {
 			this.trackSeen(b)
-			this.availableBubbles.push(b)
 		}
 
 		this.logger.info('Replacement bubbles loaded', { count: fresh.length })
