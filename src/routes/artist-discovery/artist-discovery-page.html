@@ -5,22 +5,7 @@
   <div class="container">
     <toast-notification></toast-notification>
 
-    <!-- Tutorial progress bar -->
-    <div if.bind="isOnboarding" class="progress-bar-container">
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill" style="width: ${progressPercent}%"></div>
-      </div>
-      <span class="progress-bar-label">${progressText}</span>
-    </div>
-
-    <!-- Onboarding guidance overlay -->
-    <div
-      if.bind="showGuidance"
-      class="guidance-overlay ${guidanceHiding ? 'hiding' : ''}"
-    >
-      ${$this.i18n?.tr('discovery.guidance') ?? 'Tap bubbles to follow artists'}
-    </div>
-
+    <!-- Canvas paints first (behind overlays) -->
     <dna-orb-canvas
       component.ref="dnaOrbCanvas"
       followed-count.bind="followedCount"
@@ -29,21 +14,39 @@
       similar-artists-error.trigger="onSimilarArtistsError($event)"
     ></dna-orb-canvas>
 
-    <!-- Orb label -->
-    <div class="orb-label">
-      ${$this.i18n?.tr('discovery.orbLabel') ?? 'Music DNA'} ${followedCount > 0 ? '· ' + followedCount : ''}
-    </div>
+    <!-- Overlay layer — paints on top via DOM order, passes pointer events through -->
+    <div class="overlay">
+      <!-- Onboarding guidance + progress (unified cosmic pill) -->
+      <div show.bind="isOnboarding" class="onboarding-hud">
+        <!-- Orbital progress dots -->
+        <div class="progress-dots">
+          <span class="dot ${followedCount >= 1 ? 'filled' : ''}"></span>
+          <span class="dot ${followedCount >= 2 ? 'filled' : ''}"></span>
+          <span class="dot ${followedCount >= 3 ? 'filled' : ''}"></span>
+        </div>
 
-    <div
-      if.bind="showCompleteButton"
-      class="complete-button-wrapper"
-    >
-      <button
-        click.trigger="onViewSchedule()"
-        class="complete-button ${isOnboarding ? 'tutorial-cta' : ''}"
+        <!-- Guidance message -->
+        <p class="hud-message ${guidanceHiding ? 'hiding' : ''}">
+          ${guidanceMessage}
+        </p>
+      </div>
+
+      <!-- Orb label -->
+      <div class="orb-label">
+        ${$this.i18n?.tr('discovery.orbLabel') ?? 'Music DNA'} ${followedCount > 0 ? '· ' + followedCount : ''}
+      </div>
+
+      <div
+        show.bind="showCompleteButton"
+        class="complete-button-wrapper"
       >
-        ${isOnboarding ? $this.i18n?.tr('discovery.generateDashboard') ?? '' : $this.i18n?.tr('discovery.viewSchedule', { count: followedCount }) ?? ''}
-      </button>
+        <button
+          click.trigger="onViewSchedule()"
+          class="complete-button ${isOnboarding ? 'tutorial-cta' : ''}"
+        >
+          ${isOnboarding ? $this.i18n?.tr('discovery.generateDashboard') ?? '' : $this.i18n?.tr('discovery.viewSchedule', { count: followedCount }) ?? ''}
+        </button>
+      </div>
     </div>
 
     <div

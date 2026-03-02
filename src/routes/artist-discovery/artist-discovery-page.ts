@@ -34,7 +34,6 @@ export class ArtistDiscoveryPage {
 
 	public showGuidance = true
 	public guidanceHiding = false
-	private guidanceTimer: number | null = null
 
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
@@ -62,6 +61,16 @@ export class ArtistDiscoveryPage {
 		return Math.min((this.followedCount / TUTORIAL_FOLLOW_TARGET) * 100, 100)
 	}
 
+	public get guidanceMessage(): string {
+		if (!this.isOnboarding) return ''
+		const count = this.followedCount
+		if (count === 0) return '好きなアーティストを3組タップしよう！'
+		const remaining = TUTORIAL_FOLLOW_TARGET - count
+		if (remaining >= 2) return `いいね！あと${remaining}組！`
+		if (remaining === 1) return 'あと1組！'
+		return '準備完了！'
+	}
+
 	public loadFailed = false
 
 	public async loading(): Promise<void> {
@@ -86,17 +95,8 @@ export class ArtistDiscoveryPage {
 		}
 	}
 
-	public attached(): void {
-		this.guidanceTimer = window.setTimeout(() => {
-			this.dismissGuidance()
-		}, 5000)
-	}
-
 	public detaching(): void {
-		if (this.guidanceTimer !== null) {
-			clearTimeout(this.guidanceTimer)
-			this.guidanceTimer = null
-		}
+		// No cleanup needed — guidance is dismissed on first bubble tap
 	}
 
 	private dismissGuidance(): void {

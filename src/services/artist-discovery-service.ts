@@ -50,6 +50,10 @@ export class ArtistDiscoveryService {
 	private readonly seenArtistMbids = new Set<string>()
 	private readonly followedIds = new Set<string>()
 
+	public get maxBubbles(): number {
+		return ArtistDiscoveryService.MAX_BUBBLES
+	}
+
 	/**
 	 * Step 1: Load the initial bubble pool.
 	 *
@@ -237,6 +241,44 @@ export class ArtistDiscoveryService {
 		}
 
 		return evictedIds
+	}
+
+	/**
+	 * Load replacement bubbles from top artists when similar artists are exhausted.
+	 * Resets the seen sets (keeping followed + currently available) and fetches fresh.
+	 *
+	 * Returns new bubbles WITHOUT modifying the pool (consistent with getSimilarArtists).
+	 * The caller is responsible for pool management.
+	 */
+	public async loadReplacementBubbles(): Promise<ArtistBubble[]> {
+		this.logger.info('Loading replacement bubbles from top artists')
+
+		// Reset seen sets, keeping only followed + currently available artists as seen
+		this.clearSeenSets()
+		for (const f of this.followedArtists) this.trackSeen(f)
+		for (const b of this.availableBubbles) this.trackSeen(b)
+
+		const resp = await this.artistClient.listTop({ country: 'Japan', tag: '' })
+		const fresh = resp.artists
+			.map((a) => this.toBubble(a))
+			.filter((b) => !this.isSeen(b))
+
+		for (const b of fresh) {
+			this.trackSeen(b)
+		}
+
+		this.logger.info('Replacement bubbles loaded', { count: fresh.length })
+		return fresh
+	}
+
+	/**
+	 * Evict the oldest N bubbles from the available pool.
+	 * Used by the canvas to make room for new spawns based on physics count.
+	 */
+	public evictOldest(count: number): ArtistBubble[] {
+		if (count <= 0) return []
+		const evicted = this.availableBubbles.splice(0, count)
+		return evicted
 	}
 
 	public async checkLiveEvents(artistName: string): Promise<boolean> {

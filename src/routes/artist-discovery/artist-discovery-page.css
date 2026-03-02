@@ -42,7 +42,6 @@
 		radial-gradient(1px 1px at 65% 5%, rgba(255 255 255 / 30%), transparent),
 		radial-gradient(1px 1px at 5% 45%, rgba(255 255 255 / 20%), transparent);
 	pointer-events: none;
-	z-index: 0;
 	animation: starfield-twinkle 8s ease-in-out infinite alternate;
 }
 
@@ -68,88 +67,155 @@
 	border-width: 0;
 }
 
+/* =========================================
+   Overlay — paints above canvas via DOM order
+   ========================================= */
+
+.overlay {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+/* =========================================
+   Onboarding HUD — unified cosmic pill
+   ========================================= */
+
+.onboarding-hud {
+	position: absolute;
+	top: 2rem;
+	left: 50%;
+	transform: translateX(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75rem;
+	pointer-events: none;
+	animation: hud-enter 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Progress dots — orbital constellation */
+.progress-dots {
+	display: flex;
+	gap: 0.75rem;
+	align-items: center;
+}
+
+.dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: rgba(255 255 255 / 15%);
+	border: 1.5px solid rgba(255 255 255 / 30%);
+	transition: all 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dot.filled {
+	background: rgb(167 139 250);
+	border-color: rgb(196 181 253);
+	box-shadow:
+		0 0 8px rgb(167 139 250 / 60%),
+		0 0 20px rgb(167 139 250 / 30%);
+	transform: scale(1.2);
+}
+
+/* Guidance message — translucent cosmic pill */
+.hud-message {
+	margin: 0;
+	padding: 0.625rem 1.25rem;
+	background: linear-gradient(
+		135deg,
+		rgba(99 102 241 / 20%),
+		rgba(139 92 246 / 15%)
+	);
+	backdrop-filter: blur(12px);
+	border-radius: 9999px;
+	border: 1px solid rgba(167 139 250 / 25%);
+	color: rgba(255 255 255 / 90%);
+	font-family: var(--font-display);
+	font-size: 0.875rem;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	text-align: center;
+	white-space: nowrap;
+	transition:
+		opacity 400ms ease,
+		transform 400ms ease;
+}
+
+.hud-message.hiding {
+	opacity: 0;
+	transform: translateY(-4px);
+}
+
+@keyframes hud-enter {
+	from {
+		opacity: 0;
+		transform: translateX(-50%) translateY(-12px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(-50%) translateY(0);
+	}
+}
+
+/* =========================================
+   Complete button
+   ========================================= */
+
 .complete-button-wrapper {
 	position: absolute;
 	bottom: 2rem;
 	left: 50%;
 	transform: translateX(-50%);
-	z-index: 20;
+	animation: button-enter 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .complete-button {
+	pointer-events: auto;
 	padding: 0.75rem 1.5rem;
-	background-color: rgb(79 70 229);
+	background: linear-gradient(135deg, rgb(99 102 241), rgb(139 92 246));
 	color: white;
 	font-family: var(--font-display);
 	font-weight: 600;
 	border-radius: 9999px;
-	box-shadow: 0 10px 15px -3px rgb(79 70 229 / 30%);
+	box-shadow:
+		0 0 20px rgb(99 102 241 / 30%),
+		0 4px 12px rgb(0 0 0 / 40%);
 	transition:
 		transform 300ms,
-		background-color 300ms;
+		box-shadow 300ms;
 }
 
 .complete-button:hover {
-	background-color: rgb(99 102 241);
 	transform: scale(1.05);
+	box-shadow:
+		0 0 30px rgb(139 92 246 / 50%),
+		0 6px 16px rgb(0 0 0 / 50%);
 }
 
-/* Onboarding guidance overlay */
-.guidance-overlay {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	z-index: 30;
-	padding: 1rem 1.5rem;
-	background: rgba(0 0 0 / 70%);
-	backdrop-filter: blur(8px);
-	border-radius: 1rem;
-	border: 1px solid rgba(255 255 255 / 10%);
-	color: white;
-	font-family: var(--font-display);
-	font-size: 1rem;
-	font-weight: 500;
-	text-align: center;
-	pointer-events: none;
-	animation: guidance-fade 600ms ease-out both;
-}
-
-.guidance-overlay.hiding {
-	animation: guidance-fade-out 400ms ease-in both;
-}
-
-@keyframes guidance-fade {
+@keyframes button-enter {
 	from {
 		opacity: 0;
-		transform: translate(-50%, -50%) scale(0.9);
+		transform: translateX(-50%) translateY(16px);
 	}
 
 	to {
 		opacity: 1;
-		transform: translate(-50%, -50%) scale(1);
+		transform: translateX(-50%) translateY(0);
 	}
 }
 
-@keyframes guidance-fade-out {
-	from {
-		opacity: 1;
-		transform: translate(-50%, -50%) scale(1);
-	}
+/* =========================================
+   Orb label
+   ========================================= */
 
-	to {
-		opacity: 0;
-		transform: translate(-50%, -50%) scale(0.9);
-	}
-}
-
-/* Orb label */
 .orb-label {
 	position: absolute;
 	bottom: 10rem;
 	left: 50%;
 	transform: translateX(-50%);
-	z-index: 15;
 	color: rgba(255 255 255 / 60%);
 	font-family: var(--font-display);
 	font-size: 0.75rem;

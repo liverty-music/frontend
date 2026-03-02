@@ -158,14 +158,26 @@ describe('ArtistDiscoveryPage', () => {
 		})
 	})
 
-	describe('guidance auto-dismiss', () => {
-		it('should dismiss guidance after 5s + 400ms fade', async () => {
-			sut.attached()
-
+	describe('guidance dismiss on tap', () => {
+		it('should dismiss guidance after first artist tap + 400ms fade', async () => {
 			expect(sut.showGuidance).toBe(true)
 
-			// After 5s the dismissGuidance triggers
-			await vi.advanceTimersByTimeAsync(5000)
+			const artist = {
+				id: 'g1',
+				name: 'Guidance Artist',
+				mbid: '',
+				imageUrl: '',
+				x: 0,
+				y: 0,
+				radius: 30,
+			}
+			const event = new CustomEvent('artist-selected', {
+				detail: { artist },
+			})
+
+			await sut.onArtistSelected(event)
+
+			// Guidance should be fading
 			expect(sut.guidanceHiding).toBe(true)
 
 			// After 400ms fade, guidance is fully hidden
