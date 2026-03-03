@@ -135,9 +135,7 @@ export class ArtistDiscoveryPage {
 
 		if (!this.isOnboarding) {
 			try {
-				const hasEvents = await this.discoveryService.checkLiveEvents(
-					artist.name,
-				)
+				const hasEvents = await this.discoveryService.checkLiveEvents(artist.id)
 				if (hasEvents) {
 					this.toastService.show(
 						this.i18n.tr('discovery.hasUpcomingEvents', { name: artist.name }),

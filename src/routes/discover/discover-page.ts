@@ -189,7 +189,7 @@ export class DiscoverPage {
 		if (this.abortController.signal.aborted) return
 
 		try {
-			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
+			const hasEvents = await this.discoveryService.checkLiveEvents(artist.id)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
 				this.toastService.show(
@@ -224,7 +224,7 @@ export class DiscoverPage {
 		if (this.abortController.signal.aborted) return
 
 		try {
-			const hasEvents = await this.discoveryService.checkLiveEvents(artist.name)
+			const hasEvents = await this.discoveryService.checkLiveEvents(artist.id)
 			if (this.abortController.signal.aborted) return
 			if (hasEvents) {
 				this.toastService.show(
