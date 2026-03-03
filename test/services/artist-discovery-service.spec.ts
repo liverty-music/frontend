@@ -47,6 +47,11 @@ vi.mock('../../src/components/toast-notification/toast-notification', () => ({
 	IToastService: mockIToastService,
 }))
 
+const mockIConcertService = DI.createInterface('IConcertService')
+vi.mock('../../src/services/concert-service', () => ({
+	IConcertService: mockIConcertService,
+}))
+
 const { ArtistDiscoveryService, IArtistDiscoveryService } = await import(
 	'../../src/services/artist-discovery-service'
 )
@@ -75,6 +80,11 @@ describe('ArtistDiscoveryService', () => {
 	let sut: InstanceType<typeof ArtistDiscoveryService>
 	let mockClient: Record<string, ReturnType<typeof vi.fn>>
 	let mockToast: ReturnType<typeof createMockToastService>
+	let mockConcertService: {
+		listConcerts: ReturnType<typeof vi.fn>
+		searchNewConcerts: ReturnType<typeof vi.fn>
+		listByFollower: ReturnType<typeof vi.fn>
+	}
 
 	beforeEach(() => {
 		mockClient = {
@@ -88,10 +98,16 @@ describe('ArtistDiscoveryService', () => {
 
 		const mockAuth = createMockAuth({ isAuthenticated: true })
 		mockToast = createMockToastService()
+		mockConcertService = {
+			listConcerts: vi.fn().mockResolvedValue([]),
+			searchNewConcerts: vi.fn().mockResolvedValue(undefined),
+			listByFollower: vi.fn().mockResolvedValue([]),
+		}
 
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIToastService, mockToast),
+			Registration.instance(mockIConcertService, mockConcertService),
 		)
 		container.register(ArtistDiscoveryService)
 		sut = container.get(IArtistDiscoveryService)
@@ -361,6 +377,69 @@ describe('ArtistDiscoveryService', () => {
 			sut.markFollowed(artist)
 
 			expect(sut.followedArtists).toHaveLength(1)
+		})
+
+		it('should trigger background SearchNewConcerts', async () => {
+			mockClient.listTop.mockResolvedValue({
+				artists: [makeArtist('a1', 'Artist One')],
+			})
+			await sut.loadInitialArtists()
+			const artist = sut.availableBubbles[0]
+
+			sut.markFollowed(artist)
+
+			expect(mockConcertService.searchNewConcerts).toHaveBeenCalledWith('a1')
+		})
+
+		it('should not reject when background SearchNewConcerts fails', async () => {
+			mockConcertService.searchNewConcerts.mockRejectedValue(
+				new Error('search failed'),
+			)
+			mockClient.listTop.mockResolvedValue({
+				artists: [makeArtist('a1', 'Artist One')],
+			})
+			await sut.loadInitialArtists()
+			const artist = sut.availableBubbles[0]
+
+			// markFollowed is synchronous; the rejection is caught internally
+			sut.markFollowed(artist)
+
+			// Wait for the rejected promise to be handled
+			await vi.waitFor(() => {
+				expect(mockConcertService.searchNewConcerts).toHaveBeenCalled()
+			})
+			// No unhandled rejection — error is swallowed
+		})
+	})
+
+	describe('checkLiveEvents', () => {
+		it('should return true when artist has concerts', async () => {
+			mockConcertService.listConcerts.mockResolvedValue([
+				{ id: 'c1', title: 'Live Show' },
+			])
+
+			const result = await sut.checkLiveEvents('a1')
+
+			expect(result).toBe(true)
+			expect(mockConcertService.listConcerts).toHaveBeenCalledWith('a1')
+		})
+
+		it('should return false when artist has no concerts', async () => {
+			mockConcertService.listConcerts.mockResolvedValue([])
+
+			const result = await sut.checkLiveEvents('a1')
+
+			expect(result).toBe(false)
+		})
+
+		it('should return false when concert list call fails', async () => {
+			mockConcertService.listConcerts.mockRejectedValue(
+				new Error('network error'),
+			)
+
+			const result = await sut.checkLiveEvents('a1')
+
+			expect(result).toBe(false)
 		})
 	})
 
