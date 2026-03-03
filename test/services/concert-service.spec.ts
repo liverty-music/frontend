@@ -143,7 +143,7 @@ describe('ConcertServiceClient', () => {
 				expect.objectContaining({}),
 				expect.objectContaining({
 					signal: controller.signal,
-					timeoutMs: 20_000,
+					timeoutMs: 30_000,
 				}),
 			)
 		})
