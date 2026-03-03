@@ -5,6 +5,7 @@ import { createPromiseClient } from '@connectrpc/connect'
 import { batch, DI, ILogger, resolve } from 'aurelia'
 import { IToastService } from '../components/toast-notification/toast-notification'
 import { IAuthService } from './auth-service'
+import { IConcertService } from './concert-service'
 import { createTransport } from './grpc-transport'
 
 export interface ArtistBubble {
@@ -27,6 +28,7 @@ export interface IArtistDiscoveryService extends ArtistDiscoveryService {}
 export class ArtistDiscoveryService {
 	private readonly logger = resolve(ILogger).scopeTo('ArtistDiscoveryService')
 	private readonly toast = resolve(IToastService)
+	private readonly concertService = resolve(IConcertService)
 	private readonly artistClient: PromiseClient<typeof ArtistService>
 
 	constructor() {
@@ -133,6 +135,7 @@ export class ArtistDiscoveryService {
 	/**
 	 * Update UI state to reflect that an artist has been followed.
 	 * Does NOT persist to any backend — call ArtistServiceClient.follow() for that.
+	 * Triggers a background SearchNewConcerts call to pre-populate concert data.
 	 */
 	public markFollowed(artist: ArtistBubble): void {
 		if (this.isFollowed(artist.id)) return
@@ -142,6 +145,9 @@ export class ArtistDiscoveryService {
 		this.followedIds.add(artist.id)
 		this.followedArtists = [...this.followedArtists, artist]
 		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
+
+		// Fire-and-forget: pre-populate concert data in the background
+		this.triggerConcertSearch(artist.id)
 	}
 
 	public async followArtist(artist: ArtistBubble): Promise<void> {
@@ -281,15 +287,28 @@ export class ArtistDiscoveryService {
 		return evicted
 	}
 
-	public async checkLiveEvents(artistName: string): Promise<boolean> {
-		this.logger.info('Checking live events', { artistName })
-		// TODO: Call backend ConcertService.List via Connect-RPC when TS clients are generated
-		// For now, simulate — return true for ~30% of artists to demonstrate the toast
-		const hash = Array.from(artistName).reduce(
-			(acc, c) => acc + c.charCodeAt(0),
-			0,
-		)
-		return hash % 3 === 0
+	public async checkLiveEvents(artistId: string): Promise<boolean> {
+		this.logger.info('Checking live events', { artistId })
+		try {
+			const concerts = await this.concertService.listConcerts(artistId)
+			return concerts.length > 0
+		} catch (err) {
+			this.logger.warn('Failed to check live events', { artistId, error: err })
+			return false
+		}
+	}
+
+	/**
+	 * Fire-and-forget call to SearchNewConcerts to pre-populate concert data
+	 * in the background. Errors are logged and swallowed.
+	 */
+	private triggerConcertSearch(artistId: string): void {
+		this.concertService.searchNewConcerts(artistId).catch((err) => {
+			this.logger.warn('Background concert search failed', {
+				artistId,
+				error: err,
+			})
+		})
 	}
 
 	public async listFollowedFromBackend(
