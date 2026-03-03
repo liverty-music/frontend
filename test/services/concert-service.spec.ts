@@ -141,7 +141,7 @@ describe('ConcertServiceClient', () => {
 
 			expect(mockClient.searchNewConcerts).toHaveBeenCalledWith(
 				expect.objectContaining({}),
-				{ signal: controller.signal },
+				expect.objectContaining({ signal: controller.signal, timeoutMs: 20_000 }),
 			)
 		})
 
