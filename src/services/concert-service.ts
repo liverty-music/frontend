@@ -95,7 +95,7 @@ export class ConcertServiceClient {
 				{
 					artistId: new ArtistId({ value: artistId }),
 				},
-				{ signal },
+				{ signal, timeoutMs: 20_000 },
 			)
 			this.logger.info('Concert search completed', { artistId })
 		} catch (err) {
