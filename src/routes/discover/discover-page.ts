@@ -7,6 +7,7 @@ import {
 	type ArtistBubble,
 	IArtistDiscoveryService,
 } from '../../services/artist-discovery-service'
+import { ILocalArtistClient } from '../../services/local-artist-client'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -34,6 +35,7 @@ export class DiscoverPage {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly toastService = resolve(IToastService)
+	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoverPage')
 	public readonly i18n = resolve(I18N)
 
@@ -50,6 +52,7 @@ export class DiscoverPage {
 	public searchResults: ArtistBubble[] = []
 	public isSearching = false
 	private searchDebounceTimer = 0
+	private guidanceDismissTimer = 0
 	private abortController = new AbortController()
 
 	public showGuidance = true
@@ -60,6 +63,9 @@ export class DiscoverPage {
 	}
 
 	public get followedCount(): number {
+		if (this.isOnboarding) {
+			return this.localClient.followedCount
+		}
 		return this.discoveryService.followedArtists.length
 	}
 
@@ -99,6 +105,7 @@ export class DiscoverPage {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		window.clearTimeout(this.searchDebounceTimer)
+		window.clearTimeout(this.guidanceDismissTimer)
 	}
 
 	private readonly onVisibilityChange = (): void => {
@@ -302,7 +309,7 @@ export class DiscoverPage {
 	private dismissGuidance(): void {
 		if (!this.showGuidance || this.guidanceHiding) return
 		this.guidanceHiding = true
-		window.setTimeout(() => {
+		this.guidanceDismissTimer = window.setTimeout(() => {
 			this.showGuidance = false
 			this.guidanceHiding = false
 		}, 400)
