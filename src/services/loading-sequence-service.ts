@@ -1,3 +1,4 @@
+import { SearchStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IArtistDiscoveryService } from './artist-discovery-service'
 import { IConcertService } from './concert-service'
@@ -14,14 +15,17 @@ export type AggregationResult =
 	| { status: 'partial'; failedCount: number; totalCount: number }
 	| { status: 'failed'; error: unknown }
 
-const GLOBAL_TIMEOUT_MS = 10000
+const GLOBAL_TIMEOUT_MS = 45_000
 const MINIMUM_DISPLAY_MS = 3000
-const BATCH_SIZE = 5
+const POLL_INTERVAL_MS = 3000
 
 export class LoadingSequenceService {
 	private readonly artistDiscoveryService = resolve(IArtistDiscoveryService)
 	private readonly concertService = resolve(IConcertService)
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequenceService')
+
+	public completedCount = 0
+	public totalCount = 0
 
 	public async aggregateData(): Promise<AggregationResult> {
 		const startTime = Date.now()
@@ -43,9 +47,24 @@ export class LoadingSequenceService {
 				return { status: 'success' }
 			}
 
-			// Search concerts in batches
-			const failedCount = await this.searchConcertsInBatches(
-				followedArtists,
+			this.totalCount = followedArtists.length
+			const artistIds = followedArtists.map((a) => a.id)
+
+			// Fire-and-forget: enqueue all searches (no await needed)
+			for (const artist of followedArtists) {
+				this.concertService
+					.searchNewConcerts(artist.id, abortController.signal)
+					.catch((err) => {
+						this.logger.warn('SearchNewConcerts fire-and-forget failed', {
+							artistId: artist.id,
+							error: err,
+						})
+					})
+			}
+
+			// Poll ListSearchStatuses until all terminal or aborted
+			const failedCount = await this.pollSearchStatuses(
+				artistIds,
 				abortController.signal,
 			)
 
@@ -111,45 +130,58 @@ export class LoadingSequenceService {
 		return []
 	}
 
-	private async searchConcertsInBatches(
-		artists: Array<{ id: string; name: string }>,
+	private async pollSearchStatuses(
+		artistIds: string[],
 		signal: AbortSignal,
 	): Promise<number> {
-		this.logger.info('Starting concert searches', {
-			totalArtists: artists.length,
+		this.logger.info('Starting status polling', {
+			artistCount: artistIds.length,
 		})
 
-		let failedCount = 0
-
-		// Process in batches of BATCH_SIZE sequentially
-		for (let i = 0; i < artists.length; i += BATCH_SIZE) {
-			if (signal.aborted) break
-			const batch = artists.slice(i, i + BATCH_SIZE)
-			this.logger.info('Processing batch', {
-				batchIndex: i / BATCH_SIZE,
-				batchSize: batch.length,
+		while (!signal.aborted) {
+			await this.delay(POLL_INTERVAL_MS, signal).catch(() => {
+				// Abort during delay is expected
 			})
 
-			// Within each batch, run searches in parallel
-			const promises = batch.map((artist) =>
-				this.concertService
-					.searchNewConcerts(artist.id, signal)
-					.catch((err) => {
-						this.logger.warn('Concert search failed for artist', {
-							artistId: artist.id,
-							artistName: artist.name,
-							error: err,
-						})
-						failedCount++
-						return null
-					}),
-			)
+			if (signal.aborted) break
 
-			await Promise.allSettled(promises)
+			try {
+				const statuses = await this.concertService.listSearchStatuses(
+					artistIds,
+					signal,
+				)
+
+				let completed = 0
+				let failed = 0
+
+				for (const s of statuses) {
+					if (s.status === SearchStatus.COMPLETED) {
+						completed++
+					} else if (s.status === SearchStatus.FAILED) {
+						failed++
+					}
+				}
+
+				this.completedCount = completed + failed
+				this.logger.info('Poll result', {
+					completed,
+					failed,
+					pending: artistIds.length - completed - failed,
+				})
+
+				if (completed + failed >= artistIds.length) {
+					this.logger.info('All searches terminal', { completed, failed })
+					return failed
+				}
+			} catch (err) {
+				if (signal.aborted) break
+				this.logger.warn('Poll failed, will retry', { error: err })
+			}
 		}
 
-		this.logger.info('All concert searches completed', { failedCount })
-		return failedCount
+		// Aborted (timeout) — proceed with available data
+		this.logger.warn('Polling aborted, proceeding with available data')
+		return 0
 	}
 
 	private delay(ms: number, signal?: AbortSignal): Promise<void> {

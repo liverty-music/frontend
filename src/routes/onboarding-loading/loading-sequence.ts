@@ -46,6 +46,14 @@ export class LoadingSequence {
 		return this.phases.length
 	}
 
+	public get searchCompletedCount(): number {
+		return this.loadingService.completedCount
+	}
+
+	public get searchTotalCount(): number {
+		return this.loadingService.totalCount
+	}
+
 	public async canLoad(): Promise<NavigationInstruction | boolean> {
 		// Tutorial mode: check guest data instead of backend
 		if (this.onboarding.isOnboarding) {
