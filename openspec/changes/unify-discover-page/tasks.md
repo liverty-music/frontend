@@ -1,0 +1,8 @@
+- [ ] 1. Unify follow flow: `ArtistDiscoveryService.followArtist()` delegates to `ArtistServiceClient.follow()` instead of direct RPC; remove `markFollowed()` as separate method
+- [ ] 2. Add onboarding HUD (progress dots, guidance message, CTA) to `discover-page.html` and `discover-page.css`
+- [ ] 3. Add onboarding logic to `discover-page.ts`: `isOnboarding`, `guidanceMessage`, `showCompleteButton`, `onViewSchedule()`, `dismissGuidance()`
+- [ ] 4. Update `my-app.ts`: remove `onboarding/discover` route, set `discover` route to `auth: false`, update `showNav` to check onboarding state
+- [ ] 5. Update `welcome-page.ts`, `loading-sequence.ts`, `onboarding-service.ts` STEP_ROUTE_MAP references from `onboarding/discover` to `discover`
+- [ ] 6. Delete `src/routes/artist-discovery/` directory
+- [ ] 7. Update tests: `my-app.spec.ts`, `loading-sequence.spec.ts`, `artist-discovery-page.spec.ts` (remove or migrate)
+- [ ] 8. Update `onboarding-guidance` spec to reflect new route path
