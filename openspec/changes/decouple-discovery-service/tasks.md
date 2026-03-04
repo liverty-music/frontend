@@ -1,0 +1,6 @@
+- [ ] 1. Move `listTop()`, `listSimilar()`, `search()` from `ArtistDiscoveryService` to `ArtistServiceClient`; remove duplicate `artistClient` from discovery service
+- [ ] 2. Extract `BubblePool` class (plain, non-DI) with dedup, eviction, and pool management logic from `ArtistDiscoveryService`
+- [ ] 3. Refactor `dna-orb-canvas`: remove `IArtistDiscoveryService` injection; add `@bindable artists`, `@bindable orbIntensity`; emit `need-more-bubbles` event instead of calling service
+- [ ] 4. Update `DiscoverPage` to own `BubblePool`, coordinate between `ArtistServiceClient` and `dna-orb-canvas` via bindables and event handlers
+- [ ] 5. Remove or reduce `ArtistDiscoveryService` (delete if fully absorbed, or keep as thin facade if other consumers exist)
+- [ ] 6. Update all tests for affected components and services
