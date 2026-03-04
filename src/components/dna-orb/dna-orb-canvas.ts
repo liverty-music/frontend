@@ -255,7 +255,7 @@ export class DnaOrbCanvas {
 			this.element.dispatchEvent(
 				new CustomEvent('artist-selected', {
 					bubbles: true,
-					detail: { artist },
+					detail: { artist, position: { x: pos.x, y: pos.y } },
 				}),
 			)
 

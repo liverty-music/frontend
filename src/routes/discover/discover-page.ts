@@ -68,6 +68,7 @@ export class DiscoverPage {
 	public isSearchMode = false
 	public searchResults: ArtistBubble[] = []
 	public isSearching = false
+	private isLoadingBubbles = false
 	private searchDebounceTimer = 0
 	private guidanceDismissTimer = 0
 	private abortController = new AbortController()
@@ -227,9 +228,12 @@ export class DiscoverPage {
 	}
 
 	public async onArtistSelected(
-		event: CustomEvent<{ artist: ArtistBubble }>,
+		event: CustomEvent<{
+			artist: ArtistBubble
+			position: { x: number; y: number }
+		}>,
 	): Promise<void> {
-		const artist = event.detail.artist
+		const { artist, position } = event.detail
 		if (this.pool.isFollowed(artist.id)) return
 		this.logger.info('Artist selected from bubbles', {
 			artist: artist.name,
@@ -238,7 +242,7 @@ export class DiscoverPage {
 		this.dismissGuidance()
 
 		try {
-			await this.followArtist(artist)
+			await this.followArtist(artist, position)
 		} catch (err) {
 			this.logger.error('Failed to follow artist', {
 				artist: artist.name,
@@ -266,6 +270,8 @@ export class DiscoverPage {
 			position: { x: number; y: number }
 		}>,
 	): Promise<void> {
+		if (this.isLoadingBubbles) return
+		this.isLoadingBubbles = true
 		const { artistId, artistName, position } = event.detail
 
 		try {
@@ -314,6 +320,8 @@ export class DiscoverPage {
 				}),
 				'warning',
 			)
+		} finally {
+			this.isLoadingBubbles = false
 		}
 	}
 
@@ -448,7 +456,10 @@ export class DiscoverPage {
 		return fresh
 	}
 
-	private async followArtist(artist: ArtistBubble): Promise<void> {
+	private async followArtist(
+		artist: ArtistBubble,
+		spawnPosition?: { x: number; y: number },
+	): Promise<void> {
 		if (this.pool.isFollowed(artist.id)) return
 		this.logger.info('Following artist', { artist: artist.name })
 
@@ -490,6 +501,15 @@ export class DiscoverPage {
 				ids.delete(artist.id)
 				this.poolFollowedIds = ids
 			})
+
+			// Re-render the bubble on canvas if it was removed during interaction
+			if (spawnPosition) {
+				this.dnaOrbCanvas.spawnBubblesAt(
+					[artist],
+					spawnPosition.x,
+					spawnPosition.y,
+				)
+			}
 
 			this.toastService.show(`Failed to follow ${artist.name}`)
 			throw err
