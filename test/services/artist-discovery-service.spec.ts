@@ -84,7 +84,10 @@ function makeBubble(id: string, name: string, mbid = ''): ArtistBubble {
 describe('ArtistDiscoveryService', () => {
 	let sut: InstanceType<typeof ArtistDiscoveryService>
 	let mockClient: Record<string, ReturnType<typeof vi.fn>>
-	let mockArtistServiceClient: { follow: ReturnType<typeof vi.fn>; unfollow: ReturnType<typeof vi.fn> }
+	let mockArtistServiceClient: {
+		follow: ReturnType<typeof vi.fn>
+		unfollow: ReturnType<typeof vi.fn>
+	}
 	let mockToast: ReturnType<typeof createMockToastService>
 	let mockConcertService: {
 		listConcerts: ReturnType<typeof vi.fn>
@@ -334,7 +337,10 @@ describe('ArtistDiscoveryService', () => {
 
 			await sut.followArtist(artist)
 
-			expect(mockArtistServiceClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
+			expect(mockArtistServiceClient.follow).toHaveBeenCalledWith(
+				'a1',
+				'Artist One',
+			)
 		})
 
 		it('should rollback optimistic update when follow fails', async () => {
@@ -344,7 +350,9 @@ describe('ArtistDiscoveryService', () => {
 			await sut.loadInitialArtists()
 			const artist = sut.availableBubbles[0]
 
-			mockArtistServiceClient.follow.mockRejectedValue(new Error('persistent error'))
+			mockArtistServiceClient.follow.mockRejectedValue(
+				new Error('persistent error'),
+			)
 
 			await expect(sut.followArtist(artist)).rejects.toThrow('persistent error')
 

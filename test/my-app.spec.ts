@@ -80,9 +80,14 @@ describe('my-app', () => {
 			container = DI.createContainer()
 			container.register(
 				Registration.instance(IRouter, mockRouter as IRouter),
-				Registration.instance(IRouterEvents, { subscribe: vi.fn(() => ({ dispose: vi.fn() })) }),
+				Registration.instance(IRouterEvents, {
+					subscribe: vi.fn(() => ({ dispose: vi.fn() })),
+				}),
 				Registration.instance(IOnboardingService, mockOnboarding),
-				Registration.instance(IErrorBoundaryService, { captureError: vi.fn(), addBreadcrumb: vi.fn() }),
+				Registration.instance(IErrorBoundaryService, {
+					captureError: vi.fn(),
+					addBreadcrumb: vi.fn(),
+				}),
 			)
 			container.register(MyApp)
 			sut = container.get(MyApp)
