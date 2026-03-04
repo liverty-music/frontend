@@ -52,6 +52,7 @@ describe('ConcertServiceClient', () => {
 			list: vi.fn().mockResolvedValue({ concerts: [] }),
 			listByFollower: vi.fn().mockResolvedValue({ concerts: [] }),
 			searchNewConcerts: vi.fn().mockResolvedValue({}),
+			listSearchStatuses: vi.fn().mockResolvedValue({ statuses: [] }),
 		}
 		mockCreateClient.mockReturnValue(mockClient)
 
@@ -143,7 +144,6 @@ describe('ConcertServiceClient', () => {
 				expect.objectContaining({}),
 				expect.objectContaining({
 					signal: controller.signal,
-					timeoutMs: 30_000,
 				}),
 			)
 		})
@@ -153,6 +153,42 @@ describe('ConcertServiceClient', () => {
 
 			await expect(sut.searchNewConcerts('artist-1')).rejects.toThrow(
 				'search failed',
+			)
+		})
+	})
+
+	describe('listSearchStatuses', () => {
+		it('should return statuses for given artist IDs', async () => {
+			const fakeStatuses = [
+				{ artistId: { value: 'a1' }, status: 2 },
+				{ artistId: { value: 'a2' }, status: 1 },
+			]
+			mockClient.listSearchStatuses.mockResolvedValue({
+				statuses: fakeStatuses,
+			})
+
+			const result = await sut.listSearchStatuses(['a1', 'a2'])
+
+			expect(result).toEqual(fakeStatuses)
+			expect(mockClient.listSearchStatuses).toHaveBeenCalledTimes(1)
+		})
+
+		it('should forward AbortSignal', async () => {
+			const controller = new AbortController()
+
+			await sut.listSearchStatuses(['a1'], controller.signal)
+
+			expect(mockClient.listSearchStatuses).toHaveBeenCalledWith(
+				expect.objectContaining({}),
+				expect.objectContaining({ signal: controller.signal }),
+			)
+		})
+
+		it('should rethrow errors', async () => {
+			mockClient.listSearchStatuses.mockRejectedValue(new Error('poll failed'))
+
+			await expect(sut.listSearchStatuses(['a1'])).rejects.toThrow(
+				'poll failed',
 			)
 		})
 	})

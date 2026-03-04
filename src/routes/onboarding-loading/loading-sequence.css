@@ -204,6 +204,18 @@
 	letter-spacing: 0.1em;
 }
 
+/* Artist search progress label */
+.progress-label {
+	position: relative;
+	z-index: 1;
+	margin-top: 0.5rem;
+	font-family: var(--font-display, "Outfit", system-ui, sans-serif);
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: rgba(255 255 255 / 60%);
+	letter-spacing: 0.05em;
+}
+
 @media (width <= 640px) {
 	.pulsing-orb {
 		width: 96px;

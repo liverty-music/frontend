@@ -1,5 +1,6 @@
 import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import type { ArtistSearchStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -95,11 +96,30 @@ export class ConcertServiceClient {
 				{
 					artistId: new ArtistId({ value: artistId }),
 				},
-				{ signal, timeoutMs: 30_000 },
+				{ signal },
 			)
 			this.logger.info('Concert search completed', { artistId })
 		} catch (err) {
 			this.logger.warn('Concert search failed', { artistId, error: err })
+			throw err
+		}
+	}
+
+	public async listSearchStatuses(
+		artistIds: string[],
+		signal?: AbortSignal,
+	): Promise<ArtistSearchStatus[]> {
+		this.logger.info('Polling search statuses', { count: artistIds.length })
+		try {
+			const response = await this.concertClient.listSearchStatuses(
+				{
+					artistIds: artistIds.map((id) => new ArtistId({ value: id })),
+				},
+				{ signal },
+			)
+			return response.statuses
+		} catch (err) {
+			this.logger.warn('ListSearchStatuses failed', { error: err })
 			throw err
 		}
 	}

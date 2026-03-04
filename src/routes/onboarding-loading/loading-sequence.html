@@ -14,4 +14,7 @@
 
 	<!-- Step label -->
 	<p class="step-label">${currentPhase} / ${totalPhases}</p>
+
+	<!-- Artist search progress counter -->
+	<p if.bind="searchTotalCount > 0" class="progress-label">${searchCompletedCount}/${searchTotalCount} アーティスト完了</p>
 </div>
