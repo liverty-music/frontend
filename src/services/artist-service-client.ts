@@ -5,6 +5,7 @@ import {
 import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
 import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import type { ArtistBubble } from './artist-discovery-service'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
 import { ILocalArtistClient } from './local-artist-client'
@@ -94,6 +95,53 @@ export class ArtistServiceClient {
 			passionLevel: fa.passionLevel ?? PassionLevel.LOCAL_ONLY,
 		}))
 	}
+
+	/**
+	 * Fetch top artists by country and optional genre tag.
+	 */
+	public async listTop(
+		country: string,
+		tag: string,
+		limit: number,
+	): Promise<ArtistBubble[]> {
+		const resp = await this.client.listTop({ country, tag, limit })
+		return resp.artists.map((a) => toBubble(a))
+	}
+
+	/**
+	 * Fetch artists similar to the given artist.
+	 */
+	public async listSimilar(
+		artistId: string,
+		limit: number,
+	): Promise<ArtistBubble[]> {
+		const resp = await this.client.listSimilar({
+			artistId: new ArtistId({ value: artistId }),
+			limit,
+		})
+		return resp.artists.map((a) => toBubble(a))
+	}
+
+	/**
+	 * Search artists by query string.
+	 */
+	public async search(query: string): Promise<ArtistBubble[]> {
+		const resp = await this.client.search({ query })
+		return resp.artists.map((a) => toBubble(a))
+	}
+
+	/**
+	 * Fetch followed artists directly from the backend (bypasses onboarding check).
+	 * Used by loading sequence to verify backend state.
+	 */
+	public async listFollowedAsBubbles(
+		signal?: AbortSignal,
+	): Promise<ArtistBubble[]> {
+		const resp = await this.client.listFollowed({}, { signal })
+		return resp.artists.flatMap((fa) =>
+			fa.artist ? [toBubble(fa.artist)] : [],
+		)
+	}
 }
 
 function mapLocalPassionLevel(
@@ -108,5 +156,24 @@ function mapLocalPassionLevel(
 			return PassionLevel.KEEP_AN_EYE
 		default:
 			return PassionLevel.LOCAL_ONLY
+	}
+}
+
+function toBubble(artist: {
+	id?: { value: string }
+	name?: { value: string }
+	mbid?: { value: string }
+}): ArtistBubble {
+	const id = artist.id?.value ?? ''
+	const name = artist.name?.value ?? ''
+	const mbid = artist.mbid?.value ?? ''
+	return {
+		id: id || mbid || crypto.randomUUID(),
+		name,
+		mbid,
+		imageUrl: '',
+		x: 0,
+		y: 0,
+		radius: 30 + Math.random() * 15,
 	}
 }

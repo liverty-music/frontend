@@ -2,7 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import { IRouter, type NavigationInstruction } from '@aurelia/router'
 import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
 import { IToastService } from '../../components/toast-notification/toast-notification'
-import { IArtistDiscoveryService } from '../../services/artist-discovery-service'
+import { IArtistServiceClient } from '../../services/artist-service-client'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
 import { ILocalArtistClient } from '../../services/local-artist-client'
@@ -19,7 +19,7 @@ export class LoadingSequence {
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequence')
 	private readonly loadingService = resolve(ILoadingSequenceService)
-	private readonly artistDiscoveryService = resolve(IArtistDiscoveryService)
+	private readonly artistClient = resolve(IArtistServiceClient)
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly toastService = resolve(IToastService)
@@ -72,9 +72,7 @@ export class LoadingSequence {
 		try {
 			const abortController = new AbortController()
 			const backendFollowedArtists =
-				await this.artistDiscoveryService.listFollowedFromBackend(
-					abortController.signal,
-				)
+				await this.artistClient.listFollowedAsBubbles(abortController.signal)
 
 			if (backendFollowedArtists.length > 0) {
 				this.logger.info(
@@ -84,8 +82,7 @@ export class LoadingSequence {
 				return 'dashboard'
 			}
 
-			const localFollowedCount =
-				this.artistDiscoveryService.followedArtists.length
+			const localFollowedCount = this.localClient.followedCount
 
 			if (localFollowedCount === 0) {
 				this.logger.info(
@@ -104,8 +101,7 @@ export class LoadingSequence {
 				err,
 			)
 
-			const localFollowedCount =
-				this.artistDiscoveryService.followedArtists.length
+			const localFollowedCount = this.localClient.followedCount
 
 			if (localFollowedCount === 0) {
 				this.logger.info('No local followed artists, redirecting to discovery')

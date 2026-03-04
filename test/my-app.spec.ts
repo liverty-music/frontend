@@ -1,9 +1,9 @@
 import { IRouter, IRouterEvents } from '@aurelia/router'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { IOnboardingService } from '../src/services/onboarding-service'
-import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 import { MyApp } from '../src/my-app'
+import { IErrorBoundaryService } from '../src/services/error-boundary-service'
+import { IOnboardingService } from '../src/services/onboarding-service'
 
 // Mock all dynamic imports used by the @route decorator on MyApp.
 // Without these mocks, the imports resolve after Vitest tears down the jsdom

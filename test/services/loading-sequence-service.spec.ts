@@ -2,17 +2,15 @@ import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 import {
-	createMockArtistDiscoveryService,
+	createMockArtistServiceClient,
 	createMockConcertService,
 } from '../helpers/mock-rpc-clients'
 
-const mockIArtistDiscoveryService = DI.createInterface(
-	'IArtistDiscoveryService',
-)
+const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
 const mockIConcertService = DI.createInterface('IConcertService')
 
-vi.mock('../../src/services/artist-discovery-service', () => ({
-	IArtistDiscoveryService: mockIArtistDiscoveryService,
+vi.mock('../../src/services/artist-service-client', () => ({
+	IArtistServiceClient: mockIArtistServiceClient,
 }))
 
 vi.mock('../../src/services/concert-service', () => ({
@@ -37,17 +35,17 @@ const { LoadingSequenceService, ILoadingSequenceService } = await import(
 
 describe('LoadingSequenceService', () => {
 	let sut: InstanceType<typeof LoadingSequenceService>
-	let mockDiscovery: ReturnType<typeof createMockArtistDiscoveryService>
+	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
 	let mockConcert: ReturnType<typeof createMockConcertService>
 
 	beforeEach(() => {
 		vi.useFakeTimers()
 
-		mockDiscovery = createMockArtistDiscoveryService()
+		mockArtistClient = createMockArtistServiceClient()
 		mockConcert = createMockConcertService()
 
 		const container = createTestContainer(
-			Registration.instance(mockIArtistDiscoveryService, mockDiscovery),
+			Registration.instance(mockIArtistServiceClient, mockArtistClient),
 			Registration.instance(mockIConcertService, mockConcert),
 		)
 		container.register(LoadingSequenceService)
@@ -61,7 +59,9 @@ describe('LoadingSequenceService', () => {
 
 	describe('aggregateData', () => {
 		it('should return success when no followed artists', async () => {
-			mockDiscovery.listFollowedFromBackend = vi.fn().mockResolvedValue([])
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([])
 
 			const promise = sut.aggregateData()
 			await vi.advanceTimersByTimeAsync(100)
@@ -71,7 +71,9 @@ describe('LoadingSequenceService', () => {
 		})
 
 		it('should fire-and-forget searchNewConcerts and poll until all completed', async () => {
-			mockDiscovery.listFollowedFromBackend = vi.fn().mockResolvedValue([
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([
 				{ id: 'a1', name: 'Artist 1' },
 				{ id: 'a2', name: 'Artist 2' },
 			])
@@ -106,7 +108,9 @@ describe('LoadingSequenceService', () => {
 		})
 
 		it('should return partial when some searches fail', async () => {
-			mockDiscovery.listFollowedFromBackend = vi.fn().mockResolvedValue([
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([
 				{ id: 'a1', name: 'Artist 1' },
 				{ id: 'a2', name: 'Artist 2' },
 				{ id: 'a3', name: 'Artist 3' },
@@ -130,7 +134,9 @@ describe('LoadingSequenceService', () => {
 		})
 
 		it('should update completedCount during polling', async () => {
-			mockDiscovery.listFollowedFromBackend = vi.fn().mockResolvedValue([
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([
 				{ id: 'a1', name: 'Artist 1' },
 				{ id: 'a2', name: 'Artist 2' },
 			])
@@ -167,8 +173,7 @@ describe('LoadingSequenceService', () => {
 		})
 
 		it('should retry artist fetch on first failure', async () => {
-			mockDiscovery.listFollowedFromBackend = vi
-				.fn()
+			;(mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>)
 				.mockRejectedValueOnce(new Error('network error'))
 				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
 			mockConcert.searchNewConcerts = vi.fn().mockResolvedValue(undefined)
@@ -181,26 +186,26 @@ describe('LoadingSequenceService', () => {
 			const result = await promise
 
 			expect(result.status).toBe('success')
-			expect(mockDiscovery.listFollowedFromBackend).toHaveBeenCalledTimes(2)
+			expect(mockArtistClient.listFollowedAsBubbles).toHaveBeenCalledTimes(2)
 		})
 
 		it('should return failed when artist fetch fails after retry', async () => {
-			mockDiscovery.listFollowedFromBackend = vi
-				.fn()
-				.mockRejectedValue(new Error('persistent error'))
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockRejectedValue(new Error('persistent error'))
 
 			const promise = sut.aggregateData()
 			await vi.advanceTimersByTimeAsync(1000)
 			const result = await promise
 
 			expect(result.status).toBe('failed')
-			expect(mockDiscovery.listFollowedFromBackend).toHaveBeenCalledTimes(2)
+			expect(mockArtistClient.listFollowedAsBubbles).toHaveBeenCalledTimes(2)
 		})
 
 		it('should abort after global timeout (45s) and report partial', async () => {
-			mockDiscovery.listFollowedFromBackend = vi
-				.fn()
-				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
 			mockConcert.searchNewConcerts = vi.fn().mockResolvedValue(undefined)
 			// Always return pending
 			mockConcert.listSearchStatuses = vi
@@ -221,9 +226,9 @@ describe('LoadingSequenceService', () => {
 		})
 
 		it('should wait for minimum display duration', async () => {
-			mockDiscovery.listFollowedFromBackend = vi
-				.fn()
-				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
 			mockConcert.searchNewConcerts = vi.fn().mockResolvedValue(undefined)
 			// Immediately completed on first poll
 			mockConcert.listSearchStatuses = vi
@@ -248,9 +253,9 @@ describe('LoadingSequenceService', () => {
 		})
 
 		it('should handle poll errors gracefully and retry', async () => {
-			mockDiscovery.listFollowedFromBackend = vi
-				.fn()
-				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
 			mockConcert.searchNewConcerts = vi.fn().mockResolvedValue(undefined)
 
 			let pollCount = 0

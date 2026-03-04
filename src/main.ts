@@ -9,7 +9,6 @@ import { AuthHook } from './hooks/auth-hook'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
 import { MyApp } from './my-app'
-import { IArtistDiscoveryService } from './services/artist-discovery-service'
 import { IArtistServiceClient } from './services/artist-service-client'
 import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
@@ -84,7 +83,6 @@ Aurelia
 	.register(IUserService)
 	.register(IArtistServiceClient)
 	.register(IConcertService)
-	.register(IArtistDiscoveryService)
 	.register(IDashboardService)
 	.register(IOnboardingService)
 	.register(ILocalArtistClient)

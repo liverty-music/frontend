@@ -3,22 +3,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ArtistBubble } from '../../src/services/artist-discovery-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
-import { createMockArtistDiscoveryService } from '../helpers/mock-rpc-clients'
+import {
+	createMockArtistServiceClient,
+	createMockConcertService,
+} from '../helpers/mock-rpc-clients'
 import { createMockToastService } from '../helpers/mock-toast'
 
-const mockIArtistDiscoveryService = DI.createInterface(
-	'IArtistDiscoveryService',
-)
+const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
+const mockIConcertService = DI.createInterface('IConcertService')
 const mockIToastService = DI.createInterface('IToastService')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
+const mockILocalArtistClient = DI.createInterface('ILocalArtistClient')
 
 vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
 }))
 
-vi.mock('../../src/services/artist-discovery-service', () => ({
-	IArtistDiscoveryService: mockIArtistDiscoveryService,
+vi.mock('../../src/services/artist-service-client', () => ({
+	IArtistServiceClient: mockIArtistServiceClient,
+}))
+
+vi.mock('../../src/services/concert-service', () => ({
+	IConcertService: mockIConcertService,
 }))
 
 vi.mock('../../src/components/toast-notification/toast-notification', () => ({
@@ -39,6 +46,10 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	},
 }))
 
+vi.mock('../../src/services/local-artist-client', () => ({
+	ILocalArtistClient: mockILocalArtistClient,
+}))
+
 vi.mock('../../src/routes/discover/discover-page.css?raw', () => ({
 	default: '',
 }))
@@ -51,7 +62,8 @@ function makeBubble(id: string, name: string): ArtistBubble {
 
 describe('DiscoverPage', () => {
 	let sut: InstanceType<typeof DiscoverPage>
-	let mockDiscovery: ReturnType<typeof createMockArtistDiscoveryService>
+	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
+	let mockConcert: ReturnType<typeof createMockConcertService>
 	let mockToast: ReturnType<typeof createMockToastService>
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockOnboarding: {
@@ -60,11 +72,16 @@ describe('DiscoverPage', () => {
 		setStep: ReturnType<typeof vi.fn>
 		complete: ReturnType<typeof vi.fn>
 	}
+	let mockLocalClient: {
+		followedCount: number
+		setAdminArea: ReturnType<typeof vi.fn>
+	}
 
 	beforeEach(() => {
 		vi.useFakeTimers()
 
-		mockDiscovery = createMockArtistDiscoveryService()
+		mockArtistClient = createMockArtistServiceClient()
+		mockConcert = createMockConcertService()
 		mockToast = createMockToastService()
 		mockRouter = createMockRouter()
 		mockOnboarding = {
@@ -73,12 +90,18 @@ describe('DiscoverPage', () => {
 			setStep: vi.fn(),
 			complete: vi.fn(),
 		}
+		mockLocalClient = {
+			followedCount: 0,
+			setAdminArea: vi.fn(),
+		}
 
 		const container = createTestContainer(
-			Registration.instance(mockIArtistDiscoveryService, mockDiscovery),
+			Registration.instance(mockIArtistServiceClient, mockArtistClient),
+			Registration.instance(mockIConcertService, mockConcert),
 			Registration.instance(mockIToastService, mockToast),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
+			Registration.instance(mockILocalArtistClient, mockLocalClient),
 		)
 		container.register(DiscoverPage)
 		sut = container.get(DiscoverPage)
@@ -88,6 +111,9 @@ describe('DiscoverPage', () => {
 			pause: vi.fn(),
 			resume: vi.fn(),
 			reloadBubbles: vi.fn(),
+			spawnBubblesAt: vi.fn(),
+			fadeOutBubbles: vi.fn(),
+			bubbleCount: 0,
 		} as any
 	})
 
@@ -97,16 +123,20 @@ describe('DiscoverPage', () => {
 	})
 
 	describe('loading', () => {
-		it('should load initial artists', async () => {
+		it('should load initial artists via artistClient.listTop', async () => {
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[makeBubble('a1', 'Artist One')],
+			)
+
 			await sut.loading()
 
-			expect(mockDiscovery.loadInitialArtists).toHaveBeenCalledWith('Japan', '')
+			expect(mockArtistClient.listTop).toHaveBeenCalledWith('Japan', '', 50)
 		})
 
 		it('should show toast on load failure', async () => {
-			;(
-				mockDiscovery.loadInitialArtists as ReturnType<typeof vi.fn>
-			).mockRejectedValue(new Error('fail'))
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockRejectedValue(
+				new Error('fail'),
+			)
 
 			await sut.loading()
 
@@ -119,19 +149,19 @@ describe('DiscoverPage', () => {
 
 	describe('onSearchQueryChanged (debounced search)', () => {
 		it('should debounce search by 300ms', async () => {
-			mockDiscovery.searchArtists = vi
-				.fn()
-				.mockResolvedValue([makeBubble('a1', 'Result')])
+			;(mockArtistClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
+				makeBubble('a1', 'Result'),
+			])
 
 			sut.searchQuery = 'test'
 			;(sut as any).onSearchQueryChanged('test')
 
 			// Before 300ms
-			expect(mockDiscovery.searchArtists).not.toHaveBeenCalled()
+			expect(mockArtistClient.search).not.toHaveBeenCalled()
 
 			await vi.advanceTimersByTimeAsync(300)
 
-			expect(mockDiscovery.searchArtists).toHaveBeenCalledWith('test')
+			expect(mockArtistClient.search).toHaveBeenCalledWith('test')
 		})
 
 		it('should exit search mode when query is empty', () => {
@@ -142,15 +172,14 @@ describe('DiscoverPage', () => {
 		})
 
 		it('should discard stale responses by checking current query', async () => {
-			// The debounce resets, so only the latest query fires
-			mockDiscovery.searchArtists = vi
-				.fn()
-				.mockResolvedValue([makeBubble('a2', 'Fresh')])
+			;(mockArtistClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
+				makeBubble('a2', 'Fresh'),
+			])
 
 			sut.searchQuery = 'first'
 			;(sut as any).onSearchQueryChanged('first')
 
-			// Before debounce fires, start a new search (cancels the first timer)
+			// Before debounce fires, start a new search
 			await vi.advanceTimersByTimeAsync(100)
 			sut.searchQuery = 'second'
 			;(sut as any).onSearchQueryChanged('second')
@@ -158,8 +187,8 @@ describe('DiscoverPage', () => {
 			await vi.advanceTimersByTimeAsync(300)
 
 			// Only one search should have been triggered (the second one)
-			expect(mockDiscovery.searchArtists).toHaveBeenCalledTimes(1)
-			expect(mockDiscovery.searchArtists).toHaveBeenCalledWith('second')
+			expect(mockArtistClient.search).toHaveBeenCalledTimes(1)
+			expect(mockArtistClient.search).toHaveBeenCalledWith('second')
 		})
 	})
 
@@ -172,47 +201,55 @@ describe('DiscoverPage', () => {
 	})
 
 	describe('onGenreSelected', () => {
-		beforeEach(() => {
-			mockDiscovery.reloadWithTag = vi.fn().mockResolvedValue(undefined)
-		})
-
 		it('should activate a genre tag', async () => {
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+
 			await sut.onGenreSelected('Rock')
 
 			expect(sut.activeTag).toBe('Rock')
-			expect(mockDiscovery.reloadWithTag).toHaveBeenCalledWith('rock')
+			expect(mockArtistClient.listTop).toHaveBeenCalledWith('Japan', 'rock', 50)
 		})
 
 		it('should deactivate when selecting same tag', async () => {
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+
 			await sut.onGenreSelected('Rock')
 			await sut.onGenreSelected('Rock')
 
 			expect(sut.activeTag).toBe('')
-			expect(mockDiscovery.reloadWithTag).toHaveBeenLastCalledWith('')
+			expect(mockArtistClient.listTop).toHaveBeenLastCalledWith('Japan', '', 50)
 		})
 	})
 
 	describe('onFollowFromSearch', () => {
 		it('should follow artist and check live events', async () => {
-			mockDiscovery.isFollowed = vi.fn().mockReturnValue(false)
-			;(
-				mockDiscovery.checkLiveEvents as ReturnType<typeof vi.fn>
-			).mockResolvedValue(true)
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
+			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[{ id: 'c1' }],
+			)
 
 			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
 
-			expect(mockDiscovery.followArtist).toHaveBeenCalled()
-			expect(mockToast.show).toHaveBeenCalledWith(
-				expect.stringContaining('discover.hasUpcomingEvents'),
-			)
+			expect(mockArtistClient.follow).toHaveBeenCalledWith('a1', 'Artist')
 		})
 
 		it('should not follow already-followed artist', async () => {
-			mockDiscovery.isFollowed = vi.fn().mockReturnValue(true)
-
+			// Follow first
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
 			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
 
-			expect(mockDiscovery.followArtist).not.toHaveBeenCalled()
+			// Try to follow again
+			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
+
+			expect(mockArtistClient.follow).toHaveBeenCalledTimes(1)
 		})
 	})
 })

@@ -6,10 +6,7 @@ import {
 	shadowCSS,
 	useShadowDOM,
 } from 'aurelia'
-import {
-	type ArtistBubble,
-	IArtistDiscoveryService,
-} from '../../services/artist-discovery-service'
+import type { ArtistBubble } from '../../services/artist-discovery-service'
 import { AbsorptionAnimator } from './absorption-animator'
 import { BubblePhysics, type PhysicsBubble } from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'
@@ -35,6 +32,9 @@ export class DnaOrbCanvas {
 	]
 	@bindable public followedCount = 0
 	@bindable public showFollowedIndicator = false
+	@bindable public artists: ArtistBubble[] = []
+	@bindable public orbIntensity = 0
+	@bindable public followedIds: ReadonlySet<string> = new Set()
 
 	private readonly element = resolve(INode) as HTMLElement
 	private canvas!: HTMLCanvasElement
@@ -47,7 +47,6 @@ export class DnaOrbCanvas {
 	private orbRenderer = new OrbRenderer()
 	private absorptionAnimator = new AbsorptionAnimator()
 
-	private readonly discoveryService = resolve(IArtistDiscoveryService)
 	private readonly logger = resolve(ILogger).scopeTo('DnaOrbCanvas')
 
 	private imageCache = new Map<string, HTMLImageElement>()
@@ -67,6 +66,12 @@ export class DnaOrbCanvas {
 		this.orbRenderer.pulse()
 	}
 
+	public artistsChanged(newVal: ArtistBubble[]): void {
+		if (!this.ctx) return // not yet attached
+		this.physics.addBubbles(newVal)
+		this.preloadImages(newVal)
+	}
+
 	public async attached(): Promise<void> {
 		const ctx = this.canvas.getContext('2d')
 		if (!ctx) {
@@ -83,8 +88,8 @@ export class DnaOrbCanvas {
 		})
 		this.canvas.addEventListener('keydown', this.onKeyDown)
 
-		this.physics.addBubbles(this.discoveryService.availableBubbles)
-		this.preloadImages(this.discoveryService.availableBubbles)
+		this.physics.addBubbles(this.artists)
+		this.preloadImages(this.artists)
 
 		this.lastTime = performance.now()
 		this.animFrameId = requestAnimationFrame(this.loop)
@@ -128,6 +133,21 @@ export class DnaOrbCanvas {
 			this.preloadImages(artists)
 			this.focusedBubbleIndex = -1
 		})
+	}
+
+	/**
+	 * Spawn new bubbles at a specific position (called by parent after fetching similar artists).
+	 */
+	public spawnBubblesAt(bubbles: ArtistBubble[], x: number, y: number): void {
+		this.physics.spawnBubblesAt(bubbles, x, y)
+		this.preloadImages(bubbles)
+	}
+
+	/**
+	 * Fade out specific bubbles by ID (called by parent for eviction).
+	 */
+	public async fadeOutBubbles(ids: string[]): Promise<void> {
+		await this.physics.fadeOutBubbles(ids)
 	}
 
 	private async resize(): Promise<void> {
@@ -205,12 +225,15 @@ export class DnaOrbCanvas {
 		}
 	}
 
-	private async handleInteraction(x: number, y: number): Promise<void> {
+	private handleInteraction(x: number, y: number): void {
 		if (this.isProcessing) return
 		this.isProcessing = true
 		try {
 			const bubble = this.physics.getBubbleAt(x, y)
-			if (!bubble) return
+			if (!bubble) {
+				this.isProcessing = false
+				return
+			}
 
 			const pos = bubble.body.position
 			const artist = bubble.artist
@@ -236,62 +259,17 @@ export class DnaOrbCanvas {
 				}),
 			)
 
-			// Fetch similar artists and spawn replacements
-			try {
-				let newBubbles = await this.discoveryService.getSimilarArtists(
-					artist.name,
-					artist.id,
-				)
-				if (newBubbles.length === 0) {
-					// Similar artists exhausted — fall back to top-artist pool
-					newBubbles = await this.discoveryService.loadReplacementBubbles()
-				}
-
-				if (newBubbles.length > 0) {
-					// Use physics bubble count (not service availableBubbles.length)
-					// to avoid state divergence that causes the fade-out promise to hang
-					const maxBubbles = this.discoveryService.maxBubbles
-					const currentPhysics = this.physics.bubbleCount
-					const spawnSlots = Math.max(0, maxBubbles - currentPhysics)
-
-					// Evict oldest physics bubbles if we need more room than available
-					if (newBubbles.length > spawnSlots) {
-						const evictCount = Math.min(
-							newBubbles.length - spawnSlots,
-							currentPhysics,
-						)
-						if (evictCount > 0) {
-							const evicted = this.discoveryService.evictOldest(evictCount)
-							const evictedIds = evicted.map((b) => b.id)
-							await this.physics.fadeOutBubbles(evictedIds)
-						}
-					}
-
-					// Only spawn up to the cap
-					const finalSlots = Math.max(0, maxBubbles - this.physics.bubbleCount)
-					const toSpawn = newBubbles.slice(0, finalSlots)
-					if (toSpawn.length > 0) {
-						this.physics.spawnBubblesAt(toSpawn, pos.x, pos.y)
-						this.preloadImages(toSpawn)
-					}
-				} else {
-					// Both similar and replacement pools exhausted
-					this.element.dispatchEvent(
-						new CustomEvent('similar-artists-unavailable', {
-							bubbles: true,
-							detail: { artistName: artist.name },
-						}),
-					)
-				}
-			} catch (err) {
-				this.logger.warn('Failed to load similar artists', err)
-				this.element.dispatchEvent(
-					new CustomEvent('similar-artists-error', {
-						bubbles: true,
-						detail: { artistName: artist.name, error: err },
-					}),
-				)
-			}
+			// Request parent to fetch similar artists and provide new bubbles
+			this.element.dispatchEvent(
+				new CustomEvent('need-more-bubbles', {
+					bubbles: true,
+					detail: {
+						artistId: artist.id,
+						artistName: artist.name,
+						position: { x: pos.x, y: pos.y },
+					},
+				}),
+			)
 		} finally {
 			this.isProcessing = false
 		}
@@ -350,7 +328,7 @@ export class DnaOrbCanvas {
 		this.absorptionAnimator.render(this.ctx)
 
 		// Render orb
-		this.orbRenderer.render(this.ctx, this.discoveryService.orbIntensity)
+		this.orbRenderer.render(this.ctx, this.orbIntensity)
 	}
 
 	private artistHue(name: string): number {
@@ -367,7 +345,7 @@ export class DnaOrbCanvas {
 		const y = body.position.y
 		const r = artist.radius * scale
 		const isFollowed =
-			this.showFollowedIndicator && this.discoveryService.isFollowed(artist.id)
+			this.showFollowedIndicator && this.followedIds.has(artist.id)
 
 		if (r < 1 || opacity < 0.01) return
 
