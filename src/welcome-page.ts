@@ -76,7 +76,7 @@ export class WelcomePage implements IRouteViewModel {
 		this.localClient.clearAll()
 		this.onboarding.setStep(OnboardingStep.DISCOVER)
 		try {
-			await this.router.load('onboarding/discover')
+			await this.router.load('discover')
 		} catch (err) {
 			this.logger.error('Failed to navigate to discover', { error: err })
 			this.toast.show(this.i18n.tr('welcome.error.navigation'))

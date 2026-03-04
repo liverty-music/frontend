@@ -1,6 +1,7 @@
 import { IRouter, IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IErrorBoundaryService } from './services/error-boundary-service'
+import { IOnboardingService } from './services/onboarding-service'
 
 @route({
 	title: 'Liverty Music',
@@ -24,12 +25,6 @@ import { IErrorBoundaryService } from './services/error-boundary-service'
 			data: { auth: false },
 		},
 		{
-			path: 'onboarding/discover',
-			component: import('./routes/artist-discovery/artist-discovery-page'),
-			title: 'Discover Artists',
-			data: { auth: false, tutorialStep: 1 },
-		},
-		{
 			path: 'onboarding/loading',
 			component: import('./routes/onboarding-loading/loading-sequence'),
 			title: 'Loading',
@@ -50,6 +45,7 @@ import { IErrorBoundaryService } from './services/error-boundary-service'
 			path: 'discover',
 			component: import('./routes/discover/discover-page'),
 			title: 'Discover',
+			data: { auth: false },
 		},
 		{
 			path: 'my-artists',
@@ -74,6 +70,7 @@ export class MyApp {
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
+	private readonly onboarding = resolve(IOnboardingService)
 	private readonly logger = resolve(ILogger).scopeTo('MyApp')
 
 	private readonly subscriptions: IDisposable[] = []
@@ -81,7 +78,6 @@ export class MyApp {
 	private readonly fullscreenRoutes = [
 		'',
 		'welcome',
-		'onboarding/discover',
 		'onboarding/loading',
 		'auth/callback',
 	]
@@ -99,7 +95,9 @@ export class MyApp {
 
 	public get showNav(): boolean {
 		const path = this.currentPath
-		return !this.fullscreenRoutes.some((r) => path === r)
+		if (this.fullscreenRoutes.some((r) => path === r)) return false
+		if (path === 'discover' && this.onboarding.isOnboarding) return false
+		return true
 	}
 
 	public binding(): void {

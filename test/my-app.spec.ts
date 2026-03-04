@@ -1,6 +1,8 @@
-import { IRouter } from '@aurelia/router'
+import { IRouter, IRouterEvents } from '@aurelia/router'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { IOnboardingService } from '../src/services/onboarding-service'
+import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 import { MyApp } from '../src/my-app'
 
 // Mock all dynamic imports used by the @route decorator on MyApp.
@@ -10,9 +12,6 @@ vi.mock('../src/welcome-page', () => ({ WelcomePage: class WelcomePage {} }))
 vi.mock('../src/about-page', () => ({ AboutPage: class AboutPage {} }))
 vi.mock('../src/routes/auth-callback', () => ({
 	AuthCallback: class AuthCallback {},
-}))
-vi.mock('../src/routes/artist-discovery/artist-discovery-page', () => ({
-	ArtistDiscoveryPage: class ArtistDiscoveryPage {},
 }))
 vi.mock('../src/routes/onboarding-loading/loading-sequence', () => ({
 	LoadingSequence: class LoadingSequence {},
@@ -62,6 +61,7 @@ describe('my-app', () => {
 
 	describe('showNav', () => {
 		let mockRouter: Record<string, unknown>
+		let mockOnboarding: { isOnboarding: boolean; currentStep: number }
 		let container: ReturnType<typeof DI.createContainer>
 		let sut: MyApp
 
@@ -75,9 +75,15 @@ describe('my-app', () => {
 
 		beforeEach(() => {
 			mockRouter = {}
+			mockOnboarding = { isOnboarding: false, currentStep: 7 }
 			setCurrentPath('')
 			container = DI.createContainer()
-			container.register(Registration.instance(IRouter, mockRouter as IRouter))
+			container.register(
+				Registration.instance(IRouter, mockRouter as IRouter),
+				Registration.instance(IRouterEvents, { subscribe: vi.fn(() => ({ dispose: vi.fn() })) }),
+				Registration.instance(IOnboardingService, mockOnboarding),
+				Registration.instance(IErrorBoundaryService, { captureError: vi.fn(), addBreadcrumb: vi.fn() }),
+			)
 			container.register(MyApp)
 			sut = container.get(MyApp)
 		})
@@ -92,9 +98,16 @@ describe('my-app', () => {
 			expect(sut.showNav).toBe(false)
 		})
 
-		it('should return false for onboarding/discover route', () => {
-			setCurrentPath('onboarding/discover')
+		it('should return false for discover route during onboarding', () => {
+			mockOnboarding.isOnboarding = true
+			setCurrentPath('discover')
 			expect(sut.showNav).toBe(false)
+		})
+
+		it('should return true for discover route when not onboarding', () => {
+			mockOnboarding.isOnboarding = false
+			setCurrentPath('discover')
+			expect(sut.showNav).toBe(true)
 		})
 
 		it('should return false for onboarding/loading route', () => {

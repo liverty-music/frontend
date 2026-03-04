@@ -1,4 +1,5 @@
 import { I18N } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import { ILogger, resolve, shadowCSS, useShadowDOM, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { IToastService } from '../../components/toast-notification/toast-notification'
@@ -6,6 +7,10 @@ import {
 	type ArtistBubble,
 	IArtistDiscoveryService,
 } from '../../services/artist-discovery-service'
+import {
+	IOnboardingService,
+	OnboardingStep,
+} from '../../services/onboarding-service'
 import css from './discover-page.css?raw'
 
 const GENRE_TAGS = [
@@ -26,9 +31,13 @@ export class DiscoverPage {
 	static dependencies = [shadowCSS(css)]
 
 	private readonly discoveryService = resolve(IArtistDiscoveryService)
+	private readonly onboarding = resolve(IOnboardingService)
+	private readonly router = resolve(IRouter)
 	private readonly toastService = resolve(IToastService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoverPage')
 	public readonly i18n = resolve(I18N)
+
+	private static readonly TUTORIAL_FOLLOW_TARGET = 3
 
 	public dnaOrbCanvas!: DnaOrbCanvas
 
@@ -43,8 +52,33 @@ export class DiscoverPage {
 	private searchDebounceTimer = 0
 	private abortController = new AbortController()
 
+	public showGuidance = true
+	public guidanceHiding = false
+
+	public get isOnboarding(): boolean {
+		return this.onboarding.isOnboarding
+	}
+
 	public get followedCount(): number {
 		return this.discoveryService.followedArtists.length
+	}
+
+	public get showCompleteButton(): boolean {
+		return (
+			this.isOnboarding &&
+			this.followedCount >= DiscoverPage.TUTORIAL_FOLLOW_TARGET
+		)
+	}
+
+	public get guidanceMessage(): string {
+		if (!this.isOnboarding) return ''
+		const count = this.followedCount
+		if (count === 0) return this.i18n.tr('discovery.guidanceStart')
+		const remaining = DiscoverPage.TUTORIAL_FOLLOW_TARGET - count
+		if (remaining >= 2)
+			return this.i18n.tr('discovery.guidanceRemaining', { remaining })
+		if (remaining === 1) return this.i18n.tr('discovery.guidanceLast')
+		return this.i18n.tr('discovery.guidanceReady')
 	}
 
 	public async loading(): Promise<void> {
@@ -173,6 +207,8 @@ export class DiscoverPage {
 			artist: artist.name,
 		})
 
+		this.dismissGuidance()
+
 		try {
 			await this.discoveryService.followArtist(artist)
 		} catch (err) {
@@ -261,5 +297,22 @@ export class DiscoverPage {
 			}),
 			'warning',
 		)
+	}
+
+	private dismissGuidance(): void {
+		if (!this.showGuidance || this.guidanceHiding) return
+		this.guidanceHiding = true
+		window.setTimeout(() => {
+			this.showGuidance = false
+			this.guidanceHiding = false
+		}, 400)
+	}
+
+	public async onViewSchedule(): Promise<void> {
+		this.logger.info('Tutorial: advancing to loading step', {
+			followedCount: this.followedCount,
+		})
+		this.onboarding.setStep(OnboardingStep.LOADING)
+		await this.router.load('onboarding/loading')
 	}
 }

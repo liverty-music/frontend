@@ -141,7 +141,7 @@ describe('LoadingSequence', () => {
 
 			const result = await sut.canLoad()
 
-			expect(result).toBe('onboarding/discover')
+			expect(result).toBe('discover')
 		})
 
 		it('should allow access when local followed artists exist but none in backend', async () => {
@@ -192,7 +192,7 @@ describe('LoadingSequence', () => {
 
 			const result = await sut.canLoad()
 
-			expect(result).toBe('onboarding/discover')
+			expect(result).toBe('discover')
 		})
 	})
 

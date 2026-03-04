@@ -52,6 +52,11 @@ vi.mock('../../src/services/concert-service', () => ({
 	IConcertService: mockIConcertService,
 }))
 
+const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
+vi.mock('../../src/services/artist-service-client', () => ({
+	IArtistServiceClient: mockIArtistServiceClient,
+}))
+
 const { ArtistDiscoveryService, IArtistDiscoveryService } = await import(
 	'../../src/services/artist-discovery-service'
 )
@@ -79,6 +84,7 @@ function makeBubble(id: string, name: string, mbid = ''): ArtistBubble {
 describe('ArtistDiscoveryService', () => {
 	let sut: InstanceType<typeof ArtistDiscoveryService>
 	let mockClient: Record<string, ReturnType<typeof vi.fn>>
+	let mockArtistServiceClient: { follow: ReturnType<typeof vi.fn>; unfollow: ReturnType<typeof vi.fn> }
 	let mockToast: ReturnType<typeof createMockToastService>
 	let mockConcertService: {
 		listConcerts: ReturnType<typeof vi.fn>
@@ -98,6 +104,10 @@ describe('ArtistDiscoveryService', () => {
 
 		const mockAuth = createMockAuth({ isAuthenticated: true })
 		mockToast = createMockToastService()
+		mockArtistServiceClient = {
+			follow: vi.fn().mockResolvedValue(undefined),
+			unfollow: vi.fn().mockResolvedValue(undefined),
+		}
 		mockConcertService = {
 			listConcerts: vi.fn().mockResolvedValue([]),
 			searchNewConcerts: vi.fn().mockResolvedValue(undefined),
@@ -108,6 +118,7 @@ describe('ArtistDiscoveryService', () => {
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIToastService, mockToast),
 			Registration.instance(mockIConcertService, mockConcertService),
+			Registration.instance(mockIArtistServiceClient, mockArtistServiceClient),
 		)
 		container.register(ArtistDiscoveryService)
 		sut = container.get(IArtistDiscoveryService)
@@ -311,34 +322,29 @@ describe('ArtistDiscoveryService', () => {
 			await sut.followArtist(artist)
 			await sut.followArtist(artist) // second call should be no-op
 
-			expect(mockClient.follow).toHaveBeenCalledTimes(1)
+			expect(mockArtistServiceClient.follow).toHaveBeenCalledTimes(1)
 		})
 
-		it('should retry once on first follow failure', async () => {
+		it('should delegate follow to ArtistServiceClient', async () => {
 			mockClient.listTop.mockResolvedValue({
 				artists: [makeArtist('a1', 'Artist One')],
 			})
 			await sut.loadInitialArtists()
 			const artist = sut.availableBubbles[0]
-
-			mockClient.follow
-				.mockRejectedValueOnce(new Error('network'))
-				.mockResolvedValueOnce({})
 
 			await sut.followArtist(artist)
 
-			expect(mockClient.follow).toHaveBeenCalledTimes(2)
-			expect(sut.followedArtists).toHaveLength(1)
+			expect(mockArtistServiceClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
 		})
 
-		it('should rollback optimistic update when follow fails after retry', async () => {
+		it('should rollback optimistic update when follow fails', async () => {
 			mockClient.listTop.mockResolvedValue({
 				artists: [makeArtist('a1', 'Artist One')],
 			})
 			await sut.loadInitialArtists()
 			const artist = sut.availableBubbles[0]
 
-			mockClient.follow.mockRejectedValue(new Error('persistent error'))
+			mockArtistServiceClient.follow.mockRejectedValue(new Error('persistent error'))
 
 			await expect(sut.followArtist(artist)).rejects.toThrow('persistent error')
 
