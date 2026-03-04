@@ -54,7 +54,7 @@ export class LoadingSequence {
 				this.logger.info(
 					'Tutorial: no guest followed artists, redirecting to discovery',
 				)
-				return 'onboarding/discover'
+				return 'discover'
 			}
 			this.logger.info('Tutorial: allowing loading sequence', { guestCount })
 			return true
@@ -83,7 +83,7 @@ export class LoadingSequence {
 				this.logger.info(
 					'User has no followed artists, redirecting to discovery',
 				)
-				return 'onboarding/discover'
+				return 'discover'
 			}
 
 			this.logger.info('Allowing access to loading sequence', {
@@ -101,7 +101,7 @@ export class LoadingSequence {
 
 			if (localFollowedCount === 0) {
 				this.logger.info('No local followed artists, redirecting to discovery')
-				return 'onboarding/discover'
+				return 'discover'
 			}
 
 			return true

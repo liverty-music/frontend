@@ -4,6 +4,7 @@ import type { PromiseClient } from '@connectrpc/connect'
 import { createPromiseClient } from '@connectrpc/connect'
 import { batch, DI, ILogger, resolve } from 'aurelia'
 import { IToastService } from '../components/toast-notification/toast-notification'
+import { IArtistServiceClient } from './artist-service-client'
 import { IAuthService } from './auth-service'
 import { IConcertService } from './concert-service'
 import { createTransport } from './grpc-transport'
@@ -29,6 +30,7 @@ export class ArtistDiscoveryService {
 	private readonly logger = resolve(ILogger).scopeTo('ArtistDiscoveryService')
 	private readonly toast = resolve(IToastService)
 	private readonly concertService = resolve(IConcertService)
+	private readonly artistServiceClient = resolve(IArtistServiceClient)
 	private readonly artistClient: PromiseClient<typeof ArtistService>
 
 	constructor() {
@@ -162,40 +164,31 @@ export class ArtistDiscoveryService {
 		this.followedArtists = [...this.followedArtists, artist]
 		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 
-		// Persist follow to backend with 1 retry
-		const req = { artistId: new ArtistId({ value: artist.id }) }
+		// Persist via ArtistServiceClient (handles onboarding/auth branching internally)
 		try {
-			await this.artistClient.follow(req)
+			await this.artistServiceClient.follow(artist.id, artist.name)
 			this.logger.info('Artist followed', {
 				followed: this.followedArtists.length,
 				orbIntensity: this.orbIntensity,
 			})
-		} catch (firstErr) {
-			this.logger.warn('Follow failed, retrying', {
+		} catch (err) {
+			this.logger.error('Failed to follow artist', {
 				artist: artist.name,
-				error: firstErr,
+				error: err,
 			})
-			try {
-				await this.artistClient.follow(req)
-				this.logger.info('Artist followed on retry', {
-					artist: artist.name,
-				})
-			} catch (retryErr) {
-				this.logger.error('Failed to follow artist after retry', retryErr)
 
-				// Rollback optimistic update atomically to avoid intermediate UI flicker
-				batch(() => {
-					this.followedArtists = this.followedArtists.filter(
-						(b) => b.id !== artist.id,
-					)
-					this.followedIds.delete(artist.id)
-					this.availableBubbles = [...this.availableBubbles, artist]
-					this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
-				})
+			// Rollback optimistic update atomically to avoid intermediate UI flicker
+			batch(() => {
+				this.followedArtists = this.followedArtists.filter(
+					(b) => b.id !== artist.id,
+				)
+				this.followedIds.delete(artist.id)
+				this.availableBubbles = [...this.availableBubbles, artist]
+				this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
+			})
 
-				this.toast.show(`Failed to follow ${artist.name}`)
-				throw retryErr
-			}
+			this.toast.show(`Failed to follow ${artist.name}`)
+			throw err
 		}
 	}
 

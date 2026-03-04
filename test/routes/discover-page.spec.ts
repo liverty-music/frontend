@@ -2,6 +2,7 @@ import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ArtistBubble } from '../../src/services/artist-discovery-service'
 import { createTestContainer } from '../helpers/create-container'
+import { createMockRouter } from '../helpers/mock-router'
 import { createMockArtistDiscoveryService } from '../helpers/mock-rpc-clients'
 import { createMockToastService } from '../helpers/mock-toast'
 
@@ -9,6 +10,12 @@ const mockIArtistDiscoveryService = DI.createInterface(
 	'IArtistDiscoveryService',
 )
 const mockIToastService = DI.createInterface('IToastService')
+const mockIRouter = DI.createInterface('IRouter')
+const mockIOnboardingService = DI.createInterface('IOnboardingService')
+
+vi.mock('@aurelia/router', () => ({
+	IRouter: mockIRouter,
+}))
 
 vi.mock('../../src/services/artist-discovery-service', () => ({
 	IArtistDiscoveryService: mockIArtistDiscoveryService,
@@ -16,6 +23,20 @@ vi.mock('../../src/services/artist-discovery-service', () => ({
 
 vi.mock('../../src/components/toast-notification/toast-notification', () => ({
 	IToastService: mockIToastService,
+}))
+
+vi.mock('../../src/services/onboarding-service', () => ({
+	IOnboardingService: mockIOnboardingService,
+	OnboardingStep: {
+		LP: 0,
+		DISCOVER: 1,
+		LOADING: 2,
+		DASHBOARD: 3,
+		DETAIL: 4,
+		MY_ARTISTS: 5,
+		SIGNUP: 6,
+		COMPLETED: 7,
+	},
 }))
 
 vi.mock('../../src/routes/discover/discover-page.css?raw', () => ({
@@ -32,16 +53,32 @@ describe('DiscoverPage', () => {
 	let sut: InstanceType<typeof DiscoverPage>
 	let mockDiscovery: ReturnType<typeof createMockArtistDiscoveryService>
 	let mockToast: ReturnType<typeof createMockToastService>
+	let mockRouter: ReturnType<typeof createMockRouter>
+	let mockOnboarding: {
+		currentStep: number
+		isOnboarding: boolean
+		setStep: ReturnType<typeof vi.fn>
+		complete: ReturnType<typeof vi.fn>
+	}
 
 	beforeEach(() => {
 		vi.useFakeTimers()
 
 		mockDiscovery = createMockArtistDiscoveryService()
 		mockToast = createMockToastService()
+		mockRouter = createMockRouter()
+		mockOnboarding = {
+			currentStep: 7,
+			isOnboarding: false,
+			setStep: vi.fn(),
+			complete: vi.fn(),
+		}
 
 		const container = createTestContainer(
 			Registration.instance(mockIArtistDiscoveryService, mockDiscovery),
 			Registration.instance(mockIToastService, mockToast),
+			Registration.instance(mockIRouter, mockRouter),
+			Registration.instance(mockIOnboardingService, mockOnboarding),
 		)
 		container.register(DiscoverPage)
 		sut = container.get(DiscoverPage)

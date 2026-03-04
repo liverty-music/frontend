@@ -167,6 +167,10 @@
 	},
 	"discovery": {
 		"guidance": "Tap bubbles to follow artists",
+		"guidanceStart": "Tap 3 of your favorite artists!",
+		"guidanceRemaining": "Nice! {{remaining}} more to go!",
+		"guidanceLast": "Just 1 more!",
+		"guidanceReady": "All set!",
 		"generateDashboard": "👉 Generate Dashboard",
 		"viewSchedule": "View Live Schedule ({{count}} artists)",
 		"orbLabel": "Music DNA",

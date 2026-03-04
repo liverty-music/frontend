@@ -44,6 +44,18 @@
       </button>
     </div>
 
+    <!-- Onboarding guidance (visible only during onboarding) -->
+    <div show.bind="isOnboarding" class="onboarding-hud">
+      <div class="progress-dots">
+        <span class="dot ${followedCount >= 1 ? 'filled' : ''}"></span>
+        <span class="dot ${followedCount >= 2 ? 'filled' : ''}"></span>
+        <span class="dot ${followedCount >= 3 ? 'filled' : ''}"></span>
+      </div>
+      <p class="hud-message ${guidanceHiding ? 'hiding' : ''}">
+        ${guidanceMessage}
+      </p>
+    </div>
+
     <!-- Bubble UI (hidden during search) -->
     <div class="bubble-area ${isSearchMode ? 'hidden' : ''}">
       <dna-orb-canvas
@@ -59,6 +71,16 @@
       <div class="orb-label">
         Music DNA ${followedCount > 0 ? '· ' + followedCount : ''}
       </div>
+    </div>
+
+    <!-- CTA button (onboarding only — normal mode uses bottom nav) -->
+    <div show.bind="showCompleteButton" class="complete-button-wrapper">
+      <button
+        click.trigger="onViewSchedule()"
+        class="complete-button tutorial-cta"
+      >
+        ${$this.i18n?.tr('discovery.generateDashboard') ?? ''}
+      </button>
     </div>
 
     <!-- Search results (shown during search) -->
