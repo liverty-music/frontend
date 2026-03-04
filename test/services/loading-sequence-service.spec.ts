@@ -172,9 +172,9 @@ describe('LoadingSequenceService', () => {
 				.mockRejectedValueOnce(new Error('network error'))
 				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
 			mockConcert.searchNewConcerts = vi.fn().mockResolvedValue(undefined)
-			mockConcert.listSearchStatuses = vi.fn().mockResolvedValue([
-				{ artistId: { value: 'a1' }, status: 2 },
-			])
+			mockConcert.listSearchStatuses = vi
+				.fn()
+				.mockResolvedValue([{ artistId: { value: 'a1' }, status: 2 }])
 
 			const promise = sut.aggregateData()
 			await vi.advanceTimersByTimeAsync(10_000)
@@ -203,9 +203,9 @@ describe('LoadingSequenceService', () => {
 				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
 			mockConcert.searchNewConcerts = vi.fn().mockResolvedValue(undefined)
 			// Always return pending
-			mockConcert.listSearchStatuses = vi.fn().mockResolvedValue([
-				{ artistId: { value: 'a1' }, status: 1 },
-			])
+			mockConcert.listSearchStatuses = vi
+				.fn()
+				.mockResolvedValue([{ artistId: { value: 'a1' }, status: 1 }])
 
 			const promise = sut.aggregateData()
 			// Advance past 45s timeout
@@ -226,9 +226,9 @@ describe('LoadingSequenceService', () => {
 				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
 			mockConcert.searchNewConcerts = vi.fn().mockResolvedValue(undefined)
 			// Immediately completed on first poll
-			mockConcert.listSearchStatuses = vi.fn().mockResolvedValue([
-				{ artistId: { value: 'a1' }, status: 2 },
-			])
+			mockConcert.listSearchStatuses = vi
+				.fn()
+				.mockResolvedValue([{ artistId: { value: 'a1' }, status: 2 }])
 
 			const promise = sut.aggregateData()
 
@@ -259,9 +259,7 @@ describe('LoadingSequenceService', () => {
 				if (pollCount === 1) {
 					return Promise.reject(new Error('network error'))
 				}
-				return Promise.resolve([
-					{ artistId: { value: 'a1' }, status: 2 },
-				])
+				return Promise.resolve([{ artistId: { value: 'a1' }, status: 2 }])
 			})
 
 			const promise = sut.aggregateData()

@@ -185,9 +185,7 @@ describe('ConcertServiceClient', () => {
 		})
 
 		it('should rethrow errors', async () => {
-			mockClient.listSearchStatuses.mockRejectedValue(
-				new Error('poll failed'),
-			)
+			mockClient.listSearchStatuses.mockRejectedValue(new Error('poll failed'))
 
 			await expect(sut.listSearchStatuses(['a1'])).rejects.toThrow(
 				'poll failed',
