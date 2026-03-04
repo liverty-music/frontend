@@ -13,6 +13,7 @@ export function createMockConcertService(): Partial<IConcertService> {
 		listConcerts: vi.fn().mockResolvedValue([]),
 		listByFollower: vi.fn().mockResolvedValue([]),
 		searchNewConcerts: vi.fn().mockResolvedValue(undefined),
+		listSearchStatuses: vi.fn().mockResolvedValue([]),
 	}
 }
 
