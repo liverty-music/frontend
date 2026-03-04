@@ -2,11 +2,13 @@
   <responsibilities>Aurelia 2 single-page PWA for music fans. Vite build, TailwindCSS v4,
   Biome linter, Zitadel OIDC auth, Vitest + Playwright testing.</responsibilities>
   <essential-commands>
-    npm start                        # Dev server
-    npm run build                    # Production build
-    npx @biomejs/biome check src/    # Lint
-    npx vitest                       # Unit tests
-    npx playwright test              # E2E tests
+    make lint              # Biome lint + format check + stylelint + typecheck (matches CI)
+    make fix               # Auto-fix formatting (biome check --write)
+    make test              # Unit tests with coverage (vitest)
+    make check             # Full pre-commit check (lint + test)
+    npm start              # Dev server
+    npm run build          # Production build
+    npx playwright test    # E2E tests
   </essential-commands>
 </poly-repo-context>
 

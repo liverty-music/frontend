@@ -36,6 +36,7 @@ jobs:
               - 'vite.config.ts'
               - 'vitest.config.ts'
               - 'biome.json'
+              - 'Makefile'
               - '.github/workflows/**'
 
   lint:
@@ -57,11 +58,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run linter
-        run: npx biome lint src test && npm run lint:css
-
-      - name: Check formatting
-        run: npx biome format src test
+      - name: Run make lint
+        run: make lint
 
   lint-skip:
     needs: changes
@@ -70,36 +68,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "No relevant changes, skipping lint"
-
-  typecheck:
-    needs: changes
-    if: needs.changes.outputs.src == 'true'
-    name: Typecheck
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run type check
-        run: npx tsc --noEmit
-
-  typecheck-skip:
-    needs: changes
-    if: needs.changes.outputs.src == 'false'
-    name: Typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No relevant changes, skipping typecheck"
 
   test:
     needs: changes
@@ -120,8 +88,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests with coverage
-        run: npx vitest run --coverage
+      - name: Run make test
+        run: make test
 
       - name: Report coverage on PR
         uses: davelosert/vitest-coverage-report-action@v2
@@ -181,10 +149,10 @@ jobs:
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [changes, lint, lint-skip, typecheck, typecheck-skip, test, test-skip, security, security-skip]
+    needs: [changes, lint, lint-skip, test, test-skip, security, security-skip]
     if: always()
     steps:
       - uses: re-actors/alls-green@release/v1
         with:
-          allowed-skips: lint, lint-skip, typecheck, typecheck-skip, test, test-skip, security, security-skip
+          allowed-skips: lint, lint-skip, test, test-skip, security, security-skip
           jobs: ${{ toJSON(needs) }}
