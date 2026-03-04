@@ -1,5 +1,4 @@
 import { vi } from 'vitest'
-import type { IArtistDiscoveryService } from '../../src/services/artist-discovery-service'
 import type { IArtistServiceClient } from '../../src/services/artist-service-client'
 import type { IAuthService } from '../../src/services/auth-service'
 import type { IConcertService } from '../../src/services/concert-service'
@@ -25,6 +24,10 @@ export function createMockArtistServiceClient(): Partial<IArtistServiceClient> {
 		listFollowed: vi.fn().mockResolvedValue([]),
 		follow: vi.fn().mockResolvedValue(undefined),
 		unfollow: vi.fn().mockResolvedValue(undefined),
+		listTop: vi.fn().mockResolvedValue([]),
+		listSimilar: vi.fn().mockResolvedValue([]),
+		search: vi.fn().mockResolvedValue([]),
+		listFollowedAsBubbles: vi.fn().mockResolvedValue([]),
 		getClient: vi.fn().mockReturnValue({
 			listFollowed: vi.fn().mockResolvedValue({ artists: [] }),
 			getTopArtists: vi.fn().mockResolvedValue({ artists: [] }),
@@ -59,26 +62,5 @@ export function createMockUserService(): Partial<IUserService> {
 			create: vi.fn().mockResolvedValue({}),
 		} as unknown as IUserService['client'],
 		updateHome: vi.fn().mockResolvedValue(undefined),
-	}
-}
-
-/**
- * Creates a mock implementation of IArtistDiscoveryService for testing.
- */
-export function createMockArtistDiscoveryService(): Partial<IArtistDiscoveryService> {
-	return {
-		availableBubbles: [],
-		followedArtists: [],
-		orbIntensity: 0,
-		loadInitialArtists: vi.fn().mockResolvedValue(undefined),
-		followArtist: vi.fn().mockResolvedValue(undefined),
-		markFollowed: vi.fn(),
-		getSimilarArtists: vi.fn().mockResolvedValue([]),
-		addToPool: vi.fn().mockReturnValue([]),
-		checkLiveEvents: vi.fn().mockResolvedValue(false),
-		listFollowedFromBackend: vi.fn().mockResolvedValue([]),
-		isFollowed: vi.fn().mockReturnValue(false),
-		searchArtists: vi.fn().mockResolvedValue([]),
-		reloadWithTag: vi.fn().mockResolvedValue(undefined),
 	}
 }

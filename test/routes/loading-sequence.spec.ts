@@ -4,13 +4,11 @@ import { createTestContainer } from '../helpers/create-container'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 import { createMockLoadingSequenceService } from '../helpers/mock-loading-sequence'
 import { createMockRouter } from '../helpers/mock-router'
-import { createMockArtistDiscoveryService } from '../helpers/mock-rpc-clients'
+import { createMockArtistServiceClient } from '../helpers/mock-rpc-clients'
 import { createMockToastService } from '../helpers/mock-toast'
 
 const mockIRouter = DI.createInterface('IRouter')
-const mockIArtistDiscoveryService = DI.createInterface(
-	'IArtistDiscoveryService',
-)
+const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
 const mockILoadingSequenceService = DI.createInterface(
 	'ILoadingSequenceService',
 )
@@ -23,8 +21,8 @@ vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
 }))
 
-vi.mock('../../src/services/artist-discovery-service', () => ({
-	IArtistDiscoveryService: mockIArtistDiscoveryService,
+vi.mock('../../src/services/artist-service-client', () => ({
+	IArtistServiceClient: mockIArtistServiceClient,
 }))
 
 vi.mock('../../src/services/loading-sequence-service', () => ({
@@ -72,7 +70,7 @@ const { LoadingSequence } = await import(
 describe('LoadingSequence', () => {
 	let sut: InstanceType<typeof LoadingSequence>
 	let mockRouter: ReturnType<typeof createMockRouter>
-	let mockDiscovery: ReturnType<typeof createMockArtistDiscoveryService>
+	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
 	let mockLoadingService: ReturnType<typeof createMockLoadingSequenceService>
 	let mockToast: ReturnType<typeof createMockToastService>
 	let mockErrorBoundary: ReturnType<typeof createMockErrorBoundary>
@@ -91,7 +89,7 @@ describe('LoadingSequence', () => {
 		vi.useFakeTimers()
 
 		mockRouter = createMockRouter()
-		mockDiscovery = createMockArtistDiscoveryService()
+		mockArtistClient = createMockArtistServiceClient()
 		mockLoadingService = createMockLoadingSequenceService()
 		mockToast = createMockToastService()
 		mockErrorBoundary = createMockErrorBoundary()
@@ -108,7 +106,7 @@ describe('LoadingSequence', () => {
 
 		const container = createTestContainer(
 			Registration.instance(mockIRouter, mockRouter),
-			Registration.instance(mockIArtistDiscoveryService, mockDiscovery),
+			Registration.instance(mockIArtistServiceClient, mockArtistClient),
 			Registration.instance(mockILoadingSequenceService, mockLoadingService),
 			Registration.instance(mockIToastService, mockToast),
 			Registration.instance(mockIErrorBoundaryService, mockErrorBoundary),
@@ -126,9 +124,9 @@ describe('LoadingSequence', () => {
 
 	describe('canLoad', () => {
 		it('should redirect to dashboard when backend has followed artists', async () => {
-			mockDiscovery.listFollowedFromBackend = vi
-				.fn()
-				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
 
 			const result = await sut.canLoad()
 
@@ -136,8 +134,10 @@ describe('LoadingSequence', () => {
 		})
 
 		it('should redirect to discovery when no followed artists anywhere', async () => {
-			mockDiscovery.listFollowedFromBackend = vi.fn().mockResolvedValue([])
-			mockDiscovery.followedArtists = []
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([])
+			mockLocalClient.followedCount = 0
 
 			const result = await sut.canLoad()
 
@@ -145,18 +145,10 @@ describe('LoadingSequence', () => {
 		})
 
 		it('should allow access when local followed artists exist but none in backend', async () => {
-			mockDiscovery.listFollowedFromBackend = vi.fn().mockResolvedValue([])
-			mockDiscovery.followedArtists = [
-				{
-					id: 'a1',
-					name: 'Local Artist',
-					mbid: '',
-					imageUrl: '',
-					x: 0,
-					y: 0,
-					radius: 30,
-				},
-			]
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue([])
+			mockLocalClient.followedCount = 1
 
 			const result = await sut.canLoad()
 
@@ -164,20 +156,10 @@ describe('LoadingSequence', () => {
 		})
 
 		it('should fallback to local state when backend fetch fails with local artists', async () => {
-			mockDiscovery.listFollowedFromBackend = vi
-				.fn()
-				.mockRejectedValue(new Error('network error'))
-			mockDiscovery.followedArtists = [
-				{
-					id: 'a1',
-					name: 'Local Artist',
-					mbid: '',
-					imageUrl: '',
-					x: 0,
-					y: 0,
-					radius: 30,
-				},
-			]
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockRejectedValue(new Error('network error'))
+			mockLocalClient.followedCount = 1
 
 			const result = await sut.canLoad()
 
@@ -185,10 +167,10 @@ describe('LoadingSequence', () => {
 		})
 
 		it('should redirect to discovery when backend fails and no local artists', async () => {
-			mockDiscovery.listFollowedFromBackend = vi
-				.fn()
-				.mockRejectedValue(new Error('network error'))
-			mockDiscovery.followedArtists = []
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockRejectedValue(new Error('network error'))
+			mockLocalClient.followedCount = 0
 
 			const result = await sut.canLoad()
 

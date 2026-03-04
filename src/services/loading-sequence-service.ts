@@ -1,6 +1,6 @@
 import { SearchStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
-import { IArtistDiscoveryService } from './artist-discovery-service'
+import { IArtistServiceClient } from './artist-service-client'
 import { IConcertService } from './concert-service'
 
 export const ILoadingSequenceService =
@@ -20,7 +20,7 @@ const MINIMUM_DISPLAY_MS = 3000
 const POLL_INTERVAL_MS = 3000
 
 export class LoadingSequenceService {
-	private readonly artistDiscoveryService = resolve(IArtistDiscoveryService)
+	private readonly artistClient = resolve(IArtistServiceClient)
 	private readonly concertService = resolve(IConcertService)
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequenceService')
 
@@ -103,8 +103,7 @@ export class LoadingSequenceService {
 		while (attempt <= maxRetries) {
 			try {
 				this.logger.info('Fetching followed artists', { attempt })
-				const followed =
-					await this.artistDiscoveryService.listFollowedFromBackend(signal)
+				const followed = await this.artistClient.listFollowedAsBubbles(signal)
 				const artists = followed.map((a) => ({
 					id: a.id,
 					name: a.name,

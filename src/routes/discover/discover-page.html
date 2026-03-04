@@ -60,11 +60,13 @@
     <div class="bubble-area ${isSearchMode ? 'hidden' : ''}">
       <dna-orb-canvas
         component.ref="dnaOrbCanvas"
+        artists.bind="poolBubbles"
+        orb-intensity.bind="orbIntensity"
+        followed-ids.bind="poolFollowedIds"
         followed-count.bind="followedCount"
         show-followed-indicator.bind="true"
         artist-selected.trigger="onArtistSelected($event)"
-        similar-artists-unavailable.trigger="onSimilarArtistsUnavailable($event)"
-        similar-artists-error.trigger="onSimilarArtistsError($event)"
+        need-more-bubbles.trigger="onNeedMoreBubbles($event)"
       ></dna-orb-canvas>
 
       <!-- Orb label -->
