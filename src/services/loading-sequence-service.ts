@@ -138,6 +138,9 @@ export class LoadingSequenceService {
 			artistCount: artistIds.length,
 		})
 
+		let lastCompleted = 0
+		let lastFailed = 0
+
 		while (!signal.aborted) {
 			await this.delay(POLL_INTERVAL_MS, signal).catch(() => {
 				// Abort during delay is expected
@@ -162,6 +165,8 @@ export class LoadingSequenceService {
 					}
 				}
 
+				lastCompleted = completed
+				lastFailed = failed
 				this.completedCount = completed + failed
 				this.logger.info('Poll result', {
 					completed,
@@ -179,9 +184,14 @@ export class LoadingSequenceService {
 			}
 		}
 
-		// Aborted (timeout) — proceed with available data
-		this.logger.warn('Polling aborted, proceeding with available data')
-		return 0
+		// Aborted (timeout) — treat pending artists as failures
+		const nonTerminal = artistIds.length - lastCompleted - lastFailed
+		this.logger.warn('Polling aborted, proceeding with available data', {
+			lastCompleted,
+			lastFailed,
+			nonTerminal,
+		})
+		return lastFailed + nonTerminal
 	}
 
 	private delay(ms: number, signal?: AbortSignal): Promise<void> {

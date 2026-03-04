@@ -197,7 +197,7 @@ describe('LoadingSequenceService', () => {
 			expect(mockDiscovery.listFollowedFromBackend).toHaveBeenCalledTimes(2)
 		})
 
-		it('should abort after global timeout (45s)', async () => {
+		it('should abort after global timeout (45s) and report partial', async () => {
 			mockDiscovery.listFollowedFromBackend = vi
 				.fn()
 				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
@@ -212,8 +212,12 @@ describe('LoadingSequenceService', () => {
 			await vi.advanceTimersByTimeAsync(46_000)
 			const result = await promise
 
-			// Timeout: proceed with available data (returns success, not error)
-			expect(result.status).toBe('success')
+			// Timeout: pending artists treated as failures → partial
+			expect(result).toEqual({
+				status: 'partial',
+				failedCount: 1,
+				totalCount: 1,
+			})
 		})
 
 		it('should wait for minimum display duration', async () => {
