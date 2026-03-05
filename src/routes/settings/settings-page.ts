@@ -1,6 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve } from 'aurelia'
-import { AreaSelectorSheet } from '../../components/area-selector-sheet/area-selector-sheet'
+import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IToastService } from '../../components/toast-notification/toast-notification'
 import { shortDisplayName } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
@@ -18,15 +18,15 @@ export class SettingsPage {
 	private readonly toastService = resolve(IToastService)
 	private readonly i18n = resolve(I18N)
 
-	public currentArea: string | null = null
+	public currentHome: string | null = null
 	public notificationsEnabled = false
 	public vapidAvailable = !!(import.meta.env.VITE_VAPID_PUBLIC_KEY ?? '')
-	public areaSheet!: AreaSelectorSheet
+	public homeSelector!: UserHomeSelector
 	private isToggling = false
 
-	public get currentAreaDisplay(): string {
-		if (!this.currentArea) return this.i18n.tr('settings.notSet')
-		return this.i18n.tr(`region.prefectures.${this.currentArea}`)
+	public get currentHomeDisplay(): string {
+		if (!this.currentHome) return this.i18n.tr('settings.notSet')
+		return this.i18n.tr(`userHome.prefectures.${this.currentHome}`)
 	}
 
 	public get currentLanguageLabel(): string {
@@ -35,8 +35,8 @@ export class SettingsPage {
 	}
 
 	public loading(): void {
-		const code = AreaSelectorSheet.getStoredArea()
-		this.currentArea = code ? shortDisplayName(code) : null
+		const code = UserHomeSelector.getStoredHome()
+		this.currentHome = code ? shortDisplayName(code) : null
 		const storedPref =
 			localStorage.getItem(StorageKeys.userNotificationsEnabled) === 'true'
 		// If the browser permission was revoked externally, override the stored preference
@@ -44,13 +44,13 @@ export class SettingsPage {
 			storedPref && this.notificationManager.permission === 'granted'
 	}
 
-	public openAreaSelector(): void {
-		this.areaSheet.open()
+	public openHomeSelector(): void {
+		this.homeSelector.open()
 	}
 
-	public onAreaSelected(code: string): void {
-		this.currentArea = shortDisplayName(code)
-		this.logger.info('Area updated from settings', { code })
+	public onHomeSelected(code: string): void {
+		this.currentHome = shortDisplayName(code)
+		this.logger.info('Home area updated from settings', { code })
 	}
 
 	public async cycleLanguage(): Promise<void> {

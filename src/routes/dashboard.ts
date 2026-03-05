@@ -2,7 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import type { DateGroup } from '../components/live-highway/live-event'
-import { RegionSetupSheet } from '../components/region-setup-sheet/region-setup-sheet'
+import { UserHomeSelector } from '../components/user-home-selector/user-home-selector'
 import { IDashboardService } from '../services/dashboard-service'
 import { ILocalArtistClient } from '../services/local-artist-client'
 import {
@@ -16,7 +16,7 @@ export class Dashboard {
 	public loadError: unknown = null
 	public isStale = false
 
-	public regionSheet!: RegionSetupSheet
+	public homeSelector!: UserHomeSelector
 
 	private readonly logger = resolve(ILogger).scopeTo('Dashboard')
 	public readonly i18n = resolve(I18N)
@@ -41,7 +41,7 @@ export class Dashboard {
 	}
 
 	public async loading(): Promise<void> {
-		this.needsRegion = !RegionSetupSheet.getStoredRegion()
+		this.needsRegion = !UserHomeSelector.getStoredHome()
 		this.loadData()
 	}
 
@@ -79,15 +79,15 @@ export class Dashboard {
 
 	public attached(): void {
 		if (this.needsRegion) {
-			this.regionSheet.open()
+			this.homeSelector.open()
 		}
 	}
 
-	public onRegionSelected(region: string): void {
-		this.logger.info('Region configured', { region })
+	public onHomeSelected(code: string): void {
+		this.logger.info('Home area configured', { code })
 		this.needsRegion = false
 		if (this.isOnboarding) {
-			this.localClient.setHome(region)
+			this.localClient.setHome(code)
 		}
 	}
 

@@ -20,13 +20,13 @@
 		"button": "Create Account with Passkey",
 		"error": "Account creation failed. Please try again."
 	},
-	"region": {
-		"title": "Tell Us Your Area",
-		"description": "Select your area to find live events nearby.",
-		"majorCities": "Major Cities",
-		"selectByPrefecture": "Select by Prefecture",
-		"placeholder": "Select",
-		"confirm": "Confirm",
+	"userHome": {
+		"title": "Select Your Home Area",
+		"description": "Find live events near you.",
+		"quickSelect": "Quick Select",
+		"selectByRegion": "Select by Region",
+		"selectPrefecture": "Select your prefecture.",
+		"back": "Back",
 		"cities": {
 			"tokyo": "Tokyo",
 			"osaka": "Osaka",
@@ -95,14 +95,9 @@
 			"kyushu": "Kyushu"
 		}
 	},
-	"areaSelector": {
-		"title": "Change My Area",
-		"description": "Select a region to find prefectures near you.",
-		"selectPrefecture": "Select your prefecture."
-	},
 	"dashboard": {
 		"header": {
-			"myCity": "My City",
+			"homeArea": "Home Area",
 			"region": "Region",
 			"others": "Others"
 		},
@@ -209,7 +204,7 @@
 	"settings": {
 		"title": "Settings",
 		"preferences": "Preferences",
-		"myArea": "My Area",
+		"myHomeArea": "My Home Area",
 		"notSet": "Not set",
 		"pushNotifications": "Push Notifications",
 		"notAvailable": "Not available in this environment",

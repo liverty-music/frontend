@@ -119,17 +119,17 @@ describe('i18n language switching', () => {
 		expect(mockI18n.tr).toHaveBeenCalledWith('languages.en')
 	})
 
-	it('should use i18n.tr for area display when area is set', () => {
-		sut.currentArea = 'tokyo'
-		const display = sut.currentAreaDisplay
+	it('should use i18n.tr for home display when home is set', () => {
+		sut.currentHome = 'tokyo'
+		const display = sut.currentHomeDisplay
 
-		expect(mockI18n.tr).toHaveBeenCalledWith('region.prefectures.tokyo')
-		expect(display).toBe('region.prefectures.tokyo')
+		expect(mockI18n.tr).toHaveBeenCalledWith('userHome.prefectures.tokyo')
+		expect(display).toBe('userHome.prefectures.tokyo')
 	})
 
-	it('should use i18n.tr for "not set" when area is null', () => {
-		sut.currentArea = null
-		const display = sut.currentAreaDisplay
+	it('should use i18n.tr for "not set" when home is null', () => {
+		sut.currentHome = null
+		const display = sut.currentHomeDisplay
 
 		expect(mockI18n.tr).toHaveBeenCalledWith('settings.notSet')
 		expect(display).toBe('settings.notSet')

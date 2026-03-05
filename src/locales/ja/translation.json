@@ -20,13 +20,13 @@
 		"button": "Passkeyでアカウント作成",
 		"error": "アカウント作成に失敗しました。もう一度お試しください。"
 	},
-	"region": {
-		"title": "あなたのエリアを教えてください",
-		"description": "近くのライブイベントを見つけるために、お住まいの地域を選んでください。",
-		"majorCities": "主要都市",
-		"selectByPrefecture": "都道府県から選ぶ",
-		"placeholder": "選択してください",
-		"confirm": "決定",
+	"userHome": {
+		"title": "ホームエリアを選択",
+		"description": "お住まいの地域を選んで近くのライブイベントを見つけましょう。",
+		"quickSelect": "主要都市",
+		"selectByRegion": "地方から選ぶ",
+		"selectPrefecture": "都道府県を選んでください。",
+		"back": "戻る",
 		"cities": {
 			"tokyo": "東京",
 			"osaka": "大阪",
@@ -95,14 +95,9 @@
 			"kyushu": "九州"
 		}
 	},
-	"areaSelector": {
-		"title": "エリアを変更",
-		"description": "地域を選んで近くの都道府県を探しましょう。",
-		"selectPrefecture": "都道府県を選んでください。"
-	},
 	"dashboard": {
 		"header": {
-			"myCity": "マイシティ",
+			"homeArea": "ホームエリア",
 			"region": "地域",
 			"others": "その他"
 		},
@@ -209,7 +204,7 @@
 	"settings": {
 		"title": "設定",
 		"preferences": "環境設定",
-		"myArea": "マイエリア",
+		"myHomeArea": "ホームエリア",
 		"notSet": "未設定",
 		"pushNotifications": "プッシュ通知",
 		"notAvailable": "この環境では利用できません",

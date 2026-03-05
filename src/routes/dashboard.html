@@ -1,5 +1,5 @@
 <import from="../components/notification-prompt/notification-prompt"></import>
-<import from="../components/region-setup-sheet/region-setup-sheet"></import>
+<import from="../components/user-home-selector/user-home-selector"></import>
 <import from="../components/inline-error/inline-error"></import>
 <import from="../components/coach-mark/coach-mark"></import>
 
@@ -9,7 +9,7 @@
     <div class="flex items-center justify-between">
       <h1 class="font-display text-xl font-bold text-text-primary tracking-tight">Live Highway</h1>
       <div class="grid grid-cols-3 text-[10px] text-text-muted gap-x-3 font-medium">
-        <span t="dashboard.header.myCity"></span>
+        <span t="dashboard.header.homeArea"></span>
         <span t="dashboard.header.region"></span>
         <span t="dashboard.header.others"></span>
       </div>
@@ -81,11 +81,11 @@
   </div>
 </div>
 
-<!-- Region setup bottom sheet -->
-<region-setup-sheet
-  component.ref="regionSheet"
-  on-region-selected.bind="(region) => onRegionSelected(region)"
-></region-setup-sheet>
+<!-- Home area selector bottom sheet -->
+<user-home-selector
+  component.ref="homeSelector"
+  on-home-selected.bind="(code) => onHomeSelected(code)"
+></user-home-selector>
 
 <!-- Tutorial Step 3: Spotlight on first concert card -->
 <coach-mark

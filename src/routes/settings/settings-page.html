@@ -1,4 +1,4 @@
-<import from="../../components/area-selector-sheet/area-selector-sheet"></import>
+<import from="../../components/user-home-selector/user-home-selector"></import>
 
 <div class="min-h-screen bg-surface-base text-text-primary pb-20">
   <!-- Header -->
@@ -11,9 +11,9 @@
     <section>
       <h2 t="settings.preferences" class="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2 px-1"></h2>
       <div class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 overflow-hidden">
-        <!-- My Area -->
+        <!-- My Home Area -->
         <button
-          click.trigger="openAreaSelector()"
+          click.trigger="openHomeSelector()"
           class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition-colors"
         >
           <div class="flex items-center gap-3">
@@ -21,10 +21,10 @@
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path>
               <circle cx="12" cy="10" r="3"></circle>
             </svg>
-            <span t="settings.myArea" class="text-sm text-text-primary"></span>
+            <span t="settings.myHomeArea" class="text-sm text-text-primary"></span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-sm text-text-secondary">${currentAreaDisplay}</span>
+            <span class="text-sm text-text-secondary">${currentHomeDisplay}</span>
             <svg class="w-4 h-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 18l6-6-6-6"></path>
             </svg>
@@ -148,8 +148,8 @@
   </div>
 </div>
 
-<!-- Area Selector Bottom Sheet -->
-<area-selector-sheet
-  component.ref="areaSheet"
-  on-area-selected.bind="(area) => onAreaSelected(area)"
-></area-selector-sheet>
+<!-- Home Area Selector Bottom Sheet -->
+<user-home-selector
+  component.ref="homeSelector"
+  on-home-selected.bind="(code) => onHomeSelected(code)"
+></user-home-selector>
