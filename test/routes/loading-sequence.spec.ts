@@ -243,46 +243,14 @@ describe('LoadingSequence', () => {
 		})
 	})
 
-	describe('loading - onboarding flow', () => {
-		beforeEach(() => {
+	describe('canLoad - onboarding redirect', () => {
+		it('should redirect onboarding users to dashboard', async () => {
 			mockOnboarding.isOnboarding = true
 			mockOnboarding.currentStep = 2
-			mockLocalClient.followedCount = 3
-		})
 
-		it('should return immediately from loading() without waiting', async () => {
-			sut.binding()
-			await sut.loading()
+			const result = await sut.canLoad()
 
-			// loading() should NOT have set the step or navigated yet
-			expect(mockOnboarding.setStep).not.toHaveBeenCalled()
-			expect(mockRouter.load).not.toHaveBeenCalled()
-		})
-
-		it('should navigate to dashboard after 3s display in attached()', async () => {
-			sut.binding()
-			await sut.loading()
-			sut.attached()
-
-			// Before 3s: still on loading screen
-			await vi.advanceTimersByTimeAsync(2999)
-			expect(mockRouter.load).not.toHaveBeenCalled()
-
-			// At 3s: navigates to dashboard
-			await vi.advanceTimersByTimeAsync(1)
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith(3) // DASHBOARD
-			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
-		})
-
-		it('should clear display timer on unbinding', async () => {
-			sut.binding()
-			await sut.loading()
-			sut.attached()
-
-			sut.unbinding()
-			await vi.advanceTimersByTimeAsync(5000)
-
-			expect(mockRouter.load).not.toHaveBeenCalled()
+			expect(result).toBe('dashboard')
 		})
 	})
 

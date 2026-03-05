@@ -364,11 +364,11 @@ export class DiscoverPage {
 	}
 
 	public async onViewSchedule(): Promise<void> {
-		this.logger.info('Tutorial: advancing to loading step', {
+		this.logger.info('Tutorial: advancing to dashboard', {
 			followedCount: this.followedCount,
 		})
-		this.onboarding.setStep(OnboardingStep.LOADING)
-		await this.router.load('onboarding/loading')
+		this.onboarding.setStep(OnboardingStep.DASHBOARD)
+		await this.router.load('/dashboard')
 	}
 
 	// --- Data orchestration methods (moved from ArtistDiscoveryService) ---
