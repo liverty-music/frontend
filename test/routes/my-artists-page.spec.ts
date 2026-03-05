@@ -108,6 +108,18 @@ describe('MyArtistsPage', () => {
 		)
 		container.register(MyArtistsPage)
 		sut = container.get(MyArtistsPage)
+
+		// Mock dialog elements for Top Layer API
+		for (const name of [
+			'contextMenuDialog',
+			'passionSelectorDialog',
+			'passionExplanationDialog',
+		]) {
+			const mockDialog = document.createElement('dialog')
+			;(mockDialog as any).showModal = vi.fn()
+			;(mockDialog as any).close = vi.fn()
+			;(sut as any)[name] = mockDialog
+		}
 	})
 
 	describe('loading', () => {

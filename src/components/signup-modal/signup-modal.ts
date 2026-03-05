@@ -8,9 +8,19 @@ export class SignupModal {
 	public isSigningUp = false
 	public signUpError = ''
 
+	private dialogElement!: HTMLDialogElement
 	private readonly authService = resolve(IAuthService)
 	private readonly logger = resolve(ILogger).scopeTo('SignupModal')
 	private readonly i18n = resolve(I18N)
+
+	public activeChanged(newValue: boolean): void {
+		if (!this.dialogElement) return
+		if (newValue) {
+			this.dialogElement.showModal()
+		} else {
+			this.dialogElement.close()
+		}
+	}
 
 	public async handleSignUp(): Promise<void> {
 		if (this.isSigningUp) return

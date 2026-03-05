@@ -1,5 +1,5 @@
 import { I18N } from '@aurelia/i18n'
-import { ILogger, resolve } from 'aurelia'
+import { ILogger, resolve, watch } from 'aurelia'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IToastService } from '../toast-notification/toast-notification'
 
@@ -9,8 +9,19 @@ export class ErrorBanner {
 	private readonly logger = resolve(ILogger).scopeTo('ErrorBanner')
 	private readonly i18n = resolve(I18N)
 
+	private dialogElement!: HTMLDialogElement
 	private lastReportTime = 0
 	private static readonly REPORT_COOLDOWN_MS = 60_000
+
+	@watch<ErrorBanner>((eb) => eb.errorBoundary.currentError)
+	// biome-ignore lint/correctness/noUnusedPrivateClassMembers: invoked by @watch decorator
+	private onErrorChanged(): void {
+		if (this.errorBoundary.currentError) {
+			this.dialogElement.showModal()
+		} else {
+			this.dialogElement.close()
+		}
+	}
 
 	public async copyErrorDetails(): Promise<void> {
 		const error = this.errorBoundary.currentError

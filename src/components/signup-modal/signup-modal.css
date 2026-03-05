@@ -1,0 +1,14 @@
+.signup-dialog {
+	position: fixed;
+	inset: 0;
+	margin: auto;
+	padding: 0;
+	border: none;
+	max-width: fit-content;
+	max-height: fit-content;
+	background: transparent;
+}
+
+.signup-dialog::backdrop {
+	background: oklch(0% 0 0deg / 85%);
+}

@@ -1,4 +1,5 @@
 <import from="../../components/coach-mark/coach-mark"></import>
+<import from="./my-artists-page.css"></import>
 
 <div class="h-screen flex flex-col bg-surface-base text-text-primary pb-14">
   <!-- Header -->
@@ -117,16 +118,13 @@
     </div>
   </div>
 
-  <!-- Grid context menu overlay -->
-  <div
-    if.bind="contextMenuArtist"
-    class="absolute inset-0 z-50 flex items-end"
+  <!-- Grid context menu dialog -->
+  <dialog
+    ref="contextMenuDialog"
+    click.trigger="onContextMenuDialogClick($event)"
+    class="bottom-sheet-dialog"
   >
-    <div
-      click.trigger="closeContextMenu()"
-      class="absolute inset-0 bg-black/50"
-    ></div>
-    <div class="relative w-full bg-surface-raised border-t border-white/10 rounded-t-2xl px-4 pt-4 pb-6">
+    <div if.bind="contextMenuArtist" class="w-full bg-surface-raised border-t border-white/10 rounded-t-2xl px-4 pt-4 pb-6">
       <div class="text-sm text-text-muted mb-3 truncate">${contextMenuArtist.name}</div>
       <div class="flex flex-col gap-1">
         <button
@@ -152,7 +150,7 @@
         </button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <!-- Undo toast -->
   <div
@@ -168,19 +166,13 @@
     ></button>
   </div>
 
-  <!-- Passion level selector overlay -->
-  <div
-    if.bind="selectorArtist"
-    class="absolute inset-0 z-50 flex items-end"
+  <!-- Passion level selector dialog -->
+  <dialog
+    ref="passionSelectorDialog"
+    click.trigger="onPassionSelectorDialogClick($event)"
+    class="bottom-sheet-dialog"
   >
-    <!-- Backdrop -->
-    <div
-      click.trigger="closePassionSelector()"
-      class="absolute inset-0 bg-black/50"
-    ></div>
-
-    <!-- Bottom sheet -->
-    <div class="relative w-full bg-surface-raised border-t border-white/10 rounded-t-2xl px-4 pt-4 pb-6">
+    <div if.bind="selectorArtist" class="w-full bg-surface-raised border-t border-white/10 rounded-t-2xl px-4 pt-4 pb-6">
       <div class="text-sm text-text-muted mb-3 truncate">${selectorArtist.name}</div>
       <div class="flex flex-col gap-1">
         <button
@@ -193,7 +185,7 @@
         </button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <!-- Tutorial Step 5: Coach mark on first artist's passion button -->
   <coach-mark
@@ -203,9 +195,10 @@
   ></coach-mark>
 
   <!-- Tutorial: Passion level notification explanation -->
-  <div
-    if.bind="showPassionExplanation"
-    class="absolute inset-0 z-[60] flex items-center justify-center bg-black/70"
+  <dialog
+    ref="passionExplanationDialog"
+    cancel.trigger="$event.preventDefault()"
+    class="passion-explanation-dialog"
   >
     <div class="mx-6 bg-surface-raised border border-white/10 rounded-2xl p-6 max-w-sm">
       <div class="text-center">
@@ -214,5 +207,5 @@
         <p t="myArtists.passionExplanation.description" class="text-sm text-text-muted leading-relaxed"></p>
       </div>
     </div>
-  </div>
+  </dialog>
 </div>

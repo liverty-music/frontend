@@ -1,0 +1,15 @@
+.error-dialog {
+	position: fixed;
+	inset: 0;
+	margin: auto;
+	padding: 1rem;
+	border: none;
+	max-width: fit-content;
+	max-height: fit-content;
+	background: transparent;
+}
+
+.error-dialog::backdrop {
+	background: oklch(0% 0 0deg / 60%);
+	backdrop-filter: blur(4px);
+}

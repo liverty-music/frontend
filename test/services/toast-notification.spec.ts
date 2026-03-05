@@ -13,6 +13,12 @@ describe('ToastNotification', () => {
 		const container = DI.createContainer()
 		container.register(ToastNotification)
 		sut = container.get(IToastService)
+
+		// Mock popover container element for Top Layer API
+		const mockContainer = document.createElement('div')
+		;(mockContainer as any).showPopover = vi.fn()
+		;(mockContainer as any).hidePopover = vi.fn()
+		;(sut as any).containerElement = mockContainer
 	})
 
 	afterEach(() => {

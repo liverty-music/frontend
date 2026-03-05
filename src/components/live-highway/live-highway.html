@@ -12,10 +12,10 @@
     </div>
 
     <!-- Highway layout -->
-    <div if.bind="!loading && !isEmpty" class="flex-1 overflow-y-auto overflow-x-hidden">
+    <div if.bind="!loading && !isEmpty" class="flex-1 overflow-y-auto overflow-x-hidden isolate">
       <div repeat.for="group of dateGroups; key.bind: group.dateKey">
         <!-- Sticky date separator -->
-        <div class="sticky top-0 z-20 bg-surface-raised/90 backdrop-blur-sm border-b border-white/10 px-3 py-2">
+        <div class="sticky top-0 bg-surface-raised/90 backdrop-blur-sm border-b border-white/10 px-3 py-2">
           <span class="text-xs font-display font-bold text-brand-accent uppercase tracking-wider">${group.label}</span>
         </div>
 

@@ -51,6 +51,9 @@ export class MyArtistsPage {
 
 	// Grid context menu state
 	public contextMenuArtist: FollowedArtist | null = null
+	private contextMenuDialog!: HTMLDialogElement
+	private passionSelectorDialog!: HTMLDialogElement
+	private passionExplanationDialog!: HTMLDialogElement
 
 	// Swipe state
 	public swipedArtistId = ''
@@ -311,10 +314,18 @@ export class MyArtistsPage {
 
 	public openPassionSelector(artist: FollowedArtist): void {
 		this.selectorArtist = artist
+		this.passionSelectorDialog.showModal()
 	}
 
 	public closePassionSelector(): void {
 		this.selectorArtist = null
+		this.passionSelectorDialog.close()
+	}
+
+	public onPassionSelectorDialogClick(e: Event): void {
+		if (e.target === this.passionSelectorDialog) {
+			this.closePassionSelector()
+		}
 	}
 
 	public selectPassionLevel(level: PassionLevel): void {
@@ -333,9 +344,11 @@ export class MyArtistsPage {
 
 			// Show notification explanation, then advance to Step 6
 			this.showPassionExplanation = true
+			this.passionExplanationDialog.showModal()
 			this.tutorialTimer = setTimeout(() => {
 				this.tutorialTimer = null
 				this.showPassionExplanation = false
+				this.passionExplanationDialog.close()
 				this.onboarding.setStep(OnboardingStep.SIGNUP)
 				void this.router.load('')
 			}, 3000)
@@ -402,10 +415,18 @@ export class MyArtistsPage {
 
 	public onGridLongPress(artist: FollowedArtist): void {
 		this.contextMenuArtist = artist
+		this.contextMenuDialog.showModal()
 	}
 
 	public closeContextMenu(): void {
 		this.contextMenuArtist = null
+		this.contextMenuDialog.close()
+	}
+
+	public onContextMenuDialogClick(e: Event): void {
+		if (e.target === this.contextMenuDialog) {
+			this.closeContextMenu()
+		}
 	}
 
 	public contextMenuSetLevel(level: PassionLevel): void {
