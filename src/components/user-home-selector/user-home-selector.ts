@@ -2,41 +2,46 @@ import { I18N } from '@aurelia/i18n'
 import { bindable, ILogger, resolve } from 'aurelia'
 import {
 	codeToHome,
-	JP_PREFECTURE_OPTIONS,
 	QUICK_SELECT_CITIES,
+	REGION_GROUPS,
+	type RegionGroup,
 } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { IUserService } from '../../services/user-service'
 
-export class RegionSetupSheet {
-	@bindable public onRegionSelected?: (region: string) => void
+export class UserHomeSelector {
+	@bindable public onHomeSelected?: (code: string) => void
 
 	public isOpen = false
-	public prefectures = JP_PREFECTURE_OPTIONS
+	public regions = REGION_GROUPS
 	public quickCities = QUICK_SELECT_CITIES
-	public selectedCode = ''
+	public selectedRegion: RegionGroup | null = null
 
 	private dialogElement?: HTMLDialogElement
-	private readonly logger = resolve(ILogger).scopeTo('RegionSetupSheet')
+	private readonly logger = resolve(ILogger).scopeTo('UserHomeSelector')
 	private readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
 
+	public trRegion(key: string): string {
+		return this.i18n.tr(`userHome.regions.${key}`)
+	}
+
 	public trPrefecture(key: string): string {
-		return this.i18n.tr(`region.prefectures.${key}`)
+		return this.i18n.tr(`userHome.prefectures.${key}`)
 	}
 
 	public trCity(key: string): string {
-		return this.i18n.tr(`region.cities.${key}`)
+		return this.i18n.tr(`userHome.cities.${key}`)
 	}
 
-	public static getStoredRegion(): string | null {
+	public static getStoredHome(): string | null {
 		return localStorage.getItem(StorageKeys.guestHome)
 	}
 
 	public open(): void {
-		this.selectedCode = ''
+		this.selectedRegion = null
 		this.dialogElement?.showModal()
 		this.isOpen = true
 	}
@@ -44,6 +49,7 @@ export class RegionSetupSheet {
 	public close(): void {
 		this.dialogElement?.close()
 		this.isOpen = false
+		this.selectedRegion = null
 	}
 
 	public handleBackdropClick(event: MouseEvent): void {
@@ -52,17 +58,29 @@ export class RegionSetupSheet {
 		}
 	}
 
+	public handleCancel(event: Event): void {
+		event.preventDefault()
+		this.close()
+	}
+
+	public selectRegion(region: RegionGroup): void {
+		this.selectedRegion = region
+	}
+
+	public backToRegions(): void {
+		this.selectedRegion = null
+	}
+
 	public selectQuickCity(code: string): void {
-		this.saveRegion(code)
+		this.confirmSelection(code)
 	}
 
-	public selectPrefecture(): void {
-		if (!this.selectedCode) return
-		this.saveRegion(this.selectedCode)
+	public selectPrefecture(code: string): void {
+		this.confirmSelection(code)
 	}
 
-	private async saveRegion(code: string): Promise<void> {
-		this.logger.info('Region selected', { code })
+	private async confirmSelection(code: string): Promise<void> {
+		this.logger.info('Home area selected', { code })
 
 		if (this.authService.isAuthenticated) {
 			try {
@@ -75,6 +93,6 @@ export class RegionSetupSheet {
 		}
 
 		this.close()
-		this.onRegionSelected?.(code)
+		this.onHomeSelected?.(code)
 	}
 }

@@ -102,7 +102,7 @@ export interface PrefectureOption {
 
 /**
  * All Japanese prefecture entries as { code, key } pairs for UI selectors.
- * Use i18n tr(`region.prefectures.${key}`) for display.
+ * Use i18n tr(`userHome.prefectures.${key}`) for display.
  */
 export const JP_PREFECTURE_OPTIONS: PrefectureOption[] = Object.entries(
 	JP_PREFECTURES,

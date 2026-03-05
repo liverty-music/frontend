@@ -1,0 +1,79 @@
+<dialog
+  ref="dialogElement"
+  t="[aria-label]userHome.title"
+  click.trigger="handleBackdropClick($event)"
+  cancel.trigger="handleCancel($event)"
+  class="user-home-selector"
+>
+  <div class="bg-surface-raised rounded-t-[var(--radius-sheet)] shadow-[var(--shadow-sheet)] max-h-[80vh] overflow-y-auto">
+    <!-- Handle bar -->
+    <div class="flex justify-center pt-3 pb-2">
+      <div class="w-10 h-1 rounded-full bg-white/20"></div>
+    </div>
+
+    <div class="px-6 pb-8">
+      <!-- Step 1: Quick-select cities + Region selection -->
+      <template if.bind="!selectedRegion">
+        <h2 t="userHome.title" class="font-display text-xl font-bold text-text-primary mb-2"></h2>
+        <p t="userHome.description" class="text-text-secondary text-sm mb-6"></p>
+
+        <!-- Quick-select cities -->
+        <div class="mb-6">
+          <p t="userHome.quickSelect" class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3"></p>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              repeat.for="city of quickCities; key.bind: city.code"
+              click.trigger="selectQuickCity(city.code)"
+              class="py-2.5 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
+            >
+              ${trCity(city.key)}
+            </button>
+          </div>
+        </div>
+
+        <!-- Region buttons -->
+        <div>
+          <p t="userHome.selectByRegion" class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3"></p>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              repeat.for="region of regions; key.bind: region.key"
+              click.trigger="selectRegion(region)"
+              class="py-3 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
+            >
+              ${trRegion(region.key)}
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Step 2: Prefecture selection -->
+      <template if.bind="selectedRegion">
+        <div class="flex items-center gap-3 mb-2">
+          <button
+            click.trigger="backToRegions()"
+            t="[aria-label]userHome.back"
+            class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-overlay hover:bg-white/10 transition-colors"
+          >
+            <svg class="w-4 h-4 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 18l-6-6 6-6"></path>
+            </svg>
+          </button>
+          <h2 class="font-display text-xl font-bold text-text-primary">
+            ${trRegion(selectedRegion.key)}
+          </h2>
+        </div>
+        <p t="userHome.selectPrefecture" class="text-text-secondary text-sm mb-6"></p>
+
+        <div class="grid grid-cols-3 gap-2">
+          <button
+            repeat.for="pref of selectedRegion.prefectures; key.bind: pref.code"
+            click.trigger="selectPrefecture(pref.code)"
+            class="py-3 px-3 bg-surface-overlay hover:bg-brand-primary/20 text-text-primary font-display font-semibold text-sm rounded-[var(--radius-button)] border border-white/10 hover:border-brand-primary/40 transition-colors"
+          >
+            ${trPrefecture(pref.key)}
+          </button>
+        </div>
+      </template>
+    </div>
+  </div>
+</dialog>

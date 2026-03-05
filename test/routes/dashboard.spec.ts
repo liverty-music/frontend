@@ -34,15 +34,15 @@ vi.mock('../../src/services/local-artist-client', () => ({
 	ILocalArtistClient: mockILocalArtistClient,
 }))
 
-vi.mock('../../src/components/region-setup-sheet/region-setup-sheet', () => ({
-	RegionSetupSheet: {
-		getStoredRegion: vi.fn().mockReturnValue(null),
+vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
+	UserHomeSelector: {
+		getStoredHome: vi.fn().mockReturnValue(null),
 	},
 }))
 
 const { Dashboard } = await import('../../src/routes/dashboard')
-const { RegionSetupSheet } = await import(
-	'../../src/components/region-setup-sheet/region-setup-sheet'
+const { UserHomeSelector } = await import(
+	'../../src/components/user-home-selector/user-home-selector'
 )
 
 describe('Dashboard', () => {
@@ -174,7 +174,7 @@ describe('Dashboard', () => {
 	describe('loading', () => {
 		it('should check region and load data', async () => {
 			;(
-				RegionSetupSheet.getStoredRegion as ReturnType<typeof vi.fn>
+				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
 			).mockReturnValue(null)
 			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
@@ -186,7 +186,7 @@ describe('Dashboard', () => {
 
 		it('should not need region when stored region exists', async () => {
 			;(
-				RegionSetupSheet.getStoredRegion as ReturnType<typeof vi.fn>
+				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
 			).mockReturnValue('Tokyo')
 			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
@@ -196,10 +196,10 @@ describe('Dashboard', () => {
 		})
 	})
 
-	describe('onRegionSelected', () => {
+	describe('onHomeSelected', () => {
 		it('should set needsRegion to false', () => {
 			sut.needsRegion = true
-			sut.onRegionSelected('Tokyo')
+			sut.onHomeSelected('JP-13')
 			expect(sut.needsRegion).toBe(false)
 		})
 	})
