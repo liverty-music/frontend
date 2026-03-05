@@ -31,8 +31,11 @@ export class LoadingSequence {
 	public isPhaseVisible = true
 
 	private nextRoute: string | null = null
+	private isOnboardingFlow = false
 	private phaseTimer: number | null = null
+	private displayTimer: number | null = null
 	private readonly FADE_DURATION_MS = 600
+	private readonly ONBOARDING_DISPLAY_MS = 3000
 
 	private get phases() {
 		return [
@@ -127,9 +130,9 @@ export class LoadingSequence {
 		this.startPhaseAnimation()
 
 		if (this.onboarding.isOnboarding) {
-			await new Promise((r) => setTimeout(r, 3000))
-			this.onboarding.setStep(OnboardingStep.DASHBOARD)
-			this.nextRoute = '/dashboard'
+			// Return immediately so the router swaps in the loading screen.
+			// The display timer in attached() handles the 3s wait + navigation.
+			this.isOnboardingFlow = true
 			return
 		}
 
@@ -174,6 +177,14 @@ export class LoadingSequence {
 	 * pipeline finishes before the new navigation starts.
 	 */
 	public attached(): void {
+		if (this.isOnboardingFlow) {
+			this.displayTimer = window.setTimeout(() => {
+				this.onboarding.setStep(OnboardingStep.DASHBOARD)
+				this.router.load('/dashboard')
+			}, this.ONBOARDING_DISPLAY_MS)
+			return
+		}
+
 		if (this.nextRoute) {
 			const route = this.nextRoute
 			this.nextRoute = null
@@ -185,8 +196,12 @@ export class LoadingSequence {
 
 	public unbinding(): void {
 		if (this.phaseTimer !== null) {
-			clearTimeout(this.phaseTimer)
+			window.clearTimeout(this.phaseTimer)
 			this.phaseTimer = null
+		}
+		if (this.displayTimer !== null) {
+			window.clearTimeout(this.displayTimer)
+			this.displayTimer = null
 		}
 	}
 
