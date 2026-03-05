@@ -40,6 +40,17 @@ describe('TicketsPage', () => {
 		)
 		container.register(TicketsPage)
 		sut = container.get(TicketsPage)
+
+		// Mock dialog elements for Top Layer API
+		const mockGeneratingDialog = document.createElement('dialog')
+		;(mockGeneratingDialog as any).showModal = vi.fn()
+		;(mockGeneratingDialog as any).close = vi.fn()
+		;(sut as any).generatingDialog = mockGeneratingDialog
+
+		const mockQrDialog = document.createElement('dialog')
+		;(mockQrDialog as any).showModal = vi.fn()
+		;(mockQrDialog as any).close = vi.fn()
+		;(sut as any).qrDialog = mockQrDialog
 	})
 
 	afterEach(() => {

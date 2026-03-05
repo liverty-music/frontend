@@ -40,6 +40,19 @@ describe('EventDetailSheet', () => {
 		)
 		container.register(EventDetailSheet)
 		sut = container.get(EventDetailSheet)
+
+		// Mock dialog element for Top Layer API
+		const mockDialog = document.createElement('dialog')
+		;(mockDialog as any).showModal = vi.fn()
+		;(mockDialog as any).close = vi.fn()
+		const dialogScrollable = document.createElement('div')
+		dialogScrollable.classList.add('overflow-y-auto')
+		Object.defineProperty(dialogScrollable, 'scrollTop', {
+			value: 0,
+			writable: true,
+		})
+		mockDialog.appendChild(dialogScrollable)
+		;(sut as any).dialogElement = mockDialog
 	})
 
 	afterEach(() => {

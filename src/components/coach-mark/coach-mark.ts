@@ -11,10 +11,10 @@ export class CoachMark {
 
 	public visible = false
 
+	private overlayEl!: HTMLElement
 	private spotlightEl!: HTMLElement
-	private tooltipEl!: HTMLElement
 	private retryTimer: ReturnType<typeof setTimeout> | null = null
-	private resizeObserver: ResizeObserver | null = null
+	private currentTarget: HTMLElement | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('CoachMark')
 
@@ -63,20 +63,19 @@ export class CoachMark {
 
 	private highlight(target: HTMLElement): void {
 		this.visible = true
+		this.currentTarget = target
 
-		// Position the spotlight and tooltip after render
+		// Set CSS anchor-name on target for tooltip positioning
+		target.style.setProperty('anchor-name', '--coach-target')
+
+		// Position the spotlight after render (canvas-based, needs getBoundingClientRect)
 		requestAnimationFrame(() => {
-			this.updatePosition(target)
+			this.updateSpotlightPosition(target)
+			this.overlayEl.showPopover()
 		})
-
-		// Track layout changes
-		this.resizeObserver = new ResizeObserver(() => {
-			this.updatePosition(target)
-		})
-		this.resizeObserver.observe(target)
 	}
 
-	private updatePosition(target: HTMLElement): void {
+	private updateSpotlightPosition(target: HTMLElement): void {
 		const rect = target.getBoundingClientRect()
 		const padding = 8
 
@@ -85,17 +84,6 @@ export class CoachMark {
 			this.spotlightEl.style.left = `${rect.left - padding}px`
 			this.spotlightEl.style.width = `${rect.width + padding * 2}px`
 			this.spotlightEl.style.height = `${rect.height + padding * 2}px`
-		}
-
-		if (this.tooltipEl) {
-			// Position tooltip below the target
-			const tooltipTop = rect.bottom + 16
-			const tooltipLeft = Math.max(
-				16,
-				rect.left + rect.width / 2 - this.tooltipEl.offsetWidth / 2,
-			)
-			this.tooltipEl.style.top = `${tooltipTop}px`
-			this.tooltipEl.style.left = `${tooltipLeft}px`
 		}
 	}
 
@@ -127,6 +115,10 @@ export class CoachMark {
 
 	private hide(): void {
 		this.visible = false
+		if (this.currentTarget) {
+			this.currentTarget.style.removeProperty('anchor-name')
+			this.currentTarget = null
+		}
 		this.cleanup()
 	}
 
@@ -134,10 +126,6 @@ export class CoachMark {
 		if (this.retryTimer) {
 			clearTimeout(this.retryTimer)
 			this.retryTimer = null
-		}
-		if (this.resizeObserver) {
-			this.resizeObserver.disconnect()
-			this.resizeObserver = null
 		}
 	}
 }

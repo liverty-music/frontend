@@ -1,4 +1,4 @@
-import { bindable, INode, resolve } from 'aurelia'
+import { bindable, resolve } from 'aurelia'
 import { displayName } from '../../constants/iso3166'
 import {
 	IOnboardingService,
@@ -13,7 +13,7 @@ export class EventDetailSheet {
 	public isOpen = false
 	public dragOffset = 0
 
-	private readonly element = resolve(INode) as HTMLElement
+	private dialogElement!: HTMLDialogElement
 	private readonly onboarding = resolve(IOnboardingService)
 	private touchStartY = 0
 	private isDragging = false
@@ -63,18 +63,28 @@ export class EventDetailSheet {
 		this.event = event
 		this.isOpen = true
 		this.dragOffset = 0
+		this.dialogElement.showModal()
 		history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 	}
 
 	public close(): void {
 		this.isOpen = false
 		this.dragOffset = 0
+		this.dialogElement.close()
 		history.replaceState(null, '', '/dashboard')
 	}
 
-	public onBackdropClick(): void {
-		if (this.isDismissBlocked) return
-		this.close()
+	public onDialogClick(e: Event): void {
+		if (e.target === this.dialogElement) {
+			if (this.isDismissBlocked) return
+			this.close()
+		}
+	}
+
+	public onCancel(e: Event): void {
+		if (this.isDismissBlocked) {
+			e.preventDefault()
+		}
 	}
 
 	public onSheetClick(e: Event): void {
@@ -90,7 +100,7 @@ export class EventDetailSheet {
 	public onTouchMove(e: TouchEvent): void {
 		if (!this.isDragging) return
 		if (this.isDismissBlocked) return
-		const scrollable = this.element.querySelector('.overflow-y-auto')
+		const scrollable = this.dialogElement.querySelector('.overflow-y-auto')
 		if (scrollable && scrollable.scrollTop > 0) {
 			this.isDragging = false
 			return

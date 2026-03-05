@@ -2,20 +2,16 @@
   <import from="../icons/icon-calendar"></import>
   <import from="../icons/icon-map-pin"></import>
   <import from="../icons/icon-link"></import>
+  <import from="./event-detail-sheet.css"></import>
 
-  <!-- Backdrop -->
-  <div
-    if.bind="isOpen"
-    click.trigger="onBackdropClick()"
-    class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
-  ></div>
-
-  <!-- Sheet -->
-  <div
+  <dialog
+    ref="dialogElement"
+    click.trigger="onDialogClick($event)"
+    cancel.trigger="onCancel($event)"
     touchstart.trigger="onTouchStart($event)"
     touchmove.trigger="onTouchMove($event)"
     touchend.trigger="onTouchEnd()"
-    class="fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}"
+    class="event-detail-dialog"
     style="transform: ${dragOffset > 0 ? 'translateY(' + dragOffset + 'px)' : ''}"
   >
     <div
@@ -91,5 +87,5 @@
         </div>
       </div>
     </div>
-  </div>
+  </dialog>
 </template>

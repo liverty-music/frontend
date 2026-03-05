@@ -25,6 +25,7 @@ export interface IToastService extends ToastNotification {}
 
 export class ToastNotification {
 	public toasts: ToastItem[] = []
+	private containerElement!: HTMLElement
 	private nextId = 0
 
 	public show(
@@ -36,6 +37,10 @@ export class ToastNotification {
 		const toast: ToastItem = { id, message, severity, visible: false }
 		this.toasts.push(toast)
 
+		// Re-insert into Top Layer to ensure it paints above any open dialog
+		this.containerElement.hidePopover()
+		this.containerElement.showPopover()
+
 		// Trigger slide-in on next frame
 		requestAnimationFrame(() => {
 			toast.visible = true
@@ -46,6 +51,9 @@ export class ToastNotification {
 			toast.visible = false
 			setTimeout(() => {
 				this.toasts = this.toasts.filter((t) => t.id !== id)
+				if (this.toasts.length === 0) {
+					this.containerElement.hidePopover()
+				}
 			}, 400)
 		}, durationMs)
 	}

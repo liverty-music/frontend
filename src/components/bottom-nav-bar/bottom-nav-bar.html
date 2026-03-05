@@ -1,4 +1,4 @@
-<nav class="fixed inset-x-0 bottom-0 z-30 bg-surface-raised border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
+<nav ref="navElement" popover="manual" class="fixed inset-x-0 bottom-0 bg-surface-raised border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
   <div class="flex items-center justify-around h-14">
     <a
       repeat.for="tab of tabs; key.bind: tab.path"

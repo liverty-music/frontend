@@ -13,7 +13,9 @@ export class TicketsPage {
 	public proofProgress = ''
 	public qrDataUrl = ''
 	public generatingTicketId = ''
-	public qrModal: HTMLElement | null = null
+
+	private generatingDialog!: HTMLDialogElement
+	private qrDialog!: HTMLDialogElement
 
 	private readonly logger = resolve(ILogger).scopeTo('TicketsPage')
 	private readonly ticketService = resolve(ITicketService)
@@ -65,6 +67,7 @@ export class TicketsPage {
 		this.qrDataUrl = ''
 		this.generatingTicketId = ticket.id?.value ?? ''
 		this.error = ''
+		this.generatingDialog.showModal()
 
 		try {
 			const proofOutput = await this.proofService.generateEntryProof(
@@ -95,14 +98,16 @@ export class TicketsPage {
 			this.proofProgress = ''
 			this.logger.info('Entry code generated', { eventId })
 
-			// Focus the modal for keyboard accessibility
-			requestAnimationFrame(() => this.qrModal?.focus())
+			// Close generating dialog, open QR dialog
+			this.generatingDialog.close()
+			this.qrDialog.showModal()
 		} catch (err) {
 			if ((err as Error).name !== 'AbortError') {
 				this.logger.error('Proof generation failed', { error: err })
 				this.error = 'Failed to generate entry code. Please try again.'
 			}
 			this.qrDataUrl = ''
+			this.generatingDialog.close()
 		} finally {
 			this.isGenerating = false
 		}
@@ -111,6 +116,7 @@ export class TicketsPage {
 	public dismissQr(): void {
 		this.qrDataUrl = ''
 		this.generatingTicketId = ''
+		this.qrDialog.close()
 	}
 
 	public detaching(): void {

@@ -1,6 +1,6 @@
 <import from="../icons/icon-ticket"></import>
 
-<div class="fixed top-0 left-0 right-0 z-50 flex flex-col items-center gap-2 pt-4 pointer-events-none">
+<div ref="containerElement" popover="manual" class="fixed top-0 left-0 right-0 flex flex-col items-center gap-2 pt-4 pointer-events-none">
   <div
     repeat.for="toast of toasts; key.bind: toast.id"
     role="status"
