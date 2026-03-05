@@ -14,6 +14,7 @@ export class SignupModal {
 	private readonly i18n = resolve(I18N)
 
 	public activeChanged(newValue: boolean): void {
+		if (!this.dialogElement) return
 		if (newValue) {
 			this.dialogElement.showModal()
 		} else {

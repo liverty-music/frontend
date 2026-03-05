@@ -63,6 +63,7 @@ export class CoachMark {
 
 	private highlight(target: HTMLElement): void {
 		this.visible = true
+		this.currentTarget?.style.removeProperty('anchor-name')
 		this.currentTarget = target
 
 		// Set CSS anchor-name on target for tooltip positioning

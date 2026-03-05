@@ -98,6 +98,7 @@
   <dialog
     ref="qrDialog"
     click.trigger="$event.target === qrDialog && dismissQr()"
+    cancel.trigger="dismissQr()"
     aria-labelledby="qr-modal-title"
     class="center-dialog"
   >

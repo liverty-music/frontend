@@ -38,7 +38,7 @@ export class ToastNotification {
 		this.toasts.push(toast)
 
 		// Re-insert into Top Layer to ensure it paints above any open dialog
-		this.containerElement.hidePopover()
+		if (this.toasts.length > 1) this.containerElement.hidePopover()
 		this.containerElement.showPopover()
 
 		// Trigger slide-in on next frame
