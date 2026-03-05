@@ -7,7 +7,7 @@ import { BackgroundSyncPlugin } from 'workbox-background-sync'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
-import { CacheFirst, NetworkFirst } from 'workbox-strategies'
+import { CacheFirst, NetworkOnly } from 'workbox-strategies'
 
 // ---------------------------------------------------------------------------
 // Precache app shell assets injected by vite-plugin-pwa at build time.
@@ -53,34 +53,13 @@ self.addEventListener('install', (event) => {
 })
 
 // ---------------------------------------------------------------------------
-// Concert list API — NetworkFirst with 3s timeout, 24h cache.
-// ---------------------------------------------------------------------------
-const CONCERT_CACHE = 'concert-api-v1'
-
-registerRoute(
-	({ url }) =>
-		url.pathname.includes('liverty_music.rpc.concert.v1.ConcertService'),
-	new NetworkFirst({
-		cacheName: CONCERT_CACHE,
-		networkTimeoutSeconds: 3,
-		plugins: [
-			new ExpirationPlugin({
-				maxEntries: 50,
-				maxAgeSeconds: 24 * 60 * 60, // 24 hours
-			}),
-		],
-		fetchOptions: {},
-	}),
-)
-
-// ---------------------------------------------------------------------------
 // Background Sync for artist operations (follow / unfollow / passion level).
+// NetworkOnly avoids cache.put() on POST responses (Cache API is GET-only).
 // ---------------------------------------------------------------------------
 registerRoute(
 	({ url }) =>
 		url.pathname.includes('liverty_music.rpc.artist.v1.ArtistService'),
-	new NetworkFirst({
-		cacheName: 'artist-api-v1',
+	new NetworkOnly({
 		plugins: [
 			new BackgroundSyncPlugin('artist-ops-queue', {
 				maxRetentionTime: 7 * 24 * 60, // 7 days (minutes)
@@ -88,26 +67,6 @@ registerRoute(
 		],
 	}),
 	'POST',
-)
-
-// ---------------------------------------------------------------------------
-// Periodic Background Sync — refresh concert cache.
-// The SW cannot obtain fresh OIDC tokens (no access to UserManager), so it
-// delegates the actual re-fetch to the main thread via postMessage.
-// ---------------------------------------------------------------------------
-self.addEventListener(
-	'periodicsync',
-	(event: ExtendableEvent & { tag?: string }) => {
-		if (event.tag !== 'concert-refresh') return
-
-		event.waitUntil(
-			self.clients.matchAll({ type: 'window' }).then((clients) => {
-				for (const client of clients) {
-					client.postMessage({ type: 'REFRESH_CONCERT_CACHE' })
-				}
-			}),
-		)
-	},
 )
 
 // ---------------------------------------------------------------------------
