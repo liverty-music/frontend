@@ -29,3 +29,9 @@
 	);
 	pointer-events: none;
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.signup-modal-content::before {
+		display: none;
+	}
+}
