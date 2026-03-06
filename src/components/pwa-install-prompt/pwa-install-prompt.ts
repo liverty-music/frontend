@@ -13,12 +13,14 @@ export class PwaInstallPrompt {
 		if (newValue && !this.isVisible) {
 			this.animationClass = 'animate-fade-slide-up'
 			this.isVisible = true
+		} else if (!newValue && this.isVisible) {
+			this.hideWithAnimation()
 		}
 	}
 
 	public async handleInstall(): Promise<void> {
-		this.hideWithAnimation()
 		await this.pwaInstall.install()
+		this.hideWithAnimation()
 	}
 
 	public handleDismiss(): void {

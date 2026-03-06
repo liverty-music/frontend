@@ -75,4 +75,19 @@ describe('PwaInstallPrompt', () => {
 		expect(sut.animationClass).toBe('animate-fade-slide-down')
 		vi.useRealTimers()
 	})
+
+	it('should hide with animation when canShow becomes false externally', () => {
+		vi.useFakeTimers()
+		sut = create(false)
+		sut.canShowChanged(true)
+		expect(sut.isVisible).toBe(true)
+
+		sut.canShowChanged(false)
+		expect(sut.animationClass).toBe('animate-fade-slide-down')
+		expect(sut.isVisible).toBe(true)
+
+		vi.advanceTimersByTime(600)
+		expect(sut.isVisible).toBe(false)
+		vi.useRealTimers()
+	})
 })
