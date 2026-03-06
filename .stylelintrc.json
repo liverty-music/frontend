@@ -1,14 +1,91 @@
 {
   "extends": [
-    "stylelint-config-standard"
+    "stylelint-config-standard",
+    "stylelint-config-clean-order"
   ],
   "rules": {
     "import-notation": null,
+
     "at-rule-no-unknown": [
       true,
       {
-        "ignoreAtRules": ["theme"]
+        "ignoreAtRules": [
+          "theme",
+          "apply",
+          "layer",
+          "container",
+          "starting-style",
+          "property"
+        ]
       }
-    ]
+    ],
+
+    "function-no-unknown": [
+      true,
+      {
+        "ignoreFunctions": ["oklch", "theme"]
+      }
+    ],
+
+    "function-disallowed-list": [
+      "rgb",
+      "rgba",
+      "hsl",
+      "hsla"
+    ],
+
+    "color-no-hex": true,
+
+    "property-disallowed-list": [
+      "top",
+      "right",
+      "bottom",
+      "left",
+      "margin-top",
+      "margin-right",
+      "margin-bottom",
+      "margin-left",
+      "padding-top",
+      "padding-right",
+      "padding-bottom",
+      "padding-left",
+      "border-top",
+      "border-right",
+      "border-bottom",
+      "border-left",
+      "border-top-width",
+      "border-right-width",
+      "border-bottom-width",
+      "border-left-width",
+      "border-top-style",
+      "border-right-style",
+      "border-bottom-style",
+      "border-left-style",
+      "border-top-color",
+      "border-right-color",
+      "border-bottom-color",
+      "border-left-color",
+      "border-top-left-radius",
+      "border-top-right-radius",
+      "border-bottom-right-radius",
+      "border-bottom-left-radius",
+      "z-index",
+      "float",
+      "clear"
+    ],
+
+    "media-feature-name-disallowed-list": [
+      "width",
+      "min-width",
+      "max-width"
+    ],
+
+    "declaration-no-important": true,
+
+    "selector-max-id": 0,
+    "selector-max-specificity": "0,4,0",
+    "selector-max-compound-selectors": 4,
+
+    "number-max-precision": 4
   }
 }
