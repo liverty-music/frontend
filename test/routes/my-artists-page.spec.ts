@@ -310,4 +310,74 @@ describe('MyArtistsPage', () => {
 			expect(sut.isLoading).toBe(false)
 		})
 	})
+
+	describe('tutorial step 5 passion timing', () => {
+		let tutorialSut: InstanceType<typeof MyArtistsPage>
+
+		beforeEach(async () => {
+			vi.useFakeTimers()
+
+			const mockOnboarding = {
+				currentStep: 5, // MY_ARTISTS
+				isOnboarding: true,
+				isCompleted: false,
+				setStep: vi.fn(),
+				complete: vi.fn(),
+			}
+
+			const container = createTestContainer(
+				Registration.instance(mockIArtistServiceClient, mockArtistService),
+				Registration.instance(mockIRouter, mockRouter),
+				Registration.instance(mockIOnboardingService, mockOnboarding),
+				Registration.instance(mockIToastService, { show: vi.fn() }),
+			)
+			container.register(MyArtistsPage)
+			tutorialSut = container.get(MyArtistsPage)
+
+			for (const name of [
+				'contextMenuDialog',
+				'passionSelectorDialog',
+				'passionExplanationDialog',
+			]) {
+				const mockDialog = document.createElement('dialog')
+				;(mockDialog as any).showModal = vi.fn()
+				;(mockDialog as any).close = vi.fn()
+				;(tutorialSut as any)[name] = mockDialog
+			}
+
+			await tutorialSut.loading()
+		})
+
+		afterEach(() => {
+			vi.useRealTimers()
+		})
+
+		it('should set pulsingArtistId immediately on passion level change', () => {
+			tutorialSut.openPassionSelector(tutorialSut.artists[0])
+			tutorialSut.selectPassionLevel(1) // MUST_GO
+
+			expect(tutorialSut.pulsingArtistId).toBe('id-1')
+		})
+
+		it('should clear pulsingArtistId after 300ms', () => {
+			tutorialSut.openPassionSelector(tutorialSut.artists[0])
+			tutorialSut.selectPassionLevel(1)
+
+			vi.advanceTimersByTime(300)
+			expect(tutorialSut.pulsingArtistId).toBe('')
+		})
+
+		it('should use 800ms delay for passion explanation', () => {
+			tutorialSut.openPassionSelector(tutorialSut.artists[0])
+			tutorialSut.selectPassionLevel(1)
+
+			// At 700ms, explanation should still be showing
+			vi.advanceTimersByTime(700)
+			expect(tutorialSut.showPassionExplanation).toBe(true)
+
+			// At 800ms, explanation should close
+			vi.advanceTimersByTime(100)
+			expect(tutorialSut.showPassionExplanation).toBe(false)
+		})
+	})
 })

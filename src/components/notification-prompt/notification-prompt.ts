@@ -6,9 +6,12 @@ import { IOnboardingService } from '../../services/onboarding-service'
 import { IPromptCoordinator } from '../../services/prompt-coordinator'
 import { IPushService } from '../../services/push-service'
 
+const EXIT_ANIMATION_MS = 600
+
 export class NotificationPrompt {
 	public isVisible = false
 	public isLoading = false
+	public animationClass = ''
 
 	private readonly logger = resolve(ILogger).scopeTo('NotificationPrompt')
 	private readonly notificationManager = resolve(INotificationManager)
@@ -43,6 +46,7 @@ export class NotificationPrompt {
 
 		if (!this.promptCoordinator.canShowPrompt('notification')) return
 
+		this.animationClass = 'animate-fade-slide-up'
 		this.isVisible = true
 		this.promptCoordinator.markShown('notification')
 	}
@@ -52,7 +56,7 @@ export class NotificationPrompt {
 		try {
 			await this.pushService.subscribe()
 			if (this.notificationManager.permission === 'granted') {
-				this.isVisible = false
+				this.hideWithAnimation()
 				localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')
 			}
 		} catch (err) {
@@ -63,7 +67,14 @@ export class NotificationPrompt {
 	}
 
 	public dismiss(): void {
-		this.isVisible = false
+		this.hideWithAnimation()
 		localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')
+	}
+
+	private hideWithAnimation(): void {
+		this.animationClass = 'animate-fade-slide-down'
+		setTimeout(() => {
+			this.isVisible = false
+		}, EXIT_ANIMATION_MS)
 	}
 }

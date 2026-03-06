@@ -1,6 +1,6 @@
 <template>
-  <div if.bind="isVisible && notificationManager.permission === 'default'"
-    class="mx-4 mb-4 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 shadow-[var(--shadow-card-glow)]">
+  <div show.bind="isVisible && notificationManager.permission === 'default'"
+    class="mx-4 mb-4 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 shadow-[var(--shadow-card-glow)] ${animationClass}">
     <div class="flex items-start gap-3">
       <div class="shrink-0 text-2xl" aria-hidden="true">🔔</div>
       <div class="flex-1 min-w-0">
@@ -21,8 +21,8 @@
     </div>
   </div>
 
-  <div if.bind="isVisible && notificationManager.permission === 'denied'"
-    class="mx-4 mb-4 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10">
+  <div show.bind="isVisible && notificationManager.permission === 'denied'"
+    class="mx-4 mb-4 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 ${animationClass}">
     <div class="flex items-start gap-3">
       <div class="shrink-0 text-2xl" aria-hidden="true">🔕</div>
       <div class="flex-1 min-w-0">
