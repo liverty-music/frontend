@@ -134,4 +134,37 @@ describe('NotificationPrompt', () => {
 		sut.attached()
 		expect(sut.isVisible).toBe(true)
 	})
+
+	describe('animations', () => {
+		beforeEach(() => {
+			localStorage.setItem('pwa.completedSessionCount', '3')
+			localStorage.setItem('pwa.sessionCount', '4')
+		})
+
+		it('should set entrance animation class when becoming visible', () => {
+			sut = create()
+			sut.attached()
+			expect(sut.animationClass).toBe('animate-fade-slide-up')
+		})
+
+		it('should not set animation class when not visible', () => {
+			sut = create({ isAuthenticated: false })
+			sut.attached()
+			expect(sut.animationClass).toBe('')
+		})
+
+		it('should set exit animation class on dismiss', () => {
+			vi.useFakeTimers()
+			sut = create()
+			sut.attached()
+
+			sut.dismiss()
+			expect(sut.animationClass).toBe('animate-fade-slide-down')
+			expect(sut.isVisible).toBe(true) // still visible during animation
+
+			vi.advanceTimersByTime(600)
+			expect(sut.isVisible).toBe(false)
+			vi.useRealTimers()
+		})
+	})
 })
