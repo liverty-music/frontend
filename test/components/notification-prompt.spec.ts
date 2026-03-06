@@ -95,10 +95,24 @@ describe('NotificationPrompt', () => {
 		expect(sut.isVisible).toBe(false)
 	})
 
+	it('should not consume coordinator slot when dismissed', () => {
+		sut = create({ dismissed: true })
+		sut.attached()
+		expect(sut.isVisible).toBe(false)
+	})
+
 	it('should remain not visible on the same session where onboarding completed', () => {
 		// Onboarding completed at session 3, still on session 3
 		localStorage.setItem('pwa.completedSessionCount', '3')
 		localStorage.setItem('pwa.sessionCount', '3')
+		sut = create()
+		sut.attached()
+		expect(sut.isVisible).toBe(false)
+	})
+
+	it('should remain not visible when completedSessionCount is missing (treats as current session)', () => {
+		// PwaInstallService hasn't persisted completedSessionCount yet
+		localStorage.setItem('pwa.sessionCount', '5')
 		sut = create()
 		sut.attached()
 		expect(sut.isVisible).toBe(false)

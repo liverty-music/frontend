@@ -20,29 +20,31 @@ export class NotificationPrompt {
 	public attached(): void {
 		if (!this.auth.isAuthenticated) return
 		if (!this.onboarding.isCompleted) return
-		if (!this.promptCoordinator.canShowPrompt('notification')) return
-
-		// Do not show on the same session where onboarding just completed.
-		// Defer to the next session when the user returns with fresh motivation.
-		const completedAt = Number(
-			localStorage.getItem(StorageKeys.pwaCompletedSessionCount) || '0',
-		)
-		const currentSession = Number(
-			localStorage.getItem(StorageKeys.pwaSessionCount) || '0',
-		)
-		if (completedAt > 0 && currentSession <= completedAt) return
 
 		const dismissed = localStorage.getItem(
 			StorageKeys.uiNotificationPromptDismissed,
 		)
-		if (dismissed) {
-			return
-		}
+		if (dismissed) return
 
-		if (this.notificationManager.permission !== 'granted') {
-			this.isVisible = true
-			this.promptCoordinator.markShown('notification')
-		}
+		if (this.notificationManager.permission === 'granted') return
+
+		// Do not show on the same session where onboarding just completed.
+		// When completedSessionCount is missing, treat as "completed this session"
+		// to handle the case where PwaInstallService hasn't persisted it yet.
+		const completedAtRaw = localStorage.getItem(
+			StorageKeys.pwaCompletedSessionCount,
+		)
+		const currentSession = Number(
+			localStorage.getItem(StorageKeys.pwaSessionCount) || '0',
+		)
+		const completedAt =
+			completedAtRaw !== null ? Number(completedAtRaw) : currentSession
+		if (currentSession <= completedAt) return
+
+		if (!this.promptCoordinator.canShowPrompt('notification')) return
+
+		this.isVisible = true
+		this.promptCoordinator.markShown('notification')
 	}
 
 	public async enable(): Promise<void> {
