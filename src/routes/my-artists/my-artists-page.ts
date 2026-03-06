@@ -93,6 +93,7 @@ export class MyArtistsPage {
 
 	// Tutorial state
 	public showPassionExplanation = false
+	public pulsingArtistId = ''
 	private tutorialTimer: ReturnType<typeof setTimeout> | null = null
 
 	public get isTutorialStep5(): boolean {
@@ -340,7 +341,14 @@ export class MyArtistsPage {
 		// During onboarding step 5: visual demo only, no persistence
 		if (this.isTutorialStep5) {
 			this.selectorArtist.passionLevel = level
+			const artistId = this.selectorArtist.id
 			this.closePassionSelector()
+
+			// Immediate pulse feedback on the passion button
+			this.pulsingArtistId = artistId
+			setTimeout(() => {
+				this.pulsingArtistId = ''
+			}, 300)
 
 			// Show notification explanation, then advance to Step 6
 			this.showPassionExplanation = true
@@ -351,7 +359,7 @@ export class MyArtistsPage {
 				this.passionExplanationDialog.close()
 				this.onboarding.setStep(OnboardingStep.SIGNUP)
 				void this.router.load('')
-			}, 3000)
+			}, 800)
 			return
 		}
 
