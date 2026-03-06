@@ -130,6 +130,12 @@
 			"dismiss": "閉じる"
 		}
 	},
+	"pwa": {
+		"title": "ホーム画面に追加",
+		"description": "Liverty Musicをインストールして、より速くオフラインでもお楽しみください。",
+		"install": "インストール",
+		"notNow": "今はしない"
+	},
 	"passionLevel": {
 		"mustGo": "絶対行く",
 		"localOnly": "近場なら行く",

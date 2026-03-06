@@ -12,3 +12,20 @@
 .signup-dialog::backdrop {
 	background: oklch(0% 0 0deg / 85%);
 }
+
+.signup-modal-content {
+	position: relative;
+}
+
+.signup-modal-content::before {
+	content: "";
+	position: absolute;
+	inset: -1px;
+	border-radius: inherit;
+	background: radial-gradient(
+		circle at center,
+		oklch(58.5% 0.233 277deg / 15%) 0%,
+		transparent 70%
+	);
+	pointer-events: none;
+}
