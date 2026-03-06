@@ -12,6 +12,6 @@ canvas {
 }
 
 canvas:focus-visible {
-	outline: 2px solid rgb(79 70 229);
+	outline: 2px solid oklch(51.1% 0.23 277deg);
 	outline-offset: 2px;
 }
