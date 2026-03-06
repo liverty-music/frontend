@@ -22,6 +22,7 @@ import { INotificationManager } from './services/notification-manager'
 import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
 import { OtelLogSink } from './services/otel-log-sink'
+import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IProofService } from './services/proof-service'
 import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
@@ -89,6 +90,7 @@ Aurelia
 	.register(IGuestDataMergeService)
 	.register(INotificationManager)
 	.register(IPushService)
+	.register(IPromptCoordinator)
 	.register(IPwaInstallService)
 	.register(ITicketService)
 	.register(IEntryService)
