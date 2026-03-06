@@ -81,8 +81,8 @@ export class CoachMark {
 		const padding = 8
 
 		if (this.spotlightEl) {
-			this.spotlightEl.style.top = `${rect.top - padding}px`
-			this.spotlightEl.style.left = `${rect.left - padding}px`
+			this.spotlightEl.style.insetBlockStart = `${rect.top - padding}px`
+			this.spotlightEl.style.insetInlineStart = `${rect.left - padding}px`
 			this.spotlightEl.style.width = `${rect.width + padding * 2}px`
 			this.spotlightEl.style.height = `${rect.height + padding * 2}px`
 		}
