@@ -6,10 +6,7 @@ import { IArtistServiceClient } from '../../services/artist-service-client'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
 import { ILocalArtistClient } from '../../services/local-artist-client'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../services/onboarding-service'
+import { IOnboardingService } from '../../services/onboarding-service'
 import css from './loading-sequence.css?raw'
 
 @useShadowDOM()
@@ -31,11 +28,8 @@ export class LoadingSequence {
 	public isPhaseVisible = true
 
 	private nextRoute: string | null = null
-	private isOnboardingFlow = false
 	private phaseTimer: number | null = null
-	private displayTimer: number | null = null
 	private readonly FADE_DURATION_MS = 600
-	private readonly ONBOARDING_DISPLAY_MS = 3000
 
 	private get phases() {
 		return [
@@ -58,17 +52,12 @@ export class LoadingSequence {
 	}
 
 	public async canLoad(): Promise<NavigationInstruction | boolean> {
-		// Tutorial mode: check guest data instead of backend
+		// Onboarding users no longer use this route — redirect to dashboard
 		if (this.onboarding.isOnboarding) {
-			const guestCount = this.localClient.followedCount
-			if (guestCount === 0) {
-				this.logger.info(
-					'Tutorial: no guest followed artists, redirecting to discovery',
-				)
-				return 'discover'
-			}
-			this.logger.info('Tutorial: allowing loading sequence', { guestCount })
-			return true
+			this.logger.info(
+				'Onboarding user reached loading-sequence, redirecting to dashboard',
+			)
+			return 'dashboard'
 		}
 
 		// Authenticated mode: check backend
@@ -129,13 +118,6 @@ export class LoadingSequence {
 	public async loading(): Promise<void> {
 		this.startPhaseAnimation()
 
-		if (this.onboarding.isOnboarding) {
-			// Return immediately so the router swaps in the loading screen.
-			// The display timer in attached() handles the 3s wait + navigation.
-			this.isOnboardingFlow = true
-			return
-		}
-
 		const result = await this.loadingService.aggregateData()
 
 		switch (result.status) {
@@ -177,14 +159,6 @@ export class LoadingSequence {
 	 * pipeline finishes before the new navigation starts.
 	 */
 	public attached(): void {
-		if (this.isOnboardingFlow) {
-			this.displayTimer = window.setTimeout(() => {
-				this.onboarding.setStep(OnboardingStep.DASHBOARD)
-				this.router.load('/dashboard')
-			}, this.ONBOARDING_DISPLAY_MS)
-			return
-		}
-
 		if (this.nextRoute) {
 			const route = this.nextRoute
 			this.nextRoute = null
@@ -198,10 +172,6 @@ export class LoadingSequence {
 		if (this.phaseTimer !== null) {
 			window.clearTimeout(this.phaseTimer)
 			this.phaseTimer = null
-		}
-		if (this.displayTimer !== null) {
-			window.clearTimeout(this.displayTimer)
-			this.displayTimer = null
 		}
 	}
 

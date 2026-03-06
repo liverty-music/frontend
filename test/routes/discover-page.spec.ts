@@ -225,6 +225,18 @@ describe('DiscoverPage', () => {
 		})
 	})
 
+	describe('onViewSchedule', () => {
+		it('should set step to DASHBOARD and navigate to /dashboard', async () => {
+			mockOnboarding.isOnboarding = true
+			mockOnboarding.currentStep = 1
+
+			await sut.onViewSchedule()
+
+			expect(mockOnboarding.setStep).toHaveBeenCalledWith(3) // DASHBOARD
+			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
+		})
+	})
+
 	describe('onFollowFromSearch', () => {
 		it('should follow artist and check live events', async () => {
 			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
