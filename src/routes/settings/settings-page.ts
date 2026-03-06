@@ -1,7 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve } from 'aurelia'
-import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IToastService } from '../../components/toast-notification/toast-notification'
+import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { shortDisplayName } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
