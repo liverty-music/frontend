@@ -40,36 +40,21 @@
 	--transition-route-easing: ease-out;
 }
 
+/* Propagate height through au-viewport so route components can use height: 100% */
+au-viewport {
+	overflow-y: auto;
+	display: block;
+}
+
 /* View Transitions API for route animations */
-@supports (view-transition-name: x) {
-	::view-transition-old(root) {
-		animation: var(--transition-route-duration) var(--transition-route-easing)
-			both fade-out;
-	}
-
-	::view-transition-new(root) {
-		animation: var(--transition-route-duration) var(--transition-route-easing)
-			both fade-in;
-	}
+::view-transition-old(root) {
+	animation: var(--transition-route-duration) var(--transition-route-easing)
+		both fade-out;
 }
 
-/* Fallback for browsers without View Transitions */
-@supports not (view-transition-name: x) {
-	au-viewport > * {
-		animation: page-enter 300ms ease-out both;
-	}
-}
-
-@keyframes page-enter {
-	from {
-		transform: translateY(12px);
-		opacity: 0;
-	}
-
-	to {
-		transform: translateY(0);
-		opacity: 1;
-	}
+::view-transition-new(root) {
+	animation: var(--transition-route-duration) var(--transition-route-easing)
+		both fade-in;
 }
 
 /* Hero entrance animations */
@@ -107,26 +92,26 @@
 
 @keyframes fade-slide-down {
 	from {
-		opacity: 1;
 		transform: translateY(0);
+		opacity: 1;
 	}
 
 	to {
-		opacity: 0;
 		transform: translateY(16px);
+		opacity: 0;
 	}
 }
 
 /* Modal entrance: scale + fade with spring easing */
 @keyframes modal-enter {
 	from {
-		opacity: 0;
 		transform: scale(0.95);
+		opacity: 0;
 	}
 
 	to {
-		opacity: 1;
 		transform: scale(1);
+		opacity: 1;
 	}
 }
 
@@ -208,7 +193,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	au-viewport > *,
 	[class*="animate-"] {
 		animation: none;
 	}
