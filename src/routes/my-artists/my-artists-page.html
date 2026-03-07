@@ -1,7 +1,7 @@
 <import from="../../components/coach-mark/coach-mark"></import>
 <import from="./my-artists-page.css"></import>
 
-<div class="h-screen flex flex-col bg-surface-base text-text-primary pb-14">
+<div class="relative flex flex-col h-full bg-surface-base text-text-primary">
   <!-- Header -->
   <div class="shrink-0 px-4 py-4 border-b border-white/10 bg-surface-raised">
     <div class="flex items-center justify-between">
@@ -58,7 +58,7 @@
         class="relative overflow-hidden rounded-[var(--radius-card)] mb-2"
       >
         <!-- Delete zone (behind the row) -->
-        <div class="absolute inset-y-0 right-0 w-20 bg-red-500 flex items-center justify-center">
+        <div class="absolute inset-y-0 end-0 w-20 bg-red-500 flex items-center justify-center">
           <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
@@ -156,13 +156,13 @@
   <div
     if.bind="undoVisible"
     role="status"
-    class="absolute bottom-16 left-4 right-4 bg-surface-overlay border border-white/10 rounded-[var(--radius-card)] px-4 py-3 flex items-center justify-between shadow-lg"
+    class="absolute bottom-4 start-4 end-4 bg-surface-overlay border border-white/10 rounded-[var(--radius-card)] px-4 py-3 flex items-center justify-between shadow-lg"
   >
     <span class="text-sm text-text-primary">${$this.i18n?.tr('myArtists.unfollowed', { name: undoArtist?.name }) ?? ''}</span>
     <button
       click.trigger="undo()"
       t="myArtists.undo"
-      class="text-sm font-semibold text-brand-primary hover:text-brand-primary/80 transition-colors ml-4"
+      class="text-sm font-semibold text-brand-primary hover:text-brand-primary/80 transition-colors ms-4"
     ></button>
   </div>
 

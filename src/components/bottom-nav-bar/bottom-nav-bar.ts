@@ -19,13 +19,8 @@ const tabs: NavTab[] = [
 export class BottomNavBar {
 	public readonly tabs = tabs
 
-	private navElement!: HTMLElement
 	private readonly router = resolve(IRouter)
 	private readonly i18n = resolve(I18N)
-
-	public attached(): void {
-		this.navElement.showPopover()
-	}
 
 	public trLabel(key: string): string {
 		return this.i18n.tr(key)

@@ -1,6 +1,6 @@
 <import from="../../components/user-home-selector/user-home-selector"></import>
 
-<div class="min-h-screen bg-surface-base text-text-primary pb-20">
+<div class="bg-surface-base text-text-primary">
   <!-- Header -->
   <div class="px-4 py-4 border-b border-white/10 bg-surface-raised">
     <h1 t="settings.title" class="font-display text-xl font-bold tracking-tight"></h1>
@@ -74,11 +74,11 @@
               </svg>
               <span t="settings.pushNotifications" class="text-sm text-text-primary"></span>
             </div>
-            <span if.bind="!vapidAvailable" t="settings.notAvailable" class="text-xs text-text-muted ml-8"></span>
+            <span if.bind="!vapidAvailable" t="settings.notAvailable" class="text-xs text-text-muted ms-8"></span>
           </div>
           <!-- Toggle switch -->
           <div class="relative w-11 h-6 rounded-full transition-colors duration-200 ${notificationsEnabled ? 'bg-brand-primary' : 'bg-white/20'}">
-            <div class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}"></div>
+            <div class="absolute top-0.5 start-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}"></div>
           </div>
         </button>
       </div>
