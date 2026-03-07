@@ -9,7 +9,7 @@
 	align-items: center;
 	justify-content: center;
 
-	height: 100vh;
+	height: 100dvh;
 
 	/* Match Artist Discovery background for visual continuity */
 	background: linear-gradient(

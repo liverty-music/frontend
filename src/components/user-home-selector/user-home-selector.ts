@@ -12,6 +12,7 @@ import { IUserService } from '../../services/user-service'
 
 export class UserHomeSelector {
 	@bindable public onHomeSelected?: (code: string) => void
+	@bindable public required = false
 
 	public isOpen = false
 	public regions = REGION_GROUPS
@@ -53,6 +54,7 @@ export class UserHomeSelector {
 	}
 
 	public handleBackdropClick(event: MouseEvent): void {
+		if (this.required) return
 		if (event.target === this.dialogElement) {
 			this.close()
 		}
@@ -60,7 +62,9 @@ export class UserHomeSelector {
 
 	public handleCancel(event: Event): void {
 		event.preventDefault()
-		this.close()
+		if (!this.required) {
+			this.close()
+		}
 	}
 
 	public selectRegion(region: RegionGroup): void {
