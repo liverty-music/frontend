@@ -2,12 +2,14 @@
 <import from="./components/pwa-install-prompt/pwa-install-prompt"></import>
 <import from="./components/notification-prompt/notification-prompt"></import>
 
-<main class="overflow-y-auto">
+<main>
   <au-viewport></au-viewport>
+
+  <!-- Top-layer overlays: inside main to avoid creating implicit grid rows.
+       popover/dialog elements render in top layer regardless of DOM position. -->
+  <pwa-install-prompt if.bind="showNav"></pwa-install-prompt>
+  <notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
+  <error-banner></error-banner>
 </main>
 
 <bottom-nav-bar show.bind="showNav"></bottom-nav-bar>
-
-<pwa-install-prompt if.bind="showNav"></pwa-install-prompt>
-<notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
-<error-banner></error-banner>

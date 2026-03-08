@@ -54,7 +54,6 @@ my-app {
 
 /* Propagate height through au-viewport so route components can use height: 100% */
 au-viewport {
-	overflow-y: auto;
 	display: block;
 	height: 100%;
 }
