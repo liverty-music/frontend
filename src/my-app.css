@@ -41,7 +41,7 @@
 }
 
 /* Shell layout: main content + bottom nav */
-:host {
+my-app {
 	display: grid;
 	grid-template-rows: 1fr min-content;
 
