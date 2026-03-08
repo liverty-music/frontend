@@ -1,18 +1,13 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter, type NavigationInstruction } from '@aurelia/router'
-import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
+import { ILogger, resolve } from 'aurelia'
 import { IToastService } from '../../components/toast-notification/toast-notification'
 import { IArtistServiceClient } from '../../services/artist-service-client'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
 import { ILocalArtistClient } from '../../services/local-artist-client'
 import { IOnboardingService } from '../../services/onboarding-service'
-import css from './loading-sequence.css?raw'
-
-@useShadowDOM()
 export class LoadingSequence {
-	static dependencies = [shadowCSS(css)]
-
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequence')
 	private readonly loadingService = resolve(ILoadingSequenceService)

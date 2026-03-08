@@ -1,13 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
-import {
-	batch,
-	ILogger,
-	resolve,
-	shadowCSS,
-	useShadowDOM,
-	watch,
-} from 'aurelia'
+import { batch, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { IToastService } from '../../components/toast-notification/toast-notification'
 import type { ArtistBubble } from '../../services/artist-discovery-service'
@@ -19,8 +12,6 @@ import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
-import css from './discover-page.css?raw'
-
 const GENRE_TAGS = [
 	'Rock',
 	'Pop',
@@ -34,10 +25,7 @@ const GENRE_TAGS = [
 	'Indie',
 ] as const
 
-@useShadowDOM()
 export class DiscoverPage {
-	static dependencies = [shadowCSS(css)]
-
 	private readonly artistClient = resolve(IArtistServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
