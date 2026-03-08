@@ -1,7 +1,6 @@
 <template>
   <div ref="popoverEl" popover="manual"
-    style="position: fixed; inset-block-start: 0; inset-inline: 1rem; margin: 0;"
-    class="p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 shadow-[var(--shadow-card-glow)] ${animationClass}"
+    class="fixed [inset-block-start:0] [inset-inline:1rem] m-0 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 shadow-[var(--shadow-card-glow)] ${animationClass}"
     data-testid="pwa-install-banner">
     <div class="flex items-start gap-3">
       <div class="shrink-0 w-5 h-5 text-text-secondary" aria-hidden="true">
