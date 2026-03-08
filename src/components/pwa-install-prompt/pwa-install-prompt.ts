@@ -8,6 +8,7 @@ export class PwaInstallPrompt {
 	public isVisible = false
 	public animationClass = ''
 	public popoverEl!: HTMLElement
+	private hideTimer: ReturnType<typeof setTimeout> | null = null
 
 	@watch((vm: PwaInstallPrompt) => vm.pwaInstall.canShow)
 	public canShowChanged(newValue: boolean): void {
@@ -17,6 +18,13 @@ export class PwaInstallPrompt {
 			this.popoverEl?.showPopover()
 		} else if (!newValue && this.isVisible) {
 			this.hideWithAnimation()
+		}
+	}
+
+	public detaching(): void {
+		if (this.hideTimer !== null) {
+			clearTimeout(this.hideTimer)
+			this.hideTimer = null
 		}
 	}
 
@@ -32,9 +40,12 @@ export class PwaInstallPrompt {
 
 	private hideWithAnimation(): void {
 		this.animationClass = 'animate-fade-slide-down'
-		setTimeout(() => {
+		this.hideTimer = setTimeout(() => {
+			this.hideTimer = null
 			this.isVisible = false
-			this.popoverEl?.hidePopover()
+			if (this.popoverEl?.isConnected) {
+				this.popoverEl.hidePopover()
+			}
 		}, EXIT_ANIMATION_MS)
 	}
 }
