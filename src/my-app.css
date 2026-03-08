@@ -40,10 +40,23 @@
 	--transition-route-easing: ease-out;
 }
 
+/* Shell layout: main content + bottom nav */
+my-app {
+	display: grid;
+	grid-template-rows: 1fr min-content;
+
+	height: 100dvh;
+
+	color: var(--color-text-primary);
+
+	background: var(--color-surface-base);
+}
+
 /* Propagate height through au-viewport so route components can use height: 100% */
 au-viewport {
 	overflow-y: auto;
 	display: block;
+	height: 100%;
 }
 
 /* View Transitions API for route animations */

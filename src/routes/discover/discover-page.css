@@ -1,3 +1,8 @@
+discover-page {
+	display: block;
+	height: 100%;
+}
+
 .container {
 	isolation: isolate;
 	position: relative;

@@ -1,37 +1,41 @@
 <template>
-  <div show.bind="isVisible && notificationManager.permission === 'default'"
-    class="mx-4 mb-4 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 shadow-[var(--shadow-card-glow)] ${animationClass}">
-    <div class="flex items-start gap-3">
-      <div class="shrink-0 text-2xl" aria-hidden="true">🔔</div>
-      <div class="flex-1 min-w-0">
-        <p t="notification.title" class="font-display font-bold text-text-primary text-sm"></p>
-        <p t="notification.description" class="text-text-secondary text-xs mt-0.5"></p>
-        <div class="flex gap-2 mt-3">
-          <button click.trigger="dismiss()"
-            t="notification.notNow"
-            class="px-3 py-1.5 text-xs text-text-muted border border-white/10 rounded-[var(--radius-button)] transition-colors hover:bg-white/5">
-          </button>
-          <button click.trigger="enable()" disabled.bind="isLoading"
-            class="px-3 py-1.5 text-xs font-medium text-white bg-brand-primary rounded-[var(--radius-button)] transition-colors hover:bg-brand-secondary shadow-[var(--shadow-button)] disabled:opacity-40 disabled:cursor-not-allowed">
-            <span if.bind="isLoading" t="notification.enabling"></span>
-            <span if.bind="!isLoading" t="notification.enable"></span>
-          </button>
+  <div ref="popoverEl" popover="manual"
+    class="fixed [inset-block-start:0] [inset-inline:1rem] m-0 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 shadow-[var(--shadow-card-glow)] ${animationClass}">
+
+    <!-- Default permission state -->
+    <div show.bind="notificationManager.permission === 'default'">
+      <div class="flex items-start gap-3">
+        <div class="shrink-0 text-2xl" aria-hidden="true">🔔</div>
+        <div class="flex-1 min-w-0">
+          <p t="notification.title" class="font-display font-bold text-text-primary text-sm"></p>
+          <p t="notification.description" class="text-text-secondary text-xs mt-0.5"></p>
+          <div class="flex gap-2 mt-3">
+            <button click.trigger="dismiss()"
+              t="notification.notNow"
+              class="px-3 py-1.5 text-xs text-text-muted border border-white/10 rounded-[var(--radius-button)] transition-colors hover:bg-white/5">
+            </button>
+            <button click.trigger="enable()" disabled.bind="isLoading"
+              class="px-3 py-1.5 text-xs font-medium text-white bg-brand-primary rounded-[var(--radius-button)] transition-colors hover:bg-brand-secondary shadow-[var(--shadow-button)] disabled:opacity-40 disabled:cursor-not-allowed">
+              <span if.bind="isLoading" t="notification.enabling"></span>
+              <span if.bind="!isLoading" t="notification.enable"></span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div show.bind="isVisible && notificationManager.permission === 'denied'"
-    class="mx-4 mb-4 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 ${animationClass}">
-    <div class="flex items-start gap-3">
-      <div class="shrink-0 text-2xl" aria-hidden="true">🔕</div>
-      <div class="flex-1 min-w-0">
-        <p t="notification.blocked.title" class="font-display font-bold text-text-primary text-sm"></p>
-        <p t="notification.blocked.description" class="text-text-secondary text-xs mt-0.5"></p>
-        <button click.trigger="dismiss()"
-          t="notification.blocked.dismiss"
-          class="mt-3 px-3 py-1.5 text-xs text-text-muted border border-white/10 rounded-[var(--radius-button)] transition-colors hover:bg-white/5">
-        </button>
+    <!-- Denied permission state -->
+    <div show.bind="notificationManager.permission === 'denied'">
+      <div class="flex items-start gap-3">
+        <div class="shrink-0 text-2xl" aria-hidden="true">🔕</div>
+        <div class="flex-1 min-w-0">
+          <p t="notification.blocked.title" class="font-display font-bold text-text-primary text-sm"></p>
+          <p t="notification.blocked.description" class="text-text-secondary text-xs mt-0.5"></p>
+          <button click.trigger="dismiss()"
+            t="notification.blocked.dismiss"
+            class="mt-3 px-3 py-1.5 text-xs text-text-muted border border-white/10 rounded-[var(--radius-button)] transition-colors hover:bg-white/5">
+          </button>
+        </div>
       </div>
     </div>
   </div>

@@ -12,9 +12,11 @@ export class NotificationPrompt {
 	public isVisible = false
 	public isLoading = false
 	public animationClass = ''
+	public popoverEl!: HTMLElement
+	private hideTimer: ReturnType<typeof setTimeout> | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('NotificationPrompt')
-	private readonly notificationManager = resolve(INotificationManager)
+	public readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
 	private readonly auth = resolve(IAuthService)
 	private readonly onboarding = resolve(IOnboardingService)
@@ -48,6 +50,7 @@ export class NotificationPrompt {
 
 		this.animationClass = 'animate-fade-slide-up'
 		this.isVisible = true
+		this.popoverEl?.showPopover()
 		this.promptCoordinator.markShown('notification')
 	}
 
@@ -66,6 +69,13 @@ export class NotificationPrompt {
 		}
 	}
 
+	public detaching(): void {
+		if (this.hideTimer !== null) {
+			clearTimeout(this.hideTimer)
+			this.hideTimer = null
+		}
+	}
+
 	public dismiss(): void {
 		this.hideWithAnimation()
 		localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')
@@ -73,8 +83,12 @@ export class NotificationPrompt {
 
 	private hideWithAnimation(): void {
 		this.animationClass = 'animate-fade-slide-down'
-		setTimeout(() => {
+		this.hideTimer = setTimeout(() => {
+			this.hideTimer = null
 			this.isVisible = false
+			if (this.popoverEl?.isConnected) {
+				this.popoverEl.hidePopover()
+			}
 		}, EXIT_ANIMATION_MS)
 	}
 }

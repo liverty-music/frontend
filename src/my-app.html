@@ -2,14 +2,12 @@
 <import from="./components/pwa-install-prompt/pwa-install-prompt"></import>
 <import from="./components/notification-prompt/notification-prompt"></import>
 
-<div class="grid grid-rows-[1fr_min-content] h-dvh bg-surface-base text-text-primary">
-  <main class="grid grid-rows-[auto_auto_1fr] overflow-hidden">
-    <pwa-install-prompt if.bind="showNav"></pwa-install-prompt>
-    <notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
-    <au-viewport></au-viewport>
-  </main>
+<main class="overflow-y-auto">
+  <au-viewport></au-viewport>
+</main>
 
-  <bottom-nav-bar show.bind="showNav"></bottom-nav-bar>
-</div>
+<bottom-nav-bar show.bind="showNav"></bottom-nav-bar>
 
+<pwa-install-prompt if.bind="showNav"></pwa-install-prompt>
+<notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
 <error-banner></error-banner>
