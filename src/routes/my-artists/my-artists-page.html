@@ -152,11 +152,13 @@
     </div>
   </dialog>
 
-  <!-- Undo toast -->
+  <!-- Undo toast (top-layer popover to stay above dialogs) -->
   <div
-    if.bind="undoVisible"
+    ref="undoPopoverEl"
+    popover="manual"
     role="status"
-    class="absolute bottom-4 start-4 end-4 bg-surface-overlay border border-white/10 rounded-[var(--radius-card)] px-4 py-3 flex items-center justify-between shadow-lg"
+    style="position: fixed; inset-block-end: 5rem; inset-inline: 1rem; margin: 0;"
+    class="bg-surface-overlay border border-white/10 rounded-[var(--radius-card)] px-4 py-3 flex items-center justify-between shadow-lg"
   >
     <span class="text-sm text-text-primary">${$this.i18n?.tr('myArtists.unfollowed', { name: undoArtist?.name }) ?? ''}</span>
     <button

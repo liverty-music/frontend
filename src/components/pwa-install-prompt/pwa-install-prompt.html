@@ -1,6 +1,7 @@
 <template>
-  <div show.bind="isVisible"
-    class="mx-4 mb-4 p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 shadow-[var(--shadow-card-glow)] ${animationClass}"
+  <div ref="popoverEl" popover="manual"
+    style="position: fixed; inset-block-start: 0; inset-inline: 1rem; margin: 0;"
+    class="p-4 bg-surface-raised rounded-[var(--radius-card)] border border-white/10 shadow-[var(--shadow-card-glow)] ${animationClass}"
     data-testid="pwa-install-banner">
     <div class="flex items-start gap-3">
       <div class="shrink-0 w-5 h-5 text-text-secondary" aria-hidden="true">

@@ -44,6 +44,7 @@
 au-viewport {
 	overflow-y: auto;
 	display: block;
+	height: 100%;
 }
 
 /* View Transitions API for route animations */

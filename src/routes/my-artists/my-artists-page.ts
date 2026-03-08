@@ -70,6 +70,7 @@ export class MyArtistsPage {
 	// Undo state
 	public undoArtist: FollowedArtist | null = null
 	public undoVisible = false
+	public undoPopoverEl!: HTMLElement
 	private undoTimer: ReturnType<typeof setTimeout> | null = null
 	private undoIndex = -1
 
@@ -229,6 +230,7 @@ export class MyArtistsPage {
 		this.undoArtist = artist
 		this.undoIndex = index
 		this.undoVisible = true
+		this.undoPopoverEl?.showPopover()
 
 		this.logger.info('Artist unfollowed (pending)', { name: artist.name })
 
@@ -251,6 +253,7 @@ export class MyArtistsPage {
 
 		this.undoArtist = null
 		this.undoVisible = false
+		this.undoPopoverEl?.hidePopover()
 	}
 
 	private commitPendingUnfollow(): void {
@@ -261,6 +264,7 @@ export class MyArtistsPage {
 		const originalIndex = this.undoIndex
 		this.undoArtist = null
 		this.undoVisible = false
+		this.undoPopoverEl?.hidePopover()
 
 		// Fire-and-forget RPC with 1 retry
 		const client = this.artistService.getClient()
