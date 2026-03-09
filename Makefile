@@ -19,9 +19,11 @@ test:
 test-layout:
 	npx playwright test --project=mobile-layout
 
-## test-layout-auth: Playwright layout assertions for authenticated routes (requires storageState)
+## test-layout-auth: Playwright layout assertions for authenticated routes
+## Requires .auth/storageState.json — run `npx tsx scripts/capture-auth-state.ts` first
 test-layout-auth:
 	npx playwright test --project=authenticated-mobile
 
 ## check: full local pre-commit check (lint + test + layout)
+## Note: test-layout-auth excluded — requires manual storageState capture
 check: lint test test-layout
