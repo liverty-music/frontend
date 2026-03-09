@@ -1,15 +1,10 @@
-discover-page {
-	display: block;
-	height: 100%;
-}
-
-.container {
+.discover-layout {
 	isolation: isolate;
 	position: relative;
 
 	overflow: hidden;
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template-rows: auto auto auto 1fr;
 
 	width: 100%;
 	height: 100%;
@@ -23,7 +18,7 @@ discover-page {
 }
 
 /* Starfield background layer */
-.container::before {
+.discover-layout::before {
 	pointer-events: none;
 	content: "";
 
@@ -90,7 +85,6 @@ discover-page {
 	position: relative;
 
 	display: flex;
-	flex-shrink: 0;
 	align-items: center;
 
 	margin: 0.75rem 1rem 0;
@@ -156,15 +150,14 @@ discover-page {
 	background: oklch(100% 0 0deg / 25%);
 }
 
-/* Genre chips */
+/* Genre chips — flex is intentional: horizontal scrollable strip with overflow-inline */
 .genre-chips {
 	scrollbar-width: none;
 
 	position: relative;
 
-	overflow-x: auto;
+	overflow-inline: auto;
 	display: flex;
-	flex-shrink: 0;
 	gap: 0.5rem;
 
 	padding: 0.75rem 1rem 0.25rem;
@@ -211,11 +204,12 @@ discover-page {
 	opacity: 0.5;
 }
 
-/* Bubble area */
+/* Bubble area — always in the 1fr row regardless of sibling visibility */
 .bubble-area {
 	position: relative;
-	flex: 1;
-	min-height: 0;
+	container-type: inline-size;
+	grid-row: -2 / -1;
+	min-block-size: 0;
 }
 
 /* Orb label */
@@ -233,14 +227,15 @@ discover-page {
 	letter-spacing: 0.15em;
 }
 
-/* Search results */
+/* Search results — always in the 1fr row regardless of sibling visibility */
 .search-results {
 	position: relative;
 
-	overflow-y: auto;
-	flex: 1;
+	container-type: inline-size;
+	overflow-block: auto;
+	grid-row: -2 / -1;
 
-	min-height: 0;
+	min-block-size: 0;
 	padding: 0.75rem 1rem;
 	padding-block-end: calc(4rem + env(safe-area-inset-bottom));
 }
@@ -255,15 +250,17 @@ discover-page {
 }
 
 .results-list {
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template-columns: auto 1fr auto;
 	gap: 0.25rem;
 }
 
 .result-item {
-	display: flex;
+	display: grid;
+	grid-column: 1 / -1;
+	grid-template-columns: subgrid;
+	gap: 0.75rem;
 	align-items: center;
-	justify-content: space-between;
 
 	padding: 0.75rem;
 	border-radius: 0.75rem;
@@ -278,17 +275,12 @@ discover-page {
 }
 
 .result-info {
-	display: flex;
-	gap: 0.75rem;
-	align-items: center;
-	min-width: 0;
+	display: contents;
 }
 
 .result-avatar {
-	display: flex;
-	flex-shrink: 0;
-	align-items: center;
-	justify-content: center;
+	display: grid;
+	place-items: center;
 
 	width: 2.5rem;
 	height: 2.5rem;
@@ -309,6 +301,8 @@ discover-page {
 .result-name {
 	overflow: hidden;
 
+	min-inline-size: 0;
+
 	font-family: var(--font-display);
 	font-size: 0.9375rem;
 	font-weight: 500;
@@ -320,10 +314,9 @@ discover-page {
 .follow-button {
 	cursor: pointer;
 
-	display: flex;
-	flex-shrink: 0;
-	align-items: center;
-	justify-content: center;
+	display: grid;
+	place-items: center;
+	justify-self: end;
 
 	width: 2.25rem;
 	height: 2.25rem;
@@ -369,11 +362,9 @@ discover-page {
 
 	position: relative;
 
-	display: flex;
-	flex-direction: column;
-	flex-shrink: 0;
+	display: grid;
 	gap: 0.75rem;
-	align-items: center;
+	justify-items: center;
 
 	padding-block-start: 0.5rem;
 
@@ -381,7 +372,8 @@ discover-page {
 }
 
 .progress-dots {
-	display: flex;
+	display: grid;
+	grid-auto-flow: column;
 	gap: 0.75rem;
 	align-items: center;
 }

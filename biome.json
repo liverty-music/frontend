@@ -20,7 +20,7 @@
 	},
 	"overrides": [
 		{
-			"includes": ["test/**/*.ts", "test/**/*.spec.ts"],
+			"includes": ["test/**/*.ts", "test/**/*.spec.ts", "e2e/**/*.ts"],
 			"linter": {
 				"rules": {
 					"style": {

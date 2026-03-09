@@ -56,6 +56,14 @@ export default defineConfig({
         storageState: '.auth/storageState.json',
       },
     },
+    {
+      name: 'mobile-layout',
+      testMatch: 'e2e/layout/**/*.spec.ts',
+      use: {
+        ...devices['iPhone 14'],
+        baseURL: 'http://localhost:9000',
+      },
+    },
 
     // {
     //   name: 'firefox',
@@ -107,5 +115,6 @@ export default defineConfig({
   webServer: {
     command: 'npm start',
     port: 9000,
+    reuseExistingServer: !process.env.CI,
   },
 });
