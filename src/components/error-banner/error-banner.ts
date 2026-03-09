@@ -1,11 +1,11 @@
 import { I18N } from '@aurelia/i18n'
-import { ILogger, resolve, watch } from 'aurelia'
+import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
-import { IToastService } from '../toast-notification/toast-notification'
+import { Toast } from '../toast-notification/toast'
 
 export class ErrorBanner {
 	public readonly errorBoundary = resolve(IErrorBoundaryService)
-	private readonly toastService = resolve(IToastService)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly logger = resolve(ILogger).scopeTo('ErrorBanner')
 	private readonly i18n = resolve(I18N)
 
@@ -30,7 +30,7 @@ export class ErrorBanner {
 		const report = this.errorBoundary.generateReport(error)
 		try {
 			await navigator.clipboard.writeText(report)
-			this.toastService.show(this.i18n.tr('errorBanner.copied'))
+			this.ea.publish(new Toast(this.i18n.tr('errorBanner.copied')))
 		} catch (err) {
 			this.logger.warn('Failed to copy to clipboard', err)
 		}
@@ -42,9 +42,8 @@ export class ErrorBanner {
 
 		const now = Date.now()
 		if (now - this.lastReportTime < ErrorBanner.REPORT_COOLDOWN_MS) {
-			this.toastService.show(
-				this.i18n.tr('errorBanner.reportCooldown'),
-				'warning',
+			this.ea.publish(
+				new Toast(this.i18n.tr('errorBanner.reportCooldown'), 'warning'),
 			)
 			return
 		}

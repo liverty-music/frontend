@@ -1,8 +1,8 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
-import { batch, ILogger, resolve, watch } from 'aurelia'
+import { batch, IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
-import { IToastService } from '../../components/toast-notification/toast-notification'
+import { Toast } from '../../components/toast-notification/toast'
 import type { ArtistBubble } from '../../services/artist-discovery-service'
 import { IArtistServiceClient } from '../../services/artist-service-client'
 import { BubblePool } from '../../services/bubble-pool'
@@ -12,6 +12,7 @@ import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
+
 const GENRE_TAGS = [
 	'Rock',
 	'Pop',
@@ -29,7 +30,7 @@ export class DiscoverPage {
 	private readonly artistClient = resolve(IArtistServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
-	private readonly toastService = resolve(IToastService)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly concertService = resolve(IConcertService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoverPage')
@@ -103,7 +104,7 @@ export class DiscoverPage {
 			await this.loadInitialArtists('Japan', '')
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
-			this.toastService.show(this.i18n.tr('discover.loadFailed'), 'error')
+			this.ea.publish(new Toast(this.i18n.tr('discover.loadFailed'), 'error'))
 		}
 	}
 
@@ -138,7 +139,9 @@ export class DiscoverPage {
 				this.dnaOrbCanvas.reloadBubbles(this.pool.availableBubbles)
 			} catch (err) {
 				this.logger.error('Failed to clear genre tag', err)
-				this.toastService.show(this.i18n.tr('discover.resetFailed'), 'error')
+				this.ea.publish(
+					new Toast(this.i18n.tr('discover.resetFailed'), 'error'),
+				)
 			} finally {
 				this.isLoadingTag = false
 			}
@@ -156,9 +159,8 @@ export class DiscoverPage {
 		} catch (err) {
 			this.activeTag = ''
 			this.logger.warn('Failed to load genre artists', err)
-			this.toastService.show(
-				this.i18n.tr('discover.genreLoadFailed', { tag }),
-				'error',
+			this.ea.publish(
+				new Toast(this.i18n.tr('discover.genreLoadFailed', { tag }), 'error'),
 			)
 		} finally {
 			this.isLoadingTag = false
@@ -206,7 +208,9 @@ export class DiscoverPage {
 			this.searchResults = results
 		} catch (err) {
 			this.logger.warn('Search failed', err)
-			this.toastService.show(this.i18n.tr('discover.searchFailed'), 'warning')
+			this.ea.publish(
+				new Toast(this.i18n.tr('discover.searchFailed'), 'warning'),
+			)
 			this.searchResults = []
 		} finally {
 			if (this.searchQuery.trim() === query) {
@@ -236,9 +240,11 @@ export class DiscoverPage {
 				artist: artist.name,
 				error: err,
 			})
-			this.toastService.show(
-				this.i18n.tr('discover.followFailed', { name: artist.name }),
-				'error',
+			this.ea.publish(
+				new Toast(
+					this.i18n.tr('discover.followFailed', { name: artist.name }),
+					'error',
+				),
 			)
 			return
 		}
@@ -302,11 +308,13 @@ export class DiscoverPage {
 			}
 		} catch (err) {
 			this.logger.warn('Failed to load similar artists', err)
-			this.toastService.show(
-				this.i18n.tr('discover.similarArtistsError', {
-					name: artistName,
-				}),
-				'warning',
+			this.ea.publish(
+				new Toast(
+					this.i18n.tr('discover.similarArtistsError', {
+						name: artistName,
+					}),
+					'warning',
+				),
 			)
 		} finally {
 			this.isLoadingBubbles = false
@@ -327,9 +335,11 @@ export class DiscoverPage {
 				artist: artist.name,
 				error: err,
 			})
-			this.toastService.show(
-				this.i18n.tr('discover.followFailed', { name: artist.name }),
-				'error',
+			this.ea.publish(
+				new Toast(
+					this.i18n.tr('discover.followFailed', { name: artist.name }),
+					'error',
+				),
 			)
 			return
 		}
@@ -499,7 +509,7 @@ export class DiscoverPage {
 				)
 			}
 
-			this.toastService.show(`Failed to follow ${artist.name}`)
+			this.ea.publish(new Toast(`Failed to follow ${artist.name}`))
 			throw err
 		}
 	}
@@ -510,10 +520,12 @@ export class DiscoverPage {
 			.then((concerts) => {
 				if (this.abortController.signal.aborted) return
 				if (concerts.length > 0) {
-					this.toastService.show(
-						this.i18n.tr('discover.hasUpcomingEvents', {
-							name: artist.name,
-						}),
+					this.ea.publish(
+						new Toast(
+							this.i18n.tr('discover.hasUpcomingEvents', {
+								name: artist.name,
+							}),
+						),
 					)
 				}
 			})

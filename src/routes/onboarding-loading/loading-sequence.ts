@@ -1,7 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter, type NavigationInstruction } from '@aurelia/router'
-import { ILogger, resolve } from 'aurelia'
-import { IToastService } from '../../components/toast-notification/toast-notification'
+import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { Toast } from '../../components/toast-notification/toast'
 import { IArtistServiceClient } from '../../services/artist-service-client'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
@@ -14,7 +14,7 @@ export class LoadingSequence {
 	private readonly artistClient = resolve(IArtistServiceClient)
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly toastService = resolve(IToastService)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly i18n = resolve(I18N)
 
@@ -124,13 +124,16 @@ export class LoadingSequence {
 					failedCount: result.failedCount,
 					totalCount: result.totalCount,
 				})
-				this.toastService.show(
-					this.i18n.tr('loading.partialFailure', {
-						failed: result.failedCount,
-						total: result.totalCount,
-					}),
-					'warning',
+				this.ea.publish(
+					new Toast(
+						this.i18n.tr('loading.partialFailure', {
+							failed: result.failedCount,
+							total: result.totalCount,
+						}),
+						'warning',
+					),
 				)
+
 				break
 			case 'failed':
 				this.logger.error('Complete data aggregation failure', {

@@ -4,9 +4,9 @@ import {
 	ArtistId,
 	PassionLevel,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import { ILogger, resolve } from 'aurelia'
+import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../components/live-highway/color-generator'
-import { IToastService } from '../../components/toast-notification/toast-notification'
+import { Toast } from '../../components/toast-notification/toast'
 import { IArtistServiceClient } from '../../services/artist-service-client'
 import {
 	IOnboardingService,
@@ -89,7 +89,7 @@ export class MyArtistsPage {
 	private readonly artistService = resolve(IArtistServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
-	private readonly toast = resolve(IToastService)
+	private readonly ea = resolve(IEventAggregator)
 	private abortController: AbortController | null = null
 
 	// Tutorial state
@@ -294,8 +294,10 @@ export class MyArtistsPage {
 						// Revert optimistic removal
 						const insertAt = Math.min(originalIndex, this.artists.length)
 						this.artists.splice(insertAt, 0, artist)
-						this.toast.show(
-							this.i18n.tr('myArtists.failedUnfollow', { name: artist.name }),
+						this.ea.publish(
+							new Toast(
+								this.i18n.tr('myArtists.failedUnfollow', { name: artist.name }),
+							),
 						)
 					})
 			})
@@ -408,7 +410,9 @@ export class MyArtistsPage {
 						})
 						const artist = this.artists.find((a) => a.id === artistId)
 						if (artist) artist.passionLevel = prev
-						this.toast.show(this.i18n.tr('myArtists.failedPassionLevel'))
+						this.ea.publish(
+							new Toast(this.i18n.tr('myArtists.failedPassionLevel')),
+						)
 					})
 			})
 	}
@@ -467,7 +471,7 @@ export class MyArtistsPage {
 					error: retryErr,
 				})
 				artist.passionLevel = prev
-				this.toast.show(this.i18n.tr('myArtists.failedPassionLevel'))
+				this.ea.publish(new Toast(this.i18n.tr('myArtists.failedPassionLevel')))
 			})
 		})
 	}

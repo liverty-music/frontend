@@ -3,7 +3,6 @@ import { RouterConfiguration } from '@aurelia/router'
 import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
-import { IToastService } from './components/toast-notification/toast-notification'
 import { migrateStorageKeys } from './constants/storage-keys'
 import { AuthHook } from './hooks/auth-hook'
 import en from './locales/en/translation.json'
@@ -95,7 +94,6 @@ Aurelia
 	.register(ITicketService)
 	.register(IEntryService)
 	.register(IProofService)
-	.register(IToastService)
 	.register(BottomNavBar)
 	.register(AuthHook)
 	.register(DateValueConverter)

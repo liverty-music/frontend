@@ -1,18 +1,18 @@
-import { DI, Registration } from 'aurelia'
+import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Toast } from '../../src/components/toast-notification/toast'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 import { createMockLoadingSequenceService } from '../helpers/mock-loading-sequence'
 import { createMockRouter } from '../helpers/mock-router'
 import { createMockArtistServiceClient } from '../helpers/mock-rpc-clients'
-import { createMockToastService } from '../helpers/mock-toast'
+import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIRouter = DI.createInterface('IRouter')
 const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
 const mockILoadingSequenceService = DI.createInterface(
 	'ILoadingSequenceService',
 )
-const mockIToastService = DI.createInterface('IToastService')
 const mockIErrorBoundaryService = DI.createInterface('IErrorBoundaryService')
 const mockILocalArtistClient = DI.createInterface('ILocalArtistClient')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
@@ -27,10 +27,6 @@ vi.mock('../../src/services/artist-service-client', () => ({
 
 vi.mock('../../src/services/loading-sequence-service', () => ({
 	ILoadingSequenceService: mockILoadingSequenceService,
-}))
-
-vi.mock('../../src/components/toast-notification/toast-notification', () => ({
-	IToastService: mockIToastService,
 }))
 
 vi.mock('../../src/services/error-boundary-service', () => ({
@@ -72,7 +68,7 @@ describe('LoadingSequence', () => {
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
 	let mockLoadingService: ReturnType<typeof createMockLoadingSequenceService>
-	let mockToast: ReturnType<typeof createMockToastService>
+	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockErrorBoundary: ReturnType<typeof createMockErrorBoundary>
 	let mockOnboarding: {
 		currentStep: number
@@ -91,7 +87,7 @@ describe('LoadingSequence', () => {
 		mockRouter = createMockRouter()
 		mockArtistClient = createMockArtistServiceClient()
 		mockLoadingService = createMockLoadingSequenceService()
-		mockToast = createMockToastService()
+		mockEa = createMockEventAggregator()
 		mockErrorBoundary = createMockErrorBoundary()
 		mockOnboarding = {
 			currentStep: 7,
@@ -108,7 +104,7 @@ describe('LoadingSequence', () => {
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIArtistServiceClient, mockArtistClient),
 			Registration.instance(mockILoadingSequenceService, mockLoadingService),
-			Registration.instance(mockIToastService, mockToast),
+			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIErrorBoundaryService, mockErrorBoundary),
 			Registration.instance(mockILocalArtistClient, mockLocalClient),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
@@ -208,10 +204,8 @@ describe('LoadingSequence', () => {
 			sut.binding()
 			await sut.loading()
 
-			expect(mockToast.show).toHaveBeenCalledWith(
-				expect.stringContaining('loading.partialFailure'),
-				'warning',
-			)
+			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Toast))
+			expect(mockEa.published[0].severity).toBe('warning')
 
 			sut.attached()
 			await vi.advanceTimersByTimeAsync(1)

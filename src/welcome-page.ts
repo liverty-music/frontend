@@ -4,8 +4,8 @@ import {
 	type IRouteViewModel,
 	type NavigationInstruction,
 } from '@aurelia/router'
-import { ILogger, resolve } from 'aurelia'
-import { IToastService } from './components/toast-notification/toast-notification'
+import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { Toast } from './components/toast-notification/toast'
 import { IAuthService } from './services/auth-service'
 import { ILocalArtistClient } from './services/local-artist-client'
 import {
@@ -19,7 +19,7 @@ export class WelcomePage implements IRouteViewModel {
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('WelcomePage')
-	private readonly toast = resolve(IToastService)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 
 	/**
@@ -79,7 +79,7 @@ export class WelcomePage implements IRouteViewModel {
 			await this.router.load('discover')
 		} catch (err) {
 			this.logger.error('Failed to navigate to discover', { error: err })
-			this.toast.show(this.i18n.tr('welcome.error.navigation'))
+			this.ea.publish(new Toast(this.i18n.tr('welcome.error.navigation')))
 		}
 	}
 
@@ -89,7 +89,7 @@ export class WelcomePage implements IRouteViewModel {
 			await this.authService.signIn()
 		} catch (err) {
 			this.logger.error('Failed to start sign-in flow', { error: err })
-			this.toast.show(this.i18n.tr('welcome.error.login'))
+			this.ea.publish(new Toast(this.i18n.tr('welcome.error.login')))
 		}
 	}
 }
