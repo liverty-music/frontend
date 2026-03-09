@@ -21,7 +21,8 @@ async function mockRpcRoutes(page: Page): Promise<void> {
  * Set localStorage values so routes render without auth/onboarding redirects.
  */
 const BYPASS_AUTH_SETUP = () => {
-	localStorage.setItem('onboardingStep', '1')
+	// Set step to COMPLETED (7) so isOnboarding=false and bottom-nav is visible
+	localStorage.setItem('onboardingStep', '7')
 }
 
 export const test = base.extend<{ layoutPage: Page }>({

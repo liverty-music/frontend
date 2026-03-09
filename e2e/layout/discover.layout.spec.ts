@@ -67,6 +67,7 @@ test.describe('Discover page layout', () => {
 	test('bubble-area bottom does not exceed bottom-nav top (D5)', async ({
 		layoutPage: page,
 	}) => {
+		await page.waitForSelector('bottom-nav-bar')
 		const bubbleArea = page.locator('.bubble-area')
 		const nav = page.locator('bottom-nav-bar')
 

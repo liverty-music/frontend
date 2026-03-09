@@ -44,8 +44,10 @@ test.describe('Shell layout', () => {
 	test('au-viewport fills full height without nav (S4)', async ({
 		layoutPage: page,
 	}) => {
-		await page.goto('/onboarding/loading')
-		await page.waitForSelector('.loading-layout')
+		// Welcome page is a fullscreen route (no bottom-nav).
+		await page.goto('/welcome')
+		// Wait for au-viewport to contain rendered content
+		await page.locator('au-viewport > *').first().waitFor({ timeout: 10_000 })
 
 		const myApp = page.locator('my-app')
 		const viewport = page.locator('au-viewport')

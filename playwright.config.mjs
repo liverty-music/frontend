@@ -59,9 +59,19 @@ export default defineConfig({
     {
       name: 'mobile-layout',
       testMatch: 'e2e/layout/**/*.spec.ts',
+      testIgnore: 'e2e/layout/**/*.auth.spec.ts',
       use: {
         ...devices['iPhone 14'],
         baseURL: 'http://localhost:9000',
+      },
+    },
+    {
+      name: 'authenticated-mobile',
+      testMatch: 'e2e/layout/**/*.auth.spec.ts',
+      use: {
+        ...devices['iPhone 14'],
+        baseURL: 'http://localhost:9000',
+        storageState: '.auth/storageState.json',
       },
     },
 
