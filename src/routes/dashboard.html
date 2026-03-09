@@ -1,3 +1,4 @@
+<import from="../components/live-highway/live-highway"></import>
 <import from="../components/user-home-selector/user-home-selector"></import>
 <import from="../components/inline-error/inline-error"></import>
 <import from="../components/coach-mark/coach-mark"></import>
@@ -27,7 +28,7 @@
   </div>
 
   <!-- Highway content with promise.bind -->
-  <div class="flex-1 min-h-0 transition-[filter] duration-500 ${needsRegion ? 'blur-sm pointer-events-none overflow-hidden' : ''}" promise.bind="dataPromise">
+  <div class="flex flex-col flex-1 min-h-0 transition-[filter] duration-500 ${needsRegion ? 'blur-sm pointer-events-none overflow-hidden' : ''}" promise.bind="dataPromise">
     <!-- Loading skeleton -->
     <div pending class="flex-1 min-h-0">
       <live-highway

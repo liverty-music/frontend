@@ -65,6 +65,13 @@ au-viewport {
 	grid-template-rows: 1fr;
 }
 
+/* Custom element needs block display + full height so that
+   child h-full / flex-1 heights resolve through the CE boundary. */
+live-highway {
+	display: block;
+	height: 100%;
+}
+
 /* Overlay components use top-layer APIs (popover/dialog).
    Collapsed to zero so they don't affect grid row sizing.
    Note: display:contents breaks Aurelia ref bindings — keep the box. */

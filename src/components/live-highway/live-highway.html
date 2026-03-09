@@ -1,4 +1,7 @@
 <template>
+  <import from="./event-card"></import>
+  <import from="./event-detail-sheet"></import>
+
   <div event-selected.trigger="onEventSelected($event)" class="flex flex-col h-full bg-surface-base">
     <!-- Loading state -->
     <div if.bind="loading" class="flex items-center justify-center h-full">
