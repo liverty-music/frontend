@@ -5,8 +5,13 @@ import type {
 	Params,
 	RouteNode,
 } from '@aurelia/router'
-import { type ILifecycleHooks, lifecycleHooks, resolve } from 'aurelia'
-import { IToastService } from '../components/toast-notification/toast-notification'
+import {
+	IEventAggregator,
+	type ILifecycleHooks,
+	lifecycleHooks,
+	resolve,
+} from 'aurelia'
+import { Toast } from '../components/toast-notification/toast'
 import { IAuthService } from '../services/auth-service'
 import {
 	IOnboardingService,
@@ -18,7 +23,7 @@ import {
 export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 	private readonly authService = resolve(IAuthService)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly toastService = resolve(IToastService)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 
 	async canLoad(
@@ -52,7 +57,7 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 		}
 
 		// Priority 3: Not authenticated, not in tutorial
-		this.toastService.show(this.i18n.tr('auth.loginRequired'), 'warning')
+		this.ea.publish(new Toast(this.i18n.tr('auth.loginRequired'), 'warning'))
 		return ''
 	}
 }

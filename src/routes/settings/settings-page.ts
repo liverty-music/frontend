@@ -1,6 +1,6 @@
 import { I18N } from '@aurelia/i18n'
-import { ILogger, resolve } from 'aurelia'
-import { IToastService } from '../../components/toast-notification/toast-notification'
+import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { Toast } from '../../components/toast-notification/toast'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { shortDisplayName } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
@@ -15,7 +15,7 @@ export class SettingsPage {
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
 	private readonly logger = resolve(ILogger).scopeTo('SettingsPage')
-	private readonly toastService = resolve(IToastService)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 
 	public currentHome: string | null = null
@@ -100,7 +100,7 @@ export class SettingsPage {
 			await this.auth.signOut()
 		} catch (err) {
 			this.logger.error('Sign-out failed', { error: err })
-			this.toastService.show(this.i18n.tr('settings.signOutError'), 'error')
+			this.ea.publish(new Toast(this.i18n.tr('settings.signOutError'), 'error'))
 		}
 	}
 }

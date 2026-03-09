@@ -1,13 +1,22 @@
+import { IEventAggregator } from 'aurelia'
 import { vi } from 'vitest'
-import type { IToastService } from '../../src/components/toast-notification/toast-notification'
+import { Toast } from '../../src/components/toast-notification/toast'
 
 /**
- * Creates a mock implementation of IToastService for testing.
+ * Creates a mock IEventAggregator that captures published Toast events.
  */
-export function createMockToastService(): Partial<IToastService> {
+export function createMockEventAggregator() {
+	const published: Toast[] = []
 	return {
-		toasts: [],
-		show: vi.fn(),
-		severityClass: vi.fn().mockReturnValue(''),
+		publish: vi.fn((event: unknown) => {
+			if (event instanceof Toast) {
+				published.push(event)
+			}
+		}),
+		subscribe: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+		subscribeOnce: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+		published,
+		/** The DI interface key for IEventAggregator. */
+		key: IEventAggregator,
 	}
 }

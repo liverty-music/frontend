@@ -1,25 +1,20 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter, type NavigationInstruction } from '@aurelia/router'
-import { ILogger, resolve, shadowCSS, useShadowDOM } from 'aurelia'
-import { IToastService } from '../../components/toast-notification/toast-notification'
+import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { Toast } from '../../components/toast-notification/toast'
 import { IArtistServiceClient } from '../../services/artist-service-client'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
 import { ILocalArtistClient } from '../../services/local-artist-client'
 import { IOnboardingService } from '../../services/onboarding-service'
-import css from './loading-sequence.css?raw'
-
-@useShadowDOM()
 export class LoadingSequence {
-	static dependencies = [shadowCSS(css)]
-
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequence')
 	private readonly loadingService = resolve(ILoadingSequenceService)
 	private readonly artistClient = resolve(IArtistServiceClient)
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly toastService = resolve(IToastService)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly i18n = resolve(I18N)
 
@@ -129,13 +124,16 @@ export class LoadingSequence {
 					failedCount: result.failedCount,
 					totalCount: result.totalCount,
 				})
-				this.toastService.show(
-					this.i18n.tr('loading.partialFailure', {
-						failed: result.failedCount,
-						total: result.totalCount,
-					}),
-					'warning',
+				this.ea.publish(
+					new Toast(
+						this.i18n.tr('loading.partialFailure', {
+							failed: result.failedCount,
+							total: result.totalCount,
+						}),
+						'warning',
+					),
 				)
+
 				break
 			case 'failed':
 				this.logger.error('Complete data aggregation failure', {

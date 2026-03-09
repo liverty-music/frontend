@@ -1,20 +1,16 @@
 import type { RouteNode } from '@aurelia/router'
-import { DI, Registration } from 'aurelia'
+import { DI, IEventAggregator, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Toast } from '../../src/components/toast-notification/toast'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
-import { createMockToastService } from '../helpers/mock-toast'
+import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIAuthService = DI.createInterface('IAuthService')
-const mockIToastService = DI.createInterface('IToastService')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
-}))
-
-vi.mock('../../src/components/toast-notification/toast-notification', () => ({
-	IToastService: mockIToastService,
 }))
 
 vi.mock('../../src/services/onboarding-service', () => ({
@@ -41,15 +37,15 @@ function makeRouteNode(data?: Record<string, unknown>): RouteNode {
 describe('AuthHook', () => {
 	let sut: InstanceType<typeof AuthHook>
 	let mockAuth: ReturnType<typeof createMockAuth>
-	let mockToast: ReturnType<typeof createMockToastService>
+	let mockEa: ReturnType<typeof createMockEventAggregator>
 
 	beforeEach(() => {
 		mockAuth = createMockAuth({ isAuthenticated: true })
-		mockToast = createMockToastService()
+		mockEa = createMockEventAggregator()
 
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(mockIToastService, mockToast),
+			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIOnboardingService, {
 				currentStep: 7,
 				isOnboarding: false,
@@ -78,9 +74,10 @@ describe('AuthHook', () => {
 
 		it('should redirect unauthenticated users to welcome', async () => {
 			mockAuth = createMockAuth({ isAuthenticated: false })
+			mockEa = createMockEventAggregator()
 			const container = createTestContainer(
 				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(mockIToastService, mockToast),
+				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
 					currentStep: 7,
 					isOnboarding: false,
@@ -95,10 +92,9 @@ describe('AuthHook', () => {
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe('')
-			expect(mockToast.show).toHaveBeenCalledWith(
-				'auth.loginRequired',
-				'warning',
-			)
+			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Toast))
+			expect(mockEa.published[0].message).toBe('auth.loginRequired')
+			expect(mockEa.published[0].severity).toBe('warning')
 		})
 
 		it('should await authService.ready before checking auth', async () => {
@@ -113,7 +109,7 @@ describe('AuthHook', () => {
 			})
 			const container = createTestContainer(
 				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(mockIToastService, mockToast),
+				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
 					currentStep: 7,
 					isOnboarding: false,

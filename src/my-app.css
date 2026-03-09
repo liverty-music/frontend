@@ -52,11 +52,36 @@ my-app {
 	background: var(--color-surface-base);
 }
 
-/* Propagate height through au-viewport so route components can use height: 100% */
+/* <main> passes through grid — semantic landmark without a layout box */
+main {
+	display: contents;
+}
+
+/* Grid container: route components auto-stretch to fill both axes.
+   1fr row ensures the track fills au-viewport's height so that
+   child percentage heights (h-full) resolve correctly. */
 au-viewport {
-	overflow-y: auto;
+	display: grid;
+	grid-template-rows: 1fr;
+}
+
+/* Custom element needs block display + full height so that
+   child h-full / flex-1 heights resolve through the CE boundary. */
+live-highway {
 	display: block;
 	height: 100%;
+}
+
+/* Overlay components use top-layer APIs (popover/dialog).
+   Collapsed to zero so they don't affect grid row sizing.
+   Note: display:contents breaks Aurelia ref bindings — keep the box. */
+pwa-install-prompt,
+notification-prompt,
+toast-notification,
+error-banner {
+	overflow: hidden;
+	display: block;
+	height: 0;
 }
 
 /* View Transitions API for route animations */
@@ -164,14 +189,14 @@ au-viewport {
 /* Container query responsive rules for event cards */
 @container (min-width: 320px) {
 	.event-card-responsive {
-		min-height: 120px;
+		min-block-size: 120px;
 		padding: 1.25rem;
 	}
 }
 
 @container (min-width: 480px) {
 	.event-card-responsive {
-		min-height: 140px;
+		min-block-size: 140px;
 		padding: 1.5rem;
 	}
 
@@ -183,7 +208,7 @@ au-viewport {
 /* Fallback for browsers without Container Queries */
 @supports not (container-type: inline-size) {
 	.event-card-responsive {
-		min-height: 120px;
+		min-block-size: 120px;
 		padding: 1.25rem;
 	}
 }

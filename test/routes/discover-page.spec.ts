@@ -1,5 +1,6 @@
-import { DI, Registration } from 'aurelia'
+import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Toast } from '../../src/components/toast-notification/toast'
 import type { ArtistBubble } from '../../src/services/artist-discovery-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
@@ -7,11 +8,10 @@ import {
 	createMockArtistServiceClient,
 	createMockConcertService,
 } from '../helpers/mock-rpc-clients'
-import { createMockToastService } from '../helpers/mock-toast'
+import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
 const mockIConcertService = DI.createInterface('IConcertService')
-const mockIToastService = DI.createInterface('IToastService')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockILocalArtistClient = DI.createInterface('ILocalArtistClient')
@@ -26,10 +26,6 @@ vi.mock('../../src/services/artist-service-client', () => ({
 
 vi.mock('../../src/services/concert-service', () => ({
 	IConcertService: mockIConcertService,
-}))
-
-vi.mock('../../src/components/toast-notification/toast-notification', () => ({
-	IToastService: mockIToastService,
 }))
 
 vi.mock('../../src/services/onboarding-service', () => ({
@@ -64,7 +60,7 @@ describe('DiscoverPage', () => {
 	let sut: InstanceType<typeof DiscoverPage>
 	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
 	let mockConcert: ReturnType<typeof createMockConcertService>
-	let mockToast: ReturnType<typeof createMockToastService>
+	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockOnboarding: {
 		currentStep: number
@@ -82,7 +78,7 @@ describe('DiscoverPage', () => {
 
 		mockArtistClient = createMockArtistServiceClient()
 		mockConcert = createMockConcertService()
-		mockToast = createMockToastService()
+		mockEa = createMockEventAggregator()
 		mockRouter = createMockRouter()
 		mockOnboarding = {
 			currentStep: 7,
@@ -98,7 +94,7 @@ describe('DiscoverPage', () => {
 		const container = createTestContainer(
 			Registration.instance(mockIArtistServiceClient, mockArtistClient),
 			Registration.instance(mockIConcertService, mockConcert),
-			Registration.instance(mockIToastService, mockToast),
+			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockILocalArtistClient, mockLocalClient),
@@ -140,10 +136,8 @@ describe('DiscoverPage', () => {
 
 			await sut.loading()
 
-			expect(mockToast.show).toHaveBeenCalledWith(
-				expect.stringContaining('Failed'),
-				'error',
-			)
+			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Toast))
+			expect(mockEa.published[0].severity).toBe('error')
 		})
 	})
 

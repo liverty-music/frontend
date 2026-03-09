@@ -1,19 +1,14 @@
 import { I18N } from '@aurelia/i18n'
-import { DI, Registration } from 'aurelia'
+import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMockToastService } from '../helpers/mock-toast'
+import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIAuthService = DI.createInterface('IAuthService')
-const mockIToastService = DI.createInterface('IToastService')
 const mockINotificationManager = DI.createInterface('INotificationManager')
 const mockIPushService = DI.createInterface('IPushService')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
-}))
-
-vi.mock('../../src/components/toast-notification/toast-notification', () => ({
-	IToastService: mockIToastService,
 }))
 
 vi.mock('../../src/services/notification-manager', () => ({
@@ -56,7 +51,7 @@ describe('i18n language switching', () => {
 				isAuthenticated: true,
 				signOut: vi.fn(),
 			}),
-			Registration.instance(mockIToastService, createMockToastService()),
+			Registration.instance(IEventAggregator, createMockEventAggregator()),
 			Registration.instance(mockINotificationManager, {
 				permission: 'default',
 			}),

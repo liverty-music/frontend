@@ -1,13 +1,17 @@
 <import from="./components/error-banner/error-banner"></import>
 <import from="./components/pwa-install-prompt/pwa-install-prompt"></import>
 <import from="./components/notification-prompt/notification-prompt"></import>
+<import from="./components/toast-notification/toast-notification"></import>
 
-<main class="overflow-y-auto">
+<main>
   <au-viewport></au-viewport>
 </main>
 
-<bottom-nav-bar show.bind="showNav"></bottom-nav-bar>
-
+<!-- Top-layer overlays: rendered via popover/dialog in browser top layer,
+     DOM position is irrelevant. Placed outside <main> to avoid grid interference. -->
 <pwa-install-prompt if.bind="showNav"></pwa-install-prompt>
 <notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
+<toast-notification></toast-notification>
 <error-banner></error-banner>
+
+<bottom-nav-bar show.bind="showNav"></bottom-nav-bar>
