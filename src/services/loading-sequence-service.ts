@@ -1,4 +1,5 @@
 import { SearchStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IArtistServiceClient } from './artist-service-client'
 import { IConcertService } from './concert-service'
@@ -113,6 +114,12 @@ export class LoadingSequenceService {
 				})
 				return artists
 			} catch (err) {
+				if (
+					(err instanceof Error && err.name === 'AbortError') ||
+					(err instanceof ConnectError && err.code === Code.Canceled)
+				) {
+					throw err
+				}
 				attempt++
 				if (attempt > maxRetries) {
 					this.logger.error(
@@ -196,12 +203,16 @@ export class LoadingSequenceService {
 	private delay(ms: number, signal?: AbortSignal): Promise<void> {
 		return new Promise((resolve, reject) => {
 			if (signal?.aborted) {
-				return reject(new Error('Aborted'))
+				const err = new Error('Aborted')
+				err.name = 'AbortError'
+				return reject(err)
 			}
 
 			const onAbort = () => {
 				clearTimeout(timeoutId)
-				reject(new Error('Aborted'))
+				const err = new Error('Aborted')
+				err.name = 'AbortError'
+				reject(err)
 			}
 
 			const timeoutId = setTimeout(() => {

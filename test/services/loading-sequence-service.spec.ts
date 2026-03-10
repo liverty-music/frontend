@@ -1,3 +1,4 @@
+import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
@@ -250,6 +251,53 @@ describe('LoadingSequenceService', () => {
 			await vi.advanceTimersByTimeAsync(2000)
 			const result = await promise
 			expect(result.status).toBe('success')
+		})
+
+		it('should immediately re-throw AbortError without retrying', async () => {
+			const abortError = new Error('Aborted')
+			abortError.name = 'AbortError'
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockRejectedValue(abortError)
+
+			const promise = sut.aggregateData()
+			await vi.advanceTimersByTimeAsync(100)
+			const result = await promise
+
+			expect(result.status).toBe('failed')
+			expect(mockArtistClient.listFollowedAsBubbles).toHaveBeenCalledTimes(1)
+		})
+
+		it('should immediately re-throw ConnectError(Code.Canceled) without retrying', async () => {
+			;(
+				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+			).mockRejectedValue(new ConnectError('canceled', Code.Canceled))
+
+			const promise = sut.aggregateData()
+			await vi.advanceTimersByTimeAsync(100)
+			const result = await promise
+
+			expect(result.status).toBe('failed')
+			expect(mockArtistClient.listFollowedAsBubbles).toHaveBeenCalledTimes(1)
+		})
+
+		it('should retry on ConnectError(Code.Unavailable)', async () => {
+			;(mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>)
+				.mockRejectedValueOnce(
+					new ConnectError('unavailable', Code.Unavailable),
+				)
+				.mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
+			mockConcert.searchNewConcerts = vi.fn().mockResolvedValue(undefined)
+			mockConcert.listSearchStatuses = vi
+				.fn()
+				.mockResolvedValue([{ artistId: { value: 'a1' }, status: 2 }])
+
+			const promise = sut.aggregateData()
+			await vi.advanceTimersByTimeAsync(10_000)
+			const result = await promise
+
+			expect(result.status).toBe('success')
+			expect(mockArtistClient.listFollowedAsBubbles).toHaveBeenCalledTimes(2)
 		})
 
 		it('should handle poll errors gracefully and retry', async () => {
