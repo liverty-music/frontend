@@ -8,6 +8,7 @@ interface ToastItem {
 	action?: ToastAction
 	onDismiss?: () => void
 	visible: boolean
+	dismissed: boolean
 	dismissTimer: ReturnType<typeof setTimeout> | null
 }
 
@@ -43,6 +44,7 @@ export class ToastNotification {
 			action: event.action,
 			onDismiss: event.options?.onDismiss,
 			visible: false,
+			dismissed: false,
 			dismissTimer: null,
 		}
 		this.toasts.push(toast)
@@ -69,7 +71,8 @@ export class ToastNotification {
 	}
 
 	private dismiss(toast: ToastItem): void {
-		if (!toast.visible) return
+		if (toast.dismissed) return
+		toast.dismissed = true
 
 		if (toast.dismissTimer !== null) {
 			clearTimeout(toast.dismissTimer)
