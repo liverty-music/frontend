@@ -1,6 +1,9 @@
 import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import type { ArtistSearchStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
+import {
+	type ArtistSearchStatus,
+	DateLaneGroup,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -45,14 +48,14 @@ export class ConcertServiceClient {
 		}
 	}
 
-	public async listByFollower(signal?: AbortSignal): Promise<Concert[]> {
+	public async listByFollower(signal?: AbortSignal): Promise<DateLaneGroup[]> {
 		if (this.onboarding.isOnboarding) {
 			return this.listByFollowerOnboarding(signal)
 		}
 		this.logger.info('Listing concerts by follower')
 		try {
 			const response = await this.concertClient.listByFollower({}, { signal })
-			return response.concerts
+			return response.groups
 		} catch (err) {
 			this.logger.warn('Concert listByFollower failed', { error: err })
 			throw err
@@ -62,10 +65,11 @@ export class ConcertServiceClient {
 	/**
 	 * During onboarding, read artist IDs from LocalArtistClient and call
 	 * ConcertService/List per artist (public RPC), merging results.
+	 * Groups all concerts into the "away" lane since no home is set.
 	 */
 	private async listByFollowerOnboarding(
 		signal?: AbortSignal,
-	): Promise<Concert[]> {
+	): Promise<DateLaneGroup[]> {
 		const artists = this.localClient.listFollowed()
 		this.logger.info('Onboarding: listing concerts for local artists', {
 			count: artists.length,
@@ -83,7 +87,7 @@ export class ConcertServiceClient {
 				})
 			}
 		}
-		return concerts
+		return groupConcertsByDate(concerts)
 	}
 
 	public async searchNewConcerts(
@@ -123,4 +127,30 @@ export class ConcertServiceClient {
 			throw err
 		}
 	}
+}
+
+/**
+ * Groups a flat list of concerts by date into DateLaneGroup messages.
+ * All concerts are placed in the "away" lane (used during onboarding when
+ * no server-side grouping is available).
+ */
+function groupConcertsByDate(concerts: Concert[]): DateLaneGroup[] {
+	const groups = new Map<string, DateLaneGroup>()
+	for (const concert of concerts) {
+		const ld = concert.localDate?.value
+		if (!ld) continue
+		const key = `${ld.year}-${String(ld.month).padStart(2, '0')}-${String(ld.day).padStart(2, '0')}`
+		let group = groups.get(key)
+		if (!group) {
+			group = new DateLaneGroup({ date: concert.localDate })
+			groups.set(key, group)
+		}
+		group.away.push(concert)
+	}
+	return Array.from(groups.values()).sort((a, b) => {
+		const ad = a.date?.value
+		const bd = b.date?.value
+		if (!ad || !bd) return 0
+		return ad.year - bd.year || ad.month - bd.month || ad.day - bd.day
+	})
 }
