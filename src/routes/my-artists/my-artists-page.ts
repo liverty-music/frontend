@@ -26,6 +26,7 @@ export interface FollowedArtist {
 export const HYPE_META: Record<number, { labelKey: string; icon: string }> = {
 	[HypeType.WATCH]: { labelKey: 'hype.watch', icon: '\u{1F440}' },
 	[HypeType.HOME]: { labelKey: 'hype.home', icon: '\u{1F525}' },
+	[HypeType.NEARBY]: { labelKey: 'hype.nearby', icon: '\u{1F525}\u{1F525}' },
 	[HypeType.ANYWHERE]: {
 		labelKey: 'hype.anywhere',
 		icon: '\u{1F525}\u{1F525}\u{1F525}',
@@ -35,6 +36,7 @@ export const HYPE_META: Record<number, { labelKey: string; icon: string }> = {
 export const HYPE_LEVELS = [
 	HypeType.WATCH,
 	HypeType.HOME,
+	HypeType.NEARBY,
 	HypeType.ANYWHERE,
 ] as const
 

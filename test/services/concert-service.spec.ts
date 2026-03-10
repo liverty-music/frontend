@@ -98,20 +98,27 @@ describe('ConcertServiceClient', () => {
 	})
 
 	describe('listByFollower', () => {
-		it('should return concerts for followed artists', async () => {
-			const fakeConcerts = [{ id: 'c1' }]
+		it('should return groups for followed artists', async () => {
+			const fakeGroups = [
+				{
+					date: { value: { year: 2026, month: 3, day: 15 } },
+					home: [],
+					nearby: [],
+					away: [],
+				},
+			]
 			mockClient.listByFollower.mockResolvedValue({
-				concerts: fakeConcerts,
+				groups: fakeGroups,
 			})
 
 			const result = await sut.listByFollower()
 
-			expect(result).toEqual(fakeConcerts)
+			expect(result).toEqual(fakeGroups)
 		})
 
 		it('should forward AbortSignal', async () => {
 			const controller = new AbortController()
-			mockClient.listByFollower.mockResolvedValue({ concerts: [] })
+			mockClient.listByFollower.mockResolvedValue({ groups: [] })
 
 			await sut.listByFollower(controller.signal)
 

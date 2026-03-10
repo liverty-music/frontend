@@ -4,7 +4,7 @@ import { StorageKeys } from '../constants/storage-keys'
 export interface LocalFollowedArtist {
 	id: string
 	name: string
-	hype: 'WATCH' | 'HOME' | 'ANYWHERE'
+	hype: 'WATCH' | 'HOME' | 'NEARBY' | 'ANYWHERE'
 }
 
 export const ILocalArtistClient = DI.createInterface<ILocalArtistClient>(

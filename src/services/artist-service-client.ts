@@ -153,12 +153,16 @@ export class ArtistServiceClient {
 	}
 }
 
-function mapLocalHype(level: 'WATCH' | 'HOME' | 'ANYWHERE'): HypeType {
+function mapLocalHype(
+	level: 'WATCH' | 'HOME' | 'NEARBY' | 'ANYWHERE',
+): HypeType {
 	switch (level) {
 		case 'WATCH':
 			return HypeType.WATCH
 		case 'HOME':
 			return HypeType.HOME
+		case 'NEARBY':
+			return HypeType.NEARBY
 		case 'ANYWHERE':
 			return HypeType.ANYWHERE
 		default:
