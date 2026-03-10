@@ -1,4 +1,4 @@
-import type { ArtistBubble } from './artist-discovery-service'
+import type { ArtistBubble } from './artist-service-client'
 
 /**
  * Manages the available bubble pool for the discover page.

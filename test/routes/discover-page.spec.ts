@@ -1,7 +1,7 @@
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Toast } from '../../src/components/toast-notification/toast'
-import type { ArtistBubble } from '../../src/services/artist-discovery-service'
+import type { ArtistBubble } from '../../src/services/artist-service-client'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
 import {
@@ -256,6 +256,411 @@ describe('DiscoverPage', () => {
 			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
 
 			expect(mockArtistClient.follow).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe('onArtistSelected', () => {
+		it('should follow artist and request similar artists via event detail', async () => {
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
+			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+
+			const artist = makeBubble('a1', 'Artist One')
+			const event = new CustomEvent('artist-selected', {
+				detail: { artist, position: { x: 100, y: 200 } },
+			})
+
+			await sut.onArtistSelected(event)
+
+			expect(mockArtistClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
+		})
+
+		it('should update orbIntensity after following', async () => {
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
+			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+
+			expect(sut.orbIntensity).toBe(0)
+
+			const event = new CustomEvent('artist-selected', {
+				detail: {
+					artist: makeBubble('a1', 'Artist'),
+					position: { x: 0, y: 0 },
+				},
+			})
+			await sut.onArtistSelected(event)
+
+			expect(sut.orbIntensity).toBe(1 / 20) // 1 followed / 20
+		})
+
+		it('should skip if artist already followed', async () => {
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
+			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+
+			const artist = makeBubble('a1', 'Artist')
+			const event = new CustomEvent('artist-selected', {
+				detail: { artist, position: { x: 0, y: 0 } },
+			})
+
+			await sut.onArtistSelected(event)
+			await sut.onArtistSelected(event)
+
+			expect(mockArtistClient.follow).toHaveBeenCalledTimes(1)
+		})
+
+		it('should show toast when artist has upcoming live events', async () => {
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
+			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[{ id: 'c1' }],
+			)
+
+			const event = new CustomEvent('artist-selected', {
+				detail: {
+					artist: makeBubble('a1', 'Live Band'),
+					position: { x: 0, y: 0 },
+				},
+			})
+			await sut.onArtistSelected(event)
+
+			// Wait for the fire-and-forget concert check to resolve
+			await vi.advanceTimersByTimeAsync(0)
+
+			expect(mockConcert.listConcerts).toHaveBeenCalledWith('a1')
+			expect(mockEa.publish).toHaveBeenCalled()
+		})
+
+		it('should show error toast on follow failure', async () => {
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
+				new Error('network error'),
+			)
+
+			const event = new CustomEvent('artist-selected', {
+				detail: {
+					artist: makeBubble('a1', 'Fail Artist'),
+					position: { x: 10, y: 20 },
+				},
+			})
+			await sut.onArtistSelected(event)
+
+			// followArtist publishes a toast, then onArtistSelected publishes an error toast
+			expect(mockEa.published.length).toBeGreaterThanOrEqual(1)
+			const hasErrorToast = mockEa.published.some(
+				(t: Toast) => t.severity === 'error',
+			)
+			expect(hasErrorToast).toBe(true)
+		})
+	})
+
+	describe('followArtist rollback on RPC failure', () => {
+		it('should rollback followedArtists on follow failure', async () => {
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
+				new Error('rpc fail'),
+			)
+
+			const event = new CustomEvent('artist-selected', {
+				detail: {
+					artist: makeBubble('a1', 'RollbackArtist'),
+					position: { x: 50, y: 50 },
+				},
+			})
+			await sut.onArtistSelected(event)
+
+			// followedArtists should be empty after rollback
+			expect(sut.followedCount).toBe(0)
+			expect(sut.orbIntensity).toBe(0)
+			expect(sut.isArtistFollowed('a1')).toBe(false)
+		})
+
+		it('should re-spawn bubble at original position on follow failure', async () => {
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
+				new Error('fail'),
+			)
+
+			const event = new CustomEvent('artist-selected', {
+				detail: {
+					artist: makeBubble('a1', 'Respawn'),
+					position: { x: 100, y: 200 },
+				},
+			})
+			await sut.onArtistSelected(event)
+
+			expect(sut.dnaOrbCanvas.spawnBubblesAt).toHaveBeenCalledWith(
+				[expect.objectContaining({ id: 'a1' })],
+				100,
+				200,
+			)
+		})
+	})
+
+	describe('onNeedMoreBubbles', () => {
+		it('should fetch similar artists and spawn them at tap position', async () => {
+			const similar = [makeBubble('s1', 'Similar 1')]
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockResolvedValue(similar)
+
+			const event = new CustomEvent('need-more-bubbles', {
+				detail: {
+					artistId: 'a1',
+					artistName: 'Tapped',
+					position: { x: 50, y: 50 },
+				},
+			})
+
+			await sut.onNeedMoreBubbles(event)
+
+			expect(mockArtistClient.listSimilar).toHaveBeenCalledWith('a1', 30)
+			expect(sut.dnaOrbCanvas.spawnBubblesAt).toHaveBeenCalledWith(
+				similar,
+				50,
+				50,
+			)
+		})
+
+		it('should fall back to top artists when similar returns empty', async () => {
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockResolvedValue([])
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[makeBubble('t1', 'Top Fallback')],
+			)
+
+			const event = new CustomEvent('need-more-bubbles', {
+				detail: {
+					artistId: 'a1',
+					artistName: 'NoSimilar',
+					position: { x: 0, y: 0 },
+				},
+			})
+			await sut.onNeedMoreBubbles(event)
+
+			expect(mockArtistClient.listTop).toHaveBeenCalled()
+			expect(sut.dnaOrbCanvas.spawnBubblesAt).toHaveBeenCalled()
+		})
+
+		it('should evict oldest bubbles when pool is full', async () => {
+			// Fill the pool up to MAX
+			const initial = Array.from({ length: 50 }, (_, i) =>
+				makeBubble(`existing${i}`, `Existing ${i}`),
+			)
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				initial,
+			)
+			await sut.loading()
+
+			// Mock canvas bubbleCount to match pool
+			;(sut.dnaOrbCanvas as any).bubbleCount = 50
+
+			const similar = [makeBubble('new1', 'New One')]
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockResolvedValue(similar)
+			;(
+				sut.dnaOrbCanvas.fadeOutBubbles as ReturnType<typeof vi.fn>
+			).mockResolvedValue(undefined)
+
+			const event = new CustomEvent('need-more-bubbles', {
+				detail: {
+					artistId: 'a1',
+					artistName: 'Source',
+					position: { x: 0, y: 0 },
+				},
+			})
+			await sut.onNeedMoreBubbles(event)
+
+			expect(sut.dnaOrbCanvas.fadeOutBubbles).toHaveBeenCalled()
+		})
+
+		it('should ignore concurrent requests (isLoadingBubbles guard)', async () => {
+			let resolveFirst: () => void
+			const firstPromise = new Promise<ArtistBubble[]>((resolve) => {
+				resolveFirst = () => resolve([makeBubble('s1', 'S1')])
+			})
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockReturnValueOnce(firstPromise)
+
+			const event = new CustomEvent('need-more-bubbles', {
+				detail: { artistId: 'a1', artistName: 'A', position: { x: 0, y: 0 } },
+			})
+
+			// Fire two events simultaneously
+			const first = sut.onNeedMoreBubbles(event)
+			const second = sut.onNeedMoreBubbles(event)
+
+			resolveFirst!()
+			await first
+			await second
+
+			// listSimilar should only be called once (second was blocked)
+			expect(mockArtistClient.listSimilar).toHaveBeenCalledTimes(1)
+		})
+
+		it('should show warning toast on fetch failure', async () => {
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockRejectedValue(new Error('network'))
+
+			const event = new CustomEvent('need-more-bubbles', {
+				detail: {
+					artistId: 'a1',
+					artistName: 'Failing',
+					position: { x: 0, y: 0 },
+				},
+			})
+			await sut.onNeedMoreBubbles(event)
+
+			expect(mockEa.published.length).toBe(1)
+			expect(mockEa.published[0].severity).toBe('warning')
+		})
+	})
+
+	describe('loading with existing followed artists (seed similar)', () => {
+		it('should fetch seed similar artists when followedArtists is non-empty', async () => {
+			// Pre-populate followed artists
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
+			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+			await sut.onFollowFromSearch(makeBubble('f1', 'Followed One'))
+
+			// Now loading should call listSimilar (seed) instead of listTop
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockResolvedValue([makeBubble('s1', 'Seed Similar')])
+
+			await sut.loading()
+
+			expect(mockArtistClient.listSimilar).toHaveBeenCalled()
+		})
+	})
+
+	describe('visibility change', () => {
+		it('should pause canvas when document becomes hidden', () => {
+			sut.attached()
+
+			Object.defineProperty(document, 'hidden', {
+				value: true,
+				writable: true,
+			})
+			document.dispatchEvent(new Event('visibilitychange'))
+
+			expect(sut.dnaOrbCanvas.pause).toHaveBeenCalled()
+
+			// Cleanup
+			Object.defineProperty(document, 'hidden', {
+				value: false,
+				writable: true,
+			})
+			sut.detaching()
+		})
+
+		it('should resume canvas when document becomes visible and not in search mode', () => {
+			sut.attached()
+			sut.isSearchMode = false
+
+			Object.defineProperty(document, 'hidden', {
+				value: false,
+				writable: true,
+			})
+			document.dispatchEvent(new Event('visibilitychange'))
+
+			expect(sut.dnaOrbCanvas.resume).toHaveBeenCalled()
+			sut.detaching()
+		})
+
+		it('should NOT resume canvas when document becomes visible but in search mode', () => {
+			sut.attached()
+			sut.isSearchMode = true
+
+			Object.defineProperty(document, 'hidden', {
+				value: false,
+				writable: true,
+			})
+			document.dispatchEvent(new Event('visibilitychange'))
+
+			expect(sut.dnaOrbCanvas.resume).not.toHaveBeenCalled()
+			sut.detaching()
+		})
+	})
+
+	describe('onboarding followedCount delegation', () => {
+		it('should delegate to localClient.followedCount during onboarding', () => {
+			mockOnboarding.isOnboarding = true
+			mockLocalClient.followedCount = 5
+
+			expect(sut.followedCount).toBe(5)
+		})
+
+		it('should use followedArtists.length when not onboarding', async () => {
+			mockOnboarding.isOnboarding = false
+			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
+			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+
+			await sut.onFollowFromSearch(makeBubble('a1', 'A'))
+			await sut.onFollowFromSearch(makeBubble('a2', 'B'))
+
+			expect(sut.followedCount).toBe(2)
+		})
+	})
+
+	describe('showCompleteButton', () => {
+		it('should show when onboarding and followed >= TUTORIAL_FOLLOW_TARGET', async () => {
+			mockOnboarding.isOnboarding = true
+			mockLocalClient.followedCount = 3
+
+			expect(sut.showCompleteButton).toBe(true)
+		})
+
+		it('should hide when not onboarding', () => {
+			mockOnboarding.isOnboarding = false
+			expect(sut.showCompleteButton).toBe(false)
+		})
+	})
+
+	describe('poolBubbles', () => {
+		it('should reflect pool availableBubbles', async () => {
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[makeBubble('a1', 'Pool Artist')],
+			)
+
+			await sut.loading()
+
+			expect(sut.poolBubbles).toHaveLength(1)
+			expect(sut.poolBubbles[0].name).toBe('Pool Artist')
+		})
+	})
+
+	describe('guidanceMessage', () => {
+		it('should return start message when no artists followed during onboarding', () => {
+			mockOnboarding.isOnboarding = true
+			mockLocalClient.followedCount = 0
+
+			const msg = sut.guidanceMessage
+			expect(msg).toBeTruthy()
+		})
+
+		it('should return empty when not onboarding', () => {
+			mockOnboarding.isOnboarding = false
+			expect(sut.guidanceMessage).toBe('')
 		})
 	})
 })

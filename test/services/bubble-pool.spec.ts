@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { ArtistBubble } from '../../src/services/artist-discovery-service'
+import type { ArtistBubble } from '../../src/services/artist-service-client'
 import { BubblePool } from '../../src/services/bubble-pool'
 
 function makeBubble(id: string, name: string, mbid = ''): ArtistBubble {

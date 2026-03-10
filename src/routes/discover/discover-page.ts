@@ -3,8 +3,10 @@ import { IRouter } from '@aurelia/router'
 import { batch, IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { Toast } from '../../components/toast-notification/toast'
-import type { ArtistBubble } from '../../services/artist-discovery-service'
-import { IArtistServiceClient } from '../../services/artist-service-client'
+import {
+	type ArtistBubble,
+	IArtistServiceClient,
+} from '../../services/artist-service-client'
 import { BubblePool } from '../../services/bubble-pool'
 import { IConcertService } from '../../services/concert-service'
 import { ILocalArtistClient } from '../../services/local-artist-client'

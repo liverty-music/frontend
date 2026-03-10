@@ -1,5 +1,5 @@
 import type Matter from 'matter-js'
-import type { ArtistBubble } from '../../services/artist-discovery-service'
+import type { ArtistBubble } from '../../services/artist-service-client'
 
 export interface PhysicsBubble {
 	body: Matter.Body
