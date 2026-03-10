@@ -61,7 +61,7 @@ describe('ToastNotification', () => {
 			return 0
 		})
 
-		publishToast(new Toast('Test message', 'info', 2500))
+		publishToast(new Toast('Test message', 'info', { duration: 2500 }))
 
 		expect(sut.toasts[0].visible).toBe(true)
 
@@ -70,7 +70,7 @@ describe('ToastNotification', () => {
 	})
 
 	it('should remove toast after exit animation delay', () => {
-		publishToast(new Toast('Test message', 'info', 2500))
+		publishToast(new Toast('Test message', 'info', { duration: 2500 }))
 
 		vi.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
 			cb(0)
