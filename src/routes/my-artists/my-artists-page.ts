@@ -21,10 +21,10 @@ export interface FollowedArtist {
 }
 
 export const HYPE_META: Record<number, { labelKey: string; icon: string }> = {
-	[HypeType.WATCH]: { labelKey: 'hypeType.watch', icon: '\u{1F440}' },
-	[HypeType.HOME]: { labelKey: 'hypeType.home', icon: '\u{1F525}' },
+	[HypeType.WATCH]: { labelKey: 'hype.watch', icon: '\u{1F440}' },
+	[HypeType.HOME]: { labelKey: 'hype.home', icon: '\u{1F525}' },
 	[HypeType.ANYWHERE]: {
-		labelKey: 'hypeType.anywhere',
+		labelKey: 'hype.anywhere',
 		icon: '\u{1F525}\u{1F525}\u{1F525}',
 	},
 }
@@ -407,9 +407,7 @@ export class MyArtistsPage {
 						})
 						const artist = this.artists.find((a) => a.id === artistId)
 						if (artist) artist.hype = prev
-						this.ea.publish(
-							new Toast(this.i18n.tr('myArtists.failedHypeLevel')),
-						)
+						this.ea.publish(new Toast(this.i18n.tr('myArtists.failedHype')))
 					})
 			})
 	}
@@ -468,7 +466,7 @@ export class MyArtistsPage {
 					error: retryErr,
 				})
 				artist.hype = prev
-				this.ea.publish(new Toast(this.i18n.tr('myArtists.failedHypeLevel')))
+				this.ea.publish(new Toast(this.i18n.tr('myArtists.failedHype')))
 			})
 		})
 	}
