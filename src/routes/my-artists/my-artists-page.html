@@ -132,7 +132,7 @@
           click.trigger="contextMenuSetLevel(level)"
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${contextMenuArtist.hype === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
         >
-          <span class="text-base w-8 text-center">${hypeLevelMeta[level].icon}</span>
+          <span class="text-base w-8 text-center">${hypeMeta[level].icon}</span>
           <span class="text-sm font-medium">${trHypeLabel(level)}</span>
         </button>
         <div class="border-t border-white/10 my-1"></div>
@@ -181,7 +181,7 @@
           click.trigger="selectHype(level)"
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${selectorArtist.hype === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
         >
-          <span class="text-base w-8 text-center">${hypeLevelMeta[level].icon}</span>
+          <span class="text-base w-8 text-center">${hypeMeta[level].icon}</span>
           <span class="text-sm font-medium">${trHypeLabel(level)}</span>
         </button>
       </div>
