@@ -6,7 +6,7 @@ import {
 	shadowCSS,
 	useShadowDOM,
 } from 'aurelia'
-import type { ArtistBubble } from '../../services/artist-discovery-service'
+import type { ArtistBubble } from '../../services/artist-service-client'
 import { AbsorptionAnimator } from './absorption-animator'
 import { BubblePhysics, type PhysicsBubble } from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'

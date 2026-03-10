@@ -5,11 +5,20 @@ import {
 import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
 import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
-import type { ArtistBubble } from './artist-discovery-service'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
 import { ILocalArtistClient } from './local-artist-client'
 import { IOnboardingService } from './onboarding-service'
+
+export interface ArtistBubble {
+	id: string
+	name: string
+	mbid: string
+	imageUrl: string
+	x: number
+	y: number
+	radius: number
+}
 
 export interface FollowedArtistInfo {
 	id: string
