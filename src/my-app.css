@@ -153,8 +153,8 @@ error-banner {
 	}
 }
 
-/* Passion button pulse feedback */
-@keyframes passion-pulse {
+/* Hype button pulse feedback */
+@keyframes hype-pulse {
 	0% {
 		transform: scale(1);
 	}
@@ -226,8 +226,8 @@ error-banner {
 	animation: modal-enter 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.animate-passion-pulse {
-	animation: passion-pulse 300ms ease-out;
+.animate-hype-pulse {
+	animation: hype-pulse 300ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

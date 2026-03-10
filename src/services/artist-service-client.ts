@@ -1,6 +1,6 @@
 import {
 	ArtistId,
-	PassionLevel,
+	HypeType,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
 import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
@@ -14,7 +14,7 @@ import { IOnboardingService } from './onboarding-service'
 export interface FollowedArtistInfo {
 	id: string
 	name: string
-	passionLevel: PassionLevel
+	hype: HypeType
 }
 
 export const IArtistServiceClient = DI.createInterface<IArtistServiceClient>(
@@ -85,14 +85,14 @@ export class ArtistServiceClient {
 			return this.localClient.listFollowed().map((a) => ({
 				id: a.id,
 				name: a.name,
-				passionLevel: mapLocalPassionLevel(a.passionLevel),
+				hype: mapLocalHype(a.hype),
 			}))
 		}
 		const response = await this.client.listFollowed({}, { signal })
 		return response.artists.map((fa) => ({
 			id: fa.artist?.id?.value ?? '',
 			name: fa.artist?.name?.value ?? '',
-			passionLevel: fa.passionLevel ?? PassionLevel.LOCAL_ONLY,
+			hype: fa.hype ?? HypeType.ANYWHERE,
 		}))
 	}
 
@@ -144,18 +144,16 @@ export class ArtistServiceClient {
 	}
 }
 
-function mapLocalPassionLevel(
-	level: 'MUST_GO' | 'LOCAL_ONLY' | 'KEEP_AN_EYE',
-): PassionLevel {
+function mapLocalHype(level: 'WATCH' | 'HOME' | 'ANYWHERE'): HypeType {
 	switch (level) {
-		case 'MUST_GO':
-			return PassionLevel.MUST_GO
-		case 'LOCAL_ONLY':
-			return PassionLevel.LOCAL_ONLY
-		case 'KEEP_AN_EYE':
-			return PassionLevel.KEEP_AN_EYE
+		case 'WATCH':
+			return HypeType.WATCH
+		case 'HOME':
+			return HypeType.HOME
+		case 'ANYWHERE':
+			return HypeType.ANYWHERE
 		default:
-			return PassionLevel.LOCAL_ONLY
+			return HypeType.ANYWHERE
 	}
 }
 

@@ -34,7 +34,7 @@ export function createMockArtistServiceClient(): Partial<IArtistServiceClient> {
 			getSimilarArtists: vi.fn().mockResolvedValue({ artists: [] }),
 			followArtist: vi.fn().mockResolvedValue({}),
 			unfollow: vi.fn().mockResolvedValue({}),
-			setPassionLevel: vi.fn().mockResolvedValue({}),
+			setHype: vi.fn().mockResolvedValue({}),
 		}),
 	}
 }

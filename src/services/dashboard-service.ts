@@ -1,4 +1,4 @@
-import { PassionLevel } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
+import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
 import type {
@@ -65,7 +65,7 @@ export class DashboardService {
 		for (const fa of followed) {
 			map.set(fa.id, {
 				name: fa.name,
-				isMustGo: fa.passionLevel === PassionLevel.MUST_GO,
+				isMustGo: fa.hype === HypeType.ANYWHERE,
 			})
 		}
 		return map

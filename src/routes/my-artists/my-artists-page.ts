@@ -2,7 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import {
 	ArtistId,
-	PassionLevel,
+	HypeType,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../components/live-highway/color-generator'
@@ -17,27 +17,24 @@ export interface FollowedArtist {
 	id: string
 	name: string
 	color: string
-	passionLevel: PassionLevel
+	hype: HypeType
 }
 
-export const PASSION_LEVEL_META: Record<
-	number,
-	{ labelKey: string; icon: string }
-> = {
-	[PassionLevel.MUST_GO]: { labelKey: 'passionLevel.mustGo', icon: '🔥🔥' },
-	[PassionLevel.LOCAL_ONLY]: { labelKey: 'passionLevel.localOnly', icon: '🔥' },
-	[PassionLevel.KEEP_AN_EYE]: {
-		labelKey: 'passionLevel.keepAnEye',
-		icon: '👀',
+export const HYPE_META: Record<number, { labelKey: string; icon: string }> = {
+	[HypeType.WATCH]: { labelKey: 'hypeType.watch', icon: '\u{1F440}' },
+	[HypeType.HOME]: { labelKey: 'hypeType.home', icon: '\u{1F525}' },
+	[HypeType.ANYWHERE]: {
+		labelKey: 'hypeType.anywhere',
+		icon: '\u{1F525}\u{1F525}\u{1F525}',
 	},
 }
 
 const UNDO_TIMEOUT_MS = 5000
 
-export const PASSION_LEVELS = [
-	PassionLevel.MUST_GO,
-	PassionLevel.LOCAL_ONLY,
-	PassionLevel.KEEP_AN_EYE,
+export const HYPE_LEVELS = [
+	HypeType.WATCH,
+	HypeType.HOME,
+	HypeType.ANYWHERE,
 ] as const
 
 export type ViewMode = 'list' | 'grid'
@@ -52,8 +49,8 @@ export class MyArtistsPage {
 	// Grid context menu state
 	public contextMenuArtist: FollowedArtist | null = null
 	private contextMenuDialog!: HTMLDialogElement
-	private passionSelectorDialog!: HTMLDialogElement
-	private passionExplanationDialog!: HTMLDialogElement
+	private hypeSelectorDialog!: HTMLDialogElement
+	private hypeExplanationDialog!: HTMLDialogElement
 
 	// Swipe state
 	public swipedArtistId = ''
@@ -74,16 +71,16 @@ export class MyArtistsPage {
 	private undoTimer: ReturnType<typeof setTimeout> | null = null
 	private undoIndex = -1
 
-	// Passion level selector state
+	// Hype level selector state
 	public selectorArtist: FollowedArtist | null = null
-	public readonly passionLevels = PASSION_LEVELS
-	public readonly passionLevelMeta = PASSION_LEVEL_META
+	public readonly hypeLevels = HYPE_LEVELS
+	public readonly hypeMeta = HYPE_META
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsPage')
 	public readonly i18n = resolve(I18N)
 
-	public trPassionLabel(level: number): string {
-		const meta = PASSION_LEVEL_META[level]
+	public trHypeLabel(level: number): string {
+		const meta = HYPE_META[level]
 		return meta ? this.i18n.tr(meta.labelKey) : ''
 	}
 	private readonly artistService = resolve(IArtistServiceClient)
@@ -93,7 +90,7 @@ export class MyArtistsPage {
 	private abortController: AbortController | null = null
 
 	// Tutorial state
-	public showPassionExplanation = false
+	public showHypeExplanation = false
 	public pulsingArtistId = ''
 	private tutorialTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -117,7 +114,7 @@ export class MyArtistsPage {
 				id: fa.id,
 				name: fa.name,
 				color: artistColor(fa.name),
-				passionLevel: fa.passionLevel,
+				hype: fa.hype,
 			}))
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,
@@ -317,108 +314,108 @@ export class MyArtistsPage {
 		this.swipeTarget = null
 	}
 
-	// --- Passion level selector ---
+	// --- Hype level selector ---
 
-	public openPassionSelector(artist: FollowedArtist): void {
+	public openHypeSelector(artist: FollowedArtist): void {
 		this.selectorArtist = artist
-		this.passionSelectorDialog.showModal()
+		this.hypeSelectorDialog.showModal()
 	}
 
-	public closePassionSelector(): void {
+	public closeHypeSelector(): void {
 		this.selectorArtist = null
-		this.passionSelectorDialog.close()
+		this.hypeSelectorDialog.close()
 	}
 
-	public onPassionSelectorDialogClick(e: Event): void {
-		if (e.target === this.passionSelectorDialog) {
-			this.closePassionSelector()
+	public onHypeSelectorDialogClick(e: Event): void {
+		if (e.target === this.hypeSelectorDialog) {
+			this.closeHypeSelector()
 		}
 	}
 
-	public selectPassionLevel(level: PassionLevel): void {
+	public selectHype(level: HypeType): void {
 		if (!this.selectorArtist) return
 
-		const prev = this.selectorArtist.passionLevel
+		const prev = this.selectorArtist.hype
 		if (prev === level) {
-			this.closePassionSelector()
+			this.closeHypeSelector()
 			return
 		}
 
 		// During onboarding step 5: visual demo only, no persistence
 		if (this.isTutorialStep5) {
-			this.selectorArtist.passionLevel = level
+			this.selectorArtist.hype = level
 			const artistId = this.selectorArtist.id
-			this.closePassionSelector()
+			this.closeHypeSelector()
 
-			// Immediate pulse feedback on the passion button
+			// Immediate pulse feedback on the hype button
 			this.pulsingArtistId = artistId
 			setTimeout(() => {
 				this.pulsingArtistId = ''
 			}, 300)
 
 			// Show notification explanation, then advance to Step 6
-			this.showPassionExplanation = true
-			this.passionExplanationDialog.showModal()
+			this.showHypeExplanation = true
+			this.hypeExplanationDialog.showModal()
 			this.tutorialTimer = setTimeout(() => {
 				this.tutorialTimer = null
-				this.showPassionExplanation = false
-				this.passionExplanationDialog.close()
+				this.showHypeExplanation = false
+				this.hypeExplanationDialog.close()
 				this.onboarding.setStep(OnboardingStep.SIGNUP)
 				void this.router.load('')
 			}, 800)
 			return
 		}
 
-		// Block passion level changes during other onboarding steps
+		// Block hype level changes during other onboarding steps
 		if (this.isOnboarding) {
-			this.closePassionSelector()
+			this.closeHypeSelector()
 			return
 		}
 
 		// Optimistic update
-		this.selectorArtist.passionLevel = level
+		this.selectorArtist.hype = level
 		const artistId = this.selectorArtist.id
-		this.closePassionSelector()
+		this.closeHypeSelector()
 
 		// Fire-and-forget RPC with 1 retry
 		const client = this.artistService.getClient()
 		const req = {
 			artistId: new ArtistId({ value: artistId }),
-			passionLevel: level,
+			hype: level,
 		}
 		client
-			.setPassionLevel(req)
+			.setHype(req)
 			.then(() => {
-				this.logger.info('Passion level updated', { artistId, level })
+				this.logger.info('Hype level updated', { artistId, level })
 			})
 			.catch((firstErr) => {
-				this.logger.warn('Passion level update failed, retrying', {
+				this.logger.warn('Hype level update failed, retrying', {
 					artistId,
 					error: firstErr,
 				})
 				client
-					.setPassionLevel(req)
+					.setHype(req)
 					.then(() => {
-						this.logger.info('Passion level updated on retry', {
+						this.logger.info('Hype level updated on retry', {
 							artistId,
 							level,
 						})
 					})
 					.catch((retryErr) => {
-						this.logger.error('Failed to update passion level after retry', {
+						this.logger.error('Failed to update hype level after retry', {
 							error: retryErr,
 						})
 						const artist = this.artists.find((a) => a.id === artistId)
-						if (artist) artist.passionLevel = prev
+						if (artist) artist.hype = prev
 						this.ea.publish(
-							new Toast(this.i18n.tr('myArtists.failedPassionLevel')),
+							new Toast(this.i18n.tr('myArtists.failedHypeLevel')),
 						)
 					})
 			})
 	}
 
-	public passionIcon(artist: FollowedArtist): string {
-		return PASSION_LEVEL_META[artist.passionLevel]?.icon ?? '🔥'
+	public hypeIcon(artist: FollowedArtist): string {
+		return HYPE_META[artist.hype]?.icon ?? '\u{1F525}'
 	}
 
 	// --- View toggle ---
@@ -445,7 +442,7 @@ export class MyArtistsPage {
 		}
 	}
 
-	public contextMenuSetLevel(level: PassionLevel): void {
+	public contextMenuSetLevel(level: HypeType): void {
 		if (!this.contextMenuArtist) return
 		const artist = this.contextMenuArtist
 		this.closeContextMenu()
@@ -453,25 +450,25 @@ export class MyArtistsPage {
 		// Block during onboarding (no backend RPC available)
 		if (this.isOnboarding) return
 
-		const prev = artist.passionLevel
+		const prev = artist.hype
 		if (prev === level) return
 
-		artist.passionLevel = level
+		artist.hype = level
 		const client = this.artistService.getClient()
 		const req = {
 			artistId: new ArtistId({ value: artist.id }),
-			passionLevel: level,
+			hype: level,
 		}
-		client.setPassionLevel(req).catch((firstErr) => {
-			this.logger.warn('Passion level update failed, retrying', {
+		client.setHype(req).catch((firstErr) => {
+			this.logger.warn('Hype level update failed, retrying', {
 				error: firstErr,
 			})
-			client.setPassionLevel(req).catch((retryErr) => {
-				this.logger.error('Failed to update passion level after retry', {
+			client.setHype(req).catch((retryErr) => {
+				this.logger.error('Failed to update hype level after retry', {
 					error: retryErr,
 				})
-				artist.passionLevel = prev
-				this.ea.publish(new Toast(this.i18n.tr('myArtists.failedPassionLevel')))
+				artist.hype = prev
+				this.ea.publish(new Toast(this.i18n.tr('myArtists.failedHypeLevel')))
 			})
 		})
 	}
@@ -484,9 +481,7 @@ export class MyArtistsPage {
 	}
 
 	public tileSpan(artist: FollowedArtist): string {
-		return artist.passionLevel === PassionLevel.MUST_GO
-			? 'col-span-2 row-span-2'
-			: ''
+		return artist.hype === HypeType.ANYWHERE ? 'col-span-2 row-span-2' : ''
 	}
 
 	// --- Grid long-press touch handler ---

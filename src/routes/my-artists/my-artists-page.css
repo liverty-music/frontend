@@ -48,7 +48,7 @@
 	opacity: 0;
 }
 
-.passion-explanation-dialog {
+.hype-explanation-dialog {
 	position: fixed;
 	inset: 0;
 
@@ -61,6 +61,6 @@
 	background: transparent;
 }
 
-.passion-explanation-dialog::backdrop {
+.hype-explanation-dialog::backdrop {
 	background: oklch(0% 0 0deg / 70%);
 }

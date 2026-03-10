@@ -1,11 +1,11 @@
-import { DI, Registration } from 'aurelia'
+import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 
 const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-const mockIToastService = DI.createInterface('IToastService')
+const mockEa = { publish: vi.fn() }
 
 vi.mock('../../src/services/artist-service-client', () => ({
 	IArtistServiceClient: mockIArtistServiceClient,
@@ -29,8 +29,10 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	},
 }))
 
-vi.mock('../../src/components/toast-notification/toast-notification', () => ({
-	IToastService: mockIToastService,
+vi.mock('../../src/components/toast-notification/toast', () => ({
+	Toast: class Toast {
+		constructor(public message: string) {}
+	},
 }))
 
 vi.mock(
@@ -42,7 +44,7 @@ vi.mock(
 				this.value = opts.value
 			}
 		},
-		PassionLevel: { MUST_GO: 1, LOCAL_ONLY: 2, KEEP_AN_EYE: 3 },
+		HypeType: { ANYWHERE: 1, HOME: 2, WATCH: 3 },
 	}),
 )
 
@@ -50,8 +52,8 @@ const { MyArtistsPage } = await import(
 	'../../src/routes/my-artists/my-artists-page'
 )
 
-function makeFollowedArtistInfo(id: string, name: string, passionLevel = 2) {
-	return { id, name, passionLevel }
+function makeFollowedArtistInfo(id: string, name: string, hype = 2) {
+	return { id, name, hype }
 }
 
 function makeTouchEvent(clientX: number, clientY = 0): TouchEvent {
@@ -65,7 +67,7 @@ describe('MyArtistsPage', () => {
 	let sut: InstanceType<typeof MyArtistsPage>
 	let mockGrpcClient: {
 		unfollow: ReturnType<typeof vi.fn>
-		setPassionLevel: ReturnType<typeof vi.fn>
+		setHype: ReturnType<typeof vi.fn>
 	}
 	let mockArtistService: {
 		listFollowed: ReturnType<typeof vi.fn>
@@ -76,7 +78,7 @@ describe('MyArtistsPage', () => {
 	beforeEach(() => {
 		mockGrpcClient = {
 			unfollow: vi.fn().mockResolvedValue({}),
-			setPassionLevel: vi.fn().mockResolvedValue({}),
+			setHype: vi.fn().mockResolvedValue({}),
 		}
 
 		mockArtistService = {
@@ -98,13 +100,11 @@ describe('MyArtistsPage', () => {
 			complete: vi.fn(),
 		}
 
-		const mockToast = { show: vi.fn() }
-
 		const container = createTestContainer(
 			Registration.instance(mockIArtistServiceClient, mockArtistService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(mockIToastService, mockToast),
+			Registration.instance(IEventAggregator, mockEa),
 		)
 		container.register(MyArtistsPage)
 		sut = container.get(MyArtistsPage)
@@ -112,8 +112,8 @@ describe('MyArtistsPage', () => {
 		// Mock dialog elements for Top Layer API
 		for (const name of [
 			'contextMenuDialog',
-			'passionSelectorDialog',
-			'passionExplanationDialog',
+			'hypeSelectorDialog',
+			'hypeExplanationDialog',
 		]) {
 			const mockDialog = document.createElement('dialog')
 			;(mockDialog as any).showModal = vi.fn()
@@ -311,7 +311,7 @@ describe('MyArtistsPage', () => {
 		})
 	})
 
-	describe('tutorial step 5 passion timing', () => {
+	describe('tutorial step 5 hype timing', () => {
 		let tutorialSut: InstanceType<typeof MyArtistsPage>
 
 		beforeEach(async () => {
@@ -329,15 +329,15 @@ describe('MyArtistsPage', () => {
 				Registration.instance(mockIArtistServiceClient, mockArtistService),
 				Registration.instance(mockIRouter, mockRouter),
 				Registration.instance(mockIOnboardingService, mockOnboarding),
-				Registration.instance(mockIToastService, { show: vi.fn() }),
+				Registration.instance(IEventAggregator, { publish: vi.fn() }),
 			)
 			container.register(MyArtistsPage)
 			tutorialSut = container.get(MyArtistsPage)
 
 			for (const name of [
 				'contextMenuDialog',
-				'passionSelectorDialog',
-				'passionExplanationDialog',
+				'hypeSelectorDialog',
+				'hypeExplanationDialog',
 			]) {
 				const mockDialog = document.createElement('dialog')
 				;(mockDialog as any).showModal = vi.fn()
@@ -352,32 +352,32 @@ describe('MyArtistsPage', () => {
 			vi.useRealTimers()
 		})
 
-		it('should set pulsingArtistId immediately on passion level change', () => {
-			tutorialSut.openPassionSelector(tutorialSut.artists[0])
-			tutorialSut.selectPassionLevel(1) // MUST_GO
+		it('should set pulsingArtistId immediately on hype change', () => {
+			tutorialSut.openHypeSelector(tutorialSut.artists[0])
+			tutorialSut.selectHype(1) // ANYWHERE
 
 			expect(tutorialSut.pulsingArtistId).toBe('id-1')
 		})
 
 		it('should clear pulsingArtistId after 300ms', () => {
-			tutorialSut.openPassionSelector(tutorialSut.artists[0])
-			tutorialSut.selectPassionLevel(1)
+			tutorialSut.openHypeSelector(tutorialSut.artists[0])
+			tutorialSut.selectHype(1)
 
 			vi.advanceTimersByTime(300)
 			expect(tutorialSut.pulsingArtistId).toBe('')
 		})
 
-		it('should use 800ms delay for passion explanation', () => {
-			tutorialSut.openPassionSelector(tutorialSut.artists[0])
-			tutorialSut.selectPassionLevel(1)
+		it('should use 800ms delay for hype explanation', () => {
+			tutorialSut.openHypeSelector(tutorialSut.artists[0])
+			tutorialSut.selectHype(1)
 
 			// At 700ms, explanation should still be showing
 			vi.advanceTimersByTime(700)
-			expect(tutorialSut.showPassionExplanation).toBe(true)
+			expect(tutorialSut.showHypeExplanation).toBe(true)
 
 			// At 800ms, explanation should close
 			vi.advanceTimersByTime(100)
-			expect(tutorialSut.showPassionExplanation).toBe(false)
+			expect(tutorialSut.showHypeExplanation).toBe(false)
 		})
 	})
 })
