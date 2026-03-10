@@ -99,7 +99,7 @@ describe('MyArtistsPage', () => {
 			Registration.instance(mockIArtistServiceClient, mockArtistService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			)
+		)
 		container.register(MyArtistsPage)
 		sut = container.get(MyArtistsPage)
 		ea = container.get(IEventAggregator)
