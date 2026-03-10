@@ -85,13 +85,13 @@
           <!-- Artist name -->
           <span class="text-sm text-text-primary font-medium truncate flex-1">${artist.name}</span>
 
-          <!-- Passion level indicator -->
+          <!-- Hype indicator -->
           <button
-            click.trigger="openPassionSelector(artist)"
-            data-passion-button
-            class="shrink-0 text-base leading-none px-1.5 py-1 rounded-md hover:bg-white/10 transition-colors ${pulsingArtistId === artist.id ? 'animate-passion-pulse' : ''}"
-            aria-label="Change passion level"
-          >${passionIcon(artist)}</button>
+            click.trigger="openHypeSelector(artist)"
+            data-hype-button
+            class="shrink-0 text-base leading-none px-1.5 py-1 rounded-md hover:bg-white/10 transition-colors ${pulsingArtistId === artist.id ? 'animate-hype-pulse' : ''}"
+            aria-label="Change hype"
+          >${hypeIcon(artist)}</button>
         </div>
       </div>
     </div>
@@ -105,14 +105,14 @@
         touchstart.trigger="onGridTouchStart(artist)"
         touchend.trigger="onGridTouchEnd()"
         touchcancel.trigger="onGridTouchEnd()"
-        click.trigger="openPassionSelector(artist)"
+        click.trigger="openHypeSelector(artist)"
         class="relative rounded-[var(--radius-card)] overflow-hidden border border-white/10 flex items-end select-none ${tileSpan(artist)}"
         style="background: linear-gradient(135deg, ${artist.color}40, ${artist.color}10)"
       >
         <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         <div class="relative w-full p-2">
           <div class="text-xs font-medium text-white truncate">${artist.name}</div>
-          <div class="text-xs mt-0.5">${passionIcon(artist)}</div>
+          <div class="text-xs mt-0.5">${hypeIcon(artist)}</div>
         </div>
       </div>
     </div>
@@ -128,12 +128,12 @@
       <div class="text-sm text-text-muted mb-3 truncate">${contextMenuArtist.name}</div>
       <div class="flex flex-col gap-1">
         <button
-          repeat.for="level of passionLevels; key.bind: level"
+          repeat.for="level of hypeLevels; key.bind: level"
           click.trigger="contextMenuSetLevel(level)"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${contextMenuArtist.passionLevel === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${contextMenuArtist.hype === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
         >
-          <span class="text-base w-8 text-center">${passionLevelMeta[level].icon}</span>
-          <span class="text-sm font-medium">${trPassionLabel(level)}</span>
+          <span class="text-base w-8 text-center">${hypeMeta[level].icon}</span>
+          <span class="text-sm font-medium">${trHypeLabel(level)}</span>
         </button>
         <div class="border-t border-white/10 my-1"></div>
         <button
@@ -167,45 +167,45 @@
     ></button>
   </div>
 
-  <!-- Passion level selector dialog -->
+  <!-- Hype selector dialog -->
   <dialog
-    ref="passionSelectorDialog"
-    click.trigger="onPassionSelectorDialogClick($event)"
+    ref="hypeSelectorDialog"
+    click.trigger="onHypeSelectorDialogClick($event)"
     class="bottom-sheet-dialog"
   >
     <div if.bind="selectorArtist" class="w-full bg-surface-raised border-t border-white/10 rounded-t-2xl px-4 pt-4 pb-6">
       <div class="text-sm text-text-muted mb-3 truncate">${selectorArtist.name}</div>
       <div class="flex flex-col gap-1">
         <button
-          repeat.for="level of passionLevels; key.bind: level"
-          click.trigger="selectPassionLevel(level)"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${selectorArtist.passionLevel === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
+          repeat.for="level of hypeLevels; key.bind: level"
+          click.trigger="selectHype(level)"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${selectorArtist.hype === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
         >
-          <span class="text-base w-8 text-center">${passionLevelMeta[level].icon}</span>
-          <span class="text-sm font-medium">${trPassionLabel(level)}</span>
+          <span class="text-base w-8 text-center">${hypeMeta[level].icon}</span>
+          <span class="text-sm font-medium">${trHypeLabel(level)}</span>
         </button>
       </div>
     </div>
   </dialog>
 
-  <!-- Tutorial Step 5: Coach mark on first artist's passion button -->
+  <!-- Tutorial Step 5: Coach mark on first artist's hype button -->
   <coach-mark
-    target-selector="[data-passion-button]"
-    message.bind="$this.i18n?.tr('myArtists.coachMark.setPassion') ?? ''"
+    target-selector="[data-hype-button]"
+    message.bind="$this.i18n?.tr('myArtists.coachMark.setHype') ?? ''"
     active.bind="isTutorialStep5 && !isLoading && artists.length > 0"
   ></coach-mark>
 
-  <!-- Tutorial: Passion level notification explanation -->
+  <!-- Tutorial: Hype notification explanation -->
   <dialog
-    ref="passionExplanationDialog"
+    ref="hypeExplanationDialog"
     cancel.trigger="$event.preventDefault()"
-    class="passion-explanation-dialog"
+    class="hype-explanation-dialog"
   >
     <div class="mx-6 bg-surface-raised border border-white/10 rounded-2xl p-6 max-w-sm">
       <div class="text-center">
         <div class="text-3xl mb-3">🔔</div>
-        <h3 t="myArtists.passionExplanation.title" class="font-display text-lg font-bold text-text-primary mb-2"></h3>
-        <p t="myArtists.passionExplanation.description" class="text-sm text-text-muted leading-relaxed"></p>
+        <h3 t="myArtists.hypeExplanation.title" class="font-display text-lg font-bold text-text-primary mb-2"></h3>
+        <p t="myArtists.hypeExplanation.description" class="text-sm text-text-muted leading-relaxed"></p>
       </div>
     </div>
   </dialog>

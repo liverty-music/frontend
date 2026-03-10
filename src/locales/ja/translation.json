@@ -136,18 +136,22 @@
 		"install": "インストール",
 		"notNow": "今はしない"
 	},
-	"passionLevel": {
-		"mustGo": "絶対行く",
-		"localOnly": "近場なら行く",
-		"keepAnEye": "チェックしておく"
+	"hype": {
+		"watch": "観測のみ",
+		"home": "地元のみ",
+		"nearby": "近郊まで",
+		"anywhere": "遠征OK"
 	},
 	"myArtists": {
 		"coachMark": {
-			"setPassion": "熱量を設定してみましょう"
+			"setHype": "Hypeレベルを設定してみましょう"
 		},
-		"passionExplanation": {
-			"title": "通知コントロール",
-			"description": "熱量レベルに応じて通知の頻度が変わります。「Must Go」のアーティストは全公演を通知、「Local Only」は近くの公演のみ、「Keep an Eye」は注目公演だけお知らせします。"
+		"hypeExplanation": {
+			"title": "通知の範囲",
+			"description": "Hypeレベルに応じて、受け取るコンサート通知が変わります。",
+			"watch": "ダッシュボード表示のみ — プッシュ通知なし",
+			"home": "ホームエリアのコンサート時に通知",
+			"anywhere": "全国すべてのコンサートを通知"
 		},
 		"empty": {
 			"title": "フォロー中のアーティストはいません",
@@ -158,7 +162,7 @@
 		"undo": "元に戻す",
 		"unfollow": "フォロー解除",
 		"failedUnfollow": "{{name}}のフォロー解除に失敗しました",
-		"failedPassionLevel": "熱量レベルの更新に失敗しました"
+		"failedHype": "Hypeレベルの更新に失敗しました"
 	},
 	"loading": {
 		"phase1": "あなたのMusic DNAを構築中...",

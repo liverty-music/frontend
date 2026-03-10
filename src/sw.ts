@@ -53,7 +53,7 @@ self.addEventListener('install', (event) => {
 })
 
 // ---------------------------------------------------------------------------
-// Background Sync for artist operations (follow / unfollow / passion level).
+// Background Sync for artist operations (follow / unfollow / hype).
 // NetworkOnly avoids cache.put() on POST responses (Cache API is GET-only).
 // ---------------------------------------------------------------------------
 registerRoute(

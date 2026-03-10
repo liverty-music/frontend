@@ -1,6 +1,6 @@
 import {
 	ArtistId,
-	PassionLevel,
+	HypeType,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IArtistServiceClient } from './artist-service-client'
@@ -54,30 +54,27 @@ export class GuestDataMergeService {
 			}
 		}
 
-		// Set passion levels (best-effort)
+		// Set hype (best-effort)
 		for (const artist of artists) {
-			const level = this.mapPassionLevel(artist.passionLevel)
-			if (level === PassionLevel.LOCAL_ONLY) {
-				// LOCAL_ONLY is the default, skip the RPC
+			const hype = this.mapHype(artist.hype)
+			if (hype === HypeType.ANYWHERE) {
+				// ANYWHERE is the default, skip the RPC
 				continue
 			}
 			try {
-				await client.setPassionLevel({
+				await client.setHype({
 					artistId: new ArtistId({ value: artist.id }),
-					passionLevel: level,
+					hype,
 				})
-				this.logger.debug('Set passion level', {
+				this.logger.debug('Set hype', {
 					id: artist.id,
-					level: artist.passionLevel,
+					hype: artist.hype,
 				})
 			} catch (err) {
-				this.logger.warn(
-					'Failed to set passion level during merge, continuing',
-					{
-						id: artist.id,
-						error: err,
-					},
-				)
+				this.logger.warn('Failed to set hype during merge, continuing', {
+					id: artist.id,
+					error: err,
+				})
 			}
 		}
 
@@ -88,18 +85,16 @@ export class GuestDataMergeService {
 		this.logger.info('Guest data merge completed')
 	}
 
-	private mapPassionLevel(
-		level: LocalFollowedArtist['passionLevel'],
-	): PassionLevel {
+	private mapHype(level: LocalFollowedArtist['hype']): HypeType {
 		switch (level) {
-			case 'MUST_GO':
-				return PassionLevel.MUST_GO
-			case 'LOCAL_ONLY':
-				return PassionLevel.LOCAL_ONLY
-			case 'KEEP_AN_EYE':
-				return PassionLevel.KEEP_AN_EYE
+			case 'WATCH':
+				return HypeType.WATCH
+			case 'HOME':
+				return HypeType.HOME
+			case 'ANYWHERE':
+				return HypeType.ANYWHERE
 			default:
-				return PassionLevel.LOCAL_ONLY
+				return HypeType.ANYWHERE
 		}
 	}
 }

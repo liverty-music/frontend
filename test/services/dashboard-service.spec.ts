@@ -63,8 +63,8 @@ describe('DashboardService', () => {
 	it('should load and group concerts for multiple artists', async () => {
 		// Arrange
 		mockArtistService.listFollowed = vi.fn().mockResolvedValue([
-			{ id: 'artist-1', name: 'Artist One', passionLevel: 0 },
-			{ id: 'artist-2', name: 'Artist Two', passionLevel: 0 },
+			{ id: 'artist-1', name: 'Artist One', hype: 0 },
+			{ id: 'artist-2', name: 'Artist Two', hype: 0 },
 		])
 
 		// Concerts have no adminArea — they land in 'away' lane (no userHome set)
@@ -125,9 +125,7 @@ describe('DashboardService', () => {
 		// Arrange
 		mockArtistService.listFollowed = vi
 			.fn()
-			.mockResolvedValue([
-				{ id: 'artist-1', name: 'Artist One', passionLevel: 0 },
-			])
+			.mockResolvedValue([{ id: 'artist-1', name: 'Artist One', hype: 0 }])
 
 		mockConcertService.listByFollower = vi
 			.fn()
@@ -141,7 +139,7 @@ describe('DashboardService', () => {
 		// Arrange
 		mockArtistService.listFollowed = vi
 			.fn()
-			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', passionLevel: 0 }])
+			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', hype: 0 }])
 
 		// 2026-05-01 09:05 UTC = seconds: 1746090300
 		// 2026-05-01 08:30 UTC = seconds: 1746088200
@@ -171,7 +169,7 @@ describe('DashboardService', () => {
 		// Arrange
 		mockArtistService.listFollowed = vi
 			.fn()
-			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', passionLevel: 0 }])
+			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', hype: 0 }])
 
 		const concertWithDate: Partial<Concert> = {
 			id: { value: 'concert-1' },
@@ -206,7 +204,7 @@ describe('DashboardService', () => {
 		// Arrange
 		mockArtistService.listFollowed = vi
 			.fn()
-			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', passionLevel: 0 }])
+			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', hype: 0 }])
 
 		// Return concerts in reverse chronological order
 		const concert1: Partial<Concert> = {
@@ -243,7 +241,7 @@ describe('DashboardService', () => {
 
 		mockArtistService.listFollowed = vi
 			.fn()
-			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', passionLevel: 0 }])
+			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', hype: 0 }])
 
 		const tokyoConcert: Partial<Concert> = {
 			id: { value: 'concert-1' },

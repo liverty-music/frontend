@@ -23,6 +23,9 @@ vi.mock('../src/routes/discover/discover-page', () => ({
 vi.mock('../src/routes/my-artists/my-artists-page', () => ({
 	MyArtistsPage: class MyArtistsPage {},
 }))
+vi.mock('../src/routes/tickets/tickets-page', () => ({
+	TicketsPage: class TicketsPage {},
+}))
 vi.mock('../src/routes/settings/settings-page', () => ({
 	SettingsPage: class SettingsPage {},
 }))

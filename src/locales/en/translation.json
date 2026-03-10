@@ -136,18 +136,22 @@
 		"install": "Install",
 		"notNow": "Not now"
 	},
-	"passionLevel": {
-		"mustGo": "Must Go",
-		"localOnly": "Local Only",
-		"keepAnEye": "Keep an Eye"
+	"hype": {
+		"watch": "Watch",
+		"home": "Home",
+		"nearby": "NearBy",
+		"anywhere": "Anywhere"
 	},
 	"myArtists": {
 		"coachMark": {
-			"setPassion": "Try setting a passion level"
+			"setHype": "Try setting a hype level"
 		},
-		"passionExplanation": {
-			"title": "Notification Control",
-			"description": "Notification frequency varies by passion level. \"Must Go\" artists notify for all shows, \"Local Only\" for nearby shows only, and \"Keep an Eye\" for notable shows only."
+		"hypeExplanation": {
+			"title": "Notification Scope",
+			"description": "Your hype level controls which concert notifications you receive.",
+			"watch": "Dashboard only — no push notifications",
+			"home": "Notified when concerts are in your home area",
+			"anywhere": "Notified for all concerts nationwide"
 		},
 		"empty": {
 			"title": "No artists followed yet",
@@ -158,7 +162,7 @@
 		"undo": "Undo",
 		"unfollow": "Unfollow",
 		"failedUnfollow": "Failed to unfollow {{name}}",
-		"failedPassionLevel": "Failed to update passion level"
+		"failedHype": "Failed to update hype level"
 	},
 	"loading": {
 		"phase1": "Building your Music DNA...",

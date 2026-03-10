@@ -4,7 +4,7 @@ import { StorageKeys } from '../constants/storage-keys'
 export interface LocalFollowedArtist {
 	id: string
 	name: string
-	passionLevel: 'MUST_GO' | 'LOCAL_ONLY' | 'KEEP_AN_EYE'
+	hype: 'WATCH' | 'HOME' | 'ANYWHERE'
 }
 
 export const ILocalArtistClient = DI.createInterface<ILocalArtistClient>(
@@ -48,7 +48,7 @@ export class LocalArtistClient {
 			this.logger.debug('Artist already followed locally', { id })
 			return
 		}
-		artists.push({ id, name, passionLevel: 'LOCAL_ONLY' })
+		artists.push({ id, name, hype: 'ANYWHERE' })
 		localStorage.setItem(
 			StorageKeys.guestFollowedArtists,
 			JSON.stringify(artists),
@@ -80,26 +80,23 @@ export class LocalArtistClient {
 	}
 
 	/**
-	 * Set the passion level for a locally followed artist.
+	 * Set the hype level for a locally followed artist.
 	 */
-	public setPassionLevel(
-		artistId: string,
-		level: LocalFollowedArtist['passionLevel'],
-	): void {
+	public setHype(artistId: string, level: LocalFollowedArtist['hype']): void {
 		const artists = this.listFollowed()
 		const artist = artists.find((a) => a.id === artistId)
 		if (!artist) {
-			this.logger.warn('Cannot set passion level: artist not found locally', {
+			this.logger.warn('Cannot set hype: artist not found locally', {
 				artistId,
 			})
 			return
 		}
-		artist.passionLevel = level
+		artist.hype = level
 		localStorage.setItem(
 			StorageKeys.guestFollowedArtists,
 			JSON.stringify(artists),
 		)
-		this.logger.info('Local passion level set', { artistId, level })
+		this.logger.info('Local hype set', { artistId, level })
 	}
 
 	/**
