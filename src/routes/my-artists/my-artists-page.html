@@ -152,21 +152,6 @@
     </div>
   </dialog>
 
-  <!-- Undo toast (top-layer popover to stay above dialogs) -->
-  <div
-    ref="undoPopoverEl"
-    popover="manual"
-    role="status"
-    class="fixed [inset-block-end:5rem] [inset-inline:1rem] m-0 bg-surface-overlay border border-white/10 rounded-[var(--radius-card)] px-4 py-3 flex items-center justify-between shadow-lg"
-  >
-    <span class="text-sm text-text-primary">${$this.i18n?.tr('myArtists.unfollowed', { name: undoArtist?.name }) ?? ''}</span>
-    <button
-      click.trigger="undo()"
-      t="myArtists.undo"
-      class="text-sm font-semibold text-brand-primary hover:text-brand-primary/80 transition-colors ms-4"
-    ></button>
-  </div>
-
   <!-- Hype selector dialog -->
   <dialog
     ref="hypeSelectorDialog"
