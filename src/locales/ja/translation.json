@@ -144,10 +144,11 @@
 	},
 	"myArtists": {
 		"coachMark": {
-			"setPassion": "Hypeレベルを設定してみましょう"
+			"setHype": "Hypeレベルを設定してみましょう"
 		},
 		"hypeExplanation": {
 			"title": "通知の範囲",
+			"description": "Hypeレベルに応じて、受け取るコンサート通知が変わります。",
 			"watch": "ダッシュボード表示のみ — プッシュ通知なし",
 			"home": "ホームエリアのコンサート時に通知",
 			"anywhere": "全国すべてのコンサートを通知"

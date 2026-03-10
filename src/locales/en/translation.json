@@ -144,10 +144,11 @@
 	},
 	"myArtists": {
 		"coachMark": {
-			"setPassion": "Try setting a hype level"
+			"setHype": "Try setting a hype level"
 		},
 		"hypeExplanation": {
 			"title": "Notification Scope",
+			"description": "Your hype level controls which concert notifications you receive.",
 			"watch": "Dashboard only — no push notifications",
 			"home": "Notified when concerts are in your home area",
 			"anywhere": "Notified for all concerts nationwide"
