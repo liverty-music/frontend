@@ -6,7 +6,10 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../components/live-highway/color-generator'
-import { Toast } from '../../components/toast-notification/toast'
+import {
+	Toast,
+	type ToastHandle,
+} from '../../components/toast-notification/toast'
 import { IArtistServiceClient } from '../../services/artist-service-client'
 import {
 	IOnboardingService,
@@ -28,8 +31,6 @@ export const HYPE_META: Record<number, { labelKey: string; icon: string }> = {
 		icon: '\u{1F525}\u{1F525}\u{1F525}',
 	},
 }
-
-const UNDO_TIMEOUT_MS = 5000
 
 export const HYPE_LEVELS = [
 	HypeType.WATCH,
@@ -65,11 +66,9 @@ export class MyArtistsPage {
 	private readonly LONG_PRESS_MS = 500
 
 	// Undo state
-	public undoArtist: FollowedArtist | null = null
-	public undoVisible = false
-	public undoPopoverEl!: HTMLElement
-	private undoTimer: ReturnType<typeof setTimeout> | null = null
+	private undoArtist: FollowedArtist | null = null
 	private undoIndex = -1
+	private undoHandle: ToastHandle | null = null
 
 	// Hype level selector state
 	public selectorArtist: FollowedArtist | null = null
@@ -131,7 +130,7 @@ export class MyArtistsPage {
 	public detaching(): void {
 		this.abortController?.abort()
 		this.abortController = null
-		this.commitPendingUnfollow()
+		this.undoHandle?.dismiss()
 		this.clearLongPressTimer()
 		if (this.tutorialTimer !== null) {
 			clearTimeout(this.tutorialTimer)
@@ -216,8 +215,8 @@ export class MyArtistsPage {
 		// Block unfollow during onboarding
 		if (this.isOnboarding) return
 
-		// Clear any previous undo (commits it)
-		this.commitPendingUnfollow()
+		// Dismiss any previous undo toast (commits that unfollow)
+		this.undoHandle?.dismiss()
 
 		const index = this.artists.findIndex((a) => a.id === artist.id)
 		if (index === -1) return
@@ -226,21 +225,33 @@ export class MyArtistsPage {
 		this.artists.splice(index, 1)
 		this.undoArtist = artist
 		this.undoIndex = index
-		this.undoVisible = true
-		this.undoPopoverEl?.showPopover()
 
 		this.logger.info('Artist unfollowed (pending)', { name: artist.name })
 
-		// Start undo timer
-		this.undoTimer = setTimeout(() => {
-			this.commitPendingUnfollow()
-		}, UNDO_TIMEOUT_MS)
+		const toast = new Toast(
+			this.i18n.tr('myArtists.unfollowed', { name: artist.name }),
+			'info',
+			{
+				duration: 5000,
+				action: {
+					label: this.i18n.tr('myArtists.undo'),
+					callback: () => this.undo(),
+				},
+				onDismiss: () => {
+					if (this.undoArtist) {
+						this.commitUnfollow(this.undoArtist, this.undoIndex)
+						this.undoArtist = null
+						this.undoHandle = null
+					}
+				},
+			},
+		)
+		this.ea.publish(toast)
+		this.undoHandle = toast.handle
 	}
 
-	public undo(): void {
+	private undo(): void {
 		if (!this.undoArtist) return
-
-		this.clearUndoTimer()
 
 		// Re-insert at original position
 		const insertAt = Math.min(this.undoIndex, this.artists.length)
@@ -249,20 +260,10 @@ export class MyArtistsPage {
 		this.logger.info('Undo unfollow', { name: this.undoArtist.name })
 
 		this.undoArtist = null
-		this.undoVisible = false
-		this.undoPopoverEl?.hidePopover()
+		this.undoHandle = null
 	}
 
-	private commitPendingUnfollow(): void {
-		if (!this.undoArtist) return
-
-		this.clearUndoTimer()
-		const artist = this.undoArtist
-		const originalIndex = this.undoIndex
-		this.undoArtist = null
-		this.undoVisible = false
-		this.undoPopoverEl?.hidePopover()
-
+	private commitUnfollow(artist: FollowedArtist, originalIndex: number): void {
 		// Fire-and-forget RPC with 1 retry
 		const client = this.artistService.getClient()
 		const req = { artistId: new ArtistId({ value: artist.id }) }
@@ -298,13 +299,6 @@ export class MyArtistsPage {
 						)
 					})
 			})
-	}
-
-	private clearUndoTimer(): void {
-		if (this.undoTimer !== null) {
-			clearTimeout(this.undoTimer)
-			this.undoTimer = null
-		}
 	}
 
 	private resetSwipe(): void {

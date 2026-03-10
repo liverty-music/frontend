@@ -61,7 +61,7 @@ describe('ToastNotification', () => {
 			return 0
 		})
 
-		publishToast(new Toast('Test message', 'info', 2500))
+		publishToast(new Toast('Test message', 'info', { duration: 2500 }))
 
 		expect(sut.toasts[0].visible).toBe(true)
 
@@ -70,7 +70,7 @@ describe('ToastNotification', () => {
 	})
 
 	it('should remove toast after exit animation delay', () => {
-		publishToast(new Toast('Test message', 'info', 2500))
+		publishToast(new Toast('Test message', 'info', { duration: 2500 }))
 
 		vi.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
 			cb(0)
@@ -85,6 +85,40 @@ describe('ToastNotification', () => {
 
 		vi.advanceTimersByTime(400)
 		expect(sut.toasts).toHaveLength(0)
+	})
+
+	it('should dismiss even before requestAnimationFrame fires', () => {
+		// Do NOT mock rAF — visible stays false
+		const onDismiss = vi.fn()
+		const toast = new Toast('Test', 'info', { onDismiss })
+		publishToast(toast)
+
+		expect(sut.toasts[0].visible).toBe(false)
+
+		// Dismiss via handle before rAF fires
+		toast.handle!.dismiss()
+
+		expect(onDismiss).toHaveBeenCalledOnce()
+
+		// Toast should be removed after exit animation
+		vi.advanceTimersByTime(400)
+		expect(sut.toasts).toHaveLength(0)
+	})
+
+	it('should not double-dismiss', () => {
+		vi.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
+			cb(0)
+			return 0
+		})
+
+		const onDismiss = vi.fn()
+		const toast = new Toast('Test', 'info', { onDismiss })
+		publishToast(toast)
+
+		toast.handle!.dismiss()
+		toast.handle!.dismiss()
+
+		expect(onDismiss).toHaveBeenCalledOnce()
 	})
 
 	it('should handle multiple toasts with unique IDs', () => {

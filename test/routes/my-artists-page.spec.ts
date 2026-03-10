@@ -1,12 +1,11 @@
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Toast } from '../../src/components/toast-notification/toast'
 import { createTestContainer } from '../helpers/create-container'
 
 const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-const mockEa = { publish: vi.fn() }
-
 vi.mock('../../src/services/artist-service-client', () => ({
 	IArtistServiceClient: mockIArtistServiceClient,
 }))
@@ -26,12 +25,6 @@ vi.mock('../../src/services/onboarding-service', () => ({
 		MY_ARTISTS: 5,
 		SIGNUP: 6,
 		COMPLETED: 7,
-	},
-}))
-
-vi.mock('../../src/components/toast-notification/toast', () => ({
-	Toast: class Toast {
-		constructor(public message: string) {}
 	},
 }))
 
@@ -65,6 +58,7 @@ function makeTouchEvent(clientX: number, clientY = 0): TouchEvent {
 
 describe('MyArtistsPage', () => {
 	let sut: InstanceType<typeof MyArtistsPage>
+	let ea: IEventAggregator
 	let mockGrpcClient: {
 		unfollow: ReturnType<typeof vi.fn>
 		setHype: ReturnType<typeof vi.fn>
@@ -74,6 +68,7 @@ describe('MyArtistsPage', () => {
 		getClient: () => typeof mockGrpcClient
 	}
 	let mockRouter: { load: ReturnType<typeof vi.fn> }
+	let publishedToasts: Toast[]
 
 	beforeEach(() => {
 		mockGrpcClient = {
@@ -104,10 +99,16 @@ describe('MyArtistsPage', () => {
 			Registration.instance(mockIArtistServiceClient, mockArtistService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(IEventAggregator, mockEa),
 		)
 		container.register(MyArtistsPage)
 		sut = container.get(MyArtistsPage)
+		ea = container.get(IEventAggregator)
+
+		// Capture published Toast events
+		publishedToasts = []
+		ea.subscribe(Toast, (toast: Toast) => {
+			publishedToasts.push(toast)
+		})
 
 		// Mock dialog elements for Top Layer API
 		for (const name of [
@@ -188,8 +189,9 @@ describe('MyArtistsPage', () => {
 			sut.onTouchEnd()
 
 			expect(sut.artists).toHaveLength(2)
-			expect(sut.undoVisible).toBe(true)
-			expect(sut.undoArtist?.name).toBe('RADWIMPS')
+			expect(publishedToasts).toHaveLength(1)
+			expect(publishedToasts[0].action).toBeDefined()
+			expect(publishedToasts[0].action?.label).toBe('myArtists.undo')
 		})
 
 		it('should not unfollow when swipe is below threshold', () => {
@@ -199,7 +201,7 @@ describe('MyArtistsPage', () => {
 			sut.onTouchEnd()
 
 			expect(sut.artists).toHaveLength(3)
-			expect(sut.undoVisible).toBe(false)
+			expect(publishedToasts).toHaveLength(0)
 		})
 
 		it('should reset swipe state after touchend', () => {
@@ -227,7 +229,7 @@ describe('MyArtistsPage', () => {
 			vi.advanceTimersByTime(500)
 
 			expect(sut.artists).toHaveLength(2)
-			expect(sut.undoArtist?.name).toBe('ONE OK ROCK')
+			expect(publishedToasts).toHaveLength(1)
 		})
 
 		it('should cancel long press on touch move', () => {
@@ -260,36 +262,38 @@ describe('MyArtistsPage', () => {
 			expect(sut.artists).toHaveLength(2)
 			expect(sut.artists[1].name).toBe('Aimer')
 
-			sut.undo()
+			// Invoke the undo action callback from the published toast
+			publishedToasts[0].action?.callback()
 
 			expect(sut.artists).toHaveLength(3)
 			expect(sut.artists[1].name).toBe('ONE OK ROCK')
-			expect(sut.undoVisible).toBe(false)
 		})
 
-		it('should commit unfollow RPC after undo timer expires', async () => {
+		it('should commit unfollow RPC when toast is dismissed', async () => {
 			sut.onTouchStart(sut.artists[0], makeTouchEvent(200))
 			sut.onTouchMove(makeTouchEvent(180))
 			sut.onTouchMove(makeTouchEvent(100))
 			sut.onTouchEnd()
 
-			vi.advanceTimersByTime(5000)
+			// Simulate toast dismiss via onDismiss callback
+			publishedToasts[0].options?.onDismiss?.()
 			await vi.runAllTimersAsync()
 
 			expect(mockGrpcClient.unfollow).toHaveBeenCalledWith({
 				artistId: expect.objectContaining({ value: 'id-1' }),
 			})
-			expect(sut.undoVisible).toBe(false)
 		})
 
-		it('should not call RPC when undo is pressed', () => {
+		it('should not call RPC when undo is pressed before dismiss', async () => {
 			sut.onTouchStart(sut.artists[0], makeTouchEvent(200))
 			sut.onTouchMove(makeTouchEvent(180))
 			sut.onTouchMove(makeTouchEvent(100))
 			sut.onTouchEnd()
 
-			sut.undo()
-			vi.advanceTimersByTime(5000)
+			// Undo first (clears undoArtist), then onDismiss fires
+			publishedToasts[0].action?.callback()
+			publishedToasts[0].options?.onDismiss?.()
+			await vi.runAllTimersAsync()
 
 			expect(mockGrpcClient.unfollow).not.toHaveBeenCalled()
 		})

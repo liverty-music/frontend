@@ -1,11 +1,15 @@
 import { type IDisposable, IEventAggregator, resolve } from 'aurelia'
-import { Toast, type ToastSeverity } from './toast'
+import { Toast, type ToastAction, type ToastSeverity } from './toast'
 
 interface ToastItem {
 	id: number
 	message: string
 	severity: ToastSeverity
+	action?: ToastAction
+	onDismiss?: () => void
 	visible: boolean
+	dismissed: boolean
+	dismissTimer: ReturnType<typeof setTimeout> | null
 }
 
 /** CSS class mapping for toast severity levels. */
@@ -37,9 +41,18 @@ export class ToastNotification {
 			id,
 			message: event.message,
 			severity: event.severity,
+			action: event.action,
+			onDismiss: event.options?.onDismiss,
 			visible: false,
+			dismissed: false,
+			dismissTimer: null,
 		}
 		this.toasts.push(toast)
+
+		// Populate handle so callers can programmatically dismiss
+		event.handle = {
+			dismiss: () => this.dismiss(toast),
+		}
 
 		// Re-insert into Top Layer to ensure it paints above any open dialog
 		if (this.toasts.length > 1) this.containerElement.hidePopover()
@@ -51,16 +64,35 @@ export class ToastNotification {
 		})
 
 		// Auto-dismiss
-		setTimeout(() => {
-			toast.visible = false
-			setTimeout(() => {
-				const idx = this.toasts.findIndex((t) => t.id === id)
-				if (idx !== -1) this.toasts.splice(idx, 1)
-				if (this.toasts.length === 0) {
-					this.containerElement.hidePopover()
-				}
-			}, 400)
+		toast.dismissTimer = setTimeout(() => {
+			toast.dismissTimer = null
+			this.dismiss(toast)
 		}, event.durationMs)
+	}
+
+	private dismiss(toast: ToastItem): void {
+		if (toast.dismissed) return
+		toast.dismissed = true
+
+		if (toast.dismissTimer !== null) {
+			clearTimeout(toast.dismissTimer)
+			toast.dismissTimer = null
+		}
+
+		toast.visible = false
+		toast.onDismiss?.()
+		setTimeout(() => {
+			const idx = this.toasts.findIndex((t) => t.id === toast.id)
+			if (idx !== -1) this.toasts.splice(idx, 1)
+			if (this.toasts.length === 0) {
+				this.containerElement.hidePopover()
+			}
+		}, 400)
+	}
+
+	public onAction(toast: ToastItem): void {
+		toast.action?.callback()
+		this.dismiss(toast)
 	}
 
 	/** Returns the gradient CSS classes for a toast's severity. */
