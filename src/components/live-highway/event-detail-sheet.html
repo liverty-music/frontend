@@ -4,14 +4,20 @@
   <import from="../icons/icon-link"></import>
   <import from="./event-detail-sheet.css"></import>
 
+  <!-- <dialog popover="manual"> combines native dialog semantics with popover
+       LIFO top-layer ordering: sheet shown first, coach mark shown after = coach
+       mark on top. Native ::backdrop replaces the sibling backdrop div.
+       Manual Escape handling is required (popover="manual" has no light dismiss). -->
   <dialog
-    ref="dialogElement"
-    click.trigger="onDialogClick($event)"
-    cancel.trigger="onCancel($event)"
+    ref="sheetElement"
+    popover="manual"
+    tabindex="-1"
+    aria-label="Event details"
+    click.trigger="onBackdropClick($event)"
     touchstart.trigger="onTouchStart($event)"
     touchmove.trigger="onTouchMove($event)"
     touchend.trigger="onTouchEnd()"
-    class="event-detail-dialog"
+    class="event-detail-sheet"
     style="transform: ${dragOffset > 0 ? 'translateY(' + dragOffset + 'px)' : ''}"
   >
     <div
@@ -26,8 +32,8 @@
       <div if.bind="event" class="px-6 pb-8">
         <!-- Artist name header with dynamic color -->
         <div
-          style="background-color: ${backgroundColor}"
-          class="rounded-[var(--radius-card)] p-5 mb-5"
+          artist-color.bind="event.artistName"
+          class="rounded-[var(--radius-card)] p-5 mb-5 hype-home"
         >
           <h2 class="text-white font-display font-extrabold text-2xl leading-tight">
             ${event.artistName}

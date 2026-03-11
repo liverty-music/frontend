@@ -19,7 +19,7 @@ function makeEvent(overrides: Partial<LiveEvent> = {}): LiveEvent {
 		startTime: '19:00',
 		title: 'Test Concert',
 		sourceUrl: 'https://example.com',
-		isMustGo: false,
+		hypeLevel: 'watch',
 		...overrides,
 	}
 }
@@ -41,18 +41,18 @@ describe('EventDetailSheet', () => {
 		container.register(EventDetailSheet)
 		sut = container.get(EventDetailSheet)
 
-		// Mock dialog element for Top Layer API
-		const mockDialog = document.createElement('dialog')
-		;(mockDialog as any).showModal = vi.fn()
-		;(mockDialog as any).close = vi.fn()
-		const dialogScrollable = document.createElement('div')
-		dialogScrollable.classList.add('overflow-y-auto')
-		Object.defineProperty(dialogScrollable, 'scrollTop', {
+		// Mock sheet element for Popover API
+		const mockSheet = document.createElement('div')
+		;(mockSheet as any).showPopover = vi.fn()
+		;(mockSheet as any).hidePopover = vi.fn()
+		const sheetScrollable = document.createElement('div')
+		sheetScrollable.classList.add('overflow-y-auto')
+		Object.defineProperty(sheetScrollable, 'scrollTop', {
 			value: 0,
 			writable: true,
 		})
-		mockDialog.appendChild(dialogScrollable)
-		;(sut as any).dialogElement = mockDialog
+		mockSheet.appendChild(sheetScrollable)
+		;(sut as any).sheetElement = mockSheet
 	})
 
 	afterEach(() => {
@@ -102,18 +102,6 @@ describe('EventDetailSheet', () => {
 		it('should return "#" when no event', () => {
 			sut.event = null
 			expect(sut.calendarUrl).toBe('#')
-		})
-	})
-
-	describe('backgroundColor', () => {
-		it('should return an hsl color string when event exists', () => {
-			sut.event = makeEvent()
-			expect(sut.backgroundColor).toMatch(/^hsl\(/)
-		})
-
-		it('should return default grey when no event', () => {
-			sut.event = null
-			expect(sut.backgroundColor).toBe('hsl(0, 0%, 20%)')
 		})
 	})
 

@@ -1,0 +1,13 @@
+<template>
+  <import from="./celebration-overlay.css"></import>
+
+  <div
+    if.bind="visible"
+    class="celebration-overlay ${fadingOut ? 'fade-out' : ''}"
+  >
+    <div class="confetti-container">
+      <div class="confetti" repeat.for="i of 30"></div>
+    </div>
+    <p class="celebration-text">${message}</p>
+  </div>
+</template>

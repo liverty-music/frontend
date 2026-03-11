@@ -228,12 +228,12 @@ describe('DiscoverPage', () => {
 		})
 	})
 
-	describe('onViewSchedule', () => {
+	describe('onCoachMarkTap', () => {
 		it('should set step to DASHBOARD and navigate to /dashboard', async () => {
 			mockOnboarding.isOnboarding = true
 			mockOnboarding.currentStep = 1
 
-			await sut.onViewSchedule()
+			sut.onCoachMarkTap()
 
 			expect(mockOnboarding.setStep).toHaveBeenCalledWith(3) // DASHBOARD
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
@@ -631,17 +631,16 @@ describe('DiscoverPage', () => {
 		})
 	})
 
-	describe('showCompleteButton', () => {
-		it('should show when onboarding and followed >= TUTORIAL_FOLLOW_TARGET', async () => {
-			mockOnboarding.isOnboarding = true
-			mockLocalClient.followedCount = 3
-
-			expect(sut.showCompleteButton).toBe(true)
-		})
-
+	describe('showDashboardCoachMark', () => {
 		it('should hide when not onboarding', () => {
 			mockOnboarding.isOnboarding = false
-			expect(sut.showCompleteButton).toBe(false)
+			expect(sut.showDashboardCoachMark).toBe(false)
+		})
+
+		it('should hide when onboarding but followed < TUTORIAL_FOLLOW_TARGET', () => {
+			mockOnboarding.isOnboarding = true
+			mockLocalClient.followedCount = 2
+			expect(sut.showDashboardCoachMark).toBe(false)
 		})
 	})
 

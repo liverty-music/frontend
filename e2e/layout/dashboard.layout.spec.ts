@@ -19,9 +19,13 @@ function seedDashboardState() {
 
 /** Seed dashboard with concert data so live-highway renders event cards.
  *  Sets up:
- *  - onboardingStep = 3 (DASHBOARD)
+ *  - onboardingStep = 3 (DASHBOARD — required for auth hook to allow access)
  *  - guest.home = JP-13 (Tokyo)
- *  - guest.followedArtists with 3 artists (MUST_GO, LOCAL_ONLY, KEEP_AN_EYE)
+ *  - guest.followedArtists with 3 artists
+ *
+ *  Note: During onboarding, listByFollowerOnboarding calls List per artist
+ *  and groups ALL concerts into the "away" lane. Layout tests should check
+ *  the away lane for cards.
  */
 function seedWithConcertData() {
 	return () => {
@@ -38,21 +42,17 @@ function seedWithConcertData() {
 	}
 }
 
-/** Build a Connect-RPC JSON response with a list of concerts. */
+/** Build a Connect-RPC JSON response for ConcertService/List (per artist).
+ *  During onboarding, each artist's concerts are fetched separately via List,
+ *  then merged and grouped by date into the "away" lane.
+ */
 function concertListResponse() {
 	const tomorrow = new Date()
 	tomorrow.setDate(tomorrow.getDate() + 1)
-	const nextWeek = new Date()
-	nextWeek.setDate(nextWeek.getDate() + 7)
 
 	return {
 		concerts: [
-			// Home lane (JP-13 matches guest.home)
 			makeConcert('c1', 'artist-1', tomorrow, 'JP-13', 'Zepp DiverCity'),
-			// Nearby lane (JP-27 differs from JP-13)
-			makeConcert('c2', 'artist-2', tomorrow, 'JP-27', 'Zepp Osaka Bayside'),
-			// Away lane (no adminArea)
-			makeConcert('c3', 'artist-3', nextWeek, undefined, 'Unknown Venue'),
 		],
 	}
 }
@@ -180,32 +180,31 @@ test.describe('Dashboard shell layout', () => {
 
 test.describe('Dashboard header', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
-		await page.addInitScript(seedDashboardState())
+		await page.addInitScript(seedWithConcertData())
+		await page.route('**/liverty_music.rpc.concert.**', (route) => {
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify(concertListResponse()),
+			})
+		})
 		await page.goto('/dashboard')
-		await page.waitForSelector('live-highway, [class*="justify-center"]', {
-			timeout: 5000,
+		await page.waitForSelector('live-highway [data-live-card]', {
+			timeout: 10000,
 		})
 	})
 
-	test('header shows "Live Highway" title (H1)', async ({
+	test('header contains three STAGE labels (H2)', async ({
 		layoutPage: page,
 	}) => {
-		const title = page.locator('h1')
-		await expect(title).toBeVisible()
-		await expect(title).toHaveText('Live Highway')
-	})
-
-	test('header contains three lane labels (H2)', async ({
-		layoutPage: page,
-	}) => {
-		const labels = page.locator('.grid.grid-cols-3 span')
+		const labels = page.locator('live-highway .sticky.top-0.grid.grid-cols-3 span')
 		await expect(labels).toHaveCount(3)
 	})
 
 	test('header is pinned to top of dashboard (H3)', async ({
 		layoutPage: page,
 	}) => {
-		const header = page.locator('.shrink-0.px-4.py-4').first()
+		const header = page.locator('live-highway .sticky.top-0.grid.grid-cols-3').first()
 		const headerBox = await header.boundingBox()
 		const auViewportBox = await page.locator('au-viewport').boundingBox()
 
@@ -363,10 +362,10 @@ test.describe('Dashboard data-loaded state', () => {
 		).toBeLessThanOrEqual(viewport.height)
 	})
 
-	test('three-lane grid uses 50/30/20 ratio (C2)', async ({
+	test('three-lane grid uses equal 1fr 1fr 1fr ratio (C2)', async ({
 		layoutPage: page,
 	}) => {
-		const grid = page.locator('.grid.grid-cols-\\[50\\%_30\\%_20\\%\\]').first()
+		const grid = page.locator('.grid.grid-cols-3').first()
 		await expect(grid).toBeVisible()
 
 		const gridBox = await grid.boundingBox()
@@ -386,16 +385,14 @@ test.describe('Dashboard data-loaded state', () => {
 		}
 
 		const totalWidth = gridBox!.width
-		// Home lane ~50%
-		expect(laneBoxes[0]!.width / totalWidth).toBeCloseTo(0.5, 1)
-		// Nearby lane ~30%
-		expect(laneBoxes[1]!.width / totalWidth).toBeCloseTo(0.3, 1)
-		// Away lane ~20%
-		expect(laneBoxes[2]!.width / totalWidth).toBeCloseTo(0.2, 1)
+		// All lanes ~33%
+		expect(laneBoxes[0]!.width / totalWidth).toBeCloseTo(0.333, 1)
+		expect(laneBoxes[1]!.width / totalWidth).toBeCloseTo(0.333, 1)
+		expect(laneBoxes[2]!.width / totalWidth).toBeCloseTo(0.333, 1)
 	})
 
 	test('sticky date header exists (C3)', async ({ layoutPage: page }) => {
-		const stickyHeader = page.locator('.sticky.top-0').first()
+		const stickyHeader = page.locator('live-highway .sticky.top-0.grid.grid-cols-3').first()
 		await expect(stickyHeader).toBeVisible()
 
 		const style = await stickyHeader.evaluate(
@@ -412,15 +409,14 @@ test.describe('Dashboard data-loaded state', () => {
 		expect(cursor).toBe('pointer')
 	})
 
-	test('home lane card has min-height 120px (C5)', async ({
+	test('event cards have non-zero height (C5)', async ({
 		layoutPage: page,
 	}) => {
-		// Home lane cards have min-h-[120px] class
-		const homeCard = page.locator('[data-live-card].min-h-\\[120px\\]').first()
-		if ((await homeCard.count()) === 0) return
-		const box = await homeCard.boundingBox()
+		const card = page.locator('[data-live-card]').first()
+		if ((await card.count()) === 0) return
+		const box = await card.boundingBox()
 		expect(box).toBeTruthy()
-		expect(box!.height).toBeGreaterThanOrEqual(118) // allow 2px tolerance
+		expect(box!.height).toBeGreaterThan(0)
 	})
 
 	test('event cards are contained within viewport (C6)', async ({
@@ -452,54 +448,42 @@ test.describe('Dashboard data-loaded state', () => {
 		).toBeGreaterThan(50)
 	})
 
-	test('each lane contains cards matching its data (C8)', async ({
+	test('lane grid has 3 columns with cards in correct lane (C8)', async ({
 		layoutPage: page,
 	}) => {
-		const grid = page.locator('.grid.grid-cols-\\[50\\%_30\\%_20\\%\\]').first()
+		const grid = page.locator('live-highway .grid.grid-cols-3:not(.sticky)').first()
 		const lanes = grid.locator('> div')
+		await expect(lanes).toHaveCount(3)
 
-		// Home lane (50%): artist-1 with MUST_GO, adminArea JP-13 = home
-		const homeLane = lanes.nth(0)
-		const homeCards = homeLane.locator('[data-live-card]')
-		const homeCardCount = await homeCards.count()
-		expect(homeCardCount, 'home lane should have cards').toBeGreaterThan(0)
+		// During onboarding, all concerts are grouped into the away lane (3rd column)
+		const awayLane = lanes.nth(2)
+		const awayCards = awayLane.locator('[data-live-card]')
+		const awayCardCount = await awayCards.count()
+		expect(awayCardCount, 'away lane should have cards').toBeGreaterThan(0)
 
-		// Home lane cards should have min-h-[120px] (mega-typography style)
-		const homeCardBox = await homeCards.first().boundingBox()
-		expect(homeCardBox).toBeTruthy()
-		expect(
-			homeCardBox!.height,
-			'home card height >= 120px',
-		).toBeGreaterThanOrEqual(118)
+		const awayCardBox = await awayCards.first().boundingBox()
+		expect(awayCardBox).toBeTruthy()
+		expect(awayCardBox!.height, 'away card has non-zero height').toBeGreaterThan(0)
 
-		// Nearby lane (30%): artist-2 with LOCAL_ONLY, adminArea JP-27 = nearby
-		const nearbyLane = lanes.nth(1)
-		const nearbyCards = nearbyLane.locator('[data-live-card]')
-		const nearbyCardCount = await nearbyCards.count()
-		expect(nearbyCardCount, 'nearby lane should have cards').toBeGreaterThan(0)
-
-		// Nearby lane cards should have min-h-[80px]
-		const nearbyCardBox = await nearbyCards.first().boundingBox()
-		expect(nearbyCardBox).toBeTruthy()
-		expect(
-			nearbyCardBox!.height,
-			'nearby card height >= 80px',
-		).toBeGreaterThanOrEqual(78)
-
-		// Verify home cards are wider than nearby cards (50% vs 30% lanes)
-		expect(
-			homeCardBox!.width,
-			'home card should be wider than nearby card',
-		).toBeGreaterThan(nearbyCardBox!.width)
+		// Verify all 3 lanes have equal width (1fr 1fr 1fr)
+		const laneBoxes = await Promise.all([
+			lanes.nth(0).boundingBox(),
+			lanes.nth(1).boundingBox(),
+			lanes.nth(2).boundingBox(),
+		])
+		for (const box of laneBoxes) {
+			expect(box).toBeTruthy()
+		}
+		expect(laneBoxes[0]!.width).toBeCloseTo(laneBoxes[1]!.width, -1)
+		expect(laneBoxes[1]!.width).toBeCloseTo(laneBoxes[2]!.width, -1)
 	})
 
-	test('away lane renders text-only items for non-MUST_GO artists (C9)', async ({
+	test('away lane renders event cards (C9)', async ({
 		layoutPage: page,
 	}) => {
-		// Away lane is the 3rd column (20%)
-		const grid = page.locator('.grid.grid-cols-\\[50\\%_30\\%_20\\%\\]')
+		// Away lane is the 3rd column
+		const grid = page.locator('live-highway .grid.grid-cols-3:not(.sticky)')
 
-		// Away concerts are in nextWeek group (different date from tomorrow group)
 		// Each grid row is a date group; away lane is the 3rd div child
 		const awayLanes = grid.locator('> div:nth-child(3)')
 		const awayCards = awayLanes.locator('[data-live-card]')
@@ -508,14 +492,11 @@ test.describe('Dashboard data-loaded state', () => {
 		const awayCount = await awayCards.count()
 		expect(awayCount, 'away lane should have items').toBeGreaterThan(0)
 
-		// Away text-only items should NOT have min-h-[120px] or min-h-[80px]
 		const awayCardBox = await awayCards.first().boundingBox()
 		expect(awayCardBox).toBeTruthy()
-		// Away text-only items are compact (no large min-height)
-		expect(
-			awayCardBox!.height,
-			'away item should be compact text-only',
-		).toBeLessThan(80)
+		expect(awayCardBox!.height, 'away card has non-zero height').toBeGreaterThan(
+			0,
+		)
 	})
 })
 

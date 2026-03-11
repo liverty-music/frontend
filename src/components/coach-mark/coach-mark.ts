@@ -32,8 +32,13 @@ export class CoachMark {
 		}
 	}
 
+	/**
+	 * Must call hide() (not cleanup()) to reverse ALL side effects of highlight():
+	 * anchor-name on target, overflow on au-viewport, and retry timer.
+	 * cleanup() alone only handles the timer, leaving scroll lock leaked.
+	 */
 	public detaching(): void {
-		this.cleanup()
+		this.hide()
 	}
 
 	private findAndHighlight(elapsed = 0): void {
@@ -68,6 +73,9 @@ export class CoachMark {
 
 		// Set CSS anchor-name on target for tooltip positioning
 		target.style.setProperty('anchor-name', '--coach-target')
+
+		// Lock scroll on the viewport container
+		this.setScrollLock(true)
 
 		// Position the spotlight after render (canvas-based, needs getBoundingClientRect)
 		requestAnimationFrame(() => {
@@ -120,7 +128,19 @@ export class CoachMark {
 			this.currentTarget.style.removeProperty('anchor-name')
 			this.currentTarget = null
 		}
+		this.setScrollLock(false)
 		this.cleanup()
+	}
+
+	private setScrollLock(locked: boolean): void {
+		const viewport = document.querySelector('au-viewport')
+		if (viewport instanceof HTMLElement) {
+			if (locked) {
+				viewport.style.setProperty('overflow', 'hidden')
+			} else {
+				viewport.style.removeProperty('overflow')
+			}
+		}
 	}
 
 	private cleanup(): void {

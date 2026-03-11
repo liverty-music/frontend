@@ -2,8 +2,6 @@ import { IRouter, IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './services/auth-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
-import { IOnboardingService } from './services/onboarding-service'
-
 @route({
 	title: 'Liverty Music',
 	routes: [
@@ -72,17 +70,11 @@ export class MyApp {
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
-	private readonly onboarding = resolve(IOnboardingService)
 	private readonly logger = resolve(ILogger).scopeTo('MyApp')
 
 	private readonly subscriptions: IDisposable[] = []
 
-	private readonly fullscreenRoutes = [
-		'',
-		'welcome',
-		'onboarding/loading',
-		'auth/callback',
-	]
+	private readonly fullscreenRoutes = ['', 'welcome', 'auth/callback']
 
 	public get currentPath(): string {
 		const tree = (
@@ -97,9 +89,7 @@ export class MyApp {
 
 	public get showNav(): boolean {
 		const path = this.currentPath
-		if (this.fullscreenRoutes.some((r) => path === r)) return false
-		if (path === 'discover' && this.onboarding.isOnboarding) return false
-		return true
+		return !this.fullscreenRoutes.some((r) => path === r)
 	}
 
 	public binding(): void {

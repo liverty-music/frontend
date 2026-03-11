@@ -96,14 +96,22 @@
 		}
 	},
 	"dashboard": {
-		"header": {
-			"homeArea": "ホームエリア",
-			"region": "地域",
-			"others": "その他"
+		"lane": {
+			"home": "HOME STAGE",
+			"near": "NEAR STAGE",
+			"away": "AWAY STAGE"
 		},
 		"coachMark": {
-			"tapCard": "見つかりました！カードをタップして詳細を見てみましょう",
-			"customizeNotifications": "通知のカスタマイズはアーティスト画面から行えます 👉"
+			"tapCard": "タップして詳細を見てみよう！",
+			"viewArtists": "アーティスト一覧も見てみよう！"
+		},
+		"celebration": {
+			"complete": "あなただけのタイムテーブルが完成しました！"
+		},
+		"laneIntro": {
+			"home": "地元のライブ情報！",
+			"near": "近くのエリアのライブも！",
+			"away": "全国のライブ情報もチェック！"
 		},
 		"empty": {
 			"title": "予定されているイベントはありません",
@@ -171,6 +179,9 @@
 		"partialFailure": "一部のアーティストのスケジュールを読み込めませんでした（{{failed}}/{{total}}）"
 	},
 	"discovery": {
+		"coachMark": {
+			"viewTimetable": "タイムテーブルを見てみよう！"
+		},
 		"guidance": "バブルをタップしてアーティストをフォロー",
 		"guidanceStart": "好きなアーティストを3組タップしよう！",
 		"guidanceRemaining": "いいね！あと{{remaining}}組！",

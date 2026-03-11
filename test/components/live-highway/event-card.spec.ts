@@ -17,52 +17,6 @@ describe('EventCard', () => {
 		component = container.get(EventCard)
 	})
 
-	describe('backgroundColor', () => {
-		it('should return HSL color based on artist name', () => {
-			// Arrange
-			component.event = {
-				artistName: 'Radiohead',
-				id: 'event-1',
-				artistId: 'artist-1',
-				venueName: 'Venue',
-				locationLabel: 'Tokyo',
-				date: new Date(2026, 2, 15),
-				startTime: '19:00',
-				title: 'Concert',
-				sourceUrl: 'https://example.com',
-			}
-
-			// Act
-			const color = component.backgroundColor
-
-			// Assert
-			expect(color).toMatch(/^hsl\(\d+, \d+%, \d+%\)$/)
-		})
-
-		it('should return same color for same artist name', () => {
-			// Arrange
-			const event: LiveEvent = {
-				artistName: 'Pink Floyd',
-				id: 'event-1',
-				artistId: 'artist-1',
-				venueName: 'Venue',
-				locationLabel: 'Tokyo',
-				date: new Date(2026, 2, 15),
-				startTime: '19:00',
-				title: 'Concert',
-				sourceUrl: 'https://example.com',
-			}
-			component.event = event
-
-			// Act
-			const color1 = component.backgroundColor
-			const color2 = component.backgroundColor
-
-			// Assert
-			expect(color1).toBe(color2)
-		})
-	})
-
 	describe('formattedDate', () => {
 		it('should format date in Japanese locale', () => {
 			// Arrange

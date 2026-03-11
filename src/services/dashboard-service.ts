@@ -4,6 +4,7 @@ import type { DateLaneGroup } from '@buf/liverty-music_schema.bufbuild_es/livert
 import { DI, ILogger, resolve } from 'aurelia'
 import type {
 	DateGroup,
+	HypeLevel,
 	LiveEvent,
 } from '../components/live-highway/live-event'
 import { displayName } from '../constants/iso3166'
@@ -40,7 +41,7 @@ export class DashboardService {
 
 	private protoGroupToDateGroup(
 		group: DateLaneGroup,
-		artistMap: Map<string, { name: string; isMustGo: boolean }>,
+		artistMap: Map<string, { name: string; hypeLevel: HypeLevel }>,
 	): DateGroup {
 		const ld = group.date?.value
 		const jsDate = ld ? new Date(ld.year, ld.month - 1, ld.day) : new Date()
@@ -62,7 +63,7 @@ export class DashboardService {
 				const event = concertToLiveEvent(
 					c,
 					artist?.name ?? '',
-					artist?.isMustGo ?? false,
+					artist?.hypeLevel ?? 'watch',
 				)
 				return event ? [event] : []
 			})
@@ -78,23 +79,38 @@ export class DashboardService {
 
 	private async fetchFollowedArtistMap(
 		signal?: AbortSignal,
-	): Promise<Map<string, { name: string; isMustGo: boolean }>> {
+	): Promise<Map<string, { name: string; hypeLevel: HypeLevel }>> {
 		const followed = await this.followService.listFollowed(signal)
-		const map = new Map<string, { name: string; isMustGo: boolean }>()
+		const map = new Map<string, { name: string; hypeLevel: HypeLevel }>()
 		for (const fa of followed) {
 			map.set(fa.id, {
 				name: fa.name,
-				isMustGo: fa.hype === HypeType.AWAY,
+				hypeLevel: hypeTypeToLevel(fa.hype),
 			})
 		}
 		return map
 	}
 }
 
+function hypeTypeToLevel(hype: HypeType): HypeLevel {
+	switch (hype) {
+		case HypeType.WATCH:
+			return 'watch'
+		case HypeType.HOME:
+			return 'home'
+		case HypeType.NEARBY:
+			return 'nearby'
+		case HypeType.AWAY:
+			return 'away'
+		default:
+			return 'watch'
+	}
+}
+
 function concertToLiveEvent(
 	concert: Concert,
 	artistName: string,
-	isMustGo: boolean,
+	hypeLevel: HypeLevel,
 ): LiveEvent | null {
 	const localDate = concert.localDate?.value
 	if (!localDate) return null
@@ -125,7 +141,7 @@ function concertToLiveEvent(
 		openTime,
 		title: concert.title?.value ?? '',
 		sourceUrl: concert.sourceUrl?.value ?? '',
-		isMustGo,
+		hypeLevel,
 	}
 }
 

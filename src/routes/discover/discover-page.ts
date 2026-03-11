@@ -69,6 +69,11 @@ export class DiscoverPage {
 	public showGuidance = true
 	public guidanceHiding = false
 
+	// Concert search status tracking for dashboard coach mark
+	private readonly concertSearchStatus = new Map<string, 'pending' | 'done'>()
+	private readonly searchTimeouts = new Set<number>()
+	public completedSearchCount = 0
+
 	public get poolBubbles(): ArtistBubble[] {
 		return this.pool.availableBubbles
 	}
@@ -84,11 +89,17 @@ export class DiscoverPage {
 		return this.followedArtists.length
 	}
 
-	public get showCompleteButton(): boolean {
+	public get showDashboardCoachMark(): boolean {
 		return (
 			this.isOnboarding &&
-			this.followedCount >= DiscoverPage.TUTORIAL_FOLLOW_TARGET
+			this.followedCount >= DiscoverPage.TUTORIAL_FOLLOW_TARGET &&
+			this.completedSearchCount >= this.followedCount
 		)
+	}
+
+	public get searchProgress(): number {
+		if (this.followedCount === 0) return 0
+		return this.completedSearchCount / this.followedCount
 	}
 
 	public get guidanceMessage(): string {
@@ -121,6 +132,8 @@ export class DiscoverPage {
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		window.clearTimeout(this.searchDebounceTimer)
 		window.clearTimeout(this.guidanceDismissTimer)
+		for (const t of this.searchTimeouts) window.clearTimeout(t)
+		this.searchTimeouts.clear()
 	}
 
 	private readonly onVisibilityChange = (): void => {
@@ -365,12 +378,45 @@ export class DiscoverPage {
 		}, 400)
 	}
 
-	public async onViewSchedule(): Promise<void> {
-		this.logger.info('Tutorial: advancing to dashboard', {
+	public onCoachMarkTap(): void {
+		this.logger.info('Tutorial: coach mark tapped, advancing to dashboard', {
 			followedCount: this.followedCount,
 		})
 		this.onboarding.setStep(OnboardingStep.DASHBOARD)
-		await this.router.load('/dashboard')
+		void this.router.load('/dashboard')
+	}
+
+	private searchConcertsWithTimeout(artistId: string): void {
+		const timeout = window.setTimeout(() => {
+			this.searchTimeouts.delete(timeout)
+			this.markSearchDone(artistId)
+		}, 15_000)
+		this.searchTimeouts.add(timeout)
+
+		this.concertService
+			.searchNewConcerts(artistId)
+			.then(() => {
+				window.clearTimeout(timeout)
+				this.searchTimeouts.delete(timeout)
+				this.markSearchDone(artistId)
+			})
+			.catch((err) => {
+				window.clearTimeout(timeout)
+				this.searchTimeouts.delete(timeout)
+				this.logger.warn('Background concert search failed', {
+					artistId,
+					error: err,
+				})
+				this.markSearchDone(artistId)
+			})
+	}
+
+	private markSearchDone(artistId: string): void {
+		if (this.concertSearchStatus.get(artistId) === 'done') return
+		this.concertSearchStatus.set(artistId, 'done')
+		this.completedSearchCount = [...this.concertSearchStatus.values()].filter(
+			(s) => s === 'done',
+		).length
 	}
 
 	// --- Data orchestration methods (moved from ArtistDiscoveryService) ---
@@ -478,13 +524,9 @@ export class DiscoverPage {
 				orbIntensity: this.orbIntensity,
 			})
 
-			// Fire-and-forget: pre-populate concert data in the background
-			this.concertService.searchNewConcerts(artist.id).catch((err) => {
-				this.logger.warn('Background concert search failed', {
-					artistId: artist.id,
-					error: err,
-				})
-			})
+			// Track concert search status for dashboard coach mark
+			this.concertSearchStatus.set(artist.id, 'pending')
+			this.searchConcertsWithTimeout(artist.id)
 		} catch (err) {
 			this.logger.error('Failed to follow artist', {
 				artist: artist.name,

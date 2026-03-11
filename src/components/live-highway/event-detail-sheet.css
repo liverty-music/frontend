@@ -1,4 +1,10 @@
-.event-detail-dialog {
+/*
+ * <dialog popover="manual"> sheet with native ::backdrop.
+ * MDN: "Backdrops appear for Popover API elements shown via showPopover()"
+ * — applies to both popover="auto" and popover="manual".
+ */
+
+.event-detail-sheet {
 	position: fixed;
 	inset: auto 0 0;
 
@@ -16,7 +22,7 @@
 		display 300ms ease-out allow-discrete;
 }
 
-.event-detail-dialog[open] {
+.event-detail-sheet:popover-open {
 	transform: translateY(0);
 
 	@starting-style {
@@ -24,27 +30,20 @@
 	}
 }
 
-.event-detail-dialog:not([open]) {
+.event-detail-sheet:not(:popover-open) {
 	transform: translateY(100%);
 }
 
-.event-detail-dialog::backdrop {
+/* Native ::backdrop for popover="manual" — no sibling div needed */
+.event-detail-sheet:popover-open::backdrop {
 	background: oklch(0% 0 0deg / 60%);
 	backdrop-filter: blur(4px);
 	transition:
 		opacity 300ms ease-out,
 		overlay 300ms ease-out allow-discrete,
 		display 300ms ease-out allow-discrete;
-}
-
-.event-detail-dialog[open]::backdrop {
-	opacity: 1;
 
 	@starting-style {
 		opacity: 0;
 	}
-}
-
-.event-detail-dialog:not([open])::backdrop {
-	opacity: 0;
 }

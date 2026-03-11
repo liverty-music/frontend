@@ -3,7 +3,6 @@ import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MyApp } from '../src/my-app'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
-import { IOnboardingService } from '../src/services/onboarding-service'
 
 // Mock all dynamic imports used by the @route decorator on MyApp.
 // Without these mocks, the imports resolve after Vitest tears down the jsdom
@@ -64,7 +63,6 @@ describe('my-app', () => {
 
 	describe('showNav', () => {
 		let mockRouter: Record<string, unknown>
-		let mockOnboarding: { isOnboarding: boolean; currentStep: number }
 		let container: ReturnType<typeof DI.createContainer>
 		let sut: MyApp
 
@@ -78,7 +76,6 @@ describe('my-app', () => {
 
 		beforeEach(() => {
 			mockRouter = {}
-			mockOnboarding = { isOnboarding: false, currentStep: 7 }
 			setCurrentPath('')
 			container = DI.createContainer()
 			container.register(
@@ -86,7 +83,6 @@ describe('my-app', () => {
 				Registration.instance(IRouterEvents, {
 					subscribe: vi.fn(() => ({ dispose: vi.fn() })),
 				}),
-				Registration.instance(IOnboardingService, mockOnboarding),
 				Registration.instance(IErrorBoundaryService, {
 					captureError: vi.fn(),
 					addBreadcrumb: vi.fn(),
@@ -106,21 +102,14 @@ describe('my-app', () => {
 			expect(sut.showNav).toBe(false)
 		})
 
-		it('should return false for discover route during onboarding', () => {
-			mockOnboarding.isOnboarding = true
-			setCurrentPath('discover')
-			expect(sut.showNav).toBe(false)
-		})
-
-		it('should return true for discover route when not onboarding', () => {
-			mockOnboarding.isOnboarding = false
+		it('should return true for discover route', () => {
 			setCurrentPath('discover')
 			expect(sut.showNav).toBe(true)
 		})
 
-		it('should return false for onboarding/loading route', () => {
+		it('should return true for onboarding/loading route', () => {
 			setCurrentPath('onboarding/loading')
-			expect(sut.showNav).toBe(false)
+			expect(sut.showNav).toBe(true)
 		})
 
 		it('should return false for auth/callback route', () => {

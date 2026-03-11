@@ -1,6 +1,7 @@
 <template>
   <import from="./discover-page.css"></import>
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
+  <import from="../../components/coach-mark/coach-mark"></import>
 
   <div class="discover-layout">
 
@@ -45,10 +46,11 @@
 
     <!-- Onboarding guidance (visible only during onboarding) -->
     <div show.bind="isOnboarding" class="onboarding-hud">
-      <div class="progress-dots">
-        <span class="dot ${followedCount >= 1 ? 'filled' : ''}"></span>
-        <span class="dot ${followedCount >= 2 ? 'filled' : ''}"></span>
-        <span class="dot ${followedCount >= 3 ? 'filled' : ''}"></span>
+      <div class="search-progress-bar" show.bind="followedCount > 0">
+        <div
+          class="search-progress-fill"
+          style="width: ${searchProgress * 100}%"
+        ></div>
       </div>
       <p class="hud-message ${guidanceHiding ? 'hiding' : ''}">
         ${guidanceMessage}
@@ -74,15 +76,13 @@
       </div>
     </div>
 
-    <!-- CTA button (onboarding only — normal mode uses bottom nav) -->
-    <div show.bind="showCompleteButton" class="complete-button-wrapper">
-      <button
-        click.trigger="onViewSchedule()"
-        class="complete-button tutorial-cta"
-      >
-        ${$this.i18n?.tr('discovery.generateDashboard') ?? ''}
-      </button>
-    </div>
+    <!-- Coach mark: spotlight dashboard nav when all searches complete -->
+    <coach-mark
+      target-selector="[data-nav-dashboard]"
+      message.bind="$this.i18n?.tr('discovery.coachMark.viewTimetable') ?? 'タイムテーブルを見てみよう！'"
+      active.bind="showDashboardCoachMark"
+      on-tap.bind="() => onCoachMarkTap()"
+    ></coach-mark>
 
     <!-- Search results (shown during search) -->
     <div class="search-results ${isSearchMode ? '' : 'hidden'}">

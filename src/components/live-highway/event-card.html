@@ -1,26 +1,28 @@
 <template>
-  <!-- Home lane: mega-typography, card glow, entrance animation -->
+  <import from="./event-card.css"></import>
+
+  <!-- Home lane card -->
   <div
     if.bind="lane === 'home'"
     data-live-card
     click.trigger="onClick()"
-    style="background-color: ${backgroundColor}"
-    class="rounded-[var(--radius-card)] p-5 mb-3 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[120px] flex items-end shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] animate-[fade-slide-up_400ms_ease-out_both]"
+    artist-color.bind="event.artistName"
+    class="rounded-[var(--radius-card)] p-4 mb-3 cursor-pointer transition-transform duration-200 active:scale-[0.97] flex flex-col justify-end animate-[fade-slide-up_400ms_ease-out_both] hype-${event.hypeLevel}"
   >
-    <span class="text-white font-display font-extrabold text-4xl leading-tight break-words drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+    <span class="artist-name text-white font-display font-extrabold leading-tight [overflow-wrap:break-word] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" style="font-size: clamp(12px, 5cqi, 24px)">
       ${event.artistName}
     </span>
   </div>
 
-  <!-- Nearby lane: medium card with artist + prefecture -->
+  <!-- Nearby lane card -->
   <div
-    if.bind="lane === 'nearby' && !isMutated"
+    if.bind="lane === 'nearby'"
     data-live-card
     click.trigger="onClick()"
-    style="background-color: ${backgroundColor}"
-    class="rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[80px] flex flex-col justify-end shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)] animate-[fade-slide-up_400ms_ease-out_both]"
+    artist-color.bind="event.artistName"
+    class="rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] flex flex-col justify-end animate-[fade-slide-up_400ms_ease-out_both] hype-${event.hypeLevel}"
   >
-    <span class="text-white font-display font-bold text-lg leading-snug break-words">
+    <span class="artist-name text-white font-display font-bold leading-snug [overflow-wrap:break-word]" style="font-size: clamp(12px, 5cqi, 24px)">
       ${event.artistName}
     </span>
     <span class="text-white/70 text-xs mt-1">
@@ -28,55 +30,18 @@
     </span>
   </div>
 
-  <!-- Nearby lane MUTATED: expanded Must Go card -->
+  <!-- Away lane card -->
   <div
-    if.bind="lane === 'nearby' && isMutated"
+    if.bind="lane === 'away'"
     data-live-card
     click.trigger="onClick()"
-    style="background-color: ${backgroundColor}; box-shadow: 0 0 16px ${backgroundColor}66"
-    class="relative rounded-xl p-4 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[100px] flex flex-col justify-end shadow-[0_4px_20px_-4px_rgba(0,0,0,0.4)] animate-[fade-slide-up_400ms_ease-out_both] ring-1 ring-white/20"
+    artist-color.bind="event.artistName"
+    class="rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] flex flex-col justify-end animate-[fade-slide-up_400ms_ease-out_both] hype-${event.hypeLevel}"
   >
-    <span class="absolute top-2 end-2 text-xs bg-black/40 px-1.5 py-0.5 rounded-full">🔥🔥</span>
-    <span class="text-white font-display font-extrabold text-xl leading-snug break-words drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+    <span class="artist-name text-white font-display font-bold leading-snug [overflow-wrap:break-word]" style="font-size: clamp(12px, 5cqi, 24px)">
       ${event.artistName}
     </span>
     <span class="text-white/70 text-xs mt-1">
-      ${event.locationLabel}
-    </span>
-  </div>
-
-  <!-- Away lane: text-only list item -->
-  <div
-    if.bind="lane === 'away' && !isMutated"
-    data-live-card
-    click.trigger="onClick()"
-    class="py-2 px-2 mb-1 cursor-pointer rounded-lg transition-colors duration-200 hover:bg-white/5 active:bg-white/10 flex items-center gap-2 animate-[fade-slide-up_400ms_ease-out_both]"
-  >
-    <span
-      style="background-color: ${backgroundColor}"
-      class="w-2 h-2 rounded-full shrink-0"
-    ></span>
-    <span class="text-text-primary text-sm font-medium truncate">
-      ${event.artistName}
-    </span>
-    <span class="text-text-muted text-xs shrink-0">
-      ${event.locationLabel}
-    </span>
-  </div>
-
-  <!-- Away lane MUTATED: promoted to card style -->
-  <div
-    if.bind="lane === 'away' && isMutated"
-    data-live-card
-    click.trigger="onClick()"
-    style="background-color: ${backgroundColor}"
-    class="relative rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] min-h-[60px] flex flex-col justify-end shadow-[0_2px_12px_-2px_rgba(0,0,0,0.3)] animate-[fade-slide-up_400ms_ease-out_both] ring-1 ring-white/20"
-  >
-    <span class="absolute top-1.5 end-1.5 text-[10px] bg-black/40 px-1 py-0.5 rounded-full">🔥🔥</span>
-    <span class="text-white font-display font-bold text-sm leading-snug break-words">
-      ${event.artistName}
-    </span>
-    <span class="text-white/70 text-[10px] mt-0.5">
       ${event.locationLabel}
     </span>
   </div>

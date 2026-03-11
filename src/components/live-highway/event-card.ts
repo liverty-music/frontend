@@ -1,5 +1,4 @@
 import { bindable, INode, resolve } from 'aurelia'
-import { artistColor } from './color-generator'
 import type { LaneType, LiveEvent } from './live-event'
 
 export class EventCard {
@@ -7,14 +6,6 @@ export class EventCard {
 	@bindable public lane: LaneType = 'home'
 
 	private readonly element = resolve(INode) as HTMLElement
-
-	public get backgroundColor(): string {
-		return artistColor(this.event.artistName)
-	}
-
-	public get isMutated(): boolean {
-		return this.event.isMustGo && this.lane !== 'home'
-	}
 
 	public get formattedDate(): string {
 		return this.event.date.toLocaleDateString('ja-JP', {
