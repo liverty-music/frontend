@@ -1,16 +1,16 @@
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { IArtistServiceClient } from '../../src/services/artist-service-client'
 import { IConcertService } from '../../src/services/concert-service'
+import { IFollowServiceClient } from '../../src/services/follow-service-client'
 import {
 	DashboardService,
 	IDashboardService,
 } from '../../src/services/dashboard-service'
 import { createTestContainer } from '../helpers/create-container'
 import {
-	createMockArtistServiceClient,
 	createMockConcertService,
+	createMockFollowServiceClient,
 } from '../helpers/mock-rpc-clients'
 
 // Helpers to build mock proto-like objects
@@ -41,15 +41,15 @@ function makeDateLaneGroup(
 describe('DashboardService', () => {
 	let sut: DashboardService
 	let container: ReturnType<typeof createTestContainer>
-	let mockArtistService: ReturnType<typeof createMockArtistServiceClient>
+	let mockFollowService: ReturnType<typeof createMockFollowServiceClient>
 	let mockConcertService: ReturnType<typeof createMockConcertService>
 
 	beforeEach(() => {
-		mockArtistService = createMockArtistServiceClient()
+		mockFollowService = createMockFollowServiceClient()
 		mockConcertService = createMockConcertService()
 
 		container = createTestContainer(
-			Registration.instance(IArtistServiceClient, mockArtistService),
+			Registration.instance(IFollowServiceClient, mockFollowService),
 			Registration.instance(IConcertService, mockConcertService),
 		)
 		container.register(DashboardService)
@@ -57,7 +57,7 @@ describe('DashboardService', () => {
 	})
 
 	it('should return empty array when no groups returned', async () => {
-		mockArtistService.listFollowed = vi.fn().mockResolvedValue([])
+		mockFollowService.listFollowed = vi.fn().mockResolvedValue([])
 		mockConcertService.listByFollower = vi.fn().mockResolvedValue([])
 
 		const result = await sut.loadDashboardEvents()
@@ -66,7 +66,7 @@ describe('DashboardService', () => {
 	})
 
 	it('should map server-provided DateLaneGroup to frontend DateGroup', async () => {
-		mockArtistService.listFollowed = vi.fn().mockResolvedValue([
+		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
 			{ id: 'artist-1', name: 'Artist One', hype: 0 },
 			{ id: 'artist-2', name: 'Artist Two', hype: 0 },
 		])
@@ -126,7 +126,7 @@ describe('DashboardService', () => {
 	})
 
 	it('should handle listByFollower RPC failure gracefully', async () => {
-		mockArtistService.listFollowed = vi
+		mockFollowService.listFollowed = vi
 			.fn()
 			.mockResolvedValue([{ id: 'artist-1', name: 'Artist One', hype: 0 }])
 
@@ -138,7 +138,7 @@ describe('DashboardService', () => {
 	})
 
 	it('should format concert times correctly', async () => {
-		mockArtistService.listFollowed = vi
+		mockFollowService.listFollowed = vi
 			.fn()
 			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', hype: 0 }])
 
@@ -166,7 +166,7 @@ describe('DashboardService', () => {
 	})
 
 	it('should skip concerts without localDate', async () => {
-		mockArtistService.listFollowed = vi
+		mockFollowService.listFollowed = vi
 			.fn()
 			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', hype: 0 }])
 
@@ -201,7 +201,7 @@ describe('DashboardService', () => {
 	})
 
 	it('should map concerts in all three lanes correctly', async () => {
-		mockArtistService.listFollowed = vi
+		mockFollowService.listFollowed = vi
 			.fn()
 			.mockResolvedValue([{ id: 'artist-1', name: 'Artist One', hype: 0 }])
 

@@ -2,8 +2,8 @@ import { I18N } from '@aurelia/i18n'
 import { IRouter, type NavigationInstruction } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Toast } from '../../components/toast-notification/toast'
-import { IArtistServiceClient } from '../../services/artist-service-client'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
+import { IFollowServiceClient } from '../../services/follow-service-client'
 import { ILoadingSequenceService } from '../../services/loading-sequence-service'
 import { ILocalArtistClient } from '../../services/local-artist-client'
 import { IOnboardingService } from '../../services/onboarding-service'
@@ -11,7 +11,7 @@ export class LoadingSequence {
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('LoadingSequence')
 	private readonly loadingService = resolve(ILoadingSequenceService)
-	private readonly artistClient = resolve(IArtistServiceClient)
+	private readonly followClient = resolve(IFollowServiceClient)
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly ea = resolve(IEventAggregator)
@@ -59,7 +59,7 @@ export class LoadingSequence {
 		try {
 			const abortController = new AbortController()
 			const backendFollowedArtists =
-				await this.artistClient.listFollowedAsBubbles(abortController.signal)
+				await this.followClient.listFollowedAsBubbles(abortController.signal)
 
 			if (backendFollowedArtists.length > 0) {
 				this.logger.info(

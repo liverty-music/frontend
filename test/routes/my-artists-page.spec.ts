@@ -3,11 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Toast } from '../../src/components/toast-notification/toast'
 import { createTestContainer } from '../helpers/create-container'
 
-const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
+const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-vi.mock('../../src/services/artist-service-client', () => ({
-	IArtistServiceClient: mockIArtistServiceClient,
+vi.mock('../../src/services/follow-service-client', () => ({
+	IFollowServiceClient: mockIFollowServiceClient,
 }))
 
 vi.mock('@aurelia/router', () => ({
@@ -63,7 +63,7 @@ describe('MyArtistsPage', () => {
 		unfollow: ReturnType<typeof vi.fn>
 		setHype: ReturnType<typeof vi.fn>
 	}
-	let mockArtistService: {
+	let mockFollowService: {
 		listFollowed: ReturnType<typeof vi.fn>
 		getClient: () => typeof mockGrpcClient
 	}
@@ -76,7 +76,7 @@ describe('MyArtistsPage', () => {
 			setHype: vi.fn().mockResolvedValue({}),
 		}
 
-		mockArtistService = {
+		mockFollowService = {
 			listFollowed: vi
 				.fn()
 				.mockResolvedValue([
@@ -96,7 +96,7 @@ describe('MyArtistsPage', () => {
 		}
 
 		const container = createTestContainer(
-			Registration.instance(mockIArtistServiceClient, mockArtistService),
+			Registration.instance(mockIFollowServiceClient, mockFollowService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 		)
@@ -135,7 +135,7 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should handle empty response', async () => {
-			mockArtistService.listFollowed.mockResolvedValue([])
+			mockFollowService.listFollowed.mockResolvedValue([])
 			await sut.loading()
 
 			expect(sut.artists).toHaveLength(0)
@@ -143,7 +143,7 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should handle RPC errors gracefully', async () => {
-			mockArtistService.listFollowed.mockRejectedValue(
+			mockFollowService.listFollowed.mockRejectedValue(
 				new Error('Network error'),
 			)
 			await sut.loading()
@@ -330,7 +330,7 @@ describe('MyArtistsPage', () => {
 			}
 
 			const container = createTestContainer(
-				Registration.instance(mockIArtistServiceClient, mockArtistService),
+				Registration.instance(mockIFollowServiceClient, mockFollowService),
 				Registration.instance(mockIRouter, mockRouter),
 				Registration.instance(mockIOnboardingService, mockOnboarding),
 				Registration.instance(IEventAggregator, { publish: vi.fn() }),

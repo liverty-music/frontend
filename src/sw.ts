@@ -53,7 +53,7 @@ self.addEventListener('install', (event) => {
 })
 
 // ---------------------------------------------------------------------------
-// Background Sync for artist operations (follow / unfollow / hype).
+// Background Sync for artist operations (listTop / listSimilar / search).
 // NetworkOnly avoids cache.put() on POST responses (Cache API is GET-only).
 // ---------------------------------------------------------------------------
 registerRoute(
@@ -62,6 +62,23 @@ registerRoute(
 	new NetworkOnly({
 		plugins: [
 			new BackgroundSyncPlugin('artist-ops-queue', {
+				maxRetentionTime: 7 * 24 * 60, // 7 days (minutes)
+			}),
+		],
+	}),
+	'POST',
+)
+
+// ---------------------------------------------------------------------------
+// Background Sync for follow operations (follow / unfollow / hype).
+// NetworkOnly avoids cache.put() on POST responses (Cache API is GET-only).
+// ---------------------------------------------------------------------------
+registerRoute(
+	({ url }) =>
+		url.pathname.includes('liverty_music.rpc.follow.v1.FollowService'),
+	new NetworkOnly({
+		plugins: [
+			new BackgroundSyncPlugin('follow-ops-queue', {
 				maxRetentionTime: 7 * 24 * 60, // 7 days (minutes)
 			}),
 		],

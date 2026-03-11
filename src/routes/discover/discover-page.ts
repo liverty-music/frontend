@@ -9,6 +9,7 @@ import {
 } from '../../services/artist-service-client'
 import { BubblePool } from '../../services/bubble-pool'
 import { IConcertService } from '../../services/concert-service'
+import { IFollowServiceClient } from '../../services/follow-service-client'
 import { ILocalArtistClient } from '../../services/local-artist-client'
 import {
 	IOnboardingService,
@@ -30,6 +31,7 @@ const GENRE_TAGS = [
 
 export class DiscoverPage {
 	private readonly artistClient = resolve(IArtistServiceClient)
+	private readonly followClient = resolve(IFollowServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
@@ -470,7 +472,7 @@ export class DiscoverPage {
 		this.poolFollowedIds = new Set(this.poolFollowedIds).add(artist.id)
 
 		try {
-			await this.artistClient.follow(artist.id, artist.name)
+			await this.followClient.follow(artist.id, artist.name)
 			this.logger.info('Artist followed', {
 				followed: this.followedArtists.length,
 				orbIntensity: this.orbIntensity,

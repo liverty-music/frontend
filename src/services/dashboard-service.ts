@@ -1,5 +1,5 @@
-import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
 import type { DateLaneGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
 import type {
@@ -7,8 +7,8 @@ import type {
 	LiveEvent,
 } from '../components/live-highway/live-event'
 import { displayName } from '../constants/iso3166'
-import { IArtistServiceClient } from './artist-service-client'
 import { IConcertService } from './concert-service'
+import { IFollowServiceClient } from './follow-service-client'
 
 export const IDashboardService = DI.createInterface<IDashboardService>(
 	'IDashboardService',
@@ -20,7 +20,7 @@ export interface IDashboardService extends DashboardService {}
 export class DashboardService {
 	private readonly logger = resolve(ILogger).scopeTo('DashboardService')
 	private readonly concertService = resolve(IConcertService)
-	private readonly artistService = resolve(IArtistServiceClient)
+	private readonly followService = resolve(IFollowServiceClient)
 
 	public async loadDashboardEvents(signal?: AbortSignal): Promise<DateGroup[]> {
 		this.logger.info('Loading dashboard events')
@@ -79,7 +79,7 @@ export class DashboardService {
 	private async fetchFollowedArtistMap(
 		signal?: AbortSignal,
 	): Promise<Map<string, { name: string; isMustGo: boolean }>> {
-		const followed = await this.artistService.listFollowed(signal)
+		const followed = await this.followService.listFollowed(signal)
 		const map = new Map<string, { name: string; isMustGo: boolean }>()
 		for (const fa of followed) {
 			map.set(fa.id, {

@@ -5,11 +5,11 @@ import { createTestContainer } from '../helpers/create-container'
 import { createMockErrorBoundary } from '../helpers/mock-error-boundary'
 import { createMockLoadingSequenceService } from '../helpers/mock-loading-sequence'
 import { createMockRouter } from '../helpers/mock-router'
-import { createMockArtistServiceClient } from '../helpers/mock-rpc-clients'
+import { createMockFollowServiceClient } from '../helpers/mock-rpc-clients'
 import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIRouter = DI.createInterface('IRouter')
-const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
+const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockILoadingSequenceService = DI.createInterface(
 	'ILoadingSequenceService',
 )
@@ -21,8 +21,8 @@ vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
 }))
 
-vi.mock('../../src/services/artist-service-client', () => ({
-	IArtistServiceClient: mockIArtistServiceClient,
+vi.mock('../../src/services/follow-service-client', () => ({
+	IFollowServiceClient: mockIFollowServiceClient,
 }))
 
 vi.mock('../../src/services/loading-sequence-service', () => ({
@@ -66,7 +66,7 @@ const { LoadingSequence } = await import(
 describe('LoadingSequence', () => {
 	let sut: InstanceType<typeof LoadingSequence>
 	let mockRouter: ReturnType<typeof createMockRouter>
-	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
+	let mockFollowClient: ReturnType<typeof createMockFollowServiceClient>
 	let mockLoadingService: ReturnType<typeof createMockLoadingSequenceService>
 	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockErrorBoundary: ReturnType<typeof createMockErrorBoundary>
@@ -85,7 +85,7 @@ describe('LoadingSequence', () => {
 		vi.useFakeTimers()
 
 		mockRouter = createMockRouter()
-		mockArtistClient = createMockArtistServiceClient()
+		mockFollowClient = createMockFollowServiceClient()
 		mockLoadingService = createMockLoadingSequenceService()
 		mockEa = createMockEventAggregator()
 		mockErrorBoundary = createMockErrorBoundary()
@@ -102,7 +102,7 @@ describe('LoadingSequence', () => {
 
 		const container = createTestContainer(
 			Registration.instance(mockIRouter, mockRouter),
-			Registration.instance(mockIArtistServiceClient, mockArtistClient),
+			Registration.instance(mockIFollowServiceClient, mockFollowClient),
 			Registration.instance(mockILoadingSequenceService, mockLoadingService),
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIErrorBoundaryService, mockErrorBoundary),
@@ -121,7 +121,7 @@ describe('LoadingSequence', () => {
 	describe('canLoad', () => {
 		it('should redirect to dashboard when backend has followed artists', async () => {
 			;(
-				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+				mockFollowClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
 			).mockResolvedValue([{ id: 'a1', name: 'Artist 1' }])
 
 			const result = await sut.canLoad()
@@ -131,7 +131,7 @@ describe('LoadingSequence', () => {
 
 		it('should redirect to discovery when no followed artists anywhere', async () => {
 			;(
-				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+				mockFollowClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
 			).mockResolvedValue([])
 			mockLocalClient.followedCount = 0
 
@@ -142,7 +142,7 @@ describe('LoadingSequence', () => {
 
 		it('should allow access when local followed artists exist but none in backend', async () => {
 			;(
-				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+				mockFollowClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
 			).mockResolvedValue([])
 			mockLocalClient.followedCount = 1
 
@@ -153,7 +153,7 @@ describe('LoadingSequence', () => {
 
 		it('should fallback to local state when backend fetch fails with local artists', async () => {
 			;(
-				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+				mockFollowClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
 			).mockRejectedValue(new Error('network error'))
 			mockLocalClient.followedCount = 1
 
@@ -164,7 +164,7 @@ describe('LoadingSequence', () => {
 
 		it('should redirect to discovery when backend fails and no local artists', async () => {
 			;(
-				mockArtistClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
+				mockFollowClient.listFollowedAsBubbles as ReturnType<typeof vi.fn>
 			).mockRejectedValue(new Error('network error'))
 			mockLocalClient.followedCount = 0
 

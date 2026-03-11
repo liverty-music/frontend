@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import type { IArtistServiceClient } from '../../src/services/artist-service-client'
 import type { IAuthService } from '../../src/services/auth-service'
 import type { IConcertService } from '../../src/services/concert-service'
+import type { IFollowServiceClient } from '../../src/services/follow-service-client'
 import type { IUserService } from '../../src/services/user-service'
 
 /**
@@ -21,18 +22,28 @@ export function createMockConcertService(): Partial<IConcertService> {
  */
 export function createMockArtistServiceClient(): Partial<IArtistServiceClient> {
 	return {
-		listFollowed: vi.fn().mockResolvedValue([]),
-		follow: vi.fn().mockResolvedValue(undefined),
-		unfollow: vi.fn().mockResolvedValue(undefined),
 		listTop: vi.fn().mockResolvedValue([]),
 		listSimilar: vi.fn().mockResolvedValue([]),
 		search: vi.fn().mockResolvedValue([]),
+		getClient: vi.fn().mockReturnValue({
+			getTopArtists: vi.fn().mockResolvedValue({ artists: [] }),
+			getSimilarArtists: vi.fn().mockResolvedValue({ artists: [] }),
+		}),
+	}
+}
+
+/**
+ * Creates a mock implementation of IFollowServiceClient for testing.
+ */
+export function createMockFollowServiceClient(): Partial<IFollowServiceClient> {
+	return {
+		listFollowed: vi.fn().mockResolvedValue([]),
+		follow: vi.fn().mockResolvedValue(undefined),
+		unfollow: vi.fn().mockResolvedValue(undefined),
 		listFollowedAsBubbles: vi.fn().mockResolvedValue([]),
 		getClient: vi.fn().mockReturnValue({
 			listFollowed: vi.fn().mockResolvedValue({ artists: [] }),
-			getTopArtists: vi.fn().mockResolvedValue({ artists: [] }),
-			getSimilarArtists: vi.fn().mockResolvedValue({ artists: [] }),
-			followArtist: vi.fn().mockResolvedValue({}),
+			follow: vi.fn().mockResolvedValue({}),
 			unfollow: vi.fn().mockResolvedValue({}),
 			setHype: vi.fn().mockResolvedValue({}),
 		}),
