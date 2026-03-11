@@ -13,6 +13,11 @@ import {
 export type LaneIntroPhase = 'home' | 'near' | 'away' | 'card' | 'done'
 
 export class Dashboard {
+	// Static flag persists across route-component re-creation for the SPA session
+	// lifetime. Prevents celebration overlay re-triggering on every navigation
+	// to /dashboard while onboarding step is DASHBOARD.
+	private static celebrationShown = false
+
 	public dateGroups: DateGroup[] = []
 	public needsRegion = false
 	public loadError: unknown = null
@@ -48,7 +53,11 @@ export class Dashboard {
 	public async loading(): Promise<void> {
 		this.needsRegion = !UserHomeSelector.getStoredHome()
 		this.showCelebration =
-			this.onboarding.currentStep === OnboardingStep.DASHBOARD
+			this.onboarding.currentStep === OnboardingStep.DASHBOARD &&
+			!Dashboard.celebrationShown
+		if (this.showCelebration) {
+			Dashboard.celebrationShown = true
+		}
 		this.loadData()
 	}
 

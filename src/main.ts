@@ -28,6 +28,7 @@ import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
 import { ITicketService } from './services/ticket-service'
 import { IUserService } from './services/user-service'
+import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
 import { DateValueConverter } from './value-converters/date'
 
 // Initialize OpenTelemetry before Aurelia startup
@@ -98,6 +99,7 @@ Aurelia
 	.register(IProofService)
 	.register(BottomNavBar)
 	.register(AuthHook)
+	.register(ArtistColorCustomAttribute)
 	.register(DateValueConverter)
 	// To use HTML5 pushState routes, replace previous line with the following
 	// customized router config.

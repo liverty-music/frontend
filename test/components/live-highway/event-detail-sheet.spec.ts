@@ -105,18 +105,6 @@ describe('EventDetailSheet', () => {
 		})
 	})
 
-	describe('backgroundColor', () => {
-		it('should return an hsl color string when event exists', () => {
-			sut.event = makeEvent()
-			expect(sut.backgroundColor).toMatch(/^hsl\(/)
-		})
-
-		it('should return default grey when no event', () => {
-			sut.event = null
-			expect(sut.backgroundColor).toBe('hsl(0, 0%, 20%)')
-		})
-	})
-
 	describe('open / close', () => {
 		it('should open with event and push history state', () => {
 			const pushSpy = vi.spyOn(history, 'pushState')

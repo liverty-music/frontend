@@ -1,11 +1,14 @@
 const SATURATION = 65
 const LIGHTNESS = 60
 
-export function artistColor(name: string): string {
+export function artistHue(name: string): number {
 	let hash = 0
 	for (const char of name) {
 		hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0
 	}
-	const hue = ((hash % 360) + 360) % 360
-	return `hsl(${hue}, ${SATURATION}%, ${LIGHTNESS}%)`
+	return ((hash % 360) + 360) % 360
+}
+
+export function artistColor(name: string): string {
+	return `hsl(${artistHue(name)}, ${SATURATION}%, ${LIGHTNESS}%)`
 }

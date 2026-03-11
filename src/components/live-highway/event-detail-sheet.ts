@@ -4,7 +4,6 @@ import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
-import { artistColor } from './color-generator'
 import type { LiveEvent } from './live-event'
 
 export class EventDetailSheet {
@@ -13,25 +12,22 @@ export class EventDetailSheet {
 	public isOpen = false
 	public dragOffset = 0
 
-	private sheetElement!: HTMLElement
+	private sheetElement!: HTMLDialogElement
 	private readonly onboarding = resolve(IOnboardingService)
 	private touchStartY = 0
 	private isDragging = false
 	private readonly DISMISS_THRESHOLD = 100
+	private triggerElement: HTMLElement | null = null
 
 	private get isDismissBlocked(): boolean {
 		return this.onboarding.currentStep === OnboardingStep.DETAIL
 	}
 
+	// Arrow function preserves `this` binding for add/removeEventListener
 	private readonly onKeyDown = (e: KeyboardEvent): void => {
 		if (e.key === 'Escape' && this.isOpen && !this.isDismissBlocked) {
 			this.close()
 		}
-	}
-
-	public get backgroundColor(): string {
-		if (!this.event) return 'hsl(0, 0%, 20%)'
-		return artistColor(this.event.artistName)
 	}
 
 	public get googleMapsUrl(): string {
@@ -66,10 +62,12 @@ export class EventDetailSheet {
 	}
 
 	public open(event: LiveEvent): void {
+		this.triggerElement = document.activeElement as HTMLElement | null
 		this.event = event
 		this.isOpen = true
 		this.dragOffset = 0
 		this.sheetElement.showPopover()
+		this.sheetElement.focus()
 		document.addEventListener('keydown', this.onKeyDown)
 		history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 	}
@@ -79,12 +77,18 @@ export class EventDetailSheet {
 		this.dragOffset = 0
 		this.sheetElement.hidePopover()
 		document.removeEventListener('keydown', this.onKeyDown)
+		this.triggerElement?.focus()
+		this.triggerElement = null
 		history.replaceState(null, '', '/dashboard')
 	}
 
-	public onBackdropTap(): void {
-		if (this.isDismissBlocked) return
-		this.close()
+	/**
+	 * Unconditional cleanup on component detach.
+	 * Navigating away while the sheet is open skips close(), so the keydown
+	 * listener must be removed here to prevent leaks and GC retention.
+	 */
+	public detaching(): void {
+		document.removeEventListener('keydown', this.onKeyDown)
 	}
 
 	public onBackdropClick(e: Event): void {

@@ -32,8 +32,13 @@ export class CoachMark {
 		}
 	}
 
+	/**
+	 * Must call hide() (not cleanup()) to reverse ALL side effects of highlight():
+	 * anchor-name on target, overflow on au-viewport, and retry timer.
+	 * cleanup() alone only handles the timer, leaving scroll lock leaked.
+	 */
 	public detaching(): void {
-		this.cleanup()
+		this.hide()
 	}
 
 	private findAndHighlight(elapsed = 0): void {
