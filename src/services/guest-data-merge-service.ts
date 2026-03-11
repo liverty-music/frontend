@@ -55,7 +55,7 @@ export class GuestDataMergeService {
 		// Set hype (best-effort)
 		for (const artist of artists) {
 			const hype = this.mapHype(artist.hype)
-			if (hype === HypeType.ANYWHERE) {
+			if (hype === HypeType.AWAY) {
 				// ANYWHERE is the default, skip the RPC
 				continue
 			}
@@ -89,10 +89,10 @@ export class GuestDataMergeService {
 				return HypeType.WATCH
 			case 'HOME':
 				return HypeType.HOME
-			case 'ANYWHERE':
-				return HypeType.ANYWHERE
+			case 'AWAY':
+				return HypeType.AWAY
 			default:
-				return HypeType.ANYWHERE
+				return HypeType.AWAY
 		}
 	}
 }

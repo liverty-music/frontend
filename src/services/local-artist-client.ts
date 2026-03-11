@@ -4,7 +4,7 @@ import { StorageKeys } from '../constants/storage-keys'
 export interface LocalFollowedArtist {
 	id: string
 	name: string
-	hype: 'WATCH' | 'HOME' | 'NEARBY' | 'ANYWHERE'
+	hype: 'WATCH' | 'HOME' | 'NEARBY' | 'AWAY'
 }
 
 export const ILocalArtistClient = DI.createInterface<ILocalArtistClient>(
@@ -48,7 +48,7 @@ export class LocalArtistClient {
 			this.logger.debug('Artist already followed locally', { id })
 			return
 		}
-		artists.push({ id, name, hype: 'ANYWHERE' })
+		artists.push({ id, name, hype: 'AWAY' })
 		localStorage.setItem(
 			StorageKeys.guestFollowedArtists,
 			JSON.stringify(artists),

@@ -84,7 +84,7 @@ export class DashboardService {
 		for (const fa of followed) {
 			map.set(fa.id, {
 				name: fa.name,
-				isMustGo: fa.hype === HypeType.ANYWHERE,
+				isMustGo: fa.hype === HypeType.AWAY,
 			})
 		}
 		return map

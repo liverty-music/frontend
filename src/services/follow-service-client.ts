@@ -90,7 +90,7 @@ export class FollowServiceClient {
 		return response.artists.map((fa) => ({
 			id: fa.artist?.id?.value ?? '',
 			name: fa.artist?.name?.value ?? '',
-			hype: fa.hype ?? HypeType.ANYWHERE,
+			hype: fa.hype ?? HypeType.AWAY,
 		}))
 	}
 
@@ -108,9 +108,7 @@ export class FollowServiceClient {
 	}
 }
 
-function mapLocalHype(
-	level: 'WATCH' | 'HOME' | 'NEARBY' | 'ANYWHERE',
-): HypeType {
+function mapLocalHype(level: 'WATCH' | 'HOME' | 'NEARBY' | 'AWAY'): HypeType {
 	switch (level) {
 		case 'WATCH':
 			return HypeType.WATCH
@@ -118,10 +116,10 @@ function mapLocalHype(
 			return HypeType.HOME
 		case 'NEARBY':
 			return HypeType.NEARBY
-		case 'ANYWHERE':
-			return HypeType.ANYWHERE
+		case 'AWAY':
+			return HypeType.AWAY
 		default:
-			return HypeType.ANYWHERE
+			return HypeType.AWAY
 	}
 }
 
