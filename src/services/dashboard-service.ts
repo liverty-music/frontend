@@ -100,7 +100,7 @@ function hypeTypeToLevel(hype: HypeType): HypeLevel {
 			return 'home'
 		case HypeType.NEARBY:
 			return 'nearby'
-		case HypeType.ANYWHERE:
+		case HypeType.AWAY:
 			return 'away'
 		default:
 			return 'watch'

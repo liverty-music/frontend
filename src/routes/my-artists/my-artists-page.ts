@@ -25,7 +25,7 @@ export const HYPE_META: Record<number, { labelKey: string; icon: string }> = {
 	[HypeType.WATCH]: { labelKey: 'hype.watch', icon: '\u{1F440}' },
 	[HypeType.HOME]: { labelKey: 'hype.home', icon: '\u{1F525}' },
 	[HypeType.NEARBY]: { labelKey: 'hype.nearby', icon: '\u{1F525}\u{1F525}' },
-	[HypeType.ANYWHERE]: {
+	[HypeType.AWAY]: {
 		labelKey: 'hype.away',
 		icon: '\u{1F525}\u{1F525}\u{1F525}',
 	},
@@ -35,7 +35,7 @@ export const HYPE_LEVELS = [
 	HypeType.WATCH,
 	HypeType.HOME,
 	HypeType.NEARBY,
-	HypeType.ANYWHERE,
+	HypeType.AWAY,
 ] as const
 
 export type ViewMode = 'list' | 'grid'
@@ -473,7 +473,7 @@ export class MyArtistsPage {
 	}
 
 	public tileSpan(artist: FollowedArtist): string {
-		return artist.hype === HypeType.ANYWHERE ? 'col-span-2 row-span-2' : ''
+		return artist.hype === HypeType.AWAY ? 'col-span-2 row-span-2' : ''
 	}
 
 	// --- Grid long-press touch handler ---
