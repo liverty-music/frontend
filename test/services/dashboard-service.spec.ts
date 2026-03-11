@@ -2,11 +2,11 @@ import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_musi
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IConcertService } from '../../src/services/concert-service'
-import { IFollowServiceClient } from '../../src/services/follow-service-client'
 import {
 	DashboardService,
 	IDashboardService,
 } from '../../src/services/dashboard-service'
+import { IFollowServiceClient } from '../../src/services/follow-service-client'
 import { createTestContainer } from '../helpers/create-container'
 import {
 	createMockConcertService,
