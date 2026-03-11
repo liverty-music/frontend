@@ -1,16 +1,14 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
-import {
-	ArtistId,
-	HypeType,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
+import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
+import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../components/live-highway/color-generator'
 import {
 	Toast,
 	type ToastHandle,
 } from '../../components/toast-notification/toast'
-import { IArtistServiceClient } from '../../services/artist-service-client'
+import { IFollowServiceClient } from '../../services/follow-service-client'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -84,7 +82,7 @@ export class MyArtistsPage {
 		const meta = HYPE_META[level]
 		return meta ? this.i18n.tr(meta.labelKey) : ''
 	}
-	private readonly artistService = resolve(IArtistServiceClient)
+	private readonly followService = resolve(IFollowServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
@@ -108,7 +106,7 @@ export class MyArtistsPage {
 		this.abortController = new AbortController()
 
 		try {
-			const followed = await this.artistService.listFollowed(
+			const followed = await this.followService.listFollowed(
 				this.abortController.signal,
 			)
 			this.artists = followed.map((fa) => ({
@@ -267,7 +265,7 @@ export class MyArtistsPage {
 
 	private commitUnfollow(artist: FollowedArtist, originalIndex: number): void {
 		// Fire-and-forget RPC with 1 retry
-		const client = this.artistService.getClient()
+		const client = this.followService.getClient()
 		const req = { artistId: new ArtistId({ value: artist.id }) }
 		client
 			.unfollow(req)
@@ -374,7 +372,7 @@ export class MyArtistsPage {
 		this.closeHypeSelector()
 
 		// Fire-and-forget RPC with 1 retry
-		const client = this.artistService.getClient()
+		const client = this.followService.getClient()
 		const req = {
 			artistId: new ArtistId({ value: artistId }),
 			hype: level,
@@ -448,7 +446,7 @@ export class MyArtistsPage {
 		if (prev === level) return
 
 		artist.hype = level
-		const client = this.artistService.getClient()
+		const client = this.followService.getClient()
 		const req = {
 			artistId: new ArtistId({ value: artist.id }),
 			hype: level,

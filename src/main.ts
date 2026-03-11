@@ -14,6 +14,7 @@ import { IConcertService } from './services/concert-service'
 import { IDashboardService } from './services/dashboard-service'
 import { IEntryService } from './services/entry-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
+import { IFollowServiceClient } from './services/follow-service-client'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
 import { IGuestDataMergeService } from './services/guest-data-merge-service'
 import { ILocalArtistClient } from './services/local-artist-client'
@@ -82,6 +83,7 @@ Aurelia
 	.register(IAuthService)
 	.register(IUserService)
 	.register(IArtistServiceClient)
+	.register(IFollowServiceClient)
 	.register(IConcertService)
 	.register(IDashboardService)
 	.register(IOnboardingService)

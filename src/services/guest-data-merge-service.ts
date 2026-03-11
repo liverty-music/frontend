@@ -1,9 +1,7 @@
-import {
-	ArtistId,
-	HypeType,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
+import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
+import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
-import { IArtistServiceClient } from './artist-service-client'
+import { IFollowServiceClient } from './follow-service-client'
 import {
 	ILocalArtistClient,
 	type LocalFollowedArtist,
@@ -19,7 +17,7 @@ export interface IGuestDataMergeService extends GuestDataMergeService {}
 
 export class GuestDataMergeService {
 	private readonly logger = resolve(ILogger).scopeTo('GuestDataMergeService')
-	private readonly artistService = resolve(IArtistServiceClient)
+	private readonly followService = resolve(IFollowServiceClient)
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly onboarding = resolve(IOnboardingService)
 
@@ -35,7 +33,7 @@ export class GuestDataMergeService {
 		})
 
 		// Follow each artist (best-effort)
-		const client = this.artistService.getClient()
+		const client = this.followService.getClient()
 		for (const artist of artists) {
 			try {
 				await client.follow({
