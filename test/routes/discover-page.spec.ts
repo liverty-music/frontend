@@ -7,10 +7,12 @@ import { createMockRouter } from '../helpers/mock-router'
 import {
 	createMockArtistServiceClient,
 	createMockConcertService,
+	createMockFollowServiceClient,
 } from '../helpers/mock-rpc-clients'
 import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
+const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockIConcertService = DI.createInterface('IConcertService')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
@@ -22,6 +24,10 @@ vi.mock('@aurelia/router', () => ({
 
 vi.mock('../../src/services/artist-service-client', () => ({
 	IArtistServiceClient: mockIArtistServiceClient,
+}))
+
+vi.mock('../../src/services/follow-service-client', () => ({
+	IFollowServiceClient: mockIFollowServiceClient,
 }))
 
 vi.mock('../../src/services/concert-service', () => ({
@@ -59,6 +65,7 @@ function makeBubble(id: string, name: string): ArtistBubble {
 describe('DiscoverPage', () => {
 	let sut: InstanceType<typeof DiscoverPage>
 	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
+	let mockFollowClient: ReturnType<typeof createMockFollowServiceClient>
 	let mockConcert: ReturnType<typeof createMockConcertService>
 	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockRouter: ReturnType<typeof createMockRouter>
@@ -77,6 +84,7 @@ describe('DiscoverPage', () => {
 		vi.useFakeTimers()
 
 		mockArtistClient = createMockArtistServiceClient()
+		mockFollowClient = createMockFollowServiceClient()
 		mockConcert = createMockConcertService()
 		mockEa = createMockEventAggregator()
 		mockRouter = createMockRouter()
@@ -93,6 +101,7 @@ describe('DiscoverPage', () => {
 
 		const container = createTestContainer(
 			Registration.instance(mockIArtistServiceClient, mockArtistClient),
+			Registration.instance(mockIFollowServiceClient, mockFollowClient),
 			Registration.instance(mockIConcertService, mockConcert),
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIRouter, mockRouter),
@@ -233,7 +242,7 @@ describe('DiscoverPage', () => {
 
 	describe('onFollowFromSearch', () => {
 		it('should follow artist and check live events', async () => {
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
 			)
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -242,12 +251,12 @@ describe('DiscoverPage', () => {
 
 			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
 
-			expect(mockArtistClient.follow).toHaveBeenCalledWith('a1', 'Artist')
+			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist')
 		})
 
 		it('should not follow already-followed artist', async () => {
 			// Follow first
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
 			)
 			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
@@ -255,13 +264,13 @@ describe('DiscoverPage', () => {
 			// Try to follow again
 			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
 
-			expect(mockArtistClient.follow).toHaveBeenCalledTimes(1)
+			expect(mockFollowClient.follow).toHaveBeenCalledTimes(1)
 		})
 	})
 
 	describe('onArtistSelected', () => {
 		it('should follow artist and request similar artists via event detail', async () => {
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
 			)
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -275,11 +284,11 @@ describe('DiscoverPage', () => {
 
 			await sut.onArtistSelected(event)
 
-			expect(mockArtistClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
+			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
 		})
 
 		it('should update orbIntensity after following', async () => {
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
 			)
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -300,7 +309,7 @@ describe('DiscoverPage', () => {
 		})
 
 		it('should skip if artist already followed', async () => {
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
 			)
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -315,11 +324,11 @@ describe('DiscoverPage', () => {
 			await sut.onArtistSelected(event)
 			await sut.onArtistSelected(event)
 
-			expect(mockArtistClient.follow).toHaveBeenCalledTimes(1)
+			expect(mockFollowClient.follow).toHaveBeenCalledTimes(1)
 		})
 
 		it('should show toast when artist has upcoming live events', async () => {
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
 			)
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -342,7 +351,7 @@ describe('DiscoverPage', () => {
 		})
 
 		it('should show error toast on follow failure', async () => {
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('network error'),
 			)
 
@@ -365,7 +374,7 @@ describe('DiscoverPage', () => {
 
 	describe('followArtist rollback on RPC failure', () => {
 		it('should rollback followedArtists on follow failure', async () => {
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('rpc fail'),
 			)
 
@@ -384,7 +393,7 @@ describe('DiscoverPage', () => {
 		})
 
 		it('should re-spawn bubble at original position on follow failure', async () => {
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('fail'),
 			)
 
@@ -530,7 +539,7 @@ describe('DiscoverPage', () => {
 	describe('loading with existing followed artists (seed similar)', () => {
 		it('should fetch seed similar artists when followedArtists is non-empty', async () => {
 			// Pre-populate followed artists
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
 			)
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -608,7 +617,7 @@ describe('DiscoverPage', () => {
 
 		it('should use followedArtists.length when not onboarding', async () => {
 			mockOnboarding.isOnboarding = false
-			;(mockArtistClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
 			)
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
