@@ -12,8 +12,13 @@ export class EventCard {
 		return artistColor(this.event.artistName)
 	}
 
-	public get isMutated(): boolean {
-		return this.event.isMustGo && this.lane !== 'home'
+	public get hypeClass(): string {
+		return `hype-${this.event.hypeLevel}`
+	}
+
+	public get cardStyle(): string {
+		const color = this.backgroundColor
+		return `background-color: ${color}; --artist-color: ${color}`
 	}
 
 	public get formattedDate(): string {

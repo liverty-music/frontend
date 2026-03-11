@@ -16,15 +16,28 @@
 
     <!-- Highway layout -->
     <div if.bind="!loading && !isEmpty" class="flex-1 overflow-y-auto overflow-x-hidden isolate">
+      <!-- Sticky STAGE header -->
+      <div class="sticky top-0 z-10 grid grid-cols-3 bg-surface-base border-b border-white/10">
+        <div data-stage-home class="px-2 py-2.5 text-center border-r border-white/10">
+          <span class="font-display font-bold text-sm uppercase tracking-wider text-text-primary">HOME STAGE</span>
+        </div>
+        <div data-stage-near class="px-2 py-2.5 text-center border-r border-white/10">
+          <span class="font-display font-bold text-sm uppercase tracking-wider text-text-primary">NEAR STAGE</span>
+        </div>
+        <div data-stage-away class="px-2 py-2.5 text-center">
+          <span class="font-display font-bold text-sm uppercase tracking-wider text-text-primary">AWAY STAGE</span>
+        </div>
+      </div>
+
       <div repeat.for="group of dateGroups; key.bind: group.dateKey">
         <!-- Sticky date separator -->
-        <div class="sticky top-0 bg-surface-raised/90 backdrop-blur-sm border-b border-white/10 px-3 py-2">
+        <div class="sticky top-[41px] bg-surface-raised/90 backdrop-blur-sm border-b border-white/10 px-3 py-2">
           <span class="text-xs font-display font-bold text-brand-accent uppercase tracking-wider">${group.label}</span>
         </div>
 
         <!-- Three-lane grid -->
-        <div class="grid grid-cols-[50%_30%_20%] min-h-[80px]">
-          <!-- Home lane: My City -->
+        <div class="grid grid-cols-3">
+          <!-- Home lane -->
           <div class="[container-type:inline-size] px-2 py-2 border-r border-white/5">
             <event-card
               repeat.for="ev of group.home; key.bind: ev.id"
@@ -36,7 +49,7 @@
             </div>
           </div>
 
-          <!-- Nearby lane: My Region -->
+          <!-- Nearby lane -->
           <div class="[container-type:inline-size] px-1 py-2 border-r border-white/5">
             <event-card
               repeat.for="ev of group.nearby; key.bind: ev.id"
@@ -48,7 +61,7 @@
             </div>
           </div>
 
-          <!-- Away lane: Others -->
+          <!-- Away lane -->
           <div class="[container-type:inline-size] px-1 py-2">
             <event-card
               repeat.for="ev of group.away; key.bind: ev.id"

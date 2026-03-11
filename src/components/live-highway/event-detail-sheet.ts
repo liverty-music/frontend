@@ -13,7 +13,7 @@ export class EventDetailSheet {
 	public isOpen = false
 	public dragOffset = 0
 
-	private dialogElement!: HTMLDialogElement
+	private sheetElement!: HTMLElement
 	private readonly onboarding = resolve(IOnboardingService)
 	private touchStartY = 0
 	private isDragging = false
@@ -63,27 +63,21 @@ export class EventDetailSheet {
 		this.event = event
 		this.isOpen = true
 		this.dragOffset = 0
-		this.dialogElement.showModal()
+		this.sheetElement.showPopover()
 		history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 	}
 
 	public close(): void {
 		this.isOpen = false
 		this.dragOffset = 0
-		this.dialogElement.close()
+		this.sheetElement.hidePopover()
 		history.replaceState(null, '', '/dashboard')
 	}
 
-	public onDialogClick(e: Event): void {
-		if (e.target === this.dialogElement) {
+	public onBackdropClick(e: Event): void {
+		if (e.target === this.sheetElement) {
 			if (this.isDismissBlocked) return
 			this.close()
-		}
-	}
-
-	public onCancel(e: Event): void {
-		if (this.isDismissBlocked) {
-			e.preventDefault()
 		}
 	}
 
@@ -100,7 +94,7 @@ export class EventDetailSheet {
 	public onTouchMove(e: TouchEvent): void {
 		if (!this.isDragging) return
 		if (this.isDismissBlocked) return
-		const scrollable = this.dialogElement.querySelector('.overflow-y-auto')
+		const scrollable = this.sheetElement.querySelector('.overflow-y-auto')
 		if (scrollable && scrollable.scrollTop > 0) {
 			this.isDragging = false
 			return

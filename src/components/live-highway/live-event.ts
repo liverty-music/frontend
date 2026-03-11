@@ -1,5 +1,7 @@
 export type LaneType = 'home' | 'nearby' | 'away'
 
+export type HypeLevel = 'watch' | 'home' | 'nearby' | 'away'
+
 export interface LiveEvent {
 	id: string
 	artistName: string
@@ -12,7 +14,7 @@ export interface LiveEvent {
 	openTime?: string
 	title: string
 	sourceUrl: string
-	isMustGo: boolean
+	hypeLevel: HypeLevel
 }
 
 export interface DateGroup {

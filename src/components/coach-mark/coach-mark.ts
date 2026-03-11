@@ -69,6 +69,9 @@ export class CoachMark {
 		// Set CSS anchor-name on target for tooltip positioning
 		target.style.setProperty('anchor-name', '--coach-target')
 
+		// Lock scroll on the viewport container
+		this.setScrollLock(true)
+
 		// Position the spotlight after render (canvas-based, needs getBoundingClientRect)
 		requestAnimationFrame(() => {
 			this.updateSpotlightPosition(target)
@@ -120,7 +123,19 @@ export class CoachMark {
 			this.currentTarget.style.removeProperty('anchor-name')
 			this.currentTarget = null
 		}
+		this.setScrollLock(false)
 		this.cleanup()
+	}
+
+	private setScrollLock(locked: boolean): void {
+		const viewport = document.querySelector('au-viewport')
+		if (viewport instanceof HTMLElement) {
+			if (locked) {
+				viewport.style.setProperty('overflow', 'hidden')
+			} else {
+				viewport.style.removeProperty('overflow')
+			}
+		}
 	}
 
 	private cleanup(): void {

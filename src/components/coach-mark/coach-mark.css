@@ -2,7 +2,7 @@
 	pointer-events: auto;
 	position: fixed;
 	inset: 0;
-	background: oklch(0% 0deg / 60%);
+	background: oklch(0% 0deg / 75%);
 }
 
 .coach-mark-spotlight {
@@ -10,16 +10,18 @@
 
 	position: absolute;
 
+	border: 2px solid var(--color-brand-accent, oklch(75% 0.15 160deg));
 	border-radius: 12px;
 
 	background: transparent;
-	box-shadow: 0 0 0 9999px oklch(0% 0deg / 60%);
+	box-shadow: 0 0 0 9999px oklch(0% 0deg / 75%);
 
 	transition:
 		inset-block-start 200ms ease,
 		inset-inline-start 200ms ease,
 		width 200ms ease,
 		height 200ms ease;
+	animation: coach-pulse 1.5s ease-in-out infinite;
 }
 
 .coach-mark-tooltip {
@@ -30,19 +32,37 @@
 	position-area: block-end;
 	position-try-fallbacks: flip-block, flip-inline;
 
-	max-width: 280px;
+	max-width: 320px;
 	margin-block-start: 16px;
-	padding: 12px 16px;
+	padding: 16px;
 	border-radius: 12px;
 
-	font-size: 0.875rem;
+	font-size: 16px;
+	font-weight: 500;
 	line-height: 1.5;
-	color: var(--color-text-primary, oklch(100% 0 0deg));
+	color: white;
 
-	background: var(--color-surface-elevated, oklch(25% 0.02 270deg));
+	background: var(--color-brand-accent, oklch(75% 0.15 160deg));
 	box-shadow: 0 8px 32px oklch(0% 0deg / 30%);
 }
 
 .coach-mark-tooltip p {
 	margin: 0;
+}
+
+@keyframes coach-pulse {
+	0%,
+	100% {
+		transform: scale(1);
+	}
+
+	50% {
+		transform: scale(1.05);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.coach-mark-spotlight {
+		animation: none;
+	}
 }

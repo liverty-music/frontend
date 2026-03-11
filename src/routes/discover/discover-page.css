@@ -371,31 +371,27 @@
 	animation: hud-enter 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.progress-dots {
-	display: grid;
-	grid-auto-flow: column;
-	gap: 0.75rem;
-	align-items: center;
-}
-
-.dot {
-	width: 10px;
-	height: 10px;
-	border: 1.5px solid oklch(100% 0 0deg / 30%);
-	border-radius: 50%;
+.search-progress-bar {
+	width: 60%;
+	max-width: 200px;
+	height: 4px;
+	border-radius: 2px;
 
 	background: oklch(100% 0 0deg / 15%);
-
-	transition: all 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.dot.filled {
-	transform: scale(1.2);
-	border-color: oklch(81.1% 0.101 294deg);
-	background: oklch(70.9% 0.159 294deg);
-	box-shadow:
-		0 0 8px oklch(70.9% 0.159 294deg / 60%),
-		0 0 20px oklch(70.9% 0.159 294deg / 30%);
+.search-progress-fill {
+	height: 100%;
+	border-radius: 2px;
+
+	background: linear-gradient(
+		90deg,
+		oklch(70.9% 0.159 294deg),
+		oklch(81.1% 0.101 294deg)
+	);
+	box-shadow: 0 0 8px oklch(70.9% 0.159 294deg / 40%);
+
+	transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hud-message {
@@ -437,64 +433,6 @@
 
 	to {
 		transform: translateY(0);
-		opacity: 1;
-	}
-}
-
-/* =========================================
-   Complete button (onboarding CTA)
-   ========================================= */
-
-.complete-button-wrapper {
-	position: absolute;
-	inset-block-end: 2rem;
-	inset-inline-start: 50%;
-	transform: translateX(-50%);
-
-	animation: button-enter 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.complete-button {
-	pointer-events: auto;
-	cursor: pointer;
-
-	padding: 0.75rem 1.5rem;
-	border: none;
-	border-radius: 9999px;
-
-	font-family: var(--font-display);
-	font-weight: 600;
-	color: oklch(100% 0 0deg);
-
-	background: linear-gradient(
-		135deg,
-		oklch(58.5% 0.204 277deg),
-		oklch(60.6% 0.219 293deg)
-	);
-	box-shadow:
-		0 0 20px oklch(58.5% 0.204 277deg / 30%),
-		0 4px 12px oklch(0% 0 0deg / 40%);
-
-	transition:
-		transform 300ms,
-		box-shadow 300ms;
-}
-
-.complete-button:hover {
-	transform: scale(1.05);
-	box-shadow:
-		0 0 30px oklch(60.6% 0.219 293deg / 50%),
-		0 6px 16px oklch(0% 0 0deg / 50%);
-}
-
-@keyframes button-enter {
-	from {
-		transform: translateX(-50%) translateY(16px);
-		opacity: 0;
-	}
-
-	to {
-		transform: translateX(-50%) translateY(0);
 		opacity: 1;
 	}
 }

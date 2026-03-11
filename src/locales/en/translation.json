@@ -96,14 +96,22 @@
 		}
 	},
 	"dashboard": {
-		"header": {
-			"homeArea": "Home Area",
-			"region": "Region",
-			"others": "Others"
+		"lane": {
+			"home": "HOME STAGE",
+			"near": "NEAR STAGE",
+			"away": "AWAY STAGE"
 		},
 		"coachMark": {
-			"tapCard": "Found! Tap the card to see details",
-			"customizeNotifications": "Customize notifications from the Artists screen 👉"
+			"tapCard": "Tap to see the details!",
+			"viewArtists": "Check out your artist list too!"
+		},
+		"celebration": {
+			"complete": "Your personal timetable is ready!"
+		},
+		"laneIntro": {
+			"home": "Local live events!",
+			"near": "Nearby area events too!",
+			"away": "Events from all across Japan!"
 		},
 		"empty": {
 			"title": "No upcoming events",
@@ -171,6 +179,9 @@
 		"partialFailure": "Some artist schedules couldn't be loaded ({{failed}}/{{total}})"
 	},
 	"discovery": {
+		"coachMark": {
+			"viewTimetable": "Check out your timetable!"
+		},
 		"guidance": "Tap bubbles to follow artists",
 		"guidanceStart": "Tap 3 of your favorite artists!",
 		"guidanceRemaining": "Nice! {{remaining}} more to go!",

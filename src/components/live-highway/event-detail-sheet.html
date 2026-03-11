@@ -4,14 +4,16 @@
   <import from="../icons/icon-link"></import>
   <import from="./event-detail-sheet.css"></import>
 
-  <dialog
-    ref="dialogElement"
-    click.trigger="onDialogClick($event)"
-    cancel.trigger="onCancel($event)"
+  <div
+    ref="sheetElement"
+    popover="manual"
+    role="dialog"
+    aria-modal="true"
+    click.trigger="onBackdropClick($event)"
     touchstart.trigger="onTouchStart($event)"
     touchmove.trigger="onTouchMove($event)"
     touchend.trigger="onTouchEnd()"
-    class="event-detail-dialog"
+    class="event-detail-sheet"
     style="transform: ${dragOffset > 0 ? 'translateY(' + dragOffset + 'px)' : ''}"
   >
     <div
@@ -87,5 +89,5 @@
         </div>
       </div>
     </div>
-  </dialog>
+  </div>
 </template>

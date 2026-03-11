@@ -10,11 +10,15 @@ import {
 	OnboardingStep,
 } from '../services/onboarding-service'
 
+export type LaneIntroPhase = 'home' | 'near' | 'away' | 'card' | 'done'
+
 export class Dashboard {
 	public dateGroups: DateGroup[] = []
 	public needsRegion = false
 	public loadError: unknown = null
 	public isStale = false
+	public showCelebration = false
+	public laneIntroPhase: LaneIntroPhase = 'done'
 
 	public homeSelector!: UserHomeSelector
 
@@ -25,6 +29,7 @@ export class Dashboard {
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly router = resolve(IRouter)
 	private abortController: AbortController | null = null
+	private laneIntroTimer: ReturnType<typeof setTimeout> | null = null
 
 	public dataPromise: Promise<DateGroup[]> | null = null
 
@@ -42,6 +47,8 @@ export class Dashboard {
 
 	public async loading(): Promise<void> {
 		this.needsRegion = !UserHomeSelector.getStoredHome()
+		this.showCelebration =
+			this.onboarding.currentStep === OnboardingStep.DASHBOARD
 		this.loadData()
 	}
 
@@ -78,8 +85,18 @@ export class Dashboard {
 	}
 
 	public attached(): void {
+		if (this.needsRegion && !this.showCelebration) {
+			this.homeSelector.open()
+		}
+	}
+
+	public onCelebrationComplete(): void {
+		this.showCelebration = false
+		this.logger.info('Celebration complete')
 		if (this.needsRegion) {
 			this.homeSelector.open()
+		} else {
+			this.startLaneIntro()
 		}
 	}
 
@@ -88,7 +105,80 @@ export class Dashboard {
 		this.needsRegion = false
 		if (this.isOnboarding) {
 			this.localClient.setHome(code)
+			this.startLaneIntro()
 		}
+	}
+
+	public onLaneIntroTap(): void {
+		this.advanceLaneIntro()
+	}
+
+	private startLaneIntro(): void {
+		if (!this.isTutorialStep3) return
+		this.laneIntroPhase = 'home'
+		this.logger.info('Lane intro started')
+		this.scheduleLaneIntroAdvance()
+	}
+
+	private advanceLaneIntro(): void {
+		if (this.laneIntroTimer) {
+			clearTimeout(this.laneIntroTimer)
+			this.laneIntroTimer = null
+		}
+
+		const phases: LaneIntroPhase[] = ['home', 'near', 'away', 'card', 'done']
+		const currentIdx = phases.indexOf(this.laneIntroPhase)
+		if (currentIdx < 0 || currentIdx >= phases.length - 1) {
+			this.laneIntroPhase = 'done'
+			return
+		}
+
+		this.laneIntroPhase = phases[currentIdx + 1]
+		this.logger.info('Lane intro advanced', { phase: this.laneIntroPhase })
+
+		if (this.laneIntroPhase !== 'done' && this.laneIntroPhase !== 'card') {
+			this.scheduleLaneIntroAdvance()
+		}
+	}
+
+	private scheduleLaneIntroAdvance(): void {
+		this.laneIntroTimer = setTimeout(() => {
+			this.advanceLaneIntro()
+		}, 2000)
+	}
+
+	public get laneIntroSelector(): string {
+		switch (this.laneIntroPhase) {
+			case 'home':
+				return '[data-stage-home]'
+			case 'near':
+				return '[data-stage-near]'
+			case 'away':
+				return '[data-stage-away]'
+			case 'card':
+				return '[data-live-card]:first-child'
+			default:
+				return ''
+		}
+	}
+
+	public get laneIntroMessage(): string {
+		switch (this.laneIntroPhase) {
+			case 'home':
+				return this.i18n.tr('dashboard.laneIntro.home')
+			case 'near':
+				return this.i18n.tr('dashboard.laneIntro.near')
+			case 'away':
+				return this.i18n.tr('dashboard.laneIntro.away')
+			case 'card':
+				return this.i18n.tr('dashboard.coachMark.tapCard')
+			default:
+				return ''
+		}
+	}
+
+	public get isLaneIntroActive(): boolean {
+		return this.laneIntroPhase !== 'done'
 	}
 
 	public onTutorialCardTapped(): void {
@@ -109,5 +199,9 @@ export class Dashboard {
 	public detaching(): void {
 		this.abortController?.abort()
 		this.abortController = null
+		if (this.laneIntroTimer) {
+			clearTimeout(this.laneIntroTimer)
+			this.laneIntroTimer = null
+		}
 	}
 }

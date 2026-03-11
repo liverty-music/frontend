@@ -2,20 +2,9 @@
 <import from="../components/user-home-selector/user-home-selector"></import>
 <import from="../components/inline-error/inline-error"></import>
 <import from="../components/coach-mark/coach-mark"></import>
+<import from="../components/celebration-overlay/celebration-overlay"></import>
 
 <div class="flex flex-col h-full bg-surface-base">
-  <!-- Header -->
-  <div class="shrink-0 px-4 py-4 border-b border-white/10 bg-surface-raised">
-    <div class="flex items-center justify-between">
-      <h1 class="font-display text-xl font-bold text-text-primary tracking-tight">Live Highway</h1>
-      <div class="grid grid-cols-3 text-[10px] text-text-muted gap-x-3 font-medium">
-        <span t="dashboard.header.homeArea"></span>
-        <span t="dashboard.header.region"></span>
-        <span t="dashboard.header.others"></span>
-      </div>
-    </div>
-  </div>
-
   <!-- Stale data warning -->
   <div if.bind="isStale" class="px-4 py-2 bg-amber-900/30 border-b border-amber-500/20">
     <div class="flex items-center gap-2 text-sm text-amber-300">
@@ -85,18 +74,25 @@
   required.bind="isOnboarding"
 ></user-home-selector>
 
-<!-- Tutorial Step 3: Spotlight on first concert card -->
+<!-- Celebration overlay (onboarding first dashboard load) -->
+<celebration-overlay
+  active.bind="showCelebration"
+  message.bind="$this.i18n?.tr('dashboard.celebration.complete') ?? 'あなただけのタイムテーブルが完成しました！'"
+  on-complete.bind="() => onCelebrationComplete()"
+></celebration-overlay>
+
+<!-- Lane introduction + Step 3 card spotlight -->
 <coach-mark
-  target-selector="[data-live-card]:first-child"
-  message.bind="$this.i18n?.tr('dashboard.coachMark.tapCard') ?? ''"
-  active.bind="isTutorialStep3 && !needsRegion"
-  on-tap.bind="() => onTutorialCardTapped()"
+  target-selector.bind="laneIntroSelector"
+  message.bind="laneIntroMessage"
+  active.bind="isLaneIntroActive && !needsRegion && !showCelebration"
+  on-tap.bind="() => laneIntroPhase === 'card' ? onTutorialCardTapped() : onLaneIntroTap()"
 ></coach-mark>
 
 <!-- Tutorial Step 4: Highlight My Artists tab -->
 <coach-mark
   target-selector="[data-nav-my-artists]"
-  message.bind="$this.i18n?.tr('dashboard.coachMark.customizeNotifications') ?? ''"
+  message.bind="$this.i18n?.tr('dashboard.coachMark.viewArtists') ?? ''"
   active.bind="isTutorialStep4"
   on-tap.bind="() => onTutorialMyArtistsTapped()"
 ></coach-mark>

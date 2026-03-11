@@ -1,0 +1,109 @@
+/* Hype tier visual styles — border, glow, and neon text-shadow */
+
+/* WATCH: flat, minimal presence */
+.hype-watch {
+	border: 1px solid oklch(100% 0 0deg / 10%);
+}
+
+/* HOME: subtle artist color presence */
+.hype-home {
+	border: 1px solid oklch(from var(--artist-color) l c h / 40%);
+	box-shadow: 0 0 8px oklch(from var(--artist-color) l c h / 30%);
+}
+
+.hype-home .artist-name {
+	text-shadow: 0 0 4px oklch(from var(--artist-color) l c h / 40%);
+}
+
+/* NEARBY: vivid with pulse animation */
+.hype-nearby {
+	border: 2px solid var(--artist-color);
+	animation: hype-glow-pulse-nearby 2s ease-in-out infinite;
+}
+
+.hype-nearby .artist-name {
+	text-shadow: 0 0 8px oklch(from var(--artist-color) l c h / 60%);
+}
+
+/* AWAY: maximum — animated gradient border + strong neon */
+.hype-away {
+	border: 2px solid transparent;
+	border-color: transparent;
+
+	background-image:
+		linear-gradient(var(--artist-color), var(--artist-color)),
+		conic-gradient(
+			from var(--hype-border-angle, 0deg),
+			var(--artist-color),
+			oklch(80% 0.2 calc(var(--hype-hue-shift, 0) + 60)),
+			var(--artist-color)
+		);
+	background-clip: padding-box, border-box;
+	background-origin: border-box;
+
+	animation:
+		hype-glow-pulse-away 1.5s ease-in-out infinite,
+		hype-border-rotate 3s linear infinite;
+}
+
+.hype-away .artist-name {
+	text-shadow:
+		0 0 12px oklch(from var(--artist-color) l c h / 70%),
+		0 0 24px oklch(from var(--artist-color) l c h / 40%);
+}
+
+/* Pulse keyframes for NEARBY tier (2s) */
+@keyframes hype-glow-pulse-nearby {
+	0%,
+	100% {
+		box-shadow: 0 0 16px oklch(from var(--artist-color) l c h / 50%);
+	}
+
+	50% {
+		box-shadow: 0 0 24px oklch(from var(--artist-color) l c h / 70%);
+	}
+}
+
+/* Pulse keyframes for AWAY tier (1.5s) */
+@keyframes hype-glow-pulse-away {
+	0%,
+	100% {
+		box-shadow:
+			0 0 24px oklch(from var(--artist-color) l c h / 50%),
+			0 0 48px oklch(from var(--artist-color) l c h / 25%);
+	}
+
+	50% {
+		box-shadow:
+			0 0 32px oklch(from var(--artist-color) l c h / 70%),
+			0 0 56px oklch(from var(--artist-color) l c h / 35%);
+	}
+}
+
+/* Gradient border rotation for AWAY tier */
+@keyframes hype-border-rotate {
+	to {
+		--hype-border-angle: 360deg;
+	}
+}
+
+@property --hype-border-angle {
+	inherits: false;
+	initial-value: 0deg;
+	syntax: "<angle>";
+}
+
+/* Reduced motion: static styles only */
+@media (prefers-reduced-motion: reduce) {
+	.hype-nearby {
+		box-shadow: 0 0 16px oklch(from var(--artist-color) l c h / 50%);
+		animation: none;
+	}
+
+	.hype-away {
+		box-shadow:
+			0 0 24px oklch(from var(--artist-color) l c h / 50%),
+			0 0 48px oklch(from var(--artist-color) l c h / 25%);
+		animation: none;
+	}
+}
