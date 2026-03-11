@@ -28,23 +28,20 @@
 	transform: translateY(100%);
 }
 
-.event-detail-sheet::backdrop {
+.event-detail-backdrop {
+	position: fixed;
+	inset: 0;
+
+	pointer-events: none;
+	opacity: 0;
+
 	background: oklch(0% 0 0deg / 60%);
 	backdrop-filter: blur(4px);
-	transition:
-		opacity 300ms ease-out,
-		overlay 300ms ease-out allow-discrete,
-		display 300ms ease-out allow-discrete;
+
+	transition: opacity 300ms ease-out;
 }
 
-.event-detail-sheet:popover-open::backdrop {
+.event-detail-backdrop.is-visible {
+	pointer-events: auto;
 	opacity: 1;
-
-	@starting-style {
-		opacity: 0;
-	}
-}
-
-.event-detail-sheet:not(:popover-open)::backdrop {
-	opacity: 0;
 }

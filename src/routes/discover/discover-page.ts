@@ -71,6 +71,7 @@ export class DiscoverPage {
 
 	// Concert search status tracking for dashboard coach mark
 	private readonly concertSearchStatus = new Map<string, 'pending' | 'done'>()
+	private readonly searchTimeouts = new Set<number>()
 	public completedSearchCount = 0
 
 	public get poolBubbles(): ArtistBubble[] {
@@ -131,6 +132,8 @@ export class DiscoverPage {
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		window.clearTimeout(this.searchDebounceTimer)
 		window.clearTimeout(this.guidanceDismissTimer)
+		for (const t of this.searchTimeouts) window.clearTimeout(t)
+		this.searchTimeouts.clear()
 	}
 
 	private readonly onVisibilityChange = (): void => {
@@ -385,17 +388,21 @@ export class DiscoverPage {
 
 	private searchConcertsWithTimeout(artistId: string): void {
 		const timeout = window.setTimeout(() => {
+			this.searchTimeouts.delete(timeout)
 			this.markSearchDone(artistId)
 		}, 15_000)
+		this.searchTimeouts.add(timeout)
 
 		this.concertService
 			.searchNewConcerts(artistId)
 			.then(() => {
 				window.clearTimeout(timeout)
+				this.searchTimeouts.delete(timeout)
 				this.markSearchDone(artistId)
 			})
 			.catch((err) => {
 				window.clearTimeout(timeout)
+				this.searchTimeouts.delete(timeout)
 				this.logger.warn('Background concert search failed', {
 					artistId,
 					error: err,

@@ -23,6 +23,12 @@ export class EventDetailSheet {
 		return this.onboarding.currentStep === OnboardingStep.DETAIL
 	}
 
+	private readonly onKeyDown = (e: KeyboardEvent): void => {
+		if (e.key === 'Escape' && this.isOpen && !this.isDismissBlocked) {
+			this.close()
+		}
+	}
+
 	public get backgroundColor(): string {
 		if (!this.event) return 'hsl(0, 0%, 20%)'
 		return artistColor(this.event.artistName)
@@ -64,6 +70,7 @@ export class EventDetailSheet {
 		this.isOpen = true
 		this.dragOffset = 0
 		this.sheetElement.showPopover()
+		document.addEventListener('keydown', this.onKeyDown)
 		history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 	}
 
@@ -71,7 +78,13 @@ export class EventDetailSheet {
 		this.isOpen = false
 		this.dragOffset = 0
 		this.sheetElement.hidePopover()
+		document.removeEventListener('keydown', this.onKeyDown)
 		history.replaceState(null, '', '/dashboard')
+	}
+
+	public onBackdropTap(): void {
+		if (this.isDismissBlocked) return
+		this.close()
 	}
 
 	public onBackdropClick(e: Event): void {

@@ -4,11 +4,17 @@
   <import from="../icons/icon-link"></import>
   <import from="./event-detail-sheet.css"></import>
 
+  <!-- Backdrop overlay (popover="manual" does not generate ::backdrop) -->
+  <div
+    class="event-detail-backdrop ${isOpen ? 'is-visible' : ''}"
+    click.trigger="onBackdropTap()"
+  ></div>
+
   <div
     ref="sheetElement"
     popover="manual"
     role="dialog"
-    aria-modal="true"
+    aria-label="Event details"
     click.trigger="onBackdropClick($event)"
     touchstart.trigger="onTouchStart($event)"
     touchmove.trigger="onTouchMove($event)"
