@@ -37,7 +37,7 @@ vi.mock(
 				this.value = opts.value
 			}
 		},
-		HypeType: { ANYWHERE: 1, HOME: 2, WATCH: 3 },
+		HypeType: { AWAY: 1, HOME: 2, WATCH: 3 },
 	}),
 )
 

@@ -56,7 +56,7 @@ export class GuestDataMergeService {
 		for (const artist of artists) {
 			const hype = this.mapHype(artist.hype)
 			if (hype === HypeType.AWAY) {
-				// ANYWHERE is the default, skip the RPC
+				// AWAY is the default, skip the RPC
 				continue
 			}
 			try {
