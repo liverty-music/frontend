@@ -104,6 +104,8 @@ export class CoachMark {
 			reassign()
 		}
 
+		if (generation !== this.highlightGeneration) return
+
 		// Lock scroll on the viewport container
 		this.setScrollLock(true)
 

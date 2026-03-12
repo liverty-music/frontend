@@ -18,6 +18,10 @@ describe('ToastNotification', () => {
 
 	beforeEach(() => {
 		vi.useFakeTimers()
+		// jsdom does not provide matchMedia — stub it to return no-preference by default
+		window.matchMedia = vi
+			.fn()
+			.mockReturnValue({ matches: false } as MediaQueryList)
 
 		hostElement = document.createElement('div')
 

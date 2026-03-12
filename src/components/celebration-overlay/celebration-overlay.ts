@@ -30,6 +30,10 @@ export class CelebrationOverlay {
 
 	public detaching(): void {
 		this.host.removeEventListener('transitionend', this.onTransitionEnd)
+		if (this.fadingOut) {
+			this.fadingOut = false
+			this.onComplete?.()
+		}
 		if (this.timer) {
 			clearTimeout(this.timer)
 			this.timer = null
