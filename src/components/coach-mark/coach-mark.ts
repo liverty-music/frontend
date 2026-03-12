@@ -17,6 +17,9 @@ export class CoachMark {
 	private retryTimer: ReturnType<typeof setTimeout> | null = null
 	private currentTarget: HTMLElement | null = null
 	private isPopoverOpen = false
+	private highlightGeneration = 0
+	private scrollFailsafeTimer: ReturnType<typeof setTimeout> | null = null
+	private scrollEndHandler: (() => void) | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('CoachMark')
 
@@ -74,10 +77,17 @@ export class CoachMark {
 	}
 
 	private async highlight(target: HTMLElement): Promise<void> {
+		const generation = ++this.highlightGeneration
+
 		// Let the browser scroll target into view and wait for scroll to settle.
 		// scrollIntoView is a no-op when the element is already visible;
 		// the scrollend failsafe timeout resolves in that case.
 		await this.smoothScrollTo(target)
+
+		// Abort if a newer highlight() call was initiated during the scroll
+		if (generation !== this.highlightGeneration) {
+			return
+		}
 
 		this.visible = true
 
@@ -108,6 +118,8 @@ export class CoachMark {
 	 * Deactivate spotlight completely — called at Step 6 or when component detaches.
 	 */
 	public deactivate(): void {
+		this.highlightGeneration++
+		this.cancelScroll()
 		this.visible = false
 		if (this.currentTarget) {
 			this.currentTarget.style.removeProperty('anchor-name')
@@ -136,12 +148,16 @@ export class CoachMark {
 	}
 
 	private smoothScrollTo(element: HTMLElement): Promise<void> {
+		this.cancelScroll()
+
 		return new Promise((resolve) => {
 			const onScrollEnd = () => {
+				this.scrollEndHandler = null
 				window.removeEventListener('scrollend', onScrollEnd)
 				resolve()
 			}
 
+			this.scrollEndHandler = onScrollEnd
 			window.addEventListener('scrollend', onScrollEnd)
 
 			element.scrollIntoView({
@@ -151,11 +167,24 @@ export class CoachMark {
 			})
 
 			// Failsafe: resolve if scrollend never fires (e.g. already in position)
-			setTimeout(() => {
+			this.scrollFailsafeTimer = setTimeout(() => {
+				this.scrollFailsafeTimer = null
 				window.removeEventListener('scrollend', onScrollEnd)
+				this.scrollEndHandler = null
 				resolve()
 			}, SCROLL_FAILSAFE_MS)
 		})
+	}
+
+	private cancelScroll(): void {
+		if (this.scrollFailsafeTimer) {
+			clearTimeout(this.scrollFailsafeTimer)
+			this.scrollFailsafeTimer = null
+		}
+		if (this.scrollEndHandler) {
+			window.removeEventListener('scrollend', this.scrollEndHandler)
+			this.scrollEndHandler = null
+		}
 	}
 
 	private setScrollLock(locked: boolean): void {
