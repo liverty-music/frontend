@@ -41,6 +41,10 @@ const ruleFunction = (primary) => {
 		let highestBlockName = '';
 
 		root.walkAtRules('layer', (atRule) => {
+			// Only check top-level @layer nodes; nested @layer blocks
+			// should not participate in the document-level order check.
+			if (atRule.parent.type !== 'root') return;
+
 			const hasBody = atRule.nodes !== undefined;
 			const params = atRule.params.trim();
 
@@ -48,7 +52,10 @@ const ruleFunction = (primary) => {
 				// Declaration statement: @layer reset, global, composition;
 				const names = params.split(',').map((n) => n.trim()).filter(Boolean);
 
-				// Check for unknown names
+				// Check for unknown names and relative order in a single pass.
+				// Unknown names are reported but skipped for order comparison.
+				let prevIndex = -1;
+
 				for (const name of names) {
 					if (!CUBE_LAYER_SET.has(name)) {
 						report({
@@ -58,14 +65,9 @@ const ruleFunction = (primary) => {
 							ruleName,
 						});
 
-						return;
+						continue;
 					}
-				}
 
-				// Check relative order within the declaration
-				let prevIndex = -1;
-
-				for (const name of names) {
 					const currentIndex = LAYER_INDEX.get(name);
 
 					if (currentIndex < prevIndex) {

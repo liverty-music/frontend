@@ -103,6 +103,34 @@ describe(ruleName, () => {
 		expect(warnings[0].text).toContain('Unknown CUBE CSS layer "custom"');
 	});
 
+	it('ignores nested @layer blocks inside a top-level @layer', async () => {
+		const result = await lint(`
+			@layer reset {
+				@layer utility {
+					.inner { color: red; }
+				}
+			}
+			@layer block {
+				.card { color: blue; }
+			}
+		`);
+
+		expect(getWarnings(result)).toHaveLength(0);
+	});
+
+	it('still validates order for valid names when declaration contains an unknown name', async () => {
+		const result = await lint(`
+			@layer block, TYPO, reset;
+		`);
+
+		const warnings = getWarnings(result);
+
+		// Should report both: unknown "TYPO" AND out-of-order declaration
+		expect(warnings.length).toBeGreaterThanOrEqual(2);
+		expect(warnings.some((w) => w.text.includes('Unknown CUBE CSS layer "TYPO"'))).toBe(true);
+		expect(warnings.some((w) => w.text.includes('Unexpected @layer declaration order'))).toBe(true);
+	});
+
 	it('accepts duplicate @layer blocks (same layer appearing twice)', async () => {
 		const result = await lint(`
 			@layer block {
