@@ -260,5 +260,57 @@ describe('AuthHook', () => {
 
 			expect(result).toBe(true)
 		})
+
+		it('should allow public route with tutorialStep during active tutorial', async () => {
+			mockAuth = createMockAuth({ isAuthenticated: false })
+			mockEa = createMockEventAggregator()
+			const container = createTestContainer(
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(IEventAggregator, mockEa),
+				Registration.instance(mockIOnboardingService, {
+					currentStep: 1,
+					isOnboarding: true,
+					spotlightActive: false,
+					setStep: vi.fn(),
+					complete: vi.fn(),
+					deactivateSpotlight: vi.fn(),
+					getRouteForCurrentStep: () => 'discover',
+				}),
+			)
+			container.register(AuthHook)
+			sut = container.get(AuthHook)
+
+			// /discover has { auth: false, tutorialStep: 1 }
+			const next = makeRouteNode({ auth: false, tutorialStep: 1 })
+			const result = await sut.canLoad({}, {}, next, null)
+
+			expect(result).toBe(true)
+			expect(mockEa.publish).not.toHaveBeenCalled()
+		})
+
+		it('should redirect to LP when public tutorialStep route accessed without active tutorial', async () => {
+			mockAuth = createMockAuth({ isAuthenticated: false })
+			mockEa = createMockEventAggregator()
+			const container = createTestContainer(
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(IEventAggregator, mockEa),
+				Registration.instance(mockIOnboardingService, {
+					currentStep: 0,
+					isOnboarding: false,
+					setStep: vi.fn(),
+					complete: vi.fn(),
+					getRouteForCurrentStep: () => '',
+				}),
+			)
+			container.register(AuthHook)
+			sut = container.get(AuthHook)
+
+			// /discover has { auth: false, tutorialStep: 1 } but no active tutorial
+			const next = makeRouteNode({ auth: false, tutorialStep: 1 })
+			const result = await sut.canLoad({}, {}, next, null)
+
+			expect(result).toBe('')
+			expect(mockEa.publish).not.toHaveBeenCalled()
+		})
 	})
 })
