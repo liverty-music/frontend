@@ -75,6 +75,20 @@ describe(ruleName, () => {
 		expect(warnings[0].text).toContain('a');
 	});
 
+	it('rejects compound selector with :where() followed by :not()', async () => {
+		const result = await lint(`
+			@layer reset {
+				:where(p):not(.exception) {
+					margin: 0;
+				}
+			}
+		`);
+		const warnings = getWarnings(result);
+
+		expect(warnings).toHaveLength(1);
+		expect(warnings[0].text).toContain(':where(p):not(.exception)');
+	});
+
 	it('ignores selectors in non-reset/global layers', async () => {
 		const result = await lint(`
 			@layer block {

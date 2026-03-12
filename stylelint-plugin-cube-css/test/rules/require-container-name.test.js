@@ -73,6 +73,19 @@ describe(ruleName, () => {
 		expect(warnings).toHaveLength(0);
 	});
 
+	it('rejects container-type when container-name is only in nested rule', async () => {
+		const result = await lint(`
+			.card {
+				container-type: inline-size;
+				.inner { container-name: card; }
+			}
+		`);
+		const warnings = getWarnings(result);
+
+		expect(warnings).toHaveLength(1);
+		expect(warnings[0].text).toContain('container-name');
+	});
+
 	it('accepts container-type when container shorthand is also present', async () => {
 		const result = await lint(`
 			@layer block {

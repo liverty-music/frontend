@@ -22,13 +22,32 @@ const EXEMPT_SELECTORS = new Set([':root', 'body', 'html', '*']);
 const TARGET_LAYERS = new Set(['reset', 'global']);
 
 /**
- * Check if a selector is wrapped in :where() at the top level.
- * Accepts selectors like ":where(.foo)" or ":where(h1, h2, h3)".
+ * Check if a selector is entirely wrapped in :where() at the top level.
+ * Uses balanced parentheses matching to avoid false positives from
+ * compound selectors like ":where(p):not(.exception)".
  */
 function isWrappedInWhere(selector) {
 	const trimmed = selector.trim();
 
-	return trimmed.startsWith(':where(') && trimmed.endsWith(')');
+	if (!trimmed.startsWith(':where(')) return false;
+
+	// Find the closing paren that matches the opening one.
+	// ":where(" is 7 chars, so scan from index 7.
+	let depth = 0;
+
+	for (let i = 7; i < trimmed.length; i++) {
+		if (trimmed[i] === '(') depth++;
+		else if (trimmed[i] === ')') {
+			if (depth === 0) {
+				// The matching close paren must be the last character.
+				return i === trimmed.length - 1;
+			}
+
+			depth--;
+		}
+	}
+
+	return false;
 }
 
 /**

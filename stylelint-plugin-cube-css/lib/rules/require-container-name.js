@@ -38,13 +38,16 @@ const ruleFunction = (primary) => {
 
 			let hasContainerName = false;
 
-			parent.walkDecls((sibling) => {
-				const prop = sibling.prop.toLowerCase();
+			// Iterate direct children only — walkDecls would deep-walk into
+			// nested rules and produce false negatives with CSS nesting.
+			for (const node of parent.nodes) {
+				if (node.type !== 'decl') continue;
+				const prop = node.prop.toLowerCase();
 
 				if (prop === 'container-name' || prop === 'container') {
 					hasContainerName = true;
 				}
-			});
+			}
 
 			if (!hasContainerName) {
 				report({
