@@ -1,10 +1,13 @@
 <import from="../icons/icon-ticket"></import>
+<import from="./toast-notification.css"></import>
 
-<div ref="containerElement" popover="manual" class="fixed top-0 start-0 end-0 flex flex-col items-center gap-2 pt-4 pointer-events-none">
+<div ref="containerElement" popover="manual" class="toast-popover fixed top-0 start-0 end-0 flex flex-col items-center gap-2 pt-4 pointer-events-none">
   <div
     repeat.for="toast of toasts; key.bind: toast.id"
+    data-toast-id.bind="toast.id"
     role="status"
-    class="flex items-center gap-2 px-5 py-3 bg-gradient-to-r ${severityClass(toast.severity)} backdrop-blur-sm text-white font-display font-semibold rounded-xl shadow-[var(--shadow-card-glow)] pointer-events-auto ${toast.visible ? 'animate-[bounce-in_400ms_ease-out_both]' : 'opacity-0 -translate-y-4 transition-[transform,opacity] duration-300'}"
+    class="toast-item flex items-center gap-2 px-5 py-3 bg-gradient-to-r ${severityClass(toast.severity)} backdrop-blur-sm text-white font-display font-semibold rounded-xl shadow-[var(--shadow-card-glow)] pointer-events-auto"
+    data-state="${toast.visible ? 'entering' : 'exiting'}"
   >
     <icon-ticket if.bind="toast.severity === 'info'"></icon-ticket>
     <svg if.bind="toast.severity === 'warning'" class="w-5 h-5 shrink-0" viewBox="0 0 20 20" fill="currentColor">

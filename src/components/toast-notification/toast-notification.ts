@@ -1,4 +1,4 @@
-import { type IDisposable, IEventAggregator, resolve } from 'aurelia'
+import { type IDisposable, IEventAggregator, INode, resolve } from 'aurelia'
 import { Toast, type ToastAction, type ToastSeverity } from './toast'
 
 interface ToastItem {
@@ -21,6 +21,7 @@ const SEVERITY_CLASSES: Record<ToastSeverity, string> = {
 
 export class ToastNotification {
 	private readonly ea = resolve(IEventAggregator)
+	private readonly element = resolve(INode) as HTMLElement
 
 	public toasts: ToastItem[] = []
 	private containerElement!: HTMLElement
@@ -29,6 +30,13 @@ export class ToastNotification {
 
 	public attaching(): void {
 		this.subscription = this.ea.subscribe(Toast, (event) => this.show(event))
+	}
+
+	public attached(): void {
+		// Listen for exit transition end to remove dismissed toasts from DOM
+		this.element.addEventListener('transitionend', (e) =>
+			this.onTransitionEnd(e),
+		)
 	}
 
 	public detaching(): void {
@@ -43,7 +51,7 @@ export class ToastNotification {
 			severity: event.severity,
 			action: event.action,
 			onDismiss: event.options?.onDismiss,
-			visible: false,
+			visible: true,
 			dismissed: false,
 			dismissTimer: null,
 		}
@@ -57,11 +65,6 @@ export class ToastNotification {
 		// Re-insert into Top Layer to ensure it paints above any open dialog
 		if (this.toasts.length > 1) this.containerElement.hidePopover()
 		this.containerElement.showPopover()
-
-		// Trigger slide-in on next frame
-		requestAnimationFrame(() => {
-			toast.visible = true
-		})
 
 		// Auto-dismiss
 		toast.dismissTimer = setTimeout(() => {
@@ -81,13 +84,23 @@ export class ToastNotification {
 
 		toast.visible = false
 		toast.onDismiss?.()
-		setTimeout(() => {
-			const idx = this.toasts.findIndex((t) => t.id === toast.id)
-			if (idx !== -1) this.toasts.splice(idx, 1)
-			if (this.toasts.length === 0) {
-				this.containerElement.hidePopover()
-			}
-		}, 400)
+	}
+
+	private onTransitionEnd(e: TransitionEvent): void {
+		if (e.propertyName !== 'opacity') return
+		const target = e.target as HTMLElement
+		const idStr = target.dataset.toastId
+		if (!idStr) return
+
+		const id = Number(idStr)
+		const toast = this.toasts.find((t) => t.id === id)
+		if (!toast || toast.visible) return
+
+		const idx = this.toasts.indexOf(toast)
+		if (idx !== -1) this.toasts.splice(idx, 1)
+		if (this.toasts.length === 0) {
+			this.containerElement.hidePopover()
+		}
 	}
 
 	public onAction(toast: ToastItem): void {
