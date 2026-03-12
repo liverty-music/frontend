@@ -1,6 +1,6 @@
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
-import type { DateLaneGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
+import type { ProximityGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
 import type {
 	DateGroup,
@@ -40,7 +40,7 @@ export class DashboardService {
 	}
 
 	private protoGroupToDateGroup(
-		group: DateLaneGroup,
+		group: ProximityGroup,
 		artistMap: Map<string, { name: string; hypeLevel: HypeLevel }>,
 	): DateGroup {
 		const ld = group.date?.value
