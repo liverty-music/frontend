@@ -34,6 +34,11 @@
 	transform: translateY(100%);
 }
 
+/* Prevent scroll chaining from inner content to the page behind the sheet */
+.event-detail-sheet .overflow-y-auto {
+	overscroll-behavior: contain;
+}
+
 /* Native ::backdrop for popover="manual" — no sibling div needed */
 .event-detail-sheet:popover-open::backdrop {
 	background: oklch(0% 0 0deg / 60%);

@@ -26,12 +26,25 @@ export class ToastNotification {
 	private containerElement!: HTMLElement
 	private nextId = 0
 	private subscription!: IDisposable
+	private readonly boundTransitionEnd = (e: TransitionEvent) =>
+		this.onTransitionEnd(e)
 
 	public attaching(): void {
 		this.subscription = this.ea.subscribe(Toast, (event) => this.show(event))
 	}
 
+	public attached(): void {
+		this.containerElement.addEventListener(
+			'transitionend',
+			this.boundTransitionEnd,
+		)
+	}
+
 	public detaching(): void {
+		this.containerElement.removeEventListener(
+			'transitionend',
+			this.boundTransitionEnd,
+		)
 		this.subscription.dispose()
 	}
 
@@ -43,7 +56,7 @@ export class ToastNotification {
 			severity: event.severity,
 			action: event.action,
 			onDismiss: event.options?.onDismiss,
-			visible: false,
+			visible: true,
 			dismissed: false,
 			dismissTimer: null,
 		}
@@ -57,11 +70,6 @@ export class ToastNotification {
 		// Re-insert into Top Layer to ensure it paints above any open dialog
 		if (this.toasts.length > 1) this.containerElement.hidePopover()
 		this.containerElement.showPopover()
-
-		// Trigger slide-in on next frame
-		requestAnimationFrame(() => {
-			toast.visible = true
-		})
 
 		// Auto-dismiss
 		toast.dismissTimer = setTimeout(() => {
@@ -81,13 +89,37 @@ export class ToastNotification {
 
 		toast.visible = false
 		toast.onDismiss?.()
-		setTimeout(() => {
-			const idx = this.toasts.findIndex((t) => t.id === toast.id)
-			if (idx !== -1) this.toasts.splice(idx, 1)
-			if (this.toasts.length === 0) {
-				this.containerElement.hidePopover()
-			}
-		}, 400)
+
+		// When transitions are disabled (prefers-reduced-motion: reduce),
+		// transitionend never fires — remove the toast immediately.
+		if (this.prefersReducedMotion()) {
+			this.removeToast(toast)
+		}
+	}
+
+	private removeToast(toast: ToastItem): void {
+		const idx = this.toasts.indexOf(toast)
+		if (idx !== -1) this.toasts.splice(idx, 1)
+		if (this.toasts.length === 0) {
+			this.containerElement.hidePopover()
+		}
+	}
+
+	private prefersReducedMotion(): boolean {
+		return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+	}
+
+	private onTransitionEnd(e: TransitionEvent): void {
+		if (e.propertyName !== 'opacity') return
+		const target = e.target as HTMLElement
+		const idStr = target.dataset.toastId
+		if (!idStr) return
+
+		const id = Number(idStr)
+		const toast = this.toasts.find((t) => t.id === id)
+		if (!toast || toast.visible) return
+
+		this.removeToast(toast)
 	}
 
 	public onAction(toast: ToastItem): void {

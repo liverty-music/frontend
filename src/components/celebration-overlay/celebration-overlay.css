@@ -11,7 +11,7 @@
 	transition: opacity 400ms ease;
 }
 
-.celebration-overlay.fade-out {
+.celebration-overlay[data-state="exiting"] {
 	opacity: 0;
 }
 

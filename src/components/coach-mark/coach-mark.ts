@@ -2,19 +2,24 @@ import { bindable, ILogger, resolve } from 'aurelia'
 
 const MAX_RETRY_MS = 5000
 const INITIAL_RETRY_MS = 100
+const SCROLL_FAILSAFE_MS = 800
 
 export class CoachMark {
 	@bindable public targetSelector = ''
 	@bindable public message = ''
 	@bindable public active = false
+	@bindable public spotlightRadius = '12px'
 	@bindable public onTap?: () => void
 
 	public visible = false
 
 	private overlayEl!: HTMLElement
-	private spotlightEl!: HTMLElement
 	private retryTimer: ReturnType<typeof setTimeout> | null = null
 	private currentTarget: HTMLElement | null = null
+	private isPopoverOpen = false
+	private highlightGeneration = 0
+	private scrollFailsafeTimer: ReturnType<typeof setTimeout> | null = null
+	private scrollEndHandler: (() => void) | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('CoachMark')
 
@@ -22,7 +27,7 @@ export class CoachMark {
 		if (this.active) {
 			this.findAndHighlight()
 		} else {
-			this.hide()
+			this.deactivate()
 		}
 	}
 
@@ -32,13 +37,18 @@ export class CoachMark {
 		}
 	}
 
-	/**
-	 * Must call hide() (not cleanup()) to reverse ALL side effects of highlight():
-	 * anchor-name on target, overflow on au-viewport, and retry timer.
-	 * cleanup() alone only handles the timer, leaving scroll lock leaked.
-	 */
 	public detaching(): void {
-		this.hide()
+		this.deactivate()
+	}
+
+	/**
+	 * Called when target changes but spotlight should stay open.
+	 * Wraps anchor-name reassignment in View Transition for smooth animation.
+	 */
+	public targetSelectorChanged(): void {
+		if (this.active && this.visible) {
+			this.findAndHighlight()
+		}
 	}
 
 	private findAndHighlight(elapsed = 0): void {
@@ -52,7 +62,7 @@ export class CoachMark {
 			this.logger.error('Coach mark target not found after retries', {
 				selector: this.targetSelector,
 			})
-			this.visible = false
+			this.deactivate()
 			return
 		}
 
@@ -66,70 +76,118 @@ export class CoachMark {
 		}, delay)
 	}
 
-	private highlight(target: HTMLElement): void {
-		this.visible = true
-		this.currentTarget?.style.removeProperty('anchor-name')
-		this.currentTarget = target
+	private async highlight(target: HTMLElement): Promise<void> {
+		const generation = ++this.highlightGeneration
 
-		// Set CSS anchor-name on target for tooltip positioning
-		target.style.setProperty('anchor-name', '--coach-target')
+		// Let the browser scroll target into view and wait for scroll to settle.
+		// scrollIntoView is a no-op when the element is already visible;
+		// the scrollend failsafe timeout resolves in that case.
+		await this.smoothScrollTo(target)
+
+		// Abort if a newer highlight() call was initiated during the scroll
+		if (generation !== this.highlightGeneration) {
+			return
+		}
+
+		this.visible = true
+
+		// Wrap anchor-name reassignment in View Transition for smooth spotlight slide
+		const reassign = () => {
+			this.currentTarget?.style.removeProperty('anchor-name')
+			target.style.setProperty('anchor-name', '--coach-target')
+			this.currentTarget = target
+		}
+
+		if (document.startViewTransition) {
+			await document.startViewTransition(reassign).updateCallbackDone
+		} else {
+			reassign()
+		}
+
+		if (generation !== this.highlightGeneration) return
 
 		// Lock scroll on the viewport container
 		this.setScrollLock(true)
 
-		// Position the spotlight after render (canvas-based, needs getBoundingClientRect)
-		requestAnimationFrame(() => {
-			this.updateSpotlightPosition(target)
+		// Open popover if not already open (continuous spotlight: only opens once)
+		if (!this.isPopoverOpen) {
 			this.overlayEl.showPopover()
-		})
-	}
-
-	private updateSpotlightPosition(target: HTMLElement): void {
-		const rect = target.getBoundingClientRect()
-		const padding = 8
-
-		if (this.spotlightEl) {
-			this.spotlightEl.style.insetBlockStart = `${rect.top - padding}px`
-			this.spotlightEl.style.insetInlineStart = `${rect.left - padding}px`
-			this.spotlightEl.style.width = `${rect.width + padding * 2}px`
-			this.spotlightEl.style.height = `${rect.height + padding * 2}px`
+			this.isPopoverOpen = true
 		}
 	}
 
-	public onOverlayClick(event: MouseEvent): void {
-		const target = document.querySelector(this.targetSelector)
-		if (target instanceof HTMLElement) {
-			const rect = target.getBoundingClientRect()
-			const x = event.clientX
-			const y = event.clientY
-			const padding = 8
-
-			// Check if click is inside the spotlight area
-			if (
-				x >= rect.left - padding &&
-				x <= rect.right + padding &&
-				y >= rect.top - padding &&
-				y <= rect.bottom + padding
-			) {
-				// Forward click to the target element
-				target.click()
-				this.onTap?.()
-				return
-			}
-		}
-
-		// Block clicks outside the spotlight
-		event.stopPropagation()
-	}
-
-	private hide(): void {
+	/**
+	 * Deactivate spotlight completely — called at Step 6 or when component detaches.
+	 */
+	public deactivate(): void {
+		this.highlightGeneration++
+		this.cancelScroll()
 		this.visible = false
 		if (this.currentTarget) {
 			this.currentTarget.style.removeProperty('anchor-name')
 			this.currentTarget = null
 		}
 		this.setScrollLock(false)
+		if (this.isPopoverOpen) {
+			try {
+				this.overlayEl.hidePopover()
+			} catch {
+				// Popover may already be hidden
+			}
+			this.isPopoverOpen = false
+		}
 		this.cleanup()
+	}
+
+	public onBlockerClick(): void {
+		// Intentionally no-op: clicks outside the target are blocked
+	}
+
+	public onTargetClick(e: Event): void {
+		e.preventDefault()
+		e.stopPropagation()
+		this.currentTarget?.click()
+		this.onTap?.()
+	}
+
+	private smoothScrollTo(element: HTMLElement): Promise<void> {
+		this.cancelScroll()
+
+		return new Promise((resolve) => {
+			const onScrollEnd = () => {
+				this.scrollEndHandler = null
+				window.removeEventListener('scrollend', onScrollEnd)
+				resolve()
+			}
+
+			this.scrollEndHandler = onScrollEnd
+			window.addEventListener('scrollend', onScrollEnd)
+
+			element.scrollIntoView({
+				behavior: 'smooth',
+				block: 'center',
+				inline: 'center',
+			})
+
+			// Failsafe: resolve if scrollend never fires (e.g. already in position)
+			this.scrollFailsafeTimer = setTimeout(() => {
+				this.scrollFailsafeTimer = null
+				window.removeEventListener('scrollend', onScrollEnd)
+				this.scrollEndHandler = null
+				resolve()
+			}, SCROLL_FAILSAFE_MS)
+		})
+	}
+
+	private cancelScroll(): void {
+		if (this.scrollFailsafeTimer) {
+			clearTimeout(this.scrollFailsafeTimer)
+			this.scrollFailsafeTimer = null
+		}
+		if (this.scrollEndHandler) {
+			window.removeEventListener('scrollend', this.scrollEndHandler)
+			this.scrollEndHandler = null
+		}
 	}
 
 	private setScrollLock(locked: boolean): void {
