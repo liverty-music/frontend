@@ -1,9 +1,30 @@
 import { DI, ILogger, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { IOnboardingService } from '../../src/services/onboarding-service'
 import { createMockLogger } from '../helpers/mock-logger'
 
-// Coach mark is imported directly since it has no external DI deps beyond ILogger
 const { CoachMark } = await import('../../src/components/coach-mark/coach-mark')
+
+function createMockOnboarding() {
+	return {
+		currentStep: 7,
+		spotlightTarget: '',
+		spotlightMessage: '',
+		spotlightRadius: '12px',
+		spotlightActive: false,
+		onSpotlightTap: undefined as (() => void) | undefined,
+		onBringToFront: undefined as (() => void) | undefined,
+		isOnboarding: false,
+		isCompleted: true,
+		activateSpotlight: vi.fn(),
+		deactivateSpotlight: vi.fn(),
+		bringSpotlightToFront: vi.fn(),
+		setStep: vi.fn(),
+		complete: vi.fn(),
+		reset: vi.fn(),
+		getRouteForCurrentStep: vi.fn(() => ''),
+	}
+}
 
 function createMockElement(
 	opts: { top?: number; height?: number } = {},
@@ -30,12 +51,17 @@ describe('CoachMark', () => {
 	let sut: InstanceType<typeof CoachMark>
 	let overlayEl: HTMLElement
 	let targetEl: HTMLElement
+	let mockOnboarding: ReturnType<typeof createMockOnboarding>
 
 	beforeEach(() => {
 		vi.useFakeTimers()
+		mockOnboarding = createMockOnboarding()
 
 		const container = DI.createContainer()
 		container.register(Registration.instance(ILogger, createMockLogger()))
+		container.register(
+			Registration.instance(IOnboardingService, mockOnboarding),
+		)
 
 		sut = container.invoke(CoachMark)
 
@@ -221,6 +247,66 @@ describe('CoachMark', () => {
 			await vi.advanceTimersByTimeAsync(6000)
 
 			expect(sut.visible).toBe(false)
+		})
+	})
+
+	describe('bringToFront', () => {
+		it('should call hidePopover then showPopover when popover is open', async () => {
+			// Open the popover first
+			sut.active = true
+			sut.activeChanged()
+			await vi.advanceTimersByTimeAsync(900)
+
+			expect(overlayEl.showPopover).toHaveBeenCalledTimes(1)
+
+			// Reset call counts
+			;(overlayEl.hidePopover as ReturnType<typeof vi.fn>).mockClear()
+			;(overlayEl.showPopover as ReturnType<typeof vi.fn>).mockClear()
+
+			sut.bringToFront()
+			await vi.advanceTimersByTimeAsync(16) // requestAnimationFrame
+
+			expect(overlayEl.hidePopover).toHaveBeenCalledTimes(1)
+			expect(overlayEl.showPopover).toHaveBeenCalledTimes(1)
+		})
+
+		it('should be no-op when popover is not open', async () => {
+			sut.bringToFront()
+			await vi.advanceTimersByTimeAsync(16)
+
+			expect(overlayEl.hidePopover).not.toHaveBeenCalled()
+			expect(overlayEl.showPopover).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('onboarding service integration', () => {
+		it('should register onBringToFront callback on bound()', () => {
+			sut.bound()
+			expect(mockOnboarding.onBringToFront).toBeTypeOf('function')
+		})
+
+		it('should clear onBringToFront callback on detaching()', () => {
+			sut.bound()
+			expect(mockOnboarding.onBringToFront).toBeDefined()
+
+			sut.detaching()
+			expect(mockOnboarding.onBringToFront).toBeUndefined()
+		})
+
+		it('should trigger bringToFront when onboarding service calls callback', async () => {
+			sut.active = true
+			sut.bound()
+			await vi.advanceTimersByTimeAsync(900)
+
+			;(overlayEl.hidePopover as ReturnType<typeof vi.fn>).mockClear()
+			;(overlayEl.showPopover as ReturnType<typeof vi.fn>).mockClear()
+
+			// Simulate onboarding service calling the callback
+			mockOnboarding.onBringToFront?.()
+			await vi.advanceTimersByTimeAsync(16)
+
+			expect(overlayEl.hidePopover).toHaveBeenCalledTimes(1)
+			expect(overlayEl.showPopover).toHaveBeenCalledTimes(1)
 		})
 	})
 })
