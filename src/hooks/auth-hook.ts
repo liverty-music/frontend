@@ -33,8 +33,10 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 		next: RouteNode,
 		_current: RouteNode | null,
 	): Promise<boolean | NavigationInstruction> {
-		// Public routes (LP, about, auth/callback) always allowed
-		if (next.data?.auth === false) {
+		const tutorialStep = next.data?.tutorialStep as number | undefined
+
+		// Public routes without tutorialStep (LP, about, auth/callback) always allowed
+		if (next.data?.auth === false && tutorialStep === undefined) {
 			return true
 		}
 
@@ -46,7 +48,6 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 		}
 
 		// Priority 2: During tutorial, allow routes that match the current step
-		const tutorialStep = next.data?.tutorialStep as number | undefined
 		if (tutorialStep !== undefined && this.onboarding.isOnboarding) {
 			if (this.onboarding.currentStep >= tutorialStep) {
 				return true
@@ -71,7 +72,12 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 			return this.onboarding.getRouteForCurrentStep()
 		}
 
-		// Priority 3: Not authenticated, not in tutorial
+		// Priority 3: Tutorial route accessed without active tutorial — redirect to LP
+		if (tutorialStep !== undefined && next.data?.auth === false) {
+			return ''
+		}
+
+		// Priority 4: Not authenticated, not in tutorial
 		this.ea.publish(new Toast(this.i18n.tr('auth.loginRequired'), 'warning'))
 		return ''
 	}
