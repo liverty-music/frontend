@@ -45,7 +45,7 @@ import { IOnboardingService } from './services/onboarding-service'
 			path: 'discover',
 			component: import('./routes/discover/discover-page'),
 			title: 'Discover',
-			data: { auth: false },
+			data: { auth: false, tutorialStep: 1 },
 		},
 		{
 			path: 'my-artists',
