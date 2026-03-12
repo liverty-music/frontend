@@ -27,19 +27,19 @@ export class ToastNotification {
 	private containerElement!: HTMLElement
 	private nextId = 0
 	private subscription!: IDisposable
+	private readonly boundTransitionEnd = (e: TransitionEvent) =>
+		this.onTransitionEnd(e)
 
 	public attaching(): void {
 		this.subscription = this.ea.subscribe(Toast, (event) => this.show(event))
 	}
 
 	public attached(): void {
-		// Listen for exit transition end to remove dismissed toasts from DOM
-		this.element.addEventListener('transitionend', (e) =>
-			this.onTransitionEnd(e),
-		)
+		this.element.addEventListener('transitionend', this.boundTransitionEnd)
 	}
 
 	public detaching(): void {
+		this.element.removeEventListener('transitionend', this.boundTransitionEnd)
 		this.subscription.dispose()
 	}
 
