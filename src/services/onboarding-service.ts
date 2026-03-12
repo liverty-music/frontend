@@ -51,6 +51,7 @@ export class OnboardingService {
 	public spotlightRadius = '12px'
 	public spotlightActive = false
 	public onSpotlightTap: (() => void) | undefined = undefined
+	public onBringToFront: (() => void) | undefined = undefined
 
 	constructor() {
 		this.currentStep = this.readStep()
@@ -82,6 +83,14 @@ export class OnboardingService {
 		this.spotlightTarget = ''
 		this.spotlightMessage = ''
 		this.onSpotlightTap = undefined
+	}
+
+	/**
+	 * Re-insert the spotlight popover at the top of the LIFO stack.
+	 * Used when another popover has entered the top layer after the coach mark.
+	 */
+	public bringSpotlightToFront(): void {
+		this.onBringToFront?.()
 	}
 
 	/**

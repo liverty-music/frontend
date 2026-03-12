@@ -1,7 +1,8 @@
 /*
- * <dialog popover="manual"> sheet with native ::backdrop.
- * MDN: "Backdrops appear for Popover API elements shown via showPopover()"
- * — applies to both popover="auto" and popover="manual".
+ * <dialog> with dynamic popover mode (auto or manual) and native ::backdrop.
+ * popover="auto": light dismiss (Escape, click-outside, Android back) handled by browser.
+ * popover="manual": non-dismissible (onboarding Step 4).
+ * ::backdrop visual styles apply to both modes; pointer-events are UA-controlled.
  */
 
 .event-detail-sheet {
@@ -39,7 +40,7 @@
 	overscroll-behavior: contain;
 }
 
-/* Native ::backdrop for popover="manual" — no sibling div needed */
+/* Native ::backdrop visual layer — applies to both auto and manual modes */
 .event-detail-sheet:popover-open::backdrop {
 	background: oklch(0% 0 0deg / 60%);
 	backdrop-filter: blur(4px);
