@@ -1,4 +1,4 @@
-import { type IDisposable, IEventAggregator, INode, resolve } from 'aurelia'
+import { type IDisposable, IEventAggregator, resolve } from 'aurelia'
 import { Toast, type ToastAction, type ToastSeverity } from './toast'
 
 interface ToastItem {
@@ -21,7 +21,6 @@ const SEVERITY_CLASSES: Record<ToastSeverity, string> = {
 
 export class ToastNotification {
 	private readonly ea = resolve(IEventAggregator)
-	private readonly element = resolve(INode) as HTMLElement
 
 	public toasts: ToastItem[] = []
 	private containerElement!: HTMLElement
@@ -35,11 +34,17 @@ export class ToastNotification {
 	}
 
 	public attached(): void {
-		this.element.addEventListener('transitionend', this.boundTransitionEnd)
+		this.containerElement.addEventListener(
+			'transitionend',
+			this.boundTransitionEnd,
+		)
 	}
 
 	public detaching(): void {
-		this.element.removeEventListener('transitionend', this.boundTransitionEnd)
+		this.containerElement.removeEventListener(
+			'transitionend',
+			this.boundTransitionEnd,
+		)
 		this.subscription.dispose()
 	}
 

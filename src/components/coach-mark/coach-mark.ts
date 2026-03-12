@@ -99,7 +99,7 @@ export class CoachMark {
 		}
 
 		if (document.startViewTransition) {
-			document.startViewTransition(reassign)
+			await document.startViewTransition(reassign).updateCallbackDone
 		} else {
 			reassign()
 		}
@@ -144,6 +144,7 @@ export class CoachMark {
 	public onTargetClick(e: Event): void {
 		e.preventDefault()
 		e.stopPropagation()
+		this.currentTarget?.click()
 		this.onTap?.()
 	}
 
