@@ -13,6 +13,11 @@ export class OrbRenderer {
 	private readonly maxParticles = 60
 	private particleScale = 1.0
 	private pulseIntensity = 0
+	public swirlIntensity = 0
+	private readonly reducedMotion =
+		typeof window !== 'undefined' &&
+		typeof window.matchMedia === 'function' &&
+		window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 	public orbX = 0
 	public orbY = 0
@@ -42,6 +47,20 @@ export class OrbRenderer {
 		this.pulseIntensity = 1.0
 	}
 
+	/** Replace 5-8 random particles with the given hue and trigger swirl. */
+	public injectColor(hue: number): void {
+		const count = 5 + Math.floor(Math.random() * 4) // 5-8
+		const indices: number[] = []
+		while (indices.length < count && indices.length < this.particles.length) {
+			const idx = Math.floor(Math.random() * this.particles.length)
+			if (!indices.includes(idx)) indices.push(idx)
+		}
+		for (const idx of indices) {
+			this.particles[idx].hue = hue + (Math.random() - 0.5) * 20
+		}
+		this.swirlIntensity = 1.0
+	}
+
 	public update(delta: number): void {
 		this.time += delta * 0.001
 
@@ -50,8 +69,15 @@ export class OrbRenderer {
 			this.pulseIntensity = Math.max(0, this.pulseIntensity - delta / 300)
 		}
 
+		// Decay swirl over ~1000ms
+		if (this.swirlIntensity > 0) {
+			this.swirlIntensity = Math.max(0, this.swirlIntensity - delta / 1000)
+		}
+
+		const swirlMultiplier = this.reducedMotion ? 1 : 1 + this.swirlIntensity * 2
+
 		for (const p of this.particles) {
-			p.angle += p.speed * delta * 0.002
+			p.angle += p.speed * delta * 0.002 * swirlMultiplier
 			p.radius += Math.sin(this.time * p.speed) * 0.1
 			p.radius = Math.max(0, Math.min(this.orbRadius * 0.8, p.radius))
 		}
@@ -60,10 +86,10 @@ export class OrbRenderer {
 	public render(ctx: CanvasRenderingContext2D, intensity: number): void {
 		ctx.save()
 
-		// Outer glow (boosted during pulse)
+		// Outer glow (boosted during pulse and swirl)
 		const effectiveIntensity = Math.min(
 			1,
-			intensity + this.pulseIntensity * 0.4,
+			intensity + this.pulseIntensity * 0.4 + this.swirlIntensity * 0.4,
 		)
 		const glowSize = this.orbRadius * (1.2 + effectiveIntensity * 0.4)
 		const glowGrad = ctx.createRadialGradient(

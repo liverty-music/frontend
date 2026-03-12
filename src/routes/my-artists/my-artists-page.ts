@@ -91,7 +91,6 @@ export class MyArtistsPage {
 	// Tutorial state
 	public showHypeExplanation = false
 	public pulsingArtistId = ''
-	private tutorialTimer: ReturnType<typeof setTimeout> | null = null
 
 	public get isTutorialStep5(): boolean {
 		return this.onboarding.currentStep === OnboardingStep.MY_ARTISTS
@@ -125,6 +124,17 @@ export class MyArtistsPage {
 		} finally {
 			this.isLoading = false
 		}
+
+		if (this.isTutorialStep5 && this.artists.length > 0) {
+			this.onboarding.activateSpotlight(
+				'[data-hype-button]',
+				this.i18n.tr('myArtists.coachMark.setHype'),
+				() => {
+					const first = this.artists[0]
+					if (first) this.openHypeSelector(first)
+				},
+			)
+		}
 	}
 
 	public detaching(): void {
@@ -132,10 +142,6 @@ export class MyArtistsPage {
 		this.abortController = null
 		this.undoHandle?.dismiss()
 		this.clearLongPressTimer()
-		if (this.tutorialTimer !== null) {
-			clearTimeout(this.tutorialTimer)
-			this.tutorialTimer = null
-		}
 	}
 
 	// --- Swipe-to-unfollow ---
@@ -347,16 +353,10 @@ export class MyArtistsPage {
 				this.pulsingArtistId = ''
 			}, 300)
 
-			// Show notification explanation, then advance to Step 6
+			// Show notification explanation — user dismisses manually
+			this.onboarding.deactivateSpotlight()
 			this.showHypeExplanation = true
 			this.hypeExplanationDialog.showModal()
-			this.tutorialTimer = setTimeout(() => {
-				this.tutorialTimer = null
-				this.showHypeExplanation = false
-				this.hypeExplanationDialog.close()
-				this.onboarding.setStep(OnboardingStep.SIGNUP)
-				void this.router.load('')
-			}, 800)
 			return
 		}
 
@@ -408,6 +408,13 @@ export class MyArtistsPage {
 
 	public hypeIcon(artist: FollowedArtist): string {
 		return HYPE_META[artist.hype]?.icon ?? '\u{1F525}'
+	}
+
+	public dismissHypeExplanation(): void {
+		this.showHypeExplanation = false
+		this.hypeExplanationDialog.close()
+		this.onboarding.setStep(OnboardingStep.SIGNUP)
+		void this.router.load('')
 	}
 
 	// --- View toggle ---

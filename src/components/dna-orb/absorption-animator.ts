@@ -9,6 +9,8 @@ interface AbsorptionAnimation {
 	imageUrl: string
 	progress: number
 	dissolved: boolean
+	hue: number
+	onComplete?: (hue: number) => void
 }
 
 interface DissolveParticle {
@@ -59,6 +61,8 @@ export class AbsorptionAnimator {
 		toY: number,
 		radius: number,
 		imageUrl: string,
+		hue = 260,
+		onComplete?: (hue: number) => void,
 	): void {
 		this.animations.push({
 			artistId,
@@ -71,6 +75,8 @@ export class AbsorptionAnimator {
 			imageUrl,
 			progress: 0,
 			dissolved: false,
+			hue,
+			onComplete,
 		})
 	}
 
@@ -85,6 +91,7 @@ export class AbsorptionAnimator {
 			}
 
 			if (anim.progress >= 1) {
+				anim.onComplete?.(anim.hue)
 				this.animations.splice(i, 1)
 			}
 		}

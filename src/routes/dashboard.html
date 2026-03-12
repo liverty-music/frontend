@@ -1,7 +1,7 @@
 <import from="../components/live-highway/live-highway"></import>
 <import from="../components/user-home-selector/user-home-selector"></import>
 <import from="../components/inline-error/inline-error"></import>
-<import from="../components/coach-mark/coach-mark"></import>
+
 <import from="../components/celebration-overlay/celebration-overlay"></import>
 
 <div class="flex flex-col h-full bg-surface-base">
@@ -81,18 +81,3 @@
   on-complete.bind="() => onCelebrationComplete()"
 ></celebration-overlay>
 
-<!-- Lane introduction + Step 3 card spotlight -->
-<coach-mark
-  target-selector.bind="laneIntroSelector"
-  message.bind="laneIntroMessage"
-  active.bind="isLaneIntroActive && !needsRegion && !showCelebration"
-  on-tap.bind="() => laneIntroPhase === 'card' ? onTutorialCardTapped() : onLaneIntroTap()"
-></coach-mark>
-
-<!-- Tutorial Step 4: Highlight My Artists tab -->
-<coach-mark
-  target-selector="[data-nav-my-artists]"
-  message.bind="$this.i18n?.tr('dashboard.coachMark.viewArtists') ?? ''"
-  active.bind="isTutorialStep4"
-  on-tap.bind="() => onTutorialMyArtistsTapped()"
-></coach-mark>

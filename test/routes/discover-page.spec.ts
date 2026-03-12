@@ -74,10 +74,13 @@ describe('DiscoverPage', () => {
 		isOnboarding: boolean
 		setStep: ReturnType<typeof vi.fn>
 		complete: ReturnType<typeof vi.fn>
+		activateSpotlight: ReturnType<typeof vi.fn>
+		deactivateSpotlight: ReturnType<typeof vi.fn>
 	}
 	let mockLocalClient: {
 		followedCount: number
 		setAdminArea: ReturnType<typeof vi.fn>
+		listFollowed: ReturnType<typeof vi.fn>
 	}
 
 	beforeEach(() => {
@@ -93,10 +96,13 @@ describe('DiscoverPage', () => {
 			isOnboarding: false,
 			setStep: vi.fn(),
 			complete: vi.fn(),
+			activateSpotlight: vi.fn(),
+			deactivateSpotlight: vi.fn(),
 		}
 		mockLocalClient = {
 			followedCount: 0,
 			setAdminArea: vi.fn(),
+			listFollowed: vi.fn().mockReturnValue([]),
 		}
 
 		const container = createTestContainer(
@@ -642,6 +648,24 @@ describe('DiscoverPage', () => {
 			mockLocalClient.followedCount = 2
 			expect(sut.showDashboardCoachMark).toBe(false)
 		})
+
+		it('TC-GATE-01: should be false when concertGroupCount is 0 despite 3+ follows and all searches complete', () => {
+			mockOnboarding.isOnboarding = true
+			mockLocalClient.followedCount = 3
+			sut.completedSearchCount = 3
+			sut.concertGroupCount = 0
+
+			expect(sut.showDashboardCoachMark).toBe(false)
+		})
+
+		it('TC-GATE-02: should be true when concertGroupCount > 0 with 3+ follows and all searches complete', () => {
+			mockOnboarding.isOnboarding = true
+			mockLocalClient.followedCount = 3
+			sut.completedSearchCount = 3
+			sut.concertGroupCount = 2
+
+			expect(sut.showDashboardCoachMark).toBe(true)
+		})
 	})
 
 	describe('poolBubbles', () => {
@@ -669,6 +693,38 @@ describe('DiscoverPage', () => {
 		it('should return empty when not onboarding', () => {
 			mockOnboarding.isOnboarding = false
 			expect(sut.guidanceMessage).toBe('')
+		})
+
+		it('TC-GATE-03: should show "no upcoming events" when all searches complete with no concerts', () => {
+			mockOnboarding.isOnboarding = true
+			mockLocalClient.followedCount = 3
+			sut.completedSearchCount = 3
+			sut.concertGroupCount = 0
+
+			expect(sut.guidanceMessage).toBe('discovery.guidanceNoConcerts')
+		})
+	})
+
+	describe('onCoachMarkTap (Home nav step advancement)', () => {
+		it('should deactivate spotlight, advance step to DASHBOARD, and navigate', () => {
+			mockOnboarding.isOnboarding = true
+			mockOnboarding.currentStep = 1 // DISCOVER
+			mockLocalClient.followedCount = 3
+
+			sut.onCoachMarkTap()
+
+			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalledTimes(1)
+			expect(mockOnboarding.setStep).toHaveBeenCalledWith(3) // DASHBOARD
+			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
+		})
+
+		it('should not advance step when showDashboardCoachMark is false (fewer than 3 follows)', () => {
+			mockOnboarding.isOnboarding = true
+			mockOnboarding.currentStep = 1 // DISCOVER
+			mockLocalClient.followedCount = 1
+
+			// showDashboardCoachMark should be false
+			expect(sut.showDashboardCoachMark).toBe(false)
 		})
 	})
 })

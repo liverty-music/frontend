@@ -45,9 +45,43 @@ export class OnboardingService {
 
 	public currentStep: OnboardingStepValue
 
+	// Spotlight config — driven by page components, consumed by app-shell coach mark
+	public spotlightTarget = ''
+	public spotlightMessage = ''
+	public spotlightRadius = '12px'
+	public spotlightActive = false
+	public onSpotlightTap: (() => void) | undefined = undefined
+
 	constructor() {
 		this.currentStep = this.readStep()
 		this.logger.debug('Initialized', { step: this.currentStep })
+	}
+
+	/**
+	 * Activate the spotlight on a target element.
+	 * Called by page components to drive the app-shell coach mark.
+	 */
+	public activateSpotlight(
+		target: string,
+		message: string,
+		onTap?: () => void,
+		radius = '12px',
+	): void {
+		this.spotlightTarget = target
+		this.spotlightMessage = message
+		this.spotlightRadius = radius
+		this.onSpotlightTap = onTap
+		this.spotlightActive = true
+	}
+
+	/**
+	 * Deactivate the spotlight entirely. Called at Step 6 (SignUp).
+	 */
+	public deactivateSpotlight(): void {
+		this.spotlightActive = false
+		this.spotlightTarget = ''
+		this.spotlightMessage = ''
+		this.onSpotlightTap = undefined
 	}
 
 	/**

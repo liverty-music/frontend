@@ -3,6 +3,7 @@ import { IRouter } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import type { DateGroup } from '../components/live-highway/live-event'
 import { UserHomeSelector } from '../components/user-home-selector/user-home-selector'
+import { StorageKeys } from '../constants/storage-keys'
 import { IDashboardService } from '../services/dashboard-service'
 import { ILocalArtistClient } from '../services/local-artist-client'
 import {
@@ -13,10 +14,17 @@ import {
 export type LaneIntroPhase = 'home' | 'near' | 'away' | 'card' | 'done'
 
 export class Dashboard {
-	// Static flag persists across route-component re-creation for the SPA session
-	// lifetime. Prevents celebration overlay re-triggering on every navigation
-	// to /dashboard while onboarding step is DASHBOARD.
-	private static celebrationShown = false
+	private static get celebrationShown(): boolean {
+		return localStorage.getItem(StorageKeys.celebrationShown) === '1'
+	}
+
+	private static set celebrationShown(value: boolean) {
+		if (value) {
+			localStorage.setItem(StorageKeys.celebrationShown, '1')
+		} else {
+			localStorage.removeItem(StorageKeys.celebrationShown)
+		}
+	}
 
 	public dateGroups: DateGroup[] = []
 	public needsRegion = false
@@ -59,6 +67,23 @@ export class Dashboard {
 			Dashboard.celebrationShown = true
 		}
 		this.loadData()
+
+		// When returning to step 3 with celebration and region already resolved,
+		// resume the lane intro (e.g. page reload during onboarding)
+		if (this.isTutorialStep3 && !this.showCelebration && !this.needsRegion) {
+			this.startLaneIntro()
+		}
+
+		// Resume step 4 spotlight after reload: re-activate My Artists tab spotlight
+		// so the user can proceed. Without this, the detail sheet blocks dismiss
+		// but the coach mark never re-appears, causing a dead end.
+		if (this.isTutorialStep4) {
+			this.onboarding.activateSpotlight(
+				'[data-nav-my-artists]',
+				this.i18n.tr('dashboard.coachMark.viewArtists'),
+				() => this.onTutorialMyArtistsTapped(),
+			)
+		}
 	}
 
 	public loadData(): void {
@@ -122,10 +147,29 @@ export class Dashboard {
 		this.advanceLaneIntro()
 	}
 
-	private startLaneIntro(): void {
+	private async startLaneIntro(): Promise<void> {
 		if (!this.isTutorialStep3) return
+
+		// Wait for data to finish loading before deciding
+		if (this.dataPromise) {
+			try {
+				await this.dataPromise
+			} catch {
+				// Data load failed — proceed with whatever we have
+			}
+		}
+
+		// When no concert data is available, skip lane intro entirely
+		if (this.dateGroups.length === 0) {
+			this.logger.warn('No concert data available, skipping lane intro')
+			this.laneIntroPhase = 'done'
+			this.skipToMyArtists()
+			return
+		}
+
 		this.laneIntroPhase = 'home'
 		this.logger.info('Lane intro started')
+		this.updateSpotlightForPhase()
 		this.scheduleLaneIntroAdvance()
 	}
 
@@ -142,12 +186,51 @@ export class Dashboard {
 			return
 		}
 
-		this.laneIntroPhase = phases[currentIdx + 1]
+		let nextPhase = phases[currentIdx + 1]
+
+		// Skip card phase when no concert data is available
+		if (nextPhase === 'card' && this.dateGroups.length === 0) {
+			this.logger.warn('No concert cards available, skipping card phase')
+			nextPhase = 'done'
+			this.laneIntroPhase = nextPhase
+			this.onboarding.deactivateSpotlight()
+			this.skipToMyArtists()
+			return
+		}
+
+		this.laneIntroPhase = nextPhase
 		this.logger.info('Lane intro advanced', { phase: this.laneIntroPhase })
+		this.updateSpotlightForPhase()
 
 		if (this.laneIntroPhase !== 'done' && this.laneIntroPhase !== 'card') {
 			this.scheduleLaneIntroAdvance()
 		}
+	}
+
+	/**
+	 * Skip from lane intro directly to Step 4 (My Artists tab spotlight)
+	 * when no concert cards are available.
+	 */
+	private skipToMyArtists(): void {
+		this.onboarding.setStep(OnboardingStep.DETAIL)
+		this.onboarding.activateSpotlight(
+			'[data-nav-my-artists]',
+			this.i18n.tr('dashboard.coachMark.viewArtists'),
+			() => this.onTutorialMyArtistsTapped(),
+		)
+	}
+
+	private updateSpotlightForPhase(): void {
+		const selector = this.laneIntroSelector
+		const message = this.laneIntroMessage
+		if (!selector) return
+
+		const onTap =
+			this.laneIntroPhase === 'card'
+				? () => this.onTutorialCardTapped()
+				: () => this.onLaneIntroTap()
+
+		this.onboarding.activateSpotlight(selector, message, onTap)
 	}
 
 	private scheduleLaneIntroAdvance(): void {
@@ -194,6 +277,12 @@ export class Dashboard {
 		if (this.isTutorialStep3) {
 			this.logger.info('Tutorial: concert card tapped, advancing to Step 4')
 			this.onboarding.setStep(OnboardingStep.DETAIL)
+			// Step 4: Spotlight slides to My Artists tab
+			this.onboarding.activateSpotlight(
+				'[data-nav-my-artists]',
+				this.i18n.tr('dashboard.coachMark.viewArtists'),
+				() => this.onTutorialMyArtistsTapped(),
+			)
 		}
 	}
 
