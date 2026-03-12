@@ -15,6 +15,7 @@ import { Toast } from '../components/toast-notification/toast'
 import { IAuthService } from '../services/auth-service'
 import {
 	IOnboardingService,
+	OnboardingStep,
 	type OnboardingStepValue,
 	STEP_ROUTE_MAP,
 } from '../services/onboarding-service'
@@ -50,10 +51,24 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 			if (this.onboarding.currentStep >= tutorialStep) {
 				return true
 			}
+			// Direct nav tap on Dashboard while coach mark is active — advance step
+			if (
+				tutorialStep === OnboardingStep.DASHBOARD &&
+				this.onboarding.spotlightActive
+			) {
+				this.onboarding.deactivateSpotlight()
+				this.onboarding.setStep(OnboardingStep.DASHBOARD)
+				return true
+			}
 			// Redirect to the route for the current step
 			return (
 				STEP_ROUTE_MAP[this.onboarding.currentStep as OnboardingStepValue] || ''
 			)
+		}
+
+		// Priority 2.5: Onboarding user on a route without tutorialStep — redirect silently
+		if (tutorialStep === undefined && this.onboarding.isOnboarding) {
+			return this.onboarding.getRouteForCurrentStep()
 		}
 
 		// Priority 3: Not authenticated, not in tutorial

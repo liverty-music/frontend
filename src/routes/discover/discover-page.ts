@@ -73,6 +73,7 @@ export class DiscoverPage {
 	private readonly concertSearchStatus = new Map<string, 'pending' | 'done'>()
 	private readonly searchTimeouts = new Set<number>()
 	public completedSearchCount = 0
+	public concertGroupCount = -1 // -1 = not yet checked
 
 	public get poolBubbles(): ArtistBubble[] {
 		return this.pool.availableBubbles
@@ -93,13 +94,29 @@ export class DiscoverPage {
 		return (
 			this.isOnboarding &&
 			this.followedCount >= DiscoverPage.TUTORIAL_FOLLOW_TARGET &&
+			this.completedSearchCount >= this.followedCount &&
+			this.concertGroupCount > 0
+		)
+	}
+
+	public get allSearchesComplete(): boolean {
+		return (
+			this.isOnboarding &&
+			this.followedCount >= DiscoverPage.TUTORIAL_FOLLOW_TARGET &&
 			this.completedSearchCount >= this.followedCount
 		)
 	}
 
-	public get searchProgress(): number {
-		if (this.followedCount === 0) return 0
-		return this.completedSearchCount / this.followedCount
+	@watch('showDashboardCoachMark')
+	protected onShowDashboardCoachMarkChanged(show: boolean): void {
+		if (show) {
+			this.onboarding.activateSpotlight(
+				'[data-nav-dashboard]',
+				this.i18n.tr('discovery.coachMark.viewTimetable'),
+				() => this.onCoachMarkTap(),
+				'50%',
+			)
+		}
 	}
 
 	public get guidanceMessage(): string {
@@ -110,6 +127,8 @@ export class DiscoverPage {
 		if (remaining >= 2)
 			return this.i18n.tr('discovery.guidanceRemaining', { remaining })
 		if (remaining === 1) return this.i18n.tr('discovery.guidanceLast')
+		if (this.allSearchesComplete && this.concertGroupCount === 0)
+			return this.i18n.tr('discovery.guidanceNoConcerts')
 		return this.i18n.tr('discovery.guidanceReady')
 	}
 
@@ -120,6 +139,18 @@ export class DiscoverPage {
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
 			this.ea.publish(new Toast(this.i18n.tr('discover.loadFailed'), 'error'))
+		}
+
+		// During onboarding, sync with pre-seeded followed artists from localStorage
+		// (e.g. page reload or E2E seeding) and trigger their concert searches
+		if (this.isOnboarding) {
+			const preSeeded = this.localClient.listFollowed()
+			for (const artist of preSeeded) {
+				if (!this.concertSearchStatus.has(artist.id)) {
+					this.concertSearchStatus.set(artist.id, 'pending')
+					this.searchConcertsWithTimeout(artist.id)
+				}
+			}
 		}
 	}
 
@@ -382,6 +413,8 @@ export class DiscoverPage {
 		this.logger.info('Tutorial: coach mark tapped, advancing to dashboard', {
 			followedCount: this.followedCount,
 		})
+		// Deactivate spotlight before navigating — dashboard will reactivate during lane intro
+		this.onboarding.deactivateSpotlight()
 		this.onboarding.setStep(OnboardingStep.DASHBOARD)
 		void this.router.load('/dashboard')
 	}
@@ -417,6 +450,33 @@ export class DiscoverPage {
 		this.completedSearchCount = [...this.concertSearchStatus.values()].filter(
 			(s) => s === 'done',
 		).length
+
+		// Check if all searches are done and verify concert data exists
+		if (this.allSearchesComplete) {
+			void this.verifyConcertData()
+		}
+	}
+
+	/**
+	 * Call ConcertService/List to verify that at least 1 date group exists.
+	 * Updates concertGroupCount which gates the dashboard coach mark.
+	 */
+	private async verifyConcertData(): Promise<void> {
+		try {
+			const groups = await this.concertService.listByFollower(
+				this.abortController.signal,
+			)
+			if (this.abortController.signal.aborted) return
+			this.concertGroupCount = groups.length
+			this.logger.info('Concert data verified', {
+				groupCount: this.concertGroupCount,
+			})
+		} catch (err) {
+			if ((err as Error).name === 'AbortError') return
+			this.logger.warn('Failed to verify concert data', { error: err })
+			// Treat failure as no data — user can follow more artists
+			this.concertGroupCount = 0
+		}
 	}
 
 	// --- Data orchestration methods (moved from ArtistDiscoveryService) ---

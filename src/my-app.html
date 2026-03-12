@@ -2,6 +2,7 @@
 <import from="./components/pwa-install-prompt/pwa-install-prompt"></import>
 <import from="./components/notification-prompt/notification-prompt"></import>
 <import from="./components/toast-notification/toast-notification"></import>
+<import from="./components/coach-mark/coach-mark"></import>
 
 <main>
   <au-viewport></au-viewport>
@@ -13,5 +14,14 @@
 <notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
 <toast-notification></toast-notification>
 <error-banner></error-banner>
+
+<!-- Onboarding coach mark: single instance driven by onboarding service -->
+<coach-mark
+  target-selector.bind="onboarding.spotlightTarget"
+  message.bind="onboarding.spotlightMessage"
+  spotlight-radius.bind="onboarding.spotlightRadius"
+  active.bind="onboarding.spotlightActive"
+  on-tap.bind="() => onboarding.onSpotlightTap?.()"
+></coach-mark>
 
 <bottom-nav-bar show.bind="showNav"></bottom-nav-bar>

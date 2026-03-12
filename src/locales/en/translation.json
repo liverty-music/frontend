@@ -159,7 +159,8 @@
 			"description": "Your hype level controls which concert notifications you receive.",
 			"watch": "Dashboard only — no push notifications",
 			"home": "Notified when concerts are in your home area",
-			"away": "Notified for all concerts nationwide"
+			"away": "Notified for all concerts nationwide",
+			"ok": "OK"
 		},
 		"empty": {
 			"title": "No artists followed yet",
@@ -187,6 +188,7 @@
 		"guidanceRemaining": "Nice! {{remaining}} more to go!",
 		"guidanceLast": "Just 1 more!",
 		"guidanceReady": "All set!",
+		"guidanceNoConcerts": "No upcoming events found yet — try following more artists!",
 		"generateDashboard": "👉 Generate Dashboard",
 		"viewSchedule": "View Live Schedule ({{count}} artists)",
 		"orbLabel": "Music DNA",

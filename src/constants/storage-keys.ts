@@ -8,6 +8,7 @@ export const StorageKeys = {
 	pwaSessionCount: 'pwa.sessionCount',
 	pwaInstallPromptDismissed: 'pwa.installPromptDismissed',
 	pwaCompletedSessionCount: 'pwa.completedSessionCount',
+	celebrationShown: 'onboarding.celebrationShown',
 } as const
 
 /**

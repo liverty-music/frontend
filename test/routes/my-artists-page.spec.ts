@@ -93,6 +93,8 @@ describe('MyArtistsPage', () => {
 			isOnboarding: false,
 			setStep: vi.fn(),
 			complete: vi.fn(),
+			activateSpotlight: vi.fn(),
+			deactivateSpotlight: vi.fn(),
 		}
 
 		const container = createTestContainer(
@@ -317,22 +319,26 @@ describe('MyArtistsPage', () => {
 
 	describe('tutorial step 5 hype timing', () => {
 		let tutorialSut: InstanceType<typeof MyArtistsPage>
+		// biome-ignore lint/suspicious/noExplicitAny: test mock
+		let tutorialOnboarding: any
 
 		beforeEach(async () => {
 			vi.useFakeTimers()
 
-			const mockOnboarding = {
+			tutorialOnboarding = {
 				currentStep: 5, // MY_ARTISTS
 				isOnboarding: true,
 				isCompleted: false,
 				setStep: vi.fn(),
 				complete: vi.fn(),
-			}
+				activateSpotlight: vi.fn(),
+				deactivateSpotlight: vi.fn(),
+			} as any
 
 			const container = createTestContainer(
 				Registration.instance(mockIFollowServiceClient, mockFollowService),
 				Registration.instance(mockIRouter, mockRouter),
-				Registration.instance(mockIOnboardingService, mockOnboarding),
+				Registration.instance(mockIOnboardingService, tutorialOnboarding),
 				Registration.instance(IEventAggregator, { publish: vi.fn() }),
 			)
 			container.register(MyArtistsPage)
@@ -371,17 +377,18 @@ describe('MyArtistsPage', () => {
 			expect(tutorialSut.pulsingArtistId).toBe('')
 		})
 
-		it('should use 800ms delay for hype explanation', () => {
+		it('should show hype explanation until user dismisses', () => {
 			tutorialSut.openHypeSelector(tutorialSut.artists[0])
 			tutorialSut.selectHype(1)
 
-			// At 700ms, explanation should still be showing
-			vi.advanceTimersByTime(700)
+			// Explanation stays visible — no auto-dismiss
 			expect(tutorialSut.showHypeExplanation).toBe(true)
 
-			// At 800ms, explanation should close
-			vi.advanceTimersByTime(100)
+			// User dismisses manually
+			tutorialSut.dismissHypeExplanation()
 			expect(tutorialSut.showHypeExplanation).toBe(false)
+			expect(tutorialOnboarding.setStep).toHaveBeenCalledWith(6)
+			expect(mockRouter.load).toHaveBeenCalledWith('')
 		})
 	})
 })

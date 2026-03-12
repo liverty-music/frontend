@@ -57,6 +57,14 @@ export default defineConfig({
       },
     },
     {
+      name: 'onboarding',
+      testMatch: ['e2e/onboarding-flow.spec.ts', 'e2e/css-antipattern-verification.spec.ts'],
+      use: {
+        ...devices['Pixel 7'],
+        baseURL: 'http://localhost:9000',
+      },
+    },
+    {
       name: 'mobile-layout',
       testMatch: 'e2e/layout/**/*.spec.ts',
       testIgnore: 'e2e/layout/**/*.auth.spec.ts',

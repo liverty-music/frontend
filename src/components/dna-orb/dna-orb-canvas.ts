@@ -239,6 +239,7 @@ export class DnaOrbCanvas {
 			const artist = bubble.artist
 
 			// Remove from physics and start absorption
+			const hue = this.artistHue(artist.name)
 			this.physics.removeBubble(artist.id)
 			this.absorptionAnimator.startAbsorption(
 				artist.id,
@@ -249,6 +250,8 @@ export class DnaOrbCanvas {
 				this.orbRenderer.orbY,
 				artist.radius,
 				artist.imageUrl,
+				hue,
+				(completedHue) => this.orbRenderer.injectColor(completedHue),
 			)
 
 			// Notify parent via DOM event

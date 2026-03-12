@@ -56,6 +56,8 @@ describe('Dashboard', () => {
 		isOnboarding: boolean
 		setStep: ReturnType<typeof vi.fn>
 		complete: ReturnType<typeof vi.fn>
+		activateSpotlight: ReturnType<typeof vi.fn>
+		deactivateSpotlight: ReturnType<typeof vi.fn>
 	}
 	let mockLocalClient: {
 		followedCount: number
@@ -72,6 +74,8 @@ describe('Dashboard', () => {
 			isOnboarding: false,
 			setStep: vi.fn(),
 			complete: vi.fn(),
+			activateSpotlight: vi.fn(),
+			deactivateSpotlight: vi.fn(),
 		}
 		mockLocalClient = {
 			followedCount: 0,
@@ -201,6 +205,33 @@ describe('Dashboard', () => {
 			sut.needsRegion = true
 			sut.onHomeSelected('JP-13')
 			expect(sut.needsRegion).toBe(false)
+		})
+	})
+
+	describe('onCelebrationComplete (lane intro with empty data)', () => {
+		it('should skip lane intro and advance to Step 4 when no concert data', async () => {
+			mockOnboarding.currentStep = 3
+			mockOnboarding.isOnboarding = true
+			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
+
+			sut.loadData()
+			await sut.dataPromise
+
+			// Simulate celebration completing
+			sut.showCelebration = true
+			sut.onCelebrationComplete()
+
+			// Wait for the async startLaneIntro to complete
+			await new Promise((r) => setTimeout(r, 50))
+
+			expect(sut.showCelebration).toBe(false)
+			expect(sut.laneIntroPhase).toBe('done')
+			expect(mockOnboarding.setStep).toHaveBeenCalledWith(4) // DETAIL
+			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
+				'[data-nav-my-artists]',
+				expect.any(String),
+				expect.any(Function),
+			)
 		})
 	})
 

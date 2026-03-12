@@ -371,29 +371,6 @@
 	animation: hud-enter 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.search-progress-bar {
-	width: 60%;
-	max-width: 200px;
-	height: 4px;
-	border-radius: 2px;
-
-	background: oklch(100% 0 0deg / 15%);
-}
-
-.search-progress-fill {
-	height: 100%;
-	border-radius: 2px;
-
-	background: linear-gradient(
-		90deg,
-		oklch(70.9% 0.159 294deg),
-		oklch(81.1% 0.101 294deg)
-	);
-	box-shadow: 0 0 8px oklch(70.9% 0.159 294deg / 40%);
-
-	transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 .hud-message {
 	margin: 0;
 	padding: 0.625rem 1.25rem;

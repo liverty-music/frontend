@@ -1,9 +1,5 @@
-import { bindable, resolve } from 'aurelia'
+import { bindable } from 'aurelia'
 import { displayName } from '../../constants/iso3166'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../services/onboarding-service'
 import type { LiveEvent } from './live-event'
 
 export class EventDetailSheet {
@@ -13,19 +9,14 @@ export class EventDetailSheet {
 	public dragOffset = 0
 
 	private sheetElement!: HTMLDialogElement
-	private readonly onboarding = resolve(IOnboardingService)
 	private touchStartY = 0
 	private isDragging = false
 	private readonly DISMISS_THRESHOLD = 100
 	private triggerElement: HTMLElement | null = null
 
-	private get isDismissBlocked(): boolean {
-		return this.onboarding.currentStep === OnboardingStep.DETAIL
-	}
-
 	// Arrow function preserves `this` binding for add/removeEventListener
 	private readonly onKeyDown = (e: KeyboardEvent): void => {
-		if (e.key === 'Escape' && this.isOpen && !this.isDismissBlocked) {
+		if (e.key === 'Escape' && this.isOpen) {
 			this.close()
 		}
 	}
@@ -93,7 +84,6 @@ export class EventDetailSheet {
 
 	public onBackdropClick(e: Event): void {
 		if (e.target === this.sheetElement) {
-			if (this.isDismissBlocked) return
 			this.close()
 		}
 	}
@@ -110,7 +100,6 @@ export class EventDetailSheet {
 
 	public onTouchMove(e: TouchEvent): void {
 		if (!this.isDragging) return
-		if (this.isDismissBlocked) return
 		const scrollable = this.sheetElement.querySelector('.overflow-y-auto')
 		if (scrollable && scrollable.scrollTop > 0) {
 			this.isDragging = false
@@ -123,11 +112,6 @@ export class EventDetailSheet {
 	public onTouchEnd(): void {
 		if (!this.isDragging) return
 		this.isDragging = false
-
-		if (this.isDismissBlocked) {
-			this.dragOffset = 0
-			return
-		}
 
 		if (this.dragOffset > this.DISMISS_THRESHOLD) {
 			this.close()

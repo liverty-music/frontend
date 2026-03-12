@@ -13,6 +13,12 @@ export class SignupModal {
 	private readonly logger = resolve(ILogger).scopeTo('SignupModal')
 	private readonly i18n = resolve(I18N)
 
+	public attached(): void {
+		if (this.active) {
+			this.dialogElement.showModal()
+		}
+	}
+
 	public activeChanged(newValue: boolean): void {
 		if (!this.dialogElement) return
 		if (newValue) {

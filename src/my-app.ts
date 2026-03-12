@@ -2,6 +2,7 @@ import { IRouter, IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './services/auth-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
+import { IOnboardingService } from './services/onboarding-service'
 @route({
 	title: 'Liverty Music',
 	routes: [
@@ -69,6 +70,7 @@ export class MyApp {
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
+	public readonly onboarding = resolve(IOnboardingService)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly logger = resolve(ILogger).scopeTo('MyApp')
 
