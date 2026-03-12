@@ -10,8 +10,8 @@
 	"dependencies": {
 		"@aurelia/i18n": "^2.0.0-rc.0",
 		"@aurelia/router": "latest",
-		"@buf/liverty-music_schema.bufbuild_es": "^1.10.0-20260310150029-c1a7c0621406.1",
-		"@buf/liverty-music_schema.connectrpc_es": "^1.6.1-20260310150029-c1a7c0621406.2",
+		"@buf/liverty-music_schema.bufbuild_es": "^1.10.0-20260312074833-163690671e3f.1",
+		"@buf/liverty-music_schema.connectrpc_es": "^1.6.1-20260312074833-163690671e3f.2",
 		"@bufbuild/protobuf": "^1.10.1",
 		"@connectrpc/connect": "^1.7.0",
 		"@connectrpc/connect-web": "^1.7.0",

@@ -2,7 +2,7 @@ import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/en
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import {
 	type ArtistSearchStatus,
-	DateLaneGroup,
+	ProximityGroup,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
@@ -48,7 +48,7 @@ export class ConcertServiceClient {
 		}
 	}
 
-	public async listByFollower(signal?: AbortSignal): Promise<DateLaneGroup[]> {
+	public async listByFollower(signal?: AbortSignal): Promise<ProximityGroup[]> {
 		if (this.onboarding.isOnboarding) {
 			return this.listByFollowerOnboarding(signal)
 		}
@@ -69,7 +69,7 @@ export class ConcertServiceClient {
 	 */
 	private async listByFollowerOnboarding(
 		signal?: AbortSignal,
-	): Promise<DateLaneGroup[]> {
+	): Promise<ProximityGroup[]> {
 		const artists = this.localClient.listFollowed()
 		this.logger.info('Onboarding: listing concerts for local artists', {
 			count: artists.length,
@@ -130,19 +130,19 @@ export class ConcertServiceClient {
 }
 
 /**
- * Groups a flat list of concerts by date into DateLaneGroup messages.
+ * Groups a flat list of concerts by date into ProximityGroup messages.
  * All concerts are placed in the "away" lane (used during onboarding when
  * no server-side grouping is available).
  */
-function groupConcertsByDate(concerts: Concert[]): DateLaneGroup[] {
-	const groups = new Map<string, DateLaneGroup>()
+function groupConcertsByDate(concerts: Concert[]): ProximityGroup[] {
+	const groups = new Map<string, ProximityGroup>()
 	for (const concert of concerts) {
 		const ld = concert.localDate?.value
 		if (!ld) continue
 		const key = `${ld.year}-${String(ld.month).padStart(2, '0')}-${String(ld.day).padStart(2, '0')}`
 		let group = groups.get(key)
 		if (!group) {
-			group = new DateLaneGroup({ date: concert.localDate })
+			group = new ProximityGroup({ date: concert.localDate })
 			groups.set(key, group)
 		}
 		group.away.push(concert)
