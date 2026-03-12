@@ -4,16 +4,13 @@
   <import from="../icons/icon-link"></import>
   <import from="./event-detail-sheet.css"></import>
 
-  <!-- <dialog popover="manual"> combines native dialog semantics with popover
-       LIFO top-layer ordering: sheet shown first, coach mark shown after = coach
-       mark on top. Native ::backdrop replaces the sibling backdrop div.
-       Manual Escape handling is required (popover="manual" has no light dismiss). -->
+  <!-- <dialog> with dynamic popover mode set in open():
+       - popover="auto" (normal): free light dismiss (Escape, click-outside, Android back)
+       - popover="manual" (onboarding Step 4): non-dismissible, coach mark on top -->
   <dialog
     ref="sheetElement"
-    popover="manual"
     tabindex="-1"
     aria-label="Event details"
-    click.trigger="onBackdropClick($event)"
     touchstart.trigger="onTouchStart($event)"
     touchmove.trigger="onTouchMove($event)"
     touchend.trigger="onTouchEnd()"

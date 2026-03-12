@@ -1,5 +1,9 @@
-import { bindable } from 'aurelia'
+import { bindable, resolve } from 'aurelia'
 import { displayName } from '../../constants/iso3166'
+import {
+	IOnboardingService,
+	OnboardingStep,
+} from '../../services/onboarding-service'
 import type { LiveEvent } from './live-event'
 
 export class EventDetailSheet {
@@ -13,12 +17,31 @@ export class EventDetailSheet {
 	private isDragging = false
 	private readonly DISMISS_THRESHOLD = 100
 	private triggerElement: HTMLElement | null = null
+	private closedByPopstate = false
 
-	// Arrow function preserves `this` binding for add/removeEventListener
-	private readonly onKeyDown = (e: KeyboardEvent): void => {
-		if (e.key === 'Escape' && this.isOpen) {
+	private readonly onboarding = resolve(IOnboardingService)
+
+	private readonly onPopstate = (): void => {
+		if (this.isOpen) {
+			this.closedByPopstate = true
 			this.close()
 		}
+	}
+
+	private readonly onToggle = (e: ToggleEvent): void => {
+		// Fires when popover="auto" light-dismisses the sheet (Escape, click outside)
+		if (e.newState === 'closed' && this.isOpen) {
+			this.isOpen = false
+			this.dragOffset = 0
+			this.triggerElement?.focus()
+			this.triggerElement = null
+			window.removeEventListener('popstate', this.onPopstate)
+			history.replaceState(null, '', '/dashboard')
+		}
+	}
+
+	public get isDismissable(): boolean {
+		return this.onboarding.currentStep !== OnboardingStep.DETAIL
 	}
 
 	public get googleMapsUrl(): string {
@@ -57,35 +80,52 @@ export class EventDetailSheet {
 		this.event = event
 		this.isOpen = true
 		this.dragOffset = 0
+		this.closedByPopstate = false
+
+		// Dynamic popover mode: manual during onboarding Step 4 (non-dismissible),
+		// auto otherwise (free light dismiss: Escape, click-outside, Android back)
+		this.sheetElement.popover = this.isDismissable ? 'auto' : 'manual'
+
 		this.sheetElement.showPopover()
 		this.sheetElement.focus()
-		document.addEventListener('keydown', this.onKeyDown)
+
+		window.addEventListener('popstate', this.onPopstate)
+		this.sheetElement.addEventListener('toggle', this.onToggle)
+
 		history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 	}
 
 	public close(): void {
 		this.isOpen = false
 		this.dragOffset = 0
-		this.sheetElement.hidePopover()
-		document.removeEventListener('keydown', this.onKeyDown)
+
+		try {
+			this.sheetElement.hidePopover()
+		} catch {
+			// Popover may already be hidden by light dismiss
+		}
+
+		this.sheetElement.removeEventListener('toggle', this.onToggle)
+		window.removeEventListener('popstate', this.onPopstate)
+
 		this.triggerElement?.focus()
 		this.triggerElement = null
-		history.replaceState(null, '', '/dashboard')
+
+		// Skip history manipulation when the browser already navigated back
+		if (!this.closedByPopstate) {
+			history.replaceState(null, '', '/dashboard')
+		}
+		this.closedByPopstate = false
 	}
 
 	/**
 	 * Unconditional cleanup on component detach.
-	 * Navigating away while the sheet is open skips close(), so the keydown
-	 * listener must be removed here to prevent leaks and GC retention.
+	 * Navigating away while the sheet is open skips close(), so listeners
+	 * must be removed here to prevent leaks and GC retention.
 	 */
 	public detaching(): void {
-		document.removeEventListener('keydown', this.onKeyDown)
-	}
-
-	public onBackdropClick(e: Event): void {
-		if (e.target === this.sheetElement) {
-			this.close()
-		}
+		window.removeEventListener('popstate', this.onPopstate)
+		this.sheetElement.removeEventListener('toggle', this.onToggle)
 	}
 
 	public onSheetClick(e: Event): void {
@@ -93,7 +133,7 @@ export class EventDetailSheet {
 	}
 
 	public onTouchStart(e: TouchEvent): void {
-		if (!this.isOpen) return
+		if (!this.isOpen || !this.isDismissable) return
 		this.touchStartY = e.touches[0].clientY
 		this.isDragging = true
 	}

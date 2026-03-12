@@ -75,14 +75,15 @@ export class Dashboard {
 		}
 
 		// Resume step 4 spotlight after reload: re-activate My Artists tab spotlight
-		// so the user can proceed. Without this, the detail sheet blocks dismiss
-		// but the coach mark never re-appears, causing a dead end.
+		// so the user can proceed. bringSpotlightToFront ensures the coach mark
+		// renders above the detail sheet in the top-layer LIFO stack.
 		if (this.isTutorialStep4) {
 			this.onboarding.activateSpotlight(
 				'[data-nav-my-artists]',
 				this.i18n.tr('dashboard.coachMark.viewArtists'),
 				() => this.onTutorialMyArtistsTapped(),
 			)
+			this.onboarding.bringSpotlightToFront()
 		}
 	}
 
@@ -283,6 +284,8 @@ export class Dashboard {
 				this.i18n.tr('dashboard.coachMark.viewArtists'),
 				() => this.onTutorialMyArtistsTapped(),
 			)
+			// Re-insert coach mark above detail sheet in LIFO top-layer stack
+			this.onboarding.bringSpotlightToFront()
 		}
 	}
 
