@@ -1,7 +1,7 @@
 /** @type {import('stylelint').Config} */
 export default {
 	extends: ['stylelint-config-standard', 'stylelint-config-clean-order'],
-	plugins: ['stylelint-use-logical'],
+	plugins: ['stylelint-use-logical', './stylelint-plugin-cube-css/index.js'],
 	rules: {
 		'import-notation': null,
 
@@ -15,6 +15,7 @@ export default {
 					'container',
 					'starting-style',
 					'property',
+					'scope',
 				],
 			},
 		],
@@ -73,5 +74,23 @@ export default {
 		'selector-max-compound-selectors': 4,
 
 		'number-max-precision': 4,
+
+		// CUBE CSS methodology enforcement.
+		// Set as warnings until existing CSS files are migrated to CUBE CSS structure.
+		// Promote to errors (remove severity override) as files are migrated.
+		'cube/require-layer': [true, { severity: 'warning' }],
+		'cube/layer-order': [true, { severity: 'warning' }],
+		'cube/exception-data-attr': [true, { severity: 'warning' }],
+		'cube/no-visual-in-composition': [true, { severity: 'warning' }],
+		'cube/utility-single-property': [true, { severity: 'warning' }],
+		'cube/block-require-scope': [true, { severity: 'warning' }],
+		'cube/require-token-variables': [true, { severity: 'warning' }],
+		'cube/block-max-lines': [true, { severity: 'warning' }],
+		'cube/one-block-per-file': [true, { severity: 'warning' }],
+		'cube/prefer-where-in-reset': [true, { severity: 'warning' }],
+		'cube/data-attr-naming': [true, { severity: 'warning' }],
+		'cube/prefer-vi-over-vw': [true, { severity: 'warning' }],
+		'cube/require-container-name': [true, { severity: 'warning' }],
+		'cube/prefer-color-mix': [true, { severity: 'warning' }],
 	},
 }
