@@ -101,7 +101,7 @@ test.describe('Dashboard shell layout', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedDashboardState())
 		await page.goto('/dashboard')
-		await page.waitForSelector('live-highway, [class*="justify-center"]', {
+		await page.waitForSelector('live-highway, .dashboard-empty', {
 			timeout: 5000,
 		})
 	})
@@ -118,22 +118,21 @@ test.describe('Dashboard shell layout', () => {
 		layoutPage: page,
 	}) => {
 		const contentHeight = await page.evaluate(() => {
-			const root = document.querySelector('au-viewport > * > .flex.flex-col')
+			const root = document.querySelector('.dashboard-layout')
 			if (!root) return { root: 0, content: 0 }
-			const children = root.children
-			const content = children[children.length - 1] as HTMLElement
+			const body = root.querySelector('.dashboard-body')
 			return {
 				root: root.getBoundingClientRect().height,
-				content: content?.getBoundingClientRect().height ?? 0,
+				content: body?.getBoundingClientRect().height ?? 0,
 			}
 		})
 		expect(
 			contentHeight.root,
-			'root flex column should have height',
+			'dashboard-layout should have height',
 		).toBeGreaterThan(100)
 		expect(
 			contentHeight.content,
-			'content area should not collapse to zero',
+			'dashboard-body should not collapse to zero',
 		).toBeGreaterThan(50)
 	})
 
@@ -141,9 +140,7 @@ test.describe('Dashboard shell layout', () => {
 		layoutPage: page,
 	}) => {
 		const visibleText = page
-			.locator(
-				'au-viewport h1, au-viewport p, au-viewport [class*="font-display"]',
-			)
+			.locator('au-viewport h1, au-viewport p, au-viewport span')
 			.first()
 		await expect(visibleText).toBeVisible()
 
@@ -197,14 +194,14 @@ test.describe('Dashboard header', () => {
 	test('header contains three STAGE labels (H2)', async ({
 		layoutPage: page,
 	}) => {
-		const labels = page.locator('live-highway .sticky.top-0.grid.grid-cols-3 span')
+		const labels = page.locator('live-highway .stage-header .stage-label-text')
 		await expect(labels).toHaveCount(3)
 	})
 
 	test('header is pinned to top of dashboard (H3)', async ({
 		layoutPage: page,
 	}) => {
-		const header = page.locator('live-highway .sticky.top-0.grid.grid-cols-3').first()
+		const header = page.locator('live-highway .stage-header').first()
 		const headerBox = await header.boundingBox()
 		const auViewportBox = await page.locator('au-viewport').boundingBox()
 
@@ -212,6 +209,41 @@ test.describe('Dashboard header', () => {
 		expect(auViewportBox).toBeTruthy()
 		// Header top should align with au-viewport top
 		expect(headerBox!.y).toBeCloseTo(auViewportBox!.y, 0)
+	})
+
+	test('stage header stays sticky after scrolling (H4)', async ({
+		layoutPage: page,
+	}) => {
+		const scrollContainer = page.locator('live-highway .highway-scroll')
+		const header = page.locator('live-highway .stage-header').first()
+
+		// Record header position before scroll
+		const beforeBox = await header.boundingBox()
+		expect(beforeBox).toBeTruthy()
+
+		// Scroll the highway content down
+		await scrollContainer.evaluate((el) => {
+			el.scrollTop = 200
+		})
+
+		// Header should still be at the same Y position (sticky)
+		const afterBox = await header.boundingBox()
+		expect(afterBox).toBeTruthy()
+		expect(afterBox!.y).toBeCloseTo(beforeBox!.y, 0)
+	})
+
+	test('bottom-nav stays pinned after scrolling (H5)', async ({
+		layoutPage: page,
+	}) => {
+		const scrollContainer = page.locator('live-highway .highway-scroll')
+
+		// Scroll the highway content down
+		await scrollContainer.evaluate((el) => {
+			el.scrollTop = 200
+		})
+
+		// Bottom nav should still be anchored to viewport bottom
+		await expectAnchored(page, page.locator('bottom-nav-bar'), 'bottom', 2)
 	})
 })
 
@@ -224,13 +256,13 @@ test.describe('Dashboard empty state', () => {
 		await page.addInitScript(seedDashboardState())
 		await page.goto('/dashboard')
 		// Wait for promise to resolve to empty state
-		await page.waitForSelector('[class*="justify-center"] svg, live-highway', {
+		await page.waitForSelector('.dashboard-empty svg, live-highway', {
 			timeout: 5000,
 		})
 	})
 
 	test('empty state icon is visible (E1)', async ({ layoutPage: page }) => {
-		const icon = page.locator('[class*="justify-center"] svg').first()
+		const icon = page.locator('.dashboard-empty svg').first()
 		// Only check if empty state is shown (no followed artists -> empty)
 		const isEmpty = (await icon.count()) > 0
 		if (!isEmpty) return // Data loaded, skip empty state tests
@@ -244,20 +276,14 @@ test.describe('Dashboard empty state', () => {
 	test('empty state shows title and subtitle text (E2)', async ({
 		layoutPage: page,
 	}) => {
-		// Scope to dashboard's empty state (has text-center, distinguishing from live-highway's)
-		const emptyContainer = page.locator(
-			'au-viewport .text-center.items-center.justify-center',
-		)
+		const emptyContainer = page.locator('.dashboard-empty')
 		if ((await emptyContainer.count()) === 0) return
 		const paragraphs = emptyContainer.locator('p')
 		await expect(paragraphs).toHaveCount(2)
 	})
 
 	test('empty state has discover link (E3)', async ({ layoutPage: page }) => {
-		// Aurelia router resolves href="/discover" relative to current route
-		const emptyContainer = page.locator(
-			'au-viewport .text-center.items-center.justify-center',
-		)
+		const emptyContainer = page.locator('.dashboard-empty')
 		if ((await emptyContainer.count()) === 0) return
 		const link = emptyContainer.locator('a[href*="discover"]')
 		await expect(link).toHaveCount(1)
@@ -267,10 +293,7 @@ test.describe('Dashboard empty state', () => {
 	test('empty state is vertically centered in content area (E4)', async ({
 		layoutPage: page,
 	}) => {
-		// Scope to dashboard's empty state (has text-center + px-6)
-		const emptyContainer = page.locator(
-			'au-viewport .text-center.items-center.justify-center.px-6',
-		)
+		const emptyContainer = page.locator('.dashboard-empty')
 		if ((await emptyContainer.count()) === 0) return
 
 		const containerBox = await emptyContainer.boundingBox()
@@ -314,28 +337,25 @@ test.describe('Dashboard data-loaded state', () => {
 	}) => {
 		// Critical regression test: the height chain must propagate through
 		// au-viewport → dashboard → promise.bind div → live-highway → scroll container.
-		// Without flex flex-col on promise.bind div, flex-1 collapses to 0px,
-		// and live-highway's overflow-y:auto clips all cards invisible.
 		const heights = await page.evaluate(() => {
-			const root = document.querySelector('au-viewport > * > .flex.flex-col')
+			const root = document.querySelector('.dashboard-layout')
 			if (!root) return { root: 0, content: 0, scrollContainer: 0 }
-			const children = root.children
-			const content = children[children.length - 1] as HTMLElement
-			const scroll = document.querySelector('.overflow-y-auto')
+			const body = root.querySelector('.dashboard-body')
+			const scroll = document.querySelector('.highway-scroll')
 			return {
 				root: root.getBoundingClientRect().height,
-				content: content?.getBoundingClientRect().height ?? 0,
+				content: body?.getBoundingClientRect().height ?? 0,
 				scrollContainer: scroll?.getBoundingClientRect().height ?? 0,
 			}
 		})
 
 		expect(
 			heights.root,
-			'dashboard root flex column should fill viewport',
+			'dashboard-layout should fill viewport',
 		).toBeGreaterThan(200)
 		expect(
 			heights.content,
-			'content area (flex-1 min-h-0) must not collapse to zero',
+			'dashboard-body must not collapse to zero',
 		).toBeGreaterThan(100)
 		expect(
 			heights.scrollContainer,
@@ -365,7 +385,7 @@ test.describe('Dashboard data-loaded state', () => {
 	test('three-lane grid uses equal 1fr 1fr 1fr ratio (C2)', async ({
 		layoutPage: page,
 	}) => {
-		const grid = page.locator('.grid.grid-cols-3').first()
+		const grid = page.locator('.lane-grid').first()
 		await expect(grid).toBeVisible()
 
 		const gridBox = await grid.boundingBox()
@@ -391,11 +411,11 @@ test.describe('Dashboard data-loaded state', () => {
 		expect(laneBoxes[2]!.width / totalWidth).toBeCloseTo(0.333, 1)
 	})
 
-	test('sticky date header exists (C3)', async ({ layoutPage: page }) => {
-		const stickyHeader = page.locator('live-highway .sticky.top-0.grid.grid-cols-3').first()
-		await expect(stickyHeader).toBeVisible()
+	test('stage header has sticky positioning (C3)', async ({ layoutPage: page }) => {
+		const stageHeader = page.locator('live-highway .stage-header').first()
+		await expect(stageHeader).toBeVisible()
 
-		const style = await stickyHeader.evaluate(
+		const style = await stageHeader.evaluate(
 			(el) => getComputedStyle(el).position,
 		)
 		expect(style).toBe('sticky')
@@ -430,12 +450,12 @@ test.describe('Dashboard data-loaded state', () => {
 	test('live-highway scroll container has renderable height (C7)', async ({
 		layoutPage: page,
 	}) => {
-		const scrollContainer = page.locator('.overflow-y-auto').first()
+		const scrollContainer = page.locator('.highway-scroll').first()
 		if ((await scrollContainer.count()) === 0) return
 
 		// Check CSS property
 		const overflowY = await scrollContainer.evaluate(
-			(el) => getComputedStyle(el).overflowY,
+			(el) => getComputedStyle(el).overflowBlock,
 		)
 		expect(overflowY).toBe('auto')
 
@@ -451,7 +471,7 @@ test.describe('Dashboard data-loaded state', () => {
 	test('lane grid has 3 columns with cards in correct lane (C8)', async ({
 		layoutPage: page,
 	}) => {
-		const grid = page.locator('live-highway .grid.grid-cols-3:not(.sticky)').first()
+		const grid = page.locator('live-highway .lane-grid').first()
 		const lanes = grid.locator('> div')
 		await expect(lanes).toHaveCount(3)
 
@@ -482,7 +502,7 @@ test.describe('Dashboard data-loaded state', () => {
 		layoutPage: page,
 	}) => {
 		// Away lane is the 3rd column
-		const grid = page.locator('live-highway .grid.grid-cols-3:not(.sticky)')
+		const grid = page.locator('live-highway .lane-grid')
 
 		// Each grid row is a date group; away lane is the 3rd div child
 		const awayLanes = grid.locator('> div:nth-child(3)')
@@ -513,7 +533,7 @@ test.describe('Dashboard needsRegion blur state', () => {
 		})
 		await page.goto('/dashboard')
 		// Wait for user-home-selector dialog or the blur state
-		await page.waitForSelector('.blur-sm, user-home-selector', {
+		await page.waitForSelector('[data-blurred], user-home-selector', {
 			timeout: 5000,
 		})
 	})
@@ -521,7 +541,7 @@ test.describe('Dashboard needsRegion blur state', () => {
 	test('content has blur filter when no home region set (B1)', async ({
 		layoutPage: page,
 	}) => {
-		const blurElement = page.locator('.blur-sm')
+		const blurElement = page.locator('[data-blurred]')
 		if ((await blurElement.count()) === 0) return
 
 		const filter = await blurElement.evaluate(
@@ -533,7 +553,7 @@ test.describe('Dashboard needsRegion blur state', () => {
 	test('content has pointer-events-none when blurred (B2)', async ({
 		layoutPage: page,
 	}) => {
-		const blurElement = page.locator('.blur-sm')
+		const blurElement = page.locator('[data-blurred]')
 		if ((await blurElement.count()) === 0) return
 
 		const pointerEvents = await blurElement.evaluate(
