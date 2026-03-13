@@ -1,0 +1,109 @@
+@layer block {
+	@scope (hype-inline-slider) {
+		.hype-slider {
+			position: relative;
+
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			align-items: center;
+
+			min-block-size: 44px;
+		}
+
+		.hype-slider-track {
+			position: absolute;
+			inset-inline: 0;
+
+			grid-column: 1 / -1;
+			grid-row: 1;
+
+			block-size: 2px;
+
+			background: var(--color-border-subtle, oklch(100% 0 0deg / 10%));
+		}
+
+		.hype-slider-dot {
+			cursor: pointer;
+
+			position: relative;
+
+			grid-row: 1;
+			justify-self: center;
+
+			inline-size: 8px;
+			block-size: 8px;
+			padding: 0;
+			border: none;
+			border-radius: var(--radius-full);
+
+			background: var(--color-border-subtle, oklch(100% 0 0deg / 20%));
+
+			transition: all 200ms ease-out;
+
+			/* 44px min tap target */
+			&::before {
+				content: "";
+				position: absolute;
+				inset: -18px;
+			}
+
+			&[data-active] {
+				inline-size: 14px;
+				block-size: 14px;
+			}
+
+			/* WATCH: minimal */
+			&[data-active][data-level="watch"] {
+				border: 1px solid oklch(100% 0 0deg / 10%);
+				background: var(--color-surface-base, oklch(100% 0 0deg / 5%));
+			}
+
+			/* HOME: subtle glow */
+			&[data-active][data-level="home"] {
+				border: 1px solid var(--artist-color, oklch(70% 0.15 60deg));
+				opacity: 0.4;
+				background: var(--artist-color, oklch(70% 0.15 60deg));
+				box-shadow: 0 0 8px
+					oklch(from var(--artist-color, oklch(70% 0.15 60deg)) l c h / 30%);
+			}
+
+			/* NEARBY: neon glow */
+			&[data-active][data-level="nearby"] {
+				border: 2px solid var(--artist-color, oklch(70% 0.15 60deg));
+				background: var(--artist-color, oklch(70% 0.15 60deg));
+				box-shadow: 0 0 16px
+					oklch(from var(--artist-color, oklch(70% 0.15 60deg)) l c h / 50%);
+				animation: dot-pulse 2s ease-in-out infinite;
+			}
+
+			/* AWAY: intense neon */
+			&[data-active][data-level="away"] {
+				border: 2px solid var(--artist-color, oklch(70% 0.15 60deg));
+				background: var(--artist-color, oklch(70% 0.15 60deg));
+				box-shadow:
+					0 0 24px
+					oklch(from var(--artist-color, oklch(70% 0.15 60deg)) l c h / 60%),
+					0 0 48px
+					oklch(from var(--artist-color, oklch(70% 0.15 60deg)) l c h / 20%);
+				animation: dot-pulse 1.5s ease-in-out infinite;
+			}
+		}
+
+		@keyframes dot-pulse {
+			0%,
+			100% {
+				transform: scale(1);
+			}
+
+			50% {
+				transform: scale(1.15);
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.hype-slider-dot {
+				animation: none;
+			}
+		}
+	}
+}
