@@ -1,0 +1,119 @@
+@layer block {
+	@scope (hype-notification-dialog) {
+		:scope {
+			--_backdrop-bg: oklch(0% 0 0deg / 70%);
+			--_border-subtle: oklch(100% 0 0deg / 10%);
+		}
+
+		.notification-dialog {
+			position: fixed;
+			inset: 0;
+
+			max-inline-size: fit-content;
+			max-block-size: fit-content;
+			margin: auto;
+			padding: 0;
+			border: none;
+
+			background: transparent;
+
+			&::backdrop {
+				background: var(--_backdrop-bg);
+			}
+		}
+
+		.notification-dialog-content {
+			inline-size: 100%;
+			max-inline-size: 22rem;
+			margin-inline: var(--space-m);
+			padding-block: var(--space-m);
+			padding-inline: var(--space-m);
+			border: 1px solid var(--_border-subtle);
+			border-radius: var(--radius-sheet);
+
+			text-align: center;
+
+			background: var(--color-surface-raised);
+		}
+
+		.notification-dialog-title {
+			margin-block-end: var(--space-s);
+
+			font-family: var(--font-display);
+			font-size: var(--step-0);
+			font-weight: 700;
+			color: var(--color-text-primary);
+		}
+
+		.notification-dialog-tiers {
+			margin-block-end: var(--space-s);
+			padding: 0;
+			text-align: start;
+			list-style: none;
+
+			& li {
+				padding-block: var(--space-3xs);
+				font-size: var(--step--1);
+				color: var(--color-text-secondary);
+			}
+		}
+
+		.notification-dialog-note {
+			margin-block-end: var(--space-m);
+			font-size: var(--step--2);
+			color: var(--color-text-muted);
+		}
+
+		.notification-dialog-actions {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+		}
+
+		.notification-dialog-btn-primary {
+			inline-size: 100%;
+			min-block-size: 3rem;
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-m);
+			border: none;
+			border-radius: var(--radius-button);
+
+			font-family: var(--font-display);
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+
+			transition: opacity 150ms ease-out;
+
+			&:hover {
+				opacity: 0.85;
+			}
+
+			&:active {
+				transform: scale(0.98);
+			}
+		}
+
+		.notification-dialog-btn-ghost {
+			inline-size: 100%;
+			min-block-size: 2.5rem;
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-m);
+			border: none;
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			color: var(--color-text-muted);
+
+			background: transparent;
+
+			transition: color 150ms ease-out;
+
+			&:hover {
+				color: var(--color-text-secondary);
+			}
+		}
+	}
+}
