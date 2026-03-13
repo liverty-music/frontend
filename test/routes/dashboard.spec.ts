@@ -7,6 +7,8 @@ const mockIDashboardService = DI.createInterface('IDashboardService')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockILocalArtistClient = DI.createInterface('ILocalArtistClient')
+const mockIAuthService = DI.createInterface('IAuthService')
+const mockIUserService = DI.createInterface('IUserService')
 
 vi.mock('../../src/services/dashboard-service', () => ({
 	IDashboardService: mockIDashboardService,
@@ -32,6 +34,14 @@ vi.mock('../../src/services/onboarding-service', () => ({
 
 vi.mock('../../src/services/local-artist-client', () => ({
 	ILocalArtistClient: mockILocalArtistClient,
+}))
+
+vi.mock('../../src/services/auth-service', () => ({
+	IAuthService: mockIAuthService,
+}))
+
+vi.mock('../../src/services/user-service', () => ({
+	IUserService: mockIUserService,
 }))
 
 vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
@@ -62,6 +72,17 @@ describe('Dashboard', () => {
 	let mockLocalClient: {
 		followedCount: number
 		setAdminArea: ReturnType<typeof vi.fn>
+		setHome: ReturnType<typeof vi.fn>
+	}
+	let mockAuth: {
+		isAuthenticated: boolean
+	}
+	let mockUserClient: {
+		get: ReturnType<typeof vi.fn>
+	}
+	let mockUser: {
+		client: typeof mockUserClient
+		updateHome: ReturnType<typeof vi.fn>
 	}
 
 	beforeEach(() => {
@@ -80,6 +101,17 @@ describe('Dashboard', () => {
 		mockLocalClient = {
 			followedCount: 0,
 			setAdminArea: vi.fn(),
+			setHome: vi.fn(),
+		}
+		mockAuth = {
+			isAuthenticated: false,
+		}
+		mockUserClient = {
+			get: vi.fn().mockResolvedValue({ user: undefined }),
+		}
+		mockUser = {
+			client: mockUserClient,
+			updateHome: vi.fn().mockResolvedValue(undefined),
 		}
 
 		const container = createTestContainer(
@@ -87,6 +119,8 @@ describe('Dashboard', () => {
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockILocalArtistClient, mockLocalClient),
+			Registration.instance(mockIAuthService, mockAuth),
+			Registration.instance(mockIUserService, mockUser),
 		)
 		container.register(Dashboard)
 		sut = container.get(Dashboard)
@@ -176,7 +210,8 @@ describe('Dashboard', () => {
 	})
 
 	describe('loading', () => {
-		it('should check region and load data', async () => {
+		it('should set needsRegion true for guest without stored home', async () => {
+			mockAuth.isAuthenticated = false
 			;(
 				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
 			).mockReturnValue(null)
@@ -188,10 +223,48 @@ describe('Dashboard', () => {
 			expect(mockDashboardService.loadDashboardEvents).toHaveBeenCalledTimes(1)
 		})
 
-		it('should not need region when stored region exists', async () => {
+		it('should set needsRegion false for guest with stored home', async () => {
+			mockAuth.isAuthenticated = false
 			;(
 				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
-			).mockReturnValue('Tokyo')
+			).mockReturnValue('JP-13')
+			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
+
+			await sut.loading()
+
+			expect(sut.needsRegion).toBe(false)
+		})
+
+		it('should set needsRegion false for authenticated user with home set', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserClient.get.mockResolvedValue({
+				user: { home: { countryCode: 'JP', level1: 'JP-13' } },
+			})
+			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
+
+			await sut.loading()
+
+			expect(sut.needsRegion).toBe(false)
+			expect(mockUserClient.get).toHaveBeenCalledTimes(1)
+		})
+
+		it('should set needsRegion true for authenticated user without home', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserClient.get.mockResolvedValue({ user: { home: undefined } })
+			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
+
+			await sut.loading()
+
+			expect(sut.needsRegion).toBe(true)
+			expect(mockUserClient.get).toHaveBeenCalledTimes(1)
+		})
+
+		it('should fall back to localStorage when UserService.Get fails for authenticated user', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserClient.get.mockRejectedValue(new Error('network'))
+			;(
+				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
+			).mockReturnValue('JP-13')
 			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
 			await sut.loading()
@@ -205,6 +278,32 @@ describe('Dashboard', () => {
 			sut.needsRegion = true
 			sut.onHomeSelected('JP-13')
 			expect(sut.needsRegion).toBe(false)
+		})
+
+		it('should reload data after home selection', () => {
+			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
+
+			sut.onHomeSelected('JP-13')
+
+			expect(mockDashboardService.loadDashboardEvents).toHaveBeenCalledTimes(1)
+		})
+
+		it('should reflect reloaded data in dateGroups', async () => {
+			const newGroups = [
+				{
+					label: 'Mar 13',
+					dateKey: '2026-03-13',
+					home: [{ id: 'c1' }],
+					nearby: [],
+					away: [],
+				},
+			]
+			mockDashboardService.loadDashboardEvents.mockResolvedValue(newGroups)
+
+			sut.onHomeSelected('JP-13')
+			await sut.dataPromise
+
+			expect(sut.dateGroups).toEqual(newGroups)
 		})
 	})
 
