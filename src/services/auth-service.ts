@@ -10,7 +10,7 @@ const settings: UserManagerSettings = {
 	authority: import.meta.env.VITE_ZITADEL_ISSUER,
 	client_id: import.meta.env.VITE_ZITADEL_CLIENT_ID,
 	redirect_uri: `${window.location.origin}/auth/callback`,
-	post_logout_redirect_uri: window.location.origin,
+	post_logout_redirect_uri: `${window.location.origin}/`,
 	response_type: 'code',
 	scope: [
 		'openid profile email offline_access',
