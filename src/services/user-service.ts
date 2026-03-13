@@ -12,6 +12,9 @@ export const IUserService = DI.createInterface<IUserService>(
 
 export interface IUserService {
 	readonly client: PromiseClient<typeof UserService>
+	readonly current: User | undefined
+	ensureLoaded(): Promise<User | undefined>
+	clear(): void
 	updateHome(home: {
 		countryCode: string
 		level1: string
@@ -21,13 +24,36 @@ export interface IUserService {
 
 export class UserServiceClient implements IUserService {
 	public readonly client: PromiseClient<typeof UserService>
+	private readonly authService: IAuthService
+	private readonly logger = resolve(ILogger).scopeTo('UserService')
+
+	private _current: User | undefined = undefined
 
 	constructor() {
-		const authService = resolve(IAuthService)
+		this.authService = resolve(IAuthService)
 		this.client = createClient(
 			UserService,
-			createTransport(authService, resolve(ILogger).scopeTo('Transport')),
+			createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
 		)
+	}
+
+	public get current(): User | undefined {
+		return this._current
+	}
+
+	public async ensureLoaded(): Promise<User | undefined> {
+		if (this._current) return this._current
+		if (!this.authService.isAuthenticated) return undefined
+
+		this.logger.info('Loading user profile from backend')
+		const resp = await this.client.get({})
+		this._current = resp.user
+		return this._current
+	}
+
+	public clear(): void {
+		this._current = undefined
+		this.logger.info('User profile cleared')
 	}
 
 	public async updateHome(home: {
@@ -42,6 +68,7 @@ export class UserServiceClient implements IUserService {
 				level2: home.level2,
 			},
 		})
+		this._current = resp.user
 		return resp.user
 	}
 }

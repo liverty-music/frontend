@@ -18,6 +18,7 @@ function createMockUserService() {
 		client: {
 			create: vi.fn().mockResolvedValue({}),
 		},
+		ensureLoaded: vi.fn().mockResolvedValue(undefined),
 	}
 }
 

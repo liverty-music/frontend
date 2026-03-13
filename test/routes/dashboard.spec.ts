@@ -111,6 +111,9 @@ describe('Dashboard', () => {
 		}
 		mockUser = {
 			client: mockUserClient,
+			current: undefined as
+				| { home?: { countryCode: string; level1: string } }
+				| undefined,
 			updateHome: vi.fn().mockResolvedValue(undefined),
 		}
 
@@ -237,39 +240,32 @@ describe('Dashboard', () => {
 
 		it('should set needsRegion false for authenticated user with home set', async () => {
 			mockAuth.isAuthenticated = true
-			mockUserClient.get.mockResolvedValue({
-				user: { home: { countryCode: 'JP', level1: 'JP-13' } },
-			})
+			mockUser.current = { home: { countryCode: 'JP', level1: 'JP-13' } }
 			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
 			await sut.loading()
 
 			expect(sut.needsRegion).toBe(false)
-			expect(mockUserClient.get).toHaveBeenCalledTimes(1)
 		})
 
 		it('should set needsRegion true for authenticated user without home', async () => {
 			mockAuth.isAuthenticated = true
-			mockUserClient.get.mockResolvedValue({ user: { home: undefined } })
+			mockUser.current = { home: undefined }
 			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
 			await sut.loading()
 
 			expect(sut.needsRegion).toBe(true)
-			expect(mockUserClient.get).toHaveBeenCalledTimes(1)
 		})
 
-		it('should fall back to localStorage when UserService.Get fails for authenticated user', async () => {
+		it('should set needsRegion true for authenticated user when current is undefined', async () => {
 			mockAuth.isAuthenticated = true
-			mockUserClient.get.mockRejectedValue(new Error('network'))
-			;(
-				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
-			).mockReturnValue('JP-13')
+			mockUser.current = undefined
 			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
 			await sut.loading()
 
-			expect(sut.needsRegion).toBe(false)
+			expect(sut.needsRegion).toBe(true)
 		})
 	})
 

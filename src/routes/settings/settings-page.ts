@@ -7,11 +7,13 @@ import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
+import { IUserService } from '../../services/user-service'
 
 const SUPPORTED_LANGUAGES = ['ja', 'en'] as const
 
 export class SettingsPage {
 	public readonly auth = resolve(IAuthService)
+	private readonly userService = resolve(IUserService)
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
 	private readonly logger = resolve(ILogger).scopeTo('SettingsPage')
@@ -35,7 +37,8 @@ export class SettingsPage {
 	}
 
 	public loading(): void {
-		const code = UserHomeSelector.getStoredHome()
+		const homeLevel1 = this.userService.current?.home?.level1
+		const code = homeLevel1 ?? UserHomeSelector.getStoredHome()
 		this.currentHome = code ? shortDisplayName(code) : null
 		const storedPref =
 			localStorage.getItem(StorageKeys.userNotificationsEnabled) === 'true'
@@ -97,6 +100,7 @@ export class SettingsPage {
 
 	public async signOut(): Promise<void> {
 		try {
+			this.userService.clear()
 			await this.auth.signOut()
 		} catch (err) {
 			this.logger.error('Sign-out failed', { error: err })
