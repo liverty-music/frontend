@@ -28,17 +28,6 @@
 			animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 		}
 
-		@keyframes pulse {
-			0%,
-			100% {
-				opacity: 1;
-			}
-
-			50% {
-				opacity: 0.5;
-			}
-		}
-
 		/* Empty state */
 		.highway-empty {
 			display: flex;
@@ -76,8 +65,6 @@
 		/* Stage header */
 		.stage-header {
 			position: sticky;
-			/* stylelint-disable-next-line property-disallowed-list -- sticky header must stack above scrolling content */
-			z-index: 10;
 			inset-block-start: 0;
 
 			display: grid;

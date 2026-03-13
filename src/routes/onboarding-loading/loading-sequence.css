@@ -104,16 +104,6 @@
 			}
 		}
 
-		@keyframes starfield-twinkle {
-			0% {
-				opacity: 0.6;
-			}
-
-			100% {
-				opacity: 1;
-			}
-		}
-
 		.pulsing-orb {
 			position: relative;
 
