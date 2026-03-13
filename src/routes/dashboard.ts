@@ -4,12 +4,14 @@ import { ILogger, resolve } from 'aurelia'
 import type { DateGroup } from '../components/live-highway/live-event'
 import { UserHomeSelector } from '../components/user-home-selector/user-home-selector'
 import { StorageKeys } from '../constants/storage-keys'
+import { IAuthService } from '../services/auth-service'
 import { IDashboardService } from '../services/dashboard-service'
 import { ILocalArtistClient } from '../services/local-artist-client'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../services/onboarding-service'
+import { IUserService } from '../services/user-service'
 
 export type LaneIntroPhase = 'home' | 'near' | 'away' | 'card' | 'done'
 
@@ -37,9 +39,11 @@ export class Dashboard {
 
 	private readonly logger = resolve(ILogger).scopeTo('Dashboard')
 	public readonly i18n = resolve(I18N)
+	private readonly authService = resolve(IAuthService)
 	private readonly dashboardService = resolve(IDashboardService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly localClient = resolve(ILocalArtistClient)
+	private readonly userService = resolve(IUserService)
 	private readonly router = resolve(IRouter)
 	private abortController: AbortController | null = null
 	private laneIntroTimer: ReturnType<typeof setTimeout> | null = null
@@ -59,7 +63,20 @@ export class Dashboard {
 	}
 
 	public async loading(): Promise<void> {
-		this.needsRegion = !UserHomeSelector.getStoredHome()
+		if (this.authService.isAuthenticated) {
+			try {
+				const resp = await this.userService.client.get({})
+				this.needsRegion = !resp.user?.home
+			} catch (err) {
+				this.logger.warn(
+					'Failed to fetch user home, falling back to localStorage',
+					{ error: err },
+				)
+				this.needsRegion = !UserHomeSelector.getStoredHome()
+			}
+		} else {
+			this.needsRegion = !UserHomeSelector.getStoredHome()
+		}
 		this.showCelebration =
 			this.onboarding.currentStep === OnboardingStep.DASHBOARD &&
 			!Dashboard.celebrationShown
@@ -138,6 +155,7 @@ export class Dashboard {
 	public onHomeSelected(code: string): void {
 		this.logger.info('Home area configured', { code })
 		this.needsRegion = false
+		this.loadData()
 		if (this.isOnboarding) {
 			this.localClient.setHome(code)
 			this.startLaneIntro()
