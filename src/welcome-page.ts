@@ -31,13 +31,6 @@ export class WelcomePage implements IRouteViewModel {
 	}
 
 	/**
-	 * Whether the user is at Step 6 (should show SignUp modal immediately).
-	 */
-	public get showSignUpModal(): boolean {
-		return this.onboarding.currentStep === OnboardingStep.SIGNUP
-	}
-
-	/**
 	 * Router lifecycle hook - called before the component is loaded.
 	 * Returns a redirect instruction instead of calling router.load() to avoid
 	 * re-entrant navigation while the viewport is not yet registered (AUR3174).
@@ -54,10 +47,7 @@ export class WelcomePage implements IRouteViewModel {
 		}
 
 		// If in tutorial (step 1-5), resume at the correct step
-		if (
-			this.onboarding.isOnboarding &&
-			this.onboarding.currentStep !== OnboardingStep.SIGNUP
-		) {
+		if (this.onboarding.isOnboarding) {
 			const route = this.onboarding.getRouteForCurrentStep()
 			if (route) {
 				this.logger.info('Resuming tutorial', {

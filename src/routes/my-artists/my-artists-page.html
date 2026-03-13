@@ -1,4 +1,7 @@
 <import from="./my-artists-page.css"></import>
+<import from="../../components/hype-inline-slider/hype-inline-slider"></import>
+<import from="../../components/hype-notification-dialog/hype-notification-dialog"></import>
+<import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
 
 <div class="page-layout">
   <!-- Header -->
@@ -27,6 +30,14 @@
       </div>
     </div>
   </div>
+
+  <!-- Hype level legend (sticky) -->
+  <header if.bind="!isLoading && artists.length > 0" class="[ hype-legend ]" data-hype-header>
+    <span class="hype-legend-item">👀<small>チェック</small></span>
+    <span class="hype-legend-item">🔥<small>地元</small></span>
+    <span class="hype-legend-item">🔥🔥<small>近くも</small></span>
+    <span class="hype-legend-item">🔥🔥🔥<small>どこでも！</small></span>
+  </header>
 
   <!-- Loading state -->
   <div if.bind="isLoading" class="state-center">
@@ -77,21 +88,23 @@
           style="transform: translateX(${swipedArtistId === artist.id ? swipeOffset : 0}px)"
         >
           <!-- Color accent dot -->
-          <div
-            class="color-dot"
-            style="background-color: ${artist.color}"
-          ></div>
+          <span
+            class="[ artist-row-indicator ]"
+            style="background: ${artist.color}"
+          ></span>
 
           <!-- Artist name -->
-          <span class="artist-name">${artist.name}</span>
+          <span class="[ artist-row-name ]">${artist.name}</span>
 
-          <!-- Hype indicator -->
-          <button
-            click.trigger="openHypeSelector(artist)"
-            data-hype-button
-            class="hype-btn ${pulsingArtistId === artist.id ? 'animate-hype-pulse' : ''}"
-            aria-label="Change hype"
-          >${hypeIcon(artist)}</button>
+          <!-- Inline hype slider -->
+          <hype-inline-slider
+            artist-id.bind="artist.id"
+            artist-color.bind="getArtistColor(artist.id)"
+            hype-level.bind="hypeStop(artist)"
+            is-authenticated.bind="isAuthenticated"
+            hype-changed.trigger="onHypeChanged($event)"
+            hype-signup-prompt.trigger="onHypeSignupPrompt($event)">
+          </hype-inline-slider>
         </div>
       </div>
     </div>
@@ -105,7 +118,7 @@
         touchstart.trigger="onGridTouchStart(artist)"
         touchend.trigger="onGridTouchEnd()"
         touchcancel.trigger="onGridTouchEnd()"
-        click.trigger="openHypeSelector(artist)"
+        click.trigger="onGridLongPress(artist)"
         class="grid-tile ${tileSpan(artist)}"
         style="background: linear-gradient(135deg, ${artist.color}40, ${artist.color}10)"
       >
@@ -117,6 +130,13 @@
       </div>
     </div>
   </div>
+
+  <!-- Signup prompt banner -->
+  <signup-prompt-banner
+    visible.bind="showSignupBanner && !isAuthenticated"
+    message="&#x1F514; 通知を有効にするには"
+    signup-requested.trigger="onSignupRequested()">
+  </signup-prompt-banner>
 
   <!-- Grid context menu dialog -->
   <dialog
@@ -153,43 +173,11 @@
     </div>
   </dialog>
 
-  <!-- Hype selector dialog -->
-  <dialog
-    ref="hypeSelectorDialog"
-    click.trigger="onHypeSelectorDialogClick($event)"
-    class="bottom-sheet-dialog"
-  >
-    <div if.bind="selectorArtist" class="sheet-body">
-      <div class="sheet-artist-name">${selectorArtist.name}</div>
-      <div class="sheet-options">
-        <button
-          repeat.for="level of hypeLevels; key.bind: level"
-          click.trigger="selectHype(level)"
-          class="sheet-option-btn"
-          data-active.bind="selectorArtist.hype === level ? '' : null"
-        >
-          <span class="sheet-option-icon">${hypeMeta[level].icon}</span>
-          <span class="sheet-option-label">${trHypeLabel(level)}</span>
-        </button>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- Tutorial: Hype notification explanation -->
-  <dialog
-    ref="hypeExplanationDialog"
-    cancel.trigger="$event.preventDefault()"
-    class="hype-explanation-dialog"
-  >
-    <div class="explanation-card">
-      <div class="explanation-emoji">🔔</div>
-      <h3 t="myArtists.hypeExplanation.title" class="explanation-title"></h3>
-      <p t="myArtists.hypeExplanation.description" class="explanation-desc"></p>
-      <button
-        click.trigger="dismissHypeExplanation()"
-        class="explanation-ok-btn"
-        t="myArtists.hypeExplanation.ok"
-      ></button>
-    </div>
-  </dialog>
 </div>
+
+<!-- Notification dialog (outside page-layout for proper top-layer stacking) -->
+<hype-notification-dialog
+  active.bind="showNotificationDialog"
+  signup-requested.trigger="onSignupRequested()"
+  dialog-dismissed.trigger="onDialogDismissed()">
+</hype-notification-dialog>

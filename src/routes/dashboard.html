@@ -3,6 +3,7 @@
 <import from="../components/inline-error/inline-error"></import>
 
 <import from="../components/celebration-overlay/celebration-overlay"></import>
+<import from="../components/signup-prompt-banner/signup-prompt-banner"></import>
 
 <div class="dashboard-layout">
   <!-- Stale data warning -->
@@ -66,6 +67,13 @@
     </div>
   </div>
 </div>
+
+<!-- Signup prompt banner for unauthenticated users -->
+<signup-prompt-banner
+  visible.bind="showSignupBanner && !isAuthenticated"
+  message="&#x1F514; 通知を有効にするには"
+  signup-requested.trigger="onSignupRequested()">
+</signup-prompt-banner>
 
 <!-- Home area selector bottom sheet -->
 <user-home-selector

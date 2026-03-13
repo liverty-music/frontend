@@ -1,0 +1,53 @@
+@layer block {
+	@scope (signup-prompt-banner) {
+		:scope {
+			--_border-subtle: oklch(100% 0 0deg / 10%);
+			--_surface-bg: oklch(100% 0 0deg / 5%);
+		}
+
+		.signup-banner {
+			display: flex;
+			gap: var(--space-s);
+			align-items: center;
+			justify-content: space-between;
+
+			padding-block: var(--space-xs);
+			padding-inline: var(--space-s);
+			border-block-start: 1px solid var(--_border-subtle);
+
+			background: var(--_surface-bg);
+		}
+
+		.signup-banner-message {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.signup-banner-btn {
+			flex-shrink: 0;
+
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-s);
+			border: none;
+			border-radius: var(--radius-button);
+
+			font-family: var(--font-display);
+			font-size: var(--step--2);
+			font-weight: 600;
+			color: var(--color-white);
+			white-space: nowrap;
+
+			background: var(--color-brand-primary);
+
+			transition: opacity 150ms ease-out;
+
+			&:hover {
+				opacity: 0.85;
+			}
+
+			&:active {
+				transform: scale(0.98);
+			}
+		}
+	}
+}

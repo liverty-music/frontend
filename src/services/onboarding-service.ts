@@ -3,7 +3,7 @@ import { StorageKeys } from '../constants/storage-keys'
 
 /**
  * Onboarding step values.
- * 0 = LP (not started), 1-6 = tutorial in progress, 7 = completed.
+ * 0 = LP (not started), 1-5 = tutorial in progress, 6 = legacy (removed), 7 = completed.
  */
 export const OnboardingStep = {
 	LP: 0,
@@ -55,6 +55,13 @@ export class OnboardingService {
 
 	constructor() {
 		this.currentStep = this.readStep()
+
+		// Backward compat: Step 6 (forced signup) was removed
+		if (this.currentStep === OnboardingStep.SIGNUP) {
+			this.currentStep = OnboardingStep.COMPLETED
+			this.writeStep(OnboardingStep.COMPLETED)
+		}
+
 		this.logger.debug('Initialized', { step: this.currentStep })
 	}
 
@@ -76,7 +83,7 @@ export class OnboardingService {
 	}
 
 	/**
-	 * Deactivate the spotlight entirely. Called at Step 6 (SignUp).
+	 * Deactivate the spotlight entirely.
 	 */
 	public deactivateSpotlight(): void {
 		this.spotlightActive = false
@@ -94,12 +101,12 @@ export class OnboardingService {
 	}
 
 	/**
-	 * Whether the user is currently in the onboarding flow (step 1-6).
+	 * Whether the user is currently in the onboarding flow (step 1-5).
 	 */
 	public get isOnboarding(): boolean {
 		return (
 			this.currentStep >= OnboardingStep.DISCOVER &&
-			this.currentStep <= OnboardingStep.SIGNUP
+			this.currentStep <= OnboardingStep.MY_ARTISTS
 		)
 	}
 

@@ -34,6 +34,7 @@ export class Dashboard {
 	public isStale = false
 	public showCelebration = false
 	public laneIntroPhase: LaneIntroPhase = 'done'
+	public showSignupBanner = false
 
 	public homeSelector!: UserHomeSelector
 
@@ -60,6 +61,10 @@ export class Dashboard {
 
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
+	}
+
+	public get isAuthenticated(): boolean {
+		return this.authService.isAuthenticated
 	}
 
 	public async loading(): Promise<void> {
@@ -89,6 +94,11 @@ export class Dashboard {
 		// resume the lane intro (e.g. page reload during onboarding)
 		if (this.isTutorialStep3 && !this.showCelebration && !this.needsRegion) {
 			this.startLaneIntro()
+		}
+
+		// Show signup banner for unauthenticated users who completed onboarding
+		if (!this.authService.isAuthenticated && this.onboarding.isCompleted) {
+			this.showSignupBanner = true
 		}
 
 		// Resume step 4 spotlight after reload: re-activate My Artists tab spotlight
@@ -313,6 +323,10 @@ export class Dashboard {
 			this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
 			await this.router.load('my-artists')
 		}
+	}
+
+	public onSignupRequested(): void {
+		this.authService.signUp()
 	}
 
 	public detaching(): void {

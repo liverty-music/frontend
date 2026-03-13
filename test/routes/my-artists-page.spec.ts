@@ -6,6 +6,7 @@ import { createTestContainer } from '../helpers/create-container'
 const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
+const mockIAuthService = DI.createInterface('IAuthService')
 vi.mock('../../src/services/follow-service-client', () => ({
 	IFollowServiceClient: mockIFollowServiceClient,
 }))
@@ -28,6 +29,10 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	},
 }))
 
+vi.mock('../../src/services/auth-service', () => ({
+	IAuthService: mockIAuthService,
+}))
+
 vi.mock(
 	'@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js',
 	() => ({
@@ -37,7 +42,13 @@ vi.mock(
 				this.value = opts.value
 			}
 		},
-		HypeType: { AWAY: 1, HOME: 2, WATCH: 3 },
+	}),
+)
+
+vi.mock(
+	'@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js',
+	() => ({
+		HypeType: { WATCH: 1, HOME: 2, NEARBY: 3, AWAY: 4 },
 	}),
 )
 
@@ -68,6 +79,7 @@ describe('MyArtistsPage', () => {
 		getClient: () => typeof mockGrpcClient
 	}
 	let mockRouter: { load: ReturnType<typeof vi.fn> }
+	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
 	let publishedToasts: Toast[]
 
 	beforeEach(() => {
@@ -87,6 +99,7 @@ describe('MyArtistsPage', () => {
 			getClient: () => mockGrpcClient,
 		}
 		mockRouter = { load: vi.fn().mockResolvedValue(undefined) }
+		mockAuth = { isAuthenticated: true, signUp: vi.fn() }
 
 		const mockOnboarding = {
 			currentStep: 7, // COMPLETED
@@ -101,6 +114,7 @@ describe('MyArtistsPage', () => {
 			Registration.instance(mockIFollowServiceClient, mockFollowService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
+			Registration.instance(mockIAuthService, mockAuth),
 		)
 		container.register(MyArtistsPage)
 		sut = container.get(MyArtistsPage)
@@ -317,7 +331,7 @@ describe('MyArtistsPage', () => {
 		})
 	})
 
-	describe('tutorial step 5 hype timing', () => {
+	describe('tutorial step 5 hype flow', () => {
 		let tutorialSut: InstanceType<typeof MyArtistsPage>
 		let tutorialOnboarding: any
 
@@ -338,16 +352,13 @@ describe('MyArtistsPage', () => {
 				Registration.instance(mockIFollowServiceClient, mockFollowService),
 				Registration.instance(mockIRouter, mockRouter),
 				Registration.instance(mockIOnboardingService, tutorialOnboarding),
+				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, { publish: vi.fn() }),
 			)
 			container.register(MyArtistsPage)
 			tutorialSut = container.get(MyArtistsPage)
 
-			for (const name of [
-				'contextMenuDialog',
-				'hypeSelectorDialog',
-				'hypeExplanationDialog',
-			]) {
+			for (const name of ['contextMenuDialog']) {
 				const mockDialog = document.createElement('dialog')
 				;(mockDialog as any).showModal = vi.fn()
 				;(mockDialog as any).close = vi.fn()
@@ -361,32 +372,44 @@ describe('MyArtistsPage', () => {
 			vi.useRealTimers()
 		})
 
+		it('should activate spotlight targeting [data-hype-header] on loading', () => {
+			expect(tutorialOnboarding.activateSpotlight).toHaveBeenCalledWith(
+				'[data-hype-header]',
+				expect.any(String),
+			)
+		})
+
 		it('should set pulsingArtistId immediately on hype change', () => {
-			tutorialSut.openHypeSelector(tutorialSut.artists[0])
-			tutorialSut.selectHype(1) // ANYWHERE
+			const event = new CustomEvent('hype-changed', {
+				detail: { artistId: 'id-1', level: 'away' },
+			})
+
+			tutorialSut.onHypeChanged(event)
 
 			expect(tutorialSut.pulsingArtistId).toBe('id-1')
 		})
 
 		it('should clear pulsingArtistId after 300ms', () => {
-			tutorialSut.openHypeSelector(tutorialSut.artists[0])
-			tutorialSut.selectHype(1)
+			const event = new CustomEvent('hype-changed', {
+				detail: { artistId: 'id-1', level: 'away' },
+			})
+
+			tutorialSut.onHypeChanged(event)
 
 			vi.advanceTimersByTime(300)
 			expect(tutorialSut.pulsingArtistId).toBe('')
 		})
 
-		it('should show hype explanation until user dismisses', () => {
-			tutorialSut.openHypeSelector(tutorialSut.artists[0])
-			tutorialSut.selectHype(1)
+		it('should advance to step 7 (COMPLETED), not 6, after hype change', () => {
+			const event = new CustomEvent('hype-changed', {
+				detail: { artistId: 'id-1', level: 'away' },
+			})
 
-			// Explanation stays visible — no auto-dismiss
-			expect(tutorialSut.showHypeExplanation).toBe(true)
+			tutorialSut.onHypeChanged(event)
 
-			// User dismisses manually
-			tutorialSut.dismissHypeExplanation()
-			expect(tutorialSut.showHypeExplanation).toBe(false)
-			expect(tutorialOnboarding.setStep).toHaveBeenCalledWith(6)
+			// Step 6 (SIGNUP) was removed; should go directly to COMPLETED (7)
+			expect(tutorialOnboarding.setStep).toHaveBeenCalledWith(7)
+			expect(tutorialOnboarding.deactivateSpotlight).toHaveBeenCalled()
 			expect(mockRouter.load).toHaveBeenCalledWith('')
 		})
 	})
