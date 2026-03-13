@@ -80,7 +80,7 @@
 
 	/* High contrast: ensure borders and focus rings are visible */
 	@media (prefers-contrast: more) {
-		:where(button, a, input, textarea, select) {
+		:where(button, input, textarea, select) {
 			border: 2px solid currentcolor;
 		}
 
