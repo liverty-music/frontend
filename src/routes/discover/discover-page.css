@@ -241,17 +241,21 @@
 		}
 
 		.bubble-area {
+			position: relative;
+
 			container-name: bubble-area;
-			container-type: inline-size;
+			container-type: size;
+			overflow: hidden;
 			grid-row: -2 / -1;
+
 			min-block-size: 0;
 		}
 
 		.orb-label {
 			position: absolute;
-			inset-block-end: 10rem;
+			inset-block-end: 15cqb;
 			inset-inline-start: 50%;
-			transform: translateX(-50%);
+			translate: -50% 0;
 
 			font-family: var(--font-display);
 			font-size: var(--step--2);
@@ -418,6 +422,15 @@
 				transform: translateY(0);
 				opacity: 1;
 			}
+		}
+
+		/* State-driven visibility (after base selectors to avoid descending specificity) */
+		.discover-layout[data-state="search"] :is(.genre-chips, .bubble-area) {
+			display: none;
+		}
+
+		.discover-layout:not([data-state="search"]) .search-results {
+			display: none;
 		}
 	}
 }

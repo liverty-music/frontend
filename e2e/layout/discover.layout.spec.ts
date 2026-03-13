@@ -2,13 +2,13 @@ import { expectContainedIn, expectFillsParent } from './assertions'
 import { expect, test } from './fixtures'
 
 test.describe('Discover page layout', () => {
-	test.beforeEach(async ({ layoutPage: page }) => {
+	test.beforeEach(async ({ discoverLayoutPage: page }) => {
 		await page.goto('/discover')
 		await page.waitForSelector('.discover-layout')
 	})
 
 	test('discover-layout fills viewport width and au-viewport height (D1)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		const viewportSize = page.viewportSize()!
 		const layout = page.locator('.discover-layout')
@@ -24,7 +24,7 @@ test.describe('Discover page layout', () => {
 	})
 
 	test('bubble-area width equals discover-layout width (D2)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		const layout = page.locator('.discover-layout')
 		const bubbleArea = page.locator('.bubble-area')
@@ -38,7 +38,7 @@ test.describe('Discover page layout', () => {
 	})
 
 	test('canvas fills bubble-area within 1px tolerance (D3)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		// Wait for canvas to initialize (dna-orb-canvas sets width/height on attaching)
 		await page.waitForSelector('dna-orb-canvas canvas')
@@ -50,7 +50,7 @@ test.describe('Discover page layout', () => {
 	})
 
 	test('search-bar right edge within viewport (D4)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		const viewportSize = page.viewportSize()!
 		const searchBar = page.locator('.search-bar')
@@ -65,7 +65,7 @@ test.describe('Discover page layout', () => {
 	})
 
 	test('bubble-area bottom does not exceed bottom-nav top (D5)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		await page.waitForSelector('bottom-nav-bar')
 		const bubbleArea = page.locator('.bubble-area')
@@ -80,7 +80,7 @@ test.describe('Discover page layout', () => {
 	})
 
 	test('no horizontal overflow on discover-layout (D6)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		const overflow = await page.evaluate(() => {
 			const el = document.querySelector('.discover-layout')
@@ -91,7 +91,7 @@ test.describe('Discover page layout', () => {
 	})
 
 	test('bubble-area occupies majority of vertical space (D7)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		const layout = page.locator('.discover-layout')
 		const bubbleArea = page.locator('.bubble-area')
@@ -106,7 +106,7 @@ test.describe('Discover page layout', () => {
 	})
 
 	test('genre-chips height is constrained (D8)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		const chips = page.locator('.genre-chips')
 		const chipsBox = await chips.boundingBox()
@@ -117,7 +117,7 @@ test.describe('Discover page layout', () => {
 	})
 
 	test('vertical order: search-bar above genre-chips above bubble-area (D9)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		const searchBar = page.locator('.search-bar')
 		const chips = page.locator('.genre-chips')
@@ -135,7 +135,7 @@ test.describe('Discover page layout', () => {
 	})
 
 	test('all grid children contained within discover-layout (D10)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		const layoutBox = await page.locator('.discover-layout').boundingBox()
 		expect(layoutBox).toBeTruthy()

@@ -2,7 +2,9 @@ import { expectAnchored, expectFillsViewport } from './assertions'
 import { expect, test } from './fixtures'
 
 test.describe('Shell layout', () => {
-	test('my-app fills viewport height (S1)', async ({ layoutPage: page }) => {
+	test('my-app fills viewport height (S1)', async ({
+		discoverLayoutPage: page,
+	}) => {
 		await page.goto('/discover')
 		await page.waitForSelector('.discover-layout')
 
@@ -11,7 +13,7 @@ test.describe('Shell layout', () => {
 	})
 
 	test('au-viewport + bottom-nav equals my-app height (S2)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		await page.goto('/discover')
 		await page.waitForSelector('.discover-layout')
@@ -33,7 +35,7 @@ test.describe('Shell layout', () => {
 	})
 
 	test('bottom-nav anchored to viewport bottom (S3)', async ({
-		layoutPage: page,
+		discoverLayoutPage: page,
 	}) => {
 		await page.goto('/discover')
 		await page.waitForSelector('.discover-layout')
