@@ -26,14 +26,16 @@
 		}
 
 		/* Overlay components use top-layer APIs (popover/dialog).
-		   Collapsed to zero so they don't affect grid row sizing.
+		   Removed from flow so they don't create implicit grid rows.
 		   Note: display:contents breaks Aurelia ref bindings — keep the box. */
 		pwa-install-prompt,
 		notification-prompt,
 		toast-notification,
-		error-banner {
+		error-banner,
+		coach-mark {
+			pointer-events: none;
+			position: fixed;
 			overflow: hidden;
-			display: block;
 			block-size: 0;
 		}
 	}
