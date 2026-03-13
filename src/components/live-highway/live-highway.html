@@ -2,74 +2,74 @@
   <import from="./event-card"></import>
   <import from="./event-detail-sheet"></import>
 
-  <div event-selected.trigger="onEventSelected($event)" class="flex flex-col h-full bg-surface-base">
+  <div event-selected.trigger="onEventSelected($event)" class="highway-layout">
     <!-- Loading state -->
-    <div if.bind="loading" class="flex items-center justify-center h-full">
-      <p class="text-text-muted text-sm animate-pulse">Loading events...</p>
+    <div if.bind="loading" class="highway-loading">
+      <p class="highway-loading-text">Loading events...</p>
     </div>
 
     <!-- Empty state -->
-    <div if.bind="!loading && isEmpty" class="flex flex-col items-center justify-center h-full px-6">
-      <p class="text-text-secondary text-lg font-display font-semibold mb-2">No upcoming events</p>
-      <p class="text-text-muted text-sm text-center">Follow more artists to see their upcoming concerts here.</p>
+    <div if.bind="!loading && isEmpty" class="highway-empty">
+      <p class="highway-empty-title">No upcoming events</p>
+      <p class="highway-empty-message">Follow more artists to see their upcoming concerts here.</p>
     </div>
 
     <!-- Highway layout -->
-    <div if.bind="!loading && !isEmpty" class="flex-1 overflow-y-auto overflow-x-hidden isolate">
+    <div if.bind="!loading && !isEmpty" class="highway-scroll">
       <!-- Sticky STAGE header -->
-      <div class="sticky top-0 z-10 grid grid-cols-3 bg-surface-base border-b border-white/10">
-        <div data-stage-home class="px-2 py-2.5 text-center border-r border-white/10">
-          <span class="font-display font-bold text-sm uppercase tracking-wider text-text-primary">HOME STAGE</span>
+      <div class="stage-header">
+        <div data-stage-home class="stage-label">
+          <span class="stage-label-text">HOME STAGE</span>
         </div>
-        <div data-stage-near class="px-2 py-2.5 text-center border-r border-white/10">
-          <span class="font-display font-bold text-sm uppercase tracking-wider text-text-primary">NEAR STAGE</span>
+        <div data-stage-near class="stage-label">
+          <span class="stage-label-text">NEAR STAGE</span>
         </div>
-        <div data-stage-away class="px-2 py-2.5 text-center">
-          <span class="font-display font-bold text-sm uppercase tracking-wider text-text-primary">AWAY STAGE</span>
+        <div data-stage-away class="stage-label">
+          <span class="stage-label-text">AWAY STAGE</span>
         </div>
       </div>
 
       <div repeat.for="group of dateGroups; key.bind: group.dateKey">
         <!-- Sticky date separator -->
-        <div class="sticky top-[41px] bg-surface-raised/90 backdrop-blur-sm border-b border-white/10 px-3 py-2">
-          <span class="text-xs font-display font-bold text-brand-accent uppercase tracking-wider">${group.label}</span>
+        <div class="date-separator">
+          <span class="date-separator-text">${group.label}</span>
         </div>
 
         <!-- Three-lane grid -->
-        <div class="grid grid-cols-3">
+        <div class="lane-grid">
           <!-- Home lane -->
-          <div class="[container-type:inline-size] px-2 py-2 border-r border-white/5">
+          <div class="lane">
             <event-card
               repeat.for="ev of group.home; key.bind: ev.id"
               event.bind="ev"
               lane="home"
             ></event-card>
-            <div if.bind="group.home.length === 0" class="py-4">
-              <p class="text-text-muted/30 text-xs text-center">—</p>
+            <div if.bind="group.home.length === 0" class="lane-empty">
+              <p class="lane-empty-dash">—</p>
             </div>
           </div>
 
           <!-- Nearby lane -->
-          <div class="[container-type:inline-size] px-1 py-2 border-r border-white/5">
+          <div class="lane">
             <event-card
               repeat.for="ev of group.nearby; key.bind: ev.id"
               event.bind="ev"
               lane="nearby"
             ></event-card>
-            <div if.bind="group.nearby.length === 0" class="py-4">
-              <p class="text-text-muted/30 text-xs text-center">—</p>
+            <div if.bind="group.nearby.length === 0" class="lane-empty">
+              <p class="lane-empty-dash">—</p>
             </div>
           </div>
 
           <!-- Away lane -->
-          <div class="[container-type:inline-size] px-1 py-2">
+          <div class="lane">
             <event-card
               repeat.for="ev of group.away; key.bind: ev.id"
               event.bind="ev"
               lane="away"
             ></event-card>
-            <div if.bind="group.away.length === 0" class="py-4">
-              <p class="text-text-muted/30 text-xs text-center">—</p>
+            <div if.bind="group.away.length === 0" class="lane-empty">
+              <p class="lane-empty-dash">—</p>
             </div>
           </div>
         </div>

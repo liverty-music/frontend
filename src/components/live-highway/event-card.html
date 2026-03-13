@@ -5,11 +5,12 @@
   <div
     if.bind="lane === 'home'"
     data-live-card
+    data-lane="home"
     click.trigger="onClick()"
     artist-color.bind="event.artistName"
-    class="rounded-[var(--radius-card)] p-4 mb-3 cursor-pointer transition-transform duration-200 active:scale-[0.97] flex flex-col justify-end animate-[fade-slide-up_400ms_ease-out_both] hype-${event.hypeLevel}"
+    class="event-card hype-${event.hypeLevel}"
   >
-    <span class="artist-name text-white font-display font-extrabold leading-tight [overflow-wrap:break-word] drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" style="font-size: clamp(12px, 5cqi, 24px)">
+    <span class="artist-name" style="font-size: clamp(12px, 5cqi, 24px)">
       ${event.artistName}
     </span>
   </div>
@@ -18,14 +19,15 @@
   <div
     if.bind="lane === 'nearby'"
     data-live-card
+    data-lane="nearby"
     click.trigger="onClick()"
     artist-color.bind="event.artistName"
-    class="rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] flex flex-col justify-end animate-[fade-slide-up_400ms_ease-out_both] hype-${event.hypeLevel}"
+    class="event-card hype-${event.hypeLevel}"
   >
-    <span class="artist-name text-white font-display font-bold leading-snug [overflow-wrap:break-word]" style="font-size: clamp(12px, 5cqi, 24px)">
+    <span class="artist-name" style="font-size: clamp(12px, 5cqi, 24px)">
       ${event.artistName}
     </span>
-    <span class="text-white/70 text-xs mt-1">
+    <span class="location-label">
       ${event.locationLabel}
     </span>
   </div>
@@ -34,14 +36,15 @@
   <div
     if.bind="lane === 'away'"
     data-live-card
+    data-lane="away"
     click.trigger="onClick()"
     artist-color.bind="event.artistName"
-    class="rounded-xl p-3 mb-2 cursor-pointer transition-transform duration-200 active:scale-[0.97] flex flex-col justify-end animate-[fade-slide-up_400ms_ease-out_both] hype-${event.hypeLevel}"
+    class="event-card hype-${event.hypeLevel}"
   >
-    <span class="artist-name text-white font-display font-bold leading-snug [overflow-wrap:break-word]" style="font-size: clamp(12px, 5cqi, 24px)">
+    <span class="artist-name" style="font-size: clamp(12px, 5cqi, 24px)">
       ${event.artistName}
     </span>
-    <span class="text-white/70 text-xs mt-1">
+    <span class="location-label">
       ${event.locationLabel}
     </span>
   </div>

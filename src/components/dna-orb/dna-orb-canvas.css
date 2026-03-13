@@ -1,17 +1,21 @@
-:host {
-	display: block;
-	width: 100%;
-	height: 100%;
-}
+@layer block {
+	@scope (dna-orb-canvas) {
+		:scope {
+			display: block;
+			inline-size: 100%;
+			block-size: 100%;
+		}
 
-canvas {
-	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-}
+		canvas {
+			position: absolute;
+			inset: 0;
+			inline-size: 100%;
+			block-size: 100%;
+		}
 
-canvas:focus-visible {
-	outline: 2px solid oklch(51.1% 0.23 277deg);
-	outline-offset: 2px;
+		canvas:focus-visible {
+			outline: 2px solid var(--color-brand-primary);
+			outline-offset: 2px;
+		}
+	}
 }

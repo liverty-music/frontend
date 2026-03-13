@@ -1,25 +1,25 @@
 <import from="./my-artists-page.css"></import>
 
-<div class="relative flex flex-col h-full bg-surface-base text-text-primary">
+<div class="page-layout">
   <!-- Header -->
-  <div class="shrink-0 px-4 py-4 border-b border-white/10 bg-surface-raised">
-    <div class="flex items-center justify-between">
-      <h1 t="nav.myArtists" class="font-display text-xl font-bold tracking-tight"></h1>
-      <div class="flex items-center gap-2">
-        <span if.bind="!isLoading && artists.length > 0" class="text-sm text-text-muted">(${artists.length})</span>
+  <div class="page-header">
+    <div class="header-row">
+      <h1 t="nav.myArtists"></h1>
+      <div class="header-actions">
+        <span if.bind="!isLoading && artists.length > 0" class="artist-count">(${artists.length})</span>
         <button
           if.bind="!isLoading && artists.length > 0"
           click.trigger="toggleView()"
-          class="p-1.5 rounded-md hover:bg-white/10 transition-colors text-text-muted"
+          class="toggle-view-btn"
           aria-label="Toggle view"
         >
           <!-- List icon -->
-          <svg if.bind="viewMode === 'grid'" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg if.bind="viewMode === 'grid'" class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line>
             <line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
           </svg>
           <!-- Grid icon -->
-          <svg if.bind="viewMode === 'list'" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg if.bind="viewMode === 'list'" class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
             <rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect>
           </svg>
@@ -29,36 +29,38 @@
   </div>
 
   <!-- Loading state -->
-  <div if.bind="isLoading" class="flex-1 flex items-center justify-center">
-    <div class="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+  <div if.bind="isLoading" class="state-center">
+    <div class="spinner"></div>
   </div>
 
   <!-- Empty state -->
-  <div if.bind="!isLoading && artists.length === 0" class="flex-1 flex flex-col items-center justify-center px-6">
-    <svg class="w-16 h-16 text-text-muted mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M9 18V5l12-2v13"></path>
-      <circle cx="6" cy="18" r="3"></circle>
-      <circle cx="18" cy="16" r="3"></circle>
-    </svg>
-    <h2 t="myArtists.empty.title" class="font-display text-lg font-bold mb-2"></h2>
-    <p t="myArtists.empty.subtitle" class="text-sm text-text-muted text-center mb-6"></p>
-    <button
-      click.trigger="goToDiscover()"
-      t="myArtists.empty.discoverButton"
-      class="px-6 py-2.5 bg-brand-primary text-white font-display font-semibold text-sm rounded-[var(--radius-button)] hover:bg-brand-primary/80 transition-colors"
-    ></button>
+  <div if.bind="!isLoading && artists.length === 0" class="state-center">
+    <div class="state-content">
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18V5l12-2v13"></path>
+        <circle cx="6" cy="18" r="3"></circle>
+        <circle cx="18" cy="16" r="3"></circle>
+      </svg>
+      <h2 t="myArtists.empty.title" class="empty-title"></h2>
+      <p t="myArtists.empty.subtitle" class="empty-subtitle"></p>
+      <button
+        click.trigger="goToDiscover()"
+        t="myArtists.empty.discoverButton"
+        class="discover-btn"
+      ></button>
+    </div>
   </div>
 
   <!-- Artist list view -->
-  <div if.bind="!isLoading && artists.length > 0 && viewMode === 'list'" class="flex-1 overflow-y-auto">
-    <div class="px-4 py-3">
+  <div if.bind="!isLoading && artists.length > 0 && viewMode === 'list'" class="artist-list">
+    <div class="artist-list-inner">
       <div
         repeat.for="artist of artists; key.bind: artist.id"
-        class="relative overflow-hidden rounded-[var(--radius-card)] mb-2"
+        class="artist-list-item"
       >
         <!-- Delete zone (behind the row) -->
-        <div class="absolute inset-y-0 end-0 w-20 bg-red-500 flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="delete-zone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
           </svg>
@@ -70,25 +72,24 @@
           touchmove.trigger="onTouchMove($event) & throttle:16"
           touchend.trigger="onTouchEnd()"
           touchcancel.trigger="onTouchEnd()"
-          class="relative flex items-center gap-3 px-4 py-3.5 bg-surface-raised border border-white/10 touch-pan-y transition-transform"
-          transition-transform.class="swipedArtistId !== artist.id || swipeOffset >= 0"
-          duration-200.class="swipedArtistId !== artist.id || swipeOffset >= 0"
+          class="artist-row"
+          data-swiping="${swipedArtistId === artist.id && swipeOffset < 0 ? 'true' : 'false'}"
           style="transform: translateX(${swipedArtistId === artist.id ? swipeOffset : 0}px)"
         >
           <!-- Color accent dot -->
           <div
-            class="w-3 h-3 rounded-full shrink-0"
+            class="color-dot"
             style="background-color: ${artist.color}"
           ></div>
 
           <!-- Artist name -->
-          <span class="text-sm text-text-primary font-medium truncate flex-1">${artist.name}</span>
+          <span class="artist-name">${artist.name}</span>
 
           <!-- Hype indicator -->
           <button
             click.trigger="openHypeSelector(artist)"
             data-hype-button
-            class="shrink-0 text-base leading-none px-1.5 py-1 rounded-md hover:bg-white/10 transition-colors ${pulsingArtistId === artist.id ? 'animate-hype-pulse' : ''}"
+            class="hype-btn ${pulsingArtistId === artist.id ? 'animate-hype-pulse' : ''}"
             aria-label="Change hype"
           >${hypeIcon(artist)}</button>
         </div>
@@ -97,21 +98,21 @@
   </div>
 
   <!-- Artist grid (festival) view -->
-  <div if.bind="!isLoading && artists.length > 0 && viewMode === 'grid'" class="flex-1 overflow-y-auto">
-    <div class="px-4 py-3 grid grid-cols-3 auto-rows-[minmax(6rem,auto)] gap-2">
+  <div if.bind="!isLoading && artists.length > 0 && viewMode === 'grid'" class="artist-grid">
+    <div class="artist-grid-inner">
       <div
         repeat.for="artist of artists; key.bind: artist.id"
         touchstart.trigger="onGridTouchStart(artist)"
         touchend.trigger="onGridTouchEnd()"
         touchcancel.trigger="onGridTouchEnd()"
         click.trigger="openHypeSelector(artist)"
-        class="relative rounded-[var(--radius-card)] overflow-hidden border border-white/10 flex items-end select-none ${tileSpan(artist)}"
+        class="grid-tile ${tileSpan(artist)}"
         style="background: linear-gradient(135deg, ${artist.color}40, ${artist.color}10)"
       >
-        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-        <div class="relative w-full p-2">
-          <div class="text-xs font-medium text-white truncate">${artist.name}</div>
-          <div class="text-xs mt-0.5">${hypeIcon(artist)}</div>
+        <div class="grid-tile-overlay"></div>
+        <div class="grid-tile-content">
+          <div class="grid-tile-name">${artist.name}</div>
+          <div class="grid-tile-hype">${hypeIcon(artist)}</div>
         </div>
       </div>
     </div>
@@ -123,29 +124,30 @@
     click.trigger="onContextMenuDialogClick($event)"
     class="bottom-sheet-dialog"
   >
-    <div if.bind="contextMenuArtist" class="w-full bg-surface-raised border-t border-white/10 rounded-t-2xl px-4 pt-4 pb-6">
-      <div class="text-sm text-text-muted mb-3 truncate">${contextMenuArtist.name}</div>
-      <div class="flex flex-col gap-1">
+    <div if.bind="contextMenuArtist" class="sheet-body">
+      <div class="sheet-artist-name">${contextMenuArtist.name}</div>
+      <div class="sheet-options">
         <button
           repeat.for="level of hypeLevels; key.bind: level"
           click.trigger="contextMenuSetLevel(level)"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${contextMenuArtist.hype === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
+          class="sheet-option-btn"
+          data-active.bind="contextMenuArtist.hype === level ? '' : null"
         >
-          <span class="text-base w-8 text-center">${hypeMeta[level].icon}</span>
-          <span class="text-sm font-medium">${trHypeLabel(level)}</span>
+          <span class="sheet-option-icon">${hypeMeta[level].icon}</span>
+          <span class="sheet-option-label">${trHypeLabel(level)}</span>
         </button>
-        <div class="border-t border-white/10 my-1"></div>
+        <div class="sheet-divider"></div>
         <button
           click.trigger="contextMenuUnfollow()"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+          class="sheet-unfollow-btn"
         >
-          <span class="text-base w-8 text-center">
-            <svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <span class="sheet-option-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
             </svg>
           </span>
-          <span t="myArtists.unfollow" class="text-sm font-medium"></span>
+          <span t="myArtists.unfollow" class="sheet-option-label"></span>
         </button>
       </div>
     </div>
@@ -157,16 +159,17 @@
     click.trigger="onHypeSelectorDialogClick($event)"
     class="bottom-sheet-dialog"
   >
-    <div if.bind="selectorArtist" class="w-full bg-surface-raised border-t border-white/10 rounded-t-2xl px-4 pt-4 pb-6">
-      <div class="text-sm text-text-muted mb-3 truncate">${selectorArtist.name}</div>
-      <div class="flex flex-col gap-1">
+    <div if.bind="selectorArtist" class="sheet-body">
+      <div class="sheet-artist-name">${selectorArtist.name}</div>
+      <div class="sheet-options">
         <button
           repeat.for="level of hypeLevels; key.bind: level"
           click.trigger="selectHype(level)"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${selectorArtist.hype === level ? 'bg-brand-primary/20 text-brand-primary' : 'hover:bg-white/5 text-text-primary'}"
+          class="sheet-option-btn"
+          data-active.bind="selectorArtist.hype === level ? '' : null"
         >
-          <span class="text-base w-8 text-center">${hypeMeta[level].icon}</span>
-          <span class="text-sm font-medium">${trHypeLabel(level)}</span>
+          <span class="sheet-option-icon">${hypeMeta[level].icon}</span>
+          <span class="sheet-option-label">${trHypeLabel(level)}</span>
         </button>
       </div>
     </div>
@@ -178,17 +181,15 @@
     cancel.trigger="$event.preventDefault()"
     class="hype-explanation-dialog"
   >
-    <div class="mx-6 bg-surface-raised border border-white/10 rounded-2xl p-6 max-w-sm">
-      <div class="text-center">
-        <div class="text-3xl mb-3">🔔</div>
-        <h3 t="myArtists.hypeExplanation.title" class="font-display text-lg font-bold text-text-primary mb-2"></h3>
-        <p t="myArtists.hypeExplanation.description" class="text-sm text-text-muted leading-relaxed mb-5"></p>
-        <button
-          click.trigger="dismissHypeExplanation()"
-          class="w-full py-3 px-6 bg-brand-primary text-white font-display font-semibold text-sm border-none rounded-[var(--radius-button)] cursor-pointer transition-opacity min-h-12 hover:opacity-85 active:scale-[0.98]"
-          t="myArtists.hypeExplanation.ok"
-        ></button>
-      </div>
+    <div class="explanation-card">
+      <div class="explanation-emoji">🔔</div>
+      <h3 t="myArtists.hypeExplanation.title" class="explanation-title"></h3>
+      <p t="myArtists.hypeExplanation.description" class="explanation-desc"></p>
+      <button
+        click.trigger="dismissHypeExplanation()"
+        class="explanation-ok-btn"
+        t="myArtists.hypeExplanation.ok"
+      ></button>
     </div>
   </dialog>
 </div>

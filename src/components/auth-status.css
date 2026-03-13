@@ -1,0 +1,54 @@
+@layer block {
+	@scope (auth-status) {
+		:scope {
+			--_padding-btn-block: 0.375rem;
+		}
+
+		.auth-status-bar {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+		}
+
+		.auth-user-name {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.auth-sign-out-btn {
+			padding: var(--_padding-btn-block) var(--space-xs);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			color: var(--color-text-muted);
+
+			transition:
+				border-color 200ms,
+				color 200ms;
+		}
+
+		.auth-sign-out-btn:hover {
+			border-color: var(--color-border-muted);
+			color: var(--color-text-secondary);
+		}
+
+		.auth-sign-in-btn {
+			padding: var(--_padding-btn-block) var(--space-s);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			font-weight: 500;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+			box-shadow: var(--shadow-button);
+
+			transition: background 200ms;
+		}
+
+		.auth-sign-in-btn:hover {
+			background: var(--color-brand-secondary);
+		}
+	}
+}

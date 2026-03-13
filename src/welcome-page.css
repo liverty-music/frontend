@@ -1,0 +1,118 @@
+@layer block {
+	@scope (welcome-page) {
+		:scope {
+			--_gradient-mid: var(--color-brand-primary);
+		}
+
+		.welcome-layout {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+
+			block-size: 100%;
+			padding-block: var(--space-xl);
+			padding-inline: var(--space-m);
+
+			background: linear-gradient(
+				to bottom,
+				var(--color-surface-base),
+				color-mix(in oklch, var(--_gradient-mid) 10%, transparent),
+				var(--color-surface-base)
+			);
+		}
+
+		.welcome-content {
+			inline-size: 100%;
+			max-inline-size: 28rem;
+			text-align: center;
+		}
+
+		.welcome-brand {
+			margin-block-end: var(--space-l);
+
+			font-family: var(--font-display);
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-brand-accent);
+			text-transform: uppercase;
+			letter-spacing: 0.2em;
+
+			animation: fade-in 600ms ease-out both;
+		}
+
+		.welcome-title {
+			margin-block-end: var(--space-s);
+
+			font-family: var(--font-display);
+			font-size: var(--step-3);
+			font-weight: 800;
+			line-height: var(--leading-tight);
+			color: var(--color-text-primary);
+
+			animation: fade-slide-up 600ms ease-out 200ms both;
+		}
+
+		.welcome-subtitle {
+			margin-block-end: var(--space-l);
+			font-size: var(--step-0);
+			color: var(--color-text-secondary);
+			animation: fade-slide-up 600ms ease-out 400ms both;
+		}
+
+		.welcome-actions {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-xs);
+
+			inline-size: 100%;
+
+			animation: fade-slide-up 600ms ease-out 600ms both;
+		}
+
+		.welcome-btn-primary {
+			inline-size: 100%;
+			min-block-size: 48px;
+			padding: var(--space-xs) var(--space-m);
+			border-radius: var(--radius-button);
+
+			font-weight: 600;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+			box-shadow: var(--shadow-button);
+
+			transition:
+				background 200ms,
+				box-shadow 200ms,
+				transform 200ms;
+
+			&:hover {
+				background: var(--color-brand-secondary);
+			}
+
+			&:active {
+				transform: scale(0.98);
+			}
+		}
+
+		.welcome-login-hint {
+			margin-block-start: var(--space-s);
+		}
+
+		.welcome-login-link {
+			cursor: pointer;
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+			text-decoration: underline;
+			text-underline-offset: 4px;
+
+			transition: color 200ms;
+
+			&:hover {
+				color: var(--color-text-primary);
+			}
+		}
+	}
+}

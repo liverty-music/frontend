@@ -1,0 +1,50 @@
+@layer block {
+	@scope (not-found-page) {
+		.not-found-layout {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+
+			block-size: 100%;
+			padding-inline: var(--space-s);
+
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-base);
+		}
+
+		.not-found-code {
+			margin-block-end: var(--space-2xs);
+
+			font-family: var(--font-display);
+			font-size: var(--step-5);
+			font-weight: 700;
+			color: var(--color-text-muted);
+		}
+
+		.not-found-message {
+			margin-block-end: var(--space-m);
+			font-size: var(--step-0);
+			color: var(--color-text-secondary);
+		}
+
+		.not-found-link {
+			padding: var(--space-2xs) var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-sm);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+
+			transition:
+				border-color 200ms,
+				color 200ms;
+		}
+
+		.not-found-link:hover {
+			border-color: var(--color-border-muted);
+			color: var(--color-text-primary);
+		}
+	}
+}

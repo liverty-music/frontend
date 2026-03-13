@@ -1,62 +1,62 @@
 <import from="../../components/user-home-selector/user-home-selector"></import>
 
-<div class="h-full overflow-y-auto bg-surface-base text-text-primary">
+<div class="settings-layout">
   <!-- Header -->
-  <div class="px-4 py-4 border-b border-white/10 bg-surface-raised">
-    <h1 t="settings.title" class="font-display text-xl font-bold tracking-tight"></h1>
+  <div class="settings-header">
+    <h1 t="settings.title" class="settings-header-title"></h1>
   </div>
 
-  <div class="px-4 py-6 flex flex-col gap-6">
+  <div class="settings-body">
     <!-- PREFERENCES Section -->
     <section>
-      <h2 t="settings.preferences" class="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2 px-1"></h2>
-      <div class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 overflow-hidden">
+      <h2 t="settings.preferences" class="settings-section-title"></h2>
+      <div class="settings-card">
         <!-- My Home Area -->
         <button
           click.trigger="openHomeSelector()"
-          class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition-colors"
+          class="settings-row"
         >
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <div class="settings-row-start">
+            <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path>
               <circle cx="12" cy="10" r="3"></circle>
             </svg>
-            <span t="settings.myHomeArea" class="text-sm text-text-primary"></span>
+            <span t="settings.myHomeArea" class="settings-row-label"></span>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-text-secondary">${currentHomeDisplay}</span>
-            <svg class="w-4 h-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="settings-row-end">
+            <span class="settings-row-value">${currentHomeDisplay}</span>
+            <svg class="settings-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 18l6-6-6-6"></path>
             </svg>
           </div>
         </button>
 
         <!-- Divider -->
-        <div class="mx-4 border-t border-white/5"></div>
+        <div class="settings-divider"></div>
 
         <!-- Language -->
         <button
           click.trigger="cycleLanguage()"
-          class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition-colors"
+          class="settings-row"
         >
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <div class="settings-row-start">
+            <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="2" y1="12" x2="22" y2="12"></line>
               <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"></path>
             </svg>
-            <span t="settings.language" class="text-sm text-text-primary"></span>
+            <span t="settings.language" class="settings-row-label"></span>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-text-secondary">${currentLanguageLabel}</span>
-            <svg class="w-4 h-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="settings-row-end">
+            <span class="settings-row-value">${currentLanguageLabel}</span>
+            <svg class="settings-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 18l6-6-6-6"></path>
             </svg>
           </div>
         </button>
 
         <!-- Divider -->
-        <div class="mx-4 border-t border-white/5"></div>
+        <div class="settings-divider"></div>
 
         <!-- Push Notifications -->
         <button
@@ -64,21 +64,22 @@
           role="switch"
           aria-checked.bind="notificationsEnabled"
           disabled.bind="!vapidAvailable"
-          class="w-full flex items-center justify-between px-4 py-3.5 transition-colors ${vapidAvailable ? 'hover:bg-white/5' : 'opacity-50 cursor-not-allowed'}"
+          class="settings-row"
+          data-disabled.bind="!vapidAvailable ? '' : null"
         >
-          <div class="flex flex-col items-start gap-0.5">
-            <div class="flex items-center gap-3">
-              <svg class="w-5 h-5 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <div class="settings-toggle-col">
+            <div class="settings-row-start">
+              <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                 <path d="M13.73 21a2 2 0 01-3.46 0"></path>
               </svg>
-              <span t="settings.pushNotifications" class="text-sm text-text-primary"></span>
+              <span t="settings.pushNotifications" class="settings-row-label"></span>
             </div>
-            <span if.bind="!vapidAvailable" t="settings.notAvailable" class="text-xs text-text-muted ms-8"></span>
+            <span if.bind="!vapidAvailable" t="settings.notAvailable" class="settings-row-hint"></span>
           </div>
           <!-- Toggle switch -->
-          <div class="relative w-11 h-6 rounded-full transition-colors duration-200 ${notificationsEnabled ? 'bg-brand-primary' : 'bg-white/20'}">
-            <div class="absolute top-0.5 start-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}"></div>
+          <div class="settings-toggle-track" data-on.bind="notificationsEnabled ? '' : null">
+            <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled ? '' : null"></div>
           </div>
         </button>
       </div>
@@ -86,47 +87,47 @@
 
     <!-- ABOUT Section -->
     <section>
-      <h2 t="settings.about" class="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2 px-1"></h2>
-      <div class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 overflow-hidden">
+      <h2 t="settings.about" class="settings-section-title"></h2>
+      <div class="settings-card">
         <!-- Terms of Service -->
         <a
           href="https://liverty.me/terms"
           target="_blank"
           rel="noopener noreferrer"
-          class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition-colors"
+          class="settings-row"
         >
-          <span t="settings.termsOfService" class="text-sm text-text-primary"></span>
-          <svg class="w-4 h-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <span t="settings.termsOfService" class="settings-row-label"></span>
+          <svg class="settings-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 18l6-6-6-6"></path>
           </svg>
         </a>
 
-        <div class="mx-4 border-t border-white/5"></div>
+        <div class="settings-divider"></div>
 
         <!-- Privacy Policy -->
         <a
           href="https://liverty.me/privacy"
           target="_blank"
           rel="noopener noreferrer"
-          class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition-colors"
+          class="settings-row"
         >
-          <span t="settings.privacyPolicy" class="text-sm text-text-primary"></span>
-          <svg class="w-4 h-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <span t="settings.privacyPolicy" class="settings-row-label"></span>
+          <svg class="settings-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 18l6-6-6-6"></path>
           </svg>
         </a>
 
-        <div class="mx-4 border-t border-white/5"></div>
+        <div class="settings-divider"></div>
 
         <!-- OSS Licenses -->
         <a
           href="https://liverty.me/licenses"
           target="_blank"
           rel="noopener noreferrer"
-          class="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition-colors"
+          class="settings-row"
         >
-          <span t="settings.ossLicenses" class="text-sm text-text-primary"></span>
-          <svg class="w-4 h-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <span t="settings.ossLicenses" class="settings-row-label"></span>
+          <svg class="settings-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 18l6-6-6-6"></path>
           </svg>
         </a>
@@ -135,13 +136,13 @@
 
     <!-- ACCOUNT Section -->
     <section>
-      <h2 t="settings.account" class="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2 px-1"></h2>
-      <div class="bg-surface-raised rounded-[var(--radius-card)] border border-white/10 overflow-hidden">
+      <h2 t="settings.account" class="settings-section-title"></h2>
+      <div class="settings-card">
         <button
           click.trigger="signOut()"
-          class="w-full flex items-center justify-center px-4 py-3.5 hover:bg-white/5 transition-colors"
+          class="settings-row settings-sign-out"
         >
-          <span t="settings.signOut" class="text-sm font-semibold text-red-400"></span>
+          <span t="settings.signOut" class="settings-sign-out-text"></span>
         </button>
       </div>
     </section>
