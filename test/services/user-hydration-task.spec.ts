@@ -1,4 +1,4 @@
-import { Registration } from 'aurelia'
+import { ILogger, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IAuthService } from '../../src/services/auth-service'
 import { IUserService } from '../../src/services/user-service'
@@ -7,8 +7,9 @@ import { createMockAuth } from '../helpers/mock-auth'
 
 /**
  * Tests the UserHydrationTask logic directly.
- * The actual AppTask.activating() callback resolves IAuthService and IUserService
- * from the container, awaits auth.ready, and calls ensureLoaded() if authenticated.
+ * Mirrors the AppTask.activating() callback: resolves IAuthService and IUserService
+ * from the container, awaits auth.ready, calls ensureLoaded() if authenticated,
+ * and catches errors to allow graceful degradation.
  */
 async function runHydrationLogic(
 	container: ReturnType<typeof createTestContainer>,
@@ -18,7 +19,14 @@ async function runHydrationLogic(
 
 	if (auth.isAuthenticated) {
 		const userService = container.get(IUserService)
-		await userService.ensureLoaded()
+		try {
+			await userService.ensureLoaded()
+		} catch (err) {
+			const logger = container.get(ILogger).scopeTo('UserHydrationTask')
+			logger.warn('Failed to hydrate user profile, continuing without it', {
+				error: err,
+			})
+		}
 	}
 }
 
@@ -80,6 +88,19 @@ describe('UserHydrationTask', () => {
 		resolveReady!()
 		await runPromise
 
+		expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(1)
+	})
+
+	it('should not throw when ensureLoaded fails', async () => {
+		mockAuth.isAuthenticated = true
+		mockUserService.ensureLoaded.mockRejectedValue(new Error('network'))
+
+		const container = createTestContainer(
+			Registration.instance(IAuthService, mockAuth),
+			Registration.instance(IUserService, mockUserService),
+		)
+
+		await expect(runHydrationLogic(container)).resolves.toBeUndefined()
 		expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(1)
 	})
 })

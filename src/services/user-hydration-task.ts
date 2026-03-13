@@ -1,4 +1,4 @@
-import { IContainer, AppTask } from 'aurelia'
+import { AppTask, IContainer, ILogger } from 'aurelia'
 import { IAuthService } from './auth-service'
 import { IUserService } from './user-service'
 
@@ -10,7 +10,14 @@ export const UserHydrationTask = AppTask.activating(
 
 		if (auth.isAuthenticated) {
 			const userService = container.get(IUserService)
-			await userService.ensureLoaded()
+			try {
+				await userService.ensureLoaded()
+			} catch (err) {
+				const logger = container.get(ILogger).scopeTo('UserHydrationTask')
+				logger.warn('Failed to hydrate user profile, continuing without it', {
+					error: err,
+				})
+			}
 		}
 	},
 )
