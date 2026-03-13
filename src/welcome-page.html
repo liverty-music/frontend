@@ -1,5 +1,3 @@
-<import from="./components/signup-modal/signup-modal"></import>
-
 <div class="welcome-layout">
   <div class="welcome-content">
     <!-- Brand wordmark -->
@@ -12,7 +10,7 @@
     <p t="welcome.hero.subtitle" class="welcome-subtitle"></p>
 
     <!-- CTA buttons -->
-    <div class="welcome-actions" if.bind="!showSignUpModal">
+    <div class="welcome-actions">
       <!-- Primary: Get Started (new users / tutorial in progress) -->
       <button
         if.bind="showGetStarted"
@@ -38,8 +36,5 @@
         ></a>
       </p>
     </div>
-
-    <!-- Step 6: Non-dismissible SignUp modal -->
-    <signup-modal active.bind="showSignUpModal"></signup-modal>
   </div>
 </div>
