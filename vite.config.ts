@@ -1,5 +1,4 @@
 import aurelia from '@aurelia/vite-plugin'
-import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -26,7 +25,6 @@ export default defineConfig({
 		aurelia({
 			useDev: true,
 		}),
-		tailwindcss(),
 		nodePolyfills(),
 		VitePWA({
 			strategies: 'injectManifest',

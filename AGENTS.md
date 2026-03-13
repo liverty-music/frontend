@@ -1,5 +1,5 @@
 <poly-repo-context repo="frontend">
-  <responsibilities>Aurelia 2 single-page PWA for music fans. Vite build, TailwindCSS v4,
+  <responsibilities>Aurelia 2 single-page PWA for music fans. Vite build, CUBE CSS methodology,
   Biome linter, Zitadel OIDC auth, Vitest + Playwright testing.</responsibilities>
   <essential-commands>
     make lint              # Biome lint + format check + stylelint + typecheck (matches CI)
@@ -20,7 +20,7 @@
 |------------------|------------------------------------------------------|
 | **Framework**    | Aurelia 2 (`aurelia`, `@aurelia/router`)              |
 | **Build**        | Vite (`@aurelia/vite-plugin`)                         |
-| **Styling**      | TailwindCSS v4 (`@tailwindcss/vite`)                  |
+| **Styling**      | CUBE CSS methodology (`@layer`, `@scope`)             |
 | **Linter**       | Biome (`@biomejs/biome`)                              |
 | **Auth**         | Zitadel via `oidc-client-ts`                          |
 | **Testing**      | Vitest + `@aurelia/testing`, Playwright (E2E)         |
