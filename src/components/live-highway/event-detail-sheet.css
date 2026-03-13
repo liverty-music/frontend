@@ -1,55 +1,193 @@
-/*
- * <dialog> with dynamic popover mode (auto or manual) and native ::backdrop.
- * popover="auto": light dismiss (Escape, click-outside, Android back) handled by browser.
- * popover="manual": non-dismissible (onboarding Step 4).
- * ::backdrop visual styles apply to both modes; pointer-events are UA-controlled.
- */
+@layer block {
+	@scope (event-detail-sheet) {
+		:scope {
+			--_backdrop-bg: oklch(0% 0 0deg / 60%);
+			--_handle-bg: oklch(100% 0 0deg / 20%);
+			--_event-title-color: oklch(100% 0 0deg / 80%);
+			--_border-light: oklch(100% 0 0deg / 20%);
+			--_border-light-hover: oklch(100% 0 0deg / 40%);
+			--_bg-hover: oklch(100% 0 0deg / 5%);
+		}
 
-.event-detail-sheet {
-	position: fixed;
-	inset: auto 0 0;
+		.event-detail-sheet {
+			position: fixed;
+			inset: auto 0 0;
 
-	width: 100%;
-	max-width: 100%;
-	margin: 0;
-	padding: 0;
-	border: none;
+			inline-size: 100%;
+			max-inline-size: 100%;
+			margin: 0;
+			padding: 0;
+			border: none;
 
-	background: transparent;
+			background: transparent;
 
-	transition:
-		transform 300ms ease-out,
-		overlay 300ms ease-out allow-discrete,
-		display 300ms ease-out allow-discrete;
-}
+			transition:
+				transform 300ms ease-out,
+				overlay 300ms ease-out allow-discrete,
+				display 300ms ease-out allow-discrete;
 
-.event-detail-sheet:popover-open {
-	transform: translateY(0);
+			&:popover-open {
+				transform: translateY(0);
 
-	@starting-style {
-		transform: translateY(100%);
-	}
-}
+				@starting-style {
+					transform: translateY(100%);
+				}
+			}
 
-.event-detail-sheet:not(:popover-open) {
-	transform: translateY(100%);
-}
+			&:not(:popover-open) {
+				transform: translateY(100%);
+			}
+		}
 
-/* Prevent scroll chaining from inner content to the page behind the sheet */
-.event-detail-sheet .overflow-y-auto {
-	overscroll-behavior: contain;
-}
+		/* Native ::backdrop visual layer */
+		.event-detail-sheet:popover-open::backdrop {
+			background: var(--_backdrop-bg);
+			backdrop-filter: blur(4px);
+			transition:
+				opacity 300ms ease-out,
+				overlay 300ms ease-out allow-discrete,
+				display 300ms ease-out allow-discrete;
 
-/* Native ::backdrop visual layer — applies to both auto and manual modes */
-.event-detail-sheet:popover-open::backdrop {
-	background: oklch(0% 0 0deg / 60%);
-	backdrop-filter: blur(4px);
-	transition:
-		opacity 300ms ease-out,
-		overlay 300ms ease-out allow-discrete,
-		display 300ms ease-out allow-discrete;
+			@starting-style {
+				opacity: 0;
+			}
+		}
 
-	@starting-style {
-		opacity: 0;
+		.sheet-body {
+			overflow-y: auto;
+			overscroll-behavior: contain;
+
+			max-block-size: 70vh;
+			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+
+			background: var(--color-surface-raised);
+			box-shadow: var(--shadow-sheet);
+		}
+
+		/* Handle bar */
+		.sheet-handle {
+			display: flex;
+			justify-content: center;
+			padding-block: var(--space-2xs) var(--space-3xs);
+		}
+
+		.sheet-handle-bar {
+			inline-size: 2.5rem;
+			block-size: 0.25rem;
+			border-radius: var(--radius-full);
+			background: var(--_handle-bg);
+		}
+
+		.sheet-content {
+			padding-block-end: var(--space-l);
+			padding-inline: var(--space-m);
+		}
+
+		/* Artist header with dynamic color */
+		.sheet-artist-header {
+			margin-block-end: var(--space-s);
+			padding: var(--space-s);
+			border-radius: var(--radius-card);
+		}
+
+		.sheet-artist-name {
+			font-family: var(--font-display);
+			font-size: var(--step-2);
+			font-weight: 800;
+			line-height: var(--leading-snug);
+			color: var(--color-white);
+		}
+
+		.sheet-event-title {
+			margin-block-start: var(--space-3xs);
+			font-size: var(--step--1);
+			color: var(--_event-title-color);
+		}
+
+		/* Event details list */
+		.sheet-details {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-xs);
+		}
+
+		.detail-row {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: start;
+		}
+
+		.detail-icon {
+			margin-block-start: var(--space-3xs);
+			color: var(--color-text-muted);
+		}
+
+		.detail-primary {
+			font-weight: 500;
+			color: var(--color-text-primary);
+		}
+
+		.detail-secondary {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.detail-link {
+			font-size: var(--step--1);
+			color: var(--color-brand-accent);
+
+			&:hover {
+				text-decoration: underline;
+			}
+		}
+
+		/* Action buttons */
+		.sheet-actions {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+			margin-block-start: var(--space-m);
+		}
+
+		.sheet-btn-primary,
+		.sheet-btn-secondary {
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-xs);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			font-weight: 500;
+		}
+
+		.sheet-btn-primary {
+			color: var(--color-white);
+			background: var(--color-brand-primary);
+			box-shadow: var(--shadow-button);
+			transition: background-color 150ms ease-out;
+
+			&:hover {
+				background: var(--color-brand-secondary);
+			}
+		}
+
+		.sheet-btn-secondary {
+			border: 1px solid var(--_border-light);
+			color: var(--color-text-secondary);
+			transition:
+				border-color 150ms ease-out,
+				color 150ms ease-out,
+				background-color 150ms ease-out;
+
+			&:hover {
+				border-color: var(--_border-light-hover);
+				color: var(--color-text-primary);
+				background: var(--_bg-hover);
+			}
+		}
 	}
 }

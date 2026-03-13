@@ -1,0 +1,90 @@
+@layer block {
+	@scope (notification-prompt) {
+		:scope {
+			--_btn-padding: 0.375rem 0.75rem;
+			--_desc-gap: 0.125rem;
+		}
+
+		.prompt-popover {
+			position: fixed;
+			inset-block-start: 0;
+			inset-inline: 1rem;
+
+			margin: 0;
+			padding: var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+
+			background: var(--color-surface-raised);
+			box-shadow: var(--shadow-card-glow);
+		}
+
+		.prompt-row {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: flex-start;
+		}
+
+		.prompt-emoji {
+			flex-shrink: 0;
+			font-size: var(--step-2);
+		}
+
+		.prompt-body {
+			flex: 1;
+			min-inline-size: 0;
+		}
+
+		.prompt-title {
+			font-family: var(--font-display);
+			font-size: var(--step--1);
+			font-weight: 700;
+			color: var(--color-text-primary);
+		}
+
+		.prompt-desc {
+			margin-block-start: var(--_desc-gap);
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.prompt-actions {
+			display: flex;
+			gap: var(--space-2xs);
+			margin-block-start: var(--space-xs);
+		}
+
+		.prompt-btn-secondary,
+		.prompt-btn-primary {
+			padding: var(--_btn-padding);
+			border-radius: var(--radius-button);
+			font-size: var(--step--1);
+			transition: background var(--transition-normal);
+		}
+
+		.prompt-btn-secondary {
+			border: 1px solid var(--color-border-subtle);
+			color: var(--color-text-muted);
+
+			&:hover {
+				background: color-mix(in oklch, var(--color-white) 5%, transparent);
+			}
+		}
+
+		.prompt-btn-primary {
+			font-weight: 500;
+			color: var(--color-white);
+			background: var(--color-brand-primary);
+			box-shadow: var(--shadow-button);
+
+			&:hover {
+				background: var(--color-brand-secondary);
+			}
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.4;
+			}
+		}
+	}
+}

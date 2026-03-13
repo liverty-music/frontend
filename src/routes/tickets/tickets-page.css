@@ -1,17 +1,303 @@
-.center-dialog {
-	position: fixed;
-	inset: 0;
+@layer block {
+	@scope (tickets-page) {
+		:scope {
+			--_white-5: oklch(100% 0 0deg / 5%);
+			--_white-10: oklch(100% 0 0deg / 10%);
+			--_black-60: oklch(0% 0 0deg / 60%);
+			--_pad-btn: var(--space-2xs);
+			--_pad-tiny: 0.125rem;
+			--_font-mono: monospace;
+			--_size-hint: var(--step--2);
 
-	max-width: fit-content;
-	max-height: fit-content;
-	margin: auto;
-	padding: 0;
-	border: none;
+			display: block;
+			block-size: 100%;
+		}
 
-	background: transparent;
-}
+		.page-layout {
+			display: flex;
+			flex-direction: column;
+			block-size: 100%;
+			background: var(--color-surface-base);
+		}
 
-.center-dialog::backdrop {
-	background: oklch(0% 0 0deg / 60%);
-	backdrop-filter: blur(4px);
+		.page-header {
+			flex-shrink: 0;
+
+			padding-block: var(--space-xs);
+			padding-inline: var(--space-xs);
+			border-block-end: 1px solid var(--_white-10);
+
+			background: var(--color-surface-raised);
+
+			& h1 {
+				font-family: var(--font-display);
+				font-size: var(--step-1);
+				font-weight: 700;
+				color: var(--color-text-primary);
+				letter-spacing: -0.01em;
+			}
+		}
+
+		.state-center {
+			display: flex;
+			flex: 1;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.state-content {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+			align-items: center;
+
+			text-align: center;
+		}
+
+		.spinner {
+			inline-size: 2rem;
+			block-size: 2rem;
+			border: 2px solid oklch(from var(--color-brand-accent) l c h / 30%);
+			border-block-start-color: var(--color-brand-accent);
+			border-radius: var(--radius-full);
+
+			animation: spin 0.8s linear infinite;
+		}
+
+		.spinner-lg {
+			inline-size: 2.5rem;
+			block-size: 2.5rem;
+			border-width: 3px;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(1turn);
+			}
+		}
+
+		.state-text {
+			font-size: var(--step--1);
+			color: var(--color-text-muted);
+		}
+
+		.state-icon {
+			inline-size: 2.5rem;
+			block-size: 2.5rem;
+			color: var(--color-text-muted);
+		}
+
+		.state-icon-lg {
+			inline-size: 3rem;
+			block-size: 3rem;
+		}
+
+		.state-title {
+			font-family: var(--font-display);
+			font-size: var(--step-0);
+			font-weight: 700;
+			color: var(--color-text-primary);
+		}
+
+		.state-desc {
+			max-inline-size: 240px;
+			font-size: var(--step--1);
+			color: var(--color-text-muted);
+		}
+
+		.ticket-list {
+			overflow-y: auto;
+			flex: 1;
+			padding: var(--space-xs);
+
+			& > * + * {
+				margin-block-start: var(--space-2xs);
+			}
+		}
+
+		.ticket-card {
+			padding: var(--space-xs);
+			border: 1px solid var(--_white-10);
+			border-radius: var(--radius-card);
+			background: var(--color-surface-raised);
+		}
+
+		.ticket-row {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: start;
+			justify-content: space-between;
+		}
+
+		.ticket-info {
+			flex: 1;
+			min-inline-size: 0;
+		}
+
+		.ticket-name {
+			overflow: hidden;
+
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.ticket-meta {
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+			margin-block-start: var(--space-3xs);
+		}
+
+		.ticket-date {
+			font-size: var(--_size-hint);
+			color: var(--color-text-muted);
+		}
+
+		.ticket-token {
+			font-family: var(--_font-mono);
+			font-size: var(--_size-hint);
+			color: var(--color-brand-accent);
+		}
+
+		.soulbound-badge {
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			margin-block-start: var(--space-3xs);
+			padding-block: var(--_pad-tiny);
+			padding-inline: var(--space-3xs);
+			border-radius: var(--radius-full);
+
+			font-size: var(--_size-hint);
+			font-weight: 500;
+			color: var(--color-brand-accent);
+
+			background: oklch(from var(--color-brand-accent) l c h / 10%);
+
+			& svg {
+				inline-size: 0.75rem;
+				block-size: 0.75rem;
+			}
+		}
+
+		.entry-btn {
+			display: flex;
+			flex-shrink: 0;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-2xs);
+			border-radius: var(--radius-button);
+
+			font-size: var(--_size-hint);
+			font-weight: 600;
+			color: var(--color-surface-base);
+
+			background: var(--color-brand-accent);
+
+			transition: filter 150ms ease-out;
+
+			&:hover {
+				filter: brightness(1.1);
+			}
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+
+			& svg {
+				inline-size: 1rem;
+				block-size: 1rem;
+			}
+		}
+
+		.center-dialog {
+			position: fixed;
+			inset: 0;
+
+			max-inline-size: fit-content;
+			max-block-size: fit-content;
+			margin: auto;
+			padding: 0;
+			border: none;
+
+			background: transparent;
+
+			&::backdrop {
+				background: var(--_black-60);
+				backdrop-filter: blur(4px);
+			}
+		}
+
+		.dialog-card {
+			inline-size: 100%;
+			max-inline-size: 24rem;
+			margin-inline: var(--space-xs);
+			padding: var(--space-m);
+			border: 1px solid var(--_white-10);
+			border-radius: var(--radius-card);
+
+			text-align: center;
+
+			background: var(--color-surface-raised);
+		}
+
+		.dialog-title {
+			font-family: var(--font-display);
+			font-size: var(--step-0);
+			font-weight: 700;
+			color: var(--color-text-primary);
+		}
+
+		.dialog-desc {
+			margin-block-start: var(--space-3xs);
+			font-size: var(--_size-hint);
+			color: var(--color-text-muted);
+		}
+
+		.dialog-hint {
+			margin-block-start: var(--space-2xs);
+			font-size: var(--_size-hint);
+			color: var(--color-text-muted);
+		}
+
+		.qr-wrapper {
+			display: inline-block;
+
+			margin-block-start: var(--space-xs);
+			padding: var(--space-2xs);
+			border-radius: var(--radius-button);
+
+			background: var(--color-white);
+
+			& img {
+				inline-size: 280px;
+				block-size: 280px;
+			}
+		}
+
+		.dialog-close-btn {
+			inline-size: 100%;
+			margin-block-start: var(--space-xs);
+			padding-block: var(--_pad-btn);
+			border: 1px solid var(--_white-10);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+
+			transition: background-color 150ms ease-out;
+
+			&:hover {
+				background: var(--_white-5);
+			}
+		}
+	}
 }

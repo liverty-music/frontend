@@ -1,23 +1,23 @@
 <import from="./components/signup-modal/signup-modal"></import>
 
-<div class="h-full flex flex-col items-center justify-center px-6 py-12 bg-gradient-to-b from-surface-base via-brand-primary/10 to-surface-base">
-  <div class="text-center max-w-md w-full">
+<div class="welcome-layout">
+  <div class="welcome-content">
     <!-- Brand wordmark -->
-    <p class="font-display text-sm font-semibold tracking-[0.2em] uppercase text-brand-accent mb-8 animate-[fade-in_600ms_ease-out_both]">
+    <p class="welcome-brand">
       Liverty Music
     </p>
 
     <!-- Hero copy -->
-    <h1 t="welcome.hero.title" class="font-display text-4xl md:text-5xl font-extrabold text-text-primary leading-tight mb-5 animate-[fade-slide-up_600ms_ease-out_200ms_both]"></h1>
-    <p t="welcome.hero.subtitle" class="text-lg text-text-secondary mb-10 animate-[fade-slide-up_600ms_ease-out_400ms_both]"></p>
+    <h1 t="welcome.hero.title" class="welcome-title"></h1>
+    <p t="welcome.hero.subtitle" class="welcome-subtitle"></p>
 
     <!-- CTA buttons -->
-    <div class="space-y-3 w-full animate-[fade-slide-up_600ms_ease-out_600ms_both]" if.bind="!showSignUpModal">
+    <div class="welcome-actions" if.bind="!showSignUpModal">
       <!-- Primary: Get Started (new users / tutorial in progress) -->
       <button
         if.bind="showGetStarted"
         click.trigger="handleGetStarted()"
-        class="w-full bg-brand-primary hover:bg-brand-secondary text-white font-semibold py-3.5 px-6 rounded-[var(--radius-button)] transition-all min-h-[48px] shadow-[var(--shadow-button)] hover:shadow-[0_6px_24px_-2px_oklch(0.585_0.233_277/0.4)] hover:scale-[1.02] active:scale-[0.98]"
+        class="welcome-btn-primary"
         t="welcome.cta.getStarted"
       ></button>
 
@@ -25,15 +25,15 @@
       <button
         if.bind="!showGetStarted"
         click.trigger="handleLogin()"
-        class="w-full bg-brand-primary hover:bg-brand-secondary text-white font-semibold py-3.5 px-6 rounded-[var(--radius-button)] transition-all min-h-[48px] shadow-[var(--shadow-button)] hover:shadow-[0_6px_24px_-2px_oklch(0.585_0.233_277/0.4)] hover:scale-[1.02] active:scale-[0.98]"
+        class="welcome-btn-primary"
         t="welcome.cta.login"
       ></button>
 
       <!-- Secondary: Login link (visible alongside Get Started for new users) -->
-      <p if.bind="showGetStarted" class="mt-4">
+      <p if.bind="showGetStarted" class="welcome-login-hint">
         <a
           click.trigger="handleLogin()"
-          class="text-sm text-text-secondary hover:text-text-primary cursor-pointer transition-colors underline underline-offset-4"
+          class="welcome-login-link"
           t="welcome.cta.loginHint"
         ></a>
       </p>

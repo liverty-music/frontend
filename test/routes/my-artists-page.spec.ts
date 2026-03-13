@@ -319,7 +319,6 @@ describe('MyArtistsPage', () => {
 
 	describe('tutorial step 5 hype timing', () => {
 		let tutorialSut: InstanceType<typeof MyArtistsPage>
-		// biome-ignore lint/suspicious/noExplicitAny: test mock
 		let tutorialOnboarding: any
 
 		beforeEach(async () => {

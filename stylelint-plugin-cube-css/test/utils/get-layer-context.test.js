@@ -67,6 +67,7 @@ describe('CUBE_LAYERS', () => {
 	it('has correct order', () => {
 		expect(CUBE_LAYERS).toEqual([
 			'reset',
+			'tokens',
 			'global',
 			'composition',
 			'utility',

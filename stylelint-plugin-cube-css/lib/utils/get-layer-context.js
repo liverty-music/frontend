@@ -24,6 +24,7 @@ export function getLayerContext(node) {
 /** Canonical CUBE CSS layer order. */
 export const CUBE_LAYERS = [
 	'reset',
+	'tokens',
 	'global',
 	'composition',
 	'utility',

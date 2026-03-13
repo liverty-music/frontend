@@ -1,0 +1,180 @@
+@layer block {
+	@scope (settings-page) {
+		:scope {
+			--_hover-bg: var(--color-white);
+			--_toggle-off: var(--color-white);
+			--_thumb-bg: var(--color-white);
+			--_signout-color: var(--color-error);
+		}
+
+		.settings-layout {
+			overflow-block: auto;
+			block-size: 100%;
+			color: var(--color-text-primary);
+			background: var(--color-surface-base);
+		}
+
+		.settings-header {
+			padding: var(--space-s);
+			border-block-end: 1px solid
+				color-mix(in oklch, var(--color-white) 10%, transparent);
+			background: var(--color-surface-raised);
+
+			& .settings-header-title {
+				font-family: var(--font-display);
+				font-size: var(--step-1);
+				font-weight: 700;
+				letter-spacing: -0.01em;
+			}
+		}
+
+		.settings-body {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-m);
+			padding: var(--space-m) var(--space-s);
+		}
+
+		.settings-section-title {
+			margin-block-end: var(--space-2xs);
+			padding-inline: var(--space-3xs);
+
+			font-size: var(--step--2);
+			font-weight: 600;
+			color: var(--color-text-muted);
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.settings-card {
+			overflow: hidden;
+			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+			border-radius: var(--radius-card);
+			background: var(--color-surface-raised);
+		}
+
+		.settings-row {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+
+			inline-size: 100%;
+			padding: var(--space-xs) var(--space-s);
+
+			transition: background 200ms;
+
+			&:hover {
+				background: color-mix(in oklch, var(--_hover-bg) 5%, transparent);
+			}
+
+			&[data-disabled] {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+
+			&[data-disabled]:hover {
+				background: transparent;
+			}
+
+			& .settings-row-start {
+				display: flex;
+				gap: var(--space-xs);
+				align-items: center;
+			}
+
+			& .settings-row-end {
+				display: flex;
+				gap: var(--space-2xs);
+				align-items: center;
+			}
+
+			& .settings-icon {
+				inline-size: 1.25rem;
+				block-size: 1.25rem;
+				color: var(--color-text-secondary);
+			}
+
+			& .settings-chevron {
+				inline-size: 1rem;
+				block-size: 1rem;
+				color: var(--color-text-muted);
+			}
+
+			& .settings-row-label {
+				font-size: var(--step--1);
+				color: var(--color-text-primary);
+			}
+
+			& .settings-row-value {
+				font-size: var(--step--1);
+				color: var(--color-text-secondary);
+			}
+
+			& .settings-row-hint {
+				margin-inline-start: var(--space-l);
+				font-size: var(--step--2);
+				color: var(--color-text-muted);
+			}
+		}
+
+		.settings-divider {
+			margin-inline: var(--space-s);
+			border-block-start: 1px solid
+				color-mix(in oklch, var(--color-white) 5%, transparent);
+		}
+
+		.settings-toggle-col {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			align-items: flex-start;
+		}
+
+		.settings-toggle-track {
+			position: relative;
+
+			inline-size: 2.75rem;
+			block-size: 1.5rem;
+			border-radius: var(--radius-full);
+
+			transition: background 200ms;
+
+			&[data-on] {
+				background: var(--color-brand-primary);
+			}
+
+			&:not([data-on]) {
+				background: color-mix(in oklch, var(--_toggle-off) 20%, transparent);
+			}
+		}
+
+		.settings-toggle-thumb {
+			position: absolute;
+			inset-block-start: 0.125rem;
+			inset-inline-start: 0.125rem;
+
+			inline-size: 1.25rem;
+			block-size: 1.25rem;
+			border-radius: var(--radius-full);
+
+			background: var(--_thumb-bg);
+			box-shadow: var(--shadow-soft);
+
+			transition: transform 200ms;
+
+			&[data-on] {
+				transform: translateX(1.25rem);
+			}
+		}
+
+		.settings-sign-out {
+			justify-content: center;
+		}
+
+		.settings-sign-out-text {
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--_signout-color);
+		}
+	}
+}

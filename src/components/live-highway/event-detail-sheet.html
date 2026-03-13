@@ -19,49 +19,49 @@
   >
     <div
       click.trigger="onSheetClick($event)"
-      class="bg-surface-raised rounded-t-[var(--radius-sheet)] shadow-[var(--shadow-sheet)] max-h-[70vh] overflow-y-auto"
+      class="sheet-body"
     >
       <!-- Handle bar -->
-      <div class="flex justify-center pt-3 pb-2">
-        <div class="w-10 h-1 rounded-full bg-white/20"></div>
+      <div class="sheet-handle">
+        <div class="sheet-handle-bar"></div>
       </div>
 
-      <div if.bind="event" class="px-6 pb-8">
+      <div if.bind="event" class="sheet-content">
         <!-- Artist name header with dynamic color -->
         <div
           artist-color.bind="event.artistName"
-          class="rounded-[var(--radius-card)] p-5 mb-5 hype-home"
+          class="sheet-artist-header hype-home"
         >
-          <h2 class="text-white font-display font-extrabold text-2xl leading-tight">
+          <h2 class="sheet-artist-name">
             ${event.artistName}
           </h2>
-          <p class="text-white/80 text-sm mt-1">${event.title}</p>
+          <p class="sheet-event-title">${event.title}</p>
         </div>
 
         <!-- Event details -->
-        <div class="space-y-4">
+        <div class="sheet-details">
           <!-- Date & Time -->
-          <div class="flex items-start gap-3">
-            <span class="text-text-muted mt-0.5"><icon-calendar></icon-calendar></span>
+          <div class="detail-row">
+            <span class="detail-icon"><icon-calendar></icon-calendar></span>
             <div>
-              <p class="text-text-primary font-medium">${event.date | date:'long'}</p>
-              <p class="text-text-secondary text-sm">
+              <p class="detail-primary">${event.date | date:'long'}</p>
+              <p class="detail-secondary">
                 Open ${event.openTime || '—'} / Start ${event.startTime}
               </p>
             </div>
           </div>
 
           <!-- Venue -->
-          <div class="flex items-start gap-3">
-            <span class="text-text-muted mt-0.5"><icon-map-pin></icon-map-pin></span>
+          <div class="detail-row">
+            <span class="detail-icon"><icon-map-pin></icon-map-pin></span>
             <div>
-              <p class="text-text-primary font-medium">${event.venueName}</p>
-              <p if.bind="event.adminArea" class="text-text-secondary text-sm">${event.adminArea}</p>
+              <p class="detail-primary">${event.venueName}</p>
+              <p if.bind="event.adminArea" class="detail-secondary">${event.adminArea}</p>
               <a
                 href.bind="googleMapsUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-brand-accent text-sm hover:underline"
+                class="detail-link"
               >
                 Open in Google Maps
               </a>
@@ -70,12 +70,12 @@
         </div>
 
         <!-- Action buttons -->
-        <div class="mt-6 flex flex-col gap-3">
+        <div class="sheet-actions">
           <a
             href.bind="event.sourceUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="flex items-center justify-center gap-2 py-3 px-4 bg-brand-primary hover:bg-brand-secondary text-white rounded-[var(--radius-button)] font-medium text-sm transition-colors shadow-[var(--shadow-button)]"
+            class="sheet-btn-primary"
           >
             <icon-link></icon-link> View Official Info
           </a>
@@ -83,7 +83,7 @@
             href.bind="calendarUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="flex items-center justify-center gap-2 py-3 px-4 border border-white/20 hover:border-white/40 text-text-secondary hover:text-text-primary rounded-[var(--radius-button)] font-medium text-sm transition-colors hover:bg-white/5"
+            class="sheet-btn-secondary"
           >
             <icon-calendar></icon-calendar> Add to Calendar
           </a>

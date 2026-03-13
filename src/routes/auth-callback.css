@@ -1,0 +1,63 @@
+@layer block {
+	@scope (auth-callback) {
+		:scope {
+			--_spinner-radius: 50%;
+		}
+
+		.callback-layout {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			block-size: 100%;
+
+			background: var(--color-surface-base);
+		}
+
+		.callback-content {
+			padding-inline: var(--space-m);
+			text-align: center;
+		}
+
+		.callback-loading {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+			align-items: center;
+		}
+
+		.callback-spinner {
+			inline-size: 2rem;
+			block-size: 2rem;
+			border: 2px solid var(--color-brand-primary);
+			border-block-start-color: transparent;
+			border-radius: var(--_spinner-radius);
+
+			animation: callback-spin 1s linear infinite;
+		}
+
+		@keyframes callback-spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		.callback-status {
+			font-size: var(--step-0);
+			color: var(--color-text-primary);
+		}
+
+		.callback-error {
+			font-weight: 700;
+			color: var(--color-error);
+			white-space: pre-wrap;
+		}
+
+		.callback-home-link {
+			display: block;
+			margin-block-start: var(--space-s);
+			color: var(--color-brand-primary);
+			text-decoration: underline;
+		}
+	}
+}

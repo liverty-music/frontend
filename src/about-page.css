@@ -1,0 +1,23 @@
+@layer block {
+	@scope (about-page) {
+		.about-card {
+			padding: var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+			background: color-mix(in oklch, var(--color-white) 5%, transparent);
+		}
+
+		.about-title {
+			margin-block-end: var(--space-2xs);
+
+			font-family: var(--font-display);
+			font-size: var(--step-1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.about-text {
+			color: var(--color-text-secondary);
+		}
+	}
+}

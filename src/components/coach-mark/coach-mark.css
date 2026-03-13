@@ -1,227 +1,228 @@
 @import url("https://fonts.googleapis.com/css2?family=Klee+One&display=swap");
 
-/* View Transition for smooth spotlight movement */
-
-/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transition API pseudo-element */
-::view-transition-group(spotlight) {
-	animation-duration: 0.4s;
-	animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-/* Popover UA style reset */
-.coach-mark-overlay {
-	pointer-events: none;
-
-	width: 100vw;
-	height: 100vh;
-	margin: 0;
-	padding: 0;
-	border: none;
-
-	background: transparent;
-
-	&::backdrop {
-		display: none;
-	}
-}
-
-/* Visual layer: box-shadow creates dark overlay with rounded cutout */
-.visual-spotlight {
-	pointer-events: none;
-
-	position: fixed;
-	inset: anchor(--coach-target top) anchor(--coach-target right)
-		anchor(--coach-target bottom) anchor(--coach-target left);
-
-	margin: -8px;
-	border: 2px solid var(--color-brand-accent, oklch(75% 0.15 160deg));
-	border-radius: var(--spotlight-radius, 12px);
-
-	box-shadow: 0 0 0 100vmax
-		color-mix(in oklch, oklch(0% 0 0deg) 70%, transparent);
-
-	animation: coach-pulse 1.5s ease-in-out infinite;
-	view-transition-name: spotlight;
-}
-
-/* Logic layer: transparent divs block clicks outside target */
-.click-blocker {
-	pointer-events: auto;
-	position: fixed;
-	background-color: transparent;
-}
-
-.mask-top {
-	inset: 0 0 auto;
-	inset-block-end: anchor(--coach-target top);
-}
-
-.mask-bottom {
-	inset: auto 0 0;
-	inset-block-start: anchor(--coach-target bottom);
-}
-
-.mask-left {
-	inset: anchor(--coach-target top) anchor(--coach-target left)
-		anchor(--coach-target bottom) 0;
-}
-
-.mask-right {
-	inset: anchor(--coach-target top) 0 anchor(--coach-target bottom)
-		anchor(--coach-target right);
-}
-
-/* Target click interceptor — captures clicks on the target element */
-.target-interceptor {
-	inset: anchor(--coach-target top) anchor(--coach-target right)
-		anchor(--coach-target bottom) anchor(--coach-target left);
-	margin: -8px;
-}
-
-/* Tooltip positioned via Anchor Positioning with @position-try fallbacks */
-.coach-mark-tooltip {
-	pointer-events: none;
-
-	position: fixed;
-	position-anchor: --coach-target;
-	position-area: block-end;
-	position-try-fallbacks: flip-block;
-
-	/* Anchored Container Query (CSS Anchor Positioning L2):
-	   children can query which fallback was applied — no JS needed */
-	container-type: anchored;
-
-	display: flex;
-	flex-direction: column;
-	gap: 0;
-	align-items: start;
-
-	max-width: 320px;
-	margin-block: 16px 0;
-	padding: 16px;
-
-	color: white;
-
-	filter: drop-shadow(0 2px 8px oklch(0% 0 0deg / 40%));
-}
-
-.coach-tooltip-message {
-	margin: 0;
-
-	font-family: "Klee One", cursive;
-	font-size: 18px;
-	font-weight: 500;
-	line-height: 1.6;
-}
-
-/*
- * Dual-arrow toggle via Anchored Container Query (CSS Anchor Positioning L2).
- *
- * container-type: anchored on the tooltip lets children query which
- * position-try-fallback was applied — entirely in CSS, no JS needed.
- * flip-block flips position-area and margin-block automatically.
- *
- *   - default (block-end):  .coach-arrow-above visible (points up to target)
- *   - flipped (flip-block):  .coach-arrow-below visible (points down to target)
- */
-
-.coach-arrow-above {
-	display: block;
-}
-
-.coach-arrow-below {
-	display: none;
-}
-
-@container anchored (fallback: flip-block) {
-	.coach-arrow-above {
-		display: none;
+/* stylelint-disable cube/block-require-scope -- anchor positioning,
+   view transitions, and @container anchored queries cannot be scoped */
+@layer block {
+	/* Coach-mark custom properties (unique values not in design tokens) */
+	:where(.coach-mark-overlay) {
+		--coach-spotlight-outset: -8px;
+		--coach-overlay-shadow: 0 0 0 100vmax
+			color-mix(in oklch, oklch(0% 0 0deg) 70%, transparent);
+		--coach-font-handwritten: "Klee One", cursive;
+		--coach-duration-none: 0s;
 	}
 
-	.coach-arrow-below {
-		display: block;
-	}
-
-	/*
-	 * When .coach-arrow-below transitions from display:none → block,
-	 * the draw-line / fade-in-head animations have already "completed"
-	 * while the element was hidden. Force the final visible state directly.
-	 */
-	.coach-arrow-below .arrow-line {
-		stroke-dashoffset: 0;
-		animation: none;
-	}
-
-	.coach-arrow-below .arrow-head {
-		opacity: 1;
-		animation: none;
-	}
-}
-
-.coach-arrow-container svg {
-	width: 80px;
-	height: 80px;
-
-	filter: drop-shadow(
-		0 4px 6px color-mix(in oklch, oklch(0% 0 0deg) 50%, transparent)
-	);
-
-	stroke-linecap: round;
-	stroke-linejoin: round;
-	stroke-width: 4px;
-}
-
-.arrow-line {
-	stroke-dasharray: 150;
-	stroke-dashoffset: 150;
-	animation: draw-line 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-}
-
-.arrow-head {
-	opacity: 0;
-	animation: fade-in-head 0.3s ease-out 0.5s forwards;
-}
-
-@keyframes coach-pulse {
-	0%,
-	100% {
-		transform: scale(1);
-	}
-
-	50% {
-		transform: scale(1.05);
-	}
-}
-
-@keyframes draw-line {
-	to {
-		stroke-dashoffset: 0;
-	}
-}
-
-@keyframes fade-in-head {
-	to {
-		opacity: 1;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.visual-spotlight {
-		animation: none;
-	}
+	/* View Transition for smooth spotlight movement */
 
 	/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transition API pseudo-element */
 	::view-transition-group(spotlight) {
-		animation-duration: 0s;
+		animation-duration: var(--transition-slow);
+		animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+	}
+
+	/* Popover UA style reset */
+	.coach-mark-overlay {
+		pointer-events: none;
+
+		inline-size: 100vi;
+		block-size: 100vb;
+		margin: 0;
+		padding: 0;
+		border: none;
+
+		background: transparent;
+
+		&::backdrop {
+			display: none;
+		}
+	}
+
+	/* Visual layer: box-shadow creates dark overlay with rounded cutout */
+	.visual-spotlight {
+		pointer-events: none;
+
+		position: fixed;
+		inset: anchor(--coach-target top) anchor(--coach-target right)
+			anchor(--coach-target bottom) anchor(--coach-target left);
+
+		margin: var(--coach-spotlight-outset);
+		border: 2px solid var(--color-brand-accent, oklch(75% 0.15 160deg));
+		border-radius: var(--spotlight-radius, 12px);
+
+		box-shadow: var(--coach-overlay-shadow);
+
+		animation: coach-pulse 1.5s ease-in-out infinite;
+		view-transition-name: spotlight;
+	}
+
+	/* Logic layer: transparent divs block clicks outside target */
+	.click-blocker {
+		pointer-events: auto;
+		position: fixed;
+		background-color: transparent;
+	}
+
+	.mask-top {
+		inset: 0 0 auto;
+		inset-block-end: anchor(--coach-target top);
+	}
+
+	.mask-bottom {
+		inset: auto 0 0;
+		inset-block-start: anchor(--coach-target bottom);
+	}
+
+	.mask-left {
+		inset: anchor(--coach-target top) anchor(--coach-target left)
+			anchor(--coach-target bottom) 0;
+	}
+
+	.mask-right {
+		inset: anchor(--coach-target top) 0 anchor(--coach-target bottom)
+			anchor(--coach-target right);
+	}
+
+	/* Target click interceptor — captures clicks on the target element */
+	.target-interceptor {
+		inset: anchor(--coach-target top) anchor(--coach-target right)
+			anchor(--coach-target bottom) anchor(--coach-target left);
+		margin: var(--coach-spotlight-outset);
+	}
+
+	/* Tooltip positioned via Anchor Positioning with @position-try fallbacks */
+	.coach-mark-tooltip {
+		pointer-events: none;
+
+		position: fixed;
+		position-anchor: --coach-target;
+		position-area: block-end;
+		position-try-fallbacks: flip-block;
+
+		/* Anchored Container Query (CSS Anchor Positioning L2):
+		   children can query which fallback was applied — no JS needed */
+		container-name: coach-tooltip;
+		container-type: anchored;
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+		align-items: start;
+
+		max-inline-size: 320px;
+		margin-block: var(--space-s) 0;
+		padding: var(--space-s);
+
+		color: var(--color-white);
+
+		filter: drop-shadow(0 2px 8px oklch(0% 0 0deg / 40%));
+	}
+
+	.coach-tooltip-message {
+		margin: 0;
+
+		font-family: var(--coach-font-handwritten);
+		font-size: var(--step-0);
+		font-weight: 500;
+		line-height: var(--leading-relaxed);
+	}
+
+	/*
+	 * Dual-arrow toggle via Anchored Container Query (CSS Anchor Positioning L2).
+	 * container-type: anchored on the tooltip lets children query which
+	 * position-try-fallback was applied — entirely in CSS, no JS needed.
+	 */
+	.coach-arrow-above {
+		display: block;
+	}
+
+	.coach-arrow-below {
+		display: none;
+	}
+
+	@container anchored (fallback: flip-block) {
+		.coach-arrow-above {
+			display: none;
+		}
+
+		.coach-arrow-below {
+			display: block;
+		}
+
+		.coach-arrow-below .arrow-line {
+			stroke-dashoffset: 0;
+			animation: none;
+		}
+
+		.coach-arrow-below .arrow-head {
+			opacity: 1;
+			animation: none;
+		}
+	}
+
+	.coach-arrow-container svg {
+		inline-size: 80px;
+		block-size: 80px;
+
+		filter: drop-shadow(
+			0 4px 6px color-mix(in oklch, oklch(0% 0 0deg) 50%, transparent)
+		);
+
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		stroke-width: 4px;
 	}
 
 	.arrow-line {
-		stroke-dashoffset: 0;
-		animation: none;
+		stroke-dasharray: 150;
+		stroke-dashoffset: 150;
+		animation: draw-line 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 	}
 
 	.arrow-head {
-		opacity: 1;
-		animation: none;
+		opacity: 0;
+		animation: fade-in-head 0.3s ease-out 0.5s forwards;
+	}
+
+	@keyframes coach-pulse {
+		0%,
+		100% {
+			transform: scale(1);
+		}
+
+		50% {
+			transform: scale(1.05);
+		}
+	}
+
+	@keyframes draw-line {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+
+	@keyframes fade-in-head {
+		to {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.visual-spotlight {
+			animation: none;
+		}
+
+		/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transition API pseudo-element */
+		::view-transition-group(spotlight) {
+			animation-duration: var(--coach-duration-none);
+		}
+
+		.arrow-line {
+			stroke-dashoffset: 0;
+			animation: none;
+		}
+
+		.arrow-head {
+			opacity: 1;
+			animation: none;
+		}
 	}
 }

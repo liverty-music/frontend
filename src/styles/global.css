@@ -1,0 +1,79 @@
+@layer global {
+	:where(body) {
+		font-family: var(--font-body);
+		font-size: var(--step-0);
+		line-height: var(--leading-relaxed);
+		color: var(--color-text-primary);
+
+		background: var(--color-surface-base);
+	}
+
+	:where(h1, h2, h3, h4, h5, h6) {
+		font-family: var(--font-display);
+		line-height: var(--leading-snug);
+	}
+
+	:where(h1) {
+		font-size: var(--step-4);
+	}
+
+	:where(h2) {
+		font-size: var(--step-3);
+	}
+
+	:where(h3) {
+		font-size: var(--step-2);
+	}
+
+	:where(h4) {
+		font-size: var(--step-1);
+	}
+
+	:where(a) {
+		color: var(--color-brand-accent);
+		text-underline-offset: 0.2em;
+	}
+
+	:where(button) {
+		padding-block: var(--space-2xs);
+		padding-inline: var(--space-s);
+		border: none;
+		border-radius: var(--radius-button);
+
+		font-family: var(--font-display);
+		font-weight: 600;
+
+		background: transparent;
+
+		transition:
+			background-color var(--transition-fast) ease-out,
+			opacity var(--transition-fast) ease-out;
+	}
+
+	:where(input, textarea, select) {
+		padding-block: var(--space-2xs);
+		padding-inline: var(--space-xs);
+		border: 1px solid var(--color-border-subtle);
+		border-radius: var(--radius-button);
+
+		background: var(--color-surface-raised);
+	}
+
+	:where(svg) {
+		fill: currentcolor;
+		stroke: currentcolor;
+	}
+
+	/* View Transitions API for route animations — pseudo-elements cannot be wrapped in :where() */
+	/* stylelint-disable cube/prefer-where-in-reset */
+	::view-transition-old(root) {
+		animation: var(--transition-route-duration) var(--transition-route-easing)
+			both fade-out;
+	}
+
+	::view-transition-new(root) {
+		animation: var(--transition-route-duration) var(--transition-route-easing)
+			both fade-in;
+	}
+	/* stylelint-enable cube/prefer-where-in-reset */
+}

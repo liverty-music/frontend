@@ -1,0 +1,53 @@
+@layer block {
+	@scope (bottom-nav-bar) {
+		:scope {
+			--_tab-gap: 0.125rem;
+			--_safe-area-bottom: env(safe-area-inset-bottom);
+		}
+
+		.nav-bar {
+			padding-block-end: var(--_safe-area-bottom);
+			border-block-start: 1px solid var(--color-border-subtle);
+			background: var(--color-surface-raised);
+		}
+
+		.nav-bar-inner {
+			display: flex;
+			align-items: center;
+			justify-content: space-around;
+			block-size: 3.5rem;
+		}
+
+		.nav-tab {
+			display: flex;
+			flex: 1;
+			flex-direction: column;
+			gap: var(--_tab-gap);
+			align-items: center;
+			justify-content: center;
+
+			block-size: 100%;
+
+			transition: color var(--transition-normal);
+		}
+
+		.nav-tab[data-active] {
+			color: var(--color-brand-accent);
+		}
+
+		.nav-tab:not([data-active]) {
+			color: var(--color-text-muted);
+		}
+
+		.nav-icon {
+			inline-size: 1.25rem;
+			block-size: 1.25rem;
+		}
+
+		.nav-label {
+			font-size: var(--step--2);
+			font-weight: 500;
+			line-height: var(--leading-none);
+		}
+	}
+}

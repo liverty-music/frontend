@@ -12,13 +12,6 @@ interface ToastItem {
 	dismissTimer: ReturnType<typeof setTimeout> | null
 }
 
-/** CSS class mapping for toast severity levels. */
-const SEVERITY_CLASSES: Record<ToastSeverity, string> = {
-	info: 'from-brand-primary to-brand-secondary',
-	warning: 'from-amber-600 to-amber-500',
-	error: 'from-red-700 to-red-600',
-}
-
 export class ToastNotification {
 	private readonly ea = resolve(IEventAggregator)
 
@@ -125,10 +118,5 @@ export class ToastNotification {
 	public onAction(toast: ToastItem): void {
 		toast.action?.callback()
 		this.dismiss(toast)
-	}
-
-	/** Returns the gradient CSS classes for a toast's severity. */
-	public severityClass(severity: ToastSeverity): string {
-		return SEVERITY_CLASSES[severity]
 	}
 }
