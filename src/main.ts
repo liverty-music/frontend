@@ -1,3 +1,4 @@
+import './styles/main.css'
 import { I18nConfiguration } from '@aurelia/i18n'
 import { RouterConfiguration } from '@aurelia/router'
 import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
