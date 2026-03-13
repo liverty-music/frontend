@@ -33,13 +33,7 @@
 			border-block-start-color: transparent;
 			border-radius: var(--_spinner-radius);
 
-			animation: callback-spin 1s linear infinite;
-		}
-
-		@keyframes callback-spin {
-			to {
-				transform: rotate(360deg);
-			}
+			animation: spin 1s linear infinite;
 		}
 
 		.callback-status {

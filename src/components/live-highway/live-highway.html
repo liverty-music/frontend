@@ -15,8 +15,8 @@
     </div>
 
     <!-- Highway layout -->
-    <div if.bind="!loading && !isEmpty" class="highway-scroll">
-      <!-- Sticky STAGE header -->
+    <template if.bind="!loading && !isEmpty">
+      <!-- Stage header (outside scroll container — no sticky/z-index needed) -->
       <div class="stage-header">
         <div data-stage-home class="stage-label">
           <span class="stage-label-text">HOME STAGE</span>
@@ -29,52 +29,54 @@
         </div>
       </div>
 
-      <div repeat.for="group of dateGroups; key.bind: group.dateKey">
-        <!-- Sticky date separator -->
-        <div class="date-separator">
-          <span class="date-separator-text">${group.label}</span>
-        </div>
-
-        <!-- Three-lane grid -->
-        <div class="lane-grid">
-          <!-- Home lane -->
-          <div class="lane">
-            <event-card
-              repeat.for="ev of group.home; key.bind: ev.id"
-              event.bind="ev"
-              lane="home"
-            ></event-card>
-            <div if.bind="group.home.length === 0" class="lane-empty">
-              <p class="lane-empty-dash">—</p>
-            </div>
+      <div class="highway-scroll">
+        <div repeat.for="group of dateGroups; key.bind: group.dateKey">
+          <!-- Sticky date separator -->
+          <div class="date-separator">
+            <span class="date-separator-text">${group.label}</span>
           </div>
 
-          <!-- Nearby lane -->
-          <div class="lane">
-            <event-card
-              repeat.for="ev of group.nearby; key.bind: ev.id"
-              event.bind="ev"
-              lane="nearby"
-            ></event-card>
-            <div if.bind="group.nearby.length === 0" class="lane-empty">
-              <p class="lane-empty-dash">—</p>
+          <!-- Three-lane grid -->
+          <div class="lane-grid">
+            <!-- Home lane -->
+            <div class="lane">
+              <event-card
+                repeat.for="ev of group.home; key.bind: ev.id"
+                event.bind="ev"
+                lane="home"
+              ></event-card>
+              <div if.bind="group.home.length === 0" class="lane-empty">
+                <p class="lane-empty-dash">—</p>
+              </div>
             </div>
-          </div>
 
-          <!-- Away lane -->
-          <div class="lane">
-            <event-card
-              repeat.for="ev of group.away; key.bind: ev.id"
-              event.bind="ev"
-              lane="away"
-            ></event-card>
-            <div if.bind="group.away.length === 0" class="lane-empty">
-              <p class="lane-empty-dash">—</p>
+            <!-- Nearby lane -->
+            <div class="lane">
+              <event-card
+                repeat.for="ev of group.nearby; key.bind: ev.id"
+                event.bind="ev"
+                lane="nearby"
+              ></event-card>
+              <div if.bind="group.nearby.length === 0" class="lane-empty">
+                <p class="lane-empty-dash">—</p>
+              </div>
+            </div>
+
+            <!-- Away lane -->
+            <div class="lane">
+              <event-card
+                repeat.for="ev of group.away; key.bind: ev.id"
+                event.bind="ev"
+                lane="away"
+              ></event-card>
+              <div if.bind="group.away.length === 0" class="lane-empty">
+                <p class="lane-empty-dash">—</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 
   <!-- Bottom sheet (outside scroll container) -->

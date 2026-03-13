@@ -120,12 +120,6 @@
 			animation: spin 0.8s linear infinite;
 		}
 
-		@keyframes spin {
-			to {
-				transform: rotate(1turn);
-			}
-		}
-
 		.signup-error {
 			margin-block-start: var(--space-2xs);
 			font-size: var(--step--2);

@@ -70,6 +70,33 @@
 		}
 	}
 
+	@keyframes spin {
+		to {
+			transform: rotate(1turn);
+		}
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+
+		50% {
+			opacity: 0.5;
+		}
+	}
+
+	@keyframes starfield-twinkle {
+		0% {
+			opacity: 0.6;
+		}
+
+		100% {
+			opacity: 1;
+		}
+	}
+
 	@keyframes bounce-in {
 		0% {
 			transform: translateY(-20px) scale(0.95);

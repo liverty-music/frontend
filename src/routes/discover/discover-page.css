@@ -118,16 +118,6 @@
 			}
 		}
 
-		@keyframes starfield-twinkle {
-			0% {
-				opacity: 0.6;
-			}
-
-			100% {
-				opacity: 1;
-			}
-		}
-
 		.sr-only {
 			--_sr-margin: -1px;
 
@@ -143,7 +133,7 @@
 
 			white-space: nowrap;
 
-			clip: rect(0, 0, 0, 0);
+			clip-path: inset(50%);
 		}
 
 		.search-bar {
