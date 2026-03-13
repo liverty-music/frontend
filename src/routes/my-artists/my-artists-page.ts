@@ -3,11 +3,13 @@ import { IRouter } from '@aurelia/router'
 import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import type { HypeStop } from '../../components/hype-inline-slider/hype-inline-slider'
 import { artistColor } from '../../components/live-highway/color-generator'
 import {
 	Toast,
 	type ToastHandle,
 } from '../../components/toast-notification/toast'
+import { IAuthService } from '../../services/auth-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import {
 	IOnboardingService,
@@ -22,12 +24,12 @@ export interface FollowedArtist {
 }
 
 export const HYPE_META: Record<number, { labelKey: string; icon: string }> = {
-	[HypeType.WATCH]: { labelKey: 'hype.watch', icon: '\u{1F440}' },
-	[HypeType.HOME]: { labelKey: 'hype.home', icon: '\u{1F525}' },
-	[HypeType.NEARBY]: { labelKey: 'hype.nearby', icon: '\u{1F525}\u{1F525}' },
+	[HypeType.WATCH]: { labelKey: 'チェック', icon: '👀' },
+	[HypeType.HOME]: { labelKey: '地元', icon: '🔥' },
+	[HypeType.NEARBY]: { labelKey: '近くも', icon: '🔥🔥' },
 	[HypeType.AWAY]: {
-		labelKey: 'hype.away',
-		icon: '\u{1F525}\u{1F525}\u{1F525}',
+		labelKey: 'どこでも！',
+		icon: '🔥🔥🔥',
 	},
 }
 
@@ -50,8 +52,11 @@ export class MyArtistsPage {
 	// Grid context menu state
 	public contextMenuArtist: FollowedArtist | null = null
 	private contextMenuDialog!: HTMLDialogElement
-	private hypeSelectorDialog!: HTMLDialogElement
-	private hypeExplanationDialog!: HTMLDialogElement
+
+	// Notification dialog state
+	public showNotificationDialog = false
+	public showSignupBanner = false
+	public notificationDialogShown = false
 
 	// Swipe state
 	public swipedArtistId = ''
@@ -70,17 +75,17 @@ export class MyArtistsPage {
 	private undoIndex = -1
 	private undoHandle: ToastHandle | null = null
 
-	// Hype level selector state
-	public selectorArtist: FollowedArtist | null = null
+	// Hype level references
 	public readonly hypeLevels = HYPE_LEVELS
 	public readonly hypeMeta = HYPE_META
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsPage')
 	public readonly i18n = resolve(I18N)
+	private readonly authService = resolve(IAuthService)
 
 	public trHypeLabel(level: number): string {
 		const meta = HYPE_META[level]
-		return meta ? this.i18n.tr(meta.labelKey) : ''
+		return meta?.labelKey ?? ''
 	}
 	private readonly followService = resolve(IFollowServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
@@ -89,7 +94,6 @@ export class MyArtistsPage {
 	private abortController: AbortController | null = null
 
 	// Tutorial state
-	public showHypeExplanation = false
 	public pulsingArtistId = ''
 
 	public get isTutorialStep5(): boolean {
@@ -98,6 +102,26 @@ export class MyArtistsPage {
 
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
+	}
+
+	public get isAuthenticated(): boolean {
+		return this.authService.isAuthenticated
+	}
+
+	public getArtistColor(id: string): string {
+		const artist = this.artists.find((a) => a.id === id)
+		return artist?.color ?? ''
+	}
+
+	private static readonly HYPE_TYPE_TO_STOP: Record<number, HypeStop> = {
+		[HypeType.WATCH]: 'watch',
+		[HypeType.HOME]: 'home',
+		[HypeType.NEARBY]: 'nearby',
+		[HypeType.AWAY]: 'away',
+	}
+
+	public hypeStop(artist: FollowedArtist): HypeStop {
+		return MyArtistsPage.HYPE_TYPE_TO_STOP[artist.hype] ?? 'watch'
 	}
 
 	public async loading(): Promise<void> {
@@ -127,12 +151,8 @@ export class MyArtistsPage {
 
 		if (this.isTutorialStep5 && this.artists.length > 0) {
 			this.onboarding.activateSpotlight(
-				'[data-hype-button]',
-				this.i18n.tr('myArtists.coachMark.setHype'),
-				() => {
-					const first = this.artists[0]
-					if (first) this.openHypeSelector(first)
-				},
+				'[data-hype-header]',
+				'絶対に見逃したくないアーティストの熱量を上げておこう',
 			)
 		}
 	}
@@ -314,68 +334,54 @@ export class MyArtistsPage {
 		this.swipeTarget = null
 	}
 
-	// --- Hype level selector ---
+	// --- Hype level inline slider ---
 
-	public openHypeSelector(artist: FollowedArtist): void {
-		this.selectorArtist = artist
-		this.hypeSelectorDialog.showModal()
+	private static readonly HYPE_STOP_TO_TYPE: Record<HypeStop, HypeType> = {
+		watch: HypeType.WATCH,
+		home: HypeType.HOME,
+		nearby: HypeType.NEARBY,
+		away: HypeType.AWAY,
 	}
 
-	public closeHypeSelector(): void {
-		this.selectorArtist = null
-		this.hypeSelectorDialog.close()
-	}
+	public onHypeChanged(
+		event: CustomEvent<{ artistId: string; level: HypeStop }>,
+	): void {
+		const { artistId, level } = event.detail
+		const artist = this.artists.find((a) => a.id === artistId)
+		if (!artist) return
 
-	public onHypeSelectorDialogClick(e: Event): void {
-		if (e.target === this.hypeSelectorDialog) {
-			this.closeHypeSelector()
-		}
-	}
-
-	public selectHype(level: HypeType): void {
-		if (!this.selectorArtist) return
-
-		const prev = this.selectorArtist.hype
-		if (prev === level) {
-			this.closeHypeSelector()
-			return
-		}
+		const hypeType = MyArtistsPage.HYPE_STOP_TO_TYPE[level]
+		const prev = artist.hype
+		if (prev === hypeType) return
 
 		// During onboarding step 5: visual demo only, no persistence
 		if (this.isTutorialStep5) {
-			this.selectorArtist.hype = level
-			const artistId = this.selectorArtist.id
-			this.closeHypeSelector()
+			artist.hype = hypeType
 
-			// Immediate pulse feedback on the hype button
+			// Immediate pulse feedback
 			this.pulsingArtistId = artistId
 			setTimeout(() => {
 				this.pulsingArtistId = ''
 			}, 300)
 
-			// Show notification explanation — user dismisses manually
+			// Complete onboarding and return to welcome page
 			this.onboarding.deactivateSpotlight()
-			this.showHypeExplanation = true
-			this.hypeExplanationDialog.showModal()
+			this.onboarding.setStep(OnboardingStep.COMPLETED)
+			void this.router.load('')
 			return
 		}
 
 		// Block hype level changes during other onboarding steps
-		if (this.isOnboarding) {
-			this.closeHypeSelector()
-			return
-		}
+		if (this.isOnboarding) return
 
 		// Optimistic update
-		this.selectorArtist.hype = level
-		const artistId = this.selectorArtist.id
-		this.closeHypeSelector()
+		artist.hype = hypeType
 
 		// Fire-and-forget RPC with 1 retry
 		const client = this.followService.getClient()
 		const req = {
 			artistId: new ArtistId({ value: artistId }),
-			hype: level,
+			hype: hypeType,
 		}
 		client
 			.setHype(req)
@@ -399,22 +405,31 @@ export class MyArtistsPage {
 						this.logger.error('Failed to update hype level after retry', {
 							error: retryErr,
 						})
-						const artist = this.artists.find((a) => a.id === artistId)
-						if (artist) artist.hype = prev
+						const a = this.artists.find((x) => x.id === artistId)
+						if (a) a.hype = prev
 						this.ea.publish(new Toast(this.i18n.tr('myArtists.failedHype')))
 					})
 			})
 	}
 
-	public hypeIcon(artist: FollowedArtist): string {
-		return HYPE_META[artist.hype]?.icon ?? '\u{1F525}'
+	public onHypeSignupPrompt(_event: CustomEvent): void {
+		if (!this.notificationDialogShown) {
+			this.showNotificationDialog = true
+		}
 	}
 
-	public dismissHypeExplanation(): void {
-		this.showHypeExplanation = false
-		this.hypeExplanationDialog.close()
-		this.onboarding.setStep(OnboardingStep.SIGNUP)
-		void this.router.load('')
+	public onSignupRequested(): void {
+		this.authService.signUp()
+	}
+
+	public onDialogDismissed(): void {
+		this.showNotificationDialog = false
+		this.showSignupBanner = true
+		this.notificationDialogShown = true
+	}
+
+	public hypeIcon(artist: FollowedArtist): string {
+		return HYPE_META[artist.hype]?.icon ?? '\u{1F525}'
 	}
 
 	// --- View toggle ---
