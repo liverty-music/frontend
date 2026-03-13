@@ -211,7 +211,7 @@ test.describe('Dashboard header', () => {
 		expect(headerBox!.y).toBeCloseTo(auViewportBox!.y, 0)
 	})
 
-	test('stage header stays sticky after scrolling (H4)', async ({
+	test('stage header stays fixed after scrolling (H4)', async ({
 		layoutPage: page,
 	}) => {
 		const scrollContainer = page.locator('live-highway .highway-scroll')
@@ -226,7 +226,7 @@ test.describe('Dashboard header', () => {
 			el.scrollTop = 200
 		})
 
-		// Header should still be at the same Y position (sticky)
+		// Header is outside the scroll container, so it stays at the same Y
 		const afterBox = await header.boundingBox()
 		expect(afterBox).toBeTruthy()
 		expect(afterBox!.y).toBeCloseTo(beforeBox!.y, 0)
@@ -311,7 +311,7 @@ test.describe('Dashboard empty state', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Group 4: Data-loaded state -- event cards, 3-lane grid, sticky header
+// Group 4: Data-loaded state -- event cards, 3-lane grid, stage header
 // ---------------------------------------------------------------------------
 
 test.describe('Dashboard data-loaded state', () => {
@@ -411,14 +411,20 @@ test.describe('Dashboard data-loaded state', () => {
 		expect(laneBoxes[2]!.width / totalWidth).toBeCloseTo(0.333, 1)
 	})
 
-	test('stage header has sticky positioning (C3)', async ({ layoutPage: page }) => {
+	test('stage header is outside scroll container (C3)', async ({
+		layoutPage: page,
+	}) => {
 		const stageHeader = page.locator('live-highway .stage-header').first()
 		await expect(stageHeader).toBeVisible()
 
-		const style = await stageHeader.evaluate(
-			(el) => getComputedStyle(el).position,
+		// Stage header is a direct grid child of .highway-layout, not inside .highway-scroll
+		const isInsideScroll = await stageHeader.evaluate(
+			(el) => el.closest('.highway-scroll') !== null,
 		)
-		expect(style).toBe('sticky')
+		expect(
+			isInsideScroll,
+			'stage-header must not be inside scroll container',
+		).toBe(false)
 	})
 
 	test('event cards are clickable (have cursor-pointer) (C4)', async ({
