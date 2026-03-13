@@ -69,16 +69,7 @@ export class Dashboard {
 
 	public async loading(): Promise<void> {
 		if (this.authService.isAuthenticated) {
-			try {
-				const resp = await this.userService.client.get({})
-				this.needsRegion = !resp.user?.home
-			} catch (err) {
-				this.logger.warn(
-					'Failed to fetch user home, falling back to localStorage',
-					{ error: err },
-				)
-				this.needsRegion = !UserHomeSelector.getStoredHome()
-			}
+			this.needsRegion = !this.userService.current?.home
 		} else {
 			this.needsRegion = !UserHomeSelector.getStoredHome()
 		}

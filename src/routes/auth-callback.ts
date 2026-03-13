@@ -48,6 +48,7 @@ export class AuthCallback {
 					'Tutorial signup detected, provisioning user and merging guest data',
 				)
 				await this.provisionUser(user.profile.email)
+				await this.userService.ensureLoaded()
 
 				await this.mergeService.merge()
 
@@ -56,6 +57,7 @@ export class AuthCallback {
 
 			// Login flow (from LP login link or returning user)
 			await this.provisionUser(user.profile.email)
+			await this.userService.ensureLoaded()
 
 			// If onboarding was in progress but user logged in, mark as completed
 			if (this.onboarding.isOnboarding) {

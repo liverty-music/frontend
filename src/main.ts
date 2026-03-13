@@ -18,6 +18,7 @@ import { IEntryService } from './services/entry-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFollowServiceClient } from './services/follow-service-client'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
+import { UserHydrationTask } from './services/user-hydration-task'
 import { IGuestDataMergeService } from './services/guest-data-merge-service'
 import { ILocalArtistClient } from './services/local-artist-client'
 import { INotificationManager } from './services/notification-manager'
@@ -84,6 +85,7 @@ Aurelia
 	.register(GlobalErrorHandlingTask)
 	.register(IAuthService)
 	.register(IUserService)
+	.register(UserHydrationTask)
 	.register(IArtistServiceClient)
 	.register(IFollowServiceClient)
 	.register(IConcertService)
