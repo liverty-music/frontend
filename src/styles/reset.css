@@ -1,0 +1,49 @@
+@layer reset {
+	:where(*, *::before, *::after) {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+
+	:where(html) {
+		text-size-adjust: none;
+	}
+
+	:where(body) {
+		min-block-size: 100dvh;
+	}
+
+	:where(img, picture, video, canvas, svg) {
+		display: block;
+		max-inline-size: 100%;
+		block-size: auto;
+	}
+
+	:where(input, button, textarea, select) {
+		font: inherit;
+		color: inherit;
+	}
+
+	:where(button) {
+		cursor: pointer;
+	}
+
+	:where(a) {
+		color: inherit;
+		text-decoration-skip-ink: auto;
+	}
+
+	:where(ul, ol) {
+		list-style: none;
+	}
+
+	:where(h1, h2, h3, h4, h5, h6) {
+		text-wrap: balance;
+		overflow-wrap: break-word;
+	}
+
+	:where(p) {
+		text-wrap: pretty;
+		overflow-wrap: break-word;
+	}
+}

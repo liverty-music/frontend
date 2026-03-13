@@ -1,0 +1,87 @@
+@layer tokens {
+	:root {
+		/* Brand colors */
+		--color-brand-primary: oklch(58.5% 0.233 277deg);
+		--color-brand-secondary: oklch(54.1% 0.281 293deg);
+		--color-brand-accent: oklch(78.9% 0.154 211deg);
+
+		/* Surface colors (dark theme) */
+		--color-surface-base: oklch(14.5% 0.014 286deg);
+		--color-surface-raised: oklch(17.8% 0.014 286deg);
+		--color-surface-overlay: oklch(21% 0.014 286deg);
+
+		/* Text colors */
+		--color-text-primary: oklch(98.5% 0 0deg);
+		--color-text-secondary: oklch(78.8% 0.013 286deg);
+		--color-text-muted: oklch(55.6% 0.014 286deg);
+
+		/* State colors */
+		--color-error: oklch(65% 0.2 25deg);
+		--color-warning: oklch(75% 0.15 75deg);
+		--color-success: oklch(80% 0.18 152deg);
+		--color-white: oklch(100% 0 0deg);
+
+		/* Border colors */
+		--color-border-subtle: oklch(98.5% 0 0deg / 10%);
+		--color-border-muted: oklch(98.5% 0 0deg / 20%);
+
+		/* Typography */
+		--font-display: "Outfit", system-ui, sans-serif;
+		--font-body: system-ui, -apple-system, sans-serif;
+
+		/* Fluid type scale (generated via utopia.fyi) */
+		--step--2: clamp(0.625rem, calc(0.6rem + 0.13vi), 0.7rem);
+		--step--1: clamp(0.83rem, calc(0.78rem + 0.29vi), 1rem);
+		--step-0: clamp(1rem, calc(0.91rem + 0.43vi), 1.25rem);
+		--step-1: clamp(1.2rem, calc(1.07rem + 0.63vi), 1.56rem);
+		--step-2: clamp(1.44rem, calc(1.26rem + 0.89vi), 1.95rem);
+		--step-3: clamp(1.73rem, calc(1.48rem + 1.24vi), 2.44rem);
+		--step-4: clamp(2.07rem, calc(1.73rem + 1.7vi), 3.05rem);
+		--step-5: clamp(2.49rem, calc(2.02rem + 2.33vi), 3.81rem);
+
+		/* Line heights */
+		--leading-none: 1;
+		--leading-tight: 1.1;
+		--leading-snug: 1.2;
+		--leading-normal: 1.4;
+		--leading-relaxed: 1.6;
+
+		/* Fluid spacing scale (generated via utopia.fyi) */
+		--space-3xs: clamp(0.25rem, calc(0.23rem + 0.11vi), 0.31rem);
+		--space-2xs: clamp(0.5rem, calc(0.46rem + 0.22vi), 0.63rem);
+		--space-xs: clamp(0.75rem, calc(0.68rem + 0.33vi), 0.94rem);
+		--space-s: clamp(1rem, calc(0.91rem + 0.43vi), 1.25rem);
+		--space-m: clamp(1.5rem, calc(1.37rem + 0.65vi), 1.88rem);
+		--space-l: clamp(2rem, calc(1.83rem + 0.87vi), 2.5rem);
+		--space-xl: clamp(3rem, calc(2.74rem + 1.3vi), 3.75rem);
+		--space-2xl: clamp(4rem, calc(3.65rem + 1.74vi), 5rem);
+		--space-3xl: clamp(6rem, calc(5.48rem + 2.61vi), 7.5rem);
+
+		/* Radius */
+		--radius-sm: 0.5rem;
+		--radius-card: 1rem;
+		--radius-button: 0.75rem;
+		--radius-sheet: 1.5rem;
+		--radius-full: 9999px;
+
+		/* Shadows */
+		--shadow-card-glow: 0 4px 24px -4px oklch(58.5% 0.233 277deg / 20%);
+		--shadow-sheet: 0 -8px 32px -4px oklch(0% 0 0deg / 50%);
+		--shadow-button: 0 4px 16px -2px oklch(58.5% 0.233 277deg / 30%);
+		--shadow-soft: 0 2px 8px oklch(0% 0 0deg / 20%);
+
+		/* Transition durations */
+		--transition-fast: 150ms;
+		--transition-normal: 200ms;
+		--transition-slow: 300ms;
+
+		/* Container query breakpoints */
+		--container-sm: 320px;
+		--container-md: 480px;
+		--container-lg: 640px;
+
+		/* View transition tokens */
+		--transition-route-duration: 200ms;
+		--transition-route-easing: ease-out;
+	}
+}

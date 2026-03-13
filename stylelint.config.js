@@ -5,12 +5,13 @@ export default {
 	rules: {
 		'import-notation': null,
 
+		// Allow token names like --step--1 (negative step scale).
+		'custom-property-pattern': null,
+
 		'at-rule-no-unknown': [
 			true,
 			{
 				ignoreAtRules: [
-					'theme',
-					'apply',
 					'layer',
 					'container',
 					'starting-style',
@@ -23,7 +24,7 @@ export default {
 		'function-no-unknown': [
 			true,
 			{
-				ignoreFunctions: ['oklch', 'theme'],
+				ignoreFunctions: ['oklch'],
 			},
 		],
 
@@ -76,21 +77,19 @@ export default {
 		'number-max-precision': 4,
 
 		// CUBE CSS methodology enforcement.
-		// Set as warnings until existing CSS files are migrated to CUBE CSS structure.
-		// Promote to errors (remove severity override) as files are migrated.
-		'cube/require-layer': [true, { severity: 'warning' }],
-		'cube/layer-order': [true, { severity: 'warning' }],
-		'cube/exception-data-attr': [true, { severity: 'warning' }],
-		'cube/no-visual-in-composition': [true, { severity: 'warning' }],
-		'cube/utility-single-property': [true, { severity: 'warning' }],
-		'cube/block-require-scope': [true, { severity: 'warning' }],
-		'cube/require-token-variables': [true, { severity: 'warning' }],
-		'cube/block-max-lines': [true, { severity: 'warning' }],
-		'cube/one-block-per-file': [true, { severity: 'warning' }],
-		'cube/prefer-where-in-reset': [true, { severity: 'warning' }],
-		'cube/data-attr-naming': [true, { severity: 'warning' }],
-		'cube/prefer-vi-over-vw': [true, { severity: 'warning' }],
-		'cube/require-container-name': [true, { severity: 'warning' }],
-		'cube/prefer-color-mix': [true, { severity: 'warning' }],
+		'cube/require-layer': true,
+		'cube/layer-order': true,
+		'cube/exception-data-attr': true,
+		'cube/no-visual-in-composition': true,
+		'cube/utility-single-property': true,
+		'cube/block-require-scope': true,
+		'cube/require-token-variables': true,
+		'cube/block-max-lines': [true, { max: 510 }],
+		'cube/one-block-per-file': true,
+		'cube/prefer-where-in-reset': true,
+		'cube/data-attr-naming': true,
+		'cube/prefer-vi-over-vw': true,
+		'cube/require-container-name': true,
+		'cube/prefer-color-mix': true,
 	},
 }

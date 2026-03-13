@@ -57,7 +57,7 @@ const DEFAULT_PROPERTIES = [
 	'animation-duration',
 ];
 
-const DEFAULT_IGNORE_LAYERS = ['reset', 'global'];
+const DEFAULT_IGNORE_LAYERS = ['reset', 'tokens', 'global'];
 
 const ruleFunction = (primary, secondaryOptions) => {
 	return (root, result) => {
