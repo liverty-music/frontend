@@ -3,7 +3,7 @@
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
 
 
-  <div class="discover-layout">
+  <div class="discover-layout" data-state.bind="isSearchMode ? 'search' : null">
 
     <!-- Search bar -->
     <div class="search-bar">
@@ -32,7 +32,7 @@
     </div>
 
     <!-- Genre chips (hidden during search) -->
-    <div class="genre-chips ${isSearchMode ? 'hidden' : ''}">
+    <div class="genre-chips">
       <button
         repeat.for="tag of genreTags; key.bind: tag"
         class="genre-chip ${activeTag === tag ? 'active' : ''}"
@@ -52,7 +52,7 @@
     </div>
 
     <!-- Bubble UI (hidden during search) -->
-    <div class="bubble-area ${isSearchMode ? 'hidden' : ''}">
+    <div class="bubble-area">
       <dna-orb-canvas
         component.ref="dnaOrbCanvas"
         artists.bind="poolBubbles"
@@ -71,7 +71,7 @@
     </div>
 
     <!-- Search results (shown during search) -->
-    <div class="search-results ${isSearchMode ? '' : 'hidden'}">
+    <div class="search-results">
       <div if.bind="isSearching" class="search-status" t="discover.searching">
       </div>
 
