@@ -160,7 +160,7 @@ export class MyArtistsPage {
 		if (this.dismissingIds.has(artist.id)) return
 
 		const el = event.target as HTMLElement
-		if (el.scrollLeft > el.offsetWidth * 0.5) {
+		if (el.scrollLeft > (el.scrollWidth - el.offsetWidth) * 0.5) {
 			this.dismissingIds.add(artist.id)
 			this.executeDismiss(artist)
 		}

@@ -167,14 +167,18 @@ describe('MyArtistsPage', () => {
 			await sut.loading()
 		})
 
-		function makeScrollEvent(scrollLeft: number, offsetWidth: number): Event {
+		function makeScrollEvent(
+			scrollLeft: number,
+			offsetWidth: number,
+			scrollWidth: number,
+		): Event {
 			return {
-				target: { scrollLeft, offsetWidth },
+				target: { scrollLeft, offsetWidth, scrollWidth },
 			} as unknown as Event
 		}
 
 		it('should unfollow when scroll exceeds 50% threshold', () => {
-			sut.checkDismiss(makeScrollEvent(210, 400), sut.artists[0])
+			sut.checkDismiss(makeScrollEvent(50, 400, 480), sut.artists[0])
 
 			expect(sut.artists).toHaveLength(2)
 			expect(publishedToasts).toHaveLength(1)
@@ -183,7 +187,7 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should not unfollow when scroll is below threshold', () => {
-			sut.checkDismiss(makeScrollEvent(100, 400), sut.artists[0])
+			sut.checkDismiss(makeScrollEvent(30, 400, 480), sut.artists[0])
 
 			expect(sut.artists).toHaveLength(3)
 			expect(publishedToasts).toHaveLength(0)
@@ -191,17 +195,21 @@ describe('MyArtistsPage', () => {
 
 		it('should not dismiss twice for the same artist', () => {
 			const artist = sut.artists[0]
-			sut.checkDismiss(makeScrollEvent(210, 400), artist)
-			sut.checkDismiss(makeScrollEvent(210, 400), artist)
+			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
+			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
 
 			expect(publishedToasts).toHaveLength(1)
 		})
 	})
 
 	describe('undo', () => {
-		function makeScrollEvent(scrollLeft: number, offsetWidth: number): Event {
+		function makeScrollEvent(
+			scrollLeft: number,
+			offsetWidth: number,
+			scrollWidth: number,
+		): Event {
 			return {
-				target: { scrollLeft, offsetWidth },
+				target: { scrollLeft, offsetWidth, scrollWidth },
 			} as unknown as Event
 		}
 
@@ -216,7 +224,7 @@ describe('MyArtistsPage', () => {
 
 		it('should re-insert artist at original position', () => {
 			const artist = sut.artists[1]
-			sut.checkDismiss(makeScrollEvent(210, 400), artist)
+			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
 
 			expect(sut.artists).toHaveLength(2)
 			expect(sut.artists[1].name).toBe('Aimer')
@@ -228,7 +236,7 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should commit unfollow RPC when toast is dismissed', async () => {
-			sut.checkDismiss(makeScrollEvent(210, 400), sut.artists[0])
+			sut.checkDismiss(makeScrollEvent(50, 400, 480), sut.artists[0])
 
 			publishedToasts[0].options?.onDismiss?.()
 			await vi.runAllTimersAsync()
@@ -239,7 +247,7 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should not call RPC when undo is pressed before dismiss', async () => {
-			sut.checkDismiss(makeScrollEvent(210, 400), sut.artists[0])
+			sut.checkDismiss(makeScrollEvent(50, 400, 480), sut.artists[0])
 
 			publishedToasts[0].action?.callback()
 			publishedToasts[0].options?.onDismiss?.()
