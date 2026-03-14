@@ -23,7 +23,7 @@ export interface FollowedArtist {
 	hype: HypeType
 }
 
-export const HYPE_META: Record<number, { labelKey: string; icon: string }> = {
+export const HYPE_TIERS: Record<number, { labelKey: string; icon: string }> = {
 	[HypeType.WATCH]: { labelKey: 'チェック', icon: '👀' },
 	[HypeType.HOME]: { labelKey: '地元', icon: '🔥' },
 	[HypeType.NEARBY]: { labelKey: '近くも', icon: '🔥🔥' },
@@ -32,13 +32,6 @@ export const HYPE_META: Record<number, { labelKey: string; icon: string }> = {
 		icon: '🔥🔥🔥',
 	},
 }
-
-export const HYPE_LEVELS = [
-	HypeType.WATCH,
-	HypeType.HOME,
-	HypeType.NEARBY,
-	HypeType.AWAY,
-] as const
 
 export type ViewMode = 'list' | 'grid'
 
@@ -66,16 +59,21 @@ export class MyArtistsPage {
 	private undoIndex = -1
 	private undoHandle: ToastHandle | null = null
 
-	// Hype level references
-	public readonly hypeLevels = HYPE_LEVELS
-	public readonly hypeMeta = HYPE_META
+	// Hype tier references
+	public readonly hypeLevels = [
+		HypeType.WATCH,
+		HypeType.HOME,
+		HypeType.NEARBY,
+		HypeType.AWAY,
+	]
+	public readonly hypeTiers = HYPE_TIERS
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsPage')
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 
 	public trHypeLabel(level: number): string {
-		const meta = HYPE_META[level]
+		const meta = HYPE_TIERS[level]
 		return meta?.labelKey ?? ''
 	}
 	private readonly followService = resolve(IFollowServiceClient)
@@ -104,7 +102,7 @@ export class MyArtistsPage {
 		return artist?.color ?? ''
 	}
 
-	private static readonly HYPE_TYPE_TO_STOP: Record<number, HypeStop> = {
+	private static readonly HYPE_TO_STOP: Record<number, HypeStop> = {
 		[HypeType.WATCH]: 'watch',
 		[HypeType.HOME]: 'home',
 		[HypeType.NEARBY]: 'nearby',
@@ -112,7 +110,7 @@ export class MyArtistsPage {
 	}
 
 	public hypeStop(artist: FollowedArtist): HypeStop {
-		return MyArtistsPage.HYPE_TYPE_TO_STOP[artist.hype] ?? 'watch'
+		return MyArtistsPage.HYPE_TO_STOP[artist.hype] ?? 'watch'
 	}
 
 	public async loading(): Promise<void> {
@@ -277,7 +275,7 @@ export class MyArtistsPage {
 
 	// --- Hype level inline slider ---
 
-	private static readonly HYPE_STOP_TO_TYPE: Record<HypeStop, HypeType> = {
+	private static readonly HYPE_FROM_STOP: Record<HypeStop, HypeType> = {
 		watch: HypeType.WATCH,
 		home: HypeType.HOME,
 		nearby: HypeType.NEARBY,
@@ -291,7 +289,7 @@ export class MyArtistsPage {
 		const artist = this.artists.find((a) => a.id === artistId)
 		if (!artist) return
 
-		const hypeType = MyArtistsPage.HYPE_STOP_TO_TYPE[level]
+		const hypeType = MyArtistsPage.HYPE_FROM_STOP[level]
 		const prev = artist.hype
 		if (prev === hypeType) return
 
@@ -370,7 +368,7 @@ export class MyArtistsPage {
 	}
 
 	public hypeIcon(artist: FollowedArtist): string {
-		return HYPE_META[artist.hype]?.icon ?? '\u{1F525}'
+		return HYPE_TIERS[artist.hype]?.icon ?? '\u{1F525}'
 	}
 
 	// --- View toggle ---
