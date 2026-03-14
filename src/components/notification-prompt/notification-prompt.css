@@ -71,6 +71,11 @@
 			}
 		}
 
+		/* Denied state dismiss button spacing */
+		.prompt-popover .prompt-btn-secondary:only-child {
+			margin-block-start: var(--space-xs);
+		}
+
 		.prompt-btn-primary {
 			font-weight: 500;
 			color: var(--color-white);

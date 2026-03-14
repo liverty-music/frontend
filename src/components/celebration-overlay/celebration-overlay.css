@@ -29,6 +29,10 @@
 
 			transition: opacity 400ms ease;
 
+			&[data-state="hidden"] {
+				display: none;
+			}
+
 			&[data-state="exiting"] {
 				opacity: 0;
 			}

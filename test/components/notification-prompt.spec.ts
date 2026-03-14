@@ -59,6 +59,17 @@ describe('NotificationPrompt', () => {
 
 	beforeEach(() => {
 		localStorage.clear()
+		// jsdom does not provide window.matchMedia
+		window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+			matches: false,
+			media: query,
+			onchange: null,
+			addListener: vi.fn(),
+			removeListener: vi.fn(),
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+			dispatchEvent: vi.fn(),
+		}))
 	})
 
 	afterEach(() => {
@@ -141,30 +152,34 @@ describe('NotificationPrompt', () => {
 			localStorage.setItem('pwa.sessionCount', '4')
 		})
 
-		it('should set entrance animation class when becoming visible', () => {
+		it('should set entrance animation state when becoming visible', () => {
 			sut = create()
 			sut.attached()
-			expect(sut.animationClass).toBe('animate-fade-slide-up')
+			expect(sut.animationState).toBe('fade-slide-up')
 		})
 
-		it('should not set animation class when not visible', () => {
+		it('should not set animation state when not visible', () => {
 			sut = create({ isAuthenticated: false })
 			sut.attached()
-			expect(sut.animationClass).toBe('')
+			expect(sut.animationState).toBe('')
 		})
 
-		it('should set exit animation class on dismiss', () => {
-			vi.useFakeTimers()
+		it('should set exit animation state on dismiss and hide after animationend', () => {
 			sut = create()
+			const mockPopoverEl = document.createElement('div')
+			// jsdom does not implement Popover API
+			mockPopoverEl.showPopover = vi.fn()
+			mockPopoverEl.hidePopover = vi.fn()
+			sut.popoverEl = mockPopoverEl
 			sut.attached()
 
 			sut.dismiss()
-			expect(sut.animationClass).toBe('animate-fade-slide-down')
+			expect(sut.animationState).toBe('fade-slide-down')
 			expect(sut.isVisible).toBe(true) // still visible during animation
 
-			vi.advanceTimersByTime(600)
+			// Simulate the animationend event that the browser would fire
+			mockPopoverEl.dispatchEvent(new Event('animationend'))
 			expect(sut.isVisible).toBe(false)
-			vi.useRealTimers()
 		})
 	})
 })

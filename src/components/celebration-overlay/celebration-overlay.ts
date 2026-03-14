@@ -8,6 +8,11 @@ export class CelebrationOverlay {
 	public visible = false
 	public fadingOut = false
 
+	public get overlayState(): 'hidden' | 'active' | 'exiting' {
+		if (!this.visible) return 'hidden'
+		return this.fadingOut ? 'exiting' : 'active'
+	}
+
 	private shown = false
 	private timer: ReturnType<typeof setTimeout> | null = null
 

@@ -6,14 +6,11 @@ import { IOnboardingService } from '../../services/onboarding-service'
 import { IPromptCoordinator } from '../../services/prompt-coordinator'
 import { IPushService } from '../../services/push-service'
 
-const EXIT_ANIMATION_MS = 600
-
 export class NotificationPrompt {
 	public isVisible = false
 	public isLoading = false
-	public animationClass = ''
+	public animationState = ''
 	public popoverEl!: HTMLElement
-	private hideTimer: ReturnType<typeof setTimeout> | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('NotificationPrompt')
 	public readonly notificationManager = resolve(INotificationManager)
@@ -48,7 +45,7 @@ export class NotificationPrompt {
 
 		if (!this.promptCoordinator.canShowPrompt('notification')) return
 
-		this.animationClass = 'animate-fade-slide-up'
+		this.animationState = 'fade-slide-up'
 		this.isVisible = true
 		this.popoverEl?.showPopover()
 		this.promptCoordinator.markShown('notification')
@@ -70,9 +67,10 @@ export class NotificationPrompt {
 	}
 
 	public detaching(): void {
-		if (this.hideTimer !== null) {
-			clearTimeout(this.hideTimer)
-			this.hideTimer = null
+		this.popoverEl?.removeEventListener('animationend', this.onHideAnimationEnd)
+		// Handle reduced motion: cleanup immediately if animation hadn't finished
+		if (this.animationState === 'fade-slide-down') {
+			this.isVisible = false
 		}
 	}
 
@@ -82,13 +80,20 @@ export class NotificationPrompt {
 	}
 
 	private hideWithAnimation(): void {
-		this.animationClass = 'animate-fade-slide-down'
-		this.hideTimer = setTimeout(() => {
-			this.hideTimer = null
-			this.isVisible = false
-			if (this.popoverEl?.isConnected) {
-				this.popoverEl.hidePopover()
-			}
-		}, EXIT_ANIMATION_MS)
+		this.animationState = 'fade-slide-down'
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			this.onHideAnimationEnd()
+			return
+		}
+		this.popoverEl.addEventListener('animationend', this.onHideAnimationEnd, {
+			once: true,
+		})
+	}
+
+	private readonly onHideAnimationEnd = (): void => {
+		this.isVisible = false
+		if (this.popoverEl?.isConnected) {
+			this.popoverEl.hidePopover()
+		}
 	}
 }

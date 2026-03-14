@@ -1,6 +1,6 @@
 <template>
   <div ref="popoverEl" popover="manual"
-    class="prompt-popover ${animationClass}">
+    class="prompt-popover" data-animation.bind="animationState">
 
     <!-- Default permission state -->
     <div show.bind="notificationManager.permission === 'default'">
@@ -33,8 +33,7 @@
           <p t="notification.blocked.description" class="prompt-desc"></p>
           <button click.trigger="dismiss()"
             t="notification.blocked.dismiss"
-            class="prompt-btn-secondary"
-            style="margin-block-start: 0.75rem">
+            class="prompt-btn-secondary">
           </button>
         </div>
       </div>

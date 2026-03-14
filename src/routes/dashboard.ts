@@ -97,7 +97,7 @@ export class Dashboard {
 		// renders above the detail sheet in the top-layer LIFO stack.
 		if (this.isTutorialStep4) {
 			this.onboarding.activateSpotlight(
-				'[data-nav-my-artists]',
+				'[data-nav="my-artists"]',
 				this.i18n.tr('dashboard.coachMark.viewArtists'),
 				() => this.onTutorialMyArtistsTapped(),
 			)
@@ -234,7 +234,7 @@ export class Dashboard {
 	private skipToMyArtists(): void {
 		this.onboarding.setStep(OnboardingStep.DETAIL)
 		this.onboarding.activateSpotlight(
-			'[data-nav-my-artists]',
+			'[data-nav="my-artists"]',
 			this.i18n.tr('dashboard.coachMark.viewArtists'),
 			() => this.onTutorialMyArtistsTapped(),
 		)
@@ -299,7 +299,7 @@ export class Dashboard {
 			this.onboarding.setStep(OnboardingStep.DETAIL)
 			// Step 4: Spotlight slides to My Artists tab
 			this.onboarding.activateSpotlight(
-				'[data-nav-my-artists]',
+				'[data-nav="my-artists"]',
 				this.i18n.tr('dashboard.coachMark.viewArtists'),
 				() => this.onTutorialMyArtistsTapped(),
 			)

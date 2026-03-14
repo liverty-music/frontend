@@ -67,12 +67,12 @@
 				background: color-mix(in oklch, var(--_hover-bg) 5%, transparent);
 			}
 
-			&[data-disabled] {
+			&[data-disabled="true"] {
 				cursor: not-allowed;
 				opacity: 0.5;
 			}
 
-			&[data-disabled]:hover {
+			&[data-disabled="true"]:hover {
 				background: transparent;
 			}
 
@@ -139,11 +139,11 @@
 
 			transition: background 200ms;
 
-			&[data-on] {
+			&[data-on="true"] {
 				background: var(--color-brand-primary);
 			}
 
-			&:not([data-on]) {
+			&[data-on="false"] {
 				background: color-mix(in oklch, var(--_toggle-off) 20%, transparent);
 			}
 		}
@@ -162,7 +162,7 @@
 
 			transition: transform 200ms;
 
-			&[data-on] {
+			&[data-on="true"] {
 				transform: translateX(1.25rem);
 			}
 		}

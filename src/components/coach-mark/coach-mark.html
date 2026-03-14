@@ -1,12 +1,11 @@
 <import from="./coach-mark.css"></import>
 
 <div
-  if.bind="visible"
   ref="overlayEl"
   popover="manual"
   class="coach-mark-overlay"
 >
-  <div class="visual-spotlight" style="--spotlight-radius: ${spotlightRadius}"></div>
+  <div class="visual-spotlight" spotlight-radius.bind="spotlightRadius"></div>
 
   <div class="click-blocker mask-top" click.trigger="onBlockerClick()"></div>
   <div class="click-blocker mask-right" click.trigger="onBlockerClick()"></div>

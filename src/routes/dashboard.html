@@ -18,12 +18,12 @@
   </div>
 
   <!-- Highway content with promise.bind -->
-  <div class="dashboard-body" data-blurred.bind="needsRegion ? '' : null" promise.bind="dataPromise">
+  <div class="dashboard-body" data-blurred.bind="needsRegion" promise.bind="dataPromise">
     <!-- Loading skeleton -->
     <div pending class="dashboard-promise-slot">
       <live-highway
         date-groups.bind="dateGroups"
-        loading.bind="true"
+        loading.one-time="true"
       ></live-highway>
     </div>
 
@@ -44,7 +44,7 @@
       <live-highway
         if.bind="dateGroups.length > 0"
         date-groups.bind="dateGroups"
-        loading.bind="false"
+        loading.one-time="false"
       ></live-highway>
     </div>
 
@@ -62,7 +62,7 @@
       <live-highway
         if.bind="isStale"
         date-groups.bind="dateGroups"
-        loading.bind="false"
+        loading.one-time="false"
       ></live-highway>
     </div>
   </div>

@@ -47,44 +47,44 @@
 				inset: -18px;
 			}
 
-			&[data-active] {
+			&[data-active="true"] {
 				inline-size: 14px;
 				block-size: 14px;
 			}
 
 			/* WATCH: minimal */
-			&[data-active][data-level="watch"] {
+			&[data-active="true"][data-level="watch"] {
 				border: 1px solid oklch(100% 0 0deg / 10%);
 				background: var(--color-surface-base, oklch(100% 0 0deg / 5%));
 			}
 
 			/* HOME: subtle glow */
-			&[data-active][data-level="home"] {
-				border: 1px solid var(--artist-color, oklch(70% 0.15 60deg));
+			&[data-active="true"][data-level="home"] {
+				border: 1px solid var(--_dot-color, oklch(70% 0.15 60deg));
 				opacity: 0.4;
-				background: var(--artist-color, oklch(70% 0.15 60deg));
+				background: var(--_dot-color, oklch(70% 0.15 60deg));
 				box-shadow: 0 0 8px
-					oklch(from var(--artist-color, oklch(70% 0.15 60deg)) l c h / 30%);
+					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 30%);
 			}
 
 			/* NEARBY: neon glow */
-			&[data-active][data-level="nearby"] {
-				border: 2px solid var(--artist-color, oklch(70% 0.15 60deg));
-				background: var(--artist-color, oklch(70% 0.15 60deg));
+			&[data-active="true"][data-level="nearby"] {
+				border: 2px solid var(--_dot-color, oklch(70% 0.15 60deg));
+				background: var(--_dot-color, oklch(70% 0.15 60deg));
 				box-shadow: 0 0 16px
-					oklch(from var(--artist-color, oklch(70% 0.15 60deg)) l c h / 50%);
+					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 50%);
 				animation: dot-pulse 2s ease-in-out infinite;
 			}
 
 			/* AWAY: intense neon */
-			&[data-active][data-level="away"] {
-				border: 2px solid var(--artist-color, oklch(70% 0.15 60deg));
-				background: var(--artist-color, oklch(70% 0.15 60deg));
+			&[data-active="true"][data-level="away"] {
+				border: 2px solid var(--_dot-color, oklch(70% 0.15 60deg));
+				background: var(--_dot-color, oklch(70% 0.15 60deg));
 				box-shadow:
 					0 0 24px
-					oklch(from var(--artist-color, oklch(70% 0.15 60deg)) l c h / 60%),
+					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 60%),
 					0 0 48px
-					oklch(from var(--artist-color, oklch(70% 0.15 60deg)) l c h / 20%);
+					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 20%);
 				animation: dot-pulse 1.5s ease-in-out infinite;
 			}
 		}

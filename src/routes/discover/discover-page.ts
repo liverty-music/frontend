@@ -99,6 +99,27 @@ export class DiscoverPage {
 		)
 	}
 
+	public get srStatusText(): string {
+		const parts: string[] = []
+		if (this.isSearchMode) {
+			parts.push(
+				this.i18n.tr('discover.srSearchResults', {
+					count: this.searchResults.length,
+				}),
+			)
+		} else {
+			parts.push(
+				this.i18n.tr('discover.srArtistsAvailable', {
+					count: this.dnaOrbCanvas?.bubbleCount ?? 0,
+				}),
+			)
+		}
+		parts.push(
+			this.i18n.tr('discover.srFollowed', { count: this.followedCount }),
+		)
+		return parts.join('. ')
+	}
+
 	public get allSearchesComplete(): boolean {
 		return (
 			this.isOnboarding &&
@@ -111,7 +132,7 @@ export class DiscoverPage {
 	protected onShowDashboardCoachMarkChanged(show: boolean): void {
 		if (show) {
 			this.onboarding.activateSpotlight(
-				'[data-nav-dashboard]',
+				'[data-nav="home"]',
 				this.i18n.tr('discovery.coachMark.viewTimetable'),
 				() => this.onCoachMarkTap(),
 				'50%',

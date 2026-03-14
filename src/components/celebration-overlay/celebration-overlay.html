@@ -2,9 +2,8 @@
   <import from="./celebration-overlay.css"></import>
 
   <div
-    if.bind="visible"
     class="celebration-overlay"
-    data-state="${fadingOut ? 'exiting' : 'active'}"
+    data-state.bind="overlayState"
   >
     <div class="confetti-container">
       <div class="confetti" repeat.for="i of 30"></div>

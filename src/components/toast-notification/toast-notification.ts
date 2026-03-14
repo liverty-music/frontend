@@ -115,6 +115,10 @@ export class ToastNotification {
 		this.removeToast(toast)
 	}
 
+	public toastState(toast: ToastItem): 'entering' | 'exiting' {
+		return toast.visible ? 'entering' : 'exiting'
+	}
+
 	public onAction(toast: ToastItem): void {
 		toast.action?.callback()
 		this.dismiss(toast)

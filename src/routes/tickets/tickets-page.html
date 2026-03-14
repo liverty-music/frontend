@@ -73,7 +73,7 @@
             <rect x="14" y="14" width="7" height="7"></rect>
             <rect x="3" y="14" width="7" height="7"></rect>
           </svg>
-          <div if.bind="isGenerating && generatingTicketId === ticket.id?.value" class="spinner" style="inline-size: 1rem; block-size: 1rem; border-color: oklch(from var(--color-surface-base) l c h / 30%); border-block-start-color: var(--color-surface-base)"></div>
+          <div if.bind="isGenerating && generatingTicketId === ticket.id?.value" class="spinner spinner-sm"></div>
           Entry
         </button>
       </div>
@@ -87,8 +87,8 @@
     class="center-dialog"
   >
     <div role="alert" aria-live="polite" class="dialog-card">
-      <div class="spinner spinner-lg" style="margin-inline: auto"></div>
-      <p class="dialog-title" style="margin-block-start: var(--space-xs)">Generating Entry Code</p>
+      <div class="spinner spinner-lg"></div>
+      <p class="dialog-title">Generating Entry Code</p>
       <p class="dialog-desc">${proofProgress}</p>
       <p class="dialog-hint">This may take up to 30 seconds on mobile devices.</p>
     </div>

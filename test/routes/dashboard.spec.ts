@@ -323,7 +323,7 @@ describe('Dashboard', () => {
 			expect(sut.laneIntroPhase).toBe('done')
 			expect(mockOnboarding.setStep).toHaveBeenCalledWith(4) // DETAIL
 			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'[data-nav-my-artists]',
+				'[data-nav="my-artists"]',
 				expect.any(String),
 				expect.any(Function),
 			)

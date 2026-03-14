@@ -3,7 +3,7 @@
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
 
 
-  <div class="discover-layout" data-state.bind="isSearchMode ? 'search' : null">
+  <div class="discover-layout" data-search-mode.bind="isSearchMode">
 
     <!-- Search bar -->
     <div class="search-bar">
@@ -35,7 +35,7 @@
     <div class="genre-chips">
       <button
         repeat.for="tag of genreTags; key.bind: tag"
-        class="genre-chip ${activeTag === tag ? 'active' : ''}"
+        class="genre-chip" data-active.bind="activeTag === tag"
         click.trigger="onGenreSelected(tag)"
         disabled.bind="isLoadingTag"
         aria-pressed.bind="activeTag === tag"
@@ -46,7 +46,7 @@
 
     <!-- Onboarding guidance (visible only during onboarding) -->
     <div show.bind="isOnboarding" class="onboarding-hud">
-      <p class="hud-message ${guidanceHiding ? 'hiding' : ''}">
+      <p class="hud-message" data-hiding.bind="guidanceHiding">
         ${guidanceMessage}
       </p>
     </div>
@@ -59,7 +59,7 @@
         orb-intensity.bind="orbIntensity"
         followed-ids.bind="poolFollowedIds"
         followed-count.bind="followedCount"
-        show-followed-indicator.bind="true"
+        show-followed-indicator.one-time="true"
         artist-selected.trigger="onArtistSelected($event)"
         need-more-bubbles.trigger="onNeedMoreBubbles($event)"
       ></dna-orb-canvas>
@@ -90,7 +90,7 @@
             <span class="result-name">${artist.name}</span>
           </div>
           <button
-            class="follow-button ${isArtistFollowed(artist.id) ? 'followed' : ''}"
+            class="follow-button" data-followed.bind="isArtistFollowed(artist.id)"
             click.trigger="onFollowFromSearch(artist)"
             disabled.bind="isArtistFollowed(artist.id)"
             aria-label.bind="isArtistFollowed(artist.id) ? ($this.i18n?.tr('discover.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discover.followArtist', { name: artist.name }) ?? '')"
@@ -112,8 +112,7 @@
       role="status"
       aria-live="polite"
       class="sr-only"
-    >
-      ${isSearchMode ? ($this.i18n?.tr('discover.srSearchResults', { count: searchResults.length }) ?? '') : ($this.i18n?.tr('discover.srArtistsAvailable', { count: dnaOrbCanvas?.bubbleCount ?? 0 }) ?? '')}. ${$this.i18n?.tr('discover.srFollowed', { count: followedCount }) ?? ''}
-    </div>
+      textcontent.bind="srStatusText"
+    ></div>
   </div>
 </template>

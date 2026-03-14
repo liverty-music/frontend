@@ -31,11 +31,11 @@
 			transition: color var(--transition-normal);
 		}
 
-		.nav-tab[data-active] {
+		.nav-tab[data-active="true"] {
 			color: var(--color-brand-accent);
 		}
 
-		.nav-tab:not([data-active]) {
+		.nav-tab[data-active="false"] {
 			color: var(--color-text-muted);
 		}
 

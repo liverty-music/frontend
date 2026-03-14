@@ -1,4 +1,4 @@
-import { DI, IEventAggregator, Registration } from 'aurelia'
+import { DI, IEventAggregator, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Toast } from '../../src/components/toast-notification/toast'
 import { createTestContainer } from '../helpers/create-container'
@@ -80,6 +80,7 @@ describe('LoadingSequence', () => {
 		followedCount: number
 		setAdminArea: ReturnType<typeof vi.fn>
 	}
+	let mockHostElement: HTMLElement
 
 	beforeEach(() => {
 		vi.useFakeTimers()
@@ -99,8 +100,10 @@ describe('LoadingSequence', () => {
 			followedCount: 0,
 			setAdminArea: vi.fn(),
 		}
+		mockHostElement = document.createElement('div')
 
 		const container = createTestContainer(
+			Registration.instance(INode, mockHostElement),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIFollowServiceClient, mockFollowClient),
 			Registration.instance(mockILoadingSequenceService, mockLoadingService),
@@ -266,34 +269,22 @@ describe('LoadingSequence', () => {
 		})
 	})
 
-	describe('getPhaseClass', () => {
-		it('should return "phase-visible" when phase is visible', () => {
-			sut.isPhaseVisible = true
-			expect(sut.getPhaseClass()).toBe('phase-visible')
-		})
-
-		it('should return empty string when phase is not visible', () => {
-			sut.isPhaseVisible = false
-			expect(sut.getPhaseClass()).toBe('')
-		})
-	})
-
-	describe('getStepDotClass', () => {
-		it('should return "completed" for phases before current', () => {
+	describe('getStepState', () => {
+		it('should return "complete" for phases before current', () => {
 			sut.currentPhase = 3
-			expect(sut.getStepDotClass(0)).toBe('completed')
-			expect(sut.getStepDotClass(1)).toBe('completed')
+			expect(sut.getStepState(0)).toBe('complete')
+			expect(sut.getStepState(1)).toBe('complete')
 		})
 
 		it('should return "active" for current phase', () => {
 			sut.currentPhase = 2
-			expect(sut.getStepDotClass(1)).toBe('active')
+			expect(sut.getStepState(1)).toBe('active')
 		})
 
 		it('should return empty string for future phases', () => {
 			sut.currentPhase = 1
-			expect(sut.getStepDotClass(1)).toBe('')
-			expect(sut.getStepDotClass(2)).toBe('')
+			expect(sut.getStepState(1)).toBe('')
+			expect(sut.getStepState(2)).toBe('')
 		})
 	})
 })

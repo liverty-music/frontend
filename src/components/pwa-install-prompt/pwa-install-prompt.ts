@@ -1,19 +1,16 @@
 import { resolve, watch } from 'aurelia'
 import { IPwaInstallService } from '../../services/pwa-install-service'
 
-const EXIT_ANIMATION_MS = 600
-
 export class PwaInstallPrompt {
 	public readonly pwaInstall = resolve(IPwaInstallService)
 	public isVisible = false
-	public animationClass = ''
+	public animationState = ''
 	public popoverEl!: HTMLElement
-	private hideTimer: ReturnType<typeof setTimeout> | null = null
 
 	@watch((vm: PwaInstallPrompt) => vm.pwaInstall.canShow)
 	public canShowChanged(newValue: boolean): void {
 		if (newValue && !this.isVisible) {
-			this.animationClass = 'animate-fade-slide-up'
+			this.animationState = 'fade-slide-up'
 			this.isVisible = true
 			this.popoverEl?.showPopover()
 		} else if (!newValue && this.isVisible) {
@@ -22,9 +19,10 @@ export class PwaInstallPrompt {
 	}
 
 	public detaching(): void {
-		if (this.hideTimer !== null) {
-			clearTimeout(this.hideTimer)
-			this.hideTimer = null
+		this.popoverEl?.removeEventListener('animationend', this.onHideAnimationEnd)
+		// Handle reduced motion: cleanup immediately if animation hadn't finished
+		if (this.animationState === 'fade-slide-down') {
+			this.isVisible = false
 		}
 	}
 
@@ -39,13 +37,20 @@ export class PwaInstallPrompt {
 	}
 
 	private hideWithAnimation(): void {
-		this.animationClass = 'animate-fade-slide-down'
-		this.hideTimer = setTimeout(() => {
-			this.hideTimer = null
-			this.isVisible = false
-			if (this.popoverEl?.isConnected) {
-				this.popoverEl.hidePopover()
-			}
-		}, EXIT_ANIMATION_MS)
+		this.animationState = 'fade-slide-down'
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			this.onHideAnimationEnd()
+			return
+		}
+		this.popoverEl.addEventListener('animationend', this.onHideAnimationEnd, {
+			once: true,
+		})
+	}
+
+	private readonly onHideAnimationEnd = (): void => {
+		this.isVisible = false
+		if (this.popoverEl?.isConnected) {
+			this.popoverEl.hidePopover()
+		}
 	}
 }
