@@ -14,6 +14,7 @@ export class OrbRenderer {
 	private particleScale = 1.0
 	private pulseIntensity = 0
 	public swirlIntensity = 0
+	public baseIntensity = 0
 	private readonly reducedMotion =
 		typeof window !== 'undefined' &&
 		typeof window.matchMedia === 'function' &&
@@ -47,9 +48,9 @@ export class OrbRenderer {
 		this.pulseIntensity = 1.0
 	}
 
-	/** Replace 5-8 random particles with the given hue and trigger swirl. */
+	/** Replace 10-15 random particles with the given hue and trigger swirl. */
 	public injectColor(hue: number): void {
-		const count = 5 + Math.floor(Math.random() * 4) // 5-8
+		const count = 10 + Math.floor(Math.random() * 6) // 10-15
 		const indices: number[] = []
 		while (indices.length < count && indices.length < this.particles.length) {
 			const idx = Math.floor(Math.random() * this.particles.length)
@@ -74,7 +75,8 @@ export class OrbRenderer {
 			this.swirlIntensity = Math.max(0, this.swirlIntensity - delta / 1000)
 		}
 
-		const swirlMultiplier = this.reducedMotion ? 1 : 1 + this.swirlIntensity * 2
+		const effectiveSwirl = this.baseIntensity + this.swirlIntensity
+		const swirlMultiplier = this.reducedMotion ? 1 : 1 + effectiveSwirl * 2
 
 		for (const p of this.particles) {
 			p.angle += p.speed * delta * 0.002 * swirlMultiplier
@@ -86,10 +88,13 @@ export class OrbRenderer {
 	public render(ctx: CanvasRenderingContext2D, intensity: number): void {
 		ctx.save()
 
-		// Outer glow (boosted during pulse and swirl)
+		// Outer glow (boosted during pulse, swirl, and accumulated follows)
 		const effectiveIntensity = Math.min(
 			1,
-			intensity + this.pulseIntensity * 0.4 + this.swirlIntensity * 0.4,
+			intensity +
+				this.baseIntensity +
+				this.pulseIntensity * 0.4 +
+				this.swirlIntensity * 0.4,
 		)
 		const glowSize = this.orbRadius * (1.2 + effectiveIntensity * 0.4)
 		const glowGrad = ctx.createRadialGradient(
@@ -118,8 +123,9 @@ export class OrbRenderer {
 			this.orbY,
 			this.orbRadius,
 		)
-		const baseAlpha = 0.15 + intensity * 0.25
-		const saturation = 40 + intensity * 40
+		const combinedIntensity = Math.min(1, intensity + this.baseIntensity)
+		const baseAlpha = 0.15 + combinedIntensity * 0.25
+		const saturation = 40 + combinedIntensity * 40
 		orbGrad.addColorStop(
 			0,
 			`hsla(260, ${saturation}%, 80%, ${baseAlpha + 0.2})`,
@@ -135,16 +141,16 @@ export class OrbRenderer {
 		ctx.arc(this.orbX, this.orbY, this.orbRadius, 0, Math.PI * 2)
 		ctx.fill()
 
-		// Inner swirling particles (scaled by performance quality)
+		// Inner swirling particles (scaled by performance quality and accumulated intensity)
 		const visibleParticles = Math.floor(
-			this.maxParticles * this.particleScale * (0.1 + intensity * 0.9),
+			this.maxParticles * this.particleScale * (0.1 + combinedIntensity * 0.9),
 		)
 		for (let i = 0; i < visibleParticles; i++) {
 			const p = this.particles[i]
 			const px = this.orbX + Math.cos(p.angle) * p.radius
 			const py = this.orbY + Math.sin(p.angle) * p.radius
-			const pOpacity = p.opacity * (0.3 + intensity * 0.7)
-			const pSize = p.size * (0.5 + intensity * 0.5)
+			const pOpacity = p.opacity * (0.3 + combinedIntensity * 0.7)
+			const pSize = p.size * (0.5 + combinedIntensity * 0.5)
 
 			ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${pOpacity})`
 			ctx.beginPath()
@@ -175,13 +181,18 @@ export class OrbRenderer {
 		ctx.fill()
 
 		// Rim outline
-		ctx.strokeStyle = `hsla(260, 60%, 70%, ${0.2 + intensity * 0.3})`
+		ctx.strokeStyle = `hsla(260, 60%, 70%, ${0.2 + combinedIntensity * 0.3})`
 		ctx.lineWidth = 1.5
 		ctx.beginPath()
 		ctx.arc(this.orbX, this.orbY, this.orbRadius, 0, Math.PI * 2)
 		ctx.stroke()
 
 		ctx.restore()
+	}
+
+	/** Update baseIntensity using a diminishing-returns easing curve. */
+	public setFollowCount(count: number): void {
+		this.baseIntensity = count > 0 ? 1 - 1 / (1 + count * 0.5) : 0
 	}
 
 	public setParticleScale(scale: number): void {

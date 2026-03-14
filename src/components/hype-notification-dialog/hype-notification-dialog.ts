@@ -1,4 +1,4 @@
-import { INode, bindable, resolve } from 'aurelia'
+import { bindable, INode, resolve } from 'aurelia'
 
 export class HypeNotificationDialog {
 	@bindable public active = false

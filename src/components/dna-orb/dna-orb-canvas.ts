@@ -62,8 +62,9 @@ export class DnaOrbCanvas {
 		return this.physics.bubbleCount
 	}
 
-	public followedCountChanged(_newVal: number, _oldVal: number): void {
+	public followedCountChanged(newVal: number, _oldVal: number): void {
 		this.orbRenderer.pulse()
+		this.orbRenderer.setFollowCount(newVal)
 	}
 
 	public artistsChanged(newVal: ArtistBubble[]): void {
