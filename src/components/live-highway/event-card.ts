@@ -14,6 +14,13 @@ export class EventCard {
 		})
 	}
 
+	public handleKeydown(event: KeyboardEvent): void {
+		if (event.key === ' ') {
+			this.onClick()
+			event.preventDefault()
+		}
+	}
+
 	public onClick(): void {
 		this.element.dispatchEvent(
 			new CustomEvent('event-selected', {

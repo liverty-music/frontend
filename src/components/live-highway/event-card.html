@@ -5,7 +5,7 @@
     data-live-card
     data-lane.bind="lane"
     click.trigger="onClick()"
-    keydown.trigger="$event.key === ' ' ? (onClick(), $event.preventDefault()) : null"
+    keydown.trigger="handleKeydown($event)"
     role="button"
     tabindex="0"
     artist-color.bind="event.artistName"
