@@ -64,48 +64,39 @@
 
   <!-- Artist list view -->
   <div if.bind="!isLoading && artists.length > 0 && viewMode === 'list'" class="artist-list">
-    <div class="artist-list-inner">
-      <div
-        repeat.for="artist of artists; key.bind: artist.id"
-        class="artist-list-item"
-      >
-        <!-- Delete zone (behind the row) -->
-        <div class="delete-zone">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-          </svg>
-        </div>
-
-        <!-- Artist row (swipeable) -->
-        <div
-          touchstart.trigger="onTouchStart(artist, $event)"
-          touchmove.trigger="onTouchMove($event) & throttle:16"
-          touchend.trigger="onTouchEnd()"
-          touchcancel.trigger="onTouchEnd()"
-          class="artist-row"
-          data-swiping="${swipedArtistId === artist.id && swipeOffset < 0 ? 'true' : 'false'}"
-          style="transform: translateX(${swipedArtistId === artist.id ? swipeOffset : 0}px)"
-        >
-          <!-- Color accent dot -->
+    <div
+      repeat.for="artist of artists; key.bind: artist.id"
+      class="artist-row"
+      style="--_vt-name: artist-${artist.id}"
+      scroll.trigger="checkDismiss($event, artist)"
+    >
+      <div class="artist-row-content">
+        <!-- Artist identity (indicator + name) -->
+        <div class="artist-identity">
           <span
             class="[ artist-row-indicator ]"
             style="background: ${artist.color}"
           ></span>
-
-          <!-- Artist name -->
           <span class="[ artist-row-name ]">${artist.name}</span>
-
-          <!-- Inline hype slider -->
-          <hype-inline-slider
-            artist-id.bind="artist.id"
-            artist-color.bind="getArtistColor(artist.id)"
-            hype-level.bind="hypeStop(artist)"
-            is-authenticated.bind="isAuthenticated"
-            hype-changed.trigger="onHypeChanged($event)"
-            hype-signup-prompt.trigger="onHypeSignupPrompt($event)">
-          </hype-inline-slider>
         </div>
+
+        <!-- Inline hype slider -->
+        <hype-inline-slider
+          artist-id.bind="artist.id"
+          artist-color.bind="getArtistColor(artist.id)"
+          hype-level.bind="hypeStop(artist)"
+          is-authenticated.bind="isAuthenticated"
+          hype-changed.trigger="onHypeChanged($event)"
+          hype-signup-prompt.trigger="onHypeSignupPrompt($event)">
+        </hype-inline-slider>
+      </div>
+
+      <!-- Dismiss trigger (scroll-snap end target) -->
+      <div class="dismiss-end">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+        </svg>
       </div>
     </div>
   </div>
