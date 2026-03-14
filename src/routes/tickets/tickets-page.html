@@ -1,11 +1,6 @@
 <import from="./tickets-page.css"></import>
 
-<main class="[ page-layout ]">
-  <!-- Header -->
-  <div class="page-header">
-    <h1>My Tickets</h1>
-  </div>
-
+<page-shell title-key="nav.tickets">
   <!-- Loading state -->
   <div if.bind="isLoading" class="state-center">
     <div class="spinner"></div>
@@ -13,24 +8,19 @@
   </div>
 
   <!-- Error state -->
-  <div if.bind="!isLoading && error" class="state-center">
-    <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"></circle>
-      <line x1="12" y1="8" x2="12" y2="12"></line>
-      <line x1="12" y1="16" x2="12.01" y2="16"></line>
-    </svg>
-    <p class="state-text">${error}</p>
-  </div>
+  <state-placeholder
+    if.bind="!isLoading && error"
+    icon="info"
+    description.bind="error"
+  ></state-placeholder>
 
   <!-- Empty state -->
-  <div if.bind="!isLoading && !error && tickets.length === 0" class="state-center">
-    <svg class="state-icon state-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
-      <path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path>
-    </svg>
-    <h2 class="state-title">No tickets yet</h2>
-    <p class="state-desc">Your soulbound tickets will appear here once minted for an event.</p>
-  </div>
+  <state-placeholder
+    if.bind="!isLoading && !error && tickets.length === 0"
+    icon="ticket"
+    title="No tickets yet"
+    description="Your soulbound tickets will appear here once minted for an event."
+  ></state-placeholder>
 
   <!-- Ticket list -->
   <div if.bind="!isLoading && !error && tickets.length > 0" class="ticket-list">
@@ -48,10 +38,7 @@
             <span if.bind="ticket.tokenId" class="ticket-token">${formatTokenId(ticket)}</span>
           </div>
           <div class="soulbound-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0110 0v4"></path>
-            </svg>
+            <svg-icon name="lock" size="xs"></svg-icon>
             Soulbound
           </div>
         </div>
@@ -61,12 +48,7 @@
           disabled.bind="isGenerating"
           class="entry-btn"
         >
-          <svg if.bind="!isGenerating || generatingTicketId !== ticket.id?.value" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
+          <svg-icon if.bind="!isGenerating || generatingTicketId !== ticket.id?.value" name="qr-code"></svg-icon>
           <div if.bind="isGenerating && generatingTicketId === ticket.id?.value" class="spinner spinner-sm"></div>
           Entry
         </button>
@@ -111,4 +93,4 @@
       </button>
     </div>
   </dialog>
-</main>
+</page-shell>

@@ -3,14 +3,12 @@
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
 
 
+  <!-- Uses custom layout with data-search-mode state — not suitable for page-shell -->
   <main class="[ discover-layout ]" data-search-mode.bind="isSearchMode">
 
     <!-- Search bar -->
     <div class="search-bar">
-      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"></circle>
-        <path d="m21 21-4.35-4.35"></path>
-      </svg>
+      <svg-icon name="search" class="search-icon"></svg-icon>
       <input
         type="text"
         class="search-input"
@@ -24,10 +22,7 @@
         click.trigger="clearSearch()"
         aria-label.bind="$this.i18n?.tr('discover.clearSearch') ?? ''"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 6 6 18"></path>
-          <path d="m6 6 12 12"></path>
-        </svg>
+        <svg-icon name="x"></svg-icon>
       </button>
     </div>
 
@@ -98,13 +93,8 @@
             disabled.bind="isArtistFollowed(artist.id)"
             aria-label.bind="isArtistFollowed(artist.id) ? ($this.i18n?.tr('discover.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discover.followArtist', { name: artist.name }) ?? '')"
           >
-            <svg if.bind="!isArtistFollowed(artist.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M12 5v14"></path>
-              <path d="M5 12h14"></path>
-            </svg>
-            <svg if.bind="isArtistFollowed(artist.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M20 6 9 17l-5-5"></path>
-            </svg>
+            <svg-icon if.bind="!isArtistFollowed(artist.id)" name="plus"></svg-icon>
+            <svg-icon if.bind="isArtistFollowed(artist.id)" name="check"></svg-icon>
           </button>
         </div>
       </div>

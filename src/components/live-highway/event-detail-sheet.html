@@ -1,7 +1,4 @@
 <template>
-  <import from="../icons/icon-calendar"></import>
-  <import from="../icons/icon-map-pin"></import>
-  <import from="../icons/icon-link"></import>
   <import from="./event-detail-sheet.css"></import>
 
   <!-- <dialog> with dynamic popover mode set in open():
@@ -42,7 +39,7 @@
         <div class="sheet-details">
           <!-- Date & Time -->
           <div class="detail-row">
-            <span class="detail-icon"><icon-calendar></icon-calendar></span>
+            <span class="detail-icon"><svg-icon name="calendar"></svg-icon></span>
             <div>
               <time datetime.bind="event.date.toISOString()" class="detail-primary">${event.date | date:'long'}</time>
               <p class="detail-secondary">
@@ -53,7 +50,7 @@
 
           <!-- Venue -->
           <div class="detail-row">
-            <span class="detail-icon"><icon-map-pin></icon-map-pin></span>
+            <span class="detail-icon"><svg-icon name="map-pin"></svg-icon></span>
             <div class="detail-venue">
               <p class="detail-primary">${event.venueName}</p>
               <p if.bind="event.adminArea" class="detail-secondary">${event.adminArea}</p>
@@ -77,7 +74,7 @@
             rel="noopener noreferrer"
             class="sheet-btn-primary"
           >
-            <icon-link></icon-link> View Official Info
+            <svg-icon name="link"></svg-icon> View Official Info
           </a>
           <a
             href.bind="calendarUrl"
@@ -85,7 +82,7 @@
             rel="noopener noreferrer"
             class="sheet-btn-secondary"
           >
-            <icon-calendar></icon-calendar> Add to Calendar
+            <svg-icon name="calendar"></svg-icon> Add to Calendar
           </a>
         </div>
       </div>

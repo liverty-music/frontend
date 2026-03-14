@@ -14,42 +14,6 @@
 			block-size: 100%;
 		}
 
-		.page-layout {
-			position: relative;
-
-			display: flex;
-			flex-direction: column;
-
-			block-size: 100%;
-
-			color: var(--color-text-primary);
-
-			background: var(--color-surface-base);
-		}
-
-		.page-header {
-			flex-shrink: 0;
-
-			padding-block: var(--space-xs);
-			padding-inline: var(--space-xs);
-			border-block-end: 1px solid var(--_white-10);
-
-			background: var(--color-surface-raised);
-		}
-
-		.header-row {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-
-			& h1 {
-				font-family: var(--font-display);
-				font-size: var(--step-1);
-				font-weight: 700;
-				letter-spacing: -0.01em;
-			}
-		}
-
 		.header-actions {
 			display: flex;
 			gap: var(--space-3xs);
@@ -70,11 +34,6 @@
 			&:hover {
 				background: var(--_white-10);
 			}
-		}
-
-		.icon-sm {
-			inline-size: 1.25rem;
-			block-size: 1.25rem;
 		}
 
 		.state-center {
