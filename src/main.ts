@@ -6,6 +6,11 @@ import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { migrateStorageKeys } from './constants/storage-keys'
 import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
+import { DotColorCustomAttribute } from './custom-attributes/dot-color'
+import { DragOffsetCustomAttribute } from './custom-attributes/drag-offset'
+import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
+import { SwipeOffsetCustomAttribute } from './custom-attributes/swipe-offset'
+import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
@@ -103,6 +108,11 @@ Aurelia
 	.register(BottomNavBar)
 	.register(AuthHook)
 	.register(ArtistColorCustomAttribute)
+	.register(DotColorCustomAttribute)
+	.register(DragOffsetCustomAttribute)
+	.register(SpotlightRadiusCustomAttribute)
+	.register(SwipeOffsetCustomAttribute)
+	.register(TileColorCustomAttribute)
 	.register(DateValueConverter)
 	// To use HTML5 pushState routes, replace previous line with the following
 	// customized router config.
