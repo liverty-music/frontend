@@ -58,17 +58,8 @@ export class MyArtistsPage {
 	public showSignupBanner = false
 	public notificationDialogShown = false
 
-	// Swipe state
-	public swipedArtistId = ''
-	public swipeOffset = 0
-	private touchStartX = 0
-	private touchStartY = 0
-	private isSwiping = false
-	private swipeTarget: FollowedArtist | null = null
-
-	// Long-press state
-	private longPressTimer: ReturnType<typeof setTimeout> | null = null
-	private readonly LONG_PRESS_MS = 500
+	// Dismiss state (tracks scroll containers currently dismissing)
+	private dismissingIds = new Set<string>()
 
 	// Undo state
 	private undoArtist: FollowedArtist | null = null
@@ -161,78 +152,35 @@ export class MyArtistsPage {
 		this.abortController?.abort()
 		this.abortController = null
 		this.undoHandle?.dismiss()
-		this.clearLongPressTimer()
 	}
 
-	// --- Swipe-to-unfollow ---
+	// --- Scroll-snap dismiss ---
 
-	public onTouchStart(artist: FollowedArtist, e: TouchEvent): void {
-		if (this.swipeTarget) return
-		this.touchStartX = e.touches[0].clientX
-		this.touchStartY = e.touches[0].clientY
-		this.isSwiping = false
-		this.swipeTarget = artist
+	public checkDismiss(event: Event, artist: FollowedArtist): void {
+		if (this.dismissingIds.has(artist.id)) return
 
-		this.longPressTimer = setTimeout(() => {
-			this.onLongPress(artist)
-		}, this.LONG_PRESS_MS)
-	}
-
-	public onTouchMove(e: TouchEvent): void {
-		if (!this.swipeTarget) return
-
-		const deltaX = e.touches[0].clientX - this.touchStartX
-		const deltaY = e.touches[0].clientY - this.touchStartY
-
-		// Cancel long-press on any movement
-		this.clearLongPressTimer()
-
-		// Determine if horizontal swipe (only activate on left swipe)
-		if (!this.isSwiping) {
-			if (Math.abs(deltaX) > 10 && Math.abs(deltaX) > Math.abs(deltaY)) {
-				this.isSwiping = true
-			} else if (Math.abs(deltaY) > 10) {
-				// Vertical scroll — cancel swipe
-				this.swipeTarget = null
-				return
-			} else {
-				return
-			}
+		const el = event.target as HTMLElement
+		if (el.scrollLeft > el.offsetWidth * 0.5) {
+			this.dismissingIds.add(artist.id)
+			this.executeDismiss(artist)
 		}
-
-		// Only allow left swipe (negative deltaX)
-		this.swipeOffset = Math.min(0, deltaX)
-		this.swipedArtistId = this.swipeTarget.id
 	}
 
-	public onTouchEnd(): void {
-		this.clearLongPressTimer()
-
-		if (!this.swipeTarget || !this.isSwiping) {
-			this.resetSwipe()
+	private executeDismiss(artist: FollowedArtist): void {
+		if (!document.startViewTransition) {
+			this.unfollowArtist(artist)
+			this.dismissingIds.delete(artist.id)
 			return
 		}
 
-		// If swiped past threshold, trigger unfollow
-		if (this.swipeOffset < -80) {
-			this.unfollowArtist(this.swipeTarget)
-		}
-
-		this.resetSwipe()
-	}
-
-	// --- Long-press unfollow ---
-
-	private onLongPress(artist: FollowedArtist): void {
-		this.longPressTimer = null
-		this.unfollowArtist(artist)
-	}
-
-	private clearLongPressTimer(): void {
-		if (this.longPressTimer !== null) {
-			clearTimeout(this.longPressTimer)
-			this.longPressTimer = null
-		}
+		const transition = document.startViewTransition(() => {
+			this.unfollowArtist(artist)
+			this.dismissingIds.delete(artist.id)
+			return Promise.resolve()
+		})
+		transition.finished.catch(() => {
+			this.dismissingIds.delete(artist.id)
+		})
 	}
 
 	// --- Unfollow with undo ---
@@ -325,13 +273,6 @@ export class MyArtistsPage {
 						)
 					})
 			})
-	}
-
-	private resetSwipe(): void {
-		this.swipeOffset = 0
-		this.swipedArtistId = ''
-		this.isSwiping = false
-		this.swipeTarget = null
 	}
 
 	// --- Hype level inline slider ---
@@ -440,6 +381,8 @@ export class MyArtistsPage {
 
 	// --- Grid context menu ---
 
+	private static readonly GRID_LONG_PRESS_MS = 500
+
 	public onGridLongPress(artist: FollowedArtist): void {
 		this.contextMenuArtist = artist
 		this.contextMenuDialog.showModal()
@@ -506,7 +449,7 @@ export class MyArtistsPage {
 		this.gridLongPressTimer = setTimeout(() => {
 			this.gridLongPressTimer = null
 			this.onGridLongPress(artist)
-		}, this.LONG_PRESS_MS)
+		}, MyArtistsPage.GRID_LONG_PRESS_MS)
 	}
 
 	public onGridTouchEnd(): void {

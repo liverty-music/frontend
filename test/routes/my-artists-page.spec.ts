@@ -60,13 +60,6 @@ function makeFollowedArtistInfo(id: string, name: string, hype = 2) {
 	return { id, name, hype }
 }
 
-function makeTouchEvent(clientX: number, clientY = 0): TouchEvent {
-	return {
-		touches: [{ clientX, clientY }],
-		preventDefault: vi.fn(),
-	} as unknown as TouchEvent
-}
-
 describe('MyArtistsPage', () => {
 	let sut: InstanceType<typeof MyArtistsPage>
 	let ea: IEventAggregator
@@ -169,40 +162,19 @@ describe('MyArtistsPage', () => {
 		})
 	})
 
-	describe('swipe-to-unfollow', () => {
+	describe('scroll-snap dismiss', () => {
 		beforeEach(async () => {
 			await sut.loading()
 		})
 
-		it('should track swipe offset on left swipe', () => {
-			sut.onTouchStart(sut.artists[0], makeTouchEvent(200))
-			sut.onTouchMove(makeTouchEvent(180)) // -20 deltaX, triggers swiping
-			sut.onTouchMove(makeTouchEvent(100)) // -100 deltaX
+		function makeScrollEvent(scrollLeft: number, offsetWidth: number): Event {
+			return {
+				target: { scrollLeft, offsetWidth },
+			} as unknown as Event
+		}
 
-			expect(sut.swipedArtistId).toBe('id-1')
-			expect(sut.swipeOffset).toBe(-100)
-		})
-
-		it('should not track right swipe', () => {
-			sut.onTouchStart(sut.artists[0], makeTouchEvent(100))
-			sut.onTouchMove(makeTouchEvent(120))
-
-			// Right swipe — offset clamped to 0
-			expect(sut.swipeOffset).toBe(0)
-		})
-
-		it('should cancel swipe on vertical scroll', () => {
-			sut.onTouchStart(sut.artists[0], makeTouchEvent(200, 100))
-			sut.onTouchMove(makeTouchEvent(200, 120)) // 20px vertical, triggers scroll cancel
-
-			expect(sut.swipedArtistId).toBe('')
-		})
-
-		it('should unfollow when swipe exceeds threshold', () => {
-			sut.onTouchStart(sut.artists[0], makeTouchEvent(200))
-			sut.onTouchMove(makeTouchEvent(180))
-			sut.onTouchMove(makeTouchEvent(100)) // -100 > threshold
-			sut.onTouchEnd()
+		it('should unfollow when scroll exceeds 50% threshold', () => {
+			sut.checkDismiss(makeScrollEvent(210, 400), sut.artists[0])
 
 			expect(sut.artists).toHaveLength(2)
 			expect(publishedToasts).toHaveLength(1)
@@ -210,55 +182,29 @@ describe('MyArtistsPage', () => {
 			expect(publishedToasts[0].action?.label).toBe('myArtists.undo')
 		})
 
-		it('should not unfollow when swipe is below threshold', () => {
-			sut.onTouchStart(sut.artists[0], makeTouchEvent(200))
-			sut.onTouchMove(makeTouchEvent(190))
-			sut.onTouchMove(makeTouchEvent(170)) // -30 < threshold
-			sut.onTouchEnd()
+		it('should not unfollow when scroll is below threshold', () => {
+			sut.checkDismiss(makeScrollEvent(100, 400), sut.artists[0])
 
 			expect(sut.artists).toHaveLength(3)
 			expect(publishedToasts).toHaveLength(0)
 		})
 
-		it('should reset swipe state after touchend', () => {
-			sut.onTouchStart(sut.artists[0], makeTouchEvent(200))
-			sut.onTouchMove(makeTouchEvent(180))
-			sut.onTouchEnd()
+		it('should not dismiss twice for the same artist', () => {
+			const artist = sut.artists[0]
+			sut.checkDismiss(makeScrollEvent(210, 400), artist)
+			sut.checkDismiss(makeScrollEvent(210, 400), artist)
 
-			expect(sut.swipeOffset).toBe(0)
-			expect(sut.swipedArtistId).toBe('')
-		})
-	})
-
-	describe('long-press unfollow', () => {
-		beforeEach(async () => {
-			vi.useFakeTimers()
-			await sut.loading()
-		})
-
-		afterEach(() => {
-			vi.useRealTimers()
-		})
-
-		it('should unfollow after long press', () => {
-			sut.onTouchStart(sut.artists[1], makeTouchEvent(100))
-			vi.advanceTimersByTime(500)
-
-			expect(sut.artists).toHaveLength(2)
 			expect(publishedToasts).toHaveLength(1)
-		})
-
-		it('should cancel long press on touch move', () => {
-			sut.onTouchStart(sut.artists[1], makeTouchEvent(100))
-			sut.onTouchMove(makeTouchEvent(80))
-			vi.advanceTimersByTime(500)
-
-			// long-press cancelled by movement, but swipe threshold not met
-			expect(sut.artists).toHaveLength(3)
 		})
 	})
 
 	describe('undo', () => {
+		function makeScrollEvent(scrollLeft: number, offsetWidth: number): Event {
+			return {
+				target: { scrollLeft, offsetWidth },
+			} as unknown as Event
+		}
+
 		beforeEach(async () => {
 			vi.useFakeTimers()
 			await sut.loading()
@@ -269,16 +215,12 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should re-insert artist at original position', () => {
-			// Remove the second artist
-			sut.onTouchStart(sut.artists[1], makeTouchEvent(200))
-			sut.onTouchMove(makeTouchEvent(180))
-			sut.onTouchMove(makeTouchEvent(100))
-			sut.onTouchEnd()
+			const artist = sut.artists[1]
+			sut.checkDismiss(makeScrollEvent(210, 400), artist)
 
 			expect(sut.artists).toHaveLength(2)
 			expect(sut.artists[1].name).toBe('Aimer')
 
-			// Invoke the undo action callback from the published toast
 			publishedToasts[0].action?.callback()
 
 			expect(sut.artists).toHaveLength(3)
@@ -286,12 +228,8 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should commit unfollow RPC when toast is dismissed', async () => {
-			sut.onTouchStart(sut.artists[0], makeTouchEvent(200))
-			sut.onTouchMove(makeTouchEvent(180))
-			sut.onTouchMove(makeTouchEvent(100))
-			sut.onTouchEnd()
+			sut.checkDismiss(makeScrollEvent(210, 400), sut.artists[0])
 
-			// Simulate toast dismiss via onDismiss callback
 			publishedToasts[0].options?.onDismiss?.()
 			await vi.runAllTimersAsync()
 
@@ -301,12 +239,8 @@ describe('MyArtistsPage', () => {
 		})
 
 		it('should not call RPC when undo is pressed before dismiss', async () => {
-			sut.onTouchStart(sut.artists[0], makeTouchEvent(200))
-			sut.onTouchMove(makeTouchEvent(180))
-			sut.onTouchMove(makeTouchEvent(100))
-			sut.onTouchEnd()
+			sut.checkDismiss(makeScrollEvent(210, 400), sut.artists[0])
 
-			// Undo first (clears undoArtist), then onDismiss fires
 			publishedToasts[0].action?.callback()
 			publishedToasts[0].options?.onDismiss?.()
 			await vi.runAllTimersAsync()
