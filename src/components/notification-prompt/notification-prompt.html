@@ -1,9 +1,9 @@
 <template>
   <div ref="popoverEl" popover="manual"
-    class="prompt-popover" data-animation.bind="animationState">
+    class="[ prompt-popover ]" data-animation.bind="animationState">
 
     <!-- Default permission state -->
-    <div show.bind="notificationManager.permission === 'default'">
+    <div show.bind="notificationManager.permission === 'default'" aria-live="polite">
       <div class="prompt-row">
         <div class="prompt-emoji" aria-hidden="true">🔔</div>
         <div class="prompt-body">
@@ -25,7 +25,7 @@
     </div>
 
     <!-- Denied permission state -->
-    <div show.bind="notificationManager.permission === 'denied'">
+    <div show.bind="notificationManager.permission === 'denied'" aria-live="polite">
       <div class="prompt-row">
         <div class="prompt-emoji" aria-hidden="true">🔕</div>
         <div class="prompt-body">

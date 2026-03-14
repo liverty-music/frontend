@@ -1,6 +1,6 @@
 <import from="./loading-sequence.css"></import>
 
-<div class="loading-layout">
+<main class="[ loading-layout ]">
 	<!-- Pulsing orb visual -->
 	<div class="pulsing-orb"></div>
 
@@ -10,7 +10,7 @@
 	</div>
 
 	<!-- Step dots progress indicator -->
-	<div class="step-dots">
+	<div class="step-dots" aria-label="Progress steps">
 		<div repeat.for="i of totalPhases; key.bind: i" class="step-dot" data-step-state.bind="getStepState(i)"></div>
 	</div>
 
@@ -19,4 +19,4 @@
 
 	<!-- Artist search progress counter -->
 	<p if.bind="searchTotalCount > 0" class="progress-label">${searchCompletedCount}/${searchTotalCount} アーティスト完了</p>
-</div>
+</main>

@@ -14,7 +14,7 @@
     touchstart.trigger="onTouchStart($event)"
     touchmove.trigger="onTouchMove($event)"
     touchend.trigger="onTouchEnd()"
-    class="event-detail-sheet"
+    class="[ event-detail-sheet ]"
     drag-offset.bind="dragOffset"
   >
     <div
@@ -44,7 +44,7 @@
           <div class="detail-row">
             <span class="detail-icon"><icon-calendar></icon-calendar></span>
             <div>
-              <p class="detail-primary">${event.date | date:'long'}</p>
+              <time datetime.bind="event.date" class="detail-primary">${event.date | date:'long'}</time>
               <p class="detail-secondary">
                 Open ${event.openTime || '—'} / Start ${event.startTime}
               </p>
@@ -54,7 +54,7 @@
           <!-- Venue -->
           <div class="detail-row">
             <span class="detail-icon"><icon-map-pin></icon-map-pin></span>
-            <div>
+            <address class="detail-venue">
               <p class="detail-primary">${event.venueName}</p>
               <p if.bind="event.adminArea" class="detail-secondary">${event.adminArea}</p>
               <a
@@ -65,7 +65,7 @@
               >
                 Open in Google Maps
               </a>
-            </div>
+            </address>
           </div>
         </div>
 

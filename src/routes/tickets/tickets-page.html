@@ -1,6 +1,6 @@
 <import from="./tickets-page.css"></import>
 
-<div class="page-layout">
+<main class="[ page-layout ]">
   <!-- Header -->
   <div class="page-header">
     <h1>My Tickets</h1>
@@ -84,11 +84,12 @@
   <dialog
     ref="generatingDialog"
     cancel.trigger="$event.preventDefault()"
+    aria-labelledby="generating-dialog-title"
     class="center-dialog"
   >
     <div role="alert" aria-live="polite" class="dialog-card">
       <div class="spinner spinner-lg"></div>
-      <p class="dialog-title">Generating Entry Code</p>
+      <p id="generating-dialog-title" class="dialog-title">Generating Entry Code</p>
       <p class="dialog-desc">${proofProgress}</p>
       <p class="dialog-hint">This may take up to 30 seconds on mobile devices.</p>
     </div>
@@ -116,4 +117,4 @@
       </button>
     </div>
   </dialog>
-</div>
+</main>

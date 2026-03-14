@@ -1,12 +1,14 @@
 <template>
   <import from="./event-card.css"></import>
 
-  <div
+  <article
     data-live-card
     data-lane.bind="lane"
     click.trigger="onClick()"
+    role="button"
+    tabindex="0"
     artist-color.bind="event.artistName"
-    class="event-card"
+    class="[ event-card ]"
     data-hype.bind="event.hypeLevel"
   >
     <span class="artist-name">
@@ -15,5 +17,5 @@
     <span if.bind="lane !== 'home'" class="location-label">
       ${event.locationLabel}
     </span>
-  </div>
+  </article>
 </template>

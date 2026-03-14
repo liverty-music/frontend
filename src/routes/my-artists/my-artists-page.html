@@ -3,9 +3,9 @@
 <import from="../../components/hype-notification-dialog/hype-notification-dialog"></import>
 <import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
 
-<div class="page-layout">
+<main class="[ page-layout ]">
   <!-- Header -->
-  <div class="page-header">
+  <header class="[ page-header ]">
     <div class="header-row">
       <h1 t="nav.myArtists"></h1>
       <div class="header-actions">
@@ -29,7 +29,7 @@
         </button>
       </div>
     </div>
-  </div>
+  </header>
 
   <!-- Hype level legend (sticky) -->
   <header if.bind="!isLoading && artists.length > 0" class="[ hype-legend ]" data-hype-header>
@@ -133,6 +133,7 @@
   <dialog
     ref="contextMenuDialog"
     click.trigger="onContextMenuDialogClick($event)"
+    aria-label="Artist options"
     class="bottom-sheet-dialog"
   >
     <div if.bind="contextMenuArtist" class="sheet-body">
@@ -164,7 +165,7 @@
     </div>
   </dialog>
 
-</div>
+</main>
 
 <!-- Notification dialog (outside page-layout for proper top-layer stacking) -->
 <hype-notification-dialog

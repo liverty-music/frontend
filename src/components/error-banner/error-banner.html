@@ -2,10 +2,11 @@
 
 <dialog
   ref="dialogElement"
-  class="error-dialog"
+  aria-labelledby="error-dialog-title"
+  class="[ error-dialog ]"
 >
   <div class="error-content">
-    <h2 class="error-title">Something went wrong</h2>
+    <h2 id="error-dialog-title" class="error-title">Something went wrong</h2>
     <p class="error-message">${errorBoundary.currentError?.message}</p>
 
     <div class="error-id-box">
