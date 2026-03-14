@@ -15,7 +15,7 @@
     touchmove.trigger="onTouchMove($event)"
     touchend.trigger="onTouchEnd()"
     class="event-detail-sheet"
-    style="transform: ${dragOffset > 0 ? 'translateY(' + dragOffset + 'px)' : ''}"
+    drag-offset.bind="dragOffset"
   >
     <div
       click.trigger="onSheetClick($event)"

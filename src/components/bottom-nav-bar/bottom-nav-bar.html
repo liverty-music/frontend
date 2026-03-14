@@ -2,11 +2,10 @@
   <div class="nav-bar-inner">
     <a
       repeat.for="tab of tabs; key.bind: tab.path"
-      href="${tab.path}"
-      data-nav-dashboard.bind="tab.icon === 'home' ? '' : null"
-      data-nav-my-artists.bind="tab.icon === 'my-artists' ? '' : null"
+      href.bind="tab.path"
+      data-nav.bind="tab.icon"
       class="nav-tab"
-      data-active.bind="isActive(tab.path) ? '' : null"
+      data-active.bind="isActive(tab.path)"
     >
       <template switch.bind="tab.icon">
         <!-- Home icon -->

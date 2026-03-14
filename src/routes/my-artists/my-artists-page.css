@@ -226,9 +226,12 @@
 
 		.artist-row-indicator {
 			flex-shrink: 0;
+
 			inline-size: 8px;
 			block-size: 8px;
 			border-radius: var(--radius-full);
+
+			background-color: var(--_dot-color);
 		}
 
 		.artist-row-name {
@@ -286,6 +289,15 @@
 
 			border: 1px solid var(--_white-10);
 			border-radius: var(--radius-card);
+		}
+
+		/* Tile color gradient from custom attribute */
+		.grid-tile[tile-color] {
+			background: linear-gradient(
+				135deg,
+				color-mix(in oklch, var(--_tile-color) 25%, transparent),
+				color-mix(in oklch, var(--_tile-color) 6%, transparent)
+			);
 		}
 
 		.grid-tile-overlay {
@@ -407,7 +419,7 @@
 				background: var(--_white-5);
 			}
 
-			&[data-active] {
+			&[data-active="true"] {
 				color: var(--color-brand-primary);
 				background: oklch(from var(--color-brand-primary) l c h / 20%);
 			}

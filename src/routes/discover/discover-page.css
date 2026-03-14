@@ -229,7 +229,7 @@
 				background: var(--_white-15);
 			}
 
-			&.active {
+			&[data-active="true"] {
 				border-color: var(--_brand-80);
 				color: var(--color-white);
 				background: var(--_brand-60);
@@ -368,7 +368,7 @@
 				background: var(--_brand-80);
 			}
 
-			&.followed {
+			&[data-followed="true"] {
 				color: var(--_green-90);
 				background: var(--_green-30);
 			}
@@ -406,7 +406,7 @@
 				opacity 400ms ease,
 				transform 400ms ease;
 
-			&.hiding {
+			&[data-hiding="true"] {
 				transform: translateY(-4px);
 				opacity: 0;
 			}
@@ -425,11 +425,11 @@
 		}
 
 		/* State-driven visibility (after base selectors to avoid descending specificity) */
-		.discover-layout[data-state="search"] :is(.genre-chips, .bubble-area) {
+		.discover-layout[data-search-mode="true"] :is(.genre-chips, .bubble-area) {
 			display: none;
 		}
 
-		.discover-layout:not([data-state="search"]) .search-results {
+		.discover-layout:not([data-search-mode="true"]) .search-results {
 			display: none;
 		}
 	}

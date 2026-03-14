@@ -1,6 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter, type NavigationInstruction } from '@aurelia/router'
-import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { IEventAggregator, ILogger, INode, resolve } from 'aurelia'
 import { Toast } from '../../components/toast-notification/toast'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
@@ -17,6 +17,7 @@ export class LoadingSequence {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly i18n = resolve(I18N)
+	private readonly host = resolve(INode) as HTMLElement
 
 	public currentPhase = 1
 	public currentPhaseMessage = ''
@@ -24,7 +25,6 @@ export class LoadingSequence {
 
 	private nextRoute: string | null = null
 	private phaseTimer: number | null = null
-	private readonly FADE_DURATION_MS = 600
 
 	private get phases() {
 		return [
@@ -191,33 +191,48 @@ export class LoadingSequence {
 			if (this.phaseTimer === null) return
 			this.isPhaseVisible = false
 
-			this.phaseTimer = window.setTimeout(() => {
-				if (this.phaseTimer === null) return
-				this.currentPhase++
-				if (this.currentPhase <= this.phases.length) {
-					this.currentPhaseMessage = this.phases[this.currentPhase - 1].message
-					this.phaseTimer = window.setTimeout(() => {
-						if (this.phaseTimer === null) return
-						this.isPhaseVisible = true
-						this.scheduleNextPhase()
-					}, 50)
-				}
-			}, this.FADE_DURATION_MS)
+			// Use transitionend instead of setTimeout for fade duration
+			const messageEl = this.getMessageElement()
+			if (messageEl && !this.prefersReducedMotion()) {
+				messageEl.addEventListener(
+					'transitionend',
+					() => {
+						this.advancePhase()
+					},
+					{ once: true },
+				)
+			} else {
+				// Reduced motion or no element: advance immediately
+				this.advancePhase()
+			}
 		}, currentPhaseConfig.duration)
 	}
 
-	public getPhaseClass(): string {
-		return this.isPhaseVisible ? 'phase-visible' : ''
+	private advancePhase(): void {
+		if (this.phaseTimer === null) return
+		this.currentPhase++
+		if (this.currentPhase <= this.phases.length) {
+			this.currentPhaseMessage = this.phases[this.currentPhase - 1].message
+			this.phaseTimer = window.setTimeout(() => {
+				if (this.phaseTimer === null) return
+				this.isPhaseVisible = true
+				this.scheduleNextPhase()
+			}, 50)
+		}
 	}
 
-	public getStepDotClass(index: number): string {
+	private getMessageElement(): HTMLElement | null {
+		return this.host.querySelector('.loading-message')
+	}
+
+	private prefersReducedMotion(): boolean {
+		return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+	}
+
+	public getStepState(index: number): 'complete' | 'active' | '' {
 		const phase1Based = index + 1
-		if (phase1Based < this.currentPhase) {
-			return 'completed'
-		}
-		if (phase1Based === this.currentPhase) {
-			return 'active'
-		}
+		if (phase1Based < this.currentPhase) return 'complete'
+		if (phase1Based === this.currentPhase) return 'active'
 		return ''
 	}
 }

@@ -75,7 +75,7 @@
         <div class="artist-identity">
           <span
             class="[ artist-row-indicator ]"
-            style="background: ${artist.color}"
+            dot-color.bind="artist.color"
           ></span>
           <span class="[ artist-row-name ]">${artist.name}</span>
         </div>
@@ -110,8 +110,8 @@
         touchend.trigger="onGridTouchEnd()"
         touchcancel.trigger="onGridTouchEnd()"
         click.trigger="onGridLongPress(artist)"
-        class="grid-tile ${tileSpan(artist)}"
-        style="background: linear-gradient(135deg, ${artist.color}40, ${artist.color}10)"
+        class="grid-tile" data-span.bind="tileSpan(artist)"
+        tile-color.bind="artist.color"
       >
         <div class="grid-tile-overlay"></div>
         <div class="grid-tile-content">
@@ -142,7 +142,7 @@
           repeat.for="level of hypeLevels; key.bind: level"
           click.trigger="contextMenuSetLevel(level)"
           class="sheet-option-btn"
-          data-active.bind="contextMenuArtist.hype === level ? '' : null"
+          data-active.bind="contextMenuArtist.hype === level"
         >
           <span class="sheet-option-icon">${hypeMeta[level].icon}</span>
           <span class="sheet-option-label">${trHypeLabel(level)}</span>

@@ -6,12 +6,12 @@
 
 	<!-- Phase message -->
 	<div class="message-container">
-		<p class="loading-message ${getPhaseClass()}">${currentPhaseMessage}</p>
+		<p class="loading-message" data-visible.bind="isPhaseVisible">${currentPhaseMessage}</p>
 	</div>
 
 	<!-- Step dots progress indicator -->
 	<div class="step-dots">
-		<div repeat.for="i of totalPhases; key.bind: i" class="step-dot ${getStepDotClass(i)}"></div>
+		<div repeat.for="i of totalPhases; key.bind: i" class="step-dot" data-step-state.bind="getStepState(i)"></div>
 	</div>
 
 	<!-- Step label -->

@@ -65,7 +65,7 @@
           aria-checked.bind="notificationsEnabled"
           disabled.bind="!vapidAvailable"
           class="settings-row"
-          data-disabled.bind="!vapidAvailable ? '' : null"
+          data-disabled.bind="!vapidAvailable"
         >
           <div class="settings-toggle-col">
             <div class="settings-row-start">
@@ -78,8 +78,8 @@
             <span if.bind="!vapidAvailable" t="settings.notAvailable" class="settings-row-hint"></span>
           </div>
           <!-- Toggle switch -->
-          <div class="settings-toggle-track" data-on.bind="notificationsEnabled ? '' : null">
-            <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled ? '' : null"></div>
+          <div class="settings-toggle-track" data-on.bind="notificationsEnabled">
+            <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled"></div>
           </div>
         </button>
       </div>

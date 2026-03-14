@@ -7,8 +7,8 @@
     data-toast-id.bind="toast.id"
     role="status"
     class="toast-item"
-    data-severity="${toast.severity}"
-    data-state="${toast.visible ? 'entering' : 'exiting'}"
+    data-severity.bind="toast.severity"
+    data-state.bind="toastState(toast)"
   >
     <icon-ticket if.bind="toast.severity === 'info'"></icon-ticket>
     <svg if.bind="toast.severity === 'warning'" class="toast-icon" viewBox="0 0 20 20" fill="currentColor">

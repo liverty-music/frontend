@@ -1,50 +1,18 @@
 <template>
   <import from="./event-card.css"></import>
 
-  <!-- Home lane card -->
   <div
-    if.bind="lane === 'home'"
     data-live-card
-    data-lane="home"
+    data-lane.bind="lane"
     click.trigger="onClick()"
     artist-color.bind="event.artistName"
-    class="event-card hype-${event.hypeLevel}"
+    class="event-card"
+    data-hype.bind="event.hypeLevel"
   >
-    <span class="artist-name" style="font-size: clamp(12px, 5cqi, 24px)">
+    <span class="artist-name">
       ${event.artistName}
     </span>
-  </div>
-
-  <!-- Nearby lane card -->
-  <div
-    if.bind="lane === 'nearby'"
-    data-live-card
-    data-lane="nearby"
-    click.trigger="onClick()"
-    artist-color.bind="event.artistName"
-    class="event-card hype-${event.hypeLevel}"
-  >
-    <span class="artist-name" style="font-size: clamp(12px, 5cqi, 24px)">
-      ${event.artistName}
-    </span>
-    <span class="location-label">
-      ${event.locationLabel}
-    </span>
-  </div>
-
-  <!-- Away lane card -->
-  <div
-    if.bind="lane === 'away'"
-    data-live-card
-    data-lane="away"
-    click.trigger="onClick()"
-    artist-color.bind="event.artistName"
-    class="event-card hype-${event.hypeLevel}"
-  >
-    <span class="artist-name" style="font-size: clamp(12px, 5cqi, 24px)">
-      ${event.artistName}
-    </span>
-    <span class="location-label">
+    <span if.bind="lane !== 'home'" class="location-label">
       ${event.locationLabel}
     </span>
   </div>

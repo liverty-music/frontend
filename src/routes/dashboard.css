@@ -57,7 +57,7 @@
 
 			transition: filter 500ms;
 
-			&[data-blurred] {
+			&[data-blurred="true"] {
 				pointer-events: none;
 				overflow: hidden;
 				filter: blur(4px);
