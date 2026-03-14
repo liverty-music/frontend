@@ -123,6 +123,10 @@
 			color: var(--color-text-muted);
 		}
 
+		.detail-venue {
+			font-style: normal;
+		}
+
 		.detail-primary {
 			font-weight: 500;
 			color: var(--color-text-primary);

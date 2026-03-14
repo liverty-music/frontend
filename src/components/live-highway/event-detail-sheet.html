@@ -44,7 +44,7 @@
           <div class="detail-row">
             <span class="detail-icon"><icon-calendar></icon-calendar></span>
             <div>
-              <time datetime.bind="event.date" class="detail-primary">${event.date | date:'long'}</time>
+              <time datetime.bind="event.date.toISOString()" class="detail-primary">${event.date | date:'long'}</time>
               <p class="detail-secondary">
                 Open ${event.openTime || '—'} / Start ${event.startTime}
               </p>
