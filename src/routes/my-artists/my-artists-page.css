@@ -80,14 +80,10 @@
 		.state-center {
 			display: flex;
 			flex: 1;
-			align-items: center;
-			justify-content: center;
-		}
-
-		.state-content {
-			display: flex;
 			flex-direction: column;
 			align-items: center;
+			justify-content: center;
+
 			padding-inline: var(--space-m);
 		}
 
@@ -307,7 +303,8 @@
 			grid-row: span 2;
 		}
 
-		.grid-tile-overlay {
+		.grid-tile::before {
+			content: "";
 			position: absolute;
 			inset: 0;
 			background: linear-gradient(to top, var(--_black-60), transparent);

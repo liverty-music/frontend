@@ -2,18 +2,9 @@
 	@scope (welcome-page) {
 		:scope {
 			--_gradient-mid: var(--color-brand-primary);
-		}
 
-		.welcome-layout {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-
+			display: block;
 			block-size: 100%;
-			padding-block: var(--space-xl);
-			padding-inline: var(--space-m);
-
 			background: linear-gradient(
 				to bottom,
 				var(--color-surface-base),
@@ -22,9 +13,18 @@
 			);
 		}
 
-		.welcome-content {
-			inline-size: 100%;
+		.welcome-layout {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+
 			max-inline-size: 28rem;
+			block-size: 100%;
+			margin-inline: auto;
+			padding-block: var(--space-xl);
+			padding-inline: var(--space-m);
+
 			text-align: center;
 		}
 

@@ -14,37 +14,32 @@
 		}
 
 		.dashboard-stale-banner {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+
 			padding: var(--space-2xs) var(--space-s);
 			border-block-end: 1px solid
 				color-mix(in oklch, var(--_stale-bg) 20%, transparent);
+
+			font-size: var(--step--1);
+			color: color-mix(in oklch, var(--_stale-text) 80%, var(--color-white));
+
 			background: color-mix(in oklch, var(--_stale-bg) 30%, transparent);
+		}
 
-			& .dashboard-stale-content {
-				display: flex;
-				gap: var(--space-2xs);
-				align-items: center;
+		.dashboard-stale-icon {
+			flex-shrink: 0;
+			inline-size: 1rem;
+			block-size: 1rem;
+		}
 
-				font-size: var(--step--1);
-				color: color-mix(in oklch, var(--_stale-text) 80%, var(--color-white));
-			}
+		.dashboard-stale-retry {
+			text-decoration: underline;
+			transition: color 200ms;
 
-			& .dashboard-stale-icon {
-				flex-shrink: 0;
-				inline-size: 1rem;
-				block-size: 1rem;
-			}
-
-			& .dashboard-stale-retry {
-				text-decoration: underline;
-				transition: color 200ms;
-
-				&:hover {
-					color: color-mix(
-						in oklch,
-						var(--_stale-text) 90%,
-						var(--color-white)
-					);
-				}
+			&:hover {
+				color: color-mix(in oklch, var(--_stale-text) 90%, var(--color-white));
 			}
 		}
 

@@ -46,20 +46,18 @@
 
   <!-- Empty state -->
   <div if.bind="!isLoading && artists.length === 0" class="state-center">
-    <div class="state-content">
-      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 18V5l12-2v13"></path>
-        <circle cx="6" cy="18" r="3"></circle>
-        <circle cx="18" cy="16" r="3"></circle>
-      </svg>
-      <h2 t="myArtists.empty.title" class="empty-title"></h2>
-      <p t="myArtists.empty.subtitle" class="empty-subtitle"></p>
-      <button
-        click.trigger="goToDiscover()"
-        t="myArtists.empty.discoverButton"
-        class="discover-btn"
-      ></button>
-    </div>
+    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 18V5l12-2v13"></path>
+      <circle cx="6" cy="18" r="3"></circle>
+      <circle cx="18" cy="16" r="3"></circle>
+    </svg>
+    <h2 t="myArtists.empty.title" class="empty-title"></h2>
+    <p t="myArtists.empty.subtitle" class="empty-subtitle"></p>
+    <button
+      click.trigger="goToDiscover()"
+      t="myArtists.empty.discoverButton"
+      class="discover-btn"
+    ></button>
   </div>
 
   <!-- Artist list view -->
@@ -113,7 +111,6 @@
         class="grid-tile" data-span.bind="tileSpan(artist)"
         tile-color.bind="artist.color"
       >
-        <div class="grid-tile-overlay"></div>
         <div class="grid-tile-content">
           <div class="grid-tile-name">${artist.name}</div>
           <div class="grid-tile-hype">${hypeIcon(artist)}</div>
