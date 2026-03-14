@@ -103,11 +103,13 @@
 	}
 
 	/* Animation utility classes */
-	.animate-fade-slide-up {
+	.animate-fade-slide-up,
+	[data-animation="fade-slide-up"] {
 		animation: fade-slide-up 600ms ease-out both;
 	}
 
-	.animate-fade-slide-down {
+	.animate-fade-slide-down,
+	[data-animation="fade-slide-down"] {
 		animation: fade-slide-down 600ms ease-out both;
 	}
 
