@@ -1,4 +1,4 @@
-.PHONY: lint fix test test-layout test-layout-auth check
+.PHONY: lint lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-templates fix test test-layout test-layout-auth check
 
 ## lint: biome lint + format check + stylelint + typecheck (matches CI)
 lint:
@@ -24,6 +24,25 @@ test-layout:
 test-layout-auth:
 	npx playwright test --project=authenticated-mobile
 
-## check: full local pre-commit check (lint + test + layout)
+## lint-no-style: ban style attributes in templates (CSS owns presentation)
+lint-no-style:
+	! grep -rn 'style[.= ]' --include='*.html' src/
+
+## lint-no-class-ternary: ban class interpolation (use data-* instead)
+lint-no-class-ternary:
+	! grep -rn 'class="[^"]*$${' --include='*.html' src/
+
+## lint-no-data-interpolation: ban data-* interpolation (use .bind)
+lint-no-data-interpolation:
+	! grep -rn 'data-[a-z-]*="[^"]*$${' --include='*.html' src/
+
+## lint-no-bind-ternary: ban ternary in data-*.bind (pass state directly)
+lint-no-bind-ternary:
+	! grep -rn 'data-[a-z-]*\.bind="[^"]*?[^"]*"' --include='*.html' src/
+
+## lint-templates: all template lint rules
+lint-templates: lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary
+
+## check: full local pre-commit check (lint + test + layout + template rules)
 ## Note: test-layout-auth excluded — requires manual storageState capture
-check: lint test test-layout
+check: lint lint-templates test test-layout
