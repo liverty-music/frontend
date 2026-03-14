@@ -1,0 +1,8 @@
+<import from="./state-placeholder.css"></import>
+
+<div class="state-center">
+  <svg-icon if.bind="icon" name.bind="icon" size="xl" class="state-icon"></svg-icon>
+  <h2 if.bind="title" class="state-title">${title}</h2>
+  <p if.bind="description" class="state-desc">${description}</p>
+  <au-slot></au-slot>
+</div>
