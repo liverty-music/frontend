@@ -1,6 +1,6 @@
 <import from="./signup-prompt-banner.css"></import>
 
-<div if.bind="visible" class="[ signup-banner ]">
+<aside if.bind="visible" aria-label="Signup prompt" class="[ signup-banner ]">
   <span class="signup-banner-message">${message}</span>
   <button class="signup-banner-btn" click.trigger="onSignup()">アカウント作成</button>
-</div>
+</aside>

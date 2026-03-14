@@ -1,4 +1,4 @@
-<div class="auth-status-bar">
+<nav aria-label="Account" class="[ auth-status-bar ]">
   <div if.bind="auth.isAuthenticated" class="auth-status-bar">
     <span class="auth-user-name">${auth.user.profile.name || auth.user.profile.preferred_username || 'User'}</span>
     <button click.trigger="signOut()" class="auth-sign-out-btn">
@@ -10,4 +10,4 @@
       Sign In
     </button>
   </div>
-</div>
+</nav>

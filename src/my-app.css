@@ -7,8 +7,8 @@
 			block-size: 100dvh;
 		}
 
-		/* <main> passes through grid — semantic landmark without a layout box */
-		main {
+		/* Viewport wrapper passes through grid — routes own their <main> landmark */
+		.app-viewport {
 			display: contents;
 		}
 

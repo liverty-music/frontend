@@ -2,7 +2,7 @@
   <import from="./event-card"></import>
   <import from="./event-detail-sheet"></import>
 
-  <div event-selected.trigger="onEventSelected($event)" class="highway-layout">
+  <div event-selected.trigger="onEventSelected($event)" class="[ highway-layout ]">
     <!-- Loading state -->
     <div if.bind="loading" class="highway-loading">
       <p class="highway-loading-text">Loading events...</p>
@@ -17,7 +17,7 @@
     <!-- Highway layout -->
     <template if.bind="!loading && !isEmpty">
       <!-- Stage header (outside scroll container — no sticky/z-index needed) -->
-      <div class="stage-header">
+      <header class="[ stage-header ]">
         <div data-stage-home class="stage-label">
           <span class="stage-label-text">HOME STAGE</span>
         </div>
@@ -27,14 +27,14 @@
         <div data-stage-away class="stage-label">
           <span class="stage-label-text">AWAY STAGE</span>
         </div>
-      </div>
+      </header>
 
       <div class="highway-scroll">
         <div repeat.for="group of dateGroups; key.bind: group.dateKey">
           <!-- Sticky date separator -->
-          <div class="date-separator">
+          <header class="[ date-separator ]">
             <span class="date-separator-text">${group.label}</span>
-          </div>
+          </header>
 
           <!-- Three-lane grid -->
           <div class="lane-grid">
