@@ -1,12 +1,10 @@
 <main class="[ callback-layout ]">
-  <div class="callback-content">
-    <div if.bind="!error" class="callback-loading">
-      <div class="callback-spinner"></div>
-      <div class="callback-status">Verifying authentication...</div>
-    </div>
-    <div if.bind="error" class="callback-error">${error}</div>
-    <a if.bind="error" href="/" class="callback-home-link"
-      >Return Home</a
-    >
+  <div if.bind="!error" class="callback-loading">
+    <div class="callback-spinner"></div>
+    <div class="callback-status">Verifying authentication...</div>
   </div>
+  <div if.bind="error" class="callback-error">${error}</div>
+  <a if.bind="error" href="/" class="callback-home-link"
+    >Return Home</a
+  >
 </main>

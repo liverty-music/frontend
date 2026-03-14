@@ -25,7 +25,7 @@
 			align-items: flex-start;
 		}
 
-		.prompt-icon-wrap {
+		.prompt-icon {
 			flex-shrink: 0;
 			inline-size: 1.25rem;
 			block-size: 1.25rem;

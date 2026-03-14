@@ -10,13 +10,11 @@
 			justify-content: center;
 
 			block-size: 100%;
+			padding-inline: var(--space-m);
+
+			text-align: center;
 
 			background: var(--color-surface-base);
-		}
-
-		.callback-content {
-			padding-inline: var(--space-m);
-			text-align: center;
 		}
 
 		.callback-loading {

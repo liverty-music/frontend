@@ -8,34 +8,28 @@
 
   <!-- Loading state -->
   <div if.bind="isLoading" class="state-center">
-    <div class="state-content">
-      <div class="spinner"></div>
-      <p class="state-text">Loading tickets...</p>
-    </div>
+    <div class="spinner"></div>
+    <p class="state-text">Loading tickets...</p>
   </div>
 
   <!-- Error state -->
   <div if.bind="!isLoading && error" class="state-center">
-    <div class="state-content">
-      <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      <p class="state-text">${error}</p>
-    </div>
+    <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <p class="state-text">${error}</p>
   </div>
 
   <!-- Empty state -->
   <div if.bind="!isLoading && !error && tickets.length === 0" class="state-center">
-    <div class="state-content">
-      <svg class="state-icon state-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
-        <path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path>
-      </svg>
-      <h2 class="state-title">No tickets yet</h2>
-      <p class="state-desc">Your soulbound tickets will appear here once minted for an event.</p>
-    </div>
+    <svg class="state-icon state-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+      <path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path>
+    </svg>
+    <h2 class="state-title">No tickets yet</h2>
+    <p class="state-desc">Your soulbound tickets will appear here once minted for an event.</p>
   </div>
 
   <!-- Ticket list -->

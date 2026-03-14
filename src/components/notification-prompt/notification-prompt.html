@@ -3,39 +3,35 @@
     class="[ prompt-popover ]" data-animation.bind="animationState">
 
     <!-- Default permission state -->
-    <div show.bind="notificationManager.permission === 'default'" aria-live="polite">
-      <div class="prompt-row">
-        <div class="prompt-emoji" aria-hidden="true">🔔</div>
-        <div class="prompt-body">
-          <p t="notification.title" class="prompt-title"></p>
-          <p t="notification.description" class="prompt-desc"></p>
-          <div class="prompt-actions">
-            <button click.trigger="dismiss()"
-              t="notification.notNow"
-              class="prompt-btn-secondary">
-            </button>
-            <button click.trigger="enable()" disabled.bind="isLoading"
-              class="prompt-btn-primary">
-              <span if.bind="isLoading" t="notification.enabling"></span>
-              <span if.bind="!isLoading" t="notification.enable"></span>
-            </button>
-          </div>
+    <div show.bind="notificationManager.permission === 'default'" class="prompt-row" aria-live="polite">
+      <div class="prompt-emoji" aria-hidden="true">🔔</div>
+      <div class="prompt-body">
+        <p t="notification.title" class="prompt-title"></p>
+        <p t="notification.description" class="prompt-desc"></p>
+        <div class="prompt-actions">
+          <button click.trigger="dismiss()"
+            t="notification.notNow"
+            class="prompt-btn-secondary">
+          </button>
+          <button click.trigger="enable()" disabled.bind="isLoading"
+            class="prompt-btn-primary">
+            <span if.bind="isLoading" t="notification.enabling"></span>
+            <span if.bind="!isLoading" t="notification.enable"></span>
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Denied permission state -->
-    <div show.bind="notificationManager.permission === 'denied'" aria-live="polite">
-      <div class="prompt-row">
-        <div class="prompt-emoji" aria-hidden="true">🔕</div>
-        <div class="prompt-body">
-          <p t="notification.blocked.title" class="prompt-title"></p>
-          <p t="notification.blocked.description" class="prompt-desc"></p>
-          <button click.trigger="dismiss()"
-            t="notification.blocked.dismiss"
-            class="prompt-btn-secondary">
-          </button>
-        </div>
+    <div show.bind="notificationManager.permission === 'denied'" class="prompt-row" aria-live="polite">
+      <div class="prompt-emoji" aria-hidden="true">🔕</div>
+      <div class="prompt-body">
+        <p t="notification.blocked.title" class="prompt-title"></p>
+        <p t="notification.blocked.description" class="prompt-desc"></p>
+        <button click.trigger="dismiss()"
+          t="notification.blocked.dismiss"
+          class="prompt-btn-secondary">
+        </button>
       </div>
     </div>
   </div>

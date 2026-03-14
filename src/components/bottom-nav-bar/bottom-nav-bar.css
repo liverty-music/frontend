@@ -6,16 +6,15 @@
 		}
 
 		.nav-bar {
-			padding-block-end: var(--_safe-area-bottom);
-			border-block-start: 1px solid var(--color-border-subtle);
-			background: var(--color-surface-raised);
-		}
-
-		.nav-bar-inner {
 			display: flex;
 			align-items: center;
 			justify-content: space-around;
+
 			block-size: 3.5rem;
+			padding-block-end: var(--_safe-area-bottom);
+			border-block-start: 1px solid var(--color-border-subtle);
+
+			background: var(--color-surface-raised);
 		}
 
 		.nav-tab {
