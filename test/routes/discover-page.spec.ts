@@ -681,27 +681,27 @@ describe('DiscoverPage', () => {
 		})
 	})
 
-	describe('guidanceMessage', () => {
-		it('should return start message when no artists followed during onboarding', () => {
+	describe('onboarding popover', () => {
+		it('should call showPopover on attach when onboarding', () => {
 			mockOnboarding.isOnboarding = true
-			mockLocalClient.followedCount = 0
+			const mockPopover = { showPopover: vi.fn() }
+			sut.onboardingGuide = mockPopover as any
 
-			const msg = sut.guidanceMessage
-			expect(msg).toBeTruthy()
+			sut.attached()
+
+			expect(mockPopover.showPopover).toHaveBeenCalledTimes(1)
+			sut.detaching()
 		})
 
-		it('should return empty when not onboarding', () => {
+		it('should not call showPopover when not onboarding', () => {
 			mockOnboarding.isOnboarding = false
-			expect(sut.guidanceMessage).toBe('')
-		})
+			const mockPopover = { showPopover: vi.fn() }
+			sut.onboardingGuide = mockPopover as any
 
-		it('TC-GATE-03: should show "no upcoming events" when all searches complete with no concerts', () => {
-			mockOnboarding.isOnboarding = true
-			mockLocalClient.followedCount = 3
-			sut.completedSearchCount = 3
-			sut.concertGroupCount = 0
+			sut.attached()
 
-			expect(sut.guidanceMessage).toBe('discovery.guidanceNoConcerts')
+			expect(mockPopover.showPopover).not.toHaveBeenCalled()
+			sut.detaching()
 		})
 	})
 

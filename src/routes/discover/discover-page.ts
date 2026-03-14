@@ -63,11 +63,9 @@ export class DiscoverPage {
 	public isSearching = false
 	private isLoadingBubbles = false
 	private searchDebounceTimer = 0
-	private guidanceDismissTimer = 0
 	private abortController = new AbortController()
 
-	public showGuidance = true
-	public guidanceHiding = false
+	public onboardingGuide!: HTMLElement
 
 	// Concert search status tracking for dashboard coach mark
 	private readonly concertSearchStatus = new Map<string, 'pending' | 'done'>()
@@ -140,19 +138,6 @@ export class DiscoverPage {
 		}
 	}
 
-	public get guidanceMessage(): string {
-		if (!this.isOnboarding) return ''
-		const count = this.followedCount
-		if (count === 0) return this.i18n.tr('discovery.guidanceStart')
-		const remaining = DiscoverPage.TUTORIAL_FOLLOW_TARGET - count
-		if (remaining >= 2)
-			return this.i18n.tr('discovery.guidanceRemaining', { remaining })
-		if (remaining === 1) return this.i18n.tr('discovery.guidanceLast')
-		if (this.allSearchesComplete && this.concertGroupCount === 0)
-			return this.i18n.tr('discovery.guidanceNoConcerts')
-		return this.i18n.tr('discovery.guidanceReady')
-	}
-
 	public async loading(): Promise<void> {
 		this.logger.info('Loading discover page')
 		try {
@@ -177,13 +162,16 @@ export class DiscoverPage {
 
 	public attached(): void {
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
+
+		if (this.isOnboarding && this.onboardingGuide) {
+			this.onboardingGuide.showPopover()
+		}
 	}
 
 	public detaching(): void {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		window.clearTimeout(this.searchDebounceTimer)
-		window.clearTimeout(this.guidanceDismissTimer)
 		for (const t of this.searchTimeouts) window.clearTimeout(t)
 		this.searchTimeouts.clear()
 	}
@@ -299,8 +287,6 @@ export class DiscoverPage {
 		this.logger.info('Artist selected from bubbles', {
 			artist: artist.name,
 		})
-
-		this.dismissGuidance()
 
 		try {
 			await this.followArtist(artist, position)
@@ -419,15 +405,6 @@ export class DiscoverPage {
 
 	public isArtistFollowed(artistId: string): boolean {
 		return this.pool.isFollowed(artistId)
-	}
-
-	private dismissGuidance(): void {
-		if (!this.showGuidance || this.guidanceHiding) return
-		this.guidanceHiding = true
-		this.guidanceDismissTimer = window.setTimeout(() => {
-			this.showGuidance = false
-			this.guidanceHiding = false
-		}, 400)
 	}
 
 	public onCoachMarkTap(): void {

@@ -183,12 +183,7 @@
 		"coachMark": {
 			"viewTimetable": "タイムテーブルを見てみよう！"
 		},
-		"guidance": "バブルをタップしてアーティストをフォロー",
-		"guidanceStart": "好きなアーティストを3組タップしよう！",
-		"guidanceRemaining": "いいね！あと{{remaining}}組！",
-		"guidanceLast": "あと1組！",
-		"guidanceReady": "準備完了！",
-		"guidanceNoConcerts": "まだライブ情報が見つかりません。もっとアーティストをフォローしてみよう！",
+		"popoverGuide": "ライブ情報を追いかけたいアーティストをタップしてフォローしよう",
 		"generateDashboard": "👉 ダッシュボードを生成する",
 		"viewSchedule": "ライブスケジュールを見る（{{count}}アーティスト）",
 		"orbLabel": "Music DNA",

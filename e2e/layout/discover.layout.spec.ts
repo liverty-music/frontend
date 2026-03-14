@@ -134,6 +134,37 @@ test.describe('Discover page layout', () => {
 		expect(chipsBox!.y).toBeLessThan(bubbleBox!.y)
 	})
 
+	test('search-icon has explicit size and flex-shrink: 0 (D10a)', async ({
+		discoverLayoutPage: page,
+	}) => {
+		const icon = page.locator('.search-icon')
+		const styles = await icon.evaluate((el) => {
+			const cs = getComputedStyle(el)
+			return {
+				flexShrink: cs.flexShrink,
+				width: el.getBoundingClientRect().width,
+				height: el.getBoundingClientRect().height,
+			}
+		})
+		expect(styles.flexShrink).toBe('0')
+		expect(styles.width).toBeGreaterThan(0)
+		expect(styles.height).toBeGreaterThan(0)
+		// Should not exceed 30px (compact icon)
+		expect(styles.width).toBeLessThanOrEqual(30)
+		expect(styles.height).toBeLessThanOrEqual(30)
+	})
+
+	test('discover-layout uses 3-row grid (D10b)', async ({
+		discoverLayoutPage: page,
+	}) => {
+		const rows = await page.locator('.discover-layout').evaluate((el) => {
+			return getComputedStyle(el).gridTemplateRows
+		})
+		// Should have exactly 3 row tracks (auto auto 1fr resolves to specific px values)
+		const trackCount = rows.split(/\s+/).length
+		expect(trackCount).toBe(3)
+	})
+
 	test('all grid children contained within discover-layout (D10)', async ({
 		discoverLayoutPage: page,
 	}) => {

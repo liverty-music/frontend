@@ -201,6 +201,24 @@ test.describe('Onboarding tutorial flow', () => {
 		).toBeVisible()
 	})
 
+	test('Step 1: Popover guide appears on discover page entry', async ({
+		page,
+	}) => {
+		await page.addInitScript(() => {
+			localStorage.setItem('onboardingStep', '1')
+		})
+		await page.goto('http://localhost:9000/discover')
+		await page.waitForSelector('.discover-layout')
+
+		// Popover guide should be visible
+		const popover = page.locator('.onboarding-guide')
+		await expect(popover).toBeVisible({ timeout: 5000 })
+
+		// Light-dismiss: clicking outside should close the popover
+		await page.locator('.bubble-area').click({ position: { x: 10, y: 10 } })
+		await expect(popover).not.toBeVisible({ timeout: 3000 })
+	})
+
 	test('Step 0 → Step 1: Get Started navigates to Discover', async ({
 		page,
 	}) => {
@@ -434,12 +452,9 @@ test.describe('Onboarding tutorial flow', () => {
 		const spotlight = page.locator('.visual-spotlight')
 		await expect(spotlight).toHaveCount(0)
 
-		// Guidance message should show the "no upcoming events" text
-		const guidance = page.locator('.guidance-hud')
-		if ((await guidance.count()) > 0) {
-			const text = await guidance.textContent()
-			expect(text).toBeTruthy()
-		}
+		// No onboarding HUD or popover guide should remain
+		const popoverGuide = page.locator('.onboarding-guide')
+		await expect(popoverGuide).toHaveCount(0)
 	})
 
 	test('Spotlight is visible when coach mark is active', async ({ page }) => {

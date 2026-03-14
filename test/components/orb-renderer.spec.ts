@@ -50,6 +50,64 @@ describe('OrbRenderer', () => {
 		})
 	})
 
+	describe('setFollowCount / baseIntensity', () => {
+		it('should return 0 for count 0', () => {
+			const renderer = createRenderer()
+			renderer.setFollowCount(0)
+			expect(renderer.baseIntensity).toBe(0)
+		})
+
+		it('should follow diminishing-returns curve 1 - 1/(1 + count*0.5)', () => {
+			const renderer = createRenderer()
+
+			renderer.setFollowCount(1)
+			expect(renderer.baseIntensity).toBeCloseTo(1 - 1 / 1.5, 10)
+
+			renderer.setFollowCount(2)
+			expect(renderer.baseIntensity).toBeCloseTo(1 - 1 / 2, 10)
+
+			renderer.setFollowCount(5)
+			expect(renderer.baseIntensity).toBeCloseTo(1 - 1 / 3.5, 10)
+
+			renderer.setFollowCount(10)
+			expect(renderer.baseIntensity).toBeCloseTo(1 - 1 / 6, 10)
+		})
+
+		it('should asymptotically approach 1 for large counts', () => {
+			const renderer = createRenderer()
+			renderer.setFollowCount(100)
+			expect(renderer.baseIntensity).toBeGreaterThan(0.95)
+			expect(renderer.baseIntensity).toBeLessThan(1)
+		})
+
+		it('should influence swirlMultiplier in update()', () => {
+			const renderer = createRenderer()
+
+			// Without baseIntensity, particles move at base speed
+			const p0Angle = (
+				renderer as unknown as { particles: { angle: number }[] }
+			).particles[0].angle
+			renderer.update(100)
+			const deltaNoBase =
+				(renderer as unknown as { particles: { angle: number }[] }).particles[0]
+					.angle - p0Angle
+
+			// Reset and apply baseIntensity
+			const renderer2 = createRenderer()
+			renderer2.setFollowCount(5)
+			const p0Angle2 = (
+				renderer2 as unknown as { particles: { angle: number }[] }
+			).particles[0].angle
+			renderer2.update(100)
+			const deltaWithBase =
+				(renderer2 as unknown as { particles: { angle: number }[] })
+					.particles[0].angle - p0Angle2
+
+			// With baseIntensity, particles should move faster
+			expect(Math.abs(deltaWithBase)).toBeGreaterThan(Math.abs(deltaNoBase))
+		})
+	})
+
 	describe('multiple rapid injectColor calls', () => {
 		it('should inject each hue and restart swirl', () => {
 			const renderer = createRenderer()

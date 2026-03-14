@@ -44,11 +44,14 @@
       </button>
     </div>
 
-    <!-- Onboarding guidance (visible only during onboarding) -->
-    <div show.bind="isOnboarding" class="onboarding-hud">
-      <p class="hud-message" data-hiding.bind="guidanceHiding">
-        ${guidanceMessage}
-      </p>
+    <!-- Onboarding popover guide (shown once on entry) -->
+    <div
+      if.bind="isOnboarding"
+      class="onboarding-guide"
+      popover="auto"
+      ref="onboardingGuide"
+    >
+      ${i18n.tr('discovery.popoverGuide')}
     </div>
 
     <!-- Bubble UI (hidden during search) -->

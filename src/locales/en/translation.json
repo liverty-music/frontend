@@ -183,12 +183,7 @@
 		"coachMark": {
 			"viewTimetable": "Check out your timetable!"
 		},
-		"guidance": "Tap bubbles to follow artists",
-		"guidanceStart": "Tap 3 of your favorite artists!",
-		"guidanceRemaining": "Nice! {{remaining}} more to go!",
-		"guidanceLast": "Just 1 more!",
-		"guidanceReady": "All set!",
-		"guidanceNoConcerts": "No upcoming events found yet — try following more artists!",
+		"popoverGuide": "Tap artists you want to follow to get their live concert updates",
 		"generateDashboard": "👉 Generate Dashboard",
 		"viewSchedule": "View Live Schedule ({{count}} artists)",
 		"orbLabel": "Music DNA",

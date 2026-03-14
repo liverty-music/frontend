@@ -1,4 +1,4 @@
-import { INode, bindable, resolve } from 'aurelia'
+import { bindable, INode, resolve } from 'aurelia'
 
 export class SignupPromptBanner {
 	@bindable public message = '\u{1F514} 通知を有効にするには'
