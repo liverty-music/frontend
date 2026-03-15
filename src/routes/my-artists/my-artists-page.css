@@ -9,11 +9,20 @@
 			--_danger-10: oklch(60% 0.2 25deg / 10%);
 			--_pad-btn: var(--space-2xs);
 			--_radius-sm: var(--radius-sm);
+
+			display: grid;
+			grid-template-areas:
+				"header"
+				"main";
+			grid-template-rows: auto 1fr;
+
+			block-size: 100%;
+			min-block-size: 0;
 		}
 
 		.page-header {
 			display: flex;
-			flex-shrink: 0;
+			grid-area: header;
 			gap: var(--space-3xs);
 			align-items: center;
 
@@ -38,7 +47,7 @@
 		main {
 			overflow: hidden;
 			display: flex;
-			flex: 1;
+			grid-area: main;
 			flex-direction: column;
 
 			min-block-size: 0;

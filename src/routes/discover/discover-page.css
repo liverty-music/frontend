@@ -81,6 +81,13 @@
 					oklch(100% 0 0deg / 20%),
 					transparent
 				);
+
+			display: grid;
+			grid-template-areas: "main";
+			grid-template-rows: 1fr;
+
+			block-size: 100%;
+			min-block-size: 0;
 		}
 
 		.discover-layout {
@@ -89,6 +96,7 @@
 
 			overflow: hidden;
 			display: grid;
+			grid-area: main;
 			grid-template-rows: auto auto 1fr;
 
 			inline-size: 100%;
@@ -374,6 +382,8 @@
 				oklch(60.6% 0.219 293deg / 15%)
 			);
 
+			translate: 0 1rem;
+
 			margin: auto;
 			padding: var(--space-s) var(--space-l);
 			border: 1px solid var(--_purple-25);
@@ -385,10 +395,8 @@
 			color: var(--_white-90);
 			text-align: center;
 
-			background: var(--_guide-bg);
-
-			translate: 0 1rem;
 			opacity: 0;
+			background: var(--_guide-bg);
 			backdrop-filter: blur(12px);
 
 			transition:

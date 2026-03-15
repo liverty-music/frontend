@@ -9,6 +9,8 @@
 		}
 
 		.error-dialog {
+			pointer-events: auto;
+
 			position: fixed;
 			inset: 0;
 
@@ -19,7 +21,6 @@
 			border: none;
 
 			background: transparent;
-			pointer-events: auto;
 
 			&::backdrop {
 				background: color-mix(

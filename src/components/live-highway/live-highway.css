@@ -5,6 +5,10 @@
 			--_border-faint: oklch(100% 0 0deg / 5%);
 			--_date-bg: oklch(from var(--color-surface-raised) l c h / 90%);
 			--_muted-faint: oklch(from var(--color-text-muted) l c h / 30%);
+
+			display: block;
+			block-size: 100%;
+			min-block-size: 0;
 		}
 
 		.highway-layout {
