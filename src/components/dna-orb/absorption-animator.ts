@@ -1,3 +1,8 @@
+interface TrailPoint {
+	x: number
+	y: number
+}
+
 interface AbsorptionAnimation {
 	artistId: string
 	artistName: string
@@ -11,6 +16,7 @@ interface AbsorptionAnimation {
 	dissolved: boolean
 	hue: number
 	onComplete?: (hue: number) => void
+	trailPoints: TrailPoint[]
 }
 
 interface DissolveParticle {
@@ -26,13 +32,14 @@ interface DissolveParticle {
 }
 
 const POOL_SIZE = 60
+const MAX_TRAIL_LENGTH = 12
 
 export class AbsorptionAnimator {
 	private animations: AbsorptionAnimation[] = []
 	private particlePool: DissolveParticle[] = []
+	public cometTrailEnabled = false
 
 	constructor() {
-		// Pre-allocate particle pool to avoid GC pressure
 		for (let i = 0; i < POOL_SIZE; i++) {
 			this.particlePool.push({
 				x: 0,
@@ -50,6 +57,15 @@ export class AbsorptionAnimator {
 
 	public get isAnimating(): boolean {
 		return this.animations.length > 0 || this.particlePool.some((p) => p.active)
+	}
+
+	public getTrailLength(index: number): number {
+		const anim = this.animations[index]
+		return anim ? anim.trailPoints.length : 0
+	}
+
+	public get animationCount(): number {
+		return this.animations.length
 	}
 
 	public startAbsorption(
@@ -77,6 +93,7 @@ export class AbsorptionAnimator {
 			dissolved: false,
 			hue,
 			onComplete,
+			trailPoints: [],
 		})
 	}
 
@@ -84,6 +101,21 @@ export class AbsorptionAnimator {
 		for (let i = this.animations.length - 1; i >= 0; i--) {
 			const anim = this.animations[i]
 			anim.progress = Math.min(1, anim.progress + delta * 0.0015)
+
+			// Record trail point
+			if (this.cometTrailEnabled) {
+				const t = easeInCubic(anim.progress)
+				const cpX =
+					(anim.startX + anim.endX) / 2 + (anim.startX - anim.endX) * 0.3
+				const cpY = Math.min(anim.startY, anim.endY) - 80
+				const x = bezierPoint(anim.startX, cpX, anim.endX, t)
+				const y = bezierPoint(anim.startY, cpY, anim.endY, t)
+
+				anim.trailPoints.push({ x, y })
+				if (anim.trailPoints.length > MAX_TRAIL_LENGTH) {
+					anim.trailPoints.shift()
+				}
+			}
 
 			if (anim.progress >= 0.85 && !anim.dissolved) {
 				anim.dissolved = true
@@ -114,7 +146,6 @@ export class AbsorptionAnimator {
 		for (const anim of this.animations) {
 			const t = easeInCubic(anim.progress)
 
-			// Bezier curve path: start -> control point (above midpoint) -> end
 			const cpX =
 				(anim.startX + anim.endX) / 2 + (anim.startX - anim.endX) * 0.3
 			const cpY = Math.min(anim.startY, anim.endY) - 80
@@ -126,13 +157,33 @@ export class AbsorptionAnimator {
 			const radius = anim.radius * scale
 			const opacity = 1 - easeInCubic(Math.max(0, (anim.progress - 0.7) / 0.3))
 
+			// Comet trail
+			if (this.cometTrailEnabled && anim.trailPoints.length > 1) {
+				const points = anim.trailPoints
+				for (let j = 0; j < points.length - 1; j++) {
+					const ratio = j / (points.length - 1)
+					const lineWidth = 1 + ratio * 3
+					const lineOpacity = 0.05 + ratio * 0.65
+
+					ctx.save()
+					ctx.strokeStyle = `hsla(${anim.hue}, 80%, 70%, ${lineOpacity})`
+					ctx.lineWidth = lineWidth
+					ctx.lineCap = 'round'
+					ctx.beginPath()
+					ctx.moveTo(points[j].x, points[j].y)
+					ctx.lineTo(points[j + 1].x, points[j + 1].y)
+					ctx.stroke()
+					ctx.restore()
+				}
+			}
+
 			ctx.save()
 			ctx.globalAlpha = opacity
 
-			// Bubble trail
+			// Bubble trail glow
 			const trailGrad = ctx.createRadialGradient(x, y, 0, x, y, radius * 1.5)
-			trailGrad.addColorStop(0, 'hsla(260, 80%, 70%, 0.3)')
-			trailGrad.addColorStop(1, 'hsla(260, 80%, 70%, 0)')
+			trailGrad.addColorStop(0, `hsla(${anim.hue}, 80%, 70%, 0.3)`)
+			trailGrad.addColorStop(1, `hsla(${anim.hue}, 80%, 70%, 0)`)
 			ctx.fillStyle = trailGrad
 			ctx.beginPath()
 			ctx.arc(x, y, radius * 1.5, 0, Math.PI * 2)
@@ -147,8 +198,8 @@ export class AbsorptionAnimator {
 				y,
 				radius,
 			)
-			grad.addColorStop(0, 'hsla(260, 70%, 80%, 0.9)')
-			grad.addColorStop(1, 'hsla(250, 60%, 50%, 0.7)')
+			grad.addColorStop(0, `hsla(${anim.hue}, 70%, 80%, 0.9)`)
+			grad.addColorStop(1, `hsla(${(anim.hue + 20) % 360}, 60%, 50%, 0.7)`)
 			ctx.fillStyle = grad
 			ctx.beginPath()
 			ctx.arc(x, y, radius, 0, Math.PI * 2)
@@ -166,7 +217,7 @@ export class AbsorptionAnimator {
 			ctx.restore()
 		}
 
-		// Dissolve particles (from pool)
+		// Dissolve particles
 		for (const p of this.particlePool) {
 			if (!p.active) continue
 			ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${p.opacity})`
