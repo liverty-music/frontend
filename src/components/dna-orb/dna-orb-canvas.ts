@@ -352,6 +352,9 @@ export class DnaOrbCanvas {
 
 		// Layer 7: Shockwave rings
 		this.orbRenderer.renderShockwaves(this.ctx)
+
+		// Layer 8: Strobe flash (single-frame overlay, self-clearing)
+		this.orbRenderer.renderStrobeFlash(this.ctx)
 	}
 
 	private artistHue(name: string): number {
