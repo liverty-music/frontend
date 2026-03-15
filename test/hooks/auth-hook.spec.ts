@@ -28,7 +28,7 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	STEP_ROUTE_MAP: {
 		0: '',
 		1: 'discover',
-		2: 'onboarding/loading',
+		2: 'dashboard',
 		3: 'dashboard',
 		4: 'dashboard',
 		5: 'my-artists',
