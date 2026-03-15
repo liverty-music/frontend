@@ -30,7 +30,7 @@
 
 ```
 src/
-  my-app.ts / .html          # Shell component + route definitions
+  app-shell.ts / .html       # Shell component + route definitions
   main.ts                     # Aurelia bootstrap + DI registrations
   routes/
     auth-callback.ts / .html  # OAuth callback handler

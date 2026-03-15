@@ -36,13 +36,9 @@
 			}
 		}
 
-		.dashboard-body {
-			display: flex;
+		.dashboard-main {
 			flex: 1;
-			flex-direction: column;
-
 			min-block-size: 0;
-
 			transition: filter 500ms;
 
 			&[data-blurred="true"] {
@@ -50,11 +46,6 @@
 				overflow: hidden;
 				filter: blur(4px);
 			}
-		}
-
-		.dashboard-promise-slot {
-			flex: 1;
-			min-block-size: 0;
 		}
 
 		.dashboard-empty-title {

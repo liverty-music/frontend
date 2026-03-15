@@ -1,126 +1,128 @@
 <import from="../../components/user-home-selector/user-home-selector"></import>
 
-<page-shell title-key="settings.title">
-  <div class="settings-body">
-    <!-- PREFERENCES Section -->
-    <section>
-      <h2 t="settings.preferences" class="settings-section-title"></h2>
-      <div class="settings-card">
-        <!-- My Home Area -->
-        <button
-          click.trigger="openHomeSelector()"
-          class="settings-row"
-        >
+<header class="[ page-header ]">
+  <h1 t="settings.title"></h1>
+</header>
+
+<main>
+  <!-- PREFERENCES Section -->
+  <section>
+    <h2 t="settings.preferences" class="settings-section-title"></h2>
+    <div class="settings-card">
+      <!-- My Home Area -->
+      <button
+        click.trigger="openHomeSelector()"
+        class="settings-row"
+      >
+        <div class="settings-row-start">
+          <svg-icon name="map-pin" class="settings-icon"></svg-icon>
+          <span t="settings.myHomeArea" class="settings-row-label"></span>
+        </div>
+        <div class="settings-row-end">
+          <span class="settings-row-value">${currentHomeDisplay}</span>
+          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+        </div>
+      </button>
+
+      <hr class="[ settings-divider ]">
+
+      <!-- Language -->
+      <button
+        click.trigger="cycleLanguage()"
+        class="settings-row"
+      >
+        <div class="settings-row-start">
+          <svg-icon name="globe" class="settings-icon"></svg-icon>
+          <span t="settings.language" class="settings-row-label"></span>
+        </div>
+        <div class="settings-row-end">
+          <span class="settings-row-value">${currentLanguageLabel}</span>
+          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+        </div>
+      </button>
+
+      <hr class="[ settings-divider ]">
+
+      <!-- Push Notifications -->
+      <button
+        click.trigger="toggleNotifications()"
+        role="switch"
+        aria-checked.bind="notificationsEnabled"
+        disabled.bind="!vapidAvailable"
+        class="settings-row"
+        data-disabled.bind="!vapidAvailable"
+      >
+        <div class="settings-toggle-col">
           <div class="settings-row-start">
-            <svg-icon name="map-pin" class="settings-icon"></svg-icon>
-            <span t="settings.myHomeArea" class="settings-row-label"></span>
+            <svg-icon name="bell" class="settings-icon"></svg-icon>
+            <span t="settings.pushNotifications" class="settings-row-label"></span>
           </div>
-          <div class="settings-row-end">
-            <span class="settings-row-value">${currentHomeDisplay}</span>
-            <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-          </div>
-        </button>
+          <span if.bind="!vapidAvailable" t="settings.notAvailable" class="settings-row-hint"></span>
+        </div>
+        <!-- Toggle switch -->
+        <div class="settings-toggle-track" data-on.bind="notificationsEnabled">
+          <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled"></div>
+        </div>
+      </button>
+    </div>
+  </section>
 
-        <hr class="[ settings-divider ]">
+  <!-- ABOUT Section -->
+  <section>
+    <h2 t="settings.about" class="settings-section-title"></h2>
+    <div class="settings-card">
+      <!-- Terms of Service -->
+      <a
+        href="https://liverty.me/terms"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="settings-row"
+      >
+        <span t="settings.termsOfService" class="settings-row-label"></span>
+        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+      </a>
 
-        <!-- Language -->
-        <button
-          click.trigger="cycleLanguage()"
-          class="settings-row"
-        >
-          <div class="settings-row-start">
-            <svg-icon name="globe" class="settings-icon"></svg-icon>
-            <span t="settings.language" class="settings-row-label"></span>
-          </div>
-          <div class="settings-row-end">
-            <span class="settings-row-value">${currentLanguageLabel}</span>
-            <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-          </div>
-        </button>
+      <hr class="[ settings-divider ]">
 
-        <hr class="[ settings-divider ]">
+      <!-- Privacy Policy -->
+      <a
+        href="https://liverty.me/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="settings-row"
+      >
+        <span t="settings.privacyPolicy" class="settings-row-label"></span>
+        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+      </a>
 
-        <!-- Push Notifications -->
-        <button
-          click.trigger="toggleNotifications()"
-          role="switch"
-          aria-checked.bind="notificationsEnabled"
-          disabled.bind="!vapidAvailable"
-          class="settings-row"
-          data-disabled.bind="!vapidAvailable"
-        >
-          <div class="settings-toggle-col">
-            <div class="settings-row-start">
-              <svg-icon name="bell" class="settings-icon"></svg-icon>
-              <span t="settings.pushNotifications" class="settings-row-label"></span>
-            </div>
-            <span if.bind="!vapidAvailable" t="settings.notAvailable" class="settings-row-hint"></span>
-          </div>
-          <!-- Toggle switch -->
-          <div class="settings-toggle-track" data-on.bind="notificationsEnabled">
-            <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled"></div>
-          </div>
-        </button>
-      </div>
-    </section>
+      <hr class="[ settings-divider ]">
 
-    <!-- ABOUT Section -->
-    <section>
-      <h2 t="settings.about" class="settings-section-title"></h2>
-      <div class="settings-card">
-        <!-- Terms of Service -->
-        <a
-          href="https://liverty.me/terms"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="settings-row"
-        >
-          <span t="settings.termsOfService" class="settings-row-label"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </a>
+      <!-- OSS Licenses -->
+      <a
+        href="https://liverty.me/licenses"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="settings-row"
+      >
+        <span t="settings.ossLicenses" class="settings-row-label"></span>
+        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+      </a>
+    </div>
+  </section>
 
-        <hr class="[ settings-divider ]">
-
-        <!-- Privacy Policy -->
-        <a
-          href="https://liverty.me/privacy"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="settings-row"
-        >
-          <span t="settings.privacyPolicy" class="settings-row-label"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </a>
-
-        <hr class="[ settings-divider ]">
-
-        <!-- OSS Licenses -->
-        <a
-          href="https://liverty.me/licenses"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="settings-row"
-        >
-          <span t="settings.ossLicenses" class="settings-row-label"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </a>
-      </div>
-    </section>
-
-    <!-- ACCOUNT Section -->
-    <section>
-      <h2 t="settings.account" class="settings-section-title"></h2>
-      <div class="settings-card">
-        <button
-          click.trigger="signOut()"
-          class="settings-row settings-sign-out"
-        >
-          <span t="settings.signOut" class="settings-sign-out-text"></span>
-        </button>
-      </div>
-    </section>
-  </div>
-</page-shell>
+  <!-- ACCOUNT Section -->
+  <section>
+    <h2 t="settings.account" class="settings-section-title"></h2>
+    <div class="settings-card">
+      <button
+        click.trigger="signOut()"
+        class="settings-row settings-sign-out"
+      >
+        <span t="settings.signOut" class="settings-sign-out-text"></span>
+      </button>
+    </div>
+  </section>
+</main>
 
 <!-- Home Area Selector Bottom Sheet -->
 <user-home-selector

@@ -2,36 +2,36 @@ import { expectAnchored, expectFillsViewport } from './assertions'
 import { expect, test } from './fixtures'
 
 test.describe('Shell layout', () => {
-	test('my-app fills viewport height (S1)', async ({
+	test('app-shell fills viewport height (S1)', async ({
 		discoverLayoutPage: page,
 	}) => {
 		await page.goto('/discover')
 		await page.waitForSelector('.discover-layout')
 
-		const myApp = page.locator('my-app')
-		await expectFillsViewport(page, myApp, 2)
+		const appShell = page.locator('app-shell')
+		await expectFillsViewport(page, appShell, 2)
 	})
 
-	test('au-viewport + bottom-nav equals my-app height (S2)', async ({
+	test('au-viewport + bottom-nav equals app-shell height (S2)', async ({
 		discoverLayoutPage: page,
 	}) => {
 		await page.goto('/discover')
 		await page.waitForSelector('.discover-layout')
 
-		const myApp = page.locator('my-app')
+		const appShell = page.locator('app-shell')
 		const viewport = page.locator('au-viewport')
 		const nav = page.locator('bottom-nav-bar')
 
-		const myAppBox = await myApp.boundingBox()
+		const appShellBox = await appShell.boundingBox()
 		const viewportBox = await viewport.boundingBox()
 		const navBox = await nav.boundingBox()
 
-		expect(myAppBox).toBeTruthy()
+		expect(appShellBox).toBeTruthy()
 		expect(viewportBox).toBeTruthy()
 		expect(navBox).toBeTruthy()
 
 		const combined = viewportBox!.height + navBox!.height
-		expect(combined).toBeCloseTo(myAppBox!.height, 0)
+		expect(combined).toBeCloseTo(appShellBox!.height, 0)
 	})
 
 	test('bottom-nav anchored to viewport bottom (S3)', async ({
@@ -51,14 +51,14 @@ test.describe('Shell layout', () => {
 		// Wait for au-viewport to contain rendered content
 		await page.locator('au-viewport > *').first().waitFor({ timeout: 10_000 })
 
-		const myApp = page.locator('my-app')
+		const appShell = page.locator('app-shell')
 		const viewport = page.locator('au-viewport')
 
-		const myAppBox = await myApp.boundingBox()
+		const appShellBox = await appShell.boundingBox()
 		const viewportBox = await viewport.boundingBox()
 
-		expect(myAppBox).toBeTruthy()
+		expect(appShellBox).toBeTruthy()
 		expect(viewportBox).toBeTruthy()
-		expect(viewportBox!.height).toBeCloseTo(myAppBox!.height, 0)
+		expect(viewportBox!.height).toBeCloseTo(appShellBox!.height, 0)
 	})
 })

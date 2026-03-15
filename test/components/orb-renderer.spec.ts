@@ -108,7 +108,7 @@ describe('OrbRenderer', () => {
 			const p0Angle = (
 				renderer as unknown as { particles: { angle: number }[] }
 			).particles[0].angle
-			renderer.update(100)
+			for (let i = 0; i < 10; i++) renderer.update(100)
 			const deltaNoBase =
 				(renderer as unknown as { particles: { angle: number }[] }).particles[0]
 					.angle - p0Angle
@@ -118,7 +118,7 @@ describe('OrbRenderer', () => {
 			const p0Angle2 = (
 				renderer2 as unknown as { particles: { angle: number }[] }
 			).particles[0].angle
-			renderer2.update(100)
+			for (let i = 0; i < 10; i++) renderer2.update(100)
 			const deltaWithBase =
 				(renderer2 as unknown as { particles: { angle: number }[] })
 					.particles[0].angle - p0Angle2
