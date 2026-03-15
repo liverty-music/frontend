@@ -25,7 +25,7 @@ export type OnboardingStepValue =
 export const STEP_ROUTE_MAP: Record<OnboardingStepValue, string> = {
 	[OnboardingStep.LP]: '',
 	[OnboardingStep.DISCOVER]: 'discover',
-	[OnboardingStep.LOADING]: 'onboarding/loading',
+	[OnboardingStep.LOADING]: 'dashboard',
 	[OnboardingStep.DASHBOARD]: 'dashboard',
 	[OnboardingStep.DETAIL]: 'dashboard',
 	[OnboardingStep.MY_ARTISTS]: 'my-artists',

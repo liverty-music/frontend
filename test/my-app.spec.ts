@@ -12,9 +12,6 @@ vi.mock('../src/about-page', () => ({ AboutPage: class AboutPage {} }))
 vi.mock('../src/routes/auth-callback', () => ({
 	AuthCallback: class AuthCallback {},
 }))
-vi.mock('../src/routes/onboarding-loading/loading-sequence', () => ({
-	LoadingSequence: class LoadingSequence {},
-}))
 vi.mock('../src/routes/dashboard', () => ({ Dashboard: class Dashboard {} }))
 vi.mock('../src/routes/discover/discover-page', () => ({
 	DiscoverPage: class DiscoverPage {},
@@ -104,11 +101,6 @@ describe('my-app', () => {
 
 		it('should return true for discover route', () => {
 			setCurrentPath('discover')
-			expect(sut.showNav).toBe(true)
-		})
-
-		it('should return true for onboarding/loading route', () => {
-			setCurrentPath('onboarding/loading')
 			expect(sut.showNav).toBe(true)
 		})
 
