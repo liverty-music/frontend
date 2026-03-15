@@ -65,6 +65,14 @@ export default defineConfig({
       },
     },
     {
+      name: 'smoke',
+      testMatch: 'e2e/smoke/**/*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:9000',
+      },
+    },
+    {
       name: 'mobile-layout',
       testMatch: 'e2e/layout/**/*.spec.ts',
       testIgnore: 'e2e/layout/**/*.auth.spec.ts',
