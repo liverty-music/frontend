@@ -33,7 +33,6 @@ export class DnaOrbCanvas {
 	@bindable public followedCount = 0
 	@bindable public showFollowedIndicator = false
 	@bindable public artists: ArtistBubble[] = []
-	@bindable public orbIntensity = 0
 	@bindable public followedIds: ReadonlySet<string> = new Set()
 
 	private readonly element = resolve(INode) as HTMLElement
@@ -65,6 +64,9 @@ export class DnaOrbCanvas {
 	public followedCountChanged(newVal: number, _oldVal: number): void {
 		this.orbRenderer.pulse()
 		this.orbRenderer.setFollowCount(newVal)
+		const sp = this.orbRenderer.getStageParams()
+		this.physics.updateOrbZone(sp.orbRadius)
+		this.absorptionAnimator.cometTrailEnabled = sp.cometTrailEnabled
 	}
 
 	public artistsChanged(newVal: ArtistBubble[]): void {
@@ -252,7 +254,12 @@ export class DnaOrbCanvas {
 				artist.radius,
 				artist.imageUrl,
 				hue,
-				(completedHue) => this.orbRenderer.injectColor(completedHue),
+				(completedHue) => {
+					this.orbRenderer.injectColor(completedHue)
+					if (this.orbRenderer.getStageParams().shockwaveEnabled) {
+						this.orbRenderer.spawnShockwave(completedHue)
+					}
+				},
 			)
 
 			// Notify parent via DOM event
@@ -322,17 +329,29 @@ export class DnaOrbCanvas {
 
 		this.ctx.clearRect(0, 0, w, h)
 
-		// Render bubbles
+		// Layer 0: Ground glow (behind everything)
+		this.orbRenderer.renderGroundGlow(this.ctx)
+
+		// Layer 1: Light rays (additive blend, behind bubbles)
+		this.orbRenderer.renderLightRays(this.ctx)
+
+		// Layer 2: Bubbles
 		const bubbles = this.physics.getBubbles()
 		for (let i = 0; i < bubbles.length; i++) {
 			this.renderBubble(bubbles[i], i === this.focusedBubbleIndex)
 		}
 
-		// Render absorption animations
+		// Layer 3-4: Comet trails + absorption animations
 		this.absorptionAnimator.render(this.ctx)
 
-		// Render orb
-		this.orbRenderer.render(this.ctx, this.orbIntensity)
+		// Layer 5: Orb body
+		this.orbRenderer.render(this.ctx)
+
+		// Layer 6: Orbital particles
+		this.orbRenderer.renderOrbitals(this.ctx)
+
+		// Layer 7: Shockwave rings
+		this.orbRenderer.renderShockwaves(this.ctx)
 	}
 
 	private artistHue(name: string): number {

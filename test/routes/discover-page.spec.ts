@@ -293,27 +293,6 @@ describe('DiscoverPage', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
 		})
 
-		it('should update orbIntensity after following', async () => {
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[],
-			)
-
-			expect(sut.orbIntensity).toBe(0)
-
-			const event = new CustomEvent('artist-selected', {
-				detail: {
-					artist: makeBubble('a1', 'Artist'),
-					position: { x: 0, y: 0 },
-				},
-			})
-			await sut.onArtistSelected(event)
-
-			expect(sut.orbIntensity).toBe(1 / 20) // 1 followed / 20
-		})
-
 		it('should skip if artist already followed', async () => {
 			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
@@ -394,7 +373,6 @@ describe('DiscoverPage', () => {
 
 			// followedArtists should be empty after rollback
 			expect(sut.followedCount).toBe(0)
-			expect(sut.orbIntensity).toBe(0)
 			expect(sut.isArtistFollowed('a1')).toBe(false)
 		})
 
