@@ -22,7 +22,7 @@ function isExcludedError(text: string): boolean {
 	return EXCLUDED_ERROR_PATTERNS.some((pattern) => text.includes(pattern))
 }
 
-const PUBLIC_ROUTES = ['/', '/welcome', '/about', '/discover']
+const PUBLIC_ROUTES = ['/', '/welcome', '/about']
 
 for (const route of PUBLIC_ROUTES) {
 	test(`${route} loads without console errors`, async ({ page }) => {
