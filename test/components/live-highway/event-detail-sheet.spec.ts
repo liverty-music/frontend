@@ -53,16 +53,13 @@ describe('EventDetailSheet', () => {
 	let sut: InstanceType<typeof EventDetailSheet>
 	let mockElement: HTMLElement
 	let mockSheet: HTMLElement
+	let mockScrollWrapper: HTMLElement
 	let mockOnboarding: ReturnType<typeof createMockOnboarding>
 
 	beforeEach(() => {
 		mockOnboarding = createMockOnboarding()
 
 		mockElement = document.createElement('div')
-		const scrollable = document.createElement('div')
-		scrollable.classList.add('overflow-y-auto')
-		Object.defineProperty(scrollable, 'scrollTop', { value: 0, writable: true })
-		mockElement.appendChild(scrollable)
 
 		const container = createTestContainer(
 			Registration.instance(INode, mockElement),
@@ -76,14 +73,19 @@ describe('EventDetailSheet', () => {
 		;(mockSheet as any).showPopover = vi.fn()
 		;(mockSheet as any).hidePopover = vi.fn()
 		;(mockSheet as any).focus = vi.fn()
-		const sheetScrollable = document.createElement('div')
-		sheetScrollable.classList.add('overflow-y-auto')
-		Object.defineProperty(sheetScrollable, 'scrollTop', {
+		;(sut as any).sheetElement = mockSheet
+
+		// Mock scroll wrapper for scroll snap dismiss
+		mockScrollWrapper = document.createElement('div')
+		Object.defineProperty(mockScrollWrapper, 'scrollTop', {
 			value: 0,
 			writable: true,
 		})
-		mockSheet.appendChild(sheetScrollable)
-		;(sut as any).sheetElement = mockSheet
+		Object.defineProperty(mockScrollWrapper, 'clientHeight', {
+			value: 400,
+			writable: true,
+		})
+		;(sut as any).scrollWrapper = mockScrollWrapper
 	})
 
 	afterEach(() => {
@@ -152,6 +154,13 @@ describe('EventDetailSheet', () => {
 			)
 		})
 
+		it('should reset scroll position on open', () => {
+			;(mockScrollWrapper as any).scrollTop = 100
+			sut.open(makeEvent())
+
+			expect(mockScrollWrapper.scrollTop).toBe(0)
+		})
+
 		it('should close and replace history state', () => {
 			const replaceSpy = vi.spyOn(history, 'replaceState')
 			sut.isOpen = true
@@ -159,62 +168,28 @@ describe('EventDetailSheet', () => {
 			sut.close()
 
 			expect(sut.isOpen).toBe(false)
-			expect(sut.dragOffset).toBe(0)
 			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
 		})
 	})
 
-	describe('touch drag dismiss', () => {
-		it('should close when drag exceeds 100px threshold', () => {
+	describe('scroll snap dismiss', () => {
+		it('should close when scrolled past half of container height', () => {
 			sut.open(makeEvent())
 
-			sut.onTouchStart({ touches: [{ clientY: 100 }] } as any)
-			sut.onTouchMove({ touches: [{ clientY: 250 }] } as any) // delta = 150
-			sut.onTouchEnd()
+			// Simulate scrollend with scrollTop > clientHeight * 0.5
+			const mockTarget = { scrollTop: 250, clientHeight: 400 }
+			sut.onScrollEnd({ target: mockTarget } as any)
 
 			expect(sut.isOpen).toBe(false)
 		})
 
-		it('should snap back when drag is below threshold', () => {
+		it('should not close when scrolled less than half', () => {
 			sut.open(makeEvent())
 
-			sut.onTouchStart({ touches: [{ clientY: 100 }] } as any)
-			sut.onTouchMove({ touches: [{ clientY: 150 }] } as any) // delta = 50
-			sut.onTouchEnd()
+			const mockTarget = { scrollTop: 150, clientHeight: 400 }
+			sut.onScrollEnd({ target: mockTarget } as any)
 
 			expect(sut.isOpen).toBe(true)
-			expect(sut.dragOffset).toBe(0)
-		})
-
-		it('should not start drag when not open', () => {
-			sut.isOpen = false
-
-			sut.onTouchStart({ touches: [{ clientY: 100 }] } as any)
-			sut.onTouchMove({ touches: [{ clientY: 300 }] } as any)
-			sut.onTouchEnd()
-
-			expect(sut.dragOffset).toBe(0)
-		})
-
-		it('should not allow negative drag offset', () => {
-			sut.open(makeEvent())
-
-			sut.onTouchStart({ touches: [{ clientY: 200 }] } as any)
-			sut.onTouchMove({ touches: [{ clientY: 100 }] } as any) // delta = -100
-
-			expect(sut.dragOffset).toBe(0)
-		})
-
-		it('should block swipe when isDismissable is false (Step 4)', () => {
-			mockOnboarding.currentStep = OnboardingStep.DETAIL
-			sut.open(makeEvent())
-
-			sut.onTouchStart({ touches: [{ clientY: 100 }] } as any)
-			sut.onTouchMove({ touches: [{ clientY: 300 }] } as any)
-			sut.onTouchEnd()
-
-			expect(sut.isOpen).toBe(true)
-			expect(sut.dragOffset).toBe(0)
 		})
 	})
 
@@ -280,7 +255,6 @@ describe('EventDetailSheet', () => {
 			mockSheet.dispatchEvent(toggleEvent)
 
 			expect(sut.isOpen).toBe(false)
-			expect(sut.dragOffset).toBe(0)
 			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
 		})
 

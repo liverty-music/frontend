@@ -12,7 +12,6 @@
 		.event-detail-sheet {
 			position: fixed;
 			inset: auto 0 0;
-			translate: 0 var(--_drag-y, 0);
 
 			inline-size: 100%;
 			max-inline-size: 100%;
@@ -54,15 +53,25 @@
 			}
 		}
 
-		.sheet-body {
+		/* Scroll snap container for native pull-to-dismiss */
+		.sheet-scroll {
+			scroll-snap-type: y mandatory;
 			overflow-y: auto;
 			overscroll-behavior: contain;
-
 			max-block-size: 70vh;
-			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+		}
 
+		.sheet-body {
+			scroll-snap-align: start;
+			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
 			background: var(--color-surface-raised);
 			box-shadow: var(--shadow-sheet);
+		}
+
+		/* Invisible zone below sheet — scrolling here triggers dismiss */
+		.dismiss-zone {
+			scroll-snap-align: end;
+			block-size: 30vh;
 		}
 
 		/* Handle bar */
