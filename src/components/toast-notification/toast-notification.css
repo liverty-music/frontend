@@ -5,7 +5,7 @@
 			--_bg-to: var(--color-brand-secondary);
 		}
 
-		[popover].toast-popover {
+		.toast-stack {
 			pointer-events: none;
 
 			position: fixed;
@@ -17,44 +17,46 @@
 			gap: var(--space-3xs);
 			align-items: center;
 
-			margin: 0;
 			padding: var(--space-xs) 0 0;
-			border: none;
-
-			background: transparent;
 		}
 
 		.toast-item {
 			pointer-events: auto;
+
+			transform: translateY(-1rem);
 
 			display: flex;
 			gap: var(--space-3xs);
 			align-items: center;
 
 			padding: var(--space-2xs) var(--space-s);
+			border: none;
 			border-radius: var(--radius-card);
 
 			font-family: var(--font-display);
 			font-weight: 600;
 			color: var(--color-white);
 
+			opacity: 0;
 			background: linear-gradient(to right, var(--_bg-from), var(--_bg-to));
 			backdrop-filter: blur(8px);
 			box-shadow: var(--shadow-card-glow);
 
 			transition:
 				transform var(--transition-slow) cubic-bezier(0.16, 1, 0.3, 1),
-				opacity var(--transition-slow) ease;
+				opacity var(--transition-slow) ease,
+				display var(--transition-slow) allow-discrete,
+				overlay var(--transition-slow) allow-discrete;
 
-			@starting-style {
-				transform: translateY(-1rem);
-				opacity: 0;
+			&:popover-open {
+				transform: translateY(0);
+				opacity: 1;
+
+				@starting-style {
+					transform: translateY(-1rem);
+					opacity: 0;
+				}
 			}
-		}
-
-		.toast-item[data-state="exiting"] {
-			transform: translateY(-1rem);
-			opacity: 0;
 		}
 
 		.toast-item[data-severity="warning"] {
@@ -88,6 +90,12 @@
 
 			&:hover {
 				color: var(--color-white);
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.toast-item {
+				transition: none;
 			}
 		}
 	}

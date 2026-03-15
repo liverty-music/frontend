@@ -3,10 +3,31 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Toast } from '../../src/components/toast-notification/toast'
 import { ToastNotification } from '../../src/components/toast-notification/toast-notification'
 
-function createTransitionEvent(propertyName: string): Event {
-	const event = new Event('transitionend', { bubbles: true })
-	Object.defineProperty(event, 'propertyName', { value: propertyName })
-	return event
+// jsdom does not provide ToggleEvent — polyfill for tests
+if (typeof globalThis.ToggleEvent === 'undefined') {
+	;(globalThis as any).ToggleEvent = class ToggleEvent extends Event {
+		public readonly newState: string
+		public readonly oldState: string
+		constructor(type: string, init: { newState: string; oldState: string }) {
+			super(type)
+			this.newState = init.newState
+			this.oldState = init.oldState
+		}
+	}
+}
+
+function createToggleEvent(newState: 'open' | 'closed'): ToggleEvent {
+	return new ToggleEvent('toggle', {
+		newState,
+		oldState: newState === 'closed' ? 'open' : 'closed',
+	})
+}
+
+function createMockToastElement(): HTMLElement {
+	const el = document.createElement('div')
+	;(el as any).showPopover = vi.fn()
+	;(el as any).hidePopover = vi.fn()
+	return el
 }
 
 describe('ToastNotification', () => {
@@ -18,10 +39,6 @@ describe('ToastNotification', () => {
 
 	beforeEach(() => {
 		vi.useFakeTimers()
-		// jsdom does not provide matchMedia — stub it to return no-preference by default
-		window.matchMedia = vi
-			.fn()
-			.mockReturnValue({ matches: false } as MediaQueryList)
 
 		hostElement = document.createElement('div')
 
@@ -33,15 +50,11 @@ describe('ToastNotification', () => {
 		ea = container.get(IEventAggregator)
 		sut = container.get(ToastNotification)
 
-		// Mock popover container element for Top Layer API
+		// Container element that holds toast children
 		mockContainer = document.createElement('div')
-		;(mockContainer as any).showPopover = vi.fn()
-		;(mockContainer as any).hidePopover = vi.fn()
 		;(sut as any).containerElement = mockContainer
 
-		// Subscribe by calling attaching lifecycle
 		sut.attaching()
-		sut.attached()
 
 		publishToast = (event: Toast) => ea.publish(event)
 	})
@@ -51,38 +64,53 @@ describe('ToastNotification', () => {
 		vi.restoreAllMocks()
 	})
 
-	it('should add toast to array and set visible immediately', () => {
+	/** Insert a mock popover element into the container to simulate Aurelia repeat.for rendering. */
+	function insertMockElement(toastId: number): HTMLElement {
+		const el = createMockToastElement()
+		el.dataset.toastId = String(toastId)
+		mockContainer.appendChild(el)
+		return el
+	}
+
+	it('should add toast to array on publish', () => {
 		publishToast(new Toast('Test message'))
 
 		expect(sut.toasts).toHaveLength(1)
 		expect(sut.toasts[0].message).toBe('Test message')
-		expect(sut.toasts[0].visible).toBe(true)
+	})
+
+	it('should call showPopover after microtask flush', async () => {
+		publishToast(new Toast('Test message'))
+		const el = insertMockElement(0)
+
+		// Flush the queueMicrotask
+		await Promise.resolve()
+
+		expect(el.showPopover).toHaveBeenCalledOnce()
 	})
 
 	it('should auto-dismiss toast after duration', () => {
 		publishToast(new Toast('Test message', 'info', { duration: 2500 }))
+		insertMockElement(0)
 
-		expect(sut.toasts[0].visible).toBe(true)
+		expect(sut.toasts[0].dismissed).toBe(false)
 
 		vi.advanceTimersByTime(2500)
-		expect(sut.toasts[0].visible).toBe(false)
+		expect(sut.toasts[0].dismissed).toBe(true)
 	})
 
-	it('should remove toast on transitionend after dismiss', () => {
+	it('should remove toast on toggle event after hidePopover', () => {
 		publishToast(new Toast('Test message', 'info', { duration: 2500 }))
+		insertMockElement(0)
 
 		expect(sut.toasts).toHaveLength(1)
 
 		vi.advanceTimersByTime(2500)
+		// Toast is dismissed but still in array (awaiting toggle)
 		expect(sut.toasts).toHaveLength(1)
-		expect(sut.toasts[0].visible).toBe(false)
 
-		// Simulate transitionend — call onTransitionEnd directly with a mock event
-		const toastEl = document.createElement('div')
-		toastEl.dataset.toastId = '0'
-		const event = createTransitionEvent('opacity')
-		Object.defineProperty(event, 'target', { value: toastEl })
-		;(sut as any).onTransitionEnd(event)
+		// Simulate the popover closing (browser fires toggle after exit transition)
+		sut.onToggle(createToggleEvent('closed'), sut.toasts[0])
 
 		expect(sut.toasts).toHaveLength(0)
 	})
@@ -91,17 +119,19 @@ describe('ToastNotification', () => {
 		const onDismiss = vi.fn()
 		const toast = new Toast('Test', 'info', { onDismiss })
 		publishToast(toast)
+		insertMockElement(0)
 
 		toast.handle!.dismiss()
 
 		expect(onDismiss).toHaveBeenCalledOnce()
-		expect(sut.toasts[0].visible).toBe(false)
+		expect(sut.toasts[0].dismissed).toBe(true)
 	})
 
 	it('should not double-dismiss', () => {
 		const onDismiss = vi.fn()
 		const toast = new Toast('Test', 'info', { onDismiss })
 		publishToast(toast)
+		insertMockElement(0)
 
 		toast.handle!.dismiss()
 		toast.handle!.dismiss()
@@ -122,22 +152,48 @@ describe('ToastNotification', () => {
 
 	it('should use default duration if not specified', () => {
 		publishToast(new Toast('Test message'))
+		insertMockElement(0)
 
-		// Default is 2500ms
 		vi.advanceTimersByTime(2500)
-		expect(sut.toasts[0].visible).toBe(false)
+		expect(sut.toasts[0].dismissed).toBe(true)
 	})
 
-	it('should hide container popover when last toast is removed', () => {
-		publishToast(new Toast('Test message', 'info', { duration: 2500 }))
+	it('should remove toast from array on toggle close (no container hidePopover needed)', () => {
+		publishToast(new Toast('Test message'))
+		insertMockElement(0)
+
 		vi.advanceTimersByTime(2500)
+		sut.onToggle(createToggleEvent('closed'), sut.toasts[0])
 
-		const toastEl = document.createElement('div')
-		toastEl.dataset.toastId = '0'
-		const event = createTransitionEvent('opacity')
-		Object.defineProperty(event, 'target', { value: toastEl })
-		;(sut as any).onTransitionEnd(event)
+		expect(sut.toasts).toHaveLength(0)
+	})
 
-		expect(mockContainer.hidePopover).toHaveBeenCalled()
+	it('should dismiss multiple toasts independently without interference', () => {
+		publishToast(new Toast('A', 'info', { duration: 1000 }))
+		publishToast(new Toast('B', 'info', { duration: 2000 }))
+		publishToast(new Toast('C', 'info', { duration: 3000 }))
+		insertMockElement(0)
+		insertMockElement(1)
+		insertMockElement(2)
+
+		// Dismiss A
+		vi.advanceTimersByTime(1000)
+		expect(sut.toasts[0].dismissed).toBe(true)
+		expect(sut.toasts[1].dismissed).toBe(false)
+		expect(sut.toasts[2].dismissed).toBe(false)
+
+		// Toggle removes A
+		const toastA = sut.toasts[0]
+		sut.onToggle(createToggleEvent('closed'), toastA)
+		expect(sut.toasts).toHaveLength(2)
+
+		// B and C still alive
+		expect(sut.toasts[0].message).toBe('B')
+		expect(sut.toasts[1].message).toBe('C')
+
+		// Dismiss B
+		vi.advanceTimersByTime(1000)
+		expect(sut.toasts[0].dismissed).toBe(true)
+		expect(sut.toasts[1].dismissed).toBe(false)
 	})
 })

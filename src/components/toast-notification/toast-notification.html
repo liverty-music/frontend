@@ -1,13 +1,14 @@
 <import from="./toast-notification.css"></import>
 
-<div ref="containerElement" popover="manual" class="[ toast-popover ]">
+<div ref="containerElement" class="[ toast-stack ]">
   <div
     repeat.for="toast of toasts; key.bind: toast.id"
     data-toast-id.bind="toast.id"
+    popover="manual"
     role="status"
     class="toast-item"
     data-severity.bind="toast.severity"
-    data-state.bind="toastState(toast)"
+    toggle.trigger="onToggle($event, toast)"
   >
     <svg-icon if.bind="toast.severity === 'info'" name="ticket" class="toast-icon"></svg-icon>
     <svg-icon if.bind="toast.severity === 'warning'" name="warning" class="toast-icon"></svg-icon>
