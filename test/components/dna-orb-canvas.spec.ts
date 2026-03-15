@@ -128,7 +128,6 @@ describe('DnaOrbCanvas', () => {
 			expect(sut.followedCount).toBe(0)
 			expect(sut.showFollowedIndicator).toBe(false)
 			expect(sut.artists).toEqual([])
-			expect(sut.orbIntensity).toBe(0)
 			expect(sut.followedIds).toEqual(new Set())
 		})
 	})

@@ -25,6 +25,7 @@ export class BubblePhysics {
 	private initGeneration = 0
 	private fadeOutResolve: (() => void) | null = null
 	private fadeOutPendingIds = new Set<string>()
+	private bottomWall: Matter.Body | null = null
 
 	public async init(width: number, height: number): Promise<void> {
 		if (this.initPromise) {
@@ -57,6 +58,13 @@ export class BubblePhysics {
 
 			const wallThickness = 50
 			const orbZoneHeight = 160
+			this.bottomWall = this.Matter?.Bodies.rectangle(
+				w / 2,
+				h - orbZoneHeight + wallThickness / 2,
+				w,
+				wallThickness,
+				{ isStatic: true },
+			)
 			this.walls = [
 				// Top
 				this.Matter?.Bodies.rectangle(
@@ -83,13 +91,7 @@ export class BubblePhysics {
 					{ isStatic: true },
 				),
 				// Bottom (above orb zone)
-				this.Matter?.Bodies.rectangle(
-					w / 2,
-					h - orbZoneHeight + wallThickness / 2,
-					w,
-					wallThickness,
-					{ isStatic: true },
-				),
+				this.bottomWall,
 			]
 			if (gen !== this.initGeneration) return
 			this.Matter?.Composite.add(this.world, this.walls)
@@ -101,6 +103,16 @@ export class BubblePhysics {
 		this.initPromise = promise
 
 		return this.initPromise
+	}
+
+	public updateOrbZone(orbRadius: number): void {
+		if (!this.Matter || !this.bottomWall || this.height === 0) return
+		const wallThickness = 50
+		const newY = this.height - (orbRadius * 2 + 20) + wallThickness / 2
+		this.Matter.Body.setPosition(this.bottomWall, {
+			x: this.width / 2,
+			y: newY,
+		})
 	}
 
 	public addBubbles(artists: ArtistBubble[]): void {
