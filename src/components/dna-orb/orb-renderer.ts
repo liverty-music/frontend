@@ -213,7 +213,7 @@ export class OrbRenderer {
 		// Beat sync
 		const sp = this.stageParams
 		if (sp.beatBPM > 0 && !this.reducedMotion) {
-			this.beatPhase = Math.sin((this.time * sp.beatBPM * Math.PI) / 30)
+			this.beatPhase = Math.sin(this.time * sp.beatBPM * 2 * Math.PI)
 		} else {
 			this.beatPhase = 0
 		}
@@ -647,6 +647,9 @@ export class OrbRenderer {
 	public setFollowCount(count: number): void {
 		this.baseIntensity = count > 0 ? 1 - 1 / (1 + count * 0.5) : 0
 		this.stageParams = getStageParams(count)
+		for (const p of this.particles) {
+			p.trail = []
+		}
 		this.orbRadius = this.stageParams.orbRadius
 		this.distributeColorsToOrbitals()
 	}
