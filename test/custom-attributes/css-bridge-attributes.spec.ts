@@ -1,9 +1,7 @@
 import { DI, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DotColorCustomAttribute } from '../../src/custom-attributes/dot-color'
-import { DragOffsetCustomAttribute } from '../../src/custom-attributes/drag-offset'
 import { SpotlightRadiusCustomAttribute } from '../../src/custom-attributes/spotlight-radius'
-import { SwipeOffsetCustomAttribute } from '../../src/custom-attributes/swipe-offset'
 import { TileColorCustomAttribute } from '../../src/custom-attributes/tile-color'
 
 function createAttribute<T>(Ctor: new (...args: any[]) => T) {
@@ -16,78 +14,6 @@ function createAttribute<T>(Ctor: new (...args: any[]) => T) {
 	const sut = container.invoke(Ctor) as T
 	return { sut, el }
 }
-
-describe('SwipeOffsetCustomAttribute', () => {
-	let sut: SwipeOffsetCustomAttribute
-	let el: HTMLElement
-
-	beforeEach(() => {
-		const result = createAttribute(SwipeOffsetCustomAttribute)
-		sut = result.sut
-		el = result.el
-	})
-
-	afterEach(() => {
-		el.remove()
-	})
-
-	it('sets --_swipe-x on bound', () => {
-		sut.value = 42
-		sut.bound()
-		expect(el.style.getPropertyValue('--_swipe-x')).toBe('42px')
-	})
-
-	it('updates --_swipe-x on valueChanged', () => {
-		sut.value = 10
-		sut.bound()
-		sut.value = -20
-		sut.valueChanged()
-		expect(el.style.getPropertyValue('--_swipe-x')).toBe('-20px')
-	})
-
-	it('removes --_swipe-x on detaching', () => {
-		sut.value = 5
-		sut.bound()
-		sut.detaching()
-		expect(el.style.getPropertyValue('--_swipe-x')).toBe('')
-	})
-})
-
-describe('DragOffsetCustomAttribute', () => {
-	let sut: DragOffsetCustomAttribute
-	let el: HTMLElement
-
-	beforeEach(() => {
-		const result = createAttribute(DragOffsetCustomAttribute)
-		sut = result.sut
-		el = result.el
-	})
-
-	afterEach(() => {
-		el.remove()
-	})
-
-	it('sets --_drag-y when value > 0', () => {
-		sut.value = 100
-		sut.bound()
-		expect(el.style.getPropertyValue('--_drag-y')).toBe('100px')
-	})
-
-	it('removes --_drag-y when value <= 0', () => {
-		sut.value = 50
-		sut.bound()
-		sut.value = 0
-		sut.valueChanged()
-		expect(el.style.getPropertyValue('--_drag-y')).toBe('')
-	})
-
-	it('removes --_drag-y on detaching', () => {
-		sut.value = 30
-		sut.bound()
-		sut.detaching()
-		expect(el.style.getPropertyValue('--_drag-y')).toBe('')
-	})
-})
 
 describe('TileColorCustomAttribute', () => {
 	let sut: TileColorCustomAttribute

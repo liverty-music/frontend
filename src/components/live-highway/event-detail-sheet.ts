@@ -10,12 +10,9 @@ export class EventDetailSheet {
 	@bindable public event: LiveEvent | null = null
 
 	public isOpen = false
-	public dragOffset = 0
 
 	private sheetElement!: HTMLDialogElement
-	private touchStartY = 0
-	private isDragging = false
-	private readonly DISMISS_THRESHOLD = 100
+	private scrollWrapper!: HTMLElement
 	private triggerElement: HTMLElement | null = null
 	private closedByPopstate = false
 
@@ -32,7 +29,6 @@ export class EventDetailSheet {
 		// Fires when popover="auto" light-dismisses the sheet (Escape, click outside)
 		if (e.newState === 'closed' && this.isOpen) {
 			this.isOpen = false
-			this.dragOffset = 0
 			this.triggerElement?.focus()
 			this.triggerElement = null
 			window.removeEventListener('popstate', this.onPopstate)
@@ -79,7 +75,6 @@ export class EventDetailSheet {
 		this.triggerElement = document.activeElement as HTMLElement | null
 		this.event = event
 		this.isOpen = true
-		this.dragOffset = 0
 		this.closedByPopstate = false
 
 		// Dynamic popover mode: manual during onboarding Step 4 (non-dismissible),
@@ -89,6 +84,9 @@ export class EventDetailSheet {
 		this.sheetElement.showPopover()
 		this.sheetElement.focus()
 
+		// Reset scroll position so sheet starts at the content snap point
+		this.scrollWrapper.scrollTop = 0
+
 		window.addEventListener('popstate', this.onPopstate)
 		this.sheetElement.addEventListener('toggle', this.onToggle)
 
@@ -97,7 +95,6 @@ export class EventDetailSheet {
 
 	public close(): void {
 		this.isOpen = false
-		this.dragOffset = 0
 
 		try {
 			this.sheetElement.hidePopover()
@@ -132,31 +129,11 @@ export class EventDetailSheet {
 		e.stopPropagation()
 	}
 
-	public onTouchStart(e: TouchEvent): void {
-		if (!this.isOpen || !this.isDismissable) return
-		this.touchStartY = e.touches[0].clientY
-		this.isDragging = true
-	}
-
-	public onTouchMove(e: TouchEvent): void {
-		if (!this.isDragging) return
-		const scrollable = this.sheetElement.querySelector('.overflow-y-auto')
-		if (scrollable && scrollable.scrollTop > 0) {
-			this.isDragging = false
-			return
-		}
-		const deltaY = e.touches[0].clientY - this.touchStartY
-		this.dragOffset = Math.max(0, deltaY)
-	}
-
-	public onTouchEnd(): void {
-		if (!this.isDragging) return
-		this.isDragging = false
-
-		if (this.dragOffset > this.DISMISS_THRESHOLD) {
+	/** CSS scroll snap dismiss: close when scrolled past the dismiss zone */
+	public onScrollEnd(e: Event): void {
+		const el = e.target as HTMLElement
+		if (el.scrollTop > 0) {
 			this.close()
-		} else {
-			this.dragOffset = 0
 		}
 	}
 }

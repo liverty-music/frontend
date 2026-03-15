@@ -8,84 +8,88 @@
     ref="sheetElement"
     tabindex="-1"
     aria-label="Event details"
-    touchstart.trigger="onTouchStart($event)"
-    touchmove.trigger="onTouchMove($event)"
-    touchend.trigger="onTouchEnd()"
     class="[ event-detail-sheet ]"
-    drag-offset.bind="dragOffset"
   >
+    <!-- Scroll snap container: pull down to dismiss -->
     <div
+      ref="scrollWrapper"
+      scrollend.trigger="onScrollEnd($event)"
       click.trigger="onSheetClick($event)"
-      class="sheet-body"
+      class="sheet-scroll"
     >
-      <!-- Handle bar -->
-      <div class="sheet-handle">
-        <div class="sheet-handle-bar"></div>
-      </div>
-
-      <div if.bind="event" class="sheet-content">
-        <!-- Artist name header with dynamic color -->
-        <div
-          artist-color.bind="event.artistName"
-          class="sheet-artist-header hype-home"
-        >
-          <h2 class="sheet-artist-name">
-            ${event.artistName}
-          </h2>
-          <p class="sheet-event-title">${event.title}</p>
+      <div class="sheet-body">
+        <!-- Handle bar -->
+        <div class="sheet-handle">
+          <div class="sheet-handle-bar"></div>
         </div>
 
-        <!-- Event details -->
-        <div class="sheet-details">
-          <!-- Date & Time -->
-          <div class="detail-row">
-            <span class="detail-icon"><svg-icon name="calendar"></svg-icon></span>
-            <div>
-              <time datetime.bind="event.date.toISOString()" class="detail-primary">${event.date | date:'long'}</time>
-              <p class="detail-secondary">
-                Open ${event.openTime || '—'} / Start ${event.startTime}
-              </p>
+        <div if.bind="event" class="sheet-content">
+          <!-- Artist name header with dynamic color -->
+          <div
+            artist-color.bind="event.artistName"
+            class="sheet-artist-header hype-home"
+          >
+            <h2 class="sheet-artist-name">
+              ${event.artistName}
+            </h2>
+            <p class="sheet-event-title">${event.title}</p>
+          </div>
+
+          <!-- Event details -->
+          <div class="sheet-details">
+            <!-- Date & Time -->
+            <div class="detail-row">
+              <span class="detail-icon"><svg-icon name="calendar"></svg-icon></span>
+              <div>
+                <time datetime.bind="event.date.toISOString()" class="detail-primary">${event.date | date:'long'}</time>
+                <p class="detail-secondary">
+                  Open ${event.openTime || '—'} / Start ${event.startTime}
+                </p>
+              </div>
+            </div>
+
+            <!-- Venue -->
+            <div class="detail-row">
+              <span class="detail-icon"><svg-icon name="map-pin"></svg-icon></span>
+              <div class="detail-venue">
+                <p class="detail-primary">${event.venueName}</p>
+                <p if.bind="event.adminArea" class="detail-secondary">${event.adminArea}</p>
+                <a
+                  href.bind="googleMapsUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="detail-link"
+                >
+                  Open in Google Maps
+                </a>
+              </div>
             </div>
           </div>
 
-          <!-- Venue -->
-          <div class="detail-row">
-            <span class="detail-icon"><svg-icon name="map-pin"></svg-icon></span>
-            <div class="detail-venue">
-              <p class="detail-primary">${event.venueName}</p>
-              <p if.bind="event.adminArea" class="detail-secondary">${event.adminArea}</p>
-              <a
-                href.bind="googleMapsUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="detail-link"
-              >
-                Open in Google Maps
-              </a>
-            </div>
+          <!-- Action buttons -->
+          <div class="sheet-actions">
+            <a
+              href.bind="event.sourceUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="sheet-btn-primary"
+            >
+              <svg-icon name="link"></svg-icon> View Official Info
+            </a>
+            <a
+              href.bind="calendarUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="sheet-btn-secondary"
+            >
+              <svg-icon name="calendar"></svg-icon> Add to Calendar
+            </a>
           </div>
         </div>
-
-        <!-- Action buttons -->
-        <div class="sheet-actions">
-          <a
-            href.bind="event.sourceUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="sheet-btn-primary"
-          >
-            <svg-icon name="link"></svg-icon> View Official Info
-          </a>
-          <a
-            href.bind="calendarUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="sheet-btn-secondary"
-          >
-            <svg-icon name="calendar"></svg-icon> Add to Calendar
-          </a>
-        </div>
       </div>
+
+      <!-- Pull past this zone to dismiss -->
+      <div if.bind="isDismissable" class="dismiss-zone"></div>
     </div>
   </dialog>
 </template>
