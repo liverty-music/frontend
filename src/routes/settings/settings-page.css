@@ -7,10 +7,19 @@
 			--_signout-color: var(--color-error);
 			--_backdrop-bg: oklch(0% 0 0deg / 60%);
 			--_handle-bg: oklch(100% 0 0deg / 20%);
+
+			display: grid;
+			grid-template-areas:
+				"header"
+				"main";
+			grid-template-rows: auto 1fr;
+
+			block-size: 100%;
+			min-block-size: 0;
 		}
 
 		.page-header {
-			flex-shrink: 0;
+			grid-area: header;
 
 			padding-block: var(--space-xs);
 			padding-inline: var(--space-xs);
@@ -31,7 +40,7 @@
 		main {
 			overflow-y: auto;
 			display: flex;
-			flex: 1;
+			grid-area: main;
 			flex-direction: column;
 			gap: var(--space-m);
 

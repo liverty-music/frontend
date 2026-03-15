@@ -3,21 +3,11 @@
 		/* Shell layout: viewport content + bottom nav */
 		:scope {
 			display: grid;
-			grid-template-rows: minmax(0, 1fr) min-content;
+			grid-template-areas:
+				"viewport"
+				"nav";
+			grid-template-rows: 1fr auto;
 			block-size: 100dvh;
-		}
-
-		/* Route viewport: stretch child routes to fill available space */
-		au-viewport {
-			display: grid;
-			grid-template-rows: minmax(0, 1fr);
-		}
-
-		/* Custom element needs block display + full height so that
-		   child heights resolve through the CE boundary */
-		live-highway {
-			display: block;
-			block-size: 100%;
 		}
 
 		/* Overlay components use top-layer APIs (popover/dialog).
