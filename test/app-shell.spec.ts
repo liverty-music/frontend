@@ -1,10 +1,10 @@
 import { IRouter, IRouterEvents } from '@aurelia/router'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MyApp } from '../src/my-app'
+import { AppShell } from '../src/app-shell'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 
-// Mock all dynamic imports used by the @route decorator on MyApp.
+// Mock all dynamic imports used by the @route decorator on AppShell.
 // Without these mocks, the imports resolve after Vitest tears down the jsdom
 // environment, causing "document is not defined" unhandled rejections.
 vi.mock('../src/welcome-page', () => ({ WelcomePage: class WelcomePage {} }))
@@ -29,7 +29,7 @@ vi.mock('../src/routes/not-found/not-found-page', () => ({
 	NotFoundPage: class NotFoundPage {},
 }))
 
-describe('my-app', () => {
+describe('app-shell', () => {
 	// TODO: Fix landing page test - requires complex mocking of auth service and RPC client
 	it.skip('should render the landing page message', async () => {
 		// This test is currently skipped due to complex dependencies (AuthService, Router, RPC client)
@@ -43,14 +43,15 @@ describe('my-app', () => {
 	// for this unit test PR. Tracked in: https://github.com/liverty-music/frontend/issues/24
 	it.skip('should have a layout with navigation and viewport', async () => {
 		const { createFixture } = await import('@aurelia/testing')
-		const { appHost } = await createFixture('<my-app></my-app>', {}, [MyApp])
-			.started
+		const { appHost } = await createFixture('<app-shell></app-shell>', {}, [
+			AppShell,
+		]).started
 
-		const myApp = appHost.querySelector('my-app')
+		const myApp = appHost.querySelector('app-shell')
 		expect(myApp).not.toBeNull()
 
 		const shadowRoot = myApp?.shadowRoot
-		// MyApp might NOT be shadow DOM if it's the root component without @useShadowDOM (though defined in vite plugin)
+		// AppShell might NOT be shadow DOM if it's the root component without @useShadowDOM (though defined in vite plugin)
 		// Actually, the vite plugin sets defaultShadowOptions to 'open'.
 		const root = shadowRoot || myApp
 
@@ -61,7 +62,7 @@ describe('my-app', () => {
 	describe('showNav', () => {
 		let mockRouter: Record<string, unknown>
 		let container: ReturnType<typeof DI.createContainer>
-		let sut: MyApp
+		let sut: AppShell
 
 		function setCurrentPath(path: string) {
 			mockRouter.routeTree = {
@@ -85,8 +86,8 @@ describe('my-app', () => {
 					addBreadcrumb: vi.fn(),
 				}),
 			)
-			container.register(MyApp)
-			sut = container.get(MyApp)
+			container.register(AppShell)
+			sut = container.get(AppShell)
 		})
 
 		it('should return false for empty path (root)', () => {

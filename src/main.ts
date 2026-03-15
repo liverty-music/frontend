@@ -4,7 +4,6 @@ import { RouterConfiguration } from '@aurelia/router'
 import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
-import { PageShell } from './components/page-shell/page-shell'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SvgIcon } from './components/svg-icon/svg-icon'
 import { migrateStorageKeys } from './constants/storage-keys'
@@ -15,7 +14,7 @@ import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
-import { MyApp } from './my-app'
+import { AppShell } from './app-shell'
 import { IArtistServiceClient } from './services/artist-service-client'
 import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
@@ -107,7 +106,6 @@ Aurelia
 	.register(IEntryService)
 	.register(IProofService)
 	.register(BottomNavBar)
-	.register(PageShell)
 	.register(StatePlaceholder)
 	.register(SvgIcon)
 	.register(AuthHook)
@@ -119,7 +117,7 @@ Aurelia
 	// To use HTML5 pushState routes, replace previous line with the following
 	// customized router config.
 	// .register(RouterConfiguration.customize({ useUrlFragmentHash: false }))
-	.app(MyApp)
+	.app(AppShell)
 	.start()
 
 // Register Service Worker for push notifications (production only).

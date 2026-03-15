@@ -60,13 +60,13 @@ import { IOnboardingService } from './services/onboarding-service'
 	],
 	fallback: import('./routes/not-found/not-found-page'),
 })
-export class MyApp {
+export class AppShell {
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
 	public readonly onboarding = resolve(IOnboardingService)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
-	private readonly logger = resolve(ILogger).scopeTo('MyApp')
+	private readonly logger = resolve(ILogger).scopeTo('AppShell')
 
 	private readonly subscriptions: IDisposable[] = []
 
