@@ -7,7 +7,6 @@ interface ToastItem {
 	severity: ToastSeverity
 	action?: ToastAction
 	onDismiss?: () => void
-	visible: boolean
 	dismissed: boolean
 	dismissTimer: ReturnType<typeof setTimeout> | null
 }
@@ -19,25 +18,12 @@ export class ToastNotification {
 	private containerElement!: HTMLElement
 	private nextId = 0
 	private subscription!: IDisposable
-	private readonly boundTransitionEnd = (e: TransitionEvent) =>
-		this.onTransitionEnd(e)
 
 	public attaching(): void {
 		this.subscription = this.ea.subscribe(Toast, (event) => this.show(event))
 	}
 
-	public attached(): void {
-		this.containerElement.addEventListener(
-			'transitionend',
-			this.boundTransitionEnd,
-		)
-	}
-
 	public detaching(): void {
-		this.containerElement.removeEventListener(
-			'transitionend',
-			this.boundTransitionEnd,
-		)
 		this.subscription.dispose()
 	}
 
@@ -49,7 +35,6 @@ export class ToastNotification {
 			severity: event.severity,
 			action: event.action,
 			onDismiss: event.options?.onDismiss,
-			visible: true,
 			dismissed: false,
 			dismissTimer: null,
 		}
@@ -60,9 +45,13 @@ export class ToastNotification {
 			dismiss: () => this.dismiss(toast),
 		}
 
-		// Re-insert into Top Layer to ensure it paints above any open dialog
-		if (this.toasts.length > 1) this.containerElement.hidePopover()
-		this.containerElement.showPopover()
+		// Wait for Aurelia to flush the repeat.for DOM insertion, then show popover
+		queueMicrotask(() => {
+			const el = this.containerElement.querySelector<HTMLElement>(
+				`[data-toast-id="${id}"]`,
+			)
+			el?.showPopover()
+		})
 
 		// Auto-dismiss
 		toast.dismissTimer = setTimeout(() => {
@@ -80,12 +69,19 @@ export class ToastNotification {
 			toast.dismissTimer = null
 		}
 
-		toast.visible = false
 		toast.onDismiss?.()
 
-		// When transitions are disabled (prefers-reduced-motion: reduce),
-		// transitionend never fires — remove the toast immediately.
-		if (this.prefersReducedMotion()) {
+		const el = this.containerElement.querySelector<HTMLElement>(
+			`[data-toast-id="${toast.id}"]`,
+		)
+		if (el) {
+			try {
+				el.hidePopover()
+			} catch {
+				// Already hidden — remove directly
+				this.removeToast(toast)
+			}
+		} else {
 			this.removeToast(toast)
 		}
 	}
@@ -93,30 +89,12 @@ export class ToastNotification {
 	private removeToast(toast: ToastItem): void {
 		const idx = this.toasts.indexOf(toast)
 		if (idx !== -1) this.toasts.splice(idx, 1)
-		if (this.toasts.length === 0) {
-			this.containerElement.hidePopover()
+	}
+
+	public onToggle(event: ToggleEvent, toast: ToastItem): void {
+		if (event.newState === 'closed') {
+			this.removeToast(toast)
 		}
-	}
-
-	private prefersReducedMotion(): boolean {
-		return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-	}
-
-	private onTransitionEnd(e: TransitionEvent): void {
-		if (e.propertyName !== 'opacity') return
-		const target = e.target as HTMLElement
-		const idStr = target.dataset.toastId
-		if (!idStr) return
-
-		const id = Number(idStr)
-		const toast = this.toasts.find((t) => t.id === id)
-		if (!toast || toast.visible) return
-
-		this.removeToast(toast)
-	}
-
-	public toastState(toast: ToastItem): 'entering' | 'exiting' {
-		return toast.visible ? 'entering' : 'exiting'
 	}
 
 	public onAction(toast: ToastItem): void {
