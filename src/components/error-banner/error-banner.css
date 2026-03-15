@@ -19,6 +19,7 @@
 			border: none;
 
 			background: transparent;
+			pointer-events: auto;
 
 			&::backdrop {
 				background: color-mix(
