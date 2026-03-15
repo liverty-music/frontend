@@ -6,6 +6,10 @@
 			justify-content: center;
 		}
 
+		.icon-switch {
+			display: contents;
+		}
+
 		.svg-icon {
 			flex-shrink: 0;
 			inline-size: var(--_icon-size, 1.25rem);
