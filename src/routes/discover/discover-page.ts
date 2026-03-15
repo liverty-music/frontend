@@ -50,7 +50,6 @@ export class DiscoverPage {
 
 	// State exposed to template
 	public followedArtists: ArtistBubble[] = []
-	public orbIntensity = 0
 	public poolFollowedIds: ReadonlySet<string> = new Set()
 
 	public readonly genreTags = GENRE_TAGS
@@ -572,14 +571,12 @@ export class DiscoverPage {
 		// Optimistic UI update
 		this.pool.markFollowed(artist.id)
 		this.followedArtists = [...this.followedArtists, artist]
-		this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 		this.poolFollowedIds = new Set(this.poolFollowedIds).add(artist.id)
 
 		try {
 			await this.followClient.follow(artist.id, artist.name)
 			this.logger.info('Artist followed', {
 				followed: this.followedArtists.length,
-				orbIntensity: this.orbIntensity,
 			})
 
 			// Track concert search status for dashboard coach mark
@@ -598,7 +595,6 @@ export class DiscoverPage {
 				this.followedArtists = this.followedArtists.filter(
 					(b) => b.id !== artist.id,
 				)
-				this.orbIntensity = Math.min(1, this.followedArtists.length / 20)
 				const ids = new Set(this.poolFollowedIds)
 				ids.delete(artist.id)
 				this.poolFollowedIds = ids

@@ -59,7 +59,6 @@
       <dna-orb-canvas
         component.ref="dnaOrbCanvas"
         artists.bind="poolBubbles"
-        orb-intensity.bind="orbIntensity"
         followed-ids.bind="poolFollowedIds"
         followed-count.bind="followedCount"
         show-followed-indicator.one-time="true"
@@ -67,10 +66,6 @@
         need-more-bubbles.trigger="onNeedMoreBubbles($event)"
       ></dna-orb-canvas>
 
-      <!-- Orb label -->
-      <div class="orb-label">
-        Music DNA ${followedCount > 0 ? '· ' + followedCount : ''}
-      </div>
     </div>
 
     <!-- Search results (shown during search) -->
