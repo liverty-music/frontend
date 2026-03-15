@@ -96,10 +96,10 @@ describe('OrbRenderer', () => {
 			expect(renderer.orbRadius).toBe(60)
 
 			renderer.setFollowCount(3)
-			expect(renderer.orbRadius).toBe(84)
+			expect(renderer.orbRadius).toBe(96)
 
-			renderer.setFollowCount(6)
-			expect(renderer.orbRadius).toBe(108)
+			renderer.setFollowCount(5)
+			expect(renderer.orbRadius).toBe(120)
 		})
 
 		it('should influence swirlMultiplier in update()', () => {
@@ -173,15 +173,26 @@ describe('OrbRenderer', () => {
 			expect(renderer.activeShockwaveCount).toBe(0)
 		})
 
-		it('should limit to 3 concurrent shockwaves', () => {
+		it('should support 5 concurrent shockwaves', () => {
 			const renderer = createRenderer()
 
 			renderer.spawnShockwave(100)
 			renderer.spawnShockwave(200)
 			renderer.spawnShockwave(300)
 			renderer.spawnShockwave(400)
+			renderer.spawnShockwave(500)
 
-			expect(renderer.activeShockwaveCount).toBe(3)
+			expect(renderer.activeShockwaveCount).toBe(5)
+		})
+
+		it('should not exceed 5 concurrent shockwaves', () => {
+			const renderer = createRenderer()
+
+			for (let i = 0; i < 7; i++) {
+				renderer.spawnShockwave(i * 50)
+			}
+
+			expect(renderer.activeShockwaveCount).toBe(5)
 		})
 	})
 
@@ -192,16 +203,16 @@ describe('OrbRenderer', () => {
 			expect(renderer.orbitalCount).toBe(0)
 		})
 
-		it('should return 2 orbitals at follow count 2', () => {
+		it('should return 2 orbitals at follow count 1', () => {
 			const renderer = createRenderer()
-			renderer.setFollowCount(2)
+			renderer.setFollowCount(1)
 			expect(renderer.orbitalCount).toBe(2)
 		})
 
 		it('should increase orbitals with follow count', () => {
 			const renderer = createRenderer()
-			renderer.setFollowCount(6)
-			expect(renderer.orbitalCount).toBe(10)
+			renderer.setFollowCount(5)
+			expect(renderer.orbitalCount).toBe(12)
 		})
 	})
 
@@ -236,7 +247,7 @@ describe('OrbRenderer', () => {
 
 		it('should suppress orbital rotation', () => {
 			const renderer = createReducedMotionRenderer()
-			renderer.setFollowCount(6)
+			renderer.setFollowCount(5)
 
 			const orbitals = (
 				renderer as unknown as {
@@ -254,7 +265,6 @@ describe('OrbRenderer', () => {
 			const renderer = createReducedMotionRenderer()
 			renderer.setFollowCount(5)
 
-			// Access the private reducedMotion to confirm it's set
 			const rm = (renderer as unknown as { reducedMotion: boolean })
 				.reducedMotion
 			expect(rm).toBe(true)
@@ -273,7 +283,6 @@ describe('OrbRenderer', () => {
 				(renderer as unknown as { particles: { angle: number }[] }).particles[0]
 					.angle - p0Angle
 
-			// Normal renderer with same settings
 			const normalRenderer = createRenderer()
 			normalRenderer.setFollowCount(5)
 			normalRenderer.injectColor(100)
@@ -286,8 +295,37 @@ describe('OrbRenderer', () => {
 				(normalRenderer as unknown as { particles: { angle: number }[] })
 					.particles[0].angle - p0Angle2
 
-			// Reduced motion should have smaller angle change (swirlMultiplier = 1 vs 1 + effectiveSwirl * 2)
 			expect(Math.abs(deltaReduced)).toBeLessThan(Math.abs(deltaNormal))
+		})
+
+		it('should suppress beat sync', () => {
+			const renderer = createReducedMotionRenderer()
+			renderer.setFollowCount(5)
+			renderer.update(100)
+
+			const beatPhase = (renderer as unknown as { beatPhase: number }).beatPhase
+			expect(beatPhase).toBe(0)
+		})
+
+		it('should suppress strobe flash', () => {
+			const renderer = createReducedMotionRenderer()
+			renderer.setFollowCount(5)
+			renderer.pulse()
+
+			const strobeFlash = (renderer as unknown as { strobeFlash: boolean })
+				.strobeFlash
+			expect(strobeFlash).toBe(false)
+		})
+
+		it('should suppress light ray alpha spike', () => {
+			const renderer = createReducedMotionRenderer()
+			renderer.setFollowCount(5)
+			renderer.pulse()
+
+			const lightRayAlphaSpike = (
+				renderer as unknown as { lightRayAlphaSpike: number }
+			).lightRayAlphaSpike
+			expect(lightRayAlphaSpike).toBe(0)
 		})
 	})
 })
