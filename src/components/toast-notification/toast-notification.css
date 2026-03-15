@@ -92,5 +92,11 @@
 				color: var(--color-white);
 			}
 		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.toast-item {
+				transition: none;
+			}
+		}
 	}
 }
