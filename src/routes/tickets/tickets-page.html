@@ -1,8 +1,12 @@
 <import from="./tickets-page.css"></import>
 
-<page-shell title-key="nav.tickets">
+<header class="[ page-header ]">
+  <h1 t="nav.tickets"></h1>
+</header>
+
+<main>
   <!-- Loading state -->
-  <div if.bind="isLoading" class="state-center">
+  <div if.bind="isLoading" class="state-center" role="status" aria-busy="true">
     <div class="spinner"></div>
     <p class="state-text">Loading tickets...</p>
   </div>
@@ -23,8 +27,8 @@
   ></state-placeholder>
 
   <!-- Ticket list -->
-  <div if.bind="!isLoading && !error && tickets.length > 0" class="ticket-list">
-    <div
+  <ul if.bind="!isLoading && !error && tickets.length > 0" class="ticket-list" role="list">
+    <li
       repeat.for="ticket of tickets; key.bind: ticket.id?.value"
       class="ticket-card"
     >
@@ -37,10 +41,10 @@
             <span class="ticket-date">${mintDate(ticket) | date:'short'}</span>
             <span if.bind="ticket.tokenId" class="ticket-token">${formatTokenId(ticket)}</span>
           </div>
-          <div class="soulbound-badge">
+          <span class="soulbound-badge">
             <svg-icon name="lock" size="xs"></svg-icon>
             Soulbound
-          </div>
+          </span>
         </div>
 
         <button
@@ -53,44 +57,44 @@
           Entry
         </button>
       </div>
-    </div>
+    </li>
+  </ul>
+</main>
+
+<!-- Proof generation progress dialog -->
+<dialog
+  ref="generatingDialog"
+  cancel.trigger="$event.preventDefault()"
+  aria-labelledby="generating-dialog-title"
+  class="center-dialog"
+>
+  <div role="alert" aria-live="polite" class="dialog-card">
+    <div class="spinner spinner-lg"></div>
+    <p id="generating-dialog-title" class="dialog-title">Generating Entry Code</p>
+    <p class="dialog-desc">${proofProgress}</p>
+    <p class="dialog-hint">This may take up to 30 seconds on mobile devices.</p>
   </div>
+</dialog>
 
-  <!-- Proof generation progress dialog -->
-  <dialog
-    ref="generatingDialog"
-    cancel.trigger="$event.preventDefault()"
-    aria-labelledby="generating-dialog-title"
-    class="center-dialog"
-  >
-    <div role="alert" aria-live="polite" class="dialog-card">
-      <div class="spinner spinner-lg"></div>
-      <p id="generating-dialog-title" class="dialog-title">Generating Entry Code</p>
-      <p class="dialog-desc">${proofProgress}</p>
-      <p class="dialog-hint">This may take up to 30 seconds on mobile devices.</p>
+<!-- QR Code dialog -->
+<dialog
+  ref="qrDialog"
+  click.trigger="$event.target === qrDialog && dismissQr()"
+  cancel.trigger="dismissQr()"
+  aria-labelledby="qr-modal-title"
+  class="center-dialog"
+>
+  <div class="dialog-card">
+    <h2 id="qr-modal-title" class="dialog-title">Entry Code</h2>
+    <p class="dialog-desc">Present this QR code at the venue entrance.</p>
+    <div class="qr-wrapper">
+      <img src.bind="qrDataUrl" alt="Entry QR Code" />
     </div>
-  </dialog>
-
-  <!-- QR Code dialog -->
-  <dialog
-    ref="qrDialog"
-    click.trigger="$event.target === qrDialog && dismissQr()"
-    cancel.trigger="dismissQr()"
-    aria-labelledby="qr-modal-title"
-    class="center-dialog"
-  >
-    <div class="dialog-card">
-      <h2 id="qr-modal-title" class="dialog-title">Entry Code</h2>
-      <p class="dialog-desc">Present this QR code at the venue entrance.</p>
-      <div class="qr-wrapper">
-        <img src.bind="qrDataUrl" alt="Entry QR Code" />
-      </div>
-      <button
-        click.trigger="dismissQr()"
-        class="dialog-close-btn"
-      >
-        Close
-      </button>
-    </div>
-  </dialog>
-</page-shell>
+    <button
+      click.trigger="dismissQr()"
+      class="dialog-close-btn"
+    >
+      Close
+    </button>
+  </div>
+</dialog>

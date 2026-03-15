@@ -8,9 +8,36 @@
 			--_pad-tiny: 0.125rem;
 			--_font-mono: monospace;
 			--_size-hint: var(--step--2);
+		}
 
-			display: block;
-			block-size: 100%;
+		.page-header {
+			flex-shrink: 0;
+
+			padding-block: var(--space-xs);
+			padding-inline: var(--space-xs);
+			border-block-end: 1px solid
+				color-mix(in oklch, var(--color-white) 10%, transparent);
+
+			background: var(--color-surface-raised);
+
+			& h1 {
+				font-family: var(--font-display);
+				font-size: var(--step-1);
+				font-weight: 700;
+				color: var(--color-text-primary);
+				letter-spacing: -0.01em;
+			}
+		}
+
+		main {
+			overflow: hidden;
+			display: flex;
+			flex: 1;
+			flex-direction: column;
+
+			min-block-size: 0;
+
+			background: var(--color-surface-base);
 		}
 
 		.state-center {

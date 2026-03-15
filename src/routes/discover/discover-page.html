@@ -3,11 +3,10 @@
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
 
 
-  <!-- Uses custom layout with data-search-mode state — not suitable for page-shell -->
   <main class="[ discover-layout ]" data-search-mode.bind="isSearchMode">
 
     <!-- Search bar -->
-    <div class="search-bar">
+    <search class="search-bar">
       <svg-icon name="search" class="search-icon"></svg-icon>
       <input
         type="text"
@@ -24,7 +23,7 @@
       >
         <svg-icon name="x"></svg-icon>
       </button>
-    </div>
+    </search>
 
     <!-- Genre chips (hidden during search) -->
     <div class="genre-chips">
@@ -71,8 +70,8 @@
       <div if.bind="!isSearching && isSearchMode && searchResults.length === 0 && searchQuery.trim().length > 0" class="search-status" t="discover.noResults">
       </div>
 
-      <div class="results-list">
-        <div
+      <ul class="results-list" role="list">
+        <li
           repeat.for="artist of searchResults; key.bind: artist.id"
           class="result-item"
         >
@@ -91,8 +90,8 @@
             <svg-icon if.bind="!isArtistFollowed(artist.id)" name="plus"></svg-icon>
             <svg-icon if.bind="isArtistFollowed(artist.id)" name="check"></svg-icon>
           </button>
-        </div>
-      </div>
+        </li>
+      </ul>
     </div>
 
     <!-- Screen reader status -->
