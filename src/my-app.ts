@@ -25,12 +25,6 @@ import { IOnboardingService } from './services/onboarding-service'
 			data: { auth: false },
 		},
 		{
-			path: 'onboarding/loading',
-			component: import('./routes/onboarding-loading/loading-sequence'),
-			title: 'Loading',
-			data: { auth: false, tutorialStep: 2 },
-		},
-		{
 			path: 'dashboard',
 			component: import('./routes/dashboard'),
 			title: 'Dashboard',

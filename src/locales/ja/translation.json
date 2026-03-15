@@ -173,12 +173,6 @@
 		"failedUnfollow": "{{name}}のフォロー解除に失敗しました",
 		"failedHype": "Hypeレベルの更新に失敗しました"
 	},
-	"loading": {
-		"phase1": "あなたのMusic DNAを構築中...",
-		"phase2": "全国のライブスケジュールと照合中...",
-		"phase3": "AIが最新のツアー情報を検索中... 🤖",
-		"partialFailure": "一部のアーティストのスケジュールを読み込めませんでした（{{failed}}/{{total}}）"
-	},
 	"discovery": {
 		"coachMark": {
 			"viewTimetable": "タイムテーブルを見てみよう！"

@@ -173,12 +173,6 @@
 		"failedUnfollow": "Failed to unfollow {{name}}",
 		"failedHype": "Failed to update hype level"
 	},
-	"loading": {
-		"phase1": "Building your Music DNA...",
-		"phase2": "Matching with live schedules nationwide...",
-		"phase3": "AI searching for the latest tour info... 🤖",
-		"partialFailure": "Some artist schedules couldn't be loaded ({{failed}}/{{total}})"
-	},
 	"discovery": {
 		"coachMark": {
 			"viewTimetable": "Check out your timetable!"
