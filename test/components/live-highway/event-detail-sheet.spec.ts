@@ -173,20 +173,20 @@ describe('EventDetailSheet', () => {
 	})
 
 	describe('scroll snap dismiss', () => {
-		it('should close when scrolled past half of container height', () => {
+		it('should close when snapped to dismiss zone (scrollTop > 0)', () => {
 			sut.open(makeEvent())
 
-			// Simulate scrollend with scrollTop > clientHeight * 0.5
-			const mockTarget = { scrollTop: 250, clientHeight: 400 }
+			// With mandatory snap, any non-zero scrollTop means dismiss zone
+			const mockTarget = { scrollTop: 1, clientHeight: 400 }
 			sut.onScrollEnd({ target: mockTarget } as any)
 
 			expect(sut.isOpen).toBe(false)
 		})
 
-		it('should not close when scrolled less than half', () => {
+		it('should not close when snapped back to content (scrollTop === 0)', () => {
 			sut.open(makeEvent())
 
-			const mockTarget = { scrollTop: 150, clientHeight: 400 }
+			const mockTarget = { scrollTop: 0, clientHeight: 400 }
 			sut.onScrollEnd({ target: mockTarget } as any)
 
 			expect(sut.isOpen).toBe(true)

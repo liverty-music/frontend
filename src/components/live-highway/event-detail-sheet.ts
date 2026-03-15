@@ -132,7 +132,7 @@ export class EventDetailSheet {
 	/** CSS scroll snap dismiss: close when scrolled past the dismiss zone */
 	public onScrollEnd(e: Event): void {
 		const el = e.target as HTMLElement
-		if (el.scrollTop > el.clientHeight * 0.5) {
+		if (el.scrollTop > 0) {
 			this.close()
 		}
 	}
