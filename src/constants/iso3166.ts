@@ -70,13 +70,13 @@ export function displayName(code: string, lang: 'ja' | 'en' = 'ja'): string {
 }
 
 /**
- * Returns the short display name (without suffix) for Japanese prefectures.
- * e.g., "JP-13" → "東京", "JP-27" → "大阪"
+ * Returns the i18n translation key for an ISO 3166-2 code.
+ * e.g., "JP-13" → "tokyo", "JP-40" → "fukuoka"
  */
-export function shortDisplayName(code: string): string {
+export function translationKey(code: string): string {
 	const entry = JP_PREFECTURES[code]
 	if (!entry) return code
-	return entry.ja.replace(/[都道府県]$/, '')
+	return entry.key
 }
 
 /**

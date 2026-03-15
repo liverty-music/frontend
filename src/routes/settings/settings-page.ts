@@ -2,7 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Toast } from '../../components/toast-notification/toast'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
-import { shortDisplayName } from '../../constants/iso3166'
+import { translationKey } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
@@ -24,6 +24,8 @@ export class SettingsPage {
 	public notificationsEnabled = false
 	public vapidAvailable = !!(import.meta.env.VITE_VAPID_PUBLIC_KEY ?? '')
 	public homeSelector!: UserHomeSelector
+	public languageDialog?: HTMLDialogElement
+	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	private isToggling = false
 
 	public get currentHomeDisplay(): string {
@@ -39,7 +41,7 @@ export class SettingsPage {
 	public loading(): void {
 		const homeLevel1 = this.userService.current?.home?.level1
 		const code = homeLevel1 ?? UserHomeSelector.getStoredHome()
-		this.currentHome = code ? shortDisplayName(code) : null
+		this.currentHome = code ? translationKey(code) : null
 		const storedPref =
 			localStorage.getItem(StorageKeys.userNotificationsEnabled) === 'true'
 		// If the browser permission was revoked externally, override the stored preference
@@ -52,19 +54,47 @@ export class SettingsPage {
 	}
 
 	public onHomeSelected(code: string): void {
-		this.currentHome = shortDisplayName(code)
+		this.currentHome = translationKey(code)
 		this.logger.info('Home area updated from settings', { code })
 	}
 
-	public async cycleLanguage(): Promise<void> {
+	public openLanguageSelector(): void {
+		this.languageDialog?.showModal()
+	}
+
+	public closeLanguageSelector(): void {
+		this.languageDialog?.close()
+	}
+
+	public handleLanguageBackdropClick(event: MouseEvent): void {
+		if (event.target === this.languageDialog) {
+			this.closeLanguageSelector()
+		}
+	}
+
+	public handleLanguageCancel(event: Event): void {
+		event.preventDefault()
+		this.closeLanguageSelector()
+	}
+
+	public async selectLanguage(lang: string): Promise<void> {
 		const current = this.i18n.getLocale()
-		const idx = SUPPORTED_LANGUAGES.indexOf(
-			current as (typeof SUPPORTED_LANGUAGES)[number],
-		)
-		const next = SUPPORTED_LANGUAGES[(idx + 1) % SUPPORTED_LANGUAGES.length]
-		await this.i18n.setLocale(next)
-		localStorage.setItem('language', next)
-		this.logger.info('Language changed', { from: current, to: next })
+		if (lang === current) {
+			this.closeLanguageSelector()
+			return
+		}
+		await this.i18n.setLocale(lang)
+		localStorage.setItem('language', lang)
+		this.logger.info('Language changed', { from: current, to: lang })
+		this.closeLanguageSelector()
+	}
+
+	public isCurrentLanguage(lang: string): boolean {
+		return this.i18n.getLocale() === lang
+	}
+
+	public languageLabel(lang: string): string {
+		return this.i18n.tr(`languages.${lang}`)
 	}
 
 	public async toggleNotifications(): Promise<void> {
