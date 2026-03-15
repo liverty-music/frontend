@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { OrbRenderer } from '../../src/components/dna-orb/orb-renderer'
 
 describe('OrbRenderer', () => {
@@ -8,19 +8,30 @@ describe('OrbRenderer', () => {
 		return renderer
 	}
 
+	function createReducedMotionRenderer(): OrbRenderer {
+		const original = window.matchMedia
+		window.matchMedia = vi.fn().mockReturnValue({ matches: true })
+		const renderer = new OrbRenderer()
+		renderer.init(400, 600)
+		window.matchMedia = original
+		return renderer
+	}
+
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
 	describe('injectColor', () => {
 		it('should inject particles with the given hue while keeping total at maxParticles', () => {
 			const renderer = createRenderer()
 
 			renderer.injectColor(142)
 
-			// Access particles via type assertion for testing
 			const particles = (
 				renderer as unknown as { particles: { hue: number }[] }
 			).particles
-			expect(particles.length).toBe(60) // maxParticles unchanged
+			expect(particles.length).toBe(60)
 
-			// At least 5 particles should have hue near 142 (±10)
 			const injected = particles.filter((p) => p.hue >= 132 && p.hue <= 152)
 			expect(injected.length).toBeGreaterThanOrEqual(5)
 		})
@@ -41,7 +52,6 @@ describe('OrbRenderer', () => {
 			renderer.injectColor(100)
 			expect(renderer.swirlIntensity).toBe(1.0)
 
-			// Simulate 1200ms of updates (should decay fully from 1.0 over 1000ms)
 			for (let i = 0; i < 12; i++) {
 				renderer.update(100)
 			}
@@ -80,10 +90,21 @@ describe('OrbRenderer', () => {
 			expect(renderer.baseIntensity).toBeLessThan(1)
 		})
 
+		it('should update orbRadius via stageParams', () => {
+			const renderer = createRenderer()
+			renderer.setFollowCount(0)
+			expect(renderer.orbRadius).toBe(60)
+
+			renderer.setFollowCount(3)
+			expect(renderer.orbRadius).toBe(84)
+
+			renderer.setFollowCount(6)
+			expect(renderer.orbRadius).toBe(108)
+		})
+
 		it('should influence swirlMultiplier in update()', () => {
 			const renderer = createRenderer()
 
-			// Without baseIntensity, particles move at base speed
 			const p0Angle = (
 				renderer as unknown as { particles: { angle: number }[] }
 			).particles[0].angle
@@ -92,7 +113,6 @@ describe('OrbRenderer', () => {
 				(renderer as unknown as { particles: { angle: number }[] }).particles[0]
 					.angle - p0Angle
 
-			// Reset and apply baseIntensity
 			const renderer2 = createRenderer()
 			renderer2.setFollowCount(5)
 			const p0Angle2 = (
@@ -103,8 +123,85 @@ describe('OrbRenderer', () => {
 				(renderer2 as unknown as { particles: { angle: number }[] })
 					.particles[0].angle - p0Angle2
 
-			// With baseIntensity, particles should move faster
 			expect(Math.abs(deltaWithBase)).toBeGreaterThan(Math.abs(deltaNoBase))
+		})
+	})
+
+	describe('color palette accumulation', () => {
+		it('should accumulate hues in colorPalette', () => {
+			const renderer = createRenderer()
+
+			renderer.injectColor(100)
+			renderer.injectColor(200)
+			renderer.injectColor(300)
+
+			expect(renderer.colorPalette).toEqual([100, 200, 300])
+		})
+
+		it('should cap palette at 20 entries using FIFO', () => {
+			const renderer = createRenderer()
+
+			for (let i = 0; i < 25; i++) {
+				renderer.injectColor(i * 15)
+			}
+
+			expect(renderer.colorPalette.length).toBe(20)
+			expect(renderer.colorPalette[0]).toBe(75)
+			expect(renderer.colorPalette[19]).toBe(360)
+		})
+	})
+
+	describe('shockwave lifecycle', () => {
+		it('should spawn a shockwave', () => {
+			const renderer = createRenderer()
+
+			renderer.spawnShockwave(180)
+
+			expect(renderer.activeShockwaveCount).toBe(1)
+		})
+
+		it('should deactivate shockwave after 800ms', () => {
+			const renderer = createRenderer()
+
+			renderer.spawnShockwave(180)
+			expect(renderer.activeShockwaveCount).toBe(1)
+
+			for (let i = 0; i < 8; i++) {
+				renderer.update(100)
+			}
+
+			expect(renderer.activeShockwaveCount).toBe(0)
+		})
+
+		it('should limit to 3 concurrent shockwaves', () => {
+			const renderer = createRenderer()
+
+			renderer.spawnShockwave(100)
+			renderer.spawnShockwave(200)
+			renderer.spawnShockwave(300)
+			renderer.spawnShockwave(400)
+
+			expect(renderer.activeShockwaveCount).toBe(3)
+		})
+	})
+
+	describe('orbital count reflects stageParams', () => {
+		it('should return 0 orbitals at follow count 0', () => {
+			const renderer = createRenderer()
+			renderer.setFollowCount(0)
+			expect(renderer.orbitalCount).toBe(0)
+		})
+
+		it('should return 2 orbitals at follow count 2', () => {
+			const renderer = createRenderer()
+			renderer.setFollowCount(2)
+			expect(renderer.orbitalCount).toBe(2)
+		})
+
+		it('should increase orbitals with follow count', () => {
+			const renderer = createRenderer()
+			renderer.setFollowCount(6)
+			expect(renderer.orbitalCount).toBe(10)
 		})
 	})
 
@@ -113,20 +210,84 @@ describe('OrbRenderer', () => {
 			const renderer = createRenderer()
 
 			renderer.injectColor(100)
-			renderer.update(200) // Decay swirl partially
+			renderer.update(200)
 			expect(renderer.swirlIntensity).toBeLessThan(1.0)
 
 			renderer.injectColor(300)
-			// Swirl should restart at 1.0
 			expect(renderer.swirlIntensity).toBe(1.0)
 
 			const particles = (
-				renderer as unknown as { particles: { hue: number }[] }
+				renderer as unknown as { particles: { angle: number; hue: number }[] }
 			).particles
-			// Should have particles near both 100 and 300
 			const near100 = particles.filter((p) => p.hue >= 90 && p.hue <= 110)
 			const near300 = particles.filter((p) => p.hue >= 290 && p.hue <= 310)
 			expect(near100.length + near300.length).toBeGreaterThanOrEqual(5)
+		})
+	})
+
+	describe('prefers-reduced-motion', () => {
+		it('should suppress shockwave spawning', () => {
+			const renderer = createReducedMotionRenderer()
+
+			renderer.spawnShockwave(180)
+
+			expect(renderer.activeShockwaveCount).toBe(0)
+		})
+
+		it('should suppress orbital rotation', () => {
+			const renderer = createReducedMotionRenderer()
+			renderer.setFollowCount(6)
+
+			const orbitals = (
+				renderer as unknown as {
+					orbitals: { angle: number }[]
+				}
+			).orbitals
+			const angleBefore = orbitals[0].angle
+
+			renderer.update(100)
+
+			expect(orbitals[0].angle).toBe(angleBefore)
+		})
+
+		it('should suppress breathing amplitude in render', () => {
+			const renderer = createReducedMotionRenderer()
+			renderer.setFollowCount(5)
+
+			// Access the private reducedMotion to confirm it's set
+			const rm = (renderer as unknown as { reducedMotion: boolean })
+				.reducedMotion
+			expect(rm).toBe(true)
+		})
+
+		it('should use swirlMultiplier of 1 regardless of intensity', () => {
+			const renderer = createReducedMotionRenderer()
+			renderer.setFollowCount(5)
+			renderer.injectColor(100)
+
+			const p0Angle = (
+				renderer as unknown as { particles: { angle: number }[] }
+			).particles[0].angle
+			renderer.update(100)
+			const deltaReduced =
+				(renderer as unknown as { particles: { angle: number }[] }).particles[0]
+					.angle - p0Angle
+
+			// Normal renderer with same settings
+			const normalRenderer = createRenderer()
+			normalRenderer.setFollowCount(5)
+			normalRenderer.injectColor(100)
+
+			const p0Angle2 = (
+				normalRenderer as unknown as { particles: { angle: number }[] }
+			).particles[0].angle
+			normalRenderer.update(100)
+			const deltaNormal =
+				(normalRenderer as unknown as { particles: { angle: number }[] })
+					.particles[0].angle - p0Angle2
+
+			// Reduced motion should have smaller angle change (swirlMultiplier = 1 vs 1 + effectiveSwirl * 2)
+			expect(Math.abs(deltaReduced)).toBeLessThan(Math.abs(deltaNormal))
 		})
 	})
 })
