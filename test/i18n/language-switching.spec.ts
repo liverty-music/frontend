@@ -73,44 +73,55 @@ describe('i18n language switching', () => {
 		expect(mockI18n.getLocale()).toBe('ja')
 	})
 
-	it('should cycle from ja to en', async () => {
-		await sut.cycleLanguage()
+	it('should select English language', async () => {
+		await sut.selectLanguage('en')
 
 		expect(mockI18n.setLocale).toHaveBeenCalledWith('en')
 		expect(localStorage.getItem('language')).toBe('en')
 	})
 
-	it('should cycle from en back to ja', async () => {
-		// Switch to English first
-		await sut.cycleLanguage()
+	it('should switch back to Japanese', async () => {
+		await sut.selectLanguage('en')
 		expect(mockI18n.currentLocale).toBe('en')
 
-		// Switch back to Japanese
-		await sut.cycleLanguage()
+		await sut.selectLanguage('ja')
 
 		expect(mockI18n.setLocale).toHaveBeenCalledWith('ja')
 		expect(localStorage.getItem('language')).toBe('ja')
 	})
 
+	it('should not call setLocale when selecting current language', async () => {
+		await sut.selectLanguage('ja')
+
+		expect(mockI18n.setLocale).not.toHaveBeenCalled()
+	})
+
 	it('should persist language choice in localStorage', async () => {
-		await sut.cycleLanguage()
+		await sut.selectLanguage('en')
 		expect(localStorage.getItem('language')).toBe('en')
 
-		await sut.cycleLanguage()
+		await sut.selectLanguage('ja')
 		expect(localStorage.getItem('language')).toBe('ja')
 	})
 
 	it('should update currentLanguageLabel after locale change', async () => {
-		// Before switching: ja
 		sut.currentLanguageLabel
 		expect(mockI18n.tr).toHaveBeenCalledWith('languages.ja')
 
-		// Switch to English
-		await sut.cycleLanguage()
+		await sut.selectLanguage('en')
 
-		// After switching: en
 		mockI18n.tr.mockClear()
 		sut.currentLanguageLabel
+		expect(mockI18n.tr).toHaveBeenCalledWith('languages.en')
+	})
+
+	it('should identify current language', () => {
+		expect(sut.isCurrentLanguage('ja')).toBe(true)
+		expect(sut.isCurrentLanguage('en')).toBe(false)
+	})
+
+	it('should return language label via languageLabel()', () => {
+		sut.languageLabel('en')
 		expect(mockI18n.tr).toHaveBeenCalledWith('languages.en')
 	})
 

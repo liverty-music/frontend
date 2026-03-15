@@ -28,7 +28,7 @@
 
       <!-- Language -->
       <button
-        click.trigger="cycleLanguage()"
+        click.trigger="openLanguageSelector()"
         class="settings-row"
       >
         <div class="settings-row-start">
@@ -129,3 +129,32 @@
   component.ref="homeSelector"
   on-home-selected.bind="(code) => onHomeSelected(code)"
 ></user-home-selector>
+
+<!-- Language Selector Bottom Sheet -->
+<dialog
+  ref="languageDialog"
+  t="[aria-label]settings.language"
+  click.trigger="handleLanguageBackdropClick($event)"
+  cancel.trigger="handleLanguageCancel($event)"
+  class="[ language-selector ]"
+>
+  <div class="selector-body">
+    <div class="selector-handle">
+      <div class="selector-handle-bar"></div>
+    </div>
+    <div class="selector-content">
+      <h2 t="settings.language" class="selector-title"></h2>
+      <div class="language-list">
+        <button
+          repeat.for="lang of supportedLanguages"
+          click.trigger="selectLanguage(lang)"
+          class="language-option"
+          data-selected.bind="isCurrentLanguage(lang)"
+        >
+          <span>${ languageLabel(lang) }</span>
+          <svg-icon if.bind="isCurrentLanguage(lang)" name="check" class="language-check"></svg-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</dialog>
