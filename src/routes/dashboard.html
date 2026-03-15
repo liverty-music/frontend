@@ -5,12 +5,10 @@
 <import from="../components/celebration-overlay/celebration-overlay"></import>
 <import from="../components/signup-prompt-banner/signup-prompt-banner"></import>
 
-<main class="[ dashboard-layout ]">
+<page-shell show-header.bind="false">
   <!-- Stale data warning -->
   <aside if.bind="isStale" class="[ dashboard-stale-banner ]">
-    <svg class="dashboard-stale-icon" viewBox="0 0 20 20" fill="currentColor">
-      <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-    </svg>
+    <svg-icon name="warning" class="dashboard-stale-icon"></svg-icon>
     <span t="dashboard.stale.message"></span>
     <button click.trigger="retry()" t="dashboard.stale.retry" class="dashboard-stale-retry"></button>
   </aside>
@@ -28,15 +26,11 @@
     <!-- Success state -->
     <div then.from-view="data" class="dashboard-promise-slot">
       <!-- Empty state -->
-      <div if.bind="dateGroups.length === 0" class="dashboard-empty">
-        <svg class="dashboard-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M12 6v6l4 2"/>
-        </svg>
+      <state-placeholder if.bind="dateGroups.length === 0" icon="clock">
         <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
         <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
         <a href="/discover" t="dashboard.empty.discoverLink" class="dashboard-empty-link"></a>
-      </div>
+      </state-placeholder>
 
       <!-- Data loaded -->
       <live-highway
@@ -64,7 +58,7 @@
       ></live-highway>
     </div>
   </div>
-</main>
+</page-shell>
 
 <!-- Signup prompt banner for unauthenticated users -->
 <signup-prompt-banner

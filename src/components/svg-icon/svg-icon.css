@@ -1,0 +1,35 @@
+@layer block {
+	@scope (svg-icon) {
+		:scope {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.svg-icon {
+			flex-shrink: 0;
+			inline-size: var(--_icon-size, 1.25rem);
+			block-size: var(--_icon-size, 1.25rem);
+		}
+
+		:scope[data-size="xs"] {
+			--_icon-size: 0.75rem;
+		}
+
+		:scope[data-size="sm"] {
+			--_icon-size: 1rem;
+		}
+
+		:scope[data-size="md"] {
+			--_icon-size: 1.25rem;
+		}
+
+		:scope[data-size="lg"] {
+			--_icon-size: 1.5rem;
+		}
+
+		:scope[data-size="xl"] {
+			--_icon-size: 2.5rem;
+		}
+	}
+}

@@ -4,6 +4,9 @@ import { RouterConfiguration } from '@aurelia/router'
 import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
+import { PageShell } from './components/page-shell/page-shell'
+import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
+import { SvgIcon } from './components/svg-icon/svg-icon'
 import { migrateStorageKeys } from './constants/storage-keys'
 import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
@@ -106,6 +109,9 @@ Aurelia
 	.register(IEntryService)
 	.register(IProofService)
 	.register(BottomNavBar)
+	.register(PageShell)
+	.register(StatePlaceholder)
+	.register(SvgIcon)
 	.register(AuthHook)
 	.register(ArtistColorCustomAttribute)
 	.register(DotColorCustomAttribute)
