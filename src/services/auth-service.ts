@@ -78,7 +78,11 @@ export class AuthService {
 
 	public async signIn(): Promise<void> {
 		this.logger.info('Starting sign-in flow')
-		await this.userManager.signinRedirect()
+		// In dev, force re-authentication to bypass Zitadel session cookies,
+		// making it easy to switch between test users without clearing cookies.
+		await this.userManager.signinRedirect(
+			import.meta.env.DEV ? { prompt: 'login' } : undefined,
+		)
 	}
 
 	public async signUp(): Promise<void> {
