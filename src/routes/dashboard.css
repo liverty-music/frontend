@@ -2,50 +2,12 @@
 	/* biome-ignore lint/correctness/noUnknownTypeSelector: Aurelia 2 custom element */
 	@scope (dashboard) {
 		:scope {
-			--_stale-bg: var(--color-warning);
-			--_stale-text: var(--color-warning);
-
 			display: grid;
 			grid-template-areas: "main";
 			grid-template-rows: 1fr;
 
 			block-size: 100%;
 			min-block-size: 0;
-		}
-
-		.dashboard-stale-banner {
-			position: fixed;
-			inset-block-start: 0;
-			inset-inline: 0;
-
-			display: flex;
-			gap: var(--space-2xs);
-			align-items: center;
-
-			padding: var(--space-2xs) var(--space-s);
-			border-block-end: 1px solid
-				color-mix(in oklch, var(--_stale-bg) 20%, transparent);
-
-			font-size: var(--step--1);
-			color: color-mix(in oklch, var(--_stale-text) 80%, var(--color-white));
-
-			background: color-mix(in oklch, var(--_stale-bg) 30%, transparent);
-			backdrop-filter: blur(8px);
-		}
-
-		.dashboard-stale-icon {
-			flex-shrink: 0;
-			inline-size: 1rem;
-			block-size: 1rem;
-		}
-
-		.dashboard-stale-retry {
-			text-decoration: underline;
-			transition: color 200ms;
-
-			&:hover {
-				color: color-mix(in oklch, var(--_stale-text) 90%, var(--color-white));
-			}
 		}
 
 		.dashboard-main {
