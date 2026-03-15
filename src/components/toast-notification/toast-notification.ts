@@ -24,6 +24,12 @@ export class ToastNotification {
 	}
 
 	public detaching(): void {
+		for (const toast of this.toasts) {
+			if (toast.dismissTimer !== null) {
+				clearTimeout(toast.dismissTimer)
+				toast.dismissTimer = null
+			}
+		}
 		this.subscription.dispose()
 	}
 
