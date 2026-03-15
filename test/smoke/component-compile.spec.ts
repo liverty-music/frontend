@@ -4,7 +4,6 @@ import { createFixture } from '@aurelia/testing'
 import { IEventAggregator, Registration } from 'aurelia'
 import { describe, expect, it, vi } from 'vitest'
 import { BottomNavBar } from '../../src/components/bottom-nav-bar/bottom-nav-bar'
-import { PageShell } from '../../src/components/page-shell/page-shell'
 import { StatePlaceholder } from '../../src/components/state-placeholder/state-placeholder'
 import { SvgIcon } from '../../src/components/svg-icon/svg-icon'
 import { IErrorBoundaryService } from '../../src/services/error-boundary-service'
@@ -52,7 +51,6 @@ const components: [string, string, object, object[]][] = [
 		StatePlaceholder,
 		[],
 	],
-	['PageShell', '<page-shell></page-shell>', PageShell, [SvgIcon]],
 	[
 		'BottomNavBar',
 		'<bottom-nav-bar></bottom-nav-bar>',
