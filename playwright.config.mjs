@@ -45,6 +45,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: 'e2e/layout/**/*.auth.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
       },

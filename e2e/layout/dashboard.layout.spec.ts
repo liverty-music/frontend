@@ -101,7 +101,7 @@ test.describe('Dashboard shell layout', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedDashboardState())
 		await page.goto('/dashboard')
-		await page.waitForSelector('live-highway, .dashboard-empty', {
+		await page.waitForSelector('live-highway, state-placeholder', {
 			timeout: 5000,
 		})
 	})
@@ -118,35 +118,42 @@ test.describe('Dashboard shell layout', () => {
 		layoutPage: page,
 	}) => {
 		const contentHeight = await page.evaluate(() => {
-			const root = document.querySelector('.dashboard-layout')
+			const root = document.querySelector('dashboard')
 			if (!root) return { root: 0, content: 0 }
-			const body = root.querySelector('.dashboard-body')
+			const main = root.querySelector('.dashboard-main')
 			return {
 				root: root.getBoundingClientRect().height,
-				content: body?.getBoundingClientRect().height ?? 0,
+				content: main?.getBoundingClientRect().height ?? 0,
 			}
 		})
 		expect(
 			contentHeight.root,
-			'dashboard-layout should have height',
+			'dashboard CE should have height',
 		).toBeGreaterThan(100)
 		expect(
 			contentHeight.content,
-			'dashboard-body should not collapse to zero',
+			'dashboard-main should not collapse to zero',
 		).toBeGreaterThan(50)
 	})
 
 	test('visible content not clipped by zero-height ancestor (DB3)', async ({
 		layoutPage: page,
 	}) => {
+		// Use a stable locator: dashboard always renders at least one visible element
+		// (either live-highway stage labels or state-placeholder text)
 		const visibleText = page
-			.locator('au-viewport h1, au-viewport p, au-viewport span')
+			.locator(
+				'live-highway .stage-label-text, state-placeholder p, state-placeholder h2',
+			)
 			.first()
 		await expect(visibleText).toBeVisible()
 
-		const box = await visibleText.boundingBox()
-		expect(box, 'text element should have a bounding box').toBeTruthy()
-		expect(box!.height).toBeGreaterThan(0)
+		await expect
+			.poll(async () => {
+				const box = await visibleText.boundingBox()
+				return box?.height ?? 0
+			})
+			.toBeGreaterThan(0)
 	})
 
 	test('bottom-nav anchored to viewport bottom (DB4)', async ({
@@ -155,19 +162,19 @@ test.describe('Dashboard shell layout', () => {
 		await expectAnchored(page, page.locator('bottom-nav-bar'), 'bottom', 2)
 	})
 
-	test('au-viewport + bottom-nav equals my-app height (DB5)', async ({
+	test('au-viewport + bottom-nav equals app-shell height (DB5)', async ({
 		layoutPage: page,
 	}) => {
-		const myAppBox = await page.locator('my-app').boundingBox()
+		const appShellBox = await page.locator('app-shell').boundingBox()
 		const viewportBox = await page.locator('au-viewport').boundingBox()
 		const navBox = await page.locator('bottom-nav-bar').boundingBox()
 
-		expect(myAppBox).toBeTruthy()
+		expect(appShellBox).toBeTruthy()
 		expect(viewportBox).toBeTruthy()
 		expect(navBox).toBeTruthy()
 
 		const combined = viewportBox!.height + navBox!.height
-		expect(combined).toBeCloseTo(myAppBox!.height, 0)
+		expect(combined).toBeCloseTo(appShellBox!.height, 0)
 	})
 })
 
@@ -256,16 +263,16 @@ test.describe('Dashboard empty state', () => {
 		await page.addInitScript(seedDashboardState())
 		await page.goto('/dashboard')
 		// Wait for promise to resolve to empty state
-		await page.waitForSelector('.dashboard-empty svg, live-highway', {
+		await page.waitForSelector('state-placeholder, live-highway', {
 			timeout: 5000,
 		})
 	})
 
 	test('empty state icon is visible (E1)', async ({ layoutPage: page }) => {
-		const icon = page.locator('.dashboard-empty svg').first()
-		// Only check if empty state is shown (no followed artists -> empty)
-		const isEmpty = (await icon.count()) > 0
+		const placeholder = page.locator('state-placeholder')
+		const isEmpty = (await placeholder.count()) > 0
 		if (!isEmpty) return // Data loaded, skip empty state tests
+		const icon = placeholder.locator('svg').first()
 		await expect(icon).toBeVisible()
 		const box = await icon.boundingBox()
 		expect(box).toBeTruthy()
@@ -276,16 +283,17 @@ test.describe('Dashboard empty state', () => {
 	test('empty state shows title and subtitle text (E2)', async ({
 		layoutPage: page,
 	}) => {
-		const emptyContainer = page.locator('.dashboard-empty')
-		if ((await emptyContainer.count()) === 0) return
-		const paragraphs = emptyContainer.locator('p')
+		const placeholder = page.locator('state-placeholder')
+		if ((await placeholder.count()) === 0) return
+		// state-placeholder projects content via au-slot; title is <p> + subtitle is <p>
+		const paragraphs = placeholder.locator('p')
 		await expect(paragraphs).toHaveCount(2)
 	})
 
 	test('empty state has discover link (E3)', async ({ layoutPage: page }) => {
-		const emptyContainer = page.locator('.dashboard-empty')
-		if ((await emptyContainer.count()) === 0) return
-		const link = emptyContainer.locator('a[href*="discover"]')
+		const placeholder = page.locator('state-placeholder')
+		if ((await placeholder.count()) === 0) return
+		const link = placeholder.locator('a[href*="discover"]')
 		await expect(link).toHaveCount(1)
 		await expect(link).toBeVisible()
 	})
@@ -293,19 +301,19 @@ test.describe('Dashboard empty state', () => {
 	test('empty state is vertically centered in content area (E4)', async ({
 		layoutPage: page,
 	}) => {
-		const emptyContainer = page.locator('.dashboard-empty')
-		if ((await emptyContainer.count()) === 0) return
+		const placeholder = page.locator('state-placeholder')
+		if ((await placeholder.count()) === 0) return
 
-		const containerBox = await emptyContainer.boundingBox()
-		expect(containerBox).toBeTruthy()
+		const placeholderBox = await placeholder.boundingBox()
+		expect(placeholderBox).toBeTruthy()
 
-		// Content area is the parent (promise.bind div)
-		const contentBox = await emptyContainer.locator('..').boundingBox()
-		if (!contentBox) return
+		// Content area is .dashboard-main
+		const mainBox = await page.locator('.dashboard-main').boundingBox()
+		if (!mainBox) return
 
 		// Center of the empty state should be near center of content area
-		const emptyCenter = containerBox!.y + containerBox!.height / 2
-		const contentCenter = contentBox.y + contentBox.height / 2
+		const emptyCenter = placeholderBox!.y + placeholderBox!.height / 2
+		const contentCenter = mainBox.y + mainBox.height / 2
 		expect(Math.abs(emptyCenter - contentCenter)).toBeLessThan(50)
 	})
 })
@@ -336,26 +344,25 @@ test.describe('Dashboard data-loaded state', () => {
 		layoutPage: page,
 	}) => {
 		// Critical regression test: the height chain must propagate through
-		// au-viewport → dashboard → promise.bind div → live-highway → scroll container.
+		// au-viewport → dashboard → .dashboard-main → live-highway → scroll container.
 		const heights = await page.evaluate(() => {
-			const root = document.querySelector('.dashboard-layout')
+			const root = document.querySelector('dashboard')
 			if (!root) return { root: 0, content: 0, scrollContainer: 0 }
-			const body = root.querySelector('.dashboard-body')
+			const main = root.querySelector('.dashboard-main')
 			const scroll = document.querySelector('.highway-scroll')
 			return {
 				root: root.getBoundingClientRect().height,
-				content: body?.getBoundingClientRect().height ?? 0,
+				content: main?.getBoundingClientRect().height ?? 0,
 				scrollContainer: scroll?.getBoundingClientRect().height ?? 0,
 			}
 		})
 
-		expect(
-			heights.root,
-			'dashboard-layout should fill viewport',
-		).toBeGreaterThan(200)
+		expect(heights.root, 'dashboard CE should fill viewport').toBeGreaterThan(
+			200,
+		)
 		expect(
 			heights.content,
-			'dashboard-body must not collapse to zero',
+			'dashboard-main must not collapse to zero',
 		).toBeGreaterThan(100)
 		expect(
 			heights.scrollContainer,
@@ -489,7 +496,10 @@ test.describe('Dashboard data-loaded state', () => {
 
 		const awayCardBox = await awayCards.first().boundingBox()
 		expect(awayCardBox).toBeTruthy()
-		expect(awayCardBox!.height, 'away card has non-zero height').toBeGreaterThan(0)
+		expect(
+			awayCardBox!.height,
+			'away card has non-zero height',
+		).toBeGreaterThan(0)
 
 		// Verify all 3 lanes have equal width (1fr 1fr 1fr)
 		const laneBoxes = await Promise.all([
@@ -504,9 +514,7 @@ test.describe('Dashboard data-loaded state', () => {
 		expect(laneBoxes[1]!.width).toBeCloseTo(laneBoxes[2]!.width, -1)
 	})
 
-	test('away lane renders event cards (C9)', async ({
-		layoutPage: page,
-	}) => {
+	test('away lane renders event cards (C9)', async ({ layoutPage: page }) => {
 		// Away lane is the 3rd column
 		const grid = page.locator('live-highway .lane-grid')
 
@@ -520,9 +528,10 @@ test.describe('Dashboard data-loaded state', () => {
 
 		const awayCardBox = await awayCards.first().boundingBox()
 		expect(awayCardBox).toBeTruthy()
-		expect(awayCardBox!.height, 'away card has non-zero height').toBeGreaterThan(
-			0,
-		)
+		expect(
+			awayCardBox!.height,
+			'away card has non-zero height',
+		).toBeGreaterThan(0)
 	})
 })
 
