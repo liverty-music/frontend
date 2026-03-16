@@ -1,19 +1,24 @@
 @layer tokens {
 	:root {
-		/* Brand colors */
-		--color-brand-primary: oklch(58.5% 0.233 277deg);
-		--color-brand-secondary: oklch(54.1% 0.281 293deg);
-		--color-brand-accent: oklch(78.9% 0.154 211deg);
+		/* Brand colors — festival vibrant palette */
+		--color-brand-primary: oklch(65% 0.28 350deg);
+		--color-brand-secondary: oklch(62% 0.25 255deg);
+		--color-brand-accent: oklch(82% 0.22 140deg);
 
-		/* Surface colors (dark theme) */
-		--color-surface-base: oklch(14.5% 0.014 286deg);
-		--color-surface-raised: oklch(17.8% 0.014 286deg);
-		--color-surface-overlay: oklch(21% 0.014 286deg);
+		/* Stage identity colors */
+		--color-stage-home: oklch(72% 0.2 55deg);
+		--color-stage-near: oklch(75% 0.18 195deg);
+		--color-stage-away: oklch(68% 0.25 330deg);
 
-		/* Text colors */
+		/* Surface colors (deep navy — dark but with color) */
+		--color-surface-base: oklch(18% 0.04 275deg);
+		--color-surface-raised: oklch(22% 0.04 275deg);
+		--color-surface-overlay: oklch(26% 0.04 275deg);
+
+		/* Text colors (warm-tinted) */
 		--color-text-primary: oklch(98.5% 0 0deg);
-		--color-text-secondary: oklch(78.8% 0.013 286deg);
-		--color-text-muted: oklch(55.6% 0.014 286deg);
+		--color-text-secondary: oklch(82% 0.02 275deg);
+		--color-text-muted: oklch(60% 0.03 275deg);
 
 		/* State colors */
 		--color-error: oklch(65% 0.2 25deg);
@@ -22,12 +27,12 @@
 		--color-white: oklch(100% 0 0deg);
 
 		/* Border colors */
-		--color-border-subtle: oklch(98.5% 0 0deg / 10%);
-		--color-border-muted: oklch(98.5% 0 0deg / 20%);
+		--color-border-subtle: oklch(98.5% 0 0deg / 12%);
+		--color-border-muted: oklch(98.5% 0 0deg / 22%);
 
-		/* Typography */
-		--font-display: "Outfit", system-ui, sans-serif;
-		--font-body: system-ui, -apple-system, sans-serif;
+		/* Typography — festival display + clean body */
+		--font-display: "Righteous", "Outfit", system-ui, sans-serif;
+		--font-body: "Poppins", system-ui, -apple-system, sans-serif;
 
 		/* Fluid type scale (generated via utopia.fyi) */
 		--step--2: clamp(0.625rem, calc(0.6rem + 0.13vi), 0.7rem);
@@ -64,10 +69,12 @@
 		--radius-sheet: 1.5rem;
 		--radius-full: 9999px;
 
-		/* Shadows */
-		--shadow-card-glow: 0 4px 24px -4px oklch(58.5% 0.233 277deg / 20%);
+		/* Shadows (derived from brand color via relative color syntax) */
+		--shadow-card-glow: 0 4px 24px -4px
+			oklch(from var(--color-brand-primary) l c h / 20%);
 		--shadow-sheet: 0 -8px 32px -4px oklch(0% 0 0deg / 50%);
-		--shadow-button: 0 4px 16px -2px oklch(58.5% 0.233 277deg / 30%);
+		--shadow-button: 0 4px 16px -2px
+			oklch(from var(--color-brand-primary) l c h / 30%);
 		--shadow-soft: 0 2px 8px oklch(0% 0 0deg / 20%);
 
 		/* Transition durations */

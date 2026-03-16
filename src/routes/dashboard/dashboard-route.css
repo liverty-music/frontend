@@ -24,17 +24,12 @@
 			grid-column: stage-home / stage-away;
 			grid-template-columns: subgrid;
 
-			border-block-end: 1px solid var(--_border-light);
-
-			background: var(--color-surface-base);
-
 			& > span {
 				padding: var(--space-2xs);
 
 				font-family: var(--font-display);
 				font-size: var(--step--1);
-				font-weight: 700;
-				color: var(--color-text-primary);
+				font-weight: normal;
 				text-align: center;
 				text-transform: uppercase;
 				letter-spacing: 0.05em;
@@ -42,6 +37,25 @@
 
 			& > span:not(:last-child) {
 				border-inline-end: 1px solid var(--_border-light);
+			}
+
+			/* Stage color exceptions via data-stage */
+			& > [data-stage="home"] {
+				color: var(--color-surface-base);
+
+				background: var(--color-stage-home);
+			}
+
+			& > [data-stage="near"] {
+				color: var(--color-surface-base);
+
+				background: var(--color-stage-near);
+			}
+
+			& > [data-stage="away"] {
+				color: var(--color-surface-base);
+
+				background: var(--color-stage-away);
 			}
 		}
 
@@ -103,13 +117,18 @@
 			padding: var(--space-2xs) var(--space-xs);
 			border-block-end: 1px solid var(--_border-light);
 
-			background: var(--_date-bg);
+			background: linear-gradient(
+				to right,
+				oklch(from var(--color-stage-home) l c h / 10%),
+				oklch(from var(--color-stage-near) l c h / 10%),
+				oklch(from var(--color-stage-away) l c h / 10%)
+			);
 			backdrop-filter: blur(4px);
 
 			& time {
 				font-family: var(--font-display);
 				font-size: var(--step--2);
-				font-weight: 700;
+				font-weight: normal;
 				color: var(--color-brand-accent);
 				text-transform: uppercase;
 				letter-spacing: 0.05em;
@@ -127,6 +146,22 @@
 			container-name: lane;
 			container-type: inline-size;
 			padding: var(--space-2xs);
+			border-block-start: 2px solid
+				oklch(from var(--color-stage-home) l c h / 40%);
+
+			&:nth-child(2) {
+				border-block-start-color: oklch(
+					from var(--color-stage-near) l c h /
+					40%
+				);
+			}
+
+			&:nth-child(3) {
+				border-block-start-color: oklch(
+					from var(--color-stage-away) l c h /
+					40%
+				);
+			}
 
 			&:not(:last-child) {
 				border-inline-end: 1px solid var(--_border-faint);
@@ -151,7 +186,7 @@
 
 			font-family: var(--font-display);
 			font-size: var(--step-0);
-			font-weight: 700;
+			font-weight: normal;
 			color: var(--color-text-secondary);
 		}
 
