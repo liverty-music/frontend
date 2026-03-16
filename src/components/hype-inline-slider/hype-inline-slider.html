@@ -1,14 +1,20 @@
 <import from="./hype-inline-slider.css"></import>
 
-<div class="[ hype-slider ]">
+<fieldset class="[ hype-slider ]">
+  <legend class="[ visually-hidden ]">Hype level</legend>
   <div class="hype-slider-track"></div>
-  <button
-    repeat.for="stop of stops"
-    class="hype-slider-dot"
-    data-active.bind="stop === hypeLevel"
-    data-level.bind="stop"
-    dot-color.bind="hypeColor"
-    click.trigger="selectHype(stop)"
-    aria-label.bind="stop">
-  </button>
-</div>
+  <label repeat.for="stop of stops" class="hype-slider-stop">
+    <input type="radio"
+      name.bind="'hype-' + artistId"
+      model.bind="stop"
+      checked.bind="hype"
+      class="[ visually-hidden ]"
+      click.trigger="selectHype(stop, $event)">
+    <span
+      class="hype-slider-dot"
+      data-active.bind="stop === hype"
+      data-level.bind="stop"
+      dot-color.bind="hypeColor">
+    </span>
+  </label>
+</fieldset>

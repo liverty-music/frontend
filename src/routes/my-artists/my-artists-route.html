@@ -64,8 +64,8 @@
         <!-- Inline hype slider -->
         <hype-inline-slider
           artist-id.bind="artist.id"
-          hype-color.bind="getArtistColor(artist.id)"
-          hype-level.bind="hypeStop(artist)"
+          hype-color.bind="artist.color"
+          hype.bind="artist.hype"
           is-authenticated.bind="isAuthenticated"
           hype-changed.trigger="onHypeChanged($event)"
           hype-signup-prompt.trigger="onHypeSignupPrompt($event)">
