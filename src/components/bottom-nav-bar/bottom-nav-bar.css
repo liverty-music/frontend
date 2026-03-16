@@ -6,15 +6,34 @@
 		}
 
 		.nav-bar {
+			position: relative;
+
 			display: flex;
 			align-items: center;
 			justify-content: space-around;
 
 			block-size: 3.5rem;
 			padding-block-end: var(--_safe-area-bottom);
-			border-block-start: 1px solid var(--color-border-subtle);
 
 			background: var(--color-surface-raised);
+
+			/* Gradient top border via pseudo-element (avoids border-image + border-radius conflict) */
+			&::before {
+				content: "";
+
+				position: absolute;
+				inset-block-start: 0;
+				inset-inline: 0;
+
+				block-size: 1px;
+
+				background-image: linear-gradient(
+					to right,
+					var(--color-brand-primary),
+					var(--color-brand-secondary),
+					var(--color-brand-accent)
+				);
+			}
 		}
 
 		.nav-tab {
@@ -27,11 +46,15 @@
 
 			block-size: 100%;
 
-			transition: color var(--transition-normal);
+			transition:
+				color var(--transition-normal),
+				box-shadow var(--transition-normal);
 		}
 
 		.nav-tab[data-active="true"] {
 			color: var(--color-brand-accent);
+			box-shadow: inset 0 2px 8px
+				oklch(from var(--color-brand-accent) l c h / 20%);
 		}
 
 		.nav-tab[data-active="false"] {

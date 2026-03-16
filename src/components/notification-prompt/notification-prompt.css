@@ -38,7 +38,7 @@
 		.prompt-title {
 			font-family: var(--font-display);
 			font-size: var(--step--1);
-			font-weight: 700;
+			font-weight: normal;
 			color: var(--color-text-primary);
 		}
 

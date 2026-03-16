@@ -18,7 +18,6 @@
 		toast-notification,
 		error-banner,
 		coach-mark {
-			pointer-events: none;
 			position: fixed;
 			overflow: hidden;
 			block-size: 0;

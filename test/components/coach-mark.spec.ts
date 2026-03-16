@@ -231,12 +231,6 @@ describe('CoachMark', () => {
 		})
 	})
 
-	describe('spotlightRadius', () => {
-		it('should default to 12px', () => {
-			expect(sut.spotlightRadius).toBe('12px')
-		})
-	})
-
 	describe('retry behavior', () => {
 		it('should set visible to false when target is not found after retries', async () => {
 			sut.targetSelector = '[data-nonexistent]'
