@@ -5,6 +5,16 @@
 <import from="../../components/celebration-overlay/celebration-overlay"></import>
 <import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
 
+<!-- Laser beams — before header so header paints on top -->
+<div class="[ beam-overlay ]" if.bind="laserBeams.length > 0">
+  <div
+    repeat.for="b of laserBeams"
+    class="[ laser-beam ]"
+    data-beam-anchor.bind="b.anchorIndex"
+    style.bind="'--beam-hue: ' + b.hue + '; --beam-left: ' + b.left + '; --beam-right: ' + b.right"
+  ></div>
+</div>
+
 <!-- Stage header (fixed above scroll container via grid row) -->
 <header if.bind="dateGroups.length > 0" class="[ stage-header ]">
   <span data-stage="home">HOME STAGE</span>
@@ -67,14 +77,6 @@
       </li>
     </ol>
 
-    <!-- Laser beams — anchored to matched cards via CSS Anchor Positioning -->
-    <div class="[ beam-overlay ]" if.bind="beams.length > 0">
-      <div
-        repeat.for="b of beams"
-        class="[ laser-beam ]"
-        style.bind="'position-anchor: --beam-' + b.index + '; --beam-hue: ' + b.hue"
-      ></div>
-    </div>
   </template>
 
   <!-- Error state -->

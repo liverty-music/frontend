@@ -1,5 +1,6 @@
 @layer block {
 	@scope (dashboard-route) {
+		--_header-h: 2rem;
 		--_border-light: oklch(100% 0 0deg / 10%);
 		--_border-faint: oklch(100% 0 0deg / 5%);
 		--_date-bg: oklch(from var(--color-surface-raised) l c h / 90%);
@@ -22,6 +23,8 @@
 
 		/* ── Row 1: Stage header ── */
 		.stage-header {
+			position: relative;
+
 			display: grid;
 			grid-column: stage-home / stage-away;
 			grid-template-columns: subgrid;
@@ -184,49 +187,68 @@
 			}
 		}
 
-		/* ── Laser beam overlay (CSS Anchor Positioning) ── */
+		/* ── Laser beam overlay (viewport-fixed) ── */
 		.beam-overlay {
 			pointer-events: none;
 
-			position: sticky;
-			inset-block-start: 0;
-
-			overflow: visible;
-
-			grid-column: 1 / -1;
-
-			block-size: 0;
+			position: fixed;
+			inset: 0;
 		}
 
-		/* stylelint-disable declaration-block-no-redundant-longhand-properties */
+		/* Triangular laser beam — apex at top-left corner, base at card */
 		.laser-beam {
-			position: fixed;
-
-			/* Stretch from viewport top to the card's top edge */
+			position: absolute;
 			inset-block-start: 0;
-			inset-block-end: anchor(top);
-			inset-inline-start: anchor(center);
-			translate: -50% 0;
+			inset-inline: 0;
 
-			/* Beam core + glow spread */
-			inline-size: 4px;
+			block-size: var(--beam-h, 0);
 
 			background: linear-gradient(
 				to bottom,
-				transparent 0%,
-				oklch(90% 0.3 var(--beam-hue, 300) / 50%) 10%,
-				oklch(85% 0.35 var(--beam-hue, 300) / 80%) 50%,
-				oklch(95% 0.2 var(--beam-hue, 300)) 100%
+				oklch(70% 0.15 var(--beam-hue, 180) / 18%) 0%,
+				oklch(60% 0.1 var(--beam-hue, 180) / 10%) 60%,
+				oklch(50% 0.08 var(--beam-hue, 180) / 5%) 100%
 			);
-			filter: blur(6px);
+			clip-path: polygon(
+				0% 0%,
+				var(--beam-left, 34%) 100%,
+				var(--beam-right, 66%) 100%
+			);
 
-			/* Bright inner core via box-shadow */
-			box-shadow:
-				0 0 4px oklch(95% 0.15 var(--beam-hue, 300) / 90%),
-				0 0 12px oklch(80% 0.3 var(--beam-hue, 300) / 50%),
-				0 0 24px oklch(70% 0.25 var(--beam-hue, 300) / 25%);
+			filter: drop-shadow(0 0 6px oklch(80% 0.25 var(--beam-hue, 180) / 30%));
 		}
-		/* stylelint-enable declaration-block-no-redundant-longhand-properties */
+
+		/* Bright edge lines along triangle sides */
+		.laser-beam::before,
+		.laser-beam::after {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			background: oklch(85% 0.3 var(--beam-hue, 180) / 60%);
+		}
+
+		/* Left edge */
+		.laser-beam::before {
+			clip-path: polygon(
+				0% 0%,
+				1px 0%,
+				calc(var(--beam-left, 34%) + 3px) 100%,
+				var(--beam-left, 34%) 100%
+			);
+		}
+
+		/* Right edge */
+		.laser-beam::after {
+			clip-path: polygon(
+				0% 0%,
+				1px 0%,
+				var(--beam-right, 66%) 100%,
+				calc(var(--beam-right, 66%) - 3px) 100%
+			);
+		}
 
 		/* ── Empty state typography ── */
 		.dashboard-empty-title {

@@ -1,7 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { artistHue } from '../../components/live-highway/color-generator'
 import { IRouter } from '@aurelia/router'
-import { ILogger, resolve } from 'aurelia'
+import { ILogger, INode, resolve } from 'aurelia'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
 	DateGroup,
@@ -34,7 +34,7 @@ export class DashboardRoute {
 	}
 
 	public dateGroups: DateGroup[] = []
-	/** Beam indices keyed by event ID, for CSS anchor positioning. */
+	/** Beam indices keyed by event ID, for laser beam tracking. */
 	public beamIndexMap = new Map<string, number>()
 	public needsRegion = false
 	public loadError: unknown = null
@@ -45,6 +45,7 @@ export class DashboardRoute {
 	public homeSelector!: UserHomeSelector
 	public detailSheet!: EventDetailSheet
 
+	private readonly element = resolve(INode) as HTMLElement
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
@@ -55,30 +56,55 @@ export class DashboardRoute {
 	private readonly router = resolve(IRouter)
 	private abortController: AbortController | null = null
 	private laneIntroTimer: ReturnType<typeof setTimeout> | null = null
+	private beamRafId = 0
+	private readonly onScroll = (): void => this.scheduleBeamUpdate()
 
 	public dataPromise: Promise<DateGroup[]> | null = null
 
-	/** Beam descriptors for rendering laser beam elements. */
-	public beams: { index: number; hue: number }[] = []
+	/** Triangular laser beams — one per matched card. */
+	public laserBeams: {
+		anchorIndex: number
+		hue: number
+		left: string
+		right: string
+	}[] = []
 
 	/** Assign sequential beam indices to matched events across all groups. */
 	private buildBeamIndexMap(): void {
 		const map = new Map<string, number>()
-		const beams: { index: number; hue: number }[] = []
+		const beams: typeof this.laserBeams = []
 		let idx = 0
+
+		// Lane boundaries as viewport percentages (3-column 1fr grid)
+		const LANE_PCT = [
+			{ left: 1, right: 32 },
+			{ left: 34.5, right: 65.5 },
+			{ left: 68, right: 99 },
+		]
+
 		for (const group of this.dateGroups) {
-			for (const lane of [group.home, group.nearby, group.away]) {
-				for (const ev of lane) {
+			const lanes = [group.home, group.nearby, group.away]
+			for (let laneIdx = 0; laneIdx < lanes.length; laneIdx++) {
+				for (const ev of lanes[laneIdx]) {
 					if (ev.matched) {
 						map.set(ev.id, idx)
-						beams.push({ index: idx, hue: artistHue(ev.artistName) })
+						const { left, right } = LANE_PCT[laneIdx]
+						beams.push({
+							anchorIndex: idx,
+							hue: artistHue(ev.artistName),
+							left: `${left}%`,
+							right: `${right}%`,
+						})
 						idx++
 					}
 				}
 			}
 		}
+
 		this.beamIndexMap = map
-		this.beams = beams
+		this.laserBeams = beams
+		// Schedule initial position update after Aurelia renders the beam elements
+		requestAnimationFrame(() => this.updateBeamPositions())
 	}
 
 	public getBeamIndex(eventId: string): number | null {
@@ -174,6 +200,45 @@ export class DashboardRoute {
 	public attached(): void {
 		if (this.needsRegion && !this.showCelebration) {
 			this.homeSelector.open()
+		}
+		this.setupBeamTracking()
+	}
+
+	/** Wire scroll listener for JS-based beam height tracking. */
+	private setupBeamTracking(): void {
+		const scroll = this.element.querySelector('.concert-scroll')
+		if (scroll) {
+			scroll.addEventListener('scroll', this.onScroll, { passive: true })
+			this.scheduleBeamUpdate()
+		}
+	}
+
+	private scheduleBeamUpdate(): void {
+		if (this.beamRafId) return
+		this.beamRafId = requestAnimationFrame(() => {
+			this.beamRafId = 0
+			this.updateBeamPositions()
+		})
+	}
+
+	/** Set --beam-h on each .laser-beam element from card getBoundingClientRect(). */
+	private updateBeamPositions(): void {
+		const beamEls = this.element.querySelectorAll<HTMLElement>('.laser-beam')
+		const vh = window.innerHeight
+		for (const beamEl of beamEls) {
+			const idx = beamEl.dataset.beamAnchor
+			if (idx == null) continue
+			const card = this.element.querySelector<HTMLElement>(
+				`[data-beam-index="${idx}"]`,
+			)
+			if (!card) continue
+			const rect = card.getBoundingClientRect()
+			// Only illuminate cards visible in the viewport
+			const visible = rect.bottom > 0 && rect.top < vh
+			beamEl.style.setProperty(
+				'--beam-h',
+				visible ? `${Math.max(0, rect.top)}px` : '0',
+			)
 		}
 	}
 
@@ -366,6 +431,14 @@ export class DashboardRoute {
 		if (this.laneIntroTimer) {
 			clearTimeout(this.laneIntroTimer)
 			this.laneIntroTimer = null
+		}
+		const scroll = this.element.querySelector('.concert-scroll')
+		if (scroll) {
+			scroll.removeEventListener('scroll', this.onScroll)
+		}
+		if (this.beamRafId) {
+			cancelAnimationFrame(this.beamRafId)
+			this.beamRafId = 0
 		}
 	}
 }
