@@ -1,7 +1,11 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
-import type { DateGroup } from '../../components/live-highway/live-event'
+import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
+import type {
+	DateGroup,
+	LiveEvent,
+} from '../../components/live-highway/live-event'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
@@ -36,6 +40,7 @@ export class DashboardRoute {
 	public showSignupBanner = false
 
 	public homeSelector!: UserHomeSelector
+	public detailSheet!: EventDetailSheet
 
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
 	public readonly i18n = resolve(I18N)
@@ -308,6 +313,10 @@ export class DashboardRoute {
 			this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
 			await this.router.load('my-artists')
 		}
+	}
+
+	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {
+		this.detailSheet.open(event.detail.event)
 	}
 
 	public onSignupRequested(): void {

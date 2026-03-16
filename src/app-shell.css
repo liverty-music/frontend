@@ -6,7 +6,7 @@
 			grid-template-areas:
 				"viewport"
 				"nav";
-			grid-template-rows: 1fr auto;
+			grid-template-rows: minmax(0, 1fr) auto;
 			block-size: 100dvh;
 		}
 

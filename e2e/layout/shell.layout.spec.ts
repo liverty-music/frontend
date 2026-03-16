@@ -5,8 +5,8 @@ test.describe('Shell layout', () => {
 	test('app-shell fills viewport height (S1)', async ({
 		discoverLayoutPage: page,
 	}) => {
-		await page.goto('/discover')
-		await page.waitForSelector('.discover-layout')
+		await page.goto('/discovery')
+		await page.waitForSelector('.discovery-layout')
 
 		const appShell = page.locator('app-shell')
 		await expectFillsViewport(page, appShell, 2)
@@ -15,8 +15,8 @@ test.describe('Shell layout', () => {
 	test('au-viewport + bottom-nav equals app-shell height (S2)', async ({
 		discoverLayoutPage: page,
 	}) => {
-		await page.goto('/discover')
-		await page.waitForSelector('.discover-layout')
+		await page.goto('/discovery')
+		await page.waitForSelector('.discovery-layout')
 
 		const appShell = page.locator('app-shell')
 		const viewport = page.locator('au-viewport')
@@ -37,8 +37,8 @@ test.describe('Shell layout', () => {
 	test('bottom-nav anchored to viewport bottom (S3)', async ({
 		discoverLayoutPage: page,
 	}) => {
-		await page.goto('/discover')
-		await page.waitForSelector('.discover-layout')
+		await page.goto('/discovery')
+		await page.waitForSelector('.discovery-layout')
 
 		await expectAnchored(page, page.locator('bottom-nav-bar'), 'bottom', 2)
 	})
