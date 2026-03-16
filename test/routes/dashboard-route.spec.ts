@@ -1,5 +1,5 @@
 import { IStore } from '@aurelia/state'
-import { DI, Registration } from 'aurelia'
+import { DI, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
@@ -106,6 +106,8 @@ describe('DashboardRoute', () => {
 
 		const { store } = createMockStore()
 
+		const mockElement = document.createElement('div')
+
 		const container = createTestContainer(
 			Registration.instance(mockIDashboardService, mockDashboardService),
 			Registration.instance(mockIRouter, mockRouter),
@@ -113,6 +115,7 @@ describe('DashboardRoute', () => {
 			Registration.instance(IStore, store),
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIUserService, mockUser),
+			Registration.instance(INode, mockElement),
 		)
 		container.register(DashboardRoute)
 		sut = container.get(DashboardRoute)

@@ -29,4 +29,7 @@ export class EventCard {
 			}),
 		)
 	}
+
+	/** Sequential beam index assigned by dashboard for JS beam tracking. */
+	@bindable public beamIndex: number | null = null
 }

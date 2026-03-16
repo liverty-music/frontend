@@ -5,6 +5,16 @@
 <import from="../../components/celebration-overlay/celebration-overlay"></import>
 <import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
 
+<!-- Laser beams — before header so header paints on top -->
+<div class="[ beam-overlay ]" if.bind="laserBeams.length > 0">
+  <div
+    repeat.for="b of laserBeams"
+    class="[ laser-beam ]"
+    data-beam-anchor.bind="b.anchorIndex"
+    style.bind="'--beam-hue: ' + b.hue + '; --beam-left: ' + b.left + '; --beam-right: ' + b.right"
+  ></div>
+</div>
+
 <!-- Stage header (fixed above scroll container via grid row) -->
 <header if.bind="dateGroups.length > 0" class="[ stage-header ]">
   <span data-stage="home">HOME STAGE</span>
@@ -44,6 +54,7 @@
               repeat.for="ev of group.home; key.bind: ev.id"
               event.bind="ev"
               lane="home"
+              beam-index.bind="getBeamIndex(ev.id)"
             ></event-card>
           </li>
           <li class="[ lane ]" data-empty.bind="group.nearby.length === 0">
@@ -51,6 +62,7 @@
               repeat.for="ev of group.nearby; key.bind: ev.id"
               event.bind="ev"
               lane="nearby"
+              beam-index.bind="getBeamIndex(ev.id)"
             ></event-card>
           </li>
           <li class="[ lane ]" data-empty.bind="group.away.length === 0">
@@ -58,11 +70,13 @@
               repeat.for="ev of group.away; key.bind: ev.id"
               event.bind="ev"
               lane="away"
+              beam-index.bind="getBeamIndex(ev.id)"
             ></event-card>
           </li>
         </ol>
       </li>
     </ol>
+
   </template>
 
   <!-- Error state -->

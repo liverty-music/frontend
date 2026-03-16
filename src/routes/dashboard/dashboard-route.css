@@ -1,11 +1,14 @@
 @layer block {
 	@scope (dashboard-route) {
+		--_header-h: 2rem;
 		--_border-light: oklch(100% 0 0deg / 10%);
 		--_border-faint: oklch(100% 0 0deg / 5%);
 		--_date-bg: oklch(from var(--color-surface-raised) l c h / 90%);
 		--_muted-faint: oklch(from var(--color-text-muted) l c h / 30%);
 
 		:scope {
+			position: relative;
+
 			display: grid;
 			grid-template:
 				"stage-home stage-near stage-away" auto
@@ -20,6 +23,8 @@
 
 		/* ── Row 1: Stage header ── */
 		.stage-header {
+			position: relative;
+
 			display: grid;
 			grid-column: stage-home / stage-away;
 			grid-template-columns: subgrid;
@@ -61,6 +66,8 @@
 
 		/* ── Row 2: Concert scroll (subgrid propagation root) ── */
 		.concert-scroll {
+			position: relative;
+
 			overflow-block: auto;
 			overflow-inline: hidden;
 			display: grid;
@@ -178,6 +185,76 @@
 				color: var(--_muted-faint);
 				text-align: center;
 			}
+		}
+
+		/* ── Laser beam overlay (viewport-fixed) ── */
+		.beam-overlay {
+			pointer-events: none;
+
+			position: fixed;
+			inset: 0;
+		}
+
+		/* Laser beam — apex at top-left, wraps card diagonally */
+		.laser-beam {
+			position: absolute;
+			inset-block-start: 0;
+			inset-inline: 0;
+
+			block-size: var(--beam-h, 0);
+
+			/* Faint fill between edge lines */
+			background: linear-gradient(
+				to bottom,
+				oklch(70% 0.15 var(--beam-hue, 180) / 4%) 0%,
+				oklch(60% 0.1 var(--beam-hue, 180) / 2%) 60%,
+				oklch(50% 0.08 var(--beam-hue, 180) / 1%) 100%
+			);
+			clip-path: polygon(
+				0% 0%,
+				var(--beam-left, 34%) 100%,
+				var(--beam-right, 66%) var(--beam-top-pct, 80%)
+			);
+
+			/* Fade endpoints — dissolve near card instead of hard cutoff */
+			mask-image: linear-gradient(to bottom, black 65%, transparent);
+
+			/* Neon glow — layered bloom around diffused lines */
+			filter: drop-shadow(0 0 4px oklch(85% 0.3 var(--beam-hue, 180) / 55%))
+				drop-shadow(0 0 12px oklch(75% 0.25 var(--beam-hue, 180) / 28%))
+				drop-shadow(0 0 28px oklch(65% 0.2 var(--beam-hue, 180) / 10%));
+		}
+
+		/* Diffused core lines — wide + semi-transparent so glow dominates */
+		.laser-beam::before,
+		.laser-beam::after {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			background: oklch(85% 0.25 var(--beam-hue, 180) / 45%);
+		}
+
+		/* Left edge — diffused 4px line to card bottom-left */
+		.laser-beam::before {
+			clip-path: polygon(
+				0% 0%,
+				4px 0%,
+				calc(var(--beam-left, 34%) + 4px) 100%,
+				var(--beam-left, 34%) 100%
+			);
+		}
+
+		/* Right edge — diffused 4px line to card top-right */
+		.laser-beam::after {
+			clip-path: polygon(
+				0% 0%,
+				4px 0%,
+				var(--beam-right, 66%) var(--beam-top-pct, 80%),
+				calc(var(--beam-right, 66%) - 4px) var(--beam-top-pct, 80%)
+			);
 		}
 
 		/* ── Empty state typography ── */

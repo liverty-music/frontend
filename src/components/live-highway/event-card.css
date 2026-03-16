@@ -1,18 +1,23 @@
 @layer block {
 	@scope (event-card) {
 		:scope {
-			--_border-faint: oklch(100% 0 0deg / 10%);
 			--_label-color: oklch(100% 0 0deg / 70%);
 			--_drop-shadow: oklch(0% 0 0deg / 30%);
+			--_noise-url: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
 		}
 
 		[artist-color] {
-			--artist-color: oklch(65% 0.15 var(--artist-hue));
+			--artist-color: oklch(
+				65% 0.2 calc(var(--artist-hue) + var(--hue-drift, 0))
+			);
+			--artist-color-dim: oklch(65% 0.03 var(--artist-hue));
 		}
 
 		/* Card base styles */
 		.event-card {
 			cursor: pointer;
+
+			position: relative;
 
 			display: flex;
 			flex-direction: column;
@@ -40,6 +45,17 @@
 			}
 		}
 
+		/* --- Artist logo (clearLOGO transparent PNG) --- */
+		.artist-logo {
+			max-inline-size: 100%;
+			block-size: auto;
+			max-block-size: 48px;
+
+			object-fit: contain;
+			object-position: start end;
+		}
+
+		/* --- Artist name (text fallback) --- */
 		.artist-name {
 			font-family: var(--font-display);
 			/* stylelint-disable-next-line cube/require-token-variables -- container-query clamp cannot be tokenized */
@@ -58,112 +74,217 @@
 			color: var(--_label-color);
 		}
 
-		/* WATCH: flat, minimal presence */
-		.event-card[data-hype="watch"] {
-			border: 1px solid var(--_border-faint);
-			background-color: var(--artist-color);
-		}
+		/* =============================================
+		   MATCHED — festival spotlight from above
+		   ============================================= */
+		.event-card[data-matched] {
+			--_spot-white: oklch(98% 0.05 var(--artist-hue));
+			--_spot-bright: oklch(80% 0.3 var(--artist-hue));
+			--_spot-mid: oklch(65% 0.25 var(--artist-hue));
+			--_spot-dim: oklch(40% 0.15 var(--artist-hue));
+			--_spot-glow: oklch(75% 0.3 var(--artist-hue) / 70%);
 
-		/* HOME: subtle artist color presence */
-		.event-card[data-hype="home"] {
-			border: 1px solid oklch(from var(--artist-color) l c h / 40%);
-			background-color: var(--artist-color);
-			box-shadow: 0 0 8px oklch(from var(--artist-color) l c h / 30%);
+			/* Vivid neon border */
+			border: 2px solid var(--_spot-bright);
 
-			& .artist-name {
-				text-shadow: 0 0 4px oklch(from var(--artist-color) l c h / 40%);
-			}
-		}
-
-		/* NEARBY: vivid with pulse animation */
-		.event-card[data-hype="nearby"] {
-			border: 2px solid var(--artist-color);
-			background-color: var(--artist-color);
-			animation: hype-glow-pulse-nearby 2s ease-in-out infinite;
-
-			& .artist-name {
-				text-shadow: 0 0 8px oklch(from var(--artist-color) l c h / 60%);
-			}
-		}
-
-		/* AWAY: maximum — animated gradient border + strong neon */
-		.event-card[data-hype="away"] {
-			border: 2px solid transparent;
-			border-color: transparent;
-
-			background-image:
-				linear-gradient(var(--artist-color), var(--artist-color)),
-				conic-gradient(
-					from var(--hype-border-angle, 0deg),
-					var(--artist-color),
-					oklch(80% 0.2 calc(var(--hype-hue-shift, 0) + 60)),
-					var(--artist-color)
+			/* Spotlight cone: bright top → dark bottom */
+			background:
+				radial-gradient(
+					ellipse 80% 50% at 50% 0%,
+					var(--_spot-white) 0%,
+					var(--_spot-bright) 20%,
+					transparent 70%
+				),
+				radial-gradient(
+					ellipse 120% 80% at 50% 0%,
+					var(--_spot-mid) 0%,
+					var(--_spot-dim) 40%,
+					oklch(15% 0.03 var(--artist-hue)) 100%
 				);
-			background-clip: padding-box, border-box;
-			background-origin: border-box;
 
-			animation:
-				hype-glow-pulse-away 1.5s ease-in-out infinite,
-				hype-border-rotate 3s linear infinite;
+			/* Massive multi-layer outer glow — festival spotlight spill */
+			box-shadow:
+				0 -8px 20px var(--_spot-bright),
+				0 -4px 40px var(--_spot-glow),
+				0 0 15px var(--_spot-bright),
+				0 0 40px var(--_spot-glow),
+				0 0 80px oklch(60% 0.2 var(--artist-hue) / 25%),
+				inset 0 4px 30px var(--_spot-mid);
 
-			& .artist-name {
-				text-shadow:
-					0 0 12px oklch(from var(--artist-color) l c h / 70%),
-					0 0 24px oklch(from var(--artist-color) l c h / 40%);
-			}
+			animation: color-drift 8s ease-in-out infinite;
 		}
 
-		/* Pulse keyframes for NEARBY tier (2s) */
-		@keyframes hype-glow-pulse-nearby {
-			0%,
-			100% {
-				box-shadow: 0 0 16px oklch(from var(--artist-color) l c h / 50%);
-			}
+		/* Spotlight beam cone — contained within card using clipped ::before */
+		.event-card[data-matched]::before {
+			pointer-events: none;
+			content: "";
 
-			50% {
-				box-shadow: 0 0 24px oklch(from var(--artist-color) l c h / 70%);
-			}
+			position: absolute;
+			inset-block-start: 0;
+			inset-inline: 0;
+
+			block-size: 100%;
+
+			/* Vertical light beam stripe through center */
+			background: linear-gradient(
+				to bottom,
+				oklch(95% 0.1 var(--artist-hue) / 80%) 0%,
+				oklch(80% 0.2 var(--artist-hue) / 40%) 30%,
+				transparent 70%
+			);
+
+			/* Narrow beam shape via mask */
+			mask-image: radial-gradient(
+				ellipse 30% 100% at 50% 0%,
+				black 0%,
+				transparent 100%
+			);
 		}
 
-		/* Pulse keyframes for AWAY tier (1.5s) */
-		@keyframes hype-glow-pulse-away {
-			0%,
-			100% {
-				box-shadow:
-					0 0 24px oklch(from var(--artist-color) l c h / 50%),
-					0 0 48px oklch(from var(--artist-color) l c h / 25%);
-			}
+		/* Bright top-edge contact flash — where the beam hits */
+		.event-card[data-matched]::after {
+			pointer-events: none;
+			content: "";
 
-			50% {
-				box-shadow:
-					0 0 32px oklch(from var(--artist-color) l c h / 70%),
-					0 0 56px oklch(from var(--artist-color) l c h / 35%);
-			}
+			position: absolute;
+			inset-block-start: -2px;
+			inset-inline: 10%;
+
+			block-size: 4px;
+			/* stylelint-disable-next-line cube/require-token-variables -- decorative glow bar, not a UI radius */
+			border-radius: 2px;
+
+			background: var(--_spot-white);
+			box-shadow:
+				0 0 8px var(--_spot-white),
+				0 0 20px var(--_spot-bright),
+				0 0 40px var(--_spot-glow);
+
+			animation: pulse-glow 2s ease-in-out infinite;
 		}
 
-		/* Gradient border rotation for AWAY tier */
-		@keyframes hype-border-rotate {
+		/* ClearLOGO neon contour glow — triple layer */
+		.event-card[data-matched] .artist-logo {
+			filter: drop-shadow(0 0 6px var(--_spot-bright))
+				drop-shadow(0 0 14px var(--_spot-glow))
+				drop-shadow(0 0 28px var(--_spot-dim));
+		}
+
+		/* Text fallback neon glow — triple layer */
+		.event-card[data-matched] .artist-name {
+			text-shadow:
+				0 0 6px var(--_spot-bright),
+				0 0 14px var(--_spot-glow),
+				0 0 28px var(--_spot-dim);
+		}
+
+		/* =============================================
+		   UNMATCHED — faded concert poster
+		   ============================================= */
+		.event-card:not([data-matched]) {
+			border: 1px solid oklch(100% 0 0deg / 5%);
+			background-color: var(--artist-color-dim);
+		}
+
+		/* Noise texture overlay — aged poster grain */
+		.event-card:not([data-matched])::after {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			border-radius: inherit;
+
+			opacity: 0.08;
+			background-image: var(--_noise-url);
+			background-size: 200px 200px;
+		}
+
+		/* ClearLOGO dimmed */
+		.event-card:not([data-matched]) .artist-logo {
+			filter: brightness(0.35) grayscale(0.8);
+		}
+
+		/* Text fallback dimmed */
+		.event-card:not([data-matched]) .artist-name {
+			opacity: 0.6;
+		}
+
+		/* =============================================
+		   Keyframes
+		   ============================================= */
+
+		/* Beam descends from above — scroll-triggered (GPU-composited) */
+		@keyframes beam-descend {
+			from {
+				transform: scaleY(0);
+				opacity: 0;
+			}
+
 			to {
-				--hype-border-angle: 360deg;
+				transform: scaleY(1);
+				opacity: 1;
 			}
 		}
 
-		/* Reduced motion: static styles only */
+		/* Contact glow fades in after beam arrives */
+		@keyframes contact-glow {
+			from {
+				opacity: 0;
+			}
+
+			to {
+				opacity: 1;
+			}
+		}
+
+		/* Top-edge pulse — beam contact point flicker */
+		@keyframes pulse-glow {
+			0%,
+			100% {
+				opacity: 1;
+			}
+
+			50% {
+				opacity: 0.5;
+			}
+		}
+
+		/* Color drift — stage lighting hue oscillation */
+		@keyframes color-drift {
+			0%,
+			100% {
+				--hue-drift: 0;
+			}
+
+			33% {
+				--hue-drift: 30;
+			}
+
+			66% {
+				--hue-drift: -30;
+			}
+		}
+
+		/* =============================================
+		   Reduced motion
+		   ============================================= */
 		@media (prefers-reduced-motion: reduce) {
-			.event-card[data-hype="nearby"] {
-				box-shadow: 0 0 16px oklch(from var(--artist-color) l c h / 50%);
+			.event-card[data-matched] {
 				animation: none;
 			}
 
-			.event-card[data-hype="away"] {
-				box-shadow:
-					0 0 24px oklch(from var(--artist-color) l c h / 50%),
-					0 0 48px oklch(from var(--artist-color) l c h / 25%);
+			.event-card[data-matched]::after {
+				/* Show static glow bar — visual effect without pulsing */
+				opacity: 1;
 				animation: none;
 			}
 		}
 
-		/* Container query responsive rules */
+		/* =============================================
+		   Container query responsive rules
+		   ============================================= */
 		@container (min-width: 320px) {
 			.event-card-responsive {
 				min-block-size: 120px;
@@ -192,8 +313,8 @@
 	}
 }
 
-@property --hype-border-angle {
+@property --hue-drift {
 	inherits: false;
-	initial-value: 0deg;
-	syntax: "<angle>";
+	initial-value: 0;
+	syntax: "<number>";
 }

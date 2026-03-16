@@ -4,15 +4,22 @@
   <article
     data-live-card
     data-lane.bind="lane"
+    data-matched.bind="event.matched || undefined"
     click.trigger="onClick()"
     keydown.trigger="handleKeydown($event)"
     role="button"
     tabindex="0"
     artist-color.bind="event.artistName"
+    data-beam-index.bind="beamIndex"
     class="[ event-card ]"
-    data-hype.bind="event.hypeLevel"
   >
-    <span class="artist-name">
+    <img
+      if.bind="event.clearLogoUrl"
+      src.bind="event.clearLogoUrl"
+      alt.bind="event.artistName"
+      class="artist-logo"
+    />
+    <span else class="artist-name">
       ${event.artistName}
     </span>
     <span if.bind="lane !== 'home'" class="location-label">
