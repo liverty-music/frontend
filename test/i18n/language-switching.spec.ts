@@ -106,15 +106,20 @@ describe('i18n language switching', () => {
 		expect(localStorage.getItem('language')).toBe('ja')
 	})
 
-	it('should update currentLanguageLabel after locale change', async () => {
-		sut.currentLanguageLabel
-		expect(mockI18n.tr).toHaveBeenCalledWith('languages.ja')
+	it('should update currentLocale property after language change', async () => {
+		sut.loading()
+		expect(sut.currentLocale).toBe('ja')
 
 		await sut.selectLanguage('en')
 
-		mockI18n.tr.mockClear()
-		sut.currentLanguageLabel
-		expect(mockI18n.tr).toHaveBeenCalledWith('languages.en')
+		expect(sut.currentLocale).toBe('en')
+	})
+
+	it('should initialize currentLocale from i18n in loading()', () => {
+		sut.loading()
+
+		expect(sut.currentLocale).toBe('ja')
+		expect(mockI18n.getLocale).toHaveBeenCalled()
 	})
 
 	it('should identify current language', () => {
@@ -122,24 +127,25 @@ describe('i18n language switching', () => {
 		expect(sut.isCurrentLanguage('en')).toBe(false)
 	})
 
-	it('should return language label via languageLabel()', () => {
-		sut.languageLabel('en')
-		expect(mockI18n.tr).toHaveBeenCalledWith('languages.en')
-	})
+	describe('currentHomeKey', () => {
+		it('should return prefecture translation key when home is set', () => {
+			sut.currentHome = 'tokyo'
 
-	it('should use i18n.tr for home display when home is set', () => {
-		sut.currentHome = 'tokyo'
-		const display = sut.currentHomeDisplay
+			expect(sut.currentHomeKey).toBe('userHome.prefectures.tokyo')
+		})
 
-		expect(mockI18n.tr).toHaveBeenCalledWith('userHome.prefectures.tokyo')
-		expect(display).toBe('userHome.prefectures.tokyo')
-	})
+		it('should return settings.notSet key when home is null', () => {
+			sut.currentHome = null
 
-	it('should use i18n.tr for "not set" when home is null', () => {
-		sut.currentHome = null
-		const display = sut.currentHomeDisplay
+			expect(sut.currentHomeKey).toBe('settings.notSet')
+		})
 
-		expect(mockI18n.tr).toHaveBeenCalledWith('settings.notSet')
-		expect(display).toBe('settings.notSet')
+		it('should update key when home changes', () => {
+			sut.currentHome = 'tokyo'
+			expect(sut.currentHomeKey).toBe('userHome.prefectures.tokyo')
+
+			sut.currentHome = 'fukuoka'
+			expect(sut.currentHomeKey).toBe('userHome.prefectures.fukuoka')
+		})
 	})
 })

@@ -26,7 +26,7 @@
               click.trigger="selectQuickCity(city.code)"
               class="selector-btn"
             >
-              ${trCity(city.key)}
+              <span t.bind="'userHome.cities.' + city.key"></span>
             </button>
           </div>
         </div>
@@ -40,7 +40,7 @@
               click.trigger="selectRegion(region)"
               class="selector-btn"
             >
-              ${trRegion(region.key)}
+              <span t.bind="'userHome.regions.' + region.key"></span>
             </button>
           </div>
         </div>
@@ -59,7 +59,7 @@
             </svg>
           </button>
           <h2 class="selector-title">
-            ${trRegion(selectedRegion.key)}
+            <span t.bind="'userHome.regions.' + selectedRegion.key"></span>
           </h2>
         </div>
         <p t="userHome.selectPrefecture" class="selector-desc"></p>
@@ -70,7 +70,7 @@
             click.trigger="selectPrefecture(pref.code)"
             class="selector-btn"
           >
-            ${trPrefecture(pref.key)}
+            <span t.bind="'userHome.prefectures.' + pref.key"></span>
           </button>
         </div>
       </template>

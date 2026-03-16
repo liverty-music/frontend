@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { resolve } from 'aurelia'
 
@@ -20,11 +19,6 @@ export class BottomNavBar {
 	public readonly tabs = tabs
 
 	private readonly router = resolve(IRouter)
-	private readonly i18n = resolve(I18N)
-
-	public trLabel(key: string): string {
-		return this.i18n.tr(key)
-	}
 
 	private get currentPath(): string {
 		const tree = (
