@@ -118,10 +118,6 @@
 			"subtitle": "Follow more artists to see their live schedules here.",
 			"discoverLink": "Discover Artists"
 		},
-		"stale": {
-			"message": "Data may be outdated.",
-			"retry": "Retry"
-		},
 		"error": {
 			"load": "Failed to load live events"
 		}

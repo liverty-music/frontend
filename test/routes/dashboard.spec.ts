@@ -153,7 +153,7 @@ describe('Dashboard', () => {
 			expect(sut.loadError).toBeNull()
 		})
 
-		it('should preserve stale data on failure when data exists', async () => {
+		it('should silently keep previous data on failure when data exists', async () => {
 			// First load succeeds
 			const fakeGroups = [
 				{
@@ -173,11 +173,10 @@ describe('Dashboard', () => {
 				new Error('network'),
 			)
 			sut.loadData()
-			await sut.dataPromise!.catch(() => {})
+			await sut.dataPromise
 
 			expect(sut.dateGroups).toEqual(fakeGroups)
-			expect(sut.isStale).toBe(true)
-			expect(sut.loadError).toBeInstanceOf(Error)
+			expect(sut.loadError).toBeNull()
 		})
 
 		it('should ignore AbortError', async () => {
@@ -188,7 +187,6 @@ describe('Dashboard', () => {
 			await sut.dataPromise!.catch(() => {})
 
 			expect(sut.loadError).toBeNull()
-			expect(sut.isStale).toBe(false)
 		})
 
 		it('should abort previous request on new loadData call', () => {
@@ -199,16 +197,6 @@ describe('Dashboard', () => {
 
 			// loadDashboardEvents is called twice
 			expect(mockDashboardService.loadDashboardEvents).toHaveBeenCalledTimes(2)
-		})
-	})
-
-	describe('retry', () => {
-		it('should call loadData again', () => {
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
-
-			sut.retry()
-
-			expect(mockDashboardService.loadDashboardEvents).toHaveBeenCalledTimes(1)
 		})
 	})
 

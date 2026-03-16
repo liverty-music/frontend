@@ -5,13 +5,6 @@
 <import from="../components/celebration-overlay/celebration-overlay"></import>
 <import from="../components/signup-prompt-banner/signup-prompt-banner"></import>
 
-<!-- Stale data warning -->
-<aside if.bind="isStale" class="[ dashboard-stale-banner ]">
-  <svg-icon name="warning" class="dashboard-stale-icon"></svg-icon>
-  <span t="dashboard.stale.message"></span>
-  <button click.trigger="retry()" t="dashboard.stale.retry" class="dashboard-stale-retry"></button>
-</aside>
-
 <!-- Highway content with promise.bind -->
 <main class="[ dashboard-main ]" data-blurred.bind="needsRegion" promise.bind="dataPromise">
   <!-- Loading skeleton -->
@@ -41,18 +34,10 @@
   <!-- Error state -->
   <template catch.from-view="err">
     <inline-error
-      if.bind="!isStale"
       message.bind="i18n.tr('dashboard.error.load')"
       error.bind="err"
-      retry-action.bind="() => retry()"
+      retry-action.bind="() => loadData()"
     ></inline-error>
-
-    <!-- Stale data: show previous results despite error -->
-    <live-highway
-      if.bind="isStale"
-      date-groups.bind="dateGroups"
-      loading.one-time="false"
-    ></live-highway>
   </template>
 </main>
 

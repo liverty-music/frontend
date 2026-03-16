@@ -31,7 +31,6 @@ export class Dashboard {
 	public dateGroups: DateGroup[] = []
 	public needsRegion = false
 	public loadError: unknown = null
-	public isStale = false
 	public showCelebration = false
 	public laneIntroPhase: LaneIntroPhase = 'done'
 	public showSignupBanner = false
@@ -109,7 +108,6 @@ export class Dashboard {
 		this.abortController?.abort()
 		this.abortController = new AbortController()
 		this.loadError = null
-		this.isStale = false
 
 		this.dataPromise = this.dashboardService
 			.loadDashboardEvents(this.abortController.signal)
@@ -123,18 +121,14 @@ export class Dashboard {
 				if ((err as Error).name === 'AbortError') {
 					throw err
 				}
-				this.loadError = err
 				this.logger.error('Failed to load dashboard', { error: err })
-				// If we have previous data, mark as stale instead of clearing
+				// If we have previous data, silently keep showing it
 				if (this.dateGroups.length > 0) {
-					this.isStale = true
+					return this.dateGroups
 				}
+				this.loadError = err
 				throw err
 			})
-	}
-
-	public retry(): void {
-		this.loadData()
 	}
 
 	public attached(): void {
