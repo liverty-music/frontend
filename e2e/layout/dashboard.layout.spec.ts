@@ -17,7 +17,7 @@ function seedDashboardState() {
 	}
 }
 
-/** Seed dashboard with concert data so live-highway renders event cards.
+/** Seed dashboard with concert data so event cards render.
  *  Sets up:
  *  - onboardingStep = 3 (DASHBOARD — required for auth hook to allow access)
  *  - guest.home = JP-13 (Tokyo)
@@ -45,16 +45,36 @@ function seedWithConcertData() {
 /** Build a Connect-RPC JSON response for ConcertService/List (per artist).
  *  During onboarding, each artist's concerts are fetched separately via List,
  *  then merged and grouped by date into the "away" lane.
+ *
+ *  Generates enough concerts to overflow the viewport so scroll-related
+ *  layout bugs (header/footer not staying fixed) are detected.
  */
 function concertListResponse() {
-	const tomorrow = new Date()
-	tomorrow.setDate(tomorrow.getDate() + 1)
+	const venues = [
+		'Zepp DiverCity',
+		'Budokan',
+		'Zepp Osaka',
+		'Makuhari Messe',
+		'Yokohama Arena',
+	]
+	const areas = ['JP-13', 'JP-27', 'JP-12', 'JP-14', 'JP-04']
+	const concerts = []
 
-	return {
-		concerts: [
-			makeConcert('c1', 'artist-1', tomorrow, 'JP-13', 'Zepp DiverCity'),
-		],
+	for (let i = 0; i < 20; i++) {
+		const date = new Date()
+		date.setDate(date.getDate() + 1 + Math.floor(i / 3))
+		concerts.push(
+			makeConcert(
+				`c${i}`,
+				`artist-${(i % 3) + 1}`,
+				date,
+				areas[i % areas.length],
+				venues[i % venues.length],
+			),
+		)
 	}
+
+	return { concerts }
 }
 
 function makeConcert(
@@ -101,7 +121,7 @@ test.describe('Dashboard shell layout', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedDashboardState())
 		await page.goto('/dashboard')
-		await page.waitForSelector('live-highway, state-placeholder', {
+		await page.waitForSelector('.concert-scroll, state-placeholder', {
 			timeout: 5000,
 		})
 	})
@@ -118,9 +138,9 @@ test.describe('Dashboard shell layout', () => {
 		layoutPage: page,
 	}) => {
 		const contentHeight = await page.evaluate(() => {
-			const root = document.querySelector('dashboard')
+			const root = document.querySelector('dashboard-route')
 			if (!root) return { root: 0, content: 0 }
-			const main = root.querySelector('.dashboard-main')
+			const main = root.querySelector('.concert-scroll')
 			return {
 				root: root.getBoundingClientRect().height,
 				content: main?.getBoundingClientRect().height ?? 0,
@@ -128,22 +148,22 @@ test.describe('Dashboard shell layout', () => {
 		})
 		expect(
 			contentHeight.root,
-			'dashboard CE should have height',
+			'dashboard-route CE should have height',
 		).toBeGreaterThan(100)
 		expect(
 			contentHeight.content,
-			'dashboard-main should not collapse to zero',
+			'concert-scroll should not collapse to zero',
 		).toBeGreaterThan(50)
 	})
 
 	test('visible content not clipped by zero-height ancestor (DB3)', async ({
 		layoutPage: page,
 	}) => {
-		// Use a stable locator: dashboard always renders at least one visible element
-		// (either live-highway stage labels or state-placeholder text)
+		// dashboard-route always renders at least one visible element
+		// (either stage-header labels or state-placeholder text)
 		const visibleText = page
 			.locator(
-				'live-highway .stage-label-text, state-placeholder p, state-placeholder h2',
+				'dashboard-route .stage-header > span, state-placeholder p, state-placeholder h2',
 			)
 			.first()
 		await expect(visibleText).toBeVisible()
@@ -193,7 +213,7 @@ test.describe('Dashboard header', () => {
 			})
 		})
 		await page.goto('/dashboard')
-		await page.waitForSelector('live-highway [data-live-card]', {
+		await page.waitForSelector('[data-live-card]', {
 			timeout: 10000,
 		})
 	})
@@ -201,14 +221,14 @@ test.describe('Dashboard header', () => {
 	test('header contains three STAGE labels (H2)', async ({
 		layoutPage: page,
 	}) => {
-		const labels = page.locator('live-highway .stage-header .stage-label-text')
+		const labels = page.locator('.stage-header > span')
 		await expect(labels).toHaveCount(3)
 	})
 
 	test('header is pinned to top of dashboard (H3)', async ({
 		layoutPage: page,
 	}) => {
-		const header = page.locator('live-highway .stage-header').first()
+		const header = page.locator('.stage-header').first()
 		const headerBox = await header.boundingBox()
 		const auViewportBox = await page.locator('au-viewport').boundingBox()
 
@@ -218,20 +238,40 @@ test.describe('Dashboard header', () => {
 		expect(headerBox!.y).toBeCloseTo(auViewportBox!.y, 0)
 	})
 
+	test('concert-scroll is the only scroll container (H4a)', async ({
+		layoutPage: page,
+	}) => {
+		// .concert-scroll must have a constrained height so overflow-block: auto
+		// actually produces a scrollable region. If scrollHeight > clientHeight
+		// the container is correctly constrained; if they are equal, content
+		// has expanded its parent and no scrolling will occur — the bug.
+		const scroll = page.locator('.concert-scroll')
+		const metrics = await scroll.evaluate((el) => ({
+			scrollHeight: el.scrollHeight,
+			clientHeight: el.clientHeight,
+		}))
+		expect(
+			metrics.scrollHeight,
+			'concert-scroll must overflow (content taller than container)',
+		).toBeGreaterThan(metrics.clientHeight)
+	})
+
 	test('stage header stays fixed after scrolling (H4)', async ({
 		layoutPage: page,
 	}) => {
-		const scrollContainer = page.locator('live-highway .highway-scroll')
-		const header = page.locator('live-highway .stage-header').first()
+		const scrollContainer = page.locator('.concert-scroll')
+		const header = page.locator('.stage-header').first()
 
 		// Record header position before scroll
 		const beforeBox = await header.boundingBox()
 		expect(beforeBox).toBeTruthy()
 
-		// Scroll the highway content down
+		// Scroll the concert content down significantly
 		await scrollContainer.evaluate((el) => {
-			el.scrollTop = 200
+			el.scrollTop = 400
 		})
+		// Allow layout to settle
+		await page.waitForTimeout(100)
 
 		// Header is outside the scroll container, so it stays at the same Y
 		const afterBox = await header.boundingBox()
@@ -242,15 +282,38 @@ test.describe('Dashboard header', () => {
 	test('bottom-nav stays pinned after scrolling (H5)', async ({
 		layoutPage: page,
 	}) => {
-		const scrollContainer = page.locator('live-highway .highway-scroll')
+		const scrollContainer = page.locator('.concert-scroll')
 
-		// Scroll the highway content down
+		// Scroll the concert content down significantly
 		await scrollContainer.evaluate((el) => {
-			el.scrollTop = 200
+			el.scrollTop = 400
 		})
+		await page.waitForTimeout(100)
 
 		// Bottom nav should still be anchored to viewport bottom
 		await expectAnchored(page, page.locator('bottom-nav-bar'), 'bottom', 2)
+	})
+
+	test('height chain propagates correctly from au-viewport to concert-scroll (H6)', async ({
+		layoutPage: page,
+	}) => {
+		// Every element in the chain must be constrained to the viewport area,
+		// not expanding to fit content. If any element's rendered height exceeds
+		// the au-viewport height, the height chain is broken.
+		const auViewportHeight = await page
+			.locator('au-viewport')
+			.evaluate((el) => el.getBoundingClientRect().height)
+
+		for (const selector of ['au-viewport > *', 'dashboard-route']) {
+			const height = await page
+				.locator(selector)
+				.first()
+				.evaluate((el) => el.getBoundingClientRect().height)
+			expect(
+				height,
+				`${selector} (${height}px) must not exceed au-viewport (${auViewportHeight}px)`,
+			).toBeLessThanOrEqual(auViewportHeight + 1)
+		}
 	})
 })
 
@@ -263,7 +326,7 @@ test.describe('Dashboard empty state', () => {
 		await page.addInitScript(seedDashboardState())
 		await page.goto('/dashboard')
 		// Wait for promise to resolve to empty state
-		await page.waitForSelector('state-placeholder, live-highway', {
+		await page.waitForSelector('state-placeholder, .concert-scroll', {
 			timeout: 5000,
 		})
 	})
@@ -307,8 +370,8 @@ test.describe('Dashboard empty state', () => {
 		const placeholderBox = await placeholder.boundingBox()
 		expect(placeholderBox).toBeTruthy()
 
-		// Content area is .dashboard-main
-		const mainBox = await page.locator('.dashboard-main').boundingBox()
+		// Content area is .concert-scroll
+		const mainBox = await page.locator('.concert-scroll').boundingBox()
 		if (!mainBox) return
 
 		// Center of the empty state should be near center of content area
@@ -336,7 +399,7 @@ test.describe('Dashboard data-loaded state', () => {
 		})
 
 		await page.goto('/dashboard')
-		await page.waitForSelector('live-highway', { timeout: 5000 })
+		await page.waitForSelector('.concert-scroll', { timeout: 5000 })
 		await page.waitForSelector('[data-live-card]', { timeout: 10000 })
 	})
 
@@ -344,29 +407,23 @@ test.describe('Dashboard data-loaded state', () => {
 		layoutPage: page,
 	}) => {
 		// Critical regression test: the height chain must propagate through
-		// au-viewport → dashboard → .dashboard-main → live-highway → scroll container.
+		// au-viewport → dashboard-route → .concert-scroll (scroll container).
 		const heights = await page.evaluate(() => {
-			const root = document.querySelector('dashboard')
-			if (!root) return { root: 0, content: 0, scrollContainer: 0 }
-			const main = root.querySelector('.dashboard-main')
-			const scroll = document.querySelector('.highway-scroll')
+			const root = document.querySelector('dashboard-route')
+			if (!root) return { root: 0, scrollContainer: 0 }
+			const scroll = root.querySelector('.concert-scroll')
 			return {
 				root: root.getBoundingClientRect().height,
-				content: main?.getBoundingClientRect().height ?? 0,
 				scrollContainer: scroll?.getBoundingClientRect().height ?? 0,
 			}
 		})
 
-		expect(heights.root, 'dashboard CE should fill viewport').toBeGreaterThan(
+		expect(heights.root, 'dashboard-route CE should fill viewport').toBeGreaterThan(
 			200,
 		)
 		expect(
-			heights.content,
-			'dashboard-main must not collapse to zero',
-		).toBeGreaterThan(100)
-		expect(
 			heights.scrollContainer,
-			'live-highway scroll container must have renderable height',
+			'concert-scroll must have renderable height',
 		).toBeGreaterThan(50)
 	})
 
@@ -398,7 +455,7 @@ test.describe('Dashboard data-loaded state', () => {
 		const gridBox = await grid.boundingBox()
 		expect(gridBox).toBeTruthy()
 
-		const lanes = grid.locator('> div')
+		const lanes = grid.locator('> li')
 		await expect(lanes).toHaveCount(3)
 
 		const laneBoxes = await Promise.all([
@@ -421,12 +478,12 @@ test.describe('Dashboard data-loaded state', () => {
 	test('stage header is outside scroll container (C3)', async ({
 		layoutPage: page,
 	}) => {
-		const stageHeader = page.locator('live-highway .stage-header').first()
+		const stageHeader = page.locator('.stage-header').first()
 		await expect(stageHeader).toBeVisible()
 
-		// Stage header is a direct grid child of .highway-layout, not inside .highway-scroll
+		// Stage header is a direct grid child of dashboard-route, not inside .concert-scroll
 		const isInsideScroll = await stageHeader.evaluate(
-			(el) => el.closest('.highway-scroll') !== null,
+			(el) => el.closest('.concert-scroll') !== null,
 		)
 		expect(
 			isInsideScroll,
@@ -460,10 +517,10 @@ test.describe('Dashboard data-loaded state', () => {
 		await expectContainedIn(card, auViewport, 2)
 	})
 
-	test('live-highway scroll container has renderable height (C7)', async ({
+	test('concert-scroll container has renderable height (C7)', async ({
 		layoutPage: page,
 	}) => {
-		const scrollContainer = page.locator('.highway-scroll').first()
+		const scrollContainer = page.locator('.concert-scroll').first()
 		if ((await scrollContainer.count()) === 0) return
 
 		// Check CSS property
@@ -484,8 +541,8 @@ test.describe('Dashboard data-loaded state', () => {
 	test('lane grid has 3 columns with cards in correct lane (C8)', async ({
 		layoutPage: page,
 	}) => {
-		const grid = page.locator('live-highway .lane-grid').first()
-		const lanes = grid.locator('> div')
+		const grid = page.locator('.lane-grid').first()
+		const lanes = grid.locator('> li')
 		await expect(lanes).toHaveCount(3)
 
 		// During onboarding, all concerts are grouped into the away lane (3rd column)
@@ -516,10 +573,10 @@ test.describe('Dashboard data-loaded state', () => {
 
 	test('away lane renders event cards (C9)', async ({ layoutPage: page }) => {
 		// Away lane is the 3rd column
-		const grid = page.locator('live-highway .lane-grid')
+		const grid = page.locator('.lane-grid')
 
-		// Each grid row is a date group; away lane is the 3rd div child
-		const awayLanes = grid.locator('> div:nth-child(3)')
+		// Each grid row is a date group; away lane is the 3rd li child
+		const awayLanes = grid.locator('> li:nth-child(3)')
 		const awayCards = awayLanes.locator('[data-live-card]')
 
 		// There should be away cards (artist-3 has no adminArea)

@@ -1,18 +1,26 @@
-<import from="../../components/live-highway/live-highway"></import>
+<import from="../../components/live-highway/event-card"></import>
+<import from="../../components/live-highway/event-detail-sheet"></import>
 <import from="../../components/user-home-selector/user-home-selector"></import>
 <import from="../../components/inline-error/inline-error"></import>
-
 <import from="../../components/celebration-overlay/celebration-overlay"></import>
 <import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
 
-<!-- Highway content with promise.bind -->
-<main class="[ dashboard-main ]" data-blurred.bind="needsRegion" promise.bind="dataPromise">
-  <!-- Loading skeleton -->
-  <live-highway
-    pending
-    date-groups.bind="dateGroups"
-    loading.one-time="true"
-  ></live-highway>
+<!-- Stage header (fixed above scroll container via grid row) -->
+<header if.bind="dateGroups.length > 0" class="[ stage-header ]">
+  <span data-stage="home">HOME STAGE</span>
+  <span data-stage="near">NEAR STAGE</span>
+  <span data-stage="away">AWAY STAGE</span>
+</header>
+
+<!-- Concert list with promise.bind -->
+<main
+  class="[ concert-scroll ]"
+  data-blurred.bind="needsRegion"
+  promise.bind="dataPromise"
+  event-selected.trigger="onEventSelected($event)"
+>
+  <!-- Loading state -->
+  <p pending class="loading-text">Loading events...</p>
 
   <!-- Success state -->
   <template then.from-view="data">
@@ -24,11 +32,37 @@
     </state-placeholder>
 
     <!-- Data loaded -->
-    <live-highway
-      if.bind="dateGroups.length > 0"
-      date-groups.bind="dateGroups"
-      loading.one-time="false"
-    ></live-highway>
+    <ol if.bind="dateGroups.length > 0" class="[ date-group-list ]">
+      <li repeat.for="group of dateGroups; key.bind: group.dateKey">
+        <header class="[ date-separator ]">
+          <time>${group.label}</time>
+        </header>
+
+        <ol class="[ lane-grid ]" aria-label="Concerts">
+          <li class="[ lane ]" data-empty.bind="group.home.length === 0">
+            <event-card
+              repeat.for="ev of group.home; key.bind: ev.id"
+              event.bind="ev"
+              lane="home"
+            ></event-card>
+          </li>
+          <li class="[ lane ]" data-empty.bind="group.nearby.length === 0">
+            <event-card
+              repeat.for="ev of group.nearby; key.bind: ev.id"
+              event.bind="ev"
+              lane="nearby"
+            ></event-card>
+          </li>
+          <li class="[ lane ]" data-empty.bind="group.away.length === 0">
+            <event-card
+              repeat.for="ev of group.away; key.bind: ev.id"
+              event.bind="ev"
+              lane="away"
+            ></event-card>
+          </li>
+        </ol>
+      </li>
+    </ol>
   </template>
 
   <!-- Error state -->
@@ -40,6 +74,9 @@
     ></inline-error>
   </template>
 </main>
+
+<!-- Bottom sheet for event details (top-layer dialog) -->
+<event-detail-sheet component.ref="detailSheet"></event-detail-sheet>
 
 <!-- Signup prompt banner for unauthenticated users -->
 <signup-prompt-banner

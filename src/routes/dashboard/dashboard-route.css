@@ -1,19 +1,65 @@
 @layer block {
 	@scope (dashboard-route) {
+		--_border-light: oklch(100% 0 0deg / 10%);
+		--_border-faint: oklch(100% 0 0deg / 5%);
+		--_date-bg: oklch(from var(--color-surface-raised) l c h / 90%);
+		--_muted-faint: oklch(from var(--color-text-muted) l c h / 30%);
+
 		:scope {
 			display: grid;
-			grid-template-areas: "content";
-			grid-template-rows: 1fr;
+			grid-template:
+				"stage-home stage-near stage-away" auto
+				"lane-home  lane-near  lane-away" minmax(0, 1fr)
+				/ 1fr 1fr 1fr;
 
 			block-size: 100%;
 			min-block-size: 0;
+
+			background: var(--color-surface-base);
 		}
 
-		.dashboard-main {
+		/* ── Row 1: Stage header ── */
+		.stage-header {
 			display: grid;
-			grid-area: content;
+			grid-column: stage-home / stage-away;
+			grid-template-columns: subgrid;
+
+			border-block-end: 1px solid var(--_border-light);
+
+			background: var(--color-surface-base);
+
+			& > span {
+				padding: var(--space-2xs);
+
+				font-family: var(--font-display);
+				font-size: var(--step--1);
+				font-weight: 700;
+				color: var(--color-text-primary);
+				text-align: center;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+			}
+
+			& > span:not(:last-child) {
+				border-inline-end: 1px solid var(--_border-light);
+			}
+		}
+
+		/* ── Row 2: Concert scroll (subgrid propagation root) ── */
+		.concert-scroll {
+			overflow-block: auto;
+			overflow-inline: hidden;
+			display: grid;
+			grid-column: lane-home / lane-away;
+			grid-template-columns: subgrid;
+
 			min-block-size: 0;
+
 			transition: filter 500ms;
+
+			& > * {
+				grid-column: 1 / -1;
+			}
 
 			&[data-blurred="true"] {
 				pointer-events: none;
@@ -22,6 +68,84 @@
 			}
 		}
 
+		.loading-text {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			block-size: 100%;
+
+			font-size: var(--step--1);
+			color: var(--color-text-muted);
+
+			animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+		}
+
+		/* ── Subgrid chain: date-group-list → li → lane-grid ── */
+		.date-group-list {
+			display: grid;
+			grid-template-columns: subgrid;
+			list-style: none;
+
+			& > li {
+				display: grid;
+				grid-column: 1 / -1;
+				grid-template-columns: subgrid;
+			}
+		}
+
+		.date-separator {
+			position: sticky;
+			inset-block-start: 0;
+
+			grid-column: 1 / -1;
+
+			padding: var(--space-2xs) var(--space-xs);
+			border-block-end: 1px solid var(--_border-light);
+
+			background: var(--_date-bg);
+			backdrop-filter: blur(4px);
+
+			& time {
+				font-family: var(--font-display);
+				font-size: var(--step--2);
+				font-weight: 700;
+				color: var(--color-brand-accent);
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+			}
+		}
+
+		.lane-grid {
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: subgrid;
+			list-style: none;
+		}
+
+		.lane {
+			container-name: lane;
+			container-type: inline-size;
+			padding: var(--space-2xs);
+
+			&:not(:last-child) {
+				border-inline-end: 1px solid var(--_border-faint);
+			}
+
+			&[data-empty="true"]::after {
+				content: "—";
+
+				display: block;
+
+				padding-block: var(--space-s);
+
+				font-size: var(--step--2);
+				color: var(--_muted-faint);
+				text-align: center;
+			}
+		}
+
+		/* ── Empty state typography ── */
 		.dashboard-empty-title {
 			margin-block-end: var(--space-3xs);
 
@@ -52,15 +176,6 @@
 			&:hover {
 				color: var(--color-text-primary);
 			}
-		}
-
-		.dashboard-error-center {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-
-			block-size: 100%;
-			padding-inline: var(--space-s);
 		}
 	}
 }
