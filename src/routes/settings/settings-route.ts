@@ -11,12 +11,12 @@ import { IUserService } from '../../services/user-service'
 
 const SUPPORTED_LANGUAGES = ['ja', 'en'] as const
 
-export class SettingsPage {
+export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
-	private readonly logger = resolve(ILogger).scopeTo('SettingsPage')
+	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 

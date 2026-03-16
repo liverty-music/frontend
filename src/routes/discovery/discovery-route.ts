@@ -29,7 +29,7 @@ const GENRE_TAGS = [
 	'Indie',
 ] as const
 
-export class DiscoverPage {
+export class DiscoveryRoute {
 	private readonly artistClient = resolve(IArtistServiceClient)
 	private readonly followClient = resolve(IFollowServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
@@ -37,7 +37,7 @@ export class DiscoverPage {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly concertService = resolve(IConcertService)
-	private readonly logger = resolve(ILogger).scopeTo('DiscoverPage')
+	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
 
 	private static readonly TUTORIAL_FOLLOW_TARGET = 3
@@ -90,7 +90,7 @@ export class DiscoverPage {
 	public get showDashboardCoachMark(): boolean {
 		return (
 			this.isOnboarding &&
-			this.followedCount >= DiscoverPage.TUTORIAL_FOLLOW_TARGET &&
+			this.followedCount >= DiscoveryRoute.TUTORIAL_FOLLOW_TARGET &&
 			this.completedSearchCount >= this.followedCount &&
 			this.concertGroupCount > 0
 		)
@@ -100,19 +100,19 @@ export class DiscoverPage {
 		const parts: string[] = []
 		if (this.isSearchMode) {
 			parts.push(
-				this.i18n.tr('discover.srSearchResults', {
+				this.i18n.tr('discovery.srSearchResults', {
 					count: this.searchResults.length,
 				}),
 			)
 		} else {
 			parts.push(
-				this.i18n.tr('discover.srArtistsAvailable', {
+				this.i18n.tr('discovery.srArtistsAvailable', {
 					count: this.dnaOrbCanvas?.bubbleCount ?? 0,
 				}),
 			)
 		}
 		parts.push(
-			this.i18n.tr('discover.srFollowed', { count: this.followedCount }),
+			this.i18n.tr('discovery.srFollowed', { count: this.followedCount }),
 		)
 		return parts.join('. ')
 	}
@@ -120,7 +120,7 @@ export class DiscoverPage {
 	public get allSearchesComplete(): boolean {
 		return (
 			this.isOnboarding &&
-			this.followedCount >= DiscoverPage.TUTORIAL_FOLLOW_TARGET &&
+			this.followedCount >= DiscoveryRoute.TUTORIAL_FOLLOW_TARGET &&
 			this.completedSearchCount >= this.followedCount
 		)
 	}
@@ -138,12 +138,12 @@ export class DiscoverPage {
 	}
 
 	public async loading(): Promise<void> {
-		this.logger.info('Loading discover page')
+		this.logger.info('Loading discovery page')
 		try {
 			await this.loadInitialArtists('Japan', '')
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
-			this.ea.publish(new Toast(this.i18n.tr('discover.loadFailed'), 'error'))
+			this.ea.publish(new Toast(this.i18n.tr('discovery.loadFailed'), 'error'))
 		}
 
 		// During onboarding, sync with pre-seeded followed artists from localStorage
@@ -196,7 +196,7 @@ export class DiscoverPage {
 			} catch (err) {
 				this.logger.error('Failed to clear genre tag', err)
 				this.ea.publish(
-					new Toast(this.i18n.tr('discover.resetFailed'), 'error'),
+					new Toast(this.i18n.tr('discovery.resetFailed'), 'error'),
 				)
 			} finally {
 				this.isLoadingTag = false
@@ -216,7 +216,7 @@ export class DiscoverPage {
 			this.activeTag = ''
 			this.logger.warn('Failed to load genre artists', err)
 			this.ea.publish(
-				new Toast(this.i18n.tr('discover.genreLoadFailed', { tag }), 'error'),
+				new Toast(this.i18n.tr('discovery.genreLoadFailed', { tag }), 'error'),
 			)
 		} finally {
 			this.isLoadingTag = false
@@ -265,7 +265,7 @@ export class DiscoverPage {
 		} catch (err) {
 			this.logger.warn('Search failed', err)
 			this.ea.publish(
-				new Toast(this.i18n.tr('discover.searchFailed'), 'warning'),
+				new Toast(this.i18n.tr('discovery.searchFailed'), 'warning'),
 			)
 			this.searchResults = []
 		} finally {
@@ -296,7 +296,7 @@ export class DiscoverPage {
 			})
 			this.ea.publish(
 				new Toast(
-					this.i18n.tr('discover.followFailed', { name: artist.name }),
+					this.i18n.tr('discovery.followFailed', { name: artist.name }),
 					'error',
 				),
 			)
@@ -364,7 +364,7 @@ export class DiscoverPage {
 			this.logger.warn('Failed to load similar artists', err)
 			this.ea.publish(
 				new Toast(
-					this.i18n.tr('discover.similarArtistsError', {
+					this.i18n.tr('discovery.similarArtistsError', {
 						name: artistName,
 					}),
 					'warning',
@@ -391,7 +391,7 @@ export class DiscoverPage {
 			})
 			this.ea.publish(
 				new Toast(
-					this.i18n.tr('discover.followFailed', { name: artist.name }),
+					this.i18n.tr('discovery.followFailed', { name: artist.name }),
 					'error',
 				),
 			)
@@ -533,7 +533,7 @@ export class DiscoverPage {
 
 		const rawBubbles = await this.artistClient.listSimilar(
 			artistId,
-			DiscoverPage.SIMILAR_LIMIT_ON_TAP,
+			DiscoveryRoute.SIMILAR_LIMIT_ON_TAP,
 		)
 		const newBubbles = this.pool.dedup(rawBubbles)
 		this.pool.trackAllSeen(newBubbles)
@@ -622,7 +622,7 @@ export class DiscoverPage {
 				if (concerts.length > 0) {
 					this.ea.publish(
 						new Toast(
-							this.i18n.tr('discover.hasUpcomingEvents', {
+							this.i18n.tr('discovery.hasUpcomingEvents', {
 								name: artist.name,
 							}),
 						),
@@ -662,7 +662,7 @@ export class DiscoverPage {
 	}
 
 	private pickRandomSeeds(): ArtistBubble[] {
-		const max = DiscoverPage.MAX_SEED_ARTISTS
+		const max = DiscoveryRoute.MAX_SEED_ARTISTS
 		if (this.followedArtists.length <= max) {
 			return [...this.followedArtists]
 		}

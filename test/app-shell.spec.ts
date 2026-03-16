@@ -7,26 +7,32 @@ import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 // Mock all dynamic imports used by the @route decorator on AppShell.
 // Without these mocks, the imports resolve after Vitest tears down the jsdom
 // environment, causing "document is not defined" unhandled rejections.
-vi.mock('../src/welcome-page', () => ({ WelcomePage: class WelcomePage {} }))
-vi.mock('../src/about-page', () => ({ AboutPage: class AboutPage {} }))
-vi.mock('../src/routes/auth-callback', () => ({
-	AuthCallback: class AuthCallback {},
+vi.mock('../src/routes/welcome/welcome-route', () => ({
+	WelcomeRoute: class WelcomeRoute {},
 }))
-vi.mock('../src/routes/dashboard', () => ({ Dashboard: class Dashboard {} }))
-vi.mock('../src/routes/discover/discover-page', () => ({
-	DiscoverPage: class DiscoverPage {},
+vi.mock('../src/routes/about/about-route', () => ({
+	AboutRoute: class AboutRoute {},
 }))
-vi.mock('../src/routes/my-artists/my-artists-page', () => ({
-	MyArtistsPage: class MyArtistsPage {},
+vi.mock('../src/routes/auth-callback/auth-callback-route', () => ({
+	AuthCallbackRoute: class AuthCallbackRoute {},
 }))
-vi.mock('../src/routes/tickets/tickets-page', () => ({
-	TicketsPage: class TicketsPage {},
+vi.mock('../src/routes/dashboard/dashboard-route', () => ({
+	DashboardRoute: class DashboardRoute {},
 }))
-vi.mock('../src/routes/settings/settings-page', () => ({
-	SettingsPage: class SettingsPage {},
+vi.mock('../src/routes/discovery/discovery-route', () => ({
+	DiscoveryRoute: class DiscoveryRoute {},
 }))
-vi.mock('../src/routes/not-found/not-found-page', () => ({
-	NotFoundPage: class NotFoundPage {},
+vi.mock('../src/routes/my-artists/my-artists-route', () => ({
+	MyArtistsRoute: class MyArtistsRoute {},
+}))
+vi.mock('../src/routes/tickets/tickets-route', () => ({
+	TicketsRoute: class TicketsRoute {},
+}))
+vi.mock('../src/routes/settings/settings-route', () => ({
+	SettingsRoute: class SettingsRoute {},
+}))
+vi.mock('../src/routes/not-found/not-found-route', () => ({
+	NotFoundRoute: class NotFoundRoute {},
 }))
 
 describe('app-shell', () => {
@@ -100,8 +106,8 @@ describe('app-shell', () => {
 			expect(sut.showNav).toBe(false)
 		})
 
-		it('should return true for discover route', () => {
-			setCurrentPath('discover')
+		it('should return true for discovery route', () => {
+			setCurrentPath('discovery')
 			expect(sut.showNav).toBe(true)
 		})
 

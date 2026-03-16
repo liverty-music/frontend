@@ -3,15 +3,15 @@ import { expect, test } from './fixtures'
 
 test.describe('Discover page layout', () => {
 	test.beforeEach(async ({ discoverLayoutPage: page }) => {
-		await page.goto('/discover')
-		await page.waitForSelector('.discover-layout')
+		await page.goto('/discovery')
+		await page.waitForSelector('.discovery-layout')
 	})
 
 	test('discover-layout fills viewport width and au-viewport height (D1)', async ({
 		discoverLayoutPage: page,
 	}) => {
 		const viewportSize = page.viewportSize()!
-		const layout = page.locator('.discover-layout')
+		const layout = page.locator('.discovery-layout')
 		const auViewport = page.locator('au-viewport')
 
 		const layoutBox = await layout.boundingBox()
@@ -26,7 +26,7 @@ test.describe('Discover page layout', () => {
 	test('bubble-area width equals discover-layout width (D2)', async ({
 		discoverLayoutPage: page,
 	}) => {
-		const layout = page.locator('.discover-layout')
+		const layout = page.locator('.discovery-layout')
 		const bubbleArea = page.locator('.bubble-area')
 
 		const layoutBox = await layout.boundingBox()
@@ -55,7 +55,7 @@ test.describe('Discover page layout', () => {
 		const viewportSize = page.viewportSize()!
 		const searchBar = page.locator('.search-bar')
 
-		await expectContainedIn(searchBar, page.locator('.discover-layout'), 1)
+		await expectContainedIn(searchBar, page.locator('.discovery-layout'), 1)
 
 		const searchBox = await searchBar.boundingBox()
 		expect(searchBox).toBeTruthy()
@@ -83,7 +83,7 @@ test.describe('Discover page layout', () => {
 		discoverLayoutPage: page,
 	}) => {
 		const overflow = await page.evaluate(() => {
-			const el = document.querySelector('.discover-layout')
+			const el = document.querySelector('.discovery-layout')
 			if (!el) return { scroll: 0, client: 0 }
 			return { scroll: el.scrollWidth, client: el.clientWidth }
 		})
@@ -93,7 +93,7 @@ test.describe('Discover page layout', () => {
 	test('bubble-area occupies majority of vertical space (D7)', async ({
 		discoverLayoutPage: page,
 	}) => {
-		const layout = page.locator('.discover-layout')
+		const layout = page.locator('.discovery-layout')
 		const bubbleArea = page.locator('.bubble-area')
 
 		const layoutBox = await layout.boundingBox()
@@ -157,7 +157,7 @@ test.describe('Discover page layout', () => {
 	test('discover-layout uses 3-row grid (D10b)', async ({
 		discoverLayoutPage: page,
 	}) => {
-		const rows = await page.locator('.discover-layout').evaluate((el) => {
+		const rows = await page.locator('.discovery-layout').evaluate((el) => {
 			return getComputedStyle(el).gridTemplateRows
 		})
 		// Should have exactly 3 row tracks (auto auto 1fr resolves to specific px values)
@@ -168,7 +168,7 @@ test.describe('Discover page layout', () => {
 	test('all grid children contained within discover-layout (D10)', async ({
 		discoverLayoutPage: page,
 	}) => {
-		const layoutBox = await page.locator('.discover-layout').boundingBox()
+		const layoutBox = await page.locator('.discovery-layout').boundingBox()
 		expect(layoutBox).toBeTruthy()
 		const layoutRight = layoutBox!.x + layoutBox!.width
 

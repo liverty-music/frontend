@@ -1,6 +1,5 @@
 @layer block {
-	/* biome-ignore lint/correctness/noUnknownTypeSelector: Aurelia 2 custom element */
-	@scope (dashboard) {
+	@scope (dashboard-route) {
 		:scope {
 			display: grid;
 			grid-template-areas: "main";

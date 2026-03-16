@@ -1,5 +1,5 @@
 @layer block {
-	@scope (about-page) {
+	@scope (about-route) {
 		.about-card {
 			padding: var(--space-s);
 			border: 1px solid var(--color-border-subtle);

@@ -4,7 +4,7 @@ import QRCode from 'qrcode'
 import { IProofService } from '../../services/proof-service'
 import { ITicketService } from '../../services/ticket-service'
 
-export class TicketsPage {
+export class TicketsRoute {
 	public tickets: Ticket[] = []
 	public isLoading = true
 	public error = ''
@@ -17,7 +17,7 @@ export class TicketsPage {
 	private generatingDialog!: HTMLDialogElement
 	private qrDialog!: HTMLDialogElement
 
-	private readonly logger = resolve(ILogger).scopeTo('TicketsPage')
+	private readonly logger = resolve(ILogger).scopeTo('TicketsRoute')
 	private readonly ticketService = resolve(ITicketService)
 	private readonly proofService = resolve(IProofService)
 	private abortController: AbortController | null = null

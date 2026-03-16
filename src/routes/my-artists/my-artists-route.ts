@@ -35,7 +35,7 @@ export const HYPE_TIERS: Record<number, { labelKey: string; icon: string }> = {
 
 export type ViewMode = 'list' | 'grid'
 
-export class MyArtistsPage {
+export class MyArtistsRoute {
 	public artists: FollowedArtist[] = []
 	public isLoading = true
 
@@ -68,7 +68,7 @@ export class MyArtistsPage {
 	]
 	public readonly hypeTiers = HYPE_TIERS
 
-	private readonly logger = resolve(ILogger).scopeTo('MyArtistsPage')
+	private readonly logger = resolve(ILogger).scopeTo('MyArtistsRoute')
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 
@@ -110,7 +110,7 @@ export class MyArtistsPage {
 	}
 
 	public hypeStop(artist: FollowedArtist): HypeStop {
-		return MyArtistsPage.HYPE_TO_STOP[artist.hype] ?? 'watch'
+		return MyArtistsRoute.HYPE_TO_STOP[artist.hype] ?? 'watch'
 	}
 
 	public async loading(): Promise<void> {
@@ -289,7 +289,7 @@ export class MyArtistsPage {
 		const artist = this.artists.find((a) => a.id === artistId)
 		if (!artist) return
 
-		const hypeType = MyArtistsPage.HYPE_FROM_STOP[level]
+		const hypeType = MyArtistsRoute.HYPE_FROM_STOP[level]
 		const prev = artist.hype
 		if (prev === hypeType) return
 
@@ -447,7 +447,7 @@ export class MyArtistsPage {
 		this.gridLongPressTimer = setTimeout(() => {
 			this.gridLongPressTimer = null
 			this.onGridLongPress(artist)
-		}, MyArtistsPage.GRID_LONG_PRESS_MS)
+		}, MyArtistsRoute.GRID_LONG_PRESS_MS)
 	}
 
 	public onGridTouchEnd(): void {
@@ -459,7 +459,7 @@ export class MyArtistsPage {
 
 	// --- Navigation ---
 
-	public async goToDiscover(): Promise<void> {
-		await this.router.load('discover')
+	public async goToDiscovery(): Promise<void> {
+		await this.router.load('discovery')
 	}
 }

@@ -2,7 +2,7 @@ import type { RouteNode } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { AuthCallback } from '../../src/routes/auth-callback'
+import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { IGuestDataMergeService } from '../../src/services/guest-data-merge-service'
 import {
@@ -45,8 +45,8 @@ function createMockOnboardingService(
 	}
 }
 
-describe('AuthCallback', () => {
-	let sut: AuthCallback
+describe('AuthCallbackRoute', () => {
+	let sut: AuthCallbackRoute
 	let mockAuth: ReturnType<typeof createMockAuth>
 	let mockUserService: ReturnType<typeof createMockUserService>
 	let mockMergeService: ReturnType<typeof createMockMergeService>
@@ -73,8 +73,8 @@ describe('AuthCallback', () => {
 				mockOnboarding as IOnboardingService,
 			),
 		)
-		container.register(AuthCallback)
-		sut = container.get(AuthCallback)
+		container.register(AuthCallbackRoute)
+		sut = container.get(AuthCallbackRoute)
 	})
 
 	describe('canLoad', () => {

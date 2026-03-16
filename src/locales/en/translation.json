@@ -182,9 +182,7 @@
 		"followFailed": "Failed to follow {{name}}. Please try again.",
 		"hasUpcomingEvents": "{{name}} has upcoming live events!",
 		"similarArtistsError": "Couldn't find similar artists for {{name}}",
-		"srStatus": "Artist discovery: {{available}} artists available, {{followed}} followed."
-	},
-	"discover": {
+		"srStatus": "Artist discovery: {{available}} artists available, {{followed}} followed.",
 		"searchPlaceholder": "Search artists...",
 		"clearSearch": "Clear search",
 		"searching": "Searching...",
@@ -194,13 +192,9 @@
 		"srSearchResults": "{{count}} search results",
 		"srArtistsAvailable": "{{count}} artists available",
 		"srFollowed": "{{count}} artists followed",
-		"loadFailed": "Failed to load discovery data",
 		"resetFailed": "Failed to reset discovery view",
 		"genreLoadFailed": "Couldn't load {{tag}} artists",
-		"searchFailed": "Search failed, please try again",
-		"followFailed": "Failed to follow {{name}}. Please try again.",
-		"hasUpcomingEvents": "{{name}} has upcoming live events!",
-		"similarArtistsError": "Couldn't find similar artists for {{name}}"
+		"searchFailed": "Search failed, please try again"
 	},
 	"errorBanner": {
 		"copied": "Error details copied",
@@ -227,7 +221,7 @@
 	},
 	"nav": {
 		"home": "Home",
-		"discover": "Discover",
+		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
 		"settings": "Settings"

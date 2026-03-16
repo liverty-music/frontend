@@ -1,11 +1,11 @@
 import type { ArtistBubble } from './artist-service-client'
 
 /**
- * Manages the available bubble pool for the discover page.
+ * Manages the available bubble pool for the discovery page.
  * Handles deduplication (by name, id, mbid), eviction, and pool size limits.
  *
  * This is a plain class (not DI-registered) — its lifetime matches
- * the owning component (DiscoverPage), not the app lifetime.
+ * the owning component (DiscoveryRoute), not the app lifetime.
  */
 export class BubblePool {
 	public static readonly MAX_BUBBLES = 50

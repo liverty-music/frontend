@@ -42,14 +42,14 @@ test.describe('My Artists shell layout', () => {
 		await page.addInitScript(seedWithArtists())
 		await page.goto('/my-artists')
 		await page.waitForSelector(
-			'my-artists-page .artist-list, my-artists-page .artist-grid',
+			'my-artists-route .artist-list, my-artists-route .artist-grid',
 			{
 				timeout: 5000,
 			},
 		)
 	})
 
-	test('my-artists-page fills au-viewport (MA1)', async ({
+	test('my-artists-route fills au-viewport (MA1)', async ({
 		layoutPage: page,
 	}) => {
 		const auViewport = page.locator('au-viewport')
@@ -64,7 +64,7 @@ test.describe('My Artists shell layout', () => {
 	})
 
 	test('main has non-zero height (MA3)', async ({ layoutPage: page }) => {
-		const main = page.locator('my-artists-page main')
+		const main = page.locator('my-artists-route main')
 		const box = await main.boundingBox()
 		expect(box, 'main should have a bounding box').toBeTruthy()
 		expect(box!.height, 'main should have visible height').toBeGreaterThan(100)
@@ -79,18 +79,18 @@ test.describe('My Artists header', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedWithArtists())
 		await page.goto('/my-artists')
-		await page.waitForSelector('my-artists-page .page-header', {
+		await page.waitForSelector('my-artists-route .page-header', {
 			timeout: 5000,
 		})
 	})
 
 	test('header contains h1 title (MA-H1)', async ({ layoutPage: page }) => {
-		const h1 = page.locator('my-artists-page .page-header h1')
+		const h1 = page.locator('my-artists-route .page-header h1')
 		await expect(h1).toBeVisible()
 	})
 
 	test('header shows artist count (MA-H2)', async ({ layoutPage: page }) => {
-		const count = page.locator('my-artists-page .artist-count')
+		const count = page.locator('my-artists-route .artist-count')
 		await expect(count).toBeVisible()
 		const text = await count.textContent()
 		expect(text).toContain('3')
@@ -99,7 +99,7 @@ test.describe('My Artists header', () => {
 	test('header has view toggle button (MA-H3)', async ({
 		layoutPage: page,
 	}) => {
-		const toggleBtn = page.locator('my-artists-page .toggle-view-btn')
+		const toggleBtn = page.locator('my-artists-route .toggle-view-btn')
 		await expect(toggleBtn).toBeVisible()
 	})
 })
@@ -112,21 +112,21 @@ test.describe('My Artists list view', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedWithArtists())
 		await page.goto('/my-artists')
-		await page.waitForSelector('my-artists-page .artist-list', {
+		await page.waitForSelector('my-artists-route .artist-list', {
 			timeout: 5000,
 		})
 	})
 
 	test('artist list renders 3 rows (MA-L1)', async ({ layoutPage: page }) => {
-		const rows = page.locator('my-artists-page .artist-list .artist-row')
+		const rows = page.locator('my-artists-route .artist-list .artist-row')
 		await expect(rows).toHaveCount(3)
 	})
 
 	test('hype legend is visible above artist list (MA-L2)', async ({
 		layoutPage: page,
 	}) => {
-		const legend = page.locator('my-artists-page .hype-legend')
-		const list = page.locator('my-artists-page .artist-list')
+		const legend = page.locator('my-artists-route .hype-legend')
+		const list = page.locator('my-artists-route .artist-list')
 
 		const legendBox = await legend.boundingBox()
 		const listBox = await list.boundingBox()
@@ -142,7 +142,7 @@ test.describe('My Artists list view', () => {
 	test('artist list does not overflow below bottom-nav (MA-L3)', async ({
 		layoutPage: page,
 	}) => {
-		const list = page.locator('my-artists-page .artist-list')
+		const list = page.locator('my-artists-route .artist-list')
 		const nav = page.locator('bottom-nav-bar')
 
 		const listBox = await list.boundingBox()
@@ -157,7 +157,7 @@ test.describe('My Artists list view', () => {
 	})
 
 	test('artist row names are visible (MA-L4)', async ({ layoutPage: page }) => {
-		const names = page.locator('my-artists-page .artist-row-name')
+		const names = page.locator('my-artists-route .artist-row-name')
 		const count = await names.count()
 		expect(count).toBe(3)
 		for (let i = 0; i < count; i++) {
@@ -174,7 +174,7 @@ test.describe('My Artists empty state', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedEmpty())
 		await page.goto('/my-artists')
-		await page.waitForSelector('my-artists-page state-placeholder', {
+		await page.waitForSelector('my-artists-route state-placeholder', {
 			timeout: 5000,
 		})
 	})
@@ -182,22 +182,22 @@ test.describe('My Artists empty state', () => {
 	test('empty state placeholder is visible (MA-E1)', async ({
 		layoutPage: page,
 	}) => {
-		const placeholder = page.locator('my-artists-page state-placeholder')
+		const placeholder = page.locator('my-artists-route state-placeholder')
 		await expect(placeholder).toBeVisible()
 	})
 
 	test('empty state has discover button (MA-E2)', async ({
 		layoutPage: page,
 	}) => {
-		const btn = page.locator('my-artists-page state-placeholder .discover-btn')
+		const btn = page.locator('my-artists-route state-placeholder .discover-btn')
 		await expect(btn).toBeVisible()
 	})
 
 	test('empty state is vertically centered in main (MA-E3)', async ({
 		layoutPage: page,
 	}) => {
-		const placeholder = page.locator('my-artists-page state-placeholder')
-		const main = page.locator('my-artists-page main')
+		const placeholder = page.locator('my-artists-route state-placeholder')
+		const main = page.locator('my-artists-route main')
 
 		const placeholderBox = await placeholder.boundingBox()
 		const mainBox = await main.boundingBox()
@@ -213,7 +213,7 @@ test.describe('My Artists empty state', () => {
 	test('header is hidden when no artists (MA-E4)', async ({
 		layoutPage: page,
 	}) => {
-		const header = page.locator('my-artists-page .page-header')
+		const header = page.locator('my-artists-route .page-header')
 		await expect(header).toHaveCount(0)
 	})
 

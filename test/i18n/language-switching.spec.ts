@@ -19,10 +19,12 @@ vi.mock('../../src/services/push-service', () => ({
 	IPushService: mockIPushService,
 }))
 
-const { SettingsPage } = await import('../../src/routes/settings/settings-page')
+const { SettingsRoute } = await import(
+	'../../src/routes/settings/settings-route'
+)
 
 describe('i18n language switching', () => {
-	let sut: InstanceType<typeof SettingsPage>
+	let sut: InstanceType<typeof SettingsRoute>
 	let mockI18n: ReturnType<typeof createStatefulI18nMock>
 
 	function createStatefulI18nMock() {
@@ -60,8 +62,8 @@ describe('i18n language switching', () => {
 				unsubscribe: vi.fn(),
 			}),
 		)
-		container.register(SettingsPage)
-		sut = container.get(SettingsPage)
+		container.register(SettingsRoute)
+		sut = container.get(SettingsRoute)
 	})
 
 	afterEach(() => {

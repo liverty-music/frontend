@@ -1,5 +1,5 @@
 @layer block {
-	@scope (my-artists-page) {
+	@scope (my-artists-route) {
 		:scope {
 			--_white-5: oklch(100% 0 0deg / 5%);
 			--_white-10: oklch(100% 0 0deg / 10%);

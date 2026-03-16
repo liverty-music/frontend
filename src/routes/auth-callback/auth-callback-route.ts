@@ -2,15 +2,15 @@ import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import { codeToHome } from '../constants/iso3166'
-import { StorageKeys } from '../constants/storage-keys'
-import { IAuthService } from '../services/auth-service'
-import { IGuestDataMergeService } from '../services/guest-data-merge-service'
+import { codeToHome } from '../../constants/iso3166'
+import { StorageKeys } from '../../constants/storage-keys'
+import { IAuthService } from '../../services/auth-service'
+import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
-} from '../services/onboarding-service'
-import { IUserService } from '../services/user-service'
+} from '../../services/onboarding-service'
+import { IUserService } from '../../services/user-service'
 
 /**
  * OIDC callback handler that processes the authorization code exchange
@@ -21,14 +21,14 @@ import { IUserService } from '../services/user-service'
  * router.load() from attached(), which can hang because attached() fires
  * during the _swap phase when _isNavigating is still true.
  */
-export class AuthCallback {
+export class AuthCallbackRoute {
 	public error = ''
 
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
 	private readonly mergeService = resolve(IGuestDataMergeService)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly logger = resolve(ILogger).scopeTo('AuthCallback')
+	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
 
 	public async canLoad(
 		_params: Params,

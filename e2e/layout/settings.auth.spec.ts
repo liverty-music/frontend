@@ -4,12 +4,12 @@ import { expectAnchored, expectContainedIn } from './assertions'
 test.describe('Settings page layout (authenticated)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/settings')
-		await page.waitForSelector('settings-page', { timeout: 10_000 })
+		await page.waitForSelector('settings-route', { timeout: 10_000 })
 	})
 
 	test('settings container fills au-viewport height', async ({ page }) => {
 		const viewport = page.locator('au-viewport')
-		const settings = page.locator('settings-page > div').first()
+		const settings = page.locator('settings-route > div').first()
 
 		const viewportBox = await viewport.boundingBox()
 		const settingsBox = await settings.boundingBox()
@@ -22,7 +22,7 @@ test.describe('Settings page layout (authenticated)', () => {
 	test('settings container has overflow-y auto for scrolling', async ({
 		page,
 	}) => {
-		const container = page.locator('settings-page > div').first()
+		const container = page.locator('settings-route > div').first()
 		await expect(container).toHaveCSS('overflow-y', 'auto')
 	})
 
@@ -30,7 +30,7 @@ test.describe('Settings page layout (authenticated)', () => {
 		page,
 	}) => {
 		const viewport = page.locator('au-viewport')
-		const settings = page.locator('settings-page > div').first()
+		const settings = page.locator('settings-route > div').first()
 
 		await expectContainedIn(settings, viewport)
 	})
