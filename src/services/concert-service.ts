@@ -7,9 +7,9 @@ import {
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { resolveStore } from '../state/store-interface'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
-import { ILocalArtistClient } from './local-artist-client'
 import { IOnboardingService } from './onboarding-service'
 
 export const IConcertService = DI.createInterface<IConcertService>(
@@ -22,7 +22,7 @@ export interface IConcertService extends ConcertServiceClient {}
 export class ConcertServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('ConcertService')
 	private readonly authService = resolve(IAuthService)
-	private readonly localClient = resolve(ILocalArtistClient)
+	private readonly store = resolveStore()
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly concertClient = createClient(
 		ConcertService,
@@ -70,12 +70,12 @@ export class ConcertServiceClient {
 	private async listByFollowerOnboarding(
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
-		const artists = this.localClient.listFollowed()
+		const artists = this.store.getState().guest.follows
 		this.logger.info('Onboarding: listing concerts for local artists', {
 			count: artists.length,
 		})
 		const results = await Promise.allSettled(
-			artists.map((a) => this.listConcerts(a.id, signal)),
+			artists.map((a) => this.listConcerts(a.artistId, signal)),
 		)
 		const concerts: Concert[] = []
 		for (const result of results) {

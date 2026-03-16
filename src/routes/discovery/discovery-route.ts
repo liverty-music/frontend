@@ -10,11 +10,11 @@ import {
 import { BubblePool } from '../../services/bubble-pool'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
-import { ILocalArtistClient } from '../../services/local-artist-client'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
+import { resolveStore } from '../../state/store-interface'
 
 const GENRE_TAGS = [
 	'Rock',
@@ -35,7 +35,7 @@ export class DiscoveryRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
-	private readonly localClient = resolve(ILocalArtistClient)
+	private readonly store = resolveStore()
 	private readonly concertService = resolve(IConcertService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
@@ -82,7 +82,7 @@ export class DiscoveryRoute {
 
 	public get followedCount(): number {
 		if (this.isOnboarding) {
-			return this.localClient.followedCount
+			return this.store.getState().guest.follows.length
 		}
 		return this.followedArtists.length
 	}
@@ -146,14 +146,14 @@ export class DiscoveryRoute {
 			this.ea.publish(new Toast(this.i18n.tr('discovery.loadFailed'), 'error'))
 		}
 
-		// During onboarding, sync with pre-seeded followed artists from localStorage
+		// During onboarding, sync with pre-seeded followed artists from Store
 		// (e.g. page reload or E2E seeding) and trigger their concert searches
 		if (this.isOnboarding) {
-			const preSeeded = this.localClient.listFollowed()
+			const preSeeded = this.store.getState().guest.follows
 			for (const artist of preSeeded) {
-				if (!this.concertSearchStatus.has(artist.id)) {
-					this.concertSearchStatus.set(artist.id, 'pending')
-					this.searchConcertsWithTimeout(artist.id)
+				if (!this.concertSearchStatus.has(artist.artistId)) {
+					this.concertSearchStatus.set(artist.artistId, 'pending')
+					this.searchConcertsWithTimeout(artist.artistId)
 				}
 			}
 		}
@@ -407,7 +407,7 @@ export class DiscoveryRoute {
 	}
 
 	public onCoachMarkTap(): void {
-		this.logger.info('Tutorial: coach mark tapped, advancing to dashboard', {
+		this.logger.info('Onboarding: coach mark tapped, advancing to dashboard', {
 			followedCount: this.followedCount,
 		})
 		// Deactivate spotlight before navigating — dashboard will reactivate during lane intro

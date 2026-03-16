@@ -1,37 +1,61 @@
 import { DI, ILogger, resolve } from 'aurelia'
-import { StorageKeys } from '../constants/storage-keys'
+import { resolveStore } from '../state/store-interface'
 
 /**
- * Onboarding step values.
- * 0 = LP (not started), 1-5 = tutorial in progress, 6 = legacy (removed), 7 = completed.
+ * Onboarding step values as string literals for readability in code and localStorage.
  */
 export const OnboardingStep = {
-	LP: 0,
-	DISCOVER: 1,
-	LOADING: 2,
-	DASHBOARD: 3,
-	DETAIL: 4,
-	MY_ARTISTS: 5,
-	SIGNUP: 6,
-	COMPLETED: 7,
+	LP: 'lp',
+	DISCOVERY: 'discovery',
+	DASHBOARD: 'dashboard',
+	DETAIL: 'detail',
+	MY_ARTISTS: 'my-artists',
+	COMPLETED: 'completed',
 } as const
 
 export type OnboardingStepValue =
 	(typeof OnboardingStep)[keyof typeof OnboardingStep]
 
 /**
- * Maps each tutorial step to the route the user should be on.
+ * Maps each onboarding step to the route the user should be on.
  */
 export const STEP_ROUTE_MAP: Record<OnboardingStepValue, string> = {
 	[OnboardingStep.LP]: '',
-	[OnboardingStep.DISCOVER]: 'discovery',
-	[OnboardingStep.LOADING]: 'dashboard',
+	[OnboardingStep.DISCOVERY]: 'discovery',
 	[OnboardingStep.DASHBOARD]: 'dashboard',
 	[OnboardingStep.DETAIL]: 'dashboard',
 	[OnboardingStep.MY_ARTISTS]: 'my-artists',
-	[OnboardingStep.SIGNUP]: '',
 	[OnboardingStep.COMPLETED]: '',
 }
+
+/**
+ * Ordered progression of onboarding steps for ordinal comparison.
+ */
+export const STEP_ORDER = [
+	OnboardingStep.LP,
+	OnboardingStep.DISCOVERY,
+	OnboardingStep.DASHBOARD,
+	OnboardingStep.DETAIL,
+	OnboardingStep.MY_ARTISTS,
+	OnboardingStep.COMPLETED,
+] as const
+
+/**
+ * Returns the ordinal index of a step in the progression.
+ */
+export function stepIndex(step: OnboardingStepValue): number {
+	return STEP_ORDER.indexOf(step)
+}
+
+/**
+ * Set of steps that constitute the active onboarding flow.
+ */
+const ONBOARDING_STEPS = new Set<OnboardingStepValue>([
+	OnboardingStep.DISCOVERY,
+	OnboardingStep.DASHBOARD,
+	OnboardingStep.DETAIL,
+	OnboardingStep.MY_ARTISTS,
+])
 
 export const IOnboardingService = DI.createInterface<IOnboardingService>(
 	'IOnboardingService',
@@ -40,29 +64,38 @@ export const IOnboardingService = DI.createInterface<IOnboardingService>(
 
 export interface IOnboardingService extends OnboardingService {}
 
+/**
+ * Thin facade over the Store for onboarding state.
+ * Delegates all state reads/writes to IStore<AppState, AppAction>.
+ * Retains callback management (onSpotlightTap, onBringToFront) as instance properties
+ * since callbacks cannot be stored in a Redux-like store.
+ */
 export class OnboardingService {
 	private readonly logger = resolve(ILogger).scopeTo('OnboardingService')
+	private readonly store = resolveStore()
 
-	public currentStep: OnboardingStepValue
-
-	// Spotlight config — driven by page components, consumed by app-shell coach mark
-	public spotlightTarget = ''
-	public spotlightMessage = ''
-	public spotlightRadius = '12px'
-	public spotlightActive = false
+	// Callbacks — not state, cannot live in the Store
 	public onSpotlightTap: (() => void) | undefined = undefined
 	public onBringToFront: (() => void) | undefined = undefined
 
-	constructor() {
-		this.currentStep = this.readStep()
+	public get currentStep(): OnboardingStepValue {
+		return this.store.getState().onboarding.step
+	}
 
-		// Backward compat: Step 6 (forced signup) was removed
-		if (this.currentStep === OnboardingStep.SIGNUP) {
-			this.currentStep = OnboardingStep.COMPLETED
-			this.writeStep(OnboardingStep.COMPLETED)
-		}
+	public get spotlightTarget(): string {
+		return this.store.getState().onboarding.spotlightTarget
+	}
 
-		this.logger.debug('Initialized', { step: this.currentStep })
+	public get spotlightMessage(): string {
+		return this.store.getState().onboarding.spotlightMessage
+	}
+
+	public get spotlightRadius(): string {
+		return this.store.getState().onboarding.spotlightRadius
+	}
+
+	public get spotlightActive(): boolean {
+		return this.store.getState().onboarding.spotlightActive
 	}
 
 	/**
@@ -75,20 +108,20 @@ export class OnboardingService {
 		onTap?: () => void,
 		radius = '12px',
 	): void {
-		this.spotlightTarget = target
-		this.spotlightMessage = message
-		this.spotlightRadius = radius
+		this.store.dispatch({
+			type: 'onboarding/setSpotlight',
+			target,
+			message,
+			radius,
+		})
 		this.onSpotlightTap = onTap
-		this.spotlightActive = true
 	}
 
 	/**
 	 * Deactivate the spotlight entirely.
 	 */
 	public deactivateSpotlight(): void {
-		this.spotlightActive = false
-		this.spotlightTarget = ''
-		this.spotlightMessage = ''
+		this.store.dispatch({ type: 'onboarding/clearSpotlight' })
 		this.onSpotlightTap = undefined
 	}
 
@@ -101,46 +134,42 @@ export class OnboardingService {
 	}
 
 	/**
-	 * Whether the user is currently in the onboarding flow (step 1-5).
+	 * Whether the user is currently in the onboarding flow.
 	 */
 	public get isOnboarding(): boolean {
-		return (
-			this.currentStep >= OnboardingStep.DISCOVER &&
-			this.currentStep <= OnboardingStep.MY_ARTISTS
-		)
+		return ONBOARDING_STEPS.has(this.currentStep)
 	}
 
 	/**
-	 * Whether the tutorial has been completed at least once.
+	 * Whether onboarding has been completed at least once.
 	 */
 	public get isCompleted(): boolean {
 		return this.currentStep === OnboardingStep.COMPLETED
 	}
 
 	/**
-	 * Advance to the given step and persist to LocalStorage.
+	 * Advance to the given step and persist via Store dispatch.
 	 */
 	public setStep(step: OnboardingStepValue): void {
 		this.logger.info('Step transition', {
 			from: this.currentStep,
 			to: step,
 		})
-		this.currentStep = step
-		this.writeStep(step)
+		this.store.dispatch({ type: 'onboarding/advance', step })
 	}
 
 	/**
-	 * Mark tutorial as completed.
+	 * Mark onboarding as completed.
 	 */
 	public complete(): void {
-		this.setStep(OnboardingStep.COMPLETED)
+		this.store.dispatch({ type: 'onboarding/complete' })
 	}
 
 	/**
-	 * Reset to LP (step 0). Used when starting a fresh tutorial.
+	 * Reset to LP. Used when starting a fresh onboarding.
 	 */
 	public reset(): void {
-		this.setStep(OnboardingStep.LP)
+		this.store.dispatch({ type: 'onboarding/reset' })
 	}
 
 	/**
@@ -148,25 +177,5 @@ export class OnboardingService {
 	 */
 	public getRouteForCurrentStep(): string {
 		return STEP_ROUTE_MAP[this.currentStep]
-	}
-
-	private readStep(): OnboardingStepValue {
-		const raw = localStorage.getItem(StorageKeys.onboardingStep)
-		if (raw === null) {
-			return OnboardingStep.LP
-		}
-		const parsed = Number(raw)
-		if (!Number.isInteger(parsed) || parsed < 0 || parsed > 7) {
-			this.logger.warn('Invalid onboardingStep value, resetting to 0', {
-				raw,
-			})
-			localStorage.setItem(StorageKeys.onboardingStep, '0')
-			return OnboardingStep.LP
-		}
-		return parsed as OnboardingStepValue
-	}
-
-	private writeStep(step: OnboardingStepValue): void {
-		localStorage.setItem(StorageKeys.onboardingStep, String(step))
 	}
 }

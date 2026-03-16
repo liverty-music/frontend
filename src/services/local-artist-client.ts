@@ -1,10 +1,10 @@
-import { DI, ILogger, observable, resolve } from 'aurelia'
-import { StorageKeys } from '../constants/storage-keys'
+import { DI, ILogger, resolve } from 'aurelia'
+import type { GuestFollow } from '../state/app-state'
+import { resolveStore } from '../state/store-interface'
 
 export interface LocalFollowedArtist {
 	id: string
 	name: string
-	hype: 'WATCH' | 'HOME' | 'NEARBY' | 'AWAY'
 }
 
 export const ILocalArtistClient = DI.createInterface<ILocalArtistClient>(
@@ -14,121 +14,65 @@ export const ILocalArtistClient = DI.createInterface<ILocalArtistClient>(
 
 export interface ILocalArtistClient extends LocalArtistClient {}
 
+/**
+ * Thin facade over the Store for guest artist data.
+ * Delegates all state reads/writes to IStore<AppState, AppAction>.
+ */
 export class LocalArtistClient {
 	private readonly logger = resolve(ILogger).scopeTo('LocalArtistClient')
+	private readonly store = resolveStore()
 
-	@observable public followedCount = 0
-
-	constructor() {
-		this.followedCount = this.listFollowed().length
+	public get followedCount(): number {
+		return this.store.getState().guest.follows.length
 	}
 
 	/**
 	 * List all locally followed artists.
 	 */
 	public listFollowed(): LocalFollowedArtist[] {
-		const raw = localStorage.getItem(StorageKeys.guestFollowedArtists)
-		if (!raw) return []
-		try {
-			return JSON.parse(raw) as LocalFollowedArtist[]
-		} catch {
-			this.logger.warn(
-				'Failed to parse local followed artists, returning empty',
-			)
-			return []
-		}
+		return this.store.getState().guest.follows.map(toLocal)
 	}
 
 	/**
-	 * Follow an artist locally.
+	 * Follow an artist locally via Store dispatch.
 	 */
 	public follow(id: string, name: string): void {
-		const artists = this.listFollowed()
-		if (artists.some((a) => a.id === id)) {
-			this.logger.debug('Artist already followed locally', { id })
-			return
-		}
-		artists.push({ id, name, hype: 'AWAY' })
-		localStorage.setItem(
-			StorageKeys.guestFollowedArtists,
-			JSON.stringify(artists),
-		)
-		this.followedCount = artists.length
-		this.logger.info('Local artist followed', {
-			id,
-			name,
-			count: artists.length,
-		})
+		this.store.dispatch({ type: 'guest/follow', artistId: id, name })
+		this.logger.info('Local artist followed', { id, name })
 	}
 
 	/**
-	 * Unfollow an artist locally.
+	 * Unfollow an artist locally via Store dispatch.
 	 */
 	public unfollow(id: string): void {
-		const artists = this.listFollowed()
-		const filtered = artists.filter((a) => a.id !== id)
-		if (filtered.length === artists.length) {
-			this.logger.debug('Artist not found locally for unfollow', { id })
-			return
-		}
-		localStorage.setItem(
-			StorageKeys.guestFollowedArtists,
-			JSON.stringify(filtered),
-		)
-		this.followedCount = filtered.length
+		this.store.dispatch({ type: 'guest/unfollow', artistId: id })
 		this.logger.info('Local artist unfollowed', { id })
-	}
-
-	/**
-	 * Set the hype level for a locally followed artist.
-	 */
-	public setHype(artistId: string, level: LocalFollowedArtist['hype']): void {
-		const artists = this.listFollowed()
-		const artist = artists.find((a) => a.id === artistId)
-		if (!artist) {
-			this.logger.warn('Cannot set hype: artist not found locally', {
-				artistId,
-			})
-			return
-		}
-		artist.hype = level
-		localStorage.setItem(
-			StorageKeys.guestFollowedArtists,
-			JSON.stringify(artists),
-		)
-		this.logger.info('Local hype set', { artistId, level })
 	}
 
 	/**
 	 * Get the locally stored home area (ISO 3166-2 code).
 	 */
 	public getHome(): string | null {
-		return localStorage.getItem(StorageKeys.guestHome)
+		return this.store.getState().guest.home
 	}
 
 	/**
-	 * Store the selected home area locally (ISO 3166-2 code).
+	 * Store the selected home area locally via Store dispatch.
 	 */
 	public setHome(home: string): void {
-		localStorage.setItem(StorageKeys.guestHome, home)
+		this.store.dispatch({ type: 'guest/setUserHome', code: home })
 		this.logger.info('Local home set', { home })
 	}
 
 	/**
-	 * Clear all guest/local data from LocalStorage.
+	 * Clear all guest/local data via Store dispatch.
 	 */
 	public clearAll(): void {
-		const keysToRemove: string[] = []
-		for (let i = 0; i < localStorage.length; i++) {
-			const key = localStorage.key(i)
-			if (key?.startsWith(StorageKeys.guestKeyPrefix)) {
-				keysToRemove.push(key)
-			}
-		}
-		for (const key of keysToRemove) {
-			localStorage.removeItem(key)
-		}
-		this.followedCount = 0
-		this.logger.info('Local data cleared', { keysRemoved: keysToRemove.length })
+		this.store.dispatch({ type: 'guest/clearAll' })
+		this.logger.info('Local data cleared')
 	}
+}
+
+function toLocal(f: GuestFollow): LocalFollowedArtist {
+	return { id: f.artistId, name: f.name }
 }

@@ -1,7 +1,9 @@
+import { IStore } from '@aurelia/state'
 import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
+import { createMockStore } from '../helpers/mock-store'
 
 const mockConcertService = { typeName: 'ConcertService' }
 const mockCreateClient = vi.fn()
@@ -39,6 +41,19 @@ vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
 }))
 
+const mockIOnboardingService = DI.createInterface('IOnboardingService')
+vi.mock('../../src/services/onboarding-service', () => ({
+	IOnboardingService: mockIOnboardingService,
+	OnboardingStep: {
+		LP: 'lp',
+		DISCOVERY: 'discovery',
+		DASHBOARD: 'dashboard',
+		DETAIL: 'detail',
+		MY_ARTISTS: 'my-artists',
+		COMPLETED: 'completed',
+	},
+}))
+
 const { ConcertServiceClient, IConcertService } = await import(
 	'../../src/services/concert-service'
 )
@@ -57,8 +72,13 @@ describe('ConcertServiceClient', () => {
 		mockCreateClient.mockReturnValue(mockClient)
 
 		const mockAuth = createMockAuth({ isAuthenticated: true })
+		const { store } = createMockStore()
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
+			Registration.instance(IStore, store),
+			Registration.instance(mockIOnboardingService, {
+				isOnboarding: false,
+			}),
 		)
 		container.register(ConcertServiceClient)
 		sut = container.get(IConcertService)

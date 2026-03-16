@@ -16,7 +16,7 @@
 	},
 	"signup": {
 		"title": "Create Your Account",
-		"description": "Great job completing the tutorial!<br>Create a secure account with Passkey<br>to save the artists you follow.",
+		"description": "Great job completing onboarding!<br>Create a secure account with Passkey<br>to save the artists you follow.",
 		"button": "Create Account with Passkey",
 		"error": "Account creation failed. Please try again."
 	},

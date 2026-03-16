@@ -36,7 +36,7 @@ const sharedRegistrations = [
 	}),
 	Registration.instance(IErrorBoundaryService, createMockErrorBoundary()),
 	Registration.instance(IOnboardingService, {
-		currentStep: 7,
+		currentStep: 'completed',
 		isComplete: true,
 		completeStep: vi.fn(),
 		goToStep: vi.fn(),

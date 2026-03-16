@@ -3,10 +3,10 @@ import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/en
 import { FollowService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/follow/v1/follow_service_connect.js'
 import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { resolveStore } from '../state/store-interface'
 import type { ArtistBubble } from './artist-service-client'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
-import { ILocalArtistClient } from './local-artist-client'
 import { IOnboardingService } from './onboarding-service'
 
 export interface FollowedArtistInfo {
@@ -24,7 +24,7 @@ export interface IFollowServiceClient extends FollowServiceClient {}
 
 export class FollowServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('FollowServiceClient')
-	private readonly localClient = resolve(ILocalArtistClient)
+	private readonly store = resolveStore()
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly client: PromiseClient<typeof FollowService>
 
@@ -50,7 +50,7 @@ export class FollowServiceClient {
 	 */
 	public async follow(artistId: string, artistName: string): Promise<void> {
 		if (this.onboarding.isOnboarding) {
-			this.localClient.follow(artistId, artistName)
+			this.store.dispatch({ type: 'guest/follow', artistId, name: artistName })
 			return
 		}
 		await this.client.follow({
@@ -64,7 +64,7 @@ export class FollowServiceClient {
 	 */
 	public async unfollow(artistId: string): Promise<void> {
 		if (this.onboarding.isOnboarding) {
-			this.localClient.unfollow(artistId)
+			this.store.dispatch({ type: 'guest/unfollow', artistId })
 			return
 		}
 		await this.client.unfollow({
@@ -80,10 +80,10 @@ export class FollowServiceClient {
 		signal?: AbortSignal,
 	): Promise<FollowedArtistInfo[]> {
 		if (this.onboarding.isOnboarding) {
-			return this.localClient.listFollowed().map((a) => ({
-				id: a.id,
-				name: a.name,
-				hype: mapLocalHype(a.hype),
+			return this.store.getState().guest.follows.map((f) => ({
+				id: f.artistId,
+				name: f.name,
+				hype: HypeType.AWAY,
 			}))
 		}
 		const response = await this.client.listFollowed({}, { signal })
@@ -105,21 +105,6 @@ export class FollowServiceClient {
 		return resp.artists.flatMap((fa) =>
 			fa.artist ? [toBubble(fa.artist)] : [],
 		)
-	}
-}
-
-function mapLocalHype(level: 'WATCH' | 'HOME' | 'NEARBY' | 'AWAY'): HypeType {
-	switch (level) {
-		case 'WATCH':
-			return HypeType.WATCH
-		case 'HOME':
-			return HypeType.HOME
-		case 'NEARBY':
-			return HypeType.NEARBY
-		case 'AWAY':
-			return HypeType.AWAY
-		default:
-			return HypeType.AWAY
 	}
 }
 

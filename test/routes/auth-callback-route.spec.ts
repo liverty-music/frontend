@@ -1,4 +1,5 @@
 import type { RouteNode } from '@aurelia/router'
+import { IStore } from '@aurelia/state'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,6 +13,7 @@ import {
 import { IUserService } from '../../src/services/user-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
+import { createMockStore } from '../helpers/mock-store'
 
 function createMockUserService() {
 	return {
@@ -30,7 +32,7 @@ function createMockMergeService() {
 
 function createMockOnboardingService(
 	overrides: Partial<{
-		currentStep: number
+		currentStep: string
 		isOnboarding: boolean
 	}> = {},
 ) {
@@ -61,6 +63,8 @@ describe('AuthCallbackRoute', () => {
 		mockMergeService = createMockMergeService()
 		mockOnboarding = createMockOnboardingService()
 
+		const { store } = createMockStore()
+
 		const container = createTestContainer(
 			Registration.instance(IAuthService, mockAuth as IAuthService),
 			Registration.instance(IUserService, mockUserService as IUserService),
@@ -72,15 +76,14 @@ describe('AuthCallbackRoute', () => {
 				IOnboardingService,
 				mockOnboarding as IOnboardingService,
 			),
+			Registration.instance(IStore, store),
 		)
 		container.register(AuthCallbackRoute)
 		sut = container.get(AuthCallbackRoute)
 	})
 
 	describe('canLoad', () => {
-		it('should redirect to dashboard and merge on tutorial signup', async () => {
-			// Tutorial signup: onboarding step is SIGNUP
-			mockOnboarding.currentStep = OnboardingStep.SIGNUP
+		it('should redirect to dashboard and always merge guest data after authentication', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'new@example.com' },
 			})
@@ -89,18 +92,6 @@ describe('AuthCallbackRoute', () => {
 
 			expect(mockUserService.client.create).toHaveBeenCalled()
 			expect(mockMergeService.merge).toHaveBeenCalled()
-			expect(result).toBe('/dashboard')
-		})
-
-		it('should redirect to dashboard on sign-in and provision user', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'existing@example.com' },
-			})
-
-			const result = await sut.canLoad({}, {} as RouteNode)
-
-			expect(mockUserService.client.create).toHaveBeenCalled()
-			expect(mockMergeService.merge).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 
@@ -139,7 +130,6 @@ describe('AuthCallbackRoute', () => {
 		})
 
 		it('should handle provisionUser ALREADY_EXISTS gracefully', async () => {
-			mockOnboarding.currentStep = OnboardingStep.SIGNUP
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'existing@example.com' },
 			})
@@ -167,7 +157,6 @@ describe('AuthCallbackRoute', () => {
 		})
 
 		it('should skip provisionUser when email is missing', async () => {
-			mockOnboarding.currentStep = OnboardingStep.SIGNUP
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: {},
 			})
@@ -179,7 +168,7 @@ describe('AuthCallbackRoute', () => {
 		})
 
 		it('should complete onboarding when login happens during onboarding', async () => {
-			mockOnboarding.currentStep = OnboardingStep.DISCOVER
+			mockOnboarding.currentStep = OnboardingStep.DISCOVERY
 			mockOnboarding.isOnboarding = true
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'user@example.com' },

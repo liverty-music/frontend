@@ -28,7 +28,7 @@ import { IOnboardingService } from './services/onboarding-service'
 			path: 'dashboard',
 			component: import('./routes/dashboard/dashboard-route'),
 			title: 'Dashboard',
-			data: { tutorialStep: 3 },
+			data: { onboardingStep: 'dashboard' },
 		},
 		{
 			path: 'concerts/:id',
@@ -39,13 +39,13 @@ import { IOnboardingService } from './services/onboarding-service'
 			path: 'discovery',
 			component: import('./routes/discovery/discovery-route'),
 			title: 'Discovery',
-			data: { auth: false, tutorialStep: 1 },
+			data: { auth: false, onboardingStep: 'discovery' },
 		},
 		{
 			path: 'my-artists',
 			component: import('./routes/my-artists/my-artists-route'),
 			title: 'My Artists',
-			data: { tutorialStep: 5 },
+			data: { onboardingStep: 'my-artists' },
 		},
 		{
 			path: 'tickets',

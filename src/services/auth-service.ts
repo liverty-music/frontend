@@ -88,7 +88,7 @@ export class AuthService {
 	public async signUp(): Promise<void> {
 		this.logger.info('Starting sign-up flow')
 		// Zitadel supports prompt=create to default to sign-up form
-		// Tutorial vs login detection is handled via onboardingStep in LocalStorage
+		// Onboarding vs login detection is handled via onboardingStep in localStorage
 		await this.userManager.signinRedirect({
 			prompt: 'create',
 		})

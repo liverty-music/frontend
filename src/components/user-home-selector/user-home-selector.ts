@@ -6,9 +6,9 @@ import {
 	REGION_GROUPS,
 	type RegionGroup,
 } from '../../constants/iso3166'
-import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { IUserService } from '../../services/user-service'
+import { resolveStore } from '../../state/store-interface'
 
 export class UserHomeSelector {
 	@bindable public onHomeSelected?: (code: string) => void
@@ -24,6 +24,7 @@ export class UserHomeSelector {
 	private readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
+	private readonly store = resolveStore()
 
 	public trRegion(key: string): string {
 		return this.i18n.tr(`userHome.regions.${key}`)
@@ -38,7 +39,7 @@ export class UserHomeSelector {
 	}
 
 	public static getStoredHome(): string | null {
-		return localStorage.getItem(StorageKeys.guestHome)
+		return localStorage.getItem('guest.home')
 	}
 
 	public open(): void {
@@ -93,7 +94,7 @@ export class UserHomeSelector {
 				this.logger.error('Failed to update home via RPC', err)
 			}
 		} else {
-			localStorage.setItem(StorageKeys.guestHome, code)
+			this.store.dispatch({ type: 'guest/setUserHome', code })
 		}
 
 		this.close()

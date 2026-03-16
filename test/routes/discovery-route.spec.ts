@@ -1,3 +1,4 @@
+import { IStore } from '@aurelia/state'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Toast } from '../../src/components/toast-notification/toast'
@@ -9,6 +10,7 @@ import {
 	createMockConcertService,
 	createMockFollowServiceClient,
 } from '../helpers/mock-rpc-clients'
+import { createMockStore } from '../helpers/mock-store'
 import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
@@ -16,7 +18,6 @@ const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockIConcertService = DI.createInterface('IConcertService')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-const mockILocalArtistClient = DI.createInterface('ILocalArtistClient')
 
 vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
@@ -37,19 +38,13 @@ vi.mock('../../src/services/concert-service', () => ({
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
 	OnboardingStep: {
-		LP: 0,
-		DISCOVER: 1,
-		LOADING: 2,
-		DASHBOARD: 3,
-		DETAIL: 4,
-		MY_ARTISTS: 5,
-		SIGNUP: 6,
-		COMPLETED: 7,
+		LP: 'lp',
+		DISCOVERY: 'discovery',
+		DASHBOARD: 'dashboard',
+		DETAIL: 'detail',
+		MY_ARTISTS: 'my-artists',
+		COMPLETED: 'completed',
 	},
-}))
-
-vi.mock('../../src/services/local-artist-client', () => ({
-	ILocalArtistClient: mockILocalArtistClient,
 }))
 
 vi.mock('../../src/routes/discovery/discovery-route.css?raw', () => ({
@@ -72,18 +67,14 @@ describe('DiscoveryRoute', () => {
 	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockOnboarding: {
-		currentStep: number
+		currentStep: string
 		isOnboarding: boolean
 		setStep: ReturnType<typeof vi.fn>
 		complete: ReturnType<typeof vi.fn>
 		activateSpotlight: ReturnType<typeof vi.fn>
 		deactivateSpotlight: ReturnType<typeof vi.fn>
 	}
-	let mockLocalClient: {
-		followedCount: number
-		setAdminArea: ReturnType<typeof vi.fn>
-		listFollowed: ReturnType<typeof vi.fn>
-	}
+	let mockStoreInstance: ReturnType<typeof createMockStore>
 
 	beforeEach(() => {
 		vi.useFakeTimers()
@@ -94,18 +85,14 @@ describe('DiscoveryRoute', () => {
 		mockEa = createMockEventAggregator()
 		mockRouter = createMockRouter()
 		mockOnboarding = {
-			currentStep: 7,
+			currentStep: 'completed',
 			isOnboarding: false,
 			setStep: vi.fn(),
 			complete: vi.fn(),
 			activateSpotlight: vi.fn(),
 			deactivateSpotlight: vi.fn(),
 		}
-		mockLocalClient = {
-			followedCount: 0,
-			setAdminArea: vi.fn(),
-			listFollowed: vi.fn().mockReturnValue([]),
-		}
+		mockStoreInstance = createMockStore()
 
 		const container = createTestContainer(
 			Registration.instance(mockIArtistServiceClient, mockArtistClient),
@@ -114,7 +101,7 @@ describe('DiscoveryRoute', () => {
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(mockILocalArtistClient, mockLocalClient),
+			Registration.instance(IStore, mockStoreInstance.store),
 		)
 		container.register(DiscoveryRoute)
 		sut = container.get(DiscoveryRoute)
@@ -239,11 +226,11 @@ describe('DiscoveryRoute', () => {
 	describe('onCoachMarkTap', () => {
 		it('should set step to DASHBOARD and navigate to /dashboard', async () => {
 			mockOnboarding.isOnboarding = true
-			mockOnboarding.currentStep = 1
+			mockOnboarding.currentStep = 'discovery'
 
 			sut.onCoachMarkTap()
 
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith(3) // DASHBOARD
+			expect(mockOnboarding.setStep).toHaveBeenCalledWith('dashboard') // DASHBOARD
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
 		})
 	})
@@ -594,9 +581,16 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onboarding followedCount delegation', () => {
-		it('should delegate to localClient.followedCount during onboarding', () => {
+		it('should read from store guest.follows during onboarding', () => {
 			mockOnboarding.isOnboarding = true
-			mockLocalClient.followedCount = 5
+			// Add follows to the mock store state
+			mockStoreInstance.state.guest.follows = [
+				{ artistId: 'a1', name: 'A1' },
+				{ artistId: 'a2', name: 'A2' },
+				{ artistId: 'a3', name: 'A3' },
+				{ artistId: 'a4', name: 'A4' },
+				{ artistId: 'a5', name: 'A5' },
+			]
 
 			expect(sut.followedCount).toBe(5)
 		})
@@ -623,15 +617,22 @@ describe('DiscoveryRoute', () => {
 			expect(sut.showDashboardCoachMark).toBe(false)
 		})
 
-		it('should hide when onboarding but followed < TUTORIAL_FOLLOW_TARGET', () => {
+		it('should hide when onboarding but followed < ONBOARDING_FOLLOW_TARGET', () => {
 			mockOnboarding.isOnboarding = true
-			mockLocalClient.followedCount = 2
+			mockStoreInstance.state.guest.follows = [
+				{ artistId: 'a1', name: 'A1' },
+				{ artistId: 'a2', name: 'A2' },
+			]
 			expect(sut.showDashboardCoachMark).toBe(false)
 		})
 
 		it('TC-GATE-01: should be false when concertGroupCount is 0 despite 3+ follows and all searches complete', () => {
 			mockOnboarding.isOnboarding = true
-			mockLocalClient.followedCount = 3
+			mockStoreInstance.state.guest.follows = [
+				{ artistId: 'a1', name: 'A1' },
+				{ artistId: 'a2', name: 'A2' },
+				{ artistId: 'a3', name: 'A3' },
+			]
 			sut.completedSearchCount = 3
 			sut.concertGroupCount = 0
 
@@ -640,7 +641,11 @@ describe('DiscoveryRoute', () => {
 
 		it('TC-GATE-02: should be true when concertGroupCount > 0 with 3+ follows and all searches complete', () => {
 			mockOnboarding.isOnboarding = true
-			mockLocalClient.followedCount = 3
+			mockStoreInstance.state.guest.follows = [
+				{ artistId: 'a1', name: 'A1' },
+				{ artistId: 'a2', name: 'A2' },
+				{ artistId: 'a3', name: 'A3' },
+			]
 			sut.completedSearchCount = 3
 			sut.concertGroupCount = 2
 
@@ -688,20 +693,24 @@ describe('DiscoveryRoute', () => {
 	describe('onCoachMarkTap (Home nav step advancement)', () => {
 		it('should deactivate spotlight, advance step to DASHBOARD, and navigate', () => {
 			mockOnboarding.isOnboarding = true
-			mockOnboarding.currentStep = 1 // DISCOVER
-			mockLocalClient.followedCount = 3
+			mockOnboarding.currentStep = 'discovery' // DISCOVERY
+			mockStoreInstance.state.guest.follows = [
+				{ artistId: 'a1', name: 'A1' },
+				{ artistId: 'a2', name: 'A2' },
+				{ artistId: 'a3', name: 'A3' },
+			]
 
 			sut.onCoachMarkTap()
 
 			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalledTimes(1)
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith(3) // DASHBOARD
+			expect(mockOnboarding.setStep).toHaveBeenCalledWith('dashboard') // DASHBOARD
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
 		})
 
 		it('should not advance step when showDashboardCoachMark is false (fewer than 3 follows)', () => {
 			mockOnboarding.isOnboarding = true
-			mockOnboarding.currentStep = 1 // DISCOVER
-			mockLocalClient.followedCount = 1
+			mockOnboarding.currentStep = 'discovery' // DISCOVERY
+			mockStoreInstance.state.guest.follows = [{ artistId: 'a1', name: 'A1' }]
 
 			// showDashboardCoachMark should be false
 			expect(sut.showDashboardCoachMark).toBe(false)
