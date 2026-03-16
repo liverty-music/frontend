@@ -1,21 +1,21 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
-import type { DateGroup } from '../components/live-highway/live-event'
-import { UserHomeSelector } from '../components/user-home-selector/user-home-selector'
-import { StorageKeys } from '../constants/storage-keys'
-import { IAuthService } from '../services/auth-service'
-import { IDashboardService } from '../services/dashboard-service'
-import { ILocalArtistClient } from '../services/local-artist-client'
+import type { DateGroup } from '../../components/live-highway/live-event'
+import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
+import { StorageKeys } from '../../constants/storage-keys'
+import { IAuthService } from '../../services/auth-service'
+import { IDashboardService } from '../../services/dashboard-service'
+import { ILocalArtistClient } from '../../services/local-artist-client'
 import {
 	IOnboardingService,
 	OnboardingStep,
-} from '../services/onboarding-service'
-import { IUserService } from '../services/user-service'
+} from '../../services/onboarding-service'
+import { IUserService } from '../../services/user-service'
 
 export type LaneIntroPhase = 'home' | 'near' | 'away' | 'card' | 'done'
 
-export class Dashboard {
+export class DashboardRoute {
 	private static get celebrationShown(): boolean {
 		return localStorage.getItem(StorageKeys.celebrationShown) === '1'
 	}
@@ -37,7 +37,7 @@ export class Dashboard {
 
 	public homeSelector!: UserHomeSelector
 
-	private readonly logger = resolve(ILogger).scopeTo('Dashboard')
+	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 	private readonly dashboardService = resolve(IDashboardService)
@@ -74,9 +74,9 @@ export class Dashboard {
 		}
 		this.showCelebration =
 			this.onboarding.currentStep === OnboardingStep.DASHBOARD &&
-			!Dashboard.celebrationShown
+			!DashboardRoute.celebrationShown
 		if (this.showCelebration) {
-			Dashboard.celebrationShown = true
+			DashboardRoute.celebrationShown = true
 		}
 		this.loadData()
 

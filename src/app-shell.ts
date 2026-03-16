@@ -8,57 +8,57 @@ import { IOnboardingService } from './services/onboarding-service'
 	routes: [
 		{
 			path: ['', 'welcome'],
-			component: import('./welcome-page'),
+			component: import('./routes/welcome/welcome-route'),
 			title: 'Welcome',
 			data: { auth: false },
 		},
 		{
 			path: 'about',
-			component: import('./about-page'),
+			component: import('./routes/about/about-route'),
 			title: 'About',
 			data: { auth: false },
 		},
 		{
 			path: 'auth/callback',
-			component: import('./routes/auth-callback'),
+			component: import('./routes/auth-callback/auth-callback-route'),
 			title: 'Signing In',
 			data: { auth: false },
 		},
 		{
 			path: 'dashboard',
-			component: import('./routes/dashboard'),
+			component: import('./routes/dashboard/dashboard-route'),
 			title: 'Dashboard',
 			data: { tutorialStep: 3 },
 		},
 		{
 			path: 'concerts/:id',
-			component: import('./routes/dashboard'),
+			component: import('./routes/dashboard/dashboard-route'),
 			title: 'Concert',
 		},
 		{
-			path: 'discover',
-			component: import('./routes/discover/discover-page'),
-			title: 'Discover',
+			path: 'discovery',
+			component: import('./routes/discovery/discovery-route'),
+			title: 'Discovery',
 			data: { auth: false, tutorialStep: 1 },
 		},
 		{
 			path: 'my-artists',
-			component: import('./routes/my-artists/my-artists-page'),
+			component: import('./routes/my-artists/my-artists-route'),
 			title: 'My Artists',
 			data: { tutorialStep: 5 },
 		},
 		{
 			path: 'tickets',
-			component: import('./routes/tickets/tickets-page'),
+			component: import('./routes/tickets/tickets-route'),
 			title: 'Tickets',
 		},
 		{
 			path: 'settings',
-			component: import('./routes/settings/settings-page'),
+			component: import('./routes/settings/settings-route'),
 			title: 'Settings',
 		},
 	],
-	fallback: import('./routes/not-found/not-found-page'),
+	fallback: import('./routes/not-found/not-found-route'),
 })
 export class AppShell {
 	private readonly router = resolve(IRouter)

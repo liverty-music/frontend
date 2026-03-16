@@ -1,14 +1,14 @@
-import { WelcomePage } from './welcome-page'
+import { WelcomeRoute } from './welcome-route'
 
 const meta = {
-	title: 'Pages/WelcomePage',
-	component: WelcomePage,
+	title: 'Pages/WelcomeRoute',
+	component: WelcomeRoute,
 	parameters: {
 		layout: 'fullscreen',
 		backgrounds: { default: 'dark' },
 	},
 	render: () => ({
-		template: `<welcome-page></welcome-page>`,
+		template: `<welcome-route></welcome-route>`,
 	}),
 }
 

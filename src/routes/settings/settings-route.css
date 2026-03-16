@@ -1,5 +1,5 @@
 @layer block {
-	@scope (settings-page) {
+	@scope (settings-route) {
 		:scope {
 			--_hover-bg: var(--color-white);
 			--_toggle-off: var(--color-white);

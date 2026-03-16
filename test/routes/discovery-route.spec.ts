@@ -52,18 +52,20 @@ vi.mock('../../src/services/local-artist-client', () => ({
 	ILocalArtistClient: mockILocalArtistClient,
 }))
 
-vi.mock('../../src/routes/discover/discover-page.css?raw', () => ({
+vi.mock('../../src/routes/discovery/discovery-route.css?raw', () => ({
 	default: '',
 }))
 
-const { DiscoverPage } = await import('../../src/routes/discover/discover-page')
+const { DiscoveryRoute } = await import(
+	'../../src/routes/discovery/discovery-route'
+)
 
 function makeBubble(id: string, name: string): ArtistBubble {
 	return { id, name, mbid: '', imageUrl: '', x: 0, y: 0, radius: 30 }
 }
 
-describe('DiscoverPage', () => {
-	let sut: InstanceType<typeof DiscoverPage>
+describe('DiscoveryRoute', () => {
+	let sut: InstanceType<typeof DiscoveryRoute>
 	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
 	let mockFollowClient: ReturnType<typeof createMockFollowServiceClient>
 	let mockConcert: ReturnType<typeof createMockConcertService>
@@ -114,8 +116,8 @@ describe('DiscoverPage', () => {
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockILocalArtistClient, mockLocalClient),
 		)
-		container.register(DiscoverPage)
-		sut = container.get(DiscoverPage)
+		container.register(DiscoveryRoute)
+		sut = container.get(DiscoveryRoute)
 
 		// Stub the dnaOrbCanvas ref
 		sut.dnaOrbCanvas = {

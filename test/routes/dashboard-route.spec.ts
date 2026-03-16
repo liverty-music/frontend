@@ -50,13 +50,15 @@ vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
 	},
 }))
 
-const { Dashboard } = await import('../../src/routes/dashboard')
+const { DashboardRoute } = await import(
+	'../../src/routes/dashboard/dashboard-route'
+)
 const { UserHomeSelector } = await import(
 	'../../src/components/user-home-selector/user-home-selector'
 )
 
-describe('Dashboard', () => {
-	let sut: InstanceType<typeof Dashboard>
+describe('DashboardRoute', () => {
+	let sut: InstanceType<typeof DashboardRoute>
 	let mockDashboardService: {
 		loadDashboardEvents: ReturnType<typeof vi.fn>
 	}
@@ -125,8 +127,8 @@ describe('Dashboard', () => {
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIUserService, mockUser),
 		)
-		container.register(Dashboard)
-		sut = container.get(Dashboard)
+		container.register(DashboardRoute)
+		sut = container.get(DashboardRoute)
 	})
 
 	afterEach(() => {

@@ -1,5 +1,5 @@
 @layer block {
-	@scope (welcome-page) {
+	@scope (welcome-route) {
 		:scope {
 			--_gradient-mid: var(--color-brand-primary);
 

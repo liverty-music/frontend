@@ -1,9 +1,9 @@
 <template>
-  <import from="./discover-page.css"></import>
+  <import from="./discovery-route.css"></import>
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
 
 
-  <main class="[ discover-layout ]" data-search-mode.bind="isSearchMode">
+  <main class="[ discovery-layout ]" data-search-mode.bind="isSearchMode">
 
     <!-- Search bar -->
     <search class="search-bar">
@@ -11,15 +11,15 @@
       <input
         type="text"
         class="search-input"
-        placeholder.bind="$this.i18n?.tr('discover.searchPlaceholder') ?? ''"
+        placeholder.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
         value.bind="searchQuery"
-        aria-label.bind="$this.i18n?.tr('discover.searchPlaceholder') ?? ''"
+        aria-label.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
       >
       <button
         if.bind="searchQuery"
         class="clear-button"
         click.trigger="clearSearch()"
-        aria-label.bind="$this.i18n?.tr('discover.clearSearch') ?? ''"
+        aria-label.bind="$this.i18n?.tr('discovery.clearSearch') ?? ''"
       >
         <svg-icon name="x"></svg-icon>
       </button>
@@ -64,10 +64,10 @@
 
     <!-- Search results (shown during search) -->
     <div class="search-results">
-      <div if.bind="isSearching" class="search-status" t="discover.searching">
+      <div if.bind="isSearching" class="search-status" t="discovery.searching">
       </div>
 
-      <div if.bind="!isSearching && isSearchMode && searchResults.length === 0 && searchQuery.trim().length > 0" class="search-status" t="discover.noResults">
+      <div if.bind="!isSearching && isSearchMode && searchResults.length === 0 && searchQuery.trim().length > 0" class="search-status" t="discovery.noResults">
       </div>
 
       <ul class="results-list" role="list">
@@ -85,7 +85,7 @@
             class="follow-button" data-followed.bind="isArtistFollowed(artist.id)"
             click.trigger="onFollowFromSearch(artist)"
             disabled.bind="isArtistFollowed(artist.id)"
-            aria-label.bind="isArtistFollowed(artist.id) ? ($this.i18n?.tr('discover.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discover.followArtist', { name: artist.name }) ?? '')"
+            aria-label.bind="isArtistFollowed(artist.id) ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name }) ?? '')"
           >
             <svg-icon if.bind="!isArtistFollowed(artist.id)" name="plus"></svg-icon>
             <svg-icon if.bind="isArtistFollowed(artist.id)" name="check"></svg-icon>

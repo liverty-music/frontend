@@ -23,10 +23,10 @@ vi.mock('qrcode', () => {
 	}
 })
 
-const { TicketsPage } = await import('../../src/routes/tickets/tickets-page')
+const { TicketsRoute } = await import('../../src/routes/tickets/tickets-route')
 
-describe('TicketsPage', () => {
-	let sut: InstanceType<typeof TicketsPage>
+describe('TicketsRoute', () => {
+	let sut: InstanceType<typeof TicketsRoute>
 	let mockTicketService: ReturnType<typeof createMockTicketService>
 	let mockProofService: ReturnType<typeof createMockProofService>
 
@@ -38,8 +38,8 @@ describe('TicketsPage', () => {
 			Registration.instance(mockITicketService, mockTicketService),
 			Registration.instance(mockIProofService, mockProofService),
 		)
-		container.register(TicketsPage)
-		sut = container.get(TicketsPage)
+		container.register(TicketsRoute)
+		sut = container.get(TicketsRoute)
 
 		// Mock dialog elements for Top Layer API
 		const mockGeneratingDialog = document.createElement('dialog')

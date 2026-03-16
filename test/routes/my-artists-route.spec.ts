@@ -52,16 +52,16 @@ vi.mock(
 	}),
 )
 
-const { MyArtistsPage } = await import(
-	'../../src/routes/my-artists/my-artists-page'
+const { MyArtistsRoute } = await import(
+	'../../src/routes/my-artists/my-artists-route'
 )
 
 function makeFollowedArtistInfo(id: string, name: string, hype = 2) {
 	return { id, name, hype }
 }
 
-describe('MyArtistsPage', () => {
-	let sut: InstanceType<typeof MyArtistsPage>
+describe('MyArtistsRoute', () => {
+	let sut: InstanceType<typeof MyArtistsRoute>
 	let ea: IEventAggregator
 	let mockGrpcClient: {
 		unfollow: ReturnType<typeof vi.fn>
@@ -109,8 +109,8 @@ describe('MyArtistsPage', () => {
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIAuthService, mockAuth),
 		)
-		container.register(MyArtistsPage)
-		sut = container.get(MyArtistsPage)
+		container.register(MyArtistsRoute)
+		sut = container.get(MyArtistsRoute)
 		ea = container.get(IEventAggregator)
 
 		// Capture published Toast events
@@ -257,10 +257,10 @@ describe('MyArtistsPage', () => {
 		})
 	})
 
-	describe('goToDiscover', () => {
-		it('should navigate to discover page', async () => {
-			await sut.goToDiscover()
-			expect(mockRouter.load).toHaveBeenCalledWith('discover')
+	describe('goToDiscovery', () => {
+		it('should navigate to discovery page', async () => {
+			await sut.goToDiscovery()
+			expect(mockRouter.load).toHaveBeenCalledWith('discovery')
 		})
 	})
 
@@ -274,7 +274,7 @@ describe('MyArtistsPage', () => {
 	})
 
 	describe('tutorial step 5 hype flow', () => {
-		let tutorialSut: InstanceType<typeof MyArtistsPage>
+		let tutorialSut: InstanceType<typeof MyArtistsRoute>
 		let tutorialOnboarding: any
 
 		beforeEach(async () => {
@@ -297,8 +297,8 @@ describe('MyArtistsPage', () => {
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, { publish: vi.fn() }),
 			)
-			container.register(MyArtistsPage)
-			tutorialSut = container.get(MyArtistsPage)
+			container.register(MyArtistsRoute)
+			tutorialSut = container.get(MyArtistsRoute)
 
 			for (const name of ['contextMenuDialog']) {
 				const mockDialog = document.createElement('dialog')

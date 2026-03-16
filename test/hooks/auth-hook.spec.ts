@@ -27,7 +27,7 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	},
 	STEP_ROUTE_MAP: {
 		0: '',
-		1: 'discover',
+		1: 'discovery',
 		2: 'dashboard',
 		3: 'dashboard',
 		4: 'dashboard',
@@ -184,7 +184,7 @@ describe('AuthHook', () => {
 					setStep: vi.fn(),
 					complete: vi.fn(),
 					deactivateSpotlight: vi.fn(),
-					getRouteForCurrentStep: () => 'discover',
+					getRouteForCurrentStep: () => 'discovery',
 				}),
 			)
 			container.register(AuthHook)
@@ -194,7 +194,7 @@ describe('AuthHook', () => {
 			const next = makeRouteNode({ tutorialStep: 3 })
 			const result = await sut.canLoad({}, {}, next, null)
 
-			expect(result).toBe('discover')
+			expect(result).toBe('discovery')
 			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
@@ -213,7 +213,7 @@ describe('AuthHook', () => {
 					setStep: mockSetStep,
 					complete: vi.fn(),
 					deactivateSpotlight: mockDeactivate,
-					getRouteForCurrentStep: () => 'discover',
+					getRouteForCurrentStep: () => 'discovery',
 				}),
 			)
 			container.register(AuthHook)
@@ -274,7 +274,7 @@ describe('AuthHook', () => {
 					setStep: vi.fn(),
 					complete: vi.fn(),
 					deactivateSpotlight: vi.fn(),
-					getRouteForCurrentStep: () => 'discover',
+					getRouteForCurrentStep: () => 'discovery',
 				}),
 			)
 			container.register(AuthHook)

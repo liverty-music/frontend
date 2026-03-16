@@ -1,5 +1,5 @@
 @layer block {
-	@scope (not-found-page) {
+	@scope (not-found-route) {
 		.not-found-layout {
 			display: flex;
 			flex-direction: column;

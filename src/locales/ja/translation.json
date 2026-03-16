@@ -182,9 +182,7 @@
 		"followFailed": "{{name}}のフォローに失敗しました。もう一度お試しください。",
 		"hasUpcomingEvents": "{{name}}のライブが近日開催予定です！",
 		"similarArtistsError": "{{name}}の類似アーティストが見つかりませんでした",
-		"srStatus": "アーティスト探索: {{available}}アーティスト表示中、{{followed}}フォロー済み"
-	},
-	"discover": {
+		"srStatus": "アーティスト探索: {{available}}アーティスト表示中、{{followed}}フォロー済み",
 		"searchPlaceholder": "アーティストを検索...",
 		"clearSearch": "検索をクリア",
 		"searching": "検索中...",
@@ -194,13 +192,9 @@
 		"srSearchResults": "{{count}}件の検索結果",
 		"srArtistsAvailable": "{{count}}件のアーティストが利用可能",
 		"srFollowed": "{{count}}アーティストをフォロー中",
-		"loadFailed": "ディスカバリーデータの読み込みに失敗しました",
 		"resetFailed": "ディスカバリービューのリセットに失敗しました",
 		"genreLoadFailed": "{{tag}}のアーティストを読み込めませんでした",
-		"searchFailed": "検索に失敗しました。もう一度お試しください",
-		"followFailed": "{{name}}のフォローに失敗しました。もう一度お試しください。",
-		"hasUpcomingEvents": "{{name}}のライブが近日開催予定です！",
-		"similarArtistsError": "{{name}}の類似アーティストが見つかりませんでした"
+		"searchFailed": "検索に失敗しました。もう一度お試しください"
 	},
 	"errorBanner": {
 		"copied": "エラー詳細をコピーしました",
@@ -227,7 +221,7 @@
 	},
 	"nav": {
 		"home": "Home",
-		"discover": "Discover",
+		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
 		"settings": "Settings"

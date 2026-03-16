@@ -10,7 +10,7 @@ interface NavTab {
 
 const tabs: NavTab[] = [
 	{ path: 'dashboard', labelKey: 'nav.home', icon: 'home' },
-	{ path: 'discover', labelKey: 'nav.discover', icon: 'discover' },
+	{ path: 'discovery', labelKey: 'nav.discovery', icon: 'discovery' },
 	{ path: 'my-artists', labelKey: 'nav.myArtists', icon: 'my-artists' },
 	{ path: 'tickets', labelKey: 'nav.tickets', icon: 'ticket' },
 	{ path: 'settings', labelKey: 'nav.settings', icon: 'settings' },

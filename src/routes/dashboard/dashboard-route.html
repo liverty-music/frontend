@@ -1,9 +1,9 @@
-<import from="../components/live-highway/live-highway"></import>
-<import from="../components/user-home-selector/user-home-selector"></import>
-<import from="../components/inline-error/inline-error"></import>
+<import from="../../components/live-highway/live-highway"></import>
+<import from="../../components/user-home-selector/user-home-selector"></import>
+<import from="../../components/inline-error/inline-error"></import>
 
-<import from="../components/celebration-overlay/celebration-overlay"></import>
-<import from="../components/signup-prompt-banner/signup-prompt-banner"></import>
+<import from="../../components/celebration-overlay/celebration-overlay"></import>
+<import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
 
 <!-- Highway content with promise.bind -->
 <main class="[ dashboard-main ]" data-blurred.bind="needsRegion" promise.bind="dataPromise">
@@ -20,7 +20,7 @@
     <state-placeholder if.bind="dateGroups.length === 0" icon="clock">
       <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
       <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
-      <a href="/discover" t="dashboard.empty.discoverLink" class="dashboard-empty-link"></a>
+      <a href="/discovery" t="dashboard.empty.discoverLink" class="dashboard-empty-link"></a>
     </state-placeholder>
 
     <!-- Data loaded -->

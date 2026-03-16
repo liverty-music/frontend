@@ -5,20 +5,20 @@ import {
 	type NavigationInstruction,
 } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
-import { Toast } from './components/toast-notification/toast'
-import { IAuthService } from './services/auth-service'
-import { ILocalArtistClient } from './services/local-artist-client'
+import { Toast } from '../../components/toast-notification/toast'
+import { IAuthService } from '../../services/auth-service'
+import { ILocalArtistClient } from '../../services/local-artist-client'
 import {
 	IOnboardingService,
 	OnboardingStep,
-} from './services/onboarding-service'
+} from '../../services/onboarding-service'
 
-export class WelcomePage implements IRouteViewModel {
+export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly localClient = resolve(ILocalArtistClient)
 	private readonly router = resolve(IRouter)
-	private readonly logger = resolve(ILogger).scopeTo('WelcomePage')
+	private readonly logger = resolve(ILogger).scopeTo('WelcomeRoute')
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 
@@ -66,9 +66,9 @@ export class WelcomePage implements IRouteViewModel {
 		this.localClient.clearAll()
 		this.onboarding.setStep(OnboardingStep.DISCOVER)
 		try {
-			await this.router.load('discover')
+			await this.router.load('discovery')
 		} catch (err) {
-			this.logger.error('Failed to navigate to discover', { error: err })
+			this.logger.error('Failed to navigate to discovery', { error: err })
 			this.ea.publish(new Toast(this.i18n.tr('welcome.error.navigation')))
 		}
 	}
