@@ -5,6 +5,7 @@ import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { AppShell } from './app-shell'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
+import { PageHeader } from './components/page-header/page-header'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SvgIcon } from './components/svg-icon/svg-icon'
 import { migrateStorageKeys } from './constants/storage-keys'
@@ -106,6 +107,7 @@ Aurelia
 	.register(IEntryService)
 	.register(IProofService)
 	.register(BottomNavBar)
+	.register(PageHeader)
 	.register(StatePlaceholder)
 	.register(SvgIcon)
 	.register(AuthHook)

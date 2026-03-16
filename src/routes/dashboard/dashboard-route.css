@@ -2,7 +2,7 @@
 	@scope (dashboard-route) {
 		:scope {
 			display: grid;
-			grid-template-areas: "main";
+			grid-template-areas: "content";
 			grid-template-rows: 1fr;
 
 			block-size: 100%;
@@ -11,7 +11,7 @@
 
 		.dashboard-main {
 			display: grid;
-			grid-area: main;
+			grid-area: content;
 			min-block-size: 0;
 			transition: filter 500ms;
 
