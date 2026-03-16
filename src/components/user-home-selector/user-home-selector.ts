@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { bindable, ILogger, resolve } from 'aurelia'
 import {
 	codeToHome,
@@ -21,22 +20,9 @@ export class UserHomeSelector {
 
 	private dialogElement?: HTMLDialogElement
 	private readonly logger = resolve(ILogger).scopeTo('UserHomeSelector')
-	private readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
 	private readonly store = resolveStore()
-
-	public trRegion(key: string): string {
-		return this.i18n.tr(`userHome.regions.${key}`)
-	}
-
-	public trPrefecture(key: string): string {
-		return this.i18n.tr(`userHome.prefectures.${key}`)
-	}
-
-	public trCity(key: string): string {
-		return this.i18n.tr(`userHome.cities.${key}`)
-	}
 
 	public static getStoredHome(): string | null {
 		return localStorage.getItem('guest.home')

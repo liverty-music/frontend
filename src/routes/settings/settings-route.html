@@ -17,7 +17,7 @@
           <span t="settings.myHomeArea" class="settings-row-label"></span>
         </div>
         <div class="settings-row-end">
-          <span class="settings-row-value">${currentHomeDisplay}</span>
+          <span class="settings-row-value" t.bind="currentHomeKey"></span>
           <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
         </div>
       </button>
@@ -34,7 +34,7 @@
           <span t="settings.language" class="settings-row-label"></span>
         </div>
         <div class="settings-row-end">
-          <span class="settings-row-value">${currentLanguageLabel}</span>
+          <span class="settings-row-value" t.bind="'languages.' + currentLocale"></span>
           <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
         </div>
       </button>
@@ -149,7 +149,7 @@
           class="language-option"
           data-selected.bind="isCurrentLanguage(lang)"
         >
-          <span>${ languageLabel(lang) }</span>
+          <span t.bind="'languages.' + lang"></span>
           <svg-icon if.bind="isCurrentLanguage(lang)" name="check" class="language-check"></svg-icon>
         </button>
       </div>

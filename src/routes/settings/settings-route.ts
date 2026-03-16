@@ -21,6 +21,7 @@ export class SettingsRoute {
 	private readonly i18n = resolve(I18N)
 
 	public currentHome: string | null = null
+	public currentLocale = ''
 	public notificationsEnabled = false
 	public vapidAvailable = !!(import.meta.env.VITE_VAPID_PUBLIC_KEY ?? '')
 	public homeSelector!: UserHomeSelector
@@ -28,17 +29,14 @@ export class SettingsRoute {
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	private isToggling = false
 
-	public get currentHomeDisplay(): string {
-		if (!this.currentHome) return this.i18n.tr('settings.notSet')
-		return this.i18n.tr(`userHome.prefectures.${this.currentHome}`)
-	}
-
-	public get currentLanguageLabel(): string {
-		const lang = this.i18n.getLocale()
-		return this.i18n.tr(`languages.${lang}`)
+	public get currentHomeKey(): string {
+		return this.currentHome
+			? `userHome.prefectures.${this.currentHome}`
+			: 'settings.notSet'
 	}
 
 	public loading(): void {
+		this.currentLocale = this.i18n.getLocale()
 		const homeLevel1 = this.userService.current?.home?.level1
 		const code = homeLevel1 ?? UserHomeSelector.getStoredHome()
 		this.currentHome = code ? translationKey(code) : null
@@ -84,6 +82,7 @@ export class SettingsRoute {
 			return
 		}
 		await this.i18n.setLocale(lang)
+		this.currentLocale = lang
 		localStorage.setItem('language', lang)
 		this.logger.info('Language changed', { from: current, to: lang })
 		this.closeLanguageSelector()
@@ -91,10 +90,6 @@ export class SettingsRoute {
 
 	public isCurrentLanguage(lang: string): boolean {
 		return this.i18n.getLocale() === lang
-	}
-
-	public languageLabel(lang: string): string {
-		return this.i18n.tr(`languages.${lang}`)
 	}
 
 	public async toggleNotifications(): Promise<void> {

@@ -7,6 +7,6 @@
     data-active.bind="isActive(tab.path)"
   >
     <svg-icon name.bind="tab.icon" class="nav-icon"></svg-icon>
-    <span class="nav-label">${trLabel(tab.labelKey)}</span>
+    <span class="nav-label" t.bind="tab.labelKey"></span>
   </a>
 </nav>
