@@ -321,7 +321,7 @@ describe('MyArtistsRoute', () => {
 
 		it('should set pulsingArtistId immediately on hype change', () => {
 			const event = new CustomEvent('hype-changed', {
-				detail: { artistId: 'id-1', level: 'away' },
+				detail: { artistId: 'id-1', hype: 4 },
 			})
 
 			onboardingSut.onHypeChanged(event)
@@ -331,7 +331,7 @@ describe('MyArtistsRoute', () => {
 
 		it('should clear pulsingArtistId after 300ms', () => {
 			const event = new CustomEvent('hype-changed', {
-				detail: { artistId: 'id-1', level: 'away' },
+				detail: { artistId: 'id-1', hype: 4 },
 			})
 
 			onboardingSut.onHypeChanged(event)
@@ -342,7 +342,7 @@ describe('MyArtistsRoute', () => {
 
 		it('should advance to COMPLETED after hype change', () => {
 			const event = new CustomEvent('hype-changed', {
-				detail: { artistId: 'id-1', level: 'away' },
+				detail: { artistId: 'id-1', hype: 4 },
 			})
 
 			onboardingSut.onHypeChanged(event)

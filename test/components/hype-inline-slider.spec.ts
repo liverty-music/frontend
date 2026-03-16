@@ -2,17 +2,20 @@ import { DI, ILogger, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockLogger } from '../helpers/mock-logger'
 
+vi.mock(
+	'@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js',
+	() => ({
+		HypeType: { UNSPECIFIED: 0, WATCH: 1, HOME: 2, NEARBY: 3, AWAY: 4 },
+	}),
+)
+
 const { HypeInlineSlider } = await import(
 	'../../src/components/hype-inline-slider/hype-inline-slider'
 )
 
-/**
- * HypeInlineSlider resolves INode via DI. We create a real HTMLElement and
- * register it as INode so that dispatchEvent works on an actual DOM node.
- */
 function createSliderWithHost(opts: {
 	artistId?: string
-	hypeLevel?: string
+	hype?: number
 	isAuthenticated?: boolean
 }) {
 	const hostElement = document.createElement('div')
@@ -24,10 +27,18 @@ function createSliderWithHost(opts: {
 
 	const sut = container.invoke(HypeInlineSlider)
 	sut.artistId = opts.artistId ?? 'artist-1'
-	sut.hypeLevel = (opts.hypeLevel ?? 'watch') as any
+	sut.hype = opts.hype ?? 1 // HypeType.WATCH
 	sut.isAuthenticated = opts.isAuthenticated ?? false
 
 	return { sut, hostElement }
+}
+
+function mockClickEvent(): Event & {
+	preventDefault: ReturnType<typeof vi.fn>
+} {
+	return { preventDefault: vi.fn() } as unknown as Event & {
+		preventDefault: ReturnType<typeof vi.fn>
+	}
 }
 
 describe('HypeInlineSlider', () => {
@@ -51,13 +62,13 @@ describe('HypeInlineSlider', () => {
 			const handler = vi.fn()
 			hostElement.addEventListener('hype-changed', handler)
 
-			sut.selectHype('away')
+			sut.selectHype(4, mockClickEvent()) // HypeType.AWAY
 
 			expect(handler).toHaveBeenCalledTimes(1)
 			const event = handler.mock.calls[0][0] as CustomEvent
 			expect(event.detail).toEqual({
 				artistId: 'artist-1',
-				level: 'away',
+				hype: 4,
 			})
 		})
 
@@ -65,9 +76,17 @@ describe('HypeInlineSlider', () => {
 			const handler = vi.fn()
 			hostElement.addEventListener('hype-signup-prompt', handler)
 
-			sut.selectHype('home')
+			sut.selectHype(2, mockClickEvent()) // HypeType.HOME
 
 			expect(handler).not.toHaveBeenCalled()
+		})
+
+		it('should NOT call preventDefault on tap', () => {
+			const event = mockClickEvent()
+
+			sut.selectHype(2, event) // HypeType.HOME
+
+			expect(event.preventDefault).not.toHaveBeenCalled()
 		})
 	})
 
@@ -91,7 +110,7 @@ describe('HypeInlineSlider', () => {
 			const handler = vi.fn()
 			hostElement.addEventListener('hype-signup-prompt', handler)
 
-			sut.selectHype('home')
+			sut.selectHype(2, mockClickEvent()) // HypeType.HOME
 
 			expect(handler).toHaveBeenCalledTimes(1)
 		})
@@ -100,17 +119,17 @@ describe('HypeInlineSlider', () => {
 			const handler = vi.fn()
 			hostElement.addEventListener('hype-changed', handler)
 
-			sut.selectHype('away')
+			sut.selectHype(4, mockClickEvent()) // HypeType.AWAY
 
 			expect(handler).not.toHaveBeenCalled()
 		})
 
-		it('should NOT change hypeLevel on tap', () => {
-			sut.hypeLevel = 'watch' as any
+		it('should call preventDefault to block radio selection', () => {
+			const event = mockClickEvent()
 
-			sut.selectHype('away')
+			sut.selectHype(4, event) // HypeType.AWAY
 
-			expect(sut.hypeLevel).toBe('watch')
+			expect(event.preventDefault).toHaveBeenCalledTimes(1)
 		})
 	})
 })

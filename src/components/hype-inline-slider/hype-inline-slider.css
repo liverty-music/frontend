@@ -8,6 +8,15 @@
 			align-items: center;
 
 			min-block-size: 44px;
+			margin: 0;
+			padding: 0;
+			border: none;
+		}
+
+		.hype-slider-stop {
+			cursor: pointer;
+			grid-row: 1;
+			justify-self: center;
 		}
 
 		.hype-slider-track {
@@ -23,16 +32,12 @@
 		}
 
 		.hype-slider-dot {
-			cursor: pointer;
-
 			position: relative;
 
-			grid-row: 1;
-			justify-self: center;
+			display: block;
 
 			inline-size: 8px;
 			block-size: 8px;
-			padding: 0;
 			border: none;
 			border-radius: var(--radius-full);
 
@@ -52,14 +57,14 @@
 				block-size: 14px;
 			}
 
-			/* WATCH: minimal */
-			&[data-active="true"][data-level="watch"] {
+			/* WATCH (1): minimal */
+			&[data-active="true"][data-level="1"] {
 				border: 1px solid oklch(100% 0 0deg / 10%);
 				background: var(--color-surface-base, oklch(100% 0 0deg / 5%));
 			}
 
-			/* HOME: subtle glow */
-			&[data-active="true"][data-level="home"] {
+			/* HOME (2): subtle glow */
+			&[data-active="true"][data-level="2"] {
 				border: 1px solid var(--_dot-color, oklch(70% 0.15 60deg));
 				opacity: 0.4;
 				background: var(--_dot-color, oklch(70% 0.15 60deg));
@@ -67,8 +72,8 @@
 					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 30%);
 			}
 
-			/* NEARBY: neon glow */
-			&[data-active="true"][data-level="nearby"] {
+			/* NEARBY (3): neon glow */
+			&[data-active="true"][data-level="3"] {
 				border: 2px solid var(--_dot-color, oklch(70% 0.15 60deg));
 				background: var(--_dot-color, oklch(70% 0.15 60deg));
 				box-shadow: 0 0 16px
@@ -76,8 +81,8 @@
 				animation: dot-pulse 2s ease-in-out infinite;
 			}
 
-			/* AWAY: intense neon */
-			&[data-active="true"][data-level="away"] {
+			/* AWAY (4): intense neon */
+			&[data-active="true"][data-level="4"] {
 				border: 2px solid var(--_dot-color, oklch(70% 0.15 60deg));
 				background: var(--_dot-color, oklch(70% 0.15 60deg));
 				box-shadow:

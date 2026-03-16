@@ -3,7 +3,6 @@ import { IRouter } from '@aurelia/router'
 import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
-import type { HypeStop } from '../../components/hype-inline-slider/hype-inline-slider'
 import { artistColor } from '../../components/live-highway/color-generator'
 import {
 	Toast,
@@ -95,22 +94,6 @@ export class MyArtistsRoute {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
-	}
-
-	public getArtistColor(id: string): string {
-		const artist = this.artists.find((a) => a.id === id)
-		return artist?.color ?? ''
-	}
-
-	private static readonly HYPE_TO_STOP: Record<number, HypeStop> = {
-		[HypeType.WATCH]: 'watch',
-		[HypeType.HOME]: 'home',
-		[HypeType.NEARBY]: 'nearby',
-		[HypeType.AWAY]: 'away',
-	}
-
-	public hypeStop(artist: FollowedArtist): HypeStop {
-		return MyArtistsRoute.HYPE_TO_STOP[artist.hype] ?? 'watch'
 	}
 
 	public async loading(): Promise<void> {
@@ -275,27 +258,19 @@ export class MyArtistsRoute {
 
 	// --- Hype level inline slider ---
 
-	private static readonly HYPE_FROM_STOP: Record<HypeStop, HypeType> = {
-		watch: HypeType.WATCH,
-		home: HypeType.HOME,
-		nearby: HypeType.NEARBY,
-		away: HypeType.AWAY,
-	}
-
 	public onHypeChanged(
-		event: CustomEvent<{ artistId: string; level: HypeStop }>,
+		event: CustomEvent<{ artistId: string; hype: HypeType }>,
 	): void {
-		const { artistId, level } = event.detail
+		const { artistId, hype } = event.detail
 		const artist = this.artists.find((a) => a.id === artistId)
 		if (!artist) return
 
-		const hypeType = MyArtistsRoute.HYPE_FROM_STOP[level]
 		const prev = artist.hype
-		if (prev === hypeType) return
+		if (prev === hype) return
 
 		// During onboarding step 5: visual demo only, no persistence
 		if (this.isOnboardingStepMyArtists) {
-			artist.hype = hypeType
+			artist.hype = hype
 
 			// Immediate pulse feedback
 			this.pulsingArtistId = artistId
@@ -314,18 +289,18 @@ export class MyArtistsRoute {
 		if (this.isOnboarding) return
 
 		// Optimistic update
-		artist.hype = hypeType
+		artist.hype = hype
 
 		// Fire-and-forget RPC with 1 retry
 		const client = this.followService.getClient()
 		const req = {
 			artistId: new ArtistId({ value: artistId }),
-			hype: hypeType,
+			hype,
 		}
 		client
 			.setHype(req)
 			.then(() => {
-				this.logger.info('Hype level updated', { artistId, level })
+				this.logger.info('Hype level updated', { artistId, hype })
 			})
 			.catch((firstErr) => {
 				this.logger.warn('Hype level update failed, retrying', {
@@ -337,7 +312,7 @@ export class MyArtistsRoute {
 					.then(() => {
 						this.logger.info('Hype level updated on retry', {
 							artistId,
-							level,
+							hype,
 						})
 					})
 					.catch((retryErr) => {
