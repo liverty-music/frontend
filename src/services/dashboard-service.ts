@@ -5,6 +5,7 @@ import { DI, ILogger, resolve } from 'aurelia'
 import type {
 	DateGroup,
 	HypeLevel,
+	LaneType,
 	LiveEvent,
 } from '../components/live-highway/live-event'
 import { displayName } from '../constants/iso3166'
@@ -56,14 +57,16 @@ export class DashboardService {
 			weekday: 'short',
 		})
 
-		const convert = (concerts: Concert[]) =>
+		const convert = (concerts: Concert[], lane: LaneType) =>
 			concerts.flatMap((c) => {
 				const artistId = c.artistId?.value ?? ''
 				const artist = artistMap.get(artistId)
+				const hypeLevel = artist?.hypeLevel ?? 'watch'
 				const event = concertToLiveEvent(
 					c,
 					artist?.name ?? '',
-					artist?.hypeLevel ?? 'watch',
+					hypeLevel,
+					isHypeMatched(hypeLevel, lane),
 				)
 				return event ? [event] : []
 			})
@@ -71,9 +74,9 @@ export class DashboardService {
 		return {
 			label,
 			dateKey,
-			home: convert(group.home),
-			nearby: convert(group.nearby),
-			away: convert(group.away),
+			home: convert(group.home, 'home'),
+			nearby: convert(group.nearby, 'nearby'),
+			away: convert(group.away, 'away'),
 		}
 	}
 
@@ -107,10 +110,23 @@ function hypeTypeToLevel(hype: HypeType): HypeLevel {
 	}
 }
 
+const HYPE_ORDER: Record<HypeLevel, number> = {
+	watch: 0,
+	home: 1,
+	nearby: 2,
+	away: 3,
+}
+const LANE_ORDER: Record<LaneType, number> = { home: 1, nearby: 2, away: 3 }
+
+export function isHypeMatched(hype: HypeLevel, lane: LaneType): boolean {
+	return HYPE_ORDER[hype] >= LANE_ORDER[lane]
+}
+
 function concertToLiveEvent(
 	concert: Concert,
 	artistName: string,
 	hypeLevel: HypeLevel,
+	matched: boolean,
 ): LiveEvent | null {
 	const localDate = concert.localDate?.value
 	if (!localDate) return null
@@ -142,6 +158,7 @@ function concertToLiveEvent(
 		title: concert.title?.value ?? '',
 		sourceUrl: concert.sourceUrl?.value ?? '',
 		hypeLevel,
+		matched,
 	}
 }
 

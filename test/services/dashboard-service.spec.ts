@@ -5,6 +5,7 @@ import { IConcertService } from '../../src/services/concert-service'
 import {
 	DashboardService,
 	IDashboardService,
+	isHypeMatched,
 } from '../../src/services/dashboard-service'
 import { IFollowServiceClient } from '../../src/services/follow-service-client'
 import { createTestContainer } from '../helpers/create-container'
@@ -37,6 +38,29 @@ function makeDateLaneGroup(
 		away: lanes.away ?? [],
 	}
 }
+
+describe('isHypeMatched', () => {
+	it.each([
+		// watch never matches
+		{ hype: 'watch' as const, lane: 'home' as const, expected: false },
+		{ hype: 'watch' as const, lane: 'nearby' as const, expected: false },
+		{ hype: 'watch' as const, lane: 'away' as const, expected: false },
+		// home matches home only
+		{ hype: 'home' as const, lane: 'home' as const, expected: true },
+		{ hype: 'home' as const, lane: 'nearby' as const, expected: false },
+		{ hype: 'home' as const, lane: 'away' as const, expected: false },
+		// nearby matches home and nearby
+		{ hype: 'nearby' as const, lane: 'home' as const, expected: true },
+		{ hype: 'nearby' as const, lane: 'nearby' as const, expected: true },
+		{ hype: 'nearby' as const, lane: 'away' as const, expected: false },
+		// away matches all
+		{ hype: 'away' as const, lane: 'home' as const, expected: true },
+		{ hype: 'away' as const, lane: 'nearby' as const, expected: true },
+		{ hype: 'away' as const, lane: 'away' as const, expected: true },
+	])('hype=$hype lane=$lane → $expected', ({ hype, lane, expected }) => {
+		expect(isHypeMatched(hype, lane)).toBe(expected)
+	})
+})
 
 describe('DashboardService', () => {
 	let sut: DashboardService

@@ -15,6 +15,7 @@ export interface LiveEvent {
 	title: string
 	sourceUrl: string
 	hypeLevel: HypeLevel
+	matched: boolean
 }
 
 export interface DateGroup {
