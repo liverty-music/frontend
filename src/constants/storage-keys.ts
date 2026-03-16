@@ -1,9 +1,5 @@
 export const StorageKeys = {
-	onboardingStep: 'onboardingStep',
-	guestHome: 'guest.home',
 	userNotificationsEnabled: 'user.notificationsEnabled',
-	guestFollowedArtists: 'guest.followedArtists',
-	guestKeyPrefix: 'guest.',
 	uiNotificationPromptDismissed: 'ui.notificationPromptDismissed',
 	pwaSessionCount: 'pwa.sessionCount',
 	pwaInstallPromptDismissed: 'pwa.installPromptDismissed',

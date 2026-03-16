@@ -1,7 +1,13 @@
 import './styles/main.css'
 import { I18nConfiguration } from '@aurelia/i18n'
 import { RouterConfiguration } from '@aurelia/router'
-import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
+import { StateDefaultConfiguration } from '@aurelia/state'
+import Aurelia, {
+	ConsoleSink,
+	ILogger,
+	LoggerConfiguration,
+	LogLevel,
+} from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { AppShell } from './app-shell'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
@@ -25,7 +31,6 @@ import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFollowServiceClient } from './services/follow-service-client'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
 import { IGuestDataMergeService } from './services/guest-data-merge-service'
-import { ILocalArtistClient } from './services/local-artist-client'
 import { INotificationManager } from './services/notification-manager'
 import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
@@ -37,6 +42,13 @@ import { IPwaInstallService } from './services/pwa-install-service'
 import { ITicketService } from './services/ticket-service'
 import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserService } from './services/user-service'
+import { initialState } from './state/app-state'
+import {
+	createLoggingMiddleware,
+	loadPersistedState,
+	persistenceMiddleware,
+} from './state/middleware'
+import { appReducer } from './state/reducer'
 import { DateValueConverter } from './value-converters/date'
 
 // Initialize OpenTelemetry before Aurelia startup
@@ -49,78 +61,90 @@ migrateStorageKeys()
 // to get CSS as string for sharedStyles in shadowDOM.
 // import shared from './shared.css?inline';
 
-Aurelia
-	/*
-  .register(StyleConfiguration.shadowDOM({
-    // optionally add the shared styles for all components
-    sharedStyles: [shared]
-  }))
-  */
-	.register(
-		I18nConfiguration.customize((options) => {
-			options.initOptions = {
-				resources: {
-					ja: { translation: ja },
-					en: { translation: en },
-				},
-				fallbackLng: 'ja',
-				supportedLngs: ['ja', 'en'],
-				interpolation: { escapeValue: false },
-				detection: {
-					order: ['querystring', 'localStorage', 'navigator'],
-					lookupQuerystring: 'lang',
-					lookupLocalStorage: 'language',
-					caches: [],
-				},
-				plugins: [i18nextBrowserLanguageDetector],
-			}
-		}),
-	)
-	.register(
-		RouterConfiguration.customize({
-			restorePreviousRouteTreeOnError: !import.meta.env.DEV,
-		}),
-	)
-	.register(
-		LoggerConfiguration.create({
-			level: LogLevel.debug,
-			sinks: [ConsoleSink, OtelLogSink],
-		}),
-	)
-	.register(IErrorBoundaryService)
-	.register(GlobalErrorHandlingTask)
-	.register(IAuthService)
-	.register(IUserService)
-	.register(UserHydrationTask)
-	.register(IArtistServiceClient)
-	.register(IFollowServiceClient)
-	.register(IConcertService)
-	.register(IDashboardService)
-	.register(IOnboardingService)
-	.register(ILocalArtistClient)
-	.register(IGuestDataMergeService)
-	.register(INotificationManager)
-	.register(IPushService)
-	.register(IPromptCoordinator)
-	.register(IPwaInstallService)
-	.register(ITicketService)
-	.register(IEntryService)
-	.register(IProofService)
-	.register(BottomNavBar)
-	.register(PageHeader)
-	.register(StatePlaceholder)
-	.register(SvgIcon)
-	.register(AuthHook)
-	.register(ArtistColorCustomAttribute)
-	.register(DotColorCustomAttribute)
-	.register(SpotlightRadiusCustomAttribute)
-	.register(TileColorCustomAttribute)
-	.register(DateValueConverter)
-	// To use HTML5 pushState routes, replace previous line with the following
-	// customized router config.
-	// .register(RouterConfiguration.customize({ useUrlFragmentHash: false }))
-	.app(AppShell)
-	.start()
+const au = new Aurelia()
+
+au.register(
+	I18nConfiguration.customize((options) => {
+		options.initOptions = {
+			resources: {
+				ja: { translation: ja },
+				en: { translation: en },
+			},
+			fallbackLng: 'ja',
+			supportedLngs: ['ja', 'en'],
+			interpolation: { escapeValue: false },
+			detection: {
+				order: ['querystring', 'localStorage', 'navigator'],
+				lookupQuerystring: 'lang',
+				lookupLocalStorage: 'language',
+				caches: [],
+			},
+			plugins: [i18nextBrowserLanguageDetector],
+		}
+	}),
+)
+au.register(
+	RouterConfiguration.customize({
+		restorePreviousRouteTreeOnError: !import.meta.env.DEV,
+	}),
+)
+au.register(
+	LoggerConfiguration.create({
+		level: LogLevel.debug,
+		sinks: [ConsoleSink, OtelLogSink],
+	}),
+)
+
+// Build state middleware list — logging middleware uses ILogger from the container
+const stateMiddlewares: {
+	middleware: typeof persistenceMiddleware
+	placement: 'before' | 'after'
+}[] = [{ middleware: persistenceMiddleware, placement: 'after' }]
+if (import.meta.env.DEV) {
+	const logger = au.container.get(ILogger).scopeTo('Store')
+	stateMiddlewares.unshift({
+		middleware: createLoggingMiddleware(logger),
+		placement: 'before',
+	})
+}
+
+au.register(
+	StateDefaultConfiguration.init(
+		{ ...initialState, ...loadPersistedState() },
+		{ middlewares: stateMiddlewares },
+		appReducer,
+	),
+)
+au.register(IErrorBoundaryService)
+au.register(GlobalErrorHandlingTask)
+au.register(IAuthService)
+au.register(IUserService)
+au.register(UserHydrationTask)
+au.register(IArtistServiceClient)
+au.register(IFollowServiceClient)
+au.register(IConcertService)
+au.register(IDashboardService)
+au.register(IOnboardingService)
+au.register(IGuestDataMergeService)
+au.register(INotificationManager)
+au.register(IPushService)
+au.register(IPromptCoordinator)
+au.register(IPwaInstallService)
+au.register(ITicketService)
+au.register(IEntryService)
+au.register(IProofService)
+au.register(BottomNavBar)
+au.register(PageHeader)
+au.register(StatePlaceholder)
+au.register(SvgIcon)
+au.register(AuthHook)
+au.register(ArtistColorCustomAttribute)
+au.register(DotColorCustomAttribute)
+au.register(SpotlightRadiusCustomAttribute)
+au.register(TileColorCustomAttribute)
+au.register(DateValueConverter)
+au.app(AppShell)
+au.start()
 
 // Register Service Worker for push notifications (production only).
 // In dev mode, vite-plugin-node-polyfills injects Buffer/global/process shims

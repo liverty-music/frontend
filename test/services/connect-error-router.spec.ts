@@ -71,7 +71,7 @@ describe('createAuthRetryInterceptor', () => {
 		const error = new ConnectError('unauthenticated', Code.Unauthenticated)
 		const next = vi.fn().mockRejectedValue(error)
 
-		// auth.user is null (guest/tutorial mode)
+		// auth.user is null (guest/onboarding mode)
 		mockAuth.user = null
 
 		const interceptor = createAuthRetryInterceptor(mockAuth as any)

@@ -18,14 +18,12 @@ vi.mock('@aurelia/router', () => ({
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
 	OnboardingStep: {
-		LP: 0,
-		DISCOVER: 1,
-		LOADING: 2,
-		DASHBOARD: 3,
-		DETAIL: 4,
-		MY_ARTISTS: 5,
-		SIGNUP: 6,
-		COMPLETED: 7,
+		LP: 'lp',
+		DISCOVERY: 'discovery',
+		DASHBOARD: 'dashboard',
+		DETAIL: 'detail',
+		MY_ARTISTS: 'my-artists',
+		COMPLETED: 'completed',
 	},
 }))
 
@@ -95,7 +93,7 @@ describe('MyArtistsRoute', () => {
 		mockAuth = { isAuthenticated: true, signUp: vi.fn() }
 
 		const mockOnboarding = {
-			currentStep: 7, // COMPLETED
+			currentStep: 'completed', // COMPLETED
 			isOnboarding: false,
 			setStep: vi.fn(),
 			complete: vi.fn(),
@@ -273,15 +271,15 @@ describe('MyArtistsRoute', () => {
 		})
 	})
 
-	describe('tutorial step 5 hype flow', () => {
-		let tutorialSut: InstanceType<typeof MyArtistsRoute>
-		let tutorialOnboarding: any
+	describe('onboarding step my-artists hype flow', () => {
+		let onboardingSut: InstanceType<typeof MyArtistsRoute>
+		let onboardingOnboarding: any
 
 		beforeEach(async () => {
 			vi.useFakeTimers()
 
-			tutorialOnboarding = {
-				currentStep: 5, // MY_ARTISTS
+			onboardingOnboarding = {
+				currentStep: 'my-artists', // MY_ARTISTS
 				isOnboarding: true,
 				isCompleted: false,
 				setStep: vi.fn(),
@@ -293,21 +291,21 @@ describe('MyArtistsRoute', () => {
 			const container = createTestContainer(
 				Registration.instance(mockIFollowServiceClient, mockFollowService),
 				Registration.instance(mockIRouter, mockRouter),
-				Registration.instance(mockIOnboardingService, tutorialOnboarding),
+				Registration.instance(mockIOnboardingService, onboardingOnboarding),
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, { publish: vi.fn() }),
 			)
 			container.register(MyArtistsRoute)
-			tutorialSut = container.get(MyArtistsRoute)
+			onboardingSut = container.get(MyArtistsRoute)
 
 			for (const name of ['contextMenuDialog']) {
 				const mockDialog = document.createElement('dialog')
 				;(mockDialog as any).showModal = vi.fn()
 				;(mockDialog as any).close = vi.fn()
-				;(tutorialSut as any)[name] = mockDialog
+				;(onboardingSut as any)[name] = mockDialog
 			}
 
-			await tutorialSut.loading()
+			await onboardingSut.loading()
 		})
 
 		afterEach(() => {
@@ -315,7 +313,7 @@ describe('MyArtistsRoute', () => {
 		})
 
 		it('should activate spotlight targeting [data-hype-header] on loading', () => {
-			expect(tutorialOnboarding.activateSpotlight).toHaveBeenCalledWith(
+			expect(onboardingOnboarding.activateSpotlight).toHaveBeenCalledWith(
 				'[data-hype-header]',
 				expect.any(String),
 			)
@@ -326,9 +324,9 @@ describe('MyArtistsRoute', () => {
 				detail: { artistId: 'id-1', level: 'away' },
 			})
 
-			tutorialSut.onHypeChanged(event)
+			onboardingSut.onHypeChanged(event)
 
-			expect(tutorialSut.pulsingArtistId).toBe('id-1')
+			expect(onboardingSut.pulsingArtistId).toBe('id-1')
 		})
 
 		it('should clear pulsingArtistId after 300ms', () => {
@@ -336,22 +334,22 @@ describe('MyArtistsRoute', () => {
 				detail: { artistId: 'id-1', level: 'away' },
 			})
 
-			tutorialSut.onHypeChanged(event)
+			onboardingSut.onHypeChanged(event)
 
 			vi.advanceTimersByTime(300)
-			expect(tutorialSut.pulsingArtistId).toBe('')
+			expect(onboardingSut.pulsingArtistId).toBe('')
 		})
 
-		it('should advance to step 7 (COMPLETED), not 6, after hype change', () => {
+		it('should advance to COMPLETED after hype change', () => {
 			const event = new CustomEvent('hype-changed', {
 				detail: { artistId: 'id-1', level: 'away' },
 			})
 
-			tutorialSut.onHypeChanged(event)
+			onboardingSut.onHypeChanged(event)
 
-			// Step 6 (SIGNUP) was removed; should go directly to COMPLETED (7)
-			expect(tutorialOnboarding.setStep).toHaveBeenCalledWith(7)
-			expect(tutorialOnboarding.deactivateSpotlight).toHaveBeenCalled()
+			// SIGNUP was removed; should go directly to COMPLETED
+			expect(onboardingOnboarding.setStep).toHaveBeenCalledWith('completed')
+			expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
 			expect(mockRouter.load).toHaveBeenCalledWith('')
 		})
 	})

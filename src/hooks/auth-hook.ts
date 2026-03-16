@@ -18,6 +18,7 @@ import {
 	OnboardingStep,
 	type OnboardingStepValue,
 	STEP_ROUTE_MAP,
+	stepIndex,
 } from '../services/onboarding-service'
 
 @lifecycleHooks()
@@ -33,10 +34,12 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 		next: RouteNode,
 		_current: RouteNode | null,
 	): Promise<boolean | NavigationInstruction> {
-		const tutorialStep = next.data?.tutorialStep as number | undefined
+		const routeStep = next.data?.onboardingStep as
+			| OnboardingStepValue
+			| undefined
 
-		// Public routes without tutorialStep (LP, about, auth/callback) always allowed
-		if (next.data?.auth === false && tutorialStep === undefined) {
+		// Public routes without onboardingStep (LP, about, auth/callback) always allowed
+		if (next.data?.auth === false && routeStep === undefined) {
 			return true
 		}
 
@@ -47,14 +50,14 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 			return true
 		}
 
-		// Priority 2: During tutorial, allow routes that match the current step
-		if (tutorialStep !== undefined && this.onboarding.isOnboarding) {
-			if (this.onboarding.currentStep >= tutorialStep) {
+		// Priority 2: During onboarding, allow routes that match the current step
+		if (routeStep !== undefined && this.onboarding.isOnboarding) {
+			if (stepIndex(this.onboarding.currentStep) >= stepIndex(routeStep)) {
 				return true
 			}
 			// Direct nav tap on Dashboard while coach mark is active — advance step
 			if (
-				tutorialStep === OnboardingStep.DASHBOARD &&
+				routeStep === OnboardingStep.DASHBOARD &&
 				this.onboarding.spotlightActive
 			) {
 				this.onboarding.deactivateSpotlight()
@@ -67,17 +70,17 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 			)
 		}
 
-		// Priority 2.5: Onboarding user on a route without tutorialStep — redirect silently
-		if (tutorialStep === undefined && this.onboarding.isOnboarding) {
+		// Priority 2.5: Onboarding user on a route without onboardingStep — redirect silently
+		if (routeStep === undefined && this.onboarding.isOnboarding) {
 			return this.onboarding.getRouteForCurrentStep()
 		}
 
-		// Priority 3: Tutorial route accessed without active tutorial — redirect to LP
-		if (tutorialStep !== undefined && next.data?.auth === false) {
+		// Priority 3: Onboarding route accessed without active onboarding — redirect to LP
+		if (routeStep !== undefined && next.data?.auth === false) {
 			return ''
 		}
 
-		// Priority 4: Not authenticated, not in tutorial
+		// Priority 4: Not authenticated, not in onboarding
 		this.ea.publish(new Toast(this.i18n.tr('auth.loginRequired'), 'warning'))
 		return ''
 	}

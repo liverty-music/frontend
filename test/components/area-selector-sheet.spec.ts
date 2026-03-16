@@ -1,8 +1,8 @@
 import { I18N } from '@aurelia/i18n'
+import { IStore } from '@aurelia/state'
 import { DI, LoggerConfiguration, LogLevel, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UserHomeSelector } from '../../src/components/user-home-selector/user-home-selector'
-import { StorageKeys } from '../../src/constants/storage-keys'
 import { IAuthService } from '../../src/services/auth-service'
 import { IUserService } from '../../src/services/user-service'
 import { createMockI18n } from '../helpers/mock-i18n'
@@ -10,12 +10,15 @@ import {
 	createMockAuthService,
 	createMockUserService,
 } from '../helpers/mock-rpc-clients'
+import { createMockStore } from '../helpers/mock-store'
 
 describe('UserHomeSelector', () => {
 	let sut: UserHomeSelector
+	let mockStoreInstance: ReturnType<typeof createMockStore>
 
 	beforeEach(() => {
 		localStorage.clear()
+		mockStoreInstance = createMockStore()
 		const container = DI.createContainer()
 		container.register(LoggerConfiguration.create({ level: LogLevel.none }))
 		container.register(Registration.instance(I18N, createMockI18n()))
@@ -25,6 +28,7 @@ describe('UserHomeSelector', () => {
 		container.register(
 			Registration.instance(IUserService, createMockUserService()),
 		)
+		container.register(Registration.instance(IStore, mockStoreInstance.store))
 		container.register(UserHomeSelector)
 		sut = container.get(UserHomeSelector)
 	})
@@ -66,11 +70,14 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('prefecture selection', () => {
-		it('should save ISO code to localStorage for guest and close', async () => {
+		it('should dispatch guest/setUserHome for guest and close', async () => {
 			sut.open()
 			await sut.selectPrefecture('JP-13')
 
-			expect(localStorage.getItem(StorageKeys.guestHome)).toBe('JP-13')
+			expect(mockStoreInstance.store.dispatch).toHaveBeenCalledWith({
+				type: 'guest/setUserHome',
+				code: 'JP-13',
+			})
 			expect(sut.isOpen).toBe(false)
 		})
 
@@ -84,11 +91,14 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('quick city selection', () => {
-		it('should save ISO code to localStorage for guest and close', async () => {
+		it('should dispatch guest/setUserHome for guest and close', async () => {
 			sut.open()
 			await sut.selectQuickCity('JP-13')
 
-			expect(localStorage.getItem(StorageKeys.guestHome)).toBe('JP-13')
+			expect(mockStoreInstance.store.dispatch).toHaveBeenCalledWith({
+				type: 'guest/setUserHome',
+				code: 'JP-13',
+			})
 			expect(sut.isOpen).toBe(false)
 		})
 
@@ -107,7 +117,7 @@ describe('UserHomeSelector', () => {
 		})
 
 		it('should return stored home', () => {
-			localStorage.setItem(StorageKeys.guestHome, 'JP-23')
+			localStorage.setItem('guest.home', 'JP-23')
 			expect(UserHomeSelector.getStoredHome()).toBe('JP-23')
 		})
 	})

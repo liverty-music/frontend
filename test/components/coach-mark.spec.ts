@@ -7,7 +7,7 @@ const { CoachMark } = await import('../../src/components/coach-mark/coach-mark')
 
 function createMockOnboarding() {
 	return {
-		currentStep: 7,
+		currentStep: 'completed',
 		spotlightTarget: '',
 		spotlightMessage: '',
 		spotlightRadius: '12px',

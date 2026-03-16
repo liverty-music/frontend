@@ -6,12 +6,12 @@ import { UserHomeSelector } from '../../components/user-home-selector/user-home-
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { IDashboardService } from '../../services/dashboard-service'
-import { ILocalArtistClient } from '../../services/local-artist-client'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
 import { IUserService } from '../../services/user-service'
+import { resolveStore } from '../../state/store-interface'
 
 export type LaneIntroPhase = 'home' | 'near' | 'away' | 'card' | 'done'
 
@@ -42,7 +42,7 @@ export class DashboardRoute {
 	private readonly authService = resolve(IAuthService)
 	private readonly dashboardService = resolve(IDashboardService)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly localClient = resolve(ILocalArtistClient)
+	private readonly store = resolveStore()
 	private readonly userService = resolve(IUserService)
 	private readonly router = resolve(IRouter)
 	private abortController: AbortController | null = null
@@ -50,11 +50,11 @@ export class DashboardRoute {
 
 	public dataPromise: Promise<DateGroup[]> | null = null
 
-	public get isTutorialStep3(): boolean {
+	public get isOnboardingStepDashboard(): boolean {
 		return this.onboarding.currentStep === OnboardingStep.DASHBOARD
 	}
 
-	public get isTutorialStep4(): boolean {
+	public get isOnboardingStepDetail(): boolean {
 		return this.onboarding.currentStep === OnboardingStep.DETAIL
 	}
 
@@ -82,7 +82,11 @@ export class DashboardRoute {
 
 		// When returning to step 3 with celebration and region already resolved,
 		// resume the lane intro (e.g. page reload during onboarding)
-		if (this.isTutorialStep3 && !this.showCelebration && !this.needsRegion) {
+		if (
+			this.isOnboardingStepDashboard &&
+			!this.showCelebration &&
+			!this.needsRegion
+		) {
 			this.startLaneIntro()
 		}
 
@@ -94,11 +98,11 @@ export class DashboardRoute {
 		// Resume step 4 spotlight after reload: re-activate My Artists tab spotlight
 		// so the user can proceed. bringSpotlightToFront ensures the coach mark
 		// renders above the detail sheet in the top-layer LIFO stack.
-		if (this.isTutorialStep4) {
+		if (this.isOnboardingStepDetail) {
 			this.onboarding.activateSpotlight(
 				'[data-nav="my-artists"]',
 				this.i18n.tr('dashboard.coachMark.viewArtists'),
-				() => this.onTutorialMyArtistsTapped(),
+				() => this.onOnboardingMyArtistsTapped(),
 			)
 			this.onboarding.bringSpotlightToFront()
 		}
@@ -152,7 +156,7 @@ export class DashboardRoute {
 		this.needsRegion = false
 		this.loadData()
 		if (this.isOnboarding) {
-			this.localClient.setHome(code)
+			this.store.dispatch({ type: 'guest/setUserHome', code })
 			this.startLaneIntro()
 		}
 	}
@@ -162,7 +166,7 @@ export class DashboardRoute {
 	}
 
 	private async startLaneIntro(): Promise<void> {
-		if (!this.isTutorialStep3) return
+		if (!this.isOnboardingStepDashboard) return
 
 		// Wait for data to finish loading before deciding
 		if (this.dataPromise) {
@@ -230,7 +234,7 @@ export class DashboardRoute {
 		this.onboarding.activateSpotlight(
 			'[data-nav="my-artists"]',
 			this.i18n.tr('dashboard.coachMark.viewArtists'),
-			() => this.onTutorialMyArtistsTapped(),
+			() => this.onOnboardingMyArtistsTapped(),
 		)
 	}
 
@@ -241,7 +245,7 @@ export class DashboardRoute {
 
 		const onTap =
 			this.laneIntroPhase === 'card'
-				? () => this.onTutorialCardTapped()
+				? () => this.onOnboardingCardTapped()
 				: () => this.onLaneIntroTap()
 
 		this.onboarding.activateSpotlight(selector, message, onTap)
@@ -287,24 +291,26 @@ export class DashboardRoute {
 		return this.laneIntroPhase !== 'done'
 	}
 
-	public onTutorialCardTapped(): void {
-		if (this.isTutorialStep3) {
-			this.logger.info('Tutorial: concert card tapped, advancing to Step 4')
+	public onOnboardingCardTapped(): void {
+		if (this.isOnboardingStepDashboard) {
+			this.logger.info('Onboarding: concert card tapped, advancing to detail')
 			this.onboarding.setStep(OnboardingStep.DETAIL)
 			// Step 4: Spotlight slides to My Artists tab
 			this.onboarding.activateSpotlight(
 				'[data-nav="my-artists"]',
 				this.i18n.tr('dashboard.coachMark.viewArtists'),
-				() => this.onTutorialMyArtistsTapped(),
+				() => this.onOnboardingMyArtistsTapped(),
 			)
 			// Re-insert coach mark above detail sheet in LIFO top-layer stack
 			this.onboarding.bringSpotlightToFront()
 		}
 	}
 
-	public async onTutorialMyArtistsTapped(): Promise<void> {
-		if (this.isTutorialStep4) {
-			this.logger.info('Tutorial: My Artists tab tapped, advancing to Step 5')
+	public async onOnboardingMyArtistsTapped(): Promise<void> {
+		if (this.isOnboardingStepDetail) {
+			this.logger.info(
+				'Onboarding: My Artists tab tapped, advancing to my-artists',
+			)
 			this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
 			await this.router.load('my-artists')
 		}

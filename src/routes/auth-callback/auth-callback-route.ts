@@ -3,14 +3,11 @@ import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/e
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
-import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../services/onboarding-service'
+import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserService } from '../../services/user-service'
+import { resolveStore } from '../../state/store-interface'
 
 /**
  * OIDC callback handler that processes the authorization code exchange
@@ -28,6 +25,7 @@ export class AuthCallbackRoute {
 	private readonly userService = resolve(IUserService)
 	private readonly mergeService = resolve(IGuestDataMergeService)
 	private readonly onboarding = resolve(IOnboardingService)
+	private readonly store = resolveStore()
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
 
 	public async canLoad(
@@ -39,30 +37,16 @@ export class AuthCallbackRoute {
 			const user = await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
 
-			// Detect tutorial-originated signup via onboardingStep (not OIDC state)
-			const isTutorialSignup =
-				this.onboarding.currentStep === OnboardingStep.SIGNUP
-
-			if (isTutorialSignup) {
-				this.logger.info(
-					'Tutorial signup detected, provisioning user and merging guest data',
-				)
-				await this.provisionUser(user.profile.email)
-				await this.userService.ensureLoaded()
-
-				await this.mergeService.merge()
-
-				return '/dashboard'
-			}
-
-			// Login flow (from LP login link or returning user)
 			await this.provisionUser(user.profile.email)
 			await this.userService.ensureLoaded()
 
-			// If onboarding was in progress but user logged in, mark as completed
+			// If onboarding was in progress, mark as completed
 			if (this.onboarding.isOnboarding) {
 				this.onboarding.complete()
 			}
+
+			// Merge any guest data accumulated during onboarding
+			await this.mergeService.merge()
 
 			return '/dashboard'
 		} catch (err) {
@@ -91,7 +75,7 @@ export class AuthCallbackRoute {
 		}
 
 		try {
-			const guestHome = localStorage.getItem(StorageKeys.guestHome)
+			const guestHome = this.store.getState().guest.home
 			await this.userService.client.create({
 				email: new UserEmail({ value: email }),
 				...(guestHome ? { home: codeToHome(guestHome) } : {}),

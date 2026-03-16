@@ -16,24 +16,38 @@ vi.mock('../../src/services/auth-service', () => ({
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
 	OnboardingStep: {
-		LP: 0,
-		DISCOVER: 1,
-		LOADING: 2,
-		DASHBOARD: 3,
-		DETAIL: 4,
-		MY_ARTISTS: 5,
-		SIGNUP: 6,
-		COMPLETED: 7,
+		LP: 'lp',
+		DISCOVERY: 'discovery',
+		DASHBOARD: 'dashboard',
+		DETAIL: 'detail',
+		MY_ARTISTS: 'my-artists',
+		COMPLETED: 'completed',
 	},
 	STEP_ROUTE_MAP: {
-		0: '',
-		1: 'discovery',
-		2: 'dashboard',
-		3: 'dashboard',
-		4: 'dashboard',
-		5: 'my-artists',
-		6: '',
-		7: '',
+		lp: '',
+		discovery: 'discovery',
+		dashboard: 'dashboard',
+		detail: 'dashboard',
+		'my-artists': 'my-artists',
+		completed: '',
+	},
+	STEP_ORDER: [
+		'lp',
+		'discovery',
+		'dashboard',
+		'detail',
+		'my-artists',
+		'completed',
+	],
+	stepIndex(step: string) {
+		return [
+			'lp',
+			'discovery',
+			'dashboard',
+			'detail',
+			'my-artists',
+			'completed',
+		].indexOf(step)
 	},
 }))
 
@@ -56,7 +70,7 @@ describe('AuthHook', () => {
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIOnboardingService, {
-				currentStep: 7,
+				currentStep: 'completed',
 				isOnboarding: false,
 				setStep: vi.fn(),
 				complete: vi.fn(),
@@ -88,7 +102,7 @@ describe('AuthHook', () => {
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
-					currentStep: 7,
+					currentStep: 'completed',
 					isOnboarding: false,
 					setStep: vi.fn(),
 					complete: vi.fn(),
@@ -120,7 +134,7 @@ describe('AuthHook', () => {
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
-					currentStep: 7,
+					currentStep: 'completed',
 					isOnboarding: false,
 					setStep: vi.fn(),
 					complete: vi.fn(),
@@ -146,14 +160,14 @@ describe('AuthHook', () => {
 			expect(result).toBe(true)
 		})
 
-		it('should silently redirect onboarding user on route without tutorialStep', async () => {
+		it('should silently redirect onboarding user on route without onboardingStep data', async () => {
 			mockAuth = createMockAuth({ isAuthenticated: false })
 			mockEa = createMockEventAggregator()
 			const container = createTestContainer(
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
-					currentStep: 3,
+					currentStep: 'dashboard',
 					isOnboarding: true,
 					setStep: vi.fn(),
 					complete: vi.fn(),
@@ -163,7 +177,7 @@ describe('AuthHook', () => {
 			container.register(AuthHook)
 			sut = container.get(AuthHook)
 
-			// Tickets route has no tutorialStep
+			// Tickets route has no onboardingStep data
 			const next = makeRouteNode({})
 			const result = await sut.canLoad({}, {}, next, null)
 
@@ -171,14 +185,14 @@ describe('AuthHook', () => {
 			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
-		it('should redirect onboarding user when tutorialStep exceeds currentStep', async () => {
+		it('should redirect onboarding user when route onboardingStep exceeds currentStep', async () => {
 			mockAuth = createMockAuth({ isAuthenticated: false })
 			mockEa = createMockEventAggregator()
 			const container = createTestContainer(
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
-					currentStep: 1,
+					currentStep: 'discovery',
 					isOnboarding: true,
 					spotlightActive: false,
 					setStep: vi.fn(),
@@ -190,8 +204,8 @@ describe('AuthHook', () => {
 			container.register(AuthHook)
 			sut = container.get(AuthHook)
 
-			// Dashboard requires tutorialStep 3, but user is at step 1 without spotlight
-			const next = makeRouteNode({ tutorialStep: 3 })
+			// Dashboard requires onboardingStep 'dashboard', but user is at 'discovery' without spotlight
+			const next = makeRouteNode({ onboardingStep: 'dashboard' })
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe('discovery')
@@ -207,7 +221,7 @@ describe('AuthHook', () => {
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
-					currentStep: 1,
+					currentStep: 'discovery',
 					isOnboarding: true,
 					spotlightActive: true,
 					setStep: mockSetStep,
@@ -219,13 +233,13 @@ describe('AuthHook', () => {
 			container.register(AuthHook)
 			sut = container.get(AuthHook)
 
-			// Direct nav tap on Dashboard (tutorialStep: 3) while spotlight is active
-			const next = makeRouteNode({ tutorialStep: 3 })
+			// Direct nav tap on Dashboard (onboardingStep: 'dashboard') while spotlight is active
+			const next = makeRouteNode({ onboardingStep: 'dashboard' })
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe(true)
 			expect(mockDeactivate).toHaveBeenCalledTimes(1)
-			expect(mockSetStep).toHaveBeenCalledWith(3) // DASHBOARD
+			expect(mockSetStep).toHaveBeenCalledWith('dashboard') // DASHBOARD
 			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
@@ -236,7 +250,7 @@ describe('AuthHook', () => {
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
-					currentStep: 7,
+					currentStep: 'completed',
 					isOnboarding: false,
 					setStep: vi.fn(),
 					complete: vi.fn(),
@@ -261,14 +275,14 @@ describe('AuthHook', () => {
 			expect(result).toBe(true)
 		})
 
-		it('should allow public route with tutorialStep during active tutorial', async () => {
+		it('should allow public route with onboardingStep during active onboarding', async () => {
 			mockAuth = createMockAuth({ isAuthenticated: false })
 			mockEa = createMockEventAggregator()
 			const container = createTestContainer(
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
-					currentStep: 1,
+					currentStep: 'discovery',
 					isOnboarding: true,
 					spotlightActive: false,
 					setStep: vi.fn(),
@@ -280,22 +294,22 @@ describe('AuthHook', () => {
 			container.register(AuthHook)
 			sut = container.get(AuthHook)
 
-			// /discover has { auth: false, tutorialStep: 1 }
-			const next = makeRouteNode({ auth: false, tutorialStep: 1 })
+			// /discovery has { auth: false, onboardingStep: 'discovery' }
+			const next = makeRouteNode({ auth: false, onboardingStep: 'discovery' })
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe(true)
 			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
-		it('should redirect to LP when public tutorialStep route accessed without active tutorial', async () => {
+		it('should redirect to LP when public onboardingStep route accessed without active onboarding', async () => {
 			mockAuth = createMockAuth({ isAuthenticated: false })
 			mockEa = createMockEventAggregator()
 			const container = createTestContainer(
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(mockIOnboardingService, {
-					currentStep: 0,
+					currentStep: 'lp',
 					isOnboarding: false,
 					setStep: vi.fn(),
 					complete: vi.fn(),
@@ -305,8 +319,8 @@ describe('AuthHook', () => {
 			container.register(AuthHook)
 			sut = container.get(AuthHook)
 
-			// /discover has { auth: false, tutorialStep: 1 } but no active tutorial
-			const next = makeRouteNode({ auth: false, tutorialStep: 1 })
+			// /discovery has { auth: false, onboardingStep: 'discovery' } but no active onboarding
+			const next = makeRouteNode({ auth: false, onboardingStep: 'discovery' })
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe('')

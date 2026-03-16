@@ -1,12 +1,13 @@
+import { IStore } from '@aurelia/state'
 import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
+import { createMockStore } from '../helpers/mock-store'
 
 const mockIDashboardService = DI.createInterface('IDashboardService')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-const mockILocalArtistClient = DI.createInterface('ILocalArtistClient')
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserService = DI.createInterface('IUserService')
 
@@ -21,19 +22,13 @@ vi.mock('@aurelia/router', () => ({
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
 	OnboardingStep: {
-		LP: 0,
-		DISCOVER: 1,
-		LOADING: 2,
-		DASHBOARD: 3,
-		DETAIL: 4,
-		MY_ARTISTS: 5,
-		SIGNUP: 6,
-		COMPLETED: 7,
+		LP: 'lp',
+		DISCOVERY: 'discovery',
+		DASHBOARD: 'dashboard',
+		DETAIL: 'detail',
+		MY_ARTISTS: 'my-artists',
+		COMPLETED: 'completed',
 	},
-}))
-
-vi.mock('../../src/services/local-artist-client', () => ({
-	ILocalArtistClient: mockILocalArtistClient,
 }))
 
 vi.mock('../../src/services/auth-service', () => ({
@@ -64,17 +59,12 @@ describe('DashboardRoute', () => {
 	}
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockOnboarding: {
-		currentStep: number
+		currentStep: string
 		isOnboarding: boolean
 		setStep: ReturnType<typeof vi.fn>
 		complete: ReturnType<typeof vi.fn>
 		activateSpotlight: ReturnType<typeof vi.fn>
 		deactivateSpotlight: ReturnType<typeof vi.fn>
-	}
-	let mockLocalClient: {
-		followedCount: number
-		setAdminArea: ReturnType<typeof vi.fn>
-		setHome: ReturnType<typeof vi.fn>
 	}
 	let mockAuth: {
 		isAuthenticated: boolean
@@ -93,17 +83,12 @@ describe('DashboardRoute', () => {
 		}
 		mockRouter = createMockRouter()
 		mockOnboarding = {
-			currentStep: 7,
+			currentStep: 'completed',
 			isOnboarding: false,
 			setStep: vi.fn(),
 			complete: vi.fn(),
 			activateSpotlight: vi.fn(),
 			deactivateSpotlight: vi.fn(),
-		}
-		mockLocalClient = {
-			followedCount: 0,
-			setAdminArea: vi.fn(),
-			setHome: vi.fn(),
 		}
 		mockAuth = {
 			isAuthenticated: false,
@@ -119,11 +104,13 @@ describe('DashboardRoute', () => {
 			updateHome: vi.fn().mockResolvedValue(undefined),
 		}
 
+		const { store } = createMockStore()
+
 		const container = createTestContainer(
 			Registration.instance(mockIDashboardService, mockDashboardService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(mockILocalArtistClient, mockLocalClient),
+			Registration.instance(IStore, store),
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIUserService, mockUser),
 		)
@@ -295,7 +282,7 @@ describe('DashboardRoute', () => {
 
 	describe('onCelebrationComplete (lane intro with empty data)', () => {
 		it('should skip lane intro and advance to Step 4 when no concert data', async () => {
-			mockOnboarding.currentStep = 3
+			mockOnboarding.currentStep = 'dashboard'
 			mockOnboarding.isOnboarding = true
 			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
@@ -311,7 +298,7 @@ describe('DashboardRoute', () => {
 
 			expect(sut.showCelebration).toBe(false)
 			expect(sut.laneIntroPhase).toBe('done')
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith(4) // DETAIL
+			expect(mockOnboarding.setStep).toHaveBeenCalledWith('detail') // DETAIL
 			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
 				'[data-nav="my-artists"]',
 				expect.any(String),

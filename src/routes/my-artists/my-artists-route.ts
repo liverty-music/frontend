@@ -82,10 +82,10 @@ export class MyArtistsRoute {
 	private readonly ea = resolve(IEventAggregator)
 	private abortController: AbortController | null = null
 
-	// Tutorial state
+	// Onboarding state
 	public pulsingArtistId = ''
 
-	public get isTutorialStep5(): boolean {
+	public get isOnboardingStepMyArtists(): boolean {
 		return this.onboarding.currentStep === OnboardingStep.MY_ARTISTS
 	}
 
@@ -138,7 +138,7 @@ export class MyArtistsRoute {
 			this.isLoading = false
 		}
 
-		if (this.isTutorialStep5 && this.artists.length > 0) {
+		if (this.isOnboardingStepMyArtists && this.artists.length > 0) {
 			this.onboarding.activateSpotlight(
 				'[data-hype-header]',
 				'絶対に見逃したくないアーティストの熱量を上げておこう',
@@ -294,7 +294,7 @@ export class MyArtistsRoute {
 		if (prev === hypeType) return
 
 		// During onboarding step 5: visual demo only, no persistence
-		if (this.isTutorialStep5) {
+		if (this.isOnboardingStepMyArtists) {
 			artist.hype = hypeType
 
 			// Immediate pulse feedback
