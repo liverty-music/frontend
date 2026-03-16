@@ -221,7 +221,7 @@ export class DashboardRoute {
 		})
 	}
 
-	/** Set --beam-h on each .laser-beam element from card getBoundingClientRect(). */
+	/** Set beam dimensions so triangle wraps card diagonally (bottom-left to top-right). */
 	private updateBeamPositions(): void {
 		const beamEls = this.element.querySelectorAll<HTMLElement>('.laser-beam')
 		const vh = window.innerHeight
@@ -235,10 +235,15 @@ export class DashboardRoute {
 			const rect = card.getBoundingClientRect()
 			// Only illuminate cards visible in the viewport
 			const visible = rect.bottom > 0 && rect.top < vh
-			beamEl.style.setProperty(
-				'--beam-h',
-				visible ? `${Math.max(0, rect.top)}px` : '0',
-			)
+			if (visible) {
+				const bottom = Math.max(0, rect.bottom)
+				const topPct =
+					bottom > 0 ? `${(Math.max(0, rect.top) / bottom) * 100}%` : '80%'
+				beamEl.style.setProperty('--beam-h', `${bottom}px`)
+				beamEl.style.setProperty('--beam-top-pct', topPct)
+			} else {
+				beamEl.style.setProperty('--beam-h', '0')
+			}
 		}
 	}
 
