@@ -79,13 +79,13 @@ test.describe('My Artists header', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedWithArtists())
 		await page.goto('/my-artists')
-		await page.waitForSelector('my-artists-route .page-header', {
+		await page.waitForSelector('my-artists-route page-header', {
 			timeout: 5000,
 		})
 	})
 
 	test('header contains h1 title (MA-H1)', async ({ layoutPage: page }) => {
-		const h1 = page.locator('my-artists-route .page-header h1')
+		const h1 = page.locator('my-artists-route page-header h1')
 		await expect(h1).toBeVisible()
 	})
 
@@ -213,7 +213,7 @@ test.describe('My Artists empty state', () => {
 	test('header is hidden when no artists (MA-E4)', async ({
 		layoutPage: page,
 	}) => {
-		const header = page.locator('my-artists-route .page-header')
+		const header = page.locator('my-artists-route page-header')
 		await expect(header).toHaveCount(0)
 	})
 

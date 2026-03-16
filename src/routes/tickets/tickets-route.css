@@ -12,36 +12,17 @@
 			display: grid;
 			grid-template-areas:
 				"header"
-				"main";
+				"content";
 			grid-template-rows: auto 1fr;
 
 			block-size: 100%;
 			min-block-size: 0;
 		}
 
-		.page-header {
-			grid-area: header;
-
-			padding-block: var(--space-xs);
-			padding-inline: var(--space-xs);
-			border-block-end: 1px solid
-				color-mix(in oklch, var(--color-white) 10%, transparent);
-
-			background: var(--color-surface-raised);
-
-			& h1 {
-				font-family: var(--font-display);
-				font-size: var(--step-1);
-				font-weight: 700;
-				color: var(--color-text-primary);
-				letter-spacing: -0.01em;
-			}
-		}
-
 		main {
 			overflow: hidden;
 			display: flex;
-			grid-area: main;
+			grid-area: content;
 			flex-direction: column;
 
 			min-block-size: 0;

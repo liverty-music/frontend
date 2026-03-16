@@ -3,8 +3,7 @@
 <import from="../../components/hype-notification-dialog/hype-notification-dialog"></import>
 <import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
 
-<header if.bind="!isLoading && artists.length > 0" class="[ page-header ]">
-  <h1 t="nav.myArtists"></h1>
+<page-header if.bind="!isLoading && artists.length > 0" title-key="nav.myArtists">
   <span class="artist-count">(${artists.length})</span>
   <button
     click.trigger="toggleView()"
@@ -14,7 +13,7 @@
     <svg-icon if.bind="viewMode === 'grid'" name="list" size="sm"></svg-icon>
     <svg-icon if.bind="viewMode === 'list'" name="grid" size="sm"></svg-icon>
   </button>
-</header>
+</page-header>
 
 <main>
   <!-- Loading state -->
