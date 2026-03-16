@@ -9,7 +9,6 @@ export class CoachMark {
 	@bindable public targetSelector = ''
 	@bindable public message = ''
 	@bindable public active = false
-	@bindable public spotlightRadius = '12px'
 	@bindable public onTap?: () => void
 
 	public visible = false

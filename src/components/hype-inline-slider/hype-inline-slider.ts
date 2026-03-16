@@ -5,7 +5,7 @@ export type HypeStop = (typeof HYPE_STOPS)[number]
 
 export class HypeInlineSlider {
 	@bindable public artistId = ''
-	@bindable public artistColor = ''
+	@bindable public hypeColor = ''
 	@bindable public hypeLevel: HypeStop = 'watch'
 	@bindable public isAuthenticated = false
 

@@ -287,7 +287,7 @@ export class DnaOrbCanvas {
 	}
 
 	private readonly loop = (time: number): void => {
-		const delta = Math.min(time - this.lastTime, 32) // Cap at ~30fps min
+		const delta = Math.min(time - this.lastTime, 16.667) // Fixed timestep cap (Matter.js recommendation)
 		this.lastTime = time
 
 		this.monitorPerformance(delta)
