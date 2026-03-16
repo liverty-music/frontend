@@ -7,8 +7,9 @@ import { createMockStore } from '../helpers/mock-store'
 const { OnboardingService, OnboardingStep } = await import(
 	'../../src/services/onboarding-service'
 )
+type OnboardingStepValue = (typeof OnboardingStep)[keyof typeof OnboardingStep]
 
-function createService(overrides: { step?: number } = {}) {
+function createService(overrides: { step?: OnboardingStepValue } = {}) {
 	const { store, state } = createMockStore({
 		onboarding: {
 			step: overrides.step ?? OnboardingStep.LP,

@@ -12,6 +12,15 @@ const STORAGE_KEY_GUEST_HOME = 'guest.home'
 
 const VALID_STEPS = new Set<string>(STEP_ORDER)
 
+const NUMERIC_STEP_MIGRATION: Record<string, OnboardingStepValue> = {
+	'0': OnboardingStep.LP,
+	'1': OnboardingStep.DISCOVERY,
+	'3': OnboardingStep.DASHBOARD,
+	'4': OnboardingStep.DETAIL,
+	'5': OnboardingStep.MY_ARTISTS,
+	'7': OnboardingStep.COMPLETED,
+}
+
 export function persistenceMiddleware(
 	currentState: AppState,
 	_action: unknown,
@@ -51,6 +60,9 @@ export function loadPersistedState(): Partial<AppState> {
 		let step: OnboardingStepValue
 		if (VALID_STEPS.has(rawStep)) {
 			step = rawStep as OnboardingStepValue
+		} else if (rawStep in NUMERIC_STEP_MIGRATION) {
+			step = NUMERIC_STEP_MIGRATION[rawStep]
+			localStorage.setItem(STORAGE_KEY_ONBOARDING_STEP, step)
 		} else {
 			step = OnboardingStep.LP
 			localStorage.setItem(STORAGE_KEY_ONBOARDING_STEP, OnboardingStep.LP)
@@ -70,7 +82,17 @@ export function loadPersistedState(): Partial<AppState> {
 		let follows: GuestFollow[] = []
 		if (rawFollowed) {
 			try {
-				follows = JSON.parse(rawFollowed) as GuestFollow[]
+				const raw = JSON.parse(rawFollowed) as Array<{
+					artistId?: string
+					id?: string
+					name: string
+				}>
+				follows = raw
+					.map((f) => ({
+						artistId: f.artistId ?? f.id ?? '',
+						name: f.name,
+					}))
+					.filter((f) => f.artistId !== '')
 			} catch {
 				follows = []
 			}
