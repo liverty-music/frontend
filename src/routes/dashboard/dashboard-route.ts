@@ -1,4 +1,5 @@
 import { I18N } from '@aurelia/i18n'
+import { artistHue } from '../../components/live-highway/color-generator'
 import { IRouter } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
@@ -33,6 +34,8 @@ export class DashboardRoute {
 	}
 
 	public dateGroups: DateGroup[] = []
+	/** Beam indices keyed by event ID, for CSS anchor positioning. */
+	public beamIndexMap = new Map<string, number>()
 	public needsRegion = false
 	public loadError: unknown = null
 	public showCelebration = false
@@ -54,6 +57,33 @@ export class DashboardRoute {
 	private laneIntroTimer: ReturnType<typeof setTimeout> | null = null
 
 	public dataPromise: Promise<DateGroup[]> | null = null
+
+	/** Beam descriptors for rendering laser beam elements. */
+	public beams: { index: number; hue: number }[] = []
+
+	/** Assign sequential beam indices to matched events across all groups. */
+	private buildBeamIndexMap(): void {
+		const map = new Map<string, number>()
+		const beams: { index: number; hue: number }[] = []
+		let idx = 0
+		for (const group of this.dateGroups) {
+			for (const lane of [group.home, group.nearby, group.away]) {
+				for (const ev of lane) {
+					if (ev.matched) {
+						map.set(ev.id, idx)
+						beams.push({ index: idx, hue: artistHue(ev.artistName) })
+						idx++
+					}
+				}
+			}
+		}
+		this.beamIndexMap = map
+		this.beams = beams
+	}
+
+	public getBeamIndex(eventId: string): number | null {
+		return this.beamIndexMap.get(eventId) ?? null
+	}
 
 	public get isOnboardingStepDashboard(): boolean {
 		return this.onboarding.currentStep === OnboardingStep.DASHBOARD
@@ -122,6 +152,7 @@ export class DashboardRoute {
 			.loadDashboardEvents(this.abortController.signal)
 			.then((groups) => {
 				this.dateGroups = groups
+				this.buildBeamIndexMap()
 				this.loadError = null
 				this.logger.info('Dashboard loaded', { groups: groups.length })
 				return groups

@@ -29,4 +29,16 @@ export class EventCard {
 			}),
 		)
 	}
+
+	/** Sequential beam index assigned by dashboard for CSS anchor positioning. */
+	@bindable public beamIndex: number | null = null
+
+	/**
+	 * CSS anchor-name value for this card (e.g. "--beam-0").
+	 * Returns empty string when not a beam target.
+	 */
+	public get anchorStyle(): string {
+		if (this.beamIndex === null || !this.event?.matched) return ''
+		return `anchor-name: --beam-${this.beamIndex}`
+	}
 }

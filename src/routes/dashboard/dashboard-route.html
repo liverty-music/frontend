@@ -44,6 +44,7 @@
               repeat.for="ev of group.home; key.bind: ev.id"
               event.bind="ev"
               lane="home"
+              beam-index.bind="getBeamIndex(ev.id)"
             ></event-card>
           </li>
           <li class="[ lane ]" data-empty.bind="group.nearby.length === 0">
@@ -51,6 +52,7 @@
               repeat.for="ev of group.nearby; key.bind: ev.id"
               event.bind="ev"
               lane="nearby"
+              beam-index.bind="getBeamIndex(ev.id)"
             ></event-card>
           </li>
           <li class="[ lane ]" data-empty.bind="group.away.length === 0">
@@ -58,11 +60,21 @@
               repeat.for="ev of group.away; key.bind: ev.id"
               event.bind="ev"
               lane="away"
+              beam-index.bind="getBeamIndex(ev.id)"
             ></event-card>
           </li>
         </ol>
       </li>
     </ol>
+
+    <!-- Laser beams — anchored to matched cards via CSS Anchor Positioning -->
+    <div class="[ beam-overlay ]" if.bind="beams.length > 0">
+      <div
+        repeat.for="b of beams"
+        class="[ laser-beam ]"
+        style.bind="'position-anchor: --beam-' + b.index + '; --beam-hue: ' + b.hue"
+      ></div>
+    </div>
   </template>
 
   <!-- Error state -->

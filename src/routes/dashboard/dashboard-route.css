@@ -6,6 +6,8 @@
 		--_muted-faint: oklch(from var(--color-text-muted) l c h / 30%);
 
 		:scope {
+			position: relative;
+
 			display: grid;
 			grid-template:
 				"stage-home stage-near stage-away" auto
@@ -61,6 +63,8 @@
 
 		/* ── Row 2: Concert scroll (subgrid propagation root) ── */
 		.concert-scroll {
+			position: relative;
+
 			overflow-block: auto;
 			overflow-inline: hidden;
 			display: grid;
@@ -179,6 +183,50 @@
 				text-align: center;
 			}
 		}
+
+		/* ── Laser beam overlay (CSS Anchor Positioning) ── */
+		.beam-overlay {
+			pointer-events: none;
+
+			position: sticky;
+			inset-block-start: 0;
+
+			overflow: visible;
+
+			grid-column: 1 / -1;
+
+			block-size: 0;
+		}
+
+		/* stylelint-disable declaration-block-no-redundant-longhand-properties */
+		.laser-beam {
+			position: fixed;
+
+			/* Stretch from viewport top to the card's top edge */
+			inset-block-start: 0;
+			inset-block-end: anchor(top);
+			inset-inline-start: anchor(center);
+			translate: -50% 0;
+
+			/* Beam core + glow spread */
+			inline-size: 4px;
+
+			background: linear-gradient(
+				to bottom,
+				transparent 0%,
+				oklch(90% 0.3 var(--beam-hue, 300) / 50%) 10%,
+				oklch(85% 0.35 var(--beam-hue, 300) / 80%) 50%,
+				oklch(95% 0.2 var(--beam-hue, 300)) 100%
+			);
+			filter: blur(6px);
+
+			/* Bright inner core via box-shadow */
+			box-shadow:
+				0 0 4px oklch(95% 0.15 var(--beam-hue, 300) / 90%),
+				0 0 12px oklch(80% 0.3 var(--beam-hue, 300) / 50%),
+				0 0 24px oklch(70% 0.25 var(--beam-hue, 300) / 25%);
+		}
+		/* stylelint-enable declaration-block-no-redundant-longhand-properties */
 
 		/* ── Empty state typography ── */
 		.dashboard-empty-title {
