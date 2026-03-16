@@ -83,7 +83,7 @@
 				);
 
 			display: grid;
-			grid-template-areas: "main";
+			grid-template-areas: "content";
 			grid-template-rows: 1fr;
 
 			block-size: 100%;
@@ -96,7 +96,7 @@
 
 			overflow: hidden;
 			display: grid;
-			grid-area: main;
+			grid-area: content;
 			grid-template-rows: auto auto 1fr;
 
 			inline-size: 100%;
