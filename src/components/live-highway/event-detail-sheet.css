@@ -93,6 +93,36 @@
 			padding-inline: var(--space-m);
 		}
 
+		.sheet-hero {
+			position: relative;
+			overflow: hidden;
+			margin-block-end: var(--space-s);
+			margin-inline: calc(-1 * var(--space-m));
+		}
+
+		.sheet-hero-img {
+			display: block;
+			aspect-ratio: 16 / 9;
+			inline-size: 100%;
+			object-fit: cover;
+		}
+
+		.sheet-hero::after {
+			content: "";
+
+			position: absolute;
+			inset-block-end: 0;
+			inset-inline: 0;
+
+			block-size: 30%;
+
+			background: linear-gradient(
+				to top,
+				var(--color-surface-raised),
+				transparent
+			);
+		}
+
 		/* Artist header with dynamic color */
 		.sheet-artist-header {
 			margin-block-end: var(--space-s);

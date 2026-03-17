@@ -24,6 +24,17 @@
         </div>
 
         <div if.bind="event" class="sheet-content">
+          <!-- Hero background image -->
+          <div if.bind="event.backgroundUrl" class="sheet-hero">
+            <img
+              src.bind="event.backgroundUrl"
+              alt=""
+              loading="lazy"
+              decoding="async"
+              class="sheet-hero-img"
+            />
+          </div>
+
           <!-- Artist name header with dynamic color -->
           <div
             artist-color.bind="event.artistName"

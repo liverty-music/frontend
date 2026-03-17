@@ -14,9 +14,12 @@
     class="[ event-card ]"
   >
     <img
-      if.bind="event.clearLogoUrl"
-      src.bind="event.clearLogoUrl"
+      if.bind="event.logoUrl && !logoError"
+      src.bind="event.logoUrl"
       alt.bind="event.artistName"
+      loading="lazy"
+      decoding="async"
+      error.trigger="onLogoError()"
       class="artist-logo"
     />
     <span else class="artist-name">

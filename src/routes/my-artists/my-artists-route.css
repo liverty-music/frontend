@@ -262,6 +262,11 @@
 				color-mix(in oklch, var(--_tile-color, transparent) 25%, transparent),
 				color-mix(in oklch, var(--_tile-color, transparent) 6%, transparent)
 			);
+
+			/* Thumbnail background — replaces color gradient when available */
+			&[data-thumb] {
+				background: var(--_tile-thumb) center / cover no-repeat;
+			}
 		}
 
 		/* Grid spanning for high-hype artists */
