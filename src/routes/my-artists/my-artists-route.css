@@ -170,7 +170,7 @@
 			}
 		}
 
-		.artist-identity {
+		header {
 			display: flex;
 			grid-area: name;
 			gap: var(--space-xs);

@@ -113,21 +113,21 @@
 			padding-inline: var(--space-m);
 		}
 
-		.sheet-hero {
+		figure {
 			position: relative;
 			overflow: hidden;
 			margin-block-end: var(--space-s);
 			margin-inline: calc(-1 * var(--space-m));
 		}
 
-		.sheet-hero-img {
+		figure-img {
 			display: block;
 			aspect-ratio: 16 / 9;
 			inline-size: 100%;
 			object-fit: cover;
 		}
 
-		.sheet-hero::after {
+		figure::after {
 			content: "";
 
 			position: absolute;

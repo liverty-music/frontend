@@ -9,9 +9,9 @@
 
 <main>
   <!-- Loading state -->
-  <div if.bind="isLoading" class="state-center" role="status" aria-busy="true">
+  <output if.bind="isLoading" class="state-center" role="status" aria-busy="true">
     <div class="spinner"></div>
-  </div>
+  </output>
 
   <!-- Empty state -->
   <state-placeholder
@@ -43,15 +43,15 @@
       css="--_vt-name: artist-${artist.id}"
       scroll.trigger="checkDismiss($event, artist)"
     >
-      <div class="artist-row-content">
+      <section class="artist-row-content">
         <!-- Artist identity (indicator + name) -->
-        <div class="artist-identity">
+        <header class="artist-identity">
           <span
             class="[ artist-row-indicator ]"
             dot-color.bind="artist.color"
           ></span>
           <span class="[ artist-row-name ]">${artist.name}</span>
-        </div>
+        </header>
 
         <!-- Inline hype slider -->
         <hype-inline-slider
@@ -62,7 +62,7 @@
           hype-changed.trigger="onHypeChanged($event)"
           hype-signup-prompt.trigger="onHypeSignupPrompt($event)">
         </hype-inline-slider>
-      </div>
+      </section>
 
       <!-- Dismiss trigger (scroll-snap end target) -->
       <div class="dismiss-end">

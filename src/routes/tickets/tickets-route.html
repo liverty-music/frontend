@@ -4,10 +4,10 @@
 
 <main>
   <!-- Loading state -->
-  <div if.bind="isLoading" class="state-center" role="status" aria-busy="true">
+  <output if.bind="isLoading" class="state-center" role="status" aria-busy="true">
     <div class="spinner"></div>
     <p class="state-text">Loading tickets...</p>
-  </div>
+  </output>
 
   <!-- Error state -->
   <state-placeholder
@@ -30,8 +30,8 @@
       repeat.for="ticket of tickets; key.bind: ticket.id?.value"
       class="ticket-card"
     >
-      <div class="ticket-row">
-        <div class="ticket-info">
+      <article class="ticket-row">
+        <header class="ticket-info">
           <p class="ticket-name">
             Event ${ticket.eventId?.value ?? ''}
           </p>
@@ -43,7 +43,7 @@
             <svg-icon name="lock" size="xs"></svg-icon>
             Soulbound
           </span>
-        </div>
+        </header>
 
         <button
           click.trigger="generateEntryCode(ticket)"
@@ -54,7 +54,7 @@
           <div if.bind="isGenerating && generatingTicketId === ticket.id?.value" class="spinner spinner-sm"></div>
           Entry
         </button>
-      </div>
+      </article>
     </li>
   </ul>
 </main>

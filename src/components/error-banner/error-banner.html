@@ -5,7 +5,7 @@
   aria-labelledby="error-dialog-title"
   class="[ error-dialog ]"
 >
-  <div class="error-content">
+  <section class="error-content">
     <h2 id="error-dialog-title" class="error-title">Something went wrong</h2>
     <p class="error-message">${errorBoundary.currentError?.message}</p>
 
@@ -13,7 +13,7 @@
       <span class="error-id">${errorBoundary.currentError?.id}</span>
     </div>
 
-    <div class="error-actions">
+    <footer class="error-actions">
       <button
         click.trigger="copyErrorDetails()"
         class="error-btn"
@@ -40,6 +40,6 @@
       >
         Reload Page
       </button>
-    </div>
-  </div>
+    </footer>
+  </section>
 </dialog>

@@ -1,7 +1,7 @@
 <import from="./toast-notification.css"></import>
 
-<div ref="containerElement" class="[ toast-stack ]">
-  <div
+<aside ref="containerElement" class="[ toast-stack ]">
+  <output
     repeat.for="toast of toasts; key.bind: toast.id"
     data-toast-id.bind="toast.id"
     popover="manual"
@@ -19,5 +19,5 @@
       click.trigger="onAction(toast)"
       class="toast-action-btn"
     >${toast.action.label}</button>
-  </div>
-</div>
+  </output>
+</aside>
