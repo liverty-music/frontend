@@ -61,6 +61,11 @@ export class DnaOrbCanvas {
 		return this.physics.bubbleCount
 	}
 
+	public get canvasRect(): { width: number; height: number } {
+		const rect = this.element.getBoundingClientRect()
+		return { width: rect.width, height: rect.height }
+	}
+
 	public followedCountChanged(newVal: number, _oldVal: number): void {
 		this.orbRenderer.pulse()
 		this.orbRenderer.setFollowCount(newVal)
@@ -144,6 +149,42 @@ export class DnaOrbCanvas {
 	public spawnBubblesAt(bubbles: ArtistBubble[], x: number, y: number): void {
 		this.physics.spawnBubblesAt(bubbles, x, y)
 		this.preloadImages(bubbles)
+	}
+
+	/**
+	 * Spawn a temporary bubble and immediately absorb it into the orb.
+	 * Used when following an artist from search results.
+	 */
+	public spawnAndAbsorb(artist: ArtistBubble, x: number, y: number): void {
+		const hue = this.artistHue(artist.name)
+		this.absorptionAnimator.startAbsorption(
+			artist.id,
+			artist.name,
+			x,
+			y,
+			this.orbRenderer.orbX,
+			this.orbRenderer.orbY,
+			artist.radius,
+			artist.imageUrl,
+			hue,
+			(completedHue) => {
+				this.orbRenderer.injectColor(completedHue)
+				if (this.orbRenderer.getStageParams().shockwaveEnabled) {
+					this.orbRenderer.spawnShockwave(completedHue)
+				}
+			},
+		)
+
+		this.element.dispatchEvent(
+			new CustomEvent('need-more-bubbles', {
+				bubbles: true,
+				detail: {
+					artistId: artist.id,
+					artistName: artist.name,
+					position: { x, y },
+				},
+			}),
+		)
 	}
 
 	/**

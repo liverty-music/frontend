@@ -293,12 +293,15 @@
 		}
 
 		.result-item {
+			cursor: pointer;
+
 			display: grid;
 			grid-column: 1 / -1;
 			grid-template-columns: subgrid;
 			gap: var(--space-xs);
 			align-items: center;
 
+			min-block-size: 48px;
 			padding: var(--space-xs);
 			border-radius: var(--radius-button);
 
@@ -309,10 +312,20 @@
 			&:hover {
 				background: var(--_white-10);
 			}
-		}
 
-		.result-info {
-			display: contents;
+			&:active {
+				background: var(--_white-15);
+			}
+
+			&[data-followed="true"] {
+				cursor: default;
+				opacity: 0.5;
+
+				&:hover,
+				&:active {
+					background: var(--_white-5);
+				}
+			}
 		}
 
 		.result-avatar {
@@ -342,37 +355,10 @@
 			white-space: nowrap;
 		}
 
-		.follow-button {
-			cursor: pointer;
-
-			display: grid;
-			place-items: center;
-
-			padding: 0;
-			border: none;
-			border-radius: var(--radius-full);
-
-			color: var(--color-white);
-
-			background: var(--_brand-60);
-
-			transition:
-				background var(--transition-normal),
-				transform var(--transition-normal);
-
-			&:disabled {
-				opacity: 0.8;
-			}
-
-			&:hover:not(:disabled) {
-				transform: scale(1.1);
-				background: var(--_brand-80);
-			}
-
-			&[data-followed="true"] {
-				color: var(--_green-90);
-				background: var(--_green-30);
-			}
+		.followed-check {
+			inline-size: 1.25rem;
+			block-size: 1.25rem;
+			color: var(--_green-90);
 		}
 
 		.onboarding-guide {

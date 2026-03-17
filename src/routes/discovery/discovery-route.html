@@ -53,7 +53,7 @@
       <dna-orb-canvas
         component.ref="dnaOrbCanvas"
         artists.bind="poolBubbles"
-        followed-ids.bind="poolFollowedIds"
+        followed-ids.bind="followedIds"
         followed-count.bind="followedCount"
         show-followed-indicator.one-time="true"
         artist-selected.trigger="onArtistSelected($event)"
@@ -74,22 +74,17 @@
         <li
           repeat.for="artist of searchResults; key.bind: artist.id"
           class="result-item"
+          data-followed.bind="followedIds.has(artist.id)"
+          click.trigger="followedIds.has(artist.id) ? undefined : onFollowFromSearch(artist)"
+          role="button"
+          aria-disabled.bind="followedIds.has(artist.id)"
+          aria-label.bind="followedIds.has(artist.id) ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name }) ?? '')"
         >
-          <div class="result-info">
-            <div class="result-avatar">
-              ${artist.name.charAt(0)}
-            </div>
-            <span class="result-name">${artist.name}</span>
+          <div class="result-avatar">
+            ${artist.name.charAt(0)}
           </div>
-          <button
-            class="follow-button" data-followed.bind="isArtistFollowed(artist.id)"
-            click.trigger="onFollowFromSearch(artist)"
-            disabled.bind="isArtistFollowed(artist.id)"
-            aria-label.bind="isArtistFollowed(artist.id) ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name }) ?? '')"
-          >
-            <svg-icon if.bind="!isArtistFollowed(artist.id)" name="plus"></svg-icon>
-            <svg-icon if.bind="isArtistFollowed(artist.id)" name="check"></svg-icon>
-          </button>
+          <span class="result-name">${artist.name}</span>
+          <svg-icon if.bind="followedIds.has(artist.id)" name="check" class="followed-check"></svg-icon>
         </li>
       </ul>
     </div>
