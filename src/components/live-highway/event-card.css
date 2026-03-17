@@ -47,12 +47,10 @@
 
 		/* --- Artist logo (clearLOGO transparent PNG) --- */
 		.artist-logo {
-			max-inline-size: 100%;
-			block-size: auto;
-			max-block-size: 48px;
-
+			max-inline-size: 80%;
+			max-block-size: 3rem;
 			object-fit: contain;
-			object-position: start end;
+			filter: drop-shadow(0 2px 4px var(--_drop-shadow));
 		}
 
 		/* --- Artist name (text fallback) --- */

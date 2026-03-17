@@ -13,6 +13,9 @@ export interface FollowedArtistInfo {
 	id: string
 	name: string
 	hype: HypeType
+	logoUrl?: string
+	backgroundUrl?: string
+	thumbUrl?: string
 }
 
 export const IFollowServiceClient = DI.createInterface<IFollowServiceClient>(
@@ -87,11 +90,17 @@ export class FollowServiceClient {
 			}))
 		}
 		const response = await this.client.listFollowed({}, { signal })
-		return response.artists.map((fa) => ({
-			id: fa.artist?.id?.value ?? '',
-			name: fa.artist?.name?.value ?? '',
-			hype: fa.hype ?? HypeType.AWAY,
-		}))
+		return response.artists.map((fa) => {
+			const fanart = fa.artist?.fanart
+			return {
+				id: fa.artist?.id?.value ?? '',
+				name: fa.artist?.name?.value ?? '',
+				hype: fa.hype ?? HypeType.AWAY,
+				logoUrl: fanart?.hdMusicLogo?.value ?? fanart?.musicLogo?.value,
+				backgroundUrl: fanart?.artistBackground?.value,
+				thumbUrl: fanart?.artistThumb?.value,
+			}
+		})
 	}
 
 	/**

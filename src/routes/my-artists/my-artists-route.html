@@ -89,7 +89,17 @@
       click.trigger="onGridLongPress(artist)"
       class="grid-tile" data-span.bind="tileSpan(artist)"
       tile-color.bind="artist.color"
+      data-thumb.bind="artist.thumbUrl"
+      css="--_tile-thumb: ${artist.thumbUrl ? 'url(&quot;' + artist.thumbUrl + '&quot;)' : 'none'}"
     >
+      <img
+        if.bind="artist.thumbUrl"
+        src.bind="artist.thumbUrl"
+        alt=""
+        error.trigger="onThumbError(artist)"
+        class="visually-hidden"
+        aria-hidden="true"
+      />
       <div class="grid-tile-content">
         <div class="grid-tile-name">${artist.name}</div>
         <div class="grid-tile-hype">${hypeIcon(artist)}</div>

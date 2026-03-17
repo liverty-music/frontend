@@ -42,7 +42,15 @@ export class DashboardService {
 
 	private protoGroupToDateGroup(
 		group: ProximityGroup,
-		artistMap: Map<string, { name: string; hypeLevel: HypeLevel }>,
+		artistMap: Map<
+			string,
+			{
+				name: string
+				hypeLevel: HypeLevel
+				logoUrl?: string
+				backgroundUrl?: string
+			}
+		>,
 	): DateGroup {
 		const ld = group.date?.value
 		const jsDate = ld ? new Date(ld.year, ld.month - 1, ld.day) : new Date()
@@ -67,6 +75,8 @@ export class DashboardService {
 					artist?.name ?? '',
 					hypeLevel,
 					isHypeMatched(hypeLevel, lane),
+					artist?.logoUrl,
+					artist?.backgroundUrl,
 				)
 				return event ? [event] : []
 			})
@@ -80,15 +90,33 @@ export class DashboardService {
 		}
 	}
 
-	private async fetchFollowedArtistMap(
-		signal?: AbortSignal,
-	): Promise<Map<string, { name: string; hypeLevel: HypeLevel }>> {
+	private async fetchFollowedArtistMap(signal?: AbortSignal): Promise<
+		Map<
+			string,
+			{
+				name: string
+				hypeLevel: HypeLevel
+				logoUrl?: string
+				backgroundUrl?: string
+			}
+		>
+	> {
 		const followed = await this.followService.listFollowed(signal)
-		const map = new Map<string, { name: string; hypeLevel: HypeLevel }>()
+		const map = new Map<
+			string,
+			{
+				name: string
+				hypeLevel: HypeLevel
+				logoUrl?: string
+				backgroundUrl?: string
+			}
+		>()
 		for (const fa of followed) {
 			map.set(fa.id, {
 				name: fa.name,
 				hypeLevel: hypeTypeToLevel(fa.hype),
+				logoUrl: fa.logoUrl,
+				backgroundUrl: fa.backgroundUrl,
 			})
 		}
 		return map
@@ -127,6 +155,8 @@ function concertToLiveEvent(
 	artistName: string,
 	hypeLevel: HypeLevel,
 	matched: boolean,
+	logoUrl?: string,
+	backgroundUrl?: string,
 ): LiveEvent | null {
 	const localDate = concert.localDate?.value
 	if (!localDate) return null
@@ -159,6 +189,8 @@ function concertToLiveEvent(
 		sourceUrl: concert.sourceUrl?.value ?? '',
 		hypeLevel,
 		matched,
+		logoUrl,
+		backgroundUrl,
 	}
 }
 

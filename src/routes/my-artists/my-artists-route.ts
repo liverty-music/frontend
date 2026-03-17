@@ -20,6 +20,8 @@ export interface FollowedArtist {
 	name: string
 	color: string
 	hype: HypeType
+	thumbUrl?: string
+	logoUrl?: string
 }
 
 export const HYPE_TIERS: Record<number, { labelKey: string; icon: string }> = {
@@ -109,6 +111,8 @@ export class MyArtistsRoute {
 				name: fa.name,
 				color: artistColor(fa.name),
 				hype: fa.hype,
+				thumbUrl: fa.thumbUrl,
+				logoUrl: fa.logoUrl,
 			}))
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,
@@ -408,6 +412,10 @@ export class MyArtistsRoute {
 		const artist = this.contextMenuArtist
 		this.closeContextMenu()
 		this.unfollowArtist(artist)
+	}
+
+	public onThumbError(artist: FollowedArtist): void {
+		artist.thumbUrl = undefined
 	}
 
 	public tileSpan(artist: FollowedArtist): string {

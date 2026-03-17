@@ -4,8 +4,17 @@ import type { LaneType, LiveEvent } from './live-event'
 export class EventCard {
 	@bindable public event!: LiveEvent
 	@bindable public lane: LaneType = 'home'
+	public logoError = false
 
 	private readonly element = resolve(INode) as HTMLElement
+
+	public eventChanged(): void {
+		this.logoError = false
+	}
+
+	public onLogoError(): void {
+		this.logoError = true
+	}
 
 	public get formattedDate(): string {
 		return this.event.date.toLocaleDateString('ja-JP', {

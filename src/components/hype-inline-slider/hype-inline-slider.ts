@@ -1,5 +1,5 @@
-import { bindable, INode, resolve } from 'aurelia'
 import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
+import { bindable, INode, resolve } from 'aurelia'
 
 const HYPE_STOPS: readonly HypeType[] = [
 	HypeType.WATCH,
