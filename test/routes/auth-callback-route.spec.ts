@@ -83,13 +83,14 @@ describe('AuthCallbackRoute', () => {
 	})
 
 	describe('canLoad', () => {
-		it('should reject unverified email and show error', async () => {
+		it('should reject unverified email, sign out, and show error', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'new@example.com', email_verified: false },
 			})
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
+			expect(mockAuth.signOut).toHaveBeenCalled()
 			expect(result).toBe(true)
 			expect(sut.error).toBe(
 				'Your email address has not been verified. Please check your inbox for a verification email and try again.',

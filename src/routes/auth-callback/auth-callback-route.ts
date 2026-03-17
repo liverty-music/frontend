@@ -39,6 +39,7 @@ export class AuthCallbackRoute {
 
 			// Reject unverified emails before provisioning a backend user
 			if (!user.profile.email_verified) {
+				await this.authService.signOut()
 				this.error =
 					'Your email address has not been verified. Please check your inbox for a verification email and try again.'
 				return true
