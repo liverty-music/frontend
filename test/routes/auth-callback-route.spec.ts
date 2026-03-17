@@ -83,9 +83,23 @@ describe('AuthCallbackRoute', () => {
 	})
 
 	describe('canLoad', () => {
+		it('should reject unverified email and show error', async () => {
+			mockAuth.handleCallback = vi.fn().mockResolvedValue({
+				profile: { email: 'new@example.com', email_verified: false },
+			})
+
+			const result = await sut.canLoad({}, {} as RouteNode)
+
+			expect(result).toBe(true)
+			expect(sut.error).toBe(
+				'Your email address has not been verified. Please check your inbox for a verification email and try again.',
+			)
+			expect(mockUserService.client.create).not.toHaveBeenCalled()
+		})
+
 		it('should redirect to dashboard and always merge guest data after authentication', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'new@example.com' },
+				profile: { email: 'new@example.com', email_verified: true },
 			})
 
 			const result = await sut.canLoad({}, {} as RouteNode)
@@ -97,7 +111,7 @@ describe('AuthCallbackRoute', () => {
 
 		it('should redirect to dashboard when state is undefined', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'existing@example.com' },
+				profile: { email: 'existing@example.com', email_verified: true },
 			})
 
 			const result = await sut.canLoad({}, {} as RouteNode)
@@ -131,7 +145,7 @@ describe('AuthCallbackRoute', () => {
 
 		it('should handle provisionUser ALREADY_EXISTS gracefully', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'existing@example.com' },
+				profile: { email: 'existing@example.com', email_verified: true },
 			})
 			mockUserService.client.create = vi
 				.fn()
@@ -144,7 +158,7 @@ describe('AuthCallbackRoute', () => {
 
 		it('should show error when provisionUser fails with non-AlreadyExists error', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'new@example.com' },
+				profile: { email: 'new@example.com', email_verified: true },
 			})
 			mockUserService.client.create = vi
 				.fn()
@@ -158,7 +172,7 @@ describe('AuthCallbackRoute', () => {
 
 		it('should skip provisionUser when email is missing', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: {},
+				profile: { email_verified: true },
 			})
 
 			const result = await sut.canLoad({}, {} as RouteNode)
@@ -171,7 +185,7 @@ describe('AuthCallbackRoute', () => {
 			mockOnboarding.currentStep = OnboardingStep.DISCOVERY
 			mockOnboarding.isOnboarding = true
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'user@example.com' },
+				profile: { email: 'user@example.com', email_verified: true },
 			})
 
 			const result = await sut.canLoad({}, {} as RouteNode)
