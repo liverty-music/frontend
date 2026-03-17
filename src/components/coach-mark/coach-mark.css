@@ -25,10 +25,14 @@
 		pointer-events: none;
 
 		inline-size: 100vi;
+		max-inline-size: none;
 		block-size: 100vb;
+		max-block-size: none;
 		margin: 0;
 		padding: 0;
 		border: none;
+
+		color: inherit;
 
 		background: transparent;
 

@@ -1,4 +1,4 @@
-.PHONY: lint lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-templates fix test test-layout test-layout-auth check
+.PHONY: lint lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test test-layout test-layout-auth check
 
 ## lint: biome lint + format check + stylelint + typecheck (matches CI)
 lint:
@@ -40,8 +40,16 @@ lint-no-data-interpolation:
 lint-no-bind-ternary:
 	! grep -rn 'data-[a-z-]*\.bind="[^"]*?[^"]*"' --include='*.html' src/
 
+## lint-no-div-popover: popover must use <dialog>, not <div> (multi-line aware)
+lint-no-div-popover:
+	! grep -Pzo '(?s)<div\b[^>]*\bpopover\b' -r --include='*.html' src/
+
+## lint-no-div-role-status: status must use <output>, not <div> (multi-line aware)
+lint-no-div-role-status:
+	! grep -Pzo '(?s)<div\b[^>]*\brole="status"' -r --include='*.html' src/
+
 ## lint-templates: all template lint rules
-lint-templates: lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary
+lint-templates: lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status
 
 ## check: full local pre-commit check (lint + test + layout + template rules)
 ## Note: test-layout-auth excluded — requires manual storageState capture

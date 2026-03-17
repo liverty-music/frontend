@@ -60,7 +60,7 @@
 			animation: fade-slide-up 600ms ease-out 400ms both;
 		}
 
-		.welcome-actions {
+		footer {
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-xs);

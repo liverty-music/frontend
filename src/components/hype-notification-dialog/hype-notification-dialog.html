@@ -1,7 +1,7 @@
 <import from="./hype-notification-dialog.css"></import>
 
 <dialog ref="dialogRef" class="[ notification-dialog ]">
-  <div class="notification-dialog-content">
+  <section class="notification-dialog-content">
     <h2 class="notification-dialog-title">&#x1F514; ライブ通知について</h2>
 
     <ul class="notification-dialog-tiers">
@@ -13,9 +13,9 @@
 
     <p class="notification-dialog-note">通知を受け取るにはアカウント登録が必要です</p>
 
-    <div class="notification-dialog-actions">
+    <footer class="notification-dialog-actions">
       <button class="notification-dialog-btn-primary" click.trigger="onSignup()">アカウント作成</button>
       <button class="notification-dialog-btn-ghost" click.trigger="onDismiss()">あとで</button>
-    </div>
-  </div>
+    </footer>
+  </section>
 </dialog>

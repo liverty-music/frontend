@@ -209,7 +209,7 @@
 			}
 		}
 
-		.genre-chips {
+		fieldset {
 			scrollbar-width: none;
 
 			overflow-inline: auto;
@@ -370,6 +370,8 @@
 
 			translate: 0 1rem;
 
+			max-inline-size: none;
+			max-block-size: none;
 			margin: auto;
 			padding: var(--space-s) var(--space-l);
 			border: 1px solid var(--_purple-25);
@@ -409,7 +411,7 @@
 		}
 
 		/* State-driven visibility (after base selectors to avoid descending specificity) */
-		.discovery-layout[data-search-mode="true"] :is(.genre-chips, .bubble-area) {
+		.discovery-layout[data-search-mode="true"] :is(fieldset, .bubble-area) {
 			display: none;
 		}
 

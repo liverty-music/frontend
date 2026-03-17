@@ -1,7 +1,7 @@
 <template>
   <import from="./celebration-overlay.css"></import>
 
-  <div
+  <output
     role="status"
     aria-live="polite"
     class="[ celebration-overlay ]"
@@ -11,5 +11,5 @@
       <div class="confetti" repeat.for="i of 30"></div>
     </div>
     <p class="celebration-text">${message}</p>
-  </div>
+  </output>
 </template>

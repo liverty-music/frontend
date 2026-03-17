@@ -1,5 +1,5 @@
 <template>
-  <div ref="popoverEl" popover="manual"
+  <dialog ref="popoverEl" popover="manual"
     class="[ prompt-popover ]" data-animation.bind="animationState">
 
     <!-- Default permission state -->
@@ -8,7 +8,7 @@
       <div class="prompt-body">
         <p t="notification.title" class="prompt-title"></p>
         <p t="notification.description" class="prompt-desc"></p>
-        <div class="prompt-actions">
+        <footer class="prompt-actions">
           <button click.trigger="dismiss()"
             t="notification.notNow"
             class="prompt-btn-secondary">
@@ -18,7 +18,7 @@
             <span if.bind="isLoading" t="notification.enabling"></span>
             <span if.bind="!isLoading" t="notification.enable"></span>
           </button>
-        </div>
+        </footer>
       </div>
     </div>
 
@@ -34,5 +34,5 @@
         </button>
       </div>
     </div>
-  </div>
+  </dialog>
 </template>
