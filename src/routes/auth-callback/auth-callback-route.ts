@@ -37,6 +37,13 @@ export class AuthCallbackRoute {
 			const user = await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
 
+			// Reject unverified emails before provisioning a backend user
+			if (!user.profile.email_verified) {
+				this.error =
+					'Your email address has not been verified. Please check your inbox for a verification email and try again.'
+				return true
+			}
+
 			await this.provisionUser(user.profile.email)
 			await this.userService.ensureLoaded()
 
