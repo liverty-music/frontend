@@ -8,6 +8,7 @@ import {
 	Toast,
 	type ToastHandle,
 } from '../../components/toast-notification/toast'
+import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import {
@@ -15,37 +16,23 @@ import {
 	OnboardingStep,
 } from '../../services/onboarding-service'
 
-export interface FollowedArtist {
-	id: string
-	name: string
+export interface MyArtist extends FollowedArtist {
 	color: string
-	hype: HypeType
-	thumbUrl?: string
-	logoUrl?: string
 }
 
-export const HYPE_TIERS: Record<number, { labelKey: string; icon: string }> = {
-	[HypeType.WATCH]: { labelKey: 'チェック', icon: '👀' },
-	[HypeType.HOME]: { labelKey: '地元', icon: '🔥' },
-	[HypeType.NEARBY]: { labelKey: '近くも', icon: '🔥🔥' },
-	[HypeType.AWAY]: {
+export const HYPE_TIERS: Record<string, { labelKey: string; icon: string }> = {
+	watch: { labelKey: 'チェック', icon: '👀' },
+	home: { labelKey: '地元', icon: '🔥' },
+	nearby: { labelKey: '近くも', icon: '🔥🔥' },
+	away: {
 		labelKey: 'どこでも！',
 		icon: '🔥🔥🔥',
 	},
 }
 
-export type ViewMode = 'list' | 'grid'
-
 export class MyArtistsRoute {
-	public artists: FollowedArtist[] = []
+	public artists: MyArtist[] = []
 	public isLoading = true
-
-	// View toggle
-	public viewMode: ViewMode = 'list'
-
-	// Grid context menu state
-	public contextMenuArtist: FollowedArtist | null = null
-	private contextMenuDialog!: HTMLDialogElement
 
 	// Notification dialog state
 	public showNotificationDialog = false
@@ -56,26 +43,35 @@ export class MyArtistsRoute {
 	private dismissingIds = new Set<string>()
 
 	// Undo state
-	private undoArtist: FollowedArtist | null = null
+	private undoArtist: MyArtist | null = null
 	private undoIndex = -1
 	private undoHandle: ToastHandle | null = null
 
 	// Hype tier references
-	public readonly hypeLevels = [
-		HypeType.WATCH,
-		HypeType.HOME,
-		HypeType.NEARBY,
-		HypeType.AWAY,
-	]
+	public readonly hypeLevels: Hype[] = ['watch', 'home', 'nearby', 'away']
 	public readonly hypeTiers = HYPE_TIERS
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsRoute')
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 
-	public trHypeLabel(level: number): string {
+	public trHypeLabel(level: Hype): string {
 		const meta = HYPE_TIERS[level]
 		return meta?.labelKey ?? ''
+	}
+
+	/** Convert entity Hype string to proto HypeType for the slider component. */
+	public hypeToNumber(hype: Hype): HypeType {
+		switch (hype) {
+			case 'watch':
+				return HypeType.WATCH
+			case 'home':
+				return HypeType.HOME
+			case 'nearby':
+				return HypeType.NEARBY
+			case 'away':
+				return HypeType.AWAY
+		}
 	}
 	private readonly followService = resolve(IFollowServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
@@ -107,12 +103,8 @@ export class MyArtistsRoute {
 				this.abortController.signal,
 			)
 			this.artists = followed.map((fa) => ({
-				id: fa.id,
-				name: fa.name,
+				...fa,
 				color: artistColor(fa.name),
-				hype: fa.hype,
-				thumbUrl: fa.thumbUrl,
-				logoUrl: fa.logoUrl,
 			}))
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,
@@ -141,7 +133,7 @@ export class MyArtistsRoute {
 
 	// --- Scroll-snap dismiss ---
 
-	public checkDismiss(event: Event, artist: FollowedArtist): void {
+	public checkDismiss(event: Event, artist: MyArtist): void {
 		if (this.dismissingIds.has(artist.id)) return
 
 		const el = event.target as HTMLElement
@@ -151,7 +143,7 @@ export class MyArtistsRoute {
 		}
 	}
 
-	private executeDismiss(artist: FollowedArtist): void {
+	private executeDismiss(artist: MyArtist): void {
 		if (!document.startViewTransition) {
 			this.unfollowArtist(artist)
 			this.dismissingIds.delete(artist.id)
@@ -170,7 +162,7 @@ export class MyArtistsRoute {
 
 	// --- Unfollow with undo ---
 
-	private unfollowArtist(artist: FollowedArtist): void {
+	private unfollowArtist(artist: MyArtist): void {
 		// Block unfollow during onboarding
 		if (this.isOnboarding) return
 
@@ -222,7 +214,7 @@ export class MyArtistsRoute {
 		this.undoHandle = null
 	}
 
-	private commitUnfollow(artist: FollowedArtist, originalIndex: number): void {
+	private commitUnfollow(artist: MyArtist, originalIndex: number): void {
 		// Fire-and-forget RPC with 1 retry
 		const client = this.followService.getClient()
 		const req = { artistId: new ArtistId({ value: artist.id }) }
@@ -265,7 +257,8 @@ export class MyArtistsRoute {
 	public onHypeChanged(
 		event: CustomEvent<{ artistId: string; hype: HypeType }>,
 	): void {
-		const { artistId, hype } = event.detail
+		const { artistId, hype: hypeType } = event.detail
+		const hype = hypeTypeToHype(hypeType)
 		const artist = this.artists.find((a) => a.id === artistId)
 		if (!artist) return
 
@@ -299,7 +292,7 @@ export class MyArtistsRoute {
 		const client = this.followService.getClient()
 		const req = {
 			artistId: new ArtistId({ value: artistId }),
-			hype,
+			hype: hypeType,
 		}
 		client
 			.setHype(req)
@@ -346,103 +339,28 @@ export class MyArtistsRoute {
 		this.notificationDialogShown = true
 	}
 
-	public hypeIcon(artist: FollowedArtist): string {
+	public hypeIcon(artist: MyArtist): string {
 		return HYPE_TIERS[artist.hype]?.icon ?? '\u{1F525}'
-	}
-
-	// --- View toggle ---
-
-	public toggleView(): void {
-		this.viewMode = this.viewMode === 'list' ? 'grid' : 'list'
-	}
-
-	// --- Grid context menu ---
-
-	private static readonly GRID_LONG_PRESS_MS = 500
-
-	public onGridLongPress(artist: FollowedArtist): void {
-		this.contextMenuArtist = artist
-		this.contextMenuDialog.showModal()
-	}
-
-	public closeContextMenu(): void {
-		this.contextMenuArtist = null
-		this.contextMenuDialog.close()
-	}
-
-	public onContextMenuDialogClick(e: Event): void {
-		if (e.target === this.contextMenuDialog) {
-			this.closeContextMenu()
-		}
-	}
-
-	public contextMenuSetLevel(level: HypeType): void {
-		if (!this.contextMenuArtist) return
-		const artist = this.contextMenuArtist
-		this.closeContextMenu()
-
-		// Block during onboarding (no backend RPC available)
-		if (this.isOnboarding) return
-
-		const prev = artist.hype
-		if (prev === level) return
-
-		artist.hype = level
-		const client = this.followService.getClient()
-		const req = {
-			artistId: new ArtistId({ value: artist.id }),
-			hype: level,
-		}
-		client.setHype(req).catch((firstErr) => {
-			this.logger.warn('Hype level update failed, retrying', {
-				error: firstErr,
-			})
-			client.setHype(req).catch((retryErr) => {
-				this.logger.error('Failed to update hype level after retry', {
-					error: retryErr,
-				})
-				artist.hype = prev
-				this.ea.publish(new Toast(this.i18n.tr('myArtists.failedHype')))
-			})
-		})
-	}
-
-	public contextMenuUnfollow(): void {
-		if (!this.contextMenuArtist) return
-		const artist = this.contextMenuArtist
-		this.closeContextMenu()
-		this.unfollowArtist(artist)
-	}
-
-	public onThumbError(artist: FollowedArtist): void {
-		artist.thumbUrl = undefined
-	}
-
-	public tileSpan(artist: FollowedArtist): string {
-		return artist.hype === HypeType.AWAY ? 'col-span-2 row-span-2' : ''
-	}
-
-	// --- Grid long-press touch handler ---
-
-	private gridLongPressTimer: ReturnType<typeof setTimeout> | null = null
-
-	public onGridTouchStart(artist: FollowedArtist): void {
-		this.gridLongPressTimer = setTimeout(() => {
-			this.gridLongPressTimer = null
-			this.onGridLongPress(artist)
-		}, MyArtistsRoute.GRID_LONG_PRESS_MS)
-	}
-
-	public onGridTouchEnd(): void {
-		if (this.gridLongPressTimer !== null) {
-			clearTimeout(this.gridLongPressTimer)
-			this.gridLongPressTimer = null
-		}
 	}
 
 	// --- Navigation ---
 
 	public async goToDiscovery(): Promise<void> {
 		await this.router.load('discovery')
+	}
+}
+
+function hypeTypeToHype(hype: HypeType): Hype {
+	switch (hype) {
+		case HypeType.WATCH:
+			return 'watch'
+		case HypeType.HOME:
+			return 'home'
+		case HypeType.NEARBY:
+			return 'nearby'
+		case HypeType.AWAY:
+			return 'away'
+		default:
+			return 'watch'
 	}
 }

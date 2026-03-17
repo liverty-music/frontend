@@ -5,7 +5,7 @@ import { expect, test } from './fixtures'
 // Helpers: seed localStorage so my-artists renders with deterministic state
 // ---------------------------------------------------------------------------
 
-/** Seed with followed artists so the list/grid view renders.
+/** Seed with followed artists so the list view renders.
  *  onboardingStep = 5 (MY_ARTISTS) keeps isOnboarding=true so the auth hook
  *  allows access to /my-artists (tutorialStep: 5) without real authentication.
  */
@@ -41,12 +41,9 @@ test.describe('My Artists shell layout', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedWithArtists())
 		await page.goto('/my-artists')
-		await page.waitForSelector(
-			'my-artists-route .artist-list, my-artists-route .artist-grid',
-			{
-				timeout: 5000,
-			},
-		)
+		await page.waitForSelector('my-artists-route .artist-list', {
+			timeout: 5000,
+		})
 	})
 
 	test('my-artists-route fills au-viewport (MA1)', async ({
@@ -72,7 +69,7 @@ test.describe('My Artists shell layout', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Group 2: Header — title, artist count, view toggle
+// Group 2: Header — title, artist count
 // ---------------------------------------------------------------------------
 
 test.describe('My Artists header', () => {
@@ -96,12 +93,6 @@ test.describe('My Artists header', () => {
 		expect(text).toContain('3')
 	})
 
-	test('header has view toggle button (MA-H3)', async ({
-		layoutPage: page,
-	}) => {
-		const toggleBtn = page.locator('my-artists-route .toggle-view-btn')
-		await expect(toggleBtn).toBeVisible()
-	})
 })
 
 // ---------------------------------------------------------------------------

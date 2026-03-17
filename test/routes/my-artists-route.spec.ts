@@ -54,7 +54,7 @@ const { MyArtistsRoute } = await import(
 	'../../src/routes/my-artists/my-artists-route'
 )
 
-function makeFollowedArtistInfo(id: string, name: string, hype = 2) {
+function makeFollowedArtist(id: string, name: string, hype = 'nearby') {
 	return { id, name, hype }
 }
 
@@ -83,9 +83,9 @@ describe('MyArtistsRoute', () => {
 			listFollowed: vi
 				.fn()
 				.mockResolvedValue([
-					makeFollowedArtistInfo('id-1', 'RADWIMPS'),
-					makeFollowedArtistInfo('id-2', 'ONE OK ROCK'),
-					makeFollowedArtistInfo('id-3', 'Aimer'),
+					makeFollowedArtist('id-1', 'RADWIMPS'),
+					makeFollowedArtist('id-2', 'ONE OK ROCK'),
+					makeFollowedArtist('id-3', 'Aimer'),
 				]),
 			getClient: () => mockGrpcClient,
 		}
