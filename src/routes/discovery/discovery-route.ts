@@ -1,13 +1,12 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
-import { batch, IEventAggregator, ILogger, resolve, watch } from 'aurelia'
+import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { Toast } from '../../components/toast-notification/toast'
 import {
 	type ArtistBubble,
 	IArtistServiceClient,
 } from '../../services/artist-service-client'
-import { BubblePool } from '../../services/bubble-pool'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import {
@@ -15,19 +14,13 @@ import {
 	OnboardingStep,
 } from '../../services/onboarding-service'
 import { resolveStore } from '../../state/store-interface'
+import { BubbleManager } from './bubble-manager'
+import { ConcertSearchTracker } from './concert-search-tracker'
+import { FollowOrchestrator } from './follow-orchestrator'
+import { GenreFilterController } from './genre-filter-controller'
+import { SearchController } from './search-controller'
 
-const GENRE_TAGS = [
-	'Rock',
-	'Pop',
-	'Anime',
-	'Jazz',
-	'Electronic',
-	'Hip-Hop',
-	'Metal',
-	'R&B',
-	'Classical',
-	'Indie',
-] as const
+const TUTORIAL_FOLLOW_TARGET = 3
 
 export class DiscoveryRoute {
 	private readonly artistClient = resolve(IArtistServiceClient)
@@ -40,43 +33,82 @@ export class DiscoveryRoute {
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
 
-	private static readonly TUTORIAL_FOLLOW_TARGET = 3
-	private static readonly SIMILAR_LIMIT_ON_TAP = 30
-	private static readonly MAX_SEED_ARTISTS = 5
-
 	public dnaOrbCanvas!: DnaOrbCanvas
-
-	private readonly pool = new BubblePool()
-
-	// State exposed to template
-	public followedArtists: ArtistBubble[] = []
-
-	public get followedIds(): ReadonlySet<string> {
-		return this.pool.followedIds
-	}
-
-	public readonly genreTags = GENRE_TAGS
-	public activeTag = ''
-	public isLoadingTag = false
-
-	public searchQuery = ''
-	public isSearchMode = false
-	public searchResults: ArtistBubble[] = []
-	public isSearching = false
-	private isLoadingBubbles = false
-	private searchDebounceTimer = 0
-	private abortController = new AbortController()
-
 	public onboardingGuide!: HTMLElement
 
-	// Concert search status tracking for dashboard coach mark
-	private readonly concertSearchStatus = new Map<string, 'pending' | 'done'>()
-	private readonly searchTimeouts = new Set<number>()
-	public completedSearchCount = 0
-	public concertGroupCount = -1 // -1 = not yet checked
+	private abortController = new AbortController()
+
+	// Controllers — order matters: bubbles must be initialized before genre/follow
+	public readonly bubbles = new BubbleManager(
+		this.artistClient,
+		resolve(ILogger).scopeTo('BubbleManager'),
+	)
+
+	public readonly search = new SearchController(
+		this.artistClient,
+		{
+			onEnterSearchMode: () => this.dnaOrbCanvas?.pause(),
+			onExitSearchMode: () => this.dnaOrbCanvas?.resume(),
+			onError: (key) =>
+				this.ea.publish(new Toast(this.i18n.tr(key), 'warning')),
+		},
+		resolve(ILogger).scopeTo('SearchController'),
+	)
+
+	public readonly genre = new GenreFilterController(
+		this.artistClient,
+		this.bubbles.pool,
+		() => this.follow.followedArtists,
+		{
+			onBubblesReloaded: (bubbles) => this.dnaOrbCanvas.reloadBubbles(bubbles),
+			onError: (key, params) =>
+				this.ea.publish(new Toast(this.i18n.tr(key, params), 'error')),
+		},
+		resolve(ILogger).scopeTo('GenreFilterController'),
+		() => this.abortController.signal,
+	)
+
+	public readonly follow = new FollowOrchestrator(
+		this.followClient,
+		this.concertService,
+		this.bubbles.pool,
+		{
+			onFollowed: (artist) => {
+				this.concertTracker.searchConcertsWithTimeout(artist.id)
+			},
+			onRollback: () => {},
+			onHasUpcomingEvents: (name) =>
+				this.ea.publish(
+					new Toast(this.i18n.tr('discovery.hasUpcomingEvents', { name })),
+				),
+			onError: (key, params) =>
+				this.ea.publish(new Toast(this.i18n.tr(key, params), 'error')),
+			respawnBubble: (artist, pos) =>
+				this.dnaOrbCanvas.spawnBubblesAt([artist], pos.x, pos.y),
+		},
+		resolve(ILogger).scopeTo('FollowOrchestrator'),
+		() => this.abortController.signal,
+	)
+
+	public readonly concertTracker = new ConcertSearchTracker(
+		this.concertService,
+		{
+			onAllSearchesComplete: () => {
+				// Coach mark reactivity is handled by @watch
+			},
+		},
+		resolve(ILogger).scopeTo('ConcertSearchTracker'),
+		() => this.abortController.signal,
+		() => this.followedCount,
+		TUTORIAL_FOLLOW_TARGET,
+	)
 
 	public get poolBubbles(): ArtistBubble[] {
-		return this.pool.availableBubbles
+		return this.bubbles.poolBubbles
+	}
+
+	public get followedIds(): ReadonlySet<string> {
+		return this.follow.followedIds
 	}
 
 	public get isOnboarding(): boolean {
@@ -87,24 +119,24 @@ export class DiscoveryRoute {
 		if (this.isOnboarding) {
 			return this.store.getState().guest.follows.length
 		}
-		return this.followedArtists.length
+		return this.follow.followedCount
 	}
 
 	public get showDashboardCoachMark(): boolean {
 		return (
 			this.isOnboarding &&
-			this.followedCount >= DiscoveryRoute.TUTORIAL_FOLLOW_TARGET &&
-			this.completedSearchCount >= this.followedCount &&
-			this.concertGroupCount > 0
+			this.followedCount >= TUTORIAL_FOLLOW_TARGET &&
+			this.concertTracker.completedSearchCount >= this.followedCount &&
+			this.concertTracker.concertGroupCount > 0
 		)
 	}
 
 	public get srStatusText(): string {
 		const parts: string[] = []
-		if (this.isSearchMode) {
+		if (this.search.isSearchMode) {
 			parts.push(
 				this.i18n.tr('discovery.srSearchResults', {
-					count: this.searchResults.length,
+					count: this.search.searchResults.length,
 				}),
 			)
 		} else {
@@ -118,14 +150,6 @@ export class DiscoveryRoute {
 			this.i18n.tr('discovery.srFollowed', { count: this.followedCount }),
 		)
 		return parts.join('. ')
-	}
-
-	public get allSearchesComplete(): boolean {
-		return (
-			this.isOnboarding &&
-			this.followedCount >= DiscoveryRoute.TUTORIAL_FOLLOW_TARGET &&
-			this.completedSearchCount >= this.followedCount
-		)
 	}
 
 	@watch('showDashboardCoachMark')
@@ -143,22 +167,19 @@ export class DiscoveryRoute {
 	public async loading(): Promise<void> {
 		this.logger.info('Loading discovery page')
 		try {
-			await this.loadInitialArtists('Japan', '')
+			await this.bubbles.loadInitialArtists(
+				this.follow.followedArtists,
+				'Japan',
+				'',
+			)
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
 			this.ea.publish(new Toast(this.i18n.tr('discovery.loadFailed'), 'error'))
 		}
 
-		// During onboarding, sync with pre-seeded followed artists from Store
-		// (e.g. page reload or E2E seeding) and trigger their concert searches
 		if (this.isOnboarding) {
 			const preSeeded = this.store.getState().guest.follows
-			for (const artist of preSeeded) {
-				if (!this.concertSearchStatus.has(artist.artistId)) {
-					this.concertSearchStatus.set(artist.artistId, 'pending')
-					this.searchConcertsWithTimeout(artist.artistId)
-				}
-			}
+			this.concertTracker.syncPreSeeded(preSeeded)
 		}
 	}
 
@@ -173,109 +194,31 @@ export class DiscoveryRoute {
 	public detaching(): void {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
-		window.clearTimeout(this.searchDebounceTimer)
-		for (const t of this.searchTimeouts) window.clearTimeout(t)
-		this.searchTimeouts.clear()
+		this.search.dispose()
+		this.concertTracker.dispose()
 	}
 
 	private readonly onVisibilityChange = (): void => {
 		if (document.hidden) {
 			this.dnaOrbCanvas?.pause()
-		} else if (!this.isSearchMode) {
+		} else if (!this.search.isSearchMode) {
 			this.dnaOrbCanvas?.resume()
 		}
 	}
 
-	public async onGenreSelected(tag: string): Promise<void> {
-		if (this.isLoadingTag) return
+	// --- Template event handlers ---
 
-		if (this.activeTag === tag) {
-			this.activeTag = ''
-			this.isLoadingTag = true
-			try {
-				await this.reloadWithTag('')
-				if (this.abortController.signal.aborted) return
-				this.dnaOrbCanvas.reloadBubbles(this.pool.availableBubbles)
-			} catch (err) {
-				this.logger.error('Failed to clear genre tag', err)
-				this.ea.publish(
-					new Toast(this.i18n.tr('discovery.resetFailed'), 'error'),
-				)
-			} finally {
-				this.isLoadingTag = false
-			}
-			return
-		}
-
-		this.activeTag = tag
-		this.isLoadingTag = true
-		this.logger.info('Genre selected', { tag })
-
-		try {
-			await this.reloadWithTag(tag.toLowerCase())
-			if (this.abortController.signal.aborted) return
-			this.dnaOrbCanvas.reloadBubbles(this.pool.availableBubbles)
-		} catch (err) {
-			this.activeTag = ''
-			this.logger.warn('Failed to load genre artists', err)
-			this.ea.publish(
-				new Toast(this.i18n.tr('discovery.genreLoadFailed', { tag }), 'error'),
-			)
-		} finally {
-			this.isLoadingTag = false
-		}
-	}
-
-	@watch('searchQuery')
+	@watch('search.searchQuery')
 	protected onSearchQueryChanged(newValue: string): void {
-		window.clearTimeout(this.searchDebounceTimer)
-		const query = newValue.trim()
-
-		if (query.length === 0) {
-			this.exitSearchMode()
-			return
-		}
-
-		this.isSearchMode = true
-		this.dnaOrbCanvas?.pause()
-		this.searchDebounceTimer = window.setTimeout(() => {
-			void this.performSearch(query)
-		}, 300)
+		this.search.onQueryChanged(newValue)
 	}
 
 	public clearSearch(): void {
-		this.searchQuery = ''
+		this.search.clearSearch()
 	}
 
-	private exitSearchMode(): void {
-		this.isSearchMode = false
-		this.searchResults = []
-		this.isSearching = false
-		this.dnaOrbCanvas?.resume()
-	}
-
-	private async performSearch(query: string): Promise<void> {
-		if (query.length < 1) return
-
-		this.isSearching = true
-		this.logger.info('Searching artists', { query })
-
-		try {
-			const results = await this.artistClient.search(query)
-			if (this.abortController.signal.aborted) return
-			if (this.searchQuery.trim() !== query) return // stale response
-			this.searchResults = results
-		} catch (err) {
-			this.logger.warn('Search failed', err)
-			this.ea.publish(
-				new Toast(this.i18n.tr('discovery.searchFailed'), 'warning'),
-			)
-			this.searchResults = []
-		} finally {
-			if (this.searchQuery.trim() === query) {
-				this.isSearching = false
-			}
-		}
+	public async onGenreSelected(tag: string): Promise<void> {
+		await this.genre.onGenreSelected(tag)
 	}
 
 	public async onArtistSelected(
@@ -291,29 +234,15 @@ export class DiscoveryRoute {
 		})
 
 		try {
-			await this.followArtist(artist, position)
-		} catch (err) {
-			this.logger.error('Failed to follow artist', {
-				artist: artist.name,
-				error: err,
-			})
-			this.ea.publish(
-				new Toast(
-					this.i18n.tr('discovery.followFailed', { name: artist.name }),
-					'error',
-				),
-			)
+			await this.follow.followArtist(artist, position)
+		} catch {
 			return
 		}
 		if (this.abortController.signal.aborted) return
 
-		this.checkLiveEvents(artist)
+		this.follow.checkLiveEvents(artist)
 	}
 
-	/**
-	 * Handle the need-more-bubbles event from dna-orb-canvas.
-	 * Fetches similar artists and spawns them at the tap position.
-	 */
 	public async onNeedMoreBubbles(
 		event: CustomEvent<{
 			artistId: string
@@ -321,47 +250,23 @@ export class DiscoveryRoute {
 			position: { x: number; y: number }
 		}>,
 	): Promise<void> {
-		if (this.isLoadingBubbles) return
-		this.isLoadingBubbles = true
 		const { artistId, artistName, position } = event.detail
-
 		try {
-			let newBubbles = await this.getSimilarArtists(artistId)
-			if (newBubbles.length === 0) {
-				// Similar artists exhausted — fall back to top-artist pool
-				newBubbles = await this.loadReplacementBubbles()
-			}
-
-			if (newBubbles.length > 0) {
-				const maxBubbles = this.pool.maxBubbles
-				const currentPhysics = this.dnaOrbCanvas.bubbleCount
-				const spawnSlots = Math.max(0, maxBubbles - currentPhysics)
-
-				// Evict oldest physics bubbles if we need more room
-				if (newBubbles.length > spawnSlots) {
-					const evictCount = Math.min(
-						newBubbles.length - spawnSlots,
-						currentPhysics,
-					)
-					if (evictCount > 0) {
-						const evicted = this.pool.evictOldest(evictCount)
-						const evictedIds = evicted.map((b) => b.id)
-						await this.dnaOrbCanvas.fadeOutBubbles(evictedIds)
-					}
-				}
-
-				// Only spawn up to the cap
-				const finalSlots = Math.max(
-					0,
-					maxBubbles - this.dnaOrbCanvas.bubbleCount,
+			const spawned = await this.bubbles.onNeedMoreBubbles(
+				artistId,
+				artistName,
+				position,
+				this.dnaOrbCanvas,
+			)
+			if (!spawned) {
+				this.ea.publish(
+					new Toast(
+						this.i18n.tr('discovery.similarArtistsUnavailable', {
+							name: artistName,
+						}),
+						'info',
+					),
 				)
-				const toSpawn = newBubbles.slice(0, finalSlots)
-				if (toSpawn.length > 0) {
-					this.pool.add(toSpawn)
-					this.dnaOrbCanvas.spawnBubblesAt(toSpawn, position.x, position.y)
-				}
-			} else {
-				this.logger.info('No similar artists found', { artistName })
 			}
 		} catch (err) {
 			this.logger.warn('Failed to load similar artists', err)
@@ -373,8 +278,6 @@ export class DiscoveryRoute {
 					'warning',
 				),
 			)
-		} finally {
-			this.isLoadingBubbles = false
 		}
 	}
 
@@ -386,295 +289,27 @@ export class DiscoveryRoute {
 		})
 
 		try {
-			await this.followArtist(artist)
-		} catch (err) {
-			this.logger.error('Failed to follow artist from search', {
-				artist: artist.name,
-				error: err,
-			})
-			this.ea.publish(
-				new Toast(
-					this.i18n.tr('discovery.followFailed', { name: artist.name }),
-					'error',
-				),
-			)
+			await this.follow.followArtist(artist)
+		} catch {
 			return
 		}
 		if (this.abortController.signal.aborted) return
 
 		// Transition to bubble view and play absorption animation
-		this.clearSearch()
-		this.exitSearchMode()
+		this.search.clearSearch()
+		this.search.exitSearchMode()
 
-		const rect = this.dnaOrbCanvas.canvasRect
-		const spawnX = rect.width / 2
-		const spawnY = rect.height * 0.17
-		this.dnaOrbCanvas.spawnAndAbsorb(artist, spawnX, spawnY)
+		this.bubbles.spawnAndAbsorbAfterSearch(artist, this.dnaOrbCanvas)
 
-		this.checkLiveEvents(artist)
+		this.follow.checkLiveEvents(artist)
 	}
 
 	public onCoachMarkTap(): void {
 		this.logger.info('Onboarding: coach mark tapped, advancing to dashboard', {
 			followedCount: this.followedCount,
 		})
-		// Deactivate spotlight before navigating — dashboard will reactivate during lane intro
 		this.onboarding.deactivateSpotlight()
 		this.onboarding.setStep(OnboardingStep.DASHBOARD)
 		void this.router.load('/dashboard')
-	}
-
-	private searchConcertsWithTimeout(artistId: string): void {
-		const timeout = window.setTimeout(() => {
-			this.searchTimeouts.delete(timeout)
-			this.markSearchDone(artistId)
-		}, 15_000)
-		this.searchTimeouts.add(timeout)
-
-		this.concertService
-			.searchNewConcerts(artistId)
-			.then(() => {
-				window.clearTimeout(timeout)
-				this.searchTimeouts.delete(timeout)
-				this.markSearchDone(artistId)
-			})
-			.catch((err) => {
-				window.clearTimeout(timeout)
-				this.searchTimeouts.delete(timeout)
-				this.logger.warn('Background concert search failed', {
-					artistId,
-					error: err,
-				})
-				this.markSearchDone(artistId)
-			})
-	}
-
-	private markSearchDone(artistId: string): void {
-		if (this.concertSearchStatus.get(artistId) === 'done') return
-		this.concertSearchStatus.set(artistId, 'done')
-		this.completedSearchCount = [...this.concertSearchStatus.values()].filter(
-			(s) => s === 'done',
-		).length
-
-		// Check if all searches are done and verify concert data exists
-		if (this.allSearchesComplete) {
-			void this.verifyConcertData()
-		}
-	}
-
-	/**
-	 * Call ConcertService/List to verify that at least 1 date group exists.
-	 * Updates concertGroupCount which gates the dashboard coach mark.
-	 */
-	private async verifyConcertData(): Promise<void> {
-		try {
-			const groups = await this.concertService.listByFollower(
-				this.abortController.signal,
-			)
-			if (this.abortController.signal.aborted) return
-			this.concertGroupCount = groups.length
-			this.logger.info('Concert data verified', {
-				groupCount: this.concertGroupCount,
-			})
-		} catch (err) {
-			if ((err as Error).name === 'AbortError') return
-			this.logger.warn('Failed to verify concert data', { error: err })
-			// Treat failure as no data — user can follow more artists
-			this.concertGroupCount = 0
-		}
-	}
-
-	// --- Data orchestration methods (moved from ArtistDiscoveryService) ---
-
-	private async loadInitialArtists(
-		country: string,
-		tag: string,
-	): Promise<void> {
-		this.logger.info('Loading initial artists', { country, tag })
-		this.pool.clearSeenSets()
-		this.markFollowedAsSeen()
-
-		let bubbles: ArtistBubble[]
-
-		if (this.followedArtists.length === 0) {
-			bubbles = await this.artistClient.listTop(
-				country,
-				tag,
-				BubblePool.MAX_BUBBLES,
-			)
-		} else {
-			bubbles = await this.fetchSeedSimilarArtists()
-		}
-
-		bubbles = this.pool.dedup(bubbles).slice(0, BubblePool.MAX_BUBBLES)
-		this.pool.replace(bubbles)
-		this.pool.trackAllSeen(bubbles)
-
-		this.logger.info('Loaded initial artists', {
-			count: this.pool.availableBubbles.length,
-		})
-	}
-
-	private async reloadWithTag(tag: string, country = 'Japan'): Promise<void> {
-		this.logger.info('Reloading artists with tag', { tag, country })
-		this.pool.clearSeenSets()
-		this.markFollowedAsSeen()
-
-		const rawBubbles = await this.artistClient.listTop(
-			country,
-			tag,
-			BubblePool.MAX_BUBBLES,
-		)
-		const bubbles = this.pool.dedup(rawBubbles).slice(0, BubblePool.MAX_BUBBLES)
-
-		this.pool.replace(bubbles)
-		this.pool.trackAllSeen(bubbles)
-
-		this.logger.info('Reloaded artists with tag', {
-			tag,
-			count: this.pool.availableBubbles.length,
-		})
-	}
-
-	private async getSimilarArtists(artistId: string): Promise<ArtistBubble[]> {
-		this.logger.info('Getting similar artists', { artistId })
-
-		const rawBubbles = await this.artistClient.listSimilar(
-			artistId,
-			DiscoveryRoute.SIMILAR_LIMIT_ON_TAP,
-		)
-		const newBubbles = this.pool.dedup(rawBubbles)
-		this.pool.trackAllSeen(newBubbles)
-
-		return newBubbles
-	}
-
-	private async loadReplacementBubbles(): Promise<ArtistBubble[]> {
-		this.logger.info('Loading replacement bubbles from top artists')
-
-		this.pool.resetSeenWith([
-			...this.followedArtists,
-			...this.pool.availableBubbles,
-		])
-
-		const rawBubbles = await this.artistClient.listTop(
-			'Japan',
-			'',
-			BubblePool.MAX_BUBBLES,
-		)
-		const fresh = this.pool.dedup(rawBubbles)
-		this.pool.trackAllSeen(fresh)
-
-		this.logger.info('Replacement bubbles loaded', { count: fresh.length })
-		return fresh
-	}
-
-	private async followArtist(
-		artist: ArtistBubble,
-		spawnPosition?: { x: number; y: number },
-	): Promise<void> {
-		if (this.followedIds.has(artist.id)) return
-		this.logger.info('Following artist', { artist: artist.name })
-
-		// Optimistic UI update
-		this.pool.markFollowed(artist.id)
-		this.followedArtists = [...this.followedArtists, artist]
-
-		try {
-			await this.followClient.follow(artist.id, artist.name)
-			this.logger.info('Artist followed', {
-				followed: this.followedArtists.length,
-			})
-
-			// Track concert search status for dashboard coach mark
-			this.concertSearchStatus.set(artist.id, 'pending')
-			this.searchConcertsWithTimeout(artist.id)
-		} catch (err) {
-			this.logger.error('Failed to follow artist', {
-				artist: artist.name,
-				error: err,
-			})
-
-			// Rollback optimistic update
-			batch(() => {
-				this.pool.unmarkFollowed(artist.id)
-				this.pool.add([artist])
-				this.followedArtists = this.followedArtists.filter(
-					(b) => b.id !== artist.id,
-				)
-			})
-
-			// Re-render the bubble on canvas if it was removed during interaction
-			if (spawnPosition) {
-				this.dnaOrbCanvas.spawnBubblesAt(
-					[artist],
-					spawnPosition.x,
-					spawnPosition.y,
-				)
-			}
-
-			this.ea.publish(new Toast(`Failed to follow ${artist.name}`))
-			throw err
-		}
-	}
-
-	private checkLiveEvents(artist: ArtistBubble): void {
-		this.concertService
-			.listConcerts(artist.id)
-			.then((concerts) => {
-				if (this.abortController.signal.aborted) return
-				if (concerts.length > 0) {
-					this.ea.publish(
-						new Toast(
-							this.i18n.tr('discovery.hasUpcomingEvents', {
-								name: artist.name,
-							}),
-						),
-					)
-				}
-			})
-			.catch((err) => {
-				this.logger.warn('Failed to check live events', err)
-			})
-	}
-
-	private markFollowedAsSeen(): void {
-		this.pool.trackAllSeen(this.followedArtists)
-	}
-
-	private async fetchSeedSimilarArtists(): Promise<ArtistBubble[]> {
-		const seeds = this.pickRandomSeeds()
-		const limitPerSeed = Math.floor(BubblePool.MAX_BUBBLES / seeds.length)
-		this.logger.info('Fetching seed similar artists', {
-			seedCount: seeds.length,
-			limitPerSeed,
-		})
-
-		const results = await Promise.all(
-			seeds.map((seed) =>
-				this.artistClient.listSimilar(seed.id, limitPerSeed).catch((err) => {
-					this.logger.warn('Seed similar fetch failed', {
-						seed: seed.name,
-						error: err,
-					})
-					return [] as ArtistBubble[]
-				}),
-			),
-		)
-
-		return results.flat()
-	}
-
-	private pickRandomSeeds(): ArtistBubble[] {
-		const max = DiscoveryRoute.MAX_SEED_ARTISTS
-		if (this.followedArtists.length <= max) {
-			return [...this.followedArtists]
-		}
-		const shuffled = [...this.followedArtists]
-		for (let i = shuffled.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1))
-			;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-		}
-		return shuffled.slice(0, max)
 	}
 }

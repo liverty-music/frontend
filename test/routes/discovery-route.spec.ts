@@ -153,8 +153,8 @@ describe('DiscoveryRoute', () => {
 				makeBubble('a1', 'Result'),
 			])
 
-			sut.searchQuery = 'test'
-			;(sut as any).onSearchQueryChanged('test')
+			sut.search.searchQuery = 'test'
+			sut.search.onQueryChanged('test')
 
 			// Before 300ms
 			expect(mockArtistClient.search).not.toHaveBeenCalled()
@@ -165,10 +165,10 @@ describe('DiscoveryRoute', () => {
 		})
 
 		it('should exit search mode when query is empty', () => {
-			sut.isSearchMode = true
-			;(sut as any).onSearchQueryChanged('')
+			sut.search.isSearchMode = true
+			sut.search.onQueryChanged('')
 
-			expect(sut.isSearchMode).toBe(false)
+			expect(sut.search.isSearchMode).toBe(false)
 		})
 
 		it('should discard stale responses by checking current query', async () => {
@@ -176,13 +176,13 @@ describe('DiscoveryRoute', () => {
 				makeBubble('a2', 'Fresh'),
 			])
 
-			sut.searchQuery = 'first'
-			;(sut as any).onSearchQueryChanged('first')
+			sut.search.searchQuery = 'first'
+			sut.search.onQueryChanged('first')
 
 			// Before debounce fires, start a new search
 			await vi.advanceTimersByTimeAsync(100)
-			sut.searchQuery = 'second'
-			;(sut as any).onSearchQueryChanged('second')
+			sut.search.searchQuery = 'second'
+			sut.search.onQueryChanged('second')
 
 			await vi.advanceTimersByTimeAsync(300)
 
@@ -194,9 +194,9 @@ describe('DiscoveryRoute', () => {
 
 	describe('clearSearch', () => {
 		it('should reset searchQuery', () => {
-			sut.searchQuery = 'something'
+			sut.search.searchQuery = 'something'
 			sut.clearSearch()
-			expect(sut.searchQuery).toBe('')
+			expect(sut.search.searchQuery).toBe('')
 		})
 	})
 
@@ -208,7 +208,7 @@ describe('DiscoveryRoute', () => {
 
 			await sut.onGenreSelected('Rock')
 
-			expect(sut.activeTag).toBe('Rock')
+			expect(sut.genre.activeTag).toBe('Rock')
 			expect(mockArtistClient.listTop).toHaveBeenCalledWith('Japan', 'rock', 50)
 		})
 
@@ -220,7 +220,7 @@ describe('DiscoveryRoute', () => {
 			await sut.onGenreSelected('Rock')
 			await sut.onGenreSelected('Rock')
 
-			expect(sut.activeTag).toBe('')
+			expect(sut.genre.activeTag).toBe('')
 			expect(mockArtistClient.listTop).toHaveBeenLastCalledWith('Japan', '', 50)
 		})
 	})
@@ -246,16 +246,27 @@ describe('DiscoveryRoute', () => {
 				[{ id: 'c1' }],
 			)
 
+			// Mock rAF for spawnAndAbsorbAfterSearch
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+				cb(0)
+				return 0
+			})
+
 			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
 
 			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist')
 		})
 
 		it('should not follow already-followed artist', async () => {
-			// Follow first
 			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
 				undefined,
 			)
+
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+				cb(0)
+				return 0
+			})
+
 			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
 
 			// Try to follow again
@@ -268,13 +279,13 @@ describe('DiscoveryRoute', () => {
 			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('network error'),
 			)
-			sut.isSearchMode = true
-			sut.searchQuery = 'test'
+			sut.search.isSearchMode = true
+			sut.search.searchQuery = 'test'
 
 			await sut.onFollowFromSearch(makeBubble('a1', 'Fail'))
 
-			expect(sut.isSearchMode).toBe(true)
-			expect(sut.searchQuery).toBe('test')
+			expect(sut.search.isSearchMode).toBe(true)
+			expect(sut.search.searchQuery).toBe('test')
 			expect(sut.dnaOrbCanvas.spawnAndAbsorb).not.toHaveBeenCalled()
 			const hasErrorToast = mockEa.published.some(
 				(t: Toast) => t.severity === 'error',
@@ -289,15 +300,21 @@ describe('DiscoveryRoute', () => {
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[],
 			)
-			sut.isSearchMode = true
-			sut.searchQuery = 'query'
-			sut.searchResults = [makeBubble('a1', 'Artist')]
+
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+				cb(0)
+				return 0
+			})
+
+			sut.search.isSearchMode = true
+			sut.search.searchQuery = 'query'
+			sut.search.searchResults = [makeBubble('a1', 'Artist')]
 
 			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
 
-			expect(sut.isSearchMode).toBe(false)
-			expect(sut.searchQuery).toBe('')
-			expect(sut.searchResults).toHaveLength(0)
+			expect(sut.search.isSearchMode).toBe(false)
+			expect(sut.search.searchQuery).toBe('')
+			expect(sut.search.searchResults).toHaveLength(0)
 			expect(sut.dnaOrbCanvas.spawnAndAbsorb).toHaveBeenCalledTimes(1)
 		})
 
@@ -308,6 +325,11 @@ describe('DiscoveryRoute', () => {
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[],
 			)
+
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+				cb(0)
+				return 0
+			})
 
 			const artist = makeBubble('a1', 'Artist')
 			await sut.onFollowFromSearch(artist)
@@ -395,7 +417,7 @@ describe('DiscoveryRoute', () => {
 			})
 			await sut.onArtistSelected(event)
 
-			// followArtist publishes a toast, then onArtistSelected publishes an error toast
+			// followArtist publishes a toast via callback
 			expect(mockEa.published.length).toBeGreaterThanOrEqual(1)
 			const hasErrorToast = mockEa.published.some(
 				(t: Toast) => t.severity === 'error',
@@ -523,29 +545,25 @@ describe('DiscoveryRoute', () => {
 			expect(sut.dnaOrbCanvas.fadeOutBubbles).toHaveBeenCalled()
 		})
 
-		it('should ignore concurrent requests (isLoadingBubbles guard)', async () => {
-			let resolveFirst: () => void
-			const firstPromise = new Promise<ArtistBubble[]>((resolve) => {
-				resolveFirst = () => resolve([makeBubble('s1', 'S1')])
-			})
+		it('should show info toast when no new bubbles are available', async () => {
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
-			).mockReturnValueOnce(firstPromise)
+			).mockResolvedValue([])
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
 
 			const event = new CustomEvent('need-more-bubbles', {
-				detail: { artistId: 'a1', artistName: 'A', position: { x: 0, y: 0 } },
+				detail: {
+					artistId: 'a1',
+					artistName: 'Exhausted',
+					position: { x: 0, y: 0 },
+				},
 			})
+			await sut.onNeedMoreBubbles(event)
 
-			// Fire two events simultaneously
-			const first = sut.onNeedMoreBubbles(event)
-			const second = sut.onNeedMoreBubbles(event)
-
-			resolveFirst!()
-			await first
-			await second
-
-			// listSimilar should only be called once (second was blocked)
-			expect(mockArtistClient.listSimilar).toHaveBeenCalledTimes(1)
+			expect(mockEa.published.length).toBe(1)
+			expect(mockEa.published[0].severity).toBe('info')
 		})
 
 		it('should show warning toast on fetch failure', async () => {
@@ -576,6 +594,12 @@ describe('DiscoveryRoute', () => {
 			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[],
 			)
+
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+				cb(0)
+				return 0
+			})
+
 			await sut.onFollowFromSearch(makeBubble('f1', 'Followed One'))
 
 			// Now loading should call listSimilar (seed) instead of listTop
@@ -611,7 +635,7 @@ describe('DiscoveryRoute', () => {
 
 		it('should resume canvas when document becomes visible and not in search mode', () => {
 			sut.attached()
-			sut.isSearchMode = false
+			sut.search.isSearchMode = false
 
 			Object.defineProperty(document, 'hidden', {
 				value: false,
@@ -625,7 +649,7 @@ describe('DiscoveryRoute', () => {
 
 		it('should NOT resume canvas when document becomes visible but in search mode', () => {
 			sut.attached()
-			sut.isSearchMode = true
+			sut.search.isSearchMode = true
 
 			Object.defineProperty(document, 'hidden', {
 				value: false,
@@ -662,6 +686,11 @@ describe('DiscoveryRoute', () => {
 				[],
 			)
 
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+				cb(0)
+				return 0
+			})
+
 			await sut.onFollowFromSearch(makeBubble('a1', 'A'))
 			await sut.onFollowFromSearch(makeBubble('a2', 'B'))
 
@@ -691,8 +720,8 @@ describe('DiscoveryRoute', () => {
 				{ artistId: 'a2', name: 'A2' },
 				{ artistId: 'a3', name: 'A3' },
 			]
-			sut.completedSearchCount = 3
-			sut.concertGroupCount = 0
+			sut.concertTracker.completedSearchCount = 3
+			sut.concertTracker.concertGroupCount = 0
 
 			expect(sut.showDashboardCoachMark).toBe(false)
 		})
@@ -704,8 +733,8 @@ describe('DiscoveryRoute', () => {
 				{ artistId: 'a2', name: 'A2' },
 				{ artistId: 'a3', name: 'A3' },
 			]
-			sut.completedSearchCount = 3
-			sut.concertGroupCount = 2
+			sut.concertTracker.completedSearchCount = 3
+			sut.concertTracker.concertGroupCount = 2
 
 			expect(sut.showDashboardCoachMark).toBe(true)
 		})
