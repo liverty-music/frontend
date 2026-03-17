@@ -85,6 +85,10 @@ describe('EventDetailSheet', () => {
 			value: 400,
 			writable: true,
 		})
+		Object.defineProperty(mockScrollWrapper, 'scrollHeight', {
+			value: 800,
+			writable: true,
+		})
 		;(sut as any).scrollWrapper = mockScrollWrapper
 	})
 
@@ -154,11 +158,11 @@ describe('EventDetailSheet', () => {
 			)
 		})
 
-		it('should reset scroll position on open', () => {
-			;(mockScrollWrapper as any).scrollTop = 100
+		it('should scroll to card page on open', () => {
+			;(mockScrollWrapper as any).scrollTop = 0
 			sut.open(makeEvent())
 
-			expect(mockScrollWrapper.scrollTop).toBe(0)
+			expect(mockScrollWrapper.scrollTop).toBe(mockScrollWrapper.scrollHeight)
 		})
 
 		it('should close and replace history state', () => {
@@ -173,20 +177,21 @@ describe('EventDetailSheet', () => {
 	})
 
 	describe('scroll snap dismiss', () => {
-		it('should close when snapped to dismiss zone (scrollTop > 0)', () => {
+		it('should close when swiped down to dismiss zone (scrollTop < maxScroll)', () => {
 			sut.open(makeEvent())
 
-			// With mandatory snap, any non-zero scrollTop means dismiss zone
-			const mockTarget = { scrollTop: 1, clientHeight: 400 }
+			// Dismiss zone is at scrollTop=0, card is at scrollTop=400 (scrollHeight - clientHeight)
+			const mockTarget = { scrollTop: 0, scrollHeight: 800, clientHeight: 400 }
 			sut.onScrollEnd({ target: mockTarget } as any)
 
 			expect(sut.isOpen).toBe(false)
 		})
 
-		it('should not close when snapped back to content (scrollTop === 0)', () => {
+		it('should not close when snapped back to card page (scrollTop === maxScroll)', () => {
 			sut.open(makeEvent())
 
-			const mockTarget = { scrollTop: 0, clientHeight: 400 }
+			// Card page: scrollTop equals scrollHeight - clientHeight
+			const mockTarget = { scrollTop: 400, scrollHeight: 800, clientHeight: 400 }
 			sut.onScrollEnd({ target: mockTarget } as any)
 
 			expect(sut.isOpen).toBe(true)

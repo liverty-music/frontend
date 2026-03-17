@@ -81,11 +81,12 @@ export class EventDetailSheet {
 		// auto otherwise (free light dismiss: Escape, click-outside, Android back)
 		this.sheetElement.popover = this.isDismissable ? 'auto' : 'manual'
 
+		this.sheetElement.style.setProperty('--_backdrop-opacity', '1')
 		this.sheetElement.showPopover()
 		this.sheetElement.focus()
 
-		// Reset scroll position so sheet starts at the content snap point
-		this.scrollWrapper.scrollTop = 0
+		// Scroll to the card page (page 2); dismiss zone sits above at scrollTop=0
+		this.scrollWrapper.scrollTop = this.scrollWrapper.scrollHeight
 
 		window.addEventListener('popstate', this.onPopstate)
 		this.sheetElement.addEventListener('toggle', this.onToggle)
@@ -95,6 +96,8 @@ export class EventDetailSheet {
 
 	public close(): void {
 		this.isOpen = false
+
+		this.sheetElement.style.removeProperty('--_backdrop-opacity')
 
 		try {
 			this.sheetElement.hidePopover()
@@ -125,14 +128,28 @@ export class EventDetailSheet {
 		this.sheetElement.removeEventListener('toggle', this.onToggle)
 	}
 
-	public onSheetClick(e: Event): void {
-		e.stopPropagation()
+	/** Click on the transparent area above the card — scroll to dismiss zone for unified fade-out */
+	public onBackdropClick(): void {
+		if (this.isDismissable) {
+			this.scrollWrapper.scrollTo({ top: 0, behavior: 'smooth' })
+		}
 	}
 
-	/** CSS scroll snap dismiss: close when scrolled past the dismiss zone */
+	/** Fade backdrop in real-time as the user swipes toward the dismiss zone */
+	public onScroll(e: Event): void {
+		if (!this.isOpen) return
+		const el = e.target as HTMLElement
+		const maxScroll = el.scrollHeight - el.clientHeight
+		if (maxScroll <= 0) return
+		const progress = el.scrollTop / maxScroll
+		this.sheetElement.style.setProperty('--_backdrop-opacity', String(progress))
+	}
+
+	/** CSS scroll snap dismiss: close when swiped down to the dismiss zone */
 	public onScrollEnd(e: Event): void {
 		const el = e.target as HTMLElement
-		if (el.scrollTop > 0) {
+		const maxScroll = el.scrollHeight - el.clientHeight
+		if (maxScroll > 0 && el.scrollTop < maxScroll) {
 			this.close()
 		}
 	}

@@ -9,12 +9,18 @@
 			--_bg-hover: oklch(100% 0 0deg / 5%);
 		}
 
-		.event-detail-sheet {
+		dialog.event-detail-sheet {
 			position: fixed;
-			inset: auto 0 0;
+			inset: 0;
+			translate: 0 0;
 
-			inline-size: 100%;
-			max-inline-size: 100%;
+			overflow: visible;
+			display: block;
+
+			inline-size: 100vi;
+			max-inline-size: none;
+			block-size: 100dvh;
+			max-block-size: none;
 			margin: 0;
 			padding: 0;
 			border: none;
@@ -39,8 +45,9 @@
 			}
 		}
 
-		/* Native ::backdrop visual layer */
-		.event-detail-sheet:popover-open::backdrop {
+		/* Native ::backdrop visual layer — opacity driven by --_dismiss-progress custom property */
+		dialog.event-detail-sheet:popover-open::backdrop {
+			opacity: var(--_backdrop-opacity, 1);
 			background: var(--_backdrop-bg);
 			backdrop-filter: blur(4px);
 			transition:
@@ -53,38 +60,51 @@
 			}
 		}
 
-		/* Scroll snap container for native pull-to-dismiss */
+		/* Fullscreen scroll snap container for native pull-to-dismiss */
 		.sheet-scroll {
+			scrollbar-width: none;
 			scroll-snap-type: y mandatory;
+
 			overflow-y: auto;
-			overscroll-behavior: contain;
-			max-block-size: 70vh;
+			overscroll-behavior-y: none;
+
+			inline-size: 100%;
+			block-size: 100%;
+		}
+
+		/* Each snap page fills one viewport — gives the snap engine two unambiguous targets */
+		.snap-page {
+			scroll-snap-align: start;
+			scroll-snap-stop: always;
+			inline-size: 100%;
+			block-size: 100dvh;
+		}
+
+		/* Page 1: flex-end pins the card to the viewport bottom */
+		.sheet-page {
+			display: flex;
+			flex-direction: column;
+			justify-content: flex-end;
 		}
 
 		.sheet-body {
-			scroll-snap-align: start;
+			overflow-y: auto;
+
+			max-block-size: 90dvh;
 			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+
 			background: var(--color-surface-raised);
 			box-shadow: var(--shadow-sheet);
 		}
 
-		/* Invisible zone below sheet — scrolling here triggers dismiss */
-		.dismiss-zone {
-			scroll-snap-align: end;
-			block-size: 30vh;
-		}
-
-		/* Handle bar */
-		.sheet-handle {
-			display: flex;
-			justify-content: center;
-			padding-block: var(--space-2xs) var(--space-3xs);
-		}
-
+		/* Handle bar — self-centering with generous top margin for drag area */
 		.sheet-handle-bar {
 			inline-size: 2.5rem;
 			block-size: 0.25rem;
+			margin-block: var(--space-s) var(--space-3xs);
+			margin-inline: auto;
 			border-radius: var(--radius-full);
+
 			background: var(--_handle-bg);
 		}
 
@@ -160,10 +180,6 @@
 		.detail-icon {
 			margin-block-start: var(--space-3xs);
 			color: var(--color-text-muted);
-		}
-
-		.detail-venue {
-			font-style: normal;
 		}
 
 		.detail-primary {
