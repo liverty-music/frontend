@@ -8,7 +8,7 @@ import type {
 	HypeLevel,
 	LaneType,
 } from '../entities/concert'
-import type { FollowedArtist } from '../entities/follow'
+import type { FollowedArtist, LogoColorProfile } from '../entities/follow'
 import { IConcertService } from './concert-service'
 import { IFollowServiceClient } from './follow-service-client'
 
@@ -69,6 +69,7 @@ export class DashboardService {
 					isHypeMatched(hypeLevel, lane),
 					artist?.logoUrl,
 					artist?.backgroundUrl,
+					artist?.logoColorProfile,
 				)
 				return event ? [event] : []
 			})
@@ -113,6 +114,7 @@ function protoConcertToEntity(
 	matched: boolean,
 	logoUrl?: string,
 	backgroundUrl?: string,
+	logoColorProfile?: LogoColorProfile,
 ): Concert | null {
 	const localDate = concert.localDate?.value
 	if (!localDate) return null
@@ -147,6 +149,7 @@ function protoConcertToEntity(
 		matched,
 		logoUrl,
 		backgroundUrl,
+		logoColorProfile,
 	}
 }
 

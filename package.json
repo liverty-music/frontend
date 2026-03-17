@@ -11,7 +11,7 @@
 		"@aurelia/i18n": "^2.0.0-rc.1",
 		"@aurelia/router": "^2.0.0-rc.1",
 		"@aurelia/state": "^2.0.0-rc.1",
-		"@buf/liverty-music_schema.bufbuild_es": "^1.10.0-20260316093621-1b6c95a9fe65.1",
+		"@buf/liverty-music_schema.bufbuild_es": "^1.10.0-20260317152751-2246cc3a8863.1",
 		"@buf/liverty-music_schema.connectrpc_es": "^1.6.1-20260316093621-1b6c95a9fe65.2",
 		"@bufbuild/protobuf": "^1.10.1",
 		"@connectrpc/connect": "^1.7.0",

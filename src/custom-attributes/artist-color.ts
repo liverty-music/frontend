@@ -1,40 +1,56 @@
 import { bindable, customAttribute, INode, resolve } from 'aurelia'
-import { artistHue } from '../components/live-highway/color-generator'
+import { artistHueFromColorProfile } from '../components/live-highway/color-generator'
+import type { LogoColorProfile } from '../entities/follow'
 
 /**
  * Bridges JS→CSS for artist-specific coloring.
- * Computes a deterministic hue from the artist name and sets --artist-hue
- * as a CSS custom property on the host element. CSS constructs the full
- * color via hsl(var(--artist-hue), 65%, 60%) and applies it per hype tier.
+ * Computes an optimal hue from the logo color profile (if available) or
+ * a deterministic hash of the artist name, then sets --artist-hue and
+ * --artist-bg-lightness as CSS custom properties on the host element.
  *
- * Usage: <div artist-color.bind="event.artistName">
+ * Usage: <div artist-color="event.artistName" profile.bind="event.logoColorProfile">
  */
 @customAttribute('artist-color')
 export class ArtistColorCustomAttribute {
 	@bindable() public value = ''
+	@bindable() public profile?: LogoColorProfile
 
 	private readonly element: HTMLElement = resolve(INode) as HTMLElement
 
 	public bound(): void {
-		this.applyHue()
+		this.apply()
 	}
 
 	public valueChanged(): void {
-		this.applyHue()
+		this.apply()
+	}
+
+	public profileChanged(): void {
+		this.apply()
 	}
 
 	public detaching(): void {
 		this.element.style.removeProperty('--artist-hue')
+		this.element.style.removeProperty('--artist-bg-lightness')
 	}
 
-	private applyHue(): void {
-		if (this.value) {
+	private apply(): void {
+		if (!this.value) {
+			this.element.style.removeProperty('--artist-hue')
+			this.element.style.removeProperty('--artist-bg-lightness')
+			return
+		}
+
+		const hue = artistHueFromColorProfile(this.profile, this.value)
+		this.element.style.setProperty('--artist-hue', String(hue))
+
+		if (this.profile) {
 			this.element.style.setProperty(
-				'--artist-hue',
-				String(artistHue(this.value)),
+				'--artist-bg-lightness',
+				String(this.profile.dominantLightness),
 			)
 		} else {
-			this.element.style.removeProperty('--artist-hue')
+			this.element.style.removeProperty('--artist-bg-lightness')
 		}
 	}
 }

@@ -82,12 +82,20 @@ export class FollowServiceClient {
 		const response = await this.client.listFollowed({}, { signal })
 		return response.artists.map((fa) => {
 			const fanart = fa.artist?.fanart
+			const lcp = fanart?.logoColorProfile
 			return {
 				id: fa.artist?.id?.value ?? '',
 				name: fa.artist?.name?.value ?? '',
 				hype: hypeTypeToHype(fa.hype),
 				logoUrl: fanart?.hdMusicLogo?.value ?? fanart?.musicLogo?.value,
 				backgroundUrl: fanart?.artistBackground?.value,
+				logoColorProfile: lcp
+					? {
+							dominantHue: lcp.dominantHue ?? undefined,
+							dominantLightness: lcp.dominantLightness,
+							isChromatic: lcp.isChromatic,
+						}
+					: undefined,
 			}
 		})
 	}

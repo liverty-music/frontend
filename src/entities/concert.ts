@@ -24,6 +24,7 @@ export interface Concert {
 	matched: boolean
 	logoUrl?: string
 	backgroundUrl?: string
+	logoColorProfile?: import('./follow').LogoColorProfile
 }
 
 /** A group of concerts for a single date, split by proximity lane. */
