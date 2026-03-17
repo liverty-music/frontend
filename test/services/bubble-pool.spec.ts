@@ -104,6 +104,16 @@ describe('BubblePool', () => {
 			expect(evicted).toHaveLength(0)
 			expect(pool.availableBubbles).toHaveLength(1)
 		})
+
+		it('should reassign array reference for Aurelia observation', () => {
+			const pool = new BubblePool()
+			pool.add([makeBubble('a1', 'One'), makeBubble('a2', 'Two')])
+			const before = pool.availableBubbles
+
+			pool.evictOldest(1)
+
+			expect(pool.availableBubbles).not.toBe(before)
+		})
 	})
 
 	describe('replace', () => {

@@ -59,7 +59,9 @@ export class BubblePool {
 	 */
 	public evictOldest(count: number): ArtistBubble[] {
 		if (count <= 0) return []
-		return this.availableBubbles.splice(0, count)
+		const evicted = this.availableBubbles.slice(0, count)
+		this.availableBubbles = this.availableBubbles.slice(count)
+		return evicted
 	}
 
 	/**

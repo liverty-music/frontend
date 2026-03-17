@@ -181,6 +181,7 @@
 		"retryFailed": "Still unable to load artists. Please try again later.",
 		"followFailed": "Failed to follow {{name}}. Please try again.",
 		"hasUpcomingEvents": "{{name}} has upcoming live events!",
+		"similarArtistsUnavailable": "No more similar artists available for {{name}}",
 		"similarArtistsError": "Couldn't find similar artists for {{name}}",
 		"srStatus": "Artist discovery: {{available}} artists available, {{followed}} followed.",
 		"searchPlaceholder": "Search artists...",

@@ -3,7 +3,7 @@
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
 
 
-  <main class="[ discovery-layout ]" data-search-mode.bind="isSearchMode">
+  <main class="[ discovery-layout ]" data-search-mode.bind="search.isSearchMode">
 
     <!-- Search bar -->
     <search class="search-bar">
@@ -12,11 +12,11 @@
         type="text"
         class="search-input"
         placeholder.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
-        value.bind="searchQuery"
+        value.bind="search.searchQuery"
         aria-label.bind="$this.i18n?.tr('discovery.searchPlaceholder') ?? ''"
       >
       <button
-        if.bind="searchQuery"
+        if.bind="search.searchQuery"
         class="clear-button"
         click.trigger="clearSearch()"
         aria-label.bind="$this.i18n?.tr('discovery.clearSearch') ?? ''"
@@ -28,11 +28,11 @@
     <!-- Genre chips (hidden during search) -->
     <div class="genre-chips">
       <button
-        repeat.for="tag of genreTags; key.bind: tag"
-        class="genre-chip" data-active.bind="activeTag === tag"
+        repeat.for="tag of genre.genreTags; key.bind: tag"
+        class="genre-chip" data-active.bind="genre.activeTag === tag"
         click.trigger="onGenreSelected(tag)"
-        disabled.bind="isLoadingTag"
-        aria-pressed.bind="activeTag === tag"
+        disabled.bind="genre.isLoadingTag"
+        aria-pressed.bind="genre.activeTag === tag"
       >
         ${tag}
       </button>
@@ -64,15 +64,15 @@
 
     <!-- Search results (shown during search) -->
     <div class="search-results">
-      <div if.bind="isSearching" class="search-status" t="discovery.searching">
+      <div if.bind="search.isSearching" class="search-status" t="discovery.searching">
       </div>
 
-      <div if.bind="!isSearching && isSearchMode && searchResults.length === 0 && searchQuery.trim().length > 0" class="search-status" t="discovery.noResults">
+      <div if.bind="!search.isSearching && search.isSearchMode && search.searchResults.length === 0 && search.searchQuery.trim().length > 0" class="search-status" t="discovery.noResults">
       </div>
 
       <ul class="results-list" role="list">
         <li
-          repeat.for="artist of searchResults; key.bind: artist.id"
+          repeat.for="artist of search.searchResults; key.bind: artist.id"
           class="result-item"
           data-followed.bind="followedIds.has(artist.id)"
           click.trigger="followedIds.has(artist.id) ? undefined : onFollowFromSearch(artist)"

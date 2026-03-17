@@ -181,6 +181,7 @@
 		"retryFailed": "読み込みに失敗しました。後ほど再度お試しください。",
 		"followFailed": "{{name}}のフォローに失敗しました。もう一度お試しください。",
 		"hasUpcomingEvents": "{{name}}のライブが近日開催予定です！",
+		"similarArtistsUnavailable": "{{name}}の類似アーティストはこれ以上ありません",
 		"similarArtistsError": "{{name}}の類似アーティストが見つかりませんでした",
 		"srStatus": "アーティスト探索: {{available}}アーティスト表示中、{{followed}}フォロー済み",
 		"searchPlaceholder": "アーティストを検索...",
