@@ -93,7 +93,7 @@
 			justify-content: space-between;
 		}
 
-		header {
+		header.ticket-info {
 			flex: 1;
 			min-inline-size: 0;
 		}

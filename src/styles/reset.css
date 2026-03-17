@@ -38,6 +38,7 @@
 	}
 
 	:where(fieldset) {
+		min-inline-size: 0;
 		border: none;
 	}
 
