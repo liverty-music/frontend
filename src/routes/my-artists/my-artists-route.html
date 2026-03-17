@@ -5,14 +5,6 @@
 
 <page-header if.bind="!isLoading && artists.length > 0" title-key="nav.myArtists">
   <span class="artist-count">(${artists.length})</span>
-  <button
-    click.trigger="toggleView()"
-    class="toggle-view-btn"
-    aria-label="Toggle view"
-  >
-    <svg-icon if.bind="viewMode === 'grid'" name="list" size="sm"></svg-icon>
-    <svg-icon if.bind="viewMode === 'list'" name="grid" size="sm"></svg-icon>
-  </button>
 </page-header>
 
 <main>
@@ -43,8 +35,8 @@
     <span class="hype-legend-item">🔥🔥🔥<small>どこでも！</small></span>
   </header>
 
-  <!-- Artist list view -->
-  <ul if.bind="!isLoading && artists.length > 0 && viewMode === 'list'" class="artist-list" role="list">
+  <!-- Artist list -->
+  <ul if.bind="!isLoading && artists.length > 0" class="artist-list" role="list">
     <li
       repeat.for="artist of artists; key.bind: artist.id"
       class="artist-row"
@@ -65,7 +57,7 @@
         <hype-inline-slider
           artist-id.bind="artist.id"
           hype-color.bind="artist.color"
-          hype.bind="artist.hype"
+          hype.bind="hypeToNumber(artist.hype)"
           is-authenticated.bind="isAuthenticated"
           hype-changed.trigger="onHypeChanged($event)"
           hype-signup-prompt.trigger="onHypeSignupPrompt($event)">
@@ -78,34 +70,6 @@
       </div>
     </li>
   </ul>
-
-  <!-- Artist grid (festival) view -->
-  <ul if.bind="!isLoading && artists.length > 0 && viewMode === 'grid'" class="artist-grid" role="list">
-    <li
-      repeat.for="artist of artists; key.bind: artist.id"
-      touchstart.trigger="onGridTouchStart(artist)"
-      touchend.trigger="onGridTouchEnd()"
-      touchcancel.trigger="onGridTouchEnd()"
-      click.trigger="onGridLongPress(artist)"
-      class="grid-tile" data-span.bind="tileSpan(artist)"
-      tile-color.bind="artist.color"
-      data-thumb.bind="artist.thumbUrl"
-      css="--_tile-thumb: ${artist.thumbUrl ? 'url(&quot;' + artist.thumbUrl + '&quot;)' : 'none'}"
-    >
-      <img
-        if.bind="artist.thumbUrl"
-        src.bind="artist.thumbUrl"
-        alt=""
-        error.trigger="onThumbError(artist)"
-        class="visually-hidden"
-        aria-hidden="true"
-      />
-      <div class="grid-tile-content">
-        <div class="grid-tile-name">${artist.name}</div>
-        <div class="grid-tile-hype">${hypeIcon(artist)}</div>
-      </div>
-    </li>
-  </ul>
 </main>
 
 <!-- Signup prompt banner -->
@@ -114,39 +78,6 @@
   message="&#x1F514; 通知を有効にするには"
   signup-requested.trigger="onSignupRequested()">
 </signup-prompt-banner>
-
-<!-- Grid context menu dialog -->
-<dialog
-  ref="contextMenuDialog"
-  click.trigger="onContextMenuDialogClick($event)"
-  aria-label="Artist options"
-  class="bottom-sheet-dialog"
->
-  <div if.bind="contextMenuArtist" class="sheet-body">
-    <div class="sheet-artist-name">${contextMenuArtist.name}</div>
-    <div class="sheet-options">
-      <button
-        repeat.for="level of hypeLevels; key.bind: level"
-        click.trigger="contextMenuSetLevel(level)"
-        class="sheet-option-btn"
-        data-active.bind="contextMenuArtist.hype === level"
-      >
-        <span class="sheet-option-icon">${hypeTiers[level].icon}</span>
-        <span class="sheet-option-label">${trHypeLabel(level)}</span>
-      </button>
-      <div class="sheet-divider"></div>
-      <button
-        click.trigger="contextMenuUnfollow()"
-        class="sheet-unfollow-btn"
-      >
-        <span class="sheet-option-icon">
-          <svg-icon name="trash"></svg-icon>
-        </span>
-        <span t="myArtists.unfollow" class="sheet-option-label"></span>
-      </button>
-    </div>
-  </div>
-</dialog>
 
 <!-- Notification dialog (outside main for proper top-layer stacking) -->
 <hype-notification-dialog
