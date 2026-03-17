@@ -90,7 +90,7 @@
       class="grid-tile" data-span.bind="tileSpan(artist)"
       tile-color.bind="artist.color"
       data-thumb.bind="artist.thumbUrl"
-      css="--_tile-thumb: ${artist.thumbUrl ? 'url(' + artist.thumbUrl + ')' : 'none'}"
+      css="--_tile-thumb: ${artist.thumbUrl ? 'url(&quot;' + artist.thumbUrl + '&quot;)' : 'none'}"
     >
       <img
         if.bind="artist.thumbUrl"
