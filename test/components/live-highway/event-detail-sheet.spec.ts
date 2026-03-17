@@ -191,7 +191,11 @@ describe('EventDetailSheet', () => {
 			sut.open(makeEvent())
 
 			// Card page: scrollTop equals scrollHeight - clientHeight
-			const mockTarget = { scrollTop: 400, scrollHeight: 800, clientHeight: 400 }
+			const mockTarget = {
+				scrollTop: 400,
+				scrollHeight: 800,
+				clientHeight: 400,
+			}
 			sut.onScrollEnd({ target: mockTarget } as any)
 
 			expect(sut.isOpen).toBe(true)
