@@ -26,7 +26,7 @@
     </search>
 
     <!-- Genre chips (hidden during search) -->
-    <div class="genre-chips">
+    <fieldset class="genre-chips">
       <button
         repeat.for="tag of genre.genreTags; key.bind: tag"
         class="genre-chip" data-active.bind="genre.activeTag === tag"
@@ -36,17 +36,17 @@
       >
         ${tag}
       </button>
-    </div>
+    </fieldset>
 
     <!-- Onboarding popover guide (shown once on entry) -->
-    <div
+    <dialog
       if.bind="isOnboarding"
       class="onboarding-guide"
       popover="auto"
       ref="onboardingGuide"
     >
       <span t="discovery.popoverGuide"></span>
-    </div>
+    </dialog>
 
     <!-- Bubble UI (hidden during search) -->
     <div class="bubble-area">
@@ -63,12 +63,12 @@
     </div>
 
     <!-- Search results (shown during search) -->
-    <div class="search-results">
-      <div if.bind="search.isSearching" class="search-status" t="discovery.searching">
-      </div>
+    <section class="search-results">
+      <p if.bind="search.isSearching" class="search-status" t="discovery.searching">
+      </p>
 
-      <div if.bind="!search.isSearching && search.isSearchMode && search.searchResults.length === 0 && search.searchQuery.trim().length > 0" class="search-status" t="discovery.noResults">
-      </div>
+      <p if.bind="!search.isSearching && search.isSearchMode && search.searchResults.length === 0 && search.searchQuery.trim().length > 0" class="search-status" t="discovery.noResults">
+      </p>
 
       <ul class="results-list" role="list">
         <li
@@ -87,14 +87,14 @@
           <svg-icon if.bind="followedIds.has(artist.id)" name="check" class="followed-check"></svg-icon>
         </li>
       </ul>
-    </div>
+    </section>
 
     <!-- Screen reader status -->
-    <div
+    <output
       role="status"
       aria-live="polite"
       class="sr-only"
       textcontent.bind="srStatusText"
-    ></div>
+    ></output>
   </main>
 </template>

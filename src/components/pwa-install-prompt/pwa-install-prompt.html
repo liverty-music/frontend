@@ -1,5 +1,5 @@
 <template>
-  <div ref="popoverEl" popover="manual"
+  <dialog ref="popoverEl" popover="manual"
     class="[ prompt-popover ]" data-animation.bind="animationState"
     data-testid="pwa-install-banner">
     <div class="prompt-row">
@@ -11,7 +11,7 @@
       <div class="prompt-body">
         <p t="pwa.title" class="prompt-title"></p>
         <p t="pwa.description" class="prompt-desc"></p>
-        <div class="prompt-actions">
+        <footer class="prompt-actions">
           <button click.trigger="handleDismiss()"
             t="pwa.notNow"
             class="prompt-btn-secondary"
@@ -22,8 +22,8 @@
             class="prompt-btn-primary"
             data-testid="pwa-install-button">
           </button>
-        </div>
+        </footer>
       </div>
     </div>
-  </div>
+  </dialog>
 </template>
