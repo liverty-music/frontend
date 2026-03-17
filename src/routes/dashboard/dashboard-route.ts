@@ -1,7 +1,7 @@
 import { I18N } from '@aurelia/i18n'
-import { artistHue } from '../../components/live-highway/color-generator'
 import { IRouter } from '@aurelia/router'
 import { ILogger, INode, resolve } from 'aurelia'
+import { artistHue } from '../../components/live-highway/color-generator'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
 	DateGroup,
