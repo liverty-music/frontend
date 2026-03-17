@@ -143,6 +143,7 @@ describe('BubblePool', () => {
 			pool.markFollowed('a1')
 
 			expect(pool.isFollowed('a1')).toBe(true)
+			expect(pool.followedIds.has('a1')).toBe(true)
 			expect(pool.availableBubbles).toHaveLength(1)
 			expect(pool.availableBubbles[0].id).toBe('a2')
 		})
@@ -154,6 +155,7 @@ describe('BubblePool', () => {
 			pool.unmarkFollowed('a1')
 
 			expect(pool.isFollowed('a1')).toBe(false)
+			expect(pool.followedIds.has('a1')).toBe(false)
 		})
 
 		it('should be a no-op when marking already followed artist', () => {

@@ -15,7 +15,7 @@ export class BubblePool {
 	private readonly seenArtistNames = new Set<string>()
 	private readonly seenArtistIds = new Set<string>()
 	private readonly seenArtistMbids = new Set<string>()
-	private readonly followedIds = new Set<string>()
+	public readonly followedIds = new Set<string>()
 
 	public get maxBubbles(): number {
 		return BubblePool.MAX_BUBBLES
