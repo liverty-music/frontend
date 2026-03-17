@@ -112,8 +112,10 @@ describe('DiscoveryRoute', () => {
 			resume: vi.fn(),
 			reloadBubbles: vi.fn(),
 			spawnBubblesAt: vi.fn(),
+			spawnAndAbsorb: vi.fn(),
 			fadeOutBubbles: vi.fn(),
 			bubbleCount: 0,
+			canvasRect: { width: 400, height: 600 },
 		} as any
 	})
 
@@ -261,6 +263,62 @@ describe('DiscoveryRoute', () => {
 
 			expect(mockFollowClient.follow).toHaveBeenCalledTimes(1)
 		})
+
+		it('should stay in search mode on follow failure', async () => {
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
+				new Error('network error'),
+			)
+			sut.isSearchMode = true
+			sut.searchQuery = 'test'
+
+			await sut.onFollowFromSearch(makeBubble('a1', 'Fail'))
+
+			expect(sut.isSearchMode).toBe(true)
+			expect(sut.searchQuery).toBe('test')
+			expect(sut.dnaOrbCanvas.spawnAndAbsorb).not.toHaveBeenCalled()
+			const hasErrorToast = mockEa.published.some(
+				(t: Toast) => t.severity === 'error',
+			)
+			expect(hasErrorToast).toBe(true)
+		})
+
+		it('should exit search mode and trigger spawnAndAbsorb on success', async () => {
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
+			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+			sut.isSearchMode = true
+			sut.searchQuery = 'query'
+			sut.searchResults = [makeBubble('a1', 'Artist')]
+
+			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
+
+			expect(sut.isSearchMode).toBe(false)
+			expect(sut.searchQuery).toBe('')
+			expect(sut.searchResults).toHaveLength(0)
+			expect(sut.dnaOrbCanvas.spawnAndAbsorb).toHaveBeenCalledTimes(1)
+		})
+
+		it('should call spawnAndAbsorb with center-x and 17% height position', async () => {
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
+				undefined,
+			)
+			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+
+			const artist = makeBubble('a1', 'Artist')
+			await sut.onFollowFromSearch(artist)
+
+			// canvasRect mock: { width: 400, height: 600 }
+			expect(sut.dnaOrbCanvas.spawnAndAbsorb).toHaveBeenCalledWith(
+				artist,
+				200, // 400 / 2
+				expect.closeTo(102, 0), // 600 * 0.17
+			)
+		})
 	})
 
 	describe('onArtistSelected', () => {
@@ -362,7 +420,7 @@ describe('DiscoveryRoute', () => {
 
 			// followedArtists should be empty after rollback
 			expect(sut.followedCount).toBe(0)
-			expect(sut.isArtistFollowed('a1')).toBe(false)
+			expect(sut.followedIds.has('a1')).toBe(false)
 		})
 
 		it('should re-spawn bubble at original position on follow failure', async () => {

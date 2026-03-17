@@ -50,7 +50,10 @@ export class DiscoveryRoute {
 
 	// State exposed to template
 	public followedArtists: ArtistBubble[] = []
-	public poolFollowedIds: ReadonlySet<string> = new Set()
+
+	public get followedIds(): ReadonlySet<string> {
+		return this.pool.followedIds
+	}
 
 	public readonly genreTags = GENRE_TAGS
 	public activeTag = ''
@@ -282,7 +285,7 @@ export class DiscoveryRoute {
 		}>,
 	): Promise<void> {
 		const { artist, position } = event.detail
-		if (this.pool.isFollowed(artist.id)) return
+		if (this.followedIds.has(artist.id)) return
 		this.logger.info('Artist selected from bubbles', {
 			artist: artist.name,
 		})
@@ -376,7 +379,7 @@ export class DiscoveryRoute {
 	}
 
 	public async onFollowFromSearch(artist: ArtistBubble): Promise<void> {
-		if (this.pool.isFollowed(artist.id)) return
+		if (this.followedIds.has(artist.id)) return
 
 		this.logger.info('Following artist from search', {
 			artist: artist.name,
@@ -399,11 +402,16 @@ export class DiscoveryRoute {
 		}
 		if (this.abortController.signal.aborted) return
 
-		this.checkLiveEvents(artist)
-	}
+		// Transition to bubble view and play absorption animation
+		this.clearSearch()
+		this.exitSearchMode()
 
-	public isArtistFollowed(artistId: string): boolean {
-		return this.pool.isFollowed(artistId)
+		const rect = this.dnaOrbCanvas.canvasRect
+		const spawnX = rect.width / 2
+		const spawnY = rect.height * 0.17
+		this.dnaOrbCanvas.spawnAndAbsorb(artist, spawnX, spawnY)
+
+		this.checkLiveEvents(artist)
 	}
 
 	public onCoachMarkTap(): void {
@@ -565,13 +573,12 @@ export class DiscoveryRoute {
 		artist: ArtistBubble,
 		spawnPosition?: { x: number; y: number },
 	): Promise<void> {
-		if (this.pool.isFollowed(artist.id)) return
+		if (this.followedIds.has(artist.id)) return
 		this.logger.info('Following artist', { artist: artist.name })
 
 		// Optimistic UI update
 		this.pool.markFollowed(artist.id)
 		this.followedArtists = [...this.followedArtists, artist]
-		this.poolFollowedIds = new Set(this.poolFollowedIds).add(artist.id)
 
 		try {
 			await this.followClient.follow(artist.id, artist.name)
@@ -595,9 +602,6 @@ export class DiscoveryRoute {
 				this.followedArtists = this.followedArtists.filter(
 					(b) => b.id !== artist.id,
 				)
-				const ids = new Set(this.poolFollowedIds)
-				ids.delete(artist.id)
-				this.poolFollowedIds = ids
 			})
 
 			// Re-render the bubble on canvas if it was removed during interaction
