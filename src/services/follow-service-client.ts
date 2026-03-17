@@ -3,20 +3,12 @@ import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/en
 import { FollowService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/follow/v1/follow_service_connect.js'
 import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import type { FollowedArtist } from '../entities/follow'
 import { resolveStore } from '../state/store-interface'
 import type { ArtistBubble } from './artist-service-client'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
 import { IOnboardingService } from './onboarding-service'
-
-export interface FollowedArtistInfo {
-	id: string
-	name: string
-	hype: HypeType
-	logoUrl?: string
-	backgroundUrl?: string
-	thumbUrl?: string
-}
 
 export const IFollowServiceClient = DI.createInterface<IFollowServiceClient>(
 	'IFollowServiceClient',
@@ -79,14 +71,12 @@ export class FollowServiceClient {
 	 * List followed artists. During onboarding, reads from LocalArtistClient.
 	 * Otherwise calls the backend ListFollowed RPC.
 	 */
-	public async listFollowed(
-		signal?: AbortSignal,
-	): Promise<FollowedArtistInfo[]> {
+	public async listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
 		if (this.onboarding.isOnboarding) {
 			return this.store.getState().guest.follows.map((f) => ({
 				id: f.artistId,
 				name: f.name,
-				hype: HypeType.AWAY,
+				hype: 'away' as const,
 			}))
 		}
 		const response = await this.client.listFollowed({}, { signal })
@@ -95,10 +85,9 @@ export class FollowServiceClient {
 			return {
 				id: fa.artist?.id?.value ?? '',
 				name: fa.artist?.name?.value ?? '',
-				hype: fa.hype ?? HypeType.AWAY,
+				hype: hypeTypeToHype(fa.hype),
 				logoUrl: fanart?.hdMusicLogo?.value ?? fanart?.musicLogo?.value,
 				backgroundUrl: fanart?.artistBackground?.value,
-				thumbUrl: fanart?.artistThumb?.value,
 			}
 		})
 	}
@@ -114,6 +103,21 @@ export class FollowServiceClient {
 		return resp.artists.flatMap((fa) =>
 			fa.artist ? [toBubble(fa.artist)] : [],
 		)
+	}
+}
+
+function hypeTypeToHype(hype: HypeType | undefined): FollowedArtist['hype'] {
+	switch (hype) {
+		case HypeType.WATCH:
+			return 'watch'
+		case HypeType.HOME:
+			return 'home'
+		case HypeType.NEARBY:
+			return 'nearby'
+		case HypeType.AWAY:
+			return 'away'
+		default:
+			return 'watch'
 	}
 }
 

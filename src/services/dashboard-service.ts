@@ -1,14 +1,14 @@
-import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
+import type { Concert as ProtoConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import type { ProximityGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
+import { displayName } from '../constants/iso3166'
 import type {
+	Concert,
 	DateGroup,
 	HypeLevel,
 	LaneType,
-	LiveEvent,
-} from '../components/live-highway/live-event'
-import { displayName } from '../constants/iso3166'
+} from '../entities/concert'
+import type { FollowedArtist } from '../entities/follow'
 import { IConcertService } from './concert-service'
 import { IFollowServiceClient } from './follow-service-client'
 
@@ -42,15 +42,7 @@ export class DashboardService {
 
 	private protoGroupToDateGroup(
 		group: ProximityGroup,
-		artistMap: Map<
-			string,
-			{
-				name: string
-				hypeLevel: HypeLevel
-				logoUrl?: string
-				backgroundUrl?: string
-			}
-		>,
+		artistMap: Map<string, FollowedArtist>,
 	): DateGroup {
 		const ld = group.date?.value
 		const jsDate = ld ? new Date(ld.year, ld.month - 1, ld.day) : new Date()
@@ -65,12 +57,12 @@ export class DashboardService {
 			weekday: 'short',
 		})
 
-		const convert = (concerts: Concert[], lane: LaneType) =>
+		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
 			concerts.flatMap((c) => {
 				const artistId = c.artistId?.value ?? ''
 				const artist = artistMap.get(artistId)
-				const hypeLevel = artist?.hypeLevel ?? 'watch'
-				const event = concertToLiveEvent(
+				const hypeLevel: HypeLevel = artist?.hype ?? 'watch'
+				const event = protoConcertToEntity(
 					c,
 					artist?.name ?? '',
 					hypeLevel,
@@ -90,51 +82,15 @@ export class DashboardService {
 		}
 	}
 
-	private async fetchFollowedArtistMap(signal?: AbortSignal): Promise<
-		Map<
-			string,
-			{
-				name: string
-				hypeLevel: HypeLevel
-				logoUrl?: string
-				backgroundUrl?: string
-			}
-		>
-	> {
+	private async fetchFollowedArtistMap(
+		signal?: AbortSignal,
+	): Promise<Map<string, FollowedArtist>> {
 		const followed = await this.followService.listFollowed(signal)
-		const map = new Map<
-			string,
-			{
-				name: string
-				hypeLevel: HypeLevel
-				logoUrl?: string
-				backgroundUrl?: string
-			}
-		>()
+		const map = new Map<string, FollowedArtist>()
 		for (const fa of followed) {
-			map.set(fa.id, {
-				name: fa.name,
-				hypeLevel: hypeTypeToLevel(fa.hype),
-				logoUrl: fa.logoUrl,
-				backgroundUrl: fa.backgroundUrl,
-			})
+			map.set(fa.id, fa)
 		}
 		return map
-	}
-}
-
-function hypeTypeToLevel(hype: HypeType): HypeLevel {
-	switch (hype) {
-		case HypeType.WATCH:
-			return 'watch'
-		case HypeType.HOME:
-			return 'home'
-		case HypeType.NEARBY:
-			return 'nearby'
-		case HypeType.AWAY:
-			return 'away'
-		default:
-			return 'watch'
 	}
 }
 
@@ -150,14 +106,14 @@ export function isHypeMatched(hype: HypeLevel, lane: LaneType): boolean {
 	return HYPE_ORDER[hype] >= LANE_ORDER[lane]
 }
 
-function concertToLiveEvent(
-	concert: Concert,
+function protoConcertToEntity(
+	concert: ProtoConcert,
 	artistName: string,
 	hypeLevel: HypeLevel,
 	matched: boolean,
 	logoUrl?: string,
 	backgroundUrl?: string,
-): LiveEvent | null {
+): Concert | null {
 	const localDate = concert.localDate?.value
 	if (!localDate) return null
 
