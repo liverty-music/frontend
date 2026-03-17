@@ -180,8 +180,19 @@
 		   UNMATCHED — faded concert poster
 		   ============================================= */
 		.event-card:not([data-matched]) {
+			/*
+			 * When --artist-bg-lightness is set (logo analysis available),
+			 * derive background lightness to ensure contrast with the logo:
+			 * - Dark logos (low lightness) → raised background (0.30)
+			 * - Light logos (high lightness) → dark background (0.15)
+			 * Falls back to the original static dim color when unavailable.
+			 */
+			--_bg-l: var(--artist-bg-lightness, 0.25);
+
 			border: 1px solid oklch(100% 0 0deg / 5%);
-			background-color: var(--artist-color-dim);
+			background-color: oklch(
+				clamp(0.12, calc(0.45 - var(--_bg-l) * 0.5), 0.3) 0.03 var(--artist-hue)
+			);
 		}
 
 		/* Noise texture overlay — aged poster grain */
