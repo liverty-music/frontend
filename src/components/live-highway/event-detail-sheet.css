@@ -120,7 +120,7 @@
 			margin-inline: calc(-1 * var(--space-m));
 		}
 
-		figure-img {
+		figure img {
 			display: block;
 			aspect-ratio: 16 / 9;
 			inline-size: 100%;
