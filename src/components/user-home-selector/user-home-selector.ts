@@ -18,7 +18,6 @@ export class UserHomeSelector {
 	public quickCities = QUICK_SELECT_CITIES
 	public selectedRegion: RegionGroup | null = null
 
-	private dialogElement?: HTMLDialogElement
 	private readonly logger = resolve(ILogger).scopeTo('UserHomeSelector')
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
@@ -30,28 +29,12 @@ export class UserHomeSelector {
 
 	public open(): void {
 		this.selectedRegion = null
-		this.dialogElement?.showModal()
 		this.isOpen = true
 	}
 
-	public close(): void {
-		this.dialogElement?.close()
+	public onSheetClosed(): void {
 		this.isOpen = false
 		this.selectedRegion = null
-	}
-
-	public handleBackdropClick(event: MouseEvent): void {
-		if (this.required) return
-		if (event.target === this.dialogElement) {
-			this.close()
-		}
-	}
-
-	public handleCancel(event: Event): void {
-		event.preventDefault()
-		if (!this.required) {
-			this.close()
-		}
 	}
 
 	public selectRegion(region: RegionGroup): void {
@@ -83,7 +66,8 @@ export class UserHomeSelector {
 			this.store.dispatch({ type: 'guest/setUserHome', code })
 		}
 
-		this.close()
+		this.isOpen = false
+		this.selectedRegion = null
 		this.onHomeSelected?.(code)
 	}
 }

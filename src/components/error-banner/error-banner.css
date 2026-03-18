@@ -8,30 +8,6 @@
 			--_primary-bg: oklch(from var(--color-brand-primary) l c h / 20%);
 		}
 
-		.error-dialog {
-			pointer-events: auto;
-
-			position: fixed;
-			inset: 0;
-
-			max-inline-size: fit-content;
-			max-block-size: fit-content;
-			margin: auto;
-			padding: var(--space-s);
-			border: none;
-
-			background: transparent;
-
-			&::backdrop {
-				background: color-mix(
-					in oklch,
-					var(--color-surface-base) 60%,
-					transparent
-				);
-				backdrop-filter: blur(4px);
-			}
-		}
-
 		.error-content {
 			inline-size: 100%;
 			max-inline-size: 28rem;

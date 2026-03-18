@@ -5,24 +5,20 @@
 <main>
   <!-- Loading state -->
   <output if.bind="isLoading" class="state-center" role="status" aria-busy="true">
-    <div class="spinner"></div>
+    <loading-spinner></loading-spinner>
     <p class="state-text">Loading tickets...</p>
   </output>
 
   <!-- Error state -->
-  <state-placeholder
-    if.bind="!isLoading && error"
-    icon="info"
-    description.bind="error"
-  ></state-placeholder>
+  <state-placeholder if.bind="!isLoading && error" icon="info">
+    <p>${error}</p>
+  </state-placeholder>
 
   <!-- Empty state -->
-  <state-placeholder
-    if.bind="!isLoading && !error && tickets.length === 0"
-    icon="ticket"
-    title="No tickets yet"
-    description="Your soulbound tickets will appear here once minted for an event."
-  ></state-placeholder>
+  <state-placeholder if.bind="!isLoading && !error && tickets.length === 0" icon="ticket">
+    <h2>No tickets yet</h2>
+    <p>Your soulbound tickets will appear here once minted for an event.</p>
+  </state-placeholder>
 
   <!-- Ticket list -->
   <ul if.bind="!isLoading && !error && tickets.length > 0" class="ticket-list" role="list">
@@ -51,7 +47,7 @@
           class="entry-btn"
         >
           <svg-icon if.bind="!isGenerating || generatingTicketId !== ticket.id?.value" name="qr-code"></svg-icon>
-          <div if.bind="isGenerating && generatingTicketId === ticket.id?.value" class="spinner spinner-sm"></div>
+          <loading-spinner if.bind="isGenerating && generatingTicketId === ticket.id?.value" size="sm"></loading-spinner>
           Entry
         </button>
       </article>
@@ -59,40 +55,24 @@
   </ul>
 </main>
 
-<!-- Proof generation progress dialog -->
-<dialog
-  ref="generatingDialog"
-  cancel.trigger="$event.preventDefault()"
-  aria-labelledby="generating-dialog-title"
-  class="center-dialog"
->
+<!-- Proof generation progress bottom sheet -->
+<bottom-sheet open.bind="isGenerating" dismissable.bind="false">
   <div role="alert" aria-live="polite" class="dialog-card">
-    <div class="spinner spinner-lg"></div>
+    <loading-spinner size="lg"></loading-spinner>
     <p id="generating-dialog-title" class="dialog-title">Generating Entry Code</p>
     <p class="dialog-desc">${proofProgress}</p>
     <p class="dialog-hint">This may take up to 30 seconds on mobile devices.</p>
   </div>
-</dialog>
+</bottom-sheet>
 
-<!-- QR Code dialog -->
-<dialog
-  ref="qrDialog"
-  click.trigger="$event.target === qrDialog && dismissQr()"
-  cancel.trigger="dismissQr()"
-  aria-labelledby="qr-modal-title"
-  class="center-dialog"
->
+<!-- QR Code bottom sheet -->
+<bottom-sheet open.bind="qrDataUrl" sheet-closed.trigger="dismissQr()">
   <div class="dialog-card">
     <h2 id="qr-modal-title" class="dialog-title">Entry Code</h2>
     <p class="dialog-desc">Present this QR code at the venue entrance.</p>
     <div class="qr-wrapper">
       <img src.bind="qrDataUrl" alt="Entry QR Code" />
     </div>
-    <button
-      click.trigger="dismissQr()"
-      class="dialog-close-btn"
-    >
-      Close
-    </button>
+    <button click.trigger="dismissQr()" class="dialog-close-btn">Close</button>
   </div>
-</dialog>
+</bottom-sheet>

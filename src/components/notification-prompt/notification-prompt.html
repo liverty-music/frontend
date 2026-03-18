@@ -1,6 +1,5 @@
 <template>
-  <dialog ref="popoverEl" popover="manual"
-    class="[ prompt-popover ]" data-animation.bind="animationState">
+  <toast open.bind="isVisible">
 
     <!-- Default permission state -->
     <div show.bind="notificationManager.permission === 'default'" class="prompt-row" aria-live="polite">
@@ -34,5 +33,5 @@
         </button>
       </div>
     </div>
-  </dialog>
+  </toast>
 </template>

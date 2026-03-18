@@ -1,6 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
-import { Toast } from '../../components/toast-notification/toast'
+import { Snack } from '../../components/snack-bar/snack'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { translationKey } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
@@ -25,7 +25,7 @@ export class SettingsRoute {
 	public notificationsEnabled = false
 	public vapidAvailable = !!(import.meta.env.VITE_VAPID_PUBLIC_KEY ?? '')
 	public homeSelector!: UserHomeSelector
-	public languageDialog?: HTMLDialogElement
+	public languageSelectorOpen = false
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	private isToggling = false
 
@@ -57,35 +57,20 @@ export class SettingsRoute {
 	}
 
 	public openLanguageSelector(): void {
-		this.languageDialog?.showModal()
-	}
-
-	public closeLanguageSelector(): void {
-		this.languageDialog?.close()
-	}
-
-	public handleLanguageBackdropClick(event: MouseEvent): void {
-		if (event.target === this.languageDialog) {
-			this.closeLanguageSelector()
-		}
-	}
-
-	public handleLanguageCancel(event: Event): void {
-		event.preventDefault()
-		this.closeLanguageSelector()
+		this.languageSelectorOpen = true
 	}
 
 	public async selectLanguage(lang: string): Promise<void> {
 		const current = this.i18n.getLocale()
 		if (lang === current) {
-			this.closeLanguageSelector()
+			this.languageSelectorOpen = false
 			return
 		}
 		await this.i18n.setLocale(lang)
 		this.currentLocale = lang
 		localStorage.setItem('language', lang)
 		this.logger.info('Language changed', { from: current, to: lang })
-		this.closeLanguageSelector()
+		this.languageSelectorOpen = false
 	}
 
 	public isCurrentLanguage(lang: string): boolean {
@@ -129,7 +114,7 @@ export class SettingsRoute {
 			await this.auth.signOut()
 		} catch (err) {
 			this.logger.error('Sign-out failed', { error: err })
-			this.ea.publish(new Toast(this.i18n.tr('settings.signOutError'), 'error'))
+			this.ea.publish(new Snack(this.i18n.tr('settings.signOutError'), 'error'))
 		}
 	}
 }

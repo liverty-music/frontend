@@ -1,7 +1,7 @@
 import { I18N } from '@aurelia/i18n'
-import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
+import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { IErrorBoundaryService } from '../../services/error-boundary-service'
-import { Toast } from '../toast-notification/toast'
+import { Snack } from '../snack-bar/snack'
 
 export class ErrorBanner {
 	public readonly errorBoundary = resolve(IErrorBoundaryService)
@@ -9,19 +9,8 @@ export class ErrorBanner {
 	private readonly logger = resolve(ILogger).scopeTo('ErrorBanner')
 	private readonly i18n = resolve(I18N)
 
-	private dialogElement!: HTMLDialogElement
 	private lastReportTime = 0
 	private static readonly REPORT_COOLDOWN_MS = 60_000
-
-	@watch<ErrorBanner>((eb) => eb.errorBoundary.currentError)
-	// biome-ignore lint/correctness/noUnusedPrivateClassMembers: invoked by @watch decorator
-	private onErrorChanged(): void {
-		if (this.errorBoundary.currentError) {
-			this.dialogElement.showModal()
-		} else {
-			this.dialogElement.close()
-		}
-	}
 
 	public async copyErrorDetails(): Promise<void> {
 		const error = this.errorBoundary.currentError
@@ -30,7 +19,7 @@ export class ErrorBanner {
 		const report = this.errorBoundary.generateReport(error)
 		try {
 			await navigator.clipboard.writeText(report)
-			this.ea.publish(new Toast(this.i18n.tr('errorBanner.copied')))
+			this.ea.publish(new Snack(this.i18n.tr('errorBanner.copied')))
 		} catch (err) {
 			this.logger.warn('Failed to copy to clipboard', err)
 		}
@@ -43,7 +32,7 @@ export class ErrorBanner {
 		const now = Date.now()
 		if (now - this.lastReportTime < ErrorBanner.REPORT_COOLDOWN_MS) {
 			this.ea.publish(
-				new Toast(this.i18n.tr('errorBanner.reportCooldown'), 'warning'),
+				new Snack(this.i18n.tr('errorBanner.reportCooldown'), 'warning'),
 			)
 			return
 		}

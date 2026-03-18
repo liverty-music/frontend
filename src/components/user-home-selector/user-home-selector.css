@@ -1,93 +1,10 @@
 @layer block {
 	@scope (user-home-selector) {
 		:scope {
-			--_backdrop-bg: oklch(0% 0 0deg / 60%);
-			--_handle-bg: oklch(100% 0 0deg / 20%);
 			--_border-light: oklch(100% 0 0deg / 10%);
 			--_hover-border: oklch(from var(--color-brand-primary) l c h / 40%);
 			--_hover-bg: oklch(from var(--color-brand-primary) l c h / 20%);
 			--_back-hover-bg: oklch(100% 0 0deg / 10%);
-		}
-
-		dialog.user-home-selector {
-			position: fixed;
-			inset-block: auto 0;
-			inset-inline: 0;
-			translate: 0 0;
-
-			overflow: visible;
-			display: block;
-
-			inline-size: 100%;
-			max-inline-size: 100%;
-			max-block-size: 80vh;
-			margin: 0;
-			padding: 0;
-			border: none;
-
-			opacity: 1;
-			background: transparent;
-
-			transition:
-				opacity 300ms ease-out,
-				translate 300ms ease-out,
-				overlay 300ms ease-out allow-discrete,
-				display 300ms ease-out allow-discrete;
-
-			&::backdrop {
-				opacity: 1;
-				background: var(--_backdrop-bg);
-				backdrop-filter: blur(4px);
-				transition:
-					opacity 300ms ease-out,
-					overlay 300ms ease-out allow-discrete,
-					display 300ms ease-out allow-discrete;
-			}
-
-			&:not([open]) {
-				translate: 0 100%;
-				display: none;
-				opacity: 0;
-			}
-
-			&:not([open])::backdrop {
-				opacity: 0;
-			}
-		}
-
-		@starting-style {
-			dialog.user-home-selector[open] {
-				translate: 0 100%;
-				opacity: 0;
-			}
-
-			dialog.user-home-selector[open]::backdrop {
-				opacity: 0;
-			}
-		}
-
-		.selector-body {
-			overflow-y: auto;
-
-			max-block-size: 80vh;
-			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
-
-			background: var(--color-surface-raised);
-			box-shadow: var(--shadow-sheet);
-		}
-
-		/* Handle bar */
-		.selector-handle {
-			display: flex;
-			justify-content: center;
-			padding-block: var(--space-2xs) var(--space-3xs);
-		}
-
-		.selector-handle-bar {
-			inline-size: 2.5rem;
-			block-size: 0.25rem;
-			border-radius: var(--radius-full);
-			background: var(--_handle-bg);
 		}
 
 		.selector-content {
@@ -181,13 +98,6 @@
 				inline-size: 1rem;
 				block-size: 1rem;
 				color: var(--color-text-secondary);
-			}
-		}
-
-		@media (prefers-reduced-motion: reduce) {
-			dialog.user-home-selector,
-			dialog.user-home-selector::backdrop {
-				transition-duration: var(--transition-fast);
 			}
 		}
 	}
