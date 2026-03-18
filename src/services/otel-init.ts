@@ -29,6 +29,7 @@ export function initOtel(): WebTracerProvider {
 		instrumentations: [
 			new FetchInstrumentation({
 				propagateTraceHeaderCorsUrls: [new RegExp(escapeRegExp(API_BASE_URL))],
+				ignoreUrls: [/zitadel\.cloud/],
 			}),
 		],
 	})

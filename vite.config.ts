@@ -7,6 +7,7 @@ export default defineConfig({
 	server: {
 		open: !process.env.CI,
 		port: 9000,
+		strictPort: true,
 		proxy: {
 			'/liverty_music': {
 				target: 'https://api.dev.liverty-music.app',
