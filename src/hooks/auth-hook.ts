@@ -11,7 +11,7 @@ import {
 	lifecycleHooks,
 	resolve,
 } from 'aurelia'
-import { Toast } from '../components/toast-notification/toast'
+import { Snack } from '../components/snack-bar/snack'
 import { IAuthService } from '../services/auth-service'
 import {
 	IOnboardingService,
@@ -81,7 +81,7 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 		}
 
 		// Priority 4: Not authenticated, not in onboarding
-		this.ea.publish(new Toast(this.i18n.tr('auth.loginRequired'), 'warning'))
+		this.ea.publish(new Snack(this.i18n.tr('auth.loginRequired'), 'warning'))
 		return ''
 	}
 }
