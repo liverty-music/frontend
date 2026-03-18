@@ -55,7 +55,10 @@ const { MyArtistsRoute } = await import(
 )
 
 function makeFollowedArtist(id: string, name: string, hype = 'nearby') {
-	return { id, name, hype }
+	return {
+		artist: { id: { value: id }, name: { value: name } },
+		hype,
+	}
 }
 
 describe('MyArtistsRoute', () => {
@@ -136,8 +139,8 @@ describe('MyArtistsRoute', () => {
 
 			expect(sut.isLoading).toBe(false)
 			expect(sut.artists).toHaveLength(3)
-			expect(sut.artists[0].name).toBe('RADWIMPS')
-			expect(sut.artists[0].id).toBe('id-1')
+			expect(sut.artists[0].artist.name?.value).toBe('RADWIMPS')
+			expect(sut.artists[0].artist.id?.value).toBe('id-1')
 			expect(sut.artists[0].color).toMatch(/^hsl\(/)
 		})
 
@@ -225,12 +228,12 @@ describe('MyArtistsRoute', () => {
 			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
 
 			expect(sut.artists).toHaveLength(2)
-			expect(sut.artists[1].name).toBe('Aimer')
+			expect(sut.artists[1].artist.name?.value).toBe('Aimer')
 
 			publishedSnacks[0].action?.callback()
 
 			expect(sut.artists).toHaveLength(3)
-			expect(sut.artists[1].name).toBe('ONE OK ROCK')
+			expect(sut.artists[1].artist.name?.value).toBe('ONE OK ROCK')
 		})
 
 		it('should commit unfollow RPC when toast is dismissed', async () => {

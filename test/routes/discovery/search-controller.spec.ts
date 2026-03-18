@@ -1,14 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Artist } from '../../../src/entities/artist'
 import {
 	type SearchClient,
 	SearchController,
 	type SearchControllerCallbacks,
 } from '../../../src/routes/discovery/search-controller'
-import type { ArtistBubble } from '../../../src/services/artist-service-client'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
 
-function makeBubble(id: string, name: string): ArtistBubble {
-	return { id, name, mbid: '', imageUrl: '', x: 0, y: 0, radius: 30 }
+function makeArtist(id: string, name: string): Artist {
+	return new Artist({
+		id: { value: id },
+		name: { value: name },
+	})
 }
 
 describe('SearchController', () => {
@@ -79,7 +82,7 @@ describe('SearchController', () => {
 		})
 
 		it('should discard stale responses', async () => {
-			const results = [makeBubble('a1', 'Artist')]
+			const results = [makeArtist('a1', 'Artist')]
 			;(mockClient.search as ReturnType<typeof vi.fn>).mockResolvedValue(
 				results,
 			)
@@ -109,7 +112,7 @@ describe('SearchController', () => {
 	describe('exitSearchMode', () => {
 		it('should reset all search state', () => {
 			sut.isSearchMode = true
-			sut.searchResults = [makeBubble('a1', 'A')]
+			sut.searchResults = [makeArtist('a1', 'A')]
 			sut.isSearching = true
 
 			sut.exitSearchMode()
@@ -139,9 +142,9 @@ describe('SearchController', () => {
 		})
 
 		it('should set isSearching during search', async () => {
-			let resolveSearch: (value: ArtistBubble[]) => void
+			let resolveSearch: (value: Artist[]) => void
 			;(mockClient.search as ReturnType<typeof vi.fn>).mockReturnValue(
-				new Promise<ArtistBubble[]>((resolve) => {
+				new Promise<Artist[]>((resolve) => {
 					resolveSearch = resolve
 				}),
 			)

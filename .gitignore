@@ -39,6 +39,7 @@ node_modules
 
 tmp/*
 !tmp/.gitkeep
+!tmp/ticket-journey-stub.js
 
 # Authenticated browser state for E2E testing
 .auth/

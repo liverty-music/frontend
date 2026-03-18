@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Artist } from '../../src/entities/artist'
 import { OnboardingStep } from '../../src/services/onboarding-service'
 import { type AppState, initialState } from '../../src/state/app-state'
 import {
@@ -46,10 +47,14 @@ describe('persistenceMiddleware', () => {
 	})
 
 	it('persists guest follows as JSON', () => {
+		const artist = new Artist({
+			id: { value: 'a1' },
+			name: { value: 'Artist 1' },
+		})
 		const state: AppState = {
 			...initialState,
 			guest: {
-				follows: [{ artistId: 'a1', name: 'Artist 1' }],
+				follows: [{ artist, home: null }],
 				home: null,
 			},
 		}
@@ -57,7 +62,12 @@ describe('persistenceMiddleware', () => {
 		const stored = JSON.parse(
 			localStorage.getItem('guest.followedArtists') ?? '[]',
 		)
-		expect(stored).toEqual([{ artistId: 'a1', name: 'Artist 1' }])
+		expect(stored).toEqual([
+			{
+				artist: { id: { value: 'a1' }, name: { value: 'Artist 1' } },
+				home: null,
+			},
+		])
 	})
 
 	it('persists guest home', () => {
@@ -103,15 +113,35 @@ describe('loadPersistedState', () => {
 		expect(localStorage.getItem('onboardingStep')).toBe('lp')
 	})
 
-	it('loads guest followed artists', () => {
+	it('loads guest followed artists from legacy format', () => {
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([{ artistId: 'a1', name: 'Artist 1' }]),
 		)
 		const result = loadPersistedState()
-		expect(result.guest?.follows).toEqual([
-			{ artistId: 'a1', name: 'Artist 1' },
-		])
+		expect(result.guest?.follows).toHaveLength(1)
+		expect(result.guest?.follows[0].artist).toBeInstanceOf(Artist)
+		expect(result.guest?.follows[0].artist.id?.value).toBe('a1')
+		expect(result.guest?.follows[0].artist.name?.value).toBe('Artist 1')
+		expect(result.guest?.follows[0].home).toBeNull()
+	})
+
+	it('loads guest followed artists from new format', () => {
+		localStorage.setItem(
+			'guest.followedArtists',
+			JSON.stringify([
+				{
+					artist: { id: { value: 'a1' }, name: { value: 'Artist 1' } },
+					home: null,
+				},
+			]),
+		)
+		const result = loadPersistedState()
+		expect(result.guest?.follows).toHaveLength(1)
+		expect(result.guest?.follows[0].artist).toBeInstanceOf(Artist)
+		expect(result.guest?.follows[0].artist.id?.value).toBe('a1')
+		expect(result.guest?.follows[0].artist.name?.value).toBe('Artist 1')
+		expect(result.guest?.follows[0].home).toBeNull()
 	})
 
 	it('loads guest home', () => {

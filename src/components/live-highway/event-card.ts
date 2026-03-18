@@ -1,4 +1,5 @@
 import { bindable, INode, resolve } from 'aurelia'
+import { bestLogoUrl } from '../../entities/artist'
 import type { LaneType, LiveEvent } from './live-event'
 
 export class EventCard {
@@ -7,6 +8,10 @@ export class EventCard {
 	public logoError = false
 
 	private readonly element = resolve(INode) as HTMLElement
+
+	public get logoUrl(): string | undefined {
+		return bestLogoUrl(this.event.artist)
+	}
 
 	public eventChanged(): void {
 		this.logoError = false

@@ -1,16 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Artist } from '../../../src/entities/artist'
 import {
 	type FollowCallbacks,
 	type FollowClient,
 	type FollowConcertClient,
 	FollowOrchestrator,
 } from '../../../src/routes/discovery/follow-orchestrator'
-import type { ArtistBubble } from '../../../src/services/artist-service-client'
 import { BubblePool } from '../../../src/services/bubble-pool'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
 
-function makeBubble(id: string, name: string): ArtistBubble {
-	return { id, name, mbid: '', imageUrl: '', x: 0, y: 0, radius: 30 }
+function makeArtist(id: string, name: string): Artist {
+	return new Artist({
+		id: { value: id },
+		name: { value: name },
+	})
 }
 
 describe('FollowOrchestrator', () => {
@@ -39,7 +42,7 @@ describe('FollowOrchestrator', () => {
 		}
 
 		pool = new BubblePool()
-		pool.add([makeBubble('a1', 'Artist One'), makeBubble('a2', 'Artist Two')])
+		pool.add([makeArtist('a1', 'Artist One'), makeArtist('a2', 'Artist Two')])
 		abortController = new AbortController()
 
 		sut = new FollowOrchestrator(
@@ -54,17 +57,19 @@ describe('FollowOrchestrator', () => {
 
 	describe('followArtist', () => {
 		it('should follow artist and update state optimistically', async () => {
-			await sut.followArtist(makeBubble('a1', 'Artist One'))
+			await sut.followArtist(makeArtist('a1', 'Artist One'))
 
-			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
+			expect(mockFollowClient.follow).toHaveBeenCalledWith(
+				expect.objectContaining({ id: { value: 'a1' } }),
+			)
 			expect(sut.followedCount).toBe(1)
 			expect(sut.followedIds.has('a1')).toBe(true)
 			expect(mockCallbacks.onFollowed).toHaveBeenCalled()
 		})
 
 		it('should skip if artist already followed', async () => {
-			await sut.followArtist(makeBubble('a1', 'Artist One'))
-			await sut.followArtist(makeBubble('a1', 'Artist One'))
+			await sut.followArtist(makeArtist('a1', 'Artist One'))
+			await sut.followArtist(makeArtist('a1', 'Artist One'))
 
 			expect(mockFollowClient.follow).toHaveBeenCalledTimes(1)
 		})
@@ -75,7 +80,7 @@ describe('FollowOrchestrator', () => {
 			)
 
 			await expect(
-				sut.followArtist(makeBubble('a1', 'Artist One'), { x: 10, y: 20 }),
+				sut.followArtist(makeArtist('a1', 'Artist One'), { x: 10, y: 20 }),
 			).rejects.toThrow('network')
 
 			expect(sut.followedCount).toBe(0)
@@ -92,19 +97,23 @@ describe('FollowOrchestrator', () => {
 			)
 
 			await expect(
-				sut.followArtist(makeBubble('a1', 'A'), { x: 100, y: 200 }),
+				sut.followArtist(makeArtist('a1', 'A'), { x: 100, y: 200 }),
 			).rejects.toThrow()
 
 			expect(mockCallbacks.respawnBubble).toHaveBeenCalledWith(
-				expect.objectContaining({ id: 'a1' }),
+				expect.objectContaining({
+					id: expect.objectContaining({ value: 'a1' }),
+				}),
 				{ x: 100, y: 200 },
 			)
 		})
 
 		it('should remove artist from pool on follow', async () => {
-			await sut.followArtist(makeBubble('a1', 'Artist One'))
+			await sut.followArtist(makeArtist('a1', 'Artist One'))
 
-			expect(pool.availableBubbles.find((b) => b.id === 'a1')).toBeUndefined()
+			expect(
+				pool.availableBubbles.find((a) => a.id?.value === 'a1'),
+			).toBeUndefined()
 		})
 	})
 
@@ -114,14 +123,14 @@ describe('FollowOrchestrator', () => {
 		})
 
 		it('should contain the artist ID after followArtist', async () => {
-			await sut.followArtist(makeBubble('a1', 'Artist One'))
+			await sut.followArtist(makeArtist('a1', 'Artist One'))
 
 			expect(sut.followedIds.has('a1')).toBe(true)
 		})
 
 		it('should match followedArtists IDs', async () => {
-			await sut.followArtist(makeBubble('a1', 'Artist One'))
-			await sut.followArtist(makeBubble('a2', 'Artist Two'))
+			await sut.followArtist(makeArtist('a1', 'Artist One'))
+			await sut.followArtist(makeArtist('a2', 'Artist Two'))
 
 			const ids = [...sut.followedIds]
 			expect(ids).toEqual(['a1', 'a2'])
@@ -130,10 +139,12 @@ describe('FollowOrchestrator', () => {
 
 	describe('atomicity — state and pool are synchronized', () => {
 		it('should have artist in followedIds and absent from pool after follow', async () => {
-			await sut.followArtist(makeBubble('a1', 'Artist One'))
+			await sut.followArtist(makeArtist('a1', 'Artist One'))
 
 			expect(sut.followedIds.has('a1')).toBe(true)
-			expect(pool.availableBubbles.find((b) => b.id === 'a1')).toBeUndefined()
+			expect(
+				pool.availableBubbles.find((b) => b.id?.value === 'a1'),
+			).toBeUndefined()
 		})
 
 		it('should have artist absent from followedIds and restored in pool after rollback', async () => {
@@ -142,21 +153,23 @@ describe('FollowOrchestrator', () => {
 			)
 
 			await expect(
-				sut.followArtist(makeBubble('a1', 'Artist One')),
+				sut.followArtist(makeArtist('a1', 'Artist One')),
 			).rejects.toThrow()
 
 			expect(sut.followedIds.has('a1')).toBe(false)
-			expect(pool.availableBubbles.find((b) => b.id === 'a1')).toBeDefined()
+			expect(
+				pool.availableBubbles.find((b) => b.id?.value === 'a1'),
+			).toBeDefined()
 		})
 	})
 
 	describe('regression: no dual-state desync', () => {
 		it('should keep followedIds.size === 2 after sequential follow (3) then rollback (1)', async () => {
-			await sut.followArtist(makeBubble('a1', 'Artist One'))
-			await sut.followArtist(makeBubble('a2', 'Artist Two'))
+			await sut.followArtist(makeArtist('a1', 'Artist One'))
+			await sut.followArtist(makeArtist('a2', 'Artist Two'))
 
 			// Third follow will fail and rollback
-			const a3 = makeBubble('a3', 'Artist Three')
+			const a3 = makeArtist('a3', 'Artist Three')
 			pool.add([a3])
 			;(
 				mockFollowClient.follow as ReturnType<typeof vi.fn>
@@ -169,7 +182,9 @@ describe('FollowOrchestrator', () => {
 			expect(sut.followedIds.has('a2')).toBe(true)
 			expect(sut.followedIds.has('a3')).toBe(false)
 			// Only the rolled-back artist is restored to pool
-			expect(pool.availableBubbles.find((b) => b.id === 'a3')).toBeDefined()
+			expect(
+				pool.availableBubbles.find((b) => b.id?.value === 'a3'),
+			).toBeDefined()
 		})
 	})
 
@@ -179,7 +194,7 @@ describe('FollowOrchestrator', () => {
 				mockConcertClient.listConcerts as ReturnType<typeof vi.fn>
 			).mockResolvedValue([{ id: 'c1' }])
 
-			sut.checkLiveEvents(makeBubble('a1', 'Live Band'))
+			sut.checkLiveEvents(makeArtist('a1', 'Live Band'))
 			await vi.waitFor(() => {
 				expect(mockCallbacks.onHasUpcomingEvents).toHaveBeenCalledWith(
 					'Live Band',
@@ -192,7 +207,7 @@ describe('FollowOrchestrator', () => {
 				mockConcertClient.listConcerts as ReturnType<typeof vi.fn>
 			).mockResolvedValue([])
 
-			sut.checkLiveEvents(makeBubble('a1', 'No Events'))
+			sut.checkLiveEvents(makeArtist('a1', 'No Events'))
 			await vi.waitFor(() => {
 				expect(mockConcertClient.listConcerts).toHaveBeenCalled()
 			})

@@ -2,7 +2,7 @@ import { IStore } from '@aurelia/state'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Snack } from '../../src/components/snack-bar/snack'
-import type { ArtistBubble } from '../../src/services/artist-service-client'
+import { Artist } from '../../src/entities/artist'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
 import {
@@ -55,8 +55,11 @@ const { DiscoveryRoute } = await import(
 	'../../src/routes/discovery/discovery-route'
 )
 
-function makeBubble(id: string, name: string): ArtistBubble {
-	return { id, name, mbid: '', imageUrl: '', x: 0, y: 0, radius: 30 }
+function makeArtist(id: string, name: string): Artist {
+	return new Artist({
+		id: { value: id },
+		name: { value: name },
+	})
 }
 
 describe('DiscoveryRoute', () => {
@@ -127,7 +130,7 @@ describe('DiscoveryRoute', () => {
 	describe('loading', () => {
 		it('should load initial artists via artistClient.listTop', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[makeBubble('a1', 'Artist One')],
+				[makeArtist('a1', 'Artist One')],
 			)
 
 			await sut.loading()
@@ -150,7 +153,7 @@ describe('DiscoveryRoute', () => {
 	describe('onSearchQueryChanged (debounced search)', () => {
 		it('should debounce search by 300ms', async () => {
 			;(mockArtistClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeBubble('a1', 'Result'),
+				makeArtist('a1', 'Result'),
 			])
 
 			sut.search.searchQuery = 'test'
@@ -173,7 +176,7 @@ describe('DiscoveryRoute', () => {
 
 		it('should discard stale responses by checking current query', async () => {
 			;(mockArtistClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeBubble('a2', 'Fresh'),
+				makeArtist('a2', 'Fresh'),
 			])
 
 			sut.search.searchQuery = 'first'
@@ -252,9 +255,11 @@ describe('DiscoveryRoute', () => {
 				return 0
 			})
 
-			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
+			await sut.onFollowFromSearch(makeArtist('a1', 'Artist'))
 
-			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist')
+			expect(mockFollowClient.follow).toHaveBeenCalledWith(
+				expect.objectContaining({ id: { value: 'a1' } }),
+			)
 		})
 
 		it('should not follow already-followed artist', async () => {
@@ -267,10 +272,10 @@ describe('DiscoveryRoute', () => {
 				return 0
 			})
 
-			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
+			await sut.onFollowFromSearch(makeArtist('a1', 'Artist'))
 
 			// Try to follow again
-			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
+			await sut.onFollowFromSearch(makeArtist('a1', 'Artist'))
 
 			expect(mockFollowClient.follow).toHaveBeenCalledTimes(1)
 		})
@@ -282,7 +287,7 @@ describe('DiscoveryRoute', () => {
 			sut.search.isSearchMode = true
 			sut.search.searchQuery = 'test'
 
-			await sut.onFollowFromSearch(makeBubble('a1', 'Fail'))
+			await sut.onFollowFromSearch(makeArtist('a1', 'Fail'))
 
 			expect(sut.search.isSearchMode).toBe(true)
 			expect(sut.search.searchQuery).toBe('test')
@@ -308,9 +313,9 @@ describe('DiscoveryRoute', () => {
 
 			sut.search.isSearchMode = true
 			sut.search.searchQuery = 'query'
-			sut.search.searchResults = [makeBubble('a1', 'Artist')]
+			sut.search.searchResults = [makeArtist('a1', 'Artist')]
 
-			await sut.onFollowFromSearch(makeBubble('a1', 'Artist'))
+			await sut.onFollowFromSearch(makeArtist('a1', 'Artist'))
 
 			expect(sut.search.isSearchMode).toBe(false)
 			expect(sut.search.searchQuery).toBe('')
@@ -331,7 +336,7 @@ describe('DiscoveryRoute', () => {
 				return 0
 			})
 
-			const artist = makeBubble('a1', 'Artist')
+			const artist = makeArtist('a1', 'Artist')
 			await sut.onFollowFromSearch(artist)
 
 			// canvasRect mock: { width: 400, height: 600 }
@@ -352,14 +357,16 @@ describe('DiscoveryRoute', () => {
 				[],
 			)
 
-			const artist = makeBubble('a1', 'Artist One')
+			const artist = makeArtist('a1', 'Artist One')
 			const event = new CustomEvent('artist-selected', {
 				detail: { artist, position: { x: 100, y: 200 } },
 			})
 
 			await sut.onArtistSelected(event)
 
-			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
+			expect(mockFollowClient.follow).toHaveBeenCalledWith(
+				expect.objectContaining({ id: { value: 'a1' } }),
+			)
 		})
 
 		it('should skip if artist already followed', async () => {
@@ -370,7 +377,7 @@ describe('DiscoveryRoute', () => {
 				[],
 			)
 
-			const artist = makeBubble('a1', 'Artist')
+			const artist = makeArtist('a1', 'Artist')
 			const event = new CustomEvent('artist-selected', {
 				detail: { artist, position: { x: 0, y: 0 } },
 			})
@@ -391,7 +398,7 @@ describe('DiscoveryRoute', () => {
 
 			const event = new CustomEvent('artist-selected', {
 				detail: {
-					artist: makeBubble('a1', 'Live Band'),
+					artist: makeArtist('a1', 'Live Band'),
 					position: { x: 0, y: 0 },
 				},
 			})
@@ -411,7 +418,7 @@ describe('DiscoveryRoute', () => {
 
 			const event = new CustomEvent('artist-selected', {
 				detail: {
-					artist: makeBubble('a1', 'Fail Artist'),
+					artist: makeArtist('a1', 'Fail Artist'),
 					position: { x: 10, y: 20 },
 				},
 			})
@@ -434,7 +441,7 @@ describe('DiscoveryRoute', () => {
 
 			const event = new CustomEvent('artist-selected', {
 				detail: {
-					artist: makeBubble('a1', 'RollbackArtist'),
+					artist: makeArtist('a1', 'RollbackArtist'),
 					position: { x: 50, y: 50 },
 				},
 			})
@@ -452,14 +459,18 @@ describe('DiscoveryRoute', () => {
 
 			const event = new CustomEvent('artist-selected', {
 				detail: {
-					artist: makeBubble('a1', 'Respawn'),
+					artist: makeArtist('a1', 'Respawn'),
 					position: { x: 100, y: 200 },
 				},
 			})
 			await sut.onArtistSelected(event)
 
 			expect(sut.dnaOrbCanvas.spawnBubblesAt).toHaveBeenCalledWith(
-				[expect.objectContaining({ id: 'a1' })],
+				[
+					expect.objectContaining({
+						id: expect.objectContaining({ value: 'a1' }),
+					}),
+				],
 				100,
 				200,
 			)
@@ -468,7 +479,7 @@ describe('DiscoveryRoute', () => {
 
 	describe('onNeedMoreBubbles', () => {
 		it('should fetch similar artists and spawn them at tap position', async () => {
-			const similar = [makeBubble('s1', 'Similar 1')]
+			const similar = [makeArtist('s1', 'Similar 1')]
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
 			).mockResolvedValue(similar)
@@ -496,7 +507,7 @@ describe('DiscoveryRoute', () => {
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
 			).mockResolvedValue([])
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[makeBubble('t1', 'Top Fallback')],
+				[makeArtist('t1', 'Top Fallback')],
 			)
 
 			const event = new CustomEvent('need-more-bubbles', {
@@ -515,7 +526,7 @@ describe('DiscoveryRoute', () => {
 		it('should evict oldest bubbles when pool is full', async () => {
 			// Fill the pool up to MAX
 			const initial = Array.from({ length: 50 }, (_, i) =>
-				makeBubble(`existing${i}`, `Existing ${i}`),
+				makeArtist(`existing${i}`, `Existing ${i}`),
 			)
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				initial,
@@ -525,7 +536,7 @@ describe('DiscoveryRoute', () => {
 			// Mock canvas bubbleCount to match pool
 			;(sut.dnaOrbCanvas as any).bubbleCount = 50
 
-			const similar = [makeBubble('new1', 'New One')]
+			const similar = [makeArtist('new1', 'New One')]
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
 			).mockResolvedValue(similar)
@@ -600,12 +611,12 @@ describe('DiscoveryRoute', () => {
 				return 0
 			})
 
-			await sut.onFollowFromSearch(makeBubble('f1', 'Followed One'))
+			await sut.onFollowFromSearch(makeArtist('f1', 'Followed One'))
 
 			// Now loading should call listSimilar (seed) instead of listTop
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
-			).mockResolvedValue([makeBubble('s1', 'Seed Similar')])
+			).mockResolvedValue([makeArtist('s1', 'Seed Similar')])
 
 			await sut.loading()
 
@@ -665,13 +676,13 @@ describe('DiscoveryRoute', () => {
 	describe('onboarding followedCount delegation', () => {
 		it('should read from store guest.follows during onboarding', () => {
 			mockOnboarding.isOnboarding = true
-			// Add follows to the mock store state
+			// Add follows to the mock store state (new format with proto Artist)
 			mockStoreInstance.state.guest.follows = [
-				{ artistId: 'a1', name: 'A1' },
-				{ artistId: 'a2', name: 'A2' },
-				{ artistId: 'a3', name: 'A3' },
-				{ artistId: 'a4', name: 'A4' },
-				{ artistId: 'a5', name: 'A5' },
+				{ artist: makeArtist('a1', 'A1'), home: null },
+				{ artist: makeArtist('a2', 'A2'), home: null },
+				{ artist: makeArtist('a3', 'A3'), home: null },
+				{ artist: makeArtist('a4', 'A4'), home: null },
+				{ artist: makeArtist('a5', 'A5'), home: null },
 			]
 
 			expect(sut.followedCount).toBe(5)
@@ -691,8 +702,8 @@ describe('DiscoveryRoute', () => {
 				return 0
 			})
 
-			await sut.onFollowFromSearch(makeBubble('a1', 'A'))
-			await sut.onFollowFromSearch(makeBubble('a2', 'B'))
+			await sut.onFollowFromSearch(makeArtist('a1', 'A'))
+			await sut.onFollowFromSearch(makeArtist('a2', 'B'))
 
 			expect(sut.followedCount).toBe(2)
 		})
@@ -707,8 +718,8 @@ describe('DiscoveryRoute', () => {
 		it('should hide when onboarding but followed < ONBOARDING_FOLLOW_TARGET', () => {
 			mockOnboarding.isOnboarding = true
 			mockStoreInstance.state.guest.follows = [
-				{ artistId: 'a1', name: 'A1' },
-				{ artistId: 'a2', name: 'A2' },
+				{ artist: makeArtist('a1', 'A1'), home: null },
+				{ artist: makeArtist('a2', 'A2'), home: null },
 			]
 			expect(sut.showDashboardCoachMark).toBe(false)
 		})
@@ -716,9 +727,9 @@ describe('DiscoveryRoute', () => {
 		it('TC-GATE-01: should be false when concertGroupCount is 0 despite 3+ follows and all searches complete', () => {
 			mockOnboarding.isOnboarding = true
 			mockStoreInstance.state.guest.follows = [
-				{ artistId: 'a1', name: 'A1' },
-				{ artistId: 'a2', name: 'A2' },
-				{ artistId: 'a3', name: 'A3' },
+				{ artist: makeArtist('a1', 'A1'), home: null },
+				{ artist: makeArtist('a2', 'A2'), home: null },
+				{ artist: makeArtist('a3', 'A3'), home: null },
 			]
 			sut.concertTracker.completedSearchCount = 3
 			sut.concertTracker.concertGroupCount = 0
@@ -729,9 +740,9 @@ describe('DiscoveryRoute', () => {
 		it('TC-GATE-02: should be true when concertGroupCount > 0 with 3+ follows and all searches complete', () => {
 			mockOnboarding.isOnboarding = true
 			mockStoreInstance.state.guest.follows = [
-				{ artistId: 'a1', name: 'A1' },
-				{ artistId: 'a2', name: 'A2' },
-				{ artistId: 'a3', name: 'A3' },
+				{ artist: makeArtist('a1', 'A1'), home: null },
+				{ artist: makeArtist('a2', 'A2'), home: null },
+				{ artist: makeArtist('a3', 'A3'), home: null },
 			]
 			sut.concertTracker.completedSearchCount = 3
 			sut.concertTracker.concertGroupCount = 2
@@ -743,13 +754,13 @@ describe('DiscoveryRoute', () => {
 	describe('poolBubbles', () => {
 		it('should reflect pool availableBubbles', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[makeBubble('a1', 'Pool Artist')],
+				[makeArtist('a1', 'Pool Artist')],
 			)
 
 			await sut.loading()
 
 			expect(sut.poolBubbles).toHaveLength(1)
-			expect(sut.poolBubbles[0].name).toBe('Pool Artist')
+			expect(sut.poolBubbles[0].name?.value).toBe('Pool Artist')
 		})
 	})
 
@@ -787,9 +798,9 @@ describe('DiscoveryRoute', () => {
 			mockOnboarding.isOnboarding = true
 			mockOnboarding.currentStep = 'discovery' // DISCOVERY
 			mockStoreInstance.state.guest.follows = [
-				{ artistId: 'a1', name: 'A1' },
-				{ artistId: 'a2', name: 'A2' },
-				{ artistId: 'a3', name: 'A3' },
+				{ artist: makeArtist('a1', 'A1'), home: null },
+				{ artist: makeArtist('a2', 'A2'), home: null },
+				{ artist: makeArtist('a3', 'A3'), home: null },
 			]
 
 			sut.onCoachMarkTap()
@@ -802,7 +813,9 @@ describe('DiscoveryRoute', () => {
 		it('should not advance step when showDashboardCoachMark is false (fewer than 3 follows)', () => {
 			mockOnboarding.isOnboarding = true
 			mockOnboarding.currentStep = 'discovery' // DISCOVERY
-			mockStoreInstance.state.guest.follows = [{ artistId: 'a1', name: 'A1' }]
+			mockStoreInstance.state.guest.follows = [
+				{ artist: makeArtist('a1', 'A1'), home: null },
+			]
 
 			// showDashboardCoachMark should be false
 			expect(sut.showDashboardCoachMark).toBe(false)

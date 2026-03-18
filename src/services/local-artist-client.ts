@@ -1,4 +1,5 @@
 import { DI, ILogger, resolve } from 'aurelia'
+import type { Artist } from '../entities/artist'
 import type { GuestFollow } from '../state/app-state'
 import { resolveStore } from '../state/store-interface'
 
@@ -36,9 +37,12 @@ export class LocalArtistClient {
 	/**
 	 * Follow an artist locally via Store dispatch.
 	 */
-	public follow(id: string, name: string): void {
-		this.store.dispatch({ type: 'guest/follow', artistId: id, name })
-		this.logger.info('Local artist followed', { id, name })
+	public follow(artist: Artist): void {
+		this.store.dispatch({ type: 'guest/follow', artist })
+		this.logger.info('Local artist followed', {
+			id: artist.id?.value,
+			name: artist.name?.value,
+		})
 	}
 
 	/**
@@ -74,5 +78,8 @@ export class LocalArtistClient {
 }
 
 function toLocal(f: GuestFollow): LocalFollowedArtist {
-	return { id: f.artistId, name: f.name }
+	return {
+		id: f.artist.id?.value ?? '',
+		name: f.artist.name?.value ?? '',
+	}
 }

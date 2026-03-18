@@ -1,13 +1,13 @@
 import type { ILogger } from 'aurelia'
-import type { ArtistBubble } from '../../services/artist-service-client'
+import type { Artist } from '../../entities/artist'
 import { BubblePool } from '../../services/bubble-pool'
 
 export interface GenreArtistClient {
-	listTop(country: string, tag: string, limit: number): Promise<ArtistBubble[]>
+	listTop(country: string, tag: string, limit: number): Promise<Artist[]>
 }
 
 export interface GenreFilterCallbacks {
-	onBubblesReloaded(bubbles: ArtistBubble[]): void
+	onBubblesReloaded(artists: Artist[]): void
 	onError(messageKey: string, params?: Record<string, string>): void
 }
 
@@ -32,7 +32,7 @@ export class GenreFilterController {
 	constructor(
 		private readonly client: GenreArtistClient,
 		private readonly pool: BubblePool,
-		private readonly followedArtists: () => ArtistBubble[],
+		private readonly followedArtists: () => Artist[],
 		private readonly callbacks: GenreFilterCallbacks,
 		private readonly logger: ILogger,
 		private readonly abortSignal: () => AbortSignal,
@@ -79,18 +79,20 @@ export class GenreFilterController {
 		this.pool.clearSeenSets()
 		this.pool.trackAllSeen(this.followedArtists())
 
-		const rawBubbles = await this.client.listTop(
+		const rawArtists = await this.client.listTop(
 			country,
 			tag,
 			BubblePool.MAX_BUBBLES,
 		)
-		const followedIds = new Set(this.followedArtists().map((a) => a.id))
-		const bubbles = this.pool
-			.dedup(rawBubbles, followedIds)
+		const followedIds = new Set(
+			this.followedArtists().map((a) => a.id?.value ?? ''),
+		)
+		const artists = this.pool
+			.dedup(rawArtists, followedIds)
 			.slice(0, BubblePool.MAX_BUBBLES)
 
-		this.pool.replace(bubbles)
-		this.pool.trackAllSeen(bubbles)
+		this.pool.replace(artists)
+		this.pool.trackAllSeen(artists)
 
 		this.logger.info('Reloaded artists with tag', {
 			tag,

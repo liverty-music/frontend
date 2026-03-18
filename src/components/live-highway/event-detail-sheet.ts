@@ -1,5 +1,6 @@
 import { bindable, ILogger, resolve } from 'aurelia'
 import { displayName } from '../../constants/iso3166'
+import { bestBackgroundUrl } from '../../entities/artist'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -20,7 +21,7 @@ export class EventDetailSheet {
 
 	private readonly onPopstate = (): void => {
 		if (this.isOpen) {
-			// Browser navigated back — mark so onSheetClosed skips replaceState
+			// Browser navigated back -- mark so onSheetClosed skips replaceState
 			this.closedByPopstate = true
 			this.isOpen = false
 			window.removeEventListener('popstate', this.onPopstate)
@@ -29,6 +30,10 @@ export class EventDetailSheet {
 
 	public get isDismissable(): boolean {
 		return this.onboarding.currentStep !== OnboardingStep.DETAIL
+	}
+
+	public get backgroundUrl(): string | undefined {
+		return bestBackgroundUrl(this.event?.artist)
 	}
 
 	public get googleMapsUrl(): string {
@@ -72,7 +77,7 @@ export class EventDetailSheet {
 		history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 	}
 
-	/** Programmatic close — replaces history state back to dashboard */
+	/** Programmatic close -- replaces history state back to dashboard */
 	public close(): void {
 		if (!this.isOpen) return
 		this.isOpen = false

@@ -91,6 +91,16 @@ export class MyArtistsRoute {
 		return this.authService.isAuthenticated
 	}
 
+	/** Get the artist ID string for template bindings. */
+	public artistId(myArtist: MyArtist): string {
+		return myArtist.artist.id?.value ?? ''
+	}
+
+	/** Get the artist name string for template bindings. */
+	public artistName(myArtist: MyArtist): string {
+		return myArtist.artist.name?.value ?? ''
+	}
+
 	public async loading(): Promise<void> {
 		this.isLoading = true
 		this.abortController = new AbortController()
@@ -101,7 +111,7 @@ export class MyArtistsRoute {
 			)
 			this.artists = followed.map((fa) => ({
 				...fa,
-				color: artistColor(fa.name),
+				color: artistColor(fa.artist.name?.value ?? ''),
 			}))
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,
@@ -131,29 +141,31 @@ export class MyArtistsRoute {
 	// --- Scroll-snap dismiss ---
 
 	public checkDismiss(event: Event, artist: MyArtist): void {
-		if (this.dismissingIds.has(artist.id)) return
+		const id = this.artistId(artist)
+		if (this.dismissingIds.has(id)) return
 
 		const el = event.target as HTMLElement
 		if (el.scrollLeft > (el.scrollWidth - el.offsetWidth) * 0.5) {
-			this.dismissingIds.add(artist.id)
+			this.dismissingIds.add(id)
 			this.executeDismiss(artist)
 		}
 	}
 
 	private executeDismiss(artist: MyArtist): void {
+		const id = this.artistId(artist)
 		if (!document.startViewTransition) {
 			this.unfollowArtist(artist)
-			this.dismissingIds.delete(artist.id)
+			this.dismissingIds.delete(id)
 			return
 		}
 
 		const transition = document.startViewTransition(() => {
 			this.unfollowArtist(artist)
-			this.dismissingIds.delete(artist.id)
+			this.dismissingIds.delete(id)
 			return Promise.resolve()
 		})
 		transition.finished.catch(() => {
-			this.dismissingIds.delete(artist.id)
+			this.dismissingIds.delete(id)
 		})
 	}
 
@@ -166,7 +178,11 @@ export class MyArtistsRoute {
 		// Dismiss any previous undo toast (commits that unfollow)
 		this.undoHandle?.dismiss()
 
-		const index = this.artists.findIndex((a) => a.id === artist.id)
+		const artistId = this.artistId(artist)
+		const artistName = this.artistName(artist)
+		const index = this.artists.findIndex(
+			(a) => (a.artist.id?.value ?? '') === artistId,
+		)
 		if (index === -1) return
 
 		// Optimistic removal
@@ -174,10 +190,10 @@ export class MyArtistsRoute {
 		this.undoArtist = artist
 		this.undoIndex = index
 
-		this.logger.info('Artist unfollowed (pending)', { name: artist.name })
+		this.logger.info('Artist unfollowed (pending)', { name: artistName })
 
 		const toast = new Snack(
-			this.i18n.tr('myArtists.unfollowed', { name: artist.name }),
+			this.i18n.tr('myArtists.unfollowed', { name: artistName }),
 			'info',
 			{
 				duration: 5000,
@@ -205,36 +221,40 @@ export class MyArtistsRoute {
 		const insertAt = Math.min(this.undoIndex, this.artists.length)
 		this.artists.splice(insertAt, 0, this.undoArtist)
 
-		this.logger.info('Undo unfollow', { name: this.undoArtist.name })
+		this.logger.info('Undo unfollow', {
+			name: this.artistName(this.undoArtist),
+		})
 
 		this.undoArtist = null
 		this.undoHandle = null
 	}
 
 	private commitUnfollow(artist: MyArtist, originalIndex: number): void {
+		const artistId = this.artistId(artist)
+		const artistName = this.artistName(artist)
 		// Fire-and-forget RPC with 1 retry
 		const client = this.followService.getClient()
-		const req = { artistId: new ArtistId({ value: artist.id }) }
+		const req = { artistId: new ArtistId({ value: artistId }) }
 		client
 			.unfollow(req)
 			.then(() => {
-				this.logger.info('Unfollow committed', { name: artist.name })
+				this.logger.info('Unfollow committed', { name: artistName })
 			})
 			.catch((firstErr) => {
 				this.logger.warn('Unfollow failed, retrying', {
-					name: artist.name,
+					name: artistName,
 					error: firstErr,
 				})
 				client
 					.unfollow(req)
 					.then(() => {
 						this.logger.info('Unfollow committed on retry', {
-							name: artist.name,
+							name: artistName,
 						})
 					})
 					.catch((retryErr) => {
 						this.logger.error('Failed to unfollow artist after retry', {
-							name: artist.name,
+							name: artistName,
 							error: retryErr,
 						})
 						// Revert optimistic removal
@@ -242,7 +262,9 @@ export class MyArtistsRoute {
 						this.artists.splice(insertAt, 0, artist)
 						this.ea.publish(
 							new Snack(
-								this.i18n.tr('myArtists.failedUnfollow', { name: artist.name }),
+								this.i18n.tr('myArtists.failedUnfollow', {
+									name: artistName,
+								}),
 							),
 						)
 					})
@@ -256,7 +278,9 @@ export class MyArtistsRoute {
 	): void {
 		const { artistId, hype: hypeType } = event.detail
 		const hype = hypeTypeToHype(hypeType)
-		const artist = this.artists.find((a) => a.id === artistId)
+		const artist = this.artists.find(
+			(a) => (a.artist.id?.value ?? '') === artistId,
+		)
 		if (!artist) return
 
 		const prev = artist.hype
@@ -313,7 +337,9 @@ export class MyArtistsRoute {
 						this.logger.error('Failed to update hype level after retry', {
 							error: retryErr,
 						})
-						const a = this.artists.find((x) => x.id === artistId)
+						const a = this.artists.find(
+							(x) => (x.artist.id?.value ?? '') === artistId,
+						)
 						if (a) a.hype = prev
 						this.ea.publish(new Snack(this.i18n.tr('myArtists.failedHype')))
 					})

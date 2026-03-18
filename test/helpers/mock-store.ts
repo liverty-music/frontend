@@ -2,8 +2,8 @@ import type { IStore } from '@aurelia/state'
 import { vi } from 'vitest'
 
 interface GuestFollow {
-	artistId: string
-	name: string
+	artist: { id?: { value: string }; name?: { value: string } }
+	home: string | null
 }
 
 interface OnboardingState {
@@ -78,18 +78,14 @@ export function createMockStore(overrides: Partial<MockAppState> = {}): {
 					state.onboarding.spotlightRadius = '12px'
 					state.onboarding.spotlightActive = false
 					break
-				case 'guest/follow':
-					state.guest.follows = [
-						...state.guest.follows,
-						{
-							artistId: action.artistId as string,
-							name: action.name as string,
-						},
-					]
+				case 'guest/follow': {
+					const artist = action.artist as GuestFollow['artist']
+					state.guest.follows = [...state.guest.follows, { artist, home: null }]
 					break
+				}
 				case 'guest/unfollow':
 					state.guest.follows = state.guest.follows.filter(
-						(f) => f.artistId !== action.artistId,
+						(f) => f.artist.id?.value !== action.artistId,
 					)
 					break
 				case 'guest/setUserHome':

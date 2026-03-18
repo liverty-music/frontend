@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import aurelia from '@aurelia/vite-plugin'
 import { defineConfig } from 'vite'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
@@ -21,6 +22,15 @@ export default defineConfig({
 	},
 	resolve: {
 		conditions: ['browser', 'import', 'module', 'default'],
+		alias: {
+			// Stub for unpublished BSR proto types — remove after BSR release
+			'@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js':
+				resolve(__dirname, 'tmp/ticket-journey-stub.js'),
+			'@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js':
+				resolve(__dirname, 'tmp/ticket-journey-stub.js'),
+			'@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/ticket_journey/v1/ticket_journey_service_connect.js':
+				resolve(__dirname, 'tmp/ticket-journey-stub.js'),
+		},
 	},
 	plugins: [
 		aurelia({

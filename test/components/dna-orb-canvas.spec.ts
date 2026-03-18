@@ -1,6 +1,6 @@
 import { INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ArtistBubble } from '../../src/services/artist-service-client'
+import { Artist } from '../../src/entities/artist'
 import { createTestContainer } from '../helpers/create-container'
 
 // Mock Matter.js to avoid loading the actual physics engine
@@ -35,8 +35,11 @@ const { DnaOrbCanvas } = await import(
 	'../../src/components/dna-orb/dna-orb-canvas'
 )
 
-function makeBubble(id: string, name: string): ArtistBubble {
-	return { id, name, mbid: '', imageUrl: '', x: 0, y: 0, radius: 30 }
+function makeArtist(id: string, name: string): Artist {
+	return new Artist({
+		id: { value: id },
+		name: { value: name },
+	})
 }
 
 function createMockCanvasContext(): CanvasRenderingContext2D {
@@ -136,7 +139,7 @@ describe('DnaOrbCanvas', () => {
 		it('should not add bubbles if not yet attached (no ctx)', () => {
 			// ctx is not set until attached() is called
 			const addBubblesSpy = vi.spyOn((sut as any).physics, 'addBubbles')
-			sut.artistsChanged([makeBubble('a1', 'Artist')])
+			sut.artistsChanged([makeArtist('a1', 'Artist')])
 
 			expect(addBubblesSpy).not.toHaveBeenCalled()
 		})
@@ -146,10 +149,15 @@ describe('DnaOrbCanvas', () => {
 			await sut.attached()
 			const addBubblesSpy = vi.spyOn((sut as any).physics, 'addBubbles')
 
-			const artists = [makeBubble('a1', 'Artist')]
+			const artists = [makeArtist('a1', 'Artist')]
 			sut.artistsChanged(artists)
 
-			expect(addBubblesSpy).toHaveBeenCalledWith(artists)
+			expect(addBubblesSpy).toHaveBeenCalledWith([
+				expect.objectContaining({
+					artist: artists[0],
+					radius: expect.any(Number),
+				}),
+			])
 		})
 	})
 
@@ -180,11 +188,16 @@ describe('DnaOrbCanvas', () => {
 
 		it('should add initial artists to physics', async () => {
 			const addBubblesSpy = vi.spyOn((sut as any).physics, 'addBubbles')
-			sut.artists = [makeBubble('a1', 'Initial')]
+			sut.artists = [makeArtist('a1', 'Initial')]
 
 			await sut.attached()
 
-			expect(addBubblesSpy).toHaveBeenCalledWith(sut.artists)
+			expect(addBubblesSpy).toHaveBeenCalledWith([
+				expect.objectContaining({
+					artist: sut.artists[0],
+					radius: expect.any(Number),
+				}),
+			])
 		})
 	})
 
@@ -249,11 +262,20 @@ describe('DnaOrbCanvas', () => {
 		it('should delegate to physics.spawnBubblesAt', async () => {
 			await sut.attached()
 			const spawnSpy = vi.spyOn((sut as any).physics, 'spawnBubblesAt')
-			const bubbles = [makeBubble('s1', 'Spawn')]
+			const artists = [makeArtist('s1', 'Spawn')]
 
-			sut.spawnBubblesAt(bubbles, 100, 200)
+			sut.spawnBubblesAt(artists, 100, 200)
 
-			expect(spawnSpy).toHaveBeenCalledWith(bubbles, 100, 200)
+			expect(spawnSpy).toHaveBeenCalledWith(
+				[
+					expect.objectContaining({
+						artist: artists[0],
+						radius: expect.any(Number),
+					}),
+				],
+				100,
+				200,
+			)
 		})
 	})
 
@@ -279,7 +301,7 @@ describe('DnaOrbCanvas', () => {
 				.mockResolvedValue(undefined)
 			const addSpy = vi.spyOn((sut as any).physics, 'addBubbles')
 
-			const newArtists = [makeBubble('r1', 'Reloaded')]
+			const newArtists = [makeArtist('r1', 'Reloaded')]
 			sut.reloadBubbles(newArtists)
 
 			expect(resetSpy).toHaveBeenCalled()
@@ -288,7 +310,12 @@ describe('DnaOrbCanvas', () => {
 			await vi.advanceTimersByTimeAsync(0)
 
 			expect(initSpy).toHaveBeenCalledWith(400, 600)
-			expect(addSpy).toHaveBeenCalledWith(newArtists)
+			expect(addSpy).toHaveBeenCalledWith([
+				expect.objectContaining({
+					artist: newArtists[0],
+					radius: expect.any(Number),
+				}),
+			])
 		})
 
 		it('should skip if element has zero dimensions', async () => {
@@ -301,7 +328,7 @@ describe('DnaOrbCanvas', () => {
 			})
 
 			const resetSpy = vi.spyOn((sut as any).physics, 'reset')
-			sut.reloadBubbles([makeBubble('r1', 'Skip')])
+			sut.reloadBubbles([makeArtist('r1', 'Skip')])
 
 			expect(resetSpy).not.toHaveBeenCalled()
 		})
@@ -318,10 +345,11 @@ describe('DnaOrbCanvas', () => {
 		it('should dispatch artist-selected and need-more-bubbles events on bubble tap', async () => {
 			await sut.attached()
 
-			const artist = makeBubble('a1', 'Tapped Artist')
+			const artist = makeArtist('a1', 'Tapped Artist')
 			const mockPhysicsBubble = {
 				body: { position: { x: 150, y: 250 } },
 				artist,
+				radius: 30,
 				scale: 1,
 				opacity: 1,
 				isSpawning: false,
@@ -368,10 +396,11 @@ describe('DnaOrbCanvas', () => {
 		it('should remove tapped bubble from physics and start absorption', async () => {
 			await sut.attached()
 
-			const artist = makeBubble('a1', 'Absorbed')
+			const artist = makeArtist('a1', 'Absorbed')
 			const mockBubble = {
 				body: { position: { x: 100, y: 200 } },
 				artist,
+				radius: 30,
 				scale: 1,
 				opacity: 1,
 				isSpawning: false,
@@ -409,10 +438,11 @@ describe('DnaOrbCanvas', () => {
 		it('should prevent concurrent interactions (isProcessing guard)', async () => {
 			await sut.attached()
 
-			const artist = makeBubble('a1', 'Guard')
+			const artist = makeArtist('a1', 'Guard')
 			const mockBubble = {
 				body: { position: { x: 100, y: 200 } },
 				artist,
+				radius: 30,
 				scale: 1,
 				opacity: 1,
 				isSpawning: false,

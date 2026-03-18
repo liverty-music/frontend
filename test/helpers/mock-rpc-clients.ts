@@ -40,7 +40,6 @@ export function createMockFollowServiceClient(): Partial<IFollowServiceClient> {
 		listFollowed: vi.fn().mockResolvedValue([]),
 		follow: vi.fn().mockResolvedValue(undefined),
 		unfollow: vi.fn().mockResolvedValue(undefined),
-		listFollowedAsBubbles: vi.fn().mockResolvedValue([]),
 		getClient: vi.fn().mockReturnValue({
 			listFollowed: vi.fn().mockResolvedValue({ artists: [] }),
 			follow: vi.fn().mockResolvedValue({}),

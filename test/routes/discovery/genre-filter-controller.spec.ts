@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Artist } from '../../../src/entities/artist'
 import {
 	type GenreArtistClient,
 	type GenreFilterCallbacks,
 	GenreFilterController,
 } from '../../../src/routes/discovery/genre-filter-controller'
-import type { ArtistBubble } from '../../../src/services/artist-service-client'
 import { BubblePool } from '../../../src/services/bubble-pool'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
 
-function makeBubble(id: string, name: string): ArtistBubble {
-	return { id, name, mbid: '', imageUrl: '', x: 0, y: 0, radius: 30 }
+function makeArtist(id: string, name: string): Artist {
+	return new Artist({
+		id: { value: id },
+		name: { value: name },
+	})
 }
 
 describe('GenreFilterController', () => {
@@ -44,9 +47,9 @@ describe('GenreFilterController', () => {
 
 	describe('onGenreSelected', () => {
 		it('should activate a genre tag and reload bubbles', async () => {
-			const bubbles = [makeBubble('a1', 'Rock Artist')]
+			const artists = [makeArtist('a1', 'Rock Artist')]
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
-				bubbles,
+				artists,
 			)
 
 			await sut.onGenreSelected('Rock')
@@ -67,9 +70,9 @@ describe('GenreFilterController', () => {
 		})
 
 		it('should set isLoadingTag during load', async () => {
-			let resolveListTop: (value: ArtistBubble[]) => void
+			let resolveListTop: (value: Artist[]) => void
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockReturnValue(
-				new Promise<ArtistBubble[]>((resolve) => {
+				new Promise<Artist[]>((resolve) => {
 					resolveListTop = resolve
 				}),
 			)
@@ -83,9 +86,9 @@ describe('GenreFilterController', () => {
 		})
 
 		it('should ignore requests while loading', async () => {
-			let resolveListTop: (value: ArtistBubble[]) => void
+			let resolveListTop: (value: Artist[]) => void
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockReturnValue(
-				new Promise<ArtistBubble[]>((resolve) => {
+				new Promise<Artist[]>((resolve) => {
 					resolveListTop = resolve
 				}),
 			)
@@ -101,7 +104,7 @@ describe('GenreFilterController', () => {
 		})
 
 		it('should exclude followed artists from dedup', async () => {
-			const followed = [makeBubble('f1', 'Followed Artist')]
+			const followed = [makeArtist('f1', 'Followed Artist')]
 			sut = new GenreFilterController(
 				mockClient,
 				pool,
@@ -112,14 +115,14 @@ describe('GenreFilterController', () => {
 			)
 
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeBubble('f1', 'Followed Artist'),
-				makeBubble('a1', 'Available Artist'),
+				makeArtist('f1', 'Followed Artist'),
+				makeArtist('a1', 'Available Artist'),
 			])
 
 			await sut.onGenreSelected('Rock')
 
 			expect(pool.availableBubbles).toHaveLength(1)
-			expect(pool.availableBubbles[0].id).toBe('a1')
+			expect(pool.availableBubbles[0].id?.value).toBe('a1')
 		})
 
 		it('should reset activeTag and call onError on failure', async () => {

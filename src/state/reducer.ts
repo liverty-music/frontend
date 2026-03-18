@@ -54,7 +54,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 			}
 
 		case 'guest/follow': {
-			if (state.guest.follows.some((f) => f.artistId === action.artistId)) {
+			const artistId = action.artist.id?.value ?? ''
+			if (
+				state.guest.follows.some((f) => (f.artist.id?.value ?? '') === artistId)
+			) {
 				return state
 			}
 			return {
@@ -63,7 +66,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 					...state.guest,
 					follows: [
 						...state.guest.follows,
-						{ artistId: action.artistId, name: action.name },
+						{ artist: action.artist, home: null },
 					],
 				},
 			}
@@ -75,7 +78,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 				guest: {
 					...state.guest,
 					follows: state.guest.follows.filter(
-						(f) => f.artistId !== action.artistId,
+						(f) => (f.artist.id?.value ?? '') !== action.artistId,
 					),
 				},
 			}
