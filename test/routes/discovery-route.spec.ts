@@ -257,7 +257,9 @@ describe('DiscoveryRoute', () => {
 
 			await sut.onFollowFromSearch(makeArtist('a1', 'Artist'))
 
-			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist')
+			expect(mockFollowClient.follow).toHaveBeenCalledWith(
+				expect.objectContaining({ id: { value: 'a1' } }),
+			)
 		})
 
 		it('should not follow already-followed artist', async () => {
@@ -362,7 +364,9 @@ describe('DiscoveryRoute', () => {
 
 			await sut.onArtistSelected(event)
 
-			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
+			expect(mockFollowClient.follow).toHaveBeenCalledWith(
+				expect.objectContaining({ id: { value: 'a1' } }),
+			)
 		})
 
 		it('should skip if artist already followed', async () => {
