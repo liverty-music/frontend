@@ -83,13 +83,9 @@ export class BubblePool {
 	 * Deduplicate bubbles: remove seen artists and already-followed artists.
 	 * Follow state is provided externally by the caller.
 	 */
-	public dedup(
-		artists: Artist[],
-		followedIds: ReadonlySet<string>,
-	): Artist[] {
+	public dedup(artists: Artist[], followedIds: ReadonlySet<string>): Artist[] {
 		return artists.filter(
-			(a) =>
-				!this.isSeen(a) && !followedIds.has(a.id?.value ?? ''),
+			(a) => !this.isSeen(a) && !followedIds.has(a.id?.value ?? ''),
 		)
 	}
 
