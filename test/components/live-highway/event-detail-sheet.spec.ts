@@ -52,8 +52,6 @@ function createMockOnboarding(step = OnboardingStep.COMPLETED) {
 describe('EventDetailSheet', () => {
 	let sut: InstanceType<typeof EventDetailSheet>
 	let mockElement: HTMLElement
-	let mockSheet: HTMLElement
-	let mockScrollWrapper: HTMLElement
 	let mockOnboarding: ReturnType<typeof createMockOnboarding>
 
 	beforeEach(() => {
@@ -67,29 +65,6 @@ describe('EventDetailSheet', () => {
 		)
 		container.register(EventDetailSheet)
 		sut = container.get(EventDetailSheet)
-
-		// Mock sheet element for Popover API
-		mockSheet = document.createElement('div')
-		;(mockSheet as any).showPopover = vi.fn()
-		;(mockSheet as any).hidePopover = vi.fn()
-		;(mockSheet as any).focus = vi.fn()
-		;(sut as any).sheetElement = mockSheet
-
-		// Mock scroll wrapper for scroll snap dismiss
-		mockScrollWrapper = document.createElement('div')
-		Object.defineProperty(mockScrollWrapper, 'scrollTop', {
-			value: 0,
-			writable: true,
-		})
-		Object.defineProperty(mockScrollWrapper, 'clientHeight', {
-			value: 400,
-			writable: true,
-		})
-		Object.defineProperty(mockScrollWrapper, 'scrollHeight', {
-			value: 800,
-			writable: true,
-		})
-		;(sut as any).scrollWrapper = mockScrollWrapper
 	})
 
 	afterEach(() => {
@@ -158,16 +133,9 @@ describe('EventDetailSheet', () => {
 			)
 		})
 
-		it('should scroll to card page on open', () => {
-			;(mockScrollWrapper as any).scrollTop = 0
-			sut.open(makeEvent())
-
-			expect(mockScrollWrapper.scrollTop).toBe(mockScrollWrapper.scrollHeight)
-		})
-
 		it('should close and replace history state', () => {
 			const replaceSpy = vi.spyOn(history, 'replaceState')
-			sut.isOpen = true
+			sut.open(makeEvent())
 
 			sut.close()
 
@@ -176,45 +144,15 @@ describe('EventDetailSheet', () => {
 		})
 	})
 
-	describe('scroll snap dismiss', () => {
-		it('should close when swiped down to dismiss zone (scrollTop < maxScroll)', () => {
+	describe('onSheetClosed', () => {
+		it('should close and replace history when bottom-sheet fires sheet-closed', () => {
+			const replaceSpy = vi.spyOn(history, 'replaceState')
 			sut.open(makeEvent())
 
-			// Dismiss zone is at scrollTop=0, card is at scrollTop=400 (scrollHeight - clientHeight)
-			const mockTarget = { scrollTop: 0, scrollHeight: 800, clientHeight: 400 }
-			sut.onScrollEnd({ target: mockTarget } as any)
+			sut.onSheetClosed()
 
 			expect(sut.isOpen).toBe(false)
-		})
-
-		it('should not close when snapped back to card page (scrollTop === maxScroll)', () => {
-			sut.open(makeEvent())
-
-			// Card page: scrollTop equals scrollHeight - clientHeight
-			const mockTarget = {
-				scrollTop: 400,
-				scrollHeight: 800,
-				clientHeight: 400,
-			}
-			sut.onScrollEnd({ target: mockTarget } as any)
-
-			expect(sut.isOpen).toBe(true)
-		})
-	})
-
-	describe('dynamic popover mode', () => {
-		it('should set popover="auto" when not in onboarding Step 4', () => {
-			mockOnboarding.currentStep = OnboardingStep.COMPLETED
-			sut.open(makeEvent())
-
-			expect(mockSheet.popover).toBe('auto')
-		})
-
-		it('should set popover="manual" when in onboarding Step 4', () => {
-			mockOnboarding.currentStep = OnboardingStep.DETAIL
-			sut.open(makeEvent())
-
-			expect(mockSheet.popover).toBe('manual')
+			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
 		})
 	})
 
@@ -233,13 +171,10 @@ describe('EventDetailSheet', () => {
 	describe('popstate handling', () => {
 		it('should close sheet when popstate fires', () => {
 			sut.open(makeEvent())
-			const replaceSpy = vi.spyOn(history, 'replaceState')
 
 			window.dispatchEvent(new PopStateEvent('popstate'))
 
 			expect(sut.isOpen).toBe(false)
-			// Should skip history.replaceState when closed by popstate
-			expect(replaceSpy).not.toHaveBeenCalled()
 		})
 
 		it('should not close when popstate fires and sheet is not open', () => {
@@ -253,44 +188,14 @@ describe('EventDetailSheet', () => {
 		})
 	})
 
-	describe('toggle event (light dismiss)', () => {
-		it('should clean up state when popover auto-dismisses', () => {
-			sut.open(makeEvent())
-			const replaceSpy = vi.spyOn(history, 'replaceState')
-
-			// Simulate the browser firing toggle event on light dismiss
-			const toggleEvent = new Event('toggle') as any
-			toggleEvent.newState = 'closed'
-			mockSheet.dispatchEvent(toggleEvent)
-
-			expect(sut.isOpen).toBe(false)
-			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
-		})
-
-		it('should not clean up when toggle fires with newState="open"', () => {
-			sut.open(makeEvent())
-
-			const toggleEvent = new Event('toggle') as any
-			toggleEvent.newState = 'open'
-			mockSheet.dispatchEvent(toggleEvent)
-
-			expect(sut.isOpen).toBe(true)
-		})
-	})
-
 	describe('detaching', () => {
-		it('should remove popstate and toggle listeners', () => {
+		it('should remove popstate listener', () => {
 			const removeWindowSpy = vi.spyOn(window, 'removeEventListener')
-			const removeSheetSpy = vi.spyOn(mockSheet, 'removeEventListener')
 
 			sut.detaching()
 
 			expect(removeWindowSpy).toHaveBeenCalledWith(
 				'popstate',
-				expect.any(Function),
-			)
-			expect(removeSheetSpy).toHaveBeenCalledWith(
-				'toggle',
 				expect.any(Function),
 			)
 		})
