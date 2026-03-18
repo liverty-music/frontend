@@ -192,6 +192,23 @@ describe('EventDetailSheet', () => {
 			expect(replaceSpy).not.toHaveBeenCalled()
 		})
 
+		it('should reset closedByPopstate on next open so light-dismiss works', () => {
+			const replaceSpy = vi.spyOn(history, 'replaceState')
+			sut.open(makeEvent())
+
+			// First cycle: popstate closes the sheet
+			window.dispatchEvent(new PopStateEvent('popstate'))
+			sut.onSheetClosed() // bottom-sheet fires after popstate — skips replaceState (correct)
+			replaceSpy.mockClear()
+
+			// Second cycle: re-open and light-dismiss
+			sut.open(makeEvent({ id: 'c2' }))
+			sut.onSheetClosed()
+
+			// Should call replaceState because this was a normal light-dismiss, not popstate
+			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
+		})
+
 		it('should not close when popstate fires and sheet is not open', () => {
 			sut.open(makeEvent())
 			sut.close()

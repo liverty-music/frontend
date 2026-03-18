@@ -60,6 +60,7 @@ export class EventDetailSheet {
 
 	/** Open the sheet for a given event, pushing a history entry for deep-link support */
 	public open(event: LiveEvent): void {
+		this.closedByPopstate = false
 		this.event = event
 		this.isOpen = true
 

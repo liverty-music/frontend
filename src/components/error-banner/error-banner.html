@@ -1,6 +1,6 @@
 <import from="./error-banner.css"></import>
 
-<bottom-sheet open.bind="errorBoundary.currentError" dismissable.bind="false" aria-label="Error details">
+<bottom-sheet open.to-view="errorBoundary.currentError" dismissable.bind="false" aria-label="Error details">
   <section class="error-content">
     <h2 class="error-title">Something went wrong</h2>
     <p class="error-message">${errorBoundary.currentError?.message}</p>
