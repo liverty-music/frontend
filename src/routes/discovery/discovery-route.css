@@ -16,8 +16,6 @@
 			--_brand-60: oklch(58.5% 0.204 277deg / 60%);
 			--_brand-80: oklch(58.5% 0.204 277deg / 80%);
 			--_magenta-60: oklch(62.7% 0.233 304deg / 60%);
-			--_purple-25: oklch(70.9% 0.159 294deg / 25%);
-			--_backdrop-bg: oklch(0% 0 0deg / 30%);
 			--_green-30: oklch(80% 0.182 152deg / 30%);
 			--_green-90: oklch(80% 0.182 152deg / 90%);
 			--_star-img:
@@ -361,55 +359,6 @@
 			color: var(--_green-90);
 		}
 
-		.onboarding-guide {
-			--_guide-bg: linear-gradient(
-				135deg,
-				oklch(58.5% 0.204 277deg / 20%),
-				oklch(60.6% 0.219 293deg / 15%)
-			);
-
-			translate: 0 1rem;
-
-			max-inline-size: none;
-			max-block-size: none;
-			margin: auto;
-			padding: var(--space-s) var(--space-l);
-			border: 1px solid var(--_purple-25);
-			border-radius: var(--radius-button);
-
-			font-family: var(--font-display);
-			font-size: var(--step--1);
-			font-weight: 500;
-			color: var(--_white-90);
-			text-align: center;
-
-			opacity: 0;
-			background: var(--_guide-bg);
-			backdrop-filter: blur(12px);
-
-			transition:
-				opacity 400ms ease,
-				translate 400ms ease,
-				display 400ms ease allow-discrete,
-				overlay 400ms ease allow-discrete;
-
-			&::backdrop {
-				background: var(--_backdrop-bg);
-			}
-
-			&:popover-open {
-				translate: 0 0;
-				opacity: 1;
-			}
-
-			@starting-style {
-				&:popover-open {
-					translate: 0 1rem;
-					opacity: 0;
-				}
-			}
-		}
-
 		/* State-driven visibility (after base selectors to avoid descending specificity) */
 		.discovery-layout[data-search-mode="true"] :is(fieldset, .bubble-area) {
 			display: none;
@@ -417,12 +366,6 @@
 
 		.discovery-layout:not([data-search-mode="true"]) .search-results {
 			display: none;
-		}
-
-		@media (prefers-reduced-motion: reduce) {
-			.onboarding-guide {
-				transition: none;
-			}
 		}
 	}
 }

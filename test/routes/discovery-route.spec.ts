@@ -753,26 +753,31 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('onboarding popover', () => {
-		it('should call showPopover on attach when onboarding', () => {
+	describe('onboarding snack notification', () => {
+		it('should publish a Snack when onboarding', () => {
 			mockOnboarding.isOnboarding = true
-			const mockPopover = { showPopover: vi.fn() }
-			sut.onboardingGuide = mockPopover as any
 
 			sut.attached()
 
-			expect(mockPopover.showPopover).toHaveBeenCalledTimes(1)
+			expect(mockEa.publish).toHaveBeenCalledWith(
+				expect.objectContaining({
+					message: 'discovery.popoverGuide',
+					severity: 'info',
+					options: expect.objectContaining({ duration: 5000 }),
+				}),
+			)
 			sut.detaching()
 		})
 
-		it('should not call showPopover when not onboarding', () => {
+		it('should not publish a Snack when not onboarding', () => {
 			mockOnboarding.isOnboarding = false
-			const mockPopover = { showPopover: vi.fn() }
-			sut.onboardingGuide = mockPopover as any
 
 			sut.attached()
 
-			expect(mockPopover.showPopover).not.toHaveBeenCalled()
+			const snackCalls = (
+				mockEa.publish as ReturnType<typeof vi.fn>
+			).mock.calls.filter(([arg]: [unknown]) => arg instanceof Snack)
+			expect(snackCalls).toHaveLength(0)
 			sut.detaching()
 		})
 	})
