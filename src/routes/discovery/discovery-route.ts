@@ -34,7 +34,6 @@ export class DiscoveryRoute {
 	public readonly i18n = resolve(I18N)
 
 	public dnaOrbCanvas!: DnaOrbCanvas
-	public onboardingGuide!: HTMLElement
 
 	private abortController = new AbortController()
 
@@ -186,8 +185,12 @@ export class DiscoveryRoute {
 	public attached(): void {
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
 
-		if (this.isOnboarding && this.onboardingGuide) {
-			this.onboardingGuide.showPopover()
+		if (this.isOnboarding) {
+			this.ea.publish(
+				new Snack(this.i18n.tr('discovery.popoverGuide'), 'info', {
+					duration: 5000,
+				}),
+			)
 		}
 	}
 

@@ -201,22 +201,21 @@ test.describe('Onboarding tutorial flow', () => {
 		).toBeVisible()
 	})
 
-	test('Step 1: Popover guide appears on discover page entry', async ({
+	test('Step 1: Snack notification appears on discover page entry', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
 			localStorage.setItem('onboardingStep', '1')
 		})
 		await page.goto('http://localhost:9000/discover')
-		await page.waitForSelector('.discover-layout')
+		await page.waitForSelector('.discovery-layout')
 
-		// Popover guide should be visible
-		const popover = page.locator('.onboarding-guide')
-		await expect(popover).toBeVisible({ timeout: 5000 })
+		// Snack notification should be visible
+		const snack = page.locator('.snack-item')
+		await expect(snack).toBeVisible({ timeout: 5000 })
 
-		// Light-dismiss: clicking outside should close the popover
-		await page.locator('.bubble-area').click({ position: { x: 10, y: 10 } })
-		await expect(popover).not.toBeVisible({ timeout: 3000 })
+		// Auto-dismiss: snack disappears after duration
+		await expect(snack).not.toBeVisible({ timeout: 7000 })
 	})
 
 	test('Step 0 → Step 1: Get Started navigates to Discover', async ({
