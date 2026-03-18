@@ -1,5 +1,5 @@
 <template>
-  <toast open.bind="isVisible">
+  <toast open.bind="isVisible" aria-label="Notification permission">
 
     <!-- Default permission state -->
     <div show.bind="notificationManager.permission === 'default'" class="prompt-row" aria-live="polite">

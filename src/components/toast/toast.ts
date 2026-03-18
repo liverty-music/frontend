@@ -2,6 +2,7 @@ import { bindable } from 'aurelia'
 
 export class Toast {
 	@bindable public open = false
+	@bindable public ariaLabel = ''
 
 	private popoverEl!: HTMLDialogElement
 
