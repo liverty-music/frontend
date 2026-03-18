@@ -43,10 +43,7 @@ describe('SnackBar', () => {
 		hostElement = document.createElement('div')
 
 		const container = DI.createContainer()
-		container.register(
-			Registration.instance(INode, hostElement),
-			SnackBar,
-		)
+		container.register(Registration.instance(INode, hostElement), SnackBar)
 		ea = container.get(IEventAggregator)
 		sut = container.get(SnackBar)
 
