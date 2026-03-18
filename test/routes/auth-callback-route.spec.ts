@@ -83,40 +83,33 @@ describe('AuthCallbackRoute', () => {
 	})
 
 	describe('canLoad', () => {
-		it('should reject unverified email, sign out, and show error', async () => {
+		it('should redirect to dashboard for returning user (ensureLoaded succeeds, no create)', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'new@example.com', email_verified: false },
+				profile: { email: 'existing@example.com' },
 			})
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockAuth.signOut).toHaveBeenCalled()
-			expect(result).toBe(true)
-			expect(sut.error).toBe(
-				'Your email address has not been verified. Please check your inbox for a verification email and try again.',
-			)
+			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
 			expect(mockUserService.client.create).not.toHaveBeenCalled()
-		})
-
-		it('should redirect to dashboard and always merge guest data after authentication', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'new@example.com', email_verified: true },
-			})
-
-			const result = await sut.canLoad({}, {} as RouteNode)
-
-			expect(mockUserService.client.create).toHaveBeenCalled()
 			expect(mockMergeService.merge).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 
-		it('should redirect to dashboard when state is undefined', async () => {
+		it('should provision new user when ensureLoaded returns NotFound', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'existing@example.com', email_verified: true },
+				profile: { email: 'new@example.com' },
 			})
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
+				.mockResolvedValueOnce(undefined)
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
+			expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(2)
+			expect(mockUserService.client.create).toHaveBeenCalled()
+			expect(mockMergeService.merge).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 
@@ -146,8 +139,12 @@ describe('AuthCallbackRoute', () => {
 
 		it('should handle provisionUser ALREADY_EXISTS gracefully', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'existing@example.com', email_verified: true },
+				profile: { email: 'existing@example.com' },
 			})
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
+				.mockResolvedValueOnce(undefined)
 			mockUserService.client.create = vi
 				.fn()
 				.mockRejectedValue(new ConnectError('exists', Code.AlreadyExists))
@@ -159,8 +156,11 @@ describe('AuthCallbackRoute', () => {
 
 		it('should show error when provisionUser fails with non-AlreadyExists error', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'new@example.com', email_verified: true },
+				profile: { email: 'new@example.com' },
 			})
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockRejectedValue(new ConnectError('not found', Code.NotFound))
 			mockUserService.client.create = vi
 				.fn()
 				.mockRejectedValue(new Error('server error'))
@@ -171,10 +171,14 @@ describe('AuthCallbackRoute', () => {
 			expect(sut.error).toBe('Login failed: server error')
 		})
 
-		it('should skip provisionUser when email is missing', async () => {
+		it('should skip provisionUser when email is missing and ensureLoaded returns NotFound', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email_verified: true },
+				profile: {},
 			})
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
+				.mockResolvedValueOnce(undefined)
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
@@ -186,7 +190,7 @@ describe('AuthCallbackRoute', () => {
 			mockOnboarding.currentStep = OnboardingStep.DISCOVERY
 			mockOnboarding.isOnboarding = true
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'user@example.com', email_verified: true },
+				profile: { email: 'user@example.com' },
 			})
 
 			const result = await sut.canLoad({}, {} as RouteNode)

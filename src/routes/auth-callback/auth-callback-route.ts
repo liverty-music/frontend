@@ -37,16 +37,7 @@ export class AuthCallbackRoute {
 			const user = await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
 
-			// Reject unverified emails before provisioning a backend user
-			if (!user.profile.email_verified) {
-				await this.authService.signOut()
-				this.error =
-					'Your email address has not been verified. Please check your inbox for a verification email and try again.'
-				return true
-			}
-
-			await this.provisionUser(user.profile.email)
-			await this.userService.ensureLoaded()
+			await this.ensureUserProvisioned(user.profile.email)
 
 			// If onboarding was in progress, mark as completed
 			if (this.onboarding.isOnboarding) {
@@ -71,6 +62,25 @@ export class AuthCallbackRoute {
 			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
 			return true
 		}
+	}
+
+	// Load the user profile from the backend. If the user does not exist yet
+	// (new registration), provision first and then load.
+	private async ensureUserProvisioned(
+		email: string | undefined,
+	): Promise<void> {
+		try {
+			await this.userService.ensureLoaded()
+			return
+		} catch (err) {
+			if (!(err instanceof ConnectError && err.code === Code.NotFound)) {
+				throw err
+			}
+			this.logger.info('User not found in backend, provisioning...')
+		}
+
+		await this.provisionUser(email)
+		await this.userService.ensureLoaded()
 	}
 
 	// Call Create RPC with ALREADY_EXISTS handling.
