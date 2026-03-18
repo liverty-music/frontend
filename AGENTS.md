@@ -54,6 +54,8 @@ in the `aurelia2-component` skill. Read it before writing any component code.
 
 All routes require authentication by default (`AuthHook` in `src/hooks/auth-hook.ts`). Public routes explicitly set `data: { auth: false }` in route config.
 
+Test user: `pepperoni9+playwright-1@gmail.com` (password in `.auth/password.md`).
+
 Before using the `playwright-auth` MCP server to test protected routes:
 
 ```bash
@@ -63,6 +65,8 @@ npx tsx scripts/capture-auth-state.ts
 This opens a browser for manual OIDC login and saves the session to `.auth/storageState.json`. The `playwright-auth` MCP server (configured in `.claude/settings.json`) uses this file automatically.
 
 If navigation to a protected route redirects to `/`, the storageState has likely expired. Re-run the capture script.
+
+On WSL2, the headed browser may not render via WSLg. Alternative: use Playwright MCP (headless) to navigate to `http://localhost:9000`, complete the login flow, extract localStorage, and write to `.auth/storageState.json`.
 
 ## Key Technical Decisions
 
