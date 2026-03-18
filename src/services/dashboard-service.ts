@@ -6,11 +6,13 @@ import type {
 	Concert,
 	DateGroup,
 	HypeLevel,
+	JourneyStatus,
 	LaneType,
 } from '../entities/concert'
 import type { FollowedArtist, LogoColorProfile } from '../entities/follow'
 import { IConcertService } from './concert-service'
 import { IFollowServiceClient } from './follow-service-client'
+import { ITicketJourneyService } from './ticket-journey-service'
 
 export const IDashboardService = DI.createInterface<IDashboardService>(
 	'IDashboardService',
@@ -23,13 +25,15 @@ export class DashboardService {
 	private readonly logger = resolve(ILogger).scopeTo('DashboardService')
 	private readonly concertService = resolve(IConcertService)
 	private readonly followService = resolve(IFollowServiceClient)
+	private readonly journeyService = resolve(ITicketJourneyService)
 
 	public async loadDashboardEvents(signal?: AbortSignal): Promise<DateGroup[]> {
 		this.logger.info('Loading dashboard events')
 
-		const [artistMap, groups] = await Promise.all([
+		const [artistMap, groups, journeyMap] = await Promise.all([
 			this.fetchFollowedArtistMap(signal),
 			this.concertService.listByFollower(signal),
+			this.fetchJourneyMap(signal),
 		])
 
 		if (groups.length === 0) {
@@ -37,12 +41,15 @@ export class DashboardService {
 			return []
 		}
 
-		return groups.map((g) => this.protoGroupToDateGroup(g, artistMap))
+		return groups.map((g) =>
+			this.protoGroupToDateGroup(g, artistMap, journeyMap),
+		)
 	}
 
 	private protoGroupToDateGroup(
 		group: ProximityGroup,
 		artistMap: Map<string, FollowedArtist>,
+		journeyMap: Map<string, JourneyStatus>,
 	): DateGroup {
 		const ld = group.date?.value
 		const jsDate = ld ? new Date(ld.year, ld.month - 1, ld.day) : new Date()
@@ -71,7 +78,12 @@ export class DashboardService {
 					artist?.backgroundUrl,
 					artist?.logoColorProfile,
 				)
-				return event ? [event] : []
+				if (!event) return []
+				const eventId = c.id?.value
+				if (eventId) {
+					event.journeyStatus = journeyMap.get(eventId)
+				}
+				return [event]
 			})
 
 		return {
@@ -80,6 +92,19 @@ export class DashboardService {
 			home: convert(group.home, 'home'),
 			nearby: convert(group.nearby, 'nearby'),
 			away: convert(group.away, 'away'),
+		}
+	}
+
+	private async fetchJourneyMap(
+		signal?: AbortSignal,
+	): Promise<Map<string, JourneyStatus>> {
+		try {
+			return await this.journeyService.listByUser(signal)
+		} catch (err) {
+			this.logger.warn('Journey fetch failed, continuing without statuses', {
+				error: err,
+			})
+			return new Map()
 		}
 	}
 
