@@ -23,14 +23,6 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly i18n = resolve(I18N)
 
 	/**
-	 * Whether to show the [Get Started] primary CTA.
-	 * Hidden when onboardingStep = COMPLETED (show Login only).
-	 */
-	public get showGetStarted(): boolean {
-		return !this.onboarding.isCompleted
-	}
-
-	/**
 	 * Router lifecycle hook - called before the component is loaded.
 	 * Returns a redirect instruction instead of calling router.load() to avoid
 	 * re-entrant navigation while the viewport is not yet registered (AUR3174).
@@ -63,7 +55,6 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	async handleGetStarted(): Promise<void> {
 		this.logger.info('Get Started tapped, entering onboarding')
-		this.store.dispatch({ type: 'guest/clearAll' })
 		this.store.dispatch({ type: 'onboarding/reset' })
 		this.onboarding.setStep(OnboardingStep.DISCOVERY)
 		try {
