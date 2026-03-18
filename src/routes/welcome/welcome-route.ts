@@ -55,6 +55,7 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	async handleGetStarted(): Promise<void> {
 		this.logger.info('Get Started tapped, entering onboarding')
+		this.store.dispatch({ type: 'guest/clearAll' })
 		this.store.dispatch({ type: 'onboarding/reset' })
 		this.onboarding.setStep(OnboardingStep.DISCOVERY)
 		try {
