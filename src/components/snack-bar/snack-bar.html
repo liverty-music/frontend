@@ -1,0 +1,23 @@
+<import from="./snack-bar.css"></import>
+
+<aside ref="containerElement" class="[ snack-stack ]">
+  <output
+    repeat.for="snack of snacks; key.bind: snack.id"
+    data-snack-id.bind="snack.id"
+    popover="manual"
+    role="status"
+    class="snack-item"
+    data-severity.bind="snack.severity"
+    toggle.trigger="onToggle($event, snack)"
+  >
+    <svg-icon if.bind="snack.severity === 'info'" name="ticket" class="snack-icon"></svg-icon>
+    <svg-icon if.bind="snack.severity === 'warning'" name="warning" class="snack-icon"></svg-icon>
+    <svg-icon if.bind="snack.severity === 'error'" name="x-circle" class="snack-icon"></svg-icon>
+    ${snack.message}
+    <button
+      if.bind="snack.action"
+      click.trigger="onAction(snack)"
+      class="snack-action-btn"
+    >${snack.action.label}</button>
+  </output>
+</aside>
