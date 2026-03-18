@@ -1,4 +1,4 @@
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import {
 	type TicketJourney,
 	TicketJourneyStatus,
@@ -10,11 +10,10 @@ import type { JourneyStatus } from '../entities/concert'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
 
-export const ITicketJourneyService =
-	DI.createInterface<ITicketJourneyService>(
-		'ITicketJourneyService',
-		(x) => x.singleton(TicketJourneyServiceClient),
-	)
+export const ITicketJourneyService = DI.createInterface<ITicketJourneyService>(
+	'ITicketJourneyService',
+	(x) => x.singleton(TicketJourneyServiceClient),
+)
 
 export interface ITicketJourneyService extends TicketJourneyServiceClient {}
 

@@ -128,69 +128,74 @@
 
 			font-size: var(--step--2);
 			font-weight: 500;
+			color: var(--color-text-secondary);
 			text-transform: uppercase;
 			letter-spacing: 0.03em;
-			color: var(--color-text-secondary);
 
 			transition:
 				border-color 150ms ease-out,
 				color 150ms ease-out,
 				background-color 150ms ease-out;
 
+			&:disabled {
+				opacity: 0.5;
+			}
+
 			&:hover:not(:disabled) {
 				border-color: var(--_border-light-hover);
 				color: var(--color-text-primary);
 				background: var(--_bg-hover);
 			}
-
-			&:disabled {
-				opacity: 0.5;
-			}
 		}
 
-		.journey-btn[data-journey-status="tracking"][data-active] {
-			border-color: oklch(65% 0.18 255deg);
-			color: oklch(90% 0.05 255deg);
-			background: oklch(65% 0.18 255deg / 25%);
+		.journey-btn[data-active] {
+			border-color: var(--_journey-border);
+			color: var(--_journey-text);
+			background: var(--_journey-bg);
 		}
 
-		.journey-btn[data-journey-status="applied"][data-active] {
-			border-color: oklch(65% 0.15 195deg);
-			color: oklch(90% 0.05 195deg);
-			background: oklch(65% 0.15 195deg / 25%);
+		.journey-btn[data-journey-status="tracking"] {
+			--_journey-border: oklch(65% 0.18 255deg);
+			--_journey-text: oklch(90% 0.05 255deg);
+			--_journey-bg: oklch(65% 0.18 255deg / 25%);
 		}
 
-		.journey-btn[data-journey-status="lost"][data-active] {
-			border-color: oklch(55% 0.1 0deg);
-			color: oklch(80% 0.05 0deg);
-			background: oklch(45% 0.08 0deg / 25%);
+		.journey-btn[data-journey-status="applied"] {
+			--_journey-border: oklch(65% 0.15 195deg);
+			--_journey-text: oklch(90% 0.05 195deg);
+			--_journey-bg: oklch(65% 0.15 195deg / 25%);
 		}
 
-		.journey-btn[data-journey-status="unpaid"][data-active] {
-			border-color: oklch(65% 0.18 55deg);
-			color: oklch(90% 0.05 55deg);
-			background: oklch(65% 0.18 55deg / 25%);
+		.journey-btn[data-journey-status="lost"] {
+			--_journey-border: oklch(55% 0.1 0deg);
+			--_journey-text: oklch(80% 0.05 0deg);
+			--_journey-bg: oklch(45% 0.08 0deg / 25%);
 		}
 
-		.journey-btn[data-journey-status="paid"][data-active] {
-			border-color: oklch(65% 0.18 152deg);
-			color: oklch(90% 0.05 152deg);
-			background: oklch(65% 0.18 152deg / 25%);
+		.journey-btn[data-journey-status="unpaid"] {
+			--_journey-border: oklch(65% 0.18 55deg);
+			--_journey-text: oklch(90% 0.05 55deg);
+			--_journey-bg: oklch(65% 0.18 55deg / 25%);
+		}
+
+		.journey-btn[data-journey-status="paid"] {
+			--_journey-border: oklch(65% 0.18 152deg);
+			--_journey-text: oklch(90% 0.05 152deg);
+			--_journey-bg: oklch(65% 0.18 152deg / 25%);
 		}
 
 		.journey-remove-btn {
 			margin-block-start: var(--space-2xs);
-
 			font-size: var(--step--2);
 			color: var(--color-text-muted);
 			text-decoration: underline;
 
-			&:hover:not(:disabled) {
-				color: var(--color-text-secondary);
-			}
-
 			&:disabled {
 				opacity: 0.5;
+			}
+
+			&:hover:not(:disabled) {
+				color: var(--color-text-secondary);
 			}
 		}
 
