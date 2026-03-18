@@ -5,7 +5,6 @@ import { ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
 import { IAuthService } from '../../services/auth-service'
 import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
-import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserService } from '../../services/user-service'
 import { resolveStore } from '../../state/store-interface'
 
@@ -24,7 +23,6 @@ export class AuthCallbackRoute {
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
 	private readonly mergeService = resolve(IGuestDataMergeService)
-	private readonly onboarding = resolve(IOnboardingService)
 	private readonly store = resolveStore()
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
 
@@ -38,11 +36,6 @@ export class AuthCallbackRoute {
 			this.logger.info('handleCallback success!')
 
 			await this.ensureUserProvisioned(user.profile.email)
-
-			// If onboarding was in progress, mark as completed
-			if (this.onboarding.isOnboarding) {
-				this.onboarding.complete()
-			}
 
 			// Merge any guest data accumulated during onboarding
 			await this.mergeService.merge()
