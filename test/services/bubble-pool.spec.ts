@@ -138,16 +138,13 @@ describe('BubblePool', () => {
 			pool.add([makeArtist('a1', 'One')])
 			pool.trackSeen(makeArtist('a1', 'One'))
 
-
 			pool.reset()
-
 			expect(pool.availableBubbles).toHaveLength(0)
 			// Seen sets cleared: dedup should no longer filter
 			const result = pool.dedup([makeArtist('a1', 'One')], new Set())
 			expect(result).toHaveLength(1)
 		})
 	})
-
 
 	describe('dedup', () => {
 		it('should filter out seen artists by name', () => {
