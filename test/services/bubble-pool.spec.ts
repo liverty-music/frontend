@@ -129,53 +129,17 @@ describe('BubblePool', () => {
 	})
 
 	describe('reset', () => {
-		it('should clear pool, seen sets, and followed IDs', () => {
+		it('should clear pool and seen sets', () => {
 			const pool = new BubblePool()
 			pool.add([makeBubble('a1', 'One')])
 			pool.trackSeen(makeBubble('a1', 'One'))
-			pool.markFollowed('a1')
 
 			pool.reset()
 
 			expect(pool.availableBubbles).toHaveLength(0)
-			expect(pool.isFollowed('a1')).toBe(false)
 			// Seen sets cleared: dedup should no longer filter
-			const result = pool.dedup([makeBubble('a1', 'One')])
+			const result = pool.dedup([makeBubble('a1', 'One')], new Set())
 			expect(result).toHaveLength(1)
-		})
-	})
-
-	describe('markFollowed / unmarkFollowed / isFollowed', () => {
-		it('should mark an artist as followed and remove from pool', () => {
-			const pool = new BubblePool()
-			pool.add([makeBubble('a1', 'One'), makeBubble('a2', 'Two')])
-
-			pool.markFollowed('a1')
-
-			expect(pool.isFollowed('a1')).toBe(true)
-			expect(pool.followedIds.has('a1')).toBe(true)
-			expect(pool.availableBubbles).toHaveLength(1)
-			expect(pool.availableBubbles[0].id).toBe('a2')
-		})
-
-		it('should unmark a followed artist for rollback', () => {
-			const pool = new BubblePool()
-			pool.markFollowed('a1')
-
-			pool.unmarkFollowed('a1')
-
-			expect(pool.isFollowed('a1')).toBe(false)
-			expect(pool.followedIds.has('a1')).toBe(false)
-		})
-
-		it('should be a no-op when marking already followed artist', () => {
-			const pool = new BubblePool()
-			pool.add([makeBubble('a1', 'One')])
-			pool.markFollowed('a1')
-			pool.markFollowed('a1')
-
-			expect(pool.isFollowed('a1')).toBe(true)
-			expect(pool.availableBubbles).toHaveLength(0)
 		})
 	})
 
@@ -184,10 +148,13 @@ describe('BubblePool', () => {
 			const pool = new BubblePool()
 			pool.trackSeen(makeBubble('a1', 'Artist X'))
 
-			const result = pool.dedup([
-				makeBubble('a2', 'Artist X'), // same name, different id
-				makeBubble('a3', 'Artist Y'),
-			])
+			const result = pool.dedup(
+				[
+					makeBubble('a2', 'Artist X'), // same name, different id
+					makeBubble('a3', 'Artist Y'),
+				],
+				new Set(),
+			)
 
 			expect(result).toHaveLength(1)
 			expect(result[0].name).toBe('Artist Y')
@@ -197,10 +164,10 @@ describe('BubblePool', () => {
 			const pool = new BubblePool()
 			pool.trackSeen(makeBubble('a1', 'Original Name'))
 
-			const result = pool.dedup([
-				makeBubble('a1', 'Different Name'),
-				makeBubble('a2', 'New Artist'),
-			])
+			const result = pool.dedup(
+				[makeBubble('a1', 'Different Name'), makeBubble('a2', 'New Artist')],
+				new Set(),
+			)
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('a2')
@@ -210,33 +177,65 @@ describe('BubblePool', () => {
 			const pool = new BubblePool()
 			pool.trackSeen(makeBubble('a1', 'Artist', 'mbid-123'))
 
-			const result = pool.dedup([
-				makeBubble('a2', 'Different', 'mbid-123'), // same mbid
-				makeBubble('a3', 'Other', 'mbid-456'),
-			])
+			const result = pool.dedup(
+				[
+					makeBubble('a2', 'Different', 'mbid-123'), // same mbid
+					makeBubble('a3', 'Other', 'mbid-456'),
+				],
+				new Set(),
+			)
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('a3')
 		})
 
-		it('should filter out followed artists', () => {
+		it('should filter out followed artists via external followedIds', () => {
 			const pool = new BubblePool()
-			pool.markFollowed('a1')
+			const followedIds = new Set(['a1'])
 
-			const result = pool.dedup([
-				makeBubble('a1', 'Followed Artist'),
-				makeBubble('a2', 'Not Followed'),
-			])
+			const result = pool.dedup(
+				[makeBubble('a1', 'Followed Artist'), makeBubble('a2', 'Not Followed')],
+				followedIds,
+			)
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('a2')
+		})
+
+		it('should work without follow filtering when followedIds is empty', () => {
+			const pool = new BubblePool()
+
+			const result = pool.dedup(
+				[makeBubble('a1', 'Artist One'), makeBubble('a2', 'Artist Two')],
+				new Set(),
+			)
+
+			expect(result).toHaveLength(2)
+		})
+
+		it('should apply both seen and followed filters', () => {
+			const pool = new BubblePool()
+			pool.trackSeen(makeBubble('a1', 'Seen Artist'))
+			const followedIds = new Set(['a2'])
+
+			const result = pool.dedup(
+				[
+					makeBubble('a1', 'Seen Artist'),
+					makeBubble('a2', 'Followed Artist'),
+					makeBubble('a3', 'Fresh Artist'),
+				],
+				followedIds,
+			)
+
+			expect(result).toHaveLength(1)
+			expect(result[0].id).toBe('a3')
 		})
 
 		it('should normalize name matching (case-insensitive, whitespace-collapsed)', () => {
 			const pool = new BubblePool()
 			pool.trackSeen(makeBubble('a1', 'Artist  X'))
 
-			const result = pool.dedup([makeBubble('a2', ' artist x ')])
+			const result = pool.dedup([makeBubble('a2', ' artist x ')], new Set())
 
 			expect(result).toHaveLength(0)
 		})
@@ -247,11 +246,14 @@ describe('BubblePool', () => {
 			const pool = new BubblePool()
 			pool.trackAllSeen([makeBubble('a1', 'One'), makeBubble('a2', 'Two')])
 
-			const result = pool.dedup([
-				makeBubble('a1', 'One'),
-				makeBubble('a2', 'Two'),
-				makeBubble('a3', 'Three'),
-			])
+			const result = pool.dedup(
+				[
+					makeBubble('a1', 'One'),
+					makeBubble('a2', 'Two'),
+					makeBubble('a3', 'Three'),
+				],
+				new Set(),
+			)
 
 			expect(result).toHaveLength(1)
 			expect(result[0].id).toBe('a3')
@@ -266,11 +268,11 @@ describe('BubblePool', () => {
 			pool.resetSeenWith([makeBubble('keep1', 'Keep One')])
 
 			// Old seen artist should no longer be filtered
-			const result1 = pool.dedup([makeBubble('old1', 'Old One')])
+			const result1 = pool.dedup([makeBubble('old1', 'Old One')], new Set())
 			expect(result1).toHaveLength(1)
 
 			// Kept artist should still be filtered
-			const result2 = pool.dedup([makeBubble('keep1', 'Keep One')])
+			const result2 = pool.dedup([makeBubble('keep1', 'Keep One')], new Set())
 			expect(result2).toHaveLength(0)
 		})
 	})
@@ -282,7 +284,7 @@ describe('BubblePool', () => {
 
 			pool.clearSeenSets()
 
-			const result = pool.dedup([makeBubble('a1', 'One')])
+			const result = pool.dedup([makeBubble('a1', 'One')], new Set())
 			expect(result).toHaveLength(1)
 		})
 	})

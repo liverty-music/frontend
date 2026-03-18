@@ -31,7 +31,7 @@ export class FollowOrchestrator {
 	) {}
 
 	public get followedIds(): ReadonlySet<string> {
-		return this.pool.followedIds
+		return new Set(this.followedArtists.map((a) => a.id))
 	}
 
 	public get followedCount(): number {
@@ -42,12 +42,12 @@ export class FollowOrchestrator {
 		artist: ArtistBubble,
 		spawnPosition?: { x: number; y: number },
 	): Promise<void> {
-		if (this.pool.isFollowed(artist.id)) return
+		if (this.followedIds.has(artist.id)) return
 		this.logger.info('Following artist', { artist: artist.name })
 
 		// Optimistic UI update
-		this.pool.markFollowed(artist.id)
 		this.followedArtists = [...this.followedArtists, artist]
+		this.pool.remove(artist.id)
 
 		try {
 			await this.followClient.follow(artist.id, artist.name)
@@ -63,11 +63,10 @@ export class FollowOrchestrator {
 
 			// Rollback optimistic update
 			batch(() => {
-				this.pool.unmarkFollowed(artist.id)
-				this.pool.add([artist])
 				this.followedArtists = this.followedArtists.filter(
 					(b) => b.id !== artist.id,
 				)
+				this.pool.add([artist])
 			})
 
 			if (spawnPosition) {

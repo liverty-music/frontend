@@ -84,7 +84,10 @@ export class GenreFilterController {
 			tag,
 			BubblePool.MAX_BUBBLES,
 		)
-		const bubbles = this.pool.dedup(rawBubbles).slice(0, BubblePool.MAX_BUBBLES)
+		const followedIds = new Set(this.followedArtists().map((a) => a.id))
+		const bubbles = this.pool
+			.dedup(rawBubbles, followedIds)
+			.slice(0, BubblePool.MAX_BUBBLES)
 
 		this.pool.replace(bubbles)
 		this.pool.trackAllSeen(bubbles)
