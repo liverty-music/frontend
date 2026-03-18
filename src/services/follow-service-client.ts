@@ -3,6 +3,7 @@ import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/en
 import { FollowService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/follow/v1/follow_service_connect.js'
 import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import type { Artist } from '../entities/artist'
 import type { FollowedArtist } from '../entities/follow'
 import { resolveStore } from '../state/store-interface'
 import { IAuthService } from './auth-service'
@@ -39,22 +40,16 @@ export class FollowServiceClient {
 	}
 
 	/**
-	 * Follow an artist. During onboarding, writes to guest store.
-	 * Otherwise calls the backend RPC.
+	 * Follow an artist. During onboarding, writes to guest store
+	 * with the full Artist proto (preserving fanart). Otherwise calls the backend RPC.
 	 */
-	public async follow(artistId: string, artistName: string): Promise<void> {
+	public async follow(artist: Artist): Promise<void> {
 		if (this.onboarding.isOnboarding) {
-			// During onboarding, find the artist in the guest store or create a minimal one
-			const { Artist } = await import('../entities/artist')
-			const artist = new Artist({
-				id: { value: artistId },
-				name: { value: artistName },
-			})
 			this.store.dispatch({ type: 'guest/follow', artist })
 			return
 		}
 		await this.client.follow({
-			artistId: new ArtistId({ value: artistId }),
+			artistId: new ArtistId({ value: artist.id?.value ?? '' }),
 		})
 	}
 

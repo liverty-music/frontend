@@ -3,7 +3,7 @@ import type { Artist } from '../../entities/artist'
 import type { BubblePool } from '../../services/bubble-pool'
 
 export interface FollowClient {
-	follow(artistId: string, artistName: string): Promise<void>
+	follow(artist: Artist): Promise<void>
 }
 
 export interface FollowConcertClient {
@@ -52,7 +52,7 @@ export class FollowOrchestrator {
 		this.pool.remove(artistId)
 
 		try {
-			await this.followClient.follow(artistId, artistName)
+			await this.followClient.follow(artist)
 			this.logger.info('Artist followed', {
 				followed: this.followedArtists.length,
 			})

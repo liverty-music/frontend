@@ -59,7 +59,9 @@ describe('FollowOrchestrator', () => {
 		it('should follow artist and update state optimistically', async () => {
 			await sut.followArtist(makeArtist('a1', 'Artist One'))
 
-			expect(mockFollowClient.follow).toHaveBeenCalledWith('a1', 'Artist One')
+			expect(mockFollowClient.follow).toHaveBeenCalledWith(
+				expect.objectContaining({ id: { value: 'a1' } }),
+			)
 			expect(sut.followedCount).toBe(1)
 			expect(sut.followedIds.has('a1')).toBe(true)
 			expect(mockCallbacks.onFollowed).toHaveBeenCalled()
