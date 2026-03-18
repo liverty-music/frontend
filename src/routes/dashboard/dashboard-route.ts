@@ -366,11 +366,11 @@ export class DashboardRoute {
 	public get laneIntroSelector(): string {
 		switch (this.laneIntroPhase) {
 			case 'home':
-				return '[data-stage-home]'
+				return '[data-stage="home"]'
 			case 'near':
-				return '[data-stage-near]'
+				return '[data-stage="near"]'
 			case 'away':
-				return '[data-stage-away]'
+				return '[data-stage="away"]'
 			case 'card':
 				return '[data-live-card]:first-child'
 			default:
