@@ -29,5 +29,10 @@
     <span if.bind="lane !== 'home'" class="location-label">
       ${event.locationLabel}
     </span>
+    <span
+      if.bind="event.journeyStatus"
+      data-journey-status.bind="event.journeyStatus"
+      class="journey-badge"
+    >${event.journeyStatus}</span>
   </article>
 </template>

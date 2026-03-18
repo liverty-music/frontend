@@ -73,6 +73,52 @@
 			color: var(--_label-color);
 		}
 
+		/* --- Journey status badge --- */
+		.journey-badge {
+			position: absolute;
+			inset-block-start: var(--space-3xs);
+			inset-inline-end: var(--space-3xs);
+
+			/* stylelint-disable-next-line cube/require-token-variables -- badge pill needs tighter padding than any token */
+			padding-block: 1px;
+			padding-inline: var(--space-3xs);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--2);
+			font-weight: 600;
+			line-height: var(--leading-snug);
+			color: var(--_journey-text);
+			text-transform: uppercase;
+			letter-spacing: 0.03em;
+
+			background: var(--_journey-bg);
+		}
+
+		.journey-badge[data-journey-status="tracking"] {
+			--_journey-bg: oklch(65% 0.18 255deg / 85%);
+			--_journey-text: oklch(95% 0.02 255deg);
+		}
+
+		.journey-badge[data-journey-status="applied"] {
+			--_journey-bg: oklch(65% 0.15 195deg / 85%);
+			--_journey-text: oklch(95% 0.02 195deg);
+		}
+
+		.journey-badge[data-journey-status="lost"] {
+			--_journey-bg: oklch(45% 0.08 0deg / 85%);
+			--_journey-text: oklch(75% 0.05 0deg);
+		}
+
+		.journey-badge[data-journey-status="unpaid"] {
+			--_journey-bg: oklch(65% 0.18 55deg / 85%);
+			--_journey-text: oklch(95% 0.02 55deg);
+		}
+
+		.journey-badge[data-journey-status="paid"] {
+			--_journey-bg: oklch(65% 0.18 152deg / 85%);
+			--_journey-text: oklch(95% 0.02 152deg);
+		}
+
 		/* =============================================
 		   MATCHED — festival spotlight from above
 		   ============================================= */
@@ -109,7 +155,6 @@
 				0 0 40px var(--_spot-glow),
 				0 0 80px oklch(60% 0.2 var(--artist-hue) / 25%),
 				inset 0 4px 30px var(--_spot-mid);
-
 			animation: color-drift 8s ease-in-out infinite;
 		}
 

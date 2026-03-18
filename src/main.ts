@@ -42,6 +42,7 @@ import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IProofService } from './services/proof-service'
 import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
+import { ITicketJourneyService } from './services/ticket-journey-service'
 import { ITicketService } from './services/ticket-service'
 import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserService } from './services/user-service'
@@ -133,6 +134,7 @@ au.register(INotificationManager)
 au.register(IPushService)
 au.register(IPromptCoordinator)
 au.register(IPwaInstallService)
+au.register(ITicketJourneyService)
 au.register(ITicketService)
 au.register(IEntryService)
 au.register(IProofService)

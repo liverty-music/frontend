@@ -61,6 +61,27 @@
         </div>
       </section>
 
+      <!-- Ticket journey status -->
+      <section class="sheet-journey">
+        <h3 class="journey-heading">Ticket Status</h3>
+        <div class="journey-controls">
+          <button
+            repeat.for="s of journeyStatuses"
+            class="journey-btn"
+            data-journey-status.bind="s"
+            data-active.bind="event.journeyStatus === s || undefined"
+            disabled.bind="journeyUpdating"
+            click.trigger="setJourneyStatus(s)"
+          >${s}</button>
+        </div>
+        <button
+          if.bind="event.journeyStatus"
+          class="journey-remove-btn"
+          disabled.bind="journeyUpdating"
+          click.trigger="removeJourney()"
+        >Stop tracking</button>
+      </section>
+
       <!-- Action buttons -->
       <footer class="sheet-actions">
         <a
