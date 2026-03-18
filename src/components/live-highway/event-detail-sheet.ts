@@ -1,17 +1,21 @@
-import { bindable, resolve } from 'aurelia'
+import { bindable, ILogger, resolve } from 'aurelia'
 import { displayName } from '../../constants/iso3166'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
-import type { LiveEvent } from './live-event'
+import { ITicketJourneyService } from '../../services/ticket-journey-service'
+import type { JourneyStatus, LiveEvent } from './live-event'
 
 export class EventDetailSheet {
 	@bindable public event: LiveEvent | null = null
 
 	public isOpen = false
+	public journeyUpdating = false
 
+	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
 	private readonly onboarding = resolve(IOnboardingService)
+	private readonly journeyService = resolve(ITicketJourneyService)
 	private closedByPopstate = false
 
 	private readonly onPopstate = (): void => {
@@ -85,6 +89,36 @@ export class EventDetailSheet {
 		this.isOpen = false
 		window.removeEventListener('popstate', this.onPopstate)
 		history.replaceState(null, '', '/dashboard')
+	}
+
+	public get journeyStatuses(): JourneyStatus[] {
+		return ['tracking', 'applied', 'lost', 'unpaid', 'paid']
+	}
+
+	public async setJourneyStatus(status: JourneyStatus): Promise<void> {
+		if (!this.event || this.journeyUpdating) return
+		this.journeyUpdating = true
+		try {
+			await this.journeyService.setStatus(this.event.id, status)
+			this.event.journeyStatus = status
+		} catch (err) {
+			this.logger.warn('Failed to set journey status', { error: err })
+		} finally {
+			this.journeyUpdating = false
+		}
+	}
+
+	public async removeJourney(): Promise<void> {
+		if (!this.event || this.journeyUpdating) return
+		this.journeyUpdating = true
+		try {
+			await this.journeyService.delete(this.event.id)
+			this.event.journeyStatus = undefined
+		} catch (err) {
+			this.logger.warn('Failed to remove journey', { error: err })
+		} finally {
+			this.journeyUpdating = false
+		}
 	}
 
 	/** Unconditional cleanup on component detach to prevent listener leaks */
