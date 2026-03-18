@@ -26,6 +26,7 @@ function createMockCanvas() {
 describe('BubbleManager', () => {
 	let sut: BubbleManager
 	let mockClient: BubbleArtistClient
+	let followedIds: Set<string>
 
 	beforeEach(() => {
 		mockClient = {
@@ -33,7 +34,8 @@ describe('BubbleManager', () => {
 			listSimilar: vi.fn().mockResolvedValue([]),
 		}
 
-		sut = new BubbleManager(mockClient, createMockLogger())
+		followedIds = new Set<string>()
+		sut = new BubbleManager(mockClient, createMockLogger(), () => followedIds)
 	})
 
 	describe('loadInitialArtists', () => {
@@ -225,10 +227,47 @@ describe('BubbleManager', () => {
 
 			expect(sut.poolBubbles).toHaveLength(2)
 		})
+	})
 
-		it('should expose followedIds through pool', () => {
-			sut.pool.markFollowed('a1')
-			expect(sut.followedIds.has('a1')).toBe(true)
+	describe('dedup uses external followedIds', () => {
+		it('should exclude followed artists from loadInitialArtists', async () => {
+			followedIds.add('a1')
+			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
+				makeBubble('a1', 'Followed'),
+				makeBubble('a2', 'Available'),
+			])
+
+			await sut.loadInitialArtists([], 'Japan', '')
+
+			expect(sut.poolBubbles).toHaveLength(1)
+			expect(sut.poolBubbles[0].id).toBe('a2')
+		})
+
+		it('should use latest followedIds at call time (lazy evaluation)', async () => {
+			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
+				makeBubble('a1', 'One'),
+				makeBubble('a2', 'Two'),
+			])
+
+			// followedIds is empty at construction time
+			await sut.loadInitialArtists([], 'Japan', '')
+			expect(sut.poolBubbles).toHaveLength(2)
+
+			// Update followedIds after construction
+			followedIds.add('a3')
+			;(mockClient.listSimilar as ReturnType<typeof vi.fn>).mockResolvedValue([
+				makeBubble('a3', 'Now Followed'),
+				makeBubble('a4', 'Still Available'),
+			])
+
+			const canvas = createMockCanvas()
+			await sut.onNeedMoreBubbles('a1', 'One', { x: 0, y: 0 }, canvas)
+
+			// a3 should be filtered out because followedIds was updated
+			const spawnedBubbles = canvas.spawnBubblesAt.mock.calls[0]?.[0] ?? []
+			const spawnedIds = spawnedBubbles.map((b: ArtistBubble) => b.id)
+			expect(spawnedIds).not.toContain('a3')
+			expect(spawnedIds).toContain('a4')
 		})
 	})
 })

@@ -42,6 +42,7 @@ export class DiscoveryRoute {
 	public readonly bubbles = new BubbleManager(
 		this.artistClient,
 		resolve(ILogger).scopeTo('BubbleManager'),
+		() => this.follow.followedIds,
 	)
 
 	public readonly search = new SearchController(

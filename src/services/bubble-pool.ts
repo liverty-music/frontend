@@ -15,8 +15,6 @@ export class BubblePool {
 	private readonly seenArtistNames = new Set<string>()
 	private readonly seenArtistIds = new Set<string>()
 	private readonly seenArtistMbids = new Set<string>()
-	public readonly followedIds = new Set<string>()
-
 	public get maxBubbles(): number {
 		return BubblePool.MAX_BUBBLES
 	}
@@ -77,33 +75,17 @@ export class BubblePool {
 	public reset(): void {
 		this.availableBubbles = []
 		this.clearSeenSets()
-		this.followedIds.clear()
-	}
-
-	/**
-	 * Mark an artist as followed. Removes from available pool.
-	 */
-	public markFollowed(artistId: string): void {
-		this.followedIds.add(artistId)
-		this.remove(artistId)
-	}
-
-	/**
-	 * Unmark an artist as followed (for rollback).
-	 */
-	public unmarkFollowed(artistId: string): void {
-		this.followedIds.delete(artistId)
-	}
-
-	public isFollowed(artistId: string): boolean {
-		return this.followedIds.has(artistId)
 	}
 
 	/**
 	 * Deduplicate bubbles: remove seen artists and already-followed artists.
+	 * Follow state is provided externally by the caller.
 	 */
-	public dedup(bubbles: ArtistBubble[]): ArtistBubble[] {
-		return bubbles.filter((b) => !this.isSeen(b) && !this.isFollowed(b.id))
+	public dedup(
+		bubbles: ArtistBubble[],
+		followedIds: ReadonlySet<string>,
+	): ArtistBubble[] {
+		return bubbles.filter((b) => !this.isSeen(b) && !followedIds.has(b.id))
 	}
 
 	/**

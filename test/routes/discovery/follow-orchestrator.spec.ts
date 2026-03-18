@@ -108,6 +108,71 @@ describe('FollowOrchestrator', () => {
 		})
 	})
 
+	describe('followedIds derived getter', () => {
+		it('should be an empty Set when followedArtists is empty', () => {
+			expect(sut.followedIds.size).toBe(0)
+		})
+
+		it('should contain the artist ID after followArtist', async () => {
+			await sut.followArtist(makeBubble('a1', 'Artist One'))
+
+			expect(sut.followedIds.has('a1')).toBe(true)
+		})
+
+		it('should match followedArtists IDs', async () => {
+			await sut.followArtist(makeBubble('a1', 'Artist One'))
+			await sut.followArtist(makeBubble('a2', 'Artist Two'))
+
+			const ids = [...sut.followedIds]
+			expect(ids).toEqual(['a1', 'a2'])
+		})
+	})
+
+	describe('atomicity — state and pool are synchronized', () => {
+		it('should have artist in followedIds and absent from pool after follow', async () => {
+			await sut.followArtist(makeBubble('a1', 'Artist One'))
+
+			expect(sut.followedIds.has('a1')).toBe(true)
+			expect(pool.availableBubbles.find((b) => b.id === 'a1')).toBeUndefined()
+		})
+
+		it('should have artist absent from followedIds and restored in pool after rollback', async () => {
+			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
+				new Error('fail'),
+			)
+
+			await expect(
+				sut.followArtist(makeBubble('a1', 'Artist One')),
+			).rejects.toThrow()
+
+			expect(sut.followedIds.has('a1')).toBe(false)
+			expect(pool.availableBubbles.find((b) => b.id === 'a1')).toBeDefined()
+		})
+	})
+
+	describe('regression: no dual-state desync', () => {
+		it('should keep followedIds.size === 2 after sequential follow (3) then rollback (1)', async () => {
+			await sut.followArtist(makeBubble('a1', 'Artist One'))
+			await sut.followArtist(makeBubble('a2', 'Artist Two'))
+
+			// Third follow will fail and rollback
+			const a3 = makeBubble('a3', 'Artist Three')
+			pool.add([a3])
+			;(
+				mockFollowClient.follow as ReturnType<typeof vi.fn>
+			).mockRejectedValueOnce(new Error('fail'))
+
+			await expect(sut.followArtist(a3)).rejects.toThrow()
+
+			expect(sut.followedIds.size).toBe(2)
+			expect(sut.followedIds.has('a1')).toBe(true)
+			expect(sut.followedIds.has('a2')).toBe(true)
+			expect(sut.followedIds.has('a3')).toBe(false)
+			// Only the rolled-back artist is restored to pool
+			expect(pool.availableBubbles.find((b) => b.id === 'a3')).toBeDefined()
+		})
+	})
+
 	describe('checkLiveEvents', () => {
 		it('should notify on upcoming events', async () => {
 			;(

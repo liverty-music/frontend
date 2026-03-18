@@ -19,14 +19,11 @@ export class BubbleManager {
 	constructor(
 		private readonly client: BubbleArtistClient,
 		private readonly logger: ILogger,
+		private readonly getFollowedIds: () => ReadonlySet<string>,
 	) {}
 
 	public get poolBubbles(): ArtistBubble[] {
 		return this.pool.availableBubbles
-	}
-
-	public get followedIds(): ReadonlySet<string> {
-		return this.pool.followedIds
 	}
 
 	public async loadInitialArtists(
@@ -47,7 +44,9 @@ export class BubbleManager {
 			bubbles = await this.fetchSeedSimilarArtists(followedArtists)
 		}
 
-		bubbles = this.pool.dedup(bubbles).slice(0, BubblePool.MAX_BUBBLES)
+		bubbles = this.pool
+			.dedup(bubbles, this.getFollowedIds())
+			.slice(0, BubblePool.MAX_BUBBLES)
 		this.pool.replace(bubbles)
 		this.pool.trackAllSeen(bubbles)
 
@@ -148,7 +147,7 @@ export class BubbleManager {
 			artistId,
 			BubbleManager.SIMILAR_LIMIT_ON_TAP,
 		)
-		const newBubbles = this.pool.dedup(rawBubbles)
+		const newBubbles = this.pool.dedup(rawBubbles, this.getFollowedIds())
 		this.pool.trackAllSeen(newBubbles)
 
 		return newBubbles
@@ -164,7 +163,7 @@ export class BubbleManager {
 			'',
 			BubblePool.MAX_BUBBLES,
 		)
-		const fresh = this.pool.dedup(rawBubbles)
+		const fresh = this.pool.dedup(rawBubbles, this.getFollowedIds())
 		this.pool.trackAllSeen(fresh)
 
 		this.logger.info('Replacement bubbles loaded', { count: fresh.length })

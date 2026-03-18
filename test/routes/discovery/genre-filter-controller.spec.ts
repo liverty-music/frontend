@@ -100,6 +100,28 @@ describe('GenreFilterController', () => {
 			expect(mockClient.listTop).toHaveBeenCalledTimes(1)
 		})
 
+		it('should exclude followed artists from dedup', async () => {
+			const followed = [makeBubble('f1', 'Followed Artist')]
+			sut = new GenreFilterController(
+				mockClient,
+				pool,
+				() => followed,
+				mockCallbacks,
+				createMockLogger(),
+				() => abortController.signal,
+			)
+
+			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
+				makeBubble('f1', 'Followed Artist'),
+				makeBubble('a1', 'Available Artist'),
+			])
+
+			await sut.onGenreSelected('Rock')
+
+			expect(pool.availableBubbles).toHaveLength(1)
+			expect(pool.availableBubbles[0].id).toBe('a1')
+		})
+
 		it('should reset activeTag and call onError on failure', async () => {
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('network'),
