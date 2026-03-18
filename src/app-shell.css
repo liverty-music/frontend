@@ -15,7 +15,7 @@
 		   Note: display:contents breaks Aurelia ref bindings — keep the box. */
 		pwa-install-prompt,
 		notification-prompt,
-		toast-notification,
+		snack-bar,
 		error-banner,
 		coach-mark {
 			position: fixed;

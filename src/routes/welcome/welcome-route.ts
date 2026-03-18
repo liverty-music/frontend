@@ -5,7 +5,7 @@ import {
 	type NavigationInstruction,
 } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
-import { Toast } from '../../components/toast-notification/toast'
+import { Snack } from '../../components/snack-bar/snack'
 import { IAuthService } from '../../services/auth-service'
 import {
 	IOnboardingService,
@@ -70,7 +70,7 @@ export class WelcomeRoute implements IRouteViewModel {
 			await this.router.load('discovery')
 		} catch (err) {
 			this.logger.error('Failed to navigate to discovery', { error: err })
-			this.ea.publish(new Toast(this.i18n.tr('welcome.error.navigation')))
+			this.ea.publish(new Snack(this.i18n.tr('welcome.error.navigation')))
 		}
 	}
 
@@ -80,7 +80,7 @@ export class WelcomeRoute implements IRouteViewModel {
 			await this.authService.signIn()
 		} catch (err) {
 			this.logger.error('Failed to start sign-in flow', { error: err })
-			this.ea.publish(new Toast(this.i18n.tr('welcome.error.login')))
+			this.ea.publish(new Snack(this.i18n.tr('welcome.error.login')))
 		}
 	}
 }

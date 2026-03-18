@@ -4,10 +4,7 @@ import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/en
 import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../components/live-highway/color-generator'
-import {
-	Toast,
-	type ToastHandle,
-} from '../../components/toast-notification/toast'
+import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
@@ -45,7 +42,7 @@ export class MyArtistsRoute {
 	// Undo state
 	private undoArtist: MyArtist | null = null
 	private undoIndex = -1
-	private undoHandle: ToastHandle | null = null
+	private undoHandle: SnackHandle | null = null
 
 	// Hype tier references
 	public readonly hypeLevels: Hype[] = ['watch', 'home', 'nearby', 'away']
@@ -179,7 +176,7 @@ export class MyArtistsRoute {
 
 		this.logger.info('Artist unfollowed (pending)', { name: artist.name })
 
-		const toast = new Toast(
+		const toast = new Snack(
 			this.i18n.tr('myArtists.unfollowed', { name: artist.name }),
 			'info',
 			{
@@ -244,7 +241,7 @@ export class MyArtistsRoute {
 						const insertAt = Math.min(originalIndex, this.artists.length)
 						this.artists.splice(insertAt, 0, artist)
 						this.ea.publish(
-							new Toast(
+							new Snack(
 								this.i18n.tr('myArtists.failedUnfollow', { name: artist.name }),
 							),
 						)
@@ -318,7 +315,7 @@ export class MyArtistsRoute {
 						})
 						const a = this.artists.find((x) => x.id === artistId)
 						if (a) a.hype = prev
-						this.ea.publish(new Toast(this.i18n.tr('myArtists.failedHype')))
+						this.ea.publish(new Snack(this.i18n.tr('myArtists.failedHype')))
 					})
 			})
 	}

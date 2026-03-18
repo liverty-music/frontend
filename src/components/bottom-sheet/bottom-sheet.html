@@ -1,0 +1,24 @@
+<dialog
+  ref="sheetElement"
+  popover="auto"
+  aria-label.bind="ariaLabel"
+>
+  <div
+    ref="scrollWrapper"
+    class="scroll-wrapper"
+    scroll.trigger="onScroll()"
+    scrollend.trigger="onScrollEnd()"
+    click.trigger="onBackdropClick($event)"
+  >
+    <!-- Dismiss zone (scroll-snap target at top) -->
+    <div if.bind="dismissable" class="dismiss-zone"></div>
+
+    <!-- Sheet page (scroll-snap target at bottom) -->
+    <section class="sheet-page">
+      <div class="sheet-body">
+        <div class="handle-bar"></div>
+        <au-slot></au-slot>
+      </div>
+    </section>
+  </div>
+</dialog>

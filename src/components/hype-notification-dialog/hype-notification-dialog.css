@@ -1,42 +1,20 @@
 @layer block {
 	@scope (hype-notification-dialog) {
 		:scope {
-			--_backdrop-bg: oklch(0% 0 0deg / 70%);
 			--_border-subtle: oklch(100% 0 0deg / 10%);
 		}
 
-		.notification-dialog {
-			position: fixed;
-			inset: 0;
-
-			max-inline-size: fit-content;
-			max-block-size: fit-content;
-			margin: auto;
-			padding: 0;
-			border: none;
-
-			background: transparent;
-
-			&::backdrop {
-				background: var(--_backdrop-bg);
-			}
-		}
-
-		.notification-dialog-content {
+		.notification-content {
 			inline-size: 100%;
 			max-inline-size: 22rem;
-			margin-inline: var(--space-m);
+			margin-inline: auto;
 			padding-block: var(--space-m);
 			padding-inline: var(--space-m);
-			border: 1px solid var(--_border-subtle);
-			border-radius: var(--radius-sheet);
 
 			text-align: center;
-
-			background: var(--color-surface-raised);
 		}
 
-		.notification-dialog-title {
+		.notification-title {
 			margin-block-end: var(--space-s);
 
 			font-family: var(--font-display);
@@ -45,7 +23,7 @@
 			color: var(--color-text-primary);
 		}
 
-		.notification-dialog-tiers {
+		.notification-tiers {
 			margin-block-end: var(--space-s);
 			padding: 0;
 			text-align: start;
@@ -58,7 +36,7 @@
 			}
 		}
 
-		.notification-dialog-note {
+		.notification-note {
 			margin-block-end: var(--space-m);
 			font-size: var(--step--2);
 			color: var(--color-text-muted);
@@ -70,7 +48,7 @@
 			gap: var(--space-2xs);
 		}
 
-		.notification-dialog-btn-primary {
+		.notification-btn-primary {
 			inline-size: 100%;
 			min-block-size: 3rem;
 			padding-block: var(--space-2xs);
@@ -96,7 +74,7 @@
 			}
 		}
 
-		.notification-dialog-btn-ghost {
+		.notification-btn-ghost {
 			inline-size: 100%;
 			min-block-size: 2.5rem;
 			padding-block: var(--space-3xs);

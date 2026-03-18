@@ -5,8 +5,6 @@
 			--_toggle-off: var(--color-white);
 			--_thumb-bg: var(--color-white);
 			--_signout-color: var(--color-error);
-			--_backdrop-bg: oklch(0% 0 0deg / 60%);
-			--_handle-bg: oklch(100% 0 0deg / 20%);
 
 			display: grid;
 			grid-template-areas:
@@ -172,92 +170,13 @@
 			color: var(--_signout-color);
 		}
 
-		/* Language selector bottom sheet */
-		dialog.language-selector {
-			position: fixed;
-			inset-block: auto 0;
-			inset-inline: 0;
-			translate: 0 0;
-
-			overflow: visible;
-			display: block;
-
-			inline-size: 100%;
-			max-inline-size: 100%;
-			margin: 0;
-			padding: 0;
-			border: none;
-
-			opacity: 1;
-			background: transparent;
-
-			transition:
-				opacity 300ms ease-out,
-				translate 300ms ease-out,
-				overlay 300ms ease-out allow-discrete,
-				display 300ms ease-out allow-discrete;
-
-			&::backdrop {
-				opacity: 1;
-				background: var(--_backdrop-bg);
-				backdrop-filter: blur(4px);
-				transition:
-					opacity 300ms ease-out,
-					overlay 300ms ease-out allow-discrete,
-					display 300ms ease-out allow-discrete;
-			}
-
-			&:not([open]) {
-				translate: 0 100%;
-				display: none;
-				opacity: 0;
-			}
-
-			&:not([open])::backdrop {
-				opacity: 0;
-			}
-		}
-
-		@starting-style {
-			dialog.language-selector[open] {
-				translate: 0 100%;
-				opacity: 0;
-			}
-
-			dialog.language-selector[open]::backdrop {
-				opacity: 0;
-			}
-		}
-
-		dialog.language-selector .selector-body {
-			overflow-y: auto;
-
-			max-block-size: 80vh;
-			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
-
-			background: var(--color-surface-raised);
-			box-shadow: var(--shadow-sheet);
-		}
-
-		dialog.language-selector .selector-handle {
-			display: flex;
-			justify-content: center;
-			padding-block: var(--space-2xs) var(--space-3xs);
-		}
-
-		dialog.language-selector .selector-handle-bar {
-			inline-size: 2.5rem;
-			block-size: 0.25rem;
-			border-radius: var(--radius-full);
-			background: var(--_handle-bg);
-		}
-
-		dialog.language-selector .selector-content {
+		/* Language selector content (inside bottom-sheet) */
+		.selector-content {
 			padding-block-end: var(--space-l);
 			padding-inline: var(--space-m);
 		}
 
-		dialog.language-selector .selector-title {
+		.selector-title {
 			margin-block-end: var(--space-s);
 
 			font-family: var(--font-display);
@@ -307,13 +226,6 @@
 			inline-size: 1.25rem;
 			block-size: 1.25rem;
 			color: var(--color-brand-primary);
-		}
-
-		@media (prefers-reduced-motion: reduce) {
-			dialog.language-selector,
-			dialog.language-selector::backdrop {
-				transition-duration: var(--transition-fast);
-			}
 		}
 	}
 }

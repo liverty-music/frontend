@@ -1,79 +1,71 @@
-<dialog
-  ref="dialogElement"
-  t="[aria-label]userHome.title"
-  click.trigger="handleBackdropClick($event)"
-  cancel.trigger="handleCancel($event)"
-  class="[ user-home-selector ]"
+<bottom-sheet
+  open.bind="isOpen"
+  dismissable.bind="!required"
+  sheet-closed.trigger="onSheetClosed()"
+  aria-label="Select your area"
 >
-  <div class="selector-body">
-    <!-- Handle bar -->
-    <div class="selector-handle">
-      <div class="selector-handle-bar"></div>
-    </div>
+  <div class="selector-content">
+    <!-- Step 1: Quick-select cities + Region selection -->
+    <template if.bind="!selectedRegion">
+      <h2 t="userHome.title" class="selector-title"></h2>
+      <p t="userHome.description" class="selector-desc"></p>
 
-    <div class="selector-content">
-      <!-- Step 1: Quick-select cities + Region selection -->
-      <template if.bind="!selectedRegion">
-        <h2 t="userHome.title" class="selector-title"></h2>
-        <p t="userHome.description" class="selector-desc"></p>
-
-        <!-- Quick-select cities -->
-        <section class="selector-section">
-          <p t="userHome.quickSelect" class="selector-label"></p>
-          <div class="selector-grid">
-            <button
-              repeat.for="city of quickCities; key.bind: city.code"
-              click.trigger="selectQuickCity(city.code)"
-              class="selector-btn"
-            >
-              <span t.bind="'userHome.cities.' + city.key"></span>
-            </button>
-          </div>
-        </section>
-
-        <!-- Region buttons -->
-        <div>
-          <p t="userHome.selectByRegion" class="selector-label"></p>
-          <div class="selector-grid">
-            <button
-              repeat.for="region of regions; key.bind: region.key"
-              click.trigger="selectRegion(region)"
-              class="selector-btn"
-            >
-              <span t.bind="'userHome.regions.' + region.key"></span>
-            </button>
-          </div>
-        </div>
-      </template>
-
-      <!-- Step 2: Prefecture selection -->
-      <template if.bind="selectedRegion">
-        <div class="selector-header-row">
-          <button
-            click.trigger="backToRegions()"
-            t="[aria-label]userHome.back"
-            class="selector-back-btn"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 18l-6-6 6-6"></path>
-            </svg>
-          </button>
-          <h2 class="selector-title">
-            <span t.bind="'userHome.regions.' + selectedRegion.key"></span>
-          </h2>
-        </div>
-        <p t="userHome.selectPrefecture" class="selector-desc"></p>
-
+      <!-- Quick-select cities -->
+      <section class="selector-section">
+        <p t="userHome.quickSelect" class="selector-label"></p>
         <div class="selector-grid">
           <button
-            repeat.for="pref of selectedRegion.prefectures; key.bind: pref.code"
-            click.trigger="selectPrefecture(pref.code)"
+            repeat.for="city of quickCities; key.bind: city.code"
+            click.trigger="selectQuickCity(city.code)"
             class="selector-btn"
           >
-            <span t.bind="'userHome.prefectures.' + pref.key"></span>
+            <span t.bind="'userHome.cities.' + city.key"></span>
           </button>
         </div>
-      </template>
-    </div>
+      </section>
+
+      <!-- Region buttons -->
+      <div>
+        <p t="userHome.selectByRegion" class="selector-label"></p>
+        <div class="selector-grid">
+          <button
+            repeat.for="region of regions; key.bind: region.key"
+            click.trigger="selectRegion(region)"
+            class="selector-btn"
+          >
+            <span t.bind="'userHome.regions.' + region.key"></span>
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <!-- Step 2: Prefecture selection -->
+    <template if.bind="selectedRegion">
+      <div class="selector-header-row">
+        <button
+          click.trigger="backToRegions()"
+          t="[aria-label]userHome.back"
+          class="selector-back-btn"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"></path>
+          </svg>
+        </button>
+        <h2 class="selector-title">
+          <span t.bind="'userHome.regions.' + selectedRegion.key"></span>
+        </h2>
+      </div>
+      <p t="userHome.selectPrefecture" class="selector-desc"></p>
+
+      <div class="selector-grid">
+        <button
+          repeat.for="pref of selectedRegion.prefectures; key.bind: pref.code"
+          click.trigger="selectPrefecture(pref.code)"
+          class="selector-btn"
+        >
+          <span t.bind="'userHome.prefectures.' + pref.key"></span>
+        </button>
+      </div>
+    </template>
   </div>
-</dialog>
+</bottom-sheet>

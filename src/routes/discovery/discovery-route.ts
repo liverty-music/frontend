@@ -2,7 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
-import { Toast } from '../../components/toast-notification/toast'
+import { Snack } from '../../components/snack-bar/snack'
 import {
 	type ArtistBubble,
 	IArtistServiceClient,
@@ -50,7 +50,7 @@ export class DiscoveryRoute {
 			onEnterSearchMode: () => this.dnaOrbCanvas?.pause(),
 			onExitSearchMode: () => this.dnaOrbCanvas?.resume(),
 			onError: (key) =>
-				this.ea.publish(new Toast(this.i18n.tr(key), 'warning')),
+				this.ea.publish(new Snack(this.i18n.tr(key), 'warning')),
 		},
 		resolve(ILogger).scopeTo('SearchController'),
 	)
@@ -62,7 +62,7 @@ export class DiscoveryRoute {
 		{
 			onBubblesReloaded: (bubbles) => this.dnaOrbCanvas.reloadBubbles(bubbles),
 			onError: (key, params) =>
-				this.ea.publish(new Toast(this.i18n.tr(key, params), 'error')),
+				this.ea.publish(new Snack(this.i18n.tr(key, params), 'error')),
 		},
 		resolve(ILogger).scopeTo('GenreFilterController'),
 		() => this.abortController.signal,
@@ -79,10 +79,10 @@ export class DiscoveryRoute {
 			onRollback: () => {},
 			onHasUpcomingEvents: (name) =>
 				this.ea.publish(
-					new Toast(this.i18n.tr('discovery.hasUpcomingEvents', { name })),
+					new Snack(this.i18n.tr('discovery.hasUpcomingEvents', { name })),
 				),
 			onError: (key, params) =>
-				this.ea.publish(new Toast(this.i18n.tr(key, params), 'error')),
+				this.ea.publish(new Snack(this.i18n.tr(key, params), 'error')),
 			respawnBubble: (artist, pos) =>
 				this.dnaOrbCanvas.spawnBubblesAt([artist], pos.x, pos.y),
 		},
@@ -174,7 +174,7 @@ export class DiscoveryRoute {
 			)
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
-			this.ea.publish(new Toast(this.i18n.tr('discovery.loadFailed'), 'error'))
+			this.ea.publish(new Snack(this.i18n.tr('discovery.loadFailed'), 'error'))
 		}
 
 		if (this.isOnboarding) {
@@ -260,7 +260,7 @@ export class DiscoveryRoute {
 			)
 			if (!spawned) {
 				this.ea.publish(
-					new Toast(
+					new Snack(
 						this.i18n.tr('discovery.similarArtistsUnavailable', {
 							name: artistName,
 						}),
@@ -271,7 +271,7 @@ export class DiscoveryRoute {
 		} catch (err) {
 			this.logger.warn('Failed to load similar artists', err)
 			this.ea.publish(
-				new Toast(
+				new Snack(
 					this.i18n.tr('discovery.similarArtistsError', {
 						name: artistName,
 					}),

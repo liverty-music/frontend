@@ -11,9 +11,12 @@ import Aurelia, {
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { AppShell } from './app-shell'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
+import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
+import { LoadingSpinner } from './components/loading-spinner/loading-spinner'
 import { PageHeader } from './components/page-header/page-header'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SvgIcon } from './components/svg-icon/svg-icon'
+import { Toast } from './components/toast/toast'
 import { migrateStorageKeys } from './constants/storage-keys'
 import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
@@ -134,6 +137,9 @@ au.register(ITicketService)
 au.register(IEntryService)
 au.register(IProofService)
 au.register(BottomNavBar)
+au.register(BottomSheet)
+au.register(LoadingSpinner)
+au.register(Toast)
 au.register(PageHeader)
 au.register(StatePlaceholder)
 au.register(SvgIcon)

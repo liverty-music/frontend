@@ -12,10 +12,8 @@ export class TicketsRoute {
 	public isGenerating = false
 	public proofProgress = ''
 	public qrDataUrl = ''
+	public showQrSheet = false
 	public generatingTicketId = ''
-
-	private generatingDialog!: HTMLDialogElement
-	private qrDialog!: HTMLDialogElement
 
 	private readonly logger = resolve(ILogger).scopeTo('TicketsRoute')
 	private readonly ticketService = resolve(ITicketService)
@@ -67,7 +65,6 @@ export class TicketsRoute {
 		this.qrDataUrl = ''
 		this.generatingTicketId = ticket.id?.value ?? ''
 		this.error = ''
-		this.generatingDialog.showModal()
 
 		try {
 			const proofOutput = await this.proofService.generateEntryProof(
@@ -94,29 +91,25 @@ export class TicketsRoute {
 				margin: 2,
 				color: { dark: '#000000', light: '#ffffff' },
 			})
+			this.showQrSheet = true
 
 			this.proofProgress = ''
 			this.logger.info('Entry code generated', { eventId })
-
-			// Close generating dialog, open QR dialog
-			this.generatingDialog.close()
-			this.qrDialog.showModal()
 		} catch (err) {
 			if ((err as Error).name !== 'AbortError') {
 				this.logger.error('Proof generation failed', { error: err })
 				this.error = 'Failed to generate entry code. Please try again.'
 			}
 			this.qrDataUrl = ''
-			this.generatingDialog.close()
 		} finally {
 			this.isGenerating = false
 		}
 	}
 
 	public dismissQr(): void {
+		this.showQrSheet = false
 		this.qrDataUrl = ''
 		this.generatingTicketId = ''
-		this.qrDialog.close()
 	}
 
 	public detaching(): void {

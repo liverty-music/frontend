@@ -38,7 +38,10 @@ src/
   components/
     auth-status.ts / .html    # Auth status display
     dna-orb/                  # Canvas-based artist discovery (Matter.js physics)
-    toast-notification/       # Reusable toast notifications
+    bottom-sheet/             # Shared bottom-sheet dialog primitive
+    loading-spinner/          # Shared loading indicator
+    snack-bar/                # App-level snack notifications
+    toast/                    # Shared popover banner primitive
   services/
     auth-service.ts           # Zitadel OIDC integration
     lastfm-service.ts         # Last.fm API client

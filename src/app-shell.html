@@ -1,7 +1,7 @@
 <import from="./components/error-banner/error-banner"></import>
 <import from="./components/pwa-install-prompt/pwa-install-prompt"></import>
 <import from="./components/notification-prompt/notification-prompt"></import>
-<import from="./components/toast-notification/toast-notification"></import>
+<import from="./components/snack-bar/snack-bar"></import>
 <import from="./components/coach-mark/coach-mark"></import>
 
 <au-viewport></au-viewport>
@@ -12,7 +12,7 @@
      DOM position is irrelevant. Placed outside viewport to avoid grid interference. -->
 <pwa-install-prompt if.bind="showNav"></pwa-install-prompt>
 <notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
-<toast-notification></toast-notification>
+<snack-bar></snack-bar>
 <error-banner></error-banner>
 
 <!-- Onboarding coach mark: single instance driven by onboarding service -->

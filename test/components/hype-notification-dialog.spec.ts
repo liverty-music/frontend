@@ -16,25 +16,17 @@ function createDialogWithHost() {
 
 	const sut = container.invoke(HypeNotificationDialog)
 
-	// Create a mock dialog element for the ref
-	const mockDialog = document.createElement('dialog')
-	;(mockDialog as any).showModal = vi.fn()
-	;(mockDialog as any).close = vi.fn()
-	;(sut as any).dialogRef = mockDialog
-
-	return { sut, hostElement, mockDialog }
+	return { sut, hostElement }
 }
 
 describe('HypeNotificationDialog', () => {
 	let sut: InstanceType<typeof HypeNotificationDialog>
 	let hostElement: HTMLElement
-	let mockDialog: HTMLDialogElement
 
 	beforeEach(() => {
 		const result = createDialogWithHost()
 		sut = result.sut
 		hostElement = result.hostElement
-		mockDialog = result.mockDialog
 	})
 
 	afterEach(() => {
@@ -44,23 +36,13 @@ describe('HypeNotificationDialog', () => {
 	})
 
 	describe('active state', () => {
-		it('should call showModal when active set to true', () => {
-			sut.active = true
-			sut.activeChanged(true)
-
-			expect((mockDialog as any).showModal).toHaveBeenCalledTimes(1)
+		it('should default active to false', () => {
+			expect(sut.active).toBe(false)
 		})
 
-		it('should call close when active set to false', () => {
-			// First open
+		it('should allow active to be set to true', () => {
 			sut.active = true
-			sut.activeChanged(true)
-
-			// Then close
-			sut.active = false
-			sut.activeChanged(false)
-
-			expect((mockDialog as any).close).toHaveBeenCalledTimes(1)
+			expect(sut.active).toBe(true)
 		})
 	})
 
@@ -77,16 +59,13 @@ describe('HypeNotificationDialog', () => {
 			expect(sut.active).toBe(false)
 
 			sut.active = true
-			sut.activeChanged(true)
-			expect((mockDialog as any).showModal).toHaveBeenCalledTimes(1)
+			expect(sut.active).toBe(true)
 
 			sut.active = false
-			sut.activeChanged(false)
 
 			// Can be re-opened — guard logic is in the parent
 			sut.active = true
-			sut.activeChanged(true)
-			expect((mockDialog as any).showModal).toHaveBeenCalledTimes(2)
+			expect(sut.active).toBe(true)
 		})
 	})
 

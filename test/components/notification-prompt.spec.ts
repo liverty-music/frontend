@@ -146,40 +146,19 @@ describe('NotificationPrompt', () => {
 		expect(sut.isVisible).toBe(true)
 	})
 
-	describe('animations', () => {
-		beforeEach(() => {
+	describe('dismiss', () => {
+		it('should set isVisible to false and persist dismissal', () => {
 			localStorage.setItem('pwa.completedSessionCount', '3')
 			localStorage.setItem('pwa.sessionCount', '4')
-		})
-
-		it('should set entrance animation state when becoming visible', () => {
 			sut = create()
 			sut.attached()
-			expect(sut.animationState).toBe('fade-slide-up')
-		})
-
-		it('should not set animation state when not visible', () => {
-			sut = create({ isAuthenticated: false })
-			sut.attached()
-			expect(sut.animationState).toBe('')
-		})
-
-		it('should set exit animation state on dismiss and hide after animationend', () => {
-			sut = create()
-			const mockPopoverEl = document.createElement('div')
-			// jsdom does not implement Popover API
-			mockPopoverEl.showPopover = vi.fn()
-			mockPopoverEl.hidePopover = vi.fn()
-			sut.popoverEl = mockPopoverEl
-			sut.attached()
+			expect(sut.isVisible).toBe(true)
 
 			sut.dismiss()
-			expect(sut.animationState).toBe('fade-slide-down')
-			expect(sut.isVisible).toBe(true) // still visible during animation
-
-			// Simulate the animationend event that the browser would fire
-			mockPopoverEl.dispatchEvent(new Event('animationend'))
 			expect(sut.isVisible).toBe(false)
+			expect(localStorage.getItem('ui.notificationPromptDismissed')).toBe(
+				'true',
+			)
 		})
 	})
 })

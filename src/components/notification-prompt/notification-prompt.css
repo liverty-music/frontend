@@ -5,24 +5,6 @@
 			--_desc-gap: 0.125rem;
 		}
 
-		.prompt-popover {
-			position: fixed;
-			inset-block-start: 0;
-			inset-inline: 1rem;
-
-			max-inline-size: none;
-			max-block-size: none;
-			margin: 0;
-			padding: var(--space-s);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-card);
-
-			color: inherit;
-
-			background: var(--color-surface-raised);
-			box-shadow: var(--shadow-card-glow);
-		}
-
 		.prompt-row {
 			display: flex;
 			gap: var(--space-xs);
@@ -76,7 +58,7 @@
 		}
 
 		/* Denied state dismiss button spacing */
-		.prompt-popover .prompt-btn-secondary:only-child {
+		.prompt-btn-secondary:only-child {
 			margin-block-start: var(--space-xs);
 		}
 

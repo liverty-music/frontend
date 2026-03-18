@@ -1,12 +1,8 @@
 <import from="./error-banner.css"></import>
 
-<dialog
-  ref="dialogElement"
-  aria-labelledby="error-dialog-title"
-  class="[ error-dialog ]"
->
+<bottom-sheet open.to-view="errorBoundary.currentError" dismissable.bind="false" aria-label="Error details">
   <section class="error-content">
-    <h2 id="error-dialog-title" class="error-title">Something went wrong</h2>
+    <h2 class="error-title">Something went wrong</h2>
     <p class="error-message">${errorBoundary.currentError?.message}</p>
 
     <div class="error-id-box">
@@ -42,4 +38,4 @@
       </button>
     </footer>
   </section>
-</dialog>
+</bottom-sheet>

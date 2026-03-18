@@ -1,6 +1,6 @@
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Toast } from '../../src/components/toast-notification/toast'
+import { Snack } from '../../src/components/snack-bar/snack'
 import { createTestContainer } from '../helpers/create-container'
 
 const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
@@ -71,7 +71,7 @@ describe('MyArtistsRoute', () => {
 	}
 	let mockRouter: { load: ReturnType<typeof vi.fn> }
 	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
-	let publishedToasts: Toast[]
+	let publishedSnacks: Snack[]
 
 	beforeEach(() => {
 		mockGrpcClient = {
@@ -111,10 +111,10 @@ describe('MyArtistsRoute', () => {
 		sut = container.get(MyArtistsRoute)
 		ea = container.get(IEventAggregator)
 
-		// Capture published Toast events
-		publishedToasts = []
-		ea.subscribe(Toast, (toast: Toast) => {
-			publishedToasts.push(toast)
+		// Capture published Snack events
+		publishedSnacks = []
+		ea.subscribe(Snack, (snack: Snack) => {
+			publishedSnacks.push(snack)
 		})
 
 		// Mock dialog elements for Top Layer API
@@ -179,16 +179,16 @@ describe('MyArtistsRoute', () => {
 			sut.checkDismiss(makeScrollEvent(50, 400, 480), sut.artists[0])
 
 			expect(sut.artists).toHaveLength(2)
-			expect(publishedToasts).toHaveLength(1)
-			expect(publishedToasts[0].action).toBeDefined()
-			expect(publishedToasts[0].action?.label).toBe('myArtists.undo')
+			expect(publishedSnacks).toHaveLength(1)
+			expect(publishedSnacks[0].action).toBeDefined()
+			expect(publishedSnacks[0].action?.label).toBe('myArtists.undo')
 		})
 
 		it('should not unfollow when scroll is below threshold', () => {
 			sut.checkDismiss(makeScrollEvent(30, 400, 480), sut.artists[0])
 
 			expect(sut.artists).toHaveLength(3)
-			expect(publishedToasts).toHaveLength(0)
+			expect(publishedSnacks).toHaveLength(0)
 		})
 
 		it('should not dismiss twice for the same artist', () => {
@@ -196,7 +196,7 @@ describe('MyArtistsRoute', () => {
 			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
 			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
 
-			expect(publishedToasts).toHaveLength(1)
+			expect(publishedSnacks).toHaveLength(1)
 		})
 	})
 
@@ -227,7 +227,7 @@ describe('MyArtistsRoute', () => {
 			expect(sut.artists).toHaveLength(2)
 			expect(sut.artists[1].name).toBe('Aimer')
 
-			publishedToasts[0].action?.callback()
+			publishedSnacks[0].action?.callback()
 
 			expect(sut.artists).toHaveLength(3)
 			expect(sut.artists[1].name).toBe('ONE OK ROCK')
@@ -236,7 +236,7 @@ describe('MyArtistsRoute', () => {
 		it('should commit unfollow RPC when toast is dismissed', async () => {
 			sut.checkDismiss(makeScrollEvent(50, 400, 480), sut.artists[0])
 
-			publishedToasts[0].options?.onDismiss?.()
+			publishedSnacks[0].options?.onDismiss?.()
 			await vi.runAllTimersAsync()
 
 			expect(mockGrpcClient.unfollow).toHaveBeenCalledWith({
@@ -247,8 +247,8 @@ describe('MyArtistsRoute', () => {
 		it('should not call RPC when undo is pressed before dismiss', async () => {
 			sut.checkDismiss(makeScrollEvent(50, 400, 480), sut.artists[0])
 
-			publishedToasts[0].action?.callback()
-			publishedToasts[0].options?.onDismiss?.()
+			publishedSnacks[0].action?.callback()
+			publishedSnacks[0].options?.onDismiss?.()
 			await vi.runAllTimersAsync()
 
 			expect(mockGrpcClient.unfollow).not.toHaveBeenCalled()

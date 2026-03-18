@@ -1,11 +1,11 @@
 @layer block {
-	@scope (toast-notification) {
+	@scope (snack-bar) {
 		:scope {
 			--_bg-from: var(--color-brand-primary);
 			--_bg-to: var(--color-brand-secondary);
 		}
 
-		.toast-stack {
+		.snack-stack {
 			pointer-events: none;
 
 			position: fixed;
@@ -20,7 +20,7 @@
 			padding: var(--space-xs) 0 0;
 		}
 
-		.toast-item {
+		.snack-item {
 			pointer-events: auto;
 
 			transform: translateY(-1rem);
@@ -59,23 +59,23 @@
 			}
 		}
 
-		.toast-item[data-severity="warning"] {
+		.snack-item[data-severity="warning"] {
 			--_bg-from: oklch(55% 0.16 75deg);
 			--_bg-to: oklch(60% 0.16 75deg);
 		}
 
-		.toast-item[data-severity="error"] {
+		.snack-item[data-severity="error"] {
 			--_bg-from: oklch(40% 0.2 25deg);
 			--_bg-to: oklch(45% 0.18 25deg);
 		}
 
-		.toast-icon {
+		.snack-icon {
 			flex-shrink: 0;
 			inline-size: 1.25rem;
 			block-size: 1.25rem;
 		}
 
-		.toast-action-btn {
+		.snack-action-btn {
 			flex-shrink: 0;
 
 			margin-inline-start: auto;
@@ -94,7 +94,7 @@
 		}
 
 		@media (prefers-reduced-motion: reduce) {
-			.toast-item {
+			.snack-item {
 				transition: none;
 			}
 		}

@@ -9,9 +9,9 @@
 
 <main>
   <!-- Loading state -->
-  <output if.bind="isLoading" class="state-center" role="status" aria-busy="true">
-    <div class="spinner"></div>
-  </output>
+  <div if.bind="isLoading" class="state-center">
+    <loading-spinner></loading-spinner>
+  </div>
 
   <!-- Empty state -->
   <state-placeholder

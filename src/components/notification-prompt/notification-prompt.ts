@@ -9,8 +9,6 @@ import { IPushService } from '../../services/push-service'
 export class NotificationPrompt {
 	public isVisible = false
 	public isLoading = false
-	public animationState = ''
-	public popoverEl!: HTMLElement
 
 	private readonly logger = resolve(ILogger).scopeTo('NotificationPrompt')
 	public readonly notificationManager = resolve(INotificationManager)
@@ -45,9 +43,7 @@ export class NotificationPrompt {
 
 		if (!this.promptCoordinator.canShowPrompt('notification')) return
 
-		this.animationState = 'fade-slide-up'
 		this.isVisible = true
-		this.popoverEl?.showPopover()
 		this.promptCoordinator.markShown('notification')
 	}
 
@@ -56,7 +52,7 @@ export class NotificationPrompt {
 		try {
 			await this.pushService.subscribe()
 			if (this.notificationManager.permission === 'granted') {
-				this.hideWithAnimation()
+				this.isVisible = false
 				localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')
 			}
 		} catch (err) {
@@ -66,34 +62,8 @@ export class NotificationPrompt {
 		}
 	}
 
-	public detaching(): void {
-		this.popoverEl?.removeEventListener('animationend', this.onHideAnimationEnd)
-		// Handle reduced motion: cleanup immediately if animation hadn't finished
-		if (this.animationState === 'fade-slide-down') {
-			this.isVisible = false
-		}
-	}
-
 	public dismiss(): void {
-		this.hideWithAnimation()
-		localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')
-	}
-
-	private hideWithAnimation(): void {
-		this.animationState = 'fade-slide-down'
-		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-			this.onHideAnimationEnd()
-			return
-		}
-		this.popoverEl.addEventListener('animationend', this.onHideAnimationEnd, {
-			once: true,
-		})
-	}
-
-	private readonly onHideAnimationEnd = (): void => {
 		this.isVisible = false
-		if (this.popoverEl?.isConnected) {
-			this.popoverEl.hidePopover()
-		}
+		localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')
 	}
 }
