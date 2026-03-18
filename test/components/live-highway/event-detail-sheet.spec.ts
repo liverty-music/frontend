@@ -177,6 +177,21 @@ describe('EventDetailSheet', () => {
 			expect(sut.isOpen).toBe(false)
 		})
 
+		it('should skip replaceState in onSheetClosed after popstate', () => {
+			const replaceSpy = vi.spyOn(history, 'replaceState')
+			sut.open(makeEvent())
+
+			// Simulate popstate firing before toggle (browser back)
+			window.dispatchEvent(new PopStateEvent('popstate'))
+			replaceSpy.mockClear()
+
+			// Then bottom-sheet fires sheet-closed
+			sut.onSheetClosed()
+
+			// Should not call replaceState since popstate already handled navigation
+			expect(replaceSpy).not.toHaveBeenCalled()
+		})
+
 		it('should not close when popstate fires and sheet is not open', () => {
 			sut.open(makeEvent())
 			sut.close()

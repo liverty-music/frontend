@@ -56,7 +56,7 @@
 </main>
 
 <!-- Proof generation progress bottom sheet -->
-<bottom-sheet open.bind="isGenerating" dismissable.bind="false">
+<bottom-sheet open.bind="isGenerating" dismissable.bind="false" aria-label="Generating entry code">
   <div role="alert" aria-live="polite" class="dialog-card">
     <loading-spinner size="lg"></loading-spinner>
     <p id="generating-dialog-title" class="dialog-title">Generating Entry Code</p>
@@ -66,7 +66,7 @@
 </bottom-sheet>
 
 <!-- QR Code bottom sheet -->
-<bottom-sheet open.bind="qrDataUrl" sheet-closed.trigger="dismissQr()">
+<bottom-sheet open.bind="qrDataUrl" sheet-closed.trigger="dismissQr()" aria-label="Entry code">
   <div class="dialog-card">
     <h2 id="qr-modal-title" class="dialog-title">Entry Code</h2>
     <p class="dialog-desc">Present this QR code at the venue entrance.</p>

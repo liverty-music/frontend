@@ -3,6 +3,7 @@ import { bindable } from 'aurelia'
 export class BottomSheet {
 	@bindable public open = false
 	@bindable public dismissable = true
+	@bindable public ariaLabel = ''
 
 	private sheetElement!: HTMLDialogElement
 	private scrollWrapper!: HTMLElement

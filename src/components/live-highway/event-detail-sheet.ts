@@ -12,10 +12,12 @@ export class EventDetailSheet {
 	public isOpen = false
 
 	private readonly onboarding = resolve(IOnboardingService)
+	private closedByPopstate = false
 
 	private readonly onPopstate = (): void => {
 		if (this.isOpen) {
-			// Browser navigated back — close without touching history
+			// Browser navigated back — mark so onSheetClosed skips replaceState
+			this.closedByPopstate = true
 			this.isOpen = false
 			window.removeEventListener('popstate', this.onPopstate)
 		}
@@ -75,6 +77,10 @@ export class EventDetailSheet {
 
 	/** Handles the sheet-closed event dispatched by <bottom-sheet> on light-dismiss or swipe */
 	public onSheetClosed(): void {
+		if (this.closedByPopstate) {
+			this.closedByPopstate = false
+			return
+		}
 		this.isOpen = false
 		window.removeEventListener('popstate', this.onPopstate)
 		history.replaceState(null, '', '/dashboard')
