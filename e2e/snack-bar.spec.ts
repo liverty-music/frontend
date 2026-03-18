@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 
 /**
- * E2E tests for toast notification using the Popover API.
+ * E2E tests for snack-bar (renamed from snack-bar) using the Popover API.
  *
  * Covers verification tasks:
  * - 5.1: Multiple toasts appear, animate in, auto-dismiss, no zombies
@@ -91,8 +91,8 @@ async function publishToastDirect(
 ): Promise<void> {
 	await page.evaluate(
 		({ message, severity, durationMs }) => {
-			const toastEl = document.querySelector('toast-notification')
-			if (!toastEl) throw new Error('toast-notification element not found')
+			const toastEl = document.querySelector('snack-bar')
+			if (!toastEl) throw new Error('snack-bar element not found')
 
 			const controller = (toastEl as any).$controller
 			if (!controller) throw new Error('Aurelia controller not found')
@@ -136,7 +136,7 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		})
 		await mockRpcRoutes(page)
 		await page.goto('http://localhost:9000/dashboard')
-		await page.waitForSelector('toast-notification', { timeout: 10_000 })
+		await page.waitForSelector('snack-bar', { timeout: 10_000 })
 	})
 
 	test('3 rapid toasts appear as popover-open, then auto-dismiss without zombies', async ({
@@ -151,7 +151,7 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		}
 
 		// All 3 should be visible as popovers in the Top Layer
-		const toasts = page.locator('.toast-item:popover-open')
+		const toasts = page.locator('.snack-item:popover-open')
 		await expect(toasts).toHaveCount(3, { timeout: 3000 })
 
 		// Verify each toast has opacity and is visible
@@ -163,7 +163,7 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		await page.waitForTimeout(3000)
 
 		// All toasts should be gone — no zombies
-		const remaining = page.locator('.toast-item')
+		const remaining = page.locator('.snack-item')
 		await expect(remaining).toHaveCount(0, { timeout: 3000 })
 	})
 
@@ -173,7 +173,7 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		await publishToastDirect(page, 'First toast', 'info', 5000)
 		await publishToastDirect(page, 'Second toast', 'warning', 5000)
 
-		const toasts = page.locator('.toast-item:popover-open')
+		const toasts = page.locator('.snack-item:popover-open')
 		await expect(toasts).toHaveCount(2, { timeout: 3000 })
 
 		const firstBox = await toasts.nth(0).boundingBox()
@@ -238,7 +238,7 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 		}
 
 		// Toast should appear
-		const toast = page.locator('.toast-item:popover-open')
+		const toast = page.locator('.snack-item:popover-open')
 		await expect(toast).toHaveCount(1, { timeout: 5000 })
 		await expect(toast.first()).toBeVisible()
 
@@ -277,7 +277,7 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 		test.setTimeout(30_000)
 
 		await page.goto('http://localhost:9000/dashboard')
-		await page.waitForSelector('toast-notification', { timeout: 10_000 })
+		await page.waitForSelector('snack-bar', { timeout: 10_000 })
 
 		// Open a dialog programmatically to simulate a modal being open
 		await page.evaluate(() => {
@@ -298,7 +298,7 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 		// (both are in the Top Layer; later entry is on top)
 		await publishToastDirect(page, 'Toast above dialog', 'info', 5000)
 
-		const toast = page.locator('.toast-item:popover-open')
+		const toast = page.locator('.snack-item:popover-open')
 		await expect(toast).toHaveCount(1, { timeout: 3000 })
 		await expect(toast.first()).toBeVisible()
 
@@ -312,7 +312,7 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 		// This verifies Top Layer stacking: later popover is above earlier modal
 		const isClickable = await page.evaluate(() => {
 			const toastEl = document.querySelector(
-				'.toast-item:popover-open',
+				'.snack-item:popover-open',
 			) as HTMLElement
 			if (!toastEl) return false
 			const rect = toastEl.getBoundingClientRect()
