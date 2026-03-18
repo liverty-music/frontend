@@ -10,29 +10,16 @@
 
   <!-- CTA buttons -->
   <footer class="welcome-actions">
-    <!-- Primary: Get Started (new users / onboarding in progress) -->
     <button
-      if.bind="showGetStarted"
       click.trigger="handleGetStarted()"
       class="welcome-btn-primary"
       t="welcome.cta.getStarted"
     ></button>
 
-    <!-- Primary: Login (returning users with COMPLETED step) -->
     <button
-      if.bind="!showGetStarted"
       click.trigger="handleLogin()"
-      class="welcome-btn-primary"
+      class="welcome-btn-secondary"
       t="welcome.cta.login"
     ></button>
-
-    <!-- Secondary: Login link (visible alongside Get Started for new users) -->
-    <p if.bind="showGetStarted" class="welcome-login-hint">
-      <a
-        click.trigger="handleLogin()"
-        class="welcome-login-link"
-        t="welcome.cta.loginHint"
-      ></a>
-    </p>
   </footer>
 </main>

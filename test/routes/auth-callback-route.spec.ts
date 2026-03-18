@@ -6,10 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { IGuestDataMergeService } from '../../src/services/guest-data-merge-service'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../src/services/onboarding-service'
+import { IOnboardingService } from '../../src/services/onboarding-service'
 import { IUserService } from '../../src/services/user-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
@@ -30,29 +27,11 @@ function createMockMergeService() {
 	}
 }
 
-function createMockOnboardingService(
-	overrides: Partial<{
-		currentStep: string
-		isOnboarding: boolean
-	}> = {},
-) {
-	return {
-		currentStep: overrides.currentStep ?? OnboardingStep.COMPLETED,
-		isOnboarding: overrides.isOnboarding ?? false,
-		setStep: vi.fn(),
-		complete: vi.fn(),
-		reset: vi.fn(),
-		isCompleted: true,
-		getRouteForCurrentStep: vi.fn().mockReturnValue(''),
-	}
-}
-
 describe('AuthCallbackRoute', () => {
 	let sut: AuthCallbackRoute
 	let mockAuth: ReturnType<typeof createMockAuth>
 	let mockUserService: ReturnType<typeof createMockUserService>
 	let mockMergeService: ReturnType<typeof createMockMergeService>
-	let mockOnboarding: ReturnType<typeof createMockOnboardingService>
 
 	beforeEach(() => {
 		mockAuth = createMockAuth({
@@ -61,7 +40,6 @@ describe('AuthCallbackRoute', () => {
 		})
 		mockUserService = createMockUserService()
 		mockMergeService = createMockMergeService()
-		mockOnboarding = createMockOnboardingService()
 
 		const { store } = createMockStore()
 
@@ -72,10 +50,7 @@ describe('AuthCallbackRoute', () => {
 				IGuestDataMergeService,
 				mockMergeService as IGuestDataMergeService,
 			),
-			Registration.instance(
-				IOnboardingService,
-				mockOnboarding as IOnboardingService,
-			),
+			Registration.instance(IOnboardingService, {}),
 			Registration.instance(IStore, store),
 		)
 		container.register(AuthCallbackRoute)
@@ -186,16 +161,14 @@ describe('AuthCallbackRoute', () => {
 			expect(result).toBe('/dashboard')
 		})
 
-		it('should complete onboarding when login happens during onboarding', async () => {
-			mockOnboarding.currentStep = OnboardingStep.DISCOVERY
-			mockOnboarding.isOnboarding = true
+		it('should delegate onboarding completion to merge service (not call complete directly)', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'user@example.com' },
 			})
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockOnboarding.complete).toHaveBeenCalled()
+			expect(mockMergeService.merge).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 	})
