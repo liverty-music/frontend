@@ -45,10 +45,10 @@ describe('UserHomeSelector', () => {
 			expect(sut.selectedRegion).toBeNull()
 		})
 
-		it('should close the sheet and reset selectedRegion immediately', () => {
+		it('should close the sheet and reset selectedRegion when bottom-sheet closes', () => {
 			sut.open()
 			sut.selectRegion(sut.regions[0])
-			sut.close()
+			sut.onSheetClosed()
 			expect(sut.isOpen).toBe(false)
 			expect(sut.selectedRegion).toBeNull()
 		})

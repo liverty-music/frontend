@@ -1,7 +1,7 @@
 import type { RouteNode } from '@aurelia/router'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Toast } from '../../src/components/toast-notification/toast'
+import { Snack } from '../../src/components/snack-bar/snack'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
 import { createMockEventAggregator } from '../helpers/mock-toast'
@@ -115,7 +115,7 @@ describe('AuthHook', () => {
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe('')
-			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Toast))
+			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
 			expect(mockEa.published[0].message).toBe('auth.loginRequired')
 			expect(mockEa.published[0].severity).toBe('warning')
 		})
@@ -264,7 +264,7 @@ describe('AuthHook', () => {
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe('')
-			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Toast))
+			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
 			expect(mockEa.published[0].severity).toBe('warning')
 		})
 

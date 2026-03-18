@@ -1,7 +1,7 @@
 import { IStore } from '@aurelia/state'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Toast } from '../../src/components/toast-notification/toast'
+import { Snack } from '../../src/components/snack-bar/snack'
 import type { ArtistBubble } from '../../src/services/artist-service-client'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
@@ -142,7 +142,7 @@ describe('DiscoveryRoute', () => {
 
 			await sut.loading()
 
-			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Toast))
+			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
 			expect(mockEa.published[0].severity).toBe('error')
 		})
 	})
@@ -288,7 +288,7 @@ describe('DiscoveryRoute', () => {
 			expect(sut.search.searchQuery).toBe('test')
 			expect(sut.dnaOrbCanvas.spawnAndAbsorb).not.toHaveBeenCalled()
 			const hasErrorToast = mockEa.published.some(
-				(t: Toast) => t.severity === 'error',
+				(t: Snack) => t.severity === 'error',
 			)
 			expect(hasErrorToast).toBe(true)
 		})
@@ -420,7 +420,7 @@ describe('DiscoveryRoute', () => {
 			// followArtist publishes a toast via callback
 			expect(mockEa.published.length).toBeGreaterThanOrEqual(1)
 			const hasErrorToast = mockEa.published.some(
-				(t: Toast) => t.severity === 'error',
+				(t: Snack) => t.severity === 'error',
 			)
 			expect(hasErrorToast).toBe(true)
 		})

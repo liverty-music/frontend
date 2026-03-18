@@ -1,15 +1,15 @@
 import { IEventAggregator } from 'aurelia'
 import { vi } from 'vitest'
-import { Toast } from '../../src/components/toast-notification/toast'
+import { Snack } from '../../src/components/snack-bar/snack'
 
 /**
- * Creates a mock IEventAggregator that captures published Toast events.
+ * Creates a mock IEventAggregator that captures published Snack events.
  */
 export function createMockEventAggregator() {
-	const published: Toast[] = []
+	const published: Snack[] = []
 	return {
 		publish: vi.fn((event: unknown) => {
-			if (event instanceof Toast) {
+			if (event instanceof Snack) {
 				published.push(event)
 			}
 		}),
