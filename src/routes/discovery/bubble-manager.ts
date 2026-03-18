@@ -1,11 +1,11 @@
 import type { ILogger } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
-import type { ArtistBubble } from '../../services/artist-service-client'
+import type { Artist } from '../../entities/artist'
 import { BubblePool } from '../../services/bubble-pool'
 
 export interface BubbleArtistClient {
-	listTop(country: string, tag: string, limit: number): Promise<ArtistBubble[]>
-	listSimilar(artistId: string, limit: number): Promise<ArtistBubble[]>
+	listTop(country: string, tag: string, limit: number): Promise<Artist[]>
+	listSimilar(artistId: string, limit: number): Promise<Artist[]>
 }
 
 export class BubbleManager {
@@ -22,12 +22,12 @@ export class BubbleManager {
 		private readonly getFollowedIds: () => ReadonlySet<string>,
 	) {}
 
-	public get poolBubbles(): ArtistBubble[] {
+	public get poolBubbles(): Artist[] {
 		return this.pool.availableBubbles
 	}
 
 	public async loadInitialArtists(
-		followedArtists: ArtistBubble[],
+		followedArtists: Artist[],
 		country: string,
 		tag: string,
 	): Promise<void> {
@@ -36,19 +36,19 @@ export class BubbleManager {
 		this.pool.clearSeenSets()
 		this.pool.trackAllSeen(followedArtists)
 
-		let bubbles: ArtistBubble[]
+		let artists: Artist[]
 
 		if (followedArtists.length === 0) {
-			bubbles = await this.client.listTop(country, tag, BubblePool.MAX_BUBBLES)
+			artists = await this.client.listTop(country, tag, BubblePool.MAX_BUBBLES)
 		} else {
-			bubbles = await this.fetchSeedSimilarArtists(followedArtists)
+			artists = await this.fetchSeedSimilarArtists(followedArtists)
 		}
 
-		bubbles = this.pool
-			.dedup(bubbles, this.getFollowedIds())
+		artists = this.pool
+			.dedup(artists, this.getFollowedIds())
 			.slice(0, BubblePool.MAX_BUBBLES)
-		this.pool.replace(bubbles)
-		this.pool.trackAllSeen(bubbles)
+		this.pool.replace(artists)
+		this.pool.trackAllSeen(artists)
 
 		this.logger.info('Loaded initial artists', {
 			count: this.pool.availableBubbles.length,
@@ -69,13 +69,13 @@ export class BubbleManager {
 		this.isLoadingBubbles = true
 
 		try {
-			let newBubbles = await this.getSimilarArtists(artistId)
-			if (newBubbles.length === 0) {
-				newBubbles = await this.loadReplacementBubbles()
+			let newArtists = await this.getSimilarArtists(artistId)
+			if (newArtists.length === 0) {
+				newArtists = await this.loadReplacementBubbles()
 			}
 
-			if (newBubbles.length > 0) {
-				await this.addBubblesWithEviction(newBubbles, position, canvas)
+			if (newArtists.length > 0) {
+				await this.addBubblesWithEviction(newArtists, position, canvas)
 				return true
 			}
 
@@ -90,10 +90,7 @@ export class BubbleManager {
 	 * Spawn a bubble and absorb it after search follow.
 	 * Defers canvas read until the element is visible via requestAnimationFrame.
 	 */
-	public spawnAndAbsorbAfterSearch(
-		artist: ArtistBubble,
-		canvas: DnaOrbCanvas,
-	): void {
+	public spawnAndAbsorbAfterSearch(artist: Artist, canvas: DnaOrbCanvas): void {
 		requestAnimationFrame(() => {
 			const rect = canvas.canvasRect
 			if (rect.width === 0 || rect.height === 0) {
@@ -110,7 +107,7 @@ export class BubbleManager {
 	 * Add bubbles with coordinated pool + physics eviction.
 	 */
 	private async addBubblesWithEviction(
-		newBubbles: ArtistBubble[],
+		newArtists: Artist[],
 		position: { x: number; y: number },
 		canvas: DnaOrbCanvas,
 	): Promise<void> {
@@ -119,51 +116,51 @@ export class BubbleManager {
 		const spawnSlots = Math.max(0, maxBubbles - currentPhysics)
 
 		// Evict oldest physics bubbles if we need more room
-		if (newBubbles.length > spawnSlots) {
+		if (newArtists.length > spawnSlots) {
 			const evictCount = Math.min(
-				newBubbles.length - spawnSlots,
+				newArtists.length - spawnSlots,
 				currentPhysics,
 			)
 			if (evictCount > 0) {
 				const evicted = this.pool.evictOldest(evictCount)
-				const evictedIds = evicted.map((b) => b.id)
+				const evictedIds = evicted.map((a) => a.id?.value ?? '')
 				await canvas.fadeOutBubbles(evictedIds)
 			}
 		}
 
 		// Only spawn up to the cap
 		const finalSlots = Math.max(0, maxBubbles - canvas.bubbleCount)
-		const toSpawn = newBubbles.slice(0, finalSlots)
+		const toSpawn = newArtists.slice(0, finalSlots)
 		if (toSpawn.length > 0) {
 			this.pool.add(toSpawn)
 			canvas.spawnBubblesAt(toSpawn, position.x, position.y)
 		}
 	}
 
-	private async getSimilarArtists(artistId: string): Promise<ArtistBubble[]> {
+	private async getSimilarArtists(artistId: string): Promise<Artist[]> {
 		this.logger.info('Getting similar artists', { artistId })
 
-		const rawBubbles = await this.client.listSimilar(
+		const rawArtists = await this.client.listSimilar(
 			artistId,
 			BubbleManager.SIMILAR_LIMIT_ON_TAP,
 		)
-		const newBubbles = this.pool.dedup(rawBubbles, this.getFollowedIds())
-		this.pool.trackAllSeen(newBubbles)
+		const newArtists = this.pool.dedup(rawArtists, this.getFollowedIds())
+		this.pool.trackAllSeen(newArtists)
 
-		return newBubbles
+		return newArtists
 	}
 
-	private async loadReplacementBubbles(): Promise<ArtistBubble[]> {
+	private async loadReplacementBubbles(): Promise<Artist[]> {
 		this.logger.info('Loading replacement bubbles from top artists')
 
 		this.pool.resetSeenWith(this.pool.availableBubbles)
 
-		const rawBubbles = await this.client.listTop(
+		const rawArtists = await this.client.listTop(
 			this.country,
 			'',
 			BubblePool.MAX_BUBBLES,
 		)
-		const fresh = this.pool.dedup(rawBubbles, this.getFollowedIds())
+		const fresh = this.pool.dedup(rawArtists, this.getFollowedIds())
 		this.pool.trackAllSeen(fresh)
 
 		this.logger.info('Replacement bubbles loaded', { count: fresh.length })
@@ -171,8 +168,8 @@ export class BubbleManager {
 	}
 
 	private async fetchSeedSimilarArtists(
-		followedArtists: ArtistBubble[],
-	): Promise<ArtistBubble[]> {
+		followedArtists: Artist[],
+	): Promise<Artist[]> {
 		const seeds = this.pickRandomSeeds(followedArtists)
 		const limitPerSeed = Math.floor(BubblePool.MAX_BUBBLES / seeds.length)
 		this.logger.info('Fetching seed similar artists', {
@@ -182,20 +179,22 @@ export class BubbleManager {
 
 		const results = await Promise.all(
 			seeds.map((seed) =>
-				this.client.listSimilar(seed.id, limitPerSeed).catch((err) => {
-					this.logger.warn('Seed similar fetch failed', {
-						seed: seed.name,
-						error: err,
-					})
-					return [] as ArtistBubble[]
-				}),
+				this.client
+					.listSimilar(seed.id?.value ?? '', limitPerSeed)
+					.catch((err) => {
+						this.logger.warn('Seed similar fetch failed', {
+							seed: seed.name?.value,
+							error: err,
+						})
+						return [] as Artist[]
+					}),
 			),
 		)
 
 		return results.flat()
 	}
 
-	private pickRandomSeeds(followedArtists: ArtistBubble[]): ArtistBubble[] {
+	private pickRandomSeeds(followedArtists: Artist[]): Artist[] {
 		const max = BubbleManager.MAX_SEED_ARTISTS
 		if (followedArtists.length <= max) {
 			return [...followedArtists]

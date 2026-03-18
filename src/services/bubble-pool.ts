@@ -1,16 +1,16 @@
-import type { ArtistBubble } from './artist-service-client'
+import type { Artist } from '../entities/artist'
 
 /**
  * Manages the available bubble pool for the discovery page.
  * Handles deduplication (by name, id, mbid), eviction, and pool size limits.
  *
- * This is a plain class (not DI-registered) — its lifetime matches
+ * This is a plain class (not DI-registered) -- its lifetime matches
  * the owning component (DiscoveryRoute), not the app lifetime.
  */
 export class BubblePool {
 	public static readonly MAX_BUBBLES = 50
 
-	public availableBubbles: ArtistBubble[] = []
+	public availableBubbles: Artist[] = []
 
 	private readonly seenArtistNames = new Set<string>()
 	private readonly seenArtistIds = new Set<string>()
@@ -23,14 +23,16 @@ export class BubblePool {
 	 * Add bubbles to the pool, evicting oldest first if it would exceed MAX_BUBBLES.
 	 * Returns the list of evicted bubble IDs (for physics fade-out).
 	 */
-	public add(newBubbles: ArtistBubble[]): string[] {
+	public add(newBubbles: Artist[]): string[] {
 		const max = BubblePool.MAX_BUBBLES
 		const total = this.availableBubbles.length + newBubbles.length
 		const overflow = total - max
 		let evictedIds: string[] = []
 
 		if (overflow > 0) {
-			evictedIds = this.availableBubbles.slice(0, overflow).map((b) => b.id)
+			evictedIds = this.availableBubbles
+				.slice(0, overflow)
+				.map((a) => a.id?.value ?? '')
 			this.availableBubbles = [
 				...this.availableBubbles.slice(overflow),
 				...newBubbles,
@@ -47,7 +49,7 @@ export class BubblePool {
 	 */
 	public remove(artistId: string): void {
 		this.availableBubbles = this.availableBubbles.filter(
-			(b) => b.id !== artistId,
+			(a) => (a.id?.value ?? '') !== artistId,
 		)
 	}
 
@@ -55,7 +57,7 @@ export class BubblePool {
 	 * Evict the oldest N bubbles from the available pool.
 	 * Returns the evicted bubbles (for physics fade-out).
 	 */
-	public evictOldest(count: number): ArtistBubble[] {
+	public evictOldest(count: number): Artist[] {
 		if (count <= 0) return []
 		const evicted = this.availableBubbles.slice(0, count)
 		this.availableBubbles = this.availableBubbles.slice(count)
@@ -65,7 +67,7 @@ export class BubblePool {
 	/**
 	 * Replace the entire pool with new bubbles.
 	 */
-	public replace(bubbles: ArtistBubble[]): void {
+	public replace(bubbles: Artist[]): void {
 		this.availableBubbles = bubbles
 	}
 
@@ -82,34 +84,40 @@ export class BubblePool {
 	 * Follow state is provided externally by the caller.
 	 */
 	public dedup(
-		bubbles: ArtistBubble[],
+		artists: Artist[],
 		followedIds: ReadonlySet<string>,
-	): ArtistBubble[] {
-		return bubbles.filter((b) => !this.isSeen(b) && !followedIds.has(b.id))
+	): Artist[] {
+		return artists.filter(
+			(a) =>
+				!this.isSeen(a) && !followedIds.has(a.id?.value ?? ''),
+		)
 	}
 
 	/**
-	 * Track a bubble as seen (prevents future duplicates).
+	 * Track an artist as seen (prevents future duplicates).
 	 */
-	public trackSeen(bubble: ArtistBubble): void {
-		this.seenArtistNames.add(this.normalizeName(bubble.name))
-		if (bubble.id) this.seenArtistIds.add(bubble.id)
-		if (bubble.mbid) this.seenArtistMbids.add(bubble.mbid)
+	public trackSeen(artist: Artist): void {
+		const name = artist.name?.value ?? ''
+		const id = artist.id?.value ?? ''
+		const mbid = artist.mbid?.value ?? ''
+		if (name) this.seenArtistNames.add(this.normalizeName(name))
+		if (id) this.seenArtistIds.add(id)
+		if (mbid) this.seenArtistMbids.add(mbid)
 	}
 
 	/**
-	 * Track multiple bubbles as seen.
+	 * Track multiple artists as seen.
 	 */
-	public trackAllSeen(bubbles: ArtistBubble[]): void {
-		for (const b of bubbles) {
-			this.trackSeen(b)
+	public trackAllSeen(artists: Artist[]): void {
+		for (const a of artists) {
+			this.trackSeen(a)
 		}
 	}
 
 	/**
-	 * Clear seen sets and re-seed from provided bubbles.
+	 * Clear seen sets and re-seed from provided artists.
 	 */
-	public resetSeenWith(keepSeen: ArtistBubble[]): void {
+	public resetSeenWith(keepSeen: Artist[]): void {
 		this.clearSeenSets()
 		this.trackAllSeen(keepSeen)
 	}
@@ -120,10 +128,13 @@ export class BubblePool {
 		this.seenArtistMbids.clear()
 	}
 
-	private isSeen(bubble: ArtistBubble): boolean {
-		if (this.seenArtistNames.has(this.normalizeName(bubble.name))) return true
-		if (bubble.id && this.seenArtistIds.has(bubble.id)) return true
-		if (bubble.mbid && this.seenArtistMbids.has(bubble.mbid)) return true
+	private isSeen(artist: Artist): boolean {
+		const name = artist.name?.value ?? ''
+		const id = artist.id?.value ?? ''
+		const mbid = artist.mbid?.value ?? ''
+		if (name && this.seenArtistNames.has(this.normalizeName(name))) return true
+		if (id && this.seenArtistIds.has(id)) return true
+		if (mbid && this.seenArtistMbids.has(mbid)) return true
 		return false
 	}
 

@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Artist } from '../../../src/entities/artist'
 import {
 	type BubbleArtistClient,
 	BubbleManager,
 } from '../../../src/routes/discovery/bubble-manager'
-import type { ArtistBubble } from '../../../src/services/artist-service-client'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
 
-function makeBubble(id: string, name: string): ArtistBubble {
-	return { id, name, mbid: '', imageUrl: '', x: 0, y: 0, radius: 30 }
+function makeArtist(id: string, name: string): Artist {
+	return new Artist({
+		id: { value: id },
+		name: { value: name },
+	})
 }
 
 function createMockCanvas() {
@@ -40,9 +43,9 @@ describe('BubbleManager', () => {
 
 	describe('loadInitialArtists', () => {
 		it('should call listTop when no followed artists', async () => {
-			const bubbles = [makeBubble('a1', 'Artist One')]
+			const artists = [makeArtist('a1', 'Artist One')]
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
-				bubbles,
+				artists,
 			)
 
 			await sut.loadInitialArtists([], 'Japan', '')
@@ -52,9 +55,9 @@ describe('BubbleManager', () => {
 		})
 
 		it('should call listSimilar when followed artists exist', async () => {
-			const followed = [makeBubble('f1', 'Followed')]
+			const followed = [makeArtist('f1', 'Followed')]
 			;(mockClient.listSimilar as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeBubble('s1', 'Similar'),
+				makeArtist('s1', 'Similar'),
 			])
 
 			await sut.loadInitialArtists(followed, 'Japan', '')
@@ -64,8 +67,8 @@ describe('BubbleManager', () => {
 		})
 
 		it('should deduplicate against followed artists', async () => {
-			const followed = [makeBubble('f1', 'Followed')]
-			const similar = [makeBubble('f1', 'Followed'), makeBubble('a1', 'New')]
+			const followed = [makeArtist('f1', 'Followed')]
+			const similar = [makeArtist('f1', 'Followed'), makeArtist('a1', 'New')]
 			;(mockClient.listSimilar as ReturnType<typeof vi.fn>).mockResolvedValue(
 				similar,
 			)
@@ -74,13 +77,13 @@ describe('BubbleManager', () => {
 
 			// 'Followed' should be excluded since it's tracked as seen
 			expect(sut.poolBubbles).toHaveLength(1)
-			expect(sut.poolBubbles[0].id).toBe('a1')
+			expect(sut.poolBubbles[0].id?.value).toBe('a1')
 		})
 	})
 
 	describe('onNeedMoreBubbles', () => {
 		it('should fetch similar and spawn them', async () => {
-			const similar = [makeBubble('s1', 'Similar')]
+			const similar = [makeArtist('s1', 'Similar')]
 			;(mockClient.listSimilar as ReturnType<typeof vi.fn>).mockResolvedValue(
 				similar,
 			)
@@ -103,7 +106,7 @@ describe('BubbleManager', () => {
 				[],
 			)
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeBubble('t1', 'Top'),
+				makeArtist('t1', 'Top'),
 			])
 
 			const canvas = createMockCanvas()
@@ -116,7 +119,7 @@ describe('BubbleManager', () => {
 		it('should evict oldest when pool is full', async () => {
 			// Fill the pool
 			const initial = Array.from({ length: 50 }, (_, i) =>
-				makeBubble(`e${i}`, `Existing ${i}`),
+				makeArtist(`e${i}`, `Existing ${i}`),
 			)
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				initial,
@@ -124,7 +127,7 @@ describe('BubbleManager', () => {
 			await sut.loadInitialArtists([], 'Japan', '')
 
 			// Now add more
-			const similar = [makeBubble('new1', 'New One')]
+			const similar = [makeArtist('new1', 'New One')]
 			;(mockClient.listSimilar as ReturnType<typeof vi.fn>).mockResolvedValue(
 				similar,
 			)
@@ -138,9 +141,9 @@ describe('BubbleManager', () => {
 		})
 
 		it('should ignore concurrent requests', async () => {
-			let resolveFirst: (value: ArtistBubble[]) => void
+			let resolveFirst: (value: Artist[]) => void
 			;(mockClient.listSimilar as ReturnType<typeof vi.fn>).mockReturnValueOnce(
-				new Promise<ArtistBubble[]>((resolve) => {
+				new Promise<Artist[]>((resolve) => {
 					resolveFirst = resolve
 				}),
 			)
@@ -149,7 +152,7 @@ describe('BubbleManager', () => {
 			const first = sut.onNeedMoreBubbles('a1', 'A', { x: 0, y: 0 }, canvas)
 			const second = sut.onNeedMoreBubbles('a2', 'B', { x: 0, y: 0 }, canvas)
 
-			resolveFirst!([makeBubble('s1', 'S1')])
+			resolveFirst!([makeArtist('s1', 'S1')])
 			await first
 			const secondResult = await second
 
@@ -185,11 +188,12 @@ describe('BubbleManager', () => {
 					return 0
 				})
 
-			sut.spawnAndAbsorbAfterSearch(makeBubble('a1', 'Artist'), canvas)
+			const artist = makeArtist('a1', 'Artist')
+			sut.spawnAndAbsorbAfterSearch(artist, canvas)
 
 			expect(rafSpy).toHaveBeenCalled()
 			expect(canvas.spawnAndAbsorb).toHaveBeenCalledWith(
-				expect.objectContaining({ id: 'a1' }),
+				artist,
 				200, // 400 / 2
 				expect.closeTo(102, 0), // 600 * 0.17
 			)
@@ -208,7 +212,7 @@ describe('BubbleManager', () => {
 					return 0
 				})
 
-			sut.spawnAndAbsorbAfterSearch(makeBubble('a1', 'Artist'), canvas)
+			sut.spawnAndAbsorbAfterSearch(makeArtist('a1', 'Artist'), canvas)
 
 			expect(canvas.spawnAndAbsorb).not.toHaveBeenCalled()
 
@@ -219,8 +223,8 @@ describe('BubbleManager', () => {
 	describe('pool state sync', () => {
 		it('should reflect pool state through poolBubbles', async () => {
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeBubble('a1', 'One'),
-				makeBubble('a2', 'Two'),
+				makeArtist('a1', 'One'),
+				makeArtist('a2', 'Two'),
 			])
 
 			await sut.loadInitialArtists([], 'Japan', '')
@@ -233,20 +237,20 @@ describe('BubbleManager', () => {
 		it('should exclude followed artists from loadInitialArtists', async () => {
 			followedIds.add('a1')
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeBubble('a1', 'Followed'),
-				makeBubble('a2', 'Available'),
+				makeArtist('a1', 'Followed'),
+				makeArtist('a2', 'Available'),
 			])
 
 			await sut.loadInitialArtists([], 'Japan', '')
 
 			expect(sut.poolBubbles).toHaveLength(1)
-			expect(sut.poolBubbles[0].id).toBe('a2')
+			expect(sut.poolBubbles[0].id?.value).toBe('a2')
 		})
 
 		it('should use latest followedIds at call time (lazy evaluation)', async () => {
 			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeBubble('a1', 'One'),
-				makeBubble('a2', 'Two'),
+				makeArtist('a1', 'One'),
+				makeArtist('a2', 'Two'),
 			])
 
 			// followedIds is empty at construction time
@@ -256,8 +260,8 @@ describe('BubbleManager', () => {
 			// Update followedIds after construction
 			followedIds.add('a3')
 			;(mockClient.listSimilar as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeBubble('a3', 'Now Followed'),
-				makeBubble('a4', 'Still Available'),
+				makeArtist('a3', 'Now Followed'),
+				makeArtist('a4', 'Still Available'),
 			])
 
 			const canvas = createMockCanvas()
@@ -265,7 +269,7 @@ describe('BubbleManager', () => {
 
 			// a3 should be filtered out because followedIds was updated
 			const spawnedBubbles = canvas.spawnBubblesAt.mock.calls[0]?.[0] ?? []
-			const spawnedIds = spawnedBubbles.map((b: ArtistBubble) => b.id)
+			const spawnedIds = spawnedBubbles.map((b: Artist) => b.id?.value)
 			expect(spawnedIds).not.toContain('a3')
 			expect(spawnedIds).toContain('a4')
 		})

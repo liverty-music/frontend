@@ -1,14 +1,14 @@
 import { bindable, customAttribute, INode, resolve } from 'aurelia'
 import { artistHueFromColorProfile } from '../components/live-highway/color-generator'
-import type { LogoColorProfile } from '../entities/follow'
+import type { LogoColorProfile } from '../entities/artist'
 
 /**
- * Bridges JS→CSS for artist-specific coloring.
+ * Bridges JS to CSS for artist-specific coloring.
  * Computes an optimal hue from the logo color profile (if available) or
  * a deterministic hash of the artist name, then sets --artist-hue and
  * --artist-bg-lightness as CSS custom properties on the host element.
  *
- * Usage: <div artist-color="event.artistName" profile.bind="event.logoColorProfile">
+ * Usage: <div artist-color="event.artistName" profile.bind="event.artist?.fanart?.logoColorProfile">
  */
 @customAttribute('artist-color')
 export class ArtistColorCustomAttribute {

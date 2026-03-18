@@ -1,5 +1,5 @@
 import { batch, type ILogger } from 'aurelia'
-import type { ArtistBubble } from '../../services/artist-service-client'
+import type { Artist } from '../../entities/artist'
 import type { BubblePool } from '../../services/bubble-pool'
 
 export interface FollowClient {
@@ -11,15 +11,15 @@ export interface FollowConcertClient {
 }
 
 export interface FollowCallbacks {
-	onFollowed(artist: ArtistBubble): void
-	onRollback(artist: ArtistBubble): void
+	onFollowed(artist: Artist): void
+	onRollback(artist: Artist): void
 	onHasUpcomingEvents(artistName: string): void
 	onError(messageKey: string, params?: Record<string, string>): void
-	respawnBubble(artist: ArtistBubble, position: { x: number; y: number }): void
+	respawnBubble(artist: Artist, position: { x: number; y: number }): void
 }
 
 export class FollowOrchestrator {
-	public followedArtists: ArtistBubble[] = []
+	public followedArtists: Artist[] = []
 
 	constructor(
 		private readonly followClient: FollowClient,
@@ -31,7 +31,7 @@ export class FollowOrchestrator {
 	) {}
 
 	public get followedIds(): ReadonlySet<string> {
-		return new Set(this.followedArtists.map((a) => a.id))
+		return new Set(this.followedArtists.map((a) => a.id?.value ?? ''))
 	}
 
 	public get followedCount(): number {
@@ -39,32 +39,34 @@ export class FollowOrchestrator {
 	}
 
 	public async followArtist(
-		artist: ArtistBubble,
+		artist: Artist,
 		spawnPosition?: { x: number; y: number },
 	): Promise<void> {
-		if (this.followedIds.has(artist.id)) return
-		this.logger.info('Following artist', { artist: artist.name })
+		const artistId = artist.id?.value ?? ''
+		const artistName = artist.name?.value ?? ''
+		if (this.followedIds.has(artistId)) return
+		this.logger.info('Following artist', { artist: artistName })
 
 		// Optimistic UI update
 		this.followedArtists = [...this.followedArtists, artist]
-		this.pool.remove(artist.id)
+		this.pool.remove(artistId)
 
 		try {
-			await this.followClient.follow(artist.id, artist.name)
+			await this.followClient.follow(artistId, artistName)
 			this.logger.info('Artist followed', {
 				followed: this.followedArtists.length,
 			})
 			this.callbacks.onFollowed(artist)
 		} catch (err) {
 			this.logger.error('Failed to follow artist', {
-				artist: artist.name,
+				artist: artistName,
 				error: err,
 			})
 
 			// Rollback optimistic update
 			batch(() => {
 				this.followedArtists = this.followedArtists.filter(
-					(b) => b.id !== artist.id,
+					(a) => (a.id?.value ?? '') !== artistId,
 				)
 				this.pool.add([artist])
 			})
@@ -73,18 +75,20 @@ export class FollowOrchestrator {
 				this.callbacks.respawnBubble(artist, spawnPosition)
 			}
 
-			this.callbacks.onError('discovery.followFailed', { name: artist.name })
+			this.callbacks.onError('discovery.followFailed', { name: artistName })
 			throw err
 		}
 	}
 
-	public checkLiveEvents(artist: ArtistBubble): void {
+	public checkLiveEvents(artist: Artist): void {
+		const artistId = artist.id?.value ?? ''
+		const artistName = artist.name?.value ?? ''
 		this.concertClient
-			.listConcerts(artist.id)
+			.listConcerts(artistId)
 			.then((concerts) => {
 				if (this.abortSignal().aborted) return
 				if (concerts.length > 0) {
-					this.callbacks.onHasUpcomingEvents(artist.name)
+					this.callbacks.onHasUpcomingEvents(artistName)
 				}
 			})
 			.catch((err) => {

@@ -1,4 +1,4 @@
-import type { LogoColorProfile } from '../../entities/follow'
+import type { LogoColorProfile } from '../../entities/artist'
 
 const SATURATION = 65
 const LIGHTNESS = 60

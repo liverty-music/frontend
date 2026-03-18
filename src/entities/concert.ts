@@ -1,3 +1,5 @@
+import type { Artist } from './artist'
+
 /** Lane type for proximity-based grouping on the dashboard. */
 export type LaneType = 'home' | 'nearby' | 'away'
 
@@ -25,9 +27,7 @@ export interface Concert {
 	// --- UI-only ---
 	hypeLevel: HypeLevel
 	matched: boolean
-	logoUrl?: string
-	backgroundUrl?: string
-	logoColorProfile?: import('./follow').LogoColorProfile
+	artist?: Artist
 	journeyStatus?: JourneyStatus
 }
 

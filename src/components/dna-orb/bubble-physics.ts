@@ -1,15 +1,23 @@
 import type Matter from 'matter-js'
-import type { ArtistBubble } from '../../services/artist-service-client'
+import type { Artist } from '../../entities/artist'
 
+/** A physics-enabled bubble wrapping a proto Artist with position and radius. */
 export interface PhysicsBubble {
 	body: Matter.Body
-	artist: ArtistBubble
+	artist: Artist
+	radius: number
 	scale: number
 	opacity: number
 	isSpawning: boolean
 	spawnProgress: number
 	isFadingOut: boolean
 	fadeOutProgress: number
+}
+
+/** Parameters for adding an artist to the physics simulation. */
+export interface BubbleArtistParams {
+	artist: Artist
+	radius: number
 }
 
 export class BubblePhysics {
@@ -115,13 +123,14 @@ export class BubblePhysics {
 		})
 	}
 
-	public addBubbles(artists: ArtistBubble[]): void {
-		for (const artist of artists) {
-			if (this.bubbleMap.has(artist.id)) continue
+	public addBubbles(params: BubbleArtistParams[]): void {
+		for (const { artist, radius } of params) {
+			const id = artist.id?.value ?? ''
+			if (!id || this.bubbleMap.has(id)) continue
 
 			const x = Math.random() * (this.width - 100) + 50
 			const y = Math.random() * (this.height * 0.5) + 50
-			const body = this.Matter?.Bodies.circle(x, y, artist.radius, {
+			const body = this.Matter?.Bodies.circle(x, y, radius, {
 				restitution: 0.6,
 				friction: 0.1,
 				frictionAir: 0.02,
@@ -129,9 +138,10 @@ export class BubblePhysics {
 			})
 
 			this.Matter?.Composite.add(this.world, body)
-			this.bubbleMap.set(artist.id, {
+			this.bubbleMap.set(id, {
 				body,
 				artist,
+				radius,
 				scale: 1,
 				opacity: 1,
 				isSpawning: false,
@@ -143,14 +153,15 @@ export class BubblePhysics {
 	}
 
 	public spawnBubblesAt(
-		artists: ArtistBubble[],
+		params: BubbleArtistParams[],
 		fromX: number,
 		fromY: number,
 	): void {
-		for (const artist of artists) {
-			if (this.bubbleMap.has(artist.id)) continue
+		for (const { artist, radius } of params) {
+			const id = artist.id?.value ?? ''
+			if (!id || this.bubbleMap.has(id)) continue
 
-			const body = this.Matter?.Bodies.circle(fromX, fromY, artist.radius, {
+			const body = this.Matter?.Bodies.circle(fromX, fromY, radius, {
 				restitution: 0.6,
 				friction: 0.1,
 				frictionAir: 0.02,
@@ -166,9 +177,10 @@ export class BubblePhysics {
 			})
 
 			this.Matter?.Composite.add(this.world, body)
-			this.bubbleMap.set(artist.id, {
+			this.bubbleMap.set(id, {
 				body,
 				artist,
+				radius,
 				scale: 0,
 				opacity: 0,
 				isSpawning: true,
@@ -219,7 +231,7 @@ export class BubblePhysics {
 			const dx = pos.x - x
 			const dy = pos.y - y
 			const dist = Math.sqrt(dx * dx + dy * dy)
-			if (dist <= bubble.artist.radius * bubble.scale) {
+			if (dist <= bubble.radius * bubble.scale) {
 				return bubble
 			}
 		}
@@ -232,6 +244,7 @@ export class BubblePhysics {
 		const FADE_OUT_SPEED = 0.0033 // ~300ms to complete
 
 		for (const bubble of this.bubbleMap.values()) {
+			const id = bubble.artist.id?.value ?? ''
 			if (bubble.isSpawning) {
 				bubble.spawnProgress = Math.min(1, bubble.spawnProgress + delta * 0.004)
 				bubble.scale = easeOutBack(bubble.spawnProgress)
@@ -249,8 +262,8 @@ export class BubblePhysics {
 				bubble.opacity = 1 - bubble.fadeOutProgress
 				if (bubble.fadeOutProgress >= 1) {
 					this.Matter?.Composite.remove(this.world, bubble.body)
-					this.bubbleMap.delete(bubble.artist.id)
-					this.fadeOutPendingIds.delete(bubble.artist.id)
+					this.bubbleMap.delete(id)
+					this.fadeOutPendingIds.delete(id)
 					if (this.fadeOutPendingIds.size === 0 && this.fadeOutResolve) {
 						this.fadeOutResolve()
 						this.fadeOutResolve = null

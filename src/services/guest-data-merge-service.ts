@@ -28,19 +28,21 @@ export class GuestDataMergeService {
 
 		// Follow each artist (best-effort)
 		const client = this.followService.getClient()
-		for (const artist of follows) {
+		for (const guestFollow of follows) {
+			const artistId = guestFollow.artist.id?.value ?? ''
+			const artistName = guestFollow.artist.name?.value ?? ''
 			try {
 				await client.follow({
-					artistId: new ArtistId({ value: artist.artistId }),
+					artistId: new ArtistId({ value: artistId }),
 				})
 				this.logger.debug('Followed artist', {
-					id: artist.artistId,
-					name: artist.name,
+					id: artistId,
+					name: artistName,
 				})
 			} catch (err) {
 				this.logger.warn('Failed to follow artist during merge, continuing', {
-					id: artist.artistId,
-					name: artist.name,
+					id: artistId,
+					name: artistName,
 					error: err,
 				})
 			}

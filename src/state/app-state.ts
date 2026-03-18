@@ -1,11 +1,12 @@
+import type { Artist } from '../entities/artist'
 import {
 	OnboardingStep,
 	type OnboardingStepValue,
 } from '../services/onboarding-service'
 
 export interface GuestFollow {
-	artistId: string
-	name: string
+	artist: Artist
+	home: string | null
 }
 
 export interface OnboardingState {

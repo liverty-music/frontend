@@ -1,3 +1,4 @@
+import type { Artist } from '../entities/artist'
 import type { OnboardingStepValue } from '../services/onboarding-service'
 
 export type AppAction =
@@ -11,7 +12,7 @@ export type AppAction =
 	| { type: 'onboarding/clearSpotlight' }
 	| { type: 'onboarding/complete' }
 	| { type: 'onboarding/reset' }
-	| { type: 'guest/follow'; artistId: string; name: string }
+	| { type: 'guest/follow'; artist: Artist }
 	| { type: 'guest/unfollow'; artistId: string }
 	| { type: 'guest/setUserHome'; code: string }
 	| { type: 'guest/clearAll' }

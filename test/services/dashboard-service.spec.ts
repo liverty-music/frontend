@@ -91,8 +91,14 @@ describe('DashboardService', () => {
 
 	it('should map server-provided DateLaneGroup to frontend DateGroup', async () => {
 		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
-			{ id: 'artist-1', name: 'Artist One', hype: 0 },
-			{ id: 'artist-2', name: 'Artist Two', hype: 0 },
+			{
+				artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
+				hype: 'watch',
+			},
+			{
+				artist: { id: { value: 'artist-2' }, name: { value: 'Artist Two' } },
+				hype: 'watch',
+			},
 		])
 
 		const concert1: Partial<Concert> = {
@@ -150,9 +156,12 @@ describe('DashboardService', () => {
 	})
 
 	it('should handle listByFollower RPC failure gracefully', async () => {
-		mockFollowService.listFollowed = vi
-			.fn()
-			.mockResolvedValue([{ id: 'artist-1', name: 'Artist One', hype: 0 }])
+		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
+			{
+				artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
+				hype: 'watch',
+			},
+		])
 
 		mockConcertService.listByFollower = vi
 			.fn()
@@ -162,9 +171,12 @@ describe('DashboardService', () => {
 	})
 
 	it('should format concert times correctly', async () => {
-		mockFollowService.listFollowed = vi
-			.fn()
-			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', hype: 0 }])
+		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
+			{
+				artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
+				hype: 'watch',
+			},
+		])
 
 		const concert: Partial<Concert> = {
 			id: { value: 'concert-1' },
@@ -190,9 +202,12 @@ describe('DashboardService', () => {
 	})
 
 	it('should skip concerts without localDate', async () => {
-		mockFollowService.listFollowed = vi
-			.fn()
-			.mockResolvedValue([{ id: 'artist-1', name: 'Artist', hype: 0 }])
+		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
+			{
+				artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
+				hype: 'watch',
+			},
+		])
 
 		const concertWithDate: Partial<Concert> = {
 			id: { value: 'concert-1' },
@@ -225,9 +240,12 @@ describe('DashboardService', () => {
 	})
 
 	it('should map concerts in all three lanes correctly', async () => {
-		mockFollowService.listFollowed = vi
-			.fn()
-			.mockResolvedValue([{ id: 'artist-1', name: 'Artist One', hype: 0 }])
+		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
+			{
+				artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
+				hype: 'watch',
+			},
+		])
 
 		const homeConcert: Partial<Concert> = {
 			id: { value: 'concert-home' },

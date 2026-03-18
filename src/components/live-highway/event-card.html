@@ -10,13 +10,13 @@
     role="button"
     tabindex="0"
     artist-color.bind="event.artistName"
-    profile.bind="event.logoColorProfile"
+    profile.bind="event.artist?.fanart?.logoColorProfile"
     data-beam-index.bind="beamIndex"
     class="[ event-card ]"
   >
     <img
-      if.bind="event.logoUrl && !logoError"
-      src.bind="event.logoUrl"
+      if.bind="logoUrl && !logoError"
+      src.bind="logoUrl"
       alt.bind="event.artistName"
       loading="lazy"
       decoding="async"

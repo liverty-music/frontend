@@ -3,10 +3,8 @@ import { IRouter } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { Snack } from '../../components/snack-bar/snack'
-import {
-	type ArtistBubble,
-	IArtistServiceClient,
-} from '../../services/artist-service-client'
+import type { Artist } from '../../entities/artist'
+import { IArtistServiceClient } from '../../services/artist-service-client'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import {
@@ -37,7 +35,7 @@ export class DiscoveryRoute {
 
 	private abortController = new AbortController()
 
-	// Controllers — order matters: bubbles must be initialized before genre/follow
+	// Controllers -- order matters: bubbles must be initialized before genre/follow
 	public readonly bubbles = new BubbleManager(
 		this.artistClient,
 		resolve(ILogger).scopeTo('BubbleManager'),
@@ -60,7 +58,7 @@ export class DiscoveryRoute {
 		this.bubbles.pool,
 		() => this.follow.followedArtists,
 		{
-			onBubblesReloaded: (bubbles) => this.dnaOrbCanvas.reloadBubbles(bubbles),
+			onBubblesReloaded: (artists) => this.dnaOrbCanvas.reloadBubbles(artists),
 			onError: (key, params) =>
 				this.ea.publish(new Snack(this.i18n.tr(key, params), 'error')),
 		},
@@ -74,7 +72,7 @@ export class DiscoveryRoute {
 		this.bubbles.pool,
 		{
 			onFollowed: (artist) => {
-				this.concertTracker.searchConcertsWithTimeout(artist.id)
+				this.concertTracker.searchConcertsWithTimeout(artist.id?.value ?? '')
 			},
 			onRollback: () => {},
 			onHasUpcomingEvents: (name) =>
@@ -103,7 +101,7 @@ export class DiscoveryRoute {
 		TUTORIAL_FOLLOW_TARGET,
 	)
 
-	public get poolBubbles(): ArtistBubble[] {
+	public get poolBubbles(): Artist[] {
 		return this.bubbles.poolBubbles
 	}
 
@@ -179,7 +177,9 @@ export class DiscoveryRoute {
 
 		if (this.isOnboarding) {
 			const preSeeded = this.store.getState().guest.follows
-			this.concertTracker.syncPreSeeded(preSeeded)
+			this.concertTracker.syncPreSeeded(
+				preSeeded.map((f) => ({ artistId: f.artist.id?.value ?? '' })),
+			)
 		}
 	}
 
@@ -227,14 +227,15 @@ export class DiscoveryRoute {
 
 	public async onArtistSelected(
 		event: CustomEvent<{
-			artist: ArtistBubble
+			artist: Artist
 			position: { x: number; y: number }
 		}>,
 	): Promise<void> {
 		const { artist, position } = event.detail
-		if (this.followedIds.has(artist.id)) return
+		const artistId = artist.id?.value ?? ''
+		if (this.followedIds.has(artistId)) return
 		this.logger.info('Artist selected from bubbles', {
-			artist: artist.name,
+			artist: artist.name?.value,
 		})
 
 		try {
@@ -285,11 +286,12 @@ export class DiscoveryRoute {
 		}
 	}
 
-	public async onFollowFromSearch(artist: ArtistBubble): Promise<void> {
-		if (this.followedIds.has(artist.id)) return
+	public async onFollowFromSearch(artist: Artist): Promise<void> {
+		const artistId = artist.id?.value ?? ''
+		if (this.followedIds.has(artistId)) return
 
 		this.logger.info('Following artist from search', {
-			artist: artist.name,
+			artist: artist.name?.value,
 		})
 
 		try {

@@ -1,3 +1,4 @@
+import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert as ProtoConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import type { ProximityGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -9,7 +10,7 @@ import type {
 	JourneyStatus,
 	LaneType,
 } from '../entities/concert'
-import type { FollowedArtist, LogoColorProfile } from '../entities/follow'
+import type { Hype } from '../entities/follow'
 import { IConcertService } from './concert-service'
 import { IFollowServiceClient } from './follow-service-client'
 import { ITicketJourneyService } from './ticket-journey-service'
@@ -48,7 +49,7 @@ export class DashboardService {
 
 	private protoGroupToDateGroup(
 		group: ProximityGroup,
-		artistMap: Map<string, FollowedArtist>,
+		artistMap: Map<string, { artist: Artist; hype: Hype }>,
 		journeyMap: Map<string, JourneyStatus>,
 	): DateGroup {
 		const ld = group.date?.value
@@ -67,16 +68,14 @@ export class DashboardService {
 		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
 			concerts.flatMap((c) => {
 				const artistId = c.artistId?.value ?? ''
-				const artist = artistMap.get(artistId)
-				const hypeLevel: HypeLevel = artist?.hype ?? 'watch'
+				const entry = artistMap.get(artistId)
+				const hypeLevel: HypeLevel = entry?.hype ?? 'watch'
 				const event = protoConcertToEntity(
 					c,
-					artist?.name ?? '',
+					entry?.artist.name?.value ?? '',
 					hypeLevel,
 					isHypeMatched(hypeLevel, lane),
-					artist?.logoUrl,
-					artist?.backgroundUrl,
-					artist?.logoColorProfile,
+					entry?.artist,
 				)
 				if (!event) return []
 				const eventId = c.id?.value
@@ -110,11 +109,14 @@ export class DashboardService {
 
 	private async fetchFollowedArtistMap(
 		signal?: AbortSignal,
-	): Promise<Map<string, FollowedArtist>> {
+	): Promise<Map<string, { artist: Artist; hype: Hype }>> {
 		const followed = await this.followService.listFollowed(signal)
-		const map = new Map<string, FollowedArtist>()
+		const map = new Map<string, { artist: Artist; hype: Hype }>()
 		for (const fa of followed) {
-			map.set(fa.id, fa)
+			const id = fa.artist.id?.value ?? ''
+			if (id) {
+				map.set(id, { artist: fa.artist, hype: fa.hype })
+			}
 		}
 		return map
 	}
@@ -137,9 +139,7 @@ function protoConcertToEntity(
 	artistName: string,
 	hypeLevel: HypeLevel,
 	matched: boolean,
-	logoUrl?: string,
-	backgroundUrl?: string,
-	logoColorProfile?: LogoColorProfile,
+	artist?: Artist,
 ): Concert | null {
 	const localDate = concert.localDate?.value
 	if (!localDate) return null
@@ -172,9 +172,7 @@ function protoConcertToEntity(
 		sourceUrl: concert.sourceUrl?.value ?? '',
 		hypeLevel,
 		matched,
-		logoUrl,
-		backgroundUrl,
-		logoColorProfile,
+		artist,
 	}
 }
 

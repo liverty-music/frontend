@@ -5,7 +5,6 @@ import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import type { FollowedArtist } from '../entities/follow'
 import { resolveStore } from '../state/store-interface'
-import type { ArtistBubble } from './artist-service-client'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
 import { IOnboardingService } from './onboarding-service'
@@ -40,12 +39,18 @@ export class FollowServiceClient {
 	}
 
 	/**
-	 * Follow an artist. During onboarding, writes to LocalArtistClient.
+	 * Follow an artist. During onboarding, writes to guest store.
 	 * Otherwise calls the backend RPC.
 	 */
 	public async follow(artistId: string, artistName: string): Promise<void> {
 		if (this.onboarding.isOnboarding) {
-			this.store.dispatch({ type: 'guest/follow', artistId, name: artistName })
+			// During onboarding, find the artist in the guest store or create a minimal one
+			const { Artist } = await import('../entities/artist')
+			const artist = new Artist({
+				id: { value: artistId },
+				name: { value: artistName },
+			})
+			this.store.dispatch({ type: 'guest/follow', artist })
 			return
 		}
 		await this.client.follow({
@@ -54,7 +59,7 @@ export class FollowServiceClient {
 	}
 
 	/**
-	 * Unfollow an artist. During onboarding, writes to LocalArtistClient.
+	 * Unfollow an artist. During onboarding, writes to guest store.
 	 * Otherwise calls the backend RPC.
 	 */
 	public async unfollow(artistId: string): Promise<void> {
@@ -68,49 +73,26 @@ export class FollowServiceClient {
 	}
 
 	/**
-	 * List followed artists. During onboarding, reads from LocalArtistClient.
+	 * List followed artists. During onboarding, reads from guest store.
 	 * Otherwise calls the backend ListFollowed RPC.
 	 */
 	public async listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
 		if (this.onboarding.isOnboarding) {
 			return this.store.getState().guest.follows.map((f) => ({
-				id: f.artistId,
-				name: f.name,
+				artist: f.artist,
 				hype: 'away' as const,
 			}))
 		}
 		const response = await this.client.listFollowed({}, { signal })
-		return response.artists.map((fa) => {
-			const fanart = fa.artist?.fanart
-			const lcp = fanart?.logoColorProfile
-			return {
-				id: fa.artist?.id?.value ?? '',
-				name: fa.artist?.name?.value ?? '',
-				hype: hypeTypeToHype(fa.hype),
-				logoUrl: fanart?.hdMusicLogo?.value ?? fanart?.musicLogo?.value,
-				backgroundUrl: fanart?.artistBackground?.value,
-				logoColorProfile: lcp
-					? {
-							dominantHue: lcp.dominantHue ?? undefined,
-							dominantLightness: lcp.dominantLightness,
-							isChromatic: lcp.isChromatic,
-						}
-					: undefined,
-			}
+		return response.artists.flatMap((fa) => {
+			if (!fa.artist) return []
+			return [
+				{
+					artist: fa.artist,
+					hype: hypeTypeToHype(fa.hype),
+				},
+			]
 		})
-	}
-
-	/**
-	 * Fetch followed artists directly from the backend (bypasses onboarding check).
-	 * Used by loading sequence to verify backend state.
-	 */
-	public async listFollowedAsBubbles(
-		signal?: AbortSignal,
-	): Promise<ArtistBubble[]> {
-		const resp = await this.client.listFollowed({}, { signal })
-		return resp.artists.flatMap((fa) =>
-			fa.artist ? [toBubble(fa.artist)] : [],
-		)
 	}
 }
 
@@ -126,24 +108,5 @@ function hypeTypeToHype(hype: HypeType | undefined): FollowedArtist['hype'] {
 			return 'away'
 		default:
 			return 'watch'
-	}
-}
-
-function toBubble(artist: {
-	id?: { value: string }
-	name?: { value: string }
-	mbid?: { value: string }
-}): ArtistBubble {
-	const id = artist.id?.value ?? ''
-	const name = artist.name?.value ?? ''
-	const mbid = artist.mbid?.value ?? ''
-	return {
-		id: id || mbid || crypto.randomUUID(),
-		name,
-		mbid,
-		imageUrl: '',
-		x: 0,
-		y: 0,
-		radius: 30 + Math.random() * 15,
 	}
 }

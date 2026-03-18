@@ -62,19 +62,19 @@
 
       <ul class="results-list" role="list">
         <li
-          repeat.for="artist of search.searchResults; key.bind: artist.id"
+          repeat.for="artist of search.searchResults; key.bind: artist.id?.value"
           class="result-item"
-          data-followed.bind="followedIds.has(artist.id)"
-          click.trigger="followedIds.has(artist.id) ? undefined : onFollowFromSearch(artist)"
+          data-followed.bind="followedIds.has(artist.id?.value ?? '')"
+          click.trigger="followedIds.has(artist.id?.value ?? '') ? undefined : onFollowFromSearch(artist)"
           role="button"
-          aria-disabled.bind="followedIds.has(artist.id)"
-          aria-label.bind="followedIds.has(artist.id) ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name }) ?? '')"
+          aria-disabled.bind="followedIds.has(artist.id?.value ?? '')"
+          aria-label.bind="followedIds.has(artist.id?.value ?? '') ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name?.value ?? '' }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name?.value ?? '' }) ?? '')"
         >
           <div class="result-avatar">
-            ${artist.name.charAt(0)}
+            ${(artist.name?.value ?? '').charAt(0)}
           </div>
-          <span class="result-name">${artist.name}</span>
-          <svg-icon if.bind="followedIds.has(artist.id)" name="check" class="followed-check"></svg-icon>
+          <span class="result-name">${artist.name?.value}</span>
+          <svg-icon if.bind="followedIds.has(artist.id?.value ?? '')" name="check" class="followed-check"></svg-icon>
         </li>
       </ul>
     </section>

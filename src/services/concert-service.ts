@@ -75,7 +75,7 @@ export class ConcertServiceClient {
 			count: artists.length,
 		})
 		const results = await Promise.allSettled(
-			artists.map((a) => this.listConcerts(a.artistId, signal)),
+			artists.map((a) => this.listConcerts(a.artist.id?.value ?? '', signal)),
 		)
 		const concerts: Concert[] = []
 		for (const result of results) {

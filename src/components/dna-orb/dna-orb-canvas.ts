@@ -6,9 +6,14 @@ import {
 	shadowCSS,
 	useShadowDOM,
 } from 'aurelia'
-import type { ArtistBubble } from '../../services/artist-service-client'
+import type { Artist } from '../../entities/artist'
+import { bestLogoUrl } from '../../entities/artist'
 import { AbsorptionAnimator } from './absorption-animator'
-import { BubblePhysics, type PhysicsBubble } from './bubble-physics'
+import {
+	type BubbleArtistParams,
+	BubblePhysics,
+	type PhysicsBubble,
+} from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'
 
 @useShadowDOM()
@@ -32,7 +37,7 @@ export class DnaOrbCanvas {
 	]
 	@bindable public followedCount = 0
 	@bindable public showFollowedIndicator = false
-	@bindable public artists: ArtistBubble[] = []
+	@bindable public artists: Artist[] = []
 	@bindable public followedIds: ReadonlySet<string> = new Set()
 
 	private readonly element = resolve(INode) as HTMLElement
@@ -74,9 +79,10 @@ export class DnaOrbCanvas {
 		this.absorptionAnimator.cometTrailEnabled = sp.cometTrailEnabled
 	}
 
-	public artistsChanged(newVal: ArtistBubble[]): void {
+	public artistsChanged(newVal: Artist[]): void {
 		if (!this.ctx) return // not yet attached
-		this.physics.addBubbles(newVal)
+		const params = newVal.map((a) => toBubbleParams(a))
+		this.physics.addBubbles(params)
 		this.preloadImages(newVal)
 	}
 
@@ -96,7 +102,8 @@ export class DnaOrbCanvas {
 		})
 		this.canvas.addEventListener('keydown', this.onKeyDown)
 
-		this.physics.addBubbles(this.artists)
+		const params = this.artists.map((a) => toBubbleParams(a))
+		this.physics.addBubbles(params)
 		this.preloadImages(this.artists)
 
 		this.lastTime = performance.now()
@@ -128,7 +135,7 @@ export class DnaOrbCanvas {
 		this.logger.info('Physics resumed')
 	}
 
-	public reloadBubbles(artists: ArtistBubble[]): void {
+	public reloadBubbles(artists: Artist[]): void {
 		const rect = this.element.getBoundingClientRect()
 		if (rect.width === 0 || rect.height === 0) return
 
@@ -137,7 +144,8 @@ export class DnaOrbCanvas {
 		this.imageCache.clear()
 		void this.physics.init(rect.width, rect.height).then(() => {
 			if (gen !== this.reloadGeneration) return // stale
-			this.physics.addBubbles(artists)
+			const params = artists.map((a) => toBubbleParams(a))
+			this.physics.addBubbles(params)
 			this.preloadImages(artists)
 			this.focusedBubbleIndex = -1
 		})
@@ -146,26 +154,31 @@ export class DnaOrbCanvas {
 	/**
 	 * Spawn new bubbles at a specific position (called by parent after fetching similar artists).
 	 */
-	public spawnBubblesAt(bubbles: ArtistBubble[], x: number, y: number): void {
-		this.physics.spawnBubblesAt(bubbles, x, y)
-		this.preloadImages(bubbles)
+	public spawnBubblesAt(artists: Artist[], x: number, y: number): void {
+		const params = artists.map((a) => toBubbleParams(a))
+		this.physics.spawnBubblesAt(params, x, y)
+		this.preloadImages(artists)
 	}
 
 	/**
 	 * Spawn a temporary bubble and immediately absorb it into the orb.
 	 * Used when following an artist from search results.
 	 */
-	public spawnAndAbsorb(artist: ArtistBubble, x: number, y: number): void {
-		const hue = this.artistHue(artist.name)
+	public spawnAndAbsorb(artist: Artist, x: number, y: number): void {
+		const id = artist.id?.value ?? ''
+		const name = artist.name?.value ?? ''
+		const radius = 30 + Math.random() * 15
+		const hue = this.artistHue(name)
+		const logoUrl = bestLogoUrl(artist) ?? ''
 		this.absorptionAnimator.startAbsorption(
-			artist.id,
-			artist.name,
+			id,
+			name,
 			x,
 			y,
 			this.orbRenderer.orbX,
 			this.orbRenderer.orbY,
-			artist.radius,
-			artist.imageUrl,
+			radius,
+			logoUrl,
 			hue,
 			(completedHue) => {
 				this.orbRenderer.injectColor(completedHue)
@@ -179,8 +192,8 @@ export class DnaOrbCanvas {
 			new CustomEvent('need-more-bubbles', {
 				bubbles: true,
 				detail: {
-					artistId: artist.id,
-					artistName: artist.name,
+					artistId: id,
+					artistName: name,
 					position: { x, y },
 				},
 			}),
@@ -281,19 +294,22 @@ export class DnaOrbCanvas {
 
 			const pos = bubble.body.position
 			const artist = bubble.artist
+			const artistId = artist.id?.value ?? ''
+			const artistName = artist.name?.value ?? ''
 
 			// Remove from physics and start absorption
-			const hue = this.artistHue(artist.name)
-			this.physics.removeBubble(artist.id)
+			const hue = this.artistHue(artistName)
+			this.physics.removeBubble(artistId)
+			const logoUrl = bestLogoUrl(artist) ?? ''
 			this.absorptionAnimator.startAbsorption(
-				artist.id,
-				artist.name,
+				artistId,
+				artistName,
 				pos.x,
 				pos.y,
 				this.orbRenderer.orbX,
 				this.orbRenderer.orbY,
-				artist.radius,
-				artist.imageUrl,
+				bubble.radius,
+				logoUrl,
 				hue,
 				(completedHue) => {
 					this.orbRenderer.injectColor(completedHue)
@@ -316,8 +332,8 @@ export class DnaOrbCanvas {
 				new CustomEvent('need-more-bubbles', {
 					bubbles: true,
 					detail: {
-						artistId: artist.id,
-						artistName: artist.name,
+						artistId,
+						artistName,
 						position: { x: pos.x, y: pos.y },
 					},
 				}),
@@ -407,12 +423,14 @@ export class DnaOrbCanvas {
 	}
 
 	private renderBubble(bubble: PhysicsBubble, focused: boolean): void {
-		const { body, artist, scale, opacity } = bubble
+		const { body, artist, radius, scale, opacity } = bubble
 		const x = body.position.x
 		const y = body.position.y
-		const r = artist.radius * scale
+		const r = radius * scale
+		const artistId = artist.id?.value ?? ''
+		const artistName = artist.name?.value ?? ''
 		const isFollowed =
-			this.showFollowedIndicator && this.followedIds.has(artist.id)
+			this.showFollowedIndicator && this.followedIds.has(artistId)
 
 		if (r < 1 || opacity < 0.01) return
 
@@ -431,7 +449,7 @@ export class DnaOrbCanvas {
 		}
 
 		// Per-artist color bubble gradient
-		const hue = this.artistHue(artist.name)
+		const hue = this.artistHue(artistName)
 		const grad = this.ctx.createRadialGradient(
 			x - r * 0.3,
 			y - r * 0.3,
@@ -449,7 +467,7 @@ export class DnaOrbCanvas {
 		this.ctx.fill()
 
 		// Artist image (if loaded)
-		const img = this.imageCache.get(artist.id)
+		const img = this.imageCache.get(artistId)
 		if (img?.complete && img.naturalWidth > 0) {
 			this.ctx.save()
 			this.ctx.beginPath()
@@ -465,7 +483,7 @@ export class DnaOrbCanvas {
 		this.ctx.textAlign = 'center'
 		this.ctx.textBaseline = 'middle'
 		const nameY = img?.complete ? y + r * 0.5 : y
-		this.ctx.fillText(artist.name, x, nameY, r * 1.8)
+		this.ctx.fillText(artistName, x, nameY, r * 1.8)
 
 		// Subtle outline
 		this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
@@ -500,13 +518,23 @@ export class DnaOrbCanvas {
 		this.ctx.restore()
 	}
 
-	private preloadImages(bubbles: ArtistBubble[]): void {
-		for (const bubble of bubbles) {
-			if (!bubble.imageUrl || this.imageCache.has(bubble.id)) continue
+	private preloadImages(artists: Artist[]): void {
+		for (const artist of artists) {
+			const id = artist.id?.value ?? ''
+			const logoUrl = bestLogoUrl(artist)
+			if (!logoUrl || !id || this.imageCache.has(id)) continue
 			const img = new Image()
 			img.crossOrigin = 'anonymous'
-			img.src = bubble.imageUrl
-			this.imageCache.set(bubble.id, img)
+			img.src = logoUrl
+			this.imageCache.set(id, img)
 		}
+	}
+}
+
+/** Convert a proto Artist to physics bubble parameters with a random radius. */
+function toBubbleParams(artist: Artist): BubbleArtistParams {
+	return {
+		artist,
+		radius: 30 + Math.random() * 15,
 	}
 }

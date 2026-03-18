@@ -1,8 +1,8 @@
 import type { ILogger } from 'aurelia'
-import type { ArtistBubble } from '../../services/artist-service-client'
+import type { Artist } from '../../entities/artist'
 
 export interface SearchClient {
-	search(query: string): Promise<ArtistBubble[]>
+	search(query: string): Promise<Artist[]>
 }
 
 export interface SearchControllerCallbacks {
@@ -14,7 +14,7 @@ export interface SearchControllerCallbacks {
 export class SearchController {
 	public searchQuery = ''
 	public isSearchMode = false
-	public searchResults: ArtistBubble[] = []
+	public searchResults: Artist[] = []
 	public isSearching = false
 
 	private debounceTimer = 0
