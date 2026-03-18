@@ -12,6 +12,7 @@ export class TicketsRoute {
 	public isGenerating = false
 	public proofProgress = ''
 	public qrDataUrl = ''
+	public showQrSheet = false
 	public generatingTicketId = ''
 
 	private readonly logger = resolve(ILogger).scopeTo('TicketsRoute')
@@ -90,6 +91,7 @@ export class TicketsRoute {
 				margin: 2,
 				color: { dark: '#000000', light: '#ffffff' },
 			})
+			this.showQrSheet = true
 
 			this.proofProgress = ''
 			this.logger.info('Entry code generated', { eventId })
@@ -105,6 +107,7 @@ export class TicketsRoute {
 	}
 
 	public dismissQr(): void {
+		this.showQrSheet = false
 		this.qrDataUrl = ''
 		this.generatingTicketId = ''
 	}
