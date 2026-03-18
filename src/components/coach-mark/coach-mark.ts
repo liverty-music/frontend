@@ -55,6 +55,7 @@ export class CoachMark {
 	}
 
 	private findAndHighlight(elapsed = 0): void {
+		this.cleanup()
 		if (!this.targetSelector) return
 		const target = document.querySelector(this.targetSelector)
 		if (target instanceof HTMLElement) {
