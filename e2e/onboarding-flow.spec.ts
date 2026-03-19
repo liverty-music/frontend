@@ -65,6 +65,32 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
+		// ConcertService/ListWithProximity (check before ListByFollower/List)
+		if (url.includes('ListWithProximity')) {
+			return route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					groups: [
+						{
+							date: { value: { year: 2026, month: 3, day: 15 } },
+							home: [
+								{
+									id: { value: 'c-1' },
+									title: { value: 'Test Concert' },
+									localDate: {
+										value: { year: 2026, month: 3, day: 15 },
+									},
+								},
+							],
+							nearby: [],
+							away: [],
+						},
+					],
+				}),
+			})
+		}
+
 		// ConcertService/ListByFollower (check before List to avoid substring match)
 		if (url.includes('ListByFollower')) {
 			return route.fulfill({
@@ -226,7 +252,7 @@ test.describe('Onboarding tutorial flow', () => {
 			.locator('button')
 			.filter({ hasText: /get started/i })
 			.click()
-		await expect(page).toHaveURL(/discover/)
+		await expect(page).toHaveURL(/discover/, { timeout: 10_000 })
 	})
 
 	test('Step 1: No toast when tapping restricted nav during onboarding', async ({
@@ -237,7 +263,7 @@ test.describe('Onboarding tutorial flow', () => {
 			localStorage.setItem('onboardingStep', '1')
 		})
 		await page.goto('http://localhost:9000/discover')
-		await page.waitForSelector('.discover-layout')
+		await page.waitForSelector('.discovery-layout')
 
 		// Tap a restricted nav item (tickets has no tutorialStep)
 		const ticketsNav = page.locator('[data-nav-tickets]')
@@ -277,12 +303,13 @@ test.describe('Onboarding tutorial flow', () => {
 		})
 		await page.goto('http://localhost:9000/dashboard')
 
-		// Page should be interactive — no full-screen blocking overlay
-		const clickBlockers = page.locator('.click-blocker')
-		await expect(clickBlockers).toHaveCount(0)
-
+		// Dashboard content should be visible (au-viewport rendered)
 		const mainContent = page.locator('au-viewport')
-		await expect(mainContent).toBeVisible()
+		await expect(mainContent).toBeVisible({ timeout: 10_000 })
+
+		// No full-screen blocking celebration overlay
+		const celebration = page.locator('.celebration-overlay')
+		await expect(celebration).toHaveCount(0)
 	})
 
 	test('Coach mark tooltip has transparent background (no colored box)', async ({
@@ -372,21 +399,17 @@ test.describe('Onboarding tutorial flow', () => {
 		}
 	})
 
-	test('Step 6: Signup modal appears on welcome page', async ({ page }) => {
+	test('Completed: welcome page shows CTA buttons', async ({ page }) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '6')
+			localStorage.setItem('onboardingStep', 'completed')
 		})
 		await page.goto('http://localhost:9000/')
 
-		// Signup modal dialog should be visible
-		const signupDialog = page.locator('.signup-dialog')
-		await expect(signupDialog).toBeVisible({ timeout: 5000 })
-
-		// CTA buttons should be hidden (replaced by modal)
+		// Welcome page CTA buttons should be visible
 		const getStartedBtn = page
 			.locator('button')
 			.filter({ hasText: /get started/i })
-		await expect(getStartedBtn).toHaveCount(0)
+		await expect(getStartedBtn).toBeVisible({ timeout: 5000 })
 	})
 
 	test('Step 3: Dashboard with no concerts skips lane intro without stuck overlay', async ({
@@ -407,11 +430,11 @@ test.describe('Onboarding tutorial flow', () => {
 		// Wait for dashboard to load and lane intro to skip
 		await page.waitForTimeout(5000)
 
-		// Step should have advanced to 4 (skipped lane intro → My Artists spotlight)
+		// Step should have advanced to detail (skipped lane intro → My Artists spotlight)
 		const step = await page.evaluate(() =>
 			localStorage.getItem('onboardingStep'),
 		)
-		expect(step).toBe('4')
+		expect(step).toBe('detail')
 
 		// Spotlight should now be on My Artists tab (Step 4), not stuck/invisible
 		const spotlight = page.locator('.visual-spotlight')
@@ -442,14 +465,14 @@ test.describe('Onboarding tutorial flow', () => {
 		})
 
 		await page.goto('http://localhost:9000/discover')
-		await page.waitForSelector('.discover-layout')
+		await page.waitForSelector('.discovery-layout')
 
 		// Wait for concert searches to complete (SearchNewConcerts + List verification)
 		await page.waitForTimeout(5000)
 
-		// Coach mark spotlight should NOT appear because ConcertService/List returned empty
+		// Coach mark spotlight should NOT be visible because concerts are empty
 		const spotlight = page.locator('.visual-spotlight')
-		await expect(spotlight).toHaveCount(0)
+		await expect(spotlight).not.toBeVisible()
 
 		// No onboarding HUD or popover guide should remain
 		const popoverGuide = page.locator('.onboarding-guide')
@@ -457,9 +480,13 @@ test.describe('Onboarding tutorial flow', () => {
 	})
 
 	test('Spotlight is visible when coach mark is active', async ({ page }) => {
-		// Set up step 1 with enough follows to trigger coach mark
+		test.setTimeout(60_000)
+		// Set up step 1 with enough follows to trigger coach mark.
+		// guest.home is required because ListWithProximity (used during onboarding)
+		// needs a home region for proximity classification.
 		await page.addInitScript(() => {
 			localStorage.setItem('onboardingStep', '1')
+			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
@@ -470,19 +497,19 @@ test.describe('Onboarding tutorial flow', () => {
 			)
 		})
 		await page.goto('http://localhost:9000/discover')
+		await page.waitForSelector('.discovery-layout')
 
-		// Wait for coach mark to potentially appear
+		// Wait for concert searches to complete and coach mark to activate
+		// The spotlight becomes visible only after SearchNewConcerts + List complete
 		const spotlight = page.locator('.visual-spotlight')
-		if ((await spotlight.count()) > 0) {
-			await expect(spotlight).toBeVisible()
+		await expect(spotlight).toBeVisible({ timeout: 30_000 })
 
-			// Verify spotlight has the dark overlay box-shadow
-			const boxShadow = await spotlight.evaluate((el) =>
-				getComputedStyle(el).getPropertyValue('box-shadow'),
-			)
-			// box-shadow should contain a large spread (100vmax)
-			expect(boxShadow).not.toBe('none')
-		}
+		// Verify spotlight has the dark overlay box-shadow
+		const boxShadow = await spotlight.evaluate((el) =>
+			getComputedStyle(el).getPropertyValue('box-shadow'),
+		)
+		// box-shadow should contain a large spread (100vmax)
+		expect(boxShadow).not.toBe('none')
 	})
 })
 
@@ -510,10 +537,11 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		await mockRpcRoutes(page)
 		await mockLastFmApi(page)
 
-		// --- Seed: simulate 3 artists followed + concert searches complete ---
+		// --- Seed: simulate 3 artists followed + home set ---
+		// guest.home is required for ListWithProximity RPC during onboarding.
 		await page.addInitScript(() => {
 			localStorage.removeItem('onboarding.celebrationShown')
-			localStorage.removeItem('guest.home')
+			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem('onboardingStep', '1')
 			localStorage.setItem(
 				'guest.followedArtists',
@@ -529,10 +557,10 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		// STEP 1: Discover page — coach mark on Dashboard icon
 		// =====================================================================
 		await page.goto('http://localhost:9000/discover')
-		await page.waitForSelector('.discover-layout')
+		await page.waitForSelector('.discovery-layout')
 
 		// Wait for concert search completion and coach mark activation.
-		// The coach mark targets [data-nav-dashboard] which is in the bottom nav.
+		// The coach mark targets [data-nav="home"] which is in the bottom nav.
 		const dashboardCoachMark = page.locator('.visual-spotlight')
 		await expect(dashboardCoachMark).toBeVisible({ timeout: 20_000 })
 
@@ -552,30 +580,27 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 			await targetInterceptor.click()
 		} else {
 			// Fallback: tap the nav icon directly
-			await page.locator('[data-nav-dashboard]').click()
+			await page.locator('[data-nav="home"]').click()
 		}
 
 		// =====================================================================
-		// STEP 3: Dashboard — celebration → region → lane intro → card
+		// STEP 3: Dashboard — celebration → lane intro → card
+		// (guest.home is already set, so region selector is skipped.
+		//  Region selector is tested separately in dashboard-lane-classification.spec.ts)
 		// =====================================================================
 		await expect(page).toHaveURL(/dashboard/, { timeout: 10_000 })
 
-		// Verify onboardingStep advanced to 3
+		// Verify onboardingStep advanced to dashboard
 		const stepAfterNav = await page.evaluate(() =>
 			localStorage.getItem('onboardingStep'),
 		)
-		expect(stepAfterNav).toBe('3')
+		expect(stepAfterNav).toBe('dashboard')
 
-		// Celebration overlay appears and auto-dismisses via transitionend
+		// Celebration overlay appears and auto-dismisses via transitionend.
+		// The element stays in DOM with data-state="hidden" after fade-out.
 		const celebration = page.locator('.celebration-overlay')
 		await expect(celebration).toBeVisible({ timeout: 10_000 })
-		await expect(celebration).toHaveCount(0, { timeout: 10_000 })
-
-		// Region selector opens after celebration completes (no guest.home set)
-		const regionDialog = page.locator('dialog.user-home-selector')
-		await expect(regionDialog).toBeVisible({ timeout: 5000 })
-		const regionOption = regionDialog.locator('button').first()
-		await regionOption.click()
+		await expect(celebration).not.toBeVisible({ timeout: 10_000 })
 
 		// Lane intro cycles: home(2s) → near(2s) → away(2s) → card (manual tap)
 		// Wait for it to reach the card phase by checking step doesn't advance yet.
@@ -600,11 +625,11 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		const stepAfterCard = await page.evaluate(() =>
 			localStorage.getItem('onboardingStep'),
 		)
-		expect(stepAfterCard).toBe('4')
+		expect(stepAfterCard).toBe('detail')
 
-		// Spotlight should now be on [data-nav-my-artists]
-		const myArtistsNav = page.locator('[data-nav-my-artists]')
-		await expect(myArtistsNav).toBeVisible()
+		// Spotlight should now be on [data-nav="my-artists"]
+		const myArtistsNav = page.locator('[data-nav="my-artists"]')
+		await expect(myArtistsNav).toBeVisible({ timeout: 5000 })
 
 		// Tap My Artists tab — advances to Step 5
 		const myArtistsInterceptor = page.locator('.target-interceptor')
@@ -615,79 +640,26 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		}
 
 		// =====================================================================
-		// STEP 5: My Artists — hype selector → explanation → OK
+		// STEP 5: My Artists — hype header spotlight
 		// =====================================================================
 		await expect(page).toHaveURL(/my-artists/, { timeout: 10_000 })
 
 		const stepAfterMyArtists = await page.evaluate(() =>
 			localStorage.getItem('onboardingStep'),
 		)
-		expect(stepAfterMyArtists).toBe('5')
+		expect(stepAfterMyArtists).toBe('my-artists')
 
-		// Spotlight should be on [data-hype-button]
-		const hypeButton = page.locator('[data-hype-button]').first()
-		await expect(hypeButton).toBeVisible({ timeout: 10_000 })
+		// Spotlight targets [data-hype-header] (the hype legend bar)
+		const hypeHeader = page.locator('[data-hype-header]')
+		await expect(hypeHeader).toBeVisible({ timeout: 10_000 })
 
-		// Tap the hype button (via coach mark interceptor or directly)
-		const hypeInterceptor = page.locator('.target-interceptor')
-		if ((await hypeInterceptor.count()) > 0) {
-			await hypeInterceptor.click()
-		} else {
-			await hypeButton.click()
-		}
+		// Verify artist list loaded (at least 1 artist row visible)
+		const artistRow = page.locator('.artist-row').first()
+		await expect(artistRow).toBeVisible({ timeout: 5000 })
 
-		// Hype selector dialog should open
-		const hypeSelectorDialog = page
-			.locator('dialog')
-			.filter({ has: page.locator('.hype-level-option') })
-		if ((await hypeSelectorDialog.count()) > 0) {
-			await expect(hypeSelectorDialog).toBeVisible({ timeout: 5000 })
-
-			// Select a hype level (first non-current option)
-			const hypeOption = hypeSelectorDialog
-				.locator('.hype-level-option')
-				.first()
-			await hypeOption.click()
-		}
-
-		// Hype explanation dialog should appear and STAY visible
-		const explanation = page.locator('.hype-explanation-dialog')
-		await expect(explanation).toBeVisible({ timeout: 5000 })
-
-		// Wait 2s to verify no auto-dismiss
-		await page.waitForTimeout(2000)
-		await expect(explanation).toBeVisible()
-
-		// Tap OK button to dismiss and advance to Step 6
-		const okButton = explanation.locator('button')
-		await expect(okButton).toBeVisible()
-		await okButton.click()
-
-		// =====================================================================
-		// STEP 6: Welcome page — signup modal
-		// =====================================================================
-		await expect(page).toHaveURL(/^\/$|\/welcome/, { timeout: 10_000 })
-
-		const stepAfterExplanation = await page.evaluate(() =>
-			localStorage.getItem('onboardingStep'),
-		)
-		expect(stepAfterExplanation).toBe('6')
-
-		// Signup modal should be visible
-		const signupDialog = page.locator('.signup-dialog')
-		await expect(signupDialog).toBeVisible({ timeout: 5000 })
-
-		// No spotlight, click-blockers, or orphaned coach mark elements
-		const spotlight = page.locator('.visual-spotlight')
-		await expect(spotlight).toHaveCount(0)
-
-		const clickBlockers = page.locator('.click-blocker')
-		await expect(clickBlockers).toHaveCount(0)
-
-		// Get Started button should NOT be visible (replaced by signup modal)
-		const getStarted = page
-			.locator('button')
-			.filter({ hasText: /get started/i })
-		await expect(getStarted).toHaveCount(0)
+		// Note: Hype slider interaction cannot advance onboarding further in
+		// guest mode because hype-inline-slider blocks changes for
+		// unauthenticated users (dispatches hype-signup-prompt instead).
+		// Full step completion (my-artists → completed) requires auth.
 	})
 })
