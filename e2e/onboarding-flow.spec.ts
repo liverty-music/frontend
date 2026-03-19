@@ -560,7 +560,7 @@ test.describe('Onboarding tutorial flow', () => {
 		await page.waitForSelector('.discovery-layout')
 
 		// The SR status text includes the followed count — verify hydration preserved it
-		const srOutput = page.locator('output[role="status"]')
+		const srOutput = page.locator('output.sr-only[role="status"]')
 		await expect(srOutput).toContainText(/3/, { timeout: 10_000 })
 
 		// No console errors related to hydration or missing state
