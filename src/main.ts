@@ -9,9 +9,13 @@ import Aurelia, {
 	LogLevel,
 } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
+import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
+import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
 import { IEntryRpcClient } from './adapter/rpc/client/entry-client'
+import { IFollowRpcClient } from './adapter/rpc/client/follow-client'
 import { IPushRpcClient } from './adapter/rpc/client/push-client'
 import { ITicketRpcClient } from './adapter/rpc/client/ticket-client'
+import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
@@ -138,7 +142,11 @@ au.register(IPushService)
 au.register(IPromptCoordinator)
 au.register(IPwaInstallService)
 au.register(ITicketJourneyService)
+au.register(IArtistRpcClient)
+au.register(IConcertRpcClient)
+au.register(IFollowRpcClient)
 au.register(ITicketRpcClient)
+au.register(ITicketJourneyRpcClient)
 au.register(IEntryRpcClient)
 au.register(IUserRpcClient)
 au.register(IPushRpcClient)
