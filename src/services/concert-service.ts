@@ -1,15 +1,16 @@
+import { SearchStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
 import {
-	type ArtistSearchStatus,
 	IConcertRpcClient,
 	type ProtoConcert,
 	type ProximityGroup,
 } from '../adapter/rpc/client/concert-client'
 import { codeToHome } from '../constants/iso3166'
+import type { SearchStatusResult } from '../routes/discovery/concert-search-tracker'
 import { resolveStore } from '../state/store-interface'
 import { IOnboardingService } from './onboarding-service'
 
-export type { ArtistSearchStatus, ProtoConcert, ProximityGroup }
+export type { ProtoConcert, ProximityGroup, SearchStatusResult }
 
 export const IConcertService = DI.createInterface<IConcertService>(
 	'IConcertService',
@@ -66,7 +67,26 @@ export class ConcertServiceClient {
 	public async listSearchStatuses(
 		artistIds: string[],
 		signal?: AbortSignal,
-	): Promise<ArtistSearchStatus[]> {
-		return this.rpcClient.listSearchStatuses(artistIds, signal)
+	): Promise<SearchStatusResult[]> {
+		const statuses = await this.rpcClient.listSearchStatuses(artistIds, signal)
+		return statuses.map((s) => ({
+			artistId: s.artistId?.value ?? '',
+			status: protoStatusToString(s.status),
+		}))
+	}
+}
+
+function protoStatusToString(
+	status: SearchStatus,
+): SearchStatusResult['status'] {
+	switch (status) {
+		case SearchStatus.PENDING:
+			return 'pending'
+		case SearchStatus.COMPLETED:
+			return 'completed'
+		case SearchStatus.FAILED:
+			return 'failed'
+		default:
+			return 'unspecified'
 	}
 }

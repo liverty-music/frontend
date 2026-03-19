@@ -185,7 +185,7 @@ describe('ConcertServiceClient', () => {
 	})
 
 	describe('listSearchStatuses', () => {
-		it('should return statuses for given artist IDs', async () => {
+		it('should return mapped statuses for given artist IDs', async () => {
 			const fakeStatuses = [
 				{ artistId: { value: 'a1' }, status: 2 },
 				{ artistId: { value: 'a2' }, status: 1 },
@@ -196,7 +196,10 @@ describe('ConcertServiceClient', () => {
 
 			const result = await sut.listSearchStatuses(['a1', 'a2'])
 
-			expect(result).toEqual(fakeStatuses)
+			expect(result).toEqual([
+				{ artistId: 'a1', status: 'completed' },
+				{ artistId: 'a2', status: 'pending' },
+			])
 			expect(mockClient.listSearchStatuses).toHaveBeenCalledTimes(1)
 		})
 
