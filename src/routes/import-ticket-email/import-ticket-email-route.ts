@@ -1,9 +1,8 @@
+import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import type { TicketEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_email_pb.js'
-import type { Parameters } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import type { FollowedArtist } from '../../entities/follow'
-import type { DashboardConcert } from '../../services/dashboard-service'
-import { IDashboardService } from '../../services/dashboard-service'
+import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import {
 	type EmailType,
@@ -39,7 +38,7 @@ export class ImportTicketEmailRoute {
 	public selectedArtistId = ''
 
 	// Step 4: Concert selection
-	public concerts: DashboardConcert[] = []
+	public concerts: Concert[] = []
 	public selectedEventIds: Set<string> = new Set()
 
 	// Step 5: Editable body
@@ -54,11 +53,11 @@ export class ImportTicketEmailRoute {
 
 	private readonly logger = resolve(ILogger).scopeTo('ImportTicketEmail')
 	private readonly followService = resolve(IFollowServiceClient)
-	private readonly dashboardService = resolve(IDashboardService)
+	private readonly concertService = resolve(IConcertService)
 	private readonly ticketEmailService = resolve(ITicketEmailService)
 	private abortController: AbortController | null = null
 
-	public async loading(_params: Parameters): Promise<void> {
+	public async loading(): Promise<void> {
 		this.abortController = new AbortController()
 
 		// Extract shared data from URL query params (set by SW redirect).
@@ -89,10 +88,12 @@ export class ImportTicketEmailRoute {
 		}
 
 		// Step 2: Auto-match artist name in email body.
-		for (const artist of this.followedArtists) {
-			if (this.emailBody.includes(artist.name)) {
-				this.matchedArtistId = artist.id
-				this.selectedArtistId = artist.id
+		for (const fa of this.followedArtists) {
+			const name = fa.artist.name?.value ?? ''
+			const id = fa.artist.id?.value ?? ''
+			if (name && this.emailBody.includes(name)) {
+				this.matchedArtistId = id
+				this.selectedArtistId = id
 				break
 			}
 		}
@@ -109,11 +110,9 @@ export class ImportTicketEmailRoute {
 		if (!this.selectedArtistId) return
 		this.isLoading = true
 		try {
-			const allConcerts = await this.dashboardService.loadDashboard(
+			this.concerts = await this.concertService.listConcerts(
+				this.selectedArtistId,
 				this.abortController?.signal,
-			)
-			this.concerts = allConcerts.filter(
-				(c) => c.artistId === this.selectedArtistId,
 			)
 			this.step = 'concert'
 		} catch (err) {
