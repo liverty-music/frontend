@@ -3,8 +3,16 @@ import {
 	type ConcertSearchCallbacks,
 	type ConcertSearchClient,
 	ConcertSearchTracker,
+	type SearchStatusResult,
 } from '../../../src/routes/discovery/concert-search-tracker'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
+
+function statusResult(
+	artistId: string,
+	status: SearchStatusResult['status'],
+): SearchStatusResult {
+	return { artistId, status }
+}
 
 describe('ConcertSearchTracker', () => {
 	let sut: ConcertSearchTracker
@@ -18,6 +26,9 @@ describe('ConcertSearchTracker', () => {
 
 		mockClient = {
 			searchNewConcerts: vi.fn().mockResolvedValue(undefined),
+			listSearchStatuses: vi
+				.fn()
+				.mockResolvedValue([]) as ConcertSearchClient['listSearchStatuses'],
 			listByFollower: vi.fn().mockResolvedValue([{ id: 'g1' }]),
 		}
 
@@ -44,7 +55,7 @@ describe('ConcertSearchTracker', () => {
 	})
 
 	describe('searchConcertsWithTimeout', () => {
-		it('should call searchNewConcerts for the artist', async () => {
+		it('should fire searchNewConcerts RPC for the artist', async () => {
 			sut.searchConcertsWithTimeout('a1')
 			await vi.advanceTimersByTimeAsync(0)
 
@@ -58,14 +69,15 @@ describe('ConcertSearchTracker', () => {
 			expect(mockClient.searchNewConcerts).toHaveBeenCalledTimes(1)
 		})
 
-		it('should mark as done on success', async () => {
+		it('should NOT mark as done on RPC return (fire-and-forget)', async () => {
 			sut.searchConcertsWithTimeout('a1')
 			await vi.advanceTimersByTimeAsync(0)
 
-			expect(sut.completedSearchCount).toBe(1)
+			// RPC resolved but search is NOT done — must wait for polling
+			expect(sut.completedSearchCount).toBe(0)
 		})
 
-		it('should mark as done on failure', async () => {
+		it('should NOT mark as done on RPC failure (fire-and-forget)', async () => {
 			;(
 				mockClient.searchNewConcerts as ReturnType<typeof vi.fn>
 			).mockRejectedValue(new Error('network'))
@@ -73,17 +85,164 @@ describe('ConcertSearchTracker', () => {
 			sut.searchConcertsWithTimeout('a1')
 			await vi.advanceTimersByTimeAsync(0)
 
+			expect(sut.completedSearchCount).toBe(0)
+		})
+	})
+
+	describe('polling via listSearchStatuses', () => {
+		it('should mark artist done when poll returns COMPLETED', async () => {
+			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([statusResult('a1', 'completed')])
+
+			sut.searchConcertsWithTimeout('a1')
+			await vi.advanceTimersByTimeAsync(0)
+
+			// First poll at 2s
+			await vi.advanceTimersByTimeAsync(2_000)
+
 			expect(sut.completedSearchCount).toBe(1)
 		})
 
-		it('should mark as done on timeout', async () => {
+		it('should mark artist done when poll returns FAILED', async () => {
 			;(
-				mockClient.searchNewConcerts as ReturnType<typeof vi.fn>
-			).mockReturnValue(new Promise(() => {})) // never resolves
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([statusResult('a1', 'failed')])
 
 			sut.searchConcertsWithTimeout('a1')
-			await vi.advanceTimersByTimeAsync(15_000)
+			await vi.advanceTimersByTimeAsync(0)
+			await vi.advanceTimersByTimeAsync(2_000)
 
+			expect(sut.completedSearchCount).toBe(1)
+		})
+
+		it('should keep artist pending when poll returns PENDING', async () => {
+			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([statusResult('a1', 'pending')])
+
+			sut.searchConcertsWithTimeout('a1')
+			await vi.advanceTimersByTimeAsync(0)
+			await vi.advanceTimersByTimeAsync(2_000)
+
+			expect(sut.completedSearchCount).toBe(0)
+		})
+
+		it('should batch all pending artist IDs into a single poll call', async () => {
+			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([
+				statusResult('a1', 'pending'),
+				statusResult('a2', 'pending'),
+				statusResult('a3', 'pending'),
+			])
+
+			sut.searchConcertsWithTimeout('a1')
+			sut.searchConcertsWithTimeout('a2')
+			sut.searchConcertsWithTimeout('a3')
+			await vi.advanceTimersByTimeAsync(0)
+
+			// First poll
+			await vi.advanceTimersByTimeAsync(2_000)
+
+			expect(mockClient.listSearchStatuses).toHaveBeenCalledTimes(1)
+			expect(mockClient.listSearchStatuses).toHaveBeenCalledWith(
+				expect.arrayContaining(['a1', 'a2', 'a3']),
+				expect.anything(),
+			)
+		})
+
+		it('should call verifyConcertData after all searches complete via polling', async () => {
+			followedCount = 3
+			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([
+				statusResult('a1', 'completed'),
+				statusResult('a2', 'completed'),
+				statusResult('a3', 'completed'),
+			])
+
+			sut.searchConcertsWithTimeout('a1')
+			sut.searchConcertsWithTimeout('a2')
+			sut.searchConcertsWithTimeout('a3')
+			await vi.advanceTimersByTimeAsync(0)
+
+			// Poll completes all
+			await vi.advanceTimersByTimeAsync(2_000)
+
+			expect(mockClient.listByFollower).toHaveBeenCalledTimes(1)
+		})
+
+		it('should NOT call verifyConcertData before allSearchesComplete', async () => {
+			followedCount = 3
+			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([statusResult('a1', 'completed')])
+
+			sut.searchConcertsWithTimeout('a1')
+			await vi.advanceTimersByTimeAsync(0)
+			await vi.advanceTimersByTimeAsync(2_000)
+
+			// Only 1 of 3 done
+			expect(mockClient.listByFollower).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('per-artist timeout', () => {
+		it('should mark artist done after 15s even if poll returns PENDING', async () => {
+			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([statusResult('a1', 'pending')])
+
+			followedCount = 1
+
+			sut.searchConcertsWithTimeout('a1')
+			await vi.advanceTimersByTimeAsync(0)
+
+			// Advance through multiple poll cycles, all returning PENDING
+			await vi.advanceTimersByTimeAsync(14_000)
+			expect(sut.completedSearchCount).toBe(0)
+
+			// At 15s+ the timeout kicks in
+			await vi.advanceTimersByTimeAsync(2_000)
+			expect(sut.completedSearchCount).toBe(1)
+		})
+	})
+
+	describe('polling error resilience', () => {
+		it('should retry on next poll cycle when listSearchStatuses throws', async () => {
+			const listSearchStatuses = mockClient.listSearchStatuses as ReturnType<
+				typeof vi.fn
+			>
+			listSearchStatuses.mockRejectedValueOnce(new Error('network error'))
+			listSearchStatuses.mockResolvedValueOnce([
+				statusResult('a1', 'completed'),
+			])
+
+			sut.searchConcertsWithTimeout('a1')
+			await vi.advanceTimersByTimeAsync(0)
+
+			// First poll fails
+			await vi.advanceTimersByTimeAsync(2_000)
+			expect(sut.completedSearchCount).toBe(0)
+
+			// Second poll succeeds
+			await vi.advanceTimersByTimeAsync(2_000)
+			expect(sut.completedSearchCount).toBe(1)
+		})
+
+		it('should still timeout even if polls keep failing', async () => {
+			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockRejectedValue(new Error('persistent error'))
+
+			followedCount = 1
+
+			sut.searchConcertsWithTimeout('a1')
+			await vi.advanceTimersByTimeAsync(0)
+
+			// After 15s, timeout overrides poll failures
+			await vi.advanceTimersByTimeAsync(16_000)
 			expect(sut.completedSearchCount).toBe(1)
 		})
 	})
@@ -97,17 +256,24 @@ describe('ConcertSearchTracker', () => {
 		it('should be false when not all searches are done', () => {
 			followedCount = 3
 			sut.searchConcertsWithTimeout('a1')
-			// Only 1 search started, need 3
 			expect(sut.allSearchesComplete).toBe(false)
 		})
 
-		it('should be true when all searches complete and followed >= target', async () => {
+		it('should be true when all searches complete via polling and followed >= target', async () => {
 			followedCount = 3
+			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([
+				statusResult('a1', 'completed'),
+				statusResult('a2', 'completed'),
+				statusResult('a3', 'completed'),
+			])
+
 			sut.searchConcertsWithTimeout('a1')
 			sut.searchConcertsWithTimeout('a2')
 			sut.searchConcertsWithTimeout('a3')
-
 			await vi.advanceTimersByTimeAsync(0)
+			await vi.advanceTimersByTimeAsync(2_000)
 
 			expect(sut.allSearchesComplete).toBe(true)
 		})
@@ -117,6 +283,13 @@ describe('ConcertSearchTracker', () => {
 		it('should be false when concertGroupCount is 0', async () => {
 			followedCount = 3
 			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([
+				statusResult('a1', 'completed'),
+				statusResult('a2', 'completed'),
+				statusResult('a3', 'completed'),
+			])
+			;(
 				mockClient.listByFollower as ReturnType<typeof vi.fn>
 			).mockResolvedValue([])
 
@@ -124,12 +297,20 @@ describe('ConcertSearchTracker', () => {
 			sut.searchConcertsWithTimeout('a2')
 			sut.searchConcertsWithTimeout('a3')
 			await vi.advanceTimersByTimeAsync(0)
+			await vi.advanceTimersByTimeAsync(2_000)
 
 			expect(sut.showDashboardCoachMark).toBe(false)
 		})
 
 		it('should be true when all searches complete and concerts exist', async () => {
 			followedCount = 3
+			;(
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([
+				statusResult('a1', 'completed'),
+				statusResult('a2', 'completed'),
+				statusResult('a3', 'completed'),
+			])
 			;(
 				mockClient.listByFollower as ReturnType<typeof vi.fn>
 			).mockResolvedValue([{ id: 'g1' }])
@@ -138,6 +319,7 @@ describe('ConcertSearchTracker', () => {
 			sut.searchConcertsWithTimeout('a2')
 			sut.searchConcertsWithTimeout('a3')
 			await vi.advanceTimersByTimeAsync(0)
+			await vi.advanceTimersByTimeAsync(2_000)
 
 			expect(sut.showDashboardCoachMark).toBe(true)
 		})
@@ -159,17 +341,17 @@ describe('ConcertSearchTracker', () => {
 	})
 
 	describe('dispose', () => {
-		it('should clear pending timeouts', async () => {
+		it('should clear polling interval', async () => {
 			;(
-				mockClient.searchNewConcerts as ReturnType<typeof vi.fn>
-			).mockReturnValue(new Promise(() => {}))
+				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
+			).mockResolvedValue([statusResult('a1', 'pending')])
 
 			sut.searchConcertsWithTimeout('a1')
 			sut.dispose()
 
-			await vi.advanceTimersByTimeAsync(15_000)
-			// Should not throw or increment — timeout was cleared
-			expect(sut.completedSearchCount).toBe(0)
+			await vi.advanceTimersByTimeAsync(16_000)
+			// Polling was cleared, so listSearchStatuses should not have been called
+			expect(mockClient.listSearchStatuses).not.toHaveBeenCalled()
 		})
 	})
 })
