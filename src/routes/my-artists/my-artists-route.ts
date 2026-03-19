@@ -1,7 +1,8 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
-import { artistColor } from '../../components/live-highway/color-generator'
+import { artistColor } from '../../adapter/view/artist-color'
+import { HYPE_TIERS } from '../../adapter/view/hype-display'
 import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
@@ -13,16 +14,6 @@ import {
 
 export interface MyArtist extends FollowedArtist {
 	color: string
-}
-
-export const HYPE_TIERS: Record<string, { labelKey: string; icon: string }> = {
-	watch: { labelKey: 'チェック', icon: '👀' },
-	home: { labelKey: '地元', icon: '🔥' },
-	nearby: { labelKey: '近くも', icon: '🔥🔥' },
-	away: {
-		labelKey: 'どこでも！',
-		icon: '🔥🔥🔥',
-	},
 }
 
 export class MyArtistsRoute {

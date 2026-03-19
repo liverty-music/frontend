@@ -2,7 +2,7 @@ import type { Artist } from '../entities/artist'
 import {
 	OnboardingStep,
 	type OnboardingStepValue,
-} from '../services/onboarding-service'
+} from '../entities/onboarding'
 
 export interface GuestFollow {
 	artist: Artist

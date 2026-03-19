@@ -1,20 +1,18 @@
 import { DI, ILogger, resolve } from 'aurelia'
+import {
+	isCompleted as isCompletedStep,
+	isOnboarding as isOnboardingStep,
+	OnboardingStep,
+	type OnboardingStepValue,
+} from '../entities/onboarding'
 import { resolveStore } from '../state/store-interface'
 
-/**
- * Onboarding step values as string literals for readability in code and localStorage.
- */
-export const OnboardingStep = {
-	LP: 'lp',
-	DISCOVERY: 'discovery',
-	DASHBOARD: 'dashboard',
-	DETAIL: 'detail',
-	MY_ARTISTS: 'my-artists',
-	COMPLETED: 'completed',
-} as const
-
-export type OnboardingStepValue =
-	(typeof OnboardingStep)[keyof typeof OnboardingStep]
+export {
+	OnboardingStep,
+	type OnboardingStepValue,
+	STEP_ORDER,
+	stepIndex,
+} from '../entities/onboarding'
 
 /**
  * Maps each onboarding step to the route the user should be on.
@@ -27,35 +25,6 @@ export const STEP_ROUTE_MAP: Record<OnboardingStepValue, string> = {
 	[OnboardingStep.MY_ARTISTS]: 'my-artists',
 	[OnboardingStep.COMPLETED]: '',
 }
-
-/**
- * Ordered progression of onboarding steps for ordinal comparison.
- */
-export const STEP_ORDER = [
-	OnboardingStep.LP,
-	OnboardingStep.DISCOVERY,
-	OnboardingStep.DASHBOARD,
-	OnboardingStep.DETAIL,
-	OnboardingStep.MY_ARTISTS,
-	OnboardingStep.COMPLETED,
-] as const
-
-/**
- * Returns the ordinal index of a step in the progression.
- */
-export function stepIndex(step: OnboardingStepValue): number {
-	return STEP_ORDER.indexOf(step)
-}
-
-/**
- * Set of steps that constitute the active onboarding flow.
- */
-const ONBOARDING_STEPS = new Set<OnboardingStepValue>([
-	OnboardingStep.DISCOVERY,
-	OnboardingStep.DASHBOARD,
-	OnboardingStep.DETAIL,
-	OnboardingStep.MY_ARTISTS,
-])
 
 export const IOnboardingService = DI.createInterface<IOnboardingService>(
 	'IOnboardingService',
@@ -137,14 +106,14 @@ export class OnboardingService {
 	 * Whether the user is currently in the onboarding flow.
 	 */
 	public get isOnboarding(): boolean {
-		return ONBOARDING_STEPS.has(this.currentStep)
+		return isOnboardingStep(this.currentStep)
 	}
 
 	/**
 	 * Whether onboarding has been completed at least once.
 	 */
 	public get isCompleted(): boolean {
-		return this.currentStep === OnboardingStep.COMPLETED
+		return isCompletedStep(this.currentStep)
 	}
 
 	/**

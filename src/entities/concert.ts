@@ -42,3 +42,26 @@ export interface DateGroup {
 	nearby: Concert[]
 	away: Concert[]
 }
+
+/** Ordinal ranking of hype levels (higher = willing to travel farther). */
+export const HYPE_ORDER: Record<HypeLevel, number> = {
+	watch: 0,
+	home: 1,
+	nearby: 2,
+	away: 3,
+}
+
+/** Ordinal ranking of proximity lanes. */
+export const LANE_ORDER: Record<LaneType, number> = {
+	home: 1,
+	nearby: 2,
+	away: 3,
+}
+
+/**
+ * Determine whether a hype level qualifies a concert for display in a lane.
+ * A hype level matches a lane when its ordinal is >= the lane's ordinal.
+ */
+export function isHypeMatched(hype: HypeLevel, lane: LaneType): boolean {
+	return HYPE_ORDER[hype] >= LANE_ORDER[lane]
+}

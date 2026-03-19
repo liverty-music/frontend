@@ -1,4 +1,5 @@
-import { OnboardingStep } from '../services/onboarding-service'
+import { hasFollow } from '../entities/follow'
+import { OnboardingStep } from '../entities/onboarding'
 import type { AppAction } from './actions'
 import { type AppState, initialState } from './app-state'
 
@@ -54,8 +55,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 			}
 
 		case 'guest/follow': {
-			const artistId = action.artist.id
-			if (state.guest.follows.some((f) => f.artist.id === artistId)) {
+			if (hasFollow(state.guest.follows, action.artist.id)) {
 				return state
 			}
 			return {
