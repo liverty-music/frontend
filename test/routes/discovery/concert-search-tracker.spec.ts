@@ -29,7 +29,7 @@ describe('ConcertSearchTracker', () => {
 			listSearchStatuses: vi
 				.fn()
 				.mockResolvedValue([]) as ConcertSearchClient['listSearchStatuses'],
-			listByFollower: vi.fn().mockResolvedValue([{ id: 'g1' }]),
+			verifyConcertsExist: vi.fn().mockResolvedValue(true),
 		}
 
 		mockCallbacks = {
@@ -152,7 +152,7 @@ describe('ConcertSearchTracker', () => {
 			)
 		})
 
-		it('should call verifyConcertData after all searches complete via polling', async () => {
+		it('should call verifyConcertsExist after all searches complete via polling', async () => {
 			followedCount = 3
 			;(
 				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
@@ -170,10 +170,14 @@ describe('ConcertSearchTracker', () => {
 			// Poll completes all
 			await vi.advanceTimersByTimeAsync(2_000)
 
-			expect(mockClient.listByFollower).toHaveBeenCalledTimes(1)
+			expect(mockClient.verifyConcertsExist).toHaveBeenCalledTimes(1)
+			expect(mockClient.verifyConcertsExist).toHaveBeenCalledWith(
+				expect.arrayContaining(['a1', 'a2', 'a3']),
+				expect.anything(),
+			)
 		})
 
-		it('should NOT call verifyConcertData before allSearchesComplete', async () => {
+		it('should NOT call verifyConcertsExist before allSearchesComplete', async () => {
 			followedCount = 3
 			;(
 				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
@@ -184,7 +188,7 @@ describe('ConcertSearchTracker', () => {
 			await vi.advanceTimersByTimeAsync(2_000)
 
 			// Only 1 of 3 done
-			expect(mockClient.listByFollower).not.toHaveBeenCalled()
+			expect(mockClient.verifyConcertsExist).not.toHaveBeenCalled()
 		})
 	})
 
@@ -280,7 +284,7 @@ describe('ConcertSearchTracker', () => {
 	})
 
 	describe('showDashboardCoachMark', () => {
-		it('should be false when concertGroupCount is 0', async () => {
+		it('should be false when no concerts exist', async () => {
 			followedCount = 3
 			;(
 				mockClient.listSearchStatuses as ReturnType<typeof vi.fn>
@@ -290,8 +294,8 @@ describe('ConcertSearchTracker', () => {
 				statusResult('a3', 'completed'),
 			])
 			;(
-				mockClient.listByFollower as ReturnType<typeof vi.fn>
-			).mockResolvedValue([])
+				mockClient.verifyConcertsExist as ReturnType<typeof vi.fn>
+			).mockResolvedValue(false)
 
 			sut.searchConcertsWithTimeout('a1')
 			sut.searchConcertsWithTimeout('a2')
@@ -312,8 +316,8 @@ describe('ConcertSearchTracker', () => {
 				statusResult('a3', 'completed'),
 			])
 			;(
-				mockClient.listByFollower as ReturnType<typeof vi.fn>
-			).mockResolvedValue([{ id: 'g1' }])
+				mockClient.verifyConcertsExist as ReturnType<typeof vi.fn>
+			).mockResolvedValue(true)
 
 			sut.searchConcertsWithTimeout('a1')
 			sut.searchConcertsWithTimeout('a2')

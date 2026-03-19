@@ -12,12 +12,27 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		// ConcertService/List — return empty groups
+		// ConcertService/ListSearchStatuses — return completed for all artists
+		if (url.includes('ListSearchStatuses')) {
+			return route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					statuses: [
+						{ artistId: { value: 'a-1' }, status: 'SEARCH_STATUS_COMPLETED' },
+						{ artistId: { value: 'a-2' }, status: 'SEARCH_STATUS_COMPLETED' },
+						{ artistId: { value: 'a-3' }, status: 'SEARCH_STATUS_COMPLETED' },
+					],
+				}),
+			})
+		}
+
+		// ConcertService/List — return empty (no concerts)
 		if (url.includes('ConcertService/List')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({ dateGroups: [] }),
+				body: JSON.stringify({ concerts: [] }),
 			})
 		}
 
@@ -55,6 +70,21 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
 async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
+
+		// ConcertService/ListSearchStatuses — return completed for all artists
+		if (url.includes('ListSearchStatuses')) {
+			return route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					statuses: [
+						{ artistId: { value: 'a-1' }, status: 'SEARCH_STATUS_COMPLETED' },
+						{ artistId: { value: 'a-2' }, status: 'SEARCH_STATUS_COMPLETED' },
+						{ artistId: { value: 'a-3' }, status: 'SEARCH_STATUS_COMPLETED' },
+					],
+				}),
+			})
+		}
 
 		// ConcertService/SearchNewConcerts — fire-and-forget (check before List)
 		if (url.includes('SearchNewConcerts')) {
@@ -482,11 +512,10 @@ test.describe('Onboarding tutorial flow', () => {
 	test('Spotlight is visible when coach mark is active', async ({ page }) => {
 		test.setTimeout(60_000)
 		// Set up step 1 with enough follows to trigger coach mark.
-		// guest.home is required because ListWithProximity (used during onboarding)
-		// needs a home region for proximity classification.
+		// No guest.home needed — concert gate uses ConcertService/List per artist,
+		// not ListWithProximity which requires a home region.
 		await page.addInitScript(() => {
 			localStorage.setItem('onboardingStep', '1')
-			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
@@ -510,6 +539,40 @@ test.describe('Onboarding tutorial flow', () => {
 		)
 		// box-shadow should contain a large spread (100vmax)
 		expect(boxShadow).not.toBe('none')
+	})
+
+	test('Reload with pre-seeded follows: page loads and preserves followed count', async ({
+		page,
+	}) => {
+		// Simulate reload: pre-seeded follows in localStorage, step 1 (discovery)
+		await page.addInitScript(() => {
+			localStorage.setItem('onboardingStep', '1')
+			localStorage.setItem(
+				'guest.followedArtists',
+				JSON.stringify([
+					{ id: 'a-1', name: 'Artist 1' },
+					{ id: 'a-2', name: 'Artist 2' },
+					{ id: 'a-3', name: 'Artist 3' },
+				]),
+			)
+		})
+		await page.goto('http://localhost:9000/discover')
+		await page.waitForSelector('.discovery-layout')
+
+		// The SR status text includes the followed count — verify hydration preserved it
+		const srOutput = page.locator('output.sr-only[role="status"]')
+		await expect(srOutput).toContainText(/3/, { timeout: 10_000 })
+
+		// No console errors related to hydration or missing state
+		const errors: string[] = []
+		page.on('console', (msg) => {
+			if (msg.type() === 'error') errors.push(msg.text())
+		})
+		await page.waitForTimeout(2000)
+		const hydrationErrors = errors.filter(
+			(e) => e.includes('hydrate') || e.includes('followedArtists'),
+		)
+		expect(hydrationErrors).toHaveLength(0)
 	})
 })
 
@@ -537,8 +600,9 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		await mockRpcRoutes(page)
 		await mockLastFmApi(page)
 
-		// --- Seed: simulate 3 artists followed + home set ---
-		// guest.home is required for ListWithProximity RPC during onboarding.
+		// --- Seed: simulate 3 artists followed ---
+		// guest.home is NOT needed for the discovery concert gate (uses ConcertService/List),
+		// but IS needed for the dashboard step (ListWithProximity requires a home region).
 		await page.addInitScript(() => {
 			localStorage.removeItem('onboarding.celebrationShown')
 			localStorage.setItem('guest.home', 'JP-13')

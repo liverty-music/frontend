@@ -164,6 +164,14 @@ export class DiscoveryRoute {
 
 	public async loading(): Promise<void> {
 		this.logger.info('Loading discovery page')
+
+		if (this.isOnboarding) {
+			const persisted = this.store.getState().guest.follows
+			if (persisted.length > 0) {
+				this.follow.hydrate(persisted.map((f) => f.artist))
+			}
+		}
+
 		try {
 			await this.bubbles.loadInitialArtists(
 				this.follow.followedArtists,

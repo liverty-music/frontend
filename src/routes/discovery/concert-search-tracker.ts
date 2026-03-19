@@ -11,7 +11,10 @@ export interface ConcertSearchClient {
 		artistIds: string[],
 		signal?: AbortSignal,
 	): Promise<SearchStatusResult[]>
-	listByFollower(signal?: AbortSignal): Promise<unknown[]>
+	verifyConcertsExist(
+		artistIds: string[],
+		signal?: AbortSignal,
+	): Promise<boolean>
 }
 
 export interface ConcertSearchCallbacks {
@@ -160,12 +163,16 @@ export class ConcertSearchTracker {
 	}
 
 	private async verifyConcertData(): Promise<void> {
+		const artistIds = [...this.searchStatus.keys()]
 		try {
-			const groups = await this.concertClient.listByFollower(this.abortSignal())
+			const exists = await this.concertClient.verifyConcertsExist(
+				artistIds,
+				this.abortSignal(),
+			)
 			if (this.abortSignal().aborted) return
-			this.concertGroupCount = groups.length
+			this.concertGroupCount = exists ? 1 : 0
 			this.logger.info('Concert data verified', {
-				groupCount: this.concertGroupCount,
+				concertsExist: exists,
 			})
 			this.callbacks.onAllSearchesComplete()
 		} catch (err) {

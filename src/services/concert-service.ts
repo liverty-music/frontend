@@ -57,6 +57,22 @@ export class ConcertServiceClient {
 		)
 	}
 
+	public async verifyConcertsExist(
+		artistIds: string[],
+		signal?: AbortSignal,
+	): Promise<boolean> {
+		if (artistIds.length === 0) return false
+		this.logger.info('Verifying concerts exist for artists', {
+			count: artistIds.length,
+		})
+		const results = await Promise.all(
+			artistIds.map((id) =>
+				this.rpcClient.listConcerts(id, signal).catch(() => []),
+			),
+		)
+		return results.some((concerts) => concerts.length > 0)
+	}
+
 	public async searchNewConcerts(
 		artistId: string,
 		signal?: AbortSignal,
