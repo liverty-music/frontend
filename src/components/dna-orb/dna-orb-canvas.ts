@@ -7,7 +7,6 @@ import {
 	useShadowDOM,
 } from 'aurelia'
 import type { Artist } from '../../entities/artist'
-import { bestLogoUrl } from '../../entities/artist'
 import { AbsorptionAnimator } from './absorption-animator'
 import {
 	type BubbleArtistParams,
@@ -53,7 +52,6 @@ export class DnaOrbCanvas {
 
 	private readonly logger = resolve(ILogger).scopeTo('DnaOrbCanvas')
 
-	private imageCache = new Map<string, HTMLImageElement>()
 	private focusedBubbleIndex = -1
 	private reloadGeneration = 0
 	private isProcessing = false
@@ -83,7 +81,6 @@ export class DnaOrbCanvas {
 		if (!this.ctx) return // not yet attached
 		const params = newVal.map((a) => toBubbleParams(a))
 		this.physics.addBubbles(params)
-		this.preloadImages(newVal)
 	}
 
 	public async attached(): Promise<void> {
@@ -104,7 +101,6 @@ export class DnaOrbCanvas {
 
 		const params = this.artists.map((a) => toBubbleParams(a))
 		this.physics.addBubbles(params)
-		this.preloadImages(this.artists)
 
 		this.lastTime = performance.now()
 		this.animFrameId = requestAnimationFrame(this.loop)
@@ -117,7 +113,6 @@ export class DnaOrbCanvas {
 		this.canvas.removeEventListener('touchstart', this.onTouch)
 		this.canvas.removeEventListener('keydown', this.onKeyDown)
 		this.physics.destroy()
-		this.imageCache.clear()
 	}
 
 	public pause(): void {
@@ -141,12 +136,10 @@ export class DnaOrbCanvas {
 
 		const gen = ++this.reloadGeneration
 		this.physics.reset()
-		this.imageCache.clear()
 		void this.physics.init(rect.width, rect.height).then(() => {
 			if (gen !== this.reloadGeneration) return // stale
 			const params = artists.map((a) => toBubbleParams(a))
 			this.physics.addBubbles(params)
-			this.preloadImages(artists)
 			this.focusedBubbleIndex = -1
 		})
 	}
@@ -157,7 +150,6 @@ export class DnaOrbCanvas {
 	public spawnBubblesAt(artists: Artist[], x: number, y: number): void {
 		const params = artists.map((a) => toBubbleParams(a))
 		this.physics.spawnBubblesAt(params, x, y)
-		this.preloadImages(artists)
 	}
 
 	/**
@@ -169,7 +161,6 @@ export class DnaOrbCanvas {
 		const name = artist.name
 		const radius = 30 + Math.random() * 15
 		const hue = this.artistHue(name)
-		const logoUrl = bestLogoUrl(artist) ?? ''
 		this.absorptionAnimator.startAbsorption(
 			id,
 			name,
@@ -178,7 +169,6 @@ export class DnaOrbCanvas {
 			this.orbRenderer.orbX,
 			this.orbRenderer.orbY,
 			radius,
-			logoUrl,
 			hue,
 			(completedHue) => {
 				this.orbRenderer.injectColor(completedHue)
@@ -300,7 +290,6 @@ export class DnaOrbCanvas {
 			// Remove from physics and start absorption
 			const hue = this.artistHue(artistName)
 			this.physics.removeBubble(artistId)
-			const logoUrl = bestLogoUrl(artist) ?? ''
 			this.absorptionAnimator.startAbsorption(
 				artistId,
 				artistName,
@@ -309,7 +298,6 @@ export class DnaOrbCanvas {
 				this.orbRenderer.orbX,
 				this.orbRenderer.orbY,
 				bubble.radius,
-				logoUrl,
 				hue,
 				(completedHue) => {
 					this.orbRenderer.injectColor(completedHue)
@@ -466,24 +454,8 @@ export class DnaOrbCanvas {
 		this.ctx.arc(x, y, r, 0, Math.PI * 2)
 		this.ctx.fill()
 
-		// Artist image (if loaded)
-		const img = this.imageCache.get(artistId)
-		if (img?.complete && img.naturalWidth > 0) {
-			this.ctx.save()
-			this.ctx.beginPath()
-			this.ctx.arc(x, y, r * 0.7, 0, Math.PI * 2)
-			this.ctx.clip()
-			this.ctx.drawImage(img, x - r * 0.7, y - r * 0.7, r * 1.4, r * 1.4)
-			this.ctx.restore()
-		}
-
-		// Artist name
-		this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
-		this.ctx.font = `bold ${Math.max(9, r * 0.32)}px system-ui, sans-serif`
-		this.ctx.textAlign = 'center'
-		this.ctx.textBaseline = 'middle'
-		const nameY = img?.complete ? y + r * 0.5 : y
-		this.ctx.fillText(artistName, x, nameY, r * 1.8)
+		// Artist name (adaptive sizing + word wrap)
+		this.renderBubbleText(artistName, x, y, r)
 
 		// Subtle outline
 		this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
@@ -518,16 +490,59 @@ export class DnaOrbCanvas {
 		this.ctx.restore()
 	}
 
-	private preloadImages(artists: Artist[]): void {
-		for (const artist of artists) {
-			const id = artist.id
-			const logoUrl = bestLogoUrl(artist)
-			if (!logoUrl || !id || this.imageCache.has(id)) continue
-			const img = new Image()
-			img.crossOrigin = 'anonymous'
-			img.src = logoUrl
-			this.imageCache.set(id, img)
+	private renderBubbleText(
+		name: string,
+		cx: number,
+		cy: number,
+		radius: number,
+	): void {
+		const usableWidth = radius * 1.6
+		const minFont = 7
+		let fontSize = Math.max(minFont, radius * 0.38)
+
+		this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+		this.ctx.textAlign = 'center'
+		this.ctx.textBaseline = 'middle'
+
+		// Word-wrap and adaptive sizing loop
+		let lines: string[]
+		for (;;) {
+			this.ctx.font = `bold ${fontSize}px system-ui, sans-serif`
+			lines = this.wrapText(name, usableWidth)
+
+			// Check if all lines fit; if not, shrink font
+			const allFit = lines.every(
+				(line) => this.ctx.measureText(line).width <= usableWidth,
+			)
+			if (allFit || fontSize <= minFont) break
+			fontSize -= 0.5
 		}
+
+		const lineHeight = fontSize * 1.25
+		for (let i = 0; i < lines.length; i++) {
+			const offsetY = lineHeight * (i - (lines.length - 1) / 2)
+			this.ctx.fillText(lines[i], cx, cy + offsetY, usableWidth)
+		}
+	}
+
+	private wrapText(text: string, maxWidth: number): string[] {
+		const words = text.split(/\s+/)
+		if (words.length === 0) return [text]
+
+		const lines: string[] = []
+		let current = words[0]
+
+		for (let i = 1; i < words.length; i++) {
+			const trial = `${current} ${words[i]}`
+			if (this.ctx.measureText(trial).width <= maxWidth) {
+				current = trial
+			} else {
+				lines.push(current)
+				current = words[i]
+			}
+		}
+		lines.push(current)
+		return lines
 	}
 }
 
