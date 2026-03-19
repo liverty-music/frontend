@@ -75,9 +75,6 @@ export class TicketEmailServiceClient {
 }
 
 export interface UpdateCorrections {
-	paymentDeadline?: Date
-	lotteryStart?: Date
-	lotteryEnd?: Date
 	applicationUrl?: string
 	lotteryResult?: number
 	paymentStatus?: number

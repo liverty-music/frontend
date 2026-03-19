@@ -127,11 +127,13 @@ export class ImportTicketEmailRoute {
 
 	// Step 4: Toggle concert selection.
 	public toggleConcert(eventId: string): void {
-		if (this.selectedEventIds.has(eventId)) {
-			this.selectedEventIds.delete(eventId)
+		const next = new Set(this.selectedEventIds)
+		if (next.has(eventId)) {
+			next.delete(eventId)
 		} else {
-			this.selectedEventIds.add(eventId)
+			next.add(eventId)
 		}
+		this.selectedEventIds = next
 	}
 
 	public get hasSelectedConcerts(): boolean {
@@ -197,6 +199,19 @@ export class ImportTicketEmailRoute {
 		} finally {
 			this.isLoading = false
 		}
+	}
+
+	public sanitizeUrl(url: string | undefined): string {
+		if (!url) return ''
+		try {
+			const parsed = new URL(url)
+			if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+				return url
+			}
+		} catch {
+			// Invalid URL
+		}
+		return ''
 	}
 
 	private detectEmailType(body: string): EmailType {

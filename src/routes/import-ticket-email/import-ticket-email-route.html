@@ -16,8 +16,8 @@
       <p if.bind="matchedArtistId">メール本文からアーティストが検出されました。</p>
       <select value.bind="selectedArtistId">
         <option value="">選択してください</option>
-        <option repeat.for="artist of followedArtists" value.bind="artist.id">
-          ${artist.name}
+        <option repeat.for="fa of followedArtists" value.bind="fa.artist.id?.value ?? ''">
+          ${fa.artist.name?.value ?? ''}
         </option>
       </select>
       <button click.trigger="selectArtist()" disabled.bind="!selectedArtistId || isLoading">
@@ -37,11 +37,11 @@
           <label>
             <input
               type="checkbox"
-              checked.bind="selectedEventIds.has(concert.eventId)"
-              change.trigger="toggleConcert(concert.eventId)"
+              checked.bind="selectedEventIds.has(concert.id?.value ?? '')"
+              change.trigger="toggleConcert(concert.id?.value ?? '')"
             >
-            <span>${concert.title}</span>
-            <small>${concert.localDate}</small>
+            <span>${concert.title?.value ?? ''}</span>
+            <small>${concert.localDate?.value}</small>
           </label>
         </li>
       </ul>
@@ -99,7 +99,7 @@
           </template>
           <template if.bind="email.applicationUrl">
             <dt>申し込みURL</dt>
-            <dd><a href.bind="email.applicationUrl" target="_blank">${email.applicationUrl}</a></dd>
+            <dd><a href.bind="sanitizeUrl(email.applicationUrl)" target="_blank" rel="noopener noreferrer">${email.applicationUrl}</a></dd>
           </template>
           <template if.bind="email.lotteryResult">
             <dt>抽選結果</dt>
