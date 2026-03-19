@@ -58,9 +58,7 @@
           artist-id.bind="artist.artist.id"
           hype-color.bind="artist.color"
           hype.bind="artist.hype"
-          is-authenticated.bind="isAuthenticated"
-          hype-changed.trigger="onHypeChanged($event)"
-          hype-signup-prompt.trigger="onHypeSignupPrompt($event)">
+          change.trigger="onHypeInput(artist)">
         </hype-inline-slider>
       </section>
 

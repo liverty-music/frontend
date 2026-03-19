@@ -49,7 +49,7 @@ export class FollowServiceClient {
 		if (this.onboarding.isOnboarding) {
 			return this.store.getState().guest.follows.map((f) => ({
 				artist: f.artist,
-				hype: 'away' as const,
+				hype: 'watch' as const,
 			}))
 		}
 		return this.rpcClient.listFollowed(signal)
