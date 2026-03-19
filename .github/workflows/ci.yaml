@@ -172,6 +172,9 @@ jobs:
       - name: Run smoke tests
         run: npx playwright test --project=smoke
 
+      - name: Run onboarding tests
+        run: npx playwright test --project=onboarding
+
   smoke-skip:
     needs: changes
     if: needs.changes.outputs.src == 'false'

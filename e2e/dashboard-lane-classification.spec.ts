@@ -45,7 +45,7 @@ function concertListPayload() {
 	}
 }
 
-/** Mock RPC routes with concert data for onboarding (ConcertService/List per artist). */
+/** Mock RPC routes with concert data for onboarding (ConcertService/ListWithProximity). */
 async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
@@ -55,6 +55,24 @@ async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 				status: 200,
 				contentType: 'application/json',
 				body: JSON.stringify({}),
+			})
+		}
+
+		// ListWithProximity (check before List to avoid substring match)
+		if (url.includes('ListWithProximity')) {
+			return route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					groups: [
+						{
+							date: concertListPayload().concerts[0].localDate,
+							home: concertListPayload().concerts,
+							nearby: [],
+							away: [],
+						},
+					],
+				}),
 			})
 		}
 
@@ -128,23 +146,25 @@ test.describe('Dashboard lane classification after home selection', () => {
 		await page.goto('http://localhost:9000/dashboard')
 
 		// Wait for dashboard to render with blur applied (needsRegion = true)
-		const blurElement = page.locator('.blur-sm')
+		const blurElement = page.locator('[data-blurred="true"]')
 		await expect(blurElement).toBeVisible({ timeout: 10_000 })
 
 		// Home selector dialog should open automatically
-		const regionDialog = page.locator('dialog.user-home-selector')
+		const regionDialog = page.locator('user-home-selector dialog[popover]')
 		await expect(regionDialog).toBeVisible({ timeout: 5000 })
 
-		// Select a home region — expect loadData() to fire (ConcertService/List RPC)
+		// Select a home region — expect loadData() to fire (ListWithProximity RPC)
 		const reloadPromise = page.waitForResponse(
-			(resp) => resp.url().includes('ConcertService/List'),
+			(resp) => resp.url().includes('ListWithProximity'),
 			{ timeout: 10_000 },
 		)
 		const regionOption = regionDialog.locator('button').first()
 		await regionOption.click()
 
 		// After selection: blur should be removed (needsRegion = false)
-		await expect(blurElement).toHaveCount(0, { timeout: 5000 })
+		await expect(page.locator('[data-blurred="true"]')).toHaveCount(0, {
+			timeout: 5000,
+		})
 
 		// loadData() should have fired (ConcertService/List response received)
 		await reloadPromise
@@ -176,12 +196,12 @@ test.describe('Dashboard lane classification after home selection', () => {
 		await page.goto('http://localhost:9000/dashboard')
 
 		// Wait for dashboard content to render
-		await page.waitForSelector('live-highway, [class*="justify-center"]', {
+		await page.waitForSelector('.concert-scroll', {
 			timeout: 10_000,
 		})
 
 		// Blur should NOT be applied (needsRegion = false because guest.home is set)
-		const blurElement = page.locator('.blur-sm')
+		const blurElement = page.locator('[data-blurred="true"]')
 		await expect(blurElement).toHaveCount(0)
 
 		// Home selector dialog should NOT be open
