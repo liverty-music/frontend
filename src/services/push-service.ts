@@ -1,8 +1,5 @@
-import { PushNotificationService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/push_notification/v1/push_notification_service_connect.js'
-import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
-import { IAuthService } from './auth-service'
-import { createTransport } from './grpc-transport'
+import { IPushRpcClient } from '../adapter/rpc/client/push-client'
 import { INotificationManager } from './notification-manager'
 
 export const IPushService = DI.createInterface<IPushService>(
@@ -16,12 +13,8 @@ export class PushServiceClient {
 	private static readonly SW_READY_TIMEOUT_MS = 10_000
 
 	private readonly logger = resolve(ILogger).scopeTo('PushService')
-	private readonly authService = resolve(IAuthService)
+	private readonly rpcClient = resolve(IPushRpcClient)
 	private readonly notificationManager = resolve(INotificationManager)
-	private readonly pushClient = createClient(
-		PushNotificationService,
-		createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
-	)
 
 	// VAPID public key injected via Vite build environment variable
 	private readonly vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY ?? ''
@@ -71,7 +64,7 @@ export class PushServiceClient {
 		this.logger.info('Sending push subscription to backend', { endpoint })
 
 		try {
-			await this.pushClient.subscribe({ endpoint, p256dh, auth })
+			await this.rpcClient.subscribe({ endpoint, p256dh, auth })
 			this.logger.info('Push subscription registered successfully')
 		} catch (err) {
 			this.logger.error(
@@ -92,7 +85,7 @@ export class PushServiceClient {
 		}
 
 		try {
-			await this.pushClient.unsubscribe({})
+			await this.rpcClient.unsubscribe()
 			this.logger.info('Push subscription removed from backend successfully')
 		} catch (err) {
 			this.logger.error('Failed to remove push subscription from backend', err)

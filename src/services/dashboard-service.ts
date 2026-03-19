@@ -1,10 +1,11 @@
-import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import type { Concert as ProtoConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import type { ProximityGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
-import { displayName } from '../constants/iso3166'
 import type {
-	Concert,
+	ProtoConcert,
+	ProximityGroup,
+} from '../adapter/rpc/client/concert-client'
+import { concertFrom } from '../adapter/rpc/mapper/concert-mapper'
+import type { Artist } from '../entities/artist'
+import type {
 	DateGroup,
 	HypeLevel,
 	JourneyStatus,
@@ -70,9 +71,9 @@ export class DashboardService {
 				const artistId = c.artistId?.value ?? ''
 				const entry = artistMap.get(artistId)
 				const hypeLevel: HypeLevel = entry?.hype ?? 'watch'
-				const event = protoConcertToEntity(
+				const event = concertFrom(
 					c,
-					entry?.artist.name?.value ?? '',
+					entry?.artist.name ?? '',
 					hypeLevel,
 					isHypeMatched(hypeLevel, lane),
 					entry?.artist,
@@ -113,7 +114,7 @@ export class DashboardService {
 		const followed = await this.followService.listFollowed(signal)
 		const map = new Map<string, { artist: Artist; hype: Hype }>()
 		for (const fa of followed) {
-			const id = fa.artist.id?.value ?? ''
+			const id = fa.artist.id
 			if (id) {
 				map.set(id, { artist: fa.artist, hype: fa.hype })
 			}
@@ -132,51 +133,4 @@ const LANE_ORDER: Record<LaneType, number> = { home: 1, nearby: 2, away: 3 }
 
 export function isHypeMatched(hype: HypeLevel, lane: LaneType): boolean {
 	return HYPE_ORDER[hype] >= LANE_ORDER[lane]
-}
-
-function protoConcertToEntity(
-	concert: ProtoConcert,
-	artistName: string,
-	hypeLevel: HypeLevel,
-	matched: boolean,
-	artist?: Artist,
-): Concert | null {
-	const localDate = concert.localDate?.value
-	if (!localDate) return null
-
-	const jsDate = new Date(localDate.year, localDate.month - 1, localDate.day)
-
-	const startTime = concert.startTime?.value
-		? timestampToTimeString(Number(concert.startTime.value.seconds))
-		: ''
-	const openTime = concert.openTime?.value
-		? timestampToTimeString(Number(concert.openTime.value.seconds))
-		: undefined
-
-	const venueName =
-		concert.venue?.name?.value ?? concert.listedVenueName?.value ?? ''
-	const adminArea = concert.venue?.adminArea?.value
-	const locationLabel = adminArea ? displayName(adminArea) : ''
-
-	return {
-		id: concert.id?.value ?? '',
-		artistName,
-		artistId: concert.artistId?.value ?? '',
-		venueName,
-		locationLabel,
-		adminArea,
-		date: jsDate,
-		startTime,
-		openTime,
-		title: concert.title?.value ?? '',
-		sourceUrl: concert.sourceUrl?.value ?? '',
-		hypeLevel,
-		matched,
-		artist,
-	}
-}
-
-function timestampToTimeString(epochSeconds: number): string {
-	const d = new Date(epochSeconds * 1000)
-	return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }

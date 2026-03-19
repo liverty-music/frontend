@@ -1,7 +1,5 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
-import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import { HypeType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../components/live-highway/color-generator'
 import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
@@ -57,19 +55,6 @@ export class MyArtistsRoute {
 		return meta?.labelKey ?? ''
 	}
 
-	/** Convert entity Hype string to proto HypeType for the slider component. */
-	public hypeToNumber(hype: Hype): HypeType {
-		switch (hype) {
-			case 'watch':
-				return HypeType.WATCH
-			case 'home':
-				return HypeType.HOME
-			case 'nearby':
-				return HypeType.NEARBY
-			case 'away':
-				return HypeType.AWAY
-		}
-	}
 	private readonly followService = resolve(IFollowServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
@@ -93,12 +78,12 @@ export class MyArtistsRoute {
 
 	/** Get the artist ID string for template bindings. */
 	public artistId(myArtist: MyArtist): string {
-		return myArtist.artist.id?.value ?? ''
+		return myArtist.artist.id
 	}
 
 	/** Get the artist name string for template bindings. */
 	public artistName(myArtist: MyArtist): string {
-		return myArtist.artist.name?.value ?? ''
+		return myArtist.artist.name
 	}
 
 	public async loading(): Promise<void> {
@@ -111,7 +96,7 @@ export class MyArtistsRoute {
 			)
 			this.artists = followed.map((fa) => ({
 				...fa,
-				color: artistColor(fa.artist.name?.value ?? ''),
+				color: artistColor(fa.artist.name),
 			}))
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,
@@ -180,9 +165,7 @@ export class MyArtistsRoute {
 
 		const artistId = this.artistId(artist)
 		const artistName = this.artistName(artist)
-		const index = this.artists.findIndex(
-			(a) => (a.artist.id?.value ?? '') === artistId,
-		)
+		const index = this.artists.findIndex((a) => a.artist.id === artistId)
 		if (index === -1) return
 
 		// Optimistic removal
@@ -233,10 +216,8 @@ export class MyArtistsRoute {
 		const artistId = this.artistId(artist)
 		const artistName = this.artistName(artist)
 		// Fire-and-forget RPC with 1 retry
-		const client = this.followService.getClient()
-		const req = { artistId: new ArtistId({ value: artistId }) }
-		client
-			.unfollow(req)
+		this.followService
+			.unfollow(artistId)
 			.then(() => {
 				this.logger.info('Unfollow committed', { name: artistName })
 			})
@@ -245,8 +226,8 @@ export class MyArtistsRoute {
 					name: artistName,
 					error: firstErr,
 				})
-				client
-					.unfollow(req)
+				this.followService
+					.unfollow(artistId)
 					.then(() => {
 						this.logger.info('Unfollow committed on retry', {
 							name: artistName,
@@ -274,13 +255,10 @@ export class MyArtistsRoute {
 	// --- Hype level inline slider ---
 
 	public onHypeChanged(
-		event: CustomEvent<{ artistId: string; hype: HypeType }>,
+		event: CustomEvent<{ artistId: string; hype: Hype }>,
 	): void {
-		const { artistId, hype: hypeType } = event.detail
-		const hype = hypeTypeToHype(hypeType)
-		const artist = this.artists.find(
-			(a) => (a.artist.id?.value ?? '') === artistId,
-		)
+		const { artistId, hype } = event.detail
+		const artist = this.artists.find((a) => a.artist.id === artistId)
 		if (!artist) return
 
 		const prev = artist.hype
@@ -310,13 +288,8 @@ export class MyArtistsRoute {
 		artist.hype = hype
 
 		// Fire-and-forget RPC with 1 retry
-		const client = this.followService.getClient()
-		const req = {
-			artistId: new ArtistId({ value: artistId }),
-			hype: hypeType,
-		}
-		client
-			.setHype(req)
+		this.followService
+			.setHype(artistId, hype)
 			.then(() => {
 				this.logger.info('Hype level updated', { artistId, hype })
 			})
@@ -325,8 +298,8 @@ export class MyArtistsRoute {
 					artistId,
 					error: firstErr,
 				})
-				client
-					.setHype(req)
+				this.followService
+					.setHype(artistId, hype)
 					.then(() => {
 						this.logger.info('Hype level updated on retry', {
 							artistId,
@@ -337,9 +310,7 @@ export class MyArtistsRoute {
 						this.logger.error('Failed to update hype level after retry', {
 							error: retryErr,
 						})
-						const a = this.artists.find(
-							(x) => (x.artist.id?.value ?? '') === artistId,
-						)
+						const a = this.artists.find((x) => x.artist.id === artistId)
 						if (a) a.hype = prev
 						this.ea.publish(new Snack(this.i18n.tr('myArtists.failedHype')))
 					})
@@ -370,20 +341,5 @@ export class MyArtistsRoute {
 
 	public async goToDiscovery(): Promise<void> {
 		await this.router.load('discovery')
-	}
-}
-
-function hypeTypeToHype(hype: HypeType): Hype {
-	switch (hype) {
-		case HypeType.WATCH:
-			return 'watch'
-		case HypeType.HOME:
-			return 'home'
-		case HypeType.NEARBY:
-			return 'nearby'
-		case HypeType.AWAY:
-			return 'away'
-		default:
-			return 'watch'
 	}
 }

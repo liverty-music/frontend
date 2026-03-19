@@ -84,9 +84,7 @@ export class GenreFilterController {
 			tag,
 			BubblePool.MAX_BUBBLES,
 		)
-		const followedIds = new Set(
-			this.followedArtists().map((a) => a.id?.value ?? ''),
-		)
+		const followedIds = new Set(this.followedArtists().map((a) => a.id))
 		const artists = this.pool
 			.dedup(rawArtists, followedIds)
 			.slice(0, BubblePool.MAX_BUBBLES)

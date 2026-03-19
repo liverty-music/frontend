@@ -123,7 +123,7 @@ export class BubbleManager {
 			)
 			if (evictCount > 0) {
 				const evicted = this.pool.evictOldest(evictCount)
-				const evictedIds = evicted.map((a) => a.id?.value ?? '')
+				const evictedIds = evicted.map((a) => a.id)
 				await canvas.fadeOutBubbles(evictedIds)
 			}
 		}
@@ -179,15 +179,13 @@ export class BubbleManager {
 
 		const results = await Promise.all(
 			seeds.map((seed) =>
-				this.client
-					.listSimilar(seed.id?.value ?? '', limitPerSeed)
-					.catch((err) => {
-						this.logger.warn('Seed similar fetch failed', {
-							seed: seed.name?.value,
-							error: err,
-						})
-						return [] as Artist[]
-					}),
+				this.client.listSimilar(seed.id, limitPerSeed).catch((err) => {
+					this.logger.warn('Seed similar fetch failed', {
+						seed: seed.name,
+						error: err,
+					})
+					return [] as Artist[]
+				}),
 			),
 		)
 

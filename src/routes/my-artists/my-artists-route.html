@@ -38,9 +38,9 @@
   <!-- Artist list -->
   <ul if.bind="!isLoading && artists.length > 0" class="artist-list" role="list">
     <li
-      repeat.for="artist of artists; key.bind: artist.artist.id?.value"
+      repeat.for="artist of artists; key.bind: artist.artist.id"
       class="artist-row"
-      css="--_vt-name: artist-${artist.artist.id?.value}"
+      css="--_vt-name: artist-${artist.artist.id}"
       scroll.trigger="checkDismiss($event, artist)"
     >
       <section class="artist-row-content">
@@ -50,14 +50,14 @@
             class="[ artist-row-indicator ]"
             dot-color.bind="artist.color"
           ></span>
-          <span class="[ artist-row-name ]">${artist.artist.name?.value}</span>
+          <span class="[ artist-row-name ]">${artist.artist.name}</span>
         </header>
 
         <!-- Inline hype slider -->
         <hype-inline-slider
-          artist-id.bind="artist.artist.id?.value"
+          artist-id.bind="artist.artist.id"
           hype-color.bind="artist.color"
-          hype.bind="hypeToNumber(artist.hype)"
+          hype.bind="artist.hype"
           is-authenticated.bind="isAuthenticated"
           hype-changed.trigger="onHypeChanged($event)"
           hype-signup-prompt.trigger="onHypeSignupPrompt($event)">
