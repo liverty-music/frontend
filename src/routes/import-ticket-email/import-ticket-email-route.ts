@@ -1,5 +1,6 @@
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import type { TicketEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_email_pb.js'
+import { TicketJourneyStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import type { FollowedArtist } from '../../entities/follow'
 import { IConcertService } from '../../services/concert-service'
@@ -201,6 +202,23 @@ export class ImportTicketEmailRoute {
 			// Invalid URL
 		}
 		return ''
+	}
+
+	public formatJourneyStatus(status: TicketJourneyStatus): string {
+		switch (status) {
+			case TicketJourneyStatus.TRACKING:
+				return 'トラッキング中'
+			case TicketJourneyStatus.APPLIED:
+				return '申し込み済'
+			case TicketJourneyStatus.LOST:
+				return '落選'
+			case TicketJourneyStatus.UNPAID:
+				return '当選（未払い）'
+			case TicketJourneyStatus.PAID:
+				return '支払済'
+			default:
+				return '不明'
+		}
 	}
 
 	private detectEmailType(body: string): EmailType {

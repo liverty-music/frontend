@@ -101,13 +101,9 @@
             <dt>申し込みURL</dt>
             <dd><a href.bind="sanitizeUrl(email.applicationUrl)" target="_blank" rel="noopener noreferrer">${email.applicationUrl}</a></dd>
           </template>
-          <template if.bind="email.lotteryResult">
-            <dt>抽選結果</dt>
-            <dd>${email.lotteryResult === 1 ? '当選' : '落選'}</dd>
-          </template>
-          <template if.bind="email.paymentStatus">
-            <dt>支払状況</dt>
-            <dd>${email.paymentStatus === 2 ? '支払済' : '未払い'}</dd>
+          <template if.bind="email.journeyStatus">
+            <dt>ステータス</dt>
+            <dd>${formatJourneyStatus(email.journeyStatus)}</dd>
           </template>
           <template if.bind="email.paymentDeadline">
             <dt>入金期限</dt>
