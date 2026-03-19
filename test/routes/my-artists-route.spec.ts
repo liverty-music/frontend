@@ -291,7 +291,14 @@ describe('MyArtistsRoute', () => {
 			expect(onboardingOnboarding.activateSpotlight).toHaveBeenCalledWith(
 				'[data-hype-header]',
 				expect.any(String),
+				expect.any(Function),
 			)
+		})
+
+		it('should deactivate spotlight when onTap callback is invoked', () => {
+			const onTap = onboardingOnboarding.activateSpotlight.mock.calls[0][2]
+			onTap()
+			expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
 		})
 
 		it('should set pulsingArtistId immediately on hype change', () => {

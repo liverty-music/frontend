@@ -104,6 +104,7 @@ export class MyArtistsRoute {
 			this.onboarding.activateSpotlight(
 				'[data-hype-header]',
 				'絶対に見逃したくないアーティストの熱量を上げておこう',
+				() => this.onboarding.deactivateSpotlight(),
 			)
 		}
 	}
