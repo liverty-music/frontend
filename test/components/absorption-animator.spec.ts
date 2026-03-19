@@ -11,7 +11,7 @@ describe('AbsorptionAnimator', () => {
 			const animator = createAnimator()
 			animator.cometTrailEnabled = true
 
-			animator.startAbsorption('id1', 'Artist', 100, 100, 200, 400, 20, '', 260)
+			animator.startAbsorption('id1', 'Artist', 100, 100, 200, 400, 20, 260)
 
 			// Simulate 20 frames
 			for (let i = 0; i < 20; i++) {
@@ -27,7 +27,7 @@ describe('AbsorptionAnimator', () => {
 			const animator = createAnimator()
 			animator.cometTrailEnabled = true
 
-			animator.startAbsorption('id1', 'Artist', 100, 100, 200, 400, 20, '', 260)
+			animator.startAbsorption('id1', 'Artist', 100, 100, 200, 400, 20, 260)
 
 			// Simulate many frames (but not enough to complete)
 			for (let i = 0; i < 30; i++) {
@@ -44,7 +44,7 @@ describe('AbsorptionAnimator', () => {
 			const animator = createAnimator()
 			animator.cometTrailEnabled = false
 
-			animator.startAbsorption('id1', 'Artist', 100, 100, 200, 400, 20, '', 260)
+			animator.startAbsorption('id1', 'Artist', 100, 100, 200, 400, 20, 260)
 
 			for (let i = 0; i < 20; i++) {
 				animator.update(16)
@@ -69,7 +69,6 @@ describe('AbsorptionAnimator', () => {
 				200,
 				400,
 				20,
-				'',
 				180,
 				(hue) => {
 					completedHue = hue
@@ -89,7 +88,7 @@ describe('AbsorptionAnimator', () => {
 			const animator = createAnimator()
 			expect(animator.isAnimating).toBe(false)
 
-			animator.startAbsorption('id1', 'Artist', 100, 100, 200, 400, 20, '')
+			animator.startAbsorption('id1', 'Artist', 100, 100, 200, 400, 20)
 			expect(animator.isAnimating).toBe(true)
 		})
 	})
