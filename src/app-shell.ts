@@ -63,6 +63,7 @@ import { IOnboardingService } from './services/onboarding-service'
 				'./routes/import-ticket-email/import-ticket-email-route'
 			),
 			title: 'Import Ticket Email',
+			data: { auth: false },
 		},
 	],
 	fallback: import('./routes/not-found/not-found-route'),

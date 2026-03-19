@@ -39,7 +39,7 @@ export class ImportTicketEmailRoute {
 
 	// Step 4: Concert selection
 	public concerts: Concert[] = []
-	public selectedEventIds: Set<string> = new Set()
+	public selectedEventIds: string[] = []
 
 	// Step 5: Editable body
 	public editableBody = ''
@@ -125,19 +125,8 @@ export class ImportTicketEmailRoute {
 		}
 	}
 
-	// Step 4: Toggle concert selection.
-	public toggleConcert(eventId: string): void {
-		const next = new Set(this.selectedEventIds)
-		if (next.has(eventId)) {
-			next.delete(eventId)
-		} else {
-			next.add(eventId)
-		}
-		this.selectedEventIds = next
-	}
-
 	public get hasSelectedConcerts(): boolean {
-		return this.selectedEventIds.size > 0
+		return this.selectedEventIds.length > 0
 	}
 
 	// Step 4 → 5: Proceed to body confirmation.
@@ -160,7 +149,7 @@ export class ImportTicketEmailRoute {
 			this.createdEmails = await this.ticketEmailService.create(
 				this.editableBody,
 				this.detectedEmailType,
-				Array.from(this.selectedEventIds),
+				this.selectedEventIds,
 				this.abortController?.signal,
 			)
 			this.step = 'confirm'
