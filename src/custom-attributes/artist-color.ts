@@ -1,5 +1,5 @@
 import { bindable, customAttribute, INode, resolve } from 'aurelia'
-import { artistHueFromColorProfile } from '../components/live-highway/color-generator'
+import { artistHueFromColorProfile } from '../adapter/view/artist-color'
 import type { LogoColorProfile } from '../entities/artist'
 
 /**

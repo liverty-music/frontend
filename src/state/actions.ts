@@ -1,5 +1,5 @@
 import type { Artist } from '../entities/artist'
-import type { OnboardingStepValue } from '../services/onboarding-service'
+import type { OnboardingStepValue } from '../entities/onboarding'
 
 export type AppAction =
 	| { type: 'onboarding/advance'; step: OnboardingStepValue }

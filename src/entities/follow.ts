@@ -11,3 +11,14 @@ export interface FollowedArtist {
 	artist: Artist
 	hype: Hype
 }
+
+/**
+ * Check whether an artist is already in a follow list.
+ * Enforces the invariant that a user cannot follow the same artist twice.
+ */
+export function hasFollow(
+	follows: ReadonlyArray<{ artist: { id: string } }>,
+	artistId: string,
+): boolean {
+	return follows.some((f) => f.artist.id === artistId)
+}

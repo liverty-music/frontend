@@ -5,11 +5,12 @@ import type {
 } from '../adapter/rpc/client/concert-client'
 import { concertFrom } from '../adapter/rpc/mapper/concert-mapper'
 import type { Artist } from '../entities/artist'
-import type {
-	DateGroup,
-	HypeLevel,
-	JourneyStatus,
-	LaneType,
+import {
+	type DateGroup,
+	type HypeLevel,
+	isHypeMatched,
+	type JourneyStatus,
+	type LaneType,
 } from '../entities/concert'
 import type { Hype } from '../entities/follow'
 import { IConcertService } from './concert-service'
@@ -121,16 +122,4 @@ export class DashboardService {
 		}
 		return map
 	}
-}
-
-const HYPE_ORDER: Record<HypeLevel, number> = {
-	watch: 0,
-	home: 1,
-	nearby: 2,
-	away: 3,
-}
-const LANE_ORDER: Record<LaneType, number> = { home: 1, nearby: 2, away: 3 }
-
-export function isHypeMatched(hype: HypeLevel, lane: LaneType): boolean {
-	return HYPE_ORDER[hype] >= LANE_ORDER[lane]
 }

@@ -5,8 +5,8 @@ import { IConcertService } from '../../src/services/concert-service'
 import {
 	DashboardService,
 	IDashboardService,
-	isHypeMatched,
 } from '../../src/services/dashboard-service'
+import { isHypeMatched } from '../../src/entities/concert'
 import { IFollowServiceClient } from '../../src/services/follow-service-client'
 import { createTestContainer } from '../helpers/create-container'
 import {

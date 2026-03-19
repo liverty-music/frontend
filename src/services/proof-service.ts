@@ -1,5 +1,6 @@
 import { DI, ILogger, resolve } from 'aurelia'
 import { IEntryRpcClient } from '../adapter/rpc/client/entry-client'
+import { bytesToDecimal, uuidToFieldElement } from '../entities/entry'
 import type { ProofMessage, ProofRequest } from '../workers/proof.worker'
 
 const CIRCUIT_BASE_URL =
@@ -173,26 +174,4 @@ export class ProofServiceClient {
 			worker.postMessage(request)
 		})
 	}
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-	let hex = ''
-	for (const byte of bytes) {
-		hex += byte.toString(16).padStart(2, '0')
-	}
-	return hex
-}
-
-function bytesToDecimal(bytes: Uint8Array): string {
-	// Convert big-endian bytes to a decimal string without BigInt literals.
-	// snarkjs circuit inputs are decimal strings.
-	const hex = bytesToHex(bytes)
-	if (hex === '') return '0'
-	return BigInt(`0x${hex}`).toString(10)
-}
-
-function uuidToFieldElement(uuid: string): string {
-	// Strip hyphens and convert UUID hex to a decimal field element.
-	const hex = uuid.replace(/-/g, '')
-	return BigInt(`0x${hex}`).toString(10)
 }

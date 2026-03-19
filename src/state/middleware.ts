@@ -3,27 +3,12 @@ import {
 	deserializeGuestFollows,
 	serializeGuestFollows,
 } from '../adapter/storage/guest-storage'
-import {
-	OnboardingStep,
-	type OnboardingStepValue,
-	STEP_ORDER,
-} from '../services/onboarding-service'
+import { normalizeStep } from '../entities/onboarding'
 import type { AppState, GuestFollow } from './app-state'
 
 const STORAGE_KEY_ONBOARDING_STEP = 'onboardingStep'
 const STORAGE_KEY_GUEST_FOLLOWED = 'guest.followedArtists'
 const STORAGE_KEY_GUEST_HOME = 'guest.home'
-
-const VALID_STEPS = new Set<string>(STEP_ORDER)
-
-const NUMERIC_STEP_MIGRATION: Record<string, OnboardingStepValue> = {
-	'0': OnboardingStep.LP,
-	'1': OnboardingStep.DISCOVERY,
-	'3': OnboardingStep.DASHBOARD,
-	'4': OnboardingStep.DETAIL,
-	'5': OnboardingStep.MY_ARTISTS,
-	'7': OnboardingStep.COMPLETED,
-}
 
 export function persistenceMiddleware(
 	currentState: AppState,
@@ -61,15 +46,9 @@ export function loadPersistedState(): Partial<AppState> {
 
 	const rawStep = localStorage.getItem(STORAGE_KEY_ONBOARDING_STEP)
 	if (rawStep !== null) {
-		let step: OnboardingStepValue
-		if (VALID_STEPS.has(rawStep)) {
-			step = rawStep as OnboardingStepValue
-		} else if (rawStep in NUMERIC_STEP_MIGRATION) {
-			step = NUMERIC_STEP_MIGRATION[rawStep]
+		const step = normalizeStep(rawStep)
+		if (step !== rawStep) {
 			localStorage.setItem(STORAGE_KEY_ONBOARDING_STEP, step)
-		} else {
-			step = OnboardingStep.LP
-			localStorage.setItem(STORAGE_KEY_ONBOARDING_STEP, OnboardingStep.LP)
 		}
 		result.onboarding = {
 			step,
