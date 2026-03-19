@@ -230,6 +230,45 @@ describe('BubbleManager', () => {
 		})
 	})
 
+	describe('reload with pre-hydrated follows', () => {
+		it('should filter followed artists from listSimilar results on reload', async () => {
+			// Simulate reload: followedIds pre-populated from store
+			followedIds.add('f1')
+			followedIds.add('f2')
+			followedIds.add('f3')
+			const followed = [
+				makeArtist('f1', 'Followed 1'),
+				makeArtist('f2', 'Followed 2'),
+				makeArtist('f3', 'Followed 3'),
+			]
+			;(mockClient.listSimilar as ReturnType<typeof vi.fn>).mockResolvedValue([
+				makeArtist('f1', 'Followed 1'), // should be excluded
+				makeArtist('a1', 'New One'),
+				makeArtist('a2', 'New Two'),
+			])
+
+			await sut.loadInitialArtists(followed, 'Japan', '')
+
+			const bubbleIds = sut.poolBubbles.map((a) => a.id)
+			expect(bubbleIds).not.toContain('f1')
+			expect(bubbleIds).not.toContain('f2')
+			expect(bubbleIds).not.toContain('f3')
+			expect(bubbleIds).toContain('a1')
+			expect(bubbleIds).toContain('a2')
+		})
+
+		it('should use listTop when followedArtists is empty (fresh session)', async () => {
+			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
+				makeArtist('a1', 'Top One'),
+			])
+
+			await sut.loadInitialArtists([], 'Japan', '')
+
+			expect(mockClient.listTop).toHaveBeenCalled()
+			expect(mockClient.listSimilar).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('dedup uses external followedIds', () => {
 		it('should exclude followed artists from loadInitialArtists', async () => {
 			followedIds.add('a1')

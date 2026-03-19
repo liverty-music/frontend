@@ -52,6 +52,43 @@ describe('FollowOrchestrator', () => {
 		)
 	})
 
+	describe('hydrate', () => {
+		it('should populate followedArtists from external source', () => {
+			sut.hydrate([makeArtist('x1', 'X1'), makeArtist('x2', 'X2')])
+
+			expect(sut.followedCount).toBe(2)
+			expect(sut.followedIds.has('x1')).toBe(true)
+			expect(sut.followedIds.has('x2')).toBe(true)
+		})
+
+		it('should create a defensive copy of the input', () => {
+			const artists = [makeArtist('x1', 'X1')]
+			sut.hydrate(artists)
+			artists.push(makeArtist('x2', 'X2'))
+
+			expect(sut.followedCount).toBe(1)
+		})
+
+		it('should replace any previously followed artists', () => {
+			sut.hydrate([makeArtist('x1', 'X1'), makeArtist('x2', 'X2')])
+			sut.hydrate([makeArtist('x3', 'X3')])
+
+			expect(sut.followedCount).toBe(1)
+			expect(sut.followedIds.has('x3')).toBe(true)
+			expect(sut.followedIds.has('x1')).toBe(false)
+		})
+
+		it('should make hydrated artists visible to followedIds for dedup', async () => {
+			sut.hydrate([makeArtist('a1', 'Artist One')])
+
+			// Trying to follow the same artist should be a no-op
+			await sut.followArtist(makeArtist('a1', 'Artist One'))
+
+			expect(mockFollowClient.follow).not.toHaveBeenCalled()
+			expect(sut.followedCount).toBe(1)
+		})
+	})
+
 	describe('followArtist', () => {
 		it('should follow artist and update state optimistically', async () => {
 			await sut.followArtist(makeArtist('a1', 'Artist One'))
