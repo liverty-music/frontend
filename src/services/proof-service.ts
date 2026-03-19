@@ -1,6 +1,6 @@
 import { DI, ILogger, resolve } from 'aurelia'
+import { IEntryRpcClient } from '../adapter/rpc/client/entry-client'
 import type { ProofMessage, ProofRequest } from '../workers/proof.worker'
-import { IEntryService } from './entry-service'
 
 const CIRCUIT_BASE_URL =
 	import.meta.env.VITE_CIRCUIT_BASE_URL ?? '/circuits/ticketcheck-v1'
@@ -28,11 +28,11 @@ export interface IProofService extends ProofServiceClient {}
 
 export class ProofServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('ProofService')
-	private readonly entryService = resolve(IEntryService)
+	private readonly entryClient = resolve(IEntryRpcClient)
 
 	public async generateEntryProof(
 		eventId: string,
-		userId: string,
+		_userId: string,
 		onProgress?: (stage: string) => void,
 		signal?: AbortSignal,
 	): Promise<ProofOutput> {
@@ -40,7 +40,7 @@ export class ProofServiceClient {
 
 		onProgress?.('Fetching Merkle path...')
 
-		const merklePath = await this.entryService.getMerklePath(eventId, signal)
+		const merklePath = await this.entryClient.getMerklePath(eventId, signal)
 
 		const pathElements = merklePath.pathElements.map((bytes) =>
 			bytesToDecimal(bytes),
