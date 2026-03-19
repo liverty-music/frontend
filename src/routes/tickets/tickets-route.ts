@@ -1,8 +1,8 @@
-import type { Ticket } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import QRCode from 'qrcode'
+import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
+import type { Ticket } from '../../entities/ticket'
 import { IProofService } from '../../services/proof-service'
-import { ITicketService } from '../../services/ticket-service'
 
 export class TicketsRoute {
 	public tickets: Ticket[] = []
@@ -16,7 +16,7 @@ export class TicketsRoute {
 	public generatingTicketId = ''
 
 	private readonly logger = resolve(ILogger).scopeTo('TicketsRoute')
-	private readonly ticketService = resolve(ITicketService)
+	private readonly ticketClient = resolve(ITicketRpcClient)
 	private readonly proofService = resolve(IProofService)
 	private abortController: AbortController | null = null
 
@@ -26,7 +26,7 @@ export class TicketsRoute {
 		this.abortController = new AbortController()
 
 		try {
-			this.tickets = await this.ticketService.listTickets(
+			this.tickets = await this.ticketClient.listTickets(
 				this.abortController.signal,
 			)
 			this.logger.info('Tickets loaded', { count: this.tickets.length })
@@ -41,21 +41,16 @@ export class TicketsRoute {
 	}
 
 	public mintDate(ticket: Ticket): Date | null {
-		const ts = ticket.mintTime
-		if (!ts) return null
-		return new Date(Number(ts.seconds) * 1000 + ts.nanos / 1_000_000)
+		return ticket.mintTime ?? null
 	}
 
 	public formatTokenId(ticket: Ticket): string {
-		const value = ticket.tokenId?.value
-		if (value === undefined) return ''
-		return `#${value.toString()}`
+		if (ticket.tokenId === undefined) return ''
+		return `#${ticket.tokenId}`
 	}
 
 	public async generateEntryCode(ticket: Ticket): Promise<void> {
-		const eventId = ticket.eventId?.value
-		const userId = ticket.userId?.value
-		if (!eventId || !userId) {
+		if (!ticket.eventId || !ticket.userId) {
 			this.error = 'Missing ticket data.'
 			return
 		}
@@ -63,13 +58,13 @@ export class TicketsRoute {
 		this.isGenerating = true
 		this.proofProgress = 'Preparing...'
 		this.qrDataUrl = ''
-		this.generatingTicketId = ticket.id?.value ?? ''
+		this.generatingTicketId = ticket.id
 		this.error = ''
 
 		try {
 			const proofOutput = await this.proofService.generateEntryProof(
-				eventId,
-				userId,
+				ticket.eventId,
+				ticket.userId,
 				(stage) => {
 					this.proofProgress = stage
 				},
@@ -79,7 +74,7 @@ export class TicketsRoute {
 			this.proofProgress = 'Creating QR code...'
 
 			const payload = JSON.stringify({
-				eventId,
+				eventId: ticket.eventId,
 				proof: JSON.parse(proofOutput.proofJson),
 				publicSignals: JSON.parse(proofOutput.publicSignalsJson),
 				exp: Date.now() + 5 * 60 * 1000, // 5-minute expiry
@@ -94,7 +89,7 @@ export class TicketsRoute {
 			this.showQrSheet = true
 
 			this.proofProgress = ''
-			this.logger.info('Entry code generated', { eventId })
+			this.logger.info('Entry code generated', { eventId: ticket.eventId })
 		} catch (err) {
 			if ((err as Error).name !== 'AbortError') {
 				this.logger.error('Proof generation failed', { error: err })

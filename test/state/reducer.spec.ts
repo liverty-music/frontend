@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Artist } from '../../src/entities/artist'
+import type { Artist } from '../../src/entities/artist'
 import { OnboardingStep } from '../../src/services/onboarding-service'
 import type { AppAction } from '../../src/state/actions'
 import { type AppState, initialState } from '../../src/state/app-state'
@@ -7,6 +7,10 @@ import { appReducer } from '../../src/state/reducer'
 
 function stateWith(overrides: Partial<AppState> = {}): AppState {
 	return { ...initialState, ...overrides }
+}
+
+function makeArtist(id: string, name: string): Artist {
+	return { id, name, mbid: '' }
 }
 
 describe('appReducer', () => {
@@ -94,10 +98,7 @@ describe('appReducer', () => {
 
 	describe('guest artist actions', () => {
 		it('follows an artist', () => {
-			const artist = new Artist({
-				id: { value: 'a1' },
-				name: { value: 'Artist 1' },
-			})
+			const artist = makeArtist('a1', 'Artist 1')
 			const result = appReducer(initialState, {
 				type: 'guest/follow',
 				artist,
@@ -105,8 +106,8 @@ describe('appReducer', () => {
 			expect(result.guest.follows).toEqual([
 				{
 					artist: expect.objectContaining({
-						id: expect.objectContaining({ value: 'a1' }),
-						name: expect.objectContaining({ value: 'Artist 1' }),
+						id: 'a1',
+						name: 'Artist 1',
 					}),
 					home: null,
 				},
@@ -114,10 +115,7 @@ describe('appReducer', () => {
 		})
 
 		it('does not add duplicate follows', () => {
-			const artist = new Artist({
-				id: { value: 'a1' },
-				name: { value: 'Artist 1' },
-			})
+			const artist = makeArtist('a1', 'Artist 1')
 			const state = stateWith({
 				guest: {
 					follows: [{ artist, home: null }],
@@ -132,14 +130,8 @@ describe('appReducer', () => {
 		})
 
 		it('unfollows an artist', () => {
-			const artist1 = new Artist({
-				id: { value: 'a1' },
-				name: { value: 'Artist 1' },
-			})
-			const artist2 = new Artist({
-				id: { value: 'a2' },
-				name: { value: 'Artist 2' },
-			})
+			const artist1 = makeArtist('a1', 'Artist 1')
+			const artist2 = makeArtist('a2', 'Artist 2')
 			const state = stateWith({
 				guest: {
 					follows: [
@@ -156,8 +148,8 @@ describe('appReducer', () => {
 			expect(result.guest.follows).toEqual([
 				{
 					artist: expect.objectContaining({
-						id: expect.objectContaining({ value: 'a2' }),
-						name: expect.objectContaining({ value: 'Artist 2' }),
+						id: 'a2',
+						name: 'Artist 2',
 					}),
 					home: null,
 				},
@@ -173,10 +165,7 @@ describe('appReducer', () => {
 		})
 
 		it('clears all guest data', () => {
-			const artist = new Artist({
-				id: { value: 'a1' },
-				name: { value: 'Artist 1' },
-			})
+			const artist = makeArtist('a1', 'Artist 1')
 			const state = stateWith({
 				guest: {
 					follows: [{ artist, home: null }],
@@ -235,10 +224,7 @@ describe('appReducer', () => {
 
 	describe('guest edge cases', () => {
 		it('unfollow non-existent artist returns new state with same follows', () => {
-			const artist = new Artist({
-				id: { value: 'a1' },
-				name: { value: 'Artist 1' },
-			})
+			const artist = makeArtist('a1', 'Artist 1')
 			const state = stateWith({
 				guest: {
 					follows: [{ artist, home: null }],
@@ -252,8 +238,8 @@ describe('appReducer', () => {
 			expect(result.guest.follows).toEqual([
 				{
 					artist: expect.objectContaining({
-						id: expect.objectContaining({ value: 'a1' }),
-						name: expect.objectContaining({ value: 'Artist 1' }),
+						id: 'a1',
+						name: 'Artist 1',
 					}),
 					home: null,
 				},
@@ -287,10 +273,7 @@ describe('appReducer', () => {
 
 	it('does not mutate original state', () => {
 		const original = { ...initialState }
-		const artist = new Artist({
-			id: { value: 'a1' },
-			name: { value: 'Artist 1' },
-		})
+		const artist = makeArtist('a1', 'Artist 1')
 		appReducer(initialState, {
 			type: 'guest/follow',
 			artist,

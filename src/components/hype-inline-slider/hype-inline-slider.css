@@ -57,14 +57,14 @@
 				block-size: 14px;
 			}
 
-			/* WATCH (1): minimal */
-			&[data-active="true"][data-level="1"] {
+			/* WATCH: minimal */
+			&[data-active="true"][data-level="watch"] {
 				border: 1px solid oklch(100% 0 0deg / 10%);
 				background: var(--color-surface-base, oklch(100% 0 0deg / 5%));
 			}
 
-			/* HOME (2): subtle glow */
-			&[data-active="true"][data-level="2"] {
+			/* HOME: subtle glow */
+			&[data-active="true"][data-level="home"] {
 				border: 1px solid var(--_dot-color, oklch(70% 0.15 60deg));
 				opacity: 0.4;
 				background: var(--_dot-color, oklch(70% 0.15 60deg));
@@ -72,8 +72,8 @@
 					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 30%);
 			}
 
-			/* NEARBY (3): neon glow */
-			&[data-active="true"][data-level="3"] {
+			/* NEARBY: neon glow */
+			&[data-active="true"][data-level="nearby"] {
 				border: 2px solid var(--_dot-color, oklch(70% 0.15 60deg));
 				background: var(--_dot-color, oklch(70% 0.15 60deg));
 				box-shadow: 0 0 16px
@@ -81,8 +81,8 @@
 				animation: dot-pulse 2s ease-in-out infinite;
 			}
 
-			/* AWAY (4): intense neon */
-			&[data-active="true"][data-level="4"] {
+			/* AWAY: intense neon */
+			&[data-active="true"][data-level="away"] {
 				border: 2px solid var(--_dot-color, oklch(70% 0.15 60deg));
 				background: var(--_dot-color, oklch(70% 0.15 60deg));
 				box-shadow:

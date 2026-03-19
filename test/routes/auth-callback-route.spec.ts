@@ -14,9 +14,7 @@ import { createMockStore } from '../helpers/mock-store'
 
 function createMockUserService() {
 	return {
-		client: {
-			create: vi.fn().mockResolvedValue({}),
-		},
+		create: vi.fn().mockResolvedValue(undefined),
 		ensureLoaded: vi.fn().mockResolvedValue(undefined),
 	}
 }
@@ -66,7 +64,7 @@ describe('AuthCallbackRoute', () => {
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
-			expect(mockUserService.client.create).not.toHaveBeenCalled()
+			expect(mockUserService.create).not.toHaveBeenCalled()
 			expect(mockMergeService.merge).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
@@ -83,7 +81,7 @@ describe('AuthCallbackRoute', () => {
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(2)
-			expect(mockUserService.client.create).toHaveBeenCalled()
+			expect(mockUserService.create).toHaveBeenCalled()
 			expect(mockMergeService.merge).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
@@ -120,7 +118,7 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
 				.mockResolvedValueOnce(undefined)
-			mockUserService.client.create = vi
+			mockUserService.create = vi
 				.fn()
 				.mockRejectedValue(new ConnectError('exists', Code.AlreadyExists))
 
@@ -136,7 +134,7 @@ describe('AuthCallbackRoute', () => {
 			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockRejectedValue(new ConnectError('not found', Code.NotFound))
-			mockUserService.client.create = vi
+			mockUserService.create = vi
 				.fn()
 				.mockRejectedValue(new Error('server error'))
 
@@ -157,7 +155,7 @@ describe('AuthCallbackRoute', () => {
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockUserService.client.create).not.toHaveBeenCalled()
+			expect(mockUserService.create).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 

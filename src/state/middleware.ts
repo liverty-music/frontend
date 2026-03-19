@@ -1,6 +1,8 @@
-import type { JsonValue } from '@bufbuild/protobuf'
 import type { ILogger } from 'aurelia'
-import { Artist } from '../entities/artist'
+import {
+	deserializeGuestFollows,
+	serializeGuestFollows,
+} from '../adapter/storage/guest-storage'
 import {
 	OnboardingStep,
 	type OnboardingStepValue,
@@ -32,14 +34,9 @@ export function persistenceMiddleware(
 		currentState.onboarding.step,
 	)
 
-	// Serialize guest follows using proto Artist's toJsonString()
-	const serializedFollows = currentState.guest.follows.map((f) => ({
-		artist: JSON.parse(f.artist.toJsonString()),
-		home: f.home,
-	}))
 	localStorage.setItem(
 		STORAGE_KEY_GUEST_FOLLOWED,
-		JSON.stringify(serializedFollows),
+		serializeGuestFollows(currentState.guest.follows),
 	)
 
 	if (currentState.guest.home !== null) {
@@ -88,39 +85,7 @@ export function loadPersistedState(): Partial<AppState> {
 	if (rawFollowed !== null || rawHome !== null) {
 		let follows: GuestFollow[] = []
 		if (rawFollowed) {
-			try {
-				const raw = JSON.parse(rawFollowed) as Array<{
-					artist?: Record<string, unknown>
-					// Legacy format fields for migration
-					artistId?: string
-					id?: string
-					name?: string
-					home?: string | null
-				}>
-				follows = raw
-					.map((f) => {
-						if (f.artist) {
-							// New format: proto Artist JSON
-							return {
-								artist: Artist.fromJson(f.artist as JsonValue),
-								home: f.home ?? null,
-							}
-						}
-						// Legacy format migration: create minimal Artist
-						const legacyId = f.artistId ?? f.id ?? ''
-						if (!legacyId) return null
-						return {
-							artist: new Artist({
-								id: { value: legacyId },
-								name: f.name ? { value: f.name } : undefined,
-							}),
-							home: null,
-						}
-					})
-					.filter((f): f is GuestFollow => f !== null)
-			} catch {
-				follows = []
-			}
+			follows = deserializeGuestFollows(rawFollowed)
 		}
 		result.guest = {
 			follows,

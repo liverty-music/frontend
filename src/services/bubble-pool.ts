@@ -30,9 +30,7 @@ export class BubblePool {
 		let evictedIds: string[] = []
 
 		if (overflow > 0) {
-			evictedIds = this.availableBubbles
-				.slice(0, overflow)
-				.map((a) => a.id?.value ?? '')
+			evictedIds = this.availableBubbles.slice(0, overflow).map((a) => a.id)
 			this.availableBubbles = [
 				...this.availableBubbles.slice(overflow),
 				...newBubbles,
@@ -49,7 +47,7 @@ export class BubblePool {
 	 */
 	public remove(artistId: string): void {
 		this.availableBubbles = this.availableBubbles.filter(
-			(a) => (a.id?.value ?? '') !== artistId,
+			(a) => a.id !== artistId,
 		)
 	}
 
@@ -84,18 +82,16 @@ export class BubblePool {
 	 * Follow state is provided externally by the caller.
 	 */
 	public dedup(artists: Artist[], followedIds: ReadonlySet<string>): Artist[] {
-		return artists.filter(
-			(a) => !this.isSeen(a) && !followedIds.has(a.id?.value ?? ''),
-		)
+		return artists.filter((a) => !this.isSeen(a) && !followedIds.has(a.id))
 	}
 
 	/**
 	 * Track an artist as seen (prevents future duplicates).
 	 */
 	public trackSeen(artist: Artist): void {
-		const name = artist.name?.value ?? ''
-		const id = artist.id?.value ?? ''
-		const mbid = artist.mbid?.value ?? ''
+		const name = artist.name
+		const id = artist.id
+		const mbid = artist.mbid
 		if (name) this.seenArtistNames.add(this.normalizeName(name))
 		if (id) this.seenArtistIds.add(id)
 		if (mbid) this.seenArtistMbids.add(mbid)
@@ -125,9 +121,9 @@ export class BubblePool {
 	}
 
 	private isSeen(artist: Artist): boolean {
-		const name = artist.name?.value ?? ''
-		const id = artist.id?.value ?? ''
-		const mbid = artist.mbid?.value ?? ''
+		const name = artist.name
+		const id = artist.id
+		const mbid = artist.mbid
 		if (name && this.seenArtistNames.has(this.normalizeName(name))) return true
 		if (id && this.seenArtistIds.has(id)) return true
 		if (mbid && this.seenArtistMbids.has(mbid)) return true

@@ -1,7 +1,6 @@
-import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IFollowRpcClient } from '../adapter/rpc/client/follow-client'
 import { resolveStore } from '../state/store-interface'
-import { IFollowServiceClient } from './follow-service-client'
 
 export const IGuestDataMergeService =
 	DI.createInterface<IGuestDataMergeService>('IGuestDataMergeService', (x) =>
@@ -12,7 +11,7 @@ export interface IGuestDataMergeService extends GuestDataMergeService {}
 
 export class GuestDataMergeService {
 	private readonly logger = resolve(ILogger).scopeTo('GuestDataMergeService')
-	private readonly followService = resolve(IFollowServiceClient)
+	private readonly rpcClient = resolve(IFollowRpcClient)
 	private readonly store = resolveStore()
 
 	/**
@@ -26,15 +25,11 @@ export class GuestDataMergeService {
 			artistCount: follows.length,
 		})
 
-		// Follow each artist (best-effort)
-		const client = this.followService.getClient()
 		for (const guestFollow of follows) {
-			const artistId = guestFollow.artist.id?.value ?? ''
-			const artistName = guestFollow.artist.name?.value ?? ''
+			const artistId = guestFollow.artist.id
+			const artistName = guestFollow.artist.name
 			try {
-				await client.follow({
-					artistId: new ArtistId({ value: artistId }),
-				})
+				await this.rpcClient.follow(artistId)
 				this.logger.debug('Followed artist', {
 					id: artistId,
 					name: artistName,
@@ -48,7 +43,6 @@ export class GuestDataMergeService {
 			}
 		}
 
-		// Clear guest data before marking onboarding as completed.
 		this.store.dispatch({ type: 'guest/clearAll' })
 		this.store.dispatch({ type: 'onboarding/complete' })
 		this.logger.info('Guest data merge completed')

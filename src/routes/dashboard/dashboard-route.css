@@ -24,7 +24,6 @@
 		/* ── Row 1: Stage header ── */
 		.stage-header {
 			position: relative;
-
 			display: grid;
 			grid-column: stage-home / stage-away;
 			grid-template-columns: subgrid;
@@ -47,19 +46,16 @@
 			/* Stage color exceptions via data-stage */
 			& > [data-stage="home"] {
 				color: var(--color-surface-base);
-
 				background: var(--color-stage-home);
 			}
 
 			& > [data-stage="near"] {
 				color: var(--color-surface-base);
-
 				background: var(--color-stage-near);
 			}
 
 			& > [data-stage="away"] {
 				color: var(--color-surface-base);
-
 				background: var(--color-stage-away);
 			}
 		}
@@ -190,7 +186,6 @@
 		/* ── Laser beam overlay (viewport-fixed) ── */
 		.beam-overlay {
 			pointer-events: none;
-
 			position: fixed;
 			inset: 0;
 		}
@@ -216,13 +211,13 @@
 				var(--beam-right, 66%) var(--beam-top-pct, 80%)
 			);
 
-			/* Fade endpoints — dissolve near card instead of hard cutoff */
-			mask-image: linear-gradient(to bottom, black 65%, transparent);
-
 			/* Neon glow — layered bloom around diffused lines */
 			filter: drop-shadow(0 0 4px oklch(85% 0.3 var(--beam-hue, 180) / 55%))
 				drop-shadow(0 0 12px oklch(75% 0.25 var(--beam-hue, 180) / 28%))
 				drop-shadow(0 0 28px oklch(65% 0.2 var(--beam-hue, 180) / 10%));
+
+			/* Fade endpoints — dissolve near card instead of hard cutoff */
+			mask-image: linear-gradient(to bottom, black 65%, transparent);
 		}
 
 		/* Diffused core lines — wide + semi-transparent so glow dominates */

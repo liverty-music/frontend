@@ -72,7 +72,7 @@ export class DiscoveryRoute {
 		this.bubbles.pool,
 		{
 			onFollowed: (artist) => {
-				this.concertTracker.searchConcertsWithTimeout(artist.id?.value ?? '')
+				this.concertTracker.searchConcertsWithTimeout(artist.id)
 			},
 			onRollback: () => {},
 			onHasUpcomingEvents: (name) =>
@@ -178,7 +178,7 @@ export class DiscoveryRoute {
 		if (this.isOnboarding) {
 			const preSeeded = this.store.getState().guest.follows
 			this.concertTracker.syncPreSeeded(
-				preSeeded.map((f) => ({ artistId: f.artist.id?.value ?? '' })),
+				preSeeded.map((f) => ({ artistId: f.artist.id })),
 			)
 		}
 	}
@@ -232,10 +232,10 @@ export class DiscoveryRoute {
 		}>,
 	): Promise<void> {
 		const { artist, position } = event.detail
-		const artistId = artist.id?.value ?? ''
+		const artistId = artist.id
 		if (this.followedIds.has(artistId)) return
 		this.logger.info('Artist selected from bubbles', {
-			artist: artist.name?.value,
+			artist: artist.name,
 		})
 
 		try {
@@ -287,11 +287,11 @@ export class DiscoveryRoute {
 	}
 
 	public async onFollowFromSearch(artist: Artist): Promise<void> {
-		const artistId = artist.id?.value ?? ''
+		const artistId = artist.id
 		if (this.followedIds.has(artistId)) return
 
 		this.logger.info('Following artist from search', {
-			artist: artist.name?.value,
+			artist: artist.name,
 		})
 
 		try {

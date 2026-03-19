@@ -1,7 +1,7 @@
 import type Matter from 'matter-js'
 import type { Artist } from '../../entities/artist'
 
-/** A physics-enabled bubble wrapping a proto Artist with position and radius. */
+/** A physics-enabled bubble wrapping an Artist with position and radius. */
 export interface PhysicsBubble {
 	body: Matter.Body
 	artist: Artist
@@ -125,7 +125,7 @@ export class BubblePhysics {
 
 	public addBubbles(params: BubbleArtistParams[]): void {
 		for (const { artist, radius } of params) {
-			const id = artist.id?.value ?? ''
+			const id = artist.id
 			if (!id || this.bubbleMap.has(id)) continue
 
 			const x = Math.random() * (this.width - 100) + 50
@@ -158,7 +158,7 @@ export class BubblePhysics {
 		fromY: number,
 	): void {
 		for (const { artist, radius } of params) {
-			const id = artist.id?.value ?? ''
+			const id = artist.id
 			if (!id || this.bubbleMap.has(id)) continue
 
 			const body = this.Matter?.Bodies.circle(fromX, fromY, radius, {
@@ -244,7 +244,7 @@ export class BubblePhysics {
 		const FADE_OUT_SPEED = 0.0033 // ~300ms to complete
 
 		for (const bubble of this.bubbleMap.values()) {
-			const id = bubble.artist.id?.value ?? ''
+			const id = bubble.artist.id
 			if (bubble.isSpawning) {
 				bubble.spawnProgress = Math.min(1, bubble.spawnProgress + delta * 0.004)
 				bubble.scale = easeOutBack(bubble.spawnProgress)

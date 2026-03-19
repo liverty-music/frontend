@@ -1,9 +1,7 @@
-export {
-	Artist,
-	bestBackgroundUrl,
-	bestLogoUrl,
-	Fanart,
-	LogoColorProfile,
-} from './artist'
+export type { Artist, ArtistFanart, LogoColorProfile } from './artist'
+export { bestBackgroundUrl, bestLogoUrl } from './artist'
 export type { Concert, DateGroup, HypeLevel, LaneType } from './concert'
+export type { MerklePath } from './entry'
 export type { FollowedArtist, Hype } from './follow'
+export type { Ticket } from './ticket'
+export type { User, UserHome } from './user'

@@ -1,6 +1,6 @@
 import { INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Artist } from '../../src/entities/artist'
+import type { Artist } from '../../src/entities/artist'
 import { createTestContainer } from '../helpers/create-container'
 
 // Mock Matter.js to avoid loading the actual physics engine
@@ -36,10 +36,7 @@ const { DnaOrbCanvas } = await import(
 )
 
 function makeArtist(id: string, name: string): Artist {
-	return new Artist({
-		id: { value: id },
-		name: { value: name },
-	})
+	return { id, name, mbid: '' }
 }
 
 function createMockCanvasContext(): CanvasRenderingContext2D {

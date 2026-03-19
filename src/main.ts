@@ -9,6 +9,10 @@ import Aurelia, {
 	LogLevel,
 } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
+import { IEntryRpcClient } from './adapter/rpc/client/entry-client'
+import { IPushRpcClient } from './adapter/rpc/client/push-client'
+import { ITicketRpcClient } from './adapter/rpc/client/ticket-client'
+import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
@@ -19,6 +23,7 @@ import { SvgIcon } from './components/svg-icon/svg-icon'
 import { Toast } from './components/toast/toast'
 import { migrateStorageKeys } from './constants/storage-keys'
 import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
+import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
@@ -29,7 +34,6 @@ import { IArtistServiceClient } from './services/artist-service-client'
 import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
 import { IDashboardService } from './services/dashboard-service'
-import { IEntryService } from './services/entry-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFollowServiceClient } from './services/follow-service-client'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
@@ -43,7 +47,6 @@ import { IProofService } from './services/proof-service'
 import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
-import { ITicketService } from './services/ticket-service'
 import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserService } from './services/user-service'
 import { initialState } from './state/app-state'
@@ -135,8 +138,10 @@ au.register(IPushService)
 au.register(IPromptCoordinator)
 au.register(IPwaInstallService)
 au.register(ITicketJourneyService)
-au.register(ITicketService)
-au.register(IEntryService)
+au.register(ITicketRpcClient)
+au.register(IEntryRpcClient)
+au.register(IUserRpcClient)
+au.register(IPushRpcClient)
 au.register(IProofService)
 au.register(BottomNavBar)
 au.register(BottomSheet)
@@ -147,6 +152,7 @@ au.register(StatePlaceholder)
 au.register(SvgIcon)
 au.register(AuthHook)
 au.register(ArtistColorCustomAttribute)
+au.register(BeamVarsCustomAttribute)
 au.register(DotColorCustomAttribute)
 au.register(SpotlightRadiusCustomAttribute)
 au.register(TileColorCustomAttribute)

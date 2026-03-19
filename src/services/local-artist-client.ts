@@ -40,8 +40,8 @@ export class LocalArtistClient {
 	public follow(artist: Artist): void {
 		this.store.dispatch({ type: 'guest/follow', artist })
 		this.logger.info('Local artist followed', {
-			id: artist.id?.value,
-			name: artist.name?.value,
+			id: artist.id,
+			name: artist.name,
 		})
 	}
 
@@ -79,7 +79,7 @@ export class LocalArtistClient {
 
 function toLocal(f: GuestFollow): LocalFollowedArtist {
 	return {
-		id: f.artist.id?.value ?? '',
-		name: f.artist.name?.value ?? '',
+		id: f.artist.id,
+		name: f.artist.name,
 	}
 }

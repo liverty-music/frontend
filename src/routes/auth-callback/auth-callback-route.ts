@@ -1,5 +1,4 @@
 import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
-import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
@@ -87,10 +86,10 @@ export class AuthCallbackRoute {
 
 		try {
 			const guestHome = this.store.getState().guest.home
-			await this.userService.client.create({
-				email: new UserEmail({ value: email }),
-				...(guestHome ? { home: codeToHome(guestHome) } : {}),
-			})
+			await this.userService.create(
+				email,
+				guestHome ? codeToHome(guestHome) : undefined,
+			)
 			this.logger.info('User provisioned successfully', { email })
 		} catch (err) {
 			if (err instanceof ConnectError && err.code === Code.AlreadyExists) {

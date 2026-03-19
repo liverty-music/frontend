@@ -23,13 +23,13 @@
   <!-- Ticket list -->
   <ul if.bind="!isLoading && !error && tickets.length > 0" class="ticket-list" role="list">
     <li
-      repeat.for="ticket of tickets; key.bind: ticket.id?.value"
+      repeat.for="ticket of tickets; key.bind: ticket.id"
       class="ticket-card"
     >
       <article class="ticket-row">
         <header class="ticket-info">
           <p class="ticket-name">
-            Event ${ticket.eventId?.value ?? ''}
+            Event ${ticket.eventId}
           </p>
           <div class="ticket-meta">
             <span class="ticket-date">${mintDate(ticket) | date:'short'}</span>
@@ -46,8 +46,8 @@
           disabled.bind="isGenerating"
           class="entry-btn"
         >
-          <svg-icon if.bind="!isGenerating || generatingTicketId !== ticket.id?.value" name="qr-code"></svg-icon>
-          <loading-spinner if.bind="isGenerating && generatingTicketId === ticket.id?.value" size="sm"></loading-spinner>
+          <svg-icon if.bind="!isGenerating || generatingTicketId !== ticket.id" name="qr-code"></svg-icon>
+          <loading-spinner if.bind="isGenerating && generatingTicketId === ticket.id" size="sm"></loading-spinner>
           Entry
         </button>
       </article>

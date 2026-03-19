@@ -165,8 +165,8 @@ export class DnaOrbCanvas {
 	 * Used when following an artist from search results.
 	 */
 	public spawnAndAbsorb(artist: Artist, x: number, y: number): void {
-		const id = artist.id?.value ?? ''
-		const name = artist.name?.value ?? ''
+		const id = artist.id
+		const name = artist.name
 		const radius = 30 + Math.random() * 15
 		const hue = this.artistHue(name)
 		const logoUrl = bestLogoUrl(artist) ?? ''
@@ -294,8 +294,8 @@ export class DnaOrbCanvas {
 
 			const pos = bubble.body.position
 			const artist = bubble.artist
-			const artistId = artist.id?.value ?? ''
-			const artistName = artist.name?.value ?? ''
+			const artistId = artist.id
+			const artistName = artist.name
 
 			// Remove from physics and start absorption
 			const hue = this.artistHue(artistName)
@@ -427,8 +427,8 @@ export class DnaOrbCanvas {
 		const x = body.position.x
 		const y = body.position.y
 		const r = radius * scale
-		const artistId = artist.id?.value ?? ''
-		const artistName = artist.name?.value ?? ''
+		const artistId = artist.id
+		const artistName = artist.name
 		const isFollowed =
 			this.showFollowedIndicator && this.followedIds.has(artistId)
 
@@ -520,7 +520,7 @@ export class DnaOrbCanvas {
 
 	private preloadImages(artists: Artist[]): void {
 		for (const artist of artists) {
-			const id = artist.id?.value ?? ''
+			const id = artist.id
 			const logoUrl = bestLogoUrl(artist)
 			if (!logoUrl || !id || this.imageCache.has(id)) continue
 			const img = new Image()
@@ -531,7 +531,7 @@ export class DnaOrbCanvas {
 	}
 }
 
-/** Convert a proto Artist to physics bubble parameters with a random radius. */
+/** Convert an Artist to physics bubble parameters with a random radius. */
 function toBubbleParams(artist: Artist): BubbleArtistParams {
 	return {
 		artist,

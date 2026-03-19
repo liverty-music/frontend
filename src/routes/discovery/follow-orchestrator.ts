@@ -31,7 +31,7 @@ export class FollowOrchestrator {
 	) {}
 
 	public get followedIds(): ReadonlySet<string> {
-		return new Set(this.followedArtists.map((a) => a.id?.value ?? ''))
+		return new Set(this.followedArtists.map((a) => a.id))
 	}
 
 	public get followedCount(): number {
@@ -42,8 +42,8 @@ export class FollowOrchestrator {
 		artist: Artist,
 		spawnPosition?: { x: number; y: number },
 	): Promise<void> {
-		const artistId = artist.id?.value ?? ''
-		const artistName = artist.name?.value ?? ''
+		const artistId = artist.id
+		const artistName = artist.name
 		if (this.followedIds.has(artistId)) return
 		this.logger.info('Following artist', { artist: artistName })
 
@@ -66,7 +66,7 @@ export class FollowOrchestrator {
 			// Rollback optimistic update
 			batch(() => {
 				this.followedArtists = this.followedArtists.filter(
-					(a) => (a.id?.value ?? '') !== artistId,
+					(a) => a.id !== artistId,
 				)
 				this.pool.add([artist])
 			})
@@ -81,8 +81,8 @@ export class FollowOrchestrator {
 	}
 
 	public checkLiveEvents(artist: Artist): void {
-		const artistId = artist.id?.value ?? ''
-		const artistName = artist.name?.value ?? ''
+		const artistId = artist.id
+		const artistName = artist.name
 		this.concertClient
 			.listConcerts(artistId)
 			.then((concerts) => {

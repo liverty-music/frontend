@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Artist } from '../../../src/entities/artist'
+import type { Artist } from '../../../src/entities/artist'
 import {
 	type BubbleArtistClient,
 	BubbleManager,
@@ -7,10 +7,7 @@ import {
 import { createMockLogger } from '../../../test/helpers/mock-logger'
 
 function makeArtist(id: string, name: string): Artist {
-	return new Artist({
-		id: { value: id },
-		name: { value: name },
-	})
+	return { id, name, mbid: '' }
 }
 
 function createMockCanvas() {
@@ -77,7 +74,7 @@ describe('BubbleManager', () => {
 
 			// 'Followed' should be excluded since it's tracked as seen
 			expect(sut.poolBubbles).toHaveLength(1)
-			expect(sut.poolBubbles[0].id?.value).toBe('a1')
+			expect(sut.poolBubbles[0].id).toBe('a1')
 		})
 	})
 
@@ -244,7 +241,7 @@ describe('BubbleManager', () => {
 			await sut.loadInitialArtists([], 'Japan', '')
 
 			expect(sut.poolBubbles).toHaveLength(1)
-			expect(sut.poolBubbles[0].id?.value).toBe('a2')
+			expect(sut.poolBubbles[0].id).toBe('a2')
 		})
 
 		it('should use latest followedIds at call time (lazy evaluation)', async () => {
@@ -269,7 +266,7 @@ describe('BubbleManager', () => {
 
 			// a3 should be filtered out because followedIds was updated
 			const spawnedBubbles = canvas.spawnBubblesAt.mock.calls[0]?.[0] ?? []
-			const spawnedIds = spawnedBubbles.map((b: Artist) => b.id?.value)
+			const spawnedIds = spawnedBubbles.map((b: Artist) => b.id)
 			expect(spawnedIds).not.toContain('a3')
 			expect(spawnedIds).toContain('a4')
 		})

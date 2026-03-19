@@ -9,7 +9,10 @@ export type HypeLevel = 'watch' | 'home' | 'nearby' | 'away'
 /** Ticket journey status reflecting where the user is in the ticket acquisition flow. */
 export type JourneyStatus = 'tracking' | 'applied' | 'lost' | 'unpaid' | 'paid'
 
-/** A concert event displayed on the dashboard. */
+/**
+ * A concert event displayed on the dashboard.
+ * @source proto/liverty_music/rpc/concert/v1/concert_service.proto — Concert
+ */
 export interface Concert {
 	// --- mapped from proto ---
 	id: string
