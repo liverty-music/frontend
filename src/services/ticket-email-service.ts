@@ -32,7 +32,10 @@ export class TicketEmailServiceClient {
 		eventIds: string[],
 		signal?: AbortSignal,
 	): Promise<TicketEmail[]> {
-		this.logger.info('Creating ticket email', { emailType, eventCount: eventIds.length })
+		this.logger.info('Creating ticket email', {
+			emailType,
+			eventCount: eventIds.length,
+		})
 		try {
 			const response = await this.client.createTicketEmail(
 				{

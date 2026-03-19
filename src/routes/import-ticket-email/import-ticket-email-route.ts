@@ -5,7 +5,10 @@ import type { FollowedArtist } from '../../entities/follow'
 import type { DashboardConcert } from '../../services/dashboard-service'
 import { IDashboardService } from '../../services/dashboard-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
-import { type EmailType, ITicketEmailService } from '../../services/ticket-email-service'
+import {
+	type EmailType,
+	ITicketEmailService,
+} from '../../services/ticket-email-service'
 
 // Regex for detecting ticket-related Japanese email content.
 const TICKET_EMAIL_REGEX =
@@ -55,7 +58,7 @@ export class ImportTicketEmailRoute {
 	private readonly ticketEmailService = resolve(ITicketEmailService)
 	private abortController: AbortController | null = null
 
-	public async loading(params: Parameters): Promise<void> {
+	public async loading(_params: Parameters): Promise<void> {
 		this.abortController = new AbortController()
 
 		// Extract shared data from URL query params (set by SW redirect).

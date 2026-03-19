@@ -59,7 +59,9 @@ import { IOnboardingService } from './services/onboarding-service'
 		},
 		{
 			path: 'import/ticket-email',
-			component: import('./routes/import-ticket-email/import-ticket-email-route'),
+			component: import(
+				'./routes/import-ticket-email/import-ticket-email-route'
+			),
 			title: 'Import Ticket Email',
 		},
 	],
