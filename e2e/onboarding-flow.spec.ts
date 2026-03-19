@@ -721,6 +721,21 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		const artistRow = page.locator('.artist-row').first()
 		await expect(artistRow).toBeVisible({ timeout: 5000 })
 
+		// =====================================================================
+		// STEP 5b: Tap spotlight to dismiss coach mark (verifies onTap callback)
+		// =====================================================================
+		const spotlightInterceptor = page.locator('.target-interceptor')
+		await expect(spotlightInterceptor).toBeVisible({ timeout: 5000 })
+		await spotlightInterceptor.click()
+
+		// Coach mark overlay should be dismissed after tapping
+		const spotlight = page.locator('.visual-spotlight')
+		await expect(spotlight).not.toBeVisible({ timeout: 5000 })
+
+		// Hype sliders should now be interactive (not blocked by click-blocker)
+		const hypeSlider = page.locator('hype-inline-slider').first()
+		await expect(hypeSlider).toBeVisible({ timeout: 5000 })
+
 		// Note: Hype slider interaction cannot advance onboarding further in
 		// guest mode because hype-inline-slider blocks changes for
 		// unauthenticated users (dispatches hype-signup-prompt instead).
