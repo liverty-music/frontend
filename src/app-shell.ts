@@ -57,6 +57,14 @@ import { IOnboardingService } from './services/onboarding-service'
 			component: import('./routes/settings/settings-route'),
 			title: 'Settings',
 		},
+		{
+			path: 'import/ticket-email',
+			component: import(
+				'./routes/import-ticket-email/import-ticket-email-route'
+			),
+			title: 'Import Ticket Email',
+			data: { auth: false },
+		},
 	],
 	fallback: import('./routes/not-found/not-found-route'),
 })

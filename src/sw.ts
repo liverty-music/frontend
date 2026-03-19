@@ -53,6 +53,31 @@ self.addEventListener('install', (event) => {
 })
 
 // ---------------------------------------------------------------------------
+// PWA Share Target handler — intercepts POST from Android share sheet.
+// Extracts shared email data and redirects to the import wizard route.
+// ---------------------------------------------------------------------------
+self.addEventListener('fetch', (event) => {
+	const url = new URL(event.request.url)
+	if (
+		event.request.method === 'POST' &&
+		url.pathname === '/import/ticket-email'
+	) {
+		event.respondWith(
+			(async () => {
+				const formData = await event.request.formData()
+				const title = formData.get('title')?.toString() ?? ''
+				const text = formData.get('text')?.toString() ?? ''
+				const params = new URLSearchParams({ title, text })
+				return Response.redirect(
+					`/import/ticket-email?${params.toString()}`,
+					303,
+				)
+			})(),
+		)
+	}
+})
+
+// ---------------------------------------------------------------------------
 // Background Sync for artist operations (listTop / listSimilar / search).
 // NetworkOnly avoids cache.put() on POST responses (Cache API is GET-only).
 // ---------------------------------------------------------------------------
