@@ -225,17 +225,7 @@ export class BubblePhysics {
 	}
 
 	public getBubbleAt(x: number, y: number): PhysicsBubble | undefined {
-		for (const bubble of this.bubbleMap.values()) {
-			if (bubble.isFadingOut) continue
-			const pos = bubble.body.position
-			const dx = pos.x - x
-			const dy = pos.y - y
-			const dist = Math.sqrt(dx * dx + dy * dy)
-			if (dist <= bubble.radius * bubble.scale) {
-				return bubble
-			}
-		}
-		return undefined
+		return findClosestBubble(Array.from(this.bubbleMap.values()), x, y)
 	}
 
 	public update(delta: number): void {
@@ -300,6 +290,36 @@ export class BubblePhysics {
 		this.walls = []
 		this.initPromise = null
 	}
+}
+
+/**
+ * Find the bubble whose center is closest to the given point,
+ * among those whose hit radius contains the point.
+ * Excludes fading-out bubbles and zero-scale bubbles.
+ */
+export function findClosestBubble(
+	bubbles: readonly PhysicsBubble[],
+	x: number,
+	y: number,
+): PhysicsBubble | undefined {
+	let closest: PhysicsBubble | undefined
+	let closestDist = Number.POSITIVE_INFINITY
+
+	for (const bubble of bubbles) {
+		if (bubble.isFadingOut) continue
+		const hitRadius = bubble.radius * bubble.scale
+		if (hitRadius <= 0) continue
+
+		const pos = bubble.body.position
+		const dx = pos.x - x
+		const dy = pos.y - y
+		const dist = Math.sqrt(dx * dx + dy * dy)
+		if (dist <= hitRadius && dist < closestDist) {
+			closest = bubble
+			closestDist = dist
+		}
+	}
+	return closest
 }
 
 function easeOutBack(t: number): number {

@@ -169,13 +169,8 @@ describe('DnaOrbCanvas', () => {
 			await sut.attached()
 
 			expect(mockCanvas.addEventListener).toHaveBeenCalledWith(
-				'click',
+				'pointerdown',
 				expect.any(Function),
-			)
-			expect(mockCanvas.addEventListener).toHaveBeenCalledWith(
-				'touchstart',
-				expect.any(Function),
-				{ passive: true },
 			)
 			expect(mockCanvas.addEventListener).toHaveBeenCalledWith(
 				'keydown',
@@ -206,7 +201,7 @@ describe('DnaOrbCanvas', () => {
 			sut.detaching()
 
 			expect(mockCanvas.removeEventListener).toHaveBeenCalledWith(
-				'click',
+				'pointerdown',
 				expect.any(Function),
 			)
 			expect(destroySpy).toHaveBeenCalled()

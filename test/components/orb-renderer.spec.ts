@@ -105,25 +105,31 @@ describe('OrbRenderer', () => {
 		it('should influence swirlMultiplier in update()', () => {
 			const renderer = createRenderer()
 
-			const p0Angle = (
-				renderer as unknown as { particles: { angle: number }[] }
-			).particles[0].angle
+			// Sum absolute angle deltas across ALL particles to smooth out
+			// per-particle random speed variance that causes flakiness.
+			type Particle = { angle: number; speed: number }
+			const getParticles = (r: OrbRenderer) =>
+				(r as unknown as { particles: Particle[] }).particles
+
+			const before1 = getParticles(renderer).map((p) => p.angle)
 			for (let i = 0; i < 10; i++) renderer.update(100)
-			const deltaNoBase =
-				(renderer as unknown as { particles: { angle: number }[] }).particles[0]
-					.angle - p0Angle
+			const after1 = getParticles(renderer).map((p) => p.angle)
+			const totalNoBase = before1.reduce(
+				(sum, a, i) => sum + Math.abs(after1[i] - a),
+				0,
+			)
 
 			const renderer2 = createRenderer()
 			renderer2.setFollowCount(5)
-			const p0Angle2 = (
-				renderer2 as unknown as { particles: { angle: number }[] }
-			).particles[0].angle
+			const before2 = getParticles(renderer2).map((p) => p.angle)
 			for (let i = 0; i < 10; i++) renderer2.update(100)
-			const deltaWithBase =
-				(renderer2 as unknown as { particles: { angle: number }[] })
-					.particles[0].angle - p0Angle2
+			const after2 = getParticles(renderer2).map((p) => p.angle)
+			const totalWithBase = before2.reduce(
+				(sum, a, i) => sum + Math.abs(after2[i] - a),
+				0,
+			)
 
-			expect(Math.abs(deltaWithBase)).toBeGreaterThan(Math.abs(deltaNoBase))
+			expect(totalWithBase).toBeGreaterThan(totalNoBase)
 		})
 	})
 
