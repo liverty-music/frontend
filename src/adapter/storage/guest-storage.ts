@@ -42,6 +42,18 @@ export function deserializeGuestFollows(json: string): GuestFollow[] {
 					}
 				}
 
+				// Legacy direct format: { id: '...', name: '...' }
+				if (typeof f.id === 'string') {
+					return {
+						artist: {
+							id: f.id,
+							name: typeof f.name === 'string' ? f.name : '',
+							mbid: '',
+						},
+						home: null,
+					}
+				}
+
 				return null
 			})
 			.filter((f): f is GuestFollow => f !== null)

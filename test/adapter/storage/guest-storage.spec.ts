@@ -146,6 +146,21 @@ describe('deserializeGuestFollows', () => {
 		})
 	})
 
+	describe('legacy direct format (id at top level)', () => {
+		it('maps top-level id/name to artist', () => {
+			const json = JSON.stringify([
+				{ id: 'artist-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
+			])
+			const result = deserializeGuestFollows(json)
+
+			expect(result).toHaveLength(1)
+			expect(result[0].artist.id).toBe('artist-1')
+			expect(result[0].artist.name).toBe('YOASOBI')
+			expect(result[0].artist.mbid).toBe('')
+			expect(result[0].home).toBeNull()
+		})
+	})
+
 	describe('corrupt / invalid data', () => {
 		it('returns empty array for invalid JSON', () => {
 			expect(deserializeGuestFollows('not json')).toEqual([])
