@@ -7,6 +7,15 @@
 	"background_color": "#1a1333",
 	"theme_color": "#1a1333",
 	"lang": "ja",
+	"share_target": {
+		"action": "/import/ticket-email",
+		"method": "POST",
+		"enctype": "multipart/form-data",
+		"params": {
+			"title": "title",
+			"text": "text"
+		}
+	},
 	"icons": [
 		{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
 		{
