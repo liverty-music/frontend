@@ -7,7 +7,7 @@ import { IOnboardingService } from './services/onboarding-service'
 	title: 'Liverty Music',
 	routes: [
 		{
-			path: ['', 'welcome'],
+			path: 'welcome',
 			component: import('./routes/welcome/welcome-route'),
 			title: 'Welcome',
 			data: { auth: false },
