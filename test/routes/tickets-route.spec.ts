@@ -4,11 +4,11 @@ import { createTestContainer } from '../helpers/create-container'
 import { createMockProofService } from '../helpers/mock-proof-service'
 import { createMockTicketService } from '../helpers/mock-ticket-service'
 
-const mockITicketService = DI.createInterface('ITicketService')
+const mockITicketRpcClient = DI.createInterface('ITicketRpcClient')
 const mockIProofService = DI.createInterface('IProofService')
 
-vi.mock('../../src/services/ticket-service', () => ({
-	ITicketService: mockITicketService,
+vi.mock('../../src/adapter/rpc/client/ticket-client', () => ({
+	ITicketRpcClient: mockITicketRpcClient,
 }))
 
 vi.mock('../../src/services/proof-service', () => ({
@@ -35,7 +35,7 @@ describe('TicketsRoute', () => {
 		mockProofService = createMockProofService()
 
 		const container = createTestContainer(
-			Registration.instance(mockITicketService, mockTicketService),
+			Registration.instance(mockITicketRpcClient, mockTicketService),
 			Registration.instance(mockIProofService, mockProofService),
 		)
 		container.register(TicketsRoute)
@@ -58,26 +58,29 @@ describe('TicketsRoute', () => {
 	})
 
 	describe('mintDate', () => {
-		it('should convert timestamp to Date', () => {
+		it('should return Date when mintTime is set', () => {
 			const ticket = {
-				mintTime: { seconds: BigInt(1700000000), nanos: 500_000_000 },
+				id: 't1',
+				eventId: 'e1',
+				userId: 'u1',
+				mintTime: new Date(1700000000500),
 			} as any
 
 			const result = sut.mintDate(ticket)
 
 			expect(result).toBeInstanceOf(Date)
-			expect(result!.getTime()).toBe(1700000000 * 1000 + 500)
+			expect(result!.getTime()).toBe(1700000000500)
 		})
 
 		it('should return null when no mintTime', () => {
-			const result = sut.mintDate({} as any)
+			const result = sut.mintDate({ id: 't1' } as any)
 			expect(result).toBeNull()
 		})
 	})
 
 	describe('formatTokenId', () => {
 		it('should format token ID with hash prefix', () => {
-			const ticket = { tokenId: { value: 42 } } as any
+			const ticket = { tokenId: '42' } as any
 			expect(sut.formatTokenId(ticket)).toBe('#42')
 		})
 
@@ -88,7 +91,7 @@ describe('TicketsRoute', () => {
 
 	describe('loading', () => {
 		it('should load tickets', async () => {
-			const fakeTickets = [{ id: { value: 't1' } }]
+			const fakeTickets = [{ id: 't1', eventId: 'e1', userId: 'u1' }]
 			;(
 				mockTicketService.listTickets as ReturnType<typeof vi.fn>
 			).mockResolvedValue(fakeTickets)
@@ -125,11 +128,7 @@ describe('TicketsRoute', () => {
 
 	describe('generateEntryCode', () => {
 		it('should generate proof and complete without error', async () => {
-			const ticket = {
-				id: { value: 't1' },
-				eventId: { value: 'e1' },
-				userId: { value: 'u1' },
-			} as any
+			const ticket = { id: 't1', eventId: 'e1', userId: 'u1' } as any
 
 			await sut.loading() // set up abortController
 			await sut.generateEntryCode(ticket)
@@ -144,7 +143,7 @@ describe('TicketsRoute', () => {
 		})
 
 		it('should set error when eventId is missing', async () => {
-			const ticket = { userId: { value: 'u1' } } as any
+			const ticket = { id: 't1', eventId: '', userId: 'u1' } as any
 
 			await sut.generateEntryCode(ticket)
 
@@ -156,11 +155,7 @@ describe('TicketsRoute', () => {
 				mockProofService.generateEntryProof as ReturnType<typeof vi.fn>
 			).mockRejectedValue(new Error('proof failed'))
 
-			const ticket = {
-				id: { value: 't1' },
-				eventId: { value: 'e1' },
-				userId: { value: 'u1' },
-			} as any
+			const ticket = { id: 't1', eventId: 'e1', userId: 'u1' } as any
 
 			await sut.loading()
 			await sut.generateEntryCode(ticket)
@@ -175,11 +170,7 @@ describe('TicketsRoute', () => {
 				mockProofService.generateEntryProof as ReturnType<typeof vi.fn>
 			).mockRejectedValue(abortError)
 
-			const ticket = {
-				id: { value: 't1' },
-				eventId: { value: 'e1' },
-				userId: { value: 'u1' },
-			} as any
+			const ticket = { id: 't1', eventId: 'e1', userId: 'u1' } as any
 
 			await sut.loading()
 			await sut.generateEntryCode(ticket)

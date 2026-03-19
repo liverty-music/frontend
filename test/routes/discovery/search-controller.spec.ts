@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Artist } from '../../../src/entities/artist'
+import type { Artist } from '../../../src/entities/artist'
 import {
 	type SearchClient,
 	SearchController,
@@ -8,10 +8,7 @@ import {
 import { createMockLogger } from '../../../test/helpers/mock-logger'
 
 function makeArtist(id: string, name: string): Artist {
-	return new Artist({
-		id: { value: id },
-		name: { value: name },
-	})
+	return { id, name, mbid: '' }
 }
 
 describe('SearchController', () => {

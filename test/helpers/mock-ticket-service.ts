@@ -1,10 +1,10 @@
 import { vi } from 'vitest'
-import type { ITicketService } from '../../src/services/ticket-service'
+import type { ITicketRpcClient } from '../../src/adapter/rpc/client/ticket-client'
 
 /**
- * Creates a mock implementation of ITicketService for testing.
+ * Creates a mock implementation of ITicketRpcClient for testing.
  */
-export function createMockTicketService(): Partial<ITicketService> {
+export function createMockTicketService(): Partial<ITicketRpcClient> {
 	return {
 		listTickets: vi.fn().mockResolvedValue([]),
 	}

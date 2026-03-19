@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Artist } from '../../../src/entities/artist'
+import type { Artist } from '../../../src/entities/artist'
 import {
 	type GenreArtistClient,
 	type GenreFilterCallbacks,
@@ -9,10 +9,7 @@ import { BubblePool } from '../../../src/services/bubble-pool'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
 
 function makeArtist(id: string, name: string): Artist {
-	return new Artist({
-		id: { value: id },
-		name: { value: name },
-	})
+	return { id, name, mbid: '' }
 }
 
 describe('GenreFilterController', () => {
@@ -122,7 +119,7 @@ describe('GenreFilterController', () => {
 			await sut.onGenreSelected('Rock')
 
 			expect(pool.availableBubbles).toHaveLength(1)
-			expect(pool.availableBubbles[0].id?.value).toBe('a1')
+			expect(pool.availableBubbles[0].id).toBe('a1')
 		})
 
 		it('should reset activeTag and call onError on failure', async () => {

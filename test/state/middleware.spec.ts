@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Artist } from '../../src/entities/artist'
+import type { Artist } from '../../src/entities/artist'
 import { OnboardingStep } from '../../src/services/onboarding-service'
 import { type AppState, initialState } from '../../src/state/app-state'
 import {
@@ -47,10 +47,7 @@ describe('persistenceMiddleware', () => {
 	})
 
 	it('persists guest follows as JSON', () => {
-		const artist = new Artist({
-			id: { value: 'a1' },
-			name: { value: 'Artist 1' },
-		})
+		const artist: Artist = { id: 'a1', name: 'Artist 1', mbid: '' }
 		const state: AppState = {
 			...initialState,
 			guest: {
@@ -64,7 +61,7 @@ describe('persistenceMiddleware', () => {
 		)
 		expect(stored).toEqual([
 			{
-				artist: { id: { value: 'a1' }, name: { value: 'Artist 1' } },
+				artist: { id: 'a1', name: 'Artist 1', mbid: '' },
 				home: null,
 			},
 		])
@@ -120,9 +117,8 @@ describe('loadPersistedState', () => {
 		)
 		const result = loadPersistedState()
 		expect(result.guest?.follows).toHaveLength(1)
-		expect(result.guest?.follows[0].artist).toBeInstanceOf(Artist)
-		expect(result.guest?.follows[0].artist.id?.value).toBe('a1')
-		expect(result.guest?.follows[0].artist.name?.value).toBe('Artist 1')
+		expect(result.guest?.follows[0].artist.id).toBe('a1')
+		expect(result.guest?.follows[0].artist.name).toBe('Artist 1')
 		expect(result.guest?.follows[0].home).toBeNull()
 	})
 
@@ -131,16 +127,15 @@ describe('loadPersistedState', () => {
 			'guest.followedArtists',
 			JSON.stringify([
 				{
-					artist: { id: { value: 'a1' }, name: { value: 'Artist 1' } },
+					artist: { id: 'a1', name: 'Artist 1', mbid: '' },
 					home: null,
 				},
 			]),
 		)
 		const result = loadPersistedState()
 		expect(result.guest?.follows).toHaveLength(1)
-		expect(result.guest?.follows[0].artist).toBeInstanceOf(Artist)
-		expect(result.guest?.follows[0].artist.id?.value).toBe('a1')
-		expect(result.guest?.follows[0].artist.name?.value).toBe('Artist 1')
+		expect(result.guest?.follows[0].artist.id).toBe('a1')
+		expect(result.guest?.follows[0].artist.name).toBe('Artist 1')
 		expect(result.guest?.follows[0].home).toBeNull()
 	})
 

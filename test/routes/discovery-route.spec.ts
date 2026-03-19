@@ -2,7 +2,7 @@ import { IStore } from '@aurelia/state'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Snack } from '../../src/components/snack-bar/snack'
-import { Artist } from '../../src/entities/artist'
+import type { Artist } from '../../src/entities/artist'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
 import {
@@ -56,10 +56,7 @@ const { DiscoveryRoute } = await import(
 )
 
 function makeArtist(id: string, name: string): Artist {
-	return new Artist({
-		id: { value: id },
-		name: { value: name },
-	})
+	return { id, name, mbid: '' }
 }
 
 describe('DiscoveryRoute', () => {
@@ -258,7 +255,7 @@ describe('DiscoveryRoute', () => {
 			await sut.onFollowFromSearch(makeArtist('a1', 'Artist'))
 
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
-				expect.objectContaining({ id: { value: 'a1' } }),
+				expect.objectContaining({ id: 'a1' }),
 			)
 		})
 
@@ -365,7 +362,7 @@ describe('DiscoveryRoute', () => {
 			await sut.onArtistSelected(event)
 
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
-				expect.objectContaining({ id: { value: 'a1' } }),
+				expect.objectContaining({ id: 'a1' }),
 			)
 		})
 
@@ -468,7 +465,7 @@ describe('DiscoveryRoute', () => {
 			expect(sut.dnaOrbCanvas.spawnBubblesAt).toHaveBeenCalledWith(
 				[
 					expect.objectContaining({
-						id: expect.objectContaining({ value: 'a1' }),
+						id: 'a1',
 					}),
 				],
 				100,
@@ -676,7 +673,7 @@ describe('DiscoveryRoute', () => {
 	describe('onboarding followedCount delegation', () => {
 		it('should read from store guest.follows during onboarding', () => {
 			mockOnboarding.isOnboarding = true
-			// Add follows to the mock store state (new format with proto Artist)
+			// Add follows to the mock store state
 			mockStoreInstance.state.guest.follows = [
 				{ artist: makeArtist('a1', 'A1'), home: null },
 				{ artist: makeArtist('a2', 'A2'), home: null },
@@ -760,7 +757,7 @@ describe('DiscoveryRoute', () => {
 			await sut.loading()
 
 			expect(sut.poolBubbles).toHaveLength(1)
-			expect(sut.poolBubbles[0].name?.value).toBe('Pool Artist')
+			expect(sut.poolBubbles[0].name).toBe('Pool Artist')
 		})
 	})
 

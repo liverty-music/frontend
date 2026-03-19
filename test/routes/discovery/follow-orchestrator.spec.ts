@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Artist } from '../../../src/entities/artist'
+import type { Artist } from '../../../src/entities/artist'
 import {
 	type FollowCallbacks,
 	type FollowClient,
@@ -10,10 +10,7 @@ import { BubblePool } from '../../../src/services/bubble-pool'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
 
 function makeArtist(id: string, name: string): Artist {
-	return new Artist({
-		id: { value: id },
-		name: { value: name },
-	})
+	return { id, name, mbid: '' }
 }
 
 describe('FollowOrchestrator', () => {
@@ -60,7 +57,7 @@ describe('FollowOrchestrator', () => {
 			await sut.followArtist(makeArtist('a1', 'Artist One'))
 
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
-				expect.objectContaining({ id: { value: 'a1' } }),
+				expect.objectContaining({ id: 'a1' }),
 			)
 			expect(sut.followedCount).toBe(1)
 			expect(sut.followedIds.has('a1')).toBe(true)
@@ -102,7 +99,7 @@ describe('FollowOrchestrator', () => {
 
 			expect(mockCallbacks.respawnBubble).toHaveBeenCalledWith(
 				expect.objectContaining({
-					id: expect.objectContaining({ value: 'a1' }),
+					id: 'a1',
 				}),
 				{ x: 100, y: 200 },
 			)
@@ -111,9 +108,7 @@ describe('FollowOrchestrator', () => {
 		it('should remove artist from pool on follow', async () => {
 			await sut.followArtist(makeArtist('a1', 'Artist One'))
 
-			expect(
-				pool.availableBubbles.find((a) => a.id?.value === 'a1'),
-			).toBeUndefined()
+			expect(pool.availableBubbles.find((a) => a.id === 'a1')).toBeUndefined()
 		})
 	})
 
@@ -142,9 +137,7 @@ describe('FollowOrchestrator', () => {
 			await sut.followArtist(makeArtist('a1', 'Artist One'))
 
 			expect(sut.followedIds.has('a1')).toBe(true)
-			expect(
-				pool.availableBubbles.find((b) => b.id?.value === 'a1'),
-			).toBeUndefined()
+			expect(pool.availableBubbles.find((b) => b.id === 'a1')).toBeUndefined()
 		})
 
 		it('should have artist absent from followedIds and restored in pool after rollback', async () => {
@@ -157,9 +150,7 @@ describe('FollowOrchestrator', () => {
 			).rejects.toThrow()
 
 			expect(sut.followedIds.has('a1')).toBe(false)
-			expect(
-				pool.availableBubbles.find((b) => b.id?.value === 'a1'),
-			).toBeDefined()
+			expect(pool.availableBubbles.find((b) => b.id === 'a1')).toBeDefined()
 		})
 	})
 
@@ -182,9 +173,7 @@ describe('FollowOrchestrator', () => {
 			expect(sut.followedIds.has('a2')).toBe(true)
 			expect(sut.followedIds.has('a3')).toBe(false)
 			// Only the rolled-back artist is restored to pool
-			expect(
-				pool.availableBubbles.find((b) => b.id?.value === 'a3'),
-			).toBeDefined()
+			expect(pool.availableBubbles.find((b) => b.id === 'a3')).toBeDefined()
 		})
 	})
 

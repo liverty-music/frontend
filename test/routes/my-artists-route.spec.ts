@@ -31,32 +31,13 @@ vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
 }))
 
-vi.mock(
-	'@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js',
-	() => ({
-		ArtistId: class ArtistId {
-			value: string
-			constructor(opts: { value: string }) {
-				this.value = opts.value
-			}
-		},
-	}),
-)
-
-vi.mock(
-	'@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/follow_pb.js',
-	() => ({
-		HypeType: { WATCH: 1, HOME: 2, NEARBY: 3, AWAY: 4 },
-	}),
-)
-
 const { MyArtistsRoute } = await import(
 	'../../src/routes/my-artists/my-artists-route'
 )
 
 function makeFollowedArtist(id: string, name: string, hype = 'nearby') {
 	return {
-		artist: { id: { value: id }, name: { value: name } },
+		artist: { id, name, mbid: '' },
 		hype,
 	}
 }
@@ -64,24 +45,16 @@ function makeFollowedArtist(id: string, name: string, hype = 'nearby') {
 describe('MyArtistsRoute', () => {
 	let sut: InstanceType<typeof MyArtistsRoute>
 	let ea: IEventAggregator
-	let mockGrpcClient: {
-		unfollow: ReturnType<typeof vi.fn>
-		setHype: ReturnType<typeof vi.fn>
-	}
 	let mockFollowService: {
 		listFollowed: ReturnType<typeof vi.fn>
-		getClient: () => typeof mockGrpcClient
+		unfollow: ReturnType<typeof vi.fn>
+		setHype: ReturnType<typeof vi.fn>
 	}
 	let mockRouter: { load: ReturnType<typeof vi.fn> }
 	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
 	let publishedSnacks: Snack[]
 
 	beforeEach(() => {
-		mockGrpcClient = {
-			unfollow: vi.fn().mockResolvedValue({}),
-			setHype: vi.fn().mockResolvedValue({}),
-		}
-
 		mockFollowService = {
 			listFollowed: vi
 				.fn()
@@ -90,7 +63,8 @@ describe('MyArtistsRoute', () => {
 					makeFollowedArtist('id-2', 'ONE OK ROCK'),
 					makeFollowedArtist('id-3', 'Aimer'),
 				]),
-			getClient: () => mockGrpcClient,
+			unfollow: vi.fn().mockResolvedValue(undefined),
+			setHype: vi.fn().mockResolvedValue(undefined),
 		}
 		mockRouter = { load: vi.fn().mockResolvedValue(undefined) }
 		mockAuth = { isAuthenticated: true, signUp: vi.fn() }
@@ -139,8 +113,8 @@ describe('MyArtistsRoute', () => {
 
 			expect(sut.isLoading).toBe(false)
 			expect(sut.artists).toHaveLength(3)
-			expect(sut.artists[0].artist.name?.value).toBe('RADWIMPS')
-			expect(sut.artists[0].artist.id?.value).toBe('id-1')
+			expect(sut.artists[0].artist.name).toBe('RADWIMPS')
+			expect(sut.artists[0].artist.id).toBe('id-1')
 			expect(sut.artists[0].color).toMatch(/^hsl\(/)
 		})
 
@@ -228,12 +202,12 @@ describe('MyArtistsRoute', () => {
 			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
 
 			expect(sut.artists).toHaveLength(2)
-			expect(sut.artists[1].artist.name?.value).toBe('Aimer')
+			expect(sut.artists[1].artist.name).toBe('Aimer')
 
 			publishedSnacks[0].action?.callback()
 
 			expect(sut.artists).toHaveLength(3)
-			expect(sut.artists[1].artist.name?.value).toBe('ONE OK ROCK')
+			expect(sut.artists[1].artist.name).toBe('ONE OK ROCK')
 		})
 
 		it('should commit unfollow RPC when toast is dismissed', async () => {
@@ -242,9 +216,7 @@ describe('MyArtistsRoute', () => {
 			publishedSnacks[0].options?.onDismiss?.()
 			await vi.runAllTimersAsync()
 
-			expect(mockGrpcClient.unfollow).toHaveBeenCalledWith({
-				artistId: expect.objectContaining({ value: 'id-1' }),
-			})
+			expect(mockFollowService.unfollow).toHaveBeenCalledWith('id-1')
 		})
 
 		it('should not call RPC when undo is pressed before dismiss', async () => {
@@ -254,7 +226,7 @@ describe('MyArtistsRoute', () => {
 			publishedSnacks[0].options?.onDismiss?.()
 			await vi.runAllTimersAsync()
 
-			expect(mockGrpcClient.unfollow).not.toHaveBeenCalled()
+			expect(mockFollowService.unfollow).not.toHaveBeenCalled()
 		})
 	})
 
@@ -324,7 +296,7 @@ describe('MyArtistsRoute', () => {
 
 		it('should set pulsingArtistId immediately on hype change', () => {
 			const event = new CustomEvent('hype-changed', {
-				detail: { artistId: 'id-1', hype: 4 },
+				detail: { artistId: 'id-1', hype: 'away' },
 			})
 
 			onboardingSut.onHypeChanged(event)
@@ -334,7 +306,7 @@ describe('MyArtistsRoute', () => {
 
 		it('should clear pulsingArtistId after 300ms', () => {
 			const event = new CustomEvent('hype-changed', {
-				detail: { artistId: 'id-1', hype: 4 },
+				detail: { artistId: 'id-1', hype: 'away' },
 			})
 
 			onboardingSut.onHypeChanged(event)
@@ -345,7 +317,7 @@ describe('MyArtistsRoute', () => {
 
 		it('should advance to COMPLETED after hype change', () => {
 			const event = new CustomEvent('hype-changed', {
-				detail: { artistId: 'id-1', hype: 4 },
+				detail: { artistId: 'id-1', hype: 'away' },
 			})
 
 			onboardingSut.onHypeChanged(event)

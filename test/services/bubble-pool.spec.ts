@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { Artist } from '../../src/entities/artist'
+import type { Artist } from '../../src/entities/artist'
 import { BubblePool } from '../../src/services/bubble-pool'
 
 function makeArtist(id: string, name: string, mbid = ''): Artist {
-	return new Artist({
-		id: { value: id },
-		name: { value: name },
-		mbid: mbid ? { value: mbid } : undefined,
-	})
+	return { id, name, mbid }
 }
 
 describe('BubblePool', () => {
@@ -41,9 +37,9 @@ describe('BubblePool', () => {
 			expect(evictedIds[0]).toBe('a0')
 			expect(evictedIds[4]).toBe('a4')
 			expect(pool.availableBubbles).toHaveLength(BubblePool.MAX_BUBBLES)
-			expect(
-				pool.availableBubbles[pool.availableBubbles.length - 1].name?.value,
-			).toBe('New 4')
+			expect(pool.availableBubbles[pool.availableBubbles.length - 1].name).toBe(
+				'New 4',
+			)
 		})
 
 		it('should reassign array reference for Aurelia observation', () => {
@@ -68,7 +64,7 @@ describe('BubblePool', () => {
 			pool.remove('a1')
 
 			expect(pool.availableBubbles).toHaveLength(1)
-			expect(pool.availableBubbles[0].id?.value).toBe('a2')
+			expect(pool.availableBubbles[0].id).toBe('a2')
 		})
 
 		it('should be a no-op when artist is not in pool', () => {
@@ -93,10 +89,10 @@ describe('BubblePool', () => {
 			const evicted = pool.evictOldest(2)
 
 			expect(evicted).toHaveLength(2)
-			expect(evicted[0].id?.value).toBe('a1')
-			expect(evicted[1].id?.value).toBe('a2')
+			expect(evicted[0].id).toBe('a1')
+			expect(evicted[1].id).toBe('a2')
 			expect(pool.availableBubbles).toHaveLength(1)
-			expect(pool.availableBubbles[0].id?.value).toBe('a3')
+			expect(pool.availableBubbles[0].id).toBe('a3')
 		})
 
 		it('should return empty array when count is 0', () => {
@@ -128,7 +124,7 @@ describe('BubblePool', () => {
 			pool.replace([makeArtist('b1', 'New One'), makeArtist('b2', 'New Two')])
 
 			expect(pool.availableBubbles).toHaveLength(2)
-			expect(pool.availableBubbles[0].id?.value).toBe('b1')
+			expect(pool.availableBubbles[0].id).toBe('b1')
 		})
 	})
 
@@ -160,7 +156,7 @@ describe('BubblePool', () => {
 			)
 
 			expect(result).toHaveLength(1)
-			expect(result[0].name?.value).toBe('Artist Y')
+			expect(result[0].name).toBe('Artist Y')
 		})
 
 		it('should filter out seen artists by id', () => {
@@ -173,7 +169,7 @@ describe('BubblePool', () => {
 			)
 
 			expect(result).toHaveLength(1)
-			expect(result[0].id?.value).toBe('a2')
+			expect(result[0].id).toBe('a2')
 		})
 
 		it('should filter out seen artists by mbid', () => {
@@ -189,7 +185,7 @@ describe('BubblePool', () => {
 			)
 
 			expect(result).toHaveLength(1)
-			expect(result[0].id?.value).toBe('a3')
+			expect(result[0].id).toBe('a3')
 		})
 
 		it('should filter out followed artists via external followedIds', () => {
@@ -202,7 +198,7 @@ describe('BubblePool', () => {
 			)
 
 			expect(result).toHaveLength(1)
-			expect(result[0].id?.value).toBe('a2')
+			expect(result[0].id).toBe('a2')
 		})
 
 		it('should work without follow filtering when followedIds is empty', () => {
@@ -231,7 +227,7 @@ describe('BubblePool', () => {
 			)
 
 			expect(result).toHaveLength(1)
-			expect(result[0].id?.value).toBe('a3')
+			expect(result[0].id).toBe('a3')
 		})
 
 		it('should normalize name matching (case-insensitive, whitespace-collapsed)', () => {
@@ -259,7 +255,7 @@ describe('BubblePool', () => {
 			)
 
 			expect(result).toHaveLength(1)
-			expect(result[0].id?.value).toBe('a3')
+			expect(result[0].id).toBe('a3')
 		})
 	})
 

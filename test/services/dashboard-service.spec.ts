@@ -92,11 +92,11 @@ describe('DashboardService', () => {
 	it('should map server-provided DateLaneGroup to frontend DateGroup', async () => {
 		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
 			{
-				artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
+				artist: { id: 'artist-1', name: 'Artist One', mbid: '' },
 				hype: 'watch',
 			},
 			{
-				artist: { id: { value: 'artist-2' }, name: { value: 'Artist Two' } },
+				artist: { id: 'artist-2', name: 'Artist Two', mbid: '' },
 				hype: 'watch',
 			},
 		])
@@ -158,7 +158,7 @@ describe('DashboardService', () => {
 	it('should handle listByFollower RPC failure gracefully', async () => {
 		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
 			{
-				artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
+				artist: { id: 'artist-1', name: 'Artist One', mbid: '' },
 				hype: 'watch',
 			},
 		])
@@ -173,7 +173,7 @@ describe('DashboardService', () => {
 	it('should format concert times correctly', async () => {
 		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
 			{
-				artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
+				artist: { id: 'artist-1', name: 'Artist', mbid: '' },
 				hype: 'watch',
 			},
 		])
@@ -204,7 +204,7 @@ describe('DashboardService', () => {
 	it('should skip concerts without localDate', async () => {
 		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
 			{
-				artist: { id: { value: 'artist-1' }, name: { value: 'Artist' } },
+				artist: { id: 'artist-1', name: 'Artist', mbid: '' },
 				hype: 'watch',
 			},
 		])
@@ -242,7 +242,7 @@ describe('DashboardService', () => {
 	it('should map concerts in all three lanes correctly', async () => {
 		mockFollowService.listFollowed = vi.fn().mockResolvedValue([
 			{
-				artist: { id: { value: 'artist-1' }, name: { value: 'Artist One' } },
+				artist: { id: 'artist-1', name: 'Artist One', mbid: '' },
 				hype: 'watch',
 			},
 		])
