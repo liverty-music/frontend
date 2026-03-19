@@ -1,0 +1,134 @@
+<page-header title="チケットメール取り込み"></page-header>
+
+<section class="import-wizard">
+  <!-- Validation Error -->
+  <template if.bind="step === 'validation' && error">
+    <div class="wizard-error">
+      <p>${error}</p>
+      <a href="/dashboard">ダッシュボードに戻る</a>
+    </div>
+  </template>
+
+  <!-- Step 2-3: Artist Selection -->
+  <template if.bind="step === 'artist'">
+    <div class="wizard-step">
+      <h2>アーティストを選択</h2>
+      <p if.bind="matchedArtistId">メール本文からアーティストが検出されました。</p>
+      <select value.bind="selectedArtistId">
+        <option value="">選択してください</option>
+        <option repeat.for="artist of followedArtists" value.bind="artist.id">
+          ${artist.name}
+        </option>
+      </select>
+      <button click.trigger="selectArtist()" disabled.bind="!selectedArtistId || isLoading">
+        <loading-spinner if.bind="isLoading"></loading-spinner>
+        <span else>次へ</span>
+      </button>
+    </div>
+  </template>
+
+  <!-- Step 4: Concert Selection -->
+  <template if.bind="step === 'concert'">
+    <div class="wizard-step">
+      <h2>コンサートを選択</h2>
+      <p>関連付けるコンサートを選択してください（複数可）。</p>
+      <ul class="concert-list">
+        <li repeat.for="concert of concerts" class="concert-item">
+          <label>
+            <input
+              type="checkbox"
+              checked.bind="selectedEventIds.has(concert.eventId)"
+              change.trigger="toggleConcert(concert.eventId)"
+            >
+            <span>${concert.title}</span>
+            <small>${concert.localDate}</small>
+          </label>
+        </li>
+      </ul>
+      <p if.bind="concerts.length === 0">このアーティストのコンサートが見つかりません。</p>
+      <button click.trigger="confirmConcerts()" disabled.bind="!hasSelectedConcerts">
+        次へ
+      </button>
+    </div>
+  </template>
+
+  <!-- Step 5: Email Body Confirmation -->
+  <template if.bind="step === 'body'">
+    <div class="wizard-step">
+      <h2>メール本文の確認</h2>
+      <p>バックエンドに送信されるメール本文です。個人情報は編集で削除できます。</p>
+      <div class="body-preview">
+        <textarea if.bind="isEditingBody" value.bind="editableBody" rows="12"></textarea>
+        <pre else>${editableBody}</pre>
+        <button class="edit-toggle" click.trigger="toggleEditBody()">
+          ${isEditingBody ? '完了' : '編集'}
+        </button>
+      </div>
+      <p class="email-type-label">
+        検出タイプ: ${detectedEmailType === 'lottery_result' ? '抽選結果通知' : '抽選受付情報'}
+      </p>
+      <div if.bind="error" class="wizard-error"><p>${error}</p></div>
+      <button click.trigger="submitForParsing()" disabled.bind="isLoading">
+        <loading-spinner if.bind="isLoading"></loading-spinner>
+        <span else>解析する</span>
+      </button>
+    </div>
+  </template>
+
+  <!-- Step 6: Parsing -->
+  <template if.bind="step === 'parsing'">
+    <div class="wizard-step">
+      <loading-spinner></loading-spinner>
+      <p>メールを解析中...</p>
+    </div>
+  </template>
+
+  <!-- Step 7: Confirm Parsed Results -->
+  <template if.bind="step === 'confirm'">
+    <div class="wizard-step">
+      <h2>解析結果の確認</h2>
+      <div repeat.for="email of createdEmails" class="parsed-result">
+        <dl>
+          <template if.bind="email.lotteryStart">
+            <dt>抽選受付開始</dt>
+            <dd>${email.lotteryStart.toDate() | date}</dd>
+          </template>
+          <template if.bind="email.lotteryEnd">
+            <dt>抽選受付終了</dt>
+            <dd>${email.lotteryEnd.toDate() | date}</dd>
+          </template>
+          <template if.bind="email.applicationUrl">
+            <dt>申し込みURL</dt>
+            <dd><a href.bind="email.applicationUrl" target="_blank">${email.applicationUrl}</a></dd>
+          </template>
+          <template if.bind="email.lotteryResult">
+            <dt>抽選結果</dt>
+            <dd>${email.lotteryResult === 1 ? '当選' : '落選'}</dd>
+          </template>
+          <template if.bind="email.paymentStatus">
+            <dt>支払状況</dt>
+            <dd>${email.paymentStatus === 2 ? '支払済' : '未払い'}</dd>
+          </template>
+          <template if.bind="email.paymentDeadline">
+            <dt>入金期限</dt>
+            <dd>${email.paymentDeadline.toDate() | date}</dd>
+          </template>
+        </dl>
+      </div>
+      <div if.bind="error" class="wizard-error"><p>${error}</p></div>
+      <button click.trigger="confirmResults()" disabled.bind="isLoading">
+        <loading-spinner if.bind="isLoading"></loading-spinner>
+        <span else>確定する</span>
+      </button>
+    </div>
+  </template>
+
+  <!-- Done -->
+  <template if.bind="step === 'done'">
+    <div class="wizard-step wizard-done">
+      <h2>取り込み完了</h2>
+      <p>チケット情報が更新されました。</p>
+      <a href="/dashboard">ダッシュボードに戻る</a>
+    </div>
+  </template>
+</section>
