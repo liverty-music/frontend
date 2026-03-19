@@ -90,8 +90,8 @@ export class ImportTicketEmailRoute {
 
 		// Step 2: Auto-match artist name in email body.
 		for (const fa of this.followedArtists) {
-			const name = fa.artist.name?.value ?? ''
-			const id = fa.artist.id?.value ?? ''
+			const name = fa.artist.name ?? ''
+			const id = fa.artist.id ?? ''
 			if (name && this.emailBody.includes(name)) {
 				this.matchedArtistId = id
 				this.selectedArtistId = id

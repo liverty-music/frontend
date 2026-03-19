@@ -16,8 +16,8 @@
       <p if.bind="matchedArtistId">メール本文からアーティストが検出されました。</p>
       <select value.bind="selectedArtistId">
         <option value="">選択してください</option>
-        <option repeat.for="fa of followedArtists" value.bind="fa.artist.id?.value ?? ''">
-          ${fa.artist.name?.value ?? ''}
+        <option repeat.for="fa of followedArtists" value.bind="fa.artist.id ?? ''">
+          ${fa.artist.name ?? ''}
         </option>
       </select>
       <button click.trigger="selectArtist()" disabled.bind="!selectedArtistId || isLoading">
