@@ -11,7 +11,6 @@ interface AbsorptionAnimation {
 	endX: number
 	endY: number
 	radius: number
-	imageUrl: string
 	progress: number
 	dissolved: boolean
 	hue: number
@@ -76,7 +75,6 @@ export class AbsorptionAnimator {
 		toX: number,
 		toY: number,
 		radius: number,
-		imageUrl: string,
 		hue = 260,
 		onComplete?: (hue: number) => void,
 	): void {
@@ -88,7 +86,6 @@ export class AbsorptionAnimator {
 			endX: toX,
 			endY: toY,
 			radius,
-			imageUrl,
 			progress: 0,
 			dissolved: false,
 			hue,

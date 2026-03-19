@@ -426,7 +426,6 @@ describe('DnaOrbCanvas', () => {
 				expect.any(Number), // orbX
 				expect.any(Number), // orbY
 				30, // radius
-				'', // imageUrl
 				expect.any(Number), // hue
 				expect.any(Function), // onComplete
 			)
