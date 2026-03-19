@@ -246,93 +246,137 @@ describe('MyArtistsRoute', () => {
 		})
 	})
 
-	describe('onboarding step my-artists hype flow', () => {
-		let onboardingSut: InstanceType<typeof MyArtistsRoute>
-		let onboardingOnboarding: any
+	describe('onHypeInput', () => {
+		describe('onboarding step my-artists', () => {
+			let onboardingSut: InstanceType<typeof MyArtistsRoute>
+			let onboardingOnboarding: any
 
-		beforeEach(async () => {
-			vi.useFakeTimers()
+			beforeEach(async () => {
+				onboardingOnboarding = {
+					currentStep: 'my-artists',
+					isOnboarding: true,
+					setStep: vi.fn(),
+					activateSpotlight: vi.fn(),
+					deactivateSpotlight: vi.fn(),
+				}
 
-			onboardingOnboarding = {
-				currentStep: 'my-artists', // MY_ARTISTS
-				isOnboarding: true,
-				isCompleted: false,
-				setStep: vi.fn(),
-				complete: vi.fn(),
-				activateSpotlight: vi.fn(),
-				deactivateSpotlight: vi.fn(),
-			} as any
-
-			const container = createTestContainer(
-				Registration.instance(mockIFollowServiceClient, mockFollowService),
-				Registration.instance(mockIRouter, mockRouter),
-				Registration.instance(mockIOnboardingService, onboardingOnboarding),
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, { publish: vi.fn() }),
-			)
-			container.register(MyArtistsRoute)
-			onboardingSut = container.get(MyArtistsRoute)
-
-			for (const name of ['contextMenuDialog']) {
-				const mockDialog = document.createElement('dialog')
-				;(mockDialog as any).showModal = vi.fn()
-				;(mockDialog as any).close = vi.fn()
-				;(onboardingSut as any)[name] = mockDialog
-			}
-
-			await onboardingSut.loading()
-		})
-
-		afterEach(() => {
-			vi.useRealTimers()
-		})
-
-		it('should activate spotlight targeting [data-hype-header] on loading', () => {
-			expect(onboardingOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'[data-hype-header]',
-				expect.any(String),
-				expect.any(Function),
-			)
-		})
-
-		it('should deactivate spotlight when onTap callback is invoked', () => {
-			const onTap = onboardingOnboarding.activateSpotlight.mock.calls[0][2]
-			onTap()
-			expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
-		})
-
-		it('should set pulsingArtistId immediately on hype change', () => {
-			const event = new CustomEvent('hype-changed', {
-				detail: { artistId: 'id-1', hype: 'away' },
+				const container = createTestContainer(
+					Registration.instance(mockIFollowServiceClient, mockFollowService),
+					Registration.instance(mockIRouter, mockRouter),
+					Registration.instance(mockIOnboardingService, onboardingOnboarding),
+					Registration.instance(mockIAuthService, mockAuth),
+					Registration.instance(IEventAggregator, { publish: vi.fn() }),
+				)
+				container.register(MyArtistsRoute)
+				onboardingSut = container.get(MyArtistsRoute)
+				await onboardingSut.loading()
 			})
 
-			onboardingSut.onHypeChanged(event)
-
-			expect(onboardingSut.pulsingArtistId).toBe('id-1')
-		})
-
-		it('should clear pulsingArtistId after 300ms', () => {
-			const event = new CustomEvent('hype-changed', {
-				detail: { artistId: 'id-1', hype: 'away' },
+			it('should activate spotlight targeting .artist-list on loading', () => {
+				expect(onboardingOnboarding.activateSpotlight).toHaveBeenCalledWith(
+					'.artist-list',
+					expect.any(String),
+					expect.any(Function),
+				)
 			})
 
-			onboardingSut.onHypeChanged(event)
+			it('should revert hype, complete onboarding, and redirect', () => {
+				const artist = onboardingSut.artists[0]
+				const originalHype = artist.hype
+				artist.hype = 'away'
 
-			vi.advanceTimersByTime(300)
-			expect(onboardingSut.pulsingArtistId).toBe('')
-		})
+				onboardingSut.onHypeInput(artist)
 
-		it('should advance to COMPLETED after hype change', () => {
-			const event = new CustomEvent('hype-changed', {
-				detail: { artistId: 'id-1', hype: 'away' },
+				expect(artist.hype).toBe(originalHype)
+				expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
+				expect(onboardingOnboarding.setStep).toHaveBeenCalledWith('completed')
+				expect(mockRouter.load).toHaveBeenCalledWith('')
 			})
 
-			onboardingSut.onHypeChanged(event)
+			it('should not call setHype RPC', () => {
+				const artist = onboardingSut.artists[0]
+				artist.hype = 'away'
 
-			// SIGNUP was removed; should go directly to COMPLETED
-			expect(onboardingOnboarding.setStep).toHaveBeenCalledWith('completed')
-			expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
-			expect(mockRouter.load).toHaveBeenCalledWith('')
+				onboardingSut.onHypeInput(artist)
+
+				expect(mockFollowService.setHype).not.toHaveBeenCalled()
+			})
+		})
+
+		describe('unauthenticated user', () => {
+			beforeEach(async () => {
+				mockAuth.isAuthenticated = false
+				await sut.loading()
+			})
+
+			it('should revert hype and show notification dialog', () => {
+				const artist = sut.artists[0]
+				const originalHype = artist.hype
+				artist.hype = 'away'
+
+				sut.onHypeInput(artist)
+
+				expect(artist.hype).toBe(originalHype)
+				expect(sut.showNotificationDialog).toBe(true)
+			})
+
+			it('should not show dialog if already shown', () => {
+				sut.notificationDialogShown = true
+				const artist = sut.artists[0]
+				artist.hype = 'away'
+
+				sut.onHypeInput(artist)
+
+				expect(sut.showNotificationDialog).toBe(false)
+			})
+
+			it('should not call setHype RPC', () => {
+				const artist = sut.artists[0]
+				artist.hype = 'away'
+
+				sut.onHypeInput(artist)
+
+				expect(mockFollowService.setHype).not.toHaveBeenCalled()
+			})
+		})
+
+		describe('authenticated user', () => {
+			beforeEach(async () => {
+				mockAuth.isAuthenticated = true
+				await sut.loading()
+			})
+
+			it('should accept hype change and call setHype RPC', () => {
+				const artist = sut.artists[0]
+				artist.hype = 'away'
+
+				sut.onHypeInput(artist)
+
+				expect(artist.hype).toBe('away')
+				expect(mockFollowService.setHype).toHaveBeenCalledWith('id-1', 'away')
+			})
+
+			it('should revert hype on RPC failure after retry', async () => {
+				mockFollowService.setHype.mockRejectedValue(new Error('fail'))
+				const artist = sut.artists[0]
+				const originalHype = artist.hype
+				artist.hype = 'away'
+
+				sut.onHypeInput(artist)
+
+				await vi.waitFor(() => {
+					expect(mockFollowService.setHype).toHaveBeenCalledTimes(2)
+				})
+				expect(artist.hype).toBe(originalHype)
+			})
+
+			it('should no-op when hype has not changed', () => {
+				const artist = sut.artists[0]
+
+				sut.onHypeInput(artist)
+
+				expect(mockFollowService.setHype).not.toHaveBeenCalled()
+			})
 		})
 	})
 })

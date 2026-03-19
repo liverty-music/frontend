@@ -25,6 +25,9 @@ export class MyArtistsRoute {
 	public showSignupBanner = false
 	public notificationDialogShown = false
 
+	// Hype state tracking for revert
+	private prevHypes = new Map<string, Hype>()
+
 	// Dismiss state (tracks scroll containers currently dismissing)
 	private dismissingIds = new Set<string>()
 
@@ -51,9 +54,6 @@ export class MyArtistsRoute {
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
 	private abortController: AbortController | null = null
-
-	// Onboarding state
-	public pulsingArtistId = ''
 
 	public get isOnboardingStepMyArtists(): boolean {
 		return this.onboarding.currentStep === OnboardingStep.MY_ARTISTS
@@ -89,6 +89,7 @@ export class MyArtistsRoute {
 				...fa,
 				color: artistColor(fa.artist.name),
 			}))
+			this.prevHypes = new Map(this.artists.map((a) => [a.artist.id, a.hype]))
 			this.logger.info('Followed artists loaded', {
 				count: this.artists.length,
 			})
@@ -102,7 +103,7 @@ export class MyArtistsRoute {
 
 		if (this.isOnboardingStepMyArtists && this.artists.length > 0) {
 			this.onboarding.activateSpotlight(
-				'[data-hype-header]',
+				'.artist-list',
 				'絶対に見逃したくないアーティストの熱量を上げておこう',
 				() => this.onboarding.deactivateSpotlight(),
 			)
@@ -244,42 +245,41 @@ export class MyArtistsRoute {
 			})
 	}
 
-	// --- Hype level inline slider ---
+	// --- Hype level change (native `change` event from radio) ---
 
-	public onHypeChanged(
-		event: CustomEvent<{ artistId: string; hype: Hype }>,
-	): void {
-		const { artistId, hype } = event.detail
-		const artist = this.artists.find((a) => a.artist.id === artistId)
-		if (!artist) return
+	public onHypeInput(artist: MyArtist): void {
+		const artistId = artist.artist.id
+		const prev = this.prevHypes.get(artistId) ?? 'watch'
+		if (prev === artist.hype) return
 
-		const prev = artist.hype
-		if (prev === hype) return
-
-		// During onboarding step 5: visual demo only, no persistence
+		// Onboarding step 5: revert hype, complete onboarding, redirect
 		if (this.isOnboardingStepMyArtists) {
-			artist.hype = hype
-
-			// Immediate pulse feedback
-			this.pulsingArtistId = artistId
-			setTimeout(() => {
-				this.pulsingArtistId = ''
-			}, 300)
-
-			// Complete onboarding and return to welcome page
+			artist.hype = prev
 			this.onboarding.deactivateSpotlight()
 			this.onboarding.setStep(OnboardingStep.COMPLETED)
 			void this.router.load('')
 			return
 		}
 
-		// Block hype level changes during other onboarding steps
-		if (this.isOnboarding) return
+		// Block during other onboarding steps
+		if (this.isOnboarding) {
+			artist.hype = prev
+			return
+		}
 
-		// Optimistic update
-		artist.hype = hype
+		// Unauthenticated: revert and show signup dialog
+		if (!this.isAuthenticated) {
+			artist.hype = prev
+			if (!this.notificationDialogShown) {
+				this.showNotificationDialog = true
+			}
+			return
+		}
 
-		// Fire-and-forget RPC with 1 retry
+		// Authenticated: accept and persist
+		const hype = artist.hype
+		this.prevHypes.set(artistId, hype)
+
 		this.followService
 			.setHype(artistId, hype)
 			.then(() => {
@@ -302,17 +302,11 @@ export class MyArtistsRoute {
 						this.logger.error('Failed to update hype level after retry', {
 							error: retryErr,
 						})
-						const a = this.artists.find((x) => x.artist.id === artistId)
-						if (a) a.hype = prev
+						artist.hype = prev
+						this.prevHypes.set(artistId, prev)
 						this.ea.publish(new Snack(this.i18n.tr('myArtists.failedHype')))
 					})
 			})
-	}
-
-	public onHypeSignupPrompt(_event: CustomEvent): void {
-		if (!this.notificationDialogShown) {
-			this.showNotificationDialog = true
-		}
 	}
 
 	public onSignupRequested(): void {

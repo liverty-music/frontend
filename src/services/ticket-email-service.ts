@@ -1,8 +1,8 @@
+import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import {
 	type TicketEmail,
 	TicketEmailType,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_email_pb.js'
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import type { TicketJourneyStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js'
 import { TicketEmailService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/ticket_email/v1/ticket_email_service_connect.js'
 import { createClient } from '@connectrpc/connect'

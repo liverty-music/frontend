@@ -21,7 +21,9 @@
 
 		.hype-slider-track {
 			position: absolute;
+			inset-block-start: 50%;
 			inset-inline: 0;
+			translate: 0 -50%;
 
 			grid-column: 1 / -1;
 			grid-row: 1;

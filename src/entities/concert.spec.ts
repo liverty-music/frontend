@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
 	HYPE_ORDER,
 	type HypeLevel,
+	isHypeMatched,
 	LANE_ORDER,
 	type LaneType,
-	isHypeMatched,
 } from './concert'
 
 describe('HYPE_ORDER', () => {

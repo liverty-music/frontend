@@ -1,12 +1,12 @@
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { isHypeMatched } from '../../src/entities/concert'
 import { IConcertService } from '../../src/services/concert-service'
 import {
 	DashboardService,
 	IDashboardService,
 } from '../../src/services/dashboard-service'
-import { isHypeMatched } from '../../src/entities/concert'
 import { IFollowServiceClient } from '../../src/services/follow-service-client'
 import { createTestContainer } from '../helpers/create-container'
 import {
