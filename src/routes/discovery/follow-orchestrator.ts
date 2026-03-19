@@ -30,6 +30,10 @@ export class FollowOrchestrator {
 		private readonly abortSignal: () => AbortSignal,
 	) {}
 
+	public hydrate(artists: Artist[]): void {
+		this.followedArtists = [...artists]
+	}
+
 	public get followedIds(): ReadonlySet<string> {
 		return new Set(this.followedArtists.map((a) => a.id))
 	}
