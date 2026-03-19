@@ -31,6 +31,7 @@ export class DnaOrbCanvas {
 				width: 100%;
 				height: 100%;
 				outline: none;
+				touch-action: manipulation;
 			}
 		`),
 	]
@@ -93,10 +94,7 @@ export class DnaOrbCanvas {
 
 		await this.resize()
 		window.addEventListener('resize', this.onResize)
-		this.canvas.addEventListener('click', this.onClick)
-		this.canvas.addEventListener('touchstart', this.onTouch, {
-			passive: true,
-		})
+		this.canvas.addEventListener('pointerdown', this.onPointerDown)
 		this.canvas.addEventListener('keydown', this.onKeyDown)
 
 		const params = this.artists.map((a) => toBubbleParams(a))
@@ -109,8 +107,7 @@ export class DnaOrbCanvas {
 	public detaching(): void {
 		cancelAnimationFrame(this.animFrameId)
 		window.removeEventListener('resize', this.onResize)
-		this.canvas.removeEventListener('click', this.onClick)
-		this.canvas.removeEventListener('touchstart', this.onTouch)
+		this.canvas.removeEventListener('pointerdown', this.onPointerDown)
 		this.canvas.removeEventListener('keydown', this.onKeyDown)
 		this.physics.destroy()
 	}
@@ -220,16 +217,9 @@ export class DnaOrbCanvas {
 		}, 150)
 	}
 
-	private readonly onClick = (e: MouseEvent): void => {
+	private readonly onPointerDown = (e: PointerEvent): void => {
 		const rect = this.canvas.getBoundingClientRect()
 		this.handleInteraction(e.clientX - rect.left, e.clientY - rect.top)
-	}
-
-	private readonly onTouch = (e: TouchEvent): void => {
-		const touch = e.touches[0]
-		if (!touch) return
-		const rect = this.canvas.getBoundingClientRect()
-		this.handleInteraction(touch.clientX - rect.left, touch.clientY - rect.top)
 	}
 
 	private readonly onKeyDown = (e: KeyboardEvent): void => {
@@ -497,25 +487,32 @@ export class DnaOrbCanvas {
 		radius: number,
 	): void {
 		const usableWidth = radius * 1.6
-		const minFont = 7
+		const minFont = 10
 		let fontSize = Math.max(minFont, radius * 0.38)
 
 		this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
 		this.ctx.textAlign = 'center'
 		this.ctx.textBaseline = 'middle'
 
+		const maxLines = 3
+
 		// Word-wrap and adaptive sizing loop
 		let lines: string[]
 		for (;;) {
 			this.ctx.font = `bold ${fontSize}px system-ui, sans-serif`
-			lines = this.wrapText(name, usableWidth)
+			lines = this.wrapTextLocal(name, usableWidth)
 
-			// Check if all lines fit; if not, shrink font
+			// Shrink font if lines overflow width or exceed max line count
 			const allFit = lines.every(
 				(line) => this.ctx.measureText(line).width <= usableWidth,
 			)
-			if (allFit || fontSize <= minFont) break
+			if ((allFit && lines.length <= maxLines) || fontSize <= minFont) break
 			fontSize -= 0.5
+		}
+
+		// Truncate to maxLines if still exceeded after font floor
+		if (lines.length > maxLines) {
+			lines = lines.slice(0, maxLines)
 		}
 
 		const lineHeight = fontSize * 1.25
@@ -525,24 +522,8 @@ export class DnaOrbCanvas {
 		}
 	}
 
-	private wrapText(text: string, maxWidth: number): string[] {
-		const words = text.split(/\s+/)
-		if (words.length === 0) return [text]
-
-		const lines: string[] = []
-		let current = words[0]
-
-		for (let i = 1; i < words.length; i++) {
-			const trial = `${current} ${words[i]}`
-			if (this.ctx.measureText(trial).width <= maxWidth) {
-				current = trial
-			} else {
-				lines.push(current)
-				current = words[i]
-			}
-		}
-		lines.push(current)
-		return lines
+	private wrapTextLocal(text: string, maxWidth: number): string[] {
+		return wrapText(text, maxWidth, (t) => this.ctx.measureText(t).width)
 	}
 }
 
@@ -552,4 +533,76 @@ function toBubbleParams(artist: Artist): BubbleArtistParams {
 		artist,
 		radius: 30 + Math.random() * 15,
 	}
+}
+
+/**
+ * Wrap text to fit within maxWidth, supporting both space-delimited
+ * and character-boundary wrapping for long words.
+ *
+ * @param measureFn - returns the rendered width of a string (e.g. ctx.measureText(t).width)
+ */
+export function wrapText(
+	text: string,
+	maxWidth: number,
+	measureFn: (text: string) => number,
+): string[] {
+	if (!text) return [text]
+
+	// Split by whitespace first
+	const words = text.split(/\s+/)
+
+	const lines: string[] = []
+	let current = ''
+
+	for (let w = 0; w < words.length; w++) {
+		const word = words[w]
+		const separator = current ? ' ' : ''
+		const trial = current + separator + word
+
+		if (measureFn(trial) <= maxWidth) {
+			current = trial
+		} else {
+			// Current line is full — push it if non-empty
+			if (current) lines.push(current)
+
+			// If this single word exceeds maxWidth, break by character
+			if (measureFn(word) > maxWidth) {
+				let charLine = ''
+				for (const ch of word) {
+					const charTrial = charLine + ch
+					if (charLine && measureFn(charTrial) > maxWidth) {
+						lines.push(charLine)
+						charLine = ch
+					} else {
+						charLine = charTrial
+					}
+				}
+				current = charLine
+			} else {
+				current = word
+			}
+		}
+	}
+	if (current) lines.push(current)
+
+	// Anti-orphan: if the last line has 1-2 characters, merge back from previous line
+	if (lines.length >= 2) {
+		const lastLine = lines[lines.length - 1]
+		const lastCharCount = [...lastLine].length
+		if (lastCharCount <= 2) {
+			const prev = lines[lines.length - 2]
+			const prevChars = [...prev]
+			// Move enough characters from prev to make last line >= 3 chars
+			const moveCount = Math.min(3 - lastCharCount, prevChars.length - 1)
+			if (moveCount > 0) {
+				lines[lines.length - 2] = prevChars
+					.slice(0, prevChars.length - moveCount)
+					.join('')
+				lines[lines.length - 1] =
+					prevChars.slice(prevChars.length - moveCount).join('') + lastLine
+			}
+		}
+	}
+
+	return lines.length > 0 ? lines : [text]
 }
