@@ -255,7 +255,7 @@ test.describe('CSS antipattern verification', () => {
 			},
 		)
 
-		test('arrow is between target and message when tooltip is below target', async ({
+		test('arrow is between target and message at lane intro step', async ({
 			page,
 		}) => {
 			test.setTimeout(30_000)
@@ -279,8 +279,9 @@ test.describe('CSS antipattern verification', () => {
 				waitUntil: 'domcontentloaded',
 			})
 
-			// Wait for lane intro — first phase spotlights a lane header
-			// which is near the top of the viewport, so tooltip is BELOW
+			// Wait for lane intro — spotlights a lane header.
+			// The tooltip may appear below (default position-area: block-end)
+			// or above (flip-block fallback) depending on available viewport space.
 			const overlay = page.locator('.coach-mark-overlay')
 			await expect(overlay).toBeVisible({ timeout: 8000 })
 
@@ -310,8 +311,12 @@ test.describe('CSS antipattern verification', () => {
 			expect(tooltipBox).not.toBeNull()
 			expect(messageBox).not.toBeNull()
 
-			// Tooltip is BELOW the target (default position)
-			expect(tooltipBox!.y).toBeGreaterThanOrEqual(targetBox!.y - 8)
+			// Determine whether browser placed tooltip below or above the target.
+			// CSS uses position-area: block-end with position-try-fallbacks: flip-block,
+			// so the browser may choose either position based on available space.
+			const isBelow = tooltipBox!.y >= targetBox!.y - 8
+			const targetBottom = targetBox!.y + targetBox!.height
+			const tooltipBottom = tooltipBox!.y + tooltipBox!.height
 
 			// Find the visible arrow
 			const arrowContainers = page.locator('.coach-arrow-container')
@@ -330,30 +335,64 @@ test.describe('CSS antipattern verification', () => {
 			}
 			expect(arrowBox).not.toBeNull()
 
-			// Arrow sits BETWEEN target and message:
-			//   target.bottom ≤ arrow.top  AND  arrow.bottom ≤ message.top
 			const tolerance = 8
-			expect(arrowBox!.y).toBeGreaterThanOrEqual(
-				targetBox!.y + targetBox!.height - tolerance,
-			)
-			expect(arrowBox!.y + arrowBox!.height).toBeLessThanOrEqual(
-				messageBox!.y + tolerance,
-			)
 
-			// Arrow-head points TOWARD the target (above the arrow-line center).
-			// The arrow-head's center Y should be closer to the target than
-			// the arrow-line's center Y. Target is above → head should be higher.
-			const visibleArrow = page.locator(
-				'.coach-arrow-above:not([style*="display: none"])',
-			)
-			const headBox = await visibleArrow.locator('.arrow-head').boundingBox()
-			const lineBox = await visibleArrow.locator('.arrow-line').boundingBox()
-			expect(headBox).not.toBeNull()
-			expect(lineBox).not.toBeNull()
-			const headCenterY = headBox!.y + headBox!.height / 2
-			const lineCenterY = lineBox!.y + lineBox!.height / 2
-			// Target is above → head should be higher (smaller Y, closer to target)
-			expect(headCenterY).toBeLessThan(lineCenterY)
+			if (isBelow) {
+				// Tooltip BELOW target:
+				//   target.bottom <= arrow.top  AND  arrow.bottom <= message.top
+				expect(arrowBox!.y).toBeGreaterThanOrEqual(
+					targetBottom - tolerance,
+				)
+				expect(arrowBox!.y + arrowBox!.height).toBeLessThanOrEqual(
+					messageBox!.y + tolerance,
+				)
+
+				// Arrow-head points TOWARD the target (upward).
+				const visibleArrow = page.locator(
+					'.coach-arrow-above:not([style*="display: none"])',
+				)
+				const headBox = await visibleArrow
+					.locator('.arrow-head')
+					.boundingBox()
+				const lineBox = await visibleArrow
+					.locator('.arrow-line')
+					.boundingBox()
+				expect(headBox).not.toBeNull()
+				expect(lineBox).not.toBeNull()
+				const headCenterY = headBox!.y + headBox!.height / 2
+				const lineCenterY = lineBox!.y + lineBox!.height / 2
+				// Target is above -> head should be higher (smaller Y)
+				expect(headCenterY).toBeLessThan(lineCenterY)
+			} else {
+				// Tooltip ABOVE target (flip-block fallback):
+				//   message.bottom <= arrow.top  AND  arrow.bottom <= target.top
+				expect(tooltipBottom).toBeLessThanOrEqual(
+					targetBox!.y + tolerance,
+				)
+				expect(arrowBox!.y).toBeGreaterThanOrEqual(
+					messageBox!.y + messageBox!.height - tolerance,
+				)
+				expect(arrowBox!.y + arrowBox!.height).toBeLessThanOrEqual(
+					targetBox!.y + tolerance,
+				)
+
+				// Arrow-head points TOWARD the target (downward).
+				const visibleArrow = page.locator(
+					'.coach-arrow-below:not([style*="display: none"])',
+				)
+				const headBox = await visibleArrow
+					.locator('.arrow-head')
+					.boundingBox()
+				const lineBox = await visibleArrow
+					.locator('.arrow-line')
+					.boundingBox()
+				expect(headBox).not.toBeNull()
+				expect(lineBox).not.toBeNull()
+				const headCenterY = headBox!.y + headBox!.height / 2
+				const lineCenterY = lineBox!.y + lineBox!.height / 2
+				// Target is below -> head should be lower (larger Y)
+				expect(headCenterY).toBeGreaterThan(lineCenterY)
+			}
 		})
 	})
 

@@ -136,15 +136,15 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 /** Seed localStorage for Step 4 state (detail sheet open, spotlight on My Artists). */
 function seedStep4State() {
 	return () => {
-		localStorage.setItem('onboardingStep', '4')
+		localStorage.setItem('onboardingStep', 'detail')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ id: 'a-1', name: 'Artist 1' },
-				{ id: 'a-2', name: 'Artist 2' },
-				{ id: 'a-3', name: 'Artist 3' },
+				{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+				{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+				{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
 			]),
 		)
 	}
@@ -159,9 +159,9 @@ function seedPostDashboardState() {
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ id: 'a-1', name: 'Artist 1' },
-				{ id: 'a-2', name: 'Artist 2' },
-				{ id: 'a-3', name: 'Artist 3' },
+				{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+				{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+				{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
 			]),
 		)
 	}
@@ -194,27 +194,32 @@ test.describe('Step 3→4: Coach mark above detail sheet', () => {
 	}) => {
 		test.setTimeout(60_000)
 
-		// Seed Step 3 at card phase (skip celebration + region + lane intro)
+		// Seed Step 3 at dashboard phase (skip celebration + region)
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '3')
+			localStorage.setItem('onboardingStep', 'dashboard')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'Artist 1' },
-					{ id: 'a-2', name: 'Artist 2' },
-					{ id: 'a-3', name: 'Artist 3' },
+					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
 				]),
 			)
 		})
 		await page.goto('http://localhost:9000/dashboard')
 
-		// Wait for lane intro to reach card phase
+		// Wait for concert cards to render (confirms mock data loaded)
+		await expect(page.locator('[data-live-card]').first()).toBeVisible({
+			timeout: 20_000,
+		})
+
+		// Wait for lane intro to reach card phase.
+		// Phases auto-advance every 2s: home → near → away → card (pauses).
+		// Total ~6s from lane intro start, plus variable data loading delay.
 		const cardInterceptor = page.locator('.target-interceptor')
 		await expect(cardInterceptor).toBeVisible({ timeout: 20_000 })
-
-		// Wait for card phase specifically
 		await page.waitForTimeout(8000)
 
 		// Tap card — opens detail sheet and advances to Step 4
