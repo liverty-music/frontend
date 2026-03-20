@@ -1,14 +1,13 @@
-import { IStore } from '@aurelia/state'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Snack } from '../../src/components/snack-bar/snack'
 import { createTestContainer } from '../helpers/create-container'
-import { createMockStore } from '../helpers/mock-store'
 
 const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIAuthService = DI.createInterface('IAuthService')
+const mockIGuestService = DI.createInterface('IGuestService')
 vi.mock('../../src/services/follow-service-client', () => ({
 	IFollowServiceClient: mockIFollowServiceClient,
 }))
@@ -31,6 +30,10 @@ vi.mock('../../src/services/onboarding-service', () => ({
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
+}))
+
+vi.mock('../../src/services/guest-service', () => ({
+	IGuestService: mockIGuestService,
 }))
 
 const { MyArtistsRoute } = await import(
@@ -80,14 +83,20 @@ describe('MyArtistsRoute', () => {
 			deactivateSpotlight: vi.fn(),
 		}
 
-		const { store } = createMockStore()
+		const mockGuest = {
+			follows: [],
+			home: null,
+			follow: vi.fn(),
+			unfollow: vi.fn(),
+			setHome: vi.fn(),
+		}
 
 		const container = createTestContainer(
 			Registration.instance(mockIFollowServiceClient, mockFollowService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(IStore, store),
+			Registration.instance(mockIGuestService, mockGuest),
 		)
 		container.register(MyArtistsRoute)
 		sut = container.get(MyArtistsRoute)
@@ -140,6 +149,21 @@ describe('MyArtistsRoute', () => {
 			expect(sut.isLoading).toBe(false)
 			expect(sut.artists).toHaveLength(0)
 		})
+
+		it('should load artists from guest service for unauthenticated user', async () => {
+			mockAuth.isAuthenticated = false
+			mockFollowService.listFollowed.mockResolvedValue([
+				makeFollowedArtist('g-1', 'Guest Artist', 'watch'),
+			])
+
+			await sut.loading()
+
+			expect(sut.isLoading).toBe(false)
+			expect(sut.artists).toHaveLength(1)
+			expect(sut.artists[0].artist.name).toBe('Guest Artist')
+			expect(sut.artists[0].hype).toBe('watch')
+			expect(mockFollowService.listFollowed).toHaveBeenCalled()
+		})
 	})
 
 	describe('delete button', () => {
@@ -164,13 +188,13 @@ describe('MyArtistsRoute', () => {
 				activateSpotlight: vi.fn(),
 				deactivateSpotlight: vi.fn(),
 			}
-			const { store: onbStore } = createMockStore()
+			const mockGuest = { follows: [], home: null, follow: vi.fn(), unfollow: vi.fn(), setHome: vi.fn() }
 			const container = createTestContainer(
 				Registration.instance(mockIFollowServiceClient, mockFollowService),
 				Registration.instance(mockIRouter, mockRouter),
 				Registration.instance(mockIOnboardingService, mockOnboarding),
 				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IStore, onbStore),
+				Registration.instance(mockIGuestService, mockGuest),
 			)
 			container.register(MyArtistsRoute)
 			const onboardingSut = container.get(MyArtistsRoute)
@@ -255,14 +279,14 @@ describe('MyArtistsRoute', () => {
 					deactivateSpotlight: vi.fn(),
 				}
 
-				const { store: onbStore } = createMockStore()
+				const mockGuest = { follows: [], home: null, follow: vi.fn(), unfollow: vi.fn(), setHome: vi.fn() }
 				const container = createTestContainer(
 					Registration.instance(mockIFollowServiceClient, mockFollowService),
 					Registration.instance(mockIRouter, mockRouter),
 					Registration.instance(mockIOnboardingService, onboardingOnboarding),
 					Registration.instance(mockIAuthService, mockAuth),
 					Registration.instance(IEventAggregator, { publish: vi.fn() }),
-					Registration.instance(IStore, onbStore),
+					Registration.instance(mockIGuestService, mockGuest),
 				)
 				container.register(MyArtistsRoute)
 				onboardingSut = container.get(MyArtistsRoute)

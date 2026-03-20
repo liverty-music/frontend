@@ -268,6 +268,79 @@ describe('AuthHook', () => {
 			expect(mockEa.published[0].severity).toBe('warning')
 		})
 
+		it('should allow isCompleted guest on dashboard route', async () => {
+			mockAuth = createMockAuth({ isAuthenticated: false })
+			mockEa = createMockEventAggregator()
+			const container = createTestContainer(
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(IEventAggregator, mockEa),
+				Registration.instance(mockIOnboardingService, {
+					currentStep: 'completed',
+					isOnboarding: false,
+					isCompleted: true,
+					setStep: vi.fn(),
+					complete: vi.fn(),
+				}),
+			)
+			container.register(AuthHook)
+			sut = container.get(AuthHook)
+
+			const next = makeRouteNode({ onboardingStep: 'dashboard' })
+			const result = await sut.canLoad({}, {}, next, null)
+
+			expect(result).toBe(true)
+			expect(mockEa.publish).not.toHaveBeenCalled()
+		})
+
+		it('should allow isCompleted guest on my-artists route', async () => {
+			mockAuth = createMockAuth({ isAuthenticated: false })
+			mockEa = createMockEventAggregator()
+			const container = createTestContainer(
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(IEventAggregator, mockEa),
+				Registration.instance(mockIOnboardingService, {
+					currentStep: 'completed',
+					isOnboarding: false,
+					isCompleted: true,
+					setStep: vi.fn(),
+					complete: vi.fn(),
+				}),
+			)
+			container.register(AuthHook)
+			sut = container.get(AuthHook)
+
+			const next = makeRouteNode({ onboardingStep: 'my-artists' })
+			const result = await sut.canLoad({}, {}, next, null)
+
+			expect(result).toBe(true)
+		})
+
+		it('should block isCompleted guest on tickets route with toast', async () => {
+			mockAuth = createMockAuth({ isAuthenticated: false })
+			mockEa = createMockEventAggregator()
+			const container = createTestContainer(
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(IEventAggregator, mockEa),
+				Registration.instance(mockIOnboardingService, {
+					currentStep: 'completed',
+					isOnboarding: false,
+					isCompleted: true,
+					setStep: vi.fn(),
+					complete: vi.fn(),
+				}),
+			)
+			container.register(AuthHook)
+			sut = container.get(AuthHook)
+
+			const next = makeRouteNode({})
+			const result = await sut.canLoad({}, {}, next, null)
+
+			expect(result).toBe(false)
+			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
+			expect(mockEa.published[0].message).toBe('auth.loginRequired')
+			expect(mockEa.published[0].severity).toBe('warning')
+		})
+
 		it('should allow route with no data property', async () => {
 			const next = makeRouteNode(undefined)
 			const result = await sut.canLoad({}, {}, next, null)
