@@ -12,7 +12,7 @@ import { expect, test } from './fixtures'
 /** Seed dashboard to render empty state (no followed artists, no concerts). */
 function seedDashboardState() {
 	return () => {
-		localStorage.setItem('onboardingStep', '3')
+		localStorage.setItem('onboardingStep', 'dashboard')
 		localStorage.setItem('guest.home', 'JP-13')
 	}
 }
@@ -29,7 +29,7 @@ function seedDashboardState() {
  */
 function seedWithConcertData() {
 	return () => {
-		localStorage.setItem('onboardingStep', '3')
+		localStorage.setItem('onboardingStep', 'dashboard')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
 			'guest.followedArtists',
@@ -624,7 +624,7 @@ test.describe('Dashboard needsRegion blur state', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		// Set onboarding step but do NOT set guest.home -> needsRegion = true
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '3')
+			localStorage.setItem('onboardingStep', 'dashboard')
 			// Intentionally omit guest.home to trigger needsRegion
 		})
 		await page.goto('/dashboard')

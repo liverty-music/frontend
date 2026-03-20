@@ -7,7 +7,7 @@ import { expect, test } from './fixtures'
 /** Seed dashboard in onboarding mode with concert data. */
 function seedWithConcertData(opts?: { skipCelebration?: boolean }) {
 	return () => {
-		localStorage.setItem('onboardingStep', '3')
+		localStorage.setItem('onboardingStep', 'dashboard')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
 			'guest.followedArtists',

@@ -11,7 +11,7 @@ import { expect, test } from './fixtures'
  */
 function seedWithArtists() {
 	return () => {
-		localStorage.setItem('onboardingStep', '5')
+		localStorage.setItem('onboardingStep', 'my-artists')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
 			'guest.followedArtists',
@@ -36,7 +36,7 @@ function seedWithArtists() {
 /** Seed with no followed artists to trigger the empty state. */
 function seedEmpty() {
 	return () => {
-		localStorage.setItem('onboardingStep', '5')
+		localStorage.setItem('onboardingStep', 'my-artists')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem('guest.followedArtists', JSON.stringify([]))
 	}
