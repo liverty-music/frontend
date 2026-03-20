@@ -1,6 +1,7 @@
 import { DI, ILogger, resolve } from 'aurelia'
 import { IFollowRpcClient } from '../adapter/rpc/client/follow-client'
-import { resolveStore } from '../state/store-interface'
+import { IGuestService } from './guest-service'
+import { IOnboardingService } from './onboarding-service'
 
 export const IGuestDataMergeService =
 	DI.createInterface<IGuestDataMergeService>('IGuestDataMergeService', (x) =>
@@ -12,7 +13,8 @@ export interface IGuestDataMergeService extends GuestDataMergeService {}
 export class GuestDataMergeService {
 	private readonly logger = resolve(ILogger).scopeTo('GuestDataMergeService')
 	private readonly rpcClient = resolve(IFollowRpcClient)
-	private readonly store = resolveStore()
+	private readonly guest = resolve(IGuestService)
+	private readonly onboarding = resolve(IOnboardingService)
 
 	/**
 	 * Merge all guest data into the authenticated user's account.
@@ -20,7 +22,7 @@ export class GuestDataMergeService {
 	 * After merge, onboardingStep is set to COMPLETED and guest data is cleared.
 	 */
 	public async merge(): Promise<void> {
-		const { follows } = this.store.getState().guest
+		const { follows } = this.guest
 		this.logger.info('Starting guest data merge', {
 			artistCount: follows.length,
 		})
@@ -43,8 +45,8 @@ export class GuestDataMergeService {
 			}
 		}
 
-		this.store.dispatch({ type: 'guest/clearAll' })
-		this.store.dispatch({ type: 'onboarding/complete' })
+		this.guest.clearAll()
+		this.onboarding.complete()
 		this.logger.info('Guest data merge completed')
 	}
 }

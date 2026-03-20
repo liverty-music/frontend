@@ -7,7 +7,7 @@ import {
 } from '../adapter/rpc/client/concert-client'
 import { codeToHome } from '../constants/iso3166'
 import type { SearchStatusResult } from '../routes/discovery/concert-search-tracker'
-import { resolveStore } from '../state/store-interface'
+import { IGuestService } from './guest-service'
 import { IOnboardingService } from './onboarding-service'
 
 export type { ProtoConcert, ProximityGroup, SearchStatusResult }
@@ -21,7 +21,7 @@ export interface IConcertService extends ConcertServiceClient {}
 
 export class ConcertServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('ConcertService')
-	private readonly store = resolveStore()
+	private readonly guest = resolve(IGuestService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
@@ -42,7 +42,7 @@ export class ConcertServiceClient {
 	private async listByFollowerOnboarding(
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
-		const { follows, home: homeCode } = this.store.getState().guest
+		const { follows, home: homeCode } = this.guest
 		this.logger.info('Onboarding: listing concerts with proximity', {
 			count: follows.length,
 		})

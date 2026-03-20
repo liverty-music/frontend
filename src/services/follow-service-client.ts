@@ -2,7 +2,7 @@ import { DI, resolve } from 'aurelia'
 import { IFollowRpcClient } from '../adapter/rpc/client/follow-client'
 import type { Artist } from '../entities/artist'
 import type { FollowedArtist, Hype } from '../entities/follow'
-import { resolveStore } from '../state/store-interface'
+import { IGuestService } from './guest-service'
 import { IOnboardingService } from './onboarding-service'
 
 export const IFollowServiceClient = DI.createInterface<IFollowServiceClient>(
@@ -13,41 +13,41 @@ export const IFollowServiceClient = DI.createInterface<IFollowServiceClient>(
 export interface IFollowServiceClient extends FollowServiceClient {}
 
 export class FollowServiceClient {
-	private readonly store = resolveStore()
+	private readonly guest = resolve(IGuestService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly rpcClient = resolve(IFollowRpcClient)
 
 	/**
-	 * Follow an artist. During onboarding, writes to guest store.
+	 * Follow an artist. During onboarding, writes to guest service.
 	 * Otherwise calls the backend RPC.
 	 */
 	public async follow(artist: Artist): Promise<void> {
 		if (this.onboarding.isOnboarding) {
-			this.store.dispatch({ type: 'guest/follow', artist })
+			this.guest.follow(artist)
 			return
 		}
 		await this.rpcClient.follow(artist.id)
 	}
 
 	/**
-	 * Unfollow an artist. During onboarding, writes to guest store.
+	 * Unfollow an artist. During onboarding, writes to guest service.
 	 * Otherwise calls the backend RPC.
 	 */
 	public async unfollow(artistId: string): Promise<void> {
 		if (this.onboarding.isOnboarding) {
-			this.store.dispatch({ type: 'guest/unfollow', artistId })
+			this.guest.unfollow(artistId)
 			return
 		}
 		await this.rpcClient.unfollow(artistId)
 	}
 
 	/**
-	 * List followed artists. During onboarding, reads from guest store.
+	 * List followed artists. During onboarding, reads from guest service.
 	 * Otherwise calls the backend ListFollowed RPC.
 	 */
 	public async listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
 		if (this.onboarding.isOnboarding) {
-			return this.store.getState().guest.follows.map((f) => ({
+			return this.guest.follows.map((f) => ({
 				artist: f.artist,
 				hype: 'watch' as const,
 			}))
