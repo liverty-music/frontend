@@ -7,16 +7,16 @@ import {
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Snack } from '../../components/snack-bar/snack'
 import { IAuthService } from '../../services/auth-service'
+import { IGuestService } from '../../services/guest-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
-import { resolveStore } from '../../state/store-interface'
 
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly store = resolveStore()
+	private readonly guest = resolve(IGuestService)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('WelcomeRoute')
 	private readonly ea = resolve(IEventAggregator)
@@ -55,8 +55,8 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	async handleGetStarted(): Promise<void> {
 		this.logger.info('Get Started tapped, entering onboarding')
-		this.store.dispatch({ type: 'guest/clearAll' })
-		this.store.dispatch({ type: 'onboarding/reset' })
+		this.guest.clearAll()
+		this.onboarding.reset()
 		this.onboarding.setStep(OnboardingStep.DISCOVERY)
 		try {
 			await this.router.load('discovery')

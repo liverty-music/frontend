@@ -123,14 +123,14 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '7')
+			localStorage.setItem('onboardingStep', 'completed')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'YOASOBI' },
-					{ id: 'a-2', name: 'Vaundy' },
-					{ id: 'a-3', name: 'Ado' },
+					{ artist: { id: 'a-1', name: 'YOASOBI' }, home: null },
+					{ artist: { id: 'a-2', name: 'Vaundy' }, home: null },
+					{ artist: { id: 'a-3', name: 'Ado' }, home: null },
 				]),
 			)
 		})
@@ -195,14 +195,20 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '5')
+			localStorage.setItem('onboardingStep', 'my-artists')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-					{ id: 'a-2', name: 'Vaundy', passionLevel: 'LOCAL_ONLY' },
-					{ id: 'a-3', name: 'Ado', passionLevel: 'KEEP_AN_EYE' },
+					{
+						artist: { id: 'a-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						home: 'JP-13',
+					},
+					{
+						artist: { id: 'a-2', name: 'Vaundy', mbid: 'mbid-2' },
+						home: 'JP-13',
+					},
+					{ artist: { id: 'a-3', name: 'Ado', mbid: 'mbid-3' }, home: 'JP-13' },
 				]),
 			)
 		})
@@ -257,14 +263,14 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '7')
+			localStorage.setItem('onboardingStep', 'completed')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'YOASOBI' },
-					{ id: 'a-2', name: 'Vaundy' },
-					{ id: 'a-3', name: 'Ado' },
+					{ artist: { id: 'a-1', name: 'YOASOBI' }, home: null },
+					{ artist: { id: 'a-2', name: 'Vaundy' }, home: null },
+					{ artist: { id: 'a-3', name: 'Ado' }, home: null },
 				]),
 			)
 		})

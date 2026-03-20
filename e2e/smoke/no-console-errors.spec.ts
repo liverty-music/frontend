@@ -36,7 +36,7 @@ for (const route of PUBLIC_ROUTES) {
 
 		// Bypass auth/onboarding redirects
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '7')
+			localStorage.setItem('onboardingStep', 'completed')
 		})
 
 		await page.goto(route)

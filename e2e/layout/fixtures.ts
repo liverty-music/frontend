@@ -19,18 +19,18 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 
 /**
  * Set localStorage values so routes render without auth/onboarding redirects.
- * Step 7 = COMPLETED: bypasses tutorial restrictions for non-tutorial routes.
+ * Step 'completed': bypasses tutorial restrictions for non-tutorial routes.
  */
 const BYPASS_AUTH_SETUP = () => {
-	localStorage.setItem('onboardingStep', '7')
+	localStorage.setItem('onboardingStep', 'completed')
 }
 
 /**
- * Set onboarding step to DISCOVER (1) so the auth hook allows
+ * Set onboarding step to 'discovery' so the auth hook allows
  * tutorial routes (discover, loading, dashboard) without authentication.
  */
 const ONBOARDING_DISCOVER_SETUP = () => {
-	localStorage.setItem('onboardingStep', '1')
+	localStorage.setItem('onboardingStep', 'discovery')
 }
 
 export const test = base.extend<{

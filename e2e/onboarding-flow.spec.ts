@@ -261,7 +261,7 @@ test.describe('Onboarding tutorial flow', () => {
 		page,
 	}) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '1')
+			localStorage.setItem('onboardingStep', 'discovery')
 		})
 		await page.goto('http://localhost:9000/discover')
 		await page.waitForSelector('.discovery-layout')
@@ -290,7 +290,7 @@ test.describe('Onboarding tutorial flow', () => {
 	}) => {
 		// Start at discover (step 1)
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '1')
+			localStorage.setItem('onboardingStep', 'discovery')
 		})
 		await page.goto('http://localhost:9000/discover')
 		await page.waitForSelector('.discovery-layout')
@@ -312,7 +312,7 @@ test.describe('Onboarding tutorial flow', () => {
 	}) => {
 		// Set up step 3 with celebration already shown
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '3')
+			localStorage.setItem('onboardingStep', 'dashboard')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
@@ -327,7 +327,7 @@ test.describe('Onboarding tutorial flow', () => {
 		page,
 	}) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '3')
+			localStorage.setItem('onboardingStep', 'dashboard')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
@@ -347,7 +347,7 @@ test.describe('Onboarding tutorial flow', () => {
 	}) => {
 		// Set up step 3 at the card phase
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '3')
+			localStorage.setItem('onboardingStep', 'dashboard')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
@@ -366,7 +366,7 @@ test.describe('Onboarding tutorial flow', () => {
 
 	test('Toast popover has no white background gap', async ({ page }) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '7')
+			localStorage.setItem('onboardingStep', 'completed')
 		})
 		await page.goto('http://localhost:9000/dashboard')
 
@@ -389,14 +389,14 @@ test.describe('Onboarding tutorial flow', () => {
 		page,
 	}) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '5')
+			localStorage.setItem('onboardingStep', 'my-artists')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'Artist 1' },
-					{ id: 'a-2', name: 'Artist 2' },
-					{ id: 'a-3', name: 'Artist 3' },
+					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
 				]),
 			)
 		})
@@ -451,7 +451,7 @@ test.describe('Onboarding tutorial flow', () => {
 		await mockLastFmApi(page)
 
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '3')
+			localStorage.setItem('onboardingStep', 'dashboard')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
@@ -483,13 +483,13 @@ test.describe('Onboarding tutorial flow', () => {
 
 		// Seed 3 followed artists so searches trigger
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '1')
+			localStorage.setItem('onboardingStep', 'discovery')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'Artist 1' },
-					{ id: 'a-2', name: 'Artist 2' },
-					{ id: 'a-3', name: 'Artist 3' },
+					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
 				]),
 			)
 		})
@@ -515,13 +515,13 @@ test.describe('Onboarding tutorial flow', () => {
 		// No guest.home needed — concert gate uses ConcertService/List per artist,
 		// not ListWithProximity which requires a home region.
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '1')
+			localStorage.setItem('onboardingStep', 'discovery')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'Artist 1' },
-					{ id: 'a-2', name: 'Artist 2' },
-					{ id: 'a-3', name: 'Artist 3' },
+					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
 				]),
 			)
 		})
@@ -546,13 +546,13 @@ test.describe('Onboarding tutorial flow', () => {
 	}) => {
 		// Simulate reload: pre-seeded follows in localStorage, step 1 (discovery)
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '1')
+			localStorage.setItem('onboardingStep', 'discovery')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'Artist 1' },
-					{ id: 'a-2', name: 'Artist 2' },
-					{ id: 'a-3', name: 'Artist 3' },
+					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
 				]),
 			)
 		})
@@ -606,13 +606,13 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		await page.addInitScript(() => {
 			localStorage.removeItem('onboarding.celebrationShown')
 			localStorage.setItem('guest.home', 'JP-13')
-			localStorage.setItem('onboardingStep', '1')
+			localStorage.setItem('onboardingStep', 'discovery')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'Artist 1' },
-					{ id: 'a-2', name: 'Artist 2' },
-					{ id: 'a-3', name: 'Artist 3' },
+					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
 				]),
 			)
 		})

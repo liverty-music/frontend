@@ -1,15 +1,14 @@
-import { IStore } from '@aurelia/state'
 import { DI, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
-import { createMockStore } from '../helpers/mock-store'
 
 const mockIDashboardService = DI.createInterface('IDashboardService')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserService = DI.createInterface('IUserService')
+const mockIGuestService = DI.createInterface('IGuestService')
 
 vi.mock('../../src/services/dashboard-service', () => ({
 	IDashboardService: mockIDashboardService,
@@ -39,6 +38,10 @@ vi.mock('../../src/services/user-service', () => ({
 	IUserService: mockIUserService,
 }))
 
+vi.mock('../../src/services/guest-service', () => ({
+	IGuestService: mockIGuestService,
+}))
+
 vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
 	UserHomeSelector: {
 		getStoredHome: vi.fn().mockReturnValue(null),
@@ -61,10 +64,12 @@ describe('DashboardRoute', () => {
 	let mockOnboarding: {
 		currentStep: string
 		isOnboarding: boolean
+		isCompleted: boolean
 		setStep: ReturnType<typeof vi.fn>
 		complete: ReturnType<typeof vi.fn>
 		activateSpotlight: ReturnType<typeof vi.fn>
 		deactivateSpotlight: ReturnType<typeof vi.fn>
+		bringSpotlightToFront: ReturnType<typeof vi.fn>
 	}
 	let mockAuth: {
 		isAuthenticated: boolean
@@ -75,6 +80,20 @@ describe('DashboardRoute', () => {
 	let mockUser: {
 		client: typeof mockUserClient
 		updateHome: ReturnType<typeof vi.fn>
+		current: { home?: { countryCode: string; level1: string } } | undefined
+	}
+	let mockGuest: {
+		follows: {
+			artist: { id: string; name: string; mbid: string }
+			home: string | null
+		}[]
+		home: string | null
+		followedCount: number
+		follow: ReturnType<typeof vi.fn>
+		unfollow: ReturnType<typeof vi.fn>
+		setHome: ReturnType<typeof vi.fn>
+		clearAll: ReturnType<typeof vi.fn>
+		listFollowed: ReturnType<typeof vi.fn>
 	}
 
 	beforeEach(() => {
@@ -85,10 +104,12 @@ describe('DashboardRoute', () => {
 		mockOnboarding = {
 			currentStep: 'completed',
 			isOnboarding: false,
+			isCompleted: true,
 			setStep: vi.fn(),
 			complete: vi.fn(),
 			activateSpotlight: vi.fn(),
 			deactivateSpotlight: vi.fn(),
+			bringSpotlightToFront: vi.fn(),
 		}
 		mockAuth = {
 			isAuthenticated: false,
@@ -98,13 +119,19 @@ describe('DashboardRoute', () => {
 		}
 		mockUser = {
 			client: mockUserClient,
-			current: undefined as
-				| { home?: { countryCode: string; level1: string } }
-				| undefined,
+			current: undefined,
 			updateHome: vi.fn().mockResolvedValue(undefined),
 		}
-
-		const { store } = createMockStore()
+		mockGuest = {
+			follows: [],
+			home: null,
+			followedCount: 0,
+			follow: vi.fn(),
+			unfollow: vi.fn(),
+			setHome: vi.fn(),
+			clearAll: vi.fn(),
+			listFollowed: vi.fn().mockReturnValue([]),
+		}
 
 		const mockElement = document.createElement('div')
 
@@ -112,9 +139,9 @@ describe('DashboardRoute', () => {
 			Registration.instance(mockIDashboardService, mockDashboardService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(IStore, store),
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIUserService, mockUser),
+			Registration.instance(mockIGuestService, mockGuest),
 			Registration.instance(INode, mockElement),
 		)
 		container.register(DashboardRoute)

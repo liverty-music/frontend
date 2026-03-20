@@ -3,9 +3,7 @@ import { expect, test } from '@playwright/test'
 test.describe('Settings Push Notification Toggle', () => {
 	test.use({ storageState: '.auth/storageState.json' })
 
-	test('push notification toggle exists on settings page', async ({
-		page,
-	}) => {
+	test('push notification toggle exists on settings page', async ({ page }) => {
 		await page.goto('/settings')
 		await page.waitForTimeout(3000)
 

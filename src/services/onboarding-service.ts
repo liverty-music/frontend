@@ -1,11 +1,11 @@
-import { DI, ILogger, resolve } from 'aurelia'
+import { DI, ILogger, observable, resolve } from 'aurelia'
+import { loadStep, saveStep } from '../adapter/storage/onboarding-storage'
 import {
 	isCompleted as isCompletedStep,
 	isOnboarding as isOnboardingStep,
 	OnboardingStep,
 	type OnboardingStepValue,
 } from '../entities/onboarding'
-import { resolveStore } from '../state/store-interface'
 
 export {
 	OnboardingStep,
@@ -34,37 +34,30 @@ export const IOnboardingService = DI.createInterface<IOnboardingService>(
 export interface IOnboardingService extends OnboardingService {}
 
 /**
- * Thin facade over the Store for onboarding state.
- * Delegates all state reads/writes to IStore<AppState, AppAction>.
- * Retains callback management (onSpotlightTap, onBringToFront) as instance properties
- * since callbacks cannot be stored in a Redux-like store.
+ * Singleton service owning all onboarding state.
+ * Step is persisted to localStorage via @observable + stepChanged().
+ * Spotlight properties are plain (no persistence needed).
  */
 export class OnboardingService {
 	private readonly logger = resolve(ILogger).scopeTo('OnboardingService')
-	private readonly store = resolveStore()
 
-	// Callbacks — not state, cannot live in the Store
+	@observable public step: OnboardingStepValue = loadStep()
+
+	// Spotlight — plain properties, auto-observed by Aurelia templates
+	public spotlightTarget = ''
+	public spotlightMessage = ''
+	public spotlightRadius = '12px'
+	public spotlightActive = false
+
+	// Callbacks — not state, cannot live in a store
 	public onSpotlightTap: (() => void) | undefined = undefined
 	public onBringToFront: (() => void) | undefined = undefined
 
-	public get currentStep(): OnboardingStepValue {
-		return this.store.getState().onboarding.step
-	}
-
-	public get spotlightTarget(): string {
-		return this.store.getState().onboarding.spotlightTarget
-	}
-
-	public get spotlightMessage(): string {
-		return this.store.getState().onboarding.spotlightMessage
-	}
-
-	public get spotlightRadius(): string {
-		return this.store.getState().onboarding.spotlightRadius
-	}
-
-	public get spotlightActive(): boolean {
-		return this.store.getState().onboarding.spotlightActive
+	/**
+	 * Persist step to localStorage on change.
+	 */
+	public stepChanged(newValue: OnboardingStepValue): void {
+		saveStep(newValue)
 	}
 
 	/**
@@ -77,12 +70,10 @@ export class OnboardingService {
 		onTap?: () => void,
 		radius = '12px',
 	): void {
-		this.store.dispatch({
-			type: 'onboarding/setSpotlight',
-			target,
-			message,
-			radius,
-		})
+		this.spotlightTarget = target
+		this.spotlightMessage = message
+		this.spotlightRadius = radius
+		this.spotlightActive = true
 		this.onSpotlightTap = onTap
 	}
 
@@ -90,7 +81,10 @@ export class OnboardingService {
 	 * Deactivate the spotlight entirely.
 	 */
 	public deactivateSpotlight(): void {
-		this.store.dispatch({ type: 'onboarding/clearSpotlight' })
+		this.spotlightTarget = ''
+		this.spotlightMessage = ''
+		this.spotlightRadius = '12px'
+		this.spotlightActive = false
 		this.onSpotlightTap = undefined
 	}
 
@@ -103,48 +97,56 @@ export class OnboardingService {
 	}
 
 	/**
+	 * Alias for step — preserves the public API used by routes and hooks.
+	 */
+	public get currentStep(): OnboardingStepValue {
+		return this.step
+	}
+
+	/**
 	 * Whether the user is currently in the onboarding flow.
 	 */
 	public get isOnboarding(): boolean {
-		return isOnboardingStep(this.currentStep)
+		return isOnboardingStep(this.step)
 	}
 
 	/**
 	 * Whether onboarding has been completed at least once.
 	 */
 	public get isCompleted(): boolean {
-		return isCompletedStep(this.currentStep)
+		return isCompletedStep(this.step)
 	}
 
 	/**
-	 * Advance to the given step and persist via Store dispatch.
+	 * Advance to the given step.
 	 */
 	public setStep(step: OnboardingStepValue): void {
 		this.logger.info('Step transition', {
-			from: this.currentStep,
+			from: this.step,
 			to: step,
 		})
-		this.store.dispatch({ type: 'onboarding/advance', step })
+		this.step = step
 	}
 
 	/**
 	 * Mark onboarding as completed.
 	 */
 	public complete(): void {
-		this.store.dispatch({ type: 'onboarding/complete' })
+		this.deactivateSpotlight()
+		this.step = OnboardingStep.COMPLETED
 	}
 
 	/**
 	 * Reset to LP. Used when starting a fresh onboarding.
 	 */
 	public reset(): void {
-		this.store.dispatch({ type: 'onboarding/reset' })
+		this.step = OnboardingStep.LP
 	}
 
 	/**
 	 * Get the route path for the current step.
 	 */
 	public getRouteForCurrentStep(): string {
-		return STEP_ROUTE_MAP[this.currentStep]
+		return STEP_ROUTE_MAP[this.step]
 	}
 }

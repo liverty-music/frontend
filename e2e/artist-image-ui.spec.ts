@@ -384,4 +384,3 @@ test.describe('Event detail sheet hero image', () => {
 		await expect(heroSection).toHaveCount(0)
 	})
 })
-

@@ -1,16 +1,14 @@
 import type { RouteNode } from '@aurelia/router'
-import { IStore } from '@aurelia/state'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { IGuestDataMergeService } from '../../src/services/guest-data-merge-service'
-import { IOnboardingService } from '../../src/services/onboarding-service'
+import { IGuestService } from '../../src/services/guest-service'
 import { IUserService } from '../../src/services/user-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
-import { createMockStore } from '../helpers/mock-store'
 
 function createMockUserService() {
 	return {
@@ -22,6 +20,19 @@ function createMockUserService() {
 function createMockMergeService() {
 	return {
 		merge: vi.fn().mockResolvedValue(undefined),
+	}
+}
+
+function createMockGuestService() {
+	return {
+		follows: [],
+		home: null,
+		followedCount: 0,
+		follow: vi.fn(),
+		unfollow: vi.fn(),
+		setHome: vi.fn(),
+		clearAll: vi.fn(),
+		listFollowed: vi.fn().mockReturnValue([]),
 	}
 }
 
@@ -39,8 +50,6 @@ describe('AuthCallbackRoute', () => {
 		mockUserService = createMockUserService()
 		mockMergeService = createMockMergeService()
 
-		const { store } = createMockStore()
-
 		const container = createTestContainer(
 			Registration.instance(IAuthService, mockAuth as IAuthService),
 			Registration.instance(IUserService, mockUserService as IUserService),
@@ -48,8 +57,7 @@ describe('AuthCallbackRoute', () => {
 				IGuestDataMergeService,
 				mockMergeService as IGuestDataMergeService,
 			),
-			Registration.instance(IOnboardingService, {}),
-			Registration.instance(IStore, store),
+			Registration.instance(IGuestService, createMockGuestService()),
 		)
 		container.register(AuthCallbackRoute)
 		sut = container.get(AuthCallbackRoute)

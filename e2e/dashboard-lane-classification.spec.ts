@@ -130,15 +130,24 @@ test.describe('Dashboard lane classification after home selection', () => {
 
 		// Seed: step 3, followed artists, NO guest.home -> needsRegion = true
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '3')
+			localStorage.setItem('onboardingStep', 'dashboard')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.removeItem('guest.home')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'artist-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-					{ id: 'artist-2', name: 'Vaundy', passionLevel: 'LOCAL_ONLY' },
-					{ id: 'artist-3', name: 'Ado', passionLevel: 'KEEP_AN_EYE' },
+					{
+						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						home: null,
+					},
+					{
+						artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+						home: null,
+					},
+					{
+						artist: { id: 'artist-3', name: 'Ado', mbid: 'mbid-3' },
+						home: null,
+					},
 				]),
 			)
 		})
@@ -180,15 +189,24 @@ test.describe('Dashboard lane classification after home selection', () => {
 		// Seed: step 3, guest.home already set, celebration already shown.
 		// This simulates returning to dashboard after having already selected home.
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', '3')
+			localStorage.setItem('onboardingStep', 'dashboard')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'artist-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-					{ id: 'artist-2', name: 'Vaundy', passionLevel: 'LOCAL_ONLY' },
-					{ id: 'artist-3', name: 'Ado', passionLevel: 'KEEP_AN_EYE' },
+					{
+						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						home: 'JP-13',
+					},
+					{
+						artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+						home: 'JP-13',
+					},
+					{
+						artist: { id: 'artist-3', name: 'Ado', mbid: 'mbid-3' },
+						home: 'JP-13',
+					},
 				]),
 			)
 		})

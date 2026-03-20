@@ -1,171 +1,233 @@
-import { IStore } from '@aurelia/state'
 import { DI, ILogger, Registration } from 'aurelia'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { OnboardingStep } from '../../src/entities/onboarding'
 import { createMockLogger } from '../helpers/mock-logger'
-import { createMockStore } from '../helpers/mock-store'
 
-const { OnboardingService, OnboardingStep } = await import(
+vi.mock('../../src/adapter/storage/onboarding-storage', () => ({
+	loadStep: vi.fn().mockReturnValue('lp'),
+	saveStep: vi.fn(),
+}))
+
+const { loadStep } = await import(
+	'../../src/adapter/storage/onboarding-storage'
+)
+
+// Dynamic import so that the module-level loadStep() call uses our mock
+const { OnboardingService } = await import(
 	'../../src/services/onboarding-service'
 )
-type OnboardingStepValue = (typeof OnboardingStep)[keyof typeof OnboardingStep]
 
-function createService(overrides: { step?: OnboardingStepValue } = {}) {
-	const { store, state } = createMockStore({
-		onboarding: {
-			step: overrides.step ?? OnboardingStep.LP,
-			spotlightTarget: '',
-			spotlightMessage: '',
-			spotlightRadius: '12px',
-			spotlightActive: false,
-		},
-	})
-
+function createService(
+	overrides: { step?: string } = {},
+): InstanceType<typeof OnboardingService> {
+	// Reset to default, then apply override
+	vi.mocked(loadStep).mockReturnValue((overrides.step ?? 'lp') as never)
 	const container = DI.createContainer()
 	container.register(Registration.instance(ILogger, createMockLogger()))
-	container.register(Registration.instance(IStore, store))
-	const sut = container.invoke(OnboardingService)
-
-	return { sut, store, state }
+	return container.invoke(OnboardingService)
 }
 
 describe('OnboardingService', () => {
 	beforeEach(() => {
-		localStorage.clear()
-	})
-
-	afterEach(() => {
-		localStorage.clear()
+		vi.clearAllMocks()
 	})
 
 	describe('currentStep', () => {
-		it('should default to LP (0) when store has initial state', () => {
-			const { sut } = createService()
+		it('should default to LP when no override', () => {
+			const sut = createService()
 			expect(sut.currentStep).toBe(OnboardingStep.LP)
 		})
 
-		it('should reflect store state', () => {
-			const { sut } = createService({ step: OnboardingStep.DASHBOARD })
+		it('should reflect the step passed at creation', () => {
+			const sut = createService({ step: OnboardingStep.DASHBOARD })
 			expect(sut.currentStep).toBe(OnboardingStep.DASHBOARD)
 		})
 	})
 
 	describe('isOnboarding', () => {
-		it('should return true for steps 1-5', () => {
-			const { sut } = createService({ step: OnboardingStep.DASHBOARD })
+		it('should return true for DISCOVERY', () => {
+			const sut = createService({ step: OnboardingStep.DISCOVERY })
 			expect(sut.isOnboarding).toBe(true)
 		})
 
-		it('should return false for COMPLETED (7)', () => {
-			const { sut } = createService({ step: OnboardingStep.COMPLETED })
+		it('should return true for DASHBOARD', () => {
+			const sut = createService({ step: OnboardingStep.DASHBOARD })
+			expect(sut.isOnboarding).toBe(true)
+		})
+
+		it('should return true for DETAIL', () => {
+			const sut = createService({ step: OnboardingStep.DETAIL })
+			expect(sut.isOnboarding).toBe(true)
+		})
+
+		it('should return true for MY_ARTISTS', () => {
+			const sut = createService({ step: OnboardingStep.MY_ARTISTS })
+			expect(sut.isOnboarding).toBe(true)
+		})
+
+		it('should return false for COMPLETED', () => {
+			const sut = createService({ step: OnboardingStep.COMPLETED })
 			expect(sut.isOnboarding).toBe(false)
 		})
 
-		it('should return false for LP (0)', () => {
-			const { sut } = createService()
+		it('should return false for LP', () => {
+			const sut = createService()
 			expect(sut.isOnboarding).toBe(false)
 		})
 	})
 
+	describe('isCompleted', () => {
+		it('should return true for COMPLETED', () => {
+			const sut = createService({ step: OnboardingStep.COMPLETED })
+			expect(sut.isCompleted).toBe(true)
+		})
+
+		it('should return false for LP', () => {
+			const sut = createService()
+			expect(sut.isCompleted).toBe(false)
+		})
+
+		it('should return false for DASHBOARD', () => {
+			const sut = createService({ step: OnboardingStep.DASHBOARD })
+			expect(sut.isCompleted).toBe(false)
+		})
+	})
+
 	describe('setStep', () => {
-		it('should dispatch onboarding/advance action', () => {
-			const { sut, store } = createService()
+		it('should update step to the given value', () => {
+			const sut = createService()
 
 			sut.setStep(OnboardingStep.DASHBOARD)
 
-			expect(store.dispatch).toHaveBeenCalledWith({
-				type: 'onboarding/advance',
-				step: OnboardingStep.DASHBOARD,
-			})
+			expect(sut.step).toBe(OnboardingStep.DASHBOARD)
 			expect(sut.currentStep).toBe(OnboardingStep.DASHBOARD)
 		})
 	})
 
 	describe('complete', () => {
-		it('should dispatch onboarding/complete action', () => {
-			const { sut, store } = createService()
+		it('should set step to COMPLETED', () => {
+			const sut = createService({ step: OnboardingStep.DASHBOARD })
 
 			sut.complete()
 
-			expect(store.dispatch).toHaveBeenCalledWith({
-				type: 'onboarding/complete',
-			})
-			expect(sut.currentStep).toBe(OnboardingStep.COMPLETED)
+			expect(sut.step).toBe(OnboardingStep.COMPLETED)
+			expect(sut.isCompleted).toBe(true)
+		})
+
+		it('should deactivate spotlight', () => {
+			const sut = createService({ step: OnboardingStep.DASHBOARD })
+			sut.activateSpotlight('[data-target]', 'msg')
+
+			sut.complete()
+
+			expect(sut.spotlightActive).toBe(false)
+			expect(sut.spotlightTarget).toBe('')
+			expect(sut.spotlightMessage).toBe('')
 		})
 	})
 
 	describe('reset', () => {
-		it('should dispatch onboarding/reset action', () => {
-			const { sut, store } = createService({ step: OnboardingStep.DASHBOARD })
+		it('should set step to LP', () => {
+			const sut = createService({ step: OnboardingStep.DASHBOARD })
 
 			sut.reset()
 
-			expect(store.dispatch).toHaveBeenCalledWith({
-				type: 'onboarding/reset',
-			})
-			expect(sut.currentStep).toBe(OnboardingStep.LP)
+			expect(sut.step).toBe(OnboardingStep.LP)
 		})
 	})
 
-	describe('spotlight', () => {
-		it('should activate spotlight via store dispatch', () => {
-			const { sut, store } = createService()
+	describe('activateSpotlight', () => {
+		it('should set spotlight properties', () => {
+			const sut = createService()
 
 			sut.activateSpotlight('[data-hype-header]', 'Test message')
 
-			expect(store.dispatch).toHaveBeenCalledWith({
-				type: 'onboarding/setSpotlight',
-				target: '[data-hype-header]',
-				message: 'Test message',
-				radius: '12px',
-			})
 			expect(sut.spotlightActive).toBe(true)
 			expect(sut.spotlightTarget).toBe('[data-hype-header]')
 			expect(sut.spotlightMessage).toBe('Test message')
+			expect(sut.spotlightRadius).toBe('12px')
 		})
 
-		it('should deactivate spotlight and clear state', () => {
-			const { sut } = createService()
-			sut.activateSpotlight('[data-target]', 'msg')
+		it('should accept custom radius', () => {
+			const sut = createService()
+
+			sut.activateSpotlight('[data-target]', 'msg', undefined, '50%')
+
+			expect(sut.spotlightRadius).toBe('50%')
+		})
+
+		it('should store onTap callback', () => {
+			const sut = createService()
+			const tapFn = (): void => {}
+
+			sut.activateSpotlight('[data-target]', 'msg', tapFn)
+
+			expect(sut.onSpotlightTap).toBe(tapFn)
+		})
+	})
+
+	describe('deactivateSpotlight', () => {
+		it('should clear all spotlight properties', () => {
+			const sut = createService()
+			sut.activateSpotlight('[data-target]', 'msg', () => {}, '24px')
 
 			sut.deactivateSpotlight()
 
 			expect(sut.spotlightActive).toBe(false)
 			expect(sut.spotlightTarget).toBe('')
 			expect(sut.spotlightMessage).toBe('')
-		})
-
-		it('should store onTap callback on instance', () => {
-			const { sut } = createService()
-			const tapFn = () => {}
-
-			sut.activateSpotlight('[data-target]', 'msg', tapFn)
-
-			expect(sut.onSpotlightTap).toBe(tapFn)
-		})
-
-		it('should clear onTap callback on deactivate', () => {
-			const { sut } = createService()
-			sut.activateSpotlight('[data-target]', 'msg', () => {})
-
-			sut.deactivateSpotlight()
-
+			expect(sut.spotlightRadius).toBe('12px')
 			expect(sut.onSpotlightTap).toBeUndefined()
+		})
+	})
+
+	describe('bringSpotlightToFront', () => {
+		it('should invoke onBringToFront callback when set', () => {
+			const sut = createService()
+			const bringFn = vi.fn()
+			sut.onBringToFront = bringFn
+
+			sut.bringSpotlightToFront()
+
+			expect(bringFn).toHaveBeenCalledOnce()
+		})
+
+		it('should be a no-op when callback is not set', () => {
+			const sut = createService()
+
+			// Should not throw
+			expect(() => sut.bringSpotlightToFront()).not.toThrow()
 		})
 	})
 
 	describe('getRouteForCurrentStep', () => {
 		it('should return "discovery" for DISCOVERY step', () => {
-			const { sut } = createService({ step: OnboardingStep.DISCOVERY })
+			const sut = createService({ step: OnboardingStep.DISCOVERY })
 			expect(sut.getRouteForCurrentStep()).toBe('discovery')
 		})
 
 		it('should return "dashboard" for DASHBOARD step', () => {
-			const { sut } = createService({ step: OnboardingStep.DASHBOARD })
+			const sut = createService({ step: OnboardingStep.DASHBOARD })
 			expect(sut.getRouteForCurrentStep()).toBe('dashboard')
 		})
 
+		it('should return "dashboard" for DETAIL step', () => {
+			const sut = createService({ step: OnboardingStep.DETAIL })
+			expect(sut.getRouteForCurrentStep()).toBe('dashboard')
+		})
+
+		it('should return "my-artists" for MY_ARTISTS step', () => {
+			const sut = createService({ step: OnboardingStep.MY_ARTISTS })
+			expect(sut.getRouteForCurrentStep()).toBe('my-artists')
+		})
+
 		it('should return empty string for LP', () => {
-			const { sut } = createService()
+			const sut = createService()
+			expect(sut.getRouteForCurrentStep()).toBe('')
+		})
+
+		it('should return empty string for COMPLETED', () => {
+			const sut = createService({ step: OnboardingStep.COMPLETED })
 			expect(sut.getRouteForCurrentStep()).toBe('')
 		})
 	})

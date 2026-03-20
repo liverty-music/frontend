@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
-	deserializeGuestFollows,
-	serializeGuestFollows,
+	loadFollows,
+	loadHome,
+	saveFollows,
+	saveHome,
 } from '../../../src/adapter/storage/guest-storage'
-import type { GuestFollow } from '../../../src/state/app-state'
+import type { GuestFollow } from '../../../src/entities/follow'
 
 function makeFollow(
 	id: string,
@@ -13,29 +15,44 @@ function makeFollow(
 	return { artist: { id, name, mbid: '' }, home }
 }
 
-describe('serializeGuestFollows', () => {
-	it('serializes follows to JSON', () => {
-		const follows = [makeFollow('a1', 'Artist One', 'tokyo')]
-		const json = serializeGuestFollows(follows)
-		const parsed = JSON.parse(json)
+beforeEach(() => {
+	localStorage.clear()
+})
 
-		expect(parsed).toHaveLength(1)
-		expect(parsed[0].artist.id).toBe('a1')
-		expect(parsed[0].artist.name).toBe('Artist One')
-		expect(parsed[0].home).toBe('tokyo')
+afterEach(() => {
+	localStorage.clear()
+})
+
+describe('saveFollows / loadFollows', () => {
+	it('should round-trip follows through localStorage', () => {
+		const follows = [
+			makeFollow('a1', 'Artist One', 'tokyo'),
+			makeFollow('a2', 'Artist Two'),
+		]
+
+		saveFollows(follows)
+		const result = loadFollows()
+
+		expect(result).toHaveLength(2)
+		expect(result[0].artist.id).toBe('a1')
+		expect(result[0].artist.name).toBe('Artist One')
+		expect(result[0].home).toBe('tokyo')
+		expect(result[1].artist.id).toBe('a2')
+		expect(result[1].home).toBeNull()
 	})
 
-	it('serializes empty array', () => {
-		expect(serializeGuestFollows([])).toBe('[]')
+	it('should save and load empty array', () => {
+		saveFollows([])
+		expect(loadFollows()).toEqual([])
 	})
 
-	it('preserves null home', () => {
-		const follows = [makeFollow('a1', 'Artist')]
-		const parsed = JSON.parse(serializeGuestFollows(follows))
-		expect(parsed[0].home).toBeNull()
+	it('should preserve null home', () => {
+		saveFollows([makeFollow('a1', 'Artist')])
+		const result = loadFollows()
+		expect(result[0].home).toBeNull()
 	})
 
-	it('preserves fanart data', () => {
+	it('should preserve fanart data', () => {
 		const follows: GuestFollow[] = [
 			{
 				artist: {
@@ -54,163 +71,66 @@ describe('serializeGuestFollows', () => {
 				home: null,
 			},
 		]
-		const parsed = JSON.parse(serializeGuestFollows(follows))
-		expect(parsed[0].artist.fanart.hdMusicLogo).toBe('hd.png')
-		expect(parsed[0].artist.fanart.logoColorProfile.dominantHue).toBe(120)
+		saveFollows(follows)
+		const result = loadFollows()
+		expect(result[0].artist.fanart?.hdMusicLogo).toBe('hd.png')
+		expect(result[0].artist.fanart?.logoColorProfile?.dominantHue).toBe(120)
+	})
+
+	it('should return empty array when localStorage is empty', () => {
+		expect(loadFollows()).toEqual([])
+	})
+
+	it('should return empty array for invalid JSON', () => {
+		localStorage.setItem('guest.followedArtists', 'not json')
+		expect(loadFollows()).toEqual([])
+	})
+
+	it('should return empty array for non-array JSON', () => {
+		localStorage.setItem('guest.followedArtists', '{"key":"val"}')
+		expect(loadFollows()).toEqual([])
+	})
+
+	it('should filter out entries missing artist.id or artist.name', () => {
+		localStorage.setItem(
+			'guest.followedArtists',
+			JSON.stringify([
+				{ artist: { id: 'a1', name: 'Valid' }, home: null },
+				{ artist: { id: 123, name: 'Bad ID' }, home: null },
+				{ artist: {}, home: null },
+				{ notArtist: true },
+			]),
+		)
+		const result = loadFollows()
+		expect(result).toHaveLength(1)
+		expect(result[0].artist.id).toBe('a1')
+	})
+
+	it('should filter out null entries', () => {
+		localStorage.setItem(
+			'guest.followedArtists',
+			JSON.stringify([null, { artist: { id: 'a1', name: 'X' }, home: null }]),
+		)
+		const result = loadFollows()
+		expect(result).toHaveLength(1)
+		expect(result[0].artist.id).toBe('a1')
 	})
 })
 
-describe('deserializeGuestFollows', () => {
-	describe('new flat format', () => {
-		it('deserializes correctly', () => {
-			const json = JSON.stringify([
-				{
-					artist: { id: 'a1', name: 'Artist One', mbid: 'mb1' },
-					home: 'tokyo',
-				},
-			])
-			const result = deserializeGuestFollows(json)
-
-			expect(result).toHaveLength(1)
-			expect(result[0].artist.id).toBe('a1')
-			expect(result[0].artist.name).toBe('Artist One')
-			expect(result[0].artist.mbid).toBe('mb1')
-			expect(result[0].home).toBe('tokyo')
-		})
-
-		it('defaults name and mbid to empty string', () => {
-			const json = JSON.stringify([{ artist: { id: 'a1' }, home: null }])
-			const result = deserializeGuestFollows(json)
-
-			expect(result[0].artist.name).toBe('')
-			expect(result[0].artist.mbid).toBe('')
-		})
-
-		it('handles missing home field', () => {
-			const json = JSON.stringify([
-				{ artist: { id: 'a1', name: 'X', mbid: '' } },
-			])
-			const result = deserializeGuestFollows(json)
-			expect(result[0].home).toBeNull()
-		})
+describe('saveHome / loadHome', () => {
+	it('should save and load a home code', () => {
+		saveHome('JP-13')
+		expect(loadHome()).toBe('JP-13')
 	})
 
-	describe('legacy proto VO format', () => {
-		it('unwraps { value: "..." } wrappers', () => {
-			const json = JSON.stringify([
-				{
-					artist: {
-						id: { value: 'a1' },
-						name: { value: 'Artist One' },
-						mbid: { value: 'mb1' },
-					},
-					home: null,
-				},
-			])
-			const result = deserializeGuestFollows(json)
-
-			expect(result).toHaveLength(1)
-			expect(result[0].artist.id).toBe('a1')
-			expect(result[0].artist.name).toBe('Artist One')
-			expect(result[0].artist.mbid).toBe('mb1')
-		})
-
-		it('skips entry when VO id has no value', () => {
-			const json = JSON.stringify([
-				{
-					artist: { id: { value: undefined }, name: { value: 'X' } },
-					home: null,
-				},
-			])
-			const result = deserializeGuestFollows(json)
-			expect(result).toHaveLength(0)
-		})
+	it('should return null when no home is stored', () => {
+		expect(loadHome()).toBeNull()
 	})
 
-	describe('legacy flat format (artistId)', () => {
-		it('maps artistId to artist.id', () => {
-			const json = JSON.stringify([{ artistId: 'a1', name: 'Artist One' }])
-			const result = deserializeGuestFollows(json)
-
-			expect(result).toHaveLength(1)
-			expect(result[0].artist.id).toBe('a1')
-			expect(result[0].artist.name).toBe('Artist One')
-			expect(result[0].artist.mbid).toBe('')
-			expect(result[0].home).toBeNull()
-		})
-
-		it('defaults name to empty string when missing', () => {
-			const json = JSON.stringify([{ artistId: 'a1' }])
-			const result = deserializeGuestFollows(json)
-			expect(result[0].artist.name).toBe('')
-		})
-	})
-
-	describe('legacy direct format (id at top level)', () => {
-		it('maps top-level id/name to artist', () => {
-			const json = JSON.stringify([
-				{ id: 'artist-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-			])
-			const result = deserializeGuestFollows(json)
-
-			expect(result).toHaveLength(1)
-			expect(result[0].artist.id).toBe('artist-1')
-			expect(result[0].artist.name).toBe('YOASOBI')
-			expect(result[0].artist.mbid).toBe('')
-			expect(result[0].home).toBeNull()
-		})
-	})
-
-	describe('corrupt / invalid data', () => {
-		it('returns empty array for invalid JSON', () => {
-			expect(deserializeGuestFollows('not json')).toEqual([])
-		})
-
-		it('returns empty array for non-array JSON', () => {
-			expect(deserializeGuestFollows('{"key":"val"}')).toEqual([])
-		})
-
-		it('returns empty array for empty string', () => {
-			expect(deserializeGuestFollows('')).toEqual([])
-		})
-
-		it('filters out null entries', () => {
-			const json = JSON.stringify([
-				null,
-				{ artist: { id: 'a1', name: 'X', mbid: '' } },
-			])
-			const result = deserializeGuestFollows(json)
-			expect(result).toHaveLength(1)
-			expect(result[0].artist.id).toBe('a1')
-		})
-
-		it('filters out entries without recognizable format', () => {
-			const json = JSON.stringify([{ foo: 'bar' }])
-			const result = deserializeGuestFollows(json)
-			expect(result).toHaveLength(0)
-		})
-
-		it('filters out entries with empty artist object', () => {
-			const json = JSON.stringify([{ artist: {} }])
-			const result = deserializeGuestFollows(json)
-			expect(result).toHaveLength(0)
-		})
-	})
-
-	describe('round-trip', () => {
-		it('serialize then deserialize preserves data', () => {
-			const original: GuestFollow[] = [
-				makeFollow('a1', 'Artist One', 'tokyo'),
-				makeFollow('a2', 'Artist Two'),
-			]
-			const result = deserializeGuestFollows(serializeGuestFollows(original))
-
-			expect(result).toHaveLength(2)
-			expect(result[0].artist.id).toBe('a1')
-			expect(result[0].artist.name).toBe('Artist One')
-			expect(result[0].home).toBe('tokyo')
-			expect(result[1].artist.id).toBe('a2')
-			expect(result[1].home).toBeNull()
-		})
+	it('should remove home from localStorage when saving null', () => {
+		saveHome('JP-13')
+		saveHome(null)
+		expect(loadHome()).toBeNull()
+		expect(localStorage.getItem('guest.home')).toBeNull()
 	})
 })

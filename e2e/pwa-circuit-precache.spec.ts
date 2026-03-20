@@ -5,13 +5,15 @@ test.describe('ZK Circuit File Pre-Cache', () => {
 		await page.goto('/')
 
 		// Wait for SW to register and install event to complete
-		await page.waitForFunction(
-			() => navigator.serviceWorker.controller !== null,
-			{},
-			{ timeout: 15000 },
-		).catch(() => {
-			// SW might not be available in test environment — skip gracefully
-		})
+		await page
+			.waitForFunction(
+				() => navigator.serviceWorker.controller !== null,
+				{},
+				{ timeout: 15000 },
+			)
+			.catch(() => {
+				// SW might not be available in test environment — skip gracefully
+			})
 
 		// Query Cache API for circuit files
 		const cachedUrls = await page.evaluate(async () => {

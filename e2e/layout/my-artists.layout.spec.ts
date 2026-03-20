@@ -11,14 +11,23 @@ import { expect, test } from './fixtures'
  */
 function seedWithArtists() {
 	return () => {
-		localStorage.setItem('onboardingStep', '5')
+		localStorage.setItem('onboardingStep', 'my-artists')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ id: 'artist-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-				{ id: 'artist-2', name: 'Vaundy', passionLevel: 'LOCAL_ONLY' },
-				{ id: 'artist-3', name: 'Ado', passionLevel: 'KEEP_AN_EYE' },
+				{
+					artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+					home: 'JP-13',
+				},
+				{
+					artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+					home: 'JP-13',
+				},
+				{
+					artist: { id: 'artist-3', name: 'Ado', mbid: 'mbid-3' },
+					home: 'JP-13',
+				},
 			]),
 		)
 	}
@@ -27,7 +36,7 @@ function seedWithArtists() {
 /** Seed with no followed artists to trigger the empty state. */
 function seedEmpty() {
 	return () => {
-		localStorage.setItem('onboardingStep', '5')
+		localStorage.setItem('onboardingStep', 'my-artists')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem('guest.followedArtists', JSON.stringify([]))
 	}
@@ -92,7 +101,6 @@ test.describe('My Artists header', () => {
 		const text = await count.textContent()
 		expect(text).toContain('3')
 	})
-
 })
 
 // ---------------------------------------------------------------------------

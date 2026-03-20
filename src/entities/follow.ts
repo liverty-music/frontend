@@ -4,6 +4,15 @@ import type { Artist } from './artist'
 export type Hype = 'watch' | 'home' | 'nearby' | 'away'
 
 /**
+ * A guest (unauthenticated) follow stored locally during onboarding.
+ * Paired with a nullable home area for proximity-based concert search.
+ */
+export interface GuestFollow {
+	artist: Artist
+	home: string | null
+}
+
+/**
  * A followed artist combining the proto Artist entity
  * with the user's hype setting.
  */

@@ -7,13 +7,19 @@ import { expect, test } from './fixtures'
 /** Seed dashboard in onboarding mode with concert data. */
 function seedWithConcertData(opts?: { skipCelebration?: boolean }) {
 	return () => {
-		localStorage.setItem('onboardingStep', '3')
+		localStorage.setItem('onboardingStep', 'dashboard')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ id: 'artist-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-				{ id: 'artist-2', name: 'Vaundy', passionLevel: 'LOCAL_ONLY' },
+				{
+					artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+					home: 'JP-13',
+				},
+				{
+					artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+					home: 'JP-13',
+				},
 			]),
 		)
 		if (opts?.skipCelebration) {
@@ -22,15 +28,29 @@ function seedWithConcertData(opts?: { skipCelebration?: boolean }) {
 	}
 }
 
-/** Build a ConcertService/List response (per artist, onboarding path). */
+/** Build a ConcertService/ListWithProximity response (onboarding path). */
 function concertListResponse() {
-	const concerts = []
+	const groupMap = new Map<string, { date: object; away: object[] }>()
 	for (let i = 0; i < 6; i++) {
 		const date = new Date()
 		date.setDate(date.getDate() + 1 + Math.floor(i / 2))
-		concerts.push(makeConcert(`c${i}`, `artist-${(i % 2) + 1}`, date))
+		const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+		const concert = makeConcert(`c${i}`, `artist-${(i % 2) + 1}`, date)
+		if (!groupMap.has(dateKey)) {
+			groupMap.set(dateKey, {
+				date: {
+					value: {
+						year: date.getFullYear(),
+						month: date.getMonth() + 1,
+						day: date.getDate(),
+					},
+				},
+				away: [],
+			})
+		}
+		groupMap.get(dateKey)!.away.push(concert)
 	}
-	return { concerts }
+	return { groups: Array.from(groupMap.values()) }
 }
 
 function makeConcert(id: string, artistId: string, date: Date) {
@@ -90,26 +110,23 @@ async function setupMocks(
 	})
 
 	if (opts.withJourneys) {
-		await page.route(
-			'**/liverty_music.rpc.ticket_journey.**',
-			(route) => {
-				const url = route.request().url()
-				if (url.includes('ListByUser')) {
-					route.fulfill({
-						status: 200,
-						contentType: 'application/json',
-						body: JSON.stringify(journeyListResponse()),
-					})
-				} else {
-					// SetStatus / Delete — return empty success
-					route.fulfill({
-						status: 200,
-						contentType: 'application/json',
-						body: JSON.stringify({}),
-					})
-				}
-			},
-		)
+		await page.route('**/liverty_music.rpc.ticket_journey.**', (route) => {
+			const url = route.request().url()
+			if (url.includes('ListByUser')) {
+				route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify(journeyListResponse()),
+				})
+			} else {
+				// SetStatus / Delete — return empty success
+				route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify({}),
+				})
+			}
+		})
 	}
 }
 
@@ -183,10 +200,9 @@ test.describe('Ticket journey badge', () => {
 		const allCards = page.locator('[data-live-card]')
 		const totalCards = await allCards.count()
 		const totalBadges = await page.locator('.journey-badge').count()
-		expect(
-			totalBadges,
-			'not every card should have a badge',
-		).toBeLessThan(totalCards)
+		expect(totalBadges, 'not every card should have a badge').toBeLessThan(
+			totalCards,
+		)
 	})
 })
 
@@ -264,10 +280,9 @@ test.describe('Detail sheet journey controls', () => {
 		)
 		await trackingBtn.click()
 		await expect
-			.poll(
-				async () => trackingBtn.getAttribute('data-active'),
-				{ timeout: 3_000 },
-			)
+			.poll(async () => trackingBtn.getAttribute('data-active'), {
+				timeout: 3_000,
+			})
 			.not.toBeNull()
 	})
 
@@ -276,9 +291,7 @@ test.describe('Detail sheet journey controls', () => {
 	}) => {
 		const removeBtn = page.locator('.journey-remove-btn')
 
-		const paidBtn = page.locator(
-			'.journey-btn[data-journey-status="paid"]',
-		)
+		const paidBtn = page.locator('.journey-btn[data-journey-status="paid"]')
 		await paidBtn.click()
 
 		await expect(removeBtn).toBeVisible({ timeout: 3_000 })
@@ -293,20 +306,18 @@ test.describe('Detail sheet journey controls', () => {
 		await appliedBtn.click()
 
 		await expect
-			.poll(
-				async () => appliedBtn.getAttribute('data-active'),
-				{ timeout: 3_000 },
-			)
+			.poll(async () => appliedBtn.getAttribute('data-active'), {
+				timeout: 3_000,
+			})
 			.not.toBeNull()
 
 		const removeBtn = page.locator('.journey-remove-btn')
 		await removeBtn.click()
 
 		await expect
-			.poll(
-				async () => appliedBtn.getAttribute('data-active'),
-				{ timeout: 3_000 },
-			)
+			.poll(async () => appliedBtn.getAttribute('data-active'), {
+				timeout: 3_000,
+			})
 			.toBeNull()
 	})
 

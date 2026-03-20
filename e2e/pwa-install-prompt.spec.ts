@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 // The dashboard requires auth or onboarding step >= 3.
 // Set onboarding step and region to bypass auth and region-setup dialog.
 const ONBOARDING_SETUP = () => {
-	localStorage.setItem('onboardingStep', '3')
+	localStorage.setItem('onboardingStep', 'dashboard')
 	localStorage.setItem('user.adminArea', 'Tokyo')
 }
 

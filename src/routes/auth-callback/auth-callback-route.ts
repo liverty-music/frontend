@@ -4,8 +4,8 @@ import { ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
 import { IAuthService } from '../../services/auth-service'
 import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
+import { IGuestService } from '../../services/guest-service'
 import { IUserService } from '../../services/user-service'
-import { resolveStore } from '../../state/store-interface'
 
 /**
  * OIDC callback handler that processes the authorization code exchange
@@ -22,7 +22,7 @@ export class AuthCallbackRoute {
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
 	private readonly mergeService = resolve(IGuestDataMergeService)
-	private readonly store = resolveStore()
+	private readonly guest = resolve(IGuestService)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
 
 	public async canLoad(
@@ -85,7 +85,7 @@ export class AuthCallbackRoute {
 		}
 
 		try {
-			const guestHome = this.store.getState().guest.home
+			const guestHome = this.guest.home
 			await this.userService.create(
 				email,
 				guestHome ? codeToHome(guestHome) : undefined,

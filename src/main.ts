@@ -1,13 +1,7 @@
 import './styles/main.css'
 import { I18nConfiguration } from '@aurelia/i18n'
 import { RouterConfiguration } from '@aurelia/router'
-import { StateDefaultConfiguration } from '@aurelia/state'
-import Aurelia, {
-	ConsoleSink,
-	ILogger,
-	LoggerConfiguration,
-	LogLevel,
-} from 'aurelia'
+import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
 import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
@@ -42,6 +36,7 @@ import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFollowServiceClient } from './services/follow-service-client'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
 import { IGuestDataMergeService } from './services/guest-data-merge-service'
+import { IGuestService } from './services/guest-service'
 import { INotificationManager } from './services/notification-manager'
 import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
@@ -54,13 +49,6 @@ import { ITicketEmailService } from './services/ticket-email-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
 import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserService } from './services/user-service'
-import { initialState } from './state/app-state'
-import {
-	createLoggingMiddleware,
-	loadPersistedState,
-	persistenceMiddleware,
-} from './state/middleware'
-import { appReducer } from './state/reducer'
 import { DateValueConverter } from './value-converters/date'
 
 // Initialize OpenTelemetry before Aurelia startup
@@ -107,26 +95,6 @@ au.register(
 	}),
 )
 
-// Build state middleware list — logging middleware uses ILogger from the container
-const stateMiddlewares: {
-	middleware: typeof persistenceMiddleware
-	placement: 'before' | 'after'
-}[] = [{ middleware: persistenceMiddleware, placement: 'after' }]
-if (import.meta.env.DEV) {
-	const logger = au.container.get(ILogger).scopeTo('Store')
-	stateMiddlewares.unshift({
-		middleware: createLoggingMiddleware(logger),
-		placement: 'before',
-	})
-}
-
-au.register(
-	StateDefaultConfiguration.init(
-		{ ...initialState, ...loadPersistedState() },
-		{ middlewares: stateMiddlewares },
-		appReducer,
-	),
-)
 au.register(IErrorBoundaryService)
 au.register(GlobalErrorHandlingTask)
 au.register(IAuthService)
@@ -137,6 +105,7 @@ au.register(IFollowServiceClient)
 au.register(IConcertService)
 au.register(IDashboardService)
 au.register(IOnboardingService)
+au.register(IGuestService)
 au.register(IGuestDataMergeService)
 au.register(INotificationManager)
 au.register(IPushService)
