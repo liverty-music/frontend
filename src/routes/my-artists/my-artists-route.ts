@@ -7,11 +7,11 @@ import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
+import { IGuestService } from '../../services/guest-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
-import { resolveStore } from '../../state/store-interface'
 
 export interface MyArtist extends FollowedArtist {
 	color: string
@@ -51,7 +51,7 @@ export class MyArtistsRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
-	private readonly store = resolveStore()
+	private readonly guest = resolve(IGuestService)
 	private abortController: AbortController | null = null
 
 	public get isOnboardingStepMyArtists(): boolean {
@@ -80,34 +80,6 @@ export class MyArtistsRoute {
 		this.isLoading = true
 		this.abortController = new AbortController()
 
-		if (!this.isAuthenticated) {
-			// Guest users: load from guest store (no RPC needed)
-			try {
-				const followed = await this.followService.listFollowed(
-					this.abortController.signal,
-				)
-				this.artists = followed.map((fa) => ({
-					...fa,
-					color: artistColor(fa.artist.name),
-				}))
-				this.prevHypes = new Map(
-					this.artists.map((a) => [a.artist.id, a.hype]),
-				)
-			} catch {
-				// Guest store read should not fail, but guard anyway
-			} finally {
-				this.isLoading = false
-			}
-			if (this.isOnboardingStepMyArtists) {
-				this.onboarding.activateSpotlight(
-					'[data-artist-rows]',
-					'絶対に見逃したくないアーティストの熱量を上げておこう',
-					() => this.onboarding.deactivateSpotlight(),
-				)
-			}
-			return
-		}
-
 		try {
 			const followed = await this.followService.listFollowed(
 				this.abortController.signal,
@@ -131,7 +103,7 @@ export class MyArtistsRoute {
 		if (this.isOnboardingStepMyArtists && this.artists.length > 0) {
 			this.onboarding.activateSpotlight(
 				'[data-artist-rows]',
-				'絶対に見逃したくないアーティストの熱量を上げておこう',
+				this.i18n.tr('myArtists.spotlight.setHypeMessage'),
 				() => this.onboarding.deactivateSpotlight(),
 			)
 		}
@@ -214,8 +186,8 @@ export class MyArtistsRoute {
 		const artistName = this.artistName(artist)
 
 		if (!this.isAuthenticated) {
-			this.store.dispatch({ type: 'guest/unfollow', artistId })
-			this.logger.info('Unfollow committed (guest store)', {
+			this.guest.unfollow(artistId)
+			this.logger.info('Unfollow committed (guest service)', {
 				name: artistName,
 			})
 			return
