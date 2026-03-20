@@ -188,7 +188,13 @@ describe('MyArtistsRoute', () => {
 				activateSpotlight: vi.fn(),
 				deactivateSpotlight: vi.fn(),
 			}
-			const mockGuest = { follows: [], home: null, follow: vi.fn(), unfollow: vi.fn(), setHome: vi.fn() }
+			const mockGuest = {
+				follows: [],
+				home: null,
+				follow: vi.fn(),
+				unfollow: vi.fn(),
+				setHome: vi.fn(),
+			}
 			const container = createTestContainer(
 				Registration.instance(mockIFollowServiceClient, mockFollowService),
 				Registration.instance(mockIRouter, mockRouter),
@@ -279,7 +285,13 @@ describe('MyArtistsRoute', () => {
 					deactivateSpotlight: vi.fn(),
 				}
 
-				const mockGuest = { follows: [], home: null, follow: vi.fn(), unfollow: vi.fn(), setHome: vi.fn() }
+				const mockGuest = {
+					follows: [],
+					home: null,
+					follow: vi.fn(),
+					unfollow: vi.fn(),
+					setHome: vi.fn(),
+				}
 				const container = createTestContainer(
 					Registration.instance(mockIFollowServiceClient, mockFollowService),
 					Registration.instance(mockIRouter, mockRouter),
