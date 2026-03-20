@@ -81,9 +81,9 @@ The artist discovery bubble UI uses HTML5 Canvas 2D with Matter.js physics engin
 
 Last.fm API is called directly from the frontend (client-side). The API key is public/read-only by design. Calls use 300ms debounce and in-memory caching.
 
-### 3. Centralised Store via `@aurelia/state`
+### 3. DI + Service State Management
 
-Application state (onboarding progress, guest artist data) is managed through `@aurelia/state`, a Redux-style store integrated with Aurelia's DI. Singleton services act as thin facades over the store, dispatching actions and reading state. See `src/state/` for actions, reducer, and middleware.
+Application state (onboarding progress, guest artist data) is managed through singleton services with Aurelia's native DI and observation. `OnboardingService` and `GuestService` own their state as `@observable` properties, hydrate from localStorage on construction, and persist via explicit storage functions in `src/adapter/storage/`. No external state library is used — Aurelia's built-in observation system handles reactivity.
 
 ### 4. Onboarding Flow via OIDC Sign-Up Detection
 
