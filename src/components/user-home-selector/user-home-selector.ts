@@ -6,8 +6,8 @@ import {
 	type RegionGroup,
 } from '../../constants/iso3166'
 import { IAuthService } from '../../services/auth-service'
+import { IGuestService } from '../../services/guest-service'
 import { IUserService } from '../../services/user-service'
-import { resolveStore } from '../../state/store-interface'
 
 export class UserHomeSelector {
 	@bindable public onHomeSelected?: (code: string) => void
@@ -20,8 +20,8 @@ export class UserHomeSelector {
 
 	private readonly logger = resolve(ILogger).scopeTo('UserHomeSelector')
 	private readonly authService = resolve(IAuthService)
+	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
-	private readonly store = resolveStore()
 
 	public static getStoredHome(): string | null {
 		return localStorage.getItem('guest.home')
@@ -63,7 +63,7 @@ export class UserHomeSelector {
 				this.logger.error('Failed to update home via RPC', err)
 			}
 		} else {
-			this.store.dispatch({ type: 'guest/setUserHome', code })
+			this.guest.setHome(code)
 		}
 
 		this.isOpen = false

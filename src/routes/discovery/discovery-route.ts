@@ -7,11 +7,11 @@ import type { Artist } from '../../entities/artist'
 import { IArtistServiceClient } from '../../services/artist-service-client'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
+import { IGuestService } from '../../services/guest-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
-import { resolveStore } from '../../state/store-interface'
 import { BubbleManager } from './bubble-manager'
 import { ConcertSearchTracker } from './concert-search-tracker'
 import { FollowOrchestrator } from './follow-orchestrator'
@@ -26,7 +26,7 @@ export class DiscoveryRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
-	private readonly store = resolveStore()
+	private readonly guest = resolve(IGuestService)
 	private readonly concertService = resolve(IConcertService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
@@ -115,7 +115,7 @@ export class DiscoveryRoute {
 
 	public get followedCount(): number {
 		if (this.isOnboarding) {
-			return this.store.getState().guest.follows.length
+			return this.guest.followedCount
 		}
 		return this.follow.followedCount
 	}
@@ -166,7 +166,7 @@ export class DiscoveryRoute {
 		this.logger.info('Loading discovery page')
 
 		if (this.isOnboarding) {
-			const persisted = this.store.getState().guest.follows
+			const persisted = this.guest.follows
 			if (persisted.length > 0) {
 				this.follow.hydrate(persisted.map((f) => f.artist))
 			}
@@ -184,7 +184,7 @@ export class DiscoveryRoute {
 		}
 
 		if (this.isOnboarding) {
-			const preSeeded = this.store.getState().guest.follows
+			const preSeeded = this.guest.follows
 			this.concertTracker.syncPreSeeded(
 				preSeeded.map((f) => ({ artistId: f.artist.id })),
 			)

@@ -11,12 +11,12 @@ import { UserHomeSelector } from '../../components/user-home-selector/user-home-
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { IDashboardService } from '../../services/dashboard-service'
+import { IGuestService } from '../../services/guest-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
 import { IUserService } from '../../services/user-service'
-import { resolveStore } from '../../state/store-interface'
 
 export type LaneIntroPhase = 'home' | 'near' | 'away' | 'card' | 'done'
 
@@ -51,7 +51,7 @@ export class DashboardRoute {
 	private readonly authService = resolve(IAuthService)
 	private readonly dashboardService = resolve(IDashboardService)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly store = resolveStore()
+	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
 	private readonly router = resolve(IRouter)
 	private abortController: AbortController | null = null
@@ -262,7 +262,7 @@ export class DashboardRoute {
 		this.needsRegion = false
 		this.loadData()
 		if (this.isOnboarding) {
-			this.store.dispatch({ type: 'guest/setUserHome', code })
+			this.guest.setHome(code)
 			this.startLaneIntro()
 		}
 	}
