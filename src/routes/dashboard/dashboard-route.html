@@ -96,7 +96,8 @@
 <signup-prompt-banner
   visible.bind="showSignupBanner && !isAuthenticated"
   message.bind="i18n.tr('myArtists.signupBanner.message')"
-  signup-requested.trigger="onSignupRequested()">
+  signup-requested.trigger="onSignupRequested()"
+  banner-dismissed.trigger="onBannerDismissed()">
 </signup-prompt-banner>
 
 <!-- Home area selector bottom sheet -->
