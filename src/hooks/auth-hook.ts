@@ -75,12 +75,26 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 			return this.onboarding.getRouteForCurrentStep()
 		}
 
-		// Priority 3: Onboarding route accessed without active onboarding — redirect to LP
+		// Priority 3: Completed onboarding (guest) — allow dashboard / discovery / my-artists only
+		if (this.onboarding.isCompleted) {
+			const allowedSteps: OnboardingStepValue[] = [
+				OnboardingStep.DASHBOARD,
+				OnboardingStep.DISCOVERY,
+				OnboardingStep.MY_ARTISTS,
+			]
+			if (routeStep !== undefined && allowedSteps.includes(routeStep)) {
+				return true
+			}
+			this.ea.publish(new Snack(this.i18n.tr('auth.loginRequired'), 'warning'))
+			return false
+		}
+
+		// Priority 4: Onboarding route accessed without active onboarding — redirect to LP
 		if (routeStep !== undefined && next.data?.auth === false) {
 			return ''
 		}
 
-		// Priority 4: Not authenticated, not in onboarding
+		// Priority 5: Not authenticated, not in onboarding
 		this.ea.publish(new Snack(this.i18n.tr('auth.loginRequired'), 'warning'))
 		return ''
 	}

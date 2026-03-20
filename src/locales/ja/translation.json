@@ -1,4 +1,7 @@
 {
+	"common": {
+		"dismiss": "閉じる"
+	},
 	"welcome": {
 		"hero": {
 			"title": "大好きなあのバンドのライブ、もう二度と見逃さない。",
@@ -163,9 +166,14 @@
 			"subtitle": "アーティストを探してフォローしましょう。",
 			"discoverButton": "アーティストを探す"
 		},
+		"table": {
+			"artistCol": "アーティスト",
+			"unfollowCol": "フォロー解除"
+		},
 		"unfollowed": "{{name}}のフォローを解除しました",
 		"undo": "元に戻す",
 		"unfollow": "フォロー解除",
+		"unfollowArtist": "{{name}}のフォローを解除",
 		"failedUnfollow": "{{name}}のフォロー解除に失敗しました",
 		"failedHype": "Hypeレベルの更新に失敗しました"
 	},

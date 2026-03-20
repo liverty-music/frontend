@@ -98,9 +98,9 @@ export class BottomSheet {
 
 	public onBackdropClick(event: MouseEvent): void {
 		if (!this.dismissable) return
-		if (event.target !== this.scrollWrapper) return
+		if ((event.target as Element).closest('.sheet-page')) return
 
-		// Smooth-scroll to dismiss zone
+		// Clicked dismiss-zone or scrollWrapper itself — smooth-scroll to dismiss
 		this.scrollWrapper.scrollTo({ top: 0, behavior: 'smooth' })
 	}
 }
