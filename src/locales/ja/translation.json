@@ -1,6 +1,7 @@
 {
 	"common": {
-		"dismiss": "閉じる"
+		"dismiss": "閉じる",
+		"createAccount": "アカウント作成"
 	},
 	"welcome": {
 		"hero": {
@@ -168,7 +169,17 @@
 		},
 		"table": {
 			"artistCol": "アーティスト",
-			"unfollowCol": "フォロー解除"
+			"unfollowCol": "フォロー解除",
+			"watch": "チェック",
+			"home": "地元",
+			"nearby": "近くも",
+			"away": "どこでも！"
+		},
+		"spotlight": {
+			"setHypeMessage": "絶対に見逃したくないアーティストの熱量を上げておこう"
+		},
+		"signupBanner": {
+			"message": "\uD83D\uDD14 通知を有効にするには"
 		},
 		"unfollowed": "{{name}}のフォローを解除しました",
 		"undo": "元に戻す",

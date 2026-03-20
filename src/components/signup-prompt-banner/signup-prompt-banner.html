@@ -2,7 +2,7 @@
 
 <aside if.bind="visible" aria-label="Signup prompt" class="[ signup-banner ]">
   <span class="signup-banner-message">${message}</span>
-  <button class="signup-banner-btn" click.trigger="onSignup()">アカウント作成</button>
+  <button class="signup-banner-btn" click.trigger="onSignup()" t="common.createAccount"></button>
   <button type="button" class="signup-banner-dismiss" t="[aria-label]common.dismiss" click.trigger="onDismiss()">
     <svg-icon name="x" aria-hidden="true"></svg-icon>
   </button>

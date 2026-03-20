@@ -46,7 +46,8 @@
 				block-size: 0.875rem;
 			}
 
-			&:hover {
+			&:hover,
+			&:focus-visible {
 				color: var(--color-text-secondary);
 			}
 		}
@@ -69,7 +70,8 @@
 
 			transition: opacity 150ms ease-out;
 
-			&:hover {
+			&:hover,
+			&:focus-visible {
 				opacity: 0.85;
 			}
 

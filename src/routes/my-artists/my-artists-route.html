@@ -33,10 +33,10 @@
       <thead>
         <tr class="artists-thead-row">
           <th scope="col" class="[ visually-hidden ]" t="myArtists.table.artistCol"></th>
-          <th scope="col" class="hype-col-header">👀<small>チェック</small></th>
-          <th scope="col" class="hype-col-header">🔥<small>地元</small></th>
-          <th scope="col" class="hype-col-header">🔥🔥<small>近くも</small></th>
-          <th scope="col" class="hype-col-header">🔥🔥🔥<small>どこでも！</small></th>
+          <th scope="col" class="hype-col-header">👀<small t="myArtists.table.watch"></small></th>
+          <th scope="col" class="hype-col-header">🔥<small t="myArtists.table.home"></small></th>
+          <th scope="col" class="hype-col-header">🔥🔥<small t="myArtists.table.nearby"></small></th>
+          <th scope="col" class="hype-col-header">🔥🔥🔥<small t="myArtists.table.away"></small></th>
           <th scope="col" class="[ visually-hidden ]" t="myArtists.table.unfollowCol"></th>
         </tr>
       </thead>
@@ -91,7 +91,7 @@
 <!-- Signup prompt banner -->
 <signup-prompt-banner
   visible.bind="showSignupBanner && !isAuthenticated"
-  message="&#x1F514; 通知を有効にするには"
+  message.bind="i18n.tr('myArtists.signupBanner.message')"
   signup-requested.trigger="onSignupRequested()"
   banner-dismissed.trigger="onBannerDismissed()">
 </signup-prompt-banner>

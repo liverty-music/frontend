@@ -258,7 +258,13 @@
 
 			background: var(--color-border-subtle, oklch(100% 0 0deg / 20%));
 
-			transition: all 200ms ease-out;
+			transition:
+				inline-size 200ms ease-out,
+				block-size 200ms ease-out,
+				background-color 200ms ease-out,
+				border-color 200ms ease-out,
+				box-shadow 200ms ease-out,
+				opacity 200ms ease-out;
 
 			/* 44px min tap target */
 			&::before {

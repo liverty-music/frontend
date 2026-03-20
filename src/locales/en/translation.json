@@ -1,6 +1,7 @@
 {
 	"common": {
-		"dismiss": "Dismiss"
+		"dismiss": "Dismiss",
+		"createAccount": "Create Account"
 	},
 	"welcome": {
 		"hero": {
@@ -168,7 +169,17 @@
 		},
 		"table": {
 			"artistCol": "Artist",
-			"unfollowCol": "Unfollow"
+			"unfollowCol": "Unfollow",
+			"watch": "Watch",
+			"home": "Home",
+			"nearby": "Nearby",
+			"away": "Anywhere!"
+		},
+		"spotlight": {
+			"setHypeMessage": "Raise the hype for artists you never want to miss"
+		},
+		"signupBanner": {
+			"message": "\uD83D\uDD14 To enable notifications"
 		},
 		"unfollowed": "{{name}} unfollowed",
 		"undo": "Undo",
