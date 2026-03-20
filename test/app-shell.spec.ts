@@ -1,10 +1,10 @@
 import { IRouter, IRouterEvents } from '@aurelia/router'
-import { IStore } from '@aurelia/state'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppShell } from '../src/app-shell'
+import { IAuthService } from '../src/services/auth-service'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
-import { createMockStore } from './helpers/mock-store'
+import { IOnboardingService } from '../src/services/onboarding-service'
 
 // Mock all dynamic imports used by the @route decorator on AppShell.
 // Without these mocks, the imports resolve after Vitest tears down the jsdom
@@ -83,7 +83,6 @@ describe('app-shell', () => {
 		beforeEach(() => {
 			mockRouter = {}
 			setCurrentPath('')
-			const { store } = createMockStore()
 			container = DI.createContainer()
 			container.register(
 				Registration.instance(IRouter, mockRouter as IRouter),
@@ -94,7 +93,18 @@ describe('app-shell', () => {
 					captureError: vi.fn(),
 					addBreadcrumb: vi.fn(),
 				}),
-				Registration.instance(IStore, store),
+				Registration.instance(IAuthService, {
+					isAuthenticated: false,
+				}),
+				Registration.instance(IOnboardingService, {
+					isOnboarding: false,
+					isCompleted: false,
+					currentStep: 'lp',
+					spotlightActive: false,
+					spotlightTarget: '',
+					spotlightMessage: '',
+					spotlightRadius: '12px',
+				}),
 			)
 			container.register(AppShell)
 			sut = container.get(AppShell)

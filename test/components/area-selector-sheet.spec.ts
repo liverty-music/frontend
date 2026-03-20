@@ -1,24 +1,36 @@
 import { I18N } from '@aurelia/i18n'
-import { IStore } from '@aurelia/state'
 import { DI, LoggerConfiguration, LogLevel, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UserHomeSelector } from '../../src/components/user-home-selector/user-home-selector'
 import { IAuthService } from '../../src/services/auth-service'
+import { IGuestService } from '../../src/services/guest-service'
 import { IUserService } from '../../src/services/user-service'
 import { createMockI18n } from '../helpers/mock-i18n'
 import {
 	createMockAuthService,
 	createMockUserService,
 } from '../helpers/mock-rpc-clients'
-import { createMockStore } from '../helpers/mock-store'
+
+function createMockGuestService() {
+	return {
+		follows: [],
+		home: null,
+		followedCount: 0,
+		follow: vi.fn(),
+		unfollow: vi.fn(),
+		setHome: vi.fn(),
+		clearAll: vi.fn(),
+		listFollowed: vi.fn().mockReturnValue([]),
+	}
+}
 
 describe('UserHomeSelector', () => {
 	let sut: UserHomeSelector
-	let mockStoreInstance: ReturnType<typeof createMockStore>
+	let mockGuest: ReturnType<typeof createMockGuestService>
 
 	beforeEach(() => {
 		localStorage.clear()
-		mockStoreInstance = createMockStore()
+		mockGuest = createMockGuestService()
 		const container = DI.createContainer()
 		container.register(LoggerConfiguration.create({ level: LogLevel.none }))
 		container.register(Registration.instance(I18N, createMockI18n()))
@@ -28,7 +40,7 @@ describe('UserHomeSelector', () => {
 		container.register(
 			Registration.instance(IUserService, createMockUserService()),
 		)
-		container.register(Registration.instance(IStore, mockStoreInstance.store))
+		container.register(Registration.instance(IGuestService, mockGuest))
 		container.register(UserHomeSelector)
 		sut = container.get(UserHomeSelector)
 	})
@@ -70,14 +82,11 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('prefecture selection', () => {
-		it('should dispatch guest/setUserHome for guest and close', async () => {
+		it('should call guest.setHome for guest user and close', async () => {
 			sut.open()
 			await sut.selectPrefecture('JP-13')
 
-			expect(mockStoreInstance.store.dispatch).toHaveBeenCalledWith({
-				type: 'guest/setUserHome',
-				code: 'JP-13',
-			})
+			expect(mockGuest.setHome).toHaveBeenCalledWith('JP-13')
 			expect(sut.isOpen).toBe(false)
 		})
 
@@ -91,14 +100,11 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('quick city selection', () => {
-		it('should dispatch guest/setUserHome for guest and close', async () => {
+		it('should call guest.setHome for guest user and close', async () => {
 			sut.open()
 			await sut.selectQuickCity('JP-13')
 
-			expect(mockStoreInstance.store.dispatch).toHaveBeenCalledWith({
-				type: 'guest/setUserHome',
-				code: 'JP-13',
-			})
+			expect(mockGuest.setHome).toHaveBeenCalledWith('JP-13')
 			expect(sut.isOpen).toBe(false)
 		})
 
