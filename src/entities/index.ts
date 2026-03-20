@@ -10,7 +10,7 @@ export type {
 export { HYPE_ORDER, isHypeMatched, LANE_ORDER } from './concert'
 export type { MerklePath } from './entry'
 export { bytesToDecimal, bytesToHex, uuidToFieldElement } from './entry'
-export type { FollowedArtist, Hype } from './follow'
+export type { FollowedArtist, GuestFollow, Hype } from './follow'
 export { hasFollow } from './follow'
 export type { OnboardingStepValue } from './onboarding'
 export {
