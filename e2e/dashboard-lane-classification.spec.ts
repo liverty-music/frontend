@@ -136,9 +136,18 @@ test.describe('Dashboard lane classification after home selection', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'artist-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-					{ id: 'artist-2', name: 'Vaundy', passionLevel: 'LOCAL_ONLY' },
-					{ id: 'artist-3', name: 'Ado', passionLevel: 'KEEP_AN_EYE' },
+					{
+						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						home: null,
+					},
+					{
+						artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+						home: null,
+					},
+					{
+						artist: { id: 'artist-3', name: 'Ado', mbid: 'mbid-3' },
+						home: null,
+					},
 				]),
 			)
 		})
@@ -186,9 +195,18 @@ test.describe('Dashboard lane classification after home selection', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'artist-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-					{ id: 'artist-2', name: 'Vaundy', passionLevel: 'LOCAL_ONLY' },
-					{ id: 'artist-3', name: 'Ado', passionLevel: 'KEEP_AN_EYE' },
+					{
+						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						home: 'JP-13',
+					},
+					{
+						artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+						home: 'JP-13',
+					},
+					{
+						artist: { id: 'artist-3', name: 'Ado', mbid: 'mbid-3' },
+						home: 'JP-13',
+					},
 				]),
 			)
 		})

@@ -157,102 +157,103 @@ test.describe('CSS antipattern verification', () => {
 		// TODO: CSS anchor positioning layout differs in headless Chromium Pixel 7 viewport.
 		// The arrow's y-position doesn't satisfy the "between message and target" invariant.
 		// Needs investigation into whether this is a rendering difference or a real regression.
-		test.fixme('arrow is between message and target when tooltip flips above bottom-nav', async ({
-			page,
-		}) => {
-			test.setTimeout(30_000)
-			await mockOnboardingRpcRoutes(page)
+		test.fixme(
+			'arrow is between message and target when tooltip flips above bottom-nav',
+			async ({ page }) => {
+				test.setTimeout(30_000)
+				await mockOnboardingRpcRoutes(page)
 
-			await page.addInitScript(() => {
-				localStorage.setItem('onboardingStep', '3')
-				localStorage.setItem('onboarding.celebrationShown', '1')
-				localStorage.setItem('guest.home', 'JP-13')
-				localStorage.setItem(
-					'guest.followedArtists',
-					JSON.stringify([
-						{ id: 'a-1', name: 'Artist 1' },
-						{ id: 'a-2', name: 'Artist 2' },
-						{ id: 'a-3', name: 'Artist 3' },
-					]),
+				await page.addInitScript(() => {
+					localStorage.setItem('onboardingStep', '3')
+					localStorage.setItem('onboarding.celebrationShown', '1')
+					localStorage.setItem('guest.home', 'JP-13')
+					localStorage.setItem(
+						'guest.followedArtists',
+						JSON.stringify([
+							{ id: 'a-1', name: 'Artist 1' },
+							{ id: 'a-2', name: 'Artist 2' },
+							{ id: 'a-3', name: 'Artist 3' },
+						]),
+					)
+				})
+
+				await advanceToStep4(page)
+
+				const tooltip = page.locator('.coach-mark-tooltip')
+				await expect(tooltip).toBeVisible()
+
+				// Gather bounding boxes for the three key elements
+				const targetBox = await page
+					.locator('[data-nav="my-artists"]')
+					.boundingBox()
+				const tooltipBox = await tooltip.boundingBox()
+				const messageBox = await page
+					.locator('.coach-tooltip-message')
+					.boundingBox()
+
+				expect(targetBox).not.toBeNull()
+				expect(tooltipBox).not.toBeNull()
+				expect(messageBox).not.toBeNull()
+
+				// 1. Tooltip is ABOVE the target (flipped)
+				expect(tooltipBox!.y + tooltipBox!.height).toBeLessThanOrEqual(
+					targetBox!.y + 8,
 				)
-			})
 
-			await advanceToStep4(page)
-
-			const tooltip = page.locator('.coach-mark-tooltip')
-			await expect(tooltip).toBeVisible()
-
-			// Gather bounding boxes for the three key elements
-			const targetBox = await page
-				.locator('[data-nav="my-artists"]')
-				.boundingBox()
-			const tooltipBox = await tooltip.boundingBox()
-			const messageBox = await page
-				.locator('.coach-tooltip-message')
-				.boundingBox()
-
-			expect(targetBox).not.toBeNull()
-			expect(tooltipBox).not.toBeNull()
-			expect(messageBox).not.toBeNull()
-
-			// 1. Tooltip is ABOVE the target (flipped)
-			expect(tooltipBox!.y + tooltipBox!.height).toBeLessThanOrEqual(
-				targetBox!.y + 8,
-			)
-
-			// Find the visible arrow — whichever .coach-arrow-container has non-zero height
-			const arrowContainers = page.locator('.coach-arrow-container')
-			const count = await arrowContainers.count()
-			let arrowBox: {
-				x: number
-				y: number
-				width: number
-				height: number
-			} | null = null
-			for (let i = 0; i < count; i++) {
-				const box = await arrowContainers.nth(i).boundingBox()
-				if (box && box.height > 0 && box.width > 0) {
-					arrowBox = box
+				// Find the visible arrow — whichever .coach-arrow-container has non-zero height
+				const arrowContainers = page.locator('.coach-arrow-container')
+				const count = await arrowContainers.count()
+				let arrowBox: {
+					x: number
+					y: number
+					width: number
+					height: number
+				} | null = null
+				for (let i = 0; i < count; i++) {
+					const box = await arrowContainers.nth(i).boundingBox()
+					if (box && box.height > 0 && box.width > 0) {
+						arrowBox = box
+					}
 				}
-			}
-			expect(arrowBox).not.toBeNull()
+				expect(arrowBox).not.toBeNull()
 
-			// 2. Arrow sits BETWEEN message and target vertically:
-			//    message.bottom ≤ arrow.top  AND  arrow.bottom ≤ target.top
-			//    (with small tolerance for sub-pixel rendering)
-			const tolerance = 8
-			expect(arrowBox!.y).toBeGreaterThanOrEqual(
-				messageBox!.y + messageBox!.height - tolerance,
-			)
-			expect(arrowBox!.y + arrowBox!.height).toBeLessThanOrEqual(
-				targetBox!.y + tolerance,
-			)
+				// 2. Arrow sits BETWEEN message and target vertically:
+				//    message.bottom ≤ arrow.top  AND  arrow.bottom ≤ target.top
+				//    (with small tolerance for sub-pixel rendering)
+				const tolerance = 8
+				expect(arrowBox!.y).toBeGreaterThanOrEqual(
+					messageBox!.y + messageBox!.height - tolerance,
+				)
+				expect(arrowBox!.y + arrowBox!.height).toBeLessThanOrEqual(
+					targetBox!.y + tolerance,
+				)
 
-			// 3. Arrow's center is closer to target than message's center is.
-			//    This confirms the arrow "bridges" toward the target.
-			const arrowCenterY = arrowBox!.y + arrowBox!.height / 2
-			const messageCenterY = messageBox!.y + messageBox!.height / 2
-			const targetTopY = targetBox!.y
-			expect(Math.abs(arrowCenterY - targetTopY)).toBeLessThan(
-				Math.abs(messageCenterY - targetTopY),
-			)
+				// 3. Arrow's center is closer to target than message's center is.
+				//    This confirms the arrow "bridges" toward the target.
+				const arrowCenterY = arrowBox!.y + arrowBox!.height / 2
+				const messageCenterY = messageBox!.y + messageBox!.height / 2
+				const targetTopY = targetBox!.y
+				expect(Math.abs(arrowCenterY - targetTopY)).toBeLessThan(
+					Math.abs(messageCenterY - targetTopY),
+				)
 
-			// 4. Arrow-head points TOWARD the target (below the arrow-line start).
-			//    The arrow-head's center Y should be closer to the target than
-			//    the arrow-line's center Y. This catches SVG path direction bugs
-			//    where the arrowhead faces away from the target.
-			const visibleArrow = page.locator(
-				'.coach-arrow-below:not([style*="display: none"])',
-			)
-			const headBox = await visibleArrow.locator('.arrow-head').boundingBox()
-			const lineBox = await visibleArrow.locator('.arrow-line').boundingBox()
-			expect(headBox).not.toBeNull()
-			expect(lineBox).not.toBeNull()
-			const headCenterY = headBox!.y + headBox!.height / 2
-			const lineCenterY = lineBox!.y + lineBox!.height / 2
-			// Target is below → head should be lower (closer to target) than line center
-			expect(headCenterY).toBeGreaterThan(lineCenterY)
-		})
+				// 4. Arrow-head points TOWARD the target (below the arrow-line start).
+				//    The arrow-head's center Y should be closer to the target than
+				//    the arrow-line's center Y. This catches SVG path direction bugs
+				//    where the arrowhead faces away from the target.
+				const visibleArrow = page.locator(
+					'.coach-arrow-below:not([style*="display: none"])',
+				)
+				const headBox = await visibleArrow.locator('.arrow-head').boundingBox()
+				const lineBox = await visibleArrow.locator('.arrow-line').boundingBox()
+				expect(headBox).not.toBeNull()
+				expect(lineBox).not.toBeNull()
+				const headCenterY = headBox!.y + headBox!.height / 2
+				const lineCenterY = lineBox!.y + lineBox!.height / 2
+				// Target is below → head should be lower (closer to target) than line center
+				expect(headCenterY).toBeGreaterThan(lineCenterY)
+			},
+		)
 
 		test('arrow is between target and message when tooltip is below target', async ({
 			page,

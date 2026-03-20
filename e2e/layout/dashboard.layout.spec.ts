@@ -34,17 +34,25 @@ function seedWithConcertData() {
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ id: 'artist-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-				{ id: 'artist-2', name: 'Vaundy', passionLevel: 'LOCAL_ONLY' },
-				{ id: 'artist-3', name: 'Ado', passionLevel: 'KEEP_AN_EYE' },
+				{
+					artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+					home: 'JP-13',
+				},
+				{
+					artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+					home: 'JP-13',
+				},
+				{
+					artist: { id: 'artist-3', name: 'Ado', mbid: 'mbid-3' },
+					home: 'JP-13',
+				},
 			]),
 		)
 	}
 }
 
-/** Build a Connect-RPC JSON response for ConcertService/List (per artist).
- *  During onboarding, each artist's concerts are fetched separately via List,
- *  then merged and grouped by date into the "away" lane.
+/** Build a Connect-RPC JSON response for ConcertService/ListWithProximity.
+ *  Returns proximity groups with concerts in the "away" lane (onboarding path).
  *
  *  Generates enough concerts to overflow the viewport so scroll-related
  *  layout bugs (header/footer not staying fixed) are detected.
@@ -58,23 +66,38 @@ function concertListResponse() {
 		'Yokohama Arena',
 	]
 	const areas = ['JP-13', 'JP-27', 'JP-12', 'JP-14', 'JP-04']
-	const concerts = []
+
+	// Group concerts by date into ProximityGroup objects
+	const groupMap = new Map<string, { date: object; away: object[] }>()
 
 	for (let i = 0; i < 20; i++) {
 		const date = new Date()
 		date.setDate(date.getDate() + 1 + Math.floor(i / 3))
-		concerts.push(
-			makeConcert(
-				`c${i}`,
-				`artist-${(i % 3) + 1}`,
-				date,
-				areas[i % areas.length],
-				venues[i % venues.length],
-			),
+		const dateKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+		const concert = makeConcert(
+			`c${i}`,
+			`artist-${(i % 3) + 1}`,
+			date,
+			areas[i % areas.length],
+			venues[i % venues.length],
 		)
+
+		if (!groupMap.has(dateKey)) {
+			groupMap.set(dateKey, {
+				date: {
+					value: {
+						year: date.getFullYear(),
+						month: date.getMonth() + 1,
+						day: date.getDate(),
+					},
+				},
+				away: [],
+			})
+		}
+		groupMap.get(dateKey)!.away.push(concert)
 	}
 
-	return { concerts }
+	return { groups: Array.from(groupMap.values()) }
 }
 
 function makeConcert(
@@ -418,9 +441,10 @@ test.describe('Dashboard data-loaded state', () => {
 			}
 		})
 
-		expect(heights.root, 'dashboard-route CE should fill viewport').toBeGreaterThan(
-			200,
-		)
+		expect(
+			heights.root,
+			'dashboard-route CE should fill viewport',
+		).toBeGreaterThan(200)
 		expect(
 			heights.scrollContainer,
 			'concert-scroll must have renderable height',

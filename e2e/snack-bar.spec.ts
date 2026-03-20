@@ -200,9 +200,15 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ id: 'a-1', name: 'YOASOBI', passionLevel: 'MUST_GO' },
-					{ id: 'a-2', name: 'Vaundy', passionLevel: 'LOCAL_ONLY' },
-					{ id: 'a-3', name: 'Ado', passionLevel: 'KEEP_AN_EYE' },
+					{
+						artist: { id: 'a-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						home: 'JP-13',
+					},
+					{
+						artist: { id: 'a-2', name: 'Vaundy', mbid: 'mbid-2' },
+						home: 'JP-13',
+					},
+					{ artist: { id: 'a-3', name: 'Ado', mbid: 'mbid-3' }, home: 'JP-13' },
 				]),
 			)
 		})
