@@ -11,10 +11,16 @@ import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
 
 function createMockUserService() {
-	return {
-		create: vi.fn().mockResolvedValue(undefined),
-		ensureLoaded: vi.fn().mockResolvedValue(undefined),
+	const stub = { id: 'u1', externalId: 'ext', email: 'u@test.com', name: 'U' }
+	const svc = {
+		_current: stub as unknown as import('../../src/entities/user').User | undefined,
+		get current() {
+			return svc._current
+		},
+		create: vi.fn().mockResolvedValue(stub),
+		ensureLoaded: vi.fn().mockResolvedValue(stub),
 	}
+	return svc
 }
 
 function createMockMergeService() {
@@ -121,6 +127,7 @@ describe('AuthCallbackRoute', () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'existing@example.com' },
 			})
+			mockUserService._current = undefined
 			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
@@ -156,9 +163,11 @@ describe('AuthCallbackRoute', () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: {},
 			})
+			mockUserService._current = undefined
 			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
+				.mockResolvedValueOnce(undefined)
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
