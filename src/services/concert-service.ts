@@ -33,7 +33,7 @@ export class ConcertServiceClient {
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
 	// --- Concert search tracking state ---
-	public readonly artistsWithConcerts = new Set<string>()
+	public artistsWithConcerts = new Set<string>()
 	private readonly searchStatus = new Map<string, 'pending' | 'done'>()
 	private readonly searchStartTimes = new Map<string, number>()
 	private pollIntervalId: number | undefined
@@ -221,7 +221,10 @@ export class ConcertServiceClient {
 			const concerts = await this.rpcClient.listConcerts(artistId, signal)
 			if (signal?.aborted) return
 			if (concerts.length > 0) {
-				this.artistsWithConcerts.add(artistId)
+				this.artistsWithConcerts = new Set([
+					...this.artistsWithConcerts,
+					artistId,
+				])
 				this.logger.info('Artist has concerts', {
 					artistId,
 					concertCount: concerts.length,
