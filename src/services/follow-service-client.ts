@@ -1,4 +1,4 @@
-import { DI, ILogger, resolve } from 'aurelia'
+import { DI, ILogger, observable, resolve } from 'aurelia'
 import { IFollowRpcClient } from '../adapter/rpc/client/follow-client'
 import type { Artist } from '../entities/artist'
 import type { FollowedArtist, Hype } from '../entities/follow'
@@ -18,7 +18,7 @@ export class FollowServiceClient {
 	private readonly guest = resolve(IGuestService)
 	private readonly rpcClient = resolve(IFollowRpcClient)
 
-	public followedArtists: Artist[] = []
+	@observable public followedArtists: Artist[] = []
 
 	public get followedIds(): ReadonlySet<string> {
 		return new Set(this.followedArtists.map((a) => a.id))

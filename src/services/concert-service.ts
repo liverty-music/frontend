@@ -1,5 +1,5 @@
 import { SearchStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
-import { DI, ILogger, resolve } from 'aurelia'
+import { DI, ILogger, observable, resolve } from 'aurelia'
 import {
 	IConcertRpcClient,
 	type ProtoConcert,
@@ -33,7 +33,7 @@ export class ConcertServiceClient {
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
 	// --- Concert search tracking state ---
-	public artistsWithConcerts = new Set<string>()
+	@observable public artistsWithConcerts = new Set<string>()
 	private readonly searchStatus = new Map<string, 'pending' | 'done'>()
 	private readonly searchStartTimes = new Map<string, number>()
 	private pollIntervalId: number | undefined
