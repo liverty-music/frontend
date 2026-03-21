@@ -227,22 +227,6 @@
 			justify-content: center;
 
 			min-block-size: 44px;
-
-			/* Track line: drawn on the first hype-label; spans dot-center to dot-center */
-			.hype-col:first-of-type > &::before {
-				content: "";
-				pointer-events: none;
-
-				position: absolute;
-				inset-block-start: 50%;
-				inset-inline-start: 50%;
-				translate: 0 -50%;
-
-				inline-size: calc(3 * 100%);
-				block-size: 2px;
-
-				background: var(--color-border-subtle, oklch(100% 0 0deg / 10%));
-			}
 		}
 
 		/* ── Hype dot (base) ── */

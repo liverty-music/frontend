@@ -90,7 +90,7 @@ au.register(
 )
 au.register(
 	LoggerConfiguration.create({
-		level: LogLevel.debug,
+		level: import.meta.env.DEV ? LogLevel.debug : LogLevel.warn,
 		sinks: [ConsoleSink, OtelLogSink],
 	}),
 )
