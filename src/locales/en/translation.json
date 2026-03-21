@@ -236,6 +236,13 @@
 		"privacyPolicy": "Privacy Policy",
 		"ossLicenses": "OSS Licenses",
 		"account": "Account",
+		"emailVerified": "Verified",
+		"emailNotVerified": "Not verified",
+		"resendVerification": "Resend",
+		"resending": "Sending...",
+		"resendSent": "Sent!",
+		"resendError": "Failed to send verification email. Please try again.",
+		"resendRateLimited": "Too many requests. Please try again later.",
 		"signOut": "Sign Out",
 		"signOutError": "Sign-out failed. Please try again."
 	},
