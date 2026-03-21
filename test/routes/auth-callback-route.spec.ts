@@ -84,11 +84,10 @@ describe('AuthCallbackRoute', () => {
 			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
-				.mockResolvedValueOnce(undefined)
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(2)
+			expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(1)
 			expect(mockUserService.create).toHaveBeenCalled()
 			expect(mockMergeService.merge).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
@@ -125,7 +124,6 @@ describe('AuthCallbackRoute', () => {
 			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
-				.mockResolvedValueOnce(undefined)
 			mockUserService.create = vi
 				.fn()
 				.mockRejectedValue(new ConnectError('exists', Code.AlreadyExists))
@@ -159,7 +157,6 @@ describe('AuthCallbackRoute', () => {
 			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
-				.mockResolvedValueOnce(undefined)
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
