@@ -31,11 +31,12 @@ export class UserRpcClient {
 	public async create(
 		email: string,
 		home?: { countryCode: string; level1: string; level2?: string },
-	): Promise<void> {
-		await this.userClient.create({
+	): Promise<User | undefined> {
+		const resp = await this.userClient.create({
 			email: new UserEmail({ value: email }),
 			...(home ? { home } : {}),
 		})
+		return resp.user ? userFrom(resp.user) : undefined
 	}
 
 	public async updateHome(home: {
