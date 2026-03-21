@@ -13,7 +13,9 @@ import { createMockAuth } from '../helpers/mock-auth'
 function createMockUserService() {
 	const stub = { id: 'u1', externalId: 'ext', email: 'u@test.com', name: 'U' }
 	const svc = {
-		_current: stub as unknown as import('../../src/entities/user').User | undefined,
+		_current: stub as unknown as
+			| import('../../src/entities/user').User
+			| undefined,
 		get current() {
 			return svc._current
 		},
