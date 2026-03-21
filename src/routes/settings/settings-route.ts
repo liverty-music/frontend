@@ -124,7 +124,7 @@ export class SettingsRoute {
 		this.resendSuccess = false
 
 		try {
-			await this.userService.client.resendEmailVerification({})
+			await this.userService.resendEmailVerification()
 			this.resendSuccess = true
 		} catch (err) {
 			if (err instanceof ConnectError && err.code === Code.ResourceExhausted) {
