@@ -22,7 +22,7 @@ export function artistColor(name: string): string {
 }
 
 /**
- * Returns the hue to use for an artist card background.
+ * Returns the primary hue for an artist (logo glow, matched effects).
  * Chromatic logos use their dominant hue; achromatic logos fall back to the
  * name-hash to preserve color variety across the dashboard.
  */

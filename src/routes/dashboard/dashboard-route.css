@@ -201,9 +201,9 @@
 			/* Faint fill between edge lines */
 			background: linear-gradient(
 				to bottom,
-				oklch(70% 0.15 var(--beam-hue, 180) / 4%) 0%,
-				oklch(60% 0.1 var(--beam-hue, 180) / 2%) 60%,
-				oklch(50% 0.08 var(--beam-hue, 180) / 1%) 100%
+				oklch(70% 0.15 var(--beam-hue, 180) / 12%) 0%,
+				oklch(60% 0.1 var(--beam-hue, 180) / 7%) 60%,
+				oklch(50% 0.08 var(--beam-hue, 180) / 3%) 100%
 			);
 			clip-path: polygon(
 				0% 0%,
@@ -229,7 +229,7 @@
 			position: absolute;
 			inset: 0;
 
-			background: oklch(85% 0.25 var(--beam-hue, 180) / 45%);
+			background: oklch(85% 0.25 var(--beam-hue, 180) / 25%);
 		}
 
 		/* Left edge — diffused 4px line to card bottom-left */
