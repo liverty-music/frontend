@@ -12,8 +12,11 @@
 			position: fixed;
 			inset: 0;
 
-			overflow: hidden;
+			overflow-y: auto;
 			display: block;
+			scrollbar-width: none;
+			scroll-snap-type: y mandatory;
+			overscroll-behavior-y: contain;
 
 			inline-size: 100%;
 			max-inline-size: 100%;
@@ -24,15 +27,20 @@
 
 			background: transparent;
 
+			scroll-timeline: --sheet-scroll block;
+
 			transition:
 				opacity 300ms ease-out,
 				overlay 300ms ease-out allow-discrete,
 				display 300ms ease-out allow-discrete;
 
 			&::backdrop {
-				opacity: var(--_backdrop-opacity, 1);
 				background: var(--_backdrop-bg);
 				backdrop-filter: blur(4px);
+
+				animation: backdrop-fade linear both;
+				animation-timeline: --sheet-scroll;
+
 				transition:
 					opacity 300ms ease-out,
 					overlay 300ms ease-out allow-discrete,
@@ -59,11 +67,14 @@
 			}
 		}
 
-		.scroll-wrapper {
-			scrollbar-width: none;
-			scroll-snap-type: y mandatory;
-			overflow-y: auto;
-			block-size: 100dvh;
+		@keyframes backdrop-fade {
+			from {
+				opacity: 0;
+			}
+
+			to {
+				opacity: 1;
+			}
 		}
 
 		.dismiss-zone {
@@ -71,17 +82,8 @@
 			block-size: 100dvh;
 		}
 
-		.sheet-page {
-			scroll-snap-align: start;
-
-			display: flex;
-			flex-direction: column;
-			justify-content: flex-end;
-
-			min-block-size: 100dvh;
-		}
-
 		.sheet-body {
+			scroll-snap-align: end;
 			overflow-y: auto;
 
 			max-block-size: 90dvh;
