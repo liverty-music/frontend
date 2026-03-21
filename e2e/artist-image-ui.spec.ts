@@ -281,30 +281,23 @@ test.describe('Event card logo display', () => {
 		await page.addInitScript(seedAuthenticatedState())
 	})
 
-	test('5.1a: artist with fanart shows logo image instead of text', async ({
-		page,
-	}) => {
+	test('5.1a: all cards show artist name as text', async ({ page }) => {
 		await page.goto('http://localhost:9000/dashboard')
 
 		// Wait for event cards to render
 		const cards = page.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-		// Find the card for YOASOBI (has hdMusicLogo)
+		// All cards use text — no logo images anywhere
+		const logoImgs = page.locator('img.artist-logo')
+		await expect(logoImgs).toHaveCount(0)
+
+		// YOASOBI card shows text name
 		const yoasobiCard = cards
-			.filter({ has: page.locator('img.artist-logo') })
+			.filter({ has: page.locator('.artist-name', { hasText: 'YOASOBI' }) })
 			.first()
 		await expect(yoasobiCard).toBeVisible({ timeout: 5_000 })
-
-		// Verify the logo image has the correct src
-		const logoImg = yoasobiCard.locator('img.artist-logo')
-		await expect(logoImg).toHaveAttribute('src', FANART_LOGO_URL)
-		await expect(logoImg).toHaveAttribute('loading', 'lazy')
-		await expect(logoImg).toHaveAttribute('decoding', 'async')
-
-		// The text span should NOT be visible for this card
-		const textName = yoasobiCard.locator('.artist-name')
-		await expect(textName).toHaveCount(0)
+		await expect(yoasobiCard.locator('.artist-name')).toHaveText('YOASOBI')
 	})
 
 	test('5.1b: artist without fanart shows text name', async ({ page }) => {
@@ -313,16 +306,15 @@ test.describe('Event card logo display', () => {
 		const cards = page.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-		// Find a card with text name (Vaundy has no fanart)
-		const textCards = cards.filter({ has: page.locator('.artist-name') })
-		await expect(textCards.first()).toBeVisible({ timeout: 5_000 })
+		// Vaundy card shows text name
+		const vaundyCard = cards
+			.filter({ has: page.locator('.artist-name', { hasText: 'Vaundy' }) })
+			.first()
+		await expect(vaundyCard).toBeVisible({ timeout: 5_000 })
+		await expect(vaundyCard.locator('.artist-name')).toHaveText('Vaundy')
 
-		// The text name should display
-		const vanudyText = textCards.first().locator('.artist-name')
-		await expect(vanudyText).toBeVisible()
-
-		// No logo image for this card
-		const logoImg = textCards.first().locator('img.artist-logo')
+		// No logo image for any card
+		const logoImg = vaundyCard.locator('img.artist-logo')
 		await expect(logoImg).toHaveCount(0)
 	})
 })
@@ -348,10 +340,11 @@ test.describe('Event detail sheet hero image', () => {
 		const cards = page.locator('[data-live-card]')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-		// Click a card with logo (YOASOBI) to open detail sheet
+		// Click the YOASOBI card (has fanart/backgroundUrl) to open detail sheet
 		const yoasobiCard = cards
-			.filter({ has: page.locator('img.artist-logo') })
+			.filter({ has: page.locator('.artist-name', { hasText: 'YOASOBI' }) })
 			.first()
+		await expect(yoasobiCard).toBeVisible({ timeout: 5_000 })
 		await yoasobiCard.click()
 
 		// Detail sheet should open with hero image
