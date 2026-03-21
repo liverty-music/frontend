@@ -10,10 +10,14 @@ import type { IUserService } from '../../src/services/user-service'
  */
 export function createMockConcertService(): Partial<IConcertService> {
 	return {
+		artistsWithConcerts: new Set<string>(),
+		artistsWithConcertsCount: 0,
 		listConcerts: vi.fn().mockResolvedValue([]),
 		listByFollower: vi.fn().mockResolvedValue([]),
 		searchNewConcerts: vi.fn().mockResolvedValue(undefined),
 		listSearchStatuses: vi.fn().mockResolvedValue([]),
+		searchAndTrack: vi.fn(),
+		stopTracking: vi.fn(),
 	}
 }
 
@@ -37,15 +41,13 @@ export function createMockArtistServiceClient(): Partial<IArtistServiceClient> {
  */
 export function createMockFollowServiceClient(): Partial<IFollowServiceClient> {
 	return {
+		followedArtists: [],
+		followedIds: new Set<string>(),
+		followedCount: 0,
+		hydrate: vi.fn(),
 		listFollowed: vi.fn().mockResolvedValue([]),
 		follow: vi.fn().mockResolvedValue(undefined),
 		unfollow: vi.fn().mockResolvedValue(undefined),
-		getClient: vi.fn().mockReturnValue({
-			listFollowed: vi.fn().mockResolvedValue({ artists: [] }),
-			follow: vi.fn().mockResolvedValue({}),
-			unfollow: vi.fn().mockResolvedValue({}),
-			setHype: vi.fn().mockResolvedValue({}),
-		}),
 	}
 }
 

@@ -54,12 +54,26 @@ vi.mock('../../src/routes/discovery/discovery-route.css?raw', () => ({
 	default: '',
 }))
 
+vi.mock('../../src/routes/discovery/discovery-route.$au.ts', () => ({
+	default: { name: 'discovery-route', template: '<template></template>' },
+}))
+
 const { DiscoveryRoute } = await import(
 	'../../src/routes/discovery/discovery-route'
 )
 
 function makeArtist(id: string, name: string): Artist {
 	return { id, name, mbid: '' }
+}
+
+function simulateFollow(
+	mock: ReturnType<typeof createMockFollowServiceClient>,
+	artist: Artist,
+): void {
+	const artists = mock.followedArtists as Artist[]
+	artists.push(artist)
+	;(mock.followedIds as Set<string>).add(artist.id)
+	;(mock as { followedCount: number }).followedCount = artists.length
 }
 
 describe('DiscoveryRoute', () => {
@@ -114,6 +128,13 @@ describe('DiscoveryRoute', () => {
 			clearAll: vi.fn(),
 			listFollowed: vi.fn().mockReturnValue([]),
 		}
+
+		// Default: follow succeeds and updates mock state
+		;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockImplementation(
+			async (artist: Artist) => {
+				simulateFollow(mockFollowClient, artist)
+			},
+		)
 
 		const container = createTestContainer(
 			Registration.instance(mockIArtistServiceClient, mockArtistClient),
@@ -259,15 +280,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onFollowFromSearch', () => {
-		it('should follow artist and check live events', async () => {
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[{ id: 'c1' }],
-			)
-
-			// Mock rAF for spawnAndAbsorbAfterSearch
+		it('should follow artist and call searchAndTrack', async () => {
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -278,13 +291,15 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
+			expect(mockConcert.searchAndTrack).toHaveBeenCalledWith(
+				'a1',
+				expect.any(AbortSignal),
+				3,
+				expect.any(Function),
+			)
 		})
 
 		it('should not follow already-followed artist', async () => {
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -310,20 +325,9 @@ describe('DiscoveryRoute', () => {
 			expect(sut.search.isSearchMode).toBe(true)
 			expect(sut.search.searchQuery).toBe('test')
 			expect(sut.dnaOrbCanvas.spawnAndAbsorb).not.toHaveBeenCalled()
-			const hasErrorToast = mockEa.published.some(
-				(t: Snack) => t.severity === 'error',
-			)
-			expect(hasErrorToast).toBe(true)
 		})
 
 		it('should exit search mode and trigger spawnAndAbsorb on success', async () => {
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[],
-			)
-
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -342,13 +346,6 @@ describe('DiscoveryRoute', () => {
 		})
 
 		it('should call spawnAndAbsorb with center-x and 17% height position', async () => {
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[],
-			)
-
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -367,14 +364,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onArtistSelected', () => {
-		it('should follow artist and request similar artists via event detail', async () => {
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[],
-			)
-
+		it('should follow artist and call searchAndTrack via event detail', async () => {
 			const artist = makeArtist('a1', 'Artist One')
 			const event = new CustomEvent('artist-selected', {
 				detail: { artist, position: { x: 100, y: 200 } },
@@ -385,16 +375,15 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
+			expect(mockConcert.searchAndTrack).toHaveBeenCalledWith(
+				'a1',
+				expect.any(AbortSignal),
+				3,
+				expect.any(Function),
+			)
 		})
 
 		it('should skip if artist already followed', async () => {
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[],
-			)
-
 			const artist = makeArtist('a1', 'Artist')
 			const event = new CustomEvent('artist-selected', {
 				detail: { artist, position: { x: 0, y: 0 } },
@@ -406,68 +395,18 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledTimes(1)
 		})
 
-		it('should show toast when artist has upcoming live events', async () => {
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[{ id: 'c1' }],
-			)
-
-			const event = new CustomEvent('artist-selected', {
-				detail: {
-					artist: makeArtist('a1', 'Live Band'),
-					position: { x: 0, y: 0 },
-				},
-			})
-			await sut.onArtistSelected(event)
-
-			// Wait for the fire-and-forget concert check to resolve
-			await vi.advanceTimersByTimeAsync(0)
-
-			expect(mockConcert.listConcerts).toHaveBeenCalledWith('a1')
-			expect(mockEa.publish).toHaveBeenCalled()
-		})
-
-		it('should show error toast on follow failure', async () => {
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
-				new Error('network error'),
-			)
-
-			const event = new CustomEvent('artist-selected', {
-				detail: {
-					artist: makeArtist('a1', 'Fail Artist'),
-					position: { x: 10, y: 20 },
-				},
-			})
-			await sut.onArtistSelected(event)
-
-			// followArtist publishes a toast via callback
-			expect(mockEa.published.length).toBeGreaterThanOrEqual(1)
-			const hasErrorToast = mockEa.published.some(
-				(t: Snack) => t.severity === 'error',
-			)
-			expect(hasErrorToast).toBe(true)
-		})
-	})
-
-	describe('followArtist rollback on RPC failure', () => {
-		it('should rollback followedArtists on follow failure', async () => {
+		it('should rollback bubble on follow failure', async () => {
 			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('rpc fail'),
 			)
 
+			const artist = makeArtist('a1', 'RollbackArtist')
 			const event = new CustomEvent('artist-selected', {
-				detail: {
-					artist: makeArtist('a1', 'RollbackArtist'),
-					position: { x: 50, y: 50 },
-				},
+				detail: { artist, position: { x: 50, y: 50 } },
 			})
 			await sut.onArtistSelected(event)
 
-			// followedArtists should be empty after rollback
-			expect(sut.followedCount).toBe(0)
-			expect(sut.followedIds.has('a1')).toBe(false)
+			expect(mockConcert.searchAndTrack).not.toHaveBeenCalled()
 		})
 
 		it('should re-spawn bubble at original position on follow failure', async () => {
@@ -616,14 +555,6 @@ describe('DiscoveryRoute', () => {
 
 	describe('loading with existing followed artists (seed similar)', () => {
 		it('should fetch seed similar artists when followedArtists is non-empty', async () => {
-			// Pre-populate followed artists
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[],
-			)
-
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -691,31 +622,13 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('onboarding followedCount delegation', () => {
-		it('should read from guest service during onboarding', () => {
-			mockOnboarding.isOnboarding = true
-			// Add follows to the mock guest service
-			mockGuest.follows = [
-				{ artist: makeArtist('a1', 'A1'), home: null },
-				{ artist: makeArtist('a2', 'A2'), home: null },
-				{ artist: makeArtist('a3', 'A3'), home: null },
-				{ artist: makeArtist('a4', 'A4'), home: null },
-				{ artist: makeArtist('a5', 'A5'), home: null },
-			]
-			mockGuest.followedCount = 5
-
+	describe('followedCount', () => {
+		it('should always read from followService.followedCount', async () => {
+			;(mockFollowClient as { followedCount: number }).followedCount = 5
 			expect(sut.followedCount).toBe(5)
 		})
 
-		it('should use followedArtists.length when not onboarding', async () => {
-			mockOnboarding.isOnboarding = false
-			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockResolvedValue(
-				undefined,
-			)
-			;(mockConcert.listConcerts as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[],
-			)
-
+		it('should reflect follow calls', async () => {
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -734,40 +647,28 @@ describe('DiscoveryRoute', () => {
 			expect(sut.showDashboardCoachMark).toBe(false)
 		})
 
-		it('should hide when onboarding but followed < ONBOARDING_FOLLOW_TARGET', () => {
+		it('should hide when onboarding but artistsWithConcertsCount < TUTORIAL_FOLLOW_TARGET', () => {
 			mockOnboarding.isOnboarding = true
-			mockGuest.follows = [
-				{ artist: makeArtist('a1', 'A1'), home: null },
-				{ artist: makeArtist('a2', 'A2'), home: null },
-			]
-			mockGuest.followedCount = 2
+			;(
+				mockConcert as { artistsWithConcertsCount: number }
+			).artistsWithConcertsCount = 2
 			expect(sut.showDashboardCoachMark).toBe(false)
 		})
 
-		it('TC-GATE-01: should be false when concertGroupCount is 0 despite 3+ follows and all searches complete', () => {
+		it('TC-GATE-01: should be false when artistsWithConcertsCount is 0 despite follows', () => {
 			mockOnboarding.isOnboarding = true
-			mockGuest.follows = [
-				{ artist: makeArtist('a1', 'A1'), home: null },
-				{ artist: makeArtist('a2', 'A2'), home: null },
-				{ artist: makeArtist('a3', 'A3'), home: null },
-			]
-			mockGuest.followedCount = 3
-			sut.concertTracker.completedSearchCount = 3
-			sut.concertTracker.concertGroupCount = 0
+			;(
+				mockConcert as { artistsWithConcertsCount: number }
+			).artistsWithConcertsCount = 0
 
 			expect(sut.showDashboardCoachMark).toBe(false)
 		})
 
-		it('TC-GATE-02: should be true when concertGroupCount > 0 with 3+ follows and all searches complete', () => {
+		it('TC-GATE-02: should be true when artistsWithConcertsCount >= 3', () => {
 			mockOnboarding.isOnboarding = true
-			mockGuest.follows = [
-				{ artist: makeArtist('a1', 'A1'), home: null },
-				{ artist: makeArtist('a2', 'A2'), home: null },
-				{ artist: makeArtist('a3', 'A3'), home: null },
-			]
-			mockGuest.followedCount = 3
-			sut.concertTracker.completedSearchCount = 3
-			sut.concertTracker.concertGroupCount = 2
+			;(
+				mockConcert as { artistsWithConcertsCount: number }
+			).artistsWithConcertsCount = 3
 
 			expect(sut.showDashboardCoachMark).toBe(true)
 		})
@@ -819,12 +720,6 @@ describe('DiscoveryRoute', () => {
 		it('should deactivate spotlight, advance step to DASHBOARD, and navigate', () => {
 			mockOnboarding.isOnboarding = true
 			mockOnboarding.currentStep = 'discovery' // DISCOVERY
-			mockGuest.follows = [
-				{ artist: makeArtist('a1', 'A1'), home: null },
-				{ artist: makeArtist('a2', 'A2'), home: null },
-				{ artist: makeArtist('a3', 'A3'), home: null },
-			]
-			mockGuest.followedCount = 3
 
 			sut.onCoachMarkTap()
 
@@ -833,11 +728,12 @@ describe('DiscoveryRoute', () => {
 			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
 		})
 
-		it('should not advance step when showDashboardCoachMark is false (fewer than 3 follows)', () => {
+		it('should not advance step when showDashboardCoachMark is false (fewer than 3 artistsWithConcerts)', () => {
 			mockOnboarding.isOnboarding = true
 			mockOnboarding.currentStep = 'discovery' // DISCOVERY
-			mockGuest.follows = [{ artist: makeArtist('a1', 'A1'), home: null }]
-			mockGuest.followedCount = 1
+			;(
+				mockConcert as { artistsWithConcertsCount: number }
+			).artistsWithConcertsCount = 1
 
 			// showDashboardCoachMark should be false
 			expect(sut.showDashboardCoachMark).toBe(false)
