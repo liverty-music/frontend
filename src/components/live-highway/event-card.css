@@ -48,7 +48,7 @@
 
 		/* --- Artist logo (clearLOGO transparent PNG) --- */
 		.artist-logo {
-			max-inline-size: 80%;
+			inline-size: 100%;
 			max-block-size: 25cqi;
 			object-fit: contain;
 			filter: drop-shadow(0 2px 4px var(--_drop-shadow));
@@ -223,22 +223,11 @@
 		}
 
 		/* =============================================
-		   UNMATCHED — adaptive contrast background
+		   UNMATCHED — tinted background
 		   ============================================= */
 		.event-card:not([data-matched]) {
-			/*
-			 * When --artist-bg-lightness is set (logo analysis available),
-			 * derive background lightness to ensure contrast with the logo:
-			 * - Dark logos (low lightness) → raised background (0.30)
-			 * - Light logos (high lightness) → dark background (0.15)
-			 * Falls back to the original static dim color when unavailable.
-			 */
-			--_bg-l: var(--artist-bg-lightness, 0.25);
-
 			border: 1px solid oklch(100% 0 0deg / 5%);
-			background-color: oklch(
-				clamp(0.12, calc(0.45 - var(--_bg-l) * 0.5), 0.3) 0.03 var(--artist-hue)
-			);
+			background-color: var(--artist-color-dim);
 		}
 
 		/* Noise texture overlay — subtle surface grain */

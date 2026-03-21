@@ -23,15 +23,16 @@ export function artistColor(name: string): string {
 
 /**
  * Returns the hue to use for an artist card background.
- * Chromatic logos use their dominant hue; achromatic logos fall back to the
- * name-hash to preserve color variety across the dashboard.
+ * Chromatic logos use the complementary hue (dominantHue + 180°) so the
+ * logo color always contrasts with the background. Achromatic logos fall
+ * back to the name-hash to preserve color variety across the dashboard.
  */
 export function artistHueFromColorProfile(
 	profile: LogoColorProfile | undefined,
 	artistName: string,
 ): number {
 	if (profile?.isChromatic && profile.dominantHue != null) {
-		return profile.dominantHue
+		return (profile.dominantHue + 180) % 360
 	}
 	return artistHue(artistName)
 }

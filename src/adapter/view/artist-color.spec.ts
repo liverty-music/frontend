@@ -40,22 +40,49 @@ describe('artistColor', () => {
 })
 
 describe('artistHueFromColorProfile', () => {
-	it('uses dominant hue for chromatic profile', () => {
+	it('returns complementary hue for chromatic profile (120° → 300°)', () => {
 		const profile = {
 			isChromatic: true,
 			dominantHue: 120,
 			dominantLightness: 50,
 		}
-		expect(artistHueFromColorProfile(profile, 'Radiohead')).toBe(120)
+		expect(artistHueFromColorProfile(profile, 'Radiohead')).toBe(300)
 	})
 
-	it('treats dominantHue 0 as valid chromatic hue', () => {
+	it('returns complementary hue for pink logo (335° → 155°)', () => {
+		const profile = {
+			isChromatic: true,
+			dominantHue: 335,
+			dominantLightness: 75,
+		}
+		expect(artistHueFromColorProfile(profile, 'YOASOBI')).toBe(155)
+	})
+
+	it('returns complementary hue for red logo (29° → 209°)', () => {
+		const profile = {
+			isChromatic: true,
+			dominantHue: 29,
+			dominantLightness: 63,
+		}
+		expect(artistHueFromColorProfile(profile, 'Artist')).toBe(209)
+	})
+
+	it('returns complementary hue for blue logo (260° → 80°)', () => {
+		const profile = {
+			isChromatic: true,
+			dominantHue: 260,
+			dominantLightness: 45,
+		}
+		expect(artistHueFromColorProfile(profile, 'Artist')).toBe(80)
+	})
+
+	it('treats dominantHue 0 as valid — complementary is 180°', () => {
 		const profile = {
 			isChromatic: true,
 			dominantHue: 0,
 			dominantLightness: 50,
 		}
-		expect(artistHueFromColorProfile(profile, 'Radiohead')).toBe(0)
+		expect(artistHueFromColorProfile(profile, 'Radiohead')).toBe(180)
 	})
 
 	it('falls back to name hash for achromatic profile', () => {
