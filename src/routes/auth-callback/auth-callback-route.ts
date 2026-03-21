@@ -73,6 +73,11 @@ export class AuthCallbackRoute {
 		}
 
 		await this.provisionUser(email)
+		// provisionUser swallows AlreadyExists without setting _current,
+		// so fall back to a Get RPC if the cache is still empty.
+		if (!this.userService.current) {
+			await this.userService.ensureLoaded()
+		}
 	}
 
 	// Call Create RPC with ALREADY_EXISTS handling.

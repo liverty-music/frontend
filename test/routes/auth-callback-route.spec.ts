@@ -124,12 +124,14 @@ describe('AuthCallbackRoute', () => {
 			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
+				.mockResolvedValueOnce(undefined)
 			mockUserService.create = vi
 				.fn()
 				.mockRejectedValue(new ConnectError('exists', Code.AlreadyExists))
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
+			expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(2)
 			expect(result).toBe('/dashboard')
 		})
 
