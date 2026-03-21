@@ -14,7 +14,7 @@ export interface IUserService {
 	create(
 		email: string,
 		home?: { countryCode: string; level1: string; level2?: string },
-	): Promise<void>
+	): Promise<User | undefined>
 	updateHome(home: {
 		countryCode: string
 		level1: string
@@ -48,8 +48,10 @@ export class UserServiceClient implements IUserService {
 	public async create(
 		email: string,
 		home?: { countryCode: string; level1: string; level2?: string },
-	): Promise<void> {
-		await this.rpcClient.create(email, home)
+	): Promise<User | undefined> {
+		const user = await this.rpcClient.create(email, home)
+		this._current = user
+		return user
 	}
 
 	public async updateHome(home: {

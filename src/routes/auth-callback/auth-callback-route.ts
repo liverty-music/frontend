@@ -57,7 +57,8 @@ export class AuthCallbackRoute {
 	}
 
 	// Load the user profile from the backend. If the user does not exist yet
-	// (new registration), provision first and then load.
+	// (new registration), provision first. The Create RPC returns the user
+	// entity which is cached by UserServiceClient, so no second Get is needed.
 	private async ensureUserProvisioned(
 		email: string | undefined,
 	): Promise<void> {
@@ -72,7 +73,6 @@ export class AuthCallbackRoute {
 		}
 
 		await this.provisionUser(email)
-		await this.userService.ensureLoaded()
 	}
 
 	// Call Create RPC with ALREADY_EXISTS handling.
