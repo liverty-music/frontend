@@ -8,9 +8,9 @@
 
 		[artist-color] {
 			--artist-color: oklch(
-				65% 0.2 calc(var(--artist-hue) + var(--hue-drift, 0))
+				75% 0.4 calc(var(--artist-hue) + var(--hue-drift, 0))
 			);
-			--artist-color-dim: oklch(65% 0.03 var(--artist-hue));
+			--artist-color-dim: oklch(75% 0.4 var(--artist-hue));
 		}
 
 		/* Card base styles */
@@ -19,6 +19,7 @@
 
 			position: relative;
 
+			overflow: hidden;
 			display: flex;
 			flex-direction: column;
 			align-items: center;
@@ -124,28 +125,20 @@
 		   ============================================= */
 		.event-card[data-matched] {
 			--_spot-white: oklch(98% 0.05 var(--artist-hue));
-			--_spot-bright: oklch(80% 0.3 var(--artist-hue));
-			--_spot-mid: oklch(65% 0.25 var(--artist-hue));
-			--_spot-dim: oklch(40% 0.15 var(--artist-hue));
-			--_spot-glow: oklch(75% 0.3 var(--artist-hue) / 70%);
+			--_spot-bright: oklch(80% 0.4 var(--artist-hue));
+			--_spot-mid: oklch(65% 0.3 var(--artist-hue));
+			--_spot-dim: oklch(55% 0.2 var(--artist-hue));
+			--_spot-glow: oklch(75% 0.4 var(--artist-hue) / 70%);
 
 			/* Vivid neon border */
 			border: 2px solid var(--_spot-bright);
 
-			/* Spotlight cone: bright top → dark bottom */
-			background:
-				radial-gradient(
-					ellipse 80% 50% at 50% 0%,
-					var(--_spot-white) 0%,
-					var(--_spot-bright) 20%,
-					transparent 70%
-				),
-				radial-gradient(
-					ellipse 120% 80% at 50% 0%,
-					var(--_spot-mid) 0%,
-					var(--_spot-dim) 40%,
-					oklch(15% 0.03 var(--artist-hue)) 100%
-				);
+			/* Vivid diagonal gradient — slightly deeper than unmatched */
+			background: linear-gradient(
+				135deg,
+				oklch(62% 0.3 var(--artist-hue)) 0%,
+				oklch(62% 0.3 calc(var(--artist-hue) + 40)) 100%
+			);
 
 			/* Massive multi-layer outer glow — festival spotlight spill */
 			box-shadow:
@@ -153,7 +146,7 @@
 				0 -4px 40px var(--_spot-glow),
 				0 0 15px var(--_spot-bright),
 				0 0 40px var(--_spot-glow),
-				0 0 80px oklch(60% 0.2 var(--artist-hue) / 25%),
+				0 0 80px oklch(60% 0.3 var(--artist-hue) / 25%),
 				inset 0 4px 30px var(--_spot-mid);
 			animation: color-drift 8s ease-in-out infinite;
 		}
@@ -185,28 +178,6 @@
 			);
 		}
 
-		/* Bright top-edge contact flash — where the beam hits */
-		.event-card[data-matched]::after {
-			pointer-events: none;
-			content: "";
-
-			position: absolute;
-			inset-block-start: -2px;
-			inset-inline: 10%;
-
-			block-size: 4px;
-			/* stylelint-disable-next-line cube/require-token-variables -- decorative glow bar, not a UI radius */
-			border-radius: 2px;
-
-			background: var(--_spot-white);
-			box-shadow:
-				0 0 8px var(--_spot-white),
-				0 0 20px var(--_spot-bright),
-				0 0 40px var(--_spot-glow);
-
-			animation: pulse-glow 2s ease-in-out infinite;
-		}
-
 		/* ClearLOGO neon contour glow — triple layer */
 		.event-card[data-matched] .artist-logo {
 			filter: drop-shadow(0 0 6px var(--_spot-bright))
@@ -223,11 +194,15 @@
 		}
 
 		/* =============================================
-		   UNMATCHED — tinted background
+		   UNMATCHED — vivid diagonal gradient
 		   ============================================= */
 		.event-card:not([data-matched]) {
-			border: 1px solid oklch(100% 0 0deg / 5%);
-			background-color: var(--artist-color-dim);
+			border: 1px solid oklch(100% 0 0deg / 12%);
+			background: linear-gradient(
+				135deg,
+				oklch(75% 0.3 var(--artist-hue)) 0%,
+				oklch(75% 0.3 calc(var(--artist-hue) + 40)) 100%
+			);
 		}
 
 		/* Noise texture overlay — subtle surface grain */

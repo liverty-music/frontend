@@ -10,20 +10,10 @@
     role="button"
     tabindex="0"
     artist-color.bind="event.artistName"
-    profile.bind="event.artist?.fanart?.logoColorProfile"
     data-beam-index.bind="beamIndex"
-    class="[ event-card ]"
+class="[ event-card ]"
   >
-    <img
-      if.bind="logoUrl && !logoError"
-      src.bind="logoUrl"
-      alt.bind="event.artistName"
-      loading="lazy"
-      decoding="async"
-      error.trigger="onLogoError()"
-      class="artist-logo"
-    />
-    <span else class="artist-name">
+    <span class="artist-name">
       ${event.artistName}
     </span>
     <span if.bind="lane !== 'home'" class="location-label">
