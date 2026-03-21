@@ -6,11 +6,18 @@ import {
 	type ProximityGroup,
 } from '../adapter/rpc/client/concert-client'
 import { codeToHome } from '../constants/iso3166'
-import type { SearchStatusResult } from '../routes/discovery/concert-search-tracker'
 import { IAuthService } from './auth-service'
 import { IGuestService } from './guest-service'
 
-export type { ProtoConcert, ProximityGroup, SearchStatusResult }
+export type { ProtoConcert, ProximityGroup }
+
+export interface SearchStatusResult {
+	artistId: string
+	status: 'unspecified' | 'pending' | 'completed' | 'failed'
+}
+
+const POLL_INTERVAL_MS = 2_000
+const PER_ARTIST_TIMEOUT_MS = 15_000
 
 export const IConcertService = DI.createInterface<IConcertService>(
 	'IConcertService',
@@ -25,6 +32,60 @@ export class ConcertServiceClient {
 	private readonly guest = resolve(IGuestService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
+	// --- Concert search tracking state ---
+	public readonly artistsWithConcerts = new Set<string>()
+	private readonly searchStatus = new Map<string, 'pending' | 'done'>()
+	private readonly searchStartTimes = new Map<string, number>()
+	private pollIntervalId: number | undefined
+	private pollAbortSignal: AbortSignal | undefined
+	private pollTargetCount = 3
+	private onConcertFoundCallback?: (artistId: string) => void
+
+	public get artistsWithConcertsCount(): number {
+		return this.artistsWithConcerts.size
+	}
+
+	// --- Search and track lifecycle ---
+
+	/**
+	 * Initiate a background concert search for an artist and track its completion.
+	 * When the search completes, checks if the artist has concerts and updates
+	 * artistsWithConcerts. Stops polling early when targetCount is reached.
+	 */
+	public searchAndTrack(
+		artistId: string,
+		signal: AbortSignal,
+		targetCount: number,
+		onConcertFound?: (artistId: string) => void,
+	): void {
+		if (this.searchStatus.has(artistId)) return
+		this.searchStatus.set(artistId, 'pending')
+		this.searchStartTimes.set(artistId, Date.now())
+		this.pollAbortSignal = signal
+		this.pollTargetCount = targetCount
+		this.onConcertFoundCallback = onConcertFound
+
+		// Fire-and-forget: initiate backend search
+		this.rpcClient.searchNewConcerts(artistId).catch((err) => {
+			this.logger.warn('Background concert search failed', {
+				artistId,
+				error: err,
+			})
+		})
+
+		this.startPollingIfNeeded()
+	}
+
+	/**
+	 * Stop polling and clean up interval. Called on page detach.
+	 * Retains artistsWithConcerts state.
+	 */
+	public stopTracking(): void {
+		this.stopPolling()
+	}
+
+	// --- Existing RPC methods ---
+
 	public async listConcerts(
 		artistId: string,
 		signal?: AbortSignal,
@@ -38,6 +99,26 @@ export class ConcertServiceClient {
 		}
 		return this.rpcClient.listByFollower(signal)
 	}
+
+	public async searchNewConcerts(
+		artistId: string,
+		signal?: AbortSignal,
+	): Promise<void> {
+		await this.rpcClient.searchNewConcerts(artistId, signal)
+	}
+
+	public async listSearchStatuses(
+		artistIds: string[],
+		signal?: AbortSignal,
+	): Promise<SearchStatusResult[]> {
+		const statuses = await this.rpcClient.listSearchStatuses(artistIds, signal)
+		return statuses.map((s) => ({
+			artistId: s.artistId?.value ?? '',
+			status: protoStatusToString(s.status),
+		}))
+	}
+
+	// --- Private ---
 
 	private async listByFollowerGuest(
 		signal?: AbortSignal,
@@ -57,38 +138,116 @@ export class ConcertServiceClient {
 		)
 	}
 
-	public async verifyConcertsExist(
-		artistIds: string[],
-		signal?: AbortSignal,
-	): Promise<boolean> {
-		if (artistIds.length === 0) return false
-		this.logger.info('Verifying concerts exist for artists', {
-			count: artistIds.length,
-		})
-		const results = await Promise.all(
-			artistIds.map((id) =>
-				this.rpcClient.listConcerts(id, signal).catch(() => []),
-			),
+	private startPollingIfNeeded(): void {
+		if (this.pollIntervalId !== undefined) return
+		this.pollIntervalId = window.setInterval(
+			() => void this.pollSearchStatuses(),
+			POLL_INTERVAL_MS,
 		)
-		return results.some((concerts) => concerts.length > 0)
 	}
 
-	public async searchNewConcerts(
+	private stopPolling(): void {
+		if (this.pollIntervalId !== undefined) {
+			window.clearInterval(this.pollIntervalId)
+			this.pollIntervalId = undefined
+		}
+	}
+
+	private async pollSearchStatuses(): Promise<void> {
+		const signal = this.pollAbortSignal
+		if (signal?.aborted) {
+			this.stopPolling()
+			return
+		}
+
+		const now = Date.now()
+		const pendingIds = this.getPendingArtistIds()
+
+		// Apply per-artist timeout
+		for (const artistId of pendingIds) {
+			const startTime = this.searchStartTimes.get(artistId) ?? now
+			if (now - startTime >= PER_ARTIST_TIMEOUT_MS) {
+				this.logger.info('Search polling timed out for artist', { artistId })
+				this.markDone(artistId)
+			}
+		}
+
+		// Check early exit: target reached
+		if (this.artistsWithConcerts.size >= this.pollTargetCount) {
+			this.stopPolling()
+			return
+		}
+
+		const stillPending = this.getPendingArtistIds()
+		if (stillPending.length === 0) {
+			this.stopPolling()
+			return
+		}
+
+		try {
+			const statuses = await this.listSearchStatuses(stillPending, signal)
+			if (signal?.aborted) return
+
+			for (const s of statuses) {
+				if (s.status === 'completed') {
+					this.markDone(s.artistId)
+					void this.checkArtistConcerts(s.artistId, signal)
+				} else if (s.status === 'failed') {
+					this.markDone(s.artistId)
+				}
+			}
+		} catch (err) {
+			if ((err as Error).name === 'AbortError') return
+			this.logger.warn('ListSearchStatuses poll failed, will retry', {
+				error: err,
+			})
+			return
+		}
+
+		// Re-check after processing
+		if (
+			this.getPendingArtistIds().length === 0 ||
+			this.artistsWithConcerts.size >= this.pollTargetCount
+		) {
+			this.stopPolling()
+		}
+	}
+
+	private async checkArtistConcerts(
 		artistId: string,
 		signal?: AbortSignal,
 	): Promise<void> {
-		await this.rpcClient.searchNewConcerts(artistId, signal)
+		try {
+			const concerts = await this.rpcClient.listConcerts(artistId, signal)
+			if (signal?.aborted) return
+			if (concerts.length > 0) {
+				this.artistsWithConcerts.add(artistId)
+				this.logger.info('Artist has concerts', {
+					artistId,
+					concertCount: concerts.length,
+					artistsWithConcerts: this.artistsWithConcerts.size,
+				})
+				this.onConcertFoundCallback?.(artistId)
+			}
+		} catch (err) {
+			if ((err as Error).name === 'AbortError') return
+			this.logger.warn('Failed to check artist concerts', {
+				artistId,
+				error: err,
+			})
+		}
 	}
 
-	public async listSearchStatuses(
-		artistIds: string[],
-		signal?: AbortSignal,
-	): Promise<SearchStatusResult[]> {
-		const statuses = await this.rpcClient.listSearchStatuses(artistIds, signal)
-		return statuses.map((s) => ({
-			artistId: s.artistId?.value ?? '',
-			status: protoStatusToString(s.status),
-		}))
+	private getPendingArtistIds(): string[] {
+		const pending: string[] = []
+		for (const [artistId, status] of this.searchStatus) {
+			if (status === 'pending') pending.push(artistId)
+		}
+		return pending
+	}
+
+	private markDone(artistId: string): void {
+		this.searchStatus.set(artistId, 'done')
 	}
 }
 

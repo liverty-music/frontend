@@ -13,8 +13,6 @@ import {
 	OnboardingStep,
 } from '../../services/onboarding-service'
 import { BubbleManager } from './bubble-manager'
-import { ConcertSearchTracker } from './concert-search-tracker'
-import { FollowOrchestrator } from './follow-orchestrator'
 import { GenreFilterController } from './genre-filter-controller'
 import { SearchController } from './search-controller'
 
@@ -22,7 +20,7 @@ const TUTORIAL_FOLLOW_TARGET = 3
 
 export class DiscoveryRoute {
 	private readonly artistClient = resolve(IArtistServiceClient)
-	private readonly followClient = resolve(IFollowServiceClient)
+	private readonly followService = resolve(IFollowServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
@@ -35,11 +33,11 @@ export class DiscoveryRoute {
 
 	private abortController = new AbortController()
 
-	// Controllers -- order matters: bubbles must be initialized before genre/follow
+	// Controllers
 	public readonly bubbles = new BubbleManager(
 		this.artistClient,
 		resolve(ILogger).scopeTo('BubbleManager'),
-		() => this.follow.followedIds,
+		() => this.followService.followedIds,
 	)
 
 	public readonly search = new SearchController(
@@ -56,7 +54,7 @@ export class DiscoveryRoute {
 	public readonly genre = new GenreFilterController(
 		this.artistClient,
 		this.bubbles.pool,
-		() => this.follow.followedArtists,
+		() => this.followService.followedArtists,
 		{
 			onBubblesReloaded: (artists) => this.dnaOrbCanvas.reloadBubbles(artists),
 			onError: (key, params) =>
@@ -66,47 +64,12 @@ export class DiscoveryRoute {
 		() => this.abortController.signal,
 	)
 
-	public readonly follow = new FollowOrchestrator(
-		this.followClient,
-		this.concertService,
-		this.bubbles.pool,
-		{
-			onFollowed: (artist) => {
-				this.concertTracker.searchConcertsWithTimeout(artist.id)
-			},
-			onRollback: () => {},
-			onHasUpcomingEvents: (name) =>
-				this.ea.publish(
-					new Snack(this.i18n.tr('discovery.hasUpcomingEvents', { name })),
-				),
-			onError: (key, params) =>
-				this.ea.publish(new Snack(this.i18n.tr(key, params), 'error')),
-			respawnBubble: (artist, pos) =>
-				this.dnaOrbCanvas.spawnBubblesAt([artist], pos.x, pos.y),
-		},
-		resolve(ILogger).scopeTo('FollowOrchestrator'),
-		() => this.abortController.signal,
-	)
-
-	public readonly concertTracker = new ConcertSearchTracker(
-		this.concertService,
-		{
-			onAllSearchesComplete: () => {
-				// Coach mark reactivity is handled by @watch
-			},
-		},
-		resolve(ILogger).scopeTo('ConcertSearchTracker'),
-		() => this.abortController.signal,
-		() => this.followedCount,
-		TUTORIAL_FOLLOW_TARGET,
-	)
-
 	public get poolBubbles(): Artist[] {
 		return this.bubbles.poolBubbles
 	}
 
 	public get followedIds(): ReadonlySet<string> {
-		return this.follow.followedIds
+		return this.followService.followedIds
 	}
 
 	public get isOnboarding(): boolean {
@@ -114,18 +77,13 @@ export class DiscoveryRoute {
 	}
 
 	public get followedCount(): number {
-		if (this.isOnboarding) {
-			return this.guest.followedCount
-		}
-		return this.follow.followedCount
+		return this.followService.followedCount
 	}
 
 	public get showDashboardCoachMark(): boolean {
 		return (
 			this.isOnboarding &&
-			this.followedCount >= TUTORIAL_FOLLOW_TARGET &&
-			this.concertTracker.completedSearchCount >= this.followedCount &&
-			this.concertTracker.concertGroupCount > 0
+			this.concertService.artistsWithConcertsCount >= TUTORIAL_FOLLOW_TARGET
 		)
 	}
 
@@ -150,7 +108,7 @@ export class DiscoveryRoute {
 		return parts.join('. ')
 	}
 
-	@watch('showDashboardCoachMark')
+	@watch((vm: DiscoveryRoute) => vm.showDashboardCoachMark)
 	protected onShowDashboardCoachMarkChanged(show: boolean): void {
 		if (show) {
 			this.onboarding.activateSpotlight(
@@ -168,13 +126,13 @@ export class DiscoveryRoute {
 		if (this.isOnboarding) {
 			const persisted = this.guest.follows
 			if (persisted.length > 0) {
-				this.follow.hydrate(persisted.map((f) => f.artist))
+				this.followService.hydrate(persisted.map((f) => f.artist))
 			}
 		}
 
 		try {
 			await this.bubbles.loadInitialArtists(
-				this.follow.followedArtists,
+				this.followService.followedArtists,
 				'Japan',
 				'',
 			)
@@ -183,11 +141,16 @@ export class DiscoveryRoute {
 			this.ea.publish(new Snack(this.i18n.tr('discovery.loadFailed'), 'error'))
 		}
 
+		// Resume search tracking for pre-seeded follows
 		if (this.isOnboarding) {
-			const preSeeded = this.guest.follows
-			this.concertTracker.syncPreSeeded(
-				preSeeded.map((f) => ({ artistId: f.artist.id })),
-			)
+			for (const f of this.guest.follows) {
+				this.concertService.searchAndTrack(
+					f.artist.id,
+					this.abortController.signal,
+					TUTORIAL_FOLLOW_TARGET,
+					(artistId) => this.onConcertFound(artistId),
+				)
+			}
 		}
 	}
 
@@ -207,7 +170,7 @@ export class DiscoveryRoute {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		this.search.dispose()
-		this.concertTracker.dispose()
+		this.concertService.stopTracking()
 	}
 
 	private readonly onVisibilityChange = (): void => {
@@ -246,14 +209,25 @@ export class DiscoveryRoute {
 			artist: artist.name,
 		})
 
+		// Optimistic UI: remove from pool
+		this.bubbles.pool.remove(artistId)
+
 		try {
-			await this.follow.followArtist(artist, position)
+			await this.followService.follow(artist)
 		} catch {
+			// Rollback UI
+			this.bubbles.pool.add([artist])
+			this.dnaOrbCanvas.spawnBubblesAt([artist], position.x, position.y)
 			return
 		}
 		if (this.abortController.signal.aborted) return
 
-		this.follow.checkLiveEvents(artist)
+		this.concertService.searchAndTrack(
+			artistId,
+			this.abortController.signal,
+			TUTORIAL_FOLLOW_TARGET,
+			(id) => this.onConcertFound(id),
+		)
 	}
 
 	public async onNeedMoreBubbles(
@@ -303,7 +277,7 @@ export class DiscoveryRoute {
 		})
 
 		try {
-			await this.follow.followArtist(artist)
+			await this.followService.follow(artist)
 		} catch {
 			return
 		}
@@ -315,7 +289,12 @@ export class DiscoveryRoute {
 
 		this.bubbles.spawnAndAbsorbAfterSearch(artist, this.dnaOrbCanvas)
 
-		this.follow.checkLiveEvents(artist)
+		this.concertService.searchAndTrack(
+			artistId,
+			this.abortController.signal,
+			TUTORIAL_FOLLOW_TARGET,
+			(id) => this.onConcertFound(id),
+		)
 	}
 
 	public onCoachMarkTap(): void {
@@ -325,5 +304,19 @@ export class DiscoveryRoute {
 		this.onboarding.deactivateSpotlight()
 		this.onboarding.setStep(OnboardingStep.DASHBOARD)
 		void this.router.load('/dashboard')
+	}
+
+	private onConcertFound(artistId: string): void {
+		// Find artist name for snack notification
+		const artist = this.followService.followedArtists.find(
+			(a) => a.id === artistId,
+		)
+		if (artist) {
+			this.ea.publish(
+				new Snack(
+					this.i18n.tr('discovery.hasUpcomingEvents', { name: artist.name }),
+				),
+			)
+		}
 	}
 }
