@@ -713,9 +713,9 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		)
 		expect(stepAfterMyArtists).toBe('my-artists')
 
-		// Spotlight targets [data-hype-header] (the hype legend bar)
-		const hypeHeader = page.locator('[data-hype-header]')
-		await expect(hypeHeader).toBeVisible({ timeout: 10_000 })
+		// Spotlight targets [data-artist-rows] (the artist table body)
+		const artistRows = page.locator('[data-artist-rows]')
+		await expect(artistRows).toBeVisible({ timeout: 10_000 })
 
 		// Verify artist list loaded (at least 1 artist row visible)
 		const artistRow = page.locator('.artist-row').first()
@@ -732,13 +732,11 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		const spotlight = page.locator('.visual-spotlight')
 		await expect(spotlight).not.toBeVisible({ timeout: 5000 })
 
-		// Hype sliders should now be interactive (not blocked by click-blocker)
-		const hypeSlider = page.locator('hype-inline-slider').first()
-		await expect(hypeSlider).toBeVisible({ timeout: 5000 })
+		// Hype dots should now be visible (not blocked by click-blocker)
+		const hypeDot = page.locator('.hype-dot').first()
+		await expect(hypeDot).toBeVisible({ timeout: 5000 })
 
-		// Note: Hype slider interaction cannot advance onboarding further in
-		// guest mode because hype-inline-slider blocks changes for
-		// unauthenticated users (dispatches hype-signup-prompt instead).
-		// Full step completion (my-artists → completed) requires auth.
+		// Note: Tapping a hype dot in guest mode completes onboarding and
+		// opens the signup notification dialog. The hype change is reverted.
 	})
 })

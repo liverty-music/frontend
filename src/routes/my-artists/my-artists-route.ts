@@ -7,6 +7,7 @@ import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
+import { IGuestService } from '../../services/guest-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -27,9 +28,6 @@ export class MyArtistsRoute {
 
 	// Hype state tracking for revert
 	private prevHypes = new Map<string, Hype>()
-
-	// Dismiss state (tracks scroll containers currently dismissing)
-	private dismissingIds = new Set<string>()
 
 	// Undo state
 	private undoArtist: MyArtist | null = null
@@ -53,6 +51,7 @@ export class MyArtistsRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
+	private readonly guest = resolve(IGuestService)
 	private abortController: AbortController | null = null
 
 	public get isOnboardingStepMyArtists(): boolean {
@@ -103,8 +102,8 @@ export class MyArtistsRoute {
 
 		if (this.isOnboardingStepMyArtists && this.artists.length > 0) {
 			this.onboarding.activateSpotlight(
-				'.artist-list',
-				'絶対に見逃したくないアーティストの熱量を上げておこう',
+				'[data-artist-rows]',
+				this.i18n.tr('myArtists.spotlight.setHypeMessage'),
 				() => this.onboarding.deactivateSpotlight(),
 			)
 		}
@@ -116,40 +115,9 @@ export class MyArtistsRoute {
 		this.undoHandle?.dismiss()
 	}
 
-	// --- Scroll-snap dismiss ---
-
-	public checkDismiss(event: Event, artist: MyArtist): void {
-		const id = this.artistId(artist)
-		if (this.dismissingIds.has(id)) return
-
-		const el = event.target as HTMLElement
-		if (el.scrollLeft > (el.scrollWidth - el.offsetWidth) * 0.5) {
-			this.dismissingIds.add(id)
-			this.executeDismiss(artist)
-		}
-	}
-
-	private executeDismiss(artist: MyArtist): void {
-		const id = this.artistId(artist)
-		if (!document.startViewTransition) {
-			this.unfollowArtist(artist)
-			this.dismissingIds.delete(id)
-			return
-		}
-
-		const transition = document.startViewTransition(() => {
-			this.unfollowArtist(artist)
-			this.dismissingIds.delete(id)
-			return Promise.resolve()
-		})
-		transition.finished.catch(() => {
-			this.dismissingIds.delete(id)
-		})
-	}
-
 	// --- Unfollow with undo ---
 
-	private unfollowArtist(artist: MyArtist): void {
+	public unfollowArtist(artist: MyArtist): void {
 		// Block unfollow during onboarding
 		if (this.isOnboarding) return
 
@@ -161,10 +129,18 @@ export class MyArtistsRoute {
 		const index = this.artists.findIndex((a) => a.artist.id === artistId)
 		if (index === -1) return
 
-		// Optimistic removal
-		this.artists.splice(index, 1)
-		this.undoArtist = artist
-		this.undoIndex = index
+		// Optimistic removal (with View Transition if available)
+		const doRemove = () => {
+			this.artists.splice(index, 1)
+			this.undoArtist = artist
+			this.undoIndex = index
+		}
+
+		if (document.startViewTransition) {
+			document.startViewTransition(doRemove)
+		} else {
+			doRemove()
+		}
 
 		this.logger.info('Artist unfollowed (pending)', { name: artistName })
 
@@ -208,6 +184,15 @@ export class MyArtistsRoute {
 	private commitUnfollow(artist: MyArtist, originalIndex: number): void {
 		const artistId = this.artistId(artist)
 		const artistName = this.artistName(artist)
+
+		if (!this.isAuthenticated) {
+			this.guest.unfollow(artistId)
+			this.logger.info('Unfollow committed (guest service)', {
+				name: artistName,
+			})
+			return
+		}
+
 		// Fire-and-forget RPC with 1 retry
 		this.followService
 			.unfollow(artistId)
@@ -252,12 +237,17 @@ export class MyArtistsRoute {
 		const prev = this.prevHypes.get(artistId) ?? 'watch'
 		if (prev === artist.hype) return
 
-		// Onboarding step 5: revert hype, complete onboarding, redirect
+		// Onboarding step 5: revert hype, complete onboarding, stay on page
+		// Fall through to unauthenticated check so the notification dialog opens immediately
 		if (this.isOnboardingStepMyArtists) {
 			artist.hype = prev
 			this.onboarding.deactivateSpotlight()
 			this.onboarding.setStep(OnboardingStep.COMPLETED)
-			void this.router.load('')
+			if (!this.isAuthenticated) {
+				if (!this.notificationDialogShown) {
+					this.showNotificationDialog = true
+				}
+			}
 			return
 		}
 
@@ -317,6 +307,10 @@ export class MyArtistsRoute {
 		this.showNotificationDialog = false
 		this.showSignupBanner = true
 		this.notificationDialogShown = true
+	}
+
+	public onBannerDismissed(): void {
+		this.showSignupBanner = false
 	}
 
 	public hypeIcon(artist: MyArtist): string {

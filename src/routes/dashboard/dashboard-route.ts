@@ -260,9 +260,11 @@ export class DashboardRoute {
 	public onHomeSelected(code: string): void {
 		this.logger.info('Home area configured', { code })
 		this.needsRegion = false
+		if (!this.authService.isAuthenticated) {
+			this.guest.setHome(code)
+		}
 		this.loadData()
 		if (this.isOnboarding) {
-			this.guest.setHome(code)
 			this.startLaneIntro()
 		}
 	}
@@ -428,6 +430,10 @@ export class DashboardRoute {
 
 	public onSignupRequested(): void {
 		this.authService.signUp()
+	}
+
+	public onBannerDismissed(): void {
+		this.showSignupBanner = false
 	}
 
 	public detaching(): void {

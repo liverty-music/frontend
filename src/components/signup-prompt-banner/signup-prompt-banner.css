@@ -3,6 +3,10 @@
 		:scope {
 			--_border-subtle: oklch(100% 0 0deg / 10%);
 			--_surface-bg: oklch(100% 0 0deg / 5%);
+
+			position: fixed;
+			inset-block-end: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+			inset-inline: 0;
 		}
 
 		.signup-banner {
@@ -23,6 +27,31 @@
 			color: var(--color-text-secondary);
 		}
 
+		.signup-banner-dismiss {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-shrink: 0;
+
+			inline-size: 1.5rem;
+			block-size: 1.5rem;
+			border-radius: var(--radius-full);
+
+			color: var(--color-text-muted);
+
+			transition: color 150ms ease-out;
+
+			& svg-icon {
+				inline-size: 0.875rem;
+				block-size: 0.875rem;
+			}
+
+			&:hover,
+			&:focus-visible {
+				color: var(--color-text-secondary);
+			}
+		}
+
 		.signup-banner-btn {
 			flex-shrink: 0;
 
@@ -41,7 +70,8 @@
 
 			transition: opacity 150ms ease-out;
 
-			&:hover {
+			&:hover,
+			&:focus-visible {
 				opacity: 0.85;
 			}
 

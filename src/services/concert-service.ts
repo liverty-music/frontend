@@ -7,8 +7,8 @@ import {
 } from '../adapter/rpc/client/concert-client'
 import { codeToHome } from '../constants/iso3166'
 import type { SearchStatusResult } from '../routes/discovery/concert-search-tracker'
+import { IAuthService } from './auth-service'
 import { IGuestService } from './guest-service'
-import { IOnboardingService } from './onboarding-service'
 
 export type { ProtoConcert, ProximityGroup, SearchStatusResult }
 
@@ -21,8 +21,8 @@ export interface IConcertService extends ConcertServiceClient {}
 
 export class ConcertServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('ConcertService')
+	private readonly authService = resolve(IAuthService)
 	private readonly guest = resolve(IGuestService)
-	private readonly onboarding = resolve(IOnboardingService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
 	public async listConcerts(
@@ -33,17 +33,17 @@ export class ConcertServiceClient {
 	}
 
 	public async listByFollower(signal?: AbortSignal): Promise<ProximityGroup[]> {
-		if (this.onboarding.isOnboarding) {
-			return this.listByFollowerOnboarding(signal)
+		if (!this.authService.isAuthenticated) {
+			return this.listByFollowerGuest(signal)
 		}
 		return this.rpcClient.listByFollower(signal)
 	}
 
-	private async listByFollowerOnboarding(
+	private async listByFollowerGuest(
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
 		const { follows, home: homeCode } = this.guest
-		this.logger.info('Onboarding: listing concerts with proximity', {
+		this.logger.info('Guest: listing concerts with proximity', {
 			count: follows.length,
 		})
 		if (follows.length === 0 || !homeCode) return []

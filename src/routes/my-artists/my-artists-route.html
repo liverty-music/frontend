@@ -1,5 +1,4 @@
 <import from="./my-artists-route.css"></import>
-<import from="../../components/hype-inline-slider/hype-inline-slider"></import>
 <import from="../../components/hype-notification-dialog/hype-notification-dialog"></import>
 <import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
 
@@ -27,54 +26,74 @@
     ></button>
   </state-placeholder>
 
-  <!-- Hype level legend -->
-  <header if.bind="!isLoading && artists.length > 0" class="[ hype-legend ]" data-hype-header aria-label="Hype levels">
-    <span class="hype-legend-item">👀<small>チェック</small></span>
-    <span class="hype-legend-item">🔥<small>地元</small></span>
-    <span class="hype-legend-item">🔥🔥<small>近くも</small></span>
-    <span class="hype-legend-item">🔥🔥🔥<small>どこでも！</small></span>
-  </header>
+  <!-- Artist hype table -->
+  <fieldset if.bind="!isLoading && artists.length > 0" class="artists-fieldset">
+    <legend class="[ visually-hidden ]" t="nav.myArtists"></legend>
+    <table class="artists-table">
+      <thead>
+        <tr class="artists-thead-row">
+          <th scope="col" class="[ visually-hidden ]" t="myArtists.table.artistCol"></th>
+          <th scope="col" class="hype-col-header">👀<small t="myArtists.table.watch"></small></th>
+          <th scope="col" class="hype-col-header">🔥<small t="myArtists.table.home"></small></th>
+          <th scope="col" class="hype-col-header">🔥🔥<small t="myArtists.table.nearby"></small></th>
+          <th scope="col" class="hype-col-header">🔥🔥🔥<small t="myArtists.table.away"></small></th>
+          <th scope="col" class="[ visually-hidden ]" t="myArtists.table.unfollowCol"></th>
+        </tr>
+      </thead>
+      <tbody data-artist-rows>
+        <tr
+          repeat.for="artist of artists; key.bind: artist.artist.id"
+          class="artist-row"
+          css="--_vt-name: artist-${artist.artist.id}; --_dot-color: ${artist.color}"
+        >
+          <!-- Artist name cell -->
+          <th scope="row" class="artist-name-cell">
+            <span class="artist-row-indicator" aria-hidden="true"></span>
+            <span class="artist-row-name">${artist.artist.name}</span>
+          </th>
 
-  <!-- Artist list -->
-  <ul if.bind="!isLoading && artists.length > 0" class="artist-list" role="list">
-    <li
-      repeat.for="artist of artists; key.bind: artist.artist.id"
-      class="artist-row"
-      css="--_vt-name: artist-${artist.artist.id}"
-      scroll.trigger="checkDismiss($event, artist)"
-    >
-      <section class="artist-row-content">
-        <!-- Artist identity (indicator + name) -->
-        <header class="artist-identity">
-          <span
-            class="[ artist-row-indicator ]"
-            dot-color.bind="artist.color"
-          ></span>
-          <span class="[ artist-row-name ]">${artist.artist.name}</span>
-        </header>
+          <!-- Hype dot cells -->
+          <td repeat.for="level of hypeLevels" class="hype-col">
+            <label class="hype-label">
+              <input
+                type="radio"
+                class="[ visually-hidden ]"
+                name.bind="'hype-' + artist.artist.id"
+                model.bind="level"
+                checked.bind="artist.hype"
+                change.trigger="onHypeInput(artist)"
+              >
+              <span
+                class="hype-dot"
+                data-active.bind="level === artist.hype"
+                data-level.bind="level"
+              ></span>
+            </label>
+          </td>
 
-        <!-- Inline hype slider -->
-        <hype-inline-slider
-          artist-id.bind="artist.artist.id"
-          hype-color.bind="artist.color"
-          hype.bind="artist.hype"
-          change.trigger="onHypeInput(artist)">
-        </hype-inline-slider>
-      </section>
-
-      <!-- Dismiss trigger (scroll-snap end target) -->
-      <div class="dismiss-end">
-        <svg-icon name="trash"></svg-icon>
-      </div>
-    </li>
-  </ul>
+          <!-- Unfollow cell -->
+          <td class="artist-unfollow-col">
+            <button
+              type="button"
+              class="artist-unfollow-btn"
+              aria-label.bind="i18n.tr('myArtists.unfollowArtist', { name: artist.artist.name })"
+              click.trigger="unfollowArtist(artist)"
+            >
+              <svg-icon name="trash" aria-hidden="true"></svg-icon>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </fieldset>
 </main>
 
 <!-- Signup prompt banner -->
 <signup-prompt-banner
   visible.bind="showSignupBanner && !isAuthenticated"
-  message="&#x1F514; 通知を有効にするには"
-  signup-requested.trigger="onSignupRequested()">
+  message.bind="i18n.tr('myArtists.signupBanner.message')"
+  signup-requested.trigger="onSignupRequested()"
+  banner-dismissed.trigger="onBannerDismissed()">
 </signup-prompt-banner>
 
 <!-- Notification dialog (outside main for proper top-layer stacking) -->

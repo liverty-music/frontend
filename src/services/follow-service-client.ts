@@ -2,8 +2,8 @@ import { DI, resolve } from 'aurelia'
 import { IFollowRpcClient } from '../adapter/rpc/client/follow-client'
 import type { Artist } from '../entities/artist'
 import type { FollowedArtist, Hype } from '../entities/follow'
+import { IAuthService } from './auth-service'
 import { IGuestService } from './guest-service'
-import { IOnboardingService } from './onboarding-service'
 
 export const IFollowServiceClient = DI.createInterface<IFollowServiceClient>(
 	'IFollowServiceClient',
@@ -13,16 +13,16 @@ export const IFollowServiceClient = DI.createInterface<IFollowServiceClient>(
 export interface IFollowServiceClient extends FollowServiceClient {}
 
 export class FollowServiceClient {
+	private readonly authService = resolve(IAuthService)
 	private readonly guest = resolve(IGuestService)
-	private readonly onboarding = resolve(IOnboardingService)
 	private readonly rpcClient = resolve(IFollowRpcClient)
 
 	/**
-	 * Follow an artist. During onboarding, writes to guest service.
-	 * Otherwise calls the backend RPC.
+	 * Follow an artist. Unauthenticated users write to guest service.
+	 * Authenticated users call the backend RPC.
 	 */
 	public async follow(artist: Artist): Promise<void> {
-		if (this.onboarding.isOnboarding) {
+		if (!this.authService.isAuthenticated) {
 			this.guest.follow(artist)
 			return
 		}
@@ -30,11 +30,11 @@ export class FollowServiceClient {
 	}
 
 	/**
-	 * Unfollow an artist. During onboarding, writes to guest service.
-	 * Otherwise calls the backend RPC.
+	 * Unfollow an artist. Unauthenticated users write to guest service.
+	 * Authenticated users call the backend RPC.
 	 */
 	public async unfollow(artistId: string): Promise<void> {
-		if (this.onboarding.isOnboarding) {
+		if (!this.authService.isAuthenticated) {
 			this.guest.unfollow(artistId)
 			return
 		}
@@ -42,11 +42,11 @@ export class FollowServiceClient {
 	}
 
 	/**
-	 * List followed artists. During onboarding, reads from guest service.
-	 * Otherwise calls the backend ListFollowed RPC.
+	 * List followed artists. Unauthenticated users read from guest service.
+	 * Authenticated users call the backend ListFollowed RPC.
 	 */
 	public async listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
-		if (this.onboarding.isOnboarding) {
+		if (!this.authService.isAuthenticated) {
 			return this.guest.follows.map((f) => ({
 				artist: f.artist,
 				hype: 'watch' as const,

@@ -7,6 +7,7 @@ const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIAuthService = DI.createInterface('IAuthService')
+const mockIGuestService = DI.createInterface('IGuestService')
 vi.mock('../../src/services/follow-service-client', () => ({
 	IFollowServiceClient: mockIFollowServiceClient,
 }))
@@ -29,6 +30,10 @@ vi.mock('../../src/services/onboarding-service', () => ({
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
+}))
+
+vi.mock('../../src/services/guest-service', () => ({
+	IGuestService: mockIGuestService,
 }))
 
 const { MyArtistsRoute } = await import(
@@ -78,11 +83,20 @@ describe('MyArtistsRoute', () => {
 			deactivateSpotlight: vi.fn(),
 		}
 
+		const mockGuest = {
+			follows: [],
+			home: null,
+			follow: vi.fn(),
+			unfollow: vi.fn(),
+			setHome: vi.fn(),
+		}
+
 		const container = createTestContainer(
 			Registration.instance(mockIFollowServiceClient, mockFollowService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIAuthService, mockAuth),
+			Registration.instance(mockIGuestService, mockGuest),
 		)
 		container.register(MyArtistsRoute)
 		sut = container.get(MyArtistsRoute)
@@ -135,25 +149,30 @@ describe('MyArtistsRoute', () => {
 			expect(sut.isLoading).toBe(false)
 			expect(sut.artists).toHaveLength(0)
 		})
+
+		it('should load artists from guest service for unauthenticated user', async () => {
+			mockAuth.isAuthenticated = false
+			mockFollowService.listFollowed.mockResolvedValue([
+				makeFollowedArtist('g-1', 'Guest Artist', 'watch'),
+			])
+
+			await sut.loading()
+
+			expect(sut.isLoading).toBe(false)
+			expect(sut.artists).toHaveLength(1)
+			expect(sut.artists[0].artist.name).toBe('Guest Artist')
+			expect(sut.artists[0].hype).toBe('watch')
+			expect(mockFollowService.listFollowed).toHaveBeenCalled()
+		})
 	})
 
-	describe('scroll-snap dismiss', () => {
+	describe('delete button', () => {
 		beforeEach(async () => {
 			await sut.loading()
 		})
 
-		function makeScrollEvent(
-			scrollLeft: number,
-			offsetWidth: number,
-			scrollWidth: number,
-		): Event {
-			return {
-				target: { scrollLeft, offsetWidth, scrollWidth },
-			} as unknown as Event
-		}
-
-		it('should unfollow when scroll exceeds 50% threshold', () => {
-			sut.checkDismiss(makeScrollEvent(50, 400, 480), sut.artists[0])
+		it('should unfollow and publish undo snack', () => {
+			sut.unfollowArtist(sut.artists[0])
 
 			expect(sut.artists).toHaveLength(2)
 			expect(publishedSnacks).toHaveLength(1)
@@ -161,33 +180,39 @@ describe('MyArtistsRoute', () => {
 			expect(publishedSnacks[0].action?.label).toBe('myArtists.undo')
 		})
 
-		it('should not unfollow when scroll is below threshold', () => {
-			sut.checkDismiss(makeScrollEvent(30, 400, 480), sut.artists[0])
+		it('should not unfollow during onboarding', async () => {
+			const mockOnboarding = {
+				currentStep: 'my-artists',
+				isOnboarding: true,
+				setStep: vi.fn(),
+				activateSpotlight: vi.fn(),
+				deactivateSpotlight: vi.fn(),
+			}
+			const mockGuest = {
+				follows: [],
+				home: null,
+				follow: vi.fn(),
+				unfollow: vi.fn(),
+				setHome: vi.fn(),
+			}
+			const container = createTestContainer(
+				Registration.instance(mockIFollowServiceClient, mockFollowService),
+				Registration.instance(mockIRouter, mockRouter),
+				Registration.instance(mockIOnboardingService, mockOnboarding),
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(mockIGuestService, mockGuest),
+			)
+			container.register(MyArtistsRoute)
+			const onboardingSut = container.get(MyArtistsRoute)
+			await onboardingSut.loading()
 
-			expect(sut.artists).toHaveLength(3)
-			expect(publishedSnacks).toHaveLength(0)
-		})
+			onboardingSut.unfollowArtist(onboardingSut.artists[0])
 
-		it('should not dismiss twice for the same artist', () => {
-			const artist = sut.artists[0]
-			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
-			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
-
-			expect(publishedSnacks).toHaveLength(1)
+			expect(onboardingSut.artists).toHaveLength(3)
 		})
 	})
 
 	describe('undo', () => {
-		function makeScrollEvent(
-			scrollLeft: number,
-			offsetWidth: number,
-			scrollWidth: number,
-		): Event {
-			return {
-				target: { scrollLeft, offsetWidth, scrollWidth },
-			} as unknown as Event
-		}
-
 		beforeEach(async () => {
 			vi.useFakeTimers()
 			await sut.loading()
@@ -199,7 +224,7 @@ describe('MyArtistsRoute', () => {
 
 		it('should re-insert artist at original position', () => {
 			const artist = sut.artists[1]
-			sut.checkDismiss(makeScrollEvent(50, 400, 480), artist)
+			sut.unfollowArtist(artist)
 
 			expect(sut.artists).toHaveLength(2)
 			expect(sut.artists[1].artist.name).toBe('Aimer')
@@ -211,7 +236,7 @@ describe('MyArtistsRoute', () => {
 		})
 
 		it('should commit unfollow RPC when toast is dismissed', async () => {
-			sut.checkDismiss(makeScrollEvent(50, 400, 480), sut.artists[0])
+			sut.unfollowArtist(sut.artists[0])
 
 			publishedSnacks[0].options?.onDismiss?.()
 			await vi.runAllTimersAsync()
@@ -220,7 +245,7 @@ describe('MyArtistsRoute', () => {
 		})
 
 		it('should not call RPC when undo is pressed before dismiss', async () => {
-			sut.checkDismiss(makeScrollEvent(50, 400, 480), sut.artists[0])
+			sut.unfollowArtist(sut.artists[0])
 
 			publishedSnacks[0].action?.callback()
 			publishedSnacks[0].options?.onDismiss?.()
@@ -260,27 +285,35 @@ describe('MyArtistsRoute', () => {
 					deactivateSpotlight: vi.fn(),
 				}
 
+				const mockGuest = {
+					follows: [],
+					home: null,
+					follow: vi.fn(),
+					unfollow: vi.fn(),
+					setHome: vi.fn(),
+				}
 				const container = createTestContainer(
 					Registration.instance(mockIFollowServiceClient, mockFollowService),
 					Registration.instance(mockIRouter, mockRouter),
 					Registration.instance(mockIOnboardingService, onboardingOnboarding),
 					Registration.instance(mockIAuthService, mockAuth),
 					Registration.instance(IEventAggregator, { publish: vi.fn() }),
+					Registration.instance(mockIGuestService, mockGuest),
 				)
 				container.register(MyArtistsRoute)
 				onboardingSut = container.get(MyArtistsRoute)
 				await onboardingSut.loading()
 			})
 
-			it('should activate spotlight targeting .artist-list on loading', () => {
+			it('should activate spotlight targeting [data-artist-rows] on loading', () => {
 				expect(onboardingOnboarding.activateSpotlight).toHaveBeenCalledWith(
-					'.artist-list',
+					'[data-artist-rows]',
 					expect.any(String),
 					expect.any(Function),
 				)
 			})
 
-			it('should revert hype, complete onboarding, and redirect', () => {
+			it('should revert hype, complete onboarding, and stay on page', () => {
 				const artist = onboardingSut.artists[0]
 				const originalHype = artist.hype
 				artist.hype = 'away'
@@ -290,7 +323,7 @@ describe('MyArtistsRoute', () => {
 				expect(artist.hype).toBe(originalHype)
 				expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
 				expect(onboardingOnboarding.setStep).toHaveBeenCalledWith('completed')
-				expect(mockRouter.load).toHaveBeenCalledWith('')
+				expect(mockRouter.load).not.toHaveBeenCalled()
 			})
 
 			it('should not call setHype RPC', () => {
@@ -305,8 +338,9 @@ describe('MyArtistsRoute', () => {
 
 		describe('unauthenticated user', () => {
 			beforeEach(async () => {
-				mockAuth.isAuthenticated = false
+				// Load artists while authenticated so prevHypes is populated, then switch to unauth
 				await sut.loading()
+				mockAuth.isAuthenticated = false
 			})
 
 			it('should revert hype and show notification dialog', () => {

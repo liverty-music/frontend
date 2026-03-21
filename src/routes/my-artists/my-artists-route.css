@@ -86,125 +86,280 @@
 			}
 		}
 
-		.hype-legend {
-			position: sticky;
-			inset-block-start: 0;
-
-			display: grid;
-			grid-template-areas: "spacer watch home nearby away";
-			grid-template-columns: 2fr repeat(4, 1fr);
-
-			padding-block: var(--space-xs);
-			padding-inline: var(--space-xs);
-
-			background: var(--color-surface-base);
-			backdrop-filter: blur(8px);
-		}
-
-		.hype-legend-item {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
-			align-items: center;
-
-			font-size: var(--step--2);
-			color: var(--color-text-muted);
-
-			&:first-child {
-				grid-column: 2;
-			}
-
-			& small {
-				font-size: var(--step--2);
-			}
-		}
-
-		.artist-list {
+		/* ── Fieldset reset ── */
+		.artists-fieldset {
 			overflow-y: auto;
 			flex: 1;
+
+			min-block-size: 0;
+			margin: 0;
+			padding: 0;
+			border: none;
+		}
+
+		/* ── Table ── */
+		.artists-table {
+			border-spacing: 0 var(--space-3xs);
+			border-collapse: separate;
+
+			inline-size: 100%;
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-xs);
 		}
 
-		.artist-row {
-			scrollbar-width: none;
-			scroll-snap-type: x mandatory;
-
-			overflow-x: auto;
-			display: flex;
-
-			margin-block-end: var(--space-3xs);
-			border-radius: var(--radius-card);
-
-			view-transition-name: var(--_vt-name);
+		/* ── Sticky thead ── */
+		thead {
+			isolation: isolate;
+			position: sticky;
+			inset-block-start: 0;
 		}
 
-		.artist-row-content {
-			scroll-snap-align: start;
+		.artists-thead-row th {
+			padding-block: var(--space-xs);
+			background: var(--color-surface-base);
+			backdrop-filter: blur(8px);
+		}
 
-			display: grid;
-			grid-template-areas: "name watch home nearby away";
-			grid-template-columns: 2fr repeat(4, 1fr);
-			flex: 0 0 100%;
-			align-items: center;
+		.hype-col-header {
+			display: table-cell;
 
-			min-block-size: 44px;
-			padding-inline: var(--space-s);
-			border: 1px solid var(--_white-10);
-			border-radius: var(--radius-card);
+			min-inline-size: 44px;
 
-			background: var(--color-surface-raised);
+			font-size: var(--step--2);
+			font-weight: normal;
+			color: var(--color-text-muted);
+			text-align: center;
+			vertical-align: middle;
 
-			& hype-inline-slider {
-				grid-column: 2 / -1;
+			& small {
+				display: block;
+				font-size: var(--step--2);
 			}
 		}
 
-		header.artist-identity {
-			display: flex;
-			grid-area: name;
-			gap: var(--space-xs);
-			align-items: center;
+		/* ── Artist row ── */
+		.artist-row {
+			view-transition-name: var(--_vt-name);
+
+			& td,
+			& th {
+				border-block: 1px solid var(--_white-10);
+				background: var(--color-surface-raised);
+			}
+
+			& th:first-child {
+				border-inline-start: 1px solid var(--_white-10);
+				border-start-start-radius: var(--radius-card);
+				border-end-start-radius: var(--radius-card);
+			}
+
+			& td:last-child {
+				border-inline-end: 1px solid var(--_white-10);
+				border-start-end-radius: var(--radius-card);
+				border-end-end-radius: var(--radius-card);
+			}
+		}
+
+		/* ── Artist name cell ── */
+		.artist-name-cell {
+			display: table-cell;
 
 			min-inline-size: 0;
+			max-inline-size: 10rem;
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-s);
+
+			white-space: nowrap;
+			text-align: start;
+			vertical-align: middle;
+		}
+
+		.artist-name-cell > * {
+			display: inline;
+			vertical-align: middle;
 		}
 
 		.artist-row-indicator {
+			display: inline-block;
 			flex-shrink: 0;
 
 			inline-size: 8px;
 			block-size: 8px;
+			margin-inline-end: var(--space-xs);
 			border-radius: var(--radius-full);
+
+			vertical-align: middle;
 
 			background-color: var(--_dot-color);
 		}
 
 		.artist-row-name {
 			overflow: hidden;
+			display: inline-block;
 
 			min-inline-size: 0;
+			max-inline-size: calc(100% - 8px - var(--space-xs));
 
 			font-size: var(--step--1);
 			font-weight: 500;
 			color: var(--color-text-primary);
 			text-overflow: ellipsis;
 			white-space: nowrap;
+			vertical-align: middle;
 		}
 
-		.dismiss-end {
-			scroll-snap-align: end;
+		/* ── Hype td cells ── */
+		.hype-col {
+			min-inline-size: 44px;
+			padding: 0;
+
+			text-align: center;
+			vertical-align: middle;
+		}
+
+		.hype-label {
+			cursor: pointer;
+
+			position: relative;
 
 			display: flex;
-			flex: 0 0 5rem;
 			align-items: center;
 			justify-content: center;
 
-			background: var(--_danger);
+			min-block-size: 44px;
+
+			/* Track line: drawn on the first hype-label; spans dot-center to dot-center */
+			.hype-col:first-of-type > &::before {
+				content: "";
+				pointer-events: none;
+
+				position: absolute;
+				inset-block-start: 50%;
+				inset-inline-start: 50%;
+				translate: 0 -50%;
+
+				inline-size: calc(3 * 100%);
+				block-size: 2px;
+
+				background: var(--color-border-subtle, oklch(100% 0 0deg / 10%));
+			}
+		}
+
+		/* ── Hype dot (base) ── */
+		.hype-dot {
+			position: relative;
+
+			display: block;
+
+			inline-size: 8px;
+			block-size: 8px;
+			border: none;
+			border-radius: var(--radius-full);
+
+			background: var(--color-border-subtle, oklch(100% 0 0deg / 20%));
+
+			transition:
+				inline-size 200ms ease-out,
+				block-size 200ms ease-out,
+				background-color 200ms ease-out,
+				border-color 200ms ease-out,
+				box-shadow 200ms ease-out,
+				opacity 200ms ease-out;
+
+			/* 44px min tap target */
+			&::before {
+				content: "";
+				position: absolute;
+				inset: -18px;
+			}
+
+			&[data-active="true"] {
+				inline-size: 14px;
+				block-size: 14px;
+			}
+
+			/* WATCH: minimal */
+			&[data-active="true"][data-level="watch"] {
+				border: 1px solid oklch(100% 0 0deg / 10%);
+				background: var(--color-surface-base, oklch(100% 0 0deg / 5%));
+			}
+
+			/* HOME: subtle glow */
+			&[data-active="true"][data-level="home"] {
+				border: 1px solid var(--_dot-color, oklch(70% 0.15 60deg));
+				opacity: 0.4;
+				background: var(--_dot-color, oklch(70% 0.15 60deg));
+				box-shadow: 0 0 8px
+					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 30%);
+			}
+
+			/* NEARBY: neon glow */
+			&[data-active="true"][data-level="nearby"] {
+				border: 2px solid var(--_dot-color, oklch(70% 0.15 60deg));
+				background: var(--_dot-color, oklch(70% 0.15 60deg));
+				box-shadow: 0 0 16px
+					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 50%);
+				animation: dot-pulse 2s ease-in-out infinite;
+			}
+
+			/* AWAY: intense neon */
+			&[data-active="true"][data-level="away"] {
+				border: 2px solid var(--_dot-color, oklch(70% 0.15 60deg));
+				background: var(--_dot-color, oklch(70% 0.15 60deg));
+				box-shadow:
+					0 0 24px
+					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 60%),
+					0 0 48px
+					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 20%);
+				animation: dot-pulse 1.5s ease-in-out infinite;
+			}
+		}
+
+		/* ── Unfollow column ── */
+		.artist-unfollow-col {
+			padding-inline: var(--space-2xs);
+			text-align: center;
+			vertical-align: middle;
+		}
+
+		.artist-unfollow-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+
+			inline-size: 2rem;
+			block-size: 2rem;
+			border-radius: var(--_radius-sm);
+
+			color: oklch(from var(--_danger) l c h / 40%);
+
+			transition: color 150ms ease-out;
 
 			& svg {
-				inline-size: 1.25rem;
-				block-size: 1.25rem;
-				color: var(--color-white);
+				inline-size: 1rem;
+				block-size: 1rem;
+			}
+
+			&:hover,
+			&:focus-visible {
+				color: var(--_danger);
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.hype-dot {
+				animation: none;
+			}
+		}
+
+		@keyframes dot-pulse {
+			0%,
+			100% {
+				transform: scale(1);
+			}
+
+			50% {
+				transform: scale(1.15);
 			}
 		}
 	}

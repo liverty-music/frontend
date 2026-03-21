@@ -95,8 +95,9 @@
 <!-- Signup prompt banner for unauthenticated users -->
 <signup-prompt-banner
   visible.bind="showSignupBanner && !isAuthenticated"
-  message="&#x1F514; 通知を有効にするには"
-  signup-requested.trigger="onSignupRequested()">
+  message.bind="i18n.tr('myArtists.signupBanner.message')"
+  signup-requested.trigger="onSignupRequested()"
+  banner-dismissed.trigger="onBannerDismissed()">
 </signup-prompt-banner>
 
 <!-- Home area selector bottom sheet -->
