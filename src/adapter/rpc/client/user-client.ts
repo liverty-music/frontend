@@ -47,4 +47,8 @@ export class UserRpcClient {
 		const resp = await this.userClient.updateHome({ home })
 		return resp.user ? userFrom(resp.user) : undefined
 	}
+
+	public async resendEmailVerification(): Promise<void> {
+		await this.userClient.resendEmailVerification({})
+	}
 }

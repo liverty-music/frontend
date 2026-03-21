@@ -112,6 +112,35 @@
   <section>
     <h2 t="settings.account" class="settings-section-title"></h2>
     <div class="settings-card">
+      <!-- Email Verification -->
+      <div class="settings-row">
+        <div class="settings-row-start">
+          <svg-icon name="mail" class="settings-icon"></svg-icon>
+          <div>
+            <span class="settings-row-label">${auth.user.profile.email}</span>
+            <span
+              class="settings-verification-badge"
+              data-verified.bind="emailVerified"
+            >
+              <span if.bind="emailVerified" t="settings.emailVerified"></span>
+              <span if.bind="!emailVerified" t="settings.emailNotVerified"></span>
+            </span>
+          </div>
+        </div>
+        <button
+          if.bind="!emailVerified"
+          click.trigger="resendVerification()"
+          disabled.bind="isResendingVerification || resendSuccess"
+          class="settings-resend-btn"
+        >
+          <span if.bind="resendSuccess" t="settings.resendSent"></span>
+          <span if.bind="isResendingVerification" t="settings.resending"></span>
+          <span if.bind="!isResendingVerification && !resendSuccess" t="settings.resendVerification"></span>
+        </button>
+      </div>
+
+      <hr class="[ settings-divider ]">
+
       <button
         click.trigger="signOut()"
         class="settings-row settings-sign-out"

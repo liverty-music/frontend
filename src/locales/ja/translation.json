@@ -236,6 +236,13 @@
 		"privacyPolicy": "プライバシーポリシー",
 		"ossLicenses": "OSSライセンス",
 		"account": "アカウント",
+		"emailVerified": "認証済み",
+		"emailNotVerified": "未認証",
+		"resendVerification": "再送信",
+		"resending": "送信中...",
+		"resendSent": "送信済み！",
+		"resendError": "認証メールの送信に失敗しました。もう一度お試しください。",
+		"resendRateLimited": "リクエストが多すぎます。しばらくしてからお試しください。",
 		"signOut": "サインアウト",
 		"signOutError": "サインアウトに失敗しました。もう一度お試しください。"
 	},

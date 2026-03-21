@@ -20,6 +20,7 @@ export interface IUserService {
 		level1: string
 		level2?: string
 	}): Promise<User | undefined>
+	resendEmailVerification(): Promise<void>
 }
 
 export class UserServiceClient implements IUserService {
@@ -61,5 +62,9 @@ export class UserServiceClient implements IUserService {
 	}): Promise<User | undefined> {
 		this._current = await this.rpcClient.updateHome(home)
 		return this._current
+	}
+
+	public async resendEmailVerification(): Promise<void> {
+		await this.rpcClient.resendEmailVerification()
 	}
 }

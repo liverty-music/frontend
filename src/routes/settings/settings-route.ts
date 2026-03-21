@@ -1,4 +1,5 @@
 import { I18N } from '@aurelia/i18n'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Snack } from '../../components/snack-bar/snack'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
@@ -29,6 +30,10 @@ export class SettingsRoute {
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	private isToggling = false
 
+	public emailVerified = false
+	public isResendingVerification = false
+	public resendSuccess = false
+
 	public get currentHomeKey(): string {
 		return this.currentHome
 			? `userHome.prefectures.${this.currentHome}`
@@ -45,6 +50,11 @@ export class SettingsRoute {
 		// If the browser permission was revoked externally, override the stored preference
 		this.notificationsEnabled =
 			storedPref && this.notificationManager.permission === 'granted'
+
+		// Read email_verified from OIDC profile claims
+		this.emailVerified =
+			(this.auth.user?.profile as Record<string, unknown>)?.email_verified ===
+			true
 	}
 
 	public openHomeSelector(): void {
@@ -105,6 +115,30 @@ export class SettingsRoute {
 			this.logger.error('Failed to toggle push notifications', err)
 		} finally {
 			this.isToggling = false
+		}
+	}
+
+	public async resendVerification(): Promise<void> {
+		if (this.isResendingVerification) return
+		this.isResendingVerification = true
+		this.resendSuccess = false
+
+		try {
+			await this.userService.resendEmailVerification()
+			this.resendSuccess = true
+		} catch (err) {
+			if (err instanceof ConnectError && err.code === Code.ResourceExhausted) {
+				this.ea.publish(
+					new Snack(this.i18n.tr('settings.resendRateLimited'), 'error'),
+				)
+			} else {
+				this.logger.error('Failed to resend verification email', err)
+				this.ea.publish(
+					new Snack(this.i18n.tr('settings.resendError'), 'error'),
+				)
+			}
+		} finally {
+			this.isResendingVerification = false
 		}
 	}
 
