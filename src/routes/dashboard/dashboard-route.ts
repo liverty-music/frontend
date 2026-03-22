@@ -1,4 +1,5 @@
 import { I18N } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import { ILogger, INode, resolve } from 'aurelia'
 import { artistHue } from '../../adapter/view/artist-color'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
@@ -52,6 +53,7 @@ export class DashboardRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
+	private readonly router = resolve(IRouter)
 	private abortController: AbortController | null = null
 	private laneIntroTimer: ReturnType<typeof setTimeout> | null = null
 	private beamRafId = 0
@@ -412,12 +414,14 @@ export class DashboardRoute {
 		}
 	}
 
-	public onOnboardingMyArtistsTapped(): void {
+	public async onOnboardingMyArtistsTapped(): Promise<void> {
 		if (this.isOnboardingStepDetail) {
 			this.logger.info(
 				'Onboarding: My Artists tab tapped, advancing to my-artists',
 			)
+			this.onboarding.deactivateSpotlight()
 			this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
+			await this.router.load('my-artists')
 		}
 	}
 
