@@ -4,10 +4,10 @@
   aria-label.bind="ariaLabel"
   scrollend.trigger="onScrollEnd()"
 >
-  <!-- Dismiss zone (scroll-snap target at top) -->
+  <!-- Dismiss zone (scroll-snap target at top, swipe down to reach) -->
   <div if.bind="dismissable" class="dismiss-zone" aria-hidden="true"></div>
 
-  <!-- Sheet body (scroll-snap target at bottom) -->
+  <!-- Sheet body (scroll-snap target at bottom, initially visible) -->
   <div class="sheet-body">
     <div class="handle-bar"></div>
     <au-slot></au-slot>

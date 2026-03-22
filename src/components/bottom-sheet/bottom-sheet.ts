@@ -25,7 +25,9 @@ export class BottomSheet {
 		if (isOpen) {
 			this.triggerElement = document.activeElement as HTMLElement | null
 			this.sheetElement.showPopover()
-			this.sheetElement.scrollTo({ top: this.sheetElement.scrollHeight })
+			requestAnimationFrame(() => {
+				this.sheetElement.scrollTo({ top: this.sheetElement.scrollHeight })
+			})
 		} else {
 			try {
 				this.sheetElement.hidePopover()
@@ -72,7 +74,7 @@ export class BottomSheet {
 		const maxScroll = scrollHeight - clientHeight
 		const scrollRatio = maxScroll > 0 ? scrollTop / maxScroll : 1
 
-		// If scrolled to the dismiss zone (top), close
+		// If swiped down to the dismiss zone (top), close
 		if (scrollRatio < 0.1) {
 			this.open = false
 			this.sheetElement.dispatchEvent(
