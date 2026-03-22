@@ -74,20 +74,16 @@ export class ConcertRpcClient {
 	public async searchNewConcerts(
 		artistId: string,
 		signal?: AbortSignal,
-	): Promise<ProtoConcert[]> {
+	): Promise<void> {
 		this.logger.info('Searching for new concerts', { artistId })
 		try {
-			const response = await this.client.searchNewConcerts(
+			await this.client.searchNewConcerts(
 				{
 					artistId: new ArtistId({ value: artistId }),
 				},
 				{ signal },
 			)
-			this.logger.info('Concert search completed', {
-				artistId,
-				count: response.concerts.length,
-			})
-			return response.concerts
+			this.logger.info('Concert search completed', { artistId })
 		} catch (err) {
 			this.logger.warn('Concert search failed', { artistId, error: err })
 			throw err
