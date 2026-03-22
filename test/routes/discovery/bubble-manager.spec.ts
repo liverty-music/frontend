@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Artist } from '../../../src/entities/artist'
-import {
-	type BubbleArtistClient,
-	BubbleManager,
-} from '../../../src/routes/discovery/bubble-manager'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
+
+vi.mock('../../../src/util/detect-country', () => ({
+	detectCountryFromTimezone: () => 'Japan',
+}))
+
+const { BubbleManager } = await import(
+	'../../../src/routes/discovery/bubble-manager'
+)
+type BubbleArtistClient =
+	import('../../../src/routes/discovery/bubble-manager').BubbleArtistClient
 
 function makeArtist(id: string, name: string): Artist {
 	return { id, name, mbid: '' }
@@ -98,7 +104,7 @@ describe('BubbleManager', () => {
 			expect(canvas.spawnBubblesAt).toHaveBeenCalledWith(similar, 50, 50)
 		})
 
-		it('should fall back to top artists when similar is empty', async () => {
+		it('should fall back to top artists with detected country when similar is empty', async () => {
 			;(mockClient.listSimilar as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[],
 			)
@@ -109,7 +115,7 @@ describe('BubbleManager', () => {
 			const canvas = createMockCanvas()
 			await sut.onNeedMoreBubbles('a1', 'NoSimilar', { x: 0, y: 0 }, canvas)
 
-			expect(mockClient.listTop).toHaveBeenCalled()
+			expect(mockClient.listTop).toHaveBeenCalledWith('Japan', '', 50)
 			expect(canvas.spawnBubblesAt).toHaveBeenCalled()
 		})
 

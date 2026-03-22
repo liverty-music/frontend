@@ -1,12 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Artist } from '../../../src/entities/artist'
-import {
-	type GenreArtistClient,
-	type GenreFilterCallbacks,
-	GenreFilterController,
-} from '../../../src/routes/discovery/genre-filter-controller'
 import { BubblePool } from '../../../src/services/bubble-pool'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
+
+vi.mock('../../../src/util/detect-country', () => ({
+	detectCountryFromTimezone: () => 'Japan',
+}))
+
+const { GenreFilterController } = await import(
+	'../../../src/routes/discovery/genre-filter-controller'
+)
+type GenreArtistClient =
+	import('../../../src/routes/discovery/genre-filter-controller').GenreArtistClient
+type GenreFilterCallbacks =
+	import('../../../src/routes/discovery/genre-filter-controller').GenreFilterCallbacks
 
 function makeArtist(id: string, name: string): Artist {
 	return { id, name, mbid: '' }
@@ -52,7 +59,7 @@ describe('GenreFilterController', () => {
 			await sut.onGenreSelected('Rock')
 
 			expect(sut.activeTag).toBe('Rock')
-			expect(mockClient.listTop).toHaveBeenCalledWith('Japan', 'rock', 50)
+			expect(mockClient.listTop).toHaveBeenCalledWith('', 'rock', 50)
 			expect(mockCallbacks.onBubblesReloaded).toHaveBeenCalled()
 		})
 

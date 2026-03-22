@@ -58,6 +58,10 @@ vi.mock('../../src/routes/discovery/discovery-route.$au.ts', () => ({
 	default: { name: 'discovery-route', template: '<template></template>' },
 }))
 
+vi.mock('../../src/util/detect-country', () => ({
+	detectCountryFromTimezone: () => 'Japan',
+}))
+
 const { DiscoveryRoute } = await import(
 	'../../src/routes/discovery/discovery-route'
 )
@@ -251,7 +255,7 @@ describe('DiscoveryRoute', () => {
 			await sut.onGenreSelected('Rock')
 
 			expect(sut.genre.activeTag).toBe('Rock')
-			expect(mockArtistClient.listTop).toHaveBeenCalledWith('Japan', 'rock', 50)
+			expect(mockArtistClient.listTop).toHaveBeenCalledWith('', 'rock', 50)
 		})
 
 		it('should deactivate when selecting same tag', async () => {
