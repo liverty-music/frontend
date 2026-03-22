@@ -419,7 +419,6 @@ export class DashboardRoute {
 			this.logger.info(
 				'Onboarding: My Artists tab tapped, advancing to my-artists',
 			)
-			this.onboarding.deactivateSpotlight()
 			this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
 			await this.router.load('my-artists')
 		}
