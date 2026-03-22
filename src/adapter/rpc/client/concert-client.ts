@@ -1,17 +1,14 @@
 import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert as ProtoConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import { Home } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
-import type {
-	ArtistSearchStatus,
-	ProximityGroup,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
+import type { ProximityGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
 
-export type { ArtistSearchStatus, ProtoConcert, ProximityGroup }
+export type { ProtoConcert, ProximityGroup }
 
 export const IConcertRpcClient = DI.createInterface<IConcertRpcClient>(
 	'IConcertRpcClient',
@@ -77,37 +74,22 @@ export class ConcertRpcClient {
 	public async searchNewConcerts(
 		artistId: string,
 		signal?: AbortSignal,
-	): Promise<void> {
+	): Promise<ProtoConcert[]> {
 		this.logger.info('Searching for new concerts', { artistId })
 		try {
-			await this.client.searchNewConcerts(
+			const response = await this.client.searchNewConcerts(
 				{
 					artistId: new ArtistId({ value: artistId }),
 				},
 				{ signal },
 			)
-			this.logger.info('Concert search completed', { artistId })
+			this.logger.info('Concert search completed', {
+				artistId,
+				count: response.concerts.length,
+			})
+			return response.concerts
 		} catch (err) {
 			this.logger.warn('Concert search failed', { artistId, error: err })
-			throw err
-		}
-	}
-
-	public async listSearchStatuses(
-		artistIds: string[],
-		signal?: AbortSignal,
-	): Promise<ArtistSearchStatus[]> {
-		this.logger.info('Polling search statuses', { count: artistIds.length })
-		try {
-			const response = await this.client.listSearchStatuses(
-				{
-					artistIds: artistIds.map((id) => new ArtistId({ value: id })),
-				},
-				{ signal },
-			)
-			return response.statuses
-		} catch (err) {
-			this.logger.warn('ListSearchStatuses failed', { error: err })
 			throw err
 		}
 	}
