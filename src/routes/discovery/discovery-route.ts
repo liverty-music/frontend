@@ -142,15 +142,10 @@ export class DiscoveryRoute {
 			this.ea.publish(new Snack(this.i18n.tr('discovery.loadFailed'), 'error'))
 		}
 
-		// Resume search tracking for pre-seeded follows
+		// Resume concert search for pre-seeded follows (fire concurrently)
 		if (this.isOnboarding) {
 			for (const f of this.guest.follows) {
-				this.concertService.searchAndTrack(
-					f.artist.id,
-					this.abortController.signal,
-					TUTORIAL_FOLLOW_TARGET,
-					(artistId) => this.onConcertFound(artistId),
-				)
+				void this.searchConcertsForArtist(f.artist.id, f.artist.name)
 			}
 		}
 	}
@@ -171,7 +166,6 @@ export class DiscoveryRoute {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		this.search.dispose()
-		this.concertService.stopTracking()
 	}
 
 	private readonly onVisibilityChange = (): void => {
@@ -223,12 +217,7 @@ export class DiscoveryRoute {
 		}
 		if (this.abortController.signal.aborted) return
 
-		this.concertService.searchAndTrack(
-			artistId,
-			this.abortController.signal,
-			TUTORIAL_FOLLOW_TARGET,
-			(id) => this.onConcertFound(id),
-		)
+		void this.searchConcertsForArtist(artistId, artist.name)
 	}
 
 	public async onNeedMoreBubbles(
@@ -290,12 +279,7 @@ export class DiscoveryRoute {
 
 		this.bubbles.spawnAndAbsorbAfterSearch(artist, this.dnaOrbCanvas)
 
-		this.concertService.searchAndTrack(
-			artistId,
-			this.abortController.signal,
-			TUTORIAL_FOLLOW_TARGET,
-			(id) => this.onConcertFound(id),
-		)
+		void this.searchConcertsForArtist(artistId, artist.name)
 	}
 
 	public onCoachMarkTap(): void {
@@ -307,17 +291,38 @@ export class DiscoveryRoute {
 		void this.router.load('/dashboard')
 	}
 
-	private onConcertFound(artistId: string): void {
-		// Find artist name for snack notification
-		const artist = this.followService.followedArtists.find(
-			(a) => a.id === artistId,
-		)
-		if (artist) {
-			this.ea.publish(
-				new Snack(
-					this.i18n.tr('discovery.hasUpcomingEvents', { name: artist.name }),
-				),
+	/**
+	 * Search for concerts for an artist. Updates artistsWithConcerts and shows
+	 * a snack notification if concerts are found. Errors are logged but do not
+	 * propagate — the follow operation remains successful regardless.
+	 */
+	private async searchConcertsForArtist(
+		artistId: string,
+		artistName: string,
+	): Promise<void> {
+		try {
+			const concerts = await this.concertService.searchNewConcerts(
+				artistId,
+				this.abortController.signal,
 			)
+			if (this.abortController.signal.aborted) return
+
+			if (concerts.length > 0) {
+				this.concertService.addArtistWithConcerts(artistId)
+				this.ea.publish(
+					new Snack(
+						this.i18n.tr('discovery.hasUpcomingEvents', {
+							name: artistName,
+						}),
+					),
+				)
+			}
+		} catch (err) {
+			if ((err as Error).name === 'AbortError') return
+			this.logger.warn('Concert search failed for artist', {
+				artistId,
+				error: err,
+			})
 		}
 	}
 }
