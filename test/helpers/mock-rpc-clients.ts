@@ -14,10 +14,8 @@ export function createMockConcertService(): Partial<IConcertService> {
 		artistsWithConcertsCount: 0,
 		listConcerts: vi.fn().mockResolvedValue([]),
 		listByFollower: vi.fn().mockResolvedValue([]),
-		searchNewConcerts: vi.fn().mockResolvedValue(undefined),
-		listSearchStatuses: vi.fn().mockResolvedValue([]),
-		searchAndTrack: vi.fn(),
-		stopTracking: vi.fn(),
+		searchNewConcerts: vi.fn().mockResolvedValue([]),
+		addArtistWithConcerts: vi.fn(),
 	}
 }
 

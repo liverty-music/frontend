@@ -12,18 +12,12 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		// ConcertService/ListSearchStatuses — return completed for all artists
-		if (url.includes('ListSearchStatuses')) {
+		// ConcertService/SearchNewConcerts — return empty concerts (sync)
+		if (url.includes('SearchNewConcerts')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					statuses: [
-						{ artistId: { value: 'a-1' }, status: 'SEARCH_STATUS_COMPLETED' },
-						{ artistId: { value: 'a-2' }, status: 'SEARCH_STATUS_COMPLETED' },
-						{ artistId: { value: 'a-3' }, status: 'SEARCH_STATUS_COMPLETED' },
-					],
-				}),
+				body: JSON.stringify({ concerts: [] }),
 			})
 		}
 
@@ -33,14 +27,6 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
 				status: 200,
 				contentType: 'application/json',
 				body: JSON.stringify({ concerts: [] }),
-			})
-		}
-
-		if (url.includes('SearchNewConcerts')) {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({}),
 			})
 		}
 
@@ -71,27 +57,20 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		// ConcertService/ListSearchStatuses — return completed for all artists
-		if (url.includes('ListSearchStatuses')) {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({
-					statuses: [
-						{ artistId: { value: 'a-1' }, status: 'SEARCH_STATUS_COMPLETED' },
-						{ artistId: { value: 'a-2' }, status: 'SEARCH_STATUS_COMPLETED' },
-						{ artistId: { value: 'a-3' }, status: 'SEARCH_STATUS_COMPLETED' },
-					],
-				}),
-			})
-		}
-
-		// ConcertService/SearchNewConcerts — fire-and-forget (check before List)
+		// ConcertService/SearchNewConcerts — sync, return concerts
 		if (url.includes('SearchNewConcerts')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({}),
+				body: JSON.stringify({
+					concerts: [
+						{
+							id: { value: 'c-1' },
+							title: { value: 'Test Concert' },
+							localDate: { value: { year: 2026, month: 3, day: 15 } },
+						},
+					],
+				}),
 			})
 		}
 

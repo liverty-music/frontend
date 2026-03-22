@@ -284,7 +284,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onFollowFromSearch', () => {
-		it('should follow artist and call searchAndTrack', async () => {
+		it('should follow artist and call searchNewConcerts', async () => {
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -295,11 +295,9 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
-			expect(mockConcert.searchAndTrack).toHaveBeenCalledWith(
+			expect(mockConcert.searchNewConcerts).toHaveBeenCalledWith(
 				'a1',
 				expect.any(AbortSignal),
-				3,
-				expect.any(Function),
 			)
 		})
 
@@ -368,7 +366,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onArtistSelected', () => {
-		it('should follow artist and call searchAndTrack via event detail', async () => {
+		it('should follow artist and call searchNewConcerts via event detail', async () => {
 			const artist = makeArtist('a1', 'Artist One')
 			const event = new CustomEvent('artist-selected', {
 				detail: { artist, position: { x: 100, y: 200 } },
@@ -379,11 +377,9 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
-			expect(mockConcert.searchAndTrack).toHaveBeenCalledWith(
+			expect(mockConcert.searchNewConcerts).toHaveBeenCalledWith(
 				'a1',
 				expect.any(AbortSignal),
-				3,
-				expect.any(Function),
 			)
 		})
 
@@ -410,7 +406,7 @@ describe('DiscoveryRoute', () => {
 			})
 			await sut.onArtistSelected(event)
 
-			expect(mockConcert.searchAndTrack).not.toHaveBeenCalled()
+			expect(mockConcert.searchNewConcerts).not.toHaveBeenCalled()
 		})
 
 		it('should re-spawn bubble at original position on follow failure', async () => {

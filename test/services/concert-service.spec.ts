@@ -7,8 +7,7 @@ const mockConcertRpcClient = {
 	listConcerts: vi.fn().mockResolvedValue([]),
 	listByFollower: vi.fn().mockResolvedValue([]),
 	listWithProximity: vi.fn().mockResolvedValue([]),
-	searchNewConcerts: vi.fn().mockResolvedValue(undefined),
-	listSearchStatuses: vi.fn().mockResolvedValue([]),
+	searchNewConcerts: vi.fn().mockResolvedValue([]),
 }
 
 const mockIConcertRpcClient = DI.createInterface('IConcertRpcClient')
@@ -51,8 +50,7 @@ describe('ConcertServiceClient', () => {
 		mockConcertRpcClient.listConcerts.mockResolvedValue([])
 		mockConcertRpcClient.listByFollower.mockResolvedValue([])
 		mockConcertRpcClient.listWithProximity.mockResolvedValue([])
-		mockConcertRpcClient.searchNewConcerts.mockResolvedValue(undefined)
-		mockConcertRpcClient.listSearchStatuses.mockResolvedValue([])
+		mockConcertRpcClient.searchNewConcerts.mockResolvedValue([])
 
 		const mockAuth = createMockAuth({ isAuthenticated: true })
 
@@ -138,9 +136,13 @@ describe('ConcertServiceClient', () => {
 	})
 
 	describe('searchNewConcerts', () => {
-		it('should call searchNewConcerts on the rpc client', async () => {
-			await sut.searchNewConcerts('artist-1')
+		it('should return concerts from the rpc client', async () => {
+			const fakeConcerts = [{ id: 'c1' }]
+			mockConcertRpcClient.searchNewConcerts.mockResolvedValue(fakeConcerts)
 
+			const result = await sut.searchNewConcerts('artist-1')
+
+			expect(result).toEqual(fakeConcerts)
 			expect(mockConcertRpcClient.searchNewConcerts).toHaveBeenCalledTimes(1)
 		})
 
@@ -166,42 +168,19 @@ describe('ConcertServiceClient', () => {
 		})
 	})
 
-	describe('listSearchStatuses', () => {
-		it('should return mapped statuses for given artist IDs', async () => {
-			const fakeStatuses = [
-				{ artistId: { value: 'a1' }, status: 2 },
-				{ artistId: { value: 'a2' }, status: 1 },
-			]
-			mockConcertRpcClient.listSearchStatuses.mockResolvedValue(fakeStatuses)
+	describe('addArtistWithConcerts', () => {
+		it('should add artist to the set', () => {
+			sut.addArtistWithConcerts('a1')
+			expect(sut.artistsWithConcertsCount).toBe(1)
 
-			const result = await sut.listSearchStatuses(['a1', 'a2'])
-
-			expect(result).toEqual([
-				{ artistId: 'a1', status: 'completed' },
-				{ artistId: 'a2', status: 'pending' },
-			])
-			expect(mockConcertRpcClient.listSearchStatuses).toHaveBeenCalledTimes(1)
+			sut.addArtistWithConcerts('a2')
+			expect(sut.artistsWithConcertsCount).toBe(2)
 		})
 
-		it('should forward AbortSignal', async () => {
-			const controller = new AbortController()
-
-			await sut.listSearchStatuses(['a1'], controller.signal)
-
-			expect(mockConcertRpcClient.listSearchStatuses).toHaveBeenCalledWith(
-				['a1'],
-				controller.signal,
-			)
-		})
-
-		it('should rethrow errors', async () => {
-			mockConcertRpcClient.listSearchStatuses.mockRejectedValue(
-				new Error('poll failed'),
-			)
-
-			await expect(sut.listSearchStatuses(['a1'])).rejects.toThrow(
-				'poll failed',
-			)
+		it('should not duplicate', () => {
+			sut.addArtistWithConcerts('a1')
+			sut.addArtistWithConcerts('a1')
+			expect(sut.artistsWithConcertsCount).toBe(1)
 		})
 	})
 })
