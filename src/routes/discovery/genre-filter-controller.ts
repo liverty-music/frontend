@@ -1,6 +1,7 @@
 import type { ILogger } from 'aurelia'
 import type { Artist } from '../../entities/artist'
 import { BubblePool } from '../../services/bubble-pool'
+import { detectCountryFromTimezone } from '../../util/detect-country'
 
 export interface GenreArtistClient {
 	listTop(country: string, tag: string, limit: number): Promise<Artist[]>
@@ -45,7 +46,7 @@ export class GenreFilterController {
 			this.activeTag = ''
 			this.isLoadingTag = true
 			try {
-				await this.reloadWithTag('')
+				await this.reloadByCountry(detectCountryFromTimezone())
 				if (this.abortSignal().aborted) return
 				this.callbacks.onBubblesReloaded(this.pool.availableBubbles)
 			} catch (err) {
@@ -62,7 +63,7 @@ export class GenreFilterController {
 		this.logger.info('Genre selected', { tag })
 
 		try {
-			await this.reloadWithTag(tag.toLowerCase())
+			await this.reloadByTag(tag.toLowerCase())
 			if (this.abortSignal().aborted) return
 			this.callbacks.onBubblesReloaded(this.pool.availableBubbles)
 		} catch (err) {
@@ -74,8 +75,20 @@ export class GenreFilterController {
 		}
 	}
 
-	private async reloadWithTag(tag: string, country = 'Japan'): Promise<void> {
-		this.logger.info('Reloading artists with tag', { tag, country })
+	// Fetch global top artists for a genre tag.
+	// Country is not passed — the upstream API does not support tag + country.
+	private async reloadByTag(tag: string): Promise<void> {
+		this.logger.info('Reloading artists by tag', { tag })
+		await this.fetchAndReplace('', tag)
+	}
+
+	// Fetch regional top artists for a country.
+	private async reloadByCountry(country: string): Promise<void> {
+		this.logger.info('Reloading artists by country', { country })
+		await this.fetchAndReplace(country, '')
+	}
+
+	private async fetchAndReplace(country: string, tag: string): Promise<void> {
 		this.pool.clearSeenSets()
 		this.pool.trackAllSeen(this.followedArtists())
 
@@ -91,10 +104,5 @@ export class GenreFilterController {
 
 		this.pool.replace(artists)
 		this.pool.trackAllSeen(artists)
-
-		this.logger.info('Reloaded artists with tag', {
-			tag,
-			count: this.pool.availableBubbles.length,
-		})
 	}
 }

@@ -12,6 +12,7 @@ import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
+import { detectCountryFromTimezone } from '../../util/detect-country'
 import { BubbleManager } from './bubble-manager'
 import { GenreFilterController } from './genre-filter-controller'
 import { SearchController } from './search-controller'
@@ -133,7 +134,7 @@ export class DiscoveryRoute {
 		try {
 			await this.bubbles.loadInitialArtists(
 				this.followService.followedArtists,
-				'Japan',
+				detectCountryFromTimezone(),
 				'',
 			)
 		} catch (err) {

@@ -2,6 +2,7 @@ import type { ILogger } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import type { Artist } from '../../entities/artist'
 import { BubblePool } from '../../services/bubble-pool'
+import { detectCountryFromTimezone } from '../../util/detect-country'
 
 export interface BubbleArtistClient {
 	listTop(country: string, tag: string, limit: number): Promise<Artist[]>
@@ -14,7 +15,7 @@ export class BubbleManager {
 
 	public readonly pool = new BubblePool()
 	private isLoadingBubbles = false
-	private country = 'Japan'
+	private country = detectCountryFromTimezone()
 
 	constructor(
 		private readonly client: BubbleArtistClient,
