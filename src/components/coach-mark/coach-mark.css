@@ -99,8 +99,8 @@
 
 		position: fixed;
 		position-anchor: --coach-target;
-		position-area: block-end;
-		position-try-fallbacks: flip-block;
+		position-area: block-end inline-start;
+		position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
 
 		/* Anchored Container Query (CSS Anchor Positioning L2):
 		   children can query which fallback was applied — no JS needed */
@@ -130,11 +130,17 @@
 	}
 
 	/*
-	 * Dual-arrow toggle via Anchored Container Query (CSS Anchor Positioning L2).
+	 * 4-state arrow toggle via Anchored Container Query (CSS Anchor Positioning L2).
 	 * container-type: anchored on the tooltip lets children query which
 	 * position-try-fallback was applied — entirely in CSS, no JS needed.
+	 *
+	 * States: default (below-left), flip-inline (below-right),
+	 *         flip-block (above-left), flip-block flip-inline (above-right)
 	 */
+
+	/* Default: below-left — arrow curves right toward target */
 	.coach-arrow-above {
+		transform: scaleX(-1);
 		display: block;
 	}
 
@@ -142,12 +148,43 @@
 		display: none;
 	}
 
+	/* Below-right: arrow curves left (SVG default direction) */
+	@container anchored (fallback: flip-inline) {
+		.coach-arrow-above {
+			transform: scaleX(1);
+		}
+	}
+
+	/* Above-left: swap to below arrow, curves right */
 	@container anchored (fallback: flip-block) {
 		.coach-arrow-above {
 			display: none;
 		}
 
 		.coach-arrow-below {
+			transform: scaleX(-1);
+			display: block;
+		}
+
+		.coach-arrow-below .arrow-line {
+			stroke-dashoffset: 0;
+			animation: none;
+		}
+
+		.coach-arrow-below .arrow-head {
+			opacity: 1;
+			animation: none;
+		}
+	}
+
+	/* Above-right: swap to below arrow, curves left */
+	@container anchored (fallback: flip-block flip-inline) {
+		.coach-arrow-above {
+			display: none;
+		}
+
+		.coach-arrow-below {
+			transform: scaleX(1);
 			display: block;
 		}
 
