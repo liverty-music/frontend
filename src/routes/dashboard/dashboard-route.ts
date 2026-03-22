@@ -437,7 +437,6 @@ export class DashboardRoute {
 	}
 
 	public detaching(): void {
-		this.onboarding.deactivateSpotlight()
 		this.abortController?.abort()
 		this.abortController = null
 		if (this.laneIntroTimer) {

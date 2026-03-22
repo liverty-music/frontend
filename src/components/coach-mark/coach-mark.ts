@@ -104,7 +104,15 @@ export class CoachMark {
 		}
 
 		if (document.startViewTransition) {
-			await document.startViewTransition(reassign).updateCallbackDone
+			const transition = document.startViewTransition(reassign)
+			// Suppress abort errors on all ViewTransition promises.
+			// Route navigation may abort the transition mid-flight.
+			transition.finished.catch(() => {})
+			try {
+				await transition.updateCallbackDone
+			} catch {
+				// View Transition may be aborted during route navigation
+			}
 		} else {
 			reassign()
 		}
