@@ -90,10 +90,26 @@ au.register(
 )
 au.register(
 	LoggerConfiguration.create({
-		level: import.meta.env.DEV ? LogLevel.debug : LogLevel.warn,
+		level: resolveLogLevel(),
 		sinks: [ConsoleSink, OtelLogSink],
 	}),
 )
+
+function resolveLogLevel(): LogLevel {
+	const env = import.meta.env.VITE_LOG_LEVEL as string | undefined
+	if (env) {
+		const map: Record<string, LogLevel> = {
+			trace: LogLevel.trace,
+			debug: LogLevel.debug,
+			info: LogLevel.info,
+			warn: LogLevel.warn,
+			error: LogLevel.error,
+		}
+		const level = map[env]
+		if (level !== undefined) return level
+	}
+	return import.meta.env.DEV ? LogLevel.debug : LogLevel.warn
+}
 
 au.register(IErrorBoundaryService)
 au.register(GlobalErrorHandlingTask)

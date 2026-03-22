@@ -15,6 +15,8 @@ COPY . .
 # Build-time environment variables for Vite
 ARG VITE_VAPID_PUBLIC_KEY
 ENV VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY}
+ARG VITE_LOG_LEVEL
+ENV VITE_LOG_LEVEL=${VITE_LOG_LEVEL}
 
 # Build the application
 RUN npm run build
