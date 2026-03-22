@@ -7,7 +7,7 @@ const mockConcertRpcClient = {
 	listConcerts: vi.fn().mockResolvedValue([]),
 	listByFollower: vi.fn().mockResolvedValue([]),
 	listWithProximity: vi.fn().mockResolvedValue([]),
-	searchNewConcerts: vi.fn().mockResolvedValue([]),
+	searchNewConcerts: vi.fn().mockResolvedValue(undefined),
 }
 
 const mockIConcertRpcClient = DI.createInterface('IConcertRpcClient')
@@ -136,13 +136,12 @@ describe('ConcertServiceClient', () => {
 	})
 
 	describe('searchNewConcerts', () => {
-		it('should return concerts from the rpc client', async () => {
-			const fakeConcerts = [{ id: 'c1' }]
-			mockConcertRpcClient.searchNewConcerts.mockResolvedValue(fakeConcerts)
+		it('should delegate to rpc client and return void', async () => {
+			mockConcertRpcClient.searchNewConcerts.mockResolvedValue(undefined)
 
 			const result = await sut.searchNewConcerts('artist-1')
 
-			expect(result).toEqual(fakeConcerts)
+			expect(result).toBeUndefined()
 			expect(mockConcertRpcClient.searchNewConcerts).toHaveBeenCalledTimes(1)
 		})
 

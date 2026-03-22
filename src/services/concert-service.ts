@@ -30,14 +30,14 @@ export class ConcertServiceClient {
 	}
 
 	/**
-	 * Search for new concerts for an artist. Blocks until the backend
-	 * Gemini search completes (up to 60s) and returns discovered concerts.
+	 * Trigger background concert search for an artist.
+	 * The RPC enqueues a discovery job and returns immediately (empty response).
 	 */
 	public async searchNewConcerts(
 		artistId: string,
 		signal?: AbortSignal,
-	): Promise<ProtoConcert[]> {
-		return this.rpcClient.searchNewConcerts(artistId, signal)
+	): Promise<void> {
+		await this.rpcClient.searchNewConcerts(artistId, signal)
 	}
 
 	/**
