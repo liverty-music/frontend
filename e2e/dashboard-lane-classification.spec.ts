@@ -159,7 +159,7 @@ test.describe('Dashboard lane classification after home selection', () => {
 		await expect(blurElement).toBeVisible({ timeout: 10_000 })
 
 		// Home selector dialog should open automatically
-		const regionDialog = page.locator('user-home-selector dialog[popover]')
+		const regionDialog = page.locator('user-home-selector bottom-sheet')
 		await expect(regionDialog).toBeVisible({ timeout: 5000 })
 
 		// Select a home region — expect loadData() to fire (ListWithProximity RPC)
@@ -223,7 +223,7 @@ test.describe('Dashboard lane classification after home selection', () => {
 		await expect(blurElement).toHaveCount(0)
 
 		// Home selector dialog should NOT be open
-		const regionDialog = page.locator('dialog.user-home-selector[open]')
+		const regionDialog = page.locator('user-home-selector bottom-sheet:popover-open')
 		await expect(regionDialog).toHaveCount(0)
 	})
 })
