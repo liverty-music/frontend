@@ -36,16 +36,10 @@ export class MyArtistsRoute {
 
 	// Hype tier references
 	public readonly hypeLevels: Hype[] = ['watch', 'home', 'nearby', 'away']
-	public readonly hypeTiers = HYPE_TIERS
 
 	private readonly logger = resolve(ILogger).scopeTo('MyArtistsRoute')
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
-
-	public trHypeLabel(level: Hype): string {
-		const meta = HYPE_TIERS[level]
-		return meta?.labelKey ?? ''
-	}
 
 	private readonly followService = resolve(IFollowServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
