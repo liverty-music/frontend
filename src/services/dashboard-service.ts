@@ -1,4 +1,5 @@
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAuthService } from './auth-service'
 import type {
 	ProtoConcert,
 	ProximityGroup,
@@ -26,6 +27,7 @@ export interface IDashboardService extends DashboardService {}
 
 export class DashboardService {
 	private readonly logger = resolve(ILogger).scopeTo('DashboardService')
+	private readonly authService = resolve(IAuthService)
 	private readonly concertService = resolve(IConcertService)
 	private readonly followService = resolve(IFollowServiceClient)
 	private readonly journeyService = resolve(ITicketJourneyService)
@@ -99,6 +101,10 @@ export class DashboardService {
 	private async fetchJourneyMap(
 		signal?: AbortSignal,
 	): Promise<Map<string, JourneyStatus>> {
+		if (!this.authService.isAuthenticated) {
+			return new Map()
+		}
+
 		try {
 			return await this.journeyService.listByUser(signal)
 		} catch (err) {

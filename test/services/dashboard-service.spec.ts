@@ -2,14 +2,17 @@ import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_musi
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { isHypeMatched } from '../../src/entities/concert'
+import { IAuthService } from '../../src/services/auth-service'
 import { IConcertService } from '../../src/services/concert-service'
 import {
 	DashboardService,
 	IDashboardService,
 } from '../../src/services/dashboard-service'
 import { IFollowServiceClient } from '../../src/services/follow-service-client'
+import { ITicketJourneyService } from '../../src/services/ticket-journey-service'
 import { createTestContainer } from '../helpers/create-container'
 import {
+	createMockAuthService,
 	createMockConcertService,
 	createMockFollowServiceClient,
 } from '../helpers/mock-rpc-clients'
@@ -67,14 +70,21 @@ describe('DashboardService', () => {
 	let container: ReturnType<typeof createTestContainer>
 	let mockFollowService: ReturnType<typeof createMockFollowServiceClient>
 	let mockConcertService: ReturnType<typeof createMockConcertService>
+	let mockAuthService: ReturnType<typeof createMockAuthService>
+	let mockJourneyService: { listByUser: ReturnType<typeof vi.fn> }
 
 	beforeEach(() => {
 		mockFollowService = createMockFollowServiceClient()
 		mockConcertService = createMockConcertService()
+		mockAuthService = createMockAuthService()
+		mockAuthService.isAuthenticated = true
+		mockJourneyService = { listByUser: vi.fn().mockResolvedValue(new Map()) }
 
 		container = createTestContainer(
 			Registration.instance(IFollowServiceClient, mockFollowService),
 			Registration.instance(IConcertService, mockConcertService),
+			Registration.instance(IAuthService, mockAuthService),
+			Registration.instance(ITicketJourneyService, mockJourneyService),
 		)
 		container.register(DashboardService)
 		sut = container.get(IDashboardService)
@@ -301,5 +311,27 @@ describe('DashboardService', () => {
 		expect(result[0].nearby[0].title).toBe('Saitama Concert')
 		expect(result[0].away).toHaveLength(1)
 		expect(result[0].away[0].title).toBe('Osaka Concert')
+	})
+
+	describe('fetchJourneyMap auth guard', () => {
+		it('should skip listByUser when unauthenticated', async () => {
+			mockAuthService.isAuthenticated = false
+			mockFollowService.listFollowed = vi.fn().mockResolvedValue([])
+			mockConcertService.listByFollower = vi.fn().mockResolvedValue([])
+
+			await sut.loadDashboardEvents()
+
+			expect(mockJourneyService.listByUser).not.toHaveBeenCalled()
+		})
+
+		it('should call listByUser when authenticated', async () => {
+			mockAuthService.isAuthenticated = true
+			mockFollowService.listFollowed = vi.fn().mockResolvedValue([])
+			mockConcertService.listByFollower = vi.fn().mockResolvedValue([])
+
+			await sut.loadDashboardEvents()
+
+			expect(mockJourneyService.listByUser).toHaveBeenCalled()
+		})
 	})
 })

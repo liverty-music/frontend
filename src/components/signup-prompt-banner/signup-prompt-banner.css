@@ -1,8 +1,9 @@
 @layer block {
 	@scope (signup-prompt-banner) {
 		:scope {
-			--_border-subtle: oklch(100% 0 0deg / 10%);
-			--_surface-bg: oklch(100% 0 0deg / 5%);
+			--_surface-bg: oklch(18% 0.04 275deg / 85%);
+			--_gradient-from: var(--color-brand-primary);
+			--_gradient-to: var(--color-brand-secondary);
 
 			position: fixed;
 			inset-block-end: calc(3.5rem + env(safe-area-inset-bottom, 0px));
@@ -17,9 +18,16 @@
 
 			padding-block: var(--space-xs);
 			padding-inline: var(--space-s);
-			border-block-start: 1px solid var(--_border-subtle);
+			border-block-start: 2px solid;
+			border-image: linear-gradient(
+					to right,
+					var(--_gradient-from),
+					var(--_gradient-to)
+				)
+				1;
 
 			background: var(--_surface-bg);
+			backdrop-filter: blur(12px);
 		}
 
 		.signup-banner-message {
@@ -77,6 +85,39 @@
 
 			&:active {
 				transform: scale(0.98);
+			}
+		}
+
+		@media (prefers-reduced-motion: no-preference) {
+			:scope {
+				animation: banner-enter 400ms ease-out;
+			}
+
+			.signup-banner-btn {
+				animation: cta-glow 2.5s ease-in-out infinite;
+			}
+		}
+
+		@keyframes banner-enter {
+			from {
+				opacity: 0;
+				transform: translateY(100%);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		@keyframes cta-glow {
+			0%,
+			100% {
+				box-shadow: 0 0 8px oklch(from var(--color-brand-primary) l c h / 30%);
+			}
+
+			50% {
+				box-shadow: 0 0 18px oklch(from var(--color-brand-primary) l c h / 55%);
 			}
 		}
 	}

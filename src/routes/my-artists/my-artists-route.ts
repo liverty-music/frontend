@@ -100,6 +100,10 @@ export class MyArtistsRoute {
 			this.isLoading = false
 		}
 
+		if (!this.isAuthenticated && this.onboarding.isCompleted) {
+			this.showSignupBanner = true
+		}
+
 		if (this.isOnboardingStepMyArtists && this.artists.length > 0) {
 			this.onboarding.activateSpotlight(
 				'[data-artist-rows]',

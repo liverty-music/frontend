@@ -77,6 +77,7 @@ describe('MyArtistsRoute', () => {
 		const mockOnboarding = {
 			currentStep: 'completed', // COMPLETED
 			isOnboarding: false,
+			isCompleted: true,
 			setStep: vi.fn(),
 			complete: vi.fn(),
 			activateSpotlight: vi.fn(),
@@ -163,6 +164,22 @@ describe('MyArtistsRoute', () => {
 			expect(sut.artists[0].artist.name).toBe('Guest Artist')
 			expect(sut.artists[0].hype).toBe('watch')
 			expect(mockFollowService.listFollowed).toHaveBeenCalled()
+		})
+
+		it('should show signup banner for unauthenticated user with completed onboarding', async () => {
+			mockAuth.isAuthenticated = false
+
+			await sut.loading()
+
+			expect(sut.showSignupBanner).toBe(true)
+		})
+
+		it('should not show signup banner for authenticated user', async () => {
+			mockAuth.isAuthenticated = true
+
+			await sut.loading()
+
+			expect(sut.showSignupBanner).toBe(false)
 		})
 	})
 
