@@ -9,8 +9,7 @@ import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IUserService } from '../../services/user-service'
-
-const SUPPORTED_LANGUAGES = ['ja', 'en'] as const
+import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
@@ -76,9 +75,8 @@ export class SettingsRoute {
 			this.languageSelectorOpen = false
 			return
 		}
-		await this.i18n.setLocale(lang)
+		await changeLocale(this.i18n, lang)
 		this.currentLocale = lang
-		localStorage.setItem('language', lang)
 		this.logger.info('Language changed', { from: current, to: lang })
 		this.languageSelectorOpen = false
 	}
