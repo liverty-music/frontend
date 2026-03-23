@@ -145,74 +145,13 @@ test.describe('CSS antipattern verification', () => {
 		viewport: { width: 412, height: 915 },
 	})
 
-	test.describe('Coach mark — arrow points at target', () => {
+	test.describe('Coach mark — tooltip near target', () => {
 		/**
 		 * Core visual invariant:
-		 *   The visible arrow must sit BETWEEN the message text and the target,
-		 *   with its nearest edge closer to the target than to the message.
-		 *
-		 * This catches the original bug where @position-try couldn't flip
-		 * flex-direction, leaving the arrow on the wrong side of the text.
+		 *   The tooltip must be positioned near the target element,
+		 *   either above or below depending on available viewport space.
 		 */
-		// TODO: CSS anchor positioning layout differs in headless Chromium Pixel 7 viewport.
-		// The arrow's y-position doesn't satisfy the "between message and target" invariant.
-		// Needs investigation into whether this is a rendering difference or a real regression.
-		test.fixme(
-			'arrow is between message and target when tooltip flips above bottom-nav',
-			async ({ page }) => {
-				test.setTimeout(30_000)
-				await mockOnboardingRpcRoutes(page)
-
-				await page.addInitScript(() => {
-					localStorage.setItem('onboardingStep', 'dashboard')
-					localStorage.setItem('onboarding.celebrationShown', '1')
-					localStorage.setItem('guest.home', 'JP-13')
-					localStorage.setItem(
-						'guest.followedArtists',
-						JSON.stringify([
-							{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
-							{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
-							{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
-						]),
-					)
-				})
-
-				await advanceToStep4(page)
-
-				const tooltip = page.locator('.coach-mark-tooltip')
-				await expect(tooltip).toBeVisible()
-
-				// Gather bounding boxes for the three key elements
-				const targetBox = await page
-					.locator('[data-nav="my-artists"]')
-					.boundingBox()
-				const tooltipBox = await tooltip.boundingBox()
-				const messageBox = await page
-					.locator('.coach-tooltip-message')
-					.boundingBox()
-
-				expect(targetBox).not.toBeNull()
-				expect(tooltipBox).not.toBeNull()
-				expect(messageBox).not.toBeNull()
-
-				// 1. Tooltip is ABOVE the target (flipped)
-				expect(tooltipBox!.y + tooltipBox!.height).toBeLessThanOrEqual(
-					targetBox!.y + 8,
-				)
-
-				// 2. Arrow gap: the space between tooltip and target is within
-				//    the expected arrow-gap range, confirming the arrow bridge exists.
-				const tolerance = 16
-				const gap = targetBox!.y - (tooltipBox!.y + tooltipBox!.height)
-				// Gap should be small and positive (arrow connects them)
-				expect(gap).toBeGreaterThanOrEqual(-tolerance)
-				expect(gap).toBeLessThan(40)
-			},
-		)
-
-		test('arrow is between target and message at lane intro step', async ({
-			page,
-		}) => {
+		test('tooltip is near target at lane intro step', async ({ page }) => {
 			test.setTimeout(30_000)
 			await mockOnboardingRpcRoutes(page)
 
@@ -234,52 +173,37 @@ test.describe('CSS antipattern verification', () => {
 				waitUntil: 'domcontentloaded',
 			})
 
-			// Wait for lane intro — spotlights a lane header.
-			// The tooltip may appear below (default position-area: block-end)
-			// or above (flip-block fallback) depending on available viewport space.
 			const overlay = page.locator('.coach-mark-overlay')
 			await expect(overlay).toBeVisible({ timeout: 8000 })
 
 			const tooltip = page.locator('.coach-mark-tooltip')
 			await expect(tooltip).toBeVisible()
-
-			// Wait for anchor positioning and container query to resolve
 			await page.waitForTimeout(200)
-
-			const targetSelector = await page.evaluate(() => {
-				const el = document.querySelector(
-					'[style*="anchor-name: --coach-target"]',
-				)
-				return el ? el.tagName : null
-			})
-			expect(targetSelector).not.toBeNull()
 
 			const targetBox = await page
 				.locator('[style*="anchor-name: --coach-target"]')
 				.boundingBox()
 			const tooltipBox = await tooltip.boundingBox()
-			const messageBox = await page
-				.locator('.coach-tooltip-message')
-				.boundingBox()
 
 			expect(targetBox).not.toBeNull()
 			expect(tooltipBox).not.toBeNull()
-			expect(messageBox).not.toBeNull()
 
-			// Tooltip must be near the target vertically (arrow gap connects them)
+			// Tooltip must be near the target (within 60px gap)
 			const isBelow = tooltipBox!.y >= targetBox!.y - 8
 			const tolerance = 8
 
 			if (isBelow) {
-				// Tooltip below target: tooltip top should be near target bottom + arrow gap
 				const targetBottom = targetBox!.y + targetBox!.height
-				expect(tooltipBox!.y).toBeGreaterThanOrEqual(targetBottom - tolerance)
+				expect(tooltipBox!.y).toBeGreaterThanOrEqual(
+					targetBottom - tolerance,
+				)
+				expect(tooltipBox!.y).toBeLessThan(targetBottom + 60)
 			} else {
-				// Tooltip above target: tooltip bottom should be near target top - arrow gap
 				const tooltipBottom = tooltipBox!.y + tooltipBox!.height
 				expect(tooltipBottom).toBeLessThanOrEqual(
 					targetBox!.y + tolerance,
 				)
+				expect(tooltipBottom).toBeGreaterThan(targetBox!.y - 60)
 			}
 		})
 	})

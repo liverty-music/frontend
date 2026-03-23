@@ -93,17 +93,14 @@
 		margin: var(--coach-spotlight-outset);
 	}
 
-	/* Tooltip positioned via Anchor Positioning with @position-try fallbacks */
+	/* Tooltip positioned via Anchor Positioning with @position-try fallbacks.
+	   Matches proven pattern from 0d7d6cf: fixed + block-end + flip-block. */
 	.coach-mark-tooltip {
-		--arrow-size: 1.5em;
-		--arrow-gap: 1.2em;
-
 		pointer-events: none;
 
 		position: fixed;
 		position-anchor: --coach-target;
 		position-area: block-end;
-		anchor-name: --coach-tooltip;
 		position-try-fallbacks: flip-block;
 
 		display: flex;
@@ -111,48 +108,12 @@
 		align-items: start;
 
 		max-inline-size: 320px;
-		margin-block: var(--arrow-gap) 0;
+		margin-block: var(--space-s) 0;
 		padding: var(--space-s);
 
 		color: var(--color-white);
 		background: var(--color-surface-overlay);
 		filter: drop-shadow(0 2px 8px oklch(0% 0 0deg / 40%));
-	}
-
-	/*
-	 * Arrow via ::before + clip-path (community best practice).
-	 *
-	 * A diamond-shaped clip-path spans from the tooltip edge to the
-	 * anchor gap. margin: inherit copies the tooltip's margin-block,
-	 * which flips on position-try flip-block — masking the unused
-	 * half of the diamond so only the correct arrow direction shows.
-	 *
-	 * Horizontally centered on the target via anchor(--coach-target center).
-	 * No JavaScript, no display toggling, no @container query needed.
-	 */
-	.coach-mark-tooltip::before {
-		content: "";
-
-		position: fixed;
-		/* stylelint-disable-next-line csstools/use-logical -- anchor() does not resolve correctly with logical properties in current browsers */
-		top: calc(anchor(--coach-tooltip top) - var(--arrow-gap));
-		/* stylelint-disable-next-line csstools/use-logical -- anchor() does not resolve correctly with logical properties in current browsers */
-		bottom: calc(anchor(--coach-tooltip bottom) - var(--arrow-gap));
-		/* stylelint-disable-next-line csstools/use-logical -- anchor() does not resolve correctly with logical properties in current browsers */
-		left: calc(anchor(--coach-target center) - var(--arrow-size) / 2);
-
-		inline-size: var(--arrow-size);
-		margin: inherit;
-
-		background: inherit;
-		clip-path: polygon(
-			50% 0.2em,
-			100% var(--arrow-gap),
-			100% calc(100% - var(--arrow-gap)),
-			50% calc(100% - 0.2em),
-			0 calc(100% - var(--arrow-gap)),
-			0 var(--arrow-gap)
-		);
 	}
 
 	.coach-tooltip-message {
