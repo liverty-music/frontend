@@ -44,10 +44,12 @@ export const createAuthRetryInterceptor = (auth: IAuthService): Interceptor => {
 
 /**
  * Creates a Connect interceptor that retries transient errors
- * (Unavailable, DeadlineExceeded) with exponential backoff.
+ * (Unavailable) with exponential backoff.
+ * DeadlineExceeded is NOT retried — it indicates a long-running operation
+ * (e.g. Gemini API) timed out, and retrying wastes ~60s per attempt.
  */
 export const createRetryInterceptor = (maxRetries = 3): Interceptor => {
-	const retryableCodes = new Set([Code.Unavailable, Code.DeadlineExceeded])
+	const retryableCodes = new Set([Code.Unavailable])
 
 	return (next) => async (req) => {
 		let lastError: unknown

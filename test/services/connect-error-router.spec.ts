@@ -167,24 +167,18 @@ describe('createRetryInterceptor', () => {
 		expect(next).toHaveBeenCalledTimes(2)
 	})
 
-	it('should retry on DeadlineExceeded error', async () => {
-		const response = { message: 'ok' }
+	it('should NOT retry on DeadlineExceeded error', async () => {
 		const next = vi
 			.fn()
 			.mockRejectedValueOnce(
 				new ConnectError('deadline', Code.DeadlineExceeded),
 			)
-			.mockResolvedValue(response)
 
 		const interceptor = createRetryInterceptor(3)
 		const handler = interceptor(next)
 
-		const promise = handler(makeRequest())
-		await vi.advanceTimersByTimeAsync(200)
-
-		const result = await promise
-		expect(result).toBe(response)
-		expect(next).toHaveBeenCalledTimes(2)
+		await expect(handler(makeRequest())).rejects.toThrow(ConnectError)
+		expect(next).toHaveBeenCalledTimes(1)
 	})
 
 	it('should throw after max retries exhausted', async () => {
