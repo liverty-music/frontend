@@ -50,7 +50,7 @@ test.describe('My Artists shell layout', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedWithArtists())
 		await page.goto('/my-artists')
-		await page.waitForSelector('my-artists-route .artist-list', {
+		await page.waitForSelector('my-artists-route .artists-table', {
 			timeout: 5000,
 		})
 	})
@@ -111,37 +111,37 @@ test.describe('My Artists list view', () => {
 	test.beforeEach(async ({ layoutPage: page }) => {
 		await page.addInitScript(seedWithArtists())
 		await page.goto('/my-artists')
-		await page.waitForSelector('my-artists-route .artist-list', {
+		await page.waitForSelector('my-artists-route .artists-table', {
 			timeout: 5000,
 		})
 	})
 
 	test('artist list renders 3 rows (MA-L1)', async ({ layoutPage: page }) => {
-		const rows = page.locator('my-artists-route .artist-list .artist-row')
+		const rows = page.locator('my-artists-route .artists-table .artist-row')
 		await expect(rows).toHaveCount(3)
 	})
 
 	test('hype legend is visible above artist list (MA-L2)', async ({
 		layoutPage: page,
 	}) => {
-		const legend = page.locator('my-artists-route .hype-legend')
-		const list = page.locator('my-artists-route .artist-list')
+		const thead = page.locator('my-artists-route .artists-thead-row')
+		const tbody = page.locator('my-artists-route [data-artist-rows]')
 
-		const legendBox = await legend.boundingBox()
-		const listBox = await list.boundingBox()
+		const theadBox = await thead.boundingBox()
+		const tbodyBox = await tbody.boundingBox()
 
-		expect(legendBox).toBeTruthy()
-		expect(listBox).toBeTruthy()
+		expect(theadBox).toBeTruthy()
+		expect(tbodyBox).toBeTruthy()
 		expect(
-			legendBox!.y + legendBox!.height,
-			'legend bottom should be at or above list top',
-		).toBeLessThanOrEqual(listBox!.y + 2)
+			theadBox!.y + theadBox!.height,
+			'thead bottom should be at or above tbody top',
+		).toBeLessThanOrEqual(tbodyBox!.y + 2)
 	})
 
 	test('artist list does not overflow below bottom-nav (MA-L3)', async ({
 		layoutPage: page,
 	}) => {
-		const list = page.locator('my-artists-route .artist-list')
+		const list = page.locator('my-artists-route .artists-table')
 		const nav = page.locator('bottom-nav-bar')
 
 		const listBox = await list.boundingBox()

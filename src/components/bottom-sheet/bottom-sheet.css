@@ -76,7 +76,7 @@
 			overscroll-behavior-y: contain;
 			display: block;
 
-			block-size: 100%;
+			block-size: 100dvh;
 
 			animation: initial-snap 0.01s backwards;
 			scroll-timeline: --sheet-scroll block;
