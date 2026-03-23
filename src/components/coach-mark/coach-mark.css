@@ -112,8 +112,8 @@
 		padding: var(--space-s);
 
 		color: var(--color-white);
-		background: var(--color-surface-overlay);
-		filter: drop-shadow(0 2px 8px oklch(0% 0 0deg / 40%));
+		background: transparent;
+		filter: none;
 	}
 
 	.coach-tooltip-message {
