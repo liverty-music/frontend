@@ -169,8 +169,8 @@
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-s);
 
-			white-space: nowrap;
 			text-align: start;
+			white-space: nowrap;
 			vertical-align: middle;
 		}
 
@@ -212,7 +212,6 @@
 		.hype-col {
 			min-inline-size: 44px;
 			padding: 0;
-
 			text-align: center;
 			vertical-align: middle;
 		}
