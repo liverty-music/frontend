@@ -142,14 +142,16 @@
 
 	.coach-arrow-container {
 		position: absolute;
+		/* stylelint-disable-next-line csstools/use-logical -- anchor() does not resolve correctly with logical properties in current browsers */
 		left: anchor(--coach-target center);
 		transform: translateX(-50%);
 	}
 
 	/* Default: tooltip below target — arrow sits above tooltip, pointing up */
 	.coach-arrow-above {
-		display: block;
+		/* stylelint-disable-next-line csstools/use-logical, order/properties-order -- anchor() compat + positioned before display intentionally */
 		bottom: 100%;
+		display: block;
 	}
 
 	.coach-arrow-below {
@@ -163,8 +165,9 @@
 		}
 
 		.coach-arrow-below {
-			display: block;
+			/* stylelint-disable-next-line csstools/use-logical, order/properties-order -- anchor() compat + positioned before display intentionally */
 			top: 100%;
+			display: block;
 		}
 
 		.coach-arrow-below .arrow-line {
