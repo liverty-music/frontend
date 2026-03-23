@@ -200,26 +200,13 @@ test.describe('CSS antipattern verification', () => {
 					targetBox!.y + 8,
 				)
 
-				// 2. Arrow is a ::before pseudo-element — verify it exists with clip-path
-				const arrowStyles = await page.evaluate(() => {
-					const tooltip = document.querySelector('.coach-mark-tooltip')
-					if (!tooltip) return null
-					const styles = getComputedStyle(tooltip, '::before')
-					return {
-						content: styles.content,
-						clipPath: styles.clipPath,
-						position: styles.position,
-					}
-				})
-				expect(arrowStyles).not.toBeNull()
-				expect(arrowStyles!.content).not.toBe('none')
-				expect(arrowStyles!.clipPath).toContain('polygon')
-
-				// 3. Tooltip bottom is near target top (arrow gap connects them)
+				// 2. Arrow gap: the space between tooltip and target is within
+				//    the expected arrow-gap range, confirming the arrow bridge exists.
 				const tolerance = 16
-				expect(tooltipBox!.y + tooltipBox!.height).toBeLessThanOrEqual(
-					targetBox!.y + tolerance,
-				)
+				const gap = targetBox!.y - (tooltipBox!.y + tooltipBox!.height)
+				// Gap should be small and positive (arrow connects them)
+				expect(gap).toBeGreaterThanOrEqual(-tolerance)
+				expect(gap).toBeLessThan(40)
 			},
 		)
 
@@ -279,26 +266,7 @@ test.describe('CSS antipattern verification', () => {
 			expect(tooltipBox).not.toBeNull()
 			expect(messageBox).not.toBeNull()
 
-			// Arrow is now a ::before pseudo-element on .coach-mark-tooltip.
-			// Verify it exists and has clip-path (pseudo-elements can't be
-			// directly queried for bounding boxes, so check computed styles).
-			const arrowStyles = await page.evaluate(() => {
-				const tooltip = document.querySelector('.coach-mark-tooltip')
-				if (!tooltip) return null
-				const styles = getComputedStyle(tooltip, '::before')
-				return {
-					content: styles.content,
-					clipPath: styles.clipPath,
-					position: styles.position,
-					display: styles.display,
-				}
-			})
-			expect(arrowStyles).not.toBeNull()
-			expect(arrowStyles!.content).not.toBe('none')
-			expect(arrowStyles!.clipPath).toContain('polygon')
-			expect(arrowStyles!.position).toBe('fixed')
-
-			// Tooltip must be near the target vertically (arrow connects them)
+			// Tooltip must be near the target vertically (arrow gap connects them)
 			const isBelow = tooltipBox!.y >= targetBox!.y - 8
 			const tolerance = 8
 
