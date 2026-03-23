@@ -1,34 +1,33 @@
-import { bindable } from 'aurelia'
+import { bindable, INode, resolve } from 'aurelia'
 
 export class BottomSheet {
 	@bindable public open = false
 	@bindable public dismissable = true
 	@bindable public ariaLabel = ''
 
-	private sheetElement!: HTMLDialogElement
+	private readonly host = resolve(INode) as HTMLElement
+	private scrollArea!: HTMLElement
 	private triggerElement: HTMLElement | null = null
 
-	private readonly onToggle = (e: ToggleEvent): void => {
+	private readonly onToggle = (e: Event): void => {
+		if (!(e instanceof ToggleEvent)) return
 		if (e.newState === 'closed' && this.open) {
 			this.open = false
 			this.triggerElement?.focus()
 			this.triggerElement = null
-			this.sheetElement.dispatchEvent(
+			this.host.dispatchEvent(
 				new CustomEvent('sheet-closed', { bubbles: true }),
 			)
 		}
 	}
 
 	public openChanged(isOpen: boolean): void {
-		if (!this.sheetElement) return
-
 		if (isOpen) {
 			this.triggerElement = document.activeElement as HTMLElement | null
-			this.sheetElement.showPopover()
-			this.sheetElement.scrollTo({ top: this.sheetElement.scrollHeight })
+			this.host.showPopover()
 		} else {
 			try {
-				this.sheetElement.hidePopover()
+				this.host.hidePopover()
 			} catch {
 				// Already hidden
 			}
@@ -36,16 +35,19 @@ export class BottomSheet {
 	}
 
 	public dismissableChanged(value: boolean): void {
-		if (!this.sheetElement) return
-		this.sheetElement.setAttribute('popover', value ? 'auto' : 'manual')
+		this.host.setAttribute('popover', value ? 'auto' : 'manual')
+	}
+
+	public ariaLabelChanged(value: string): void {
+		this.host.setAttribute('aria-label', value)
 	}
 
 	public attached(): void {
-		this.sheetElement.setAttribute(
-			'popover',
-			this.dismissable ? 'auto' : 'manual',
-		)
-		this.sheetElement.addEventListener('toggle', this.onToggle as EventListener)
+		this.host.setAttribute('popover', this.dismissable ? 'auto' : 'manual')
+		if (this.ariaLabel) {
+			this.host.setAttribute('aria-label', this.ariaLabel)
+		}
+		this.host.addEventListener('toggle', this.onToggle)
 
 		if (this.open) {
 			this.openChanged(true)
@@ -53,12 +55,9 @@ export class BottomSheet {
 	}
 
 	public detaching(): void {
-		this.sheetElement.removeEventListener(
-			'toggle',
-			this.onToggle as EventListener,
-		)
+		this.host.removeEventListener('toggle', this.onToggle)
 		try {
-			this.sheetElement.hidePopover()
+			this.host.hidePopover()
 		} catch {
 			// Already hidden or not in DOM
 		}
@@ -68,14 +67,14 @@ export class BottomSheet {
 	public onScrollEnd(): void {
 		if (!this.dismissable) return
 
-		const { scrollTop, scrollHeight, clientHeight } = this.sheetElement
+		const { scrollTop, scrollHeight, clientHeight } = this.scrollArea
 		const maxScroll = scrollHeight - clientHeight
 		const scrollRatio = maxScroll > 0 ? scrollTop / maxScroll : 1
 
-		// If scrolled to the dismiss zone (top), close
+		// If swiped down to the dismiss zone (top), close
 		if (scrollRatio < 0.1) {
 			this.open = false
-			this.sheetElement.dispatchEvent(
+			this.host.dispatchEvent(
 				new CustomEvent('sheet-closed', { bubbles: true }),
 			)
 		}

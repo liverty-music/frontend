@@ -1,7 +1,7 @@
 import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import type { TicketJourney } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js'
 import { TicketJourneyService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/ticket_journey/v1/ticket_journey_service_connect.js'
-import { createClient } from '@connectrpc/connect'
+import { createClient, type Client } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import type { JourneyStatus } from '../../../entities/concert'
 import { IAuthService } from '../../../services/auth-service'
@@ -20,11 +20,16 @@ export interface ITicketJourneyRpcClient extends TicketJourneyRpcClient {}
 
 export class TicketJourneyRpcClient {
 	private readonly logger = resolve(ILogger).scopeTo('TicketJourneyRpcClient')
-	private readonly authService = resolve(IAuthService)
-	private readonly client = createClient(
-		TicketJourneyService,
-		createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
-	)
+	private readonly client: Client<typeof TicketJourneyService>
+
+	constructor() {
+		const authService = resolve(IAuthService)
+		const transport = createTransport(
+			authService,
+			resolve(ILogger).scopeTo('Transport'),
+		)
+		this.client = createClient(TicketJourneyService, transport)
+	}
 
 	public async listByUser(
 		signal?: AbortSignal,

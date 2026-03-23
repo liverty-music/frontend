@@ -1,5 +1,4 @@
 import { DI, ILogger, resolve } from 'aurelia'
-import { IAuthService } from './auth-service'
 import type {
 	ProtoConcert,
 	ProximityGroup,
@@ -14,6 +13,7 @@ import {
 	type LaneType,
 } from '../entities/concert'
 import type { Hype } from '../entities/follow'
+import { IAuthService } from './auth-service'
 import { IConcertService } from './concert-service'
 import { IFollowServiceClient } from './follow-service-client'
 import { ITicketJourneyService } from './ticket-journey-service'
@@ -104,7 +104,6 @@ export class DashboardService {
 		if (!this.authService.isAuthenticated) {
 			return new Map()
 		}
-
 		try {
 			return await this.journeyService.listByUser(signal)
 		} catch (err) {

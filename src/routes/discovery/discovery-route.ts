@@ -301,7 +301,13 @@ export class DiscoveryRoute {
 		artistName: string,
 	): Promise<void> {
 		try {
-			const concerts = await this.concertService.searchNewConcerts(
+			await this.concertService.searchNewConcerts(
+				artistId,
+				this.abortController.signal,
+			)
+			if (this.abortController.signal.aborted) return
+
+			const concerts = await this.concertService.listConcerts(
 				artistId,
 				this.abortController.signal,
 			)

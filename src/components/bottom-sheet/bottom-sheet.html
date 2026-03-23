@@ -1,15 +1,15 @@
-<dialog
-  ref="sheetElement"
-  popover="auto"
-  aria-label.bind="ariaLabel"
+<div
+  ref="scrollArea"
+  class="scroll-area"
+  data-dismissable.bind="dismissable"
   scrollend.trigger="onScrollEnd()"
 >
-  <!-- Dismiss zone (scroll-snap target at top) -->
-  <div if.bind="dismissable" class="dismiss-zone" aria-hidden="true"></div>
+  <!-- Dismiss zone (always in DOM; CSS controls snap behavior via data-dismissable) -->
+  <div class="dismiss-zone" aria-hidden="true"></div>
 
-  <!-- Sheet body (scroll-snap target at bottom) -->
+  <!-- Sheet body (scroll-snap target at bottom, initially visible) -->
   <div class="sheet-body">
     <div class="handle-bar"></div>
     <au-slot></au-slot>
   </div>
-</dialog>
+</div>

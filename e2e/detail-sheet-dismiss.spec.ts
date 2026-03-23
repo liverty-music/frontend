@@ -174,7 +174,7 @@ async function openDetailSheet(page: Page): Promise<void> {
 	await card.click()
 
 	// Wait for sheet to be visible via popover
-	const sheet = page.locator('event-detail-sheet dialog')
+	const sheet = page.locator('event-detail-sheet bottom-sheet')
 	await expect(sheet).toBeVisible({ timeout: 5000 })
 }
 
@@ -232,7 +232,7 @@ test.describe('Step 3→4: Coach mark above detail sheet', () => {
 		expect(step).toBe('detail')
 
 		// Detail sheet should be visible
-		const sheet = page.locator('event-detail-sheet dialog')
+		const sheet = page.locator('event-detail-sheet bottom-sheet')
 		await expect(sheet).toBeVisible({ timeout: 5000 })
 
 		// Coach mark spotlight should be visible ABOVE the detail sheet
@@ -279,7 +279,7 @@ test.describe('Normal detail sheet dismiss', () => {
 		await page.mouse.click(200, 50)
 
 		// Sheet should close
-		const sheet = page.locator('event-detail-sheet dialog')
+		const sheet = page.locator('event-detail-sheet bottom-sheet')
 		await expect(sheet).not.toBeVisible({ timeout: 3000 })
 
 		// URL should revert to dashboard
@@ -293,7 +293,7 @@ test.describe('Normal detail sheet dismiss', () => {
 		await page.keyboard.press('Escape')
 
 		// Sheet should close
-		const sheet = page.locator('event-detail-sheet dialog')
+		const sheet = page.locator('event-detail-sheet bottom-sheet')
 		await expect(sheet).not.toBeVisible({ timeout: 3000 })
 
 		// URL should revert to dashboard
@@ -310,7 +310,7 @@ test.describe('Normal detail sheet dismiss', () => {
 		await page.goBack()
 
 		// Sheet should close
-		const sheet = page.locator('event-detail-sheet dialog')
+		const sheet = page.locator('event-detail-sheet bottom-sheet')
 		await expect(sheet).not.toBeVisible({ timeout: 3000 })
 
 		// URL should be dashboard (browser navigated back)
@@ -320,7 +320,7 @@ test.describe('Normal detail sheet dismiss', () => {
 	test.fixme('swipe down closes sheet', async ({ page }) => {
 		await openDetailSheet(page)
 
-		const sheet = page.locator('event-detail-sheet dialog')
+		const sheet = page.locator('event-detail-sheet bottom-sheet')
 		const box = await sheet.boundingBox()
 		expect(box).toBeTruthy()
 

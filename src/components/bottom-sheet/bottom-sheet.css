@@ -5,18 +5,11 @@
 			--_handle-bg: oklch(100% 0 0deg / 20%);
 			--_duration-reduced: 0.01ms;
 
-			display: contents;
-		}
-
-		dialog {
+			/* Popover host: top-layer, opacity fade, backdrop */
 			position: fixed;
 			inset: 0;
 
-			overflow-y: auto;
 			display: block;
-			scrollbar-width: none;
-			scroll-snap-type: y mandatory;
-			overscroll-behavior-y: contain;
 
 			inline-size: 100%;
 			max-inline-size: 100%;
@@ -27,8 +20,6 @@
 
 			background: transparent;
 
-			scroll-timeline: --sheet-scroll block;
-
 			transition:
 				opacity 300ms ease-out,
 				overlay 300ms ease-out allow-discrete,
@@ -37,10 +28,6 @@
 			&::backdrop {
 				background: var(--_backdrop-bg);
 				backdrop-filter: blur(4px);
-
-				animation: backdrop-fade linear both;
-				animation-timeline: --sheet-scroll;
-
 				transition:
 					opacity 300ms ease-out,
 					overlay 300ms ease-out allow-discrete,
@@ -58,32 +45,63 @@
 		}
 
 		@starting-style {
-			dialog:popover-open {
+			:scope:popover-open {
 				opacity: 0;
 			}
 
-			dialog:popover-open::backdrop {
+			:scope:popover-open::backdrop {
 				opacity: 0;
 			}
 		}
 
-		@keyframes backdrop-fade {
-			from {
-				opacity: 0;
-			}
-
+		/*
+		  "Snappy Scroll-Start": temporarily disable all snap points except
+		  .sheet-body so the browser re-snaps to the sheet (bottom) on open.
+		  After the animation ends, dismiss-zone regains its snap alignment.
+		  See: https://drafts.csswg.org/css-scroll-snap-1/#re-snap
+		*/
+		@keyframes initial-snap {
+			from,
 			to {
-				opacity: 1;
+				--_snap-align: none;
+			}
+		}
+
+		.scroll-area {
+			/* Scroll responsibility only: snap, dismiss, initial position */
+			scrollbar-width: none;
+			scroll-snap-type: y mandatory;
+
+			overflow-y: auto;
+			overscroll-behavior-y: contain;
+			display: block;
+
+			block-size: 100%;
+
+			animation: initial-snap 0.01s backwards;
+			scroll-timeline: --sheet-scroll block;
+		}
+
+		/* Safari: re-run initial-snap animation each time display toggles */
+		@supports (-webkit-touch-callout: none) {
+			.scroll-area {
+				display: inherit;
 			}
 		}
 
 		.dismiss-zone {
-			scroll-snap-align: start;
+			scroll-snap-align: var(--_snap-align, start);
 			block-size: 100dvh;
+		}
+
+		.scroll-area:not([data-dismissable]) .dismiss-zone {
+			pointer-events: none;
+			scroll-snap-align: none;
 		}
 
 		.sheet-body {
 			scroll-snap-align: end;
+
 			overflow-y: auto;
 
 			max-block-size: 90dvh;
@@ -110,8 +128,8 @@
 		}
 
 		@media (prefers-reduced-motion: reduce) {
-			dialog,
-			dialog::backdrop {
+			:scope,
+			:scope::backdrop {
 				transition-duration: var(--_duration-reduced);
 			}
 		}

@@ -37,9 +37,9 @@
 
 		.signup-banner-dismiss {
 			display: flex;
+			flex-shrink: 0;
 			align-items: center;
 			justify-content: center;
-			flex-shrink: 0;
 
 			inline-size: 1.5rem;
 			block-size: 1.5rem;
