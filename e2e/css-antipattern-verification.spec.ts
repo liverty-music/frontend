@@ -373,6 +373,10 @@ test.describe('CSS antipattern verification', () => {
 				expect(arrowBox!.y).toBeGreaterThanOrEqual(
 					tooltipBottom - aboveTolerance,
 				)
+				// Arrow bottom does not extend past the target top
+				expect(arrowBox!.y + arrowBox!.height).toBeLessThanOrEqual(
+					targetBox!.y + aboveTolerance,
+				)
 
 				// Arrow-head points TOWARD the target (downward).
 				const visibleArrow = page.locator(
