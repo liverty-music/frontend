@@ -12,6 +12,7 @@ import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
+import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
@@ -21,6 +22,17 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly logger = resolve(ILogger).scopeTo('WelcomeRoute')
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
+
+	public readonly supportedLanguages = SUPPORTED_LANGUAGES
+
+	public isCurrentLanguage(lang: string): boolean {
+		return this.i18n.getLocale() === lang
+	}
+
+	public async selectLanguage(lang: string): Promise<void> {
+		if (lang === this.i18n.getLocale()) return
+		await changeLocale(this.i18n, lang)
+	}
 
 	/**
 	 * Router lifecycle hook - called before the component is loaded.

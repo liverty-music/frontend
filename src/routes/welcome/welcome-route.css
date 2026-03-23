@@ -96,6 +96,40 @@
 			}
 		}
 
+		.welcome-lang {
+			display: flex;
+			gap: var(--space-xs);
+			justify-content: center;
+
+			margin-block-start: var(--space-l);
+
+			animation: fade-slide-up 600ms ease-out 800ms both;
+		}
+
+		.welcome-lang-btn {
+			padding: var(--space-3xs) var(--space-xs);
+			border: none;
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+
+			background: transparent;
+
+			transition: color 200ms;
+
+			&[data-active="true"] {
+				font-weight: 600;
+				color: var(--color-text-primary);
+				text-decoration: underline;
+				text-underline-offset: 4px;
+			}
+
+			&:hover {
+				color: var(--color-text-primary);
+			}
+		}
+
 		.welcome-btn-secondary {
 			inline-size: 100%;
 			min-block-size: 48px;

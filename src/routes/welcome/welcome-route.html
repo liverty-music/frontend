@@ -22,4 +22,15 @@
       t="welcome.cta.login"
     ></button>
   </footer>
+
+  <!-- Language toggle -->
+  <nav class="welcome-lang" aria-label="Language">
+    <button
+      repeat.for="lang of supportedLanguages"
+      click.trigger="selectLanguage(lang)"
+      class="welcome-lang-btn"
+      data-active.bind="isCurrentLanguage(lang)"
+      aria-current.attr="isCurrentLanguage(lang) ? 'true' : null"
+    >${lang === 'ja' ? '日本語' : 'EN'}</button>
+  </nav>
 </main>

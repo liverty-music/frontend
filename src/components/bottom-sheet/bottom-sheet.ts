@@ -44,6 +44,7 @@ export class BottomSheet {
 
 	public attached(): void {
 		this.host.setAttribute('popover', this.dismissable ? 'auto' : 'manual')
+		this.host.setAttribute('role', 'dialog')
 		if (this.ariaLabel) {
 			this.host.setAttribute('aria-label', this.ariaLabel)
 		}

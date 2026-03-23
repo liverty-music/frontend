@@ -24,7 +24,7 @@ describe('BottomSheet', () => {
 		dismissZone.className = 'dismiss-zone'
 		scrollArea.appendChild(dismissZone)
 
-		const sheetBody = document.createElement('div')
+		const sheetBody = document.createElement('section')
 		sheetBody.className = 'sheet-body'
 		scrollArea.appendChild(sheetBody)
 
@@ -79,6 +79,12 @@ describe('BottomSheet', () => {
 				'toggle',
 				expect.any(Function),
 			)
+		})
+
+		it('should set role="dialog" on host', () => {
+			sut.attached()
+
+			expect(host.setAttribute).toHaveBeenCalledWith('role', 'dialog')
 		})
 	})
 

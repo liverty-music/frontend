@@ -94,7 +94,7 @@
 			block-size: 100dvh;
 		}
 
-		.scroll-area:not([data-dismissable]) .dismiss-zone {
+		.scroll-area:not([data-dismissable="true"]) .dismiss-zone {
 			pointer-events: none;
 			scroll-snap-align: none;
 		}
