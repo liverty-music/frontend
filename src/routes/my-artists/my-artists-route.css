@@ -214,6 +214,22 @@
 			padding: 0;
 			text-align: center;
 			vertical-align: middle;
+
+			/* Track line: drawn on the first hype-col; spans dot-center to dot-center */
+			&:first-of-type > .hype-label::before {
+				content: "";
+				pointer-events: none;
+
+				position: absolute;
+				inset-block-start: 50%;
+				inset-inline-start: 50%;
+				translate: 0 -50%;
+
+				inline-size: calc(3 * 100%);
+				block-size: 2px;
+
+				background: var(--color-border-subtle, oklch(100% 0 0deg / 10%));
+			}
 		}
 
 		.hype-label {
