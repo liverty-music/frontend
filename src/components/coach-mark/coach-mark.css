@@ -99,8 +99,8 @@
 
 		position: fixed;
 		position-anchor: --coach-target;
-		position-area: block-end inline-start;
-		position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+		position-area: block-end;
+		position-try-fallbacks: flip-block;
 
 		/* Anchored Container Query (CSS Anchor Positioning L2):
 		   children can query which fallback was applied — no JS needed */
@@ -130,17 +130,27 @@
 	}
 
 	/*
-	 * 4-state arrow toggle via Anchored Container Query (CSS Anchor Positioning L2).
-	 * container-type: anchored on the tooltip lets children query which
-	 * position-try-fallback was applied — entirely in CSS, no JS needed.
+	 * Arrow positioning via anchor() + Anchored Container Query.
 	 *
-	 * States: default (below-left), flip-inline (below-right),
-	 *         flip-block (above-left), flip-block flip-inline (above-right)
+	 * The arrow is taken out of flex flow (position: absolute) and
+	 * horizontally centered on the target via anchor(--coach-target center).
+	 * This ensures the arrow always points toward the target regardless
+	 * of where the tooltip text sits — pure CSS, no JS needed.
+	 *
+	 * Vertical flip (above/below) is detected by @container anchored.
 	 */
 
-	/* Default: below-left — arrow curves right toward target */
+	.coach-arrow-container {
+		position: absolute;
+		/* stylelint-disable-next-line csstools/use-logical -- anchor() does not resolve correctly with logical properties in current browsers */
+		left: anchor(--coach-target center);
+		transform: translateX(-50%);
+	}
+
+	/* Default: tooltip below target — arrow sits above tooltip, pointing up */
 	.coach-arrow-above {
-		transform: scaleX(-1);
+		/* stylelint-disable-next-line csstools/use-logical, order/properties-order -- anchor() compat + positioned before display intentionally */
+		bottom: 100%;
 		display: block;
 	}
 
@@ -148,43 +158,15 @@
 		display: none;
 	}
 
-	/* Below-right: arrow curves left (SVG default direction) */
-	@container anchored (fallback: flip-inline) {
-		.coach-arrow-above {
-			transform: scaleX(1);
-		}
-	}
-
-	/* Above-left: swap to below arrow, curves right */
+	/* Flipped: tooltip above target — arrow sits below tooltip, pointing down */
 	@container anchored (fallback: flip-block) {
 		.coach-arrow-above {
 			display: none;
 		}
 
 		.coach-arrow-below {
-			transform: scaleX(-1);
-			display: block;
-		}
-
-		.coach-arrow-below .arrow-line {
-			stroke-dashoffset: 0;
-			animation: none;
-		}
-
-		.coach-arrow-below .arrow-head {
-			opacity: 1;
-			animation: none;
-		}
-	}
-
-	/* Above-right: swap to below arrow, curves left */
-	@container anchored (fallback: flip-block flip-inline) {
-		.coach-arrow-above {
-			display: none;
-		}
-
-		.coach-arrow-below {
-			transform: scaleX(1);
+			/* stylelint-disable-next-line csstools/use-logical, order/properties-order -- anchor() compat + positioned before display intentionally */
+			top: 100%;
 			display: block;
 		}
 

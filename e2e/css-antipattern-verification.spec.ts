@@ -315,7 +315,6 @@ test.describe('CSS antipattern verification', () => {
 			// CSS uses position-area: block-end with position-try-fallbacks: flip-block,
 			// so the browser may choose either position based on available space.
 			const isBelow = tooltipBox!.y >= targetBox!.y - 8
-			const targetBottom = targetBox!.y + targetBox!.height
 			const tooltipBottom = tooltipBox!.y + tooltipBox!.height
 
 			// Find the visible arrow
@@ -337,12 +336,22 @@ test.describe('CSS antipattern verification', () => {
 
 			const tolerance = 8
 
+			// Arrow is positioned via anchor() outside the tooltip (position: absolute).
+			// It should be horizontally centered on the target and sit between
+			// target and tooltip vertically.
+			const arrowCenterX = arrowBox!.x + arrowBox!.width / 2
+			const targetCenterX = targetBox!.x + targetBox!.width / 2
+
+			// Arrow is horizontally near the target center (within half the arrow width)
+			expect(Math.abs(arrowCenterX - targetCenterX)).toBeLessThan(
+				arrowBox!.width,
+			)
+
 			if (isBelow) {
-				// Tooltip BELOW target:
-				//   target.bottom <= arrow.top  AND  arrow.bottom <= message.top
-				expect(arrowBox!.y).toBeGreaterThanOrEqual(targetBottom - tolerance)
+				// Tooltip BELOW target: arrow sits above tooltip via bottom: 100%
+				// Arrow bottom should be near or at the tooltip top
 				expect(arrowBox!.y + arrowBox!.height).toBeLessThanOrEqual(
-					messageBox!.y + tolerance,
+					tooltipBox!.y + tolerance,
 				)
 
 				// Arrow-head points TOWARD the target (upward).
@@ -359,15 +368,12 @@ test.describe('CSS antipattern verification', () => {
 				expect(headCenterY).toBeLessThan(lineCenterY)
 			} else {
 				// Tooltip ABOVE target (flip-block fallback):
-				// The arrow sits between the tooltip bottom and target top.
-				// Use generous tolerance (16px) because layout varies in headless Chromium.
+				// Arrow sits below tooltip via top: 100%
 				const aboveTolerance = 16
-				expect(tooltipBottom).toBeLessThanOrEqual(targetBox!.y + aboveTolerance)
-				// Arrow is within the tooltip (at or below tooltip top)
 				expect(arrowBox!.y).toBeGreaterThanOrEqual(
-					tooltipBox!.y - aboveTolerance,
+					tooltipBottom - aboveTolerance,
 				)
-				// Arrow bottom does not exceed target top
+				// Arrow bottom does not extend past the target top
 				expect(arrowBox!.y + arrowBox!.height).toBeLessThanOrEqual(
 					targetBox!.y + aboveTolerance,
 				)
@@ -385,6 +391,125 @@ test.describe('CSS antipattern verification', () => {
 				// Target is below -> head should be lower (larger Y)
 				expect(headCenterY).toBeGreaterThan(lineCenterY)
 			}
+		})
+	})
+
+	test.describe('Coach mark — tooltip aligned with target', () => {
+		/**
+		 * Layout invariant:
+		 *   The tooltip must horizontally overlap the target element.
+		 *   A tooltip that drifts far from its target (e.g. left-biased
+		 *   position-area causing offset from a right-aligned card)
+		 *   breaks the visual connection between arrow and target.
+		 */
+		test('card spotlight: tooltip overlaps target horizontally', async ({
+			page,
+		}) => {
+			test.setTimeout(30_000)
+			await mockOnboardingRpcRoutes(page)
+
+			await page.addInitScript(() => {
+				localStorage.setItem('onboardingStep', 'dashboard')
+				localStorage.setItem('onboarding.celebrationShown', '1')
+				localStorage.setItem('guest.home', 'JP-13')
+				localStorage.setItem(
+					'guest.followedArtists',
+					JSON.stringify([
+						{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+						{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+						{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+					]),
+				)
+			})
+
+			await page.goto('http://localhost:9000/dashboard', {
+				waitUntil: 'domcontentloaded',
+			})
+
+			// Wait for card phase of lane intro
+			await page.waitForFunction(
+				() => {
+					const el = document.querySelector('.coach-mark-tooltip p')
+					const text = el?.textContent ?? ''
+					return text.includes('Tap') || text.includes('タップ')
+				},
+				undefined,
+				{ timeout: 15_000 },
+			)
+			await page.waitForTimeout(200)
+
+			const targetBox = await page
+				.locator('[style*="anchor-name: --coach-target"]')
+				.boundingBox()
+			const tooltipBox = await page
+				.locator('.coach-mark-tooltip')
+				.boundingBox()
+
+			expect(targetBox).not.toBeNull()
+			expect(tooltipBox).not.toBeNull()
+
+			// Horizontal overlap: ranges must intersect.
+			// target: [targetBox.x, targetBox.x + targetBox.width]
+			// tooltip: [tooltipBox.x, tooltipBox.x + tooltipBox.width]
+			const targetLeft = targetBox!.x
+			const targetRight = targetBox!.x + targetBox!.width
+			const tooltipLeft = tooltipBox!.x
+			const tooltipRight = tooltipBox!.x + tooltipBox!.width
+
+			const overlapStart = Math.max(targetLeft, tooltipLeft)
+			const overlapEnd = Math.min(targetRight, tooltipRight)
+			const overlap = overlapEnd - overlapStart
+
+			// Tooltip must overlap at least 20% of the target's width
+			const minOverlap = targetBox!.width * 0.2
+			expect(overlap).toBeGreaterThanOrEqual(minOverlap)
+		})
+
+		test('my-artists spotlight: tooltip overlaps target horizontally', async ({
+			page,
+		}) => {
+			test.setTimeout(30_000)
+			await mockOnboardingRpcRoutes(page)
+
+			await page.addInitScript(() => {
+				localStorage.setItem('onboardingStep', 'dashboard')
+				localStorage.setItem('onboarding.celebrationShown', '1')
+				localStorage.setItem('guest.home', 'JP-13')
+				localStorage.setItem(
+					'guest.followedArtists',
+					JSON.stringify([
+						{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+						{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+						{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+					]),
+				)
+			})
+
+			await advanceToStep4(page)
+			await page.waitForTimeout(200)
+
+			const targetBox = await page
+				.locator('[data-nav="my-artists"]')
+				.boundingBox()
+			const tooltipBox = await page
+				.locator('.coach-mark-tooltip')
+				.boundingBox()
+
+			expect(targetBox).not.toBeNull()
+			expect(tooltipBox).not.toBeNull()
+
+			const targetLeft = targetBox!.x
+			const targetRight = targetBox!.x + targetBox!.width
+			const tooltipLeft = tooltipBox!.x
+			const tooltipRight = tooltipBox!.x + tooltipBox!.width
+
+			const overlapStart = Math.max(targetLeft, tooltipLeft)
+			const overlapEnd = Math.min(targetRight, tooltipRight)
+			const overlap = overlapEnd - overlapStart
+
+			// Tooltip must overlap at least 20% of the target's width
+			const minOverlap = targetBox!.width * 0.2
+			expect(overlap).toBeGreaterThanOrEqual(minOverlap)
 		})
 	})
 
