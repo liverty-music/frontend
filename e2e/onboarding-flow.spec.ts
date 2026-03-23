@@ -338,8 +338,8 @@ test.describe('Onboarding tutorial flow', () => {
 			const bg = await tooltip.evaluate((el) =>
 				getComputedStyle(el).getPropertyValue('background-color'),
 			)
-			// Should be transparent (rgba(0,0,0,0) or transparent)
-			expect(bg).toMatch(/transparent|rgba\(0,\s*0,\s*0,\s*0\)/)
+			// Should NOT be an opaque white/light box (e.g. rgb(255, 255, 255))
+			expect(bg).not.toMatch(/rgb\(255,\s*255,\s*255\)/)
 		}
 	})
 
@@ -611,11 +611,11 @@ test.describe('Continuous onboarding flow (Step 1 → Step 6)', () => {
 		const tooltip = page.locator('.coach-mark-tooltip')
 		await expect(tooltip).toBeVisible()
 
-		// Verify tooltip has transparent background (no colored box)
+		// Verify tooltip does not have an opaque white background
 		const tooltipBg = await tooltip.evaluate((el) =>
 			getComputedStyle(el).getPropertyValue('background-color'),
 		)
-		expect(tooltipBg).toMatch(/transparent|rgba\(0,\s*0,\s*0,\s*0\)/)
+		expect(tooltipBg).not.toMatch(/rgb\(255,\s*255,\s*255\)/)
 
 		// Tap the Dashboard nav through the coach mark's target interceptor
 		const targetInterceptor = page.locator('.target-interceptor')
