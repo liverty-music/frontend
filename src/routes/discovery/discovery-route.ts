@@ -301,30 +301,22 @@ export class DiscoveryRoute {
 		artistName: string,
 	): Promise<void> {
 		try {
-			await this.concertService.searchNewConcerts(
-				artistId,
-				this.abortController.signal,
-			)
-			if (this.abortController.signal.aborted) return
-
-			const concerts = await this.concertService.listConcerts(
-				artistId,
-				this.abortController.signal,
-			)
-			if (this.abortController.signal.aborted) return
+			await this.concertService.searchNewConcerts(artistId)
+			const concerts = await this.concertService.listConcerts(artistId)
 
 			if (concerts.length > 0) {
 				this.concertService.addArtistWithConcerts(artistId)
-				this.ea.publish(
-					new Snack(
-						this.i18n.tr('discovery.hasUpcomingEvents', {
-							name: artistName,
-						}),
-					),
-				)
+				if (!this.abortController.signal.aborted) {
+					this.ea.publish(
+						new Snack(
+							this.i18n.tr('discovery.hasUpcomingEvents', {
+								name: artistName,
+							}),
+						),
+					)
+				}
 			}
 		} catch (err) {
-			if ((err as Error).name === 'AbortError') return
 			this.logger.warn('Concert search failed for artist', {
 				artistId,
 				error: err,

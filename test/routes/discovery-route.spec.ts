@@ -295,10 +295,7 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
-			expect(mockConcert.searchNewConcerts).toHaveBeenCalledWith(
-				'a1',
-				expect.any(AbortSignal),
-			)
+			expect(mockConcert.searchNewConcerts).toHaveBeenCalledWith('a1')
 		})
 
 		it('should not follow already-followed artist', async () => {
@@ -377,10 +374,7 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
-			expect(mockConcert.searchNewConcerts).toHaveBeenCalledWith(
-				'a1',
-				expect.any(AbortSignal),
-			)
+			expect(mockConcert.searchNewConcerts).toHaveBeenCalledWith('a1')
 		})
 
 		it('should skip if artist already followed', async () => {

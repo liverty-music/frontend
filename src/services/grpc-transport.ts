@@ -1,5 +1,5 @@
 import type { Interceptor } from '@connectrpc/connect'
-import { ConnectError } from '@connectrpc/connect'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 import { SpanStatusCode, trace } from '@opentelemetry/api'
 import type { ILogger } from 'aurelia'
@@ -12,6 +12,11 @@ import {
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 const tracer = trace.getTracer('connect-rpc')
+
+/** Returns true for errors caused by intentional request cancellation. */
+const isCancellation = (err: unknown): boolean =>
+	(err instanceof DOMException && err.name === 'AbortError') ||
+	(err instanceof ConnectError && err.code === Code.Canceled)
 
 /**
  * Creates a Connect transport with authentication, logging, and OTEL interceptors.
@@ -57,16 +62,18 @@ export const createTransport = (auth: IAuthService, logger: ILogger) => {
 			logger.debug('RPC response', method, `${durationMs}ms`)
 			return response
 		} catch (err) {
-			const durationMs = Math.round(performance.now() - start)
-			if (err instanceof ConnectError) {
-				logger.error(
-					'RPC error',
-					method,
-					`${durationMs}ms`,
-					err.code.toString(),
-				)
-			} else {
-				logger.error('RPC error', method, `${durationMs}ms`, err)
+			if (!isCancellation(err)) {
+				const durationMs = Math.round(performance.now() - start)
+				if (err instanceof ConnectError) {
+					logger.error(
+						'RPC error',
+						method,
+						`${durationMs}ms`,
+						err.code.toString(),
+					)
+				} else {
+					logger.error('RPC error', method, `${durationMs}ms`, err)
+				}
 			}
 			throw err
 		}
@@ -94,6 +101,10 @@ export const createTransport = (auth: IAuthService, logger: ILogger) => {
 				span.setStatus({ code: SpanStatusCode.OK })
 				return response
 			} catch (err) {
+				if (isCancellation(err)) {
+					span.setStatus({ code: SpanStatusCode.OK })
+					throw err
+				}
 				if (err instanceof ConnectError) {
 					span.setAttributes({
 						'rpc.connect.error_code': err.code.toString(),
