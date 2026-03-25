@@ -55,6 +55,12 @@ export default defineConfig({
         'e2e/dashboard-lane-classification.spec.ts',
         'e2e/toast-notification.spec.ts',
         'e2e/artist-image-ui.spec.ts',
+        // Requires auth storageState — covered by chromium-authenticated project
+        'e2e/pwa-settings.spec.ts',
+        // Requires Service Worker cache — not available in CI headless environment
+        'e2e/pwa-offline-cache.spec.ts',
+        // Requires auth.isAuthenticated — evaluateVisibility() gates on it
+        'e2e/pwa-install-prompt.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
