@@ -11,6 +11,7 @@ import {
 import { PageHelp } from '../components/page-help/page-help'
 import type { Artist } from '../entities/artist'
 import { type GuestFollow, hasFollow } from '../entities/follow'
+import { StorageKeys } from '../constants/storage-keys'
 
 export interface LocalFollowedArtist {
 	id: string
@@ -109,6 +110,7 @@ export class GuestService {
 		this.hypes = {}
 		clearHypes()
 		PageHelp.clearHelpSeen()
+		localStorage.removeItem(StorageKeys.celebrationShown)
 		this.logger.info('Local data cleared')
 	}
 
