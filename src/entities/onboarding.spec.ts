@@ -11,9 +11,8 @@ describe('stepIndex', () => {
 		expect(stepIndex('lp')).toBe(0)
 		expect(stepIndex('discovery')).toBe(1)
 		expect(stepIndex('dashboard')).toBe(2)
-		expect(stepIndex('detail')).toBe(3)
-		expect(stepIndex('my-artists')).toBe(4)
-		expect(stepIndex('completed')).toBe(5)
+		expect(stepIndex('my-artists')).toBe(3)
+		expect(stepIndex('completed')).toBe(4)
 	})
 })
 
@@ -21,7 +20,6 @@ describe('isOnboarding', () => {
 	it('returns true for active onboarding steps', () => {
 		expect(isOnboarding('discovery')).toBe(true)
 		expect(isOnboarding('dashboard')).toBe(true)
-		expect(isOnboarding('detail')).toBe(true)
 		expect(isOnboarding('my-artists')).toBe(true)
 	})
 
@@ -47,7 +45,7 @@ describe('normalizeStep', () => {
 		['0', 'lp'],
 		['1', 'discovery'],
 		['3', 'dashboard'],
-		['4', 'detail'],
+		['4', 'my-artists'],
 		['5', 'my-artists'],
 		['7', 'completed'],
 	])('maps legacy numeric %s to %s', (input, expected) => {
@@ -56,6 +54,10 @@ describe('normalizeStep', () => {
 
 	it.each(['2', '6'])('falls back to lp for unmapped numeric %s', (input) => {
 		expect(normalizeStep(input)).toBe('lp')
+	})
+
+	it('migrates removed "detail" step to "dashboard"', () => {
+		expect(normalizeStep('detail')).toBe('dashboard')
 	})
 
 	it('passes through valid string steps', () => {

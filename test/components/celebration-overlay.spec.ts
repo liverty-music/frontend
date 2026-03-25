@@ -11,7 +11,8 @@ function createTransitionEvent(propertyName: string): Event {
 describe('CelebrationOverlay', () => {
 	let sut: CelebrationOverlay
 	let hostElement: HTMLElement
-	let onComplete: ReturnType<typeof vi.fn>
+	let onDismissed: ReturnType<typeof vi.fn>
+	let onOpen: ReturnType<typeof vi.fn>
 
 	beforeEach(() => {
 		vi.useFakeTimers()
@@ -25,8 +26,10 @@ describe('CelebrationOverlay', () => {
 		container.register(Registration.instance(INode, hostElement))
 		sut = container.get(CelebrationOverlay)
 
-		onComplete = vi.fn()
-		sut.onComplete = onComplete
+		onDismissed = vi.fn()
+		onOpen = vi.fn()
+		sut.onDismissed = onDismissed
+		sut.onOpen = onOpen
 	})
 
 	afterEach(() => {
@@ -69,6 +72,48 @@ describe('CelebrationOverlay', () => {
 			// shown flag prevents double-show
 			expect(sut.visible).toBe(true)
 		})
+
+		it('should call onOpen callback when shown', () => {
+			sut.attached()
+			sut.active = true
+			sut.activeChanged()
+
+			expect(onOpen).toHaveBeenCalledOnce()
+		})
+	})
+
+	describe('onTap()', () => {
+		it('should start fade-out on tap', () => {
+			sut.attached()
+			sut.active = true
+			sut.activeChanged()
+
+			sut.onTap()
+
+			expect(sut.fadingOut).toBe(true)
+		})
+
+		it('should be a no-op when not visible', () => {
+			sut.attached()
+
+			sut.onTap()
+
+			expect(sut.fadingOut).toBe(false)
+		})
+
+		it('should be a no-op when already fading out', () => {
+			sut.attached()
+			sut.active = true
+			sut.activeChanged()
+			sut.onTap()
+
+			// Second tap during fade should be ignored
+			sut.onTap()
+
+			// Still fading, not hidden
+			expect(sut.fadingOut).toBe(true)
+			expect(sut.visible).toBe(true)
+		})
 	})
 
 	describe('transitionend cleanup', () => {
@@ -77,8 +122,7 @@ describe('CelebrationOverlay', () => {
 			sut.active = true
 			sut.activeChanged()
 
-			// Advance past display duration (2500ms default)
-			vi.advanceTimersByTime(2500)
+			sut.onTap()
 			expect(sut.fadingOut).toBe(true)
 
 			// Simulate CSS transition completing
@@ -86,7 +130,7 @@ describe('CelebrationOverlay', () => {
 
 			expect(sut.visible).toBe(false)
 			expect(sut.fadingOut).toBe(false)
-			expect(onComplete).toHaveBeenCalledOnce()
+			expect(onDismissed).toHaveBeenCalledOnce()
 		})
 
 		it('should ignore transitionend for non-opacity properties', () => {
@@ -94,7 +138,7 @@ describe('CelebrationOverlay', () => {
 			sut.active = true
 			sut.activeChanged()
 
-			vi.advanceTimersByTime(2500)
+			sut.onTap()
 			expect(sut.fadingOut).toBe(true)
 
 			hostElement.dispatchEvent(createTransitionEvent('transform'))
@@ -102,7 +146,7 @@ describe('CelebrationOverlay', () => {
 			// Should still be fading out — not cleaned up
 			expect(sut.fadingOut).toBe(true)
 			expect(sut.visible).toBe(true)
-			expect(onComplete).not.toHaveBeenCalled()
+			expect(onDismissed).not.toHaveBeenCalled()
 		})
 
 		it('should ignore transitionend when not fading out', () => {
@@ -114,12 +158,12 @@ describe('CelebrationOverlay', () => {
 			hostElement.dispatchEvent(createTransitionEvent('opacity'))
 
 			expect(sut.visible).toBe(true)
-			expect(onComplete).not.toHaveBeenCalled()
+			expect(onDismissed).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('prefers-reduced-motion', () => {
-		it('should use shorter display duration and skip transition', () => {
+		it('should skip CSS transition and immediately dismiss on tap', () => {
 			vi.spyOn(window, 'matchMedia').mockReturnValue({
 				matches: true,
 			} as MediaQueryList)
@@ -128,28 +172,25 @@ describe('CelebrationOverlay', () => {
 			sut.active = true
 			sut.activeChanged()
 
-			// Reduced motion display duration is 1500ms
-			vi.advanceTimersByTime(1500)
+			sut.onTap()
 
 			// Should immediately clean up without waiting for transitionend
 			expect(sut.visible).toBe(false)
 			expect(sut.fadingOut).toBe(false)
-			expect(onComplete).toHaveBeenCalledOnce()
+			expect(onDismissed).toHaveBeenCalledOnce()
 		})
 	})
 
 	describe('detaching() cleanup', () => {
-		it('should clear timer on detach', () => {
+		it('should call onDismissed when detaching during fade-out', () => {
 			sut.attached()
 			sut.active = true
 			sut.activeChanged()
+			sut.onTap()
 
-			// Timer is running for display duration
 			sut.detaching()
 
-			// Advancing time should not trigger fade-out
-			vi.advanceTimersByTime(5000)
-			expect(sut.fadingOut).toBe(false)
+			expect(onDismissed).toHaveBeenCalledOnce()
 		})
 
 		it('should remove transitionend listener on detach', () => {

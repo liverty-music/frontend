@@ -1,0 +1,61 @@
+<import from="./page-help.css"></import>
+
+<button
+  class="page-help-trigger"
+  aria-label.bind="ariaLabel"
+  title.bind="ariaLabel"
+  click.trigger="onHelpTap()"
+  type="button"
+>?</button>
+
+<bottom-sheet open.bind="isOpen" sheet-closed.trigger="onSheetClosed()" aria-label="ページのヘルプ">
+
+  <if condition.bind="page === 'discovery'">
+    <section class="page-help-content">
+      <h2 class="page-help-title" t="pageHelp.discovery.title"></h2>
+      <p t="pageHelp.discovery.description"></p>
+      <p class="page-help-count" if.bind="followedCount > 0">
+        <span t="pageHelp.discovery.followedCount" t-params.bind="{ count: followedCount }"></span>
+      </p>
+    </section>
+  </if>
+
+  <if condition.bind="page === 'dashboard'">
+    <section class="page-help-content">
+      <h2 class="page-help-title" t="pageHelp.dashboard.title"></h2>
+      <ul class="page-help-lanes">
+        <li><strong t="pageHelp.dashboard.homeLabel"></strong><span t="pageHelp.dashboard.homeDesc"></span></li>
+        <li><strong t="pageHelp.dashboard.nearLabel"></strong><span t="pageHelp.dashboard.nearDesc"></span></li>
+        <li><strong t="pageHelp.dashboard.awayLabel"></strong><span t="pageHelp.dashboard.awayDesc"></span></li>
+      </ul>
+    </section>
+  </if>
+
+  <if condition.bind="page === 'my-artists'">
+    <section class="page-help-content">
+      <h2 class="page-help-title" t="pageHelp.myArtists.title"></h2>
+      <table class="page-help-hype-table">
+        <tbody>
+          <tr>
+            <td>👀 Watch</td>
+            <td t="pageHelp.myArtists.watchDesc"></td>
+          </tr>
+          <tr>
+            <td>🔥 Home</td>
+            <td t="pageHelp.myArtists.homeDesc"></td>
+          </tr>
+          <tr>
+            <td>🔥🔥 Nearby</td>
+            <td t="pageHelp.myArtists.nearbyDesc"></td>
+          </tr>
+          <tr>
+            <td>🔥🔥🔥 Away</td>
+            <td t="pageHelp.myArtists.awayDesc"></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="page-help-note" t="pageHelp.myArtists.accountNote"></p>
+    </section>
+  </if>
+
+</bottom-sheet>

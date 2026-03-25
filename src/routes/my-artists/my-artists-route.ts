@@ -21,12 +21,9 @@ export class MyArtistsRoute {
 	public artists: MyArtist[] = []
 	public isLoading = true
 
-	// Notification dialog state
-	public showNotificationDialog = false
 	public showSignupBanner = false
-	public notificationDialogShown = false
 
-	// Hype state tracking for revert
+	// Hype state tracking
 	private prevHypes = new Map<string, Hype>()
 
 	// Undo state
@@ -96,14 +93,6 @@ export class MyArtistsRoute {
 
 		if (!this.isAuthenticated && this.onboarding.isCompleted) {
 			this.showSignupBanner = true
-		}
-
-		if (this.isOnboardingStepMyArtists && this.artists.length > 0) {
-			this.onboarding.activateSpotlight(
-				'[data-artist-rows]',
-				this.i18n.tr('myArtists.spotlight.setHypeMessage'),
-				() => this.onboarding.deactivateSpotlight(),
-			)
 		}
 	}
 
@@ -230,42 +219,42 @@ export class MyArtistsRoute {
 
 	// --- Hype level change (native `change` event from radio) ---
 
-	public onHypeInput(artist: MyArtist): void {
+	public onHypeInput(artist: MyArtist, newHype: Hype): void {
 		const artistId = artist.artist.id
 		const prev = this.prevHypes.get(artistId) ?? 'watch'
-		if (prev === artist.hype) return
+		if (prev === newHype) return
 
-		// Onboarding step 5: revert hype, complete onboarding, stay on page
-		// Fall through to unauthenticated check so the notification dialog opens immediately
+		// Update the artist object so Aurelia re-renders the dot selection
+		artist.hype = newHype
+		const hype = newHype
+
+		// Onboarding MY_ARTISTS step: accept hype change, complete onboarding
 		if (this.isOnboardingStepMyArtists) {
-			artist.hype = prev
+			this.prevHypes.set(artistId, hype)
 			this.onboarding.deactivateSpotlight()
 			this.onboarding.setStep(OnboardingStep.COMPLETED)
+			// Persist for guest users — merged on signup
 			if (!this.isAuthenticated) {
-				if (!this.notificationDialogShown) {
-					this.showNotificationDialog = true
-				}
+				this.guest.setHype(artistId, hype)
 			}
 			return
 		}
 
-		// Block during other onboarding steps
+		// Block during other onboarding steps (should not happen, but guard)
 		if (this.isOnboarding) {
 			artist.hype = prev
 			return
 		}
 
-		// Unauthenticated: revert and show signup dialog
+		// Unauthenticated outside onboarding: persist to guest storage, show signup banner
 		if (!this.isAuthenticated) {
-			artist.hype = prev
-			if (!this.notificationDialogShown) {
-				this.showNotificationDialog = true
-			}
+			this.prevHypes.set(artistId, hype)
+			this.guest.setHype(artistId, hype)
+			this.showSignupBanner = true
 			return
 		}
 
 		// Authenticated: accept and persist
-		const hype = artist.hype
 		this.prevHypes.set(artistId, hype)
 
 		this.followService
@@ -299,12 +288,6 @@ export class MyArtistsRoute {
 
 	public onSignupRequested(): void {
 		this.authService.signUp()
-	}
-
-	public onDialogDismissed(): void {
-		this.showNotificationDialog = false
-		this.showSignupBanner = true
-		this.notificationDialogShown = true
 	}
 
 	public onBannerDismissed(): void {

@@ -1,15 +1,19 @@
 <template>
   <import from="./celebration-overlay.css"></import>
 
-  <output
+  <div
     role="status"
     aria-live="polite"
+    aria-atomic="true"
     class="[ celebration-overlay ]"
     data-state.bind="overlayState"
+    click.trigger="onTap()"
+    pointerdown.trigger="onTap()"
   >
     <div class="confetti-container">
       <div class="confetti" repeat.for="i of 30"></div>
     </div>
     <p class="celebration-text">${message}</p>
-  </output>
+    <p class="celebration-sub-text" if.bind="subMessage">${subMessage}</p>
+  </div>
 </template>

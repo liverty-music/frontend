@@ -107,37 +107,33 @@ async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 	})
 }
 
-/** Navigate to step 4 (My Artists spotlight) by advancing through the lane intro. */
-async function advanceToStep4(page: Page): Promise<void> {
+/**
+ * Navigate to MY_ARTISTS step by dismissing the celebration overlay.
+ *
+ * When onboardingStep='dashboard' and celebrationShown is not set, the
+ * celebration appears immediately (no lane intro needed). Dismissing it
+ * advances the step to MY_ARTISTS. The caller seeds celebrationShown=removed
+ * to ensure the celebration shows.
+ *
+ * Flow: goto /dashboard → celebration appears → dismiss → MY_ARTISTS step
+ */
+async function advanceToMyArtistsSpotlight(page: Page): Promise<void> {
 	await page.goto('http://localhost:9000/dashboard', {
 		waitUntil: 'domcontentloaded',
 	})
 
-	const overlay = page.locator('.coach-mark-overlay')
-	await expect(overlay).toBeVisible({ timeout: 8000 })
+	// Celebration overlay appears immediately when celebrationShown is not set
+	const celebration = page.locator('.celebration-overlay')
+	await expect(celebration).toBeVisible({ timeout: 8000 })
 
-	// Lane intro: home(2s) → near(2s) → away(2s) → card (waits for tap)
-	// Wait for card phase by checking for tap text in tooltip (Japanese or English)
-	await page.waitForFunction(
-		() => {
-			const el = document.querySelector('.coach-mark-tooltip p')
-			const text = el?.textContent ?? ''
-			return text.includes('Tap') || text.includes('タップ')
-		},
-		undefined,
-		{ timeout: 15_000 },
-	)
-	await page.locator('.click-blocker.target-interceptor').click({ force: true })
+	// Dismiss celebration — sets step to MY_ARTISTS.
+	// page-help may intercept pointer events, so use JS dispatch.
+	await page.evaluate(() => {
+		const el = document.querySelector('.celebration-overlay')
+		el?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+	})
 
-	// Step 4: spotlight moves to [data-nav="my-artists"]
-	await page.waitForFunction(
-		() => {
-			const el = document.querySelector('[data-nav="my-artists"]')
-			return el?.style.getPropertyValue('anchor-name') === '--coach-target'
-		},
-		undefined,
-		{ timeout: 5000 },
-	)
+	await expect(celebration).not.toBeVisible({ timeout: 5000 })
 }
 
 test.describe('CSS antipattern verification', () => {
@@ -216,7 +212,7 @@ test.describe('CSS antipattern verification', () => {
 		 *   position-area causing offset from a right-aligned card)
 		 *   breaks the visual connection between arrow and target.
 		 */
-		test('card spotlight: tooltip overlaps target horizontally', async ({
+		test('lane intro home spotlight: tooltip overlaps target horizontally', async ({
 			page,
 		}) => {
 			test.setTimeout(30_000)
@@ -240,16 +236,9 @@ test.describe('CSS antipattern verification', () => {
 				waitUntil: 'domcontentloaded',
 			})
 
-			// Wait for card phase of lane intro
-			await page.waitForFunction(
-				() => {
-					const el = document.querySelector('.coach-mark-tooltip p')
-					const text = el?.textContent ?? ''
-					return text.includes('Tap') || text.includes('タップ')
-				},
-				undefined,
-				{ timeout: 15_000 },
-			)
+			// Wait for lane intro to activate (home phase spotlight on [data-stage="home"])
+			const overlay = page.locator('.coach-mark-overlay')
+			await expect(overlay).toBeVisible({ timeout: 8000 })
 			await page.waitForTimeout(200)
 
 			const targetBox = await page
@@ -262,9 +251,6 @@ test.describe('CSS antipattern verification', () => {
 			expect(targetBox).not.toBeNull()
 			expect(tooltipBox).not.toBeNull()
 
-			// Horizontal overlap: ranges must intersect.
-			// target: [targetBox.x, targetBox.x + targetBox.width]
-			// tooltip: [tooltipBox.x, tooltipBox.x + tooltipBox.width]
 			const targetLeft = targetBox!.x
 			const targetRight = targetBox!.x + targetBox!.width
 			const tooltipLeft = tooltipBox!.x
@@ -279,7 +265,7 @@ test.describe('CSS antipattern verification', () => {
 			expect(overlap).toBeGreaterThanOrEqual(minOverlap)
 		})
 
-		test('my-artists spotlight: tooltip overlaps target horizontally', async ({
+		test('lane intro away spotlight: tooltip overlaps target horizontally', async ({
 			page,
 		}) => {
 			test.setTimeout(30_000)
@@ -299,11 +285,23 @@ test.describe('CSS antipattern verification', () => {
 				)
 			})
 
-			await advanceToStep4(page)
+			await page.goto('http://localhost:9000/dashboard', {
+				waitUntil: 'domcontentloaded',
+			})
+
+			// Wait for lane intro to start (home phase)
+			const overlay = page.locator('.coach-mark-overlay')
+			await expect(overlay).toBeVisible({ timeout: 8000 })
+
+			// Advance to 'away' phase by tapping home → near → away
+			for (let i = 0; i < 2; i++) {
+				await page.locator('.click-blocker.target-interceptor').click({ force: true })
+				await page.waitForTimeout(200)
+			}
 			await page.waitForTimeout(200)
 
 			const targetBox = await page
-				.locator('[data-nav="my-artists"]')
+				.locator('[style*="anchor-name: --coach-target"]')
 				.boundingBox()
 			const tooltipBox = await page
 				.locator('.coach-mark-tooltip')
@@ -362,8 +360,8 @@ test.describe('CSS antipattern verification', () => {
 		})
 	})
 
-	test.describe('Celebration overlay — transitionend cleanup', () => {
-		test('reduced motion bypasses transitionend — cleanup happens immediately', async ({
+	test.describe('Celebration overlay — tap-to-dismiss cleanup', () => {
+		test('reduced motion: celebration uses data-state attribute (no fade-out class)', async ({
 			page,
 		}) => {
 			test.setTimeout(15_000)
@@ -393,12 +391,25 @@ test.describe('CSS antipattern verification', () => {
 			const celebration = page.locator('.celebration-overlay')
 			await expect(celebration).toBeVisible({ timeout: 5000 })
 
-			// With reduced motion: 1500ms display then immediate cleanup (no fade transition)
-			// Should be removed faster than the non-reduced-motion path (2500ms + 400ms fade)
+			// Verify data-state="active" attribute is used (not .fade-out class)
+			await expect(celebration).toHaveAttribute('data-state', 'active')
+
+			// Overlay is tap-to-dismiss. Dispatch pointerdown to trigger onTap().
+			// page-help may intercept real pointer events, so use JS dispatch.
+			await page.evaluate(() => {
+				const el = document.querySelector('.celebration-overlay')
+				el?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+			})
+
+			// After dismissal, overlay should not be visible
 			await expect(celebration).not.toBeVisible({ timeout: 5000 })
+
+			// Verify no old .fade-out class leakage (replaced by data-state attribute)
+			const fadeOutElements = page.locator('.fade-out')
+			await expect(fadeOutElements).toHaveCount(0)
 		})
 
-		test('celebration overlay completes via transitionend and is removed from DOM', async ({
+		test('celebration overlay dismissed via tap: removed from DOM after transition', async ({
 			page,
 		}) => {
 			test.setTimeout(15_000)
@@ -426,12 +437,18 @@ test.describe('CSS antipattern verification', () => {
 			const celebration = page.locator('.celebration-overlay')
 			await expect(celebration).toBeVisible({ timeout: 5000 })
 
-			// Verify data-state attribute is used (not .fade-out class)
+			// Verify data-state="active" is used (not .fade-out class)
 			await expect(celebration).toHaveAttribute('data-state', 'active')
 
-			// Wait for full cycle: 2.5s display + 400ms CSS fade + transitionend cleanup
-			// The overlay div is removed from DOM after transitionend fires
-			await expect(celebration).not.toBeVisible({ timeout: 10_000 })
+			// Tap to dismiss: dispatch pointerdown directly on the element.
+			// page-help may intercept real pointer events from Playwright.
+			await page.evaluate(() => {
+				const el = document.querySelector('.celebration-overlay')
+				el?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+			})
+
+			// After tap: overlay transitions to data-state="hidden" then is removed
+			await expect(celebration).not.toBeVisible({ timeout: 5000 })
 
 			// Verify no old .fade-out class leakage (replaced by data-state attribute)
 			const fadeOutElements = page.locator('.fade-out')

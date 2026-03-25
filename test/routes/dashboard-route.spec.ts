@@ -310,30 +310,22 @@ describe('DashboardRoute', () => {
 		})
 	})
 
-	describe('onCelebrationComplete (lane intro with empty data)', () => {
-		it('should skip lane intro and advance to Step 4 when no concert data', async () => {
+	describe('onCelebrationOpen', () => {
+		it('should advance to MY_ARTISTS step when celebration opens', () => {
 			mockOnboarding.currentStep = 'dashboard'
 			mockOnboarding.isOnboarding = true
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
-			sut.loadData()
-			await sut.dataPromise
+			sut.onCelebrationOpen()
 
-			// Simulate celebration completing
-			sut.showCelebration = true
-			sut.onCelebrationComplete()
+			expect(mockOnboarding.setStep).toHaveBeenCalledWith('my-artists')
+		})
+	})
 
-			// Wait for the async startLaneIntro to complete
-			await new Promise((r) => setTimeout(r, 50))
+	describe('onCelebrationDismissed', () => {
+		it('should deactivate spotlight when celebration is dismissed', () => {
+			sut.onCelebrationDismissed()
 
-			expect(sut.showCelebration).toBe(false)
-			expect(sut.laneIntroPhase).toBe('done')
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith('detail') // DETAIL
-			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'[data-nav="my-artists"]',
-				expect.any(String),
-				expect.any(Function),
-			)
+			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalled()
 		})
 	})
 

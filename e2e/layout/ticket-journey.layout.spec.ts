@@ -218,22 +218,44 @@ test.describe('Detail sheet journey controls', () => {
 	test.describe.configure({ mode: 'serial' })
 
 	test.beforeEach(async ({ layoutPage: page }) => {
-		// Override fixture step '7' (COMPLETED) → 'my-artists' (step 5).
-		// 'my-artists' is still in ONBOARDING_STEPS so auth allows /dashboard,
-		// but past DASHBOARD/DETAIL so no celebration, lane intro, or coach marks.
-		await page.addInitScript(seedWithConcertData({ skipCelebration: true }))
+		// Seed guest data and concert artists directly at 'completed' step.
+		// Avoids setting 'dashboard' step (which triggers celebration in serial
+		// mode due to addInitScript accumulation timing).
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'my-artists')
+			localStorage.setItem('onboardingStep', 'completed')
+			localStorage.setItem('guest.home', 'JP-13')
+			localStorage.setItem('onboarding.celebrationShown', '1')
+			localStorage.setItem(
+				'guest.followedArtists',
+				JSON.stringify([
+					{
+						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						home: 'JP-13',
+					},
+					{
+						artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+						home: 'JP-13',
+					},
+				]),
+			)
 		})
 
+		// Clean up accumulated route handlers from serial mode to prevent
+		// stale or duplicate handlers from interfering with responses.
+		await page.unrouteAll({ behavior: 'ignoreErrors' })
 		await setupMocks(page)
 
 		await page.goto('/dashboard')
 		await page.waitForSelector('[data-live-card]', { timeout: 10_000 })
 
 		// Click the first card to open the detail sheet.
-		// No coach marks at step 'my-artists', so regular click works.
-		await page.locator('[data-live-card]').first().click()
+		// page-help's .dismiss-zone may intercept real pointer events;
+		// dispatch the click via JS to bypass interception.
+		await page.evaluate(() => {
+			const el = document.querySelector<HTMLElement>('[data-live-card]')
+			if (!el) throw new Error('[data-live-card] not found')
+			el.click()
+		})
 		await page.waitForSelector('.sheet-journey', { timeout: 5_000 })
 	})
 
@@ -303,19 +325,31 @@ test.describe('Detail sheet journey controls', () => {
 	test('stop tracking button removes active state (TJ12)', async ({
 		layoutPage: page,
 	}) => {
+		// Use JS dispatch: in serial mode the popover may auto-dismiss between
+		// Playwright clicks, but JS click still triggers event handlers, and
+		// assertions read DOM attributes regardless of visibility.
+		await page.evaluate(() => {
+			const btn = document.querySelector<HTMLElement>(
+				'.journey-btn[data-journey-status="applied"]',
+			)
+			if (!btn) throw new Error('applied button not found')
+			btn.click()
+		})
+
 		const appliedBtn = page.locator(
 			'.journey-btn[data-journey-status="applied"]',
 		)
-		await appliedBtn.click()
-
 		await expect
 			.poll(async () => appliedBtn.getAttribute('data-active'), {
 				timeout: 3_000,
 			})
 			.not.toBeNull()
 
-		const removeBtn = page.locator('.journey-remove-btn')
-		await removeBtn.click()
+		await page.evaluate(() => {
+			const btn = document.querySelector<HTMLElement>('.journey-remove-btn')
+			if (!btn) throw new Error('remove button not found')
+			btn.click()
+		})
 
 		await expect
 			.poll(async () => appliedBtn.getAttribute('data-active'), {

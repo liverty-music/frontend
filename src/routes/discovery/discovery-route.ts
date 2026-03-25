@@ -18,6 +18,8 @@ import { GenreFilterController } from './genre-filter-controller'
 import { SearchController } from './search-controller'
 
 const TUTORIAL_FOLLOW_TARGET = 3
+const TUTORIAL_TOTAL_FOLLOW_TARGET = 5
+const COACH_MARK_FADE_MS = 2000
 
 export class DiscoveryRoute {
 	private readonly artistClient = resolve(IArtistServiceClient)
@@ -33,6 +35,8 @@ export class DiscoveryRoute {
 	public dnaOrbCanvas!: DnaOrbCanvas
 
 	private abortController = new AbortController()
+	private dashboardCoachMarkShown = false
+	private coachMarkFadeTimer: ReturnType<typeof setTimeout> | null = null
 
 	// Controllers
 	public readonly bubbles = new BubbleManager(
@@ -84,7 +88,8 @@ export class DiscoveryRoute {
 	public get showDashboardCoachMark(): boolean {
 		return (
 			this.isOnboarding &&
-			this.concertService.artistsWithConcertsCount >= TUTORIAL_FOLLOW_TARGET
+			(this.followedCount >= TUTORIAL_TOTAL_FOLLOW_TARGET ||
+				this.concertService.artistsWithConcertsCount >= TUTORIAL_FOLLOW_TARGET)
 		)
 	}
 
@@ -111,13 +116,18 @@ export class DiscoveryRoute {
 
 	@watch((vm: DiscoveryRoute) => vm.showDashboardCoachMark)
 	protected onShowDashboardCoachMarkChanged(show: boolean): void {
-		if (show) {
+		if (show && !this.dashboardCoachMarkShown) {
+			this.dashboardCoachMarkShown = true
 			this.onboarding.activateSpotlight(
 				'[data-nav="home"]',
 				this.i18n.tr('discovery.coachMark.viewTimetable'),
 				() => this.onCoachMarkTap(),
 				'50%',
 			)
+			this.coachMarkFadeTimer = setTimeout(() => {
+				this.coachMarkFadeTimer = null
+				this.onboarding.deactivateSpotlight()
+			}, COACH_MARK_FADE_MS)
 		}
 	}
 
@@ -152,20 +162,16 @@ export class DiscoveryRoute {
 
 	public attached(): void {
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
-
-		if (this.isOnboarding) {
-			this.ea.publish(
-				new Snack(this.i18n.tr('discovery.popoverGuide'), 'info', {
-					duration: 5000,
-				}),
-			)
-		}
 	}
 
 	public detaching(): void {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		this.search.dispose()
+		if (this.coachMarkFadeTimer) {
+			clearTimeout(this.coachMarkFadeTimer)
+			this.coachMarkFadeTimer = null
+		}
 	}
 
 	private readonly onVisibilityChange = (): void => {

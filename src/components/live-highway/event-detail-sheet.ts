@@ -1,10 +1,6 @@
 import { bindable, ILogger, resolve } from 'aurelia'
 import { displayName } from '../../constants/iso3166'
 import { bestBackgroundUrl } from '../../entities/artist'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../services/onboarding-service'
 import { ITicketJourneyService } from '../../services/ticket-journey-service'
 import type { JourneyStatus, LiveEvent } from './live-event'
 
@@ -15,7 +11,6 @@ export class EventDetailSheet {
 	public journeyUpdating = false
 
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
-	private readonly onboarding = resolve(IOnboardingService)
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private closedByPopstate = false
 
@@ -29,7 +24,7 @@ export class EventDetailSheet {
 	}
 
 	public get isDismissable(): boolean {
-		return this.onboarding.currentStep !== OnboardingStep.DETAIL
+		return true
 	}
 
 	public get backgroundUrl(): string | undefined {

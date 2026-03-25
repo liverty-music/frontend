@@ -4,6 +4,8 @@
 <import from="../../components/inline-error/inline-error"></import>
 <import from="../../components/celebration-overlay/celebration-overlay"></import>
 <import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
+<import from="../../components/page-help/page-help"></import>
+<import from="../../components/post-signup-dialog/post-signup-dialog"></import>
 
 <!-- Laser beams — before header so header paints on top -->
 <div class="[ beam-overlay ]" if.bind="laserBeams.length > 0">
@@ -30,7 +32,7 @@
   event-selected.trigger="onEventSelected($event)"
 >
   <!-- Loading state -->
-  <p pending class="loading-text">Loading events...</p>
+  <p pending class="loading-text" t="dashboard.loading"></p>
 
   <!-- Success state -->
   <template then.from-view="data">
@@ -107,9 +109,17 @@
   required.bind="isOnboarding"
 ></user-home-selector>
 
-<!-- Celebration overlay (onboarding first dashboard load) -->
+<!-- Celebration overlay — shown after Lane Intro; tap-to-dismiss -->
 <celebration-overlay
   active.bind="showCelebration"
-  message.bind="$this.i18n?.tr('dashboard.celebration.complete') ?? 'あなただけのタイムテーブルが完成しました！'"
-  on-complete.bind="() => onCelebrationComplete()"
+  message.bind="i18n.tr('dashboard.celebration.complete')"
+  sub-message.bind="i18n.tr('dashboard.celebration.explore')"
+  on-open.bind="() => onCelebrationOpen()"
+  on-dismissed.bind="() => onCelebrationDismissed()"
 ></celebration-overlay>
+
+<!-- PageHelp — persistent ? icon, auto-opens once per onboarding session -->
+<page-help if.bind="isOnboarding" page="dashboard"></page-help>
+
+<!-- PostSignupDialog — shown once after first-time signup -->
+<post-signup-dialog active.bind="showPostSignupDialog"></post-signup-dialog>

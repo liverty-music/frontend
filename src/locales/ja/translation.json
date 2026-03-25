@@ -13,6 +13,7 @@
 			"login": "ログイン",
 			"loginHint": "アカウントをお持ちの方はログイン"
 		},
+		"guestFriendly": "アカウント不要でお試しいただけます",
 		"error": {
 			"navigation": "画面遷移に失敗しました。もう一度お試しください。",
 			"login": "ログインの開始に失敗しました。もう一度お試しください。"
@@ -106,17 +107,19 @@
 			"away": "AWAY STAGE"
 		},
 		"coachMark": {
-			"tapCard": "タップして詳細を見てみよう！",
 			"viewArtists": "アーティスト一覧も見てみよう！"
 		},
 		"celebration": {
-			"complete": "あなただけのタイムテーブルが完成しました！"
+			"complete": "あなただけのタイムテーブルが完成しました！",
+			"explore": "自由にタイムテーブルを触ってみよう"
 		},
 		"laneIntro": {
-			"home": "地元のライブ情報！",
-			"near": "近くのエリアのライブも！",
-			"away": "全国のライブ情報もチェック！"
+			"homePrompt": "居住エリアのライブが並びます。居住エリアはどこですか？",
+			"home": "{{prefecture}}のライブ",
+			"near": "少し足を伸ばせば行けるライブ",
+			"away": "遠征ライブ！"
 		},
+		"loading": "イベントを読み込み中…",
 		"empty": {
 			"title": "予定されているイベントはありません",
 			"subtitle": "アーティストをフォローしてライブスケジュールを確認しましょう。",
@@ -179,7 +182,7 @@
 			"setHypeMessage": "絶対に見逃したくないアーティストの熱量を上げておこう"
 		},
 		"signupBanner": {
-			"message": "\uD83D\uDD14 通知を有効にするには"
+			"message": "アカウントを作成してフォロー情報を保存しよう。新着コンサート通知も有効になります！"
 		},
 		"unfollowed": "{{name}}のフォローを解除しました",
 		"undo": "元に戻す",
@@ -256,5 +259,40 @@
 	"languages": {
 		"ja": "日本語",
 		"en": "English"
+	},
+	"postSignup": {
+		"notificationLabel": "新着ライブ通知をオンにしよう",
+		"notificationEnable": "通知をオンにする",
+		"notificationEnabling": "有効化中…",
+		"notificationEnabled": "✓ 通知をオンにしました",
+		"notificationError": "通知の有効化に失敗しました。ブラウザの設定を確認してください。",
+		"notificationDenied": "ブラウザの設定で通知が拒否されています。設定から変更できます。",
+		"pwaLabel": "ホーム画面に追加するとより快適に",
+		"pwaInstall": "ホーム画面に追加",
+		"defer": "あとで"
+	},
+	"pageHelp": {
+		"discovery": {
+			"title": "アーティストをフォローしよう",
+			"description": "アーティストをタップしてフォロー。フォロー解除は My Artists ページから。",
+			"followedCount": "{{count}}アーティストをフォロー中"
+		},
+		"dashboard": {
+			"title": "タイムテーブルの見方",
+			"homeLabel": "HOME STAGE — ",
+			"homeDesc": "居住エリアのライブ",
+			"nearLabel": "NEAR STAGE — ",
+			"nearDesc": "少し足を伸ばせば行けるライブ",
+			"awayLabel": "AWAY STAGE — ",
+			"awayDesc": "遠征ライブ！Hypeを上げると通知が届く"
+		},
+		"myArtists": {
+			"title": "Hypeレベルについて",
+			"watchDesc": "通知なし",
+			"homeDesc": "居住エリアのライブを通知",
+			"nearbyDesc": "近くのライブも通知",
+			"awayDesc": "全国のライブを通知",
+			"accountNote": "通知を受け取るにはアカウント登録が必要です"
+		}
 	}
 }

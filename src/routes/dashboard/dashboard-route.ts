@@ -1,5 +1,4 @@
 import { I18N } from '@aurelia/i18n'
-import { IRouter } from '@aurelia/router'
 import { ILogger, INode, resolve } from 'aurelia'
 import { artistHue } from '../../adapter/view/artist-color'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
@@ -18,7 +17,13 @@ import {
 } from '../../services/onboarding-service'
 import { IUserService } from '../../services/user-service'
 
-export type LaneIntroPhase = 'home' | 'near' | 'away' | 'card' | 'done'
+/** Lane intro phases — no 'card' phase; 'waiting-for-home' is a sub-state of 'home' */
+export type LaneIntroPhase =
+	| 'home'
+	| 'waiting-for-home'
+	| 'near'
+	| 'away'
+	| 'done'
 
 export class DashboardRoute {
 	private static get celebrationShown(): boolean {
@@ -41,9 +46,12 @@ export class DashboardRoute {
 	public showCelebration = false
 	public laneIntroPhase: LaneIntroPhase = 'done'
 	public showSignupBanner = false
+	public showPostSignupDialog = false
+	/** Prefecture name resolved after Home Selector selection, used for dynamic coach mark text. */
+	public selectedPrefectureName = ''
 
-	public homeSelector!: UserHomeSelector
-	public detailSheet!: EventDetailSheet
+	public homeSelector: UserHomeSelector | undefined
+	public detailSheet: EventDetailSheet | undefined
 
 	private readonly element = resolve(INode) as HTMLElement
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
@@ -53,9 +61,7 @@ export class DashboardRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
-	private readonly router = resolve(IRouter)
 	private abortController: AbortController | null = null
-	private laneIntroTimer: ReturnType<typeof setTimeout> | null = null
 	private beamRafId = 0
 	private readonly onScroll = (): void => this.scheduleBeamUpdate()
 
@@ -115,10 +121,6 @@ export class DashboardRoute {
 		return this.onboarding.currentStep === OnboardingStep.DASHBOARD
 	}
 
-	public get isOnboardingStepDetail(): boolean {
-		return this.onboarding.currentStep === OnboardingStep.DETAIL
-	}
-
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
 	}
@@ -141,31 +143,15 @@ export class DashboardRoute {
 		}
 		this.loadData()
 
-		// When returning to step 3 with celebration and region already resolved,
-		// resume the lane intro (e.g. page reload during onboarding)
-		if (
-			this.isOnboardingStepDashboard &&
-			!this.showCelebration &&
-			!this.needsRegion
-		) {
-			this.startLaneIntro()
-		}
-
 		// Show signup banner for unauthenticated users who completed onboarding
 		if (!this.authService.isAuthenticated && this.onboarding.isCompleted) {
 			this.showSignupBanner = true
 		}
 
-		// Resume step 4 spotlight after reload: re-activate My Artists tab spotlight
-		// so the user can proceed. bringSpotlightToFront ensures the coach mark
-		// renders above the detail sheet in the top-layer LIFO stack.
-		if (this.isOnboardingStepDetail) {
-			this.onboarding.activateSpotlight(
-				'[data-nav="my-artists"]',
-				this.i18n.tr('dashboard.coachMark.viewArtists'),
-				() => this.onOnboardingMyArtistsTapped(),
-			)
-			this.onboarding.bringSpotlightToFront()
+		// PostSignupDialog: show once after first-time signup
+		if (localStorage.getItem(StorageKeys.postSignupShown) === 'pending') {
+			localStorage.removeItem(StorageKeys.postSignupShown)
+			this.showPostSignupDialog = true
 		}
 	}
 
@@ -199,7 +185,13 @@ export class DashboardRoute {
 
 	public attached(): void {
 		if (this.needsRegion && !this.showCelebration) {
-			this.homeSelector.open()
+			this.homeSelector?.open()
+		} else if (
+			this.isOnboardingStepDashboard &&
+			!this.showCelebration &&
+			!this.needsRegion
+		) {
+			this.startLaneIntro()
 		}
 		this.setupBeamTracking()
 	}
@@ -247,14 +239,25 @@ export class DashboardRoute {
 		}
 	}
 
-	public onCelebrationComplete(): void {
+	/**
+	 * Called when Celebration Overlay opens.
+	 * Advances the onboarding step to MY_ARTISTS — this is the controlled
+	 * moment before free exploration begins.
+	 */
+	public onCelebrationOpen(): void {
+		this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
+		this.logger.info('Celebration opened: advancing step to MY_ARTISTS')
+	}
+
+	/**
+	 * Called when Celebration Overlay is dismissed (tap anywhere).
+	 * Deactivates blocker divs, releases scroll lock, restores nav tabs.
+	 */
+	public onCelebrationDismissed(): void {
 		this.showCelebration = false
-		this.logger.info('Celebration complete')
-		if (this.needsRegion) {
-			this.homeSelector.open()
-		} else {
-			this.startLaneIntro()
-		}
+		this.logger.info('Celebration dismissed: entering free exploration')
+		this.onboarding.deactivateSpotlight()
+		this.setNavTabsDimmed(false)
 	}
 
 	public onHomeSelected(code: string): void {
@@ -264,7 +267,16 @@ export class DashboardRoute {
 			this.guest.setHome(code)
 		}
 		this.loadData()
-		if (this.isOnboarding) {
+
+		// If we're in the waiting-for-home sub-state of lane intro, advance to HOME phase
+		if (this.laneIntroPhase === 'waiting-for-home') {
+			// Resolve prefecture display name for dynamic coach mark text
+			this.selectedPrefectureName = this.i18n.tr(
+				`userHome.prefectures.${code.toLowerCase().replace('jp-', '')}`,
+			)
+			this.laneIntroPhase = 'home'
+			this.updateSpotlightForPhase()
+		} else if (this.isOnboarding && this.isOnboardingStepDashboard) {
 			this.startLaneIntro()
 		}
 	}
@@ -285,96 +297,103 @@ export class DashboardRoute {
 			}
 		}
 
-		// When no concert data is available, skip lane intro entirely
+		// When no concert data is available, skip lane intro and show celebration
 		if (this.dateGroups.length === 0) {
 			this.logger.warn('No concert data available, skipping lane intro')
 			this.laneIntroPhase = 'done'
-			this.skipToMyArtists()
+			this.showCelebration = true
 			return
 		}
 
-		this.laneIntroPhase = 'home'
-		this.logger.info('Lane intro started')
-		this.updateSpotlightForPhase()
-		this.scheduleLaneIntroAdvance()
+		this.setNavTabsDimmed(true)
+
+		// HOME phase: open Home Selector inline if region not yet set
+		if (this.needsRegion) {
+			this.laneIntroPhase = 'waiting-for-home'
+			this.homeSelector?.open()
+			// Spotlight the HOME stage while waiting for selection
+			this.onboarding.activateSpotlight(
+				'[data-stage="home"]',
+				this.i18n.tr('dashboard.laneIntro.homePrompt'),
+				undefined,
+			)
+		} else {
+			// Resolve prefecture name for coach mark text (home already set)
+			const homeCode = this.guest.home
+			if (homeCode) {
+				this.selectedPrefectureName = this.i18n.tr(
+					`userHome.prefectures.${homeCode.toLowerCase().replace('jp-', '')}`,
+				)
+			}
+			this.laneIntroPhase = 'home'
+			this.logger.info('Lane intro started')
+			this.updateSpotlightForPhase()
+		}
 	}
 
 	private advanceLaneIntro(): void {
-		if (this.laneIntroTimer) {
-			clearTimeout(this.laneIntroTimer)
-			this.laneIntroTimer = null
-		}
+		if (this.laneIntroPhase === 'waiting-for-home') return
 
-		const phases: LaneIntroPhase[] = ['home', 'near', 'away', 'card', 'done']
+		const phases: LaneIntroPhase[] = ['home', 'near', 'away', 'done']
 		const currentIdx = phases.indexOf(this.laneIntroPhase)
 		if (currentIdx < 0 || currentIdx >= phases.length - 1) {
-			this.laneIntroPhase = 'done'
+			this.completeLaneIntro()
 			return
 		}
 
-		let nextPhase = phases[currentIdx + 1]
-
-		// Skip card phase when no concert data is available
-		if (nextPhase === 'card' && this.dateGroups.length === 0) {
-			this.logger.warn('No concert cards available, skipping card phase')
-			nextPhase = 'done'
-			this.laneIntroPhase = nextPhase
-			this.onboarding.deactivateSpotlight()
-			this.skipToMyArtists()
-			return
-		}
-
+		const nextPhase = phases[currentIdx + 1]
 		this.laneIntroPhase = nextPhase
 		this.logger.info('Lane intro advanced', { phase: this.laneIntroPhase })
-		this.updateSpotlightForPhase()
 
-		if (this.laneIntroPhase !== 'done' && this.laneIntroPhase !== 'card') {
-			this.scheduleLaneIntroAdvance()
+		if (this.laneIntroPhase === 'done') {
+			this.completeLaneIntro()
+		} else {
+			this.updateSpotlightForPhase()
 		}
 	}
 
-	/**
-	 * Skip from lane intro directly to Step 4 (My Artists tab spotlight)
-	 * when no concert cards are available.
-	 */
-	private skipToMyArtists(): void {
-		this.onboarding.setStep(OnboardingStep.DETAIL)
-		this.onboarding.activateSpotlight(
-			'[data-nav="my-artists"]',
-			this.i18n.tr('dashboard.coachMark.viewArtists'),
-			() => this.onOnboardingMyArtistsTapped(),
-		)
+	private completeLaneIntro(): void {
+		this.laneIntroPhase = 'done'
+		this.onboarding.deactivateSpotlight()
+		this.logger.info('Lane intro completed, showing celebration')
+		this.showCelebration = true
 	}
 
 	private updateSpotlightForPhase(): void {
 		const selector = this.laneIntroSelector
 		const message = this.laneIntroMessage
 		if (!selector) return
-
-		const onTap =
-			this.laneIntroPhase === 'card'
-				? () => this.onOnboardingCardTapped()
-				: () => this.onLaneIntroTap()
-
-		this.onboarding.activateSpotlight(selector, message, onTap)
+		this.onboarding.activateSpotlight(selector, message, () =>
+			this.onLaneIntroTap(),
+		)
 	}
 
-	private scheduleLaneIntroAdvance(): void {
-		this.laneIntroTimer = setTimeout(() => {
-			this.advanceLaneIntro()
-		}, 2000)
+	/** Dim/undim nav tabs during Lane Intro to guide focus. */
+	private setNavTabsDimmed(dimmed: boolean): void {
+		const navItems = this.element
+			.closest('body')
+			?.querySelectorAll<HTMLElement>('[data-nav]')
+		if (!navItems) return
+		for (const item of navItems) {
+			if (dimmed) {
+				item.style.setProperty('opacity', '0.3')
+				item.setAttribute('aria-disabled', 'true')
+			} else {
+				item.style.removeProperty('opacity')
+				item.removeAttribute('aria-disabled')
+			}
+		}
 	}
 
 	public get laneIntroSelector(): string {
 		switch (this.laneIntroPhase) {
 			case 'home':
+			case 'waiting-for-home':
 				return '[data-stage="home"]'
 			case 'near':
 				return '[data-stage="near"]'
 			case 'away':
 				return '[data-stage="away"]'
-			case 'card':
-				return '[data-live-card]:first-child'
 			default:
 				return ''
 		}
@@ -383,13 +402,17 @@ export class DashboardRoute {
 	public get laneIntroMessage(): string {
 		switch (this.laneIntroPhase) {
 			case 'home':
-				return this.i18n.tr('dashboard.laneIntro.home')
+				return this.selectedPrefectureName
+					? this.i18n.tr('dashboard.laneIntro.home', {
+							prefecture: this.selectedPrefectureName,
+						})
+					: this.i18n.tr('dashboard.laneIntro.homePrompt')
+			case 'waiting-for-home':
+				return this.i18n.tr('dashboard.laneIntro.homePrompt')
 			case 'near':
 				return this.i18n.tr('dashboard.laneIntro.near')
 			case 'away':
 				return this.i18n.tr('dashboard.laneIntro.away')
-			case 'card':
-				return this.i18n.tr('dashboard.coachMark.tapCard')
 			default:
 				return ''
 		}
@@ -399,33 +422,8 @@ export class DashboardRoute {
 		return this.laneIntroPhase !== 'done'
 	}
 
-	public onOnboardingCardTapped(): void {
-		if (this.isOnboardingStepDashboard) {
-			this.logger.info('Onboarding: concert card tapped, advancing to detail')
-			this.onboarding.setStep(OnboardingStep.DETAIL)
-			// Step 4: Spotlight slides to My Artists tab
-			this.onboarding.activateSpotlight(
-				'[data-nav="my-artists"]',
-				this.i18n.tr('dashboard.coachMark.viewArtists'),
-				() => this.onOnboardingMyArtistsTapped(),
-			)
-			// Re-insert coach mark above detail sheet in LIFO top-layer stack
-			this.onboarding.bringSpotlightToFront()
-		}
-	}
-
-	public async onOnboardingMyArtistsTapped(): Promise<void> {
-		if (this.isOnboardingStepDetail) {
-			this.logger.info(
-				'Onboarding: My Artists tab tapped, advancing to my-artists',
-			)
-			this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
-			await this.router.load('my-artists')
-		}
-	}
-
 	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {
-		this.detailSheet.open(event.detail.event)
+		this.detailSheet?.open(event.detail.event)
 	}
 
 	public onSignupRequested(): void {
@@ -439,10 +437,7 @@ export class DashboardRoute {
 	public detaching(): void {
 		this.abortController?.abort()
 		this.abortController = null
-		if (this.laneIntroTimer) {
-			clearTimeout(this.laneIntroTimer)
-			this.laneIntroTimer = null
-		}
+		this.setNavTabsDimmed(false)
 		const scroll = this.element.querySelector('.concert-scroll')
 		if (scroll) {
 			scroll.removeEventListener('scroll', this.onScroll)

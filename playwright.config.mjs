@@ -45,9 +45,26 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: 'e2e/layout/**/*.auth.spec.ts',
+      testIgnore: [
+        'e2e/layout/**',
+        'e2e/smoke/**',
+        // Already covered by the onboarding project (Pixel 7 viewport)
+        'e2e/onboarding-flow.spec.ts',
+        'e2e/css-antipattern-verification.spec.ts',
+        'e2e/detail-sheet-dismiss.spec.ts',
+        'e2e/dashboard-lane-classification.spec.ts',
+        'e2e/toast-notification.spec.ts',
+        'e2e/artist-image-ui.spec.ts',
+        // Requires auth storageState — covered by chromium-authenticated project
+        'e2e/pwa-settings.spec.ts',
+        // Requires Service Worker cache — not available in CI headless environment
+        'e2e/pwa-offline-cache.spec.ts',
+        // Requires auth.isAuthenticated — evaluateVisibility() gates on it
+        'e2e/pwa-install-prompt.spec.ts',
+      ],
       use: {
         ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:9000',
       },
     },
     {

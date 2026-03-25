@@ -8,6 +8,9 @@ vi.mock('../../src/adapter/storage/guest-storage', () => ({
 	saveFollows: vi.fn(),
 	loadHome: vi.fn().mockReturnValue(null),
 	saveHome: vi.fn(),
+	loadHypes: vi.fn().mockReturnValue({}),
+	saveHypes: vi.fn(),
+	clearHypes: vi.fn(),
 }))
 
 const { loadFollows, loadHome } = await import(

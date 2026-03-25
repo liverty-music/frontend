@@ -1,0 +1,45 @@
+import { bindable, resolve } from 'aurelia'
+import {
+	clearAllHelpSeen,
+	loadHelpSeen,
+	saveHelpSeen,
+} from '../../adapter/storage/onboarding-storage'
+import { IOnboardingService } from '../../services/onboarding-service'
+
+export type PageHelpPage = 'discovery' | 'dashboard' | 'my-artists'
+
+export class PageHelp {
+	@bindable public page: PageHelpPage = 'discovery'
+	@bindable public followedCount = 0
+
+	public isOpen = false
+
+	private readonly onboarding = resolve(IOnboardingService)
+
+	public attached(): void {
+		if (this.onboarding.isOnboarding && !loadHelpSeen(this.page)) {
+			saveHelpSeen(this.page)
+			this.isOpen = true
+		}
+	}
+
+	public open(): void {
+		this.isOpen = true
+	}
+
+	public onHelpTap(): void {
+		this.isOpen = true
+	}
+
+	public onSheetClosed(): void {
+		this.isOpen = false
+	}
+
+	public get ariaLabel(): string {
+		return 'ヘルプを表示'
+	}
+
+	public static clearHelpSeen(): void {
+		clearAllHelpSeen()
+	}
+}

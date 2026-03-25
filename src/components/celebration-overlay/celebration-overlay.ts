@@ -3,7 +3,9 @@ import { bindable, ILogger, INode, resolve } from 'aurelia'
 export class CelebrationOverlay {
 	@bindable public active = false
 	@bindable public message = ''
-	@bindable public onComplete?: () => void
+	@bindable public subMessage = ''
+	@bindable public onOpen?: () => void
+	@bindable public onDismissed?: () => void
 
 	public visible = false
 	public fadingOut = false
@@ -14,7 +16,6 @@ export class CelebrationOverlay {
 	}
 
 	private shown = false
-	private timer: ReturnType<typeof setTimeout> | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('CelebrationOverlay')
 	private readonly host = resolve(INode) as HTMLElement
@@ -37,12 +38,14 @@ export class CelebrationOverlay {
 		this.host.removeEventListener('transitionend', this.onTransitionEnd)
 		if (this.fadingOut) {
 			this.fadingOut = false
-			this.onComplete?.()
+			this.onDismissed?.()
 		}
-		if (this.timer) {
-			clearTimeout(this.timer)
-			this.timer = null
-		}
+	}
+
+	/** Tap anywhere on the overlay to dismiss it. */
+	public onTap(): void {
+		if (!this.visible || this.fadingOut) return
+		this.startFadeOut()
 	}
 
 	private show(): void {
@@ -50,17 +53,14 @@ export class CelebrationOverlay {
 		this.visible = true
 		this.fadingOut = false
 		this.logger.info('Celebration overlay shown')
-
-		const displayDuration = this.prefersReducedMotion() ? 1500 : 2500
-		this.timer = setTimeout(() => {
-			this.startFadeOut()
-		}, displayDuration)
+		// Notify caller on open (e.g. to advance onboarding step)
+		this.onOpen?.()
 	}
 
 	private startFadeOut(): void {
 		if (this.prefersReducedMotion()) {
 			this.visible = false
-			this.onComplete?.()
+			this.onDismissed?.()
 			return
 		}
 
@@ -74,7 +74,7 @@ export class CelebrationOverlay {
 
 		this.visible = false
 		this.fadingOut = false
-		this.onComplete?.()
+		this.onDismissed?.()
 	}
 
 	private prefersReducedMotion(): boolean {

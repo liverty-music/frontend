@@ -2,6 +2,7 @@ import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
+import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
 import { IGuestService } from '../../services/guest-service'
@@ -34,10 +35,15 @@ export class AuthCallbackRoute {
 			const user = await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
 
-			await this.ensureUserProvisioned(user.profile.email)
+			const isNewUser = await this.ensureUserProvisioned(user.profile.email)
 
 			// Merge any guest data accumulated during onboarding
 			await this.mergeService.merge()
+
+			// On first-time signup: set flag so dashboard shows PostSignupDialog
+			if (isNewUser) {
+				localStorage.setItem(StorageKeys.postSignupShown, 'pending')
+			}
 
 			return '/dashboard'
 		} catch (err) {
@@ -59,12 +65,13 @@ export class AuthCallbackRoute {
 	// Load the user profile from the backend. If the user does not exist yet
 	// (new registration), provision first. The Create RPC returns the user
 	// entity which is cached by UserServiceClient, so no second Get is needed.
+	// Returns true if this was a first-time signup (new user provisioned).
 	private async ensureUserProvisioned(
 		email: string | undefined,
-	): Promise<void> {
+	): Promise<boolean> {
 		try {
 			await this.userService.ensureLoaded()
-			return
+			return false
 		} catch (err) {
 			if (!(err instanceof ConnectError && err.code === Code.NotFound)) {
 				throw err
@@ -72,21 +79,23 @@ export class AuthCallbackRoute {
 			this.logger.info('User not found in backend, provisioning...')
 		}
 
-		await this.provisionUser(email)
+		const isNew = await this.provisionUser(email)
 		// provisionUser swallows AlreadyExists without setting _current,
 		// so fall back to a Get RPC if the cache is still empty.
 		if (!this.userService.current) {
 			await this.userService.ensureLoaded()
 		}
+		return isNew
 	}
 
 	// Call Create RPC with ALREADY_EXISTS handling.
 	// If the guest selected a home during onboarding, include it in the
 	// CreateRequest so it is persisted atomically with account creation.
-	private async provisionUser(email: string | undefined): Promise<void> {
+	// Returns true if the user was newly created.
+	private async provisionUser(email: string | undefined): Promise<boolean> {
 		if (!email) {
 			this.logger.error('User email is missing, cannot provision user')
-			return
+			return false
 		}
 
 		try {
@@ -96,12 +105,13 @@ export class AuthCallbackRoute {
 				guestHome ? codeToHome(guestHome) : undefined,
 			)
 			this.logger.info('User provisioned successfully', { email })
+			return true
 		} catch (err) {
 			if (err instanceof ConnectError && err.code === Code.AlreadyExists) {
 				this.logger.info('User already exists in backend, continuing...', {
 					email,
 				})
-				return
+				return false
 			}
 
 			this.logger.error('Failed to provision user in backend', {
