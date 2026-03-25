@@ -1,10 +1,14 @@
 import { DI, ILogger, observable, resolve } from 'aurelia'
 import {
+	clearHypes,
 	loadFollows,
 	loadHome,
+	loadHypes,
 	saveFollows,
 	saveHome,
+	saveHypes,
 } from '../adapter/storage/guest-storage'
+import { PageHelp } from '../components/page-help/page-help'
 import type { Artist } from '../entities/artist'
 import { type GuestFollow, hasFollow } from '../entities/follow'
 
@@ -30,6 +34,7 @@ export class GuestService {
 
 	public follows: GuestFollow[] = loadFollows()
 	@observable public home: string | null = loadHome()
+	private hypes: Record<string, string> = loadHypes()
 
 	public get followedCount(): number {
 		return this.follows.length
@@ -79,12 +84,31 @@ export class GuestService {
 	}
 
 	/**
+	 * Set hype level for an artist (persisted to localStorage).
+	 */
+	public setHype(artistId: string, hype: string): void {
+		this.hypes[artistId] = hype
+		saveHypes(this.hypes)
+		this.logger.info('Local hype set', { artistId, hype })
+	}
+
+	/**
+	 * Get all stored guest hype levels.
+	 */
+	public getHypes(): Record<string, string> {
+		return { ...this.hypes }
+	}
+
+	/**
 	 * Clear all guest data.
 	 */
 	public clearAll(): void {
 		this.follows.splice(0)
 		this.persistFollows()
 		this.home = null
+		this.hypes = {}
+		clearHypes()
+		PageHelp.clearHelpSeen()
 		this.logger.info('Local data cleared')
 	}
 

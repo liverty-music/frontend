@@ -6,7 +6,6 @@ export const OnboardingStep = {
 	LP: 'lp',
 	DISCOVERY: 'discovery',
 	DASHBOARD: 'dashboard',
-	DETAIL: 'detail',
 	MY_ARTISTS: 'my-artists',
 	COMPLETED: 'completed',
 } as const
@@ -21,7 +20,6 @@ export const STEP_ORDER = [
 	OnboardingStep.LP,
 	OnboardingStep.DISCOVERY,
 	OnboardingStep.DASHBOARD,
-	OnboardingStep.DETAIL,
 	OnboardingStep.MY_ARTISTS,
 	OnboardingStep.COMPLETED,
 ] as const
@@ -37,7 +35,6 @@ export function stepIndex(step: OnboardingStepValue): number {
 const ONBOARDING_STEPS = new Set<OnboardingStepValue>([
 	OnboardingStep.DISCOVERY,
 	OnboardingStep.DASHBOARD,
-	OnboardingStep.DETAIL,
 	OnboardingStep.MY_ARTISTS,
 ])
 
@@ -55,28 +52,31 @@ export function isCompleted(step: OnboardingStepValue): boolean {
 	return step === OnboardingStep.COMPLETED
 }
 
-/** Legacy numeric step index → current string step mapping. */
-const NUMERIC_STEP_MIGRATION: Record<string, OnboardingStepValue> = {
+/** Legacy step value → current step mapping. */
+const STEP_MIGRATION: Record<string, OnboardingStepValue> = {
+	// Legacy numeric step indices
 	'0': OnboardingStep.LP,
 	'1': OnboardingStep.DISCOVERY,
 	'3': OnboardingStep.DASHBOARD,
-	'4': OnboardingStep.DETAIL,
+	'4': OnboardingStep.MY_ARTISTS,
 	'5': OnboardingStep.MY_ARTISTS,
 	'7': OnboardingStep.COMPLETED,
+	// Removed step: 'detail' falls back to 'dashboard'
+	detail: OnboardingStep.DASHBOARD,
 }
 
 const VALID_STEPS = new Set<string>(STEP_ORDER)
 
 /**
- * Normalize a raw step value (potentially a legacy numeric index) into a valid OnboardingStepValue.
+ * Normalize a raw step value (potentially a legacy numeric index or removed step) into a valid OnboardingStepValue.
  * Returns 'lp' as fallback for unrecognized values.
  */
 export function normalizeStep(raw: string): OnboardingStepValue {
 	if (VALID_STEPS.has(raw)) {
 		return raw as OnboardingStepValue
 	}
-	if (raw in NUMERIC_STEP_MIGRATION) {
-		return NUMERIC_STEP_MIGRATION[raw]
+	if (raw in STEP_MIGRATION) {
+		return STEP_MIGRATION[raw]
 	}
 	return OnboardingStep.LP
 }
