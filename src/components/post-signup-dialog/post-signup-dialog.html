@@ -16,7 +16,7 @@
           disabled.bind="notificationLoading || notificationDone"
         >
           <span if.bind="notificationLoading" t="postSignup.notificationEnabling"></span>
-          <span else-if.bind="notificationDone" t="postSignup.notificationEnabled"></span>
+          <span else-if="notificationDone" t="postSignup.notificationEnabled"></span>
           <span else t="postSignup.notificationEnable"></span>
         </button>
         <p if.bind="notificationError" class="post-signup-error" t="postSignup.notificationError"></p>

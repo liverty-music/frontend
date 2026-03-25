@@ -149,8 +149,8 @@ export class DashboardRoute {
 		}
 
 		// PostSignupDialog: show once after first-time signup
-		if (localStorage.getItem('liverty:postSignup:shown') === 'pending') {
-			localStorage.removeItem('liverty:postSignup:shown')
+		if (localStorage.getItem(StorageKeys.postSignupShown) === 'pending') {
+			localStorage.removeItem(StorageKeys.postSignupShown)
 			this.showPostSignupDialog = true
 		}
 	}
@@ -318,6 +318,13 @@ export class DashboardRoute {
 				undefined,
 			)
 		} else {
+			// Resolve prefecture name for coach mark text (home already set)
+			const homeCode = this.guest.home
+			if (homeCode) {
+				this.selectedPrefectureName = this.i18n.tr(
+					`userHome.prefectures.${homeCode.toLowerCase().replace('jp-', '')}`,
+				)
+			}
 			this.laneIntroPhase = 'home'
 			this.logger.info('Lane intro started')
 			this.updateSpotlightForPhase()
@@ -430,6 +437,7 @@ export class DashboardRoute {
 	public detaching(): void {
 		this.abortController?.abort()
 		this.abortController = null
+		this.setNavTabsDimmed(false)
 		const scroll = this.element.querySelector('.concert-scroll')
 		if (scroll) {
 			scroll.removeEventListener('scroll', this.onScroll)

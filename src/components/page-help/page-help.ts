@@ -1,9 +1,12 @@
 import { bindable, resolve } from 'aurelia'
+import {
+	clearAllHelpSeen,
+	loadHelpSeen,
+	saveHelpSeen,
+} from '../../adapter/storage/onboarding-storage'
 import { IOnboardingService } from '../../services/onboarding-service'
 
 export type PageHelpPage = 'discovery' | 'dashboard' | 'my-artists'
-
-const STORAGE_PREFIX = 'liverty:onboarding:helpSeen:'
 
 export class PageHelp {
 	@bindable public page: PageHelpPage = 'discovery'
@@ -14,9 +17,8 @@ export class PageHelp {
 	private readonly onboarding = resolve(IOnboardingService)
 
 	public attached(): void {
-		const key = STORAGE_PREFIX + this.page
-		if (this.onboarding.isOnboarding && !localStorage.getItem(key)) {
-			localStorage.setItem(key, '1')
+		if (this.onboarding.isOnboarding && !loadHelpSeen(this.page)) {
+			saveHelpSeen(this.page)
 			this.isOpen = true
 		}
 	}
@@ -38,8 +40,6 @@ export class PageHelp {
 	}
 
 	public static clearHelpSeen(): void {
-		for (const page of ['discovery', 'dashboard', 'my-artists'] as const) {
-			localStorage.removeItem(STORAGE_PREFIX + page)
-		}
+		clearAllHelpSeen()
 	}
 }

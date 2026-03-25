@@ -8,7 +8,7 @@ import {
 	saveHome,
 	saveHypes,
 } from '../adapter/storage/guest-storage'
-import { PageHelp } from '../components/page-help/page-help'
+import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
 import type { Artist } from '../entities/artist'
 import { type GuestFollow, hasFollow } from '../entities/follow'
 import { StorageKeys } from '../constants/storage-keys'
@@ -109,7 +109,7 @@ export class GuestService {
 		this.home = null
 		this.hypes = {}
 		clearHypes()
-		PageHelp.clearHelpSeen()
+		clearAllHelpSeen()
 		localStorage.removeItem(StorageKeys.celebrationShown)
 		this.logger.info('Local data cleared')
 	}

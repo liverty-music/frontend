@@ -2,6 +2,7 @@ import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
+import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
 import { IGuestService } from '../../services/guest-service'
@@ -16,8 +17,6 @@ import { IUserService } from '../../services/user-service'
  * router.load() from attached(), which can hang because attached() fires
  * during the _swap phase when _isNavigating is still true.
  */
-const POST_SIGNUP_FLAG = 'liverty:postSignup:shown'
-
 export class AuthCallbackRoute {
 	public error = ''
 
@@ -43,7 +42,7 @@ export class AuthCallbackRoute {
 
 			// On first-time signup: set flag so dashboard shows PostSignupDialog
 			if (isNewUser) {
-				localStorage.setItem(POST_SIGNUP_FLAG, 'pending')
+				localStorage.setItem(StorageKeys.postSignupShown, 'pending')
 			}
 
 			return '/dashboard'

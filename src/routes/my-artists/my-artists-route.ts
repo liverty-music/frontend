@@ -219,12 +219,14 @@ export class MyArtistsRoute {
 
 	// --- Hype level change (native `change` event from radio) ---
 
-	public onHypeInput(artist: MyArtist): void {
+	public onHypeInput(artist: MyArtist, newHype: Hype): void {
 		const artistId = artist.artist.id
 		const prev = this.prevHypes.get(artistId) ?? 'watch'
-		if (prev === artist.hype) return
+		if (prev === newHype) return
 
-		const hype = artist.hype
+		// Update the artist object so Aurelia re-renders the dot selection
+		artist.hype = newHype
+		const hype = newHype
 
 		// Onboarding MY_ARTISTS step: accept hype change, complete onboarding
 		if (this.isOnboardingStepMyArtists) {

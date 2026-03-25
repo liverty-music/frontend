@@ -5,6 +5,7 @@ export const StorageKeys = {
 	pwaInstallPromptDismissed: 'pwa.installPromptDismissed',
 	pwaCompletedSessionCount: 'pwa.completedSessionCount',
 	celebrationShown: 'onboarding.celebrationShown',
+	postSignupShown: 'liverty:postSignup:shown',
 } as const
 
 /**
