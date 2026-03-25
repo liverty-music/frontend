@@ -13,6 +13,7 @@
 			"login": "Log In",
 			"loginHint": "Already have an account? Log in"
 		},
+		"guestFriendly": "Try it without creating an account",
 		"error": {
 			"navigation": "Navigation failed. Please try again.",
 			"login": "Failed to start login. Please try again."
@@ -106,16 +107,18 @@
 			"away": "AWAY STAGE"
 		},
 		"coachMark": {
-			"tapCard": "Tap to see the details!",
 			"viewArtists": "Check out your artist list too!"
 		},
 		"celebration": {
-			"complete": "Your personal timetable is ready!"
+			"complete": "Your personal timetable is ready!",
+			"explore": "Explore your timetable freely"
 		},
 		"laneIntro": {
-			"home": "Local live events!",
-			"near": "Nearby area events too!",
-			"away": "Events from all across Japan!"
+			"homePrompt": "Shows lives in your home area. Where do you live?",
+			"home": "{{prefecture}} lives",
+			"homeSelected": "{{prefecture}} lives",
+			"near": "Lives just within reach",
+			"away": "Away lives!"
 		},
 		"empty": {
 			"title": "No upcoming events",
@@ -256,5 +259,39 @@
 	"languages": {
 		"ja": "日本語",
 		"en": "English"
+	},
+	"postSignup": {
+		"notificationLabel": "Turn on new live notifications",
+		"notificationEnable": "Enable notifications",
+		"notificationEnabling": "Enabling…",
+		"notificationEnabled": "✓ Notifications enabled",
+		"notificationError": "Failed to enable notifications. Check your browser settings.",
+		"pwaLabel": "Add to home screen for a better experience",
+		"pwaInstall": "Add to home screen",
+		"defer": "Later"
+	},
+	"pageHelp": {
+		"discovery": {
+			"title": "Follow Artists",
+			"description": "Tap an artist to follow them. Unfollow from the My Artists page.",
+			"followedCount": "{{count}} artists followed"
+		},
+		"dashboard": {
+			"title": "Reading the Timetable",
+			"homeLabel": "HOME STAGE — ",
+			"homeDesc": "Lives in your home area",
+			"nearLabel": "NEAR STAGE — ",
+			"nearDesc": "Lives within reach",
+			"awayLabel": "AWAY STAGE — ",
+			"awayDesc": "Lives anywhere — raise Hype to get notified"
+		},
+		"myArtists": {
+			"title": "About Hype Levels",
+			"watchDesc": "No notifications",
+			"homeDesc": "Notify for home area lives",
+			"nearbyDesc": "Notify for nearby lives too",
+			"awayDesc": "Notify for all lives nationwide",
+			"accountNote": "An account is required to receive notifications"
+		}
 	}
 }
