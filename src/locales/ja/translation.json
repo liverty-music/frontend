@@ -116,10 +116,10 @@
 		"laneIntro": {
 			"homePrompt": "居住エリアのライブが並びます。居住エリアはどこですか？",
 			"home": "{{prefecture}}のライブ",
-			"homeSelected": "{{prefecture}}のライブ",
 			"near": "少し足を伸ばせば行けるライブ",
 			"away": "遠征ライブ！"
 		},
+		"loading": "イベントを読み込み中…",
 		"empty": {
 			"title": "予定されているイベントはありません",
 			"subtitle": "アーティストをフォローしてライブスケジュールを確認しましょう。",
@@ -266,6 +266,7 @@
 		"notificationEnabling": "有効化中…",
 		"notificationEnabled": "✓ 通知をオンにしました",
 		"notificationError": "通知の有効化に失敗しました。ブラウザの設定を確認してください。",
+		"notificationDenied": "ブラウザの設定で通知が拒否されています。設定から変更できます。",
 		"pwaLabel": "ホーム画面に追加するとより快適に",
 		"pwaInstall": "ホーム画面に追加",
 		"defer": "あとで"

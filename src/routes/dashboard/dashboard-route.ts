@@ -50,8 +50,8 @@ export class DashboardRoute {
 	/** Prefecture name resolved after Home Selector selection, used for dynamic coach mark text. */
 	public selectedPrefectureName = ''
 
-	public homeSelector!: UserHomeSelector
-	public detailSheet!: EventDetailSheet
+	public homeSelector: UserHomeSelector | undefined
+	public detailSheet: EventDetailSheet | undefined
 
 	private readonly element = resolve(INode) as HTMLElement
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
@@ -185,7 +185,7 @@ export class DashboardRoute {
 
 	public attached(): void {
 		if (this.needsRegion && !this.showCelebration) {
-			this.homeSelector.open()
+			this.homeSelector?.open()
 		}
 		this.setupBeamTracking()
 	}
@@ -304,7 +304,7 @@ export class DashboardRoute {
 		// HOME phase: open Home Selector inline if region not yet set
 		if (this.needsRegion) {
 			this.laneIntroPhase = 'waiting-for-home'
-			this.homeSelector.open()
+			this.homeSelector?.open()
 			// Spotlight the HOME stage while waiting for selection
 			this.onboarding.activateSpotlight(
 				'[data-stage="home"]',
@@ -390,10 +390,10 @@ export class DashboardRoute {
 		switch (this.laneIntroPhase) {
 			case 'home':
 				return this.selectedPrefectureName
-					? this.i18n.tr('dashboard.laneIntro.homeSelected', {
+					? this.i18n.tr('dashboard.laneIntro.home', {
 							prefecture: this.selectedPrefectureName,
 						})
-					: this.i18n.tr('dashboard.laneIntro.home')
+					: this.i18n.tr('dashboard.laneIntro.homePrompt')
 			case 'waiting-for-home':
 				return this.i18n.tr('dashboard.laneIntro.homePrompt')
 			case 'near':
@@ -410,7 +410,7 @@ export class DashboardRoute {
 	}
 
 	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {
-		this.detailSheet.open(event.detail.event)
+		this.detailSheet?.open(event.detail.event)
 	}
 
 	public onSignupRequested(): void {

@@ -5,25 +5,22 @@
 		}
 
 		.post-signup-title {
+			margin-block-end: var(--space-m);
 			font-size: var(--step-1);
 			font-weight: 700;
-
-			margin-block-end: var(--space-m);
 		}
 
 		.post-signup-row {
 			display: flex;
-			align-items: flex-start;
 			gap: var(--space-xs);
+			align-items: flex-start;
 
 			padding-block: var(--space-xs);
-
 			border-block-start: 1px solid var(--color-border-subtle);
 		}
 
 		.post-signup-row-icon {
 			flex-shrink: 0;
-
 			font-size: var(--step-1);
 		}
 
@@ -39,15 +36,14 @@
 		}
 
 		.post-signup-btn {
-			align-self: flex-start;
+			cursor: pointer;
 
-			border: none;
-			border-radius: var(--radius-button);
+			align-self: flex-start;
 
 			padding-block: var(--space-2xs);
 			padding-inline: var(--space-s);
-
-			cursor: pointer;
+			border: none;
+			border-radius: var(--radius-button);
 
 			font-size: var(--step--1);
 			font-weight: 600;
@@ -57,7 +53,6 @@
 
 		.post-signup-btn:disabled {
 			cursor: default;
-
 			opacity: 0.5;
 		}
 
@@ -69,21 +64,19 @@
 		.post-signup-footer {
 			display: flex;
 			justify-content: center;
-
 			margin-block-start: var(--space-m);
 		}
 
 		.post-signup-btn-ghost {
-			border: none;
-			background: transparent;
+			cursor: pointer;
 
 			padding: var(--space-2xs) var(--space-s);
-
-			cursor: pointer;
+			border: none;
 
 			font-size: var(--step--1);
 
 			opacity: 0.6;
+			background: transparent;
 		}
 	}
 }

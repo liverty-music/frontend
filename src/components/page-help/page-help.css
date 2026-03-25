@@ -1,6 +1,8 @@
 @layer block {
 	@scope (page-help) {
 		.page-help-trigger {
+			cursor: pointer;
+
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
@@ -10,15 +12,12 @@
 			border: 1.5px solid currentcolor;
 			border-radius: var(--radius-full);
 
-			background: transparent;
-
-			cursor: pointer;
-
 			font-size: var(--step-0);
 			font-weight: 600;
 			line-height: var(--leading-none);
 
 			opacity: 0.7;
+			background: transparent;
 
 			transition: opacity var(--transition-fast);
 		}
@@ -32,10 +31,9 @@
 		}
 
 		.page-help-title {
+			margin-block-end: var(--space-xs);
 			font-size: var(--step-1);
 			font-weight: 700;
-
-			margin-block-end: var(--space-xs);
 		}
 
 		.page-help-lanes {
@@ -49,9 +47,8 @@
 		}
 
 		.page-help-hype-table {
-			inline-size: 100%;
 			border-collapse: collapse;
-
+			inline-size: 100%;
 			margin-block: var(--space-xs);
 		}
 
@@ -67,15 +64,12 @@
 
 		.page-help-note {
 			margin-block-start: var(--space-xs);
-
 			font-size: var(--step--1);
-
 			opacity: 0.7;
 		}
 
 		.page-help-count {
 			font-size: var(--step--1);
-
 			opacity: 0.7;
 		}
 	}

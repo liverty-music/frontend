@@ -116,10 +116,10 @@
 		"laneIntro": {
 			"homePrompt": "Shows lives in your home area. Where do you live?",
 			"home": "{{prefecture}} lives",
-			"homeSelected": "{{prefecture}} lives",
 			"near": "Lives just within reach",
 			"away": "Away lives!"
 		},
+		"loading": "Loading events…",
 		"empty": {
 			"title": "No upcoming events",
 			"subtitle": "Follow more artists to see their live schedules here.",
@@ -266,6 +266,7 @@
 		"notificationEnabling": "Enabling…",
 		"notificationEnabled": "✓ Notifications enabled",
 		"notificationError": "Failed to enable notifications. Check your browser settings.",
+		"notificationDenied": "Notifications are blocked in your browser settings. You can change this in your browser.",
 		"pwaLabel": "Add to home screen for a better experience",
 		"pwaInstall": "Add to home screen",
 		"defer": "Later"

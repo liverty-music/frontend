@@ -1,9 +1,10 @@
 <template>
   <import from="./celebration-overlay.css"></import>
 
-  <output
+  <div
     role="status"
     aria-live="polite"
+    aria-atomic="true"
     class="[ celebration-overlay ]"
     data-state.bind="overlayState"
     click.trigger="onTap()"
@@ -14,5 +15,5 @@
     </div>
     <p class="celebration-text">${message}</p>
     <p class="celebration-sub-text" if.bind="subMessage">${subMessage}</p>
-  </output>
+  </div>
 </template>

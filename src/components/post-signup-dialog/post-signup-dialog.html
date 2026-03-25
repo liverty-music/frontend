@@ -5,7 +5,7 @@
     <h2 class="post-signup-title">✅ アカウント登録完了！</h2>
 
     <!-- Notification opt-in row -->
-    <div class="post-signup-row" if.bind="notificationManager.permission !== 'granted'">
+    <div class="post-signup-row" if.bind="notificationManager.permission === 'default'">
       <span class="post-signup-row-icon">🔔</span>
       <div class="post-signup-row-body">
         <p class="post-signup-row-label" t="postSignup.notificationLabel"></p>
@@ -20,6 +20,14 @@
           <span else t="postSignup.notificationEnable"></span>
         </button>
         <p if.bind="notificationError" class="post-signup-error" t="postSignup.notificationError"></p>
+      </div>
+    </div>
+
+    <!-- Notification denied state -->
+    <div class="post-signup-row" if.bind="notificationManager.permission === 'denied'">
+      <span class="post-signup-row-icon">🔕</span>
+      <div class="post-signup-row-body">
+        <p class="post-signup-row-label" t="postSignup.notificationDenied"></p>
       </div>
     </div>
 
