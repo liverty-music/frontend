@@ -154,7 +154,7 @@ jobs:
     if: needs.changes.outputs.src == 'true'
     name: Smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4

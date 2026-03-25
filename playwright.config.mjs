@@ -45,7 +45,17 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: ['e2e/layout/**', 'e2e/smoke/**'],
+      testIgnore: [
+        'e2e/layout/**',
+        'e2e/smoke/**',
+        // Already covered by the onboarding project (Pixel 7 viewport)
+        'e2e/onboarding-flow.spec.ts',
+        'e2e/css-antipattern-verification.spec.ts',
+        'e2e/detail-sheet-dismiss.spec.ts',
+        'e2e/dashboard-lane-classification.spec.ts',
+        'e2e/toast-notification.spec.ts',
+        'e2e/artist-image-ui.spec.ts',
+      ],
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:9000',
