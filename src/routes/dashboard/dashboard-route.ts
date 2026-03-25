@@ -186,6 +186,8 @@ export class DashboardRoute {
 	public attached(): void {
 		if (this.needsRegion && !this.showCelebration) {
 			this.homeSelector?.open()
+		} else if (this.isOnboardingStepDashboard && !this.showCelebration && !this.needsRegion) {
+			this.startLaneIntro()
 		}
 		this.setupBeamTracking()
 	}
