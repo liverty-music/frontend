@@ -1,0 +1,89 @@
+@layer block {
+	@scope (post-signup-dialog) {
+		.post-signup-content {
+			padding: var(--space-m) var(--space-s) var(--space-l);
+		}
+
+		.post-signup-title {
+			font-size: var(--step-1);
+			font-weight: 700;
+
+			margin-block-end: var(--space-m);
+		}
+
+		.post-signup-row {
+			display: flex;
+			align-items: flex-start;
+			gap: var(--space-xs);
+
+			padding-block: var(--space-xs);
+
+			border-block-start: 1px solid var(--color-border-subtle);
+		}
+
+		.post-signup-row-icon {
+			flex-shrink: 0;
+
+			font-size: var(--step-1);
+		}
+
+		.post-signup-row-body {
+			display: flex;
+			flex: 1;
+			flex-direction: column;
+			gap: var(--space-2xs);
+		}
+
+		.post-signup-row-label {
+			font-size: var(--step-0);
+		}
+
+		.post-signup-btn {
+			align-self: flex-start;
+
+			border: none;
+			border-radius: var(--radius-button);
+
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-s);
+
+			cursor: pointer;
+
+			font-size: var(--step--1);
+			font-weight: 600;
+
+			transition: opacity var(--transition-fast);
+		}
+
+		.post-signup-btn:disabled {
+			cursor: default;
+
+			opacity: 0.5;
+		}
+
+		.post-signup-error {
+			font-size: var(--step--2);
+			color: var(--color-error);
+		}
+
+		.post-signup-footer {
+			display: flex;
+			justify-content: center;
+
+			margin-block-start: var(--space-m);
+		}
+
+		.post-signup-btn-ghost {
+			border: none;
+			background: transparent;
+
+			padding: var(--space-2xs) var(--space-s);
+
+			cursor: pointer;
+
+			font-size: var(--step--1);
+
+			opacity: 0.6;
+		}
+	}
+}

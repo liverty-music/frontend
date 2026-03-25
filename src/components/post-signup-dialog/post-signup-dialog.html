@@ -1,0 +1,49 @@
+<import from="./post-signup-dialog.css"></import>
+
+<bottom-sheet open.bind="isOpen" aria-label="アカウント登録完了" sheet-closed.trigger="onDefer()">
+  <section class="post-signup-content">
+    <h2 class="post-signup-title">✅ アカウント登録完了！</h2>
+
+    <!-- Notification opt-in row -->
+    <div class="post-signup-row" if.bind="notificationManager.permission !== 'granted'">
+      <span class="post-signup-row-icon">🔔</span>
+      <div class="post-signup-row-body">
+        <p class="post-signup-row-label" t="postSignup.notificationLabel"></p>
+        <button
+          type="button"
+          class="post-signup-btn"
+          click.trigger="onEnableNotifications()"
+          disabled.bind="notificationLoading || notificationDone"
+        >
+          <span if.bind="notificationLoading" t="postSignup.notificationEnabling"></span>
+          <span else-if.bind="notificationDone" t="postSignup.notificationEnabled"></span>
+          <span else t="postSignup.notificationEnable"></span>
+        </button>
+        <p if.bind="notificationError" class="post-signup-error" t="postSignup.notificationError"></p>
+      </div>
+    </div>
+
+    <!-- PWA install row (only if installable) -->
+    <div class="post-signup-row" if.bind="canInstallPwa">
+      <span class="post-signup-row-icon">📱</span>
+      <div class="post-signup-row-body">
+        <p class="post-signup-row-label" t="postSignup.pwaLabel"></p>
+        <button
+          type="button"
+          class="post-signup-btn"
+          click.trigger="onInstallPwa()"
+          t="postSignup.pwaInstall"
+        ></button>
+      </div>
+    </div>
+
+    <footer class="post-signup-footer">
+      <button
+        type="button"
+        class="post-signup-btn-ghost"
+        click.trigger="onDefer()"
+        t="postSignup.defer"
+      ></button>
+    </footer>
+  </section>
+</bottom-sheet>

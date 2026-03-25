@@ -35,7 +35,11 @@ export class EventCard {
 		}
 	}
 
+	/** When true, tap/click does not fire event-selected (preview mode). */
+	@bindable public readonly = false
+
 	public onClick(): void {
+		if (this.readonly) return
 		this.element.dispatchEvent(
 			new CustomEvent('event-selected', {
 				detail: { event: this.event },

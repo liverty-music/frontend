@@ -1,0 +1,82 @@
+@layer block {
+	@scope (page-help) {
+		.page-help-trigger {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+
+			inline-size: 2rem;
+			block-size: 2rem;
+			border: 1.5px solid currentcolor;
+			border-radius: var(--radius-full);
+
+			background: transparent;
+
+			cursor: pointer;
+
+			font-size: var(--step-0);
+			font-weight: 600;
+			line-height: var(--leading-none);
+
+			opacity: 0.7;
+
+			transition: opacity var(--transition-fast);
+		}
+
+		.page-help-trigger:hover {
+			opacity: 1;
+		}
+
+		.page-help-content {
+			padding: var(--space-m) var(--space-s) var(--space-l);
+		}
+
+		.page-help-title {
+			font-size: var(--step-1);
+			font-weight: 700;
+
+			margin-block-end: var(--space-xs);
+		}
+
+		.page-help-lanes {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+
+			padding: 0;
+
+			list-style: none;
+		}
+
+		.page-help-hype-table {
+			inline-size: 100%;
+			border-collapse: collapse;
+
+			margin-block: var(--space-xs);
+		}
+
+		.page-help-hype-table td {
+			padding: var(--space-3xs) var(--space-2xs);
+			vertical-align: top;
+		}
+
+		.page-help-hype-table td:first-child {
+			inline-size: 7rem;
+			white-space: nowrap;
+		}
+
+		.page-help-note {
+			margin-block-start: var(--space-xs);
+
+			font-size: var(--step--1);
+
+			opacity: 0.7;
+		}
+
+		.page-help-count {
+			font-size: var(--step--1);
+
+			opacity: 0.7;
+		}
+	}
+}
