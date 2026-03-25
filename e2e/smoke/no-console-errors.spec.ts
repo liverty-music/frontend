@@ -16,6 +16,7 @@ const EXCLUDED_ERROR_PATTERNS = [
 	'ECONNREFUSED',
 	'TypeError: Failed to fetch',
 	'Failed to load resource',
+	'[ERR Transport]',
 ]
 
 function isExcludedError(text: string): boolean {
