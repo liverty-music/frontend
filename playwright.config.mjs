@@ -45,9 +45,10 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: 'e2e/layout/**/*.auth.spec.ts',
+      testIgnore: ['e2e/layout/**', 'e2e/smoke/**'],
       use: {
         ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:9000',
       },
     },
     {
