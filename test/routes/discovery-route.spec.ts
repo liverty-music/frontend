@@ -682,18 +682,19 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onboarding snack notification', () => {
-		it('should publish a Snack when onboarding', () => {
+		it('should not publish a popoverGuide Snack when onboarding (replaced by PageHelp)', () => {
 			mockOnboarding.isOnboarding = true
 
 			sut.attached()
 
-			expect(mockEa.publish).toHaveBeenCalledWith(
-				expect.objectContaining({
-					message: 'discovery.popoverGuide',
-					severity: 'info',
-					options: expect.objectContaining({ duration: 5000 }),
-				}),
+			const snackCalls = (
+				mockEa.publish as ReturnType<typeof vi.fn>
+			).mock.calls.filter(
+				([arg]: [unknown]) =>
+					arg instanceof Snack &&
+					(arg as Snack).message === 'discovery.popoverGuide',
 			)
+			expect(snackCalls).toHaveLength(0)
 			sut.detaching()
 		})
 

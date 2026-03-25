@@ -90,6 +90,7 @@ describe('MyArtistsRoute', () => {
 			follow: vi.fn(),
 			unfollow: vi.fn(),
 			setHome: vi.fn(),
+			setHype: vi.fn(),
 		}
 
 		const container = createTestContainer(
@@ -211,6 +212,7 @@ describe('MyArtistsRoute', () => {
 				follow: vi.fn(),
 				unfollow: vi.fn(),
 				setHome: vi.fn(),
+				setHype: vi.fn(),
 			}
 			const container = createTestContainer(
 				Registration.instance(mockIFollowServiceClient, mockFollowService),
@@ -308,6 +310,7 @@ describe('MyArtistsRoute', () => {
 					follow: vi.fn(),
 					unfollow: vi.fn(),
 					setHome: vi.fn(),
+					setHype: vi.fn(),
 				}
 				const container = createTestContainer(
 					Registration.instance(mockIFollowServiceClient, mockFollowService),
@@ -322,22 +325,22 @@ describe('MyArtistsRoute', () => {
 				await onboardingSut.loading()
 			})
 
-			it('should activate spotlight targeting [data-artist-rows] on loading', () => {
-				expect(onboardingOnboarding.activateSpotlight).toHaveBeenCalledWith(
+			it('should not activate spotlight on loading (PageHelp handles guidance)', () => {
+				// Spotlight is no longer activated on loading — PageHelp auto-opens instead
+				expect(onboardingOnboarding.activateSpotlight).not.toHaveBeenCalledWith(
 					'[data-artist-rows]',
 					expect.any(String),
 					expect.any(Function),
 				)
 			})
 
-			it('should revert hype, complete onboarding, and stay on page', () => {
+			it('should accept hype change, complete onboarding, and deactivate spotlight', () => {
 				const artist = onboardingSut.artists[0]
-				const originalHype = artist.hype
 				artist.hype = 'away'
 
 				onboardingSut.onHypeInput(artist)
 
-				expect(artist.hype).toBe(originalHype)
+				expect(artist.hype).toBe('away')
 				expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
 				expect(onboardingOnboarding.setStep).toHaveBeenCalledWith('completed')
 				expect(mockRouter.load).not.toHaveBeenCalled()
@@ -355,30 +358,18 @@ describe('MyArtistsRoute', () => {
 
 		describe('unauthenticated user', () => {
 			beforeEach(async () => {
-				// Load artists while authenticated so prevHypes is populated, then switch to unauth
-				await sut.loading()
 				mockAuth.isAuthenticated = false
+				await sut.loading()
 			})
 
-			it('should revert hype and show notification dialog', () => {
-				const artist = sut.artists[0]
-				const originalHype = artist.hype
-				artist.hype = 'away'
-
-				sut.onHypeInput(artist)
-
-				expect(artist.hype).toBe(originalHype)
-				expect(sut.showNotificationDialog).toBe(true)
-			})
-
-			it('should not show dialog if already shown', () => {
-				sut.notificationDialogShown = true
+			it('should accept hype change and persist to guest storage', () => {
 				const artist = sut.artists[0]
 				artist.hype = 'away'
 
 				sut.onHypeInput(artist)
 
-				expect(sut.showNotificationDialog).toBe(false)
+				expect(artist.hype).toBe('away')
+				expect(mockFollowService.setHype).not.toHaveBeenCalled()
 			})
 
 			it('should not call setHype RPC', () => {

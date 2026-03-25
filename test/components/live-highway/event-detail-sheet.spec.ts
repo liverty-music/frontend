@@ -157,14 +157,8 @@ describe('EventDetailSheet', () => {
 	})
 
 	describe('isDismissable', () => {
-		it('should return true when not in Step 4', () => {
-			mockOnboarding.currentStep = OnboardingStep.DASHBOARD
+		it('should always return true', () => {
 			expect(sut.isDismissable).toBe(true)
-		})
-
-		it('should return false when in Step 4 (DETAIL)', () => {
-			mockOnboarding.currentStep = OnboardingStep.DETAIL
-			expect(sut.isDismissable).toBe(false)
 		})
 	})
 

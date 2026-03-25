@@ -55,11 +55,6 @@ describe('OnboardingService', () => {
 			expect(sut.isOnboarding).toBe(true)
 		})
 
-		it('should return true for DETAIL', () => {
-			const sut = createService({ step: OnboardingStep.DETAIL })
-			expect(sut.isOnboarding).toBe(true)
-		})
-
 		it('should return true for MY_ARTISTS', () => {
 			const sut = createService({ step: OnboardingStep.MY_ARTISTS })
 			expect(sut.isOnboarding).toBe(true)
@@ -208,11 +203,6 @@ describe('OnboardingService', () => {
 
 		it('should return "dashboard" for DASHBOARD step', () => {
 			const sut = createService({ step: OnboardingStep.DASHBOARD })
-			expect(sut.getRouteForCurrentStep()).toBe('dashboard')
-		})
-
-		it('should return "dashboard" for DETAIL step', () => {
-			const sut = createService({ step: OnboardingStep.DETAIL })
 			expect(sut.getRouteForCurrentStep()).toBe('dashboard')
 		})
 
