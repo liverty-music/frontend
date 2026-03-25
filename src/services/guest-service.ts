@@ -9,9 +9,9 @@ import {
 	saveHypes,
 } from '../adapter/storage/guest-storage'
 import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
+import { StorageKeys } from '../constants/storage-keys'
 import type { Artist } from '../entities/artist'
 import { type GuestFollow, hasFollow } from '../entities/follow'
-import { StorageKeys } from '../constants/storage-keys'
 
 export interface LocalFollowedArtist {
 	id: string

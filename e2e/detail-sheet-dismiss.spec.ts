@@ -133,10 +133,14 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	})
 }
 
-/** Seed localStorage for Step 4 state (detail sheet open, spotlight on My Artists). */
-function seedStep4State() {
+/**
+ * Seed localStorage for the MY_ARTISTS spotlight state.
+ * In the new flow, after celebration dismiss the step is 'my-artists'
+ * and the coach mark targets the My Artists nav tab.
+ */
+function seedMyArtistsSpotlightState() {
 	return () => {
-		localStorage.setItem('onboardingStep', 'detail')
+		localStorage.setItem('onboardingStep', 'my-artists')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
@@ -171,30 +175,35 @@ function seedPostDashboardState() {
 async function openDetailSheet(page: Page): Promise<void> {
 	const card = page.locator('[data-live-card]').first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
-	await card.click()
+	// page-help may intercept pointer events; dispatch click via JS to bypass interception
+	await page.evaluate(() => {
+		const el = document.querySelector<HTMLElement>('[data-live-card]')
+		el?.click()
+	})
 
-	// Wait for sheet to be visible via popover
+	// Wait for sheet — bottom-sheet is a popover, wait for popover-open state
 	const sheet = page.locator('event-detail-sheet bottom-sheet')
 	await expect(sheet).toBeVisible({ timeout: 5000 })
 }
 
 // =========================================================================
-// Task 5.1: Step 3→4 — coach mark renders above detail sheet
+// Task 5.1: Lane intro coach mark renders above concert cards
+// (The 'detail' step was removed; lane intro is the new step 3 flow)
 // =========================================================================
 
-test.describe('Step 3→4: Coach mark above detail sheet', () => {
+test.describe('Lane intro: coach mark visible above concert cards', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
 	test.beforeEach(async ({ page }) => {
 		await mockRpcRoutes(page)
 	})
 
-	test('coach mark spotlight visible above detail sheet at Step 4', async ({
+	test('lane intro coach mark is visible while dashboard has concert cards', async ({
 		page,
 	}) => {
-		test.setTimeout(60_000)
+		test.setTimeout(30_000)
 
-		// Seed Step 3 at dashboard phase (skip celebration + region)
+		// Seed DASHBOARD step with celebration already shown (lane intro starts immediately)
 		await page.addInitScript(() => {
 			localStorage.setItem('onboardingStep', 'dashboard')
 			localStorage.setItem('onboarding.celebrationShown', '1')
@@ -215,44 +224,28 @@ test.describe('Step 3→4: Coach mark above detail sheet', () => {
 			timeout: 20_000,
 		})
 
-		// Wait for lane intro to reach card phase.
-		// Phases auto-advance every 2s: home → near → away → card (pauses).
-		// Total ~6s from lane intro start, plus variable data loading delay.
-		const cardInterceptor = page.locator('.target-interceptor')
-		await expect(cardInterceptor).toBeVisible({ timeout: 20_000 })
-		await page.waitForTimeout(8000)
+		// Coach mark overlay should be visible (lane intro is active)
+		const overlay = page.locator('.coach-mark-overlay')
+		await expect(overlay).toBeVisible({ timeout: 10_000 })
 
-		// Tap card — opens detail sheet and advances to Step 4
-		await cardInterceptor.click()
-
-		// Verify step advanced
-		const step = await page.evaluate(() =>
-			localStorage.getItem('onboardingStep'),
-		)
-		expect(step).toBe('detail')
-
-		// Detail sheet should be visible
-		const sheet = page.locator('event-detail-sheet bottom-sheet')
-		await expect(sheet).toBeVisible({ timeout: 5000 })
-
-		// Coach mark spotlight should be visible ABOVE the detail sheet
+		// Spotlight should be active
 		const spotlight = page.locator('.visual-spotlight')
 		await expect(spotlight).toBeVisible({ timeout: 5000 })
 
-		// Coach mark tooltip should show My Artists guidance
+		// Coach mark tooltip should be visible
 		const tooltip = page.locator('.coach-mark-tooltip')
 		await expect(tooltip).toBeVisible()
 
-		// My Artists tab interceptor should be clickable (coach mark on top)
-		const myArtistsInterceptor = page.locator('.target-interceptor')
-		await expect(myArtistsInterceptor).toBeVisible()
+		// Tapping the interceptor advances lane intro (home → near)
+		const interceptor = page.locator('.target-interceptor')
+		await expect(interceptor).toBeVisible()
+		await interceptor.click({ force: true })
 
-		// Tapping My Artists advances to Step 5
-		await myArtistsInterceptor.click()
-		const stepAfter = await page.evaluate(() =>
+		// Step stays at 'dashboard' during lane intro (step advances only at celebration)
+		const step = await page.evaluate(() =>
 			localStorage.getItem('onboardingStep'),
 		)
-		expect(stepAfter).toBe('my-artists')
+		expect(step).toBe('dashboard')
 	})
 })
 
@@ -341,48 +334,58 @@ test.describe('Normal detail sheet dismiss', () => {
 })
 
 // =========================================================================
-// Task 5.3: Page reload during Step 4
+// Task 5.3: Page reload during MY_ARTISTS spotlight state
+// (The old 'detail' step is removed; reload recovery now tests 'my-artists' state)
 // =========================================================================
 
-test.describe('Step 4 reload recovery', () => {
+test.describe('MY_ARTISTS spotlight reload recovery', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
 	test.beforeEach(async ({ page }) => {
-		await page.addInitScript(seedStep4State())
+		await page.addInitScript(seedMyArtistsSpotlightState())
 		await mockRpcRoutes(page)
 	})
 
-	test('coach mark re-appears on reload at Step 4', async ({ page }) => {
+	test('dashboard loads normally after reload at my-artists step', async ({
+		page,
+	}) => {
 		await page.goto('http://localhost:9000/dashboard')
 
-		// Wait for dashboard to load and spotlight to activate
-		const spotlight = page.locator('.visual-spotlight')
-		await expect(spotlight).toBeVisible({ timeout: 10_000 })
+		// Dashboard should load without active coach mark (step is 'my-artists', not 'dashboard')
+		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
-		// Coach mark tooltip should be visible
-		const tooltip = page.locator('.coach-mark-tooltip')
-		await expect(tooltip).toBeVisible()
+		// Lane intro overlay should not be visible (step is not 'dashboard')
+		await expect(page.locator('.coach-mark-overlay')).not.toBeVisible()
 
-		// My Artists tab should be targeted
+		// My Artists tab should be visible and enabled (nav not dimmed)
 		const myArtistsNav = page.locator('[data-nav="my-artists"]')
 		await expect(myArtistsNav).toBeVisible()
 	})
 
-	test('My Artists tab is tappable after Step 4 reload', async ({ page }) => {
+	test('My Artists tab navigates to my-artists page after reload', async ({
+		page,
+	}) => {
 		await page.goto('http://localhost:9000/dashboard')
 
-		// Wait for spotlight
-		const interceptor = page.locator('.target-interceptor')
-		await expect(interceptor).toBeVisible({ timeout: 10_000 })
+		// Wait for dashboard to load
+		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
-		// Tap through the interceptor
-		await interceptor.click()
+		// Click the My Artists nav tab. page-help may intercept pointer events;
+		// use force: true or JS dispatch to bypass interception.
+		const myArtistsNav = page.locator('[data-nav="my-artists"]')
+		await expect(myArtistsNav).toBeVisible()
+		await page.evaluate(() => {
+			const tab = document.querySelector<HTMLElement>('[data-nav="my-artists"]')
+			tab?.click()
+		})
 
-		// Should advance to Step 5 and navigate to My Artists
+		// Should navigate to My Artists page
+		await expect(page).toHaveURL(/my-artists/, { timeout: 10_000 })
+
+		// Step stays at 'my-artists' (hype change completes it, not navigation)
 		const step = await page.evaluate(() =>
 			localStorage.getItem('onboardingStep'),
 		)
 		expect(step).toBe('my-artists')
-		await expect(page).toHaveURL(/my-artists/, { timeout: 10_000 })
 	})
 })

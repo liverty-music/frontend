@@ -278,6 +278,47 @@ test.describe('Onboarding tutorial flow', () => {
 		).toBeVisible({ timeout: 5000 })
 	})
 
+	test('Step 0: Dashboard preview renders when concert data is available', async ({
+		page,
+	}) => {
+		// mockRpcRoutes (via beforeEach) returns concerts for ConcertService/List.
+		// loadPreviewConcerts iterates PREVIEW_ARTIST_IDS and stops after ≥3 artists
+		// return concerts. The preview section only renders when previewDateGroups.length > 0.
+		await page.goto('http://localhost:9000/')
+
+		// Preview section is present in DOM and visible
+		const preview = page.locator('.welcome-preview')
+		await expect(preview).toBeVisible({ timeout: 10_000 })
+
+		// At least one event card rendered inside the preview
+		const cards = preview.locator('event-card')
+		await expect(cards.first()).toBeVisible()
+	})
+
+	test('Step 0: Dashboard preview is hidden when no concert data', async ({
+		page,
+	}) => {
+		// Override the default mock to return empty concerts for all ConcertService/List calls.
+		// This simulates the case where no preview artists have upcoming concerts.
+		await page.route('**/liverty_music.rpc.**', (route) => {
+			return route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({}),
+			})
+		})
+
+		await page.goto('http://localhost:9000/')
+
+		// Get Started button still visible — page loads normally
+		await expect(
+			page.locator('button').filter({ hasText: /get started/i }),
+		).toBeVisible({ timeout: 5000 })
+
+		// Preview section must not be in the DOM (if.bind="previewDateGroups.length > 0")
+		await expect(page.locator('.welcome-preview')).not.toBeAttached()
+	})
+
 	// -------------------------------------------------------------------------
 	// DISCOVERY (Step 1)
 	// -------------------------------------------------------------------------
@@ -542,26 +583,18 @@ test.describe('Onboarding tutorial flow', () => {
 			timeout: 5000,
 		})
 
-		// Changing a hype level completes onboarding without a dialog.
-		// The radios use Aurelia's checked.bind + model.bind pattern. We trigger
-		// the change via evaluate() + native .click() which fires the DOM 'change'
-		// event that Aurelia's checked observer and change.trigger both respond to.
-		// Radios are visually hidden (clip-path), so use evaluate to avoid
-		// Playwright's visibility/state-change verification which can race with
-		// Aurelia's synchronous two-way binding re-render.
+		// Trigger hype change by dispatching 'change' on the 'home' radio (index 1).
+		// Aurelia's change.trigger calls onHypeInput(artist, 'home') from binding scope.
+		// click({ force: true }) doesn't fire 'change' on visually-hidden inputs;
+		// direct dispatchEvent is the reliable path for hidden form controls.
 		const hypeRadios = page.locator('input[type="radio"][name^="hype-"]')
 		await expect(hypeRadios.first()).toBeAttached({ timeout: 5000 })
-
-		// Click the second radio (index 1 = 'home' for artist a-1) via JS to
-		// select a different hype level from the default 'watch' (index 0).
 		await page.evaluate(() => {
-			const radios = document.querySelectorAll<HTMLInputElement>(
+			const radio = document.querySelectorAll<HTMLInputElement>(
 				'input[type="radio"][name^="hype-"]',
-			)
-			const target = radios[1]
-			if (!target) return
-			target.checked = true
-			target.dispatchEvent(new Event('change', { bubbles: true }))
+			)[1]
+			if (!radio) throw new Error('hype radio not found')
+			radio.dispatchEvent(new Event('change', { bubbles: true }))
 		})
 
 		// No hype-notification dialog (component was removed)
@@ -721,22 +754,23 @@ test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
 
 		// =========================================================================
 		// STEP 5 → COMPLETED: hype change completes onboarding
-		// Trigger via JS: set checked + dispatch 'change' event. Playwright's
-		// check({ force: true }) races with Aurelia's synchronous binding reset,
-		// causing "did not change its state" failures. Direct DOM manipulation
-		// is reliable for visually-hidden inputs with Aurelia's checked.bind.
+		// checked.bind="artist.hype" + model.bind="level" creates a two-way binding:
+		// clicking the 'home' radio (index 1) sets artist.hype = 'home', then
+		// change.trigger calls onHypeInput which detects the change and advances
+		// onboarding to COMPLETED. force: true bypasses the visually-hidden clip-path.
 		// =========================================================================
 		const hypeRadios = page.locator('input[type="radio"][name^="hype-"]')
 		await expect(hypeRadios.first()).toBeAttached({ timeout: 5000 })
 
+		// Dispatch 'change' on the 'home' radio (index 1) for the first artist.
+		// click({ force: true }) doesn't fire 'change' on visually-hidden inputs.
+		// Aurelia's change.trigger calls onHypeInput(artist, 'home') from the binding scope.
 		await page.evaluate(() => {
-			const radios = document.querySelectorAll<HTMLInputElement>(
+			const radio = document.querySelectorAll<HTMLInputElement>(
 				'input[type="radio"][name^="hype-"]',
-			)
-			const target = radios[1]
-			if (!target) return
-			target.checked = true
-			target.dispatchEvent(new Event('change', { bubbles: true }))
+			)[1]
+			if (!radio) throw new Error('hype radio not found')
+			radio.dispatchEvent(new Event('change', { bubbles: true }))
 		})
 
 		// Onboarding step advances to completed

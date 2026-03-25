@@ -336,9 +336,8 @@ describe('MyArtistsRoute', () => {
 
 			it('should accept hype change, complete onboarding, and deactivate spotlight', () => {
 				const artist = onboardingSut.artists[0]
-				artist.hype = 'away'
 
-				onboardingSut.onHypeInput(artist)
+				onboardingSut.onHypeInput(artist, 'away')
 
 				expect(artist.hype).toBe('away')
 				expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
@@ -348,9 +347,8 @@ describe('MyArtistsRoute', () => {
 
 			it('should not call setHype RPC', () => {
 				const artist = onboardingSut.artists[0]
-				artist.hype = 'away'
 
-				onboardingSut.onHypeInput(artist)
+				onboardingSut.onHypeInput(artist, 'away')
 
 				expect(mockFollowService.setHype).not.toHaveBeenCalled()
 			})
@@ -364,9 +362,8 @@ describe('MyArtistsRoute', () => {
 
 			it('should accept hype change and persist to guest storage', () => {
 				const artist = sut.artists[0]
-				artist.hype = 'away'
 
-				sut.onHypeInput(artist)
+				sut.onHypeInput(artist, 'away')
 
 				expect(artist.hype).toBe('away')
 				expect(mockFollowService.setHype).not.toHaveBeenCalled()
@@ -374,9 +371,8 @@ describe('MyArtistsRoute', () => {
 
 			it('should not call setHype RPC', () => {
 				const artist = sut.artists[0]
-				artist.hype = 'away'
 
-				sut.onHypeInput(artist)
+				sut.onHypeInput(artist, 'away')
 
 				expect(mockFollowService.setHype).not.toHaveBeenCalled()
 			})
@@ -390,9 +386,8 @@ describe('MyArtistsRoute', () => {
 
 			it('should accept hype change and call setHype RPC', () => {
 				const artist = sut.artists[0]
-				artist.hype = 'away'
 
-				sut.onHypeInput(artist)
+				sut.onHypeInput(artist, 'away')
 
 				expect(artist.hype).toBe('away')
 				expect(mockFollowService.setHype).toHaveBeenCalledWith('id-1', 'away')
@@ -402,9 +397,8 @@ describe('MyArtistsRoute', () => {
 				mockFollowService.setHype.mockRejectedValue(new Error('fail'))
 				const artist = sut.artists[0]
 				const originalHype = artist.hype
-				artist.hype = 'away'
 
-				sut.onHypeInput(artist)
+				sut.onHypeInput(artist, 'away')
 
 				await vi.waitFor(() => {
 					expect(mockFollowService.setHype).toHaveBeenCalledTimes(2)
@@ -415,7 +409,7 @@ describe('MyArtistsRoute', () => {
 			it('should no-op when hype has not changed', () => {
 				const artist = sut.artists[0]
 
-				sut.onHypeInput(artist)
+				sut.onHypeInput(artist, artist.hype as 'nearby')
 
 				expect(mockFollowService.setHype).not.toHaveBeenCalled()
 			})

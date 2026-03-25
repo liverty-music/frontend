@@ -1,7 +1,12 @@
 import './styles/main.css'
 import { I18nConfiguration } from '@aurelia/i18n'
 import { RouterConfiguration } from '@aurelia/router'
-import Aurelia, { ConsoleSink, LoggerConfiguration, LogLevel } from 'aurelia'
+import Aurelia, {
+	ConsoleSink,
+	IEventAggregator,
+	LoggerConfiguration,
+	LogLevel,
+} from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
 import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
@@ -18,6 +23,7 @@ import { LoadingSpinner } from './components/loading-spinner/loading-spinner'
 import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
 import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
+import { Snack } from './components/snack-bar/snack'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SvgIcon } from './components/svg-icon/svg-icon'
 import { Toast } from './components/toast/toast'
@@ -158,6 +164,25 @@ au.register(TileColorCustomAttribute)
 au.register(DateValueConverter)
 au.app(AppShell)
 au.start()
+
+// Test-only bridge: expose EA publish for snack-bar E2E tests.
+// This allows Playwright to trigger real snack toasts without needing
+// to access Aurelia internals. Stripped by tree-shaking in production
+// builds because the reference is guarded by the dev env check.
+if (import.meta.env.DEV) {
+	const ea = au.container.get(IEventAggregator)
+	;(window as unknown as Record<string, unknown>).__lm_publishSnack = (
+		message: string,
+		severity: string,
+		durationMs: number,
+	) => {
+		ea.publish(
+			new Snack(message, severity as 'info' | 'warning' | 'error', {
+				duration: durationMs,
+			}),
+		)
+	}
+}
 
 // Register Service Worker for push notifications (production only).
 // In dev mode, vite-plugin-node-polyfills injects Buffer/global/process shims
