@@ -12,10 +12,6 @@ RUN npm ci
 # Copy source code (including .env files)
 COPY . .
 
-# Build-time environment variables for Vite
-ARG VITE_VAPID_PUBLIC_KEY
-ENV VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY}
-
 # Build the application
 RUN npm run build
 
