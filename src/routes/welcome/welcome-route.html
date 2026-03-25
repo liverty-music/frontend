@@ -1,3 +1,5 @@
+<import from="../../components/live-highway/event-card"></import>
+
 <main class="[ welcome-layout ]">
   <!-- Brand wordmark -->
   <p class="welcome-brand">
@@ -7,6 +9,48 @@
   <!-- Hero copy -->
   <h1 t="welcome.hero.title" class="welcome-title"></h1>
   <p t="welcome.hero.subtitle" class="welcome-subtitle"></p>
+
+  <!-- Dashboard preview (read-only) -->
+  <section
+    if.bind="previewDateGroups.length > 0"
+    class="[ welcome-preview ]"
+    aria-hidden="true"
+  >
+    <ol class="[ date-group-list ]">
+      <li repeat.for="group of previewDateGroups; key.bind: group.dateKey">
+        <header class="[ date-separator ]">
+          <time>${group.dateKey}</time>
+        </header>
+        <ol class="[ lane-grid ]" aria-label="Concerts">
+          <li class="[ lane ]" data-empty.bind="group.home.length === 0">
+            <event-card
+              repeat.for="ev of group.home; key.bind: ev.id"
+              event.bind="ev"
+              lane="home"
+              readonly.bind="true"
+            ></event-card>
+          </li>
+          <li class="[ lane ]" data-empty.bind="group.nearby.length === 0">
+            <event-card
+              repeat.for="ev of group.nearby; key.bind: ev.id"
+              event.bind="ev"
+              lane="nearby"
+              readonly.bind="true"
+            ></event-card>
+          </li>
+          <li class="[ lane ]" data-empty.bind="group.away.length === 0">
+            <event-card
+              repeat.for="ev of group.away; key.bind: ev.id"
+              event.bind="ev"
+              lane="away"
+              readonly.bind="true"
+            ></event-card>
+          </li>
+        </ol>
+      </li>
+    </ol>
+    <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
+  </section>
 
   <!-- CTA buttons -->
   <footer class="welcome-actions">

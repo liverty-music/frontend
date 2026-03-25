@@ -1,9 +1,10 @@
 <import from="./my-artists-route.css"></import>
-<import from="../../components/hype-notification-dialog/hype-notification-dialog"></import>
 <import from="../../components/signup-prompt-banner/signup-prompt-banner"></import>
+<import from="../../components/page-help/page-help"></import>
 
 <page-header if.bind="!isLoading && artists.length > 0" title-key="nav.myArtists">
   <span class="artist-count">(${artists.length})</span>
+  <page-help if.bind="isOnboarding" page="my-artists"></page-help>
 </page-header>
 
 <main>
@@ -95,10 +96,3 @@
   signup-requested.trigger="onSignupRequested()"
   banner-dismissed.trigger="onBannerDismissed()">
 </signup-prompt-banner>
-
-<!-- Notification dialog (outside main for proper top-layer stacking) -->
-<hype-notification-dialog
-  active.bind="showNotificationDialog"
-  signup-requested.trigger="onSignupRequested()"
-  dialog-dismissed.trigger="onDialogDismissed()">
-</hype-notification-dialog>

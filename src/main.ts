@@ -16,6 +16,8 @@ import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
 import { LoadingSpinner } from './components/loading-spinner/loading-spinner'
 import { PageHeader } from './components/page-header/page-header'
+import { PageHelp } from './components/page-help/page-help'
+import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SvgIcon } from './components/svg-icon/svg-icon'
 import { Toast } from './components/toast/toast'
@@ -143,6 +145,8 @@ au.register(BottomSheet)
 au.register(LoadingSpinner)
 au.register(Toast)
 au.register(PageHeader)
+au.register(PageHelp)
+au.register(PostSignupDialog)
 au.register(StatePlaceholder)
 au.register(SvgIcon)
 au.register(AuthHook)

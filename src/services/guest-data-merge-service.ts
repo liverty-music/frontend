@@ -18,13 +18,15 @@ export class GuestDataMergeService {
 
 	/**
 	 * Merge all guest data into the authenticated user's account.
-	 * Follows are best-effort: individual failures are logged but do not abort the merge.
+	 * Follows and hypes are best-effort: individual failures are logged but do not abort the merge.
 	 * After merge, onboardingStep is set to COMPLETED and guest data is cleared.
 	 */
 	public async merge(): Promise<void> {
 		const { follows } = this.guest
+		const hypes = this.guest.getHypes()
 		this.logger.info('Starting guest data merge', {
 			artistCount: follows.length,
+			hypeCount: Object.keys(hypes).length,
 		})
 
 		for (const guestFollow of follows) {
@@ -40,6 +42,23 @@ export class GuestDataMergeService {
 				this.logger.warn('Failed to follow artist during merge, continuing', {
 					id: artistId,
 					name: artistName,
+					error: err,
+				})
+			}
+		}
+
+		// Merge guest hype levels (best-effort)
+		for (const [artistId, hype] of Object.entries(hypes)) {
+			try {
+				await this.rpcClient.setHype(
+					artistId,
+					hype as import('../entities/follow').Hype,
+				)
+				this.logger.debug('Hype merged', { artistId, hype })
+			} catch (err) {
+				this.logger.warn('Failed to set hype during merge, continuing', {
+					artistId,
+					hype,
 					error: err,
 				})
 			}
