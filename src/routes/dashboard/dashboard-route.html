@@ -7,6 +7,10 @@
 <import from="../../components/page-help/page-help"></import>
 <import from="../../components/post-signup-dialog/post-signup-dialog"></import>
 
+<page-header title-key="nav.home">
+  <page-help if.bind="isOnboarding" page="dashboard"></page-help>
+</page-header>
+
 <!-- Laser beams — before header so header paints on top -->
 <div class="[ beam-overlay ]" if.bind="laserBeams.length > 0">
   <div
@@ -117,9 +121,6 @@
   on-open.bind="() => onCelebrationOpen()"
   on-dismissed.bind="() => onCelebrationDismissed()"
 ></celebration-overlay>
-
-<!-- PageHelp — persistent ? icon, auto-opens once per onboarding session -->
-<page-help if.bind="isOnboarding" page="dashboard"></page-help>
 
 <!-- PostSignupDialog — shown once after first-time signup -->
 <post-signup-dialog active.bind="showPostSignupDialog"></post-signup-dialog>

@@ -11,6 +11,7 @@
 
 			display: grid;
 			grid-template:
+				"header     header     header" auto
 				"stage-home stage-near stage-away" auto
 				"lane-home  lane-near  lane-away" minmax(0, 1fr)
 				/ 1fr 1fr 1fr;
