@@ -8,6 +8,12 @@ import { IOnboardingService } from '../../services/onboarding-service'
 
 export type PageHelpPage = 'discovery' | 'dashboard' | 'my-artists'
 
+/** Pages where the help sheet auto-opens on first visit (spec-defined). */
+const AUTO_OPEN_PAGES: ReadonlySet<PageHelpPage> = new Set([
+	'discovery',
+	'my-artists',
+])
+
 export class PageHelp {
 	@bindable public page: PageHelpPage = 'discovery'
 	@bindable public followedCount = 0
@@ -17,7 +23,11 @@ export class PageHelp {
 	private readonly onboarding = resolve(IOnboardingService)
 
 	public attached(): void {
-		if (this.onboarding.isOnboarding && !loadHelpSeen(this.page)) {
+		if (
+			AUTO_OPEN_PAGES.has(this.page) &&
+			this.onboarding.isOnboarding &&
+			!loadHelpSeen(this.page)
+		) {
 			saveHelpSeen(this.page)
 			this.isOpen = true
 		}
