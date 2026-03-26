@@ -7,7 +7,6 @@ const mockConcertRpcClient = {
 	listConcerts: vi.fn().mockResolvedValue([]),
 	listByFollower: vi.fn().mockResolvedValue([]),
 	listWithProximity: vi.fn().mockResolvedValue([]),
-	searchNewConcerts: vi.fn().mockResolvedValue(undefined),
 }
 
 const mockIConcertRpcClient = DI.createInterface('IConcertRpcClient')
@@ -50,7 +49,6 @@ describe('ConcertServiceClient', () => {
 		mockConcertRpcClient.listConcerts.mockResolvedValue([])
 		mockConcertRpcClient.listByFollower.mockResolvedValue([])
 		mockConcertRpcClient.listWithProximity.mockResolvedValue([])
-		mockConcertRpcClient.searchNewConcerts.mockResolvedValue([])
 
 		const mockAuth = createMockAuth({ isAuthenticated: true })
 
@@ -132,38 +130,6 @@ describe('ConcertServiceClient', () => {
 			)
 
 			await expect(sut.listByFollower()).rejects.toThrow('rpc error')
-		})
-	})
-
-	describe('searchNewConcerts', () => {
-		it('should delegate to rpc client and return void', async () => {
-			mockConcertRpcClient.searchNewConcerts.mockResolvedValue(undefined)
-
-			const result = await sut.searchNewConcerts('artist-1')
-
-			expect(result).toBeUndefined()
-			expect(mockConcertRpcClient.searchNewConcerts).toHaveBeenCalledTimes(1)
-		})
-
-		it('should forward AbortSignal', async () => {
-			const controller = new AbortController()
-
-			await sut.searchNewConcerts('artist-1', controller.signal)
-
-			expect(mockConcertRpcClient.searchNewConcerts).toHaveBeenCalledWith(
-				'artist-1',
-				controller.signal,
-			)
-		})
-
-		it('should rethrow errors', async () => {
-			mockConcertRpcClient.searchNewConcerts.mockRejectedValue(
-				new Error('search failed'),
-			)
-
-			await expect(sut.searchNewConcerts('artist-1')).rejects.toThrow(
-				'search failed',
-			)
 		})
 	})
 

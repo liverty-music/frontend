@@ -307,7 +307,6 @@ export class DiscoveryRoute {
 		artistName: string,
 	): Promise<void> {
 		try {
-			await this.concertService.searchNewConcerts(artistId)
 			const concerts = await this.concertService.listConcerts(artistId)
 
 			if (concerts.length > 0) {

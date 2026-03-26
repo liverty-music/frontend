@@ -191,6 +191,17 @@ describe('DiscoveryRoute', () => {
 			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
 			expect(mockEa.published[0].severity).toBe('error')
 		})
+
+		it('should call listConcerts (not searchNewConcerts) for pre-seeded guest follows during onboarding', async () => {
+			mockOnboarding.isOnboarding = true
+			mockGuest.follows = [
+				{ artist: makeArtist('g1', 'Guest Artist'), home: null },
+			]
+
+			await sut.loading()
+
+			expect(mockConcert.listConcerts).toHaveBeenCalledWith('g1')
+		})
 	})
 
 	describe('onSearchQueryChanged (debounced search)', () => {
@@ -284,7 +295,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onFollowFromSearch', () => {
-		it('should follow artist and call searchNewConcerts', async () => {
+		it('should follow artist and call listConcerts (not searchNewConcerts)', async () => {
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -295,7 +306,7 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
-			expect(mockConcert.searchNewConcerts).toHaveBeenCalledWith('a1')
+			expect(mockConcert.listConcerts).toHaveBeenCalledWith('a1')
 		})
 
 		it('should not follow already-followed artist', async () => {
@@ -363,7 +374,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onArtistSelected', () => {
-		it('should follow artist and call searchNewConcerts via event detail', async () => {
+		it('should follow artist and call listConcerts (not searchNewConcerts) via event detail', async () => {
 			const artist = makeArtist('a1', 'Artist One')
 			const event = new CustomEvent('artist-selected', {
 				detail: { artist, position: { x: 100, y: 200 } },
@@ -374,7 +385,7 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
-			expect(mockConcert.searchNewConcerts).toHaveBeenCalledWith('a1')
+			expect(mockConcert.listConcerts).toHaveBeenCalledWith('a1')
 		})
 
 		it('should skip if artist already followed', async () => {
@@ -400,7 +411,7 @@ describe('DiscoveryRoute', () => {
 			})
 			await sut.onArtistSelected(event)
 
-			expect(mockConcert.searchNewConcerts).not.toHaveBeenCalled()
+			expect(mockConcert.listConcerts).not.toHaveBeenCalled()
 		})
 
 		it('should re-spawn bubble at original position on follow failure', async () => {
