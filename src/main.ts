@@ -39,7 +39,6 @@ import ja from './locales/ja/translation.json'
 import { IArtistServiceClient } from './services/artist-service-client'
 import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
-import { IDashboardService } from './services/dashboard-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFollowServiceClient } from './services/follow-service-client'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
@@ -127,7 +126,6 @@ au.register(UserHydrationTask)
 au.register(IArtistServiceClient)
 au.register(IFollowServiceClient)
 au.register(IConcertService)
-au.register(IDashboardService)
 au.register(IOnboardingService)
 au.register(IGuestService)
 au.register(IGuestDataMergeService)

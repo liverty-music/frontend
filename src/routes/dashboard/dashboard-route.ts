@@ -1,20 +1,22 @@
 import { I18N } from '@aurelia/i18n'
 import { ILogger, INode, resolve } from 'aurelia'
-import { artistHue } from '../../adapter/view/artist-color'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
 	DateGroup,
 	LiveEvent,
 } from '../../components/live-highway/live-event'
+import type { JourneyStatus } from '../../entities/concert'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
-import { IDashboardService } from '../../services/dashboard-service'
+import { IConcertService } from '../../services/concert-service'
+import { IFollowServiceClient } from '../../services/follow-service-client'
 import { IGuestService } from '../../services/guest-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
+import { ITicketJourneyService } from '../../services/ticket-journey-service'
 import { IUserService } from '../../services/user-service'
 
 /** Lane intro phases — no 'card' phase; 'waiting-for-home' is a sub-state of 'home' */
@@ -39,9 +41,8 @@ export class DashboardRoute {
 	}
 
 	public dateGroups: DateGroup[] = []
-	/** Beam indices keyed by event ID, for laser beam tracking. */
-	public beamIndexMap = new Map<string, number>()
 	public needsRegion = false
+	public isLoading = false
 	public loadError: unknown = null
 	public showCelebration = false
 	public laneIntroPhase: LaneIntroPhase = 'done'
@@ -57,65 +58,13 @@ export class DashboardRoute {
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
-	private readonly dashboardService = resolve(IDashboardService)
+	private readonly concertService = resolve(IConcertService)
+	private readonly followService = resolve(IFollowServiceClient)
+	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
 	private abortController: AbortController | null = null
-	private beamRafId = 0
-	private readonly onScroll = (): void => this.scheduleBeamUpdate()
-
-	public dataPromise: Promise<DateGroup[]> | null = null
-
-	/** Triangular laser beams — one per matched card. */
-	public laserBeams: {
-		anchorIndex: number
-		hue: number
-		left: string
-		right: string
-	}[] = []
-
-	/** Assign sequential beam indices to matched events across all groups. */
-	private buildBeamIndexMap(): void {
-		const map = new Map<string, number>()
-		const beams: typeof this.laserBeams = []
-		let idx = 0
-
-		// Lane boundaries as viewport percentages (3-column 1fr grid)
-		const LANE_PCT = [
-			{ left: 1, right: 32 },
-			{ left: 34.5, right: 65.5 },
-			{ left: 68, right: 99 },
-		]
-
-		for (const group of this.dateGroups) {
-			const lanes = [group.home, group.nearby, group.away]
-			for (let laneIdx = 0; laneIdx < lanes.length; laneIdx++) {
-				for (const ev of lanes[laneIdx]) {
-					if (ev.matched) {
-						map.set(ev.id, idx)
-						const { left, right } = LANE_PCT[laneIdx]
-						beams.push({
-							anchorIndex: idx,
-							hue: artistHue(ev.artistName),
-							left: `${left}%`,
-							right: `${right}%`,
-						})
-						idx++
-					}
-				}
-			}
-		}
-
-		this.beamIndexMap = map
-		this.laserBeams = beams
-		// Schedule initial position update after Aurelia renders the beam elements
-		requestAnimationFrame(() => this.updateBeamPositions())
-	}
-
-	public getBeamIndex(eventId: string): number | null {
-		return this.beamIndexMap.get(eventId) ?? null
-	}
 
 	public get isOnboardingStepDashboard(): boolean {
 		return this.onboarding.currentStep === OnboardingStep.DASHBOARD
@@ -153,28 +102,59 @@ export class DashboardRoute {
 		this.abortController?.abort()
 		this.abortController = new AbortController()
 		this.loadError = null
+		this.isLoading = true
+		const signal = this.abortController.signal
 
-		this.dataPromise = this.dashboardService
-			.loadDashboardEvents(this.abortController.signal)
+		void this.loadDashboardEvents(signal)
 			.then((groups) => {
 				this.dateGroups = groups
-				this.buildBeamIndexMap()
 				this.loadError = null
+				this.isLoading = false
 				this.logger.info('Dashboard loaded', { groups: groups.length })
-				return groups
 			})
 			.catch((err) => {
-				if ((err as Error).name === 'AbortError') {
-					throw err
-				}
+				this.isLoading = false
+				if ((err as Error).name === 'AbortError') return
 				this.logger.error('Failed to load dashboard', { error: err })
-				// If we have previous data, silently keep showing it
-				if (this.dateGroups.length > 0) {
-					return this.dateGroups
+				if (this.dateGroups.length === 0) {
+					this.loadError = err
 				}
-				this.loadError = err
-				throw err
 			})
+	}
+
+	private async loadDashboardEvents(
+		signal?: AbortSignal,
+	): Promise<DateGroup[]> {
+		this.logger.info('Loading dashboard events')
+
+		const [artistMap, groups, journeyMap] = await Promise.all([
+			this.followService.getFollowedArtistMap(signal),
+			this.concertService.listByFollower(signal),
+			this.fetchJourneyMap(signal),
+		])
+
+		if (groups.length === 0) {
+			this.logger.info('No concert groups returned')
+			return []
+		}
+
+		return this.concertService.toDateGroups(groups, artistMap, journeyMap)
+	}
+
+	private async fetchJourneyMap(
+		signal?: AbortSignal,
+	): Promise<Map<string, JourneyStatus>> {
+		if (!this.authService.isAuthenticated) {
+			return new Map()
+		}
+		try {
+			return await this.journeyService.listByUser(signal)
+		} catch (err) {
+			this.logger.warn('Journey fetch failed, continuing without statuses', {
+				error: err,
+			})
+			return new Map()
+		}
 	}
 
 	public attached(): void {
@@ -182,50 +162,6 @@ export class DashboardRoute {
 			this.startLaneIntro()
 		} else if (this.needsRegion && this.isOnboardingStepDashboard) {
 			this.homeSelector?.open()
-		}
-		this.setupBeamTracking()
-	}
-
-	/** Wire scroll listener for JS-based beam height tracking. */
-	private setupBeamTracking(): void {
-		const scroll = this.element.querySelector('.concert-scroll')
-		if (scroll) {
-			scroll.addEventListener('scroll', this.onScroll, { passive: true })
-			this.scheduleBeamUpdate()
-		}
-	}
-
-	private scheduleBeamUpdate(): void {
-		if (this.beamRafId) return
-		this.beamRafId = requestAnimationFrame(() => {
-			this.beamRafId = 0
-			this.updateBeamPositions()
-		})
-	}
-
-	/** Set beam dimensions so triangle wraps card diagonally (bottom-left to top-right). */
-	private updateBeamPositions(): void {
-		const beamEls = this.element.querySelectorAll<HTMLElement>('.laser-beam')
-		const vh = window.innerHeight
-		for (const beamEl of beamEls) {
-			const idx = beamEl.dataset.beamAnchor
-			if (idx == null) continue
-			const card = this.element.querySelector<HTMLElement>(
-				`[data-beam-index="${idx}"]`,
-			)
-			if (!card) continue
-			const rect = card.getBoundingClientRect()
-			// Only illuminate cards visible in the viewport
-			const visible = rect.bottom > 0 && rect.top < vh
-			if (visible) {
-				const bottom = Math.max(0, rect.bottom)
-				const topPct =
-					bottom > 0 ? `${(Math.max(0, rect.top) / bottom) * 100}%` : '80%'
-				beamEl.style.setProperty('--beam-h', `${bottom}px`)
-				beamEl.style.setProperty('--beam-top-pct', topPct)
-			} else {
-				beamEl.style.setProperty('--beam-h', '0')
-			}
 		}
 	}
 
@@ -279,12 +215,8 @@ export class DashboardRoute {
 		if (!this.isOnboardingStepDashboard) return
 
 		// Wait for data to finish loading before deciding
-		if (this.dataPromise) {
-			try {
-				await this.dataPromise
-			} catch {
-				// Data load failed — proceed with whatever we have
-			}
+		while (this.isLoading) {
+			await new Promise((r) => setTimeout(r, 100))
 		}
 
 		// When no concert data is available, skip lane intro and show celebration
@@ -437,13 +369,5 @@ export class DashboardRoute {
 		this.abortController?.abort()
 		this.abortController = null
 		this.setNavTabsDimmed(false)
-		const scroll = this.element.querySelector('.concert-scroll')
-		if (scroll) {
-			scroll.removeEventListener('scroll', this.onScroll)
-		}
-		if (this.beamRafId) {
-			cancelAnimationFrame(this.beamRafId)
-			this.beamRafId = 0
-		}
 	}
 }

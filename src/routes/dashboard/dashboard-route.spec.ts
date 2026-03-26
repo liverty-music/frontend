@@ -16,8 +16,17 @@ const fakeAuth = {
 	signUp: vi.fn(),
 }
 
-const fakeDashboard = {
-	loadDashboardEvents: vi.fn(() => Promise.resolve([])),
+const fakeConcertService = {
+	listByFollower: vi.fn(() => Promise.resolve([])),
+	toDateGroups: vi.fn(() => []),
+}
+
+const fakeFollowService = {
+	getFollowedArtistMap: vi.fn(() => Promise.resolve(new Map())),
+}
+
+const fakeJourneyService = {
+	listByUser: vi.fn(() => Promise.resolve(new Map())),
 }
 
 const fakeGuest = {
@@ -67,8 +76,16 @@ vi.mock('../../services/auth-service', () => ({
 	IAuthService: Symbol('IAuthService'),
 }))
 
-vi.mock('../../services/dashboard-service', () => ({
-	IDashboardService: Symbol('IDashboardService'),
+vi.mock('../../services/concert-service', () => ({
+	IConcertService: Symbol('IConcertService'),
+}))
+
+vi.mock('../../services/follow-service-client', () => ({
+	IFollowServiceClient: Symbol('IFollowServiceClient'),
+}))
+
+vi.mock('../../services/ticket-journey-service', () => ({
+	ITicketJourneyService: Symbol('ITicketJourneyService'),
 }))
 
 vi.mock('../../services/onboarding-service', async (importOriginal) => {
@@ -96,7 +113,9 @@ vi.mock('../../components/user-home-selector/user-home-selector', () => ({
 import { I18N } from '@aurelia/i18n'
 import { ILogger, INode } from 'aurelia'
 import { IAuthService } from '../../services/auth-service'
-import { IDashboardService } from '../../services/dashboard-service'
+import { IConcertService } from '../../services/concert-service'
+import { IFollowServiceClient } from '../../services/follow-service-client'
+import { ITicketJourneyService } from '../../services/ticket-journey-service'
 import { IGuestService } from '../../services/guest-service'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserService } from '../../services/user-service'
@@ -105,7 +124,9 @@ import { DashboardRoute } from './dashboard-route'
 function setupServiceMap(): void {
 	serviceMap.set(IOnboardingService, fakeOnboarding)
 	serviceMap.set(IAuthService, fakeAuth)
-	serviceMap.set(IDashboardService, fakeDashboard)
+	serviceMap.set(IConcertService, fakeConcertService)
+	serviceMap.set(IFollowServiceClient, fakeFollowService)
+	serviceMap.set(ITicketJourneyService, fakeJourneyService)
 	serviceMap.set(IGuestService, fakeGuest)
 	serviceMap.set(IUserService, fakeUser)
 	serviceMap.set(I18N, fakeI18n)
@@ -125,7 +146,8 @@ describe('DashboardRoute onboarding orchestration', () => {
 		fakeAuth.isAuthenticated = false
 		fakeGuest.home = 'jp-tokyo'
 		fakeUser.current = null
-		fakeDashboard.loadDashboardEvents.mockResolvedValue([])
+		fakeConcertService.listByFollower.mockResolvedValue([])
+		fakeConcertService.toDateGroups.mockReturnValue([])
 
 		setupServiceMap()
 		sut = new DashboardRoute()

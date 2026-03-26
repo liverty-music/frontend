@@ -5,3 +5,5 @@ export type {
 	JourneyStatus,
 	LaneType,
 } from '../../entities/concert'
+
+export { ConcertHighway } from './concert-highway'

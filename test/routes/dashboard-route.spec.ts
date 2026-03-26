@@ -3,15 +3,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
 
-const mockIDashboardService = DI.createInterface('IDashboardService')
+const mockIConcertService = DI.createInterface('IConcertService')
+const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
+const mockITicketJourneyService = DI.createInterface('ITicketJourneyService')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserService = DI.createInterface('IUserService')
 const mockIGuestService = DI.createInterface('IGuestService')
 
-vi.mock('../../src/services/dashboard-service', () => ({
-	IDashboardService: mockIDashboardService,
+vi.mock('../../src/services/concert-service', () => ({
+	IConcertService: mockIConcertService,
+}))
+
+vi.mock('../../src/services/follow-service-client', () => ({
+	IFollowServiceClient: mockIFollowServiceClient,
+}))
+
+vi.mock('../../src/services/ticket-journey-service', () => ({
+	ITicketJourneyService: mockITicketJourneyService,
 }))
 
 vi.mock('@aurelia/router', () => ({
@@ -57,8 +67,15 @@ const { UserHomeSelector } = await import(
 
 describe('DashboardRoute', () => {
 	let sut: InstanceType<typeof DashboardRoute>
-	let mockDashboardService: {
-		loadDashboardEvents: ReturnType<typeof vi.fn>
+	let mockConcertService: {
+		listByFollower: ReturnType<typeof vi.fn>
+		toDateGroups: ReturnType<typeof vi.fn>
+	}
+	let mockFollowService: {
+		getFollowedArtistMap: ReturnType<typeof vi.fn>
+	}
+	let mockJourneyService: {
+		listByUser: ReturnType<typeof vi.fn>
 	}
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockOnboarding: {
@@ -97,8 +114,15 @@ describe('DashboardRoute', () => {
 	}
 
 	beforeEach(() => {
-		mockDashboardService = {
-			loadDashboardEvents: vi.fn().mockResolvedValue([]),
+		mockConcertService = {
+			listByFollower: vi.fn().mockResolvedValue([]),
+			toDateGroups: vi.fn().mockReturnValue([]),
+		}
+		mockFollowService = {
+			getFollowedArtistMap: vi.fn().mockResolvedValue(new Map()),
+		}
+		mockJourneyService = {
+			listByUser: vi.fn().mockResolvedValue(new Map()),
 		}
 		mockRouter = createMockRouter()
 		mockOnboarding = {
@@ -136,7 +160,9 @@ describe('DashboardRoute', () => {
 		const mockElement = document.createElement('div')
 
 		const container = createTestContainer(
-			Registration.instance(mockIDashboardService, mockDashboardService),
+			Registration.instance(mockIConcertService, mockConcertService),
+			Registration.instance(mockIFollowServiceClient, mockFollowService),
+			Registration.instance(mockITicketJourneyService, mockJourneyService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIAuthService, mockAuth),
@@ -158,41 +184,46 @@ describe('DashboardRoute', () => {
 				{
 					label: 'Jan 1',
 					dateKey: '2026-01-01',
-					main: [],
-					region: [],
-					other: [],
+					home: [],
+					nearby: [],
+					away: [],
 				},
 			]
-			mockDashboardService.loadDashboardEvents.mockResolvedValue(fakeGroups)
+			mockConcertService.listByFollower.mockResolvedValue([
+				{ date: {}, home: [], nearby: [], away: [] },
+			])
+			mockConcertService.toDateGroups.mockReturnValue(fakeGroups)
 
 			sut.loadData()
-			await sut.dataPromise
+			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
 
 			expect(sut.dateGroups).toEqual(fakeGroups)
 			expect(sut.loadError).toBeNull()
 		})
 
 		it('should silently keep previous data on failure when data exists', async () => {
-			// First load succeeds
 			const fakeGroups = [
 				{
 					label: 'Jan 1',
 					dateKey: '2026-01-01',
-					main: [],
-					region: [],
-					other: [],
+					home: [],
+					nearby: [],
+					away: [],
 				},
 			]
-			mockDashboardService.loadDashboardEvents.mockResolvedValue(fakeGroups)
+			mockConcertService.listByFollower.mockResolvedValue([
+				{ date: {}, home: [], nearby: [], away: [] },
+			])
+			mockConcertService.toDateGroups.mockReturnValue(fakeGroups)
 			sut.loadData()
-			await sut.dataPromise
+			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
 
 			// Second load fails
-			mockDashboardService.loadDashboardEvents.mockRejectedValue(
+			mockFollowService.getFollowedArtistMap.mockRejectedValue(
 				new Error('network'),
 			)
 			sut.loadData()
-			await sut.dataPromise
+			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
 
 			expect(sut.dateGroups).toEqual(fakeGroups)
 			expect(sut.loadError).toBeNull()
@@ -200,22 +231,21 @@ describe('DashboardRoute', () => {
 
 		it('should ignore AbortError', async () => {
 			const abortError = new DOMException('aborted', 'AbortError')
-			mockDashboardService.loadDashboardEvents.mockRejectedValue(abortError)
+			mockFollowService.getFollowedArtistMap.mockRejectedValue(abortError)
 
 			sut.loadData()
-			await sut.dataPromise!.catch(() => {})
+			await vi.waitFor(() => expect(sut.isLoading).toBe(false))!.catch(() => {})
 
 			expect(sut.loadError).toBeNull()
 		})
 
 		it('should abort previous request on new loadData call', () => {
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
+			mockConcertService.listByFollower.mockResolvedValue([])
 
 			sut.loadData()
 			sut.loadData()
 
-			// loadDashboardEvents is called twice
-			expect(mockDashboardService.loadDashboardEvents).toHaveBeenCalledTimes(2)
+			expect(mockFollowService.getFollowedArtistMap).toHaveBeenCalledTimes(2)
 		})
 	})
 
@@ -225,12 +255,10 @@ describe('DashboardRoute', () => {
 			;(
 				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
 			).mockReturnValue(null)
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
 			await sut.loading()
 
 			expect(sut.needsRegion).toBe(true)
-			expect(mockDashboardService.loadDashboardEvents).toHaveBeenCalledTimes(1)
 		})
 
 		it('should set needsRegion false for guest with stored home', async () => {
@@ -238,7 +266,6 @@ describe('DashboardRoute', () => {
 			;(
 				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
 			).mockReturnValue('JP-13')
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
 			await sut.loading()
 
@@ -247,8 +274,9 @@ describe('DashboardRoute', () => {
 
 		it('should set needsRegion false for authenticated user with home set', async () => {
 			mockAuth.isAuthenticated = true
-			mockUser.current = { home: { countryCode: 'JP', level1: 'JP-13' } }
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
+			mockUser.current = {
+				home: { countryCode: 'JP', level1: 'JP-13' },
+			}
 
 			await sut.loading()
 
@@ -258,7 +286,6 @@ describe('DashboardRoute', () => {
 		it('should set needsRegion true for authenticated user without home', async () => {
 			mockAuth.isAuthenticated = true
 			mockUser.current = { home: undefined }
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
 			await sut.loading()
 
@@ -268,7 +295,6 @@ describe('DashboardRoute', () => {
 		it('should set needsRegion true for authenticated user when current is undefined', async () => {
 			mockAuth.isAuthenticated = true
 			mockUser.current = undefined
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 
 			await sut.loading()
 
@@ -284,11 +310,9 @@ describe('DashboardRoute', () => {
 		})
 
 		it('should reload data after home selection', () => {
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
-
 			sut.onHomeSelected('JP-13')
 
-			expect(mockDashboardService.loadDashboardEvents).toHaveBeenCalledTimes(1)
+			expect(mockFollowService.getFollowedArtistMap).toHaveBeenCalledTimes(1)
 		})
 
 		it('should reflect reloaded data in dateGroups', async () => {
@@ -301,10 +325,13 @@ describe('DashboardRoute', () => {
 					away: [],
 				},
 			]
-			mockDashboardService.loadDashboardEvents.mockResolvedValue(newGroups)
+			mockConcertService.listByFollower.mockResolvedValue([
+				{ date: {}, home: [], nearby: [], away: [] },
+			])
+			mockConcertService.toDateGroups.mockReturnValue(newGroups)
 
 			sut.onHomeSelected('JP-13')
-			await sut.dataPromise
+			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
 
 			expect(sut.dateGroups).toEqual(newGroups)
 		})
@@ -331,7 +358,6 @@ describe('DashboardRoute', () => {
 
 	describe('detaching', () => {
 		it('should abort active request', () => {
-			mockDashboardService.loadDashboardEvents.mockResolvedValue([])
 			sut.loadData()
 
 			const abortSpy = vi.spyOn(AbortController.prototype, 'abort')

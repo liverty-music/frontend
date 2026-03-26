@@ -108,4 +108,22 @@ export class FollowServiceClient {
 	public async setHype(artistId: string, hype: Hype): Promise<void> {
 		await this.rpcClient.setHype(artistId, hype)
 	}
+
+	/**
+	 * Build a lookup map of followed artists keyed by artist ID.
+	 * Used by dashboard-route to enrich concert data with artist info and hype levels.
+	 */
+	public async getFollowedArtistMap(
+		signal?: AbortSignal,
+	): Promise<Map<string, { artist: Artist; hype: Hype }>> {
+		const followed = await this.listFollowed(signal)
+		const map = new Map<string, { artist: Artist; hype: Hype }>()
+		for (const fa of followed) {
+			const id = fa.artist.id
+			if (id) {
+				map.set(id, { artist: fa.artist, hype: fa.hype })
+			}
+		}
+		return map
+	}
 }

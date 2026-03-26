@@ -1,20 +1,8 @@
 @layer block {
 	@scope (dashboard-route) {
-		--_header-h: 2rem;
-		--_border-light: oklch(100% 0 0deg / 10%);
-		--_border-faint: oklch(100% 0 0deg / 5%);
-		--_date-bg: oklch(from var(--color-surface-raised) l c h / 90%);
-		--_muted-faint: oklch(from var(--color-text-muted) l c h / 30%);
-
 		:scope {
-			position: relative;
-
-			display: grid;
-			grid-template:
-				"header     header     header" auto
-				"stage-home stage-near stage-away" auto
-				"lane-home  lane-near  lane-away" minmax(0, 1fr)
-				/ 1fr 1fr 1fr;
+			display: flex;
+			flex-direction: column;
 
 			block-size: 100%;
 			min-block-size: 0;
@@ -22,68 +10,16 @@
 			background: var(--color-surface-base);
 		}
 
-		/* ── Row 1: Stage header ── */
-		.stage-header {
-			position: relative;
-			display: grid;
-			grid-column: stage-home / stage-away;
-			grid-template-columns: subgrid;
-
-			& > span {
-				padding: var(--space-2xs);
-
-				font-family: var(--font-display);
-				font-size: var(--step--1);
-				font-weight: normal;
-				text-align: center;
-				text-transform: uppercase;
-				letter-spacing: 0.05em;
-			}
-
-			& > span:not(:last-child) {
-				border-inline-end: 1px solid var(--_border-light);
-			}
-
-			/* Stage color exceptions via data-stage */
-			& > [data-stage="home"] {
-				color: var(--color-surface-base);
-				background: var(--color-stage-home);
-			}
-
-			& > [data-stage="near"] {
-				color: var(--color-surface-base);
-				background: var(--color-stage-near);
-			}
-
-			& > [data-stage="away"] {
-				color: var(--color-surface-base);
-				background: var(--color-stage-away);
-			}
+		concert-highway {
+			flex: 1 1 0;
+			min-block-size: 0;
+			transition: filter 500ms;
 		}
 
-		/* ── Row 2: Concert scroll (subgrid propagation root) ── */
-		.concert-scroll {
-			position: relative;
-
-			overflow-block: auto;
-			overflow-inline: hidden;
-			display: grid;
-			grid-column: lane-home / lane-away;
-			grid-template-columns: subgrid;
-
-			min-block-size: 0;
-
-			transition: filter 500ms;
-
-			& > * {
-				grid-column: 1 / -1;
-			}
-
-			&[data-blurred="true"] {
-				pointer-events: none;
-				overflow: hidden;
-				filter: blur(4px);
-			}
+		concert-highway[data-blurred="true"] {
+			pointer-events: none;
+			overflow: hidden;
+			filter: blur(4px);
 		}
 
 		.loading-text {
@@ -97,160 +33,6 @@
 			color: var(--color-text-muted);
 
 			animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-		}
-
-		/* ── Subgrid chain: date-group-list → li → lane-grid ── */
-		.date-group-list {
-			display: grid;
-			grid-template-columns: subgrid;
-			list-style: none;
-
-			& > li {
-				display: grid;
-				grid-column: 1 / -1;
-				grid-template-columns: subgrid;
-			}
-		}
-
-		.date-separator {
-			position: sticky;
-			inset-block-start: 0;
-
-			grid-column: 1 / -1;
-
-			padding: var(--space-2xs) var(--space-xs);
-			border-block-end: 1px solid var(--_border-light);
-
-			background: linear-gradient(
-				to right,
-				oklch(from var(--color-stage-home) l c h / 10%),
-				oklch(from var(--color-stage-near) l c h / 10%),
-				oklch(from var(--color-stage-away) l c h / 10%)
-			);
-			backdrop-filter: blur(4px);
-
-			& time {
-				font-family: var(--font-display);
-				font-size: var(--step-0);
-				font-weight: normal;
-				color: var(--color-brand-accent);
-				text-transform: uppercase;
-				letter-spacing: 0.05em;
-			}
-		}
-
-		.lane-grid {
-			display: grid;
-			grid-column: 1 / -1;
-			grid-template-columns: subgrid;
-			list-style: none;
-		}
-
-		.lane {
-			container-name: lane;
-			container-type: inline-size;
-			padding: var(--space-2xs);
-			border-block-start: 2px solid
-				oklch(from var(--color-stage-home) l c h / 40%);
-
-			&:nth-child(2) {
-				border-block-start-color: oklch(
-					from var(--color-stage-near) l c h /
-					40%
-				);
-			}
-
-			&:nth-child(3) {
-				border-block-start-color: oklch(
-					from var(--color-stage-away) l c h /
-					40%
-				);
-			}
-
-			&:not(:last-child) {
-				border-inline-end: 1px solid var(--_border-faint);
-			}
-
-			&[data-empty="true"]::after {
-				content: "—";
-
-				display: block;
-
-				padding-block: var(--space-s);
-
-				font-size: var(--step--2);
-				color: var(--_muted-faint);
-				text-align: center;
-			}
-		}
-
-		/* ── Laser beam overlay (viewport-fixed) ── */
-		.beam-overlay {
-			pointer-events: none;
-			position: fixed;
-			inset: 0;
-		}
-
-		/* Laser beam — apex at top-left, wraps card diagonally */
-		.laser-beam {
-			position: absolute;
-			inset-block-start: 0;
-			inset-inline: 0;
-
-			block-size: var(--beam-h, 0);
-
-			/* Faint fill between edge lines */
-			background: linear-gradient(
-				to bottom,
-				oklch(70% 0.15 var(--beam-hue, 180) / 12%) 0%,
-				oklch(60% 0.1 var(--beam-hue, 180) / 7%) 60%,
-				oklch(50% 0.08 var(--beam-hue, 180) / 3%) 100%
-			);
-			clip-path: polygon(
-				0% 0%,
-				var(--beam-left, 34%) 100%,
-				var(--beam-right, 66%) var(--beam-top-pct, 80%)
-			);
-
-			/* Neon glow — layered bloom around diffused lines */
-			filter: drop-shadow(0 0 4px oklch(85% 0.3 var(--beam-hue, 180) / 55%))
-				drop-shadow(0 0 12px oklch(75% 0.25 var(--beam-hue, 180) / 28%))
-				drop-shadow(0 0 28px oklch(65% 0.2 var(--beam-hue, 180) / 10%));
-
-			/* Fade endpoints — dissolve near card instead of hard cutoff */
-			mask-image: linear-gradient(to bottom, black 65%, transparent);
-		}
-
-		/* Diffused core lines — wide + semi-transparent so glow dominates */
-		.laser-beam::before,
-		.laser-beam::after {
-			pointer-events: none;
-			content: "";
-
-			position: absolute;
-			inset: 0;
-
-			background: oklch(85% 0.25 var(--beam-hue, 180) / 25%);
-		}
-
-		/* Left edge — diffused 4px line to card bottom-left */
-		.laser-beam::before {
-			clip-path: polygon(
-				0% 0%,
-				4px 0%,
-				calc(var(--beam-left, 34%) + 4px) 100%,
-				var(--beam-left, 34%) 100%
-			);
-		}
-
-		/* Right edge — diffused 4px line to card top-right */
-		.laser-beam::after {
-			clip-path: polygon(
-				0% 0%,
-				4px 0%,
-				var(--beam-right, 66%) var(--beam-top-pct, 80%),
-				calc(var(--beam-right, 66%) - 4px) var(--beam-top-pct, 80%)
-			);
 		}
 
 		/* ── Empty state typography ── */
