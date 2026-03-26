@@ -7,7 +7,7 @@ test.describe('Discover page layout', () => {
 		await page.waitForSelector('.discovery-layout')
 	})
 
-	test('discover-layout fills viewport width and au-viewport height (D1)', async ({
+	test('discover-layout fills viewport width and remaining height below page-header (D1)', async ({
 		discoverLayoutPage: page,
 	}) => {
 		const viewportSize = page.viewportSize()!
@@ -20,7 +20,10 @@ test.describe('Discover page layout', () => {
 		expect(layoutBox).toBeTruthy()
 		expect(auViewportBox).toBeTruthy()
 		expect(layoutBox!.width).toBeCloseTo(viewportSize.width, 0)
-		expect(layoutBox!.height).toBeCloseTo(auViewportBox!.height, 0)
+		// discovery-layout occupies the "content" grid row, below page-header
+		const layoutBottom = layoutBox!.y + layoutBox!.height
+		const auViewportBottom = auViewportBox!.y + auViewportBox!.height
+		expect(layoutBottom).toBeCloseTo(auViewportBottom, 0)
 	})
 
 	test('bubble-area width equals discover-layout width (D2)', async ({

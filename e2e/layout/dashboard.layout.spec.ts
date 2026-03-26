@@ -251,14 +251,15 @@ test.describe('Dashboard header', () => {
 	test('header is pinned to top of dashboard (H3)', async ({
 		layoutPage: page,
 	}) => {
-		const header = page.locator('.stage-header').first()
-		const headerBox = await header.boundingBox()
+		const stageHeader = page.locator('.stage-header').first()
+		const stageHeaderBox = await stageHeader.boundingBox()
 		const auViewportBox = await page.locator('au-viewport').boundingBox()
 
-		expect(headerBox).toBeTruthy()
+		expect(stageHeaderBox).toBeTruthy()
 		expect(auViewportBox).toBeTruthy()
-		// Header top should align with au-viewport top
-		expect(headerBox!.y).toBeCloseTo(auViewportBox!.y, 0)
+		// Stage header sits below page-header; verify it's within the au-viewport
+		expect(stageHeaderBox!.y).toBeGreaterThanOrEqual(auViewportBox!.y)
+		expect(stageHeaderBox!.y).toBeLessThan(auViewportBox!.y + auViewportBox!.height)
 	})
 
 	test('concert-scroll is the only scroll container (H4a)', async ({
