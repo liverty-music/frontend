@@ -30,17 +30,6 @@ export class ConcertServiceClient {
 	}
 
 	/**
-	 * Trigger background concert search for an artist.
-	 * The RPC enqueues a discovery job and returns immediately (empty response).
-	 */
-	public async searchNewConcerts(
-		artistId: string,
-		signal?: AbortSignal,
-	): Promise<void> {
-		await this.rpcClient.searchNewConcerts(artistId, signal)
-	}
-
-	/**
 	 * Add an artist to the set of artists with known concerts.
 	 * Triggers Aurelia observation for the coach mark getter.
 	 */
