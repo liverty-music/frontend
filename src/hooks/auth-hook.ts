@@ -55,6 +55,14 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 			if (stepIndex(this.onboarding.currentStep) >= stepIndex(routeStep)) {
 				return true
 			}
+			// Nav tap on Dashboard after progression condition met (coach mark may have faded)
+			if (
+				routeStep === OnboardingStep.DASHBOARD &&
+				this.onboarding.readyForDashboard
+			) {
+				this.onboarding.setStep(OnboardingStep.DASHBOARD)
+				return true
+			}
 			// Direct nav tap on Dashboard while coach mark is active — advance step
 			if (
 				routeStep === OnboardingStep.DASHBOARD &&

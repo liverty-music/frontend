@@ -32,6 +32,11 @@ export const IOnboardingService = DI.createInterface<IOnboardingService>(
 
 export interface IOnboardingService extends OnboardingService {}
 
+/** Minimum followed artists to unlock dashboard navigation. */
+export const DASHBOARD_FOLLOW_TARGET = 5
+/** Minimum artists with concerts to unlock dashboard navigation. */
+export const DASHBOARD_CONCERT_TARGET = 3
+
 /**
  * Singleton service owning all onboarding state.
  * Step is persisted to localStorage via @observable + stepChanged().
@@ -47,6 +52,10 @@ export class OnboardingService {
 	public spotlightMessage = ''
 	public spotlightRadius = '12px'
 	public spotlightActive = false
+
+	// Discovery counts — updated by DiscoveryRoute via setDiscoveryCounts()
+	public followedCount = 0
+	public artistsWithConcertsCount = 0
 
 	// Callbacks — not state, cannot live in a store
 	public onSpotlightTap: (() => void) | undefined = undefined
@@ -147,5 +156,27 @@ export class OnboardingService {
 	 */
 	public getRouteForCurrentStep(): string {
 		return STEP_ROUTE_MAP[this.step]
+	}
+
+	/**
+	 * Update the discovery progress counts used by readyForDashboard.
+	 * Called by DiscoveryRoute whenever follow or concert counts change.
+	 * Call with (0, 0) in detaching() to reset on page leave.
+	 */
+	public setDiscoveryCounts(followed: number, concerts: number): void {
+		this.followedCount = followed
+		this.artistsWithConcertsCount = concerts
+	}
+
+	/**
+	 * Whether the user has met the condition to navigate to the dashboard
+	 * from the discovery step (without having tapped the coach mark).
+	 */
+	public get readyForDashboard(): boolean {
+		return (
+			this.step === OnboardingStep.DISCOVERY &&
+			(this.followedCount >= DASHBOARD_FOLLOW_TARGET ||
+				this.artistsWithConcertsCount >= DASHBOARD_CONCERT_TARGET)
+		)
 	}
 }

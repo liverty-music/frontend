@@ -9,6 +9,8 @@ import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import { IGuestService } from '../../services/guest-service'
 import {
+	DASHBOARD_CONCERT_TARGET,
+	DASHBOARD_FOLLOW_TARGET,
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
@@ -17,8 +19,6 @@ import { BubbleManager } from './bubble-manager'
 import { GenreFilterController } from './genre-filter-controller'
 import { SearchController } from './search-controller'
 
-const TUTORIAL_FOLLOW_TARGET = 3
-const TUTORIAL_TOTAL_FOLLOW_TARGET = 5
 const COACH_MARK_FADE_MS = 2000
 
 export class DiscoveryRoute {
@@ -88,8 +88,9 @@ export class DiscoveryRoute {
 	public get showDashboardCoachMark(): boolean {
 		return (
 			this.isOnboarding &&
-			(this.followedCount >= TUTORIAL_TOTAL_FOLLOW_TARGET ||
-				this.concertService.artistsWithConcertsCount >= TUTORIAL_FOLLOW_TARGET)
+			(this.followedCount >= DASHBOARD_FOLLOW_TARGET ||
+				this.concertService.artistsWithConcertsCount >=
+					DASHBOARD_CONCERT_TARGET)
 		)
 	}
 
@@ -157,6 +158,12 @@ export class DiscoveryRoute {
 			for (const f of this.guest.follows) {
 				void this.searchConcertsForArtist(f.artist.id, f.artist.name)
 			}
+			// Sync initial counts — @watch only fires on changes, not on the
+			// initial value, so we push the baseline explicitly after hydration.
+			this.onboarding.setDiscoveryCounts(
+				this.followedCount,
+				this.concertService.artistsWithConcertsCount,
+			)
 		}
 	}
 
@@ -172,6 +179,7 @@ export class DiscoveryRoute {
 			clearTimeout(this.coachMarkFadeTimer)
 			this.coachMarkFadeTimer = null
 		}
+		this.onboarding.setDiscoveryCounts(0, 0)
 	}
 
 	private readonly onVisibilityChange = (): void => {
@@ -187,6 +195,22 @@ export class DiscoveryRoute {
 	@watch('search.searchQuery')
 	protected onSearchQueryChanged(newValue: string): void {
 		this.search.onQueryChanged(newValue)
+	}
+
+	@watch((vm: DiscoveryRoute) => vm.followedCount)
+	protected onFollowedCountChanged(): void {
+		this.onboarding.setDiscoveryCounts(
+			this.followedCount,
+			this.concertService.artistsWithConcertsCount,
+		)
+	}
+
+	@watch((vm: DiscoveryRoute) => vm.concertService.artistsWithConcertsCount)
+	protected onArtistsWithConcertsCountChanged(): void {
+		this.onboarding.setDiscoveryCounts(
+			this.followedCount,
+			this.concertService.artistsWithConcertsCount,
+		)
 	}
 
 	public clearSearch(): void {

@@ -195,6 +195,7 @@ describe('AuthHook', () => {
 					currentStep: 'discovery',
 					isOnboarding: true,
 					spotlightActive: false,
+					readyForDashboard: false,
 					setStep: vi.fn(),
 					complete: vi.fn(),
 					deactivateSpotlight: vi.fn(),
@@ -205,6 +206,62 @@ describe('AuthHook', () => {
 			sut = container.get(AuthHook)
 
 			// Dashboard requires onboardingStep 'dashboard', but user is at 'discovery' without spotlight
+			const next = makeRouteNode({ onboardingStep: 'dashboard' })
+			const result = await sut.canLoad({}, {}, next, null)
+
+			expect(result).toBe('discovery')
+			expect(mockEa.publish).not.toHaveBeenCalled()
+		})
+
+		it('TC-RG-05: discovery-step user with readyForDashboard=true is allowed to navigate to dashboard and step advances', async () => {
+			mockAuth = createMockAuth({ isAuthenticated: false })
+			mockEa = createMockEventAggregator()
+			const mockSetStep = vi.fn()
+			const container = createTestContainer(
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(IEventAggregator, mockEa),
+				Registration.instance(mockIOnboardingService, {
+					currentStep: 'discovery',
+					isOnboarding: true,
+					spotlightActive: false,
+					readyForDashboard: true,
+					setStep: mockSetStep,
+					complete: vi.fn(),
+					deactivateSpotlight: vi.fn(),
+					getRouteForCurrentStep: () => 'discovery',
+				}),
+			)
+			container.register(AuthHook)
+			sut = container.get(AuthHook)
+
+			const next = makeRouteNode({ onboardingStep: 'dashboard' })
+			const result = await sut.canLoad({}, {}, next, null)
+
+			expect(result).toBe(true)
+			expect(mockSetStep).toHaveBeenCalledWith('dashboard')
+			expect(mockEa.publish).not.toHaveBeenCalled()
+		})
+
+		it('TC-RG-06: discovery-step user with readyForDashboard=false is redirected to discovery without toast', async () => {
+			mockAuth = createMockAuth({ isAuthenticated: false })
+			mockEa = createMockEventAggregator()
+			const container = createTestContainer(
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(IEventAggregator, mockEa),
+				Registration.instance(mockIOnboardingService, {
+					currentStep: 'discovery',
+					isOnboarding: true,
+					spotlightActive: false,
+					readyForDashboard: false,
+					setStep: vi.fn(),
+					complete: vi.fn(),
+					deactivateSpotlight: vi.fn(),
+					getRouteForCurrentStep: () => 'discovery',
+				}),
+			)
+			container.register(AuthHook)
+			sut = container.get(AuthHook)
+
 			const next = makeRouteNode({ onboardingStep: 'dashboard' })
 			const result = await sut.canLoad({}, {}, next, null)
 

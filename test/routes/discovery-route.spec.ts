@@ -44,6 +44,8 @@ vi.mock('../../src/services/onboarding-service', () => ({
 		MY_ARTISTS: 'my-artists',
 		COMPLETED: 'completed',
 	},
+	DASHBOARD_FOLLOW_TARGET: 5,
+	DASHBOARD_CONCERT_TARGET: 3,
 }))
 
 vi.mock('../../src/services/guest-service', () => ({
@@ -94,6 +96,7 @@ describe('DiscoveryRoute', () => {
 		complete: ReturnType<typeof vi.fn>
 		activateSpotlight: ReturnType<typeof vi.fn>
 		deactivateSpotlight: ReturnType<typeof vi.fn>
+		setDiscoveryCounts: ReturnType<typeof vi.fn>
 	}
 	let mockGuest: {
 		follows: { artist: Artist; home: string | null }[]
@@ -121,6 +124,7 @@ describe('DiscoveryRoute', () => {
 			complete: vi.fn(),
 			activateSpotlight: vi.fn(),
 			deactivateSpotlight: vi.fn(),
+			setDiscoveryCounts: vi.fn(),
 		}
 		mockGuest = {
 			follows: [],
