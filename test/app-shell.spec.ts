@@ -21,6 +21,9 @@ vi.mock('../src/routes/auth-callback/auth-callback-route', () => ({
 vi.mock('../src/routes/dashboard/dashboard-route', () => ({
 	DashboardRoute: class DashboardRoute {},
 }))
+vi.mock('../src/routes/dashboard/dashboard-route.html', () => ({
+	default: '',
+}))
 vi.mock('../src/routes/discovery/discovery-route', () => ({
 	DiscoveryRoute: class DiscoveryRoute {},
 }))

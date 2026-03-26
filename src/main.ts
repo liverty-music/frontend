@@ -19,6 +19,7 @@ import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
+import { EventCard } from './components/live-highway/event-card'
 import { LoadingSpinner } from './components/loading-spinner/loading-spinner'
 import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
@@ -39,7 +40,6 @@ import ja from './locales/ja/translation.json'
 import { IArtistServiceClient } from './services/artist-service-client'
 import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
-import { IDashboardService } from './services/dashboard-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFollowServiceClient } from './services/follow-service-client'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
@@ -127,7 +127,6 @@ au.register(UserHydrationTask)
 au.register(IArtistServiceClient)
 au.register(IFollowServiceClient)
 au.register(IConcertService)
-au.register(IDashboardService)
 au.register(IOnboardingService)
 au.register(IGuestService)
 au.register(IGuestDataMergeService)
@@ -148,6 +147,7 @@ au.register(IPushRpcClient)
 au.register(IProofService)
 au.register(BottomNavBar)
 au.register(BottomSheet)
+au.register(EventCard)
 au.register(LoadingSpinner)
 au.register(Toast)
 au.register(PageHeader)

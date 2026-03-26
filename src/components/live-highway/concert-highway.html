@@ -1,0 +1,56 @@
+<!-- Laser beams — before header so header paints on top -->
+<div class="[ beam-overlay ]" if.bind="showBeams && laserBeams.length > 0">
+  <div
+    repeat.for="b of laserBeams"
+    class="[ laser-beam ]"
+    data-beam-anchor.bind="b.anchorIndex"
+    beam-vars="hue.bind: b.hue; left.bind: b.left; right.bind: b.right"
+  ></div>
+</div>
+
+<!-- Concert grid (stage header + scrollable lanes) -->
+<section class="[ concert-grid-wrapper ]">
+  <header class="[ stage-header ]" if.bind="dateGroups.length > 0">
+    <span data-stage="home">HOME STAGE</span>
+    <span data-stage="near">NEAR STAGE</span>
+    <span data-stage="away">AWAY STAGE</span>
+  </header>
+
+  <ol class="[ concert-scroll ] [ date-group-list ]">
+    <li repeat.for="group of dateGroups; key.bind: group.dateKey">
+      <header class="[ date-separator ]">
+        <time datetime.bind="group.dateKey">${group.label}</time>
+      </header>
+
+      <ol class="[ lane-grid ]" aria-label="Concerts">
+        <li class="[ lane ]" data-lane="home" data-empty.bind="group.home.length === 0">
+          <event-card
+            repeat.for="ev of group.home; key.bind: ev.id"
+            event.bind="ev"
+            lane="home"
+            readonly.bind="isReadonly"
+            beam-index.bind="getBeamIndex(ev.id)"
+          ></event-card>
+        </li>
+        <li class="[ lane ]" data-lane="near" data-empty.bind="group.nearby.length === 0">
+          <event-card
+            repeat.for="ev of group.nearby; key.bind: ev.id"
+            event.bind="ev"
+            lane="nearby"
+            readonly.bind="isReadonly"
+            beam-index.bind="getBeamIndex(ev.id)"
+          ></event-card>
+        </li>
+        <li class="[ lane ]" data-lane="away" data-empty.bind="group.away.length === 0">
+          <event-card
+            repeat.for="ev of group.away; key.bind: ev.id"
+            event.bind="ev"
+            lane="away"
+            readonly.bind="isReadonly"
+            beam-index.bind="getBeamIndex(ev.id)"
+          ></event-card>
+        </li>
+      </ol>
+    </li>
+  </ol>
+</section>

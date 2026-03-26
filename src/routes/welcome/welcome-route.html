@@ -1,59 +1,14 @@
-<import from="../../components/live-highway/event-card"></import>
+<import from="../../components/live-highway/concert-highway"></import>
 
-<main class="[ welcome-layout ]">
-  <!-- Brand wordmark -->
+<!-- Screen 1: Hero with CTA (full viewport, actionable first view) -->
+<header class="[ welcome-hero ]">
   <p class="welcome-brand">
     Liverty Music
   </p>
-
-  <!-- Hero copy -->
   <h1 t="welcome.hero.title" class="welcome-title"></h1>
   <p t="welcome.hero.subtitle" class="welcome-subtitle"></p>
 
-  <!-- Dashboard preview (read-only) -->
-  <section
-    if.bind="previewDateGroups.length > 0"
-    class="[ welcome-preview ]"
-    aria-hidden="true"
-  >
-    <ol class="[ date-group-list ]">
-      <li repeat.for="group of previewDateGroups; key.bind: group.dateKey">
-        <header class="[ date-separator ]">
-          <time>${group.dateKey}</time>
-        </header>
-        <ol class="[ lane-grid ]" aria-label="Concerts">
-          <li class="[ lane ]" data-empty.bind="group.home.length === 0">
-            <event-card
-              repeat.for="ev of group.home; key.bind: ev.id"
-              event.bind="ev"
-              lane="home"
-              readonly.bind="true"
-            ></event-card>
-          </li>
-          <li class="[ lane ]" data-empty.bind="group.nearby.length === 0">
-            <event-card
-              repeat.for="ev of group.nearby; key.bind: ev.id"
-              event.bind="ev"
-              lane="nearby"
-              readonly.bind="true"
-            ></event-card>
-          </li>
-          <li class="[ lane ]" data-empty.bind="group.away.length === 0">
-            <event-card
-              repeat.for="ev of group.away; key.bind: ev.id"
-              event.bind="ev"
-              lane="away"
-              readonly.bind="true"
-            ></event-card>
-          </li>
-        </ol>
-      </li>
-    </ol>
-    <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
-  </section>
-
-  <!-- CTA buttons -->
-  <footer class="welcome-actions">
+  <div class="welcome-cta-group">
     <button
       click.trigger="handleGetStarted()"
       class="welcome-btn-primary"
@@ -65,16 +20,51 @@
       class="welcome-btn-secondary"
       t="welcome.cta.login"
     ></button>
-  </footer>
+  </div>
 
-  <!-- Language toggle -->
-  <nav class="welcome-lang" aria-label="Language">
-    <button
-      repeat.for="lang of supportedLanguages"
-      click.trigger="selectLanguage(lang)"
-      class="welcome-lang-btn"
-      data-active.bind="isCurrentLanguage(lang)"
-      aria-current.attr="isCurrentLanguage(lang) ? 'page' : null"
-    >${lang === 'ja' ? '日本語' : 'EN'}</button>
-  </nav>
-</main>
+  <fieldset class="welcome-lang">
+    <legend class="[ visually-hidden ]">Language</legend>
+    <label repeat.for="lang of supportedLanguages" class="welcome-lang-label">
+      <input
+        type="radio"
+        class="[ visually-hidden ]"
+        name="welcome-lang"
+        model.bind="lang"
+        checked.bind="currentLocale"
+      >
+      <span class="welcome-lang-text">${lang === 'ja' ? '日本語' : 'EN'}</span>
+    </label>
+  </fieldset>
+
+  <div class="welcome-scroll-hint" if.bind="dateGroups.length > 0" aria-hidden="true"></div>
+</header>
+
+<!-- Screen 2: Live dashboard preview (bonus scroll destination) -->
+<section class="[ welcome-screen-2 ]" if.bind="dateGroups.length > 0">
+  <p t="welcome.preview.label" class="welcome-preview-label"></p>
+  <div class="[ welcome-preview ]" role="presentation">
+    <concert-highway
+      date-groups.bind="dateGroups"
+      is-readonly="true"
+      show-beams="true"
+    ></concert-highway>
+  </div>
+
+  <footer class="[ welcome-actions ]">
+    <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
+
+    <div class="welcome-cta-group">
+      <button
+        click.trigger="handleGetStarted()"
+        class="welcome-btn-primary"
+        t="welcome.cta.getStarted"
+      ></button>
+
+      <button
+        click.trigger="handleLogin()"
+        class="welcome-btn-secondary"
+        t="welcome.cta.login"
+      ></button>
+    </div>
+  </footer>
+</section>

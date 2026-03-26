@@ -1,4 +1,4 @@
-<import from="../../components/live-highway/event-card"></import>
+<import from="../../components/live-highway/concert-highway"></import>
 <import from="../../components/live-highway/event-detail-sheet"></import>
 <import from="../../components/user-home-selector/user-home-selector"></import>
 <import from="../../components/inline-error/inline-error"></import>
@@ -11,89 +11,31 @@
   <page-help if.bind="isOnboarding" page="dashboard"></page-help>
 </page-header>
 
-<!-- Laser beams — before header so header paints on top -->
-<div class="[ beam-overlay ]" if.bind="laserBeams.length > 0">
-  <div
-    repeat.for="b of laserBeams"
-    class="[ laser-beam ]"
-    data-beam-anchor.bind="b.anchorIndex"
-    beam-vars="hue.bind: b.hue; left.bind: b.left; right.bind: b.right"
-  ></div>
-</div>
+<!-- Loading state -->
+<p if.bind="isLoading" class="loading-text" t="dashboard.loading"></p>
 
-<!-- Stage header (fixed above scroll container via grid row) -->
-<header if.bind="dateGroups.length > 0" class="[ stage-header ]">
-  <span data-stage="home">HOME STAGE</span>
-  <span data-stage="near">NEAR STAGE</span>
-  <span data-stage="away">AWAY STAGE</span>
-</header>
+<!-- Error state -->
+<inline-error
+  if.bind="loadError"
+  message.bind="i18n.tr('dashboard.error.load')"
+  error.bind="loadError"
+  retry-action.bind="() => loadData()"
+></inline-error>
 
-<!-- Concert list with promise.bind -->
-<main
-  class="[ concert-scroll ]"
+<!-- Empty state -->
+<state-placeholder if.bind="!isLoading && !loadError && dateGroups.length === 0" icon="clock">
+  <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
+  <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
+  <a href="/discovery" t="dashboard.empty.discoverLink" class="dashboard-empty-link"></a>
+</state-placeholder>
+
+<!-- Concert highway — always in DOM for E2E compatibility -->
+<concert-highway
+  date-groups.bind="dateGroups"
+  show-beams="true"
   data-blurred.bind="needsRegion"
-  promise.bind="dataPromise"
   event-selected.trigger="onEventSelected($event)"
->
-  <!-- Loading state -->
-  <p pending class="loading-text" t="dashboard.loading"></p>
-
-  <!-- Success state -->
-  <template then.from-view="data">
-    <!-- Empty state -->
-    <state-placeholder if.bind="dateGroups.length === 0" icon="clock">
-      <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
-      <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
-      <a href="/discovery" t="dashboard.empty.discoverLink" class="dashboard-empty-link"></a>
-    </state-placeholder>
-
-    <!-- Data loaded -->
-    <ol if.bind="dateGroups.length > 0" class="[ date-group-list ]">
-      <li repeat.for="group of dateGroups; key.bind: group.dateKey">
-        <header class="[ date-separator ]">
-          <time>${group.label}</time>
-        </header>
-
-        <ol class="[ lane-grid ]" aria-label="Concerts">
-          <li class="[ lane ]" data-empty.bind="group.home.length === 0">
-            <event-card
-              repeat.for="ev of group.home; key.bind: ev.id"
-              event.bind="ev"
-              lane="home"
-              beam-index.bind="getBeamIndex(ev.id)"
-            ></event-card>
-          </li>
-          <li class="[ lane ]" data-empty.bind="group.nearby.length === 0">
-            <event-card
-              repeat.for="ev of group.nearby; key.bind: ev.id"
-              event.bind="ev"
-              lane="nearby"
-              beam-index.bind="getBeamIndex(ev.id)"
-            ></event-card>
-          </li>
-          <li class="[ lane ]" data-empty.bind="group.away.length === 0">
-            <event-card
-              repeat.for="ev of group.away; key.bind: ev.id"
-              event.bind="ev"
-              lane="away"
-              beam-index.bind="getBeamIndex(ev.id)"
-            ></event-card>
-          </li>
-        </ol>
-      </li>
-    </ol>
-
-  </template>
-
-  <!-- Error state -->
-  <template catch.from-view="err">
-    <inline-error
-      message.bind="i18n.tr('dashboard.error.load')"
-      error.bind="err"
-      retry-action.bind="() => loadData()"
-    ></inline-error>
-  </template>
-</main>
+></concert-highway>
 
 <!-- Bottom sheet for event details (top-layer dialog) -->
 <event-detail-sheet component.ref="detailSheet"></event-detail-sheet>

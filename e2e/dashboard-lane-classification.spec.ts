@@ -214,7 +214,7 @@ test.describe('Dashboard lane classification after home selection', () => {
 		await page.goto('http://localhost:9000/dashboard')
 
 		// Wait for dashboard content to render
-		await page.waitForSelector('.concert-scroll', {
+		await page.waitForSelector('concert-highway', {
 			timeout: 10_000,
 		})
 

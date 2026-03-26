@@ -1,44 +1,48 @@
 @layer block {
 	@scope (welcome-route) {
 		:scope {
-			--_gradient-mid: var(--color-brand-primary);
+			scroll-behavior: smooth;
+			scroll-snap-type: y mandatory;
 
+			overflow-y: auto;
 			display: block;
+
 			block-size: 100%;
+
 			background: linear-gradient(
 				to bottom,
 				var(--color-surface-base),
-				color-mix(in oklch, var(--_gradient-mid) 10%, transparent),
+				color-mix(in oklch, var(--color-brand-primary) 10%, transparent),
 				var(--color-surface-base)
 			);
 		}
 
-		.welcome-layout {
+		/* ── Screen 1: Hero (full viewport) ── */
+		.welcome-hero {
+			scroll-snap-align: start;
+
 			display: flex;
 			flex-direction: column;
 			align-items: center;
 			justify-content: center;
 
-			max-inline-size: 28rem;
-			block-size: 100%;
-			margin-inline: auto;
-			padding-block: var(--space-xl);
-			padding-inline: var(--space-m);
+			block-size: 100svh;
+			padding-inline: var(--space-l);
 
 			text-align: center;
+
+			animation: fade-in 600ms ease-out both;
 		}
 
 		.welcome-brand {
 			margin-block-end: var(--space-l);
 
 			font-family: var(--font-display);
-			font-size: var(--step--1);
+			font-size: var(--step-0);
 			font-weight: 600;
 			color: var(--color-brand-accent);
 			text-transform: uppercase;
 			letter-spacing: 0.2em;
-
-			animation: fade-in 600ms ease-out both;
 		}
 
 		.welcome-title {
@@ -49,28 +53,107 @@
 			font-weight: normal;
 			line-height: var(--leading-tight);
 			color: var(--color-text-primary);
-
-			animation: fade-slide-up 600ms ease-out 200ms both;
 		}
 
 		.welcome-subtitle {
+			max-inline-size: 28rem;
 			margin-block-end: var(--space-l);
 			font-size: var(--step-0);
 			color: var(--color-text-secondary);
-			animation: fade-slide-up 600ms ease-out 400ms both;
 		}
 
-		footer {
+		.welcome-scroll-hint {
+			position: absolute;
+			inset-block-end: var(--space-l);
+			transform: rotate(45deg);
+
+			inline-size: 24px;
+			block-size: 24px;
+			border-block-end: 2px solid var(--color-text-muted);
+			border-inline-end: 2px solid var(--color-text-muted);
+
+			animation: bounce-down 2s ease-in-out infinite;
+		}
+
+		/* ── Screen 2: Preview + CTA ── */
+		.welcome-screen-2 {
+			scroll-snap-align: start;
+
+			display: grid;
+			grid-template-rows: auto 1fr auto;
+
+			block-size: 100svh;
+			min-block-size: 0;
+		}
+
+		.welcome-preview-label {
+			padding-block: var(--space-s) var(--space-xs);
+			padding-inline: var(--space-m);
+
+			font-family: var(--font-display);
+			font-size: var(--step-0);
+			font-weight: normal;
+			color: var(--color-brand-accent);
+			text-align: center;
+			letter-spacing: 0.05em;
+		}
+
+		.welcome-preview {
+			position: relative;
+			min-block-size: 0;
+
+			/* Bottom fade-out mask */
+			&::after {
+				pointer-events: none;
+				content: "";
+
+				position: absolute;
+				inset-block-end: 0;
+				inset-inline: 0;
+
+				block-size: 60px;
+
+				background: linear-gradient(
+					to bottom,
+					transparent,
+					var(--color-surface-base)
+				);
+			}
+		}
+
+		.welcome-preview > concert-highway {
+			block-size: 100%;
+		}
+
+		/* ── CTA footer ── */
+		.welcome-actions {
 			display: flex;
 			flex-direction: column;
-			gap: var(--space-xs);
+			flex-shrink: 0;
+			align-items: center;
+
+			padding-block: var(--space-s) var(--space-xs);
+			padding-inline: var(--space-m);
+		}
+
+		.welcome-guest-friendly {
+			margin-block-end: var(--space-2xs);
+			font-size: var(--step--1);
+			color: var(--color-text-muted);
+		}
+
+		.welcome-cta-group {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
 
 			inline-size: 100%;
-
-			animation: fade-slide-up 600ms ease-out 600ms both;
+			max-inline-size: 28rem;
 		}
 
 		.welcome-btn-primary {
+			cursor: pointer;
+
 			inline-size: 100%;
 			min-block-size: 48px;
 			padding: var(--space-xs) var(--space-m);
@@ -96,41 +179,9 @@
 			}
 		}
 
-		.welcome-lang {
-			display: flex;
-			gap: var(--space-xs);
-			justify-content: center;
-
-			margin-block-start: var(--space-l);
-
-			animation: fade-slide-up 600ms ease-out 800ms both;
-		}
-
-		.welcome-lang-btn {
-			padding: var(--space-3xs) var(--space-xs);
-			border: none;
-			border-radius: var(--radius-button);
-
-			font-size: var(--step--1);
-			color: var(--color-text-secondary);
-
-			background: transparent;
-
-			transition: color 200ms;
-
-			&[data-active="true"] {
-				font-weight: 600;
-				color: var(--color-text-primary);
-				text-decoration: underline;
-				text-underline-offset: 4px;
-			}
-
-			&:hover {
-				color: var(--color-text-primary);
-			}
-		}
-
 		.welcome-btn-secondary {
+			cursor: pointer;
+
 			inline-size: 100%;
 			min-block-size: 48px;
 			padding: var(--space-xs) var(--space-m);
@@ -158,6 +209,62 @@
 
 			&:active {
 				transform: scale(0.98);
+			}
+		}
+
+		.welcome-lang {
+			display: flex;
+			gap: var(--space-xs);
+			justify-content: center;
+
+			padding-block-start: var(--space-xs);
+			border: none;
+		}
+
+		.welcome-lang-label {
+			cursor: pointer;
+		}
+
+		.welcome-lang-text {
+			padding: var(--space-3xs) var(--space-xs);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+
+			transition: color 200ms;
+		}
+
+		.welcome-lang-label:hover > .welcome-lang-text {
+			color: var(--color-text-primary);
+		}
+
+		.welcome-lang-label:has(input:checked) > .welcome-lang-text {
+			font-weight: 600;
+			color: var(--color-text-primary);
+			text-decoration: underline;
+			text-underline-offset: 4px;
+		}
+
+		@keyframes bounce-down {
+			0%,
+			100% {
+				transform: translateY(0);
+			}
+
+			50% {
+				transform: translateY(var(--space-xs));
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			:scope {
+				scroll-behavior: auto;
+			}
+
+			.welcome-hero,
+			.welcome-scroll-hint {
+				animation: none;
 			}
 		}
 	}

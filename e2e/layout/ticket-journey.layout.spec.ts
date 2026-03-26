@@ -300,10 +300,18 @@ test.describe('Detail sheet journey controls', () => {
 	test('clicking a status button marks it active (TJ10)', async ({
 		layoutPage: page,
 	}) => {
+		// Use JS dispatch: in serial mode the detail sheet popover may
+		// intercept Playwright pointer events after prior tests mutate state.
+		await page.evaluate(() => {
+			const btn = document.querySelector<HTMLElement>(
+				'.journey-btn[data-journey-status="tracking"]',
+			)
+			if (!btn) throw new Error('tracking button not found')
+			btn.click()
+		})
 		const trackingBtn = page.locator(
 			'.journey-btn[data-journey-status="tracking"]',
 		)
-		await trackingBtn.click()
 		await expect
 			.poll(async () => trackingBtn.getAttribute('data-active'), {
 				timeout: 3_000,
@@ -316,8 +324,13 @@ test.describe('Detail sheet journey controls', () => {
 	}) => {
 		const removeBtn = page.locator('.journey-remove-btn')
 
-		const paidBtn = page.locator('.journey-btn[data-journey-status="paid"]')
-		await paidBtn.click()
+		await page.evaluate(() => {
+			const btn = document.querySelector<HTMLElement>(
+				'.journey-btn[data-journey-status="paid"]',
+			)
+			if (!btn) throw new Error('paid button not found')
+			btn.click()
+		})
 
 		await expect(removeBtn).toBeVisible({ timeout: 3_000 })
 	})

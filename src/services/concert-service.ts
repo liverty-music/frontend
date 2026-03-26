@@ -4,7 +4,17 @@ import {
 	type ProtoConcert,
 	type ProximityGroup,
 } from '../adapter/rpc/client/concert-client'
+import { concertFrom } from '../adapter/rpc/mapper/concert-mapper'
 import { codeToHome } from '../constants/iso3166'
+import type { Artist } from '../entities/artist'
+import {
+	type DateGroup,
+	type HypeLevel,
+	type JourneyStatus,
+	isHypeMatched,
+	type LaneType,
+} from '../entities/concert'
+import type { Hype } from '../entities/follow'
 import { IAuthService } from './auth-service'
 import { IGuestService } from './guest-service'
 
@@ -53,7 +63,82 @@ export class ConcertServiceClient {
 		return this.rpcClient.listByFollower(signal)
 	}
 
+	public async listWithProximity(
+		artistIds: readonly string[],
+		countryCode: string,
+		level1: string,
+		signal?: AbortSignal,
+	): Promise<ProximityGroup[]> {
+		return this.rpcClient.listWithProximity(
+			[...artistIds],
+			countryCode,
+			level1,
+			signal,
+		)
+	}
+
+	/**
+	 * Convert ProximityGroup[] into DateGroup[] for rendering.
+	 * Shared by dashboard-route (authenticated) and welcome-route (preview).
+	 */
+	public toDateGroups(
+		groups: ProximityGroup[],
+		artistMap: Map<string, { artist: Artist; hype: Hype }>,
+		journeyMap: Map<string, JourneyStatus> = new Map(),
+	): DateGroup[] {
+		return groups.map((g) =>
+			this.protoGroupToDateGroup(g, artistMap, journeyMap),
+		)
+	}
+
 	// --- Private ---
+
+	private protoGroupToDateGroup(
+		group: ProximityGroup,
+		artistMap: Map<string, { artist: Artist; hype: Hype }>,
+		journeyMap: Map<string, JourneyStatus>,
+	): DateGroup {
+		const ld = group.date?.value
+		const jsDate = ld ? new Date(ld.year, ld.month - 1, ld.day) : new Date()
+
+		const dateKey = ld
+			? `${ld.year}-${String(ld.month).padStart(2, '0')}-${String(ld.day).padStart(2, '0')}`
+			: ''
+
+		const label = jsDate.toLocaleDateString('ja-JP', {
+			month: 'long',
+			day: 'numeric',
+			weekday: 'short',
+		})
+
+		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
+			concerts.flatMap((c) => {
+				const artistId = c.artistId?.value ?? ''
+				const entry = artistMap.get(artistId)
+				const hypeLevel: HypeLevel = entry?.hype ?? 'watch'
+				const event = concertFrom(
+					c,
+					entry?.artist.name ?? '',
+					hypeLevel,
+					isHypeMatched(hypeLevel, lane),
+					entry?.artist,
+				)
+				if (!event) return []
+				const eventId = c.id?.value
+				if (eventId) {
+					event.journeyStatus = journeyMap.get(eventId)
+				}
+				return [event]
+			})
+
+		return {
+			label,
+			dateKey,
+			home: convert(group.home, 'home'),
+			nearby: convert(group.nearby, 'nearby'),
+			away: convert(group.away, 'away'),
+		}
+	}
 
 	private async listByFollowerGuest(
 		signal?: AbortSignal,
