@@ -195,6 +195,32 @@ describe('OnboardingService', () => {
 		})
 	})
 
+	describe('readyForDashboard', () => {
+		it('should return true when followedCount meets the threshold', () => {
+			const sut = createService({ step: OnboardingStep.DISCOVERY })
+			sut.setDiscoveryCounts(5, 0)
+			expect(sut.readyForDashboard).toBe(true)
+		})
+
+		it('should return true when artistsWithConcertsCount meets the threshold', () => {
+			const sut = createService({ step: OnboardingStep.DISCOVERY })
+			sut.setDiscoveryCounts(0, 3)
+			expect(sut.readyForDashboard).toBe(true)
+		})
+
+		it('should return false when both counts are below threshold', () => {
+			const sut = createService({ step: OnboardingStep.DISCOVERY })
+			sut.setDiscoveryCounts(4, 2)
+			expect(sut.readyForDashboard).toBe(false)
+		})
+
+		it('should return false when step is not DISCOVERY', () => {
+			const sut = createService({ step: OnboardingStep.DASHBOARD })
+			sut.setDiscoveryCounts(10, 10)
+			expect(sut.readyForDashboard).toBe(false)
+		})
+	})
+
 	describe('getRouteForCurrentStep', () => {
 		it('should return "discovery" for DISCOVERY step', () => {
 			const sut = createService({ step: OnboardingStep.DISCOVERY })
