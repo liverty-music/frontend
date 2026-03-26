@@ -135,12 +135,6 @@ export class DashboardRoute {
 		} else {
 			this.needsRegion = !UserHomeSelector.getStoredHome()
 		}
-		this.showCelebration =
-			this.onboarding.currentStep === OnboardingStep.DASHBOARD &&
-			!DashboardRoute.celebrationShown
-		if (this.showCelebration) {
-			DashboardRoute.celebrationShown = true
-		}
 		this.loadData()
 
 		// Show signup banner for unauthenticated users who completed onboarding
@@ -184,14 +178,10 @@ export class DashboardRoute {
 	}
 
 	public attached(): void {
-		if (this.needsRegion && !this.showCelebration) {
-			this.homeSelector?.open()
-		} else if (
-			this.isOnboardingStepDashboard &&
-			!this.showCelebration &&
-			!this.needsRegion
-		) {
+		if (this.isOnboardingStepDashboard && !this.needsRegion) {
 			this.startLaneIntro()
+		} else if (this.needsRegion && this.isOnboardingStepDashboard) {
+			this.homeSelector?.open()
 		}
 		this.setupBeamTracking()
 	}
@@ -301,7 +291,10 @@ export class DashboardRoute {
 		if (this.dateGroups.length === 0) {
 			this.logger.warn('No concert data available, skipping lane intro')
 			this.laneIntroPhase = 'done'
-			this.showCelebration = true
+			if (!DashboardRoute.celebrationShown) {
+				this.showCelebration = true
+				DashboardRoute.celebrationShown = true
+			}
 			return
 		}
 
@@ -355,8 +348,14 @@ export class DashboardRoute {
 	private completeLaneIntro(): void {
 		this.laneIntroPhase = 'done'
 		this.onboarding.deactivateSpotlight()
-		this.logger.info('Lane intro completed, showing celebration')
-		this.showCelebration = true
+		if (!DashboardRoute.celebrationShown) {
+			this.logger.info('Lane intro completed, showing celebration')
+			this.showCelebration = true
+			DashboardRoute.celebrationShown = true
+		} else {
+			this.logger.info('Lane intro completed, celebration already shown')
+			this.setNavTabsDimmed(false)
+		}
 	}
 
 	private updateSpotlightForPhase(): void {
