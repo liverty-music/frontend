@@ -70,5 +70,4 @@ export class ConcertRpcClient {
 		)
 		return response.groups
 	}
-
 }
