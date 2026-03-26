@@ -1,7 +1,11 @@
 <template>
   <import from="./discovery-route.css"></import>
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
+  <import from="../../components/page-help/page-help"></import>
 
+  <page-header title-key="nav.discovery">
+    <page-help if.bind="isOnboarding" page="discovery" followed-count.bind="followedCount"></page-help>
+  </page-header>
 
   <main class="[ discovery-layout ]" data-search-mode.bind="search.isSearchMode">
 

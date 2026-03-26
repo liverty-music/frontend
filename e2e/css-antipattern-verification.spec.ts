@@ -365,7 +365,14 @@ test.describe('CSS antipattern verification', () => {
 			page,
 		}) => {
 			test.setTimeout(15_000)
-			await mockOnboardingRpcRoutes(page)
+			// Return empty concert data so lane intro is skipped → celebration shows directly
+			await page.route('**/liverty_music.rpc.**', (route) => {
+				return route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify({}),
+				})
+			})
 
 			await page.emulateMedia({ reducedMotion: 'reduce' })
 
@@ -387,7 +394,7 @@ test.describe('CSS antipattern verification', () => {
 				waitUntil: 'domcontentloaded',
 			})
 
-			// Celebration overlay should appear
+			// Celebration overlay should appear (lane intro skipped — no concert data)
 			const celebration = page.locator('.celebration-overlay')
 			await expect(celebration).toBeVisible({ timeout: 5000 })
 
@@ -413,7 +420,14 @@ test.describe('CSS antipattern verification', () => {
 			page,
 		}) => {
 			test.setTimeout(15_000)
-			await mockOnboardingRpcRoutes(page)
+			// Return empty concert data so lane intro is skipped → celebration shows directly
+			await page.route('**/liverty_music.rpc.**', (route) => {
+				return route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify({}),
+				})
+			})
 
 			await page.addInitScript(() => {
 				localStorage.setItem('onboardingStep', 'dashboard')
@@ -433,7 +447,7 @@ test.describe('CSS antipattern verification', () => {
 				waitUntil: 'domcontentloaded',
 			})
 
-			// Celebration overlay should appear at step 3 (first dashboard visit)
+			// Celebration overlay should appear (lane intro skipped — no concert data)
 			const celebration = page.locator('.celebration-overlay')
 			await expect(celebration).toBeVisible({ timeout: 5000 })
 

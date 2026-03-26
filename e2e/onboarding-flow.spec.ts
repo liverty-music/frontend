@@ -704,11 +704,19 @@ test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
 		await page.waitForURL(/dashboard/, { timeout: 10_000 })
 
 		// =========================================================================
-		// STEP 3 — DASHBOARD: celebration opens (step → MY_ARTISTS), then dismiss
+		// STEP 3 — DASHBOARD: lane intro → celebration → dismiss
 		// =========================================================================
 
-		// onCelebrationOpen fires immediately when celebration becomes visible,
-		// setting step to MY_ARTISTS before the user even taps
+		// Lane intro starts: HOME → NEAR → AWAY spotlight sequence.
+		// Each phase waits for a tap on the coach-mark interceptor.
+		// The target-interceptor inside coach-mark captures clicks on the spotlight area.
+		const coachTarget = page.locator('coach-mark .target-interceptor')
+		for (const _phase of ['home', 'near', 'away']) {
+			await expect(coachTarget).toBeVisible({ timeout: 10_000 })
+			await coachTarget.click({ timeout: 5_000 })
+		}
+
+		// After AWAY phase tap, celebration opens (step → MY_ARTISTS)
 		const celebration = page.locator('.celebration-overlay')
 		await expect(celebration).toBeVisible({ timeout: 10_000 })
 
