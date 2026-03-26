@@ -1,8 +1,8 @@
 @layer block {
 	@scope (dashboard-route) {
 		:scope {
-			display: flex;
-			flex-direction: column;
+			display: grid;
+			grid-template-rows: auto minmax(0, 1fr);
 
 			block-size: 100%;
 			min-block-size: 0;
@@ -10,8 +10,20 @@
 			background: var(--color-surface-base);
 		}
 
+		/* All content after page-header shares the second grid row */
+		concert-highway,
+		.loading-text,
+		inline-error,
+		state-placeholder {
+			grid-column: 1;
+			grid-row: 2;
+		}
+
+		state-placeholder {
+			place-self: center;
+		}
+
 		concert-highway {
-			flex: 1 1 0;
 			min-block-size: 0;
 			transition: filter 500ms;
 		}

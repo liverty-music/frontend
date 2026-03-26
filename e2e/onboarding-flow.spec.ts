@@ -88,24 +88,31 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 		}
 
 		if (url.includes('ListWithProximity')) {
+			// Return concerts for 5+ artists to satisfy PREVIEW_MIN_ARTISTS_WITH_CONCERTS
+			const artists = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
 				body: JSON.stringify({
-					groups: [
-						{
-							date: { value: { year: 2026, month: 6, day: 15 } },
-							home: [],
-							nearby: [],
-							away: [
-								{
-									id: { value: 'c-1' },
-									title: { value: 'Test Concert' },
-									localDate: { value: { year: 2026, month: 6, day: 15 } },
+					groups: artists.map((aid, i) => ({
+						date: { value: { year: 2026, month: 6, day: 15 + i } },
+						home: [],
+						nearby: [],
+						away: [
+							{
+								id: { value: `c-${aid}` },
+								artistId: { value: aid },
+								title: { value: `Concert ${aid}` },
+								localDate: {
+									value: { year: 2026, month: 6, day: 15 + i },
 								},
-							],
-						},
-					],
+								venue: {
+									name: { value: `Venue ${aid}` },
+									adminArea: { value: 'JP-13' },
+								},
+							},
+						],
+					})),
 				}),
 			})
 		}
@@ -251,7 +258,7 @@ test.describe('Onboarding tutorial flow', () => {
 	test('Step 0: Welcome page shows Get Started button', async ({ page }) => {
 		await page.goto('http://localhost:9000/')
 		await expect(
-			page.locator('button').filter({ hasText: /get started/i }),
+			page.locator('button').filter({ hasText: /get started/i }).first(),
 		).toBeVisible()
 	})
 
@@ -274,7 +281,7 @@ test.describe('Onboarding tutorial flow', () => {
 		})
 		await page.goto('http://localhost:9000/')
 		await expect(
-			page.locator('button').filter({ hasText: /get started/i }),
+			page.locator('button').filter({ hasText: /get started/i }).first(),
 		).toBeVisible({ timeout: 5000 })
 	})
 
@@ -286,13 +293,16 @@ test.describe('Onboarding tutorial flow', () => {
 		// return concerts. The preview section only renders when previewDateGroups.length > 0.
 		await page.goto('http://localhost:9000/')
 
-		// Preview section is present in DOM and visible
+		// Preview section is present in DOM (in scroll-snap Screen 2)
 		const preview = page.locator('.welcome-preview')
-		await expect(preview).toBeVisible({ timeout: 10_000 })
+		await expect(preview).toBeAttached({ timeout: 10_000 })
+
+		// Scroll to Screen 2 to make preview visible
+		await preview.scrollIntoViewIfNeeded()
 
 		// At least one event card rendered inside the preview
 		const cards = preview.locator('event-card')
-		await expect(cards.first()).toBeVisible()
+		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 	})
 
 	test('Step 0: Dashboard preview is hidden when no concert data', async ({
@@ -312,7 +322,7 @@ test.describe('Onboarding tutorial flow', () => {
 
 		// Get Started button still visible — page loads normally
 		await expect(
-			page.locator('button').filter({ hasText: /get started/i }),
+			page.locator('button').filter({ hasText: /get started/i }).first(),
 		).toBeVisible({ timeout: 5000 })
 
 		// Preview section must not be in the DOM (if.bind="previewDateGroups.length > 0")

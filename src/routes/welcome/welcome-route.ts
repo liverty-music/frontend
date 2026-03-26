@@ -4,14 +4,16 @@ import {
 	type IRouteViewModel,
 	type NavigationInstruction,
 } from '@aurelia/router'
-import { IEventAggregator, ILogger, resolve } from 'aurelia'
-import { concertFrom } from '../../adapter/rpc/mapper/concert-mapper'
+import { IEventAggregator, ILogger, observable, resolve } from 'aurelia'
+import type { Artist } from '../../entities/artist'
+import type { DateGroup } from '../../entities/concert'
+import type { Hype } from '../../entities/follow'
 import { Snack } from '../../components/snack-bar/snack'
 import {
 	PREVIEW_ARTIST_IDS,
+	PREVIEW_ARTIST_NAME_MAP,
 	PREVIEW_MIN_ARTISTS_WITH_CONCERTS,
 } from '../../constants/preview-artists'
-import type { Concert, DateGroup } from '../../entities/concert'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertService } from '../../services/concert-service'
 import { IGuestService } from '../../services/guest-service'
@@ -32,97 +34,92 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly concertService = resolve(IConcertService)
 
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
+	@observable public currentLocale: string = ''
 
-	/** Preview concert data for the read-only dashboard lane on the welcome page. */
-	public previewDateGroups: DateGroup[] = []
+	/** Preview concert data for the read-only dashboard on the welcome page. */
+	public dateGroups: DateGroup[] = []
+
+	private abortController: AbortController | null = null
 
 	public attached(): void {
-		void this.loadPreviewConcerts()
+		this.currentLocale = this.i18n.getLocale()
+		void this.loadPreviewData()
 	}
 
-	private async loadPreviewConcerts(): Promise<void> {
-		const artistsWithData = new Set<string>()
-		const byDate = new Map<string, Concert[]>()
+	public detaching(): void {
+		this.abortController?.abort()
+		this.abortController = null
+	}
 
-		for (const artistId of PREVIEW_ARTIST_IDS) {
-			if (artistsWithData.size >= PREVIEW_MIN_ARTISTS_WITH_CONCERTS) break
-			try {
-				const protos = await this.concertService.listConcerts(artistId)
-				if (protos.length === 0) continue
+	private async loadPreviewData(): Promise<void> {
+		if (PREVIEW_ARTIST_IDS.length === 0) return
 
-				artistsWithData.add(artistId)
-				for (const proto of protos) {
-					const ld = proto.localDate?.value
-					if (!ld) continue
-					const dateKey = `${ld.year}-${String(ld.month).padStart(2, '0')}-${String(ld.day).padStart(2, '0')}`
-					const concert = concertFrom(proto, '', 'away', true)
-					if (!concert) continue
-					const list = byDate.get(dateKey) ?? []
-					list.push(concert)
-					byDate.set(dateKey, list)
-				}
-			} catch (err) {
-				this.logger.debug('Preview fetch skipped for artist', {
-					artistId,
-					error: err,
+		this.abortController?.abort()
+		this.abortController = new AbortController()
+
+		try {
+			const groups = await this.concertService.listWithProximity(
+				PREVIEW_ARTIST_IDS,
+				'JP',
+				'JP-13',
+				this.abortController.signal,
+			)
+
+			// Build artist map from env-configured names (preview has no followed artists)
+			const artistMap = new Map<string, { artist: Artist; hype: Hype }>()
+			for (const [id, name] of PREVIEW_ARTIST_NAME_MAP) {
+				artistMap.set(id, {
+					artist: { id, name, mbid: '' },
+					hype: 'watch',
 				})
 			}
+
+			const allGroups = this.concertService.toDateGroups(groups, artistMap)
+
+			// Cap preview at ~30 concerts to avoid overwhelming the visitor
+			const MAX_PREVIEW_CONCERTS = 30
+			const capped: DateGroup[] = []
+			let total = 0
+			const artistsWithData = new Set<string>()
+
+			for (const g of allGroups) {
+				const concerts = [...g.home, ...g.nearby, ...g.away]
+				for (const c of concerts) {
+					artistsWithData.add(c.artistId)
+				}
+				total += concerts.length
+				capped.push(g)
+				if (total >= MAX_PREVIEW_CONCERTS) break
+			}
+
+			if (artistsWithData.size < PREVIEW_MIN_ARTISTS_WITH_CONCERTS) {
+				this.logger.debug('Not enough artists with concerts for preview', {
+					found: artistsWithData.size,
+				})
+				return
+			}
+
+			this.dateGroups = capped
+		} catch (err) {
+			this.logger.warn('Preview data load failed', { error: err })
 		}
-
-		if (artistsWithData.size < PREVIEW_MIN_ARTISTS_WITH_CONCERTS) {
-			this.logger.debug('Not enough artists with concerts for preview', {
-				found: artistsWithData.size,
-			})
-			return
-		}
-
-		this.previewDateGroups = Array.from(byDate.entries())
-			.sort(([a], [b]) => a.localeCompare(b))
-			.slice(0, 7)
-			.map(([dateKey, concerts]) => {
-				const [year, month, day] = dateKey.split('-').map(Number) as [
-					number,
-					number,
-					number,
-				]
-				const label = new Date(year, month - 1, day).toLocaleDateString(
-					'ja-JP',
-					{
-						month: 'long',
-						day: 'numeric',
-						weekday: 'short',
-					},
-				)
-				return { dateKey, label, home: [], nearby: concerts, away: [] }
-			})
 	}
 
-	public isCurrentLanguage(lang: string): boolean {
-		return this.i18n.getLocale() === lang
+	public async currentLocaleChanged(newLocale: string): Promise<void> {
+		if (!newLocale || newLocale === this.i18n.getLocale()) return
+		await changeLocale(this.i18n, newLocale)
 	}
 
-	public async selectLanguage(lang: string): Promise<void> {
-		if (lang === this.i18n.getLocale()) return
-		await changeLocale(this.i18n, lang)
-	}
-
-	/**
-	 * Router lifecycle hook - called before the component is loaded.
-	 * Returns a redirect instruction instead of calling router.load() to avoid
-	 * re-entrant navigation while the viewport is not yet registered (AUR3174).
-	 */
 	async canLoad(): Promise<NavigationInstruction | boolean> {
 		this.logger.debug('Checking if landing page can load')
 
 		await this.authService.ready
 
-		// Authenticated users skip LP entirely
 		if (this.authService.isAuthenticated) {
 			this.logger.info('User is authenticated, redirecting to dashboard')
 			return 'dashboard'
 		}
 
-		// If in onboarding, resume at the correct step
 		if (this.onboarding.isOnboarding) {
 			const route = this.onboarding.getRouteForCurrentStep()
 			if (route) {

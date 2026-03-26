@@ -19,6 +19,7 @@ import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
+import { EventCard } from './components/live-highway/event-card'
 import { LoadingSpinner } from './components/loading-spinner/loading-spinner'
 import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
@@ -146,6 +147,7 @@ au.register(IPushRpcClient)
 au.register(IProofService)
 au.register(BottomNavBar)
 au.register(BottomSheet)
+au.register(EventCard)
 au.register(LoadingSpinner)
 au.register(Toast)
 au.register(PageHeader)
