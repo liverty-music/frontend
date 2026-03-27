@@ -6,9 +6,9 @@ import { IAuthService } from '../src/services/auth-service'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 import { IOnboardingService } from '../src/services/onboarding-service'
 
-// Mock all dynamic imports used by the @route decorator on AppShell.
-// Without these mocks, the imports resolve after Vitest tears down the jsdom
-// environment, causing "document is not defined" unhandled rejections.
+// Mock dynamic imports used by the @route decorator on AppShell.
+// Route modules are mocked to prevent vitest from loading the full
+// component dependency tree (template convention → child CEs → resolve(INode)).
 vi.mock('../src/routes/welcome/welcome-route', () => ({
 	WelcomeRoute: class WelcomeRoute {},
 }))
@@ -20,9 +20,6 @@ vi.mock('../src/routes/auth-callback/auth-callback-route', () => ({
 }))
 vi.mock('../src/routes/dashboard/dashboard-route', () => ({
 	DashboardRoute: class DashboardRoute {},
-}))
-vi.mock('../src/routes/dashboard/dashboard-route.html', () => ({
-	default: '',
 }))
 vi.mock('../src/routes/discovery/discovery-route', () => ({
 	DiscoveryRoute: class DiscoveryRoute {},
