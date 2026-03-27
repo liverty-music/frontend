@@ -248,14 +248,18 @@ test.describe('Detail sheet journey controls', () => {
 		await page.goto('/dashboard')
 		await page.waitForSelector('[data-live-card]', { timeout: 10_000 })
 
-		// Click the first card to open the detail sheet.
-		// page-help's .dismiss-zone may intercept real pointer events;
-		// dispatch the click via JS to bypass interception.
+		// Close any lingering popovers from prior serial tests so they
+		// don't intercept Playwright's pointer events via top-layer.
 		await page.evaluate(() => {
-			const el = document.querySelector<HTMLElement>('[data-live-card]')
-			if (!el) throw new Error('[data-live-card] not found')
-			el.click()
+			document.querySelectorAll('[popover]').forEach((el) => {
+				try {
+					;(el as HTMLElement).hidePopover()
+				} catch {}
+			})
 		})
+
+		// Click the first card to open the detail sheet.
+		await page.locator('[data-live-card]').first().click()
 		await page.waitForSelector('[data-testid="sheet-journey"]', { timeout: 5_000 })
 	})
 
