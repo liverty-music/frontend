@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import { AbsorptionAnimator } from '../../src/components/dna-orb/absorption-animator'
 

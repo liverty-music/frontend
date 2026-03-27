@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it, vi } from 'vitest'
 
 // Mock the proto enum before importing the mapper

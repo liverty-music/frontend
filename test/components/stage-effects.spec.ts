@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import { getStageParams } from '../../src/components/dna-orb/stage-effects'
 
