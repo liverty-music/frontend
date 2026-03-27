@@ -52,6 +52,31 @@ describe('BottomSheet', () => {
 
 			expect(() => sut.openChanged(false)).not.toThrow()
 		})
+
+		it('suppresses showPopover error before attached (pre-attach)', () => {
+			mockHost.showPopover.mockImplementation(() => {
+				throw new DOMException('not a popover', 'InvalidStateError')
+			})
+
+			expect(() => sut.openChanged(true)).not.toThrow()
+		})
+
+		it('opens successfully when open is true at creation time and attached() runs', () => {
+			// Simulate pre-attach: showPopover fails
+			mockHost.showPopover.mockImplementationOnce(() => {
+				throw new DOMException('not a popover', 'InvalidStateError')
+			})
+
+			// binding phase: open = true triggers openChanged
+			sut.open = true
+			sut.openChanged(true)
+			expect(mockHost.showPopover).toHaveBeenCalledOnce()
+
+			// attached phase: popover attribute is set, retry succeeds
+			mockHost.showPopover.mockImplementation(() => {})
+			sut.attached()
+			expect(mockHost.showPopover).toHaveBeenCalledTimes(2)
+		})
 	})
 
 	describe('attached lifecycle', () => {
