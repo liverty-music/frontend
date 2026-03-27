@@ -101,12 +101,6 @@ export class DashboardRoute {
 		if (!this.authService.isAuthenticated && this.onboarding.isCompleted) {
 			this.showSignupBanner = true
 		}
-
-		// PostSignupDialog: show once after first-time signup
-		if (localStorage.getItem(StorageKeys.postSignupShown) === 'pending') {
-			localStorage.removeItem(StorageKeys.postSignupShown)
-			this.showPostSignupDialog = true
-		}
 	}
 
 	public async loadData(): Promise<void> {
@@ -171,6 +165,14 @@ export class DashboardRoute {
 	public attached(): void {
 		if (this.isOnboardingStepDashboard) {
 			this.startLaneIntro()
+		}
+
+		// PostSignupDialog: show once after first-time signup.
+		// Checked in attached() so child BottomSheet is in the DOM
+		// and showPopover() can succeed.
+		if (localStorage.getItem(StorageKeys.postSignupShown) === 'pending') {
+			localStorage.removeItem(StorageKeys.postSignupShown)
+			this.showPostSignupDialog = true
 		}
 	}
 
