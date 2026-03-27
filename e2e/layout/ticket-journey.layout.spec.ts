@@ -304,7 +304,7 @@ test.describe('Detail sheet journey controls', () => {
 		// intercept Playwright pointer events after prior tests mutate state.
 		await page.evaluate(() => {
 			const btn = document.querySelector<HTMLElement>(
-				'.journey-btn[data-journey-status="tracking"]',
+				'[data-testid="journey-btn-tracking"]',
 			)
 			if (!btn) throw new Error('tracking button not found')
 			btn.click()
@@ -326,7 +326,7 @@ test.describe('Detail sheet journey controls', () => {
 
 		await page.evaluate(() => {
 			const btn = document.querySelector<HTMLElement>(
-				'.journey-btn[data-journey-status="paid"]',
+				'[data-testid="journey-btn-paid"]',
 			)
 			if (!btn) throw new Error('paid button not found')
 			btn.click()
@@ -343,7 +343,7 @@ test.describe('Detail sheet journey controls', () => {
 		// assertions read DOM attributes regardless of visibility.
 		await page.evaluate(() => {
 			const btn = document.querySelector<HTMLElement>(
-				'.journey-btn[data-journey-status="applied"]',
+				'[data-testid="journey-btn-applied"]',
 			)
 			if (!btn) throw new Error('applied button not found')
 			btn.click()
@@ -359,7 +359,7 @@ test.describe('Detail sheet journey controls', () => {
 			.not.toBeNull()
 
 		await page.evaluate(() => {
-			const btn = document.querySelector<HTMLElement>('.journey-remove-btn')
+			const btn = document.querySelector<HTMLElement>('[data-testid="journey-remove-btn"]')
 			if (!btn) throw new Error('remove button not found')
 			btn.click()
 		})
