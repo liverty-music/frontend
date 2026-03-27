@@ -16,7 +16,6 @@ const AUTO_OPEN_PAGES: ReadonlySet<PageHelpPage> = new Set([
 
 export class PageHelp {
 	@bindable public page: PageHelpPage = 'discovery'
-	@bindable public followedCount = 0
 
 	public isOpen = false
 

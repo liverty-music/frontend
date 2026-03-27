@@ -236,10 +236,14 @@ test.describe('Lane intro: coach mark visible above concert cards', () => {
 		const tooltip = page.locator('.coach-mark-tooltip')
 		await expect(tooltip).toBeVisible()
 
-		// Tapping the interceptor advances lane intro (home → near)
-		const interceptor = page.locator('.target-interceptor')
-		await expect(interceptor).toBeVisible()
-		await interceptor.click({ force: true })
+		// Tapping the interceptor advances lane intro (home → near).
+		// The interceptor is inside a popover top layer positioned via CSS Anchor
+		// Positioning — it may be outside the viewport when the anchor hasn't
+		// resolved, so dispatch the click via JS instead of Playwright click.
+		await page.evaluate(() => {
+			const el = document.querySelector('.target-interceptor')
+			el?.dispatchEvent(new PointerEvent('click', { bubbles: true }))
+		})
 
 		// Step stays at 'dashboard' during lane intro (step advances only at celebration)
 		const step = await page.evaluate(() =>

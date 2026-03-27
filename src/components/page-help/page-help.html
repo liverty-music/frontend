@@ -10,52 +10,54 @@
 
 <bottom-sheet open.bind="isOpen" sheet-closed.trigger="onSheetClosed()" aria-label="ページのヘルプ">
 
-  <if condition.bind="page === 'discovery'">
-    <section class="page-help-content">
-      <h2 class="page-help-title" t="pageHelp.discovery.title"></h2>
-      <p t="pageHelp.discovery.description"></p>
-      <p class="page-help-count" if.bind="followedCount > 0">
-        <span t="pageHelp.discovery.followedCount" t-params.bind="{ count: followedCount }"></span>
-      </p>
-    </section>
-  </if>
+  <template switch.bind="page">
 
-  <if condition.bind="page === 'dashboard'">
-    <section class="page-help-content">
-      <h2 class="page-help-title" t="pageHelp.dashboard.title"></h2>
-      <ul class="page-help-lanes">
-        <li><strong t="pageHelp.dashboard.homeLabel"></strong><span t="pageHelp.dashboard.homeDesc"></span></li>
-        <li><strong t="pageHelp.dashboard.nearLabel"></strong><span t="pageHelp.dashboard.nearDesc"></span></li>
-        <li><strong t="pageHelp.dashboard.awayLabel"></strong><span t="pageHelp.dashboard.awayDesc"></span></li>
+    <section case="discovery" class="page-help-content" aria-labelledby="help-discovery-title">
+      <h2 id="help-discovery-title" class="page-help-title" t="pageHelp.discovery.title"></h2>
+      <p t="pageHelp.discovery.description"></p>
+      <ul class="page-help-tips">
+        <li t="pageHelp.discovery.genreTip"></li>
+        <li t="pageHelp.discovery.searchTip"></li>
       </ul>
     </section>
-  </if>
 
-  <if condition.bind="page === 'my-artists'">
-    <section class="page-help-content">
-      <h2 class="page-help-title" t="pageHelp.myArtists.title"></h2>
+    <section case="dashboard" class="page-help-content" aria-labelledby="help-dashboard-title">
+      <h2 id="help-dashboard-title" class="page-help-title" t="pageHelp.dashboard.title"></h2>
+      <p t="pageHelp.dashboard.description"></p>
+      <ul class="page-help-lanes">
+        <li><strong class="stage-label" data-stage="home" t="pageHelp.dashboard.homeLabel"></strong><span t="pageHelp.dashboard.homeDesc"></span></li>
+        <li><strong class="stage-label" data-stage="near" t="pageHelp.dashboard.nearLabel"></strong><span t="pageHelp.dashboard.nearDesc"></span></li>
+        <li><strong class="stage-label" data-stage="away" t="pageHelp.dashboard.awayLabel"></strong><span t="pageHelp.dashboard.awayDesc"></span></li>
+      </ul>
+      <p class="page-help-note" t="pageHelp.dashboard.cardTip"></p>
+    </section>
+
+    <section case="my-artists" class="page-help-content" aria-labelledby="help-my-artists-title">
+      <h2 id="help-my-artists-title" class="page-help-title" t="pageHelp.myArtists.title"></h2>
+      <p t="pageHelp.myArtists.description"></p>
       <table class="page-help-hype-table">
         <tbody>
           <tr>
-            <td>👀 Watch</td>
+            <th scope="row"><span aria-hidden="true">👀</span> Watch</th>
             <td t="pageHelp.myArtists.watchDesc"></td>
           </tr>
           <tr>
-            <td>🔥 Home</td>
+            <th scope="row"><span aria-hidden="true">🔥</span> Home</th>
             <td t="pageHelp.myArtists.homeDesc"></td>
           </tr>
           <tr>
-            <td>🔥🔥 Nearby</td>
+            <th scope="row"><span aria-hidden="true">🔥🔥</span> Nearby</th>
             <td t="pageHelp.myArtists.nearbyDesc"></td>
           </tr>
           <tr>
-            <td>🔥🔥🔥 Away</td>
+            <th scope="row"><span aria-hidden="true">🔥🔥🔥</span> Away</th>
             <td t="pageHelp.myArtists.awayDesc"></td>
           </tr>
         </tbody>
       </table>
-      <p class="page-help-note" t="pageHelp.myArtists.accountNote"></p>
+      <p class="page-help-note" t="pageHelp.myArtists.tip"></p>
     </section>
-  </if>
+
+  </template>
 
 </bottom-sheet>
