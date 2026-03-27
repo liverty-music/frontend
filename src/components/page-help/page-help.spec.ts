@@ -19,7 +19,7 @@ import {
 	loadHelpSeen,
 	saveHelpSeen,
 } from '../../adapter/storage/onboarding-storage'
-import { type PageHelpPage, PageHelp } from './page-help'
+import { PageHelp, type PageHelpPage } from './page-help'
 
 const fakeOnboarding = {
 	isOnboarding: true,

@@ -5,15 +5,15 @@ import {
 	type NavigationInstruction,
 } from '@aurelia/router'
 import { IEventAggregator, ILogger, observable, resolve } from 'aurelia'
-import type { Artist } from '../../entities/artist'
-import type { DateGroup } from '../../entities/concert'
-import type { Hype } from '../../entities/follow'
 import { Snack } from '../../components/snack-bar/snack'
 import {
 	PREVIEW_ARTIST_IDS,
 	PREVIEW_ARTIST_NAME_MAP,
 	PREVIEW_MIN_ARTISTS_WITH_CONCERTS,
 } from '../../constants/preview-artists'
+import type { Artist } from '../../entities/artist'
+import type { DateGroup } from '../../entities/concert'
+import type { Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertService } from '../../services/concert-service'
 import { IGuestService } from '../../services/guest-service'

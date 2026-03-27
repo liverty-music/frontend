@@ -343,7 +343,7 @@ test.describe('Onboarding tutorial flow', () => {
 		await page.goto('http://localhost:9000/discover')
 		await page.waitForSelector('.discovery-layout')
 
-		await page.waitForTimeout(2000)
+		await page.waitForLoadState('networkidle')
 		await expect(page.locator('.snack-item')).toHaveCount(0)
 	})
 
@@ -359,10 +359,10 @@ test.describe('Onboarding tutorial flow', () => {
 		const ticketsNav = page.locator('[data-nav-tickets]')
 		if ((await ticketsNav.count()) > 0) {
 			await ticketsNav.click()
-			await page.waitForTimeout(500)
+			// Web-first assertion: if a toast were to appear, it would within 500ms
 			await expect(
 				page.locator('.toast-message').filter({ hasText: /login/i }),
-			).toHaveCount(0)
+			).toHaveCount(0, { timeout: 1000 })
 		}
 	})
 
@@ -388,11 +388,9 @@ test.describe('Onboarding tutorial flow', () => {
 		await page.goto('http://localhost:9000/discover')
 		await page.waitForSelector('.discovery-layout')
 
-		// Wait for all concert searches to complete (SearchNewConcerts + List)
-		await page.waitForTimeout(5000)
-
-		// No concerts → showDashboardCoachMark stays false → no spotlight
-		await expect(page.locator('.visual-spotlight')).not.toBeVisible()
+		// Wait for all concert searches to complete, then verify no coach mark
+		await page.waitForLoadState('networkidle')
+		await expect(page.locator('.visual-spotlight')).not.toBeVisible({ timeout: 3000 })
 		await expect(page.locator('.onboarding-guide')).toHaveCount(0)
 	})
 

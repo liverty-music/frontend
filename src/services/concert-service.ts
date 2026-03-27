@@ -10,8 +10,8 @@ import type { Artist } from '../entities/artist'
 import {
 	type DateGroup,
 	type HypeLevel,
-	type JourneyStatus,
 	isHypeMatched,
+	type JourneyStatus,
 	type LaneType,
 } from '../entities/concert'
 import type { Hype } from '../entities/follow'
