@@ -94,7 +94,7 @@ export default defineConfig({
     {
       name: 'mobile-visual',
       testMatch: 'e2e/visual/**/*.spec.ts',
-      testIgnore: 'e2e/visual/**/*.auth.*.spec.ts',
+      testIgnore: 'e2e/visual/**/*.auth.visual.spec.ts',
       use: {
         ...devices['iPhone 14'],
         // Override WebKit default to Chromium — only Chromium is installed in CI
@@ -105,7 +105,7 @@ export default defineConfig({
     // Layer 4: Visual Regression — authenticated pages
     {
       name: 'authenticated-visual',
-      testMatch: 'e2e/visual/**/*.auth.*.spec.ts',
+      testMatch: 'e2e/visual/**/*.auth.visual.spec.ts',
       use: {
         ...devices['iPhone 14'],
         browserName: 'chromium',
