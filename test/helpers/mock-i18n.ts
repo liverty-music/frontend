@@ -1,3 +1,4 @@
+import type { I18N } from '@aurelia/i18n'
 import { vi } from 'vitest'
 
 /**
@@ -5,7 +6,7 @@ import { vi } from 'vitest'
  * By default, `tr()` returns the key with interpolation placeholders replaced.
  * `getLocale()` returns 'ja' and `setLocale()` is a no-op.
  */
-export function createMockI18n() {
+export function createMockI18n(): Partial<I18N> {
 	let currentLocale = 'ja'
 
 	return {

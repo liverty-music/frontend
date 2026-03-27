@@ -74,6 +74,7 @@ describe('PwaInstallService', () => {
 	})
 
 	afterEach(() => {
+		localStorage.clear()
 		vi.restoreAllMocks()
 	})
 
