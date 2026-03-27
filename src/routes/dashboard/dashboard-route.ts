@@ -223,7 +223,10 @@ export class DashboardRoute {
 	private startLaneIntro(): void {
 		if (!this.isOnboardingStepDashboard) return
 
-		// When region is not set, open Home Selector without spotlight.
+		// When region is not set, open Home Selector directly.
+		// The coach mark cannot be shown simultaneously because the bottom-sheet
+		// overlaps the spotlight tooltip. HOME STAGE context is conveyed via the
+		// Home Selector's own description text instead.
 		// The @watch on dateGroups.length will activate spotlight after data loads.
 		if (this.needsRegion) {
 			this.setNavTabsDimmed(true)

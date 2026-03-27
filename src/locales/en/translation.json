@@ -30,7 +30,7 @@
 	},
 	"userHome": {
 		"title": "Select Your Home Area",
-		"description": "Find live events near you.",
+		"description": "The HOME STAGE shows lives in your home area. Where do you live?",
 		"quickSelect": "Quick Select",
 		"selectByRegion": "Select by Region",
 		"selectPrefecture": "Select your prefecture.",
@@ -117,7 +117,7 @@
 			"explore": "Explore your timetable freely"
 		},
 		"laneIntro": {
-			"homePrompt": "Shows lives in your home area. Where do you live?",
+			"homePrompt": "This is the HOME STAGE. It shows lives in your home area. Where do you live?",
 			"home": "{{prefecture}} lives",
 			"near": "Lives just within reach",
 			"away": "Away lives!"
