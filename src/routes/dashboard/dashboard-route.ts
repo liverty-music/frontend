@@ -101,7 +101,6 @@ export class DashboardRoute {
 		if (!this.authService.isAuthenticated && this.onboarding.isCompleted) {
 			this.showSignupBanner = true
 		}
-
 	}
 
 	public async loadData(): Promise<void> {
