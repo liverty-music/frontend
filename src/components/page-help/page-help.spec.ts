@@ -19,7 +19,7 @@ import {
 	loadHelpSeen,
 	saveHelpSeen,
 } from '../../adapter/storage/onboarding-storage'
-import { PageHelp } from './page-help'
+import { type PageHelpPage, PageHelp } from './page-help'
 
 const fakeOnboarding = {
 	isOnboarding: true,
@@ -94,6 +94,52 @@ describe('PageHelp', () => {
 			sut.page = 'dashboard'
 
 			sut.onHelpTap()
+
+			expect(sut.isOpen).toBe(true)
+		})
+
+		it('opens on help tap when not onboarding', () => {
+			fakeOnboarding.isOnboarding = false
+			sut.page = 'discovery'
+
+			sut.onHelpTap()
+
+			expect(sut.isOpen).toBe(true)
+		})
+	})
+
+	describe('sheet close', () => {
+		it('closes the sheet', () => {
+			sut.isOpen = true
+
+			sut.onSheetClosed()
+
+			expect(sut.isOpen).toBe(false)
+		})
+	})
+
+	// Spec: "Only active page content is rendered"
+	// The switch.bind template controller guarantees DOM mutual exclusivity at the
+	// framework level. These tests verify that the page bindable behaves correctly
+	// at the ViewModel level, ensuring the right value is passed to the template.
+	describe('page bindable', () => {
+		it('defaults to discovery', () => {
+			expect(sut.page).toBe('discovery')
+		})
+
+		it('accepts all valid page values', () => {
+			const pages: PageHelpPage[] = ['discovery', 'dashboard', 'my-artists']
+			for (const page of pages) {
+				sut.page = page
+				expect(sut.page).toBe(page)
+			}
+		})
+
+		it('does not reset isOpen when page changes', () => {
+			sut.onHelpTap()
+			expect(sut.isOpen).toBe(true)
+
+			sut.page = 'dashboard'
 
 			expect(sut.isOpen).toBe(true)
 		})
