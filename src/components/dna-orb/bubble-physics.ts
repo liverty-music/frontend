@@ -65,7 +65,7 @@ export class BubblePhysics {
 			this.walls = []
 
 			const wallThickness = 50
-			const orbZoneHeight = 160
+			const orbZoneHeight = 130
 			this.bottomWall = this.Matter?.Bodies.rectangle(
 				w / 2,
 				h - orbZoneHeight + wallThickness / 2,

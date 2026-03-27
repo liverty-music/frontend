@@ -96,10 +96,10 @@ describe('OrbRenderer', () => {
 			expect(renderer.orbRadius).toBe(60)
 
 			renderer.setFollowCount(3)
-			expect(renderer.orbRadius).toBe(96)
+			expect(renderer.orbRadius).toBe(82.5)
 
 			renderer.setFollowCount(5)
-			expect(renderer.orbRadius).toBe(120)
+			expect(renderer.orbRadius).toBe(90)
 		})
 
 		it('should influence swirlMultiplier in update()', () => {

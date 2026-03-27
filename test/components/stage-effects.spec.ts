@@ -25,7 +25,7 @@ describe('getStageParams', () => {
 
 		it('should activate breathing, orbitals and vortex at 1 follow', () => {
 			const p = getStageParams(1)
-			expect(p.orbRadius).toBe(72)
+			expect(p.orbRadius).toBe(67.5)
 			expect(p.breathAmplitude).toBeGreaterThan(0)
 			expect(p.orbitalCount).toBe(2)
 			expect(p.particleVisibilityRatio).toBeGreaterThan(0.3)
@@ -82,14 +82,14 @@ describe('getStageParams', () => {
 			expect(p6.orbitalSize).toBe(p5.orbitalSize)
 		})
 
-		it('should use logarithmic growth beyond 5 follows', () => {
+		it('should cap orbRadius at MAX_RADIUS for 4+ follows', () => {
 			const p4 = getStageParams(4)
+			expect(p4.orbRadius).toBe(90)
+			// Follow 5+ stays capped at MAX_RADIUS=90
 			const p5 = getStageParams(5)
-			// Linear growth through follow 5
-			expect(p5.orbRadius).toBeGreaterThan(p4.orbRadius)
-			// At follow 5, orbRadius hits the cap (120), so 6+ stays capped
+			expect(p5.orbRadius).toBe(90)
 			const p10 = getStageParams(10)
-			expect(p10.orbRadius).toBeLessThanOrEqual(120)
+			expect(p10.orbRadius).toBeLessThanOrEqual(90)
 		})
 
 		it('should still compute valid params at 20 follows', () => {
