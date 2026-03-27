@@ -281,7 +281,7 @@ test.describe('Detail sheet journey controls', () => {
 	test('five journey status buttons are rendered (TJ8)', async ({
 		layoutPage: page,
 	}) => {
-		const buttons = page.locator('[data-testid^="journey-btn-"]')
+		const buttons = page.locator('[data-testid="journey-btn"]')
 		await expect(buttons).toHaveCount(5)
 
 		const labels = await buttons.allTextContents()
@@ -291,7 +291,7 @@ test.describe('Detail sheet journey controls', () => {
 	test('journey buttons have data-journey-status attributes (TJ9)', async ({
 		layoutPage: page,
 	}) => {
-		const buttons = page.locator('[data-testid^="journey-btn-"]')
+		const buttons = page.locator('[data-testid="journey-btn"]')
 		const count = await buttons.count()
 		const expected = ['tracking', 'applied', 'lost', 'unpaid', 'paid']
 
@@ -308,13 +308,13 @@ test.describe('Detail sheet journey controls', () => {
 		// intercept Playwright pointer events after prior tests mutate state.
 		await page.evaluate(() => {
 			const btn = document.querySelector<HTMLElement>(
-				'[data-testid="journey-btn-tracking"]',
+				'[data-testid="journey-btn"][data-journey-status="tracking"]',
 			)
 			if (!btn) throw new Error('tracking button not found')
 			btn.click()
 		})
 		const trackingBtn = page.locator(
-			'[data-testid="journey-btn-tracking"]',
+			'[data-testid="journey-btn"][data-journey-status="tracking"]',
 		)
 		await expect
 			.poll(async () => trackingBtn.getAttribute('data-active'), {
@@ -330,7 +330,7 @@ test.describe('Detail sheet journey controls', () => {
 
 		await page.evaluate(() => {
 			const btn = document.querySelector<HTMLElement>(
-				'[data-testid="journey-btn-paid"]',
+				'[data-testid="journey-btn"][data-journey-status="paid"]',
 			)
 			if (!btn) throw new Error('paid button not found')
 			btn.click()
@@ -347,14 +347,14 @@ test.describe('Detail sheet journey controls', () => {
 		// assertions read DOM attributes regardless of visibility.
 		await page.evaluate(() => {
 			const btn = document.querySelector<HTMLElement>(
-				'[data-testid="journey-btn-applied"]',
+				'[data-testid="journey-btn"][data-journey-status="applied"]',
 			)
 			if (!btn) throw new Error('applied button not found')
 			btn.click()
 		})
 
 		const appliedBtn = page.locator(
-			'[data-testid="journey-btn-applied"]',
+			'[data-testid="journey-btn"][data-journey-status="applied"]',
 		)
 		await expect
 			.poll(async () => appliedBtn.getAttribute('data-active'), {
@@ -378,7 +378,7 @@ test.describe('Detail sheet journey controls', () => {
 	test('journey buttons have non-zero dimensions (TJ13)', async ({
 		layoutPage: page,
 	}) => {
-		const firstBtn = page.locator('[data-testid^="journey-btn-"]').first()
+		const firstBtn = page.locator('[data-testid="journey-btn"]').first()
 		const box = await firstBtn.boundingBox()
 		expect(box, 'button must have bounding box').toBeTruthy()
 		expect(box!.width).toBeGreaterThan(20)

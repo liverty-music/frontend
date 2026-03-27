@@ -68,7 +68,7 @@
           <button
             repeat.for="s of journeyStatuses"
             class="journey-btn"
-            data-testid="journey-btn-${s}"
+            data-testid="journey-btn"
             data-journey-status.bind="s"
             data-active.bind="event.journeyStatus === s || undefined"
             disabled.bind="journeyUpdating"
