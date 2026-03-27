@@ -41,8 +41,7 @@ for (const route of PUBLIC_ROUTES) {
 		})
 
 		await page.goto(route)
-		// Allow time for async component initialization
-		await page.waitForTimeout(2000)
+		await page.waitForLoadState('networkidle')
 
 		expect(errors, `Console errors on ${route}:\n${errors.join('\n')}`).toEqual(
 			[],

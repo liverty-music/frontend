@@ -1,11 +1,8 @@
 import { test as base, type Page } from '@playwright/test'
 
 /**
- * Intercept all Connect-RPC requests to the backend API and return
- * minimal valid responses so layout tests don't depend on a running backend.
- *
- * Connect-RPC uses POST with JSON body to paths like:
- *   /liverty_music.rpc.artist.v1.ArtistService/ListTop
+ * Intercept all Connect-RPC requests and return minimal valid responses
+ * so visual regression tests don't depend on a running backend.
  */
 async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
@@ -17,18 +14,10 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	})
 }
 
-/**
- * Set localStorage values so routes render without auth/onboarding redirects.
- * Step 'completed': bypasses tutorial restrictions for non-tutorial routes.
- */
 const BYPASS_AUTH_SETUP = () => {
 	localStorage.setItem('onboardingStep', 'completed')
 }
 
-/**
- * Set onboarding step to 'discovery' so the auth hook allows
- * tutorial routes (discover, loading, dashboard) without authentication.
- */
 const ONBOARDING_DISCOVER_SETUP = () => {
 	localStorage.setItem('onboardingStep', 'discovery')
 }

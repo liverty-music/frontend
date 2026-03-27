@@ -143,7 +143,6 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		// Publish 3 toasts rapidly with short duration for test speed
 		for (let i = 1; i <= 3; i++) {
 			await publishToastDirect(page, `Toast ${i}`, 'info', 2000)
-			await page.waitForTimeout(100)
 		}
 
 		// All 3 should be visible as popovers in the Top Layer
@@ -155,12 +154,9 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 			await expect(toasts.nth(i)).toBeVisible()
 		}
 
-		// Wait for auto-dismiss (2000ms duration + transition time)
-		await page.waitForTimeout(3000)
-
-		// All toasts should be gone — no zombies
+		// Wait for auto-dismiss via web-first assertion
 		const remaining = page.locator('.snack-item')
-		await expect(remaining).toHaveCount(0, { timeout: 3000 })
+		await expect(remaining).toHaveCount(0, { timeout: 5000 })
 	})
 
 	test('multiple toasts are rendered inside the snack-stack container', async ({
