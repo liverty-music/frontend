@@ -1,4 +1,6 @@
 import { I18N } from '@aurelia/i18n'
+import { queueTask } from '@aurelia/runtime'
+import { watch } from '@aurelia/runtime-html'
 import { ILogger, INode, resolve } from 'aurelia'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
@@ -85,7 +87,15 @@ export class DashboardRoute {
 		} else {
 			this.needsRegion = !UserHomeSelector.getStoredHome()
 		}
-		this.loadData()
+
+		// When region is set, await data so stage headers exist by attached().
+		// When needsRegion, data can't load yet (API returns [] without homeCode),
+		// so fire-and-forget — the @watch handler will react when data arrives.
+		if (this.needsRegion) {
+			void this.loadData()
+		} else {
+			await this.loadData()
+		}
 
 		// Show signup banner for unauthenticated users who completed onboarding
 		if (!this.authService.isAuthenticated && this.onboarding.isCompleted) {
@@ -99,28 +109,28 @@ export class DashboardRoute {
 		}
 	}
 
-	public loadData(): void {
+	public async loadData(): Promise<void> {
 		this.abortController?.abort()
 		this.abortController = new AbortController()
 		this.loadError = null
 		this.isLoading = true
 		const signal = this.abortController.signal
 
-		void this.loadDashboardEvents(signal)
-			.then((groups) => {
-				this.dateGroups = groups
-				this.loadError = null
-				this.isLoading = false
-				this.logger.info('Dashboard loaded', { groups: groups.length })
+		try {
+			this.dateGroups = await this.loadDashboardEvents(signal)
+			this.loadError = null
+			this.logger.info('Dashboard loaded', {
+				groups: this.dateGroups.length,
 			})
-			.catch((err) => {
-				this.isLoading = false
-				if ((err as Error).name === 'AbortError') return
-				this.logger.error('Failed to load dashboard', { error: err })
-				if (this.dateGroups.length === 0) {
-					this.loadError = err
-				}
-			})
+		} catch (err) {
+			if ((err as Error).name === 'AbortError') return
+			this.logger.error('Failed to load dashboard', { error: err })
+			if (this.dateGroups.length === 0) {
+				this.loadError = err
+			}
+		} finally {
+			this.isLoading = false
+		}
 	}
 
 	private async loadDashboardEvents(
@@ -191,16 +201,16 @@ export class DashboardRoute {
 		if (!this.authService.isAuthenticated) {
 			this.guest.setHome(code)
 		}
-		this.loadData()
+		void this.loadData()
 
-		// If we're in the waiting-for-home sub-state of lane intro, advance to HOME phase
+		// If we're in the waiting-for-home sub-state of lane intro, advance to HOME phase.
+		// Spotlight activation is deferred — the @watch on dateGroups.length will trigger
+		// updateSpotlightForPhase() via queueTask after data loads and DOM renders.
 		if (this.laneIntroPhase === 'waiting-for-home') {
-			// Resolve prefecture display name for dynamic coach mark text
 			this.selectedPrefectureName = this.i18n.tr(
 				`userHome.prefectures.${translationKey(code)}`,
 			)
 			this.laneIntroPhase = 'home'
-			this.updateSpotlightForPhase()
 		} else if (this.isOnboarding && this.isOnboardingStepDashboard) {
 			this.startLaneIntro()
 		}
@@ -210,30 +220,20 @@ export class DashboardRoute {
 		this.advanceLaneIntro()
 	}
 
-	private async startLaneIntro(): Promise<void> {
+	private startLaneIntro(): void {
 		if (!this.isOnboardingStepDashboard) return
 
-		// HOME phase: open Home Selector before data check when region not yet set.
-		// listByFollowerGuest returns [] when homeCode is null, so data will always
-		// be empty until the user picks a region. Open the selector immediately.
+		// When region is not set, open Home Selector without spotlight.
+		// The @watch on dateGroups.length will activate spotlight after data loads.
 		if (this.needsRegion) {
 			this.setNavTabsDimmed(true)
 			this.laneIntroPhase = 'waiting-for-home'
 			this.homeSelector?.open()
-			this.onboarding.activateSpotlight(
-				'[data-stage="home"]',
-				this.i18n.tr('dashboard.laneIntro.homePrompt'),
-				undefined,
-			)
 			return
 		}
 
-		// Wait for data to finish loading before deciding
-		while (this.isLoading) {
-			await new Promise((r) => setTimeout(r, 100))
-		}
-
-		// When no concert data is available, skip lane intro and show celebration
+		// Data was awaited in loading(), so dateGroups is ready.
+		// If empty, skip lane intro and show celebration.
 		if (this.dateGroups.length === 0) {
 			this.logger.warn('No concert data available, skipping lane intro')
 			this.laneIntroPhase = 'done'
@@ -255,7 +255,48 @@ export class DashboardRoute {
 		}
 		this.laneIntroPhase = 'home'
 		this.logger.info('Lane intro started')
-		this.updateSpotlightForPhase()
+		// Defer spotlight to next render cycle so stage headers are in DOM
+		queueTask(() => this.updateSpotlightForPhase())
+	}
+
+	/**
+	 * Reactive spotlight trigger: fires when dateGroups transitions from
+	 * empty to non-empty after Home Selector selection + data reload.
+	 */
+	@watch((vm: DashboardRoute) => vm.dateGroups.length)
+	private onDateGroupsChanged(newLen: number): void {
+		if (
+			newLen > 0 &&
+			this.laneIntroPhase === 'home' &&
+			this.isOnboardingStepDashboard
+		) {
+			queueTask(() => this.updateSpotlightForPhase())
+		}
+	}
+
+	/**
+	 * Handles the edge case where loadData() completes with 0 results
+	 * after Home Selector selection. In this case dateGroups stays at
+	 * length 0 (no @watch trigger), so we watch isLoading instead.
+	 */
+	@watch((vm: DashboardRoute) => vm.isLoading)
+	private onLoadingChanged(loading: boolean): void {
+		if (
+			loading ||
+			this.laneIntroPhase !== 'home' ||
+			!this.isOnboardingStepDashboard
+		) {
+			return
+		}
+		if (this.dateGroups.length === 0) {
+			this.logger.warn('No concert data available, skipping lane intro')
+			this.laneIntroPhase = 'done'
+			if (!DashboardRoute.celebrationShown) {
+				this.showCelebration = true
+				DashboardRoute.celebrationShown = true
+			}
+			this.setNavTabsDimmed(false)
+		}
 	}
 
 	private advanceLaneIntro(): void {
@@ -322,11 +363,11 @@ export class DashboardRoute {
 		switch (this.laneIntroPhase) {
 			case 'home':
 			case 'waiting-for-home':
-				return '[data-stage="home"]'
+				return 'concert-highway [data-stage="home"]'
 			case 'near':
-				return '[data-stage="near"]'
+				return 'concert-highway [data-stage="near"]'
 			case 'away':
-				return '[data-stage="away"]'
+				return 'concert-highway [data-stage="away"]'
 			default:
 				return ''
 		}

@@ -58,7 +58,7 @@ export class CoachMark {
 		this.cleanup()
 		if (!this.targetSelector) return
 		const target = document.querySelector(this.targetSelector)
-		if (target instanceof HTMLElement) {
+		if (target instanceof HTMLElement && this.isVisible(target)) {
 			this.highlight(target)
 			return
 		}
@@ -236,6 +236,12 @@ export class CoachMark {
 				viewport.style.removeProperty('overflow')
 			}
 		}
+	}
+
+	/** Reject invisible elements (e.g., inside closed popovers with 0×0 rect). */
+	private isVisible(el: HTMLElement): boolean {
+		const rect = el.getBoundingClientRect()
+		return rect.width > 0 && rect.height > 0
 	}
 
 	private cleanup(): void {

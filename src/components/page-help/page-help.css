@@ -52,15 +52,15 @@
 			list-style: none;
 		}
 
-		.stage-label[data-stage="home"] {
+		.stage-home {
 			color: var(--color-stage-home);
 		}
 
-		.stage-label[data-stage="near"] {
+		.stage-near {
 			color: var(--color-stage-near);
 		}
 
-		.stage-label[data-stage="away"] {
+		.stage-away {
 			color: var(--color-stage-away);
 		}
 
