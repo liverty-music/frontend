@@ -18,8 +18,13 @@ export default defineConfig({
      * Maximum time expect() should wait for the condition to be met.
      * For example in `await expect(locator).toHaveText();`
      */
-    timeout: 5000
+    timeout: 5000,
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.01,
+      animations: 'disabled',
+    },
   },
+  snapshotPathTemplate: '{testDir}/__screenshots__/{projectName}/{testFilePath}/{arg}{ext}',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -41,47 +46,42 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
 
-  /* Configure projects for major browsers */
   projects: [
+    // Layer 3: E2E Functional — user journeys (Desktop Chrome)
     {
-      name: 'chromium',
+      name: 'functional',
+      testMatch: 'e2e/functional/**/*.spec.ts',
       testIgnore: [
-        'e2e/layout/**',
-        'e2e/smoke/**',
-        // Already covered by the onboarding project (Pixel 7 viewport)
-        'e2e/onboarding-flow.spec.ts',
-        'e2e/css-antipattern-verification.spec.ts',
-        'e2e/detail-sheet-dismiss.spec.ts',
-        'e2e/dashboard-lane-classification.spec.ts',
-        'e2e/toast-notification.spec.ts',
-        'e2e/artist-image-ui.spec.ts',
-        // Requires auth storageState — covered by chromium-authenticated project
-        'e2e/pwa-settings.spec.ts',
-        // Requires Service Worker cache — not available in CI headless environment
-        'e2e/pwa-offline-cache.spec.ts',
-        // Requires auth.isAuthenticated — evaluateVisibility() gates on it
-        'e2e/pwa-install-prompt.spec.ts',
+        // Covered by onboarding project (Pixel 7 viewport)
+        'e2e/functional/onboarding-flow.spec.ts',
+        'e2e/functional/css-antipattern-verification.spec.ts',
+        'e2e/functional/detail-sheet-dismiss.spec.ts',
+        'e2e/functional/dashboard-lane-classification.spec.ts',
+        'e2e/functional/toast-notification.spec.ts',
+        'e2e/functional/artist-image-ui.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:9000',
       },
     },
-    {
-      name: 'chromium-authenticated',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: '.auth/storageState.json',
-      },
-    },
+    // Layer 3: E2E Functional — onboarding flows (Pixel 7 mobile)
     {
       name: 'onboarding',
-      testMatch: ['e2e/onboarding-flow.spec.ts', 'e2e/css-antipattern-verification.spec.ts', 'e2e/detail-sheet-dismiss.spec.ts', 'e2e/dashboard-lane-classification.spec.ts', 'e2e/toast-notification.spec.ts', 'e2e/artist-image-ui.spec.ts'],
+      testMatch: [
+        'e2e/functional/onboarding-flow.spec.ts',
+        'e2e/functional/css-antipattern-verification.spec.ts',
+        'e2e/functional/detail-sheet-dismiss.spec.ts',
+        'e2e/functional/dashboard-lane-classification.spec.ts',
+        'e2e/functional/toast-notification.spec.ts',
+        'e2e/functional/artist-image-ui.spec.ts',
+      ],
       use: {
         ...devices['Pixel 7'],
         baseURL: 'http://localhost:9000',
       },
     },
+    // Layer 3: Smoke — console error detection
     {
       name: 'smoke',
       testMatch: 'e2e/smoke/**/*.spec.ts',
@@ -90,66 +90,44 @@ export default defineConfig({
         baseURL: 'http://localhost:9000',
       },
     },
+    // Layer 4: Visual Regression — layout screenshot comparison (iPhone 14)
     {
-      name: 'mobile-layout',
-      testMatch: 'e2e/layout/**/*.spec.ts',
-      testIgnore: 'e2e/layout/**/*.auth.spec.ts',
+      name: 'mobile-visual',
+      testMatch: 'e2e/visual/**/*.spec.ts',
+      testIgnore: 'e2e/visual/**/*.auth.spec.ts',
       use: {
         ...devices['iPhone 14'],
         baseURL: 'http://localhost:9000',
       },
     },
+    // Layer 4: Visual Regression — authenticated pages
     {
-      name: 'authenticated-mobile',
-      testMatch: 'e2e/layout/**/*.auth.spec.ts',
+      name: 'authenticated-visual',
+      testMatch: 'e2e/visual/**/*.auth.spec.ts',
       use: {
         ...devices['iPhone 14'],
         baseURL: 'http://localhost:9000',
         storageState: '.auth/storageState.json',
       },
     },
-
-    // {
-    //   name: 'firefox',
-    //   use: {
-    //     ...devices['Desktop Firefox'],
-    //   },
-    // },
-
-    // {
-    //   name: 'webkit',
-    //   use: {
-    //     ...devices['Desktop Safari'],
-    //   },
-    // },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: {
-    //     ...devices['Pixel 5'],
-    //   },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: {
-    //     ...devices['iPhone 12'],
-    //   },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: {
-    //     channel: 'msedge',
-    //   },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: {
-    //     channel: 'chrome',
-    //   },
-    // },
+    // Layer 5: PWA — service worker, offline, install prompt
+    {
+      name: 'pwa',
+      testMatch: 'e2e/pwa/**/*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:9000',
+      },
+    },
+    // Authenticated E2E (non-visual)
+    {
+      name: 'authenticated',
+      testMatch: 'e2e/pwa/pwa-settings.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/storageState.json',
+      },
+    },
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
