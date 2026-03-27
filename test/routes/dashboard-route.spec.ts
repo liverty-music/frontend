@@ -363,13 +363,9 @@ describe('DashboardRoute', () => {
 
 			sut.attached()
 
-			// needsRegion path is synchronous — opens home selector immediately
+			// needsRegion path opens home selector without spotlight
 			expect(sut.laneIntroPhase).toBe('waiting-for-home')
-			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'[data-stage="home"]',
-				expect.any(String),
-				undefined,
-			)
+			expect(mockOnboarding.activateSpotlight).not.toHaveBeenCalled()
 		})
 
 		it('should not start lane intro when not on dashboard step', () => {
@@ -414,7 +410,7 @@ describe('DashboardRoute', () => {
 
 			expect(sut.laneIntroPhase).toBe('home')
 			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'[data-stage="home"]',
+				'concert-highway [data-stage="home"]',
 				expect.any(String),
 				expect.any(Function),
 			)
@@ -437,7 +433,7 @@ describe('DashboardRoute', () => {
 
 			expect(sut.laneIntroPhase).toBe('near')
 			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'[data-stage="near"]',
+				'concert-highway [data-stage="near"]',
 				expect.any(String),
 				expect.any(Function),
 			)
@@ -452,7 +448,7 @@ describe('DashboardRoute', () => {
 
 			expect(sut.laneIntroPhase).toBe('away')
 			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'[data-stage="away"]',
+				'concert-highway [data-stage="away"]',
 				expect.any(String),
 				expect.any(Function),
 			)
