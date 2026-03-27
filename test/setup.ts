@@ -1,36 +1,13 @@
 import { BrowserPlatform } from '@aurelia/platform-browser'
 import { type IFixture, onFixtureCreated, setPlatform } from '@aurelia/testing'
-import { JSDOM } from 'jsdom'
 import { afterEach, beforeAll } from 'vitest'
 
-const jsdom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
-	url: 'http://localhost',
-})
-
-const { window } = jsdom
-const {
-	document,
-	navigator,
-	Node,
-	HTMLElement,
-	HTMLAnchorElement,
-	CustomEvent,
-} = window
-
-// Fix for "document is not defined" or "window is not defined"
-Object.assign(globalThis, {
-	window,
-	document,
-	navigator,
-	Node,
-	HTMLElement,
-	HTMLAnchorElement,
-	CustomEvent,
-	localStorage: window.localStorage,
-})
-
-// Sets up the Aurelia environment for testing
-function bootstrapTextEnv() {
+// Vitest's `environment: 'jsdom'` (vitest.config.ts) provides window, document,
+// navigator, etc. We only need to initialize Aurelia's platform bridge.
+//
+// Note: Node.js 25+ localStorage conflict is resolved via
+// execArgv: ['--no-experimental-webstorage'] in vitest.config.ts.
+function bootstrapTestEnv() {
 	const platform = new BrowserPlatform(
 		window as unknown as Window & typeof globalThis,
 	)
@@ -40,19 +17,18 @@ function bootstrapTextEnv() {
 
 const fixtures: IFixture<object>[] = []
 beforeAll(() => {
-	bootstrapTextEnv()
+	bootstrapTestEnv()
 	onFixtureCreated((fixture) => {
 		fixtures.push(fixture)
 	})
 })
 
-afterEach(() => {
-	fixtures.forEach(async (f) => {
-		try {
-			await f.stop(true)
-		} catch {
-			// ignore
-		}
-	})
+afterEach(async () => {
+	await Promise.all(
+		fixtures.map((f) => {
+			const result = f.stop?.(true) ?? (f as any).tearDown?.()
+			return result?.catch?.(() => {}) ?? Promise.resolve()
+		}),
+	)
 	fixtures.length = 0
 })

@@ -7,6 +7,15 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: "jsdom",
+      // Node.js 25+ enables --experimental-webstorage by default, providing a
+      // non-functional localStorage stub that shadows jsdom's implementation.
+      // Disable it so jsdom can provide its own working Web Storage.
+      // See: https://github.com/vitest-dev/vitest/issues/8757
+      poolOptions: {
+        forks: {
+          execArgv: ["--no-experimental-webstorage"],
+        },
+      },
       watch: false,
       exclude: [...configDefaults.exclude, "e2e/**"],
       root: fileURLToPath(new URL("./", import.meta.url)),
