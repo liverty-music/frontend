@@ -107,7 +107,7 @@
 			max-block-size: 90dvh;
 			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
 
-			background: var(--color-surface-raised);
+			background: var(--sheet-bg, var(--color-surface-raised));
 			box-shadow: var(--shadow-sheet);
 		}
 
