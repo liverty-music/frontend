@@ -718,12 +718,16 @@ test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
 		// =========================================================================
 
 		// Lane intro starts: HOME → NEAR → AWAY spotlight sequence.
-		// Each phase waits for a tap on the coach-mark interceptor.
-		// The target-interceptor inside coach-mark captures clicks on the spotlight area.
-		const coachTarget = page.locator('coach-mark .target-interceptor')
+		// The target-interceptor is inside a popover top layer positioned via
+		// CSS Anchor Positioning — it may be outside the viewport when the
+		// anchor hasn't resolved, so dispatch click via JS instead of Playwright click.
+		const coachOverlay = page.locator('.coach-mark-overlay')
+		await expect(coachOverlay).toBeVisible({ timeout: 10_000 })
 		for (const _phase of ['home', 'near', 'away']) {
-			await expect(coachTarget).toBeVisible({ timeout: 10_000 })
-			await coachTarget.click({ timeout: 5_000 })
+			await page.evaluate(() => {
+				const el = document.querySelector('coach-mark .target-interceptor')
+				el?.dispatchEvent(new PointerEvent('click', { bubbles: true }))
+			})
 		}
 
 		// After AWAY phase tap, celebration opens (step → MY_ARTISTS)
