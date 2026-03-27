@@ -82,12 +82,12 @@
 			margin-block: var(--space-xs);
 		}
 
-		.page-help-hype-table td {
+		.page-help-hype-table :is(td, th) {
 			padding: var(--space-3xs) var(--space-2xs);
 			vertical-align: top;
 		}
 
-		.page-help-hype-table td:first-child {
+		.page-help-hype-table :is(td, th):first-child {
 			inline-size: 7rem;
 			white-space: nowrap;
 		}
