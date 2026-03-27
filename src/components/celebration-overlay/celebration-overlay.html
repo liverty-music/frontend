@@ -1,8 +1,7 @@
 <template>
   <import from="./celebration-overlay.css"></import>
 
-  <div
-    role="status"
+  <output
     aria-live="polite"
     aria-atomic="true"
     class="[ celebration-overlay ]"
@@ -15,5 +14,5 @@
     </div>
     <p class="celebration-text">${message}</p>
     <p class="celebration-sub-text" if.bind="subMessage">${subMessage}</p>
-  </div>
+  </output>
 </template>

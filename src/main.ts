@@ -19,8 +19,14 @@ import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
+import { CelebrationOverlay } from './components/celebration-overlay/celebration-overlay'
+import { ConcertHighway } from './components/live-highway/concert-highway'
 import { EventCard } from './components/live-highway/event-card'
+import { EventDetailSheet } from './components/live-highway/event-detail-sheet'
+import { InlineError } from './components/inline-error/inline-error'
 import { LoadingSpinner } from './components/loading-spinner/loading-spinner'
+import { SignupPromptBanner } from './components/signup-prompt-banner/signup-prompt-banner'
+import { UserHomeSelector } from './components/user-home-selector/user-home-selector'
 import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
 import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
@@ -147,14 +153,20 @@ au.register(IPushRpcClient)
 au.register(IProofService)
 au.register(BottomNavBar)
 au.register(BottomSheet)
+au.register(CelebrationOverlay)
+au.register(ConcertHighway)
 au.register(EventCard)
+au.register(EventDetailSheet)
+au.register(InlineError)
 au.register(LoadingSpinner)
+au.register(SignupPromptBanner)
 au.register(Toast)
 au.register(PageHeader)
 au.register(PageHelp)
 au.register(PostSignupDialog)
 au.register(StatePlaceholder)
 au.register(SvgIcon)
+au.register(UserHomeSelector)
 au.register(AuthHook)
 au.register(ArtistColorCustomAttribute)
 au.register(BeamVarsCustomAttribute)
