@@ -265,9 +265,9 @@ test.describe('Dashboard header', () => {
 	test('concert-scroll is the only scroll container (H4a)', async ({
 		layoutPage: page,
 	}) => {
-		// .concert-scroll (inside concert-highway CE) must have a constrained
+		// [data-testid="concert-scroll"] (inside concert-highway CE) must have a constrained
 		// height so overflow-block: auto produces a scrollable region.
-		const scroll = page.locator('concert-highway .concert-scroll')
+		const scroll = page.locator('concert-highway [data-testid="concert-scroll"]')
 		const metrics = await scroll.evaluate((el) => ({
 			scrollHeight: el.scrollHeight,
 			clientHeight: el.clientHeight,
@@ -281,7 +281,7 @@ test.describe('Dashboard header', () => {
 	test('stage header stays fixed after scrolling (H4)', async ({
 		layoutPage: page,
 	}) => {
-		const scrollContainer = page.locator('concert-highway .concert-scroll')
+		const scrollContainer = page.locator('concert-highway [data-testid="concert-scroll"]')
 		const header = page.locator('.stage-header').first()
 
 		// Record header position before scroll
@@ -304,7 +304,7 @@ test.describe('Dashboard header', () => {
 	test('bottom-nav stays pinned after scrolling (H5)', async ({
 		layoutPage: page,
 	}) => {
-		const scrollContainer = page.locator('concert-highway .concert-scroll')
+		const scrollContainer = page.locator('concert-highway [data-testid="concert-scroll"]')
 
 		// Scroll the concert content down significantly
 		await scrollContainer.evaluate((el) => {
@@ -507,7 +507,7 @@ test.describe('Dashboard data-loaded state', () => {
 		// Stage header is inside concert-highway CE but not inside the scrollable list
 		const structure = await stageHeader.evaluate((el) => ({
 			insideCE: el.closest('concert-highway') !== null,
-			insideScroll: el.closest('.concert-scroll') !== null,
+			insideScroll: el.closest('[data-testid="concert-scroll"]') !== null,
 		}))
 		expect(structure.insideCE, 'stage-header must be inside concert-highway').toBe(true)
 		expect(structure.insideScroll, 'stage-header must not be inside scroll container').toBe(false)
@@ -542,7 +542,7 @@ test.describe('Dashboard data-loaded state', () => {
 	test('concert-highway container has renderable height (C7)', async ({
 		layoutPage: page,
 	}) => {
-		const scrollContainer = page.locator('concert-highway .concert-scroll').first()
+		const scrollContainer = page.locator('concert-highway [data-testid="concert-scroll"]').first()
 		if ((await scrollContainer.count()) === 0) return
 
 		// Check CSS property — scroll happens inside .concert-scroll, not the CE root
