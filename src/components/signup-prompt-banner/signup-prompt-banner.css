@@ -68,6 +68,7 @@
 
 		.signup-banner-btn {
 			align-self: center;
+
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-xl);
 			border: none;
