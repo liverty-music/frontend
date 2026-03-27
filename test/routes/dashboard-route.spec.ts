@@ -356,29 +356,20 @@ describe('DashboardRoute', () => {
 	})
 
 	describe('attached — lane intro entry point', () => {
-		it('should start lane intro when on dashboard step with needsRegion', async () => {
-			vi.useFakeTimers()
+		it('should enter waiting-for-home when on dashboard step with needsRegion', () => {
 			mockOnboarding.currentStep = 'dashboard'
 			mockOnboarding.isOnboarding = true
 			sut.needsRegion = true
-			// Provide data so lane intro does not skip
-			sut.dateGroups = [
-				{
-					label: 'Mar 18',
-					dateKey: '2026-03-18',
-					home: [],
-					nearby: [],
-					away: [],
-				} as never,
-			]
-			sut.isLoading = false
 
 			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
 
-			// startLaneIntro enters waiting-for-home, NOT direct homeSelector.open()
+			// needsRegion path is synchronous — opens home selector immediately
 			expect(sut.laneIntroPhase).toBe('waiting-for-home')
-			vi.useRealTimers()
+			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
+				'[data-stage="home"]',
+				expect.any(String),
+				undefined,
+			)
 		})
 
 		it('should not start lane intro when not on dashboard step', () => {
@@ -429,11 +420,11 @@ describe('DashboardRoute', () => {
 			)
 		})
 
-		it('should enter waiting-for-home when needsRegion is true', async () => {
+		it('should enter waiting-for-home when needsRegion is true', () => {
 			sut.needsRegion = true
 			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
 
+			// needsRegion path returns before data check — synchronous
 			expect(sut.laneIntroPhase).toBe('waiting-for-home')
 		})
 
@@ -500,10 +491,9 @@ describe('DashboardRoute', () => {
 			expect(sut.showCelebration).toBe(false)
 		})
 
-		it('should not advance from waiting-for-home on tap', async () => {
+		it('should not advance from waiting-for-home on tap', () => {
 			sut.needsRegion = true
 			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
 
 			sut.onLaneIntroTap()
 
