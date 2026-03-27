@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import type { PhysicsBubble } from './bubble-physics'
 import { findClosestBubble } from './bubble-physics'

@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import type { Artist } from '../../src/entities/artist'
 import { BubblePool } from '../../src/services/bubble-pool'

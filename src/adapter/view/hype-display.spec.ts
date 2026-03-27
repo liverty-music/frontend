@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import type { Hype } from '../../entities/follow'
 import { HYPE_TIERS } from './hype-display'
