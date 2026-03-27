@@ -24,11 +24,12 @@
 └───────────────────┘
 ```
 
-The primary test layer is **DI Unit tests** via `createTestContainer()` + `Registration.instance()`. This is a deliberate trade-off:
+Two co-primary test layers work together:
 
-- Aurelia 2's DI system makes class-level tests highly representative of real behavior
-- 5-10x speed advantage over DOM-rendering tests
-- Template binding bugs are rare and better caught by Storybook + E2E
+- **Component Integration tests** via `createFixture()` — the default for components with templates. Verifies view + view-model together, per [Aurelia 2 official testing documentation](https://docs.aurelia.io/developer-guides/overview/testing-components).
+- **DI Unit tests** via `createTestContainer()` — the default for services, interceptors, and guards with no template.
+
+Both use `Registration.instance()` for DI mocking. Component tests additionally use `@aurelia/testing` assertion helpers (`assertText`, `assertAttr`, `trigger.click`, etc.) and `tasksSettled()` for reactive updates.
 
 ### Test Type Decision Flow
 
@@ -37,18 +38,17 @@ The primary test layer is **DI Unit tests** via `createTestContainer()` + `Regis
   ├── YES → Pure Unit Test (no DI, no DOM)
   │         Examples: artistColor(), bytesToDecimal(), DateValueConverter
   │
-  └── NO → Does it have DI dependencies?
-           ├── YES → Does the test need to verify DOM output?
-           │         ├── YES → Component Integration Test (createFixture)
-           │         │         Examples: template bindings, if.bind,
-           │         │                   repeat.for, click handlers
-           │         │
-           │         └── NO → DI Unit Test (createTestContainer)
-           │                  Examples: service methods, canLoad guards,
-           │                           computed properties, event dispatch
+  └── NO → Is it a component with a template?
+           ├── YES → Component Integration Test (createFixture)
+           │         Use: assertText, trigger.click, getBy, type()
+           │         DI mocking via Registration.instance() in deps
            │
-           └── NO → Is it a cross-cutting user journey?
-                    └── YES → E2E Test (Playwright)
+           └── NO → Is it a service, interceptor, or guard?
+                    ├── YES → DI Unit Test (createTestContainer)
+                    │         Examples: service methods, canLoad guards,
+                    │                  computed properties, event dispatch
+                    │
+                    └── NO → E2E Test (Playwright)
                               Examples: onboarding flow, auth redirect
 ```
 
@@ -266,6 +266,53 @@ describe('EventDetailSheet', () => {
 })
 ```
 
+### Pattern H: Component Integration Test (createFixture fluent API)
+
+**When to use**: Components with templates — verifies view + view-model together per [Aurelia 2 official docs](https://docs.aurelia.io/developer-guides/overview/testing-components).
+
+```typescript
+import { createFixture } from '@aurelia/testing'
+import { Registration } from 'aurelia'
+import { tasksSettled } from '@aurelia/kernel'
+
+describe('BottomNavBar', () => {
+  it('should render nav items and highlight active route', async () => {
+    const mockRouter = { load: vi.fn() }
+
+    const fixture = await createFixture
+      .component(BottomNavBar)
+      .html`<bottom-nav-bar></bottom-nav-bar>`
+      .deps(
+        Registration.instance(IRouter, mockRouter),
+        Registration.instance(I18N, createMockI18n()),
+      )
+      .build()
+      .started
+
+    // DOM assertions via official fixture helpers
+    fixture.assertText('nav-item:first-child', 'Dashboard')
+    fixture.assertClass('nav-item:first-child', 'active')
+
+    // User interaction
+    fixture.trigger.click('nav-item:nth-child(2)')
+    await tasksSettled()
+
+    expect(mockRouter.load).toHaveBeenCalled()
+    await fixture.stop(true)
+  })
+})
+```
+
+**Key helpers from `@aurelia/testing`**:
+- `fixture.assertText(selector, text)` — verify text content
+- `fixture.assertAttr(selector, name, value)` — verify attributes
+- `fixture.assertClass(selector, ...classes)` — verify CSS classes
+- `fixture.getBy(selector)` / `queryBy(selector)` — DOM query
+- `fixture.trigger.click(selector)` — click simulation
+- `fixture.type(selector, text)` — input simulation (triggers 2-way binding)
+- `await tasksSettled()` — wait for reactive DOM updates after state mutation
+- `await fixture.stop(true)` — cleanup (replaces deprecated `tearDown()`)
+
 ---
 
 ## 3. Service Complexity Tiers
@@ -354,7 +401,11 @@ export function createMockRouter(): Partial<IRouter> {
 | Missing `vi.restoreAllMocks()` in afterEach | Always include in afterEach |
 | Missing `localStorage.clear()` for tests using localStorage | Include in afterEach |
 | Shared mutable state between tests | Rebuild everything in `beforeEach` |
-| `expect(true).toBe(true)` tautological assertion | Assert actual side effects (spy on abort, clearTimeout, etc.) |
+| `expect(true).toBe(true)` tautological assertion | Use `fixture.getBy()` / `assertAttr()` for meaningful verification |
+| `forEach(async)` in cleanup | Use `Promise.all(arr.map(async f => ...))` — forEach drops Promises |
+| Missing `tasksSettled()` after state mutation | Always `await tasksSettled()` before DOM assertions on reactive data |
+| Using deprecated `tearDown()` | Replace with `await fixture.stop(true)` |
+| `appHost.querySelector` in fixture tests | Use `fixture.getBy()` / `fixture.queryBy()` instead |
 
 ---
 
@@ -404,10 +455,29 @@ e2e/
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Primary test approach | DI Unit (`createTestContainer`) | Already proven in codebase, covers 80% of needs |
-| When to use `createFixture` | Template binding verification only | Most logic is testable without DOM |
+| Primary test approach (services) | DI Unit (`createTestContainer`) | Proven in codebase, fast, covers services/guards/interceptors |
+| Primary test approach (components) | `createFixture` fluent API | Per [Aurelia 2 official docs](https://docs.aurelia.io/developer-guides/overview/testing-components): verifies view + view-model together |
 | Mock strategy | Typed factories in `test/helpers/` | Type safety + reusability |
 | Timer testing | `vi.useFakeTimers` in `beforeEach`, `vi.useRealTimers` in `afterEach` | Prevents timer leaks |
 | E2E approach | Playwright POM, 4-6 critical journeys | Infrastructure already configured |
 | Module-level side effects | `vi.mock()` + dynamic `await import()` | Already established pattern |
 | Browser API mocking | `vi.spyOn` / `Object.defineProperty` / `vi.stubGlobal` | Per-API strategy |
+
+---
+
+## 9. Aurelia 2 Official Testing Documentation Reference
+
+This strategy is aligned with the Aurelia 2 official testing documentation. Consult these pages for patterns and API details:
+
+| Page | URL | Topics |
+|------|-----|--------|
+| Overview | [developer-guides/overview](https://docs.aurelia.io/developer-guides/overview) | Platform setup, TestContext, core concepts |
+| Testing Components | [overview/testing-components](https://docs.aurelia.io/developer-guides/overview/testing-components) | createFixture, DOM assertions, event testing |
+| Testing Attributes | [overview/testing-attributes](https://docs.aurelia.io/developer-guides/overview/testing-attributes) | Custom attribute testing, style assertions |
+| Testing Value Converters | [overview/testing-value-converters](https://docs.aurelia.io/developer-guides/overview/testing-value-converters) | Unit + integration combination |
+| Fluent API | [overview/fluent-api](https://docs.aurelia.io/developer-guides/overview/fluent-api) | Builder pattern, `.component().html().deps().build()` |
+| Stubs, Mocks & Spies | [overview/mocks-spies](https://docs.aurelia.io/developer-guides/overview/mocks-spies) | Registration.instance(), DI mocking patterns |
+| Advanced Techniques | [overview/advanced-testing](https://docs.aurelia.io/developer-guides/overview/advanced-testing) | Async, lifecycle hooks, accessibility, drag-and-drop |
+| Outcome Recipes | [overview/outcome-recipes](https://docs.aurelia.io/developer-guides/overview/outcome-recipes) | API calls, router, forms, component interaction, lifecycle |
+| Quick Reference | [developer-guides/overview](https://docs.aurelia.io/developer-guides/overview) | API cheat sheet, troubleshooting |
+| Decision Trees | [developer-guides/overview](https://docs.aurelia.io/developer-guides/overview) | When to use which test approach |
