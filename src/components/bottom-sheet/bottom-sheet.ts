@@ -24,7 +24,12 @@ export class BottomSheet {
 	public openChanged(isOpen: boolean): void {
 		if (isOpen) {
 			this.triggerElement = document.activeElement as HTMLElement | null
-			this.host.showPopover()
+			try {
+				this.host.showPopover()
+			} catch {
+				// Pre-attach: popover attribute not yet set.
+				// attached() will retry via the if(this.open) guard.
+			}
 		} else {
 			try {
 				this.host.hidePopover()
