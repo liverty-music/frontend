@@ -73,6 +73,7 @@ describe('NotificationPrompt', () => {
 	})
 
 	afterEach(() => {
+		localStorage.clear()
 		vi.restoreAllMocks()
 	})
 

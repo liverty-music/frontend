@@ -24,18 +24,16 @@ export default mergeConfig(
         provider: "v8",
         reporter: ["text", "html", "json-summary", "json"],
         thresholds: {
-          statements: 55,
+          statements: 65,
           branches: 75,
-          functions: 54,
-          lines: 55,
+          functions: 65,
+          lines: 65,
         },
         exclude: [
           ...configDefaults.coverage.exclude,
           "test/**",
           "*.config.*",
           ".storybook/**",
-          // Untested page components (exclude to prevent env teardown issues)
-          "src/*-page.ts",
           "src/**/*.stories.ts",
           // Main entry point (not unit testable)
           "src/main.ts",
@@ -43,8 +41,6 @@ export default mergeConfig(
           "src/components/dna-orb/**",
           // Scripts directory
           "scripts/**",
-          // Browser-env dependencies (window.location at module level)
-          "src/services/auth-service.ts",
         ],
       },
     },
