@@ -2,6 +2,9 @@
 	@scope (dashboard-route) {
 		:scope {
 			display: grid;
+			grid-template-areas:
+				"header"
+				"content";
 			grid-template-rows: auto minmax(0, 1fr);
 
 			block-size: 100%;
@@ -10,13 +13,12 @@
 			background: var(--color-surface-base);
 		}
 
-		/* All content after page-header shares the second grid row */
+		/* All content after page-header shares the content grid area */
 		concert-highway,
 		.loading-text,
 		inline-error,
 		state-placeholder {
-			grid-column: 1;
-			grid-row: 2;
+			grid-area: content;
 		}
 
 		state-placeholder {
