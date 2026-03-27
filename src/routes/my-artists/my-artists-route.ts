@@ -236,6 +236,7 @@ export class MyArtistsRoute {
 			// Persist for guest users — merged on signup
 			if (!this.isAuthenticated) {
 				this.guest.setHype(artistId, hype)
+				this.showSignupBanner = true
 			}
 			return
 		}

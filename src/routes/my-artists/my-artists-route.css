@@ -31,11 +31,6 @@
 			background: var(--color-surface-base);
 		}
 
-		.artist-count {
-			font-size: var(--step--1);
-			color: var(--color-text-muted);
-		}
-
 		.state-center {
 			display: flex;
 			flex: 1;

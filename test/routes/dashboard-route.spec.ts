@@ -364,6 +364,8 @@ describe('DashboardRoute', () => {
 			sut.attached()
 
 			// needsRegion path opens home selector without spotlight
+			// (coach mark and bottom-sheet overlap, so HOME STAGE context
+			// is conveyed via the Home Selector description text instead)
 			expect(sut.laneIntroPhase).toBe('waiting-for-home')
 			expect(mockOnboarding.activateSpotlight).not.toHaveBeenCalled()
 		})

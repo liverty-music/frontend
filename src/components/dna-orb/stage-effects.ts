@@ -25,9 +25,9 @@ export interface StageParams {
 }
 
 const BASE_RADIUS = 60
-const GROWTH_PER_FOLLOW = 12
-const LINEAR_STEPS = 5
-const MAX_RADIUS = 120
+const GROWTH_PER_FOLLOW = 7.5
+const LINEAR_STEPS = 4
+const MAX_RADIUS = 90
 const MAX_ORBITALS = 12
 const MAX_LIGHT_RAYS = 14
 const FULL_SHOW = 5
@@ -36,7 +36,7 @@ export function getStageParams(followCount: number): StageParams {
 	const level = followCount
 	const fc = followCount
 
-	// Orb radius: linear for 0-5, logarithmic tail for 6+
+	// Orb radius: linear for 0-4, logarithmic tail for 5+
 	let orbRadius: number
 	if (fc <= LINEAR_STEPS) {
 		orbRadius = BASE_RADIUS + fc * GROWTH_PER_FOLLOW

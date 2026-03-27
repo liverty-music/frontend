@@ -12,11 +12,10 @@
 
 		.signup-banner {
 			display: flex;
-			gap: var(--space-s);
-			align-items: center;
-			justify-content: space-between;
+			flex-direction: column;
+			gap: var(--space-xs);
 
-			padding-block: var(--space-xs);
+			padding-block: var(--space-xs) var(--space-s);
 			padding-inline: var(--space-s);
 			border-block-start: 2px solid;
 			border-image: linear-gradient(
@@ -30,8 +29,15 @@
 			backdrop-filter: blur(12px);
 		}
 
+		.signup-banner-header {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: flex-start;
+			justify-content: space-between;
+		}
+
 		.signup-banner-message {
-			font-size: var(--step--1);
+			font-size: var(--step-0);
 			color: var(--color-text-secondary);
 		}
 
@@ -61,18 +67,17 @@
 		}
 
 		.signup-banner-btn {
-			flex-shrink: 0;
+			align-self: center;
 
 			padding-block: var(--space-3xs);
-			padding-inline: var(--space-s);
+			padding-inline: var(--space-xl);
 			border: none;
 			border-radius: var(--radius-button);
 
 			font-family: var(--font-display);
-			font-size: var(--step--2);
+			font-size: var(--step--1);
 			font-weight: 600;
 			color: var(--color-white);
-			white-space: nowrap;
 
 			background: var(--color-brand-primary);
 

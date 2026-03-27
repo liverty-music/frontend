@@ -9,11 +9,11 @@
 
 		.selector-content {
 			padding-block-end: var(--space-l);
-			padding-inline: var(--space-m);
+			padding-inline: var(--space-l);
 		}
 
 		.selector-title {
-			margin-block-end: var(--space-3xs);
+			margin-block-end: var(--space-2xs);
 
 			font-family: var(--font-display);
 			font-size: var(--step-1);
@@ -22,13 +22,14 @@
 		}
 
 		.selector-desc {
-			margin-block-end: var(--space-m);
+			margin-block-end: var(--space-l);
 			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
 			color: var(--color-text-secondary);
 		}
 
 		.selector-section {
-			margin-block-end: var(--space-m);
+			margin-block-end: var(--space-l);
 		}
 
 		.selector-label {
@@ -44,7 +45,7 @@
 		.selector-grid {
 			display: grid;
 			grid-template-columns: repeat(3, 1fr);
-			gap: var(--space-3xs);
+			gap: var(--space-2xs);
 		}
 
 		.selector-btn {
