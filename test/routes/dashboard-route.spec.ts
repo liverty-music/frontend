@@ -342,9 +342,7 @@ describe('DashboardRoute', () => {
 
 			// translationKey('JP-40') returns 'fukuoka'
 			// mock i18n.tr returns the key as-is, so we verify the correct key is constructed
-			expect(sut.i18n.tr).toHaveBeenCalledWith(
-				'userHome.prefectures.fukuoka',
-			)
+			expect(sut.i18n.tr).toHaveBeenCalledWith('userHome.prefectures.fukuoka')
 			expect(sut.laneIntroPhase).toBe('home')
 		})
 
@@ -353,9 +351,7 @@ describe('DashboardRoute', () => {
 			sut.onHomeSelected('JP-40')
 
 			// Must NOT produce 'userHome.prefectures.40' (the original bug)
-			expect(sut.i18n.tr).not.toHaveBeenCalledWith(
-				'userHome.prefectures.40',
-			)
+			expect(sut.i18n.tr).not.toHaveBeenCalledWith('userHome.prefectures.40')
 		})
 	})
 
