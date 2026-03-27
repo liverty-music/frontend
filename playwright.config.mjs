@@ -90,30 +90,41 @@ export default defineConfig({
         baseURL: 'http://localhost:9000',
       },
     },
-    // Layer 4: Visual Regression — layout screenshot comparison (iPhone 14)
+    // Layer 4: Visual Regression — layout screenshot comparison (iPhone 14 viewport, Chromium)
     {
       name: 'mobile-visual',
       testMatch: 'e2e/visual/**/*.spec.ts',
-      testIgnore: 'e2e/visual/**/*.auth.spec.ts',
+      testIgnore: 'e2e/visual/**/*.auth.*.spec.ts',
       use: {
         ...devices['iPhone 14'],
+        // Override WebKit default to Chromium — only Chromium is installed in CI
+        browserName: 'chromium',
         baseURL: 'http://localhost:9000',
       },
     },
     // Layer 4: Visual Regression — authenticated pages
     {
       name: 'authenticated-visual',
-      testMatch: 'e2e/visual/**/*.auth.spec.ts',
+      testMatch: 'e2e/visual/**/*.auth.*.spec.ts',
       use: {
         ...devices['iPhone 14'],
+        browserName: 'chromium',
         baseURL: 'http://localhost:9000',
         storageState: '.auth/storageState.json',
       },
     },
-    // Layer 5: PWA — service worker, offline, install prompt
+    // Layer 5: PWA — service worker tests (non-authenticated)
     {
       name: 'pwa',
       testMatch: 'e2e/pwa/**/*.spec.ts',
+      testIgnore: [
+        // Requires auth storageState — covered by authenticated project
+        'e2e/pwa/pwa-settings.spec.ts',
+        // Requires Service Worker + offline — not available in CI headless
+        'e2e/pwa/pwa-offline-cache.spec.ts',
+        // Requires beforeinstallprompt — not available in CI headless
+        'e2e/pwa/pwa-install-prompt.spec.ts',
+      ],
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:9000',
