@@ -8,6 +8,7 @@ import type {
 import type { JourneyStatus } from '../../entities/concert'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { StorageKeys } from '../../constants/storage-keys'
+import { translationKey } from '../../entities/user'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
@@ -158,10 +159,8 @@ export class DashboardRoute {
 	}
 
 	public attached(): void {
-		if (this.isOnboardingStepDashboard && !this.needsRegion) {
+		if (this.isOnboardingStepDashboard) {
 			this.startLaneIntro()
-		} else if (this.needsRegion && this.isOnboardingStepDashboard) {
-			this.homeSelector?.open()
 		}
 	}
 
@@ -198,7 +197,7 @@ export class DashboardRoute {
 		if (this.laneIntroPhase === 'waiting-for-home') {
 			// Resolve prefecture display name for dynamic coach mark text
 			this.selectedPrefectureName = this.i18n.tr(
-				`userHome.prefectures.${code.toLowerCase().replace('jp-', '')}`,
+				`userHome.prefectures.${translationKey(code)}`,
 			)
 			this.laneIntroPhase = 'home'
 			this.updateSpotlightForPhase()
@@ -247,7 +246,7 @@ export class DashboardRoute {
 			const homeCode = this.guest.home
 			if (homeCode) {
 				this.selectedPrefectureName = this.i18n.tr(
-					`userHome.prefectures.${homeCode.toLowerCase().replace('jp-', '')}`,
+					`userHome.prefectures.${translationKey(homeCode)}`,
 				)
 			}
 			this.laneIntroPhase = 'home'
