@@ -277,25 +277,29 @@
 	"pageHelp": {
 		"discovery": {
 			"title": "アーティストをフォローしよう",
-			"description": "アーティストをタップしてフォロー。フォロー解除は My Artists ページから。",
-			"followedCount": "{{count}}アーティストをフォロー中"
+			"description": "バブルをタップしてフォロー。フォロー解除は My Artists ページから。",
+			"genreTip": "ジャンルタブで絞り込めます",
+			"searchTip": "検索バーで名前からも探せます"
 		},
 		"dashboard": {
 			"title": "タイムテーブルの見方",
-			"homeLabel": "HOME STAGE — ",
-			"homeDesc": "居住エリアのライブ",
-			"nearLabel": "NEAR STAGE — ",
-			"nearDesc": "少し足を伸ばせば行けるライブ",
-			"awayLabel": "AWAY STAGE — ",
-			"awayDesc": "遠征ライブ！Hypeを上げると通知が届く"
+			"description": "フォローしたアーティストのライブが距離ごとに表示されます。",
+			"homeLabel": "HOME",
+			"homeDesc": " — 居住エリアのライブ",
+			"nearLabel": "NEAR",
+			"nearDesc": " — 少し足を伸ばせば行けるライブ",
+			"awayLabel": "AWAY",
+			"awayDesc": " — 遠征ライブ",
+			"cardTip": "カードをタップすると詳細が見られます"
 		},
 		"myArtists": {
 			"title": "Hypeレベルについて",
+			"description": "Hypeレベルで通知の範囲が変わります。ドットをタップして切り替えられます。",
 			"watchDesc": "通知なし",
 			"homeDesc": "居住エリアのライブを通知",
 			"nearbyDesc": "近くのライブも通知",
 			"awayDesc": "全国のライブを通知",
-			"accountNote": "通知を受け取るにはアカウント登録が必要です"
+			"tip": "まずは気になるアーティストを Home に設定してみましょう。近くでライブがあればお知らせします。"
 		}
 	}
 }

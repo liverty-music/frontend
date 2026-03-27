@@ -277,25 +277,29 @@
 	"pageHelp": {
 		"discovery": {
 			"title": "Follow Artists",
-			"description": "Tap an artist to follow them. Unfollow from the My Artists page.",
-			"followedCount": "{{count}} artists followed"
+			"description": "Tap a bubble to follow an artist. Unfollow from the My Artists page.",
+			"genreTip": "Filter by genre using the tabs",
+			"searchTip": "Search by name using the search bar"
 		},
 		"dashboard": {
 			"title": "Reading the Timetable",
-			"homeLabel": "HOME STAGE — ",
-			"homeDesc": "Lives in your home area",
-			"nearLabel": "NEAR STAGE — ",
-			"nearDesc": "Lives within reach",
-			"awayLabel": "AWAY STAGE — ",
-			"awayDesc": "Lives anywhere — raise Hype to get notified"
+			"description": "Your followed artists' lives are shown by distance.",
+			"homeLabel": "HOME",
+			"homeDesc": " — Lives in your home area",
+			"nearLabel": "NEAR",
+			"nearDesc": " — Lives within reach",
+			"awayLabel": "AWAY",
+			"awayDesc": " — Lives anywhere",
+			"cardTip": "Tap a card to see concert details"
 		},
 		"myArtists": {
 			"title": "About Hype Levels",
+			"description": "Hype level controls how far away you get notified. Tap a dot to change it.",
 			"watchDesc": "No notifications",
 			"homeDesc": "Notify for home area lives",
 			"nearbyDesc": "Notify for nearby lives too",
 			"awayDesc": "Notify for all lives nationwide",
-			"accountNote": "An account is required to receive notifications"
+			"tip": "Start by setting artists you're curious about to Home — you'll get notified when they play nearby."
 		}
 	}
 }
