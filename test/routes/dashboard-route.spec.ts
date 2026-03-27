@@ -335,6 +335,170 @@ describe('DashboardRoute', () => {
 
 			expect(sut.dateGroups).toEqual(newGroups)
 		})
+
+		it('should resolve prefecture name via translationKey when in waiting-for-home phase', () => {
+			sut.laneIntroPhase = 'waiting-for-home'
+			sut.onHomeSelected('JP-40')
+
+			// translationKey('JP-40') returns 'fukuoka'
+			// mock i18n.tr returns the key as-is, so we verify the correct key is constructed
+			expect(sut.i18n.tr).toHaveBeenCalledWith('userHome.prefectures.fukuoka')
+			expect(sut.laneIntroPhase).toBe('home')
+		})
+
+		it('should not use numeric key for prefecture name', () => {
+			sut.laneIntroPhase = 'waiting-for-home'
+			sut.onHomeSelected('JP-40')
+
+			// Must NOT produce 'userHome.prefectures.40' (the original bug)
+			expect(sut.i18n.tr).not.toHaveBeenCalledWith('userHome.prefectures.40')
+		})
+	})
+
+	describe('attached — lane intro entry point', () => {
+		it('should enter waiting-for-home when on dashboard step with needsRegion', () => {
+			mockOnboarding.currentStep = 'dashboard'
+			mockOnboarding.isOnboarding = true
+			sut.needsRegion = true
+
+			sut.attached()
+
+			// needsRegion path is synchronous — opens home selector immediately
+			expect(sut.laneIntroPhase).toBe('waiting-for-home')
+			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
+				'[data-stage="home"]',
+				expect.any(String),
+				undefined,
+			)
+		})
+
+		it('should not start lane intro when not on dashboard step', () => {
+			mockOnboarding.currentStep = 'completed'
+
+			sut.attached()
+
+			expect(sut.laneIntroPhase).toBe('done')
+			expect(mockOnboarding.activateSpotlight).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('lane intro phase transitions', () => {
+		beforeEach(() => {
+			vi.useFakeTimers()
+			mockOnboarding.currentStep = 'dashboard'
+			mockOnboarding.isOnboarding = true
+			sut.needsRegion = false
+			mockGuest.home = 'JP-13'
+			// Provide concert data so lane intro is not skipped
+			sut.dateGroups = [
+				{
+					label: 'Mar 18',
+					dateKey: '2026-03-18',
+					home: [{ id: 'e1' }],
+					nearby: [],
+					away: [],
+				} as never,
+			]
+			sut.isLoading = false
+			localStorage.removeItem('onboarding.celebrationShown')
+		})
+
+		afterEach(() => {
+			localStorage.removeItem('onboarding.celebrationShown')
+			vi.useRealTimers()
+		})
+
+		it('should start at home phase when region is already set', async () => {
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(0)
+
+			expect(sut.laneIntroPhase).toBe('home')
+			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
+				'[data-stage="home"]',
+				expect.any(String),
+				expect.any(Function),
+			)
+		})
+
+		it('should enter waiting-for-home when needsRegion is true', () => {
+			sut.needsRegion = true
+			sut.attached()
+
+			// needsRegion path returns before data check — synchronous
+			expect(sut.laneIntroPhase).toBe('waiting-for-home')
+		})
+
+		it('should advance from home to near on tap', async () => {
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(0)
+			expect(sut.laneIntroPhase).toBe('home')
+
+			sut.onLaneIntroTap()
+
+			expect(sut.laneIntroPhase).toBe('near')
+			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
+				'[data-stage="near"]',
+				expect.any(String),
+				expect.any(Function),
+			)
+		})
+
+		it('should advance from near to away on tap', async () => {
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(0)
+
+			sut.onLaneIntroTap() // home → near
+			sut.onLaneIntroTap() // near → away
+
+			expect(sut.laneIntroPhase).toBe('away')
+			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
+				'[data-stage="away"]',
+				expect.any(String),
+				expect.any(Function),
+			)
+		})
+
+		it('should show celebration after away phase tap', async () => {
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(0)
+
+			sut.onLaneIntroTap() // home → near
+			sut.onLaneIntroTap() // near → away
+			sut.onLaneIntroTap() // away → done → celebration
+
+			expect(sut.laneIntroPhase).toBe('done')
+			expect(sut.showCelebration).toBe(true)
+			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalled()
+		})
+
+		it('should skip lane intro and show celebration when no concert data', async () => {
+			sut.dateGroups = []
+
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(0)
+
+			expect(sut.laneIntroPhase).toBe('done')
+			expect(sut.showCelebration).toBe(true)
+		})
+
+		it('should not replay celebration if already shown', async () => {
+			localStorage.setItem('onboarding.celebrationShown', '1')
+			sut.dateGroups = []
+
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(0)
+
+			expect(sut.showCelebration).toBe(false)
+		})
+
+		it('should not advance from waiting-for-home on tap', () => {
+			sut.needsRegion = true
+			sut.attached()
+
+			sut.onLaneIntroTap()
+
+			expect(sut.laneIntroPhase).toBe('waiting-for-home')
+		})
 	})
 
 	describe('onCelebrationOpen', () => {

@@ -5,9 +5,10 @@ import type {
 	DateGroup,
 	LiveEvent,
 } from '../../components/live-highway/live-event'
-import type { JourneyStatus } from '../../entities/concert'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { StorageKeys } from '../../constants/storage-keys'
+import type { JourneyStatus } from '../../entities/concert'
+import { translationKey } from '../../entities/user'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
@@ -158,10 +159,8 @@ export class DashboardRoute {
 	}
 
 	public attached(): void {
-		if (this.isOnboardingStepDashboard && !this.needsRegion) {
+		if (this.isOnboardingStepDashboard) {
 			this.startLaneIntro()
-		} else if (this.needsRegion && this.isOnboardingStepDashboard) {
-			this.homeSelector?.open()
 		}
 	}
 
@@ -198,7 +197,7 @@ export class DashboardRoute {
 		if (this.laneIntroPhase === 'waiting-for-home') {
 			// Resolve prefecture display name for dynamic coach mark text
 			this.selectedPrefectureName = this.i18n.tr(
-				`userHome.prefectures.${code.toLowerCase().replace('jp-', '')}`,
+				`userHome.prefectures.${translationKey(code)}`,
 			)
 			this.laneIntroPhase = 'home'
 			this.updateSpotlightForPhase()
@@ -213,6 +212,21 @@ export class DashboardRoute {
 
 	private async startLaneIntro(): Promise<void> {
 		if (!this.isOnboardingStepDashboard) return
+
+		// HOME phase: open Home Selector before data check when region not yet set.
+		// listByFollowerGuest returns [] when homeCode is null, so data will always
+		// be empty until the user picks a region. Open the selector immediately.
+		if (this.needsRegion) {
+			this.setNavTabsDimmed(true)
+			this.laneIntroPhase = 'waiting-for-home'
+			this.homeSelector?.open()
+			this.onboarding.activateSpotlight(
+				'[data-stage="home"]',
+				this.i18n.tr('dashboard.laneIntro.homePrompt'),
+				undefined,
+			)
+			return
+		}
 
 		// Wait for data to finish loading before deciding
 		while (this.isLoading) {
@@ -232,28 +246,16 @@ export class DashboardRoute {
 
 		this.setNavTabsDimmed(true)
 
-		// HOME phase: open Home Selector inline if region not yet set
-		if (this.needsRegion) {
-			this.laneIntroPhase = 'waiting-for-home'
-			this.homeSelector?.open()
-			// Spotlight the HOME stage while waiting for selection
-			this.onboarding.activateSpotlight(
-				'[data-stage="home"]',
-				this.i18n.tr('dashboard.laneIntro.homePrompt'),
-				undefined,
+		// Resolve prefecture name for coach mark text (home already set)
+		const homeCode = this.guest.home
+		if (homeCode) {
+			this.selectedPrefectureName = this.i18n.tr(
+				`userHome.prefectures.${translationKey(homeCode)}`,
 			)
-		} else {
-			// Resolve prefecture name for coach mark text (home already set)
-			const homeCode = this.guest.home
-			if (homeCode) {
-				this.selectedPrefectureName = this.i18n.tr(
-					`userHome.prefectures.${homeCode.toLowerCase().replace('jp-', '')}`,
-				)
-			}
-			this.laneIntroPhase = 'home'
-			this.logger.info('Lane intro started')
-			this.updateSpotlightForPhase()
 		}
+		this.laneIntroPhase = 'home'
+		this.logger.info('Lane intro started')
+		this.updateSpotlightForPhase()
 	}
 
 	private advanceLaneIntro(): void {
