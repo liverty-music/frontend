@@ -6,29 +6,31 @@ import {
 	WebStorageStateStore,
 } from 'oidc-client-ts'
 
-const settings: UserManagerSettings = {
-	authority: import.meta.env.VITE_ZITADEL_ISSUER,
-	client_id: import.meta.env.VITE_ZITADEL_CLIENT_ID,
-	redirect_uri: `${window.location.origin}/auth/callback`,
-	post_logout_redirect_uri: `${window.location.origin}/`,
-	response_type: 'code',
-	scope: [
-		'openid profile email offline_access',
-		// Include org scope so Zitadel applies the Org-level login policy (passkey only)
-		import.meta.env.VITE_ZITADEL_ORG_ID
-			? `urn:zitadel:iam:org:id:${import.meta.env.VITE_ZITADEL_ORG_ID}`
-			: '',
-	]
-		.filter(Boolean)
-		.join(' '),
-	// PKCE is standard/default for 'code' flow in newer oidc-client-ts versions
-	loadUserInfo: true,
-	// Use localStorage instead of sessionStorage for better compatibility with Playwright storageState
-	userStore: new WebStorageStateStore({ store: window.localStorage }),
-	// Disable session monitor in dev: Zitadel's check_session_iframe returns
-	// frame-ancestors 'none', causing oidc-client-ts to fire userUnloaded
-	// repeatedly (~10s) which re-bootstraps the entire Aurelia app.
-	monitorSession: !import.meta.env.DEV,
+function createSettings(): UserManagerSettings {
+	return {
+		authority: import.meta.env.VITE_ZITADEL_ISSUER,
+		client_id: import.meta.env.VITE_ZITADEL_CLIENT_ID,
+		redirect_uri: `${window.location.origin}/auth/callback`,
+		post_logout_redirect_uri: `${window.location.origin}/`,
+		response_type: 'code',
+		scope: [
+			'openid profile email offline_access',
+			// Include org scope so Zitadel applies the Org-level login policy (passkey only)
+			import.meta.env.VITE_ZITADEL_ORG_ID
+				? `urn:zitadel:iam:org:id:${import.meta.env.VITE_ZITADEL_ORG_ID}`
+				: '',
+		]
+			.filter(Boolean)
+			.join(' '),
+		// PKCE is standard/default for 'code' flow in newer oidc-client-ts versions
+		loadUserInfo: true,
+		// Use localStorage instead of sessionStorage for better compatibility with Playwright storageState
+		userStore: new WebStorageStateStore({ store: window.localStorage }),
+		// Disable session monitor in dev: Zitadel's check_session_iframe returns
+		// frame-ancestors 'none', causing oidc-client-ts to fire userUnloaded
+		// repeatedly (~10s) which re-bootstraps the entire Aurelia app.
+		monitorSession: !import.meta.env.DEV,
+	}
 }
 
 export const IAuthService = DI.createInterface<IAuthService>(
@@ -46,7 +48,7 @@ export class AuthService {
 
 	constructor() {
 		this.logger.debug('Initializing AuthService')
-		this.userManager = new UserManager(settings)
+		this.userManager = new UserManager(createSettings())
 
 		// Create a promise that resolves when initial auth state is loaded
 		this.ready = new Promise((resolve) => {
