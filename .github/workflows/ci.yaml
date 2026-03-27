@@ -257,12 +257,20 @@ jobs:
           workflow: ci.yaml
           if_no_artifact_found: warn
 
-      - name: Run visual regression tests
+      - name: Check if baselines exist
+        id: baselines
+        run: test -d e2e/__screenshots__ && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
+
+      - name: Run visual regression tests (compare)
+        if: steps.baselines.outputs.exists == 'true'
         run: npx playwright test --project=mobile-visual
+
+      - name: Generate initial baselines (first run)
+        if: steps.baselines.outputs.exists == 'false'
+        run: npx playwright test --project=mobile-visual --update-snapshots
 
       - name: Upload updated baselines
         uses: actions/upload-artifact@v4
-        if: github.ref == 'refs/heads/main'
         with:
           name: visual-baselines
           path: e2e/__screenshots__/
