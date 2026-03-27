@@ -2,12 +2,12 @@ import { I18N } from '@aurelia/i18n'
 import { createFixture } from '@aurelia/testing'
 import { IEventAggregator, Registration } from 'aurelia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { BeamVarsCustomAttribute } from '../../../src/custom-attributes/beam-vars'
 import { ConcertHighway } from '../../../src/components/live-highway/concert-highway'
 import { EventCard } from '../../../src/components/live-highway/event-card'
+import { BeamVarsCustomAttribute } from '../../../src/custom-attributes/beam-vars'
 import type { DateGroup } from '../../../src/entities/concert'
-import { createMockI18n } from '../../helpers/mock-i18n'
 import { makeConcert, makeDateGroup } from '../../helpers/mock-date-groups'
+import { createMockI18n } from '../../helpers/mock-i18n'
 
 const sharedDeps = [
 	ConcertHighway,
@@ -25,7 +25,7 @@ describe('ConcertHighway composition', () => {
 
 	afterEach(async () => {
 		if (fixture) {
-			await (fixture as any).stop?.(true) ?? (fixture as any).tearDown?.()
+			;(await (fixture as any).stop?.(true)) ?? (fixture as any).tearDown?.()
 			fixture = null
 		}
 	})
@@ -126,11 +126,10 @@ describe('ConcertHighway composition', () => {
 		const ceEl = result.appHost.querySelector('concert-highway')
 		expect(ceEl).not.toBeNull()
 
-		// The component should have built the beam index map
-		const highway = (result as any).component as any
 		// Find the concert-highway's viewModel via the CE element
-		const hwVm =
-			(ceEl as any).$controller?.viewModel as ConcertHighway | undefined
+		const hwVm = (ceEl as any).$controller?.viewModel as
+			| ConcertHighway
+			| undefined
 		if (hwVm) {
 			expect(hwVm.beamIndexMap.size).toBe(2)
 			expect(hwVm.beamIndexMap.has('h1')).toBe(true)

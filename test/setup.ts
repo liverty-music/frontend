@@ -14,7 +14,10 @@ if (hasDOM) {
 	const { BrowserPlatform } = await import('@aurelia/platform-browser')
 	const { onFixtureCreated, setPlatform } = await import('@aurelia/testing')
 
-	const fixtures: { stop?: (dispose?: boolean) => unknown; tearDown?: () => unknown }[] = []
+	const fixtures: {
+		stop?: (dispose?: boolean) => unknown
+		tearDown?: () => unknown
+	}[] = []
 
 	beforeAll(() => {
 		const platform = new BrowserPlatform(

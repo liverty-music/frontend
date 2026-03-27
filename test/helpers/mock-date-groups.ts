@@ -21,9 +21,7 @@ export function makeConcert(
 }
 
 /** Create a DateGroup with one event per lane for testing. */
-export function makeDateGroup(
-	overrides?: Partial<DateGroup>,
-): DateGroup {
+export function makeDateGroup(overrides?: Partial<DateGroup>): DateGroup {
 	return {
 		label: '4月1日',
 		dateKey: '2026-04-01',
