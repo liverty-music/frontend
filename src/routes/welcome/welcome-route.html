@@ -40,7 +40,7 @@
 <!-- Screen 2: Live dashboard preview (bonus scroll destination) -->
 <section class="[ welcome-screen-2 ]" if.bind="dateGroups.length > 0">
   <p t="welcome.preview.label" class="welcome-preview-label"></p>
-  <div class="[ welcome-preview ]" role="presentation">
+  <div class="[ welcome-preview ]" data-testid="welcome-preview" role="presentation">
     <concert-highway
       date-groups.bind="dateGroups"
       is-readonly="true"

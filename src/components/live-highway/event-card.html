@@ -22,7 +22,7 @@ class="[ event-card ]"
     <span
       if.bind="event.journeyStatus"
       data-journey-status.bind="event.journeyStatus"
-      class="journey-badge"
+      class="journey-badge" data-testid="journey-badge"
     >${event.journeyStatus}</span>
   </article>
 </template>
