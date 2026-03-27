@@ -170,7 +170,14 @@ export class CoachMark {
 	}
 
 	public onBlockerClick(): void {
-		// Intentionally no-op: clicks outside the target are blocked
+		this.onTap?.()
+	}
+
+	public onKeydown(e: KeyboardEvent): void {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault()
+			this.onTap?.()
+		}
 	}
 
 	public onTargetClick(e: Event): void {

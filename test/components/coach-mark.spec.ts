@@ -200,13 +200,19 @@ describe('CoachMark', () => {
 	})
 
 	describe('click interaction', () => {
-		it('should not call onTap when blocker is clicked (blocks interaction)', () => {
+		it('should call onTap when blocker is clicked (tap anywhere to advance)', () => {
 			const onTap = vi.fn()
 			sut.onTap = onTap
 
 			sut.onBlockerClick()
 
-			expect(onTap).not.toHaveBeenCalled()
+			expect(onTap).toHaveBeenCalledTimes(1)
+		})
+
+		it('should not throw when blocker is clicked without onTap set', () => {
+			sut.onTap = undefined
+
+			expect(() => sut.onBlockerClick()).not.toThrow()
 		})
 
 		it('should call onTap only when target interceptor is clicked', () => {
@@ -228,6 +234,40 @@ describe('CoachMark', () => {
 			sut.onTap = undefined
 			const event = new Event('click')
 			expect(() => sut.onTargetClick(event)).not.toThrow()
+		})
+
+		it('should call onTap when Enter key is pressed', () => {
+			const onTap = vi.fn()
+			sut.onTap = onTap
+			const event = new KeyboardEvent('keydown', { key: 'Enter' })
+			vi.spyOn(event, 'preventDefault')
+
+			sut.onKeydown(event)
+
+			expect(onTap).toHaveBeenCalledTimes(1)
+			expect(event.preventDefault).toHaveBeenCalled()
+		})
+
+		it('should call onTap when Space key is pressed', () => {
+			const onTap = vi.fn()
+			sut.onTap = onTap
+			const event = new KeyboardEvent('keydown', { key: ' ' })
+			vi.spyOn(event, 'preventDefault')
+
+			sut.onKeydown(event)
+
+			expect(onTap).toHaveBeenCalledTimes(1)
+			expect(event.preventDefault).toHaveBeenCalled()
+		})
+
+		it('should not call onTap for other keys', () => {
+			const onTap = vi.fn()
+			sut.onTap = onTap
+			const event = new KeyboardEvent('keydown', { key: 'Escape' })
+
+			sut.onKeydown(event)
+
+			expect(onTap).not.toHaveBeenCalled()
 		})
 	})
 
