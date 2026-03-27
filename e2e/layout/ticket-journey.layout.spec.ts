@@ -148,7 +148,7 @@ test.describe.fixme('Ticket journey badge', () => {
 	test('cards with journey status show a badge (TJ1)', async ({
 		layoutPage: page,
 	}) => {
-		const badges = page.locator('.journey-badge')
+		const badges = page.locator('[data-testid="journey-badge"]')
 		await expect
 			.poll(async () => badges.count(), { timeout: 5_000 })
 			.toBeGreaterThan(0)
@@ -157,7 +157,7 @@ test.describe.fixme('Ticket journey badge', () => {
 	test('journey badge has data-journey-status attribute (TJ2)', async ({
 		layoutPage: page,
 	}) => {
-		const badge = page.locator('.journey-badge').first()
+		const badge = page.locator('[data-testid="journey-badge"]').first()
 		await expect(badge).toBeVisible({ timeout: 5_000 })
 		const status = await badge.getAttribute('data-journey-status')
 		expect(
@@ -169,7 +169,7 @@ test.describe.fixme('Ticket journey badge', () => {
 	test('journey badge has non-zero dimensions (TJ3)', async ({
 		layoutPage: page,
 	}) => {
-		const badge = page.locator('.journey-badge').first()
+		const badge = page.locator('[data-testid="journey-badge"]').first()
 		await expect(badge).toBeVisible({ timeout: 5_000 })
 		const box = await badge.boundingBox()
 		expect(box, 'badge must have bounding box').toBeTruthy()
@@ -180,7 +180,7 @@ test.describe.fixme('Ticket journey badge', () => {
 	test('journey badge is positioned inside its event card (TJ4)', async ({
 		layoutPage: page,
 	}) => {
-		const badge = page.locator('.journey-badge').first()
+		const badge = page.locator('[data-testid="journey-badge"]').first()
 		await expect(badge).toBeVisible({ timeout: 5_000 })
 
 		const badgeBox = await badge.boundingBox()
@@ -202,7 +202,7 @@ test.describe.fixme('Ticket journey badge', () => {
 	}) => {
 		const allCards = page.locator('[data-live-card]')
 		const totalCards = await allCards.count()
-		const totalBadges = await page.locator('.journey-badge').count()
+		const totalBadges = await page.locator('[data-testid="journey-badge"]').count()
 		expect(totalBadges, 'not every card should have a badge').toBeLessThan(
 			totalCards,
 		)
@@ -248,21 +248,25 @@ test.describe('Detail sheet journey controls', () => {
 		await page.goto('/dashboard')
 		await page.waitForSelector('[data-live-card]', { timeout: 10_000 })
 
-		// Click the first card to open the detail sheet.
-		// page-help's .dismiss-zone may intercept real pointer events;
-		// dispatch the click via JS to bypass interception.
+		// Close any lingering popovers from prior serial tests so they
+		// don't intercept Playwright's pointer events via top-layer.
 		await page.evaluate(() => {
-			const el = document.querySelector<HTMLElement>('[data-live-card]')
-			if (!el) throw new Error('[data-live-card] not found')
-			el.click()
+			document.querySelectorAll('[popover]').forEach((el) => {
+				try {
+					;(el as HTMLElement).hidePopover()
+				} catch {}
+			})
 		})
-		await page.waitForSelector('.sheet-journey', { timeout: 5_000 })
+
+		// Click the first card to open the detail sheet.
+		await page.locator('[data-live-card]').first().click()
+		await page.waitForSelector('[data-testid="sheet-journey"]', { timeout: 5_000 })
 	})
 
 	test('journey section is visible in detail sheet (TJ6)', async ({
 		layoutPage: page,
 	}) => {
-		const section = page.locator('.sheet-journey')
+		const section = page.locator('[data-testid="sheet-journey"]')
 		await expect(section).toBeVisible()
 	})
 
@@ -277,7 +281,7 @@ test.describe('Detail sheet journey controls', () => {
 	test('five journey status buttons are rendered (TJ8)', async ({
 		layoutPage: page,
 	}) => {
-		const buttons = page.locator('.journey-btn')
+		const buttons = page.locator('[data-testid="journey-btn"]')
 		await expect(buttons).toHaveCount(5)
 
 		const labels = await buttons.allTextContents()
@@ -287,7 +291,7 @@ test.describe('Detail sheet journey controls', () => {
 	test('journey buttons have data-journey-status attributes (TJ9)', async ({
 		layoutPage: page,
 	}) => {
-		const buttons = page.locator('.journey-btn')
+		const buttons = page.locator('[data-testid="journey-btn"]')
 		const count = await buttons.count()
 		const expected = ['tracking', 'applied', 'lost', 'unpaid', 'paid']
 
@@ -304,13 +308,13 @@ test.describe('Detail sheet journey controls', () => {
 		// intercept Playwright pointer events after prior tests mutate state.
 		await page.evaluate(() => {
 			const btn = document.querySelector<HTMLElement>(
-				'.journey-btn[data-journey-status="tracking"]',
+				'[data-testid="journey-btn"][data-journey-status="tracking"]',
 			)
 			if (!btn) throw new Error('tracking button not found')
 			btn.click()
 		})
 		const trackingBtn = page.locator(
-			'.journey-btn[data-journey-status="tracking"]',
+			'[data-testid="journey-btn"][data-journey-status="tracking"]',
 		)
 		await expect
 			.poll(async () => trackingBtn.getAttribute('data-active'), {
@@ -322,11 +326,11 @@ test.describe('Detail sheet journey controls', () => {
 	test('stop tracking button appears after setting status (TJ11)', async ({
 		layoutPage: page,
 	}) => {
-		const removeBtn = page.locator('.journey-remove-btn')
+		const removeBtn = page.locator('[data-testid="journey-remove-btn"]')
 
 		await page.evaluate(() => {
 			const btn = document.querySelector<HTMLElement>(
-				'.journey-btn[data-journey-status="paid"]',
+				'[data-testid="journey-btn"][data-journey-status="paid"]',
 			)
 			if (!btn) throw new Error('paid button not found')
 			btn.click()
@@ -343,14 +347,14 @@ test.describe('Detail sheet journey controls', () => {
 		// assertions read DOM attributes regardless of visibility.
 		await page.evaluate(() => {
 			const btn = document.querySelector<HTMLElement>(
-				'.journey-btn[data-journey-status="applied"]',
+				'[data-testid="journey-btn"][data-journey-status="applied"]',
 			)
 			if (!btn) throw new Error('applied button not found')
 			btn.click()
 		})
 
 		const appliedBtn = page.locator(
-			'.journey-btn[data-journey-status="applied"]',
+			'[data-testid="journey-btn"][data-journey-status="applied"]',
 		)
 		await expect
 			.poll(async () => appliedBtn.getAttribute('data-active'), {
@@ -359,7 +363,7 @@ test.describe('Detail sheet journey controls', () => {
 			.not.toBeNull()
 
 		await page.evaluate(() => {
-			const btn = document.querySelector<HTMLElement>('.journey-remove-btn')
+			const btn = document.querySelector<HTMLElement>('[data-testid="journey-remove-btn"]')
 			if (!btn) throw new Error('remove button not found')
 			btn.click()
 		})
@@ -374,7 +378,7 @@ test.describe('Detail sheet journey controls', () => {
 	test('journey buttons have non-zero dimensions (TJ13)', async ({
 		layoutPage: page,
 	}) => {
-		const firstBtn = page.locator('.journey-btn').first()
+		const firstBtn = page.locator('[data-testid="journey-btn"]').first()
 		const box = await firstBtn.boundingBox()
 		expect(box, 'button must have bounding box').toBeTruthy()
 		expect(box!.width).toBeGreaterThan(20)

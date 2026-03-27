@@ -294,7 +294,7 @@ test.describe('Onboarding tutorial flow', () => {
 		await page.goto('http://localhost:9000/')
 
 		// Preview section is present in DOM (in scroll-snap Screen 2)
-		const preview = page.locator('.welcome-preview')
+		const preview = page.locator('[data-testid="welcome-preview"]')
 		await expect(preview).toBeAttached({ timeout: 10_000 })
 
 		// Scroll to Screen 2 to make preview visible
@@ -326,7 +326,7 @@ test.describe('Onboarding tutorial flow', () => {
 		).toBeVisible({ timeout: 5000 })
 
 		// Preview section must not be in the DOM (if.bind="previewDateGroups.length > 0")
-		await expect(page.locator('.welcome-preview')).not.toBeAttached()
+		await expect(page.locator('[data-testid="welcome-preview"]')).not.toBeAttached()
 	})
 
 	// -------------------------------------------------------------------------

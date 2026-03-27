@@ -16,7 +16,7 @@
     <span data-stage="away">AWAY STAGE</span>
   </header>
 
-  <ol class="[ concert-scroll ] [ date-group-list ]">
+  <ol class="[ concert-scroll ] [ date-group-list ]" data-testid="concert-scroll">
     <li repeat.for="group of dateGroups; key.bind: group.dateKey">
       <header class="[ date-separator ]">
         <time datetime.bind="group.dateKey">${group.label}</time>
