@@ -158,9 +158,9 @@ test.describe('Dashboard lane classification after home selection', () => {
 		const blurElement = page.locator('[data-blurred="true"]')
 		await expect(blurElement).toBeVisible({ timeout: 10_000 })
 
-		// Home selector dialog should open automatically
+		// Home selector opens via startLaneIntro() after data loads (not directly from attached)
 		const regionDialog = page.locator('user-home-selector bottom-sheet')
-		await expect(regionDialog).toBeVisible({ timeout: 5000 })
+		await expect(regionDialog).toBeVisible({ timeout: 10_000 })
 
 		// Select a home region — expect loadData() to fire (ListWithProximity RPC)
 		const reloadPromise = page.waitForResponse(
