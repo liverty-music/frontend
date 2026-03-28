@@ -264,6 +264,8 @@
 		"en": "English"
 	},
 	"postSignup": {
+		"title": "✅ アカウント登録完了！",
+		"ariaLabel": "アカウント登録完了",
 		"notificationLabel": "新着ライブ通知をオンにしよう",
 		"notificationEnable": "通知をオンにする",
 		"notificationEnabling": "有効化中…",
