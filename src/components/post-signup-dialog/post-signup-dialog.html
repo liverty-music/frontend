@@ -1,8 +1,8 @@
 <import from="./post-signup-dialog.css"></import>
 
-<bottom-sheet open.bind="isOpen" aria-label="アカウント登録完了" sheet-closed.trigger="onDefer()">
+<bottom-sheet open.bind="isOpen" t="[aria-label]postSignup.ariaLabel" sheet-closed.trigger="onDefer()">
   <section class="post-signup-content">
-    <h2 class="post-signup-title">✅ アカウント登録完了！</h2>
+    <h2 class="post-signup-title" t="postSignup.title"></h2>
 
     <!-- Notification opt-in row -->
     <div class="post-signup-row" if.bind="notificationManager.permission === 'default'">

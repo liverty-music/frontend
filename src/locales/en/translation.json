@@ -264,6 +264,8 @@
 		"en": "English"
 	},
 	"postSignup": {
+		"title": "Account registration complete!",
+		"ariaLabel": "Account registration complete",
 		"notificationLabel": "Turn on new live notifications",
 		"notificationEnable": "Enable notifications",
 		"notificationEnabling": "Enabling…",
