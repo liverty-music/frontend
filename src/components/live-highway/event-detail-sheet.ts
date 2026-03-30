@@ -1,6 +1,7 @@
 import { bindable, ILogger, resolve } from 'aurelia'
 import { displayName } from '../../constants/iso3166'
 import { bestBackgroundUrl } from '../../entities/artist'
+import { IAuthService } from '../../services/auth-service'
 import { ITicketJourneyService } from '../../services/ticket-journey-service'
 import type { JourneyStatus, LiveEvent } from './live-event'
 
@@ -12,6 +13,11 @@ export class EventDetailSheet {
 
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
 	private readonly journeyService = resolve(ITicketJourneyService)
+	private readonly authService = resolve(IAuthService)
+
+	public get isAuthenticated(): boolean {
+		return this.authService.isAuthenticated
+	}
 	private closedByPopstate = false
 
 	private readonly onPopstate = (): void => {
