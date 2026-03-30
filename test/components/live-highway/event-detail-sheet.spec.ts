@@ -1,10 +1,7 @@
 import { DI, type IDisposable, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LiveEvent } from '../../../src/components/live-highway/live-event'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../../src/services/onboarding-service'
+import { IAuthService } from '../../../src/services/auth-service'
 import { createTestContainer } from '../../helpers/create-container'
 import { createMockRouter } from '../../helpers/mock-router'
 import { createMockRouterEvents } from '../../helpers/mock-router-events'
@@ -38,40 +35,21 @@ function makeEvent(overrides: Partial<LiveEvent> = {}): LiveEvent {
 	}
 }
 
-function createMockOnboarding(step = OnboardingStep.COMPLETED) {
-	return {
-		currentStep: step,
-		spotlightTarget: '',
-		spotlightMessage: '',
-		spotlightRadius: '12px',
-		spotlightActive: false,
-		onSpotlightTap: undefined,
-		onBringToFront: undefined,
-		isOnboarding: false,
-		isCompleted: true,
-		activateSpotlight: vi.fn(),
-		deactivateSpotlight: vi.fn(),
-		bringSpotlightToFront: vi.fn(),
-		setStep: vi.fn(),
-		complete: vi.fn(),
-		reset: vi.fn(),
-		getRouteForCurrentStep: vi.fn(() => ''),
-	}
+function createMockAuthService(isAuthenticated = true) {
+	return { isAuthenticated }
 }
 
 describe('EventDetailSheet', () => {
 	let sut: InstanceType<typeof EventDetailSheet>
-	let mockOnboarding: ReturnType<typeof createMockOnboarding>
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockRouterEvents: ReturnType<typeof createMockRouterEvents>
 
 	beforeEach(() => {
-		mockOnboarding = createMockOnboarding()
 		mockRouter = createMockRouter()
 		mockRouterEvents = createMockRouterEvents()
 
 		const container = createTestContainer(
-			Registration.instance(IOnboardingService, mockOnboarding),
+			Registration.instance(IAuthService, createMockAuthService()),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIRouterEvents, mockRouterEvents),
 		)
