@@ -62,7 +62,7 @@
       </section>
 
       <!-- Ticket journey status -->
-      <section class="sheet-journey" data-testid="sheet-journey">
+      <section if.bind="isAuthenticated" class="sheet-journey" data-testid="sheet-journey">
         <h3 class="journey-heading">Ticket Status</h3>
         <div class="journey-controls">
           <button
