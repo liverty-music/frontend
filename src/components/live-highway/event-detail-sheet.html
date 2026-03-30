@@ -3,13 +3,13 @@
 
   <bottom-sheet
     open.bind="isOpen"
-    dismissable.bind="isDismissable"
+    dismissable="true"
     sheet-closed.trigger="onSheetClosed()"
     aria-label="Event details"
   >
-    <section if.bind="event" class="sheet-content">
+    <div if.bind="event" class="sheet-content" aria-labelledby="sheet-artist-name">
       <!-- Hero background image -->
-      <figure if.bind="backgroundUrl" class="sheet-hero">
+      <div if.bind="backgroundUrl" class="sheet-hero" role="presentation">
         <img
           src.bind="backgroundUrl"
           alt=""
@@ -17,14 +17,14 @@
           decoding="async"
           class="sheet-hero-img"
         />
-      </figure>
+      </div>
 
       <!-- Artist name header with dynamic color -->
       <header
         artist-color.bind="event.artistName"
         class="sheet-artist-header hype-home"
       >
-        <h2 class="sheet-artist-name">
+        <h2 id="sheet-artist-name" class="sheet-artist-name">
           ${event.artistName}
         </h2>
         <p class="sheet-event-title">${event.title}</p>
@@ -102,6 +102,6 @@
           <svg-icon name="calendar"></svg-icon> Add to Calendar
         </a>
       </footer>
-    </section>
+    </div>
   </bottom-sheet>
 </template>

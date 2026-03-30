@@ -17,7 +17,7 @@
 <state-placeholder if.bind="!isLoading && !loadError && dateGroups.length === 0" icon="clock">
   <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
   <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
-  <a href="/discovery" t="dashboard.empty.discoverLink" class="dashboard-empty-link"></a>
+  <a href.bind="'discovery'" t="dashboard.empty.discoverLink" class="dashboard-empty-link"></a>
 </state-placeholder>
 
 <!-- Concert highway — always in DOM for E2E compatibility -->

@@ -1,3 +1,5 @@
+import type { IDisposable } from '@aurelia/kernel'
+import { IRouter, IRouterEvents } from '@aurelia/router'
 import { bindable, ILogger, resolve } from 'aurelia'
 import { displayName } from '../../constants/iso3166'
 import { bestBackgroundUrl } from '../../entities/artist'
@@ -14,23 +16,12 @@ export class EventDetailSheet {
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly authService = resolve(IAuthService)
+	private readonly router = resolve(IRouter)
+	private readonly routerEvents = resolve(IRouterEvents)
+	private navSub: IDisposable | null = null
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
-	}
-	private closedByPopstate = false
-
-	private readonly onPopstate = (): void => {
-		if (this.isOpen) {
-			// Browser navigated back -- mark so onSheetClosed skips replaceState
-			this.closedByPopstate = true
-			this.isOpen = false
-			window.removeEventListener('popstate', this.onPopstate)
-		}
-	}
-
-	public get isDismissable(): boolean {
-		return true
 	}
 
 	public get backgroundUrl(): string | undefined {
@@ -70,31 +61,41 @@ export class EventDetailSheet {
 
 	/** Open the sheet for a given event, pushing a history entry for deep-link support */
 	public open(event: LiveEvent): void {
-		this.closedByPopstate = false
 		this.event = event
 		this.isOpen = true
 
-		window.addEventListener('popstate', this.onPopstate)
-		history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
+		// Navigate via Aurelia Router so history is managed by the framework.
+		// historyStrategy: 'push' adds a back-navigable entry.
+		void this.router.load(`concerts/${event.id}`, { historyStrategy: 'push' })
+
+		// Subscribe to router navigation-end to detect back navigation.
+		// When the user navigates away from /concerts/:id (e.g. browser back),
+		// close the sheet without issuing another navigation.
+		this.navSub = this.routerEvents.subscribe(
+			'au:router:navigation-end',
+			(e) => {
+				const path = e.finalInstructions.toPath()
+				if (this.isOpen && !path.startsWith('concerts/')) {
+					this.isOpen = false
+					this.navSub?.dispose()
+					this.navSub = null
+				}
+			},
+		)
 	}
 
-	/** Programmatic close -- replaces history state back to dashboard */
+	/** Programmatic close — navigates back to dashboard */
 	public close(): void {
 		if (!this.isOpen) return
 		this.isOpen = false
-		window.removeEventListener('popstate', this.onPopstate)
-		history.replaceState(null, '', '/dashboard')
+		this.navSub?.dispose()
+		this.navSub = null
+		void this.router.load('dashboard', { historyStrategy: 'replace' })
 	}
 
 	/** Handles the sheet-closed event dispatched by <bottom-sheet> on light-dismiss or swipe */
 	public onSheetClosed(): void {
-		if (this.closedByPopstate) {
-			this.closedByPopstate = false
-			return
-		}
-		this.isOpen = false
-		window.removeEventListener('popstate', this.onPopstate)
-		history.replaceState(null, '', '/dashboard')
+		this.close()
 	}
 
 	public get journeyStatuses(): JourneyStatus[] {
@@ -127,8 +128,9 @@ export class EventDetailSheet {
 		}
 	}
 
-	/** Unconditional cleanup on component detach to prevent listener leaks */
+	/** Unconditional cleanup on component detach to prevent subscription leaks */
 	public detaching(): void {
-		window.removeEventListener('popstate', this.onPopstate)
+		this.navSub?.dispose()
+		this.navSub = null
 	}
 }
