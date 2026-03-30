@@ -1,16 +1,15 @@
 import { DI, type IDisposable, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { IHistory } from '../../../src/adapter/browser/history'
 import type { LiveEvent } from '../../../src/components/live-highway/live-event'
 import { IAuthService } from '../../../src/services/auth-service'
 import { createTestContainer } from '../../helpers/create-container'
-import { createMockRouter } from '../../helpers/mock-router'
+import { createMockHistory } from '../../helpers/mock-history'
 import { createMockRouterEvents } from '../../helpers/mock-router-events'
 
-const mockIRouter = DI.createInterface('IRouter')
 const mockIRouterEvents = DI.createInterface('IRouterEvents')
 
 vi.mock('@aurelia/router', () => ({
-	IRouter: mockIRouter,
 	IRouterEvents: mockIRouterEvents,
 }))
 
@@ -41,16 +40,16 @@ function createMockAuthService(isAuthenticated = true) {
 
 describe('EventDetailSheet', () => {
 	let sut: InstanceType<typeof EventDetailSheet>
-	let mockRouter: ReturnType<typeof createMockRouter>
+	let mockHistory: ReturnType<typeof createMockHistory>
 	let mockRouterEvents: ReturnType<typeof createMockRouterEvents>
 
 	beforeEach(() => {
-		mockRouter = createMockRouter()
+		mockHistory = createMockHistory()
 		mockRouterEvents = createMockRouterEvents()
 
 		const container = createTestContainer(
 			Registration.instance(IAuthService, createMockAuthService()),
-			Registration.instance(mockIRouter, mockRouter),
+			Registration.instance(IHistory, mockHistory),
 			Registration.instance(mockIRouterEvents, mockRouterEvents),
 		)
 		container.register(EventDetailSheet)
@@ -108,16 +107,18 @@ describe('EventDetailSheet', () => {
 	})
 
 	describe('open / close', () => {
-		it('should open with event and call router.load with concerts/:id', () => {
+		it('should open with event and call history.pushState with concerts/:id', () => {
 			const event = makeEvent()
 
 			sut.open(event)
 
 			expect(sut.isOpen).toBe(true)
 			expect(sut.event).toBe(event)
-			expect(mockRouter.load).toHaveBeenCalledWith('concerts/c1', {
-				historyStrategy: 'push',
-			})
+			expect(mockHistory.pushState).toHaveBeenCalledWith(
+				{ concertId: 'c1' },
+				'',
+				'/concerts/c1',
+			)
 		})
 
 		it('should subscribe to router navigation-end on open', () => {
@@ -129,15 +130,17 @@ describe('EventDetailSheet', () => {
 			)
 		})
 
-		it('should close and navigate to dashboard via router.load', () => {
+		it('should close and call history.replaceState with dashboard', () => {
 			sut.open(makeEvent())
 
 			sut.close()
 
 			expect(sut.isOpen).toBe(false)
-			expect(mockRouter.load).toHaveBeenCalledWith('dashboard', {
-				historyStrategy: 'replace',
-			})
+			expect(mockHistory.replaceState).toHaveBeenCalledWith(
+				null,
+				'',
+				'/dashboard',
+			)
 		})
 
 		it('should dispose navSub on close', () => {
@@ -153,21 +156,23 @@ describe('EventDetailSheet', () => {
 	})
 
 	describe('onSheetClosed', () => {
-		it('should close and navigate to dashboard when bottom-sheet fires sheet-closed', () => {
+		it('should close and call replaceState when bottom-sheet fires sheet-closed', () => {
 			sut.open(makeEvent())
 
 			sut.onSheetClosed()
 
 			expect(sut.isOpen).toBe(false)
-			expect(mockRouter.load).toHaveBeenCalledWith('dashboard', {
-				historyStrategy: 'replace',
-			})
+			expect(mockHistory.replaceState).toHaveBeenCalledWith(
+				null,
+				'',
+				'/dashboard',
+			)
 		})
 
 		it('should do nothing when already closed', () => {
 			sut.onSheetClosed()
 
-			expect(mockRouter.load).not.toHaveBeenCalled()
+			expect(mockHistory.replaceState).not.toHaveBeenCalled()
 		})
 	})
 

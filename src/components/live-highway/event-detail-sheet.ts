@@ -1,6 +1,7 @@
 import type { IDisposable } from '@aurelia/kernel'
-import { IRouter, IRouterEvents } from '@aurelia/router'
+import { IRouterEvents } from '@aurelia/router'
 import { bindable, ILogger, resolve } from 'aurelia'
+import { IHistory } from '../../adapter/browser/history'
 import { displayName } from '../../constants/iso3166'
 import { bestBackgroundUrl } from '../../entities/artist'
 import { IAuthService } from '../../services/auth-service'
@@ -16,7 +17,7 @@ export class EventDetailSheet {
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly authService = resolve(IAuthService)
-	private readonly router = resolve(IRouter)
+	private readonly history = resolve(IHistory)
 	private readonly routerEvents = resolve(IRouterEvents)
 	private navSub: IDisposable | null = null
 
@@ -64,13 +65,13 @@ export class EventDetailSheet {
 		this.event = event
 		this.isOpen = true
 
-		// Navigate via Aurelia Router so history is managed by the framework.
-		// historyStrategy: 'push' adds a back-navigable entry.
-		void this.router.load(`concerts/${event.id}`, { historyStrategy: 'push' })
+		// Push URL without triggering Aurelia Router navigation — the sheet is an
+		// overlay on the dashboard, not a separate route component. A full navigation
+		// would destroy and recreate the dashboard component (and this sheet).
+		this.history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 
-		// Subscribe to router navigation-end to detect back navigation.
-		// When the user navigates away from /concerts/:id (e.g. browser back),
-		// close the sheet without issuing another navigation.
+		// Subscribe to router navigation-end to detect when the user navigates away
+		// (e.g. browser back button triggers a popstate → Aurelia Router re-syncs URL).
 		this.navSub = this.routerEvents.subscribe(
 			'au:router:navigation-end',
 			(e) => {
@@ -84,13 +85,13 @@ export class EventDetailSheet {
 		)
 	}
 
-	/** Programmatic close — navigates back to dashboard */
+	/** Programmatic close — replaces current history entry with dashboard URL */
 	public close(): void {
 		if (!this.isOpen) return
 		this.isOpen = false
 		this.navSub?.dispose()
 		this.navSub = null
-		void this.router.load('dashboard', { historyStrategy: 'replace' })
+		this.history.replaceState(null, '', '/dashboard')
 	}
 
 	/** Handles the sheet-closed event dispatched by <bottom-sheet> on light-dismiss or swipe */
