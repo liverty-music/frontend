@@ -1,11 +1,10 @@
-import { INode, Registration } from 'aurelia'
+import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { IHistory } from '../../../src/adapter/browser/history'
 import type { LiveEvent } from '../../../src/components/live-highway/live-event'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../../src/services/onboarding-service'
+import { IAuthService } from '../../../src/services/auth-service'
 import { createTestContainer } from '../../helpers/create-container'
+import { createMockHistory } from '../../helpers/mock-history'
 
 const { EventDetailSheet } = await import(
 	'../../../src/components/live-highway/event-detail-sheet'
@@ -28,40 +27,20 @@ function makeEvent(overrides: Partial<LiveEvent> = {}): LiveEvent {
 	}
 }
 
-function createMockOnboarding(step = OnboardingStep.COMPLETED) {
-	return {
-		currentStep: step,
-		spotlightTarget: '',
-		spotlightMessage: '',
-		spotlightRadius: '12px',
-		spotlightActive: false,
-		onSpotlightTap: undefined,
-		onBringToFront: undefined,
-		isOnboarding: false,
-		isCompleted: true,
-		activateSpotlight: vi.fn(),
-		deactivateSpotlight: vi.fn(),
-		bringSpotlightToFront: vi.fn(),
-		setStep: vi.fn(),
-		complete: vi.fn(),
-		reset: vi.fn(),
-		getRouteForCurrentStep: vi.fn(() => ''),
-	}
+function createMockAuthService(isAuthenticated = true) {
+	return { isAuthenticated }
 }
 
 describe('EventDetailSheet', () => {
 	let sut: InstanceType<typeof EventDetailSheet>
-	let mockElement: HTMLElement
-	let mockOnboarding: ReturnType<typeof createMockOnboarding>
+	let mockHistory: ReturnType<typeof createMockHistory>
 
 	beforeEach(() => {
-		mockOnboarding = createMockOnboarding()
-
-		mockElement = document.createElement('div')
+		mockHistory = createMockHistory()
 
 		const container = createTestContainer(
-			Registration.instance(INode, mockElement),
-			Registration.instance(IOnboardingService, mockOnboarding),
+			Registration.instance(IAuthService, createMockAuthService()),
+			Registration.instance(IHistory, mockHistory),
 		)
 		container.register(EventDetailSheet)
 		sut = container.get(EventDetailSheet)
@@ -118,47 +97,68 @@ describe('EventDetailSheet', () => {
 	})
 
 	describe('open / close', () => {
-		it('should open with event and push history state', () => {
-			const pushSpy = vi.spyOn(history, 'pushState')
+		it('should open with event and call history.pushState with concerts/:id', () => {
 			const event = makeEvent()
 
 			sut.open(event)
 
 			expect(sut.isOpen).toBe(true)
 			expect(sut.event).toBe(event)
-			expect(pushSpy).toHaveBeenCalledWith(
+			expect(mockHistory.pushState).toHaveBeenCalledWith(
 				{ concertId: 'c1' },
 				'',
 				'/concerts/c1',
 			)
 		})
 
-		it('should close and replace history state', () => {
-			const replaceSpy = vi.spyOn(history, 'replaceState')
+		it('should close and call history.replaceState with dashboard', () => {
 			sut.open(makeEvent())
 
 			sut.close()
 
 			expect(sut.isOpen).toBe(false)
-			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
+			expect(mockHistory.replaceState).toHaveBeenCalledWith(
+				null,
+				'',
+				'/dashboard',
+			)
+		})
+
+		it('should register popstate listener on open', () => {
+			const addSpy = vi.spyOn(window, 'addEventListener')
+			sut.open(makeEvent())
+
+			expect(addSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
+		})
+
+		it('should remove popstate listener on close', () => {
+			const removeSpy = vi.spyOn(window, 'removeEventListener')
+			sut.open(makeEvent())
+
+			sut.close()
+
+			expect(removeSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
 		})
 	})
 
 	describe('onSheetClosed', () => {
-		it('should close and replace history when bottom-sheet fires sheet-closed', () => {
-			const replaceSpy = vi.spyOn(history, 'replaceState')
+		it('should close and call replaceState when bottom-sheet fires sheet-closed', () => {
 			sut.open(makeEvent())
 
 			sut.onSheetClosed()
 
 			expect(sut.isOpen).toBe(false)
-			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
+			expect(mockHistory.replaceState).toHaveBeenCalledWith(
+				null,
+				'',
+				'/dashboard',
+			)
 		})
-	})
 
-	describe('isDismissable', () => {
-		it('should always return true', () => {
-			expect(sut.isDismissable).toBe(true)
+		it('should do nothing when already closed', () => {
+			sut.onSheetClosed()
+
+			expect(mockHistory.replaceState).not.toHaveBeenCalled()
 		})
 	})
 
@@ -169,38 +169,6 @@ describe('EventDetailSheet', () => {
 			window.dispatchEvent(new PopStateEvent('popstate'))
 
 			expect(sut.isOpen).toBe(false)
-		})
-
-		it('should skip replaceState in onSheetClosed after popstate', () => {
-			const replaceSpy = vi.spyOn(history, 'replaceState')
-			sut.open(makeEvent())
-
-			// Simulate popstate firing before toggle (browser back)
-			window.dispatchEvent(new PopStateEvent('popstate'))
-			replaceSpy.mockClear()
-
-			// Then bottom-sheet fires sheet-closed
-			sut.onSheetClosed()
-
-			// Should not call replaceState since popstate already handled navigation
-			expect(replaceSpy).not.toHaveBeenCalled()
-		})
-
-		it('should reset closedByPopstate on next open so light-dismiss works', () => {
-			const replaceSpy = vi.spyOn(history, 'replaceState')
-			sut.open(makeEvent())
-
-			// First cycle: popstate closes the sheet
-			window.dispatchEvent(new PopStateEvent('popstate'))
-			sut.onSheetClosed() // bottom-sheet fires after popstate — skips replaceState (correct)
-			replaceSpy.mockClear()
-
-			// Second cycle: re-open and light-dismiss
-			sut.open(makeEvent({ id: 'c2' }))
-			sut.onSheetClosed()
-
-			// Should call replaceState because this was a normal light-dismiss, not popstate
-			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
 		})
 
 		it('should not close when popstate fires and sheet is not open', () => {
@@ -215,15 +183,17 @@ describe('EventDetailSheet', () => {
 	})
 
 	describe('detaching', () => {
-		it('should remove popstate listener', () => {
-			const removeWindowSpy = vi.spyOn(window, 'removeEventListener')
+		it('should remove popstate listener on detach', () => {
+			sut.open(makeEvent())
+			const removeSpy = vi.spyOn(window, 'removeEventListener')
 
 			sut.detaching()
 
-			expect(removeWindowSpy).toHaveBeenCalledWith(
-				'popstate',
-				expect.any(Function),
-			)
+			expect(removeSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
+		})
+
+		it('should not throw when detaching without having opened', () => {
+			expect(() => sut.detaching()).not.toThrow()
 		})
 	})
 })

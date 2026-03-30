@@ -1,4 +1,5 @@
 import { bindable, ILogger, resolve } from 'aurelia'
+import { IHistory } from '../../adapter/browser/history'
 import { displayName } from '../../constants/iso3166'
 import { bestBackgroundUrl } from '../../entities/artist'
 import { IAuthService } from '../../services/auth-service'
@@ -14,23 +15,18 @@ export class EventDetailSheet {
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly authService = resolve(IAuthService)
+	private readonly history = resolve(IHistory)
 
-	public get isAuthenticated(): boolean {
-		return this.authService.isAuthenticated
-	}
-	private closedByPopstate = false
-
+	// Arrow function to allow `removeEventListener` with the same reference
 	private readonly onPopstate = (): void => {
 		if (this.isOpen) {
-			// Browser navigated back -- mark so onSheetClosed skips replaceState
-			this.closedByPopstate = true
 			this.isOpen = false
 			window.removeEventListener('popstate', this.onPopstate)
 		}
 	}
 
-	public get isDismissable(): boolean {
-		return true
+	public get isAuthenticated(): boolean {
+		return this.authService.isAuthenticated
 	}
 
 	public get backgroundUrl(): string | undefined {
@@ -70,31 +66,29 @@ export class EventDetailSheet {
 
 	/** Open the sheet for a given event, pushing a history entry for deep-link support */
 	public open(event: LiveEvent): void {
-		this.closedByPopstate = false
 		this.event = event
 		this.isOpen = true
 
+		// Push URL without triggering Aurelia Router navigation — the sheet is an
+		// overlay on the dashboard, not a separate route component. A full navigation
+		// would destroy and recreate the dashboard component (and this sheet).
+		this.history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
+
+		// Listen for browser back navigation (popstate) to close the sheet.
 		window.addEventListener('popstate', this.onPopstate)
-		history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 	}
 
-	/** Programmatic close -- replaces history state back to dashboard */
+	/** Programmatic close — replaces current history entry with dashboard URL */
 	public close(): void {
 		if (!this.isOpen) return
 		this.isOpen = false
 		window.removeEventListener('popstate', this.onPopstate)
-		history.replaceState(null, '', '/dashboard')
+		this.history.replaceState(null, '', '/dashboard')
 	}
 
 	/** Handles the sheet-closed event dispatched by <bottom-sheet> on light-dismiss or swipe */
 	public onSheetClosed(): void {
-		if (this.closedByPopstate) {
-			this.closedByPopstate = false
-			return
-		}
-		this.isOpen = false
-		window.removeEventListener('popstate', this.onPopstate)
-		history.replaceState(null, '', '/dashboard')
+		this.close()
 	}
 
 	public get journeyStatuses(): JourneyStatus[] {

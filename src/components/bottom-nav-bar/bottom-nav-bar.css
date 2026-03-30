@@ -61,6 +61,11 @@
 			color: var(--color-text-muted);
 		}
 
+		.nav-tab[data-dimmed] {
+			opacity: 0.3;
+			transition: opacity var(--transition-normal);
+		}
+
 		.nav-icon {
 			inline-size: 1.25rem;
 			block-size: 1.25rem;

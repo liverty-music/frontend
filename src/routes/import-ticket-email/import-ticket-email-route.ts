@@ -1,3 +1,4 @@
+import type { Params, RouteNode } from '@aurelia/router'
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import type { TicketEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_email_pb.js'
 import { TicketJourneyStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js'
@@ -58,11 +59,11 @@ export class ImportTicketEmailRoute {
 	private readonly ticketEmailService = resolve(ITicketEmailService)
 	private abortController: AbortController | null = null
 
-	public async loading(): Promise<void> {
+	public async loading(_params: Params, next: RouteNode): Promise<void> {
 		this.abortController = new AbortController()
 
 		// Extract shared data from URL query params (set by SW redirect).
-		const urlParams = new URLSearchParams(window.location.search)
+		const urlParams = next.queryParams
 		this.emailTitle = urlParams.get('title') ?? ''
 		this.emailBody = urlParams.get('text') ?? ''
 		this.editableBody = this.emailBody

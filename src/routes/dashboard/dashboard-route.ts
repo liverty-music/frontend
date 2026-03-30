@@ -1,7 +1,8 @@
 import { I18N } from '@aurelia/i18n'
 import { queueTask } from '@aurelia/runtime'
 import { watch } from '@aurelia/runtime-html'
-import { ILogger, INode, resolve } from 'aurelia'
+import { ILogger, resolve } from 'aurelia'
+import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
 	DateGroup,
@@ -15,6 +16,7 @@ import { IAuthService } from '../../services/auth-service'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import { IGuestService } from '../../services/guest-service'
+import { INavDimmingService } from '../../services/nav-dimming-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -31,18 +33,6 @@ export type LaneIntroPhase =
 	| 'done'
 
 export class DashboardRoute {
-	private static get celebrationShown(): boolean {
-		return localStorage.getItem(StorageKeys.celebrationShown) === '1'
-	}
-
-	private static set celebrationShown(value: boolean) {
-		if (value) {
-			localStorage.setItem(StorageKeys.celebrationShown, '1')
-		} else {
-			localStorage.removeItem(StorageKeys.celebrationShown)
-		}
-	}
-
 	public dateGroups: DateGroup[] = []
 	public needsRegion = false
 	public isLoading = false
@@ -57,7 +47,6 @@ export class DashboardRoute {
 	public homeSelector: UserHomeSelector | undefined
 	public detailSheet: EventDetailSheet | undefined
 
-	private readonly element = resolve(INode) as HTMLElement
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
@@ -67,6 +56,8 @@ export class DashboardRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
+	private readonly navDimming = resolve(INavDimmingService)
+	private readonly storage = resolve(ILocalStorage)
 	private abortController: AbortController | null = null
 
 	public get isOnboardingStepDashboard(): boolean {
@@ -170,8 +161,8 @@ export class DashboardRoute {
 		// PostSignupDialog: show once after first-time signup.
 		// Checked in attached() so child BottomSheet is in the DOM
 		// and showPopover() can succeed.
-		if (localStorage.getItem(StorageKeys.postSignupShown) === 'pending') {
-			localStorage.removeItem(StorageKeys.postSignupShown)
+		if (this.storage.getItem(StorageKeys.postSignupShown) === 'pending') {
+			this.storage.removeItem(StorageKeys.postSignupShown)
 			this.showPostSignupDialog = true
 		}
 	}
@@ -194,7 +185,7 @@ export class DashboardRoute {
 		this.showCelebration = false
 		this.logger.info('Celebration dismissed: entering free exploration')
 		this.onboarding.deactivateSpotlight()
-		this.setNavTabsDimmed(false)
+		this.navDimming.setDimmed(false)
 	}
 
 	public onHomeSelected(code: string): void {
@@ -231,7 +222,7 @@ export class DashboardRoute {
 		// Home Selector's own description text instead.
 		// The @watch on dateGroups.length will activate spotlight after data loads.
 		if (this.needsRegion) {
-			this.setNavTabsDimmed(true)
+			this.navDimming.setDimmed(true)
 			this.laneIntroPhase = 'waiting-for-home'
 			this.homeSelector?.open()
 			return
@@ -242,14 +233,14 @@ export class DashboardRoute {
 		if (this.dateGroups.length === 0) {
 			this.logger.warn('No concert data available, skipping lane intro')
 			this.laneIntroPhase = 'done'
-			if (!DashboardRoute.celebrationShown) {
+			if (!this.isCelebrationShown) {
 				this.showCelebration = true
-				DashboardRoute.celebrationShown = true
+				this.setCelebrationShown(true)
 			}
 			return
 		}
 
-		this.setNavTabsDimmed(true)
+		this.navDimming.setDimmed(true)
 
 		// Resolve prefecture name for coach mark text (home already set)
 		const homeCode = this.guest.home
@@ -269,7 +260,7 @@ export class DashboardRoute {
 	 * empty to non-empty after Home Selector selection + data reload.
 	 */
 	@watch((vm: DashboardRoute) => vm.dateGroups.length)
-	private onDateGroupsChanged(newLen: number): void {
+	protected onDateGroupsChanged(newLen: number): void {
 		if (
 			newLen > 0 &&
 			this.laneIntroPhase === 'home' &&
@@ -285,7 +276,7 @@ export class DashboardRoute {
 	 * length 0 (no @watch trigger), so we watch isLoading instead.
 	 */
 	@watch((vm: DashboardRoute) => vm.isLoading)
-	private onLoadingChanged(loading: boolean): void {
+	protected onLoadingChanged(loading: boolean): void {
 		if (
 			loading ||
 			this.laneIntroPhase !== 'home' ||
@@ -296,11 +287,11 @@ export class DashboardRoute {
 		if (this.dateGroups.length === 0) {
 			this.logger.warn('No concert data available, skipping lane intro')
 			this.laneIntroPhase = 'done'
-			if (!DashboardRoute.celebrationShown) {
+			if (!this.isCelebrationShown) {
 				this.showCelebration = true
-				DashboardRoute.celebrationShown = true
+				this.setCelebrationShown(true)
 			}
-			this.setNavTabsDimmed(false)
+			this.navDimming.setDimmed(false)
 		}
 	}
 
@@ -328,13 +319,13 @@ export class DashboardRoute {
 	private completeLaneIntro(): void {
 		this.laneIntroPhase = 'done'
 		this.onboarding.deactivateSpotlight()
-		if (!DashboardRoute.celebrationShown) {
+		if (!this.isCelebrationShown) {
 			this.logger.info('Lane intro completed, showing celebration')
 			this.showCelebration = true
-			DashboardRoute.celebrationShown = true
+			this.setCelebrationShown(true)
 		} else {
 			this.logger.info('Lane intro completed, celebration already shown')
-			this.setNavTabsDimmed(false)
+			this.navDimming.setDimmed(false)
 		}
 	}
 
@@ -347,20 +338,15 @@ export class DashboardRoute {
 		)
 	}
 
-	/** Dim/undim nav tabs during Lane Intro to guide focus. */
-	private setNavTabsDimmed(dimmed: boolean): void {
-		const navItems = this.element
-			.closest('body')
-			?.querySelectorAll<HTMLElement>('[data-nav]')
-		if (!navItems) return
-		for (const item of navItems) {
-			if (dimmed) {
-				item.style.setProperty('opacity', '0.3')
-				item.setAttribute('aria-disabled', 'true')
-			} else {
-				item.style.removeProperty('opacity')
-				item.removeAttribute('aria-disabled')
-			}
+	private get isCelebrationShown(): boolean {
+		return this.storage.getItem(StorageKeys.celebrationShown) === '1'
+	}
+
+	private setCelebrationShown(value: boolean): void {
+		if (value) {
+			this.storage.setItem(StorageKeys.celebrationShown, '1')
+		} else {
+			this.storage.removeItem(StorageKeys.celebrationShown)
 		}
 	}
 
@@ -416,6 +402,6 @@ export class DashboardRoute {
 	public detaching(): void {
 		this.abortController?.abort()
 		this.abortController = null
-		this.setNavTabsDimmed(false)
+		this.navDimming.setDimmed(false)
 	}
 }
