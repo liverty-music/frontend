@@ -1,4 +1,4 @@
-import { INode, Registration } from 'aurelia'
+import { DI, type IDisposable, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LiveEvent } from '../../../src/components/live-highway/live-event'
 import {
@@ -6,6 +6,16 @@ import {
 	OnboardingStep,
 } from '../../../src/services/onboarding-service'
 import { createTestContainer } from '../../helpers/create-container'
+import { createMockRouter } from '../../helpers/mock-router'
+import { createMockRouterEvents } from '../../helpers/mock-router-events'
+
+const mockIRouter = DI.createInterface('IRouter')
+const mockIRouterEvents = DI.createInterface('IRouterEvents')
+
+vi.mock('@aurelia/router', () => ({
+	IRouter: mockIRouter,
+	IRouterEvents: mockIRouterEvents,
+}))
 
 const { EventDetailSheet } = await import(
 	'../../../src/components/live-highway/event-detail-sheet'
@@ -51,17 +61,19 @@ function createMockOnboarding(step = OnboardingStep.COMPLETED) {
 
 describe('EventDetailSheet', () => {
 	let sut: InstanceType<typeof EventDetailSheet>
-	let mockElement: HTMLElement
 	let mockOnboarding: ReturnType<typeof createMockOnboarding>
+	let mockRouter: ReturnType<typeof createMockRouter>
+	let mockRouterEvents: ReturnType<typeof createMockRouterEvents>
 
 	beforeEach(() => {
 		mockOnboarding = createMockOnboarding()
-
-		mockElement = document.createElement('div')
+		mockRouter = createMockRouter()
+		mockRouterEvents = createMockRouterEvents()
 
 		const container = createTestContainer(
-			Registration.instance(INode, mockElement),
 			Registration.instance(IOnboardingService, mockOnboarding),
+			Registration.instance(mockIRouter, mockRouter),
+			Registration.instance(mockIRouterEvents, mockRouterEvents),
 		)
 		container.register(EventDetailSheet)
 		sut = container.get(EventDetailSheet)
@@ -118,112 +130,126 @@ describe('EventDetailSheet', () => {
 	})
 
 	describe('open / close', () => {
-		it('should open with event and push history state', () => {
-			const pushSpy = vi.spyOn(history, 'pushState')
+		it('should open with event and call router.load with concerts/:id', () => {
 			const event = makeEvent()
 
 			sut.open(event)
 
 			expect(sut.isOpen).toBe(true)
 			expect(sut.event).toBe(event)
-			expect(pushSpy).toHaveBeenCalledWith(
-				{ concertId: 'c1' },
-				'',
-				'/concerts/c1',
+			expect(mockRouter.load).toHaveBeenCalledWith('concerts/c1', {
+				historyStrategy: 'push',
+			})
+		})
+
+		it('should subscribe to router navigation-end on open', () => {
+			sut.open(makeEvent())
+
+			expect(mockRouterEvents.subscribe).toHaveBeenCalledWith(
+				'au:router:navigation-end',
+				expect.any(Function),
 			)
 		})
 
-		it('should close and replace history state', () => {
-			const replaceSpy = vi.spyOn(history, 'replaceState')
+		it('should close and navigate to dashboard via router.load', () => {
 			sut.open(makeEvent())
 
 			sut.close()
 
 			expect(sut.isOpen).toBe(false)
-			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
+			expect(mockRouter.load).toHaveBeenCalledWith('dashboard', {
+				historyStrategy: 'replace',
+			})
+		})
+
+		it('should dispose navSub on close', () => {
+			sut.open(makeEvent())
+			const sub = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
+				.results[0]?.value as IDisposable
+			expect(sub).toBeDefined()
+
+			sut.close()
+
+			expect(sub.dispose).toHaveBeenCalled()
 		})
 	})
 
 	describe('onSheetClosed', () => {
-		it('should close and replace history when bottom-sheet fires sheet-closed', () => {
-			const replaceSpy = vi.spyOn(history, 'replaceState')
+		it('should close and navigate to dashboard when bottom-sheet fires sheet-closed', () => {
 			sut.open(makeEvent())
 
 			sut.onSheetClosed()
 
 			expect(sut.isOpen).toBe(false)
-			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
+			expect(mockRouter.load).toHaveBeenCalledWith('dashboard', {
+				historyStrategy: 'replace',
+			})
+		})
+
+		it('should do nothing when already closed', () => {
+			sut.onSheetClosed()
+
+			expect(mockRouter.load).not.toHaveBeenCalled()
 		})
 	})
 
-	describe('isDismissable', () => {
-		it('should always return true', () => {
-			expect(sut.isDismissable).toBe(true)
-		})
-	})
-
-	describe('popstate handling', () => {
-		it('should close sheet when popstate fires', () => {
+	describe('router navigation-end handling', () => {
+		it('should close sheet when router navigates away from concerts/', () => {
 			sut.open(makeEvent())
 
-			window.dispatchEvent(new PopStateEvent('popstate'))
+			// Retrieve the navigation-end callback registered on open
+			const cb = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
+				.calls[0]?.[1] as (e: {
+				finalInstructions: { toPath(): string }
+			}) => void
+
+			cb({ finalInstructions: { toPath: () => 'dashboard' } })
 
 			expect(sut.isOpen).toBe(false)
 		})
 
-		it('should skip replaceState in onSheetClosed after popstate', () => {
-			const replaceSpy = vi.spyOn(history, 'replaceState')
+		it('should NOT close sheet when router navigates to concerts/', () => {
 			sut.open(makeEvent())
 
-			// Simulate popstate firing before toggle (browser back)
-			window.dispatchEvent(new PopStateEvent('popstate'))
-			replaceSpy.mockClear()
+			const cb = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
+				.calls[0]?.[1] as (e: {
+				finalInstructions: { toPath(): string }
+			}) => void
 
-			// Then bottom-sheet fires sheet-closed
-			sut.onSheetClosed()
+			cb({ finalInstructions: { toPath: () => 'concerts/c1' } })
 
-			// Should not call replaceState since popstate already handled navigation
-			expect(replaceSpy).not.toHaveBeenCalled()
+			expect(sut.isOpen).toBe(true)
 		})
 
-		it('should reset closedByPopstate on next open so light-dismiss works', () => {
-			const replaceSpy = vi.spyOn(history, 'replaceState')
-			sut.open(makeEvent())
-
-			// First cycle: popstate closes the sheet
-			window.dispatchEvent(new PopStateEvent('popstate'))
-			sut.onSheetClosed() // bottom-sheet fires after popstate — skips replaceState (correct)
-			replaceSpy.mockClear()
-
-			// Second cycle: re-open and light-dismiss
-			sut.open(makeEvent({ id: 'c2' }))
-			sut.onSheetClosed()
-
-			// Should call replaceState because this was a normal light-dismiss, not popstate
-			expect(replaceSpy).toHaveBeenCalledWith(null, '', '/dashboard')
-		})
-
-		it('should not close when popstate fires and sheet is not open', () => {
+		it('should not react to navigation when sheet is already closed', () => {
 			sut.open(makeEvent())
 			sut.close()
 
-			const closeSpy = vi.spyOn(sut, 'close')
-			window.dispatchEvent(new PopStateEvent('popstate'))
+			const cb = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
+				.calls[0]?.[1] as (e: {
+				finalInstructions: { toPath(): string }
+			}) => void
 
-			expect(closeSpy).not.toHaveBeenCalled()
+			// Should not throw / change already-closed state
+			cb({ finalInstructions: { toPath: () => 'dashboard' } })
+
+			expect(sut.isOpen).toBe(false)
 		})
 	})
 
 	describe('detaching', () => {
-		it('should remove popstate listener', () => {
-			const removeWindowSpy = vi.spyOn(window, 'removeEventListener')
+		it('should dispose navSub on detach', () => {
+			sut.open(makeEvent())
+			const sub = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
+				.results[0]?.value as IDisposable
 
 			sut.detaching()
 
-			expect(removeWindowSpy).toHaveBeenCalledWith(
-				'popstate',
-				expect.any(Function),
-			)
+			expect(sub.dispose).toHaveBeenCalled()
+		})
+
+		it('should not throw when detaching without having opened', () => {
+			expect(() => sut.detaching()).not.toThrow()
 		})
 	})
 })

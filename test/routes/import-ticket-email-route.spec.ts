@@ -1,3 +1,4 @@
+import type { RouteNode } from '@aurelia/router'
 import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
@@ -33,6 +34,10 @@ const { ImportTicketEmailRoute } = await import(
 	'../../src/routes/import-ticket-email/import-ticket-email-route'
 )
 
+function makeNext(params: Record<string, string>): RouteNode {
+	return { queryParams: new URLSearchParams(params) } as unknown as RouteNode
+}
+
 describe('ImportTicketEmailRoute', () => {
 	let sut: InstanceType<typeof ImportTicketEmailRoute>
 	let mockFollow: { listFollowed: ReturnType<typeof vi.fn> }
@@ -43,8 +48,6 @@ describe('ImportTicketEmailRoute', () => {
 	}
 
 	beforeEach(async () => {
-		window.history.replaceState({}, '', '/')
-
 		mockFollow = {
 			listFollowed: vi.fn().mockResolvedValue([]),
 		}
@@ -71,37 +74,27 @@ describe('ImportTicketEmailRoute', () => {
 
 	describe('loading', () => {
 		it('sets validation error when email body does not match ticket regex', async () => {
-			window.history.replaceState({}, '', '?title=Hello&text=PlainGreeting')
-
-			await sut.loading()
+			await sut.loading({}, makeNext({ title: 'Hello', text: 'PlainGreeting' }))
 
 			expect(sut.step).toBe('validation')
 			expect(sut.error).toContain('認識できませんでした')
 		})
 
 		it('advances to artist step when email body matches ticket regex', async () => {
-			window.history.replaceState(
-				{},
-				'',
-				`?title=Test&text=${encodeURIComponent('チケット当選')}`,
-			)
-
-			await sut.loading()
+			await sut.loading({}, makeNext({ title: 'Test', text: 'チケット当選' }))
 
 			expect(sut.step).toBe('artist')
 		})
 
 		it('auto-matches artist when name appears in email body', async () => {
-			window.history.replaceState(
-				{},
-				'',
-				`?title=Test&text=${encodeURIComponent('チケット ArtistXYZ 当選')}`,
-			)
 			mockFollow.listFollowed.mockResolvedValue([
 				{ artist: { id: 'a1', name: 'ArtistXYZ' } },
 			])
 
-			await sut.loading()
+			await sut.loading(
+				{},
+				makeNext({ title: 'Test', text: 'チケット ArtistXYZ 当選' }),
+			)
 
 			expect(sut.matchedArtistId).toBe('a1')
 			expect(sut.selectedArtistId).toBe('a1')
@@ -192,18 +185,13 @@ describe('ImportTicketEmailRoute', () => {
 		})
 
 		it('returns unknown for unrecognized status', () => {
-			expect(sut.formatJourneyStatus(99 as any)).toBe('不明')
+			expect(sut.formatJourneyStatus(99 as never)).toBe('不明')
 		})
 	})
 
 	describe('detaching', () => {
 		it('aborts active request', async () => {
-			window.history.replaceState(
-				{},
-				'',
-				`?title=T&text=${encodeURIComponent('チケット')}`,
-			)
-			await sut.loading()
+			await sut.loading({}, makeNext({ title: 'T', text: 'チケット' }))
 			const abortSpy = vi.spyOn(AbortController.prototype, 'abort')
 
 			sut.detaching()

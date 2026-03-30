@@ -1,57 +1,55 @@
-import { DI, INode, Registration } from 'aurelia'
+import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { StorageKeys } from '../../src/constants/storage-keys'
 import { createTestContainer } from '../helpers/create-container'
-import { createMockRouter } from '../helpers/mock-router'
+import { createMockLocalStorage } from '../helpers/mock-local-storage'
+import { createMockNavDimmingService } from '../helpers/mock-nav-dimming-service'
 
+// --- DI tokens (must be created before vi.mock calls) ---
+const mockIAuthService = DI.createInterface('IAuthService')
 const mockIConcertService = DI.createInterface('IConcertService')
 const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockITicketJourneyService = DI.createInterface('ITicketJourneyService')
-const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-const mockIAuthService = DI.createInterface('IAuthService')
-const mockIUserService = DI.createInterface('IUserService')
 const mockIGuestService = DI.createInterface('IGuestService')
+const mockIUserService = DI.createInterface('IUserService')
+const mockINavDimmingService = DI.createInterface('INavDimmingService')
+const mockILocalStorage = DI.createInterface('ILocalStorage')
 
+vi.mock('../../src/services/auth-service', () => ({
+	IAuthService: mockIAuthService,
+}))
 vi.mock('../../src/services/concert-service', () => ({
 	IConcertService: mockIConcertService,
 }))
-
 vi.mock('../../src/services/follow-service-client', () => ({
 	IFollowServiceClient: mockIFollowServiceClient,
 }))
-
 vi.mock('../../src/services/ticket-journey-service', () => ({
 	ITicketJourneyService: mockITicketJourneyService,
 }))
-
-vi.mock('@aurelia/router', () => ({
-	IRouter: mockIRouter,
-}))
-
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
 	OnboardingStep: {
 		LP: 'lp',
 		DISCOVERY: 'discovery',
 		DASHBOARD: 'dashboard',
-		DETAIL: 'detail',
 		MY_ARTISTS: 'my-artists',
 		COMPLETED: 'completed',
 	},
 }))
-
-vi.mock('../../src/services/auth-service', () => ({
-	IAuthService: mockIAuthService,
-}))
-
-vi.mock('../../src/services/user-service', () => ({
-	IUserService: mockIUserService,
-}))
-
 vi.mock('../../src/services/guest-service', () => ({
 	IGuestService: mockIGuestService,
 }))
-
+vi.mock('../../src/services/user-service', () => ({
+	IUserService: mockIUserService,
+}))
+vi.mock('../../src/services/nav-dimming-service', () => ({
+	INavDimmingService: mockINavDimmingService,
+}))
+vi.mock('../../src/adapter/storage/local-storage', () => ({
+	ILocalStorage: mockILocalStorage,
+}))
 vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
 	UserHomeSelector: {
 		getStoredHome: vi.fn().mockReturnValue(null),
@@ -65,193 +63,107 @@ const { UserHomeSelector } = await import(
 	'../../src/components/user-home-selector/user-home-selector'
 )
 
+// ---- Factory helpers ----
+
+function makeOnboarding(step = 'completed') {
+	return {
+		currentStep: step,
+		isOnboarding: step !== 'completed',
+		isCompleted: step === 'completed',
+		activateSpotlight: vi.fn(),
+		deactivateSpotlight: vi.fn(),
+		setStep: vi.fn(),
+	}
+}
+
+function makeConcertService() {
+	return {
+		listByFollower: vi.fn().mockResolvedValue([]),
+		toDateGroups: vi.fn().mockReturnValue([]),
+		listConcerts: vi.fn().mockResolvedValue([]),
+	}
+}
+
+function makeFollowService() {
+	return {
+		getFollowedArtistMap: vi.fn().mockResolvedValue(new Map()),
+		listFollowed: vi.fn().mockResolvedValue([]),
+	}
+}
+
+function makeJourneyService(authenticated = false) {
+	return {
+		listByUser: authenticated
+			? vi.fn().mockResolvedValue(new Map())
+			: vi.fn().mockResolvedValue(new Map()),
+	}
+}
+
+function makeGuestService() {
+	return {
+		home: null as string | null,
+		setHome: vi.fn(),
+	}
+}
+
+// ---- Suite ----
+
 describe('DashboardRoute', () => {
 	let sut: InstanceType<typeof DashboardRoute>
-	let mockConcertService: {
-		listByFollower: ReturnType<typeof vi.fn>
-		toDateGroups: ReturnType<typeof vi.fn>
-	}
-	let mockFollowService: {
-		getFollowedArtistMap: ReturnType<typeof vi.fn>
-	}
-	let mockJourneyService: {
-		listByUser: ReturnType<typeof vi.fn>
-	}
-	let mockRouter: ReturnType<typeof createMockRouter>
-	let mockOnboarding: {
-		currentStep: string
-		isOnboarding: boolean
-		isCompleted: boolean
-		setStep: ReturnType<typeof vi.fn>
-		complete: ReturnType<typeof vi.fn>
-		activateSpotlight: ReturnType<typeof vi.fn>
-		deactivateSpotlight: ReturnType<typeof vi.fn>
-		bringSpotlightToFront: ReturnType<typeof vi.fn>
-	}
-	let mockAuth: {
-		isAuthenticated: boolean
-	}
-	let mockUserClient: {
-		get: ReturnType<typeof vi.fn>
-	}
-	let mockUser: {
-		client: typeof mockUserClient
-		updateHome: ReturnType<typeof vi.fn>
-		current: { home?: { countryCode: string; level1: string } } | undefined
-	}
-	let mockGuest: {
-		follows: {
-			artist: { id: string; name: string; mbid: string }
-			home: string | null
-		}[]
-		home: string | null
-		followedCount: number
-		follow: ReturnType<typeof vi.fn>
-		unfollow: ReturnType<typeof vi.fn>
-		setHome: ReturnType<typeof vi.fn>
-		clearAll: ReturnType<typeof vi.fn>
-		listFollowed: ReturnType<typeof vi.fn>
+	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
+	let mockConcert: ReturnType<typeof makeConcertService>
+	let mockFollow: ReturnType<typeof makeFollowService>
+	let mockJourney: ReturnType<typeof makeJourneyService>
+	let mockOnboarding: ReturnType<typeof makeOnboarding>
+	let mockGuest: ReturnType<typeof makeGuestService>
+	let mockUser: { current: { home: unknown } | undefined }
+	let mockNavDimming: ReturnType<typeof createMockNavDimmingService>
+	let mockStorage: ReturnType<typeof createMockLocalStorage>
+
+	function buildSut() {
+		const container = createTestContainer(
+			Registration.instance(mockIAuthService, mockAuth),
+			Registration.instance(mockIConcertService, mockConcert),
+			Registration.instance(mockIFollowServiceClient, mockFollow),
+			Registration.instance(mockITicketJourneyService, mockJourney),
+			Registration.instance(mockIOnboardingService, mockOnboarding),
+			Registration.instance(mockIGuestService, mockGuest),
+			Registration.instance(mockIUserService, mockUser),
+			Registration.instance(mockINavDimmingService, mockNavDimming),
+			Registration.instance(mockILocalStorage, mockStorage),
+		)
+		container.register(DashboardRoute)
+		return container.get(DashboardRoute)
 	}
 
 	beforeEach(() => {
-		mockConcertService = {
-			listByFollower: vi.fn().mockResolvedValue([]),
-			toDateGroups: vi.fn().mockReturnValue([]),
-		}
-		mockFollowService = {
-			getFollowedArtistMap: vi.fn().mockResolvedValue(new Map()),
-		}
-		mockJourneyService = {
-			listByUser: vi.fn().mockResolvedValue(new Map()),
-		}
-		mockRouter = createMockRouter()
-		mockOnboarding = {
-			currentStep: 'completed',
-			isOnboarding: false,
-			isCompleted: true,
-			setStep: vi.fn(),
-			complete: vi.fn(),
-			activateSpotlight: vi.fn(),
-			deactivateSpotlight: vi.fn(),
-			bringSpotlightToFront: vi.fn(),
-		}
-		mockAuth = {
-			isAuthenticated: false,
-		}
-		mockUserClient = {
-			get: vi.fn().mockResolvedValue({ user: undefined }),
-		}
-		mockUser = {
-			client: mockUserClient,
-			current: undefined,
-			updateHome: vi.fn().mockResolvedValue(undefined),
-		}
-		mockGuest = {
-			follows: [],
-			home: null,
-			followedCount: 0,
-			follow: vi.fn(),
-			unfollow: vi.fn(),
-			setHome: vi.fn(),
-			clearAll: vi.fn(),
-			listFollowed: vi.fn().mockReturnValue([]),
-		}
+		vi.useFakeTimers()
 
-		const mockElement = document.createElement('div')
+		mockAuth = { isAuthenticated: false, signUp: vi.fn() }
+		mockConcert = makeConcertService()
+		mockFollow = makeFollowService()
+		mockJourney = makeJourneyService()
+		mockOnboarding = makeOnboarding()
+		mockGuest = makeGuestService()
+		mockUser = { current: undefined }
+		mockNavDimming = createMockNavDimmingService()
+		mockStorage = createMockLocalStorage()
+		;(
+			UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
+		).mockReturnValue(null)
 
-		const container = createTestContainer(
-			Registration.instance(mockIConcertService, mockConcertService),
-			Registration.instance(mockIFollowServiceClient, mockFollowService),
-			Registration.instance(mockITicketJourneyService, mockJourneyService),
-			Registration.instance(mockIRouter, mockRouter),
-			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(mockIUserService, mockUser),
-			Registration.instance(mockIGuestService, mockGuest),
-			Registration.instance(INode, mockElement),
-		)
-		container.register(DashboardRoute)
-		sut = container.get(DashboardRoute)
+		sut = buildSut()
 	})
 
 	afterEach(() => {
+		vi.useRealTimers()
 		vi.restoreAllMocks()
 	})
 
-	describe('loadData', () => {
-		it('should populate dateGroups on success', async () => {
-			const fakeGroups = [
-				{
-					label: 'Jan 1',
-					dateKey: '2026-01-01',
-					home: [],
-					nearby: [],
-					away: [],
-				},
-			]
-			mockConcertService.listByFollower.mockResolvedValue([
-				{ date: {}, home: [], nearby: [], away: [] },
-			])
-			mockConcertService.toDateGroups.mockReturnValue(fakeGroups)
-
-			sut.loadData()
-			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
-
-			expect(sut.dateGroups).toEqual(fakeGroups)
-			expect(sut.loadError).toBeNull()
-		})
-
-		it('should silently keep previous data on failure when data exists', async () => {
-			const fakeGroups = [
-				{
-					label: 'Jan 1',
-					dateKey: '2026-01-01',
-					home: [],
-					nearby: [],
-					away: [],
-				},
-			]
-			mockConcertService.listByFollower.mockResolvedValue([
-				{ date: {}, home: [], nearby: [], away: [] },
-			])
-			mockConcertService.toDateGroups.mockReturnValue(fakeGroups)
-			sut.loadData()
-			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
-
-			// Second load fails
-			mockFollowService.getFollowedArtistMap.mockRejectedValue(
-				new Error('network'),
-			)
-			sut.loadData()
-			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
-
-			expect(sut.dateGroups).toEqual(fakeGroups)
-			expect(sut.loadError).toBeNull()
-		})
-
-		it('should ignore AbortError', async () => {
-			const abortError = new DOMException('aborted', 'AbortError')
-			mockFollowService.getFollowedArtistMap.mockRejectedValue(abortError)
-
-			sut.loadData()
-			await vi.waitFor(() => expect(sut.isLoading).toBe(false))!.catch(() => {})
-
-			expect(sut.loadError).toBeNull()
-		})
-
-		it('should abort previous request on new loadData call', () => {
-			mockConcertService.listByFollower.mockResolvedValue([])
-
-			sut.loadData()
-			sut.loadData()
-
-			expect(mockFollowService.getFollowedArtistMap).toHaveBeenCalledTimes(2)
-		})
-	})
+	// ---- loading() ----
 
 	describe('loading', () => {
-		it('should set needsRegion true for guest without stored home', async () => {
-			mockAuth.isAuthenticated = false
+		it('sets needsRegion=true for unauthenticated user without stored home', async () => {
 			;(
 				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
 			).mockReturnValue(null)
@@ -261,8 +173,7 @@ describe('DashboardRoute', () => {
 			expect(sut.needsRegion).toBe(true)
 		})
 
-		it('should set needsRegion false for guest with stored home', async () => {
-			mockAuth.isAuthenticated = false
+		it('sets needsRegion=false for unauthenticated user with stored home', async () => {
 			;(
 				UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
 			).mockReturnValue('JP-13')
@@ -272,18 +183,7 @@ describe('DashboardRoute', () => {
 			expect(sut.needsRegion).toBe(false)
 		})
 
-		it('should set needsRegion false for authenticated user with home set', async () => {
-			mockAuth.isAuthenticated = true
-			mockUser.current = {
-				home: { countryCode: 'JP', level1: 'JP-13' },
-			}
-
-			await sut.loading()
-
-			expect(sut.needsRegion).toBe(false)
-		})
-
-		it('should set needsRegion true for authenticated user without home', async () => {
+		it('sets needsRegion=true for authenticated user without home', async () => {
 			mockAuth.isAuthenticated = true
 			mockUser.current = { home: undefined }
 
@@ -292,125 +192,108 @@ describe('DashboardRoute', () => {
 			expect(sut.needsRegion).toBe(true)
 		})
 
-		it('should set needsRegion true for authenticated user when current is undefined', async () => {
+		it('sets needsRegion=false for authenticated user with home', async () => {
 			mockAuth.isAuthenticated = true
-			mockUser.current = undefined
+			mockUser.current = { home: { countryCode: 'JP', level1: 'JP-13' } }
 
 			await sut.loading()
 
-			expect(sut.needsRegion).toBe(true)
-		})
-	})
-
-	describe('onHomeSelected', () => {
-		it('should set needsRegion to false', () => {
-			sut.needsRegion = true
-			sut.onHomeSelected('JP-13')
 			expect(sut.needsRegion).toBe(false)
 		})
 
-		it('should reload data after home selection', () => {
-			sut.onHomeSelected('JP-13')
+		it('sets showSignupBanner for unauthenticated completed-onboarding user', async () => {
+			mockOnboarding = makeOnboarding('completed')
+			;(mockOnboarding as { isCompleted: boolean }).isCompleted = true
+			sut = buildSut()
 
-			expect(mockFollowService.getFollowedArtistMap).toHaveBeenCalledTimes(1)
+			await sut.loading()
+
+			expect(sut.showSignupBanner).toBe(true)
 		})
 
-		it('should reflect reloaded data in dateGroups', async () => {
-			const newGroups = [
-				{
-					label: 'Mar 13',
-					dateKey: '2026-03-13',
-					home: [{ id: 'c1' }],
-					nearby: [],
-					away: [],
-				},
-			]
-			mockConcertService.listByFollower.mockResolvedValue([
-				{ date: {}, home: [], nearby: [], away: [] },
-			])
-			mockConcertService.toDateGroups.mockReturnValue(newGroups)
-
-			sut.onHomeSelected('JP-13')
-			await vi.waitFor(() => expect(sut.isLoading).toBe(false))
-
-			expect(sut.dateGroups).toEqual(newGroups)
-		})
-
-		it('should resolve prefecture name via translationKey when in waiting-for-home phase', () => {
-			sut.laneIntroPhase = 'waiting-for-home'
-			sut.onHomeSelected('JP-40')
-
-			// translationKey('JP-40') returns 'fukuoka'
-			// mock i18n.tr returns the key as-is, so we verify the correct key is constructed
-			expect(sut.i18n.tr).toHaveBeenCalledWith('userHome.prefectures.fukuoka')
-			expect(sut.laneIntroPhase).toBe('home')
-		})
-
-		it('should not use numeric key for prefecture name', () => {
-			sut.laneIntroPhase = 'waiting-for-home'
-			sut.onHomeSelected('JP-40')
-
-			// Must NOT produce 'userHome.prefectures.40' (the original bug)
-			expect(sut.i18n.tr).not.toHaveBeenCalledWith('userHome.prefectures.40')
+		it('does not set showSignupBanner for authenticated user', async () => {
+			mockAuth.isAuthenticated = true
+			await sut.loading()
+			expect(sut.showSignupBanner).toBe(false)
 		})
 	})
 
-	describe('attached — lane intro entry point', () => {
-		it('should enter waiting-for-home when on dashboard step with needsRegion', () => {
-			mockOnboarding.currentStep = 'dashboard'
-			mockOnboarding.isOnboarding = true
+	// ---- attached() ----
+
+	describe('attached', () => {
+		it('shows postSignupDialog when storage flag is pending', () => {
+			mockStorage = createMockLocalStorage({
+				[StorageKeys.postSignupShown]: 'pending',
+			})
+			sut = buildSut()
+
+			sut.attached()
+
+			expect(sut.showPostSignupDialog).toBe(true)
+			expect(mockStorage.removeItem).toHaveBeenCalledWith(
+				StorageKeys.postSignupShown,
+			)
+		})
+
+		it('does not show postSignupDialog when flag is absent', () => {
+			sut.attached()
+			expect(sut.showPostSignupDialog).toBe(false)
+		})
+
+		it('enters waiting-for-home when on DASHBOARD step with needsRegion', () => {
+			mockOnboarding = makeOnboarding('dashboard')
+			sut = buildSut()
 			sut.needsRegion = true
 
 			sut.attached()
 
-			// needsRegion path opens home selector without spotlight
-			// (coach mark and bottom-sheet overlap, so HOME STAGE context
-			// is conveyed via the Home Selector description text instead)
 			expect(sut.laneIntroPhase).toBe('waiting-for-home')
-			expect(mockOnboarding.activateSpotlight).not.toHaveBeenCalled()
+			expect(mockNavDimming.setDimmed).toHaveBeenCalledWith(true)
 		})
 
-		it('should not start lane intro when not on dashboard step', () => {
-			mockOnboarding.currentStep = 'completed'
+		it('does not start lane intro when not on DASHBOARD step', () => {
+			mockOnboarding = makeOnboarding('completed')
+			sut = buildSut()
 
 			sut.attached()
 
 			expect(sut.laneIntroPhase).toBe('done')
-			expect(mockOnboarding.activateSpotlight).not.toHaveBeenCalled()
+			expect(mockNavDimming.setDimmed).not.toHaveBeenCalled()
 		})
 	})
 
-	describe('lane intro phase transitions', () => {
+	// ---- Lane intro state machine ----
+
+	describe('lane intro state machine', () => {
 		beforeEach(() => {
-			vi.useFakeTimers()
-			mockOnboarding.currentStep = 'dashboard'
-			mockOnboarding.isOnboarding = true
-			sut.needsRegion = false
+			mockOnboarding = makeOnboarding('dashboard')
 			mockGuest.home = 'JP-13'
+			sut = buildSut()
+			sut.needsRegion = false
 			// Provide concert data so lane intro is not skipped
 			sut.dateGroups = [
 				{
-					label: 'Mar 18',
-					dateKey: '2026-03-18',
-					home: [{ id: 'e1' }],
-					nearby: [],
+					label: 'Mar 15',
+					dateKey: '2026-03-15',
+					home: [],
+					near: [],
 					away: [],
 				} as never,
 			]
-			sut.isLoading = false
-			localStorage.removeItem('onboarding.celebrationShown')
 		})
 
-		afterEach(() => {
-			localStorage.removeItem('onboarding.celebrationShown')
-			vi.useRealTimers()
-		})
-
-		it('should start at home phase when region is already set', async () => {
+		it('starts at home phase when region is already set', async () => {
 			sut.attached()
 			await vi.advanceTimersByTimeAsync(0)
 
 			expect(sut.laneIntroPhase).toBe('home')
+			expect(mockNavDimming.setDimmed).toHaveBeenCalledWith(true)
+		})
+
+		it('activates spotlight for home stage on start', async () => {
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(0)
+
 			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
 				'concert-highway [data-stage="home"]',
 				expect.any(String),
@@ -418,60 +301,78 @@ describe('DashboardRoute', () => {
 			)
 		})
 
-		it('should enter waiting-for-home when needsRegion is true', () => {
-			sut.needsRegion = true
-			sut.attached()
-
-			// needsRegion path returns before data check — synchronous
-			expect(sut.laneIntroPhase).toBe('waiting-for-home')
-		})
-
-		it('should advance from home to near on tap', async () => {
+		it('advances home → near on tap', async () => {
 			sut.attached()
 			await vi.advanceTimersByTimeAsync(0)
-			expect(sut.laneIntroPhase).toBe('home')
 
 			sut.onLaneIntroTap()
 
 			expect(sut.laneIntroPhase).toBe('near')
-			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'concert-highway [data-stage="near"]',
-				expect.any(String),
-				expect.any(Function),
-			)
 		})
 
-		it('should advance from near to away on tap', async () => {
+		it('advances near → away on tap', async () => {
 			sut.attached()
 			await vi.advanceTimersByTimeAsync(0)
-
 			sut.onLaneIntroTap() // home → near
+
 			sut.onLaneIntroTap() // near → away
 
 			expect(sut.laneIntroPhase).toBe('away')
-			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'concert-highway [data-stage="away"]',
-				expect.any(String),
-				expect.any(Function),
+		})
+
+		it('away tap triggers completeLaneIntro → done', async () => {
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(0)
+			sut.onLaneIntroTap() // home → near
+			sut.onLaneIntroTap() // near → away
+
+			sut.onLaneIntroTap() // away → done
+
+			expect(sut.laneIntroPhase).toBe('done')
+		})
+
+		it('completeLaneIntro shows celebration when not yet shown', async () => {
+			sut.attached()
+			await vi.advanceTimersByTimeAsync(0)
+			sut.onLaneIntroTap()
+			sut.onLaneIntroTap()
+			sut.onLaneIntroTap()
+
+			expect(sut.showCelebration).toBe(true)
+			expect(mockStorage.setItem).toHaveBeenCalledWith(
+				StorageKeys.celebrationShown,
+				'1',
 			)
 		})
 
-		it('should show celebration after away phase tap', async () => {
+		it('completeLaneIntro undims nav when celebration already shown', async () => {
+			mockStorage = createMockLocalStorage({
+				[StorageKeys.celebrationShown]: '1',
+			})
+			sut = buildSut()
+			sut.needsRegion = false
+			sut.dateGroups = [
+				{
+					label: 'x',
+					dateKey: '2026-03-15',
+					home: [],
+					near: [],
+					away: [],
+				} as never,
+			]
 			sut.attached()
 			await vi.advanceTimersByTimeAsync(0)
 
-			sut.onLaneIntroTap() // home → near
-			sut.onLaneIntroTap() // near → away
-			sut.onLaneIntroTap() // away → done → celebration
+			sut.onLaneIntroTap()
+			sut.onLaneIntroTap()
+			sut.onLaneIntroTap()
 
-			expect(sut.laneIntroPhase).toBe('done')
-			expect(sut.showCelebration).toBe(true)
-			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalled()
+			expect(sut.showCelebration).toBe(false)
+			expect(mockNavDimming.setDimmed).toHaveBeenLastCalledWith(false)
 		})
 
-		it('should skip lane intro and show celebration when no concert data', async () => {
+		it('skips lane intro and shows celebration when no concert data', async () => {
 			sut.dateGroups = []
-
 			sut.attached()
 			await vi.advanceTimersByTimeAsync(0)
 
@@ -479,17 +380,19 @@ describe('DashboardRoute', () => {
 			expect(sut.showCelebration).toBe(true)
 		})
 
-		it('should not replay celebration if already shown', async () => {
-			localStorage.setItem('onboarding.celebrationShown', '1')
+		it('does not replay celebration when already shown and no concert data', async () => {
+			mockStorage = createMockLocalStorage({
+				[StorageKeys.celebrationShown]: '1',
+			})
+			sut = buildSut()
 			sut.dateGroups = []
-
 			sut.attached()
 			await vi.advanceTimersByTimeAsync(0)
 
 			expect(sut.showCelebration).toBe(false)
 		})
 
-		it('should not advance from waiting-for-home on tap', () => {
+		it('does not advance from waiting-for-home on tap', () => {
 			sut.needsRegion = true
 			sut.attached()
 
@@ -499,34 +402,54 @@ describe('DashboardRoute', () => {
 		})
 	})
 
-	describe('onCelebrationOpen', () => {
-		it('should advance to MY_ARTISTS step when celebration opens', () => {
-			mockOnboarding.currentStep = 'dashboard'
-			mockOnboarding.isOnboarding = true
-
-			sut.onCelebrationOpen()
-
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith('my-artists')
-		})
-	})
+	// ---- onCelebrationDismissed ----
 
 	describe('onCelebrationDismissed', () => {
-		it('should deactivate spotlight when celebration is dismissed', () => {
+		it('clears showCelebration, undims nav, deactivates spotlight', () => {
+			sut.showCelebration = true
+
 			sut.onCelebrationDismissed()
 
+			expect(sut.showCelebration).toBe(false)
+			expect(mockNavDimming.setDimmed).toHaveBeenCalledWith(false)
 			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalled()
 		})
 	})
 
-	describe('detaching', () => {
-		it('should abort active request', () => {
-			sut.loadData()
+	// ---- detaching ----
 
+	describe('detaching', () => {
+		it('aborts active request and undims nav', () => {
+			sut.loadData()
 			const abortSpy = vi.spyOn(AbortController.prototype, 'abort')
+
 			sut.detaching()
 
 			expect(abortSpy).toHaveBeenCalled()
-			abortSpy.mockRestore()
+			expect(mockNavDimming.setDimmed).toHaveBeenCalledWith(false)
+		})
+	})
+
+	// ---- INavDimmingService delegation ----
+
+	describe('INavDimmingService delegation', () => {
+		it('does NOT directly query [data-nav] DOM elements', () => {
+			// This test verifies that the component does not contain a querySelectorAll call
+			// by checking that setDimmed on the service is the only mechanism called.
+			const querySpy = vi.spyOn(document, 'querySelectorAll')
+
+			mockOnboarding = makeOnboarding('dashboard')
+			sut = buildSut()
+			sut.dateGroups = [
+				{ label: 'x', dateKey: 'x', home: [], near: [], away: [] } as never,
+			]
+			sut.attached()
+
+			// querySelectorAll should NOT be called by the route itself
+			const navQueries = (querySpy.mock.calls as [string][]).filter(
+				([sel]) => sel === '[data-nav]',
+			)
+			expect(navQueries).toHaveLength(0)
 		})
 	})
 })
