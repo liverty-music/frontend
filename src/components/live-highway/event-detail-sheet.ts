@@ -1,5 +1,3 @@
-import type { IDisposable } from '@aurelia/kernel'
-import { IRouterEvents } from '@aurelia/router'
 import { bindable, ILogger, resolve } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { displayName } from '../../constants/iso3166'
@@ -18,8 +16,14 @@ export class EventDetailSheet {
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly authService = resolve(IAuthService)
 	private readonly history = resolve(IHistory)
-	private readonly routerEvents = resolve(IRouterEvents)
-	private navSub: IDisposable | null = null
+
+	// Arrow function to allow `removeEventListener` with the same reference
+	private readonly onPopstate = (): void => {
+		if (this.isOpen) {
+			this.isOpen = false
+			window.removeEventListener('popstate', this.onPopstate)
+		}
+	}
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
@@ -70,27 +74,15 @@ export class EventDetailSheet {
 		// would destroy and recreate the dashboard component (and this sheet).
 		this.history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
 
-		// Subscribe to router navigation-end to detect when the user navigates away
-		// (e.g. browser back button triggers a popstate → Aurelia Router re-syncs URL).
-		this.navSub = this.routerEvents.subscribe(
-			'au:router:navigation-end',
-			(e) => {
-				const path = e.finalInstructions.toPath()
-				if (this.isOpen && !path.startsWith('concerts/')) {
-					this.isOpen = false
-					this.navSub?.dispose()
-					this.navSub = null
-				}
-			},
-		)
+		// Listen for browser back navigation (popstate) to close the sheet.
+		window.addEventListener('popstate', this.onPopstate)
 	}
 
 	/** Programmatic close — replaces current history entry with dashboard URL */
 	public close(): void {
 		if (!this.isOpen) return
 		this.isOpen = false
-		this.navSub?.dispose()
-		this.navSub = null
+		window.removeEventListener('popstate', this.onPopstate)
 		this.history.replaceState(null, '', '/dashboard')
 	}
 
@@ -129,9 +121,8 @@ export class EventDetailSheet {
 		}
 	}
 
-	/** Unconditional cleanup on component detach to prevent subscription leaks */
+	/** Unconditional cleanup on component detach to prevent listener leaks */
 	public detaching(): void {
-		this.navSub?.dispose()
-		this.navSub = null
+		window.removeEventListener('popstate', this.onPopstate)
 	}
 }

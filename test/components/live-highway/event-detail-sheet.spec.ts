@@ -1,17 +1,10 @@
-import { DI, type IDisposable, Registration } from 'aurelia'
+import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IHistory } from '../../../src/adapter/browser/history'
 import type { LiveEvent } from '../../../src/components/live-highway/live-event'
 import { IAuthService } from '../../../src/services/auth-service'
 import { createTestContainer } from '../../helpers/create-container'
 import { createMockHistory } from '../../helpers/mock-history'
-import { createMockRouterEvents } from '../../helpers/mock-router-events'
-
-const mockIRouterEvents = DI.createInterface('IRouterEvents')
-
-vi.mock('@aurelia/router', () => ({
-	IRouterEvents: mockIRouterEvents,
-}))
 
 const { EventDetailSheet } = await import(
 	'../../../src/components/live-highway/event-detail-sheet'
@@ -41,16 +34,13 @@ function createMockAuthService(isAuthenticated = true) {
 describe('EventDetailSheet', () => {
 	let sut: InstanceType<typeof EventDetailSheet>
 	let mockHistory: ReturnType<typeof createMockHistory>
-	let mockRouterEvents: ReturnType<typeof createMockRouterEvents>
 
 	beforeEach(() => {
 		mockHistory = createMockHistory()
-		mockRouterEvents = createMockRouterEvents()
 
 		const container = createTestContainer(
 			Registration.instance(IAuthService, createMockAuthService()),
 			Registration.instance(IHistory, mockHistory),
-			Registration.instance(mockIRouterEvents, mockRouterEvents),
 		)
 		container.register(EventDetailSheet)
 		sut = container.get(EventDetailSheet)
@@ -121,15 +111,6 @@ describe('EventDetailSheet', () => {
 			)
 		})
 
-		it('should subscribe to router navigation-end on open', () => {
-			sut.open(makeEvent())
-
-			expect(mockRouterEvents.subscribe).toHaveBeenCalledWith(
-				'au:router:navigation-end',
-				expect.any(Function),
-			)
-		})
-
 		it('should close and call history.replaceState with dashboard', () => {
 			sut.open(makeEvent())
 
@@ -143,15 +124,20 @@ describe('EventDetailSheet', () => {
 			)
 		})
 
-		it('should dispose navSub on close', () => {
+		it('should register popstate listener on open', () => {
+			const addSpy = vi.spyOn(window, 'addEventListener')
 			sut.open(makeEvent())
-			const sub = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
-				.results[0]?.value as IDisposable
-			expect(sub).toBeDefined()
+
+			expect(addSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
+		})
+
+		it('should remove popstate listener on close', () => {
+			const removeSpy = vi.spyOn(window, 'removeEventListener')
+			sut.open(makeEvent())
 
 			sut.close()
 
-			expect(sub.dispose).toHaveBeenCalled()
+			expect(removeSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
 		})
 	})
 
@@ -176,59 +162,34 @@ describe('EventDetailSheet', () => {
 		})
 	})
 
-	describe('router navigation-end handling', () => {
-		it('should close sheet when router navigates away from concerts/', () => {
+	describe('popstate handling', () => {
+		it('should close sheet when popstate fires', () => {
 			sut.open(makeEvent())
 
-			// Retrieve the navigation-end callback registered on open
-			const cb = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
-				.calls[0]?.[1] as (e: {
-				finalInstructions: { toPath(): string }
-			}) => void
-
-			cb({ finalInstructions: { toPath: () => 'dashboard' } })
+			window.dispatchEvent(new PopStateEvent('popstate'))
 
 			expect(sut.isOpen).toBe(false)
 		})
 
-		it('should NOT close sheet when router navigates to concerts/', () => {
-			sut.open(makeEvent())
-
-			const cb = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
-				.calls[0]?.[1] as (e: {
-				finalInstructions: { toPath(): string }
-			}) => void
-
-			cb({ finalInstructions: { toPath: () => 'concerts/c1' } })
-
-			expect(sut.isOpen).toBe(true)
-		})
-
-		it('should not react to navigation when sheet is already closed', () => {
+		it('should not close when popstate fires and sheet is not open', () => {
 			sut.open(makeEvent())
 			sut.close()
 
-			const cb = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
-				.calls[0]?.[1] as (e: {
-				finalInstructions: { toPath(): string }
-			}) => void
+			const closeSpy = vi.spyOn(sut, 'close')
+			window.dispatchEvent(new PopStateEvent('popstate'))
 
-			// Should not throw / change already-closed state
-			cb({ finalInstructions: { toPath: () => 'dashboard' } })
-
-			expect(sut.isOpen).toBe(false)
+			expect(closeSpy).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('detaching', () => {
-		it('should dispose navSub on detach', () => {
+		it('should remove popstate listener on detach', () => {
 			sut.open(makeEvent())
-			const sub = (mockRouterEvents.subscribe as ReturnType<typeof vi.fn>).mock
-				.results[0]?.value as IDisposable
+			const removeSpy = vi.spyOn(window, 'removeEventListener')
 
 			sut.detaching()
 
-			expect(sub.dispose).toHaveBeenCalled()
+			expect(removeSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
 		})
 
 		it('should not throw when detaching without having opened', () => {
