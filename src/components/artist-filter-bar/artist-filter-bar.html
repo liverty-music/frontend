@@ -16,8 +16,7 @@
 
 <!-- Active filter chips: cluster layout + horizontal scroll -->
 <ul
-  class="[ cluster ] [ scroll-x ]"
-  style="--cluster-gap: var(--space-3xs)"
+  class="[ cluster ] [ scroll-x ] [ chips-list ]"
   if.bind="selectedIds.length > 0"
   aria-label="絞り込み中のアーティスト"
 >
@@ -39,10 +38,10 @@
   sheet-closed.trigger="closeSheet()"
   aria-labelledby="filter-sheet-title"
 >
-  <div class="[ stack ]" style="--stack-gap: var(--space-s); padding: var(--space-s) var(--space-m) var(--space-m)">
+  <div class="[ stack ] [ sheet-content ]">
     <h2 class="sheet-title" id="filter-sheet-title">アーティストで絞り込む</h2>
 
-    <ul style="list-style: none; padding: 0; margin: 0">
+    <ul class="artists-list">
       <li class="artist-item" repeat.for="artist of followedArtists">
         <label class="artist-label">
           <input
@@ -55,7 +54,7 @@
       </li>
     </ul>
 
-    <div class="[ cluster ]" style="--cluster-gap: 0; justify-content: flex-end">
+    <div class="[ cluster ] [ confirm-row ]">
       <button type="button" class="btn-confirm" click.trigger="confirmSelection()">完了</button>
     </div>
   </div>

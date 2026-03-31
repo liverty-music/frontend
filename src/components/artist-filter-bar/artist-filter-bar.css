@@ -41,6 +41,11 @@
 
 		/* ── Active filter chips ── */
 
+		/* chip gap for .cluster */
+		.chips-list {
+			--cluster-gap: var(--space-3xs);
+		}
+
 		/* layout delegated to .cluster + .scroll-x composition/utility classes in HTML */
 		.chip {
 			display: flex;
@@ -97,6 +102,27 @@
 		}
 
 		/* ── Bottom sheet content ── */
+
+		/* stack gap + padding for sheet inner layout */
+		.sheet-content {
+			--stack-gap: var(--space-s);
+
+			padding: var(--space-s) var(--space-m) var(--space-m);
+		}
+
+		/* reset list defaults for artist list */
+		.artists-list {
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+
+		/* confirm button row: flush right, no gap between items */
+		.confirm-row {
+			--cluster-gap: 0;
+
+			justify-content: flex-end;
+		}
 
 		/* layout delegated to .stack composition class in HTML */
 		.sheet-title {
