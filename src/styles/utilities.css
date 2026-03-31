@@ -117,6 +117,12 @@
 		animation: hype-pulse 300ms ease-out;
 	}
 
+	/* Horizontal scroll container — hides scrollbar, prevents overflow */
+	.scroll-x {
+		scrollbar-width: none;
+		overflow-x: auto;
+	}
+
 	/* Display */
 	.hidden {
 		display: none;

@@ -17,6 +17,7 @@ import { ITicketRpcClient } from './adapter/rpc/client/ticket-client'
 import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
+import { ArtistFilterBar } from './components/artist-filter-bar/artist-filter-bar'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
 import { CelebrationOverlay } from './components/celebration-overlay/celebration-overlay'
@@ -153,6 +154,7 @@ au.register(IEntryRpcClient)
 au.register(IUserRpcClient)
 au.register(IPushRpcClient)
 au.register(IProofService)
+au.register(ArtistFilterBar)
 au.register(BottomNavBar)
 au.register(BottomSheet)
 au.register(CelebrationOverlay)

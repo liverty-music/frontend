@@ -1,0 +1,182 @@
+@layer block {
+	@scope (artist-filter-bar) {
+		/* host is transparent — children flow directly into page-header flex context */
+		:scope {
+			display: contents;
+		}
+
+		/* ── Filter trigger ── */
+		.filter-trigger {
+			cursor: pointer;
+
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			padding: var(--space-3xs) var(--space-2xs);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-full);
+
+			color: var(--color-text-muted);
+
+			background: transparent;
+
+			transition:
+				color var(--transition-fast),
+				border-color var(--transition-fast);
+
+			&[data-active="true"] {
+				border-color: color-mix(
+					in oklch,
+					var(--color-brand-primary) 40%,
+					transparent
+				);
+				color: var(--color-brand-primary);
+			}
+
+			&:hover {
+				color: var(--color-text-secondary);
+			}
+		}
+
+		/* ── Active filter chips ── */
+
+		/* chip gap for .cluster */
+		.chips-list {
+			--cluster-gap: var(--space-3xs);
+		}
+
+		/* layout delegated to .cluster + .scroll-x composition/utility classes in HTML */
+		.chip {
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			max-inline-size: 8rem;
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-2xs);
+			border: 1px solid
+				color-mix(in oklch, var(--color-brand-primary) 30%, transparent);
+			border-radius: var(--radius-full);
+
+			font-size: var(--step--2);
+			color: var(--color-text-secondary);
+			white-space: nowrap;
+
+			background: color-mix(
+				in oklch,
+				var(--color-brand-primary) 15%,
+				transparent
+			);
+		}
+
+		.chip-name {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.chip-dismiss {
+			/* 44×44px minimum tap target (WCAG 2.5.5) */
+			cursor: pointer;
+
+			display: flex;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: center;
+
+			min-inline-size: 44px;
+			min-block-size: 44px;
+			padding: 0;
+			border: none;
+
+			font-size: var(--step--1);
+			line-height: var(--leading-none);
+			color: var(--color-text-muted);
+
+			background: transparent;
+
+			&:hover {
+				color: var(--color-text-primary);
+			}
+		}
+
+		/* ── Bottom sheet content ── */
+
+		/* stack gap + padding for filter sheet inner layout */
+		.filter-sheet-content {
+			--stack-gap: var(--space-s);
+
+			padding: var(--space-s) var(--space-m) var(--space-m);
+		}
+
+		/* reset list defaults for artist list */
+		.artists-list {
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+
+		/* confirm button row: flush right, no gap between items */
+		.confirm-row {
+			--cluster-gap: 0;
+
+			justify-content: flex-end;
+		}
+
+		/* layout delegated to .stack composition class in HTML */
+		.sheet-title {
+			font-family: var(--font-display);
+			font-size: var(--step-0);
+			font-weight: normal;
+			color: var(--color-text-primary);
+		}
+
+		.artist-item {
+			border-block-end: 1px solid var(--color-border-subtle);
+
+			&:last-child {
+				border-block-end: none;
+			}
+		}
+
+		.artist-label {
+			cursor: pointer;
+
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+
+			padding-block: var(--space-2xs);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+
+			& input[type="checkbox"] {
+				inline-size: 1.1em;
+				block-size: 1.1em;
+				accent-color: var(--color-brand-primary);
+			}
+		}
+
+		.btn-confirm {
+			cursor: pointer;
+
+			padding: var(--space-2xs) var(--space-m);
+			border: none;
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+
+			transition: opacity var(--transition-fast);
+
+			&:hover {
+				opacity: 0.85;
+			}
+		}
+	}
+}
