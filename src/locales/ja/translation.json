@@ -150,6 +150,15 @@
 		"install": "インストール",
 		"notNow": "今はしない"
 	},
+	"pwaFab": {
+		"ariaLabel": "ホーム画面に追加",
+		"sheetAriaLabel": "ホーム画面への追加手順",
+		"sheetTitle": "ホーム画面に追加する方法",
+		"step1": "Safari 下部の共有ボタン（□↑）をタップ",
+		"step2": "「ホーム画面に追加」を選択",
+		"step3": "「追加」をタップして完了",
+		"close": "閉じる"
+	},
 	"hype": {
 		"watch": "観測のみ",
 		"home": "地元のみ",

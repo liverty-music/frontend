@@ -150,6 +150,15 @@
 		"install": "Install",
 		"notNow": "Not now"
 	},
+	"pwaFab": {
+		"ariaLabel": "Add to home screen",
+		"sheetAriaLabel": "How to add to home screen",
+		"sheetTitle": "Add to Home Screen",
+		"step1": "Tap the Share button (□↑) at the bottom of Safari",
+		"step2": "Select \"Add to Home Screen\"",
+		"step3": "Tap \"Add\" to finish",
+		"close": "Close"
+	},
 	"hype": {
 		"watch": "Watch",
 		"home": "Home",
