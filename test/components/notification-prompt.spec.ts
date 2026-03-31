@@ -115,16 +115,16 @@ describe('NotificationPrompt', () => {
 
 	it('should remain not visible on the same session where onboarding completed', () => {
 		// Onboarding completed at session 3, still on session 3
-		localStorage.setItem('pwa.completedSessionCount', '3')
-		localStorage.setItem('pwa.sessionCount', '3')
+		localStorage.setItem('ui.onboardingCompletedSessionCount', '3')
+		localStorage.setItem('ui.sessionCount', '3')
 		sut = create()
 		sut.attached()
 		expect(sut.isVisible).toBe(false)
 	})
 
 	it('should remain not visible when completedSessionCount is missing (treats as current session)', () => {
-		// PwaInstallService hasn't persisted completedSessionCount yet
-		localStorage.setItem('pwa.sessionCount', '5')
+		// trackSessionForPrompts hasn't persisted completedSessionCount yet
+		localStorage.setItem('ui.sessionCount', '5')
 		sut = create()
 		sut.attached()
 		expect(sut.isVisible).toBe(false)
@@ -132,16 +132,16 @@ describe('NotificationPrompt', () => {
 
 	it('should become visible on the next session after onboarding completed', () => {
 		// Onboarding completed at session 3, now on session 4
-		localStorage.setItem('pwa.completedSessionCount', '3')
-		localStorage.setItem('pwa.sessionCount', '4')
+		localStorage.setItem('ui.onboardingCompletedSessionCount', '3')
+		localStorage.setItem('ui.sessionCount', '4')
 		sut = create()
 		sut.attached()
 		expect(sut.isVisible).toBe(true)
 	})
 
 	it('should become visible when permission is denied (settings guidance)', () => {
-		localStorage.setItem('pwa.completedSessionCount', '1')
-		localStorage.setItem('pwa.sessionCount', '2')
+		localStorage.setItem('ui.onboardingCompletedSessionCount', '1')
+		localStorage.setItem('ui.sessionCount', '2')
 		sut = create({ permission: 'denied' })
 		sut.attached()
 		expect(sut.isVisible).toBe(true)
@@ -149,8 +149,8 @@ describe('NotificationPrompt', () => {
 
 	describe('dismiss', () => {
 		it('should set isVisible to false and persist dismissal', () => {
-			localStorage.setItem('pwa.completedSessionCount', '3')
-			localStorage.setItem('pwa.sessionCount', '4')
+			localStorage.setItem('ui.onboardingCompletedSessionCount', '3')
+			localStorage.setItem('ui.sessionCount', '4')
 			sut = create()
 			sut.attached()
 			expect(sut.isVisible).toBe(true)

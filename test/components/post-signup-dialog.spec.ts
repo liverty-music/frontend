@@ -27,13 +27,21 @@ const { PostSignupDialog } = await import(
 describe('PostSignupDialog', () => {
 	let sut: InstanceType<typeof PostSignupDialog>
 	let mockPush: { subscribe: ReturnType<typeof vi.fn> }
-	let mockPwa: { canShow: boolean; install: ReturnType<typeof vi.fn> }
+	let mockPwa: {
+		canShowFab: boolean
+		isIos: boolean
+		install: ReturnType<typeof vi.fn>
+	}
 	let mockCoordinator: { markShown: ReturnType<typeof vi.fn> }
 	let mockNotification: { permission: string }
 
 	beforeEach(() => {
 		mockPush = { subscribe: vi.fn().mockResolvedValue(undefined) }
-		mockPwa = { canShow: false, install: vi.fn().mockResolvedValue(undefined) }
+		mockPwa = {
+			canShowFab: false,
+			isIos: false,
+			install: vi.fn().mockResolvedValue(undefined),
+		}
 		mockCoordinator = { markShown: vi.fn() }
 		mockNotification = { permission: 'default' }
 
@@ -59,12 +67,12 @@ describe('PostSignupDialog', () => {
 			expect(sut.isOpen).toBe(true)
 		})
 
-		it('marks notification and pwa-install prompts as shown', () => {
+		it('marks notification prompt as shown (FAB is not suppressed)', () => {
 			sut.active = true
 			sut.activeChanged()
 
 			expect(mockCoordinator.markShown).toHaveBeenCalledWith('notification')
-			expect(mockCoordinator.markShown).toHaveBeenCalledWith('pwa-install')
+			expect(mockCoordinator.markShown).not.toHaveBeenCalledWith('pwa-install')
 		})
 
 		it('does nothing when active is false', () => {
@@ -96,11 +104,19 @@ describe('PostSignupDialog', () => {
 	})
 
 	describe('canInstallPwa', () => {
-		it('reflects pwaInstall.canShow', () => {
+		it('reflects pwaInstall.canShowFab (false when not eligible)', () => {
 			expect(sut.canInstallPwa).toBe(false)
+		})
 
-			mockPwa.canShow = true
+		it('is true when canShowFab is true and not iOS', () => {
+			mockPwa.canShowFab = true
 			expect(sut.canInstallPwa).toBe(true)
+		})
+
+		it('is false when canShowFab is true but iOS (iOS uses FAB sheet instead)', () => {
+			mockPwa.canShowFab = true
+			mockPwa.isIos = true
+			expect(sut.canInstallPwa).toBe(false)
 		})
 	})
 
