@@ -1,9 +1,9 @@
 export const StorageKeys = {
 	userNotificationsEnabled: 'user.notificationsEnabled',
 	uiNotificationPromptDismissed: 'ui.notificationPromptDismissed',
-	pwaSessionCount: 'pwa.sessionCount',
-	pwaInstallPromptDismissed: 'pwa.installPromptDismissed',
-	pwaCompletedSessionCount: 'pwa.completedSessionCount',
+	uiSessionCount: 'ui.sessionCount',
+	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
+	pwaInstalled: 'pwa.installed',
 	celebrationShown: 'onboarding.celebrationShown',
 	postSignupShown: 'liverty:postSignup:shown',
 } as const
@@ -20,4 +20,29 @@ export function migrateStorageKeys(): void {
 	localStorage.removeItem('guest.adminArea')
 	// Remove deprecated user.adminArea (now managed server-side)
 	localStorage.removeItem('user.adminArea')
+	// Remove deprecated PWA session-count keys (replaced by ui.sessionCount)
+	localStorage.removeItem('pwa.sessionCount')
+	localStorage.removeItem('pwa.completedSessionCount')
+	localStorage.removeItem('pwa.installPromptDismissed')
+}
+
+/**
+ * Increment the per-session UI counter and persist the onboarding-completion
+ * session index the first time onboarding finishes.
+ * Call once at app startup (before any prompt components attach).
+ */
+export function trackSessionForPrompts(onboardingCompleted: boolean): void {
+	const count =
+		Number(localStorage.getItem(StorageKeys.uiSessionCount) || '0') + 1
+	localStorage.setItem(StorageKeys.uiSessionCount, String(count))
+
+	if (
+		onboardingCompleted &&
+		localStorage.getItem(StorageKeys.uiOnboardingCompletedSessionCount) === null
+	) {
+		localStorage.setItem(
+			StorageKeys.uiOnboardingCompletedSessionCount,
+			String(count),
+		)
+	}
 }
