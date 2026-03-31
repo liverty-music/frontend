@@ -1,0 +1,62 @@
+<import from="./artist-filter-bar.css"></import>
+<import from="../bottom-sheet/bottom-sheet"></import>
+
+<!-- Filter trigger button (always visible) -->
+<button
+  type="button"
+  class="filter-trigger"
+  click.trigger="openSheet()"
+  aria-label="アーティストで絞り込む"
+  data-active.bind="selectedIds.length > 0"
+>
+  <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16">
+    <path d="M3 6h18M7 12h10M11 18h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+</button>
+
+<!-- Active filter chips: cluster layout + horizontal scroll -->
+<ul
+  class="[ cluster ] [ scroll-x ]"
+  style="--cluster-gap: var(--space-3xs)"
+  if.bind="selectedIds.length > 0"
+  aria-label="絞り込み中のアーティスト"
+>
+  <li class="chip" repeat.for="id of selectedIds">
+    <span class="chip-name">${artistNameFor(id)}</span>
+    <button
+      type="button"
+      class="chip-dismiss"
+      click.trigger="dismiss(id)"
+      aria-label="${artistNameFor(id)} の絞り込みを解除"
+    ><span aria-hidden="true">×</span></button>
+  </li>
+</ul>
+
+<!-- Artist selection bottom sheet -->
+<!-- sheet-closed keeps isSheetOpen in sync when user swipes/clicks outside -->
+<bottom-sheet
+  open.bind="isSheetOpen"
+  sheet-closed.trigger="closeSheet()"
+  aria-labelledby="filter-sheet-title"
+>
+  <div class="[ stack ]" style="--stack-gap: var(--space-s); padding: var(--space-s) var(--space-m) var(--space-m)">
+    <h2 class="sheet-title" id="filter-sheet-title">アーティストで絞り込む</h2>
+
+    <ul style="list-style: none; padding: 0; margin: 0">
+      <li class="artist-item" repeat.for="artist of followedArtists">
+        <label class="artist-label">
+          <input
+            type="checkbox"
+            checked.bind="pendingIds.includes(artist.id)"
+            change.trigger="togglePending(artist.id)"
+          />
+          <span>${artist.name}</span>
+        </label>
+      </li>
+    </ul>
+
+    <div class="[ cluster ]" style="--cluster-gap: 0; justify-content: flex-end">
+      <button type="button" class="btn-confirm" click.trigger="confirmSelection()">完了</button>
+    </div>
+  </div>
+</bottom-sheet>
