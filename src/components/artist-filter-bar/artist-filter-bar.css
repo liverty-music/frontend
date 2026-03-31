@@ -103,8 +103,8 @@
 
 		/* ── Bottom sheet content ── */
 
-		/* stack gap + padding for sheet inner layout */
-		.sheet-content {
+		/* stack gap + padding for filter sheet inner layout */
+		.filter-sheet-content {
 			--stack-gap: var(--space-s);
 
 			padding: var(--space-s) var(--space-m) var(--space-m);
