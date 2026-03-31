@@ -38,7 +38,7 @@ describe('ArtistFilterBar', () => {
 		it('commits pendingIds to selectedIds and closes the sheet', () => {
 			sut.selectedIds = ['a1']
 			sut.openSheet()
-			sut.togglePending('a2')
+			sut.pendingIds = ['a1', 'a2']
 			sut.confirmSelection()
 
 			expect(sut.selectedIds).toEqual(['a1', 'a2'])
@@ -48,7 +48,7 @@ describe('ArtistFilterBar', () => {
 		it('clears selectedIds when all pending are deselected', () => {
 			sut.selectedIds = ['a1']
 			sut.openSheet()
-			sut.togglePending('a1') // deselect
+			sut.pendingIds = []
 			sut.confirmSelection()
 
 			expect(sut.selectedIds).toEqual([])
@@ -61,23 +61,6 @@ describe('ArtistFilterBar', () => {
 			sut.dismiss('a1')
 
 			expect(sut.selectedIds).toEqual(['a2'])
-		})
-	})
-
-	describe('togglePending', () => {
-		it('adds an artist when not already pending', () => {
-			sut.openSheet()
-			sut.togglePending('a1')
-
-			expect(sut.pendingIds.includes('a1')).toBe(true)
-		})
-
-		it('removes an artist when already pending', () => {
-			sut.openSheet()
-			sut.togglePending('a1')
-			sut.togglePending('a1')
-
-			expect(sut.pendingIds.includes('a1')).toBe(false)
 		})
 	})
 

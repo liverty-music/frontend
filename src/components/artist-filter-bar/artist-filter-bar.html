@@ -47,8 +47,8 @@
         <label class="artist-label">
           <input
             type="checkbox"
-            checked.bind="pendingIds.includes(artist.id)"
-            change.trigger="togglePending(artist.id)"
+            checked.bind="pendingIds"
+            model.bind="artist.id"
           />
           <span>${artist.name}</span>
         </label>

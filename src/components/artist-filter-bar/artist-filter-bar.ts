@@ -1,4 +1,4 @@
-import { bindable, observable } from 'aurelia'
+import { bindable } from 'aurelia'
 import type { Artist } from '../../entities/artist'
 
 export class ArtistFilterBar {
@@ -8,7 +8,7 @@ export class ArtistFilterBar {
 	public isSheetOpen = false
 
 	/** Pending selection inside the bottom sheet (committed on confirm). */
-	@observable public pendingIds: string[] = []
+	public pendingIds: string[] = []
 
 	public openSheet(): void {
 		this.pendingIds = [...this.selectedIds]
@@ -22,15 +22,6 @@ export class ArtistFilterBar {
 	public confirmSelection(): void {
 		this.selectedIds = [...this.pendingIds]
 		this.isSheetOpen = false
-	}
-
-	public togglePending(artistId: string): void {
-		const idx = this.pendingIds.indexOf(artistId)
-		if (idx === -1) {
-			this.pendingIds = [...this.pendingIds, artistId]
-		} else {
-			this.pendingIds = this.pendingIds.filter((id) => id !== artistId)
-		}
 	}
 
 	public dismiss(artistId: string): void {
