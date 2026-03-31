@@ -1,7 +1,9 @@
 import { I18N } from '@aurelia/i18n'
+import type { Params, RouteNode } from '@aurelia/router'
 import { queueTask } from '@aurelia/runtime'
 import { watch } from '@aurelia/runtime-html'
-import { ILogger, resolve } from 'aurelia'
+import { ILogger, observable, resolve } from 'aurelia'
+import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
@@ -10,6 +12,7 @@ import type {
 } from '../../components/live-highway/live-event'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { StorageKeys } from '../../constants/storage-keys'
+import type { Artist } from '../../entities/artist'
 import type { JourneyStatus } from '../../entities/concert'
 import { translationKey } from '../../entities/user'
 import { IAuthService } from '../../services/auth-service'
@@ -34,6 +37,7 @@ export type LaneIntroPhase =
 
 export class DashboardRoute {
 	public dateGroups: DateGroup[] = []
+	@observable public filteredArtistIds: string[] = []
 	public needsRegion = false
 	public isLoading = false
 	public loadError: unknown = null
@@ -58,6 +62,7 @@ export class DashboardRoute {
 	private readonly userService = resolve(IUserService)
 	private readonly navDimming = resolve(INavDimmingService)
 	private readonly storage = resolve(ILocalStorage)
+	private readonly history = resolve(IHistory)
 	private abortController: AbortController | null = null
 
 	public get isOnboardingStepDashboard(): boolean {
@@ -72,7 +77,42 @@ export class DashboardRoute {
 		return this.authService.isAuthenticated
 	}
 
-	public async loading(): Promise<void> {
+	public get followedArtists(): Artist[] {
+		return this.followService.followedArtists
+	}
+
+	public get filteredDateGroups(): DateGroup[] {
+		if (this.filteredArtistIds.length === 0) return this.dateGroups
+		const ids = new Set(this.filteredArtistIds)
+		return this.dateGroups
+			.map((g) => ({
+				...g,
+				home: g.home.filter((c) => ids.has(c.artistId)),
+				nearby: g.nearby.filter((c) => ids.has(c.artistId)),
+				away: g.away.filter((c) => ids.has(c.artistId)),
+			}))
+			.filter((g) => g.home.length + g.nearby.length + g.away.length > 0)
+	}
+
+	public filteredArtistIdsChanged(): void {
+		this.updateFilterUrl()
+	}
+
+	private updateFilterUrl(): void {
+		const url =
+			this.filteredArtistIds.length > 0
+				? `/dashboard?artists=${this.filteredArtistIds.join(',')}`
+				: '/dashboard'
+		this.history.replaceState(null, '', url)
+	}
+
+	public async loading(_params?: Params, next?: RouteNode): Promise<void> {
+		// Restore artist filter from URL query param (ignored during onboarding)
+		if (!this.isOnboarding && next) {
+			const raw = next.queryParams.get('artists')
+			this.filteredArtistIds = raw ? raw.split(',').filter(Boolean) : []
+		}
+
 		if (this.authService.isAuthenticated) {
 			this.needsRegion = !this.userService.current?.home
 		} else {

@@ -1,4 +1,9 @@
 <page-header title-key="nav.home">
+  <artist-filter-bar
+    if.bind="!isOnboarding"
+    followed-artists.bind="followedArtists"
+    selected-ids.two-way="filteredArtistIds"
+  ></artist-filter-bar>
   <page-help page="dashboard"></page-help>
 </page-header>
 
@@ -14,7 +19,7 @@
 ></inline-error>
 
 <!-- Empty state -->
-<state-placeholder if.bind="!isLoading && !loadError && dateGroups.length === 0" icon="clock">
+<state-placeholder if.bind="!isLoading && !loadError && filteredDateGroups.length === 0" icon="clock">
   <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
   <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
   <a href.bind="'discovery'" t="dashboard.empty.discoverLink" class="dashboard-empty-link"></a>
@@ -22,7 +27,7 @@
 
 <!-- Concert highway — always in DOM for E2E compatibility -->
 <concert-highway
-  date-groups.bind="dateGroups"
+  date-groups.bind="filteredDateGroups"
   show-beams="true"
   data-blurred.bind="needsRegion"
   event-selected.trigger="onEventSelected($event)"
