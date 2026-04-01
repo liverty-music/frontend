@@ -22,8 +22,18 @@ export function migrateStorageKeys(): void {
 	localStorage.removeItem('user.adminArea')
 	// Remove deprecated PWA session-count keys (replaced by ui.sessionCount)
 	localStorage.removeItem('pwa.sessionCount')
-	localStorage.removeItem('pwa.completedSessionCount')
 	localStorage.removeItem('pwa.installPromptDismissed')
+	// Migrate pwa.completedSessionCount to ui.onboardingCompletedSessionCount
+	// before deleting — returning users have no other path to set the new key
+	// (persistOnboardingCompletedSessionCount only fires on isCompleted transitions).
+	const oldCompleted = localStorage.getItem('pwa.completedSessionCount')
+	if (
+		oldCompleted !== null &&
+		localStorage.getItem('ui.onboardingCompletedSessionCount') === null
+	) {
+		localStorage.setItem('ui.onboardingCompletedSessionCount', oldCompleted)
+	}
+	localStorage.removeItem('pwa.completedSessionCount')
 }
 
 /**
