@@ -31,15 +31,14 @@
 				var(--_glow-color-from),
 				var(--_glow-color-to)
 			);
-			box-shadow:
-				0 0 10px oklch(from var(--_glow-color-from) l c h / 35%),
-				0 0 20px oklch(from var(--_glow-color-to) l c h / 20%);
 
 			/* Release phase: slightly slower ease-out */
 			transition: transform 100ms ease-out;
 
-			/* Entry animation — fires once on appearance */
-			animation: pwa-fab-enter 400ms ease-out both;
+			/* Entry animation + neon pulse (starts after entry completes) */
+			animation:
+				pwa-fab-enter 400ms ease-out both,
+				pwa-fab-neon-pulse 2.5s ease-in-out 400ms infinite;
 
 			/* Ripple ring — 2 pulses after slide-up, then stops */
 			&::after {
@@ -64,13 +63,14 @@
 
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-accent);
-				outline-offset: 3px;
+				outline-offset: 5px;
+				animation-play-state: paused;
 			}
 		}
 
 		.pwa-fab-icon {
-			inline-size: 1.25rem;
-			block-size: 1.25rem;
+			inline-size: 1.5rem;
+			block-size: 1.5rem;
 		}
 
 		@keyframes pwa-fab-enter {
@@ -92,6 +92,23 @@
 
 			to {
 				box-shadow: 0 0 0 1rem oklch(from var(--_glow-color-to) l c h / 0%);
+			}
+		}
+
+		@keyframes pwa-fab-neon-pulse {
+			0%,
+			100% {
+				box-shadow:
+					0 0 0 2px oklch(from var(--_glow-color-from) l c h / 50%),
+					0 0 10px oklch(from var(--_glow-color-from) l c h / 30%),
+					0 0 22px oklch(from var(--_glow-color-to) l c h / 15%);
+			}
+
+			50% {
+				box-shadow:
+					0 0 0 2px oklch(from var(--_glow-color-from) l c h / 90%),
+					0 0 16px oklch(from var(--_glow-color-from) l c h / 55%),
+					0 0 32px oklch(from var(--_glow-color-to) l c h / 30%);
 			}
 		}
 
@@ -173,6 +190,11 @@
 
 		@media (prefers-reduced-motion: reduce) {
 			.pwa-fab {
+				/* Static fallback — pulse suppressed */
+				box-shadow:
+					0 0 0 2px oklch(from var(--_glow-color-from) l c h / 50%),
+					0 0 10px oklch(from var(--_glow-color-from) l c h / 30%),
+					0 0 22px oklch(from var(--_glow-color-to) l c h / 15%);
 				animation: pwa-fab-fade 300ms ease-out both;
 			}
 
