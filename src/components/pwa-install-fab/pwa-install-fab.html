@@ -9,7 +9,8 @@
   -->
   <button
     show.bind="isVisible"
-    aria-hidden.bind="isVisible ? 'false' : 'true'"
+    aria-hidden.bind="isVisible ? null : 'true'"
+    tabindex.bind="isVisible ? '0' : '-1'"
     type="button"
     class="pwa-fab"
     click.trigger="handleTap()"
