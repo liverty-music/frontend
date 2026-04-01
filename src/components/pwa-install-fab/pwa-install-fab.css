@@ -1,0 +1,194 @@
+@layer block {
+	@scope (pwa-install-fab) {
+		.pwa-fab {
+			--_size: 2.75rem;
+			--_glow-color-from: var(--color-brand-primary);
+			--_glow-color-to: var(--color-brand-accent);
+
+			cursor: pointer;
+
+			position: fixed;
+			inset-block-end: calc(
+				3.5rem +
+				env(safe-area-inset-bottom, 0px) +
+				var(--space-s)
+			);
+			inset-inline-end: var(--space-s);
+
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			inline-size: var(--_size);
+			block-size: var(--_size);
+			border: none;
+			border-radius: var(--radius-full);
+
+			color: var(--color-white);
+
+			background: linear-gradient(
+				135deg,
+				var(--_glow-color-from),
+				var(--_glow-color-to)
+			);
+			box-shadow:
+				0 0 10px oklch(from var(--_glow-color-from) l c h / 35%),
+				0 0 20px oklch(from var(--_glow-color-to) l c h / 20%);
+
+			/* Release phase: slightly slower ease-out */
+			transition: transform 100ms ease-out;
+
+			/* Entry animation — fires once on appearance */
+			animation: pwa-fab-enter 400ms ease-out both;
+
+			/* Ripple ring — 2 pulses after slide-up, then stops */
+			&::after {
+				content: "";
+
+				position: absolute;
+				inset: 0;
+
+				border-radius: var(--radius-full);
+
+				background: none;
+				box-shadow: 0 0 0 0 oklch(from var(--_glow-color-to) l c h / 55%);
+
+				animation: pwa-fab-ripple 600ms ease-out 400ms 2 both;
+			}
+
+			&:active {
+				/* Press-in phase: fast ease-in */
+				transform: scale(0.92);
+				transition: transform 50ms ease-in;
+			}
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-accent);
+				outline-offset: 3px;
+			}
+		}
+
+		.pwa-fab-icon {
+			inline-size: 1.25rem;
+			block-size: 1.25rem;
+		}
+
+		@keyframes pwa-fab-enter {
+			from {
+				transform: translateY(150%);
+				opacity: 0;
+			}
+
+			to {
+				transform: translateY(0);
+				opacity: 1;
+			}
+		}
+
+		@keyframes pwa-fab-ripple {
+			from {
+				box-shadow: 0 0 0 0 oklch(from var(--_glow-color-to) l c h / 55%);
+			}
+
+			to {
+				box-shadow: 0 0 0 1rem oklch(from var(--_glow-color-to) l c h / 0%);
+			}
+		}
+
+		/* iOS instruction sheet */
+		.pwa-fab-sheet {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-m);
+
+			padding-block: var(--space-s) var(--space-l);
+			padding-inline: var(--space-m);
+		}
+
+		.pwa-fab-sheet-title {
+			font-size: var(--step-1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.pwa-fab-sheet-steps {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+
+			padding: 0;
+
+			list-style: none;
+		}
+
+		.pwa-fab-sheet-step {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: flex-start;
+
+			font-size: var(--step-0);
+			color: var(--color-text-secondary);
+		}
+
+		.pwa-fab-step-num {
+			display: flex;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: center;
+
+			inline-size: 1.5rem;
+			block-size: 1.5rem;
+			border-radius: var(--radius-full);
+
+			font-size: var(--step--1);
+			font-weight: 700;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+		}
+
+		.pwa-fab-sheet-close {
+			cursor: pointer;
+
+			align-self: center;
+
+			padding-block: var(--space-xs);
+			padding-inline: var(--space-xl);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step-0);
+			font-weight: 500;
+			color: var(--color-text-secondary);
+
+			background: none;
+
+			transition: color 150ms ease-out;
+
+			&:hover,
+			&:focus-visible {
+				color: var(--color-text-primary);
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.pwa-fab {
+				animation: pwa-fab-fade 300ms ease-out both;
+			}
+
+			.pwa-fab::after {
+				animation: none;
+			}
+
+			@keyframes pwa-fab-fade {
+				from {
+					opacity: 0;
+				}
+
+				to {
+					opacity: 1;
+				}
+			}
+		}
+	}
+}

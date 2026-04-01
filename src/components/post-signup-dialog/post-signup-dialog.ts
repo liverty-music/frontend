@@ -19,15 +19,17 @@ export class PostSignupDialog {
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
 
 	public get canInstallPwa(): boolean {
-		return this.pwaInstall.canShow
+		// On iOS, beforeinstallprompt never fires — hide the dialog row.
+		// iOS users use the persistent FAB with the instruction sheet instead.
+		return this.pwaInstall.canShowFab && !this.pwaInstall.isIos
 	}
 
 	public activeChanged(): void {
 		if (this.active) {
 			this.isOpen = true
-			// Notify coordinator so normal prompt queue is suppressed
+			// Suppress the standalone notification prompt for this session —
+			// the dialog handles it inline. FAB is not suppressed.
 			this.promptCoordinator.markShown('notification')
-			this.promptCoordinator.markShown('pwa-install')
 		}
 	}
 

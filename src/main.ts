@@ -35,7 +35,10 @@ import { StatePlaceholder } from './components/state-placeholder/state-placehold
 import { SvgIcon } from './components/svg-icon/svg-icon'
 import { Toast } from './components/toast/toast'
 import { UserHomeSelector } from './components/user-home-selector/user-home-selector'
-import { migrateStorageKeys } from './constants/storage-keys'
+import {
+	migrateStorageKeys,
+	trackSessionForPrompts,
+} from './constants/storage-keys'
 import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
@@ -72,6 +75,9 @@ initOtel()
 
 // Migrate legacy localStorage keys (safe to call multiple times)
 migrateStorageKeys()
+
+// Track session count for notification prompt deferral logic
+trackSessionForPrompts()
 
 // Css files imported in this main file should be imported with ?inline query
 // to get CSS as string for sharedStyles in shadowDOM.

@@ -1,0 +1,59 @@
+<import from="./pwa-install-fab.css"></import>
+<import from="../bottom-sheet/bottom-sheet"></import>
+
+<template>
+  <!--
+    show.bind keeps the button in the DOM at all times so that
+    assistive technology can discover it via the accessibility tree
+    even before it becomes visible. aria-hidden gates AT exposure.
+  -->
+  <button
+    show.bind="isVisible"
+    aria-hidden.bind="isVisible ? 'false' : 'true'"
+    type="button"
+    class="pwa-fab"
+    click.trigger="handleTap()"
+    t="[aria-label]pwaFab.ariaLabel"
+    data-testid="pwa-install-fab"
+  >
+    <svg class="pwa-fab-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+      <polyline points="7 10 12 15 17 10"></polyline>
+      <line x1="12" y1="15" x2="12" y2="3"></line>
+    </svg>
+  </button>
+
+  <!-- iOS instruction sheet — only mounted on iOS devices -->
+  <bottom-sheet
+    if.bind="isIos"
+    open.bind="isSheetOpen"
+    t="[aria-label]pwaFab.sheetAriaLabel"
+    sheet-closed.trigger="closeSheet()"
+    dismissable.bind="false"
+  >
+    <section class="pwa-fab-sheet" aria-labelledby="pwa-fab-sheet-title">
+      <h2 id="pwa-fab-sheet-title" class="pwa-fab-sheet-title" t="pwaFab.sheetTitle"></h2>
+      <ol class="pwa-fab-sheet-steps">
+        <li class="pwa-fab-sheet-step">
+          <span class="pwa-fab-step-num" aria-hidden="true">1</span>
+          <span t="pwaFab.step1"></span>
+        </li>
+        <li class="pwa-fab-sheet-step">
+          <span class="pwa-fab-step-num" aria-hidden="true">2</span>
+          <span t="pwaFab.step2"></span>
+        </li>
+        <li class="pwa-fab-sheet-step">
+          <span class="pwa-fab-step-num" aria-hidden="true">3</span>
+          <span t="pwaFab.step3"></span>
+        </li>
+      </ol>
+      <button
+        type="button"
+        class="pwa-fab-sheet-close"
+        click.trigger="closeSheet()"
+        t="pwaFab.close"
+        data-testid="pwa-fab-sheet-close"
+      ></button>
+    </section>
+  </bottom-sheet>
+</template>

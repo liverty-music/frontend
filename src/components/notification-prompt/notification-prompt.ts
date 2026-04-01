@@ -29,13 +29,12 @@ export class NotificationPrompt {
 		if (this.notificationManager.permission === 'granted') return
 
 		// Do not show on the same session where onboarding just completed.
-		// When completedSessionCount is missing, treat as "completed this session"
-		// to handle the case where PwaInstallService hasn't persisted it yet.
+		// When completedSessionCount is missing, treat as "completed this session".
 		const completedAtRaw = localStorage.getItem(
-			StorageKeys.pwaCompletedSessionCount,
+			StorageKeys.uiOnboardingCompletedSessionCount,
 		)
 		const currentSession = Number(
-			localStorage.getItem(StorageKeys.pwaSessionCount) || '0',
+			localStorage.getItem(StorageKeys.uiSessionCount) || '0',
 		)
 		const completedAt =
 			completedAtRaw !== null ? Number(completedAtRaw) : currentSession

@@ -1,5 +1,5 @@
 <import from="./components/error-banner/error-banner"></import>
-<import from="./components/pwa-install-prompt/pwa-install-prompt"></import>
+<import from="./components/pwa-install-fab/pwa-install-fab"></import>
 <import from="./components/notification-prompt/notification-prompt"></import>
 <import from="./components/snack-bar/snack-bar"></import>
 <import from="./components/coach-mark/coach-mark"></import>
@@ -10,7 +10,8 @@
 
 <!-- Top-layer overlays: rendered via popover/dialog in browser top layer,
      DOM position is irrelevant. Placed outside viewport to avoid grid interference. -->
-<pwa-install-prompt if.bind="showNav"></pwa-install-prompt>
+<!-- Single instance guaranteed by app-shell — safe to use static id="pwa-fab-sheet-title" inside -->
+<pwa-install-fab if.bind="showNav"></pwa-install-fab>
 <notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
 <snack-bar></snack-bar>
 <error-banner></error-banner>

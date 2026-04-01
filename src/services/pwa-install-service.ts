@@ -1,8 +1,9 @@
-import { DI, ILogger, observable, resolve } from 'aurelia'
-import { StorageKeys } from '../constants/storage-keys'
-import { IAuthService } from './auth-service'
+import { DI, ILogger, observable, resolve, watch } from 'aurelia'
+import {
+	persistOnboardingCompletedSessionCount,
+	StorageKeys,
+} from '../constants/storage-keys'
 import { IOnboardingService } from './onboarding-service'
-import { IPromptCoordinator } from './prompt-coordinator'
 
 export const IPwaInstallService = DI.createInterface<IPwaInstallService>(
 	'IPwaInstallService',
@@ -14,51 +15,35 @@ export interface IPwaInstallService extends PwaInstallService {}
 export class PwaInstallService {
 	private readonly logger = resolve(ILogger).scopeTo('PwaInstallService')
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly auth = resolve(IAuthService)
-	private readonly promptCoordinator = resolve(IPromptCoordinator)
 
 	private deferredPrompt: BeforeInstallPromptEvent | null = null
+	private installed = false
 
-	@observable public canShow = false
+	@observable public canShowFab = false
 
 	constructor() {
-		this.incrementSessionCount()
-		this.persistCompletedSessionCountIfNeeded()
+		this.installed = this.detectInstalled()
 		this.listenForInstallPrompt()
+		this.listenForAppInstalled()
+		this.evaluateVisibility()
 	}
 
-	private incrementSessionCount(): void {
-		const count =
-			Number(localStorage.getItem(StorageKeys.pwaSessionCount) || '0') + 1
-		localStorage.setItem(StorageKeys.pwaSessionCount, String(count))
-	}
-
-	private persistCompletedSessionCountIfNeeded(): void {
+	private detectInstalled(): boolean {
+		if (localStorage.getItem(StorageKeys.pwaInstalled) === 'true') return true
 		if (
-			this.onboarding.isCompleted &&
-			localStorage.getItem(StorageKeys.pwaCompletedSessionCount) === null
-		) {
-			localStorage.setItem(
-				StorageKeys.pwaCompletedSessionCount,
-				String(this.sessionCount),
-			)
-		}
-	}
-
-	private get sessionCount(): number {
-		return Number(localStorage.getItem(StorageKeys.pwaSessionCount) || '0')
-	}
-
-	private get completedSessionCount(): number {
-		return Number(
-			localStorage.getItem(StorageKeys.pwaCompletedSessionCount) || '0',
+			'standalone' in navigator &&
+			(navigator as { standalone?: boolean }).standalone === true
 		)
+			return true
+		if (window.matchMedia('(display-mode: standalone)').matches) return true
+		return false
 	}
 
-	private get isDismissed(): boolean {
-		return (
-			localStorage.getItem(StorageKeys.pwaInstallPromptDismissed) === 'true'
-		)
+	get isIos(): boolean {
+		if ('BeforeInstallPromptEvent' in window) return false
+		if (/iphone|ipad|ipod/i.test(navigator.userAgent)) return true
+		// iPadOS 13+ reports a macOS desktop user-agent; detect via touch capability
+		return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
 	}
 
 	private listenForInstallPrompt(): void {
@@ -69,20 +54,39 @@ export class PwaInstallService {
 		})
 	}
 
+	private listenForAppInstalled(): void {
+		window.addEventListener('appinstalled', () => {
+			this.logger.info('App installed')
+			this.installed = true
+			localStorage.setItem(StorageKeys.pwaInstalled, 'true')
+			this.deferredPrompt = null
+			this.canShowFab = false
+		})
+	}
+
 	private evaluateVisibility(): void {
 		const eligible =
-			this.deferredPrompt !== null &&
-			!this.isDismissed &&
+			!this.installed &&
 			this.onboarding.isCompleted &&
-			this.auth.isAuthenticated &&
-			this.sessionCount >= this.completedSessionCount + 2 &&
-			this.promptCoordinator.canShowPrompt('pwa-install')
+			(this.deferredPrompt !== null || this.isIos)
 
-		this.canShow = eligible
-		if (this.canShow) {
-			this.promptCoordinator.markShown('pwa-install')
-			this.logger.info('PWA install prompt ready to show')
+		this.canShowFab = eligible
+		if (this.canShowFab) {
+			this.logger.info('PWA install FAB ready to show')
 		}
+	}
+
+	@watch((vm: PwaInstallService) => vm.onboarding.isCompleted)
+	public onboardingCompletedChanged(isCompleted: boolean): void {
+		if (!isCompleted) return
+		// Persist the completion session so the notification prompt
+		// can defer itself to the next session.
+		persistOnboardingCompletedSessionCount()
+		this.evaluateVisibility()
+	}
+
+	public evaluateAfterOnboarding(): void {
+		this.onboardingCompletedChanged(this.onboarding.isCompleted)
 	}
 
 	public async install(): Promise<void> {
@@ -93,13 +97,7 @@ export class PwaInstallService {
 		this.logger.info('PWA install prompt outcome', { outcome })
 
 		this.deferredPrompt = null
-		this.canShow = false
-	}
-
-	public dismiss(): void {
-		localStorage.setItem(StorageKeys.pwaInstallPromptDismissed, 'true')
-		this.canShow = false
-		this.logger.info('PWA install prompt dismissed')
+		this.canShowFab = false
 	}
 }
 

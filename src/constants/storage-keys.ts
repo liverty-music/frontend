@@ -1,9 +1,9 @@
 export const StorageKeys = {
 	userNotificationsEnabled: 'user.notificationsEnabled',
 	uiNotificationPromptDismissed: 'ui.notificationPromptDismissed',
-	pwaSessionCount: 'pwa.sessionCount',
-	pwaInstallPromptDismissed: 'pwa.installPromptDismissed',
-	pwaCompletedSessionCount: 'pwa.completedSessionCount',
+	uiSessionCount: 'ui.sessionCount',
+	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
+	pwaInstalled: 'pwa.installed',
 	celebrationShown: 'onboarding.celebrationShown',
 	postSignupShown: 'liverty:postSignup:shown',
 } as const
@@ -20,4 +20,44 @@ export function migrateStorageKeys(): void {
 	localStorage.removeItem('guest.adminArea')
 	// Remove deprecated user.adminArea (now managed server-side)
 	localStorage.removeItem('user.adminArea')
+	// Remove deprecated PWA session-count keys (replaced by ui.sessionCount)
+	localStorage.removeItem('pwa.sessionCount')
+	localStorage.removeItem('pwa.installPromptDismissed')
+	// Migrate pwa.completedSessionCount to ui.onboardingCompletedSessionCount
+	// before deleting — returning users have no other path to set the new key
+	// (persistOnboardingCompletedSessionCount only fires on isCompleted transitions).
+	const oldCompleted = localStorage.getItem('pwa.completedSessionCount')
+	if (
+		oldCompleted !== null &&
+		localStorage.getItem('ui.onboardingCompletedSessionCount') === null
+	) {
+		localStorage.setItem('ui.onboardingCompletedSessionCount', oldCompleted)
+	}
+	localStorage.removeItem('pwa.completedSessionCount')
+}
+
+/**
+ * Increment the per-session UI counter.
+ * Call once at app startup (before any prompt components attach).
+ */
+export function trackSessionForPrompts(): void {
+	const count =
+		Number(localStorage.getItem(StorageKeys.uiSessionCount) || '0') + 1
+	localStorage.setItem(StorageKeys.uiSessionCount, String(count))
+}
+
+/**
+ * Persist the session index at which onboarding completed, the first time it happens.
+ * Call once when onboarding transitions to COMPLETED — does NOT increment the session counter.
+ */
+export function persistOnboardingCompletedSessionCount(): void {
+	if (
+		localStorage.getItem(StorageKeys.uiOnboardingCompletedSessionCount) !== null
+	)
+		return
+	const count = Number(localStorage.getItem(StorageKeys.uiSessionCount) || '0')
+	localStorage.setItem(
+		StorageKeys.uiOnboardingCompletedSessionCount,
+		String(count),
+	)
 }

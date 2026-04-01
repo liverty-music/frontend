@@ -13,7 +13,7 @@
 		/* Overlay components use top-layer APIs (popover/dialog).
 		   Removed from flow so they don't create implicit grid rows.
 		   Note: display:contents breaks Aurelia ref bindings — keep the box. */
-		pwa-install-prompt,
+		pwa-install-fab,
 		notification-prompt,
 		snack-bar,
 		error-banner,
