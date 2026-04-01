@@ -27,22 +27,27 @@ export function migrateStorageKeys(): void {
 }
 
 /**
- * Increment the per-session UI counter and persist the onboarding-completion
- * session index the first time onboarding finishes.
+ * Increment the per-session UI counter.
  * Call once at app startup (before any prompt components attach).
  */
-export function trackSessionForPrompts(onboardingCompleted: boolean): void {
+export function trackSessionForPrompts(): void {
 	const count =
 		Number(localStorage.getItem(StorageKeys.uiSessionCount) || '0') + 1
 	localStorage.setItem(StorageKeys.uiSessionCount, String(count))
+}
 
+/**
+ * Persist the session index at which onboarding completed, the first time it happens.
+ * Call once when onboarding transitions to COMPLETED — does NOT increment the session counter.
+ */
+export function persistOnboardingCompletedSessionCount(): void {
 	if (
-		onboardingCompleted &&
-		localStorage.getItem(StorageKeys.uiOnboardingCompletedSessionCount) === null
-	) {
-		localStorage.setItem(
-			StorageKeys.uiOnboardingCompletedSessionCount,
-			String(count),
-		)
-	}
+		localStorage.getItem(StorageKeys.uiOnboardingCompletedSessionCount) !== null
+	)
+		return
+	const count = Number(localStorage.getItem(StorageKeys.uiSessionCount) || '0')
+	localStorage.setItem(
+		StorageKeys.uiOnboardingCompletedSessionCount,
+		String(count),
+	)
 }

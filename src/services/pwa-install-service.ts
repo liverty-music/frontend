@@ -1,5 +1,8 @@
 import { DI, ILogger, observable, resolve, watch } from 'aurelia'
-import { StorageKeys, trackSessionForPrompts } from '../constants/storage-keys'
+import {
+	persistOnboardingCompletedSessionCount,
+	StorageKeys,
+} from '../constants/storage-keys'
 import { IOnboardingService } from './onboarding-service'
 
 export const IPwaInstallService = DI.createInterface<IPwaInstallService>(
@@ -75,7 +78,7 @@ export class PwaInstallService {
 		if (!isCompleted) return
 		// Persist the completion session so the notification prompt
 		// can defer itself to the next session.
-		trackSessionForPrompts(true)
+		persistOnboardingCompletedSessionCount()
 		this.evaluateVisibility()
 	}
 

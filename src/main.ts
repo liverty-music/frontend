@@ -16,7 +16,6 @@ import { IPushRpcClient } from './adapter/rpc/client/push-client'
 import { ITicketRpcClient } from './adapter/rpc/client/ticket-client'
 import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
-import { loadStep } from './adapter/storage/onboarding-storage'
 import { AppShell } from './app-shell'
 import { ArtistFilterBar } from './components/artist-filter-bar/artist-filter-bar'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
@@ -45,7 +44,6 @@ import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
-import { isCompleted as isOnboardingCompleted } from './entities/onboarding'
 import { AuthHook } from './hooks/auth-hook'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
@@ -79,7 +77,7 @@ initOtel()
 migrateStorageKeys()
 
 // Track session count for notification prompt deferral logic
-trackSessionForPrompts(isOnboardingCompleted(loadStep()))
+trackSessionForPrompts()
 
 // Css files imported in this main file should be imported with ?inline query
 // to get CSS as string for sharedStyles in shadowDOM.
