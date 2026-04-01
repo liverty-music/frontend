@@ -72,5 +72,43 @@ describe('ArtistFilterBar', () => {
 		it('falls back to the ID when artist is not found', () => {
 			expect(sut.artistNameFor('unknown')).toBe('unknown')
 		})
+
+		it('resolves names for all followed artists', () => {
+			expect(sut.artistNameFor('a1')).toBe('Artist One')
+			expect(sut.artistNameFor('a2')).toBe('Artist Two')
+		})
+	})
+
+	describe('openSheet with empty followedArtists', () => {
+		it('sets pendingIds to [] when followedArtists is empty', () => {
+			sut.followedArtists = []
+			sut.selectedIds = []
+			sut.openSheet()
+
+			expect(sut.pendingIds).toEqual([])
+			expect(sut.isSheetOpen).toBe(true)
+		})
+	})
+
+	describe('openSheet called twice', () => {
+		it('resets pendingIds to current selectedIds on second open', () => {
+			sut.selectedIds = ['a1']
+			sut.openSheet()
+			sut.pendingIds = ['a1', 'a2']
+
+			// Open again without confirming — pendingIds should reset
+			sut.openSheet()
+
+			expect(sut.pendingIds).toEqual(['a1'])
+		})
+	})
+
+	describe('dismiss with unknown ID', () => {
+		it('does not change selectedIds when the ID is not in the list', () => {
+			sut.selectedIds = ['a1', 'a2']
+			sut.dismiss('unknown')
+
+			expect(sut.selectedIds).toEqual(['a1', 'a2'])
+		})
 	})
 })
