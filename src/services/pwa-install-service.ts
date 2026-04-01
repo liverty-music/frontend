@@ -25,6 +25,7 @@ export class PwaInstallService {
 		this.installed = this.detectInstalled()
 		this.listenForInstallPrompt()
 		this.listenForAppInstalled()
+		this.evaluateVisibility()
 	}
 
 	private detectInstalled(): boolean {
@@ -40,7 +41,9 @@ export class PwaInstallService {
 
 	get isIos(): boolean {
 		if ('BeforeInstallPromptEvent' in window) return false
-		return /iphone|ipad|ipod/i.test(navigator.userAgent)
+		if (/iphone|ipad|ipod/i.test(navigator.userAgent)) return true
+		// iPadOS 13+ reports a macOS desktop user-agent; detect via touch capability
+		return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
 	}
 
 	private listenForInstallPrompt(): void {
