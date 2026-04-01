@@ -7,7 +7,6 @@
 		:scope {
 			position: relative;
 
-			overflow: hidden;
 			display: grid;
 			grid-template:
 				"stage-home stage-near stage-away" auto
