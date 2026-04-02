@@ -95,10 +95,7 @@ export class FollowServiceClient {
 	public async listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
 		let result: FollowedArtist[]
 		if (!this.authService.isAuthenticated) {
-			result = this.guest.follows.map((f) => ({
-				artist: f.artist,
-				hype: 'watch' as const,
-			}))
+			result = [...this.guest.follows]
 		} else {
 			result = await this.rpcClient.listFollowed(signal)
 		}
