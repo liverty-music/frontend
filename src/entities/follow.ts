@@ -3,18 +3,13 @@ import type { Artist } from './artist'
 /** Hype level indicating how far the user will travel for an artist. */
 export type Hype = 'watch' | 'home' | 'nearby' | 'away'
 
-/**
- * A guest (unauthenticated) follow stored locally during onboarding.
- * Paired with a nullable home area for proximity-based concert search.
- */
-export interface GuestFollow {
-	artist: Artist
-	home: string | null
-}
+/** Default hype level assigned to new follows and used as fallback. */
+export const DEFAULT_HYPE: Hype = 'watch'
 
 /**
  * A followed artist combining the proto Artist entity
  * with the user's hype setting.
+ * Used for both authenticated (RPC-backed) and guest (localStorage-backed) follows.
  */
 export interface FollowedArtist {
 	artist: Artist
