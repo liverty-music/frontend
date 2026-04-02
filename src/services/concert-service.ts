@@ -14,7 +14,7 @@ import {
 	type JourneyStatus,
 	type LaneType,
 } from '../entities/concert'
-import type { Hype } from '../entities/follow'
+import { DEFAULT_HYPE, type Hype } from '../entities/follow'
 import { IAuthService } from './auth-service'
 import { IGuestService } from './guest-service'
 
@@ -115,7 +115,7 @@ export class ConcertServiceClient {
 			concerts.flatMap((c) => {
 				const artistId = c.artistId?.value ?? ''
 				const entry = artistMap.get(artistId)
-				const hypeLevel: HypeLevel = entry?.hype ?? 'watch'
+				const hypeLevel: HypeLevel = entry?.hype ?? DEFAULT_HYPE
 				const event = concertFrom(
 					c,
 					entry?.artist.name ?? '',

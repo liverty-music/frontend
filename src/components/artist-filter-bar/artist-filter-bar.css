@@ -39,68 +39,6 @@
 			}
 		}
 
-		/* ── Active filter chips ── */
-
-		/* chip gap for .cluster */
-		.chips-list {
-			--cluster-gap: var(--space-3xs);
-		}
-
-		/* layout delegated to .cluster + .scroll-x composition/utility classes in HTML */
-		.chip {
-			display: flex;
-			gap: var(--space-3xs);
-			align-items: center;
-
-			max-inline-size: 8rem;
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-2xs);
-			border: 1px solid
-				color-mix(in oklch, var(--color-brand-primary) 30%, transparent);
-			border-radius: var(--radius-full);
-
-			font-size: var(--step--2);
-			color: var(--color-text-secondary);
-			white-space: nowrap;
-
-			background: color-mix(
-				in oklch,
-				var(--color-brand-primary) 15%,
-				transparent
-			);
-		}
-
-		.chip-name {
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-		}
-
-		.chip-dismiss {
-			/* 44×44px minimum tap target (WCAG 2.5.5) */
-			cursor: pointer;
-
-			display: flex;
-			flex-shrink: 0;
-			align-items: center;
-			justify-content: center;
-
-			min-inline-size: 44px;
-			min-block-size: 44px;
-			padding: 0;
-			border: none;
-
-			font-size: var(--step--1);
-			line-height: var(--leading-none);
-			color: var(--color-text-muted);
-
-			background: transparent;
-
-			&:hover {
-				color: var(--color-text-primary);
-			}
-		}
-
 		/* ── Bottom sheet content ── */
 
 		/* stack gap + padding for filter sheet inner layout */

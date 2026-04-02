@@ -14,23 +14,6 @@
   </svg>
 </button>
 
-<!-- Active filter chips: cluster layout + horizontal scroll -->
-<ul
-  class="[ cluster ] [ scroll-x ] [ chips-list ]"
-  if.bind="selectedIds.length > 0"
-  aria-label="絞り込み中のアーティスト"
->
-  <li class="chip" repeat.for="id of selectedIds">
-    <span class="chip-name">${artistNameFor(id)}</span>
-    <button
-      type="button"
-      class="chip-dismiss"
-      click.trigger="dismiss(id)"
-      aria-label="${artistNameFor(id)} の絞り込みを解除"
-    ><span aria-hidden="true">×</span></button>
-  </li>
-</ul>
-
 <!-- Artist selection bottom sheet -->
 <!-- sheet-closed keeps isSheetOpen in sync when user swipes/clicks outside -->
 <bottom-sheet

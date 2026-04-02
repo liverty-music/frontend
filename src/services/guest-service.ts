@@ -1,17 +1,18 @@
 import { DI, ILogger, observable, resolve } from 'aurelia'
 import {
-	clearHypes,
 	loadFollows,
 	loadHome,
-	loadHypes,
 	saveFollows,
 	saveHome,
-	saveHypes,
 } from '../adapter/storage/guest-storage'
 import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
 import { StorageKeys } from '../constants/storage-keys'
 import type { Artist } from '../entities/artist'
-import { type GuestFollow, hasFollow } from '../entities/follow'
+import {
+	DEFAULT_HYPE,
+	type FollowedArtist,
+	hasFollow,
+} from '../entities/follow'
 
 export interface LocalFollowedArtist {
 	id: string
@@ -28,14 +29,14 @@ export interface IGuestService extends GuestService {}
 /**
  * Singleton service owning all guest (unauthenticated) state.
  * Follows are mutated in-place (push/splice) for Aurelia array observation.
+ * Hype is stored inline in each FollowedArtist entry.
  * Home is persisted via @observable + homeChanged().
  */
 export class GuestService {
 	private readonly logger = resolve(ILogger).scopeTo('GuestService')
 
-	public follows: GuestFollow[] = loadFollows()
+	public follows: FollowedArtist[] = loadFollows()
 	@observable public home: string | null = loadHome()
-	private hypes: Record<string, string> = loadHypes()
 
 	public get followedCount(): number {
 		return this.follows.length
@@ -56,7 +57,7 @@ export class GuestService {
 	 */
 	public follow(artist: Artist): void {
 		if (hasFollow(this.follows, artist.id)) return
-		this.follows.push({ artist, home: null })
+		this.follows.push({ artist, hype: DEFAULT_HYPE })
 		this.persistFollows()
 		this.logger.info('Local artist followed', {
 			id: artist.id,
@@ -85,19 +86,15 @@ export class GuestService {
 	}
 
 	/**
-	 * Set hype level for an artist (persisted to localStorage).
+	 * Set hype level for a followed artist (persisted to localStorage).
 	 */
-	public setHype(artistId: string, hype: string): void {
-		this.hypes[artistId] = hype
-		saveHypes(this.hypes)
-		this.logger.info('Local hype set', { artistId, hype })
-	}
-
-	/**
-	 * Get all stored guest hype levels.
-	 */
-	public getHypes(): Record<string, string> {
-		return { ...this.hypes }
+	public setHype(artistId: string, hype: FollowedArtist['hype']): void {
+		const entry = this.follows.find((f) => f.artist.id === artistId)
+		if (entry) {
+			entry.hype = hype
+			this.persistFollows()
+			this.logger.info('Local hype set', { artistId, hype })
+		}
 	}
 
 	/**
@@ -107,8 +104,6 @@ export class GuestService {
 		this.follows.splice(0)
 		this.persistFollows()
 		this.home = null
-		this.hypes = {}
-		clearHypes()
 		clearAllHelpSeen()
 		localStorage.removeItem(StorageKeys.celebrationShown)
 		this.logger.info('Local data cleared')

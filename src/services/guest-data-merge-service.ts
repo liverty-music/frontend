@@ -1,5 +1,6 @@
 import { DI, ILogger, resolve } from 'aurelia'
 import { IFollowRpcClient } from '../adapter/rpc/client/follow-client'
+import { DEFAULT_HYPE } from '../entities/follow'
 import { IGuestService } from './guest-service'
 import { IOnboardingService } from './onboarding-service'
 
@@ -23,15 +24,15 @@ export class GuestDataMergeService {
 	 */
 	public async merge(): Promise<void> {
 		const { follows } = this.guest
-		const hypes = this.guest.getHypes()
+		const hypeCount = follows.filter((f) => f.hype !== DEFAULT_HYPE).length
 		this.logger.info('Starting guest data merge', {
 			artistCount: follows.length,
-			hypeCount: Object.keys(hypes).length,
+			hypeCount,
 		})
 
-		for (const guestFollow of follows) {
-			const artistId = guestFollow.artist.id
-			const artistName = guestFollow.artist.name
+		for (const follow of follows) {
+			const artistId = follow.artist.id
+			const artistName = follow.artist.name
 			try {
 				await this.rpcClient.follow(artistId)
 				this.logger.debug('Followed artist', {
@@ -47,18 +48,17 @@ export class GuestDataMergeService {
 			}
 		}
 
-		// Merge guest hype levels (best-effort)
-		for (const [artistId, hype] of Object.entries(hypes)) {
+		// Merge non-default hype levels (best-effort)
+		for (const follow of follows) {
+			if (follow.hype === DEFAULT_HYPE) continue
+			const artistId = follow.artist.id
 			try {
-				await this.rpcClient.setHype(
-					artistId,
-					hype as import('../entities/follow').Hype,
-				)
-				this.logger.debug('Hype merged', { artistId, hype })
+				await this.rpcClient.setHype(artistId, follow.hype)
+				this.logger.debug('Hype merged', { artistId, hype: follow.hype })
 			} catch (err) {
 				this.logger.warn('Failed to set hype during merge, continuing', {
 					artistId,
-					hype,
+					hype: follow.hype,
 					error: err,
 				})
 			}

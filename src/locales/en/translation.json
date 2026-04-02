@@ -194,7 +194,7 @@
 			"setHypeMessage": "Raise the hype for artists you never want to miss"
 		},
 		"signupBanner": {
-			"message": "\uD83D\uDD14 To enable notifications"
+			"message": "Save your followed artists and get concert notifications."
 		},
 		"unfollowed": "{{name}} unfollowed",
 		"undo": "Undo",
