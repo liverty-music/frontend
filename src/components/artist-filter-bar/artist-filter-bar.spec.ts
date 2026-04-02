@@ -55,30 +55,6 @@ describe('ArtistFilterBar', () => {
 		})
 	})
 
-	describe('dismiss', () => {
-		it('removes the given artist from selectedIds', () => {
-			sut.selectedIds = ['a1', 'a2']
-			sut.dismiss('a1')
-
-			expect(sut.selectedIds).toEqual(['a2'])
-		})
-	})
-
-	describe('artistNameFor', () => {
-		it('returns artist name for a known ID', () => {
-			expect(sut.artistNameFor('a1')).toBe('Artist One')
-		})
-
-		it('falls back to the ID when artist is not found', () => {
-			expect(sut.artistNameFor('unknown')).toBe('unknown')
-		})
-
-		it('resolves names for all followed artists', () => {
-			expect(sut.artistNameFor('a1')).toBe('Artist One')
-			expect(sut.artistNameFor('a2')).toBe('Artist Two')
-		})
-	})
-
 	describe('openSheet with empty followedArtists', () => {
 		it('sets pendingIds to [] when followedArtists is empty', () => {
 			sut.followedArtists = []
@@ -100,15 +76,6 @@ describe('ArtistFilterBar', () => {
 			sut.openSheet()
 
 			expect(sut.pendingIds).toEqual(['a1'])
-		})
-	})
-
-	describe('dismiss with unknown ID', () => {
-		it('does not change selectedIds when the ID is not in the list', () => {
-			sut.selectedIds = ['a1', 'a2']
-			sut.dismiss('unknown')
-
-			expect(sut.selectedIds).toEqual(['a1', 'a2'])
 		})
 	})
 })

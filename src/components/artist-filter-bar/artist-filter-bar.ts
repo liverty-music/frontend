@@ -23,12 +23,4 @@ export class ArtistFilterBar {
 		this.selectedIds = [...this.pendingIds]
 		this.isSheetOpen = false
 	}
-
-	public dismiss(artistId: string): void {
-		this.selectedIds = this.selectedIds.filter((id) => id !== artistId)
-	}
-
-	public artistNameFor(artistId: string): string {
-		return this.followedArtists.find((a) => a.id === artistId)?.name ?? artistId
-	}
 }
