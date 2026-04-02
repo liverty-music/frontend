@@ -110,8 +110,8 @@ test.describe('Artist filter bar bottom sheet', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, home: null },
-					{ artist: { id: 'artist-2', name: 'Vaundy', mbid: '' }, home: null },
+					{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: 'watch' },
+					{ artist: { id: 'artist-2', name: 'Vaundy', mbid: '' }, hype: 'watch' },
 				]),
 			)
 		})
@@ -131,7 +131,7 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await expect(page.getByText('Vaundy')).toBeVisible()
 	})
 
-	test('selecting an artist and confirming shows a filter chip', async ({
+	test('selecting an artist and confirming activates the filter button', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
@@ -141,8 +141,8 @@ test.describe('Artist filter bar bottom sheet', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, home: null },
-					{ artist: { id: 'artist-2', name: 'Vaundy', mbid: '' }, home: null },
+					{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: 'watch' },
+					{ artist: { id: 'artist-2', name: 'Vaundy', mbid: '' }, hype: 'watch' },
 				]),
 			)
 		})
@@ -159,9 +159,9 @@ test.describe('Artist filter bar bottom sheet', () => {
 		// Confirm
 		await page.click('button.btn-confirm')
 
-		// Chip should appear
-		await expect(
-			page.locator('.chip-name', { hasText: 'YOASOBI' }),
-		).toBeVisible()
+		// Filter button should show active state; no chips in the header
+		const filterBtn = page.locator('button[aria-label="アーティストで絞り込む"]')
+		await expect(filterBtn).toHaveAttribute('data-active', 'true')
+		await expect(page.locator('.chip-name')).toHaveCount(0)
 	})
 })
