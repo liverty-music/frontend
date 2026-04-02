@@ -1,6 +1,7 @@
 import { DI, ILogger, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Artist } from '../../src/entities/artist'
+import { DEFAULT_HYPE, type FollowedArtist } from '../../src/entities/follow'
 import { createMockLogger } from '../helpers/mock-logger'
 
 vi.mock('../../src/adapter/storage/guest-storage', () => ({
@@ -8,9 +9,6 @@ vi.mock('../../src/adapter/storage/guest-storage', () => ({
 	saveFollows: vi.fn(),
 	loadHome: vi.fn().mockReturnValue(null),
 	saveHome: vi.fn(),
-	loadHypes: vi.fn().mockReturnValue({}),
-	saveHypes: vi.fn(),
-	clearHypes: vi.fn(),
 }))
 
 const { loadFollows, loadHome } = await import(
@@ -23,13 +21,17 @@ function makeArtist(id: string, name: string): Artist {
 	return { id, name, mbid: '' }
 }
 
+function makeFollow(
+	id: string,
+	name: string,
+	hype: FollowedArtist['hype'] = DEFAULT_HYPE,
+): FollowedArtist {
+	return { artist: makeArtist(id, name), hype }
+}
+
 function createService(
-	overrides: {
-		follows?: { artist: Artist; home: string | null }[]
-		home?: string | null
-	} = {},
+	overrides: { follows?: FollowedArtist[]; home?: string | null } = {},
 ): InstanceType<typeof GuestService> {
-	// Reset to defaults, then apply overrides
 	vi.mocked(loadFollows).mockReturnValue(
 		overrides.follows ? [...overrides.follows] : [],
 	)
@@ -46,7 +48,7 @@ describe('GuestService', () => {
 	})
 
 	describe('follow', () => {
-		it('should add artist to follows', () => {
+		it('should add artist to follows with DEFAULT_HYPE', () => {
 			const sut = createService()
 			const artist = makeArtist('a1', 'Artist One')
 
@@ -55,13 +57,13 @@ describe('GuestService', () => {
 			expect(sut.follows).toHaveLength(1)
 			expect(sut.follows[0].artist.id).toBe('a1')
 			expect(sut.follows[0].artist.name).toBe('Artist One')
-			expect(sut.follows[0].home).toBeNull()
+			expect(sut.follows[0].hype).toBe(DEFAULT_HYPE)
 		})
 
 		it('should be a no-op if artist is already followed', () => {
 			const artist = makeArtist('a1', 'Artist One')
 			const sut = createService({
-				follows: [{ artist, home: null }],
+				follows: [makeFollow('a1', 'Artist One')],
 			})
 
 			sut.follow(artist)
@@ -83,10 +85,7 @@ describe('GuestService', () => {
 	describe('unfollow', () => {
 		it('should remove artist by id', () => {
 			const sut = createService({
-				follows: [
-					{ artist: makeArtist('a1', 'One'), home: null },
-					{ artist: makeArtist('a2', 'Two'), home: null },
-				],
+				follows: [makeFollow('a1', 'One'), makeFollow('a2', 'Two')],
 			})
 
 			sut.unfollow('a1')
@@ -97,12 +96,34 @@ describe('GuestService', () => {
 
 		it('should be a no-op if artist is not followed', () => {
 			const sut = createService({
-				follows: [{ artist: makeArtist('a1', 'One'), home: null }],
+				follows: [makeFollow('a1', 'One')],
 			})
 
 			sut.unfollow('nonexistent')
 
 			expect(sut.follows).toHaveLength(1)
+		})
+	})
+
+	describe('setHype', () => {
+		it('should update hype for a followed artist', () => {
+			const sut = createService({
+				follows: [makeFollow('a1', 'One')],
+			})
+
+			sut.setHype('a1', 'away')
+
+			expect(sut.follows[0].hype).toBe('away')
+		})
+
+		it('should be a no-op if artist is not followed', () => {
+			const sut = createService({
+				follows: [makeFollow('a1', 'One')],
+			})
+
+			sut.setHype('unknown', 'away')
+
+			expect(sut.follows[0].hype).toBe(DEFAULT_HYPE)
 		})
 	})
 
@@ -119,10 +140,7 @@ describe('GuestService', () => {
 	describe('clearAll', () => {
 		it('should empty follows and null home', () => {
 			const sut = createService({
-				follows: [
-					{ artist: makeArtist('a1', 'One'), home: null },
-					{ artist: makeArtist('a2', 'Two'), home: null },
-				],
+				follows: [makeFollow('a1', 'One'), makeFollow('a2', 'Two')],
 				home: 'JP-13',
 			})
 
@@ -142,9 +160,9 @@ describe('GuestService', () => {
 		it('should reflect number of followed artists', () => {
 			const sut = createService({
 				follows: [
-					{ artist: makeArtist('a1', 'One'), home: null },
-					{ artist: makeArtist('a2', 'Two'), home: null },
-					{ artist: makeArtist('a3', 'Three'), home: null },
+					makeFollow('a1', 'One'),
+					makeFollow('a2', 'Two'),
+					makeFollow('a3', 'Three'),
 				],
 			})
 			expect(sut.followedCount).toBe(3)
@@ -173,8 +191,8 @@ describe('GuestService', () => {
 		it('should project id and name from follows', () => {
 			const sut = createService({
 				follows: [
-					{ artist: makeArtist('a1', 'Artist One'), home: null },
-					{ artist: makeArtist('a2', 'Artist Two'), home: 'JP-13' },
+					makeFollow('a1', 'Artist One'),
+					makeFollow('a2', 'Artist Two'),
 				],
 			})
 
