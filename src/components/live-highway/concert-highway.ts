@@ -10,7 +10,7 @@ export class ConcertHighway {
 	private readonly element = resolve(INode) as HTMLElement
 
 	/** Beam indices keyed by event ID, for laser beam tracking. */
-	@observable public beamIndexMap = new Map<string, number>()
+	@observable public beamIndexMap: Record<string, number> = {}
 
 	/** Triangular laser beams — one per matched card. */
 	@observable public laserBeams: {
@@ -49,13 +49,9 @@ export class ConcertHighway {
 		}
 	}
 
-	public getBeamIndex(eventId: string): number | null {
-		return this.beamIndexMap.get(eventId) ?? null
-	}
-
 	/** Assign sequential beam indices to matched events across all groups. */
 	private buildBeamIndexMap(): void {
-		const map = new Map<string, number>()
+		const map: Record<string, number> = {}
 		const beams: typeof this.laserBeams = []
 		let idx = 0
 
@@ -70,7 +66,7 @@ export class ConcertHighway {
 			for (let laneIdx = 0; laneIdx < lanes.length; laneIdx++) {
 				for (const ev of lanes[laneIdx]) {
 					if (ev.matched) {
-						map.set(ev.id, idx)
+						map[ev.id] = idx
 						const { left, right } = LANE_PCT[laneIdx]
 						beams.push({
 							anchorIndex: idx,

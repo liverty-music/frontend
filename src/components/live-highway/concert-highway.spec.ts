@@ -58,8 +58,8 @@ describe('ConcertHighway', () => {
 	})
 
 	describe('beam index map', () => {
-		it('returns null for unknown event ID', () => {
-			expect(sut.getBeamIndex('unknown')).toBeNull()
+		it('returns undefined for unknown event ID', () => {
+			expect(sut.beamIndexMap.unknown).toBeUndefined()
 		})
 	})
 
