@@ -18,10 +18,14 @@ export class PageHelp {
 	@bindable public page: PageHelpPage = 'discovery'
 
 	public isOpen = false
+	public isPointerCoarse = false
 
 	private readonly onboarding = resolve(IOnboardingService)
 
 	public attached(): void {
+		this.isPointerCoarse =
+			window.matchMedia?.('(pointer: coarse)').matches ?? false
+
 		if (
 			AUTO_OPEN_PAGES.has(this.page) &&
 			this.onboarding.isOnboarding &&

@@ -340,6 +340,18 @@
 			}
 		}
 
+		@media (pointer: coarse) {
+			.artist-unfollow-col {
+				display: none;
+			}
+
+			.artist-row td:last-child {
+				border-inline-end: 1px solid var(--_white-10);
+				border-start-end-radius: var(--radius-card);
+				border-end-end-radius: var(--radius-card);
+			}
+		}
+
 		@media (prefers-reduced-motion: reduce) {
 			.hype-dot {
 				animation: none;

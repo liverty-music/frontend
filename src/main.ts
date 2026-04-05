@@ -39,7 +39,9 @@ import {
 	migrateStorageKeys,
 	trackSessionForPrompts,
 } from './constants/storage-keys'
+import { ArtistUnfollowSheet } from './components/artist-unfollow-sheet/artist-unfollow-sheet'
 import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
+import { LongPressCustomAttribute } from './custom-attributes/long-press'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
@@ -160,6 +162,7 @@ au.register(IEntryRpcClient)
 au.register(IUserRpcClient)
 au.register(IPushRpcClient)
 au.register(IProofService)
+au.register(ArtistUnfollowSheet)
 au.register(ArtistFilterBar)
 au.register(BottomNavBar)
 au.register(BottomSheet)
@@ -179,6 +182,7 @@ au.register(SvgIcon)
 au.register(UserHomeSelector)
 au.register(AuthHook)
 au.register(ArtistColorCustomAttribute)
+au.register(LongPressCustomAttribute)
 au.register(BeamVarsCustomAttribute)
 au.register(DotColorCustomAttribute)
 au.register(SpotlightRadiusCustomAttribute)
