@@ -41,6 +41,10 @@ export default mergeConfig(
           "src/components/dna-orb/**",
           // Scripts directory
           "scripts/**",
+          // Temporary files (not part of the app)
+          "tmp/**",
+          // E2E test fixtures
+          "e2e/**",
         ],
       },
     },
