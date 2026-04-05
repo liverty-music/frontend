@@ -253,7 +253,6 @@ jobs:
         with:
           name: visual-baselines
           path: e2e/__screenshots__/
-          branch: main
           workflow: ci.yaml
           if_no_artifact_found: warn
 
