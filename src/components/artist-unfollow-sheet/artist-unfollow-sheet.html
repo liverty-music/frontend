@@ -1,0 +1,9 @@
+<import from="./artist-unfollow-sheet.css"></import>
+
+<bottom-sheet open.bind="open" sheet-closed.trigger="cancel()" aria-label.bind="artistName">
+  <div class="sheet-content" if.bind="artist">
+    <p class="sheet-artist-name">${artist.artist.name}</p>
+    <button type="button" class="unfollow-btn" click.trigger="confirm()" t="myArtists.unfollowSheet.confirm"></button>
+    <button type="button" class="cancel-btn" click.trigger="cancel()" t="myArtists.unfollowSheet.cancel"></button>
+  </div>
+</bottom-sheet>

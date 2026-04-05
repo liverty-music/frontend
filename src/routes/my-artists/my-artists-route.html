@@ -43,6 +43,7 @@
           repeat.for="artist of artists; key.bind: artist.artist.id"
           class="artist-row"
           css="--_vt-name: artist-${artist.artist.id}; --_dot-color: ${artist.color}"
+          long-press.bind="() => openUnfollowSheet(artist)"
         >
           <!-- Artist name cell -->
           <th scope="row" class="artist-name-cell">
@@ -83,6 +84,13 @@
       </tbody>
     </table>
   </fieldset>
+
+  <artist-unfollow-sheet
+    artist.bind="selectedArtistForUnfollow"
+    open.bind="unfollowSheetOpen"
+    sheet-closed.trigger="unfollowSheetOpen = false"
+    unfollow-confirmed.trigger="onUnfollowConfirmed()"
+  ></artist-unfollow-sheet>
 </main>
 
 <!-- Signup prompt banner -->

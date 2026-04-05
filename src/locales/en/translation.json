@@ -201,7 +201,12 @@
 		"unfollow": "Unfollow",
 		"unfollowArtist": "Unfollow {{name}}",
 		"failedUnfollow": "Failed to unfollow {{name}}",
-		"failedHype": "Failed to update hype level"
+		"failedHype": "Failed to update hype level",
+		"unfollowSheet": {
+			"confirm": "Unfollow",
+			"cancel": "Cancel",
+			"sheetLabel": "Unfollow artist"
+		}
 	},
 	"discovery": {
 		"coachMark": {
@@ -310,7 +315,8 @@
 			"homeDesc": "Notify for home area lives",
 			"nearbyDesc": "Notify for nearby lives too",
 			"awayDesc": "Notify for all lives nationwide",
-			"tip": "Start by setting artists you're curious about to Home — you'll get notified when they play nearby."
+			"tip": "Start by setting artists you're curious about to Home — you'll get notified when they play nearby.",
+			"longPressTip": "Long-press an artist row to see the unfollow confirmation."
 		}
 	}
 }

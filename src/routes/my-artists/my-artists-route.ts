@@ -23,6 +23,10 @@ export class MyArtistsRoute {
 
 	public showSignupBanner = false
 
+	// Unfollow sheet state
+	public selectedArtistForUnfollow: MyArtist | null = null
+	public unfollowSheetOpen = false
+
 	// Hype state tracking
 	private prevHypes = new Map<string, Hype>()
 
@@ -100,6 +104,23 @@ export class MyArtistsRoute {
 		this.abortController?.abort()
 		this.abortController = null
 		this.undoHandle?.dismiss()
+	}
+
+	// --- Long-press unfollow sheet ---
+
+	public openUnfollowSheet(artist: MyArtist): void {
+		this.selectedArtistForUnfollow = artist
+		this.unfollowSheetOpen = true
+	}
+
+	public onUnfollowConfirmed(): void {
+		if (this.selectedArtistForUnfollow) {
+			this.unfollowArtist(this.selectedArtistForUnfollow)
+		}
+		this.selectedArtistForUnfollow = null
+		// Sheet is closed by the confirm() method inside ArtistUnfollowSheet via bottom-sheet's
+		// sheet-closed event → unfollowSheetOpen = false binding. Reset here too for symmetry.
+		this.unfollowSheetOpen = false
 	}
 
 	// --- Unfollow with undo ---

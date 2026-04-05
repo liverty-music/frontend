@@ -201,7 +201,12 @@
 		"unfollow": "フォロー解除",
 		"unfollowArtist": "{{name}}のフォローを解除",
 		"failedUnfollow": "{{name}}のフォロー解除に失敗しました",
-		"failedHype": "Hypeレベルの更新に失敗しました"
+		"failedHype": "Hypeレベルの更新に失敗しました",
+		"unfollowSheet": {
+			"confirm": "フォロー解除",
+			"cancel": "キャンセル",
+			"sheetLabel": "フォロー解除"
+		}
 	},
 	"discovery": {
 		"coachMark": {
@@ -310,7 +315,8 @@
 			"homeDesc": "居住エリアのライブを通知",
 			"nearbyDesc": "近くのライブも通知",
 			"awayDesc": "全国のライブを通知",
-			"tip": "まずは気になるアーティストを Home に設定してみましょう。近くでライブがあればお知らせします。"
+			"tip": "まずは気になるアーティストを Home に設定してみましょう。近くでライブがあればお知らせします。",
+			"longPressTip": "アーティスト行を長押しするとフォロー解除の確認が表示されます。"
 		}
 	}
 }
