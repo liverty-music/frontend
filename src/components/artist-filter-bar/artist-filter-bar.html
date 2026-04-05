@@ -21,20 +21,18 @@
   sheet-closed.trigger="closeSheet()"
   aria-labelledby="filter-sheet-title"
 >
-  <fieldset class="filter-sheet-content">
-    <!-- legend acts as flex row: title + clear-all button, no extra wrapper needed -->
-    <legend class="sheet-header">
-      <span class="sheet-title" id="filter-sheet-title">アーティストで絞り込む</span>
+  <section class="filter-sheet-content">
+    <div class="sheet-header">
+      <h2 class="sheet-title" id="filter-sheet-title">アーティストで絞り込む</h2>
       <button
         type="button"
         class="btn-clear-all"
         click.trigger="clearAll()"
         disabled.bind="!hasPendingSelection"
-        aria-disabled.bind="!hasPendingSelection ? 'true' : 'false'"
       >全て解除</button>
-    </legend>
+    </div>
 
-    <ul class="artists-list">
+    <ul class="artists-list" aria-labelledby="filter-sheet-title">
       <li repeat.for="artist of followedArtists">
         <label class="artist-chip">
           <input
@@ -51,8 +49,8 @@
       </li>
     </ul>
 
-    <div class="[ cluster ] [ confirm-row ]">
+    <div class="confirm-row">
       <button type="button" class="btn-confirm" click.trigger="confirmSelection()">完了</button>
     </div>
-  </fieldset>
+  </section>
 </bottom-sheet>
