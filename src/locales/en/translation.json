@@ -116,12 +116,6 @@
 			"complete": "Your personal timetable is ready!",
 			"explore": "Explore your timetable freely"
 		},
-		"laneIntro": {
-			"homePrompt": "This is the HOME STAGE. It shows lives in your home area. Where do you live?",
-			"home": "{{prefecture}} lives",
-			"near": "Lives just within reach",
-			"away": "Away lives!"
-		},
 		"loading": "Loading events…",
 		"empty": {
 			"title": "No upcoming events",

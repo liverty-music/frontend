@@ -37,24 +37,24 @@
 			&:hover {
 				color: var(--color-text-secondary);
 			}
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
+			}
 		}
 
-		/* ── Bottom sheet content ──
-		   <fieldset> as flex column — <legend> stays in normal flow,
-		   no grid hacks or display:contents needed. */
+		/* ── Bottom sheet content ── */
 		.filter-sheet-content {
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-s);
 
-			/* reset fieldset browser defaults */
-			margin: 0;
-			padding: var(--space-s) var(--space-m) var(--space-m);
-			border: none;
+			padding-block: var(--space-s) var(--space-m);
+			padding-inline: var(--space-m);
 		}
 
-		/* ── Header row: title + clear-all ──
-		   <legend> as flex row avoids any extra wrapper element. */
+		/* ── Header row: title + clear-all ── */
 		.sheet-header {
 			display: flex;
 			align-items: center;
@@ -89,6 +89,11 @@
 			&:disabled {
 				cursor: default;
 				opacity: 0.35;
+			}
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
 			}
 
 			&:hover:not(:disabled) {
@@ -155,6 +160,11 @@
 				);
 			}
 
+			&:focus-within {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
+			}
+
 			/* checked state */
 			&:has(input:checked) {
 				border-color: var(--color-brand-primary);
@@ -173,8 +183,7 @@
 
 		/* ── Confirm button row ── */
 		.confirm-row {
-			--cluster-gap: 0;
-
+			display: flex;
 			justify-content: flex-end;
 		}
 
@@ -195,6 +204,11 @@
 
 			&:hover {
 				opacity: 0.85;
+			}
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
 			}
 		}
 	}

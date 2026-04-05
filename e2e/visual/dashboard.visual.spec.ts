@@ -6,14 +6,14 @@ import { expect, test } from './fixtures'
 
 function seedDashboardState() {
 	return () => {
-		localStorage.setItem('onboardingStep', 'dashboard')
+		localStorage.setItem('onboardingStep', 'completed')
 		localStorage.setItem('guest.home', 'JP-13')
 	}
 }
 
 function seedWithConcertData() {
 	return () => {
-		localStorage.setItem('onboardingStep', 'dashboard')
+		localStorage.setItem('onboardingStep', 'completed')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
 			'guest.followedArtists',
