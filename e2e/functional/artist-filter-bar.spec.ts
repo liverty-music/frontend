@@ -153,8 +153,8 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await page.click('button[aria-label="アーティストで絞り込む"]')
 		await expect(page.getByText('YOASOBI')).toBeVisible()
 
-		// Check YOASOBI
-		await page.getByLabel('YOASOBI').check()
+		// Click the YOASOBI chip (input is visually-hidden; click the label instead)
+		await page.locator('label.artist-chip', { hasText: 'YOASOBI' }).click()
 
 		// Confirm
 		await page.click('button.btn-confirm')

@@ -21,17 +21,31 @@
   sheet-closed.trigger="closeSheet()"
   aria-labelledby="filter-sheet-title"
 >
-  <div class="[ stack ] [ filter-sheet-content ]">
-    <h2 class="sheet-title" id="filter-sheet-title">アーティストで絞り込む</h2>
+  <fieldset class="filter-sheet-content">
+    <!-- legend acts as flex row: title + clear-all button, no extra wrapper needed -->
+    <legend class="sheet-header">
+      <span class="sheet-title" id="filter-sheet-title">アーティストで絞り込む</span>
+      <button
+        type="button"
+        class="btn-clear-all"
+        click.trigger="clearAll()"
+        disabled.bind="!hasPendingSelection"
+        aria-disabled.bind="!hasPendingSelection ? 'true' : 'false'"
+      >全て解除</button>
+    </legend>
 
     <ul class="artists-list">
-      <li class="artist-item" repeat.for="artist of followedArtists">
-        <label class="artist-label">
+      <li repeat.for="artist of followedArtists">
+        <label class="artist-chip">
           <input
             type="checkbox"
+            class="visually-hidden"
             checked.bind="pendingIds"
             model.bind="artist.id"
           />
+          <svg class="chip-check" aria-hidden="true" focusable="false" viewBox="0 0 12 12" width="12" height="12">
+            <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
           <span>${artist.name}</span>
         </label>
       </li>
@@ -40,5 +54,5 @@
     <div class="[ cluster ] [ confirm-row ]">
       <button type="button" class="btn-confirm" click.trigger="confirmSelection()">完了</button>
     </div>
-  </div>
+  </fieldset>
 </bottom-sheet>

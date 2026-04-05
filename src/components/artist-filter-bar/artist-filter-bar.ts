@@ -10,6 +10,10 @@ export class ArtistFilterBar {
 	/** Pending selection inside the bottom sheet (committed on confirm). */
 	public pendingIds: string[] = []
 
+	public get hasPendingSelection(): boolean {
+		return this.pendingIds.length > 0
+	}
+
 	public openSheet(): void {
 		this.pendingIds = [...this.selectedIds]
 		this.isSheetOpen = true
@@ -17,6 +21,10 @@ export class ArtistFilterBar {
 
 	public closeSheet(): void {
 		this.isSheetOpen = false
+	}
+
+	public clearAll(): void {
+		this.pendingIds = []
 	}
 
 	public confirmSelection(): void {
