@@ -221,18 +221,6 @@ async function mockLastFmApi(page: Page): Promise<void> {
 	})
 }
 
-/**
- * Dismiss the celebration overlay by dispatching a pointerdown event directly
- * on the element. Necessary because page-help floats above the overlay and
- * intercepts actual pointer events from Playwright.
- */
-async function dismissCelebration(page: Page): Promise<void> {
-	await page.evaluate(() => {
-		const el = document.querySelector('.celebration-overlay')
-		el?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-	})
-}
-
 // ---------------------------------------------------------------------------
 // Test suite: individual step / scenario tests
 // ---------------------------------------------------------------------------
@@ -476,56 +464,6 @@ test.describe('Onboarding tutorial flow', () => {
 		await expect(page.locator('.celebration-overlay')).toHaveCount(0)
 	})
 
-	test('Step 3: Celebration appears and can be tap-dismissed', async ({
-		page,
-	}) => {
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'dashboard')
-			localStorage.removeItem('onboarding.celebrationShown')
-			localStorage.setItem('guest.home', 'JP-13')
-		})
-		await page.goto('http://localhost:9000/dashboard')
-
-		const celebration = page.locator('.celebration-overlay')
-		await expect(celebration).toBeVisible({ timeout: 10_000 })
-
-		// onCelebrationOpen fires immediately — step already MY_ARTISTS
-		const stepAfterOpen = await page.evaluate(() =>
-			localStorage.getItem('onboardingStep'),
-		)
-		expect(stepAfterOpen).toBe('my-artists')
-
-		// Tap to dismiss (page-help intercepts pointer events, use JS dispatch)
-		await dismissCelebration(page)
-		await expect(celebration).not.toBeVisible({ timeout: 10_000 })
-
-		// Dashboard is interactive after dismiss
-		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 5000 })
-	})
-
-	test('Step 3: Dashboard with no concerts shows tap-to-dismiss celebration', async ({
-		page,
-	}) => {
-		await page.unrouteAll()
-		await mockRpcRoutesEmpty(page)
-		await mockLastFmApi(page)
-
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'dashboard')
-			localStorage.removeItem('onboarding.celebrationShown')
-			localStorage.setItem('guest.home', 'JP-13')
-		})
-		await page.goto('http://localhost:9000/dashboard')
-
-		const celebration = page.locator('.celebration-overlay')
-		await expect(celebration).toBeVisible({ timeout: 10_000 })
-
-		await dismissCelebration(page)
-		await expect(celebration).not.toBeVisible({ timeout: 10_000 })
-
-		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 5000 })
-	})
-
 	test('Coach mark tooltip has transparent background (no colored box)', async ({
 		page,
 	}) => {
@@ -618,27 +556,14 @@ test.describe('Onboarding tutorial flow', () => {
 	})
 })
 
-// ---------------------------------------------------------------------------
-// TC-TUT-E2E-01: Continuous end-to-end onboarding flow
-// ---------------------------------------------------------------------------
-
 /**
  * Full step progression from DISCOVERY coach mark to onboarding completion.
  *
- * New flow (DETAIL step removed):
+ * Flow (lane intro and celebration removed from dashboard step):
  *   DISCOVERY (coach mark → tap) →
- *   DASHBOARD (celebration open → MY_ARTISTS set → tap dismiss) →
+ *   DASHBOARD (free exploration — no lane intro, no celebration overlay) →
  *   freely navigate to MY_ARTISTS tab →
  *   MY_ARTISTS (hype change → COMPLETED)
- *
- * Key design decisions:
- * - Discovery coach mark auto-fades in 2s — use waitForFunction to detect
- *   the moment it appears, then immediately tap via JS to avoid race
- * - Celebration overlay: page-help intercepts pointer events from Playwright;
- *   use dispatchEvent(pointerdown) to trigger onTap() directly
- * - After celebration dismiss, no coach mark guides user to My Artists —
- *   it's free exploration; test clicks the nav tab directly
- * - My Artists has no spotlight/interceptor; hype radio change completes onboarding
  */
 test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
@@ -712,45 +637,27 @@ test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
 		await page.waitForURL(/dashboard/, { timeout: 10_000 })
 
 		// =========================================================================
-		// STEP 3 — DASHBOARD: lane intro → celebration → dismiss
+		// STEP 3 — DASHBOARD: auto-advance to MY_ARTISTS on attach
+		// Lane intro removed — attached() now calls setStep(MY_ARTISTS) immediately
+		// when currentStep === DASHBOARD.
 		// =========================================================================
 
-		// Lane intro starts: HOME → NEAR → AWAY spotlight sequence.
-		// The target-interceptor is inside a popover top layer positioned via
-		// CSS Anchor Positioning — it may be outside the viewport when the
-		// anchor hasn't resolved, so dispatch click via JS instead of Playwright click.
-		const coachOverlay = page.locator('.coach-mark-overlay')
-		await expect(coachOverlay).toBeVisible({ timeout: 10_000 })
-		for (const _phase of ['home', 'near', 'away']) {
-			await page.evaluate(() => {
-				const el = document.querySelector('coach-mark .target-interceptor')
-				el?.dispatchEvent(new PointerEvent('click', { bubbles: true }))
-			})
-		}
+		// Dashboard loads and auto-advances step to MY_ARTISTS
+		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
-		// After AWAY phase tap, celebration opens (step → MY_ARTISTS)
-		const celebration = page.locator('.celebration-overlay')
-		await expect(celebration).toBeVisible({ timeout: 10_000 })
-
-		const stepAfterCelebOpen = await page.evaluate(() =>
-			localStorage.getItem('onboardingStep'),
-		)
-		expect(stepAfterCelebOpen).toBe('my-artists')
-
-		// Dismiss: page-help intercepts pointer events, so use JS dispatch
-		await dismissCelebration(page)
-		await expect(celebration).not.toBeVisible({ timeout: 10_000 })
+		// Step is now MY_ARTISTS (set by attached())
+		await expect
+			.poll(
+				() => page.evaluate(() => localStorage.getItem('onboardingStep')),
+				{ timeout: 5000 },
+			)
+			.toBe('my-artists')
 
 		// =========================================================================
-		// STEP 5 — MY_ARTISTS: free navigation via SPA nav tab click
-		// After celebration dismiss, the coach mark overlay is deactivated and
-		// nav tabs are un-dimmed. We click the My Artists nav tab to trigger
-		// Aurelia's SPA navigation — this preserves in-memory OnboardingService
-		// state (step = MY_ARTISTS set by onCelebrationOpen). page.goto would
-		// trigger a full reload + addInitScript re-run, resetting step to 'dashboard'.
-		//
-		// The page-help bottom sheet auto-opens on the dashboard page, covering
-		// the nav tab. We dispatch a click via JS to bypass the bottom sheet.
+		// STEP 5 — MY_ARTISTS: navigate via SPA nav tab click
+		// We click the My Artists nav tab to trigger Aurelia's SPA navigation —
+		// this preserves in-memory OnboardingService state (step = MY_ARTISTS).
+		// The page-help bottom sheet may cover the nav tab; dispatch via JS.
 		// =========================================================================
 		await page.evaluate(() => {
 			const tab = document.querySelector<HTMLElement>('[data-nav="my-artists"]')

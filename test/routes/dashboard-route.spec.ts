@@ -75,6 +75,7 @@ function makeOnboarding(step = 'completed') {
 		currentStep: step,
 		isOnboarding: step !== 'completed',
 		isCompleted: step === 'completed',
+		setStep: vi.fn(),
 	}
 }
 
@@ -261,6 +262,24 @@ describe('DashboardRoute', () => {
 			sut.attached()
 
 			expect(mockHomeSelector.open).not.toHaveBeenCalled()
+		})
+
+		it('advances onboarding step from dashboard to my-artists', () => {
+			mockOnboarding = makeOnboarding('dashboard')
+			sut = buildSut()
+
+			sut.attached()
+
+			expect(mockOnboarding.setStep).toHaveBeenCalledWith('my-artists')
+		})
+
+		it('does not advance step when not at dashboard step', () => {
+			mockOnboarding = makeOnboarding('completed')
+			sut = buildSut()
+
+			sut.attached()
+
+			expect(mockOnboarding.setStep).not.toHaveBeenCalled()
 		})
 	})
 

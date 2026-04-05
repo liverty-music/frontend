@@ -17,7 +17,10 @@ import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import { IGuestService } from '../../services/guest-service'
 import { INavDimmingService } from '../../services/nav-dimming-service'
-import { IOnboardingService } from '../../services/onboarding-service'
+import {
+	IOnboardingService,
+	OnboardingStep,
+} from '../../services/onboarding-service'
 import { ITicketJourneyService } from '../../services/ticket-journey-service'
 import { IUserService } from '../../services/user-service'
 
@@ -176,6 +179,14 @@ export class DashboardRoute {
 		// Done in attached() so the BottomSheet is in the DOM and showPopover() works.
 		if (this.needsRegion) {
 			this.homeSelector?.open()
+		}
+
+		// Advance onboarding step: DASHBOARD → MY_ARTISTS.
+		// The lane introduction sequence was removed; visiting the dashboard is now
+		// sufficient to complete this step and allow free navigation.
+		if (this.onboarding.currentStep === OnboardingStep.DASHBOARD) {
+			this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
+			this.logger.info('Dashboard step completed: advancing to MY_ARTISTS')
 		}
 
 		// PostSignupDialog: show once after first-time signup.
