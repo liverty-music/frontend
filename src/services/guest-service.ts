@@ -6,7 +6,6 @@ import {
 	saveHome,
 } from '../adapter/storage/guest-storage'
 import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
-import { StorageKeys } from '../constants/storage-keys'
 import type { Artist } from '../entities/artist'
 import {
 	DEFAULT_HYPE,
@@ -105,7 +104,6 @@ export class GuestService {
 		this.persistFollows()
 		this.home = null
 		clearAllHelpSeen()
-		localStorage.removeItem(StorageKeys.celebrationShown)
 		this.logger.info('Local data cleared')
 	}
 

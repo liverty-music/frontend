@@ -51,14 +51,5 @@
   required.bind="isOnboarding"
 ></user-home-selector>
 
-<!-- Celebration overlay — shown after Lane Intro; tap-to-dismiss -->
-<celebration-overlay
-  active.bind="showCelebration"
-  message.bind="i18n.tr('dashboard.celebration.complete')"
-  sub-message.bind="i18n.tr('dashboard.celebration.explore')"
-  on-open.bind="() => onCelebrationOpen()"
-  on-dismissed.bind="() => onCelebrationDismissed()"
-></celebration-overlay>
-
 <!-- PostSignupDialog — shown once after first-time signup -->
 <post-signup-dialog active.bind="showPostSignupDialog"></post-signup-dialog>

@@ -1,7 +1,5 @@
 import { I18N } from '@aurelia/i18n'
 import type { Params, RouteNode } from '@aurelia/router'
-import { queueTask } from '@aurelia/runtime'
-import { watch } from '@aurelia/runtime-html'
 import { ILogger, observable, resolve } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
@@ -14,26 +12,14 @@ import { UserHomeSelector } from '../../components/user-home-selector/user-home-
 import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist } from '../../entities/artist'
 import type { JourneyStatus } from '../../entities/concert'
-import { translationKey } from '../../entities/user'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import { IGuestService } from '../../services/guest-service'
 import { INavDimmingService } from '../../services/nav-dimming-service'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../services/onboarding-service'
+import { IOnboardingService } from '../../services/onboarding-service'
 import { ITicketJourneyService } from '../../services/ticket-journey-service'
 import { IUserService } from '../../services/user-service'
-
-/** Lane intro phases — no 'card' phase; 'waiting-for-home' is a sub-state of 'home' */
-export type LaneIntroPhase =
-	| 'home'
-	| 'waiting-for-home'
-	| 'near'
-	| 'away'
-	| 'done'
 
 export class DashboardRoute {
 	public dateGroups: DateGroup[] = []
@@ -41,12 +27,8 @@ export class DashboardRoute {
 	public needsRegion = false
 	public isLoading = false
 	public loadError: unknown = null
-	public showCelebration = false
-	public laneIntroPhase: LaneIntroPhase = 'done'
 	public showSignupBanner = false
 	public showPostSignupDialog = false
-	/** Prefecture name resolved after Home Selector selection, used for dynamic coach mark text. */
-	public selectedPrefectureName = ''
 
 	public homeSelector: UserHomeSelector | undefined
 	public detailSheet: EventDetailSheet | undefined
@@ -64,10 +46,6 @@ export class DashboardRoute {
 	private readonly storage = resolve(ILocalStorage)
 	private readonly history = resolve(IHistory)
 	private abortController: AbortController | null = null
-
-	public get isOnboardingStepDashboard(): boolean {
-		return this.onboarding.currentStep === OnboardingStep.DASHBOARD
-	}
 
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
@@ -194,10 +172,6 @@ export class DashboardRoute {
 	}
 
 	public attached(): void {
-		if (this.isOnboardingStepDashboard) {
-			this.startLaneIntro()
-		}
-
 		// PostSignupDialog: show once after first-time signup.
 		// Checked in attached() so child BottomSheet is in the DOM
 		// and showPopover() can succeed.
@@ -207,27 +181,6 @@ export class DashboardRoute {
 		}
 	}
 
-	/**
-	 * Called when Celebration Overlay opens.
-	 * Advances the onboarding step to MY_ARTISTS — this is the controlled
-	 * moment before free exploration begins.
-	 */
-	public onCelebrationOpen(): void {
-		this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
-		this.logger.info('Celebration opened: advancing step to MY_ARTISTS')
-	}
-
-	/**
-	 * Called when Celebration Overlay is dismissed (tap anywhere).
-	 * Deactivates blocker divs, releases scroll lock, restores nav tabs.
-	 */
-	public onCelebrationDismissed(): void {
-		this.showCelebration = false
-		this.logger.info('Celebration dismissed: entering free exploration')
-		this.onboarding.deactivateSpotlight()
-		this.navDimming.setDimmed(false)
-	}
-
 	public onHomeSelected(code: string): void {
 		this.logger.info('Home area configured', { code })
 		this.needsRegion = false
@@ -235,196 +188,6 @@ export class DashboardRoute {
 			this.guest.setHome(code)
 		}
 		void this.loadData()
-
-		// If we're in the waiting-for-home sub-state of lane intro, advance to HOME phase.
-		// Spotlight activation is deferred — the @watch on dateGroups.length will trigger
-		// updateSpotlightForPhase() via queueTask after data loads and DOM renders.
-		if (this.laneIntroPhase === 'waiting-for-home') {
-			this.selectedPrefectureName = this.i18n.tr(
-				`userHome.prefectures.${translationKey(code)}`,
-			)
-			this.laneIntroPhase = 'home'
-		} else if (this.isOnboarding && this.isOnboardingStepDashboard) {
-			this.startLaneIntro()
-		}
-	}
-
-	public onLaneIntroTap(): void {
-		this.advanceLaneIntro()
-	}
-
-	private startLaneIntro(): void {
-		if (!this.isOnboardingStepDashboard) return
-
-		// When region is not set, open Home Selector directly.
-		// The coach mark cannot be shown simultaneously because the bottom-sheet
-		// overlaps the spotlight tooltip. HOME STAGE context is conveyed via the
-		// Home Selector's own description text instead.
-		// The @watch on dateGroups.length will activate spotlight after data loads.
-		if (this.needsRegion) {
-			this.navDimming.setDimmed(true)
-			this.laneIntroPhase = 'waiting-for-home'
-			this.homeSelector?.open()
-			return
-		}
-
-		// Data was awaited in loading(), so dateGroups is ready.
-		// If empty, skip lane intro and show celebration.
-		if (this.dateGroups.length === 0) {
-			this.logger.warn('No concert data available, skipping lane intro')
-			this.laneIntroPhase = 'done'
-			if (!this.isCelebrationShown) {
-				this.showCelebration = true
-				this.setCelebrationShown(true)
-			}
-			return
-		}
-
-		this.navDimming.setDimmed(true)
-
-		// Resolve prefecture name for coach mark text (home already set)
-		const homeCode = this.guest.home
-		if (homeCode) {
-			this.selectedPrefectureName = this.i18n.tr(
-				`userHome.prefectures.${translationKey(homeCode)}`,
-			)
-		}
-		this.laneIntroPhase = 'home'
-		this.logger.info('Lane intro started')
-		// Defer spotlight to next render cycle so stage headers are in DOM
-		queueTask(() => this.updateSpotlightForPhase())
-	}
-
-	/**
-	 * Reactive spotlight trigger: fires when dateGroups transitions from
-	 * empty to non-empty after Home Selector selection + data reload.
-	 */
-	@watch((vm: DashboardRoute) => vm.dateGroups.length)
-	protected onDateGroupsChanged(newLen: number): void {
-		if (
-			newLen > 0 &&
-			this.laneIntroPhase === 'home' &&
-			this.isOnboardingStepDashboard
-		) {
-			queueTask(() => this.updateSpotlightForPhase())
-		}
-	}
-
-	/**
-	 * Handles the edge case where loadData() completes with 0 results
-	 * after Home Selector selection. In this case dateGroups stays at
-	 * length 0 (no @watch trigger), so we watch isLoading instead.
-	 */
-	@watch((vm: DashboardRoute) => vm.isLoading)
-	protected onLoadingChanged(loading: boolean): void {
-		if (
-			loading ||
-			this.laneIntroPhase !== 'home' ||
-			!this.isOnboardingStepDashboard
-		) {
-			return
-		}
-		if (this.dateGroups.length === 0) {
-			this.logger.warn('No concert data available, skipping lane intro')
-			this.laneIntroPhase = 'done'
-			if (!this.isCelebrationShown) {
-				this.showCelebration = true
-				this.setCelebrationShown(true)
-			}
-			this.navDimming.setDimmed(false)
-		}
-	}
-
-	private advanceLaneIntro(): void {
-		if (this.laneIntroPhase === 'waiting-for-home') return
-
-		const phases: LaneIntroPhase[] = ['home', 'near', 'away', 'done']
-		const currentIdx = phases.indexOf(this.laneIntroPhase)
-		if (currentIdx < 0 || currentIdx >= phases.length - 1) {
-			this.completeLaneIntro()
-			return
-		}
-
-		const nextPhase = phases[currentIdx + 1]
-		this.laneIntroPhase = nextPhase
-		this.logger.info('Lane intro advanced', { phase: this.laneIntroPhase })
-
-		if (this.laneIntroPhase === 'done') {
-			this.completeLaneIntro()
-		} else {
-			this.updateSpotlightForPhase()
-		}
-	}
-
-	private completeLaneIntro(): void {
-		this.laneIntroPhase = 'done'
-		this.onboarding.deactivateSpotlight()
-		if (!this.isCelebrationShown) {
-			this.logger.info('Lane intro completed, showing celebration')
-			this.showCelebration = true
-			this.setCelebrationShown(true)
-		} else {
-			this.logger.info('Lane intro completed, celebration already shown')
-			this.navDimming.setDimmed(false)
-		}
-	}
-
-	private updateSpotlightForPhase(): void {
-		const selector = this.laneIntroSelector
-		const message = this.laneIntroMessage
-		if (!selector) return
-		this.onboarding.activateSpotlight(selector, message, () =>
-			this.onLaneIntroTap(),
-		)
-	}
-
-	private get isCelebrationShown(): boolean {
-		return this.storage.getItem(StorageKeys.celebrationShown) === '1'
-	}
-
-	private setCelebrationShown(value: boolean): void {
-		if (value) {
-			this.storage.setItem(StorageKeys.celebrationShown, '1')
-		} else {
-			this.storage.removeItem(StorageKeys.celebrationShown)
-		}
-	}
-
-	public get laneIntroSelector(): string {
-		switch (this.laneIntroPhase) {
-			case 'home':
-			case 'waiting-for-home':
-				return 'concert-highway [data-stage="home"]'
-			case 'near':
-				return 'concert-highway [data-stage="near"]'
-			case 'away':
-				return 'concert-highway [data-stage="away"]'
-			default:
-				return ''
-		}
-	}
-
-	public get laneIntroMessage(): string {
-		switch (this.laneIntroPhase) {
-			case 'home':
-				return this.selectedPrefectureName
-					? this.i18n.tr('dashboard.laneIntro.home', {
-							prefecture: this.selectedPrefectureName,
-						})
-					: this.i18n.tr('dashboard.laneIntro.homePrompt')
-			case 'waiting-for-home':
-				return this.i18n.tr('dashboard.laneIntro.homePrompt')
-			case 'near':
-				return this.i18n.tr('dashboard.laneIntro.near')
-			case 'away':
-				return this.i18n.tr('dashboard.laneIntro.away')
-			default:
-				return ''
-		}
-	}
-
-	public get isLaneIntroActive(): boolean {
-		return this.laneIntroPhase !== 'done'
 	}
 
 	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {

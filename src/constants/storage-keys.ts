@@ -4,7 +4,6 @@ export const StorageKeys = {
 	uiSessionCount: 'ui.sessionCount',
 	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
 	pwaInstalled: 'pwa.installed',
-	celebrationShown: 'onboarding.celebrationShown',
 	postSignupShown: 'liverty:postSignup:shown',
 } as const
 

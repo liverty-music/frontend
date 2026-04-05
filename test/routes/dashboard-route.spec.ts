@@ -2,6 +2,7 @@ import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StorageKeys } from '../../src/constants/storage-keys'
 import { createTestContainer } from '../helpers/create-container'
+import { createMockHistory } from '../helpers/mock-history'
 import { createMockLocalStorage } from '../helpers/mock-local-storage'
 import { createMockNavDimmingService } from '../helpers/mock-nav-dimming-service'
 
@@ -15,6 +16,7 @@ const mockIGuestService = DI.createInterface('IGuestService')
 const mockIUserService = DI.createInterface('IUserService')
 const mockINavDimmingService = DI.createInterface('INavDimmingService')
 const mockILocalStorage = DI.createInterface('ILocalStorage')
+const mockIHistory = DI.createInterface('IHistory')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
@@ -50,6 +52,9 @@ vi.mock('../../src/services/nav-dimming-service', () => ({
 vi.mock('../../src/adapter/storage/local-storage', () => ({
 	ILocalStorage: mockILocalStorage,
 }))
+vi.mock('../../src/adapter/browser/history', () => ({
+	IHistory: mockIHistory,
+}))
 vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
 	UserHomeSelector: {
 		getStoredHome: vi.fn().mockReturnValue(null),
@@ -70,9 +75,6 @@ function makeOnboarding(step = 'completed') {
 		currentStep: step,
 		isOnboarding: step !== 'completed',
 		isCompleted: step === 'completed',
-		activateSpotlight: vi.fn(),
-		deactivateSpotlight: vi.fn(),
-		setStep: vi.fn(),
 	}
 }
 
@@ -91,11 +93,9 @@ function makeFollowService() {
 	}
 }
 
-function makeJourneyService(authenticated = false) {
+function makeJourneyService() {
 	return {
-		listByUser: authenticated
-			? vi.fn().mockResolvedValue(new Map())
-			: vi.fn().mockResolvedValue(new Map()),
+		listByUser: vi.fn().mockResolvedValue(new Map()),
 	}
 }
 
@@ -119,6 +119,7 @@ describe('DashboardRoute', () => {
 	let mockUser: { current: { home: unknown } | undefined }
 	let mockNavDimming: ReturnType<typeof createMockNavDimmingService>
 	let mockStorage: ReturnType<typeof createMockLocalStorage>
+	let mockHistory: ReturnType<typeof createMockHistory>
 
 	function buildSut() {
 		const container = createTestContainer(
@@ -131,6 +132,7 @@ describe('DashboardRoute', () => {
 			Registration.instance(mockIUserService, mockUser),
 			Registration.instance(mockINavDimmingService, mockNavDimming),
 			Registration.instance(mockILocalStorage, mockStorage),
+			Registration.instance(mockIHistory, mockHistory),
 		)
 		container.register(DashboardRoute)
 		return container.get(DashboardRoute)
@@ -148,6 +150,7 @@ describe('DashboardRoute', () => {
 		mockUser = { current: undefined }
 		mockNavDimming = createMockNavDimmingService()
 		mockStorage = createMockLocalStorage()
+		mockHistory = createMockHistory()
 		;(
 			UserHomeSelector.getStoredHome as ReturnType<typeof vi.fn>
 		).mockReturnValue(null)
@@ -239,180 +242,37 @@ describe('DashboardRoute', () => {
 			sut.attached()
 			expect(sut.showPostSignupDialog).toBe(false)
 		})
-
-		it('enters waiting-for-home when on DASHBOARD step with needsRegion', () => {
-			mockOnboarding = makeOnboarding('dashboard')
-			sut = buildSut()
-			sut.needsRegion = true
-
-			sut.attached()
-
-			expect(sut.laneIntroPhase).toBe('waiting-for-home')
-			expect(mockNavDimming.setDimmed).toHaveBeenCalledWith(true)
-		})
-
-		it('does not start lane intro when not on DASHBOARD step', () => {
-			mockOnboarding = makeOnboarding('completed')
-			sut = buildSut()
-
-			sut.attached()
-
-			expect(sut.laneIntroPhase).toBe('done')
-			expect(mockNavDimming.setDimmed).not.toHaveBeenCalled()
-		})
 	})
 
-	// ---- Lane intro state machine ----
+	// ---- onHomeSelected() ----
 
-	describe('lane intro state machine', () => {
-		beforeEach(() => {
-			mockOnboarding = makeOnboarding('dashboard')
-			mockGuest.home = 'JP-13'
-			sut = buildSut()
-			sut.needsRegion = false
-			// Provide concert data so lane intro is not skipped
-			sut.dateGroups = [
-				{
-					label: 'Mar 15',
-					dateKey: '2026-03-15',
-					home: [],
-					near: [],
-					away: [],
-				} as never,
-			]
-		})
-
-		it('starts at home phase when region is already set', async () => {
-			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
-
-			expect(sut.laneIntroPhase).toBe('home')
-			expect(mockNavDimming.setDimmed).toHaveBeenCalledWith(true)
-		})
-
-		it('activates spotlight for home stage on start', async () => {
-			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
-
-			expect(mockOnboarding.activateSpotlight).toHaveBeenCalledWith(
-				'concert-highway [data-stage="home"]',
-				expect.any(String),
-				expect.any(Function),
-			)
-		})
-
-		it('advances home → near on tap', async () => {
-			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
-
-			sut.onLaneIntroTap()
-
-			expect(sut.laneIntroPhase).toBe('near')
-		})
-
-		it('advances near → away on tap', async () => {
-			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
-			sut.onLaneIntroTap() // home → near
-
-			sut.onLaneIntroTap() // near → away
-
-			expect(sut.laneIntroPhase).toBe('away')
-		})
-
-		it('away tap triggers completeLaneIntro → done', async () => {
-			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
-			sut.onLaneIntroTap() // home → near
-			sut.onLaneIntroTap() // near → away
-
-			sut.onLaneIntroTap() // away → done
-
-			expect(sut.laneIntroPhase).toBe('done')
-		})
-
-		it('completeLaneIntro shows celebration when not yet shown', async () => {
-			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
-			sut.onLaneIntroTap()
-			sut.onLaneIntroTap()
-			sut.onLaneIntroTap()
-
-			expect(sut.showCelebration).toBe(true)
-			expect(mockStorage.setItem).toHaveBeenCalledWith(
-				StorageKeys.celebrationShown,
-				'1',
-			)
-		})
-
-		it('completeLaneIntro undims nav when celebration already shown', async () => {
-			mockStorage = createMockLocalStorage({
-				[StorageKeys.celebrationShown]: '1',
-			})
-			sut = buildSut()
-			sut.needsRegion = false
-			sut.dateGroups = [
-				{
-					label: 'x',
-					dateKey: '2026-03-15',
-					home: [],
-					near: [],
-					away: [],
-				} as never,
-			]
-			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
-
-			sut.onLaneIntroTap()
-			sut.onLaneIntroTap()
-			sut.onLaneIntroTap()
-
-			expect(sut.showCelebration).toBe(false)
-			expect(mockNavDimming.setDimmed).toHaveBeenLastCalledWith(false)
-		})
-
-		it('skips lane intro and shows celebration when no concert data', async () => {
-			sut.dateGroups = []
-			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
-
-			expect(sut.laneIntroPhase).toBe('done')
-			expect(sut.showCelebration).toBe(true)
-		})
-
-		it('does not replay celebration when already shown and no concert data', async () => {
-			mockStorage = createMockLocalStorage({
-				[StorageKeys.celebrationShown]: '1',
-			})
-			sut = buildSut()
-			sut.dateGroups = []
-			sut.attached()
-			await vi.advanceTimersByTimeAsync(0)
-
-			expect(sut.showCelebration).toBe(false)
-		})
-
-		it('does not advance from waiting-for-home on tap', () => {
+	describe('onHomeSelected', () => {
+		it('sets needsRegion=false and triggers loadData', () => {
 			sut.needsRegion = true
-			sut.attached()
+			const loadSpy = vi.spyOn(sut, 'loadData').mockResolvedValue()
 
-			sut.onLaneIntroTap()
+			sut.onHomeSelected('JP-13')
 
-			expect(sut.laneIntroPhase).toBe('waiting-for-home')
+			expect(sut.needsRegion).toBe(false)
+			expect(loadSpy).toHaveBeenCalledOnce()
 		})
-	})
 
-	// ---- onCelebrationDismissed ----
+		it('calls guest.setHome for unauthenticated user', () => {
+			mockAuth.isAuthenticated = false
+			sut = buildSut()
 
-	describe('onCelebrationDismissed', () => {
-		it('clears showCelebration, undims nav, deactivates spotlight', () => {
-			sut.showCelebration = true
+			sut.onHomeSelected('JP-13')
 
-			sut.onCelebrationDismissed()
+			expect(mockGuest.setHome).toHaveBeenCalledWith('JP-13')
+		})
 
-			expect(sut.showCelebration).toBe(false)
-			expect(mockNavDimming.setDimmed).toHaveBeenCalledWith(false)
-			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalled()
+		it('does not call guest.setHome for authenticated user', () => {
+			mockAuth.isAuthenticated = true
+			sut = buildSut()
+
+			sut.onHomeSelected('JP-13')
+
+			expect(mockGuest.setHome).not.toHaveBeenCalled()
 		})
 	})
 
@@ -427,29 +287,6 @@ describe('DashboardRoute', () => {
 
 			expect(abortSpy).toHaveBeenCalled()
 			expect(mockNavDimming.setDimmed).toHaveBeenCalledWith(false)
-		})
-	})
-
-	// ---- INavDimmingService delegation ----
-
-	describe('INavDimmingService delegation', () => {
-		it('does NOT directly query [data-nav] DOM elements', () => {
-			// This test verifies that the component does not contain a querySelectorAll call
-			// by checking that setDimmed on the service is the only mechanism called.
-			const querySpy = vi.spyOn(document, 'querySelectorAll')
-
-			mockOnboarding = makeOnboarding('dashboard')
-			sut = buildSut()
-			sut.dateGroups = [
-				{ label: 'x', dateKey: 'x', home: [], near: [], away: [] } as never,
-			]
-			sut.attached()
-
-			// querySelectorAll should NOT be called by the route itself
-			const navQueries = (querySpy.mock.calls as [string][]).filter(
-				([sel]) => sel === '[data-nav]',
-			)
-			expect(navQueries).toHaveLength(0)
 		})
 	})
 })
