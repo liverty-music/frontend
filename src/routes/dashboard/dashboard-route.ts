@@ -172,6 +172,12 @@ export class DashboardRoute {
 	}
 
 	public attached(): void {
+		// Open the home selector when the user has no region set.
+		// Done in attached() so the BottomSheet is in the DOM and showPopover() works.
+		if (this.needsRegion) {
+			this.homeSelector?.open()
+		}
+
 		// PostSignupDialog: show once after first-time signup.
 		// Checked in attached() so child BottomSheet is in the DOM
 		// and showPopover() can succeed.

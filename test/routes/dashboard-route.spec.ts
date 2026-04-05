@@ -242,6 +242,26 @@ describe('DashboardRoute', () => {
 			sut.attached()
 			expect(sut.showPostSignupDialog).toBe(false)
 		})
+
+		it('opens home selector when needsRegion is true', () => {
+			sut.needsRegion = true
+			const mockHomeSelector = { open: vi.fn() }
+			sut.homeSelector = mockHomeSelector as never
+
+			sut.attached()
+
+			expect(mockHomeSelector.open).toHaveBeenCalledOnce()
+		})
+
+		it('does not open home selector when needsRegion is false', () => {
+			sut.needsRegion = false
+			const mockHomeSelector = { open: vi.fn() }
+			sut.homeSelector = mockHomeSelector as never
+
+			sut.attached()
+
+			expect(mockHomeSelector.open).not.toHaveBeenCalled()
+		})
 	})
 
 	// ---- onHomeSelected() ----
