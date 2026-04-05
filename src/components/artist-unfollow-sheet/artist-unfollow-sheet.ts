@@ -25,5 +25,6 @@ export class ArtistUnfollowSheet {
 
 	public cancel(): void {
 		this.open = false
+		this.host.dispatchEvent(new CustomEvent('sheet-closed', { bubbles: true }))
 	}
 }
