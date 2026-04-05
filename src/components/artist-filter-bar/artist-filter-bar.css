@@ -39,30 +39,28 @@
 			}
 		}
 
-		/* ── Bottom sheet content ── */
-
-		/* stack gap + padding for filter sheet inner layout */
+		/* ── Bottom sheet content ──
+		   <fieldset> as flex column — <legend> stays in normal flow,
+		   no grid hacks or display:contents needed. */
 		.filter-sheet-content {
-			--stack-gap: var(--space-s);
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
 
-			padding: var(--space-s) var(--space-m) var(--space-m);
-		}
-
-		/* reset list defaults for artist list */
-		.artists-list {
+			/* reset fieldset browser defaults */
 			margin: 0;
-			padding: 0;
-			list-style: none;
+			padding: var(--space-s) var(--space-m) var(--space-m);
+			border: none;
 		}
 
-		/* confirm button row: flush right, no gap between items */
-		.confirm-row {
-			--cluster-gap: 0;
-
-			justify-content: flex-end;
+		/* ── Header row: title + clear-all ──
+		   <legend> as flex row avoids any extra wrapper element. */
+		.sheet-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
 		}
 
-		/* layout delegated to .stack composition class in HTML */
 		.sheet-title {
 			font-family: var(--font-display);
 			font-size: var(--step-0);
@@ -70,31 +68,114 @@
 			color: var(--color-text-primary);
 		}
 
-		.artist-item {
-			border-block-end: 1px solid var(--color-border-subtle);
+		/* ── Clear all button (ghost, beside title) ── */
+		.btn-clear-all {
+			cursor: pointer;
 
-			&:last-child {
-				border-block-end: none;
+			padding: var(--space-3xs) var(--space-xs);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-full);
+
+			font-size: var(--step--2);
+			color: var(--color-text-muted);
+
+			background: transparent;
+
+			transition:
+				color var(--transition-fast),
+				border-color var(--transition-fast),
+				opacity var(--transition-fast);
+
+			&:disabled {
+				cursor: default;
+				opacity: 0.35;
+			}
+
+			&:hover:not(:disabled) {
+				border-color: color-mix(
+					in oklch,
+					var(--color-brand-primary) 40%,
+					transparent
+				);
+				color: var(--color-brand-primary);
 			}
 		}
 
-		.artist-label {
+		/* ── Artist chip list (flex wrap — single-axis wrapping flow) ── */
+		.artists-list {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+		}
+
+		/* ── Individual chip ──
+		   input is visually-hidden; :has() drives checked state.
+		   Checkmark uses --color-text-primary for sufficient contrast
+		   against the brand-tinted chip background (>3:1). */
+		.artist-chip {
 			cursor: pointer;
 
 			display: flex;
-			gap: var(--space-xs);
+			gap: var(--space-3xs);
 			align-items: center;
 
-			padding-block: var(--space-2xs);
+			padding: var(--space-3xs) var(--space-s);
+			border: 1px solid var(--color-border-muted);
+			border-radius: var(--radius-full);
 
 			font-size: var(--step--1);
 			color: var(--color-text-secondary);
 
-			& input[type="checkbox"] {
-				inline-size: 1.1em;
-				block-size: 1.1em;
-				accent-color: var(--color-brand-primary);
+			background: var(--color-surface-raised);
+
+			transition:
+				border-color var(--transition-fast),
+				background var(--transition-fast),
+				color var(--transition-fast);
+
+			/* checkmark icon — hidden until checked */
+			& .chip-check {
+				display: none;
+				flex-shrink: 0;
+
+				/* use text-primary for contrast against brand-tinted background */
+				color: var(--color-text-primary);
 			}
+
+			&:hover {
+				border-color: color-mix(
+					in oklch,
+					var(--color-brand-primary) 40%,
+					transparent
+				);
+			}
+
+			/* checked state */
+			&:has(input:checked) {
+				border-color: var(--color-brand-primary);
+				color: var(--color-text-primary);
+				background: color-mix(
+					in oklch,
+					var(--color-brand-primary) 18%,
+					var(--color-surface-raised)
+				);
+
+				& .chip-check {
+					display: block;
+				}
+			}
+		}
+
+		/* ── Confirm button row ── */
+		.confirm-row {
+			--cluster-gap: 0;
+
+			justify-content: flex-end;
 		}
 
 		.btn-confirm {
