@@ -29,7 +29,7 @@
             event.bind="ev"
             lane="home"
             readonly.bind="isReadonly"
-            beam-index.bind="getBeamIndex(ev.id)"
+            beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>
         <li class="[ lane ]" data-lane="near" data-empty.bind="group.nearby.length === 0">
@@ -38,7 +38,7 @@
             event.bind="ev"
             lane="nearby"
             readonly.bind="isReadonly"
-            beam-index.bind="getBeamIndex(ev.id)"
+            beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>
         <li class="[ lane ]" data-lane="away" data-empty.bind="group.away.length === 0">
@@ -47,7 +47,7 @@
             event.bind="ev"
             lane="away"
             readonly.bind="isReadonly"
-            beam-index.bind="getBeamIndex(ev.id)"
+            beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>
       </ol>

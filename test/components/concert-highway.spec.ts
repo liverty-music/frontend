@@ -52,8 +52,8 @@ describe('ConcertHighway', () => {
 			sut.dateGroups = groups
 			sut.attached()
 
-			expect(sut.beamIndexMap.get('e1')).toBe(0)
-			expect(sut.beamIndexMap.get('e2')).toBe(1)
+			expect(sut.beamIndexMap.e1).toBe(0)
+			expect(sut.beamIndexMap.e2).toBe(1)
 			expect(sut.laserBeams.length).toBe(2)
 		})
 
@@ -77,12 +77,12 @@ describe('ConcertHighway', () => {
 			sut.dateGroups = groups
 			sut.attached()
 
-			expect(sut.beamIndexMap.size).toBe(0)
+			expect(Object.keys(sut.beamIndexMap).length).toBe(0)
 			expect(sut.laserBeams.length).toBe(0)
 		})
 	})
 
-	describe('getBeamIndex', () => {
+	describe('beamIndexMap lookup', () => {
 		it('returns index for matched event', () => {
 			sut.dateGroups = [
 				{
@@ -101,13 +101,13 @@ describe('ConcertHighway', () => {
 			]
 			sut.attached()
 
-			expect(sut.getBeamIndex('e1')).toBe(0)
+			expect(sut.beamIndexMap.e1).toBe(0)
 		})
 
-		it('returns null for unknown event', () => {
+		it('returns undefined for unknown event', () => {
 			sut.attached()
 
-			expect(sut.getBeamIndex('unknown')).toBeNull()
+			expect(sut.beamIndexMap.unknown).toBeUndefined()
 		})
 	})
 
@@ -150,7 +150,7 @@ describe('ConcertHighway', () => {
 			]
 			sut.dateGroupsChanged()
 
-			expect(sut.beamIndexMap.get('x')).toBe(0)
+			expect(sut.beamIndexMap.x).toBe(0)
 		})
 
 		it('does not rebuild beam map before attached', () => {
@@ -167,7 +167,7 @@ describe('ConcertHighway', () => {
 			]
 			sut.dateGroupsChanged()
 
-			expect(sut.beamIndexMap.size).toBe(0)
+			expect(Object.keys(sut.beamIndexMap).length).toBe(0)
 		})
 	})
 })
