@@ -15,6 +15,9 @@ const mockRpcClient = {
 	unfollow: vi.fn(),
 	setHype: vi.fn(),
 }
+const mockConcertService = {
+	invalidateFollowerCache: vi.fn(),
+}
 
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
@@ -26,6 +29,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IAuthService: mockAuth,
 				IGuestService: mockGuest,
 				IFollowRpcClient: mockRpcClient,
+				IConcertService: mockConcertService,
 			}
 			const tokenAny = token as { friendlyName?: string }
 			return map[tokenAny.friendlyName ?? ''] ?? {}
@@ -52,6 +56,51 @@ describe('FollowServiceClient', () => {
 		mockAuth.isAuthenticated = true
 		mockGuest.follows = []
 		sut = new FollowServiceClient()
+	})
+
+	describe('follow — cache invalidation', () => {
+		it('calls invalidateFollowerCache on successful follow', async () => {
+			mockRpcClient.follow.mockResolvedValueOnce(undefined)
+			const artist = makeArtist('a1', 'Artist One')
+
+			await sut.follow(artist)
+
+			expect(mockConcertService.invalidateFollowerCache).toHaveBeenCalledOnce()
+		})
+
+		it('does NOT call invalidateFollowerCache when follow RPC fails', async () => {
+			mockRpcClient.follow.mockRejectedValueOnce(new Error('network error'))
+			const artist = makeArtist('a1', 'Artist One')
+
+			await expect(sut.follow(artist)).rejects.toThrow('network error')
+
+			expect(mockConcertService.invalidateFollowerCache).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('getFollowedArtistMap — RPC skip when state in memory', () => {
+		it('calls listFollowed RPC when followedArtists is empty', async () => {
+			mockRpcClient.listFollowed.mockResolvedValueOnce([
+				makeFollowedArtist('a1', 'Artist One'),
+			])
+
+			await sut.getFollowedArtistMap()
+
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
+		})
+
+		it('calls listFollowed RPC on each call (hype data lives in RPC response)', async () => {
+			mockRpcClient.listFollowed.mockResolvedValue([
+				makeFollowedArtist('a1', 'Artist One'),
+			])
+			// Even with followedArtists populated, listFollowed must be called
+			// to retrieve per-artist hype values which are not stored in followedArtists.
+			sut.followedArtists = [makeArtist('a1', 'Artist One')]
+
+			await sut.getFollowedArtistMap()
+
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
+		})
 	})
 
 	describe('listFollowed', () => {
