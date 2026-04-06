@@ -25,7 +25,9 @@ export class PostSignupDialog {
 	}
 
 	public get isAllDone(): boolean {
-		return !this.canInstallPwa && this.notificationManager.permission === 'granted'
+		return (
+			!this.canInstallPwa && this.notificationManager.permission === 'granted'
+		)
 	}
 
 	public activeChanged(): void {
