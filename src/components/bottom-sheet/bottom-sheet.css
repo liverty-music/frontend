@@ -79,7 +79,6 @@
 			block-size: 100dvh;
 
 			animation: initial-snap 0.01s backwards;
-			scroll-timeline: --sheet-scroll block;
 		}
 
 		/* Safari: re-run initial-snap animation each time display toggles */
@@ -101,6 +100,25 @@
 
 		.sheet-body {
 			scroll-snap-align: end;
+
+			/*
+			 * Chromium bug workaround: scroll-snap re-evaluation inside popover top-layer.
+			 *
+			 * When a scroll container with `scroll-snap-type: y mandatory` is inside a
+			 * popover top-layer (`position: fixed; inset: 0`), any child layout change
+			 * triggers scroll-snap re-evaluation. Chromium incorrectly offsets the scroll
+			 * container itself by `-scrollTop` pixels in the rendered position (while
+			 * `scrollTop` remains unchanged), visually shifting the sheet upward.
+			 *
+			 * `contain: layout` establishes a layout containment boundary on `.sheet-body`,
+			 * isolating child layout changes (e.g., chip-check SVG toggle, dynamic content)
+			 * from `.scroll-area`. This prevents the re-evaluation from being triggered.
+			 *
+			 * Removal condition: when Chromium fixes scroll container offset on snap
+			 * re-evaluation inside top-layer, this declaration MAY be removed. The
+			 * regression guard is the artist-filter chip-check E2E test.
+			 */
+			contain: layout;
 
 			overflow-y: auto;
 
