@@ -33,6 +33,10 @@ export class ConcertServiceClient {
 	private readonly guest = resolve(IGuestService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
+	private readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000
+	private cachedGroups: ProximityGroup[] | null = null
+	private cacheTimestamp: number | null = null
+
 	@observable public artistsWithConcerts = new Set<string>()
 
 	public get artistsWithConcertsCount(): number {
@@ -60,7 +64,23 @@ export class ConcertServiceClient {
 		if (!this.authService.isAuthenticated) {
 			return this.listByFollowerGuest(signal)
 		}
-		return this.rpcClient.listByFollower(signal)
+		const now = Date.now()
+		if (
+			this.cachedGroups !== null &&
+			this.cacheTimestamp !== null &&
+			now - this.cacheTimestamp < this.CACHE_TTL_MS
+		) {
+			return this.cachedGroups
+		}
+		const result = await this.rpcClient.listByFollower(signal)
+		this.cachedGroups = result
+		this.cacheTimestamp = Date.now()
+		return result
+	}
+
+	public invalidateFollowerCache(): void {
+		this.cachedGroups = null
+		this.cacheTimestamp = null
 	}
 
 	public async listWithProximity(
