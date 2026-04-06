@@ -4,6 +4,14 @@
   <section class="post-signup-content">
     <h2 class="post-signup-title" t="postSignup.title"></h2>
 
+    <!-- Hype guide hint (always shown) -->
+    <div class="post-signup-row">
+      <span class="post-signup-row-icon">💡</span>
+      <div class="post-signup-row-body">
+        <p class="post-signup-row-label" t="postSignup.hypeGuideLabel"></p>
+      </div>
+    </div>
+
     <!-- Notification opt-in row -->
     <div class="post-signup-row" if.bind="notificationManager.permission === 'default'">
       <span class="post-signup-row-icon">🔔</span>
@@ -52,7 +60,7 @@
         type="button"
         class="post-signup-btn-ghost"
         click.trigger="onDefer()"
-        t="postSignup.defer"
+        t.bind="isAllDone ? 'postSignup.close' : 'postSignup.defer'"
       ></button>
     </footer>
   </section>

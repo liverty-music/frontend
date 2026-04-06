@@ -274,6 +274,7 @@
 	"postSignup": {
 		"title": "Account registration complete!",
 		"ariaLabel": "Account registration complete",
+		"hypeGuideLabel": "Change hype on the My Artists page to control which notifications you receive",
 		"notificationLabel": "Turn on new live notifications",
 		"notificationEnable": "Enable notifications",
 		"notificationEnabling": "Enabling…",
@@ -282,7 +283,8 @@
 		"notificationDenied": "Notifications are blocked in your browser settings. You can change this in your browser.",
 		"pwaLabel": "Add to home screen for a better experience",
 		"pwaInstall": "Add to home screen",
-		"defer": "Later"
+		"defer": "Later",
+		"close": "Close"
 	},
 	"pageHelp": {
 		"discovery": {

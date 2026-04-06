@@ -45,6 +45,7 @@ describe('PostSignupDialog', () => {
 	beforeEach(() => {
 		fakeCanShowFab = true
 		fakeIsIos = false
+		fakeNotificationManager.permission = 'default'
 		vi.clearAllMocks()
 		// Restore scopeTo after clearAllMocks resets mock implementations
 		fakeLogger.scopeTo.mockReturnValue(fakeLogger)
@@ -140,6 +141,56 @@ describe('PostSignupDialog', () => {
 			sut.onDefer()
 
 			expect(sut.isOpen).toBe(false)
+		})
+	})
+
+	describe('isAllDone', () => {
+		it('is false when canInstallPwa is true', () => {
+			fakeCanShowFab = true
+			fakeIsIos = false
+			fakeNotificationManager.permission = 'granted'
+			sut = new PostSignupDialog()
+
+			expect(sut.isAllDone).toBe(false)
+		})
+
+		it('is false when permission is not granted', () => {
+			fakeCanShowFab = false
+			fakeIsIos = false
+			fakeNotificationManager.permission = 'default'
+			sut = new PostSignupDialog()
+
+			expect(sut.isAllDone).toBe(false)
+		})
+
+		it('is true when PWA installed and notification granted', () => {
+			fakeCanShowFab = false
+			fakeIsIos = false
+			fakeNotificationManager.permission = 'granted'
+			sut = new PostSignupDialog()
+
+			expect(sut.isAllDone).toBe(true)
+		})
+
+		it('is true when iOS (canInstallPwa always false) and notification granted', () => {
+			fakeCanShowFab = true
+			fakeIsIos = true
+			fakeNotificationManager.permission = 'granted'
+			sut = new PostSignupDialog()
+
+			expect(sut.isAllDone).toBe(true)
+		})
+
+		it('becomes true when permission changes to granted after dialog creation', () => {
+			fakeCanShowFab = false
+			fakeIsIos = false
+			fakeNotificationManager.permission = 'default'
+			sut = new PostSignupDialog()
+			expect(sut.isAllDone).toBe(false)
+
+			fakeNotificationManager.permission = 'granted'
+
+			expect(sut.isAllDone).toBe(true)
 		})
 	})
 })
