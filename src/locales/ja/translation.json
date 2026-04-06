@@ -274,6 +274,7 @@
 	"postSignup": {
 		"title": "✅ アカウント登録完了！",
 		"ariaLabel": "アカウント登録完了",
+		"hypeGuideLabel": "My Artists ページで hype を変更すると通知の範囲をコントロールできます",
 		"notificationLabel": "新着ライブ通知をオンにしよう",
 		"notificationEnable": "通知をオンにする",
 		"notificationEnabling": "有効化中…",
@@ -282,7 +283,8 @@
 		"notificationDenied": "ブラウザの設定で通知が拒否されています。設定から変更できます。",
 		"pwaLabel": "ホーム画面に追加するとより快適に",
 		"pwaInstall": "ホーム画面に追加",
-		"defer": "あとで"
+		"defer": "あとで",
+		"close": "閉じる"
 	},
 	"pageHelp": {
 		"discovery": {

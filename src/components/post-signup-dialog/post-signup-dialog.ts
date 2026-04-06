@@ -24,6 +24,13 @@ export class PostSignupDialog {
 		return this.pwaInstall.canShowFab && !this.pwaInstall.isIos
 	}
 
+	public get isAllDone(): boolean {
+		return (
+			!this.canInstallPwa &&
+			this.notificationManager.permission === 'granted'
+		)
+	}
+
 	public activeChanged(): void {
 		if (this.active) {
 			this.isOpen = true
