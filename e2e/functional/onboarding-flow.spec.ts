@@ -657,12 +657,8 @@ test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
 		// STEP 5 — MY_ARTISTS: navigate via SPA nav tab click
 		// We click the My Artists nav tab to trigger Aurelia's SPA navigation —
 		// this preserves in-memory OnboardingService state (step = MY_ARTISTS).
-		// The page-help bottom sheet may cover the nav tab; dispatch via JS.
 		// =========================================================================
-		await page.evaluate(() => {
-			const tab = document.querySelector<HTMLElement>('[data-nav="my-artists"]')
-			tab?.click()
-		})
+		await page.locator('[data-nav="my-artists"]').click()
 		await expect(page).toHaveURL(/my-artists/, { timeout: 10_000 })
 
 		// Verify step is still MY_ARTISTS (not reverted)

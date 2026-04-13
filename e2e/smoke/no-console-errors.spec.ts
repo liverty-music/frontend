@@ -5,8 +5,10 @@ import { expect, test } from '@playwright/test'
  * errors are emitted during page load. Catches runtime template compilation
  * errors (AUR0703), unhandled exceptions, and startup failures.
  *
- * Network errors (failed fetch/XHR) are excluded since the backend may
- * not be running during tests.
+ * All RPC calls are intercepted and fulfilled with empty 200 responses so
+ * the test is independent of dev environment availability. Network-level
+ * errors (unreachable hosts, CORS) are also excluded since they indicate
+ * infrastructure state rather than application correctness.
  */
 
 const EXCLUDED_ERROR_PATTERNS = [
@@ -17,6 +19,8 @@ const EXCLUDED_ERROR_PATTERNS = [
 	'TypeError: Failed to fetch',
 	'Failed to load resource',
 	'[ERR Transport]',
+	'has been blocked by CORS policy',
+	'Access-Control-Allow-Origin',
 ]
 
 function isExcludedError(text: string): boolean {
@@ -27,6 +31,17 @@ const PUBLIC_ROUTES = ['/', '/welcome', '/about']
 
 for (const route of PUBLIC_ROUTES) {
 	test(`${route} loads without console errors`, async ({ page }) => {
+		// Intercept all RPC calls — smoke tests verify app startup correctness,
+		// not backend availability. Returning empty 200s prevents CORS errors
+		// from dev environment leaking into CI results.
+		await page.route('**/liverty_music.rpc.**', (route) => {
+			return route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({}),
+			})
+		})
+
 		const errors: string[] = []
 
 		page.on('console', (msg) => {

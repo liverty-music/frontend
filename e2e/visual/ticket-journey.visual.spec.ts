@@ -180,15 +180,10 @@ test.describe.fixme('Detail sheet journey controls visual regression', () => {
 	test('detail sheet after setting status', async ({
 		layoutPage: page,
 	}) => {
-		await page.evaluate(() => {
-			const btn = document.querySelector<HTMLElement>(
-				'[data-testid="journey-btn"][data-journey-status="tracking"]',
-			)
-			btn?.click()
-		})
 		const trackingBtn = page.locator(
 			'[data-testid="journey-btn"][data-journey-status="tracking"]',
 		)
+		await trackingBtn.click()
 		await expect
 			.poll(async () => trackingBtn.getAttribute('data-active'), {
 				timeout: 3_000,

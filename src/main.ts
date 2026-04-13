@@ -18,6 +18,7 @@ import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-cli
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
 import { ArtistFilterBar } from './components/artist-filter-bar/artist-filter-bar'
+import { ArtistUnfollowSheet } from './components/artist-unfollow-sheet/artist-unfollow-sheet'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
 import { CelebrationOverlay } from './components/celebration-overlay/celebration-overlay'
@@ -39,11 +40,10 @@ import {
 	migrateStorageKeys,
 	trackSessionForPrompts,
 } from './constants/storage-keys'
-import { ArtistUnfollowSheet } from './components/artist-unfollow-sheet/artist-unfollow-sheet'
 import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
-import { LongPressCustomAttribute } from './custom-attributes/long-press'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
+import { LongPressCustomAttribute } from './custom-attributes/long-press'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
