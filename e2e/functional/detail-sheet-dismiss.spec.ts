@@ -175,11 +175,7 @@ function seedPostDashboardState() {
 async function openDetailSheet(page: Page): Promise<void> {
 	const card = page.locator('[data-live-card]').first()
 	await expect(card).toBeVisible({ timeout: 15_000 })
-	// page-help may intercept pointer events; dispatch click via JS to bypass interception
-	await page.evaluate(() => {
-		const el = document.querySelector<HTMLElement>('[data-live-card]')
-		el?.click()
-	})
+	await card.click()
 
 	// Wait for sheet — bottom-sheet is a popover, wait for popover-open state
 	const sheet = page.locator('event-detail-sheet bottom-sheet')
@@ -307,14 +303,9 @@ test.describe('MY_ARTISTS spotlight reload recovery', () => {
 		// Wait for dashboard to load
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
-		// Click the My Artists nav tab. page-help may intercept pointer events;
-		// use force: true or JS dispatch to bypass interception.
 		const myArtistsNav = page.locator('[data-nav="my-artists"]')
 		await expect(myArtistsNav).toBeVisible()
-		await page.evaluate(() => {
-			const tab = document.querySelector<HTMLElement>('[data-nav="my-artists"]')
-			tab?.click()
-		})
+		await myArtistsNav.click()
 
 		// Should navigate to My Artists page
 		await expect(page).toHaveURL(/my-artists/, { timeout: 10_000 })

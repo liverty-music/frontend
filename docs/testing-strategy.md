@@ -388,7 +388,65 @@ export function createMockRouter(): Partial<IRouter> {
 
 ---
 
-## 6. Anti-Pattern Checklist
+## 6. CE Import Isolation Convention
+
+### Rule: Import CE classes directly — never via parent route modules
+
+Tests MUST import the target Custom Element class directly from its source file. Importing via a parent route module triggers Aurelia's template convention resolution, which loads child CE templates transitively and can cause `document is not defined` errors in node-environment tests.
+
+```typescript
+// CORRECT: Direct import — no module graph expansion
+import { ConcertHighway } from '../../src/components/live-highway/concert-highway'
+import { EventCard } from '../../src/components/event-card/event-card'
+
+// WRONG: Import via route — triggers ConcertHighway → EventCard → INode chain
+import { DashboardRoute } from '../../src/routes/dashboard/dashboard-route'
+```
+
+### Why this matters
+
+Vitest evaluates `import` statements eagerly. Aurelia's convention maps `foo-route.ts` → `foo-route.html`. An `.html` template with `<import from="...">` directives causes Vitest to resolve and execute those child modules — including CEs that call `resolve(INode)` at parse time, which requires `document` to exist.
+
+The module chain looks like:
+
+```
+dashboard-route.ts
+  └─ dashboard-route.html (convention)
+       └─ <import from="concert-highway">
+            └─ concert-highway.ts → concert-highway.html
+                 └─ <import from="event-card">
+                      └─ event-card.ts → resolve(INode) → document 💥
+```
+
+### How templates avoid <import> chains
+
+All shared CEs are globally registered in `main.ts`. Templates use CE tag names directly without `<import from="...">`:
+
+```html
+<!-- CORRECT: no <import> needed — CE is globally registered -->
+<concert-highway date-groups.bind="dateGroups"></concert-highway>
+
+<!-- WRONG: adds module graph edge that vitest must resolve -->
+<import from="./concert-highway">
+<concert-highway date-groups.bind="dateGroups"></concert-highway>
+```
+
+### When route-level testing is required
+
+If a test must import a route module (e.g., dashboard-route.ts), mock its HTML template to prevent child CE chain loading:
+
+```typescript
+// vi.mock() is hoisted before imports — prevents template resolution
+vi.mock('../../src/routes/dashboard/dashboard-route.html', () => ({
+  default: '<div data-testid="dashboard-loading" if.bind="isLoading">Loading</div>',
+}))
+
+import { DashboardRoute } from '../../src/routes/dashboard/dashboard-route'
+```
+
+---
+
+## 7. Anti-Pattern Checklist
 
 | Anti-Pattern | Fix |
 |---|---|
@@ -409,7 +467,7 @@ export function createMockRouter(): Partial<IRouter> {
 
 ---
 
-## 7. E2E Testing (Playwright)
+## 8. E2E Testing (Playwright)
 
 ### Recommended Scenarios (4-6 tests)
 
@@ -451,7 +509,7 @@ e2e/
 
 ---
 
-## 8. Key Decisions
+## 9. Key Decisions
 
 | Decision | Choice | Rationale |
 |---|---|---|
@@ -465,7 +523,7 @@ e2e/
 
 ---
 
-## 9. Aurelia 2 Official Testing Documentation Reference
+## 10. Aurelia 2 Official Testing Documentation Reference
 
 This strategy is aligned with the Aurelia 2 official testing documentation. Consult these pages for patterns and API details:
 
