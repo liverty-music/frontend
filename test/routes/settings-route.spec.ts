@@ -41,9 +41,7 @@ describe('SettingsRoute', () => {
 		signOut: ReturnType<typeof vi.fn>
 	}
 	let mockUser: {
-		current:
-			| { id: string; home?: { level1: string } }
-			| undefined
+		current: { id: string; home?: { level1: string } } | undefined
 		resendEmailVerification: ReturnType<typeof vi.fn>
 		clear: ReturnType<typeof vi.fn>
 	}
