@@ -43,7 +43,13 @@ export class PostSignupDialog {
 		this.notificationLoading = true
 		this.notificationError = false
 		try {
-			await this.pushService.create()
+			const endpoint = await this.pushService.create()
+			if (!endpoint) {
+				// `create()` returns null when the user denies the browser
+				// permission prompt or VAPID is not configured — no subscription
+				// was registered, so the dialog must not show a success state.
+				return
+			}
 			this.notificationDone = true
 		} catch (err) {
 			this.logger.error('PostSignupDialog: failed to enable notifications', err)

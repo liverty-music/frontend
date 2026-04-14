@@ -36,7 +36,9 @@ describe('PostSignupDialog', () => {
 	let mockNotification: { permission: string }
 
 	beforeEach(() => {
-		mockPush = { create: vi.fn().mockResolvedValue(null) }
+		mockPush = {
+			create: vi.fn().mockResolvedValue('https://push.example.com/endpoint'),
+		}
 		mockPwa = {
 			canShowFab: false,
 			isIos: false,
@@ -89,6 +91,17 @@ describe('PostSignupDialog', () => {
 
 			expect(mockPush.create).toHaveBeenCalledOnce()
 			expect(sut.notificationDone).toBe(true)
+			expect(sut.notificationLoading).toBe(false)
+		})
+
+		it('keeps notificationDone false when permission is denied (create returns null)', async () => {
+			mockPush.create.mockResolvedValue(null)
+
+			await sut.onEnableNotifications()
+
+			expect(mockPush.create).toHaveBeenCalledOnce()
+			expect(sut.notificationDone).toBe(false)
+			expect(sut.notificationError).toBe(false)
 			expect(sut.notificationLoading).toBe(false)
 		})
 
