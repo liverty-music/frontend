@@ -13,6 +13,8 @@ export interface UserHome {
  * @source proto/liverty_music/entity/v1/user.proto — User
  */
 export interface User {
+	/** The internal UUID assigned by the backend. Used on per-user RPC requests. */
+	readonly id: string
 	readonly home?: UserHome
 }
 

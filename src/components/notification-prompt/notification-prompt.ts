@@ -49,7 +49,7 @@ export class NotificationPrompt {
 	public async enable(): Promise<void> {
 		this.isLoading = true
 		try {
-			await this.pushService.subscribe()
+			await this.pushService.create()
 			if (this.notificationManager.permission === 'granted') {
 				this.isVisible = false
 				localStorage.setItem(StorageKeys.uiNotificationPromptDismissed, 'true')

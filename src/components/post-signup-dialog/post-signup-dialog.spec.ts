@@ -16,7 +16,9 @@ const fakePwaInstall = {
 }
 
 const fakeNotificationManager = { permission: 'default' }
-const fakePushService = { subscribe: vi.fn().mockResolvedValue(undefined) }
+const fakePushService = {
+	create: vi.fn().mockResolvedValue('https://push.example.com/endpoint'),
+}
 const fakePromptCoordinator = { markShown: vi.fn() }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -47,8 +49,11 @@ describe('PostSignupDialog', () => {
 		fakeIsIos = false
 		fakeNotificationManager.permission = 'default'
 		vi.clearAllMocks()
-		// Restore scopeTo after clearAllMocks resets mock implementations
+		// Restore default mock implementations after clearAllMocks resets them.
 		fakeLogger.scopeTo.mockReturnValue(fakeLogger)
+		fakePushService.create.mockResolvedValue(
+			'https://push.example.com/endpoint',
+		)
 		sut = new PostSignupDialog()
 	})
 
@@ -123,8 +128,18 @@ describe('PostSignupDialog', () => {
 			expect(sut.notificationLoading).toBe(false)
 		})
 
+		it('keeps notificationDone false when permission is denied (create returns null)', async () => {
+			fakePushService.create.mockResolvedValueOnce(null)
+
+			await sut.onEnableNotifications()
+
+			expect(sut.notificationDone).toBe(false)
+			expect(sut.notificationError).toBe(false)
+			expect(sut.notificationLoading).toBe(false)
+		})
+
 		it('sets notificationError on failure', async () => {
-			fakePushService.subscribe.mockRejectedValueOnce(new Error('denied'))
+			fakePushService.create.mockRejectedValueOnce(new Error('denied'))
 
 			await sut.onEnableNotifications()
 

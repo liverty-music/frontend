@@ -4,7 +4,6 @@ import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Snack } from '../../components/snack-bar/snack'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { translationKey } from '../../constants/iso3166'
-import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
@@ -39,21 +38,69 @@ export class SettingsRoute {
 			: 'settings.notSet'
 	}
 
-	public loading(): void {
+	public async loading(): Promise<void> {
 		this.currentLocale = this.i18n.getLocale()
 		const homeLevel1 = this.userService.current?.home?.level1
 		const code = homeLevel1 ?? UserHomeSelector.getStoredHome()
 		this.currentHome = code ? translationKey(code) : null
-		const storedPref =
-			localStorage.getItem(StorageKeys.userNotificationsEnabled) === 'true'
-		// If the browser permission was revoked externally, override the stored preference
-		this.notificationsEnabled =
-			storedPref && this.notificationManager.permission === 'granted'
 
 		// Read email_verified from OIDC profile claims
 		this.emailVerified =
 			(this.auth.user?.profile as Record<string, unknown>)?.email_verified ===
 			true
+
+		await this.resolveNotificationToggleState()
+	}
+
+	/**
+	 * Derives the push notifications toggle state from (1) the browser's
+	 * `PushManager` subscription and (2) the backend's `push_subscriptions`
+	 * row. When the browser has a subscription but the backend does not —
+	 * e.g., a prior Create RPC failed silently or another device unsubscribed
+	 * globally in an older build — this method self-heals by re-registering
+	 * the existing browser subscription via the `Create` RPC.
+	 */
+	private async resolveNotificationToggleState(): Promise<void> {
+		if (this.notificationManager.permission !== 'granted') {
+			this.notificationsEnabled = false
+			return
+		}
+
+		const browserSub = await this.pushService.getBrowserSubscription()
+		if (!browserSub) {
+			this.notificationsEnabled = false
+			return
+		}
+
+		const userId = this.userService.current?.id ?? ''
+		if (!userId) {
+			this.logger.warn(
+				'Cannot resolve push toggle state without authenticated userId',
+			)
+			this.notificationsEnabled = false
+			return
+		}
+
+		try {
+			const exists = await this.pushService.existsOnBackend(
+				userId,
+				browserSub.endpoint,
+			)
+			if (exists) {
+				this.notificationsEnabled = true
+				return
+			}
+			// Self-heal: browser has subscription but backend is missing the row.
+			// Re-register using the existing material — no permission prompt needed.
+			this.logger.info(
+				'Push subscription exists on browser but not on backend; self-healing via Create',
+			)
+			await this.pushService.createFrom(browserSub)
+			this.notificationsEnabled = true
+		} catch (err) {
+			this.logger.error('Failed to resolve push notification toggle state', err)
+			this.notificationsEnabled = false
+		}
 	}
 
 	public openHomeSelector(): void {
@@ -91,23 +138,29 @@ export class SettingsRoute {
 
 		try {
 			const newValue = !this.notificationsEnabled
+			const userId = this.userService.current?.id ?? ''
+			if (!userId) {
+				this.logger.warn(
+					'Cannot toggle push notifications without authenticated userId',
+				)
+				return
+			}
 
 			if (newValue) {
-				await this.pushService.subscribe()
-				if (this.notificationManager.permission !== 'granted') {
-					this.logger.info('Notification permission not granted, keeping OFF')
+				const endpoint = await this.pushService.create()
+				if (!endpoint) {
+					// User declined the permission prompt or VAPID key is missing.
+					this.notificationsEnabled = false
 					return
 				}
 				this.notificationsEnabled = true
-				localStorage.setItem(StorageKeys.userNotificationsEnabled, 'true')
 			} else {
 				try {
-					await this.pushService.unsubscribe()
+					await this.pushService.delete(userId)
 				} catch (err) {
 					this.logger.error('Failed to unsubscribe push notifications', err)
 				}
 				this.notificationsEnabled = false
-				localStorage.setItem(StorageKeys.userNotificationsEnabled, 'false')
 			}
 		} catch (err) {
 			this.logger.error('Failed to toggle push notifications', err)

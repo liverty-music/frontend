@@ -1,5 +1,4 @@
 export const StorageKeys = {
-	userNotificationsEnabled: 'user.notificationsEnabled',
 	uiNotificationPromptDismissed: 'ui.notificationPromptDismissed',
 	uiSessionCount: 'ui.sessionCount',
 	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
