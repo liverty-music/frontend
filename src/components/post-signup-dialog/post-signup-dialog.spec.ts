@@ -16,7 +16,7 @@ const fakePwaInstall = {
 }
 
 const fakeNotificationManager = { permission: 'default' }
-const fakePushService = { subscribe: vi.fn().mockResolvedValue(undefined) }
+const fakePushService = { create: vi.fn().mockResolvedValue(null) }
 const fakePromptCoordinator = { markShown: vi.fn() }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -124,7 +124,7 @@ describe('PostSignupDialog', () => {
 		})
 
 		it('sets notificationError on failure', async () => {
-			fakePushService.subscribe.mockRejectedValueOnce(new Error('denied'))
+			fakePushService.create.mockRejectedValueOnce(new Error('denied'))
 
 			await sut.onEnableNotifications()
 

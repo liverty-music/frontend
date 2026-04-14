@@ -4,6 +4,7 @@ import type { User } from '../../../entities/user'
 export function userFrom(proto: ProtoUser): User {
 	const home = proto.home
 	return {
+		id: proto.id?.value ?? '',
 		home: home
 			? {
 					countryCode: home.countryCode,

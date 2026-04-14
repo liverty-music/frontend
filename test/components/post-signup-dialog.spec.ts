@@ -26,7 +26,7 @@ const { PostSignupDialog } = await import(
 
 describe('PostSignupDialog', () => {
 	let sut: InstanceType<typeof PostSignupDialog>
-	let mockPush: { subscribe: ReturnType<typeof vi.fn> }
+	let mockPush: { create: ReturnType<typeof vi.fn> }
 	let mockPwa: {
 		canShowFab: boolean
 		isIos: boolean
@@ -36,7 +36,7 @@ describe('PostSignupDialog', () => {
 	let mockNotification: { permission: string }
 
 	beforeEach(() => {
-		mockPush = { subscribe: vi.fn().mockResolvedValue(undefined) }
+		mockPush = { create: vi.fn().mockResolvedValue(null) }
 		mockPwa = {
 			canShowFab: false,
 			isIos: false,
@@ -87,13 +87,13 @@ describe('PostSignupDialog', () => {
 		it('subscribes to push and sets done on success', async () => {
 			await sut.onEnableNotifications()
 
-			expect(mockPush.subscribe).toHaveBeenCalledOnce()
+			expect(mockPush.create).toHaveBeenCalledOnce()
 			expect(sut.notificationDone).toBe(true)
 			expect(sut.notificationLoading).toBe(false)
 		})
 
 		it('sets error on failure', async () => {
-			mockPush.subscribe.mockRejectedValue(new Error('denied'))
+			mockPush.create.mockRejectedValue(new Error('denied'))
 
 			await sut.onEnableNotifications()
 

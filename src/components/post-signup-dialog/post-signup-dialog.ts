@@ -43,7 +43,7 @@ export class PostSignupDialog {
 		this.notificationLoading = true
 		this.notificationError = false
 		try {
-			await this.pushService.subscribe()
+			await this.pushService.create()
 			this.notificationDone = true
 		} catch (err) {
 			this.logger.error('PostSignupDialog: failed to enable notifications', err)
