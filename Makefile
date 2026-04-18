@@ -1,4 +1,4 @@
-.PHONY: lint lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test test-layout test-layout-auth check
+.PHONY: lint lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check
 
 ## lint: biome lint + format check + stylelint + typecheck (matches CI)
 lint:
@@ -14,15 +14,6 @@ fix:
 ## test: unit tests with coverage
 test:
 	npx vitest run --coverage
-
-## test-layout: Playwright layout assertions (mock RPC, no auth required)
-test-layout:
-	npx playwright test --project=mobile-layout
-
-## test-layout-auth: Playwright layout assertions for authenticated routes
-## Requires .auth/storageState.json — run `npx tsx scripts/capture-auth-state.ts` first
-test-layout-auth:
-	npx playwright test --project=authenticated-mobile
 
 ## lint-no-style: ban style attributes in templates (CSS owns presentation)
 lint-no-style:
@@ -51,6 +42,10 @@ lint-no-div-role-status:
 ## lint-templates: all template lint rules
 lint-templates: lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status
 
-## check: full local pre-commit check (lint + test + layout + template rules)
-## Note: test-layout-auth excluded — requires manual storageState capture
-check: lint lint-templates test test-layout
+## check: full local pre-commit check.
+## Mirrors CI's fast lanes (Lint + Test). Playwright suites (smoke / e2e /
+## visual) are CI-only — they require browser binaries, baseline screenshots
+## from CI artifacts, and a running dev server, none of which are
+## deterministic in pre-commit. Run those locally on demand via
+## `npx playwright test --project=<name>`.
+check: lint lint-templates test
