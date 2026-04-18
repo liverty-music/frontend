@@ -1,5 +1,4 @@
 import type { RouteNode } from '@aurelia/router'
-import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
@@ -31,10 +30,10 @@ function createMockMergeService() {
 	}
 }
 
-function createMockGuestService() {
+function createMockGuestService(home: string | null = null) {
 	return {
 		follows: [],
-		home: null,
+		home,
 		followedCount: 0,
 		follow: vi.fn(),
 		unfollow: vi.fn(),
@@ -50,14 +49,7 @@ describe('AuthCallbackRoute', () => {
 	let mockUserService: ReturnType<typeof createMockUserService>
 	let mockMergeService: ReturnType<typeof createMockMergeService>
 
-	beforeEach(() => {
-		mockAuth = createMockAuth({
-			isAuthenticated: false,
-			ready: Promise.resolve(),
-		})
-		mockUserService = createMockUserService()
-		mockMergeService = createMockMergeService()
-
+	function setup(guestHome: string | null = null) {
 		const container = createTestContainer(
 			Registration.instance(IAuthService, mockAuth as IAuthService),
 			Registration.instance(IUserService, mockUserService as IUserService),
@@ -65,14 +57,24 @@ describe('AuthCallbackRoute', () => {
 				IGuestDataMergeService,
 				mockMergeService as IGuestDataMergeService,
 			),
-			Registration.instance(IGuestService, createMockGuestService()),
+			Registration.instance(IGuestService, createMockGuestService(guestHome)),
 		)
 		container.register(AuthCallbackRoute)
 		sut = container.get(AuthCallbackRoute)
+	}
+
+	beforeEach(() => {
+		mockAuth = createMockAuth({
+			isAuthenticated: false,
+			ready: Promise.resolve(),
+		})
+		mockUserService = createMockUserService()
+		mockMergeService = createMockMergeService()
+		setup()
 	})
 
 	describe('canLoad', () => {
-		it('should redirect to dashboard for returning user (ensureLoaded succeeds, no create)', async () => {
+		it('redirects to dashboard for returning user (cache hit → ensureLoaded resolves a user, Create not called)', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'existing@example.com' },
 			})
@@ -85,13 +87,11 @@ describe('AuthCallbackRoute', () => {
 			expect(result).toBe('/dashboard')
 		})
 
-		it('should provision new user when ensureLoaded returns NotFound', async () => {
+		it('falls back to Create when ensureLoaded returns undefined (cache miss)', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'new@example.com' },
 			})
-			mockUserService.ensureLoaded = vi
-				.fn()
-				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
+			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
@@ -101,7 +101,35 @@ describe('AuthCallbackRoute', () => {
 			expect(result).toBe('/dashboard')
 		})
 
-		it('should redirect to dashboard on error if already authenticated', async () => {
+		it('treats Create response as fresh signup when guest home is set (sets postSignupShown flag)', async () => {
+			mockAuth.handleCallback = vi.fn().mockResolvedValue({
+				profile: { email: 'new@example.com' },
+			})
+			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
+			setup('JP-13')
+
+			localStorage.removeItem('liverty:postSignup:shown')
+			const result = await sut.canLoad({}, {} as RouteNode)
+
+			expect(result).toBe('/dashboard')
+			expect(localStorage.getItem('liverty:postSignup:shown')).toBe('pending')
+		})
+
+		it('does NOT set postSignupShown when guest home is absent (returning user on fresh device)', async () => {
+			mockAuth.handleCallback = vi.fn().mockResolvedValue({
+				profile: { email: 'returning@example.com' },
+			})
+			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
+			setup(null)
+
+			localStorage.removeItem('liverty:postSignup:shown')
+			const result = await sut.canLoad({}, {} as RouteNode)
+
+			expect(result).toBe('/dashboard')
+			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
+		})
+
+		it('redirects to dashboard on error if already authenticated', async () => {
 			mockAuth.handleCallback = vi
 				.fn()
 				.mockRejectedValue(new Error('callback error'))
@@ -113,7 +141,7 @@ describe('AuthCallbackRoute', () => {
 			expect(sut.error).toBe('')
 		})
 
-		it('should show error when callback fails and not authenticated', async () => {
+		it('shows error when callback fails and not authenticated', async () => {
 			mockAuth.handleCallback = vi
 				.fn()
 				.mockRejectedValue(new Error('auth failed'))
@@ -125,32 +153,23 @@ describe('AuthCallbackRoute', () => {
 			expect(sut.error).toBe('Login failed: auth failed')
 		})
 
-		it('should handle provisionUser ALREADY_EXISTS gracefully', async () => {
+		it('skips provisionUser when email is missing', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'existing@example.com' },
+				profile: {},
 			})
-			mockUserService._current = undefined
-			mockUserService.ensureLoaded = vi
-				.fn()
-				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
-				.mockResolvedValueOnce(undefined)
-			mockUserService.create = vi
-				.fn()
-				.mockRejectedValue(new ConnectError('exists', Code.AlreadyExists))
+			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(2)
+			expect(mockUserService.create).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 
-		it('should show error when provisionUser fails with non-AlreadyExists error', async () => {
+		it('surfaces Create errors as a login failure', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'new@example.com' },
 			})
-			mockUserService.ensureLoaded = vi
-				.fn()
-				.mockRejectedValue(new ConnectError('not found', Code.NotFound))
+			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
 			mockUserService.create = vi
 				.fn()
 				.mockRejectedValue(new Error('server error'))
@@ -161,23 +180,7 @@ describe('AuthCallbackRoute', () => {
 			expect(sut.error).toBe('Login failed: server error')
 		})
 
-		it('should skip provisionUser when email is missing and ensureLoaded returns NotFound', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: {},
-			})
-			mockUserService._current = undefined
-			mockUserService.ensureLoaded = vi
-				.fn()
-				.mockRejectedValueOnce(new ConnectError('not found', Code.NotFound))
-				.mockResolvedValueOnce(undefined)
-
-			const result = await sut.canLoad({}, {} as RouteNode)
-
-			expect(mockUserService.create).not.toHaveBeenCalled()
-			expect(result).toBe('/dashboard')
-		})
-
-		it('should delegate onboarding completion to merge service (not call complete directly)', async () => {
+		it('delegates onboarding completion to merge service (not call complete directly)', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'user@example.com' },
 			})
