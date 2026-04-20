@@ -144,6 +144,18 @@ describe('WelcomeRoute', () => {
 			await sut.handleLogin()
 			expect(mockAuth.signIn).toHaveBeenCalledOnce()
 		})
+
+		it('clears guest data before initiating sign-in to prevent stale guest.home from leaking into the auth-callback signup heuristic', async () => {
+			await sut.handleLogin()
+
+			expect(mockGuest.clearAll).toHaveBeenCalledOnce()
+			expect(mockAuth.signIn).toHaveBeenCalledOnce()
+			// Order matters: clearAll MUST happen before signIn so the OIDC
+			// redirect leaves no stale guest state behind.
+			expect(mockGuest.clearAll.mock.invocationCallOrder[0]).toBeLessThan(
+				mockAuth.signIn.mock.invocationCallOrder[0],
+			)
+		})
 	})
 
 	describe('detaching', () => {
