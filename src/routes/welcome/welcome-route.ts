@@ -136,7 +136,10 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	async handleGetStarted(): Promise<void> {
 		this.logger.info('Get Started tapped, entering onboarding')
-		this.guest.clearAll()
+		// Reset the onboarding cursor but PRESERVE guest data. A user returning
+		// to / after having already followed artists as a guest should resume
+		// onboarding with those follows intact, not start from zero. Login is
+		// different — see handleLogin for the rationale.
 		this.onboarding.reset()
 		this.onboarding.setStep(OnboardingStep.DISCOVERY)
 		try {

@@ -129,10 +129,14 @@ describe('WelcomeRoute', () => {
 	})
 
 	describe('handleGetStarted', () => {
-		it('clears guest data, resets onboarding, and navigates to discovery', async () => {
+		it('resets onboarding and navigates to discovery without clearing guest data', async () => {
 			await sut.handleGetStarted()
 
-			expect(mockGuest.clearAll).toHaveBeenCalledOnce()
+			// Guest data (follows/home) MUST be preserved so that users who
+			// tapped Get Started after already having followed artists as a
+			// guest don't lose their work. Spec: landing-page > Get Started
+			// initiates onboarding without clearing guest data.
+			expect(mockGuest.clearAll).not.toHaveBeenCalled()
 			expect(mockOnboarding.reset).toHaveBeenCalledOnce()
 			expect(mockOnboarding.setStep).toHaveBeenCalledWith('discovery')
 			expect(mockRouter.load).toHaveBeenCalledWith('discovery')
