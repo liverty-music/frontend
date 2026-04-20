@@ -1,24 +1,10 @@
-<!-- Screen 1: Hero with CTA (full viewport, actionable first view) -->
+<!-- Screen 1: Hero-only hook screen -->
 <header class="[ welcome-hero ]">
   <p class="welcome-brand">
     Liverty Music
   </p>
   <h1 t="welcome.hero.title" class="welcome-title"></h1>
   <p t="welcome.hero.subtitle" class="welcome-subtitle"></p>
-
-  <div class="welcome-cta-group">
-    <button
-      click.trigger="handleGetStarted()"
-      class="welcome-btn-primary"
-      t="welcome.cta.getStarted"
-    ></button>
-
-    <button
-      click.trigger="handleLogin()"
-      class="welcome-btn-secondary"
-      t="welcome.cta.login"
-    ></button>
-  </div>
 
   <fieldset class="welcome-lang">
     <legend class="[ visually-hidden ]">Language</legend>
@@ -34,10 +20,31 @@
     </label>
   </fieldset>
 
-  <div class="welcome-scroll-hint" if.bind="dateGroups.length > 0" aria-hidden="true"></div>
+  <!-- With preview data: single scroll-affordance that reveals Screen 2 -->
+  <button
+    if.bind="dateGroups.length > 0"
+    click.trigger="scrollToPreview()"
+    class="welcome-scroll-cta"
+    t="welcome.hero.seePreview"
+  ></button>
+
+  <!-- Without preview data: no Screen 2 exists, so fall back to inline CTAs
+       so unauthenticated users can still start onboarding or sign in. -->
+  <div else class="[ welcome-cta-group welcome-hero-fallback-cta-group ]">
+    <button
+      click.trigger="handleGetStarted()"
+      class="welcome-btn-primary"
+      t="welcome.cta.getStarted"
+    ></button>
+    <button
+      click.trigger="handleLogin()"
+      class="welcome-btn-secondary"
+      t="welcome.cta.login"
+    ></button>
+  </div>
 </header>
 
-<!-- Screen 2: Live dashboard preview (bonus scroll destination) -->
+<!-- Screen 2: Live dashboard preview + CTA -->
 <section class="[ welcome-screen-2 ]" if.bind="dateGroups.length > 0">
   <p t="welcome.preview.label" class="welcome-preview-label"></p>
   <div class="[ welcome-preview ]" data-testid="welcome-preview" role="presentation">
