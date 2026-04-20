@@ -149,6 +149,14 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	async handleLogin(): Promise<void> {
 		this.logger.info('Login tapped')
+		// Discard any anonymous trial state (guest follows, guest home) before
+		// starting sign-in. Login is an explicit assertion of "I am a returning
+		// user", so leftover guest data must not leak into auth-callback's
+		// post-sign-in heuristics — most importantly the guestHome-driven
+		// new-signup detection in ensureUserProvisioned, which would otherwise
+		// surface PostSignupDialog to an existing user who happened to pick a
+		// home during a prior anonymous session.
+		this.guest.clearAll()
 		try {
 			await this.authService.signIn()
 		} catch (err) {

@@ -1,3 +1,4 @@
+import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IUserRpcClient } from '../../src/adapter/rpc/client/user-client'
@@ -14,11 +15,16 @@ import { createMockAuth } from '../helpers/mock-auth'
 const externalID = 'ext-abc'
 const internalID = 'user-uuid-1'
 const cacheKey = `liverty:userId:${externalID}`
+const userEmail = 'u@test.com'
 
-function makeAuth() {
+function makeAuth(opts?: { email?: string | null }) {
+	const profile: { sub: string; email?: string } = { sub: externalID }
+	if (opts?.email !== null) {
+		profile.email = opts?.email ?? userEmail
+	}
 	const auth = createMockAuth({
 		isAuthenticated: true,
-		user: { profile: { sub: externalID } } as never,
+		user: { profile } as never,
 	})
 	return auth
 }
@@ -80,13 +86,30 @@ describe('UserServiceClient', () => {
 	})
 
 	describe('ensureLoaded', () => {
-		it('returns undefined and skips Get when no user_id is cached', async () => {
+		it('falls back to idempotent Create when no user_id is cached', async () => {
+			rpc.create.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
+
+			const result = await svc.ensureLoaded()
+
+			expect(rpc.get).not.toHaveBeenCalled()
+			expect(rpc.create).toHaveBeenCalledWith(userEmail)
+			expect(result).toBe(stubUser)
+			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
+		})
+
+		it('returns undefined when no cache AND no email in JWT claims', async () => {
+			const svc = build({
+				storage,
+				rpc,
+				auth: makeAuth({ email: null }),
+			})
 
 			const result = await svc.ensureLoaded()
 
 			expect(result).toBeUndefined()
 			expect(rpc.get).not.toHaveBeenCalled()
+			expect(rpc.create).not.toHaveBeenCalled()
 		})
 
 		it('calls Get with cached user_id and writes the result back to cache', async () => {
@@ -97,6 +120,7 @@ describe('UserServiceClient', () => {
 			const result = await svc.ensureLoaded()
 
 			expect(rpc.get).toHaveBeenCalledWith(internalID)
+			expect(rpc.create).not.toHaveBeenCalled()
 			expect(result).toBe(stubUser)
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
 		})
@@ -111,6 +135,34 @@ describe('UserServiceClient', () => {
 
 			expect(rpc.get).toHaveBeenCalledTimes(1)
 			expect(second).toBe(stubUser)
+		})
+
+		it('self-heals when cached user_id is rejected with PermissionDenied — clears cache and recovers via Create', async () => {
+			storage.map.set(cacheKey, 'stale-uuid')
+			rpc.get.mockRejectedValue(
+				new ConnectError('user_id mismatch', Code.PermissionDenied),
+			)
+			rpc.create.mockResolvedValue(stubUser)
+			const svc = build({ storage, rpc })
+
+			const result = await svc.ensureLoaded()
+
+			expect(rpc.get).toHaveBeenCalledWith('stale-uuid')
+			expect(storage.impl.removeItem).toHaveBeenCalledWith(cacheKey)
+			expect(rpc.create).toHaveBeenCalledWith(userEmail)
+			expect(result).toBe(stubUser)
+			// New userId should be cached after Create succeeds
+			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
+		})
+
+		it('rethrows non-PermissionDenied errors from Get without clearing cache', async () => {
+			storage.map.set(cacheKey, internalID)
+			rpc.get.mockRejectedValue(new ConnectError('not found', Code.NotFound))
+			const svc = build({ storage, rpc })
+
+			await expect(svc.ensureLoaded()).rejects.toThrow(/not found/)
+			expect(storage.impl.removeItem).not.toHaveBeenCalled()
+			expect(rpc.create).not.toHaveBeenCalled()
 		})
 	})
 

@@ -87,44 +87,49 @@ describe('AuthCallbackRoute', () => {
 			expect(result).toBe('/dashboard')
 		})
 
-		it('falls back to Create when ensureLoaded returns undefined (cache miss)', async () => {
+		it('delegates cache-miss recovery to UserService.ensureLoaded — Create is NOT called from auth-callback when there is no guest home', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'new@example.com' },
 			})
+			// ensureLoaded internally handles cache hit/miss (calls Get or Create
+			// depending on cache state). Auth-callback only invokes Create
+			// explicitly when there is a guestHome to persist atomically.
 			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(1)
-			expect(mockUserService.create).toHaveBeenCalled()
+			expect(mockUserService.create).not.toHaveBeenCalled()
 			expect(mockMergeService.merge).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 
-		it('treats Create response as fresh signup when guest home is set (sets postSignupShown flag)', async () => {
+		it('explicitly calls Create with home when guest selected one — sets postSignupShown flag', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'new@example.com' },
 			})
-			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
 			setup('JP-13')
 
 			localStorage.removeItem('liverty:postSignup:shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
+			expect(mockUserService.create).toHaveBeenCalled()
+			expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 			expect(localStorage.getItem('liverty:postSignup:shown')).toBe('pending')
 		})
 
-		it('does NOT set postSignupShown when guest home is absent (returning user on fresh device)', async () => {
+		it('does NOT set postSignupShown when guest home is absent — relies on ensureLoaded only', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'returning@example.com' },
 			})
-			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
 			setup(null)
 
 			localStorage.removeItem('liverty:postSignup:shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
+			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
+			expect(mockUserService.create).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
 		})
@@ -153,24 +158,25 @@ describe('AuthCallbackRoute', () => {
 			expect(sut.error).toBe('Login failed: auth failed')
 		})
 
-		it('skips provisionUser when email is missing', async () => {
+		it('does not invoke explicit Create when email is missing even with guest home', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: {},
 			})
+			setup('JP-13')
 			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.create).not.toHaveBeenCalled()
+			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 
-		it('surfaces Create errors as a login failure', async () => {
+		it('surfaces ensureLoaded errors as a login failure', async () => {
 			mockAuth.handleCallback = vi.fn().mockResolvedValue({
 				profile: { email: 'new@example.com' },
 			})
-			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
-			mockUserService.create = vi
+			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockRejectedValue(new Error('server error'))
 

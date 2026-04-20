@@ -61,52 +61,29 @@ export class AuthCallbackRoute {
 		}
 	}
 
-	// Resolve the caller's internal user_id and cache it. Cache hit → call Get.
-	// Cache miss (fresh device, sign-up, or cleared storage) → call Create,
-	// which is now idempotent on duplicate external_id and returns either the
-	// newly created or existing user.
+	// Resolve the caller's internal user_id and cache it.
 	//
-	// Returns true when the response represents a fresh signup (no cached
-	// user_id existed before this call AND home was supplied from the guest
-	// onboarding flow — best-effort heuristic since the backend no longer
-	// distinguishes new vs. existing on the wire).
+	// When the guest selected a home during onboarding, we MUST take the
+	// explicit-Create path so the home is persisted atomically with the user
+	// record (idempotent Create on the backend ignores `home` for existing
+	// users, so this is also safe for sign-in-as-existing).
+	//
+	// Otherwise UserService.ensureLoaded() handles everything: cache hit →
+	// Get, cache miss → idempotent Create using the JWT email.
+	//
+	// Returns true when this session looks like a first-time signup. The
+	// presence of guestHome (set only during the onboarding flow before
+	// account creation) is a reliable proxy.
 	private async ensureUserProvisioned(
 		email: string | undefined,
 	): Promise<boolean> {
-		const loaded = await this.userService.ensureLoaded()
-		if (loaded) {
-			return false
-		}
-		return this.provisionUser(email)
-	}
-
-	// Call the (now idempotent) Create RPC. If the guest selected a home
-	// during onboarding, include it so it is persisted atomically with the
-	// user record. Returns true if this looks like a fresh signup.
-	private async provisionUser(email: string | undefined): Promise<boolean> {
-		if (!email) {
-			this.logger.error('User email is missing, cannot provision user')
-			return false
+		const guestHome = this.guest.home
+		if (guestHome && email) {
+			await this.userService.create(email, codeToHome(guestHome))
+			return true
 		}
 
-		try {
-			const guestHome = this.guest.home
-			const created = await this.userService.create(
-				email,
-				guestHome ? codeToHome(guestHome) : undefined,
-			)
-			this.logger.info('User provisioned (or returned existing)', { email })
-			// guestHome is only present during the new-signup onboarding flow.
-			// Its presence is a reliable signal that this session represents a
-			// first-time signup; returning users on a fresh device do not have a
-			// guest profile in localStorage.
-			return Boolean(created) && Boolean(guestHome)
-		} catch (err) {
-			this.logger.error('Failed to provision user in backend', {
-				email,
-				error: err,
-			})
-			throw err
-		}
+		await this.userService.ensureLoaded()
+		return false
 	}
 }
