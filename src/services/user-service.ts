@@ -1,3 +1,4 @@
+import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IUserRpcClient } from '../adapter/rpc/client/user-client'
 import { ILocalStorage } from '../adapter/storage/local-storage'
@@ -38,24 +39,51 @@ export class UserServiceClient implements IUserService {
 		return this._current
 	}
 
-	// Reads the cached internal user_id from localStorage and calls Get. The
-	// rpc-auth-scoping convention requires the caller to supply user_id on
-	// every per-user RPC; on cache miss this method returns undefined so
-	// callers can fall back to Create (which is the sanctioned cache-miss
-	// recovery path — idempotent on duplicate external_id).
+	// Resolves the authenticated user via:
+	//   1. in-memory cache (already hydrated this session)
+	//   2. localStorage cache → Get with cached user_id
+	//   3. recovery: idempotent Create using JWT email — covers fresh device,
+	//      cleared cache, AND any boot path (auth-callback, UserHydrationTask,
+	//      direct dashboard reload) that needs a guaranteed user.
+	//
+	// On stale cache (cached user_id no longer matches the JWT-derived userID,
+	// e.g. after manual tampering or cross-device sync), the backend returns
+	// PERMISSION_DENIED — caught here, cache cleared, and the recovery path
+	// runs so the app self-heals instead of locking the user out.
 	public async ensureLoaded(): Promise<User | undefined> {
 		if (this._current) return this._current
 
 		const userId = this.readCachedUserId()
-		if (!userId) {
-			this.logger.info(
-				'No cached user_id; skipping Get (caller should fall back to Create)',
+		if (userId) {
+			try {
+				this.logger.info('Loading user profile from backend (cache hit)')
+				this._current = await this.rpcClient.get(userId)
+				if (this._current) this.writeCachedUserId(this._current.id)
+				return this._current
+			} catch (err) {
+				if (err instanceof ConnectError && err.code === Code.PermissionDenied) {
+					this.logger.warn(
+						'Cached user_id rejected by backend; clearing and recovering via Create',
+					)
+					this.removeCachedUserId()
+				} else {
+					throw err
+				}
+			}
+		}
+
+		// Cache miss (initial OR cleared by stale check above) — recover via
+		// idempotent Create using the email from JWT claims.
+		const email = this.authService.user?.profile.email
+		if (!email) {
+			this.logger.warn(
+				'No cached user_id and no email in auth claims; cannot bootstrap user',
 			)
 			return undefined
 		}
 
-		this.logger.info('Loading user profile from backend')
-		this._current = await this.rpcClient.get(userId)
+		this.logger.info('Bootstrapping via idempotent Create (cache miss)')
+		this._current = await this.rpcClient.create(email)
 		if (this._current) this.writeCachedUserId(this._current.id)
 		return this._current
 	}
