@@ -1,6 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
-import { DI, IEventAggregator, Registration } from 'aurelia'
+import { DI, IEventAggregator, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockI18n } from '../helpers/mock-i18n'
@@ -66,6 +66,7 @@ describe('WelcomeRoute', () => {
 	}
 	let mockGuest: { clearAll: ReturnType<typeof vi.fn> }
 	let mockRouter: ReturnType<typeof createMockRouter>
+	let host: HTMLElement
 
 	beforeEach(() => {
 		mockAuth = {
@@ -86,6 +87,7 @@ describe('WelcomeRoute', () => {
 		}
 		mockGuest = { clearAll: vi.fn() }
 		mockRouter = createMockRouter()
+		host = document.createElement('div')
 
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
@@ -98,6 +100,7 @@ describe('WelcomeRoute', () => {
 				subscribe: vi.fn(() => ({ dispose: vi.fn() })),
 			}),
 			Registration.instance(I18N, createMockI18n()),
+			Registration.instance(INode, host),
 		)
 		container.register(WelcomeRoute)
 		sut = container.get(WelcomeRoute)
@@ -172,6 +175,82 @@ describe('WelcomeRoute', () => {
 
 			expect(abortSpy).toHaveBeenCalled()
 			abortSpy.mockRestore()
+		})
+	})
+
+	describe('scrollToPreview', () => {
+		let screen2: HTMLElement
+		let scrollIntoViewSpy: ReturnType<typeof vi.fn>
+		let matchMediaSpy: ReturnType<typeof vi.spyOn> | null
+
+		beforeEach(() => {
+			screen2 = document.createElement('section')
+			screen2.className = 'welcome-screen-2'
+			scrollIntoViewSpy = vi.fn()
+			screen2.scrollIntoView = scrollIntoViewSpy
+			host.appendChild(screen2)
+			matchMediaSpy = null
+		})
+
+		afterEach(() => {
+			matchMediaSpy?.mockRestore()
+		})
+
+		it('calls scrollIntoView with smooth behavior when reduced-motion is not set', () => {
+			matchMediaSpy = vi.spyOn(window, 'matchMedia').mockImplementation(
+				(query: string) =>
+					({
+						matches: false,
+						media: query,
+						onchange: null,
+						addListener: vi.fn(),
+						removeListener: vi.fn(),
+						addEventListener: vi.fn(),
+						removeEventListener: vi.fn(),
+						dispatchEvent: vi.fn(),
+					}) as unknown as MediaQueryList,
+			)
+
+			sut.scrollToPreview()
+
+			expect(scrollIntoViewSpy).toHaveBeenCalledOnce()
+			expect(scrollIntoViewSpy).toHaveBeenCalledWith({
+				behavior: 'smooth',
+				block: 'start',
+			})
+		})
+
+		it('uses auto behavior when prefers-reduced-motion is set', () => {
+			matchMediaSpy = vi.spyOn(window, 'matchMedia').mockImplementation(
+				(query: string) =>
+					({
+						matches: query === '(prefers-reduced-motion: reduce)',
+						media: query,
+						onchange: null,
+						addListener: vi.fn(),
+						removeListener: vi.fn(),
+						addEventListener: vi.fn(),
+						removeEventListener: vi.fn(),
+						dispatchEvent: vi.fn(),
+					}) as unknown as MediaQueryList,
+			)
+
+			sut.scrollToPreview()
+
+			expect(scrollIntoViewSpy).toHaveBeenCalledWith({
+				behavior: 'auto',
+				block: 'start',
+			})
+		})
+
+		it('is a no-op when the preview section is not rendered', () => {
+			// Remove the preview section to simulate the empty-preview state
+			// (dateGroups.length === 0 — Screen 2 is excluded by if.bind).
+			host.removeChild(screen2)
+
+			sut.scrollToPreview()
+
+			expect(scrollIntoViewSpy).not.toHaveBeenCalled()
 		})
 	})
 })

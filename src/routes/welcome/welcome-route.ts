@@ -4,7 +4,7 @@ import {
 	type IRouteViewModel,
 	type NavigationInstruction,
 } from '@aurelia/router'
-import { IEventAggregator, ILogger, observable, resolve } from 'aurelia'
+import { IEventAggregator, ILogger, INode, observable, resolve } from 'aurelia'
 import { Snack } from '../../components/snack-bar/snack'
 import {
 	PREVIEW_ARTIST_IDS,
@@ -32,6 +32,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 	private readonly concertService = resolve(IConcertService)
+	private readonly host = resolve(INode) as HTMLElement
 
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	@observable public currentLocale: string = ''
@@ -132,6 +133,33 @@ export class WelcomeRoute implements IRouteViewModel {
 		}
 
 		return true
+	}
+
+	/**
+	 * Smooth-scrolls the viewport to Screen 2 (the preview section). Honors the
+	 * user's `prefers-reduced-motion` setting by jumping instantly instead. No-op
+	 * when Screen 2 is not rendered (i.e. `dateGroups` is empty).
+	 */
+	scrollToPreview(): void {
+		const target = this.host.querySelector('.welcome-screen-2')
+		if (!target) {
+			this.logger.debug('scrollToPreview invoked but preview section absent')
+			return
+		}
+
+		const prefersReducedMotion =
+			typeof window !== 'undefined' &&
+			typeof window.matchMedia === 'function' &&
+			window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+		this.logger.debug('Scroll affordance activated', {
+			reducedMotion: prefersReducedMotion,
+		})
+
+		target.scrollIntoView({
+			behavior: prefersReducedMotion ? 'auto' : 'smooth',
+			block: 'start',
+		})
 	}
 
 	async handleGetStarted(): Promise<void> {

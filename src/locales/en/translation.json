@@ -6,7 +6,8 @@
 	"welcome": {
 		"hero": {
 			"title": "Never miss a live show from the bands you love.",
-			"subtitle": "Just follow your favorite artists and we'll automatically collect live schedules nationwide."
+			"subtitle": "Just follow your favorite artists and we'll automatically collect live schedules nationwide.",
+			"seePreview": "See how it works"
 		},
 		"cta": {
 			"getStarted": "Get Started",

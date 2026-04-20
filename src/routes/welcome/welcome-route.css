@@ -2,7 +2,7 @@
 	@scope (welcome-route) {
 		:scope {
 			scroll-behavior: smooth;
-			scroll-snap-type: y mandatory;
+			scroll-snap-type: y proximity;
 
 			overflow-y: auto;
 			display: block;
@@ -17,7 +17,9 @@
 			);
 		}
 
-		/* ── Screen 1: Hero (full viewport) ── */
+		/* ── Screen 1: Hero hook ──
+		   95svh when Screen 2 follows (peek effect); 100svh when alone
+		   (fallback path — no preview data, no Screen 2). */
 		.welcome-hero {
 			scroll-snap-align: start;
 
@@ -26,12 +28,21 @@
 			align-items: center;
 			justify-content: center;
 
-			block-size: 100svh;
+			block-size: 95svh;
 			padding-inline: var(--space-l);
 
 			text-align: center;
 
 			animation: fade-in 600ms ease-out both;
+
+			&:not(:has(~ .welcome-screen-2)) {
+				block-size: 100svh;
+			}
+		}
+
+		.welcome-hero-fallback-cta-group {
+			max-inline-size: 28rem;
+			margin-block-start: var(--space-l);
 		}
 
 		.welcome-brand {
@@ -62,17 +73,55 @@
 			color: var(--color-text-secondary);
 		}
 
-		.welcome-scroll-hint {
-			position: absolute;
-			inset-block-end: var(--space-l);
-			transform: rotate(45deg);
+		.welcome-scroll-cta {
+			cursor: pointer;
 
-			inline-size: 24px;
-			block-size: 24px;
-			border-block-end: 2px solid var(--color-text-muted);
-			border-inline-end: 2px solid var(--color-text-muted);
+			display: inline-flex;
+			gap: var(--space-2xs);
+			align-items: center;
+			justify-content: center;
 
-			animation: bounce-down 2s ease-in-out infinite;
+			min-inline-size: 44px;
+			min-block-size: 44px;
+			margin-block-start: var(--space-l);
+			padding: var(--space-xs) var(--space-m);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step-0);
+			font-weight: 500;
+			color: var(--color-text-secondary);
+
+			background: transparent;
+
+			transition:
+				color 200ms,
+				border-color 200ms,
+				background 200ms;
+
+			&::after {
+				content: "↓";
+				display: inline-block;
+			}
+
+			&:hover {
+				border-color: var(--color-brand-primary);
+				color: var(--color-text-primary);
+				background: color-mix(
+					in oklch,
+					var(--color-brand-primary) 8%,
+					transparent
+				);
+			}
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
+			}
+
+			&:active {
+				transform: scale(0.98);
+			}
 		}
 
 		/* ── Screen 2: Preview + CTA ── */
@@ -246,24 +295,12 @@
 			text-underline-offset: 4px;
 		}
 
-		@keyframes bounce-down {
-			0%,
-			100% {
-				transform: translateY(0);
-			}
-
-			50% {
-				transform: translateY(var(--space-xs));
-			}
-		}
-
 		@media (prefers-reduced-motion: reduce) {
 			:scope {
 				scroll-behavior: auto;
 			}
 
-			.welcome-hero,
-			.welcome-scroll-hint {
+			.welcome-hero {
 				animation: none;
 			}
 		}

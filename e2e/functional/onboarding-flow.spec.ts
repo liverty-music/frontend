@@ -243,34 +243,76 @@ test.describe('Onboarding tutorial flow', () => {
 	// LP (Step 0)
 	// -------------------------------------------------------------------------
 
-	test('Step 0: Welcome page shows Get Started button', async ({ page }) => {
-		await page.goto('http://localhost:9000/')
-		await expect(
-			page.locator('button').filter({ hasText: /get started/i }).first(),
-		).toBeVisible()
-	})
-
-	test('Step 0 → Step 1: Get Started navigates to Discover', async ({
+	test('Step 0: Welcome page shows scroll affordance above the fold, CTAs on Screen 2', async ({
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/')
-		await page
-			.locator('button')
+
+		// Screen 1 shows the [See how it works] scroll-affordance, not [Get Started]
+		const scrollCta = page.locator('.welcome-scroll-cta')
+		await expect(scrollCta).toBeVisible({ timeout: 10_000 })
+
+		// [Get Started] is attached (in Screen 2) but not within the initial
+		// viewport — assert it exists via toBeAttached (DOM) and does NOT satisfy
+		// toBeInViewport (visual position).
+		const getStarted = page.locator('button').filter({ hasText: /get started/i }).first()
+		await expect(getStarted).toBeAttached()
+		await expect(getStarted).not.toBeInViewport()
+	})
+
+	test('Step 0 → Step 1: tapping See how it works scrolls to Screen 2, then Get Started navigates to Discover', async ({
+		page,
+	}) => {
+		await page.goto('http://localhost:9000/')
+
+		// Tap scroll affordance on Screen 1
+		await page.locator('.welcome-scroll-cta').click()
+
+		// Screen 2's Get Started becomes visible after the smooth scroll completes
+		const getStarted = page
+			.locator('.welcome-screen-2 button')
 			.filter({ hasText: /get started/i })
-			.click()
+		await expect(getStarted).toBeInViewport({ timeout: 3000 })
+
+		await getStarted.click()
 		await expect(page).toHaveURL(/discover/, { timeout: 10_000 })
 	})
 
-	test('Completed: welcome page still shows Get Started button', async ({
+	test('Completed: welcome page still exposes Get Started on Screen 2', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
 			localStorage.setItem('onboardingStep', 'completed')
 		})
 		await page.goto('http://localhost:9000/')
+
+		// Screen 2's Get Started is attached (accessible via scroll) even if not
+		// currently in viewport.
 		await expect(
-			page.locator('button').filter({ hasText: /get started/i }).first(),
-		).toBeVisible({ timeout: 5000 })
+			page
+				.locator('.welcome-screen-2 button')
+				.filter({ hasText: /get started/i }),
+		).toBeAttached({ timeout: 5000 })
+	})
+
+	test('Step 0: preview peek is visible in the initial viewport', async ({
+		page,
+	}) => {
+		await page.goto('http://localhost:9000/')
+
+		// Screen 2 is attached and its top edge intersects the initial viewport
+		// (the ~5svh peek).
+		const screen2 = page.locator('.welcome-screen-2')
+		await expect(screen2).toBeAttached({ timeout: 10_000 })
+
+		const viewport = page.viewportSize()
+		const box = await screen2.boundingBox()
+		expect(box).not.toBeNull()
+		if (box && viewport) {
+			// Top edge of Screen 2 is within the viewport (not scrolled past it).
+			expect(box.y).toBeGreaterThan(0)
+			expect(box.y).toBeLessThan(viewport.height)
+		}
 	})
 
 	test('Step 0: Dashboard preview renders when concert data is available', async ({
@@ -293,7 +335,7 @@ test.describe('Onboarding tutorial flow', () => {
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 	})
 
-	test('Step 0: Dashboard preview is hidden when no concert data', async ({
+	test('Step 0: Dashboard preview is hidden when no concert data; hero CTAs fall back inline', async ({
 		page,
 	}) => {
 		// Override the default mock to return empty concerts for all ConcertService/List calls.
@@ -308,13 +350,17 @@ test.describe('Onboarding tutorial flow', () => {
 
 		await page.goto('http://localhost:9000/')
 
-		// Get Started button still visible — page loads normally
+		// In the fallback state, [Get Started] renders inline on Screen 1 and is
+		// visible in the initial viewport.
 		await expect(
 			page.locator('button').filter({ hasText: /get started/i }).first(),
 		).toBeVisible({ timeout: 5000 })
 
-		// Preview section must not be in the DOM (if.bind="previewDateGroups.length > 0")
+		// Preview section is absent (if.bind="dateGroups.length > 0")
 		await expect(page.locator('[data-testid="welcome-preview"]')).not.toBeAttached()
+
+		// Scroll-affordance button is also absent when there's no Screen 2 to scroll to
+		await expect(page.locator('.welcome-scroll-cta')).not.toBeAttached()
 	})
 
 	// -------------------------------------------------------------------------
