@@ -3,6 +3,7 @@ import QRCode from 'qrcode'
 import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
 import type { Ticket } from '../../entities/ticket'
 import { IProofService } from '../../services/proof-service'
+import { IUserService } from '../../services/user-service'
 
 export class TicketsRoute {
 	public tickets: Ticket[] = []
@@ -18,6 +19,7 @@ export class TicketsRoute {
 	private readonly logger = resolve(ILogger).scopeTo('TicketsRoute')
 	private readonly ticketClient = resolve(ITicketRpcClient)
 	private readonly proofService = resolve(IProofService)
+	private readonly userService = resolve(IUserService)
 	private abortController: AbortController | null = null
 
 	public async loading(): Promise<void> {
@@ -26,7 +28,14 @@ export class TicketsRoute {
 		this.abortController = new AbortController()
 
 		try {
+			const userId = this.userService.current?.id
+			if (!userId) {
+				this.error = 'Not signed in.'
+				return
+			}
+
 			this.tickets = await this.ticketClient.listTickets(
+				userId,
 				this.abortController.signal,
 			)
 			this.logger.info('Tickets loaded', { count: this.tickets.length })
