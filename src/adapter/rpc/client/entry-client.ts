@@ -1,3 +1,4 @@
+import { UserId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { EntryService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/entry/v1/entry_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -24,12 +25,16 @@ export class EntryRpcClient {
 
 	public async getMerklePath(
 		eventId: string,
+		userId: string,
 		signal?: AbortSignal,
 	): Promise<MerklePath> {
 		this.logger.info('Fetching Merkle path', { eventId })
 		try {
 			const response = await this.entryClient.getMerklePath(
-				{ eventId: { value: eventId } },
+				{
+					eventId: { value: eventId },
+					userId: new UserId({ value: userId }),
+				},
 				{ signal },
 			)
 			return {

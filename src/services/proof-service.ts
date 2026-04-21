@@ -33,7 +33,7 @@ export class ProofServiceClient {
 
 	public async generateEntryProof(
 		eventId: string,
-		_userId: string,
+		userId: string,
 		onProgress?: (stage: string) => void,
 		signal?: AbortSignal,
 	): Promise<ProofOutput> {
@@ -41,7 +41,11 @@ export class ProofServiceClient {
 
 		onProgress?.('Fetching Merkle path...')
 
-		const merklePath = await this.entryClient.getMerklePath(eventId, signal)
+		const merklePath = await this.entryClient.getMerklePath(
+			eventId,
+			userId,
+			signal,
+		)
 
 		const pathElements = merklePath.pathElements.map((bytes) =>
 			bytesToDecimal(bytes),
