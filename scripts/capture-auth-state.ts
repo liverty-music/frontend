@@ -16,9 +16,10 @@
  * to complete the OIDC login flow. Once authenticated, it saves the browser
  * state to .auth/storageState.json for use with Playwright MCP.
  */
-import { chromium } from '@playwright/test'
+
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { chromium } from '@playwright/test'
 
 const APP_URL = process.env.APP_URL || 'http://localhost:9000'
 const OUTPUT_DIR = path.join(import.meta.dirname, '..', '.auth')
@@ -40,22 +41,36 @@ async function captureAuthState(): Promise<void> {
 	console.log('Please complete the login flow in the browser window.')
 	console.log('Waiting for authentication to complete...')
 	console.log('(Checking storage every 1 second for oidc.user: key...)')
-	console.log('⚠️  DO NOT CLOSE THE BROWSER - wait for "Storage state saved" message')
+	console.log(
+		'⚠️  DO NOT CLOSE THE BROWSER - wait for "Storage state saved" message',
+	)
 
 	// Wait for the app to redirect after successful OIDC login.
-	// oidc-client-ts can use either localStorage or sessionStorage
+	// oidc-client-ts can use either localStorage or sessionStorage.
+	// Some intermediate pages (Zitadel Login V2 UI, about:blank during redirects)
+	// throw SecurityError when reading storage — swallow those and keep polling.
 	await page.waitForFunction(
 		() => {
-			const localKeys = Object.keys(localStorage)
-			const sessionKeys = Object.keys(sessionStorage)
-			const userKey =
-				localKeys.find((key) => key.startsWith('oidc.user:')) ||
-				sessionKeys.find((key) => key.startsWith('oidc.user:'))
-			if (!userKey) {
-				console.log(`[${new Date().toISOString()}] localStorage:`, localKeys.join(', ') || '(empty)')
-				console.log(`[${new Date().toISOString()}] sessionStorage:`, sessionKeys.join(', ') || '(empty)')
+			try {
+				const localKeys = Object.keys(localStorage)
+				const sessionKeys = Object.keys(sessionStorage)
+				const userKey =
+					localKeys.find((key) => key.startsWith('oidc.user:')) ||
+					sessionKeys.find((key) => key.startsWith('oidc.user:'))
+				if (!userKey) {
+					console.log(
+						`[${new Date().toISOString()}] localStorage:`,
+						localKeys.join(', ') || '(empty)',
+					)
+					console.log(
+						`[${new Date().toISOString()}] sessionStorage:`,
+						sessionKeys.join(', ') || '(empty)',
+					)
+				}
+				return userKey !== undefined
+			} catch {
+				return false
 			}
-			return userKey !== undefined
 		},
 		{ polling: 1000 }, // Check every 1 second (timeout set at page level)
 	)
@@ -66,9 +81,7 @@ async function captureAuthState(): Promise<void> {
 
 	console.log(`Storage state saved to ${OUTPUT_PATH}`)
 	console.log('You can now use this with Playwright MCP:')
-	console.log(
-		'  --isolated --storage-state=.auth/storageState.json',
-	)
+	console.log('  --isolated --storage-state=.auth/storageState.json')
 
 	await browser.close()
 }
