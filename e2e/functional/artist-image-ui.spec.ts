@@ -21,8 +21,8 @@ const FANART_BG_URL =
 const FANART_THUMB_URL =
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
-const OIDC_AUTHORITY = 'https://dev-svijfm.us1.zitadel.cloud'
-const OIDC_CLIENT_ID = '358723495233859681'
+const OIDC_AUTHORITY = 'https://auth.dev.liverty-music.app'
+const OIDC_CLIENT_ID = '370552773634163460'
 
 const tomorrow = new Date()
 tomorrow.setDate(tomorrow.getDate() + 1)
