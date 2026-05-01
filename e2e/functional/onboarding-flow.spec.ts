@@ -248,19 +248,19 @@ test.describe('Onboarding tutorial flow', () => {
 	}) => {
 		await page.goto('http://localhost:9000/')
 
-		// Screen 1 shows the [See how it works] scroll-affordance, not [Get Started]
+		// Screen 1 shows the [See how it works] scroll-affordance, not [Pick your artists]
 		const scrollCta = page.locator('.welcome-scroll-cta')
 		await expect(scrollCta).toBeVisible({ timeout: 10_000 })
 
-		// [Get Started] is attached (in Screen 2) but not within the initial
+		// [Pick your artists] is attached (in Screen 2) but not within the initial
 		// viewport — assert it exists via toBeAttached (DOM) and does NOT satisfy
 		// toBeInViewport (visual position).
-		const getStarted = page.locator('button').filter({ hasText: /get started/i }).first()
+		const getStarted = page.locator('button').filter({ hasText: /pick your artists/i }).first()
 		await expect(getStarted).toBeAttached()
 		await expect(getStarted).not.toBeInViewport()
 	})
 
-	test('Step 0 → Step 1: tapping See how it works scrolls to Screen 2, then Get Started navigates to Discover', async ({
+	test('Step 0 → Step 1: tapping See how it works scrolls to Screen 2, then Pick your artists navigates to Discover', async ({
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/')
@@ -268,17 +268,17 @@ test.describe('Onboarding tutorial flow', () => {
 		// Tap scroll affordance on Screen 1
 		await page.locator('.welcome-scroll-cta').click()
 
-		// Screen 2's Get Started becomes visible after the smooth scroll completes
+		// Screen 2's primary CTA becomes visible after the smooth scroll completes
 		const getStarted = page
 			.locator('.welcome-screen-2 button')
-			.filter({ hasText: /get started/i })
+			.filter({ hasText: /pick your artists/i })
 		await expect(getStarted).toBeInViewport({ timeout: 3000 })
 
 		await getStarted.click()
 		await expect(page).toHaveURL(/discover/, { timeout: 10_000 })
 	})
 
-	test('Completed: welcome page still exposes Get Started on Screen 2', async ({
+	test('Completed: welcome page still exposes the primary CTA on Screen 2', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
@@ -286,12 +286,12 @@ test.describe('Onboarding tutorial flow', () => {
 		})
 		await page.goto('http://localhost:9000/')
 
-		// Screen 2's Get Started is attached (accessible via scroll) even if not
+		// Screen 2's primary CTA is attached (accessible via scroll) even if not
 		// currently in viewport.
 		await expect(
 			page
 				.locator('.welcome-screen-2 button')
-				.filter({ hasText: /get started/i }),
+				.filter({ hasText: /pick your artists/i }),
 		).toBeAttached({ timeout: 5000 })
 	})
 
@@ -350,10 +350,10 @@ test.describe('Onboarding tutorial flow', () => {
 
 		await page.goto('http://localhost:9000/')
 
-		// In the fallback state, [Get Started] renders inline on Screen 1 and is
+		// In the fallback state, [Pick your artists] renders inline on Screen 1 and is
 		// visible in the initial viewport.
 		await expect(
-			page.locator('button').filter({ hasText: /get started/i }).first(),
+			page.locator('button').filter({ hasText: /pick your artists/i }).first(),
 		).toBeVisible({ timeout: 5000 })
 
 		// Preview section is absent (if.bind="dateGroups.length > 0")
