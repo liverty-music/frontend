@@ -3,32 +3,52 @@
 		"dismiss": "Dismiss",
 		"createAccount": "Create Account"
 	},
-	"entity": {},
+	"entity": {
+		"hype": {
+			"label": "Hype",
+			"values": {
+				"watch": "Watching",
+				"home": "Home",
+				"nearby": "Near",
+				"away": "Away"
+			}
+		},
+		"concert": {
+			"label": "Concert"
+		},
+		"artist": {
+			"label": "Artist"
+		},
+		"homeArea": {
+			"label": "Home Area"
+		}
+	},
 	"welcome": {
 		"hero": {
+			"descriptor": "Follow your favorite artists. Build your personal timetable.",
 			"title": "Never miss a live show from the bands you love.",
 			"subtitle": "Just follow your favorite artists and we'll automatically collect live schedules nationwide.",
 			"seePreview": "See how it works"
 		},
 		"cta": {
-			"getStarted": "Get Started",
+			"getStarted": "Pick your artists",
 			"login": "Log In",
 			"loginHint": "Already have an account? Log in"
 		},
-		"guestFriendly": "Try it without creating an account",
+		"guestFriendly": "No account needed · 30 seconds to try",
 		"preview": {
 			"label": "Build your own concert timetable!"
 		},
 		"error": {
 			"navigation": "Navigation failed. Please try again.",
-			"login": "Failed to start login. Please try again."
+			"login": "Could not start login — your connection may be unstable. Wait a moment and try again."
 		}
 	},
 	"signup": {
-		"title": "Create Your Account",
-		"description": "Great job completing onboarding!<br>Create a secure account with Passkey<br>to save the artists you follow.",
-		"button": "Create Account with Passkey",
-		"error": "Account creation failed. Please try again."
+		"title": "One step away from never missing a show",
+		"description": "Create an account to:<br>🔔 Get notified the moment new lives are announced<br>📱 Open your timetable from any device<br>🎟 Save tickets you'll add along the way",
+		"button": "Create Account with Passkey (30s)",
+		"error": "Could not finish creating your account — your connection may be unstable. Wait a moment and try again."
 	},
 	"userHome": {
 		"title": "Select Your Home Area",
@@ -120,8 +140,8 @@
 		},
 		"loading": "Loading events…",
 		"empty": {
-			"title": "No upcoming events",
-			"subtitle": "Follow more artists to see their live schedules here.",
+			"title": "New shows will appear here as soon as we find them",
+			"subtitle": "Follow more artists to fill out your timetable.",
 			"discoverLink": "Discover Artists"
 		},
 		"error": {
@@ -155,24 +175,7 @@
 		"step3": "Tap \"Add\" to finish",
 		"close": "Close"
 	},
-	"hype": {
-		"watch": "Watch",
-		"home": "Home",
-		"nearby": "NearBy",
-		"away": "Away"
-	},
 	"myArtists": {
-		"coachMark": {
-			"setHype": "Try setting a hype level"
-		},
-		"hypeExplanation": {
-			"title": "Notification Scope",
-			"description": "Your hype level controls which concert notifications you receive.",
-			"watch": "Dashboard only — no push notifications",
-			"home": "Notified when concerts are in your home area",
-			"away": "Notified for all concerts nationwide",
-			"ok": "OK"
-		},
 		"empty": {
 			"title": "No artists followed yet",
 			"subtitle": "Discover and follow artists to see them here.",
@@ -180,24 +183,17 @@
 		},
 		"table": {
 			"artistCol": "Artist",
-			"unfollowCol": "Unfollow",
-			"watch": "Watch",
-			"home": "Home",
-			"nearby": "Nearby",
-			"away": "Away"
-		},
-		"spotlight": {
-			"setHypeMessage": "Raise the hype for artists you never want to miss"
+			"unfollowCol": "Unfollow"
 		},
 		"signupBanner": {
-			"message": "Save your followed artists and get concert notifications."
+			"message": "Save your followed artists and get live show notifications."
 		},
 		"unfollowed": "{{name}} unfollowed",
 		"undo": "Undo",
 		"unfollow": "Unfollow",
 		"unfollowArtist": "Unfollow {{name}}",
 		"failedUnfollow": "Failed to unfollow {{name}}",
-		"failedHype": "Failed to update hype level",
+		"failedHype": "Failed to update Hype",
 		"unfollowSheet": {
 			"confirm": "Unfollow",
 			"cancel": "Cancel",
@@ -208,13 +204,12 @@
 		"coachMark": {
 			"viewTimetable": "Check out your timetable!"
 		},
-		"popoverGuide": "Tap artists you want to follow to get their live concert updates",
-		"generateDashboard": "👉 Generate Dashboard",
+		"popoverGuide": "Tap the artists you care about — your picks become a timetable in the next step",
+		"generateDashboard": "👉 Generate Timetable",
 		"viewSchedule": "View Live Schedule ({{count}} artists)",
-		"orbLabel": "Music DNA",
 		"loadFailed": "Failed to load artists. Tap retry to try again.",
 		"retryFailed": "Still unable to load artists. Please try again later.",
-		"followFailed": "Failed to follow {{name}}. Please try again.",
+		"followFailed": "Couldn't save your follow of {{name}} — your connection may be unstable. Wait a moment and try again.",
 		"hasUpcomingEvents": "{{name}} has upcoming live events!",
 		"similarArtistsUnavailable": "No more similar artists available for {{name}}",
 		"similarArtistsError": "Couldn't find similar artists for {{name}}",
@@ -222,7 +217,7 @@
 		"searchPlaceholder": "Search artists...",
 		"clearSearch": "Clear search",
 		"searching": "Searching...",
-		"noResults": "No artists found",
+		"noResults": "No artists found — try alternate spellings or romaji",
 		"alreadyFollowing": "Already following",
 		"followArtist": "Follow {{name}}",
 		"srSearchResults": "{{count}} search results",
@@ -230,7 +225,7 @@
 		"srFollowed": "{{count}} artists followed",
 		"resetFailed": "Failed to reset discovery view",
 		"genreLoadFailed": "Couldn't load {{tag}} artists",
-		"searchFailed": "Search failed, please try again"
+		"searchFailed": "Search couldn't complete — your connection may be unstable. Wait a moment and try again."
 	},
 	"errorBanner": {
 		"copied": "Error details copied",
@@ -257,7 +252,7 @@
 		"resendVerification": "Resend",
 		"resending": "Sending...",
 		"resendSent": "Sent!",
-		"resendError": "Failed to send verification email. Please try again.",
+		"resendError": "Couldn't send the verification email — your connection may be unstable. Wait a moment and try again.",
 		"resendRateLimited": "Too many requests. Please try again later.",
 		"signOut": "Sign Out",
 		"signOutError": "Sign-out failed. Please try again."
@@ -274,9 +269,9 @@
 		"en": "English"
 	},
 	"postSignup": {
-		"title": "Account registration complete!",
+		"title": "🎉 You're all set — welcome to your timetable",
+		"subtitle": "New lives will show up here as we find them.",
 		"ariaLabel": "Account registration complete",
-		"hypeGuideLabel": "Change hype on the My Artists page to control which notifications you receive",
 		"notificationLabel": "Turn on new live notifications",
 		"notificationEnable": "Enable notifications",
 		"notificationEnabling": "Enabling…",

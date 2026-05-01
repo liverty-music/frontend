@@ -119,7 +119,6 @@
 			 * regression guard is the artist-filter chip-check E2E test.
 			 */
 			contain: layout;
-
 			overflow-y: auto;
 
 			max-block-size: 90dvh;

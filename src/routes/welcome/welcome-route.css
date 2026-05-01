@@ -40,13 +40,19 @@
 			}
 		}
 
-		.welcome-hero-fallback-cta-group {
-			max-inline-size: 28rem;
+		.welcome-hero-fallback {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
 			margin-block-start: var(--space-l);
 		}
 
+		.welcome-hero-fallback-cta-group {
+			max-inline-size: 28rem;
+		}
+
 		.welcome-brand {
-			margin-block-end: var(--space-l);
+			margin-block-end: var(--space-2xs);
 
 			font-family: var(--font-display);
 			font-size: var(--step-0);
@@ -54,6 +60,13 @@
 			color: var(--color-brand-accent);
 			text-transform: uppercase;
 			letter-spacing: 0.2em;
+		}
+
+		.welcome-descriptor {
+			max-inline-size: 28rem;
+			margin-block-end: var(--space-l);
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
 		}
 
 		.welcome-title {

@@ -3,6 +3,7 @@
   <p class="welcome-brand">
     Liverty Music
   </p>
+  <p t="welcome.hero.descriptor" class="welcome-descriptor"></p>
   <h1 t="welcome.hero.title" class="welcome-title"></h1>
   <p t="welcome.hero.subtitle" class="welcome-subtitle"></p>
 
@@ -29,18 +30,23 @@
   ></button>
 
   <!-- Without preview data: no Screen 2 exists, so fall back to inline CTAs
-       so unauthenticated users can still start onboarding or sign in. -->
-  <div else class="[ welcome-cta-group welcome-hero-fallback-cta-group ]">
-    <button
-      click.trigger="handleGetStarted()"
-      class="welcome-btn-primary"
-      t="welcome.cta.getStarted"
-    ></button>
-    <button
-      click.trigger="handleLogin()"
-      class="welcome-btn-secondary"
-      t="welcome.cta.login"
-    ></button>
+       so unauthenticated users can still start onboarding or sign in. The
+       guest-friendly note rides above the CTA group per the landing-page spec
+       so the no-account-required message stays visible without scrolling. -->
+  <div else class="[ welcome-hero-fallback ]">
+    <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
+    <div class="[ welcome-cta-group welcome-hero-fallback-cta-group ]">
+      <button
+        click.trigger="handleGetStarted()"
+        class="welcome-btn-primary"
+        t="welcome.cta.getStarted"
+      ></button>
+      <button
+        click.trigger="handleLogin()"
+        class="welcome-btn-secondary"
+        t="welcome.cta.login"
+      ></button>
+    </div>
   </div>
 </header>
 
