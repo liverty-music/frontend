@@ -2,7 +2,7 @@
   <responsibilities>Aurelia 2 single-page PWA for music fans. Vite build, CUBE CSS methodology,
   Biome linter, Zitadel OIDC auth, Vitest + Playwright testing.</responsibilities>
   <essential-commands>
-    make lint              # Biome lint + format check + stylelint + typecheck (matches CI)
+    make lint              # Biome lint + format check + stylelint + typecheck + brand-vocabulary (matches CI)
     make fix               # Auto-fix formatting (biome check --write)
     make test              # Unit tests with coverage (vitest)
     make check             # Full pre-commit check (lint + test)

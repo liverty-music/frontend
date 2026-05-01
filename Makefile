@@ -1,11 +1,15 @@
-.PHONY: lint lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check
+.PHONY: lint lint-brand-vocabulary lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check
 
-## lint: biome lint + format check + stylelint + typecheck (matches CI)
-lint:
+## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary (matches CI)
+lint: lint-brand-vocabulary
 	npx biome lint src test
 	npx biome format src test
 	npm run lint:css
 	npx tsc --noEmit
+
+## lint-brand-vocabulary: enforce entity.* i18n namespace parity and known-entity rules
+lint-brand-vocabulary:
+	npx tsx scripts/check-brand-vocabulary.ts
 
 ## fix: auto-fix formatting and lint issues
 fix:
