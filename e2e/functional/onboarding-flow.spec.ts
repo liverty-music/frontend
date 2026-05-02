@@ -295,13 +295,14 @@ test.describe('Onboarding tutorial flow', () => {
 		).toBeAttached({ timeout: 5000 })
 	})
 
-	test('Step 0: preview peek is visible in the initial viewport', async ({
+	test('Step 0: Screen 2 sits at or below the fold on initial load', async ({
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/')
 
-		// Screen 2 is attached and its top edge intersects the initial viewport
-		// (the ~5svh peek).
+		// Hero is now full-viewport (100svh). Screen 2 is attached but its top
+		// edge sits at or beyond the fold; the explicit `↓ サンプルを覗く` CTA
+		// carries the "more below" affordance instead of a partial peek.
 		const screen2 = page.locator('.welcome-screen-2')
 		await expect(screen2).toBeAttached({ timeout: 10_000 })
 
@@ -309,9 +310,7 @@ test.describe('Onboarding tutorial flow', () => {
 		const box = await screen2.boundingBox()
 		expect(box).not.toBeNull()
 		if (box && viewport) {
-			// Top edge of Screen 2 is within the viewport (not scrolled past it).
-			expect(box.y).toBeGreaterThan(0)
-			expect(box.y).toBeLessThan(viewport.height)
+			expect(box.y).toBeGreaterThanOrEqual(viewport.height)
 		}
 	})
 
