@@ -131,7 +131,14 @@
 		.handle-bar {
 			display: flex;
 			justify-content: center;
-			padding-block: var(--space-2xs) var(--space-3xs);
+
+			/* Bottom padding establishes a baseline gap between the handle
+			   and the slotted content so consumers that don't add their
+			   own top padding (e.g. user-home-selector) still get
+			   breathing room. Consumers that DO add their own top padding
+			   (post-signup-dialog, page-help) keep their tighter / looser
+			   tone on top of this baseline. */
+			padding-block: var(--space-2xs) var(--space-xs);
 
 			&::after {
 				content: "";

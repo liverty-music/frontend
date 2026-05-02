@@ -1,6 +1,9 @@
 <import from="./my-artists-route.css"></import>
 
-<page-header if.bind="!isLoading && artists.length > 0" title-key="nav.myArtists">
+<!-- Header always renders so the page identity is preserved across loading
+     / empty / populated states. The hype-table column headers below carry
+     their own labels, so duplication isn't a concern. -->
+<page-header title-key="nav.myArtists">
   <page-help page="my-artists"></page-help>
 </page-header>
 

@@ -25,10 +25,10 @@
 	},
 	"welcome": {
 		"hero": {
-			"descriptor": "推しのライブを集めて、あなただけのタイムテーブルに",
-			"title": "大好きなあのバンドのライブ、もう二度と見逃さない。",
-			"subtitle": "推しアーティストをフォローするだけで、全国のライブ日程をあなただけのタイムテーブルに。",
-			"seePreview": "使い方を見る"
+			"title": "大好きなあのバンドのライブ、絶対に見逃さない。",
+			"subtitlePain": "公式サイト、SNS、チケットサイトのパトロールはもう終わり。",
+			"subtitleAction": "Liverty Music が <strong>追う</strong>。あなたは <strong>行く</strong> だけ。",
+			"seePreview": "サンプルを覗く"
 		},
 		"cta": {
 			"getStarted": "推しを選んでみる",
@@ -37,7 +37,7 @@
 		},
 		"guestFriendly": "アカウント不要・30秒で体験",
 		"preview": {
-			"label": "あなただけのタイムテーブルが作れます！"
+			"label": "↓ 推しを選ぶと、あなただけのタイムテーブルに！"
 		},
 		"error": {
 			"navigation": "画面遷移に失敗しました。もう一度お試しください。",
@@ -258,7 +258,7 @@
 		"signOutError": "サインアウトに失敗しました。もう一度お試しください。"
 	},
 	"nav": {
-		"home": "Home",
+		"home": "Timetable",
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
@@ -294,11 +294,11 @@
 			"title": "タイムテーブルの見方",
 			"description": "フォローしたアーティストのライブが距離ごとに表示されます。",
 			"homeLabel": "HOME",
-			"homeDesc": " — 居住エリアのライブ",
+			"homeDesc": "居住エリアのライブ",
 			"nearLabel": "NEAR",
-			"nearDesc": " — 少し足を伸ばせば行けるライブ",
+			"nearDesc": "少し足を伸ばせば行けるライブ",
 			"awayLabel": "AWAY",
-			"awayDesc": " — 遠征ライブ",
+			"awayDesc": "遠征ライブ",
 			"cardTip": "カードをタップすると詳細が見られます"
 		},
 		"myArtists": {

@@ -18,8 +18,12 @@
 		}
 
 		/* ── Screen 1: Hero hook ──
-		   95svh when Screen 2 follows (peek effect); 100svh when alone
-		   (fallback path — no preview data, no Screen 2). */
+		   Always full-viewport. Earlier iterations used 95svh to leak a
+		   5svh peek of Screen 2's top, but that peek caught either the
+		   preview-label text or the timetable's stage headers — neither
+		   served as a clean "more below" hint. The explicit
+		   `↓ サンプルを覗く` scroll CTA covers that affordance role
+		   instead, so Screen 1 stays clean. */
 		.welcome-hero {
 			scroll-snap-align: start;
 
@@ -28,16 +32,12 @@
 			align-items: center;
 			justify-content: center;
 
-			block-size: 95svh;
+			block-size: 100svh;
 			padding-inline: var(--space-l);
 
 			text-align: center;
 
 			animation: fade-in 600ms ease-out both;
-
-			&:not(:has(~ .welcome-screen-2)) {
-				block-size: 100svh;
-			}
 		}
 
 		.welcome-hero-fallback {
@@ -52,38 +52,72 @@
 		}
 
 		.welcome-brand {
-			margin-block-end: var(--space-2xs);
+			margin-block-end: var(--space-l);
 
 			font-family: var(--font-display);
-			font-size: var(--step-0);
+			font-size: var(--step-2);
 			font-weight: 600;
 			color: var(--color-brand-accent);
+
+			/* Same festival-spotlight vocabulary as the subtitle action
+			   verbs and event-card[data-matched]. The brand sits at the
+			   top of the visual hierarchy so it earns the brightest glow. */
+			text-shadow:
+				0 0 8px oklch(from var(--color-brand-accent) l c h / 60%),
+				0 0 18px oklch(from var(--color-brand-accent) l c h / 35%);
 			text-transform: uppercase;
 			letter-spacing: 0.2em;
 		}
 
-		.welcome-descriptor {
-			max-inline-size: 28rem;
-			margin-block-end: var(--space-l);
-			font-size: var(--step--1);
-			color: var(--color-text-secondary);
-		}
-
 		.welcome-title {
-			margin-block-end: var(--space-s);
+			margin-block-end: var(--space-m);
 
 			font-family: var(--font-display);
 			font-size: var(--step-3);
 			font-weight: normal;
-			line-height: var(--leading-tight);
+			line-height: var(--leading-snug);
 			color: var(--color-text-primary);
+
+			/* Phrase-aware wrapping for CJK headlines: balance distributes
+			   line lengths evenly; auto-phrase prefers natural phrase
+			   boundaries (Chrome 119+; gracefully ignored elsewhere). */
+			text-wrap: balance;
+			word-break: auto-phrase;
 		}
 
 		.welcome-subtitle {
 			max-inline-size: 28rem;
-			margin-block-end: var(--space-l);
+			margin-block-end: var(--space-xs);
+
 			font-size: var(--step-0);
+			line-height: var(--leading-relaxed);
 			color: var(--color-text-secondary);
+
+			/* Balance line lengths + prefer phrase-level break points so
+			   neither line strands a tail like「は」or「だけ。」alone
+			   and CJK words don't split mid-character. */
+			text-wrap: balance;
+			word-break: auto-phrase;
+		}
+
+		/* The second line of the subtitle (action / role-reversal) closes
+		   the hero paragraph; it gets the larger bottom margin so the
+		   following lang switcher / scroll CTA is properly spaced. */
+		.welcome-subtitle-action {
+			margin-block-end: var(--space-xl);
+		}
+
+		/* Emphasized verbs in the role-reversal line ("追う" / "行く" /
+		   "tracks" / "go"). Reuses the festival-spotlight glow vocabulary
+		   established by event-card[data-matched] and celebration-overlay
+		   so the verbs read as "this is the brand voice speaking" rather
+		   than just bold body copy. */
+		.welcome-subtitle-action strong {
+			font-weight: 600;
+			color: var(--color-brand-accent);
+			text-shadow:
+				0 0 6px oklch(from var(--color-brand-accent) l c h / 60%),
+				0 0 14px oklch(from var(--color-brand-accent) l c h / 35%);
 		}
 
 		.welcome-scroll-cta {
@@ -157,7 +191,11 @@
 			font-weight: normal;
 			color: var(--color-brand-accent);
 			text-align: center;
+
+			/* Same wrap-balance as the hero subtitle */
+			text-wrap: balance;
 			letter-spacing: 0.05em;
+			word-break: auto-phrase;
 		}
 
 		.welcome-preview {

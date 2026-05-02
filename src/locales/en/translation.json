@@ -25,10 +25,10 @@
 	},
 	"welcome": {
 		"hero": {
-			"descriptor": "Follow your favorite artists. Build your personal timetable.",
 			"title": "Never miss a live show from the bands you love.",
-			"subtitle": "Just follow your favorite artists and we'll automatically collect live schedules nationwide.",
-			"seePreview": "See how it works"
+			"subtitlePain": "Done patrolling official sites, socials, and ticket pages.",
+			"subtitleAction": "Liverty Music <strong>tracks</strong>. You just <strong>go</strong>.",
+			"seePreview": "Peek at a sample"
 		},
 		"cta": {
 			"getStarted": "Pick your artists",
@@ -37,7 +37,7 @@
 		},
 		"guestFriendly": "No account needed · 30 seconds to try",
 		"preview": {
-			"label": "Build your own concert timetable!"
+			"label": "↓ Pick your artists, and this becomes yours!"
 		},
 		"error": {
 			"navigation": "Navigation failed. Please try again.",
@@ -258,7 +258,7 @@
 		"signOutError": "Sign-out failed. Please try again."
 	},
 	"nav": {
-		"home": "Home",
+		"home": "Timetable",
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
@@ -294,11 +294,11 @@
 			"title": "Reading the Timetable",
 			"description": "Your followed artists' lives are shown by distance.",
 			"homeLabel": "HOME",
-			"homeDesc": " — Lives in your home area",
+			"homeDesc": "Lives in your home area",
 			"nearLabel": "NEAR",
-			"nearDesc": " — Lives within reach",
+			"nearDesc": "Lives within reach",
 			"awayLabel": "AWAY",
-			"awayDesc": " — Lives anywhere",
+			"awayDesc": "Lives anywhere",
 			"cardTip": "Tap a card to see concert details"
 		},
 		"myArtists": {
