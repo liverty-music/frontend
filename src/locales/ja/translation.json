@@ -3,32 +3,52 @@
 		"dismiss": "閉じる",
 		"createAccount": "アカウント作成"
 	},
-	"entity": {},
+	"entity": {
+		"hype": {
+			"label": "Stage",
+			"values": {
+				"watch": "観測",
+				"home": "地元",
+				"nearby": "近郊",
+				"away": "全国"
+			}
+		},
+		"concert": {
+			"label": "ライブ"
+		},
+		"artist": {
+			"label": "アーティスト"
+		},
+		"homeArea": {
+			"label": "ホームエリア"
+		}
+	},
 	"welcome": {
 		"hero": {
-			"title": "大好きなあのバンドのライブ、もう二度と見逃さない。",
-			"subtitle": "あなたの推しアーティストを登録するだけで、全国のライブ日程を自動収集。",
-			"seePreview": "使い方を見る"
+			"title": "大好きなあのバンドのライブ、絶対に見逃さない。",
+			"subtitlePain": "公式サイト、SNS、チケットサイトのパトロールはもう終わり。",
+			"subtitleAction": "Liverty Music が <strong>追う</strong>。あなたは <strong>行く</strong> だけ。",
+			"seePreview": "サンプルを覗く"
 		},
 		"cta": {
-			"getStarted": "使ってみる",
+			"getStarted": "推しを選んでみる",
 			"login": "ログイン",
 			"loginHint": "アカウントをお持ちの方はログイン"
 		},
-		"guestFriendly": "アカウント不要でお試しいただけます",
+		"guestFriendly": "アカウント不要・30秒で体験",
 		"preview": {
-			"label": "あなただけのタイムテーブルが作れます！"
+			"label": "↓ 推しを選ぶと、あなただけのタイムテーブルに！"
 		},
 		"error": {
 			"navigation": "画面遷移に失敗しました。もう一度お試しください。",
-			"login": "ログインの開始に失敗しました。もう一度お試しください。"
+			"login": "ログインを開始できませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。"
 		}
 	},
 	"signup": {
-		"title": "アカウントを作成しよう",
-		"description": "チュートリアルお疲れさまでした！<br>Passkeyで安全にアカウントを作成して、<br>フォローしたアーティストの情報を保存しましょう。",
-		"button": "Passkeyでアカウント作成",
-		"error": "アカウント作成に失敗しました。もう一度お試しください。"
+		"title": "あと一歩で、推しのライブを逃さなくなる",
+		"description": "アカウントを作ると：<br>🔔 新ライブが見つかったらすぐに通知<br>📱 どの端末からでもタイムテーブルを開ける<br>🎟 これから追加されるチケット情報も保存",
+		"button": "Passkeyでアカウント作成（30秒）",
+		"error": "アカウント作成を完了できませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。"
 	},
 	"userHome": {
 		"title": "ホームエリアを選択",
@@ -120,23 +140,23 @@
 		},
 		"loading": "イベントを読み込み中…",
 		"empty": {
-			"title": "予定されているイベントはありません",
-			"subtitle": "アーティストをフォローしてライブスケジュールを確認しましょう。",
+			"title": "新しいライブが見つかり次第、ここに並びます",
+			"subtitle": "もっと推しを増やすと、タイムテーブルが充実します。",
 			"discoverLink": "アーティストを探す"
 		},
 		"error": {
-			"load": "ライブイベントの読み込みに失敗しました"
+			"load": "ライブの読み込みに失敗しました"
 		}
 	},
 	"notification": {
-		"title": "ライブイベントを見逃さない",
-		"description": "フォローしたアーティストの新しいコンサートが見つかったら通知を受け取れます。",
+		"title": "ライブを見逃さない",
+		"description": "フォローしたアーティストの新しいライブが見つかったら通知を受け取れます。",
 		"notNow": "今はしない",
 		"enable": "通知を有効にする",
 		"enabling": "有効化中…",
 		"blocked": {
 			"title": "通知がブロックされています",
-			"description": "コンサートのお知らせを受け取るには、ブラウザの設定でこのサイトの通知を有効にしてください。",
+			"description": "ライブのお知らせを受け取るには、ブラウザの設定でこのサイトの通知を有効にしてください。",
 			"dismiss": "閉じる"
 		}
 	},
@@ -155,24 +175,7 @@
 		"step3": "「追加」をタップして完了",
 		"close": "閉じる"
 	},
-	"hype": {
-		"watch": "観測のみ",
-		"home": "地元のみ",
-		"nearby": "近郊まで",
-		"away": "遠征OK"
-	},
 	"myArtists": {
-		"coachMark": {
-			"setHype": "Hypeレベルを設定してみましょう"
-		},
-		"hypeExplanation": {
-			"title": "通知の範囲",
-			"description": "Hypeレベルに応じて、受け取るコンサート通知が変わります。",
-			"watch": "ダッシュボード表示のみ — プッシュ通知なし",
-			"home": "ホームエリアのコンサート時に通知",
-			"away": "全国すべてのコンサートを通知",
-			"ok": "OK"
-		},
 		"empty": {
 			"title": "フォロー中のアーティストはいません",
 			"subtitle": "アーティストを探してフォローしましょう。",
@@ -180,24 +183,17 @@
 		},
 		"table": {
 			"artistCol": "アーティスト",
-			"unfollowCol": "フォロー解除",
-			"watch": "チェック",
-			"home": "地元",
-			"nearby": "近くも",
-			"away": "どこでも！"
-		},
-		"spotlight": {
-			"setHypeMessage": "絶対に見逃したくないアーティストの熱量を上げておこう"
+			"unfollowCol": "フォロー解除"
 		},
 		"signupBanner": {
-			"message": "フォロー情報を保存してコンサート通知を受け取ろう！"
+			"message": "フォロー情報を保存してライブ通知を受け取ろう！"
 		},
 		"unfollowed": "{{name}}のフォローを解除しました",
 		"undo": "元に戻す",
 		"unfollow": "フォロー解除",
 		"unfollowArtist": "{{name}}のフォローを解除",
 		"failedUnfollow": "{{name}}のフォロー解除に失敗しました",
-		"failedHype": "Hypeレベルの更新に失敗しました",
+		"failedHype": "Stageの更新に失敗しました",
 		"unfollowSheet": {
 			"confirm": "フォロー解除",
 			"cancel": "キャンセル",
@@ -208,13 +204,12 @@
 		"coachMark": {
 			"viewTimetable": "タイムテーブルを見てみよう！"
 		},
-		"popoverGuide": "ライブ情報を追いかけたいアーティストをタップしてフォローしよう",
-		"generateDashboard": "👉 ダッシュボードを生成する",
+		"popoverGuide": "気になるアーティストをタップ — 選んだ推しのライブが、次のステップでタイムテーブルになります",
+		"generateDashboard": "👉 タイムテーブルを生成する",
 		"viewSchedule": "ライブスケジュールを見る（{{count}}アーティスト）",
-		"orbLabel": "Music DNA",
 		"loadFailed": "アーティストの読み込みに失敗しました。リトライしてください。",
 		"retryFailed": "読み込みに失敗しました。後ほど再度お試しください。",
-		"followFailed": "{{name}}のフォローに失敗しました。もう一度お試しください。",
+		"followFailed": "{{name}}のフォローを保存できませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。",
 		"hasUpcomingEvents": "{{name}}のライブが近日開催予定です！",
 		"similarArtistsUnavailable": "{{name}}の類似アーティストはこれ以上ありません",
 		"similarArtistsError": "{{name}}の類似アーティストが見つかりませんでした",
@@ -222,7 +217,7 @@
 		"searchPlaceholder": "アーティストを検索...",
 		"clearSearch": "検索をクリア",
 		"searching": "検索中...",
-		"noResults": "アーティストが見つかりません",
+		"noResults": "アーティストが見つかりません — 英語名やローマ字でも試せます",
 		"alreadyFollowing": "フォロー済み",
 		"followArtist": "{{name}}をフォロー",
 		"srSearchResults": "{{count}}件の検索結果",
@@ -230,7 +225,7 @@
 		"srFollowed": "{{count}}アーティストをフォロー中",
 		"resetFailed": "ディスカバリービューのリセットに失敗しました",
 		"genreLoadFailed": "{{tag}}のアーティストを読み込めませんでした",
-		"searchFailed": "検索に失敗しました。もう一度お試しください"
+		"searchFailed": "検索が完了しませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。"
 	},
 	"errorBanner": {
 		"copied": "エラー詳細をコピーしました",
@@ -257,13 +252,13 @@
 		"resendVerification": "再送信",
 		"resending": "送信中...",
 		"resendSent": "送信済み！",
-		"resendError": "認証メールの送信に失敗しました。もう一度お試しください。",
+		"resendError": "認証メールを送信できませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。",
 		"resendRateLimited": "リクエストが多すぎます。しばらくしてからお試しください。",
 		"signOut": "サインアウト",
 		"signOutError": "サインアウトに失敗しました。もう一度お試しください。"
 	},
 	"nav": {
-		"home": "Home",
+		"home": "Timetable",
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
@@ -274,9 +269,9 @@
 		"en": "English"
 	},
 	"postSignup": {
-		"title": "✅ アカウント登録完了！",
+		"title": "🎉 準備完了！ようこそ、あなたのタイムテーブルへ",
+		"subtitle": "新しいライブが見つかったら、ここでお知らせします。",
 		"ariaLabel": "アカウント登録完了",
-		"hypeGuideLabel": "My Artists ページで hype を変更すると通知の範囲をコントロールできます",
 		"notificationLabel": "新着ライブ通知をオンにしよう",
 		"notificationEnable": "通知をオンにする",
 		"notificationEnabling": "有効化中…",
@@ -299,16 +294,16 @@
 			"title": "タイムテーブルの見方",
 			"description": "フォローしたアーティストのライブが距離ごとに表示されます。",
 			"homeLabel": "HOME",
-			"homeDesc": " — 居住エリアのライブ",
+			"homeDesc": "居住エリアのライブ",
 			"nearLabel": "NEAR",
-			"nearDesc": " — 少し足を伸ばせば行けるライブ",
+			"nearDesc": "少し足を伸ばせば行けるライブ",
 			"awayLabel": "AWAY",
-			"awayDesc": " — 遠征ライブ",
+			"awayDesc": "遠征ライブ",
 			"cardTip": "カードをタップすると詳細が見られます"
 		},
 		"myArtists": {
-			"title": "Hypeレベルについて",
-			"description": "Hypeレベルで通知の範囲が変わります。ドットをタップして切り替えられます。",
+			"title": "Stage について",
+			"description": "Stage で通知の範囲が変わります。ドットをタップして切り替えられます。",
 			"watchDesc": "通知なし",
 			"homeDesc": "居住エリアのライブを通知",
 			"nearbyDesc": "近くのライブも通知",

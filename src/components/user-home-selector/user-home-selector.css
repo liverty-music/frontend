@@ -8,7 +8,7 @@
 		}
 
 		.selector-content {
-			padding-block-end: var(--space-l);
+			padding-block: var(--space-m) var(--space-l);
 			padding-inline: var(--space-l);
 		}
 

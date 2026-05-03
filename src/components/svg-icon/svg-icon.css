@@ -16,6 +16,15 @@
 			block-size: var(--_icon-size, 1.25rem);
 		}
 
+		/* The global reset (`:where(svg) { fill: currentcolor }`) overrides
+		   each SVG's `fill="none"` attribute because presentation attributes
+		   lose to even zero-specificity CSS in the cascade. Honor the
+		   attribute explicitly here so stroked-only icons (most Lucide
+		   icons) render correctly instead of as filled disks. */
+		.svg-icon[fill="none"] {
+			fill: none;
+		}
+
 		:scope[data-size="xs"] {
 			--_icon-size: 0.75rem;
 		}

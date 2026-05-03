@@ -1,9 +1,21 @@
 @layer block {
 	@scope (page-help) {
+		:scope {
+			/* Local alpha-on-white tokens, consistent with discovery-route's
+			   chip vocabulary so the inline chip demo matches reality. */
+			--_white-8: oklch(100% 0 0deg / 8%);
+			--_white-15: oklch(100% 0 0deg / 15%);
+			--_white-70: oklch(100% 0 0deg / 70%);
+		}
+
 		bottom-sheet {
 			--sheet-bg: var(--color-surface-overlay);
 		}
 
+		/* Help trigger reads as "tappable for guidance" — brand-accent
+		   coloring + soft glow so it's discoverable without dominating
+		   the header. The muted default made it look like a disabled UI
+		   chip, not an interactive affordance. */
 		.page-help-trigger {
 			cursor: pointer;
 
@@ -13,43 +25,140 @@
 
 			inline-size: 2rem;
 			block-size: 2rem;
-			border: 1.5px solid currentcolor;
+			border: 1.5px solid oklch(from var(--color-brand-accent) l c h / 50%);
 			border-radius: var(--radius-full);
 
 			font-size: var(--step-0);
-			font-weight: 600;
+			font-weight: 700;
 			line-height: var(--leading-none);
-			color: var(--color-text-muted);
+			color: var(--color-brand-accent);
 
-			background: transparent;
+			background: oklch(from var(--color-brand-accent) l c h / 8%);
 
-			transition: color var(--transition-fast);
+			transition:
+				color var(--transition-fast),
+				border-color var(--transition-fast),
+				background var(--transition-fast);
 		}
 
 		.page-help-trigger:hover {
-			color: var(--color-text-primary);
+			border-color: var(--color-brand-accent);
+			background: oklch(from var(--color-brand-accent) l c h / 18%);
 		}
 
 		.page-help-content {
 			padding: var(--space-m) var(--space-s) var(--space-l);
 		}
 
+		/* ── Header (icon + title with subtle divider) ──────────────────── */
+		.page-help-header {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+
+			margin-block-end: var(--space-s);
+			padding-block-end: var(--space-xs);
+			border-block-end: 1px solid var(--color-border-subtle);
+		}
+
+		.page-help-icon {
+			display: inline-flex;
+			flex-shrink: 0;
+			color: var(--color-brand-accent);
+		}
+
 		.page-help-title {
-			margin-block-end: var(--space-xs);
+			margin: 0;
 			font-family: var(--font-display);
 			font-size: var(--step-1);
 			font-weight: 700;
 		}
 
-		.page-help-lanes {
+		.page-help-desc {
+			margin-block-end: var(--space-s);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-primary);
+		}
+
+		/* ── Tip list (with brand-accent bullets) ───────────────────────── */
+		.page-help-tips {
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-2xs);
 
-			margin-block: var(--space-xs);
+			margin-block-start: var(--space-s);
 			padding: 0;
 
+			color: var(--color-text-secondary);
 			list-style: none;
+		}
+
+		.page-help-tips li {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: flex-start;
+		}
+
+		.page-help-tips li::before {
+			content: "▸";
+			flex-shrink: 0;
+			font-weight: bold;
+			color: var(--color-brand-accent);
+		}
+
+		/* ── Inline genre-chip demo (mimics .genre-chip on discovery) ──── */
+		.page-help-chip-demo {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+			margin-block: var(--space-xs) var(--space-s);
+		}
+
+		.page-help-chip {
+			padding: var(--space-3xs) var(--space-xs);
+			border: 1px solid var(--_white-15);
+			border-radius: var(--radius-full);
+
+			font-family: var(--font-display);
+			font-size: var(--step--2);
+			font-weight: 500;
+			color: var(--_white-70);
+			white-space: nowrap;
+
+			background: var(--_white-8);
+		}
+
+		/* Highlight one chip as "active" so the demo shows the toggle state */
+		.page-help-chip[data-active] {
+			border-color: var(--color-brand-accent);
+			color: var(--color-text-primary);
+			background: oklch(from var(--color-brand-accent) l c h / 18%);
+		}
+
+		/* ── Stage lanes block (HOME / NEAR / AWAY) ─────────────────────── */
+
+		/* Grid keeps the dt label column at intrinsic max-width (HOME
+		   determines the column) and the dd description column flush-left
+		   across all rows — flex would have left each "—" at a different
+		   x position because HOME / NEAR / AWAY have different widths. */
+		.page-help-lanes {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			gap: var(--space-2xs) var(--space-s);
+
+			margin-block: var(--space-s);
+			padding: var(--space-s);
+			border-radius: var(--radius-card);
+
+			background: oklch(from var(--color-surface-overlay) calc(l + 0.04) c h);
+		}
+
+		.page-help-lanes dt {
+			font-weight: 700;
+		}
+
+		.page-help-lanes dd {
+			margin: 0;
 		}
 
 		.stage-home {
@@ -64,26 +173,15 @@
 			color: var(--color-stage-away);
 		}
 
-		.page-help-tips {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
-
-			margin-block-start: var(--space-xs);
-			padding: 0;
-
-			color: var(--color-text-secondary);
-			list-style: none;
-		}
-
+		/* ── Hype table (My Artists) ────────────────────────────────────── */
 		.page-help-hype-table {
 			border-collapse: collapse;
 			inline-size: 100%;
-			margin-block: var(--space-xs);
+			margin-block: var(--space-s);
 		}
 
 		.page-help-hype-table :is(td, th) {
-			padding: var(--space-3xs) var(--space-2xs);
+			padding: var(--space-2xs);
 			vertical-align: top;
 		}
 
@@ -92,10 +190,15 @@
 			white-space: nowrap;
 		}
 
+		.page-help-hype-table tr + tr :is(td, th) {
+			border-block-start: 1px solid var(--color-border-subtle);
+		}
+
+		/* ── Note (footnote / caption) ──────────────────────────────────── */
 		.page-help-note {
-			margin-block-start: var(--space-xs);
+			margin-block-start: var(--space-s);
 			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+			color: var(--color-text-muted);
 		}
 	}
 }

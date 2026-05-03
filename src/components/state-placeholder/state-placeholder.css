@@ -10,14 +10,18 @@
 		.state-center {
 			display: flex;
 			flex-direction: column;
-			gap: var(--space-2xs);
+			gap: var(--space-s);
 			align-items: center;
 
 			text-align: center;
 		}
 
+		/* Brand-accent color so the empty state reads as "waiting /
+		   promised" instead of "broken / forgotten". Drop-shadow was
+		   tried but blurred the clock outline into a solid disk, so we
+		   rely on color alone for visibility. */
 		.state-icon {
-			color: var(--color-text-muted);
+			color: var(--color-brand-accent);
 		}
 	}
 }

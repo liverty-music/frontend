@@ -13,8 +13,19 @@
   <template switch.bind="page">
 
     <section case="discovery" class="page-help-content" aria-labelledby="help-discovery-title">
-      <h2 id="help-discovery-title" class="page-help-title" t="pageHelp.discovery.title"></h2>
-      <p t="pageHelp.discovery.description"></p>
+      <header class="page-help-header">
+        <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
+        <h2 id="help-discovery-title" class="page-help-title" t="pageHelp.discovery.title"></h2>
+      </header>
+      <p class="page-help-desc" t="pageHelp.discovery.description"></p>
+
+      <!-- Inline demo of the actual genre chips so the tip is shown, not just told. -->
+      <div class="page-help-chip-demo" aria-hidden="true">
+        <span class="page-help-chip">Rock</span>
+        <span class="page-help-chip" data-active>Pop</span>
+        <span class="page-help-chip">Jazz</span>
+      </div>
+
       <ul class="page-help-tips">
         <li t="pageHelp.discovery.genreTip"></li>
         <li t="pageHelp.discovery.searchTip"></li>
@@ -22,19 +33,28 @@
     </section>
 
     <section case="dashboard" class="page-help-content" aria-labelledby="help-dashboard-title">
-      <h2 id="help-dashboard-title" class="page-help-title" t="pageHelp.dashboard.title"></h2>
-      <p t="pageHelp.dashboard.description"></p>
-      <ul class="page-help-lanes">
-        <li><strong class="stage-home" t="pageHelp.dashboard.homeLabel"></strong><span t="pageHelp.dashboard.homeDesc"></span></li>
-        <li><strong class="stage-near" t="pageHelp.dashboard.nearLabel"></strong><span t="pageHelp.dashboard.nearDesc"></span></li>
-        <li><strong class="stage-away" t="pageHelp.dashboard.awayLabel"></strong><span t="pageHelp.dashboard.awayDesc"></span></li>
-      </ul>
+      <header class="page-help-header">
+        <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
+        <h2 id="help-dashboard-title" class="page-help-title" t="pageHelp.dashboard.title"></h2>
+      </header>
+      <p class="page-help-desc" t="pageHelp.dashboard.description"></p>
+      <dl class="page-help-lanes">
+        <dt class="stage-home" t="pageHelp.dashboard.homeLabel"></dt>
+        <dd t="pageHelp.dashboard.homeDesc"></dd>
+        <dt class="stage-near" t="pageHelp.dashboard.nearLabel"></dt>
+        <dd t="pageHelp.dashboard.nearDesc"></dd>
+        <dt class="stage-away" t="pageHelp.dashboard.awayLabel"></dt>
+        <dd t="pageHelp.dashboard.awayDesc"></dd>
+      </dl>
       <p class="page-help-note" t="pageHelp.dashboard.cardTip"></p>
     </section>
 
     <section case="my-artists" class="page-help-content" aria-labelledby="help-my-artists-title">
-      <h2 id="help-my-artists-title" class="page-help-title" t="pageHelp.myArtists.title"></h2>
-      <p t="pageHelp.myArtists.description"></p>
+      <header class="page-help-header">
+        <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
+        <h2 id="help-my-artists-title" class="page-help-title" t="pageHelp.myArtists.title"></h2>
+      </header>
+      <p class="page-help-desc" t="pageHelp.myArtists.description"></p>
       <table class="page-help-hype-table">
         <tbody>
           <tr>
