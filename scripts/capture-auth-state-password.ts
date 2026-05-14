@@ -118,35 +118,51 @@ async function captureAuthStatePassword(): Promise<void> {
 			{ polling: 500, timeout: 60_000 },
 		)
 
-		await context.storageState({ path: STORAGE_STATE_PATH })
-		console.log(`Storage state saved to ${STORAGE_STATE_PATH}`)
+		// Write to a temp path first; promote atomically only after the
+		// smoke test confirms the captured state actually authenticates.
+		// Without this, a failed smoke test would silently destroy the
+		// previously-working `storageState.json` (we write before we verify).
+		const tempStatePath = `${STORAGE_STATE_PATH}.tmp`
+		await context.storageState({ path: tempStatePath })
 		await context.close()
 
-		console.log('Smoke test: replaying storage state on a fresh context…')
+		console.log('Smoke test: replaying captured state on a fresh context…')
 		const smokeContext = await browser.newContext({
-			storageState: STORAGE_STATE_PATH,
+			storageState: tempStatePath,
 		})
 		const smokePage = await smokeContext.newPage()
 		smokePage.setDefaultTimeout(15_000)
 
-		// Navigate to a protected route. The frontend's AuthHook will
-		// redirect unauthenticated traffic back to `/`, so the final URL
-		// is the success/failure signal.
+		// Navigate to a protected route. Authenticated traffic lands on
+		// `/dashboard`; unauthenticated traffic gets redirected by
+		// `AuthHook` (priority 5 returns '') → root route's
+		// `redirectTo: 'welcome'` → `/welcome`. Use a POSITIVE check
+		// (must land on the requested protected route) rather than
+		// enumerating redirect targets — the check is robust even when
+		// the unauthenticated landing path changes.
 		await smokePage.goto(`${APP_URL}/dashboard`)
 		await smokePage.waitForLoadState('networkidle')
 		const finalUrl = smokePage.url()
 		await smokeContext.close()
 
-		const landingUrls = [APP_URL, `${APP_URL}/`]
-		if (landingUrls.includes(finalUrl)) {
+		if (!finalUrl.startsWith(`${APP_URL}/dashboard`)) {
 			console.error(
-				`[error] Smoke test FAILED: protected route redirected to landing (${finalUrl}).`,
+				`[error] Smoke test FAILED: protected route redirected away from /dashboard (landed at ${finalUrl}).`,
 			)
 			console.error('The captured storageState does not authenticate the user.')
 			console.error('Likely causes: wrong password, expired ESC value, or test user not provisioned.')
+			// Leave the previously-working storageState.json (if any) intact.
+			try {
+				fs.unlinkSync(tempStatePath)
+			} catch {
+				// nothing to clean up
+			}
 			process.exit(2)
 		}
 
+		// Smoke passed — atomically promote the temp file to the final path.
+		fs.renameSync(tempStatePath, STORAGE_STATE_PATH)
+		console.log(`Storage state saved to ${STORAGE_STATE_PATH}`)
 		console.log(`Smoke test PASSED: ${finalUrl}`)
 	} finally {
 		await browser.close()
