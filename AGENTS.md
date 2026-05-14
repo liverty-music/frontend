@@ -57,19 +57,30 @@ in the `aurelia2-component` skill. Read it before writing any component code.
 
 All routes require authentication by default (`AuthHook` in `src/hooks/auth-hook.ts`). Public routes explicitly set `data: { auth: false }` in route config.
 
-Test user: `pepperoni9+playwright-1@gmail.com` (password in `.auth/password.md`).
+Two dev test users exist; pick the capture path that matches your host:
 
-Before using the `playwright-auth` MCP server to test protected routes:
+| Test user | Auth | Capture command | Suitable host |
+|---|---|---|---|
+| `e2e-test-password@dev.liverty-music.app` | Username + password | `npm run auth:capture:password` | Any host including WSL2 + WSLg (default, headless) |
+| `pepperoni9+playwright-1@gmail.com` | Passkey (WebAuthn) | `npx tsx scripts/capture-auth-state.ts` | macOS / Linux with working display + registered authenticator device |
 
-```bash
-npx tsx scripts/capture-auth-state.ts
-```
+Both write to `.auth/storageState.json` — the `playwright-auth` MCP server (configured in `.claude/settings.json`) consumes whichever was captured most recently.
 
-This opens a browser for manual OIDC login and saves the session to `.auth/storageState.json`. The `playwright-auth` MCP server (configured in `.claude/settings.json`) uses this file automatically.
+**For the password flow** (preferred for WSL2 / CI / scripted automation):
 
-If navigation to a protected route redirects to `/`, the storageState has likely expired. Re-run the capture script.
+1. Retrieve the password from ESC once and mirror it locally:
+   ```bash
+   esc env get liverty-music/dev pulumiConfig.zitadel.e2eTestUser.password --show-secrets
+   # write the value into frontend/.auth/password.md (gitignored)
+   ```
+2. Start the dev server: `npm start`
+3. Run: `npm run auth:capture:password`
 
-On WSL2, the headed browser may not render via WSLg. Alternative: use Playwright MCP (headless) to navigate to `http://localhost:9000`, complete the login flow, extract localStorage, and write to `.auth/storageState.json`.
+The script is fully headless, drives the OIDC username/password flow, and self-verifies (atomic write — fails non-zero without destroying any prior working `storageState.json`). See [`frontend/.auth/README.md`](.auth/README.md) for the full setup, rotation protocol, and credential-file conventions.
+
+**For the passkey flow** (manual smoke testing on display-capable hosts), use the legacy `capture-auth-state.ts`. It opens a headed Chromium window for the operator to complete the OIDC login with the passkey gesture. On WSL2 + WSLg this path is unreliable — the Chromium window often stays at `about:blank` past the 5-minute polling timeout; use the password flow above instead.
+
+If navigation to a protected route redirects away from the requested page, the storageState has likely expired. Re-run the appropriate capture script.
 
 ## Key Technical Decisions
 
