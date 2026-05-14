@@ -29,7 +29,18 @@ export function initOtel(): WebTracerProvider {
 		instrumentations: [
 			new FetchInstrumentation({
 				propagateTraceHeaderCorsUrls: [new RegExp(escapeRegExp(API_BASE_URL))],
-				ignoreUrls: [/zitadel\.cloud/],
+				// Skip the OIDC provider entirely — Zitadel's CORS preflight
+				// rejects requests that include `traceparent` in the
+				// `Access-Control-Request-Headers` list (the preflight 204
+				// comes back WITHOUT `Access-Control-Allow-Origin`, blocking
+				// the actual `/.well-known/openid-configuration` fetch).
+				// Listing both the legacy Cloud host and the self-hosted
+				// `auth.*.liverty-music.app` hosts keeps this resilient
+				// across env (dev/staging/prod) and the never-merged rollback.
+				ignoreUrls: [
+					/zitadel\.cloud/,
+					/^https:\/\/auth\..*\.liverty-music\.app/,
+				],
 			}),
 		],
 	})
