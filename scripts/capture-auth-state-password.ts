@@ -1,0 +1,159 @@
+/**
+ * Captures an authenticated Playwright session via the dev self-hosted
+ * Zitadel password flow.
+ *
+ * Headless. No display server required. Suitable for WSL2 + WSLg hosts
+ * where `capture-auth-state.ts` (headed Chromium) cannot render the
+ * Chromium window reliably.
+ *
+ * Usage:
+ *
+ *   npm run auth:capture:password
+ *
+ * Prerequisites:
+ *
+ *   - The frontend dev server must be running: `npm start`
+ *   - The password test user has been provisioned via Pulumi
+ *     (`cloud-provisioning` change `playwright-password-test-user`).
+ *   - The test user's password is present either at `.auth/password.md`
+ *     (preferred — mirror of the ESC secret) or in `E2E_PASSWORD`.
+ *
+ * See `.auth/README.md` for the first-time setup procedure and the
+ * ESC retrieval command.
+ *
+ * Output:
+ *
+ *   `.auth/storageState.json` (gitignored).
+ *
+ * The script exits non-zero if any step fails — it never produces a
+ * silently-broken storageState. The Playwright `authenticated` and
+ * `authenticated-visual` projects in `playwright.config.mjs` consume
+ * this file automatically.
+ */
+
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { chromium } from '@playwright/test'
+
+const APP_URL = process.env.APP_URL || 'http://localhost:9000'
+const OUTPUT_DIR = path.join(import.meta.dirname, '..', '.auth')
+const STORAGE_STATE_PATH = path.join(OUTPUT_DIR, 'storageState.json')
+const PASSWORD_PATH = path.join(OUTPUT_DIR, 'password.md')
+const DEFAULT_USERNAME = 'e2e-test-password@dev.liverty-music.app'
+
+function loadPassword(): string {
+	const envPassword = process.env.E2E_PASSWORD
+	if (envPassword) {
+		return envPassword
+	}
+	if (!fs.existsSync(PASSWORD_PATH)) {
+		console.error(`[error] Password file not found: ${PASSWORD_PATH}`)
+		console.error('Either set E2E_PASSWORD or create .auth/password.md.')
+		console.error('See .auth/README.md "First-time setup" for the ESC command.')
+		process.exit(1)
+	}
+	const contents = fs.readFileSync(PASSWORD_PATH, 'utf-8').trim()
+	if (contents.length === 0) {
+		console.error(`[error] Password file is empty: ${PASSWORD_PATH}`)
+		process.exit(1)
+	}
+	return contents
+}
+
+async function captureAuthStatePassword(): Promise<void> {
+	fs.mkdirSync(OUTPUT_DIR, { recursive: true })
+
+	const username = process.env.E2E_USERNAME || DEFAULT_USERNAME
+	const password = loadPassword()
+
+	const browser = await chromium.launch({ headless: true })
+
+	try {
+		const context = await browser.newContext()
+		const page = await context.newPage()
+		page.setDefaultTimeout(60_000)
+
+		console.log(`[1/4] Navigating to ${APP_URL}…`)
+		await page.goto(APP_URL)
+
+		console.log('[2/4] Submitting username…')
+		// Zitadel Login V2 — username input. The locator tolerates either
+		// the explicit `loginName` field name or a generic text input as a
+		// resilience hedge against upstream markup tweaks.
+		const usernameInput = page
+			.locator('input[name="loginName"], input[autocomplete="username"], input[type="text"]')
+			.first()
+		await usernameInput.waitFor({ state: 'visible' })
+		await usernameInput.fill(username)
+		await page
+			.locator('button[type="submit"]')
+			.first()
+			.click()
+
+		console.log('[3/4] Submitting password…')
+		const passwordInput = page
+			.locator('input[type="password"], input[name="password"]')
+			.first()
+		await passwordInput.waitFor({ state: 'visible' })
+		await passwordInput.fill(password)
+		await page.locator('button[type="submit"]').first().click()
+
+		console.log('[4/4] Waiting for OIDC callback to complete…')
+		await page.waitForFunction(
+			() => {
+				try {
+					const localKeys = Object.keys(localStorage)
+					const sessionKeys = Object.keys(sessionStorage)
+					return Boolean(
+						localKeys.find((key) => key.startsWith('oidc.user:')) ||
+							sessionKeys.find((key) => key.startsWith('oidc.user:')),
+					)
+				} catch {
+					// Some intermediate pages (Zitadel Login V2, about:blank during
+					// redirects) throw SecurityError when reading storage. Treat as
+					// "not yet authenticated" and keep polling.
+					return false
+				}
+			},
+			{ polling: 500, timeout: 60_000 },
+		)
+
+		await context.storageState({ path: STORAGE_STATE_PATH })
+		console.log(`Storage state saved to ${STORAGE_STATE_PATH}`)
+		await context.close()
+
+		console.log('Smoke test: replaying storage state on a fresh context…')
+		const smokeContext = await browser.newContext({
+			storageState: STORAGE_STATE_PATH,
+		})
+		const smokePage = await smokeContext.newPage()
+		smokePage.setDefaultTimeout(15_000)
+
+		// Navigate to a protected route. The frontend's AuthHook will
+		// redirect unauthenticated traffic back to `/`, so the final URL
+		// is the success/failure signal.
+		await smokePage.goto(`${APP_URL}/dashboard`)
+		await smokePage.waitForLoadState('networkidle')
+		const finalUrl = smokePage.url()
+		await smokeContext.close()
+
+		const landingUrls = [APP_URL, `${APP_URL}/`]
+		if (landingUrls.includes(finalUrl)) {
+			console.error(
+				`[error] Smoke test FAILED: protected route redirected to landing (${finalUrl}).`,
+			)
+			console.error('The captured storageState does not authenticate the user.')
+			console.error('Likely causes: wrong password, expired ESC value, or test user not provisioned.')
+			process.exit(2)
+		}
+
+		console.log(`Smoke test PASSED: ${finalUrl}`)
+	} finally {
+		await browser.close()
+	}
+}
+
+captureAuthStatePassword().catch((err) => {
+	console.error('Failed to capture auth state:', err)
+	process.exit(1)
+})

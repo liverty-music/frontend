@@ -42,8 +42,13 @@ tmp/*
 !tmp/.gitkeep
 !tmp/ticket-journey-stub.js
 
-# Authenticated browser state for E2E testing
-.auth/
+# Authenticated browser state for E2E testing.
+# Directory-glob form (`.auth/*`) is required so the README negation
+# below takes effect — `.auth/` alone (directory pattern) ignores the
+# whole directory and disables in-directory negation patterns.
+.auth/*
+# README documents the setup and is safe to commit.
+!.auth/README.md
 
 # ZK circuit build artifacts (regenerated via circom compile + snarkjs setup)
 circuits/*/build/
