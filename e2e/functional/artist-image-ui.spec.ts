@@ -22,7 +22,7 @@ const FANART_THUMB_URL =
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 
 const OIDC_AUTHORITY = 'https://auth.dev.liverty-music.app'
-const OIDC_CLIENT_ID = '370552773634163460'
+const OIDC_CLIENT_ID = '371355407710421859'
 
 const tomorrow = new Date()
 tomorrow.setDate(tomorrow.getDate() + 1)
@@ -256,7 +256,7 @@ function seedAuthenticatedState() {
 		// Key format: {prefix}user:{authority}:{client_id} (default prefix: "oidc.")
 		// MUST match runtime config in .env (VITE_ZITADEL_ISSUER + VITE_ZITADEL_CLIENT_ID).
 		const oidcKey =
-			'oidc.user:https://auth.dev.liverty-music.app:370552773634163460'
+			'oidc.user:https://auth.dev.liverty-music.app:371355407710421859'
 		localStorage.setItem(
 			oidcKey,
 			JSON.stringify({
