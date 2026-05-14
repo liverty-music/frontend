@@ -70,7 +70,8 @@
 		"test": "vitest",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"auth:capture:password": "npx tsx scripts/capture-auth-state-password.ts"
 	},
 	"type": "module",
 	"overrides": {
