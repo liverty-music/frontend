@@ -6,20 +6,19 @@ This directory holds credentials and captured browser state for Playwright E2E t
 
 ---
 
-## Two test users, two capture paths
+## Test user
 
-| User | UserName / email | Auth method | Capture script | Suitable host |
-|---|---|---|---|---|
-| Existing passkey user | `pepperoni9+playwright-1@gmail.com` | Passkey (WebAuthn) | `scripts/capture-auth-state.ts` (headed Chromium, manual gesture) | macOS / Linux with working display + registered authenticator device |
-| **E2E password test user** (new) | `e2e-test-password@dev.liverty-music.app` | Username + password | `scripts/capture-auth-state-password.ts` (headless Chromium, scripted) | Any host including WSL2 + WSLg |
+The dev Zitadel hosts a single Pulumi-managed E2E test user:
 
-Both users are provisioned in the dev Zitadel instance and coexist. Neither replaces the other.
+| User | Auth | Capture command |
+|---|---|---|
+| `e2e-test-password@dev.liverty-music.app` | Username + password | `npm run auth:capture:password` |
 
-The password user was added to unblock headless / CI / WSL2 capture — passkey credentials require a biometric/PIN gesture from the registered device and cannot be replayed by headless Playwright. See OpenSpec change [`playwright-password-test-user`](../../specification/openspec/changes/) for the full design.
+Provisioned by `cloud-provisioning/src/zitadel/components/e2e-test-user.ts` (OpenSpec change `playwright-password-test-user`, archived 2026-05-14). The script runs **headless** against `https://auth.dev.liverty-music.app` — no display server required, works on macOS / Linux / WSL2 + WSLg / CI runners.
 
 ---
 
-## First-time setup (password flow, default)
+## First-time setup
 
 ### 1. Retrieve the test user's password from ESC
 
@@ -60,12 +59,13 @@ npm run auth:capture:password
 Expected output:
 
 ```
-[1/4] Navigating to http://localhost:9000...
-[2/4] Submitting username...
-[3/4] Submitting password...
-[4/4] Waiting for OIDC callback to complete...
+[1/5] Navigating to http://localhost:9000…
+[2/5] Clicking welcome page Login CTA to start OIDC sign-in…
+[3/5] Submitting username…
+[4/5] Submitting password…
+[5/5] Waiting for OIDC callback to complete…
 Storage state saved to .auth/storageState.json
-Smoke test: replaying storage state on a fresh context...
+Smoke test: replaying storage state on a fresh context…
 Smoke test PASSED: protected route loaded (http://localhost:9000/dashboard).
 ```
 
@@ -104,20 +104,6 @@ No need to refresh `.auth/password.md` — the password itself hasn't rotated.
 
 ---
 
-## Falling back to the passkey flow (manual smoke testing)
-
-The passkey path is retained for hosts with a working display and registered authenticator. Use the existing script:
-
-```bash
-npx tsx scripts/capture-auth-state.ts
-```
-
-This opens a headed Chromium window; complete the OIDC login flow with the passkey user manually. The script waits up to 5 minutes for the `oidc.user:*` key to appear in storage, then writes `.auth/storageState.json`.
-
-**WSL2 + WSLg note**: this path is currently unreliable on WSL2 — the Chromium window opens but the page often stays at `about:blank` past the 5-minute polling timeout. Use the password flow above instead.
-
----
-
 ## File reference
 
 | File | Gitignored | Purpose |
@@ -125,5 +111,10 @@ This opens a headed Chromium window; complete the OIDC login flow with the passk
 | `.auth/README.md` | NO (exempted) | This document |
 | `.auth/password.md` | YES | Test user password (manual mirror of ESC) |
 | `.auth/storageState.json` | YES | Captured Playwright session (regenerate on demand) |
-| `scripts/capture-auth-state-password.ts` | NO | Password-flow headless capture script |
-| `scripts/capture-auth-state.ts` | NO | Passkey-flow headed capture script (legacy) |
+| `scripts/capture-auth-state-password.ts` | NO | Headless password-flow capture script |
+
+---
+
+## Historical note
+
+Earlier revisions of this project documented a second, passkey-based capture path against `pepperoni9+playwright-1@gmail.com` via `scripts/capture-auth-state.ts`. That user was a Zitadel-Cloud-era Self-Registration account that was wiped by `self-hosted-zitadel §10`'s `truncate_users_for_zitadel_migration` migration and was never re-provisioned on self-hosted dev Zitadel. The script was removed by OpenSpec change `remove-passkey-capture-path`. If a future need for WebAuthn / passkey CI regression testing surfaces, the design should use Chrome DevTools virtual authenticator (`webAuthn.addVirtualAuthenticator`) — not a fork of the deleted script's lineage.
