@@ -73,10 +73,25 @@ async function captureAuthStatePassword(): Promise<void> {
 		const page = await context.newPage()
 		page.setDefaultTimeout(60_000)
 
-		console.log(`[1/4] Navigating to ${APP_URL}…`)
+		console.log(`[1/5] Navigating to ${APP_URL}…`)
 		await page.goto(APP_URL)
 
-		console.log('[2/4] Submitting username…')
+		console.log('[2/5] Clicking welcome page Login CTA to start OIDC sign-in…')
+		// The welcome page does NOT auto-redirect to Zitadel — OIDC sign-in
+		// is only initiated by clicking the Login button wired to
+		// `handleLogin()` in `src/routes/welcome/welcome-route.ts`. The
+		// button has class `welcome-btn-secondary` (the welcome HTML
+		// renders one of two button groups depending on `dateGroups.length`;
+		// `.first()` picks whichever is visible).
+		const loginButton = page.locator('button.welcome-btn-secondary').first()
+		await loginButton.waitFor({ state: 'visible' })
+		await loginButton.click()
+		// Wait for the cross-origin navigation to the Zitadel auth server.
+		// `waitForURL` matches against the full URL; the regex tolerates
+		// any path under the auth host.
+		await page.waitForURL(/auth\.dev\.liverty-music\.app/, { timeout: 30_000 })
+
+		console.log('[3/5] Submitting username…')
 		// Zitadel Login V2 — username input. The locator tolerates either
 		// the explicit `loginName` field name or a generic text input as a
 		// resilience hedge against upstream markup tweaks.
@@ -90,7 +105,7 @@ async function captureAuthStatePassword(): Promise<void> {
 			.first()
 			.click()
 
-		console.log('[3/4] Submitting password…')
+		console.log('[4/5] Submitting password…')
 		const passwordInput = page
 			.locator('input[type="password"], input[name="password"]')
 			.first()
@@ -98,7 +113,7 @@ async function captureAuthStatePassword(): Promise<void> {
 		await passwordInput.fill(password)
 		await page.locator('button[type="submit"]').first().click()
 
-		console.log('[4/4] Waiting for OIDC callback to complete…')
+		console.log('[5/5] Waiting for OIDC callback to complete…')
 		await page.waitForFunction(
 			() => {
 				try {
