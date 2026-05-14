@@ -113,6 +113,34 @@ async function captureAuthStatePassword(): Promise<void> {
 		await passwordInput.fill(password)
 		await page.locator('button[type="submit"]').first().click()
 
+		// Zitadel forces a "change password on first sign-in" step when the
+		// HumanUser is created with `initialPassword` (the
+		// `@pulumiverse/zitadel.HumanUser` resource doesn't expose a
+		// `changeRequired: false` knob today — see TODO note in
+		// `cloud-provisioning/src/zitadel/components/e2e-test-user.ts`).
+		// Detect the redirect to `/ui/v2/login/password/change` and clear
+		// the prompt by re-submitting the same password as the new one.
+		// Zitadel's default password policy has no history check, so
+		// `new = current` is accepted. This step is a no-op after the
+		// first run because Zitadel marks the password as `changeRequired
+		// = false` once the user completes the prompt once.
+		await page.waitForTimeout(1500)
+		if (page.url().includes('/password/change')) {
+			console.log('[4b/5] Clearing first-sign-in password-change prompt…')
+			const changeForm = page.locator('input[type="password"]')
+			const fields = await changeForm.all()
+			if (fields.length < 2) {
+				throw new Error(
+					`Expected at least 2 password fields on /password/change, found ${fields.length}`,
+				)
+			}
+			// Current Password / New Password / Confirm Password (3 fields)
+			for (const field of fields) {
+				await field.fill(password)
+			}
+			await page.locator('button[type="submit"]').first().click()
+		}
+
 		console.log('[5/5] Waiting for OIDC callback to complete…')
 		await page.waitForFunction(
 			() => {
