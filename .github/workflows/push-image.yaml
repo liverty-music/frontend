@@ -1,5 +1,15 @@
 name: Deploy Frontend
 
+# Dual trigger per OpenSpec change `prepare-prod-service-in`:
+#  - push to main      -> dev build, dev AR (liverty-music-dev/frontend)
+#  - release published -> prod build, prod AR (liverty-music-prod/frontend)
+#
+# The `paths:` filter only applies to push events. Release events fire on
+# any published Release regardless of file diff — the deploy step is
+# always desired for a Release cut. The path list also covers `.env.prod`
+# (loaded via `--build-arg VITE_MODE=prod`) so prod-affecting changes
+# trigger dev rebuilds for sanity (the dev build itself ignores
+# `.env.prod` because Vite mode stays at the default).
 on:
   push:
     branches:
@@ -10,9 +20,12 @@ on:
       - 'package-lock.json'
       - 'vite.config.ts'
       - '.env'
+      - '.env.prod'
       - 'Dockerfile'
       - 'Caddyfile'
       - '.github/workflows/push-image.yaml'
+  release:
+    types: [published]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,9 +33,23 @@ concurrency:
 
 jobs:
   build-and-push:
+    # Defensive guard layer 1 (event filter): only fire on the two supported
+    # events. The `target_commitish == 'main'` check is intentionally
+    # absent — it's release-creation metadata, not a verified assertion
+    # about the tag's underlying commit (mirrors the analysis in backend
+    # PR #297 review threads 3248512589 / 3248513873). The authoritative
+    # check is the runtime `Verify release commit on main` step below,
+    # which compares `github.sha` against `origin/main` history.
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     environment:
-      name: dev
+      # release -> prod; push to main -> dev. The `prod` environment binds
+      # vars.PROJECT_ID=liverty-music-prod / vars.WORKLOAD_IDENTITY_PROVIDER /
+      # vars.SERVICE_ACCOUNT scoped to the prod project (managed by Pulumi's
+      # GitHubRepositoryComponent — see cloud-provisioning/src/github/).
+      name: ${{ github.event_name == 'release' && 'prod' || 'dev' }}
     permissions:
       contents: read
       id-token: write
@@ -37,6 +64,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Defensive guard layer 2 (runtime verification): for release events,
+      # confirm the checked-out commit (`github.sha`, == the tag's commit)
+      # is actually reachable from `origin/main`. Closes the gap where:
+      #   * a tag points at a non-main commit, AND
+      #   * the release was created with `--target main` (so a literal
+      #     `target_commitish == 'main'` event-level check would falsely
+      #     pass), OR
+      #   * the release was created with `--target <sha>` (where the SHA
+      #     happens to be main HEAD but the literal `target_commitish`
+      #     string is the SHA, not `"main"`).
+      # See backend PR #297 review threads 3248512589 (false-negative)
+      # and 3248513873 (false-positive) for the analysis.
+      - name: Verify release commit is on main
+        if: github.event_name == 'release'
+        run: |
+          git fetch origin main --depth=100
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::Release tag at $(git rev-parse HEAD) is not reachable from origin/main ($(git rev-parse origin/main)). Refusing to push prod images. Cut releases on main HEAD only."
+            exit 1
+          fi
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -54,6 +102,30 @@ jobs:
       - name: Set Image URI
         run: echo "IMAGE_URI=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}" >> $GITHUB_ENV
 
+      # Dev tag set: :latest (consumed by ArgoCD Image Updater for dev
+      # auto-rollout) + :sha (immutable digest pointer) + :main.
+      # Prod is forbidden from using :latest per the `prod-image-pipeline`
+      # spec — release builds use :<tag> + :sha only.
+      - name: Set Image Tags (dev path)
+        if: github.event_name == 'push'
+        run: echo "IMAGE_TAGS=${{ env.IMAGE_URI }}:latest,${{ env.IMAGE_URI }}:${{ github.sha }},${{ env.IMAGE_URI }}:main" >> $GITHUB_ENV
+
+      - name: Set Image Tags (prod path)
+        if: github.event_name == 'release'
+        run: echo "IMAGE_TAGS=${{ env.IMAGE_URI }}:${{ github.event.release.tag_name }},${{ env.IMAGE_URI }}:${{ github.sha }}" >> $GITHUB_ENV
+
+      # VITE_MODE build-arg: unset for dev (Dockerfile runs `npm run build`,
+      # loading only `.env`); set to `prod` for release builds (Dockerfile
+      # runs `npm run build -- --mode prod`, loading `.env` + `.env.prod`).
+      # See OpenSpec design D2.
+      - name: Set Build Args (dev path)
+        if: github.event_name == 'push'
+        run: echo "BUILD_ARGS=" >> $GITHUB_ENV
+
+      - name: Set Build Args (prod path)
+        if: github.event_name == 'release'
+        run: echo "BUILD_ARGS=VITE_MODE=prod" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -62,6 +134,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.IMAGE_URI }}:latest,${{ env.IMAGE_URI }}:${{ github.sha }},${{ env.IMAGE_URI }}:main
+          tags: ${{ env.IMAGE_TAGS }}
+          build-args: ${{ env.BUILD_ARGS }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
