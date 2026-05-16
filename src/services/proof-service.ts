@@ -32,8 +32,7 @@ export class ProofServiceClient {
 	// signal — see frontend-runtime-config "Empty-string circuitBaseUrl
 	// disables ZK features" scenario. generateEntryProof() guards on it
 	// and refuses to fetch.
-	private readonly circuitBaseUrl: string =
-		resolve(IAppConfig).circuitBaseUrl
+	private readonly circuitBaseUrl: string = resolve(IAppConfig).circuitBaseUrl
 
 	public async generateEntryProof(
 		eventId: string,
