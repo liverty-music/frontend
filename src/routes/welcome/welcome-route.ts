@@ -7,8 +7,8 @@ import {
 import { IEventAggregator, ILogger, INode, observable, resolve } from 'aurelia'
 import { Snack } from '../../components/snack-bar/snack'
 import {
-	PREVIEW_ARTIST_IDS,
-	PREVIEW_ARTIST_NAME_MAP,
+	getPreviewArtistIds,
+	getPreviewArtistNameMap,
 	PREVIEW_MIN_ARTISTS_WITH_CONCERTS,
 } from '../../constants/preview-artists'
 import type { Artist } from '../../entities/artist'
@@ -53,22 +53,23 @@ export class WelcomeRoute implements IRouteViewModel {
 	}
 
 	private async loadPreviewData(): Promise<void> {
-		if (PREVIEW_ARTIST_IDS.length === 0) return
+		const previewIds = getPreviewArtistIds()
+		if (previewIds.length === 0) return
 
 		this.abortController?.abort()
 		this.abortController = new AbortController()
 
 		try {
 			const groups = await this.concertService.listWithProximity(
-				PREVIEW_ARTIST_IDS,
+				previewIds,
 				'JP',
 				'JP-13',
 				this.abortController.signal,
 			)
 
-			// Build artist map from env-configured names (preview has no followed artists)
+			// Build artist map from configured names (preview has no followed artists)
 			const artistMap = new Map<string, { artist: Artist; hype: Hype }>()
-			for (const [id, name] of PREVIEW_ARTIST_NAME_MAP) {
+			for (const [id, name] of getPreviewArtistNameMap()) {
 				artistMap.set(id, {
 					artist: { id, name, mbid: '' },
 					hype: 'watch',

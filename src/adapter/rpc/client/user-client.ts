@@ -5,6 +5,7 @@ import {
 import { UserService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/user/v1/user_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../../config/app-config'
 import type { User } from '../../../entities/user'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
@@ -23,6 +24,7 @@ export class UserRpcClient {
 		createTransport(
 			resolve(IAuthService),
 			resolve(ILogger).scopeTo('Transport'),
+			resolve(IAppConfig),
 		),
 	)
 

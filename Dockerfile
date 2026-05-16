@@ -9,22 +9,19 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code (including .env files)
+# Copy source code
 COPY . .
 
-# Vite mode selector — controls which `.env.<mode>` overlay file is loaded
-# on top of the base `.env` at build time. Defaults to empty (Vite's
-# built-in `production` mode, which loads only `.env`). The prod CI path
-# passes `--build-arg VITE_MODE=prod` to load `.env.prod` overlay (apex
-# API URL, prod OIDC issuer + client_id + org_id, prod VAPID public key,
-# `info` log level). See OpenSpec change `prepare-prod-service-in` D2.
-ARG VITE_MODE=""
+# Build the application. No env-specific build-args: the resulting bundle
+# is env-agnostic and fetches /config.json at runtime from a per-env K8s
+# ConfigMap. See OpenSpec change `adopt-runtime-config-for-frontend`.
+RUN npm run build
 
-# Build the application. When VITE_MODE is unset (= dev path), this is
-# `npm run build` (Vite defaults to mode=production but no `.env.production`
-# file exists so only `.env` is loaded). When VITE_MODE=prod, this becomes
-# `npm run build -- --mode prod`, loading `.env` + `.env.prod`.
-RUN if [ -n "$VITE_MODE" ]; then npm run build -- --mode "$VITE_MODE"; else npm run build; fi
+# Defense-in-depth: assert every route chunk still contains its compiled
+# template marker. Catches the class of bug that produced the v1.0.0
+# blank-screen regression (template stripping when a build-time toggle
+# interacts badly with the Aurelia Vite plugin).
+RUN npm run verify:build-templates
 
 #----------------------------
 

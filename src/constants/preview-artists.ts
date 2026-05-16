@@ -1,31 +1,35 @@
+import { getAppConfig } from '../config/app-config'
+
 /**
  * Curated artist IDs and names for the Welcome page dashboard preview.
- * These are popular Japanese artists likely to have upcoming concerts.
+ * Sourced from the runtime AppConfig (`/config.json` `previewArtistIds`
+ * + `previewArtistNames`).
  *
- * Both VITE_PREVIEW_ARTIST_IDS and VITE_PREVIEW_ARTIST_NAMES must be
- * comma-separated lists in the same order. Configure in the
- * environment-specific `.env` file.
+ * Exposed as functions rather than module-level constants so that
+ * module evaluation does not require `loadAppConfig()` to have
+ * resolved. Earlier versions performed the resolution at module-eval
+ * time, which silently coupled module ordering to chunk-split topology
+ * — Storybook stories or test imports that touched this module before
+ * bootstrap would crash. The function form makes the dependency
+ * explicit and lazy.
  */
 
-function parseEnvList(key: string): readonly string[] {
-	const raw = import.meta.env[key] as string | undefined
-	if (!raw) return []
-	return raw
-		.split(',')
-		.map((v) => v.trim())
-		.filter((v) => v.length > 0)
+interface PreviewArtists {
+	readonly ids: readonly string[]
+	readonly nameMap: ReadonlyMap<string, string>
 }
 
-function resolvePreviewArtists(): {
-	ids: readonly string[]
-	nameMap: ReadonlyMap<string, string>
-} {
-	const ids = parseEnvList('VITE_PREVIEW_ARTIST_IDS')
-	const names = parseEnvList('VITE_PREVIEW_ARTIST_NAMES')
+let _cache: PreviewArtists | null = null
+
+function resolvePreviewArtists(): PreviewArtists {
+	if (_cache) return _cache
+	const config = getAppConfig()
+	const ids = config.previewArtistIds
+	const names = config.previewArtistNames
 
 	if (ids.length === 0 && import.meta.env.DEV) {
 		console.warn(
-			'[WelcomePreview] VITE_PREVIEW_ARTIST_IDS is not set. The welcome page preview will not display any concerts.',
+			'[WelcomePreview] config.previewArtistIds is empty. The welcome page preview will not display any concerts.',
 		)
 	}
 
@@ -34,14 +38,28 @@ function resolvePreviewArtists(): {
 		nameMap.set(ids[i], names[i] ?? '')
 	}
 
-	return { ids, nameMap }
+	_cache = { ids, nameMap }
+	return _cache
 }
 
-const preview = resolvePreviewArtists()
+/** Returns the curated artist IDs from the runtime AppConfig. */
+export function getPreviewArtistIds(): readonly string[] {
+	return resolvePreviewArtists().ids
+}
 
-export const PREVIEW_ARTIST_IDS: readonly string[] = preview.ids
-export const PREVIEW_ARTIST_NAME_MAP: ReadonlyMap<string, string> =
-	preview.nameMap
+/** Returns the curated artist ID → display name map. */
+export function getPreviewArtistNameMap(): ReadonlyMap<string, string> {
+	return resolvePreviewArtists().nameMap
+}
 
 /** Minimum number of artists with concerts required to show the preview. */
 export const PREVIEW_MIN_ARTISTS_WITH_CONCERTS = 5
+
+/**
+ * Test-only: clear the cached resolution so each unit test starts fresh.
+ * @internal Not part of the public API; the `__` prefix and this tag
+ *   discourage import from production code.
+ */
+export function __resetPreviewArtistsForTests(): void {
+	_cache = null
+}

@@ -7,14 +7,14 @@ import {
 	ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions'
 
-const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
-
 /**
  * Initialize OpenTelemetry browser SDK for traceparent propagation.
  * No spans are exported — the backend handles trace export to Cloud Trace.
+ *
+ * @param apiBaseUrl - API base URL from runtime AppConfig; used to scope
+ *   traceparent propagation to backend requests only.
  */
-export function initOtel(): WebTracerProvider {
+export function initOtel(apiBaseUrl: string): WebTracerProvider {
 	const resource = resourceFromAttributes({
 		[ATTR_SERVICE_NAME]: 'liverty-music-frontend',
 		[ATTR_SERVICE_VERSION]: '0.1.0',
@@ -28,7 +28,7 @@ export function initOtel(): WebTracerProvider {
 	registerInstrumentations({
 		instrumentations: [
 			new FetchInstrumentation({
-				propagateTraceHeaderCorsUrls: [new RegExp(escapeRegExp(API_BASE_URL))],
+				propagateTraceHeaderCorsUrls: [new RegExp(escapeRegExp(apiBaseUrl))],
 				// Skip the OIDC provider entirely — Zitadel's CORS preflight
 				// rejects requests that include `traceparent` in the
 				// `Access-Control-Request-Headers` list (the preflight 204

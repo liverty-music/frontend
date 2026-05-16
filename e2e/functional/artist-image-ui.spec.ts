@@ -254,7 +254,7 @@ function seedAuthenticatedState() {
 
 		// Fake OIDC user stored by oidc-client-ts WebStorageStateStore
 		// Key format: {prefix}user:{authority}:{client_id} (default prefix: "oidc.")
-		// MUST match runtime config in .env (VITE_ZITADEL_ISSUER + VITE_ZITADEL_CLIENT_ID).
+		// MUST match runtime config in public/config.json (zitadelIssuer + zitadelClientId).
 		const oidcKey =
 			'oidc.user:https://auth.dev.liverty-music.app:371355407710421859'
 		localStorage.setItem(

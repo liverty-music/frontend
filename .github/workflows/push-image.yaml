@@ -1,26 +1,28 @@
 name: Deploy Frontend
 
-# Dual trigger per OpenSpec change `prepare-prod-service-in`:
+# Dual trigger:
 #  - push to main      -> dev build, dev AR (liverty-music-dev/frontend)
 #  - release published -> prod build, prod AR (liverty-music-prod/frontend)
 #
+# Per OpenSpec change `adopt-runtime-config-for-frontend`, both build paths
+# run identical Dockerfile inputs (no env-specific build-args). The bundle
+# is env-agnostic — per-environment values come from /config.json served
+# by Caddy from a K8s ConfigMap at runtime. Only the image tag and target
+# AR differ between the two paths.
+#
 # The `paths:` filter only applies to push events. Release events fire on
-# any published Release regardless of file diff — the deploy step is
-# always desired for a Release cut. The path list also covers `.env.prod`
-# (loaded via `--build-arg VITE_MODE=prod`) so prod-affecting changes
-# trigger dev rebuilds for sanity (the dev build itself ignores
-# `.env.prod` because Vite mode stays at the default).
+# any published Release regardless of file diff.
 on:
   push:
     branches:
       - main
     paths:
       - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.ts'
-      - '.env'
-      - '.env.prod'
       - 'Dockerfile'
       - 'Caddyfile'
       - '.github/workflows/push-image.yaml'
@@ -114,27 +116,21 @@ jobs:
         if: github.event_name == 'release'
         run: echo "IMAGE_TAGS=${{ env.IMAGE_URI }}:${{ github.event.release.tag_name }},${{ env.IMAGE_URI }}:${{ github.sha }}" >> $GITHUB_ENV
 
-      # VITE_MODE build-arg: unset for dev (Dockerfile runs `npm run build`,
-      # loading only `.env`); set to `prod` for release builds (Dockerfile
-      # runs `npm run build -- --mode prod`, loading `.env` + `.env.prod`).
-      # See OpenSpec design D2.
-      - name: Set Build Args (dev path)
-        if: github.event_name == 'push'
-        run: echo "BUILD_ARGS=" >> $GITHUB_ENV
-
-      - name: Set Build Args (prod path)
-        if: github.event_name == 'release'
-        run: echo "BUILD_ARGS=VITE_MODE=prod" >> $GITHUB_ENV
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # No env-specific build-args: per OpenSpec change
+      # `adopt-runtime-config-for-frontend`, both paths build the same
+      # env-agnostic bundle. Per-env values come from /config.json at
+      # runtime (mounted from a K8s ConfigMap). The Dockerfile runs
+      # `npm run verify:build-templates` after `npm run build` as a
+      # defense-in-depth gate against template-stripping regressions
+      # (the class of bug that produced the v1.0.0 blank-screen Sev-1).
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ env.IMAGE_TAGS }}
-          build-args: ${{ env.BUILD_ARGS }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

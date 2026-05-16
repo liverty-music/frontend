@@ -3,6 +3,7 @@ import type { TicketJourney } from '@buf/liverty-music_schema.bufbuild_es/livert
 import { TicketJourneyService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/ticket_journey/v1/ticket_journey_service_connect.js'
 import { type Client, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../../config/app-config'
 import type { JourneyStatus } from '../../../entities/concert'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
@@ -27,6 +28,7 @@ export class TicketJourneyRpcClient {
 		const transport = createTransport(
 			authService,
 			resolve(ILogger).scopeTo('Transport'),
+			resolve(IAppConfig),
 		)
 		this.client = createClient(TicketJourneyService, transport)
 	}

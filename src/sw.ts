@@ -15,6 +15,30 @@ import { CacheFirst, NetworkOnly } from 'workbox-strategies'
 precacheAndRoute(self.__WB_MANIFEST)
 
 // ---------------------------------------------------------------------------
+// Runtime config endpoint — NetworkOnly.
+//
+// Why NetworkOnly: ConfigMap updates (followed by Reloader-triggered pod
+// rollout) MUST propagate on the next page load without depending on
+// cache busting. Caching `/config.json` in the SW would create a window
+// where the SPA boots against stale config after an operator change.
+//
+// OFFLINE TRADE-OFF (intentional, scoped non-goal for this change):
+// A user who has previously loaded the app and then goes offline will
+// see `showStaticErrorPage` from `loadAppConfig()` rather than a
+// partial cached experience. Auth and gRPC already require network, so
+// offline support was always limited. If offline-tolerant config
+// becomes a goal, swap this for a `NetworkFirst` (or
+// `StaleWhileRevalidate`) strategy with a short TTL — additive change.
+// See OpenSpec change `adopt-runtime-config-for-frontend` design D6
+// Risks/Trade-offs for the full rationale.
+//
+// `/config.json` is intentionally NOT in `__WB_MANIFEST` — it is
+// mounted from a K8s ConfigMap at deploy time, not shipped in the
+// image's dist output beyond the `public/` fallback.
+// ---------------------------------------------------------------------------
+registerRoute(({ url }) => url.pathname === '/config.json', new NetworkOnly())
+
+// ---------------------------------------------------------------------------
 // ZK circuit artifacts — CacheFirst with 30-day TTL.
 // ---------------------------------------------------------------------------
 const ZK_CACHE = 'zk-circuits-v1'

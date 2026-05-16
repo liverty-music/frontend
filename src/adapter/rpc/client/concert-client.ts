@@ -5,6 +5,7 @@ import type { ProximityGroup } from '@buf/liverty-music_schema.bufbuild_es/liver
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../../config/app-config'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
 
@@ -22,7 +23,11 @@ export class ConcertRpcClient {
 	private readonly authService = resolve(IAuthService)
 	private readonly client = createClient(
 		ConcertService,
-		createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
+		createTransport(
+			this.authService,
+			resolve(ILogger).scopeTo('Transport'),
+			resolve(IAppConfig),
+		),
 	)
 
 	public async listConcerts(

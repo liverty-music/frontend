@@ -2,6 +2,7 @@ import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/en
 import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
 import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../../config/app-config'
 import type { Artist } from '../../../entities/artist'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
@@ -25,6 +26,7 @@ export class ArtistRpcClient {
 		const transport = createTransport(
 			authService,
 			resolve(ILogger).scopeTo('Transport'),
+			resolve(IAppConfig),
 		)
 
 		this.client = createPromiseClient(ArtistService, transport)

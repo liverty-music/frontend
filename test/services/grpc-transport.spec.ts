@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createMockAppConfig } from '../helpers/mock-app-config'
 import { createMockAuth } from '../helpers/mock-auth'
 
 // Stub external modules
@@ -64,7 +65,7 @@ describe('grpc-transport', () => {
 				error: vi.fn(),
 			}
 
-			createTransport(mockAuth as any, mockLogger as any)
+			createTransport(mockAuth as any, mockLogger as any, createMockAppConfig())
 
 			expect(mockCreateConnectTransport).toHaveBeenCalledTimes(1)
 			const call = mockCreateConnectTransport.mock.calls[0][0]
@@ -91,7 +92,7 @@ describe('grpc-transport', () => {
 				error: vi.fn(),
 			}
 
-			createTransport(mockAuth as any, mockLogger as any)
+			createTransport(mockAuth as any, mockLogger as any, createMockAppConfig())
 
 			// Extract the authInterceptor (3rd in the array: otel, logging, auth, authRetry, retry)
 			const interceptors =
@@ -132,7 +133,7 @@ describe('grpc-transport', () => {
 				error: vi.fn(),
 			}
 
-			createTransport(mockAuth as any, mockLogger as any)
+			createTransport(mockAuth as any, mockLogger as any, createMockAppConfig())
 
 			const interceptors =
 				mockCreateConnectTransport.mock.calls[
@@ -172,7 +173,7 @@ describe('grpc-transport', () => {
 				error: vi.fn(),
 			}
 
-			createTransport(mockAuth as any, mockLogger as any)
+			createTransport(mockAuth as any, mockLogger as any, createMockAppConfig())
 
 			const interceptors =
 				mockCreateConnectTransport.mock.calls[

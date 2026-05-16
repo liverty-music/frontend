@@ -1,10 +1,8 @@
 import { DI, ILogger, resolve } from 'aurelia'
 import { IEntryRpcClient } from '../adapter/rpc/client/entry-client'
+import { IAppConfig } from '../config/app-config'
 import { bytesToDecimal, uuidToFieldElement } from '../entities/entry'
 import type { ProofMessage, ProofRequest } from '../workers/proof.worker'
-
-const CIRCUIT_BASE_URL =
-	import.meta.env.VITE_CIRCUIT_BASE_URL ?? '/circuits/ticketcheck-v1'
 
 // SHA-256 hashes of known-good circuit files for integrity verification.
 // Recompute after each circuit rebuild: sha256sum build/ticketcheck_js/ticketcheck.wasm build/ticketcheck_final.zkey
@@ -30,6 +28,11 @@ export interface IProofService extends ProofServiceClient {}
 export class ProofServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('ProofService')
 	private readonly entryClient = resolve(IEntryRpcClient)
+	// Empty string is the spec's "ZK circuits unavailable in this environment"
+	// signal — see frontend-runtime-config "Empty-string circuitBaseUrl
+	// disables ZK features" scenario. generateEntryProof() guards on it
+	// and refuses to fetch.
+	private readonly circuitBaseUrl: string = resolve(IAppConfig).circuitBaseUrl
 
 	public async generateEntryProof(
 		eventId: string,
@@ -37,6 +40,12 @@ export class ProofServiceClient {
 		onProgress?: (stage: string) => void,
 		signal?: AbortSignal,
 	): Promise<ProofOutput> {
+		if (!this.circuitBaseUrl) {
+			throw new Error(
+				'ZK circuits unavailable in this environment (circuitBaseUrl is empty in /config.json)',
+			)
+		}
+
 		const start = performance.now()
 
 		onProgress?.('Fetching Merkle path...')
@@ -56,8 +65,8 @@ export class ProofServiceClient {
 
 		onProgress?.('Starting proof generation...')
 
-		const wasmUrl = `${CIRCUIT_BASE_URL}/ticketcheck.wasm`
-		const zkeyUrl = `${CIRCUIT_BASE_URL}/ticketcheck.zkey`
+		const wasmUrl = `${this.circuitBaseUrl}/ticketcheck.wasm`
+		const zkeyUrl = `${this.circuitBaseUrl}/ticketcheck.zkey`
 
 		// Verify circuit file integrity before proof generation.
 		await this.verifyCircuitIntegrity(wasmUrl, 'ticketcheck.wasm')

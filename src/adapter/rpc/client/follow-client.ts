@@ -2,6 +2,7 @@ import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/en
 import { FollowService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/follow/v1/follow_service_connect.js'
 import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../../config/app-config'
 import type { FollowedArtist, Hype } from '../../../entities/follow'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
@@ -26,6 +27,7 @@ export class FollowRpcClient {
 		const transport = createTransport(
 			authService,
 			resolve(ILogger).scopeTo('Transport'),
+			resolve(IAppConfig),
 		)
 
 		this.client = createPromiseClient(FollowService, transport)

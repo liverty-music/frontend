@@ -85,6 +85,10 @@ export default defineConfig({
     {
       name: 'smoke',
       testMatch: 'e2e/smoke/**/*.spec.ts',
+      // post-deploy.spec.ts runs from playwright.smoke.config.mjs against
+      // a live URL — exclude here so it never picks up the local dev
+      // server's baseURL.
+      testIgnore: 'e2e/smoke/post-deploy.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:9000',
@@ -144,7 +148,10 @@ export default defineConfig({
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   outputDir: 'test-results/',
 
-  /* Run your local dev server before starting the tests */
+  /* Run your local dev server before starting the tests. The post-deploy
+     smoke spec runs from a dedicated config (playwright.smoke.config.mjs)
+     so it never starts a webServer — this file is for local-dev / CI
+     tests only. */
   webServer: {
     command: 'npm start',
     port: 9000,

@@ -3,13 +3,12 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 import { SpanStatusCode, trace } from '@opentelemetry/api'
 import type { ILogger } from 'aurelia'
+import type { AppConfig } from '../config/app-config'
 import type { IAuthService } from './auth-service'
 import {
 	createAuthRetryInterceptor,
 	createRetryInterceptor,
 } from './connect-error-router'
-
-const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 const tracer = trace.getTracer('connect-rpc')
 
@@ -21,15 +20,20 @@ const isCancellation = (err: unknown): boolean =>
 /**
  * Creates a Connect transport with authentication, logging, and OTEL interceptors.
  *
- * This factory function accepts IAuthService and ILogger as dependencies to avoid
- * calling resolve() outside of a DI resolution context, which would
- * cause AUR0002 errors in Aurelia 2.
+ * This factory function accepts IAuthService, ILogger, and AppConfig as
+ * dependencies to avoid calling resolve() outside of a DI resolution context,
+ * which would cause AUR0002 errors in Aurelia 2.
  *
  * @param auth - The AuthService instance to use for retrieving JWT tokens
  * @param logger - The ILogger instance scoped to transport
+ * @param config - The resolved runtime AppConfig providing apiBaseUrl
  * @returns A configured Connect transport with auth, logging, and tracing interceptors
  */
-export const createTransport = (auth: IAuthService, logger: ILogger) => {
+export const createTransport = (
+	auth: IAuthService,
+	logger: ILogger,
+	config: AppConfig,
+) => {
 	/**
 	 * Interceptor to inject JWT token from OIDC UserManager.
 	 */
@@ -126,7 +130,7 @@ export const createTransport = (auth: IAuthService, logger: ILogger) => {
 	}
 
 	return createConnectTransport({
-		baseUrl,
+		baseUrl: config.apiBaseUrl,
 		interceptors: [
 			otelInterceptor,
 			loggingInterceptor,

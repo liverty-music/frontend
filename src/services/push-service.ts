@@ -1,6 +1,7 @@
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IPushRpcClient } from '../adapter/rpc/client/push-client'
+import { IAppConfig } from '../config/app-config'
 import { INotificationManager } from './notification-manager'
 
 export const IPushService = DI.createInterface<IPushService>(
@@ -29,8 +30,8 @@ export class PushServiceClient {
 	private readonly rpcClient = resolve(IPushRpcClient)
 	private readonly notificationManager = resolve(INotificationManager)
 
-	// VAPID public key injected via Vite build environment variable
-	private readonly vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY ?? ''
+	// VAPID public key sourced from runtime AppConfig (see IAppConfig)
+	private readonly vapidPublicKey = resolve(IAppConfig).vapidPublicKey
 
 	private async getRegistration(): Promise<ServiceWorkerRegistration> {
 		const timeout = new Promise<never>((_, reject) =>

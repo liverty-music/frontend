@@ -2,6 +2,7 @@ import { UserId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/enti
 import { TicketService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/ticket/v1/ticket_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../../config/app-config'
 import type { Ticket } from '../../../entities/ticket'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
@@ -21,6 +22,7 @@ export class TicketRpcClient {
 		createTransport(
 			resolve(IAuthService),
 			resolve(ILogger).scopeTo('Transport'),
+			resolve(IAppConfig),
 		),
 	)
 
