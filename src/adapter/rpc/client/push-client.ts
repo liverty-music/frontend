@@ -7,6 +7,7 @@ import { UserId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/enti
 import { PushNotificationService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/push_notification/v1/push_notification_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../../config/app-config'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
 
@@ -23,6 +24,7 @@ export class PushRpcClient {
 		createTransport(
 			resolve(IAuthService),
 			resolve(ILogger).scopeTo('Transport'),
+			resolve(IAppConfig),
 		),
 	)
 

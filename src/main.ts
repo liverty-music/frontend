@@ -6,6 +6,7 @@ import Aurelia, {
 	IEventAggregator,
 	LoggerConfiguration,
 	LogLevel,
+	Registration,
 } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
@@ -36,6 +37,12 @@ import { StatePlaceholder } from './components/state-placeholder/state-placehold
 import { SvgIcon } from './components/svg-icon/svg-icon'
 import { Toast } from './components/toast/toast'
 import { UserHomeSelector } from './components/user-home-selector/user-home-selector'
+import {
+	type AppConfig,
+	IAppConfig,
+	loadAppConfig,
+	validateEnvironmentMatchesHost,
+} from './config/app-config'
 import {
 	migrateStorageKeys,
 	trackSessionForPrompts,
@@ -72,143 +79,167 @@ import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserService } from './services/user-service'
 import { DateValueConverter } from './value-converters/date'
 
-// Initialize OpenTelemetry before Aurelia startup
-initOtel()
-
-// Migrate legacy localStorage keys (safe to call multiple times)
-migrateStorageKeys()
-
-// Track session count for notification prompt deferral logic
-trackSessionForPrompts()
-
-// Css files imported in this main file should be imported with ?inline query
-// to get CSS as string for sharedStyles in shadowDOM.
-// import shared from './shared.css?inline';
-
-const au = new Aurelia()
-
-au.register(
-	I18nConfiguration.customize((options) => {
-		options.initOptions = {
-			resources: {
-				ja: { translation: ja },
-				en: { translation: en },
-			},
-			fallbackLng: 'ja',
-			supportedLngs: ['ja', 'en'],
-			interpolation: { escapeValue: false },
-			detection: {
-				order: ['querystring', 'localStorage', 'navigator'],
-				lookupQuerystring: 'lang',
-				lookupLocalStorage: 'language',
-				caches: [],
-			},
-			plugins: [i18nextBrowserLanguageDetector],
-		}
-	}),
-)
-au.register(
-	RouterConfiguration.customize({
-		restorePreviousRouteTreeOnError: !import.meta.env.DEV,
-	}),
-)
-au.register(
-	LoggerConfiguration.create({
-		level: resolveLogLevel(),
-		sinks: [ConsoleSink, OtelLogSink],
-	}),
-)
-
-function resolveLogLevel(): LogLevel {
-	const env = import.meta.env.VITE_LOG_LEVEL as string | undefined
-	if (env) {
-		const map: Record<string, LogLevel> = {
-			trace: LogLevel.trace,
-			debug: LogLevel.debug,
-			info: LogLevel.info,
-			warn: LogLevel.warn,
-			error: LogLevel.error,
-		}
-		const level = map[env]
-		if (level !== undefined) return level
+function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
+	const map: Record<AppConfig['logLevel'], LogLevel> = {
+		trace: LogLevel.trace,
+		debug: LogLevel.debug,
+		info: LogLevel.info,
+		warn: LogLevel.warn,
+		error: LogLevel.error,
 	}
-	return import.meta.env.DEV ? LogLevel.debug : LogLevel.warn
+	return map[configLogLevel]
 }
 
-au.register(IErrorBoundaryService)
-au.register(GlobalErrorHandlingTask)
-au.register(IAuthService)
-au.register(IUserService)
-au.register(UserHydrationTask)
-au.register(IArtistServiceClient)
-au.register(IFollowServiceClient)
-au.register(IConcertService)
-au.register(IOnboardingService)
-au.register(IGuestService)
-au.register(IGuestDataMergeService)
-au.register(INavDimmingService)
-au.register(INotificationManager)
-au.register(IPushService)
-au.register(IPromptCoordinator)
-au.register(IPwaInstallService)
-au.register(ITicketJourneyService)
-au.register(ITicketEmailService)
-au.register(IArtistRpcClient)
-au.register(IConcertRpcClient)
-au.register(IFollowRpcClient)
-au.register(ITicketRpcClient)
-au.register(ITicketJourneyRpcClient)
-au.register(IEntryRpcClient)
-au.register(IUserRpcClient)
-au.register(IPushRpcClient)
-au.register(IProofService)
-au.register(ArtistUnfollowSheet)
-au.register(ArtistFilterBar)
-au.register(BottomNavBar)
-au.register(BottomSheet)
-au.register(CelebrationOverlay)
-au.register(ConcertHighway)
-au.register(EventCard)
-au.register(EventDetailSheet)
-au.register(InlineError)
-au.register(LoadingSpinner)
-au.register(SignupPromptBanner)
-au.register(Toast)
-au.register(PageHeader)
-au.register(PageHelp)
-au.register(PostSignupDialog)
-au.register(StatePlaceholder)
-au.register(SvgIcon)
-au.register(UserHomeSelector)
-au.register(AuthHook)
-au.register(ArtistColorCustomAttribute)
-au.register(LongPressCustomAttribute)
-au.register(BeamVarsCustomAttribute)
-au.register(DotColorCustomAttribute)
-au.register(SpotlightRadiusCustomAttribute)
-au.register(TileColorCustomAttribute)
-au.register(DateValueConverter)
-au.app(AppShell)
-au.start()
+function showStaticErrorPage(err: unknown): void {
+	const message = err instanceof Error ? err.message : String(err)
+	const detail = import.meta.env.DEV ? `<pre>${escapeHtml(message)}</pre>` : ''
+	document.body.innerHTML = `
+		<main style="font-family:system-ui;max-width:42rem;margin:4rem auto;padding:0 1rem;color:#222">
+			<h1 style="font-size:1.5rem;margin:0 0 1rem">App failed to start</h1>
+			<p>The application could not initialize. Please try reloading the page. If the problem persists, contact support.</p>
+			${detail}
+		</main>
+	`.trim()
+	console.error('Bootstrap failure:', err)
+}
 
-// Test-only bridge: expose EA publish for snack-bar E2E tests.
-// This allows Playwright to trigger real snack toasts without needing
-// to access Aurelia internals. Stripped by tree-shaking in production
-// builds because the reference is guarded by the dev env check.
-if (import.meta.env.DEV) {
-	const ea = au.container.get(IEventAggregator)
-	;(window as unknown as Record<string, unknown>).__lm_publishSnack = (
-		message: string,
-		severity: string,
-		durationMs: number,
-	) => {
-		ea.publish(
-			new Snack(message, severity as 'info' | 'warning' | 'error', {
-				duration: durationMs,
-			}),
-		)
+function escapeHtml(s: string): string {
+	return s
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;')
+}
+
+async function bootstrap(): Promise<void> {
+	const config = await loadAppConfig()
+	validateEnvironmentMatchesHost(config)
+
+	// Initialize OpenTelemetry with the runtime-resolved API base URL.
+	initOtel(config.apiBaseUrl)
+
+	// Migrate legacy localStorage keys (safe to call multiple times)
+	migrateStorageKeys()
+
+	// Track session count for notification prompt deferral logic
+	trackSessionForPrompts()
+
+	const au = new Aurelia()
+
+	// AppConfig must be registered first so any later DI resolution
+	// (services constructed during Aurelia.start) can resolve it.
+	au.register(Registration.instance(IAppConfig, config))
+
+	au.register(
+		I18nConfiguration.customize((options) => {
+			options.initOptions = {
+				resources: {
+					ja: { translation: ja },
+					en: { translation: en },
+				},
+				fallbackLng: 'ja',
+				supportedLngs: ['ja', 'en'],
+				interpolation: { escapeValue: false },
+				detection: {
+					order: ['querystring', 'localStorage', 'navigator'],
+					lookupQuerystring: 'lang',
+					lookupLocalStorage: 'language',
+					caches: [],
+				},
+				plugins: [i18nextBrowserLanguageDetector],
+			}
+		}),
+	)
+	au.register(
+		RouterConfiguration.customize({
+			restorePreviousRouteTreeOnError: !import.meta.env.DEV,
+		}),
+	)
+	au.register(
+		LoggerConfiguration.create({
+			level: resolveLogLevel(config.logLevel),
+			sinks: [ConsoleSink, OtelLogSink],
+		}),
+	)
+
+	au.register(IErrorBoundaryService)
+	au.register(GlobalErrorHandlingTask)
+	au.register(IAuthService)
+	au.register(IUserService)
+	au.register(UserHydrationTask)
+	au.register(IArtistServiceClient)
+	au.register(IFollowServiceClient)
+	au.register(IConcertService)
+	au.register(IOnboardingService)
+	au.register(IGuestService)
+	au.register(IGuestDataMergeService)
+	au.register(INavDimmingService)
+	au.register(INotificationManager)
+	au.register(IPushService)
+	au.register(IPromptCoordinator)
+	au.register(IPwaInstallService)
+	au.register(ITicketJourneyService)
+	au.register(ITicketEmailService)
+	au.register(IArtistRpcClient)
+	au.register(IConcertRpcClient)
+	au.register(IFollowRpcClient)
+	au.register(ITicketRpcClient)
+	au.register(ITicketJourneyRpcClient)
+	au.register(IEntryRpcClient)
+	au.register(IUserRpcClient)
+	au.register(IPushRpcClient)
+	au.register(IProofService)
+	au.register(ArtistUnfollowSheet)
+	au.register(ArtistFilterBar)
+	au.register(BottomNavBar)
+	au.register(BottomSheet)
+	au.register(CelebrationOverlay)
+	au.register(ConcertHighway)
+	au.register(EventCard)
+	au.register(EventDetailSheet)
+	au.register(InlineError)
+	au.register(LoadingSpinner)
+	au.register(SignupPromptBanner)
+	au.register(Toast)
+	au.register(PageHeader)
+	au.register(PageHelp)
+	au.register(PostSignupDialog)
+	au.register(StatePlaceholder)
+	au.register(SvgIcon)
+	au.register(UserHomeSelector)
+	au.register(AuthHook)
+	au.register(ArtistColorCustomAttribute)
+	au.register(LongPressCustomAttribute)
+	au.register(BeamVarsCustomAttribute)
+	au.register(DotColorCustomAttribute)
+	au.register(SpotlightRadiusCustomAttribute)
+	au.register(TileColorCustomAttribute)
+	au.register(DateValueConverter)
+	au.app(AppShell)
+	await au.start()
+
+	// Test-only bridge: expose EA publish for snack-bar E2E tests.
+	// This allows Playwright to trigger real snack toasts without needing
+	// to access Aurelia internals. Stripped by tree-shaking in production
+	// builds because the reference is guarded by the dev env check.
+	if (import.meta.env.DEV) {
+		const ea = au.container.get(IEventAggregator)
+		;(window as unknown as Record<string, unknown>).__lm_publishSnack = (
+			message: string,
+			severity: string,
+			durationMs: number,
+		) => {
+			ea.publish(
+				new Snack(message, severity as 'info' | 'warning' | 'error', {
+					duration: durationMs,
+				}),
+			)
+		}
 	}
 }
+
+bootstrap().catch(showStaticErrorPage)
 
 // Register Service Worker for push notifications (production only).
 // In dev mode, vite-plugin-node-polyfills injects Buffer/global/process shims

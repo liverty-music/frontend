@@ -5,19 +5,20 @@ import {
 	type UserManagerSettings,
 	WebStorageStateStore,
 } from 'oidc-client-ts'
+import { type AppConfig, IAppConfig } from '../config/app-config'
 
-function createSettings(): UserManagerSettings {
+function createSettings(config: AppConfig): UserManagerSettings {
 	return {
-		authority: import.meta.env.VITE_ZITADEL_ISSUER,
-		client_id: import.meta.env.VITE_ZITADEL_CLIENT_ID,
+		authority: config.zitadelIssuer,
+		client_id: config.zitadelClientId,
 		redirect_uri: `${window.location.origin}/auth/callback`,
 		post_logout_redirect_uri: `${window.location.origin}/`,
 		response_type: 'code',
 		scope: [
 			'openid profile email offline_access',
 			// Include org scope so Zitadel applies the Org-level login policy (passkey only)
-			import.meta.env.VITE_ZITADEL_ORG_ID
-				? `urn:zitadel:iam:org:id:${import.meta.env.VITE_ZITADEL_ORG_ID}`
+			config.zitadelOrgId
+				? `urn:zitadel:iam:org:id:${config.zitadelOrgId}`
 				: '',
 		]
 			.filter(Boolean)
@@ -48,7 +49,7 @@ export class AuthService {
 
 	constructor() {
 		this.logger.debug('Initializing AuthService')
-		this.userManager = new UserManager(createSettings())
+		this.userManager = new UserManager(createSettings(resolve(IAppConfig)))
 
 		// Create a promise that resolves when initial auth state is loaded
 		this.ready = new Promise((resolve) => {

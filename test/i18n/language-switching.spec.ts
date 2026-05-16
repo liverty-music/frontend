@@ -1,6 +1,8 @@
 import { I18N } from '@aurelia/i18n'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { IAppConfig } from '../../src/config/app-config'
+import { createMockAppConfig } from '../helpers/mock-app-config'
 import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIAuthService = DI.createInterface('IAuthService')
@@ -49,6 +51,7 @@ describe('i18n language switching', () => {
 		const container = DI.createContainer()
 		container.register(
 			Registration.instance(I18N, mockI18n),
+			Registration.instance(IAppConfig, createMockAppConfig()),
 			Registration.instance(mockIAuthService, {
 				isAuthenticated: true,
 				signOut: vi.fn(),

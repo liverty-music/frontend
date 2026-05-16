@@ -15,6 +15,15 @@ import { CacheFirst, NetworkOnly } from 'workbox-strategies'
 precacheAndRoute(self.__WB_MANIFEST)
 
 // ---------------------------------------------------------------------------
+// Runtime config endpoint — NetworkOnly so ConfigMap updates (followed by
+// pod rollout via Reloader) propagate on the next page load without
+// depending on cache busting. /config.json is intentionally NOT in
+// __WB_MANIFEST (it's mounted from a K8s ConfigMap at deploy time, not
+// shipped in the image's dist output beyond the public/ fallback).
+// ---------------------------------------------------------------------------
+registerRoute(({ url }) => url.pathname === '/config.json', new NetworkOnly())
+
+// ---------------------------------------------------------------------------
 // ZK circuit artifacts — CacheFirst with 30-day TTL.
 // ---------------------------------------------------------------------------
 const ZK_CACHE = 'zk-circuits-v1'

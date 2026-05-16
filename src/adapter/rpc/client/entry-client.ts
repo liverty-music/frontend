@@ -2,6 +2,7 @@ import { UserId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/enti
 import { EntryService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/entry/v1/entry_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../../config/app-config'
 import type { MerklePath } from '../../../entities/entry'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
@@ -20,6 +21,7 @@ export class EntryRpcClient {
 		createTransport(
 			resolve(IAuthService),
 			resolve(ILogger).scopeTo('Transport'),
+			resolve(IAppConfig),
 		),
 	)
 

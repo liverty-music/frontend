@@ -3,6 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Snack } from '../../components/snack-bar/snack'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
+import { IAppConfig } from '../../config/app-config'
 import { translationKey } from '../../constants/iso3166'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
@@ -22,7 +23,7 @@ export class SettingsRoute {
 	public currentHome: string | null = null
 	public currentLocale = ''
 	public notificationsEnabled = false
-	public vapidAvailable = !!(import.meta.env.VITE_VAPID_PUBLIC_KEY ?? '')
+	public vapidAvailable = !!resolve(IAppConfig).vapidPublicKey
 	public homeSelector!: UserHomeSelector
 	public languageSelectorOpen = false
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES

@@ -67,10 +67,12 @@
 		"pretest": "npm run lint",
 		"start": "vite",
 		"build": "vite build",
+		"verify:build-templates": "npx tsx scripts/verify-build-templates.ts",
 		"test": "vitest",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build",
 		"test:e2e": "playwright test",
+		"test:smoke": "playwright test --project=post-deploy",
 		"auth:capture:password": "npx tsx scripts/capture-auth-state-password.ts"
 	},
 	"type": "module",

@@ -1,10 +1,8 @@
 import { DI, ILogger, resolve } from 'aurelia'
 import { IEntryRpcClient } from '../adapter/rpc/client/entry-client'
+import { IAppConfig } from '../config/app-config'
 import { bytesToDecimal, uuidToFieldElement } from '../entities/entry'
 import type { ProofMessage, ProofRequest } from '../workers/proof.worker'
-
-const CIRCUIT_BASE_URL =
-	import.meta.env.VITE_CIRCUIT_BASE_URL ?? '/circuits/ticketcheck-v1'
 
 // SHA-256 hashes of known-good circuit files for integrity verification.
 // Recompute after each circuit rebuild: sha256sum build/ticketcheck_js/ticketcheck.wasm build/ticketcheck_final.zkey
@@ -30,6 +28,10 @@ export interface IProofService extends ProofServiceClient {}
 export class ProofServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('ProofService')
 	private readonly entryClient = resolve(IEntryRpcClient)
+	// Empty circuitBaseUrl means circuits are unavailable in this environment;
+	// callers should check before invoking proof generation.
+	private readonly circuitBaseUrl =
+		resolve(IAppConfig).circuitBaseUrl || '/circuits/ticketcheck-v1'
 
 	public async generateEntryProof(
 		eventId: string,
@@ -56,8 +58,8 @@ export class ProofServiceClient {
 
 		onProgress?.('Starting proof generation...')
 
-		const wasmUrl = `${CIRCUIT_BASE_URL}/ticketcheck.wasm`
-		const zkeyUrl = `${CIRCUIT_BASE_URL}/ticketcheck.zkey`
+		const wasmUrl = `${this.circuitBaseUrl}/ticketcheck.wasm`
+		const zkeyUrl = `${this.circuitBaseUrl}/ticketcheck.zkey`
 
 		// Verify circuit file integrity before proof generation.
 		await this.verifyCircuitIntegrity(wasmUrl, 'ticketcheck.wasm')

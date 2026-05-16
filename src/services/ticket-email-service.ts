@@ -7,6 +7,7 @@ import type { TicketJourneyStatus } from '@buf/liverty-music_schema.bufbuild_es/
 import { TicketEmailService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/ticket_email/v1/ticket_email_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../config/app-config'
 import { IAuthService } from './auth-service'
 import { createTransport } from './grpc-transport'
 
@@ -24,7 +25,11 @@ export class TicketEmailServiceClient {
 	private readonly authService = resolve(IAuthService)
 	private readonly client = createClient(
 		TicketEmailService,
-		createTransport(this.authService, resolve(ILogger).scopeTo('Transport')),
+		createTransport(
+			this.authService,
+			resolve(ILogger).scopeTo('Transport'),
+			resolve(IAppConfig),
+		),
 	)
 
 	public async create(

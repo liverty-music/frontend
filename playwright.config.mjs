@@ -85,6 +85,8 @@ export default defineConfig({
     {
       name: 'smoke',
       testMatch: 'e2e/smoke/**/*.spec.ts',
+      // post-deploy.spec.ts runs in the dedicated `post-deploy` project below.
+      testIgnore: 'e2e/smoke/post-deploy.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:9000',
@@ -139,15 +141,28 @@ export default defineConfig({
         storageState: '.auth/storageState.json',
       },
     },
+    // Post-deploy smoke against a live (deployed) URL — driven by SMOKE_BASE_URL.
+    // Does not depend on the local dev server; skips when SMOKE_BASE_URL is unset.
+    {
+      name: 'post-deploy',
+      testMatch: 'e2e/smoke/post-deploy.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.SMOKE_BASE_URL,
+      },
+    },
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   outputDir: 'test-results/',
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm start',
-    port: 9000,
-    reuseExistingServer: !process.env.CI,
-  },
+  /* Run your local dev server before starting the tests. Skip when
+     SMOKE_BASE_URL is set (post-deploy smoke runs against a live URL). */
+  webServer: process.env.SMOKE_BASE_URL
+    ? undefined
+    : {
+        command: 'npm start',
+        port: 9000,
+        reuseExistingServer: !process.env.CI,
+      },
 });
