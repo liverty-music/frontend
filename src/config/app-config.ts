@@ -40,6 +40,11 @@ const VALID_LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error'] as const
 
 let _config: AppConfig | null = null
 
+/** Bounded wall-clock for the bootstrap `/config.json` fetch so a hung
+ *  endpoint fails closed (showStaticErrorPage) within a known window
+ *  rather than leaving the user staring at a blank page indefinitely. */
+const CONFIG_FETCH_TIMEOUT_MS = 8_000
+
 /**
  * Fetches `/config.json`, validates the schema, and caches the result for
  * synchronous access via {@link getAppConfig}. MUST be awaited before
@@ -47,7 +52,10 @@ let _config: AppConfig | null = null
  * `getAppConfig()` evaluates.
  */
 export async function loadAppConfig(): Promise<AppConfig> {
-	const res = await fetch('/config.json', { cache: 'no-store' })
+	const res = await fetch('/config.json', {
+		cache: 'no-store',
+		signal: AbortSignal.timeout(CONFIG_FETCH_TIMEOUT_MS),
+	})
 	if (!res.ok) {
 		throw new Error(
 			`config.json fetch failed: HTTP ${res.status} ${res.statusText}`,

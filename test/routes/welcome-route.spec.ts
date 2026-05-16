@@ -36,12 +36,14 @@ vi.mock('../../src/services/guest-service', () => ({
 }))
 
 vi.mock('../../src/constants/preview-artists', () => ({
-	PREVIEW_ARTIST_IDS: ['a1', 'a2'],
-	PREVIEW_ARTIST_NAME_MAP: new Map([
-		['a1', 'Artist A'],
-		['a2', 'Artist B'],
-	]),
+	getPreviewArtistIds: () => ['a1', 'a2'],
+	getPreviewArtistNameMap: () =>
+		new Map([
+			['a1', 'Artist A'],
+			['a2', 'Artist B'],
+		]),
 	PREVIEW_MIN_ARTISTS_WITH_CONCERTS: 1,
+	__resetPreviewArtistsForTests: () => {},
 }))
 
 const { WelcomeRoute } = await import('../../src/routes/welcome/welcome-route')
