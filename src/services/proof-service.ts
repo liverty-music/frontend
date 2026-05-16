@@ -28,10 +28,12 @@ export interface IProofService extends ProofServiceClient {}
 export class ProofServiceClient {
 	private readonly logger = resolve(ILogger).scopeTo('ProofService')
 	private readonly entryClient = resolve(IEntryRpcClient)
-	// Empty circuitBaseUrl means circuits are unavailable in this environment;
-	// callers should check before invoking proof generation.
-	private readonly circuitBaseUrl =
-		resolve(IAppConfig).circuitBaseUrl || '/circuits/ticketcheck-v1'
+	// Empty string is the spec's "ZK circuits unavailable in this environment"
+	// signal — see frontend-runtime-config "Empty-string circuitBaseUrl
+	// disables ZK features" scenario. generateEntryProof() guards on it
+	// and refuses to fetch.
+	private readonly circuitBaseUrl: string =
+		resolve(IAppConfig).circuitBaseUrl
 
 	public async generateEntryProof(
 		eventId: string,
@@ -39,6 +41,12 @@ export class ProofServiceClient {
 		onProgress?: (stage: string) => void,
 		signal?: AbortSignal,
 	): Promise<ProofOutput> {
+		if (!this.circuitBaseUrl) {
+			throw new Error(
+				'ZK circuits unavailable in this environment (circuitBaseUrl is empty in /config.json)',
+			)
+		}
+
 		const start = performance.now()
 
 		onProgress?.('Fetching Merkle path...')

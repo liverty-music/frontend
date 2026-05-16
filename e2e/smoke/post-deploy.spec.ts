@@ -25,6 +25,10 @@ const EXPECTED_ENVIRONMENT_BY_HOST: Record<string, string> = {
 test.describe('post-deploy smoke', () => {
 	test.skip(!SMOKE_BASE_URL, 'SMOKE_BASE_URL is required for post-deploy smoke')
 
+	// Wall-clock bound per frontend-hosting spec "Post-deploy smoke
+	// verification" requirement: a hanging deploy must fail closed.
+	test.setTimeout(60_000)
+
 	test('homepage renders non-empty DOM and welcome first-screen is present', async ({
 		page,
 	}) => {
@@ -45,7 +49,6 @@ test.describe('post-deploy smoke', () => {
 
 	test('/config.json returns the expected environment for this host', async ({
 		request,
-		page,
 	}) => {
 		const configUrl = new URL('/config.json', SMOKE_BASE_URL).toString()
 		const res = await request.get(configUrl)
@@ -65,8 +68,5 @@ test.describe('post-deploy smoke', () => {
 				`host ${hostname} should serve environment '${expected}', got '${config.environment as string}'`,
 			).toBe(expected)
 		}
-
-		// Reload page after fetching config to ensure no caching surprise.
-		await page.goto(new URL('/', SMOKE_BASE_URL).toString())
 	})
 })
