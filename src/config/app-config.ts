@@ -23,7 +23,13 @@ export interface AppConfig {
 
 export const IAppConfig = DI.createInterface<AppConfig>('IAppConfig')
 
-const KNOWN_HOSTS: Readonly<Record<string, AppConfig['environment']>> = {
+/**
+ * Single source of truth for the well-known production-tier hostnames and
+ * the environment each one MUST serve. Used by the bootstrap cross-check
+ * AND by the post-deploy smoke spec — keep them aligned by importing this
+ * constant rather than redeclaring the mapping.
+ */
+export const KNOWN_HOSTS: Readonly<Record<string, AppConfig['environment']>> = {
 	'liverty-music.app': 'prod',
 	'dev.liverty-music.app': 'dev',
 	'staging.liverty-music.app': 'staging',

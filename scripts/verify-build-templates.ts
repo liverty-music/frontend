@@ -29,10 +29,10 @@ const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'dashboard', marker: 'loading-text' },
 	{ route: 'discovery', marker: 'search-bar' },
 	{ route: 'import-ticket-email', marker: 'import-wizard' },
-	{ route: 'my-artists', marker: 'state-center' },
+	{ route: 'my-artists', marker: 'artists-fieldset' },
 	{ route: 'not-found', marker: 'not-found-code' },
 	{ route: 'settings', marker: 'settings-section-title' },
-	{ route: 'tickets', marker: 'state-center' },
+	{ route: 'tickets', marker: 'ticket-row' },
 ]
 
 function findChunk(assetsDir: string, route: string): string | null {

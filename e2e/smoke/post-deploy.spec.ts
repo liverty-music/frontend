@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { KNOWN_HOSTS } from '../../src/config/app-config'
 
 /**
  * Post-deploy smoke against a live (deployed) frontend URL. Asserts the
@@ -7,20 +8,12 @@ import { expect, test } from '@playwright/test'
  * regressions (e.g., v1.0.0's missing template chunks) agnostic of root
  * cause.
  *
- * Drive with `SMOKE_BASE_URL` env var. The Playwright project's
- * `webServer` is bypassed via `page.goto(absoluteUrl)` semantics — but
- * because the playwright config still spins up `npm start`, prefer the
- * dedicated `post-deploy` Playwright project (added in
- * playwright.config.mjs) which omits `webServer`.
+ * Drive with `SMOKE_BASE_URL` env var. Use the dedicated smoke config
+ * (`playwright.smoke.config.mjs`) so this spec's project runs without
+ * the local dev-server `webServer` block firing.
  */
 
 const SMOKE_BASE_URL = process.env.SMOKE_BASE_URL ?? ''
-
-const EXPECTED_ENVIRONMENT_BY_HOST: Record<string, string> = {
-	'liverty-music.app': 'prod',
-	'dev.liverty-music.app': 'dev',
-	'staging.liverty-music.app': 'staging',
-}
 
 test.describe('post-deploy smoke', () => {
 	test.skip(!SMOKE_BASE_URL, 'SMOKE_BASE_URL is required for post-deploy smoke')
@@ -61,7 +54,7 @@ test.describe('post-deploy smoke', () => {
 		).toBe('string')
 
 		const hostname = new URL(SMOKE_BASE_URL).hostname
-		const expected = EXPECTED_ENVIRONMENT_BY_HOST[hostname]
+		const expected = KNOWN_HOSTS[hostname]
 		if (expected) {
 			expect(
 				config.environment,
