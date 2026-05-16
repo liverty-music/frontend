@@ -1,4 +1,7 @@
 import { DI } from 'aurelia'
+import { KNOWN_HOSTS } from './known-hosts'
+
+export { KNOWN_HOSTS } from './known-hosts'
 
 /**
  * Shape of `/config.json` — the runtime environment configuration document
@@ -23,27 +26,16 @@ export interface AppConfig {
 
 export const IAppConfig = DI.createInterface<AppConfig>('IAppConfig')
 
-/**
- * Single source of truth for the well-known production-tier hostnames and
- * the environment each one MUST serve. Used by the bootstrap cross-check
- * AND by the post-deploy smoke spec — keep them aligned by importing this
- * constant rather than redeclaring the mapping.
- */
-export const KNOWN_HOSTS: Readonly<Record<string, AppConfig['environment']>> = {
-	'liverty-music.app': 'prod',
-	'dev.liverty-music.app': 'dev',
-	'staging.liverty-music.app': 'staging',
-}
-
 const VALID_ENVIRONMENTS = ['dev', 'staging', 'prod'] as const
 const VALID_LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error'] as const
 
 let _config: AppConfig | null = null
+let _inflight: Promise<AppConfig> | null = null
 
 /** Bounded wall-clock for the bootstrap `/config.json` fetch so a hung
  *  endpoint fails closed (showStaticErrorPage) within a known window
  *  rather than leaving the user staring at a blank page indefinitely. */
-const CONFIG_FETCH_TIMEOUT_MS = 8_000
+const CONFIG_FETCH_TIMEOUT_MS = 5_000
 
 /**
  * Fetches `/config.json`, validates the schema, and caches the result for
@@ -51,7 +43,16 @@ const CONFIG_FETCH_TIMEOUT_MS = 8_000
  * `Aurelia.start()` and before any module-level code that calls
  * `getAppConfig()` evaluates.
  */
-export async function loadAppConfig(): Promise<AppConfig> {
+export function loadAppConfig(): Promise<AppConfig> {
+	if (_config) return Promise.resolve(_config)
+	if (_inflight) return _inflight
+	_inflight = doLoadAppConfig().finally(() => {
+		_inflight = null
+	})
+	return _inflight
+}
+
+async function doLoadAppConfig(): Promise<AppConfig> {
 	const res = await fetch('/config.json', {
 		cache: 'no-store',
 		signal: AbortSignal.timeout(CONFIG_FETCH_TIMEOUT_MS),
@@ -140,6 +141,10 @@ function validateAppConfig(parsed: unknown): AppConfig {
 		zitadelClientId: requireString(o, 'zitadelClientId'),
 		zitadelOrgId: requireString(o, 'zitadelOrgId'),
 		vapidPublicKey: requireString(o, 'vapidPublicKey'),
+		// circuitBaseUrl is the ONLY required-present-but-MAY-be-empty
+		// string in the schema — empty signals "ZK circuits unavailable
+		// in this environment" per the frontend-runtime-config spec.
+		// All other required fields use requireString (rejects empty).
 		circuitBaseUrl: optionalString(o, 'circuitBaseUrl'),
 		previewArtistIds,
 		previewArtistNames,
@@ -182,7 +187,13 @@ function requireStringArray(
 	return v as string[]
 }
 
-/** Test-only: clears the cached config so each unit test starts fresh. */
+/**
+ * Test-only: clears the cached config so each unit test starts fresh.
+ * @internal Not part of the public API; the `__` prefix and this tag
+ *   discourage import from production code. Follow-up: migrate to a
+ *   Vitest `vi.mock`-based reset pattern to remove from the prod bundle.
+ */
 export function __resetAppConfigForTests(): void {
 	_config = null
+	_inflight = null
 }

@@ -90,6 +90,10 @@ function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
 	return map[configLogLevel]
 }
 
+function removeBootstrapLoadingIndicator(): void {
+	document.getElementById('bootstrap-loading')?.remove()
+}
+
 function showStaticErrorPage(err: unknown): void {
 	const message = err instanceof Error ? err.message : String(err)
 	const detail = import.meta.env.DEV ? `<pre>${escapeHtml(message)}</pre>` : ''
@@ -218,6 +222,9 @@ async function bootstrap(): Promise<void> {
 	au.register(DateValueConverter)
 	au.app(AppShell)
 	await au.start()
+
+	// Remove the inline loading indicator now that Aurelia has rendered.
+	removeBootstrapLoadingIndicator()
 
 	// Test-only bridge: expose EA publish for snack-bar E2E tests.
 	// This allows Playwright to trigger real snack toasts without needing

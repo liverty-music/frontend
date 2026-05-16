@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { KNOWN_HOSTS } from '../../src/config/app-config'
+import { KNOWN_HOSTS } from '../../src/config/known-hosts'
 
 /**
  * Post-deploy smoke against a live (deployed) frontend URL. Asserts the

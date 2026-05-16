@@ -55,7 +55,11 @@ export function getPreviewArtistNameMap(): ReadonlyMap<string, string> {
 /** Minimum number of artists with concerts required to show the preview. */
 export const PREVIEW_MIN_ARTISTS_WITH_CONCERTS = 5
 
-/** Test-only: clear the cached resolution so each unit test starts fresh. */
+/**
+ * Test-only: clear the cached resolution so each unit test starts fresh.
+ * @internal Not part of the public API; the `__` prefix and this tag
+ *   discourage import from production code.
+ */
 export function __resetPreviewArtistsForTests(): void {
 	_cache = null
 }
