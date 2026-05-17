@@ -17,7 +17,10 @@ export default mergeConfig(
         },
       },
       watch: false,
-      exclude: [...configDefaults.exclude, "e2e/**"],
+      // scripts/ tests run via a dedicated `vitest.scripts.config.ts`
+      // because they import `node:fs` / `node:os` directly and need to
+      // bypass the SPA build's `nodePolyfills` plugin.
+      exclude: [...configDefaults.exclude, "e2e/**", "scripts/**"],
       root: fileURLToPath(new URL("./", import.meta.url)),
       setupFiles: ["./test/setup.ts"],
       coverage: {
