@@ -96,14 +96,13 @@ async function captureAuthStatePassword(): Promise<void> {
 		// the explicit `loginName` field name or a generic text input as a
 		// resilience hedge against upstream markup tweaks.
 		const usernameInput = page
-			.locator('input[name="loginName"], input[autocomplete="username"], input[type="text"]')
+			.locator(
+				'input[name="loginName"], input[autocomplete="username"], input[type="text"]',
+			)
 			.first()
 		await usernameInput.waitFor({ state: 'visible' })
 		await usernameInput.fill(username)
-		await page
-			.locator('button[type="submit"]')
-			.first()
-			.click()
+		await page.locator('button[type="submit"]').first().click()
 
 		console.log('[4/4] Submitting password and waiting for OIDC callback…')
 		const passwordInput = page
@@ -164,7 +163,9 @@ async function captureAuthStatePassword(): Promise<void> {
 				`[error] Smoke test FAILED: protected route redirected away from /dashboard (landed at ${finalUrl}).`,
 			)
 			console.error('The captured storageState does not authenticate the user.')
-			console.error('Likely causes: wrong password, expired ESC value, or test user not provisioned.')
+			console.error(
+				'Likely causes: wrong password, expired ESC value, or test user not provisioned.',
+			)
 			// Leave the previously-working storageState.json (if any) intact.
 			try {
 				fs.unlinkSync(tempStatePath)

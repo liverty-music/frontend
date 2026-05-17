@@ -28,6 +28,13 @@ on:
       - '.github/workflows/push-image.yaml'
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      smoke_url:
+        description: 'Run post-deploy smoke against this URL only (no build/push). Use after a prod pin-bump merges in cloud-provisioning.'
+        required: true
+        type: string
+        default: 'https://liverty-music.app'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -42,6 +49,7 @@ jobs:
     # PR #297 review threads 3248512589 / 3248513873). The authoritative
     # check is the runtime `Verify release commit on main` step below,
     # which compares `github.sha` against `origin/main` history.
+    # workflow_dispatch is excluded — that path only runs the smoke job.
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'release' && github.event.action == 'published')
@@ -134,3 +142,101 @@ jobs:
           tags: ${{ env.IMAGE_TAGS }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Post-deploy smoke: hits the live URL and asserts the SPA renders
+  # plus /config.json reports the expected environment. Closes the
+  # gap left by section 5.5 of OpenSpec archive
+  # `2026-05-16-adopt-runtime-config-for-frontend`: the smoke spec
+  # existed but ran only on demand.
+  #
+  # Path matrix:
+  #   - push to main      -> wait for ArgoCD Image Updater to pick up
+  #                          dev AR :latest, then smoke dev URL
+  #   - release published -> SKIP (prod does not auto-deploy; the
+  #                          pin-bump PR in cloud-provisioning is the
+  #                          gate. Re-run this workflow via
+  #                          workflow_dispatch after that PR merges to
+  #                          smoke prod)
+  #   - workflow_dispatch -> smoke whatever `smoke_url` is provided
+  #                          (no build, no wait)
+  post-deploy-smoke:
+    needs: build-and-push
+    # Skip if the upstream build failed/was skipped (e.g., release path
+    # wants prod smoke deferred to the manual pin-bump).
+    if: |
+      always() &&
+      ((github.event_name == 'push' && needs.build-and-push.result == 'success') ||
+       github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Pick smoke target URL
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "url=${{ inputs.smoke_url }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=https://dev.liverty-music.app" >> "$GITHUB_OUTPUT"
+          fi
+
+      # For the push-to-main path, the deploy is gated by ArgoCD Image
+      # Updater scanning the AR `:latest` tag (typical poll interval
+      # 60-180s). Build locally to learn the new bundle hash, then poll
+      # the live URL until that hash surfaces. Confirms the deployed
+      # image actually carries this PR's code (not the previous one).
+      # workflow_dispatch skips this — the operator chose when to run.
+      - name: Build to learn expected bundle hash
+        if: github.event_name == 'push'
+        run: npm run build
+
+      - name: Wait for new bundle to surface at dev URL
+        if: github.event_name == 'push'
+        timeout-minutes: 8
+        run: |
+          expected_bundle=$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
+          if [ -z "$expected_bundle" ]; then
+            echo "::error::Could not parse expected bundle hash from local dist/index.html"
+            exit 1
+          fi
+          echo "Expected bundle: $expected_bundle"
+          for attempt in $(seq 1 24); do
+            live_bundle=$(curl -sS "${{ steps.target.outputs.url }}/" | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+            if [ "$live_bundle" = "$expected_bundle" ]; then
+              echo "ArgoCD rollout complete after $((attempt * 20))s"
+              exit 0
+            fi
+            echo "Attempt $attempt/24: live bundle is '$live_bundle', waiting..."
+            sleep 20
+          done
+          echo "::error::Timed out waiting for $expected_bundle to surface at ${{ steps.target.outputs.url }}"
+          exit 1
+
+      - name: Run smoke against deployed URL
+        env:
+          SMOKE_BASE_URL: ${{ steps.target.outputs.url }}
+        run: npm run test:smoke
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-playwright-report
+          path: |
+            playwright-report/
+            test-results/smoke/
+          retention-days: 7
+          if-no-files-found: ignore

@@ -69,6 +69,7 @@
 		"build": "vite build",
 		"verify:build-templates": "npx tsx scripts/verify-build-templates.ts",
 		"test": "vitest",
+		"test:scripts": "vitest run --config vitest.scripts.config.ts",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build",
 		"test:e2e": "playwright test",
