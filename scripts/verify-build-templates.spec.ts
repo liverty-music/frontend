@@ -115,9 +115,8 @@ describe('checkBuildTemplates', () => {
 		// This does NOT verify alignment with `src/app-shell.ts` — adding
 		// a new route there without updating ROUTE_MARKERS will silently
 		// skip that route in the post-build assertion. Keeping the two
-		// in sync is a contributor checklist item (see
-		// `frontend/docs/runtime-config.md` once that follow-up lands;
-		// tracked in liverty-music/specification#491).
+		// in sync is a contributor checklist item — see
+		// `frontend/docs/runtime-config.md` ("Adding a new route").
 		const routes = new Set<string>()
 		const markers = new Set<string>()
 		for (const { route, marker } of ROUTE_MARKERS) {
