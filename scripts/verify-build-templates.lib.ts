@@ -38,13 +38,19 @@ export type CheckResult =
 	| { kind: 'missing-assets'; assetsDir: string }
 	| { kind: 'failed'; failures: readonly string[] }
 
-function findChunk(assetsDir: string, route: string): string | null {
+type ChunkLookup =
+	| { kind: 'found'; path: string }
+	| { kind: 'not-found' }
+	| { kind: 'ambiguous'; entries: readonly string[] }
+
+function findChunk(assetsDir: string, route: string): ChunkLookup {
 	const prefix = `${route}-route-`
 	const entries = readdirSync(assetsDir).filter(
 		(f) => f.startsWith(prefix) && f.endsWith('.js'),
 	)
-	if (entries.length === 0) return null
-	return join(assetsDir, entries[0])
+	if (entries.length === 0) return { kind: 'not-found' }
+	if (entries.length > 1) return { kind: 'ambiguous', entries }
+	return { kind: 'found', path: join(assetsDir, entries[0]) }
 }
 
 /**
@@ -63,15 +69,26 @@ export function checkBuildTemplates(distDir: string): CheckResult {
 
 	const failures: string[] = []
 	for (const { route, marker } of ROUTE_MARKERS) {
-		const chunkPath = findChunk(assetsDir, route)
-		if (!chunkPath) {
+		const lookup = findChunk(assetsDir, route)
+		if (lookup.kind === 'not-found') {
 			failures.push(`route '${route}': no chunk found in ${assetsDir}`)
 			continue
 		}
-		const content = readFileSync(chunkPath, 'utf-8')
+		if (lookup.kind === 'ambiguous') {
+			// A genuine build anomaly worth surfacing as a failure (rather
+			// than a silent first-match) — duplicate chunk emission
+			// usually means a tree-shaking regression or two competing
+			// route definitions. The CLI prints all entries so the
+			// operator can diagnose.
+			failures.push(
+				`route '${route}': multiple chunks emitted in ${assetsDir} (${lookup.entries.join(', ')}). Expected exactly one '<route>-route-*.js'.`,
+			)
+			continue
+		}
+		const content = readFileSync(lookup.path, 'utf-8')
 		if (!content.includes(marker)) {
 			failures.push(
-				`route '${route}': chunk ${chunkPath} does not contain marker '${marker}'. Template stripping suspected — see OpenSpec archive \`2026-05-16-adopt-runtime-config-for-frontend\` design D10.`,
+				`route '${route}': chunk ${lookup.path} does not contain marker '${marker}'. Template stripping suspected — see OpenSpec archive \`2026-05-16-adopt-runtime-config-for-frontend\` design D10.`,
 			)
 		}
 	}

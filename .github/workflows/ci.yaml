@@ -29,6 +29,7 @@ jobs:
               - 'src/**'
               - 'test/**'
               - 'e2e/**'
+              - 'scripts/**'
               - 'index.html'
               - 'public/**'
               - 'package.json'
@@ -36,10 +37,12 @@ jobs:
               - 'tsconfig*.json'
               - 'vite.config.ts'
               - 'vitest.config.ts'
+              - 'vitest.scripts.config.ts'
               - 'biome.json'
               - '.stylelintrc.json'
               - 'Makefile'
               - 'playwright.config.mjs'
+              - 'playwright.smoke.config.mjs'
               - '.github/workflows/**'
 
   lint:

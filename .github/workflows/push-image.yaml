@@ -238,7 +238,15 @@ jobs:
           fi
           echo "Expected bundle: $expected_bundle"
           for attempt in $(seq 1 24); do
-            live_bundle=$(curl -sS "$TARGET_URL/" | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+            # -f: fail on HTTP errors (503 during rollout, etc.) so we
+            # log the actual problem instead of treating empty output
+            # as "bundle not yet updated" for the full 8-minute window.
+            http_body=$(curl -sSf "$TARGET_URL/" 2>&1) || {
+              echo "Attempt $attempt/24: curl failed (${http_body:0:200}); retrying..."
+              sleep 20
+              continue
+            }
+            live_bundle=$(echo "$http_body" | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)
             if [ "$live_bundle" = "$expected_bundle" ]; then
               echo "ArgoCD rollout complete after $((attempt * 20))s"
               exit 0

@@ -15,9 +15,10 @@ lint-brand-vocabulary:
 fix:
 	npx biome check --write src test
 
-## test: unit tests with coverage
+## test: unit tests with coverage + scripts tests (separate vitest config)
 test:
 	npx vitest run --coverage
+	npx vitest run --config vitest.scripts.config.ts
 
 ## lint-no-style: ban style attributes in templates (CSS owns presentation)
 lint-no-style:
