@@ -184,14 +184,36 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # Pick the target URL up-front and validate that it points at a
+      # known production-tier hostname. The workflow_dispatch input
+      # MUST NOT be interpolated directly into a `run:` shell — instead
+      # we route it through the env block (single env var, no shell
+      # parsing of the value) and then through a regex allowlist.
       - name: Pick smoke target URL
         id: target
+        env:
+          SMOKE_URL_INPUT: ${{ inputs.smoke_url }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "url=${{ inputs.smoke_url }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            candidate="$SMOKE_URL_INPUT"
           else
-            echo "url=https://dev.liverty-music.app" >> "$GITHUB_OUTPUT"
+            candidate="https://dev.liverty-music.app"
           fi
+          # Allowlist: only the three known liverty-music hostnames.
+          # Same map the SPA's KNOWN_HOSTS enforces at bootstrap.
+          case "$candidate" in
+            https://liverty-music.app|https://liverty-music.app/) ;;
+            https://dev.liverty-music.app|https://dev.liverty-music.app/) ;;
+            https://staging.liverty-music.app|https://staging.liverty-music.app/) ;;
+            *)
+              echo "::error::smoke_url not in allowlist: '$candidate'"
+              exit 1
+              ;;
+          esac
+          # Strip trailing slash for a canonical form.
+          candidate="${candidate%/}"
+          echo "url=$candidate" >> "$GITHUB_OUTPUT"
 
       # For the push-to-main path, the deploy is gated by ArgoCD Image
       # Updater scanning the AR `:latest` tag (typical poll interval
@@ -206,6 +228,8 @@ jobs:
       - name: Wait for new bundle to surface at dev URL
         if: github.event_name == 'push'
         timeout-minutes: 8
+        env:
+          TARGET_URL: ${{ steps.target.outputs.url }}
         run: |
           expected_bundle=$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
           if [ -z "$expected_bundle" ]; then
@@ -214,7 +238,7 @@ jobs:
           fi
           echo "Expected bundle: $expected_bundle"
           for attempt in $(seq 1 24); do
-            live_bundle=$(curl -sS "${{ steps.target.outputs.url }}/" | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+            live_bundle=$(curl -sS "$TARGET_URL/" | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)
             if [ "$live_bundle" = "$expected_bundle" ]; then
               echo "ArgoCD rollout complete after $((attempt * 20))s"
               exit 0
@@ -222,7 +246,7 @@ jobs:
             echo "Attempt $attempt/24: live bundle is '$live_bundle', waiting..."
             sleep 20
           done
-          echo "::error::Timed out waiting for $expected_bundle to surface at ${{ steps.target.outputs.url }}"
+          echo "::error::Timed out waiting for $expected_bundle to surface at $TARGET_URL"
           exit 1
 
       - name: Run smoke against deployed URL

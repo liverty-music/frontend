@@ -92,8 +92,15 @@ describe('checkBuildTemplates', () => {
 		}
 	})
 
-	it('contract: ROUTE_MARKERS lists every route in src/app-shell.ts', () => {
-		// Spot-check: every entry has a unique route and a non-empty marker.
+	it('shape: ROUTE_MARKERS entries are well-formed and unique', () => {
+		// Local consistency only: each entry has a kebab-case route slug,
+		// a non-empty marker, and the route slug does not duplicate
+		// another entry. This does NOT verify alignment with
+		// `src/app-shell.ts` — adding a new route to app-shell.ts
+		// without updating ROUTE_MARKERS will silently skip that
+		// route in the post-build assertion. Keeping the two in sync is
+		// a contributor checklist item (see `frontend/docs/runtime-config.md`
+		// once that follow-up lands; tracked in liverty-music/specification#491).
 		const routes = new Set<string>()
 		for (const { route, marker } of ROUTE_MARKERS) {
 			expect(route).toMatch(/^[a-z][a-z-]+$/)
