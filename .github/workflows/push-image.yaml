@@ -2,13 +2,17 @@ name: Deploy Frontend
 
 # Dual trigger:
 #  - push to main      -> dev build, dev AR (liverty-music-dev/frontend)
-#  - release published -> prod build, prod AR (liverty-music-prod/frontend)
+#  - release published -> retag dev AR digest into prod AR
+#                         (liverty-music-prod/frontend)
 #
-# Per OpenSpec change `adopt-runtime-config-for-frontend`, both build paths
-# run identical Dockerfile inputs (no env-specific build-args). The bundle
-# is env-agnostic — per-environment values come from /config.json served
-# by Caddy from a K8s ConfigMap at runtime. Only the image tag and target
-# AR differ between the two paths.
+# Per OpenSpec change `promote-prod-image-via-retag`, the release path
+# does NOT rebuild — it promotes the exact dev AR digest for the
+# release's commit SHA into prod AR via `gcloud artifacts docker tags
+# add`. The image deployed to prod is byte-identical to the dev AR
+# image already exercised in dev. This avoids the ~90s redundant rebuild
+# on every release and removes a class of non-determinism (dev vs prod
+# image divergence) that the env-agnostic bundle (per
+# `adopt-runtime-config-for-frontend`) made obsolete.
 #
 # The `paths:` filter only applies to push events. Release events fire on
 # any published Release regardless of file diff.
@@ -106,35 +110,40 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      # ====================================================================
+      # Dev push path: build env-agnostic image, push to dev AR
+      # ====================================================================
+      # `Configure Docker` and `Set up Docker Buildx` are dev-only — the
+      # release path uses `gcloud artifacts docker tags add` and never
+      # touches the Docker daemon.
+
       - name: Configure Docker
+        if: github.event_name == 'push'
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-      - name: Set Image URI
+      - name: Set Image URI (dev path)
+        if: github.event_name == 'push'
         run: echo "IMAGE_URI=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}" >> $GITHUB_ENV
 
       # Dev tag set: :latest (consumed by ArgoCD Image Updater for dev
       # auto-rollout) + :sha (immutable digest pointer) + :main.
-      # Prod is forbidden from using :latest per the `prod-image-pipeline`
-      # spec — release builds use :<tag> + :sha only.
       - name: Set Image Tags (dev path)
         if: github.event_name == 'push'
         run: echo "IMAGE_TAGS=${{ env.IMAGE_URI }}:latest,${{ env.IMAGE_URI }}:${{ github.sha }},${{ env.IMAGE_URI }}:main" >> $GITHUB_ENV
 
-      - name: Set Image Tags (prod path)
-        if: github.event_name == 'release'
-        run: echo "IMAGE_TAGS=${{ env.IMAGE_URI }}:${{ github.event.release.tag_name }},${{ env.IMAGE_URI }}:${{ github.sha }}" >> $GITHUB_ENV
-
       - name: Set up Docker Buildx
+        if: github.event_name == 'push'
         uses: docker/setup-buildx-action@v3
 
-      # No env-specific build-args: per OpenSpec change
-      # `adopt-runtime-config-for-frontend`, both paths build the same
-      # env-agnostic bundle. Per-env values come from /config.json at
-      # runtime (mounted from a K8s ConfigMap). The Dockerfile runs
-      # `npm run verify:build-templates` after `npm run build` as a
-      # defense-in-depth gate against template-stripping regressions
-      # (the class of bug that produced the v1.0.0 blank-screen Sev-1).
+      # No env-specific build-args: per OpenSpec archive
+      # `adopt-runtime-config-for-frontend`, the bundle is env-agnostic.
+      # Per-env values come from /config.json at runtime (mounted from a
+      # K8s ConfigMap). The Dockerfile runs `npm run verify:build-templates`
+      # after `npm run build` as a defense-in-depth gate against
+      # template-stripping regressions (the class of bug that produced
+      # the v1.0.0 blank-screen Sev-1).
       - name: Build and Push Docker Image
+        if: github.event_name == 'push'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -142,6 +151,75 @@ jobs:
           tags: ${{ env.IMAGE_TAGS }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # ====================================================================
+      # Release path: retag the dev AR digest into prod AR — no rebuild
+      # ====================================================================
+      # Per OpenSpec archive `promote-prod-image-via-retag`, every release
+      # promotes the exact dev AR digest for the release's commit SHA into
+      # prod AR. The prod CI service account has scoped reader on
+      # `liverty-music-dev/frontend` (granted by
+      # `cloud-provisioning#282`, declared in `src/gcp/index.ts` as
+      # `prod-ci-frontend-ar-reader`).
+      #
+      # Source FQDN is hardcoded to `liverty-music-dev/frontend/web-app`
+      # because the dev project ID is the constant source of every prod
+      # promotion. Destination FQDN uses `vars.PROJECT_ID`
+      # (= `liverty-music-prod` per the `prod` environment binding) to
+      # match the prod-AR convention enforced by `prod-image-pipeline`.
+
+      - name: Resolve dev AR digest for github.sha
+        if: github.event_name == 'release'
+        id: resolve_digest
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+        run: |
+          # 6 total attempts (initial + 5 retries) × 60s wait between =
+          # ~5-minute total budget. Absorbs the race window where a
+          # release is cut seconds after merge-to-main and the dev push
+          # is still in-flight. Per the spec, this is a SHALL retry, not
+          # a MAY — silent failure on the digest-resolve step is exactly
+          # what the retry contract prevents.
+          for attempt in $(seq 1 6); do
+            digest=$(gcloud artifacts docker images describe \
+              "${DEV_AR_IMAGE}:${GITHUB_SHA}" \
+              --format='value(image_summary.digest)' \
+              2>/dev/null || echo "")
+            if [ -n "$digest" ]; then
+              echo "Resolved digest on attempt ${attempt}/6: $digest"
+              echo "digest=$digest" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$attempt" -lt 6 ]; then
+              echo "Attempt ${attempt}/6: dev AR :sha not yet available; waiting 60s..."
+              sleep 60
+            fi
+          done
+          echo "::error::dev AR tag :${GITHUB_SHA} not found after 6 attempts (~5 min total wait). Either the dev build for this commit failed, or the release was cut on a non-main commit. See docs/runbooks/prod-image-tag-pinning.md#retag-failure-recovery in cloud-provisioning."
+          exit 1
+
+      - name: Promote dev AR digest to prod AR (semver tag)
+        if: github.event_name == 'release'
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          PROD_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          DIGEST: ${{ steps.resolve_digest.outputs.digest }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gcloud artifacts docker tags add \
+            "${DEV_AR_IMAGE}@${DIGEST}" \
+            "${PROD_AR_IMAGE}:${RELEASE_TAG}"
+
+      - name: Promote dev AR digest to prod AR (commit SHA tag)
+        if: github.event_name == 'release'
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          PROD_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          DIGEST: ${{ steps.resolve_digest.outputs.digest }}
+        run: |
+          gcloud artifacts docker tags add \
+            "${DEV_AR_IMAGE}@${DIGEST}" \
+            "${PROD_AR_IMAGE}:${GITHUB_SHA}"
 
   # Post-deploy smoke: hits the live URL and asserts the SPA renders
   # plus /config.json reports the expected environment. Closes the
