@@ -168,6 +168,21 @@ jobs:
       # (= `liverty-music-prod` per the `prod` environment binding) to
       # match the prod-AR convention enforced by `prod-image-pipeline`.
 
+      # Install `gcrane` (Google's go-containerregistry CLI) for the
+      # cross-repository / cross-project digest copy. `gcloud artifacts
+      # docker tags add` is intentionally NOT used here: despite its
+      # name, it only renames tags within a single repository — passing
+      # a source from `liverty-music-dev/frontend/web-app` and a
+      # destination in `liverty-music-prod/frontend/web-app` fails with
+      # `Image ... does not match image ...`. `gcrane copy` is the
+      # registry-to-registry primitive; within the same AR region it
+      # uses cross-repo blob mounting so no image bytes actually
+      # transfer (manifest re-push only). Auth flows through ADC that
+      # `google-github-actions/auth@v2` already exported.
+      - name: Install gcrane
+        if: github.event_name == 'release'
+        uses: imjasonh/setup-crane@v0.4
+
       - name: Resolve dev AR digest for github.sha
         if: github.event_name == 'release'
         id: resolve_digest
@@ -206,7 +221,7 @@ jobs:
           DIGEST: ${{ steps.resolve_digest.outputs.digest }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          gcloud artifacts docker tags add \
+          gcrane copy \
             "${DEV_AR_IMAGE}@${DIGEST}" \
             "${PROD_AR_IMAGE}:${RELEASE_TAG}"
 
@@ -217,7 +232,7 @@ jobs:
           PROD_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}
           DIGEST: ${{ steps.resolve_digest.outputs.digest }}
         run: |
-          gcloud artifacts docker tags add \
+          gcrane copy \
             "${DEV_AR_IMAGE}@${DIGEST}" \
             "${PROD_AR_IMAGE}:${GITHUB_SHA}"
 
