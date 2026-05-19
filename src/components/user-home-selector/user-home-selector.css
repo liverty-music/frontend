@@ -79,13 +79,20 @@
 		}
 
 		.selector-back-btn {
-			display: flex;
+			display: inline-flex;
+			gap: var(--space-3xs);
 			align-items: center;
 			justify-content: center;
 
-			inline-size: 2rem;
+			inline-size: auto;
 			block-size: 2rem;
-			border-radius: var(--radius-full);
+			padding-inline: var(--space-2xs);
+			border-radius: var(--radius-button);
+
+			font-family: var(--font-display);
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-primary);
 
 			background: var(--color-surface-overlay);
 
@@ -98,7 +105,7 @@
 			& svg {
 				inline-size: 1rem;
 				block-size: 1rem;
-				color: var(--color-text-secondary);
+				color: var(--color-text-primary);
 			}
 		}
 	}

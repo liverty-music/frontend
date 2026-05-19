@@ -19,8 +19,6 @@ import { BubbleManager } from './bubble-manager'
 import { GenreFilterController } from './genre-filter-controller'
 import { SearchController } from './search-controller'
 
-const COACH_MARK_FADE_MS = 2000
-
 export class DiscoveryRoute {
 	private readonly artistClient = resolve(IArtistServiceClient)
 	private readonly followService = resolve(IFollowServiceClient)
@@ -36,7 +34,6 @@ export class DiscoveryRoute {
 
 	private abortController = new AbortController()
 	private dashboardCoachMarkShown = false
-	private coachMarkFadeTimer: ReturnType<typeof setTimeout> | null = null
 
 	// Controllers
 	public readonly bubbles = new BubbleManager(
@@ -125,10 +122,6 @@ export class DiscoveryRoute {
 				() => this.onCoachMarkTap(),
 				'50%',
 			)
-			this.coachMarkFadeTimer = setTimeout(() => {
-				this.coachMarkFadeTimer = null
-				this.onboarding.deactivateSpotlight()
-			}, COACH_MARK_FADE_MS)
 		}
 	}
 
@@ -175,10 +168,7 @@ export class DiscoveryRoute {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		this.search.dispose()
-		if (this.coachMarkFadeTimer) {
-			clearTimeout(this.coachMarkFadeTimer)
-			this.coachMarkFadeTimer = null
-		}
+		this.onboarding.deactivateSpotlight()
 		this.onboarding.setDiscoveryCounts(0, 0)
 	}
 
