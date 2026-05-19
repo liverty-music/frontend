@@ -38,8 +38,7 @@ export class ConcertServiceClient {
 	private cacheTimestamp: number | null = null
 	// Coalesces concurrent cache-miss calls onto a single RPC.
 	private inFlightListByFollower: Promise<ProximityGroup[]> | null = null
-	// Bumped on every invalidate; an in-flight .then() compares against
-	// it to detect that its cache write has been superseded.
+	// Bumped on invalidate; in-flight .then() checks it to fence superseded cache writes.
 	private cacheGeneration = 0
 
 	@observable public artistsWithConcerts = new Set<string>()
@@ -77,22 +76,19 @@ export class ConcertServiceClient {
 		) {
 			return this.cachedGroups
 		}
-		// Only dedup when no signal is provided: a shared in-flight
-		// promise honors only the first caller's AbortSignal, so coalescing
-		// signal-bearing callers would let one caller's abort reject the
-		// other's awaited result. With signal=undefined the cancellation
-		// concern doesn't apply, so dedup is safe and useful for the
-		// common dashboard concurrent-render case.
+		// Signal-less callers coalesce safely; signal-bearing ones can't (shared promise honors only first caller's signal).
 		if (this.inFlightListByFollower !== null && signal === undefined) {
 			return await this.inFlightListByFollower
 		}
 		const generationAtIssue = this.cacheGeneration
-		const promise = this.rpcClient
+		// `promise` is captured in both .then() (for the generation
+		// fence) and .finally() (for the own-promise identity check
+		// that prevents this stale finally from evicting a newer
+		// in-flight registered post-invalidate).
+		const promise: Promise<ProximityGroup[]> = this.rpcClient
 			.listByFollower(signal)
 			.then((result) => {
-				// Only write to cache if invalidateFollowerCache() has
-				// NOT been called since this RPC was issued — otherwise
-				// the stale result would repopulate the just-cleared cache.
+				// Skip cache write if invalidated since RPC issued.
 				if (generationAtIssue === this.cacheGeneration) {
 					this.cachedGroups = result
 					this.cacheTimestamp = Date.now()
@@ -100,7 +96,13 @@ export class ConcertServiceClient {
 				return result
 			})
 			.finally(() => {
-				this.inFlightListByFollower = null
+				// Own-promise identity check: only clear the slot if
+				// it still points at THIS promise. Without the guard,
+				// a stale finally would clobber a post-invalidate
+				// in-flight (RPC-2) that legitimately occupies the slot.
+				if (this.inFlightListByFollower === promise) {
+					this.inFlightListByFollower = null
+				}
 			})
 		if (signal === undefined) {
 			this.inFlightListByFollower = promise
@@ -112,11 +114,7 @@ export class ConcertServiceClient {
 		this.cachedGroups = null
 		this.cacheTimestamp = null
 		this.cacheGeneration++
-		// Also clear the in-flight slot so post-invalidate signal-less
-		// callers issue a fresh RPC instead of joining the now-stale
-		// in-flight promise. The generation guard already prevents the
-		// stale .then() from writing to the cache, but a coalesced
-		// reader would still RECEIVE the stale payload for its render.
+		// Post-invalidate callers must issue a fresh RPC, not join the now-stale in-flight.
 		this.inFlightListByFollower = null
 	}
 

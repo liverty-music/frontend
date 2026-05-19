@@ -194,5 +194,50 @@ describe('ConcertServiceClient', () => {
 			expect(await secondCall).toEqual(fresh)
 			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
 		})
+
+		it('stale finally does not evict a newer post-invalidation in-flight (own-promise identity guard)', async () => {
+			// Without the own-promise check in .finally(), this sequence
+			// produces 3 RPC calls instead of 2:
+			//   1. RPC-1 fires           → slot = promise1 (gen 0)
+			//   2. invalidate()          → slot = null, gen = 1
+			//   3. RPC-2 fires           → slot = promise2 (gen 1)
+			//   4. RPC-1 settles         → buggy finally clears slot to null (evicts promise2)
+			//   5. caller-3 arrives      → sees slot = null → fires RPC-3 unnecessarily
+			// Both RPCs are hand-released here so settling order is deterministic
+			// (mockResolvedValueOnce's microtask-queue artifact masks the bug).
+			let releaseFirst: (g: ProximityGroup[]) => void = () => {}
+			let releaseSecond: (g: ProximityGroup[]) => void = () => {}
+			const firstRpc = new Promise<ProximityGroup[]>((r) => {
+				releaseFirst = r
+			})
+			const secondRpc = new Promise<ProximityGroup[]>((r) => {
+				releaseSecond = r
+			})
+			mockRpcClient.listByFollower
+				.mockReturnValueOnce(firstRpc)
+				.mockReturnValueOnce(secondRpc)
+				// A third mock would only fire if the bug is present.
+				.mockResolvedValueOnce(makeGroups(99))
+
+			const firstCall = sut.listByFollower()
+			sut.invalidateFollowerCache()
+			const secondCall = sut.listByFollower()
+
+			// Settle RPC-1 → its .finally() runs while RPC-2 is still pending.
+			// With the fix, slot stays = promise2 (own-promise guard).
+			// Without the fix, slot = null.
+			releaseFirst(makeGroups(1))
+			await firstCall
+
+			// Caller-3 must coalesce onto RPC-2 (slot still occupied if guard works).
+			const thirdCall = sut.listByFollower()
+
+			// Settle RPC-2 → both secondCall and thirdCall resolve to the same value.
+			releaseSecond(makeGroups(2))
+			const [b, c] = await Promise.all([secondCall, thirdCall])
+
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			expect(c).toEqual(b)
+		})
 	})
 })
