@@ -88,6 +88,7 @@ export class FollowServiceClient {
 			return
 		}
 		await this.rpcClient.unfollow(artistId)
+		this.concertService.invalidateFollowerCache()
 		this.followedArtists = this.followedArtists.filter((a) => a.id !== artistId)
 	}
 

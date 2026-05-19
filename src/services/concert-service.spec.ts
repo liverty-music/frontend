@@ -169,5 +169,30 @@ describe('ConcertServiceClient', () => {
 
 			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
 		})
+
+		it('does not coalesce a post-invalidation caller onto the pre-invalidation in-flight', async () => {
+			// Reproduce the stale-coalesce window: an RPC is in flight,
+			// invalidateFollowerCache() runs, then a second caller arrives
+			// before the first RPC settles. The second caller MUST issue
+			// its own RPC (not be coalesced onto the now-stale in-flight),
+			// otherwise it would receive the stale payload for its render.
+			let releaseFirst: (groups: ProximityGroup[]) => void = () => {}
+			const firstRpc = new Promise<ProximityGroup[]>((resolve) => {
+				releaseFirst = resolve
+			})
+			const fresh = makeGroups(2)
+			mockRpcClient.listByFollower
+				.mockReturnValueOnce(firstRpc)
+				.mockResolvedValueOnce(fresh)
+
+			const firstCall = sut.listByFollower()
+			sut.invalidateFollowerCache()
+			const secondCall = sut.listByFollower()
+			releaseFirst(makeGroups(1))
+
+			await firstCall
+			expect(await secondCall).toEqual(fresh)
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+		})
 	})
 })

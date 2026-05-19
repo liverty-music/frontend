@@ -112,6 +112,12 @@ export class ConcertServiceClient {
 		this.cachedGroups = null
 		this.cacheTimestamp = null
 		this.cacheGeneration++
+		// Also clear the in-flight slot so post-invalidate signal-less
+		// callers issue a fresh RPC instead of joining the now-stale
+		// in-flight promise. The generation guard already prevents the
+		// stale .then() from writing to the cache, but a coalesced
+		// reader would still RECEIVE the stale payload for its render.
+		this.inFlightListByFollower = null
 	}
 
 	public async listWithProximity(

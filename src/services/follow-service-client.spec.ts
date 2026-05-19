@@ -78,6 +78,27 @@ describe('FollowServiceClient', () => {
 		})
 	})
 
+	describe('unfollow — cache invalidation', () => {
+		it('calls invalidateFollowerCache on successful unfollow', async () => {
+			mockRpcClient.unfollow.mockResolvedValueOnce(undefined)
+			// Seed followedArtists so the filter doesn't no-op into empty
+			sut.followedArtists = [makeArtist('a1', 'Artist One')]
+
+			await sut.unfollow('a1')
+
+			expect(mockConcertService.invalidateFollowerCache).toHaveBeenCalledOnce()
+		})
+
+		it('does NOT call invalidateFollowerCache when unfollow RPC fails', async () => {
+			mockRpcClient.unfollow.mockRejectedValueOnce(new Error('network error'))
+			sut.followedArtists = [makeArtist('a1', 'Artist One')]
+
+			await expect(sut.unfollow('a1')).rejects.toThrow('network error')
+
+			expect(mockConcertService.invalidateFollowerCache).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('getFollowedArtistMap — always issues RPC (hype data not cached)', () => {
 		it('calls listFollowed RPC when followedArtists is empty', async () => {
 			mockRpcClient.listFollowed.mockResolvedValueOnce([
