@@ -78,7 +78,7 @@ describe('FollowServiceClient', () => {
 		})
 	})
 
-	describe('getFollowedArtistMap — RPC skip when state in memory', () => {
+	describe('getFollowedArtistMap — always issues RPC (hype data not cached)', () => {
 		it('calls listFollowed RPC when followedArtists is empty', async () => {
 			mockRpcClient.listFollowed.mockResolvedValueOnce([
 				makeFollowedArtist('a1', 'Artist One'),

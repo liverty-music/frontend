@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ProximityGroup } from '../adapter/rpc/client/concert-client'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -52,6 +52,15 @@ describe('ConcertServiceClient', () => {
 		sut = new ConcertServiceClient()
 	})
 
+	// Restore spies (including the Date.now spy used by the TTL-expiry
+	// test) in afterEach so an assertion failure in a test body cannot
+	// leak the spy onto subsequent tests. A failed expect() inside the
+	// body would otherwise leave Date.now permanently frozen at the
+	// spied future timestamp.
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
 	describe('listByFollower — caching', () => {
 		it('returns cached result on second call without issuing RPC', async () => {
 			const groups = makeGroups(2)
@@ -90,8 +99,6 @@ describe('ConcertServiceClient', () => {
 
 			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
 			expect(result).toEqual(second)
-
-			vi.restoreAllMocks()
 		})
 	})
 

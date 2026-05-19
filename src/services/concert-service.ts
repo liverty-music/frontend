@@ -33,9 +33,17 @@ export class ConcertServiceClient {
 	private readonly guest = resolve(IGuestService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
-	private readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000
+	private static readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000
 	private cachedGroups: ProximityGroup[] | null = null
 	private cacheTimestamp: number | null = null
+	// In-flight RPC promise: coalesces concurrent cache-miss callers
+	// (e.g. two dashboard sub-components rendering simultaneously)
+	// onto a single RPC. Without this, both miss the cache check,
+	// both fire `listByFollower` RPCs, and the second result
+	// silently overwrites the first. Cleared on resolve/reject so
+	// the next miss after settle (cache populated or RPC failed)
+	// behaves correctly.
+	private inFlightListByFollower: Promise<ProximityGroup[]> | null = null
 
 	@observable public artistsWithConcerts = new Set<string>()
 
@@ -68,14 +76,27 @@ export class ConcertServiceClient {
 		if (
 			this.cachedGroups !== null &&
 			this.cacheTimestamp !== null &&
-			now - this.cacheTimestamp < this.CACHE_TTL_MS
+			now - this.cacheTimestamp < ConcertServiceClient.CACHE_TTL_MS
 		) {
 			return this.cachedGroups
 		}
-		const result = await this.rpcClient.listByFollower(signal)
-		this.cachedGroups = result
-		this.cacheTimestamp = Date.now()
-		return result
+		// Concurrent-call dedup: if an RPC is already in flight, return
+		// its promise instead of starting a second one. See the
+		// `inFlightListByFollower` field comment for the rationale.
+		if (this.inFlightListByFollower !== null) {
+			return this.inFlightListByFollower
+		}
+		this.inFlightListByFollower = this.rpcClient
+			.listByFollower(signal)
+			.then((result) => {
+				this.cachedGroups = result
+				this.cacheTimestamp = Date.now()
+				return result
+			})
+			.finally(() => {
+				this.inFlightListByFollower = null
+			})
+		return this.inFlightListByFollower
 	}
 
 	public invalidateFollowerCache(): void {
