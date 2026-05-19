@@ -33,6 +33,14 @@ export class ConcertServiceClient {
 	private readonly guest = resolve(IGuestService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
+	private static readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000
+	private cachedGroups: ProximityGroup[] | null = null
+	private cacheTimestamp: number | null = null
+	// Coalesces concurrent cache-miss calls onto a single RPC.
+	private inFlightListByFollower: Promise<ProximityGroup[]> | null = null
+	// Bumped on invalidate; in-flight .then() checks it to fence superseded cache writes.
+	private cacheGeneration = 0
+
 	@observable public artistsWithConcerts = new Set<string>()
 
 	public get artistsWithConcertsCount(): number {
@@ -60,7 +68,54 @@ export class ConcertServiceClient {
 		if (!this.authService.isAuthenticated) {
 			return this.listByFollowerGuest(signal)
 		}
-		return this.rpcClient.listByFollower(signal)
+		const now = Date.now()
+		if (
+			this.cachedGroups !== null &&
+			this.cacheTimestamp !== null &&
+			now - this.cacheTimestamp < ConcertServiceClient.CACHE_TTL_MS
+		) {
+			return this.cachedGroups
+		}
+		// Signal-less callers coalesce safely; signal-bearing ones can't (shared promise honors only first caller's signal).
+		if (this.inFlightListByFollower !== null && signal === undefined) {
+			return await this.inFlightListByFollower
+		}
+		const generationAtIssue = this.cacheGeneration
+		// `promise` is captured in both .then() (for the generation
+		// fence) and .finally() (for the own-promise identity check
+		// that prevents this stale finally from evicting a newer
+		// in-flight registered post-invalidate).
+		const promise: Promise<ProximityGroup[]> = this.rpcClient
+			.listByFollower(signal)
+			.then((result) => {
+				// Skip cache write if invalidated since RPC issued.
+				if (generationAtIssue === this.cacheGeneration) {
+					this.cachedGroups = result
+					this.cacheTimestamp = Date.now()
+				}
+				return result
+			})
+			.finally(() => {
+				// Own-promise identity check: only clear the slot if
+				// it still points at THIS promise. Without the guard,
+				// a stale finally would clobber a post-invalidate
+				// in-flight (RPC-2) that legitimately occupies the slot.
+				if (this.inFlightListByFollower === promise) {
+					this.inFlightListByFollower = null
+				}
+			})
+		if (signal === undefined) {
+			this.inFlightListByFollower = promise
+		}
+		return await promise
+	}
+
+	public invalidateFollowerCache(): void {
+		this.cachedGroups = null
+		this.cacheTimestamp = null
+		this.cacheGeneration++
+		// Post-invalidate callers must issue a fresh RPC, not join the now-stale in-flight.
+		this.inFlightListByFollower = null
 	}
 
 	public async listWithProximity(
