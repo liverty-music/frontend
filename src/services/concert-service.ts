@@ -36,14 +36,11 @@ export class ConcertServiceClient {
 	private static readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000
 	private cachedGroups: ProximityGroup[] | null = null
 	private cacheTimestamp: number | null = null
-	// In-flight RPC promise: coalesces concurrent cache-miss callers
-	// (e.g. two dashboard sub-components rendering simultaneously)
-	// onto a single RPC. Without this, both miss the cache check,
-	// both fire `listByFollower` RPCs, and the second result
-	// silently overwrites the first. Cleared on resolve/reject so
-	// the next miss after settle (cache populated or RPC failed)
-	// behaves correctly.
+	// Coalesces concurrent cache-miss calls onto a single RPC.
 	private inFlightListByFollower: Promise<ProximityGroup[]> | null = null
+	// Bumped on every invalidate; an in-flight .then() compares against
+	// it to detect that its cache write has been superseded.
+	private cacheGeneration = 0
 
 	@observable public artistsWithConcerts = new Set<string>()
 
@@ -80,28 +77,41 @@ export class ConcertServiceClient {
 		) {
 			return this.cachedGroups
 		}
-		// Concurrent-call dedup: if an RPC is already in flight, return
-		// its promise instead of starting a second one. See the
-		// `inFlightListByFollower` field comment for the rationale.
-		if (this.inFlightListByFollower !== null) {
-			return this.inFlightListByFollower
+		// Only dedup when no signal is provided: a shared in-flight
+		// promise honors only the first caller's AbortSignal, so coalescing
+		// signal-bearing callers would let one caller's abort reject the
+		// other's awaited result. With signal=undefined the cancellation
+		// concern doesn't apply, so dedup is safe and useful for the
+		// common dashboard concurrent-render case.
+		if (this.inFlightListByFollower !== null && signal === undefined) {
+			return await this.inFlightListByFollower
 		}
-		this.inFlightListByFollower = this.rpcClient
+		const generationAtIssue = this.cacheGeneration
+		const promise = this.rpcClient
 			.listByFollower(signal)
 			.then((result) => {
-				this.cachedGroups = result
-				this.cacheTimestamp = Date.now()
+				// Only write to cache if invalidateFollowerCache() has
+				// NOT been called since this RPC was issued — otherwise
+				// the stale result would repopulate the just-cleared cache.
+				if (generationAtIssue === this.cacheGeneration) {
+					this.cachedGroups = result
+					this.cacheTimestamp = Date.now()
+				}
 				return result
 			})
 			.finally(() => {
 				this.inFlightListByFollower = null
 			})
-		return this.inFlightListByFollower
+		if (signal === undefined) {
+			this.inFlightListByFollower = promise
+		}
+		return await promise
 	}
 
 	public invalidateFollowerCache(): void {
 		this.cachedGroups = null
 		this.cacheTimestamp = null
+		this.cacheGeneration++
 	}
 
 	public async listWithProximity(

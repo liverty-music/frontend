@@ -112,5 +112,62 @@ describe('ConcertServiceClient', () => {
 
 			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
 		})
+
+		it('discards in-flight RPC result if invalidated before it resolves', async () => {
+			// Reproduce the in-flight repopulation race: an RPC is fired,
+			// invalidateFollowerCache() runs while it's in flight, then the
+			// RPC settles. The settled result MUST NOT silently repopulate
+			// the cache, otherwise a follow-action's intentional invalidation
+			// would be undone for up to 24h.
+			let releaseFirst: (groups: ProximityGroup[]) => void = () => {}
+			const firstRpc = new Promise<ProximityGroup[]>((resolve) => {
+				releaseFirst = resolve
+			})
+			const second = makeGroups(2)
+			mockRpcClient.listByFollower
+				.mockReturnValueOnce(firstRpc)
+				.mockResolvedValueOnce(second)
+
+			const firstCallPromise = sut.listByFollower()
+			sut.invalidateFollowerCache()
+			releaseFirst(makeGroups(1))
+			await firstCallPromise
+
+			// Next call MUST hit the RPC again — cache should be empty
+			// because invalidation fenced the stale write.
+			const result = await sut.listByFollower()
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			expect(result).toEqual(second)
+		})
+	})
+
+	describe('listByFollower — concurrent-call dedup', () => {
+		it('coalesces two simultaneous signal-less callers onto one RPC', async () => {
+			const groups = makeGroups(1)
+			mockRpcClient.listByFollower.mockResolvedValueOnce(groups)
+
+			const [a, b] = await Promise.all([
+				sut.listByFollower(),
+				sut.listByFollower(),
+			])
+
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(1)
+			expect(a).toEqual(groups)
+			expect(b).toEqual(groups)
+		})
+
+		it('does NOT dedup when callers provide AbortSignal (per-caller cancellation must be honored)', async () => {
+			const groups = makeGroups(1)
+			mockRpcClient.listByFollower.mockResolvedValue(groups)
+
+			const ctrlA = new AbortController()
+			const ctrlB = new AbortController()
+			await Promise.all([
+				sut.listByFollower(ctrlA.signal),
+				sut.listByFollower(ctrlB.signal),
+			])
+
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+		})
 	})
 })
