@@ -95,6 +95,10 @@ export class EventDetailSheet {
 		return ['tracking', 'applied', 'lost', 'unpaid', 'paid']
 	}
 
+	public get openTimeOrFallback(): string {
+		return this.event?.openTime ?? '—'
+	}
+
 	public async setJourneyStatus(status: JourneyStatus): Promise<void> {
 		if (!this.event || this.journeyUpdating) return
 		this.journeyUpdating = true

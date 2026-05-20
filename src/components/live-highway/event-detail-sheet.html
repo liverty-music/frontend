@@ -5,7 +5,7 @@
     open.bind="isOpen"
     dismissable="true"
     sheet-closed.trigger="onSheetClosed()"
-    aria-label="Event details"
+    t="[aria-label]eventDetail.ariaLabel"
   >
     <div if.bind="event" class="sheet-content" aria-labelledby="sheet-artist-name">
       <!-- Hero background image -->
@@ -37,9 +37,11 @@
           <span class="detail-icon"><svg-icon name="calendar"></svg-icon></span>
           <div>
             <time datetime.bind="event.date.toISOString()" class="detail-primary">${event.date | date:'long'}</time>
-            <p class="detail-secondary">
-              Open ${event.openTime || '—'} / Start ${event.startTime}
-            </p>
+            <p
+              class="detail-secondary"
+              t="eventDetail.openStart"
+              t-params.bind="{ open: openTimeOrFallback, start: event.startTime }"
+            ></p>
           </div>
         </div>
 
@@ -54,16 +56,15 @@
               target="_blank"
               rel="noopener noreferrer"
               class="detail-link"
-            >
-              Open in Google Maps
-            </a>
+              t="eventDetail.openInGoogleMaps"
+            ></a>
           </div>
         </div>
       </section>
 
       <!-- Ticket journey status -->
       <section if.bind="isAuthenticated" class="sheet-journey" data-testid="sheet-journey">
-        <h3 class="journey-heading">Ticket Status</h3>
+        <h3 class="journey-heading" t="eventDetail.ticketStatus"></h3>
         <div class="journey-controls">
           <button
             repeat.for="s of journeyStatuses"
@@ -73,14 +74,16 @@
             data-active.bind="event.journeyStatus === s || undefined"
             disabled.bind="journeyUpdating"
             click.trigger="setJourneyStatus(s)"
-          >${s}</button>
+            t.bind="'eventDetail.journeyStatus.' + s"
+          ></button>
         </div>
         <button
           if.bind="event.journeyStatus"
           class="journey-remove-btn" data-testid="journey-remove-btn"
           disabled.bind="journeyUpdating"
           click.trigger="removeJourney()"
-        >Stop tracking</button>
+          t="eventDetail.stopTracking"
+        ></button>
       </section>
 
       <!-- Action buttons -->
@@ -91,7 +94,8 @@
           rel="noopener noreferrer"
           class="sheet-btn-primary"
         >
-          <svg-icon name="link"></svg-icon> View Official Info
+          <svg-icon name="link"></svg-icon>
+          <span t="eventDetail.viewOfficialInfo"></span>
         </a>
         <a
           href.bind="calendarUrl"
@@ -99,7 +103,8 @@
           rel="noopener noreferrer"
           class="sheet-btn-secondary"
         >
-          <svg-icon name="calendar"></svg-icon> Add to Calendar
+          <svg-icon name="calendar"></svg-icon>
+          <span t="eventDetail.addToCalendar"></span>
         </a>
       </footer>
     </div>

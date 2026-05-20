@@ -52,11 +52,11 @@
 	},
 	"userHome": {
 		"title": "Select Your Home Area",
-		"description": "The HOME STAGE shows lives in your home area. Where do you live?",
+		"description": "HOME STAGE shows lives in the area you select. Where do you live?",
 		"quickSelect": "Quick Select",
 		"selectByRegion": "Select by Region",
 		"selectPrefecture": "Select your prefecture.",
-		"back": "Back",
+		"backToRegions": "Regions",
 		"cities": {
 			"tokyo": "Tokyo",
 			"osaka": "Osaka",
@@ -123,6 +123,22 @@
 			"chugoku": "Chugoku",
 			"shikoku": "Shikoku",
 			"kyushu": "Kyushu"
+		}
+	},
+	"eventDetail": {
+		"ariaLabel": "Event details",
+		"openStart": "Open {{open}} / Start {{start}}",
+		"openInGoogleMaps": "Open in Google Maps",
+		"ticketStatus": "Ticket Status",
+		"stopTracking": "Stop tracking",
+		"viewOfficialInfo": "View Official Info",
+		"addToCalendar": "Add to Calendar",
+		"journeyStatus": {
+			"tracking": "Tracking",
+			"applied": "Applied",
+			"lost": "Lost",
+			"unpaid": "Unpaid",
+			"paid": "Paid"
 		}
 	},
 	"dashboard": {
@@ -210,7 +226,7 @@
 		"loadFailed": "Failed to load artists. Tap retry to try again.",
 		"retryFailed": "Still unable to load artists. Please try again later.",
 		"followFailed": "Couldn't save your follow of {{name}} — your connection may be unstable. Wait a moment and try again.",
-		"hasUpcomingEvents": "{{name}} has upcoming live events!",
+		"hasUpcomingEvents": "Found upcoming live events for {{name}}!",
 		"similarArtistsUnavailable": "No more similar artists available for {{name}}",
 		"similarArtistsError": "Couldn't find similar artists for {{name}}",
 		"srStatus": "Artist discovery: {{available}} artists available, {{followed}} followed.",
