@@ -11,10 +11,4 @@ export class SignupPromptBanner {
 			new CustomEvent('signup-requested', { bubbles: true }),
 		)
 	}
-
-	public onDismiss(): void {
-		this.element.dispatchEvent(
-			new CustomEvent('banner-dismissed', { bubbles: true }),
-		)
-	}
 }

@@ -95,7 +95,10 @@ export class MyArtistsRoute {
 			this.isLoading = false
 		}
 
-		if (!this.isAuthenticated && this.onboarding.isCompleted) {
+		// Signup banner visible for any guest user on this page (during AND after
+		// onboarding) — per signup-prompt-banner capability "Banner appears for
+		// guest user during onboarding" / "after onboarding" scenarios.
+		if (!this.isAuthenticated) {
 			this.showSignupBanner = true
 		}
 	}
@@ -254,10 +257,10 @@ export class MyArtistsRoute {
 			this.prevHypes.set(artistId, hype)
 			this.onboarding.deactivateSpotlight()
 			this.onboarding.setStep(OnboardingStep.COMPLETED)
-			// Persist for guest users — merged on signup
+			// Persist for guest users — merged on signup. The signup banner is
+			// already visible (set in loading() for any guest); no toggle here.
 			if (!this.isAuthenticated) {
 				this.guest.setHype(artistId, hype)
-				this.showSignupBanner = true
 			}
 			return
 		}
@@ -268,11 +271,11 @@ export class MyArtistsRoute {
 			return
 		}
 
-		// Unauthenticated outside onboarding: persist to guest storage, show signup banner
+		// Unauthenticated outside onboarding: persist to guest storage. The signup
+		// banner is already visible from loading(); no host-side toggle needed.
 		if (!this.isAuthenticated) {
 			this.prevHypes.set(artistId, hype)
 			this.guest.setHype(artistId, hype)
-			this.showSignupBanner = true
 			return
 		}
 
@@ -310,10 +313,6 @@ export class MyArtistsRoute {
 
 	public onSignupRequested(): void {
 		this.authService.signUp()
-	}
-
-	public onBannerDismissed(): void {
-		this.showSignupBanner = false
 	}
 
 	public hypeIcon(artist: MyArtist): string {

@@ -4,15 +4,6 @@
 		"createAccount": "アカウント作成"
 	},
 	"entity": {
-		"hype": {
-			"label": "Stage",
-			"values": {
-				"watch": "観測",
-				"home": "地元",
-				"nearby": "近郊",
-				"away": "全国"
-			}
-		},
 		"concert": {
 			"label": "ライブ"
 		},
@@ -209,7 +200,7 @@
 		"unfollow": "フォロー解除",
 		"unfollowArtist": "{{name}}のフォローを解除",
 		"failedUnfollow": "{{name}}のフォロー解除に失敗しました",
-		"failedHype": "Stageの更新に失敗しました",
+		"failedHype": "Hypeの更新に失敗しました",
 		"unfollowSheet": {
 			"confirm": "フォロー解除",
 			"cancel": "キャンセル",
@@ -300,14 +291,18 @@
 		"close": "閉じる"
 	},
 	"pageHelp": {
+		"sheetAriaLabel": "ページのヘルプ",
+		"triggerAriaLabel": "ヘルプを表示",
 		"discovery": {
-			"title": "アーティストをフォローしよう",
-			"description": "バブルをタップしてフォロー。フォロー解除は My Artists ページから。",
+			"findingSectionTitle": "アーティストの探し方",
+			"description": "バブルをタップしてフォローしましょう。",
 			"genreTip": "ジャンルタブで絞り込めます",
-			"searchTip": "検索バーで名前からも探せます"
+			"searchTip": "検索バーで名前からも探せます",
+			"unfollowSectionTitle": "フォロー解除",
+			"unfollowDesc": "フォロー解除は My Artists ページから行えます。"
 		},
 		"dashboard": {
-			"title": "タイムテーブルの見方",
+			"lanesSectionTitle": "ステージレーンの読み方",
 			"description": "フォローしたアーティストのライブが距離ごとに表示されます。",
 			"homeLabel": "HOME",
 			"homeDesc": "居住エリアのライブ",
@@ -315,16 +310,18 @@
 			"nearDesc": "少し足を伸ばせば行けるライブ",
 			"awayLabel": "AWAY",
 			"awayDesc": "遠征ライブ",
+			"detailsSectionTitle": "ライブ詳細を見る",
 			"cardTip": "カードをタップすると詳細が見られます"
 		},
 		"myArtists": {
-			"title": "Stage について",
-			"description": "Stage で通知の範囲が変わります。ドットをタップして切り替えられます。",
+			"hypeSectionTitle": "Hype（熱量） について",
+			"description": "Hype（熱量） で通知の範囲が変わります。スライダーをタップして切り替えられます。",
 			"watchDesc": "通知なし",
 			"homeDesc": "居住エリアのライブを通知",
 			"nearbyDesc": "近くのライブも通知",
-			"awayDesc": "全国のライブを通知",
-			"tip": "まずは気になるアーティストを Home に設定してみましょう。近くでライブがあればお知らせします。",
+			"awayDesc": "全てのライブを通知",
+			"tip": "遠征してでも見たいアーティストは Away に設定してみましょう！",
+			"unfollowSectionTitle": "フォロー解除",
 			"longPressTip": "アーティスト行を長押しするとフォロー解除の確認が表示されます。"
 		}
 	}

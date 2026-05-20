@@ -4,15 +4,6 @@
 		"createAccount": "Create Account"
 	},
 	"entity": {
-		"hype": {
-			"label": "Hype",
-			"values": {
-				"watch": "Watching",
-				"home": "Home",
-				"nearby": "Near",
-				"away": "Away"
-			}
-		},
 		"concert": {
 			"label": "Concert"
 		},
@@ -300,14 +291,18 @@
 		"close": "Close"
 	},
 	"pageHelp": {
+		"sheetAriaLabel": "Page help",
+		"triggerAriaLabel": "Show help",
 		"discovery": {
-			"title": "Follow Artists",
-			"description": "Tap a bubble to follow an artist. Unfollow from the My Artists page.",
+			"findingSectionTitle": "Finding Artists",
+			"description": "Tap a bubble to follow an artist.",
 			"genreTip": "Filter by genre using the tabs",
-			"searchTip": "Search by name using the search bar"
+			"searchTip": "Search by name using the search bar",
+			"unfollowSectionTitle": "Unfollowing",
+			"unfollowDesc": "You can unfollow from the My Artists page."
 		},
 		"dashboard": {
-			"title": "Reading the Timetable",
+			"lanesSectionTitle": "Reading the Stage Lanes",
 			"description": "Your followed artists' lives are shown by distance.",
 			"homeLabel": "HOME",
 			"homeDesc": "Lives in your home area",
@@ -315,16 +310,18 @@
 			"nearDesc": "Lives within reach",
 			"awayLabel": "AWAY",
 			"awayDesc": "Lives anywhere",
+			"detailsSectionTitle": "Viewing Concert Details",
 			"cardTip": "Tap a card to see concert details"
 		},
 		"myArtists": {
-			"title": "About Hype Levels",
-			"description": "Hype level controls how far away you get notified. Tap a dot to change it.",
+			"hypeSectionTitle": "About Hype",
+			"description": "Hype controls how far away you get notified. Tap the slider to change it.",
 			"watchDesc": "No notifications",
-			"homeDesc": "Notify for home area lives",
-			"nearbyDesc": "Notify for nearby lives too",
-			"awayDesc": "Notify for all lives nationwide",
-			"tip": "Start by setting artists you're curious about to Home — you'll get notified when they play nearby.",
+			"homeDesc": "Notify for home-area concerts",
+			"nearbyDesc": "Notify for nearby concerts too",
+			"awayDesc": "Notify for every concert",
+			"tip": "Set artists you'd travel for to Away to never miss them!",
+			"unfollowSectionTitle": "Unfollowing",
 			"longPressTip": "Long-press an artist row to see the unfollow confirmation."
 		}
 	}

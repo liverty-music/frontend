@@ -2,13 +2,13 @@ import type { Hype } from '../../entities/follow'
 
 /**
  * Display metadata for each hype tier.
- * Maps hype values to their UI label key and icon. Labels live in the
- * canonical `entity.hype.values.*` i18n namespace per the brand-vocabulary
- * capability mirror rule.
+ * Maps hype values to their invariant brand label and emoji icon. Labels are
+ * Layer B brand expressions (per the brand-vocabulary spec) rendered in the
+ * same English form across every locale; they are not sourced from i18n.
  */
-export const HYPE_TIERS: Record<Hype, { labelKey: string; icon: string }> = {
-	watch: { labelKey: 'entity.hype.values.watch', icon: '👀' },
-	home: { labelKey: 'entity.hype.values.home', icon: '🔥' },
-	nearby: { labelKey: 'entity.hype.values.nearby', icon: '🔥🔥' },
-	away: { labelKey: 'entity.hype.values.away', icon: '🔥🔥🔥' },
+export const HYPE_TIERS: Record<Hype, { label: string; icon: string }> = {
+	watch: { label: 'Watch', icon: '👀' },
+	home: { label: 'Home', icon: '🔥' },
+	nearby: { label: 'Nearby', icon: '🔥🔥' },
+	away: { label: 'Away', icon: '🔥🔥🔥' },
 }

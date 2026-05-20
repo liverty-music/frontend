@@ -62,4 +62,22 @@ describe('SignupPromptBanner', () => {
 			expect(event.bubbles).toBe(true)
 		})
 	})
+
+	// Per signup-prompt-banner capability "No dismiss control" scenario, the
+	// banner offers no user affordance to dismiss. The dismiss API has been
+	// removed from the component contract.
+	describe('no dismiss API', () => {
+		it('should not expose an onDismiss handler', () => {
+			expect(
+				(sut as unknown as { onDismiss?: () => void }).onDismiss,
+			).toBeUndefined()
+		})
+
+		it('should never emit banner-dismissed events', () => {
+			const handler = vi.fn()
+			hostElement.addEventListener('banner-dismissed', handler)
+			sut.onSignup()
+			expect(handler).not.toHaveBeenCalled()
+		})
+	})
 })

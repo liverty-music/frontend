@@ -6,11 +6,28 @@ vi.mock('../../adapter/storage/onboarding-storage', () => ({
 	clearAllHelpSeen: vi.fn(),
 }))
 
+const fakeOnboarding = {
+	isOnboarding: true,
+}
+
+const fakeI18N = {
+	tr: (key: string) => key,
+}
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
+	// Track resolve() calls in component-construction order:
+	//   1st call: IOnboardingService (from `private readonly onboarding = resolve(...)`)
+	//   2nd call: I18N (from `public readonly i18n = resolve(I18N)`)
+	// Resets per `new PageHelp()` instantiation via the modulo on call count.
+	const resolveCallCount = { count: 0 }
 	return {
 		...actual,
-		resolve: vi.fn(() => fakeOnboarding),
+		resolve: vi.fn(() => {
+			const slot = resolveCallCount.count % 2
+			resolveCallCount.count += 1
+			return slot === 0 ? fakeOnboarding : fakeI18N
+		}),
 		bindable: actual.bindable,
 	}
 })
@@ -20,10 +37,6 @@ import {
 	saveHelpSeen,
 } from '../../adapter/storage/onboarding-storage'
 import { PageHelp, type PageHelpPage } from './page-help'
-
-const fakeOnboarding = {
-	isOnboarding: true,
-}
 
 describe('PageHelp', () => {
 	let sut: PageHelp

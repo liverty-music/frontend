@@ -6,9 +6,12 @@
  *   2. Every second-segment stem (the entity name) appears in the curated
  *      KNOWN_ENTITY_STEMS list.
  *
- * Asymmetric values (different surface labels per locale, e.g. JA "Stage" vs
- * EN "Hype" for `entity.hype.label`) are intentionally permitted and not
- * flagged — that is normal localization, not drift.
+ * Asymmetric values (different surface labels per locale for the same key) are
+ * intentionally permitted and not flagged — that is normal localization, not
+ * drift. Note: `entity.hype.*` keys are NOT permitted at all (the `hype` stem
+ * was removed from `KNOWN_ENTITY_STEMS` when hype tier surface labels graduated
+ * to Layer B invariant brand expressions); any re-introduction will fail the
+ * unknown-stem check.
  *
  * Exits 0 on success, 1 on failure. Run via `npx tsx scripts/check-brand-vocabulary.ts`.
  */

@@ -1,3 +1,4 @@
+import { I18N } from '@aurelia/i18n'
 import { bindable, resolve } from 'aurelia'
 import {
 	clearAllHelpSeen,
@@ -21,6 +22,7 @@ export class PageHelp {
 	public isPointerCoarse = false
 
 	private readonly onboarding = resolve(IOnboardingService)
+	public readonly i18n = resolve(I18N)
 
 	public attached(): void {
 		this.isPointerCoarse =
@@ -49,7 +51,7 @@ export class PageHelp {
 	}
 
 	public get ariaLabel(): string {
-		return 'ヘルプを表示'
+		return this.i18n.tr('pageHelp.triggerAriaLabel')
 	}
 
 	public static clearHelpSeen(): void {

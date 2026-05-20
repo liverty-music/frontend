@@ -1,11 +1,10 @@
 <import from="./signup-prompt-banner.css"></import>
 
+<!-- Persistent for guest users until they complete signup. Per the
+     signup-prompt-banner capability spec ("No dismiss control" scenario), the
+     banner offers no UI affordance to dismiss — visibility is controlled
+     entirely by the host page via the `visible` bindable. -->
 <aside if.bind="visible" aria-label="Signup prompt" class="[ signup-banner ]">
-  <div class="signup-banner-header">
-    <span class="signup-banner-message">${message}</span>
-    <button type="button" class="signup-banner-dismiss" t="[aria-label]common.dismiss" click.trigger="onDismiss()">
-      <svg-icon name="x" aria-hidden="true"></svg-icon>
-    </button>
-  </div>
+  <span class="signup-banner-message">${message}</span>
   <button class="signup-banner-btn" click.trigger="onSignup()" t="common.createAccount"></button>
 </aside>
