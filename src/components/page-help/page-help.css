@@ -189,8 +189,10 @@
 		   description (1fr). Auto-sized columns 1 and 2 expand to fit the
 		   widest cell in each column, so label-column and description-column
 		   left edges align across all four tiers regardless of icon width.
-		   Semantic markup is <dl> with two <dt>s per <dd>: icon + label both
-		   define the term; description is the definition. */
+		   Markup is <ul> + <li display:contents>: the <li> participates as a
+		   single grid row container while its children become direct grid
+		   items. The decorative emoji is a plain <span aria-hidden="true">
+		   inside the row so it is NOT promoted to a list term. */
 		.help-hype-grid {
 			display: grid;
 			grid-template-columns: auto auto 1fr;
@@ -200,7 +202,13 @@
 			padding: var(--space-s);
 			border-radius: var(--radius-card);
 
+			list-style: none;
+
 			background: oklch(from var(--color-surface-overlay) calc(l + 0.04) c h);
+		}
+
+		.help-hype-row {
+			display: contents;
 		}
 
 		.help-hype-icon {

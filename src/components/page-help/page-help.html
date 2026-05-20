@@ -2,8 +2,7 @@
 
 <button
   class="page-help-trigger"
-  aria-label.bind="ariaLabel"
-  title.bind="ariaLabel"
+  t="[aria-label]pageHelp.triggerAriaLabel;[title]pageHelp.triggerAriaLabel"
   click.trigger="onHelpTap()"
   type="button"
 >?</button>
@@ -12,7 +11,7 @@
      Each sub-section carries its own .help-section-title heading; there is no
      sheet-level <h2>, because the bottom-sheet itself provides the accessible
      name via its aria-label. See onboarding-page-help capability spec. -->
-<bottom-sheet open.bind="isOpen" sheet-closed.trigger="onSheetClosed()" aria-label.bind="i18n.tr('pageHelp.sheetAriaLabel')">
+<bottom-sheet open.bind="isOpen" sheet-closed.trigger="onSheetClosed()" t="[aria-label]pageHelp.sheetAriaLabel">
 
   <template switch.bind="page">
 
@@ -84,29 +83,39 @@
         </header>
         <p class="page-help-desc" t="pageHelp.myArtists.description"></p>
 
-        <!-- 3-column grid via <dl> with two <dt>s per <dd>: icon (col 1), invariant
-             English label (col 2), notification scope description (col 3). The
-             column edges align across all four tiers because the grid auto-sizes
-             columns 1 and 2 to the widest cell. See onboarding-page-help spec:
+        <!-- 3-column grid: icon (col 1), invariant English label (col 2),
+             notification scope description (col 3). Auto-sized columns 1 and 2
+             expand to fit the widest cell so label-column and description-column
+             edges align across all four tier rows. See onboarding-page-help spec:
              "Hype tier table is a 3-column grid". Hype tier labels are Layer B
-             brand expressions (invariant English) per brand-vocabulary spec. -->
-        <dl class="help-hype-grid">
-          <dt class="help-hype-icon" aria-hidden="true">👀</dt>
-          <dt class="help-hype-label">Watch</dt>
-          <dd class="help-hype-desc" t="pageHelp.myArtists.watchDesc"></dd>
+             brand expressions (invariant English) per brand-vocabulary spec.
 
-          <dt class="help-hype-icon" aria-hidden="true">🔥</dt>
-          <dt class="help-hype-label">Home</dt>
-          <dd class="help-hype-desc" t="pageHelp.myArtists.homeDesc"></dd>
-
-          <dt class="help-hype-icon" aria-hidden="true">🔥🔥</dt>
-          <dt class="help-hype-label">Nearby</dt>
-          <dd class="help-hype-desc" t="pageHelp.myArtists.nearbyDesc"></dd>
-
-          <dt class="help-hype-icon" aria-hidden="true">🔥🔥🔥</dt>
-          <dt class="help-hype-label">Away</dt>
-          <dd class="help-hype-desc" t="pageHelp.myArtists.awayDesc"></dd>
-        </dl>
+             Markup uses <ul> + <li display:contents> rather than <dl> so the
+             decorative emoji icon is not promoted to a <dt> "description term".
+             Each <li> participates in the parent grid via display: contents,
+             keeping a single grid context for column auto-sizing. -->
+        <ul class="help-hype-grid">
+          <li class="help-hype-row">
+            <span class="help-hype-icon" aria-hidden="true">👀</span>
+            <span class="help-hype-label">Watch</span>
+            <span class="help-hype-desc" t="pageHelp.myArtists.watchDesc"></span>
+          </li>
+          <li class="help-hype-row">
+            <span class="help-hype-icon" aria-hidden="true">🔥</span>
+            <span class="help-hype-label">Home</span>
+            <span class="help-hype-desc" t="pageHelp.myArtists.homeDesc"></span>
+          </li>
+          <li class="help-hype-row">
+            <span class="help-hype-icon" aria-hidden="true">🔥🔥</span>
+            <span class="help-hype-label">Nearby</span>
+            <span class="help-hype-desc" t="pageHelp.myArtists.nearbyDesc"></span>
+          </li>
+          <li class="help-hype-row">
+            <span class="help-hype-icon" aria-hidden="true">🔥🔥🔥</span>
+            <span class="help-hype-label">Away</span>
+            <span class="help-hype-desc" t="pageHelp.myArtists.awayDesc"></span>
+          </li>
+        </ul>
 
         <p class="page-help-note" t="pageHelp.myArtists.tip"></p>
       </section>
