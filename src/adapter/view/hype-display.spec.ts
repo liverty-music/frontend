@@ -11,9 +11,18 @@ describe('HYPE_TIERS', () => {
 		expect(Object.keys(HYPE_TIERS).sort()).toEqual([...ALL_HYPES].sort())
 	})
 
-	it.each(ALL_HYPES)('%s has non-empty labelKey and icon', (hype) => {
+	it.each(ALL_HYPES)('%s has non-empty label and icon', (hype) => {
 		const tier = HYPE_TIERS[hype]
-		expect(tier.labelKey).toBeTruthy()
+		expect(tier.label).toBeTruthy()
 		expect(tier.icon).toBeTruthy()
+	})
+
+	it.each([
+		['watch', 'Watch'],
+		['home', 'Home'],
+		['nearby', 'Nearby'],
+		['away', 'Away'],
+	] as const)('%s renders the invariant English label %s', (hype, label) => {
+		expect(HYPE_TIERS[hype].label).toBe(label)
 	})
 })

@@ -67,7 +67,13 @@ export class WelcomeRoute implements IRouteViewModel {
 				this.abortController.signal,
 			)
 
-			// Build artist map from configured names (preview has no followed artists)
+			// Build artist map from configured names (preview has no followed artists).
+			// Preview-only synthetic hype. Intentionally NOT DEFAULT_HYPE — `watch`
+			// makes preview concerts render as "unmatched" (faded-poster treatment)
+			// per the passion-level hype-lane match rule, which keeps the welcome
+			// page softer than a real fan's dashboard. Changing this to DEFAULT_HYPE
+			// would shift the visual treatment to "matched" (festival-stage) and
+			// alter the welcome page's intended aesthetic.
 			const artistMap = new Map<string, { artist: Artist; hype: Hype }>()
 			for (const [id, name] of getPreviewArtistNameMap()) {
 				artistMap.set(id, {

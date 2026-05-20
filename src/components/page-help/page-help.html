@@ -2,82 +2,132 @@
 
 <button
   class="page-help-trigger"
-  aria-label.bind="ariaLabel"
-  title.bind="ariaLabel"
+  t="[aria-label]pageHelp.triggerAriaLabel;[title]pageHelp.triggerAriaLabel"
   click.trigger="onHelpTap()"
   type="button"
 >?</button>
 
-<bottom-sheet open.bind="isOpen" sheet-closed.trigger="onSheetClosed()" aria-label="ページのヘルプ">
+<!-- Each per-page <template case="…"> contains one or more <section> sub-blocks.
+     Each sub-section carries its own .help-section-title heading; there is no
+     sheet-level <h2>, because the bottom-sheet itself provides the accessible
+     name via its aria-label. See onboarding-page-help capability spec. -->
+<bottom-sheet open.bind="isOpen" sheet-closed.trigger="onSheetClosed()" t="[aria-label]pageHelp.sheetAriaLabel">
 
   <template switch.bind="page">
 
-    <section case="discovery" class="page-help-content" aria-labelledby="help-discovery-title">
-      <header class="page-help-header">
-        <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
-        <h2 id="help-discovery-title" class="page-help-title" t="pageHelp.discovery.title"></h2>
-      </header>
-      <p class="page-help-desc" t="pageHelp.discovery.description"></p>
+    <template case="discovery">
+      <!-- Discovery: 2 sub-sections — Finding Artists + Unfollowing. -->
+      <section class="page-help-content">
+        <header class="page-help-header">
+          <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
+          <h3 class="help-section-title" t="pageHelp.discovery.findingSectionTitle"></h3>
+        </header>
+        <p class="page-help-desc" t="pageHelp.discovery.description"></p>
 
-      <!-- Inline demo of the actual genre chips so the tip is shown, not just told. -->
-      <div class="page-help-chip-demo" aria-hidden="true">
-        <span class="page-help-chip">Rock</span>
-        <span class="page-help-chip" data-active>Pop</span>
-        <span class="page-help-chip">Jazz</span>
-      </div>
+        <!-- Inline demo of the actual genre chips so the tip is shown, not just told. -->
+        <div class="page-help-chip-demo" aria-hidden="true">
+          <span class="page-help-chip">Rock</span>
+          <span class="page-help-chip" data-active>Pop</span>
+          <span class="page-help-chip">Jazz</span>
+        </div>
 
-      <ul class="page-help-tips">
-        <li t="pageHelp.discovery.genreTip"></li>
-        <li t="pageHelp.discovery.searchTip"></li>
-      </ul>
-    </section>
+        <ul class="page-help-tips">
+          <li t="pageHelp.discovery.genreTip"></li>
+          <li t="pageHelp.discovery.searchTip"></li>
+        </ul>
+      </section>
 
-    <section case="dashboard" class="page-help-content" aria-labelledby="help-dashboard-title">
-      <header class="page-help-header">
-        <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
-        <h2 id="help-dashboard-title" class="page-help-title" t="pageHelp.dashboard.title"></h2>
-      </header>
-      <p class="page-help-desc" t="pageHelp.dashboard.description"></p>
-      <dl class="page-help-lanes">
-        <dt class="stage-home" t="pageHelp.dashboard.homeLabel"></dt>
-        <dd t="pageHelp.dashboard.homeDesc"></dd>
-        <dt class="stage-near" t="pageHelp.dashboard.nearLabel"></dt>
-        <dd t="pageHelp.dashboard.nearDesc"></dd>
-        <dt class="stage-away" t="pageHelp.dashboard.awayLabel"></dt>
-        <dd t="pageHelp.dashboard.awayDesc"></dd>
-      </dl>
-      <p class="page-help-note" t="pageHelp.dashboard.cardTip"></p>
-    </section>
+      <section class="page-help-content">
+        <header class="page-help-header">
+          <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
+          <h3 class="help-section-title" t="pageHelp.discovery.unfollowSectionTitle"></h3>
+        </header>
+        <p class="page-help-desc" t="pageHelp.discovery.unfollowDesc"></p>
+      </section>
+    </template>
 
-    <section case="my-artists" class="page-help-content" aria-labelledby="help-my-artists-title">
-      <header class="page-help-header">
-        <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
-        <h2 id="help-my-artists-title" class="page-help-title" t="pageHelp.myArtists.title"></h2>
-      </header>
-      <p class="page-help-desc" t="pageHelp.myArtists.description"></p>
-      <table class="page-help-hype-table">
-        <tbody>
-          <tr>
-            <th scope="row"><span aria-hidden="true">👀</span> Watch</th>
-            <td t="pageHelp.myArtists.watchDesc"></td>
-          </tr>
-          <tr>
-            <th scope="row"><span aria-hidden="true">🔥</span> Home</th>
-            <td t="pageHelp.myArtists.homeDesc"></td>
-          </tr>
-          <tr>
-            <th scope="row"><span aria-hidden="true">🔥🔥</span> Nearby</th>
-            <td t="pageHelp.myArtists.nearbyDesc"></td>
-          </tr>
-          <tr>
-            <th scope="row"><span aria-hidden="true">🔥🔥🔥</span> Away</th>
-            <td t="pageHelp.myArtists.awayDesc"></td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="page-help-note" t="pageHelp.myArtists.tip"></p>
-      <p if.bind="isPointerCoarse" class="page-help-note" t="pageHelp.myArtists.longPressTip"></p>
-    </section>
+    <template case="dashboard">
+      <!-- Dashboard: 2 sub-sections — Reading the Stage Lanes + Viewing Concert Details. -->
+      <section class="page-help-content">
+        <header class="page-help-header">
+          <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
+          <h3 class="help-section-title" t="pageHelp.dashboard.lanesSectionTitle"></h3>
+        </header>
+        <p class="page-help-desc" t="pageHelp.dashboard.description"></p>
+        <dl class="page-help-lanes">
+          <dt class="stage-home" t="pageHelp.dashboard.homeLabel"></dt>
+          <dd t="pageHelp.dashboard.homeDesc"></dd>
+          <dt class="stage-near" t="pageHelp.dashboard.nearLabel"></dt>
+          <dd t="pageHelp.dashboard.nearDesc"></dd>
+          <dt class="stage-away" t="pageHelp.dashboard.awayLabel"></dt>
+          <dd t="pageHelp.dashboard.awayDesc"></dd>
+        </dl>
+      </section>
+
+      <section class="page-help-content">
+        <header class="page-help-header">
+          <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
+          <h3 class="help-section-title" t="pageHelp.dashboard.detailsSectionTitle"></h3>
+        </header>
+        <p class="page-help-desc" t="pageHelp.dashboard.cardTip"></p>
+      </section>
+    </template>
+
+    <template case="my-artists">
+      <!-- My Artists: Hype sub-section (always rendered) +
+           Unfollow sub-section (only on touch devices, per existing isPointerCoarse gate). -->
+      <section class="page-help-content">
+        <header class="page-help-header">
+          <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
+          <h3 class="help-section-title" t="pageHelp.myArtists.hypeSectionTitle"></h3>
+        </header>
+        <p class="page-help-desc" t="pageHelp.myArtists.description"></p>
+
+        <!-- 3-column grid: icon (col 1), invariant English label (col 2),
+             notification scope description (col 3). Auto-sized columns 1 and 2
+             expand to fit the widest cell so label-column and description-column
+             edges align across all four tier rows. See onboarding-page-help spec:
+             "Hype tier table is a 3-column grid". Hype tier labels are Layer B
+             brand expressions (invariant English) per brand-vocabulary spec.
+
+             Markup uses <ul> + <li display:contents> rather than <dl> so the
+             decorative emoji icon is not promoted to a <dt> "description term".
+             Each <li> participates in the parent grid via display: contents,
+             keeping a single grid context for column auto-sizing. -->
+        <ul class="help-hype-grid">
+          <li class="help-hype-row">
+            <span class="help-hype-icon" aria-hidden="true">👀</span>
+            <span class="help-hype-label">Watch</span>
+            <span class="help-hype-desc" t="pageHelp.myArtists.watchDesc"></span>
+          </li>
+          <li class="help-hype-row">
+            <span class="help-hype-icon" aria-hidden="true">🔥</span>
+            <span class="help-hype-label">Home</span>
+            <span class="help-hype-desc" t="pageHelp.myArtists.homeDesc"></span>
+          </li>
+          <li class="help-hype-row">
+            <span class="help-hype-icon" aria-hidden="true">🔥🔥</span>
+            <span class="help-hype-label">Nearby</span>
+            <span class="help-hype-desc" t="pageHelp.myArtists.nearbyDesc"></span>
+          </li>
+          <li class="help-hype-row">
+            <span class="help-hype-icon" aria-hidden="true">🔥🔥🔥</span>
+            <span class="help-hype-label">Away</span>
+            <span class="help-hype-desc" t="pageHelp.myArtists.awayDesc"></span>
+          </li>
+        </ul>
+
+        <p class="page-help-note" t="pageHelp.myArtists.tip"></p>
+      </section>
+
+      <section if.bind="isPointerCoarse" class="page-help-content">
+        <header class="page-help-header">
+          <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
+          <h3 class="help-section-title" t="pageHelp.myArtists.unfollowSectionTitle"></h3>
+        </header>
+        <p class="page-help-desc" t="pageHelp.myArtists.longPressTip"></p>
+      </section>
+    </template>
 
   </template>
 

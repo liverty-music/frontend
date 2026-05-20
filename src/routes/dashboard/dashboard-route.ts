@@ -215,10 +215,6 @@ export class DashboardRoute {
 		this.authService.signUp()
 	}
 
-	public onBannerDismissed(): void {
-		this.showSignupBanner = false
-	}
-
 	public detaching(): void {
 		this.abortController?.abort()
 		this.abortController = null

@@ -48,10 +48,6 @@ export class PageHelp {
 		this.isOpen = false
 	}
 
-	public get ariaLabel(): string {
-		return 'ヘルプを表示'
-	}
-
 	public static clearHelpSeen(): void {
 		clearAllHelpSeen()
 	}

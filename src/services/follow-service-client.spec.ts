@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Artist } from '../entities/artist'
-import type { FollowedArtist } from '../entities/follow'
+import { DEFAULT_HYPE, type FollowedArtist } from '../entities/follow'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -45,7 +45,7 @@ function makeArtist(id: string, name: string): Artist {
 }
 
 function makeFollowedArtist(id: string, name: string): FollowedArtist {
-	return { artist: makeArtist(id, name), hype: 'watch' as const }
+	return { artist: makeArtist(id, name), hype: DEFAULT_HYPE }
 }
 
 describe('FollowServiceClient', () => {

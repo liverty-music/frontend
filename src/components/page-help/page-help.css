@@ -46,11 +46,21 @@
 			background: oklch(from var(--color-brand-accent) l c h / 18%);
 		}
 
+		/* Each sub-section is a <section class="page-help-content"> block. A
+		   sheet may contain multiple sub-sections rendered in document order;
+		   they share visual treatment via the .page-help-header + .help-section-title
+		   pair below. */
 		.page-help-content {
 			padding: var(--space-m) var(--space-s) var(--space-l);
 		}
 
-		/* ── Header (icon + title with subtle divider) ──────────────────── */
+		/* Sub-sections after the first reduce top padding so the divider
+		   from the previous section's content doesn't double up visually. */
+		.page-help-content + .page-help-content {
+			padding-block-start: var(--space-2xs);
+		}
+
+		/* ── Sub-section header (icon + title with subtle divider) ──────── */
 		.page-help-header {
 			display: flex;
 			gap: var(--space-2xs);
@@ -67,7 +77,7 @@
 			color: var(--color-brand-accent);
 		}
 
-		.page-help-title {
+		.help-section-title {
 			margin: 0;
 			font-family: var(--font-display);
 			font-size: var(--step-1);
@@ -173,25 +183,53 @@
 			color: var(--color-stage-away);
 		}
 
-		/* ── Hype table (My Artists) ────────────────────────────────────── */
-		.page-help-hype-table {
-			border-collapse: collapse;
-			inline-size: 100%;
+		/* ── Hype tier grid (My Artists) ────────────────────────────────── */
+
+		/* 3-column grid: icon (auto) · invariant English label (auto) · scope
+		   description (1fr). Auto-sized columns 1 and 2 expand to fit the
+		   widest cell in each column, so label-column and description-column
+		   left edges align across all four tiers regardless of icon width.
+		   Markup is <ul> + <li display:contents>: the <li> participates as a
+		   single grid row container while its children become direct grid
+		   items. The decorative emoji is a plain <span aria-hidden="true">
+		   inside the row so it is NOT promoted to a list term. */
+		.help-hype-grid {
+			display: grid;
+			grid-template-columns: auto auto 1fr;
+			gap: var(--space-xs) var(--space-s);
+
 			margin-block: var(--space-s);
+			padding: var(--space-s);
+			border-radius: var(--radius-card);
+
+			list-style: none;
+
+			background: oklch(from var(--color-surface-overlay) calc(l + 0.04) c h);
 		}
 
-		.page-help-hype-table :is(td, th) {
-			padding: var(--space-2xs);
-			vertical-align: top;
+		.help-hype-row {
+			display: contents;
 		}
 
-		.page-help-hype-table :is(td, th):first-child {
-			inline-size: 7rem;
+		.help-hype-icon {
+			align-self: center;
+			font-size: var(--step-0);
+			line-height: var(--leading-none);
+			text-align: center;
 			white-space: nowrap;
 		}
 
-		.page-help-hype-table tr + tr :is(td, th) {
-			border-block-start: 1px solid var(--color-border-subtle);
+		.help-hype-label {
+			align-self: center;
+			font-family: var(--font-display);
+			font-weight: 700;
+			white-space: nowrap;
+		}
+
+		.help-hype-desc {
+			align-self: center;
+			margin: 0;
+			color: var(--color-text-secondary);
 		}
 
 		/* ── Note (footnote / caption) ──────────────────────────────────── */

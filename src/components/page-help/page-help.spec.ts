@@ -6,6 +6,10 @@ vi.mock('../../adapter/storage/onboarding-storage', () => ({
 	clearAllHelpSeen: vi.fn(),
 }))
 
+const fakeOnboarding = {
+	isOnboarding: true,
+}
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -20,10 +24,6 @@ import {
 	saveHelpSeen,
 } from '../../adapter/storage/onboarding-storage'
 import { PageHelp, type PageHelpPage } from './page-help'
-
-const fakeOnboarding = {
-	isOnboarding: true,
-}
 
 describe('PageHelp', () => {
 	let sut: PageHelp

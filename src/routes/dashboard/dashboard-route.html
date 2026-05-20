@@ -36,12 +36,11 @@
 <!-- Bottom sheet for event details (top-layer dialog) -->
 <event-detail-sheet component.ref="detailSheet"></event-detail-sheet>
 
-<!-- Signup prompt banner for unauthenticated users -->
+<!-- Signup prompt banner for unauthenticated users (non-dismissable) -->
 <signup-prompt-banner
   visible.bind="showSignupBanner && !isAuthenticated"
   message.bind="i18n.tr('myArtists.signupBanner.message')"
-  signup-requested.trigger="onSignupRequested()"
-  banner-dismissed.trigger="onBannerDismissed()">
+  signup-requested.trigger="onSignupRequested()">
 </signup-prompt-banner>
 
 <!-- Home area selector bottom sheet -->

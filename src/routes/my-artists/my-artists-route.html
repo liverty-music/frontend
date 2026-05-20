@@ -34,10 +34,12 @@
       <thead>
         <tr class="artists-thead-row">
           <th scope="col" class="[ visually-hidden ]" t="myArtists.table.artistCol"></th>
-          <th scope="col" class="hype-col-header">👀<small t="entity.hype.values.watch"></small></th>
-          <th scope="col" class="hype-col-header">🔥<small t="entity.hype.values.home"></small></th>
-          <th scope="col" class="hype-col-header">🔥🔥<small t="entity.hype.values.nearby"></small></th>
-          <th scope="col" class="hype-col-header">🔥🔥🔥<small t="entity.hype.values.away"></small></th>
+          <!-- Hype tier labels are Layer B brand expressions (per brand-vocabulary spec):
+               rendered invariantly in English in every locale, not via i18n. -->
+          <th scope="col" class="hype-col-header">👀<small>Watch</small></th>
+          <th scope="col" class="hype-col-header">🔥<small>Home</small></th>
+          <th scope="col" class="hype-col-header">🔥🔥<small>Nearby</small></th>
+          <th scope="col" class="hype-col-header">🔥🔥🔥<small>Away</small></th>
           <th scope="col" class="[ visually-hidden ]" t="myArtists.table.unfollowCol"></th>
         </tr>
       </thead>
@@ -96,10 +98,11 @@
   ></artist-unfollow-sheet>
 </main>
 
-<!-- Signup prompt banner -->
+<!-- Signup prompt banner — non-dismissable; visible whenever the user is a guest.
+     Per signup-prompt-banner capability spec, the dismiss button is removed
+     entirely and visibility is host-controlled by `showSignupBanner`. -->
 <signup-prompt-banner
   visible.bind="showSignupBanner && !isAuthenticated"
   message.bind="i18n.tr('myArtists.signupBanner.message')"
-  signup-requested.trigger="onSignupRequested()"
-  banner-dismissed.trigger="onBannerDismissed()">
+  signup-requested.trigger="onSignupRequested()">
 </signup-prompt-banner>
