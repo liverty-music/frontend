@@ -56,7 +56,6 @@
 		"quickSelect": "主要都市",
 		"selectByRegion": "地方から選ぶ",
 		"selectPrefecture": "都道府県を選んでください。",
-		"back": "戻る",
 		"backToRegions": "地方一覧",
 		"cities": {
 			"tokyo": "東京",
@@ -136,7 +135,7 @@
 		"viewOfficialInfo": "公式情報を見る",
 		"addToCalendar": "カレンダーに追加",
 		"journeyStatus": {
-			"tracking": "検討中",
+			"tracking": "追跡中",
 			"applied": "申込済み",
 			"lost": "落選",
 			"unpaid": "当選・未入金",
