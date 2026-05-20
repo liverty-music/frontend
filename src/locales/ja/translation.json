@@ -128,7 +128,6 @@
 	"eventDetail": {
 		"ariaLabel": "ライブ詳細",
 		"openStart": "開場 {{open}} / 開演 {{start}}",
-		"openStartFallback": "—",
 		"openInGoogleMaps": "Google Maps で開く",
 		"ticketStatus": "チケット状況",
 		"stopTracking": "追跡を停止",

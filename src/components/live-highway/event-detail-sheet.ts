@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { bindable, ILogger, resolve } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { displayName } from '../../constants/iso3166'
@@ -17,7 +16,6 @@ export class EventDetailSheet {
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly authService = resolve(IAuthService)
 	private readonly history = resolve(IHistory)
-	private readonly i18n = resolve(I18N)
 
 	// Arrow function to allow `removeEventListener` with the same reference
 	private readonly onPopstate = (): void => {
@@ -98,7 +96,7 @@ export class EventDetailSheet {
 	}
 
 	public get openTimeOrFallback(): string {
-		return this.event?.openTime || this.i18n.tr('eventDetail.openStartFallback')
+		return this.event?.openTime ?? '—'
 	}
 
 	public async setJourneyStatus(status: JourneyStatus): Promise<void> {

@@ -128,7 +128,6 @@
 	"eventDetail": {
 		"ariaLabel": "Event details",
 		"openStart": "Open {{open}} / Start {{start}}",
-		"openStartFallback": "—",
 		"openInGoogleMaps": "Open in Google Maps",
 		"ticketStatus": "Ticket Status",
 		"stopTracking": "Stop tracking",
