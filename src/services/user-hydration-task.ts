@@ -26,11 +26,14 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	const logger = container.get(ILogger).scopeTo('UserHydrationTask')
 	const i18n = container.get(I18N)
 
+	// Capture once: i18n.setLocale isn't called between here and the backfill
+	// branch, so the effective locale stays stable. Reusing the value also
+	// guarantees that ensureLoaded's Create-on-cache-miss path and the
+	// backfill RPC send identical strings.
+	const clientLocale = i18n.getLocale()
+
 	try {
-		// Pass the current effective locale into ensureLoaded so its
-		// Create-on-cache-miss recovery path has the value it needs. Keeping
-		// the locale as a parameter avoids coupling UserService to I18N.
-		await userService.ensureLoaded(i18n.getLocale())
+		await userService.ensureLoaded(clientLocale)
 	} catch (err) {
 		logger.warn('Failed to hydrate user profile, continuing without it', {
 			error: err,
@@ -39,43 +42,38 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	}
 
 	// After hydration, the DB becomes the source of truth for the active
-	// locale. Three branches:
-	//   1. User has a stored preferred_language -> apply to i18n.
-	//   2. User row has no preferred_language (legacy NULL) -> backfill by
-	//      persisting the currently effective locale; bound retries to one
-	//      per session so a flaky connection doesn't hammer the backend on
-	//      every cold start.
-	//   3. No user (unlikely here because ensureLoaded resolved) -> skip.
+	// locale. Translation bundles for `ja` and `en` are statically imported
+	// in main.ts, so i18n.setLocale is synchronous from a network standpoint
+	// and is safe to call on the activating-task hot path.
 	const current = userService.current
-	if (current) {
-		if (current.preferredLanguage) {
-			try {
-				await i18n.setLocale(current.preferredLanguage)
-			} catch (err) {
-				logger.warn('Failed to apply preferred language to i18n', {
-					error: err,
-					lang: current.preferredLanguage,
-				})
-			}
-		} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
-			const effective = i18n.getLocale()
-			try {
-				await userService.updatePreferredLanguage(effective)
-				sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
-				logger.info('Backfilled preferred_language', { lang: effective })
-			} catch (err) {
-				logger.warn(
-					'Failed to backfill preferred_language; will retry on next session',
-					{ error: err, lang: effective },
-				)
-			}
+	if (!current) return
+
+	if (current.preferredLanguage) {
+		try {
+			await i18n.setLocale(current.preferredLanguage)
+		} catch (err) {
+			logger.warn('Failed to apply preferred language to i18n', {
+				error: err,
+				lang: current.preferredLanguage,
+			})
+		}
+	} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
+		// Legacy NULL row: backfill once per tab so flaky connections don't
+		// hammer the backend across cold starts.
+		try {
+			await userService.updatePreferredLanguage(clientLocale)
+			sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
+			logger.info('Backfilled preferred_language', { lang: clientLocale })
+		} catch (err) {
+			logger.warn(
+				'Failed to backfill preferred_language; will retry on next session',
+				{ error: err, lang: clientLocale },
+			)
 		}
 	}
 
-	// Cleanup the legacy localStorage key in all cases — once authenticated,
-	// no code path should read it again. removeItem is a safe no-op when the
-	// key is already absent and only throws in environments where localStorage
-	// has been monkey-patched, which is not a case we need to defend against.
+	// removeItem is a safe no-op when the key is absent and only throws when
+	// localStorage has been monkey-patched, which we don't defend against.
 	localStorage.removeItem(StorageKeys.language)
 }
 

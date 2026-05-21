@@ -5,26 +5,20 @@ import type { IUserService } from '../services/user-service'
 
 export const SUPPORTED_LANGUAGES = ['ja', 'en'] as const
 
-/**
- * Minimal logger surface accepted by `changeLocale`. The full `ILogger`
- * satisfies this — passing a scoped logger keeps the utility decoupled
- * from Aurelia's container while still routing warnings through the
- * project's structured log sink (and thus to OTel-forwarded telemetry).
- */
 export interface ChangeLocaleLogger {
 	warn(message: string, ...detail: unknown[]): void
 }
 
-/**
- * Dependencies required by the shared language-change utility. Components
- * pass these in via `resolve()` rather than the utility resolving them itself
- * so the function remains a plain utility (no DI side effects) and tests can
- * inject lightweight stubs.
- */
 export interface ChangeLocaleDeps {
 	readonly i18n: I18N
 	readonly auth: IAuthService
 	readonly userService: IUserService
+	/**
+	 * Routes the post-RPC `i18n.setLocale`-failure warning through the
+	 * project's structured log sink (otel-log-sink) instead of bare
+	 * `console.warn`. Optional so unit tests can omit it; production
+	 * callers should always pass their scoped `ILogger`.
+	 */
 	readonly logger?: ChangeLocaleLogger
 }
 
@@ -68,15 +62,11 @@ export async function changeLocale(
 		return
 	}
 
-	// Authenticated: persist server-side first; only apply locally on success.
-	// updatePreferredLanguage write-through updates UserService.current so
-	// callers can re-read the canonical value immediately after.
 	await userService.updatePreferredLanguage(lang)
-	// i18n.setLocale runs as best-effort once the DB write has committed.
-	// Surfacing its failure here would let the settings UI show a "couldn't
-	// save" Snack even though the backend already holds the new value — a
-	// phantom error from the user's perspective. Swallow it; the next
-	// hydration reads the DB value and brings i18n back in sync.
+	// Once the DB write has committed, i18n.setLocale is best-effort.
+	// Propagating its failure would surface a phantom "couldn't save" Snack
+	// to the settings UI even though the backend already holds the new value;
+	// the next hydration reads the DB and re-syncs i18n.
 	try {
 		await i18n.setLocale(lang)
 	} catch (err) {

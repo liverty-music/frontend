@@ -123,15 +123,11 @@ export class SettingsRoute {
 	}
 
 	public async selectLanguage(lang: string): Promise<void> {
-		// Use this.currentLocale (sourced from UserService.current.preferredLanguage)
-		// rather than i18n.getLocale() so the no-op guard stays consistent with
-		// `isCurrentLanguage` and remains correct if hydration's setLocale ever
-		// diverges from the backend-stored value.
+		// Compare against currentLocale (backend-sourced) rather than
+		// i18n.getLocale() so the guard matches `isCurrentLanguage`.
 		const previous = this.currentLocale
 		if (lang === previous) {
-			// Re-selecting the active language MUST be a no-op — no DB write,
-			// no Snack, just close the sheet (spec: "Re-selecting the current
-			// language is a no-op").
+			// Spec: re-selecting the active language is a no-op.
 			this.languageSelectorOpen = false
 			return
 		}
@@ -146,21 +142,15 @@ export class SettingsRoute {
 				lang,
 			)
 		} catch (err) {
-			// Only handle network / server errors here. Programmer errors
-			// (TypeError from a missing dep, RangeError, etc.) should not be
-			// silently funneled into a "connection may be unstable" Snack —
-			// they are bugs that need to surface so they can be fixed.
+			// Network / server errors map to a Snack. Programmer errors
+			// (TypeError, missing deps) re-throw so real bugs surface.
 			if (!(err instanceof ConnectError)) {
 				this.logger.error(
 					'Failed to update preferred language (non-network error; re-throwing)',
 					{ error: err, from: previous, to: lang },
 				)
-				this.languageSelectorOpen = false
 				throw err
 			}
-			// RPC failed: keep the prior locale active, surface a Snack, and
-			// leave the selector closed. The "currentLocale" field still
-			// reflects the unchanged value so the row label stays correct.
 			this.logger.error('Failed to update preferred language', {
 				error: err,
 				from: previous,
@@ -169,19 +159,18 @@ export class SettingsRoute {
 			this.ea.publish(
 				new Snack(this.i18n.tr('settings.languageChangeError'), 'error'),
 			)
-			this.languageSelectorOpen = false
 			return
+		} finally {
+			this.languageSelectorOpen = false
 		}
-		// Re-read from the canonical source (write-through-updated UserService)
-		// rather than trusting the locally-requested `lang`, so any future
-		// server-side normalization (e.g., region tag stripping) is reflected.
+		// Re-read from UserService so any server-side locale normalization
+		// (e.g., region-tag stripping) is reflected back into the UI.
 		this.currentLocale =
 			this.userService.current?.preferredLanguage ?? this.i18n.getLocale()
 		this.logger.info('Language changed', {
 			from: previous,
 			to: this.currentLocale,
 		})
-		this.languageSelectorOpen = false
 	}
 
 	public isCurrentLanguage(lang: string): boolean {
