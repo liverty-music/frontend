@@ -45,18 +45,21 @@ export async function changeLocale(
 ): Promise<void> {
 	const { i18n, auth, userService } = deps
 
+	// Guard both paths against arbitrary strings — the anon path would
+	// persist them to localStorage where they survive into future sessions;
+	// the authed path would round-trip an unsupported code through the RPC
+	// and into the DB, leaving the UI permanently desynchronized with
+	// available translation bundles even after the protovalidate pattern
+	// would normally have rejected it.
+	if (!(SUPPORTED_LANGUAGES as readonly string[]).includes(lang)) {
+		deps.logger?.warn('changeLocale: refusing to apply unsupported locale', {
+			lang,
+			supported: SUPPORTED_LANGUAGES,
+		})
+		return
+	}
+
 	if (!auth.isAuthenticated) {
-		// Guard the anon path against arbitrary strings being persisted to
-		// localStorage where they would survive into future sessions. The
-		// authenticated path doesn't need this because the backend
-		// protovalidate pattern (^[a-z]{2}$) rejects malformed values.
-		if (!(SUPPORTED_LANGUAGES as readonly string[]).includes(lang)) {
-			deps.logger?.warn(
-				'changeLocale: refusing to persist unsupported locale',
-				{ lang, supported: SUPPORTED_LANGUAGES },
-			)
-			return
-		}
 		await i18n.setLocale(lang)
 		localStorage.setItem(StorageKeys.language, lang)
 		return

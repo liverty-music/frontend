@@ -263,7 +263,7 @@
 		"resendRateLimited": "リクエストが多すぎます。しばらくしてからお試しください。",
 		"signOut": "サインアウト",
 		"signOutError": "サインアウトに失敗しました。もう一度お試しください。",
-		"languageChangeError": "言語の変更を保存できませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。"
+		"languageChangeError": "言語の変更を保存できませんでした。少し時間を置いてもう一度お試しください。"
 	},
 	"nav": {
 		"home": "Timetable",
