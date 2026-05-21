@@ -3,7 +3,6 @@ import type { User } from '../../../entities/user'
 
 export function userFrom(proto: ProtoUser): User {
 	const home = proto.home
-	const preferredLanguage = proto.preferredLanguage
 	return {
 		id: proto.id?.value ?? '',
 		home: home
@@ -13,9 +12,6 @@ export function userFrom(proto: ProtoUser): User {
 					level2: home.level2 || undefined,
 				}
 			: undefined,
-		preferredLanguage:
-			typeof preferredLanguage === 'string' && preferredLanguage.length > 0
-				? preferredLanguage
-				: undefined,
+		preferredLanguage: proto.preferredLanguage || undefined,
 	}
 }

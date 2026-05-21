@@ -93,7 +93,7 @@ export class AuthCallbackRoute {
 				codeToHome(guestHome),
 			)
 			try {
-				localStorage.removeItem('language')
+				localStorage.removeItem(StorageKeys.language)
 			} catch (err) {
 				this.logger.warn(
 					'Failed to remove legacy language key from localStorage after Create',

@@ -1,5 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import { AppTask, IContainer, ILogger } from 'aurelia'
+import { StorageKeys } from '../constants/storage-keys'
 import { IAuthService } from './auth-service'
 import { IUserService } from './user-service'
 
@@ -70,7 +71,7 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	// no code path should read it again. removeItem is a safe no-op when the
 	// key is already absent.
 	try {
-		localStorage.removeItem('language')
+		localStorage.removeItem(StorageKeys.language)
 	} catch (err) {
 		logger.warn('Failed to remove legacy language key from localStorage', {
 			error: err,

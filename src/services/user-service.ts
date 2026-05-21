@@ -126,12 +126,15 @@ export class UserServiceClient implements IUserService {
 	public async updatePreferredLanguage(
 		preferredLanguage: string,
 	): Promise<User | undefined> {
+		// `requireUserId` guarantees the ID is cached before the RPC fires, and
+		// the backend returns the same user.id — only preferred_language changes.
+		// So no writeCachedUserId here (unlike ensureLoaded / create where the ID
+		// may have just been minted).
 		const userId = this.requireUserId('updatePreferredLanguage')
 		this._current = await this.rpcClient.updatePreferredLanguage(
 			userId,
 			preferredLanguage,
 		)
-		if (this._current) this.writeCachedUserId(this._current.id)
 		return this._current
 	}
 

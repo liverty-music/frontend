@@ -123,8 +123,12 @@ export class SettingsRoute {
 	}
 
 	public async selectLanguage(lang: string): Promise<void> {
-		const current = this.i18n.getLocale()
-		if (lang === current) {
+		// Use this.currentLocale (sourced from UserService.current.preferredLanguage)
+		// rather than i18n.getLocale() so the no-op guard stays consistent with
+		// `isCurrentLanguage` and remains correct if hydration's setLocale ever
+		// diverges from the backend-stored value.
+		const previous = this.currentLocale
+		if (lang === previous) {
 			// Re-selecting the active language MUST be a no-op — no DB write,
 			// no Snack, just close the sheet (spec: "Re-selecting the current
 			// language is a no-op").
@@ -146,7 +150,7 @@ export class SettingsRoute {
 			// reflects the unchanged value so the row label stays correct.
 			this.logger.error('Failed to update preferred language', {
 				error: err,
-				from: current,
+				from: previous,
 				to: lang,
 			})
 			this.ea.publish(
@@ -161,7 +165,7 @@ export class SettingsRoute {
 		this.currentLocale =
 			this.userService.current?.preferredLanguage ?? this.i18n.getLocale()
 		this.logger.info('Language changed', {
-			from: current,
+			from: previous,
 			to: this.currentLocale,
 		})
 		this.languageSelectorOpen = false

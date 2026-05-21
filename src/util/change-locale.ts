@@ -1,4 +1,5 @@
 import type { I18N } from '@aurelia/i18n'
+import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserService } from '../services/user-service'
 
@@ -41,7 +42,7 @@ export async function changeLocale(
 
 	if (!auth.isAuthenticated) {
 		await i18n.setLocale(lang)
-		localStorage.setItem('language', lang)
+		localStorage.setItem(StorageKeys.language, lang)
 		return
 	}
 
