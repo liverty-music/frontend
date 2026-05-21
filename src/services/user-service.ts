@@ -131,10 +131,15 @@ export class UserServiceClient implements IUserService {
 		// So no writeCachedUserId here (unlike ensureLoaded / create where the ID
 		// may have just been minted).
 		const userId = this.requireUserId('updatePreferredLanguage')
-		this._current = await this.rpcClient.updatePreferredLanguage(
+		const updated = await this.rpcClient.updatePreferredLanguage(
 			userId,
 			preferredLanguage,
 		)
+		// Preserve the existing cached profile when the RPC succeeds but returns
+		// an empty payload (e.g. response without `user` populated). Wiping
+		// `_current` here would break every downstream consumer that reads
+		// `userService.current` — settings page, auth guards, hydration writes.
+		if (updated) this._current = updated
 		return this._current
 	}
 

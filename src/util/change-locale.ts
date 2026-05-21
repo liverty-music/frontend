@@ -50,5 +50,17 @@ export async function changeLocale(
 	// updatePreferredLanguage write-through updates UserService.current so
 	// callers can re-read the canonical value immediately after.
 	await userService.updatePreferredLanguage(lang)
-	await i18n.setLocale(lang)
+	// i18n.setLocale runs as best-effort once the DB write has committed.
+	// Surfacing its failure here would let the settings UI show a "couldn't
+	// save" Snack even though the backend already holds the new value — a
+	// phantom error from the user's perspective. Swallow it; the next
+	// hydration reads the DB value and brings i18n back in sync.
+	try {
+		await i18n.setLocale(lang)
+	} catch (err) {
+		const errMsg = err instanceof Error ? err.message : String(err)
+		console.warn(
+			`changeLocale: i18n.setLocale failed after successful RPC (lang=${lang}): ${errMsg}`,
+		)
+	}
 }

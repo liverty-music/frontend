@@ -4,9 +4,7 @@ export const StorageKeys = {
 	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
 	pwaInstalled: 'pwa.installed',
 	postSignupShown: 'liverty:postSignup:shown',
-	// Anonymous-period UI language preference. Read by i18next-browser-languagedetector
-	// at app start; written by changeLocale() in the anonymous path. Removed at signup
-	// because the authoritative source becomes users.preferred_language in the backend.
+	// Anonymous-period UI language. See UserHydrationTask for cleanup.
 	language: 'language',
 } as const
 
