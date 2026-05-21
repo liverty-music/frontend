@@ -6,6 +6,16 @@ import type { IUserService } from '../services/user-service'
 export const SUPPORTED_LANGUAGES = ['ja', 'en'] as const
 
 /**
+ * Minimal logger surface accepted by `changeLocale`. The full `ILogger`
+ * satisfies this — passing a scoped logger keeps the utility decoupled
+ * from Aurelia's container while still routing warnings through the
+ * project's structured log sink (and thus to OTel-forwarded telemetry).
+ */
+export interface ChangeLocaleLogger {
+	warn(message: string, ...detail: unknown[]): void
+}
+
+/**
  * Dependencies required by the shared language-change utility. Components
  * pass these in via `resolve()` rather than the utility resolving them itself
  * so the function remains a plain utility (no DI side effects) and tests can
@@ -15,6 +25,7 @@ export interface ChangeLocaleDeps {
 	readonly i18n: I18N
 	readonly auth: IAuthService
 	readonly userService: IUserService
+	readonly logger?: ChangeLocaleLogger
 }
 
 /**
@@ -58,9 +69,9 @@ export async function changeLocale(
 	try {
 		await i18n.setLocale(lang)
 	} catch (err) {
-		const errMsg = err instanceof Error ? err.message : String(err)
-		console.warn(
-			`changeLocale: i18n.setLocale failed after successful RPC (lang=${lang}): ${errMsg}`,
+		deps.logger?.warn(
+			'changeLocale: i18n.setLocale failed after successful RPC',
+			{ lang, err },
 		)
 	}
 }

@@ -83,27 +83,19 @@ export class AuthCallbackRoute {
 		if (guestHome && email) {
 			// Capture the effective locale at signup so the new user row carries
 			// the language the visitor was experiencing pre-account. The
-			// UserHydrationTask cleanup also removes localStorage['language'],
-			// but the explicit-Create branch removes it here too so the key is
-			// gone as soon as the account exists, before any downstream code
-			// runs (e.g., the guest-data merge below).
+			// UserHydrationTask runs immediately after this returns and owns
+			// the localStorage['language'] cleanup — keeping a single owner
+			// for the legacy-key migration avoids divergence if that policy
+			// ever changes.
 			await this.userService.create(
 				email,
 				this.i18n.getLocale(),
 				codeToHome(guestHome),
 			)
-			try {
-				localStorage.removeItem(StorageKeys.language)
-			} catch (err) {
-				this.logger.warn(
-					'Failed to remove legacy language key from localStorage after Create',
-					{ error: err },
-				)
-			}
 			return true
 		}
 
-		await this.userService.ensureLoaded()
+		await this.userService.ensureLoaded(this.i18n.getLocale())
 		return false
 	}
 }

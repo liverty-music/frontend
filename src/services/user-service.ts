@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IUserRpcClient } from '../adapter/rpc/client/user-client'
@@ -14,7 +13,15 @@ export const IUserService = DI.createInterface<IUserService>(
 
 export interface IUserService {
 	readonly current: User | undefined
-	ensureLoaded(): Promise<User | undefined>
+	/**
+	 * Hydrates `current` via the cache-then-Get-then-Create chain. The caller
+	 * MUST supply the currently effective locale because the cache-miss
+	 * recovery path falls through to `Create`, which requires
+	 * preferred_language. Keeping it as a parameter (rather than resolving
+	 * I18N inside the service) avoids coupling UserService to the i18n
+	 * subsystem.
+	 */
+	ensureLoaded(preferredLanguage: string): Promise<User | undefined>
 	clear(): void
 	create(
 		email: string,
@@ -35,7 +42,6 @@ export class UserServiceClient implements IUserService {
 	private readonly rpcClient = resolve(IUserRpcClient)
 	private readonly authService = resolve(IAuthService)
 	private readonly storage = resolve(ILocalStorage)
-	private readonly i18n = resolve(I18N)
 
 	private _current: User | undefined = undefined
 
@@ -54,7 +60,9 @@ export class UserServiceClient implements IUserService {
 	// e.g. after manual tampering or cross-device sync), the backend returns
 	// PERMISSION_DENIED — caught here, cache cleared, and the recovery path
 	// runs so the app self-heals instead of locking the user out.
-	public async ensureLoaded(): Promise<User | undefined> {
+	public async ensureLoaded(
+		preferredLanguage: string,
+	): Promise<User | undefined> {
 		if (this._current) return this._current
 
 		const userId = this.readCachedUserId()
@@ -90,7 +98,7 @@ export class UserServiceClient implements IUserService {
 		// Create requires preferred_language; on the idempotent-return path the
 		// existing row's language is preserved, so passing the current effective
 		// locale is safe even for returning users.
-		this._current = await this.rpcClient.create(email, this.i18n.getLocale())
+		this._current = await this.rpcClient.create(email, preferredLanguage)
 		if (this._current) this.writeCachedUserId(this._current.id)
 		return this._current
 	}

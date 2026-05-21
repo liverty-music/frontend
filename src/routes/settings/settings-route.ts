@@ -141,6 +141,7 @@ export class SettingsRoute {
 					i18n: this.i18n,
 					auth: this.auth,
 					userService: this.userService,
+					logger: this.logger,
 				},
 				lang,
 			)

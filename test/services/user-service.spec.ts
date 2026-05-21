@@ -90,7 +90,7 @@ describe('UserServiceClient', () => {
 			rpc.create.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			const result = await svc.ensureLoaded()
+			const result = await svc.ensureLoaded('ja')
 
 			expect(rpc.get).not.toHaveBeenCalled()
 			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja')
@@ -105,7 +105,7 @@ describe('UserServiceClient', () => {
 				auth: makeAuth({ email: null }),
 			})
 
-			const result = await svc.ensureLoaded()
+			const result = await svc.ensureLoaded('ja')
 
 			expect(result).toBeUndefined()
 			expect(rpc.get).not.toHaveBeenCalled()
@@ -117,7 +117,7 @@ describe('UserServiceClient', () => {
 			rpc.get.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			const result = await svc.ensureLoaded()
+			const result = await svc.ensureLoaded('ja')
 
 			expect(rpc.get).toHaveBeenCalledWith(internalID)
 			expect(rpc.create).not.toHaveBeenCalled()
@@ -130,8 +130,8 @@ describe('UserServiceClient', () => {
 			rpc.get.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			await svc.ensureLoaded()
-			const second = await svc.ensureLoaded()
+			await svc.ensureLoaded('ja')
+			const second = await svc.ensureLoaded('ja')
 
 			expect(rpc.get).toHaveBeenCalledTimes(1)
 			expect(second).toBe(stubUser)
@@ -145,7 +145,7 @@ describe('UserServiceClient', () => {
 			rpc.create.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			const result = await svc.ensureLoaded()
+			const result = await svc.ensureLoaded('ja')
 
 			expect(rpc.get).toHaveBeenCalledWith('stale-uuid')
 			expect(storage.impl.removeItem).toHaveBeenCalledWith(cacheKey)
@@ -160,7 +160,7 @@ describe('UserServiceClient', () => {
 			rpc.get.mockRejectedValue(new ConnectError('not found', Code.NotFound))
 			const svc = build({ storage, rpc })
 
-			await expect(svc.ensureLoaded()).rejects.toThrow(/not found/)
+			await expect(svc.ensureLoaded('ja')).rejects.toThrow(/not found/)
 			expect(storage.impl.removeItem).not.toHaveBeenCalled()
 			expect(rpc.create).not.toHaveBeenCalled()
 		})
@@ -244,7 +244,7 @@ describe('UserServiceClient', () => {
 			rpc.get.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			await svc.ensureLoaded()
+			await svc.ensureLoaded('ja')
 			expect(svc.current).toBe(stubUser)
 
 			svc.clear()
