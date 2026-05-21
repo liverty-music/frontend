@@ -143,6 +143,10 @@ describe('runUserHydration', () => {
 		await expect(runUserHydration(makeContainer())).resolves.toBeUndefined()
 		// Cleanup MUST still run even when backfill fails.
 		expect(localStorage.getItem(StorageKeys.language)).toBeNull()
+		// Session flag stays unset on failure so the next session retries.
+		expect(
+			sessionStorage.getItem(SessionKeys.languageBackfillAttempted),
+		).toBeNull()
 	})
 
 	it('removes localStorage["language"] after hydration even when language was already set', async () => {

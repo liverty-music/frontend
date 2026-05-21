@@ -1,6 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { AppTask, IContainer, ILogger } from 'aurelia'
 import { SessionKeys, StorageKeys } from '../constants/storage-keys'
+import { SUPPORTED_LANGUAGES } from '../util/change-locale'
 import { IAuthService } from './auth-service'
 import { IUserService } from './user-service'
 
@@ -49,13 +50,31 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	if (!current) return
 
 	if (current.preferredLanguage) {
-		try {
-			await i18n.setLocale(current.preferredLanguage)
-		} catch (err) {
-			logger.warn('Failed to apply preferred language to i18n', {
-				error: err,
-				lang: current.preferredLanguage,
-			})
+		// Guard against unexpected DB values (a future migration or loosened
+		// backend validation could persist an unsupported code). i18n.setLocale
+		// would silently fall back to fallbackLng with no bundle, leaving the
+		// UI blank — fail-loud-then-skip is friendlier to debugging.
+		if (
+			!(SUPPORTED_LANGUAGES as readonly string[]).includes(
+				current.preferredLanguage,
+			)
+		) {
+			logger.warn(
+				'Ignoring unsupported preferred_language from backend; leaving i18n locale unchanged',
+				{
+					lang: current.preferredLanguage,
+					supported: SUPPORTED_LANGUAGES,
+				},
+			)
+		} else {
+			try {
+				await i18n.setLocale(current.preferredLanguage)
+			} catch (err) {
+				logger.warn('Failed to apply preferred language to i18n', {
+					error: err,
+					lang: current.preferredLanguage,
+				})
+			}
 		}
 	} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
 		// Legacy NULL row: backfill once per tab so flaky connections don't
