@@ -8,6 +8,23 @@ export const StorageKeys = {
 	language: 'language',
 } as const
 
+/**
+ * Keys stored in `sessionStorage` rather than `localStorage` — these are
+ * scoped to the current browser tab and cleared on tab close. Per-tab
+ * scoping is intentional: cross-tab coordination is not needed for these
+ * flags, and the looser bound (one event per tab per session) is the
+ * desired behavior.
+ */
+export const SessionKeys = {
+	// Set after the first successful backfill of users.preferred_language
+	// in the current tab. Prevents the hydration task from firing the
+	// backfill RPC on every cold start when the network is flaky. A second
+	// tab opened in the same session will re-attempt once per its own
+	// lifetime — acceptable since the RPC is idempotent on a non-NULL row
+	// (server returns the existing value unchanged).
+	languageBackfillAttempted: 'liverty:lang:backfillAttempted',
+} as const
+
 // Per-external_id namespaced key holding the internal user_id resolved from
 // UserService.Create or Get. Read by UserServiceClient before issuing any
 // authenticated per-user RPC so the rpc-auth-scoping convention can be

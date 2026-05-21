@@ -52,6 +52,17 @@ export async function changeLocale(
 	const { i18n, auth, userService } = deps
 
 	if (!auth.isAuthenticated) {
+		// Guard the anon path against arbitrary strings being persisted to
+		// localStorage where they would survive into future sessions. The
+		// authenticated path doesn't need this because the backend
+		// protovalidate pattern (^[a-z]{2}$) rejects malformed values.
+		if (!(SUPPORTED_LANGUAGES as readonly string[]).includes(lang)) {
+			deps.logger?.warn(
+				'changeLocale: refusing to persist unsupported locale',
+				{ lang, supported: SUPPORTED_LANGUAGES },
+			)
+			return
+		}
 		await i18n.setLocale(lang)
 		localStorage.setItem(StorageKeys.language, lang)
 		return

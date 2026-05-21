@@ -1,5 +1,6 @@
 import type { I18N } from '@aurelia/i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserService } from '../services/user-service'
 import { changeLocale } from './change-locale'
@@ -41,7 +42,7 @@ describe('changeLocale', () => {
 			await changeLocale({ i18n, auth, userService }, 'en')
 
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
-			expect(localStorage.getItem('language')).toBe('en')
+			expect(localStorage.getItem(StorageKeys.language)).toBe('en')
 			expect(userService.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
@@ -67,7 +68,7 @@ describe('changeLocale', () => {
 			expect(userService.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			expect(callOrder).toEqual(['rpc', 'setLocale'])
-			expect(localStorage.getItem('language')).toBeNull()
+			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
 		})
 
 		it('rethrows when RPC fails so the caller can surface a Snack', async () => {
@@ -83,7 +84,7 @@ describe('changeLocale', () => {
 				changeLocale({ i18n, auth, userService }, 'en'),
 			).rejects.toThrow('network')
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(localStorage.getItem('language')).toBeNull()
+			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
 		})
 
 		it('does NOT rethrow when setLocale fails after a successful RPC (false-error guard)', async () => {
@@ -102,7 +103,7 @@ describe('changeLocale', () => {
 				changeLocale({ i18n, auth, userService }, 'en'),
 			).resolves.toBeUndefined()
 			expect(userService.updatePreferredLanguage).toHaveBeenCalledWith('en')
-			expect(localStorage.getItem('language')).toBeNull()
+			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
 		})
 	})
 })

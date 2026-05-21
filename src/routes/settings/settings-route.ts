@@ -146,6 +146,18 @@ export class SettingsRoute {
 				lang,
 			)
 		} catch (err) {
+			// Only handle network / server errors here. Programmer errors
+			// (TypeError from a missing dep, RangeError, etc.) should not be
+			// silently funneled into a "connection may be unstable" Snack —
+			// they are bugs that need to surface so they can be fixed.
+			if (!(err instanceof ConnectError)) {
+				this.logger.error(
+					'Failed to update preferred language (non-network error; re-throwing)',
+					{ error: err, from: previous, to: lang },
+				)
+				this.languageSelectorOpen = false
+				throw err
+			}
 			// RPC failed: keep the prior locale active, surface a Snack, and
 			// leave the selector closed. The "currentLocale" field still
 			// reflects the unchanged value so the row label stays correct.

@@ -1,5 +1,6 @@
 import type { IContainer } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { SessionKeys, StorageKeys } from '../constants/storage-keys'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -87,7 +88,9 @@ describe('runUserHydration', () => {
 		mockAuth.isAuthenticated = true
 		mockUserService.current = undefined
 		i18nState.locale = 'en'
-		localStorage.setItem('language', 'en')
+		localStorage.setItem(StorageKeys.language, 'en')
+		// Reset the per-tab backfill flag so tests start from a clean state.
+		sessionStorage.removeItem(SessionKeys.languageBackfillAttempted)
 	})
 
 	it('skips hydration when the user is not authenticated', async () => {
@@ -97,7 +100,7 @@ describe('runUserHydration', () => {
 
 		expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
 		// localStorage stays untouched for anonymous users.
-		expect(localStorage.getItem('language')).toBe('en')
+		expect(localStorage.getItem(StorageKeys.language)).toBe('en')
 	})
 
 	it('applies preferred_language to i18n when present in hydrated profile', async () => {
@@ -110,7 +113,7 @@ describe('runUserHydration', () => {
 
 		expect(mockI18n.setLocale).toHaveBeenCalledWith('ja')
 		expect(mockUserService.updatePreferredLanguage).not.toHaveBeenCalled()
-		expect(localStorage.getItem('language')).toBeNull()
+		expect(localStorage.getItem(StorageKeys.language)).toBeNull()
 	})
 
 	it('backfills preferred_language when absent in hydrated profile', async () => {
@@ -125,7 +128,7 @@ describe('runUserHydration', () => {
 		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledWith('ja')
 		// No i18n.setLocale because the effective locale already matches.
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
-		expect(localStorage.getItem('language')).toBeNull()
+		expect(localStorage.getItem(StorageKeys.language)).toBeNull()
 	})
 
 	it('continues gracefully when backfill RPC fails', async () => {
@@ -139,7 +142,7 @@ describe('runUserHydration', () => {
 
 		await expect(runUserHydration(makeContainer())).resolves.toBeUndefined()
 		// Cleanup MUST still run even when backfill fails.
-		expect(localStorage.getItem('language')).toBeNull()
+		expect(localStorage.getItem(StorageKeys.language)).toBeNull()
 	})
 
 	it('removes localStorage["language"] after hydration even when language was already set', async () => {
@@ -150,7 +153,32 @@ describe('runUserHydration', () => {
 
 		await runUserHydration(makeContainer())
 
-		expect(localStorage.getItem('language')).toBeNull()
+		expect(localStorage.getItem(StorageKeys.language)).toBeNull()
+	})
+
+	it('does NOT re-fire backfill on a second call when the session flag is set', async () => {
+		// First call: row has no preferred_language → backfill runs, flag set.
+		mockUserService.current = { id: 'user-1', preferredLanguage: undefined }
+		mockUserService.ensureLoaded.mockResolvedValue(mockUserService.current)
+		i18nState.locale = 'ja'
+
+		await runUserHydration(makeContainer())
+
+		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledTimes(1)
+		expect(sessionStorage.getItem(SessionKeys.languageBackfillAttempted)).toBe(
+			'1',
+		)
+
+		// Second call in the same tab (e.g. SPA re-bootstrap on focus change):
+		// even though the DB column is still NULL (we simulate a stuck row),
+		// the flag prevents another write.
+		mockUserService.current = { id: 'user-1', preferredLanguage: undefined }
+		mockUserService.ensureLoaded.mockResolvedValue(mockUserService.current)
+
+		await runUserHydration(makeContainer())
+
+		// Still 1 — second backfill blocked by the session flag.
+		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledTimes(1)
 	})
 
 	it('skips post-hydration steps when ensureLoaded throws', async () => {
@@ -162,6 +190,6 @@ describe('runUserHydration', () => {
 		expect(mockUserService.updatePreferredLanguage).not.toHaveBeenCalled()
 		// localStorage cleanup is gated on a successful hydration; the legacy
 		// key stays in place so the next boot can re-attempt.
-		expect(localStorage.getItem('language')).toBe('en')
+		expect(localStorage.getItem(StorageKeys.language)).toBe('en')
 	})
 })

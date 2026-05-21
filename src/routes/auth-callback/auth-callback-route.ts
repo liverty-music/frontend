@@ -82,11 +82,21 @@ export class AuthCallbackRoute {
 		const guestHome = this.guest.home
 		if (guestHome && email) {
 			// Capture the effective locale at signup so the new user row carries
-			// the language the visitor was experiencing pre-account. The
-			// UserHydrationTask runs immediately after this returns and owns
-			// the localStorage['language'] cleanup — keeping a single owner
-			// for the legacy-key migration avoids divergence if that policy
-			// ever changes.
+			// the language the visitor was experiencing pre-account.
+			//
+			// localStorage['language'] cleanup is delegated to UserHydrationTask,
+			// which has a single owner for the legacy-key migration. The task
+			// is registered as an `AppTask.activating` and completes BEFORE the
+			// destination route renders, so:
+			//   - sign-in path (the ensureLoaded branch below): hydration runs
+			//     during canLoad → activating → render, so the cleanup happens
+			//     before the dashboard mounts.
+			//   - sign-up path (this Create branch): canLoad returns '/dashboard',
+			//     the router transitions, the next activating tick runs the
+			//     hydration task, and then the dashboard renders — same order.
+			// Either way, no component reads localStorage['language'] in an
+			// authenticated context between Create-success and cleanup, so the
+			// single-owner policy holds for both flows.
 			await this.userService.create(
 				email,
 				this.i18n.getLocale(),

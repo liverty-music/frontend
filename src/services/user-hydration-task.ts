@@ -1,14 +1,8 @@
 import { I18N } from '@aurelia/i18n'
 import { AppTask, IContainer, ILogger } from 'aurelia'
-import { StorageKeys } from '../constants/storage-keys'
+import { SessionKeys, StorageKeys } from '../constants/storage-keys'
 import { IAuthService } from './auth-service'
 import { IUserService } from './user-service'
-
-// Session-scoped flag set after a successful backfill of preferred_language.
-// Bounds the per-boot retry on flaky networks to one attempt per session — the
-// next browser session (or full app restart) will retry if the value is still
-// NULL in the DB. Stored in sessionStorage so it clears with tab closure.
-const BACKFILL_ATTEMPTED_KEY = 'liverty:lang:backfillAttempted'
 
 /**
  * Runs the authenticated boot sequence:
@@ -63,11 +57,11 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 					lang: current.preferredLanguage,
 				})
 			}
-		} else if (!sessionStorage.getItem(BACKFILL_ATTEMPTED_KEY)) {
+		} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
 			const effective = i18n.getLocale()
 			try {
 				await userService.updatePreferredLanguage(effective)
-				sessionStorage.setItem(BACKFILL_ATTEMPTED_KEY, '1')
+				sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
 				logger.info('Backfilled preferred_language', { lang: effective })
 			} catch (err) {
 				logger.warn(
@@ -80,14 +74,9 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 
 	// Cleanup the legacy localStorage key in all cases — once authenticated,
 	// no code path should read it again. removeItem is a safe no-op when the
-	// key is already absent.
-	try {
-		localStorage.removeItem(StorageKeys.language)
-	} catch (err) {
-		logger.warn('Failed to remove legacy language key from localStorage', {
-			error: err,
-		})
-	}
+	// key is already absent and only throws in environments where localStorage
+	// has been monkey-patched, which is not a case we need to defend against.
+	localStorage.removeItem(StorageKeys.language)
 }
 
 export const UserHydrationTask = AppTask.activating(

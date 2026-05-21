@@ -20,6 +20,13 @@ export interface IUserService {
 	 * preferred_language. Keeping it as a parameter (rather than resolving
 	 * I18N inside the service) avoids coupling UserService to the i18n
 	 * subsystem.
+	 *
+	 * BREAKING (since persist-user-language): the `preferredLanguage`
+	 * parameter is required. Previously `ensureLoaded()` took no arguments.
+	 * Any external implementer of this interface (test doubles, manual
+	 * mocks) must update to the new signature; TypeScript's structural
+	 * typing will catch typed implementations, but loose `as` casts in
+	 * test fixtures could silently pass the wrong value.
 	 */
 	ensureLoaded(preferredLanguage: string): Promise<User | undefined>
 	clear(): void
