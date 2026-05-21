@@ -3,12 +3,7 @@ import type { User } from '../../../entities/user'
 
 export function userFrom(proto: ProtoUser): User {
 	const home = proto.home
-	// TODO(persist-user-language): swap to generated type after BSR gen.
-	// The current pinned BSR package does not yet expose `preferredLanguage`
-	// on `ProtoUser`. Once the schema Release ships, the cast below can be
-	// removed and `proto.preferredLanguage` accessed directly.
-	const preferredLanguage = (proto as unknown as { preferredLanguage?: string })
-		.preferredLanguage
+	const preferredLanguage = proto.preferredLanguage
 	return {
 		id: proto.id?.value ?? '',
 		home: home

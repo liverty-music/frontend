@@ -40,17 +40,11 @@ export class UserRpcClient {
 		preferredLanguage: string,
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<User | undefined> {
-		// TODO(persist-user-language): swap to generated type after BSR gen.
-		// The current pinned BSR package does not yet expose `preferredLanguage`
-		// on CreateRequest. The cast attaches the field so the wire payload is
-		// already correct against the upcoming backend; remove it once the
-		// regenerated CreateRequest declares the field.
-		const req = {
+		const resp = await this.userClient.create({
 			email: new UserEmail({ value: email }),
 			preferredLanguage,
 			...(home ? { home } : {}),
-		} as unknown as Parameters<typeof this.userClient.create>[0]
-		const resp = await this.userClient.create(req)
+		})
 		return resp.user ? userFrom(resp.user) : undefined
 	}
 
@@ -73,19 +67,7 @@ export class UserRpcClient {
 		userId: string,
 		preferredLanguage: string,
 	): Promise<User | undefined> {
-		// TODO(persist-user-language): swap to generated RPC after BSR gen.
-		// `UpdatePreferredLanguage` does not exist on the current pinned
-		// UserService client yet. Once the regenerated client exposes the
-		// method, replace the cast + dynamic dispatch below with a direct
-		// `this.userClient.updatePreferredLanguage({...})` call mirroring the
-		// shape of `updateHome` above.
-		const client = this.userClient as unknown as {
-			updatePreferredLanguage: (req: {
-				userId: InstanceType<typeof UserId>
-				preferredLanguage: string
-			}) => Promise<{ user?: Parameters<typeof userFrom>[0] }>
-		}
-		const resp = await client.updatePreferredLanguage({
+		const resp = await this.userClient.updatePreferredLanguage({
 			userId: new UserId({ value: userId }),
 			preferredLanguage,
 		})
