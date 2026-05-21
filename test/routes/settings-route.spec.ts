@@ -41,9 +41,16 @@ describe('SettingsRoute', () => {
 		signOut: ReturnType<typeof vi.fn>
 	}
 	let mockUser: {
-		current: { id: string; home?: { level1: string } } | undefined
+		current:
+			| {
+					id: string
+					home?: { level1: string }
+					preferredLanguage?: string
+			  }
+			| undefined
 		resendEmailVerification: ReturnType<typeof vi.fn>
 		clear: ReturnType<typeof vi.fn>
+		updatePreferredLanguage: ReturnType<typeof vi.fn>
 	}
 	let mockNotification: { permission: string }
 	let mockPush: {
@@ -62,9 +69,15 @@ describe('SettingsRoute', () => {
 			signOut: vi.fn().mockResolvedValue(undefined),
 		}
 		mockUser = {
-			current: { id: 'user-uuid-1' },
+			current: { id: 'user-uuid-1', preferredLanguage: 'ja' },
 			resendEmailVerification: vi.fn().mockResolvedValue(undefined),
 			clear: vi.fn(),
+			updatePreferredLanguage: vi.fn(async (lang: string) => {
+				if (mockUser.current) {
+					mockUser.current = { ...mockUser.current, preferredLanguage: lang }
+				}
+				return mockUser.current
+			}),
 		}
 		mockNotification = { permission: 'default' }
 		mockPush = {

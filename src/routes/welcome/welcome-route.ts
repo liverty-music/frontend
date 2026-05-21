@@ -21,10 +21,12 @@ import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
+import { IUserService } from '../../services/user-service'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
+	private readonly userService = resolve(IUserService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly guest = resolve(IGuestService)
 	private readonly router = resolve(IRouter)
@@ -115,7 +117,17 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	public async currentLocaleChanged(newLocale: string): Promise<void> {
 		if (!newLocale || newLocale === this.i18n.getLocale()) return
-		await changeLocale(this.i18n, newLocale)
+		// Welcome is anonymous-only (authenticated users are redirected to
+		// /dashboard by canLoad), but the shared utility selects the correct
+		// persistence path based on auth state regardless.
+		await changeLocale(
+			{
+				i18n: this.i18n,
+				auth: this.authService,
+				userService: this.userService,
+			},
+			newLocale,
+		)
 	}
 
 	async canLoad(): Promise<NavigationInstruction | boolean> {

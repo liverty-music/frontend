@@ -1,3 +1,4 @@
+import { I18N } from '@aurelia/i18n'
 import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
@@ -23,6 +24,7 @@ export class AuthCallbackRoute {
 	private readonly userService = resolve(IUserService)
 	private readonly mergeService = resolve(IGuestDataMergeService)
 	private readonly guest = resolve(IGuestService)
+	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
 
 	public async canLoad(
@@ -79,7 +81,25 @@ export class AuthCallbackRoute {
 	): Promise<boolean> {
 		const guestHome = this.guest.home
 		if (guestHome && email) {
-			await this.userService.create(email, codeToHome(guestHome))
+			// Capture the effective locale at signup so the new user row carries
+			// the language the visitor was experiencing pre-account. The
+			// UserHydrationTask cleanup also removes localStorage['language'],
+			// but the explicit-Create branch removes it here too so the key is
+			// gone as soon as the account exists, before any downstream code
+			// runs (e.g., the guest-data merge below).
+			await this.userService.create(
+				email,
+				this.i18n.getLocale(),
+				codeToHome(guestHome),
+			)
+			try {
+				localStorage.removeItem('language')
+			} catch (err) {
+				this.logger.warn(
+					'Failed to remove legacy language key from localStorage after Create',
+					{ error: err },
+				)
+			}
 			return true
 		}
 

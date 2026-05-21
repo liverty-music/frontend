@@ -149,7 +149,11 @@ async function bootstrap(): Promise<void> {
 					order: ['querystring', 'localStorage', 'navigator'],
 					lookupQuerystring: 'lang',
 					lookupLocalStorage: 'language',
-					caches: [],
+					// Persist the detected locale to localStorage so anonymous reloads
+					// see a stable language without re-detecting from navigator each
+					// time. After signup, the DB becomes the source of truth and
+					// hydration removes this key (see UserHydrationTask).
+					caches: ['localStorage'],
 				},
 				plugins: [i18nextBrowserLanguageDetector],
 			}

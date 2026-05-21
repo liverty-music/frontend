@@ -93,7 +93,7 @@ describe('UserServiceClient', () => {
 			const result = await svc.ensureLoaded()
 
 			expect(rpc.get).not.toHaveBeenCalled()
-			expect(rpc.create).toHaveBeenCalledWith(userEmail)
+			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja')
 			expect(result).toBe(stubUser)
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
 		})
@@ -149,7 +149,7 @@ describe('UserServiceClient', () => {
 
 			expect(rpc.get).toHaveBeenCalledWith('stale-uuid')
 			expect(storage.impl.removeItem).toHaveBeenCalledWith(cacheKey)
-			expect(rpc.create).toHaveBeenCalledWith(userEmail)
+			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja')
 			expect(result).toBe(stubUser)
 			// New userId should be cached after Create succeeds
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)

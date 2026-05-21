@@ -1,3 +1,4 @@
+import { I18N } from '@aurelia/i18n'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IUserRpcClient } from '../adapter/rpc/client/user-client'
@@ -17,6 +18,7 @@ export interface IUserService {
 	clear(): void
 	create(
 		email: string,
+		preferredLanguage: string,
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<User | undefined>
 	updateHome(home: {
@@ -24,6 +26,7 @@ export interface IUserService {
 		level1: string
 		level2?: string
 	}): Promise<User | undefined>
+	updatePreferredLanguage(preferredLanguage: string): Promise<User | undefined>
 	resendEmailVerification(): Promise<void>
 }
 
@@ -32,6 +35,7 @@ export class UserServiceClient implements IUserService {
 	private readonly rpcClient = resolve(IUserRpcClient)
 	private readonly authService = resolve(IAuthService)
 	private readonly storage = resolve(ILocalStorage)
+	private readonly i18n = resolve(I18N)
 
 	private _current: User | undefined = undefined
 
@@ -83,7 +87,10 @@ export class UserServiceClient implements IUserService {
 		}
 
 		this.logger.info('Bootstrapping via idempotent Create (cache miss)')
-		this._current = await this.rpcClient.create(email)
+		// Create requires preferred_language; on the idempotent-return path the
+		// existing row's language is preserved, so passing the current effective
+		// locale is safe even for returning users.
+		this._current = await this.rpcClient.create(email, this.i18n.getLocale())
 		if (this._current) this.writeCachedUserId(this._current.id)
 		return this._current
 	}
@@ -96,9 +103,10 @@ export class UserServiceClient implements IUserService {
 
 	public async create(
 		email: string,
+		preferredLanguage: string,
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<User | undefined> {
-		const user = await this.rpcClient.create(email, home)
+		const user = await this.rpcClient.create(email, preferredLanguage, home)
 		this._current = user
 		if (user) this.writeCachedUserId(user.id)
 		return user
@@ -111,6 +119,18 @@ export class UserServiceClient implements IUserService {
 	}): Promise<User | undefined> {
 		const userId = this.requireUserId('updateHome')
 		this._current = await this.rpcClient.updateHome(userId, home)
+		if (this._current) this.writeCachedUserId(this._current.id)
+		return this._current
+	}
+
+	public async updatePreferredLanguage(
+		preferredLanguage: string,
+	): Promise<User | undefined> {
+		const userId = this.requireUserId('updatePreferredLanguage')
+		this._current = await this.rpcClient.updatePreferredLanguage(
+			userId,
+			preferredLanguage,
+		)
 		if (this._current) this.writeCachedUserId(this._current.id)
 		return this._current
 	}

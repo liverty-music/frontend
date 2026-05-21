@@ -40,7 +40,12 @@ export class SettingsRoute {
 	}
 
 	public async loading(): Promise<void> {
-		this.currentLocale = this.i18n.getLocale()
+		// Source-of-truth for authenticated language is the backend user row.
+		// Fall back to the active i18n locale only when hydration has not yet
+		// populated `current.preferredLanguage` (e.g., very first render after
+		// signup). MUST NOT read localStorage['language'] here.
+		this.currentLocale =
+			this.userService.current?.preferredLanguage ?? this.i18n.getLocale()
 		const homeLevel1 = this.userService.current?.home?.level1
 		const code = homeLevel1 ?? UserHomeSelector.getStoredHome()
 		this.currentHome = code ? translationKey(code) : null
@@ -120,17 +125,50 @@ export class SettingsRoute {
 	public async selectLanguage(lang: string): Promise<void> {
 		const current = this.i18n.getLocale()
 		if (lang === current) {
+			// Re-selecting the active language MUST be a no-op — no DB write,
+			// no Snack, just close the sheet (spec: "Re-selecting the current
+			// language is a no-op").
 			this.languageSelectorOpen = false
 			return
 		}
-		await changeLocale(this.i18n, lang)
-		this.currentLocale = lang
-		this.logger.info('Language changed', { from: current, to: lang })
+		try {
+			await changeLocale(
+				{
+					i18n: this.i18n,
+					auth: this.auth,
+					userService: this.userService,
+				},
+				lang,
+			)
+		} catch (err) {
+			// RPC failed: keep the prior locale active, surface a Snack, and
+			// leave the selector closed. The "currentLocale" field still
+			// reflects the unchanged value so the row label stays correct.
+			this.logger.error('Failed to update preferred language', {
+				error: err,
+				from: current,
+				to: lang,
+			})
+			this.ea.publish(
+				new Snack(this.i18n.tr('settings.languageChangeError'), 'error'),
+			)
+			this.languageSelectorOpen = false
+			return
+		}
+		// Re-read from the canonical source (write-through-updated UserService)
+		// rather than trusting the locally-requested `lang`, so any future
+		// server-side normalization (e.g., region tag stripping) is reflected.
+		this.currentLocale =
+			this.userService.current?.preferredLanguage ?? this.i18n.getLocale()
+		this.logger.info('Language changed', {
+			from: current,
+			to: this.currentLocale,
+		})
 		this.languageSelectorOpen = false
 	}
 
 	public isCurrentLanguage(lang: string): boolean {
-		return this.i18n.getLocale() === lang
+		return this.currentLocale === lang
 	}
 
 	public async toggleNotifications(): Promise<void> {
