@@ -133,8 +133,17 @@ export class UserServiceClient implements IUserService {
 		level2?: string
 	}): Promise<User | undefined> {
 		const userId = this.requireUserId('updateHome')
-		this._current = await this.rpcClient.updateHome(userId, home)
-		if (this._current) this.writeCachedUserId(this._current.id)
+		const updated = await this.rpcClient.updateHome(userId, home)
+		// Same write-through pattern as updatePreferredLanguage: on a
+		// populated response use the DB-authoritative entity; on an
+		// empty response patch the cached field locally rather than
+		// wiping `_current` and losing the rest of the profile.
+		if (updated) {
+			this._current = updated
+			this.writeCachedUserId(updated.id)
+		} else if (this._current) {
+			this._current = { ...this._current, home }
+		}
 		return this._current
 	}
 

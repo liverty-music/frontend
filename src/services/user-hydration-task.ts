@@ -32,7 +32,16 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	// Capture once: setLocale isn't called between here and the backfill
 	// branch, so reusing the value also guarantees that ensureLoaded's
 	// Create-on-cache-miss path and the backfill RPC send identical strings.
-	const clientLocale = i18n.getLocale()
+	//
+	// Normalize via isSupportedLanguage so out-of-range navigator codes
+	// (e.g. 'ja-JP', 'fr') don't round-trip into Create / UpdatePreferredLanguage
+	// where the backend protovalidate constraint would reject them. Falling
+	// back to 'ja' (the i18next fallbackLng) ensures the outbound RPC always
+	// carries a value the backend can persist.
+	const detectedLocale = i18n.getLocale()
+	const clientLocale = isSupportedLanguage(detectedLocale)
+		? detectedLocale
+		: 'ja'
 
 	try {
 		await userService.ensureLoaded(clientLocale)

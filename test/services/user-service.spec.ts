@@ -50,6 +50,7 @@ function makeRpcClient() {
 		get: vi.fn(),
 		create: vi.fn(),
 		updateHome: vi.fn(),
+		updatePreferredLanguage: vi.fn(),
 		resendEmailVerification: vi.fn(),
 	}
 }

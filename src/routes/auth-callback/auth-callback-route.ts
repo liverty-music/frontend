@@ -7,6 +7,7 @@ import { IAuthService } from '../../services/auth-service'
 import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
 import { IGuestService } from '../../services/guest-service'
 import { IUserService } from '../../services/user-service'
+import { isSupportedLanguage } from '../../util/change-locale'
 
 /**
  * OIDC callback handler that processes the authorization code exchange
@@ -108,13 +109,22 @@ export class AuthCallbackRoute {
 			// imperatively here, not to rely on AppTask.activating.
 			await this.userService.create(
 				email,
-				this.i18n.getLocale(),
+				normalizedLocale(this.i18n.getLocale()),
 				codeToHome(guestHome),
 			)
 			return true
 		}
 
-		await this.userService.ensureLoaded(this.i18n.getLocale())
+		await this.userService.ensureLoaded(normalizedLocale(this.i18n.getLocale()))
 		return false
 	}
+}
+
+// Coerce an arbitrary detector-emitted locale (which may include region
+// tags like 'ja-JP' or fully out-of-range values like 'fr') to one of the
+// codes the backend will accept. Mirrors the same normalization the
+// hydration task performs so Create and ensureLoaded send wire-valid
+// values to the backend's protovalidate-guarded RPCs.
+function normalizedLocale(detected: string): string {
+	return isSupportedLanguage(detected) ? detected : 'ja'
 }
