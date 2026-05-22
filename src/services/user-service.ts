@@ -159,13 +159,16 @@ export class UserServiceClient implements IUserService {
 			userId,
 			preferredLanguage,
 		)
-		// On a populated response, use the DB-authoritative entity. On an empty
-		// response (RPC succeeded but server omitted the user field), patch the
-		// cached field with the value we just successfully sent so downstream
-		// consumers (settings selector, auth guards) see the new locale without
-		// waiting for the next hydration. Wiping _current entirely here would
-		// break the rest of the session for everyone reading userService.current.
-		if (updated) {
+		// Use the DB-authoritative entity when the server returned a populated
+		// user with a non-empty preferredLanguage. If the server omitted the
+		// user field entirely, OR returned a user whose preferredLanguage is
+		// missing/empty (the mapper coerces proto3 default "" to undefined,
+		// which can happen on a partial proto migration or a misconfigured
+		// validator), patch the cached field locally with the value we
+		// successfully sent. Wiping _current with a stale/incomplete entity
+		// would break the rest of the session for everyone reading
+		// userService.current.
+		if (updated?.preferredLanguage) {
 			this._current = updated
 		} else if (this._current) {
 			this._current = { ...this._current, preferredLanguage }

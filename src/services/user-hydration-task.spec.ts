@@ -164,7 +164,7 @@ describe('runUserHydration', () => {
 		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
 	})
 
-	it('skips setLocale and warns on unsupported preferred_language', async () => {
+	it('skips setLocale, warns, and KEEPS localStorage on unsupported preferred_language', async () => {
 		mockUserService.current = { id: 'user-1', preferredLanguage: 'fr' }
 		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
 			return mockUserService.current
@@ -174,8 +174,11 @@ describe('runUserHydration', () => {
 		await flushMicrotasks()
 
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
-		// Cleanup still runs.
-		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
+		// Cleanup MUST NOT run when the DB-authoritative locale could not
+		// be applied — the user's anonymous-period localStorage value is
+		// the only fallback the next boot has until backend / client
+		// drift is resolved.
+		expect(lsMap.get(StorageKeys.language)).toBe('en')
 	})
 
 	it('backfills preferred_language fire-and-forget when absent in hydrated profile', async () => {

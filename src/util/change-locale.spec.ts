@@ -4,7 +4,7 @@ import type { ILocalStorage } from '../adapter/storage/local-storage'
 import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserService } from '../services/user-service'
-import { changeLocale } from './change-locale'
+import { changeLocale, SetLocaleError } from './change-locale'
 
 function makeI18n(behavior?: {
 	setLocale?: (lang: string) => Promise<void>
@@ -134,27 +134,32 @@ describe('changeLocale', () => {
 			expect(storage.impl.setItem).not.toHaveBeenCalled()
 		})
 
-		it('rethrows when setLocale fails after a successful RPC so the UI inconsistency surfaces', async () => {
+		it('throws SetLocaleError when setLocale fails after a successful RPC so settings shows a Snack', async () => {
+			const cause = new Error('resource missing')
 			const i18n = makeI18n({
 				setLocale: async () => {
-					throw new Error('resource missing')
+					throw cause
 				},
 			})
 			const auth = makeAuth(true)
 			const userService = makeUserService()
 
-			// Swallowing this failure would leave the settings selector
-			// highlighting the new language (from the write-through
-			// userService.current) while every `t=` binding still renders
-			// in the old locale. Surfacing the error via Snack is the lesser
-			// evil — the DB value remains correct and hydration re-syncs
-			// i18n on next boot.
-			await expect(
-				changeLocale(
+			// Wrap the underlying failure in SetLocaleError so settings
+			// can distinguish "RPC succeeded, only UI switch failed" from
+			// a true save failure (ConnectError) or programmer error
+			// (TypeError) and route to a Snack rather than the global
+			// error boundary.
+			try {
+				await changeLocale(
 					{ i18n, auth, userService, localStorage: storage.impl },
 					'en',
-				),
-			).rejects.toThrow('resource missing')
+				)
+				throw new Error('expected changeLocale to reject')
+			} catch (err) {
+				expect(err).toBeInstanceOf(SetLocaleError)
+				expect((err as SetLocaleError).lang).toBe('en')
+				expect((err as SetLocaleError).cause).toBe(cause)
+			}
 			expect(userService.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(storage.impl.setItem).not.toHaveBeenCalled()
 		})

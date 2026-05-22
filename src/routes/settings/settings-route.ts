@@ -10,7 +10,11 @@ import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IUserService } from '../../services/user-service'
-import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
+import {
+	changeLocale,
+	SetLocaleError,
+	SUPPORTED_LANGUAGES,
+} from '../../util/change-locale'
 
 // ConnectError codes considered transient (worth showing a Snack and inviting
 // the user to retry). Any other ConnectError is a contract / business-rule
@@ -161,11 +165,24 @@ export class SettingsRoute {
 					auth: this.auth,
 					userService: this.userService,
 					localStorage: this.localStorage,
-					logger: this.logger,
 				},
 				lang,
 			)
 		} catch (err) {
+			// SetLocaleError: RPC succeeded but the local i18n switch
+			// failed. The DB already holds the new value; surface a Snack
+			// so the user sees the visual inconsistency rather than a
+			// global crash screen. Next hydration re-syncs i18n.
+			if (err instanceof SetLocaleError) {
+				this.logger.warn(
+					'i18n.setLocale failed after successful RPC; surfacing Snack',
+					{ error: err.cause, from: previous, to: lang },
+				)
+				this.ea.publish(
+					new Snack(this.i18n.tr('settings.languageChangeError'), 'error'),
+				)
+				return
+			}
 			// Programmer errors (TypeError, missing deps) re-throw so real
 			// bugs surface to the global error boundary.
 			if (!(err instanceof ConnectError)) {

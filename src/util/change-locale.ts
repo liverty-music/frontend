@@ -39,22 +39,34 @@ export function normalizeToSupportedLanguage(detected: string): string {
 	return 'ja'
 }
 
-export interface ChangeLocaleLogger {
-	warn(message: string, ...detail: unknown[]): void
-}
-
 export interface ChangeLocaleDeps {
 	readonly i18n: I18N
 	readonly auth: IAuthService
 	readonly userService: IUserService
 	readonly localStorage: ILocalStorage
-	/**
-	 * Routes the post-RPC `i18n.setLocale`-failure warning through the
-	 * project's structured log sink (otel-log-sink) instead of bare
-	 * `console.warn`. Optional so unit tests can omit it; production
-	 * callers should always pass their scoped `ILogger`.
-	 */
-	readonly logger?: ChangeLocaleLogger
+}
+
+/**
+ * Thrown by changeLocale when the backend `UpdatePreferredLanguage` RPC
+ * succeeded but the subsequent `i18n.setLocale` rejected. The DB
+ * already holds the new value; only the local UI failed to switch.
+ * Callers can `instanceof SetLocaleError` to distinguish this from
+ * a TRUE save failure (network error → `ConnectError`) or a
+ * programmer error (`TypeError` etc.) and surface a Snack instead of
+ * propagating to the global error boundary.
+ */
+export class SetLocaleError extends Error {
+	public readonly lang: string
+	public readonly cause: unknown
+
+	constructor(lang: string, cause: unknown) {
+		super(
+			`changeLocale: i18n.setLocale failed after successful RPC (lang=${lang})`,
+		)
+		this.name = 'SetLocaleError'
+		this.lang = lang
+		this.cause = cause
+	}
 }
 
 /**
@@ -118,12 +130,13 @@ export async function changeLocale(
 
 	await userService.updatePreferredLanguage(lang)
 	// Surface i18n.setLocale failures even though the DB write already
-	// committed. Swallowing them would leave the settings selector
-	// highlighting the new language (sourced from the write-through
-	// userService.current) while every `t=` binding still renders in the
-	// old locale — visually inconsistent with no error indication. The
-	// trade-off is that the resulting Snack reads as "couldn't save",
-	// which slightly under-states reality (the value IS saved
-	// server-side); the next hydration will re-sync i18n on its own.
-	await i18n.setLocale(lang)
+	// committed. Wrap in SetLocaleError so the caller can distinguish
+	// "RPC succeeded, only UI switch failed" from a programmer error or
+	// a network failure. Settings catches it and shows a Snack instead
+	// of letting it propagate to the global error boundary.
+	try {
+		await i18n.setLocale(lang)
+	} catch (err) {
+		throw new SetLocaleError(lang, err)
+	}
 }

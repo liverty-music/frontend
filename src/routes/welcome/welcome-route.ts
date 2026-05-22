@@ -128,7 +128,6 @@ export class WelcomeRoute implements IRouteViewModel {
 				auth: this.authService,
 				userService: this.userService,
 				localStorage: this.localStorage,
-				logger: this.logger,
 			},
 			newLocale,
 		)

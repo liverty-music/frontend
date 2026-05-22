@@ -66,15 +66,18 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 		// (caches: ['localStorage']) writes localStorage['language'] back
 		// on every setLocale call. Removing synchronously here would race
 		// the detector's microtask and the key would be restored
-		// immediately. Chain via .finally so we also clean up on apply
-		// failure (which already logs).
+		// immediately. Chain on success only — if setLocale failed, the
+		// user's anonymous-period locale is the only fallback the next
+		// boot has, so keep it.
 		void applyPreferredLanguageToI18n({
 			i18n,
 			logger,
 			clientLocale,
 			preferred: current.preferredLanguage,
-		}).finally(() => {
-			localStorage.removeItem(StorageKeys.language)
+		}).then((applied) => {
+			if (applied) {
+				localStorage.removeItem(StorageKeys.language)
+			}
 		})
 	} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
 		// Legacy NULL row: backfill once per tab. Fire-and-forget so the
@@ -114,17 +117,27 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	}
 }
 
+/**
+ * Apply `preferred` to i18n if it differs from the current locale and is
+ * supported. Returns `true` when the locale was actually switched (or was
+ * already correct — i.e. the DB value is now authoritatively reflected),
+ * `false` when the function refused to apply (unsupported value) or
+ * setLocale rejected. The caller uses this to decide whether to clean up
+ * the legacy localStorage key: only do so when the DB-authoritative
+ * locale is in effect, so a failed apply doesn't strand the user without
+ * either the DB value (not loaded) or the localStorage fallback (just
+ * erased) on the next cold boot.
+ */
 async function applyPreferredLanguageToI18n(deps: {
 	i18n: I18N
 	logger: { warn(message: string, ...detail: unknown[]): void }
 	clientLocale: string
 	preferred: string
-}): Promise<void> {
+}): Promise<boolean> {
 	const { i18n, logger, clientLocale, preferred } = deps
-	// Skip the no-op steady state — every i18n.setLocale call dispatches
-	// `languageChanged` and re-evaluates every `t=` binding, which is wasted
-	// work when the value matches what we already have.
-	if (preferred === clientLocale) return
+	// Already correct — no setLocale needed, treat as applied so the
+	// caller can proceed with cleanup.
+	if (preferred === clientLocale) return true
 
 	// Guard against unexpected DB values (a future migration or loosened
 	// backend validation could persist an unsupported code). i18n.setLocale
@@ -135,7 +148,7 @@ async function applyPreferredLanguageToI18n(deps: {
 			'Ignoring unsupported preferred_language from backend; leaving i18n locale unchanged',
 			{ lang: preferred, supported: SUPPORTED_LANGUAGES },
 		)
-		return
+		return false
 	}
 
 	// Await the setLocale promise so callers can chain post-condition work
@@ -144,11 +157,13 @@ async function applyPreferredLanguageToI18n(deps: {
 	// detector would restore the localStorage key we're about to remove.
 	try {
 		await i18n.setLocale(preferred)
+		return true
 	} catch (err) {
 		logger.warn('Failed to apply preferred language to i18n', {
 			error: err,
 			lang: preferred,
 		})
+		return false
 	}
 }
 
