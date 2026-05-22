@@ -1,6 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { Snack } from '../../components/snack-bar/snack'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
@@ -11,6 +12,16 @@ import { IPushService } from '../../services/push-service'
 import { IUserService } from '../../services/user-service'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
+// ConnectError codes considered transient (worth showing a Snack and inviting
+// the user to retry). Any other ConnectError is a contract / business-rule
+// failure where retry won't help; we surface those via the logger and rethrow
+// so the global error handler can route them.
+const TRANSIENT_CONNECT_CODES: readonly Code[] = [
+	Code.Unavailable,
+	Code.DeadlineExceeded,
+	Code.ResourceExhausted,
+]
+
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
@@ -19,6 +30,7 @@ export class SettingsRoute {
 	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
+	private readonly localStorage = resolve(ILocalStorage)
 
 	public currentHome: string | null = null
 	public currentLocale = ''
@@ -126,9 +138,11 @@ export class SettingsRoute {
 		// Compare against currentLocale (backend-sourced) rather than
 		// i18n.getLocale() so the guard matches `isCurrentLanguage`.
 		const previous = this.currentLocale
+		// Close the selector immediately, before any awaited work, so the
+		// sheet doesn't stay frozen on slow connections (INP-friendly).
+		this.languageSelectorOpen = false
 		if (lang === previous) {
 			// Spec: re-selecting the active language is a no-op.
-			this.languageSelectorOpen = false
 			return
 		}
 		try {
@@ -137,17 +151,30 @@ export class SettingsRoute {
 					i18n: this.i18n,
 					auth: this.auth,
 					userService: this.userService,
+					localStorage: this.localStorage,
 					logger: this.logger,
 				},
 				lang,
 			)
 		} catch (err) {
-			// Network / server errors map to a Snack. Programmer errors
-			// (TypeError, missing deps) re-throw so real bugs surface.
+			// Programmer errors (TypeError, missing deps) re-throw so real
+			// bugs surface to the global error boundary.
 			if (!(err instanceof ConnectError)) {
 				this.logger.error(
 					'Failed to update preferred language (non-network error; re-throwing)',
 					{ error: err, from: previous, to: lang },
+				)
+				throw err
+			}
+			// Only transient ConnectError codes map to a user-facing Snack —
+			// non-transient codes (INVALID_ARGUMENT, NOT_FOUND, etc.) are
+			// contract bugs the user can't help with; log and rethrow so they
+			// surface to the global error boundary instead of being hidden
+			// behind a misleading "try again" Snack.
+			if (!TRANSIENT_CONNECT_CODES.includes(err.code)) {
+				this.logger.error(
+					'Non-transient ConnectError in selectLanguage; re-throwing',
+					{ error: err, code: err.code, from: previous, to: lang },
 				)
 				throw err
 			}
@@ -160,13 +187,11 @@ export class SettingsRoute {
 				new Snack(this.i18n.tr('settings.languageChangeError'), 'error'),
 			)
 			return
-		} finally {
-			this.languageSelectorOpen = false
 		}
-		// Re-read from UserService so any server-side locale normalization
-		// (e.g., region-tag stripping) is reflected back into the UI.
-		this.currentLocale =
-			this.userService.current?.preferredLanguage ?? this.i18n.getLocale()
+		// i18n.setLocale already ran inside changeLocale, so getLocale() is
+		// the authoritative post-success value (and reflects any
+		// server-side normalization that updatePreferredLanguage applied).
+		this.currentLocale = this.i18n.getLocale()
 		this.logger.info('Language changed', {
 			from: previous,
 			to: this.currentLocale,

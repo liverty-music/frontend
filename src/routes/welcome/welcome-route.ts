@@ -23,6 +23,7 @@ import {
 } from '../../services/onboarding-service'
 import { IUserService } from '../../services/user-service'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
+import { ILocalStorage } from '../../adapter/storage/local-storage'
 
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
@@ -35,6 +36,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly i18n = resolve(I18N)
 	private readonly concertService = resolve(IConcertService)
 	private readonly host = resolve(INode) as HTMLElement
+	private readonly localStorage = resolve(ILocalStorage)
 
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	@observable public currentLocale: string = ''
@@ -125,6 +127,7 @@ export class WelcomeRoute implements IRouteViewModel {
 				i18n: this.i18n,
 				auth: this.authService,
 				userService: this.userService,
+				localStorage: this.localStorage,
 				logger: this.logger,
 			},
 			newLocale,

@@ -1,7 +1,8 @@
 import { I18N } from '@aurelia/i18n'
 import { AppTask, IContainer, ILogger } from 'aurelia'
+import { ILocalStorage } from '../adapter/storage/local-storage'
 import { SessionKeys, StorageKeys } from '../constants/storage-keys'
-import { SUPPORTED_LANGUAGES } from '../util/change-locale'
+import { isSupportedLanguage, SUPPORTED_LANGUAGES } from '../util/change-locale'
 import { IAuthService } from './auth-service'
 import { IUserService } from './user-service'
 
@@ -26,11 +27,11 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	const userService = container.get(IUserService)
 	const logger = container.get(ILogger).scopeTo('UserHydrationTask')
 	const i18n = container.get(I18N)
+	const localStorage = container.get(ILocalStorage)
 
-	// Capture once: i18n.setLocale isn't called between here and the backfill
-	// branch, so the effective locale stays stable. Reusing the value also
-	// guarantees that ensureLoaded's Create-on-cache-miss path and the
-	// backfill RPC send identical strings.
+	// Capture once: setLocale isn't called between here and the backfill
+	// branch, so reusing the value also guarantees that ensureLoaded's
+	// Create-on-cache-miss path and the backfill RPC send identical strings.
 	const clientLocale = i18n.getLocale()
 
 	try {
@@ -50,50 +51,72 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	if (!current) return
 
 	if (current.preferredLanguage) {
-		// Guard against unexpected DB values (a future migration or loosened
-		// backend validation could persist an unsupported code). i18n.setLocale
-		// would silently fall back to fallbackLng with no bundle, leaving the
-		// UI blank — fail-loud-then-skip is friendlier to debugging.
-		if (
-			!(SUPPORTED_LANGUAGES as readonly string[]).includes(
-				current.preferredLanguage,
-			)
-		) {
-			logger.warn(
-				'Ignoring unsupported preferred_language from backend; leaving i18n locale unchanged',
-				{
-					lang: current.preferredLanguage,
-					supported: SUPPORTED_LANGUAGES,
-				},
-			)
-		} else {
-			try {
-				await i18n.setLocale(current.preferredLanguage)
-			} catch (err) {
-				logger.warn('Failed to apply preferred language to i18n', {
-					error: err,
-					lang: current.preferredLanguage,
-				})
-			}
-		}
+		applyPreferredLanguageToI18n({
+			i18n,
+			logger,
+			clientLocale,
+			preferred: current.preferredLanguage,
+		})
 	} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
-		// Legacy NULL row: backfill once per tab so flaky connections don't
-		// hammer the backend across cold starts.
-		try {
-			await userService.updatePreferredLanguage(clientLocale)
-			sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
-			logger.info('Backfilled preferred_language', { lang: clientLocale })
-		} catch (err) {
-			logger.warn(
-				'Failed to backfill preferred_language; will retry on next session',
-				{ error: err, lang: clientLocale },
-			)
-		}
+		// Legacy NULL row: backfill once per tab. Fire-and-forget so the
+		// activating-task isn't blocked on a second serial RPC before any
+		// route renders — the backfill is idempotent and the current session's
+		// locale (clientLocale) is already active. Set the flag optimistically
+		// and clear it on failure so the next session retries.
+		sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
+		void userService.updatePreferredLanguage(clientLocale).then(
+			() => {
+				logger.info('Backfilled preferred_language', { lang: clientLocale })
+			},
+			(err: unknown) => {
+				logger.warn(
+					'Failed to backfill preferred_language; will retry on next session',
+					{ error: err, lang: clientLocale },
+				)
+				sessionStorage.removeItem(SessionKeys.languageBackfillAttempted)
+			},
+		)
 	}
 
 	// removeItem is a safe no-op when the key is absent and only throws when
 	// localStorage has been monkey-patched, which we don't defend against.
 	localStorage.removeItem(StorageKeys.language)
+}
+
+function applyPreferredLanguageToI18n(deps: {
+	i18n: I18N
+	logger: { warn(message: string, ...detail: unknown[]): void }
+	clientLocale: string
+	preferred: string
+}): void {
+	const { i18n, logger, clientLocale, preferred } = deps
+	// Skip the no-op steady state — every i18n.setLocale call dispatches
+	// `languageChanged` and re-evaluates every `t=` binding, which is wasted
+	// work when the value matches what we already have.
+	if (preferred === clientLocale) return
+
+	// Guard against unexpected DB values (a future migration or loosened
+	// backend validation could persist an unsupported code). i18n.setLocale
+	// would silently fall back to fallbackLng with no bundle, leaving the UI
+	// blank — fail-loud-then-skip is friendlier to debugging.
+	if (!isSupportedLanguage(preferred)) {
+		logger.warn(
+			'Ignoring unsupported preferred_language from backend; leaving i18n locale unchanged',
+			{ lang: preferred, supported: SUPPORTED_LANGUAGES },
+		)
+		return
+	}
+
+	// Fire async without awaiting — i18next.changeLanguage is synchronous
+	// from a network standpoint here (bundles are statically imported), so
+	// the returned promise resolves on the next microtask and is not load-
+	// bearing for first render. Failures land in the catch.
+	void i18n.setLocale(preferred).catch((err: unknown) => {
+		logger.warn('Failed to apply preferred language to i18n', {
+			error: err,
+			lang: preferred,
+		})
+	})
 }
 
 export const UserHydrationTask = AppTask.activating(

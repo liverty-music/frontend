@@ -1,5 +1,6 @@
 import type { I18N } from '@aurelia/i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ILocalStorage } from '../adapter/storage/local-storage'
 import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserService } from '../services/user-service'
@@ -28,9 +29,43 @@ function makeUserService(behavior?: {
 	} as unknown as IUserService
 }
 
+function makeLocalStorage() {
+	const map = new Map<string, string>()
+	const impl: ILocalStorage = {
+		getItem: vi.fn((k: string) => map.get(k) ?? null),
+		setItem: vi.fn((k: string, v: string) => {
+			map.set(k, v)
+		}),
+		removeItem: vi.fn((k: string) => {
+			map.delete(k)
+		}),
+	}
+	return { map, impl }
+}
+
 describe('changeLocale', () => {
+	let storage: ReturnType<typeof makeLocalStorage>
+
 	beforeEach(() => {
-		localStorage.clear()
+		storage = makeLocalStorage()
+	})
+
+	describe('validation', () => {
+		it('throws TypeError on unsupported language without touching state', async () => {
+			const i18n = makeI18n()
+			const auth = makeAuth(false)
+			const userService = makeUserService()
+
+			await expect(
+				changeLocale(
+					{ i18n, auth, userService, localStorage: storage.impl },
+					'fr',
+				),
+			).rejects.toBeInstanceOf(TypeError)
+			expect(i18n.setLocale).not.toHaveBeenCalled()
+			expect(storage.impl.setItem).not.toHaveBeenCalled()
+			expect(userService.updatePreferredLanguage).not.toHaveBeenCalled()
+		})
 	})
 
 	describe('unauthenticated path', () => {
@@ -39,10 +74,16 @@ describe('changeLocale', () => {
 			const auth = makeAuth(false)
 			const userService = makeUserService()
 
-			await changeLocale({ i18n, auth, userService }, 'en')
+			await changeLocale(
+				{ i18n, auth, userService, localStorage: storage.impl },
+				'en',
+			)
 
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
-			expect(localStorage.getItem(StorageKeys.language)).toBe('en')
+			expect(storage.impl.setItem).toHaveBeenCalledWith(
+				StorageKeys.language,
+				'en',
+			)
 			expect(userService.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
@@ -63,12 +104,15 @@ describe('changeLocale', () => {
 				},
 			})
 
-			await changeLocale({ i18n, auth, userService }, 'en')
+			await changeLocale(
+				{ i18n, auth, userService, localStorage: storage.impl },
+				'en',
+			)
 
 			expect(userService.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			expect(callOrder).toEqual(['rpc', 'setLocale'])
-			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
+			expect(storage.impl.setItem).not.toHaveBeenCalled()
 		})
 
 		it('rethrows when RPC fails so the caller can surface a Snack', async () => {
@@ -81,10 +125,13 @@ describe('changeLocale', () => {
 			})
 
 			await expect(
-				changeLocale({ i18n, auth, userService }, 'en'),
+				changeLocale(
+					{ i18n, auth, userService, localStorage: storage.impl },
+					'en',
+				),
 			).rejects.toThrow('network')
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
+			expect(storage.impl.setItem).not.toHaveBeenCalled()
 		})
 
 		it('does NOT rethrow when setLocale fails after a successful RPC (false-error guard)', async () => {
@@ -100,10 +147,13 @@ describe('changeLocale', () => {
 			// the settings UI into showing a "couldn't save" Snack. Hydration
 			// re-syncs i18n with the DB value on the next boot.
 			await expect(
-				changeLocale({ i18n, auth, userService }, 'en'),
+				changeLocale(
+					{ i18n, auth, userService, localStorage: storage.impl },
+					'en',
+				),
 			).resolves.toBeUndefined()
 			expect(userService.updatePreferredLanguage).toHaveBeenCalledWith('en')
-			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
+			expect(storage.impl.setItem).not.toHaveBeenCalled()
 		})
 	})
 })

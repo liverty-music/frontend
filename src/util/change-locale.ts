@@ -1,9 +1,21 @@
 import type { I18N } from '@aurelia/i18n'
+import type { ILocalStorage } from '../adapter/storage/local-storage'
 import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserService } from '../services/user-service'
 
 export const SUPPORTED_LANGUAGES = ['ja', 'en'] as const
+
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
+
+/**
+ * Type guard for the UI's locale allowlist. Shared between the changeLocale
+ * utility and the hydration task so both validate the same way against the
+ * single source of truth.
+ */
+export function isSupportedLanguage(lang: string): lang is SupportedLanguage {
+	return (SUPPORTED_LANGUAGES as readonly string[]).includes(lang)
+}
 
 export interface ChangeLocaleLogger {
 	warn(message: string, ...detail: unknown[]): void
@@ -13,6 +25,7 @@ export interface ChangeLocaleDeps {
 	readonly i18n: I18N
 	readonly auth: IAuthService
 	readonly userService: IUserService
+	readonly localStorage: ILocalStorage
 	/**
 	 * Routes the post-RPC `i18n.setLocale`-failure warning through the
 	 * project's structured log sink (otel-log-sink) instead of bare
@@ -36,6 +49,8 @@ export interface ChangeLocaleDeps {
  *   `localStorage['language']`. The DB is the source of truth post-signup,
  *   and the hydration task is responsible for clearing the legacy key.
  *
+ * Throws `TypeError` when `lang` is not in `SUPPORTED_LANGUAGES` so a
+ * mis-wired UI control surfaces the bug instead of silently doing nothing.
  * On RPC failure, the function rethrows so the caller can surface a
  * user-visible error (Snack) and keep the prior locale active.
  */
@@ -43,20 +58,17 @@ export async function changeLocale(
 	deps: ChangeLocaleDeps,
 	lang: string,
 ): Promise<void> {
-	const { i18n, auth, userService } = deps
+	const { i18n, auth, userService, localStorage } = deps
 
-	// Guard both paths against arbitrary strings — the anon path would
-	// persist them to localStorage where they survive into future sessions;
-	// the authed path would round-trip an unsupported code through the RPC
-	// and into the DB, leaving the UI permanently desynchronized with
-	// available translation bundles even after the protovalidate pattern
-	// would normally have rejected it.
-	if (!(SUPPORTED_LANGUAGES as readonly string[]).includes(lang)) {
-		deps.logger?.warn('changeLocale: refusing to apply unsupported locale', {
-			lang,
-			supported: SUPPORTED_LANGUAGES,
-		})
-		return
+	// Guard both paths against arbitrary strings. The anon path would
+	// otherwise persist them to localStorage where they survive into future
+	// sessions; the authed path would round-trip an unsupported code through
+	// the RPC into the DB. Throwing keeps the contract loud — silently
+	// returning would let callers think the change succeeded.
+	if (!isSupportedLanguage(lang)) {
+		throw new TypeError(
+			`changeLocale: unsupported locale "${lang}" (supported: ${SUPPORTED_LANGUAGES.join(', ')})`,
+		)
 	}
 
 	if (!auth.isAuthenticated) {
