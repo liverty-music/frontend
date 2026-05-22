@@ -14,7 +14,10 @@ interface MockUser {
 	preferredLanguage?: string
 }
 
-const mockAuth = { ready: Promise.resolve(), isAuthenticated: true }
+const mockAuth: {
+	ready: Promise<void>
+	isAuthenticated: boolean
+} = { ready: Promise.resolve(), isAuthenticated: true }
 const mockUserService = {
 	current: undefined as MockUser | undefined,
 	ensureLoaded: vi.fn(async () => mockUserService.current),
@@ -254,6 +257,35 @@ describe('runUserHydration', () => {
 
 		// Still 1 — second backfill blocked by the session flag.
 		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledTimes(1)
+	})
+
+	it('does NOT call ensureLoaded until auth.ready resolves (deferred-ready ordering invariant)', async () => {
+		// Lock in the contract that runUserHydration awaits auth.ready
+		// before touching the user service. If a refactor accidentally
+		// drops the await or reorders the isAuthenticated check above it,
+		// hydration would race the auth bootstrap and either fire RPCs
+		// without a valid token or skip hydration on cold boots.
+		mockUserService.current = { id: 'user-1', preferredLanguage: 'ja' }
+		mockUserService.ensureLoaded.mockResolvedValue(mockUserService.current)
+
+		// Replace auth.ready with a deferred promise we control.
+		let resolveReady!: () => void
+		mockAuth.ready = new Promise<void>((resolve) => {
+			resolveReady = resolve
+		})
+
+		const inFlight = runUserHydration(makeContainer())
+		await flushMicrotasks()
+
+		// auth.ready is still pending → ensureLoaded must not have run.
+		expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
+
+		// Release auth.ready → hydration proceeds.
+		resolveReady()
+		await inFlight
+		await flushMicrotasks()
+
+		expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(1)
 	})
 
 	it('skips post-hydration steps when ensureLoaded throws', async () => {

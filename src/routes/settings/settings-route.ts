@@ -16,10 +16,19 @@ import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 // the user to retry). Any other ConnectError is a contract / business-rule
 // failure where retry won't help; we surface those via the logger and rethrow
 // so the global error handler can route them.
+//   - Unavailable / DeadlineExceeded / ResourceExhausted: classic transient
+//     network / rate-limit conditions.
+//   - Internal: standard gRPC code for an unhandled server-side exception;
+//     typically a transient blip (process restart, transient dependency
+//     failure) rather than a request-shape bug.
+//   - Cancelled: surfaces when the client aborts (timeout, navigation,
+//     network drop) — retry is a sensible user action.
 const TRANSIENT_CONNECT_CODES: readonly Code[] = [
 	Code.Unavailable,
 	Code.DeadlineExceeded,
 	Code.ResourceExhausted,
+	Code.Internal,
+	Code.Canceled,
 ]
 
 export class SettingsRoute {

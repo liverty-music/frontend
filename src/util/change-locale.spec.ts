@@ -134,7 +134,7 @@ describe('changeLocale', () => {
 			expect(storage.impl.setItem).not.toHaveBeenCalled()
 		})
 
-		it('does NOT rethrow when setLocale fails after a successful RPC (false-error guard)', async () => {
+		it('rethrows when setLocale fails after a successful RPC so the UI inconsistency surfaces', async () => {
 			const i18n = makeI18n({
 				setLocale: async () => {
 					throw new Error('resource missing')
@@ -143,15 +143,18 @@ describe('changeLocale', () => {
 			const auth = makeAuth(true)
 			const userService = makeUserService()
 
-			// The DB write succeeded; surfacing the i18n failure would mislead
-			// the settings UI into showing a "couldn't save" Snack. Hydration
-			// re-syncs i18n with the DB value on the next boot.
+			// Swallowing this failure would leave the settings selector
+			// highlighting the new language (from the write-through
+			// userService.current) while every `t=` binding still renders
+			// in the old locale. Surfacing the error via Snack is the lesser
+			// evil — the DB value remains correct and hydration re-syncs
+			// i18n on next boot.
 			await expect(
 				changeLocale(
 					{ i18n, auth, userService, localStorage: storage.impl },
 					'en',
 				),
-			).resolves.toBeUndefined()
+			).rejects.toThrow('resource missing')
 			expect(userService.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(storage.impl.setItem).not.toHaveBeenCalled()
 		})

@@ -45,7 +45,7 @@ export interface ChangeLocaleDeps {
  *   `localStorage['language']` after `i18n.setLocale`. No backend call.
  *
  * - **Authenticated** (Settings page): call `UpdatePreferredLanguage` first,
- *   apply `i18n.setLocale` only on success. This function performs no
+ *   apply `i18n.setLocale` after success. This function performs no
  *   explicit localStorage writes in the authed branch — the backend row is
  *   the source of truth and the hydration task clears the legacy key on
  *   next boot.
@@ -62,8 +62,14 @@ export interface ChangeLocaleDeps {
  *
  * Throws `TypeError` when `lang` is not in `SUPPORTED_LANGUAGES` so a
  * mis-wired UI control surfaces the bug instead of silently doing nothing.
- * On RPC failure, the function rethrows so the caller can surface a
- * user-visible error (Snack) and keep the prior locale active.
+ * Rethrows on both RPC failure AND i18n.setLocale failure so the caller
+ * can surface a user-visible error (Snack). Note: a setLocale failure
+ * after a successful RPC means the DB already holds the new value while
+ * the UI still renders the old locale — the Snack reads as "couldn't
+ * save" which slightly under-states reality, but is preferable to a
+ * silent visual inconsistency (selector highlights the new value while
+ * every `t=` binding renders the old). Hydration re-syncs i18n on the
+ * next boot.
  */
 export async function changeLocale(
 	deps: ChangeLocaleDeps,
@@ -89,16 +95,13 @@ export async function changeLocale(
 	}
 
 	await userService.updatePreferredLanguage(lang)
-	// Once the DB write has committed, i18n.setLocale is best-effort.
-	// Propagating its failure would surface a phantom "couldn't save" Snack
-	// to the settings UI even though the backend already holds the new value;
-	// the next hydration reads the DB and re-syncs i18n.
-	try {
-		await i18n.setLocale(lang)
-	} catch (err) {
-		deps.logger?.warn(
-			'changeLocale: i18n.setLocale failed after successful RPC',
-			{ lang, err },
-		)
-	}
+	// Surface i18n.setLocale failures even though the DB write already
+	// committed. Swallowing them would leave the settings selector
+	// highlighting the new language (sourced from the write-through
+	// userService.current) while every `t=` binding still renders in the
+	// old locale — visually inconsistent with no error indication. The
+	// trade-off is that the resulting Snack reads as "couldn't save",
+	// which slightly under-states reality (the value IS saved
+	// server-side); the next hydration will re-sync i18n on its own.
+	await i18n.setLocale(lang)
 }

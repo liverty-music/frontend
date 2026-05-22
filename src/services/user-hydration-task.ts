@@ -60,15 +60,21 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	if (!current) return
 
 	if (current.preferredLanguage) {
-		applyPreferredLanguageToI18n({
+		// removeItem MUST run AFTER setLocale resolves: the
+		// i18next-browser-languagedetector's `languageChanged` listener
+		// (caches: ['localStorage']) writes localStorage['language'] back
+		// on every setLocale call. Removing synchronously here would race
+		// the detector's microtask and the key would be restored
+		// immediately. Chain via .finally so we also clean up on apply
+		// failure (which already logs).
+		void applyPreferredLanguageToI18n({
 			i18n,
 			logger,
 			clientLocale,
 			preferred: current.preferredLanguage,
+		}).finally(() => {
+			localStorage.removeItem(StorageKeys.language)
 		})
-		// Safe to remove the legacy key — the DB already holds the canonical
-		// value, so localStorage is redundant.
-		localStorage.removeItem(StorageKeys.language)
 	} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
 		// Legacy NULL row: backfill once per tab. Fire-and-forget so the
 		// activating-task isn't blocked on a second serial RPC before any
@@ -107,12 +113,12 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	}
 }
 
-function applyPreferredLanguageToI18n(deps: {
+async function applyPreferredLanguageToI18n(deps: {
 	i18n: I18N
 	logger: { warn(message: string, ...detail: unknown[]): void }
 	clientLocale: string
 	preferred: string
-}): void {
+}): Promise<void> {
 	const { i18n, logger, clientLocale, preferred } = deps
 	// Skip the no-op steady state — every i18n.setLocale call dispatches
 	// `languageChanged` and re-evaluates every `t=` binding, which is wasted
@@ -131,16 +137,18 @@ function applyPreferredLanguageToI18n(deps: {
 		return
 	}
 
-	// Fire async without awaiting — i18next.changeLanguage is synchronous
-	// from a network standpoint here (bundles are statically imported), so
-	// the returned promise resolves on the next microtask and is not load-
-	// bearing for first render. Failures land in the catch.
-	void i18n.setLocale(preferred).catch((err: unknown) => {
+	// Await the setLocale promise so callers can chain post-condition work
+	// (e.g. the legacy-localStorage cleanup) after the i18next-browser-
+	// languagedetector's `languageChanged` listener fires — otherwise its
+	// detector would restore the localStorage key we're about to remove.
+	try {
+		await i18n.setLocale(preferred)
+	} catch (err) {
 		logger.warn('Failed to apply preferred language to i18n', {
 			error: err,
 			lang: preferred,
 		})
-	})
+	}
 }
 
 export const UserHydrationTask = AppTask.activating(
