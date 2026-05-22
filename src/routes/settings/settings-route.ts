@@ -188,10 +188,15 @@ export class SettingsRoute {
 			)
 			return
 		}
-		// i18n.setLocale already ran inside changeLocale, so getLocale() is
-		// the authoritative post-success value (and reflects any
-		// server-side normalization that updatePreferredLanguage applied).
-		this.currentLocale = this.i18n.getLocale()
+		// changeLocale resolved without throwing → the DB write succeeded
+		// with `lang`. Read userService.current.preferredLanguage (which
+		// updatePreferredLanguage's write-through guarantees, even on an
+		// empty-RPC response — see user-service.ts) rather than
+		// i18n.getLocale() because the authenticated path swallows
+		// setLocale failures (so i18n may still hold the previous value
+		// after a partial failure). Falls back to the requested `lang`
+		// in the unlikely case `_current` was wiped concurrently.
+		this.currentLocale = this.userService.current?.preferredLanguage ?? lang
 		this.logger.info('Language changed', {
 			from: previous,
 			to: this.currentLocale,

@@ -150,11 +150,17 @@ export class UserServiceClient implements IUserService {
 			userId,
 			preferredLanguage,
 		)
-		// Preserve the existing cached profile when the RPC succeeds but returns
-		// an empty payload (e.g. response without `user` populated). Wiping
-		// `_current` here would break every downstream consumer that reads
-		// `userService.current` — settings page, auth guards, hydration writes.
-		if (updated) this._current = updated
+		// On a populated response, use the DB-authoritative entity. On an empty
+		// response (RPC succeeded but server omitted the user field), patch the
+		// cached field with the value we just successfully sent so downstream
+		// consumers (settings selector, auth guards) see the new locale without
+		// waiting for the next hydration. Wiping _current entirely here would
+		// break the rest of the session for everyone reading userService.current.
+		if (updated) {
+			this._current = updated
+		} else if (this._current) {
+			this._current = { ...this._current, preferredLanguage }
+		}
 		return this._current
 	}
 

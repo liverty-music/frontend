@@ -171,9 +171,10 @@ describe('UserServiceClient', () => {
 			rpc.create.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			const result = await svc.create('u@test.com')
+			const result = await svc.create('u@test.com', 'ja')
 
 			expect(result).toBe(stubUser)
+			expect(rpc.create).toHaveBeenCalledWith('u@test.com', 'ja', undefined)
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
 		})
 	})
@@ -206,7 +207,7 @@ describe('UserServiceClient', () => {
 			rpc.updateHome.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			await svc.create('u@test.com')
+			await svc.create('u@test.com', 'ja')
 			storage.map.delete(cacheKey)
 
 			await svc.updateHome({ countryCode: 'JP', level1: 'JP-13' })

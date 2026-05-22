@@ -5,6 +5,7 @@ import {
 	type NavigationInstruction,
 } from '@aurelia/router'
 import { IEventAggregator, ILogger, INode, observable, resolve } from 'aurelia'
+import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { Snack } from '../../components/snack-bar/snack'
 import {
 	getPreviewArtistIds,
@@ -23,7 +24,6 @@ import {
 } from '../../services/onboarding-service'
 import { IUserService } from '../../services/user-service'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
-import { ILocalStorage } from '../../adapter/storage/local-storage'
 
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
