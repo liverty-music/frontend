@@ -119,9 +119,18 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	public async currentLocaleChanged(newLocale: string): Promise<void> {
 		if (!newLocale || newLocale === this.i18n.getLocale()) return
-		// Welcome is anonymous-only (authenticated users are redirected to
-		// /dashboard by canLoad), but the shared utility selects the correct
-		// persistence path based on auth state regardless.
+		// Welcome is anonymous-only — canLoad redirects authenticated
+		// callers to /dashboard before this code runs, so
+		// `authService.isAuthenticated` is guaranteed false here. The
+		// `userService.updatePreferredLanguage` branch inside changeLocale
+		// is therefore intentional dead code from this call site.
+		//
+		// We still call the shared changeLocale (rather than inlining the
+		// anonymous path) so the welcome page and settings page route
+		// every locale change through one validation + persistence policy.
+		// The cost is a single DI resolve of IUserService at construction
+		// time, which is the right trade-off vs. a second code path that
+		// could silently diverge.
 		await changeLocale(
 			{
 				i18n: this.i18n,

@@ -1,3 +1,4 @@
+import { I18N } from '@aurelia/i18n'
 import type { RouteNode } from '@aurelia/router'
 import { Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +9,7 @@ import { IGuestService } from '../../src/services/guest-service'
 import { IUserService } from '../../src/services/user-service'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
+import type { createMockI18n } from '../helpers/mock-i18n'
 
 function createMockUserService() {
 	const stub = { id: 'u1', externalId: 'ext', email: 'u@test.com', name: 'U' }
@@ -48,6 +50,7 @@ describe('AuthCallbackRoute', () => {
 	let mockAuth: ReturnType<typeof createMockAuth>
 	let mockUserService: ReturnType<typeof createMockUserService>
 	let mockMergeService: ReturnType<typeof createMockMergeService>
+	let mockI18n: ReturnType<typeof createMockI18n>
 
 	function setup(guestHome: string | null = null) {
 		const container = createTestContainer(
@@ -61,6 +64,10 @@ describe('AuthCallbackRoute', () => {
 		)
 		container.register(AuthCallbackRoute)
 		sut = container.get(AuthCallbackRoute)
+		// createTestContainer pre-registers the mock I18N; resolve the
+		// same instance the route will use so test-side spies on setLocale
+		// observe what production code sees.
+		mockI18n = container.get(I18N) as ReturnType<typeof createMockI18n>
 	}
 
 	beforeEach(() => {
@@ -210,6 +217,80 @@ describe('AuthCallbackRoute', () => {
 
 			expect(mockMergeService.merge).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
+		})
+
+		// Coverage for the mid-session sign-in setLocale block. This is the
+		// only code path that applies the backend `preferred_language` to
+		// i18n for a session that started anonymous and then signed in —
+		// UserHydrationTask (AppTask.activating) ran once at boot when the
+		// user was still unauthenticated and won't re-fire on this redirect.
+		// Without these tests, a regression that removes or mis-conditions
+		// this block leaves users browsing in their pre-auth detected locale
+		// until a hard reload, with no signal from the test suite.
+		describe('applies backend preferredLanguage to i18n after sign-in', () => {
+			it('calls setLocale when preferredLanguage differs from current locale', async () => {
+				mockAuth.handleCallback = vi.fn().mockResolvedValue({
+					profile: { email: 'returning@example.com' },
+				})
+				// Default mock i18n locale is 'ja'; ensureLoaded resolves a
+				// user whose stored language is 'en' — the guard
+				// ('en' !== 'ja') should fire setLocale('en').
+				mockUserService.ensureLoaded = vi.fn().mockImplementation(async () => {
+					mockUserService._current = {
+						id: 'u1',
+						preferredLanguage: 'en',
+					} as unknown as import('../../src/entities/user').User
+					return mockUserService._current
+				})
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(mockI18n.setLocale).toHaveBeenCalledWith('en')
+				expect(result).toBe('/dashboard')
+			})
+
+			it('does NOT call setLocale when preferredLanguage matches the current locale', async () => {
+				mockAuth.handleCallback = vi.fn().mockResolvedValue({
+					profile: { email: 'returning@example.com' },
+				})
+				// preferredLanguage matches the mock locale 'ja' — guard
+				// short-circuits and setLocale stays untouched.
+				mockUserService.ensureLoaded = vi.fn().mockImplementation(async () => {
+					mockUserService._current = {
+						id: 'u1',
+						preferredLanguage: 'ja',
+					} as unknown as import('../../src/entities/user').User
+					return mockUserService._current
+				})
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(mockI18n.setLocale).not.toHaveBeenCalled()
+				expect(result).toBe('/dashboard')
+			})
+
+			it('does NOT call setLocale when preferredLanguage is unsupported', async () => {
+				mockAuth.handleCallback = vi.fn().mockResolvedValue({
+					profile: { email: 'returning@example.com' },
+				})
+				// A future migration or loosened backend validation could
+				// leak an unsupported code into the DB. We skip the
+				// setLocale call (i18next would silently fall back to
+				// fallbackLng with no bundle, leaving the UI blank) and log
+				// a warning instead.
+				mockUserService.ensureLoaded = vi.fn().mockImplementation(async () => {
+					mockUserService._current = {
+						id: 'u1',
+						preferredLanguage: 'fr',
+					} as unknown as import('../../src/entities/user').User
+					return mockUserService._current
+				})
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(mockI18n.setLocale).not.toHaveBeenCalled()
+				expect(result).toBe('/dashboard')
+			})
 		})
 	})
 })
