@@ -12,6 +12,7 @@ import { IPushService } from '../../services/push-service'
 import { IUserService } from '../../services/user-service'
 import {
 	changeLocale,
+	normalizeToSupportedLanguage,
 	SetLocaleError,
 	SUPPORTED_LANGUAGES,
 } from '../../util/change-locale'
@@ -69,8 +70,15 @@ export class SettingsRoute {
 		// Fall back to the active i18n locale only when hydration has not yet
 		// populated `current.preferredLanguage` (e.g., very first render after
 		// signup). MUST NOT read localStorage['language'] here.
+		//
+		// The fallback runs through normalizeToSupportedLanguage so a
+		// BCP 47 tag returned by i18n.getLocale() (e.g. 'en-US' when the
+		// detector falls through to navigator.language) maps to 'en'
+		// rather than 'en-US' — otherwise isCurrentLanguage compares
+		// 'en-US' === 'en' and no radio is highlighted.
+		const fromUser = this.userService.current?.preferredLanguage
 		this.currentLocale =
-			this.userService.current?.preferredLanguage ?? this.i18n.getLocale()
+			fromUser ?? normalizeToSupportedLanguage(this.i18n.getLocale())
 		const homeLevel1 = this.userService.current?.home?.level1
 		const code = homeLevel1 ?? UserHomeSelector.getStoredHome()
 		this.currentHome = code ? translationKey(code) : null

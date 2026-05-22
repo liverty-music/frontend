@@ -41,6 +41,17 @@ export interface IUserService {
 		level2?: string
 	}): Promise<User | undefined>
 	updatePreferredLanguage(preferredLanguage: string): Promise<User | undefined>
+	/**
+	 * Roll back the in-memory `current.preferredLanguage` without an RPC.
+	 * Intended for the SetLocaleError recovery path: when the backend RPC
+	 * committed but the local i18n switch then failed, the cached
+	 * `preferredLanguage` write-through has the new value while i18n is
+	 * still on the old; this method realigns the cache with i18n so the
+	 * settings selector and `t=` bindings stop disagreeing about which
+	 * language is active. The DB value remains the new one and the next
+	 * hydration re-syncs both layers.
+	 */
+	revertCachedPreferredLanguage(previous: string | undefined): void
 	resendEmailVerification(): Promise<void>
 }
 
@@ -174,6 +185,11 @@ export class UserServiceClient implements IUserService {
 			this._current = { ...this._current, preferredLanguage }
 		}
 		return this._current
+	}
+
+	public revertCachedPreferredLanguage(previous: string | undefined): void {
+		if (!this._current) return
+		this._current = { ...this._current, preferredLanguage: previous }
 	}
 
 	public async resendEmailVerification(): Promise<void> {

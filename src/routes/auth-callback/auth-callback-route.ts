@@ -39,6 +39,25 @@ export class AuthCallbackRoute {
 
 			const isNewUser = await this.ensureUserProvisioned(user.profile.email)
 
+			// Apply the DB-stored preferred language to i18n for the
+			// current session. UserHydrationTask normally owns this, but
+			// it's an AppTask.activating that fires once at app boot —
+			// the pre-auth tick already ran and returned early. Without
+			// this manual apply, a mid-session sign-in leaves the app
+			// rendering in the anonymous-period locale until a hard
+			// reload triggers the next activating cycle.
+			const preferred = this.userService.current?.preferredLanguage
+			if (preferred && preferred !== this.i18n.getLocale()) {
+				try {
+					await this.i18n.setLocale(preferred)
+				} catch (err) {
+					this.logger.warn(
+						'Failed to apply DB-preferred language to i18n after sign-in',
+						{ error: err, lang: preferred },
+					)
+				}
+			}
+
 			// Merge any guest data accumulated during onboarding
 			await this.mergeService.merge()
 

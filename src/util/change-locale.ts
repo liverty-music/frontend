@@ -65,6 +65,11 @@ export class SetLocaleError extends Error {
 		)
 		this.name = 'SetLocaleError'
 		this.lang = lang
+		// Store as own property; tsconfig target is ES2017 which doesn't
+		// support the ES2022 `{ cause }` super-options arg. When the
+		// project upgrades target to ES2022+, pass `{ cause }` to super()
+		// here so native prototype-chain traversal (Node util.inspect,
+		// DevTools, Sentry grouping) picks up the underlying failure.
 		this.cause = cause
 	}
 }
@@ -128,15 +133,22 @@ export async function changeLocale(
 		return
 	}
 
+	const previousPreferredLanguage = userService.current?.preferredLanguage
 	await userService.updatePreferredLanguage(lang)
 	// Surface i18n.setLocale failures even though the DB write already
 	// committed. Wrap in SetLocaleError so the caller can distinguish
 	// "RPC succeeded, only UI switch failed" from a programmer error or
 	// a network failure. Settings catches it and shows a Snack instead
 	// of letting it propagate to the global error boundary.
+	//
+	// Roll back the cached preferredLanguage on failure so the settings
+	// selector and `t=` bindings agree on which locale is active mid-
+	// session. The DB still holds the new value; the next hydration
+	// will re-sync both layers.
 	try {
 		await i18n.setLocale(lang)
 	} catch (err) {
+		userService.revertCachedPreferredLanguage(previousPreferredLanguage)
 		throw new SetLocaleError(lang, err)
 	}
 }

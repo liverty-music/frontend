@@ -61,24 +61,30 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	if (!current) return
 
 	if (current.preferredLanguage) {
+		// AWAIT setLocale before runUserHydration resolves: the wrapping
+		// AppTask.activating delays first render until this promise
+		// settles, so finishing locale-apply here means the first paint
+		// renders in the DB-authoritative locale rather than the
+		// client-detected one. Without the await Aurelia marks the app
+		// active and routes immediately, producing a visible
+		// language flash when setLocale eventually fires.
+		//
 		// removeItem MUST run AFTER setLocale resolves: the
 		// i18next-browser-languagedetector's `languageChanged` listener
 		// (caches: ['localStorage']) writes localStorage['language'] back
-		// on every setLocale call. Removing synchronously here would race
-		// the detector's microtask and the key would be restored
-		// immediately. Chain on success only — if setLocale failed, the
-		// user's anonymous-period locale is the only fallback the next
-		// boot has, so keep it.
-		void applyPreferredLanguageToI18n({
+		// on every setLocale call. Removing synchronously before await
+		// would race the detector's microtask and the key would be
+		// restored. On apply failure, KEEP localStorage — the user's
+		// anonymous-period locale is the only fallback the next boot has.
+		const applied = await applyPreferredLanguageToI18n({
 			i18n,
 			logger,
 			clientLocale,
 			preferred: current.preferredLanguage,
-		}).then((applied) => {
-			if (applied) {
-				localStorage.removeItem(StorageKeys.language)
-			}
 		})
+		if (applied) {
+			localStorage.removeItem(StorageKeys.language)
+		}
 	} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
 		// Legacy NULL row: backfill once per tab. Fire-and-forget so the
 		// activating-task isn't blocked on a second serial RPC before any

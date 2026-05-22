@@ -23,9 +23,11 @@ function makeUserService(behavior?: {
 	updatePreferredLanguage?: (lang: string) => Promise<unknown>
 }): IUserService {
 	return {
+		current: { id: 'u', preferredLanguage: 'ja' },
 		updatePreferredLanguage: vi.fn(
 			behavior?.updatePreferredLanguage ?? (async () => ({ id: 'u' })),
 		),
+		revertCachedPreferredLanguage: vi.fn(),
 	} as unknown as IUserService
 }
 
