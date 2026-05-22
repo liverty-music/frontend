@@ -7,7 +7,10 @@ import { IAuthService } from '../../services/auth-service'
 import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
 import { IGuestService } from '../../services/guest-service'
 import { IUserService } from '../../services/user-service'
-import { normalizeToSupportedLanguage } from '../../util/change-locale'
+import {
+	isSupportedLanguage,
+	normalizeToSupportedLanguage,
+} from '../../util/change-locale'
 
 /**
  * OIDC callback handler that processes the authorization code exchange
@@ -46,8 +49,18 @@ export class AuthCallbackRoute {
 			// this manual apply, a mid-session sign-in leaves the app
 			// rendering in the anonymous-period locale until a hard
 			// reload triggers the next activating cycle.
+			//
+			// Guard with isSupportedLanguage to mirror the hydration
+			// task's defense against unexpected DB values (manual edit,
+			// loosened backend validation, schema drift) — i18n.setLocale
+			// would silently fall back to fallbackLng with no bundle,
+			// leaving the UI blank.
 			const preferred = this.userService.current?.preferredLanguage
-			if (preferred && preferred !== this.i18n.getLocale()) {
+			if (
+				preferred &&
+				isSupportedLanguage(preferred) &&
+				preferred !== this.i18n.getLocale()
+			) {
 				try {
 					await this.i18n.setLocale(preferred)
 				} catch (err) {
@@ -56,6 +69,11 @@ export class AuthCallbackRoute {
 						{ error: err, lang: preferred },
 					)
 				}
+			} else if (preferred && !isSupportedLanguage(preferred)) {
+				this.logger.warn(
+					'Ignoring unsupported preferred_language from backend after sign-in',
+					{ lang: preferred },
+				)
 			}
 
 			// Merge any guest data accumulated during onboarding

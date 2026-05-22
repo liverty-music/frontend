@@ -51,6 +51,7 @@ describe('SettingsRoute', () => {
 		resendEmailVerification: ReturnType<typeof vi.fn>
 		clear: ReturnType<typeof vi.fn>
 		updatePreferredLanguage: ReturnType<typeof vi.fn>
+		revertCachedPreferredLanguage: ReturnType<typeof vi.fn>
 	}
 	let mockNotification: { permission: string }
 	let mockPush: {
@@ -77,6 +78,14 @@ describe('SettingsRoute', () => {
 					mockUser.current = { ...mockUser.current, preferredLanguage: lang }
 				}
 				return mockUser.current
+			}),
+			revertCachedPreferredLanguage: vi.fn((previous: string | undefined) => {
+				if (mockUser.current) {
+					mockUser.current = {
+						...mockUser.current,
+						preferredLanguage: previous,
+					}
+				}
 			}),
 		}
 		mockNotification = { permission: 'default' }
