@@ -220,6 +220,57 @@ describe('UserServiceClient', () => {
 		})
 	})
 
+	describe('updatePreferredLanguage', () => {
+		it('replaces _current with the populated User the RPC returns', async () => {
+			storage.map.set(cacheKey, internalID)
+			const updated = { ...stubUser, preferredLanguage: 'en' } as User
+			rpc.updatePreferredLanguage.mockResolvedValue(updated)
+			const svc = build({ storage, rpc })
+			// Hydrate _current first so we have something to compare against.
+			rpc.get.mockResolvedValue(stubUser)
+			await svc.ensureLoaded('ja')
+
+			const result = await svc.updatePreferredLanguage('en')
+
+			expect(rpc.updatePreferredLanguage).toHaveBeenCalledWith(internalID, 'en')
+			expect(result).toBe(updated)
+			expect(svc.current).toBe(updated)
+			expect(svc.current?.preferredLanguage).toBe('en')
+		})
+
+		it('patches _current.preferredLanguage locally when the RPC returns an empty payload', async () => {
+			// Load-bearing path: the settings UI reads
+			// `userService.current.preferredLanguage` immediately after the
+			// RPC resolves. If the backend omits the user field (valid
+			// proto3 default), we must still surface the just-sent value
+			// from the in-memory cache rather than leave the stale one.
+			storage.map.set(cacheKey, internalID)
+			rpc.updatePreferredLanguage.mockResolvedValue(undefined)
+			const svc = build({ storage, rpc })
+			rpc.get.mockResolvedValue(stubUser)
+			await svc.ensureLoaded('ja')
+			const before = svc.current
+			expect(before?.preferredLanguage).toBeUndefined()
+
+			const result = await svc.updatePreferredLanguage('en')
+
+			expect(rpc.updatePreferredLanguage).toHaveBeenCalledWith(internalID, 'en')
+			expect(result?.preferredLanguage).toBe('en')
+			expect(svc.current?.preferredLanguage).toBe('en')
+			// Other fields preserved (didn't wipe _current).
+			expect(svc.current?.id).toBe(internalID)
+		})
+
+		it('throws when no user_id is available', async () => {
+			const svc = build({ storage, rpc })
+
+			await expect(svc.updatePreferredLanguage('en')).rejects.toThrow(
+				/user_id is not available/,
+			)
+			expect(rpc.updatePreferredLanguage).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('resendEmailVerification', () => {
 		it('reads cached user_id and forwards it to the RPC client', async () => {
 			storage.map.set(cacheKey, internalID)

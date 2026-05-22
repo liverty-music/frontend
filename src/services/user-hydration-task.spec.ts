@@ -195,7 +195,7 @@ describe('runUserHydration', () => {
 		)
 	})
 
-	it('clears the session flag when backfill RPC fails so next session retries', async () => {
+	it('preserves localStorage and clears the session flag when backfill RPC fails so next session retries', async () => {
 		mockUserService.current = { id: 'user-1', preferredLanguage: undefined }
 		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
 			return mockUserService.current
@@ -207,8 +207,11 @@ describe('runUserHydration', () => {
 		await runUserHydration(makeContainer())
 		await flushMicrotasks()
 
-		// Cleanup MUST still run even when backfill fails.
-		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
+		// Backfill failed → KEEP localStorage['language'] so the next
+		// session can re-detect the user's explicit anonymous choice and
+		// retry the backfill. Removing it on failure would lose the
+		// user's preference if both DB and localStorage are now empty.
+		expect(lsMap.get(StorageKeys.language)).toBe('en')
 		// Optimistic flag was rolled back on failure.
 		expect(
 			sessionStorage.getItem(SessionKeys.languageBackfillAttempted),

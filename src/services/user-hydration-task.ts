@@ -66,6 +66,9 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 			clientLocale,
 			preferred: current.preferredLanguage,
 		})
+		// Safe to remove the legacy key — the DB already holds the canonical
+		// value, so localStorage is redundant.
+		localStorage.removeItem(StorageKeys.language)
 	} else if (!sessionStorage.getItem(SessionKeys.languageBackfillAttempted)) {
 		// Legacy NULL row: backfill once per tab. Fire-and-forget so the
 		// activating-task isn't blocked on a second serial RPC before any
@@ -82,6 +85,12 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 		sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
 		void userService.updatePreferredLanguage(clientLocale).then(
 			() => {
+				// Only remove the legacy localStorage key AFTER the backfill
+				// commits to the DB. Removing earlier would leave us with
+				// neither a DB value nor a localStorage fallback if the RPC
+				// fails on a flaky network — the user's explicit anonymous
+				// choice would be lost until they re-pick in settings.
+				localStorage.removeItem(StorageKeys.language)
 				logger.info('Backfilled preferred_language', { lang: clientLocale })
 			},
 			(err: unknown) => {
@@ -90,13 +99,12 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 					{ error: err, lang: clientLocale },
 				)
 				sessionStorage.removeItem(SessionKeys.languageBackfillAttempted)
+				// Intentionally keep localStorage['language'] in place so the
+				// next session can re-detect the user's anonymous choice and
+				// retry the backfill.
 			},
 		)
 	}
-
-	// removeItem is a safe no-op when the key is absent and only throws when
-	// localStorage has been monkey-patched, which we don't defend against.
-	localStorage.removeItem(StorageKeys.language)
 }
 
 function applyPreferredLanguageToI18n(deps: {
