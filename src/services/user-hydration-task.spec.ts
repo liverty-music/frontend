@@ -186,7 +186,13 @@ describe('runUserHydration', () => {
 		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
 			return mockUserService.current
 		})
+		// Align lsMap with clientLocale: in production the i18next-browser-
+		// languagedetector (caches: ['localStorage']) keeps the two in
+		// sync, so a divergence is the signal the race-guard watches for.
+		// For the steady-state backfill, set both to 'ja' so the guard
+		// passes and the cleanup runs.
 		i18nState.locale = 'ja'
+		lsMap.set(StorageKeys.language, 'ja')
 
 		await runUserHydration(makeContainer())
 		await flushMicrotasks()
@@ -199,6 +205,32 @@ describe('runUserHydration', () => {
 		expect(sessionStorage.getItem(SessionKeys.languageBackfillAttempted)).toBe(
 			'1',
 		)
+	})
+
+	it('preserves localStorage when the backfill detects a concurrent settings change (race guard)', async () => {
+		// Race scenario: hydration dispatches the backfill RPC with
+		// clientLocale='ja', but during the in-flight period the user
+		// navigates to settings and picks 'en'. Settings's setLocale
+		// fires the languagedetector's languageChanged listener which
+		// writes localStorage['language']='en'. When the backfill RPC
+		// resolves, its .then() observes stored='en' !== sent='ja' and
+		// skips the cleanup so the next cold boot can re-detect the
+		// user's explicit choice from localStorage rather than trust
+		// the potentially-clobbered DB write.
+		mockUserService.current = { id: 'user-1', preferredLanguage: undefined }
+		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
+			return mockUserService.current
+		})
+		i18nState.locale = 'ja'
+		lsMap.set(StorageKeys.language, 'en')
+
+		await runUserHydration(makeContainer())
+		await flushMicrotasks()
+
+		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledWith('ja')
+		// localStorage MUST be preserved — it carries the user's explicit
+		// choice that the backfill may have just clobbered server-side.
+		expect(lsMap.get(StorageKeys.language)).toBe('en')
 	})
 
 	it('preserves localStorage and clears the session flag when backfill RPC fails so next session retries', async () => {

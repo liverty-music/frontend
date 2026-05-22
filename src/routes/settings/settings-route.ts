@@ -186,8 +186,12 @@ export class SettingsRoute {
 					'i18n.setLocale failed after successful RPC; surfacing Snack',
 					{ error: err.cause, from: previous, to: lang },
 				)
+				// Distinct copy from `languageChangeError`: the DB write
+				// already committed, so "couldn't save" misrepresents
+				// reality (a retry would re-issue an idempotent RPC). The
+				// honest message is "saved but UI didn't catch up — reload."
 				this.ea.publish(
-					new Snack(this.i18n.tr('settings.languageChangeError'), 'error'),
+					new Snack(this.i18n.tr('settings.languageApplyError'), 'error'),
 				)
 				return
 			}

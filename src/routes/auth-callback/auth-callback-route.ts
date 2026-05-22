@@ -56,10 +56,19 @@ export class AuthCallbackRoute {
 			// would silently fall back to fallbackLng with no bundle,
 			// leaving the UI blank.
 			const preferred = this.userService.current?.preferredLanguage
+			// Normalize getLocale() before comparing — i18next's detector
+			// returns a BCP 47 region tag ('en-US') when navigator.language
+			// is region-tagged AND no prior setLocale call has cached a
+			// 2-letter code. Without normalize, 'en' !== 'en-US' is always
+			// true and setLocale fires on every sign-in for English-browser
+			// users, triggering the i18next-browser-languagedetector
+			// `languageChanged` listener to write localStorage['language']
+			// — contradicting the PR's invariant of no implicit localStorage
+			// writes during the authed path.
 			if (
 				preferred &&
 				isSupportedLanguage(preferred) &&
-				preferred !== this.i18n.getLocale()
+				preferred !== normalizeToSupportedLanguage(this.i18n.getLocale())
 			) {
 				try {
 					await this.i18n.setLocale(preferred)
