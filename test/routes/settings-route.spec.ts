@@ -3,7 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
-import { createMockI18n } from '../helpers/mock-i18n'
+import type { createMockI18n } from '../helpers/mock-i18n'
 
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserService = DI.createInterface('IUserService')

@@ -20,8 +20,17 @@ const mockAuth: {
 } = { ready: Promise.resolve(), isAuthenticated: true }
 const mockUserService = {
 	current: undefined as MockUser | undefined,
-	ensureLoaded: vi.fn(async () => mockUserService.current),
+	ensureLoaded: vi.fn(async (_preferredLanguage: string) => {
+		return mockUserService.current
+	}),
 	updatePreferredLanguage: vi.fn(async (lang: string) => {
+		mockUserService.current = {
+			id: 'user-1',
+			preferredLanguage: lang,
+		}
+		return mockUserService.current
+	}),
+	backfillPreferredLanguage: vi.fn(async (lang: string) => {
 		mockUserService.current = {
 			id: 'user-1',
 			preferredLanguage: lang,
@@ -146,7 +155,7 @@ describe('runUserHydration', () => {
 		await flushMicrotasks()
 
 		expect(mockI18n.setLocale).toHaveBeenCalledWith('ja')
-		expect(mockUserService.updatePreferredLanguage).not.toHaveBeenCalled()
+		expect(mockUserService.backfillPreferredLanguage).not.toHaveBeenCalled()
 		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
 	})
 
@@ -197,7 +206,7 @@ describe('runUserHydration', () => {
 		await runUserHydration(makeContainer())
 		await flushMicrotasks()
 
-		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledWith('ja')
+		expect(mockUserService.backfillPreferredLanguage).toHaveBeenCalledWith('ja')
 		// No setLocale because clientLocale is already the effective value.
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
 		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
@@ -227,7 +236,7 @@ describe('runUserHydration', () => {
 		await runUserHydration(makeContainer())
 		await flushMicrotasks()
 
-		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledWith('ja')
+		expect(mockUserService.backfillPreferredLanguage).toHaveBeenCalledWith('ja')
 		// localStorage MUST be preserved — it carries the user's explicit
 		// choice that the backfill may have just clobbered server-side.
 		expect(lsMap.get(StorageKeys.language)).toBe('en')
@@ -238,7 +247,7 @@ describe('runUserHydration', () => {
 		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
 			return mockUserService.current
 		})
-		mockUserService.updatePreferredLanguage.mockRejectedValueOnce(
+		mockUserService.backfillPreferredLanguage.mockRejectedValueOnce(
 			new Error('network'),
 		)
 
@@ -277,7 +286,7 @@ describe('runUserHydration', () => {
 		await runUserHydration(makeContainer())
 		await flushMicrotasks()
 
-		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledTimes(1)
+		expect(mockUserService.backfillPreferredLanguage).toHaveBeenCalledTimes(1)
 		expect(sessionStorage.getItem(SessionKeys.languageBackfillAttempted)).toBe(
 			'1',
 		)
@@ -291,7 +300,7 @@ describe('runUserHydration', () => {
 		await flushMicrotasks()
 
 		// Still 1 — second backfill blocked by the session flag.
-		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledTimes(1)
+		expect(mockUserService.backfillPreferredLanguage).toHaveBeenCalledTimes(1)
 	})
 
 	it('does NOT call ensureLoaded until auth.ready resolves (deferred-ready ordering invariant)', async () => {
@@ -320,7 +329,15 @@ describe('runUserHydration', () => {
 		await inFlight
 		await flushMicrotasks()
 
+		// Assert ensureLoaded was forwarded the normalized client locale —
+		// a regression that drops the argument (reverting to the old
+		// zero-arg form) would pass `undefined` to the backend Create
+		// RPC on the cache-miss path and break account creation under
+		// the protovalidate constraint with no signal from this suite.
 		expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(1)
+		expect(mockUserService.ensureLoaded).toHaveBeenCalledWith(
+			expect.stringMatching(/^(en|ja)$/),
+		)
 	})
 
 	it('skips post-hydration steps when ensureLoaded throws', async () => {
@@ -330,7 +347,7 @@ describe('runUserHydration', () => {
 		await flushMicrotasks()
 
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
-		expect(mockUserService.updatePreferredLanguage).not.toHaveBeenCalled()
+		expect(mockUserService.backfillPreferredLanguage).not.toHaveBeenCalled()
 		// localStorage cleanup is gated on a successful hydration; the legacy
 		// key stays in place so the next boot can re-attempt.
 		expect(lsMap.get(StorageKeys.language)).toBe('en')

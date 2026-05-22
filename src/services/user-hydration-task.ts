@@ -99,7 +99,11 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 		// comment in constants/storage-keys.ts). Tests in JSDOM access
 		// `sessionStorage` directly in `beforeEach` to control the flag.
 		sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
-		void userService.updatePreferredLanguage(clientLocale).then(
+		// Use the race-safe variant (skips write-through if a concurrent
+		// settings update mutated _current.preferredLanguage during our
+		// in-flight RPC). The DB still reflects last-writer-wins server
+		// side — see backfillPreferredLanguage's JSDoc for the trade-off.
+		void userService.backfillPreferredLanguage(clientLocale).then(
 			() => {
 				// Race guard: a concurrent settings change writes
 				// localStorage['language'] via the i18next-browser-
