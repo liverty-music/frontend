@@ -296,62 +296,6 @@ describe('UserServiceClient', () => {
 		})
 	})
 
-	describe('backfillPreferredLanguage', () => {
-		it('write-through fires when _current.preferredLanguage stays the same across the RPC roundtrip', async () => {
-			storage.map.set(cacheKey, internalID)
-			rpc.get.mockResolvedValue(stubUser)
-			rpc.updatePreferredLanguage.mockResolvedValue(undefined)
-			const svc = build({ storage, rpc })
-			await svc.ensureLoaded('ja')
-			// Pre-call: _current.preferredLanguage is undefined (stub has
-			// no language field). Steady state: no concurrent mutation
-			// during the RPC, so cachedDrifted is false and the write-
-			// through applies.
-
-			const result = await svc.backfillPreferredLanguage('ja')
-
-			expect(rpc.updatePreferredLanguage).toHaveBeenCalledWith(internalID, 'ja')
-			expect(result?.preferredLanguage).toBe('ja')
-			expect(svc.current?.preferredLanguage).toBe('ja')
-		})
-
-		it('skips the write-through when _current.preferredLanguage drifts during the in-flight RPC (race guard)', async () => {
-			// Race scenario: hydration fires backfill('en'); during the
-			// RPC roundtrip the user opens settings and selects 'ja';
-			// settings's own updatePreferredLanguage resolves first and
-			// mutates _current.preferredLanguage to 'ja'. The backfill's
-			// post-RPC write-through MUST NOT clobber that with 'en'.
-			storage.map.set(cacheKey, internalID)
-			rpc.get.mockResolvedValue(stubUser)
-			const svc = build({ storage, rpc })
-			await svc.ensureLoaded('ja')
-			// Simulate the concurrent settings write by mutating _current
-			// while the backfill RPC is pending.
-			rpc.updatePreferredLanguage.mockImplementationOnce(async () => {
-				// At this microtask boundary, settings has just completed
-				// its own updatePreferredLanguage and patched _current.
-				await svc.updatePreferredLanguage('ja')
-				return undefined
-			})
-
-			const result = await svc.backfillPreferredLanguage('en')
-
-			// _current MUST reflect the user's explicit choice, not the
-			// backfill's clientLocale.
-			expect(result?.preferredLanguage).toBe('ja')
-			expect(svc.current?.preferredLanguage).toBe('ja')
-		})
-
-		it('throws when no user_id is available', async () => {
-			const svc = build({ storage, rpc })
-
-			await expect(svc.backfillPreferredLanguage('en')).rejects.toThrow(
-				/user_id is not available/,
-			)
-			expect(rpc.updatePreferredLanguage).not.toHaveBeenCalled()
-		})
-	})
-
 	describe('resendEmailVerification', () => {
 		it('reads cached user_id and forwards it to the RPC client', async () => {
 			storage.map.set(cacheKey, internalID)

@@ -13,28 +13,8 @@ import { IUserService } from '../../services/user-service'
 import {
 	changeLocale,
 	normalizeToSupportedLanguage,
-	SetLocaleError,
 	SUPPORTED_LANGUAGES,
 } from '../../util/change-locale'
-
-// ConnectError codes considered transient (worth showing a Snack and inviting
-// the user to retry). Any other ConnectError is a contract / business-rule
-// failure where retry won't help; we surface those via the logger and rethrow
-// so the global error handler can route them.
-//   - Unavailable / DeadlineExceeded / ResourceExhausted: classic transient
-//     network / rate-limit conditions.
-//   - Internal: standard gRPC code for an unhandled server-side exception;
-//     typically a transient blip (process restart, transient dependency
-//     failure) rather than a request-shape bug.
-//   - Cancelled: surfaces when the client aborts (timeout, navigation,
-//     network drop) — retry is a sensible user action.
-const TRANSIENT_CONNECT_CODES: readonly Code[] = [
-	Code.Unavailable,
-	Code.DeadlineExceeded,
-	Code.ResourceExhausted,
-	Code.Internal,
-	Code.Canceled,
-]
 
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
@@ -156,16 +136,9 @@ export class SettingsRoute {
 	}
 
 	public async selectLanguage(lang: string): Promise<void> {
-		// Compare against currentLocale (backend-sourced) rather than
-		// i18n.getLocale() so the guard matches `isCurrentLanguage`.
 		const previous = this.currentLocale
-		// Close the selector immediately, before any awaited work, so the
-		// sheet doesn't stay frozen on slow connections (INP-friendly).
 		this.languageSelectorOpen = false
-		if (lang === previous) {
-			// Spec: re-selecting the active language is a no-op.
-			return
-		}
+		if (lang === previous) return
 		try {
 			await changeLocale(
 				{
@@ -177,45 +150,7 @@ export class SettingsRoute {
 				lang,
 			)
 		} catch (err) {
-			// SetLocaleError: RPC succeeded but the local i18n switch
-			// failed. The DB already holds the new value; surface a Snack
-			// so the user sees the visual inconsistency rather than a
-			// global crash screen. Next hydration re-syncs i18n.
-			if (err instanceof SetLocaleError) {
-				this.logger.warn(
-					'i18n.setLocale failed after successful RPC; surfacing Snack',
-					{ error: err.cause, from: previous, to: lang },
-				)
-				// Distinct copy from `languageChangeError`: the DB write
-				// already committed, so "couldn't save" misrepresents
-				// reality (a retry would re-issue an idempotent RPC). The
-				// honest message is "saved but UI didn't catch up — reload."
-				this.ea.publish(
-					new Snack(this.i18n.tr('settings.languageApplyError'), 'error'),
-				)
-				return
-			}
-			// Programmer errors (TypeError, missing deps) re-throw so real
-			// bugs surface to the global error boundary.
-			if (!(err instanceof ConnectError)) {
-				this.logger.error(
-					'Failed to update preferred language (non-network error; re-throwing)',
-					{ error: err, from: previous, to: lang },
-				)
-				throw err
-			}
-			// Only transient ConnectError codes map to a user-facing Snack —
-			// non-transient codes (INVALID_ARGUMENT, NOT_FOUND, etc.) are
-			// contract bugs the user can't help with; log and rethrow so they
-			// surface to the global error boundary instead of being hidden
-			// behind a misleading "try again" Snack.
-			if (!TRANSIENT_CONNECT_CODES.includes(err.code)) {
-				this.logger.error(
-					'Non-transient ConnectError in selectLanguage; re-throwing',
-					{ error: err, code: err.code, from: previous, to: lang },
-				)
-				throw err
-			}
+			if (!(err instanceof ConnectError)) throw err
 			this.logger.error('Failed to update preferred language', {
 				error: err,
 				from: previous,
@@ -226,14 +161,6 @@ export class SettingsRoute {
 			)
 			return
 		}
-		// changeLocale resolved without throwing → the DB write succeeded
-		// with `lang`. Read userService.current.preferredLanguage (which
-		// updatePreferredLanguage's write-through guarantees, even on an
-		// empty-RPC response — see user-service.ts) rather than
-		// i18n.getLocale() because the authenticated path swallows
-		// setLocale failures (so i18n may still hold the previous value
-		// after a partial failure). Falls back to the requested `lang`
-		// in the unlikely case `_current` was wiped concurrently.
 		this.currentLocale = this.userService.current?.preferredLanguage ?? lang
 		this.logger.info('Language changed', {
 			from: previous,

@@ -47,68 +47,20 @@ export interface ChangeLocaleDeps {
 }
 
 /**
- * Thrown by changeLocale when the backend `UpdatePreferredLanguage` RPC
- * succeeded but the subsequent `i18n.setLocale` rejected. The DB
- * already holds the new value; only the local UI failed to switch.
- * Callers can `instanceof SetLocaleError` to distinguish this from
- * a TRUE save failure (network error → `ConnectError`) or a
- * programmer error (`TypeError` etc.) and surface a Snack instead of
- * propagating to the global error boundary.
- */
-export class SetLocaleError extends Error {
-	public readonly lang: string
-	public readonly cause: unknown
-
-	constructor(lang: string, cause: unknown) {
-		super(
-			`changeLocale: i18n.setLocale failed after successful RPC (lang=${lang})`,
-		)
-		this.name = 'SetLocaleError'
-		this.lang = lang
-		// Store as own property; tsconfig target is ES2017 which doesn't
-		// support the ES2022 `{ cause }` super-options arg. When the
-		// project upgrades target to ES2022+, pass `{ cause }` to super()
-		// here so native prototype-chain traversal (Node util.inspect,
-		// DevTools, Sentry grouping) picks up the underlying failure.
-		this.cause = cause
-	}
-}
-
-/**
  * Shared entry point for changing the active locale.
  *
- * Routes persistence based on the caller's auth state, as required by the
- * `frontend-i18n` and `settings` specs:
+ * Routes persistence based on the caller's auth state:
  *
- * - **Unauthenticated** (Welcome page, landing): write through to
+ * - **Unauthenticated** (Welcome page): write through to
  *   `localStorage['language']` after `i18n.setLocale`. No backend call.
  *
  * - **Authenticated** (Settings page): call `UpdatePreferredLanguage` first,
- *   apply `i18n.setLocale` after success. This function performs no
- *   explicit localStorage writes in the authed branch — the backend row is
- *   the source of truth and the hydration task clears the legacy key on
+ *   apply `i18n.setLocale` after success. The backend row is the source
+ *   of truth; the hydration task clears the legacy localStorage key on
  *   next boot.
  *
- *   Caveat: `i18next-browser-languagedetector` is configured with
- *   `caches: ['localStorage']` in `main.ts` so anonymous-period detection
- *   persists. Its `languageChanged` listener side-effects an implicit
- *   `localStorage['language']` write on every `i18n.setLocale` call —
- *   including the authed branch below. The write is harmless because
- *   (a) no authenticated code path reads the key, and (b) the next
- *   hydration removes it. The invariant we promise is therefore "no
- *   *explicit* localStorage writes from this function in the authed
- *   branch", not "localStorage is never touched between boots".
- *
- * Throws `TypeError` when `lang` is not in `SUPPORTED_LANGUAGES` so a
- * mis-wired UI control surfaces the bug instead of silently doing nothing.
- * Rethrows on both RPC failure AND i18n.setLocale failure so the caller
- * can surface a user-visible error (Snack). Note: a setLocale failure
- * after a successful RPC means the DB already holds the new value while
- * the UI still renders the old locale — the Snack reads as "couldn't
- * save" which slightly under-states reality, but is preferable to a
- * silent visual inconsistency (selector highlights the new value while
- * every `t=` binding renders the old). Hydration re-syncs i18n on the
- * next boot.
+ * Throws `TypeError` for unsupported `lang`. Other errors propagate so
+ * the caller can surface them.
  */
 export async function changeLocale(
 	deps: ChangeLocaleDeps,
@@ -116,11 +68,6 @@ export async function changeLocale(
 ): Promise<void> {
 	const { i18n, auth, userService, localStorage } = deps
 
-	// Guard both paths against arbitrary strings. The anon path would
-	// otherwise persist them to localStorage where they survive into future
-	// sessions; the authed path would round-trip an unsupported code through
-	// the RPC into the DB. Throwing keeps the contract loud — silently
-	// returning would let callers think the change succeeded.
 	if (!isSupportedLanguage(lang)) {
 		throw new TypeError(
 			`changeLocale: unsupported locale "${lang}" (supported: ${SUPPORTED_LANGUAGES.join(', ')})`,
@@ -133,22 +80,6 @@ export async function changeLocale(
 		return
 	}
 
-	const previousPreferredLanguage = userService.current?.preferredLanguage
 	await userService.updatePreferredLanguage(lang)
-	// Surface i18n.setLocale failures even though the DB write already
-	// committed. Wrap in SetLocaleError so the caller can distinguish
-	// "RPC succeeded, only UI switch failed" from a programmer error or
-	// a network failure. Settings catches it and shows a Snack instead
-	// of letting it propagate to the global error boundary.
-	//
-	// Roll back the cached preferredLanguage on failure so the settings
-	// selector and `t=` bindings agree on which locale is active mid-
-	// session. The DB still holds the new value; the next hydration
-	// will re-sync both layers.
-	try {
-		await i18n.setLocale(lang)
-	} catch (err) {
-		userService.revertCachedPreferredLanguage(previousPreferredLanguage)
-		throw new SetLocaleError(lang, err)
-	}
+	await i18n.setLocale(lang)
 }

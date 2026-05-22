@@ -75,8 +75,6 @@ export function createMockUserService(): Partial<IUserService> {
 		create: vi.fn().mockResolvedValue(undefined),
 		updateHome: vi.fn().mockResolvedValue(undefined),
 		updatePreferredLanguage: vi.fn().mockResolvedValue(undefined),
-		backfillPreferredLanguage: vi.fn().mockResolvedValue(undefined),
-		revertCachedPreferredLanguage: vi.fn(),
 		resendEmailVerification: vi.fn().mockResolvedValue(undefined),
 	}
 }

@@ -41,35 +41,6 @@ export interface IUserService {
 		level2?: string
 	}): Promise<User | undefined>
 	updatePreferredLanguage(preferredLanguage: string): Promise<User | undefined>
-	/**
-	 * Backfill variant for the hydration task's NULL-language code path.
-	 * Runs the same RPC as `updatePreferredLanguage` but with a race-safe
-	 * write-through: skips the in-memory cache mutation when the cached
-	 * `preferredLanguage` drifted between RPC dispatch and resolution.
-	 *
-	 * The hydration backfill is fire-and-forget — the user can navigate
-	 * to settings and pick a different language during the in-flight
-	 * period. Without this guard, `updatePreferredLanguage`'s
-	 * unconditional write-through would clobber the explicit choice
-	 * (settings shows the user's value briefly, backfill resolves later
-	 * and reverts the in-memory cache to `clientLocale`). The DB still
-	 * reflects last-writer-wins; a proper fix needs server-side
-	 * optimistic locking.
-	 */
-	backfillPreferredLanguage(
-		preferredLanguage: string,
-	): Promise<User | undefined>
-	/**
-	 * Roll back the in-memory `current.preferredLanguage` without an RPC.
-	 * Intended for the SetLocaleError recovery path: when the backend RPC
-	 * committed but the local i18n switch then failed, the cached
-	 * `preferredLanguage` write-through has the new value while i18n is
-	 * still on the old; this method realigns the cache with i18n so the
-	 * settings selector and `t=` bindings stop disagreeing about which
-	 * language is active. The DB value remains the new one and the next
-	 * hydration re-syncs both layers.
-	 */
-	revertCachedPreferredLanguage(previous: string | undefined): void
 	resendEmailVerification(): Promise<void>
 }
 
@@ -203,45 +174,6 @@ export class UserServiceClient implements IUserService {
 			this._current = { ...this._current, preferredLanguage }
 		}
 		return this._current
-	}
-
-	public async backfillPreferredLanguage(
-		preferredLanguage: string,
-	): Promise<User | undefined> {
-		const userId = this.requireUserId('backfillPreferredLanguage')
-		// Snapshot the cached preferredLanguage BEFORE the RPC. The
-		// hydration backfill fires only when this value is undefined
-		// (NULL DB row), but a concurrent settings update can mutate it
-		// to a user-chosen value during the in-flight RPC roundtrip. If
-		// the snapshot differs from the post-RPC cached value, that
-		// concurrent write wins — skip our write-through so we don't
-		// clobber the user's explicit choice in memory. The DB still
-		// reflects last-writer-wins; this guard keeps the settings UI
-		// and `t=` bindings consistent until the next hydration re-syncs.
-		const beforeRpc = this._current?.preferredLanguage
-		const updated = await this.rpcClient.updatePreferredLanguage(
-			userId,
-			preferredLanguage,
-		)
-		const cachedDrifted = this._current?.preferredLanguage !== beforeRpc
-		if (cachedDrifted) {
-			this.logger.warn(
-				'Backfill detected concurrent preferredLanguage change; skipping write-through',
-				{ before: beforeRpc, now: this._current?.preferredLanguage },
-			)
-			return this._current
-		}
-		if (updated?.preferredLanguage) {
-			this._current = updated
-		} else if (this._current) {
-			this._current = { ...this._current, preferredLanguage }
-		}
-		return this._current
-	}
-
-	public revertCachedPreferredLanguage(previous: string | undefined): void {
-		if (!this._current) return
-		this._current = { ...this._current, preferredLanguage: previous }
 	}
 
 	public async resendEmailVerification(): Promise<void> {

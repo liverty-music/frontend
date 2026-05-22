@@ -30,13 +30,6 @@ const mockUserService = {
 		}
 		return mockUserService.current
 	}),
-	backfillPreferredLanguage: vi.fn(async (lang: string) => {
-		mockUserService.current = {
-			id: 'user-1',
-			preferredLanguage: lang,
-		}
-		return mockUserService.current
-	}),
 }
 const i18nState = { locale: 'en' }
 const mockI18n = {
@@ -155,7 +148,7 @@ describe('runUserHydration', () => {
 		await flushMicrotasks()
 
 		expect(mockI18n.setLocale).toHaveBeenCalledWith('ja')
-		expect(mockUserService.backfillPreferredLanguage).not.toHaveBeenCalled()
+		expect(mockUserService.updatePreferredLanguage).not.toHaveBeenCalled()
 		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
 	})
 
@@ -195,51 +188,17 @@ describe('runUserHydration', () => {
 		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
 			return mockUserService.current
 		})
-		// Align lsMap with clientLocale: in production the i18next-browser-
-		// languagedetector (caches: ['localStorage']) keeps the two in
-		// sync, so a divergence is the signal the race-guard watches for.
-		// For the steady-state backfill, set both to 'ja' so the guard
-		// passes and the cleanup runs.
 		i18nState.locale = 'ja'
-		lsMap.set(StorageKeys.language, 'ja')
 
 		await runUserHydration(makeContainer())
 		await flushMicrotasks()
 
-		expect(mockUserService.backfillPreferredLanguage).toHaveBeenCalledWith('ja')
-		// No setLocale because clientLocale is already the effective value.
+		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledWith('ja')
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
 		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
-		// Flag set optimistically before the awaited promise resolves.
 		expect(sessionStorage.getItem(SessionKeys.languageBackfillAttempted)).toBe(
 			'1',
 		)
-	})
-
-	it('preserves localStorage when the backfill detects a concurrent settings change (race guard)', async () => {
-		// Race scenario: hydration dispatches the backfill RPC with
-		// clientLocale='ja', but during the in-flight period the user
-		// navigates to settings and picks 'en'. Settings's setLocale
-		// fires the languagedetector's languageChanged listener which
-		// writes localStorage['language']='en'. When the backfill RPC
-		// resolves, its .then() observes stored='en' !== sent='ja' and
-		// skips the cleanup so the next cold boot can re-detect the
-		// user's explicit choice from localStorage rather than trust
-		// the potentially-clobbered DB write.
-		mockUserService.current = { id: 'user-1', preferredLanguage: undefined }
-		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
-			return mockUserService.current
-		})
-		i18nState.locale = 'ja'
-		lsMap.set(StorageKeys.language, 'en')
-
-		await runUserHydration(makeContainer())
-		await flushMicrotasks()
-
-		expect(mockUserService.backfillPreferredLanguage).toHaveBeenCalledWith('ja')
-		// localStorage MUST be preserved — it carries the user's explicit
-		// choice that the backfill may have just clobbered server-side.
-		expect(lsMap.get(StorageKeys.language)).toBe('en')
 	})
 
 	it('preserves localStorage and clears the session flag when backfill RPC fails so next session retries', async () => {
@@ -247,7 +206,7 @@ describe('runUserHydration', () => {
 		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
 			return mockUserService.current
 		})
-		mockUserService.backfillPreferredLanguage.mockRejectedValueOnce(
+		mockUserService.updatePreferredLanguage.mockRejectedValueOnce(
 			new Error('network'),
 		)
 
@@ -286,7 +245,7 @@ describe('runUserHydration', () => {
 		await runUserHydration(makeContainer())
 		await flushMicrotasks()
 
-		expect(mockUserService.backfillPreferredLanguage).toHaveBeenCalledTimes(1)
+		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledTimes(1)
 		expect(sessionStorage.getItem(SessionKeys.languageBackfillAttempted)).toBe(
 			'1',
 		)
@@ -300,7 +259,7 @@ describe('runUserHydration', () => {
 		await flushMicrotasks()
 
 		// Still 1 — second backfill blocked by the session flag.
-		expect(mockUserService.backfillPreferredLanguage).toHaveBeenCalledTimes(1)
+		expect(mockUserService.updatePreferredLanguage).toHaveBeenCalledTimes(1)
 	})
 
 	it('does NOT call ensureLoaded until auth.ready resolves (deferred-ready ordering invariant)', async () => {
@@ -347,7 +306,7 @@ describe('runUserHydration', () => {
 		await flushMicrotasks()
 
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
-		expect(mockUserService.backfillPreferredLanguage).not.toHaveBeenCalled()
+		expect(mockUserService.updatePreferredLanguage).not.toHaveBeenCalled()
 		// localStorage cleanup is gated on a successful hydration; the legacy
 		// key stays in place so the next boot can re-attempt.
 		expect(lsMap.get(StorageKeys.language)).toBe('en')

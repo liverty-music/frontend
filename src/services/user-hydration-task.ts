@@ -99,45 +99,8 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 		// comment in constants/storage-keys.ts). Tests in JSDOM access
 		// `sessionStorage` directly in `beforeEach` to control the flag.
 		sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
-		// Use the race-safe variant (skips write-through if a concurrent
-		// settings update mutated _current.preferredLanguage during our
-		// in-flight RPC). The DB still reflects last-writer-wins server
-		// side — see backfillPreferredLanguage's JSDoc for the trade-off.
-		void userService.backfillPreferredLanguage(clientLocale).then(
+		void userService.updatePreferredLanguage(clientLocale).then(
 			() => {
-				// Race guard: a concurrent settings change writes
-				// localStorage['language'] via the i18next-browser-
-				// languagedetector's `languageChanged` listener (the
-				// detector is configured `caches: ['localStorage']` in
-				// main.ts). When the backfill RPC is in-flight, the user
-				// can navigate to settings and select a different
-				// language; settings's setLocale fires the
-				// languageChanged listener and sets localStorage to the
-				// chosen value.
-				//
-				// If the stored value doesn't match what we just
-				// backfilled, treat that as evidence of a concurrent
-				// change: skip the cleanup so the next cold boot can
-				// re-detect the user's explicit choice from localStorage,
-				// instead of trusting our potentially-clobbered DB
-				// write. This is a partial mitigation — the DB still
-				// reflects last-writer-wins, which a proper fix would
-				// address with server-side optimistic locking. The
-				// window is short (one RPC roundtrip) and the next
-				// hydration re-syncs.
-				const storedLanguage = localStorage.getItem(StorageKeys.language)
-				if (storedLanguage && storedLanguage !== clientLocale) {
-					logger.warn(
-						'Backfill may have clobbered a concurrent settings change; preserving localStorage as fallback',
-						{ sent: clientLocale, stored: storedLanguage },
-					)
-					return
-				}
-				// Only remove the legacy localStorage key AFTER the backfill
-				// commits to the DB. Removing earlier would leave us with
-				// neither a DB value nor a localStorage fallback if the RPC
-				// fails on a flaky network — the user's explicit anonymous
-				// choice would be lost until they re-pick in settings.
 				localStorage.removeItem(StorageKeys.language)
 				logger.info('Backfilled preferred_language', { lang: clientLocale })
 			},

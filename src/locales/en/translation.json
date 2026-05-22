@@ -263,8 +263,7 @@
 		"resendRateLimited": "Too many requests. Please try again later.",
 		"signOut": "Sign Out",
 		"signOutError": "Sign-out failed. Please try again.",
-		"languageChangeError": "Couldn't save the language change. Wait a moment and try again.",
-		"languageApplyError": "Language saved, but the screen didn't refresh. Reload to apply the change."
+		"languageChangeError": "Couldn't save the language change. Wait a moment and try again."
 	},
 	"nav": {
 		"home": "Timetable",
