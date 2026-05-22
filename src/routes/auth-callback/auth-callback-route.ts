@@ -84,19 +84,28 @@ export class AuthCallbackRoute {
 			// Capture the effective locale at signup so the new user row carries
 			// the language the visitor was experiencing pre-account.
 			//
-			// localStorage['language'] cleanup is delegated to UserHydrationTask,
-			// which has a single owner for the legacy-key migration. The task
-			// is registered as an `AppTask.activating` and completes BEFORE the
-			// destination route renders, so:
-			//   - sign-in path (the ensureLoaded branch below): hydration runs
-			//     during canLoad → activating → render, so the cleanup happens
-			//     before the dashboard mounts.
-			//   - sign-up path (this Create branch): canLoad returns '/dashboard',
-			//     the router transitions, the next activating tick runs the
-			//     hydration task, and then the dashboard renders — same order.
-			// Either way, no component reads localStorage['language'] in an
-			// authenticated context between Create-success and cleanup, so the
-			// single-owner policy holds for both flows.
+			// localStorage['language'] cleanup is owned by UserHydrationTask
+			// (single owner for the legacy-key migration). The task is
+			// registered as an AppTask.activating which is a ONE-TIME boot
+			// hook: it fires once when Aurelia transitions to active state,
+			// before any routing — it does NOT re-run on subsequent
+			// navigations.
+			//
+			// Concretely:
+			//   - For both sign-in and sign-up flows arriving here via the
+			//     OIDC callback, AppTask.activating already fired earlier in
+			//     the same browser session, while the user was still
+			//     unauthenticated. runUserHydration returned early in that
+			//     pre-auth tick (auth.ready resolved with isAuthenticated =
+			//     false), so cleanup did NOT run on the current session.
+			//   - The cleanup therefore runs on the NEXT cold-boot tick
+			//     once the user is authenticated. The legacy key may
+			//     survive the current session, which is harmless because
+			//     no authenticated code path reads it.
+			//
+			// If "cleanup before first authenticated read" ever becomes a
+			// hard requirement, the right fix is to call the cleanup
+			// imperatively here, not to rely on AppTask.activating.
 			await this.userService.create(
 				email,
 				this.i18n.getLocale(),

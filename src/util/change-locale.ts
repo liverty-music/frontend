@@ -45,9 +45,20 @@ export interface ChangeLocaleDeps {
  *   `localStorage['language']` after `i18n.setLocale`. No backend call.
  *
  * - **Authenticated** (Settings page): call `UpdatePreferredLanguage` first,
- *   apply `i18n.setLocale` only on success, and NEVER touch
- *   `localStorage['language']`. The DB is the source of truth post-signup,
- *   and the hydration task is responsible for clearing the legacy key.
+ *   apply `i18n.setLocale` only on success. This function performs no
+ *   explicit localStorage writes in the authed branch — the backend row is
+ *   the source of truth and the hydration task clears the legacy key on
+ *   next boot.
+ *
+ *   Caveat: `i18next-browser-languagedetector` is configured with
+ *   `caches: ['localStorage']` in `main.ts` so anonymous-period detection
+ *   persists. Its `languageChanged` listener side-effects an implicit
+ *   `localStorage['language']` write on every `i18n.setLocale` call —
+ *   including the authed branch below. The write is harmless because
+ *   (a) no authenticated code path reads the key, and (b) the next
+ *   hydration removes it. The invariant we promise is therefore "no
+ *   *explicit* localStorage writes from this function in the authed
+ *   branch", not "localStorage is never touched between boots".
  *
  * Throws `TypeError` when `lang` is not in `SUPPORTED_LANGUAGES` so a
  * mis-wired UI control surfaces the bug instead of silently doing nothing.

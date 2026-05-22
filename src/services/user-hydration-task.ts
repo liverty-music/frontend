@@ -63,6 +63,13 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 		// route renders — the backfill is idempotent and the current session's
 		// locale (clientLocale) is already active. Set the flag optimistically
 		// and clear it on failure so the next session retries.
+		//
+		// Intentional direct sessionStorage access: there is no
+		// ISessionStorage adapter in the codebase (only ILocalStorage),
+		// and the per-tab scoping of sessionStorage is exactly the
+		// rate-limit granularity we want here (see the SessionKeys
+		// comment in constants/storage-keys.ts). Tests in JSDOM access
+		// `sessionStorage` directly in `beforeEach` to control the flag.
 		sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
 		void userService.updatePreferredLanguage(clientLocale).then(
 			() => {
