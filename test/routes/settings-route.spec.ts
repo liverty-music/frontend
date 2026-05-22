@@ -62,6 +62,7 @@ describe('SettingsRoute', () => {
 		delete: ReturnType<typeof vi.fn>
 	}
 	let mockEa: { publish: ReturnType<typeof vi.fn> }
+	let mockI18n: ReturnType<typeof createMockI18n>
 
 	beforeEach(() => {
 		mockAuth = {
@@ -104,10 +105,14 @@ describe('SettingsRoute', () => {
 			Registration.instance(mockINotificationManager, mockNotification),
 			Registration.instance(mockIPushService, mockPush),
 			Registration.instance(IEventAggregator, mockEa),
-			Registration.instance(I18N, createMockI18n()),
 		)
 		container.register(SettingsRoute)
 		sut = container.get(SettingsRoute)
+		// createTestContainer pre-registers a mock I18N first; explicit
+		// Registration.instance(I18N, ...) at the call site doesn't
+		// reliably override it. Resolve the same instance settings-route
+		// will see so test-side setLocale spies target the right object.
+		mockI18n = container.get(I18N) as ReturnType<typeof createMockI18n>
 	})
 
 	afterEach(() => {
@@ -239,6 +244,32 @@ describe('SettingsRoute', () => {
 			await expect(sut.selectLanguage('en')).rejects.toBe(bug)
 			expect(mockEa.publish).not.toHaveBeenCalled()
 			// finally still closed the sheet on the way out.
+			expect(sut.languageSelectorOpen).toBe(false)
+		})
+
+		it('publishes a Snack when setLocale fails after a successful RPC (SetLocaleError)', async () => {
+			// SetLocaleError path: RPC committed the new language to the DB
+			// but the local i18n.setLocale rejected (e.g., bundle missing).
+			// changeLocale rolls back userService.current.preferredLanguage
+			// via revertCachedPreferredLanguage, then throws SetLocaleError.
+			// settings catches it, publishes a Snack, and leaves currentLocale
+			// pointing at `previous` so the selector and t= bindings agree.
+			// Without this coverage, a regression that drops the
+			// SetLocaleError catch arm would propagate to Aurelia's global
+			// error boundary and crash the view for any user whose i18n
+			// bundle fails to load after a successful save.
+			await sut.loading()
+			;(
+				mockI18n.setLocale as unknown as ReturnType<typeof vi.fn>
+			).mockRejectedValueOnce(new Error('bundle missing'))
+			sut.languageSelectorOpen = true
+
+			await sut.selectLanguage('en')
+
+			expect(mockUser.updatePreferredLanguage).toHaveBeenCalledWith('en')
+			expect(mockUser.revertCachedPreferredLanguage).toHaveBeenCalledWith('ja')
+			expect(mockEa.publish).toHaveBeenCalledTimes(1)
+			expect(sut.currentLocale).toBe('ja')
 			expect(sut.languageSelectorOpen).toBe(false)
 		})
 	})

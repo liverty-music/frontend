@@ -81,7 +81,13 @@ describe('AuthCallbackRoute', () => {
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
+			// Assert the language argument so a regression that drops it
+			// (reverting to the old zero-arg form) fails here instead of
+			// silently breaking the backend Create RPC's protovalidate
+			// constraint on empty preferred_language.
+			expect(mockUserService.ensureLoaded).toHaveBeenCalledWith(
+				expect.stringMatching(/^(en|ja)$/),
+			)
 			expect(mockUserService.create).not.toHaveBeenCalled()
 			expect(mockMergeService.merge).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
@@ -113,7 +119,16 @@ describe('AuthCallbackRoute', () => {
 			localStorage.removeItem('liverty:postSignup:shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockUserService.create).toHaveBeenCalled()
+			// Assert email + locale + home are forwarded. Passing the
+			// locale at signup time is what makes the new user row carry
+			// the visitor's anonymous-period language — without the arg
+			// the backend would receive an empty preferred_language and
+			// protovalidate would reject the Create.
+			expect(mockUserService.create).toHaveBeenCalledWith(
+				'new@example.com',
+				expect.stringMatching(/^(en|ja)$/),
+				expect.objectContaining({ countryCode: 'JP', level1: 'JP-13' }),
+			)
 			expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 			expect(localStorage.getItem('liverty:postSignup:shown')).toBe('pending')

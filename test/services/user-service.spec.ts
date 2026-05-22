@@ -218,6 +218,31 @@ describe('UserServiceClient', () => {
 				level1: 'JP-13',
 			})
 		})
+
+		it('patches _current.home locally when the RPC returns an empty payload', async () => {
+			// Mirrors the updatePreferredLanguage empty-payload test: the
+			// settings UI reads userService.current.home immediately after
+			// the RPC resolves. If the backend omits the user field (valid
+			// proto3 default), wiping _current with undefined would clear
+			// the rest of the session's profile (id, preferredLanguage)
+			// and break requireUserId guards on subsequent calls. The
+			// write-through patch must preserve everything except home.
+			storage.map.set(cacheKey, internalID)
+			rpc.get.mockResolvedValue(stubUser)
+			rpc.updateHome.mockResolvedValue(undefined)
+			const svc = build({ storage, rpc })
+			await svc.ensureLoaded('ja')
+
+			const result = await svc.updateHome({
+				countryCode: 'JP',
+				level1: 'JP-13',
+			})
+
+			expect(result?.home?.level1).toBe('JP-13')
+			expect(result?.home?.countryCode).toBe('JP')
+			// Other fields preserved (didn't wipe _current).
+			expect(svc.current?.id).toBe(internalID)
+		})
 	})
 
 	describe('updatePreferredLanguage', () => {
