@@ -2,7 +2,11 @@ import { I18N } from '@aurelia/i18n'
 import { AppTask, IContainer, ILogger } from 'aurelia'
 import { ILocalStorage } from '../adapter/storage/local-storage'
 import { SessionKeys, StorageKeys } from '../constants/storage-keys'
-import { isSupportedLanguage, SUPPORTED_LANGUAGES } from '../util/change-locale'
+import {
+	isSupportedLanguage,
+	normalizeToSupportedLanguage,
+	SUPPORTED_LANGUAGES,
+} from '../util/change-locale'
 import { IAuthService } from './auth-service'
 import { IUserService } from './user-service'
 
@@ -33,15 +37,12 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	// branch, so reusing the value also guarantees that ensureLoaded's
 	// Create-on-cache-miss path and the backfill RPC send identical strings.
 	//
-	// Normalize via isSupportedLanguage so out-of-range navigator codes
-	// (e.g. 'ja-JP', 'fr') don't round-trip into Create / UpdatePreferredLanguage
-	// where the backend protovalidate constraint would reject them. Falling
-	// back to 'ja' (the i18next fallbackLng) ensures the outbound RPC always
-	// carries a value the backend can persist.
-	const detectedLocale = i18n.getLocale()
-	const clientLocale = isSupportedLanguage(detectedLocale)
-		? detectedLocale
-		: 'ja'
+	// Normalize so out-of-range navigator codes don't round-trip into
+	// Create / UpdatePreferredLanguage where the backend protovalidate
+	// constraint would reject them. normalizeToSupportedLanguage handles
+	// BCP 47 region tags too ('en-US' → 'en') so English-browser users
+	// get accounts created with 'en' rather than the fallbackLng 'ja'.
+	const clientLocale = normalizeToSupportedLanguage(i18n.getLocale())
 
 	try {
 		await userService.ensureLoaded(clientLocale)

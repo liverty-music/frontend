@@ -17,6 +17,28 @@ export function isSupportedLanguage(lang: string): lang is SupportedLanguage {
 	return (SUPPORTED_LANGUAGES as readonly string[]).includes(lang)
 }
 
+/**
+ * Coerce an arbitrary detector-emitted locale string to one of the values
+ * the backend protovalidate constraint accepts (ISO 639-1 two-letter,
+ * lowercase). Handles three input shapes:
+ *
+ *   - already in `SUPPORTED_LANGUAGES` (`'ja'`, `'en'`) → returned as-is.
+ *   - BCP 47 region tag (`'en-US'`, `'ja-JP'`, `'zh-Hant-TW'`) → strip the
+ *     subtags and lowercase. `'en-US'` becomes `'en'` and is then checked.
+ *   - everything else (`'fr'`, `'zh'`, `''`) → fall through to the
+ *     fallbackLng from main.ts (`'ja'`).
+ *
+ * Without the region-tag stripping, English-browser users (whose
+ * navigator typically returns `'en-US'`) would have accounts created
+ * and backfilled with `'ja'`, contradicting their browser preference.
+ */
+export function normalizeToSupportedLanguage(detected: string): string {
+	if (isSupportedLanguage(detected)) return detected
+	const base = detected.split('-')[0]?.toLowerCase() ?? ''
+	if (isSupportedLanguage(base)) return base
+	return 'ja'
+}
+
 export interface ChangeLocaleLogger {
 	warn(message: string, ...detail: unknown[]): void
 }
