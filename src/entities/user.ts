@@ -16,6 +16,15 @@ export interface User {
 	/** The internal UUID assigned by the backend. Used on per-user RPC requests. */
 	readonly id: string
 	readonly home?: UserHome
+	/**
+	 * The user's preferred display language as an ISO 639-1 two-letter code
+	 * (e.g., "ja", "en"). Absent (`undefined`) when the backend row has not yet
+	 * captured a language preference — in that case the hydration task backfills
+	 * it from the currently effective i18n locale.
+	 *
+	 * @source proto/liverty_music/entity/v1/user.proto — User.preferred_language
+	 */
+	readonly preferredLanguage?: string
 }
 
 // ---------------------------------------------------------------------------

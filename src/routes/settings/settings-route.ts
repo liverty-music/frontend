@@ -1,6 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { Snack } from '../../components/snack-bar/snack'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
@@ -9,7 +10,11 @@ import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IUserService } from '../../services/user-service'
-import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
+import {
+	changeLocale,
+	normalizeToSupportedLanguage,
+	SUPPORTED_LANGUAGES,
+} from '../../util/change-locale'
 
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
@@ -19,6 +24,7 @@ export class SettingsRoute {
 	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
+	private readonly localStorage = resolve(ILocalStorage)
 
 	public currentHome: string | null = null
 	public currentLocale = ''
@@ -40,7 +46,19 @@ export class SettingsRoute {
 	}
 
 	public async loading(): Promise<void> {
-		this.currentLocale = this.i18n.getLocale()
+		// Source-of-truth for authenticated language is the backend user row.
+		// Fall back to the active i18n locale only when hydration has not yet
+		// populated `current.preferredLanguage` (e.g., very first render after
+		// signup). MUST NOT read localStorage['language'] here.
+		//
+		// The fallback runs through normalizeToSupportedLanguage so a
+		// BCP 47 tag returned by i18n.getLocale() (e.g. 'en-US' when the
+		// detector falls through to navigator.language) maps to 'en'
+		// rather than 'en-US' — otherwise isCurrentLanguage compares
+		// 'en-US' === 'en' and no radio is highlighted.
+		const fromUser = this.userService.current?.preferredLanguage
+		this.currentLocale =
+			fromUser ?? normalizeToSupportedLanguage(this.i18n.getLocale())
 		const homeLevel1 = this.userService.current?.home?.level1
 		const code = homeLevel1 ?? UserHomeSelector.getStoredHome()
 		this.currentHome = code ? translationKey(code) : null
@@ -118,19 +136,40 @@ export class SettingsRoute {
 	}
 
 	public async selectLanguage(lang: string): Promise<void> {
-		const current = this.i18n.getLocale()
-		if (lang === current) {
-			this.languageSelectorOpen = false
+		const previous = this.currentLocale
+		this.languageSelectorOpen = false
+		if (lang === previous) return
+		try {
+			await changeLocale(
+				{
+					i18n: this.i18n,
+					auth: this.auth,
+					userService: this.userService,
+					localStorage: this.localStorage,
+				},
+				lang,
+			)
+		} catch (err) {
+			if (!(err instanceof ConnectError)) throw err
+			this.logger.error('Failed to update preferred language', {
+				error: err,
+				from: previous,
+				to: lang,
+			})
+			this.ea.publish(
+				new Snack(this.i18n.tr('settings.languageChangeError'), 'error'),
+			)
 			return
 		}
-		await changeLocale(this.i18n, lang)
-		this.currentLocale = lang
-		this.logger.info('Language changed', { from: current, to: lang })
-		this.languageSelectorOpen = false
+		this.currentLocale = this.userService.current?.preferredLanguage ?? lang
+		this.logger.info('Language changed', {
+			from: previous,
+			to: this.currentLocale,
+		})
 	}
 
 	public isCurrentLanguage(lang: string): boolean {
-		return this.i18n.getLocale() === lang
+		return this.currentLocale === lang
 	}
 
 	public async toggleNotifications(): Promise<void> {

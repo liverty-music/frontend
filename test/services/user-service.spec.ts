@@ -50,6 +50,7 @@ function makeRpcClient() {
 		get: vi.fn(),
 		create: vi.fn(),
 		updateHome: vi.fn(),
+		updatePreferredLanguage: vi.fn(),
 		resendEmailVerification: vi.fn(),
 	}
 }
@@ -90,10 +91,10 @@ describe('UserServiceClient', () => {
 			rpc.create.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			const result = await svc.ensureLoaded()
+			const result = await svc.ensureLoaded('ja')
 
 			expect(rpc.get).not.toHaveBeenCalled()
-			expect(rpc.create).toHaveBeenCalledWith(userEmail)
+			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja')
 			expect(result).toBe(stubUser)
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
 		})
@@ -105,7 +106,7 @@ describe('UserServiceClient', () => {
 				auth: makeAuth({ email: null }),
 			})
 
-			const result = await svc.ensureLoaded()
+			const result = await svc.ensureLoaded('ja')
 
 			expect(result).toBeUndefined()
 			expect(rpc.get).not.toHaveBeenCalled()
@@ -117,7 +118,7 @@ describe('UserServiceClient', () => {
 			rpc.get.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			const result = await svc.ensureLoaded()
+			const result = await svc.ensureLoaded('ja')
 
 			expect(rpc.get).toHaveBeenCalledWith(internalID)
 			expect(rpc.create).not.toHaveBeenCalled()
@@ -130,8 +131,8 @@ describe('UserServiceClient', () => {
 			rpc.get.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			await svc.ensureLoaded()
-			const second = await svc.ensureLoaded()
+			await svc.ensureLoaded('ja')
+			const second = await svc.ensureLoaded('ja')
 
 			expect(rpc.get).toHaveBeenCalledTimes(1)
 			expect(second).toBe(stubUser)
@@ -145,11 +146,11 @@ describe('UserServiceClient', () => {
 			rpc.create.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			const result = await svc.ensureLoaded()
+			const result = await svc.ensureLoaded('ja')
 
 			expect(rpc.get).toHaveBeenCalledWith('stale-uuid')
 			expect(storage.impl.removeItem).toHaveBeenCalledWith(cacheKey)
-			expect(rpc.create).toHaveBeenCalledWith(userEmail)
+			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja')
 			expect(result).toBe(stubUser)
 			// New userId should be cached after Create succeeds
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
@@ -160,7 +161,7 @@ describe('UserServiceClient', () => {
 			rpc.get.mockRejectedValue(new ConnectError('not found', Code.NotFound))
 			const svc = build({ storage, rpc })
 
-			await expect(svc.ensureLoaded()).rejects.toThrow(/not found/)
+			await expect(svc.ensureLoaded('ja')).rejects.toThrow(/not found/)
 			expect(storage.impl.removeItem).not.toHaveBeenCalled()
 			expect(rpc.create).not.toHaveBeenCalled()
 		})
@@ -171,9 +172,10 @@ describe('UserServiceClient', () => {
 			rpc.create.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			const result = await svc.create('u@test.com')
+			const result = await svc.create('u@test.com', 'ja')
 
 			expect(result).toBe(stubUser)
+			expect(rpc.create).toHaveBeenCalledWith('u@test.com', 'ja', undefined)
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
 		})
 	})
@@ -206,7 +208,7 @@ describe('UserServiceClient', () => {
 			rpc.updateHome.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			await svc.create('u@test.com')
+			await svc.create('u@test.com', 'ja')
 			storage.map.delete(cacheKey)
 
 			await svc.updateHome({ countryCode: 'JP', level1: 'JP-13' })
@@ -215,6 +217,82 @@ describe('UserServiceClient', () => {
 				countryCode: 'JP',
 				level1: 'JP-13',
 			})
+		})
+
+		it('patches _current.home locally when the RPC returns an empty payload', async () => {
+			// Mirrors the updatePreferredLanguage empty-payload test: the
+			// settings UI reads userService.current.home immediately after
+			// the RPC resolves. If the backend omits the user field (valid
+			// proto3 default), wiping _current with undefined would clear
+			// the rest of the session's profile (id, preferredLanguage)
+			// and break requireUserId guards on subsequent calls. The
+			// write-through patch must preserve everything except home.
+			storage.map.set(cacheKey, internalID)
+			rpc.get.mockResolvedValue(stubUser)
+			rpc.updateHome.mockResolvedValue(undefined)
+			const svc = build({ storage, rpc })
+			await svc.ensureLoaded('ja')
+
+			const result = await svc.updateHome({
+				countryCode: 'JP',
+				level1: 'JP-13',
+			})
+
+			expect(result?.home?.level1).toBe('JP-13')
+			expect(result?.home?.countryCode).toBe('JP')
+			// Other fields preserved (didn't wipe _current).
+			expect(svc.current?.id).toBe(internalID)
+		})
+	})
+
+	describe('updatePreferredLanguage', () => {
+		it('replaces _current with the populated User the RPC returns', async () => {
+			storage.map.set(cacheKey, internalID)
+			const updated = { ...stubUser, preferredLanguage: 'en' } as User
+			rpc.updatePreferredLanguage.mockResolvedValue(updated)
+			const svc = build({ storage, rpc })
+			// Hydrate _current first so we have something to compare against.
+			rpc.get.mockResolvedValue(stubUser)
+			await svc.ensureLoaded('ja')
+
+			const result = await svc.updatePreferredLanguage('en')
+
+			expect(rpc.updatePreferredLanguage).toHaveBeenCalledWith(internalID, 'en')
+			expect(result).toBe(updated)
+			expect(svc.current).toBe(updated)
+			expect(svc.current?.preferredLanguage).toBe('en')
+		})
+
+		it('patches _current.preferredLanguage locally when the RPC returns an empty payload', async () => {
+			// Load-bearing path: the settings UI reads
+			// `userService.current.preferredLanguage` immediately after the
+			// RPC resolves. If the backend omits the user field (valid
+			// proto3 default), we must still surface the just-sent value
+			// from the in-memory cache rather than leave the stale one.
+			storage.map.set(cacheKey, internalID)
+			rpc.updatePreferredLanguage.mockResolvedValue(undefined)
+			const svc = build({ storage, rpc })
+			rpc.get.mockResolvedValue(stubUser)
+			await svc.ensureLoaded('ja')
+			const before = svc.current
+			expect(before?.preferredLanguage).toBeUndefined()
+
+			const result = await svc.updatePreferredLanguage('en')
+
+			expect(rpc.updatePreferredLanguage).toHaveBeenCalledWith(internalID, 'en')
+			expect(result?.preferredLanguage).toBe('en')
+			expect(svc.current?.preferredLanguage).toBe('en')
+			// Other fields preserved (didn't wipe _current).
+			expect(svc.current?.id).toBe(internalID)
+		})
+
+		it('throws when no user_id is available', async () => {
+			const svc = build({ storage, rpc })
+
+			await expect(svc.updatePreferredLanguage('en')).rejects.toThrow(
+				/user_id is not available/,
+			)
+			expect(rpc.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
 
@@ -244,7 +322,7 @@ describe('UserServiceClient', () => {
 			rpc.get.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
-			await svc.ensureLoaded()
+			await svc.ensureLoaded('ja')
 			expect(svc.current).toBe(stubUser)
 
 			svc.clear()

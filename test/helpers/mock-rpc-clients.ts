@@ -62,14 +62,19 @@ export function createMockAuthService(): Partial<IAuthService> {
 
 /**
  * Creates a mock implementation of IUserService for testing.
+ *
+ * Mirrors the IUserService interface shape. Keep this in sync when
+ * IUserService grows new methods so component tests that resolve the
+ * full service don't throw TypeError on previously-unmocked call sites.
  */
 export function createMockUserService(): Partial<IUserService> {
 	return {
-		client: {
-			get: vi.fn().mockResolvedValue({ user: undefined }),
-			updateHome: vi.fn().mockResolvedValue({}),
-			create: vi.fn().mockResolvedValue({}),
-		} as unknown as IUserService['client'],
+		current: undefined,
+		ensureLoaded: vi.fn().mockResolvedValue(undefined),
+		clear: vi.fn(),
+		create: vi.fn().mockResolvedValue(undefined),
 		updateHome: vi.fn().mockResolvedValue(undefined),
+		updatePreferredLanguage: vi.fn().mockResolvedValue(undefined),
+		resendEmailVerification: vi.fn().mockResolvedValue(undefined),
 	}
 }

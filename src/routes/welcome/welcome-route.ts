@@ -5,6 +5,7 @@ import {
 	type NavigationInstruction,
 } from '@aurelia/router'
 import { IEventAggregator, ILogger, INode, observable, resolve } from 'aurelia'
+import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { Snack } from '../../components/snack-bar/snack'
 import {
 	getPreviewArtistIds,
@@ -21,10 +22,12 @@ import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
+import { IUserService } from '../../services/user-service'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
+	private readonly userService = resolve(IUserService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly guest = resolve(IGuestService)
 	private readonly router = resolve(IRouter)
@@ -33,6 +36,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly i18n = resolve(I18N)
 	private readonly concertService = resolve(IConcertService)
 	private readonly host = resolve(INode) as HTMLElement
+	private readonly localStorage = resolve(ILocalStorage)
 
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	@observable public currentLocale: string = ''
@@ -115,7 +119,27 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	public async currentLocaleChanged(newLocale: string): Promise<void> {
 		if (!newLocale || newLocale === this.i18n.getLocale()) return
-		await changeLocale(this.i18n, newLocale)
+		// Welcome is anonymous-only — canLoad redirects authenticated
+		// callers to /dashboard before this code runs, so
+		// `authService.isAuthenticated` is guaranteed false here. The
+		// `userService.updatePreferredLanguage` branch inside changeLocale
+		// is therefore intentional dead code from this call site.
+		//
+		// We still call the shared changeLocale (rather than inlining the
+		// anonymous path) so the welcome page and settings page route
+		// every locale change through one validation + persistence policy.
+		// The cost is a single DI resolve of IUserService at construction
+		// time, which is the right trade-off vs. a second code path that
+		// could silently diverge.
+		await changeLocale(
+			{
+				i18n: this.i18n,
+				auth: this.authService,
+				userService: this.userService,
+				localStorage: this.localStorage,
+			},
+			newLocale,
+		)
 	}
 
 	async canLoad(): Promise<NavigationInstruction | boolean> {

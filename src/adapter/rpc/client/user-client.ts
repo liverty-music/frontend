@@ -37,10 +37,12 @@ export class UserRpcClient {
 
 	public async create(
 		email: string,
+		preferredLanguage: string,
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<User | undefined> {
 		const resp = await this.userClient.create({
 			email: new UserEmail({ value: email }),
+			preferredLanguage,
 			...(home ? { home } : {}),
 		})
 		return resp.user ? userFrom(resp.user) : undefined
@@ -57,6 +59,17 @@ export class UserRpcClient {
 		const resp = await this.userClient.updateHome({
 			userId: new UserId({ value: userId }),
 			home,
+		})
+		return resp.user ? userFrom(resp.user) : undefined
+	}
+
+	public async updatePreferredLanguage(
+		userId: string,
+		preferredLanguage: string,
+	): Promise<User | undefined> {
+		const resp = await this.userClient.updatePreferredLanguage({
+			userId: new UserId({ value: userId }),
+			preferredLanguage,
 		})
 		return resp.user ? userFrom(resp.user) : undefined
 	}

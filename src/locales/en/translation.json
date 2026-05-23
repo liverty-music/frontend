@@ -262,7 +262,8 @@
 		"resendError": "Couldn't send the verification email — your connection may be unstable. Wait a moment and try again.",
 		"resendRateLimited": "Too many requests. Please try again later.",
 		"signOut": "Sign Out",
-		"signOutError": "Sign-out failed. Please try again."
+		"signOutError": "Sign-out failed. Please try again.",
+		"languageChangeError": "Couldn't save the language change. Wait a moment and try again."
 	},
 	"nav": {
 		"home": "Timetable",

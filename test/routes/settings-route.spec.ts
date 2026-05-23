@@ -1,9 +1,7 @@
-import { I18N } from '@aurelia/i18n'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
-import { createMockI18n } from '../helpers/mock-i18n'
 
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserService = DI.createInterface('IUserService')
@@ -41,9 +39,16 @@ describe('SettingsRoute', () => {
 		signOut: ReturnType<typeof vi.fn>
 	}
 	let mockUser: {
-		current: { id: string; home?: { level1: string } } | undefined
+		current:
+			| {
+					id: string
+					home?: { level1: string }
+					preferredLanguage?: string
+			  }
+			| undefined
 		resendEmailVerification: ReturnType<typeof vi.fn>
 		clear: ReturnType<typeof vi.fn>
+		updatePreferredLanguage: ReturnType<typeof vi.fn>
 	}
 	let mockNotification: { permission: string }
 	let mockPush: {
@@ -62,9 +67,15 @@ describe('SettingsRoute', () => {
 			signOut: vi.fn().mockResolvedValue(undefined),
 		}
 		mockUser = {
-			current: { id: 'user-uuid-1' },
+			current: { id: 'user-uuid-1', preferredLanguage: 'ja' },
 			resendEmailVerification: vi.fn().mockResolvedValue(undefined),
 			clear: vi.fn(),
+			updatePreferredLanguage: vi.fn(async (lang: string) => {
+				if (mockUser.current) {
+					mockUser.current = { ...mockUser.current, preferredLanguage: lang }
+				}
+				return mockUser.current
+			}),
 		}
 		mockNotification = { permission: 'default' }
 		mockPush = {
@@ -82,7 +93,6 @@ describe('SettingsRoute', () => {
 			Registration.instance(mockINotificationManager, mockNotification),
 			Registration.instance(mockIPushService, mockPush),
 			Registration.instance(IEventAggregator, mockEa),
-			Registration.instance(I18N, createMockI18n()),
 		)
 		container.register(SettingsRoute)
 		sut = container.get(SettingsRoute)
@@ -173,16 +183,64 @@ describe('SettingsRoute', () => {
 
 	describe('selectLanguage', () => {
 		it('changes locale and closes selector', async () => {
+			await sut.loading()
 			sut.languageSelectorOpen = true
 			await sut.selectLanguage('en')
+			expect(mockUser.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(sut.currentLocale).toBe('en')
 			expect(sut.languageSelectorOpen).toBe(false)
 		})
 
 		it('does nothing when selecting current locale', async () => {
+			// loading() must run first so currentLocale is sourced from
+			// userService.current.preferredLanguage = 'ja'. Otherwise the
+			// guard would compare against the class-field default ('') and
+			// erroneously fire the RPC, giving the test false confidence.
+			await sut.loading()
 			sut.languageSelectorOpen = true
 			await sut.selectLanguage('ja')
+			expect(mockUser.updatePreferredLanguage).not.toHaveBeenCalled()
+			expect(mockEa.publish).not.toHaveBeenCalled()
 			expect(sut.languageSelectorOpen).toBe(false)
+		})
+
+		it('publishes a Snack and leaves locale unchanged on ConnectError', async () => {
+			await sut.loading()
+			mockUser.updatePreferredLanguage.mockRejectedValueOnce(
+				new ConnectError('rate limited', Code.ResourceExhausted),
+			)
+			sut.languageSelectorOpen = true
+
+			await sut.selectLanguage('en')
+
+			expect(mockEa.publish).toHaveBeenCalledTimes(1)
+			expect(sut.currentLocale).toBe('ja') // unchanged
+			expect(sut.languageSelectorOpen).toBe(false)
+		})
+
+		it('rethrows non-ConnectError so programmer errors surface', async () => {
+			await sut.loading()
+			const bug = new TypeError('missing dep')
+			mockUser.updatePreferredLanguage.mockRejectedValueOnce(bug)
+			sut.languageSelectorOpen = true
+
+			await expect(sut.selectLanguage('en')).rejects.toBe(bug)
+			expect(mockEa.publish).not.toHaveBeenCalled()
+			expect(sut.languageSelectorOpen).toBe(false)
+		})
+	})
+
+	describe('loading — currentLocale', () => {
+		it('sets currentLocale from preferredLanguage when present', async () => {
+			mockUser.current = { id: 'user-uuid-1', preferredLanguage: 'en' }
+			await sut.loading()
+			expect(sut.currentLocale).toBe('en')
+		})
+
+		it('falls back to i18n.getLocale() when preferredLanguage is absent', async () => {
+			mockUser.current = { id: 'user-uuid-1' } // no preferredLanguage
+			await sut.loading()
+			expect(sut.currentLocale).toBe('ja') // mock i18n default
 		})
 	})
 

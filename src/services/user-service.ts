@@ -13,10 +13,26 @@ export const IUserService = DI.createInterface<IUserService>(
 
 export interface IUserService {
 	readonly current: User | undefined
-	ensureLoaded(): Promise<User | undefined>
+	/**
+	 * Hydrates `current` via the cache-then-Get-then-Create chain. The caller
+	 * MUST supply the currently effective locale because the cache-miss
+	 * recovery path falls through to `Create`, which requires
+	 * preferred_language. Keeping it as a parameter (rather than resolving
+	 * I18N inside the service) avoids coupling UserService to the i18n
+	 * subsystem.
+	 *
+	 * BREAKING (since persist-user-language): the `preferredLanguage`
+	 * parameter is required. Previously `ensureLoaded()` took no arguments.
+	 * Any external implementer of this interface (test doubles, manual
+	 * mocks) must update to the new signature; TypeScript's structural
+	 * typing will catch typed implementations, but loose `as` casts in
+	 * test fixtures could silently pass the wrong value.
+	 */
+	ensureLoaded(preferredLanguage: string): Promise<User | undefined>
 	clear(): void
 	create(
 		email: string,
+		preferredLanguage: string,
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<User | undefined>
 	updateHome(home: {
@@ -24,6 +40,7 @@ export interface IUserService {
 		level1: string
 		level2?: string
 	}): Promise<User | undefined>
+	updatePreferredLanguage(preferredLanguage: string): Promise<User | undefined>
 	resendEmailVerification(): Promise<void>
 }
 
@@ -50,7 +67,9 @@ export class UserServiceClient implements IUserService {
 	// e.g. after manual tampering or cross-device sync), the backend returns
 	// PERMISSION_DENIED — caught here, cache cleared, and the recovery path
 	// runs so the app self-heals instead of locking the user out.
-	public async ensureLoaded(): Promise<User | undefined> {
+	public async ensureLoaded(
+		preferredLanguage: string,
+	): Promise<User | undefined> {
 		if (this._current) return this._current
 
 		const userId = this.readCachedUserId()
@@ -83,7 +102,10 @@ export class UserServiceClient implements IUserService {
 		}
 
 		this.logger.info('Bootstrapping via idempotent Create (cache miss)')
-		this._current = await this.rpcClient.create(email)
+		// Create requires preferred_language; on the idempotent-return path the
+		// existing row's language is preserved, so passing the current effective
+		// locale is safe even for returning users.
+		this._current = await this.rpcClient.create(email, preferredLanguage)
 		if (this._current) this.writeCachedUserId(this._current.id)
 		return this._current
 	}
@@ -96,9 +118,10 @@ export class UserServiceClient implements IUserService {
 
 	public async create(
 		email: string,
+		preferredLanguage: string,
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<User | undefined> {
-		const user = await this.rpcClient.create(email, home)
+		const user = await this.rpcClient.create(email, preferredLanguage, home)
 		this._current = user
 		if (user) this.writeCachedUserId(user.id)
 		return user
@@ -110,8 +133,46 @@ export class UserServiceClient implements IUserService {
 		level2?: string
 	}): Promise<User | undefined> {
 		const userId = this.requireUserId('updateHome')
-		this._current = await this.rpcClient.updateHome(userId, home)
-		if (this._current) this.writeCachedUserId(this._current.id)
+		const updated = await this.rpcClient.updateHome(userId, home)
+		// Same write-through pattern as updatePreferredLanguage: on a
+		// populated response use the DB-authoritative entity; on an
+		// empty response patch the cached field locally rather than
+		// wiping `_current` and losing the rest of the profile.
+		if (updated) {
+			this._current = updated
+			this.writeCachedUserId(updated.id)
+		} else if (this._current) {
+			this._current = { ...this._current, home }
+		}
+		return this._current
+	}
+
+	public async updatePreferredLanguage(
+		preferredLanguage: string,
+	): Promise<User | undefined> {
+		// `requireUserId` guarantees the ID is cached before the RPC fires, and
+		// the backend returns the same user.id — only preferred_language changes.
+		// So no writeCachedUserId here (unlike ensureLoaded / create where the ID
+		// may have just been minted).
+		const userId = this.requireUserId('updatePreferredLanguage')
+		const updated = await this.rpcClient.updatePreferredLanguage(
+			userId,
+			preferredLanguage,
+		)
+		// Use the DB-authoritative entity when the server returned a populated
+		// user with a non-empty preferredLanguage. If the server omitted the
+		// user field entirely, OR returned a user whose preferredLanguage is
+		// missing/empty (the mapper coerces proto3 default "" to undefined,
+		// which can happen on a partial proto migration or a misconfigured
+		// validator), patch the cached field locally with the value we
+		// successfully sent. Wiping _current with a stale/incomplete entity
+		// would break the rest of the session for everyone reading
+		// userService.current.
+		if (updated?.preferredLanguage) {
+			this._current = updated
+		} else if (this._current) {
+			this._current = { ...this._current, preferredLanguage }
+		}
 		return this._current
 	}
 
