@@ -36,13 +36,26 @@ describe('timestampToTimeString', () => {
 
 describe('concertFrom', () => {
 	function makeProto(overrides: Record<string, unknown> = {}) {
+		// Concert proto v0.41.0+: title / sourceUrl moved onto the embedded
+		// `series` parent; the single `artistId` was replaced by a `performers`
+		// repeated field. The mapper projects the first performer onto the
+		// flat entity Concert.artistId.
 		return {
 			id: { value: 'c1' },
-			artistId: { value: 'a1' },
-			title: { value: 'Test Concert' },
+			performers: [
+				{
+					id: { value: 'a1' },
+					name: { value: 'Headliner' },
+					mbid: { value: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' },
+				},
+			],
+			series: {
+				id: { value: 's1' },
+				title: { value: 'Test Concert' },
+				sourceUrl: { value: 'https://example.com' },
+			},
 			localDate: { value: { year: 2026, month: 3, day: 15 } },
 			startTime: { value: { seconds: BigInt(1742054400), nanos: 0 } },
-			sourceUrl: { value: 'https://example.com' },
 			venue: {
 				name: { value: 'Zepp DiverCity' },
 				adminArea: { value: 'JP-13' },
@@ -148,10 +161,29 @@ describe('concertFrom', () => {
 		expect(result!.artist).toBe(artist)
 	})
 
-	it('handles missing id and artistId gracefully', () => {
-		const proto = makeProto({ id: undefined, artistId: undefined })
+	it('handles missing id and performers gracefully', () => {
+		const proto = makeProto({ id: undefined, performers: undefined })
 		const result = concertFrom(proto as any, 'Artist', 'watch', false)
 		expect(result!.id).toBe('')
 		expect(result!.artistId).toBe('')
+	})
+
+	it('projects the first performer when multiple are present', () => {
+		const proto = makeProto({
+			performers: [
+				{
+					id: { value: 'headliner' },
+					name: { value: 'A' },
+					mbid: { value: 'm1' },
+				},
+				{
+					id: { value: 'support' },
+					name: { value: 'B' },
+					mbid: { value: 'm2' },
+				},
+			],
+		})
+		const result = concertFrom(proto as any, 'Artist', 'watch', false)
+		expect(result!.artistId).toBe('headliner')
 	})
 })

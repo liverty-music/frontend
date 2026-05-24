@@ -27,18 +27,24 @@ export function concertFrom(
 	const adminArea = proto.venue?.adminArea?.value
 	const locationLabel = adminArea ? displayName(adminArea) : ''
 
+	// Concert proto v0.41.0+ moved title and sourceUrl onto the embedded
+	// `series` parent and replaced the singular artistId with a `performers`
+	// repeated field. The dashboard entity is still single-artist-flat, so we
+	// project the first performer (typically the headliner). Multi-performer
+	// concerts (festivals, co-headliners) surface only the lead artist here;
+	// a future enhancement can widen the entity to carry the full lineup.
 	return {
 		id: proto.id?.value ?? '',
 		artistName,
-		artistId: proto.artistId?.value ?? '',
+		artistId: proto.performers?.[0]?.id?.value ?? '',
 		venueName,
 		locationLabel,
 		adminArea,
 		date: jsDate,
 		startTime,
 		openTime,
-		title: proto.title?.value ?? '',
-		sourceUrl: proto.sourceUrl?.value ?? '',
+		title: proto.series?.title?.value ?? '',
+		sourceUrl: proto.series?.sourceUrl?.value ?? '',
 		hypeLevel,
 		matched,
 		artist,

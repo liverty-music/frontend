@@ -168,7 +168,10 @@ export class ConcertServiceClient {
 
 		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
 			concerts.flatMap((c) => {
-				const artistId = c.artistId?.value ?? ''
+				// Concert proto v0.41.0+ exposes performers as a repeated
+				// field; the dashboard groups concerts under a single
+				// "primary" artist, so we key on the first performer.
+				const artistId = c.performers?.[0]?.id?.value ?? ''
 				const entry = artistMap.get(artistId)
 				const hypeLevel: HypeLevel = entry?.hype ?? DEFAULT_HYPE
 				const event = concertFrom(
