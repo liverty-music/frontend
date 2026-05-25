@@ -12,6 +12,15 @@ export function concertFrom(
 ): Concert | null {
 	const localDate = proto.localDate?.value
 	if (!localDate) return null
+	// Reject partially-defaulted proto3 Date messages — same rule as
+	// formatLocalDate in import-ticket-email-route. A field defaulted to 0
+	// (e.g. {year: 2026, month: 0, day: 15}) would silently roll through
+	// `new Date(2026, -1, 15)` to 2025-12-15 and bucket the concert into
+	// the wrong date group one month in the past. Returning null drops
+	// the bad row instead of misplacing it.
+	if (localDate.year === 0 || localDate.month === 0 || localDate.day === 0) {
+		return null
+	}
 
 	const jsDate = new Date(localDate.year, localDate.month - 1, localDate.day)
 

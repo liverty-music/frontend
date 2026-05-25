@@ -33,12 +33,12 @@
       <h2>コンサートを選択</h2>
       <p>関連付けるコンサートを選択してください（複数可）。</p>
       <ul class="concert-list">
-        <li repeat.for="concert of concerts" class="concert-item">
+        <li repeat.for="concert of concerts" class="concert-item" if.bind="concert.id?.value">
           <label>
             <input
               type="checkbox"
               checked.bind="selectedEventIds"
-              model.bind="concert.id?.value ?? ''"
+              model.bind="concert.id.value"
             >
             <span>${concert.series?.title?.value ?? ''}</span>
             <small>${formatLocalDate(concert.localDate?.value)}</small>

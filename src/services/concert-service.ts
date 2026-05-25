@@ -203,7 +203,13 @@ export class ConcertServiceClient {
 					}
 				}
 				if (!entry) {
-					unresolvedConcertIds.push(c.id?.value ?? '')
+					// Skip blank ids in the warning array — a `''` entry is
+					// indistinguishable from "one more unresolved" and gives
+					// on-call nothing to grep for. The concert is still
+					// processed by concertFrom below; only the diagnostic
+					// entry is dropped.
+					const concertId = c.id?.value
+					if (concertId) unresolvedConcertIds.push(concertId)
 				}
 				const hypeLevel: HypeLevel = entry?.hype ?? DEFAULT_HYPE
 				const event = concertFrom(
