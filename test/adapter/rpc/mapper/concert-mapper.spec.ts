@@ -196,4 +196,28 @@ describe('concertFrom', () => {
 		const result = concertFrom(proto as any, 'Artist', 'watch', false)
 		expect(result!.artistId).toBe('headliner')
 	})
+
+	it('prefers artist.id over performers[0].id when both disagree', () => {
+		// concert-service resolves the followed performer (which may not be
+		// the headliner) and forwards it as `artist`. The mapper must take
+		// that resolved id as the artistId so the entity's artistId /
+		// artistName / artist trio stay internally consistent. Without this
+		// test, swapping the operands in
+		//   artist?.id ?? proto.performers?.[0]?.id?.value ?? ''
+		// would go undetected because every other test uses an artist whose
+		// id matches performers[0].
+		const proto = makeProto({
+			performers: [
+				{
+					id: { value: 'headliner' },
+					name: { value: 'H' },
+					mbid: { value: '' },
+				},
+			],
+		})
+		const artist = { id: 'followed-support', name: 'Support', mbid: '' }
+		const result = concertFrom(proto as any, 'Support', 'watch', false, artist)
+		expect(result!.artistId).toBe('followed-support')
+		expect(result!.artist).toBe(artist)
+	})
 })

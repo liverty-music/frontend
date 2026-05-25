@@ -26,7 +26,7 @@ async function mockRpc(page: Page, lane: 'home' | 'nearby' | 'away'): Promise<vo
 					series: {
 						id: { value: 's-1' },
 						title: { value: 'Test Live' },
-						},
+					},
 					localDate: {
 						value: {
 							year: tomorrow.getFullYear(),

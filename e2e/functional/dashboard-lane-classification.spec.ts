@@ -36,7 +36,7 @@ function concertListPayload() {
 				series: {
 					id: { value: 's-1' },
 					title: { value: 'Zepp DiverCity Live' },
-					},
+				},
 				localDate: {
 					value: {
 						year: tomorrow.getFullYear(),

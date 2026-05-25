@@ -55,7 +55,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 									series: {
 										id: { value: 's-1' },
 										title: { value: 'Zepp Live' },
-										},
+									},
 									localDate: {
 										value: {
 											year: tomorrow.getFullYear(),

@@ -202,12 +202,13 @@ export class ImportTicketEmailRoute {
 		d: { year: number; month: number; day: number } | undefined,
 	): string {
 		if (!d) return ''
-		// Guard against a proto-default Date message (all three int32 fields
-		// zero) — that's not a real calendar date, it's a never-populated
-		// field marshalled with the proto3 default. Returning '' instead of
-		// '0-00-00' keeps the row's <small> slot blank rather than showing a
-		// nonsense year-zero stamp.
-		if (d.year === 0 && d.month === 0 && d.day === 0) return ''
+		// Guard against a proto-default Date message — `year === 0` is
+		// sufficient because year 0 is never a real concert year, and using
+		// the full all-zero AND-guard would let a partially-populated message
+		// (e.g. year:0, month:3, day:15 from a backend bug) slip through and
+		// render '0-03-15'. Returning '' keeps the row's <small> slot blank
+		// rather than showing a nonsense year-zero stamp.
+		if (d.year === 0) return ''
 		const month = String(d.month).padStart(2, '0')
 		const day = String(d.day).padStart(2, '0')
 		return `${d.year}-${month}-${day}`

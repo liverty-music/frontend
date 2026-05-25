@@ -96,7 +96,7 @@ function listByFollowerResponse() {
 						series: {
 							id: { value: 's-2' },
 							title: { value: 'Vaundy Tour 2026' },
-							},
+						},
 						localDate: {
 							value: {
 								year: tomorrow.getFullYear(),
