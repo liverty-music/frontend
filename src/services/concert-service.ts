@@ -153,7 +153,17 @@ export class ConcertServiceClient {
 		artistMap: Map<string, { artist: Artist; hype: Hype }>,
 		journeyMap: Map<string, JourneyStatus>,
 	): DateGroup {
-		const ld = group.date?.value
+		// Same zero-component guard concertFrom applies to per-concert
+		// dates — a proto3-defaulted ProximityGroup.date with any zero
+		// field would roll `new Date(2026, -1, 15)` to 2025-12-15 and
+		// produce a malformed `2026-00-15` dateKey, silently
+		// misbucketing the whole group. Treat any zero component as
+		// unpopulated and fall back to today / empty key.
+		const rawLd = group.date?.value
+		const ld =
+			rawLd && rawLd.year !== 0 && rawLd.month !== 0 && rawLd.day !== 0
+				? rawLd
+				: undefined
 		const jsDate = ld ? new Date(ld.year, ld.month - 1, ld.day) : new Date()
 
 		const dateKey = ld
@@ -177,8 +187,11 @@ export class ConcertServiceClient {
 		// Each entry carries the lane the failure originated in so on-call
 		// can distinguish "all failures in away" (proximity-based, often
 		// expected) from "failures in home" (followed-artist mismatch,
-		// suspicious). Uses a Set-keyed dedup so a backend bug that echoes
-		// the same concert proto across lanes doesn't inflate the count.
+		// suspicious). Dedup keys on `${id}|${lane}` rather than id alone:
+		// a backend bug echoing the same concert proto across lanes is
+		// itself useful diagnostic signal (one entry per lane it appeared
+		// in), and within-lane re-pushes from the flatMap (impossible
+		// today but cheap to defend) still collapse to one entry.
 		const unresolved: Array<{ id: string; lane: LaneType }> = []
 		const unresolvedSeen = new Set<string>()
 		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
@@ -210,17 +223,21 @@ export class ConcertServiceClient {
 					}
 				}
 				if (!entry) {
-					// Skip blank ids in the warning array — a `''` entry is
-					// indistinguishable from "one more unresolved" and gives
-					// on-call nothing to grep for. Dedup by concertId so the
-					// same proto echoed across lanes (a backend bug) doesn't
-					// inflate the count. The concert is still processed by
-					// concertFrom below; only the diagnostic entry is
-					// dropped/deduped.
+					// Skip blank ids — a `''` entry is indistinguishable
+					// from "one more unresolved" and gives on-call nothing
+					// to grep for. Dedup by (id, lane) so a concert echoed
+					// across lanes (a backend bug) emits one entry per lane
+					// it appeared in (useful signal) instead of collapsing
+					// to whichever lane the flatMap reached first. The
+					// concert itself is still processed by concertFrom
+					// below; only the diagnostic entry is deduped.
 					const concertId = c.id?.value
-					if (concertId && !unresolvedSeen.has(concertId)) {
-						unresolvedSeen.add(concertId)
-						unresolved.push({ id: concertId, lane })
+					if (concertId) {
+						const key = `${concertId}|${lane}`
+						if (!unresolvedSeen.has(key)) {
+							unresolvedSeen.add(key)
+							unresolved.push({ id: concertId, lane })
+						}
 					}
 				}
 				const hypeLevel: HypeLevel = entry?.hype ?? DEFAULT_HYPE

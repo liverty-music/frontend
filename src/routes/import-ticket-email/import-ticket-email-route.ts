@@ -127,15 +127,20 @@ export class ImportTicketEmailRoute {
 		}
 	}
 
-	// Mirrors the `if.bind="concert.id?.value"` filter on the
-	// <li repeat.for> list: returns true only when at least one concert
-	// will actually render. Used by the empty-state <p>'s guard so the
-	// "no concerts found" message still shows when every returned proto
-	// has a blank id (schema-skew rollout window) — otherwise the user
-	// would see a completely blank list with no explanation because
-	// concerts.length > 0 but every row is hidden.
+	// Returns true only when at least one concert is fully renderable —
+	// id-bearing AND with a non-blank series title. The id check
+	// mirrors the `if.bind="concert.id?.value"` per-row filter (a
+	// missing id hides the row entirely); the series.title check covers
+	// the schema-skew case where id is populated but series is absent
+	// or its title.value is blank — the row would render with an empty
+	// <span> and look like a broken UI element while
+	// `concerts.length > 0` kept the "no concerts found" empty-state
+	// suppressed. Used by the empty-state <p>'s guard so the message
+	// surfaces whenever the visible list would be effectively empty.
 	public get hasDisplayableConcerts(): boolean {
-		return this.concerts.some((c) => Boolean(c.id?.value))
+		return this.concerts.some(
+			(c) => Boolean(c.id?.value) && Boolean(c.series?.title?.value),
+		)
 	}
 
 	public get hasSelectedConcerts(): boolean {
