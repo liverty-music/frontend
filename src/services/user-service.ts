@@ -50,24 +50,33 @@ export class UserServiceClient implements IUserService {
 	private readonly authService = resolve(IAuthService)
 	private readonly storage = resolve(ILocalStorage)
 
-	// `_current` is the single source of truth for the authenticated user
-	// entity. Marked @observable so any view-model that reads it through
-	// `current` (e.g. SettingsRoute.currentLocale, SettingsRoute.currentHome
-	// getters) re-evaluates automatically when the entity changes — no
-	// component-local mirror state, no manual write-back. Every mutation
-	// method below assigns through `this._current = ...` so the notification
-	// fires exactly once per change.
+	// `current` is the single source of truth for the authenticated user
+	// entity. Marked @observable so any view-model that binds to
+	// `userService.current` (directly OR through a computed getter such as
+	// SettingsRoute.currentLocale / SettingsRoute.currentHome) re-evaluates
+	// automatically when the entity changes — no component-local mirror
+	// state, no manual write-back. Every mutation method below assigns
+	// through `this.current = ...` so the notification fires exactly once
+	// per change.
 	//
-	// The public `current` getter preserves the `readonly` encapsulation
-	// declared on IUserService: external consumers (even ones that
-	// inadvertently resolve the concrete class instead of the interface)
-	// cannot reassign the field. Internal mutation paths stay on
-	// `this._current` directly.
-	@observable private _current: User | undefined = undefined
-
-	public get current(): User | undefined {
-		return this._current
-	}
+	// Why a public @observable field and not `@observable private _current`
+	// + `public get current()`:
+	// Aurelia 2's expression observer subscribes to the property accessed
+	// in the binding AST. For a binding like `userService.current` it sets
+	// up an observer on the `current` member of the service instance. When
+	// `current` is a plain field, the @observable setter's synchronous
+	// notification is exactly the channel the observer subscribes to —
+	// reactivity is direct and predictable. When `current` is a *getter*
+	// that returns a separately-@observable `_current`, the observer would
+	// need to track the dependency through the getter body, which only
+	// works reliably for getters marked `@computed` and for objects under
+	// proxy observation; services injected via DI are not guaranteed to be
+	// proxied in every config. The encapsulation cost here is small — the
+	// `readonly` declaration on `IUserService.current` is the effective
+	// contract for every consumer that resolves via DI, since DI always
+	// returns the interface type. Production code never resolves the
+	// concrete class.
+	@observable public current: User | undefined = undefined
 
 	// Resolves the authenticated user via:
 	//   1. in-memory cache (already hydrated this session)
@@ -83,15 +92,15 @@ export class UserServiceClient implements IUserService {
 	public async ensureLoaded(
 		preferredLanguage: string,
 	): Promise<User | undefined> {
-		if (this._current) return this._current
+		if (this.current) return this.current
 
 		const userId = this.readCachedUserId()
 		if (userId) {
 			try {
 				this.logger.info('Loading user profile from backend (cache hit)')
-				this._current = await this.rpcClient.get(userId)
-				if (this._current) this.writeCachedUserId(this._current.id)
-				return this._current
+				this.current = await this.rpcClient.get(userId)
+				if (this.current) this.writeCachedUserId(this.current.id)
+				return this.current
 			} catch (err) {
 				if (err instanceof ConnectError && err.code === Code.PermissionDenied) {
 					this.logger.warn(
@@ -118,14 +127,14 @@ export class UserServiceClient implements IUserService {
 		// Create requires preferred_language; on the idempotent-return path the
 		// existing row's language is preserved, so passing the current effective
 		// locale is safe even for returning users.
-		this._current = await this.rpcClient.create(email, preferredLanguage)
-		if (this._current) this.writeCachedUserId(this._current.id)
-		return this._current
+		this.current = await this.rpcClient.create(email, preferredLanguage)
+		if (this.current) this.writeCachedUserId(this.current.id)
+		return this.current
 	}
 
 	public clear(): void {
 		this.removeCachedUserId()
-		this._current = undefined
+		this.current = undefined
 		this.logger.info('User profile cleared')
 	}
 
@@ -135,7 +144,7 @@ export class UserServiceClient implements IUserService {
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<User | undefined> {
 		const user = await this.rpcClient.create(email, preferredLanguage, home)
-		this._current = user
+		this.current = user
 		if (user) this.writeCachedUserId(user.id)
 		return user
 	}
@@ -152,12 +161,12 @@ export class UserServiceClient implements IUserService {
 		// empty response patch the cached field locally rather than
 		// wiping `current` and losing the rest of the profile.
 		if (updated) {
-			this._current = updated
+			this.current = updated
 			this.writeCachedUserId(updated.id)
-		} else if (this._current) {
-			this._current = { ...this._current, home }
+		} else if (this.current) {
+			this.current = { ...this.current, home }
 		}
-		return this._current
+		return this.current
 	}
 
 	public async updatePreferredLanguage(
@@ -182,11 +191,11 @@ export class UserServiceClient implements IUserService {
 		// would break the rest of the session for everyone reading
 		// userService.current.
 		if (updated?.preferredLanguage) {
-			this._current = updated
-		} else if (this._current) {
-			this._current = { ...this._current, preferredLanguage }
+			this.current = updated
+		} else if (this.current) {
+			this.current = { ...this.current, preferredLanguage }
 		}
-		return this._current
+		return this.current
 	}
 
 	public async resendEmailVerification(): Promise<void> {
@@ -200,7 +209,7 @@ export class UserServiceClient implements IUserService {
 	// authenticated business code runs, the boot flow MUST have hydrated one
 	// of them via Create or Get.
 	private requireUserId(op: string): string {
-		const id = this._current?.id ?? this.readCachedUserId()
+		const id = this.current?.id ?? this.readCachedUserId()
 		if (!id) {
 			throw new Error(
 				`UserService.${op}: user_id is not available; auth bootstrap did not complete`,
