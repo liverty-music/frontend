@@ -29,14 +29,18 @@ export function concertFrom(
 
 	// Concert proto v0.41.0+ moved title and sourceUrl onto the embedded
 	// `series` parent and replaced the singular artistId with a `performers`
-	// repeated field. The dashboard entity is still single-artist-flat, so we
-	// project the first performer (typically the headliner). Multi-performer
-	// concerts (festivals, co-headliners) surface only the lead artist here;
-	// a future enhancement can widen the entity to carry the full lineup.
+	// repeated field. The dashboard entity is still single-artist-flat, so the
+	// caller resolves the "primary" artist for this row (e.g. the followed
+	// performer for a follower-based listing, which may not be the headliner)
+	// and we pull its ID from the resolved Artist object when available so
+	// artistId / artistName / artist stay consistent. The performers[0]
+	// (headliner) fallback only fires when the caller could not resolve a
+	// specific artist — typically a code path where the dashboard would render
+	// without artist-specific context anyway.
 	return {
 		id: proto.id?.value ?? '',
 		artistName,
-		artistId: proto.performers?.[0]?.id?.value ?? '',
+		artistId: artist?.id ?? proto.performers?.[0]?.id?.value ?? '',
 		venueName,
 		locationLabel,
 		adminArea,

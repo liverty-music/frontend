@@ -173,23 +173,34 @@ export class ConcertServiceClient {
 				// performer on the bill, not necessarily the headliner — a
 				// festival concert can return with the followed support act
 				// as performers[1+], so probe every performer and pick the
-				// first one that resolves against the user's artistMap. Fall
-				// back to the headliner if none match (defensive — the
-				// backend ListByFollower should only return concerts that
-				// feature a followed artist).
-				let artistId = ''
+				// first one that resolves against the user's artistMap. The
+				// resolved entry's Artist (with its id) is then forwarded to
+				// concertFrom so the entity's artistId / artistName / artist
+				// fields stay internally consistent — concertFrom reads the
+				// artist arg first and only falls back to performers[0].id
+				// when nothing was resolved.
 				let entry: { artist: Artist; hype: Hype } | undefined
 				for (const p of c.performers ?? []) {
 					const candidate = p.id?.value ?? ''
 					const candidateEntry = artistMap.get(candidate)
 					if (candidateEntry) {
-						artistId = candidate
 						entry = candidateEntry
 						break
 					}
 				}
 				if (!entry) {
-					artistId = c.performers?.[0]?.id?.value ?? ''
+					// Backend ListByFollower SHOULD only return concerts that
+					// feature a followed artist; reaching here means an
+					// ID-format mismatch or a backend bug. Log so the data
+					// gap is investigable rather than silently producing a
+					// blank artist card.
+					console.warn(
+						'[concert-service] no performer resolved against followedArtists; concert will render with empty artist context',
+						{
+							concertId: c.id?.value,
+							performerIds: c.performers?.map((p) => p.id?.value),
+						},
+					)
 				}
 				const hypeLevel: HypeLevel = entry?.hype ?? DEFAULT_HYPE
 				const event = concertFrom(
