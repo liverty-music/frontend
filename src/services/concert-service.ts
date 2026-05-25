@@ -191,11 +191,13 @@ export class ConcertServiceClient {
 				if (!entry) {
 					// Backend ListByFollower SHOULD only return concerts that
 					// feature a followed artist; reaching here means an
-					// ID-format mismatch or a backend bug. Log so the data
-					// gap is investigable rather than silently producing a
-					// blank artist card.
-					console.warn(
-						'[concert-service] no performer resolved against followedArtists; concert will render with empty artist context',
+					// ID-format mismatch or a backend bug. Use the scoped
+					// Aurelia logger so the warning routes through whatever
+					// log sink / OpenTelemetry exporter the class was
+					// configured with, instead of bypassing it via
+					// console.warn.
+					this.logger.warn(
+						'no performer resolved against followedArtists; concert will render with empty artist context',
 						{
 							concertId: c.id?.value,
 							performerIds: c.performers?.map((p) => p.id?.value),
