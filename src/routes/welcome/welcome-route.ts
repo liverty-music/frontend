@@ -111,13 +111,19 @@ export class WelcomeRoute implements IRouteViewModel {
 					}
 				}
 				total += resolved
-				// Drop groups that contribute zero resolved concerts entirely
-				// — pushing them would leak blank-artist rows into the
-				// preview and let `capped` exceed MAX_PREVIEW_CONCERTS when
-				// unresolved groups sit between resolved ones (the cap
-				// counter doesn't advance on them, so the loop continues
-				// past and accumulates extras).
-				if (resolved > 0) capped.push(g)
+				// Drop the entire group when none of its concerts resolved
+				// AND strip blank-artist concerts from partially-resolved
+				// groups before pushing. The previous group-level guard
+				// alone still leaked individual ghost cards from a mixed
+				// group into the unauthenticated preview.
+				if (resolved > 0) {
+					capped.push({
+						...g,
+						home: g.home.filter((c) => c.artistId),
+						nearby: g.nearby.filter((c) => c.artistId),
+						away: g.away.filter((c) => c.artistId),
+					})
+				}
 				if (total >= MAX_PREVIEW_CONCERTS) break
 			}
 

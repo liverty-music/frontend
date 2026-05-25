@@ -166,14 +166,21 @@ export class ConcertServiceClient {
 			weekday: 'short',
 		})
 
-		// unresolvedConcertIds collects concerts whose performers don't
-		// resolve in artistMap so we can emit a single batched warn at the
-		// end of this group instead of one per concert. A systematic
-		// mismatch (wrong ID namespace, schema-skew rollout window) could
-		// produce O(N) entries per page load and flood any remote log sink
-		// or OTEL exporter; one entry per call with the full list is
-		// equally actionable but bounded.
-		const unresolvedConcertIds: string[] = []
+		// unresolved collects concerts whose performers don't resolve in
+		// artistMap so we can emit a single batched warn at the end of
+		// this group instead of one per concert. A systematic mismatch
+		// (wrong ID namespace, schema-skew rollout window) could produce
+		// O(N) entries per page load and flood any remote log sink or
+		// OTEL exporter; one entry per call with the full list is equally
+		// actionable but bounded.
+		//
+		// Each entry carries the lane the failure originated in so on-call
+		// can distinguish "all failures in away" (proximity-based, often
+		// expected) from "failures in home" (followed-artist mismatch,
+		// suspicious). Uses a Set-keyed dedup so a backend bug that echoes
+		// the same concert proto across lanes doesn't inflate the count.
+		const unresolved: Array<{ id: string; lane: LaneType }> = []
+		const unresolvedSeen = new Set<string>()
 		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
 			concerts.flatMap((c) => {
 				// Concert proto v0.41.0+ exposes performers as a repeated
@@ -205,11 +212,16 @@ export class ConcertServiceClient {
 				if (!entry) {
 					// Skip blank ids in the warning array — a `''` entry is
 					// indistinguishable from "one more unresolved" and gives
-					// on-call nothing to grep for. The concert is still
-					// processed by concertFrom below; only the diagnostic
-					// entry is dropped.
+					// on-call nothing to grep for. Dedup by concertId so the
+					// same proto echoed across lanes (a backend bug) doesn't
+					// inflate the count. The concert is still processed by
+					// concertFrom below; only the diagnostic entry is
+					// dropped/deduped.
 					const concertId = c.id?.value
-					if (concertId) unresolvedConcertIds.push(concertId)
+					if (concertId && !unresolvedSeen.has(concertId)) {
+						unresolvedSeen.add(concertId)
+						unresolved.push({ id: concertId, lane })
+					}
 				}
 				const hypeLevel: HypeLevel = entry?.hype ?? DEFAULT_HYPE
 				const event = concertFrom(
@@ -234,7 +246,7 @@ export class ConcertServiceClient {
 			nearby: convert(group.nearby, 'nearby'),
 			away: convert(group.away, 'away'),
 		}
-		if (unresolvedConcertIds.length > 0) {
+		if (unresolved.length > 0) {
 			// Single batched warn per group; backend ListByFollower SHOULD
 			// only return concerts that feature a followed artist, so any
 			// non-empty list here is a real signal (ID-format mismatch or
@@ -244,8 +256,9 @@ export class ConcertServiceClient {
 			this.logger.warn(
 				'some concerts had no performer resolved against followedArtists; they will render with empty artist context',
 				{
-					count: unresolvedConcertIds.length,
-					concertIds: unresolvedConcertIds,
+					count: unresolved.length,
+					concertIds: unresolved.map((u) => u.id),
+					lanes: unresolved.map((u) => u.lane),
 					dateKey,
 				},
 			)

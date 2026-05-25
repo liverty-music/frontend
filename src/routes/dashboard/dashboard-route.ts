@@ -63,7 +63,25 @@ export class DashboardRoute {
 	}
 
 	public get filteredDateGroups(): DateGroup[] {
-		if (this.filteredArtistIds.length === 0) return this.dateGroups
+		// Always strip blank-artistId concerts before rendering. Post-v0.41.0
+		// `concertFrom` returns `artistId: ''` when no performer resolved
+		// against the user's artistMap (ID-namespace mismatch, schema-skew
+		// rollout window) — those rows have no usable artist context and
+		// would render as ghost cards with empty names. The active-filter
+		// branch below already excludes them naturally (Set.has('') is
+		// false); apply the same rule to the unfiltered branch so the
+		// authenticated dashboard never surfaces ghost cards.
+		const stripBlank = (g: DateGroup): DateGroup => ({
+			...g,
+			home: g.home.filter((c) => c.artistId),
+			nearby: g.nearby.filter((c) => c.artistId),
+			away: g.away.filter((c) => c.artistId),
+		})
+		if (this.filteredArtistIds.length === 0) {
+			return this.dateGroups
+				.map(stripBlank)
+				.filter((g) => g.home.length + g.nearby.length + g.away.length > 0)
+		}
 		const ids = new Set(this.filteredArtistIds)
 		return this.dateGroups
 			.map((g) => ({
