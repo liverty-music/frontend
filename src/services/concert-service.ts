@@ -166,6 +166,14 @@ export class ConcertServiceClient {
 			weekday: 'short',
 		})
 
+		// unresolvedConcertIds collects concerts whose performers don't
+		// resolve in artistMap so we can emit a single batched warn at the
+		// end of this group instead of one per concert. A systematic
+		// mismatch (wrong ID namespace, schema-skew rollout window) could
+		// produce O(N) entries per page load and flood any remote log sink
+		// or OTEL exporter; one entry per call with the full list is
+		// equally actionable but bounded.
+		const unresolvedConcertIds: string[] = []
 		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
 			concerts.flatMap((c) => {
 				// Concert proto v0.41.0+ exposes performers as a repeated
@@ -195,20 +203,7 @@ export class ConcertServiceClient {
 					}
 				}
 				if (!entry) {
-					// Backend ListByFollower SHOULD only return concerts that
-					// feature a followed artist; reaching here means an
-					// ID-format mismatch or a backend bug. Use the scoped
-					// Aurelia logger so the warning routes through whatever
-					// log sink / OpenTelemetry exporter the class was
-					// configured with, instead of bypassing it via
-					// console.warn.
-					this.logger.warn(
-						'no performer resolved against followedArtists; concert will render with empty artist context',
-						{
-							concertId: c.id?.value,
-							performerIds: c.performers?.map((p) => p.id?.value),
-						},
-					)
+					unresolvedConcertIds.push(c.id?.value ?? '')
 				}
 				const hypeLevel: HypeLevel = entry?.hype ?? DEFAULT_HYPE
 				const event = concertFrom(
@@ -226,13 +221,30 @@ export class ConcertServiceClient {
 				return [event]
 			})
 
-		return {
+		const result = {
 			label,
 			dateKey,
 			home: convert(group.home, 'home'),
 			nearby: convert(group.nearby, 'nearby'),
 			away: convert(group.away, 'away'),
 		}
+		if (unresolvedConcertIds.length > 0) {
+			// Single batched warn per group; backend ListByFollower SHOULD
+			// only return concerts that feature a followed artist, so any
+			// non-empty list here is a real signal (ID-format mismatch or
+			// schema-skew rollout). Use the scoped Aurelia logger so the
+			// entry flows through whatever log sink / OpenTelemetry
+			// exporter the class is configured with.
+			this.logger.warn(
+				'some concerts had no performer resolved against followedArtists; they will render with empty artist context',
+				{
+					count: unresolvedConcertIds.length,
+					concertIds: unresolvedConcertIds,
+					dateKey,
+				},
+			)
+		}
+		return result
 	}
 
 	private async listByFollowerGuest(

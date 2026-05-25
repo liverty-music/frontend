@@ -49,6 +49,12 @@ export function concertFrom(
 		date: jsDate,
 		startTime,
 		openTime,
+		// proto.series is guaranteed non-null on Concert by the v0.41.0+ BSR
+		// schema (required field). The `?.` chain is defensive against
+		// proto3's permissive-field-default typing, NOT a fallback for a
+		// legitimately series-less concert — there is no such state. A
+		// blank title here means the schema invariant was violated upstream
+		// and should be investigated rather than silently re-derived.
 		title: proto.series?.title?.value ?? '',
 		sourceUrl: proto.series?.sourceUrl?.value ?? '',
 		hypeLevel,

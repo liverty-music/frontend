@@ -251,9 +251,15 @@ describe('ConcertServiceClient', () => {
 				],
 			])
 			sut.toDateGroups([group as never], artistMap)
+			// One batched warn per group covering all unresolved concerts
+			// (not one per concert) — a systematic mismatch would otherwise
+			// produce O(N) entries per page load.
 			expect(mockLoggerWarn).toHaveBeenCalledWith(
 				expect.stringContaining('no performer resolved'),
-				expect.objectContaining({ concertId: 'c1' }),
+				expect.objectContaining({
+					count: 1,
+					concertIds: ['c1'],
+				}),
 			)
 		})
 
