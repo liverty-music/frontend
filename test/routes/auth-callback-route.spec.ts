@@ -13,13 +13,13 @@ import type { createMockI18n } from '../helpers/mock-i18n'
 
 function createMockUserService() {
 	const stub = { id: 'u1', externalId: 'ext', email: 'u@test.com', name: 'U' }
+	// Mirrors UserServiceClient's public @observable `current` field shape.
+	// Tests assign to `current` directly to simulate the post-RPC entity
+	// state the production service write-throughs would produce.
 	const svc = {
-		_current: stub as unknown as
+		current: stub as unknown as
 			| import('../../src/entities/user').User
 			| undefined,
-		get current() {
-			return svc._current
-		},
 		create: vi.fn().mockResolvedValue(stub),
 		ensureLoaded: vi.fn().mockResolvedValue(stub),
 	}
@@ -236,11 +236,11 @@ describe('AuthCallbackRoute', () => {
 				// user whose stored language is 'en' — the guard
 				// ('en' !== 'ja') should fire setLocale('en').
 				mockUserService.ensureLoaded = vi.fn().mockImplementation(async () => {
-					mockUserService._current = {
+					mockUserService.current = {
 						id: 'u1',
 						preferredLanguage: 'en',
 					} as unknown as import('../../src/entities/user').User
-					return mockUserService._current
+					return mockUserService.current
 				})
 
 				const result = await sut.canLoad({}, {} as RouteNode)
@@ -256,11 +256,11 @@ describe('AuthCallbackRoute', () => {
 				// preferredLanguage matches the mock locale 'ja' — guard
 				// short-circuits and setLocale stays untouched.
 				mockUserService.ensureLoaded = vi.fn().mockImplementation(async () => {
-					mockUserService._current = {
+					mockUserService.current = {
 						id: 'u1',
 						preferredLanguage: 'ja',
 					} as unknown as import('../../src/entities/user').User
-					return mockUserService._current
+					return mockUserService.current
 				})
 
 				const result = await sut.canLoad({}, {} as RouteNode)
@@ -279,11 +279,11 @@ describe('AuthCallbackRoute', () => {
 				// fallbackLng with no bundle, leaving the UI blank) and log
 				// a warning instead.
 				mockUserService.ensureLoaded = vi.fn().mockImplementation(async () => {
-					mockUserService._current = {
+					mockUserService.current = {
 						id: 'u1',
 						preferredLanguage: 'fr',
 					} as unknown as import('../../src/entities/user').User
-					return mockUserService._current
+					return mockUserService.current
 				})
 
 				const result = await sut.canLoad({}, {} as RouteNode)
