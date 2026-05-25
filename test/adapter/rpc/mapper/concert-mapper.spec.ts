@@ -65,7 +65,14 @@ describe('concertFrom', () => {
 	}
 
 	it('maps all fields from proto to entity', () => {
-		const result = concertFrom(makeProto() as any, 'Artist One', 'home', true)
+		const artist = { id: 'a1', name: 'Artist One', mbid: '' }
+		const result = concertFrom(
+			makeProto() as any,
+			'Artist One',
+			'home',
+			true,
+			artist,
+		)
 
 		expect(result).not.toBeNull()
 		expect(result!.id).toBe('c1')
@@ -178,7 +185,12 @@ describe('concertFrom', () => {
 		expect(result!.artistId).toBe('')
 	})
 
-	it('projects the first performer when multiple are present', () => {
+	it('leaves artistId empty when no artist is resolved (no headliner fallback)', () => {
+		// concert-service is the only production caller and always passes the
+		// resolved performer as `artist`. Without that resolution the artist
+		// trio (artistId / artistName / artist) all go blank so downstream
+		// dashboard filters do not see an artistId pointing at the headliner
+		// while artistName is empty.
 		const proto = makeProto({
 			performers: [
 				{
@@ -194,7 +206,7 @@ describe('concertFrom', () => {
 			],
 		})
 		const result = concertFrom(proto as any, 'Artist', 'watch', false)
-		expect(result!.artistId).toBe('headliner')
+		expect(result!.artistId).toBe('')
 	})
 
 	it('prefers artist.id over performers[0].id when both disagree', () => {

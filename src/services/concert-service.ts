@@ -181,7 +181,12 @@ export class ConcertServiceClient {
 				// when nothing was resolved.
 				let entry: { artist: Artist; hype: Hype } | undefined
 				for (const p of c.performers ?? []) {
-					const candidate = p.id?.value ?? ''
+					// Skip performers whose id is missing/empty — otherwise an
+					// `artistMap.get('')` would spuriously resolve if any
+					// followed artist happens to be stored under a blank key
+					// (a backend bug, but cheap to defend against here).
+					const candidate = p.id?.value
+					if (!candidate) continue
 					const candidateEntry = artistMap.get(candidate)
 					if (candidateEntry) {
 						entry = candidateEntry

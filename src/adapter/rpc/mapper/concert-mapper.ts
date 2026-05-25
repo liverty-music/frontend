@@ -32,15 +32,17 @@ export function concertFrom(
 	// repeated field. The dashboard entity is still single-artist-flat, so the
 	// caller resolves the "primary" artist for this row (e.g. the followed
 	// performer for a follower-based listing, which may not be the headliner)
-	// and we pull its ID from the resolved Artist object when available so
-	// artistId / artistName / artist stay consistent. The performers[0]
-	// (headliner) fallback only fires when the caller could not resolve a
-	// specific artist — typically a code path where the dashboard would render
-	// without artist-specific context anyway.
+	// and we pull its ID from the resolved Artist object. When no artist is
+	// resolved the trio `artistId / artistName / artist` ALL go empty — a
+	// performers[0] (headliner) fallback would leave an artistId pointing at
+	// the headliner while artistName / artist stay blank, so a dashboard
+	// filter on artistId would link to one identity while the visible name
+	// is empty. Symmetric blanks keep downstream consumers internally
+	// consistent.
 	return {
 		id: proto.id?.value ?? '',
 		artistName,
-		artistId: artist?.id ?? proto.performers?.[0]?.id?.value ?? '',
+		artistId: artist?.id ?? '',
 		venueName,
 		locationLabel,
 		adminArea,
