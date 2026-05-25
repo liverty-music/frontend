@@ -26,8 +26,6 @@ export class SettingsRoute {
 	private readonly i18n = resolve(I18N)
 	private readonly localStorage = resolve(ILocalStorage)
 
-	public currentHome: string | null = null
-	public currentLocale = ''
 	public notificationsEnabled = false
 	public vapidAvailable = !!resolve(IAppConfig).vapidPublicKey
 	public homeSelector!: UserHomeSelector
@@ -35,9 +33,55 @@ export class SettingsRoute {
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	private isToggling = false
 
-	public emailVerified = false
 	public isResendingVerification = false
 	public resendSuccess = false
+
+	// View state derived from the single source of truth: UserService.current
+	// (which is @observable and re-notifies on every entity mutation). All
+	// derived display values are exposed as computed getters so Aurelia's
+	// proxy-based observation tracks the access chain and re-evaluates every
+	// dependent binding (settings row text AND in-modal selector check) when
+	// the user entity changes. No component-local mirror state, no manual
+	// write-back in mutation handlers. This eliminates the desync class of
+	// bug where mirror-only updates fail to propagate to method-call
+	// bindings inside repeat.for (which expression observation cannot track
+	// through a method body).
+	public get currentLocale(): string {
+		// Fallback to the active i18n locale only when hydration has not yet
+		// populated `current.preferredLanguage` (e.g., very first render
+		// after signup, or the hydration backfill RPC is still in flight).
+		// MUST NOT read localStorage['language']. The fallback runs through
+		// normalizeToSupportedLanguage so a BCP 47 tag returned by
+		// i18n.getLocale() (e.g. 'en-US' when the detector falls through to
+		// navigator.language) maps to 'en' — otherwise the selector compares
+		// 'en-US' === 'en' and no row is highlighted.
+		return (
+			this.userService.current?.preferredLanguage ??
+			normalizeToSupportedLanguage(this.i18n.getLocale())
+		)
+	}
+
+	public get currentHome(): string | null {
+		// Settings is an authenticated-only route, so the home value MUST
+		// come from the user entity. The guest-flow home storage owned by
+		// UserHomeSelector is consumed at signup time:
+		// auth-callback's ensureUserProvisioned reads guest.home and calls
+		// userService.create(email, locale, codeToHome(guestHome)), which
+		// atomically persists the home into the user row via the Create
+		// RPC's home field. By the time Settings ever renders, user.home
+		// IS the source of truth. (GuestDataMergeService.merge() handles
+		// follows/hypes only — NOT home; home is a Create-time field, not
+		// a post-signup merge target.)
+		//
+		// If a signed-in user lacks user.home (e.g. they completed signup
+		// before the home-prompt step landed, or guest.home was empty at
+		// auth-callback), `currentHome` is null and the UI renders
+		// 'Not set'. The user re-selects via the home-selector sheet,
+		// which calls userService.updateHome — the getter then surfaces
+		// the new value automatically. No localStorage fallback needed.
+		const code = this.userService.current?.home?.level1
+		return code ? translationKey(code) : null
+	}
 
 	public get currentHomeKey(): string {
 		return this.currentHome
@@ -45,29 +89,20 @@ export class SettingsRoute {
 			: 'settings.notSet'
 	}
 
-	public async loading(): Promise<void> {
-		// Source-of-truth for authenticated language is the backend user row.
-		// Fall back to the active i18n locale only when hydration has not yet
-		// populated `current.preferredLanguage` (e.g., very first render after
-		// signup). MUST NOT read localStorage['language'] here.
-		//
-		// The fallback runs through normalizeToSupportedLanguage so a
-		// BCP 47 tag returned by i18n.getLocale() (e.g. 'en-US' when the
-		// detector falls through to navigator.language) maps to 'en'
-		// rather than 'en-US' — otherwise isCurrentLanguage compares
-		// 'en-US' === 'en' and no radio is highlighted.
-		const fromUser = this.userService.current?.preferredLanguage
-		this.currentLocale =
-			fromUser ?? normalizeToSupportedLanguage(this.i18n.getLocale())
-		const homeLevel1 = this.userService.current?.home?.level1
-		const code = homeLevel1 ?? UserHomeSelector.getStoredHome()
-		this.currentHome = code ? translationKey(code) : null
-
-		// Read email_verified from OIDC profile claims
-		this.emailVerified =
+	public get emailVerified(): boolean {
+		// Read directly from OIDC profile claims. The `as Record<string,
+		// unknown>` cast and the `email_verified` claim-name knowledge belong
+		// behind AuthService (tracked under the follow-up `expose
+		// claim-derived state on AuthService` refactor); keeping the inline
+		// read here for now to scope this change to the user-entity SSoT
+		// refactor.
+		return (
 			(this.auth.user?.profile as Record<string, unknown>)?.email_verified ===
 			true
+		)
+	}
 
+	public async loading(): Promise<void> {
 		await this.resolveNotificationToggleState()
 	}
 
@@ -127,7 +162,12 @@ export class SettingsRoute {
 	}
 
 	public onHomeSelected(code: string): void {
-		this.currentHome = translationKey(code)
+		// UserHomeSelector already persists via userService.updateHome before
+		// firing this callback, and `currentHome` is derived from
+		// userService.current.home — so the view updates automatically. The
+		// handler stays solely to surface a structured log line for the
+		// settings-originated update path (distinct from onboarding /
+		// auth-callback / hydration write paths).
 		this.logger.info('Home area updated from settings', { code })
 	}
 
@@ -150,6 +190,14 @@ export class SettingsRoute {
 				lang,
 			)
 		} catch (err) {
+			// changeLocale throws TypeError when `lang` is not in
+			// SUPPORTED_LANGUAGES. That path is unreachable from this caller
+			// — the selector only forwards values from `supportedLanguages`
+			// — so any TypeError reaching here indicates a programmer error
+			// (e.g. the constant was edited inconsistently with the
+			// validation). Surfacing it to the global error boundary is the
+			// intended behavior. Snack is only for genuine network /
+			// server-side failures (ConnectError).
 			if (!(err instanceof ConnectError)) throw err
 			this.logger.error('Failed to update preferred language', {
 				error: err,
@@ -161,15 +209,10 @@ export class SettingsRoute {
 			)
 			return
 		}
-		this.currentLocale = this.userService.current?.preferredLanguage ?? lang
-		this.logger.info('Language changed', {
-			from: previous,
-			to: this.currentLocale,
-		})
-	}
-
-	public isCurrentLanguage(lang: string): boolean {
-		return this.currentLocale === lang
+		// No manual `this.currentLocale = ...` — the getter derives from
+		// userService.current.preferredLanguage, which changeLocale's
+		// updatePreferredLanguage write-through has already updated.
+		this.logger.info('Language changed', { from: previous, to: lang })
 	}
 
 	public async toggleNotifications(): Promise<void> {

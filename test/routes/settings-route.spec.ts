@@ -115,10 +115,19 @@ describe('SettingsRoute', () => {
 			expect(sut.emailVerified).toBe(false)
 		})
 
-		it('sets currentHome from user service', async () => {
+		it('derives currentHome from userService.current.home (no loading() copy)', async () => {
+			// currentHome is a computed getter — set userService.current.home
+			// and the getter reflects it on next read. loading() is intentionally
+			// not required to surface the value (no local mirror).
 			mockUser.current = { id: 'user-uuid-1', home: { level1: 'JP-13' } }
-			await sut.loading()
 			expect(sut.currentHome).toBe('tokyo')
+		})
+
+		it('returns null currentHome when userService.current has no home', async () => {
+			// Authenticated route: no guest-storage fallback. If hydration has
+			// not populated home, the getter is null (UI renders 'Not set').
+			mockUser.current = { id: 'user-uuid-1' }
+			expect(sut.currentHome).toBeNull()
 		})
 
 		it('sets toggle OFF when permission is not granted', async () => {
@@ -230,25 +239,45 @@ describe('SettingsRoute', () => {
 		})
 	})
 
-	describe('loading — currentLocale', () => {
-		it('sets currentLocale from preferredLanguage when present', async () => {
+	describe('currentLocale getter', () => {
+		it('derives currentLocale from preferredLanguage when present', () => {
 			mockUser.current = { id: 'user-uuid-1', preferredLanguage: 'en' }
-			await sut.loading()
 			expect(sut.currentLocale).toBe('en')
 		})
 
-		it('falls back to i18n.getLocale() when preferredLanguage is absent', async () => {
-			mockUser.current = { id: 'user-uuid-1' } // no preferredLanguage
-			await sut.loading()
+		it('falls back to normalized i18n.getLocale() when preferredLanguage is absent', () => {
+			// Hydration race window: user row exists but preferred_language is
+			// NULL on the wire (legacy row pending backfill, or the
+			// UpdatePreferredLanguage RPC is still in flight). The getter
+			// must surface the active i18n locale rather than empty string —
+			// otherwise no selector option would highlight.
+			mockUser.current = { id: 'user-uuid-1' }
 			expect(sut.currentLocale).toBe('ja') // mock i18n default
+		})
+
+		it('reflects userService.current changes WITHOUT loading() re-run (single source of truth)', () => {
+			// Regression for the desync that mirrored state caused on
+			// 2026-05-25: changing the entity must be visible immediately
+			// through the getter, with no manual re-copy step.
+			mockUser.current = { id: 'user-uuid-1', preferredLanguage: 'ja' }
+			expect(sut.currentLocale).toBe('ja')
+			mockUser.current = { id: 'user-uuid-1', preferredLanguage: 'en' }
+			expect(sut.currentLocale).toBe('en')
 		})
 	})
 
 	describe('onHomeSelected', () => {
-		it('updates currentHome with translation key', () => {
+		it('is a notification-only handler — UserHomeSelector owns the userService.updateHome call', () => {
+			// The old behavior wrote `currentHome` directly here; that has
+			// moved into the derived getter. Calling onHomeSelected with
+			// arbitrary code must NOT mutate observable state — the only
+			// observable effect is a log line (asserted by absence of state
+			// change rather than positive assertion to avoid coupling to
+			// logger internals).
+			mockUser.current = { id: 'user-uuid-1' }
+			const before = sut.currentHome
 			sut.onHomeSelected('JP-13')
-			expect(sut.currentHome).toBeTruthy()
-			expect(sut.currentHome).not.toBe('JP-13') // translationKey maps to ISO name
+			expect(sut.currentHome).toBe(before)
 		})
 	})
 

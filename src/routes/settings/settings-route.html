@@ -164,10 +164,10 @@
         repeat.for="lang of supportedLanguages"
         click.trigger="selectLanguage(lang)"
         class="language-option"
-        data-selected.bind="isCurrentLanguage(lang)"
+        data-selected.bind="currentLocale === lang"
       >
         <span t.bind="'languages.' + lang"></span>
-        <svg-icon if.bind="isCurrentLanguage(lang)" name="check" class="language-check"></svg-icon>
+        <svg-icon if.bind="currentLocale === lang" name="check" class="language-check"></svg-icon>
       </button>
     </div>
   </div>
