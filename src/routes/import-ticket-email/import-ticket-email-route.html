@@ -45,7 +45,7 @@
           </label>
         </li>
       </ul>
-      <p if.bind="concerts.length === 0">このアーティストのコンサートが見つかりません。</p>
+      <p if.bind="!hasDisplayableConcerts">このアーティストのコンサートが見つかりません。</p>
       <button click.trigger="confirmConcerts()" disabled.bind="!hasSelectedConcerts">
         次へ
       </button>
