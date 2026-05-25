@@ -111,7 +111,13 @@ export class WelcomeRoute implements IRouteViewModel {
 					}
 				}
 				total += resolved
-				capped.push(g)
+				// Drop groups that contribute zero resolved concerts entirely
+				// — pushing them would leak blank-artist rows into the
+				// preview and let `capped` exceed MAX_PREVIEW_CONCERTS when
+				// unresolved groups sit between resolved ones (the cap
+				// counter doesn't advance on them, so the loop continues
+				// past and accumulates extras).
+				if (resolved > 0) capped.push(g)
 				if (total >= MAX_PREVIEW_CONCERTS) break
 			}
 
