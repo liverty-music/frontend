@@ -59,7 +59,17 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 							away: [
 								{
 									id: { value: 'c-1' },
-									title: { value: 'Test Concert' },
+									performers: [
+										{
+											id: { value: 'a-1' },
+											name: { value: 'Test Artist' },
+											mbid: { value: '' },
+										},
+									],
+									series: {
+										id: { value: 's-1' },
+										title: { value: 'Test Concert' },
+									},
 									localDate: {
 										value: { year: 2026, month: 3, day: 15 },
 									},
