@@ -33,17 +33,19 @@
       <h2>コンサートを選択</h2>
       <p>関連付けるコンサートを選択してください（複数可）。</p>
       <ul class="concert-list">
-        <li repeat.for="concert of concerts" class="concert-item" if.bind="concert.id?.value && concert.series?.title?.value">
-          <label>
-            <input
-              type="checkbox"
-              checked.bind="selectedEventIds"
-              model.bind="concert.id.value"
-            >
-            <span>${concert.series.title.value}</span>
-            <small>${formatLocalDate(concert.localDate?.value)}</small>
-          </label>
-        </li>
+        <template repeat.for="concert of concerts">
+          <li class="concert-item" if.bind="concert.id?.value && concert.series?.title?.value">
+            <label>
+              <input
+                type="checkbox"
+                checked.bind="selectedEventIds"
+                model.bind="concert.id.value"
+              >
+              <span>${concert.series.title.value}</span>
+              <small>${formatLocalDate(concert.localDate?.value)}</small>
+            </label>
+          </li>
+        </template>
       </ul>
       <p if.bind="!hasDisplayableConcerts">このアーティストのコンサートが見つかりません。</p>
       <button click.trigger="confirmConcerts()" disabled.bind="!hasSelectedConcerts">
