@@ -97,7 +97,13 @@ export class WelcomeRoute implements IRouteViewModel {
 			for (const g of allGroups) {
 				const concerts = [...g.home, ...g.nearby, ...g.away]
 				for (const c of concerts) {
-					artistsWithData.add(c.artistId)
+					// Skip blank artistId — concertFrom returns '' when no
+					// performer resolved against the user's artistMap (an
+					// ID-format mismatch or backend bug). Adding '' inflates
+					// the Set by one phantom entry and could push
+					// artistsWithData.size past PREVIEW_MIN_ARTISTS_WITH_CONCERTS
+					// even when no real artist was resolved.
+					if (c.artistId) artistsWithData.add(c.artistId)
 				}
 				total += concerts.length
 				capped.push(g)
