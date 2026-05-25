@@ -26,8 +26,17 @@ function concertListPayload() {
 		concerts: [
 			{
 				id: { value: 'c-1' },
-				artistId: { value: 'artist-1' },
-				title: { value: 'Zepp DiverCity Live' },
+				performers: [
+					{
+						id: { value: 'artist-1' },
+						name: { value: 'YOASOBI' },
+						mbid: { value: '' },
+					},
+				],
+				series: {
+					id: { value: 's-1' },
+					title: { value: 'Zepp DiverCity Live' },
+					},
 				localDate: {
 					value: {
 						year: tomorrow.getFullYear(),

@@ -169,10 +169,28 @@ export class ConcertServiceClient {
 		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
 			concerts.flatMap((c) => {
 				// Concert proto v0.41.0+ exposes performers as a repeated
-				// field; the dashboard groups concerts under a single
-				// "primary" artist, so we key on the first performer.
-				const artistId = c.performers?.[0]?.id?.value ?? ''
-				const entry = artistMap.get(artistId)
+				// field. For follower-based listing the user may follow any
+				// performer on the bill, not necessarily the headliner — a
+				// festival concert can return with the followed support act
+				// as performers[1+], so probe every performer and pick the
+				// first one that resolves against the user's artistMap. Fall
+				// back to the headliner if none match (defensive — the
+				// backend ListByFollower should only return concerts that
+				// feature a followed artist).
+				let artistId = ''
+				let entry: { artist: Artist; hype: Hype } | undefined
+				for (const p of c.performers ?? []) {
+					const candidate = p.id?.value ?? ''
+					const candidateEntry = artistMap.get(candidate)
+					if (candidateEntry) {
+						artistId = candidate
+						entry = candidateEntry
+						break
+					}
+				}
+				if (!entry) {
+					artistId = c.performers?.[0]?.id?.value ?? ''
+				}
 				const hypeLevel: HypeLevel = entry?.hype ?? DEFAULT_HYPE
 				const event = concertFrom(
 					c,

@@ -20,7 +20,18 @@ function concertListResponse() {
 
 		const concert = {
 			id: { value: `c${i}` },
-			artistId: { value: `artist-${(i % 2) + 1}` },
+			performers: [
+				{
+					id: { value: `artist-${(i % 2) + 1}` },
+					name: { value: `Artist ${(i % 2) + 1}` },
+					mbid: { value: '' },
+				},
+			],
+			series: {
+				id: { value: `s${i}` },
+				title: { value: 'Zepp Live' },
+				sourceUrl: { value: 'https://example.com' },
+			},
 			localDate: {
 				value: {
 					year: date.getFullYear(),
@@ -33,8 +44,6 @@ function concertListResponse() {
 				name: { value: 'Zepp DiverCity' },
 				adminArea: { value: 'JP-13' },
 			},
-			title: { value: 'Zepp Live' },
-			sourceUrl: { value: 'https://example.com' },
 		}
 
 		if (!groupMap.has(dateKey)) {

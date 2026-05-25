@@ -168,6 +168,16 @@ describe('concertFrom', () => {
 		expect(result!.artistId).toBe('')
 	})
 
+	it('handles empty performers array gracefully (distinct from undefined)', () => {
+		// performers: [] is a distinct server state from performers: undefined.
+		// The mapper should treat both the same way (empty artistId) so a
+		// malformed/zero-performer concert never throws nor surfaces a bogus
+		// scalar value.
+		const proto = makeProto({ performers: [] })
+		const result = concertFrom(proto as any, 'Artist', 'watch', false)
+		expect(result!.artistId).toBe('')
+	})
+
 	it('projects the first performer when multiple are present', () => {
 		const proto = makeProto({
 			performers: [
