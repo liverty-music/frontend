@@ -192,6 +192,21 @@ export class ImportTicketEmailRoute {
 		}
 	}
 
+	// formatLocalDate renders a proto LocalDate.value (a `{year, month, day}`
+	// google.type.Date message) as a zero-padded YYYY-MM-DD string for display.
+	// Without this helper the template `${concert.localDate?.value}` would
+	// stringify the proto message via its default toString() and render
+	// `[object Object]`, which is what every concert row was showing in the
+	// step-4 selection list before this method existed.
+	public formatLocalDate(
+		d: { year: number; month: number; day: number } | undefined,
+	): string {
+		if (!d) return ''
+		const month = String(d.month).padStart(2, '0')
+		const day = String(d.day).padStart(2, '0')
+		return `${d.year}-${month}-${day}`
+	}
+
 	public sanitizeUrl(url: string | undefined): string {
 		if (!url) return ''
 		try {

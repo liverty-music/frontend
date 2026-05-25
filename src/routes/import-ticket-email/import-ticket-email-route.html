@@ -41,7 +41,7 @@
               model.bind="concert.id?.value ?? ''"
             >
             <span>${concert.series?.title?.value ?? ''}</span>
-            <small>${concert.localDate?.value}</small>
+            <small>${formatLocalDate(concert.localDate?.value)}</small>
           </label>
         </li>
       </ul>
