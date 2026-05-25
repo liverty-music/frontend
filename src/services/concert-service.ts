@@ -176,9 +176,10 @@ export class ConcertServiceClient {
 				// first one that resolves against the user's artistMap. The
 				// resolved entry's Artist (with its id) is then forwarded to
 				// concertFrom so the entity's artistId / artistName / artist
-				// fields stay internally consistent — concertFrom reads the
-				// artist arg first and only falls back to performers[0].id
-				// when nothing was resolved.
+				// fields stay internally consistent. When no Artist is
+				// resolved all three fields are left blank (no headliner
+				// fallback — see concert-mapper.ts for why symmetric blanks
+				// are required).
 				let entry: { artist: Artist; hype: Hype } | undefined
 				for (const p of c.performers ?? []) {
 					// Skip performers whose id is missing/empty — otherwise an
