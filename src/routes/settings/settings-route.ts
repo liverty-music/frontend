@@ -64,11 +64,21 @@ export class SettingsRoute {
 	public get currentHome(): string | null {
 		// Settings is an authenticated-only route, so the home value MUST
 		// come from the user entity. The guest-flow home storage owned by
-		// UserHomeSelector is irrelevant here: auth-callback's
-		// GuestDataMergeService.merge() runs before any Settings render and
-		// persists the guest selection to user.home via the Create RPC. If
-		// that merge is broken, the right fix is in the merge service — not
-		// a fallback here that would silently mask the regression.
+		// UserHomeSelector is consumed at signup time:
+		// auth-callback's ensureUserProvisioned reads guest.home and calls
+		// userService.create(email, locale, codeToHome(guestHome)), which
+		// atomically persists the home into the user row via the Create
+		// RPC's home field. By the time Settings ever renders, user.home
+		// IS the source of truth. (GuestDataMergeService.merge() handles
+		// follows/hypes only — NOT home; home is a Create-time field, not
+		// a post-signup merge target.)
+		//
+		// If a signed-in user lacks user.home (e.g. they completed signup
+		// before the home-prompt step landed, or guest.home was empty at
+		// auth-callback), `currentHome` is null and the UI renders
+		// 'Not set'. The user re-selects via the home-selector sheet,
+		// which calls userService.updateHome — the getter then surfaces
+		// the new value automatically. No localStorage fallback needed.
 		const code = this.userService.current?.home?.level1
 		return code ? translationKey(code) : null
 	}
@@ -180,6 +190,14 @@ export class SettingsRoute {
 				lang,
 			)
 		} catch (err) {
+			// changeLocale throws TypeError when `lang` is not in
+			// SUPPORTED_LANGUAGES. That path is unreachable from this caller
+			// — the selector only forwards values from `supportedLanguages`
+			// — so any TypeError reaching here indicates a programmer error
+			// (e.g. the constant was edited inconsistently with the
+			// validation). Surfacing it to the global error boundary is the
+			// intended behavior. Snack is only for genuine network /
+			// server-side failures (ConnectError).
 			if (!(err instanceof ConnectError)) throw err
 			this.logger.error('Failed to update preferred language', {
 				error: err,
