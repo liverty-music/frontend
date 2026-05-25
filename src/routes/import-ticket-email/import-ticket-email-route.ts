@@ -128,15 +128,11 @@ export class ImportTicketEmailRoute {
 	}
 
 	// Returns true only when at least one concert is fully renderable —
-	// id-bearing AND with a non-blank series title. The id check
-	// mirrors the `if.bind="concert.id?.value"` per-row filter (a
-	// missing id hides the row entirely); the series.title check covers
-	// the schema-skew case where id is populated but series is absent
-	// or its title.value is blank — the row would render with an empty
-	// <span> and look like a broken UI element while
-	// `concerts.length > 0` kept the "no concerts found" empty-state
-	// suppressed. Used by the empty-state <p>'s guard so the message
-	// surfaces whenever the visible list would be effectively empty.
+	// id-bearing AND with a non-blank series title. EXACTLY mirrors the
+	// per-row `if.bind="concert.id?.value && concert.series?.title?.value"`
+	// filter on the <li repeat.for>, so the empty-state <p> only shows
+	// when zero rows render. If the two predicates ever diverge, both
+	// the broken row AND the "not found" message could appear at once.
 	public get hasDisplayableConcerts(): boolean {
 		return this.concerts.some(
 			(c) => Boolean(c.id?.value) && Boolean(c.series?.title?.value),

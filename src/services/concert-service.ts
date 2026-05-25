@@ -208,6 +208,17 @@ export class ConcertServiceClient {
 				// resolved all three fields are left blank (no headliner
 				// fallback — see concert-mapper.ts for why symmetric blanks
 				// are required).
+				// Tiebreaker note: when the user follows multiple
+				// performers on the same bill (e.g. both the headliner
+				// and a support act), the FIRST matched performer wins —
+				// the loop breaks on the first hit. Order is whatever
+				// the backend serialised in `performers[]`, which is the
+				// billing/series order today. A more nuanced policy
+				// (e.g. "highest hype tier wins") would require ranking
+				// candidates instead of breaking on first match; intent
+				// today is "first listed performer the user follows = the
+				// primary identity for this card", consistent with the
+				// dashboard's single-artist-per-row model.
 				let entry: { artist: Artist; hype: Hype } | undefined
 				for (const p of c.performers ?? []) {
 					// Skip performers whose id is missing/empty — otherwise an
@@ -271,7 +282,7 @@ export class ConcertServiceClient {
 			// entry flows through whatever log sink / OpenTelemetry
 			// exporter the class is configured with.
 			this.logger.warn(
-				'some concerts had no performer resolved against followedArtists; they will render with empty artist context',
+				'some concerts had no performer resolved against followedArtists; they will either render with empty artist context or be dropped entirely by concertFrom (e.g. a zero-component localDate)',
 				{
 					count: unresolved.length,
 					concertIds: unresolved.map((u) => u.id),

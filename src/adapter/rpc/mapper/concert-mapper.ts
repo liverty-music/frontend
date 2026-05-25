@@ -51,7 +51,15 @@ export function concertFrom(
 	return {
 		id: proto.id?.value ?? '',
 		artistName,
-		artistId: artist?.id ?? '',
+		// `||` (not `??`) so an empty-string artist.id is treated the
+		// same as absent. proto3 string defaults are `''`, so an Artist
+		// whose id field was never populated (provisioning bug or
+		// schema-skew rollout) would otherwise produce artistId: ''
+		// here AND skip the "blank-on-resolve" symmetric-blank invariant
+		// — the dashboard's strip-blank guard would then silently drop
+		// the concert while the artist trio still showed populated
+		// name/artist fields. `||` keeps the trio symmetric.
+		artistId: artist?.id || '',
 		venueName,
 		locationLabel,
 		adminArea,
