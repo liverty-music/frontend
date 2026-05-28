@@ -98,8 +98,22 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 		}
 
 		if (url.includes('ListWithProximity')) {
-			// Return concerts for 5+ artists to satisfy PREVIEW_MIN_ARTISTS_WITH_CONCERTS
-			const artists = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']
+			// Return concerts for 6 preview artists to satisfy
+			// PREVIEW_MIN_ARTISTS_WITH_CONCERTS (=5). Performer IDs MUST
+			// match `config.json` `previewArtistIds` — otherwise
+			// concert-service's `toDateGroups` performer-resolution loop
+			// won't find them in the artistMap (built from preview UUIDs),
+			// produces `resolved=0`, drops the group, leaves `dateGroups`
+			// empty, and the welcome page falls back to the inline-CTA
+			// path (no `.welcome-scroll-cta` element).
+			const artists = [
+				'019c8655-7a05-71ef-82b4-a4ac2494e29f',
+				'019c8655-7a05-721d-b0a8-4c11724d5c90',
+				'019c8655-7a05-71e9-9af5-e1cd4fbfd367',
+				'019c899e-baff-7ecd-8af2-e8dc819e29e4',
+				'019c8655-7a05-71f5-acd4-46157dcb0bec',
+				'019c8655-7a05-722a-bdae-a89596378f90',
+			]
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -114,20 +128,20 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 								performers: [
 									{
 										id: { value: aid },
-										name: { value: aid },
+										name: { value: `Artist ${i + 1}` },
 										mbid: { value: '' },
 									},
 								],
 								series: {
 									id: { value: `s-${aid}` },
-									title: { value: `Concert ${aid}` },
+									title: { value: `Concert ${i + 1}` },
 									sourceUrl: { value: '' },
 								},
 								localDate: {
 									value: { year: 2026, month: 6, day: 15 + i },
 								},
 								venue: {
-									name: { value: `Venue ${aid}` },
+									name: { value: `Venue ${i + 1}` },
 									adminArea: { value: 'JP-13' },
 								},
 							},
