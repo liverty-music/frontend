@@ -12,6 +12,15 @@ export function concertFrom(
 ): Concert | null {
 	const localDate = proto.localDate?.value
 	if (!localDate) return null
+	// Reject partially-defaulted proto3 Date messages — same rule as
+	// formatLocalDate in import-ticket-email-route. A field defaulted to 0
+	// (e.g. {year: 2026, month: 0, day: 15}) would silently roll through
+	// `new Date(2026, -1, 15)` to 2025-12-15 and bucket the concert into
+	// the wrong date group one month in the past. Returning null drops
+	// the bad row instead of misplacing it.
+	if (localDate.year === 0 || localDate.month === 0 || localDate.day === 0) {
+		return null
+	}
 
 	const jsDate = new Date(localDate.year, localDate.month - 1, localDate.day)
 
@@ -27,18 +36,44 @@ export function concertFrom(
 	const adminArea = proto.venue?.adminArea?.value
 	const locationLabel = adminArea ? displayName(adminArea) : ''
 
+	// Concert proto v0.41.0+ moved title and sourceUrl onto the embedded
+	// `series` parent and replaced the singular artistId with a `performers`
+	// repeated field. The dashboard entity is still single-artist-flat, so the
+	// caller resolves the "primary" artist for this row (e.g. the followed
+	// performer for a follower-based listing, which may not be the headliner)
+	// and we pull its ID from the resolved Artist object. When no artist is
+	// resolved the trio `artistId / artistName / artist` ALL go empty — a
+	// performers[0] (headliner) fallback would leave an artistId pointing at
+	// the headliner while artistName / artist stay blank, so a dashboard
+	// filter on artistId would link to one identity while the visible name
+	// is empty. Symmetric blanks keep downstream consumers internally
+	// consistent.
 	return {
 		id: proto.id?.value ?? '',
 		artistName,
-		artistId: proto.artistId?.value ?? '',
+		// `||` (not `??`) so an empty-string artist.id is treated the
+		// same as absent. proto3 string defaults are `''`, so an Artist
+		// whose id field was never populated (provisioning bug or
+		// schema-skew rollout) would otherwise produce artistId: ''
+		// here AND skip the "blank-on-resolve" symmetric-blank invariant
+		// — the dashboard's strip-blank guard would then silently drop
+		// the concert while the artist trio still showed populated
+		// name/artist fields. `||` keeps the trio symmetric.
+		artistId: artist?.id || '',
 		venueName,
 		locationLabel,
 		adminArea,
 		date: jsDate,
 		startTime,
 		openTime,
-		title: proto.title?.value ?? '',
-		sourceUrl: proto.sourceUrl?.value ?? '',
+		// proto.series is guaranteed non-null on Concert by the v0.41.0+ BSR
+		// schema (required field). The `?.` chain is defensive against
+		// proto3's permissive-field-default typing, NOT a fallback for a
+		// legitimately series-less concert — there is no such state. A
+		// blank title here means the schema invariant was violated upstream
+		// and should be investigated rather than silently re-derived.
+		title: proto.series?.title?.value ?? '',
+		sourceUrl: proto.series?.sourceUrl?.value ?? '',
 		hypeLevel,
 		matched,
 		artist,

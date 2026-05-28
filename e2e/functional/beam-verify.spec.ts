@@ -16,8 +16,17 @@ async function mockRpc(page: Page, lane: 'home' | 'nearby' | 'away'): Promise<vo
 			group[lane] = [
 				{
 					id: { value: 'c-1' },
-					artistId: { value: 'artist-1' },
-					title: { value: 'Test Live' },
+					performers: [
+						{
+							id: { value: 'artist-1' },
+							name: { value: 'YOASOBI' },
+							mbid: { value: '' },
+						},
+					],
+					series: {
+						id: { value: 's-1' },
+						title: { value: 'Test Live' },
+					},
 					localDate: {
 						value: {
 							year: tomorrow.getFullYear(),

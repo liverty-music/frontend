@@ -86,8 +86,17 @@ function listByFollowerResponse() {
 				home: [
 					{
 						id: { value: 'c-2' },
-						artistId: { value: 'artist-2' },
-						title: { value: 'Vaundy Tour 2026' },
+						performers: [
+							{
+								id: { value: 'artist-2' },
+								name: { value: 'Vaundy' },
+								mbid: { value: '' },
+							},
+						],
+						series: {
+							id: { value: 's-2' },
+							title: { value: 'Vaundy Tour 2026' },
+						},
 						localDate: {
 							value: {
 								year: tomorrow.getFullYear(),
@@ -115,8 +124,18 @@ function listByFollowerResponse() {
 				away: [
 					{
 						id: { value: 'c-1' },
-						artistId: { value: 'artist-1' },
-						title: { value: 'YOASOBI Live 2026' },
+						performers: [
+							{
+								id: { value: 'artist-1' },
+								name: { value: 'YOASOBI' },
+								mbid: { value: '' },
+							},
+						],
+						series: {
+							id: { value: 's-1' },
+							title: { value: 'YOASOBI Live 2026' },
+							sourceUrl: { value: 'https://example.com/yoasobi' },
+						},
 						localDate: {
 							value: {
 								year: tomorrow.getFullYear(),
@@ -136,9 +155,6 @@ function listByFollowerResponse() {
 						venue: {
 							name: { value: 'Zepp DiverCity' },
 							adminArea: { value: 'JP-13' },
-						},
-						sourceUrl: {
-							value: 'https://example.com/yoasobi',
 						},
 					},
 				],

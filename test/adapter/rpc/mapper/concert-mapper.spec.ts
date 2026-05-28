@@ -36,13 +36,30 @@ describe('timestampToTimeString', () => {
 
 describe('concertFrom', () => {
 	function makeProto(overrides: Record<string, unknown> = {}) {
+		// Concert proto v0.41.0+: title / sourceUrl moved onto the embedded
+		// `series` parent; the single `artistId` was replaced by a `performers`
+		// repeated field. The mapper takes the caller-resolved `artist` arg
+		// as the entity's artistId — no `performers[0]` fallback. When no
+		// artist is resolved the artist trio (artistId / artistName /
+		// artist) all go blank to keep downstream consumers internally
+		// consistent (see `leaves artistId empty when no artist is
+		// resolved` test for the contract assertion).
 		return {
 			id: { value: 'c1' },
-			artistId: { value: 'a1' },
-			title: { value: 'Test Concert' },
+			performers: [
+				{
+					id: { value: 'a1' },
+					name: { value: 'Headliner' },
+					mbid: { value: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' },
+				},
+			],
+			series: {
+				id: { value: 's1' },
+				title: { value: 'Test Concert' },
+				sourceUrl: { value: 'https://example.com' },
+			},
 			localDate: { value: { year: 2026, month: 3, day: 15 } },
 			startTime: { value: { seconds: BigInt(1742054400), nanos: 0 } },
-			sourceUrl: { value: 'https://example.com' },
 			venue: {
 				name: { value: 'Zepp DiverCity' },
 				adminArea: { value: 'JP-13' },
@@ -52,7 +69,14 @@ describe('concertFrom', () => {
 	}
 
 	it('maps all fields from proto to entity', () => {
-		const result = concertFrom(makeProto() as any, 'Artist One', 'home', true)
+		const artist = { id: 'a1', name: 'Artist One', mbid: '' }
+		const result = concertFrom(
+			makeProto() as any,
+			'Artist One',
+			'home',
+			true,
+			artist,
+		)
 
 		expect(result).not.toBeNull()
 		expect(result!.id).toBe('c1')
@@ -148,10 +172,68 @@ describe('concertFrom', () => {
 		expect(result!.artist).toBe(artist)
 	})
 
-	it('handles missing id and artistId gracefully', () => {
-		const proto = makeProto({ id: undefined, artistId: undefined })
+	it('handles missing id and performers gracefully', () => {
+		const proto = makeProto({ id: undefined, performers: undefined })
 		const result = concertFrom(proto as any, 'Artist', 'watch', false)
 		expect(result!.id).toBe('')
 		expect(result!.artistId).toBe('')
+	})
+
+	it('handles empty performers array gracefully (distinct from undefined)', () => {
+		// performers: [] is a distinct server state from performers: undefined.
+		// The mapper should treat both the same way (empty artistId) so a
+		// malformed/zero-performer concert never throws nor surfaces a bogus
+		// scalar value.
+		const proto = makeProto({ performers: [] })
+		const result = concertFrom(proto as any, 'Artist', 'watch', false)
+		expect(result!.artistId).toBe('')
+	})
+
+	it('leaves artistId empty when no artist is resolved (no headliner fallback)', () => {
+		// concert-service is the only production caller and always passes the
+		// resolved performer as `artist`. Without that resolution the artist
+		// trio (artistId / artistName / artist) all go blank so downstream
+		// dashboard filters do not see an artistId pointing at the headliner
+		// while artistName is empty.
+		const proto = makeProto({
+			performers: [
+				{
+					id: { value: 'headliner' },
+					name: { value: 'A' },
+					mbid: { value: 'm1' },
+				},
+				{
+					id: { value: 'support' },
+					name: { value: 'B' },
+					mbid: { value: 'm2' },
+				},
+			],
+		})
+		const result = concertFrom(proto as any, 'Artist', 'watch', false)
+		expect(result!.artistId).toBe('')
+	})
+
+	it('prefers artist.id over performers[0].id when both disagree', () => {
+		// concert-service resolves the followed performer (which may not be
+		// the headliner) and forwards it as `artist`. The mapper must take
+		// that resolved id as the artistId so the entity's artistId /
+		// artistName / artist trio stay internally consistent. Without this
+		// test, swapping the operands in
+		//   artist?.id ?? proto.performers?.[0]?.id?.value ?? ''
+		// would go undetected because every other test uses an artist whose
+		// id matches performers[0].
+		const proto = makeProto({
+			performers: [
+				{
+					id: { value: 'headliner' },
+					name: { value: 'H' },
+					mbid: { value: '' },
+				},
+			],
+		})
+		const artist = { id: 'followed-support', name: 'Support', mbid: '' }
+		const result = concertFrom(proto as any, 'Support', 'watch', false, artist)
+		expect(result!.artistId).toBe('followed-support')
+		expect(result!.artist).toBe(artist)
 	})
 })

@@ -96,11 +96,34 @@ export class WelcomeRoute implements IRouteViewModel {
 
 			for (const g of allGroups) {
 				const concerts = [...g.home, ...g.nearby, ...g.away]
+				// resolved counts only the concerts that contribute a real
+				// artist to artistsWithData. Counting every concert (incl.
+				// those with blank artistId from a failed performer
+				// resolution) could exhaust the 30-slot cap on unresolved
+				// rows alone, breaking the loop before enough artist-matched
+				// concerts are seen and silently suppressing the preview
+				// even when valid data exists past the cap boundary.
+				let resolved = 0
 				for (const c of concerts) {
-					artistsWithData.add(c.artistId)
+					if (c.artistId) {
+						artistsWithData.add(c.artistId)
+						resolved++
+					}
 				}
-				total += concerts.length
-				capped.push(g)
+				total += resolved
+				// Drop the entire group when none of its concerts resolved
+				// AND strip blank-artist concerts from partially-resolved
+				// groups before pushing. The previous group-level guard
+				// alone still leaked individual ghost cards from a mixed
+				// group into the unauthenticated preview.
+				if (resolved > 0) {
+					capped.push({
+						...g,
+						home: g.home.filter((c) => c.artistId),
+						nearby: g.nearby.filter((c) => c.artistId),
+						away: g.away.filter((c) => c.artistId),
+					})
+				}
 				if (total >= MAX_PREVIEW_CONCERTS) break
 			}
 

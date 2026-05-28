@@ -153,7 +153,17 @@ export class ConcertServiceClient {
 		artistMap: Map<string, { artist: Artist; hype: Hype }>,
 		journeyMap: Map<string, JourneyStatus>,
 	): DateGroup {
-		const ld = group.date?.value
+		// Same zero-component guard concertFrom applies to per-concert
+		// dates — a proto3-defaulted ProximityGroup.date with any zero
+		// field would roll `new Date(2026, -1, 15)` to 2025-12-15 and
+		// produce a malformed `2026-00-15` dateKey, silently
+		// misbucketing the whole group. Treat any zero component as
+		// unpopulated and fall back to today / empty key.
+		const rawLd = group.date?.value
+		const ld =
+			rawLd && rawLd.year !== 0 && rawLd.month !== 0 && rawLd.day !== 0
+				? rawLd
+				: undefined
 		const jsDate = ld ? new Date(ld.year, ld.month - 1, ld.day) : new Date()
 
 		const dateKey = ld
@@ -166,10 +176,81 @@ export class ConcertServiceClient {
 			weekday: 'short',
 		})
 
+		// unresolved collects concerts whose performers don't resolve in
+		// artistMap so we can emit a single batched warn at the end of
+		// this group instead of one per concert. A systematic mismatch
+		// (wrong ID namespace, schema-skew rollout window) could produce
+		// O(N) entries per page load and flood any remote log sink or
+		// OTEL exporter; one entry per call with the full list is equally
+		// actionable but bounded.
+		//
+		// Each entry carries the lane the failure originated in so on-call
+		// can distinguish "all failures in away" (proximity-based, often
+		// expected) from "failures in home" (followed-artist mismatch,
+		// suspicious). Dedup keys on `${id}|${lane}` rather than id alone:
+		// a backend bug echoing the same concert proto across lanes is
+		// itself useful diagnostic signal (one entry per lane it appeared
+		// in), and within-lane re-pushes from the flatMap (impossible
+		// today but cheap to defend) still collapse to one entry.
+		const unresolved: Array<{ id: string; lane: LaneType }> = []
+		const unresolvedSeen = new Set<string>()
 		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
 			concerts.flatMap((c) => {
-				const artistId = c.artistId?.value ?? ''
-				const entry = artistMap.get(artistId)
+				// Concert proto v0.41.0+ exposes performers as a repeated
+				// field. For follower-based listing the user may follow any
+				// performer on the bill, not necessarily the headliner — a
+				// festival concert can return with the followed support act
+				// as performers[1+], so probe every performer and pick the
+				// first one that resolves against the user's artistMap. The
+				// resolved entry's Artist (with its id) is then forwarded to
+				// concertFrom so the entity's artistId / artistName / artist
+				// fields stay internally consistent. When no Artist is
+				// resolved all three fields are left blank (no headliner
+				// fallback — see concert-mapper.ts for why symmetric blanks
+				// are required).
+				// Tiebreaker note: when the user follows multiple
+				// performers on the same bill (e.g. both the headliner
+				// and a support act), the FIRST matched performer wins —
+				// the loop breaks on the first hit. Order is whatever
+				// the backend serialised in `performers[]`, which is the
+				// billing/series order today. A more nuanced policy
+				// (e.g. "highest hype tier wins") would require ranking
+				// candidates instead of breaking on first match; intent
+				// today is "first listed performer the user follows = the
+				// primary identity for this card", consistent with the
+				// dashboard's single-artist-per-row model.
+				let entry: { artist: Artist; hype: Hype } | undefined
+				for (const p of c.performers ?? []) {
+					// Skip performers whose id is missing/empty — otherwise an
+					// `artistMap.get('')` would spuriously resolve if any
+					// followed artist happens to be stored under a blank key
+					// (a backend bug, but cheap to defend against here).
+					const candidate = p.id?.value
+					if (!candidate) continue
+					const candidateEntry = artistMap.get(candidate)
+					if (candidateEntry) {
+						entry = candidateEntry
+						break
+					}
+				}
+				if (!entry) {
+					// Skip blank ids — a `''` entry is indistinguishable
+					// from "one more unresolved" and gives on-call nothing
+					// to grep for. Dedup by (id, lane) so a concert echoed
+					// across lanes (a backend bug) emits one entry per lane
+					// it appeared in (useful signal) instead of collapsing
+					// to whichever lane the flatMap reached first. The
+					// concert itself is still processed by concertFrom
+					// below; only the diagnostic entry is deduped.
+					const concertId = c.id?.value
+					if (concertId) {
+						const key = `${concertId}|${lane}`
+						if (!unresolvedSeen.has(key)) {
+							unresolvedSeen.add(key)
+							unresolved.push({ id: concertId, lane })
+						}
+					}
+				}
 				const hypeLevel: HypeLevel = entry?.hype ?? DEFAULT_HYPE
 				const event = concertFrom(
 					c,
@@ -186,13 +267,31 @@ export class ConcertServiceClient {
 				return [event]
 			})
 
-		return {
+		const result = {
 			label,
 			dateKey,
 			home: convert(group.home, 'home'),
 			nearby: convert(group.nearby, 'nearby'),
 			away: convert(group.away, 'away'),
 		}
+		if (unresolved.length > 0) {
+			// Single batched warn per group; backend ListByFollower SHOULD
+			// only return concerts that feature a followed artist, so any
+			// non-empty list here is a real signal (ID-format mismatch or
+			// schema-skew rollout). Use the scoped Aurelia logger so the
+			// entry flows through whatever log sink / OpenTelemetry
+			// exporter the class is configured with.
+			this.logger.warn(
+				'some concerts had no performer resolved against followedArtists; they will either render with empty artist context or be dropped entirely by concertFrom (e.g. a zero-component localDate)',
+				{
+					count: unresolved.length,
+					concertIds: unresolved.map((u) => u.id),
+					lanes: unresolved.map((u) => u.lane),
+					dateKey,
+				},
+			)
+		}
+		return result
 	}
 
 	private async listByFollowerGuest(

@@ -42,14 +42,23 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 							home: [
 								{
 									id: { value: 'c-1' },
-									artistId: { value: 'a-1' },
-									title: { value: 'Test Concert' },
+									performers: [
+										{
+											id: { value: 'a-1' },
+											name: { value: 'Artist 1' },
+											mbid: { value: '' },
+										},
+									],
+									series: {
+										id: { value: 's-1' },
+										title: { value: 'Test Concert' },
+										sourceUrl: { value: 'https://example.com' },
+									},
 									localDate: { value: tomorrowDate },
 									venue: {
 										name: { value: 'Test Venue' },
 										adminArea: { value: 'JP-13' },
 									},
-									sourceUrl: { value: 'https://example.com' },
 								},
 							],
 							nearby: [],
@@ -73,14 +82,23 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 							away: [
 								{
 									id: { value: 'c-1' },
-									artistId: { value: 'a-1' },
-									title: { value: 'Test Concert' },
+									performers: [
+										{
+											id: { value: 'a-1' },
+											name: { value: 'Artist 1' },
+											mbid: { value: '' },
+										},
+									],
+									series: {
+										id: { value: 's-1' },
+										title: { value: 'Test Concert' },
+										sourceUrl: { value: 'https://example.com' },
+									},
 									localDate: { value: tomorrowDate },
 									venue: {
 										name: { value: 'Test Venue' },
 										adminArea: { value: 'JP-13' },
 									},
-									sourceUrl: { value: 'https://example.com' },
 								},
 							],
 						},
@@ -97,14 +115,23 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 					concerts: [
 						{
 							id: { value: 'c-1' },
-							artistId: { value: 'a-1' },
-							title: { value: 'Test Concert' },
+							performers: [
+								{
+									id: { value: 'a-1' },
+									name: { value: 'Artist 1' },
+									mbid: { value: '' },
+								},
+							],
+							series: {
+								id: { value: 's-1' },
+								title: { value: 'Test Concert' },
+								sourceUrl: { value: 'https://example.com' },
+							},
 							localDate: { value: tomorrowDate },
 							venue: {
 								name: { value: 'Test Venue' },
 								adminArea: { value: 'JP-13' },
 							},
-							sourceUrl: { value: 'https://example.com' },
 						},
 					],
 				}),

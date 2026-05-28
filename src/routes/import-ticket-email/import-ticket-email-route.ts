@@ -127,6 +127,18 @@ export class ImportTicketEmailRoute {
 		}
 	}
 
+	// Returns true only when at least one concert is fully renderable —
+	// id-bearing AND with a non-blank series title. EXACTLY mirrors the
+	// per-row `if.bind="concert.id?.value && concert.series?.title?.value"`
+	// filter on the <li repeat.for>, so the empty-state <p> only shows
+	// when zero rows render. If the two predicates ever diverge, both
+	// the broken row AND the "not found" message could appear at once.
+	public get hasDisplayableConcerts(): boolean {
+		return this.concerts.some(
+			(c) => Boolean(c.id?.value) && Boolean(c.series?.title?.value),
+		)
+	}
+
 	public get hasSelectedConcerts(): boolean {
 		return this.selectedEventIds.length > 0
 	}
@@ -190,6 +202,28 @@ export class ImportTicketEmailRoute {
 		} finally {
 			this.isLoading = false
 		}
+	}
+
+	// formatLocalDate renders a proto LocalDate.value (a `{year, month, day}`
+	// google.type.Date message) as a zero-padded YYYY-MM-DD string for display.
+	// Without this helper the template `${concert.localDate?.value}` would
+	// stringify the proto message via its default toString() and render
+	// `[object Object]`, which is what every concert row was showing in the
+	// step-4 selection list before this method existed.
+	public formatLocalDate(
+		d: { year: number; month: number; day: number } | undefined,
+	): string {
+		if (!d) return ''
+		// Treat any zero component as "unpopulated". Proto3 leaves missing
+		// scalar fields at their type-zero defaults independently, so a
+		// partially-serialised Date like {year:2025, month:0, day:0} (backend
+		// only set the year) would render as '2025-00-00' in the row's
+		// <small> slot. Symmetric for the year:0 case. Returning '' keeps
+		// the slot blank for any partially-populated Date.
+		if (d.year === 0 || d.month === 0 || d.day === 0) return ''
+		const month = String(d.month).padStart(2, '0')
+		const day = String(d.day).padStart(2, '0')
+		return `${d.year}-${month}-${day}`
 	}
 
 	public sanitizeUrl(url: string | undefined): string {

@@ -45,8 +45,17 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 							home: [
 								{
 									id: { value: 'c-1' },
-									artistId: { value: 'artist-1' },
-									title: { value: 'Zepp Live' },
+									performers: [
+										{
+											id: { value: 'artist-1' },
+											name: { value: 'YOASOBI' },
+											mbid: { value: '' },
+										},
+									],
+									series: {
+										id: { value: 's-1' },
+										title: { value: 'Zepp Live' },
+									},
 									localDate: {
 										value: {
 											year: tomorrow.getFullYear(),
