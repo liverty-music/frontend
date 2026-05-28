@@ -38,8 +38,12 @@ describe('concertFrom', () => {
 	function makeProto(overrides: Record<string, unknown> = {}) {
 		// Concert proto v0.41.0+: title / sourceUrl moved onto the embedded
 		// `series` parent; the single `artistId` was replaced by a `performers`
-		// repeated field. The mapper projects the first performer onto the
-		// flat entity Concert.artistId.
+		// repeated field. The mapper takes the caller-resolved `artist` arg
+		// as the entity's artistId — no `performers[0]` fallback. When no
+		// artist is resolved the artist trio (artistId / artistName /
+		// artist) all go blank to keep downstream consumers internally
+		// consistent (see `leaves artistId empty when no artist is
+		// resolved` test for the contract assertion).
 		return {
 			id: { value: 'c1' },
 			performers: [
