@@ -8,6 +8,10 @@ import {
 } from 'aurelia'
 import type { Artist } from '../../entities/artist'
 import { IAudioEngine } from '../../services/audio-engine'
+import {
+	onReducedMotionChange,
+	prefersReducedMotion,
+} from '../../util/prefers-reduced-motion'
 import { AbsorptionAnimator } from './absorption-animator'
 import {
 	type BubbleArtistParams,
@@ -60,6 +64,7 @@ export class DnaOrbCanvas {
 	private readonly audio = resolve(IAudioEngine)
 	private readonly logger = resolve(ILogger).scopeTo('DnaOrbCanvas')
 	private reducedMotion = false
+	private reducedMotionUnsub: (() => void) | null = null
 
 	private focusedBubbleIndex = -1
 	private reloadGeneration = 0
@@ -101,12 +106,12 @@ export class DnaOrbCanvas {
 		this.ctx = ctx
 
 		// Honor prefers-reduced-motion for the visual micro-interactions only;
-		// audio is gated solely by the SE setting / device mute switch.
-		this.reducedMotion =
-			typeof window.matchMedia === 'function' &&
-			window.matchMedia('(prefers-reduced-motion: reduce)').matches
-		this.tapEffects.reducedMotion = this.reducedMotion
-		this.absorptionAnimator.elastic = !this.reducedMotion
+		// audio is gated solely by the SE setting / device mute switch. React to
+		// live OS changes so the user need not reload to take effect.
+		this.applyReducedMotion(prefersReducedMotion())
+		this.reducedMotionUnsub = onReducedMotionChange((reduced) =>
+			this.applyReducedMotion(reduced),
+		)
 
 		await this.resize()
 		window.addEventListener('resize', this.onResize)
@@ -126,9 +131,29 @@ export class DnaOrbCanvas {
 		this.canvas.removeEventListener('pointerdown', this.onPointerDown)
 		this.canvas.removeEventListener('keydown', this.onKeyDown)
 		this.physics.destroy()
+		this.reducedMotionUnsub?.()
+		this.reducedMotionUnsub = null
 		// Release the audio hardware on route deactivation; the next tap
 		// re-unlocks the context within that gesture.
 		this.audio.suspend()
+	}
+
+	/** Apply the reduced-motion preference to the visual micro-interactions. */
+	private applyReducedMotion(reduced: boolean): void {
+		this.reducedMotion = reduced
+		this.tapEffects.reducedMotion = reduced
+		this.absorptionAnimator.elastic = !reduced
+	}
+
+	/**
+	 * Immediate tap feedback shared by direct taps and search-triggered follows:
+	 * unlock the audio context (within the gesture), play the tap tone, and pulse
+	 * the haptic. Keeps the two entry points feeling identical.
+	 */
+	private emitTapFeedback(hue: number): void {
+		this.audio.unlock()
+		this.audio.playTap(hue)
+		this.vibrate(HAPTIC_TAP_MS)
 	}
 
 	public pause(): void {
@@ -179,9 +204,7 @@ export class DnaOrbCanvas {
 		const hue = this.artistHue(name)
 		// Reuse the same feedback path as a direct tap so search-triggered
 		// follows sound and feel identical.
-		this.audio.unlock()
-		this.audio.playTap(hue)
-		this.vibrate(HAPTIC_TAP_MS)
+		this.emitTapFeedback(hue)
 		this.absorptionAnimator.startAbsorption(
 			id,
 			name,
@@ -299,9 +322,7 @@ export class DnaOrbCanvas {
 			const radius = bubble.radius
 
 			// Frame 0: immediate, coincident tap feedback (audio + haptic + ripple).
-			this.audio.unlock()
-			this.audio.playTap(hue)
-			this.vibrate(HAPTIC_TAP_MS)
+			this.emitTapFeedback(hue)
 			this.tapEffects.addRipple(x, y, radius)
 
 			// Remove from physics; the press ghost holds the bubble's place during

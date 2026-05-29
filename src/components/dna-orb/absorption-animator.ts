@@ -1,3 +1,5 @@
+import { easeInBack, easeInCubic } from './easing'
+
 interface TrailPoint {
 	x: number
 	y: number
@@ -253,17 +255,6 @@ export class AbsorptionAnimator {
 			spawned++
 		}
 	}
-}
-
-function easeInCubic(t: number): number {
-	return t * t * t
-}
-
-/** Ease-in with anticipation: dips back slightly before yanking toward 1. */
-function easeInBack(t: number): number {
-	const c1 = 1.70158
-	const c3 = c1 + 1
-	return c3 * t * t * t - c1 * t * t
 }
 
 function bezierPoint(p0: number, p1: number, p2: number, t: number): number {
