@@ -15,7 +15,13 @@
  * measure the gap between user intent and server-confirmed outcome.
  */
 
-type EventSource = 'page' | 'artist_page' | 'search_result' | 'recommendation' | 'notification' | 'discovery_orb'
+type EventSource =
+	| 'page'
+	| 'artist_page'
+	| 'search_result'
+	| 'recommendation'
+	| 'notification'
+	| 'discovery_orb'
 
 type BaseProps = {
 	/**
