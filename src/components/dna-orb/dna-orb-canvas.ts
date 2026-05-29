@@ -8,12 +8,17 @@ import {
 } from 'aurelia'
 import type { Artist } from '../../entities/artist'
 import { AbsorptionAnimator } from './absorption-animator'
+import { IAudioEngine } from './audio-engine'
 import {
 	type BubbleArtistParams,
 	BubblePhysics,
 	type PhysicsBubble,
 } from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'
+import { TapEffects } from './tap-effects'
+
+/** Haptic pulse duration (ms) for a bubble tap. */
+const HAPTIC_TAP_MS = 10
 
 @useShadowDOM()
 export class DnaOrbCanvas {
@@ -50,8 +55,11 @@ export class DnaOrbCanvas {
 	private physics = new BubblePhysics()
 	private orbRenderer = new OrbRenderer()
 	private absorptionAnimator = new AbsorptionAnimator()
+	private tapEffects = new TapEffects()
 
+	private readonly audio = resolve(IAudioEngine)
 	private readonly logger = resolve(ILogger).scopeTo('DnaOrbCanvas')
+	private reducedMotion = false
 
 	private focusedBubbleIndex = -1
 	private reloadGeneration = 0
@@ -92,6 +100,14 @@ export class DnaOrbCanvas {
 		}
 		this.ctx = ctx
 
+		// Honor prefers-reduced-motion for the visual micro-interactions only;
+		// audio is gated solely by the SE setting / device mute switch.
+		this.reducedMotion =
+			typeof window.matchMedia === 'function' &&
+			window.matchMedia('(prefers-reduced-motion: reduce)').matches
+		this.tapEffects.reducedMotion = this.reducedMotion
+		this.absorptionAnimator.elastic = !this.reducedMotion
+
 		await this.resize()
 		window.addEventListener('resize', this.onResize)
 		this.canvas.addEventListener('pointerdown', this.onPointerDown)
@@ -110,6 +126,9 @@ export class DnaOrbCanvas {
 		this.canvas.removeEventListener('pointerdown', this.onPointerDown)
 		this.canvas.removeEventListener('keydown', this.onKeyDown)
 		this.physics.destroy()
+		// Release the audio hardware on route deactivation; the next tap
+		// re-unlocks the context within that gesture.
+		this.audio.suspend()
 	}
 
 	public pause(): void {
@@ -158,6 +177,11 @@ export class DnaOrbCanvas {
 		const name = artist.name
 		const radius = 30 + Math.random() * 15
 		const hue = this.artistHue(name)
+		// Reuse the same feedback path as a direct tap so search-triggered
+		// follows sound and feel identical.
+		this.audio.unlock()
+		this.audio.playTap(hue)
+		this.vibrate(HAPTIC_TAP_MS)
 		this.absorptionAnimator.startAbsorption(
 			id,
 			name,
@@ -167,12 +191,7 @@ export class DnaOrbCanvas {
 			this.orbRenderer.orbY,
 			radius,
 			hue,
-			(completedHue) => {
-				this.orbRenderer.injectColor(completedHue)
-				if (this.orbRenderer.getStageParams().shockwaveEnabled) {
-					this.orbRenderer.spawnShockwave(completedHue)
-				}
-			},
+			(completedHue) => this.onAbsorbComplete(completedHue),
 		)
 
 		this.element.dispatchEvent(
@@ -276,26 +295,31 @@ export class DnaOrbCanvas {
 			const artist = bubble.artist
 			const artistId = artist.id
 			const artistName = artist.name
-
-			// Remove from physics and start absorption
 			const hue = this.artistHue(artistName)
+			const radius = bubble.radius
+
+			// Frame 0: immediate, coincident tap feedback (audio + haptic + ripple).
+			this.audio.unlock()
+			this.audio.playTap(hue)
+			this.vibrate(HAPTIC_TAP_MS)
+			this.tapEffects.addRipple(x, y, radius)
+
+			// Remove from physics; the press ghost holds the bubble's place during
+			// the brief squash-and-stretch pre-roll before absorption begins.
 			this.physics.removeBubble(artistId)
-			this.absorptionAnimator.startAbsorption(
-				artistId,
-				artistName,
-				pos.x,
-				pos.y,
-				this.orbRenderer.orbX,
-				this.orbRenderer.orbY,
-				bubble.radius,
-				hue,
-				(completedHue) => {
-					this.orbRenderer.injectColor(completedHue)
-					if (this.orbRenderer.getStageParams().shockwaveEnabled) {
-						this.orbRenderer.spawnShockwave(completedHue)
-					}
-				},
-			)
+			this.tapEffects.addPress(pos.x, pos.y, radius, hue, () => {
+				this.absorptionAnimator.startAbsorption(
+					artistId,
+					artistName,
+					pos.x,
+					pos.y,
+					this.orbRenderer.orbX,
+					this.orbRenderer.orbY,
+					radius,
+					hue,
+					(completedHue) => this.onAbsorbComplete(completedHue),
+				)
+			})
 
 			// Notify parent via DOM event
 			this.element.dispatchEvent(
@@ -321,6 +345,29 @@ export class DnaOrbCanvas {
 		}
 	}
 
+	/**
+	 * Shared absorption-completion feedback: inject the artist color, fire the
+	 * orb shockwave, and play the synced landing tone — all on the same frame.
+	 */
+	private onAbsorbComplete(hue: number): void {
+		this.orbRenderer.injectColor(hue)
+		if (this.orbRenderer.getStageParams().shockwaveEnabled) {
+			this.orbRenderer.spawnShockwave(hue)
+		}
+		this.audio.playLanding(hue)
+	}
+
+	/** Trigger a brief haptic pulse where the Vibration API is available. */
+	private vibrate(ms: number): void {
+		if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+			try {
+				navigator.vibrate(ms)
+			} catch {
+				// Vibration may be blocked by the platform; ignore.
+			}
+		}
+	}
+
 	private readonly loop = (time: number): void => {
 		const delta = Math.min(time - this.lastTime, 32) // Cap at ~30fps min to prevent physics explosions on tab-switch/GC pauses
 		this.lastTime = time
@@ -330,6 +377,7 @@ export class DnaOrbCanvas {
 		this.physics.update(delta)
 		this.orbRenderer.update(delta)
 		this.absorptionAnimator.update(delta)
+		this.tapEffects.update(delta)
 
 		this.render()
 		this.animFrameId = requestAnimationFrame(this.loop)
@@ -375,6 +423,9 @@ export class DnaOrbCanvas {
 		for (let i = 0; i < bubbles.length; i++) {
 			this.renderBubble(bubbles[i], i === this.focusedBubbleIndex)
 		}
+
+		// Layer 2.5: Tap ripples + squash-and-stretch press ghosts
+		this.tapEffects.render(this.ctx)
 
 		// Layer 3-4: Comet trails + absorption animations
 		this.absorptionAnimator.render(this.ctx)
