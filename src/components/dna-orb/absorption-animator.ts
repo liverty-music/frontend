@@ -1,3 +1,5 @@
+import { easeInBack, easeInCubic } from './easing'
+
 interface TrailPoint {
 	x: number
 	y: number
@@ -37,6 +39,17 @@ export class AbsorptionAnimator {
 	private animations: AbsorptionAnimation[] = []
 	private particlePool: DissolveParticle[] = []
 	public cometTrailEnabled = false
+	/**
+	 * When enabled, the bubble follows an elastic "wind-up then yank" trajectory
+	 * into the orb. Disabled under `prefers-reduced-motion`, falling back to the
+	 * prior ease-in curve.
+	 */
+	public elastic = false
+
+	/** Trajectory easing — elastic overshoot when enabled, otherwise ease-in cubic. */
+	private trajectoryEase(t: number): number {
+		return this.elastic ? easeInBack(t) : easeInCubic(t)
+	}
 
 	constructor() {
 		for (let i = 0; i < POOL_SIZE; i++) {
@@ -101,7 +114,7 @@ export class AbsorptionAnimator {
 
 			// Record trail point
 			if (this.cometTrailEnabled) {
-				const t = easeInCubic(anim.progress)
+				const t = this.trajectoryEase(anim.progress)
 				const cpX =
 					(anim.startX + anim.endX) / 2 + (anim.startX - anim.endX) * 0.3
 				const cpY = Math.min(anim.startY, anim.endY) - 80
@@ -141,7 +154,7 @@ export class AbsorptionAnimator {
 
 	public render(ctx: CanvasRenderingContext2D): void {
 		for (const anim of this.animations) {
-			const t = easeInCubic(anim.progress)
+			const t = this.trajectoryEase(anim.progress)
 
 			const cpX =
 				(anim.startX + anim.endX) / 2 + (anim.startX - anim.endX) * 0.3
@@ -242,10 +255,6 @@ export class AbsorptionAnimator {
 			spawned++
 		}
 	}
-}
-
-function easeInCubic(t: number): number {
-	return t * t * t
 }
 
 function bezierPoint(p0: number, p1: number, p2: number, t: number): number {

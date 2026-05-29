@@ -4,6 +4,9 @@ export const StorageKeys = {
 	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
 	pwaInstalled: 'pwa.installed',
 	postSignupShown: 'liverty:postSignup:shown',
+	// Discovery bubble sound-effect preferences. '1'/'0' for mute, '0'..'1' for volume.
+	soundMuted: 'liverty:sound:muted',
+	soundVolume: 'liverty:sound:volume',
 	// Anonymous-period UI language. See UserHydrationTask for cleanup.
 	language: 'language',
 } as const

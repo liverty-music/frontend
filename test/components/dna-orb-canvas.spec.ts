@@ -412,7 +412,11 @@ describe('DnaOrbCanvas', () => {
 
 			;(sut as any).handleInteraction(100, 200)
 
+			// The bubble is removed immediately; absorption begins after the brief
+			// squash-and-stretch press pre-roll, flushed here by advancing the
+			// tap-effects clock past its lifetime.
 			expect(removeSpy).toHaveBeenCalledWith('a1')
+			;(sut as any).tapEffects.update(100)
 			expect(absorptionSpy).toHaveBeenCalledWith(
 				'a1',
 				'Absorbed',

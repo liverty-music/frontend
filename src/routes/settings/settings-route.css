@@ -116,6 +116,22 @@
 				color-mix(in oklch, var(--color-white) 5%, transparent);
 		}
 
+		.settings-volume-row {
+			display: flex;
+			gap: var(--space-s);
+			align-items: center;
+		}
+
+		/* accent-color themes the slider on Chrome/Android. Safari/WebKit does
+		   not support it, so iOS falls back to the native control by design —
+		   the project's CSS rules forbid the vendor-prefixed hand-rolled slider
+		   that a custom WebKit fallback would require. */
+		.settings-volume-slider {
+			flex: 1;
+			cursor: pointer;
+			accent-color: var(--color-brand-primary);
+		}
+
 		.settings-toggle-col {
 			display: flex;
 			flex-direction: column;

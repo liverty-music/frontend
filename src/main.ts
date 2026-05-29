@@ -58,6 +58,7 @@ import { AuthHook } from './hooks/auth-hook'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
 import { IArtistServiceClient } from './services/artist-service-client'
+import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
@@ -184,6 +185,7 @@ async function bootstrap(): Promise<void> {
 	au.register(IGuestService)
 	au.register(IGuestDataMergeService)
 	au.register(INavDimmingService)
+	au.register(IAudioEngine)
 	au.register(INotificationManager)
 	au.register(IPushService)
 	au.register(IPromptCoordinator)

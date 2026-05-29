@@ -3,9 +3,10 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { Snack } from '../../components/snack-bar/snack'
-import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
+import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
 import { translationKey } from '../../constants/iso3166'
+import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
@@ -25,7 +26,10 @@ export class SettingsRoute {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 	private readonly localStorage = resolve(ILocalStorage)
+	private readonly audio = resolve(IAudioEngine)
 
+	public soundEnabled = !this.audio.muted
+	public soundVolume = Math.round(this.audio.volume * 100)
 	public notificationsEnabled = false
 	public vapidAvailable = !!resolve(IAppConfig).vapidPublicKey
 	public homeSelector!: UserHomeSelector
@@ -274,6 +278,22 @@ export class SettingsRoute {
 		} finally {
 			this.isResendingVerification = false
 		}
+	}
+
+	/** Toggle discovery sound effects on/off. */
+	public toggleSound(): void {
+		this.soundEnabled = !this.soundEnabled
+		this.audio.setMuted(!this.soundEnabled)
+	}
+
+	/** Live-apply the volume slider (0–100) to the audio engine on every tick. */
+	public onSoundVolumeInput(): void {
+		this.audio.setVolume(this.soundVolume / 100)
+	}
+
+	/** Persist the volume once when the user releases the slider. */
+	public onSoundVolumePersist(): void {
+		this.audio.persistVolume()
 	}
 
 	public async signOut(): Promise<void> {
