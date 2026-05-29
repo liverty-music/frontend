@@ -116,6 +116,12 @@
 				color-mix(in oklch, var(--color-white) 5%, transparent);
 		}
 
+		.settings-volume-slider {
+			inline-size: 100%;
+			accent-color: var(--color-brand-primary);
+			cursor: pointer;
+		}
+
 		.settings-toggle-col {
 			display: flex;
 			flex-direction: column;

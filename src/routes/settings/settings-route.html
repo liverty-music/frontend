@@ -60,6 +60,41 @@
           <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled"></div>
         </div>
       </button>
+
+      <hr class="[ settings-divider ]">
+
+      <!-- Sound Effects -->
+      <button
+        click.trigger="toggleSound()"
+        role="switch"
+        aria-checked.bind="soundEnabled"
+        class="settings-row"
+      >
+        <div class="settings-toggle-col">
+          <div class="settings-row-start">
+            <svg-icon name="music" class="settings-icon"></svg-icon>
+            <span t="settings.soundEffects" class="settings-row-label"></span>
+          </div>
+          <span t="settings.soundEffectsHint" class="settings-row-hint"></span>
+        </div>
+        <!-- Toggle switch -->
+        <div class="settings-toggle-track" data-on.bind="soundEnabled">
+          <div class="settings-toggle-thumb" data-on.bind="soundEnabled"></div>
+        </div>
+      </button>
+
+      <div if.bind="soundEnabled" class="settings-row">
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value.bind="soundVolume"
+          input.trigger="onSoundVolumeChange()"
+          class="settings-volume-slider"
+          aria-label="Sound effect volume"
+        >
+      </div>
     </div>
   </section>
 

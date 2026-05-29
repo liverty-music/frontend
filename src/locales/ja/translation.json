@@ -248,6 +248,8 @@
 		"notSet": "未設定",
 		"pushNotifications": "プッシュ通知",
 		"notAvailable": "この環境では利用できません",
+		"soundEffects": "効果音",
+		"soundEffectsHint": "iOS では効果音は端末のマナーモードに従います。",
 		"language": "言語",
 		"about": "情報",
 		"termsOfService": "利用規約",
