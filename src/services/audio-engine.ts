@@ -1,4 +1,5 @@
-import { DI } from 'aurelia'
+import { DI, resolve } from 'aurelia'
+import { ILocalStorage } from '../adapter/storage/local-storage'
 import { StorageKeys } from '../constants/storage-keys'
 
 /**
@@ -80,7 +81,10 @@ export interface IAudioEngine {
 	playTap(hue: number): void
 	playLanding(hue: number): void
 	setMuted(muted: boolean): void
+	/** Apply volume to the live output. Does NOT persist — call `persistVolume`. */
 	setVolume(volume: number): void
+	/** Persist the current volume (call once on slider release, not per tick). */
+	persistVolume(): void
 }
 
 export const IAudioEngine = DI.createInterface<IAudioEngine>(
@@ -109,9 +113,11 @@ export class AudioEngine implements IAudioEngine {
 	private comboSteps = 0
 	private lastTapAt = 0
 
+	private readonly storage = resolve(ILocalStorage)
+
 	constructor() {
-		this._muted = localStorage.getItem(StorageKeys.soundMuted) === '1'
-		const storedRaw = localStorage.getItem(StorageKeys.soundVolume)
+		this._muted = this.storage.getItem(StorageKeys.soundMuted) === '1'
+		const storedRaw = this.storage.getItem(StorageKeys.soundVolume)
 		// Distinguish "no preference stored" (null) from a real stored 0;
 		// Number(null ?? '') would be 0 and silently override DEFAULT_VOLUME.
 		const storedVolume = storedRaw === null ? Number.NaN : Number(storedRaw)
@@ -138,6 +144,10 @@ export class AudioEngine implements IAudioEngine {
 	}
 
 	public suspend(): void {
+		// Reset the combo so re-entering discovery starts at the base pitch
+		// rather than inheriting a stale climb from the previous session.
+		this.comboSteps = 0
+		this.lastTapAt = 0
 		if (this.ctx?.state === 'running') {
 			void this.ctx.suspend()
 		}
@@ -150,7 +160,7 @@ export class AudioEngine implements IAudioEngine {
 	}
 
 	public playTap(hue: number): void {
-		if (!this.ctx || !this.master) return
+		if (this._muted || !this.ctx || !this.master) return
 
 		this.advanceCombo()
 		const index = hueToScaleIndex(hue) + this.comboSteps
@@ -176,7 +186,7 @@ export class AudioEngine implements IAudioEngine {
 	}
 
 	public playLanding(hue: number): void {
-		if (!this.ctx || !this.master) return
+		if (this._muted || !this.ctx || !this.master) return
 		// An octave below the tap tone, softer and longer — a gentle "settle".
 		const freq = hueToPentatonicPitch(hue) / 2
 		this.spawnVoice(freq, {
@@ -189,14 +199,17 @@ export class AudioEngine implements IAudioEngine {
 
 	public setMuted(muted: boolean): void {
 		this._muted = muted
-		localStorage.setItem(StorageKeys.soundMuted, muted ? '1' : '0')
+		this.storage.setItem(StorageKeys.soundMuted, muted ? '1' : '0')
 		this.applyMasterGain()
 	}
 
 	public setVolume(volume: number): void {
 		this._volume = Math.min(1, Math.max(0, volume))
-		localStorage.setItem(StorageKeys.soundVolume, String(this._volume))
 		this.applyMasterGain()
+	}
+
+	public persistVolume(): void {
+		this.storage.setItem(StorageKeys.soundVolume, String(this._volume))
 	}
 
 	private ensureContext(): void {

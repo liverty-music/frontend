@@ -83,16 +83,18 @@
         </div>
       </button>
 
-      <div if.bind="soundEnabled" class="settings-row">
+      <div if.bind="soundEnabled" class="settings-row settings-volume-row">
+        <label for="se-volume" t="settings.soundVolume" class="settings-row-label"></label>
         <input
+          id="se-volume"
           type="range"
           min="0"
           max="100"
           step="5"
-          value.bind="soundVolume"
-          input.trigger="onSoundVolumeChange()"
+          value-as-number.bind="soundVolume"
+          input.trigger="onSoundVolumeInput()"
+          change.trigger="onSoundVolumePersist()"
           class="settings-volume-slider"
-          aria-label="Sound effect volume"
         >
       </div>
     </div>

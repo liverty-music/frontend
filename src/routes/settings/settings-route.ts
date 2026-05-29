@@ -286,9 +286,14 @@ export class SettingsRoute {
 		this.audio.setMuted(!this.soundEnabled)
 	}
 
-	/** Apply the sound-effect volume slider (0–100) to the audio engine. */
-	public onSoundVolumeChange(): void {
+	/** Live-apply the volume slider (0–100) to the audio engine on every tick. */
+	public onSoundVolumeInput(): void {
 		this.audio.setVolume(this.soundVolume / 100)
+	}
+
+	/** Persist the volume once when the user releases the slider. */
+	public onSoundVolumePersist(): void {
+		this.audio.persistVolume()
 	}
 
 	public async signOut(): Promise<void> {

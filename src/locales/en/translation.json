@@ -250,6 +250,7 @@
 		"notAvailable": "Not available in this environment",
 		"soundEffects": "Sound Effects",
 		"soundEffectsHint": "On iOS, sound effects follow the device mute switch.",
+		"soundVolume": "Volume",
 		"language": "Language",
 		"about": "About",
 		"termsOfService": "Terms of Service",
