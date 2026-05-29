@@ -23,6 +23,7 @@ import { ArtistUnfollowSheet } from './components/artist-unfollow-sheet/artist-u
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
 import { CelebrationOverlay } from './components/celebration-overlay/celebration-overlay'
+import { IAudioEngine } from './components/dna-orb/audio-engine'
 import { InlineError } from './components/inline-error/inline-error'
 import { ConcertHighway } from './components/live-highway/concert-highway'
 import { EventCard } from './components/live-highway/event-card'
@@ -184,6 +185,7 @@ async function bootstrap(): Promise<void> {
 	au.register(IGuestService)
 	au.register(IGuestDataMergeService)
 	au.register(INavDimmingService)
+	au.register(IAudioEngine)
 	au.register(INotificationManager)
 	au.register(IPushService)
 	au.register(IPromptCoordinator)
