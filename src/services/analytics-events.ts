@@ -49,8 +49,26 @@ type EventSource =
 // -- Per-event property type declarations -------------------------------------
 
 /**
- * Page view emitted from the Aurelia router `au:router:navigation-end` event.
- * Replaces PostHog's automatic page-view capture, which is disabled.
+ * PII safety contract for `path`, `title`, `referrer`:
+ *
+ * TypeScript cannot constrain these as strings, so the caller is
+ * responsible for stripping sensitive content before emission. The
+ * `auth-callback` route in particular receives OIDC tokens in the URL
+ * (`?code=...&state=...`); passing `pathname + search` would forward
+ * those tokens to PostHog. The `Document.referrer` header routinely
+ * carries OAuth return URLs and magic-link tokens for the same reason.
+ *
+ * - `path` MUST be `window.location.pathname` only; never include
+ *   `search` or `hash`. The router emits an internal route path, not
+ *   the raw URL.
+ * - `title` MUST be the static route title; never inject query-derived
+ *   text (e.g. a search-result title that echoes the user's query).
+ * - `referrer` SHOULD be the referrer's origin only or omitted when
+ *   the referring URL is from an OIDC / magic-link / OAuth provider.
+ *
+ * Batch 3 ships an AnalyticsService that exposes a sanitised
+ * `SafePath` branded type so the contract is enforced at the type
+ * level rather than by convention.
  */
 export type PageViewedProps = {
 	path: string
@@ -68,15 +86,13 @@ export type AccountSignupStartedProps = {
 }
 
 /**
- * The user opened an artist's detail page. Recorded by the discovery flow
- * for impression measurement against `concert.recommendation.served`.
+ * Paired with `concert.recommendation.served` for impression measurement.
  */
 export type ArtistDiscoveryViewedProps = {
 	artist_id: string
 	source: EventSource
 }
 
-/** The user submitted an artist search query. */
 export type ArtistSearchProps = {
 	/** Length of the query string; the query text itself is NOT captured. */
 	query_length: number
@@ -92,7 +108,6 @@ export type ArtistFollowRequestedProps = {
 	source: EventSource
 }
 
-/** The user opened a concert detail page. */
 export type ConcertDetailViewedProps = {
 	concert_id: string
 	artist_id: string
@@ -144,14 +159,12 @@ export type PushSubscriptionRequestedProps = {
 	source: EventSource
 }
 
-/** The user tapped a delivered push notification. */
 export type PushNotificationOpenedProps = {
 	notification_id: string
 	concert_id?: string
 	artist_id?: string
 }
 
-/** The user explicitly dismissed a push notification without opening it. */
 export type PushNotificationDismissedProps = {
 	notification_id: string
 }
