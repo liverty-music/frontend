@@ -1,5 +1,5 @@
 import { DI } from 'aurelia'
-import { StorageKeys } from '../../constants/storage-keys'
+import { StorageKeys } from '../constants/storage-keys'
 
 /**
  * Major pentatonic scale degrees (semitone offsets within one octave).

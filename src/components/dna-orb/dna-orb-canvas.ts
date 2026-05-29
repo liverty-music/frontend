@@ -7,8 +7,8 @@ import {
 	useShadowDOM,
 } from 'aurelia'
 import type { Artist } from '../../entities/artist'
+import { IAudioEngine } from '../../services/audio-engine'
 import { AbsorptionAnimator } from './absorption-animator'
-import { IAudioEngine } from './audio-engine'
 import {
 	type BubbleArtistParams,
 	BubblePhysics,
