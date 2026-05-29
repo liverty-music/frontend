@@ -13,6 +13,29 @@
  * listed here. Paired events such as `artist.follow.requested` (FE) and
  * `artist.follow.completed` (BE) intentionally appear in both catalogues to
  * measure the gap between user intent and server-confirmed outcome.
+ *
+ * Type-safety contract:
+ *
+ *   The `Events` map exposes each event as a string-literal name. The
+ *   `EventPropsMap` type maps each name literal to its required property
+ *   shape. The `EventProps<E>` helper derives the matching property type
+ *   from a name literal. Consumers capture events through a single typed
+ *   function (provided by the forthcoming AnalyticsService) whose signature
+ *   ensures the name and props match at compile time:
+ *
+ *     capture<E extends EventName>(name: E, props: EventProps<E>): void
+ *
+ *   Misuse such as `capture(Events.PageViewed, somePurchaseProps)` fails
+ *   the typecheck — name and props cannot drift apart.
+ *
+ * OpenTelemetry trace correlation:
+ *
+ *   The `trace_id` property is intentionally absent from every payload
+ *   type. AnalyticsService injects it from the active OTel span before
+ *   handing the event to the PostHog SDK, matching the symmetric pattern
+ *   implemented in the backend posthog adapter
+ *   (backend/internal/infrastructure/analytics/posthog/posthog_client.go).
+ *   Call sites do not need to plumb trace_id manually.
  */
 
 type EventSource =
@@ -23,36 +46,38 @@ type EventSource =
 	| 'notification'
 	| 'discovery_orb'
 
-type BaseProps = {
-	/**
-	 * OpenTelemetry trace ID of the active span at emission time, if any.
-	 * Provides a one-click bridge from the analytics event to the
-	 * originating request trace during incident investigation.
-	 */
-	trace_id?: string
-}
+// -- Per-event property type declarations -------------------------------------
 
 /**
  * Page view emitted from the Aurelia router `au:router:navigation-end` event.
  * Replaces PostHog's automatic page-view capture, which is disabled.
  */
-export type PageViewedProps = BaseProps & {
+export type PageViewedProps = {
 	path: string
 	title: string
 	referrer?: string
 }
 
 /**
+ * The user clicked the signup CTA or otherwise entered the signup flow.
+ * Paired with the backend `account.signup.completed` to measure the
+ * signup funnel.
+ */
+export type AccountSignupStartedProps = {
+	source: 'landing' | 'cta' | 'deep_link' | 'post_signup_dialog'
+}
+
+/**
  * The user opened an artist's detail page. Recorded by the discovery flow
  * for impression measurement against `concert.recommendation.served`.
  */
-export type ArtistDiscoveryViewedProps = BaseProps & {
+export type ArtistDiscoveryViewedProps = {
 	artist_id: string
 	source: EventSource
 }
 
 /** The user submitted an artist search query. */
-export type ArtistSearchProps = BaseProps & {
+export type ArtistSearchProps = {
 	/** Length of the query string; the query text itself is NOT captured. */
 	query_length: number
 	result_count: number
@@ -62,13 +87,13 @@ export type ArtistSearchProps = BaseProps & {
  * The user pressed the follow button. Paired with the backend
  * `artist.follow.completed` to measure intent-to-confirmation latency.
  */
-export type ArtistFollowRequestedProps = BaseProps & {
+export type ArtistFollowRequestedProps = {
 	artist_id: string
 	source: EventSource
 }
 
 /** The user opened a concert detail page. */
-export type ConcertDetailViewedProps = BaseProps & {
+export type ConcertDetailViewedProps = {
 	concert_id: string
 	artist_id: string
 	source: EventSource
@@ -78,7 +103,7 @@ export type ConcertDetailViewedProps = BaseProps & {
  * The user clicked a concert recommendation. Paired with the backend
  * `concert.recommendation.served` impression event.
  */
-export type ConcertRecommendationClickedProps = BaseProps & {
+export type ConcertRecommendationClickedProps = {
 	concert_id: string
 	artist_id: string
 	position: number
@@ -88,7 +113,7 @@ export type ConcertRecommendationClickedProps = BaseProps & {
  * The user submitted a ticket lottery entry form. Paired with the backend
  * `ticket.lottery.entry.accepted` / `.rejected` events.
  */
-export type TicketLotteryEntrySubmittedProps = BaseProps & {
+export type TicketLotteryEntrySubmittedProps = {
 	concert_id: string
 	lottery_round: number
 }
@@ -97,7 +122,7 @@ export type TicketLotteryEntrySubmittedProps = BaseProps & {
  * The user started the ticket purchase flow. Paired with the backend
  * `ticket.purchase.completed` / `.failed` events.
  */
-export type TicketPurchaseInitiatedProps = BaseProps & {
+export type TicketPurchaseInitiatedProps = {
 	ticket_id: string
 	concert_id: string
 	price_bucket: string
@@ -107,7 +132,7 @@ export type TicketPurchaseInitiatedProps = BaseProps & {
  * The user attempted to check in at a venue gate (ZK proof submission
  * starting). Paired with the backend `entry.zk_proof.verified` / `.rejected`.
  */
-export type EntryCheckinAttemptedProps = BaseProps & {
+export type EntryCheckinAttemptedProps = {
 	event_id: string
 }
 
@@ -115,82 +140,90 @@ export type EntryCheckinAttemptedProps = BaseProps & {
  * The user opted in to Web Push notifications. Paired with the backend
  * `push.subscription.completed`.
  */
-export type PushSubscriptionRequestedProps = BaseProps & {
+export type PushSubscriptionRequestedProps = {
 	source: EventSource
 }
 
 /** The user tapped a delivered push notification. */
-export type PushNotificationOpenedProps = BaseProps & {
+export type PushNotificationOpenedProps = {
 	notification_id: string
 	concert_id?: string
 	artist_id?: string
 }
 
 /** The user explicitly dismissed a push notification without opening it. */
-export type PushNotificationDismissedProps = BaseProps & {
+export type PushNotificationDismissedProps = {
 	notification_id: string
 }
 
+// -- Name catalogue and type-level wiring --------------------------------------
+
 /**
- * `Events` is the typed event catalogue. Use it as the only source of
- * event-name literals and property shapes in frontend code:
+ * `Events` is the canonical mapping from a human-readable code reference to
+ * the wire-level event-name literal. Each value is a string literal narrowed
+ * via the outer `as const`; no runtime carrier object is allocated for
+ * properties.
  *
- *   analytics.capture(Events.ArtistFollowRequested.name, {
+ *   analytics.capture(Events.ArtistFollowRequested, {
  *     artist_id: artist.id.value,
  *     source: 'recommendation',
  *   })
- *
- * The `props` field exists at compile time only; do not access it at runtime.
  */
 export const Events = {
-	PageViewed: {
-		name: 'page.viewed' as const,
-		props: undefined as unknown as PageViewedProps,
-	},
-	ArtistDiscoveryViewed: {
-		name: 'artist.discovery.viewed' as const,
-		props: undefined as unknown as ArtistDiscoveryViewedProps,
-	},
-	ArtistSearch: {
-		name: 'artist.search' as const,
-		props: undefined as unknown as ArtistSearchProps,
-	},
-	ArtistFollowRequested: {
-		name: 'artist.follow.requested' as const,
-		props: undefined as unknown as ArtistFollowRequestedProps,
-	},
-	ConcertDetailViewed: {
-		name: 'concert.detail.viewed' as const,
-		props: undefined as unknown as ConcertDetailViewedProps,
-	},
-	ConcertRecommendationClicked: {
-		name: 'concert.recommendation.clicked' as const,
-		props: undefined as unknown as ConcertRecommendationClickedProps,
-	},
-	TicketLotteryEntrySubmitted: {
-		name: 'ticket.lottery.entry.submitted' as const,
-		props: undefined as unknown as TicketLotteryEntrySubmittedProps,
-	},
-	TicketPurchaseInitiated: {
-		name: 'ticket.purchase.initiated' as const,
-		props: undefined as unknown as TicketPurchaseInitiatedProps,
-	},
-	EntryCheckinAttempted: {
-		name: 'entry.checkin.attempted' as const,
-		props: undefined as unknown as EntryCheckinAttemptedProps,
-	},
-	PushSubscriptionRequested: {
-		name: 'push.subscription.requested' as const,
-		props: undefined as unknown as PushSubscriptionRequestedProps,
-	},
-	PushNotificationOpened: {
-		name: 'push.notification.opened' as const,
-		props: undefined as unknown as PushNotificationOpenedProps,
-	},
-	PushNotificationDismissed: {
-		name: 'push.notification.dismissed' as const,
-		props: undefined as unknown as PushNotificationDismissedProps,
-	},
-} as const
+	PageViewed: 'page.viewed',
+	AccountSignupStarted: 'account.signup.started',
+	ArtistDiscoveryViewed: 'artist.discovery.viewed',
+	ArtistSearch: 'artist.search',
+	ArtistFollowRequested: 'artist.follow.requested',
+	ConcertDetailViewed: 'concert.detail.viewed',
+	ConcertRecommendationClicked: 'concert.recommendation.clicked',
+	TicketLotteryEntrySubmitted: 'ticket.lottery.entry.submitted',
+	TicketPurchaseInitiated: 'ticket.purchase.initiated',
+	EntryCheckinAttempted: 'entry.checkin.attempted',
+	PushSubscriptionRequested: 'push.subscription.requested',
+	PushNotificationOpened: 'push.notification.opened',
+	PushNotificationDismissed: 'push.notification.dismissed',
+} as const satisfies Record<string, string>
 
-export type EventName = (typeof Events)[keyof typeof Events]['name']
+/** The union of every valid event-name literal. */
+export type EventName = (typeof Events)[keyof typeof Events]
+
+/**
+ * Maps each event-name literal to its required property shape. Adding an
+ * entry to `Events` requires adding a matching key here; the `satisfies`
+ * clause on the line below verifies coverage at compile time.
+ */
+export type EventPropsMap = {
+	'page.viewed': PageViewedProps
+	'account.signup.started': AccountSignupStartedProps
+	'artist.discovery.viewed': ArtistDiscoveryViewedProps
+	'artist.search': ArtistSearchProps
+	'artist.follow.requested': ArtistFollowRequestedProps
+	'concert.detail.viewed': ConcertDetailViewedProps
+	'concert.recommendation.clicked': ConcertRecommendationClickedProps
+	'ticket.lottery.entry.submitted': TicketLotteryEntrySubmittedProps
+	'ticket.purchase.initiated': TicketPurchaseInitiatedProps
+	'entry.checkin.attempted': EntryCheckinAttemptedProps
+	'push.subscription.requested': PushSubscriptionRequestedProps
+	'push.notification.opened': PushNotificationOpenedProps
+	'push.notification.dismissed': PushNotificationDismissedProps
+}
+
+/**
+ * Compile-time coverage guarantee: every `EventName` literal MUST appear as
+ * a key in `EventPropsMap`. Adding an entry to `Events` without extending
+ * `EventPropsMap` makes this assignment fail to typecheck.
+ */
+const _eventPropsMapCoverage = {} as EventPropsMap satisfies Record<
+	EventName,
+	unknown
+>
+void _eventPropsMapCoverage
+
+/**
+ * Given an event name literal, returns the required property shape. Use in
+ * the typed capture signature:
+ *
+ *   capture<E extends EventName>(name: E, props: EventProps<E>): void
+ */
+export type EventProps<E extends EventName> = EventPropsMap[E]
