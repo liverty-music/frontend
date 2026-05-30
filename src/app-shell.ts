@@ -53,6 +53,21 @@ import { IOnboardingService } from './services/onboarding-service'
 			data: { onboardingStep: 'my-artists' },
 		},
 		{
+			path: 'consent',
+			component: import('./routes/consent/consent-route'),
+			title: 'Privacy & Analytics',
+			// Final onboarding step. `auth: false` is intentional: guest
+			// users in the my-artists step also reach the consent screen
+			// (the my-artists route's hype-change handler advances to
+			// CONSENT for both authenticated and guest paths), and the
+			// PostHog SDK has no real user_id to identify either way
+			// until signup. A guest who grants consent here carries the
+			// choice forward when they later sign up. AuthHook's
+			// progression gate (consent ordinally ≥ my-artists) still
+			// protects against direct deep-links.
+			data: { auth: false, onboardingStep: 'consent' },
+		},
+		{
 			path: 'tickets',
 			component: import('./routes/tickets/tickets-route'),
 			title: 'Tickets',

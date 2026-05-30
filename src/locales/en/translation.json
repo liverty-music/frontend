@@ -266,7 +266,34 @@
 		"resendRateLimited": "Too many requests. Please try again later.",
 		"signOut": "Sign Out",
 		"signOutError": "Sign-out failed. Please try again.",
-		"languageChangeError": "Couldn't save the language change. Wait a moment and try again."
+		"languageChangeError": "Couldn't save the language change. Wait a moment and try again.",
+		"analytics": {
+			"sectionTitle": "Privacy & Analytics",
+			"toggleLabel": "Share anonymous usage insights",
+			"toggleDescription": "Helps us see which screens get loved and which trip people up — so we can make the next version better.",
+			"crossBorderLabel": "Allow cross-border analytics processing",
+			"crossBorderDescription": "Lets us include your activity in our EU-region analytics so we can compare cohorts across releases. Turn off to keep your data inside Japan only."
+		}
+	},
+	"onboarding": {
+		"consent": {
+			"title": "Our privacy commitment",
+			"intro": "Liverty Music keeps your personal data inside Japan by default. Anything you turn on below is opt-in — and you can change your mind any time in Settings.",
+			"commitment": "This is a commitment that goes beyond what the law requires. We only ask for anonymous, aggregated usage signals because they help us build a better timetable for you — never for advertising or sale.",
+			"analytics": {
+				"label": "Share anonymous usage insights",
+				"description": "Tells us which screens fans love and which ones get in the way. No names, no contacts — just patterns."
+			},
+			"marketing": {
+				"label": "Allow cross-border analytics processing",
+				"description": "Lets us include your anonymous activity in our EU-region dashboards. Off by default — turn on only if you'd like to help."
+			},
+			"actions": {
+				"accept": "Accept selected",
+				"decline": "Decline all",
+				"later": "Set up later"
+			}
+		}
 	},
 	"nav": {
 		"home": "Timetable",

@@ -645,29 +645,41 @@ test.describe('Onboarding tutorial flow', () => {
 		// No hype-notification dialog (component was removed)
 		await expect(page.locator('.hype-notification-dialog')).toHaveCount(0)
 
-		// Step advances to completed
+		// Step advances to consent (the new final pre-completion onboarding
+		// screen introduced by the introduce-analytics-tool change). The
+		// consent route itself calls onboarding.complete() in its three
+		// exit handlers; the continuous-flow test below covers the full
+		// progression including that final transition.
 		await expect
 			.poll(
 				() => page.evaluate(() => localStorage.getItem('onboardingStep')),
 				{ timeout: 5000 },
 			)
-			.toBe('completed')
+			.toBe('consent')
 	})
 })
 
 /**
- * Full step progression from DISCOVERY coach mark to onboarding completion.
+ * Full step progression from DISCOVERY coach mark through MY_ARTISTS to the
+ * consent screen, the final pre-completion onboarding screen introduced by
+ * the introduce-analytics-tool change.
  *
  * Flow (lane intro and celebration removed from dashboard step):
  *   DISCOVERY (coach mark → tap) →
  *   DASHBOARD (free exploration — no lane intro, no celebration overlay) →
  *   freely navigate to MY_ARTISTS tab →
- *   MY_ARTISTS (hype change → COMPLETED)
+ *   MY_ARTISTS (hype change → CONSENT)
+ *
+ * The final transition CONSENT → COMPLETED is covered by the consent route
+ * unit tests (consent-service.spec.ts + the analytics-service ConsentChanged
+ * subscription tests) — exercising it in this E2E would couple the
+ * navigation-flow assertion to consent-screen UI details that are unrelated
+ * to the step-progression invariant under test here.
  */
-test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
+test.describe('Continuous onboarding flow (Step 1 → consent)', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
-	test('full step progression from discovery to onboarding completion', async ({
+	test('full step progression from discovery to consent screen', async ({
 		page,
 	}) => {
 		test.setTimeout(90_000)
@@ -775,11 +787,11 @@ test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
 		})
 
 		// =========================================================================
-		// STEP 5 → COMPLETED: hype change completes onboarding
+		// STEP 5 → CONSENT: hype change advances onboarding to the consent screen.
 		// checked.bind="artist.hype" + model.bind="level" creates a two-way binding:
 		// clicking the 'home' radio (index 1) sets artist.hype = 'home', then
 		// change.trigger calls onHypeInput which detects the change and advances
-		// onboarding to COMPLETED. force: true bypasses the visually-hidden clip-path.
+		// onboarding to CONSENT (the consent screen completes onboarding below).
 		// =========================================================================
 		const hypeRadios = page.locator('input[type="radio"][name^="hype-"]')
 		await expect(hypeRadios.first()).toBeAttached({ timeout: 5000 })
@@ -795,14 +807,14 @@ test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
 			radio.dispatchEvent(new Event('change', { bubbles: true }))
 		})
 
-		// Onboarding step advances to completed
+		// Onboarding step advances to consent
 		await expect
 			.poll(
 				() =>
 					page.evaluate(() => localStorage.getItem('onboardingStep')),
 				{ timeout: 5000 },
 			)
-			.toBe('completed')
+			.toBe('consent')
 
 		// Hype change is accepted (no dialog, no revert)
 		await expect(page.locator('.hype-notification-dialog')).toHaveCount(0)

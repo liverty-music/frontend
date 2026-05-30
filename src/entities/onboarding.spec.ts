@@ -14,7 +14,8 @@ describe('stepIndex', () => {
 		expect(stepIndex('discovery')).toBe(1)
 		expect(stepIndex('dashboard')).toBe(2)
 		expect(stepIndex('my-artists')).toBe(3)
-		expect(stepIndex('completed')).toBe(4)
+		expect(stepIndex('consent')).toBe(4)
+		expect(stepIndex('completed')).toBe(5)
 	})
 })
 
@@ -23,6 +24,7 @@ describe('isOnboarding', () => {
 		expect(isOnboarding('discovery')).toBe(true)
 		expect(isOnboarding('dashboard')).toBe(true)
 		expect(isOnboarding('my-artists')).toBe(true)
+		expect(isOnboarding('consent')).toBe(true)
 	})
 
 	it('returns false for terminal steps', () => {

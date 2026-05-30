@@ -24,6 +24,7 @@ vi.mock('../../src/services/onboarding-service', () => ({
 		DASHBOARD: 'dashboard',
 		DETAIL: 'detail',
 		MY_ARTISTS: 'my-artists',
+		CONSENT: 'consent',
 		COMPLETED: 'completed',
 	},
 }))
@@ -334,14 +335,18 @@ describe('MyArtistsRoute', () => {
 				)
 			})
 
-			it('should accept hype change, complete onboarding, and deactivate spotlight', () => {
+			it('should accept hype change, advance to consent step, and deactivate spotlight', () => {
 				const artist = onboardingSut.artists[0]
 
 				onboardingSut.onHypeInput(artist, 'away')
 
 				expect(artist.hype).toBe('away')
 				expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
-				expect(onboardingOnboarding.setStep).toHaveBeenCalledWith('completed')
+				// MY_ARTISTS now advances to CONSENT (the new final
+				// pre-completion onboarding screen); the consent route
+				// itself calls onboarding.complete() after the user
+				// accepts/declines/defers.
+				expect(onboardingOnboarding.setStep).toHaveBeenCalledWith('consent')
 				expect(mockRouter.load).not.toHaveBeenCalled()
 			})
 

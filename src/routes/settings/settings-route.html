@@ -100,6 +100,52 @@
     </div>
   </section>
 
+  <!-- PRIVACY & ANALYTICS Section -->
+  <section>
+    <h2 t="settings.analytics.sectionTitle" class="settings-section-title"></h2>
+    <div class="settings-card">
+      <!-- Analytics consent toggle -->
+      <button
+        click.trigger="handleAnalyticsToggle()"
+        role="switch"
+        aria-checked.bind="analyticsConsent"
+        class="settings-row"
+      >
+        <div class="settings-toggle-col">
+          <div class="settings-row-start">
+            <svg-icon name="info" class="settings-icon"></svg-icon>
+            <span t="settings.analytics.toggleLabel" class="settings-row-label"></span>
+          </div>
+          <span t="settings.analytics.toggleDescription" class="settings-row-hint"></span>
+        </div>
+        <div class="settings-toggle-track" data-on.bind="analyticsConsent">
+          <div class="settings-toggle-thumb" data-on.bind="analyticsConsent"></div>
+        </div>
+      </button>
+
+      <hr class="[ settings-divider ]">
+
+      <!-- Cross-border marketing measurement toggle -->
+      <button
+        click.trigger="handleMarketingToggle()"
+        role="switch"
+        aria-checked.bind="marketingConsent"
+        class="settings-row"
+      >
+        <div class="settings-toggle-col">
+          <div class="settings-row-start">
+            <svg-icon name="globe" class="settings-icon"></svg-icon>
+            <span t="settings.analytics.crossBorderLabel" class="settings-row-label"></span>
+          </div>
+          <span t="settings.analytics.crossBorderDescription" class="settings-row-hint"></span>
+        </div>
+        <div class="settings-toggle-track" data-on.bind="marketingConsent">
+          <div class="settings-toggle-thumb" data-on.bind="marketingConsent"></div>
+        </div>
+      </button>
+    </div>
+  </section>
+
   <!-- ABOUT Section -->
   <section>
     <h2 t="settings.about" class="settings-section-title"></h2>

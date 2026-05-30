@@ -252,11 +252,15 @@ export class MyArtistsRoute {
 		artist.hype = newHype
 		const hype = newHype
 
-		// Onboarding MY_ARTISTS step: accept hype change, complete onboarding
+		// Onboarding MY_ARTISTS step: accept hype change, advance to the
+		// CONSENT step (final pre-completion onboarding screen, added in
+		// the introduce-analytics-tool PR). The consent route itself
+		// calls `onboarding.complete()` once the user picks Accept /
+		// Decline / Set up later.
 		if (this.isOnboardingStepMyArtists) {
 			this.prevHypes.set(artistId, hype)
 			this.onboarding.deactivateSpotlight()
-			this.onboarding.setStep(OnboardingStep.COMPLETED)
+			this.onboarding.setStep(OnboardingStep.CONSENT)
 			// Persist for guest users — merged on signup. The signup banner is
 			// already visible (set in loading() for any guest); no toggle here.
 			if (!this.isAuthenticated) {
