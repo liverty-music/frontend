@@ -1,0 +1,79 @@
+<import from="./consent-route.css"></import>
+
+<main class="[ consent-route ] [ flow ]">
+  <header class="consent-header">
+    <h1 t="onboarding.consent.title" class="consent-title"></h1>
+    <p t="onboarding.consent.intro" class="consent-paragraph"></p>
+    <p t="onboarding.consent.commitment" class="consent-paragraph consent-paragraph-emphasis"></p>
+  </header>
+
+  <section class="[ consent-card ] [ flow ]">
+    <!-- Analytics toggle row -->
+    <button
+      click.trigger="toggleAnalytics()"
+      role="switch"
+      aria-checked.bind="analyticsConsent"
+      class="consent-row"
+    >
+      <div class="consent-row-text">
+        <div class="consent-row-label-line">
+          <svg-icon name="info" class="consent-row-icon"></svg-icon>
+          <span t="onboarding.consent.analytics.label" class="consent-row-label"></span>
+        </div>
+        <span t="onboarding.consent.analytics.description" class="consent-row-description"></span>
+      </div>
+      <div class="settings-toggle-track" data-on.bind="analyticsConsent">
+        <div class="settings-toggle-thumb" data-on.bind="analyticsConsent"></div>
+      </div>
+    </button>
+
+    <hr class="[ consent-divider ]">
+
+    <!-- Cross-border marketing measurement toggle row -->
+    <button
+      click.trigger="toggleMarketing()"
+      role="switch"
+      aria-checked.bind="marketingConsent"
+      class="consent-row"
+    >
+      <div class="consent-row-text">
+        <div class="consent-row-label-line">
+          <svg-icon name="globe" class="consent-row-icon"></svg-icon>
+          <span t="onboarding.consent.marketing.label" class="consent-row-label"></span>
+        </div>
+        <span t="onboarding.consent.marketing.description" class="consent-row-description"></span>
+      </div>
+      <div class="settings-toggle-track" data-on.bind="marketingConsent">
+        <div class="settings-toggle-thumb" data-on.bind="marketingConsent"></div>
+      </div>
+    </button>
+  </section>
+
+  <p class="consent-policy-line">
+    <a
+      href="https://liverty.me/privacy"
+      target="_blank"
+      rel="noopener noreferrer"
+      t="settings.privacyPolicy"
+      class="consent-policy-link"
+    ></a>
+  </p>
+
+  <footer class="[ consent-actions ]">
+    <button
+      click.trigger="acceptSelected()"
+      class="consent-btn-primary"
+      t="onboarding.consent.actions.accept"
+    ></button>
+    <button
+      click.trigger="declineAll()"
+      class="consent-btn-secondary"
+      t="onboarding.consent.actions.decline"
+    ></button>
+    <button
+      click.trigger="setUpLater()"
+      class="consent-btn-text"
+      t="onboarding.consent.actions.later"
+    ></button>
+  </footer>
+</main>

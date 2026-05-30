@@ -16,6 +16,9 @@ const posthogStub = {
 	identify: vi.fn(),
 	reset: vi.fn(),
 	getFeatureFlag: vi.fn(),
+	opt_in_capturing: vi.fn(),
+	opt_out_capturing: vi.fn(),
+	set_config: vi.fn(),
 }
 
 vi.mock('posthog-js', () => ({
@@ -81,6 +84,41 @@ const mockConsent: { analytics: boolean; marketingMeasurement: boolean } = {
 	marketingMeasurement: false,
 }
 
+// Minimal pub/sub modeled after IEventAggregator: subscribers keyed on
+// the event class reference so `subscribe(ConsentChanged, handler)` and
+// `publish(new ConsentChanged(state))` line up. The test bag below is
+// reset per-test via `mockEa.reset()`.
+type ChannelKey = unknown
+type Handler = (event: unknown) => void
+const eaChannels = new Map<ChannelKey, Set<Handler>>()
+const mockEa = {
+	subscribe: vi.fn((channel: ChannelKey, handler: Handler) => {
+		let set = eaChannels.get(channel)
+		if (!set) {
+			set = new Set()
+			eaChannels.set(channel, set)
+		}
+		set.add(handler)
+		return {
+			dispose: () => {
+				set?.delete(handler)
+			},
+		}
+	}),
+	publish: vi.fn((event: object) => {
+		const ctor = event.constructor
+		const set = eaChannels.get(ctor)
+		if (set) {
+			for (const handler of set) handler(event)
+		}
+	}),
+	reset: () => {
+		eaChannels.clear()
+		mockEa.subscribe.mockClear()
+		mockEa.publish.mockClear()
+	},
+}
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -94,6 +132,8 @@ vi.mock('aurelia', async (importOriginal) => {
 					return mockConfig.current
 				case 'IConsentService':
 					return mockConsent
+				case 'IEventAggregator':
+					return mockEa
 				default:
 					return {}
 			}
@@ -101,6 +141,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
+import { ConsentChanged } from '../consent/consent-changed'
 import { AnalyticsService } from './analytics-service'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -130,12 +171,16 @@ describe('AnalyticsService', () => {
 		posthogStub.identify.mockReset()
 		posthogStub.reset.mockReset()
 		posthogStub.getFeatureFlag.mockReset()
+		posthogStub.opt_in_capturing.mockReset()
+		posthogStub.opt_out_capturing.mockReset()
+		posthogStub.set_config.mockReset()
 		mockConfig.current = {
 			posthogProjectKey: 'phc_test_key',
 			posthogApiHost: 'https://eu.i.posthog.com',
 		}
 		mockConsent.analytics = false
 		mockConsent.marketingMeasurement = false
+		mockEa.reset()
 		setActiveSpan(undefined)
 		stubIdleCallback()
 	})
@@ -306,6 +351,69 @@ describe('AnalyticsService', () => {
 				path: '/welcome',
 				title: 'Welcome',
 			})
+		})
+
+		it('upgrades PostHog persistence to localStorage+cookie on consent grant', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			// The init() path applies pendingConsent first then flushes
+			// the queue — neither happens here because mockConsent.analytics
+			// stays false in beforeEach. Reset the set_config spy so the
+			// assertions below only see the post-grant call.
+			posthogStub.set_config.mockReset()
+			posthogStub.opt_in_capturing.mockReset()
+
+			mockEa.publish(
+				new ConsentChanged({ analytics: true, marketingMeasurement: false }),
+			)
+
+			// Grant MUST opt-in (PostHog tracks the opt state internally —
+			// the SDK refuses to capture while opted out regardless of
+			// persistence) AND lift the persistence to localStorage+cookie
+			// so distinct_id survives reload + IP capture is re-enabled.
+			expect(posthogStub.opt_in_capturing).toHaveBeenCalledTimes(1)
+			expect(posthogStub.set_config).toHaveBeenCalledTimes(1)
+			expect(posthogStub.set_config.mock.calls[0][0]).toMatchObject({
+				persistence: 'localStorage+cookie',
+				ip: true,
+			})
+			// reset() MUST NOT fire on grant — a grant is the privacy
+			// extension, not the contraction. Calling reset here would
+			// drop a distinct_id the user explicitly opted to persist.
+			expect(posthogStub.reset).not.toHaveBeenCalled()
+		})
+
+		it('drops PostHog to memory persistence + reset() on consent revoke', async () => {
+			// Start the user in granted state so the revoke transition has
+			// somewhere to fall from. _waitForInitForTests applies the
+			// pending consent inside init() (since mockConsent.analytics is
+			// already true here, the init path re-applies it directly).
+			mockConsent.analytics = true
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			posthogStub.set_config.mockReset()
+			posthogStub.opt_out_capturing.mockReset()
+			posthogStub.reset.mockReset()
+
+			mockEa.publish(
+				new ConsentChanged({ analytics: false, marketingMeasurement: false }),
+			)
+
+			// Revoke MUST opt-out the SDK, downgrade persistence to memory
+			// (so the distinct_id does not survive reload), drop IP, AND
+			// call reset() so any prior identification linkage is severed
+			// at the SDK boundary. This is the central privacy contract
+			// of the change — a revoke MUST leave the user
+			// indistinguishable on the wire from a never-consenting user.
+			expect(posthogStub.opt_out_capturing).toHaveBeenCalledTimes(1)
+			expect(posthogStub.set_config).toHaveBeenCalledTimes(1)
+			expect(posthogStub.set_config.mock.calls[0][0]).toMatchObject({
+				persistence: 'memory',
+				ip: false,
+			})
+			expect(posthogStub.reset).toHaveBeenCalledTimes(1)
 		})
 	})
 })

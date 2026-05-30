@@ -6,6 +6,10 @@ import { Snack } from '../../components/snack-bar/snack'
 import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
 import { translationKey } from '../../constants/iso3166'
+import {
+	type ConsentPurpose,
+	IConsentService,
+} from '../../lib/consent/consent-service'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
@@ -27,6 +31,7 @@ export class SettingsRoute {
 	private readonly i18n = resolve(I18N)
 	private readonly localStorage = resolve(ILocalStorage)
 	private readonly audio = resolve(IAudioEngine)
+	private readonly consent = resolve(IConsentService)
 
 	public soundEnabled = !this.audio.muted
 	public soundVolume = Math.round(this.audio.volume * 100)
@@ -36,6 +41,20 @@ export class SettingsRoute {
 	public languageSelectorOpen = false
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	private isToggling = false
+
+	/**
+	 * Local mirror of the consent state used for `aria-checked` + the
+	 * `data-on` toggle attribute bindings. Aurelia 2 RC1's binding engine
+	 * does not currently re-evaluate a `.bind` expression that calls a
+	 * getter through an interface boundary without an `@observable`
+	 * trigger, so we mirror the live `IConsentService` state into plain
+	 * fields and write back via `handleAnalyticsToggle` /
+	 * `handleMarketingToggle`. The mirrors are seeded in `loading()` and
+	 * re-synced whenever the user toggles, keeping the UI and service
+	 * state in lockstep without introducing an extra subscription.
+	 */
+	public analyticsConsent = false
+	public marketingConsent = false
 
 	public isResendingVerification = false
 	public resendSuccess = false
@@ -107,7 +126,40 @@ export class SettingsRoute {
 	}
 
 	public async loading(): Promise<void> {
+		// Sync consent toggles before render: a user who flipped them on
+		// the onboarding consent screen or on a prior settings visit
+		// MUST see the correct state on first paint.
+		this.analyticsConsent = this.consent.analytics
+		this.marketingConsent = this.consent.marketingMeasurement
 		await this.resolveNotificationToggleState()
+	}
+
+	/**
+	 * Persist an analytics toggle tap. Flipping the local mirror first
+	 * keeps the toggle visually responsive — the `ConsentService` write
+	 * also publishes `ConsentChanged`, but the AnalyticsService
+	 * subscription performs SDK reconfiguration synchronously inside the
+	 * publish callback, which would otherwise race the local view state.
+	 */
+	public handleAnalyticsToggle(): void {
+		const next = !this.analyticsConsent
+		this.analyticsConsent = next
+		this.writeConsent('analytics', next)
+	}
+
+	public handleMarketingToggle(): void {
+		const next = !this.marketingConsent
+		this.marketingConsent = next
+		this.writeConsent('marketingMeasurement', next)
+	}
+
+	private writeConsent(purpose: ConsentPurpose, grant: boolean): void {
+		if (grant) {
+			this.consent.grant(purpose)
+		} else {
+			this.consent.revoke(purpose)
+		}
+		this.logger.info('Consent setting changed', { purpose, grant })
 	}
 
 	/**

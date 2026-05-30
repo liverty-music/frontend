@@ -1,5 +1,11 @@
 import { trace } from '@opentelemetry/api'
-import { DI, ILogger, resolve } from 'aurelia'
+import {
+	DI,
+	type IDisposable,
+	IEventAggregator,
+	ILogger,
+	resolve,
+} from 'aurelia'
 import type { PostHog, PostHogConfig } from 'posthog-js'
 import { IAppConfig } from '../../config/app-config'
 import {
@@ -7,6 +13,7 @@ import {
 	type EventProps,
 	Events,
 } from '../../services/analytics-events'
+import { ConsentChanged } from '../consent/consent-changed'
 import { IConsentService } from '../consent/consent-service'
 
 /**
@@ -112,6 +119,7 @@ export class AnalyticsService implements IAnalyticsService {
 	private readonly logger = resolve(ILogger).scopeTo('AnalyticsService')
 	private readonly config = resolve(IAppConfig)
 	private readonly consent = resolve(IConsentService)
+	private readonly ea = resolve(IEventAggregator)
 
 	/**
 	 * Truthy iff PostHog initialisation has completed. Until this flips,
@@ -126,7 +134,30 @@ export class AnalyticsService implements IAnalyticsService {
 	private readonly queue: QueuedCapture[] = []
 	private queueOverflowed = false
 
+	/**
+	 * Buffers a consent change that fired before PostHog finished loading.
+	 * The pre-consent privacy posture (`persistence: 'memory'`, anonymous
+	 * id) is already in place during init, so a `grant` arriving early is
+	 * harmless to drop AT init time — but we MUST apply it once the SDK
+	 * resolves so the user's choice takes effect within the same boot.
+	 *
+	 * Carries the boolean value of `state.analytics` only; the marketing
+	 * purpose is not wired to a PostHog config flag in this batch.
+	 */
+	private pendingConsent: boolean | null = null
+
+	private readonly consentSubscription: IDisposable
+
 	public constructor() {
+		// Subscribe BEFORE scheduling init so a consent grant emitted in
+		// the same task as construction (e.g. the consent screen tapping
+		// `grant` then immediately reading `analytics.capture`) is captured
+		// — even in the test environment where `scheduleInit` runs init
+		// synchronously, the subscribe call is still ordered first.
+		this.consentSubscription = this.ea.subscribe(
+			ConsentChanged,
+			(event: ConsentChanged) => this.handleConsentChanged(event),
+		)
 		this.scheduleInit()
 	}
 
@@ -298,6 +329,22 @@ export class AnalyticsService implements IAnalyticsService {
 			}
 			posthog.init(this.config.posthogProjectKey, initConfig)
 			this.posthog = posthog
+			// If a consent transition fired before init() resolved, apply
+			// it now so the user's choice is in effect for the queue
+			// replay below. Falling back to the live consent state when
+			// no pending value exists keeps the early-grant-via-stored-
+			// state path consistent (a returning user with consent
+			// granted on a prior boot will be re-elevated to
+			// localStorage+cookie persistence here without needing a
+			// fresh ConsentChanged event).
+			const consentToApply =
+				this.pendingConsent !== null
+					? this.pendingConsent
+					: this.consent.analytics
+			this.pendingConsent = null
+			if (consentToApply) {
+				this.applyConsentToSdk(true)
+			}
 			this.flushQueue()
 		} catch (err) {
 			this.logger.warn(
@@ -356,6 +403,73 @@ export class AnalyticsService implements IAnalyticsService {
 			}
 		}
 		this.posthog.capture(name, enriched)
+	}
+
+	/**
+	 * React to a consent state transition. On grant we lift PostHog into
+	 * its full persistence posture (localStorage+cookie) so subsequent
+	 * captures survive page reloads and the same distinct_id ties the
+	 * session together. On revoke we drop back to memory-only AND clear
+	 * the locally-stored distinct_id via `reset()` so any prior linkage
+	 * to a real user id is severed at the SDK boundary.
+	 *
+	 * Tolerates pre-init firing: the new persistence value is buffered in
+	 * `pendingConsent` and applied inside `init()` after the SDK loads.
+	 * `opt_in/out_capturing` are idempotent, so re-applying the same
+	 * posture on every event is cheap.
+	 */
+	private handleConsentChanged(event: ConsentChanged): void {
+		const analytics = event.state.analytics
+		if (this.posthog === null) {
+			// Init has not resolved yet. Stash the decision so init() can
+			// pick it up after `posthog.init()` returns. We do NOT touch
+			// the pre-init queue: the privacy-equivalent posture is
+			// already in effect (memory persistence, anonymous id) so
+			// queued events are safe to flush regardless of the eventual
+			// grant decision.
+			this.pendingConsent = analytics
+			return
+		}
+		this.applyConsentToSdk(analytics)
+	}
+
+	private applyConsentToSdk(analytics: boolean): void {
+		if (this.posthog === null) return
+		if (analytics) {
+			// Idempotent: PostHog tracks the opt state internally and
+			// re-opting in is a no-op when already opted in. We still
+			// re-issue set_config because the post-init default is
+			// memory-only and we need to upgrade it.
+			this.posthog.opt_in_capturing()
+			this.posthog.set_config({
+				persistence: 'localStorage+cookie',
+				ip: true,
+			})
+			this.logger.debug('Consent granted — PostHog persistence upgraded')
+			return
+		}
+		this.posthog.opt_out_capturing()
+		this.posthog.set_config({ persistence: 'memory', ip: false })
+		// reset() drops the locally-stored distinct_id so any prior
+		// identification is severed at the SDK boundary. Safe to call
+		// even when no identify has occurred — PostHog generates a fresh
+		// anonymous id afterwards.
+		this.posthog.reset()
+		this.logger.debug(
+			'Consent revoked — PostHog persistence reverted to memory',
+		)
+	}
+
+	/**
+	 * Disposes the consent subscription. AnalyticsService is registered
+	 * as a singleton in `main.ts` and therefore lives for the full page
+	 * lifetime — Aurelia does not invoke a lifecycle hook on the service
+	 * itself, so production code never calls this. Tests and any future
+	 * dynamic re-binding can call it to release the IEventAggregator
+	 * subscription.
+	 */
+	public dispose(): void {
+		this.consentSubscription.dispose()
 	}
 
 	/**

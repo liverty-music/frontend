@@ -7,6 +7,14 @@ export const OnboardingStep = {
 	DISCOVERY: 'discovery',
 	DASHBOARD: 'dashboard',
 	MY_ARTISTS: 'my-artists',
+	// Consent sits after MY_ARTISTS and before COMPLETED — the final
+	// privacy-decision gate the user passes through before onboarding is
+	// marked done. Placed late on purpose: by this point the user has
+	// experienced the product (discovery → dashboard → my-artists) and the
+	// "what analytics is used for" framing has concrete value the user can
+	// trade against, rather than being a cold ToS-style splash before they
+	// have seen the app.
+	CONSENT: 'consent',
 	COMPLETED: 'completed',
 } as const
 
@@ -21,6 +29,7 @@ export const STEP_ORDER = [
 	OnboardingStep.DISCOVERY,
 	OnboardingStep.DASHBOARD,
 	OnboardingStep.MY_ARTISTS,
+	OnboardingStep.CONSENT,
 	OnboardingStep.COMPLETED,
 ] as const
 
@@ -36,6 +45,7 @@ const ONBOARDING_STEPS = new Set<OnboardingStepValue>([
 	OnboardingStep.DISCOVERY,
 	OnboardingStep.DASHBOARD,
 	OnboardingStep.MY_ARTISTS,
+	OnboardingStep.CONSENT,
 ])
 
 /**

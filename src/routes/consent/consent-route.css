@@ -1,0 +1,273 @@
+@layer block {
+	@scope (consent-route) {
+		:scope {
+			--_card-bg: var(--color-surface-raised);
+			--_card-border: color-mix(in oklch, var(--color-white) 10%, transparent);
+
+			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-m);
+
+			block-size: 100%;
+			padding-block: var(--space-l);
+			padding-inline: var(--space-m);
+
+			background: var(--color-surface-base);
+
+			--flow-space: var(--space-m);
+		}
+
+		.consent-header {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+		}
+
+		.consent-title {
+			font-family: var(--font-display);
+			font-size: var(--step-2);
+			font-weight: normal;
+			line-height: var(--leading-snug);
+			color: var(--color-text-primary);
+
+			text-wrap: balance;
+			word-break: auto-phrase;
+		}
+
+		.consent-paragraph {
+			max-inline-size: 36rem;
+
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-secondary);
+
+			text-wrap: pretty;
+			word-break: auto-phrase;
+		}
+
+		.consent-paragraph-emphasis {
+			color: var(--color-text-primary);
+		}
+
+		.consent-card {
+			overflow: hidden;
+			border: 1px solid var(--_card-border);
+			border-radius: var(--radius-card);
+
+			background: var(--_card-bg);
+
+			--flow-space: 0;
+		}
+
+		.consent-row {
+			display: flex;
+			gap: var(--space-s);
+			align-items: flex-start;
+			justify-content: space-between;
+
+			inline-size: 100%;
+			padding: var(--space-s);
+
+			text-align: start;
+
+			transition: background 200ms;
+
+			&:hover {
+				background: color-mix(in oklch, var(--color-white) 5%, transparent);
+			}
+		}
+
+		.consent-row-text {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			align-items: flex-start;
+
+			flex: 1;
+			min-inline-size: 0;
+		}
+
+		.consent-row-label-line {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+		}
+
+		.consent-row-icon {
+			inline-size: 1.1rem;
+			block-size: 1.1rem;
+			color: var(--color-text-secondary);
+		}
+
+		.consent-row-label {
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.consent-row-description {
+			font-size: var(--step--2);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-muted);
+
+			text-wrap: pretty;
+			word-break: auto-phrase;
+		}
+
+		.consent-divider {
+			margin-inline: var(--space-s);
+			border-block-start: 1px solid
+				color-mix(in oklch, var(--color-white) 5%, transparent);
+		}
+
+		.consent-policy-line {
+			font-size: var(--step--2);
+			color: var(--color-text-muted);
+			text-align: center;
+		}
+
+		.consent-policy-link {
+			color: var(--color-brand-accent);
+			text-decoration: underline;
+			text-underline-offset: 3px;
+
+			&:hover {
+				color: var(--color-text-primary);
+			}
+		}
+
+		.consent-actions {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+
+			inline-size: 100%;
+			max-inline-size: 28rem;
+			margin-inline: auto;
+		}
+
+		.consent-btn-primary {
+			cursor: pointer;
+
+			inline-size: 100%;
+			min-block-size: 48px;
+			padding: var(--space-xs) var(--space-m);
+			border-radius: var(--radius-button);
+
+			font-weight: 600;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+			box-shadow: var(--shadow-button);
+
+			transition:
+				background 200ms,
+				transform 200ms;
+
+			&:hover {
+				background: var(--color-brand-secondary);
+			}
+
+			&:active {
+				transform: scale(0.98);
+			}
+		}
+
+		.consent-btn-secondary {
+			cursor: pointer;
+
+			inline-size: 100%;
+			min-block-size: 48px;
+			padding: var(--space-xs) var(--space-m);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-button);
+
+			font-weight: 600;
+			color: var(--color-text-primary);
+
+			background: transparent;
+
+			transition:
+				background 200ms,
+				border-color 200ms,
+				transform 200ms;
+
+			&:hover {
+				border-color: var(--color-brand-primary);
+				background: color-mix(
+					in oklch,
+					var(--color-brand-primary) 8%,
+					transparent
+				);
+			}
+
+			&:active {
+				transform: scale(0.98);
+			}
+		}
+
+		.consent-btn-text {
+			cursor: pointer;
+
+			inline-size: 100%;
+			min-block-size: 44px;
+			padding: var(--space-xs) var(--space-m);
+
+			font-size: var(--step--1);
+			color: var(--color-text-muted);
+
+			background: transparent;
+
+			transition: color 200ms;
+
+			&:hover {
+				color: var(--color-text-primary);
+			}
+		}
+
+		/* Reuse settings page toggle track + thumb. The classes are defined
+		   in settings-route.css under @scope (settings-route) so they only
+		   apply on that route. The values are identical here, so we
+		   duplicate just the data-on selectors at this scope to keep the
+		   visual contract self-contained. */
+		.settings-toggle-track {
+			position: relative;
+
+			flex-shrink: 0;
+
+			inline-size: 2.75rem;
+			block-size: 1.5rem;
+			border-radius: var(--radius-full);
+
+			transition: background 200ms;
+
+			&[data-on="true"] {
+				background: var(--color-brand-primary);
+			}
+
+			&[data-on="false"] {
+				background: color-mix(in oklch, var(--color-white) 20%, transparent);
+			}
+		}
+
+		.settings-toggle-thumb {
+			position: absolute;
+			inset-block-start: 0.125rem;
+			inset-inline-start: 0.125rem;
+
+			inline-size: 1.25rem;
+			block-size: 1.25rem;
+			border-radius: var(--radius-full);
+
+			background: var(--color-white);
+			box-shadow: var(--shadow-soft);
+
+			transition: transform 200ms;
+
+			&[data-on="true"] {
+				transform: translateX(1.25rem);
+			}
+		}
+	}
+}

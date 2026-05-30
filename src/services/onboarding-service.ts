@@ -22,6 +22,7 @@ export const STEP_ROUTE_MAP: Record<OnboardingStepValue, string> = {
 	[OnboardingStep.DISCOVERY]: 'discovery',
 	[OnboardingStep.DASHBOARD]: 'dashboard',
 	[OnboardingStep.MY_ARTISTS]: 'my-artists',
+	[OnboardingStep.CONSENT]: 'consent',
 	[OnboardingStep.COMPLETED]: '',
 }
 

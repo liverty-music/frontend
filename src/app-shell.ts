@@ -53,6 +53,17 @@ import { IOnboardingService } from './services/onboarding-service'
 			data: { onboardingStep: 'my-artists' },
 		},
 		{
+			path: 'consent',
+			component: import('./routes/consent/consent-route'),
+			title: 'Privacy & Analytics',
+			// Final onboarding step — sits inside the authenticated zone
+			// because by this point the user has signed up. `onboardingStep`
+			// drives AuthHook's progression gate (consent ordinally ≥ my-
+			// artists), and the lack of `auth: false` means the standard
+			// authenticated-only path applies.
+			data: { onboardingStep: 'consent' },
+		},
+		{
 			path: 'tickets',
 			component: import('./routes/tickets/tickets-route'),
 			title: 'Tickets',
