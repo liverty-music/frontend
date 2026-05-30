@@ -281,7 +281,9 @@ export class DashboardRoute {
 	}
 
 	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {
-		this.detailSheet?.open(event.detail.event)
+		// The dashboard concert list IS the recommendation feed — tag the source
+		// so FE click events can be joined to the BE impression signal in PostHog.
+		this.detailSheet?.open(event.detail.event, 'recommendation')
 	}
 
 	public onSignupRequested(): void {

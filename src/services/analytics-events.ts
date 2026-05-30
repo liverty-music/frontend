@@ -38,7 +38,7 @@
  *   Call sites do not need to plumb trace_id manually.
  */
 
-type EventSource =
+export type EventSource =
 	| 'page'
 	| 'artist_page'
 	| 'search_result'
