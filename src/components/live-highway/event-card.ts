@@ -9,7 +9,6 @@ import type { LaneType, LiveEvent } from './live-event'
 export class EventCard {
 	@bindable public event!: LiveEvent
 	@bindable public lane: LaneType = 'home'
-	/** `null` marks surfaces that skip position tracking — emitting `0` there would skew CTR metrics. */
 	@bindable public position: number | null = null
 	public logoError = false
 
