@@ -820,12 +820,17 @@ test.describe('Continuous onboarding flow (Step 1 → completed)', () => {
 		// state persisted by grant/revoke (covered by consent-service.spec.ts).
 		// =========================================================================
 		await page.goto('http://localhost:9000/consent')
-		// `consent-route` is the Aurelia 2 custom-element tag (auto-derived
-		// from the `ConsentRoute` class name in kebab-case) — matches the
-		// `my-artists-route` selector used at line 624. The inner
-		// `class="[ consent-route ] [ flow ]"` brackets are CUBE CSS
-		// composition markers, not a reliable Playwright selector.
-		await page.waitForSelector('consent-route', { timeout: 10_000 })
+		// Wait for the URL to actually be /consent (rules out an
+		// AuthHook redirect to /dashboard or /welcome) and then for the
+		// "Set up later" button to be attached. We do NOT wait on the
+		// `consent-route` element tag here — Aurelia 2 conventions
+		// register the route component, but in our config the route's
+		// host element does not get a class/tag selector that visibly
+		// resolves before the children paint. The button is part of the
+		// same component instantiation; if it is attached, the route is
+		// definitively loaded.
+		await page.waitForURL('**/consent', { timeout: 10_000 })
+		await page.waitForSelector('.consent-btn-text', { timeout: 10_000 })
 		await page.locator('.consent-btn-text').click()
 
 		// Onboarding step advances to completed
