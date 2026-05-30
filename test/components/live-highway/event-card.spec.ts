@@ -85,12 +85,6 @@ describe('EventCard', () => {
 			expect(customEvent.bubbles).toBe(true)
 		})
 
-		// position-aware recommendation click. When the
-		// dashboard binds position (the repeat.for $index per lane), the
-		// click MUST fire concert.recommendation.clicked with the
-		// (concert_id, artist_id, position) tuple BEFORE the
-		// event-selected dispatch — so a downstream open path that
-		// throws does not eat the analytics signal.
 		it('fires concert.recommendation.clicked when position is bound', () => {
 			component.event = liveEvent
 			component.position = 2
@@ -108,10 +102,6 @@ describe('EventCard', () => {
 			)
 		})
 
-		// Read-only preview cards (e.g. the onboarding preview lane) do
-		// not bind position. Emitting position: 0 there would pollute the
-		// CTR-by-position breakdown with junk samples for a slot that
-		// users could not actually click.
 		it('does NOT fire concert.recommendation.clicked when position is null', () => {
 			component.event = liveEvent
 			component.position = null
@@ -128,8 +118,6 @@ describe('EventCard', () => {
 
 			component.onClick()
 
-			// readonly short-circuits the entire onClick body, including
-			// the analytics emission.
 			expect(mockAnalytics.capture).not.toHaveBeenCalled()
 		})
 	})

@@ -154,9 +154,6 @@ describe('EventDetailSheet', () => {
 			expect(removeSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
 		})
 
-		// open() fires concert.detail.viewed with the
-		// supplied source so downstream PostHog dashboards can break
-		// detail-view rate by surface.
 		it('fires concert.detail.viewed on open with the supplied source', () => {
 			const event = makeEvent()
 
