@@ -3,7 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { Snack } from '../../components/snack-bar/snack'
-import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
+import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
 import { translationKey } from '../../constants/iso3166'
 import {
@@ -12,6 +12,7 @@ import {
 } from '../../lib/consent/consent-service'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
+import { IGuestService } from '../../services/guest-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IUserService } from '../../services/user-service'
@@ -23,6 +24,7 @@ import {
 
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
+	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
@@ -88,7 +90,10 @@ export class SettingsRoute {
 		// Settings is now reachable by guests (from the discovery step onward).
 		// For a guest the home lives in guest storage, not the user entity.
 		if (!this.auth.isAuthenticated) {
-			const guestCode = UserHomeSelector.getStoredHome()
+			// Read from GuestService (the @observable owner of guest home) rather
+			// than a raw localStorage snapshot, so the row stays reactive if the
+			// guest picks a home from within Settings.
+			const guestCode = this.guest.home
 			return guestCode ? translationKey(guestCode) : null
 		}
 		// Authenticated: the home value MUST come from the user entity. The
