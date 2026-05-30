@@ -458,7 +458,7 @@ describe('AnalyticsService', () => {
 			expect(posthogStub.identify).not.toHaveBeenCalled()
 		})
 
-		it('replays a pre-init identify after the SDK loads', async () => {
+		it('replays a pre-init identify after the SDK loads exactly once', async () => {
 			// Consent is already granted at construction time. identify
 			// fired BEFORE init resolves must still reach PostHog once the
 			// SDK is ready — this is the steady state for returning users
@@ -475,7 +475,13 @@ describe('AnalyticsService', () => {
 			await sut._waitForInitForTests()
 
 			// After init: the buffered identify replays automatically as
-			// part of the init callback.
+			// part of the init callback. CRITICALLY exactly once — the
+			// init path runs `applyConsentToSdk(true)` AND
+			// `replayPendingIdentifyIfAllowed()` back-to-back when
+			// consent.analytics is true at boot; without the one-shot
+			// clear inside the helper, both would dispatch and PostHog
+			// would see two identify calls for the same user_id.
+			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
 			expect(posthogStub.identify).toHaveBeenCalledWith('user-xyz', undefined)
 		})
 

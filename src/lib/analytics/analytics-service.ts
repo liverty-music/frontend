@@ -520,12 +520,20 @@ export class AnalyticsService implements IAnalyticsService {
 	 * because both `init()` (steady-state already-granted boot) and
 	 * `applyConsentToSdk(true)` (consent-grant transition) need the same
 	 * behaviour.
+	 *
+	 * One-shot: clears `pendingIdentify` immediately after dispatch.
+	 * Without this, the steady-state boot path (`init()` calls
+	 * `applyConsentToSdk(true)` THEN this helper directly) would double-
+	 * dispatch the same identify. Consistent with the `reset()` doc
+	 * comment: re-populating the buffer requires a fresh
+	 * UserHydrationTask call.
 	 */
 	private replayPendingIdentifyIfAllowed(): void {
 		if (this.posthog === null) return
 		if (!this.consent.analytics) return
 		const buffered = this.pendingIdentify
 		if (buffered === null) return
+		this.pendingIdentify = null
 		this.posthog.identify(buffered.userId, buffered.properties)
 	}
 
