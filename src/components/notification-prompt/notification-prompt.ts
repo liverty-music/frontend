@@ -1,5 +1,9 @@
 import { ILogger, resolve } from 'aurelia'
 import { StorageKeys } from '../../constants/storage-keys'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../lib/analytics/analytics-service'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IOnboardingService } from '../../services/onboarding-service'
@@ -16,6 +20,7 @@ export class NotificationPrompt {
 	private readonly auth = resolve(IAuthService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
+	private readonly analytics = resolve(IAnalyticsService)
 
 	public attached(): void {
 		if (!this.auth.isAuthenticated) return
@@ -47,6 +52,13 @@ export class NotificationPrompt {
 	}
 
 	public async enable(): Promise<void> {
+		// Fire intent BEFORE the async permission flow so a denied OS
+		// dialog (or a thrown pushService.create) does not eat the signal.
+		// Paired with backend push.subscription.completed for the opt-in
+		// funnel.
+		this.analytics.capture(Events.PushSubscriptionRequested, {
+			source: 'page',
+		})
 		this.isLoading = true
 		try {
 			await this.pushService.create()
