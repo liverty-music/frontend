@@ -135,6 +135,28 @@ export class AnalyticsService implements IAnalyticsService {
 	private queueOverflowed = false
 
 	/**
+	 * Buffers the most recent `identify()` request. Two cases:
+	 *
+	 *   1. The caller fired identify BEFORE PostHog finished loading
+	 *      (e.g. UserHydrationTask runs as an AppTask.activating which
+	 *      can resolve faster than the requestIdleCallback that schedules
+	 *      `posthog.init`). The init callback consults this field and
+	 *      replays identify once the SDK is ready.
+	 *
+	 *   2. The caller fired identify while consent.analytics was false.
+	 *      The user_id is stashed so a later ConsentChanged grant can
+	 *      elevate the anonymous session to identified without the
+	 *      caller having to fire identify again. Cleared on `reset()`.
+	 *
+	 * Both cases use the same field because they share the same replay
+	 * semantics: "apply when the SDK is ready AND consent is granted".
+	 */
+	private pendingIdentify: {
+		userId: string
+		properties?: Readonly<Record<string, unknown>>
+	} | null = null
+
+	/**
 	 * Buffers a consent change that fired before PostHog finished loading.
 	 * The pre-consent privacy posture (`persistence: 'memory'`, anonymous
 	 * id) is already in place during init, so a `grant` arriving early is
@@ -187,20 +209,26 @@ export class AnalyticsService implements IAnalyticsService {
 			this.logger.debug('identify suppressed (nil-config mode)', { userId })
 			return
 		}
+
+		// Remember the most recent identify request so a later consent
+		// grant can elevate the anonymous session to identified without
+		// the caller having to re-fire identify. The properties payload
+		// is also buffered so a deferred replay is faithful to the
+		// original call. Cleared on `reset()`.
+		this.pendingIdentify = { userId, properties }
+
 		if (!this.consent.analytics) {
 			this.logger.debug('identify suppressed (consent denied)', { userId })
 			return
 		}
 		if (this.posthog === null) {
-			// Pre-init identify is intentionally dropped rather than
-			// queued: pairing it with the deferred-flush capture queue
-			// would replay identifications out-of-order against later
-			// reset() calls in the same boot, and the Batch 3c
-			// UserHydrationTask integration explicitly runs `identify`
-			// AFTER the SDK init is awaited, so this branch should not
-			// be reachable in production. Log at debug so any
-			// regression is visible during development.
-			this.logger.debug('identify dropped (pre-init)', { userId })
+			// Pre-init identify is intentionally dropped from the SDK
+			// path rather than queued: pairing it with the deferred-flush
+			// capture queue would replay identifications out-of-order
+			// against later reset() calls in the same boot. The
+			// pendingIdentify buffer above still carries the request, and
+			// `init()` consults it after the SDK loads (see scheduleInit).
+			this.logger.debug('identify deferred to SDK init', { userId })
 			return
 		}
 		this.posthog.identify(userId, properties)
@@ -217,6 +245,12 @@ export class AnalyticsService implements IAnalyticsService {
 		// anonymous id. Cheaper than walking the queue to filter.
 		this.queue.length = 0
 		this.queueOverflowed = false
+		// Also drop the pendingIdentify buffer: a consent grant arriving
+		// AFTER reset() (e.g. user signs out, then re-grants consent in
+		// settings before signing back in) MUST NOT re-elevate the prior
+		// identity. The next UserHydrationTask call will populate this
+		// field afresh.
+		this.pendingIdentify = null
 		if (this.posthog === null) {
 			this.logger.debug('reset queue-only (pre-init)')
 			return
@@ -346,6 +380,15 @@ export class AnalyticsService implements IAnalyticsService {
 				this.applyConsentToSdk(true)
 			}
 			this.flushQueue()
+			// Replay a buffered identify (from a pre-init UserHydration
+			// call) AFTER the queue flush so any pre-init `capture` is
+			// attributed to the anonymous id first and then the
+			// identification re-aliases the session to the real user_id.
+			// `applyConsentToSdk(true)` above also handles its own
+			// identify-replay, but only when consent transitions; this
+			// branch covers the steady-state case where consent was
+			// already granted at boot.
+			this.replayPendingIdentifyIfAllowed()
 		} catch (err) {
 			this.logger.warn(
 				'PostHog SDK failed to load; analytics disabled for this session',
@@ -445,6 +488,11 @@ export class AnalyticsService implements IAnalyticsService {
 				persistence: 'localStorage+cookie',
 				ip: true,
 			})
+			// Late-identify: if UserHydrationTask called identify before
+			// the user granted consent (the consent screen is the LAST
+			// onboarding step, so this is the steady-state for new
+			// signups), elevate the anonymous session to identified now.
+			this.replayPendingIdentifyIfAllowed()
 			this.logger.debug('Consent granted — PostHog persistence upgraded')
 			return
 		}
@@ -455,9 +503,30 @@ export class AnalyticsService implements IAnalyticsService {
 		// even when no identify has occurred — PostHog generates a fresh
 		// anonymous id afterwards.
 		this.posthog.reset()
+		// Drop the buffered identify too: the user revoked, so a future
+		// reconsent should NOT silently re-identify them with the old
+		// user_id. A fresh UserHydrationTask call (typically on next
+		// boot) is required to populate this field.
+		this.pendingIdentify = null
 		this.logger.debug(
 			'Consent revoked — PostHog persistence reverted to memory',
 		)
+	}
+
+	/**
+	 * Calls `posthog.identify` with the buffered user_id iff the SDK is
+	 * loaded AND consent is currently granted. No-op otherwise; the
+	 * buffer stays in place for a future grant. Pulled into a helper
+	 * because both `init()` (steady-state already-granted boot) and
+	 * `applyConsentToSdk(true)` (consent-grant transition) need the same
+	 * behaviour.
+	 */
+	private replayPendingIdentifyIfAllowed(): void {
+		if (this.posthog === null) return
+		if (!this.consent.analytics) return
+		const buffered = this.pendingIdentify
+		if (buffered === null) return
+		this.posthog.identify(buffered.userId, buffered.properties)
 	}
 
 	/**

@@ -2,6 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import { AppTask, IContainer, ILogger } from 'aurelia'
 import { ILocalStorage } from '../adapter/storage/local-storage'
 import { SessionKeys, StorageKeys } from '../constants/storage-keys'
+import { IAnalyticsService } from '../lib/analytics/analytics-service'
 import {
 	isSupportedLanguage,
 	normalizeToSupportedLanguage,
@@ -59,6 +60,16 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	// and is safe to call on the activating-task hot path.
 	const current = userService.current
 	if (!current) return
+
+	// Identify the just-loaded user to AnalyticsService. The service
+	// internally gates on `consent.analytics` — when consent is denied
+	// (the steady state for new signups before they reach the consent
+	// screen at the end of onboarding), the user_id is buffered and
+	// replayed if/when the user grants consent later. Calling identify
+	// here regardless of consent state keeps the wiring declarative:
+	// "this user just hydrated, future consent decisions can attach
+	// to them" rather than racing the consent screen.
+	container.get(IAnalyticsService).identify(current.id)
 
 	if (current.preferredLanguage) {
 		// AWAIT setLocale before runUserHydration resolves: the wrapping
