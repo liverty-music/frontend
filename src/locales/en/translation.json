@@ -143,6 +143,7 @@
 		},
 		"celebration": {
 			"complete": "Your personal timetable is ready!",
+			"welcome": "Welcome!",
 			"explore": "Explore your timetable freely"
 		},
 		"loading": "Loading events…",
@@ -239,7 +240,9 @@
 		"reportCooldown": "Please wait before reporting another issue"
 	},
 	"auth": {
-		"loginRequired": "Login required"
+		"loginRequired": "Login required",
+		"lockedDashboard": "Follow {{count}} more to unlock your timetable",
+		"lockedGeneric": "Unlocks once you've found some artists"
 	},
 	"settings": {
 		"title": "Settings",
@@ -257,6 +260,9 @@
 		"privacyPolicy": "Privacy Policy",
 		"ossLicenses": "OSS Licenses",
 		"account": "Account",
+		"guestPrompt": "Sign in to keep your favorites and notifications across devices",
+		"signIn": "Sign in",
+		"signUp": "Sign up",
 		"emailVerified": "Verified",
 		"emailNotVerified": "Not verified",
 		"resendVerification": "Resend",
