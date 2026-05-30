@@ -12,6 +12,7 @@ import {
 } from '../../lib/consent/consent-service'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
+import { IGuestService } from '../../services/guest-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IUserService } from '../../services/user-service'
@@ -23,6 +24,7 @@ import {
 
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
+	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
@@ -85,8 +87,17 @@ export class SettingsRoute {
 	}
 
 	public get currentHome(): string | null {
-		// Settings is an authenticated-only route, so the home value MUST
-		// come from the user entity. The guest-flow home storage owned by
+		// Settings is now reachable by guests (from the discovery step onward).
+		// For a guest the home lives in guest storage, not the user entity.
+		if (!this.auth.isAuthenticated) {
+			// Read from GuestService (the @observable owner of guest home) rather
+			// than a raw localStorage snapshot, so the row stays reactive if the
+			// guest picks a home from within Settings.
+			const guestCode = this.guest.home
+			return guestCode ? translationKey(guestCode) : null
+		}
+		// Authenticated: the home value MUST come from the user entity. The
+		// guest-flow home storage owned by
 		// UserHomeSelector is consumed at signup time:
 		// auth-callback's ensureUserProvisioned reads guest.home and calls
 		// userService.create(email, locale, codeToHome(guestHome)), which
@@ -346,6 +357,16 @@ export class SettingsRoute {
 	/** Persist the volume once when the user releases the slider. */
 	public onSoundVolumePersist(): void {
 		this.audio.persistVolume()
+	}
+
+	/** Guest auth entry — start the OIDC sign-in flow from Settings. */
+	public async signIn(): Promise<void> {
+		await this.auth.signIn()
+	}
+
+	/** Guest auth entry — start the OIDC sign-up flow from Settings. */
+	public async signUp(): Promise<void> {
+		await this.auth.signUp()
 	}
 
 	public async signOut(): Promise<void> {

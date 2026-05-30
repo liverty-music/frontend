@@ -689,7 +689,10 @@ test.describe('Continuous onboarding flow (Step 1 → consent)', () => {
 
 		// Seed: 3 artists followed, home set (needed for ListWithProximity on dashboard)
 		await page.addInitScript(() => {
-			localStorage.removeItem('onboarding.celebrationShown')
+			// Suppress the dashboard-arrival celebration overlay so it doesn't
+			// intercept the nav-tab clicks this step-progression test performs.
+			// The celebration itself is covered by dashboard-route unit tests.
+			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem('onboardingStep', 'discovery')
 			localStorage.setItem(

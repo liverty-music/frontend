@@ -124,12 +124,14 @@ describe('WelcomeRoute', () => {
 			expect(result).toBe(true)
 		})
 
-		it('resumes onboarding for active onboarding user', async () => {
+		it('allows an onboarding user to view Welcome (no forced resume)', async () => {
 			mockOnboarding.isOnboarding = true
 			mockOnboarding.getRouteForCurrentStep.mockReturnValue('discovery')
 
+			// Welcome is reachable during onboarding so users can re-read the value
+			// proposition; viewing it must not bounce them back to their step.
 			const result = await sut.canLoad()
-			expect(result).toBe('discovery')
+			expect(result).toBe(true)
 		})
 	})
 

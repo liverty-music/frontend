@@ -76,6 +76,9 @@ import { IOnboardingService } from './services/onboarding-service'
 			path: 'settings',
 			component: import('./routes/settings/settings-route'),
 			title: 'Settings',
+			// Reachable from the discovery step onward so guests can sign in /
+			// switch language without completing onboarding (see AuthHook).
+			data: { earlyUnlock: true },
 		},
 		{
 			path: 'import/ticket-email',

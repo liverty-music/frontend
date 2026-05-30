@@ -4,7 +4,6 @@ import { StorageKeys } from '../../src/constants/storage-keys'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockHistory } from '../helpers/mock-history'
 import { createMockLocalStorage } from '../helpers/mock-local-storage'
-import { createMockNavDimmingService } from '../helpers/mock-nav-dimming-service'
 
 // --- DI tokens (must be created before vi.mock calls) ---
 const mockIAuthService = DI.createInterface('IAuthService')
@@ -14,7 +13,6 @@ const mockITicketJourneyService = DI.createInterface('ITicketJourneyService')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIGuestService = DI.createInterface('IGuestService')
 const mockIUserService = DI.createInterface('IUserService')
-const mockINavDimmingService = DI.createInterface('INavDimmingService')
 const mockILocalStorage = DI.createInterface('ILocalStorage')
 const mockIHistory = DI.createInterface('IHistory')
 
@@ -45,9 +43,6 @@ vi.mock('../../src/services/guest-service', () => ({
 }))
 vi.mock('../../src/services/user-service', () => ({
 	IUserService: mockIUserService,
-}))
-vi.mock('../../src/services/nav-dimming-service', () => ({
-	INavDimmingService: mockINavDimmingService,
 }))
 vi.mock('../../src/adapter/storage/local-storage', () => ({
 	ILocalStorage: mockILocalStorage,
@@ -118,7 +113,6 @@ describe('DashboardRoute', () => {
 	let mockOnboarding: ReturnType<typeof makeOnboarding>
 	let mockGuest: ReturnType<typeof makeGuestService>
 	let mockUser: { current: { home: unknown } | undefined }
-	let mockNavDimming: ReturnType<typeof createMockNavDimmingService>
 	let mockStorage: ReturnType<typeof createMockLocalStorage>
 	let mockHistory: ReturnType<typeof createMockHistory>
 
@@ -131,7 +125,6 @@ describe('DashboardRoute', () => {
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIGuestService, mockGuest),
 			Registration.instance(mockIUserService, mockUser),
-			Registration.instance(mockINavDimmingService, mockNavDimming),
 			Registration.instance(mockILocalStorage, mockStorage),
 			Registration.instance(mockIHistory, mockHistory),
 		)
@@ -149,7 +142,6 @@ describe('DashboardRoute', () => {
 		mockOnboarding = makeOnboarding()
 		mockGuest = makeGuestService()
 		mockUser = { current: undefined }
-		mockNavDimming = createMockNavDimmingService()
 		mockStorage = createMockLocalStorage()
 		mockHistory = createMockHistory()
 		;(
@@ -225,7 +217,8 @@ describe('DashboardRoute', () => {
 	// ---- attached() ----
 
 	describe('attached', () => {
-		it('shows postSignupDialog when storage flag is pending', () => {
+		it('shows the post-signup celebration then opens the dialog on dismissal', () => {
+			mockAuth.isAuthenticated = true
 			mockStorage = createMockLocalStorage({
 				[StorageKeys.postSignupShown]: 'pending',
 			})
@@ -233,10 +226,17 @@ describe('DashboardRoute', () => {
 
 			sut.attached()
 
-			expect(sut.showPostSignupDialog).toBe(true)
+			// Emotion first: confetti celebration; dialog deferred until dismissal.
+			expect(sut.showCelebration).toBe(true)
+			expect(sut.celebrationConfetti).toBe(true)
 			expect(mockStorage.removeItem).toHaveBeenCalledWith(
 				StorageKeys.postSignupShown,
 			)
+			expect(sut.showPostSignupDialog).toBe(false)
+
+			sut.onCelebrationDismissed()
+
+			expect(sut.showPostSignupDialog).toBe(true)
 		})
 
 		it('does not show postSignupDialog when flag is absent', () => {
@@ -318,14 +318,13 @@ describe('DashboardRoute', () => {
 	// ---- detaching ----
 
 	describe('detaching', () => {
-		it('aborts active request and undims nav', () => {
+		it('aborts active request', () => {
 			sut.loadData()
 			const abortSpy = vi.spyOn(AbortController.prototype, 'abort')
 
 			sut.detaching()
 
 			expect(abortSpy).toHaveBeenCalled()
-			expect(mockNavDimming.setDimmed).toHaveBeenCalledWith(false)
 		})
 	})
 })

@@ -9,7 +9,7 @@
     click.trigger="onTap()"
     pointerdown.trigger="onTap()"
   >
-    <div class="confetti-container">
+    <div class="confetti-container" if.bind="confetti">
       <div class="confetti" repeat.for="i of 30"></div>
     </div>
     <p class="celebration-text">${message}</p>

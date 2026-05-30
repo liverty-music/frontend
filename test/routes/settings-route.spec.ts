@@ -37,6 +37,8 @@ describe('SettingsRoute', () => {
 		isAuthenticated: boolean
 		user: { profile: Record<string, unknown> } | null
 		signOut: ReturnType<typeof vi.fn>
+		signIn: ReturnType<typeof vi.fn>
+		signUp: ReturnType<typeof vi.fn>
 	}
 	let mockUser: {
 		current:
@@ -65,6 +67,8 @@ describe('SettingsRoute', () => {
 			isAuthenticated: true,
 			user: { profile: { email_verified: true } },
 			signOut: vi.fn().mockResolvedValue(undefined),
+			signIn: vi.fn().mockResolvedValue(undefined),
+			signUp: vi.fn().mockResolvedValue(undefined),
 		}
 		mockUser = {
 			current: { id: 'user-uuid-1', preferredLanguage: 'ja' },
@@ -356,6 +360,40 @@ describe('SettingsRoute', () => {
 			await sut.signOut()
 			expect(mockUser.clear).toHaveBeenCalledOnce()
 			expect(mockAuth.signOut).toHaveBeenCalledOnce()
+		})
+	})
+
+	describe('guest mode', () => {
+		function buildGuestSut() {
+			mockAuth.isAuthenticated = false
+			mockAuth.user = null
+			const container = createTestContainer(
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(mockIUserService, mockUser),
+				Registration.instance(mockINotificationManager, mockNotification),
+				Registration.instance(mockIPushService, mockPush),
+				Registration.instance(IEventAggregator, mockEa),
+			)
+			container.register(SettingsRoute)
+			return container.get(SettingsRoute)
+		}
+
+		it('signIn() starts the OIDC sign-in flow', async () => {
+			const guestSut = buildGuestSut()
+			await guestSut.signIn()
+			expect(mockAuth.signIn).toHaveBeenCalledOnce()
+		})
+
+		it('signUp() starts the OIDC sign-up flow', async () => {
+			const guestSut = buildGuestSut()
+			await guestSut.signUp()
+			expect(mockAuth.signUp).toHaveBeenCalledOnce()
+		})
+
+		it('language change does not call the backend RPC for a guest', async () => {
+			const guestSut = buildGuestSut()
+			await guestSut.selectLanguage('en')
+			expect(mockUser.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
 })

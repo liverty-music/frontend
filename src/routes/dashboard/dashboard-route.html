@@ -50,5 +50,15 @@
   required.bind="isOnboarding"
 ></user-home-selector>
 
+<!-- Celebration overlay — two tiers (guest light / post-signup confetti),
+     gated on timetable readiness via maybeCelebrate() -->
+<celebration-overlay
+  active.bind="showCelebration"
+  confetti.bind="celebrationConfetti"
+  message.bind="celebrationMessage"
+  sub-message.bind="celebrationSubMessage"
+  on-dismissed.bind="() => onCelebrationDismissed()"
+></celebration-overlay>
+
 <!-- PostSignupDialog — shown once after first-time signup -->
 <post-signup-dialog active.bind="showPostSignupDialog"></post-signup-dialog>

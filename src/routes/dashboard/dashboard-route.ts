@@ -16,7 +16,6 @@ import { IAuthService } from '../../services/auth-service'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import { IGuestService } from '../../services/guest-service'
-import { INavDimmingService } from '../../services/nav-dimming-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -33,6 +32,13 @@ export class DashboardRoute {
 	public showSignupBanner = false
 	public showPostSignupDialog = false
 
+	// Celebration overlay state (two tiers, gated on timetable readiness).
+	public showCelebration = false
+	public celebrationConfetti = false
+	public celebrationMessage = ''
+	public celebrationSubMessage = ''
+	private celebrationLeadsToDialog = false
+
 	public homeSelector: UserHomeSelector | undefined
 	public detailSheet: EventDetailSheet | undefined
 
@@ -45,7 +51,6 @@ export class DashboardRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
-	private readonly navDimming = resolve(INavDimmingService)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly history = resolve(IHistory)
 	private abortController: AbortController | null = null
@@ -207,22 +212,72 @@ export class DashboardRoute {
 			this.logger.info('Dashboard step completed: advancing to MY_ARTISTS')
 		}
 
-		// PostSignupDialog: show once after first-time signup.
-		// Checked in attached() so child BottomSheet is in the DOM
-		// and showPopover() can succeed.
-		if (this.storage.getItem(StorageKeys.postSignupShown) === 'pending') {
-			this.storage.removeItem(StorageKeys.postSignupShown)
-			this.showPostSignupDialog = true
+		// Celebrate once the timetable is real. While needsRegion is true the
+		// home-selector is open and the timetable is blurred, so defer to
+		// onHomeSelected(); otherwise data was already awaited in loading().
+		// The post-signup tier opens PostSignupDialog on dismissal (see
+		// maybeCelebrate / onCelebrationDismissed).
+		if (!this.needsRegion) {
+			this.maybeCelebrate()
 		}
 	}
 
-	public onHomeSelected(code: string): void {
+	public async onHomeSelected(code: string): Promise<void> {
 		this.logger.info('Home area configured', { code })
 		this.needsRegion = false
 		if (!this.authService.isAuthenticated) {
 			this.guest.setHome(code)
 		}
-		void this.loadData()
+		await this.loadData()
+		// Timetable is now real — run the celebration that was deferred while the
+		// region was unset.
+		this.maybeCelebrate()
+	}
+
+	/**
+	 * Show the celebration overlay once the dashboard timetable is real (region
+	 * set, data loaded). Two tiers, each shown at most once:
+	 *  - Post-signup (authenticated, first signup): full confetti, then opens
+	 *    the PostSignupDialog on dismissal.
+	 *  - Guest first dashboard arrival: light (no confetti) acknowledgement.
+	 */
+	private maybeCelebrate(): void {
+		if (this.showCelebration || this.needsRegion) return
+
+		if (this.authService.isAuthenticated) {
+			if (this.storage.getItem(StorageKeys.postSignupShown) !== 'pending') {
+				return
+			}
+			this.storage.removeItem(StorageKeys.postSignupShown)
+			this.celebrationConfetti = true
+			this.celebrationMessage = this.i18n.tr('dashboard.celebration.welcome')
+			this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.explore')
+			this.celebrationLeadsToDialog = true
+			this.showCelebration = true
+			return
+		}
+
+		// Light tier is the onboarding creation payoff: only fire while the guest
+		// is still in the onboarding flow (genuine first dashboard arrival), not
+		// for a completed guest revisiting the dashboard.
+		if (!this.onboarding.isOnboarding) return
+		if (this.storage.getItem(StorageKeys.celebrationShown) === '1') return
+		this.storage.setItem(StorageKeys.celebrationShown, '1')
+		this.celebrationConfetti = false
+		this.celebrationMessage = this.i18n.tr('dashboard.celebration.complete')
+		this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.explore')
+		this.celebrationLeadsToDialog = false
+		this.showCelebration = true
+	}
+
+	public onCelebrationDismissed(): void {
+		this.showCelebration = false
+		// Sequence: emotion → setup. Post-signup celebration hands off to the
+		// PostSignupDialog (notifications / PWA install) on dismissal.
+		if (this.celebrationLeadsToDialog) {
+			this.celebrationLeadsToDialog = false
+			this.showPostSignupDialog = true
+		}
 	}
 
 	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {
@@ -236,6 +291,5 @@ export class DashboardRoute {
 	public detaching(): void {
 		this.abortController?.abort()
 		this.abortController = null
-		this.navDimming.setDimmed(false)
 	}
 }
