@@ -1,7 +1,13 @@
 name: Deploy Frontend
 
 # Dual trigger:
-#  - push to main      -> dev build, dev AR (liverty-music-dev/frontend)
+#  - push to main      -> dev AR (liverty-music-dev/frontend). Every push to
+#                         main runs this workflow (no paths: trigger gate). A
+#                         per-run "build vs inherit" decision over the pushed
+#                         range (event.before..sha) picks build (docker
+#                         build-push) or inherit (crane-copy the parent tip's
+#                         dev digest onto :<sha>, re-point :main/:latest — used
+#                         when the push changed no build-relevant file).
 #  - release published -> retag dev AR digest into prod AR
 #                         (liverty-music-prod/frontend)
 #
@@ -14,22 +20,16 @@ name: Deploy Frontend
 # image divergence) that the env-agnostic bundle (per
 # `adopt-runtime-config-for-frontend`) made obsolete.
 #
-# The `paths:` filter only applies to push events. Release events fire on
-# any published Release regardless of file diff.
+# Per OpenSpec change `guarantee-dev-image-per-main-commit`, the `paths:`
+# trigger gate was removed so EVERY main commit gets a resolvable dev
+# `:<sha>` image (by build or by parent-digest inheritance). This makes
+# "any main commit is releasable" a true invariant: a release cut on main
+# HEAD always resolves a dev image. The former glob set now drives the
+# in-workflow build-vs-inherit decision instead of gating the trigger.
 on:
   push:
     branches:
       - main
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'scripts/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.ts'
-      - 'Dockerfile'
-      - 'Caddyfile'
-      - '.github/workflows/push-image.yaml'
   release:
     types: [published]
   workflow_dispatch:
@@ -78,6 +78,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so the push-path "build vs inherit" decision can
+          # diff the pushed range (event.before..sha), and so the release
+          # path's ancestry verification has main's history available.
+          fetch-depth: 0
 
       # Defensive guard layer 2 (runtime verification): for release events,
       # confirm the checked-out commit (`github.sha`, == the tag's commit)
@@ -96,7 +101,7 @@ jobs:
         run: |
           git fetch origin main --depth=100
           if ! git merge-base --is-ancestor HEAD origin/main; then
-            echo "::error::Release tag at $(git rev-parse HEAD) is not reachable from origin/main ($(git rev-parse origin/main)). Refusing to push prod images. Cut releases on main HEAD only."
+            echo "::error::Release tag at $(git rev-parse HEAD) is not reachable from origin/main ($(git rev-parse origin/main)). Refusing to push prod images. Cut releases on a commit reachable from main — main HEAD is always valid, since every main commit has a resolvable dev image (guarantee-dev-image-per-main-commit)."
             exit 1
           fi
 
@@ -123,18 +128,55 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-      - name: Set Image URI (dev path)
+      # =====================================================================
+      # Push path: decide build vs inherit
+      # =====================================================================
+      # The `paths:` trigger gate was removed (guarantee-dev-image-per-main-commit)
+      # so every push to main runs this workflow. Replicate the former glob set
+      # as an in-workflow decision over the pushed range event.before..sha:
+      #   * any build-relevant file changed -> build (produces a fresh image)
+      #   * none changed                     -> inherit the parent tip's digest
+      #     so this commit still gets a :<sha> image (byte-identical to parent).
+      # Unknown parent (zero `before` SHA on branch creation / force-push, or
+      # an unresolvable parent commit) -> build: the conservative choice that
+      # always produces a fresh image rather than risk a wrong inherit.
+      - name: Decide build vs inherit (push path)
         if: github.event_name == 'push'
+        id: decide
+        env:
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          if [ -z "${BEFORE}" ] || [ "${BEFORE}" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "Parent commit unavailable (BEFORE=${BEFORE}); defaulting to build."
+            echo "mode=build" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --name-only "${BEFORE}" "${SHA}")
+          echo "Changed files in ${BEFORE}..${SHA}:"
+          echo "${changed}"
+          # Build glob set (kept in lock-step with the prior `on.push.paths`).
+          if echo "${changed}" | grep -qE '^src/|^public/|^scripts/|^package\.json$|^package-lock\.json$|^vite\.config\.ts$|^Dockerfile$|^Caddyfile$|^\.github/workflows/push-image\.yaml$'; then
+            echo "Build-relevant change detected -> build."
+            echo "mode=build" >> "$GITHUB_OUTPUT"
+          else
+            echo "No build-relevant change -> inherit parent digest."
+            echo "mode=inherit" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set Image URI (dev path)
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
         run: echo "IMAGE_URI=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}" >> $GITHUB_ENV
 
       # Dev tag set: :latest (consumed by ArgoCD Image Updater for dev
       # auto-rollout) + :sha (immutable digest pointer) + :main.
       - name: Set Image Tags (dev path)
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
         run: echo "IMAGE_TAGS=${{ env.IMAGE_URI }}:latest,${{ env.IMAGE_URI }}:${{ github.sha }},${{ env.IMAGE_URI }}:main" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
         uses: docker/setup-buildx-action@v3
 
       # No env-specific build-args: per OpenSpec archive
@@ -145,7 +187,7 @@ jobs:
       # template-stripping regressions (the class of bug that produced
       # the v1.0.0 blank-screen Sev-1).
       - name: Build and Push Docker Image
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -188,8 +230,38 @@ jobs:
       # Auth: `crane` reads `~/.docker/config.json` populated by the
       # `Configure Docker` step above.
       - name: Install crane
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || (github.event_name == 'push' && steps.decide.outputs.mode == 'inherit')
         uses: imjasonh/setup-crane@v0.4
+
+      # =====================================================================
+      # Push/inherit path: this commit changed nothing build-relevant, so its
+      # image is byte-identical to the parent push tip's. Copy the parent's
+      # digest onto :<sha> (and re-point :main, :latest) — no rebuild. This
+      # keeps the "every main commit has a resolvable dev :<sha>" invariant.
+      # =====================================================================
+      - name: Inherit parent dev AR digest (push path, no rebuild)
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'inherit'
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          resolve() { gcloud artifacts docker images describe "$1" --format='value(image_summary.digest)' 2>/dev/null; }
+          # The parent push tip (event.before) has a :<sha> image by induction.
+          digest=$(resolve "${DEV_AR_IMAGE}:${BEFORE}")
+          if [ -z "${digest}" ]; then
+            echo "Parent :${BEFORE} not resolvable; falling back to the :main tag digest."
+            digest=$(resolve "${DEV_AR_IMAGE}:main")
+          fi
+          if [ -z "${digest}" ]; then
+            echo "::error::Cannot resolve a parent dev image for ${DEV_AR_IMAGE} (tried :${BEFORE} and :main). The inherit chain is broken. Seed it by pushing a build-relevant change (any src/** / package.json / Dockerfile) to main, which forces a fresh build. Not writing :${SHA} to avoid pinning a wrong digest."
+            exit 1
+          fi
+          echo "Inheriting digest ${digest} onto :${SHA}, :main, :latest."
+          crane copy "${DEV_AR_IMAGE}@${digest}" "${DEV_AR_IMAGE}:${SHA}"
+          crane copy "${DEV_AR_IMAGE}@${digest}" "${DEV_AR_IMAGE}:main"
+          crane copy "${DEV_AR_IMAGE}@${digest}" "${DEV_AR_IMAGE}:latest"
 
       - name: Resolve dev AR digest for github.sha
         if: github.event_name == 'release'
@@ -218,7 +290,7 @@ jobs:
               sleep 60
             fi
           done
-          echo "::error::dev AR tag :${GITHUB_SHA} not found after 6 attempts (~5 min total wait). Either the dev build for this commit failed, or the release was cut on a non-main commit. See docs/runbooks/prod-image-tag-pinning.md#retag-failure-recovery in cloud-provisioning."
+          echo "::error::dev AR tag :${GITHUB_SHA} not found after 6 attempts (~5 min total wait). Given the every-main-commit-has-an-image invariant (guarantee-dev-image-per-main-commit), the push-path build/inherit for this commit is still in-flight or failed — do NOT re-target an earlier commit; re-run the push-path 'Deploy Frontend' run for this SHA. See docs/runbooks/prod-image-tag-pinning.md#retag-failure-recovery in cloud-provisioning."
           exit 1
 
       - name: Promote dev AR digest to prod AR (semver tag)
