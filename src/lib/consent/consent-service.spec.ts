@@ -205,6 +205,64 @@ describe('ConsentService', () => {
 				marketingMeasurement: false,
 			})
 		})
+
+		// Regression for PR #380 round-1 bot finding (declineAll silent
+		// no-op). A fresh user has default state { analytics: false,
+		// marketingMeasurement: false }; tapping "Decline all" must
+		// record an explicit decision so the consent screen does not
+		// resurface on the next boot, EVEN THOUGH neither purpose value
+		// changed from its default.
+		it('stamps decidedAt on first explicit decline even when value already matches default', () => {
+			const sut = new ConsentService()
+			expect(sut.hasDecided()).toBe(false)
+
+			sut.revoke('analytics')
+
+			expect(sut.hasDecided()).toBe(true)
+			expect(sut.analytics).toBe(false)
+			// localStorage MUST be populated so a re-boot reads back
+			// hasDecided() === true via decidedAt.
+			const raw = localStorage.getItem(LS_KEY_STATE)
+			expect(raw).not.toBeNull()
+			const stored = JSON.parse(raw ?? '{}') as Record<string, unknown>
+			expect(stored).toMatchObject({
+				version: 1,
+				analytics: false,
+				marketingMeasurement: false,
+			})
+			expect(typeof stored.decidedAt).toBe('string')
+			// No ConsentChanged event: the SDK posture did not change
+			// (still memory + opt-out), so AnalyticsService does not
+			// need to reconfigure. The decision is recorded purely for
+			// `hasDecided()`.
+			expect(mockEa.publish).not.toHaveBeenCalled()
+		})
+
+		// Sibling case: a returning user toggling a purpose back to a
+		// value they already hold MUST be a full no-op — neither
+		// persisting (timestamp would update spuriously) nor publishing
+		// (AnalyticsService set_config would re-fire).
+		it('is a full no-op when value is unchanged AND user already decided', () => {
+			const initialDecidedAt = '2025-04-01T00:00:00.000Z'
+			localStorage.setItem(
+				LS_KEY_STATE,
+				JSON.stringify({
+					version: 1,
+					analytics: false,
+					marketingMeasurement: false,
+					decidedAt: initialDecidedAt,
+				}),
+			)
+			const sut = new ConsentService()
+
+			sut.revoke('analytics')
+
+			// decidedAt unchanged in storage — no spurious timestamp update.
+			const raw = localStorage.getItem(LS_KEY_STATE)
+			const stored = JSON.parse(raw ?? '{}') as Record<string, unknown>
+			expect(stored.decidedAt).toBe(initialDecidedAt)
+			expect(mockEa.publish).not.toHaveBeenCalled()
+		})
 	})
 
 	describe('defer()', () => {

@@ -1,4 +1,10 @@
 import { DI, IEventAggregator, ILogger, resolve } from 'aurelia'
+import {
+	loadConsentDeferred,
+	loadConsentState,
+	saveConsentDeferred,
+	saveConsentState,
+} from '../../adapter/storage/consent-storage'
 import { ConsentChanged } from './consent-changed'
 
 /**
@@ -84,20 +90,11 @@ export const IConsentService = DI.createInterface<IConsentService>(
  *
  * `decidedAt` carries the ISO timestamp of the user's first explicit
  * grant/revoke choice. `defer()` deliberately leaves this null and uses
- * a separate `LS_KEY_DEFERRED` flag — keeping the two signals separate
- * preserves the distinction between "user explicitly decided" and "user
- * acknowledged the screen but skipped"; the latter does NOT count as a
- * privacy-respecting consent record.
+ * a separate deferred flag in the storage adapter — keeping the two
+ * signals separate preserves the distinction between "user explicitly
+ * decided" and "user acknowledged the screen but skipped"; the latter
+ * does NOT count as a privacy-respecting consent record.
  */
-type StoredStateV1 = {
-	version: 1
-	analytics: boolean
-	marketingMeasurement: boolean
-	decidedAt: string | null
-}
-
-const LS_KEY_STATE = 'liverty:consent:state:v1'
-const LS_KEY_DEFERRED = 'liverty:consent:deferred:v1'
 
 const DEFAULT_STATE: ConsentState = Object.freeze({
 	analytics: false,
@@ -148,12 +145,8 @@ export class ConsentService implements IConsentService {
 		// visible in dev.
 		if (this.deferred) return
 		this.deferred = true
-		try {
-			localStorage.setItem(LS_KEY_DEFERRED, '1')
-		} catch (err) {
-			this.logger.warn('Failed to persist consent-deferred flag', {
-				error: err,
-			})
+		if (!saveConsentDeferred()) {
+			this.logger.warn('Failed to persist consent-deferred flag')
 		}
 		this.logger.debug('Consent decision deferred by user')
 	}
@@ -164,113 +157,51 @@ export class ConsentService implements IConsentService {
 
 	// -- Internals --------------------------------------------------------
 
+	/**
+	 * Applies a per-purpose mutation with three distinct branches:
+	 *
+	 *   1. Value changed: persist + publish ConsentChanged + log.
+	 *   2. Value unchanged AND no prior explicit decision: stamp
+	 *      decidedAt + persist + log; SKIP publish (no subscriber state
+	 *      to update, but `hasDecided()` MUST flip so the consent screen
+	 *      does not resurface on the next boot). This is the fresh-user
+	 *      "Decline all" path where revoke('analytics') and
+	 *      revoke('marketingMeasurement') both leave the value at the
+	 *      default `false` — without this branch the explicit decline
+	 *      would be silently dropped.
+	 *   3. Value unchanged AND already decided: full no-op. Returning
+	 *      users toggling the settings page back to a value they already
+	 *      hold MUST NOT republish ConsentChanged (AnalyticsService
+	 *      reads `set_config` as a side effect, so spurious republishes
+	 *      would drive redundant SDK reconfiguration).
+	 */
 	private applyMutation(purpose: ConsentPurpose, value: boolean): void {
-		// Short-circuit no-op mutations: granting an already-granted
-		// purpose MUST NOT republish ConsentChanged (AnalyticsService
-		// reads `set_config` as a side effect, so spurious republishes
-		// would drive redundant SDK reconfiguration on every settings
-		// page mount).
-		if (this.state[purpose] === value) return
+		const isNoOp = this.state[purpose] === value
+		if (isNoOp && this.decidedAt !== null) return
 
-		const next: ConsentState = { ...this.state, [purpose]: value }
-		this.state = next
+		if (!isNoOp) {
+			this.state = { ...this.state, [purpose]: value }
+		}
 		this.decidedAt = new Date().toISOString()
-		this.persist()
-		this.ea.publish(new ConsentChanged(this.state))
+		if (!saveConsentState(this.state, this.decidedAt)) {
+			this.logger.warn('Failed to persist consent state to localStorage')
+		}
+		if (!isNoOp) {
+			this.ea.publish(new ConsentChanged(this.state))
+		}
 		this.logger.info('Consent state changed', { purpose, value })
 	}
 
 	private hydrate(): void {
-		this.deferred = (() => {
-			try {
-				return localStorage.getItem(LS_KEY_DEFERRED) === '1'
-			} catch {
-				return false
-			}
-		})()
+		this.deferred = loadConsentDeferred()
 
-		let raw: string | null
-		try {
-			raw = localStorage.getItem(LS_KEY_STATE)
-		} catch (err) {
-			// SecurityError (privacy-mode Safari, blocked storage) — leave
-			// defaults and continue. Future grants/revokes will also fail
-			// at the persist() write, but the in-memory state still tracks
-			// the session and AnalyticsService still reacts to events.
-			this.logger.warn('Failed to read consent state from localStorage', {
-				error: err,
-			})
-			return
-		}
-		if (raw === null) return
-
-		const parsed = this.safeParse(raw)
-		if (parsed === null) {
-			this.logger.warn(
-				'Corrupt consent state in localStorage; falling back to defaults',
-				{ raw },
-			)
-			// Remove the bad blob so we do not warn on every subsequent
-			// boot. The user will be re-prompted via the consent screen
-			// because `hasDecided()` returns false (unless they previously
-			// deferred, in which case onboarding still progresses).
-			try {
-				localStorage.removeItem(LS_KEY_STATE)
-			} catch {
-				/* ignore — best-effort cleanup */
-			}
-			return
-		}
+		const parsed = loadConsentState()
+		if (parsed === null) return
 
 		this.state = {
 			analytics: parsed.analytics,
 			marketingMeasurement: parsed.marketingMeasurement,
 		}
 		this.decidedAt = parsed.decidedAt
-	}
-
-	private safeParse(raw: string): StoredStateV1 | null {
-		try {
-			const value = JSON.parse(raw) as unknown
-			if (
-				typeof value !== 'object' ||
-				value === null ||
-				(value as { version?: unknown }).version !== 1 ||
-				typeof (value as { analytics?: unknown }).analytics !== 'boolean' ||
-				typeof (value as { marketingMeasurement?: unknown })
-					.marketingMeasurement !== 'boolean'
-			) {
-				return null
-			}
-			const decidedAt = (value as { decidedAt?: unknown }).decidedAt
-			if (decidedAt !== null && typeof decidedAt !== 'string') {
-				return null
-			}
-			const v = value as StoredStateV1
-			return {
-				version: 1,
-				analytics: v.analytics,
-				marketingMeasurement: v.marketingMeasurement,
-				decidedAt: v.decidedAt,
-			}
-		} catch {
-			return null
-		}
-	}
-
-	private persist(): void {
-		const payload: StoredStateV1 = {
-			version: 1,
-			analytics: this.state.analytics,
-			marketingMeasurement: this.state.marketingMeasurement,
-			decidedAt: this.decidedAt,
-		}
-		try {
-			localStorage.setItem(LS_KEY_STATE, JSON.stringify(payload))
-		} catch (err) {
-			this.logger.warn('Failed to persist consent state to localStorage', {
-				error: err,
-			})
-		}
 	}
 }
