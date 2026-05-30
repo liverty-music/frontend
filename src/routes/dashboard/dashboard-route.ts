@@ -257,8 +257,12 @@ export class DashboardRoute {
 			return
 		}
 
-		if (this.storage.getItem(StorageKeys.celebrationLightShown) === '1') return
-		this.storage.setItem(StorageKeys.celebrationLightShown, '1')
+		// Light tier is the onboarding creation payoff: only fire while the guest
+		// is still in the onboarding flow (genuine first dashboard arrival), not
+		// for a completed guest revisiting the dashboard.
+		if (!this.onboarding.isOnboarding) return
+		if (this.storage.getItem(StorageKeys.celebrationShown) === '1') return
+		this.storage.setItem(StorageKeys.celebrationShown, '1')
 		this.celebrationConfetti = false
 		this.celebrationMessage = this.i18n.tr('dashboard.celebration.complete')
 		this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.explore')

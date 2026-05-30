@@ -204,6 +204,7 @@ describe('DashboardRoute', () => {
 	describe('maybeCelebrate (via attached / onHomeSelected)', () => {
 		it('shows the guest light celebration (no confetti) on first dashboard arrival', () => {
 			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
@@ -212,15 +213,27 @@ describe('DashboardRoute', () => {
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(false)
 			expect(mockStorage.setItem).toHaveBeenCalledWith(
-				'liverty:celebration:lightShown',
+				'onboarding.celebrationShown',
 				'1',
 			)
 		})
 
+		it('does not show the light celebration for a completed guest (not onboarding)', () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = false
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(false)
+		})
+
 		it('does not replay the guest light celebration once shown', () => {
 			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
 			mockStorage.getItem.mockImplementation((k: string) =>
-				k === 'liverty:celebration:lightShown' ? '1' : null,
+				k === 'onboarding.celebrationShown' ? '1' : null,
 			)
 			sut = new DashboardRoute()
 			sut.needsRegion = false
@@ -232,6 +245,7 @@ describe('DashboardRoute', () => {
 
 		it('defers the celebration while a region is still needed', () => {
 			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
 			sut = new DashboardRoute()
 			sut.needsRegion = true
 
@@ -242,6 +256,7 @@ describe('DashboardRoute', () => {
 
 		it('celebrates after the region is selected', async () => {
 			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
 			sut = new DashboardRoute()
 			sut.needsRegion = true
 			sut.attached()

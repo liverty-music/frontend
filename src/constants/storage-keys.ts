@@ -4,8 +4,10 @@ export const StorageKeys = {
 	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
 	pwaInstalled: 'pwa.installed',
 	postSignupShown: 'liverty:postSignup:shown',
-	// Guest light celebration (first dashboard arrival) shown-once flag.
-	celebrationLightShown: 'liverty:celebration:lightShown',
+	// Celebration shown-once flag (guest light tier on first dashboard arrival).
+	// Shared with the E2E suite, which seeds/removes this key to control the
+	// celebration overlay's visibility.
+	celebrationShown: 'onboarding.celebrationShown',
 	// Discovery bubble sound-effect preferences. '1'/'0' for mute, '0'..'1' for volume.
 	soundMuted: 'liverty:sound:muted',
 	soundVolume: 'liverty:sound:volume',
