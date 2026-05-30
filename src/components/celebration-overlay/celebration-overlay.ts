@@ -4,6 +4,8 @@ export class CelebrationOverlay {
 	@bindable public active = false
 	@bindable public message = ''
 	@bindable public subMessage = ''
+	/** When false, the confetti animation is suppressed (light tier). */
+	@bindable public confetti = true
 	@bindable public onOpen?: () => void
 	@bindable public onDismissed?: () => void
 

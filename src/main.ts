@@ -68,7 +68,6 @@ import { IFollowServiceClient } from './services/follow-service-client'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
 import { IGuestDataMergeService } from './services/guest-data-merge-service'
 import { IGuestService } from './services/guest-service'
-import { INavDimmingService } from './services/nav-dimming-service'
 import { INotificationManager } from './services/notification-manager'
 import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
@@ -194,7 +193,6 @@ async function bootstrap(): Promise<void> {
 	au.register(IOnboardingService)
 	au.register(IGuestService)
 	au.register(IGuestDataMergeService)
-	au.register(INavDimmingService)
 	au.register(IAudioEngine)
 	au.register(INotificationManager)
 	au.register(IPushService)

@@ -4,6 +4,8 @@ export const StorageKeys = {
 	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
 	pwaInstalled: 'pwa.installed',
 	postSignupShown: 'liverty:postSignup:shown',
+	// Guest light celebration (first dashboard arrival) shown-once flag.
+	celebrationLightShown: 'liverty:celebration:lightShown',
 	// Discovery bubble sound-effect preferences. '1'/'0' for mute, '0'..'1' for volume.
 	soundMuted: 'liverty:sound:muted',
 	soundVolume: 'liverty:sound:volume',

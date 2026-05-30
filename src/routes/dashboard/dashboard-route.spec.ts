@@ -25,9 +25,9 @@ const mockOnboarding = {
 }
 const mockGuest = { home: null, setHome: vi.fn() }
 const mockUserService = { current: { home: 'JP-13' } }
-const mockNavDimming = { setDimmed: vi.fn() }
+const mockI18n = { tr: vi.fn((key: string) => key) }
 const mockStorage = {
-	getItem: vi.fn(() => null),
+	getItem: vi.fn((_key: string): string | null => null),
 	setItem: vi.fn(),
 	removeItem: vi.fn(),
 }
@@ -47,7 +47,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IOnboardingService: mockOnboarding,
 				IGuestService: mockGuest,
 				IUserService: mockUserService,
-				INavDimmingService: mockNavDimming,
+				I18N: mockI18n,
 				ILocalStorage: mockStorage,
 			}
 			const tokenAny = token as { friendlyName?: string }
@@ -59,7 +59,7 @@ vi.mock('aurelia', async (importOriginal) => {
 
 vi.mock('@aurelia/i18n', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('@aurelia/i18n')>()
-	return { ...actual, I18N: 'I18N' }
+	return { ...actual, I18N: { friendlyName: 'I18N' } }
 })
 
 vi.mock('@aurelia/router', () => ({ RouteNode: class {} }))
@@ -94,6 +94,9 @@ describe('DashboardRoute', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockOnboarding.isOnboarding = false
+		mockOnboarding.currentStep = 'done'
+		mockAuth.isAuthenticated = false
+		mockStorage.getItem.mockReturnValue(null)
 		sut = new DashboardRoute()
 	})
 
@@ -195,6 +198,93 @@ describe('DashboardRoute', () => {
 			await sut.loading({}, makeRouteNode('id-1,id-2'))
 
 			expect(sut.filteredArtistIds).toEqual([])
+		})
+	})
+
+	describe('maybeCelebrate (via attached / onHomeSelected)', () => {
+		it('shows the guest light celebration (no confetti) on first dashboard arrival', () => {
+			mockAuth.isAuthenticated = false
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(true)
+			expect(sut.celebrationConfetti).toBe(false)
+			expect(mockStorage.setItem).toHaveBeenCalledWith(
+				'liverty:celebration:lightShown',
+				'1',
+			)
+		})
+
+		it('does not replay the guest light celebration once shown', () => {
+			mockAuth.isAuthenticated = false
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'liverty:celebration:lightShown' ? '1' : null,
+			)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(false)
+		})
+
+		it('defers the celebration while a region is still needed', () => {
+			mockAuth.isAuthenticated = false
+			sut = new DashboardRoute()
+			sut.needsRegion = true
+
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(false)
+		})
+
+		it('celebrates after the region is selected', async () => {
+			mockAuth.isAuthenticated = false
+			sut = new DashboardRoute()
+			sut.needsRegion = true
+			sut.attached()
+			expect(sut.showCelebration).toBe(false)
+
+			await sut.onHomeSelected('JP-13')
+
+			expect(mockGuest.setHome).toHaveBeenCalledWith('JP-13')
+			expect(sut.showCelebration).toBe(true)
+			expect(sut.celebrationConfetti).toBe(false)
+		})
+
+		it('shows the post-signup full celebration (confetti) then the dialog', () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'liverty:postSignup:shown' ? 'pending' : null,
+			)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(true)
+			expect(sut.celebrationConfetti).toBe(true)
+			expect(mockStorage.removeItem).toHaveBeenCalledWith(
+				'liverty:postSignup:shown',
+			)
+			expect(sut.showPostSignupDialog).toBe(false)
+
+			sut.onCelebrationDismissed()
+
+			expect(sut.showCelebration).toBe(false)
+			expect(sut.showPostSignupDialog).toBe(true)
+		})
+
+		it('does not celebrate for an authenticated returning user', () => {
+			mockAuth.isAuthenticated = true
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(false)
 		})
 	})
 })
