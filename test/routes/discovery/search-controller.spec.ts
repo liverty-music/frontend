@@ -27,6 +27,7 @@ describe('SearchController', () => {
 			onEnterSearchMode: vi.fn(),
 			onExitSearchMode: vi.fn(),
 			onError: vi.fn(),
+			onSearchCompleted: vi.fn(),
 		}
 
 		sut = new SearchController(mockClient, mockCallbacks, createMockLogger())
@@ -118,6 +119,73 @@ describe('SearchController', () => {
 			expect(sut.searchResults).toHaveLength(0)
 			expect(sut.isSearching).toBe(false)
 			expect(mockCallbacks.onExitSearchMode).toHaveBeenCalled()
+		})
+	})
+
+	describe('onSearchCompleted analytics signal', () => {
+		// Batch 3c-2a: the discovery-route subscribes via this callback to
+		// fire the artist.search analytics event. The callback MUST be
+		// invoked exactly once per successful, non-stale search with the
+		// observed query length and result count — anything else would
+		// pollute the search-quality funnel (aborted searches, failures,
+		// or stale responses inflating the count).
+
+		it('invokes onSearchCompleted with query length + result count on success', async () => {
+			const results = [
+				makeArtist('a1', 'Artist 1'),
+				makeArtist('a2', 'Artist 2'),
+			]
+			;(mockClient.search as ReturnType<typeof vi.fn>).mockResolvedValue(
+				results,
+			)
+
+			sut.searchQuery = 'beatles'
+			sut.onQueryChanged('beatles')
+			await vi.advanceTimersByTimeAsync(300)
+			// Drain the awaited search promise + the synchronous code that
+			// follows it.
+			await vi.advanceTimersByTimeAsync(0)
+
+			expect(mockCallbacks.onSearchCompleted).toHaveBeenCalledTimes(1)
+			expect(mockCallbacks.onSearchCompleted).toHaveBeenCalledWith({
+				queryLength: 7,
+				resultCount: 2,
+			})
+		})
+
+		it('does NOT fire on stale-response early return', async () => {
+			;(mockClient.search as ReturnType<typeof vi.fn>).mockResolvedValue([
+				makeArtist('a1', 'Stale'),
+			])
+
+			sut.searchQuery = 'first'
+			sut.onQueryChanged('first')
+			await vi.advanceTimersByTimeAsync(150)
+			sut.searchQuery = 'second'
+			await vi.advanceTimersByTimeAsync(150)
+			await vi.advanceTimersByTimeAsync(0)
+
+			// The response for 'first' arrived after the user typed
+			// 'second'. The stale-query guard short-circuits BEFORE the
+			// callback — analytics MUST stay quiet.
+			expect(mockCallbacks.onSearchCompleted).not.toHaveBeenCalled()
+		})
+
+		it('does NOT fire when search throws', async () => {
+			;(mockClient.search as ReturnType<typeof vi.fn>).mockRejectedValue(
+				new Error('network'),
+			)
+
+			sut.searchQuery = 'fail'
+			sut.onQueryChanged('fail')
+			await vi.advanceTimersByTimeAsync(300)
+			await vi.advanceTimersByTimeAsync(0)
+
+			expect(mockCallbacks.onSearchCompleted).not.toHaveBeenCalled()
+			// onError IS fired for the failure (existing contract).
+			expect(mockCallbacks.onError).toHaveBeenCalledWith(
+				'discovery.searchFailed',
+			)
 		})
 	})
 

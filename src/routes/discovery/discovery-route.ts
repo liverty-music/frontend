@@ -4,6 +4,10 @@ import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { Snack } from '../../components/snack-bar/snack'
 import type { Artist } from '../../entities/artist'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../lib/analytics/analytics-service'
 import { IArtistServiceClient } from '../../services/artist-service-client'
 import { IConcertService } from '../../services/concert-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
@@ -27,6 +31,7 @@ export class DiscoveryRoute {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly guest = resolve(IGuestService)
 	private readonly concertService = resolve(IConcertService)
+	private readonly analytics = resolve(IAnalyticsService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
 
@@ -49,6 +54,12 @@ export class DiscoveryRoute {
 			onExitSearchMode: () => this.dnaOrbCanvas?.resume(),
 			onError: (key) =>
 				this.ea.publish(new Snack(this.i18n.tr(key), 'warning')),
+			onSearchCompleted: ({ queryLength, resultCount }) => {
+				this.analytics.capture(Events.ArtistSearch, {
+					query_length: queryLength,
+					result_count: resultCount,
+				})
+			},
 		},
 		resolve(ILogger).scopeTo('SearchController'),
 	)
@@ -224,6 +235,21 @@ export class DiscoveryRoute {
 			artist: artist.name,
 		})
 
+		// Analytics: bubble-tap simultaneously surfaces the artist on
+		// screen (viewed) and expresses follow intent (follow.requested).
+		// Both fire BEFORE the followService call so the events capture
+		// intent regardless of follow outcome — backend
+		// artist.follow.completed (PR #317) is the trust-critical outcome
+		// signal that pairs with follow.requested for the funnel.
+		this.analytics.capture(Events.ArtistDiscoveryViewed, {
+			artist_id: artistId,
+			source: 'discovery_orb',
+		})
+		this.analytics.capture(Events.ArtistFollowRequested, {
+			artist_id: artistId,
+			source: 'discovery_orb',
+		})
+
 		// Optimistic UI: remove from pool
 		this.bubbles.pool.remove(artistId)
 
@@ -284,6 +310,19 @@ export class DiscoveryRoute {
 
 		this.logger.info('Following artist from search', {
 			artist: artist.name,
+		})
+
+		// Same intent-capture pattern as the bubble-tap path: both
+		// viewed and follow.requested fire BEFORE the followService call
+		// so search-driven discovery shows up in the funnel even when
+		// the backend follow eventually fails.
+		this.analytics.capture(Events.ArtistDiscoveryViewed, {
+			artist_id: artistId,
+			source: 'search_result',
+		})
+		this.analytics.capture(Events.ArtistFollowRequested, {
+			artist_id: artistId,
+			source: 'search_result',
 		})
 
 		try {

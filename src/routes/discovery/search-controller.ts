@@ -9,6 +9,14 @@ export interface SearchControllerCallbacks {
 	onEnterSearchMode(): void
 	onExitSearchMode(): void
 	onError(message: string): void
+	/**
+	 * Called once per successful, non-stale search after the result set is
+	 * assigned. Carries the fields the artist.search analytics event needs
+	 * (query_length, result_count). NOT called for stale-query early returns
+	 * or thrown searches — analytics MUST only fire on actual completions
+	 * so the search-quality funnel is not polluted by aborted attempts.
+	 */
+	onSearchCompleted(detail: { queryLength: number; resultCount: number }): void
 }
 
 export class SearchController {
@@ -66,6 +74,10 @@ export class SearchController {
 			const results = await this.client.search(query)
 			if (this.searchQuery.trim() !== query) return
 			this.searchResults = results
+			this.callbacks.onSearchCompleted({
+				queryLength: query.length,
+				resultCount: results.length,
+			})
 		} catch (err) {
 			this.logger.warn('Search failed', err)
 			this.callbacks.onError('discovery.searchFailed')
