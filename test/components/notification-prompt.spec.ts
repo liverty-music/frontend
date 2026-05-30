@@ -1,6 +1,7 @@
 import { DI, ILogger, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NotificationPrompt } from '../../src/components/notification-prompt/notification-prompt'
+import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
 import { IAuthService } from '../../src/services/auth-service'
 import { INotificationManager } from '../../src/services/notification-manager'
 import { IOnboardingService } from '../../src/services/onboarding-service'
@@ -10,6 +11,13 @@ import { createMockLogger } from '../helpers/mock-logger'
 
 describe('NotificationPrompt', () => {
 	let sut: NotificationPrompt
+	let mockAnalytics: {
+		capture: ReturnType<typeof vi.fn>
+		identify: ReturnType<typeof vi.fn>
+		reset: ReturnType<typeof vi.fn>
+		getFeatureFlag: ReturnType<typeof vi.fn>
+	}
+	let mockPushService: { create: ReturnType<typeof vi.fn> }
 
 	function create(
 		overrides: {
@@ -18,6 +26,7 @@ describe('NotificationPrompt', () => {
 			canShowPrompt?: boolean
 			permission?: NotificationPermission
 			dismissed?: boolean
+			pushCreate?: ReturnType<typeof vi.fn>
 		} = {},
 	): NotificationPrompt {
 		const container = DI.createContainer()
@@ -43,11 +52,11 @@ describe('NotificationPrompt', () => {
 				permission: overrides.permission ?? 'default',
 			}),
 		)
-		container.register(
-			Registration.instance(IPushService, {
-				subscribe: vi.fn().mockResolvedValue(undefined),
-			}),
-		)
+		mockPushService = {
+			create: overrides.pushCreate ?? vi.fn().mockResolvedValue(undefined),
+		}
+		container.register(Registration.instance(IPushService, mockPushService))
+		container.register(Registration.instance(IAnalyticsService, mockAnalytics))
 
 		if (overrides.dismissed) {
 			localStorage.setItem('ui.notificationPromptDismissed', 'true')
@@ -59,6 +68,12 @@ describe('NotificationPrompt', () => {
 
 	beforeEach(() => {
 		localStorage.clear()
+		mockAnalytics = {
+			capture: vi.fn(),
+			identify: vi.fn(),
+			reset: vi.fn(),
+			getFeatureFlag: vi.fn((_key: string, fallback: unknown) => fallback),
+		}
 		// jsdom does not provide window.matchMedia
 		window.matchMedia = vi.fn().mockImplementation((query: string) => ({
 			matches: false,
@@ -159,6 +174,34 @@ describe('NotificationPrompt', () => {
 			expect(sut.isVisible).toBe(false)
 			expect(localStorage.getItem('ui.notificationPromptDismissed')).toBe(
 				'true',
+			)
+		})
+	})
+
+	describe('enable', () => {
+		it('fires push.subscription.requested before the async pushService.create call', async () => {
+			sut = create()
+			await sut.enable()
+
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				'push.subscription.requested',
+				{ source: 'page' },
+			)
+			expect(mockPushService.create).toHaveBeenCalledTimes(1)
+		})
+
+		it('still fires push.subscription.requested when pushService.create throws', async () => {
+			sut = create({
+				pushCreate: vi.fn().mockRejectedValue(new Error('denied')),
+			})
+
+			await sut.enable()
+
+			// Intent must be captured regardless of outcome — denied OS
+			// permission dialog is still a meaningful funnel signal.
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				'push.subscription.requested',
+				{ source: 'page' },
 			)
 		})
 	})
