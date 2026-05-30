@@ -70,15 +70,6 @@ export class EventDetailSheet {
 		return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.title)}&dates=${dateStr}T${startStr}/${endDateStr}T${endStr}&location=${encodeURIComponent(e.venueName)}`
 	}
 
-	/**
-	 * Open the sheet for a given event, pushing a history entry for
-	 * deep-link support. The `source` parameter identifies the UI surface
-	 * that triggered the open — currently only the dashboard concert
-	 * highway, which maps to `'recommendation'` because the displayed
-	 * concert list IS the backend's recommendation feed (paired with
-	 * `concert.recommendation.served`). Defaults to `'page'` for callers
-	 * that have not yet been audited; the catalogue allows it.
-	 */
 	public open(event: LiveEvent, source: EventSource = 'page'): void {
 		this.event = event
 		this.isOpen = true
@@ -91,11 +82,7 @@ export class EventDetailSheet {
 		// Listen for browser back navigation (popstate) to close the sheet.
 		window.addEventListener('popstate', this.onPopstate)
 
-		// Fire concert.detail.viewed AFTER the sheet state flips so a
-		// listener (e.g. the dashboard view's `if.bind="detailSheet.isOpen"`
-		// gate) does not see an inconsistent state mid-capture. trace_id is
-		// injected automatically by AnalyticsService from the active OTel
-		// span — no manual plumbing.
+		// Fire after the sheet state flips — listeners observe consistent state.
 		this.analytics.capture(Events.ConcertDetailViewed, {
 			concert_id: event.id,
 			artist_id: event.artistId,

@@ -226,11 +226,8 @@ export class DashboardRoute {
 	}
 
 	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {
-		// The dashboard concert list IS the backend's recommendation feed
-		// (paired with concert.recommendation.served — see the
-		// introduce-analytics-tool event catalogue). Tag the source
-		// accordingly so the FE analytics events can be joined to the BE
-		// impression-served signal in PostHog.
+		// The dashboard concert list IS the recommendation feed — tag the source
+		// so FE click events can be joined to the BE impression signal in PostHog.
 		this.detailSheet?.open(event.detail.event, 'recommendation')
 	}
 

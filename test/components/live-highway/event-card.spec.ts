@@ -85,7 +85,7 @@ describe('EventCard', () => {
 			expect(customEvent.bubbles).toBe(true)
 		})
 
-		// Batch 3c-2b: position-aware recommendation click. When the
+		// position-aware recommendation click. When the
 		// dashboard binds position (the repeat.for $index per lane), the
 		// click MUST fire concert.recommendation.clicked with the
 		// (concert_id, artist_id, position) tuple BEFORE the

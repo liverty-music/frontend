@@ -19,11 +19,9 @@ const sharedDeps = [
 		publish: vi.fn(),
 		subscribe: vi.fn(() => ({ dispose: vi.fn() })),
 	}),
-	// EventCard now resolves IAnalyticsService for the
-	// concert.recommendation.clicked emission added in the
-	// introduce-analytics-tool change. Register a stub so the composition
-	// tests do not transitively pull in the real consent / runtime-config
-	// stack — those have their own dedicated specs.
+	// IAnalyticsService is now required by EventCard. Register a stub so
+	// composition tests do not transitively pull in the real consent /
+	// runtime-config stack — those have their own dedicated specs.
 	Registration.instance(IAnalyticsService, {
 		capture: vi.fn(),
 		identify: vi.fn(),
