@@ -2,6 +2,7 @@ import { IRouter, IRouterEvents } from '@aurelia/router'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppShell } from '../src/app-shell'
+import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
 import { IAuthService } from '../src/services/auth-service'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 import { IOnboardingService } from '../src/services/onboarding-service'
@@ -104,6 +105,19 @@ describe('app-shell', () => {
 					spotlightTarget: '',
 					spotlightMessage: '',
 					spotlightRadius: '12px',
+				}),
+				// AppShell.binding() emits a `page.viewed` event into the
+				// analytics service on every router navigation-end. The
+				// `showNav` tests never trigger the router event handler,
+				// but the constructor still resolves the service — register
+				// a no-op stub so DI doesn't try to jit-construct the real
+				// AnalyticsService (which would in turn pull in IAppConfig
+				// and IConsentService, none of which this unit test owns).
+				Registration.instance(IAnalyticsService, {
+					capture: vi.fn(),
+					identify: vi.fn(),
+					reset: vi.fn(),
+					getFeatureFlag: vi.fn(),
 				}),
 			)
 			container.register(AppShell)

@@ -22,6 +22,23 @@ export interface AppConfig {
 	readonly previewArtistIds: readonly string[]
 	readonly previewArtistNames: readonly string[]
 	readonly logLevel: 'trace' | 'debug' | 'info' | 'warn' | 'error'
+	/**
+	 * PostHog Cloud EU ingestion host. Optional — when omitted the
+	 * AnalyticsService falls back to the EU default
+	 * (`https://eu.i.posthog.com`). Kept independent from
+	 * `posthogProjectKey` so a future regional override can flip the host
+	 * without forcing a key rotation.
+	 */
+	readonly posthogApiHost?: string
+	/**
+	 * PostHog public project API key. Optional — when omitted (or empty)
+	 * the AnalyticsService runs in nil-config mode: no SDK init, no
+	 * network calls, every capture is debug-logged and dropped. Mirrors
+	 * the backend's `client == nil` posture so missing analytics never
+	 * breaks the product surface. The cloud-provisioning ConfigMap that
+	 * serves `/config.json` will populate this in a follow-up PR.
+	 */
+	readonly posthogProjectKey?: string
 }
 
 export const IAppConfig = DI.createInterface<AppConfig>('IAppConfig')
@@ -134,6 +151,14 @@ function validateAppConfig(parsed: unknown): AppConfig {
 		)
 	}
 
+	// posthogApiHost / posthogProjectKey are optional and absent from
+	// every existing ConfigMap until cloud-provisioning's follow-up PR
+	// lands. `readOptionalString` returns undefined (not '') for missing
+	// keys so AnalyticsService can distinguish "not yet configured" from
+	// "explicitly disabled".
+	const posthogApiHost = readOptionalString(o, 'posthogApiHost')
+	const posthogProjectKey = readOptionalString(o, 'posthogProjectKey')
+
 	return {
 		environment: env as AppConfig['environment'],
 		apiBaseUrl: requireString(o, 'apiBaseUrl'),
@@ -149,6 +174,8 @@ function validateAppConfig(parsed: unknown): AppConfig {
 		previewArtistIds,
 		previewArtistNames,
 		logLevel: logLevel as AppConfig['logLevel'],
+		...(posthogApiHost !== undefined ? { posthogApiHost } : {}),
+		...(posthogProjectKey !== undefined ? { posthogProjectKey } : {}),
 	}
 }
 
@@ -163,6 +190,27 @@ function requireString(o: Record<string, unknown>, key: string): string {
 function optionalString(o: Record<string, unknown>, key: string): string {
 	const v = o[key]
 	if (v === undefined || v === null) return ''
+	if (typeof v !== 'string') {
+		throw new Error(`config.json field '${key}' must be a string`)
+	}
+	return v
+}
+
+/**
+ * Returns `undefined` when the key is absent or null; rejects
+ * non-string values loudly so a malformed ConfigMap surfaces during
+ * boot rather than at first analytics call. Empty string is preserved
+ * as-is — AnalyticsService treats `''` and `undefined` identically for
+ * the nil-config gate, but keeping the distinction here lets a future
+ * inspector tell "the key is set to empty deliberately" from "the key
+ * was forgotten" in the wild config dump.
+ */
+function readOptionalString(
+	o: Record<string, unknown>,
+	key: string,
+): string | undefined {
+	const v = o[key]
+	if (v === undefined || v === null) return undefined
 	if (typeof v !== 'string') {
 		throw new Error(`config.json field '${key}' must be a string`)
 	}

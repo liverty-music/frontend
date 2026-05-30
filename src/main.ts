@@ -55,6 +55,8 @@ import { LongPressCustomAttribute } from './custom-attributes/long-press'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
+import { IAnalyticsService } from './lib/analytics/analytics-service'
+import { IConsentService } from './lib/consent/consent-service'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
 import { IArtistServiceClient } from './services/artist-service-client'
@@ -177,6 +179,14 @@ async function bootstrap(): Promise<void> {
 	au.register(GlobalErrorHandlingTask)
 	au.register(IAuthService)
 	au.register(IUserService)
+	// Consent + analytics registered together immediately after the user
+	// service: AnalyticsService depends on IConsentService for its
+	// identify-gating, and the Batch 3b consent-screen flow will mount
+	// once the user is hydrated. Page-view emission (subscribed in
+	// AppShell) starts the moment Aurelia.start() resolves, so both
+	// registrations MUST be in place before app() is called below.
+	au.register(IConsentService)
+	au.register(IAnalyticsService)
 	au.register(UserHydrationTask)
 	au.register(IArtistServiceClient)
 	au.register(IFollowServiceClient)
