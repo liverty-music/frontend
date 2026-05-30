@@ -175,17 +175,11 @@ export class WelcomeRoute implements IRouteViewModel {
 			return 'dashboard'
 		}
 
-		if (this.onboarding.isOnboarding) {
-			const route = this.onboarding.getRouteForCurrentStep()
-			if (route) {
-				this.logger.info('Resuming onboarding', {
-					step: this.onboarding.currentStep,
-					route,
-				})
-				return route
-			}
-		}
-
+		// Welcome is intentionally reachable during onboarding so users can
+		// re-read the value proposition. Merely viewing it must not reset
+		// onboarding — onboardingStep only changes when [Get Started] is tapped
+		// (see handleGetStarted). Login is reachable from Settings, so Welcome
+		// is no longer the only way back to an auth entry.
 		return true
 	}
 

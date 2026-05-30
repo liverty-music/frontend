@@ -15,6 +15,7 @@ vi.mock('../../src/services/auth-service', () => ({
 
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
+	DASHBOARD_FOLLOW_TARGET: 5,
 	OnboardingStep: {
 		LP: 'lp',
 		DISCOVERY: 'discovery',
@@ -182,7 +183,9 @@ describe('AuthHook', () => {
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe('dashboard')
-			expect(mockEa.publish).not.toHaveBeenCalled()
+			// No longer a silent no-op — the guard explains the block.
+			expect(mockEa.publish).toHaveBeenCalled()
+			expect(mockEa.published[0].message).toBe('auth.lockedGeneric')
 		})
 
 		it('should redirect onboarding user when route onboardingStep exceeds currentStep', async () => {
@@ -210,7 +213,8 @@ describe('AuthHook', () => {
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe('discovery')
-			expect(mockEa.publish).not.toHaveBeenCalled()
+			expect(mockEa.publish).toHaveBeenCalled()
+			expect(mockEa.published[0].message).toContain('auth.lockedDashboard')
 		})
 
 		it('TC-RG-05: discovery-step user with readyForDashboard=true is allowed to navigate to dashboard and step advances', async () => {
@@ -242,7 +246,7 @@ describe('AuthHook', () => {
 			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
-		it('TC-RG-06: discovery-step user with readyForDashboard=false is redirected to discovery without toast', async () => {
+		it('TC-RG-06: discovery-step user with readyForDashboard=false is redirected to discovery with feedback', async () => {
 			mockAuth = createMockAuth({ isAuthenticated: false })
 			mockEa = createMockEventAggregator()
 			const container = createTestContainer(
@@ -266,7 +270,8 @@ describe('AuthHook', () => {
 			const result = await sut.canLoad({}, {}, next, null)
 
 			expect(result).toBe('discovery')
-			expect(mockEa.publish).not.toHaveBeenCalled()
+			expect(mockEa.publish).toHaveBeenCalled()
+			expect(mockEa.published[0].message).toContain('auth.lockedDashboard')
 		})
 
 		it('should advance step when onboarding user taps Dashboard nav with spotlight active', async () => {
@@ -372,7 +377,7 @@ describe('AuthHook', () => {
 			expect(result).toBe(true)
 		})
 
-		it('should block isCompleted guest on tickets route with toast', async () => {
+		it('should allow isCompleted guest on tickets route (free roam)', async () => {
 			mockAuth = createMockAuth({ isAuthenticated: false })
 			mockEa = createMockEventAggregator()
 			const container = createTestContainer(
@@ -392,10 +397,10 @@ describe('AuthHook', () => {
 			const next = makeRouteNode({})
 			const result = await sut.canLoad({}, {}, next, null)
 
-			expect(result).toBe(false)
-			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
-			expect(mockEa.published[0].message).toBe('auth.loginRequired')
-			expect(mockEa.published[0].severity).toBe('warning')
+			// After dashboard, guests roam freely; account-only features are hidden
+			// at point of use rather than navigation-blocked.
+			expect(result).toBe(true)
+			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
 		it('should allow route with no data property', async () => {
