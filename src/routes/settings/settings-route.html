@@ -192,7 +192,32 @@
   <!-- ACCOUNT Section -->
   <section>
     <h2 t="settings.account" class="settings-section-title"></h2>
-    <div class="settings-card">
+
+    <!-- Guest: sign-in / sign-up entry. Account-bound controls (email
+         verification, sign-out) are hidden, not blocked. -->
+    <div if.bind="!auth.isAuthenticated" class="settings-card">
+      <p t="settings.guestPrompt" class="settings-row-hint settings-guest-prompt"></p>
+      <button click.trigger="signIn()" class="settings-row">
+        <div class="settings-row-start">
+          <svg-icon name="lock" class="settings-icon"></svg-icon>
+          <span t="settings.signIn" class="settings-row-label"></span>
+        </div>
+        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+      </button>
+
+      <hr class="[ settings-divider ]">
+
+      <button click.trigger="signUp()" class="settings-row">
+        <div class="settings-row-start">
+          <svg-icon name="plus" class="settings-icon"></svg-icon>
+          <span t="settings.signUp" class="settings-row-label"></span>
+        </div>
+        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+      </button>
+    </div>
+
+    <!-- Authenticated: email verification + sign out -->
+    <div if.bind="auth.isAuthenticated" class="settings-card">
       <!-- Email Verification -->
       <div class="settings-row">
         <div class="settings-row-start">

@@ -3,7 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { Snack } from '../../components/snack-bar/snack'
-import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
+import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
 import { translationKey } from '../../constants/iso3166'
 import {
@@ -85,8 +85,14 @@ export class SettingsRoute {
 	}
 
 	public get currentHome(): string | null {
-		// Settings is an authenticated-only route, so the home value MUST
-		// come from the user entity. The guest-flow home storage owned by
+		// Settings is now reachable by guests (from the discovery step onward).
+		// For a guest the home lives in guest storage, not the user entity.
+		if (!this.auth.isAuthenticated) {
+			const guestCode = UserHomeSelector.getStoredHome()
+			return guestCode ? translationKey(guestCode) : null
+		}
+		// Authenticated: the home value MUST come from the user entity. The
+		// guest-flow home storage owned by
 		// UserHomeSelector is consumed at signup time:
 		// auth-callback's ensureUserProvisioned reads guest.home and calls
 		// userService.create(email, locale, codeToHome(guestHome)), which
@@ -346,6 +352,16 @@ export class SettingsRoute {
 	/** Persist the volume once when the user releases the slider. */
 	public onSoundVolumePersist(): void {
 		this.audio.persistVolume()
+	}
+
+	/** Guest auth entry — start the OIDC sign-in flow from Settings. */
+	public async signIn(): Promise<void> {
+		await this.auth.signIn()
+	}
+
+	/** Guest auth entry — start the OIDC sign-up flow from Settings. */
+	public async signUp(): Promise<void> {
+		await this.auth.signUp()
 	}
 
 	public async signOut(): Promise<void> {
