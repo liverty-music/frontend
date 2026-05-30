@@ -384,6 +384,107 @@ describe('AnalyticsService', () => {
 			expect(posthogStub.reset).not.toHaveBeenCalled()
 		})
 
+		// Batch 3c-1: identify replay across consent transitions.
+		// UserHydrationTask fires identify before the user reaches the
+		// consent screen (which is the last onboarding step). The
+		// AnalyticsService must buffer the user_id and replay it once
+		// consent is granted, so the user_id seen in PostHog is the real
+		// one — not the anonymous bootstrap id.
+
+		it('replays a suppressed identify when consent is later granted', async () => {
+			mockConsent.analytics = false
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			sut.identify('user-abc', { signup_month: '2026-05' })
+
+			// Pre-grant: identify is gated, posthog.identify is NOT called.
+			expect(posthogStub.identify).not.toHaveBeenCalled()
+
+			// The consent transition flips the gate. AnalyticsService MUST
+			// replay the buffered identify with the same payload so the
+			// session post-consent is attributed to the real user_id
+			// rather than the anonymous bootstrap id.
+			//
+			// In production, ConsentService mutates state BEFORE
+			// publishing ConsentChanged — so when the AnalyticsService
+			// handler fires, `consent.analytics` already reads true.
+			// Mirror that order in the test so `replayPendingIdentifyIfAllowed`
+			// reads the live (granted) state.
+			posthogStub.identify.mockReset()
+			mockConsent.analytics = true
+			mockEa.publish(
+				new ConsentChanged({ analytics: true, marketingMeasurement: false }),
+			)
+
+			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
+			expect(posthogStub.identify.mock.calls[0]).toEqual([
+				'user-abc',
+				{ signup_month: '2026-05' },
+			])
+		})
+
+		it('clears the pending identify buffer on revoke so a later grant does not silently re-identify', async () => {
+			mockConsent.analytics = false
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			sut.identify('user-abc')
+
+			// First grant: state goes false → true; production order is
+			// mutate-then-publish, so the live consent flips before the
+			// handler runs.
+			mockConsent.analytics = true
+			mockEa.publish(
+				new ConsentChanged({ analytics: true, marketingMeasurement: false }),
+			)
+			// First grant replays — verified by the test above. Drop the
+			// counter to focus on the revoke→grant cycle.
+			posthogStub.identify.mockReset()
+
+			// Revoke clears the pendingIdentify buffer.
+			mockConsent.analytics = false
+			mockEa.publish(
+				new ConsentChanged({ analytics: false, marketingMeasurement: false }),
+			)
+			// A second grant must NOT re-identify the user — they would
+			// need a fresh UserHydrationTask call (typically on the next
+			// boot) to repopulate the buffer.
+			mockConsent.analytics = true
+			mockEa.publish(
+				new ConsentChanged({ analytics: true, marketingMeasurement: false }),
+			)
+
+			expect(posthogStub.identify).not.toHaveBeenCalled()
+		})
+
+		it('replays a pre-init identify after the SDK loads exactly once', async () => {
+			// Consent is already granted at construction time. identify
+			// fired BEFORE init resolves must still reach PostHog once the
+			// SDK is ready — this is the steady state for returning users
+			// whose previous-boot consent grant persisted to localStorage.
+			mockConsent.analytics = true
+			const sut = new AnalyticsService()
+
+			// Note: NOT awaiting _waitForInitForTests yet — identify fires
+			// in the pre-init window.
+			sut.identify('user-xyz')
+
+			expect(posthogStub.identify).not.toHaveBeenCalled()
+
+			await sut._waitForInitForTests()
+
+			// After init: the buffered identify replays automatically as
+			// part of the init callback. CRITICALLY exactly once — the
+			// init path runs `applyConsentToSdk(true)` AND
+			// `replayPendingIdentifyIfAllowed()` back-to-back when
+			// consent.analytics is true at boot; without the one-shot
+			// clear inside the helper, both would dispatch and PostHog
+			// would see two identify calls for the same user_id.
+			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
+			expect(posthogStub.identify).toHaveBeenCalledWith('user-xyz', undefined)
+		})
+
 		it('drops PostHog to memory persistence + reset() on consent revoke', async () => {
 			// Start the user in granted state so the revoke transition has
 			// somewhere to fall from. _waitForInitForTests applies the

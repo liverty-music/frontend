@@ -80,6 +80,16 @@ vi.mock('./auth-service', () => ({
 vi.mock('./user-service', () => ({
 	IUserService: { friendlyName: 'IUserService' },
 }))
+vi.mock('../lib/analytics/analytics-service', () => ({
+	IAnalyticsService: { friendlyName: 'IAnalyticsService' },
+}))
+
+// Captures the user_id that runUserHydration passes to analytics.identify
+// so the "identifies the hydrated user" assertion can read it. Reset on
+// every beforeEach in the suite below.
+const mockAnalyticsService = {
+	identify: vi.fn<(userId: string) => void>(),
+}
 
 import { runUserHydration } from './user-hydration-task'
 
@@ -99,6 +109,8 @@ function makeContainer(): IContainer {
 					return mockI18n
 				case 'ILocalStorage':
 					return mockLocalStorage
+				case 'IAnalyticsService':
+					return mockAnalyticsService
 				default:
 					throw new Error(`unmocked token: ${fn ?? String(token)}`)
 			}
@@ -135,6 +147,42 @@ describe('runUserHydration', () => {
 		expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
 		// localStorage stays untouched for anonymous users.
 		expect(lsMap.get(StorageKeys.language)).toBe('en')
+	})
+
+	// Batch 3c-1: identify-on-login wiring. After ensureLoaded resolves
+	// and `userService.current` is populated, runUserHydration MUST hand
+	// the user.id to AnalyticsService.identify so PostHog can attribute
+	// subsequent events to the real user_id (gated internally by consent).
+	it('identifies the hydrated user to AnalyticsService', async () => {
+		mockUserService.current = { id: 'user-abc-123', preferredLanguage: 'en' }
+		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
+			return mockUserService.current
+		})
+
+		await runUserHydration(makeContainer())
+		await flushMicrotasks()
+
+		// identify is called exactly once with the user.id. Consent gating
+		// happens inside AnalyticsService — this layer just hands over the
+		// user_id; whether PostHog actually sees it is the analytics-service
+		// spec's concern.
+		expect(mockAnalyticsService.identify).toHaveBeenCalledTimes(1)
+		expect(mockAnalyticsService.identify).toHaveBeenCalledWith('user-abc-123')
+	})
+
+	it('does NOT call AnalyticsService.identify when hydration fails', async () => {
+		mockUserService.current = undefined
+		mockUserService.ensureLoaded.mockImplementationOnce(async () => {
+			throw new Error('boom')
+		})
+
+		await runUserHydration(makeContainer())
+		await flushMicrotasks()
+
+		// No user.id available → no identify. Calling identify(undefined)
+		// would inflate PostHog with junk distinct_ids and obscure the
+		// real-user funnel.
+		expect(mockAnalyticsService.identify).not.toHaveBeenCalled()
 	})
 
 	it('applies preferred_language to i18n when present and differs from clientLocale', async () => {
