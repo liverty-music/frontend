@@ -6,6 +6,7 @@ import { ConcertHighway } from '../../../src/components/live-highway/concert-hig
 import { EventCard } from '../../../src/components/live-highway/event-card'
 import { BeamVarsCustomAttribute } from '../../../src/custom-attributes/beam-vars'
 import type { DateGroup } from '../../../src/entities/concert'
+import { IAnalyticsService } from '../../../src/lib/analytics/analytics-service'
 import { makeConcert, makeDateGroup } from '../../helpers/mock-date-groups'
 import { createMockI18n } from '../../helpers/mock-i18n'
 
@@ -17,6 +18,17 @@ const sharedDeps = [
 	Registration.instance(IEventAggregator, {
 		publish: vi.fn(),
 		subscribe: vi.fn(() => ({ dispose: vi.fn() })),
+	}),
+	// EventCard now resolves IAnalyticsService for the
+	// concert.recommendation.clicked emission added in the
+	// introduce-analytics-tool change. Register a stub so the composition
+	// tests do not transitively pull in the real consent / runtime-config
+	// stack — those have their own dedicated specs.
+	Registration.instance(IAnalyticsService, {
+		capture: vi.fn(),
+		identify: vi.fn(),
+		reset: vi.fn(),
+		getFeatureFlag: vi.fn((_key: string, fallback: unknown) => fallback),
 	}),
 ]
 

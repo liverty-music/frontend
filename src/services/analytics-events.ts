@@ -38,7 +38,15 @@
  *   Call sites do not need to plumb trace_id manually.
  */
 
-type EventSource =
+/**
+ * UI surface that triggered an analytics event. Carried as the `source`
+ * property on events whose downstream funnel cares about origin (e.g.
+ * `artist.discovery.viewed` from a bubble tap vs a search result). The
+ * union is exported so call-site helpers (route handlers, sheet open
+ * methods) can accept it as a typed parameter without inlining the
+ * literal union or stringly-typing the value.
+ */
+export type EventSource =
 	| 'page'
 	| 'artist_page'
 	| 'search_result'

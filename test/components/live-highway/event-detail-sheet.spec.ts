@@ -2,6 +2,7 @@ import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IHistory } from '../../../src/adapter/browser/history'
 import type { LiveEvent } from '../../../src/components/live-highway/live-event'
+import { IAnalyticsService } from '../../../src/lib/analytics/analytics-service'
 import { IAuthService } from '../../../src/services/auth-service'
 import { createTestContainer } from '../../helpers/create-container'
 import { createMockHistory } from '../../helpers/mock-history'
@@ -34,13 +35,26 @@ function createMockAuthService(isAuthenticated = true) {
 describe('EventDetailSheet', () => {
 	let sut: InstanceType<typeof EventDetailSheet>
 	let mockHistory: ReturnType<typeof createMockHistory>
+	let mockAnalytics: {
+		capture: ReturnType<typeof vi.fn>
+		identify: ReturnType<typeof vi.fn>
+		reset: ReturnType<typeof vi.fn>
+		getFeatureFlag: ReturnType<typeof vi.fn>
+	}
 
 	beforeEach(() => {
 		mockHistory = createMockHistory()
+		mockAnalytics = {
+			capture: vi.fn(),
+			identify: vi.fn(),
+			reset: vi.fn(),
+			getFeatureFlag: vi.fn((_key: string, fallback: unknown) => fallback),
+		}
 
 		const container = createTestContainer(
 			Registration.instance(IAuthService, createMockAuthService()),
 			Registration.instance(IHistory, mockHistory),
+			Registration.instance(IAnalyticsService, mockAnalytics),
 		)
 		container.register(EventDetailSheet)
 		sut = container.get(EventDetailSheet)
@@ -138,6 +152,36 @@ describe('EventDetailSheet', () => {
 			sut.close()
 
 			expect(removeSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
+		})
+
+		// Batch 3c-2b: open() fires concert.detail.viewed with the
+		// supplied source so downstream PostHog dashboards can break
+		// detail-view rate by surface.
+		it('fires concert.detail.viewed on open with the supplied source', () => {
+			const event = makeEvent()
+
+			sut.open(event, 'recommendation')
+
+			expect(mockAnalytics.capture).toHaveBeenCalledTimes(1)
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				'concert.detail.viewed',
+				{
+					concert_id: 'c1',
+					artist_id: 'a1',
+					source: 'recommendation',
+				},
+			)
+		})
+
+		it("defaults source to 'page' when omitted", () => {
+			const event = makeEvent()
+
+			sut.open(event)
+
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				'concert.detail.viewed',
+				expect.objectContaining({ source: 'page' }),
+			)
 		})
 	})
 

@@ -29,6 +29,7 @@
             event.bind="ev"
             lane="home"
             readonly.bind="isReadonly"
+            position.bind="$index"
             beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>
@@ -38,6 +39,7 @@
             event.bind="ev"
             lane="nearby"
             readonly.bind="isReadonly"
+            position.bind="$index"
             beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>
@@ -47,6 +49,7 @@
             event.bind="ev"
             lane="away"
             readonly.bind="isReadonly"
+            position.bind="$index"
             beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>

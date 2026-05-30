@@ -2,6 +2,11 @@ import { bindable, ILogger, resolve } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { displayName } from '../../constants/iso3166'
 import { bestBackgroundUrl } from '../../entities/artist'
+import {
+	Events,
+	IAnalyticsService,
+} from '../../lib/analytics/analytics-service'
+import type { EventSource } from '../../services/analytics-events'
 import { IAuthService } from '../../services/auth-service'
 import { ITicketJourneyService } from '../../services/ticket-journey-service'
 import type { JourneyStatus, LiveEvent } from './live-event'
@@ -16,6 +21,7 @@ export class EventDetailSheet {
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly authService = resolve(IAuthService)
 	private readonly history = resolve(IHistory)
+	private readonly analytics = resolve(IAnalyticsService)
 
 	// Arrow function to allow `removeEventListener` with the same reference
 	private readonly onPopstate = (): void => {
@@ -64,8 +70,16 @@ export class EventDetailSheet {
 		return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.title)}&dates=${dateStr}T${startStr}/${endDateStr}T${endStr}&location=${encodeURIComponent(e.venueName)}`
 	}
 
-	/** Open the sheet for a given event, pushing a history entry for deep-link support */
-	public open(event: LiveEvent): void {
+	/**
+	 * Open the sheet for a given event, pushing a history entry for
+	 * deep-link support. The `source` parameter identifies the UI surface
+	 * that triggered the open — currently only the dashboard concert
+	 * highway, which maps to `'recommendation'` because the displayed
+	 * concert list IS the backend's recommendation feed (paired with
+	 * `concert.recommendation.served`). Defaults to `'page'` for callers
+	 * that have not yet been audited; the catalogue allows it.
+	 */
+	public open(event: LiveEvent, source: EventSource = 'page'): void {
 		this.event = event
 		this.isOpen = true
 
@@ -76,6 +90,17 @@ export class EventDetailSheet {
 
 		// Listen for browser back navigation (popstate) to close the sheet.
 		window.addEventListener('popstate', this.onPopstate)
+
+		// Fire concert.detail.viewed AFTER the sheet state flips so a
+		// listener (e.g. the dashboard view's `if.bind="detailSheet.isOpen"`
+		// gate) does not see an inconsistent state mid-capture. trace_id is
+		// injected automatically by AnalyticsService from the active OTel
+		// span — no manual plumbing.
+		this.analytics.capture(Events.ConcertDetailViewed, {
+			concert_id: event.id,
+			artist_id: event.artistId,
+			source,
+		})
 	}
 
 	/** Programmatic close — replaces current history entry with dashboard URL */
