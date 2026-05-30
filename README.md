@@ -93,3 +93,14 @@ Run e2e tests with:
 Note the playwright config automatically runs "npm start" before playwright.
 
 For more information, visit https://playwright.dev/docs/test-cli
+
+## Deployment Pipeline
+
+Container images are built and promoted by `.github/workflows/push-image.yaml`:
+
+- **Push to `main`** → dev Artifact Registry (`liverty-music-dev/frontend`). Every push runs the workflow; a per-run decision over the changed files picks one of:
+  - **build** — when a build-relevant file changed (`src/**`, `public/**`, `scripts/**`, `package.json`, `package-lock.json`, `vite.config.ts`, `Dockerfile`, `Caddyfile`, or the workflow itself): `web-app` is rebuilt and pushed as `:latest`, `:main`, `:<sha>`.
+  - **inherit** — when nothing build-relevant changed (docs/CI only): no rebuild; the parent commit's digest is `crane copy`-ed onto `:<sha>`. This guarantees **every `main` commit has a resolvable dev `:<sha>` image**, so a release can be cut on `main` HEAD at any time.
+- **GitHub Release** → prod Artifact Registry (`liverty-music-prod/frontend`). The release path never rebuilds — it promotes the exact dev `:<sha>` digest to prod via `crane copy` (byte-identical to what ran in dev). The bundle is env-agnostic; per-environment values come from `/config.json` at runtime.
+
+See `cloud-provisioning/docs/runbooks/prod-image-tag-pinning.md` for the retag-failure recovery runbook.
