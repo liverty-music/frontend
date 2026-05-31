@@ -163,7 +163,7 @@ jobs:
           echo "Changed files in ${BEFORE}..${SHA}:"
           echo "${changed}"
           # Build glob set (kept in lock-step with the prior `on.push.paths`).
-          if echo "${changed}" | grep -qE '^src/|^public/|^scripts/|^package\.json$|^package-lock\.json$|^vite\.config\.ts$|^Dockerfile$|^Caddyfile$|^\.github/workflows/push-image\.yaml$'; then
+          if echo "${changed}" | grep -qE '^src/|^public/|^scripts/|^index\.html$|^package\.json$|^package-lock\.json$|^vite\.config\.ts$|^Dockerfile$|^Caddyfile$|^\.github/workflows/push-image\.yaml$'; then
             echo "Build-relevant change detected -> build."
             echo "mode=build" >> "$GITHUB_OUTPUT"
           else
