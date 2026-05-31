@@ -88,8 +88,51 @@ async function doLoadAppConfig(): Promise<AppConfig> {
 		)
 	}
 	const config = validateAppConfig(parsed)
-	_config = config
-	return config
+	const final = import.meta.env.DEV ? await applyLocalOverride(config) : config
+	_config = final
+	return final
+}
+
+/**
+ * Dev-only: merge an optional gitignored `/config.local.json` over the bundled
+ * config so a developer can point the app at a local backend without editing
+ * the tracked `config.json`. The typical override is `{ "apiBaseUrl": "/" }`,
+ * which routes RPC calls same-origin through the Vite dev proxy (see
+ * `VITE_DEV_API_TARGET` in `vite.config.ts`). A missing file is ignored.
+ * This branch is dead-code-eliminated from production builds.
+ */
+async function applyLocalOverride(config: AppConfig): Promise<AppConfig> {
+	let res: Response
+	try {
+		res = await fetch('/config.local.json', {
+			cache: 'no-store',
+			signal: AbortSignal.timeout(CONFIG_FETCH_TIMEOUT_MS),
+		})
+	} catch {
+		return config
+	}
+	if (!res.ok) return config
+	let override: unknown
+	try {
+		override = await res.json()
+	} catch {
+		return config
+	}
+	if (
+		override === null ||
+		typeof override !== 'object' ||
+		Array.isArray(override)
+	) {
+		return config
+	}
+	const o = override as Record<string, unknown>
+	// Only scalar endpoint/identity fields are overridable for local dev.
+	const overrides: Record<string, string> = {}
+	for (const key of ['apiBaseUrl', 'environment', 'zitadelIssuer'] as const) {
+		const v = o[key]
+		if (typeof v === 'string') overrides[key] = v
+	}
+	return { ...config, ...overrides } as AppConfig
 }
 
 /**

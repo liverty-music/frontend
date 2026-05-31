@@ -2,66 +2,68 @@ import { DI, resolve } from 'aurelia'
 import { ILocalStorage } from '../adapter/storage/local-storage'
 import { StorageKeys } from '../constants/storage-keys'
 
-/**
- * Major pentatonic scale degrees (semitone offsets within one octave).
- * Any subset of these intervals is mutually consonant, so quantizing every
- * tap onto these degrees guarantees no dissonant interval can occur — the
- * core trick that keeps rapid tapping musical.
- */
-const PENTATONIC: readonly number[] = [0, 2, 4, 7, 9]
-
-/** MIDI note for the lowest scale degree (C4). */
-const BASE_MIDI = 60
-/** A4 reference pitch in Hz for MIDI→frequency conversion. */
-const A4_HZ = 440
-/** Number of octaves the hue range (0–360°) is spread across. */
-const HUE_OCTAVE_SPAN = 2
 /** Hard cap on simultaneously sounding voices to bound CPU usage. */
 const MAX_VOICES = 16
 
-/** Combo window: taps within this gap (ms) keep climbing the scale. */
-const COMBO_WINDOW_MS = 600
-/** Maximum number of pentatonic degrees the combo can climb. */
-const MAX_COMBO_STEPS = 5
-/** Combo step at which an extra overtone voice is layered in. */
-const OVERTONE_COMBO_THRESHOLD = 2
-
 const DEFAULT_VOLUME = 0.5
 
-function midiToFreq(midi: number): number {
-	return A4_HZ * 2 ** ((midi - 69) / 12)
-}
+/**
+ * Every tap plays the same fixed two-part "pu-chu" pop — no musical scale, no
+ * per-bubble pitch, no combo. A low lippy "pu" thump fires first, then a short
+ * high "chu" chirp a beat later.
+ */
 
-/** Convert a scale index (degrees above BASE_MIDI) into a MIDI note. */
-function scaleIndexToMidi(index: number): number {
-	const len = PENTATONIC.length
-	const octave = Math.floor(index / len)
-	const degree = ((index % len) + len) % len
-	return BASE_MIDI + octave * 12 + PENTATONIC[degree]
-}
-
-/** Map a 0–360° hue deterministically onto a pentatonic scale index. */
-function hueToScaleIndex(hue: number, span = HUE_OCTAVE_SPAN): number {
-	const normalized = ((hue % 360) + 360) % 360
-	const totalDegrees = PENTATONIC.length * span
-	return Math.min(
-		totalDegrees - 1,
-		Math.floor((normalized / 360) * totalDegrees),
-	)
-}
+/** Low "pu" plosive thump pitch (Hz) — the lippy front of the pop. */
+const PLOSIVE_FREQ = 160
+/** The "pu" thump starts this many × above PLOSIVE_FREQ and drops onto it. */
+const PLOSIVE_START_RATIO = 2.2
+/** Duration of the "pu" thump's downward drop (seconds). */
+const PLOSIVE_GLIDE_SEC = 0.012
+/** Amplitude decay of the "pu" thump (seconds) — a quick lippy bump. */
+const PLOSIVE_DECAY = 0.03
+/** Gap (seconds) between the "pu" thump and the "chu" chirp — reads as 2 parts. */
+const CHU_DELAY = 0.022
+/** "chu" chirp pitch (Hz). */
+const POP_FREQ = 820
+/** The "chu" chirp starts this many × above POP_FREQ and drops fast onto it. */
+const POP_START_RATIO = 2.4
+/** Duration of the "chu" fast downward drop (seconds) — a snappy chirp. */
+const POP_GLIDE_SEC = 0.016
+/** Amplitude decay of the "chu" chirp (seconds) — short and dry. */
+const POP_DECAY = 0.045
+/** "chu" low-pass cutoff sweep (Hz): bright, lightly filtered — crisp, not wet. */
+const POP_CUTOFF_FROM = 6500
+const POP_CUTOFF_TO = 2200
+/** Low resonance keeps it dry/crisp ("chu"), not wet/wobbly ("pun"). */
+const POP_Q = 1.5
+/** Length of the plosive noise breath at the attack (seconds) — the "pu". */
+const NOISE_SEC = 0.009
+/** Low-pass cutoff applied to the noise (Hz): low/lippy "pu", not a bright "ts". */
+const NOISE_CUTOFF = 2000
+/** Peak gain of the noise breath. */
+const NOISE_PEAK = 0.7
+/** Landing (absorption-settle) tone — a soft, low, fixed "boop". */
+const LANDING_FREQ = 280
+const LANDING_CUTOFF_FROM = 2200
+const LANDING_CUTOFF_TO = 700
+/** Default fallback glide duration when a voice does not override it. */
+const GLIDE_SEC = 0.05
+/** Default low-pass resonance. */
+const FILTER_Q = 1.5
 
 /**
- * Deterministically map a bubble hue (0–360°) to a frequency quantized to a
- * major pentatonic scale. The same hue always yields the same pitch, and any
- * sequence of taps is guaranteed consonant.
+ * Starting frequency for the pop's fast downward drop onto `landing`.
+ * Returns a frequency ABOVE the target so the voice swoops down onto it.
+ * Exposed for unit testing without a live AudioContext.
  */
-export function hueToPentatonicPitch(hue: number): number {
-	return midiToFreq(scaleIndexToMidi(hueToScaleIndex(hue)))
+export function glideStartFreq(landing: number): number {
+	return landing * POP_START_RATIO
 }
 
 interface Voice {
 	osc: OscillatorNode
 	gain: GainNode
+	filter: BiquadFilterNode | null
 	startedAt: number
 }
 
@@ -70,6 +72,19 @@ interface ToneOptions {
 	attack: number
 	decay: number
 	peak: number
+	/** When set, the oscillator sweeps from this frequency to the target. */
+	glideFrom?: number
+	/** Duration of the pitch sweep (seconds); falls back to GLIDE_SEC. */
+	glideMs?: number
+	/** Delay (seconds) before this voice starts, relative to the call time. */
+	delay?: number
+	/** Low-pass cutoff sweep applied across the voice's life (Hz). */
+	cutoffFrom?: number
+	cutoffTo?: number
+	/** Low-pass resonance (Q); falls back to FILTER_Q. */
+	q?: number
+	/** Layer a short plosive noise click at the attack. */
+	noise?: boolean
 }
 
 export interface IAudioEngine {
@@ -106,12 +121,11 @@ export class AudioEngine implements IAudioEngine {
 	private ctx: AudioContext | null = null
 	private master: GainNode | null = null
 	private voices: Voice[] = []
+	/** Cached white-noise buffer, generated once and reused per tap transient. */
+	private noiseBuffer: AudioBuffer | null = null
 
 	private _muted: boolean
 	private _volume: number
-
-	private comboSteps = 0
-	private lastTapAt = 0
 
 	private readonly storage = resolve(ILocalStorage)
 
@@ -144,10 +158,6 @@ export class AudioEngine implements IAudioEngine {
 	}
 
 	public suspend(): void {
-		// Reset the combo so re-entering discovery starts at the base pitch
-		// rather than inheriting a stale climb from the previous session.
-		this.comboSteps = 0
-		this.lastTapAt = 0
 		if (this.ctx?.state === 'running') {
 			void this.ctx.suspend()
 		}
@@ -159,41 +169,48 @@ export class AudioEngine implements IAudioEngine {
 		}
 	}
 
-	public playTap(hue: number): void {
+	public playTap(_hue: number): void {
 		if (this._muted || !this.ctx || !this.master) return
 
-		this.advanceCombo()
-		const index = hueToScaleIndex(hue) + this.comboSteps
-		const freq = midiToFreq(scaleIndexToMidi(index))
-
-		this.spawnVoice(freq, {
-			type: 'triangle',
-			attack: 0.004,
-			decay: 0.18,
-			peak: 0.9,
+		// "pu": a low, lippy plosive thump with a soft noise breath, at the front.
+		this.spawnVoice(PLOSIVE_FREQ, {
+			type: 'sine',
+			attack: 0.001,
+			decay: PLOSIVE_DECAY,
+			peak: 0.8,
+			glideFrom: PLOSIVE_FREQ * PLOSIVE_START_RATIO,
+			glideMs: PLOSIVE_GLIDE_SEC,
+			noise: true,
 		})
 
-		// Layer a soft fifth overtone once the combo builds, for added richness.
-		if (this.comboSteps >= OVERTONE_COMBO_THRESHOLD) {
-			const overtone = midiToFreq(scaleIndexToMidi(index + PENTATONIC.length))
-			this.spawnVoice(overtone, {
-				type: 'sine',
-				attack: 0.006,
-				decay: 0.16,
-				peak: 0.35,
-			})
-		}
+		// "chu": a short, dry triangle that drops fast onto POP_FREQ, fired a beat
+		// later so the tap reads as two distinct parts — "pu" then "chu".
+		this.spawnVoice(POP_FREQ, {
+			type: 'triangle',
+			attack: 0.001,
+			decay: POP_DECAY,
+			peak: 0.85,
+			delay: CHU_DELAY,
+			glideFrom: glideStartFreq(POP_FREQ),
+			glideMs: POP_GLIDE_SEC,
+			cutoffFrom: POP_CUTOFF_FROM,
+			cutoffTo: POP_CUTOFF_TO,
+			q: POP_Q,
+		})
 	}
 
-	public playLanding(hue: number): void {
+	public playLanding(_hue: number): void {
 		if (this._muted || !this.ctx || !this.master) return
-		// An octave below the tap tone, softer and longer — a gentle "settle".
-		const freq = hueToPentatonicPitch(hue) / 2
-		this.spawnVoice(freq, {
+		// Soft, low fixed "boop" when a bubble finishes absorbing into the orb.
+		this.spawnVoice(LANDING_FREQ, {
 			type: 'sine',
-			attack: 0.012,
-			decay: 0.34,
-			peak: 0.5,
+			attack: 0.008,
+			decay: 0.3,
+			peak: 0.4,
+			glideFrom: LANDING_FREQ * 1.5,
+			glideMs: 0.06,
+			cutoffFrom: LANDING_CUTOFF_FROM,
+			cutoffTo: LANDING_CUTOFF_TO,
 		})
 	}
 
@@ -230,46 +247,113 @@ export class AudioEngine implements IAudioEngine {
 		this.master.gain.value = this._muted ? 0 : this._volume
 	}
 
-	private advanceCombo(): void {
-		const now = performance.now()
-		this.comboSteps =
-			now - this.lastTapAt <= COMBO_WINDOW_MS
-				? Math.min(MAX_COMBO_STEPS, this.comboSteps + 1)
-				: 0
-		this.lastTapAt = now
-	}
-
 	private spawnVoice(freq: number, opts: ToneOptions): void {
 		const ctx = this.ctx
 		const master = this.master
 		if (!ctx || !master) return
 
-		const t = ctx.currentTime
+		const t = ctx.currentTime + (opts.delay ?? 0)
+		const end = t + opts.attack + opts.decay
+
 		const osc = ctx.createOscillator()
 		osc.type = opts.type
-		osc.frequency.setValueAtTime(freq, t)
+		if (opts.glideFrom !== undefined) {
+			// Fast downward drop onto the target pitch — the pop's chirp.
+			osc.frequency.setValueAtTime(opts.glideFrom, t)
+			osc.frequency.exponentialRampToValueAtTime(
+				freq,
+				t + (opts.glideMs ?? GLIDE_SEC),
+			)
+		} else {
+			osc.frequency.setValueAtTime(freq, t)
+		}
 
 		const gain = ctx.createGain()
-		const end = t + opts.attack + opts.decay
 		gain.gain.setValueAtTime(0.0001, t)
 		gain.gain.linearRampToValueAtTime(opts.peak, t + opts.attack)
 		gain.gain.exponentialRampToValueAtTime(0.0001, end)
 
-		osc.connect(gain)
+		// Optional low-pass sweep rounds the timbre off toward a wet tail.
+		let filter: BiquadFilterNode | null = null
+		if (opts.cutoffFrom !== undefined && opts.cutoffTo !== undefined) {
+			filter = ctx.createBiquadFilter()
+			filter.type = 'lowpass'
+			filter.Q.value = opts.q ?? FILTER_Q
+			filter.frequency.setValueAtTime(opts.cutoffFrom, t)
+			filter.frequency.exponentialRampToValueAtTime(opts.cutoffTo, end)
+			osc.connect(filter)
+			filter.connect(gain)
+		} else {
+			osc.connect(gain)
+		}
 		gain.connect(master)
 		osc.start(t)
 		osc.stop(end + 0.02)
 
-		const voice: Voice = { osc, gain, startedAt: t }
+		if (opts.noise) this.spawnNoiseTransient(t)
+
+		const voice: Voice = { osc, gain, filter, startedAt: t }
 		this.voices.push(voice)
 		this.enforceVoiceCap()
 
 		osc.onended = (): void => {
 			osc.disconnect()
+			filter?.disconnect()
 			gain.disconnect()
 			const i = this.voices.indexOf(voice)
 			if (i !== -1) this.voices.splice(i, 1)
 		}
+	}
+
+	/**
+	 * Play a brief filtered-noise burst at `startAt` — the plosive "pu" breath of
+	 * the pop. The noise buffer is generated once and reused; the short-lived
+	 * graph self-disconnects on end and is not tracked as a pitched voice.
+	 */
+	private spawnNoiseTransient(startAt: number): void {
+		const ctx = this.ctx
+		const master = this.master
+		if (!ctx || !master) return
+
+		this.ensureNoiseBuffer()
+		if (!this.noiseBuffer) return
+
+		const t = startAt
+		const end = t + NOISE_SEC
+		const src = ctx.createBufferSource()
+		src.buffer = this.noiseBuffer
+
+		const filter = ctx.createBiquadFilter()
+		filter.type = 'lowpass'
+		filter.frequency.value = NOISE_CUTOFF
+
+		const gain = ctx.createGain()
+		gain.gain.setValueAtTime(NOISE_PEAK, t)
+		gain.gain.exponentialRampToValueAtTime(0.0001, end)
+
+		src.connect(filter)
+		filter.connect(gain)
+		gain.connect(master)
+		src.start(t)
+		src.stop(end + 0.01)
+
+		src.onended = (): void => {
+			src.disconnect()
+			filter.disconnect()
+			gain.disconnect()
+		}
+	}
+
+	/** Generate and cache a short white-noise buffer for tap transients. */
+	private ensureNoiseBuffer(): void {
+		if (this.noiseBuffer || !this.ctx) return
+		const length = Math.ceil(this.ctx.sampleRate * 0.05)
+		const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate)
+		const data = buffer.getChannelData(0)
+		for (let i = 0; i < length; i++) {
+			data[i] = Math.random() * 2 - 1
+		}
+		this.noiseBuffer = buffer
 	}
 
 	private enforceVoiceCap(): void {
@@ -282,6 +366,7 @@ export class AudioEngine implements IAudioEngine {
 				// Already stopped; ignore.
 			}
 			oldest.osc.disconnect()
+			oldest.filter?.disconnect()
 			oldest.gain.disconnect()
 		}
 	}

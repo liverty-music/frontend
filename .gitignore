@@ -60,3 +60,6 @@ circuits/*/node_modules/
 .env.local
 .env.*.local
 .vite
+
+# Local dev runtime-config override (points the app at a local backend)
+public/config.local.json

@@ -30,10 +30,18 @@ interface DissolveParticle {
 	hue: number
 	life: number
 	active: boolean
+	/** Downward acceleration (per ms) so burst droplets arc like flung liquid. */
+	gravity: number
+	/** Render with additive glow + white-hot core (burst spray, not orb dissolve). */
+	glow: boolean
 }
 
 const POOL_SIZE = 60
 const MAX_TRAIL_LENGTH = 12
+/** Droplet count for the on-tap burst spray. */
+const BURST_PARTICLE_COUNT = 20
+/** Gravity applied to burst droplets so they arc downward and fall. */
+const BURST_GRAVITY = 0.0015
 
 export class AbsorptionAnimator {
 	private animations: AbsorptionAnimation[] = []
@@ -45,6 +53,8 @@ export class AbsorptionAnimator {
 	 * prior ease-in curve.
 	 */
 	public elastic = false
+	/** When set, the on-tap burst spray is suppressed (`prefers-reduced-motion`). */
+	public reducedMotion = false
 
 	/** Trajectory easing — elastic overshoot when enabled, otherwise ease-in cubic. */
 	private trajectoryEase(t: number): number {
@@ -63,12 +73,19 @@ export class AbsorptionAnimator {
 				hue: 0,
 				life: 0,
 				active: false,
+				gravity: 0,
+				glow: false,
 			})
 		}
 	}
 
 	public get isAnimating(): boolean {
 		return this.animations.length > 0 || this.particlePool.some((p) => p.active)
+	}
+
+	/** Number of currently live dissolve/burst droplets. */
+	public get activeParticleCount(): number {
+		return this.particlePool.reduce((n, p) => n + (p.active ? 1 : 0), 0)
 	}
 
 	public getTrailLength(index: number): number {
@@ -129,7 +146,7 @@ export class AbsorptionAnimator {
 
 			if (anim.progress >= 0.85 && !anim.dissolved) {
 				anim.dissolved = true
-				this.spawnDissolveParticles(anim.endX, anim.endY)
+				this.spawnDissolveParticles(anim.endX, anim.endY, anim.hue)
 			}
 
 			if (anim.progress >= 1) {
@@ -140,6 +157,7 @@ export class AbsorptionAnimator {
 
 		for (const p of this.particlePool) {
 			if (!p.active) continue
+			p.vy += p.gravity * delta
 			p.x += p.vx * delta * 0.05
 			p.y += p.vy * delta * 0.05
 			p.life -= delta * 0.002
@@ -227,17 +245,43 @@ export class AbsorptionAnimator {
 			ctx.restore()
 		}
 
-		// Dissolve particles
+		// Dissolve / burst particles
 		for (const p of this.particlePool) {
 			if (!p.active) continue
-			ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${p.opacity})`
-			ctx.beginPath()
-			ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-			ctx.fill()
+			if (p.glow) {
+				// Luminous burst droplet: additive colored halo + white-hot core, so
+				// it reads as a spark of light rather than a flat same-color dot.
+				ctx.save()
+				ctx.globalCompositeOperation = 'lighter'
+				const halo = ctx.createRadialGradient(
+					p.x,
+					p.y,
+					0,
+					p.x,
+					p.y,
+					p.size * 2.4,
+				)
+				halo.addColorStop(0, `hsla(${p.hue}, 100%, 82%, ${p.opacity})`)
+				halo.addColorStop(1, `hsla(${p.hue}, 100%, 65%, 0)`)
+				ctx.fillStyle = halo
+				ctx.beginPath()
+				ctx.arc(p.x, p.y, p.size * 2.4, 0, Math.PI * 2)
+				ctx.fill()
+				ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * 0.9})`
+				ctx.beginPath()
+				ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2)
+				ctx.fill()
+				ctx.restore()
+			} else {
+				ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${p.opacity})`
+				ctx.beginPath()
+				ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+				ctx.fill()
+			}
 		}
 	}
 
-	private spawnDissolveParticles(x: number, y: number): void {
+	private spawnDissolveParticles(x: number, y: number, hue: number): void {
 		let spawned = 0
 		for (const p of this.particlePool) {
 			if (p.active || spawned >= 15) continue
@@ -249,9 +293,40 @@ export class AbsorptionAnimator {
 			p.vy = Math.sin(angle) * speed
 			p.size = 2 + Math.random() * 4
 			p.opacity = 1
-			p.hue = 220 + Math.random() * 60
+			p.hue = (hue + (Math.random() * 40 - 20) + 360) % 360
 			p.life = 1
 			p.active = true
+			p.gravity = 0
+			p.glow = false
+			spawned++
+		}
+	}
+
+	/**
+	 * Spray a burst of color droplets at the tap point the instant a bubble
+	 * ruptures: denser and larger than the orb dissolve, tinted with the bubble's
+	 * own hue, and pulled down by gravity so they arc like flung liquid.
+	 * Suppressed under `prefers-reduced-motion`.
+	 */
+	public spawnBurst(x: number, y: number, hue: number): void {
+		if (this.reducedMotion) return
+		let spawned = 0
+		for (const p of this.particlePool) {
+			if (p.active || spawned >= BURST_PARTICLE_COUNT) continue
+			const angle = Math.random() * Math.PI * 2
+			const speed = 1.5 + Math.random() * 2.5
+			p.x = x
+			p.y = y
+			p.vx = Math.cos(angle) * speed
+			// Bias the initial velocity slightly upward so gravity can arc it back.
+			p.vy = Math.sin(angle) * speed - 1
+			p.size = 3 + Math.random() * 4
+			p.opacity = 1
+			p.hue = (hue + (Math.random() * 20 - 10) + 360) % 360
+			p.life = 1
+			p.active = true
+			p.gravity = BURST_GRAVITY
+			p.glow = true
 			spawned++
 		}
 	}
