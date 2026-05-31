@@ -16,16 +16,30 @@
 			min-block-size: 0;
 		}
 
+		/* Shell: fixed page-header in the `header` row, this `main` in the
+		   `content` (1fr) track. `min-block-size: 0` lets the grid item shrink
+		   below its content height so the inner `.settings-scroll` can own the
+		   overflow — without it the track grows past the route box and the list
+		   slides under the header. Matches the my-artists / tickets / dashboard
+		   / discovery scroll pattern. */
 		main {
-			overflow-y: auto;
+			overflow: hidden;
 			display: flex;
 			grid-area: content;
 			flex-direction: column;
-			gap: var(--space-m);
 
-			padding: var(--space-m) var(--space-s);
+			min-block-size: 0;
 
 			background: var(--color-surface-base);
+		}
+
+		/* Scroll container. `[ stack ]` (composition layer) supplies the
+		   vertical rhythm between sections; this block only owns the scroll
+		   behaviour and gutters. */
+		.settings-scroll {
+			overflow-y: auto;
+			flex: 1;
+			padding: var(--space-m) var(--space-s);
 		}
 
 		.settings-section-title {
@@ -236,10 +250,10 @@
 			color: var(--color-text-primary);
 		}
 
+		/* Vertical list; layout comes from `[ stack ]` (composition layer).
+		   This exception tightens the default stack gap to the selector rhythm. */
 		.language-list {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
+			--stack-gap: var(--space-3xs);
 		}
 
 		.language-option {
