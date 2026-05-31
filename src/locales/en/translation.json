@@ -231,6 +231,7 @@
 		"srSearchResults": "{{count}} search results",
 		"srArtistsAvailable": "{{count}} artists available",
 		"srFollowed": "{{count}} artists followed",
+		"resetBubbles": "Reset to top artists",
 		"resetFailed": "Failed to reset discovery view",
 		"genreLoadFailed": "Couldn't load {{tag}} artists",
 		"searchFailed": "Search couldn't complete — your connection may be unstable. Wait a moment and try again."

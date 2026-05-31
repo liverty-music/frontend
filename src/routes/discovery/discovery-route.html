@@ -28,18 +28,29 @@
       </button>
     </search>
 
-    <!-- Genre chips (hidden during search) -->
-    <fieldset class="genre-chips">
+    <!-- Genre row: pinned reset + scrollable chips (hidden during search) -->
+    <div class="genre-bar">
       <button
-        repeat.for="tag of genre.genreTags; key.bind: tag"
-        class="genre-chip" data-active.bind="genre.activeTag === tag"
-        click.trigger="onGenreSelected(tag)"
+        type="button"
+        class="reset-chip"
+        click.trigger="onReset()"
         disabled.bind="genre.isLoadingTag"
-        aria-pressed.bind="genre.activeTag === tag"
+        aria-label.bind="$this.i18n?.tr('discovery.resetBubbles') ?? ''"
       >
-        ${tag}
+        <svg-icon name="rotate-ccw"></svg-icon>
       </button>
-    </fieldset>
+      <fieldset class="genre-chips">
+        <button
+          repeat.for="tag of genre.genreTags; key.bind: tag"
+          class="genre-chip" data-active.bind="genre.activeTag === tag"
+          click.trigger="onGenreSelected(tag)"
+          disabled.bind="genre.isLoadingTag"
+          aria-pressed.bind="genre.activeTag === tag"
+        >
+          ${tag}
+        </button>
+      </fieldset>
+    </div>
 
     <!-- Bubble UI (hidden during search) -->
     <div class="bubble-area">

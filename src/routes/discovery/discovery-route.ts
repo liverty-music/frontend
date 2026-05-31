@@ -222,6 +222,30 @@ export class DiscoveryRoute {
 		await this.genre.onGenreSelected(tag)
 	}
 
+	/**
+	 * Reset the bubble field to the global Top 50, clearing any active genre
+	 * filter and the accumulated similar-artist bubbles. Reuses the genre
+	 * loading flag as the shared pool-reload guard so genre chips and the reset
+	 * control disable together and concurrent reloads are prevented.
+	 */
+	public async onReset(): Promise<void> {
+		if (this.genre.isLoadingTag) return
+		this.logger.info('Resetting discovery bubbles to top artists')
+
+		this.genre.clearActiveTag()
+		this.genre.isLoadingTag = true
+		try {
+			await this.bubbles.reset(this.followService.followedArtists)
+			if (this.abortController.signal.aborted) return
+			this.dnaOrbCanvas.reloadBubbles(this.poolBubbles)
+		} catch (err) {
+			this.logger.error('Failed to reset discovery bubbles', err)
+			this.ea.publish(new Snack(this.i18n.tr('discovery.resetFailed'), 'error'))
+		} finally {
+			this.genre.isLoadingTag = false
+		}
+	}
+
 	public async onArtistSelected(
 		event: CustomEvent<{
 			artist: Artist
