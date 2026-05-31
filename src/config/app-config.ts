@@ -88,7 +88,13 @@ async function doLoadAppConfig(): Promise<AppConfig> {
 		)
 	}
 	const config = validateAppConfig(parsed)
-	const final = import.meta.env.DEV ? await applyLocalOverride(config) : config
+	// Opt-in only: the local override is attempted solely when a developer has
+	// set `VITE_DEV_API_TARGET` in a gitignored `.env.local` (the local-backend
+	// signal). This keeps the extra fetch out of every normal dev/CI bootstrap.
+	const final =
+		import.meta.env.DEV && import.meta.env.VITE_DEV_API_TARGET
+			? await applyLocalOverride(config)
+			: config
 	_config = final
 	return final
 }
@@ -99,7 +105,8 @@ async function doLoadAppConfig(): Promise<AppConfig> {
  * the tracked `config.json`. The typical override is `{ "apiBaseUrl": "/" }`,
  * which routes RPC calls same-origin through the Vite dev proxy (see
  * `VITE_DEV_API_TARGET` in `vite.config.ts`). A missing file is ignored.
- * This branch is dead-code-eliminated from production builds.
+ * Only reached when `VITE_DEV_API_TARGET` is set, and dead-code-eliminated
+ * from production builds.
  */
 async function applyLocalOverride(config: AppConfig): Promise<AppConfig> {
 	let res: Response
