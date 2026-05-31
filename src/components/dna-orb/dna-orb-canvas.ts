@@ -63,7 +63,6 @@ export class DnaOrbCanvas {
 
 	private readonly audio = resolve(IAudioEngine)
 	private readonly logger = resolve(ILogger).scopeTo('DnaOrbCanvas')
-	private reducedMotion = false
 	private reducedMotionUnsub: (() => void) | null = null
 
 	private focusedBubbleIndex = -1
@@ -140,9 +139,9 @@ export class DnaOrbCanvas {
 
 	/** Apply the reduced-motion preference to the visual micro-interactions. */
 	private applyReducedMotion(reduced: boolean): void {
-		this.reducedMotion = reduced
 		this.tapEffects.reducedMotion = reduced
 		this.absorptionAnimator.elastic = !reduced
+		this.absorptionAnimator.reducedMotion = reduced
 	}
 
 	/**
@@ -321,14 +320,16 @@ export class DnaOrbCanvas {
 			const hue = this.artistHue(artistName)
 			const radius = bubble.radius
 
-			// Frame 0: immediate, coincident tap feedback (audio + haptic + ripple).
+			// Frame 0: immediate, coincident tap feedback (audio "puryu" + haptic).
 			this.emitTapFeedback(hue)
-			this.tapEffects.addRipple(x, y, radius)
 
-			// Remove from physics; the press ghost holds the bubble's place during
-			// the brief squash-and-stretch pre-roll before absorption begins.
+			// Remove from physics; the over-inflation holds the bubble's place
+			// while it swells, then ruptures: at the peak the bubble bursts (bright
+			// ring + color-droplet spray) and absorption into the orb begins.
 			this.physics.removeBubble(artistId)
 			this.tapEffects.addPress(pos.x, pos.y, radius, hue, () => {
+				this.tapEffects.addRupture(pos.x, pos.y, radius, hue)
+				this.absorptionAnimator.spawnBurst(pos.x, pos.y, hue)
 				this.absorptionAnimator.startAbsorption(
 					artistId,
 					artistName,
