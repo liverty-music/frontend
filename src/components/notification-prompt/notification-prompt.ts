@@ -54,9 +54,8 @@ export class NotificationPrompt {
 	public async enable(): Promise<void> {
 		// Fire intent BEFORE the async permission flow so a denied OS
 		// dialog (or a thrown pushService.create) does not eat the signal.
-		// Paired with backend push.subscription.completed for the opt-in
-		// funnel.
-		this.analytics.capture(Events.PushSubscriptionRequested, {
+		// Paired with backend notification.subscribed for the opt-in funnel.
+		this.analytics.capture(Events.NotificationRequested, {
 			source: 'page',
 		})
 		this.isLoading = true

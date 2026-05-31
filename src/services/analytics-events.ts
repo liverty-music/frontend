@@ -153,19 +153,21 @@ export type EntryCheckinAttemptedProps = {
 
 /**
  * The user opted in to Web Push notifications. Paired with the backend
- * `push.subscription.completed`.
+ * `notification.subscribed`. The underlying transport is the W3C Push API,
+ * but the analytics surface stays scoped under the notification domain to
+ * align with the user-facing concept.
  */
-export type PushSubscriptionRequestedProps = {
+export type NotificationRequestedProps = {
 	source: EventSource
 }
 
-export type PushNotificationOpenedProps = {
+export type NotificationOpenedProps = {
 	notification_id: string
 	concert_id?: string
 	artist_id?: string
 }
 
-export type PushNotificationDismissedProps = {
+export type NotificationDismissedProps = {
 	notification_id: string
 }
 
@@ -193,9 +195,9 @@ export const Events = {
 	TicketLotteryEntrySubmitted: 'ticket.lottery.entry.submitted',
 	TicketPurchaseInitiated: 'ticket.purchase.initiated',
 	EntryCheckinAttempted: 'entry.checkin.attempted',
-	PushSubscriptionRequested: 'push.subscription.requested',
-	PushNotificationOpened: 'push.notification.opened',
-	PushNotificationDismissed: 'push.notification.dismissed',
+	NotificationRequested: 'notification.requested',
+	NotificationOpened: 'notification.opened',
+	NotificationDismissed: 'notification.dismissed',
 } as const satisfies Record<string, string>
 
 /** The union of every valid event-name literal. */
@@ -217,9 +219,9 @@ export type EventPropsMap = {
 	'ticket.lottery.entry.submitted': TicketLotteryEntrySubmittedProps
 	'ticket.purchase.initiated': TicketPurchaseInitiatedProps
 	'entry.checkin.attempted': EntryCheckinAttemptedProps
-	'push.subscription.requested': PushSubscriptionRequestedProps
-	'push.notification.opened': PushNotificationOpenedProps
-	'push.notification.dismissed': PushNotificationDismissedProps
+	'notification.requested': NotificationRequestedProps
+	'notification.opened': NotificationOpenedProps
+	'notification.dismissed': NotificationDismissedProps
 }
 
 /**

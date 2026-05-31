@@ -179,18 +179,18 @@ describe('NotificationPrompt', () => {
 	})
 
 	describe('enable', () => {
-		it('fires push.subscription.requested before the async pushService.create call', async () => {
+		it('fires notification.requested before the async pushService.create call', async () => {
 			sut = create()
 			await sut.enable()
 
 			expect(mockAnalytics.capture).toHaveBeenCalledWith(
-				'push.subscription.requested',
+				'notification.requested',
 				{ source: 'page' },
 			)
 			expect(mockPushService.create).toHaveBeenCalledTimes(1)
 		})
 
-		it('still fires push.subscription.requested when pushService.create throws', async () => {
+		it('still fires notification.requested when pushService.create throws', async () => {
 			sut = create({
 				pushCreate: vi.fn().mockRejectedValue(new Error('denied')),
 			})
@@ -200,7 +200,7 @@ describe('NotificationPrompt', () => {
 			// Intent must be captured regardless of outcome — denied OS
 			// permission dialog is still a meaningful funnel signal.
 			expect(mockAnalytics.capture).toHaveBeenCalledWith(
-				'push.subscription.requested',
+				'notification.requested',
 				{ source: 'page' },
 			)
 		})
