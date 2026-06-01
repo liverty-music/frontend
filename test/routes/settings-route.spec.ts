@@ -6,7 +6,6 @@ import { createTestContainer } from '../helpers/create-container'
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserService = DI.createInterface('IUserService')
 const mockIUserStore = DI.createInterface('IUserStore')
-const mockIGuestService = DI.createInterface('IGuestService')
 const mockINotificationManager = DI.createInterface('INotificationManager')
 const mockIPushService = DI.createInterface('IPushService')
 
@@ -18,9 +17,6 @@ vi.mock('../../src/services/user-service', () => ({
 }))
 vi.mock('../../src/services/user-store', () => ({
 	IUserStore: mockIUserStore,
-}))
-vi.mock('../../src/services/guest-service', () => ({
-	IGuestService: mockIGuestService,
 }))
 vi.mock('../../src/services/notification-manager', () => ({
 	INotificationManager: mockINotificationManager,
@@ -60,19 +56,19 @@ describe('SettingsRoute', () => {
 		clear: ReturnType<typeof vi.fn>
 		updatePreferredLanguage: ReturnType<typeof vi.fn>
 	}
-	// Lightweight stand-in for the real UserStore: its getters resolve the
-	// same observable sources (mockUser / mockGuest / mockAuth) the production
-	// store composes, so the SettingsRoute getters that now delegate to the
-	// store exercise the same resolution logic under test.
+	// Lightweight stand-in for the real UserStore: it OWNS the guest home/
+	// language slice (as the real store now does) and its getters resolve the
+	// same observable sources (mockUser / its own guest fields / mockAuth) the
+	// production store composes, so the SettingsRoute getters that delegate to
+	// the store — plus the guest changeLocale write-through — exercise the same
+	// resolution logic under test.
 	let mockUserStore: {
+		guestHome: string | null
+		guestLanguage: string | null
 		readonly currentHome: string | null
 		readonly currentLanguage: string
-	}
-	let mockGuest: {
-		home: string | null
-		language: string | null
-		setLanguage: ReturnType<typeof vi.fn>
-		setHome: ReturnType<typeof vi.fn>
+		setGuestHome: ReturnType<typeof vi.fn>
+		setGuestLanguage: ReturnType<typeof vi.fn>
 	}
 	let mockNotification: { permission: string }
 	let mockPush: {
@@ -103,28 +99,26 @@ describe('SettingsRoute', () => {
 				return mockUser.current
 			}),
 		}
-		mockGuest = {
-			home: null,
-			language: null,
-			setLanguage: vi.fn((lang: string) => {
-				mockGuest.language = lang
-			}),
-			setHome: vi.fn((code: string) => {
-				mockGuest.home = code
-			}),
-		}
 		mockUserStore = {
+			guestHome: null,
+			guestLanguage: null,
 			get currentHome(): string | null {
 				return mockAuth.isAuthenticated
 					? (mockUser.current?.home?.level1 ?? null)
-					: mockGuest.home
+					: mockUserStore.guestHome
 			},
 			get currentLanguage(): string {
 				if (mockAuth.isAuthenticated) {
 					return mockUser.current?.preferredLanguage ?? 'ja'
 				}
-				return mockGuest.language ?? 'ja'
+				return mockUserStore.guestLanguage ?? 'ja'
 			},
+			setGuestHome: vi.fn((code: string) => {
+				mockUserStore.guestHome = code
+			}),
+			setGuestLanguage: vi.fn((lang: string) => {
+				mockUserStore.guestLanguage = lang
+			}),
 		}
 		mockNotification = { permission: 'default' }
 		mockPush = {
@@ -140,7 +134,6 @@ describe('SettingsRoute', () => {
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIUserService, mockUser),
 			Registration.instance(mockIUserStore, mockUserStore),
-			Registration.instance(mockIGuestService, mockGuest),
 			Registration.instance(mockINotificationManager, mockNotification),
 			Registration.instance(mockIPushService, mockPush),
 			Registration.instance(IEventAggregator, mockEa),
@@ -418,7 +411,6 @@ describe('SettingsRoute', () => {
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(mockIUserService, mockUser),
 				Registration.instance(mockIUserStore, mockUserStore),
-				Registration.instance(mockIGuestService, mockGuest),
 				Registration.instance(mockINotificationManager, mockNotification),
 				Registration.instance(mockIPushService, mockPush),
 				Registration.instance(IEventAggregator, mockEa),
@@ -453,12 +445,12 @@ describe('SettingsRoute', () => {
 
 			await guestSut.selectLanguage('en')
 
-			// changeLocale writes through GuestService.setLanguage (the
+			// changeLocale writes through UserStore.setGuestLanguage (the
 			// @observable owner) rather than raw localStorage, so the store —
 			// and therefore the Settings selector binding — reflects the new
 			// language immediately. This is the guest language-selector
 			// reactivity fix.
-			expect(mockGuest.setLanguage).toHaveBeenCalledWith('en')
+			expect(mockUserStore.setGuestLanguage).toHaveBeenCalledWith('en')
 			expect(guestSut.currentLocale).toBe('en')
 		})
 	})

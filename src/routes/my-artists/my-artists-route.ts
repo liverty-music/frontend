@@ -7,7 +7,6 @@ import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IFollowServiceClient } from '../../services/follow-service-client'
-import { IGuestService } from '../../services/guest-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -46,7 +45,6 @@ export class MyArtistsRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
-	private readonly guest = resolve(IGuestService)
 	private abortController: AbortController | null = null
 
 	public get isOnboardingStepMyArtists(): boolean {
@@ -197,8 +195,11 @@ export class MyArtistsRoute {
 		const artistName = this.artistName(artist)
 
 		if (!this.isAuthenticated) {
-			this.guest.unfollow(artistId)
-			this.logger.info('Unfollow committed (guest service)', {
+			// Guest unfollow resolves synchronously (localStorage write, no RPC),
+			// so there is no retry/revert path — followService routes to the guest
+			// queue internally based on auth state.
+			void this.followService.unfollow(artistId)
+			this.logger.info('Unfollow committed (guest)', {
 				name: artistName,
 			})
 			return
@@ -263,8 +264,10 @@ export class MyArtistsRoute {
 			this.onboarding.setStep(OnboardingStep.CONSENT)
 			// Persist for guest users — merged on signup. The signup banner is
 			// already visible (set in loading() for any guest); no toggle here.
+			// followService routes to the guest queue internally when not
+			// authenticated (synchronous localStorage write, no RPC).
 			if (!this.isAuthenticated) {
-				this.guest.setHype(artistId, hype)
+				void this.followService.setHype(artistId, hype)
 			}
 			return
 		}
@@ -277,9 +280,10 @@ export class MyArtistsRoute {
 
 		// Unauthenticated outside onboarding: persist to guest storage. The signup
 		// banner is already visible from loading(); no host-side toggle needed.
+		// followService routes to the guest queue internally (synchronous write).
 		if (!this.isAuthenticated) {
 			this.prevHypes.set(artistId, hype)
-			this.guest.setHype(artistId, hype)
+			void this.followService.setHype(artistId, hype)
 			return
 		}
 

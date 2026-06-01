@@ -32,11 +32,6 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	},
 }))
 
-const mockIGuestService = DI.createInterface('IGuestService')
-vi.mock('../../src/services/guest-service', () => ({
-	IGuestService: mockIGuestService,
-}))
-
 const { ConcertStore, IConcertStore } = await import(
 	'../../src/services/concert-store'
 )
@@ -57,11 +52,6 @@ describe('ConcertStore', () => {
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIOnboardingService, {
 				isOnboarding: false,
-			}),
-			Registration.instance(mockIGuestService, {
-				follows: [],
-				home: null,
-				followedCount: 0,
 			}),
 			Registration.instance(mockIConcertRpcClient, mockConcertRpcClient),
 		)

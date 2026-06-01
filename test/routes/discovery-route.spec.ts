@@ -16,7 +16,6 @@ const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-const mockIGuestService = DI.createInterface('IGuestService')
 
 vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
@@ -46,10 +45,6 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	},
 	DASHBOARD_FOLLOW_TARGET: 5,
 	DASHBOARD_CONCERT_TARGET: 3,
-}))
-
-vi.mock('../../src/services/guest-service', () => ({
-	IGuestService: mockIGuestService,
 }))
 
 vi.mock('../../src/routes/discovery/discovery-route.css?raw', () => ({
@@ -98,17 +93,6 @@ describe('DiscoveryRoute', () => {
 		deactivateSpotlight: ReturnType<typeof vi.fn>
 		setDiscoveryCounts: ReturnType<typeof vi.fn>
 	}
-	let mockGuest: {
-		follows: { artist: Artist; home: string | null }[]
-		home: string | null
-		followedCount: number
-		follow: ReturnType<typeof vi.fn>
-		unfollow: ReturnType<typeof vi.fn>
-		setHome: ReturnType<typeof vi.fn>
-		clearAll: ReturnType<typeof vi.fn>
-		listFollowed: ReturnType<typeof vi.fn>
-	}
-
 	beforeEach(() => {
 		vi.useFakeTimers()
 
@@ -126,17 +110,6 @@ describe('DiscoveryRoute', () => {
 			deactivateSpotlight: vi.fn(),
 			setDiscoveryCounts: vi.fn(),
 		}
-		mockGuest = {
-			follows: [],
-			home: null,
-			followedCount: 0,
-			follow: vi.fn(),
-			unfollow: vi.fn(),
-			setHome: vi.fn(),
-			clearAll: vi.fn(),
-			listFollowed: vi.fn().mockReturnValue([]),
-		}
-
 		// Default: follow succeeds and updates mock state
 		;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockImplementation(
 			async (artist: Artist) => {
@@ -151,7 +124,6 @@ describe('DiscoveryRoute', () => {
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(mockIGuestService, mockGuest),
 		)
 		container.register(DiscoveryRoute)
 		sut = container.get(DiscoveryRoute)
@@ -198,8 +170,10 @@ describe('DiscoveryRoute', () => {
 
 		it('should call listConcerts (not searchNewConcerts) for pre-seeded guest follows during onboarding', async () => {
 			mockOnboarding.isOnboarding = true
-			mockGuest.follows = [
-				{ artist: makeArtist('g1', 'Guest Artist'), home: null },
+			// The follow service facade now owns the persisted guest queue; the
+			// route reads it via `guestFollows` (no IGuestService).
+			;(mockFollowClient as { guestFollows: unknown[] }).guestFollows = [
+				{ artist: makeArtist('g1', 'Guest Artist'), hype: 'nearby' },
 			]
 
 			await sut.loading()

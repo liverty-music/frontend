@@ -14,7 +14,6 @@ import {
 import { GuestMigrationRequested } from './events/guest-migration-requested'
 import { SignedOut } from './events/signed-out'
 import { IFollowServiceClient } from './follow-service-client'
-import { IGuestService } from './guest-service'
 
 export const IFollowStore = DI.createInterface<IFollowStore>(
 	'IFollowStore',
@@ -29,12 +28,11 @@ export interface IFollowStore extends FollowStore {}
  * `auth.isAuthenticated`.
  *
  * Phase 2 of the entity-store layer. It COMPOSES the existing
- * `IFollowServiceClient` (which still owns the optimistic follow/unfollow/
- * setHype facade + its `followedArtists` projection cache and the guest-vs-
- * authed branching) as a thin delegate — fully absorbing it is deferred to a
- * later phase to keep this change focused and low-risk. On top of that delegate
- * FollowStore adds the auth-boundary responsibilities that used to live in
- * `GuestDataMergeService`:
+ * `IFollowServiceClient` (which owns the optimistic follow/unfollow/setHype
+ * facade, its `followedArtists` projection cache, the guest-vs-authed
+ * branching, AND the persisted guest follow queue) as a thin delegate. On top
+ * of that delegate FollowStore adds the auth-boundary responsibilities that
+ * used to live in `GuestDataMergeService`:
  *
  *   - `GuestMigrationRequested` → migrate the guest follow queue + hype to the
  *     backend with idempotent calls, draining each artist from the guest queue once it FULLY
@@ -50,7 +48,6 @@ export interface IFollowStore extends FollowStore {}
 export class FollowStore {
 	private readonly logger = resolve(ILogger).scopeTo('FollowStore')
 	private readonly delegate = resolve(IFollowServiceClient)
-	private readonly guest = resolve(IGuestService)
 	private readonly rpcClient = resolve(IFollowRpcClient)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly ea = resolve(IEventAggregator)
@@ -91,6 +88,15 @@ export class FollowStore {
 
 	public get followedCount(): number {
 		return this.delegate.followedCount
+	}
+
+	/**
+	 * The persisted guest follow queue. Exposed for the boot reconcile task,
+	 * which checks for leftover guest follows to heal a partial migration.
+	 * Resolves through the delegate, the owner of the localStorage-backed queue.
+	 */
+	public get guestFollows(): readonly FollowedArtist[] {
+		return this.delegate.guestFollows
 	}
 
 	/**
@@ -157,7 +163,7 @@ export class FollowStore {
 	 */
 	public async migrateGuestFollows(userId: string): Promise<void> {
 		// Snapshot the queue up-front; the drain is applied once at the end.
-		const queue = [...this.guest.follows]
+		const queue = [...this.delegate.guestFollows]
 		if (queue.length === 0) {
 			// Nothing to migrate, but still record that this account has been
 			// reconciled so a later residual-queue reconcile clears without
@@ -212,7 +218,7 @@ export class FollowStore {
 		}
 
 		// Single batched drain: remove only the fully-migrated items, one write.
-		this.guest.removeFollows(migratedIds)
+		this.delegate.removeGuestFollows(migratedIds)
 
 		// Write the receipt only when every item fully migrated — a residual queue
 		// means genuine failures remain, and the next reconcile should retry them
@@ -223,7 +229,7 @@ export class FollowStore {
 		} else {
 			this.logger.warn(
 				'Guest follow migration left failed items; receipt deferred to reconcile',
-				{ userId, remaining: this.guest.follows.length },
+				{ userId, remaining: this.delegate.guestFollows.length },
 			)
 		}
 	}
@@ -236,12 +242,33 @@ export class FollowStore {
 	 * shared browser sees no follows.
 	 */
 	public clear(): void {
-		this.guest.clearFollows()
+		this.delegate.clearGuestFollows()
 		// Route the projection eviction through the delegate's own method so any
 		// cache invalidation tied to the @observable owner runs, rather than a
 		// cross-object write that bypasses it.
 		this.delegate.clear()
 		this.logger.info('Follow state cleared')
+	}
+
+	/**
+	 * Reset the guest follow slice for a fresh tutorial start (welcome route).
+	 * Same effect as the sign-out `clear()` — drops the guest follow queue and
+	 * evicts the projection cache. Named separately so the welcome reset
+	 * coordinator reads as a deliberate guest-state reset rather than a sign-out
+	 * side effect.
+	 */
+	public clearGuest(): void {
+		this.clear()
+	}
+
+	/**
+	 * Drain the residual guest follow queue WITHOUT touching the projection
+	 * cache. Used by the boot reconcile task when the per-account receipt is
+	 * already present (a prior clear failed): the stale queue is cleared without
+	 * re-migrating so reverted state is not resurrected.
+	 */
+	public clearGuestFollows(): void {
+		this.delegate.clearGuestFollows()
 	}
 
 	/** Whether the per-account guest-merge receipt exists. */

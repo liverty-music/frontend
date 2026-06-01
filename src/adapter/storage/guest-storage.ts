@@ -5,9 +5,9 @@ const KEY_FOLLOWED = 'guest.followedArtists'
 const KEY_HOME = 'guest.home'
 // Anonymous-period UI language. Dedicated key, DECOUPLED from the i18next
 // detector's own cache key (`StorageKeys.language === 'language'`, configured
-// in main.ts as `lookupLocalStorage`). GuestService is the sole reader/writer
-// of `guest.language`, so `clearAll()` cannot erase the detector's active-locale
-// cache, and a returning guest who never made an explicit choice keeps
+// in main.ts as `lookupLocalStorage`). UserStore is the sole reader/writer
+// of `guest.language`, so clearing the guest slice cannot erase the detector's
+// active-locale cache, and a returning guest who never made an explicit choice keeps
 // `guest.language === null` (the detector's auto-written 'language' no longer
 // leaks in) — preserving the "null → reactive i18nLocale fallback" contract.
 const KEY_LANGUAGE = 'guest.language'

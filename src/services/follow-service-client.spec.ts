@@ -8,7 +8,6 @@ const mockLogger = {
 	scopeTo: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }
 const mockAuth = { isAuthenticated: true }
-const mockGuest = { follows: [] as { artist: Artist }[] }
 const mockRpcClient = {
 	listFollowed: vi.fn(async (): Promise<FollowedArtist[]> => []),
 	follow: vi.fn(),
@@ -19,6 +18,18 @@ const mockConcertService = {
 	invalidateFollowerCache: vi.fn(),
 }
 
+// Guest follow queue is now hydrated from the guest-storage adapter on
+// construction (GuestService is dissolved). Drive it via a mutable seed array
+// that loadFollows returns and saveFollows mirrors back.
+let guestSeed: FollowedArtist[] = []
+const saveFollows = vi.fn((follows: FollowedArtist[]) => {
+	guestSeed = [...follows]
+})
+vi.mock('../adapter/storage/guest-storage', () => ({
+	loadFollows: vi.fn(() => [...guestSeed]),
+	saveFollows: (follows: FollowedArtist[]) => saveFollows(follows),
+}))
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -27,7 +38,6 @@ vi.mock('aurelia', async (importOriginal) => {
 			const map: Record<string, unknown> = {
 				ILogger: mockLogger,
 				IAuthService: mockAuth,
-				IGuestService: mockGuest,
 				IFollowRpcClient: mockRpcClient,
 				IConcertStore: mockConcertService,
 			}
@@ -54,7 +64,7 @@ describe('FollowServiceClient', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockAuth.isAuthenticated = true
-		mockGuest.follows = []
+		guestSeed = []
 		sut = new FollowServiceClient()
 	})
 
@@ -141,7 +151,9 @@ describe('FollowServiceClient', () => {
 
 		it('sets followedArtists from guest storage follows when not authenticated', async () => {
 			mockAuth.isAuthenticated = false
-			mockGuest.follows = [{ artist: makeArtist('g1', 'Guest Artist') }]
+			guestSeed = [makeFollowedArtist('g1', 'Guest Artist')]
+			// Reconstruct so the guest queue hydrates from the new seed.
+			sut = new FollowServiceClient()
 
 			await sut.listFollowed()
 
@@ -155,6 +167,52 @@ describe('FollowServiceClient', () => {
 			await sut.listFollowed()
 
 			expect(sut.followedArtists).toEqual([])
+		})
+	})
+
+	describe('guest follow queue (localStorage-backed)', () => {
+		beforeEach(() => {
+			mockAuth.isAuthenticated = false
+		})
+
+		it('persists a guest follow and exposes it via guestFollows', async () => {
+			await sut.follow(makeArtist('g1', 'Guest One'))
+
+			expect(sut.guestFollows.map((f) => f.artist.id)).toEqual(['g1'])
+			expect(saveFollows).toHaveBeenCalled()
+		})
+
+		it('removeGuestFollows drains a batch in a single persist', async () => {
+			guestSeed = [
+				makeFollowedArtist('g1', 'One'),
+				makeFollowedArtist('g2', 'Two'),
+				makeFollowedArtist('g3', 'Three'),
+			]
+			sut = new FollowServiceClient()
+
+			sut.removeGuestFollows(['g1', 'g3'])
+
+			expect(sut.guestFollows.map((f) => f.artist.id)).toEqual(['g2'])
+			expect(saveFollows).toHaveBeenCalledTimes(1)
+		})
+
+		it('clearGuestFollows empties the persisted queue', async () => {
+			guestSeed = [makeFollowedArtist('g1', 'One')]
+			sut = new FollowServiceClient()
+
+			sut.clearGuestFollows()
+
+			expect(sut.guestFollows).toHaveLength(0)
+		})
+
+		it('setHype persists a guest hype change', async () => {
+			guestSeed = [makeFollowedArtist('g1', 'One')]
+			sut = new FollowServiceClient()
+
+			await sut.setHype('g1', 'away')
+
+			expect(sut.guestFollows[0]?.hype).toBe('away')
+			expect(mockRpcClient.setHype).not.toHaveBeenCalled()
 		})
 	})
 })

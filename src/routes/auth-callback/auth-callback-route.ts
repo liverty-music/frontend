@@ -5,9 +5,9 @@ import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { GuestMigrationRequested } from '../../services/events/guest-migration-requested'
-import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
-import { IGuestService } from '../../services/guest-service'
+import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserService, type ProvisionResult } from '../../services/user-service'
+import { IUserStore } from '../../services/user-store'
 import {
 	isSupportedLanguage,
 	normalizeToSupportedLanguage,
@@ -27,8 +27,8 @@ export class AuthCallbackRoute {
 
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
-	private readonly mergeService = resolve(IGuestDataMergeService)
-	private readonly guest = resolve(IGuestService)
+	private readonly userStore = resolve(IUserStore)
+	private readonly onboarding = resolve(IOnboardingService)
 	private readonly i18n = resolve(I18N)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
@@ -110,8 +110,17 @@ export class AuthCallbackRoute {
 				)
 			}
 
-			// Merge any guest data accumulated during onboarding
-			await this.mergeService.merge()
+			// Complete the sign-up onboarding hand-off. The follow + hype
+			// migration is owned SOLELY by FollowStore (triggered by the
+			// GuestMigrationRequested event published above), so this hand-off is
+			// reduced to its non-follow orchestration:
+			//   - clear the home/language/help-seen guest preferences (UserStore's
+			//     slice); the follow queue is intentionally RETAINED so the
+			//     in-flight GuestMigrationRequested drain is not stranded.
+			//   - mark onboarding complete.
+			// Both are idempotent and safe on the returning-sign-in path.
+			this.userStore.clearGuest()
+			this.onboarding.complete()
 
 			// On a GENUINELY NEW account: set flag so dashboard shows
 			// PostSignupDialog. Keyed on the new-account signal from provisioning
@@ -157,7 +166,7 @@ export class AuthCallbackRoute {
 	private async ensureUserProvisioned(
 		email: string | undefined,
 	): Promise<ProvisionResult> {
-		const guestHome = this.guest.home
+		const guestHome = this.userStore.guestHome
 		if (guestHome && email) {
 			// Capture the effective locale at signup so the new user row carries
 			// the language the visitor was experiencing pre-account.

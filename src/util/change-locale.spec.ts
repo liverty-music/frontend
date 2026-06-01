@@ -1,8 +1,8 @@
 import type { I18N } from '@aurelia/i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { IAuthService } from '../services/auth-service'
-import type { IGuestService } from '../services/guest-service'
 import type { IUserService } from '../services/user-service'
+import type { IUserStore } from '../services/user-store'
 import { changeLocale } from './change-locale'
 
 function makeI18n(behavior?: {
@@ -29,18 +29,18 @@ function makeUserService(behavior?: {
 	} as unknown as IUserService
 }
 
-function makeGuest(): IGuestService {
+function makeUserStore(): IUserStore {
 	return {
-		language: null,
-		setLanguage: vi.fn(),
-	} as unknown as IGuestService
+		guestLanguage: null,
+		setGuestLanguage: vi.fn(),
+	} as unknown as IUserStore
 }
 
 describe('changeLocale', () => {
-	let guest: IGuestService
+	let userStore: IUserStore
 
 	beforeEach(() => {
-		guest = makeGuest()
+		userStore = makeUserStore()
 	})
 
 	describe('validation', () => {
@@ -50,10 +50,10 @@ describe('changeLocale', () => {
 			const userService = makeUserService()
 
 			await expect(
-				changeLocale({ i18n, auth, userService, guest }, 'fr'),
+				changeLocale({ i18n, auth, userService, userStore }, 'fr'),
 			).rejects.toBeInstanceOf(TypeError)
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(guest.setLanguage).not.toHaveBeenCalled()
+			expect(userStore.setGuestLanguage).not.toHaveBeenCalled()
 			expect(userService.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
@@ -64,12 +64,12 @@ describe('changeLocale', () => {
 			const auth = makeAuth(false)
 			const userService = makeUserService()
 
-			await changeLocale({ i18n, auth, userService, guest }, 'en')
+			await changeLocale({ i18n, auth, userService, userStore }, 'en')
 
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			// Write through the @observable guest language owner (not raw
 			// localStorage) so UserStore.currentLanguage stays reactive.
-			expect(guest.setLanguage).toHaveBeenCalledWith('en')
+			expect(userStore.setGuestLanguage).toHaveBeenCalledWith('en')
 			expect(userService.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
@@ -90,12 +90,12 @@ describe('changeLocale', () => {
 				},
 			})
 
-			await changeLocale({ i18n, auth, userService, guest }, 'en')
+			await changeLocale({ i18n, auth, userService, userStore }, 'en')
 
 			expect(userService.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			expect(callOrder).toEqual(['rpc', 'setLocale'])
-			expect(guest.setLanguage).not.toHaveBeenCalled()
+			expect(userStore.setGuestLanguage).not.toHaveBeenCalled()
 		})
 
 		it('rethrows when RPC fails so the caller can surface a Snack', async () => {
@@ -108,10 +108,10 @@ describe('changeLocale', () => {
 			})
 
 			await expect(
-				changeLocale({ i18n, auth, userService, guest }, 'en'),
+				changeLocale({ i18n, auth, userService, userStore }, 'en'),
 			).rejects.toThrow('network')
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(guest.setLanguage).not.toHaveBeenCalled()
+			expect(userStore.setGuestLanguage).not.toHaveBeenCalled()
 		})
 	})
 })

@@ -31,14 +31,17 @@ const mockI18n = {
 	getLocale: vi.fn(() => 'en'),
 }
 
-const mockGuest = {
-	follows: [] as FollowedArtist[],
-	clearFollows: vi.fn(() => {
-		mockGuest.follows.splice(0)
-	}),
-}
-
+// The guest follow queue is owned by FollowStore (via its FollowServiceClient
+// delegate) now that GuestService is dissolved; the reconcile task reads it
+// through `followStore.guestFollows` and drains via `clearGuestFollows`.
 const mockFollowStore = {
+	guestFollowsState: [] as FollowedArtist[],
+	get guestFollows(): readonly FollowedArtist[] {
+		return mockFollowStore.guestFollowsState
+	},
+	clearGuestFollows: vi.fn(() => {
+		mockFollowStore.guestFollowsState.splice(0)
+	}),
 	hasReceipt: vi.fn(() => false),
 	migrateGuestFollows: vi.fn(async () => undefined),
 }
@@ -69,9 +72,6 @@ vi.mock('./auth-service', () => ({
 vi.mock('./user-service', () => ({
 	IUserService: { friendlyName: 'IUserService' },
 }))
-vi.mock('./guest-service', () => ({
-	IGuestService: { friendlyName: 'IGuestService' },
-}))
 vi.mock('./follow-store', () => ({
 	IFollowStore: { friendlyName: 'IFollowStore' },
 }))
@@ -84,7 +84,6 @@ const container = {
 			ILogger: mockLogger,
 			IAuthService: mockAuth,
 			IUserService: mockUserService,
-			IGuestService: mockGuest,
 			IFollowStore: mockFollowStore,
 			I18N: mockI18n,
 		}
@@ -107,7 +106,7 @@ describe('runFollowReconcile', () => {
 			mockUserService.current ??= { id: 'user-1' }
 			return mockUserService.current
 		})
-		mockGuest.follows = []
+		mockFollowStore.guestFollowsState = []
 		mockFollowStore.hasReceipt.mockReturnValue(false)
 		// hasReceipt becomes true after a successful migrate (write-through).
 		mockFollowStore.migrateGuestFollows.mockImplementation(async () => {
@@ -117,7 +116,7 @@ describe('runFollowReconcile', () => {
 
 	it('skips when unauthenticated', async () => {
 		mockAuth.isAuthenticated = false
-		mockGuest.follows = [makeFollow('a1')]
+		mockFollowStore.guestFollowsState = [makeFollow('a1')]
 
 		await runFollowReconcile(container)
 
@@ -125,41 +124,41 @@ describe('runFollowReconcile', () => {
 	})
 
 	it('no-ops when the guest queue is empty', async () => {
-		mockGuest.follows = []
+		mockFollowStore.guestFollowsState = []
 
 		await runFollowReconcile(container)
 
 		expect(mockFollowStore.migrateGuestFollows).not.toHaveBeenCalled()
-		expect(mockGuest.clearFollows).not.toHaveBeenCalled()
+		expect(mockFollowStore.clearGuestFollows).not.toHaveBeenCalled()
 	})
 
 	it('migrates then clears when there is no receipt and a leftover queue', async () => {
-		mockGuest.follows = [makeFollow('a1')]
+		mockFollowStore.guestFollowsState = [makeFollow('a1')]
 
 		await runFollowReconcile(container)
 
 		expect(mockFollowStore.migrateGuestFollows).toHaveBeenCalledWith('user-1')
-		expect(mockGuest.clearFollows).toHaveBeenCalledOnce()
+		expect(mockFollowStore.clearGuestFollows).toHaveBeenCalledOnce()
 	})
 
 	it('clears WITHOUT migrating when the receipt already exists (no resurrection)', async () => {
-		mockGuest.follows = [makeFollow('a1')]
+		mockFollowStore.guestFollowsState = [makeFollow('a1')]
 		mockFollowStore.hasReceipt.mockReturnValue(true)
 
 		await runFollowReconcile(container)
 
 		expect(mockFollowStore.migrateGuestFollows).not.toHaveBeenCalled()
-		expect(mockGuest.clearFollows).toHaveBeenCalledOnce()
+		expect(mockFollowStore.clearGuestFollows).toHaveBeenCalledOnce()
 	})
 
 	it('is session-guarded: a second run in the same tab is a no-op', async () => {
-		mockGuest.follows = [makeFollow('a1')]
+		mockFollowStore.guestFollowsState = [makeFollow('a1')]
 
 		await runFollowReconcile(container)
 		expect(mockFollowStore.migrateGuestFollows).toHaveBeenCalledOnce()
 
 		// Re-arm a queue; the session flag must short-circuit the second run.
-		mockGuest.follows = [makeFollow('a2')]
+		mockFollowStore.guestFollowsState = [makeFollow('a2')]
 		await runFollowReconcile(container)
 		expect(mockFollowStore.migrateGuestFollows).toHaveBeenCalledOnce()
 	})
@@ -168,7 +167,7 @@ describe('runFollowReconcile', () => {
 		// `current` starts undefined — simulating the race where UserHydrationTask
 		// has not populated it yet. The reconcile must call ensureLoaded itself.
 		mockUserService.current = undefined
-		mockGuest.follows = [makeFollow('a1')]
+		mockFollowStore.guestFollowsState = [makeFollow('a1')]
 		mockUserService.ensureLoaded.mockImplementation(async () => {
 			mockUserService.current = { id: 'user-1' }
 			return mockUserService.current
@@ -180,11 +179,11 @@ describe('runFollowReconcile', () => {
 		// Migration ran because ensureLoaded produced a user id without depending
 		// on the hydration task running first.
 		expect(mockFollowStore.migrateGuestFollows).toHaveBeenCalledWith('user-1')
-		expect(mockGuest.clearFollows).toHaveBeenCalledOnce()
+		expect(mockFollowStore.clearGuestFollows).toHaveBeenCalledOnce()
 	})
 
 	it('defers (re-arms the session flag) when no user id is available even after ensureLoaded', async () => {
-		mockGuest.follows = [makeFollow('a1')]
+		mockFollowStore.guestFollowsState = [makeFollow('a1')]
 		mockUserService.current = undefined
 		// ensureLoaded cannot bootstrap a user (e.g. no cached id and no email).
 		mockUserService.ensureLoaded.mockResolvedValue(undefined)
@@ -199,7 +198,7 @@ describe('runFollowReconcile', () => {
 	})
 
 	it('re-arms the session flag when ensureLoaded throws', async () => {
-		mockGuest.follows = [makeFollow('a1')]
+		mockFollowStore.guestFollowsState = [makeFollow('a1')]
 		mockUserService.current = undefined
 		mockUserService.ensureLoaded.mockRejectedValue(new Error('rpc down'))
 
@@ -212,7 +211,7 @@ describe('runFollowReconcile', () => {
 	})
 
 	it('does NOT clear when migration left failed items (no receipt written)', async () => {
-		mockGuest.follows = [makeFollow('a1')]
+		mockFollowStore.guestFollowsState = [makeFollow('a1')]
 		// Simulate a partial failure: migrate runs but does not write the receipt.
 		mockFollowStore.migrateGuestFollows.mockImplementation(async () => {
 			mockFollowStore.hasReceipt.mockReturnValue(false)
@@ -221,6 +220,6 @@ describe('runFollowReconcile', () => {
 		await runFollowReconcile(container)
 
 		expect(mockFollowStore.migrateGuestFollows).toHaveBeenCalledOnce()
-		expect(mockGuest.clearFollows).not.toHaveBeenCalled()
+		expect(mockFollowStore.clearGuestFollows).not.toHaveBeenCalled()
 	})
 })

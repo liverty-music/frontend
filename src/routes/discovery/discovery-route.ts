@@ -11,7 +11,6 @@ import {
 import { IArtistStore } from '../../services/artist-store'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowServiceClient } from '../../services/follow-service-client'
-import { IGuestService } from '../../services/guest-service'
 import {
 	DASHBOARD_CONCERT_TARGET,
 	DASHBOARD_FOLLOW_TARGET,
@@ -29,7 +28,6 @@ export class DiscoveryRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
-	private readonly guest = resolve(IGuestService)
 	private readonly concertService = resolve(IConcertStore)
 	private readonly analytics = resolve(IAnalyticsService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
@@ -140,7 +138,7 @@ export class DiscoveryRoute {
 		this.logger.info('Loading discovery page')
 
 		if (this.isOnboarding) {
-			const persisted = this.guest.follows
+			const persisted = this.followService.guestFollows
 			if (persisted.length > 0) {
 				this.followService.hydrate(persisted.map((f) => f.artist))
 			}
@@ -159,7 +157,7 @@ export class DiscoveryRoute {
 
 		// Resume concert search for pre-seeded follows (fire concurrently)
 		if (this.isOnboarding) {
-			for (const f of this.guest.follows) {
+			for (const f of this.followService.guestFollows) {
 				void this.searchConcertsForArtist(f.artist.id, f.artist.name)
 			}
 			// Sync initial counts — @watch only fires on changes, not on the

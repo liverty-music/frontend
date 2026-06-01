@@ -9,7 +9,8 @@ import { createMockRouter } from '../helpers/mock-router'
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIConcertStore = DI.createInterface('IConcertStore')
-const mockIGuestService = DI.createInterface('IGuestService')
+const mockIUserStore = DI.createInterface('IUserStore')
+const mockIFollowStore = DI.createInterface('IFollowStore')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
@@ -31,8 +32,12 @@ vi.mock('../../src/services/concert-store', () => ({
 	IConcertStore: mockIConcertStore,
 }))
 
-vi.mock('../../src/services/guest-service', () => ({
-	IGuestService: mockIGuestService,
+vi.mock('../../src/services/user-store', () => ({
+	IUserStore: mockIUserStore,
+}))
+
+vi.mock('../../src/services/follow-store', () => ({
+	IFollowStore: mockIFollowStore,
 }))
 
 vi.mock('../../src/constants/preview-artists', () => ({
@@ -66,7 +71,8 @@ describe('WelcomeRoute', () => {
 		listWithProximity: ReturnType<typeof vi.fn>
 		toDateGroups: ReturnType<typeof vi.fn>
 	}
-	let mockGuest: { clearAll: ReturnType<typeof vi.fn> }
+	let mockUserStore: { clearGuest: ReturnType<typeof vi.fn> }
+	let mockFollowStore: { clearGuest: ReturnType<typeof vi.fn> }
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let host: HTMLElement
 
@@ -87,7 +93,8 @@ describe('WelcomeRoute', () => {
 			listWithProximity: vi.fn().mockResolvedValue([]),
 			toDateGroups: vi.fn().mockReturnValue([]),
 		}
-		mockGuest = { clearAll: vi.fn() }
+		mockUserStore = { clearGuest: vi.fn() }
+		mockFollowStore = { clearGuest: vi.fn() }
 		mockRouter = createMockRouter()
 		host = document.createElement('div')
 
@@ -95,7 +102,8 @@ describe('WelcomeRoute', () => {
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIConcertStore, mockConcert),
-			Registration.instance(mockIGuestService, mockGuest),
+			Registration.instance(mockIUserStore, mockUserStore),
+			Registration.instance(mockIFollowStore, mockFollowStore),
 			Registration.instance(IRouter, mockRouter),
 			Registration.instance(IEventAggregator, {
 				publish: vi.fn(),
@@ -143,7 +151,8 @@ describe('WelcomeRoute', () => {
 			// tapped Get Started after already having followed artists as a
 			// guest don't lose their work. Spec: landing-page > Get Started
 			// initiates onboarding without clearing guest data.
-			expect(mockGuest.clearAll).not.toHaveBeenCalled()
+			expect(mockUserStore.clearGuest).not.toHaveBeenCalled()
+			expect(mockFollowStore.clearGuest).not.toHaveBeenCalled()
 			expect(mockOnboarding.reset).toHaveBeenCalledOnce()
 			expect(mockOnboarding.setStep).toHaveBeenCalledWith('discovery')
 			expect(mockRouter.load).toHaveBeenCalledWith('discovery')
@@ -159,11 +168,14 @@ describe('WelcomeRoute', () => {
 		it('clears guest data before initiating sign-in to prevent stale guest.home from leaking into the auth-callback signup heuristic', async () => {
 			await sut.handleLogin()
 
-			expect(mockGuest.clearAll).toHaveBeenCalledOnce()
+			// Coordinated reset across the stores that own the guest slices,
+			// replacing the old GuestService.clearAll().
+			expect(mockUserStore.clearGuest).toHaveBeenCalledOnce()
+			expect(mockFollowStore.clearGuest).toHaveBeenCalledOnce()
 			expect(mockAuth.signIn).toHaveBeenCalledOnce()
-			// Order matters: clearAll MUST happen before signIn so the OIDC
+			// Order matters: the reset MUST happen before signIn so the OIDC
 			// redirect leaves no stale guest state behind.
-			expect(mockGuest.clearAll.mock.invocationCallOrder[0]).toBeLessThan(
+			expect(mockUserStore.clearGuest.mock.invocationCallOrder[0]).toBeLessThan(
 				mockAuth.signIn.mock.invocationCallOrder[0],
 			)
 		})

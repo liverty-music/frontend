@@ -5,6 +5,7 @@ import {
 	type ProximityGroup,
 } from '../adapter/rpc/client/concert-client'
 import { concertFrom } from '../adapter/rpc/mapper/concert-mapper'
+import { loadFollows, loadHome } from '../adapter/storage/guest-storage'
 import { codeToHome } from '../constants/iso3166'
 import type { Artist } from '../entities/artist'
 import {
@@ -16,7 +17,6 @@ import {
 } from '../entities/concert'
 import { DEFAULT_HYPE, type Hype } from '../entities/follow'
 import { IAuthService } from './auth-service'
-import { IGuestService } from './guest-service'
 
 export type { ProtoConcert, ProximityGroup }
 
@@ -30,7 +30,6 @@ export interface IConcertStore extends ConcertStore {}
 export class ConcertStore {
 	private readonly logger = resolve(ILogger).scopeTo('ConcertStore')
 	private readonly authService = resolve(IAuthService)
-	private readonly guest = resolve(IGuestService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
 	private static readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000
@@ -297,7 +296,14 @@ export class ConcertStore {
 	private async listByFollowerGuest(
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
-		const { follows, home: homeCode } = this.guest
+		// Read the guest follow queue + home directly from the localStorage
+		// adapter. Both are persisted synchronously by their @observable owners
+		// (FollowStore/FollowServiceClient for follows, UserStore for home) on
+		// every write, so the adapter read reflects the latest value without a DI
+		// dependency on those stores — which would form a resolution cycle
+		// (FollowServiceClient → ConcertStore).
+		const follows = loadFollows()
+		const homeCode = loadHome()
 		this.logger.info('Guest: listing concerts with proximity', {
 			count: follows.length,
 		})

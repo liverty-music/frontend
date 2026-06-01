@@ -16,19 +16,21 @@ import type { DateGroup } from '../../entities/concert'
 import type { Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
-import { IGuestService } from '../../services/guest-service'
+import { IFollowStore } from '../../services/follow-store'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
 import { IUserService } from '../../services/user-service'
+import { IUserStore } from '../../services/user-store'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
 	private readonly userService = resolve(IUserService)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly guest = resolve(IGuestService)
+	private readonly userStore = resolve(IUserStore)
+	private readonly followStore = resolve(IFollowStore)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('WelcomeRoute')
 	private readonly ea = resolve(IEventAggregator)
@@ -157,7 +159,7 @@ export class WelcomeRoute implements IRouteViewModel {
 				i18n: this.i18n,
 				auth: this.authService,
 				userService: this.userService,
-				guest: this.guest,
+				userStore: this.userStore,
 			},
 			newLocale,
 		)
@@ -224,6 +226,16 @@ export class WelcomeRoute implements IRouteViewModel {
 		}
 	}
 
+	/**
+	 * Coordinated guest-state reset replacing the old `GuestService.clearAll()`.
+	 * UserStore owns home/language/help-seen; FollowStore owns the follow queue +
+	 * projection cache. Both clears are idempotent and order-independent.
+	 */
+	private resetGuestState(): void {
+		this.userStore.clearGuest()
+		this.followStore.clearGuest()
+	}
+
 	async handleLogin(): Promise<void> {
 		this.logger.info('Login tapped')
 		// Discard any anonymous trial state (guest follows, guest home) before
@@ -233,7 +245,14 @@ export class WelcomeRoute implements IRouteViewModel {
 		// new-signup detection in ensureUserProvisioned, which would otherwise
 		// surface PostSignupDialog to an existing user who happened to pick a
 		// home during a prior anonymous session.
-		this.guest.clearAll()
+		//
+		// Coordinated reset across the stores that now own the guest slices:
+		// UserStore drops home/language/help-seen; FollowStore drops the follow
+		// queue + projection cache. Together these reproduce the old
+		// GuestService.clearAll() semantics. Only the dedicated `guest.language`
+		// key is cleared — the i18next detector's own `language` key is left
+		// intact (the Phase-1 cancelled-login fix).
+		this.resetGuestState()
 		try {
 			await this.authService.signIn()
 		} catch (err) {

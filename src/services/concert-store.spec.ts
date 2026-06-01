@@ -7,7 +7,6 @@ const mockLogger = {
 	scopeTo: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }
 const mockAuth = { isAuthenticated: true }
-const mockGuest = { follows: [], home: null }
 const mockRpcClient = {
 	listByFollower: vi.fn(async (): Promise<ProximityGroup[]> => []),
 	listConcerts: vi.fn(),
@@ -22,7 +21,6 @@ vi.mock('aurelia', async (importOriginal) => {
 			const map: Record<string, unknown> = {
 				ILogger: mockLogger,
 				IAuthService: mockAuth,
-				IGuestService: mockGuest,
 				IConcertRpcClient: mockRpcClient,
 			}
 			const tokenAny = token as { friendlyName?: string }
