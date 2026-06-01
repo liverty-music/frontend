@@ -295,8 +295,8 @@
 				"description": "Tells us which screens fans love and which ones get in the way. No names, no contacts — just patterns."
 			},
 			"marketing": {
-				"label": "Allow cross-border analytics processing",
-				"description": "Lets us include your anonymous activity in our EU-region dashboards. Off by default — turn on only if you'd like to help."
+				"label": "Help measure ad effectiveness",
+				"description": "We anonymously measure how people who arrive via ads move through the app, to improve how we reach them. Turning this off has no effect on other features."
 			},
 			"actions": {
 				"accept": "Accept selected",
