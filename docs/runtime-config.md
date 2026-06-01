@@ -170,7 +170,7 @@ Out of scope for the runtime-config capability.
 |---|---|---|
 | Unit | Schema validator, host cross-check | [`src/config/app-config.spec.ts`](../src/config/app-config.spec.ts) |
 | Build-time gate | Every route chunk contains its template marker | `npm run verify:build-templates` (Dockerfile + CI) |
-| Post-deploy | SPA renders + `/config.json` env field matches host | `npm run test:smoke` (auto on push-to-main via `Deploy Frontend` workflow's `post-deploy-smoke` job; manual via `workflow_dispatch` for prod after the cloud-provisioning pin-bump PR merges) |
+| Post-deploy | SPA renders + `/config.json` env field matches host | `npm run test:smoke` (auto on push-to-main via `Deploy Frontend` workflow's `post-deploy-smoke` job; manual via `workflow_dispatch` for prod after the automated cloud-provisioning pin-bump lands on `main`) |
 
 ---
 
