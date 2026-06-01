@@ -3,7 +3,7 @@ import { IFollowRpcClient } from '../adapter/rpc/client/follow-client'
 import type { Artist } from '../entities/artist'
 import type { FollowedArtist, Hype } from '../entities/follow'
 import { IAuthService } from './auth-service'
-import { IConcertService } from './concert-service'
+import { IConcertStore } from './concert-store'
 import { IGuestService } from './guest-service'
 
 export const IFollowServiceClient = DI.createInterface<IFollowServiceClient>(
@@ -18,7 +18,7 @@ export class FollowServiceClient {
 	private readonly authService = resolve(IAuthService)
 	private readonly guest = resolve(IGuestService)
 	private readonly rpcClient = resolve(IFollowRpcClient)
-	private readonly concertService = resolve(IConcertService)
+	private readonly concertStore = resolve(IConcertStore)
 
 	@observable public followedArtists: Artist[] = []
 
@@ -70,7 +70,7 @@ export class FollowServiceClient {
 
 		try {
 			await this.rpcClient.follow(artist.id)
-			this.concertService.invalidateFollowerCache()
+			this.concertStore.invalidateFollowerCache()
 			this.logger.info('Artist followed', {
 				followed: this.followedCount,
 			})
@@ -98,7 +98,7 @@ export class FollowServiceClient {
 			return
 		}
 		await this.rpcClient.unfollow(artistId)
-		this.concertService.invalidateFollowerCache()
+		this.concertStore.invalidateFollowerCache()
 		this.followedArtists = this.followedArtists.filter((a) => a.id !== artistId)
 	}
 

@@ -3,12 +3,12 @@ import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 
-const mockIConcertService = DI.createInterface('IConcertService')
+const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockITicketEmailService = DI.createInterface('ITicketEmailService')
 
-vi.mock('../../src/services/concert-service', () => ({
-	IConcertService: mockIConcertService,
+vi.mock('../../src/services/concert-store', () => ({
+	IConcertStore: mockIConcertStore,
 }))
 vi.mock('../../src/services/follow-service-client', () => ({
 	IFollowServiceClient: mockIFollowServiceClient,
@@ -60,7 +60,7 @@ describe('ImportTicketEmailRoute', () => {
 		}
 
 		const container = createTestContainer(
-			Registration.instance(mockIConcertService, mockConcert),
+			Registration.instance(mockIConcertStore, mockConcert),
 			Registration.instance(mockIFollowServiceClient, mockFollow),
 			Registration.instance(mockITicketEmailService, mockTicketEmail),
 		)

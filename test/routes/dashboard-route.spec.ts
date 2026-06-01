@@ -7,7 +7,7 @@ import { createMockLocalStorage } from '../helpers/mock-local-storage'
 
 // --- DI tokens (must be created before vi.mock calls) ---
 const mockIAuthService = DI.createInterface('IAuthService')
-const mockIConcertService = DI.createInterface('IConcertService')
+const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockITicketJourneyService = DI.createInterface('ITicketJourneyService')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
@@ -19,8 +19,8 @@ const mockIHistory = DI.createInterface('IHistory')
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
 }))
-vi.mock('../../src/services/concert-service', () => ({
-	IConcertService: mockIConcertService,
+vi.mock('../../src/services/concert-store', () => ({
+	IConcertStore: mockIConcertStore,
 }))
 vi.mock('../../src/services/follow-service-client', () => ({
 	IFollowServiceClient: mockIFollowServiceClient,
@@ -119,7 +119,7 @@ describe('DashboardRoute', () => {
 	function buildSut() {
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(mockIConcertService, mockConcert),
+			Registration.instance(mockIConcertStore, mockConcert),
 			Registration.instance(mockIFollowServiceClient, mockFollow),
 			Registration.instance(mockITicketJourneyService, mockJourney),
 			Registration.instance(mockIOnboardingService, mockOnboarding),

@@ -11,9 +11,9 @@ import {
 } from '../helpers/mock-rpc-clients'
 import { createMockEventAggregator } from '../helpers/mock-toast'
 
-const mockIArtistServiceClient = DI.createInterface('IArtistServiceClient')
+const mockIArtistStore = DI.createInterface('IArtistStore')
 const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
-const mockIConcertService = DI.createInterface('IConcertService')
+const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIGuestService = DI.createInterface('IGuestService')
@@ -22,16 +22,16 @@ vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
 }))
 
-vi.mock('../../src/services/artist-service-client', () => ({
-	IArtistServiceClient: mockIArtistServiceClient,
+vi.mock('../../src/services/artist-store', () => ({
+	IArtistStore: mockIArtistStore,
 }))
 
 vi.mock('../../src/services/follow-service-client', () => ({
 	IFollowServiceClient: mockIFollowServiceClient,
 }))
 
-vi.mock('../../src/services/concert-service', () => ({
-	IConcertService: mockIConcertService,
+vi.mock('../../src/services/concert-store', () => ({
+	IConcertStore: mockIConcertStore,
 }))
 
 vi.mock('../../src/services/onboarding-service', () => ({
@@ -145,9 +145,9 @@ describe('DiscoveryRoute', () => {
 		)
 
 		const container = createTestContainer(
-			Registration.instance(mockIArtistServiceClient, mockArtistClient),
+			Registration.instance(mockIArtistStore, mockArtistClient),
 			Registration.instance(mockIFollowServiceClient, mockFollowClient),
-			Registration.instance(mockIConcertService, mockConcert),
+			Registration.instance(mockIConcertStore, mockConcert),
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),

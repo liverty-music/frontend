@@ -190,7 +190,7 @@ describe('concertFrom', () => {
 	})
 
 	it('leaves artistId empty when no artist is resolved (no headliner fallback)', () => {
-		// concert-service is the only production caller and always passes the
+		// concert-store is the only production caller and always passes the
 		// resolved performer as `artist`. Without that resolution the artist
 		// trio (artistId / artistName / artist) all go blank so downstream
 		// dashboard filters do not see an artistId pointing at the headliner
@@ -214,7 +214,7 @@ describe('concertFrom', () => {
 	})
 
 	it('prefers artist.id over performers[0].id when both disagree', () => {
-		// concert-service resolves the followed performer (which may not be
+		// concert-store resolves the followed performer (which may not be
 		// the headliner) and forwards it as `artist`. The mapper must take
 		// that resolved id as the artistId so the entity's artistId /
 		// artistName / artist trio stay internally consistent. Without this

@@ -59,10 +59,10 @@ import { IAnalyticsService } from './lib/analytics/analytics-service'
 import { IConsentService } from './lib/consent/consent-service'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
-import { IArtistServiceClient } from './services/artist-service-client'
+import { IArtistStore } from './services/artist-store'
 import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
-import { IConcertService } from './services/concert-service'
+import { IConcertStore } from './services/concert-store'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { FollowReconcileTask } from './services/follow-reconcile-task'
 import { IFollowServiceClient } from './services/follow-service-client'
@@ -190,9 +190,9 @@ async function bootstrap(): Promise<void> {
 	au.register(IConsentService)
 	au.register(IAnalyticsService)
 	au.register(UserHydrationTask)
-	au.register(IArtistServiceClient)
+	au.register(IArtistStore)
 	au.register(IFollowServiceClient)
-	au.register(IConcertService)
+	au.register(IConcertStore)
 	au.register(IOnboardingService)
 	au.register(IGuestService)
 	// UserStore composes IUserService + IGuestService into a single observable

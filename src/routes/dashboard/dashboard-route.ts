@@ -13,7 +13,7 @@ import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist } from '../../entities/artist'
 import type { JourneyStatus } from '../../entities/concert'
 import { IAuthService } from '../../services/auth-service'
-import { IConcertService } from '../../services/concert-service'
+import { IConcertStore } from '../../services/concert-store'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import { IGuestService } from '../../services/guest-service'
 import {
@@ -45,7 +45,7 @@ export class DashboardRoute {
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
-	private readonly concertService = resolve(IConcertService)
+	private readonly concertService = resolve(IConcertStore)
 	private readonly followService = resolve(IFollowServiceClient)
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly onboarding = resolve(IOnboardingService)

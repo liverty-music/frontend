@@ -20,15 +20,15 @@ import { IGuestService } from './guest-service'
 
 export type { ProtoConcert, ProximityGroup }
 
-export const IConcertService = DI.createInterface<IConcertService>(
-	'IConcertService',
-	(x) => x.singleton(ConcertServiceClient),
+export const IConcertStore = DI.createInterface<IConcertStore>(
+	'IConcertStore',
+	(x) => x.singleton(ConcertStore),
 )
 
-export interface IConcertService extends ConcertServiceClient {}
+export interface IConcertStore extends ConcertStore {}
 
-export class ConcertServiceClient {
-	private readonly logger = resolve(ILogger).scopeTo('ConcertService')
+export class ConcertStore {
+	private readonly logger = resolve(ILogger).scopeTo('ConcertStore')
 	private readonly authService = resolve(IAuthService)
 	private readonly guest = resolve(IGuestService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
@@ -72,7 +72,7 @@ export class ConcertServiceClient {
 		if (
 			this.cachedGroups !== null &&
 			this.cacheTimestamp !== null &&
-			now - this.cacheTimestamp < ConcertServiceClient.CACHE_TTL_MS
+			now - this.cacheTimestamp < ConcertStore.CACHE_TTL_MS
 		) {
 			return this.cachedGroups
 		}

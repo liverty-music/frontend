@@ -1,14 +1,14 @@
 import { vi } from 'vitest'
-import type { IArtistServiceClient } from '../../src/services/artist-service-client'
+import type { IArtistStore } from '../../src/services/artist-store'
 import type { IAuthService } from '../../src/services/auth-service'
-import type { IConcertService } from '../../src/services/concert-service'
+import type { IConcertStore } from '../../src/services/concert-store'
 import type { IFollowServiceClient } from '../../src/services/follow-service-client'
 import type { IUserService } from '../../src/services/user-service'
 
 /**
- * Creates a mock implementation of IConcertService for testing.
+ * Creates a mock implementation of IConcertStore for testing.
  */
-export function createMockConcertService(): Partial<IConcertService> {
+export function createMockConcertService(): Partial<IConcertStore> {
 	return {
 		artistsWithConcerts: new Set<string>(),
 		artistsWithConcertsCount: 0,
@@ -19,9 +19,9 @@ export function createMockConcertService(): Partial<IConcertService> {
 }
 
 /**
- * Creates a mock implementation of IArtistServiceClient for testing.
+ * Creates a mock implementation of IArtistStore for testing.
  */
-export function createMockArtistServiceClient(): Partial<IArtistServiceClient> {
+export function createMockArtistServiceClient(): Partial<IArtistStore> {
 	return {
 		listTop: vi.fn().mockResolvedValue([]),
 		listSimilar: vi.fn().mockResolvedValue([]),
