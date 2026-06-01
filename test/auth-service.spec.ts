@@ -103,10 +103,17 @@ describe('AuthService', () => {
 		expect(userManagerMock.signoutRedirect).toHaveBeenCalled()
 	})
 
-	it('handleCallback calls signinCallback and updates state', async () => {
-		await sut.handleCallback()
+	it('handleCallback calls signinCallback, updates state, and returns the user', async () => {
+		const result = await sut.handleCallback()
 		expect(userManagerMock.signinCallback).toHaveBeenCalled()
 		expect(sut.isAuthenticated).toBe(true)
 		expect(sut.user?.profile.preferred_username).toBe('test-user')
+		expect(result.profile.preferred_username).toBe('test-user')
+	})
+
+	it('handleCallback throws when signinCallback returns no user', async () => {
+		userManagerMock.signinCallback.mockResolvedValue(null)
+
+		await expect(sut.handleCallback()).rejects.toThrow(/no user/)
 	})
 })

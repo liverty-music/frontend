@@ -51,6 +51,11 @@ const mockLocalStorage: ILocalStorage = {
 	removeItem: vi.fn((k: string) => {
 		lsMap.delete(k)
 	}),
+	removeByPrefix: vi.fn((prefix: string) => {
+		for (const k of [...lsMap.keys()]) {
+			if (k.startsWith(prefix)) lsMap.delete(k)
+		}
+	}),
 }
 
 vi.mock('aurelia', async (importOriginal) => {

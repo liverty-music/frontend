@@ -87,7 +87,7 @@ describe('UserServiceClient', () => {
 	})
 
 	describe('ensureLoaded', () => {
-		it('falls back to idempotent Create when no user_id is cached', async () => {
+		it('falls back to idempotent Create when no user_id is cached and reports created=true', async () => {
 			rpc.create.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
@@ -95,11 +95,13 @@ describe('UserServiceClient', () => {
 
 			expect(rpc.get).not.toHaveBeenCalled()
 			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja')
-			expect(result).toBe(stubUser)
+			expect(result.user).toBe(stubUser)
+			// No cached user_id → reached Create on the new-account path.
+			expect(result.created).toBe(true)
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
 		})
 
-		it('returns undefined when no cache AND no email in JWT claims', async () => {
+		it('returns undefined user (created=false) when no cache AND no email in JWT claims', async () => {
 			const svc = build({
 				storage,
 				rpc,
@@ -108,12 +110,13 @@ describe('UserServiceClient', () => {
 
 			const result = await svc.ensureLoaded('ja')
 
-			expect(result).toBeUndefined()
+			expect(result.user).toBeUndefined()
+			expect(result.created).toBe(false)
 			expect(rpc.get).not.toHaveBeenCalled()
 			expect(rpc.create).not.toHaveBeenCalled()
 		})
 
-		it('calls Get with cached user_id and writes the result back to cache', async () => {
+		it('calls Get with cached user_id, writes back to cache, and reports created=false', async () => {
 			storage.map.set(cacheKey, internalID)
 			rpc.get.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
@@ -122,11 +125,13 @@ describe('UserServiceClient', () => {
 
 			expect(rpc.get).toHaveBeenCalledWith(internalID)
 			expect(rpc.create).not.toHaveBeenCalled()
-			expect(result).toBe(stubUser)
+			expect(result.user).toBe(stubUser)
+			// Cache hit → returning account, not new.
+			expect(result.created).toBe(false)
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
 		})
 
-		it('returns the in-memory cached user without re-issuing Get on subsequent calls', async () => {
+		it('returns the in-memory cached user (created=false) without re-issuing Get on subsequent calls', async () => {
 			storage.map.set(cacheKey, internalID)
 			rpc.get.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
@@ -135,7 +140,8 @@ describe('UserServiceClient', () => {
 			const second = await svc.ensureLoaded('ja')
 
 			expect(rpc.get).toHaveBeenCalledTimes(1)
-			expect(second).toBe(stubUser)
+			expect(second.user).toBe(stubUser)
+			expect(second.created).toBe(false)
 		})
 
 		it('self-heals when cached user_id is rejected with PermissionDenied — clears cache and recovers via Create', async () => {
@@ -151,7 +157,7 @@ describe('UserServiceClient', () => {
 			expect(rpc.get).toHaveBeenCalledWith('stale-uuid')
 			expect(storage.impl.removeItem).toHaveBeenCalledWith(cacheKey)
 			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja')
-			expect(result).toBe(stubUser)
+			expect(result.user).toBe(stubUser)
 			// New userId should be cached after Create succeeds
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
 		})
@@ -168,15 +174,30 @@ describe('UserServiceClient', () => {
 	})
 
 	describe('create', () => {
-		it('writes the returned user_id to localStorage on success', async () => {
+		it('writes the returned user_id to localStorage and reports created=true for a fresh-cache identity', async () => {
 			rpc.create.mockResolvedValue(stubUser)
 			const svc = build({ storage, rpc })
 
 			const result = await svc.create('u@test.com', 'ja')
 
-			expect(result).toBe(stubUser)
+			expect(result.user).toBe(stubUser)
+			// No cached user_id before the call → genuinely new account.
+			expect(result.created).toBe(true)
 			expect(rpc.create).toHaveBeenCalledWith('u@test.com', 'ja', undefined)
 			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
+		})
+
+		it('reports created=false when a user_id is already cached (returning identity tapping Sign up)', async () => {
+			// A returning user already has a cached user_id; the idempotent backend
+			// returns their existing row, so this is NOT a new account.
+			storage.map.set(cacheKey, internalID)
+			rpc.create.mockResolvedValue(stubUser)
+			const svc = build({ storage, rpc })
+
+			const result = await svc.create('u@test.com', 'ja')
+
+			expect(result.user).toBe(stubUser)
+			expect(result.created).toBe(false)
 		})
 	})
 

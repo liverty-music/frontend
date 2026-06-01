@@ -1,4 +1,4 @@
-import { DI, ILogger, resolve } from 'aurelia'
+import { DI, IEventAggregator, ILogger, resolve } from 'aurelia'
 import {
 	type User,
 	UserManager,
@@ -6,6 +6,7 @@ import {
 	WebStorageStateStore,
 } from 'oidc-client-ts'
 import { type AppConfig, IAppConfig } from '../config/app-config'
+import { SignedOut } from './events/signed-out'
 
 function createSettings(config: AppConfig): UserManagerSettings {
 	return {
@@ -44,6 +45,7 @@ export interface IAuthService extends AuthService {}
 export class AuthService {
 	private userManager: UserManager
 	private readonly logger = resolve(ILogger).scopeTo('AuthService')
+	private readonly ea = resolve(IEventAggregator)
 	private readyResolve?: () => void
 	public readonly ready: Promise<void>
 
@@ -90,8 +92,11 @@ export class AuthService {
 
 	public async signUp(): Promise<void> {
 		this.logger.info('Starting sign-up flow')
-		// Zitadel supports prompt=create to default to sign-up form
-		// Onboarding vs login detection is handled via onboardingStep in localStorage
+		// Zitadel supports prompt=create to default to sign-up form. No custom
+		// `state` round-trip: the callback no longer keys behavior on the sign-up
+		// FLOW. Guest-follow migration fires on every authenticated callback, and
+		// the post-signup dialog keys on the backend new-account signal — neither
+		// needs an isSignUp flag, so plumbing one through OIDC state would be dead.
 		await this.userManager.signinRedirect({
 			prompt: 'create',
 		})
@@ -99,6 +104,12 @@ export class AuthService {
 
 	public async signOut(): Promise<void> {
 		this.logger.info('Starting sign-out flow')
+		// Publish BEFORE the redirect so every store can self-clear (guest
+		// follows, user-specific caches) while the app is still alive. This is
+		// the single publish point for the two sign-out call sites
+		// (settings-route, auth-status); each store subscribes and clears
+		// idempotently, replacing the old GuestService.clearAll() responsibility.
+		this.ea.publish(new SignedOut())
 		await this.userManager.signoutRedirect()
 	}
 
@@ -106,6 +117,9 @@ export class AuthService {
 		this.logger.info('Processing auth callback')
 		try {
 			const user = await this.userManager.signinCallback()
+			if (!user) {
+				throw new Error('signinCallback returned no user')
+			}
 			this.logger.info('Auth callback processed successfully', {
 				user: user.profile.preferred_username,
 			})
