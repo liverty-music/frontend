@@ -6,8 +6,7 @@ import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
 import { GuestMigrationRequested } from '../../services/events/guest-migration-requested'
 import { IOnboardingService } from '../../services/onboarding-service'
-import { IUserService, type ProvisionResult } from '../../services/user-service'
-import { IUserStore } from '../../services/user-store'
+import { IUserStore, type ProvisionResult } from '../../services/user-store'
 import {
 	isSupportedLanguage,
 	normalizeToSupportedLanguage,
@@ -26,7 +25,6 @@ export class AuthCallbackRoute {
 	public error = ''
 
 	private readonly authService = resolve(IAuthService)
-	private readonly userService = resolve(IUserService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly i18n = resolve(I18N)
@@ -57,8 +55,8 @@ export class AuthCallbackRoute {
 			// not re-migrated).
 			//
 			// migrateGuestFollows needs the internal user_id; ensureUserProvisioned
-			// guarantees `userService.current` is hydrated before we read it.
-			const userId = provisioned?.id ?? this.userService.current?.id
+			// guarantees `userStore.current` is hydrated before we read it.
+			const userId = provisioned?.id ?? this.userStore.current?.id
 			if (userId) {
 				this.ea.publish(new GuestMigrationRequested(userId))
 			} else {
@@ -80,7 +78,7 @@ export class AuthCallbackRoute {
 			// loosened backend validation, schema drift) — i18n.setLocale
 			// would silently fall back to fallbackLng with no bundle,
 			// leaving the UI blank.
-			const preferred = this.userService.current?.preferredLanguage
+			const preferred = this.userStore.current?.preferredLanguage
 			// Normalize getLocale() before comparing — i18next's detector
 			// returns a BCP 47 region tag ('en-US') when navigator.language
 			// is region-tagged AND no prior setLocale call has cached a
@@ -156,7 +154,7 @@ export class AuthCallbackRoute {
 	// record (idempotent Create on the backend ignores `home` for existing
 	// users, so this is also safe for sign-in-as-existing).
 	//
-	// Otherwise UserService.ensureLoaded() handles everything: cache hit →
+	// Otherwise UserStore.ensureLoaded() handles everything: cache hit →
 	// Get, cache miss → idempotent Create using the JWT email.
 	//
 	// Returns the provisioned/loaded user (so the caller has the internal
@@ -193,14 +191,14 @@ export class AuthCallbackRoute {
 			// If "cleanup before first authenticated read" ever becomes a
 			// hard requirement, the right fix is to call the cleanup
 			// imperatively here, not to rely on AppTask.activating.
-			return this.userService.create(
+			return this.userStore.create(
 				email,
 				normalizeToSupportedLanguage(this.i18n.getLocale()),
 				codeToHome(guestHome),
 			)
 		}
 
-		return this.userService.ensureLoaded(
+		return this.userStore.ensureLoaded(
 			normalizeToSupportedLanguage(this.i18n.getLocale()),
 		)
 	}

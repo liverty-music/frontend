@@ -9,12 +9,12 @@ import {
 	SUPPORTED_LANGUAGES,
 } from '../util/change-locale'
 import { IAuthService } from './auth-service'
-import { IUserService } from './user-service'
+import { IUserStore } from './user-store'
 
 /**
  * Runs the authenticated boot sequence:
  *   1. Wait for auth readiness.
- *   2. Hydrate `UserService.current` via `ensureLoaded` (Get or idempotent Create).
+ *   2. Hydrate `UserStore.current` via `ensureLoaded` (Get or idempotent Create).
  *   3. Apply `current.preferredLanguage` to i18n, or backfill it from the
  *      currently effective locale when the row has no preference yet.
  *   4. Remove the legacy `localStorage['language']` key — the DB is the source
@@ -29,7 +29,7 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 
 	if (!auth.isAuthenticated) return
 
-	const userService = container.get(IUserService)
+	const userStore = container.get(IUserStore)
 	const logger = container.get(ILogger).scopeTo('UserHydrationTask')
 	const i18n = container.get(I18N)
 	const localStorage = container.get(ILocalStorage)
@@ -46,7 +46,7 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	const clientLocale = normalizeToSupportedLanguage(i18n.getLocale())
 
 	try {
-		await userService.ensureLoaded(clientLocale)
+		await userStore.ensureLoaded(clientLocale)
 	} catch (err) {
 		logger.warn('Failed to hydrate user profile, continuing without it', {
 			error: err,
@@ -58,7 +58,7 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	// locale. Translation bundles for `ja` and `en` are statically imported
 	// in main.ts, so i18n.setLocale is synchronous from a network standpoint
 	// and is safe to call on the activating-task hot path.
-	const current = userService.current
+	const current = userStore.current
 	if (!current) return
 
 	// Identify the just-loaded user to AnalyticsService. The service
@@ -110,7 +110,7 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 		// comment in constants/storage-keys.ts). Tests in JSDOM access
 		// `sessionStorage` directly in `beforeEach` to control the flag.
 		sessionStorage.setItem(SessionKeys.languageBackfillAttempted, '1')
-		void userService.updatePreferredLanguage(clientLocale).then(
+		void userStore.updatePreferredLanguage(clientLocale).then(
 			() => {
 				localStorage.removeItem(StorageKeys.language)
 				logger.info('Backfilled preferred_language', { lang: clientLocale })

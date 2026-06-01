@@ -1,7 +1,6 @@
 import type { I18N } from '@aurelia/i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { IAuthService } from '../services/auth-service'
-import type { IUserService } from '../services/user-service'
 import type { IUserStore } from '../services/user-store'
 import { changeLocale } from './change-locale'
 
@@ -18,43 +17,32 @@ function makeAuth(isAuthenticated: boolean): IAuthService {
 	return { isAuthenticated } as unknown as IAuthService
 }
 
-function makeUserService(behavior?: {
+function makeUserStore(behavior?: {
 	updatePreferredLanguage?: (lang: string) => Promise<unknown>
-}): IUserService {
+}): IUserStore {
 	return {
 		current: { id: 'u', preferredLanguage: 'ja' },
+		guestLanguage: null,
+		setGuestLanguage: vi.fn(),
 		updatePreferredLanguage: vi.fn(
 			behavior?.updatePreferredLanguage ?? (async () => ({ id: 'u' })),
 		),
-	} as unknown as IUserService
-}
-
-function makeUserStore(): IUserStore {
-	return {
-		guestLanguage: null,
-		setGuestLanguage: vi.fn(),
 	} as unknown as IUserStore
 }
 
 describe('changeLocale', () => {
-	let userStore: IUserStore
-
-	beforeEach(() => {
-		userStore = makeUserStore()
-	})
-
 	describe('validation', () => {
 		it('throws TypeError on unsupported language without touching state', async () => {
 			const i18n = makeI18n()
 			const auth = makeAuth(false)
-			const userService = makeUserService()
+			const userStore = makeUserStore()
 
 			await expect(
-				changeLocale({ i18n, auth, userService, userStore }, 'fr'),
+				changeLocale({ i18n, auth, userStore }, 'fr'),
 			).rejects.toBeInstanceOf(TypeError)
 			expect(i18n.setLocale).not.toHaveBeenCalled()
 			expect(userStore.setGuestLanguage).not.toHaveBeenCalled()
-			expect(userService.updatePreferredLanguage).not.toHaveBeenCalled()
+			expect(userStore.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
 
@@ -62,15 +50,15 @@ describe('changeLocale', () => {
 		it('calls i18n.setLocale and writes through the observable guest source; no RPC', async () => {
 			const i18n = makeI18n()
 			const auth = makeAuth(false)
-			const userService = makeUserService()
+			const userStore = makeUserStore()
 
-			await changeLocale({ i18n, auth, userService, userStore }, 'en')
+			await changeLocale({ i18n, auth, userStore }, 'en')
 
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			// Write through the @observable guest language owner (not raw
 			// localStorage) so UserStore.currentLanguage stays reactive.
 			expect(userStore.setGuestLanguage).toHaveBeenCalledWith('en')
-			expect(userService.updatePreferredLanguage).not.toHaveBeenCalled()
+			expect(userStore.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
 
@@ -83,16 +71,16 @@ describe('changeLocale', () => {
 				},
 			})
 			const auth = makeAuth(true)
-			const userService = makeUserService({
+			const userStore = makeUserStore({
 				updatePreferredLanguage: async () => {
 					callOrder.push('rpc')
 					return { id: 'u' }
 				},
 			})
 
-			await changeLocale({ i18n, auth, userService, userStore }, 'en')
+			await changeLocale({ i18n, auth, userStore }, 'en')
 
-			expect(userService.updatePreferredLanguage).toHaveBeenCalledWith('en')
+			expect(userStore.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			expect(callOrder).toEqual(['rpc', 'setLocale'])
 			expect(userStore.setGuestLanguage).not.toHaveBeenCalled()
@@ -101,14 +89,14 @@ describe('changeLocale', () => {
 		it('rethrows when RPC fails so the caller can surface a Snack', async () => {
 			const i18n = makeI18n()
 			const auth = makeAuth(true)
-			const userService = makeUserService({
+			const userStore = makeUserStore({
 				updatePreferredLanguage: async () => {
 					throw new Error('network')
 				},
 			})
 
 			await expect(
-				changeLocale({ i18n, auth, userService, userStore }, 'en'),
+				changeLocale({ i18n, auth, userStore }, 'en'),
 			).rejects.toThrow('network')
 			expect(i18n.setLocale).not.toHaveBeenCalled()
 			expect(userStore.setGuestLanguage).not.toHaveBeenCalled()

@@ -78,7 +78,6 @@ import { IPwaInstallService } from './services/pwa-install-service'
 import { ITicketEmailService } from './services/ticket-email-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
 import { UserHydrationTask } from './services/user-hydration-task'
-import { IUserService } from './services/user-service'
 import { IUserStore } from './services/user-store'
 import { DateValueConverter } from './value-converters/date'
 
@@ -177,7 +176,6 @@ async function bootstrap(): Promise<void> {
 	au.register(IErrorBoundaryService)
 	au.register(GlobalErrorHandlingTask)
 	au.register(IAuthService)
-	au.register(IUserService)
 	// Consent + analytics registered together immediately after the user
 	// service: AnalyticsService depends on IConsentService for its
 	// identify-gating, and the Batch 3b consent-screen flow will mount
@@ -190,9 +188,11 @@ async function bootstrap(): Promise<void> {
 	au.register(IArtistStore)
 	au.register(IConcertStore)
 	au.register(IOnboardingService)
-	// UserStore owns the guest home/language slice directly (hydrated from the
-	// guest-storage adapter) and composes IUserService for the authenticated
-	// source. Callers read the store instead of branching on auth state.
+	// UserStore is the single owner of the User entity: it owns the guest
+	// home/language slice directly (hydrated from the guest-storage adapter) AND
+	// the authenticated User entity (cache→Get→Create chain + write-through
+	// updates, absorbed from the former UserService). Callers read the store
+	// instead of branching on auth state.
 	au.register(IUserStore)
 	// FollowStore is the single owner of the follow slice: the optimistic
 	// follow/unfollow/setHype facade + @observable projection, the persisted
@@ -203,7 +203,7 @@ async function bootstrap(): Promise<void> {
 	// migrations on boot, keyed on the per-account guest-merge receipt. Same-slot
 	// AppTasks (this and UserHydrationTask) run CONCURRENTLY via Promise.all, NOT
 	// sequentially in registration order, so this task does NOT depend on
-	// UserHydrationTask having populated `UserService.current` first — it calls
+	// UserHydrationTask having populated `UserStore.current` first — it calls
 	// the idempotent `ensureLoaded` itself before reading `current.id`. It also
 	// eagerly resolves IFollowStore so its event subscriptions are live before
 	// any sign-up / sign-out fires.

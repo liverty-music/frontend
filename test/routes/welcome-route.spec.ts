@@ -3,7 +3,7 @@ import { IRouter } from '@aurelia/router'
 import { DI, IEventAggregator, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
-import { createMockI18n } from '../helpers/mock-i18n'
+import type { createMockI18n } from '../helpers/mock-i18n'
 import { createMockRouter } from '../helpers/mock-router'
 
 const mockIAuthService = DI.createInterface('IAuthService')

@@ -4,7 +4,7 @@ import { SessionKeys } from '../constants/storage-keys'
 import { normalizeToSupportedLanguage } from '../util/change-locale'
 import { IAuthService } from './auth-service'
 import { IFollowStore } from './follow-store'
-import { IUserService } from './user-service'
+import { IUserStore } from './user-store'
 
 /**
  * Boot reconciliation of leftover guest follows, keyed on the per-account
@@ -45,7 +45,7 @@ export async function runFollowReconcile(container: IContainer): Promise<void> {
 	// is dissolved.
 	if (followStore.guestFollows.length === 0) return
 
-	const userService = container.get(IUserService)
+	const userStore = container.get(IUserStore)
 
 	// Self-sufficient hydration: same-slot AppTasks (UserHydrationTask and this
 	// task) run CONCURRENTLY via Promise.all (onResolveAll), NOT sequentially in
@@ -59,7 +59,7 @@ export async function runFollowReconcile(container: IContainer): Promise<void> {
 		container.get(I18N).getLocale(),
 	)
 	try {
-		await userService.ensureLoaded(clientLocale)
+		await userStore.ensureLoaded(clientLocale)
 	} catch (err) {
 		logger.warn('Failed to hydrate user for follow reconcile; deferring', {
 			error: err,
@@ -68,7 +68,7 @@ export async function runFollowReconcile(container: IContainer): Promise<void> {
 		return
 	}
 
-	const userId = userService.current?.id
+	const userId = userStore.current?.id
 	if (!userId) {
 		// No user id even after ensureLoaded (e.g. no cached id AND no email in
 		// the JWT claims). Leave the session flag cleared so the next start can

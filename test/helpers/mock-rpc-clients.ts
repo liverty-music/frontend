@@ -3,7 +3,6 @@ import type { IArtistStore } from '../../src/services/artist-store'
 import type { IAuthService } from '../../src/services/auth-service'
 import type { IConcertStore } from '../../src/services/concert-store'
 import type { IFollowStore } from '../../src/services/follow-store'
-import type { IUserService } from '../../src/services/user-service'
 
 /**
  * Creates a mock implementation of IConcertStore for testing.
@@ -62,24 +61,5 @@ export function createMockAuthService(): Partial<IAuthService> {
 		isAuthenticated: false,
 		login: vi.fn().mockResolvedValue(undefined),
 		logout: vi.fn().mockResolvedValue(undefined),
-	}
-}
-
-/**
- * Creates a mock implementation of IUserService for testing.
- *
- * Mirrors the IUserService interface shape. Keep this in sync when
- * IUserService grows new methods so component tests that resolve the
- * full service don't throw TypeError on previously-unmocked call sites.
- */
-export function createMockUserService(): Partial<IUserService> {
-	return {
-		current: undefined,
-		ensureLoaded: vi.fn().mockResolvedValue(undefined),
-		clear: vi.fn(),
-		create: vi.fn().mockResolvedValue(undefined),
-		updateHome: vi.fn().mockResolvedValue(undefined),
-		updatePreferredLanguage: vi.fn().mockResolvedValue(undefined),
-		resendEmailVerification: vi.fn().mockResolvedValue(undefined),
 	}
 }

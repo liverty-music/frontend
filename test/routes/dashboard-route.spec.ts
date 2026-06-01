@@ -12,7 +12,6 @@ const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockITicketJourneyService = DI.createInterface('ITicketJourneyService')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIUserStore = DI.createInterface('IUserStore')
-const mockIUserService = DI.createInterface('IUserService')
 const mockILocalStorage = DI.createInterface('ILocalStorage')
 const mockIHistory = DI.createInterface('IHistory')
 
@@ -40,9 +39,6 @@ vi.mock('../../src/services/onboarding-service', () => ({
 }))
 vi.mock('../../src/services/user-store', () => ({
 	IUserStore: mockIUserStore,
-}))
-vi.mock('../../src/services/user-service', () => ({
-	IUserService: mockIUserService,
 }))
 vi.mock('../../src/adapter/storage/local-storage', () => ({
 	ILocalStorage: mockILocalStorage,
@@ -95,10 +91,12 @@ function makeJourneyService() {
 	}
 }
 
-// UserStore now owns the guest home write path (setGuestHome) the dashboard
-// calls for unauthenticated users.
+// UserStore is the single owner of the User entity (authenticated `current`,
+// read for the needsRegion check) AND the guest home write path (setGuestHome)
+// the dashboard calls for unauthenticated users.
 function makeUserStore() {
 	return {
+		current: undefined as { home: unknown } | undefined,
 		guestHome: null as string | null,
 		setGuestHome: vi.fn(),
 	}
@@ -114,7 +112,9 @@ describe('DashboardRoute', () => {
 	let mockJourney: ReturnType<typeof makeJourneyService>
 	let mockOnboarding: ReturnType<typeof makeOnboarding>
 	let mockUserStore: ReturnType<typeof makeUserStore>
-	let mockUser: { current: { home: unknown } | undefined }
+	// Alias to the merged store so the existing `mockUser.current` assertions
+	// read naturally against the one IUserStore the route now injects.
+	let mockUser: typeof mockUserStore
 	let mockStorage: ReturnType<typeof createMockLocalStorage>
 	let mockHistory: ReturnType<typeof createMockHistory>
 
@@ -126,7 +126,6 @@ describe('DashboardRoute', () => {
 			Registration.instance(mockITicketJourneyService, mockJourney),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIUserStore, mockUserStore),
-			Registration.instance(mockIUserService, mockUser),
 			Registration.instance(mockILocalStorage, mockStorage),
 			Registration.instance(mockIHistory, mockHistory),
 		)
@@ -143,7 +142,7 @@ describe('DashboardRoute', () => {
 		mockJourney = makeJourneyService()
 		mockOnboarding = makeOnboarding()
 		mockUserStore = makeUserStore()
-		mockUser = { current: undefined }
+		mockUser = mockUserStore
 		mockStorage = createMockLocalStorage()
 		mockHistory = createMockHistory()
 		;(

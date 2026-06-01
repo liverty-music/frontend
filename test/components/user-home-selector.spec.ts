@@ -4,16 +4,12 @@ import { createTestContainer } from '../helpers/create-container'
 
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserStore = DI.createInterface('IUserStore')
-const mockIUserService = DI.createInterface('IUserService')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
 }))
 vi.mock('../../src/services/user-store', () => ({
 	IUserStore: mockIUserStore,
-}))
-vi.mock('../../src/services/user-service', () => ({
-	IUserService: mockIUserService,
 }))
 
 const { UserHomeSelector } = await import(
@@ -23,20 +19,27 @@ const { UserHomeSelector } = await import(
 describe('UserHomeSelector', () => {
 	let sut: UserHomeSelector
 	let mockAuth: { isAuthenticated: boolean }
-	let mockUserStore: { setGuestHome: ReturnType<typeof vi.fn> }
-	let mockUser: { updateHome: ReturnType<typeof vi.fn> }
+	let mockUserStore: {
+		setGuestHome: ReturnType<typeof vi.fn>
+		updateHome: ReturnType<typeof vi.fn>
+	}
+	// Alias to the merged store so the existing `mockUser.updateHome`
+	// assertions read naturally against the one IUserStore the selector injects.
+	let mockUser: typeof mockUserStore
 	let onHomeSelected: ReturnType<typeof vi.fn>
 
 	beforeEach(() => {
 		mockAuth = { isAuthenticated: false }
-		mockUserStore = { setGuestHome: vi.fn() }
-		mockUser = { updateHome: vi.fn().mockResolvedValue(undefined) }
+		mockUserStore = {
+			setGuestHome: vi.fn(),
+			updateHome: vi.fn().mockResolvedValue(undefined),
+		}
+		mockUser = mockUserStore
 		onHomeSelected = vi.fn()
 
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIUserStore, mockUserStore),
-			Registration.instance(mockIUserService, mockUser),
 		)
 		container.register(UserHomeSelector)
 		sut = container.get(UserHomeSelector)

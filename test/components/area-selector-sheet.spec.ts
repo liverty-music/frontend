@@ -3,20 +3,18 @@ import { DI, LoggerConfiguration, LogLevel, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UserHomeSelector } from '../../src/components/user-home-selector/user-home-selector'
 import { IAuthService } from '../../src/services/auth-service'
-import { IUserService } from '../../src/services/user-service'
 import { IUserStore } from '../../src/services/user-store'
 import { createMockI18n } from '../helpers/mock-i18n'
-import {
-	createMockAuthService,
-	createMockUserService,
-} from '../helpers/mock-rpc-clients'
+import { createMockAuthService } from '../helpers/mock-rpc-clients'
 
-// UserStore now owns the guest home write path (setGuestHome) that
-// UserHomeSelector calls for unauthenticated users.
+// UserStore is the single owner of the User entity: it owns both the
+// authenticated write path (updateHome) and the guest home write path
+// (setGuestHome) that UserHomeSelector calls depending on auth state.
 function createMockUserStore() {
 	return {
 		guestHome: null,
 		setGuestHome: vi.fn(),
+		updateHome: vi.fn().mockResolvedValue(undefined),
 	}
 }
 
@@ -32,9 +30,6 @@ describe('UserHomeSelector', () => {
 		container.register(Registration.instance(I18N, createMockI18n()))
 		container.register(
 			Registration.instance(IAuthService, createMockAuthService()),
-		)
-		container.register(
-			Registration.instance(IUserService, createMockUserService()),
 		)
 		container.register(
 			Registration.instance(IUserStore, mockUserStore as unknown as IUserStore),

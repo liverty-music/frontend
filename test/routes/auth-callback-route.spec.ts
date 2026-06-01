@@ -6,7 +6,6 @@ import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-
 import { IAuthService } from '../../src/services/auth-service'
 import { GuestMigrationRequested } from '../../src/services/events/guest-migration-requested'
 import { IOnboardingService } from '../../src/services/onboarding-service'
-import { IUserService } from '../../src/services/user-service'
 import { IUserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
@@ -21,45 +20,44 @@ function authUser(email: string | undefined): { profile: { email?: string } } {
 	return { profile: email ? { email } : {} }
 }
 
-function createMockUserService() {
-	const stub = { id: 'u1', externalId: 'ext', email: 'u@test.com', name: 'U' }
-	// Mirrors UserServiceClient's public @observable `current` field shape.
-	// Tests assign to `current` directly to simulate the post-RPC entity
-	// state the production service write-throughs would produce. create /
-	// ensureLoaded resolve a ProvisionResult { user, created }; per-test
-	// overrides set `created` to drive the post-signup-dialog assertions.
-	const svc = {
-		current: stub as unknown as
-			| import('../../src/entities/user').User
-			| undefined,
-		create: vi.fn().mockResolvedValue({ user: stub, created: true }),
-		ensureLoaded: vi.fn().mockResolvedValue({ user: stub, created: false }),
-	}
-	return svc
-}
-
 function createMockOnboarding() {
 	return {
 		complete: vi.fn(),
 	}
 }
 
-// UserStore now owns the guest home slice (read via `guestHome`) and the
-// home/language/help-seen reset (`clearGuest`), absorbing what GuestService +
-// GuestDataMergeService used to provide on this path.
+// UserStore is now the single owner of the User entity AND the guest slice on
+// this path: the auth bootstrap (`current` / `create` / `ensureLoaded`,
+// absorbed from the former UserService) plus the guest home read (`guestHome`)
+// and the home/language/help-seen reset (`clearGuest`). Tests assign to
+// `current` directly to simulate the post-RPC entity state the production
+// store's write-throughs would produce. create / ensureLoaded resolve a
+// ProvisionResult { user, created }; per-test overrides set `created` to drive
+// the post-signup-dialog assertions.
 function createMockUserStore(home: string | null = null) {
+	const stub = { id: 'u1', externalId: 'ext', email: 'u@test.com', name: 'U' }
 	return {
+		current: stub as unknown as
+			| import('../../src/entities/user').User
+			| undefined,
 		guestHome: home,
 		clearGuest: vi.fn(),
+		create: vi.fn().mockResolvedValue({ user: stub, created: true }),
+		ensureLoaded: vi.fn().mockResolvedValue({ user: stub, created: false }),
 	}
 }
 
 describe('AuthCallbackRoute', () => {
 	let sut: AuthCallbackRoute
 	let mockAuth: ReturnType<typeof createMockAuth>
-	let mockUserService: ReturnType<typeof createMockUserService>
-	let mockOnboarding: ReturnType<typeof createMockOnboarding>
+	// UserStore is the single owner of both the User entity bootstrap and the
+	// guest slice on this path. `mockUserService` is kept as an alias to the
+	// same merged store object so the existing entity-bootstrap assertions read
+	// naturally (create / ensureLoaded / current) while still resolving the one
+	// IUserStore the route now injects.
 	let mockUserStore: ReturnType<typeof createMockUserStore>
+	let mockUserService: ReturnType<typeof createMockUserStore>
+	let mockOnboarding: ReturnType<typeof createMockOnboarding>
 	let mockI18n: ReturnType<typeof createMockI18n>
 	let mockEa: {
 		publish: ReturnType<typeof vi.fn>
@@ -68,9 +66,9 @@ describe('AuthCallbackRoute', () => {
 
 	function setup(guestHome: string | null = null) {
 		mockUserStore = createMockUserStore(guestHome)
+		mockUserService = mockUserStore
 		const container = createTestContainer(
 			Registration.instance(IAuthService, mockAuth as IAuthService),
-			Registration.instance(IUserService, mockUserService as IUserService),
 			Registration.instance(
 				IOnboardingService,
 				mockOnboarding as unknown as IOnboardingService,
@@ -94,7 +92,6 @@ describe('AuthCallbackRoute', () => {
 			isAuthenticated: false,
 			ready: Promise.resolve(),
 		})
-		mockUserService = createMockUserService()
 		mockOnboarding = createMockOnboarding()
 		mockEa = { publish: vi.fn(), subscribe: vi.fn() }
 		setup()

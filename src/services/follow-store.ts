@@ -435,7 +435,7 @@ export class FollowStore {
 	 * Remove every per-account guest-merge receipt on sign-out. Cleared by prefix
 	 * because the signed-out user's id is already gone from in-memory + cached
 	 * state by the time `SignedOut` fires (the sign-out call sites run
-	 * `userService.clear()` first). This bounds the receipt's lifetime to a
+	 * `userStore.clear()` first). This bounds the receipt's lifetime to a
 	 * single authenticated session: the within-session no-resurrection guarantee
 	 * stays intact (the receipt still blocks re-migrating reverted state WHILE
 	 * signed in), but a fresh guest session after sign-out can migrate again.
