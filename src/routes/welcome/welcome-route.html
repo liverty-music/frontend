@@ -15,7 +15,8 @@
         class="[ visually-hidden ]"
         name="welcome-lang"
         model.bind="lang"
-        checked.bind="currentLocale"
+        checked.to-view="currentLocale"
+        change.trigger="selectLanguage(lang)"
       >
       <span class="welcome-lang-text">${lang === 'ja' ? '日本語' : 'EN'}</span>
     </label>

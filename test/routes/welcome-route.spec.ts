@@ -71,8 +71,13 @@ describe('WelcomeRoute', () => {
 		listWithProximity: ReturnType<typeof vi.fn>
 		toDateGroups: ReturnType<typeof vi.fn>
 	}
-	let mockUserStore: { clearGuest: ReturnType<typeof vi.fn> }
+	let mockUserStore: {
+		clearGuest: ReturnType<typeof vi.fn>
+		currentLanguage: string
+		setGuestLanguage: ReturnType<typeof vi.fn>
+	}
 	let mockFollowStore: { clearGuest: ReturnType<typeof vi.fn> }
+	let mockI18n: ReturnType<typeof createMockI18n>
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let host: HTMLElement
 
@@ -93,7 +98,16 @@ describe('WelcomeRoute', () => {
 			listWithProximity: vi.fn().mockResolvedValue([]),
 			toDateGroups: vi.fn().mockReturnValue([]),
 		}
-		mockUserStore = { clearGuest: vi.fn() }
+		// The language picker reads its checked state from UserStore's reactive
+		// `currentLanguage` projection (no local @observable mirror) and writes
+		// through `setGuestLanguage` on selection (via changeLocale's guest path).
+		mockUserStore = {
+			clearGuest: vi.fn(),
+			currentLanguage: 'ja',
+			setGuestLanguage: vi.fn((lang: string) => {
+				mockUserStore.currentLanguage = lang
+			}),
+		}
 		mockFollowStore = { clearGuest: vi.fn() }
 		mockRouter = createMockRouter()
 		host = document.createElement('div')
@@ -109,11 +123,14 @@ describe('WelcomeRoute', () => {
 				publish: vi.fn(),
 				subscribe: vi.fn(() => ({ dispose: vi.fn() })),
 			}),
-			Registration.instance(I18N, createMockI18n()),
 			Registration.instance(INode, host),
 		)
 		container.register(WelcomeRoute)
 		sut = container.get(WelcomeRoute)
+		// createTestContainer pre-registers its own I18N mock and the first
+		// instance registration for a key wins in Aurelia DI, so read back the
+		// instance the route actually resolved rather than registering a second.
+		mockI18n = container.get(I18N) as ReturnType<typeof createMockI18n>
 	})
 
 	afterEach(() => {
@@ -178,6 +195,37 @@ describe('WelcomeRoute', () => {
 			expect(mockUserStore.clearGuest.mock.invocationCallOrder[0]).toBeLessThan(
 				mockAuth.signIn.mock.invocationCallOrder[0],
 			)
+		})
+	})
+
+	describe('language picker', () => {
+		it('currentLocale projects UserStore.currentLanguage (no local mirror)', () => {
+			mockUserStore.currentLanguage = 'en'
+			expect(sut.currentLocale).toBe('en')
+
+			// A change to the store's projection is reflected without any local
+			// @observable mirror to keep in sync.
+			mockUserStore.currentLanguage = 'ja'
+			expect(sut.currentLocale).toBe('ja')
+		})
+
+		it('selectLanguage routes the guest locale change through changeLocale → i18n + UserStore', async () => {
+			// Active locale starts at 'ja' (mock i18n default); pick 'en'.
+			await sut.selectLanguage('en')
+
+			expect(mockI18n.setLocale).toHaveBeenCalledWith('en')
+			expect(mockUserStore.setGuestLanguage).toHaveBeenCalledWith('en')
+			// The picker now reflects the new active language through the store
+			// projection, keeping the radio's checked state correct.
+			expect(sut.currentLocale).toBe('en')
+		})
+
+		it('selectLanguage is a no-op when the locale is unchanged', async () => {
+			// Active locale is 'ja'; selecting 'ja' must not re-persist.
+			await sut.selectLanguage('ja')
+
+			expect(mockI18n.setLocale).not.toHaveBeenCalled()
+			expect(mockUserStore.setGuestLanguage).not.toHaveBeenCalled()
 		})
 	})
 

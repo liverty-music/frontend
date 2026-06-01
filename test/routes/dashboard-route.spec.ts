@@ -8,7 +8,7 @@ import { createMockLocalStorage } from '../helpers/mock-local-storage'
 // --- DI tokens (must be created before vi.mock calls) ---
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIConcertStore = DI.createInterface('IConcertStore')
-const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
+const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockITicketJourneyService = DI.createInterface('ITicketJourneyService')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIUserStore = DI.createInterface('IUserStore')
@@ -22,8 +22,8 @@ vi.mock('../../src/services/auth-service', () => ({
 vi.mock('../../src/services/concert-store', () => ({
 	IConcertStore: mockIConcertStore,
 }))
-vi.mock('../../src/services/follow-service-client', () => ({
-	IFollowServiceClient: mockIFollowServiceClient,
+vi.mock('../../src/services/follow-store', () => ({
+	IFollowStore: mockIFollowStore,
 }))
 vi.mock('../../src/services/ticket-journey-service', () => ({
 	ITicketJourneyService: mockITicketJourneyService,
@@ -122,7 +122,7 @@ describe('DashboardRoute', () => {
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIConcertStore, mockConcert),
-			Registration.instance(mockIFollowServiceClient, mockFollow),
+			Registration.instance(mockIFollowStore, mockFollow),
 			Registration.instance(mockITicketJourneyService, mockJourney),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIUserStore, mockUserStore),

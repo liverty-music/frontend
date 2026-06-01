@@ -10,7 +10,7 @@ import {
 } from '../../lib/analytics/analytics-service'
 import { IArtistStore } from '../../services/artist-store'
 import { IConcertStore } from '../../services/concert-store'
-import { IFollowServiceClient } from '../../services/follow-service-client'
+import { IFollowStore } from '../../services/follow-store'
 import {
 	DASHBOARD_CONCERT_TARGET,
 	DASHBOARD_FOLLOW_TARGET,
@@ -24,7 +24,7 @@ import { SearchController } from './search-controller'
 
 export class DiscoveryRoute {
 	private readonly artistClient = resolve(IArtistStore)
-	private readonly followService = resolve(IFollowServiceClient)
+	private readonly followStore = resolve(IFollowStore)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
@@ -42,7 +42,7 @@ export class DiscoveryRoute {
 	public readonly bubbles = new BubbleManager(
 		this.artistClient,
 		resolve(ILogger).scopeTo('BubbleManager'),
-		() => this.followService.followedIds,
+		() => this.followStore.followedIds,
 	)
 
 	public readonly search = new SearchController(
@@ -65,7 +65,7 @@ export class DiscoveryRoute {
 	public readonly genre = new GenreFilterController(
 		this.artistClient,
 		this.bubbles.pool,
-		() => this.followService.followedArtists,
+		() => this.followStore.followedArtists,
 		{
 			onBubblesReloaded: (artists) => this.dnaOrbCanvas.reloadBubbles(artists),
 			onError: (key, params) =>
@@ -80,7 +80,7 @@ export class DiscoveryRoute {
 	}
 
 	public get followedIds(): ReadonlySet<string> {
-		return this.followService.followedIds
+		return this.followStore.followedIds
 	}
 
 	public get isOnboarding(): boolean {
@@ -88,7 +88,7 @@ export class DiscoveryRoute {
 	}
 
 	public get followedCount(): number {
-		return this.followService.followedCount
+		return this.followStore.followedCount
 	}
 
 	public get showDashboardCoachMark(): boolean {
@@ -138,15 +138,15 @@ export class DiscoveryRoute {
 		this.logger.info('Loading discovery page')
 
 		if (this.isOnboarding) {
-			const persisted = this.followService.guestFollows
+			const persisted = this.followStore.guestFollows
 			if (persisted.length > 0) {
-				this.followService.hydrate(persisted.map((f) => f.artist))
+				this.followStore.hydrate(persisted.map((f) => f.artist))
 			}
 		}
 
 		try {
 			await this.bubbles.loadInitialArtists(
-				this.followService.followedArtists,
+				this.followStore.followedArtists,
 				detectCountryFromTimezone(),
 				'',
 			)
@@ -157,7 +157,7 @@ export class DiscoveryRoute {
 
 		// Resume concert search for pre-seeded follows (fire concurrently)
 		if (this.isOnboarding) {
-			for (const f of this.followService.guestFollows) {
+			for (const f of this.followStore.guestFollows) {
 				void this.searchConcertsForArtist(f.artist.id, f.artist.name)
 			}
 			// Sync initial counts — @watch only fires on changes, not on the
@@ -233,7 +233,7 @@ export class DiscoveryRoute {
 		this.genre.clearActiveTag()
 		this.genre.isLoadingTag = true
 		try {
-			await this.bubbles.reset(this.followService.followedArtists)
+			await this.bubbles.reset(this.followStore.followedArtists)
 			if (this.abortController.signal.aborted) return
 			this.dnaOrbCanvas.reloadBubbles(this.poolBubbles)
 		} catch (err) {
@@ -259,7 +259,7 @@ export class DiscoveryRoute {
 
 		// Analytics: bubble-tap simultaneously surfaces the artist on
 		// screen (viewed) and expresses follow intent (follow.requested).
-		// Both fire BEFORE the followService call so the events capture
+		// Both fire BEFORE the followStore call so the events capture
 		// intent regardless of follow outcome — backend
 		// artist.follow.completed (PR #317) is the trust-critical outcome
 		// signal that pairs with follow.requested for the funnel.
@@ -276,7 +276,7 @@ export class DiscoveryRoute {
 		this.bubbles.pool.remove(artistId)
 
 		try {
-			await this.followService.follow(artist)
+			await this.followStore.follow(artist)
 		} catch {
 			// Rollback UI
 			this.bubbles.pool.add([artist])
@@ -335,7 +335,7 @@ export class DiscoveryRoute {
 		})
 
 		// Same intent-capture pattern as the bubble-tap path: both
-		// viewed and follow.requested fire BEFORE the followService call
+		// viewed and follow.requested fire BEFORE the followStore call
 		// so search-driven discovery shows up in the funnel even when
 		// the backend follow eventually fails.
 		this.analytics.capture(Events.ArtistDiscoveryViewed, {
@@ -348,7 +348,7 @@ export class DiscoveryRoute {
 		})
 
 		try {
-			await this.followService.follow(artist)
+			await this.followStore.follow(artist)
 		} catch {
 			return
 		}

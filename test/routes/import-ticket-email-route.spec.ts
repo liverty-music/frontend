@@ -4,14 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 
 const mockIConcertStore = DI.createInterface('IConcertStore')
-const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
+const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockITicketEmailService = DI.createInterface('ITicketEmailService')
 
 vi.mock('../../src/services/concert-store', () => ({
 	IConcertStore: mockIConcertStore,
 }))
-vi.mock('../../src/services/follow-service-client', () => ({
-	IFollowServiceClient: mockIFollowServiceClient,
+vi.mock('../../src/services/follow-store', () => ({
+	IFollowStore: mockIFollowStore,
 }))
 vi.mock('../../src/services/ticket-email-service', () => ({
 	ITicketEmailService: mockITicketEmailService,
@@ -61,7 +61,7 @@ describe('ImportTicketEmailRoute', () => {
 
 		const container = createTestContainer(
 			Registration.instance(mockIConcertStore, mockConcert),
-			Registration.instance(mockIFollowServiceClient, mockFollow),
+			Registration.instance(mockIFollowStore, mockFollow),
 			Registration.instance(mockITicketEmailService, mockTicketEmail),
 		)
 		container.register(ImportTicketEmailRoute)

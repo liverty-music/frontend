@@ -6,7 +6,7 @@ import { HYPE_TIERS } from '../../adapter/view/hype-display'
 import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
-import { IFollowServiceClient } from '../../services/follow-service-client'
+import { IFollowStore } from '../../services/follow-store'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -41,7 +41,7 @@ export class MyArtistsRoute {
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 
-	private readonly followService = resolve(IFollowServiceClient)
+	private readonly followStore = resolve(IFollowStore)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
@@ -74,7 +74,7 @@ export class MyArtistsRoute {
 		this.abortController = new AbortController()
 
 		try {
-			const followed = await this.followService.listFollowed(
+			const followed = await this.followStore.listFollowed(
 				this.abortController.signal,
 			)
 			this.artists = followed.map((fa) => ({
@@ -196,9 +196,9 @@ export class MyArtistsRoute {
 
 		if (!this.isAuthenticated) {
 			// Guest unfollow resolves synchronously (localStorage write, no RPC),
-			// so there is no retry/revert path — followService routes to the guest
+			// so there is no retry/revert path — followStore routes to the guest
 			// queue internally based on auth state.
-			void this.followService.unfollow(artistId)
+			void this.followStore.unfollow(artistId)
 			this.logger.info('Unfollow committed (guest)', {
 				name: artistName,
 			})
@@ -206,7 +206,7 @@ export class MyArtistsRoute {
 		}
 
 		// Fire-and-forget RPC with 1 retry
-		this.followService
+		this.followStore
 			.unfollow(artistId)
 			.then(() => {
 				this.logger.info('Unfollow committed', { name: artistName })
@@ -216,7 +216,7 @@ export class MyArtistsRoute {
 					name: artistName,
 					error: firstErr,
 				})
-				this.followService
+				this.followStore
 					.unfollow(artistId)
 					.then(() => {
 						this.logger.info('Unfollow committed on retry', {
@@ -264,10 +264,10 @@ export class MyArtistsRoute {
 			this.onboarding.setStep(OnboardingStep.CONSENT)
 			// Persist for guest users — merged on signup. The signup banner is
 			// already visible (set in loading() for any guest); no toggle here.
-			// followService routes to the guest queue internally when not
+			// followStore routes to the guest queue internally when not
 			// authenticated (synchronous localStorage write, no RPC).
 			if (!this.isAuthenticated) {
-				void this.followService.setHype(artistId, hype)
+				void this.followStore.setHype(artistId, hype)
 			}
 			return
 		}
@@ -280,17 +280,17 @@ export class MyArtistsRoute {
 
 		// Unauthenticated outside onboarding: persist to guest storage. The signup
 		// banner is already visible from loading(); no host-side toggle needed.
-		// followService routes to the guest queue internally (synchronous write).
+		// followStore routes to the guest queue internally (synchronous write).
 		if (!this.isAuthenticated) {
 			this.prevHypes.set(artistId, hype)
-			void this.followService.setHype(artistId, hype)
+			void this.followStore.setHype(artistId, hype)
 			return
 		}
 
 		// Authenticated: accept and persist
 		this.prevHypes.set(artistId, hype)
 
-		this.followService
+		this.followStore
 			.setHype(artistId, hype)
 			.then(() => {
 				this.logger.info('Hype level updated', { artistId, hype })
@@ -300,7 +300,7 @@ export class MyArtistsRoute {
 					artistId,
 					error: firstErr,
 				})
-				this.followService
+				this.followStore
 					.setHype(artistId, hype)
 					.then(() => {
 						this.logger.info('Hype level updated on retry', {

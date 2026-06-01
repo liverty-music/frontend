@@ -7,12 +7,12 @@ import { createMockRouter } from '../helpers/mock-router'
 import {
 	createMockArtistServiceClient,
 	createMockConcertService,
-	createMockFollowServiceClient,
+	createMockFollowStore,
 } from '../helpers/mock-rpc-clients'
 import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIArtistStore = DI.createInterface('IArtistStore')
-const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
+const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
@@ -25,8 +25,8 @@ vi.mock('../../src/services/artist-store', () => ({
 	IArtistStore: mockIArtistStore,
 }))
 
-vi.mock('../../src/services/follow-service-client', () => ({
-	IFollowServiceClient: mockIFollowServiceClient,
+vi.mock('../../src/services/follow-store', () => ({
+	IFollowStore: mockIFollowStore,
 }))
 
 vi.mock('../../src/services/concert-store', () => ({
@@ -68,7 +68,7 @@ function makeArtist(id: string, name: string): Artist {
 }
 
 function simulateFollow(
-	mock: ReturnType<typeof createMockFollowServiceClient>,
+	mock: ReturnType<typeof createMockFollowStore>,
 	artist: Artist,
 ): void {
 	const artists = mock.followedArtists as Artist[]
@@ -80,7 +80,7 @@ function simulateFollow(
 describe('DiscoveryRoute', () => {
 	let sut: InstanceType<typeof DiscoveryRoute>
 	let mockArtistClient: ReturnType<typeof createMockArtistServiceClient>
-	let mockFollowClient: ReturnType<typeof createMockFollowServiceClient>
+	let mockFollowClient: ReturnType<typeof createMockFollowStore>
 	let mockConcert: ReturnType<typeof createMockConcertService>
 	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockRouter: ReturnType<typeof createMockRouter>
@@ -97,7 +97,7 @@ describe('DiscoveryRoute', () => {
 		vi.useFakeTimers()
 
 		mockArtistClient = createMockArtistServiceClient()
-		mockFollowClient = createMockFollowServiceClient()
+		mockFollowClient = createMockFollowStore()
 		mockConcert = createMockConcertService()
 		mockEa = createMockEventAggregator()
 		mockRouter = createMockRouter()
@@ -119,7 +119,7 @@ describe('DiscoveryRoute', () => {
 
 		const container = createTestContainer(
 			Registration.instance(mockIArtistStore, mockArtistClient),
-			Registration.instance(mockIFollowServiceClient, mockFollowClient),
+			Registration.instance(mockIFollowStore, mockFollowClient),
 			Registration.instance(mockIConcertStore, mockConcert),
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIRouter, mockRouter),
