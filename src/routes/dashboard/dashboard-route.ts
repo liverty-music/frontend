@@ -14,7 +14,7 @@ import type { Artist } from '../../entities/artist'
 import type { JourneyStatus } from '../../entities/concert'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
-import { IFollowServiceClient } from '../../services/follow-service-client'
+import { IFollowStore } from '../../services/follow-store'
 import {
 	IOnboardingService,
 	OnboardingStep,
@@ -46,7 +46,7 @@ export class DashboardRoute {
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 	private readonly concertService = resolve(IConcertStore)
-	private readonly followService = resolve(IFollowServiceClient)
+	private readonly followStore = resolve(IFollowStore)
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly userStore = resolve(IUserStore)
@@ -64,7 +64,7 @@ export class DashboardRoute {
 	}
 
 	public get followedArtists(): Artist[] {
-		return this.followService.followedArtists
+		return this.followStore.followedArtists
 	}
 
 	public get filteredDateGroups(): DateGroup[] {
@@ -168,7 +168,7 @@ export class DashboardRoute {
 		this.logger.info('Loading dashboard events')
 
 		const [artistMap, groups, journeyMap] = await Promise.all([
-			this.followService.getFollowedArtistMap(signal),
+			this.followStore.getFollowedArtistMap(signal),
 			this.concertService.listByFollower(signal),
 			this.fetchJourneyMap(signal),
 		])

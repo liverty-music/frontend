@@ -65,7 +65,6 @@ import { IAuthService } from './services/auth-service'
 import { IConcertStore } from './services/concert-store'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { FollowReconcileTask } from './services/follow-reconcile-task'
-import { IFollowServiceClient } from './services/follow-service-client'
 import { IFollowStore } from './services/follow-store'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
 import { INotificationManager } from './services/notification-manager'
@@ -189,17 +188,16 @@ async function bootstrap(): Promise<void> {
 	au.register(IAnalyticsService)
 	au.register(UserHydrationTask)
 	au.register(IArtistStore)
-	au.register(IFollowServiceClient)
 	au.register(IConcertStore)
 	au.register(IOnboardingService)
 	// UserStore owns the guest home/language slice directly (hydrated from the
 	// guest-storage adapter) and composes IUserService for the authenticated
 	// source. Callers read the store instead of branching on auth state.
 	au.register(IUserStore)
-	// FollowStore owns the follow slice's auth-boundary transitions
-	// (GuestMigrationRequested → migrate, SignedOut → self-clear + cache eviction)
-	// by composing IFollowServiceClient, which owns the persisted guest follow
-	// queue. Registered after IFollowServiceClient so its singleton can resolve it.
+	// FollowStore is the single owner of the follow slice: the optimistic
+	// follow/unfollow/setHype facade + @observable projection, the persisted
+	// guest follow queue, and the auth-boundary transitions
+	// (GuestMigrationRequested → migrate, SignedOut → self-clear + cache eviction).
 	au.register(IFollowStore)
 	// FollowReconcileTask is an activating AppTask that heals partial follow
 	// migrations on boot, keyed on the per-account guest-merge receipt. Same-slot

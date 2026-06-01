@@ -1,5 +1,6 @@
-import { DI, IEventAggregator, ILogger, resolve } from 'aurelia'
+import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import { IFollowRpcClient } from '../adapter/rpc/client/follow-client'
+import { loadFollows, saveFollows } from '../adapter/storage/guest-storage'
 import { ILocalStorage } from '../adapter/storage/local-storage'
 import {
 	GUEST_MERGED_RECEIPT_PREFIX,
@@ -10,10 +11,12 @@ import {
 	DEFAULT_HYPE,
 	type FollowedArtist,
 	type Hype,
+	hasFollow,
 } from '../entities/follow'
+import { IAuthService } from './auth-service'
+import { IConcertStore } from './concert-store'
 import { GuestMigrationRequested } from './events/guest-migration-requested'
 import { SignedOut } from './events/signed-out'
-import { IFollowServiceClient } from './follow-service-client'
 
 export const IFollowStore = DI.createInterface<IFollowStore>(
 	'IFollowStore',
@@ -27,30 +30,49 @@ export interface IFollowStore extends FollowStore {}
  * authenticated (backend) sources INTERNALLY so callers never branch on
  * `auth.isAuthenticated`.
  *
- * Phase 2 of the entity-store layer. It COMPOSES the existing
- * `IFollowServiceClient` (which owns the optimistic follow/unfollow/setHype
- * facade, its `followedArtists` projection cache, the guest-vs-authed
- * branching, AND the persisted guest follow queue) as a thin delegate. On top
- * of that delegate FollowStore adds the auth-boundary responsibilities that
- * used to live in `GuestDataMergeService`:
+ * Single owner of the follow slice. It owns:
  *
- *   - `GuestMigrationRequested` → migrate the guest follow queue + hype to the
- *     backend with idempotent calls, draining each artist from the guest queue once it FULLY
- *     migrates (Follow + any non-default SetHype → only not-fully-migrated items
- *     survive) in a single batched localStorage write, then write the
- *     per-account guest-merge receipt.
- *   - `SignedOut` → clear the guest follow state AND evict the followed-artist
- *     projection cache so a next visitor on a shared browser sees nothing.
+ *   - the optimistic follow/unfollow/setHype/listFollowed facade and its
+ *     `@observable followedArtists` projection,
+ *   - the guest-vs-authed branching (guest persists to localStorage via the
+ *     `guest-storage` adapter with NO RPC; authed calls `IFollowRpcClient`),
+ *   - the persisted guest follow queue (push/splice in place for Aurelia array
+ *     observation; hype stored inline in each `FollowedArtist`),
+ *   - the auth-boundary responsibilities that used to live in
+ *     `GuestDataMergeService`:
+ *
+ *       - `GuestMigrationRequested` → migrate the guest follow queue + hype to
+ *         the backend with idempotent calls, draining each artist from the guest
+ *         queue once it FULLY migrates (Follow + any non-default SetHype → only
+ *         not-fully-migrated items survive) in a single batched localStorage
+ *         write, then write the per-account guest-merge receipt.
+ *       - `SignedOut` → clear the guest follow state AND evict the
+ *         followed-artist projection so a next visitor on a shared browser sees
+ *         nothing.
  *
  * `migrateGuestFollows` is also reused by the boot-reconcile task to heal a
  * crash/network partial migration on the next authenticated start.
+ *
+ * NOTE: `ConcertStore` reads the guest follow queue directly from the
+ * `guest-storage` adapter (`loadFollows`) to avoid a DI cycle with this store,
+ * and must keep doing so.
  */
 export class FollowStore {
 	private readonly logger = resolve(ILogger).scopeTo('FollowStore')
-	private readonly delegate = resolve(IFollowServiceClient)
+	private readonly authService = resolve(IAuthService)
 	private readonly rpcClient = resolve(IFollowRpcClient)
+	private readonly concertStore = resolve(IConcertStore)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly ea = resolve(IEventAggregator)
+
+	@observable public followedArtists: Artist[] = []
+
+	/**
+	 * Guest (unauthenticated) follow queue, hydrated from localStorage on
+	 * construction. Mutated in place (push/splice) so Aurelia array observation
+	 * still sees the change.
+	 */
+	private readonly guestFollowsState: FollowedArtist[] = loadFollows()
 
 	constructor() {
 		// GuestMigrationRequested fires on every successful authenticated callback
@@ -77,66 +99,129 @@ export class FollowStore {
 		})
 	}
 
-	/** Observable follow projection — delegates to the composed facade. */
-	public get followedArtists(): Artist[] {
-		return this.delegate.followedArtists
-	}
-
 	public get followedIds(): ReadonlySet<string> {
-		return this.delegate.followedIds
+		return new Set(this.followedArtists.map((a) => a.id))
 	}
 
 	public get followedCount(): number {
-		return this.delegate.followedCount
+		return this.followedArtists.length
 	}
 
 	/**
-	 * The persisted guest follow queue. Exposed for the boot reconcile task,
-	 * which checks for leftover guest follows to heal a partial migration.
-	 * Resolves through the delegate, the owner of the localStorage-backed queue.
+	 * The persisted guest follow queue. Read by the migration drain and the boot
+	 * reconcile task. The array is mutated in place so this is a live reference,
+	 * not a snapshot.
 	 */
 	public get guestFollows(): readonly FollowedArtist[] {
-		return this.delegate.guestFollows
+		return this.guestFollowsState
 	}
 
 	/**
 	 * Hydrate the observable follow projection from persisted guest follows
-	 * (onboarding page-load). Thin delegate.
+	 * (onboarding page-load).
 	 */
 	public hydrate(artists: Artist[]): void {
-		this.delegate.hydrate(artists)
+		this.followedArtists = [...artists]
 	}
 
 	/**
-	 * Follow an artist. Routes to guest storage or the backend RPC internally —
-	 * callers do not branch on auth state.
+	 * Follow an artist with optimistic UI update.
+	 * Guest users persist to localStorage. Authenticated users call the backend
+	 * RPC with rollback on failure.
 	 */
-	public follow(artist: Artist): Promise<void> {
-		return this.delegate.follow(artist)
-	}
+	public async follow(artist: Artist): Promise<void> {
+		if (this.followedIds.has(artist.id)) return
+		this.logger.info('Following artist', { artist: artist.name })
 
-	/** Unfollow an artist (guest or authed, resolved internally). */
-	public unfollow(artistId: string): Promise<void> {
-		return this.delegate.unfollow(artistId)
-	}
+		// Optimistic update
+		const prev = this.followedArtists
+		this.followedArtists = [...prev, artist]
 
-	/** List followed artists (guest or authed, resolved internally). */
-	public listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
-		return this.delegate.listFollowed(signal)
-	}
+		if (!this.authService.isAuthenticated) {
+			this.followGuest(artist)
+			this.logger.info('Artist followed (guest)', {
+				followed: this.followedCount,
+			})
+			return
+		}
 
-	/** Set the hype level for a followed artist. */
-	public setHype(artistId: string, hype: Hype): Promise<void> {
-		return this.delegate.setHype(artistId, hype)
+		try {
+			await this.rpcClient.follow(artist.id)
+			this.concertStore.invalidateFollowerCache()
+			this.logger.info('Artist followed', {
+				followed: this.followedCount,
+			})
+		} catch (err) {
+			// Rollback
+			this.followedArtists = prev
+			this.logger.error('Failed to follow artist', {
+				artist: artist.name,
+				error: err,
+			})
+			throw err
+		}
 	}
 
 	/**
-	 * Build a lookup map of followed artists keyed by artist id (delegate).
+	 * Unfollow an artist. Unauthenticated users write to guest storage.
+	 * Authenticated users call the backend RPC.
 	 */
-	public getFollowedArtistMap(
+	public async unfollow(artistId: string): Promise<void> {
+		if (!this.authService.isAuthenticated) {
+			this.unfollowGuest(artistId)
+			this.followedArtists = this.followedArtists.filter(
+				(a) => a.id !== artistId,
+			)
+			return
+		}
+		await this.rpcClient.unfollow(artistId)
+		this.concertStore.invalidateFollowerCache()
+		this.followedArtists = this.followedArtists.filter((a) => a.id !== artistId)
+	}
+
+	/**
+	 * List followed artists. Unauthenticated users read from guest storage.
+	 * Authenticated users call the backend ListFollowed RPC.
+	 */
+	public async listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
+		let result: FollowedArtist[]
+		if (!this.authService.isAuthenticated) {
+			result = [...this.guestFollowsState]
+		} else {
+			result = await this.rpcClient.listFollowed(signal)
+		}
+		this.followedArtists = result.map((f) => f.artist)
+		return result
+	}
+
+	/**
+	 * Set the hype level for a followed artist. Unauthenticated users persist to
+	 * guest storage; authenticated users call the backend RPC.
+	 */
+	public async setHype(artistId: string, hype: Hype): Promise<void> {
+		if (!this.authService.isAuthenticated) {
+			this.setHypeGuest(artistId, hype)
+			return
+		}
+		await this.rpcClient.setHype(artistId, hype)
+	}
+
+	/**
+	 * Build a lookup map of followed artists keyed by artist ID.
+	 * Used by dashboard-route to enrich concert data with artist info and hype levels.
+	 */
+	public async getFollowedArtistMap(
 		signal?: AbortSignal,
 	): Promise<Map<string, { artist: Artist; hype: Hype }>> {
-		return this.delegate.getFollowedArtistMap(signal)
+		const followed = await this.listFollowed(signal)
+		const map = new Map<string, { artist: Artist; hype: Hype }>()
+		for (const fa of followed) {
+			const id = fa.artist.id
+			if (id) {
+				map.set(id, { artist: fa.artist, hype: fa.hype })
+			}
+		}
+		return map
 	}
 
 	/**
@@ -163,7 +248,7 @@ export class FollowStore {
 	 */
 	public async migrateGuestFollows(userId: string): Promise<void> {
 		// Snapshot the queue up-front; the drain is applied once at the end.
-		const queue = [...this.delegate.guestFollows]
+		const queue = [...this.guestFollowsState]
 		if (queue.length === 0) {
 			// Nothing to migrate, but still record that this account has been
 			// reconciled so a later residual-queue reconcile clears without
@@ -218,7 +303,7 @@ export class FollowStore {
 		}
 
 		// Single batched drain: remove only the fully-migrated items, one write.
-		this.delegate.removeGuestFollows(migratedIds)
+		this.removeGuestFollows(migratedIds)
 
 		// Write the receipt only when every item fully migrated — a residual queue
 		// means genuine failures remain, and the next reconcile should retry them
@@ -229,46 +314,112 @@ export class FollowStore {
 		} else {
 			this.logger.warn(
 				'Guest follow migration left failed items; receipt deferred to reconcile',
-				{ userId, remaining: this.delegate.guestFollows.length },
+				{ userId, remaining: this.guestFollowsState.length },
 			)
 		}
 	}
 
 	/**
-	 * Clear the guest follow state AND evict the followed-artist projection
-	 * cache. Idempotent and order-independent — safe to call on `SignedOut`
-	 * regardless of other stores' clear order. Preserves the privacy guarantee
-	 * of the old `GuestService.clearAll()` sign-out path: a next visitor on a
-	 * shared browser sees no follows.
+	 * Clear the guest follow state AND evict the followed-artist projection.
+	 * Idempotent and order-independent — safe to call on `SignedOut` regardless
+	 * of other stores' clear order. Preserves the privacy guarantee of the old
+	 * `GuestService.clearAll()` sign-out path: a next visitor on a shared browser
+	 * sees no follows.
 	 */
 	public clear(): void {
-		this.delegate.clearGuestFollows()
-		// Route the projection eviction through the delegate's own method so any
-		// cache invalidation tied to the @observable owner runs, rather than a
-		// cross-object write that bypasses it.
-		this.delegate.clear()
+		this.clearGuestFollows()
+		this.followedArtists = []
 		this.logger.info('Follow state cleared')
 	}
 
 	/**
 	 * Reset the guest follow slice for a fresh tutorial start (welcome route).
 	 * Same effect as the sign-out `clear()` — drops the guest follow queue and
-	 * evicts the projection cache. Named separately so the welcome reset
-	 * coordinator reads as a deliberate guest-state reset rather than a sign-out
-	 * side effect.
+	 * evicts the projection. Named separately so the welcome reset coordinator
+	 * reads as a deliberate guest-state reset rather than a sign-out side effect.
 	 */
 	public clearGuest(): void {
 		this.clear()
 	}
 
+	// --- Guest follow queue (localStorage-backed) ---
+
 	/**
-	 * Drain the residual guest follow queue WITHOUT touching the projection
-	 * cache. Used by the boot reconcile task when the per-account receipt is
-	 * already present (a prior clear failed): the stale queue is cleared without
-	 * re-migrating so reverted state is not resurrected.
+	 * Follow an artist in the guest queue. No-op if already followed.
+	 */
+	private followGuest(artist: Artist): void {
+		if (hasFollow(this.guestFollowsState, artist.id)) return
+		this.guestFollowsState.push({ artist, hype: DEFAULT_HYPE })
+		this.persistGuestFollows()
+		this.logger.info('Local artist followed', {
+			id: artist.id,
+			name: artist.name,
+		})
+	}
+
+	/**
+	 * Unfollow an artist from the guest queue.
+	 */
+	private unfollowGuest(id: string): void {
+		const idx = this.guestFollowsState.findIndex((f) => f.artist.id === id)
+		if (idx >= 0) {
+			this.guestFollowsState.splice(idx, 1)
+			this.persistGuestFollows()
+			this.logger.info('Local artist unfollowed', { id })
+		}
+	}
+
+	/**
+	 * Set the hype level for a guest-followed artist (persisted to localStorage).
+	 */
+	private setHypeGuest(artistId: string, hype: Hype): void {
+		const entry = this.guestFollowsState.find((f) => f.artist.id === artistId)
+		if (entry) {
+			entry.hype = hype
+			this.persistGuestFollows()
+			this.logger.info('Local hype set', { artistId, hype })
+		}
+	}
+
+	/**
+	 * Remove a batch of followed artists from the guest queue in a SINGLE
+	 * localStorage write. Used by the migration drain: persisting once per artist
+	 * would be an O(n^2) byte cost (full JSON.stringify + setItem per item) on the
+	 * latency-sensitive post-signup path. This drains in memory and persists once.
+	 * Per-item correctness is preserved: callers pass ONLY the ids that fully
+	 * migrated, so failed items remain in the queue for boot reconciliation to
+	 * retry. No-op for ids absent from the queue.
+	 */
+	public removeGuestFollows(ids: readonly string[]): void {
+		if (ids.length === 0) return
+		const remove = new Set(ids)
+		const before = this.guestFollowsState.length
+		// Mutate in place (filter into a fresh array, then splice-replace) so
+		// Aurelia's array observation still sees the change.
+		const remaining = this.guestFollowsState.filter(
+			(f) => !remove.has(f.artist.id),
+		)
+		if (remaining.length === before) return
+		this.guestFollowsState.splice(
+			0,
+			this.guestFollowsState.length,
+			...remaining,
+		)
+		this.persistGuestFollows()
+	}
+
+	/**
+	 * Clear the guest follow queue (in-memory + persisted). Used by the
+	 * `SignedOut` self-clear and the boot reconcile task. Idempotent — a no-op on
+	 * an already-empty queue.
 	 */
 	public clearGuestFollows(): void {
-		this.delegate.clearGuestFollows()
+		this.guestFollowsState.splice(0)
+		this.persistGuestFollows()
+	}
+
+	private persistGuestFollows(): void {
+		saveFollows(this.guestFollowsState)
 	}
 
 	/** Whether the per-account guest-merge receipt exists. */

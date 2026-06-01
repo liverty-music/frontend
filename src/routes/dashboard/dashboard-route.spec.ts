@@ -12,7 +12,7 @@ const mockConcertService = {
 	listByFollower: vi.fn(async () => []),
 	toDateGroups: vi.fn(() => []),
 }
-const mockFollowService = {
+const mockFollowStore = {
 	followedArtists: [],
 	getFollowedArtistMap: vi.fn(async () => new Map()),
 }
@@ -42,7 +42,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				ILogger: mockLogger,
 				IAuthService: mockAuth,
 				IConcertStore: mockConcertService,
-				IFollowServiceClient: mockFollowService,
+				IFollowStore: mockFollowStore,
 				ITicketJourneyService: mockJourneyService,
 				IOnboardingService: mockOnboarding,
 				IUserStore: mockUserStore,

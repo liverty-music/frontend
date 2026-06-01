@@ -5,7 +5,7 @@ import { TicketJourneyStatus } from '@buf/liverty-music_schema.bufbuild_es/liver
 import { ILogger, resolve } from 'aurelia'
 import type { FollowedArtist } from '../../entities/follow'
 import { IConcertStore } from '../../services/concert-store'
-import { IFollowServiceClient } from '../../services/follow-service-client'
+import { IFollowStore } from '../../services/follow-store'
 import {
 	type EmailType,
 	ITicketEmailService,
@@ -54,7 +54,7 @@ export class ImportTicketEmailRoute {
 	public createdEmails: TicketEmail[] = []
 
 	private readonly logger = resolve(ILogger).scopeTo('ImportTicketEmail')
-	private readonly followService = resolve(IFollowServiceClient)
+	private readonly followStore = resolve(IFollowStore)
 	private readonly concertService = resolve(IConcertStore)
 	private readonly ticketEmailService = resolve(ITicketEmailService)
 	private abortController: AbortController | null = null
@@ -80,7 +80,7 @@ export class ImportTicketEmailRoute {
 
 		// Load followed artists for matching.
 		try {
-			this.followedArtists = await this.followService.listFollowed(
+			this.followedArtists = await this.followStore.listFollowed(
 				this.abortController.signal,
 			)
 		} catch (err) {

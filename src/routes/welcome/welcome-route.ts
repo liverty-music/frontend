@@ -4,7 +4,7 @@ import {
 	type IRouteViewModel,
 	type NavigationInstruction,
 } from '@aurelia/router'
-import { IEventAggregator, ILogger, INode, observable, resolve } from 'aurelia'
+import { IEventAggregator, ILogger, INode, resolve } from 'aurelia'
 import { Snack } from '../../components/snack-bar/snack'
 import {
 	getPreviewArtistIds,
@@ -39,15 +39,25 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly host = resolve(INode) as HTMLElement
 
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
-	@observable public currentLocale: string = ''
 
 	/** Preview concert data for the read-only dashboard on the welcome page. */
 	public dateGroups: DateGroup[] = []
 
 	private abortController: AbortController | null = null
 
+	/**
+	 * Active UI language for the language picker's `checked.bind`, projected from
+	 * UserStore (the @observable owner of the guest language slice) rather than a
+	 * local mirror field. Welcome is anonymous-only, so `currentLanguage` resolves
+	 * to `guestLanguage ?? i18nLocale`. Bound one-way; the radio's
+	 * `change.trigger` routes the selection through `selectLanguage` so the single
+	 * source of truth stays in UserStore.
+	 */
+	public get currentLocale(): string {
+		return this.userStore.currentLanguage
+	}
+
 	public attached(): void {
-		this.currentLocale = this.i18n.getLocale()
 		void this.loadPreviewData()
 	}
 
@@ -140,7 +150,14 @@ export class WelcomeRoute implements IRouteViewModel {
 		}
 	}
 
-	public async currentLocaleChanged(newLocale: string): Promise<void> {
+	/**
+	 * Apply a language picked from the radio group. Driven by the radio's
+	 * `change.trigger` (one-way `checked.bind` reads the projection from
+	 * UserStore, this writes through it) rather than a standalone @observable
+	 * mirror. Routes through the shared `changeLocale`, which on the
+	 * unauthenticated path applies `i18n.setLocale` then `userStore.setGuestLanguage`.
+	 */
+	public async selectLanguage(newLocale: string): Promise<void> {
 		if (!newLocale || newLocale === this.i18n.getLocale()) return
 		// Welcome is anonymous-only — canLoad redirects authenticated
 		// callers to /dashboard before this code runs, so

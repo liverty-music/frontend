@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import type { IArtistStore } from '../../src/services/artist-store'
 import type { IAuthService } from '../../src/services/auth-service'
 import type { IConcertStore } from '../../src/services/concert-store'
-import type { IFollowServiceClient } from '../../src/services/follow-service-client'
+import type { IFollowStore } from '../../src/services/follow-store'
 import type { IUserService } from '../../src/services/user-service'
 
 /**
@@ -34,9 +34,9 @@ export function createMockArtistServiceClient(): Partial<IArtistStore> {
 }
 
 /**
- * Creates a mock implementation of IFollowServiceClient for testing.
+ * Creates a mock implementation of IFollowStore for testing.
  */
-export function createMockFollowServiceClient(): Partial<IFollowServiceClient> {
+export function createMockFollowStore(): Partial<IFollowStore> {
 	return {
 		followedArtists: [],
 		followedIds: new Set<string>(),

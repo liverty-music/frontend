@@ -3,12 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Snack } from '../../src/components/snack-bar/snack'
 import { createTestContainer } from '../helpers/create-container'
 
-const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
+const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIAuthService = DI.createInterface('IAuthService')
-vi.mock('../../src/services/follow-service-client', () => ({
-	IFollowServiceClient: mockIFollowServiceClient,
+vi.mock('../../src/services/follow-store', () => ({
+	IFollowStore: mockIFollowStore,
 }))
 
 vi.mock('@aurelia/router', () => ({
@@ -81,7 +81,7 @@ describe('MyArtistsRoute', () => {
 		}
 
 		const container = createTestContainer(
-			Registration.instance(mockIFollowServiceClient, mockFollowService),
+			Registration.instance(mockIFollowStore, mockFollowService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIAuthService, mockAuth),
@@ -193,7 +193,7 @@ describe('MyArtistsRoute', () => {
 				deactivateSpotlight: vi.fn(),
 			}
 			const container = createTestContainer(
-				Registration.instance(mockIFollowServiceClient, mockFollowService),
+				Registration.instance(mockIFollowStore, mockFollowService),
 				Registration.instance(mockIRouter, mockRouter),
 				Registration.instance(mockIOnboardingService, mockOnboarding),
 				Registration.instance(mockIAuthService, mockAuth),
@@ -282,7 +282,7 @@ describe('MyArtistsRoute', () => {
 				}
 
 				const container = createTestContainer(
-					Registration.instance(mockIFollowServiceClient, mockFollowService),
+					Registration.instance(mockIFollowStore, mockFollowService),
 					Registration.instance(mockIRouter, mockRouter),
 					Registration.instance(mockIOnboardingService, onboardingOnboarding),
 					Registration.instance(mockIAuthService, mockAuth),
