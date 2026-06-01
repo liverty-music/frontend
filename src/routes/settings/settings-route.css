@@ -148,13 +148,87 @@
 
 		.settings-toggle-col {
 			display: flex;
+			flex: 1;
 			flex-direction: column;
 			gap: var(--space-3xs);
 			align-items: flex-start;
+
+			/* Allow the text column to wrap instead of starving the track. */
+			min-inline-size: 0;
+		}
+
+		/* Toggle rows align their control to the first line of the label
+		   rather than the vertical centre of multi-line content. */
+		.settings-row-toggle {
+			align-items: flex-start;
+		}
+
+		/* Disclosure control wrapping the label + collapsible description.
+		   A sibling of `.settings-switch` — never a parent of it. */
+		.settings-expand {
+			display: flex;
+			flex: 1;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			align-items: flex-start;
+
+			min-inline-size: 0;
+			padding: 0;
+
+			text-align: start;
+			cursor: pointer;
+
+			background: transparent;
+			border: 0;
+		}
+
+		.settings-expand-caret {
+			inline-size: 1rem;
+			block-size: 1rem;
+			color: var(--color-text-muted);
+
+			transition: transform 200ms;
+
+			&[data-expanded="true"] {
+				transform: rotate(90deg);
+			}
+		}
+
+		/* Switch control. Min block size lifts the tap target to 44px even
+		   though the visible track is 1.5rem tall. */
+		.settings-switch {
+			display: flex;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: center;
+
+			min-block-size: 2.75rem;
+			padding-inline: var(--space-2xs);
+
+			cursor: pointer;
+
+			background: transparent;
+			border: 0;
+		}
+
+		/* Collapsible toggle description. Decoupled from `.settings-row-hint`'s
+		   icon-alignment indent so it can use the full column width. */
+		.settings-toggle-desc {
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-muted);
+
+			text-wrap: pretty;
 		}
 
 		.settings-toggle-track {
 			position: relative;
+
+			/* Never let the fixed-size control collapse when it competes for
+			   inline space with a long adjacent description in the same flex
+			   row — without this the track shrinks and the absolutely-positioned
+			   thumb overflows past the track and the card edge. */
+			flex-shrink: 0;
 
 			inline-size: 2.75rem;
 			block-size: 1.5rem;
@@ -233,6 +307,94 @@
 			font-size: var(--step--1);
 			font-weight: 600;
 			color: var(--_signout-color);
+		}
+
+		/* Guest sign-in hero. Brand-tinted to stand apart from the plain
+		   raised list cards — this is the primary action for a guest. */
+		.settings-guest-hero {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+
+			padding: var(--space-m) var(--space-s);
+			border: 1px solid oklch(from var(--color-brand-primary) l c h / 30%);
+			border-radius: var(--radius-card);
+
+			background: oklch(from var(--color-brand-primary) l c h / 12%);
+		}
+
+		.settings-guest-hero-heading {
+			font-family: var(--font-display);
+			font-size: var(--step-1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.settings-guest-hero-body {
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-secondary);
+
+			text-wrap: pretty;
+		}
+
+		.settings-guest-hero-actions {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+
+			margin-block-start: var(--space-2xs);
+		}
+
+		/* Filled primary — mirrors the consent screen's primary button. */
+		.settings-guest-hero-primary {
+			min-block-size: 2.75rem;
+			padding: var(--space-xs) var(--space-m);
+			border: 0;
+			border-radius: var(--radius-button);
+
+			font-weight: 600;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+			box-shadow: var(--shadow-button);
+
+			cursor: pointer;
+			transition:
+				background 200ms,
+				transform 200ms;
+
+			&:hover {
+				background: var(--color-brand-secondary);
+			}
+
+			&:active {
+				transform: scale(0.98);
+			}
+		}
+
+		/* Ghost secondary — subordinate to the filled primary. */
+		.settings-guest-hero-secondary {
+			min-block-size: 2.75rem;
+			padding: var(--space-2xs) var(--space-m);
+			border: 0;
+			border-radius: var(--radius-button);
+
+			font-weight: 600;
+			color: var(--color-brand-primary);
+
+			background: transparent;
+
+			cursor: pointer;
+			transition: background 200ms;
+
+			&:hover {
+				background: color-mix(
+					in oklch,
+					var(--color-brand-primary) 12%,
+					transparent
+				);
+			}
 		}
 
 		/* Language selector content (inside bottom-sheet) */

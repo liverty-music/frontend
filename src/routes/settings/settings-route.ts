@@ -54,8 +54,33 @@ export class SettingsRoute {
 	public analyticsConsent = false
 	public marketingConsent = false
 
+	/**
+	 * Per-row disclosure state for the Privacy & Analytics consent
+	 * descriptions. The description is hidden until the user expands it,
+	 * keeping each card compact while the full rationale stays one tap away.
+	 * Kept separate from the switch value so the disclosure and the switch
+	 * remain independent sibling controls (accessible: a `role="switch"`
+	 * button never nests another interactive element).
+	 */
+	public analyticsDescExpanded = false
+	public marketingDescExpanded = false
+
 	public isResendingVerification = false
 	public resendSuccess = false
+
+	/**
+	 * Whether the running platform is iOS/iPadOS. Used to gate the
+	 * sound-effects hint, which describes iOS-only silent-switch behaviour
+	 * and is noise on Android/desktop. Mirrors the detection in
+	 * `pwa-install-service`; defaults to false when uncertain so non-iOS
+	 * never sees the iOS-specific copy.
+	 */
+	public get isIOS(): boolean {
+		const ua = navigator.userAgent
+		if (/iphone|ipad|ipod/i.test(ua)) return true
+		// iPadOS 13+ reports a macOS desktop user-agent; detect via touch.
+		return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+	}
 
 	// Display values derive from UserStore, the single observable owner of the
 	// current user's home + language. UserStore resolves guest(localStorage)
@@ -118,6 +143,16 @@ export class SettingsRoute {
 		const next = !this.marketingConsent
 		this.marketingConsent = next
 		this.writeConsent('marketingMeasurement', next)
+	}
+
+	/** Toggle the analytics consent description disclosure. */
+	public toggleAnalyticsDesc(): void {
+		this.analyticsDescExpanded = !this.analyticsDescExpanded
+	}
+
+	/** Toggle the marketing-measurement consent description disclosure. */
+	public toggleMarketingDesc(): void {
+		this.marketingDescExpanded = !this.marketingDescExpanded
 	}
 
 	private writeConsent(purpose: ConsentPurpose, grant: boolean): void {

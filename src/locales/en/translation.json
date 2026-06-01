@@ -261,7 +261,6 @@
 		"privacyPolicy": "Privacy Policy",
 		"ossLicenses": "OSS Licenses",
 		"account": "Account",
-		"guestPrompt": "Sign in to keep your favorites and notifications across devices",
 		"signIn": "Sign in",
 		"signUp": "Sign up",
 		"emailVerified": "Verified",
@@ -276,10 +275,14 @@
 		"languageChangeError": "Couldn't save the language change. Wait a moment and try again.",
 		"analytics": {
 			"sectionTitle": "Privacy & Analytics",
-			"toggleLabel": "Share anonymous usage insights",
-			"toggleDescription": "Helps us see which screens get loved and which trip people up — so we can make the next version better.",
-			"crossBorderLabel": "Allow cross-border analytics processing",
-			"crossBorderDescription": "Lets us include your activity in our EU-region analytics so we can compare cohorts across releases. Turn off to keep your data inside Japan only."
+			"toggleLabel": "Help improve the experience",
+			"toggleDescription": "We use anonymous data to find where people get stuck, so we can make the next update better. No personally identifying information is collected.",
+			"marketingLabel": "Help measure ad effectiveness",
+			"marketingDescription": "We anonymously measure how people who arrive via ads move through the app, to improve how we reach them. Turning this off has no effect on other features."
+		},
+		"guestHero": {
+			"heading": "Sign in for the full experience",
+			"body": "Use your favorites and notifications on any device"
 		}
 	},
 	"onboarding": {
