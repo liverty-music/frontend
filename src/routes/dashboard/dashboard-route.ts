@@ -15,13 +15,13 @@ import type { JourneyStatus } from '../../entities/concert'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowServiceClient } from '../../services/follow-service-client'
-import { IGuestService } from '../../services/guest-service'
 import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
 import { ITicketJourneyService } from '../../services/ticket-journey-service'
 import { IUserService } from '../../services/user-service'
+import { IUserStore } from '../../services/user-store'
 
 export class DashboardRoute {
 	public dateGroups: DateGroup[] = []
@@ -49,7 +49,7 @@ export class DashboardRoute {
 	private readonly followService = resolve(IFollowServiceClient)
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly guest = resolve(IGuestService)
+	private readonly userStore = resolve(IUserStore)
 	private readonly userService = resolve(IUserService)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly history = resolve(IHistory)
@@ -226,7 +226,7 @@ export class DashboardRoute {
 		this.logger.info('Home area configured', { code })
 		this.needsRegion = false
 		if (!this.authService.isAuthenticated) {
-			this.guest.setHome(code)
+			this.userStore.setGuestHome(code)
 		}
 		await this.loadData()
 		// Timetable is now real — run the celebration that was deferred while the

@@ -108,7 +108,7 @@ export class AuthService {
 		// follows, user-specific caches) while the app is still alive. This is
 		// the single publish point for the two sign-out call sites
 		// (settings-route, auth-status); each store subscribes and clears
-		// idempotently, replacing the old GuestService.clearAll() responsibility.
+		// idempotently, replacing the old guest-service clearAll() responsibility.
 		this.ea.publish(new SignedOut())
 		await this.userManager.signoutRedirect()
 	}

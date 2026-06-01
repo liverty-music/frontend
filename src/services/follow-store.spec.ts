@@ -21,37 +21,36 @@ const mockLogger = {
 	}),
 }
 
-// Guest follow source backed by a mutable array so per-item drain is observable.
-const mockGuest = {
-	follows: [] as FollowedArtist[],
-	removeFollow: vi.fn((id: string) => {
-		const idx = mockGuest.follows.findIndex((f) => f.artist.id === id)
-		if (idx >= 0) mockGuest.follows.splice(idx, 1)
-	}),
-	// Counts calls so a test can assert the drain persisted ONCE for the batch.
-	removeFollows: vi.fn((ids: readonly string[]) => {
-		const remove = new Set(ids)
-		mockGuest.follows = mockGuest.follows.filter(
-			(f) => !remove.has(f.artist.id),
-		)
-	}),
-	clearFollows: vi.fn(() => {
-		mockGuest.follows.splice(0)
-	}),
-}
-
 const mockRpcClient = {
 	follow: vi.fn(async (_id: string) => undefined),
 	setHype: vi.fn(async (_id: string, _hype: Hype) => undefined),
 }
 
+// The delegate (FollowServiceClient) now owns the persisted guest follow queue.
+// Back it with a mutable array so per-item drain is observable, and expose the
+// guest accessors FollowStore routes through (guestFollows / removeGuestFollows
+// / clearGuestFollows).
 const mockDelegate = {
+	guestFollowsState: [] as FollowedArtist[],
+	get guestFollows(): readonly FollowedArtist[] {
+		return mockDelegate.guestFollowsState
+	},
 	followedArtists: [] as Artist[],
 	followedIds: new Set<string>(),
 	followedCount: 0,
 	hydrate: vi.fn(),
 	clear: vi.fn(() => {
 		mockDelegate.followedArtists = []
+	}),
+	// Counts calls so a test can assert the drain persisted ONCE for the batch.
+	removeGuestFollows: vi.fn((ids: readonly string[]) => {
+		const remove = new Set(ids)
+		mockDelegate.guestFollowsState = mockDelegate.guestFollowsState.filter(
+			(f) => !remove.has(f.artist.id),
+		)
+	}),
+	clearGuestFollows: vi.fn(() => {
+		mockDelegate.guestFollowsState.splice(0)
 	}),
 	follow: vi.fn(async () => undefined),
 	unfollow: vi.fn(async () => undefined),
@@ -94,7 +93,6 @@ vi.mock('aurelia', async (importOriginal) => {
 		resolve: vi.fn((token: unknown) => {
 			const map: Record<string, unknown> = {
 				ILogger: mockLogger,
-				IGuestService: mockGuest,
 				IFollowRpcClient: mockRpcClient,
 				IFollowServiceClient: mockDelegate,
 				ILocalStorage: mockStorage,
@@ -123,7 +121,7 @@ describe('FollowStore', () => {
 		vi.clearAllMocks()
 		subscriptions.clear()
 		lsMap.clear()
-		mockGuest.follows = []
+		mockDelegate.guestFollowsState = []
 		mockDelegate.followedArtists = []
 		// clearAllMocks keeps per-test mockImplementation overrides, so restore
 		// the happy-path RPC defaults to prevent one test's failure-injection
@@ -145,7 +143,7 @@ describe('FollowStore', () => {
 
 	describe('GuestMigrationRequested → migrate', () => {
 		it('follows each guest artist, drains the batch, and writes the receipt', async () => {
-			mockGuest.follows = [makeFollow('a1'), makeFollow('a2')]
+			mockDelegate.guestFollowsState = [makeFollow('a1'), makeFollow('a2')]
 
 			await sut.migrateGuestFollows('user-1')
 
@@ -153,24 +151,35 @@ describe('FollowStore', () => {
 			expect(mockRpcClient.follow).toHaveBeenCalledWith('a1')
 			expect(mockRpcClient.follow).toHaveBeenCalledWith('a2')
 			// Batched drain emptied the queue.
-			expect(mockGuest.follows).toHaveLength(0)
+			expect(mockDelegate.guestFollowsState).toHaveLength(0)
 			// Receipt written for the account.
 			expect(lsMap.get(guestMergedReceiptKey('user-1'))).toBe('1')
 		})
 
 		it('drains the fully-migrated batch with a SINGLE persist (no O(n^2) write storm)', async () => {
-			mockGuest.follows = [makeFollow('a1'), makeFollow('a2'), makeFollow('a3')]
+			mockDelegate.guestFollowsState = [
+				makeFollow('a1'),
+				makeFollow('a2'),
+				makeFollow('a3'),
+			]
 
 			await sut.migrateGuestFollows('user-1')
 
-			// One batched removeFollows call rather than one removeFollow per item.
-			expect(mockGuest.removeFollows).toHaveBeenCalledOnce()
-			expect(mockGuest.removeFollows).toHaveBeenCalledWith(['a1', 'a2', 'a3'])
-			expect(mockGuest.removeFollow).not.toHaveBeenCalled()
+			// One batched removeGuestFollows call (single persist) rather than one
+			// write per item.
+			expect(mockDelegate.removeGuestFollows).toHaveBeenCalledOnce()
+			expect(mockDelegate.removeGuestFollows).toHaveBeenCalledWith([
+				'a1',
+				'a2',
+				'a3',
+			])
 		})
 
 		it('migrates non-default hype only for successfully followed artists', async () => {
-			mockGuest.follows = [makeFollow('a1', 'away'), makeFollow('a2')]
+			mockDelegate.guestFollowsState = [
+				makeFollow('a1', 'away'),
+				makeFollow('a2'),
+			]
 
 			await sut.migrateGuestFollows('user-1')
 
@@ -179,7 +188,7 @@ describe('FollowStore', () => {
 		})
 
 		it('leaves only the failed item in the queue and DEFERS the receipt', async () => {
-			mockGuest.follows = [makeFollow('a1'), makeFollow('a2')]
+			mockDelegate.guestFollowsState = [makeFollow('a1'), makeFollow('a2')]
 			mockRpcClient.follow.mockImplementation(async (id: string) => {
 				if (id === 'a2') throw new Error('network')
 			})
@@ -187,14 +196,19 @@ describe('FollowStore', () => {
 			await sut.migrateGuestFollows('user-1')
 
 			// a1 drained, a2 failed → remains.
-			expect(mockGuest.follows.map((f) => f.artist.id)).toEqual(['a2'])
+			expect(mockDelegate.guestFollowsState.map((f) => f.artist.id)).toEqual([
+				'a2',
+			])
 			// No receipt: the next reconcile must retry the failed item.
 			expect(lsMap.has(guestMergedReceiptKey('user-1'))).toBe(false)
 		})
 
 		it('does NOT drain an item whose SetHype fails, and DEFERS the receipt', async () => {
 			// a1 has a non-default hype; its Follow succeeds but SetHype throws.
-			mockGuest.follows = [makeFollow('a1', 'away'), makeFollow('a2')]
+			mockDelegate.guestFollowsState = [
+				makeFollow('a1', 'away'),
+				makeFollow('a2'),
+			]
 			mockRpcClient.setHype.mockImplementation(async (id: string) => {
 				if (id === 'a1') throw new Error('hype rpc failed')
 			})
@@ -203,14 +217,16 @@ describe('FollowStore', () => {
 
 			// a1 Follow succeeded but its hype did not migrate → keep it for retry
 			// so the non-default hype is not lost; a2 (default hype) drains.
-			expect(mockGuest.follows.map((f) => f.artist.id)).toEqual(['a1'])
-			expect(mockGuest.removeFollows).toHaveBeenCalledWith(['a2'])
+			expect(mockDelegate.guestFollowsState.map((f) => f.artist.id)).toEqual([
+				'a1',
+			])
+			expect(mockDelegate.removeGuestFollows).toHaveBeenCalledWith(['a2'])
 			// Receipt deferred so reconcile re-issues SetHype for a1.
 			expect(lsMap.has(guestMergedReceiptKey('user-1'))).toBe(false)
 		})
 
 		it('writes the receipt even when the guest queue is empty', async () => {
-			mockGuest.follows = []
+			mockDelegate.guestFollowsState = []
 
 			await sut.migrateGuestFollows('user-1')
 
@@ -229,7 +245,7 @@ describe('FollowStore', () => {
 		})
 
 		it('does not double-migrate: a second pass with an empty queue re-asserts the receipt only', async () => {
-			mockGuest.follows = [makeFollow('a1')]
+			mockDelegate.guestFollowsState = [makeFollow('a1')]
 			await sut.migrateGuestFollows('user-1')
 			expect(mockRpcClient.follow).toHaveBeenCalledTimes(1)
 
@@ -242,13 +258,13 @@ describe('FollowStore', () => {
 
 	describe('SignedOut → self-clear + cache eviction', () => {
 		it('clears the guest follow queue and evicts the projection cache via the delegate', () => {
-			mockGuest.follows = [makeFollow('a1')]
+			mockDelegate.guestFollowsState = [makeFollow('a1')]
 			mockDelegate.followedArtists = [makeArtist('a1', 'Artist a1')]
 
 			const handler = subscriptions.get(SignedOut)
 			handler?.(new SignedOut())
 
-			expect(mockGuest.clearFollows).toHaveBeenCalledOnce()
+			expect(mockDelegate.clearGuestFollows).toHaveBeenCalledOnce()
 			// Eviction routes through the delegate's own clear(), not a direct
 			// cross-object field write.
 			expect(mockDelegate.clear).toHaveBeenCalledOnce()
@@ -271,7 +287,7 @@ describe('FollowStore', () => {
 		it('clear() is idempotent and routes eviction through the delegate', () => {
 			sut.clear()
 			sut.clear()
-			expect(mockGuest.clearFollows).toHaveBeenCalledTimes(2)
+			expect(mockDelegate.clearGuestFollows).toHaveBeenCalledTimes(2)
 			expect(mockDelegate.clear).toHaveBeenCalledTimes(2)
 			expect(mockDelegate.followedArtists).toEqual([])
 		})

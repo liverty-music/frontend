@@ -3,14 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 
 const mockIAuthService = DI.createInterface('IAuthService')
-const mockIGuestService = DI.createInterface('IGuestService')
+const mockIUserStore = DI.createInterface('IUserStore')
 const mockIUserService = DI.createInterface('IUserService')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
 }))
-vi.mock('../../src/services/guest-service', () => ({
-	IGuestService: mockIGuestService,
+vi.mock('../../src/services/user-store', () => ({
+	IUserStore: mockIUserStore,
 }))
 vi.mock('../../src/services/user-service', () => ({
 	IUserService: mockIUserService,
@@ -23,19 +23,19 @@ const { UserHomeSelector } = await import(
 describe('UserHomeSelector', () => {
 	let sut: UserHomeSelector
 	let mockAuth: { isAuthenticated: boolean }
-	let mockGuest: { setHome: ReturnType<typeof vi.fn> }
+	let mockUserStore: { setGuestHome: ReturnType<typeof vi.fn> }
 	let mockUser: { updateHome: ReturnType<typeof vi.fn> }
 	let onHomeSelected: ReturnType<typeof vi.fn>
 
 	beforeEach(() => {
 		mockAuth = { isAuthenticated: false }
-		mockGuest = { setHome: vi.fn() }
+		mockUserStore = { setGuestHome: vi.fn() }
 		mockUser = { updateHome: vi.fn().mockResolvedValue(undefined) }
 		onHomeSelected = vi.fn()
 
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(mockIGuestService, mockGuest),
+			Registration.instance(mockIUserStore, mockUserStore),
 			Registration.instance(mockIUserService, mockUser),
 		)
 		container.register(UserHomeSelector)
@@ -79,10 +79,10 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('confirmSelection (guest)', () => {
-		it('calls guest.setHome for unauthenticated user', async () => {
+		it('calls userStore.setGuestHome for unauthenticated user', async () => {
 			await sut.selectPrefecture('JP-13')
 
-			expect(mockGuest.setHome).toHaveBeenCalledWith('JP-13')
+			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
 			expect(onHomeSelected).toHaveBeenCalledWith('JP-13')
 			expect(sut.isOpen).toBe(false)
 		})

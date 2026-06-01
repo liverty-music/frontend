@@ -11,7 +11,6 @@ import {
 } from '../../lib/consent/consent-service'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
-import { IGuestService } from '../../services/guest-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IUserService } from '../../services/user-service'
@@ -20,7 +19,6 @@ import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
-	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly notificationManager = resolve(INotificationManager)
@@ -243,7 +241,7 @@ export class SettingsRoute {
 					i18n: this.i18n,
 					auth: this.auth,
 					userService: this.userService,
-					guest: this.guest,
+					userStore: this.userStore,
 				},
 				lang,
 			)
@@ -271,7 +269,7 @@ export class SettingsRoute {
 		// UserStore.currentLanguage, an observable that resolves to the authed
 		// User entity (updated by changeLocale's updatePreferredLanguage
 		// write-through) or the observable guest language (updated by
-		// changeLocale's guest.setLanguage write-through).
+		// changeLocale's userStore.setGuestLanguage write-through).
 		this.logger.info('Language changed', { from: previous, to: lang })
 	}
 

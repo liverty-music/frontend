@@ -41,10 +41,15 @@ export function createMockFollowServiceClient(): Partial<IFollowServiceClient> {
 		followedArtists: [],
 		followedIds: new Set<string>(),
 		followedCount: 0,
+		// FollowServiceClient now owns the persisted guest follow queue
+		// (GuestService dissolved); expose an empty default so consumers reading
+		// `guestFollows` during onboarding don't throw.
+		guestFollows: [],
 		hydrate: vi.fn(),
 		listFollowed: vi.fn().mockResolvedValue([]),
 		follow: vi.fn().mockResolvedValue(undefined),
 		unfollow: vi.fn().mockResolvedValue(undefined),
+		setHype: vi.fn().mockResolvedValue(undefined),
 	}
 }
 

@@ -23,7 +23,7 @@ const mockOnboarding = {
 	currentStep: 'done',
 	setStep: vi.fn(),
 }
-const mockGuest = { home: null, setHome: vi.fn() }
+const mockUserStore = { guestHome: null, setGuestHome: vi.fn() }
 const mockUserService = { current: { home: 'JP-13' } }
 const mockI18n = { tr: vi.fn((key: string) => key) }
 const mockStorage = {
@@ -45,7 +45,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IFollowServiceClient: mockFollowService,
 				ITicketJourneyService: mockJourneyService,
 				IOnboardingService: mockOnboarding,
-				IGuestService: mockGuest,
+				IUserStore: mockUserStore,
 				IUserService: mockUserService,
 				I18N: mockI18n,
 				ILocalStorage: mockStorage,
@@ -264,7 +264,7 @@ describe('DashboardRoute', () => {
 
 			await sut.onHomeSelected('JP-13')
 
-			expect(mockGuest.setHome).toHaveBeenCalledWith('JP-13')
+			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(false)
 		})

@@ -8,6 +8,8 @@
  * store's followed-artist projections) MUST also evict that cache here so a
  * subsequent visitor on a shared browser never sees the previous user's data.
  *
- * Replaces the old `GuestService.clearAll()` sign-out responsibility.
+ * Replaces the old guest-service `clearAll()` sign-out responsibility, now
+ * split across the stores that own each guest slice (UserStore: home/language;
+ * FollowStore: follow queue + projection cache).
  */
 export class SignedOut {}

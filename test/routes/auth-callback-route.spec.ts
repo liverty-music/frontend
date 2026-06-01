@@ -5,9 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { GuestMigrationRequested } from '../../src/services/events/guest-migration-requested'
-import { IGuestDataMergeService } from '../../src/services/guest-data-merge-service'
-import { IGuestService } from '../../src/services/guest-service'
+import { IOnboardingService } from '../../src/services/onboarding-service'
 import { IUserService } from '../../src/services/user-service'
+import { IUserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
 import type { createMockI18n } from '../helpers/mock-i18n'
@@ -38,22 +38,19 @@ function createMockUserService() {
 	return svc
 }
 
-function createMockMergeService() {
+function createMockOnboarding() {
 	return {
-		merge: vi.fn().mockResolvedValue(undefined),
+		complete: vi.fn(),
 	}
 }
 
-function createMockGuestService(home: string | null = null) {
+// UserStore now owns the guest home slice (read via `guestHome`) and the
+// home/language/help-seen reset (`clearGuest`), absorbing what GuestService +
+// GuestDataMergeService used to provide on this path.
+function createMockUserStore(home: string | null = null) {
 	return {
-		follows: [],
-		home,
-		followedCount: 0,
-		follow: vi.fn(),
-		unfollow: vi.fn(),
-		setHome: vi.fn(),
-		clearAll: vi.fn(),
-		listFollowed: vi.fn().mockReturnValue([]),
+		guestHome: home,
+		clearGuest: vi.fn(),
 	}
 }
 
@@ -61,7 +58,8 @@ describe('AuthCallbackRoute', () => {
 	let sut: AuthCallbackRoute
 	let mockAuth: ReturnType<typeof createMockAuth>
 	let mockUserService: ReturnType<typeof createMockUserService>
-	let mockMergeService: ReturnType<typeof createMockMergeService>
+	let mockOnboarding: ReturnType<typeof createMockOnboarding>
+	let mockUserStore: ReturnType<typeof createMockUserStore>
 	let mockI18n: ReturnType<typeof createMockI18n>
 	let mockEa: {
 		publish: ReturnType<typeof vi.fn>
@@ -69,14 +67,15 @@ describe('AuthCallbackRoute', () => {
 	}
 
 	function setup(guestHome: string | null = null) {
+		mockUserStore = createMockUserStore(guestHome)
 		const container = createTestContainer(
 			Registration.instance(IAuthService, mockAuth as IAuthService),
 			Registration.instance(IUserService, mockUserService as IUserService),
 			Registration.instance(
-				IGuestDataMergeService,
-				mockMergeService as IGuestDataMergeService,
+				IOnboardingService,
+				mockOnboarding as unknown as IOnboardingService,
 			),
-			Registration.instance(IGuestService, createMockGuestService(guestHome)),
+			Registration.instance(IUserStore, mockUserStore as unknown as IUserStore),
 			Registration.instance(
 				IEventAggregator,
 				mockEa as unknown as IEventAggregator,
@@ -96,7 +95,7 @@ describe('AuthCallbackRoute', () => {
 			ready: Promise.resolve(),
 		})
 		mockUserService = createMockUserService()
-		mockMergeService = createMockMergeService()
+		mockOnboarding = createMockOnboarding()
 		mockEa = { publish: vi.fn(), subscribe: vi.fn() }
 		setup()
 	})
@@ -117,7 +116,8 @@ describe('AuthCallbackRoute', () => {
 				expect.stringMatching(/^(en|ja)$/),
 			)
 			expect(mockUserService.create).not.toHaveBeenCalled()
-			expect(mockMergeService.merge).toHaveBeenCalled()
+			expect(mockOnboarding.complete).toHaveBeenCalled()
+			expect(mockUserStore.clearGuest).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 
@@ -136,7 +136,8 @@ describe('AuthCallbackRoute', () => {
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(1)
 			expect(mockUserService.create).not.toHaveBeenCalled()
-			expect(mockMergeService.merge).toHaveBeenCalled()
+			expect(mockOnboarding.complete).toHaveBeenCalled()
+			expect(mockUserStore.clearGuest).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 
@@ -280,7 +281,8 @@ describe('AuthCallbackRoute', () => {
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockMergeService.merge).toHaveBeenCalled()
+			expect(mockOnboarding.complete).toHaveBeenCalled()
+			expect(mockUserStore.clearGuest).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
 

@@ -1,8 +1,14 @@
 import { I18N, Signals } from '@aurelia/i18n'
-import { DI, IEventAggregator, observable, resolve } from 'aurelia'
+import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
+import {
+	loadHome,
+	loadLanguage,
+	saveHome,
+	saveLanguage,
+} from '../adapter/storage/guest-storage'
+import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
 import { normalizeToSupportedLanguage } from '../util/change-locale'
 import { IAuthService } from './auth-service'
-import { IGuestService } from './guest-service'
 import { IUserService } from './user-service'
 
 export const IUserStore = DI.createInterface<IUserStore>('IUserStore', (x) =>
@@ -16,26 +22,45 @@ export interface IUserStore extends UserStore {}
  * resolving guest (localStorage) vs authenticated (backend) sources
  * INTERNALLY so callers never branch on `auth.isAuthenticated`.
  *
- * This is the Phase 1 scaffold of the entity-store layer: it COMPOSES the
- * existing `IUserService` (the authenticated `User` entity, with its
- * cache→Get→Create + write-through logic intact) and `IGuestService` (the
- * observable guest preference source). Full absorption / deletion of
- * `UserService` and `GuestService` is deferred to later phases.
+ * Phase 4 of the entity-store layer: the guest `home` / `language` slice that
+ * used to live behind `GuestService` now lives here directly as `@observable`
+ * fields, hydrated from the low-level `guest-storage` adapter on construction
+ * and persisted through `*Changed` hooks. UserStore COMPOSES the existing
+ * `IUserService` (the authenticated `User` entity, with its cache→Get→Create +
+ * write-through logic intact) for the authenticated source.
  *
  * Every exposed value depends ONLY on observable state:
  *   - `userService.current` is @observable.
- *   - `guest.home` / `guest.language` are @observable.
+ *   - `guestHome` / `guestLanguage` are @observable.
  *   - `i18nLocale` mirrors the active i18n locale, kept in sync via the
  *     i18n locale-changed event, so even the authed-NULL fallback is
  *     reactive (a render-time `i18n.getLocale()` read is not observable and
  *     would freeze the binding).
  */
 export class UserStore {
+	private readonly logger = resolve(ILogger).scopeTo('UserStore')
 	private readonly userService = resolve(IUserService)
-	private readonly guest = resolve(IGuestService)
 	private readonly auth = resolve(IAuthService)
 	private readonly i18n = resolve(I18N)
 	private readonly ea = resolve(IEventAggregator)
+
+	/**
+	 * Guest (unauthenticated) home area (ISO 3166-2 code). First-class
+	 * @observable owner, hydrated from localStorage and persisted via
+	 * `guestHomeChanged`, so any binding that reads the guest home re-evaluates
+	 * when it changes.
+	 */
+	@observable public guestHome: string | null = loadHome()
+
+	/**
+	 * Anonymous-period UI language (ISO 639-1 code). First-class @observable
+	 * owner, symmetric with `guestHome`, so any binding that reads the guest
+	 * language re-evaluates when it changes (fixes the guest language-selector
+	 * reactivity bug where the selector was driven by an unobservable
+	 * `i18n.getLocale()` read). `null` means "no explicit guest choice yet" —
+	 * `currentLanguage` falls back to the active i18n locale in that case.
+	 */
+	@observable public guestLanguage: string | null = loadLanguage()
 
 	/**
 	 * Reactive mirror of the active i18n locale, normalized to a supported
@@ -71,7 +96,7 @@ export class UserStore {
 		if (this.auth.isAuthenticated) {
 			return this.userService.current?.home?.level1 ?? null
 		}
-		return this.guest.home
+		return this.guestHome
 	}
 
 	/**
@@ -100,6 +125,55 @@ export class UserStore {
 			// stays side-effect-free and safe to re-evaluate on every pass.
 			return this.i18nLocale
 		}
-		return this.guest.language ?? this.i18nLocale
+		return this.guestLanguage ?? this.i18nLocale
+	}
+
+	/**
+	 * Set the guest home area (ISO 3166-2 code). Persisted via
+	 * `guestHomeChanged`. Used by the unauthenticated home-selection paths
+	 * (onboarding home selector, dashboard region setup).
+	 */
+	public setGuestHome(code: string): void {
+		this.guestHome = code
+		this.logger.info('Local home set', { home: code })
+	}
+
+	/**
+	 * Set the guest language (ISO 639-1 code). Persisted via
+	 * `guestLanguageChanged`. Used by the unauthenticated locale-change path
+	 * (`changeLocale`).
+	 */
+	public setGuestLanguage(lang: string): void {
+		this.guestLanguage = lang
+		this.logger.info('Local language set', { language: lang })
+	}
+
+	/**
+	 * Reset the guest home/language slice plus the per-page help-seen flags.
+	 * Used by the welcome route's fresh-tutorial reset and the sign-up
+	 * onboarding hand-off. Does NOT touch the follow queue (owned by
+	 * FollowStore) and does NOT erase the i18next detector's own `language`
+	 * key — only the dedicated `guest.language` key is cleared (it is already
+	 * decoupled), preserving the cancelled-login behavior.
+	 */
+	public clearGuest(): void {
+		this.guestHome = null
+		this.guestLanguage = null
+		clearAllHelpSeen()
+		this.logger.info('Local home/language preferences cleared')
+	}
+
+	/**
+	 * Persist guest home to localStorage on change.
+	 */
+	public guestHomeChanged(newValue: string | null): void {
+		saveHome(newValue)
+	}
+
+	/**
+	 * Persist guest language to localStorage on change.
+	 */
+	public guestLanguageChanged(newValue: string | null): void {
+		saveLanguage(newValue)
 	}
 }

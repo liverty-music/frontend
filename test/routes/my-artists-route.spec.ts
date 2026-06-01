@@ -7,7 +7,6 @@ const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIAuthService = DI.createInterface('IAuthService')
-const mockIGuestService = DI.createInterface('IGuestService')
 vi.mock('../../src/services/follow-service-client', () => ({
 	IFollowServiceClient: mockIFollowServiceClient,
 }))
@@ -31,10 +30,6 @@ vi.mock('../../src/services/onboarding-service', () => ({
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
-}))
-
-vi.mock('../../src/services/guest-service', () => ({
-	IGuestService: mockIGuestService,
 }))
 
 const { MyArtistsRoute } = await import(
@@ -85,21 +80,11 @@ describe('MyArtistsRoute', () => {
 			deactivateSpotlight: vi.fn(),
 		}
 
-		const mockGuest = {
-			follows: [],
-			home: null,
-			follow: vi.fn(),
-			unfollow: vi.fn(),
-			setHome: vi.fn(),
-			setHype: vi.fn(),
-		}
-
 		const container = createTestContainer(
 			Registration.instance(mockIFollowServiceClient, mockFollowService),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(mockIGuestService, mockGuest),
 		)
 		container.register(MyArtistsRoute)
 		sut = container.get(MyArtistsRoute)
@@ -207,20 +192,11 @@ describe('MyArtistsRoute', () => {
 				activateSpotlight: vi.fn(),
 				deactivateSpotlight: vi.fn(),
 			}
-			const mockGuest = {
-				follows: [],
-				home: null,
-				follow: vi.fn(),
-				unfollow: vi.fn(),
-				setHome: vi.fn(),
-				setHype: vi.fn(),
-			}
 			const container = createTestContainer(
 				Registration.instance(mockIFollowServiceClient, mockFollowService),
 				Registration.instance(mockIRouter, mockRouter),
 				Registration.instance(mockIOnboardingService, mockOnboarding),
 				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(mockIGuestService, mockGuest),
 			)
 			container.register(MyArtistsRoute)
 			const onboardingSut = container.get(MyArtistsRoute)
@@ -305,21 +281,12 @@ describe('MyArtistsRoute', () => {
 					deactivateSpotlight: vi.fn(),
 				}
 
-				const mockGuest = {
-					follows: [],
-					home: null,
-					follow: vi.fn(),
-					unfollow: vi.fn(),
-					setHome: vi.fn(),
-					setHype: vi.fn(),
-				}
 				const container = createTestContainer(
 					Registration.instance(mockIFollowServiceClient, mockFollowService),
 					Registration.instance(mockIRouter, mockRouter),
 					Registration.instance(mockIOnboardingService, onboardingOnboarding),
 					Registration.instance(mockIAuthService, mockAuth),
 					Registration.instance(IEventAggregator, { publish: vi.fn() }),
-					Registration.instance(mockIGuestService, mockGuest),
 				)
 				container.register(MyArtistsRoute)
 				onboardingSut = container.get(MyArtistsRoute)
@@ -365,21 +332,24 @@ describe('MyArtistsRoute', () => {
 				await sut.loading()
 			})
 
-			it('should accept hype change and persist to guest storage', () => {
+			it('should accept hype change and persist via the follow service (guest routing is internal)', () => {
 				const artist = sut.artists[0]
 
 				sut.onHypeInput(artist, 'away')
 
 				expect(artist.hype).toBe('away')
-				expect(mockFollowService.setHype).not.toHaveBeenCalled()
+				// The follow service facade now resolves guest vs authed internally:
+				// for a guest it persists to the localStorage-backed queue (no RPC)
+				// rather than the route branching on auth state.
+				expect(mockFollowService.setHype).toHaveBeenCalledWith('id-1', 'away')
 			})
 
-			it('should not call setHype RPC', () => {
+			it('routes the hype change through the follow service facade', () => {
 				const artist = sut.artists[0]
 
 				sut.onHypeInput(artist, 'away')
 
-				expect(mockFollowService.setHype).not.toHaveBeenCalled()
+				expect(mockFollowService.setHype).toHaveBeenCalledOnce()
 			})
 		})
 

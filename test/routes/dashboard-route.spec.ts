@@ -11,7 +11,7 @@ const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIFollowServiceClient = DI.createInterface('IFollowServiceClient')
 const mockITicketJourneyService = DI.createInterface('ITicketJourneyService')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-const mockIGuestService = DI.createInterface('IGuestService')
+const mockIUserStore = DI.createInterface('IUserStore')
 const mockIUserService = DI.createInterface('IUserService')
 const mockILocalStorage = DI.createInterface('ILocalStorage')
 const mockIHistory = DI.createInterface('IHistory')
@@ -38,8 +38,8 @@ vi.mock('../../src/services/onboarding-service', () => ({
 		COMPLETED: 'completed',
 	},
 }))
-vi.mock('../../src/services/guest-service', () => ({
-	IGuestService: mockIGuestService,
+vi.mock('../../src/services/user-store', () => ({
+	IUserStore: mockIUserStore,
 }))
 vi.mock('../../src/services/user-service', () => ({
 	IUserService: mockIUserService,
@@ -95,10 +95,12 @@ function makeJourneyService() {
 	}
 }
 
-function makeGuestService() {
+// UserStore now owns the guest home write path (setGuestHome) the dashboard
+// calls for unauthenticated users.
+function makeUserStore() {
 	return {
-		home: null as string | null,
-		setHome: vi.fn(),
+		guestHome: null as string | null,
+		setGuestHome: vi.fn(),
 	}
 }
 
@@ -111,7 +113,7 @@ describe('DashboardRoute', () => {
 	let mockFollow: ReturnType<typeof makeFollowService>
 	let mockJourney: ReturnType<typeof makeJourneyService>
 	let mockOnboarding: ReturnType<typeof makeOnboarding>
-	let mockGuest: ReturnType<typeof makeGuestService>
+	let mockUserStore: ReturnType<typeof makeUserStore>
 	let mockUser: { current: { home: unknown } | undefined }
 	let mockStorage: ReturnType<typeof createMockLocalStorage>
 	let mockHistory: ReturnType<typeof createMockHistory>
@@ -123,7 +125,7 @@ describe('DashboardRoute', () => {
 			Registration.instance(mockIFollowServiceClient, mockFollow),
 			Registration.instance(mockITicketJourneyService, mockJourney),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(mockIGuestService, mockGuest),
+			Registration.instance(mockIUserStore, mockUserStore),
 			Registration.instance(mockIUserService, mockUser),
 			Registration.instance(mockILocalStorage, mockStorage),
 			Registration.instance(mockIHistory, mockHistory),
@@ -140,7 +142,7 @@ describe('DashboardRoute', () => {
 		mockFollow = makeFollowService()
 		mockJourney = makeJourneyService()
 		mockOnboarding = makeOnboarding()
-		mockGuest = makeGuestService()
+		mockUserStore = makeUserStore()
 		mockUser = { current: undefined }
 		mockStorage = createMockLocalStorage()
 		mockHistory = createMockHistory()
@@ -296,22 +298,22 @@ describe('DashboardRoute', () => {
 			expect(loadSpy).toHaveBeenCalledOnce()
 		})
 
-		it('calls guest.setHome for unauthenticated user', () => {
+		it('calls userStore.setGuestHome for unauthenticated user', () => {
 			mockAuth.isAuthenticated = false
 			sut = buildSut()
 
 			sut.onHomeSelected('JP-13')
 
-			expect(mockGuest.setHome).toHaveBeenCalledWith('JP-13')
+			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
 		})
 
-		it('does not call guest.setHome for authenticated user', () => {
+		it('does not call userStore.setGuestHome for authenticated user', () => {
 			mockAuth.isAuthenticated = true
 			sut = buildSut()
 
 			sut.onHomeSelected('JP-13')
 
-			expect(mockGuest.setHome).not.toHaveBeenCalled()
+			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
 		})
 	})
 

@@ -4,7 +4,6 @@ import { SessionKeys } from '../constants/storage-keys'
 import { normalizeToSupportedLanguage } from '../util/change-locale'
 import { IAuthService } from './auth-service'
 import { IFollowStore } from './follow-store'
-import { IGuestService } from './guest-service'
 import { IUserService } from './user-service'
 
 /**
@@ -40,10 +39,11 @@ export async function runFollowReconcile(container: IContainer): Promise<void> {
 	sessionStorage.setItem(SessionKeys.followReconcileAttempted, '1')
 
 	const logger = container.get(ILogger).scopeTo('FollowReconcileTask')
-	const guest = container.get(IGuestService)
 
-	// Nothing left in the guest queue → nothing to reconcile.
-	if (guest.follows.length === 0) return
+	// Nothing left in the guest queue → nothing to reconcile. The queue is owned
+	// by FollowStore (via its FollowServiceClient delegate) now that GuestService
+	// is dissolved.
+	if (followStore.guestFollows.length === 0) return
 
 	const userService = container.get(IUserService)
 
@@ -88,10 +88,10 @@ export async function runFollowReconcile(container: IContainer): Promise<void> {
 			'Receipt present; clearing residual guest follows without migrating',
 			{
 				userId,
-				residual: guest.follows.length,
+				residual: followStore.guestFollows.length,
 			},
 		)
-		guest.clearFollows()
+		followStore.clearGuestFollows()
 		return
 	}
 
@@ -99,7 +99,7 @@ export async function runFollowReconcile(container: IContainer): Promise<void> {
 	// (idempotent, per-item drain), which writes the receipt on success.
 	logger.info('Reconciling leftover guest follows', {
 		userId,
-		queued: guest.follows.length,
+		queued: followStore.guestFollows.length,
 	})
 	await followStore.migrateGuestFollows(userId)
 
@@ -107,7 +107,7 @@ export async function runFollowReconcile(container: IContainer): Promise<void> {
 	// succeeded items; any survivors are genuine failures left for the next
 	// reconcile (the receipt was NOT written, so they will be retried).
 	if (followStore.hasReceipt(userId)) {
-		guest.clearFollows()
+		followStore.clearGuestFollows()
 	}
 }
 

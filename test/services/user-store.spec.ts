@@ -2,13 +2,13 @@ import { Signals } from '@aurelia/i18n'
 import { IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IAuthService } from '../../src/services/auth-service'
-import { GuestService, IGuestService } from '../../src/services/guest-service'
 import { IUserService } from '../../src/services/user-service'
 import { IUserStore, UserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 
-// Dedicated guest-language key (decoupled from the i18next detector's
-// 'language' cache). Kept in sync with guest-storage.ts.
+// Dedicated guest keys (decoupled from the i18next detector's 'language'
+// cache). Kept in sync with guest-storage.ts.
+const GUEST_HOME_KEY = 'guest.home'
 const GUEST_LANGUAGE_KEY = 'guest.language'
 // The i18next-browser-languagedetector's own active-locale cache key.
 const DETECTOR_LANGUAGE_KEY = 'language'
@@ -58,33 +58,20 @@ function makeUserService(behavior?: {
 	} as unknown as IUserService
 }
 
-function makeGuest(overrides?: {
-	home?: string | null
-	language?: string | null
-}): IGuestService {
-	const guest = {
-		home: overrides?.home ?? null,
-		language: overrides?.language ?? null,
-		setHome: vi.fn((code: string) => {
-			guest.home = code
-		}),
-		setLanguage: vi.fn((lang: string) => {
-			guest.language = lang
-		}),
-	}
-	return guest as unknown as IGuestService
+// UserStore now OWNS the guest home/language slice directly, hydrating from
+// localStorage on construction. Seed the dedicated keys BEFORE building so the
+// store's @observable fields pick them up.
+function seedGuest(opts?: { home?: string | null; language?: string | null }) {
+	if (opts?.home != null) localStorage.setItem(GUEST_HOME_KEY, opts.home)
+	if (opts?.language != null)
+		localStorage.setItem(GUEST_LANGUAGE_KEY, opts.language)
 }
 
-function build(opts: {
-	auth: IAuthService
-	userService: IUserService
-	guest: IGuestService
-}) {
+function build(opts: { auth: IAuthService; userService: IUserService }) {
 	const { ea, emitLocaleChange } = makeEa()
 	const container = createTestContainer(
 		Registration.instance(IAuthService, opts.auth),
 		Registration.instance(IUserService, opts.userService),
-		Registration.instance(IGuestService, opts.guest),
 		Registration.instance(IEventAggregator, ea as never),
 	)
 	container.register(Registration.singleton(IUserStore, UserStore))
@@ -93,6 +80,10 @@ function build(opts: {
 }
 
 describe('UserStore', () => {
+	beforeEach(() => {
+		localStorage.clear()
+	})
+
 	afterEach(() => {
 		vi.restoreAllMocks()
 		sessionStorage.clear()
@@ -100,28 +91,20 @@ describe('UserStore', () => {
 	})
 
 	describe('currentLanguage — guest', () => {
-		let guest: IGuestService
-
-		beforeEach(() => {
-			guest = makeGuest()
-		})
-
 		it('falls back to the active i18n locale when the guest made no explicit choice', () => {
 			const { store } = build({
 				auth: makeAuth(false),
 				userService: makeUserService(),
-				guest,
 			})
 			// createTestContainer's mock i18n.getLocale() defaults to 'ja'.
 			expect(store.currentLanguage).toBe('ja')
 		})
 
 		it('reflects an explicit guest language choice from the observable source', () => {
-			guest = makeGuest({ language: 'en' })
+			seedGuest({ language: 'en' })
 			const { store } = build({
 				auth: makeAuth(false),
 				userService: makeUserService(),
-				guest,
 			})
 			expect(store.currentLanguage).toBe('en')
 		})
@@ -130,14 +113,12 @@ describe('UserStore', () => {
 			const { store } = build({
 				auth: makeAuth(false),
 				userService: makeUserService(),
-				guest,
 			})
 			expect(store.currentLanguage).toBe('ja')
 
 			// Mutating the @observable guest source re-resolves the getter with
-			// no manual mirror — language changes route through changeLocale, not
-			// the store (the store no longer exposes a setter).
-			guest.setLanguage('en')
+			// no manual mirror. The store owns the setter now.
+			store.setGuestLanguage('en')
 			expect(store.currentLanguage).toBe('en')
 		})
 	})
@@ -149,7 +130,6 @@ describe('UserStore', () => {
 				userService: makeUserService({
 					current: { id: 'u', preferredLanguage: 'en' },
 				}),
-				guest: makeGuest(),
 			})
 			expect(store.currentLanguage).toBe('en')
 		})
@@ -160,7 +140,6 @@ describe('UserStore', () => {
 				userService: makeUserService({
 					current: { id: 'u', preferredLanguage: 'en-US' },
 				}),
-				guest: makeGuest(),
 			})
 			// 'en-US' is not in SUPPORTED_LANGUAGES; normalize so the selector
 			// still highlights the 'en' option.
@@ -174,7 +153,6 @@ describe('UserStore', () => {
 			const { store } = build({
 				auth: makeAuth(true),
 				userService,
-				guest: makeGuest(),
 			})
 
 			// Surfaces the active locale ('ja' from the mock i18n) ...
@@ -192,7 +170,6 @@ describe('UserStore', () => {
 			const { store, emitLocaleChange } = build({
 				auth: makeAuth(false),
 				userService: makeUserService(),
-				guest: makeGuest(),
 			})
 			expect(store.currentLanguage).toBe('ja')
 
@@ -211,72 +188,81 @@ describe('UserStore', () => {
 				userService: makeUserService({
 					current: { id: 'u', home: { level1: 'JP-13' } },
 				}),
-				guest: makeGuest(),
 			})
 			expect(store.currentHome).toBe('JP-13')
 		})
 
 		it('reads from the observable guest source for a guest', () => {
+			seedGuest({ home: 'JP-27' })
 			const { store } = build({
 				auth: makeAuth(false),
 				userService: makeUserService(),
-				guest: makeGuest({ home: 'JP-27' }),
 			})
 			expect(store.currentHome).toBe('JP-27')
 		})
+
+		it('reflects a guest home change via setGuestHome', () => {
+			const { store } = build({
+				auth: makeAuth(false),
+				userService: makeUserService(),
+			})
+			expect(store.currentHome).toBeNull()
+
+			store.setGuestHome('JP-13')
+			expect(store.currentHome).toBe('JP-13')
+			// Persisted through the guestHomeChanged write-through.
+			expect(localStorage.getItem(GUEST_HOME_KEY)).toBe('JP-13')
+		})
 	})
 
-	// Round-trip against the REAL guest-storage key + a REAL GuestService,
-	// exercising the dedicated 'guest.language' key (decoupled from the i18next
-	// detector's 'language' cache).
-	describe('currentLanguage — real guest round-trip', () => {
-		function buildWithRealGuest() {
-			const { ea, emitLocaleChange } = makeEa()
-			const container = createTestContainer(
-				Registration.instance(IAuthService, makeAuth(false)),
-				Registration.instance(IUserService, makeUserService()),
-				Registration.instance(IEventAggregator, ea as never),
-			)
-			container.register(Registration.singleton(IGuestService, GuestService))
-			container.register(Registration.singleton(IUserStore, UserStore))
-			const guest = container.get(IGuestService)
-			const store = container.get(IUserStore)
-			return { store, guest, emitLocaleChange }
-		}
-
+	// Round-trip against the REAL guest-storage keys, exercising the dedicated
+	// 'guest.home' / 'guest.language' keys (decoupled from the i18next detector's
+	// 'language' cache).
+	describe('guest slice — real localStorage round-trip', () => {
 		it('falls back to the i18n mirror when no explicit choice was stored', () => {
 			// No 'guest.language' key written → loadLanguage() returns null.
-			const { store, guest } = buildWithRealGuest()
-			expect(guest.language).toBeNull()
+			const { store } = build({
+				auth: makeAuth(false),
+				userService: makeUserService(),
+			})
+			expect(store.guestLanguage).toBeNull()
 			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBeNull()
 			expect(store.currentLanguage).toBe('ja')
 		})
 
 		it('persists and reflects an explicit guest choice via the dedicated key', () => {
-			const { store, guest } = buildWithRealGuest()
+			const { store } = build({
+				auth: makeAuth(false),
+				userService: makeUserService(),
+			})
 
-			guest.setLanguage('ja')
-			// languageChanged() write-through hits the real saveLanguage.
+			store.setGuestLanguage('ja')
+			// guestLanguageChanged() write-through hits the real saveLanguage.
 			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBe('ja')
 
-			guest.setLanguage('en')
-			expect(guest.language).toBe('en')
+			store.setGuestLanguage('en')
+			expect(store.guestLanguage).toBe('en')
 			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBe('en')
 			expect(store.currentLanguage).toBe('en')
 		})
 
-		it('clearAll() removes only the guest key, never the detector cache', () => {
+		it('clearGuest() removes only the guest keys, never the detector cache', () => {
 			// Seed the detector's own active-locale cache (written by
-			// i18next-browser-languagedetector, NOT GuestService).
+			// i18next-browser-languagedetector, NOT the store).
 			localStorage.setItem(DETECTOR_LANGUAGE_KEY, 'en')
 
-			const { guest } = buildWithRealGuest()
-			guest.setLanguage('en')
+			const { store } = build({
+				auth: makeAuth(false),
+				userService: makeUserService(),
+			})
+			store.setGuestHome('JP-13')
+			store.setGuestLanguage('en')
 			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBe('en')
 
-			guest.clearAll()
-			// guest.language cleared (its dedicated key removed) ...
+			store.clearGuest()
+			// guest.language + guest.home cleared (their dedicated keys removed) ...
 			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBeNull()
+			expect(localStorage.getItem(GUEST_HOME_KEY)).toBeNull()
 			// ... but the detector's 'language' cache survives, so a cancelled
 			// login does not lose the chosen UI language.
 			expect(localStorage.getItem(DETECTOR_LANGUAGE_KEY)).toBe('en')
