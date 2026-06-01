@@ -81,9 +81,10 @@
 				);
 
 			display: grid;
-			grid-template-areas: "header" "content";
-			grid-template-rows: auto 1fr;
-
+			grid-template:
+				"header" auto
+				"content" 1fr
+				/ minmax(0, 1fr);
 			block-size: 100%;
 			min-block-size: 0;
 		}
@@ -95,7 +96,11 @@
 			overflow: hidden;
 			display: grid;
 			grid-area: content;
-			grid-template-rows: auto auto 1fr;
+			grid-template:
+				"search" auto
+				"genre" auto
+				"bubbles" 1fr
+				/ minmax(0, 1fr);
 
 			inline-size: 100%;
 			block-size: 100%;
@@ -142,6 +147,7 @@
 			position: relative;
 
 			display: flex;
+			grid-area: search;
 			align-items: center;
 
 			margin: var(--space-xs) var(--space-s) 0;
@@ -207,14 +213,68 @@
 			}
 		}
 
+		.genre-bar {
+			display: flex;
+			grid-area: genre;
+			gap: var(--space-2xs);
+			align-items: center;
+
+			/* Vertical padding lives here (not the fieldset) so the reset chip
+			   and the scrollable chips share one centered baseline. */
+			padding-block: var(--space-xs) var(--space-3xs);
+			padding-inline-start: var(--space-s);
+		}
+
 		fieldset {
 			scrollbar-width: none;
 
 			overflow-inline: auto;
 			display: flex;
+			flex: 1;
 			gap: var(--space-2xs);
 
-			padding: var(--space-xs) var(--space-s) var(--space-3xs);
+			min-inline-size: 0;
+			padding-block: 0;
+			padding-inline: 0 var(--space-s);
+		}
+
+		.reset-chip {
+			cursor: pointer;
+
+			display: grid;
+			grid-auto-columns: 1lh;
+			grid-auto-rows: 1lh;
+			flex-shrink: 0;
+			place-items: center;
+
+			padding: var(--space-3xs);
+			border: 1px solid var(--_white-15);
+			border-radius: var(--radius-full);
+
+			/* Match the genre chips' fluid height: 1lh + padding + border,
+			   derived from the same font step so the row stays aligned. */
+			font-size: var(--step--1);
+			color: var(--_white-70);
+
+			background: var(--_white-8);
+
+			transition:
+				border-color var(--transition-normal),
+				color var(--transition-normal);
+
+			& svg {
+				inline-size: 1rem;
+				block-size: 1rem;
+			}
+
+			&:hover {
+				border-color: var(--_white-25);
+				color: var(--color-white);
+			}
+
+			&:disabled {
+				opacity: 0.5;
+			}
 		}
 
 		.genre-chip {
@@ -225,7 +285,7 @@
 			border-radius: var(--radius-full);
 
 			font-family: var(--font-display);
-			font-size: var(--step--2);
+			font-size: var(--step--1);
 			font-weight: 500;
 			color: var(--_white-70);
 			white-space: nowrap;
@@ -259,7 +319,7 @@
 			container-name: bubble-area;
 			container-type: size;
 			overflow: hidden;
-			grid-row: -2 / -1;
+			grid-area: bubbles;
 
 			min-block-size: 0;
 		}
@@ -268,7 +328,7 @@
 			container-name: search-results;
 			container-type: inline-size;
 			overflow-block: auto;
-			grid-row: -2 / -1;
+			grid-area: bubbles;
 
 			min-block-size: 0;
 			padding: var(--space-xs) var(--space-s);
@@ -360,7 +420,7 @@
 		}
 
 		/* State-driven visibility (after base selectors to avoid descending specificity) */
-		.discovery-layout[data-search-mode="true"] :is(fieldset, .bubble-area) {
+		.discovery-layout[data-search-mode="true"] :is(.genre-bar, .bubble-area) {
 			display: none;
 		}
 

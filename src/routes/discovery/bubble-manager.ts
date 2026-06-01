@@ -12,6 +12,9 @@ export interface BubbleArtistClient {
 export class BubbleManager {
 	private static readonly SIMILAR_LIMIT_ON_TAP = 30
 	private static readonly MAX_SEED_ARTISTS = 5
+	// Below this many seed-similar results, top up the initial field with
+	// global top artists so it stays full regardless of follow count.
+	private static readonly SEED_SIMILAR_TARGET = 30
 
 	public readonly pool = new BubblePool()
 	private isLoadingBubbles = false
@@ -37,21 +40,72 @@ export class BubbleManager {
 		this.pool.clearSeenSets()
 		this.pool.trackAllSeen(followedArtists)
 
-		let artists: Artist[]
-
-		if (followedArtists.length === 0) {
-			artists = await this.client.listTop(country, tag, BubblePool.MAX_BUBBLES)
-		} else {
-			artists = await this.fetchSeedSimilarArtists(followedArtists)
-		}
+		let artists =
+			followedArtists.length === 0
+				? await this.client.listTop(country, tag, BubblePool.MAX_BUBBLES)
+				: await this.fetchSeedSimilarArtists(followedArtists)
 
 		artists = this.pool
 			.dedup(artists, this.getFollowedIds())
 			.slice(0, BubblePool.MAX_BUBBLES)
+
+		// Top up sparse seed-similar results with global top artists so the
+		// field stays full regardless of how many artists the user follows
+		// (more follows → fewer/narrower similar lists, heavier dedup). Similar
+		// artists keep priority; popular artists fill the remainder. This also
+		// covers the case where the similar lookups resolve to nothing.
+		if (
+			followedArtists.length > 0 &&
+			artists.length < BubbleManager.SEED_SIMILAR_TARGET
+		) {
+			this.logger.info('Seed similar sparse, topping up with top artists', {
+				similarCount: artists.length,
+			})
+			this.pool.trackAllSeen(artists)
+			const top = await this.client.listTop(
+				country,
+				tag,
+				BubblePool.MAX_BUBBLES,
+			)
+			const fillers = this.pool.dedup(top, this.getFollowedIds())
+			artists = [...artists, ...fillers].slice(0, BubblePool.MAX_BUBBLES)
+		}
+
 		this.pool.replace(artists)
 		this.pool.trackAllSeen(artists)
 
 		this.logger.info('Loaded initial artists', {
+			count: this.pool.availableBubbles.length,
+		})
+	}
+
+	/**
+	 * Reset the bubble field to the global top artists, independent of follows.
+	 *
+	 * Unlike loadInitialArtists, this never takes the follow-seeded similar-artist
+	 * path — it always fetches listTop(country, '', MAX) so the user lands on a
+	 * stable, predictable baseline. Clears the seen-sets and replaces the entire
+	 * pool, discarding any accumulated similar bubbles and prior eviction history.
+	 */
+	public async reset(followedArtists: Artist[]): Promise<void> {
+		this.logger.info('Resetting bubbles to global top artists', {
+			country: this.country,
+		})
+		this.pool.clearSeenSets()
+		this.pool.trackAllSeen(followedArtists)
+
+		const rawArtists = await this.client.listTop(
+			this.country,
+			'',
+			BubblePool.MAX_BUBBLES,
+		)
+		const artists = this.pool
+			.dedup(rawArtists, this.getFollowedIds())
+			.slice(0, BubblePool.MAX_BUBBLES)
+		this.pool.replace(artists)
+		this.pool.trackAllSeen(artists)
+
+		this.logger.info('Reset complete', {
 			count: this.pool.availableBubbles.length,
 		})
 	}

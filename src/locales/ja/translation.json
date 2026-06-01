@@ -231,6 +231,7 @@
 		"srSearchResults": "{{count}}件の検索結果",
 		"srArtistsAvailable": "{{count}}件のアーティストが利用可能",
 		"srFollowed": "{{count}}アーティストをフォロー中",
+		"resetBubbles": "トップアーティストにリセット",
 		"resetFailed": "ディスカバリービューのリセットに失敗しました",
 		"genreLoadFailed": "{{tag}}のアーティストを読み込めませんでした",
 		"searchFailed": "検索が完了しませんでした。ネットワークが不安定なようです。少し時間を置いてもう一度お試しください。"

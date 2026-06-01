@@ -39,6 +39,14 @@ export class GenreFilterController {
 		private readonly abortSignal: () => AbortSignal,
 	) {}
 
+	/**
+	 * Clear the active genre selection without reloading. The caller is
+	 * responsible for re-seeding the pool (e.g. the discovery reset flow).
+	 */
+	public clearActiveTag(): void {
+		this.activeTag = ''
+	}
+
 	public async onGenreSelected(tag: string): Promise<void> {
 		if (this.isLoadingTag) return
 

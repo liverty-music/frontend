@@ -6,7 +6,7 @@
 			--_pad-btn: var(--space-2xs);
 			--_pad-tiny: 0.125rem;
 			--_font-mono: monospace;
-			--_size-hint: var(--step--2);
+			--_size-hint: var(--step--1);
 
 			display: grid;
 			grid-template-areas:
