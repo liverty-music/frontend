@@ -64,7 +64,9 @@ import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
 import { IConcertService } from './services/concert-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
+import { FollowReconcileTask } from './services/follow-reconcile-task'
 import { IFollowServiceClient } from './services/follow-service-client'
+import { IFollowStore } from './services/follow-store'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
 import { IGuestDataMergeService } from './services/guest-data-merge-service'
 import { IGuestService } from './services/guest-service'
@@ -197,6 +199,20 @@ async function bootstrap(): Promise<void> {
 	// owner of home/language; register after both so its singleton can resolve
 	// them. Callers read the store instead of branching on auth state.
 	au.register(IUserStore)
+	// FollowStore owns the follow slice's auth-boundary transitions
+	// (GuestMigrationRequested → migrate, SignedOut → self-clear + cache eviction) by
+	// composing IFollowServiceClient. Registered after IGuestService /
+	// IFollowServiceClient so its singleton can resolve them.
+	au.register(IFollowStore)
+	// FollowReconcileTask is an activating AppTask that heals partial follow
+	// migrations on boot, keyed on the per-account guest-merge receipt. Same-slot
+	// AppTasks (this and UserHydrationTask) run CONCURRENTLY via Promise.all, NOT
+	// sequentially in registration order, so this task does NOT depend on
+	// UserHydrationTask having populated `UserService.current` first — it calls
+	// the idempotent `ensureLoaded` itself before reading `current.id`. It also
+	// eagerly resolves IFollowStore so its event subscriptions are live before
+	// any sign-up / sign-out fires.
+	au.register(FollowReconcileTask)
 	au.register(IGuestDataMergeService)
 	au.register(IAudioEngine)
 	au.register(INotificationManager)

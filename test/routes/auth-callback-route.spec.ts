@@ -1,9 +1,10 @@
 import { I18N } from '@aurelia/i18n'
 import type { RouteNode } from '@aurelia/router'
-import { Registration } from 'aurelia'
+import { IEventAggregator, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
 import { IAuthService } from '../../src/services/auth-service'
+import { GuestMigrationRequested } from '../../src/services/events/guest-migration-requested'
 import { IGuestDataMergeService } from '../../src/services/guest-data-merge-service'
 import { IGuestService } from '../../src/services/guest-service'
 import { IUserService } from '../../src/services/user-service'
@@ -11,17 +12,28 @@ import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
 import type { createMockI18n } from '../helpers/mock-i18n'
 
+/**
+ * Build the handleCallback result: the OIDC User. handleCallback no longer
+ * round-trips a sign-up flag — the callback keys behavior on the backend
+ * new-account signal (ProvisionResult.created), not the sign-up FLOW.
+ */
+function authUser(email: string | undefined): { profile: { email?: string } } {
+	return { profile: email ? { email } : {} }
+}
+
 function createMockUserService() {
 	const stub = { id: 'u1', externalId: 'ext', email: 'u@test.com', name: 'U' }
 	// Mirrors UserServiceClient's public @observable `current` field shape.
 	// Tests assign to `current` directly to simulate the post-RPC entity
-	// state the production service write-throughs would produce.
+	// state the production service write-throughs would produce. create /
+	// ensureLoaded resolve a ProvisionResult { user, created }; per-test
+	// overrides set `created` to drive the post-signup-dialog assertions.
 	const svc = {
 		current: stub as unknown as
 			| import('../../src/entities/user').User
 			| undefined,
-		create: vi.fn().mockResolvedValue(stub),
-		ensureLoaded: vi.fn().mockResolvedValue(stub),
+		create: vi.fn().mockResolvedValue({ user: stub, created: true }),
+		ensureLoaded: vi.fn().mockResolvedValue({ user: stub, created: false }),
 	}
 	return svc
 }
@@ -51,6 +63,10 @@ describe('AuthCallbackRoute', () => {
 	let mockUserService: ReturnType<typeof createMockUserService>
 	let mockMergeService: ReturnType<typeof createMockMergeService>
 	let mockI18n: ReturnType<typeof createMockI18n>
+	let mockEa: {
+		publish: ReturnType<typeof vi.fn>
+		subscribe: ReturnType<typeof vi.fn>
+	}
 
 	function setup(guestHome: string | null = null) {
 		const container = createTestContainer(
@@ -61,6 +77,10 @@ describe('AuthCallbackRoute', () => {
 				mockMergeService as IGuestDataMergeService,
 			),
 			Registration.instance(IGuestService, createMockGuestService(guestHome)),
+			Registration.instance(
+				IEventAggregator,
+				mockEa as unknown as IEventAggregator,
+			),
 		)
 		container.register(AuthCallbackRoute)
 		sut = container.get(AuthCallbackRoute)
@@ -77,14 +97,15 @@ describe('AuthCallbackRoute', () => {
 		})
 		mockUserService = createMockUserService()
 		mockMergeService = createMockMergeService()
+		mockEa = { publish: vi.fn(), subscribe: vi.fn() }
 		setup()
 	})
 
 	describe('canLoad', () => {
 		it('redirects to dashboard for returning user (cache hit → ensureLoaded resolves a user, Create not called)', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'existing@example.com' },
-			})
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('existing@example.com'))
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
@@ -101,13 +122,15 @@ describe('AuthCallbackRoute', () => {
 		})
 
 		it('delegates cache-miss recovery to UserService.ensureLoaded — Create is NOT called from auth-callback when there is no guest home', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'new@example.com' },
-			})
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('new@example.com'))
 			// ensureLoaded internally handles cache hit/miss (calls Get or Create
 			// depending on cache state). Auth-callback only invokes Create
 			// explicitly when there is a guestHome to persist atomically.
-			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockResolvedValue({ user: undefined, created: false })
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
@@ -117,11 +140,15 @@ describe('AuthCallbackRoute', () => {
 			expect(result).toBe('/dashboard')
 		})
 
-		it('explicitly calls Create with home when guest selected one — sets postSignupShown flag', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'new@example.com' },
-			})
+		it('explicitly calls Create with home when guest selected one — created=true sets postSignupShown flag', async () => {
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('new@example.com'))
 			setup('JP-13')
+			// Genuinely new account: Create minted a fresh row.
+			mockUserService.create = vi
+				.fn()
+				.mockResolvedValue({ user: mockUserService.current, created: true })
 
 			localStorage.removeItem('liverty:postSignup:shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
@@ -141,17 +168,55 @@ describe('AuthCallbackRoute', () => {
 			expect(localStorage.getItem('liverty:postSignup:shown')).toBe('pending')
 		})
 
-		it('does NOT set postSignupShown when guest home is absent — relies on ensureLoaded only', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'returning@example.com' },
-			})
+		it('a NEW no-home account still migrates and shows postSignup (migration fires regardless of home; created=true)', async () => {
+			// New account where the visitor skipped home selection: guestHome is
+			// null so provisioning goes through ensureLoaded (not Create), which
+			// reports created=true (cache-miss Create path). The migration trigger
+			// and the postSignup flag MUST still fire.
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('new@example.com'))
 			setup(null)
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockResolvedValue({ user: mockUserService.current, created: true })
 
 			localStorage.removeItem('liverty:postSignup:shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
 			expect(mockUserService.create).not.toHaveBeenCalled()
+			// Migration published with the provisioned user id → migration runs.
+			expect(mockEa.publish).toHaveBeenCalledWith(
+				new GuestMigrationRequested('u1'),
+			)
+			expect(localStorage.getItem('liverty:postSignup:shown')).toBe('pending')
+			expect(result).toBe('/dashboard')
+		})
+
+		it('a RETURNING sign-in DOES migrate (guest follows heal in-session) but does NOT set postSignup', async () => {
+			// created=false → no postSignup flag, even though ensureLoaded hydrates
+			// a user. Migration STILL fires: a returning user who browsed
+			// anonymously and signed in must not lose their guest follows in-session
+			// (FollowStore is receipt-guarded + idempotent, so this is safe).
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('returning@example.com'))
+			setup(null)
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockResolvedValue({ user: mockUserService.current, created: false })
+
+			localStorage.removeItem('liverty:postSignup:shown')
+			const result = await sut.canLoad({}, {} as RouteNode)
+
+			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
+			expect(mockUserService.create).not.toHaveBeenCalled()
+			// Migration fires on sign-in too (Correction 1).
+			expect(mockEa.publish).toHaveBeenCalledWith(
+				new GuestMigrationRequested('u1'),
+			)
+			// But no new-account dialog (Correction 2).
 			expect(result).toBe('/dashboard')
 			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
 		})
@@ -181,11 +246,11 @@ describe('AuthCallbackRoute', () => {
 		})
 
 		it('does not invoke explicit Create when email is missing even with guest home', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: {},
-			})
+			mockAuth.handleCallback = vi.fn().mockResolvedValue(authUser(undefined))
 			setup('JP-13')
-			mockUserService.ensureLoaded = vi.fn().mockResolvedValue(undefined)
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockResolvedValue({ user: undefined, created: false })
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
@@ -195,9 +260,9 @@ describe('AuthCallbackRoute', () => {
 		})
 
 		it('surfaces ensureLoaded errors as a login failure', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'new@example.com' },
-			})
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('new@example.com'))
 			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockRejectedValue(new Error('server error'))
@@ -209,9 +274,9 @@ describe('AuthCallbackRoute', () => {
 		})
 
 		it('delegates onboarding completion to merge service (not call complete directly)', async () => {
-			mockAuth.handleCallback = vi.fn().mockResolvedValue({
-				profile: { email: 'user@example.com' },
-			})
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('user@example.com'))
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
@@ -229,9 +294,9 @@ describe('AuthCallbackRoute', () => {
 		// until a hard reload, with no signal from the test suite.
 		describe('applies backend preferredLanguage to i18n after sign-in', () => {
 			it('calls setLocale when preferredLanguage differs from current locale', async () => {
-				mockAuth.handleCallback = vi.fn().mockResolvedValue({
-					profile: { email: 'returning@example.com' },
-				})
+				mockAuth.handleCallback = vi
+					.fn()
+					.mockResolvedValue(authUser('returning@example.com'))
 				// Default mock i18n locale is 'ja'; ensureLoaded resolves a
 				// user whose stored language is 'en' — the guard
 				// ('en' !== 'ja') should fire setLocale('en').
@@ -240,7 +305,7 @@ describe('AuthCallbackRoute', () => {
 						id: 'u1',
 						preferredLanguage: 'en',
 					} as unknown as import('../../src/entities/user').User
-					return mockUserService.current
+					return { user: mockUserService.current, created: false }
 				})
 
 				const result = await sut.canLoad({}, {} as RouteNode)
@@ -250,9 +315,9 @@ describe('AuthCallbackRoute', () => {
 			})
 
 			it('does NOT call setLocale when preferredLanguage matches the current locale', async () => {
-				mockAuth.handleCallback = vi.fn().mockResolvedValue({
-					profile: { email: 'returning@example.com' },
-				})
+				mockAuth.handleCallback = vi
+					.fn()
+					.mockResolvedValue(authUser('returning@example.com'))
 				// preferredLanguage matches the mock locale 'ja' — guard
 				// short-circuits and setLocale stays untouched.
 				mockUserService.ensureLoaded = vi.fn().mockImplementation(async () => {
@@ -260,7 +325,7 @@ describe('AuthCallbackRoute', () => {
 						id: 'u1',
 						preferredLanguage: 'ja',
 					} as unknown as import('../../src/entities/user').User
-					return mockUserService.current
+					return { user: mockUserService.current, created: false }
 				})
 
 				const result = await sut.canLoad({}, {} as RouteNode)
@@ -270,9 +335,9 @@ describe('AuthCallbackRoute', () => {
 			})
 
 			it('does NOT call setLocale when preferredLanguage is unsupported', async () => {
-				mockAuth.handleCallback = vi.fn().mockResolvedValue({
-					profile: { email: 'returning@example.com' },
-				})
+				mockAuth.handleCallback = vi
+					.fn()
+					.mockResolvedValue(authUser('returning@example.com'))
 				// A future migration or loosened backend validation could
 				// leak an unsupported code into the DB. We skip the
 				// setLocale call (i18next would silently fall back to
@@ -283,7 +348,7 @@ describe('AuthCallbackRoute', () => {
 						id: 'u1',
 						preferredLanguage: 'fr',
 					} as unknown as import('../../src/entities/user').User
-					return mockUserService.current
+					return { user: mockUserService.current, created: false }
 				})
 
 				const result = await sut.canLoad({}, {} as RouteNode)

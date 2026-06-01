@@ -1,12 +1,13 @@
 import { I18N } from '@aurelia/i18n'
 import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
-import { ILogger, resolve } from 'aurelia'
+import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import { IAuthService } from '../../services/auth-service'
+import { GuestMigrationRequested } from '../../services/events/guest-migration-requested'
 import { IGuestDataMergeService } from '../../services/guest-data-merge-service'
 import { IGuestService } from '../../services/guest-service'
-import { IUserService } from '../../services/user-service'
+import { IUserService, type ProvisionResult } from '../../services/user-service'
 import {
 	isSupportedLanguage,
 	normalizeToSupportedLanguage,
@@ -29,6 +30,7 @@ export class AuthCallbackRoute {
 	private readonly mergeService = resolve(IGuestDataMergeService)
 	private readonly guest = resolve(IGuestService)
 	private readonly i18n = resolve(I18N)
+	private readonly ea = resolve(IEventAggregator)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
 
 	public async canLoad(
@@ -40,7 +42,30 @@ export class AuthCallbackRoute {
 			const user = await this.authService.handleCallback()
 			this.logger.info('handleCallback success!')
 
-			const isNewUser = await this.ensureUserProvisioned(user.profile.email)
+			const { user: provisioned, created } = await this.ensureUserProvisioned(
+				user.profile.email,
+			)
+
+			// Request guest-follow migration on EVERY successful authenticated
+			// callback (sign-up AND returning sign-in), not only on sign-up. A
+			// returning user who browsed anonymously (accumulating guest follows)
+			// and then signs in via Settings / auth-status — paths that do NOT
+			// clearAll — would otherwise lose those follows in-session until a
+			// cold-boot reconcile healed them. FollowStore.migrateGuestFollows is
+			// receipt-guarded, idempotent, and a no-op on an empty queue, so firing
+			// unconditionally is safe (empty queue → nothing; already-migrated →
+			// not re-migrated).
+			//
+			// migrateGuestFollows needs the internal user_id; ensureUserProvisioned
+			// guarantees `userService.current` is hydrated before we read it.
+			const userId = provisioned?.id ?? this.userService.current?.id
+			if (userId) {
+				this.ea.publish(new GuestMigrationRequested(userId))
+			} else {
+				this.logger.warn(
+					'Authenticated callback but no user id available; skipping follow migration trigger',
+				)
+			}
 
 			// Apply the DB-stored preferred language to i18n for the
 			// current session. UserHydrationTask normally owns this, but
@@ -88,8 +113,13 @@ export class AuthCallbackRoute {
 			// Merge any guest data accumulated during onboarding
 			await this.mergeService.merge()
 
-			// On first-time signup: set flag so dashboard shows PostSignupDialog
-			if (isNewUser) {
+			// On a GENUINELY NEW account: set flag so dashboard shows
+			// PostSignupDialog. Keyed on the new-account signal from provisioning
+			// (backend minted a fresh row, not an idempotent ALREADY_EXISTS
+			// return), NOT on the OIDC sign-up FLOW — a returning user who taps
+			// "Sign up" (settings / auth-status have no guard) must not get the
+			// new-user dialog.
+			if (created) {
 				localStorage.setItem(StorageKeys.postSignupShown, 'pending')
 			}
 
@@ -120,12 +150,13 @@ export class AuthCallbackRoute {
 	// Otherwise UserService.ensureLoaded() handles everything: cache hit →
 	// Get, cache miss → idempotent Create using the JWT email.
 	//
-	// Returns true when this session looks like a first-time signup. The
-	// presence of guestHome (set only during the onboarding flow before
-	// account creation) is a reliable proxy.
+	// Returns the provisioned/loaded user (so the caller has the internal
+	// user_id for the migration trigger) plus `created`, which is true only when
+	// a GENUINELY NEW backend account was minted — the caller keys the
+	// post-signup dialog on that, NOT on the OIDC sign-up flow.
 	private async ensureUserProvisioned(
 		email: string | undefined,
-	): Promise<boolean> {
+	): Promise<ProvisionResult> {
 		const guestHome = this.guest.home
 		if (guestHome && email) {
 			// Capture the effective locale at signup so the new user row carries
@@ -153,17 +184,15 @@ export class AuthCallbackRoute {
 			// If "cleanup before first authenticated read" ever becomes a
 			// hard requirement, the right fix is to call the cleanup
 			// imperatively here, not to rely on AppTask.activating.
-			await this.userService.create(
+			return this.userService.create(
 				email,
 				normalizeToSupportedLanguage(this.i18n.getLocale()),
 				codeToHome(guestHome),
 			)
-			return true
 		}
 
-		await this.userService.ensureLoaded(
+		return this.userService.ensureLoaded(
 			normalizeToSupportedLanguage(this.i18n.getLocale()),
 		)
-		return false
 	}
 }

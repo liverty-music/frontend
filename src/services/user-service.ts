@@ -11,6 +11,26 @@ export const IUserService = DI.createInterface<IUserService>(
 	(x) => x.singleton(UserServiceClient),
 )
 
+/**
+ * Outcome of a provisioning call (`ensureLoaded` / `create`).
+ *
+ * `created` reports whether this call provisioned a GENUINELY NEW backend
+ * account, as opposed to resolving a pre-existing one. The backend `Create`
+ * RPC is idempotent — on a duplicate identity it returns the EXISTING user with
+ * a wire-identical response — so the new-vs-existing distinction is not on the
+ * response. The available frontend signal is the cache: a returning identity
+ * already has a cached `user_id` (it signed in before on this device, or its id
+ * was minted earlier this session), whereas a genuinely new account has none
+ * and reaches the Create path with an empty cache. Callers key new-account-only
+ * behavior (e.g. the post-signup dialog) on this flag rather than on the OIDC
+ * sign-up FLOW, so a returning user who taps "Sign up" is not treated as new.
+ */
+export interface ProvisionResult {
+	user: User | undefined
+	/** True only when this call minted a brand-new backend account. */
+	created: boolean
+}
+
 export interface IUserService {
 	readonly current: User | undefined
 	/**
@@ -21,6 +41,10 @@ export interface IUserService {
 	 * I18N inside the service) avoids coupling UserService to the i18n
 	 * subsystem.
 	 *
+	 * Returns a `ProvisionResult` so the auth-callback can tell a brand-new
+	 * account (cache-miss → Create) from a returning one (cache hit → Get)
+	 * without re-deriving the cache state itself.
+	 *
 	 * BREAKING (since persist-user-language): the `preferredLanguage`
 	 * parameter is required. Previously `ensureLoaded()` took no arguments.
 	 * Any external implementer of this interface (test doubles, manual
@@ -28,13 +52,13 @@ export interface IUserService {
 	 * typing will catch typed implementations, but loose `as` casts in
 	 * test fixtures could silently pass the wrong value.
 	 */
-	ensureLoaded(preferredLanguage: string): Promise<User | undefined>
+	ensureLoaded(preferredLanguage: string): Promise<ProvisionResult>
 	clear(): void
 	create(
 		email: string,
 		preferredLanguage: string,
 		home?: { countryCode: string; level1: string; level2?: string },
-	): Promise<User | undefined>
+	): Promise<ProvisionResult>
 	updateHome(home: {
 		countryCode: string
 		level1: string
@@ -91,8 +115,10 @@ export class UserServiceClient implements IUserService {
 	// runs so the app self-heals instead of locking the user out.
 	public async ensureLoaded(
 		preferredLanguage: string,
-	): Promise<User | undefined> {
-		if (this.current) return this.current
+	): Promise<ProvisionResult> {
+		// An in-memory or persisted user_id means this identity was already
+		// resolved before — never a brand-new account, so `created` is false.
+		if (this.current) return { user: this.current, created: false }
 
 		const userId = this.readCachedUserId()
 		if (userId) {
@@ -100,7 +126,7 @@ export class UserServiceClient implements IUserService {
 				this.logger.info('Loading user profile from backend (cache hit)')
 				this.current = await this.rpcClient.get(userId)
 				if (this.current) this.writeCachedUserId(this.current.id)
-				return this.current
+				return { user: this.current, created: false }
 			} catch (err) {
 				if (err instanceof ConnectError && err.code === Code.PermissionDenied) {
 					this.logger.warn(
@@ -120,16 +146,23 @@ export class UserServiceClient implements IUserService {
 			this.logger.warn(
 				'No cached user_id and no email in auth claims; cannot bootstrap user',
 			)
-			return undefined
+			return { user: undefined, created: false }
 		}
 
 		this.logger.info('Bootstrapping via idempotent Create (cache miss)')
 		// Create requires preferred_language; on the idempotent-return path the
 		// existing row's language is preserved, so passing the current effective
 		// locale is safe even for returning users.
+		//
+		// `created` is true here: we reached Create with no cached user_id, which
+		// is the new-account path (a returning identity would have hit the Get
+		// branch above). A cleared cache on an existing identity also lands here,
+		// but the cache is the only new-vs-existing signal the idempotent backend
+		// exposes, so this is the best available approximation and matches the
+		// post-signup-dialog contract (fresh-cache identity → treat as new).
 		this.current = await this.rpcClient.create(email, preferredLanguage)
 		if (this.current) this.writeCachedUserId(this.current.id)
-		return this.current
+		return { user: this.current, created: true }
 	}
 
 	public clear(): void {
@@ -142,11 +175,24 @@ export class UserServiceClient implements IUserService {
 		email: string,
 		preferredLanguage: string,
 		home?: { countryCode: string; level1: string; level2?: string },
-	): Promise<User | undefined> {
+	): Promise<ProvisionResult> {
+		// New-account signal: no user_id cached for this identity before the call.
+		// The backend Create is idempotent (a returning identity gets its existing
+		// row back, wire-identical), so the pre-call cache is the only available
+		// new-vs-existing signal — a returning user tapping "Sign up" already has a
+		// cached id and is therefore NOT treated as new.
+		const created = this.readCachedUserId() === undefined
 		const user = await this.rpcClient.create(email, preferredLanguage, home)
 		this.current = user
-		if (user) this.writeCachedUserId(user.id)
-		return user
+		if (user) {
+			this.writeCachedUserId(user.id)
+		}
+		// NOTE: the guest-follow migration trigger (GuestMigrationRequested) is
+		// published by AuthCallbackRoute on every successful authenticated
+		// callback, NOT here. create() is also reached on the idempotent cache-miss
+		// recovery, so keeping the publish at the auth-callback boundary keeps the
+		// trigger at a single site with the resolved userId.
+		return { user, created }
 	}
 
 	public async updateHome(home: {

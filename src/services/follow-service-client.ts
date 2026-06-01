@@ -38,6 +38,16 @@ export class FollowServiceClient {
 	}
 
 	/**
+	 * Evict the followed-artist projection cache. Owned by this client (the
+	 * @observable field's owner) so any cache invalidation tied to the
+	 * projection runs through the owner rather than an external cross-object
+	 * write. Called by FollowStore on sign-out.
+	 */
+	public clear(): void {
+		this.followedArtists = []
+	}
+
+	/**
 	 * Follow an artist with optimistic UI update.
 	 * Guest users delegate to GuestService for localStorage persistence.
 	 * Authenticated users call backend RPC with rollback on failure.

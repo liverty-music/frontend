@@ -30,6 +30,12 @@ export const SessionKeys = {
 	// lifetime — acceptable since the RPC is idempotent on a non-NULL row
 	// (server returns the existing value unchanged).
 	languageBackfillAttempted: 'liverty:lang:backfillAttempted',
+	// Set after the follow-reconcile task runs in the current tab so the
+	// receipt-keyed reconcile fires at most once per tab. Cleared again if the
+	// reconcile defers (no user id yet) so the next start retries. Per-tab
+	// scoping is acceptable because the backend Follow/SetHype calls are
+	// idempotent and the receipt makes queue-level migration exactly-once.
+	followReconcileAttempted: 'liverty:follow:reconcileAttempted',
 } as const
 
 // Per-external_id namespaced key holding the internal user_id resolved from
@@ -39,6 +45,22 @@ export const SessionKeys = {
 export function userIdStorageKey(externalID: string): string {
 	return `liverty:userId:${externalID}`
 }
+
+// Per-account guest-merge receipt. Written once a follow migration completes
+// for an account; its PRESENCE — not the presence of guest follow data —
+// decides whether boot reconciliation re-migrates. This makes follow migration
+// exactly-once per account and prevents resurrecting state the user reverted
+// after sign-up (migrate-then-clear-failed → reboot would otherwise re-follow).
+export function guestMergedReceiptKey(userId: string): string {
+	return `${GUEST_MERGED_RECEIPT_PREFIX}${userId}`
+}
+
+// Shared prefix for the per-account guest-merge receipt keys. The receipt's
+// lifetime is ONE authenticated session: it prevents resurrecting reverted
+// state WITHIN a session, but on sign-out every receipt is removed (by prefix,
+// since the signed-out user's id is already cleared from in-memory + cached
+// state by then) so a fresh post-sign-out guest session can migrate again.
+export const GUEST_MERGED_RECEIPT_PREFIX = 'liverty:guestMerged:'
 
 /**
  * Migrate legacy localStorage keys from the old admin area format.
