@@ -5,7 +5,6 @@ import {
 	type NavigationInstruction,
 } from '@aurelia/router'
 import { IEventAggregator, ILogger, INode, observable, resolve } from 'aurelia'
-import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { Snack } from '../../components/snack-bar/snack'
 import {
 	getPreviewArtistIds,
@@ -36,7 +35,6 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly i18n = resolve(I18N)
 	private readonly concertService = resolve(IConcertService)
 	private readonly host = resolve(INode) as HTMLElement
-	private readonly localStorage = resolve(ILocalStorage)
 
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	@observable public currentLocale: string = ''
@@ -159,7 +157,7 @@ export class WelcomeRoute implements IRouteViewModel {
 				i18n: this.i18n,
 				auth: this.authService,
 				userService: this.userService,
-				localStorage: this.localStorage,
+				guest: this.guest,
 			},
 			newLocale,
 		)

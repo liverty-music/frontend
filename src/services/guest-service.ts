@@ -2,8 +2,10 @@ import { DI, ILogger, observable, resolve } from 'aurelia'
 import {
 	loadFollows,
 	loadHome,
+	loadLanguage,
 	saveFollows,
 	saveHome,
+	saveLanguage,
 } from '../adapter/storage/guest-storage'
 import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
 import type { Artist } from '../entities/artist'
@@ -36,6 +38,13 @@ export class GuestService {
 
 	public follows: FollowedArtist[] = loadFollows()
 	@observable public home: string | null = loadHome()
+	// Anonymous-period UI language. First-class @observable owner, symmetric
+	// with `home`, so any binding that reads the guest language re-evaluates
+	// when it changes (fixes the guest language-selector reactivity bug where
+	// the selector was driven by an unobservable i18n.getLocale() read).
+	// `null` means "no explicit guest choice yet" — UserStore falls back to
+	// the active i18n locale in that case.
+	@observable public language: string | null = loadLanguage()
 
 	public get followedCount(): number {
 		return this.follows.length
@@ -85,6 +94,14 @@ export class GuestService {
 	}
 
 	/**
+	 * Set the guest language (ISO 639-1 code). Persisted via languageChanged().
+	 */
+	public setLanguage(lang: string): void {
+		this.language = lang
+		this.logger.info('Local language set', { language: lang })
+	}
+
+	/**
 	 * Set hype level for a followed artist (persisted to localStorage).
 	 */
 	public setHype(artistId: string, hype: FollowedArtist['hype']): void {
@@ -103,6 +120,7 @@ export class GuestService {
 		this.follows.splice(0)
 		this.persistFollows()
 		this.home = null
+		this.language = null
 		clearAllHelpSeen()
 		this.logger.info('Local data cleared')
 	}
@@ -112,6 +130,13 @@ export class GuestService {
 	 */
 	public homeChanged(newValue: string | null): void {
 		saveHome(newValue)
+	}
+
+	/**
+	 * Persist language to localStorage on change.
+	 */
+	public languageChanged(newValue: string | null): void {
+		saveLanguage(newValue)
 	}
 
 	private persistFollows(): void {

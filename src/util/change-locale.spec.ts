@@ -1,8 +1,7 @@
 import type { I18N } from '@aurelia/i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ILocalStorage } from '../adapter/storage/local-storage'
-import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
+import type { IGuestService } from '../services/guest-service'
 import type { IUserService } from '../services/user-service'
 import { changeLocale } from './change-locale'
 
@@ -30,25 +29,18 @@ function makeUserService(behavior?: {
 	} as unknown as IUserService
 }
 
-function makeLocalStorage() {
-	const map = new Map<string, string>()
-	const impl: ILocalStorage = {
-		getItem: vi.fn((k: string) => map.get(k) ?? null),
-		setItem: vi.fn((k: string, v: string) => {
-			map.set(k, v)
-		}),
-		removeItem: vi.fn((k: string) => {
-			map.delete(k)
-		}),
-	}
-	return { map, impl }
+function makeGuest(): IGuestService {
+	return {
+		language: null,
+		setLanguage: vi.fn(),
+	} as unknown as IGuestService
 }
 
 describe('changeLocale', () => {
-	let storage: ReturnType<typeof makeLocalStorage>
+	let guest: IGuestService
 
 	beforeEach(() => {
-		storage = makeLocalStorage()
+		guest = makeGuest()
 	})
 
 	describe('validation', () => {
@@ -58,39 +50,32 @@ describe('changeLocale', () => {
 			const userService = makeUserService()
 
 			await expect(
-				changeLocale(
-					{ i18n, auth, userService, localStorage: storage.impl },
-					'fr',
-				),
+				changeLocale({ i18n, auth, userService, guest }, 'fr'),
 			).rejects.toBeInstanceOf(TypeError)
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(storage.impl.setItem).not.toHaveBeenCalled()
+			expect(guest.setLanguage).not.toHaveBeenCalled()
 			expect(userService.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('unauthenticated path', () => {
-		it('calls i18n.setLocale and writes localStorage; no RPC', async () => {
+		it('calls i18n.setLocale and writes through the observable guest source; no RPC', async () => {
 			const i18n = makeI18n()
 			const auth = makeAuth(false)
 			const userService = makeUserService()
 
-			await changeLocale(
-				{ i18n, auth, userService, localStorage: storage.impl },
-				'en',
-			)
+			await changeLocale({ i18n, auth, userService, guest }, 'en')
 
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
-			expect(storage.impl.setItem).toHaveBeenCalledWith(
-				StorageKeys.language,
-				'en',
-			)
+			// Write through the @observable guest language owner (not raw
+			// localStorage) so UserStore.currentLanguage stays reactive.
+			expect(guest.setLanguage).toHaveBeenCalledWith('en')
 			expect(userService.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('authenticated path', () => {
-		it('calls RPC first, then setLocale; NEVER writes localStorage', async () => {
+		it('calls RPC first, then setLocale; NEVER touches the guest source', async () => {
 			const callOrder: string[] = []
 			const i18n = makeI18n({
 				setLocale: async () => {
@@ -105,15 +90,12 @@ describe('changeLocale', () => {
 				},
 			})
 
-			await changeLocale(
-				{ i18n, auth, userService, localStorage: storage.impl },
-				'en',
-			)
+			await changeLocale({ i18n, auth, userService, guest }, 'en')
 
 			expect(userService.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			expect(callOrder).toEqual(['rpc', 'setLocale'])
-			expect(storage.impl.setItem).not.toHaveBeenCalled()
+			expect(guest.setLanguage).not.toHaveBeenCalled()
 		})
 
 		it('rethrows when RPC fails so the caller can surface a Snack', async () => {
@@ -126,13 +108,10 @@ describe('changeLocale', () => {
 			})
 
 			await expect(
-				changeLocale(
-					{ i18n, auth, userService, localStorage: storage.impl },
-					'en',
-				),
+				changeLocale({ i18n, auth, userService, guest }, 'en'),
 			).rejects.toThrow('network')
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(storage.impl.setItem).not.toHaveBeenCalled()
+			expect(guest.setLanguage).not.toHaveBeenCalled()
 		})
 	})
 })

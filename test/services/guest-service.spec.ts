@@ -9,9 +9,11 @@ vi.mock('../../src/adapter/storage/guest-storage', () => ({
 	saveFollows: vi.fn(),
 	loadHome: vi.fn().mockReturnValue(null),
 	saveHome: vi.fn(),
+	loadLanguage: vi.fn().mockReturnValue(null),
+	saveLanguage: vi.fn(),
 }))
 
-const { loadFollows, loadHome } = await import(
+const { loadFollows, loadHome, loadLanguage, saveLanguage } = await import(
 	'../../src/adapter/storage/guest-storage'
 )
 
@@ -30,12 +32,17 @@ function makeFollow(
 }
 
 function createService(
-	overrides: { follows?: FollowedArtist[]; home?: string | null } = {},
+	overrides: {
+		follows?: FollowedArtist[]
+		home?: string | null
+		language?: string | null
+	} = {},
 ): InstanceType<typeof GuestService> {
 	vi.mocked(loadFollows).mockReturnValue(
 		overrides.follows ? [...overrides.follows] : [],
 	)
 	vi.mocked(loadHome).mockReturnValue(overrides.home ?? null)
+	vi.mocked(loadLanguage).mockReturnValue(overrides.language ?? null)
 
 	const container = DI.createContainer()
 	container.register(Registration.instance(ILogger, createMockLogger()))
@@ -137,17 +144,36 @@ describe('GuestService', () => {
 		})
 	})
 
+	describe('setLanguage', () => {
+		it('should set and persist the language code', () => {
+			const sut = createService()
+
+			sut.setLanguage('en')
+
+			expect(sut.language).toBe('en')
+			// languageChanged persists via the storage adapter.
+			expect(saveLanguage).toHaveBeenCalledWith('en')
+		})
+
+		it('hydrates the initial language from storage', () => {
+			const sut = createService({ language: 'en' })
+			expect(sut.language).toBe('en')
+		})
+	})
+
 	describe('clearAll', () => {
-		it('should empty follows and null home', () => {
+		it('should empty follows and null home and language', () => {
 			const sut = createService({
 				follows: [makeFollow('a1', 'One'), makeFollow('a2', 'Two')],
 				home: 'JP-13',
+				language: 'en',
 			})
 
 			sut.clearAll()
 
 			expect(sut.follows).toHaveLength(0)
 			expect(sut.home).toBeNull()
+			expect(sut.language).toBeNull()
 		})
 	})
 

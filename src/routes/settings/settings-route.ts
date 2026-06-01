@@ -1,7 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
-import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { Snack } from '../../components/snack-bar/snack'
 import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
@@ -16,22 +15,19 @@ import { IGuestService } from '../../services/guest-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IUserService } from '../../services/user-service'
-import {
-	changeLocale,
-	normalizeToSupportedLanguage,
-	SUPPORTED_LANGUAGES,
-} from '../../util/change-locale'
+import { IUserStore } from '../../services/user-store'
+import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
 	private readonly guest = resolve(IGuestService)
 	private readonly userService = resolve(IUserService)
+	private readonly userStore = resolve(IUserStore)
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
 	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
-	private readonly localStorage = resolve(ILocalStorage)
 	private readonly audio = resolve(IAudioEngine)
 	private readonly consent = resolve(IConsentService)
 
@@ -61,59 +57,19 @@ export class SettingsRoute {
 	public isResendingVerification = false
 	public resendSuccess = false
 
-	// View state derived from the single source of truth: UserService.current
-	// (which is @observable and re-notifies on every entity mutation). All
-	// derived display values are exposed as computed getters so Aurelia's
-	// proxy-based observation tracks the access chain and re-evaluates every
-	// dependent binding (settings row text AND in-modal selector check) when
-	// the user entity changes. No component-local mirror state, no manual
-	// write-back in mutation handlers. This eliminates the desync class of
-	// bug where mirror-only updates fail to propagate to method-call
-	// bindings inside repeat.for (which expression observation cannot track
-	// through a method body).
+	// Display values derive from UserStore, the single observable owner of the
+	// current user's home + language. UserStore resolves guest(localStorage)
+	// vs authed(backend) INTERNALLY and exposes only observable state, so these
+	// getters re-evaluate every dependent binding (settings row text AND the
+	// in-modal selector check) without a component-local mirror, an
+	// auth-branch, or a render-time i18n.getLocale() read — the latter was the
+	// root cause of the frozen guest language-selector highlight.
 	public get currentLocale(): string {
-		// Fallback to the active i18n locale only when hydration has not yet
-		// populated `current.preferredLanguage` (e.g., very first render
-		// after signup, or the hydration backfill RPC is still in flight).
-		// MUST NOT read localStorage['language']. The fallback runs through
-		// normalizeToSupportedLanguage so a BCP 47 tag returned by
-		// i18n.getLocale() (e.g. 'en-US' when the detector falls through to
-		// navigator.language) maps to 'en' — otherwise the selector compares
-		// 'en-US' === 'en' and no row is highlighted.
-		return (
-			this.userService.current?.preferredLanguage ??
-			normalizeToSupportedLanguage(this.i18n.getLocale())
-		)
+		return this.userStore.currentLanguage
 	}
 
 	public get currentHome(): string | null {
-		// Settings is now reachable by guests (from the discovery step onward).
-		// For a guest the home lives in guest storage, not the user entity.
-		if (!this.auth.isAuthenticated) {
-			// Read from GuestService (the @observable owner of guest home) rather
-			// than a raw localStorage snapshot, so the row stays reactive if the
-			// guest picks a home from within Settings.
-			const guestCode = this.guest.home
-			return guestCode ? translationKey(guestCode) : null
-		}
-		// Authenticated: the home value MUST come from the user entity. The
-		// guest-flow home storage owned by
-		// UserHomeSelector is consumed at signup time:
-		// auth-callback's ensureUserProvisioned reads guest.home and calls
-		// userService.create(email, locale, codeToHome(guestHome)), which
-		// atomically persists the home into the user row via the Create
-		// RPC's home field. By the time Settings ever renders, user.home
-		// IS the source of truth. (GuestDataMergeService.merge() handles
-		// follows/hypes only — NOT home; home is a Create-time field, not
-		// a post-signup merge target.)
-		//
-		// If a signed-in user lacks user.home (e.g. they completed signup
-		// before the home-prompt step landed, or guest.home was empty at
-		// auth-callback), `currentHome` is null and the UI renders
-		// 'Not set'. The user re-selects via the home-selector sheet,
-		// which calls userService.updateHome — the getter then surfaces
-		// the new value automatically. No localStorage fallback needed.
-		const code = this.userService.current?.home?.level1
+		const code = this.userStore.currentHome
 		return code ? translationKey(code) : null
 	}
 
@@ -252,7 +208,7 @@ export class SettingsRoute {
 					i18n: this.i18n,
 					auth: this.auth,
 					userService: this.userService,
-					localStorage: this.localStorage,
+					guest: this.guest,
 				},
 				lang,
 			)
@@ -277,8 +233,10 @@ export class SettingsRoute {
 			return
 		}
 		// No manual `this.currentLocale = ...` — the getter derives from
-		// userService.current.preferredLanguage, which changeLocale's
-		// updatePreferredLanguage write-through has already updated.
+		// UserStore.currentLanguage, an observable that resolves to the authed
+		// User entity (updated by changeLocale's updatePreferredLanguage
+		// write-through) or the observable guest language (updated by
+		// changeLocale's guest.setLanguage write-through).
 		this.logger.info('Language changed', { from: previous, to: lang })
 	}
 
