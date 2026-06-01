@@ -14,19 +14,18 @@
     </div>
   </section>
 
-  <!-- PREFERENCES Section -->
+  <!-- PREFERENCES Section.
+       Every row is a subgrid spanning the card's `icon | content | control`
+       columns: the first child lands in the icon column, the content in the
+       1fr column, the trailing control in the auto column — so all rows align
+       regardless of type. -->
   <section>
     <h2 t="settings.preferences" class="settings-section-title"></h2>
     <div class="settings-card">
       <!-- My Home Area -->
-      <button
-        click.trigger="openHomeSelector()"
-        class="settings-row"
-      >
-        <div class="settings-row-start">
-          <svg-icon name="map-pin" class="settings-icon"></svg-icon>
-          <span t="settings.myHomeArea" class="settings-row-label"></span>
-        </div>
+      <button click.trigger="openHomeSelector()" class="settings-row">
+        <svg-icon name="map-pin" class="settings-icon"></svg-icon>
+        <span t="settings.myHomeArea" class="settings-row-label"></span>
         <div class="settings-row-end">
           <span class="settings-row-value" t.bind="currentHomeKey"></span>
           <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
@@ -36,14 +35,9 @@
       <hr class="settings-divider">
 
       <!-- Language -->
-      <button
-        click.trigger="openLanguageSelector()"
-        class="settings-row"
-      >
-        <div class="settings-row-start">
-          <svg-icon name="globe" class="settings-icon"></svg-icon>
-          <span t="settings.language" class="settings-row-label"></span>
-        </div>
+      <button click.trigger="openLanguageSelector()" class="settings-row">
+        <svg-icon name="globe" class="settings-icon"></svg-icon>
+        <span t="settings.language" class="settings-row-label"></span>
         <div class="settings-row-end">
           <span class="settings-row-value" t.bind="'languages.' + currentLocale"></span>
           <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
@@ -52,7 +46,7 @@
 
       <hr class="settings-divider">
 
-      <!-- Push Notifications -->
+      <!-- Push Notifications (whole row is the switch) -->
       <button
         click.trigger="toggleNotifications()"
         role="switch"
@@ -61,14 +55,11 @@
         class="[ settings-row ] [ settings-row-toggle ]"
         data-disabled.bind="!vapidAvailable"
       >
+        <svg-icon name="bell" class="settings-icon"></svg-icon>
         <div class="settings-toggle-col">
-          <div class="settings-row-start">
-            <svg-icon name="bell" class="settings-icon"></svg-icon>
-            <span t="settings.pushNotifications" class="settings-row-label"></span>
-          </div>
-          <span if.bind="!vapidAvailable" t="settings.notAvailable" class="settings-row-hint"></span>
+          <span t="settings.pushNotifications" class="settings-row-label"></span>
+          <span if.bind="!vapidAvailable" t="settings.notAvailable" class="settings-toggle-desc"></span>
         </div>
-        <!-- Toggle switch -->
         <div class="settings-toggle-track" data-on.bind="notificationsEnabled">
           <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled"></div>
         </div>
@@ -76,21 +67,18 @@
 
       <hr class="settings-divider">
 
-      <!-- Sound Effects -->
+      <!-- Sound Effects (whole row is the switch) -->
       <button
         click.trigger="toggleSound()"
         role="switch"
         aria-checked.bind="soundEnabled"
         class="[ settings-row ] [ settings-row-toggle ]"
       >
+        <svg-icon name="music" class="settings-icon"></svg-icon>
         <div class="settings-toggle-col">
-          <div class="settings-row-start">
-            <svg-icon name="music" class="settings-icon"></svg-icon>
-            <span t="settings.soundEffects" class="settings-row-label"></span>
-          </div>
+          <span t="settings.soundEffects" class="settings-row-label"></span>
           <span if.bind="isIOS" t="settings.soundEffectsHint" class="settings-toggle-desc"></span>
         </div>
-        <!-- Toggle switch -->
         <div class="settings-toggle-track" data-on.bind="soundEnabled">
           <div class="settings-toggle-thumb" data-on.bind="soundEnabled"></div>
         </div>
@@ -117,20 +105,21 @@
   <section>
     <h2 t="settings.analytics.sectionTitle" class="settings-section-title"></h2>
     <div class="settings-card">
-      <!-- Analytics consent. Disclosure (expand description) and switch are
-           sibling buttons: a role="switch" must never contain another
-           interactive control. -->
+      <!-- Analytics consent. Icon (col1), disclosure (col2), switch (col3) are
+           siblings — a role="switch" must never contain another interactive
+           control, and keeping the icon a direct row child aligns it with the
+           other rows' icons. -->
       <div class="[ settings-row ] [ settings-row-toggle ]">
+        <svg-icon name="info" class="settings-icon"></svg-icon>
         <button
           click.trigger="toggleAnalyticsDesc()"
           aria-expanded.bind="analyticsDescExpanded"
           class="settings-expand"
         >
-          <div class="settings-row-start">
-            <svg-icon name="info" class="settings-icon"></svg-icon>
+          <span class="settings-expand-head">
             <span t="settings.analytics.toggleLabel" class="settings-row-label"></span>
             <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="analyticsDescExpanded"></svg-icon>
-          </div>
+          </span>
           <span
             if.bind="analyticsDescExpanded"
             t="settings.analytics.toggleDescription"
@@ -154,16 +143,16 @@
       <!-- Marketing-measurement consent. Labeled by purpose (ad-effectiveness
            measurement), not by data geography. -->
       <div class="[ settings-row ] [ settings-row-toggle ]">
+        <svg-icon name="globe" class="settings-icon"></svg-icon>
         <button
           click.trigger="toggleMarketingDesc()"
           aria-expanded.bind="marketingDescExpanded"
           class="settings-expand"
         >
-          <div class="settings-row-start">
-            <svg-icon name="globe" class="settings-icon"></svg-icon>
+          <span class="settings-expand-head">
             <span t="settings.analytics.marketingLabel" class="settings-row-label"></span>
             <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="marketingDescExpanded"></svg-icon>
-          </div>
+          </span>
           <span
             if.bind="marketingDescExpanded"
             t="settings.analytics.marketingDescription"
@@ -184,17 +173,13 @@
     </div>
   </section>
 
-  <!-- ABOUT Section -->
+  <!-- ABOUT Section. Iconless rows: the label still lands in the content
+       column, so it lines up with the icon rows' labels above. -->
   <section>
     <h2 t="settings.about" class="settings-section-title"></h2>
     <div class="settings-card">
       <!-- Terms of Service -->
-      <a
-        href="https://liverty.me/terms"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="settings-row"
-      >
+      <a href="https://liverty.me/terms" target="_blank" rel="noopener noreferrer" class="settings-row">
         <span t="settings.termsOfService" class="settings-row-label"></span>
         <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
       </a>
@@ -202,12 +187,7 @@
       <hr class="settings-divider">
 
       <!-- Privacy Policy -->
-      <a
-        href="https://liverty.me/privacy"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="settings-row"
-      >
+      <a href="https://liverty.me/privacy" target="_blank" rel="noopener noreferrer" class="settings-row">
         <span t="settings.privacyPolicy" class="settings-row-label"></span>
         <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
       </a>
@@ -215,12 +195,7 @@
       <hr class="settings-divider">
 
       <!-- OSS Licenses -->
-      <a
-        href="https://liverty.me/licenses"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="settings-row"
-      >
+      <a href="https://liverty.me/licenses" target="_blank" rel="noopener noreferrer" class="settings-row">
         <span t="settings.ossLicenses" class="settings-row-label"></span>
         <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
       </a>
@@ -232,22 +207,19 @@
   <section if.bind="auth.isAuthenticated">
     <h2 t="settings.account" class="settings-section-title"></h2>
 
-    <!-- Authenticated: email verification + sign out -->
     <div class="settings-card">
       <!-- Email Verification -->
       <div class="settings-row">
-        <div class="settings-row-start">
-          <svg-icon name="mail" class="settings-icon"></svg-icon>
-          <div>
-            <span class="settings-row-label">${auth.user.profile.email}</span>
-            <span
-              class="settings-verification-badge"
-              data-verified.bind="emailVerified"
-            >
-              <span if.bind="emailVerified" t="settings.emailVerified"></span>
-              <span if.bind="!emailVerified" t="settings.emailNotVerified"></span>
-            </span>
-          </div>
+        <svg-icon name="mail" class="settings-icon"></svg-icon>
+        <div class="settings-account">
+          <span class="settings-row-label">${auth.user.profile.email}</span>
+          <span
+            class="settings-verification-badge"
+            data-verified.bind="emailVerified"
+          >
+            <span if.bind="emailVerified" t="settings.emailVerified"></span>
+            <span if.bind="!emailVerified" t="settings.emailNotVerified"></span>
+          </span>
         </div>
         <button
           if.bind="!emailVerified"
@@ -263,10 +235,7 @@
 
       <hr class="settings-divider">
 
-      <button
-        click.trigger="signOut()"
-        class="settings-row settings-sign-out"
-      >
+      <button click.trigger="signOut()" class="settings-row settings-sign-out">
         <span t="settings.signOut" class="settings-sign-out-text"></span>
       </button>
     </div>
