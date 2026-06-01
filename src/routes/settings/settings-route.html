@@ -2,6 +2,18 @@
 
 <main>
   <div class="[ settings-scroll ] [ stack ]">
+  <!-- Guest sign-in / sign-up hero. Top-of-page, guest-only: the most
+       important action for an unauthenticated user, lifted out of the
+       bottom ACCOUNT list so it reads as a primary CTA rather than a link. -->
+  <section if.bind="!auth.isAuthenticated" class="settings-guest-hero">
+    <h2 t="settings.guestHero.heading" class="settings-guest-hero-heading"></h2>
+    <p t="settings.guestHero.body" class="settings-guest-hero-body"></p>
+    <div class="settings-guest-hero-actions">
+      <button click.trigger="signIn()" t="settings.signIn" class="settings-guest-hero-primary"></button>
+      <button click.trigger="signUp()" t="settings.signUp" class="settings-guest-hero-secondary"></button>
+    </div>
+  </section>
+
   <!-- PREFERENCES Section -->
   <section>
     <h2 t="settings.preferences" class="settings-section-title"></h2>
@@ -46,7 +58,7 @@
         role="switch"
         aria-checked.bind="notificationsEnabled"
         disabled.bind="!vapidAvailable"
-        class="settings-row"
+        class="[ settings-row ] [ settings-row-toggle ]"
         data-disabled.bind="!vapidAvailable"
       >
         <div class="settings-toggle-col">
@@ -69,14 +81,14 @@
         click.trigger="toggleSound()"
         role="switch"
         aria-checked.bind="soundEnabled"
-        class="settings-row"
+        class="[ settings-row ] [ settings-row-toggle ]"
       >
         <div class="settings-toggle-col">
           <div class="settings-row-start">
             <svg-icon name="music" class="settings-icon"></svg-icon>
             <span t="settings.soundEffects" class="settings-row-label"></span>
           </div>
-          <span t="settings.soundEffectsHint" class="settings-row-hint"></span>
+          <span if.bind="isIOS" t="settings.soundEffectsHint" class="settings-toggle-desc"></span>
         </div>
         <!-- Toggle switch -->
         <div class="settings-toggle-track" data-on.bind="soundEnabled">
@@ -105,45 +117,70 @@
   <section>
     <h2 t="settings.analytics.sectionTitle" class="settings-section-title"></h2>
     <div class="settings-card">
-      <!-- Analytics consent toggle -->
-      <button
-        click.trigger="handleAnalyticsToggle()"
-        role="switch"
-        aria-checked.bind="analyticsConsent"
-        class="settings-row"
-      >
-        <div class="settings-toggle-col">
+      <!-- Analytics consent. Disclosure (expand description) and switch are
+           sibling buttons: a role="switch" must never contain another
+           interactive control. -->
+      <div class="[ settings-row ] [ settings-row-toggle ]">
+        <button
+          click.trigger="toggleAnalyticsDesc()"
+          aria-expanded.bind="analyticsDescExpanded"
+          class="settings-expand"
+        >
           <div class="settings-row-start">
             <svg-icon name="info" class="settings-icon"></svg-icon>
             <span t="settings.analytics.toggleLabel" class="settings-row-label"></span>
+            <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="analyticsDescExpanded"></svg-icon>
           </div>
-          <span t="settings.analytics.toggleDescription" class="settings-row-hint"></span>
-        </div>
-        <div class="settings-toggle-track" data-on.bind="analyticsConsent">
-          <div class="settings-toggle-thumb" data-on.bind="analyticsConsent"></div>
-        </div>
-      </button>
+          <span
+            if.bind="analyticsDescExpanded"
+            t="settings.analytics.toggleDescription"
+            class="settings-toggle-desc"
+          ></span>
+        </button>
+        <button
+          click.trigger="handleAnalyticsToggle()"
+          role="switch"
+          aria-checked.bind="analyticsConsent"
+          class="settings-switch"
+        >
+          <div class="settings-toggle-track" data-on.bind="analyticsConsent">
+            <div class="settings-toggle-thumb" data-on.bind="analyticsConsent"></div>
+          </div>
+        </button>
+      </div>
 
       <hr class="settings-divider">
 
-      <!-- Cross-border marketing measurement toggle -->
-      <button
-        click.trigger="handleMarketingToggle()"
-        role="switch"
-        aria-checked.bind="marketingConsent"
-        class="settings-row"
-      >
-        <div class="settings-toggle-col">
+      <!-- Marketing-measurement consent. Labeled by purpose (ad-effectiveness
+           measurement), not by data geography. -->
+      <div class="[ settings-row ] [ settings-row-toggle ]">
+        <button
+          click.trigger="toggleMarketingDesc()"
+          aria-expanded.bind="marketingDescExpanded"
+          class="settings-expand"
+        >
           <div class="settings-row-start">
             <svg-icon name="globe" class="settings-icon"></svg-icon>
-            <span t="settings.analytics.crossBorderLabel" class="settings-row-label"></span>
+            <span t="settings.analytics.marketingLabel" class="settings-row-label"></span>
+            <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="marketingDescExpanded"></svg-icon>
           </div>
-          <span t="settings.analytics.crossBorderDescription" class="settings-row-hint"></span>
-        </div>
-        <div class="settings-toggle-track" data-on.bind="marketingConsent">
-          <div class="settings-toggle-thumb" data-on.bind="marketingConsent"></div>
-        </div>
-      </button>
+          <span
+            if.bind="marketingDescExpanded"
+            t="settings.analytics.marketingDescription"
+            class="settings-toggle-desc"
+          ></span>
+        </button>
+        <button
+          click.trigger="handleMarketingToggle()"
+          role="switch"
+          aria-checked.bind="marketingConsent"
+          class="settings-switch"
+        >
+          <div class="settings-toggle-track" data-on.bind="marketingConsent">
+            <div class="settings-toggle-thumb" data-on.bind="marketingConsent"></div>
+          </div>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -190,35 +227,13 @@
     </div>
   </section>
 
-  <!-- ACCOUNT Section -->
-  <section>
+  <!-- ACCOUNT Section. Authenticated-only: the guest sign-in / sign-up entry
+       lives in the top hero, so this section is hidden entirely for guests. -->
+  <section if.bind="auth.isAuthenticated">
     <h2 t="settings.account" class="settings-section-title"></h2>
 
-    <!-- Guest: sign-in / sign-up entry. Account-bound controls (email
-         verification, sign-out) are hidden, not blocked. -->
-    <div if.bind="!auth.isAuthenticated" class="settings-card">
-      <p t="settings.guestPrompt" class="settings-row-hint settings-guest-prompt"></p>
-      <button click.trigger="signIn()" class="settings-row">
-        <div class="settings-row-start">
-          <svg-icon name="lock" class="settings-icon"></svg-icon>
-          <span t="settings.signIn" class="settings-row-label"></span>
-        </div>
-        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-      </button>
-
-      <hr class="settings-divider">
-
-      <button click.trigger="signUp()" class="settings-row">
-        <div class="settings-row-start">
-          <svg-icon name="plus" class="settings-icon"></svg-icon>
-          <span t="settings.signUp" class="settings-row-label"></span>
-        </div>
-        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-      </button>
-    </div>
-
     <!-- Authenticated: email verification + sign out -->
-    <div if.bind="auth.isAuthenticated" class="settings-card">
+    <div class="settings-card">
       <!-- Email Verification -->
       <div class="settings-row">
         <div class="settings-row-start">

@@ -462,4 +462,42 @@ describe('SettingsRoute', () => {
 			expect(guestSut.currentLocale).toBe('en')
 		})
 	})
+
+	describe('consent description disclosure', () => {
+		it('toggleAnalyticsDesc flips the analytics disclosure state', () => {
+			expect(sut.analyticsDescExpanded).toBe(false)
+			sut.toggleAnalyticsDesc()
+			expect(sut.analyticsDescExpanded).toBe(true)
+			sut.toggleAnalyticsDesc()
+			expect(sut.analyticsDescExpanded).toBe(false)
+		})
+
+		it('disclosure toggle does not change the switch value (independent controls)', () => {
+			sut.marketingConsent = false
+			sut.toggleMarketingDesc()
+			expect(sut.marketingDescExpanded).toBe(true)
+			// The disclosure and the switch are separate controls — expanding
+			// the description must not grant/revoke the consent.
+			expect(sut.marketingConsent).toBe(false)
+		})
+	})
+
+	describe('isIOS', () => {
+		afterEach(() => {
+			// Drop any own-property override, restoring the prototype getter.
+			delete (navigator as { userAgent?: string }).userAgent
+		})
+
+		it('is false on a non-iOS user agent', () => {
+			expect(sut.isIOS).toBe(false)
+		})
+
+		it('is true on an iPhone user agent', () => {
+			Object.defineProperty(navigator, 'userAgent', {
+				configurable: true,
+				get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+			})
+			expect(sut.isIOS).toBe(true)
+		})
+	})
 })

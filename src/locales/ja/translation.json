@@ -261,7 +261,6 @@
 		"privacyPolicy": "プライバシーポリシー",
 		"ossLicenses": "OSSライセンス",
 		"account": "アカウント",
-		"guestPrompt": "ログインするとお気に入りや通知を端末をまたいで使えます",
 		"signIn": "ログイン",
 		"signUp": "新規登録",
 		"emailVerified": "認証済み",
@@ -276,10 +275,14 @@
 		"languageChangeError": "言語の変更を保存できませんでした。少し時間を置いてもう一度お試しください。",
 		"analytics": {
 			"sectionTitle": "プライバシーと分析",
-			"toggleLabel": "匿名の利用状況を共有する",
-			"toggleDescription": "どの画面が使われているか、どこでつまずいているかを把握して、次のアップデートをよりよくするために使います。",
-			"crossBorderLabel": "海外での分析処理を許可する",
-			"crossBorderDescription": "EUリージョンの分析ダッシュボードに匿名の利用データを含めます。オフにすると国内のみで処理します。"
+			"toggleLabel": "使い心地の改善に協力する",
+			"toggleDescription": "「どこで迷いやすいか」を匿名データから見つけ、次のアップデートに活かします。個人を特定する情報は集めません。",
+			"marketingLabel": "広告効果の測定に協力する",
+			"marketingDescription": "広告から来てくれた人の動きを匿名で測り、届け方の改善に役立てます。オフにしても他の機能には影響しません。"
+		},
+		"guestHero": {
+			"heading": "ログインして、もっと便利に",
+			"body": "お気に入りと通知を、どの端末でもそのまま使えます"
 		}
 	},
 	"onboarding": {
