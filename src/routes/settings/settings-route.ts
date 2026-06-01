@@ -13,13 +13,11 @@ import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
-import { IUserService } from '../../services/user-service'
 import { IUserStore } from '../../services/user-store'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
-	private readonly userService = resolve(IUserService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
@@ -182,7 +180,7 @@ export class SettingsRoute {
 			return
 		}
 
-		const userId = this.userService.current?.id ?? ''
+		const userId = this.userStore.current?.id ?? ''
 		if (!userId) {
 			this.logger.warn(
 				'Cannot resolve push toggle state without authenticated userId',
@@ -218,9 +216,9 @@ export class SettingsRoute {
 	}
 
 	public onHomeSelected(code: string): void {
-		// UserHomeSelector already persists via userService.updateHome before
+		// UserHomeSelector already persists via userStore.updateHome before
 		// firing this callback, and `currentHome` is derived from
-		// userService.current.home — so the view updates automatically. The
+		// userStore.current.home — so the view updates automatically. The
 		// handler stays solely to surface a structured log line for the
 		// settings-originated update path (distinct from onboarding /
 		// auth-callback / hydration write paths).
@@ -240,7 +238,6 @@ export class SettingsRoute {
 				{
 					i18n: this.i18n,
 					auth: this.auth,
-					userService: this.userService,
 					userStore: this.userStore,
 				},
 				lang,
@@ -279,7 +276,7 @@ export class SettingsRoute {
 
 		try {
 			const newValue = !this.notificationsEnabled
-			const userId = this.userService.current?.id ?? ''
+			const userId = this.userStore.current?.id ?? ''
 			if (!userId) {
 				this.logger.warn(
 					'Cannot toggle push notifications without authenticated userId',
@@ -316,7 +313,7 @@ export class SettingsRoute {
 		this.resendSuccess = false
 
 		try {
-			await this.userService.resendEmailVerification()
+			await this.userStore.resendEmailVerification()
 			this.resendSuccess = true
 		} catch (err) {
 			if (err instanceof ConnectError && err.code === Code.ResourceExhausted) {
@@ -362,7 +359,7 @@ export class SettingsRoute {
 
 	public async signOut(): Promise<void> {
 		try {
-			this.userService.clear()
+			this.userStore.clear()
 			await this.auth.signOut()
 		} catch (err) {
 			this.logger.error('Sign-out failed', { error: err })

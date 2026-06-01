@@ -19,11 +19,11 @@ const mockAuth: { ready: Promise<void>; isAuthenticated: boolean } = {
 // it does NOT depend on UserHydrationTask ordering. By default it resolves a
 // user into `current` (simulating the Get/Create chain); individual tests
 // override it to model a not-yet-hydrated or failing hydration.
-const mockUserService = {
+const mockUserStore = {
 	current: undefined as { id: string } | undefined,
 	ensureLoaded: vi.fn(async (_locale: string) => {
-		mockUserService.current ??= { id: 'user-1' }
-		return mockUserService.current
+		mockUserStore.current ??= { id: 'user-1' }
+		return mockUserStore.current
 	}),
 }
 
@@ -69,8 +69,8 @@ vi.mock('../util/change-locale', () => ({
 vi.mock('./auth-service', () => ({
 	IAuthService: { friendlyName: 'IAuthService' },
 }))
-vi.mock('./user-service', () => ({
-	IUserService: { friendlyName: 'IUserService' },
+vi.mock('./user-store', () => ({
+	IUserStore: { friendlyName: 'IUserStore' },
 }))
 vi.mock('./follow-store', () => ({
 	IFollowStore: { friendlyName: 'IFollowStore' },
@@ -83,7 +83,7 @@ const container = {
 		const map: Record<string, unknown> = {
 			ILogger: mockLogger,
 			IAuthService: mockAuth,
-			IUserService: mockUserService,
+			IUserStore: mockUserStore,
 			IFollowStore: mockFollowStore,
 			I18N: mockI18n,
 		}
@@ -100,11 +100,11 @@ describe('runFollowReconcile', () => {
 		vi.clearAllMocks()
 		sessionStorage.clear()
 		mockAuth.isAuthenticated = true
-		mockUserService.current = { id: 'user-1' }
+		mockUserStore.current = { id: 'user-1' }
 		// Default ensureLoaded: idempotent hydration that ensures `current`.
-		mockUserService.ensureLoaded.mockImplementation(async () => {
-			mockUserService.current ??= { id: 'user-1' }
-			return mockUserService.current
+		mockUserStore.ensureLoaded.mockImplementation(async () => {
+			mockUserStore.current ??= { id: 'user-1' }
+			return mockUserStore.current
 		})
 		mockFollowStore.guestFollowsState = []
 		mockFollowStore.hasReceipt.mockReturnValue(false)
@@ -166,16 +166,16 @@ describe('runFollowReconcile', () => {
 	it('self-hydrates via ensureLoaded (does NOT rely on UserHydrationTask ordering)', async () => {
 		// `current` starts undefined — simulating the race where UserHydrationTask
 		// has not populated it yet. The reconcile must call ensureLoaded itself.
-		mockUserService.current = undefined
+		mockUserStore.current = undefined
 		mockFollowStore.guestFollowsState = [makeFollow('a1')]
-		mockUserService.ensureLoaded.mockImplementation(async () => {
-			mockUserService.current = { id: 'user-1' }
-			return mockUserService.current
+		mockUserStore.ensureLoaded.mockImplementation(async () => {
+			mockUserStore.current = { id: 'user-1' }
+			return mockUserStore.current
 		})
 
 		await runFollowReconcile(container)
 
-		expect(mockUserService.ensureLoaded).toHaveBeenCalledOnce()
+		expect(mockUserStore.ensureLoaded).toHaveBeenCalledOnce()
 		// Migration ran because ensureLoaded produced a user id without depending
 		// on the hydration task running first.
 		expect(mockFollowStore.migrateGuestFollows).toHaveBeenCalledWith('user-1')
@@ -184,9 +184,9 @@ describe('runFollowReconcile', () => {
 
 	it('defers (re-arms the session flag) when no user id is available even after ensureLoaded', async () => {
 		mockFollowStore.guestFollowsState = [makeFollow('a1')]
-		mockUserService.current = undefined
+		mockUserStore.current = undefined
 		// ensureLoaded cannot bootstrap a user (e.g. no cached id and no email).
-		mockUserService.ensureLoaded.mockResolvedValue(undefined)
+		mockUserStore.ensureLoaded.mockResolvedValue(undefined)
 
 		await runFollowReconcile(container)
 
@@ -199,8 +199,8 @@ describe('runFollowReconcile', () => {
 
 	it('re-arms the session flag when ensureLoaded throws', async () => {
 		mockFollowStore.guestFollowsState = [makeFollow('a1')]
-		mockUserService.current = undefined
-		mockUserService.ensureLoaded.mockRejectedValue(new Error('rpc down'))
+		mockUserStore.current = undefined
+		mockUserStore.ensureLoaded.mockRejectedValue(new Error('rpc down'))
 
 		await runFollowReconcile(container)
 

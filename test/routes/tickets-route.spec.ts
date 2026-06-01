@@ -6,7 +6,7 @@ import { createMockTicketService } from '../helpers/mock-ticket-service'
 
 const mockITicketRpcClient = DI.createInterface('ITicketRpcClient')
 const mockIProofService = DI.createInterface('IProofService')
-const mockIUserService = DI.createInterface('IUserService')
+const mockIUserStore = DI.createInterface('IUserStore')
 
 vi.mock('../../src/adapter/rpc/client/ticket-client', () => ({
 	ITicketRpcClient: mockITicketRpcClient,
@@ -16,8 +16,8 @@ vi.mock('../../src/services/proof-service', () => ({
 	IProofService: mockIProofService,
 }))
 
-vi.mock('../../src/services/user-service', () => ({
-	IUserService: mockIUserService,
+vi.mock('../../src/services/user-store', () => ({
+	IUserStore: mockIUserStore,
 }))
 
 vi.mock('qrcode', () => {
@@ -34,17 +34,17 @@ describe('TicketsRoute', () => {
 	let sut: InstanceType<typeof TicketsRoute>
 	let mockTicketService: ReturnType<typeof createMockTicketService>
 	let mockProofService: ReturnType<typeof createMockProofService>
-	let mockUserService: { current: { id: string } | undefined }
+	let mockUserStore: { current: { id: string } | undefined }
 
 	beforeEach(() => {
 		mockTicketService = createMockTicketService()
 		mockProofService = createMockProofService()
-		mockUserService = { current: { id: 'u1' } }
+		mockUserStore = { current: { id: 'u1' } }
 
 		const container = createTestContainer(
 			Registration.instance(mockITicketRpcClient, mockTicketService),
 			Registration.instance(mockIProofService, mockProofService),
-			Registration.instance(mockIUserService, mockUserService),
+			Registration.instance(mockIUserStore, mockUserStore),
 		)
 		container.register(TicketsRoute)
 		sut = container.get(TicketsRoute)
@@ -134,7 +134,7 @@ describe('TicketsRoute', () => {
 		})
 
 		it('should set "Not signed in" error when user service has no current user', async () => {
-			mockUserService.current = undefined
+			mockUserStore.current = undefined
 
 			await sut.loading()
 

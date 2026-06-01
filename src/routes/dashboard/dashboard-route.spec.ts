@@ -23,8 +23,11 @@ const mockOnboarding = {
 	currentStep: 'done',
 	setStep: vi.fn(),
 }
-const mockUserStore = { guestHome: null, setGuestHome: vi.fn() }
-const mockUserService = { current: { home: 'JP-13' } }
+const mockUserStore = {
+	current: { home: 'JP-13' },
+	guestHome: null,
+	setGuestHome: vi.fn(),
+}
 const mockI18n = { tr: vi.fn((key: string) => key) }
 const mockStorage = {
 	getItem: vi.fn((_key: string): string | null => null),
@@ -46,7 +49,6 @@ vi.mock('aurelia', async (importOriginal) => {
 				ITicketJourneyService: mockJourneyService,
 				IOnboardingService: mockOnboarding,
 				IUserStore: mockUserStore,
-				IUserService: mockUserService,
 				I18N: mockI18n,
 				ILocalStorage: mockStorage,
 			}

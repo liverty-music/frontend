@@ -20,7 +20,6 @@ import {
 	OnboardingStep,
 } from '../../services/onboarding-service'
 import { ITicketJourneyService } from '../../services/ticket-journey-service'
-import { IUserService } from '../../services/user-service'
 import { IUserStore } from '../../services/user-store'
 
 export class DashboardRoute {
@@ -50,7 +49,6 @@ export class DashboardRoute {
 	private readonly journeyService = resolve(ITicketJourneyService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly userStore = resolve(IUserStore)
-	private readonly userService = resolve(IUserService)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly history = resolve(IHistory)
 	private abortController: AbortController | null = null
@@ -118,7 +116,7 @@ export class DashboardRoute {
 		}
 
 		if (this.authService.isAuthenticated) {
-			this.needsRegion = !this.userService.current?.home
+			this.needsRegion = !this.userStore.current?.home
 		} else {
 			this.needsRegion = !UserHomeSelector.getStoredHome()
 		}

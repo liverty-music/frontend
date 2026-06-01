@@ -21,13 +21,11 @@ import {
 	IOnboardingService,
 	OnboardingStep,
 } from '../../services/onboarding-service'
-import { IUserService } from '../../services/user-service'
 import { IUserStore } from '../../services/user-store'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
-	private readonly userService = resolve(IUserService)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly followStore = resolve(IFollowStore)
@@ -162,20 +160,16 @@ export class WelcomeRoute implements IRouteViewModel {
 		// Welcome is anonymous-only — canLoad redirects authenticated
 		// callers to /dashboard before this code runs, so
 		// `authService.isAuthenticated` is guaranteed false here. The
-		// `userService.updatePreferredLanguage` branch inside changeLocale
+		// `userStore.updatePreferredLanguage` branch inside changeLocale
 		// is therefore intentional dead code from this call site.
 		//
 		// We still call the shared changeLocale (rather than inlining the
 		// anonymous path) so the welcome page and settings page route
 		// every locale change through one validation + persistence policy.
-		// The cost is a single DI resolve of IUserService at construction
-		// time, which is the right trade-off vs. a second code path that
-		// could silently diverge.
 		await changeLocale(
 			{
 				i18n: this.i18n,
 				auth: this.authService,
-				userService: this.userService,
 				userStore: this.userStore,
 			},
 			newLocale,

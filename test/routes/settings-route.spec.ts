@@ -4,16 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
 
 const mockIAuthService = DI.createInterface('IAuthService')
-const mockIUserService = DI.createInterface('IUserService')
 const mockIUserStore = DI.createInterface('IUserStore')
 const mockINotificationManager = DI.createInterface('INotificationManager')
 const mockIPushService = DI.createInterface('IPushService')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
-}))
-vi.mock('../../src/services/user-service', () => ({
-	IUserService: mockIUserService,
 }))
 vi.mock('../../src/services/user-store', () => ({
 	IUserStore: mockIUserStore,
@@ -44,7 +40,15 @@ describe('SettingsRoute', () => {
 		signIn: ReturnType<typeof vi.fn>
 		signUp: ReturnType<typeof vi.fn>
 	}
-	let mockUser: {
+	// Lightweight stand-in for the real UserStore: it is the single owner of
+	// both the authenticated User entity (current / updatePreferredLanguage /
+	// resendEmailVerification / clear, absorbed from the former UserService)
+	// AND the guest home/language slice. Its getters resolve the same
+	// observable sources (its own `current` / guest fields / mockAuth) the
+	// production store uses, so the SettingsRoute getters that delegate to the
+	// store — plus the guest changeLocale write-through — exercise the same
+	// resolution logic under test.
+	let mockUserStore: {
 		current:
 			| {
 					id: string
@@ -52,24 +56,20 @@ describe('SettingsRoute', () => {
 					preferredLanguage?: string
 			  }
 			| undefined
-		resendEmailVerification: ReturnType<typeof vi.fn>
-		clear: ReturnType<typeof vi.fn>
-		updatePreferredLanguage: ReturnType<typeof vi.fn>
-	}
-	// Lightweight stand-in for the real UserStore: it OWNS the guest home/
-	// language slice (as the real store now does) and its getters resolve the
-	// same observable sources (mockUser / its own guest fields / mockAuth) the
-	// production store composes, so the SettingsRoute getters that delegate to
-	// the store — plus the guest changeLocale write-through — exercise the same
-	// resolution logic under test.
-	let mockUserStore: {
 		guestHome: string | null
 		guestLanguage: string | null
 		readonly currentHome: string | null
 		readonly currentLanguage: string
 		setGuestHome: ReturnType<typeof vi.fn>
 		setGuestLanguage: ReturnType<typeof vi.fn>
+		resendEmailVerification: ReturnType<typeof vi.fn>
+		clear: ReturnType<typeof vi.fn>
+		updatePreferredLanguage: ReturnType<typeof vi.fn>
 	}
+	// Alias to the merged store so the existing entity-bootstrap assertions
+	// (mockUser.current / updatePreferredLanguage / resendEmailVerification /
+	// clear) read naturally against the one IUserStore the route injects.
+	let mockUser: typeof mockUserStore
 	let mockNotification: { permission: string }
 	let mockPush: {
 		getBrowserSubscription: ReturnType<typeof vi.fn>
@@ -88,28 +88,18 @@ describe('SettingsRoute', () => {
 			signIn: vi.fn().mockResolvedValue(undefined),
 			signUp: vi.fn().mockResolvedValue(undefined),
 		}
-		mockUser = {
-			current: { id: 'user-uuid-1', preferredLanguage: 'ja' },
-			resendEmailVerification: vi.fn().mockResolvedValue(undefined),
-			clear: vi.fn(),
-			updatePreferredLanguage: vi.fn(async (lang: string) => {
-				if (mockUser.current) {
-					mockUser.current = { ...mockUser.current, preferredLanguage: lang }
-				}
-				return mockUser.current
-			}),
-		}
 		mockUserStore = {
+			current: { id: 'user-uuid-1', preferredLanguage: 'ja' },
 			guestHome: null,
 			guestLanguage: null,
 			get currentHome(): string | null {
 				return mockAuth.isAuthenticated
-					? (mockUser.current?.home?.level1 ?? null)
+					? (mockUserStore.current?.home?.level1 ?? null)
 					: mockUserStore.guestHome
 			},
 			get currentLanguage(): string {
 				if (mockAuth.isAuthenticated) {
-					return mockUser.current?.preferredLanguage ?? 'ja'
+					return mockUserStore.current?.preferredLanguage ?? 'ja'
 				}
 				return mockUserStore.guestLanguage ?? 'ja'
 			},
@@ -119,7 +109,19 @@ describe('SettingsRoute', () => {
 			setGuestLanguage: vi.fn((lang: string) => {
 				mockUserStore.guestLanguage = lang
 			}),
+			resendEmailVerification: vi.fn().mockResolvedValue(undefined),
+			clear: vi.fn(),
+			updatePreferredLanguage: vi.fn(async (lang: string) => {
+				if (mockUserStore.current) {
+					mockUserStore.current = {
+						...mockUserStore.current,
+						preferredLanguage: lang,
+					}
+				}
+				return mockUserStore.current
+			}),
 		}
+		mockUser = mockUserStore
 		mockNotification = { permission: 'default' }
 		mockPush = {
 			getBrowserSubscription: vi.fn().mockResolvedValue(null),
@@ -132,7 +134,6 @@ describe('SettingsRoute', () => {
 
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(mockIUserService, mockUser),
 			Registration.instance(mockIUserStore, mockUserStore),
 			Registration.instance(mockINotificationManager, mockNotification),
 			Registration.instance(mockIPushService, mockPush),
@@ -409,7 +410,6 @@ describe('SettingsRoute', () => {
 			mockAuth.user = null
 			const container = createTestContainer(
 				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(mockIUserService, mockUser),
 				Registration.instance(mockIUserStore, mockUserStore),
 				Registration.instance(mockINotificationManager, mockNotification),
 				Registration.instance(mockIPushService, mockPush),

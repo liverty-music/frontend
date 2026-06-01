@@ -39,9 +39,9 @@ export const SessionKeys = {
 } as const
 
 // Per-external_id namespaced key holding the internal user_id resolved from
-// UserService.Create or Get. Read by UserServiceClient before issuing any
-// authenticated per-user RPC so the rpc-auth-scoping convention can be
-// satisfied without an extra Get round-trip.
+// User.Create or Get. Read by UserStore before issuing any authenticated
+// per-user RPC so the rpc-auth-scoping convention can be satisfied without an
+// extra Get round-trip.
 export function userIdStorageKey(externalID: string): string {
 	return `liverty:userId:${externalID}`
 }
