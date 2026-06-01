@@ -1,7 +1,6 @@
 import type { I18N } from '@aurelia/i18n'
-import type { ILocalStorage } from '../adapter/storage/local-storage'
-import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
+import type { IGuestService } from '../services/guest-service'
 import type { IUserService } from '../services/user-service'
 
 export const SUPPORTED_LANGUAGES = ['ja', 'en'] as const
@@ -43,7 +42,7 @@ export interface ChangeLocaleDeps {
 	readonly i18n: I18N
 	readonly auth: IAuthService
 	readonly userService: IUserService
-	readonly localStorage: ILocalStorage
+	readonly guest: IGuestService
 }
 
 /**
@@ -51,8 +50,12 @@ export interface ChangeLocaleDeps {
  *
  * Routes persistence based on the caller's auth state:
  *
- * - **Unauthenticated** (Welcome page): write through to
- *   `localStorage['language']` after `i18n.setLocale`. No backend call.
+ * - **Unauthenticated** (Welcome / guest Settings): write through to the
+ *   observable guest language source (`GuestService.setLanguage`, which
+ *   persists to `localStorage['language']` via its `languageChanged` hook)
+ *   after `i18n.setLocale`. Writing through the @observable owner — not raw
+ *   localStorage — keeps `UserStore.currentLanguage` reactive so the language
+ *   selector highlight follows the active locale. No backend call.
  *
  * - **Authenticated** (Settings page): call `UpdatePreferredLanguage` first,
  *   apply `i18n.setLocale` after success. The backend row is the source
@@ -66,7 +69,7 @@ export async function changeLocale(
 	deps: ChangeLocaleDeps,
 	lang: string,
 ): Promise<void> {
-	const { i18n, auth, userService, localStorage } = deps
+	const { i18n, auth, userService, guest } = deps
 
 	if (!isSupportedLanguage(lang)) {
 		throw new TypeError(
@@ -76,7 +79,7 @@ export async function changeLocale(
 
 	if (!auth.isAuthenticated) {
 		await i18n.setLocale(lang)
-		localStorage.setItem(StorageKeys.language, lang)
+		guest.setLanguage(lang)
 		return
 	}
 

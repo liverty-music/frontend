@@ -80,6 +80,7 @@ import { ITicketEmailService } from './services/ticket-email-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
 import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserService } from './services/user-service'
+import { IUserStore } from './services/user-store'
 import { DateValueConverter } from './value-converters/date'
 
 function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
@@ -192,6 +193,10 @@ async function bootstrap(): Promise<void> {
 	au.register(IConcertService)
 	au.register(IOnboardingService)
 	au.register(IGuestService)
+	// UserStore composes IUserService + IGuestService into a single observable
+	// owner of home/language; register after both so its singleton can resolve
+	// them. Callers read the store instead of branching on auth state.
+	au.register(IUserStore)
 	au.register(IGuestDataMergeService)
 	au.register(IAudioEngine)
 	au.register(INotificationManager)
