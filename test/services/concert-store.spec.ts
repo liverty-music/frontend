@@ -37,12 +37,12 @@ vi.mock('../../src/services/guest-service', () => ({
 	IGuestService: mockIGuestService,
 }))
 
-const { ConcertServiceClient, IConcertService } = await import(
-	'../../src/services/concert-service'
+const { ConcertStore, IConcertStore } = await import(
+	'../../src/services/concert-store'
 )
 
-describe('ConcertServiceClient', () => {
-	let sut: InstanceType<typeof ConcertServiceClient>
+describe('ConcertStore', () => {
+	let sut: InstanceType<typeof ConcertStore>
 	let mockLoggerWarn: ReturnType<typeof vi.fn>
 
 	beforeEach(() => {
@@ -65,10 +65,10 @@ describe('ConcertServiceClient', () => {
 			}),
 			Registration.instance(mockIConcertRpcClient, mockConcertRpcClient),
 		)
-		container.register(ConcertServiceClient)
-		sut = container.get(IConcertService)
+		container.register(ConcertStore)
+		sut = container.get(IConcertStore)
 		// The mock ILogger's scopeTo returns the same instance (mockReturnThis),
-		// so the scoped logger inside ConcertServiceClient calls the very same
+		// so the scoped logger inside ConcertStore calls the very same
 		// warn spy we grab from the container here.
 		mockLoggerWarn = (
 			container.get(ILogger) as { warn: ReturnType<typeof vi.fn> }

@@ -29,7 +29,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IAuthService: mockAuth,
 				IGuestService: mockGuest,
 				IFollowRpcClient: mockRpcClient,
-				IConcertService: mockConcertService,
+				IConcertStore: mockConcertService,
 			}
 			const tokenAny = token as { friendlyName?: string }
 			return map[tokenAny.friendlyName ?? ''] ?? {}

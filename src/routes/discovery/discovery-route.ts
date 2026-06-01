@@ -8,8 +8,8 @@ import {
 	Events,
 	IAnalyticsService,
 } from '../../lib/analytics/analytics-service'
-import { IArtistServiceClient } from '../../services/artist-service-client'
-import { IConcertService } from '../../services/concert-service'
+import { IArtistStore } from '../../services/artist-store'
+import { IConcertStore } from '../../services/concert-store'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import { IGuestService } from '../../services/guest-service'
 import {
@@ -24,13 +24,13 @@ import { GenreFilterController } from './genre-filter-controller'
 import { SearchController } from './search-controller'
 
 export class DiscoveryRoute {
-	private readonly artistClient = resolve(IArtistServiceClient)
+	private readonly artistClient = resolve(IArtistStore)
 	private readonly followService = resolve(IFollowServiceClient)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly guest = resolve(IGuestService)
-	private readonly concertService = resolve(IConcertService)
+	private readonly concertService = resolve(IConcertStore)
 	private readonly analytics = resolve(IAnalyticsService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)

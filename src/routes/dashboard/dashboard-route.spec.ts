@@ -41,7 +41,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IHistory: mockHistory,
 				ILogger: mockLogger,
 				IAuthService: mockAuth,
-				IConcertService: mockConcertService,
+				IConcertStore: mockConcertService,
 				IFollowServiceClient: mockFollowService,
 				ITicketJourneyService: mockJourneyService,
 				IOnboardingService: mockOnboarding,

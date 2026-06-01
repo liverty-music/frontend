@@ -15,7 +15,7 @@ import type { Artist } from '../../entities/artist'
 import type { DateGroup } from '../../entities/concert'
 import type { Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
-import { IConcertService } from '../../services/concert-service'
+import { IConcertStore } from '../../services/concert-store'
 import { IGuestService } from '../../services/guest-service'
 import {
 	IOnboardingService,
@@ -33,7 +33,7 @@ export class WelcomeRoute implements IRouteViewModel {
 	private readonly logger = resolve(ILogger).scopeTo('WelcomeRoute')
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
-	private readonly concertService = resolve(IConcertService)
+	private readonly concertService = resolve(IConcertStore)
 	private readonly host = resolve(INode) as HTMLElement
 
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES

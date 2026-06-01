@@ -32,7 +32,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
-import { ConcertServiceClient } from './concert-service'
+import { ConcertStore } from './concert-store'
 
 function makeGroups(count: number): ProximityGroup[] {
 	return Array.from({ length: count }, (_, _i) => ({
@@ -43,13 +43,13 @@ function makeGroups(count: number): ProximityGroup[] {
 	})) as unknown as ProximityGroup[]
 }
 
-describe('ConcertServiceClient', () => {
-	let sut: ConcertServiceClient
+describe('ConcertStore', () => {
+	let sut: ConcertStore
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockAuth.isAuthenticated = true
-		sut = new ConcertServiceClient()
+		sut = new ConcertStore()
 	})
 
 	// Restore spies (including the Date.now spy used by the TTL-expiry

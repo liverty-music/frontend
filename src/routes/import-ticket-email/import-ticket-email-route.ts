@@ -4,7 +4,7 @@ import type { TicketEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_
 import { TicketJourneyStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import type { FollowedArtist } from '../../entities/follow'
-import { IConcertService } from '../../services/concert-service'
+import { IConcertStore } from '../../services/concert-store'
 import { IFollowServiceClient } from '../../services/follow-service-client'
 import {
 	type EmailType,
@@ -55,7 +55,7 @@ export class ImportTicketEmailRoute {
 
 	private readonly logger = resolve(ILogger).scopeTo('ImportTicketEmail')
 	private readonly followService = resolve(IFollowServiceClient)
-	private readonly concertService = resolve(IConcertService)
+	private readonly concertService = resolve(IConcertStore)
 	private readonly ticketEmailService = resolve(ITicketEmailService)
 	private abortController: AbortController | null = null
 

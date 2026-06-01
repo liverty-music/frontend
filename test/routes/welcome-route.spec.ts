@@ -8,7 +8,7 @@ import { createMockRouter } from '../helpers/mock-router'
 
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
-const mockIConcertService = DI.createInterface('IConcertService')
+const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIGuestService = DI.createInterface('IGuestService')
 
 vi.mock('../../src/services/auth-service', () => ({
@@ -27,8 +27,8 @@ vi.mock('../../src/services/onboarding-service', () => ({
 	},
 }))
 
-vi.mock('../../src/services/concert-service', () => ({
-	IConcertService: mockIConcertService,
+vi.mock('../../src/services/concert-store', () => ({
+	IConcertStore: mockIConcertStore,
 }))
 
 vi.mock('../../src/services/guest-service', () => ({
@@ -94,7 +94,7 @@ describe('WelcomeRoute', () => {
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
-			Registration.instance(mockIConcertService, mockConcert),
+			Registration.instance(mockIConcertStore, mockConcert),
 			Registration.instance(mockIGuestService, mockGuest),
 			Registration.instance(IRouter, mockRouter),
 			Registration.instance(IEventAggregator, {

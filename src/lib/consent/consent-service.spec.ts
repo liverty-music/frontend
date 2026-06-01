@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 //
-// Same pattern as `services/concert-service.spec.ts`: replace the
+// Same pattern as `services/concert-store.spec.ts`: replace the
 // `aurelia` `resolve()` export with a stub that maps DI tokens to mock
 // instances by the token's `friendlyName`. ConsentService resolves both
 // `ILogger` and `IEventAggregator`; the latter is the mutation publish

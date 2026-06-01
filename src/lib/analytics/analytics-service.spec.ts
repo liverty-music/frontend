@@ -60,7 +60,7 @@ vi.mock('@opentelemetry/api', async (importOriginal) => {
 
 // ── Aurelia DI mock ────────────────────────────────────────────────────────
 //
-// Same `friendlyName`-keyed resolver stub the existing `concert-service`
+// Same `friendlyName`-keyed resolver stub the existing `concert-store`
 // spec uses. `config` and `consent` are mutated per-test via the
 // references captured below, so the SUT sees the runtime values selected
 // by the test without re-instantiating the mock map.
