@@ -53,20 +53,37 @@
 			letter-spacing: 0.05em;
 		}
 
+		/* The card owns the shared column tracks (lead icon | content | trailing
+		   control); every row is a subgrid spanning them, so icons, labels, and
+		   controls line up across all rows regardless of each row's content or
+		   inner markup — alignment is structural, not emergent from per-row flex.
+		   Subgrid is Baseline (since 2023); each subgrid line carries an explicit
+		   track list above it as a same-cascade fallback for older engines. */
 		.settings-card {
 			overflow: hidden;
+			display: grid;
+			grid-template-columns: auto 1fr auto;
+
 			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
 			border-radius: var(--radius-card);
+
 			background: var(--color-surface-raised);
 		}
 
 		.settings-row {
-			display: flex;
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: auto 1fr auto;
+			grid-template-columns: subgrid;
+			column-gap: var(--space-xs);
 			align-items: center;
-			justify-content: space-between;
 
-			inline-size: 100%;
 			padding: var(--space-xs) var(--space-s);
+
+			/* Reset the UA `text-align: center` a <button>.settings-row would
+			   otherwise impose — its label is a stretched col2 grid item, so
+			   centred text would drift to the middle of the column. */
+			text-align: start;
 
 			transition: background 200ms;
 
@@ -82,46 +99,62 @@
 			&[data-disabled="true"]:hover {
 				background: transparent;
 			}
+		}
 
-			& .settings-row-start {
-				display: flex;
-				gap: var(--space-xs);
-				align-items: center;
-			}
+		/* Column placement. Each property targets whichever element is a DIRECT
+		   row child; the same class nested inside a flex cell (e.g. a label inside
+		   the toggle column) ignores `grid-column` harmlessly. */
+		.settings-icon {
+			grid-column: 1;
+			inline-size: 1.25rem;
+			block-size: 1.25rem;
+			color: var(--color-text-secondary);
+		}
 
-			& .settings-row-end {
-				display: flex;
-				gap: var(--space-2xs);
-				align-items: center;
-			}
+		.settings-row-label,
+		.settings-toggle-col,
+		.settings-expand,
+		.settings-account {
+			grid-column: 2;
+		}
 
-			& .settings-icon {
-				inline-size: 1.25rem;
-				block-size: 1.25rem;
-				color: var(--color-text-secondary);
-			}
+		.settings-row-end,
+		.settings-chevron,
+		.settings-toggle-track,
+		.settings-switch,
+		.settings-resend-btn {
+			grid-column: 3;
+			justify-self: end;
+		}
 
-			& .settings-chevron {
-				inline-size: 1rem;
-				block-size: 1rem;
-				color: var(--color-text-muted);
-			}
+		/* Trailing value + chevron cluster (nav rows). */
+		.settings-row-end {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+		}
 
-			& .settings-row-label {
-				font-size: var(--step--1);
-				color: var(--color-text-primary);
-			}
+		.settings-chevron {
+			inline-size: 1rem;
+			block-size: 1rem;
+			color: var(--color-text-muted);
+		}
 
-			& .settings-row-value {
-				font-size: var(--step--1);
-				color: var(--color-text-secondary);
-			}
+		.settings-row-label {
+			font-size: var(--step--1);
+			color: var(--color-text-primary);
+		}
 
-			& .settings-row-hint {
-				margin-inline-start: var(--space-l);
-				font-size: var(--step--1);
-				color: var(--color-text-muted);
-			}
+		.settings-row-value {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		/* Rows/elements that opt out of the 3-column model span the full width. */
+		.settings-divider,
+		.settings-volume-row,
+		.settings-sign-out {
+			grid-column: 1 / -1;
 		}
 
 		.settings-divider {
@@ -141,52 +174,59 @@
 		   the project's CSS rules forbid the vendor-prefixed hand-rolled slider
 		   that a custom WebKit fallback would require. */
 		.settings-volume-slider {
-			flex: 1;
 			cursor: pointer;
+			flex: 1;
 			accent-color: var(--color-brand-primary);
 		}
 
+		/* Content column (col2) for whole-row toggle buttons: label + optional
+		   hint/description stacked. */
 		.settings-toggle-col {
 			display: flex;
-			flex: 1;
 			flex-direction: column;
 			gap: var(--space-3xs);
 			align-items: flex-start;
 
-			/* Allow the text column to wrap instead of starving the track. */
 			min-inline-size: 0;
 		}
 
-		/* Toggle rows align their control to the first line of the label
-		   rather than the vertical centre of multi-line content. */
+		/* Toggle rows align their icon + control to the first line of the label
+		   rather than the vertical centre of an expanded description. */
 		.settings-row-toggle {
-			align-items: flex-start;
+			align-items: start;
 		}
 
-		/* Disclosure control wrapping the label + collapsible description.
-		   A sibling of `.settings-switch` — never a parent of it. */
+		/* Disclosure control (col2) wrapping the label + collapsible description.
+		   A sibling of `.settings-switch` — never a parent of it (a role="switch"
+		   must not nest another interactive control). */
 		.settings-expand {
+			cursor: pointer;
+
 			display: flex;
-			flex: 1;
 			flex-direction: column;
 			gap: var(--space-3xs);
 			align-items: flex-start;
 
 			min-inline-size: 0;
 			padding: 0;
+			border: 0;
 
 			text-align: start;
-			cursor: pointer;
 
 			background: transparent;
-			border: 0;
+		}
+
+		/* Label + expand caret on one line, above the collapsible description. */
+		.settings-expand-head {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
 		}
 
 		.settings-expand-caret {
 			inline-size: 1rem;
 			block-size: 1rem;
 			color: var(--color-text-muted);
-
 			transition: transform 200ms;
 
 			&[data-expanded="true"] {
@@ -194,21 +234,22 @@
 			}
 		}
 
-		/* Switch control. Min block size lifts the tap target to 44px even
-		   though the visible track is 1.5rem tall. */
+		/* Switch control: the trailing (col3) cell for split consent rows. A
+		   transparent button wrapping just the track — `padding: 0` so the track
+		   sits flush at col3's end edge, pixel-aligned with every other row's
+		   trailing control. The track (2.75rem × 1.5rem) is the activation
+		   target: ≥24px on both axes per WCAG 2.5.8 (AA), with the adjacent
+		   disclosure control offering a larger neighbouring target. */
 		.settings-switch {
-			display: flex;
-			flex-shrink: 0;
-			align-items: center;
-			justify-content: center;
-
-			min-block-size: 2.75rem;
-			padding-inline: var(--space-2xs);
-
 			cursor: pointer;
 
-			background: transparent;
+			display: flex;
+			align-items: center;
+
+			padding: 0;
 			border: 0;
+
+			background: transparent;
 		}
 
 		/* Collapsible toggle description. Decoupled from `.settings-row-hint`'s
@@ -217,17 +258,16 @@
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
 			color: var(--color-text-muted);
-
 			text-wrap: pretty;
 		}
 
 		.settings-toggle-track {
 			position: relative;
 
-			/* Never let the fixed-size control collapse when it competes for
-			   inline space with a long adjacent description in the same flex
-			   row — without this the track shrinks and the absolutely-positioned
-			   thumb overflows past the track and the card edge. */
+			/* Fixed-size control. Its grid cell (col3) already pins the size;
+			   `flex-shrink: 0` additionally guards the consent rows, where the
+			   track lives inside a flex `.settings-switch` — without it the track
+			   could shrink and the absolutely-positioned thumb would overflow. */
 			flex-shrink: 0;
 
 			inline-size: 2.75rem;
@@ -262,6 +302,16 @@
 			&[data-on="true"] {
 				transform: translateX(1.25rem);
 			}
+		}
+
+		/* Email + verification badge stack (col2 of the account row). */
+		.settings-account {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			align-items: flex-start;
+
+			min-inline-size: 0;
 		}
 
 		.settings-verification-badge {
@@ -299,8 +349,10 @@
 			}
 		}
 
+		/* Full-width, centred — overrides the subgrid column tracks. */
 		.settings-sign-out {
-			justify-content: center;
+			grid-template-columns: 1fr;
+			justify-items: center;
 		}
 
 		.settings-sign-out-text {
@@ -334,7 +386,6 @@
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
 			color: var(--color-text-secondary);
-
 			text-wrap: pretty;
 		}
 
@@ -342,12 +393,13 @@
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-2xs);
-
 			margin-block-start: var(--space-2xs);
 		}
 
 		/* Filled primary — mirrors the consent screen's primary button. */
 		.settings-guest-hero-primary {
+			cursor: pointer;
+
 			min-block-size: 2.75rem;
 			padding: var(--space-xs) var(--space-m);
 			border: 0;
@@ -359,7 +411,6 @@
 			background: var(--color-brand-primary);
 			box-shadow: var(--shadow-button);
 
-			cursor: pointer;
 			transition:
 				background 200ms,
 				transform 200ms;
@@ -375,6 +426,8 @@
 
 		/* Ghost secondary — subordinate to the filled primary. */
 		.settings-guest-hero-secondary {
+			cursor: pointer;
+
 			min-block-size: 2.75rem;
 			padding: var(--space-2xs) var(--space-m);
 			border: 0;
@@ -385,7 +438,6 @@
 
 			background: transparent;
 
-			cursor: pointer;
 			transition: background 200ms;
 
 			&:hover {
