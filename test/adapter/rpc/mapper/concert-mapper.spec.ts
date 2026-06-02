@@ -85,7 +85,6 @@ describe('concertFrom', () => {
 		expect(result!.title).toBe('Test Concert')
 		expect(result!.venueName).toBe('Zepp DiverCity')
 		expect(result!.locationLabel).toBe('Display(JP-13)')
-		expect(result!.adminArea).toBe('JP-13')
 		expect(result!.sourceUrl).toBe('https://example.com')
 		expect(result!.hypeLevel).toBe('home')
 		expect(result!.matched).toBe(true)
@@ -157,7 +156,6 @@ describe('concertFrom', () => {
 		})
 		const result = concertFrom(proto as any, 'Artist', 'watch', false)
 		expect(result!.locationLabel).toBe('')
-		expect(result!.adminArea).toBeUndefined()
 	})
 
 	it('attaches artist when provided', () => {

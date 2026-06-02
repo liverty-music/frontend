@@ -194,10 +194,10 @@ test.describe.fixme('Detail sheet journey controls visual regression', () => {
 		)
 		await trackingBtn.click()
 		await expect
-			.poll(async () => trackingBtn.getAttribute('data-active'), {
+			.poll(async () => trackingBtn.getAttribute('aria-checked'), {
 				timeout: 3_000,
 			})
-			.not.toBeNull()
+			.toBe('true')
 
 		await expect(page).toHaveScreenshot(
 			'ticket-journey-status-active.png',

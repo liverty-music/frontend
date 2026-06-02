@@ -114,13 +114,103 @@
 			color: var(--color-text-secondary);
 		}
 
-		.journey-controls {
+		.journey {
 			display: flex;
-			flex-wrap: wrap;
+			flex-direction: column;
+			gap: var(--space-xs);
+		}
+
+		.journey-phase {
+			display: flex;
+			flex-direction: column;
 			gap: var(--space-3xs);
 		}
 
-		.journey-btn {
+		.journey-phase-label {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: baseline;
+
+			font-size: var(--step--2);
+			color: var(--color-text-muted);
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.journey-pending-tag {
+			font-size: var(--step--2);
+			color: var(--color-text-muted);
+			text-transform: none;
+			letter-spacing: normal;
+
+			opacity: 0.85;
+		}
+
+		.journey-process {
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: stretch;
+		}
+
+		.journey-outcome {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+		}
+
+		/* Outcome phase is de-emphasized until a result is reached */
+		.journey-phase[data-pending] .journey-outcome {
+			opacity: 0.55;
+		}
+
+		/* Both outcome routes share the same card framing */
+		.journey-route {
+			padding: var(--space-2xs);
+			border: 1px solid var(--_border-light);
+			border-radius: var(--radius-card);
+		}
+
+		/* Mutually exclusive routes: the unchosen route is dimmed */
+		.journey-route[data-dimmed] {
+			opacity: 0.4;
+		}
+
+		.journey-route-success {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+		}
+
+		.journey-route-label {
+			font-size: var(--step--2);
+			font-weight: 500;
+			color: var(--color-text-secondary);
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.journey-arrow {
+			align-self: center;
+			color: var(--color-text-muted);
+
+			&::before {
+				content: "\203a"; /* > */
+			}
+		}
+
+		.journey-arrow-down::before {
+			content: "\2193"; /* down */
+		}
+
+		/* Node: contrast comes from fill (current) vs outline (others) */
+		.journey-node {
+			display: inline-flex;
+			flex: 1 1 auto;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			min-block-size: 2.75rem; /* 44px tap target */
 			padding-block: var(--space-3xs);
 			padding-inline: var(--space-2xs);
 			border: 1px solid var(--_border-light);
@@ -141,47 +231,81 @@
 				opacity: 0.5;
 			}
 
-			&:hover:not(:disabled) {
-				border-color: var(--_border-light-hover);
-				color: var(--color-text-primary);
-				background: var(--_bg-hover);
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
 			}
 		}
 
-		.journey-btn[data-active] {
-			border-color: var(--_journey-border);
-			color: var(--_journey-text);
-			background: var(--_journey-bg);
+		/* Hover affordance applies to every still-selectable node except the
+		   current one, so it never overrides the current node's solid fill while
+		   keeping feedback on the re-selectable completed nodes. */
+		.journey-node:not([data-state="current"]):hover:not(:disabled) {
+			border-color: var(--_border-light-hover);
+			color: var(--color-text-primary);
+			background: var(--_bg-hover);
 		}
 
-		.journey-btn[data-journey-status="tracking"] {
-			--_journey-border: oklch(65% 0.18 255deg);
-			--_journey-text: oklch(90% 0.05 255deg);
-			--_journey-bg: oklch(65% 0.18 255deg / 25%);
+		/* Cue glyph is chosen via a custom property to keep selector specificity low */
+		.journey-node-cue {
+			font-weight: 700;
+
+			&::before {
+				content: var(--_cue, "\25cb"); /* default: circle (future) */
+			}
 		}
 
-		.journey-btn[data-journey-status="applied"] {
-			--_journey-border: oklch(65% 0.15 195deg);
-			--_journey-text: oklch(90% 0.05 195deg);
-			--_journey-bg: oklch(65% 0.15 195deg / 25%);
+		/* Completed: low-emphasis outline with a check cue */
+		.journey-node[data-state="completed"] {
+			--_cue: "\2713"; /* check */
+
+			border-color: var(--_node-faint);
+			color: var(--color-text-muted);
 		}
 
-		.journey-btn[data-journey-status="lost"] {
-			--_journey-border: oklch(55% 0.1 0deg);
-			--_journey-text: oklch(80% 0.05 0deg);
-			--_journey-bg: oklch(45% 0.08 0deg / 25%);
+		/* Current: the single solid-filled node */
+		.journey-node[data-state="current"] {
+			--_cue: "\25cf"; /* filled dot */
+
+			border-color: var(--_node-fill);
+			font-weight: 700;
+			color: var(--_node-on);
+			background: var(--_node-fill);
 		}
 
-		.journey-btn[data-journey-status="unpaid"] {
-			--_journey-border: oklch(65% 0.18 55deg);
-			--_journey-text: oklch(90% 0.05 55deg);
-			--_journey-bg: oklch(65% 0.18 55deg / 25%);
+		.journey-node[data-state="current"][data-journey-status="unpaid"] {
+			--_cue: "\0021"; /* ! action required */
 		}
 
-		.journey-btn[data-journey-status="paid"] {
-			--_journey-border: oklch(65% 0.18 152deg);
-			--_journey-text: oklch(90% 0.05 152deg);
-			--_journey-bg: oklch(65% 0.18 152deg / 25%);
+		.journey-node[data-state="current"][data-journey-status="lost"] {
+			--_cue: "\2715"; /* cross */
+		}
+
+		/* Semantic hue per status sourced from shared journey-hue tokens;
+		   lightness/chroma stay local to this control's solid-fill treatment. */
+		.journey-node[data-journey-status="tracking"],
+		.journey-node[data-journey-status="applied"] {
+			--_node-fill: oklch(56% 0.14 var(--journey-hue-tracking));
+			--_node-on: oklch(98% 0.02 var(--journey-hue-tracking));
+			--_node-faint: oklch(62% 0.08 var(--journey-hue-tracking) / 45%);
+		}
+
+		.journey-node[data-journey-status="unpaid"] {
+			--_node-fill: oklch(72% 0.16 var(--journey-hue-unpaid));
+			--_node-on: oklch(25% 0.05 var(--journey-hue-unpaid));
+			--_node-faint: oklch(72% 0.1 var(--journey-hue-unpaid) / 45%);
+		}
+
+		.journey-node[data-journey-status="paid"] {
+			--_node-fill: oklch(58% 0.15 var(--journey-hue-paid));
+			--_node-on: oklch(98% 0.02 var(--journey-hue-paid));
+			--_node-faint: oklch(62% 0.09 var(--journey-hue-paid) / 45%);
+		}
+
+		.journey-node[data-journey-status="lost"] {
+			--_node-fill: oklch(52% 0.16 var(--journey-hue-lost));
+			--_node-on: oklch(98% 0.02 var(--journey-hue-lost));
+			--_node-faint: oklch(58% 0.09 var(--journey-hue-lost) / 45%);
 		}
 
 		.journey-remove-btn {
@@ -245,6 +369,14 @@
 				border-color: var(--_border-light-hover);
 				color: var(--color-text-primary);
 				background: var(--_bg-hover);
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.journey-node,
+			.sheet-btn-primary,
+			.sheet-btn-secondary {
+				transition: none;
 			}
 		}
 	}

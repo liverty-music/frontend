@@ -124,6 +124,14 @@
 		"stopTracking": "Stop tracking",
 		"viewOfficialInfo": "View Official Info",
 		"addToCalendar": "Add to Calendar",
+		"journeyPhase": {
+			"process": "Application",
+			"outcome": "Result",
+			"pending": "Pending"
+		},
+		"journeyRoute": {
+			"won": "Won"
+		},
 		"journeyStatus": {
 			"tracking": "Tracking",
 			"applied": "Applied",

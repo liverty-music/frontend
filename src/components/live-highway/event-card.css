@@ -95,29 +95,32 @@
 			background: var(--_journey-bg);
 		}
 
+		/* Hues sourced from shared journey-hue tokens; the badge keeps its own
+		   translucent-pill lightness/chroma. Single source of semantic identity
+		   shared with the detail-sheet flow nodes. */
 		.journey-badge[data-journey-status="tracking"] {
-			--_journey-bg: oklch(65% 0.18 255deg / 85%);
-			--_journey-text: oklch(95% 0.02 255deg);
+			--_journey-bg: oklch(65% 0.18 var(--journey-hue-tracking) / 85%);
+			--_journey-text: oklch(95% 0.02 var(--journey-hue-tracking));
 		}
 
 		.journey-badge[data-journey-status="applied"] {
-			--_journey-bg: oklch(65% 0.15 195deg / 85%);
-			--_journey-text: oklch(95% 0.02 195deg);
+			--_journey-bg: oklch(65% 0.15 var(--journey-hue-applied) / 85%);
+			--_journey-text: oklch(95% 0.02 var(--journey-hue-applied));
 		}
 
 		.journey-badge[data-journey-status="lost"] {
-			--_journey-bg: oklch(45% 0.08 0deg / 85%);
-			--_journey-text: oklch(75% 0.05 0deg);
+			--_journey-bg: oklch(45% 0.08 var(--journey-hue-lost) / 85%);
+			--_journey-text: oklch(75% 0.05 var(--journey-hue-lost));
 		}
 
 		.journey-badge[data-journey-status="unpaid"] {
-			--_journey-bg: oklch(65% 0.18 55deg / 85%);
-			--_journey-text: oklch(95% 0.02 55deg);
+			--_journey-bg: oklch(65% 0.18 var(--journey-hue-unpaid) / 85%);
+			--_journey-text: oklch(95% 0.02 var(--journey-hue-unpaid));
 		}
 
 		.journey-badge[data-journey-status="paid"] {
-			--_journey-bg: oklch(65% 0.18 152deg / 85%);
-			--_journey-text: oklch(95% 0.02 152deg);
+			--_journey-bg: oklch(65% 0.18 var(--journey-hue-paid) / 85%);
+			--_journey-text: oklch(95% 0.02 var(--journey-hue-paid));
 		}
 
 		/* =============================================
