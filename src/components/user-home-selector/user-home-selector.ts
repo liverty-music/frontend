@@ -21,6 +21,18 @@ export class UserHomeSelector {
 	private readonly authService = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
 
+	/**
+	 * The user's current home-area code (ISO 3166-2, e.g. `JP-13`), or null when
+	 * unset. Derived from `UserStore.currentHome` — the observable single owner
+	 * that resolves authed (`User.home.level1`) vs guest internally — so the
+	 * selected-state highlight on the city / prefecture options re-evaluates
+	 * reactively. `codeToHome(code).level1 === code`, so this compares directly
+	 * against each option's `code`.
+	 */
+	public get currentHomeCode(): string | null {
+		return this.userStore.currentHome
+	}
+
 	public static getStoredHome(): string | null {
 		return localStorage.getItem('guest.home')
 	}

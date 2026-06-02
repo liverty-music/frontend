@@ -25,7 +25,11 @@ export class SettingsRoute {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
 	private readonly audio = resolve(IAudioEngine)
-	private readonly consent = resolve(IConsentService)
+	// Public so the template binds the consent toggles to the service's
+	// `@observable` state directly (`consent.analytics` /
+	// `consent.marketingMeasurement`) — no component-local mirror. Mirrors the
+	// `auth` exposure pattern.
+	public readonly consent = resolve(IConsentService)
 
 	public soundEnabled = !this.audio.muted
 	public soundVolume = Math.round(this.audio.volume * 100)
@@ -35,20 +39,6 @@ export class SettingsRoute {
 	public languageSelectorOpen = false
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
 	private isToggling = false
-
-	/**
-	 * Local mirror of the consent state used for `aria-checked` + the
-	 * `data-on` toggle attribute bindings. Aurelia 2 RC1's binding engine
-	 * does not currently re-evaluate a `.bind` expression that calls a
-	 * getter through an interface boundary without an `@observable`
-	 * trigger, so we mirror the live `IConsentService` state into plain
-	 * fields and write back via `handleAnalyticsToggle` /
-	 * `handleMarketingToggle`. The mirrors are seeded in `loading()` and
-	 * re-synced whenever the user toggles, keeping the UI and service
-	 * state in lockstep without introducing an extra subscription.
-	 */
-	public analyticsConsent = false
-	public marketingConsent = false
 
 	/**
 	 * Per-row disclosure state for the Privacy & Analytics consent
@@ -114,31 +104,23 @@ export class SettingsRoute {
 	}
 
 	public async loading(): Promise<void> {
-		// Sync consent toggles before render: a user who flipped them on
-		// the onboarding consent screen or on a prior settings visit
-		// MUST see the correct state on first paint.
-		this.analyticsConsent = this.consent.analytics
-		this.marketingConsent = this.consent.marketingMeasurement
+		// Consent toggles bind `consent.analytics` / `consent.marketingMeasurement`
+		// (the service's `@observable` state) directly, so first paint reflects a
+		// choice made on the onboarding consent screen or a prior visit with no
+		// seeding here.
 		await this.resolveNotificationToggleState()
 	}
 
-	/**
-	 * Persist an analytics toggle tap. Flipping the local mirror first
-	 * keeps the toggle visually responsive — the `ConsentService` write
-	 * also publishes `ConsentChanged`, but the AnalyticsService
-	 * subscription performs SDK reconfiguration synchronously inside the
-	 * publish callback, which would otherwise race the local view state.
-	 */
+	/** Persist an analytics consent toggle tap; the bound observable state drives the UI. */
 	public handleAnalyticsToggle(): void {
-		const next = !this.analyticsConsent
-		this.analyticsConsent = next
-		this.writeConsent('analytics', next)
+		this.writeConsent('analytics', !this.consent.analytics)
 	}
 
 	public handleMarketingToggle(): void {
-		const next = !this.marketingConsent
-		this.marketingConsent = next
-		this.writeConsent('marketingMeasurement', next)
+		this.writeConsent(
+			'marketingMeasurement',
+			!this.consent.marketingMeasurement,
+		)
 	}
 
 	/** Toggle the analytics consent description disclosure. */
@@ -231,8 +213,11 @@ export class SettingsRoute {
 
 	public async selectLanguage(lang: string): Promise<void> {
 		const previous = this.currentLocale
-		this.languageSelectorOpen = false
-		if (lang === previous) return
+		// Re-selecting the active language is a no-op: just close, no RPC.
+		if (lang === previous) {
+			this.languageSelectorOpen = false
+			return
+		}
 		try {
 			await changeLocale(
 				{
@@ -248,9 +233,10 @@ export class SettingsRoute {
 			// — the selector only forwards values from `supportedLanguages`
 			// — so any TypeError reaching here indicates a programmer error
 			// (e.g. the constant was edited inconsistently with the
-			// validation). Surfacing it to the global error boundary is the
-			// intended behavior. Snack is only for genuine network /
-			// server-side failures (ConnectError).
+			// validation). Surface it to the global error boundary WITHOUT
+			// closing the sheet, so the failure is not masked as a successful
+			// dismissal with the row still showing the old language. Snack is
+			// only for genuine network / server-side failures (ConnectError).
 			if (!(err instanceof ConnectError)) throw err
 			this.logger.error('Failed to update preferred language', {
 				error: err,
@@ -260,17 +246,22 @@ export class SettingsRoute {
 			this.ea.publish(
 				new Snack(this.i18n.tr('settings.languageChangeError'), 'error'),
 			)
+			// Genuine network/server failure: close the sheet — the Snack
+			// explains why the (unchanged) row still reads the old language.
+			this.languageSelectorOpen = false
 			return
 		}
-		// No manual `this.currentLocale = ...` — the getter derives from
-		// UserStore.currentLanguage, an observable that resolves to the authed
-		// User entity (updated by changeLocale's updatePreferredLanguage
-		// write-through) or the observable guest language (updated by
-		// changeLocale's userStore.setGuestLanguage write-through).
+		// Close only after the change is applied. No manual `this.currentLocale =
+		// ...` — the getter derives from UserStore.currentLanguage, an observable
+		// updated by changeLocale's write-through.
+		this.languageSelectorOpen = false
 		this.logger.info('Language changed', { from: previous, to: lang })
 	}
 
 	public async toggleNotifications(): Promise<void> {
+		// The push row uses `aria-disabled` (not native `disabled`) when the
+		// VAPID key is absent, so it stays AT-discoverable but must no-op here.
+		if (!this.vapidAvailable) return
 		if (this.isToggling) return
 		this.isToggling = true
 

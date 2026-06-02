@@ -68,6 +68,13 @@
 				border-color: var(--_hover-border);
 				background: var(--_hover-bg);
 			}
+
+			/* Current home area: reactive highlight (consistent with the
+			   language selector's selected option). */
+			&[data-selected="true"] {
+				border-color: var(--color-brand-primary);
+				background: oklch(from var(--color-brand-primary) l c h / 15%);
+			}
 		}
 
 		/* Step 2: back button + header row */

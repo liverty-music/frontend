@@ -3,6 +3,7 @@
 		:scope {
 			--_card-bg: var(--color-surface-raised);
 			--_card-border: color-mix(in oklch, var(--color-white) 10%, transparent);
+			--flow-space: var(--space-m);
 
 			overflow-y: auto;
 			display: flex;
@@ -14,8 +15,6 @@
 			padding-inline: var(--space-m);
 
 			background: var(--color-surface-base);
-
-			--flow-space: var(--space-m);
 		}
 
 		.consent-header {
@@ -30,7 +29,6 @@
 			font-weight: normal;
 			line-height: var(--leading-snug);
 			color: var(--color-text-primary);
-
 			text-wrap: balance;
 			word-break: auto-phrase;
 		}
@@ -41,7 +39,6 @@
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
 			color: var(--color-text-secondary);
-
 			text-wrap: pretty;
 			word-break: auto-phrase;
 		}
@@ -51,13 +48,12 @@
 		}
 
 		.consent-card {
+			--flow-space: 0;
+
 			overflow: hidden;
 			border: 1px solid var(--_card-border);
 			border-radius: var(--radius-card);
-
 			background: var(--_card-bg);
-
-			--flow-space: 0;
 		}
 
 		.consent-row {
@@ -80,11 +76,11 @@
 
 		.consent-row-text {
 			display: flex;
+			flex: 1;
 			flex-direction: column;
 			gap: var(--space-3xs);
 			align-items: flex-start;
 
-			flex: 1;
 			min-inline-size: 0;
 		}
 
@@ -110,7 +106,6 @@
 			font-size: var(--step--1);
 			line-height: var(--leading-relaxed);
 			color: var(--color-text-muted);
-
 			text-wrap: pretty;
 			word-break: auto-phrase;
 		}
@@ -236,11 +231,11 @@
 
 			flex-shrink: 0;
 
-			inline-size: 2.75rem;
-			block-size: 1.5rem;
+			inline-size: var(--toggle-track-inline);
+			block-size: var(--toggle-track-block);
 			border-radius: var(--radius-full);
 
-			transition: background 200ms;
+			transition: background var(--transition-normal);
 
 			&[data-on="true"] {
 				background: var(--color-brand-primary);
@@ -253,20 +248,20 @@
 
 		.settings-toggle-thumb {
 			position: absolute;
-			inset-block-start: 0.125rem;
-			inset-inline-start: 0.125rem;
+			inset-block-start: var(--toggle-thumb-inset);
+			inset-inline-start: var(--toggle-thumb-inset);
 
-			inline-size: 1.25rem;
-			block-size: 1.25rem;
+			inline-size: var(--toggle-thumb-size);
+			block-size: var(--toggle-thumb-size);
 			border-radius: var(--radius-full);
 
 			background: var(--color-white);
 			box-shadow: var(--shadow-soft);
 
-			transition: transform 200ms;
+			transition: transform var(--transition-normal);
 
 			&[data-on="true"] {
-				transform: translateX(1.25rem);
+				transform: translateX(var(--toggle-thumb-translate));
 			}
 		}
 	}

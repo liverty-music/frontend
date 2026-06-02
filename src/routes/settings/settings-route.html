@@ -1,3 +1,5 @@
+<import from="./language-selector.css"></import>
+
 <page-header title-key="settings.title"></page-header>
 
 <main>
@@ -15,191 +17,206 @@
   </section>
 
   <!-- PREFERENCES Section.
-       Every row is a subgrid spanning the card's `icon | content | control`
-       columns: the first child lands in the icon column, the content in the
-       1fr column, the trailing control in the auto column — so all rows align
-       regardless of type. -->
+       The card is a `role="list"` of settings; each row is wrapped in a
+       `<li class="settings-list-item">` (display:contents) so the row stays a
+       subgrid item spanning the card's `icon | content | control` columns while
+       SR users hear a bounded "list, N items". Row separators are CSS borders,
+       not `<hr>`s (which an `<ul>` may not contain and SR announces as noise). -->
   <section>
     <h2 t="settings.preferences" class="settings-section-title"></h2>
-    <div class="settings-card">
+    <ul class="settings-card" role="list">
       <!-- My Home Area -->
-      <button click.trigger="openHomeSelector()" class="settings-row">
-        <svg-icon name="map-pin" class="settings-icon"></svg-icon>
-        <span t="settings.myHomeArea" class="settings-row-label"></span>
-        <div class="settings-row-end">
-          <span class="settings-row-value" t.bind="currentHomeKey"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </div>
-      </button>
-
-      <hr class="settings-divider">
+      <li class="settings-list-item">
+        <button click.trigger="openHomeSelector()" class="settings-row">
+          <svg-icon name="map-pin" class="settings-icon"></svg-icon>
+          <span t="settings.myHomeArea" class="settings-row-label"></span>
+          <div class="settings-row-end">
+            <span class="settings-row-value" t.bind="currentHomeKey"></span>
+            <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+          </div>
+        </button>
+      </li>
 
       <!-- Language -->
-      <button click.trigger="openLanguageSelector()" class="settings-row">
-        <svg-icon name="globe" class="settings-icon"></svg-icon>
-        <span t="settings.language" class="settings-row-label"></span>
-        <div class="settings-row-end">
-          <span class="settings-row-value" t.bind="'languages.' + currentLocale"></span>
-          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </div>
-      </button>
+      <li class="settings-list-item">
+        <button click.trigger="openLanguageSelector()" class="settings-row">
+          <svg-icon name="globe" class="settings-icon"></svg-icon>
+          <span t="settings.language" class="settings-row-label"></span>
+          <div class="settings-row-end">
+            <span class="settings-row-value" t.bind="'languages.' + currentLocale"></span>
+            <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+          </div>
+        </button>
+      </li>
 
-      <hr class="settings-divider">
-
-      <!-- Push Notifications (whole row is the switch) -->
-      <button
-        click.trigger="toggleNotifications()"
-        role="switch"
-        aria-checked.bind="notificationsEnabled"
-        disabled.bind="!vapidAvailable"
-        class="[ settings-row ] [ settings-row-toggle ]"
-        data-disabled.bind="!vapidAvailable"
-      >
-        <svg-icon name="bell" class="settings-icon"></svg-icon>
-        <div class="settings-toggle-col">
-          <span t="settings.pushNotifications" class="settings-row-label"></span>
-          <span if.bind="!vapidAvailable" t="settings.notAvailable" class="settings-toggle-desc"></span>
-        </div>
-        <div class="settings-toggle-track" data-on.bind="notificationsEnabled">
-          <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled"></div>
-        </div>
-      </button>
-
-      <hr class="settings-divider">
+      <!-- Push Notifications (whole row is the switch). When the VAPID key is
+           absent the row uses `aria-disabled` (not native `disabled`, which
+           removes it from AT discovery) and the explanatory hint is associated
+           via `aria-describedby`. -->
+      <li class="settings-list-item">
+        <button
+          click.trigger="toggleNotifications()"
+          role="switch"
+          aria-checked.bind="notificationsEnabled"
+          aria-disabled.bind="!vapidAvailable"
+          aria-describedby="push-na-hint"
+          class="[ settings-row ] [ settings-row-toggle ]"
+          data-disabled.bind="!vapidAvailable"
+        >
+          <svg-icon name="bell" class="settings-icon"></svg-icon>
+          <div class="settings-toggle-col">
+            <span t="settings.pushNotifications" class="settings-row-label"></span>
+            <span id="push-na-hint" if.bind="!vapidAvailable" t="settings.notAvailable" class="settings-toggle-desc"></span>
+          </div>
+          <div class="settings-toggle-track" data-on.bind="notificationsEnabled">
+            <div class="settings-toggle-thumb" data-on.bind="notificationsEnabled"></div>
+          </div>
+        </button>
+      </li>
 
       <!-- Sound Effects (whole row is the switch) -->
-      <button
-        click.trigger="toggleSound()"
-        role="switch"
-        aria-checked.bind="soundEnabled"
-        class="[ settings-row ] [ settings-row-toggle ]"
-      >
-        <svg-icon name="music" class="settings-icon"></svg-icon>
-        <div class="settings-toggle-col">
-          <span t="settings.soundEffects" class="settings-row-label"></span>
-          <span if.bind="isIOS" t="settings.soundEffectsHint" class="settings-toggle-desc"></span>
-        </div>
-        <div class="settings-toggle-track" data-on.bind="soundEnabled">
-          <div class="settings-toggle-thumb" data-on.bind="soundEnabled"></div>
-        </div>
-      </button>
-
-      <div if.bind="soundEnabled" class="settings-row settings-volume-row">
-        <label for="se-volume" t="settings.soundVolume" class="settings-row-label"></label>
-        <input
-          id="se-volume"
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          value-as-number.bind="soundVolume"
-          input.trigger="onSoundVolumeInput()"
-          change.trigger="onSoundVolumePersist()"
-          class="settings-volume-slider"
+      <li class="settings-list-item">
+        <button
+          click.trigger="toggleSound()"
+          role="switch"
+          aria-checked.bind="soundEnabled"
+          aria-describedby="sound-ios-hint"
+          class="[ settings-row ] [ settings-row-toggle ]"
         >
-      </div>
-    </div>
+          <svg-icon name="music" class="settings-icon"></svg-icon>
+          <div class="settings-toggle-col">
+            <span t="settings.soundEffects" class="settings-row-label"></span>
+            <span id="sound-ios-hint" if.bind="isIOS" t="settings.soundEffectsHint" class="settings-toggle-desc"></span>
+          </div>
+          <div class="settings-toggle-track" data-on.bind="soundEnabled">
+            <div class="settings-toggle-thumb" data-on.bind="soundEnabled"></div>
+          </div>
+        </button>
+      </li>
+
+      <!-- Sound volume: a sub-row of Sound Effects, so no divider above it. -->
+      <li if.bind="soundEnabled" class="[ settings-list-item ] [ settings-list-subitem ]">
+        <div class="settings-row settings-volume-row">
+          <label for="se-volume" t="settings.soundVolume" class="settings-row-label"></label>
+          <input
+            id="se-volume"
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value-as-number.bind="soundVolume"
+            input.trigger="onSoundVolumeInput()"
+            change.trigger="onSoundVolumePersist()"
+            class="settings-volume-slider"
+          >
+        </div>
+      </li>
+    </ul>
   </section>
 
   <!-- PRIVACY & ANALYTICS Section -->
   <section>
     <h2 t="settings.analytics.sectionTitle" class="settings-section-title"></h2>
-    <div class="settings-card">
+    <ul class="settings-card" role="list">
       <!-- Analytics consent. Icon (col1), disclosure (col2), switch (col3) are
            siblings — a role="switch" must never contain another interactive
            control, and keeping the icon a direct row child aligns it with the
            other rows' icons. -->
-      <div class="[ settings-row ] [ settings-row-toggle ]">
-        <svg-icon name="info" class="settings-icon"></svg-icon>
-        <button
-          click.trigger="toggleAnalyticsDesc()"
-          aria-expanded.bind="analyticsDescExpanded"
-          class="settings-expand"
-        >
-          <span class="settings-expand-head">
-            <span t="settings.analytics.toggleLabel" class="settings-row-label"></span>
-            <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="analyticsDescExpanded"></svg-icon>
-          </span>
-          <span
-            if.bind="analyticsDescExpanded"
-            t="settings.analytics.toggleDescription"
-            class="settings-toggle-desc"
-          ></span>
-        </button>
-        <button
-          click.trigger="handleAnalyticsToggle()"
-          role="switch"
-          aria-checked.bind="analyticsConsent"
-          class="settings-switch"
-        >
-          <div class="settings-toggle-track" data-on.bind="analyticsConsent">
-            <div class="settings-toggle-thumb" data-on.bind="analyticsConsent"></div>
-          </div>
-        </button>
-      </div>
-
-      <hr class="settings-divider">
+      <li class="settings-list-item">
+        <div class="[ settings-row ] [ settings-row-toggle ]">
+          <svg-icon name="info" class="settings-icon"></svg-icon>
+          <button
+            click.trigger="toggleAnalyticsDesc()"
+            aria-expanded.bind="analyticsDescExpanded"
+            class="settings-expand"
+          >
+            <span class="settings-expand-head">
+              <span t="settings.analytics.toggleLabel" class="settings-row-label"></span>
+              <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="analyticsDescExpanded"></svg-icon>
+            </span>
+            <span
+              if.bind="analyticsDescExpanded"
+              t="settings.analytics.toggleDescription"
+              class="settings-toggle-desc"
+            ></span>
+          </button>
+          <button
+            click.trigger="handleAnalyticsToggle()"
+            role="switch"
+            aria-checked.bind="consent.analytics"
+            class="settings-switch"
+          >
+            <div class="settings-toggle-track" data-on.bind="consent.analytics">
+              <div class="settings-toggle-thumb" data-on.bind="consent.analytics"></div>
+            </div>
+          </button>
+        </div>
+      </li>
 
       <!-- Marketing-measurement consent. Labeled by purpose (ad-effectiveness
            measurement), not by data geography. -->
-      <div class="[ settings-row ] [ settings-row-toggle ]">
-        <svg-icon name="globe" class="settings-icon"></svg-icon>
-        <button
-          click.trigger="toggleMarketingDesc()"
-          aria-expanded.bind="marketingDescExpanded"
-          class="settings-expand"
-        >
-          <span class="settings-expand-head">
-            <span t="settings.analytics.marketingLabel" class="settings-row-label"></span>
-            <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="marketingDescExpanded"></svg-icon>
-          </span>
-          <span
-            if.bind="marketingDescExpanded"
-            t="settings.analytics.marketingDescription"
-            class="settings-toggle-desc"
-          ></span>
-        </button>
-        <button
-          click.trigger="handleMarketingToggle()"
-          role="switch"
-          aria-checked.bind="marketingConsent"
-          class="settings-switch"
-        >
-          <div class="settings-toggle-track" data-on.bind="marketingConsent">
-            <div class="settings-toggle-thumb" data-on.bind="marketingConsent"></div>
-          </div>
-        </button>
-      </div>
-    </div>
+      <li class="settings-list-item">
+        <div class="[ settings-row ] [ settings-row-toggle ]">
+          <svg-icon name="globe" class="settings-icon"></svg-icon>
+          <button
+            click.trigger="toggleMarketingDesc()"
+            aria-expanded.bind="marketingDescExpanded"
+            class="settings-expand"
+          >
+            <span class="settings-expand-head">
+              <span t="settings.analytics.marketingLabel" class="settings-row-label"></span>
+              <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="marketingDescExpanded"></svg-icon>
+            </span>
+            <span
+              if.bind="marketingDescExpanded"
+              t="settings.analytics.marketingDescription"
+              class="settings-toggle-desc"
+            ></span>
+          </button>
+          <button
+            click.trigger="handleMarketingToggle()"
+            role="switch"
+            aria-checked.bind="consent.marketingMeasurement"
+            class="settings-switch"
+          >
+            <div class="settings-toggle-track" data-on.bind="consent.marketingMeasurement">
+              <div class="settings-toggle-thumb" data-on.bind="consent.marketingMeasurement"></div>
+            </div>
+          </button>
+        </div>
+      </li>
+    </ul>
   </section>
 
   <!-- ABOUT Section. Iconless rows: the label still lands in the content
        column, so it lines up with the icon rows' labels above. -->
   <section>
     <h2 t="settings.about" class="settings-section-title"></h2>
-    <div class="settings-card">
+    <ul class="settings-card" role="list">
       <!-- Terms of Service -->
-      <a href="https://liverty.me/terms" target="_blank" rel="noopener noreferrer" class="settings-row">
-        <span t="settings.termsOfService" class="settings-row-label"></span>
-        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-      </a>
-
-      <hr class="settings-divider">
+      <li class="settings-list-item">
+        <a href="https://liverty.me/terms" target="_blank" rel="noopener noreferrer" class="settings-row">
+          <span t="settings.termsOfService" class="settings-row-label"></span>
+          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+        </a>
+      </li>
 
       <!-- Privacy Policy -->
-      <a href="https://liverty.me/privacy" target="_blank" rel="noopener noreferrer" class="settings-row">
-        <span t="settings.privacyPolicy" class="settings-row-label"></span>
-        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-      </a>
-
-      <hr class="settings-divider">
+      <li class="settings-list-item">
+        <a href="https://liverty.me/privacy" target="_blank" rel="noopener noreferrer" class="settings-row">
+          <span t="settings.privacyPolicy" class="settings-row-label"></span>
+          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+        </a>
+      </li>
 
       <!-- OSS Licenses -->
-      <a href="https://liverty.me/licenses" target="_blank" rel="noopener noreferrer" class="settings-row">
-        <span t="settings.ossLicenses" class="settings-row-label"></span>
-        <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-      </a>
-    </div>
+      <li class="settings-list-item">
+        <a href="https://liverty.me/licenses" target="_blank" rel="noopener noreferrer" class="settings-row">
+          <span t="settings.ossLicenses" class="settings-row-label"></span>
+          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+        </a>
+      </li>
+    </ul>
   </section>
 
   <!-- ACCOUNT Section. Authenticated-only: the guest sign-in / sign-up entry
@@ -207,38 +224,48 @@
   <section if.bind="auth.isAuthenticated">
     <h2 t="settings.account" class="settings-section-title"></h2>
 
-    <div class="settings-card">
-      <!-- Email Verification -->
-      <div class="settings-row">
-        <svg-icon name="mail" class="settings-icon"></svg-icon>
-        <div class="settings-account">
-          <span class="settings-row-label">${auth.user.profile.email}</span>
-          <span
-            class="settings-verification-badge"
-            data-verified.bind="emailVerified"
+    <ul class="settings-card" role="list">
+      <!-- Email Verification. The badge is a polite live region (`<output>`)
+           associated with the email via `aria-describedby`, and carries a
+           non-color status icon so verification state is not conveyed by colour
+           alone. -->
+      <li class="settings-list-item">
+        <div class="settings-row">
+          <svg-icon name="mail" class="settings-icon"></svg-icon>
+          <div class="settings-account">
+            <span id="account-email" class="settings-row-label" aria-describedby="email-verification-status">${auth.user.profile.email}</span>
+            <output
+              id="email-verification-status"
+              class="settings-verification-badge"
+              aria-live="polite"
+              data-verified.bind="emailVerified"
+            >
+              <svg-icon if.bind="emailVerified" name="check" class="settings-verification-icon"></svg-icon>
+              <svg-icon if.bind="!emailVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
+              <span if.bind="emailVerified" t="settings.emailVerified"></span>
+              <span if.bind="!emailVerified" t="settings.emailNotVerified"></span>
+            </output>
+          </div>
+          <button
+            if.bind="!emailVerified"
+            click.trigger="resendVerification()"
+            disabled.bind="isResendingVerification || resendSuccess"
+            aria-live="polite"
+            class="settings-resend-btn"
           >
-            <span if.bind="emailVerified" t="settings.emailVerified"></span>
-            <span if.bind="!emailVerified" t="settings.emailNotVerified"></span>
-          </span>
+            <span if.bind="resendSuccess" t="settings.resendSent"></span>
+            <span if.bind="isResendingVerification" t="settings.resending"></span>
+            <span if.bind="!isResendingVerification && !resendSuccess" t="settings.resendVerification"></span>
+          </button>
         </div>
-        <button
-          if.bind="!emailVerified"
-          click.trigger="resendVerification()"
-          disabled.bind="isResendingVerification || resendSuccess"
-          class="settings-resend-btn"
-        >
-          <span if.bind="resendSuccess" t="settings.resendSent"></span>
-          <span if.bind="isResendingVerification" t="settings.resending"></span>
-          <span if.bind="!isResendingVerification && !resendSuccess" t="settings.resendVerification"></span>
+      </li>
+
+      <li class="settings-list-item">
+        <button click.trigger="signOut()" class="settings-row settings-sign-out">
+          <span t="settings.signOut" class="settings-sign-out-text"></span>
         </button>
-      </div>
-
-      <hr class="settings-divider">
-
-      <button click.trigger="signOut()" class="settings-row settings-sign-out">
-        <span t="settings.signOut" class="settings-sign-out-text"></span>
-      </button>
-    </div>
+      </li>
+    </ul>
   </section>
   </div>
 </main>
@@ -249,14 +276,18 @@
   on-home-selected.bind="(code) => onHomeSelected(code)"
 ></user-home-selector>
 
-<!-- Language Selector Bottom Sheet -->
+<!-- Language Selector Bottom Sheet. Single-select: a radiogroup whose options
+     expose `aria-checked` so SR users perceive the active language and that
+     exactly one may be chosen (the check icon + data-selected are visual only). -->
 <bottom-sheet open.bind="languageSelectorOpen" sheet-closed.trigger="languageSelectorOpen = false" aria-label="Select language">
   <div class="selector-content">
-    <h2 t="settings.language" class="selector-title"></h2>
-    <div class="[ language-list ] [ stack ]">
+    <h2 id="language-selector-title" t="settings.language" class="selector-title"></h2>
+    <div class="[ language-list ] [ stack ]" role="radiogroup" aria-labelledby="language-selector-title">
       <button
         repeat.for="lang of supportedLanguages"
         click.trigger="selectLanguage(lang)"
+        role="radio"
+        aria-checked.bind="currentLocale === lang"
         class="language-option"
         data-selected.bind="currentLocale === lang"
       >

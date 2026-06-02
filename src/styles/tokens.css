@@ -73,6 +73,14 @@
 		--radius-sheet: 1.5rem;
 		--radius-full: 9999px;
 
+		/* Toggle / switch control geometry (shared by the settings + consent
+		   toggle rows, which render identical switches in separate @scopes). */
+		--toggle-track-inline: 2.75rem;
+		--toggle-track-block: 1.5rem;
+		--toggle-thumb-size: 1.25rem;
+		--toggle-thumb-inset: 0.125rem;
+		--toggle-thumb-translate: 1.25rem;
+
 		/* Shadows (derived from brand color via relative color syntax) */
 		--shadow-card-glow: 0 4px 24px -4px
 			oklch(from var(--color-brand-primary) l c h / 20%);

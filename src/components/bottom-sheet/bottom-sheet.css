@@ -1,11 +1,22 @@
 @layer block {
 	@scope (bottom-sheet) {
+		/* The CE host is a layout-transparent wrapper; the inner <dialog>
+		   owns top-layer promotion, the ::backdrop, and all sheet styling. */
 		:scope {
+			display: contents;
+		}
+
+		.sheet-dialog {
 			--_backdrop-bg: oklch(0% 0 0deg / 60%);
 			--_handle-bg: oklch(100% 0 0deg / 20%);
+
+			/* Exit/enter duration. Shorter than the legacy 300ms so the
+			   slide-out and backdrop fade feel responsive after dismiss. */
+			--_duration: 240ms;
 			--_duration-reduced: 0.01ms;
 
-			/* Popover host: top-layer, opacity fade, backdrop */
+			/* Modal host: full-viewport, top-layer, transparent. Resets the
+			   UA <dialog> defaults (centred, auto-sized, bordered, margin). */
 			position: fixed;
 			inset: 0;
 
@@ -13,44 +24,86 @@
 
 			inline-size: 100%;
 			max-inline-size: 100%;
+			block-size: 100%;
 			max-block-size: 100%;
 			margin: 0;
 			padding: 0;
 			border: none;
 
+			color: inherit;
+
 			background: transparent;
 
 			transition:
-				opacity 300ms ease-out,
-				overlay 300ms ease-out allow-discrete,
-				display 300ms ease-out allow-discrete;
+				opacity var(--_duration) ease-out,
+				overlay var(--_duration) ease-out allow-discrete,
+				display var(--_duration) ease-out allow-discrete;
 
 			&::backdrop {
 				background: var(--_backdrop-bg);
 				backdrop-filter: blur(4px);
 				transition:
-					opacity 300ms ease-out,
-					overlay 300ms ease-out allow-discrete,
-					display 300ms ease-out allow-discrete;
+					opacity var(--_duration) ease-out,
+					overlay var(--_duration) ease-out allow-discrete,
+					display var(--_duration) ease-out allow-discrete;
 			}
 
-			&:not(:popover-open) {
+			&:not([open]) {
 				display: none;
 				opacity: 0;
 			}
 
-			&:not(:popover-open)::backdrop {
+			&:not([open])::backdrop {
 				opacity: 0;
 			}
 		}
 
 		@starting-style {
-			:scope:popover-open {
+			.sheet-dialog[open] {
 				opacity: 0;
 			}
 
-			:scope:popover-open::backdrop {
+			.sheet-dialog[open]::backdrop {
 				opacity: 0;
+			}
+		}
+
+		/*
+		  Gesture-coupled backdrop fade: tie the ::backdrop opacity to the
+		  scroll position so the blur tracks the swipe and is gone by the
+		  dismiss threshold, instead of fading only after `scrollend`.
+		  Restores the pre-refactor behaviour (commit 8d905f3), re-scoped to
+		  the inner <dialog>. Gated behind @supports so unsupported engines
+		  (Firefox) keep the opacity transition above as the fallback.
+
+		  Only dismissable sheets define the timeline; without a timeline the
+		  ::backdrop animation is inert and the base/transition opacity applies
+		  (non-dismissable sheets keep a steady backdrop).
+		*/
+		@supports (animation-timeline: scroll()) {
+			.sheet-dialog {
+				timeline-scope: --sheet-scroll;
+			}
+
+			.scroll-area[data-dismissable="true"] {
+				scroll-timeline: --sheet-scroll block;
+			}
+
+			.sheet-dialog::backdrop {
+				animation: backdrop-fade linear both;
+				animation-timeline: --sheet-scroll;
+			}
+
+			@keyframes backdrop-fade {
+				/* scrollTop 0 = snapped to the dismiss zone (top) → cleared. */
+				0% {
+					opacity: 0;
+				}
+
+				/* scrollTop max = snapped to the sheet body → full backdrop. */
+				100% {
+					opacity: 1;
+				}
 			}
 		}
 
@@ -102,21 +155,25 @@
 			scroll-snap-align: end;
 
 			/*
-			 * Chromium bug workaround: scroll-snap re-evaluation inside popover top-layer.
+			 * Chromium bug workaround: scroll-snap re-evaluation inside the
+			 * top-layer.
 			 *
-			 * When a scroll container with `scroll-snap-type: y mandatory` is inside a
-			 * popover top-layer (`position: fixed; inset: 0`), any child layout change
-			 * triggers scroll-snap re-evaluation. Chromium incorrectly offsets the scroll
-			 * container itself by `-scrollTop` pixels in the rendered position (while
-			 * `scrollTop` remains unchanged), visually shifting the sheet upward.
+			 * When a scroll container with `scroll-snap-type: y mandatory` is
+			 * inside a top-layer element (`position: fixed; inset: 0`), any
+			 * child layout change triggers scroll-snap re-evaluation. Chromium
+			 * incorrectly offsets the scroll container itself by `-scrollTop`
+			 * pixels in the rendered position (while `scrollTop` remains
+			 * unchanged), visually shifting the sheet upward.
 			 *
-			 * `contain: layout` establishes a layout containment boundary on `.sheet-body`,
-			 * isolating child layout changes (e.g., chip-check SVG toggle, dynamic content)
-			 * from `.scroll-area`. This prevents the re-evaluation from being triggered.
+			 * `contain: layout` establishes a layout containment boundary on
+			 * `.sheet-body`, isolating child layout changes (e.g., chip-check
+			 * SVG toggle, dynamic content) from `.scroll-area`. This prevents
+			 * the re-evaluation from being triggered.
 			 *
-			 * Removal condition: when Chromium fixes scroll container offset on snap
-			 * re-evaluation inside top-layer, this declaration MAY be removed. The
-			 * regression guard is the artist-filter chip-check E2E test.
+			 * Removal condition: when Chromium fixes scroll container offset on
+			 * snap re-evaluation inside the top-layer, this declaration MAY be
+			 * removed. The regression guard is the artist-filter chip-check E2E
+			 * test.
 			 */
 			contain: layout;
 			overflow-y: auto;
@@ -152,8 +209,8 @@
 		}
 
 		@media (prefers-reduced-motion: reduce) {
-			:scope,
-			:scope::backdrop {
+			.sheet-dialog,
+			.sheet-dialog::backdrop {
 				transition-duration: var(--_duration-reduced);
 			}
 		}

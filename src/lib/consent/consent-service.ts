@@ -1,4 +1,4 @@
-import { DI, IEventAggregator, ILogger, resolve } from 'aurelia'
+import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import {
 	loadConsentDeferred,
 	loadConsentState,
@@ -113,7 +113,12 @@ export class ConsentService implements IConsentService {
 	private readonly logger = resolve(ILogger).scopeTo('ConsentService')
 	private readonly ea = resolve(IEventAggregator)
 
-	private state: ConsentState = DEFAULT_STATE
+	// `@observable` so the `analytics` / `marketingMeasurement` getters
+	// re-evaluate every dependent binding (e.g. the Settings consent toggles)
+	// on reassignment — consumers bind the getters directly with no
+	// component-local mirror. Mutated via immutable reassignment in
+	// `applyMutation`, which is what the observable setter needs to fire.
+	@observable private state: ConsentState = DEFAULT_STATE
 	private decidedAt: string | null = null
 	private deferred = false
 
