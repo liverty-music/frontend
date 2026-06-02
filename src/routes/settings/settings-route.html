@@ -129,11 +129,11 @@
         <button
           click.trigger="handleAnalyticsToggle()"
           role="switch"
-          aria-checked.bind="analyticsConsent"
+          aria-checked.bind="consent.analytics"
           class="settings-switch"
         >
-          <div class="settings-toggle-track" data-on.bind="analyticsConsent">
-            <div class="settings-toggle-thumb" data-on.bind="analyticsConsent"></div>
+          <div class="settings-toggle-track" data-on.bind="consent.analytics">
+            <div class="settings-toggle-thumb" data-on.bind="consent.analytics"></div>
           </div>
         </button>
       </div>
@@ -162,11 +162,11 @@
         <button
           click.trigger="handleMarketingToggle()"
           role="switch"
-          aria-checked.bind="marketingConsent"
+          aria-checked.bind="consent.marketingMeasurement"
           class="settings-switch"
         >
-          <div class="settings-toggle-track" data-on.bind="marketingConsent">
-            <div class="settings-toggle-thumb" data-on.bind="marketingConsent"></div>
+          <div class="settings-toggle-track" data-on.bind="consent.marketingMeasurement">
+            <div class="settings-toggle-thumb" data-on.bind="consent.marketingMeasurement"></div>
           </div>
         </button>
       </div>

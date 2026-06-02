@@ -272,7 +272,7 @@ describe('SettingsRoute', () => {
 			expect(sut.languageSelectorOpen).toBe(false)
 		})
 
-		it('rethrows non-ConnectError so programmer errors surface', async () => {
+		it('rethrows non-ConnectError and keeps the sheet open so the failure is not masked', async () => {
 			await sut.loading()
 			const bug = new TypeError('missing dep')
 			mockUser.updatePreferredLanguage.mockRejectedValueOnce(bug)
@@ -280,7 +280,9 @@ describe('SettingsRoute', () => {
 
 			await expect(sut.selectLanguage('en')).rejects.toBe(bug)
 			expect(mockEa.publish).not.toHaveBeenCalled()
-			expect(sut.languageSelectorOpen).toBe(false)
+			// Sheet stays open: a programmer error must not look like a
+			// successful dismissal with the row still showing the old language.
+			expect(sut.languageSelectorOpen).toBe(true)
 		})
 	})
 
@@ -465,12 +467,32 @@ describe('SettingsRoute', () => {
 		})
 
 		it('disclosure toggle does not change the switch value (independent controls)', () => {
-			sut.marketingConsent = false
+			const before = sut.consent.marketingMeasurement
 			sut.toggleMarketingDesc()
 			expect(sut.marketingDescExpanded).toBe(true)
 			// The disclosure and the switch are separate controls — expanding
 			// the description must not grant/revoke the consent.
-			expect(sut.marketingConsent).toBe(false)
+			expect(sut.consent.marketingMeasurement).toBe(before)
+		})
+	})
+
+	describe('consent toggle binding', () => {
+		it('reflects an external consent change with no component-local mirror', () => {
+			expect(sut.consent.analytics).toBe(false)
+			// External change (e.g. the onboarding consent screen) — no Settings
+			// toggle handler is involved.
+			sut.consent.grant('analytics')
+			// The template binds `consent.analytics` directly, so the toggle
+			// reflects the new value without any manual re-sync in the component.
+			expect(sut.consent.analytics).toBe(true)
+		})
+
+		it('handleAnalyticsToggle writes through to the consent service', () => {
+			expect(sut.consent.analytics).toBe(false)
+			sut.handleAnalyticsToggle()
+			expect(sut.consent.analytics).toBe(true)
+			sut.handleAnalyticsToggle()
+			expect(sut.consent.analytics).toBe(false)
 		})
 	})
 
