@@ -1,15 +1,31 @@
-<div
-  ref="scrollArea"
-  class="scroll-area"
-  data-dismissable.bind="dismissable"
-  scrollend.trigger="onScrollEnd()"
+<!-- Inner native <dialog>: opened via showModal() for top-layer promotion,
+     focus-trap, inert background, and ESC / Android back close requests. -->
+<dialog
+  ref="dialogEl"
+  class="sheet-dialog"
+  cancel.trigger="onCancel($event)"
+  close.trigger="onClose()"
 >
-  <!-- Dismiss zone (always in DOM; CSS controls snap behavior via data-dismissable) -->
-  <div class="dismiss-zone" aria-hidden="true"></div>
+  <div
+    ref="scrollArea"
+    class="scroll-area"
+    data-dismissable.bind="dismissable"
+    scrollend.trigger="onScrollEnd()"
+    scrollsnapchange.trigger="onSnapChange($event)"
+  >
+    <!-- Dismiss zone (always in DOM; CSS controls snap behavior via data-dismissable).
+         Tap-outside: clicking the dimmed area closes a dismissable sheet. -->
+    <div
+      ref="dismissZone"
+      class="dismiss-zone"
+      aria-hidden="true"
+      click.trigger="onDismissZoneClick()"
+    ></div>
 
-  <!-- Sheet body (scroll-snap target at bottom, initially visible) -->
-  <section class="sheet-body">
-    <div class="handle-bar"></div>
-    <au-slot></au-slot>
-  </section>
-</div>
+    <!-- Sheet body (scroll-snap target at bottom, initially visible) -->
+    <section class="sheet-body">
+      <div class="handle-bar"></div>
+      <au-slot></au-slot>
+    </section>
+  </div>
+</dialog>

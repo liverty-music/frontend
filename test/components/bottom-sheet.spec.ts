@@ -2,39 +2,47 @@ import { DI, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BottomSheet } from '../../src/components/bottom-sheet/bottom-sheet'
 
+function makeDialog() {
+	return {
+		open: false,
+		showModal: vi.fn(function (this: { open: boolean }) {
+			this.open = true
+		}),
+		close: vi.fn(function (this: { open: boolean }) {
+			this.open = false
+		}),
+		setAttribute: vi.fn(),
+	}
+}
+
 describe('BottomSheet', () => {
 	let sut: BottomSheet
 	let host: HTMLElement
+	let dialog: ReturnType<typeof makeDialog>
 	let scrollArea: HTMLDivElement
+	let dismissZone: HTMLDivElement
 
 	beforeEach(() => {
 		host = document.createElement('div')
-		host.showPopover = vi.fn()
-		host.hidePopover = vi.fn()
-		host.addEventListener = vi.fn()
-		host.removeEventListener = vi.fn()
-		host.setAttribute = vi.fn()
 		host.dispatchEvent = vi.fn().mockReturnValue(true)
 
+		dialog = makeDialog()
 		scrollArea = document.createElement('div')
 		scrollArea.className = 'scroll-area'
-		host.appendChild(scrollArea)
-
-		const dismissZone = document.createElement('div')
+		dismissZone = document.createElement('div')
 		dismissZone.className = 'dismiss-zone'
-		scrollArea.appendChild(dismissZone)
-
-		const sheetBody = document.createElement('section')
-		sheetBody.className = 'sheet-body'
-		scrollArea.appendChild(sheetBody)
 
 		const container = DI.createContainer()
 		container.register(Registration.instance(INode, host))
 		sut = container.get(BottomSheet)
 
-		// Wire up the ref that Aurelia would set
+		Object.defineProperty(sut, 'dialogEl', { value: dialog, writable: true })
 		Object.defineProperty(sut, 'scrollArea', {
 			value: scrollArea,
+			writable: true,
+		})
+		Object.defineProperty(sut, 'dismissZone', {
+			value: dismissZone,
 			writable: true,
 		})
 	})
@@ -44,66 +52,42 @@ describe('BottomSheet', () => {
 	})
 
 	describe('openChanged()', () => {
-		it('should call showPopover on host element', () => {
+		it('calls showModal on the inner dialog when opening', () => {
 			sut.openChanged(true)
 
-			expect(host.showPopover).toHaveBeenCalledOnce()
+			expect(dialog.showModal).toHaveBeenCalledOnce()
 		})
 
-		it('should call hidePopover on host element when closed', () => {
+		it('calls close on the inner dialog when closing', () => {
+			dialog.open = true
 			sut.openChanged(false)
 
-			expect(host.hidePopover).toHaveBeenCalledOnce()
+			expect(dialog.close).toHaveBeenCalledOnce()
 		})
 	})
 
-	describe('attached()', () => {
-		it('should set popover attribute on host for dismissable=true', () => {
-			sut.dismissable = true
-			sut.attached()
-
-			expect(host.setAttribute).toHaveBeenCalledWith('popover', 'auto')
-		})
-
-		it('should set popover attribute on host for dismissable=false', () => {
+	describe('close request (cancel)', () => {
+		it('prevents default for a non-dismissable sheet', () => {
+			const e = { preventDefault: vi.fn() } as unknown as Event
 			sut.dismissable = false
-			sut.attached()
 
-			expect(host.setAttribute).toHaveBeenCalledWith('popover', 'manual')
+			sut.onCancel(e)
+
+			expect(e.preventDefault).toHaveBeenCalledOnce()
 		})
 
-		it('should register toggle listener on host', () => {
-			sut.attached()
-
-			expect(host.addEventListener).toHaveBeenCalledWith(
-				'toggle',
-				expect.any(Function),
-			)
-		})
-
-		it('should set role="dialog" on host', () => {
-			sut.attached()
-
-			expect(host.setAttribute).toHaveBeenCalledWith('role', 'dialog')
-		})
-	})
-
-	describe('dismiss-zone DOM presence', () => {
-		it('should have dismiss-zone in DOM when dismissable=true', () => {
+		it('allows the request for a dismissable sheet', () => {
+			const e = { preventDefault: vi.fn() } as unknown as Event
 			sut.dismissable = true
-			const zone = scrollArea.querySelector('.dismiss-zone')
-			expect(zone).not.toBeNull()
-		})
 
-		it('should have dismiss-zone in DOM when dismissable=false', () => {
-			sut.dismissable = false
-			const zone = scrollArea.querySelector('.dismiss-zone')
-			expect(zone).not.toBeNull()
+			sut.onCancel(e)
+
+			expect(e.preventDefault).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('onScrollEnd()', () => {
-		it('should not dismiss when dismissable=false', () => {
+		it('does not dismiss when dismissable=false', () => {
 			sut.dismissable = false
 			Object.defineProperty(scrollArea, 'scrollTop', { value: 0 })
 			Object.defineProperty(scrollArea, 'scrollHeight', { value: 1000 })
@@ -111,12 +95,13 @@ describe('BottomSheet', () => {
 
 			sut.onScrollEnd()
 
-			expect(host.dispatchEvent).not.toHaveBeenCalled()
+			expect(dialog.close).not.toHaveBeenCalled()
 		})
 
-		it('should dismiss when dismissable=true and scrolled to top', () => {
+		it('dismisses when dismissable=true and scrolled to the dismiss zone', () => {
 			sut.dismissable = true
 			sut.open = true
+			dialog.open = true
 			Object.defineProperty(scrollArea, 'scrollTop', {
 				value: 0,
 				configurable: true,
@@ -131,6 +116,7 @@ describe('BottomSheet', () => {
 			})
 
 			sut.onScrollEnd()
+			sut.onClose()
 
 			expect(sut.open).toBe(false)
 			expect(host.dispatchEvent).toHaveBeenCalledWith(
@@ -139,15 +125,34 @@ describe('BottomSheet', () => {
 		})
 	})
 
+	describe('tap-outside dismiss', () => {
+		it('closes a dismissable sheet on dismiss-zone click', () => {
+			dialog.open = true
+			sut.dismissable = true
+
+			sut.onDismissZoneClick()
+
+			expect(dialog.close).toHaveBeenCalledOnce()
+		})
+
+		it('does not close a non-dismissable sheet on dismiss-zone click', () => {
+			dialog.open = true
+			sut.dismissable = false
+
+			sut.onDismissZoneClick()
+
+			expect(dialog.close).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('detaching()', () => {
-		it('should remove toggle listener and hide popover', () => {
+		it('closes the dialog without emitting sheet-closed', () => {
+			dialog.open = true
+
 			sut.detaching()
 
-			expect(host.removeEventListener).toHaveBeenCalledWith(
-				'toggle',
-				expect.any(Function),
-			)
-			expect(host.hidePopover).toHaveBeenCalledOnce()
+			expect(dialog.close).toHaveBeenCalledOnce()
+			expect(host.dispatchEvent).not.toHaveBeenCalled()
 		})
 	})
 })

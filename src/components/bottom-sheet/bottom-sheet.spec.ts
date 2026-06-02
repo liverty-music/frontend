@@ -1,12 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockHost = {
-	showPopover: vi.fn(),
-	hidePopover: vi.fn(),
-	setAttribute: vi.fn(),
-	addEventListener: vi.fn(),
-	removeEventListener: vi.fn(),
-	dispatchEvent: vi.fn(),
+	getAttribute: vi.fn(() => null),
+	dispatchEvent: vi.fn(() => true),
 }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -20,12 +16,30 @@ vi.mock('aurelia', async (importOriginal) => {
 
 import { BottomSheet } from './bottom-sheet'
 
+function makeDialog() {
+	const dialog = {
+		open: false,
+		showModal: vi.fn(function (this: { open: boolean }) {
+			this.open = true
+		}),
+		close: vi.fn(function (this: { open: boolean }) {
+			this.open = false
+		}),
+		setAttribute: vi.fn(),
+	}
+	return dialog
+}
+
 describe('BottomSheet', () => {
 	let sut: BottomSheet
+	let dialog: ReturnType<typeof makeDialog>
 
 	beforeEach(() => {
 		vi.clearAllMocks()
+		mockHost.getAttribute.mockReturnValue(null)
 		sut = new BottomSheet()
+		dialog = makeDialog()
+		Object.defineProperty(sut, 'dialogEl', { value: dialog, writable: true })
 	})
 
 	afterEach(() => {
@@ -33,145 +47,192 @@ describe('BottomSheet', () => {
 	})
 
 	describe('open state', () => {
-		it('calls showPopover when open changes to true', () => {
+		it('calls showModal when open changes to true', () => {
 			sut.openChanged(true)
 
-			expect(mockHost.showPopover).toHaveBeenCalledOnce()
+			expect(dialog.showModal).toHaveBeenCalledOnce()
+			expect(dialog.open).toBe(true)
 		})
 
-		it('calls hidePopover when open changes to false', () => {
+		it('calls close when open changes to false', () => {
+			dialog.open = true
 			sut.openChanged(false)
 
-			expect(mockHost.hidePopover).toHaveBeenCalledOnce()
+			expect(dialog.close).toHaveBeenCalledOnce()
 		})
 
-		it('suppresses hidePopover error when already hidden', () => {
-			mockHost.hidePopover.mockImplementation(() => {
-				throw new Error('not open')
-			})
+		it('does not call showModal twice if already open', () => {
+			dialog.open = true
+			sut.openChanged(true)
 
-			expect(() => sut.openChanged(false)).not.toThrow()
+			expect(dialog.showModal).not.toHaveBeenCalled()
 		})
 
-		it('suppresses showPopover error before attached (pre-attach)', () => {
-			mockHost.showPopover.mockImplementation(() => {
-				throw new DOMException('not a popover', 'InvalidStateError')
+		it('suppresses showModal error before attached (pre-attach)', () => {
+			dialog.showModal.mockImplementation(() => {
+				throw new DOMException('not connected', 'InvalidStateError')
 			})
 
 			expect(() => sut.openChanged(true)).not.toThrow()
 		})
 
-		it('opens successfully when open is true at creation time and attached() runs', () => {
-			// Simulate pre-attach: showPopover fails
-			mockHost.showPopover.mockImplementationOnce(() => {
-				throw new DOMException('not a popover', 'InvalidStateError')
+		it('retries showModal in attached() when open is true at creation', () => {
+			dialog.showModal.mockImplementationOnce(() => {
+				throw new DOMException('not connected', 'InvalidStateError')
 			})
 
-			// binding phase: open = true triggers openChanged
 			sut.open = true
 			sut.openChanged(true)
-			expect(mockHost.showPopover).toHaveBeenCalledOnce()
+			expect(dialog.showModal).toHaveBeenCalledOnce()
 
-			// attached phase: popover attribute is set, retry succeeds
-			mockHost.showPopover.mockImplementation(() => {})
 			sut.attached()
-			expect(mockHost.showPopover).toHaveBeenCalledTimes(2)
+			expect(dialog.showModal).toHaveBeenCalledTimes(2)
+			expect(dialog.open).toBe(true)
 		})
 	})
 
-	describe('attached lifecycle', () => {
-		it('sets popover attribute to auto when dismissable', () => {
-			sut.dismissable = true
+	describe('aria-label', () => {
+		it('mirrors the ariaLabel bindable onto the dialog in attached()', () => {
+			sut.ariaLabel = 'Select language'
 			sut.attached()
 
-			expect(mockHost.setAttribute).toHaveBeenCalledWith('popover', 'auto')
+			expect(dialog.setAttribute).toHaveBeenCalledWith(
+				'aria-label',
+				'Select language',
+			)
 		})
 
-		it('sets popover attribute to manual when not dismissable', () => {
-			sut.dismissable = false
+		it('falls back to the host aria-label when the bindable is empty', () => {
+			mockHost.getAttribute.mockReturnValue('Help sheet')
+			sut.ariaLabel = ''
 			sut.attached()
 
-			expect(mockHost.setAttribute).toHaveBeenCalledWith('popover', 'manual')
-		})
-
-		it('sets role to dialog', () => {
-			sut.attached()
-
-			expect(mockHost.setAttribute).toHaveBeenCalledWith('role', 'dialog')
-		})
-
-		it('sets aria-label when provided', () => {
-			sut.ariaLabel = 'Help sheet'
-			sut.attached()
-
-			expect(mockHost.setAttribute).toHaveBeenCalledWith(
+			expect(dialog.setAttribute).toHaveBeenCalledWith(
 				'aria-label',
 				'Help sheet',
 			)
 		})
-
-		it('registers toggle event listener', () => {
-			sut.attached()
-
-			expect(mockHost.addEventListener).toHaveBeenCalledWith(
-				'toggle',
-				expect.any(Function),
-			)
-		})
 	})
 
-	describe('detaching lifecycle', () => {
-		it('removes toggle event listener', () => {
-			sut.attached()
-			sut.detaching()
+	describe('close request (ESC / Android back)', () => {
+		it('prevents default when not dismissable', () => {
+			const e = { preventDefault: vi.fn() } as unknown as Event
+			sut.dismissable = false
 
-			expect(mockHost.removeEventListener).toHaveBeenCalledWith(
-				'toggle',
-				expect.any(Function),
-			)
+			sut.onCancel(e)
+
+			expect(e.preventDefault).toHaveBeenCalledOnce()
 		})
-	})
 
-	describe('scroll dismiss', () => {
-		it('closes when scrolled to dismiss zone', () => {
-			sut.open = true
+		it('allows the request and emits sheet-closed when dismissable', () => {
+			const e = { preventDefault: vi.fn() } as unknown as Event
 			sut.dismissable = true
+			sut.open = true
 
-			const mockScrollArea = {
-				scrollTop: 0,
-				scrollHeight: 1000,
-				clientHeight: 500,
-			}
-			Object.defineProperty(sut, 'scrollArea', {
-				value: mockScrollArea,
-				writable: true,
-			})
+			sut.onCancel(e)
+			expect(e.preventDefault).not.toHaveBeenCalled()
 
-			sut.onScrollEnd()
+			// Native `close` event follows the cancel.
+			sut.onClose()
+			expect(sut.open).toBe(false)
+			expect(mockHost.dispatchEvent).toHaveBeenCalledWith(
+				expect.objectContaining({ type: 'sheet-closed' }),
+			)
+		})
+	})
+
+	describe('onClose', () => {
+		it('does not emit sheet-closed for a programmatic close', () => {
+			sut.open = true
+
+			// No prior user-dismiss signal → programmatic.
+			sut.onClose()
 
 			expect(sut.open).toBe(false)
+			expect(mockHost.dispatchEvent).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('tap-outside dismiss', () => {
+		it('closes a dismissable sheet on dismiss-zone click', () => {
+			dialog.open = true
+			sut.dismissable = true
+
+			sut.onDismissZoneClick()
+			expect(dialog.close).toHaveBeenCalledOnce()
+
+			sut.onClose()
 			expect(mockHost.dispatchEvent).toHaveBeenCalledWith(
 				expect.objectContaining({ type: 'sheet-closed' }),
 			)
 		})
 
 		it('does not close when not dismissable', () => {
-			sut.open = true
+			dialog.open = true
 			sut.dismissable = false
 
-			const mockScrollArea = {
-				scrollTop: 0,
-				scrollHeight: 1000,
-				clientHeight: 500,
-			}
+			sut.onDismissZoneClick()
+
+			expect(dialog.close).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('swipe dismiss', () => {
+		const scrolledToTop = {
+			scrollTop: 0,
+			scrollHeight: 1000,
+			clientHeight: 500,
+		}
+
+		it('closes when scrolled to the dismiss zone and dismissable', () => {
+			sut.open = true
+			sut.dismissable = true
+			dialog.open = true
 			Object.defineProperty(sut, 'scrollArea', {
-				value: mockScrollArea,
+				value: scrolledToTop,
 				writable: true,
 			})
 
 			sut.onScrollEnd()
 
-			expect(sut.open).toBe(true)
+			expect(dialog.close).toHaveBeenCalledOnce()
+		})
+
+		it('does not close when not dismissable', () => {
+			sut.dismissable = false
+			Object.defineProperty(sut, 'scrollArea', {
+				value: scrolledToTop,
+				writable: true,
+			})
+
+			sut.onScrollEnd()
+
+			expect(dialog.close).not.toHaveBeenCalled()
+		})
+
+		it('closes on snap-change to the dismiss zone', () => {
+			const dismissZone = {} as HTMLElement
+			Object.defineProperty(sut, 'dismissZone', {
+				value: dismissZone,
+				writable: true,
+			})
+			dialog.open = true
+			sut.dismissable = true
+
+			sut.onSnapChange({ snapTargetBlock: dismissZone } as unknown as Event)
+
+			expect(dialog.close).toHaveBeenCalledOnce()
+		})
+	})
+
+	describe('detaching lifecycle', () => {
+		it('closes the dialog without emitting sheet-closed', () => {
+			dialog.open = true
+
+			sut.detaching()
+
+			expect(dialog.close).toHaveBeenCalledOnce()
+			expect(mockHost.dispatchEvent).not.toHaveBeenCalled()
 		})
 	})
 })
