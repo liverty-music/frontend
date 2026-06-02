@@ -13,12 +13,10 @@ function createMockOnboarding() {
 		spotlightRadius: '12px',
 		spotlightActive: false,
 		onSpotlightTap: undefined as (() => void) | undefined,
-		onBringToFront: undefined as (() => void) | undefined,
 		isOnboarding: false,
 		isCompleted: true,
 		activateSpotlight: vi.fn(),
 		deactivateSpotlight: vi.fn(),
-		bringSpotlightToFront: vi.fn(),
 		setStep: vi.fn(),
 		complete: vi.fn(),
 		reset: vi.fn(),
@@ -281,66 +279,6 @@ describe('CoachMark', () => {
 			await vi.advanceTimersByTimeAsync(6000)
 
 			expect(sut.visible).toBe(false)
-		})
-	})
-
-	describe('bringToFront', () => {
-		it('should call hidePopover then showPopover when popover is open', async () => {
-			// Open the popover first
-			sut.active = true
-			sut.activeChanged()
-			await vi.advanceTimersByTimeAsync(900)
-
-			expect(overlayEl.showPopover).toHaveBeenCalledTimes(1)
-
-			// Reset call counts
-			;(overlayEl.hidePopover as ReturnType<typeof vi.fn>).mockClear()
-			;(overlayEl.showPopover as ReturnType<typeof vi.fn>).mockClear()
-
-			sut.bringToFront()
-			await vi.advanceTimersByTimeAsync(16) // requestAnimationFrame
-
-			expect(overlayEl.hidePopover).toHaveBeenCalledTimes(1)
-			expect(overlayEl.showPopover).toHaveBeenCalledTimes(1)
-		})
-
-		it('should be no-op when popover is not open', async () => {
-			sut.bringToFront()
-			await vi.advanceTimersByTimeAsync(16)
-
-			expect(overlayEl.hidePopover).not.toHaveBeenCalled()
-			expect(overlayEl.showPopover).not.toHaveBeenCalled()
-		})
-	})
-
-	describe('onboarding service integration', () => {
-		it('should register onBringToFront callback on bound()', () => {
-			sut.bound()
-			expect(mockOnboarding.onBringToFront).toBeTypeOf('function')
-		})
-
-		it('should clear onBringToFront callback on detaching()', () => {
-			sut.bound()
-			expect(mockOnboarding.onBringToFront).toBeDefined()
-
-			sut.detaching()
-			expect(mockOnboarding.onBringToFront).toBeUndefined()
-		})
-
-		it('should trigger bringToFront when onboarding service calls callback', async () => {
-			sut.active = true
-			sut.bound()
-			await vi.advanceTimersByTimeAsync(900)
-
-			;(overlayEl.hidePopover as ReturnType<typeof vi.fn>).mockClear()
-			;(overlayEl.showPopover as ReturnType<typeof vi.fn>).mockClear()
-
-			// Simulate onboarding service calling the callback
-			mockOnboarding.onBringToFront?.()
-			await vi.advanceTimersByTimeAsync(16)
-
-			expect(overlayEl.hidePopover).toHaveBeenCalledTimes(1)
-			expect(overlayEl.showPopover).toHaveBeenCalledTimes(1)
 		})
 	})
 })

@@ -60,7 +60,6 @@ export class OnboardingService {
 
 	// Callbacks — not state, cannot live in a store
 	public onSpotlightTap: (() => void) | undefined = undefined
-	public onBringToFront: (() => void) | undefined = undefined
 
 	/**
 	 * Persist step to localStorage on change.
@@ -95,14 +94,6 @@ export class OnboardingService {
 		this.spotlightRadius = '12px'
 		this.spotlightActive = false
 		this.onSpotlightTap = undefined
-	}
-
-	/**
-	 * Re-insert the spotlight popover at the top of the LIFO stack.
-	 * Used when another popover has entered the top layer after the coach mark.
-	 */
-	public bringSpotlightToFront(): void {
-		this.onBringToFront?.()
 	}
 
 	/**

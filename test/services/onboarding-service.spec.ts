@@ -176,25 +176,6 @@ describe('OnboardingService', () => {
 		})
 	})
 
-	describe('bringSpotlightToFront', () => {
-		it('should invoke onBringToFront callback when set', () => {
-			const sut = createService()
-			const bringFn = vi.fn()
-			sut.onBringToFront = bringFn
-
-			sut.bringSpotlightToFront()
-
-			expect(bringFn).toHaveBeenCalledOnce()
-		})
-
-		it('should be a no-op when callback is not set', () => {
-			const sut = createService()
-
-			// Should not throw
-			expect(() => sut.bringSpotlightToFront()).not.toThrow()
-		})
-	})
-
 	describe('readyForDashboard', () => {
 		it('should return true when followedCount meets the threshold', () => {
 			const sut = createService({ step: OnboardingStep.DISCOVERY })
