@@ -62,7 +62,6 @@ export function concertFrom(
 		artistId: artist?.id || '',
 		venueName,
 		locationLabel,
-		adminArea,
 		date: jsDate,
 		startTime,
 		openTime,

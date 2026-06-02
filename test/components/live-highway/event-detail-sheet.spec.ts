@@ -18,7 +18,6 @@ function makeEvent(overrides: Partial<LiveEvent> = {}): LiveEvent {
 		artistId: 'a1',
 		venueName: 'Test Venue',
 		locationLabel: 'Tokyo',
-		adminArea: 'Tokyo',
 		date: new Date(2026, 2, 15), // March 15, 2026
 		startTime: '19:00',
 		title: 'Test Concert',
@@ -65,16 +64,16 @@ describe('EventDetailSheet', () => {
 	})
 
 	describe('googleMapsUrl', () => {
-		it('should construct URL with venue and admin area', () => {
-			sut.event = makeEvent({ venueName: 'Budokan', adminArea: 'Tokyo' })
+		it('should construct URL with venue and localized area label', () => {
+			sut.event = makeEvent({ venueName: 'Budokan', locationLabel: 'Tokyo' })
 
 			expect(sut.googleMapsUrl).toBe(
 				'https://www.google.com/maps/search/?api=1&query=Budokan%20Tokyo',
 			)
 		})
 
-		it('should use only venue name when no admin area', () => {
-			sut.event = makeEvent({ venueName: 'Budokan', adminArea: undefined })
+		it('should use only venue name when no area label', () => {
+			sut.event = makeEvent({ venueName: 'Budokan', locationLabel: '' })
 
 			expect(sut.googleMapsUrl).toBe(
 				'https://www.google.com/maps/search/?api=1&query=Budokan',
@@ -220,6 +219,190 @@ describe('EventDetailSheet', () => {
 			window.dispatchEvent(new PopStateEvent('popstate'))
 
 			expect(closeSpy).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('journey view-model', () => {
+		it('marks passed states completed, current solid, future outlined (paid)', () => {
+			sut.event = makeEvent({ journeyStatus: 'paid' })
+
+			expect(sut.nodeStates).toEqual({
+				tracking: 'completed',
+				applied: 'completed',
+				unpaid: 'completed',
+				paid: 'current',
+				lost: 'future',
+			})
+		})
+
+		it('treats outcome as future while applied (result pending)', () => {
+			sut.event = makeEvent({ journeyStatus: 'applied' })
+
+			expect(sut.nodeStates).toEqual({
+				tracking: 'completed',
+				applied: 'current',
+				lost: 'future',
+				unpaid: 'future',
+				paid: 'future',
+			})
+			expect(sut.outcomePending).toBe(true)
+		})
+
+		it('keeps outcome pending for tracking and undefined', () => {
+			sut.event = makeEvent({ journeyStatus: 'tracking' })
+			expect(sut.outcomePending).toBe(true)
+
+			sut.event = makeEvent({ journeyStatus: undefined })
+			expect(sut.outcomePending).toBe(true)
+		})
+
+		it('clears outcome pending once a result is recorded', () => {
+			for (const status of ['lost', 'unpaid', 'paid'] as const) {
+				sut.event = makeEvent({ journeyStatus: status })
+				expect(sut.outcomePending).toBe(false)
+			}
+		})
+
+		it('dims the win route when a loss is recorded', () => {
+			sut.event = makeEvent({ journeyStatus: 'lost' })
+
+			expect(sut.successDimmed).toBe(true)
+			expect(sut.failureDimmed).toBe(false)
+			expect(sut.nodeStates.lost).toBe('current')
+		})
+
+		it('dims the loss route when a win is recorded', () => {
+			for (const status of ['unpaid', 'paid'] as const) {
+				sut.event = makeEvent({ journeyStatus: status })
+				expect(sut.failureDimmed).toBe(true)
+				expect(sut.successDimmed).toBe(false)
+			}
+		})
+
+		it('exposes exactly one current node per status', () => {
+			for (const status of [
+				'tracking',
+				'applied',
+				'lost',
+				'unpaid',
+				'paid',
+			] as const) {
+				sut.event = makeEvent({ journeyStatus: status })
+				const current = Object.values(sut.nodeStates).filter(
+					(s) => s === 'current',
+				)
+				expect(current).toHaveLength(1)
+			}
+		})
+	})
+
+	describe('journey radiogroup keyboard navigation', () => {
+		// Build a KeyboardEvent stub whose currentTarget mimics the radiogroup
+		// element: querySelector returns a focusable node we can assert on.
+		function makeKeydown(key: string) {
+			const focused = { focus: vi.fn() }
+			const group = { querySelector: vi.fn(() => focused) }
+			const event = {
+				key,
+				preventDefault: vi.fn(),
+				currentTarget: group,
+			} as unknown as KeyboardEvent
+			return { event, group, focused }
+		}
+
+		it('gives the selected status the only tab stop (roving tabindex)', () => {
+			sut.event = makeEvent({ journeyStatus: 'paid' })
+			expect(sut.journeyTabindex('paid')).toBe(0)
+			expect(sut.journeyTabindex('tracking')).toBe(-1)
+			expect(sut.journeyTabindex('lost')).toBe(-1)
+		})
+
+		it('makes the first node the tab stop when nothing is selected', () => {
+			sut.event = makeEvent({ journeyStatus: undefined })
+			expect(sut.journeyTabindex('tracking')).toBe(0)
+			expect(sut.journeyTabindex('applied')).toBe(-1)
+		})
+
+		it('ArrowRight selects the next node and moves focus to it', async () => {
+			sut.event = makeEvent({ journeyStatus: 'tracking' })
+			const setStatus = vi
+				.spyOn(
+					(
+						sut as unknown as {
+							journeyService: { setStatus: () => Promise<void> }
+						}
+					).journeyService,
+					'setStatus',
+				)
+				.mockResolvedValue(undefined)
+			const { event, group, focused } = makeKeydown('ArrowRight')
+
+			await sut.onJourneyKeydown(event)
+
+			expect(event.preventDefault).toHaveBeenCalled()
+			expect(setStatus).toHaveBeenCalledWith('c1', 'applied')
+			expect(group.querySelector).toHaveBeenCalledWith(
+				'[data-journey-status="applied"]',
+			)
+			expect(focused.focus).toHaveBeenCalled()
+		})
+
+		it('ArrowLeft wraps from the first node to the last', async () => {
+			sut.event = makeEvent({ journeyStatus: 'tracking' })
+			const setStatus = vi
+				.spyOn(
+					(
+						sut as unknown as {
+							journeyService: { setStatus: () => Promise<void> }
+						}
+					).journeyService,
+					'setStatus',
+				)
+				.mockResolvedValue(undefined)
+
+			await sut.onJourneyKeydown(makeKeydown('ArrowLeft').event)
+
+			expect(setStatus).toHaveBeenCalledWith('c1', 'lost')
+		})
+
+		it('Home and End jump to the first and last nodes', async () => {
+			sut.event = makeEvent({ journeyStatus: 'unpaid' })
+			const setStatus = vi
+				.spyOn(
+					(
+						sut as unknown as {
+							journeyService: { setStatus: () => Promise<void> }
+						}
+					).journeyService,
+					'setStatus',
+				)
+				.mockResolvedValue(undefined)
+
+			await sut.onJourneyKeydown(makeKeydown('Home').event)
+			expect(setStatus).toHaveBeenLastCalledWith('c1', 'tracking')
+
+			await sut.onJourneyKeydown(makeKeydown('End').event)
+			expect(setStatus).toHaveBeenLastCalledWith('c1', 'lost')
+		})
+
+		it('ignores non-navigation keys', async () => {
+			sut.event = makeEvent({ journeyStatus: 'tracking' })
+			const setStatus = vi
+				.spyOn(
+					(
+						sut as unknown as {
+							journeyService: { setStatus: () => Promise<void> }
+						}
+					).journeyService,
+					'setStatus',
+				)
+				.mockResolvedValue(undefined)
+			const { event } = makeKeydown('a')
+
+			await sut.onJourneyKeydown(event)
+
+			expect(event.preventDefault).not.toHaveBeenCalled()
+			expect(setStatus).not.toHaveBeenCalled()
 		})
 	})
 

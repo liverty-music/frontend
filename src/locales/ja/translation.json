@@ -124,6 +124,14 @@
 		"stopTracking": "追跡を停止",
 		"viewOfficialInfo": "公式情報を見る",
 		"addToCalendar": "カレンダーに追加",
+		"journeyPhase": {
+			"process": "申込フロー",
+			"outcome": "結果",
+			"pending": "結果待ち"
+		},
+		"journeyRoute": {
+			"won": "当選"
+		},
 		"journeyStatus": {
 			"tracking": "追跡中",
 			"applied": "申込済み",

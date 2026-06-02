@@ -50,7 +50,7 @@
           <span class="detail-icon"><svg-icon name="map-pin"></svg-icon></span>
           <div>
             <p class="detail-primary">${event.venueName}</p>
-            <p if.bind="event.adminArea" class="detail-secondary">${event.adminArea}</p>
+            <p if.bind="event.locationLabel" class="detail-secondary">${event.locationLabel}</p>
             <a
               href.bind="googleMapsUrl"
               target="_blank"
@@ -64,19 +64,123 @@
 
       <!-- Ticket journey status -->
       <section if.bind="isAuthenticated" class="sheet-journey" data-testid="sheet-journey">
-        <h3 class="journey-heading" t="eventDetail.ticketStatus"></h3>
-        <div class="journey-controls">
-          <button
-            repeat.for="s of journeyStatuses"
-            class="journey-btn"
-            data-testid="journey-btn"
-            data-journey-status.bind="s"
-            data-active.bind="event.journeyStatus === s || undefined"
-            disabled.bind="journeyUpdating"
-            click.trigger="setJourneyStatus(s)"
-            t.bind="'eventDetail.journeyStatus.' + s"
-          ></button>
+        <h3 id="journey-status-heading" class="journey-heading" t="eventDetail.ticketStatus"></h3>
+
+        <div
+          class="journey"
+          role="radiogroup"
+          aria-labelledby="journey-status-heading"
+          keydown.trigger="onJourneyKeydown($event)"
+        >
+          <!-- (1) Application process: tracking -> applied -->
+          <div class="journey-phase">
+            <p class="journey-phase-label" t="eventDetail.journeyPhase.process"></p>
+            <div class="journey-process">
+              <button
+                class="journey-node"
+                role="radio"
+                data-testid="journey-btn"
+                data-journey-status="tracking"
+                data-state.bind="nodeStates.tracking"
+                aria-checked.bind="event.journeyStatus === 'tracking'"
+                tabindex.bind="journeyTabindex('tracking')"
+                disabled.bind="journeyUpdating"
+                click.trigger="setJourneyStatus('tracking')"
+              >
+                <span class="journey-node-cue" aria-hidden="true"></span>
+                <span class="journey-node-label" t="eventDetail.journeyStatus.tracking"></span>
+              </button>
+              <span class="journey-arrow" aria-hidden="true"></span>
+              <button
+                class="journey-node"
+                role="radio"
+                data-testid="journey-btn"
+                data-journey-status="applied"
+                data-state.bind="nodeStates.applied"
+                aria-checked.bind="event.journeyStatus === 'applied'"
+                tabindex.bind="journeyTabindex('applied')"
+                disabled.bind="journeyUpdating"
+                click.trigger="setJourneyStatus('applied')"
+              >
+                <span class="journey-node-cue" aria-hidden="true"></span>
+                <span class="journey-node-label" t="eventDetail.journeyStatus.applied"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- (2) Outcome: success route (top) and failure route (below) -->
+          <div class="journey-phase" data-pending.bind="outcomePending || undefined">
+            <p class="journey-phase-label">
+              <span t="eventDetail.journeyPhase.outcome"></span>
+              <span
+                if.bind="outcomePending"
+                class="journey-pending-tag"
+                t="eventDetail.journeyPhase.pending"
+              ></span>
+            </p>
+
+            <div class="journey-outcome">
+              <!-- Win route: 当選 -> unpaid -> paid -->
+              <div
+                class="journey-route journey-route-success"
+                data-dimmed.bind="successDimmed || undefined"
+              >
+                <p class="journey-route-label" t="eventDetail.journeyRoute.won"></p>
+                <button
+                  class="journey-node"
+                  role="radio"
+                  data-testid="journey-btn"
+                  data-journey-status="unpaid"
+                  data-state.bind="nodeStates.unpaid"
+                  aria-checked.bind="event.journeyStatus === 'unpaid'"
+                  tabindex.bind="journeyTabindex('unpaid')"
+                  disabled.bind="journeyUpdating"
+                  click.trigger="setJourneyStatus('unpaid')"
+                >
+                  <span class="journey-node-cue" aria-hidden="true"></span>
+                  <span class="journey-node-label" t="eventDetail.journeyStatus.unpaid"></span>
+                </button>
+                <span class="journey-arrow journey-arrow-down" aria-hidden="true"></span>
+                <button
+                  class="journey-node"
+                  role="radio"
+                  data-testid="journey-btn"
+                  data-journey-status="paid"
+                  data-state.bind="nodeStates.paid"
+                  aria-checked.bind="event.journeyStatus === 'paid'"
+                  tabindex.bind="journeyTabindex('paid')"
+                  disabled.bind="journeyUpdating"
+                  click.trigger="setJourneyStatus('paid')"
+                >
+                  <span class="journey-node-cue" aria-hidden="true"></span>
+                  <span class="journey-node-label" t="eventDetail.journeyStatus.paid"></span>
+                </button>
+              </div>
+
+              <!-- Lose route: lost -->
+              <div
+                class="journey-route journey-route-failure"
+                data-dimmed.bind="failureDimmed || undefined"
+              >
+                <button
+                  class="journey-node"
+                  role="radio"
+                  data-testid="journey-btn"
+                  data-journey-status="lost"
+                  data-state.bind="nodeStates.lost"
+                  aria-checked.bind="event.journeyStatus === 'lost'"
+                  tabindex.bind="journeyTabindex('lost')"
+                  disabled.bind="journeyUpdating"
+                  click.trigger="setJourneyStatus('lost')"
+                >
+                  <span class="journey-node-cue" aria-hidden="true"></span>
+                  <span class="journey-node-label" t="eventDetail.journeyStatus.lost"></span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+
         <button
           if.bind="event.journeyStatus"
           class="journey-remove-btn" data-testid="journey-remove-btn"

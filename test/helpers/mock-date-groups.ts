@@ -9,7 +9,6 @@ export function makeConcert(
 		artistId: 'artist-1',
 		venueName: 'Test Venue',
 		locationLabel: 'Tokyo',
-		adminArea: 'JP-13',
 		date: new Date('2026-04-01T19:00:00'),
 		startTime: '19:00',
 		title: 'Test Concert',

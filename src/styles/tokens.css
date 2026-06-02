@@ -26,6 +26,15 @@
 		--color-success: oklch(80% 0.18 152deg);
 		--color-white: oklch(100% 0 0deg);
 
+		/* Ticket journey status hues — single source of semantic identity,
+		   shared by the dashboard card badge and the detail-sheet flow nodes.
+		   Each consumer chooses its own lightness/chroma/opacity. */
+		--journey-hue-tracking: 255deg; /* process — neutral blue */
+		--journey-hue-applied: 255deg; /* process — neutral blue */
+		--journey-hue-unpaid: 75deg; /* action required — amber */
+		--journey-hue-paid: 150deg; /* success — green */
+		--journey-hue-lost: 25deg; /* failure — red */
+
 		/* Border colors */
 		--color-border-subtle: oklch(98.5% 0 0deg / 12%);
 		--color-border-muted: oklch(98.5% 0 0deg / 22%);
