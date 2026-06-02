@@ -1,5 +1,4 @@
 import { bindable, ILogger, resolve } from 'aurelia'
-import { IOnboardingService } from '../../services/onboarding-service'
 
 const MAX_RETRY_MS = 5000
 const INITIAL_RETRY_MS = 100
@@ -22,7 +21,6 @@ export class CoachMark {
 	private scrollEndHandler: (() => void) | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('CoachMark')
-	private readonly onboarding = resolve(IOnboardingService)
 
 	public activeChanged(): void {
 		if (this.active) {
@@ -33,14 +31,12 @@ export class CoachMark {
 	}
 
 	public bound(): void {
-		this.onboarding.onBringToFront = () => this.bringToFront()
 		if (this.active) {
 			this.findAndHighlight()
 		}
 	}
 
 	public detaching(): void {
-		this.onboarding.onBringToFront = undefined
 		this.deactivate()
 	}
 
@@ -150,23 +146,6 @@ export class CoachMark {
 			this.isPopoverOpen = false
 		}
 		this.cleanup()
-	}
-
-	/**
-	 * Re-insert the coach mark popover at the top of the LIFO stack.
-	 * Used when another popover (e.g. detail sheet) has entered the top layer
-	 * after the coach mark and needs to appear below it.
-	 */
-	public bringToFront(): void {
-		if (!this.isPopoverOpen) return
-		requestAnimationFrame(() => {
-			try {
-				this.overlayEl.hidePopover()
-				this.overlayEl.showPopover()
-			} catch {
-				// Popover state may have changed between frames
-			}
-		})
 	}
 
 	public onBlockerClick(): void {

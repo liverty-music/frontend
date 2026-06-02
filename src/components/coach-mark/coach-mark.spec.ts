@@ -26,15 +26,12 @@ const fakeLogger = {
 	scopeTo: vi.fn(() => fakeLogger),
 }
 
-const fakeOnboarding = {
-	onBringToFront: undefined as (() => void) | undefined,
-}
+const fakeOnboarding = {}
 
 describe('CoachMark', () => {
 	let sut: CoachMark
 
 	beforeEach(() => {
-		fakeOnboarding.onBringToFront = undefined
 		sut = new CoachMark()
 	})
 
@@ -122,22 +119,7 @@ describe('CoachMark', () => {
 		})
 	})
 
-	describe('bound lifecycle', () => {
-		it('registers onBringToFront callback', () => {
-			sut.bound()
-
-			expect(fakeOnboarding.onBringToFront).toBeDefined()
-		})
-	})
-
 	describe('detaching lifecycle', () => {
-		it('unregisters onBringToFront callback', () => {
-			sut.bound()
-			sut.detaching()
-
-			expect(fakeOnboarding.onBringToFront).toBeUndefined()
-		})
-
 		it('sets visible to false', () => {
 			sut.visible = true
 			sut.detaching()
