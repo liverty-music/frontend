@@ -259,6 +259,9 @@ export class SettingsRoute {
 	}
 
 	public async toggleNotifications(): Promise<void> {
+		// The push row uses `aria-disabled` (not native `disabled`) when the
+		// VAPID key is absent, so it stays AT-discoverable but must no-op here.
+		if (!this.vapidAvailable) return
 		if (this.isToggling) return
 		this.isToggling = true
 
