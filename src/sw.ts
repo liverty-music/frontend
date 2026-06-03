@@ -77,29 +77,37 @@ self.addEventListener('install', (event) => {
 })
 
 // ---------------------------------------------------------------------------
-// PWA Share Target handler — intercepts POST from Android share sheet.
-// Extracts shared email data and redirects to the import wizard route.
+// PWA Share Target handler — DISABLED.
+//
+// This fetch handler intercepted the POST that the Android Gmail share sheet
+// sent to `/import/ticket-email`, extracted the shared email data, and
+// redirected to the import wizard route. The share entry point no longer
+// exists: the `share_target` declaration was removed from the manifest and
+// the Android share action that fed it is gone, so this interception can
+// never fire. It is kept (disabled) rather than deleted so a future revival
+// can re-enable the ticket-email import flow without re-implementation —
+// re-add `share_target` to the manifest and un-comment the handler below.
 // ---------------------------------------------------------------------------
-self.addEventListener('fetch', (event) => {
-	const url = new URL(event.request.url)
-	if (
-		event.request.method === 'POST' &&
-		url.pathname === '/import/ticket-email'
-	) {
-		event.respondWith(
-			(async () => {
-				const formData = await event.request.formData()
-				const title = formData.get('title')?.toString() ?? ''
-				const text = formData.get('text')?.toString() ?? ''
-				const params = new URLSearchParams({ title, text })
-				return Response.redirect(
-					`/import/ticket-email?${params.toString()}`,
-					303,
-				)
-			})(),
-		)
-	}
-})
+// self.addEventListener('fetch', (event) => {
+// 	const url = new URL(event.request.url)
+// 	if (
+// 		event.request.method === 'POST' &&
+// 		url.pathname === '/import/ticket-email'
+// 	) {
+// 		event.respondWith(
+// 			(async () => {
+// 				const formData = await event.request.formData()
+// 				const title = formData.get('title')?.toString() ?? ''
+// 				const text = formData.get('text')?.toString() ?? ''
+// 				const params = new URLSearchParams({ title, text })
+// 				return Response.redirect(
+// 					`/import/ticket-email?${params.toString()}`,
+// 					303,
+// 				)
+// 			})(),
+// 		)
+// 	}
+// })
 
 // ---------------------------------------------------------------------------
 // Background Sync for artist operations (listTop / listSimilar / search).

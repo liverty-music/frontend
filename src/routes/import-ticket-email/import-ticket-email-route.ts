@@ -16,6 +16,7 @@ const TICKET_EMAIL_REGEX =
 	/抽選|当選|落選|チケット|入金期限|支払期限|先行|受付|e\+|ぴあ|ローチケ|ticket|lottery/i
 
 type WizardStep =
+	| 'unavailable'
 	| 'validation'
 	| 'artist'
 	| 'concert'
@@ -25,8 +26,15 @@ type WizardStep =
 	| 'done'
 
 export class ImportTicketEmailRoute {
-	// Wizard state
-	public step: WizardStep = 'validation'
+	// Wizard state.
+	//
+	// The wizard is currently UNAVAILABLE: its only entry point was the
+	// Android Gmail share sheet, whose `share_target` manifest declaration and
+	// Service Worker redirect have been removed. The wizard code below is kept
+	// intact so a future revival re-enables this flow without re-implementation
+	// — to restore it, re-add the manifest/SW entry points and reset the
+	// initial step to 'validation' (plus drop the early return in `loading`).
+	public step: WizardStep = 'unavailable'
 	public error = ''
 	public isLoading = false
 
@@ -60,6 +68,14 @@ export class ImportTicketEmailRoute {
 	private abortController: AbortController | null = null
 
 	public async loading(_params: Params, next: RouteNode): Promise<void> {
+		// Entry point disabled: keep the route registered (so a direct deep-link
+		// resolves rather than 404s) but present the "unavailable" state and skip
+		// all wizard/network logic. Remove this early return when the share-target
+		// entry point is revived.
+		if (this.step === 'unavailable') {
+			return
+		}
+
 		this.abortController = new AbortController()
 
 		// Extract shared data from URL query params (set by SW redirect).
