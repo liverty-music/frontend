@@ -73,6 +73,7 @@ export function concertFrom(
 		// and should be investigated rather than silently re-derived.
 		title: proto.series?.title?.value ?? '',
 		sourceUrl: proto.series?.sourceUrl?.value ?? '',
+		merchUrl: proto.series?.merchUrl?.value ?? '',
 		hypeLevel,
 		matched,
 		artist,

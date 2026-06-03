@@ -22,6 +22,7 @@ function makeEvent(overrides: Partial<LiveEvent> = {}): LiveEvent {
 		startTime: '19:00',
 		title: 'Test Concert',
 		sourceUrl: 'https://example.com',
+		merchUrl: '',
 		hypeLevel: 'watch',
 		...overrides,
 	}
@@ -83,6 +84,23 @@ describe('EventDetailSheet', () => {
 		it('should return "#" when no event', () => {
 			sut.event = null
 			expect(sut.googleMapsUrl).toBe('#')
+		})
+	})
+
+	describe('hasMerchUrl (merch link gating)', () => {
+		it('is true when the event carries a merch URL', () => {
+			sut.event = makeEvent({ merchUrl: 'https://artist.example.com/goods' })
+			expect(sut.hasMerchUrl).toBe(true)
+		})
+
+		it('is false when the merch URL is empty', () => {
+			sut.event = makeEvent({ merchUrl: '' })
+			expect(sut.hasMerchUrl).toBe(false)
+		})
+
+		it('is false when there is no event', () => {
+			sut.event = null
+			expect(sut.hasMerchUrl).toBe(false)
 		})
 	})
 
