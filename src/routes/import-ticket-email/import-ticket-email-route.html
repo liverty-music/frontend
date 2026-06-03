@@ -1,6 +1,20 @@
 <page-header title="チケットメール取り込み"></page-header>
 
 <section class="import-wizard">
+  <!--
+    Unavailable state. The wizard's only entry point (the Android Gmail share
+    sheet) was removed, so this route now presents an unavailable notice
+    instead of the wizard. The wizard markup below is retained so the flow can
+    be revived without re-implementation — see the route view-model for the
+    revival steps.
+  -->
+  <template if.bind="step === 'unavailable'">
+    <div class="wizard-error wizard-unavailable">
+      <p>チケットメール取り込みは現在ご利用いただけません。</p>
+      <a href="/dashboard">ダッシュボードに戻る</a>
+    </div>
+  </template>
+
   <!-- Validation Error -->
   <template if.bind="step === 'validation' && error">
     <div class="wizard-error">

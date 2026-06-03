@@ -73,7 +73,19 @@ describe('ImportTicketEmailRoute', () => {
 	})
 
 	describe('loading', () => {
+		// The wizard entry point is disabled: the route boots into the
+		// 'unavailable' step and `loading` early-returns. The tests below that
+		// exercise the retained wizard logic first reset `step` to 'validation'
+		// to simulate the revived entry point.
+		it('stays on the unavailable step and skips wizard logic by default', async () => {
+			await sut.loading({}, makeNext({ title: 'Test', text: 'チケット当選' }))
+
+			expect(sut.step).toBe('unavailable')
+			expect(mockFollow.listFollowed).not.toHaveBeenCalled()
+		})
+
 		it('sets validation error when email body does not match ticket regex', async () => {
+			sut.step = 'validation'
 			await sut.loading({}, makeNext({ title: 'Hello', text: 'PlainGreeting' }))
 
 			expect(sut.step).toBe('validation')
@@ -81,12 +93,14 @@ describe('ImportTicketEmailRoute', () => {
 		})
 
 		it('advances to artist step when email body matches ticket regex', async () => {
+			sut.step = 'validation'
 			await sut.loading({}, makeNext({ title: 'Test', text: 'チケット当選' }))
 
 			expect(sut.step).toBe('artist')
 		})
 
 		it('auto-matches artist when name appears in email body', async () => {
+			sut.step = 'validation'
 			mockFollow.listFollowed.mockResolvedValue([
 				{ artist: { id: 'a1', name: 'ArtistXYZ' } },
 			])
@@ -191,6 +205,7 @@ describe('ImportTicketEmailRoute', () => {
 
 	describe('detaching', () => {
 		it('aborts active request', async () => {
+			sut.step = 'validation'
 			await sut.loading({}, makeNext({ title: 'T', text: 'チケット' }))
 			const abortSpy = vi.spyOn(AbortController.prototype, 'abort')
 
