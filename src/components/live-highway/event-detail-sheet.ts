@@ -45,10 +45,6 @@ export class EventDetailSheet {
 		return bestBackgroundUrl(this.event?.artist)
 	}
 
-	/**
-	 * Whether to render the merch-info link. True only when the event carries a
-	 * non-empty merch URL; the link is omitted entirely when absent.
-	 */
 	public get hasMerchUrl(): boolean {
 		return Boolean(this.event?.merchUrl)
 	}
