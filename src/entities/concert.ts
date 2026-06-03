@@ -25,6 +25,8 @@ export interface Concert {
 	openTime?: string
 	title: string
 	sourceUrl: string
+	/** Official merchandise info page (official site or social media post); empty when none is known. */
+	merchUrl: string
 
 	// --- UI-only ---
 	hypeLevel: HypeLevel

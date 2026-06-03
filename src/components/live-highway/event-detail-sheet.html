@@ -202,6 +202,17 @@
           <span t="eventDetail.viewOfficialInfo"></span>
         </a>
         <a
+          if.bind="hasMerchUrl"
+          href.bind="event.merchUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="sheet-btn-secondary"
+          data-testid="merch-link"
+        >
+          <svg-icon name="link"></svg-icon>
+          <span t="eventDetail.viewMerch"></span>
+        </a>
+        <a
           href.bind="calendarUrl"
           target="_blank"
           rel="noopener noreferrer"

@@ -13,6 +13,7 @@ export function makeConcert(
 		startTime: '19:00',
 		title: 'Test Concert',
 		sourceUrl: 'https://example.com',
+		merchUrl: '',
 		hypeLevel: 'home',
 		matched: false,
 		...overrides,

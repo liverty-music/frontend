@@ -45,6 +45,10 @@ export class EventDetailSheet {
 		return bestBackgroundUrl(this.event?.artist)
 	}
 
+	public get hasMerchUrl(): boolean {
+		return Boolean(this.event?.merchUrl)
+	}
+
 	public get googleMapsUrl(): string {
 		if (!this.event) return '#'
 		const area = this.event.locationLabel

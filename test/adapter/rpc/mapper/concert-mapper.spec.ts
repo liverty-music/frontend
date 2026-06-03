@@ -57,6 +57,7 @@ describe('concertFrom', () => {
 				id: { value: 's1' },
 				title: { value: 'Test Concert' },
 				sourceUrl: { value: 'https://example.com' },
+				merchUrl: { value: 'https://example.com/merch' },
 			},
 			localDate: { value: { year: 2026, month: 3, day: 15 } },
 			startTime: { value: { seconds: BigInt(1742054400), nanos: 0 } },
@@ -86,6 +87,7 @@ describe('concertFrom', () => {
 		expect(result!.venueName).toBe('Zepp DiverCity')
 		expect(result!.locationLabel).toBe('Display(JP-13)')
 		expect(result!.sourceUrl).toBe('https://example.com')
+		expect(result!.merchUrl).toBe('https://example.com/merch')
 		expect(result!.hypeLevel).toBe('home')
 		expect(result!.matched).toBe(true)
 		expect(result!.date).toBeInstanceOf(Date)
