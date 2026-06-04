@@ -159,8 +159,8 @@ self.addEventListener('push', (event) => {
 
 	const options: NotificationOptions = {
 		body: data.body,
-		icon: '/favicon.svg',
-		badge: '/favicon.svg',
+		icon: '/icons/icon-192x192.png',
+		badge: '/favicon-96x96.png',
 		tag: data.tag || 'liverty-default',
 		data: { url: data.url || '/' },
 	}
