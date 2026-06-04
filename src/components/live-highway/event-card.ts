@@ -1,6 +1,10 @@
 import { bindable, INode, resolve } from 'aurelia'
 import { bestLogoUrl } from '../../entities/artist'
 import {
+	JOURNEY_STATUS_CONFIG_MAP,
+	type JourneyStatusConfig,
+} from '../../entities/ticket-journey'
+import {
 	Events,
 	IAnalyticsService,
 } from '../../lib/analytics/analytics-service'
@@ -17,6 +21,12 @@ export class EventCard {
 
 	public get logoUrl(): string | undefined {
 		return bestLogoUrl(this.event.artist)
+	}
+
+	/** Canonical label/icon/hue for the concert's journey status, if any. */
+	public get journeyConfig(): JourneyStatusConfig | undefined {
+		const status = this.event.journeyStatus
+		return status ? JOURNEY_STATUS_CONFIG_MAP[status] : undefined
 	}
 
 	public eventChanged(): void {

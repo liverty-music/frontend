@@ -87,8 +87,8 @@
                 disabled.bind="journeyUpdating"
                 click.trigger="setJourneyStatus('tracking')"
               >
-                <span class="journey-node-cue" aria-hidden="true"></span>
-                <span class="journey-node-label" t="eventDetail.journeyStatus.tracking"></span>
+                <span class="journey-node-cue" aria-hidden="true">${journeyConfig.tracking.icon}</span>
+                <span class="journey-node-label" t.bind="journeyConfig.tracking.labelKey"></span>
               </button>
               <span class="journey-arrow" aria-hidden="true"></span>
               <button
@@ -102,8 +102,8 @@
                 disabled.bind="journeyUpdating"
                 click.trigger="setJourneyStatus('applied')"
               >
-                <span class="journey-node-cue" aria-hidden="true"></span>
-                <span class="journey-node-label" t="eventDetail.journeyStatus.applied"></span>
+                <span class="journey-node-cue" aria-hidden="true">${journeyConfig.applied.icon}</span>
+                <span class="journey-node-label" t.bind="journeyConfig.applied.labelKey"></span>
               </button>
             </div>
           </div>
@@ -137,8 +137,8 @@
                   disabled.bind="journeyUpdating"
                   click.trigger="setJourneyStatus('unpaid')"
                 >
-                  <span class="journey-node-cue" aria-hidden="true"></span>
-                  <span class="journey-node-label" t="eventDetail.journeyStatus.unpaid"></span>
+                  <span class="journey-node-cue" aria-hidden="true">${journeyConfig.unpaid.icon}</span>
+                  <span class="journey-node-label" t.bind="journeyConfig.unpaid.labelKey"></span>
                 </button>
                 <span class="journey-arrow journey-arrow-down" aria-hidden="true"></span>
                 <button
@@ -152,8 +152,8 @@
                   disabled.bind="journeyUpdating"
                   click.trigger="setJourneyStatus('paid')"
                 >
-                  <span class="journey-node-cue" aria-hidden="true"></span>
-                  <span class="journey-node-label" t="eventDetail.journeyStatus.paid"></span>
+                  <span class="journey-node-cue" aria-hidden="true">${journeyConfig.paid.icon}</span>
+                  <span class="journey-node-label" t.bind="journeyConfig.paid.labelKey"></span>
                 </button>
               </div>
 
@@ -173,8 +173,8 @@
                   disabled.bind="journeyUpdating"
                   click.trigger="setJourneyStatus('lost')"
                 >
-                  <span class="journey-node-cue" aria-hidden="true"></span>
-                  <span class="journey-node-label" t="eventDetail.journeyStatus.lost"></span>
+                  <span class="journey-node-cue" aria-hidden="true">${journeyConfig.lost.icon}</span>
+                  <span class="journey-node-label" t.bind="journeyConfig.lost.labelKey"></span>
                 </button>
               </div>
             </div>

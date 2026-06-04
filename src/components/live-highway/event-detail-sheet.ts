@@ -3,6 +3,7 @@ import { IHistory } from '../../adapter/browser/history'
 import { bestBackgroundUrl } from '../../entities/artist'
 import {
 	JOURNEY_NAV_ORDER,
+	JOURNEY_STATUS_CONFIG_MAP,
 	type JourneyNodeState,
 	type JourneyOutcome,
 	journeyNodeState,
@@ -22,6 +23,9 @@ export class EventDetailSheet {
 
 	public isOpen = false
 	public journeyUpdating = false
+
+	/** Canonical label/icon/hue per status, sourced once for every node. */
+	public readonly journeyConfig = JOURNEY_STATUS_CONFIG_MAP
 
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
 	private readonly journeyService = resolve(ITicketJourneyService)

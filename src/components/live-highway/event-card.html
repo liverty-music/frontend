@@ -20,10 +20,12 @@ class="[ event-card ]"
       ${event.locationLabel}
     </span>
     <span
-      if.bind="event.journeyStatus"
+      if.bind="journeyConfig"
       data-journey-status.bind="event.journeyStatus"
       class="journey-badge" data-testid="journey-badge"
-      t.bind="'eventDetail.journeyStatus.' + event.journeyStatus"
-    ></span>
+    >
+      <span class="journey-badge-icon" aria-hidden="true">${journeyConfig.icon}</span>
+      <span t.bind="journeyConfig.labelKey"></span>
+    </span>
   </article>
 </template>
