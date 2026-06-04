@@ -74,7 +74,6 @@ describe('WelcomeRoute', () => {
 	let mockUserStore: {
 		clearGuest: ReturnType<typeof vi.fn>
 		currentLanguage: string
-		setGuestLanguage: ReturnType<typeof vi.fn>
 	}
 	let mockFollowStore: { clearGuest: ReturnType<typeof vi.fn> }
 	let mockI18n: ReturnType<typeof createMockI18n>
@@ -99,14 +98,12 @@ describe('WelcomeRoute', () => {
 			toDateGroups: vi.fn().mockReturnValue([]),
 		}
 		// The language picker reads its checked state from UserStore's reactive
-		// `currentLanguage` projection (no local @observable mirror) and writes
-		// through `setGuestLanguage` on selection (via changeLocale's guest path).
+		// `currentLanguage` projection (no local @observable mirror). On selection
+		// changeLocale's guest path calls i18n.setLocale then persists the choice
+		// to the single `localStorage['language']` key — no store-owned guest key.
 		mockUserStore = {
 			clearGuest: vi.fn(),
 			currentLanguage: 'ja',
-			setGuestLanguage: vi.fn((lang: string) => {
-				mockUserStore.currentLanguage = lang
-			}),
 		}
 		mockFollowStore = { clearGuest: vi.fn() }
 		mockRouter = createMockRouter()
@@ -209,23 +206,25 @@ describe('WelcomeRoute', () => {
 			expect(sut.currentLocale).toBe('ja')
 		})
 
-		it('selectLanguage routes the guest locale change through changeLocale → i18n + UserStore', async () => {
+		it('selectLanguage routes the guest locale change through changeLocale → i18n + single language key', async () => {
+			localStorage.removeItem('language')
 			// Active locale starts at 'ja' (mock i18n default); pick 'en'.
 			await sut.selectLanguage('en')
 
 			expect(mockI18n.setLocale).toHaveBeenCalledWith('en')
-			expect(mockUserStore.setGuestLanguage).toHaveBeenCalledWith('en')
-			// The picker now reflects the new active language through the store
-			// projection, keeping the radio's checked state correct.
-			expect(sut.currentLocale).toBe('en')
+			// The anonymous choice is persisted to the single `language` key (the
+			// i18next detector cache) — no separate guest.language key.
+			expect(localStorage.getItem('language')).toBe('en')
+			localStorage.removeItem('language')
 		})
 
 		it('selectLanguage is a no-op when the locale is unchanged', async () => {
+			localStorage.removeItem('language')
 			// Active locale is 'ja'; selecting 'ja' must not re-persist.
 			await sut.selectLanguage('ja')
 
 			expect(mockI18n.setLocale).not.toHaveBeenCalled()
-			expect(mockUserStore.setGuestLanguage).not.toHaveBeenCalled()
+			expect(localStorage.getItem('language')).toBeNull()
 		})
 	})
 

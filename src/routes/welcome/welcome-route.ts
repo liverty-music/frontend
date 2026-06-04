@@ -45,11 +45,11 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	/**
 	 * Active UI language for the language picker's `checked.bind`, projected from
-	 * UserStore (the @observable owner of the guest language slice) rather than a
-	 * local mirror field. Welcome is anonymous-only, so `currentLanguage` resolves
-	 * to `guestLanguage ?? i18nLocale`. Bound one-way; the radio's
-	 * `change.trigger` routes the selection through `selectLanguage` so the single
-	 * source of truth stays in UserStore.
+	 * UserStore rather than a local mirror field. Welcome is anonymous-only, so
+	 * `currentLanguage` resolves to the reactive `i18nLocale` mirror — always
+	 * equal to the active i18n locale. Bound one-way; the radio's `change.trigger`
+	 * routes the selection through `selectLanguage` so the single source of truth
+	 * stays in UserStore / the active locale.
 	 */
 	public get currentLocale(): string {
 		return this.userStore.currentLanguage
@@ -153,7 +153,8 @@ export class WelcomeRoute implements IRouteViewModel {
 	 * `change.trigger` (one-way `checked.bind` reads the projection from
 	 * UserStore, this writes through it) rather than a standalone @observable
 	 * mirror. Routes through the shared `changeLocale`, which on the
-	 * unauthenticated path applies `i18n.setLocale` then `userStore.setGuestLanguage`.
+	 * unauthenticated path applies `i18n.setLocale` then persists the choice to
+	 * the single `localStorage['language']` key.
 	 */
 	public async selectLanguage(newLocale: string): Promise<void> {
 		if (!newLocale || newLocale === this.i18n.getLocale()) return
@@ -258,11 +259,11 @@ export class WelcomeRoute implements IRouteViewModel {
 		// home during a prior anonymous session.
 		//
 		// Coordinated reset across the stores that now own the guest slices:
-		// UserStore drops home/language/help-seen; FollowStore drops the follow
-		// queue + projection cache. Together these reproduce the old
-		// GuestService.clearAll() semantics. Only the dedicated `guest.language`
-		// key is cleared — the i18next detector's own `language` key is left
-		// intact (the Phase-1 cancelled-login fix).
+		// UserStore drops home/help-seen; FollowStore drops the follow queue +
+		// projection cache. Together these reproduce the old
+		// GuestService.clearAll() semantics. The locale is untouched — it lives
+		// solely in the i18next detector's `language` key, which persists across
+		// the reset (the cancelled-login behavior).
 		this.resetGuestState()
 		try {
 			await this.authService.signIn()

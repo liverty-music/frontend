@@ -1,4 +1,5 @@
 import type { I18N } from '@aurelia/i18n'
+import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserStore } from '../services/user-store'
 
@@ -48,12 +49,13 @@ export interface ChangeLocaleDeps {
  *
  * Routes persistence based on the caller's auth state:
  *
- * - **Unauthenticated** (Welcome / guest Settings): write through to the
- *   observable guest language source (`UserStore.setGuestLanguage`, which
- *   persists to `localStorage['guest.language']` via its `guestLanguageChanged`
- *   hook) after `i18n.setLocale`. Writing through the @observable owner — not
- *   raw localStorage — keeps `UserStore.currentLanguage` reactive so the
- *   language selector highlight follows the active locale. No backend call.
+ * - **Unauthenticated** (Welcome / guest Settings): call `i18n.setLocale` then
+ *   persist the choice explicitly to the single `localStorage['language']` key
+ *   (the i18next detector cache). `UserStore.currentLanguage` derives the guest
+ *   highlight from the reactive `i18nLocale` mirror that `setLocale` updates, so
+ *   the selector follows the active locale with no separate guest key. The
+ *   explicit write makes persistence ordering-independent rather than relying on
+ *   the detector's implicit cache side-effect. No backend call.
  *
  * - **Authenticated** (Settings page): call `UserStore.updatePreferredLanguage`
  *   first, apply `i18n.setLocale` after success. The backend row is the source
@@ -77,7 +79,7 @@ export async function changeLocale(
 
 	if (!auth.isAuthenticated) {
 		await i18n.setLocale(lang)
-		userStore.setGuestLanguage(lang)
+		localStorage.setItem(StorageKeys.language, lang)
 		return
 	}
 

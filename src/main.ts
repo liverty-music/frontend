@@ -140,6 +140,15 @@ async function bootstrap(): Promise<void> {
 	au.register(
 		I18nConfiguration.customize((options) => {
 			options.initOptions = {
+				// Load-bearing: `@aurelia/i18n` injects a default `lng: 'en'` into the
+				// i18next init options, and i18next treats an explicit `lng` as an
+				// override that BYPASSES the language detector entirely. Setting it
+				// back to `undefined` re-enables the `detection` chain below, so the
+				// boot locale is resolved from querystring → localStorage → navigator
+				// (honoring the migrated `language` key) instead of being hard-pinned
+				// to English. Do NOT delete this as a no-op — its absence silently
+				// disables detection and the app always boots English.
+				lng: undefined,
 				resources: {
 					ja: { translation: ja },
 					en: { translation: en },
