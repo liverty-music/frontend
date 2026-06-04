@@ -10,6 +10,16 @@ export interface Artist {
 }
 
 /**
+ * A followed artist projected with the count of its upcoming concerts in the
+ * loaded dashboard set — drives the count-prefixed, count-sorted filter chips.
+ */
+export interface CountedArtist {
+	id: string
+	name: string
+	count: number
+}
+
+/**
  * Community-curated artist images from fanart.tv.
  * @source proto/liverty_music/entity/v1/artist.proto — Fanart
  */

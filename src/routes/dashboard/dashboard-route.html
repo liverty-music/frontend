@@ -1,8 +1,10 @@
 <page-header title-key="nav.home">
   <artist-filter-bar
     if.bind="!isOnboarding"
-    followed-artists.bind="followedArtists"
+    counted-artists.bind="countedArtists"
     selected-ids.two-way="filteredArtistIds"
+    selected-statuses.two-way="filteredStatuses"
+    is-authenticated.bind="isAuthenticated"
   ></artist-filter-bar>
   <page-help page="dashboard"></page-help>
 </page-header>

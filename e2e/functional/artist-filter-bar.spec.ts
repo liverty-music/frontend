@@ -28,7 +28,9 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListByFollower')) {
+		// ListByFollower is the authenticated path; ListWithProximity is the guest
+		// path (ConcertStore.listByFollowerGuest). Both return the same groups.
+		if (url.includes('ListByFollower') || url.includes('ListWithProximity')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -54,6 +56,32 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 									],
 									series: {
 										id: { value: 's-1' },
+										title: { value: 'Zepp Live' },
+									},
+									localDate: {
+										value: {
+											year: tomorrow.getFullYear(),
+											month: tomorrow.getMonth() + 1,
+											day: tomorrow.getDate(),
+										},
+									},
+									venue: {
+										name: { value: 'Zepp DiverCity' },
+										adminArea: { value: 'JP-13' },
+									},
+									sourceUrl: { value: 'https://example.com' },
+								},
+								{
+									id: { value: 'c-2' },
+									performers: [
+										{
+											id: { value: 'artist-2' },
+											name: { value: 'Vaundy' },
+											mbid: { value: '' },
+										},
+									],
+									series: {
+										id: { value: 's-2' },
 										title: { value: 'Zepp Live' },
 									},
 									localDate: {
@@ -129,15 +157,20 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await page.waitForLoadState('networkidle')
 
 		// Open the filter sheet
-		await page.click('button[aria-label="アーティストで絞り込む"]')
+		await page.click('button[aria-label="絞り込む"]')
 
 		// Sheet should be open with artist list
 		const sheet = page.locator('artist-filter-bar bottom-sheet')
 		await expect(sheet).toBeVisible()
 
-		// Both artists should be visible in the sheet
-		await expect(page.getByText('YOASOBI')).toBeVisible()
-		await expect(page.getByText('Vaundy')).toBeVisible()
+		// Both artists should be present as chips in the sheet (scoped to the
+		// sheet — the artist name also appears on the concert-highway cards).
+		await expect(
+			sheet.locator('label.artist-chip', { hasText: 'YOASOBI' }),
+		).toBeVisible()
+		await expect(
+			sheet.locator('label.artist-chip', { hasText: 'Vaundy' }),
+		).toBeVisible()
 	})
 
 	test('selecting an artist and confirming activates the filter button', async ({
@@ -159,18 +192,56 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await page.goto('/dashboard')
 		await page.waitForLoadState('networkidle')
 
-		await page.click('button[aria-label="アーティストで絞り込む"]')
-		await expect(page.getByText('YOASOBI')).toBeVisible()
+		await page.click('button[aria-label="絞り込む"]')
+		const yoasobiChip = page.locator('label.artist-chip', {
+			hasText: 'YOASOBI',
+		})
+		await expect(yoasobiChip).toBeVisible()
 
 		// Click the YOASOBI chip (input is visually-hidden; click the label instead)
-		await page.locator('label.artist-chip', { hasText: 'YOASOBI' }).click()
+		await yoasobiChip.click()
 
 		// Confirm
 		await page.click('button.btn-confirm')
 
 		// Filter button should show active state; no chips in the header
-		const filterBtn = page.locator('button[aria-label="アーティストで絞り込む"]')
+		const filterBtn = page.locator('button[aria-label="絞り込む"]')
 		await expect(filterBtn).toHaveAttribute('data-active', 'true')
 		await expect(page.locator('.chip-name')).toHaveCount(0)
+	})
+
+	test('round-trips the artist filter through the URL query param', async ({
+		page,
+	}) => {
+		await page.addInitScript(() => {
+			localStorage.setItem('onboardingStep', 'completed')
+			localStorage.setItem('onboarding.celebrationShown', '1')
+			localStorage.setItem('guest.home', 'JP-13')
+			localStorage.setItem(
+				'guest.followedArtists',
+				JSON.stringify([
+					{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: 'watch' },
+					{ artist: { id: 'artist-2', name: 'Vaundy', mbid: '' }, hype: 'watch' },
+				]),
+			)
+		})
+
+		// Deep link: the artist filter is parsed from the URL on load.
+		await page.goto('/dashboard?artists=artist-1')
+		await page.waitForLoadState('networkidle')
+
+		const filterBtn = page.locator('button[aria-label="絞り込む"]')
+		await expect(filterBtn).toHaveAttribute('data-active', 'true')
+
+		// Open the sheet; the deep-linked artist is pre-selected.
+		await filterBtn.click()
+		const yoasobiChip = page.locator('label.artist-chip', { hasText: 'YOASOBI' })
+		await expect(yoasobiChip.locator('input')).toBeChecked()
+
+		// Add the second artist and confirm — the URL reflects both, written once.
+		await page.locator('label.artist-chip', { hasText: 'Vaundy' }).click()
+		await page.click('button.btn-confirm')
+
+		await expect(page).toHaveURL(/\/dashboard\?artists=artist-1,artist-2$/)
 	})
 })

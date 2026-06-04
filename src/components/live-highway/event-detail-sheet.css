@@ -246,39 +246,25 @@
 			background: var(--_bg-hover);
 		}
 
-		/* Cue glyph is chosen via a custom property to keep selector specificity low */
+		/* Holds the status's canonical emoji icon; node state (future / completed /
+		   current) is conveyed by the fill, border, and colour treatment below. */
 		.journey-node-cue {
-			font-weight: 700;
-
-			&::before {
-				content: var(--_cue, "\25cb"); /* default: circle (future) */
-			}
+			font-size: var(--step-0);
+			line-height: var(--leading-none);
 		}
 
-		/* Completed: low-emphasis outline with a check cue */
+		/* Completed: low-emphasis outline */
 		.journey-node[data-state="completed"] {
-			--_cue: "\2713"; /* check */
-
 			border-color: var(--_node-faint);
 			color: var(--color-text-muted);
 		}
 
 		/* Current: the single solid-filled node */
 		.journey-node[data-state="current"] {
-			--_cue: "\25cf"; /* filled dot */
-
 			border-color: var(--_node-fill);
 			font-weight: 700;
 			color: var(--_node-on);
 			background: var(--_node-fill);
-		}
-
-		.journey-node[data-state="current"][data-journey-status="unpaid"] {
-			--_cue: "\0021"; /* ! action required */
-		}
-
-		.journey-node[data-state="current"][data-journey-status="lost"] {
-			--_cue: "\2715"; /* cross */
 		}
 
 		/* Semantic hue per status sourced from shared journey-hue tokens;

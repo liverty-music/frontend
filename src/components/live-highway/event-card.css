@@ -80,6 +80,10 @@
 			inset-block-start: var(--space-3xs);
 			inset-inline-end: var(--space-3xs);
 
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: center;
+
 			/* stylelint-disable-next-line cube/require-token-variables -- badge pill needs tighter padding than any token */
 			padding-block: 1px;
 			padding-inline: var(--space-3xs);
@@ -93,6 +97,12 @@
 			letter-spacing: 0.03em;
 
 			background: var(--_journey-bg);
+		}
+
+		/* Emoji keeps its own colour — exempt it from the badge text tint. */
+		.journey-badge-icon {
+			font-size: var(--step--1);
+			line-height: var(--leading-none);
 		}
 
 		/* Hues sourced from shared journey-hue tokens; the badge keeps its own

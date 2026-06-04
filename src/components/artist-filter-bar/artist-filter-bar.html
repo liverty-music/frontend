@@ -6,24 +6,24 @@
   type="button"
   class="filter-trigger"
   click.trigger="openSheet()"
-  aria-label="アーティストで絞り込む"
-  data-active.bind="selectedIds.length > 0"
+  aria-label="絞り込む"
+  data-active.bind="selectedIds.length > 0 || selectedStatuses.length > 0"
 >
   <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16">
     <path d="M3 6h18M7 12h10M11 18h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
   </svg>
 </button>
 
-<!-- Artist selection bottom sheet -->
+<!-- Filter bottom sheet -->
 <!-- sheet-closed keeps isSheetOpen in sync when user swipes/clicks outside -->
 <bottom-sheet
   open.bind="isSheetOpen"
   sheet-closed.trigger="closeSheet()"
   aria-labelledby="filter-sheet-title"
 >
-  <section class="filter-sheet-content">
+  <div class="filter-sheet-content">
     <div class="sheet-header">
-      <h2 class="sheet-title" id="filter-sheet-title">アーティストで絞り込む</h2>
+      <h2 class="sheet-title" id="filter-sheet-title">絞り込み</h2>
       <button
         type="button"
         class="btn-clear-all"
@@ -32,25 +32,69 @@
       >全て解除</button>
     </div>
 
-    <ul class="artists-list" aria-labelledby="filter-sheet-title">
-      <li repeat.for="artist of followedArtists">
-        <label class="artist-chip">
-          <input
-            type="checkbox"
-            class="visually-hidden"
-            checked.bind="pendingIds"
-            model.bind="artist.id"
-          />
-          <svg class="chip-check" aria-hidden="true" focusable="false" viewBox="0 0 12 12" width="12" height="12">
-            <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          </svg>
-          <span>${artist.name}</span>
-        </label>
-      </li>
-    </ul>
+    <!-- Artist facet -->
+    <section class="filter-facet" aria-labelledby="filter-artist-heading">
+      <h3 class="facet-heading" id="filter-artist-heading">アーティスト</h3>
+      <ul class="artists-list" aria-labelledby="filter-artist-heading">
+        <li repeat.for="artist of countedArtists" key.bind="artist.id">
+          <label class="artist-chip">
+            <input
+              type="checkbox"
+              class="visually-hidden"
+              checked.bind="pendingIds"
+              model.bind="artist.id"
+            />
+            <svg class="chip-check" aria-hidden="true" focusable="false" viewBox="0 0 12 12" width="12" height="12">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+            <span class="artist-count">${artist.count}</span>
+            <span>${artist.name}</span>
+          </label>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Journey-status facet (authenticated users only) -->
+    <section
+      if.bind="showJourneyFacet"
+      class="filter-facet"
+      aria-labelledby="filter-journey-heading"
+    >
+      <h3 class="facet-heading" id="filter-journey-heading" t="eventDetail.ticketStatus"></h3>
+      <ul class="journey-list" aria-labelledby="filter-journey-heading">
+        <!-- Process phase: tracking -> applied -->
+        <li repeat.for="config of processStatuses" key.bind="config.status">
+          <label class="journey-chip" data-journey-status.bind="config.status">
+            <input
+              type="checkbox"
+              class="visually-hidden"
+              checked.bind="pendingStatuses"
+              model.bind="config.status"
+            />
+            <span class="journey-chip-icon" aria-hidden="true">${config.icon}</span>
+            <span t.bind="config.labelKey"></span>
+          </label>
+        </li>
+        <!-- Visual break separating process from outcome -->
+        <li class="journey-list-break" aria-hidden="true"></li>
+        <!-- Outcome phase: unpaid, paid, lost -->
+        <li repeat.for="config of outcomeStatuses" key.bind="config.status">
+          <label class="journey-chip" data-journey-status.bind="config.status">
+            <input
+              type="checkbox"
+              class="visually-hidden"
+              checked.bind="pendingStatuses"
+              model.bind="config.status"
+            />
+            <span class="journey-chip-icon" aria-hidden="true">${config.icon}</span>
+            <span t.bind="config.labelKey"></span>
+          </label>
+        </li>
+      </ul>
+    </section>
 
     <div class="confirm-row">
       <button type="button" class="btn-confirm" click.trigger="confirmSelection()">完了</button>
     </div>
-  </section>
+  </div>
 </bottom-sheet>
