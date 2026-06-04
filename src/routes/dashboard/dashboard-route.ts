@@ -1,6 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import type { Params, RouteNode } from '@aurelia/router'
-import { ILogger, observable, resolve } from 'aurelia'
+import { ILogger, observable, resolve, watch } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
@@ -10,8 +10,9 @@ import type {
 } from '../../components/live-highway/live-event'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { StorageKeys } from '../../constants/storage-keys'
-import type { Artist } from '../../entities/artist'
-import type { JourneyStatus } from '../../entities/concert'
+import type { Artist, CountedArtist } from '../../entities/artist'
+import type { Concert, JourneyStatus } from '../../entities/concert'
+import { isJourneyStatus } from '../../entities/ticket-journey'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
@@ -25,6 +26,7 @@ import { IUserStore } from '../../services/user-store'
 export class DashboardRoute {
 	public dateGroups: DateGroup[] = []
 	@observable public filteredArtistIds: string[] = []
+	@observable public filteredStatuses: JourneyStatus[] = []
 	public needsRegion = false
 	public isLoading = false
 	public loadError: unknown = null
@@ -66,53 +68,99 @@ export class DashboardRoute {
 	}
 
 	public get filteredDateGroups(): DateGroup[] {
-		// Always strip blank-artistId concerts before rendering. Post-v0.41.0
-		// `concertFrom` returns `artistId: ''` when no performer resolved
-		// against the user's artistMap (ID-namespace mismatch, schema-skew
-		// rollout window) — those rows have no usable artist context and
-		// would render as ghost cards with empty names. The active-filter
-		// branch below already excludes them naturally (Set.has('') is
-		// false); apply the same rule to the unfiltered branch so the
-		// authenticated dashboard never surfaces ghost cards.
-		const stripBlank = (g: DateGroup): DateGroup => ({
-			...g,
-			home: g.home.filter((c) => c.artistId),
-			nearby: g.nearby.filter((c) => c.artistId),
-			away: g.away.filter((c) => c.artistId),
-		})
-		if (this.filteredArtistIds.length === 0) {
-			return this.dateGroups
-				.map(stripBlank)
-				.filter((g) => g.home.length + g.nearby.length + g.away.length > 0)
-		}
 		const ids = new Set(this.filteredArtistIds)
+		const statuses = new Set(this.filteredStatuses)
+		const noArtist = ids.size === 0
+		const noStatus = statuses.size === 0
+
+		// One `keep` predicate combining both facets: artist (OR within) AND
+		// journey (OR within). The leading `!!c.artistId` guard always strips
+		// blank-artistId concerts before rendering. Post-v0.41.0 `concertFrom`
+		// returns `artistId: ''` when no performer resolved against the user's
+		// artistMap (ID-namespace mismatch, schema-skew rollout window) — those
+		// rows have no usable artist context and would render as ghost cards
+		// with empty names, so they never surface on the dashboard.
+		const keep = (c: Concert): boolean =>
+			!!c.artistId &&
+			(noArtist || ids.has(c.artistId)) &&
+			(noStatus ||
+				(c.journeyStatus !== undefined && statuses.has(c.journeyStatus)))
+
 		return this.dateGroups
 			.map((g) => ({
 				...g,
-				home: g.home.filter((c) => ids.has(c.artistId)),
-				nearby: g.nearby.filter((c) => ids.has(c.artistId)),
-				away: g.away.filter((c) => ids.has(c.artistId)),
+				home: g.home.filter(keep),
+				nearby: g.nearby.filter(keep),
+				away: g.away.filter(keep),
 			}))
 			.filter((g) => g.home.length + g.nearby.length + g.away.length > 0)
 	}
 
-	public filteredArtistIdsChanged(): void {
-		this.updateFilterUrl()
+	/**
+	 * Followed artists projected with their upcoming-concert count, computed over
+	 * the *unfiltered* `dateGroups` so counts stay stable as the user toggles
+	 * chips. Zero-concert artists are hidden; the rest are sorted by count
+	 * descending, ties broken by name ascending. A plain getter — Aurelia 2
+	 * auto-tracks the observable `dateGroups`/`followedArtists` it reads.
+	 */
+	public get countedArtists(): CountedArtist[] {
+		const counts = new Map<string, number>()
+		for (const group of this.dateGroups) {
+			for (const concert of [...group.home, ...group.nearby, ...group.away]) {
+				if (!concert.artistId) continue
+				counts.set(concert.artistId, (counts.get(concert.artistId) ?? 0) + 1)
+			}
+		}
+		return this.followedArtists
+			.map((artist) => ({
+				id: artist.id,
+				name: artist.name,
+				count: counts.get(artist.id) ?? 0,
+			}))
+			.filter((artist) => artist.count > 0)
+			.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 	}
 
-	private updateFilterUrl(): void {
+	/**
+	 * Single URL writer for both facets. Driven by one `@watch` keyed on a
+	 * composite of both arrays so two selections committed in the same tick
+	 * (e.g. on confirm) collapse into a single async-batched `replaceState`,
+	 * never a double write that drops one facet. Params are omitted when empty.
+	 */
+	@watch(
+		(vm: DashboardRoute) =>
+			`${vm.filteredArtistIds.join(',')}|${vm.filteredStatuses.join(',')}`,
+	)
+	protected syncFilterUrl(): void {
+		const parts: string[] = []
+		if (this.filteredArtistIds.length > 0) {
+			parts.push(`artists=${this.filteredArtistIds.join(',')}`)
+		}
+		if (this.filteredStatuses.length > 0) {
+			parts.push(`journey=${this.filteredStatuses.join(',')}`)
+		}
 		const url =
-			this.filteredArtistIds.length > 0
-				? `/dashboard?artists=${this.filteredArtistIds.join(',')}`
-				: '/dashboard'
+			parts.length > 0 ? `/dashboard?${parts.join('&')}` : '/dashboard'
 		this.history.replaceState(null, '', url)
 	}
 
 	public async loading(_params?: Params, next?: RouteNode): Promise<void> {
-		// Restore artist filter from URL query param (ignored during onboarding)
+		// Restore filters from URL query params (ignored during onboarding)
 		if (!this.isOnboarding && next) {
-			const raw = next.queryParams.get('artists')
-			this.filteredArtistIds = raw ? raw.split(',').filter(Boolean) : []
+			const rawArtists = next.queryParams.get('artists')
+			this.filteredArtistIds = rawArtists
+				? rawArtists.split(',').filter(Boolean)
+				: []
+
+			// Journey filter is authenticated-only: a guest's `journey` param has
+			// no effect, so it can never narrow their highway to an empty state.
+			// Unknown tokens are silently dropped; valid ones still apply.
+			const rawJourney = this.authService.isAuthenticated
+				? next.queryParams.get('journey')
+				: null
+			this.filteredStatuses = rawJourney
+				? rawJourney.split(',').filter(isJourneyStatus)
+				: []
 		}
 
 		if (this.authService.isAuthenticated) {

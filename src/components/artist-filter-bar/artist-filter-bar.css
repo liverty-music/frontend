@@ -106,6 +106,19 @@
 			}
 		}
 
+		/* ── Facet section: heading + chip group ── */
+		.filter-facet {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+		}
+
+		.facet-heading {
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-muted);
+		}
+
 		/* ── Artist chip list (flex wrap — single-axis wrapping flow) ── */
 		.artists-list {
 			display: flex;
@@ -116,6 +129,17 @@
 			padding: 0;
 
 			list-style: none;
+		}
+
+		/* Upcoming-concert count prefix on each artist chip. */
+		.artist-count {
+			font-weight: 600;
+			font-variant-numeric: tabular-nums;
+			color: var(--color-text-muted);
+		}
+
+		.artist-chip:has(input:checked) .artist-count {
+			color: var(--color-text-primary);
 		}
 
 		/* ── Individual chip ──
@@ -179,6 +203,89 @@
 					display: block;
 				}
 			}
+		}
+
+		/* ── Journey-status chip group ── */
+		.journey-list {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+		}
+
+		/* Forces a wrap: process chips land on the row above the outcome chips. */
+		.journey-list-break {
+			flex-basis: 100%;
+			block-size: 0;
+		}
+
+		/* Unselected: neutral outline retaining icon + label (non-colour cue).
+		   Selected: filled with the status's semantic hue via :has(input:checked).
+		   --_hue is set per status below so one rule body covers every chip. */
+		.journey-chip {
+			cursor: pointer;
+
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			padding: var(--space-3xs) var(--space-s);
+			border: 1px solid var(--color-border-muted);
+			border-radius: var(--radius-full);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+
+			background: var(--color-surface-raised);
+
+			transition:
+				border-color var(--transition-fast),
+				background var(--transition-fast),
+				color var(--transition-fast);
+
+			&[data-journey-status="tracking"] {
+				--_hue: var(--journey-hue-tracking);
+			}
+
+			&[data-journey-status="applied"] {
+				--_hue: var(--journey-hue-applied);
+			}
+
+			&[data-journey-status="unpaid"] {
+				--_hue: var(--journey-hue-unpaid);
+			}
+
+			&[data-journey-status="paid"] {
+				--_hue: var(--journey-hue-paid);
+			}
+
+			&[data-journey-status="lost"] {
+				--_hue: var(--journey-hue-lost);
+			}
+
+			&:hover {
+				border-color: oklch(65% 0.14 var(--_hue) / 60%);
+			}
+
+			&:focus-within {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
+			}
+
+			/* Selected: fill with the status hue, label flips to high-contrast. */
+			&:has(input:checked) {
+				border-color: oklch(65% 0.16 var(--_hue));
+				color: var(--color-white);
+				background: oklch(58% 0.16 var(--_hue));
+			}
+		}
+
+		.journey-chip-icon {
+			line-height: var(--leading-none);
 		}
 
 		/* ── Confirm button row ── */
