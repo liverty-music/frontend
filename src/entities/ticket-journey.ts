@@ -12,6 +12,65 @@ import type { JourneyStatus } from './concert'
 /** Display state of a single journey node relative to the current status. */
 export type JourneyNodeState = 'completed' | 'current' | 'future'
 
+/** Presentation metadata for a single journey status. */
+export interface JourneyStatusConfig {
+	status: JourneyStatus
+	/** i18n key for the human label (reuses the existing detail-sheet keys). */
+	labelKey: string
+	/** Emoji glyph shown alongside the label as a non-colour cue. */
+	icon: string
+	/** CSS custom property holding the status's semantic hue. */
+	hueToken: string
+}
+
+/**
+ * Canonical journey-status presentation map: the single source of truth for the
+ * label, icon, and semantic hue of each status, consumed by the dashboard filter
+ * chips, the concert-card badge, and the concert-detail status control, so a
+ * status's visual identity is consistent app-wide. Ordered in journey-flow order
+ * (process then outcome) so consumers can iterate it directly.
+ */
+export const JOURNEY_STATUS_CONFIG: readonly JourneyStatusConfig[] = [
+	{
+		status: 'tracking',
+		labelKey: 'eventDetail.journeyStatus.tracking',
+		icon: '👀',
+		hueToken: '--journey-hue-tracking',
+	},
+	{
+		status: 'applied',
+		labelKey: 'eventDetail.journeyStatus.applied',
+		icon: '📝',
+		hueToken: '--journey-hue-applied',
+	},
+	{
+		status: 'unpaid',
+		labelKey: 'eventDetail.journeyStatus.unpaid',
+		icon: '💰',
+		hueToken: '--journey-hue-unpaid',
+	},
+	{
+		status: 'paid',
+		labelKey: 'eventDetail.journeyStatus.paid',
+		icon: '🎟️',
+		hueToken: '--journey-hue-paid',
+	},
+	{
+		status: 'lost',
+		labelKey: 'eventDetail.journeyStatus.lost',
+		icon: '💔',
+		hueToken: '--journey-hue-lost',
+	},
+]
+
+/** Status → presentation config, for O(1) per-status lookup in components. */
+export const JOURNEY_STATUS_CONFIG_MAP: Record<
+	JourneyStatus,
+	JourneyStatusConfig
+> = Object.fromEntries(
+	JOURNEY_STATUS_CONFIG.map((config) => [config.status, config]),
+) as Record<JourneyStatus, JourneyStatusConfig>
+
 /**
  * Linear focus/navigation order across the branching graph, used for keyboard
  * arrow navigation of the journey radiogroup (DOM order: process then outcome).
@@ -23,6 +82,11 @@ export const JOURNEY_NAV_ORDER: readonly JourneyStatus[] = [
 	'paid',
 	'lost',
 ]
+
+/** Type guard: whether an arbitrary string is a valid journey status. */
+export function isJourneyStatus(value: string): value is JourneyStatus {
+	return (JOURNEY_NAV_ORDER as readonly string[]).includes(value)
+}
 
 /** Nodes already passed for each status, per the journey DAG. */
 const COMPLETED_BY: Record<JourneyStatus, readonly JourneyStatus[]> = {
