@@ -152,10 +152,13 @@
 			align-items: stretch;
 		}
 
+		/* Outcome routes sit side by side in one horizontal row so the control
+		   stays compact; wraps on very narrow viewports instead of overflowing. */
 		.journey-outcome {
 			display: flex;
-			flex-direction: column;
+			flex-wrap: wrap;
 			gap: var(--space-2xs);
+			align-items: center;
 		}
 
 		/* Outcome phase is de-emphasized until a result is reached */
@@ -163,11 +166,25 @@
 			opacity: 0.55;
 		}
 
-		/* Both outcome routes share the same card framing */
+		/* Card chrome dropped (D2): each route is a horizontal node row, and the
+		   win/lose routes are told apart by the divider below plus the dimming and
+		   per-status hue rather than a bordered card. */
 		.journey-route {
-			padding: var(--space-2xs);
-			border: 1px solid var(--_border-light);
-			border-radius: var(--radius-card);
+			display: flex;
+			flex: 1 1 auto;
+			gap: var(--space-3xs);
+			align-items: center;
+		}
+
+		/* The win route holds two nodes, so it takes the larger share of the row. */
+		.journey-route-success {
+			flex-grow: 2;
+		}
+
+		/* Lightweight separator between the win and lose routes (D2). */
+		.journey-route + .journey-route {
+			padding-inline-start: var(--space-2xs);
+			border-inline-start: 1px solid var(--_border-light);
 		}
 
 		/* Mutually exclusive routes: the unchosen route is dimmed */
@@ -175,31 +192,21 @@
 			opacity: 0.4;
 		}
 
-		.journey-route-success {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-3xs);
-		}
-
+		/* Redundant in the compact row: the node labels (e.g. "当選・未入金") are
+		   self-describing, so the per-route header label is hidden. */
 		.journey-route-label {
-			font-size: var(--step--2);
-			font-weight: 500;
-			color: var(--color-text-secondary);
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
+			display: none;
 		}
 
 		.journey-arrow {
 			align-self: center;
+			margin-inline: var(--space-2xs);
+			font-size: var(--step-0);
 			color: var(--color-text-muted);
 
 			&::before {
 				content: "\203a"; /* > */
 			}
-		}
-
-		.journey-arrow-down::before {
-			content: "\2193"; /* down */
 		}
 
 		/* Node: contrast comes from fill (current) vs outline (others) */
