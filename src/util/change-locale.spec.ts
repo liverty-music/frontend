@@ -1,5 +1,6 @@
 import type { I18N } from '@aurelia/i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserStore } from '../services/user-store'
 import { changeLocale } from './change-locale'
@@ -22,8 +23,6 @@ function makeUserStore(behavior?: {
 }): IUserStore {
 	return {
 		current: { id: 'u', preferredLanguage: 'ja' },
-		guestLanguage: null,
-		setGuestLanguage: vi.fn(),
 		updatePreferredLanguage: vi.fn(
 			behavior?.updatePreferredLanguage ?? (async () => ({ id: 'u' })),
 		),
@@ -31,23 +30,33 @@ function makeUserStore(behavior?: {
 }
 
 describe('changeLocale', () => {
+	beforeEach(() => {
+		localStorage.clear()
+	})
+
+	afterEach(() => {
+		localStorage.clear()
+		vi.restoreAllMocks()
+	})
+
 	describe('validation', () => {
 		it('throws TypeError on unsupported language without touching state', async () => {
 			const i18n = makeI18n()
 			const auth = makeAuth(false)
 			const userStore = makeUserStore()
+			const setItem = vi.spyOn(Storage.prototype, 'setItem')
 
 			await expect(
 				changeLocale({ i18n, auth, userStore }, 'fr'),
 			).rejects.toBeInstanceOf(TypeError)
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(userStore.setGuestLanguage).not.toHaveBeenCalled()
+			expect(setItem).not.toHaveBeenCalled()
 			expect(userStore.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('unauthenticated path', () => {
-		it('calls i18n.setLocale and writes through the observable guest source; no RPC', async () => {
+		it('calls i18n.setLocale and persists to the single language key; no RPC', async () => {
 			const i18n = makeI18n()
 			const auth = makeAuth(false)
 			const userStore = makeUserStore()
@@ -55,15 +64,15 @@ describe('changeLocale', () => {
 			await changeLocale({ i18n, auth, userStore }, 'en')
 
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
-			// Write through the @observable guest language owner (not raw
-			// localStorage) so UserStore.currentLanguage stays reactive.
-			expect(userStore.setGuestLanguage).toHaveBeenCalledWith('en')
+			// The anonymous choice is persisted explicitly to the single
+			// `language` key (the i18next detector cache) — no separate guest key.
+			expect(localStorage.getItem(StorageKeys.language)).toBe('en')
 			expect(userStore.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('authenticated path', () => {
-		it('calls RPC first, then setLocale; NEVER touches the guest source', async () => {
+		it('calls RPC first, then setLocale; NEVER writes the anonymous language key', async () => {
 			const callOrder: string[] = []
 			const i18n = makeI18n({
 				setLocale: async () => {
@@ -83,7 +92,9 @@ describe('changeLocale', () => {
 			expect(userStore.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			expect(callOrder).toEqual(['rpc', 'setLocale'])
-			expect(userStore.setGuestLanguage).not.toHaveBeenCalled()
+			// The authenticated path leaves the anonymous detector cache untouched;
+			// the DB row is the source of truth.
+			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
 		})
 
 		it('rethrows when RPC fails so the caller can surface a Snack', async () => {
@@ -99,7 +110,7 @@ describe('changeLocale', () => {
 				changeLocale({ i18n, auth, userStore }, 'en'),
 			).rejects.toThrow('network')
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(userStore.setGuestLanguage).not.toHaveBeenCalled()
+			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
 		})
 	})
 })

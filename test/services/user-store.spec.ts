@@ -10,10 +10,10 @@ import { IUserStore, UserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
 
-// Dedicated guest keys (decoupled from the i18next detector's 'language'
-// cache). Kept in sync with guest-storage.ts.
+// Dedicated guest key for the home slice. Kept in sync with guest-storage.ts.
+// The anonymous locale is NOT stored here — it lives solely in the i18next
+// detector's own 'language' cache (single source of truth).
 const GUEST_HOME_KEY = 'guest.home'
-const GUEST_LANGUAGE_KEY = 'guest.language'
 // The i18next-browser-languagedetector's own active-locale cache key.
 const DETECTOR_LANGUAGE_KEY = 'language'
 
@@ -97,15 +97,14 @@ function makeRpcClient() {
 	}
 }
 
-// UserStore now OWNS both the guest home/language slice (hydrating from
-// localStorage on construction) AND the authenticated User entity (the
-// cache→Get→Create chain + write-through updates, absorbed from the former
-// UserService). Seed the dedicated guest keys BEFORE building so the store's
-// @observable fields pick them up.
-function seedGuest(opts?: { home?: string | null; language?: string | null }) {
+// UserStore now OWNS both the guest home slice (hydrating from localStorage on
+// construction) AND the authenticated User entity (the cache→Get→Create chain +
+// write-through updates, absorbed from the former UserService). Seed the
+// dedicated guest home key BEFORE building so the store's @observable field
+// picks it up. The anonymous locale has no store-owned key — it is derived from
+// the active i18n locale via the reactive `i18nLocale` mirror.
+function seedGuest(opts?: { home?: string | null }) {
 	if (opts?.home != null) localStorage.setItem(GUEST_HOME_KEY, opts.home)
-	if (opts?.language != null)
-		localStorage.setItem(GUEST_LANGUAGE_KEY, opts.language)
 }
 
 function build(opts: {
@@ -139,26 +138,19 @@ describe('UserStore', () => {
 	})
 
 	describe('currentLanguage — guest', () => {
-		it('falls back to the active i18n locale when the guest made no explicit choice', () => {
+		it('derives from the active i18n locale (single source of truth)', () => {
 			const { store } = build({ auth: makeAuth(false) })
-			// createTestContainer's mock i18n.getLocale() defaults to 'ja'.
+			// createTestContainer's mock i18n.getLocale() defaults to 'ja'. The
+			// guest locale is the reactive `i18nLocale` mirror — no separate
+			// guest.language key shadows it.
 			expect(store.currentLanguage).toBe('ja')
 		})
 
-		it('reflects an explicit guest language choice from the observable source', () => {
-			seedGuest({ language: 'en' })
+		it('exposes no guest-language storage surface', () => {
 			const { store } = build({ auth: makeAuth(false) })
-			expect(store.currentLanguage).toBe('en')
-		})
-
-		it('updates reactively when the guest language changes', () => {
-			const { store } = build({ auth: makeAuth(false) })
-			expect(store.currentLanguage).toBe('ja')
-
-			// Mutating the @observable guest source re-resolves the getter with
-			// no manual mirror. The store owns the setter now.
-			store.setGuestLanguage('en')
-			expect(store.currentLanguage).toBe('en')
+			// The redundant `guest.language` plumbing is gone.
+			expect('guestLanguage' in store).toBe(false)
+			expect('setGuestLanguage' in store).toBe(false)
 		})
 	})
 
@@ -228,47 +220,33 @@ describe('UserStore', () => {
 		})
 	})
 
-	// Round-trip against the REAL guest-storage keys, exercising the dedicated
-	// 'guest.home' / 'guest.language' keys (decoupled from the i18next detector's
-	// 'language' cache).
+	// Round-trip against the REAL guest-storage key for the home slice, plus the
+	// single-source locale contract: the store never writes a `guest.language`
+	// key and clearGuest never touches the detector's 'language' cache.
 	describe('guest slice — real localStorage round-trip', () => {
-		it('falls back to the i18n mirror when no explicit choice was stored', () => {
-			// No 'guest.language' key written → loadLanguage() returns null.
-			const { store } = build({ auth: makeAuth(false) })
-			expect(store.guestLanguage).toBeNull()
-			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBeNull()
-			expect(store.currentLanguage).toBe('ja')
-		})
-
-		it('persists and reflects an explicit guest choice via the dedicated key', () => {
+		it('persists the guest home via the dedicated key', () => {
 			const { store } = build({ auth: makeAuth(false) })
 
-			store.setGuestLanguage('ja')
-			// guestLanguageChanged() write-through hits the real saveLanguage.
-			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBe('ja')
-
-			store.setGuestLanguage('en')
-			expect(store.guestLanguage).toBe('en')
-			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBe('en')
-			expect(store.currentLanguage).toBe('en')
+			store.setGuestHome('JP-13')
+			// guestHomeChanged() write-through hits the real saveHome.
+			expect(localStorage.getItem(GUEST_HOME_KEY)).toBe('JP-13')
+			expect(store.currentHome).toBe('JP-13')
 		})
 
-		it('clearGuest() removes only the guest keys, never the detector cache', () => {
+		it('clearGuest() clears the guest home but never the detector cache', () => {
 			// Seed the detector's own active-locale cache (written by
 			// i18next-browser-languagedetector, NOT the store).
 			localStorage.setItem(DETECTOR_LANGUAGE_KEY, 'en')
 
 			const { store } = build({ auth: makeAuth(false) })
 			store.setGuestHome('JP-13')
-			store.setGuestLanguage('en')
-			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBe('en')
 
 			store.clearGuest()
-			// guest.language + guest.home cleared (their dedicated keys removed) ...
-			expect(localStorage.getItem(GUEST_LANGUAGE_KEY)).toBeNull()
+			// guest.home cleared ...
 			expect(localStorage.getItem(GUEST_HOME_KEY)).toBeNull()
 			// ... but the detector's 'language' cache survives, so a cancelled
-			// login does not lose the chosen UI language.
+			// login does not lose the chosen UI language. The anonymous locale has
+			// no store-owned key for clearGuest to touch.
 			expect(localStorage.getItem(DETECTOR_LANGUAGE_KEY)).toBe('en')
 		})
 	})

@@ -2,12 +2,7 @@ import { I18N, Signals } from '@aurelia/i18n'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import { IUserRpcClient } from '../adapter/rpc/client/user-client'
-import {
-	loadHome,
-	loadLanguage,
-	saveHome,
-	saveLanguage,
-} from '../adapter/storage/guest-storage'
+import { loadHome, saveHome } from '../adapter/storage/guest-storage'
 import { ILocalStorage } from '../adapter/storage/local-storage'
 import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
 import { userIdStorageKey } from '../constants/storage-keys'
@@ -50,17 +45,17 @@ export interface ProvisionResult {
  * cache→Get→Create chain, write-through update methods, and per-external_id
  * user_id cache) used to live behind a separate `UserService`. UserStore now
  * OWNS that logic directly, making it the single owner of the User entity in
- * addition to the guest `home` / `language` slice it already owned (those still
- * live here as `@observable` fields, hydrated from the low-level `guest-storage`
- * adapter on construction and persisted through `*Changed` hooks).
+ * addition to the guest `home` slice it already owned (that still lives here as
+ * an `@observable` field, hydrated from the low-level `guest-storage` adapter on
+ * construction and persisted through its `*Changed` hook).
  *
  * Every exposed value depends ONLY on observable state:
  *   - `current` is @observable.
- *   - `guestHome` / `guestLanguage` are @observable.
+ *   - `guestHome` is @observable.
  *   - `i18nLocale` mirrors the active i18n locale, kept in sync via the
- *     i18n locale-changed event, so even the authed-NULL fallback is
- *     reactive (a render-time `i18n.getLocale()` read is not observable and
- *     would freeze the binding).
+ *     i18n locale-changed event. It is the single source of truth for the
+ *     guest locale and the authed-NULL fallback (a render-time
+ *     `i18n.getLocale()` read is not observable and would freeze the binding).
  */
 export class UserStore {
 	private readonly logger = resolve(ILogger).scopeTo('UserStore')
@@ -105,16 +100,6 @@ export class UserStore {
 	 * when it changes.
 	 */
 	@observable public guestHome: string | null = loadHome()
-
-	/**
-	 * Anonymous-period UI language (ISO 639-1 code). First-class @observable
-	 * owner, symmetric with `guestHome`, so any binding that reads the guest
-	 * language re-evaluates when it changes (fixes the guest language-selector
-	 * reactivity bug where the selector was driven by an unobservable
-	 * `i18n.getLocale()` read). `null` means "no explicit guest choice yet" —
-	 * `currentLanguage` falls back to the active i18n locale in that case.
-	 */
-	@observable public guestLanguage: string | null = loadLanguage()
 
 	/**
 	 * Reactive mirror of the active i18n locale, normalized to a supported
@@ -164,8 +149,11 @@ export class UserStore {
 	 * `user-hydration-task` (an activating AppTask); this getter is a PURE
 	 * projection of observable state and never issues an RPC.
 	 *
-	 * Guest: the observable guest language, or the i18n locale mirror when the
-	 * guest has not made an explicit choice yet.
+	 * Guest: the observable `i18nLocale` mirror, which always equals the active
+	 * i18n locale — so the selector highlight can never drift from the rendered
+	 * UI. The anonymous locale has a single persisted source
+	 * (`localStorage['language']`, the i18next detector cache); there is no
+	 * separate guest-language key to reconcile.
 	 *
 	 * NEVER reads a render-time `i18n.getLocale()`; every branch resolves to
 	 * observable state so dependent bindings re-evaluate on change.
@@ -179,7 +167,7 @@ export class UserStore {
 			// stays side-effect-free and safe to re-evaluate on every pass.
 			return this.i18nLocale
 		}
-		return this.guestLanguage ?? this.i18nLocale
+		return this.i18nLocale
 	}
 
 	// Resolves the authenticated user via:
@@ -340,28 +328,17 @@ export class UserStore {
 	}
 
 	/**
-	 * Set the guest language (ISO 639-1 code). Persisted via
-	 * `guestLanguageChanged`. Used by the unauthenticated locale-change path
-	 * (`changeLocale`).
-	 */
-	public setGuestLanguage(lang: string): void {
-		this.guestLanguage = lang
-		this.logger.info('Local language set', { language: lang })
-	}
-
-	/**
-	 * Reset the guest home/language slice plus the per-page help-seen flags.
-	 * Used by the welcome route's fresh-tutorial reset and the sign-up
-	 * onboarding hand-off. Does NOT touch the follow queue (owned by
-	 * FollowStore) and does NOT erase the i18next detector's own `language`
-	 * key — only the dedicated `guest.language` key is cleared (it is already
-	 * decoupled), preserving the cancelled-login behavior.
+	 * Reset the guest home slice plus the per-page help-seen flags. Used by the
+	 * welcome route's fresh-tutorial reset and the sign-up onboarding hand-off.
+	 * Does NOT touch the follow queue (owned by FollowStore) and does NOT touch
+	 * the locale: the anonymous locale lives solely in the i18next detector's
+	 * `language` key, which persists across this reset, preserving the
+	 * cancelled-login behavior with no decoupling to reason about.
 	 */
 	public clearGuest(): void {
 		this.guestHome = null
-		this.guestLanguage = null
 		clearAllHelpSeen()
-		this.logger.info('Local home/language preferences cleared')
+		this.logger.info('Local home preferences cleared')
 	}
 
 	/**
@@ -369,13 +346,6 @@ export class UserStore {
 	 */
 	public guestHomeChanged(newValue: string | null): void {
 		saveHome(newValue)
-	}
-
-	/**
-	 * Persist guest language to localStorage on change.
-	 */
-	public guestLanguageChanged(newValue: string | null): void {
-		saveLanguage(newValue)
 	}
 
 	// requireUserId resolves the caller's internal user_id from the in-memory

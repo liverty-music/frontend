@@ -88,6 +88,22 @@ export function migrateStorageKeys(): void {
 		localStorage.setItem('ui.onboardingCompletedSessionCount', oldCompleted)
 	}
 	localStorage.removeItem('pwa.completedSessionCount')
+
+	// Migrate the legacy `guest.language` key into the single-source `language`
+	// key (the i18next detector cache). `guest.language` was only ever written on
+	// an explicit user language choice, so it represents higher intent than the
+	// auto-detected detector cache: when the two differ — including when
+	// `language` is absent (e.g. cleared by a prior authenticated session) — the
+	// explicit guest choice wins and is promoted. Then the redundant key is
+	// removed. Because this runs before i18next detection reads `language`
+	// (see main.ts ordering), a promoted value takes effect in the same session.
+	const legacyGuestLanguage = localStorage.getItem('guest.language')
+	if (legacyGuestLanguage !== null) {
+		if (localStorage.getItem(StorageKeys.language) !== legacyGuestLanguage) {
+			localStorage.setItem(StorageKeys.language, legacyGuestLanguage)
+		}
+		localStorage.removeItem('guest.language')
+	}
 }
 
 /**

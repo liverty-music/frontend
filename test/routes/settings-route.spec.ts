@@ -57,11 +57,9 @@ describe('SettingsRoute', () => {
 			  }
 			| undefined
 		guestHome: string | null
-		guestLanguage: string | null
 		readonly currentHome: string | null
 		readonly currentLanguage: string
 		setGuestHome: ReturnType<typeof vi.fn>
-		setGuestLanguage: ReturnType<typeof vi.fn>
 		resendEmailVerification: ReturnType<typeof vi.fn>
 		clear: ReturnType<typeof vi.fn>
 		updatePreferredLanguage: ReturnType<typeof vi.fn>
@@ -91,7 +89,6 @@ describe('SettingsRoute', () => {
 		mockUserStore = {
 			current: { id: 'user-uuid-1', preferredLanguage: 'ja' },
 			guestHome: null,
-			guestLanguage: null,
 			get currentHome(): string | null {
 				return mockAuth.isAuthenticated
 					? (mockUserStore.current?.home?.level1 ?? null)
@@ -101,13 +98,13 @@ describe('SettingsRoute', () => {
 				if (mockAuth.isAuthenticated) {
 					return mockUserStore.current?.preferredLanguage ?? 'ja'
 				}
-				return mockUserStore.guestLanguage ?? 'ja'
+				// Single source of truth: the guest locale is the active i18n
+				// locale, mirrored from the detector's `language` key that
+				// changeLocale writes explicitly — no separate guest.language key.
+				return localStorage.getItem('language') ?? 'ja'
 			},
 			setGuestHome: vi.fn((code: string) => {
 				mockUserStore.guestHome = code
-			}),
-			setGuestLanguage: vi.fn((lang: string) => {
-				mockUserStore.guestLanguage = lang
 			}),
 			resendEmailVerification: vi.fn().mockResolvedValue(undefined),
 			clear: vi.fn(),
@@ -439,7 +436,7 @@ describe('SettingsRoute', () => {
 			expect(mockUser.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 
-		it('guest language change writes through the observable guest source and the selector reflects it (reactive)', async () => {
+		it('guest language change persists to the single language key and the selector reflects it (reactive)', async () => {
 			const guestSut = buildGuestSut()
 			// Before the change the guest has made no explicit choice; the
 			// selector highlight falls back to the active i18n locale ('ja').
@@ -447,12 +444,12 @@ describe('SettingsRoute', () => {
 
 			await guestSut.selectLanguage('en')
 
-			// changeLocale writes through UserStore.setGuestLanguage (the
-			// @observable owner) rather than raw localStorage, so the store —
-			// and therefore the Settings selector binding — reflects the new
-			// language immediately. This is the guest language-selector
-			// reactivity fix.
-			expect(mockUserStore.setGuestLanguage).toHaveBeenCalledWith('en')
+			// changeLocale's guest path persists to the single `language` key (the
+			// i18next detector cache). The store derives the guest selector
+			// highlight from the active i18n locale (mirrored from that key), so the
+			// Settings selector binding reflects the new language immediately and can
+			// never disagree with the rendered UI.
+			expect(localStorage.getItem('language')).toBe('en')
 			expect(guestSut.currentLocale).toBe('en')
 		})
 	})
