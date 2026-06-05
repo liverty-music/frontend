@@ -1,3 +1,4 @@
+import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -33,6 +34,7 @@ const { SettingsRoute } = await import(
 
 describe('SettingsRoute', () => {
 	let sut: InstanceType<typeof SettingsRoute>
+	let mockRouter: { load: ReturnType<typeof vi.fn> }
 	let mockAuth: {
 		isAuthenticated: boolean
 		user: { profile: Record<string, unknown> } | null
@@ -128,6 +130,7 @@ describe('SettingsRoute', () => {
 			delete: vi.fn().mockResolvedValue(undefined),
 		}
 		mockEa = { publish: vi.fn() }
+		mockRouter = { load: vi.fn().mockResolvedValue(undefined) }
 
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
@@ -135,6 +138,7 @@ describe('SettingsRoute', () => {
 			Registration.instance(mockINotificationManager, mockNotification),
 			Registration.instance(mockIPushService, mockPush),
 			Registration.instance(IEventAggregator, mockEa),
+			Registration.instance(IRouter, mockRouter),
 		)
 		container.register(SettingsRoute)
 		sut = container.get(SettingsRoute)
@@ -403,6 +407,24 @@ describe('SettingsRoute', () => {
 		})
 	})
 
+	describe('openLegal', () => {
+		// Regression guard for AUR3174: linking to the legal pages from the
+		// Settings routing context must go through the root router with an
+		// ABSOLUTE path. A relative instruction or a `load`/`href` attribute
+		// resolves against `/settings` (→ `/settings/legal/terms`), which has no
+		// route and fails. See SettingsRoute.openLegal.
+		it.each([
+			'/legal/terms',
+			'/legal/privacy',
+			'/legal/licenses',
+		])('navigates to %s via the root router', async (path) => {
+			await sut.openLegal(path)
+
+			expect(mockRouter.load).toHaveBeenCalledWith(path)
+			expect(path.startsWith('/legal/')).toBe(true)
+		})
+	})
+
 	describe('guest mode', () => {
 		function buildGuestSut() {
 			mockAuth.isAuthenticated = false
@@ -413,6 +435,7 @@ describe('SettingsRoute', () => {
 				Registration.instance(mockINotificationManager, mockNotification),
 				Registration.instance(mockIPushService, mockPush),
 				Registration.instance(IEventAggregator, mockEa),
+				Registration.instance(IRouter, mockRouter),
 			)
 			container.register(SettingsRoute)
 			return container.get(SettingsRoute)

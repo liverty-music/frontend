@@ -1,4 +1,5 @@
 import { I18N } from '@aurelia/i18n'
+import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Snack } from '../../components/snack-bar/snack'
@@ -24,6 +25,7 @@ export class SettingsRoute {
 	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
 	private readonly ea = resolve(IEventAggregator)
 	private readonly i18n = resolve(I18N)
+	private readonly router = resolve(IRouter)
 	private readonly audio = resolve(IAudioEngine)
 	// Public so the template binds the consent toggles to the service's
 	// `@observable` state directly (`consent.analytics` /
@@ -336,6 +338,19 @@ export class SettingsRoute {
 	/** Persist the volume once when the user releases the slider. */
 	public onSoundVolumePersist(): void {
 		this.audio.persistVolume()
+	}
+
+	/**
+	 * Navigate to a legal document page (Terms / Privacy / OSS Licenses).
+	 *
+	 * Uses the injected root `IRouter` rather than a `load`/`href` attribute:
+	 * the attribute resolves its instruction relative to the Settings route's
+	 * own routing context, turning `legal/terms` into `/settings/legal/terms`
+	 * (no such route → AUR3174). `router.load` resolves from the root context,
+	 * so the absolute `/legal/*` path matches the top-level route.
+	 */
+	public async openLegal(path: string): Promise<void> {
+		await this.router.load(path)
 	}
 
 	/** Guest auth entry — start the OIDC sign-in flow from Settings. */

@@ -193,28 +193,29 @@
   <section>
     <h2 t="settings.about" class="settings-section-title"></h2>
     <ul class="settings-card" role="list">
-      <!-- Terms of Service -->
+      <!-- Terms of Service. Navigates via the VM's root router (openLegal), not
+           a load/href attribute — see SettingsRoute.openLegal for why. -->
       <li class="settings-list-item">
-        <a href="legal/terms" class="settings-row">
+        <button type="button" click.trigger="openLegal('/legal/terms')" class="settings-row">
           <span t="settings.termsOfService" class="settings-row-label"></span>
           <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </a>
+        </button>
       </li>
 
       <!-- Privacy Policy -->
       <li class="settings-list-item">
-        <a href="legal/privacy" class="settings-row">
+        <button type="button" click.trigger="openLegal('/legal/privacy')" class="settings-row">
           <span t="settings.privacyPolicy" class="settings-row-label"></span>
           <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </a>
+        </button>
       </li>
 
       <!-- OSS Licenses -->
       <li class="settings-list-item">
-        <a href="legal/licenses" class="settings-row">
+        <button type="button" click.trigger="openLegal('/legal/licenses')" class="settings-row">
           <span t="settings.ossLicenses" class="settings-row-label"></span>
           <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
-        </a>
+        </button>
       </li>
     </ul>
   </section>

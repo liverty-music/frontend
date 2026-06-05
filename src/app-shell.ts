@@ -91,6 +91,9 @@ import { IOnboardingService } from './services/onboarding-service'
 		// Legal documents. Public (`auth: false`) so guests can open them
 		// without an account, and so each has a stable, directly-linkable URL
 		// (the product ships as a PWA only — there is no app-store listing).
+		// Linked from Settings via the root router (SettingsRoute.openLegal),
+		// not a `load`/`href` attribute: the attribute would resolve relative to
+		// the Settings routing context (`/settings/legal/terms` → AUR3174).
 		{
 			path: 'legal/terms',
 			component: import('./routes/legal/terms-route'),
