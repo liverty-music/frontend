@@ -1,0 +1,13 @@
+@layer block {
+	@scope (privacy-route) {
+		/* Route host owns the scroll within the app-shell viewport grid row, so
+		   the document scrolls instead of overflowing onto the bottom nav. The
+		   inner <legal-document> stays a natural-height centered content column. */
+		:scope {
+			overflow-y: auto;
+			display: block;
+			block-size: 100%;
+			min-block-size: 0;
+		}
+	}
+}
