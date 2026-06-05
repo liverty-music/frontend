@@ -1,0 +1,34 @@
+<import from="./licenses-route.css"></import>
+
+<article class="[ licenses-route ] [ flow ]">
+  <header class="[ licenses-header ] [ flow ]">
+    <h1 class="licenses-title" t="legal.licenses.title"></h1>
+    <p class="licenses-intro" t="legal.licenses.intro"></p>
+  </header>
+
+  <ul class="[ licenses-list ] [ flow ]" role="list">
+    <li class="[ licenses-item ] [ flow ]" repeat.for="pkg of packages">
+      <div class="licenses-item-head">
+        <span class="licenses-name">${pkg.name}</span>
+        <span class="licenses-version">${pkg.version}</span>
+        <span class="licenses-license">${pkg.license}</span>
+      </div>
+
+      <p class="licenses-publisher" if.bind="pkg.publisher">${pkg.publisher}</p>
+
+      <a
+        class="licenses-repository"
+        if.bind="pkg.repository"
+        href.bind="pkg.repository"
+        target="_blank"
+        rel="noopener noreferrer"
+        t="legal.licenses.sourceLabel"
+      ></a>
+
+      <details class="licenses-text" if.bind="pkg.licenseText">
+        <summary t="legal.licenses.viewLicenseText"></summary>
+        <pre class="licenses-text-body">${pkg.licenseText}</pre>
+      </details>
+    </li>
+  </ul>
+</article>

@@ -1,0 +1,24 @@
+<import from="./legal-document.css"></import>
+
+<article class="[ legal-document ] [ flow ]">
+  <header class="[ legal-header ] [ flow ]">
+    <h1 class="legal-title" t.bind="titleKey"></h1>
+    <p class="legal-updated">
+      <span t="legal.lastUpdatedLabel"></span>
+      <span t.bind="lastUpdatedKey"></span>
+    </p>
+  </header>
+
+  <p class="legal-intro" t.bind="introKey"></p>
+
+  <section
+    class="[ legal-section ] [ flow ]"
+    repeat.for="section of sections & signal: 'aurelia-translation-signal'"
+  >
+    <h2 class="legal-section-heading">${section.heading}</h2>
+    <p
+      class="legal-section-body"
+      repeat.for="paragraph of section.body"
+    >${paragraph}</p>
+  </section>
+</article>

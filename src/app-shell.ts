@@ -88,6 +88,27 @@ import { IOnboardingService } from './services/onboarding-service'
 			title: 'Import Ticket Email',
 			data: { auth: false },
 		},
+		// Legal documents. Public (`auth: false`) so guests and App Store /
+		// Play Console reviewers can open them directly without an account —
+		// the `/legal/privacy` URL is the store-registered Privacy Policy URL.
+		{
+			path: 'legal/terms',
+			component: import('./routes/legal/terms-route'),
+			title: 'Terms of Service',
+			data: { auth: false },
+		},
+		{
+			path: 'legal/privacy',
+			component: import('./routes/legal/privacy-route'),
+			title: 'Privacy Policy',
+			data: { auth: false },
+		},
+		{
+			path: 'legal/licenses',
+			component: import('./routes/legal/licenses-route'),
+			title: 'OSS Licenses',
+			data: { auth: false },
+		},
 	],
 	fallback: import('./routes/not-found/not-found-route'),
 })
