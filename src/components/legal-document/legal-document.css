@@ -1,0 +1,51 @@
+@layer block {
+	@scope (legal-document) {
+		:scope {
+			display: block;
+
+			max-inline-size: 70ch;
+			margin-inline: auto;
+			padding: var(--space-s);
+			padding-block-end: var(--space-2xl);
+
+			color: var(--color-text-secondary);
+		}
+
+		.legal-draft-banner {
+			padding: var(--space-2xs) var(--space-xs);
+			border: 1px solid var(--color-warning);
+			border-radius: var(--radius-sm);
+
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-warning);
+		}
+
+		.legal-title {
+			font-family: var(--font-display);
+			font-size: var(--step-3);
+			font-weight: 700;
+			color: var(--color-text-primary);
+		}
+
+		.legal-updated {
+			font-size: var(--step--2);
+			color: var(--color-text-secondary);
+		}
+
+		.legal-intro {
+			font-size: var(--step-0);
+		}
+
+		.legal-section-heading {
+			font-family: var(--font-display);
+			font-size: var(--step-1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.legal-section-body {
+			line-height: var(--leading-relaxed);
+		}
+	}
+}

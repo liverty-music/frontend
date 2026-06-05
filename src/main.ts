@@ -24,6 +24,7 @@ import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
 import { CelebrationOverlay } from './components/celebration-overlay/celebration-overlay'
 import { InlineError } from './components/inline-error/inline-error'
+import { LegalDocument } from './components/legal-document/legal-document'
 import { ConcertHighway } from './components/live-highway/concert-highway'
 import { EventCard } from './components/live-highway/event-card'
 import { EventDetailSheet } from './components/live-highway/event-detail-sheet'
@@ -242,6 +243,7 @@ async function bootstrap(): Promise<void> {
 	au.register(EventCard)
 	au.register(EventDetailSheet)
 	au.register(InlineError)
+	au.register(LegalDocument)
 	au.register(LoadingSpinner)
 	au.register(SignupPromptBanner)
 	au.register(Toast)

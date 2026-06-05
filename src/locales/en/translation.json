@@ -374,5 +374,169 @@
 			"unfollowSectionTitle": "Unfollowing",
 			"longPressTip": "Long-press an artist row to see the unfollow confirmation."
 		}
+	},
+	"legal": {
+		"draftBanner": "DRAFT — pending legal review. This is not the final version.",
+		"lastUpdatedLabel": "Last updated",
+		"terms": {
+			"title": "Terms of Service",
+			"lastUpdated": "June 5, 2026",
+			"intro": "These Terms of Service (the \"Terms\") govern your use of the application \"Liverty Music\" (the \"Service\") provided by pannpers.dev (\"we\" or \"us\"). By using the Service, you are deemed to have agreed to these Terms.",
+			"sections": [
+				{
+					"heading": "1. Scope",
+					"body": [
+						"These Terms set out the conditions under which the Service is provided and the rights and obligations between us and users, and apply to every relationship between you and us concerning your use of the Service."
+					]
+				},
+				{
+					"heading": "2. Description of the Service",
+					"body": [
+						"The Service is an application for music fans that lets you follow your favorite artists and receive their concert information and ticket on-sale timing as a curated list and as notifications.",
+						"The concert, ticket, and on-sale-timing information shown in the Service includes data aggregated and inferred from publicly available third-party sources."
+					]
+				},
+				{
+					"heading": "3. Accounts",
+					"body": [
+						"To use certain features of the Service, you must register an account.",
+						"You are responsible for managing your own account credentials, and must not allow any third party to use them, nor lend or transfer them."
+					]
+				},
+				{
+					"heading": "4. Prohibited Conduct",
+					"body": [
+						"In using the Service, you must not engage in any act that violates laws or public order and morals, infringes the rights of us or any third party, interferes with the operation of the Service, constitutes or attempts unauthorized access, or that we otherwise deem inappropriate."
+					]
+				},
+				{
+					"heading": "5. Disclaimer Regarding Third-Party Information",
+					"body": [
+						"The concert, ticket, and on-sale-timing information provided by the Service originates from third-party sources, and we make no warranty whatsoever as to its accuracy, completeness, timeliness, or usefulness.",
+						"For ticket purchases, admission eligibility, on-sale start times, and the like, always confirm the official primary source. We are not liable for any damage you incur in reliance on such information."
+					]
+				},
+				{
+					"heading": "6. Disclaimers and Limitation of Liability",
+					"body": [
+						"We make no warranty, express or implied, that the Service is free from defects in fact or in law.",
+						"Except in cases of our willful misconduct or gross negligence, we are not liable for any damage arising in connection with the Service."
+					]
+				},
+				{
+					"heading": "7. Suspension and Termination of Accounts",
+					"body": [
+						"If you breach these Terms, or where we otherwise deem it necessary, we may suspend or delete your account without prior notice."
+					]
+				},
+				{
+					"heading": "8. Changes to These Terms",
+					"body": [
+						"We may change these Terms at any time without notice to users where we deem it necessary. The revised Terms take effect when displayed within the Service."
+					]
+				},
+				{
+					"heading": "9. Governing Law and Jurisdiction",
+					"body": [
+						"The interpretation and application of these Terms are governed by the laws of Japan.",
+						"In the event of a dispute between us and a user concerning the Service, Fukuoka District Court shall be the court of exclusive agreed jurisdiction for the first instance."
+					]
+				},
+				{
+					"heading": "Contact",
+					"body": [
+						"For inquiries regarding these Terms, please contact pannpers@pannpers.dev."
+					]
+				}
+			]
+		},
+		"privacy": {
+			"title": "Privacy Policy",
+			"lastUpdated": "June 5, 2026",
+			"intro": "pannpers.dev (\"we\" or \"us\") establishes this Privacy Policy (the \"Policy\") regarding the handling of users' personal information in the application \"Liverty Music\" (the \"Service\"), as set out below. We comply with Japan's Act on the Protection of Personal Information (the \"APPI\") and other applicable laws.",
+			"sections": [
+				{
+					"heading": "1. Operator Information",
+					"body": [
+						"Personal information handling business operator: pannpers.dev",
+						"Contact: pannpers@pannpers.dev"
+					]
+				},
+				{
+					"heading": "2. Personal Information We Collect",
+					"body": [
+						"In providing the Service, we collect the following personal information:",
+						"- Account information: email address and account identifier (user ID)",
+						"- Wallet address (safe_address): an address derived from the user ID, used to identify the account",
+						"- Home area (a setting for your region of residence)",
+						"- Artists you follow",
+						"- Language preference",
+						"- Push notification subscription information and device token",
+						"- Usage analytics data (interaction events; we use cookies and localStorage)"
+					]
+				},
+				{
+					"heading": "3. Purposes of Use",
+					"body": [
+						"We use the personal information we collect for the following purposes:",
+						"- Providing the Service and authenticating users",
+						"- Improving the Service through usage analysis",
+						"- Measuring advertising effectiveness",
+						"- Delivering push notifications"
+					]
+				},
+				{
+					"heading": "4. Provision to Third Parties and Outsourcing",
+					"body": [
+						"In providing the Service, we entrust the handling of personal information to, or integrate with, the following external services:",
+						"- PostHog (product analytics)",
+						"- Resend (email delivery)",
+						"- Google (push notification delivery via Firebase Cloud Messaging / Web Push)",
+						"- Google (concert information search via Gemini / Vertex AI)",
+						"- Last.fm (retrieval of artist information; because the browser communicates with it directly, your IP address is transmitted)",
+						"Our authentication platform (Zitadel) is operated on servers we manage ourselves and does not constitute provision to a third party."
+					]
+				},
+				{
+					"heading": "5. Cross-Border Transfer of Personal Data",
+					"body": [
+						"The Service transfers usage analytics data to PostHog Cloud EU (within the European Union). This constitutes the provision of personal data to a third party in a foreign country under Article 28 of the APPI.",
+						"In addition, some of the external services above handle personal information on servers located in the United States or the United Kingdom."
+					]
+				},
+				{
+					"heading": "6. Withdrawing Consent",
+					"body": [
+						"Cooperation with usage analysis and advertising-effectiveness measurement is optional. You may withdraw your consent at any time by turning off the \"Help improve the experience\" and \"Help measure advertising effectiveness\" toggles in the Settings screen."
+					]
+				},
+				{
+					"heading": "7. Disclosure Requests and Inquiries",
+					"body": [
+						"You may request that we disclose, correct, add to, delete, or suspend the use of your personal information.",
+						"For these requests and any inquiries, please contact pannpers@pannpers.dev."
+					]
+				},
+				{
+					"heading": "8. Security Management Measures",
+					"body": [
+						"We take necessary and appropriate measures to manage the security of the personal information we collect, including preventing its leakage, loss, or damage."
+					]
+				},
+				{
+					"heading": "9. Revisions to This Policy",
+					"body": [
+						"We may revise this Policy as necessary. When there is a change in how we handle personal information — for example, when we begin integrating with a new external service — we will review this Policy.",
+						"The revised Policy takes effect when displayed within the Service."
+					]
+				}
+			]
+		},
+		"licenses": {
+			"title": "OSS Licenses",
+			"intro": "The Service uses the open-source software listed below. Copyright in each piece of software belongs to its respective rights holder. This list is generated automatically from the distributed dependency tree.",
+			"sourceLabel": "View source",
+			"viewLicenseText": "View full license text"
+		}
 	}
 }

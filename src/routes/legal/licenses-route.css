@@ -1,0 +1,88 @@
+@layer block {
+	@scope (licenses-route) {
+		:scope {
+			display: block;
+
+			max-inline-size: 70ch;
+			margin-inline: auto;
+			padding: var(--space-s);
+			padding-block-end: var(--space-2xl);
+
+			color: var(--color-text-secondary);
+		}
+
+		.licenses-title {
+			font-family: var(--font-display);
+			font-size: var(--step-3);
+			font-weight: 700;
+			color: var(--color-text-primary);
+		}
+
+		.licenses-intro {
+			font-size: var(--step-0);
+		}
+
+		.licenses-item {
+			padding: var(--space-xs);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+			background: var(--color-surface-raised);
+		}
+
+		.licenses-item-head {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+			align-items: baseline;
+		}
+
+		.licenses-name {
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.licenses-version {
+			font-size: var(--step--2);
+			color: var(--color-text-secondary);
+		}
+
+		.licenses-license {
+			margin-inline-start: auto;
+			padding: var(--space-3xs) var(--space-2xs);
+			border-radius: var(--radius-sm);
+
+			font-size: var(--step--2);
+
+			background: var(--color-surface-overlay);
+		}
+
+		.licenses-publisher {
+			font-size: var(--step--1);
+		}
+
+		.licenses-repository {
+			font-size: var(--step--1);
+			color: var(--color-text-primary);
+		}
+
+		.licenses-text > summary {
+			cursor: pointer;
+			font-size: var(--step--1);
+		}
+
+		.licenses-text-body {
+			overflow-x: auto;
+
+			max-block-size: 24rem;
+			margin-block-start: var(--space-2xs);
+			padding: var(--space-2xs);
+			border-radius: var(--radius-sm);
+
+			font-size: var(--step--2);
+			word-break: break-word;
+			white-space: pre-wrap;
+
+			background: var(--color-surface-base);
+		}
+	}
+}

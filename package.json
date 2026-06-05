@@ -69,6 +69,8 @@
 		"start": "vite",
 		"build": "vite build",
 		"verify:build-templates": "npx tsx scripts/verify-build-templates.ts",
+		"licenses:generate": "npx tsx scripts/generate-licenses.ts",
+		"prebuild": "npm run licenses:generate",
 		"test": "vitest",
 		"test:scripts": "vitest run --config vitest.scripts.config.ts",
 		"storybook": "storybook dev -p 6006",
