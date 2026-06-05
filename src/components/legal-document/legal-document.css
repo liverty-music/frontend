@@ -11,16 +11,6 @@
 			color: var(--color-text-secondary);
 		}
 
-		.legal-draft-banner {
-			padding: var(--space-2xs) var(--space-xs);
-			border: 1px solid var(--color-warning);
-			border-radius: var(--radius-sm);
-
-			font-size: var(--step--1);
-			font-weight: 600;
-			color: var(--color-warning);
-		}
-
 		.legal-title {
 			font-family: var(--font-display);
 			font-size: var(--step-3);

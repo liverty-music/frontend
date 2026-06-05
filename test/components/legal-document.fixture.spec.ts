@@ -46,8 +46,6 @@ describe('legal documents render in ja and en', () => {
 				const text = fixture.appHost.textContent ?? ''
 				// Title is present (the document rendered in this locale)...
 				expect(text).toContain(EXPECTED[docKey][lng])
-				// ...the DRAFT banner is shown (task 5.1 gate)...
-				expect(text).toContain(lng === 'ja' ? 'ドラフト' : 'DRAFT')
 				// ...and the signal-reactive sections array rendered at least
 				// one section heading rather than collapsing to an empty list.
 				expect(
