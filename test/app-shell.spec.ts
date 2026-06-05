@@ -34,6 +34,21 @@ vi.mock('../src/routes/tickets/tickets-route', () => ({
 vi.mock('../src/routes/settings/settings-route', () => ({
 	SettingsRoute: class SettingsRoute {},
 }))
+vi.mock('../src/routes/consent/consent-route', () => ({
+	ConsentRoute: class ConsentRoute {},
+}))
+vi.mock('../src/routes/import-ticket-email/import-ticket-email-route', () => ({
+	ImportTicketEmailRoute: class ImportTicketEmailRoute {},
+}))
+vi.mock('../src/routes/legal/terms-route', () => ({
+	TermsRoute: class TermsRoute {},
+}))
+vi.mock('../src/routes/legal/privacy-route', () => ({
+	PrivacyRoute: class PrivacyRoute {},
+}))
+vi.mock('../src/routes/legal/licenses-route', () => ({
+	LicensesRoute: class LicensesRoute {},
+}))
 vi.mock('../src/routes/not-found/not-found-route', () => ({
 	NotFoundRoute: class NotFoundRoute {},
 }))
