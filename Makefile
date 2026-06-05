@@ -1,11 +1,15 @@
-.PHONY: lint lint-brand-vocabulary lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check build-prover
+.PHONY: lint lint-brand-vocabulary lint-boundaries lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation build-prover
 
-## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary (matches CI)
-lint: lint-brand-vocabulary
-	npx biome lint src test
-	npx biome format src test
+## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary + import-boundaries (matches CI)
+lint: lint-brand-vocabulary lint-boundaries
+	npx biome lint src admin shared test
+	npx biome format src admin shared test
 	npm run lint:css
 	npx tsc --noEmit
+
+## lint-boundaries: enforce src/ <-> admin/ isolation (only shared/ crosses)
+lint-boundaries:
+	npx depcruise src admin shared test
 
 ## lint-brand-vocabulary: enforce entity.* i18n namespace parity and known-entity rules
 lint-brand-vocabulary:
@@ -52,10 +56,16 @@ lint-no-div-role-status:
 ## lint-templates: all template lint rules
 lint-templates: lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status
 
+## verify-bundle-isolation: build then assert the consumer entry graph
+## contains no admin-origin chunk (OpenSpec `add-admin-console`, design D2).
+verify-bundle-isolation:
+	npm run build
+	npm run verify:bundle-isolation
+
 ## check: full local pre-commit check.
 ## Mirrors CI's fast lanes (Lint + Test). Playwright suites (smoke / e2e /
 ## visual) are CI-only — they require browser binaries, baseline screenshots
 ## from CI artifacts, and a running dev server, none of which are
 ## deterministic in pre-commit. Run those locally on demand via
 ## `npx playwright test --project=<name>`.
-check: lint lint-templates test
+check: lint lint-templates test verify-bundle-isolation

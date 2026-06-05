@@ -10,7 +10,9 @@
     "sourceMap": true
   },
   "include": [
-    "src"
+    "src",
+    "admin",
+    "shared"
   ],
   "files": [
     "src/resource.d.ts"

@@ -1,0 +1,11 @@
+:80 {
+	root * /srv
+	file_server
+	# SPA fallback to the admin entry (not index.html — that is not shipped in
+	# this image). Mirrors the consumer Caddyfile, swapping the entry document.
+	try_files {path} /admin.html
+
+	@config path /config.json
+	header @config Cache-Control "no-store"
+	header @config Content-Type "application/json; charset=utf-8"
+}
