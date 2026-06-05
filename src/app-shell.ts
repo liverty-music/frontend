@@ -88,9 +88,9 @@ import { IOnboardingService } from './services/onboarding-service'
 			title: 'Import Ticket Email',
 			data: { auth: false },
 		},
-		// Legal documents. Public (`auth: false`) so guests and App Store /
-		// Play Console reviewers can open them directly without an account —
-		// the `/legal/privacy` URL is the store-registered Privacy Policy URL.
+		// Legal documents. Public (`auth: false`) so guests can open them
+		// without an account, and so each has a stable, directly-linkable URL
+		// (the product ships as a PWA only — there is no app-store listing).
 		{
 			path: 'legal/terms',
 			component: import('./routes/legal/terms-route'),
