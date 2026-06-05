@@ -50,7 +50,7 @@ tmp/*
 # README documents the setup and is safe to commit.
 !.auth/README.md
 
-# ZK circuit build artifacts (regenerated via circom compile + snarkjs setup)
+# ZK circuit build artifacts (regenerated via circom compile + trusted setup)
 circuits/*/build/
 circuits/*/node_modules/
 
@@ -63,3 +63,14 @@ circuits/*/node_modules/
 
 # Local dev runtime-config override (points the app at a local backend)
 public/config.local.json
+
+# Rust prover build output (pkg/ is committed as the prebuilt artifact)
+prover/target/
+
+# Python bytecode cache (circuit tools)
+__pycache__/
+*.pyc
+
+# Backup/junk files
+*.orig
+*.bak

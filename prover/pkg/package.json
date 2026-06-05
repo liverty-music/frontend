@@ -1,0 +1,17 @@
+{
+  "name": "ticketcheck-prover",
+  "type": "module",
+  "description": "MIT/Apache browser WASM Groth16 prover (arkworks/ark-circom) for the TicketCheck circuit. Replaces GPL snarkjs.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "files": [
+    "ticketcheck_prover_bg.wasm",
+    "ticketcheck_prover.js",
+    "ticketcheck_prover.d.ts"
+  ],
+  "main": "ticketcheck_prover.js",
+  "types": "ticketcheck_prover.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

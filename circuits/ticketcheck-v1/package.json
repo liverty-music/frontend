@@ -1,17 +1,12 @@
 {
   "name": "ticketcheck-v1",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "description": "TicketCheck zk circuit. Uses an in-repo MIT-licensed Poseidon (see poseidon.circom / tools/) — no GPL circomlib dependency.",
+  "license": "MIT",
   "type": "commonjs",
-  "dependencies": {
-    "circomlib": "^2.0.5",
-    "circomlibjs": "^0.1.7"
+  "scripts": {
+    "build:wasm": "mkdir -p build && circom ticketcheck.circom --wasm --r1cs --output build --prime bn128",
+    "gen:constants": "python3 tools/emit_circom.py",
+    "verify:constants": "python3 tools/verify.py"
   }
 }

@@ -1,14 +1,24 @@
 import { DI, ILogger, resolve } from 'aurelia'
 import { IEntryRpcClient } from '../adapter/rpc/client/entry-client'
 import { IAppConfig } from '../config/app-config'
-import { bytesToDecimal, uuidToFieldElement } from '../entities/entry'
+import {
+	bytesToDecimal,
+	bytesToHex,
+	uuidToFieldElement,
+} from '../entities/entry'
 import type { ProofMessage, ProofRequest } from '../workers/proof.worker'
 
 // SHA-256 hashes of known-good circuit files for integrity verification.
-// Recompute after each circuit rebuild: sha256sum build/ticketcheck_js/ticketcheck.wasm build/ticketcheck_final.zkey
+// Recompute after each circuit rebuild:
+//   cd circuits/ticketcheck-v1 && mkdir -p build && circom ticketcheck.circom --wasm --output build --prime bn128
+//   sha256sum build/ticketcheck_js/ticketcheck.wasm public/circuits/ticketcheck-v1/ticketcheck.zkey
+// The .wasm is recompiled from the in-repo MIT Poseidon (permissive sources); the
+// .zkey is reused unchanged because the MIT Poseidon yields a byte-identical R1CS.
 const CIRCUIT_HASHES: Record<string, string> = {
 	'ticketcheck.wasm':
-		'08de2f44c53230cefcb7d5b4dda5ff829e6afd1fbc52666cb12464a00f5e2f03',
+		'd37508e4bd50b857171922875c7d732379d82ad88e9d23641228e4d9020c7761',
+	'ticketcheck.r1cs':
+		'a8a5a293b869522b47b78fc4043007007945a5d26732379ae1e5fe6c2ba846f2',
 	'ticketcheck.zkey':
 		'f6cadb4cdeee3c49a5b9b86ae9ac954ee68b52a97ed21f013ff023bfc444a25e',
 }
@@ -65,20 +75,20 @@ export class ProofServiceClient {
 
 		onProgress?.('Starting proof generation...')
 
-		const wasmUrl = `${this.circuitBaseUrl}/ticketcheck.wasm`
-		const zkeyUrl = `${this.circuitBaseUrl}/ticketcheck.zkey`
-
-		// Verify circuit file integrity before proof generation.
-		await this.verifyCircuitIntegrity(wasmUrl, 'ticketcheck.wasm')
-		await this.verifyCircuitIntegrity(zkeyUrl, 'ticketcheck.zkey')
+		// Fetch and integrity-verify each circuit artifact, then hand the verified
+		// bytes to the worker (transferred zero-copy). The arkworks prover needs
+		// the witness-calculator wasm, the r1cs (constraint matrices), and the zkey.
+		const [wasmBytes, r1csBytes, zkeyBytes] = await Promise.all([
+			this.fetchVerifiedArtifact('ticketcheck.wasm'),
+			this.fetchVerifiedArtifact('ticketcheck.r1cs'),
+			this.fetchVerifiedArtifact('ticketcheck.zkey'),
+		])
 
 		// Convert eventId to a field element for the circuit.
 		// Use the same encoding as the backend: treat UUID bytes as big-endian integer.
 		const eventIdField = uuidToFieldElement(eventId)
 
 		const proofInput: ProofRequest = {
-			wasmUrl,
-			zkeyUrl,
 			input: {
 				trapdoor: leaf,
 				merkleRoot,
@@ -86,6 +96,9 @@ export class ProofServiceClient {
 				pathElements,
 				pathIndices,
 			},
+			wasmBytes,
+			r1csBytes,
+			zkeyBytes,
 		}
 
 		try {
@@ -108,28 +121,27 @@ export class ProofServiceClient {
 		}
 	}
 
-	private async verifyCircuitIntegrity(
-		url: string,
-		filename: string,
-	): Promise<void> {
-		const expectedHash = CIRCUIT_HASHES[filename]
-		if (!expectedHash) return // Skip verification if hash not configured
-
+	// Fetch a circuit artifact and verify its SHA-256 against the integrity
+	// manifest before use. Returns the verified bytes for proof generation.
+	private async fetchVerifiedArtifact(filename: string): Promise<ArrayBuffer> {
+		const url = `${this.circuitBaseUrl}/${filename}`
 		const response = await fetch(url)
 		if (!response.ok) throw new Error(`Failed to fetch circuit file: ${url}`)
 
 		const buffer = await response.arrayBuffer()
-		const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
-		const hashArray = Array.from(new Uint8Array(hashBuffer))
-		const hashHex = hashArray
-			.map((b) => b.toString(16).padStart(2, '0'))
-			.join('')
 
-		if (hashHex !== expectedHash) {
-			throw new Error(
-				`Circuit file integrity check failed for ${filename}: expected ${expectedHash}, got ${hashHex}`,
-			)
+		const expectedHash = CIRCUIT_HASHES[filename]
+		if (expectedHash) {
+			const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+			const hashHex = bytesToHex(new Uint8Array(hashBuffer))
+			if (hashHex !== expectedHash) {
+				throw new Error(
+					`Circuit file integrity check failed for ${filename}: expected ${expectedHash}, got ${hashHex}`,
+				)
+			}
 		}
+
+		return buffer
 	}
 
 	private runWorker(
@@ -184,7 +196,12 @@ export class ProofServiceClient {
 				reject(new Error(`Worker error: ${err.message}`))
 			}
 
-			worker.postMessage(request)
+			// Transfer the artifact buffers zero-copy to the worker.
+			worker.postMessage(request, [
+				request.wasmBytes,
+				request.r1csBytes,
+				request.zkeyBytes,
+			])
 		})
 	}
 }
