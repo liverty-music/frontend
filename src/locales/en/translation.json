@@ -420,26 +420,26 @@
 					"heading": "6. Disclaimers and Limitation of Liability",
 					"body": [
 						"We make no warranty, express or implied, that the Service is free from defects in fact or in law.",
-						"Except in cases of our willful misconduct or gross negligence, we are not liable for any damage arising in connection with the Service."
+						"Except in cases of our willful misconduct or gross negligence, we are not liable for any damage arising in connection with the Service. However, where the relationship between us and a user under these Terms constitutes a consumer contract as defined in the Consumer Contract Act, our liability for damages caused by our ordinary negligence shall, in light of the fact that the Service is provided free of charge, be limited to the direct and ordinary damages actually incurred by the user."
 					]
 				},
 				{
 					"heading": "7. Suspension and Termination of Accounts",
 					"body": [
-						"If you breach these Terms, or where we otherwise deem it necessary, we may suspend or delete your account without prior notice."
+						"If you breach these Terms, or where we determine that there is a reasonable and unavoidable operational ground, we may suspend or delete your account without prior notice."
 					]
 				},
 				{
 					"heading": "8. Changes to These Terms",
 					"body": [
-						"We may change these Terms at any time without notice to users where we deem it necessary. The revised Terms take effect when displayed within the Service."
+						"We may change these Terms pursuant to Article 548-4 of the Civil Code. When we change these Terms, we will notify users in advance of the content of the revised Terms and their effective date, by posting within the Service or by other appropriate means."
 					]
 				},
 				{
 					"heading": "9. Governing Law and Jurisdiction",
 					"body": [
 						"The interpretation and application of these Terms are governed by the laws of Japan.",
-						"In the event of a dispute between us and a user concerning the Service, Fukuoka District Court shall be the court of exclusive agreed jurisdiction for the first instance."
+						"In the event of a dispute between us and a user concerning the Service, the Fukuoka District Court or the Fukuoka Summary Court shall be the court of exclusive agreed jurisdiction for the first instance."
 					]
 				},
 				{
@@ -459,7 +459,8 @@
 					"heading": "1. Operator Information",
 					"body": [
 						"Personal information handling business operator: pannpers.dev",
-						"Contact: pannpers@pannpers.dev"
+						"Contact: pannpers@pannpers.dev",
+						"The operator's name (as an individual) and address will be disclosed without delay upon request."
 					]
 				},
 				{
@@ -482,7 +483,8 @@
 						"- Providing the Service and authenticating users",
 						"- Improving the Service through usage analysis",
 						"- Measuring advertising effectiveness",
-						"- Delivering push notifications"
+						"- Delivering push notifications",
+						"- Identifying the account and providing related features (including the generation and management of the wallet address)"
 					]
 				},
 				{
@@ -498,33 +500,42 @@
 					]
 				},
 				{
-					"heading": "5. Cross-Border Transfer of Personal Data",
+					"heading": "5. External Transmission (Use of Cookies, etc.)",
 					"body": [
-						"The Service transfers usage analytics data to PostHog Cloud EU (within the European Union). This constitutes the provision of personal data to a third party in a foreign country under Article 28 of the APPI.",
-						"In addition, some of the external services above handle personal information on servers located in the United States or the United Kingdom."
+						"To provide the Service's features and to analyze usage, the Service transmits information directly from your device to the following external services:",
+						"- Recipient: Last.fm / Information transmitted: IP address, etc. / Purpose: retrieval of artist information",
+						"- Recipient: PostHog / Information transmitted: usage data recorded in cookies, localStorage, etc. / Purpose: improving the Service and measuring advertising effectiveness"
 					]
 				},
 				{
-					"heading": "6. Withdrawing Consent",
+					"heading": "6. Cross-Border Transfer of Personal Data",
+					"body": [
+						"The Service transfers usage analytics data to PostHog Cloud EU (within the European Union). This constitutes the provision of personal data to a third party in a foreign country under Article 28 of the APPI.",
+						"In addition, some of the external services above handle personal information on servers located in the United States or the United Kingdom.",
+						"We ensure the appropriate handling of personal data by confirming, through contracts and other means, that these transfer recipients have established systems conforming to the standards required by Japan's APPI."
+					]
+				},
+				{
+					"heading": "7. Withdrawing Consent",
 					"body": [
 						"Cooperation with usage analysis and advertising-effectiveness measurement is optional. You may withdraw your consent at any time by turning off the \"Help improve the experience\" and \"Help measure advertising effectiveness\" toggles in the Settings screen."
 					]
 				},
 				{
-					"heading": "7. Disclosure Requests and Inquiries",
+					"heading": "8. Disclosure Requests and Inquiries",
 					"body": [
 						"You may request that we disclose, correct, add to, delete, or suspend the use of your personal information.",
-						"For these requests and any inquiries, please contact pannpers@pannpers.dev."
+						"We will respond to these requests without delay in accordance with applicable laws, after verifying your identity. For these requests and any inquiries, please contact pannpers@pannpers.dev."
 					]
 				},
 				{
-					"heading": "8. Security Management Measures",
+					"heading": "9. Security Management Measures",
 					"body": [
 						"We take necessary and appropriate measures to manage the security of the personal information we collect, including preventing its leakage, loss, or damage."
 					]
 				},
 				{
-					"heading": "9. Revisions to This Policy",
+					"heading": "10. Revisions to This Policy",
 					"body": [
 						"We may revise this Policy as necessary. When there is a change in how we handle personal information — for example, when we begin integrating with a new external service — we will review this Policy.",
 						"The revised Policy takes effect when displayed within the Service."
