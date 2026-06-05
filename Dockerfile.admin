@@ -1,0 +1,50 @@
+# Admin console image. Built from the SAME single `npm run build` as the
+# consumer image (one build emits both entries into dist/, design D4), but
+# serves ONLY the admin entry's output: `admin.html` as the SPA fallback, the
+# admin chunks, and the shared chunks the admin graph references. It does NOT
+# serve the consumer `index.html`, the consumer service worker
+# (`sw.js` / `registerSW.js`), or the PWA manifest.
+
+# Stage 1: Build the frontend application (both entries)
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# Env-agnostic build: the bundle fetches /config.json at runtime from a per-env
+# K8s ConfigMap (the admin pod mounts its OWN config.json carrying the admin org
+# id + admin client id at the canonical path, so the shared AuthService scopes
+# sign-in to the admin org). See OpenSpec change `add-admin-console`.
+RUN npm run build
+
+# Defense-in-depth: the consumer entry graph must not reference admin code.
+# Run the same isolation gate here so the admin image build also fails on a
+# boundary violation (a single `npm run build` produced both graphs).
+RUN npm run verify:bundle-isolation
+
+# Assemble the admin-only serving root. Copy the shared `assets/` (content-
+# hashed chunks; the admin entry references shared chunks that live here) and
+# the admin entry HTML + runtime config + icons, but deliberately EXCLUDE the
+# consumer index.html, the service worker, and the PWA manifest.
+RUN mkdir -p /admin-srv/assets \
+	&& cp -r /app/dist/assets/. /admin-srv/assets/ \
+	&& cp /app/dist/admin.html /admin-srv/admin.html \
+	&& cp /app/dist/config.json /admin-srv/config.json \
+	&& cp /app/dist/favicon.ico /admin-srv/favicon.ico \
+	&& cp /app/dist/favicon-96x96.png /admin-srv/favicon-96x96.png \
+	&& cp /app/dist/apple-touch-icon.png /admin-srv/apple-touch-icon.png \
+	&& if [ -d /app/dist/icons ]; then cp -r /app/dist/icons /admin-srv/icons; fi
+
+#----------------------------
+
+# Stage 2: Serve with Caddy
+FROM caddy:2-alpine
+
+COPY --from=builder /admin-srv /srv
+COPY Caddyfile.admin /etc/caddy/Caddyfile
+
+EXPOSE 80

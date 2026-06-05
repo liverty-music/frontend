@@ -23,6 +23,12 @@ RUN npm run build
 # interacts badly with the Aurelia Vite plugin).
 RUN npm run verify:build-templates
 
+# Defense-in-depth: assert the consumer entry (index.html) chunk graph
+# references no admin-origin module. Guards the bundle-isolation invariant
+# (OpenSpec change `add-admin-console`, design D2) against a stray
+# src/ -> admin/ import sneaking admin code into the fan-facing bundle.
+RUN npm run verify:bundle-isolation
+
 #----------------------------
 
 # Stage 2: Serve with Caddy

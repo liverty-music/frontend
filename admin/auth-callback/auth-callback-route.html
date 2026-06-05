@@ -1,0 +1,8 @@
+<main class="[ admin-callback-layout ]">
+  <output if.bind="!error" class="admin-callback-loading" role="status" aria-busy="true">
+    <div class="admin-callback-spinner"></div>
+    <p class="admin-callback-status">Verifying authentication…</p>
+  </output>
+  <section if.bind="error" class="admin-callback-error">${error}</section>
+  <a if.bind="error" load="/welcome" class="admin-callback-home-link">Return to console</a>
+</main>

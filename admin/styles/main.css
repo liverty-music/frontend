@@ -1,0 +1,65 @@
+/*
+ * Admin console stylesheet. Intentionally self-contained: the admin entry is a
+ * minimal placeholder, so rather than importing the full consumer style system
+ * (`src/styles/*`) — which would both cross the import boundary and pull the
+ * consumer's utility/layer machinery into the admin bundle — it declares only
+ * the design tokens the admin views actually use. Token values are kept in sync
+ * with `src/styles/tokens.css`.
+ */
+@layer reset, tokens, global, block;
+
+@layer reset {
+	:where(*, *::before, *::after) {
+		box-sizing: border-box;
+	}
+
+	:where(*) {
+		margin: 0;
+	}
+
+	:where(html, body) {
+		block-size: 100%;
+	}
+}
+
+@layer tokens {
+	:root {
+		--color-brand-primary: oklch(65% 0.28 350deg);
+		--color-surface-base: oklch(18% 0.04 275deg);
+		--color-text-primary: oklch(98.5% 0 0deg);
+		--color-text-secondary: oklch(82% 0.02 275deg);
+		--color-error: oklch(65% 0.2 25deg);
+		--space-s: 1rem;
+		--space-m: 1.5rem;
+		--space-l: 2rem;
+		--step--1: 0.833rem;
+		--step-0: 1rem;
+		--step-3: 1.953rem;
+		--font-body: "Poppins", system-ui, sans-serif;
+		--font-display: "Outfit", system-ui, sans-serif;
+		--leading-snug: 1.2;
+		--leading-relaxed: 1.5;
+	}
+}
+
+@layer global {
+	:where(body) {
+		font-family: var(--font-body);
+		font-size: var(--step-0);
+		line-height: var(--leading-relaxed);
+		color: var(--color-text-primary);
+
+		background: var(--color-surface-base);
+	}
+
+	:where(h1, h2, h3) {
+		font-family: var(--font-display);
+		line-height: var(--leading-snug);
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+}
