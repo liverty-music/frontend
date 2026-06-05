@@ -1,9 +1,14 @@
 @layer block {
 	@scope (licenses-route) {
+		/* Route host owns the scroll within the app-shell viewport grid row, so
+		   tall content scrolls instead of overflowing onto the bottom nav. */
 		:scope {
+			overflow-y: auto;
 			display: block;
 
 			max-inline-size: 70ch;
+			block-size: 100%;
+			min-block-size: 0;
 			margin-inline: auto;
 			padding: var(--space-s);
 			padding-block-end: var(--space-2xl);
