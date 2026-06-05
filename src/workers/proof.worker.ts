@@ -1,8 +1,12 @@
-import { groth16 } from 'snarkjs'
+import init, { prove } from '../../prover/pkg/ticketcheck_prover.js'
+import proverWasmUrl from '../../prover/pkg/ticketcheck_prover_bg.wasm?url'
+
+// Web Worker that generates the zk entry proof on-device so the private
+// `trapdoor` never leaves the browser. Uses the MIT/Apache arkworks
+// (`ark-circom`) WASM prover — no GPL `snarkjs`. The circuit artifacts are
+// passed in as already-integrity-verified bytes (see proof-service.ts).
 
 export interface ProofRequest {
-	wasmUrl: string
-	zkeyUrl: string
 	input: {
 		trapdoor: string
 		merkleRoot: string
@@ -10,6 +14,9 @@ export interface ProofRequest {
 		pathElements: string[]
 		pathIndices: number[]
 	}
+	wasmBytes: ArrayBuffer
+	r1csBytes: ArrayBuffer
+	zkeyBytes: ArrayBuffer
 }
 
 export interface ProofResult {
@@ -30,20 +37,32 @@ export interface ProofProgress {
 
 export type ProofMessage = ProofResult | ProofError | ProofProgress
 
+// Initialize the prover WASM module once per worker instance.
+const ready = init(proverWasmUrl)
+
 self.onmessage = async (event: MessageEvent<ProofRequest>) => {
-	const { wasmUrl, zkeyUrl, input } = event.data
+	const { input, wasmBytes, r1csBytes, zkeyBytes } = event.data
 
 	try {
+		await ready
+
 		self.postMessage({
 			type: 'progress',
 			stage: 'Generating proof...',
 		} satisfies ProofProgress)
 
-		const { proof, publicSignals } = await groth16.fullProve(
-			input,
-			wasmUrl,
-			zkeyUrl,
+		// The prover emits snarkjs-format proof JSON (G2 limb order [c0, c1])
+		// that the backend's circom2gnark -> gnark.Verify path accepts unchanged.
+		const out = prove(
+			JSON.stringify(input),
+			new Uint8Array(wasmBytes),
+			new Uint8Array(r1csBytes),
+			new Uint8Array(zkeyBytes),
 		)
+		const { proof, publicSignals } = JSON.parse(out) as {
+			proof: unknown
+			publicSignals: string[]
+		}
 
 		self.postMessage({
 			type: 'success',

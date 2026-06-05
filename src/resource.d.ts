@@ -18,13 +18,9 @@ declare module '*.css?inline' {
 
 declare module '*.css'
 
-// snarkjs does not ship type declarations.
-declare module 'snarkjs' {
-	export namespace groth16 {
-		function fullProve(
-			input: Record<string, unknown>,
-			wasmFile: string,
-			zkeyFile: string,
-		): Promise<{ proof: unknown; publicSignals: string[] }>
-	}
+// The wasm-bindgen prover ships its own .d.ts (prover/pkg). The `?url` import
+// of the prover wasm resolves to an asset URL string under Vite.
+declare module '*.wasm?url' {
+	const url: string
+	export default url
 }

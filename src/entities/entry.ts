@@ -22,7 +22,7 @@ export function bytesToHex(bytes: Uint8Array): string {
 
 /**
  * Convert big-endian bytes to a decimal string.
- * Used for snarkjs circuit inputs which require decimal strings.
+ * Used for zk circuit inputs which require decimal strings.
  */
 export function bytesToDecimal(bytes: Uint8Array): string {
 	const hex = bytesToHex(bytes)
