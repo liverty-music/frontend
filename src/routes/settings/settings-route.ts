@@ -40,6 +40,7 @@ export class SettingsRoute {
 	public homeSelector!: UserHomeSelector
 	public languageSelectorOpen = false
 	public readonly supportedLanguages = SUPPORTED_LANGUAGES
+	private isToggling = false
 
 	/**
 	 * Per-row disclosure state for the Privacy & Analytics consent
@@ -262,7 +263,10 @@ export class SettingsRoute {
 		// The push row uses `aria-disabled` (not native `disabled`) when the
 		// VAPID key is absent, so it stays AT-discoverable but must no-op here.
 		if (!this.vapidAvailable) return
-		// Re-entrancy is guarded by the `busy-on-click` attribute on the row.
+		// `busy-on-click` guards DOM re-taps; this guard additionally protects
+		// against concurrent programmatic calls (push subscription idempotency).
+		if (this.isToggling) return
+		this.isToggling = true
 
 		try {
 			const newValue = !this.notificationsEnabled
@@ -292,6 +296,8 @@ export class SettingsRoute {
 			}
 		} catch (err) {
 			this.logger.error('Failed to toggle push notifications', err)
+		} finally {
+			this.isToggling = false
 		}
 	}
 
