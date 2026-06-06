@@ -44,6 +44,11 @@
 		.licenses-name {
 			font-weight: 600;
 			color: var(--color-text-primary);
+
+			/* Long scoped names (e.g. @buf/bufbuild_protovalidate.connectrpc_es)
+			   have no break opportunities; allow breaking anywhere so they wrap
+			   inside the card instead of overflowing it. */
+			overflow-wrap: anywhere;
 		}
 
 		.licenses-version {

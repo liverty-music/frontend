@@ -1,12 +1,17 @@
 @layer block {
 	@scope (app-shell) {
-		/* Shell layout: viewport content + bottom nav */
+		/* Shell layout: viewport content (row 1) + bottom nav (row 2).
+		   The column track is `minmax(0, 1fr)`, not the implicit `auto`. An `auto`
+		   column has a `min-content` minimum, so a route with wide/unbreakable
+		   content (e.g. long scoped package names on /legal/licenses) would blow
+		   the column past the viewport and scroll the whole page horizontally.
+		   Capping the column min at 0 keeps every route within the viewport. */
 		:scope {
 			display: grid;
-			grid-template-areas:
-				"viewport"
-				"nav";
-			grid-template-rows: minmax(0, 1fr) auto;
+			grid-template:
+				"viewport" minmax(0, 1fr)
+				"nav" auto
+				/ minmax(0, 1fr);
 			block-size: 100dvh;
 		}
 
