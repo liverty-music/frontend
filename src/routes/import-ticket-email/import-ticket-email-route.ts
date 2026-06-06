@@ -36,7 +36,6 @@ export class ImportTicketEmailRoute {
 	// initial step to 'validation' (plus drop the early return in `loading`).
 	public step: WizardStep = 'unavailable'
 	public error = ''
-	public isLoading = false
 
 	// Shared data from Gmail
 	public emailTitle = ''
@@ -126,7 +125,6 @@ export class ImportTicketEmailRoute {
 	// Step 3: Artist selected → load concerts.
 	public async selectArtist(): Promise<void> {
 		if (!this.selectedArtistId) return
-		this.isLoading = true
 		try {
 			this.concerts = await this.concertService.listConcerts(
 				this.selectedArtistId,
@@ -138,8 +136,6 @@ export class ImportTicketEmailRoute {
 				this.logger.error('Failed to load concerts', { error: err })
 				this.error = 'コンサートの読み込みに失敗しました。'
 			}
-		} finally {
-			this.isLoading = false
 		}
 	}
 
@@ -172,7 +168,6 @@ export class ImportTicketEmailRoute {
 	// Step 5 → 6: Submit to backend for parsing.
 	public async submitForParsing(): Promise<void> {
 		this.step = 'parsing'
-		this.isLoading = true
 		this.error = ''
 
 		try {
@@ -189,14 +184,11 @@ export class ImportTicketEmailRoute {
 				this.error = 'メールの解析に失敗しました。もう一度お試しください。'
 				this.step = 'body'
 			}
-		} finally {
-			this.isLoading = false
 		}
 	}
 
 	// Step 7: Confirm parsed results.
 	public async confirmResults(): Promise<void> {
-		this.isLoading = true
 		this.error = ''
 
 		try {
@@ -215,8 +207,6 @@ export class ImportTicketEmailRoute {
 				this.logger.error('Failed to confirm email', { error: err })
 				this.error = '確認に失敗しました。もう一度お試しください。'
 			}
-		} finally {
-			this.isLoading = false
 		}
 	}
 

@@ -21,12 +21,14 @@ export class PwaInstallFab {
 		this.isVisible = newValue
 	}
 
-	public handleTap(): void {
+	public handleTap(): void | Promise<void> {
 		if (this.isIos) {
 			this.isSheetOpen = true
-		} else {
-			void this.pwaInstall.install()
+			return
 		}
+		// Return the promise so `busy-on-click` shows a busy state on the FAB
+		// while the browser install prompt is open.
+		return this.pwaInstall.install()
 	}
 
 	public closeSheet(): void {

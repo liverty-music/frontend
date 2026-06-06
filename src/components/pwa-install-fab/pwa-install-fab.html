@@ -13,7 +13,7 @@
     tabindex.bind="isVisible ? '0' : '-1'"
     type="button"
     class="pwa-fab"
-    click.trigger="handleTap()"
+    busy-on-click.bind="() => handleTap()"
     t="[aria-label]pwaFab.ariaLabel"
     data-testid="pwa-install-fab"
   >

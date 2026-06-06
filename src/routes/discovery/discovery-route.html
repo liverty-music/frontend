@@ -79,7 +79,7 @@
           repeat.for="artist of search.searchResults; key.bind: artist.id"
           class="result-item"
           data-followed.bind="followedIds.has(artist.id)"
-          click.trigger="followedIds.has(artist.id) ? undefined : onFollowFromSearch(artist)"
+          busy-on-click.bind="() => followedIds.has(artist.id) ? undefined : onFollowFromSearch(artist)"
           role="button"
           aria-disabled.bind="followedIds.has(artist.id)"
           aria-label.bind="followedIds.has(artist.id) ? ($this.i18n?.tr('discovery.alreadyFollowing', { name: artist.name }) ?? '') : ($this.i18n?.tr('discovery.followArtist', { name: artist.name }) ?? '')"

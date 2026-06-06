@@ -125,7 +125,6 @@ describe('PostSignupDialog', () => {
 			await sut.onEnableNotifications()
 
 			expect(sut.notificationDone).toBe(true)
-			expect(sut.notificationLoading).toBe(false)
 		})
 
 		it('keeps notificationDone false when permission is denied (create returns null)', async () => {
@@ -135,7 +134,6 @@ describe('PostSignupDialog', () => {
 
 			expect(sut.notificationDone).toBe(false)
 			expect(sut.notificationError).toBe(false)
-			expect(sut.notificationLoading).toBe(false)
 		})
 
 		it('sets notificationError on failure', async () => {
@@ -144,7 +142,6 @@ describe('PostSignupDialog', () => {
 			await sut.onEnableNotifications()
 
 			expect(sut.notificationError).toBe(true)
-			expect(sut.notificationLoading).toBe(false)
 		})
 	})
 

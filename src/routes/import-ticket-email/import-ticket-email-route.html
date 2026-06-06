@@ -34,9 +34,8 @@
           ${fa.artist.name ?? ''}
         </option>
       </select>
-      <button click.trigger="selectArtist()" disabled.bind="!selectedArtistId || isLoading">
-        <loading-spinner if.bind="isLoading"></loading-spinner>
-        <span else>次へ</span>
+      <button busy-on-click.bind="() => selectArtist()" disabled.bind="!selectedArtistId">
+        次へ
       </button>
     </div>
   </template>
@@ -84,9 +83,8 @@
         検出タイプ: ${detectedEmailType === 'lottery_result' ? '抽選結果通知' : '抽選受付情報'}
       </p>
       <div if.bind="error" class="wizard-error"><p>${error}</p></div>
-      <button click.trigger="submitForParsing()" disabled.bind="isLoading">
-        <loading-spinner if.bind="isLoading"></loading-spinner>
-        <span else>解析する</span>
+      <button busy-on-click.bind="() => submitForParsing()">
+        解析する
       </button>
     </div>
   </template>
@@ -128,9 +126,8 @@
         </dl>
       </div>
       <div if.bind="error" class="wizard-error"><p>${error}</p></div>
-      <button click.trigger="confirmResults()" disabled.bind="isLoading">
-        <loading-spinner if.bind="isLoading"></loading-spinner>
-        <span else>確定する</span>
+      <button busy-on-click.bind="() => confirmResults()">
+        確定する
       </button>
     </div>
   </template>

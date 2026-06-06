@@ -51,6 +51,7 @@ import {
 } from './constants/storage-keys'
 import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
+import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
 import { LongPressCustomAttribute } from './custom-attributes/long-press'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
@@ -256,6 +257,7 @@ async function bootstrap(): Promise<void> {
 	au.register(AuthHook)
 	au.register(ArtistColorCustomAttribute)
 	au.register(LongPressCustomAttribute)
+	au.register(BusyOnClickCustomAttribute)
 	au.register(BeamVarsCustomAttribute)
 	au.register(DotColorCustomAttribute)
 	au.register(SpotlightRadiusCustomAttribute)

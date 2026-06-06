@@ -13,14 +13,11 @@
         <button
           type="button"
           class="post-signup-btn"
-          click.trigger="onEnableNotifications()"
-          disabled.bind="notificationLoading || notificationDone"
+          busy-on-click.bind="() => onEnableNotifications()"
+          disabled.bind="notificationDone"
         >
-          <span if.bind="notificationLoading" t="postSignup.notificationEnabling"></span>
-          <template else>
-            <span if.bind="notificationDone" t="postSignup.notificationEnabled"></span>
-            <span else t="postSignup.notificationEnable"></span>
-          </template>
+          <span if.bind="notificationDone" t="postSignup.notificationEnabled"></span>
+          <span else t="postSignup.notificationEnable"></span>
         </button>
         <p if.bind="notificationError" class="post-signup-error" t="postSignup.notificationError"></p>
       </div>
@@ -42,7 +39,7 @@
         <button
           type="button"
           class="post-signup-btn"
-          click.trigger="onInstallPwa()"
+          busy-on-click.bind="() => onInstallPwa()"
           t="postSignup.pwaInstall"
         ></button>
       </div>

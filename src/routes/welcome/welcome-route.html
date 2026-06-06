@@ -38,12 +38,12 @@
     <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
     <div class="[ welcome-cta-group welcome-hero-fallback-cta-group ]">
       <button
-        click.trigger="handleGetStarted()"
+        busy-on-click.bind="() => handleGetStarted()"
         class="welcome-btn-primary"
         t="welcome.cta.getStarted"
       ></button>
       <button
-        click.trigger="handleLogin()"
+        busy-on-click.bind="() => handleLogin()"
         class="welcome-btn-secondary"
         t="welcome.cta.login"
       ></button>
@@ -67,13 +67,13 @@
 
     <div class="welcome-cta-group">
       <button
-        click.trigger="handleGetStarted()"
+        busy-on-click.bind="() => handleGetStarted()"
         class="welcome-btn-primary"
         t="welcome.cta.getStarted"
       ></button>
 
       <button
-        click.trigger="handleLogin()"
+        busy-on-click.bind="() => handleLogin()"
         class="welcome-btn-secondary"
         t="welcome.cta.login"
       ></button>

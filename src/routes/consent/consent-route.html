@@ -61,17 +61,17 @@
 
   <footer class="[ consent-actions ]">
     <button
-      click.trigger="acceptSelected()"
+      busy-on-click.bind="() => acceptSelected()"
       class="consent-btn-primary"
       t="onboarding.consent.actions.accept"
     ></button>
     <button
-      click.trigger="declineAll()"
+      busy-on-click.bind="() => declineAll()"
       class="consent-btn-secondary"
       t="onboarding.consent.actions.decline"
     ></button>
     <button
-      click.trigger="setUpLater()"
+      busy-on-click.bind="() => setUpLater()"
       class="consent-btn-text"
       t="onboarding.consent.actions.later"
     ></button>

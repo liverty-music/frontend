@@ -12,10 +12,9 @@
             t="notification.notNow"
             class="prompt-btn-secondary">
           </button>
-          <button click.trigger="enable()" disabled.bind="isLoading"
-            class="prompt-btn-primary">
-            <span if.bind="isLoading" t="notification.enabling"></span>
-            <span if.bind="!isLoading" t="notification.enable"></span>
+          <button busy-on-click.bind="() => enable()"
+            class="prompt-btn-primary"
+            t="notification.enable">
           </button>
         </footer>
       </div>
