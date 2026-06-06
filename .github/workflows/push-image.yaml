@@ -369,19 +369,20 @@ jobs:
   # build-vs-inherit decision over the pushed range, scoped to admin-relevant
   # files, and its own release retag.
   build-and-push-admin:
-    # DEV-ONLY for now: build + push the admin-app image to dev AR on pushes to
-    # main. The release/prod-promotion path is intentionally deferred to OpenSpec
-    # change `add-admin-console` §8 — prod admin needs the cloud-provisioning
-    # `frontend-admin` pin-bump receiver and the prod-overlay opt-in to exist
-    # first. Gating to push-only keeps the `release`-gated steps below inert
-    # (grep-discoverable scaffolding, like network.ts's NAT block) so that
-    #   (a) admin is never half-released to prod (no prod admin-app AR repo yet), and
-    #   (b) a failed admin promote can never block the consumer prod rollout
-    #       (dispatch-prod-pin no longer `needs` this job).
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Builds + pushes the admin-app image: to dev AR on pushes to main, and
+    # promotes the dev-AR digest to prod AR on a GH Release (the release-gated
+    # steps below). The admin and consumer images release as independent
+    # artifacts (design D5): dispatch-prod-pin deliberately does NOT `needs` this
+    # job, so a failed/absent admin promote can never block the consumer prod
+    # rollout. The admin prod-overlay pin is set manually for the first release
+    # (the cloud-provisioning prod overlay has no admin-app entry until then);
+    # automated `frontend-admin` pin-bump is a follow-up.
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'release' && github.event.action == 'published')
     runs-on: ubuntu-latest
     environment:
-      name: dev
+      name: ${{ github.event_name == 'release' && 'prod' || 'dev' }}
     permissions:
       contents: read
       id-token: write
