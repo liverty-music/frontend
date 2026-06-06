@@ -579,13 +579,16 @@ jobs:
   # only `github-actions[bot]` bypass, so this token cannot push to the one ref
   # ArgoCD tracks — its reach is bounded to non-`main` refs.
   dispatch-prod-pin:
-    # Consumer prod pin-bump only. Deliberately does NOT `needs`
-    # build-and-push-admin: admin prod release is deferred to OpenSpec change
-    # `add-admin-console` §8, and the consumer rollout must never be gated on the
-    # admin image job (a failed/absent admin promote would otherwise silently
-    # block the consumer from reaching prod).
-    needs: [build-and-push]
+    # Emits BOTH the consumer (`frontend`) and admin (`frontend-admin`) pin-bump
+    # dispatches, but they stay decoupled: the job `if` requires ONLY
+    # build-and-push (consumer) success — wrapped in always() so a failed/absent
+    # admin job does NOT skip the consumer dispatch — and the admin dispatch step
+    # below is individually gated on build-and-push-admin success. So the consumer
+    # prod rollout is never blocked by the admin image job, while the admin
+    # dispatch fires only once admin-app:${tag} exists in prod AR.
+    needs: [build-and-push, build-and-push-admin]
     if: |
+      always() &&
       github.event_name == 'release' &&
       needs.build-and-push.result == 'success'
     runs-on: ubuntu-latest
@@ -617,16 +620,26 @@ jobs:
           echo "Dispatching: $payload"
           echo "$payload" | gh api "repos/${OWNER}/cloud-provisioning/dispatches" --input -
 
-      # NOTE: the admin (`frontend-admin`) pin-bump dispatch is intentionally
-      # NOT emitted yet. cloud-provisioning `bump-prod-pin.yml` currently rejects
-      # any component other than `backend`/`frontend` (it `::error::`s and exits
-      # non-zero — it does NOT silently ignore unknown components), and the
-      # frontend prod overlay has no `admin-app` image entry to bump. Emitting it
-      # now would fail a workflow in cloud-provisioning on every release. The
-      # admin dispatch lands in OpenSpec change `add-admin-console` §8 together
-      # with the receiver change (per-component image-scoped bump) and the prod
-      # overlay opt-in. See docs/runbooks/prod-image-tag-pinning.md (admin
-      # console release path).
+      # Admin image pin-bump. Independent component (design D5): the admin
+      # (`frontend-admin`) and consumer (`frontend`) prod pins advance
+      # separately. cloud-provisioning `bump-prod-pin.yml` routes `frontend-admin`
+      # to the frontend overlay but edits ONLY the `admin-app` image entry (and
+      # leaves the consumer version label untouched). Gated on build-and-push-admin
+      # so a dispatch is only emitted once admin-app:${tag} exists in prod AR.
+      # See docs/runbooks/prod-image-tag-pinning.md (admin console release path).
+      - name: Dispatch bump-prod-pin to cloud-provisioning (admin)
+        if: needs.build-and-push-admin.result == 'success'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          OWNER: ${{ github.repository_owner }}
+          TAG: ${{ github.event.release.tag_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -nc --arg t "$TAG" --arg s "$SHA" \
+            '{event_type:"bump-prod-pin",client_payload:{component:"frontend-admin",tag:$t,sha:$s}}')
+          echo "Dispatching: $payload"
+          echo "$payload" | gh api "repos/${OWNER}/cloud-provisioning/dispatches" --input -
 
   # Post-deploy smoke: hits the live URL and asserts the SPA renders
   # plus /config.json reports the expected environment. Closes the
