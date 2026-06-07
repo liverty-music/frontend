@@ -261,14 +261,15 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onCoachMarkTap', () => {
-		it('should set step to DASHBOARD and navigate to /dashboard', async () => {
+		it('should only dismiss the spotlight without advancing step or navigating', async () => {
 			mockOnboarding.isOnboarding = true
 			mockOnboarding.currentStep = 'discovery'
 
 			sut.onCoachMarkTap()
 
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith('dashboard') // DASHBOARD
-			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
+			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalledTimes(1)
+			expect(mockOnboarding.setStep).not.toHaveBeenCalled()
+			expect(mockRouter.load).not.toHaveBeenCalled()
 		})
 	})
 
@@ -700,16 +701,19 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('onCoachMarkTap (Home nav step advancement)', () => {
-		it('should deactivate spotlight, advance step to DASHBOARD, and navigate', () => {
+	describe('onCoachMarkTap (Home nav coach mark)', () => {
+		it('should dismiss the spotlight without advancing step or navigating', () => {
 			mockOnboarding.isOnboarding = true
 			mockOnboarding.currentStep = 'discovery' // DISCOVERY
 
 			sut.onCoachMarkTap()
 
+			// Tapping the coach mark only clears the spotlight. The user advances
+			// to the dashboard by tapping the timetable nav themselves, where
+			// AuthHook performs the step transition.
 			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalledTimes(1)
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith('dashboard') // DASHBOARD
-			expect(mockRouter.load).toHaveBeenCalledWith('/dashboard')
+			expect(mockOnboarding.setStep).not.toHaveBeenCalled()
+			expect(mockRouter.load).not.toHaveBeenCalled()
 		})
 
 		it('should not advance step when showDashboardCoachMark is false (fewer than 3 artistsWithConcerts)', () => {
