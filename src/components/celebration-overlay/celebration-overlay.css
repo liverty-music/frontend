@@ -1,9 +1,17 @@
 @layer block {
 	@scope (celebration-overlay) {
 		:scope {
-			--_overlay-bg: oklch(0% 0 0deg / 80%);
+			/* Light full-viewport scrim — the timetable stays visible at the
+			   edges. Darkening that guarantees text contrast is localized to the
+			   text-lens (::before), not painted across the whole screen. */
+			--_scrim: oklch(0% 0 0deg / 18%);
+			--_lens-core: oklch(0% 0 0deg / 72%);
+			--_lens-mid: oklch(0% 0 0deg / 40%);
+			--_halo: oklch(72% 0.26 294deg / 26%);
 			--_glow-a: oklch(70.9% 0.159 294deg / 60%);
 			--_glow-b: oklch(58.5% 0.204 277deg / 30%);
+			--_text-contrast: oklch(0% 0 0deg / 85%);
+			--_text-outline: oklch(0% 0 0deg / 95%);
 			--_confetti-radius: 2px;
 			--_c1: oklch(70% 0.2 30deg);
 			--_c2: oklch(75% 0.15 160deg);
@@ -30,8 +38,9 @@
 			   the sub text far below the heading. */
 			align-content: center;
 
-			background: var(--_overlay-bg);
-			backdrop-filter: blur(8px);
+			/* Light scrim only — the completed timetable reads through it as the
+			   payoff. No full-viewport blur: contrast comes from the text-lens. */
+			background: var(--_scrim);
 
 			transition: opacity 400ms ease;
 
@@ -42,6 +51,32 @@
 			&[data-state="exiting"] {
 				opacity: 0;
 			}
+		}
+
+		/* Text-lens — a feathered radial darkening sized to the heading +
+		   sub-text group, layered with the brand-purple glow halo. Sits above
+		   the scrim and below the (relatively-positioned) text, so the screen
+		   edges keep the timetable's colors while the text stays legible over
+		   even the brightest stage cards. */
+		.celebration-overlay::before {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			background:
+				radial-gradient(
+					ellipse 78% 24% at 50% 47%,
+					var(--_lens-core) 0%,
+					var(--_lens-mid) 52%,
+					transparent 80%
+				),
+				radial-gradient(
+					ellipse 64% 32% at 50% 47%,
+					var(--_halo) 0%,
+					transparent 72%
+				);
 		}
 
 		.celebration-text {
@@ -57,7 +92,11 @@
 			line-height: var(--leading-snug);
 			color: var(--color-white);
 			text-align: center;
+
+			/* Dark contrast layer first (legibility floor over bright cards),
+			   then the brand glow. */
 			text-shadow:
+				0 2px 8px var(--_text-contrast),
 				0 0 24px var(--_glow-a),
 				0 0 48px var(--_glow-a),
 				0 0 80px var(--_glow-b);
@@ -83,6 +122,13 @@
 			line-height: var(--leading-relaxed);
 			color: oklch(from var(--color-white) l c h / 85%);
 			text-align: center;
+
+			/* Thin dark outline = hard legibility floor for the smaller sub-text
+			   on the brightest cards, where the text-lens alone is marginal. */
+			text-shadow:
+				0 0 2px var(--_text-outline),
+				0 0 2px var(--_text-outline),
+				0 1px 5px var(--_text-contrast);
 
 			animation: text-enter 600ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
 		}
