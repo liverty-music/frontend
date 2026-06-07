@@ -1,5 +1,4 @@
 import { I18N } from '@aurelia/i18n'
-import { IRouter } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { Snack } from '../../components/snack-bar/snack'
@@ -15,7 +14,6 @@ import {
 	DASHBOARD_CONCERT_TARGET,
 	DASHBOARD_FOLLOW_TARGET,
 	IOnboardingService,
-	OnboardingStep,
 } from '../../services/onboarding-service'
 import { detectCountryFromTimezone } from '../../util/detect-country'
 import { BubbleManager } from './bubble-manager'
@@ -26,7 +24,6 @@ export class DiscoveryRoute {
 	private readonly artistClient = resolve(IArtistStore)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly concertService = resolve(IConcertStore)
 	private readonly analytics = resolve(IAnalyticsService)
@@ -364,12 +361,13 @@ export class DiscoveryRoute {
 	}
 
 	public onCoachMarkTap(): void {
-		this.logger.info('Onboarding: coach mark tapped, advancing to dashboard', {
+		// Dismiss the spotlight only — do not navigate. The user advances to the
+		// dashboard by tapping the timetable nav themselves, which AuthHook then
+		// allows (readyForDashboard) and where the step transition happens.
+		this.logger.info('Onboarding: dashboard coach mark dismissed', {
 			followedCount: this.followedCount,
 		})
 		this.onboarding.deactivateSpotlight()
-		this.onboarding.setStep(OnboardingStep.DASHBOARD)
-		void this.router.load('/dashboard')
 	}
 
 	/**
