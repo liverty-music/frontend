@@ -91,7 +91,6 @@ describe('PostSignupDialog', () => {
 
 			expect(mockPush.create).toHaveBeenCalledOnce()
 			expect(sut.notificationDone).toBe(true)
-			expect(sut.notificationLoading).toBe(false)
 		})
 
 		it('keeps notificationDone false when permission is denied (create returns null)', async () => {
@@ -102,7 +101,6 @@ describe('PostSignupDialog', () => {
 			expect(mockPush.create).toHaveBeenCalledOnce()
 			expect(sut.notificationDone).toBe(false)
 			expect(sut.notificationError).toBe(false)
-			expect(sut.notificationLoading).toBe(false)
 		})
 
 		it('sets error on failure', async () => {
@@ -112,7 +110,6 @@ describe('PostSignupDialog', () => {
 
 			expect(sut.notificationError).toBe(true)
 			expect(sut.notificationDone).toBe(false)
-			expect(sut.notificationLoading).toBe(false)
 		})
 	})
 

@@ -53,7 +53,6 @@ export class SettingsRoute {
 	public analyticsDescExpanded = false
 	public marketingDescExpanded = false
 
-	public isResendingVerification = false
 	public resendSuccess = false
 
 	/**
@@ -264,6 +263,8 @@ export class SettingsRoute {
 		// The push row uses `aria-disabled` (not native `disabled`) when the
 		// VAPID key is absent, so it stays AT-discoverable but must no-op here.
 		if (!this.vapidAvailable) return
+		// `busy-on-click` guards DOM re-taps; this guard additionally protects
+		// against concurrent programmatic calls (push subscription idempotency).
 		if (this.isToggling) return
 		this.isToggling = true
 
@@ -301,8 +302,7 @@ export class SettingsRoute {
 	}
 
 	public async resendVerification(): Promise<void> {
-		if (this.isResendingVerification) return
-		this.isResendingVerification = true
+		// Re-entrancy and the in-flight busy state are handled by `busy-on-click`.
 		this.resendSuccess = false
 
 		try {
@@ -319,8 +319,6 @@ export class SettingsRoute {
 					new Snack(this.i18n.tr('settings.resendError'), 'error'),
 				)
 			}
-		} finally {
-			this.isResendingVerification = false
 		}
 	}
 

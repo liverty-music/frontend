@@ -8,7 +8,6 @@ export class PostSignupDialog {
 	@bindable public active = false
 
 	public isOpen = false
-	public notificationLoading = false
 	public notificationDone = false
 	public notificationError = false
 
@@ -40,7 +39,7 @@ export class PostSignupDialog {
 	}
 
 	public async onEnableNotifications(): Promise<void> {
-		this.notificationLoading = true
+		// The busy/disabled state while this runs is handled by `busy-on-click`.
 		this.notificationError = false
 		try {
 			const endpoint = await this.pushService.create()
@@ -54,8 +53,6 @@ export class PostSignupDialog {
 		} catch (err) {
 			this.logger.error('PostSignupDialog: failed to enable notifications', err)
 			this.notificationError = true
-		} finally {
-			this.notificationLoading = false
 		}
 	}
 

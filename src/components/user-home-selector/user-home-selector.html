@@ -16,7 +16,7 @@
         <div class="selector-grid">
           <button
             repeat.for="city of quickCities; key.bind: city.code"
-            click.trigger="selectQuickCity(city.code)"
+            busy-on-click.bind="() => selectQuickCity(city.code)"
             class="selector-btn"
             data-selected.bind="city.code === currentHomeCode"
             aria-current.bind="city.code === currentHomeCode"
@@ -62,7 +62,7 @@
       <div class="selector-grid">
         <button
           repeat.for="pref of selectedRegion.prefectures; key.bind: pref.code"
-          click.trigger="selectPrefecture(pref.code)"
+          busy-on-click.bind="() => selectPrefecture(pref.code)"
           class="selector-btn"
           data-selected.bind="pref.code === currentHomeCode"
           aria-current.bind="pref.code === currentHomeCode"

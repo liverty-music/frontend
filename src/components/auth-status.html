@@ -1,12 +1,12 @@
 <nav aria-label="Account" class="[ auth-status-bar ]">
   <div if.bind="auth.isAuthenticated" class="auth-status-bar">
     <span class="auth-user-name">${auth.user.profile.name || auth.user.profile.preferred_username || 'User'}</span>
-    <button click.trigger="signOut()" class="auth-sign-out-btn">
+    <button busy-on-click.bind="() => signOut()" class="auth-sign-out-btn">
       Sign Out
     </button>
   </div>
   <div if.bind="!auth.isAuthenticated">
-    <button click.trigger="signIn()" class="auth-sign-in-btn">
+    <button busy-on-click.bind="() => signIn()" class="auth-sign-in-btn">
       Sign In
     </button>
   </div>

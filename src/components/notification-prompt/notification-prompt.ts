@@ -12,7 +12,6 @@ import { IPushService } from '../../services/push-service'
 
 export class NotificationPrompt {
 	public isVisible = false
-	public isLoading = false
 
 	private readonly logger = resolve(ILogger).scopeTo('NotificationPrompt')
 	public readonly notificationManager = resolve(INotificationManager)
@@ -58,7 +57,7 @@ export class NotificationPrompt {
 		this.analytics.capture(Events.NotificationRequested, {
 			source: 'page',
 		})
-		this.isLoading = true
+		// The busy/disabled state while this runs is handled by `busy-on-click`.
 		try {
 			await this.pushService.create()
 			if (this.notificationManager.permission === 'granted') {
@@ -67,8 +66,6 @@ export class NotificationPrompt {
 			}
 		} catch (err) {
 			this.logger.error('Failed to enable push notifications', err)
-		} finally {
-			this.isLoading = false
 		}
 	}
 

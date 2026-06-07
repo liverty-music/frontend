@@ -55,7 +55,7 @@
            via `aria-describedby`. -->
       <li class="settings-list-item">
         <button
-          click.trigger="toggleNotifications()"
+          busy-on-click.bind="() => toggleNotifications()"
           role="switch"
           aria-checked.bind="notificationsEnabled"
           aria-disabled.bind="!vapidAvailable"
@@ -249,20 +249,19 @@
           </div>
           <button
             if.bind="!emailVerified"
-            click.trigger="resendVerification()"
-            disabled.bind="isResendingVerification || resendSuccess"
+            busy-on-click.bind="() => resendVerification()"
+            disabled.bind="resendSuccess"
             aria-live="polite"
             class="settings-resend-btn"
           >
             <span if.bind="resendSuccess" t="settings.resendSent"></span>
-            <span if.bind="isResendingVerification" t="settings.resending"></span>
-            <span if.bind="!isResendingVerification && !resendSuccess" t="settings.resendVerification"></span>
+            <span if.bind="!resendSuccess" t="settings.resendVerification"></span>
           </button>
         </div>
       </li>
 
       <li class="settings-list-item">
-        <button click.trigger="signOut()" class="settings-row settings-sign-out">
+        <button busy-on-click.bind="() => signOut()" class="settings-row settings-sign-out">
           <span t="settings.signOut" class="settings-sign-out-text"></span>
         </button>
       </li>
@@ -286,7 +285,7 @@
     <div class="[ language-list ] [ stack ]" role="radiogroup" aria-labelledby="language-selector-title">
       <button
         repeat.for="lang of supportedLanguages"
-        click.trigger="selectLanguage(lang)"
+        busy-on-click.bind="() => selectLanguage(lang)"
         role="radio"
         aria-checked.bind="currentLocale === lang"
         class="language-option"
