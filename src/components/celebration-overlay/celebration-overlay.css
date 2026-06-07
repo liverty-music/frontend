@@ -22,7 +22,13 @@
 			inset: 0;
 
 			display: grid;
+			row-gap: var(--space-s);
 			place-items: center;
+
+			/* Pack the heading and sub text to the centre as a single group.
+			   Without this the auto rows stretch to fill the viewport, pushing
+			   the sub text far below the heading. */
+			align-content: center;
 
 			background: var(--_overlay-bg);
 			backdrop-filter: blur(8px);
@@ -48,13 +54,18 @@
 			font-family: var(--font-display);
 			font-size: var(--step-4);
 			font-weight: bold;
-			line-height: var(--leading-normal);
+			line-height: var(--leading-snug);
 			color: var(--color-white);
 			text-align: center;
 			text-shadow:
 				0 0 24px var(--_glow-a),
 				0 0 48px var(--_glow-a),
 				0 0 80px var(--_glow-b);
+
+			/* Balance line lengths and break Japanese at natural phrase
+			   boundaries instead of mid-word (graceful no-op where unsupported). */
+			text-wrap: balance;
+			word-break: auto-phrase;
 
 			animation: text-enter 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
 		}
@@ -63,7 +74,7 @@
 			isolation: isolate;
 			position: relative;
 
-			margin-block-start: var(--space-m);
+			margin: 0;
 			padding: 0 var(--space-l);
 
 			font-family: var(--font-display);
