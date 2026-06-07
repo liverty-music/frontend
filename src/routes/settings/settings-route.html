@@ -52,8 +52,12 @@
       <!-- Push Notifications (whole row is the switch). When the VAPID key is
            absent the row uses `aria-disabled` (not native `disabled`, which
            removes it from AT discovery) and the explanatory hint is associated
-           via `aria-describedby`. -->
-      <li class="settings-list-item">
+           via `aria-describedby`.
+           Authenticated-only: a push subscription is persisted as a backend
+           `push_subscriptions` row keyed by userId, so before account creation
+           (onboarding / guest) there is nothing to register and the toggle
+           would no-op — hidden entirely, matching the ACCOUNT section below. -->
+      <li if.bind="auth.isAuthenticated" class="settings-list-item">
         <button
           busy-on-click.bind="() => toggleNotifications()"
           role="switch"
