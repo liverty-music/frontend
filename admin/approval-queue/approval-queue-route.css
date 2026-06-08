@@ -1,0 +1,185 @@
+@layer block {
+	@scope (approval-queue-route) {
+		:scope {
+			--_radius: 0.5rem;
+			--_radius-round: 50%;
+			--_gap-xs: 0.25rem;
+			--_pad-input: 0.5rem;
+			--_pad-btn: 0.5rem 1rem;
+			--_spinner-size: 1.25rem;
+			--_border: color-mix(
+				in oklch,
+				var(--color-text-secondary) 25%,
+				transparent
+			);
+			--_surface-raised: oklch(24% 0.04 275deg);
+		}
+
+		.approval-queue {
+			--flow-space: var(--space-m);
+
+			max-inline-size: 80rem;
+			margin-inline: auto;
+			padding: var(--space-l) var(--space-m);
+		}
+
+		.approval-queue-brand {
+			font-size: var(--step--1);
+			font-weight: 700;
+			color: var(--color-brand-primary);
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+		}
+
+		.approval-queue-title {
+			font-size: var(--step-3);
+			color: var(--color-text-primary);
+		}
+
+		.approval-queue-subtitle {
+			color: var(--color-text-secondary);
+		}
+
+		.approval-queue-back-link {
+			display: inline-block;
+			color: var(--color-brand-primary);
+			text-decoration: underline;
+		}
+
+		.approval-queue-status {
+			display: flex;
+			gap: var(--space-s);
+			align-items: center;
+			color: var(--color-text-secondary);
+		}
+
+		.approval-queue-spinner {
+			inline-size: var(--_spinner-size);
+			block-size: var(--_spinner-size);
+			border: 2px solid var(--color-brand-primary);
+			border-block-start-color: transparent;
+			border-radius: var(--_radius-round);
+
+			animation: spin 1s linear infinite;
+		}
+
+		.approval-queue-state {
+			padding: var(--space-l);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			color: var(--color-text-secondary);
+			text-align: center;
+
+			&[data-state="error"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+		}
+
+		.approval-queue-error-detail {
+			font-size: var(--step--1);
+			white-space: pre-wrap;
+		}
+
+		.approval-queue-table {
+			border-collapse: collapse;
+			inline-size: 100%;
+
+			& th,
+			& td {
+				padding: var(--space-s);
+				border-block-end: 1px solid var(--_border);
+				text-align: start;
+				vertical-align: top;
+			}
+
+			& th {
+				font-size: var(--step--1);
+				color: var(--color-text-secondary);
+				text-transform: uppercase;
+				letter-spacing: 0.04em;
+			}
+
+			& tr[data-busy="true"] {
+				opacity: 0.6;
+			}
+		}
+
+		.approval-queue-admin-area {
+			display: block;
+			color: var(--color-text-secondary);
+		}
+
+		.approval-queue-unresolved {
+			font-weight: 700;
+			color: var(--color-error);
+		}
+
+		.approval-queue-source-link {
+			color: var(--color-brand-primary);
+			text-decoration: underline;
+		}
+
+		.approval-queue-reject-form {
+			--flow-space: var(--space-s);
+
+			min-inline-size: 16rem;
+		}
+
+		.approval-queue-reject-label {
+			display: flex;
+			flex-direction: column;
+			gap: var(--_gap-xs);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.approval-queue-reject-input {
+			padding: var(--_pad-input);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+		}
+
+		.approval-queue-btn {
+			cursor: pointer;
+
+			padding: var(--_pad-btn);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+
+			&[data-variant="approve"] {
+				border-color: var(--color-brand-primary);
+				color: var(--color-surface-base);
+				background: var(--color-brand-primary);
+			}
+
+			&[data-variant="reject"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+		}
+
+		.approval-queue-row-error {
+			margin-block-start: var(--space-s);
+			font-size: var(--step--1);
+			color: var(--color-error);
+		}
+	}
+}

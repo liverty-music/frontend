@@ -23,6 +23,11 @@ import { route } from '@aurelia/router'
 			title: 'Welcome',
 		},
 		{
+			path: 'approval-queue',
+			component: import('../approval-queue/approval-queue-route'),
+			title: 'Approval Queue',
+		},
+		{
 			path: 'auth/callback',
 			component: import('../auth-callback/auth-callback-route'),
 			title: 'Signing In',

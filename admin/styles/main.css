@@ -6,7 +6,7 @@
  * the design tokens the admin views actually use. Token values are kept in sync
  * with `src/styles/tokens.css`.
  */
-@layer reset, tokens, global, block;
+@layer reset, tokens, global, composition, block;
 
 @layer reset {
 	:where(*, *::before, *::after) {
@@ -61,5 +61,20 @@
 		to {
 			transform: rotate(360deg);
 		}
+	}
+}
+
+@layer composition {
+	/* Every Layout: vertical rhythm via the owl selector. No visual treatment. */
+	.flow > * + * {
+		margin-block-start: var(--flow-space, var(--space-s));
+	}
+
+	/* Every Layout: cluster — wrap items with consistent gap, no width math. */
+	.cluster {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--cluster-space, var(--space-s));
+		align-items: center;
 	}
 }

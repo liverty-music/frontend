@@ -38,5 +38,11 @@
 			line-height: var(--leading-relaxed);
 			color: var(--color-text-secondary);
 		}
+
+		.admin-welcome-link {
+			font-weight: 700;
+			color: var(--color-brand-primary);
+			text-decoration: underline;
+		}
 	}
 }
