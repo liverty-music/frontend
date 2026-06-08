@@ -67,8 +67,8 @@
         </td>
         <td>
           <a
-            if.bind="row.sourceUrl"
-            href.bind="row.sourceUrl"
+            if.bind="sanitizeUrl(row.sourceUrl)"
+            href.bind="sanitizeUrl(row.sourceUrl)"
             target="_blank"
             rel="noopener noreferrer"
             class="approval-queue-source-link"

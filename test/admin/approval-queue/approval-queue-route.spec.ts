@@ -1,3 +1,5 @@
+import { createFixture } from '@aurelia/testing'
+import { Date as GoogleDate } from '@buf/googleapis_googleapis.bufbuild_es/google/type/date_pb.js'
 import {
 	Artist,
 	ArtistName,
@@ -17,9 +19,7 @@ import {
 	PendingConcert,
 	ResolvedVenue,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_moderation_service_pb.js'
-import { Date as GoogleDate } from '@buf/googleapis_googleapis.bufbuild_es/google/type/date_pb.js'
 import { Timestamp } from '@bufbuild/protobuf'
-import { createFixture } from '@aurelia/testing'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -137,6 +137,32 @@ describe('ApprovalQueueRoute', () => {
 			),
 		)
 		expect(links.map((a) => a.href)).toContain('https://example.com/show/1')
+	})
+
+	it('does not render a source link for a javascript: URL (XSS guard)', async () => {
+		const malicious = new PendingConcert({
+			stagedId: new StagedConcertId({ value: 'staged-xss' }),
+			performer: new Artist({ name: new ArtistName({ value: 'Sketchy Act' }) }),
+			title: new Title({ value: 'Suspicious Show' }),
+			localDate: new LocalDate({
+				value: new GoogleDate({ year: 2026, month: 9, day: 1 }),
+			}),
+			listedVenueName: new ListedVenueName({ value: 'somewhere' }),
+			// AI-sourced URL carrying a script payload — must be neutralised.
+			sourceUrl: new Url({ value: 'javascript:alert(document.cookie)' }),
+			discoveredTime: Timestamp.fromDate(new Date('2026-06-03T12:00:00Z')),
+		})
+		const client = createMockClient({
+			listPending: vi.fn().mockResolvedValue([malicious]),
+		})
+		const fixture = await build(client)
+
+		// sanitizeUrl() reduces the javascript: scheme to '', so if.bind hides
+		// the anchor entirely — no dangerous href reaches the DOM.
+		const links = fixture.appHost.querySelectorAll(
+			'a.approval-queue-source-link',
+		)
+		expect(links).toHaveLength(0)
 	})
 
 	it('renders the empty state when no concerts are pending', async () => {

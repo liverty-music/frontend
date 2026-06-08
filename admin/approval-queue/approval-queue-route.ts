@@ -1,5 +1,6 @@
 import type { PendingConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_moderation_service_pb.js'
 import { ILogger, resolve } from 'aurelia'
+import { sanitizeUrl } from '../../shared/utils/sanitize-url'
 import { IConcertModerationClient } from '../services/concert-moderation-client'
 
 /** Coarse lifecycle phase for the initial list fetch. */
@@ -102,6 +103,14 @@ export class ApprovalQueueRoute {
 
 	private readonly client = resolve(IConcertModerationClient)
 	private readonly logger = resolve(ILogger).scopeTo('ApprovalQueueRoute')
+
+	/**
+	 * Allowlists a source URL to http(s) before it is bound to an anchor
+	 * `href`. The source URL is AI-discovered, so a `javascript:` value must be
+	 * neutralised — Aurelia does not sanitize attribute bindings. Exposed for
+	 * the template binding `href.bind="sanitizeUrl(row.sourceUrl)"`.
+	 */
+	public readonly sanitizeUrl = sanitizeUrl
 
 	public async attached(): Promise<void> {
 		await this.load()
