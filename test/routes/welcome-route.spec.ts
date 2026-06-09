@@ -18,14 +18,6 @@ vi.mock('../../src/services/auth-service', () => ({
 
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
-	OnboardingStep: {
-		LP: 'lp',
-		DISCOVERY: 'discovery',
-		DASHBOARD: 'dashboard',
-		DETAIL: 'detail',
-		MY_ARTISTS: 'my-artists',
-		COMPLETED: 'completed',
-	},
 }))
 
 vi.mock('../../src/services/concert-store', () => ({
@@ -62,10 +54,6 @@ describe('WelcomeRoute', () => {
 	}
 	let mockOnboarding: {
 		isOnboarding: boolean
-		currentStep: string
-		getRouteForCurrentStep: ReturnType<typeof vi.fn>
-		reset: ReturnType<typeof vi.fn>
-		setStep: ReturnType<typeof vi.fn>
 	}
 	let mockConcert: {
 		listWithProximity: ReturnType<typeof vi.fn>
@@ -88,10 +76,6 @@ describe('WelcomeRoute', () => {
 		}
 		mockOnboarding = {
 			isOnboarding: false,
-			currentStep: 'lp',
-			getRouteForCurrentStep: vi.fn().mockReturnValue(null),
-			reset: vi.fn(),
-			setStep: vi.fn(),
 		}
 		mockConcert = {
 			listWithProximity: vi.fn().mockResolvedValue([]),
@@ -148,27 +132,24 @@ describe('WelcomeRoute', () => {
 
 		it('allows an onboarding user to view Welcome (no forced resume)', async () => {
 			mockOnboarding.isOnboarding = true
-			mockOnboarding.getRouteForCurrentStep.mockReturnValue('discovery')
 
 			// Welcome is reachable during onboarding so users can re-read the value
-			// proposition; viewing it must not bounce them back to their step.
+			// proposition; viewing it must not bounce them back into the flow.
 			const result = await sut.canLoad()
 			expect(result).toBe(true)
 		})
 	})
 
 	describe('handleGetStarted', () => {
-		it('resets onboarding and navigates to discovery without clearing guest data', async () => {
+		it('navigates to discovery without clearing guest data or mutating onboarding', async () => {
 			await sut.handleGetStarted()
 
 			// Guest data (follows/home) MUST be preserved so that users who
 			// tapped Get Started after already having followed artists as a
-			// guest don't lose their work. Spec: landing-page > Get Started
-			// initiates onboarding without clearing guest data.
+			// guest don't lose their work. Onboarding is a single flag that
+			// already defaults to true, so there is no step cursor to set.
 			expect(mockUserStore.clearGuest).not.toHaveBeenCalled()
 			expect(mockFollowStore.clearGuest).not.toHaveBeenCalled()
-			expect(mockOnboarding.reset).toHaveBeenCalledOnce()
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith('discovery')
 			expect(mockRouter.load).toHaveBeenCalledWith('discovery')
 		})
 	})

@@ -14,15 +14,15 @@ const mockConcertService = {
 	toDateGroups: vi.fn(() => []),
 }
 const mockFollowStore = {
-	followedArtists: [],
+	followedArtists: [] as unknown[],
+	followedCount: 0,
 	getFollowedArtistMap: vi.fn(async () => new Map()),
 }
 const mockJourneyService = { listByUser: vi.fn(async () => new Map()) }
 const mockOnboarding = {
 	isOnboarding: false,
 	isCompleted: false,
-	currentStep: 'done',
-	setStep: vi.fn(),
+	finish: vi.fn(),
 }
 const mockUserStore = {
 	current: { home: 'JP-13' },
@@ -106,9 +106,9 @@ describe('DashboardRoute', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockOnboarding.isOnboarding = false
-		mockOnboarding.currentStep = 'done'
 		mockAuth.isAuthenticated = false
 		mockFollowStore.followedArtists = []
+		mockFollowStore.followedCount = 0
 		mockStorage.getItem.mockReturnValue(null)
 		sut = new DashboardRoute()
 	})
@@ -461,6 +461,68 @@ describe('DashboardRoute', () => {
 			sut.attached()
 
 			expect(sut.showCelebration).toBe(false)
+		})
+	})
+
+	describe('completion latch (finish via attached / onHomeSelected)', () => {
+		it('latches finish() on a meaningful first arrival (region set, data loaded, followedCount >= 1)', () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 1
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
+		})
+
+		it('still latches when the celebration is suppressed (celebrationShown === "1")', () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 3
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'onboarding.celebrationShown' ? '1' : null,
+			)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			// Celebration is suppressed but the latch is driven by data-ready +
+			// engaged, not by the overlay rendering.
+			expect(sut.showCelebration).toBe(false)
+			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
+		})
+
+		it('does NOT latch on a zero-follow arrival', () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 0
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
+		})
+
+		it('does NOT latch while a region is still needed; celebration sequenced before latch on region select', async () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 2
+			sut = new DashboardRoute()
+			sut.needsRegion = true
+
+			sut.attached()
+			// region-less guest: no latch yet, but the light celebration is deferred
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
+
+			await sut.onHomeSelected('JP-13')
+
+			// celebration still shows (region-less guest sees it before latch)
+			expect(sut.showCelebration).toBe(true)
+			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
 		})
 	})
 })

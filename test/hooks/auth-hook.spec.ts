@@ -1,55 +1,13 @@
 import type { RouteNode } from '@aurelia/router'
-import { DI, IEventAggregator, Registration } from 'aurelia'
+import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Snack } from '../../src/components/snack-bar/snack'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
-import { createMockEventAggregator } from '../helpers/mock-toast'
 
 const mockIAuthService = DI.createInterface('IAuthService')
-const mockIOnboardingService = DI.createInterface('IOnboardingService')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
-}))
-
-vi.mock('../../src/services/onboarding-service', () => ({
-	IOnboardingService: mockIOnboardingService,
-	DASHBOARD_FOLLOW_TARGET: 5,
-	OnboardingStep: {
-		LP: 'lp',
-		DISCOVERY: 'discovery',
-		DASHBOARD: 'dashboard',
-		DETAIL: 'detail',
-		MY_ARTISTS: 'my-artists',
-		COMPLETED: 'completed',
-	},
-	STEP_ROUTE_MAP: {
-		lp: '',
-		discovery: 'discovery',
-		dashboard: 'dashboard',
-		detail: 'dashboard',
-		'my-artists': 'my-artists',
-		completed: '',
-	},
-	STEP_ORDER: [
-		'lp',
-		'discovery',
-		'dashboard',
-		'detail',
-		'my-artists',
-		'completed',
-	],
-	stepIndex(step: string) {
-		return [
-			'lp',
-			'discovery',
-			'dashboard',
-			'detail',
-			'my-artists',
-			'completed',
-		].indexOf(step)
-	},
 }))
 
 const { AuthHook } = await import('../../src/hooks/auth-hook')
@@ -58,408 +16,78 @@ function makeRouteNode(data?: Record<string, unknown>): RouteNode {
 	return { data } as unknown as RouteNode
 }
 
+function makeHook(mockAuth: ReturnType<typeof createMockAuth>) {
+	const container = createTestContainer(
+		Registration.instance(mockIAuthService, mockAuth),
+	)
+	container.register(AuthHook)
+	return container.get(AuthHook)
+}
+
 describe('AuthHook', () => {
-	let sut: InstanceType<typeof AuthHook>
 	let mockAuth: ReturnType<typeof createMockAuth>
-	let mockEa: ReturnType<typeof createMockEventAggregator>
 
 	beforeEach(() => {
 		mockAuth = createMockAuth({ isAuthenticated: true })
-		mockEa = createMockEventAggregator()
-
-		const container = createTestContainer(
-			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(IEventAggregator, mockEa),
-			Registration.instance(mockIOnboardingService, {
-				currentStep: 'completed',
-				isOnboarding: false,
-				setStep: vi.fn(),
-				complete: vi.fn(),
-			}),
-		)
-		container.register(AuthHook)
-		sut = container.get(AuthHook)
 	})
 
 	describe('canLoad', () => {
-		it('should allow public routes without auth check', async () => {
-			const next = makeRouteNode({ auth: false })
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe(true)
-		})
-
-		it('should allow authenticated users on protected routes', async () => {
-			const next = makeRouteNode({})
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe(true)
-		})
-
-		it('should redirect unauthenticated users to welcome', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'completed',
-					isOnboarding: false,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-				}),
+		it('allows public routes (data.auth === false) regardless of auth', async () => {
+			const sut = makeHook(createMockAuth({ isAuthenticated: false }))
+			const result = await sut.canLoad(
+				{},
+				{},
+				makeRouteNode({ auth: false }),
+				null,
 			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			const next = makeRouteNode({})
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe('')
-			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
-			expect(mockEa.published[0].message).toBe('auth.loginRequired')
-			expect(mockEa.published[0].severity).toBe('warning')
+			expect(result).toBe(true)
 		})
 
-		it('should await authService.ready before checking auth', async () => {
+		it('allows authenticated users on protected routes', async () => {
+			const sut = makeHook(mockAuth)
+			const result = await sut.canLoad({}, {}, makeRouteNode({}), null)
+			expect(result).toBe(true)
+		})
+
+		it('allows a guest free roam on application routes (soft gate, no redirect)', async () => {
+			const sut = makeHook(createMockAuth({ isAuthenticated: false }))
+			const result = await sut.canLoad({}, {}, makeRouteNode({}), null)
+			// Guest with zero follows still reaches e.g. the dashboard; the empty
+			// state is rendered in-page rather than blocked by a guard redirect.
+			expect(result).toBe(true)
+		})
+
+		it('allows a guest on the dashboard route (reachable at any onboarding state)', async () => {
+			const sut = makeHook(createMockAuth({ isAuthenticated: false }))
+			const result = await sut.canLoad({}, {}, makeRouteNode({}), null)
+			expect(result).toBe(true)
+		})
+
+		it('allows route with no data property', async () => {
+			const sut = makeHook(mockAuth)
+			const result = await sut.canLoad({}, {}, makeRouteNode(undefined), null)
+			expect(result).toBe(true)
+		})
+
+		it('awaits authService.ready before checking auth on a protected route', async () => {
 			let resolveReady: () => void
 			const readyPromise = new Promise<void>((r) => {
 				resolveReady = r
 			})
-
-			mockAuth = createMockAuth({
-				isAuthenticated: true,
-				ready: readyPromise,
-			})
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'completed',
-					isOnboarding: false,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-				}),
+			const sut = makeHook(
+				createMockAuth({ isAuthenticated: true, ready: readyPromise }),
 			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
 
-			const next = makeRouteNode({})
-			const canLoadPromise = sut.canLoad({}, {}, next, null)
-
-			// Should not have resolved yet
+			const canLoadPromise = sut.canLoad({}, {}, makeRouteNode({}), null)
 			let resolved = false
 			canLoadPromise.then(() => {
 				resolved = true
 			})
-			await Promise.resolve() // flush microtasks
+			await Promise.resolve()
 			expect(resolved).toBe(false)
 
-			// Now resolve ready
 			resolveReady!()
-			const result = await canLoadPromise
-			expect(result).toBe(true)
-		})
-
-		it('should silently redirect onboarding user on route without onboardingStep data', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'dashboard',
-					isOnboarding: true,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-					getRouteForCurrentStep: () => 'dashboard',
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			// Tickets route has no onboardingStep data
-			const next = makeRouteNode({})
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe('dashboard')
-			// No longer a silent no-op — the guard explains the block.
-			expect(mockEa.publish).toHaveBeenCalled()
-			expect(mockEa.published[0].message).toBe('auth.lockedGeneric')
-		})
-
-		it('should redirect onboarding user when route onboardingStep exceeds currentStep', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'discovery',
-					isOnboarding: true,
-					spotlightActive: false,
-					readyForDashboard: false,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-					deactivateSpotlight: vi.fn(),
-					getRouteForCurrentStep: () => 'discovery',
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			// Dashboard requires onboardingStep 'dashboard', but user is at 'discovery' without spotlight
-			const next = makeRouteNode({ onboardingStep: 'dashboard' })
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe('discovery')
-			expect(mockEa.publish).toHaveBeenCalled()
-			expect(mockEa.published[0].message).toContain('auth.lockedDashboard')
-		})
-
-		it('TC-RG-05: discovery-step user with readyForDashboard=true is allowed to navigate to dashboard and step advances', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const mockSetStep = vi.fn()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'discovery',
-					isOnboarding: true,
-					spotlightActive: false,
-					readyForDashboard: true,
-					setStep: mockSetStep,
-					complete: vi.fn(),
-					deactivateSpotlight: vi.fn(),
-					getRouteForCurrentStep: () => 'discovery',
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			const next = makeRouteNode({ onboardingStep: 'dashboard' })
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe(true)
-			expect(mockSetStep).toHaveBeenCalledWith('dashboard')
-			expect(mockEa.publish).not.toHaveBeenCalled()
-		})
-
-		it('TC-RG-06: discovery-step user with readyForDashboard=false is redirected to discovery with feedback', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'discovery',
-					isOnboarding: true,
-					spotlightActive: false,
-					readyForDashboard: false,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-					deactivateSpotlight: vi.fn(),
-					getRouteForCurrentStep: () => 'discovery',
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			const next = makeRouteNode({ onboardingStep: 'dashboard' })
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe('discovery')
-			expect(mockEa.publish).toHaveBeenCalled()
-			expect(mockEa.published[0].message).toContain('auth.lockedDashboard')
-		})
-
-		it('should advance step when onboarding user taps Dashboard nav with spotlight active', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const mockSetStep = vi.fn()
-			const mockDeactivate = vi.fn()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'discovery',
-					isOnboarding: true,
-					spotlightActive: true,
-					setStep: mockSetStep,
-					complete: vi.fn(),
-					deactivateSpotlight: mockDeactivate,
-					getRouteForCurrentStep: () => 'discovery',
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			// Direct nav tap on Dashboard (onboardingStep: 'dashboard') while spotlight is active
-			const next = makeRouteNode({ onboardingStep: 'dashboard' })
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe(true)
-			expect(mockDeactivate).toHaveBeenCalledTimes(1)
-			expect(mockSetStep).toHaveBeenCalledWith('dashboard') // DASHBOARD
-			expect(mockEa.publish).not.toHaveBeenCalled()
-		})
-
-		it('should show toast for non-onboarding unauthenticated user on protected route', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'completed',
-					isOnboarding: false,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-					getRouteForCurrentStep: () => '',
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			const next = makeRouteNode({})
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe('')
-			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
-			expect(mockEa.published[0].severity).toBe('warning')
-		})
-
-		it('should allow isCompleted guest on dashboard route', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'completed',
-					isOnboarding: false,
-					isCompleted: true,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			const next = makeRouteNode({ onboardingStep: 'dashboard' })
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe(true)
-			expect(mockEa.publish).not.toHaveBeenCalled()
-		})
-
-		it('should allow isCompleted guest on my-artists route', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'completed',
-					isOnboarding: false,
-					isCompleted: true,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			const next = makeRouteNode({ onboardingStep: 'my-artists' })
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe(true)
-		})
-
-		it('should allow isCompleted guest on tickets route (free roam)', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'completed',
-					isOnboarding: false,
-					isCompleted: true,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			const next = makeRouteNode({})
-			const result = await sut.canLoad({}, {}, next, null)
-
-			// After dashboard, guests roam freely; account-only features are hidden
-			// at point of use rather than navigation-blocked.
-			expect(result).toBe(true)
-			expect(mockEa.publish).not.toHaveBeenCalled()
-		})
-
-		it('should allow route with no data property', async () => {
-			const next = makeRouteNode(undefined)
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe(true)
-		})
-
-		it('should allow public route with onboardingStep during active onboarding', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'discovery',
-					isOnboarding: true,
-					spotlightActive: false,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-					deactivateSpotlight: vi.fn(),
-					getRouteForCurrentStep: () => 'discovery',
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			// /discovery has { auth: false, onboardingStep: 'discovery' }
-			const next = makeRouteNode({ auth: false, onboardingStep: 'discovery' })
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe(true)
-			expect(mockEa.publish).not.toHaveBeenCalled()
-		})
-
-		it('should redirect to LP when public onboardingStep route accessed without active onboarding', async () => {
-			mockAuth = createMockAuth({ isAuthenticated: false })
-			mockEa = createMockEventAggregator()
-			const container = createTestContainer(
-				Registration.instance(mockIAuthService, mockAuth),
-				Registration.instance(IEventAggregator, mockEa),
-				Registration.instance(mockIOnboardingService, {
-					currentStep: 'lp',
-					isOnboarding: false,
-					setStep: vi.fn(),
-					complete: vi.fn(),
-					getRouteForCurrentStep: () => '',
-				}),
-			)
-			container.register(AuthHook)
-			sut = container.get(AuthHook)
-
-			// /discovery has { auth: false, onboardingStep: 'discovery' } but no active onboarding
-			const next = makeRouteNode({ auth: false, onboardingStep: 'discovery' })
-			const result = await sut.canLoad({}, {}, next, null)
-
-			expect(result).toBe('')
-			expect(mockEa.publish).not.toHaveBeenCalled()
+			expect(await canLoadPromise).toBe(true)
 		})
 	})
 })

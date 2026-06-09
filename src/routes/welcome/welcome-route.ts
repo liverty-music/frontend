@@ -17,16 +17,11 @@ import type { Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../services/onboarding-service'
 import { IUserStore } from '../../services/user-store'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
-	private readonly onboarding = resolve(IOnboardingService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly router = resolve(IRouter)
@@ -224,12 +219,9 @@ export class WelcomeRoute implements IRouteViewModel {
 
 	async handleGetStarted(): Promise<void> {
 		this.logger.info('Get Started tapped, entering onboarding')
-		// Reset the onboarding cursor but PRESERVE guest data. A user returning
-		// to / after having already followed artists as a guest should resume
-		// onboarding with those follows intact, not start from zero. Login is
-		// different — see handleLogin for the rationale.
-		this.onboarding.reset()
-		this.onboarding.setStep(OnboardingStep.DISCOVERY)
+		// Just navigate to discovery — onboarding is a single flag that already
+		// defaults to true for a not-yet-completed user, and guest data is
+		// preserved. There is no step cursor to set.
 		try {
 			await this.router.load('discovery')
 		} catch (err) {

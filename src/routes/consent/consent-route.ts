@@ -92,7 +92,7 @@ export class ConsentRoute implements IRouteViewModel {
 	}
 
 	private async complete(): Promise<void> {
-		this.onboarding.complete()
+		this.onboarding.finish()
 		await this.router.load('/dashboard')
 	}
 }

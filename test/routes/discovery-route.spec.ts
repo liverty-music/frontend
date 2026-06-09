@@ -16,6 +16,7 @@ const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIRouter = DI.createInterface('IRouter')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
+const mockICoachMarkService = DI.createInterface('ICoachMarkService')
 
 vi.mock('@aurelia/router', () => ({
 	IRouter: mockIRouter,
@@ -35,14 +36,13 @@ vi.mock('../../src/services/concert-store', () => ({
 
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
-	OnboardingStep: {
-		LP: 'lp',
-		DISCOVERY: 'discovery',
-		DASHBOARD: 'dashboard',
-		DETAIL: 'detail',
-		MY_ARTISTS: 'my-artists',
-		COMPLETED: 'completed',
-	},
+}))
+
+vi.mock('../../src/services/coach-mark-service', () => ({
+	ICoachMarkService: mockICoachMarkService,
+}))
+
+vi.mock('../../src/constants/onboarding', () => ({
 	DASHBOARD_FOLLOW_TARGET: 5,
 	DASHBOARD_CONCERT_TARGET: 3,
 }))
@@ -85,13 +85,14 @@ describe('DiscoveryRoute', () => {
 	let mockEa: ReturnType<typeof createMockEventAggregator>
 	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockOnboarding: {
-		currentStep: string
 		isOnboarding: boolean
-		setStep: ReturnType<typeof vi.fn>
-		complete: ReturnType<typeof vi.fn>
-		activateSpotlight: ReturnType<typeof vi.fn>
-		deactivateSpotlight: ReturnType<typeof vi.fn>
-		setDiscoveryCounts: ReturnType<typeof vi.fn>
+		isCompleted: boolean
+		finish: ReturnType<typeof vi.fn>
+	}
+	let mockCoachMark: {
+		active: boolean
+		activate: ReturnType<typeof vi.fn>
+		deactivate: ReturnType<typeof vi.fn>
 	}
 	beforeEach(() => {
 		vi.useFakeTimers()
@@ -102,13 +103,14 @@ describe('DiscoveryRoute', () => {
 		mockEa = createMockEventAggregator()
 		mockRouter = createMockRouter()
 		mockOnboarding = {
-			currentStep: 'completed',
 			isOnboarding: false,
-			setStep: vi.fn(),
-			complete: vi.fn(),
-			activateSpotlight: vi.fn(),
-			deactivateSpotlight: vi.fn(),
-			setDiscoveryCounts: vi.fn(),
+			isCompleted: true,
+			finish: vi.fn(),
+		}
+		mockCoachMark = {
+			active: false,
+			activate: vi.fn(),
+			deactivate: vi.fn(),
 		}
 		// Default: follow succeeds and updates mock state
 		;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockImplementation(
@@ -124,6 +126,7 @@ describe('DiscoveryRoute', () => {
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
+			Registration.instance(mockICoachMarkService, mockCoachMark),
 		)
 		container.register(DiscoveryRoute)
 		sut = container.get(DiscoveryRoute)
@@ -261,14 +264,13 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onCoachMarkTap', () => {
-		it('should only dismiss the spotlight without advancing step or navigating', async () => {
+		it('should only dismiss the coach mark without mutating onboarding or navigating', () => {
 			mockOnboarding.isOnboarding = true
-			mockOnboarding.currentStep = 'discovery'
 
 			sut.onCoachMarkTap()
 
-			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalledTimes(1)
-			expect(mockOnboarding.setStep).not.toHaveBeenCalled()
+			expect(mockCoachMark.deactivate).toHaveBeenCalledTimes(1)
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 			expect(mockRouter.load).not.toHaveBeenCalled()
 		})
 	})
@@ -701,30 +703,62 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('onCoachMarkTap (Home nav coach mark)', () => {
-		it('should dismiss the spotlight without advancing step or navigating', () => {
+	describe('coach mark trigger (live counts)', () => {
+		it('activates the coach mark via CoachMarkService when the live follow threshold is met', () => {
 			mockOnboarding.isOnboarding = true
-			mockOnboarding.currentStep = 'discovery' // DISCOVERY
+			;(mockFollowClient as { followedCount: number }).followedCount = 5
 
-			sut.onCoachMarkTap()
+			// Drive the @watch by re-evaluating the trigger.
+			;(
+				sut as unknown as {
+					onShowDashboardCoachMarkChanged(show: boolean): void
+				}
+			).onShowDashboardCoachMarkChanged(sut.showDashboardCoachMark)
 
-			// Tapping the coach mark only clears the spotlight. The user advances
-			// to the dashboard by tapping the timetable nav themselves, where
-			// AuthHook performs the step transition.
-			expect(mockOnboarding.deactivateSpotlight).toHaveBeenCalledTimes(1)
-			expect(mockOnboarding.setStep).not.toHaveBeenCalled()
+			expect(sut.showDashboardCoachMark).toBe(true)
+			expect(mockCoachMark.activate).toHaveBeenCalledTimes(1)
+			// onTap is navigation-only and never advances a step.
+			const onTap = mockCoachMark.activate.mock.calls[0][2] as () => void
+			onTap()
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 			expect(mockRouter.load).not.toHaveBeenCalled()
 		})
 
-		it('should not advance step when showDashboardCoachMark is false (fewer than 3 artistsWithConcerts)', () => {
+		it('shows the coach mark at most once per session', () => {
 			mockOnboarding.isOnboarding = true
-			mockOnboarding.currentStep = 'discovery' // DISCOVERY
-			;(
-				mockConcert as { artistsWithConcertsCount: number }
-			).artistsWithConcertsCount = 1
+			;(mockFollowClient as { followedCount: number }).followedCount = 5
 
-			// showDashboardCoachMark should be false
+			;(
+				sut as unknown as {
+					onShowDashboardCoachMarkChanged(show: boolean): void
+				}
+			).onShowDashboardCoachMarkChanged(true)
+			;(
+				sut as unknown as {
+					onShowDashboardCoachMarkChanged(show: boolean): void
+				}
+			).onShowDashboardCoachMarkChanged(true)
+
+			expect(mockCoachMark.activate).toHaveBeenCalledTimes(1)
+		})
+
+		it('does not activate the coach mark when not onboarding', () => {
+			mockOnboarding.isOnboarding = false
+			;(mockFollowClient as { followedCount: number }).followedCount = 5
+
+			;(
+				sut as unknown as {
+					onShowDashboardCoachMarkChanged(show: boolean): void
+				}
+			).onShowDashboardCoachMarkChanged(sut.showDashboardCoachMark)
+
 			expect(sut.showDashboardCoachMark).toBe(false)
+			expect(mockCoachMark.activate).not.toHaveBeenCalled()
+		})
+
+		it('deactivates the coach mark on detaching', () => {
+			sut.detaching()
+			expect(mockCoachMark.deactivate).toHaveBeenCalled()
 		})
 	})
 })

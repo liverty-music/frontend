@@ -1,13 +1,15 @@
-import {
-	normalizeStep,
-	type OnboardingStepValue,
-} from '../../entities/onboarding'
+import { StorageKeys } from '../../constants/storage-keys'
+import { LEGACY_COMPLETED_STEPS } from '../../entities/onboarding'
 
-const KEY_STEP = 'onboardingStep'
+/** Legacy step-machine key, migrated once then deleted. */
+const KEY_LEGACY_STEP = 'onboardingStep'
 const HELP_SEEN_PREFIX = 'liverty:onboarding:helpSeen:'
 
-export function saveStep(step: OnboardingStepValue): void {
-	localStorage.setItem(KEY_STEP, step)
+export function saveOnboardingComplete(complete: boolean): void {
+	localStorage.setItem(
+		StorageKeys.onboardingComplete,
+		complete ? 'true' : 'false',
+	)
 }
 
 export function saveHelpSeen(page: string): void {
@@ -24,12 +26,26 @@ export function clearAllHelpSeen(): void {
 	}
 }
 
-export function loadStep(): OnboardingStepValue {
-	const raw = localStorage.getItem(KEY_STEP)
-	if (raw === null) return 'lp'
-	const step = normalizeStep(raw)
-	if (step !== raw) {
-		localStorage.setItem(KEY_STEP, step)
+/**
+ * Load the persisted onboarding-complete flag, running a one-time, lossless
+ * migration off the legacy `onboardingStep` key.
+ *
+ * Migration: if the legacy key exists, the new flag is set to whether the legacy
+ * value denotes completion (member of `LEGACY_COMPLETED_STEPS` — `'completed'`
+ * or the legacy numeric `'7'`); any other value (`'discovery'`, `'my-artists'`,
+ * `'detail'`, absent) maps to `false`. The new value is persisted and the legacy
+ * key is deleted, so the migration runs at most once per client.
+ *
+ * Absent new key (and no legacy key) → `false`, i.e. a brand-new user defaults
+ * to still onboarding.
+ */
+export function loadOnboardingComplete(): boolean {
+	const legacy = localStorage.getItem(KEY_LEGACY_STEP)
+	if (legacy !== null) {
+		const complete = LEGACY_COMPLETED_STEPS.has(legacy)
+		saveOnboardingComplete(complete)
+		localStorage.removeItem(KEY_LEGACY_STEP)
+		return complete
 	}
-	return step
+	return localStorage.getItem(StorageKeys.onboardingComplete) === 'true'
 }

@@ -2,8 +2,16 @@ import { bindable, ILogger, resolve } from 'aurelia'
 
 const MAX_RETRY_MS = 5000
 const INITIAL_RETRY_MS = 100
-const SCROLL_FAILSAFE_MS = 800
 
+/**
+ * Single, transient, non-blocking coach mark. Renders once at the app-shell
+ * level and is driven by `CoachMarkService` via its bindables.
+ *
+ * Non-blocking: the dim overlay + cutout is `pointer-events: none` and there are
+ * no off-target click-blockers, so the rest of the page stays interactive and
+ * scroll is never locked (soft gate). Tapping the target delegates to its native
+ * click; off-target taps reach the underlying page.
+ */
 export class CoachMark {
 	@bindable public targetSelector = ''
 	@bindable public message = ''
@@ -12,13 +20,8 @@ export class CoachMark {
 
 	public visible = false
 
-	private overlayEl!: HTMLElement
 	private retryTimer: ReturnType<typeof setTimeout> | null = null
 	private currentTarget: HTMLElement | null = null
-	private isPopoverOpen = false
-	private highlightGeneration = 0
-	private scrollFailsafeTimer: ReturnType<typeof setTimeout> | null = null
-	private scrollEndHandler: (() => void) | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('CoachMark')
 
@@ -40,19 +43,22 @@ export class CoachMark {
 		this.deactivate()
 	}
 
-	/**
-	 * Called when target changes but spotlight should stay open.
-	 * Wraps anchor-name reassignment in View Transition for smooth animation.
-	 */
 	public targetSelectorChanged(): void {
-		if (this.active && this.visible) {
+		if (this.active) {
 			this.findAndHighlight()
 		}
 	}
 
+	/**
+	 * Resolve the target element (with the empty-selector guard and a bounded
+	 * retry timer for elements that mount slightly after activation) and anchor
+	 * the spotlight to it.
+	 */
 	private findAndHighlight(elapsed = 0): void {
-		this.cleanup()
+		this.cancelRetry()
+		this.clearAnchor()
 		if (!this.targetSelector) return
+
 		const target = document.querySelector(this.targetSelector)
 		if (target instanceof HTMLElement && this.isVisible(target)) {
 			this.highlight(target)
@@ -77,79 +83,16 @@ export class CoachMark {
 		}, delay)
 	}
 
-	private async highlight(target: HTMLElement): Promise<void> {
-		const generation = ++this.highlightGeneration
-
-		// Let the browser scroll target into view and wait for scroll to settle.
-		// scrollIntoView is a no-op when the element is already visible;
-		// the scrollend failsafe timeout resolves in that case.
-		await this.smoothScrollTo(target)
-
-		// Abort if a newer highlight() call was initiated during the scroll
-		if (generation !== this.highlightGeneration) {
-			return
-		}
-
+	private highlight(target: HTMLElement): void {
+		target.style.setProperty('anchor-name', '--coach-target')
+		this.currentTarget = target
 		this.visible = true
-
-		// Wrap anchor-name reassignment in View Transition for smooth spotlight slide
-		const reassign = () => {
-			this.currentTarget?.style.removeProperty('anchor-name')
-			target.style.setProperty('anchor-name', '--coach-target')
-			this.currentTarget = target
-		}
-
-		if (document.startViewTransition) {
-			const transition = document.startViewTransition(reassign)
-			// Suppress abort errors on all ViewTransition promises.
-			// Route navigation may abort the transition mid-flight.
-			transition.finished.catch(() => {})
-			try {
-				await transition.updateCallbackDone
-			} catch {
-				// View Transition may be aborted during route navigation
-			}
-		} else {
-			reassign()
-		}
-
-		if (generation !== this.highlightGeneration) return
-
-		// Lock scroll on the viewport container
-		this.setScrollLock(true)
-
-		// Open popover if not already open (continuous spotlight: only opens once)
-		if (!this.isPopoverOpen) {
-			this.overlayEl.showPopover()
-			this.isPopoverOpen = true
-		}
 	}
 
-	/**
-	 * Deactivate spotlight completely — called at Step 6 or when component detaches.
-	 */
 	public deactivate(): void {
-		this.highlightGeneration++
-		this.cancelScroll()
+		this.cancelRetry()
 		this.visible = false
-		if (this.currentTarget) {
-			this.currentTarget.style.removeProperty('anchor-name')
-			this.currentTarget = null
-		}
-		this.setScrollLock(false)
-		if (this.isPopoverOpen) {
-			try {
-				this.overlayEl.hidePopover()
-			} catch {
-				// Popover may already be hidden
-			}
-			this.isPopoverOpen = false
-		}
-		this.cleanup()
-	}
-
-	public onBlockerClick(): void {
-		this.onTap?.()
+		this.clearAnchor()
 	}
 
 	public onKeydown(e: KeyboardEvent): void {
@@ -166,54 +109,10 @@ export class CoachMark {
 		this.onTap?.()
 	}
 
-	private smoothScrollTo(element: HTMLElement): Promise<void> {
-		this.cancelScroll()
-
-		return new Promise((resolve) => {
-			const onScrollEnd = () => {
-				this.scrollEndHandler = null
-				window.removeEventListener('scrollend', onScrollEnd)
-				resolve()
-			}
-
-			this.scrollEndHandler = onScrollEnd
-			window.addEventListener('scrollend', onScrollEnd)
-
-			element.scrollIntoView({
-				behavior: 'smooth',
-				block: 'center',
-				inline: 'center',
-			})
-
-			// Failsafe: resolve if scrollend never fires (e.g. already in position)
-			this.scrollFailsafeTimer = setTimeout(() => {
-				this.scrollFailsafeTimer = null
-				window.removeEventListener('scrollend', onScrollEnd)
-				this.scrollEndHandler = null
-				resolve()
-			}, SCROLL_FAILSAFE_MS)
-		})
-	}
-
-	private cancelScroll(): void {
-		if (this.scrollFailsafeTimer) {
-			clearTimeout(this.scrollFailsafeTimer)
-			this.scrollFailsafeTimer = null
-		}
-		if (this.scrollEndHandler) {
-			window.removeEventListener('scrollend', this.scrollEndHandler)
-			this.scrollEndHandler = null
-		}
-	}
-
-	private setScrollLock(locked: boolean): void {
-		const viewport = document.querySelector('au-viewport')
-		if (viewport instanceof HTMLElement) {
-			if (locked) {
-				viewport.style.setProperty('overflow', 'hidden')
-			} else {
-				viewport.style.removeProperty('overflow')
-			}
+	private clearAnchor(): void {
+		if (this.currentTarget) {
+			this.currentTarget.style.removeProperty('anchor-name')
+			this.currentTarget = null
 		}
 	}
 
@@ -223,7 +122,7 @@ export class CoachMark {
 		return rect.width > 0 && rect.height > 0
 	}
 
-	private cleanup(): void {
+	private cancelRetry(): void {
 		if (this.retryTimer) {
 			clearTimeout(this.retryTimer)
 			this.retryTimer = null

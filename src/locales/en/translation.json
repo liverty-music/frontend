@@ -161,6 +161,11 @@
 			"subtitle": "Follow more artists to fill out your timetable.",
 			"discoverLink": "Discover Artists"
 		},
+		"guestEmpty": {
+			"title": "Your timetable is waiting",
+			"subtitle": "Follow a few artists and their upcoming shows appear here.",
+			"cta": "Find Artists"
+		},
 		"error": {
 			"load": "Failed to load live events"
 		}

@@ -1,231 +1,100 @@
 import { DI, ILogger, Registration } from 'aurelia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { OnboardingStep } from '../../src/entities/onboarding'
+import { beforeEach, describe, expect, it } from 'vitest'
+import {
+	IOnboardingService,
+	type OnboardingService,
+} from '../../src/services/onboarding-service'
 import { createMockLogger } from '../helpers/mock-logger'
 
-vi.mock('../../src/adapter/storage/onboarding-storage', () => ({
-	loadStep: vi.fn().mockReturnValue('lp'),
-	saveStep: vi.fn(),
-}))
+const KEY_COMPLETE = 'onboardingComplete'
+const KEY_LEGACY_STEP = 'onboardingStep'
 
-const { loadStep } = await import(
-	'../../src/adapter/storage/onboarding-storage'
-)
-
-// Dynamic import so that the module-level loadStep() call uses our mock
-const { OnboardingService } = await import(
-	'../../src/services/onboarding-service'
-)
-
-function createService(
-	overrides: { step?: string } = {},
-): InstanceType<typeof OnboardingService> {
-	// Reset to default, then apply override
-	vi.mocked(loadStep).mockReturnValue((overrides.step ?? 'lp') as never)
+function createService(): OnboardingService {
 	const container = DI.createContainer()
 	container.register(Registration.instance(ILogger, createMockLogger()))
-	return container.invoke(OnboardingService)
+	container.register(IOnboardingService)
+	return container.get(IOnboardingService)
 }
 
 describe('OnboardingService', () => {
 	beforeEach(() => {
-		vi.clearAllMocks()
+		localStorage.clear()
 	})
 
-	describe('currentStep', () => {
-		it('should default to LP when no override', () => {
+	describe('default state', () => {
+		it('defaults a brand-new user to onboarding', () => {
 			const sut = createService()
-			expect(sut.currentStep).toBe(OnboardingStep.LP)
-		})
-
-		it('should reflect the step passed at creation', () => {
-			const sut = createService({ step: OnboardingStep.DASHBOARD })
-			expect(sut.currentStep).toBe(OnboardingStep.DASHBOARD)
-		})
-	})
-
-	describe('isOnboarding', () => {
-		it('should return true for DISCOVERY', () => {
-			const sut = createService({ step: OnboardingStep.DISCOVERY })
 			expect(sut.isOnboarding).toBe(true)
-		})
-
-		it('should return true for DASHBOARD', () => {
-			const sut = createService({ step: OnboardingStep.DASHBOARD })
-			expect(sut.isOnboarding).toBe(true)
-		})
-
-		it('should return true for MY_ARTISTS', () => {
-			const sut = createService({ step: OnboardingStep.MY_ARTISTS })
-			expect(sut.isOnboarding).toBe(true)
-		})
-
-		it('should return false for COMPLETED', () => {
-			const sut = createService({ step: OnboardingStep.COMPLETED })
-			expect(sut.isOnboarding).toBe(false)
-		})
-
-		it('should return false for LP', () => {
-			const sut = createService()
-			expect(sut.isOnboarding).toBe(false)
-		})
-	})
-
-	describe('isCompleted', () => {
-		it('should return true for COMPLETED', () => {
-			const sut = createService({ step: OnboardingStep.COMPLETED })
-			expect(sut.isCompleted).toBe(true)
-		})
-
-		it('should return false for LP', () => {
-			const sut = createService()
 			expect(sut.isCompleted).toBe(false)
 		})
 
-		it('should return false for DASHBOARD', () => {
-			const sut = createService({ step: OnboardingStep.DASHBOARD })
-			expect(sut.isCompleted).toBe(false)
-		})
-	})
-
-	describe('setStep', () => {
-		it('should update step to the given value', () => {
+		it('hydrates a completed flag from localStorage', () => {
+			localStorage.setItem(KEY_COMPLETE, 'true')
 			const sut = createService()
-
-			sut.setStep(OnboardingStep.DASHBOARD)
-
-			expect(sut.step).toBe(OnboardingStep.DASHBOARD)
-			expect(sut.currentStep).toBe(OnboardingStep.DASHBOARD)
-		})
-	})
-
-	describe('complete', () => {
-		it('should set step to COMPLETED', () => {
-			const sut = createService({ step: OnboardingStep.DASHBOARD })
-
-			sut.complete()
-
-			expect(sut.step).toBe(OnboardingStep.COMPLETED)
+			expect(sut.isOnboarding).toBe(false)
 			expect(sut.isCompleted).toBe(true)
 		})
+	})
 
-		it('should deactivate spotlight', () => {
-			const sut = createService({ step: OnboardingStep.DASHBOARD })
-			sut.activateSpotlight('[data-target]', 'msg')
+	describe('finish (one-way latch)', () => {
+		it('flips isOnboarding to false and persists', () => {
+			const sut = createService()
 
-			sut.complete()
+			sut.finish()
 
-			expect(sut.spotlightActive).toBe(false)
-			expect(sut.spotlightTarget).toBe('')
-			expect(sut.spotlightMessage).toBe('')
+			expect(sut.isOnboarding).toBe(false)
+			expect(sut.isCompleted).toBe(true)
+			expect(localStorage.getItem(KEY_COMPLETE)).toBe('true')
+		})
+
+		it('is idempotent and never reverts', () => {
+			const sut = createService()
+			sut.finish()
+			sut.finish()
+			expect(sut.isCompleted).toBe(true)
 		})
 	})
 
-	describe('reset', () => {
-		it('should set step to LP', () => {
-			const sut = createService({ step: OnboardingStep.DASHBOARD })
+	describe('legacy onboardingStep migration', () => {
+		it.each([
+			'completed',
+			'7',
+		])('migrates completed marker %s to completed (isOnboarding=false)', (legacy) => {
+			localStorage.setItem(KEY_LEGACY_STEP, legacy)
 
-			sut.reset()
-
-			expect(sut.step).toBe(OnboardingStep.LP)
-		})
-	})
-
-	describe('activateSpotlight', () => {
-		it('should set spotlight properties', () => {
 			const sut = createService()
 
-			sut.activateSpotlight('[data-hype-header]', 'Test message')
-
-			expect(sut.spotlightActive).toBe(true)
-			expect(sut.spotlightTarget).toBe('[data-hype-header]')
-			expect(sut.spotlightMessage).toBe('Test message')
-			expect(sut.spotlightRadius).toBe('12px')
+			expect(sut.isCompleted).toBe(true)
+			expect(sut.isOnboarding).toBe(false)
+			expect(localStorage.getItem(KEY_COMPLETE)).toBe('true')
+			expect(localStorage.getItem(KEY_LEGACY_STEP)).toBeNull()
 		})
 
-		it('should accept custom radius', () => {
+		it.each([
+			'discovery',
+			'my-artists',
+			'detail',
+			'lp',
+			'dashboard',
+		])('migrates non-completed value %s to still-onboarding (isOnboarding=true)', (legacy) => {
+			localStorage.setItem(KEY_LEGACY_STEP, legacy)
+
 			const sut = createService()
 
-			sut.activateSpotlight('[data-target]', 'msg', undefined, '50%')
-
-			expect(sut.spotlightRadius).toBe('50%')
+			expect(sut.isOnboarding).toBe(true)
+			expect(sut.isCompleted).toBe(false)
+			expect(localStorage.getItem(KEY_COMPLETE)).toBe('false')
+			expect(localStorage.getItem(KEY_LEGACY_STEP)).toBeNull()
 		})
 
-		it('should store onTap callback', () => {
-			const sut = createService()
-			const tapFn = (): void => {}
+		it('runs at most once (legacy key deleted after migration)', () => {
+			localStorage.setItem(KEY_LEGACY_STEP, 'completed')
+			createService()
+			expect(localStorage.getItem(KEY_LEGACY_STEP)).toBeNull()
 
-			sut.activateSpotlight('[data-target]', 'msg', tapFn)
-
-			expect(sut.onSpotlightTap).toBe(tapFn)
-		})
-	})
-
-	describe('deactivateSpotlight', () => {
-		it('should clear all spotlight properties', () => {
-			const sut = createService()
-			sut.activateSpotlight('[data-target]', 'msg', () => {}, '24px')
-
-			sut.deactivateSpotlight()
-
-			expect(sut.spotlightActive).toBe(false)
-			expect(sut.spotlightTarget).toBe('')
-			expect(sut.spotlightMessage).toBe('')
-			expect(sut.spotlightRadius).toBe('12px')
-			expect(sut.onSpotlightTap).toBeUndefined()
-		})
-	})
-
-	describe('readyForDashboard', () => {
-		it('should return true when followedCount meets the threshold', () => {
-			const sut = createService({ step: OnboardingStep.DISCOVERY })
-			sut.setDiscoveryCounts(5, 0)
-			expect(sut.readyForDashboard).toBe(true)
-		})
-
-		it('should return true when artistsWithConcertsCount meets the threshold', () => {
-			const sut = createService({ step: OnboardingStep.DISCOVERY })
-			sut.setDiscoveryCounts(0, 3)
-			expect(sut.readyForDashboard).toBe(true)
-		})
-
-		it('should return false when both counts are below threshold', () => {
-			const sut = createService({ step: OnboardingStep.DISCOVERY })
-			sut.setDiscoveryCounts(4, 2)
-			expect(sut.readyForDashboard).toBe(false)
-		})
-
-		it('should return false when step is not DISCOVERY', () => {
-			const sut = createService({ step: OnboardingStep.DASHBOARD })
-			sut.setDiscoveryCounts(10, 10)
-			expect(sut.readyForDashboard).toBe(false)
-		})
-	})
-
-	describe('getRouteForCurrentStep', () => {
-		it('should return "discovery" for DISCOVERY step', () => {
-			const sut = createService({ step: OnboardingStep.DISCOVERY })
-			expect(sut.getRouteForCurrentStep()).toBe('discovery')
-		})
-
-		it('should return "dashboard" for DASHBOARD step', () => {
-			const sut = createService({ step: OnboardingStep.DASHBOARD })
-			expect(sut.getRouteForCurrentStep()).toBe('dashboard')
-		})
-
-		it('should return "my-artists" for MY_ARTISTS step', () => {
-			const sut = createService({ step: OnboardingStep.MY_ARTISTS })
-			expect(sut.getRouteForCurrentStep()).toBe('my-artists')
-		})
-
-		it('should return empty string for LP', () => {
-			const sut = createService()
-			expect(sut.getRouteForCurrentStep()).toBe('')
-		})
-
-		it('should return empty string for COMPLETED', () => {
-			const sut = createService({ step: OnboardingStep.COMPLETED })
-			expect(sut.getRouteForCurrentStep()).toBe('')
+			// A second construction sees no legacy key and reads the new flag.
+			const sut2 = createService()
+			expect(sut2.isCompleted).toBe(true)
 		})
 	})
 })

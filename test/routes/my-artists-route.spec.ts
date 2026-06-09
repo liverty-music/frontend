@@ -17,15 +17,6 @@ vi.mock('@aurelia/router', () => ({
 
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
-	OnboardingStep: {
-		LP: 'lp',
-		DISCOVERY: 'discovery',
-		DASHBOARD: 'dashboard',
-		DETAIL: 'detail',
-		MY_ARTISTS: 'my-artists',
-		CONSENT: 'consent',
-		COMPLETED: 'completed',
-	},
 }))
 
 vi.mock('../../src/services/auth-service', () => ({
@@ -71,13 +62,9 @@ describe('MyArtistsRoute', () => {
 		mockAuth = { isAuthenticated: true, signUp: vi.fn() }
 
 		const mockOnboarding = {
-			currentStep: 'completed', // COMPLETED
 			isOnboarding: false,
 			isCompleted: true,
-			setStep: vi.fn(),
-			complete: vi.fn(),
-			activateSpotlight: vi.fn(),
-			deactivateSpotlight: vi.fn(),
+			finish: vi.fn(),
 		}
 
 		const container = createTestContainer(
@@ -268,17 +255,22 @@ describe('MyArtistsRoute', () => {
 	})
 
 	describe('onHypeInput', () => {
-		describe('onboarding step my-artists', () => {
+		// #444 regression: hype editing is fully decoupled from onboarding. A
+		// guest still in onboarding can change hype repeatedly; every change
+		// applies and persists, and onboarding state is never mutated or used to
+		// revert the change.
+		describe('guest during onboarding (#444)', () => {
 			let onboardingSut: InstanceType<typeof MyArtistsRoute>
-			let onboardingOnboarding: any
+			let onboardingOnboarding: {
+				isOnboarding: boolean
+				finish: ReturnType<typeof vi.fn>
+			}
 
 			beforeEach(async () => {
+				mockAuth.isAuthenticated = false
 				onboardingOnboarding = {
-					currentStep: 'my-artists',
 					isOnboarding: true,
-					setStep: vi.fn(),
-					activateSpotlight: vi.fn(),
-					deactivateSpotlight: vi.fn(),
+					finish: vi.fn(),
 				}
 
 				const container = createTestContainer(
@@ -293,36 +285,43 @@ describe('MyArtistsRoute', () => {
 				await onboardingSut.loading()
 			})
 
-			it('should not activate spotlight on loading (PageHelp handles guidance)', () => {
-				// Spotlight is no longer activated on loading — PageHelp auto-opens instead
-				expect(onboardingOnboarding.activateSpotlight).not.toHaveBeenCalledWith(
-					'[data-artist-rows]',
-					expect.any(String),
-					expect.any(Function),
-				)
-			})
-
-			it('should accept hype change, advance to consent step, and deactivate spotlight', () => {
+			it('applies and persists a hype change without mutating onboarding state', () => {
 				const artist = onboardingSut.artists[0]
 
 				onboardingSut.onHypeInput(artist, 'away')
 
 				expect(artist.hype).toBe('away')
-				expect(onboardingOnboarding.deactivateSpotlight).toHaveBeenCalled()
-				// MY_ARTISTS now advances to CONSENT (the new final
-				// pre-completion onboarding screen); the consent route
-				// itself calls onboarding.complete() after the user
-				// accepts/declines/defers.
-				expect(onboardingOnboarding.setStep).toHaveBeenCalledWith('consent')
+				expect(mockFollowService.setHype).toHaveBeenCalledWith('id-1', 'away')
+				expect(onboardingOnboarding.finish).not.toHaveBeenCalled()
 				expect(mockRouter.load).not.toHaveBeenCalled()
 			})
 
-			it('should not call setHype RPC', () => {
+			it('applies every repeated hype change and never reverts (the #444 bug)', () => {
 				const artist = onboardingSut.artists[0]
 
-				onboardingSut.onHypeInput(artist, 'away')
+				onboardingSut.onHypeInput(artist, 'home')
+				expect(artist.hype).toBe('home')
+				expect(mockFollowService.setHype).toHaveBeenLastCalledWith(
+					'id-1',
+					'home',
+				)
 
-				expect(mockFollowService.setHype).not.toHaveBeenCalled()
+				onboardingSut.onHypeInput(artist, 'nearby')
+				expect(artist.hype).toBe('nearby')
+				expect(mockFollowService.setHype).toHaveBeenLastCalledWith(
+					'id-1',
+					'nearby',
+				)
+
+				onboardingSut.onHypeInput(artist, 'away')
+				expect(artist.hype).toBe('away')
+				expect(mockFollowService.setHype).toHaveBeenLastCalledWith(
+					'id-1',
+					'away',
+				)
+
+				expect(mockFollowService.setHype).toHaveBeenCalledTimes(3)
+				expect(onboardingOnboarding.finish).not.toHaveBeenCalled()
 			})
 		})
 
