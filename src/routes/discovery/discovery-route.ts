@@ -2,19 +2,20 @@ import { I18N } from '@aurelia/i18n'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import { Snack } from '../../components/snack-bar/snack'
+import {
+	DASHBOARD_CONCERT_TARGET,
+	DASHBOARD_FOLLOW_TARGET,
+} from '../../constants/onboarding'
 import type { Artist } from '../../entities/artist'
 import {
 	Events,
 	IAnalyticsService,
 } from '../../lib/analytics/analytics-service'
 import { IArtistStore } from '../../services/artist-store'
+import { ICoachMarkService } from '../../services/coach-mark-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
-import {
-	DASHBOARD_CONCERT_TARGET,
-	DASHBOARD_FOLLOW_TARGET,
-	IOnboardingService,
-} from '../../services/onboarding-service'
+import { IOnboardingService } from '../../services/onboarding-service'
 import { detectCountryFromTimezone } from '../../util/detect-country'
 import { BubbleManager } from './bubble-manager'
 import { GenreFilterController } from './genre-filter-controller'
@@ -24,6 +25,7 @@ export class DiscoveryRoute {
 	private readonly artistClient = resolve(IArtistStore)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly onboarding = resolve(IOnboardingService)
+	private readonly coachMark = resolve(ICoachMarkService)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly concertService = resolve(IConcertStore)
 	private readonly analytics = resolve(IAnalyticsService)
@@ -88,12 +90,15 @@ export class DiscoveryRoute {
 		return this.followStore.followedCount
 	}
 
+	public get artistsWithConcertsCount(): number {
+		return this.concertService.artistsWithConcertsCount
+	}
+
 	public get showDashboardCoachMark(): boolean {
 		return (
 			this.isOnboarding &&
 			(this.followedCount >= DASHBOARD_FOLLOW_TARGET ||
-				this.concertService.artistsWithConcertsCount >=
-					DASHBOARD_CONCERT_TARGET)
+				this.artistsWithConcertsCount >= DASHBOARD_CONCERT_TARGET)
 		)
 	}
 
@@ -122,7 +127,7 @@ export class DiscoveryRoute {
 	protected onShowDashboardCoachMarkChanged(show: boolean): void {
 		if (show && !this.dashboardCoachMarkShown) {
 			this.dashboardCoachMarkShown = true
-			this.onboarding.activateSpotlight(
+			this.coachMark.activate(
 				'[data-nav="home"]',
 				this.i18n.tr('discovery.coachMark.viewTimetable'),
 				() => this.onCoachMarkTap(),
@@ -157,12 +162,6 @@ export class DiscoveryRoute {
 			for (const f of this.followStore.guestFollows) {
 				void this.searchConcertsForArtist(f.artist.id, f.artist.name)
 			}
-			// Sync initial counts — @watch only fires on changes, not on the
-			// initial value, so we push the baseline explicitly after hydration.
-			this.onboarding.setDiscoveryCounts(
-				this.followedCount,
-				this.concertService.artistsWithConcertsCount,
-			)
 		}
 	}
 
@@ -174,8 +173,7 @@ export class DiscoveryRoute {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		this.search.dispose()
-		this.onboarding.deactivateSpotlight()
-		this.onboarding.setDiscoveryCounts(0, 0)
+		this.coachMark.deactivate()
 	}
 
 	private readonly onVisibilityChange = (): void => {
@@ -191,22 +189,6 @@ export class DiscoveryRoute {
 	@watch('search.searchQuery')
 	protected onSearchQueryChanged(newValue: string): void {
 		this.search.onQueryChanged(newValue)
-	}
-
-	@watch((vm: DiscoveryRoute) => vm.followedCount)
-	protected onFollowedCountChanged(): void {
-		this.onboarding.setDiscoveryCounts(
-			this.followedCount,
-			this.concertService.artistsWithConcertsCount,
-		)
-	}
-
-	@watch((vm: DiscoveryRoute) => vm.concertService.artistsWithConcertsCount)
-	protected onArtistsWithConcertsCountChanged(): void {
-		this.onboarding.setDiscoveryCounts(
-			this.followedCount,
-			this.concertService.artistsWithConcertsCount,
-		)
 	}
 
 	public clearSearch(): void {
@@ -361,13 +343,13 @@ export class DiscoveryRoute {
 	}
 
 	public onCoachMarkTap(): void {
-		// Dismiss the spotlight only — do not navigate. The user advances to the
-		// dashboard by tapping the timetable nav themselves, which AuthHook then
-		// allows (readyForDashboard) and where the step transition happens.
-		this.logger.info('Onboarding: dashboard coach mark dismissed', {
+		// Navigation is delegated to the target nav link's native click by the
+		// coach-mark component; this callback only dismisses the spotlight. It
+		// never advances any onboarding step (there is no step machine).
+		this.logger.info('Onboarding: dashboard coach mark tapped', {
 			followedCount: this.followedCount,
 		})
-		this.onboarding.deactivateSpotlight()
+		this.coachMark.deactivate()
 	}
 
 	/**

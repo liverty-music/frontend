@@ -4,9 +4,9 @@ import { expect, type Page, test } from '@playwright/test'
  * E2E tests for concert detail sheet dismiss behavior.
  *
  * Covers:
- * - Task 5.1: Step 3→4 flow — coach mark renders above detail sheet
- * - Task 5.2: Normal dismiss — tap outside, Escape, swipe down, browser back
- * - Task 5.3: Page reload during Step 4 — coach mark re-appears above sheet
+ * - Normal dismiss — tap outside, Escape, swipe down, browser back
+ * - Reload recovery for a still-onboarding guest deep-linking to the dashboard
+ *   (single-flag model: no per-screen step, soft gate, no blocking overlays)
  */
 
 /** Mock Connect-RPC routes with concert data for dashboard rendering. */
@@ -161,13 +161,13 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 }
 
 /**
- * Seed localStorage for the MY_ARTISTS spotlight state.
- * In the new flow, after celebration dismiss the step is 'my-artists'
- * and the coach mark targets the My Artists nav tab.
+ * Seed localStorage for a still-onboarding guest with follows + home set.
+ * Single-flag model: there is no per-screen step value — "still onboarding"
+ * is just `onboardingComplete = false`, and the screen is the route navigated to.
  */
 function seedMyArtistsSpotlightState() {
 	return () => {
-		localStorage.setItem('onboardingStep', 'my-artists')
+		localStorage.setItem('onboardingComplete', 'false')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
@@ -181,10 +181,10 @@ function seedMyArtistsSpotlightState() {
 	}
 }
 
-/** Seed localStorage for a state past dashboard (my-artists allows dashboard access and sheet dismiss). */
+/** Seed localStorage for a still-onboarding guest (dashboard reachable, sheet dismiss). */
 function seedPostDashboardState() {
 	return () => {
-		localStorage.setItem('onboardingStep', 'my-artists')
+		localStorage.setItem('onboardingComplete', 'false')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
@@ -294,11 +294,13 @@ test.describe('Normal detail sheet dismiss', () => {
 })
 
 // =========================================================================
-// Task 5.3: Page reload during MY_ARTISTS spotlight state
-// (The old 'detail' step is removed; reload recovery now tests 'my-artists' state)
+// Reload recovery: a still-onboarding guest deep-links to the dashboard.
+// Single-flag model — there is no per-screen step, and the dashboard is
+// reachable any time under the soft gate. No coach-mark/lane overlay blocks
+// the page, and the nav stays fully interactive.
 // =========================================================================
 
-test.describe('MY_ARTISTS spotlight reload recovery', () => {
+test.describe('Still-onboarding reload recovery', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
 	test.beforeEach(async ({ page }) => {
@@ -306,29 +308,38 @@ test.describe('MY_ARTISTS spotlight reload recovery', () => {
 		await mockRpcRoutes(page)
 	})
 
-	test('dashboard loads normally after reload at my-artists step', async ({
+	test('dashboard loads with no blocking overlay and interactive nav', async ({
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/dashboard')
 
-		// Dashboard should load without active coach mark (step is 'my-artists', not 'dashboard')
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
-		// Lane intro overlay should not be visible (step is not 'dashboard')
+		// No blocking coach-mark overlay on the dashboard (the discovery → dashboard
+		// coach mark only renders on the discovery route).
 		await expect(page.locator('.coach-mark-overlay')).not.toBeVisible()
 
-		// My Artists tab should be visible and enabled (nav not dimmed)
+		// My Artists tab is visible and enabled (soft gate — nav never dimmed)
 		const myArtistsNav = page.locator('[data-nav="my-artists"]')
 		await expect(myArtistsNav).toBeVisible()
 	})
 
-	test('My Artists tab navigates to my-artists page after reload', async ({
+	test('My Artists tab navigates to my-artists; meaningful dashboard arrival latched onboarding', async ({
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/dashboard')
 
 		// Wait for dashboard to load
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
+
+		// Meaningful dashboard arrival (region set + data loaded + followedCount >= 1)
+		// latches the single onboarding flag to complete.
+		await expect
+			.poll(
+				() => page.evaluate(() => localStorage.getItem('onboardingComplete')),
+				{ timeout: 10_000 },
+			)
+			.toBe('true')
 
 		const myArtistsNav = page.locator('[data-nav="my-artists"]')
 		await expect(myArtistsNav).toBeVisible()
@@ -337,10 +348,10 @@ test.describe('MY_ARTISTS spotlight reload recovery', () => {
 		// Should navigate to My Artists page
 		await expect(page).toHaveURL(/my-artists/, { timeout: 10_000 })
 
-		// Step stays at 'my-artists' (hype change completes it, not navigation)
-		const step = await page.evaluate(() =>
-			localStorage.getItem('onboardingStep'),
+		// Flag stays completed (one-way latch); navigation never reverts it.
+		const complete = await page.evaluate(() =>
+			localStorage.getItem('onboardingComplete'),
 		)
-		expect(step).toBe('my-artists')
+		expect(complete).toBe('true')
 	})
 })

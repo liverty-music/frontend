@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test'
 
-// The dashboard requires auth or onboarding step >= 3.
-// Set onboarding step and region to bypass auth and region-setup dialog.
+// The dashboard is reachable any time under the soft gate. Mark onboarding
+// complete and set the guest home region so the region-setup dialog (and its
+// blur) stays closed while the PWA banner assertions run.
 const ONBOARDING_SETUP = () => {
-	localStorage.setItem('onboardingStep', 'dashboard')
-	localStorage.setItem('user.adminArea', 'Tokyo')
+	localStorage.setItem('onboardingComplete', 'true')
+	localStorage.setItem('guest.home', 'JP-13')
 }
 
 test.describe('PWA Install Prompt', () => {

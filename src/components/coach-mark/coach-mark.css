@@ -20,14 +20,15 @@
 		animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
 	}
 
-	/* Popover UA style reset */
+	/* Fixed full-viewport, non-blocking host for the spotlight + tooltip. The
+	   host itself never intercepts pointer events (pointer-events: none); only
+	   the target-interceptor opts back in over the highlighted target. */
 	.coach-mark-overlay {
 		pointer-events: none;
 
-		inline-size: 100vi;
-		max-inline-size: none;
-		block-size: 100vb;
-		max-block-size: none;
+		position: fixed;
+		inset: 0;
+
 		margin: 0;
 		padding: 0;
 		border: none;
@@ -35,10 +36,6 @@
 		color: inherit;
 
 		background: transparent;
-
-		&::backdrop {
-			display: none;
-		}
 	}
 
 	/* Visual layer: box-shadow creates dark overlay with rounded cutout */
@@ -59,38 +56,20 @@
 		view-transition-name: spotlight;
 	}
 
-	/* Logic layer: transparent divs block clicks outside target */
-	.click-blocker {
-		pointer-events: auto;
-		position: fixed;
-		background-color: transparent;
-	}
-
-	.mask-top {
-		inset: 0 0 auto;
-		inset-block-end: anchor(--coach-target top);
-	}
-
-	.mask-bottom {
-		inset: auto 0 0;
-		inset-block-start: anchor(--coach-target bottom);
-	}
-
-	.mask-left {
-		inset: anchor(--coach-target top) anchor(--coach-target left)
-			anchor(--coach-target bottom) 0;
-	}
-
-	.mask-right {
-		inset: anchor(--coach-target top) 0 anchor(--coach-target bottom)
-			anchor(--coach-target right);
-	}
-
-	/* Target click interceptor — captures clicks on the target element */
+	/* Target click interceptor — overlays only the highlighted target and
+	   delegates taps to its native click. It is the one element that opts back
+	   into pointer events; the rest of the page stays interactive (non-blocking
+	   coach mark, no off-target click-blockers). */
 	.target-interceptor {
+		pointer-events: auto;
+
+		position: fixed;
 		inset: anchor(--coach-target top) anchor(--coach-target right)
 			anchor(--coach-target bottom) anchor(--coach-target left);
+
 		margin: var(--coach-spotlight-outset);
+
+		background-color: transparent;
 	}
 
 	/* Tooltip positioned via Anchor Positioning with @position-try fallbacks.

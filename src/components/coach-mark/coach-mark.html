@@ -1,20 +1,15 @@
 <import from="./coach-mark.css"></import>
 
-<dialog
-  ref="overlayEl"
-  popover="manual"
+<div
+  if.bind="visible"
   class="[ coach-mark-overlay ]"
   keydown.trigger="onKeydown($event)"
 >
   <div class="visual-spotlight"></div>
 
-  <div class="click-blocker mask-top" click.trigger="onBlockerClick()"></div>
-  <div class="click-blocker mask-right" click.trigger="onBlockerClick()"></div>
-  <div class="click-blocker mask-bottom" click.trigger="onBlockerClick()"></div>
-  <div class="click-blocker mask-left" click.trigger="onBlockerClick()"></div>
-  <div class="click-blocker target-interceptor" click.trigger="onTargetClick($event)"></div>
+  <div class="target-interceptor" click.trigger="onTargetClick($event)"></div>
 
   <div class="coach-mark-tooltip" aria-label="Onboarding tip" role="tooltip">
     <p class="coach-tooltip-message">${message}</p>
   </div>
-</dialog>
+</div>

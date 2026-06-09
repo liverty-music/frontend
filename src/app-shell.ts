@@ -2,6 +2,7 @@ import { IRouter, IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { Events, IAnalyticsService } from './lib/analytics/analytics-service'
 import { IAuthService } from './services/auth-service'
+import { ICoachMarkService } from './services/coach-mark-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IOnboardingService } from './services/onboarding-service'
 @route({
@@ -33,7 +34,6 @@ import { IOnboardingService } from './services/onboarding-service'
 			path: 'dashboard',
 			component: import('./routes/dashboard/dashboard-route'),
 			title: 'Dashboard',
-			data: { onboardingStep: 'dashboard' },
 		},
 		{
 			path: 'concerts/:id',
@@ -44,28 +44,21 @@ import { IOnboardingService } from './services/onboarding-service'
 			path: 'discovery',
 			component: import('./routes/discovery/discovery-route'),
 			title: 'Discovery',
-			data: { auth: false, onboardingStep: 'discovery' },
+			data: { auth: false },
 		},
 		{
 			path: 'my-artists',
 			component: import('./routes/my-artists/my-artists-route'),
 			title: 'My Artists',
-			data: { onboardingStep: 'my-artists' },
 		},
 		{
 			path: 'consent',
 			component: import('./routes/consent/consent-route'),
 			title: 'Privacy & Analytics',
-			// Final onboarding step. `auth: false` is intentional: guest
-			// users in the my-artists step also reach the consent screen
-			// (the my-artists route's hype-change handler advances to
-			// CONSENT for both authenticated and guest paths), and the
-			// PostHog SDK has no real user_id to identify either way
-			// until signup. A guest who grants consent here carries the
-			// choice forward when they later sign up. AuthHook's
-			// progression gate (consent ordinally ≥ my-artists) still
-			// protects against direct deep-links.
-			data: { auth: false, onboardingStep: 'consent' },
+			// Public, directly-linkable privacy/analytics screen. No longer part
+			// of the onboarding step machine (removed); consent application logic
+			// is unchanged and lives in ConsentService.
+			data: { auth: false },
 		},
 		{
 			path: 'tickets',
@@ -76,9 +69,6 @@ import { IOnboardingService } from './services/onboarding-service'
 			path: 'settings',
 			component: import('./routes/settings/settings-route'),
 			title: 'Settings',
-			// Reachable from the discovery step onward so guests can sign in /
-			// switch language without completing onboarding (see AuthHook).
-			data: { earlyUnlock: true },
 		},
 		{
 			path: 'import/ticket-email',
@@ -120,6 +110,7 @@ export class AppShell {
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
 	public readonly onboarding = resolve(IOnboardingService)
+	public readonly coachMark = resolve(ICoachMarkService)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly analytics = resolve(IAnalyticsService)
 	private readonly logger = resolve(ILogger).scopeTo('AppShell')

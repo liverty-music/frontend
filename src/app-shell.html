@@ -16,11 +16,11 @@
 <snack-bar></snack-bar>
 <error-banner></error-banner>
 
-<!-- Onboarding coach mark: single instance driven by onboarding service -->
+<!-- Onboarding coach mark: single instance driven by CoachMarkService -->
 <coach-mark
-  target-selector.bind="onboarding.spotlightTarget"
-  message.bind="onboarding.spotlightMessage"
-  spotlight-radius.bind="onboarding.spotlightRadius"
-  active.bind="onboarding.spotlightActive"
-  on-tap.bind="() => onboarding.onSpotlightTap?.()"
+  target-selector.bind="coachMark.target"
+  message.bind="coachMark.message"
+  spotlight-radius.bind="coachMark.radius"
+  active.bind="coachMark.active"
+  on-tap.bind="() => coachMark.onTap?.()"
 ></coach-mark>

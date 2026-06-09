@@ -15,11 +15,13 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 }
 
 const BYPASS_AUTH_SETUP = () => {
-	localStorage.setItem('onboardingStep', 'completed')
+	localStorage.setItem('onboardingComplete', 'true')
 }
 
 const ONBOARDING_DISCOVER_SETUP = () => {
-	localStorage.setItem('onboardingStep', 'discovery')
+	// "Still onboarding" in the single-flag model (flag false). The discovery
+	// screen is reached by navigating to /discovery, not by a step value.
+	localStorage.setItem('onboardingComplete', 'false')
 }
 
 export const test = base.extend<{

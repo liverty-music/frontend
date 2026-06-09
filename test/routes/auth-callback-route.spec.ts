@@ -22,7 +22,7 @@ function authUser(email: string | undefined): { profile: { email?: string } } {
 
 function createMockOnboarding() {
 	return {
-		complete: vi.fn(),
+		finish: vi.fn(),
 	}
 }
 
@@ -113,7 +113,7 @@ describe('AuthCallbackRoute', () => {
 				expect.stringMatching(/^(en|ja)$/),
 			)
 			expect(mockUserService.create).not.toHaveBeenCalled()
-			expect(mockOnboarding.complete).toHaveBeenCalled()
+			expect(mockOnboarding.finish).toHaveBeenCalled()
 			expect(mockUserStore.clearGuest).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
@@ -133,7 +133,7 @@ describe('AuthCallbackRoute', () => {
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalledTimes(1)
 			expect(mockUserService.create).not.toHaveBeenCalled()
-			expect(mockOnboarding.complete).toHaveBeenCalled()
+			expect(mockOnboarding.finish).toHaveBeenCalled()
 			expect(mockUserStore.clearGuest).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})
@@ -278,7 +278,7 @@ describe('AuthCallbackRoute', () => {
 
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(mockOnboarding.complete).toHaveBeenCalled()
+			expect(mockOnboarding.finish).toHaveBeenCalled()
 			expect(mockUserStore.clearGuest).toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 		})

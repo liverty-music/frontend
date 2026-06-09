@@ -7,10 +7,7 @@ import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import { IFollowStore } from '../../services/follow-store'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../services/onboarding-service'
+import { IOnboardingService } from '../../services/onboarding-service'
 
 export interface MyArtist extends FollowedArtist {
 	color: string
@@ -46,10 +43,6 @@ export class MyArtistsRoute {
 	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
 	private abortController: AbortController | null = null
-
-	public get isOnboardingStepMyArtists(): boolean {
-		return this.onboarding.currentStep === OnboardingStep.MY_ARTISTS
-	}
 
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
@@ -253,34 +246,12 @@ export class MyArtistsRoute {
 		artist.hype = newHype
 		const hype = newHype
 
-		// Onboarding MY_ARTISTS step: accept hype change, advance to the
-		// CONSENT step (final pre-completion onboarding screen, added in
-		// the introduce-analytics-tool PR). The consent route itself
-		// calls `onboarding.complete()` once the user picks Accept /
-		// Decline / Set up later.
-		if (this.isOnboardingStepMyArtists) {
-			this.prevHypes.set(artistId, hype)
-			this.onboarding.deactivateSpotlight()
-			this.onboarding.setStep(OnboardingStep.CONSENT)
-			// Persist for guest users — merged on signup. The signup banner is
-			// already visible (set in loading() for any guest); no toggle here.
-			// followStore routes to the guest queue internally when not
-			// authenticated (synchronous localStorage write, no RPC).
-			if (!this.isAuthenticated) {
-				void this.followStore.setHype(artistId, hype)
-			}
-			return
-		}
-
-		// Block during other onboarding steps (should not happen, but guard)
-		if (this.isOnboarding) {
-			artist.hype = prev
-			return
-		}
-
-		// Unauthenticated outside onboarding: persist to guest storage. The signup
-		// banner is already visible from loading(); no host-side toggle needed.
-		// followStore routes to the guest queue internally (synchronous write).
+		// Hype editing is fully decoupled from onboarding state (#444): every
+		// change applies and persists, and onboarding is never mutated here.
+		//
+		// Unauthenticated: persist to guest storage. The signup banner is already
+		// visible from loading(); no host-side toggle needed. followStore routes to
+		// the guest queue internally (synchronous localStorage write, no RPC).
 		if (!this.isAuthenticated) {
 			this.prevHypes.set(artistId, hype)
 			void this.followStore.setHype(artistId, hype)

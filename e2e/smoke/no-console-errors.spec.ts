@@ -50,9 +50,11 @@ for (const route of PUBLIC_ROUTES) {
 			}
 		})
 
-		// Bypass auth/onboarding redirects
+		// Mark onboarding complete (single-flag model). Not strictly required for
+		// these public routes under the soft gate, but keeps the smoke run on the
+		// returning-user path (no first-run-only side effects).
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'completed')
+			localStorage.setItem('onboardingComplete', 'true')
 		})
 
 		await page.goto(route)

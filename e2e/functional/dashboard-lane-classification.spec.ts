@@ -139,7 +139,7 @@ test.describe('Dashboard lane classification after home selection', () => {
 
 		// Seed: step 3, followed artists, NO guest.home -> needsRegion = true
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'dashboard')
+			localStorage.setItem('onboardingComplete', 'false')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.removeItem('guest.home')
 			localStorage.setItem(
@@ -198,7 +198,7 @@ test.describe('Dashboard lane classification after home selection', () => {
 		// Seed: step 3, guest.home already set, celebration already shown.
 		// This simulates returning to dashboard after having already selected home.
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'dashboard')
+			localStorage.setItem('onboardingComplete', 'false')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(

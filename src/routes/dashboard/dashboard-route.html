@@ -20,8 +20,16 @@
   retry-action.bind="() => loadData()"
 ></inline-error>
 
+<!-- Guest empty-state CTA: unauthenticated visitor with zero follows. Soft gate
+     guidance toward discovery instead of a guard redirect. -->
+<state-placeholder if.bind="!isLoading && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
+  <p t="dashboard.guestEmpty.title" class="dashboard-empty-title"></p>
+  <p t="dashboard.guestEmpty.subtitle" class="dashboard-empty-subtitle"></p>
+  <a href.bind="'discovery'" t="dashboard.guestEmpty.cta" class="dashboard-empty-link"></a>
+</state-placeholder>
+
 <!-- Empty state -->
-<state-placeholder if.bind="!isLoading && !loadError && filteredDateGroups.length === 0" icon="clock">
+<state-placeholder if.bind="!isLoading && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
   <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
   <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
   <a href.bind="'discovery'" t="dashboard.empty.discoverLink" class="dashboard-empty-link"></a>

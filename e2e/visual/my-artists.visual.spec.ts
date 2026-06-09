@@ -2,7 +2,7 @@ import { expect, test } from './fixtures'
 
 function seedWithArtists() {
 	return () => {
-		localStorage.setItem('onboardingStep', 'my-artists')
+		localStorage.setItem('onboardingComplete', 'false')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(
 			'guest.followedArtists',
@@ -26,7 +26,7 @@ function seedWithArtists() {
 
 function seedEmpty() {
 	return () => {
-		localStorage.setItem('onboardingStep', 'my-artists')
+		localStorage.setItem('onboardingComplete', 'false')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem('guest.followedArtists', JSON.stringify([]))
 	}

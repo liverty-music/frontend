@@ -1,28 +1,8 @@
 import { DI, ILogger, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { IOnboardingService } from '../../src/services/onboarding-service'
 import { createMockLogger } from '../helpers/mock-logger'
 
 const { CoachMark } = await import('../../src/components/coach-mark/coach-mark')
-
-function createMockOnboarding() {
-	return {
-		currentStep: 'completed',
-		spotlightTarget: '',
-		spotlightMessage: '',
-		spotlightRadius: '12px',
-		spotlightActive: false,
-		onSpotlightTap: undefined as (() => void) | undefined,
-		isOnboarding: false,
-		isCompleted: true,
-		activateSpotlight: vi.fn(),
-		deactivateSpotlight: vi.fn(),
-		setStep: vi.fn(),
-		complete: vi.fn(),
-		reset: vi.fn(),
-		getRouteForCurrentStep: vi.fn(() => ''),
-	}
-}
 
 function createMockElement(
 	opts: { top?: number; height?: number } = {},
@@ -40,201 +20,102 @@ function createMockElement(
 			y: opts.top ?? 100,
 			toJSON: () => ({}),
 		}) as DOMRect
-	// Stub scrollIntoView since jsdom doesn't implement it
-	el.scrollIntoView = vi.fn()
 	return el
 }
 
 describe('CoachMark', () => {
 	let sut: InstanceType<typeof CoachMark>
-	let overlayEl: HTMLElement
 	let targetEl: HTMLElement
-	let mockOnboarding: ReturnType<typeof createMockOnboarding>
 
 	beforeEach(() => {
 		vi.useFakeTimers()
-		mockOnboarding = createMockOnboarding()
 
 		const container = DI.createContainer()
 		container.register(Registration.instance(ILogger, createMockLogger()))
-		container.register(
-			Registration.instance(IOnboardingService, mockOnboarding),
-		)
-
 		sut = container.invoke(CoachMark)
 
-		// Stub the overlayEl ref with mock popover methods
-		overlayEl = document.createElement('div')
-		overlayEl.showPopover = vi.fn()
-		overlayEl.hidePopover = vi.fn()
-		;(sut as unknown as { overlayEl: HTMLElement }).overlayEl = overlayEl
-
-		// Create a target element in the document
 		targetEl = createMockElement()
 		targetEl.setAttribute('data-test-target', '')
 		document.body.appendChild(targetEl)
 
-		// Mock document.querySelector to find the target
 		sut.targetSelector = '[data-test-target]'
 	})
 
 	afterEach(() => {
 		vi.useRealTimers()
-		document.body.removeChild(targetEl)
+		if (targetEl.parentNode) document.body.removeChild(targetEl)
 		vi.restoreAllMocks()
 	})
 
-	describe('highlight and popover', () => {
-		it('should set anchor-name on target when highlighted', async () => {
+	describe('highlight', () => {
+		it('sets anchor-name on target and becomes visible when activated', () => {
 			sut.active = true
 			sut.activeChanged()
-
-			// Advance past scrollend failsafe
-			await vi.advanceTimersByTimeAsync(900)
 
 			expect(targetEl.style.getPropertyValue('anchor-name')).toBe(
 				'--coach-target',
 			)
-		})
-
-		it('should open popover only once (continuous spotlight persistence)', async () => {
-			sut.active = true
-			sut.activeChanged()
-
-			// Advance past scrollend failsafe
-			await vi.advanceTimersByTimeAsync(900)
-
-			expect(overlayEl.showPopover).toHaveBeenCalledTimes(1)
-
-			// Create a second target
-			const target2 = createMockElement()
-			target2.setAttribute('data-test-target-2', '')
-			document.body.appendChild(target2)
-
-			sut.targetSelector = '[data-test-target-2]'
-			sut.targetSelectorChanged()
-
-			await vi.advanceTimersByTimeAsync(900)
-
-			// showPopover should still only have been called once
-			expect(overlayEl.showPopover).toHaveBeenCalledTimes(1)
-
-			document.body.removeChild(target2)
-		})
-
-		it('should not call hidePopover when changing target', async () => {
-			sut.active = true
-			sut.activeChanged()
-
-			await vi.advanceTimersByTimeAsync(900)
-
-			// Change target
-			const target2 = createMockElement()
-			target2.setAttribute('data-test-target-2', '')
-			document.body.appendChild(target2)
-
-			sut.targetSelector = '[data-test-target-2]'
-			sut.targetSelectorChanged()
-
-			expect(overlayEl.hidePopover).not.toHaveBeenCalled()
-
-			document.body.removeChild(target2)
+			expect(sut.visible).toBe(true)
 		})
 	})
 
 	describe('deactivate', () => {
-		it('should call hidePopover and clean up anchor-name and scroll lock', async () => {
-			// Set up au-viewport for scroll lock test
+		it('clears anchor-name and visibility', () => {
+			sut.active = true
+			sut.activeChanged()
+
+			sut.deactivate()
+
+			expect(targetEl.style.getPropertyValue('anchor-name')).toBe('')
+			expect(sut.visible).toBe(false)
+		})
+
+		it('does not lock viewport scroll (non-blocking)', () => {
 			const viewport = document.createElement('au-viewport')
 			document.body.appendChild(viewport)
 
 			sut.active = true
 			sut.activeChanged()
 
-			// Advance past scrollend failsafe so popover opens
-			await vi.advanceTimersByTimeAsync(900)
-
-			// Verify scroll lock is active
-			expect(viewport.style.getPropertyValue('overflow')).toBe('hidden')
-
-			// Deactivate
-			sut.deactivate()
-
-			expect(overlayEl.hidePopover).toHaveBeenCalledTimes(1)
-			expect(targetEl.style.getPropertyValue('anchor-name')).toBe('')
+			// The coach mark never forces overflow:hidden on the viewport.
 			expect(viewport.style.getPropertyValue('overflow')).toBe('')
-			expect(sut.visible).toBe(false)
+
+			sut.deactivate()
+			expect(viewport.style.getPropertyValue('overflow')).toBe('')
 
 			document.body.removeChild(viewport)
 		})
 	})
 
-	describe('scroll into view', () => {
-		it('should always call scrollIntoView to let the browser decide', async () => {
+	describe('target click', () => {
+		it('delegates to the target native click and invokes onTap', () => {
+			const onTap = vi.fn()
+			sut.onTap = onTap
 			sut.active = true
 			sut.activeChanged()
 
-			// Advance past scrollend failsafe
-			await vi.advanceTimersByTimeAsync(900)
-
-			expect(targetEl.scrollIntoView).toHaveBeenCalledWith({
-				behavior: 'smooth',
-				block: 'center',
-				inline: 'center',
-			})
-		})
-
-		it('should resolve via scrollend event when fired before failsafe', async () => {
-			sut.active = true
-			sut.activeChanged()
-
-			// Simulate scrollend firing immediately
-			window.dispatchEvent(new Event('scrollend'))
-			await vi.advanceTimersByTimeAsync(0)
-
-			expect(sut.visible).toBe(true)
-			expect(overlayEl.showPopover).toHaveBeenCalledTimes(1)
-		})
-	})
-
-	describe('click interaction', () => {
-		it('should call onTap when blocker is clicked (tap anywhere to advance)', () => {
-			const onTap = vi.fn()
-			sut.onTap = onTap
-
-			sut.onBlockerClick()
-
-			expect(onTap).toHaveBeenCalledTimes(1)
-		})
-
-		it('should not throw when blocker is clicked without onTap set', () => {
-			sut.onTap = undefined
-
-			expect(() => sut.onBlockerClick()).not.toThrow()
-		})
-
-		it('should call onTap only when target interceptor is clicked', () => {
-			const onTap = vi.fn()
-			sut.onTap = onTap
-
+			const clickSpy = vi.spyOn(targetEl, 'click')
 			const event = new Event('click', { bubbles: true })
 			vi.spyOn(event, 'preventDefault')
 			vi.spyOn(event, 'stopPropagation')
 
 			sut.onTargetClick(event)
 
+			expect(clickSpy).toHaveBeenCalledTimes(1)
 			expect(onTap).toHaveBeenCalledTimes(1)
 			expect(event.preventDefault).toHaveBeenCalled()
 			expect(event.stopPropagation).toHaveBeenCalled()
 		})
 
-		it('should not throw when onTap is undefined and target is clicked', () => {
+		it('does not throw when onTap is undefined', () => {
 			sut.onTap = undefined
 			const event = new Event('click')
 			expect(() => sut.onTargetClick(event)).not.toThrow()
 		})
+	})
 
-		it('should call onTap when Enter key is pressed', () => {
+	describe('keyboard handler', () => {
+		it('invokes onTap on Enter', () => {
 			const onTap = vi.fn()
 			sut.onTap = onTap
 			const event = new KeyboardEvent('keydown', { key: 'Enter' })
@@ -246,37 +127,36 @@ describe('CoachMark', () => {
 			expect(event.preventDefault).toHaveBeenCalled()
 		})
 
-		it('should call onTap when Space key is pressed', () => {
+		it('invokes onTap on Space', () => {
 			const onTap = vi.fn()
 			sut.onTap = onTap
-			const event = new KeyboardEvent('keydown', { key: ' ' })
-			vi.spyOn(event, 'preventDefault')
-
-			sut.onKeydown(event)
-
+			sut.onKeydown(new KeyboardEvent('keydown', { key: ' ' }))
 			expect(onTap).toHaveBeenCalledTimes(1)
-			expect(event.preventDefault).toHaveBeenCalled()
 		})
 
-		it('should not call onTap for other keys', () => {
+		it('ignores other keys', () => {
 			const onTap = vi.fn()
 			sut.onTap = onTap
-			const event = new KeyboardEvent('keydown', { key: 'Escape' })
-
-			sut.onKeydown(event)
-
+			sut.onKeydown(new KeyboardEvent('keydown', { key: 'Escape' }))
 			expect(onTap).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('retry behavior', () => {
-		it('should set visible to false when target is not found after retries', async () => {
+		it('sets visible to false when target is not found after retries', async () => {
 			sut.targetSelector = '[data-nonexistent]'
 			sut.active = true
 			sut.activeChanged()
 
-			// Advance past MAX_RETRY_MS (5000ms)
 			await vi.advanceTimersByTimeAsync(6000)
+
+			expect(sut.visible).toBe(false)
+		})
+
+		it('does nothing for an empty selector (empty-selector guard)', () => {
+			sut.targetSelector = ''
+			sut.active = true
+			sut.activeChanged()
 
 			expect(sut.visible).toBe(false)
 		})

@@ -118,7 +118,7 @@ export class AuthCallbackRoute {
 			//   - mark onboarding complete.
 			// Both are idempotent and safe on the returning-sign-in path.
 			this.userStore.clearGuest()
-			this.onboarding.complete()
+			this.onboarding.finish()
 
 			// On a GENUINELY NEW account: set flag so dashboard shows
 			// PostSignupDialog. Keyed on the new-account signal from provisioning

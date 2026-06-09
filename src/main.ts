@@ -64,6 +64,7 @@ import ja from './locales/ja/translation.json'
 import { IArtistStore } from './services/artist-store'
 import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
+import { ICoachMarkService } from './services/coach-mark-service'
 import { IConcertStore } from './services/concert-store'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { FollowReconcileTask } from './services/follow-reconcile-task'
@@ -199,6 +200,7 @@ async function bootstrap(): Promise<void> {
 	au.register(IArtistStore)
 	au.register(IConcertStore)
 	au.register(IOnboardingService)
+	au.register(ICoachMarkService)
 	// UserStore is the single owner of the User entity: it owns the guest
 	// home/language slice directly (hydrated from the guest-storage adapter) AND
 	// the authenticated User entity (cache→Get→Create chain + write-through

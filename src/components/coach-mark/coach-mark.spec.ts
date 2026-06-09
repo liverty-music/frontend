@@ -52,23 +52,6 @@ describe('CoachMark', () => {
 		})
 	})
 
-	describe('onTap callback', () => {
-		it('invokes onTap when onBlockerClick is called', () => {
-			const tapSpy = vi.fn()
-			sut.onTap = tapSpy
-
-			sut.onBlockerClick()
-
-			expect(tapSpy).toHaveBeenCalledOnce()
-		})
-
-		it('does not throw when onTap is not set', () => {
-			sut.onTap = undefined
-
-			expect(() => sut.onBlockerClick()).not.toThrow()
-		})
-	})
-
 	describe('keyboard handler', () => {
 		it('invokes onTap on Enter key', () => {
 			const tapSpy = vi.fn()
@@ -125,6 +108,49 @@ describe('CoachMark', () => {
 			sut.detaching()
 
 			expect(sut.visible).toBe(false)
+		})
+	})
+
+	describe('active/selector reactivity', () => {
+		// With an empty target selector findAndHighlight() returns early after the
+		// guard, so these exercise the activeChanged / bound / targetSelectorChanged
+		// branches without touching DOM anchoring or the retry timer.
+		it('deactivates when active flips to false', () => {
+			sut.visible = true
+			sut.active = false
+			sut.activeChanged()
+
+			expect(sut.visible).toBe(false)
+		})
+
+		it('attempts highlight when active flips to true', () => {
+			sut.active = true
+			sut.targetSelector = ''
+			sut.activeChanged()
+
+			// Empty selector → no highlight, stays not visible (guard path).
+			expect(sut.visible).toBe(false)
+		})
+
+		it('attempts highlight on bound when already active', () => {
+			sut.active = true
+			sut.targetSelector = ''
+
+			expect(() => sut.bound()).not.toThrow()
+		})
+
+		it('does nothing on bound when inactive', () => {
+			sut.active = false
+
+			expect(() => sut.bound()).not.toThrow()
+			expect(sut.visible).toBe(false)
+		})
+
+		it('re-resolves the target when the selector changes while active', () => {
+			sut.active = true
+			sut.targetSelector = ''
+
+			expect(() => sut.targetSelectorChanged()).not.toThrow()
 		})
 	})
 })

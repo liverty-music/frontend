@@ -29,13 +29,6 @@ vi.mock('../../src/services/ticket-journey-service', () => ({
 }))
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
-	OnboardingStep: {
-		LP: 'lp',
-		DISCOVERY: 'discovery',
-		DASHBOARD: 'dashboard',
-		MY_ARTISTS: 'my-artists',
-		COMPLETED: 'completed',
-	},
 }))
 vi.mock('../../src/services/user-store', () => ({
 	IUserStore: mockIUserStore,
@@ -61,12 +54,11 @@ const { UserHomeSelector } = await import(
 
 // ---- Factory helpers ----
 
-function makeOnboarding(step = 'completed') {
+function makeOnboarding(isOnboarding = false) {
 	return {
-		currentStep: step,
-		isOnboarding: step !== 'completed',
-		isCompleted: step === 'completed',
-		setStep: vi.fn(),
+		isOnboarding,
+		isCompleted: !isOnboarding,
+		finish: vi.fn(),
 	}
 }
 
@@ -82,6 +74,7 @@ function makeFollowService() {
 	return {
 		getFollowedArtistMap: vi.fn().mockResolvedValue(new Map()),
 		listFollowed: vi.fn().mockResolvedValue([]),
+		followedCount: 0,
 	}
 }
 
@@ -265,22 +258,37 @@ describe('DashboardRoute', () => {
 			expect(mockHomeSelector.open).not.toHaveBeenCalled()
 		})
 
-		it('advances onboarding step from dashboard to my-artists', () => {
-			mockOnboarding = makeOnboarding('dashboard')
+		it('latches finish() on a meaningful first dashboard arrival (onboarding + follows + region set)', () => {
+			mockOnboarding = makeOnboarding(true)
+			mockFollow.followedCount = 1
 			sut = buildSut()
+			sut.needsRegion = false
 
 			sut.attached()
 
-			expect(mockOnboarding.setStep).toHaveBeenCalledWith('my-artists')
+			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
 		})
 
-		it('does not advance step when not at dashboard step', () => {
-			mockOnboarding = makeOnboarding('completed')
+		it('does not latch when onboarding is already completed', () => {
+			mockOnboarding = makeOnboarding(false)
+			mockFollow.followedCount = 5
 			sut = buildSut()
+			sut.needsRegion = false
 
 			sut.attached()
 
-			expect(mockOnboarding.setStep).not.toHaveBeenCalled()
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
+		})
+
+		it('does not latch on a zero-follow arrival', () => {
+			mockOnboarding = makeOnboarding(true)
+			mockFollow.followedCount = 0
+			sut = buildSut()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 		})
 	})
 

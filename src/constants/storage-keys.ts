@@ -8,6 +8,10 @@ export const StorageKeys = {
 	// Shared with the E2E suite, which seeds/removes this key to control the
 	// celebration overlay's visibility.
 	celebrationShown: 'onboarding.celebrationShown',
+	// Collapsed onboarding-complete flag (single-flag onboarding state). Absent
+	// key means the user is still onboarding. Migrated once from the legacy
+	// `onboardingStep` key in onboarding-storage.
+	onboardingComplete: 'onboardingComplete',
 	// Discovery bubble sound-effect preferences. '1'/'0' for mute, '0'..'1' for volume.
 	soundMuted: 'liverty:sound:muted',
 	soundVolume: 'liverty:sound:volume',

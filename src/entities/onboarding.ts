@@ -1,92 +1,15 @@
 /**
- * Onboarding step values as string literals for readability in code and localStorage.
- * @source Onboarding flow progression through the app.
+ * Onboarding state is modeled as a single boolean (see `OnboardingService`).
+ * The legacy step machine (`OnboardingStep` enum, `STEP_ORDER`, `stepIndex`,
+ * `STEP_MIGRATION`, `normalizeStep`, step predicates) has been removed; this
+ * module intentionally holds no step-machine symbols.
+ *
+ * The set of legacy `localStorage['onboardingStep']` values that denote a
+ * completed first run. Used once at `OnboardingService` construction to migrate
+ * the old key to the new `onboardingComplete` boolean. `'7'` is the legacy
+ * numeric index that mapped to the old `COMPLETED` step.
  */
-export const OnboardingStep = {
-	LP: 'lp',
-	DISCOVERY: 'discovery',
-	DASHBOARD: 'dashboard',
-	MY_ARTISTS: 'my-artists',
-	// Consent sits after MY_ARTISTS and before COMPLETED — the final
-	// privacy-decision gate the user passes through before onboarding is
-	// marked done. Placed late on purpose: by this point the user has
-	// experienced the product (discovery → dashboard → my-artists) and the
-	// "what analytics is used for" framing has concrete value the user can
-	// trade against, rather than being a cold ToS-style splash before they
-	// have seen the app.
-	CONSENT: 'consent',
-	COMPLETED: 'completed',
-} as const
-
-export type OnboardingStepValue =
-	(typeof OnboardingStep)[keyof typeof OnboardingStep]
-
-/**
- * Ordered progression of onboarding steps for ordinal comparison.
- */
-export const STEP_ORDER = [
-	OnboardingStep.LP,
-	OnboardingStep.DISCOVERY,
-	OnboardingStep.DASHBOARD,
-	OnboardingStep.MY_ARTISTS,
-	OnboardingStep.CONSENT,
-	OnboardingStep.COMPLETED,
-] as const
-
-/**
- * Returns the ordinal index of a step in the progression.
- */
-export function stepIndex(step: OnboardingStepValue): number {
-	return STEP_ORDER.indexOf(step)
-}
-
-/** Set of steps that constitute the active onboarding flow. */
-const ONBOARDING_STEPS = new Set<OnboardingStepValue>([
-	OnboardingStep.DISCOVERY,
-	OnboardingStep.DASHBOARD,
-	OnboardingStep.MY_ARTISTS,
-	OnboardingStep.CONSENT,
+export const LEGACY_COMPLETED_STEPS: ReadonlySet<string> = new Set([
+	'completed',
+	'7',
 ])
-
-/**
- * Whether a step is part of the active onboarding flow.
- */
-export function isOnboarding(step: OnboardingStepValue): boolean {
-	return ONBOARDING_STEPS.has(step)
-}
-
-/**
- * Whether a step represents completed onboarding.
- */
-export function isCompleted(step: OnboardingStepValue): boolean {
-	return step === OnboardingStep.COMPLETED
-}
-
-/** Legacy step value → current step mapping. */
-const STEP_MIGRATION: Record<string, OnboardingStepValue> = {
-	// Legacy numeric step indices
-	'0': OnboardingStep.LP,
-	'1': OnboardingStep.DISCOVERY,
-	'3': OnboardingStep.DASHBOARD,
-	'4': OnboardingStep.MY_ARTISTS,
-	'5': OnboardingStep.MY_ARTISTS,
-	'7': OnboardingStep.COMPLETED,
-	// Removed step: 'detail' falls back to 'dashboard'
-	detail: OnboardingStep.DASHBOARD,
-}
-
-const VALID_STEPS = new Set<string>(STEP_ORDER)
-
-/**
- * Normalize a raw step value (potentially a legacy numeric index or removed step) into a valid OnboardingStepValue.
- * Returns 'lp' as fallback for unrecognized values.
- */
-export function normalizeStep(raw: string): OnboardingStepValue {
-	if (VALID_STEPS.has(raw)) {
-		return raw as OnboardingStepValue
-	}
-	if (raw in STEP_MIGRATION) {
-		return STEP_MIGRATION[raw]
-	}
-	return OnboardingStep.LP
-}

@@ -264,7 +264,7 @@ async function mockOidcDiscovery(page: Page): Promise<void> {
  */
 function seedAuthenticatedState() {
 	return () => {
-		localStorage.setItem('onboardingStep', 'completed')
+		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('ui.notificationPromptDismissed', 'true')
 

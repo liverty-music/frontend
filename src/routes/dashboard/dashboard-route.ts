@@ -16,10 +16,7 @@ import { isJourneyStatus } from '../../entities/ticket-journey'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
-import {
-	IOnboardingService,
-	OnboardingStep,
-} from '../../services/onboarding-service'
+import { IOnboardingService } from '../../services/onboarding-service'
 import { ITicketJourneyService } from '../../services/ticket-journey-service'
 import { IUserStore } from '../../services/user-store'
 
@@ -61,6 +58,15 @@ export class DashboardRoute {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
+	}
+
+	/**
+	 * An unauthenticated visitor with zero followed artists. Under the soft gate
+	 * the dashboard is always reachable; this surfaces an in-page empty-state CTA
+	 * toward discovery instead of a guard redirect.
+	 */
+	public get showGuestEmptyState(): boolean {
+		return !this.isAuthenticated && this.followStore.followedCount === 0
 	}
 
 	public get followedArtists(): Artist[] {
@@ -250,21 +256,12 @@ export class DashboardRoute {
 			this.homeSelector?.open()
 		}
 
-		// Advance onboarding step: DASHBOARD → MY_ARTISTS.
-		// The lane introduction sequence was removed; visiting the dashboard is now
-		// sufficient to complete this step and allow free navigation.
-		if (this.onboarding.currentStep === OnboardingStep.DASHBOARD) {
-			this.onboarding.setStep(OnboardingStep.MY_ARTISTS)
-			this.logger.info('Dashboard step completed: advancing to MY_ARTISTS')
-		}
-
-		// Celebrate once the timetable is real. While needsRegion is true the
-		// home-selector is open and the timetable is blurred, so defer to
-		// onHomeSelected(); otherwise data was already awaited in loading().
-		// The post-signup tier opens PostSignupDialog on dismissal (see
-		// maybeCelebrate / onCelebrationDismissed).
+		// Run the celebration + completion-latch decisions once the timetable is
+		// real. While needsRegion is true the home-selector is open and the
+		// timetable is blurred, so this is deferred to onHomeSelected(); otherwise
+		// data was already awaited in loading().
 		if (!this.needsRegion) {
-			this.maybeCelebrate()
+			this.onTimetableReady()
 		}
 	}
 
@@ -275,9 +272,21 @@ export class DashboardRoute {
 			this.userStore.setGuestHome(code)
 		}
 		await this.loadData()
-		// Timetable is now real — run the celebration that was deferred while the
-		// region was unset.
+		// Timetable is now real (region was just selected) — run the deferred
+		// celebration + completion-latch decisions.
+		this.onTimetableReady()
+	}
+
+	/**
+	 * Decisions that fire once the dashboard timetable is real (region set, data
+	 * loaded), from either arrival path. The completion latch is evaluated AFTER
+	 * the celebration decision (so maybeCelebrate observed isOnboarding === true)
+	 * but is driven by the data-ready + engaged condition, not by whether the
+	 * overlay actually rendered (see maybeCelebrate / onCelebrationDismissed).
+	 */
+	private onTimetableReady(): void {
 		this.maybeCelebrate()
+		this.maybeFinishOnboarding()
 	}
 
 	/**
@@ -314,6 +323,25 @@ export class DashboardRoute {
 		this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.explore')
 		this.celebrationLeadsToDialog = false
 		this.showCelebration = true
+	}
+
+	/**
+	 * Completion latch (B1): mark onboarding finished on the guest's first
+	 * MEANINGFUL dashboard arrival — the timetable is real (region set, data
+	 * loaded) AND the guest has actually engaged (`followedCount >= 1`).
+	 *
+	 * Driven purely by the data-ready + engaged condition, NOT by whether the
+	 * celebration overlay rendered: a guest with `celebrationShown === '1'` (so
+	 * the light celebration is suppressed) must still latch. A zero-follow arrival
+	 * (deep-link to the empty-state dashboard) must NOT latch, so the discovery
+	 * coach mark and page-help auto-open still apply until the guest follows an
+	 * artist. `finish()` is idempotent and one-way.
+	 */
+	private maybeFinishOnboarding(): void {
+		if (this.needsRegion) return
+		if (!this.onboarding.isOnboarding) return
+		if (this.followStore.followedCount < 1) return
+		this.onboarding.finish()
 	}
 
 	public onCelebrationDismissed(): void {
