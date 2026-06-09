@@ -1,18 +1,41 @@
 import { expect, type Page, test } from '@playwright/test'
 
 /**
- * E2E tests for the onboarding tutorial flow.
+ * E2E tests for the single-flag onboarding model.
  *
- * New step sequence (DETAIL step removed):
- *   LP → DISCOVERY → DASHBOARD → MY_ARTISTS → COMPLETED
+ * Onboarding is now ONE persisted boolean (`onboardingComplete`). There is no
+ * step machine, no per-screen `onboardingStep` value, no forced ordinal
+ * redirects, no blocking overlays, and no consent screen in the flow.
  *
- * Key behavioral changes:
- * - Celebration overlay is tap-to-dismiss (no auto-timer)
- * - onCelebrationOpen() advances step to MY_ARTISTS immediately
- * - After celebration dismiss, user freely navigates to My Artists tab
- * - My Artists: hype change completes onboarding (no explanation dialog)
- * - Discovery coach mark auto-fades after 2s; must be tapped quickly
+ * Behavioral model these tests assert:
+ * - Which screen the user sees is determined by the route they navigate to,
+ *   NOT by an onboarding step value. The auth hook is a soft gate (auth-only),
+ *   so every application route is reachable at any time.
+ * - "Still onboarding" = `onboardingComplete` absent/false. "Completed" =
+ *   `onboardingComplete === 'true'`. The legacy `onboardingStep` key is migrated
+ *   once on load (`'completed'`/`'7'` → complete; anything else → still
+ *   onboarding) but new tests seed the new key directly.
+ * - The discovery → dashboard coach mark is non-blocking (no full-viewport
+ *   click-blocker, no scroll lock, no 2s auto-fade) and is dismissed only on
+ *   target tap or route detach. It triggers when, while onboarding,
+ *   `followedCount >= 5 || artistsWithConcertsCount >= 3`.
+ * - My Artists hype change is fully decoupled from onboarding: every tap
+ *   applies/persists with no dialog, no step advance, no revert.
  */
+
+// ---------------------------------------------------------------------------
+// localStorage seeding helpers (single-flag model)
+// ---------------------------------------------------------------------------
+
+/** Seed: still onboarding (new-user default — flag absent → isOnboarding). */
+function seedOnboarding(): void {
+	localStorage.setItem('onboardingComplete', 'false')
+}
+
+/** Seed: onboarding completed. */
+function seedCompleted(): void {
+	localStorage.setItem('onboardingComplete', 'true')
+}
 
 // ---------------------------------------------------------------------------
 // RPC mocks
@@ -63,7 +86,8 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
 
 /**
  * Mock Connect-RPC with concert data.
- * - ConcertService/List: returns 1 concert per artist (triggers showDashboardCoachMark)
+ * - ConcertService/List: returns 1 concert per artist (drives
+ *   artistsWithConcertsCount >= 3 → coach mark)
  * - ListWithProximity: returns concerts in the away lane
  * - ListFollowed: returns 3 followed artists
  */
@@ -182,9 +206,9 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		// ConcertService/List — returns 1 concert per artist
-		// This is what makes concertService.artistsWithConcertsCount >= 3,
-		// which triggers showDashboardCoachMark = true
+		// ConcertService/List — returns 1 concert per artist.
+		// Makes concertService.artistsWithConcertsCount >= 3, which (while
+		// onboarding) triggers the discovery → dashboard coach mark.
 		if (url.includes('ConcertService/List')) {
 			return route.fulfill({
 				status: 200,
@@ -276,14 +300,15 @@ async function mockLastFmApi(page: Page): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Test suite: individual step / scenario tests
+// Test suite: individual screen / scenario tests
 // ---------------------------------------------------------------------------
 
-test.describe('Onboarding tutorial flow', () => {
+test.describe('Onboarding flow (single-flag model)', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(() => {
+			localStorage.removeItem('onboardingComplete')
 			localStorage.removeItem('onboardingStep')
 			localStorage.removeItem('onboarding.celebrationShown')
 			localStorage.removeItem('guest.home')
@@ -294,10 +319,10 @@ test.describe('Onboarding tutorial flow', () => {
 	})
 
 	// -------------------------------------------------------------------------
-	// LP (Step 0)
+	// Welcome page (entry)
 	// -------------------------------------------------------------------------
 
-	test('Step 0: Welcome page shows scroll affordance above the fold, CTAs on Screen 2', async ({
+	test('Welcome page shows scroll affordance above the fold, CTAs on Screen 2', async ({
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/')
@@ -309,12 +334,15 @@ test.describe('Onboarding tutorial flow', () => {
 		// [Pick your artists] is attached (in Screen 2) but not within the initial
 		// viewport — assert it exists via toBeAttached (DOM) and does NOT satisfy
 		// toBeInViewport (visual position).
-		const getStarted = page.locator('button').filter({ hasText: /pick your artists/i }).first()
+		const getStarted = page
+			.locator('button')
+			.filter({ hasText: /pick your artists/i })
+			.first()
 		await expect(getStarted).toBeAttached()
 		await expect(getStarted).not.toBeInViewport()
 	})
 
-	test('Step 0 → Step 1: tapping See how it works scrolls to Screen 2, then Pick your artists navigates to Discover', async ({
+	test('Tapping See how it works scrolls to Screen 2, then Pick your artists navigates to Discovery', async ({
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/')
@@ -329,15 +357,13 @@ test.describe('Onboarding tutorial flow', () => {
 		await expect(getStarted).toBeInViewport({ timeout: 3000 })
 
 		await getStarted.click()
-		await expect(page).toHaveURL(/discover/, { timeout: 10_000 })
+		await expect(page).toHaveURL(/discovery/, { timeout: 10_000 })
 	})
 
 	test('Completed: welcome page still exposes the primary CTA on Screen 2', async ({
 		page,
 	}) => {
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'completed')
-		})
+		await page.addInitScript(seedCompleted)
 		await page.goto('http://localhost:9000/')
 
 		// Screen 2's primary CTA is attached (accessible via scroll) even if not
@@ -349,14 +375,12 @@ test.describe('Onboarding tutorial flow', () => {
 		).toBeAttached({ timeout: 5000 })
 	})
 
-	test('Step 0: Screen 2 sits at or below the fold on initial load', async ({
-		page,
-	}) => {
+	test('Screen 2 sits at or below the fold on initial load', async ({ page }) => {
 		await page.goto('http://localhost:9000/')
 
-		// Hero is now full-viewport (100svh). Screen 2 is attached but its top
-		// edge sits at or beyond the fold; the explicit `↓ サンプルを覗く` CTA
-		// carries the "more below" affordance instead of a partial peek.
+		// Hero is full-viewport (100svh). Screen 2 is attached but its top edge
+		// sits at or beyond the fold; the explicit `↓` CTA carries the "more
+		// below" affordance instead of a partial peek.
 		const screen2 = page.locator('.welcome-screen-2')
 		await expect(screen2).toBeAttached({ timeout: 10_000 })
 
@@ -368,7 +392,7 @@ test.describe('Onboarding tutorial flow', () => {
 		}
 	})
 
-	test('Step 0: Dashboard preview renders when concert data is available', async ({
+	test('Dashboard preview renders when concert data is available', async ({
 		page,
 	}) => {
 		// mockRpcRoutes (via beforeEach) returns concerts for ConcertService/List.
@@ -388,11 +412,10 @@ test.describe('Onboarding tutorial flow', () => {
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 	})
 
-	test('Step 0: Dashboard preview is hidden when no concert data; hero CTAs fall back inline', async ({
+	test('Dashboard preview is hidden when no concert data; hero CTAs fall back inline', async ({
 		page,
 	}) => {
 		// Override the default mock to return empty concerts for all ConcertService/List calls.
-		// This simulates the case where no preview artists have upcoming concerts.
 		await page.route('**/liverty_music.rpc.**', (route) => {
 			return route.fulfill({
 				status: 200,
@@ -406,54 +429,46 @@ test.describe('Onboarding tutorial flow', () => {
 		// In the fallback state, [Pick your artists] renders inline on Screen 1 and is
 		// visible in the initial viewport.
 		await expect(
-			page.locator('button').filter({ hasText: /pick your artists/i }).first(),
+			page
+				.locator('button')
+				.filter({ hasText: /pick your artists/i })
+				.first(),
 		).toBeVisible({ timeout: 5000 })
 
 		// Preview section is absent (if.bind="dateGroups.length > 0")
-		await expect(page.locator('[data-testid="welcome-preview"]')).not.toBeAttached()
+		await expect(
+			page.locator('[data-testid="welcome-preview"]'),
+		).not.toBeAttached()
 
 		// Scroll-affordance button is also absent when there's no Screen 2 to scroll to
 		await expect(page.locator('.welcome-scroll-cta')).not.toBeAttached()
 	})
 
 	// -------------------------------------------------------------------------
-	// DISCOVERY (Step 1)
+	// Discovery (soft gate — reachable any time)
 	// -------------------------------------------------------------------------
 
-	test('Step 1: No popover-guide snack on discover page entry', async ({
+	test('Discovery is reachable directly while onboarding (no forced redirect)', async ({
 		page,
 	}) => {
-		// The popoverGuide snack was removed in refine-onboarding
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'discovery')
-		})
-		await page.goto('http://localhost:9000/discover')
+		await page.addInitScript(seedOnboarding)
+		await page.goto('http://localhost:9000/discovery')
+
+		// Soft gate: the discovery layout renders; the auth hook does not redirect.
+		await page.waitForSelector('.discovery-layout', { timeout: 10_000 })
+		await expect(page).toHaveURL(/discovery/)
+	})
+
+	test('No popover-guide snack on discovery page entry', async ({ page }) => {
+		await page.addInitScript(seedOnboarding)
+		await page.goto('http://localhost:9000/discovery')
 		await page.waitForSelector('.discovery-layout')
 
 		await page.waitForLoadState('networkidle')
 		await expect(page.locator('.snack-item')).toHaveCount(0)
 	})
 
-	test('Step 1: No toast when tapping restricted nav during onboarding', async ({
-		page,
-	}) => {
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'discovery')
-		})
-		await page.goto('http://localhost:9000/discover')
-		await page.waitForSelector('.discovery-layout')
-
-		const ticketsNav = page.locator('[data-nav-tickets]')
-		if ((await ticketsNav.count()) > 0) {
-			await ticketsNav.click()
-			// Web-first assertion: if a toast were to appear, it would within 500ms
-			await expect(
-				page.locator('.toast-message').filter({ hasText: /login/i }),
-			).toHaveCount(0, { timeout: 1000 })
-		}
-	})
-
-	test('TC-GATE-E2E-02: No coach mark when ConcertService/List returns empty', async ({
+	test('No coach mark when ConcertService/List returns empty', async ({
 		page,
 	}) => {
 		await page.unrouteAll()
@@ -461,7 +476,7 @@ test.describe('Onboarding tutorial flow', () => {
 		await mockLastFmApi(page)
 
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'discovery')
+			localStorage.setItem('onboardingComplete', 'false')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
@@ -472,21 +487,24 @@ test.describe('Onboarding tutorial flow', () => {
 			)
 		})
 
-		await page.goto('http://localhost:9000/discover')
+		await page.goto('http://localhost:9000/discovery')
 		await page.waitForSelector('.discovery-layout')
 
-		// Wait for all concert searches to complete, then verify no coach mark
+		// Wait for all concert searches to complete, then verify no coach mark.
+		// With zero concerts, artistsWithConcertsCount stays 0 and followedCount
+		// (3) is below DASHBOARD_FOLLOW_TARGET (5), so the spotlight never shows.
 		await page.waitForLoadState('networkidle')
-		await expect(page.locator('.visual-spotlight')).not.toBeVisible({ timeout: 3000 })
-		await expect(page.locator('.onboarding-guide')).toHaveCount(0)
+		await expect(page.locator('.visual-spotlight')).not.toBeVisible({
+			timeout: 3000,
+		})
 	})
 
-	test('Spotlight appears when 3 artists have concert data', async ({
+	test('Coach-mark spotlight appears when 3 artists have concert data', async ({
 		page,
 	}) => {
 		test.setTimeout(60_000)
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'discovery')
+			localStorage.setItem('onboardingComplete', 'false')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
@@ -496,10 +514,13 @@ test.describe('Onboarding tutorial flow', () => {
 				]),
 			)
 		})
-		await page.goto('http://localhost:9000/discover')
+		await page.goto('http://localhost:9000/discovery')
 		await page.waitForSelector('.discovery-layout')
 
-		// Coach mark auto-fades after 2s — must detect before fade
+		// Coach mark is non-blocking and has NO auto-fade timer — it stays visible
+		// until target tap or route detach. Concert searches for the 3 seeded
+		// follows complete fast against the mock, pushing artistsWithConcertsCount
+		// to DASHBOARD_CONCERT_TARGET (3) and activating the spotlight.
 		const spotlight = page.locator('.visual-spotlight')
 		await expect(spotlight).toBeVisible({ timeout: 30_000 })
 
@@ -514,7 +535,7 @@ test.describe('Onboarding tutorial flow', () => {
 		page,
 	}) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'discovery')
+			localStorage.setItem('onboardingComplete', 'false')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
@@ -524,7 +545,7 @@ test.describe('Onboarding tutorial flow', () => {
 				]),
 			)
 		})
-		await page.goto('http://localhost:9000/discover')
+		await page.goto('http://localhost:9000/discovery')
 		await page.waitForSelector('.discovery-layout')
 
 		// SR status includes followed count
@@ -533,14 +554,52 @@ test.describe('Onboarding tutorial flow', () => {
 	})
 
 	// -------------------------------------------------------------------------
-	// DASHBOARD (Step 3)
+	// Dashboard (reachable any time; non-blocking overlays)
 	// -------------------------------------------------------------------------
 
-	test('Step 3: Celebration does not replay after page reload', async ({
+	test('Dashboard is reachable directly while onboarding (no forced redirect)', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'dashboard')
+			localStorage.setItem('onboardingComplete', 'false')
+			localStorage.setItem('guest.home', 'JP-13')
+			localStorage.setItem(
+				'guest.followedArtists',
+				JSON.stringify([
+					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
+					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
+					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+				]),
+			)
+		})
+		await page.goto('http://localhost:9000/dashboard')
+
+		await expect(page).toHaveURL(/dashboard/)
+		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
+	})
+
+	test('Guest with zero follows sees the dashboard empty-state CTA (no redirect)', async ({
+		page,
+	}) => {
+		await page.addInitScript(() => {
+			localStorage.setItem('onboardingComplete', 'false')
+			localStorage.setItem('guest.home', 'JP-13')
+			// No guest.followedArtists → followedCount === 0 → showGuestEmptyState
+		})
+		await page.goto('http://localhost:9000/dashboard')
+
+		// Soft gate: stays on the dashboard and surfaces the in-page empty-state
+		// CTA toward discovery instead of a guard redirect. The CTA placeholder is
+		// gated on `!isLoading` settling, so allow the initial load to complete.
+		await expect(page).toHaveURL(/dashboard/)
+		await expect(
+			page.locator('state-placeholder').first(),
+		).toBeVisible({ timeout: 15_000 })
+	})
+
+	test('Celebration does not replay after page reload', async ({ page }) => {
+		await page.addInitScript(() => {
+			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
@@ -549,11 +608,11 @@ test.describe('Onboarding tutorial flow', () => {
 		await expect(page.locator('.celebration-overlay')).toHaveCount(0)
 	})
 
-	test('Step 3: Dashboard is interactive after reload (no stuck overlay)', async ({
+	test('Dashboard is interactive after reload (no stuck overlay)', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'dashboard')
+			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
@@ -567,7 +626,7 @@ test.describe('Onboarding tutorial flow', () => {
 		page,
 	}) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'dashboard')
+			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 		})
@@ -583,9 +642,7 @@ test.describe('Onboarding tutorial flow', () => {
 	})
 
 	test('Toast popover has no white background gap', async ({ page }) => {
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'completed')
-		})
+		await page.addInitScript(seedCompleted)
 		await page.goto('http://localhost:9000/dashboard')
 
 		await page.evaluate(() => {
@@ -602,15 +659,18 @@ test.describe('Onboarding tutorial flow', () => {
 	})
 
 	// -------------------------------------------------------------------------
-	// MY_ARTISTS (Step 5)
+	// My Artists (hype fully decoupled from onboarding)
 	// -------------------------------------------------------------------------
 
-	test('Step 5: My Artists page loads and hype change has no dialog', async ({
+	test('My Artists page loads; hype change has no dialog and never touches onboarding', async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'my-artists')
+			localStorage.setItem('onboardingComplete', 'false')
 			localStorage.setItem('guest.home', 'JP-13')
+			// Suppress the my-artists help sheet's first-visit auto-open so it
+			// doesn't sit over the hype table (this test is about hype, not help).
+			localStorage.setItem('liverty:onboarding:helpSeen:my-artists', '1')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
@@ -629,7 +689,6 @@ test.describe('Onboarding tutorial flow', () => {
 		})
 
 		// Trigger hype change by dispatching 'change' on the 'home' radio (index 1).
-		// Aurelia's change.trigger calls onHypeInput(artist, 'home') from binding scope.
 		// click({ force: true }) doesn't fire 'change' on visually-hidden inputs;
 		// direct dispatchEvent is the reliable path for hidden form controls.
 		const hypeRadios = page.locator('input[type="radio"][name^="hype-"]')
@@ -645,41 +704,30 @@ test.describe('Onboarding tutorial flow', () => {
 		// No hype-notification dialog (component was removed)
 		await expect(page.locator('.hype-notification-dialog')).toHaveCount(0)
 
-		// Step advances to consent (the new final pre-completion onboarding
-		// screen introduced by the introduce-analytics-tool change). The
-		// consent route itself calls onboarding.complete() in its three
-		// exit handlers; the continuous-flow test below covers the full
-		// progression including that final transition.
+		// Hype change is fully decoupled from onboarding (#444): the flag must NOT
+		// flip to completed as a side effect of a hype tap. It stays "still
+		// onboarding" (false) — completion latches only on a meaningful dashboard
+		// arrival or sign-up, never here.
 		await expect
 			.poll(
-				() => page.evaluate(() => localStorage.getItem('onboardingStep')),
-				{ timeout: 5000 },
+				() => page.evaluate(() => localStorage.getItem('onboardingComplete')),
+				{ timeout: 3000 },
 			)
-			.toBe('consent')
+			.toBe('false')
 	})
 })
 
 /**
- * Full step progression from DISCOVERY coach mark through MY_ARTISTS to the
- * consent screen, the final pre-completion onboarding screen introduced by
- * the introduce-analytics-tool change.
- *
- * Flow (lane intro and celebration removed from dashboard step):
- *   DISCOVERY (coach mark → tap) →
- *   DASHBOARD (free exploration — no lane intro, no celebration overlay) →
- *   freely navigate to MY_ARTISTS tab →
- *   MY_ARTISTS (hype change → CONSENT)
- *
- * The final transition CONSENT → COMPLETED is covered by the consent route
- * unit tests (consent-service.spec.ts + the analytics-service ConsentChanged
- * subscription tests) — exercising it in this E2E would couple the
- * navigation-flow assertion to consent-screen UI details that are unrelated
- * to the step-progression invariant under test here.
+ * End-to-end soft-gate roam: a guest freely moves
+ *   Discovery → Dashboard → My Artists
+ * with NO step machine, NO forced redirects, NO blocking overlays, and NO
+ * consent screen. Onboarding completion latches on the first MEANINGFUL
+ * dashboard arrival (region set + data loaded + followedCount >= 1).
  */
-test.describe('Continuous onboarding flow (Step 1 → consent)', () => {
+test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 	test.use({ viewport: { width: 412, height: 915 } })
 
-	test('full step progression from discovery to consent screen', async ({
+	test('guest roams across tabs and onboarding latches on meaningful dashboard arrival', async ({
 		page,
 	}) => {
 		test.setTimeout(90_000)
@@ -687,14 +735,19 @@ test.describe('Continuous onboarding flow (Step 1 → consent)', () => {
 		await mockRpcRoutes(page)
 		await mockLastFmApi(page)
 
-		// Seed: 3 artists followed, home set (needed for ListWithProximity on dashboard)
+		// Seed: still onboarding, 3 follows, home set (needed for ListWithProximity
+		// on dashboard). celebrationShown suppresses the light celebration overlay
+		// so it never intercepts nav-tab clicks (covered by dashboard unit tests).
 		await page.addInitScript(() => {
-			// Suppress the dashboard-arrival celebration overlay so it doesn't
-			// intercept the nav-tab clicks this step-progression test performs.
-			// The celebration itself is covered by dashboard-route unit tests.
+			localStorage.setItem('onboardingComplete', 'false')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
-			localStorage.setItem('onboardingStep', 'discovery')
+			// Suppress the discovery / my-artists help-sheet auto-open so it never
+			// intercepts the nav-tab clicks this roam test performs (page-help is
+			// covered by its own unit/visual tests).
+			localStorage.setItem('liverty:onboarding:helpSeen:discovery', '1')
+			localStorage.setItem('liverty:onboarding:helpSeen:dashboard', '1')
+			localStorage.setItem('liverty:onboarding:helpSeen:my-artists', '1')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
@@ -705,23 +758,13 @@ test.describe('Continuous onboarding flow (Step 1 → consent)', () => {
 			)
 		})
 
-		// =========================================================================
-		// STEP 1 — DISCOVERY: wait for coach mark to appear, then simulate tap
-		// The coach mark fades after 2s (COACH_MARK_FADE_MS). All 3 artists'
-		// concert searches run concurrently against the mock, so they complete
-		// fast. We wait for the spotlight to become visible (proves coach mark
-		// fired), then advance step directly via localStorage + navigate.
-		//
-		// Why not dispatch click on .target-interceptor?
-		// The target-interceptor lives inside a dialog[popover] in the top layer.
-		// Aurelia's click.trigger listener doesn't reliably receive synthetic
-		// events dispatched into the top layer from outside. Instead, we simulate
-		// what onCoachMarkTap() does: setStep(DASHBOARD) + router.load('/dashboard').
-		// =========================================================================
-		await page.goto('http://localhost:9000/discover')
+		// -- DISCOVERY: reachable directly; non-blocking coach mark appears --------
+		await page.goto('http://localhost:9000/discovery')
 		await page.waitForSelector('.discovery-layout')
 
-		// Wait for spotlight to become visible (concert searches must complete first)
+		// Coach mark is non-blocking (no scroll lock, no off-target click-blocker)
+		// and has no auto-fade — assert it becomes visible once concert searches
+		// push artistsWithConcertsCount to the threshold.
 		await page.waitForFunction(
 			() => {
 				const el = document.querySelector('.visual-spotlight')
@@ -732,56 +775,37 @@ test.describe('Continuous onboarding flow (Step 1 → consent)', () => {
 			{ timeout: 30_000 },
 		)
 
-		// Simulate onCoachMarkTap(): advance step to DASHBOARD and navigate.
-		//
-		// The challenge: we cannot update in-memory OnboardingService state via
-		// localStorage. page.goto triggers the Aurelia router as a SPA navigation
-		// (not a full reload), so it redirects back to /discovery based on the
-		// in-memory step value.
-		//
-		// Fix: add an initScript that seeds step='dashboard' — addInitScript
-		// runs on the NEXT full page load. Then force a full reload by navigating
-		// to the absolute URL, which triggers a fresh HTTP request and Aurelia
-		// reinitializes from localStorage (reading 'dashboard').
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'dashboard')
-		})
-		// page.goto with absolute URL forces a new HTTP request + full page load
-		await page.goto('http://localhost:9000/dashboard')
-		await page.waitForURL(/dashboard/, { timeout: 10_000 })
+		// Still onboarding while on discovery (no latch here).
+		expect(
+			await page.evaluate(() => localStorage.getItem('onboardingComplete')),
+		).toBe('false')
 
-		// =========================================================================
-		// STEP 3 — DASHBOARD: auto-advance to MY_ARTISTS on attach
-		// Lane intro removed — attached() now calls setStep(MY_ARTISTS) immediately
-		// when currentStep === DASHBOARD.
-		// =========================================================================
-
-		// Dashboard loads and auto-advances step to MY_ARTISTS
+		// -- DASHBOARD: reachable via the coach-mark tap; meaningful arrival latches -
+		// The coach mark anchors a clickable `.target-interceptor` over its target
+		// ([data-nav="home"]). Tapping it delegates to the target's native click
+		// (onTargetClick → currentTarget.click()), navigating to the dashboard and
+		// dismissing the spotlight. The rest of the page stays interactive (the dim
+		// overlay is pointer-events:none) — only this interceptor is clickable.
+		await page.locator('coach-mark .target-interceptor').click()
+		await expect(page).toHaveURL(/dashboard/, { timeout: 10_000 })
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })
 
-		// Step is now MY_ARTISTS (set by attached())
+		// Completion latch (B1): region set + data loaded + followedCount >= 1 →
+		// finish() flips onboardingComplete to 'true', which persists to storage.
 		await expect
 			.poll(
-				() => page.evaluate(() => localStorage.getItem('onboardingStep')),
-				{ timeout: 5000 },
+				() => page.evaluate(() => localStorage.getItem('onboardingComplete')),
+				{ timeout: 10_000 },
 			)
-			.toBe('my-artists')
+			.toBe('true')
 
-		// =========================================================================
-		// STEP 5 — MY_ARTISTS: navigate via SPA nav tab click
-		// We click the My Artists nav tab to trigger Aurelia's SPA navigation —
-		// this preserves in-memory OnboardingService state (step = MY_ARTISTS).
-		// =========================================================================
+		// Coach mark dismissed on leaving discovery.
+		await expect(page.locator('.visual-spotlight')).toHaveCount(0)
+
+		// -- MY ARTISTS: reachable via SPA nav; hype change has no dialog ----------
 		await page.locator('[data-nav="my-artists"]').click()
 		await expect(page).toHaveURL(/my-artists/, { timeout: 10_000 })
 
-		// Verify step is still MY_ARTISTS (not reverted)
-		const stepAtMyArtists = await page.evaluate(() =>
-			localStorage.getItem('onboardingStep'),
-		)
-		expect(stepAtMyArtists).toBe('my-artists')
-
-		// Artist table loads
 		await expect(page.locator('[data-artist-rows]')).toBeVisible({
 			timeout: 10_000,
 		})
@@ -789,19 +813,11 @@ test.describe('Continuous onboarding flow (Step 1 → consent)', () => {
 			timeout: 5000,
 		})
 
-		// =========================================================================
-		// STEP 5 → CONSENT: hype change advances onboarding to the consent screen.
-		// checked.bind="artist.hype" + model.bind="level" creates a two-way binding:
-		// clicking the 'home' radio (index 1) sets artist.hype = 'home', then
-		// change.trigger calls onHypeInput which detects the change and advances
-		// onboarding to CONSENT (the consent screen completes onboarding below).
-		// =========================================================================
+		// Dispatch 'change' on the 'home' radio (index 1) for the first artist.
+		// Hype editing is fully decoupled: it applies with no dialog and never
+		// reverts the (already-latched) onboarding flag.
 		const hypeRadios = page.locator('input[type="radio"][name^="hype-"]')
 		await expect(hypeRadios.first()).toBeAttached({ timeout: 5000 })
-
-		// Dispatch 'change' on the 'home' radio (index 1) for the first artist.
-		// click({ force: true }) doesn't fire 'change' on visually-hidden inputs.
-		// Aurelia's change.trigger calls onHypeInput(artist, 'home') from the binding scope.
 		await page.evaluate(() => {
 			const radio = document.querySelectorAll<HTMLInputElement>(
 				'input[type="radio"][name^="hype-"]',
@@ -810,16 +826,10 @@ test.describe('Continuous onboarding flow (Step 1 → consent)', () => {
 			radio.dispatchEvent(new Event('change', { bubbles: true }))
 		})
 
-		// Onboarding step advances to consent
-		await expect
-			.poll(
-				() =>
-					page.evaluate(() => localStorage.getItem('onboardingStep')),
-				{ timeout: 5000 },
-			)
-			.toBe('consent')
-
-		// Hype change is accepted (no dialog, no revert)
+		// No dialog, and onboarding stays completed (one-way latch, idempotent).
 		await expect(page.locator('.hype-notification-dialog')).toHaveCount(0)
+		expect(
+			await page.evaluate(() => localStorage.getItem('onboardingComplete')),
+		).toBe('true')
 	})
 })
