@@ -19,9 +19,14 @@ import type { IAuthService } from '../../shared/services/auth-service'
  * without triggering AUR0002 (mirrors the consumer transport's documented
  * factory shape).
  *
+ * Targets the dedicated admin API host (`adminApiBaseUrl`, i.e. `api.admin.{env}`)
+ * served by the backend's separate admin Connect server. Falls back to
+ * `apiBaseUrl` when `adminApiBaseUrl` is absent so the console keeps working
+ * before the cutover sets the admin host.
+ *
  * @param auth - Shared AuthService used to read the OIDC access token
  * @param logger - Logger scoped to the admin transport
- * @param config - Resolved runtime AppConfig providing `apiBaseUrl`
+ * @param config - Resolved runtime AppConfig providing `adminApiBaseUrl` (falls back to `apiBaseUrl`)
  * @returns A configured Connect transport with auth + logging interceptors
  */
 export const createAdminTransport = (
@@ -60,7 +65,7 @@ export const createAdminTransport = (
 	}
 
 	return createConnectTransport({
-		baseUrl: config.apiBaseUrl,
+		baseUrl: config.adminApiBaseUrl ?? config.apiBaseUrl,
 		interceptors: [loggingInterceptor, authInterceptor],
 	})
 }

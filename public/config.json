@@ -1,6 +1,7 @@
 {
   "environment": "dev",
   "apiBaseUrl": "https://api.dev.liverty-music.app",
+  "adminApiBaseUrl": "https://api.admin.dev.liverty-music.app",
   "zitadelIssuer": "https://auth.dev.liverty-music.app",
   "zitadelClientId": "371355407710421859",
   "zitadelOrgId": "371348346264093539",

@@ -14,6 +14,14 @@ export { KNOWN_HOSTS } from './known-hosts'
 export interface AppConfig {
 	readonly environment: 'dev' | 'staging' | 'prod'
 	readonly apiBaseUrl: string
+	/**
+	 * Base URL of the dedicated admin API host (`api.admin.{env}`), served by
+	 * the backend's separate admin Connect server. Read only by the admin
+	 * console's admin RPC clients (e.g. ConcertModerationService); the consumer
+	 * SPA ignores it and keeps calling `apiBaseUrl`. Optional for backward
+	 * compatibility — when absent, admin clients fall back to `apiBaseUrl`.
+	 */
+	readonly adminApiBaseUrl?: string
 	readonly zitadelIssuer: string
 	readonly zitadelClientId: string
 	readonly zitadelOrgId: string
@@ -209,9 +217,15 @@ function validateAppConfig(parsed: unknown): AppConfig {
 	const posthogApiHost = readOptionalString(o, 'posthogApiHost')
 	const posthogProjectKey = readOptionalString(o, 'posthogProjectKey')
 
+	// Optional: present only in the admin console's ConfigMap. Absent from the
+	// consumer ConfigMap, so admin clients fall back to apiBaseUrl until the
+	// cutover sets it.
+	const adminApiBaseUrl = readOptionalString(o, 'adminApiBaseUrl')
+
 	return {
 		environment: env as AppConfig['environment'],
 		apiBaseUrl: requireString(o, 'apiBaseUrl'),
+		...(adminApiBaseUrl !== undefined ? { adminApiBaseUrl } : {}),
 		zitadelIssuer: requireString(o, 'zitadelIssuer'),
 		zitadelClientId: requireString(o, 'zitadelClientId'),
 		zitadelOrgId: requireString(o, 'zitadelOrgId'),
