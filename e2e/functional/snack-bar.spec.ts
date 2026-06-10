@@ -103,6 +103,16 @@ async function publishToastDirect(
 	severity: 'info' | 'warning' | 'error' = 'info',
 	durationMs = 2500,
 ): Promise<void> {
+	// The DEV bridge is attached only after `au.start()` resolves (main.ts),
+	// which can land a tick after the snack-bar element is already in the DOM.
+	// Wait for it so the publish below never races the bridge attachment.
+	await page.waitForFunction(
+		() =>
+			typeof (window as unknown as Record<string, unknown>)
+				.__lm_publishSnack === 'function',
+		undefined,
+		{ timeout: 10_000 },
+	)
 	await page.evaluate(
 		({ message, severity, durationMs }) => {
 			const bridge = (window as unknown as Record<string, unknown>)
