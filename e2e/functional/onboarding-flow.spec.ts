@@ -15,9 +15,10 @@ import { expect, type Page, test } from '@playwright/test'
  *   `onboardingComplete === 'true'`. The legacy `onboardingStep` key is migrated
  *   once on load (`'completed'`/`'7'` → complete; anything else → still
  *   onboarding) but new tests seed the new key directly.
- * - The discovery → dashboard coach mark is non-blocking (no full-viewport
- *   click-blocker, no scroll lock, no 2s auto-fade) and is dismissed only on
- *   target tap or route detach. It triggers when, while onboarding,
+ * - The discovery → dashboard coach mark has no auto-fade: tapping the target
+ *   navigates (delegates to the target's native click), while tapping the dimmed
+ *   area outside the target light-dismisses it (tap-outside-to-dismiss). It also
+ *   dismisses on route detach. It triggers when, while onboarding,
  *   `followedCount >= 5 || artistsWithConcertsCount >= 3`.
  * - My Artists hype change is fully decoupled from onboarding: every tap
  *   applies/persists with no dialog, no step advance, no revert.
@@ -517,10 +518,10 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await page.goto('http://localhost:9000/discovery')
 		await page.waitForSelector('.discovery-layout')
 
-		// Coach mark is non-blocking and has NO auto-fade timer — it stays visible
-		// until target tap or route detach. Concert searches for the 3 seeded
-		// follows complete fast against the mock, pushing artistsWithConcertsCount
-		// to DASHBOARD_CONCERT_TARGET (3) and activating the spotlight.
+		// Coach mark has NO auto-fade timer — it stays visible until target tap,
+		// tap-outside, or route detach. Concert searches for the 3 seeded follows
+		// complete fast against the mock, pushing artistsWithConcertsCount to
+		// DASHBOARD_CONCERT_TARGET (3) and activating the spotlight.
 		const spotlight = page.locator('.visual-spotlight')
 		await expect(spotlight).toBeVisible({ timeout: 30_000 })
 
@@ -529,6 +530,13 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			(el) => getComputedStyle(el).boxShadow,
 		)
 		expect(boxShadow).not.toBe('none')
+
+		// Tap-outside-to-dismiss: a pointer tap on the dimmed area (top-left,
+		// away from the target which sits in the bottom nav) light-dismisses the
+		// coach mark via the document pointerdown listener, without navigating.
+		await page.mouse.click(5, 5)
+		await expect(spotlight).toHaveCount(0)
+		await expect(page).toHaveURL(/discovery/)
 	})
 
 	test('Reload with pre-seeded follows preserves followed count', async ({
@@ -762,9 +770,8 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 		await page.goto('http://localhost:9000/discovery')
 		await page.waitForSelector('.discovery-layout')
 
-		// Coach mark is non-blocking (no scroll lock, no off-target click-blocker)
-		// and has no auto-fade — assert it becomes visible once concert searches
-		// push artistsWithConcertsCount to the threshold.
+		// Coach mark has no auto-fade — assert it becomes visible once concert
+		// searches push artistsWithConcertsCount to the threshold.
 		await page.waitForFunction(
 			() => {
 				const el = document.querySelector('.visual-spotlight')
@@ -784,8 +791,8 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 		// The coach mark anchors a clickable `.target-interceptor` over its target
 		// ([data-nav="home"]). Tapping it delegates to the target's native click
 		// (onTargetClick → currentTarget.click()), navigating to the dashboard and
-		// dismissing the spotlight. The rest of the page stays interactive (the dim
-		// overlay is pointer-events:none) — only this interceptor is clickable.
+		// dismissing the spotlight. The interceptor paints above the dismiss
+		// backdrop, so a tap on the target navigates rather than dismissing.
 		await page.locator('coach-mark .target-interceptor').click()
 		await expect(page).toHaveURL(/dashboard/, { timeout: 10_000 })
 		await expect(page.locator('au-viewport')).toBeVisible({ timeout: 10_000 })

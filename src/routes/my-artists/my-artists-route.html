@@ -20,11 +20,11 @@
   >
     <h2 t="myArtists.empty.title" class="empty-title"></h2>
     <p t="myArtists.empty.subtitle" class="empty-subtitle"></p>
-    <button
-      click.trigger="goToDiscovery()"
+    <a
+      href.bind="'discovery'"
       t="myArtists.empty.discoverButton"
-      class="discover-btn"
-    ></button>
+      class="discover-cta"
+    ></a>
   </state-placeholder>
 
   <!-- Artist hype table -->

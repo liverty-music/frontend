@@ -7,7 +7,6 @@
 			--_black-60: oklch(0% 0 0deg / 60%);
 			--_danger: oklch(60% 0.2 25deg);
 			--_danger-10: oklch(60% 0.2 25deg / 10%);
-			--_pad-btn: var(--space-2xs);
 			--_radius-sm: var(--radius-sm);
 
 			display: grid;
@@ -60,25 +59,6 @@
 			font-size: var(--step--1);
 			color: var(--color-text-muted);
 			text-align: center;
-		}
-
-		.discover-btn {
-			padding-block: var(--_pad-btn);
-			padding-inline: var(--space-m);
-			border-radius: var(--radius-button);
-
-			font-family: var(--font-display);
-			font-size: var(--step--1);
-			font-weight: 600;
-			color: var(--color-white);
-
-			background: var(--color-brand-primary);
-
-			transition: background-color 150ms ease-out;
-
-			&:hover {
-				background: oklch(from var(--color-brand-primary) l c h / 80%);
-			}
 		}
 
 		/* ── Fieldset reset ── */

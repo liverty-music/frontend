@@ -238,13 +238,6 @@ describe('MyArtistsRoute', () => {
 		})
 	})
 
-	describe('goToDiscovery', () => {
-		it('should navigate to discovery page', async () => {
-			await sut.goToDiscovery()
-			expect(mockRouter.load).toHaveBeenCalledWith('discovery')
-		})
-	})
-
 	describe('detaching', () => {
 		it('should clean up timers and abort controller', async () => {
 			await sut.loading()

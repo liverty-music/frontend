@@ -69,21 +69,53 @@ describe('CoachMark', () => {
 			expect(targetEl.style.getPropertyValue('anchor-name')).toBe('')
 			expect(sut.visible).toBe(false)
 		})
+	})
 
-		it('does not lock viewport scroll (non-blocking)', () => {
-			const viewport = document.createElement('au-viewport')
-			document.body.appendChild(viewport)
+	describe('light-dismiss (document pointerdown outside the target)', () => {
+		it('dismisses on an outside pointerdown without triggering the target click', () => {
+			const onDismiss = vi.fn()
+			sut.onDismiss = onDismiss
+			sut.overlayEl = document.createElement('div') // contains nothing → outside
+			sut.active = true
+			sut.activeChanged() // highlight() arms the document pointerdown listener
+			expect(sut.visible).toBe(true)
 
+			const clickSpy = vi.spyOn(targetEl, 'click')
+			document.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+
+			expect(onDismiss).toHaveBeenCalledTimes(1)
+			expect(sut.visible).toBe(false)
+			// Dismissing must not trigger the target's navigation.
+			expect(clickSpy).not.toHaveBeenCalled()
+		})
+
+		it('does not dismiss on a pointerdown inside the coach mark', () => {
+			const onDismiss = vi.fn()
+			sut.onDismiss = onDismiss
+			const overlay = document.createElement('div')
+			const inside = document.createElement('div')
+			overlay.appendChild(inside)
+			document.body.appendChild(overlay)
+			sut.overlayEl = overlay
 			sut.active = true
 			sut.activeChanged()
 
-			// The coach mark never forces overflow:hidden on the viewport.
-			expect(viewport.style.getPropertyValue('overflow')).toBe('')
+			inside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
 
+			expect(onDismiss).not.toHaveBeenCalled()
+			expect(sut.visible).toBe(true)
+			overlay.remove()
 			sut.deactivate()
-			expect(viewport.style.getPropertyValue('overflow')).toBe('')
+		})
 
-			document.body.removeChild(viewport)
+		it('does not throw when onDismiss is undefined', () => {
+			sut.onDismiss = undefined
+			sut.overlayEl = document.createElement('div')
+			sut.active = true
+			sut.activeChanged()
+			expect(() =>
+				document.dispatchEvent(new Event('pointerdown', { bubbles: true })),
+			).not.toThrow()
 		})
 	})
 

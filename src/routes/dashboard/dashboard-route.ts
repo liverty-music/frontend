@@ -317,7 +317,6 @@ export class DashboardRoute {
 		// for a completed guest revisiting the dashboard.
 		if (!this.onboarding.isOnboarding) return
 		if (this.storage.getItem(StorageKeys.celebrationShown) === '1') return
-		this.storage.setItem(StorageKeys.celebrationShown, '1')
 		this.celebrationConfetti = false
 		this.celebrationMessage = this.i18n.tr('dashboard.celebration.complete')
 		this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.explore')
@@ -342,6 +341,18 @@ export class DashboardRoute {
 		if (!this.onboarding.isOnboarding) return
 		if (this.followStore.followedCount < 1) return
 		this.onboarding.finish()
+	}
+
+	/**
+	 * Persist the "guest light celebration already seen" flag only once the
+	 * overlay actually opens. Burning the flag inside maybeCelebrate() would mean a
+	 * suppressed overlay (never rendered) consumes the one-shot and the celebration
+	 * never appears again. The post-signup tier has its own one-shot
+	 * (postSignupShown), so this guard is scoped to the guest/light tier.
+	 */
+	public onCelebrationOpened(): void {
+		if (this.authService.isAuthenticated) return
+		this.storage.setItem(StorageKeys.celebrationShown, '1')
 	}
 
 	public onCelebrationDismissed(): void {

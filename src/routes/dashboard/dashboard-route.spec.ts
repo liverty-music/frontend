@@ -373,7 +373,58 @@ describe('DashboardRoute', () => {
 
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(false)
+			// The one-shot flag is NOT burned while merely deciding to show the
+			// overlay — it is set only when the overlay actually opens (Fix 2).
+			expect(mockStorage.setItem).not.toHaveBeenCalledWith(
+				'onboarding.celebrationShown',
+				'1',
+			)
+		})
+
+		it('persists the one-shot flag for a guest only once the overlay opens', () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+			expect(mockStorage.setItem).not.toHaveBeenCalledWith(
+				'onboarding.celebrationShown',
+				'1',
+			)
+
+			sut.onCelebrationOpened()
+
 			expect(mockStorage.setItem).toHaveBeenCalledWith(
+				'onboarding.celebrationShown',
+				'1',
+			)
+		})
+
+		it('does not burn the one-shot flag when the overlay is suppressed', () => {
+			// A suppressed overlay (never opened) must leave the flag untouched so the
+			// celebration can still appear on a later eligible arrival.
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = false
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			sut.attached()
+
+			expect(sut.showCelebration).toBe(false)
+			expect(mockStorage.setItem).not.toHaveBeenCalledWith(
+				'onboarding.celebrationShown',
+				'1',
+			)
+		})
+
+		it('does not persist the flag on overlay open for an authenticated user', () => {
+			mockAuth.isAuthenticated = true
+			sut = new DashboardRoute()
+
+			sut.onCelebrationOpened()
+
+			expect(mockStorage.setItem).not.toHaveBeenCalledWith(
 				'onboarding.celebrationShown',
 				'1',
 			)

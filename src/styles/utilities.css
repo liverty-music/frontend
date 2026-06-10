@@ -130,6 +130,34 @@
 		overflow-x: auto;
 	}
 
+	/* Filled brand-primary call-to-action. Shared by empty-state "find artists"
+	   prompts (dashboard + my-artists) so they read as one affordance. Works as a
+	   button or an anchor (inline-flex centers anchor text, no underline). */
+	/* stylelint-disable-next-line cube/utility-single-property */
+	.discover-cta {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+
+		padding-block: var(--space-2xs);
+		padding-inline: var(--space-m);
+		border-radius: var(--radius-button);
+
+		font-family: var(--font-display);
+		font-size: var(--step--1);
+		font-weight: 600;
+		color: var(--color-white);
+		text-decoration: none;
+
+		background: var(--color-brand-primary);
+
+		transition: background-color 150ms ease-out;
+
+		&:hover {
+			background: oklch(from var(--color-brand-primary) l c h / 80%);
+		}
+	}
+
 	/* Display */
 	.hidden {
 		display: none;

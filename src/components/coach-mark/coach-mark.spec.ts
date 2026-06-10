@@ -102,6 +102,47 @@ describe('CoachMark', () => {
 		})
 	})
 
+	describe('light-dismiss (pointerdown outside the coach mark)', () => {
+		type Handler = { onOutsidePointerDown: (e: PointerEvent) => void }
+		const fire = (target: Node) =>
+			(sut as unknown as Handler).onOutsidePointerDown({
+				target,
+			} as unknown as PointerEvent)
+
+		it('invokes onDismiss and deactivates on an outside pointerdown', () => {
+			const dismissSpy = vi.fn()
+			sut.onDismiss = dismissSpy
+			sut.visible = true
+			sut.overlayEl = document.createElement('div') // contains nothing
+
+			fire(document.createElement('div'))
+
+			expect(dismissSpy).toHaveBeenCalledOnce()
+			expect(sut.visible).toBe(false)
+		})
+
+		it('does not dismiss when the pointerdown is inside the coach mark', () => {
+			const dismissSpy = vi.fn()
+			sut.onDismiss = dismissSpy
+			sut.visible = true
+			const overlay = document.createElement('div')
+			const inside = document.createElement('div')
+			overlay.appendChild(inside)
+			sut.overlayEl = overlay
+
+			fire(inside)
+
+			expect(dismissSpy).not.toHaveBeenCalled()
+			expect(sut.visible).toBe(true)
+		})
+
+		it('does not throw when onDismiss is undefined', () => {
+			sut.onDismiss = undefined
+			sut.overlayEl = document.createElement('div')
+			expect(() => fire(document.createElement('div'))).not.toThrow()
+		})
+	})
+
 	describe('detaching lifecycle', () => {
 		it('sets visible to false', () => {
 			sut.visible = true
