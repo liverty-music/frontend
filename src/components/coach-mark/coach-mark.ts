@@ -4,19 +4,25 @@ const MAX_RETRY_MS = 5000
 const INITIAL_RETRY_MS = 100
 
 /**
- * Single, transient, non-blocking coach mark. Renders once at the app-shell
- * level and is driven by `CoachMarkService` via its bindables.
+ * Single, transient coach mark. Renders once at the app-shell level and is
+ * driven by `CoachMarkService` via its bindables.
  *
- * Non-blocking: the dim overlay + cutout is `pointer-events: none` and there are
- * no off-target click-blockers, so the rest of the page stays interactive and
- * scroll is never locked (soft gate). Tapping the target delegates to its native
- * click; off-target taps reach the underlying page.
+ * Tapping the highlighted target delegates to its native click (navigation).
+ * Tapping the dimmed area outside the target light-dismisses the coach mark via
+ * `onDismiss`. Light-dismiss is handled by a document-level `pointerdown`
+ * listener (capture) rather than a full-viewport backdrop, so it works above any
+ * other overlay without a `z-index` and without blocking the page: the host and
+ * the dim layer stay `pointer-events: none`; only the target-interceptor opts in.
  */
 export class CoachMark {
 	@bindable public targetSelector = ''
 	@bindable public message = ''
 	@bindable public active = false
 	@bindable public onTap?: () => void
+	@bindable public onDismiss?: () => void
+
+	/** Set by `ref="overlayEl"` — used to tell target/tooltip taps from outside taps. */
+	public overlayEl: HTMLElement | null = null
 
 	public visible = false
 
@@ -87,12 +93,30 @@ export class CoachMark {
 		target.style.setProperty('anchor-name', '--coach-target')
 		this.currentTarget = target
 		this.visible = true
+		// Re-arm (idempotent) the outside-tap light-dismiss listener.
+		document.removeEventListener('pointerdown', this.onOutsidePointerDown, true)
+		document.addEventListener('pointerdown', this.onOutsidePointerDown, true)
 	}
 
 	public deactivate(): void {
 		this.cancelRetry()
+		document.removeEventListener('pointerdown', this.onOutsidePointerDown, true)
 		this.visible = false
 		this.clearAnchor()
+	}
+
+	/**
+	 * Light-dismiss: a `pointerdown` anywhere outside the coach mark's own
+	 * elements dismisses it. The dim layer is `pointer-events: none`, so a tap on
+	 * the dimmed area resolves to the page element beneath (outside `overlayEl`)
+	 * and dismisses; a tap on the target-interceptor stays inside `overlayEl` and
+	 * is handled by `onTargetClick` (navigation) instead.
+	 */
+	private readonly onOutsidePointerDown = (e: PointerEvent): void => {
+		const target = e.target as Node | null
+		if (!this.overlayEl || (target && this.overlayEl.contains(target))) return
+		this.onDismiss?.()
+		this.deactivate()
 	}
 
 	public onKeydown(e: KeyboardEvent): void {

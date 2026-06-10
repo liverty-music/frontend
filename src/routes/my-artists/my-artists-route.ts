@@ -1,5 +1,4 @@
 import { I18N } from '@aurelia/i18n'
-import { IRouter } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { artistColor } from '../../adapter/view/artist-color'
 import { HYPE_TIERS } from '../../adapter/view/hype-display'
@@ -40,7 +39,6 @@ export class MyArtistsRoute {
 
 	private readonly followStore = resolve(IFollowStore)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly router = resolve(IRouter)
 	private readonly ea = resolve(IEventAggregator)
 	private abortController: AbortController | null = null
 
@@ -296,11 +294,5 @@ export class MyArtistsRoute {
 
 	public hypeIcon(artist: MyArtist): string {
 		return HYPE_TIERS[artist.hype]?.icon ?? '\u{1F525}'
-	}
-
-	// --- Navigation ---
-
-	public async goToDiscovery(): Promise<void> {
-		await this.router.load('discovery')
 	}
 }

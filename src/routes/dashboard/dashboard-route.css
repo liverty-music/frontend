@@ -64,22 +64,5 @@
 			font-size: var(--step--1);
 			color: var(--color-text-muted);
 		}
-
-		.dashboard-empty-link {
-			padding: var(--space-2xs) var(--space-s);
-			border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-			border-radius: var(--radius-sm);
-
-			font-size: var(--step--1);
-			color: var(--color-text-secondary);
-
-			transition:
-				border-color 200ms,
-				color 200ms;
-
-			&:hover {
-				color: var(--color-text-primary);
-			}
-		}
 	}
 }
