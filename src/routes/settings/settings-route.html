@@ -1,9 +1,9 @@
 <import from="./language-selector.css"></import>
 
-<page-header title-key="settings.title"></page-header>
+<page-header title-key="settings.title" data-testid="settings-header"></page-header>
 
 <main>
-  <div class="[ settings-scroll ] [ stack ]">
+  <div class="[ settings-scroll ] [ stack ]" data-testid="settings-scroll">
   <!-- Guest sign-in / sign-up hero. Top-of-page, guest-only: the most
        important action for an unauthenticated user, lifted out of the
        bottom ACCOUNT list so it reads as a primary CTA rather than a link. -->
@@ -27,7 +27,7 @@
     <ul class="settings-card" role="list">
       <!-- My Home Area -->
       <li class="settings-list-item">
-        <button click.trigger="openHomeSelector()" class="settings-row">
+        <button click.trigger="openHomeSelector()" class="settings-row" data-testid="settings-first-row">
           <svg-icon name="map-pin" class="settings-icon"></svg-icon>
           <span t="settings.myHomeArea" class="settings-row-label"></span>
           <div class="settings-row-end">
