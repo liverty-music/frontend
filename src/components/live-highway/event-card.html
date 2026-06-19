@@ -22,10 +22,10 @@ class="[ event-card ]"
     <span
       if.bind="journeyConfig"
       data-journey-status.bind="event.journeyStatus"
-      class="journey-badge" data-testid="journey-badge"
-    >
-      <span class="journey-badge-icon" aria-hidden="true">${journeyConfig.icon}</span>
-      <span t.bind="journeyConfig.labelKey"></span>
-    </span>
+      class="journey-badge"
+      data-testid="journey-badge"
+      role="img"
+      aria-label.bind="journeyConfig.labelKey | t"
+    >${journeyConfig.icon}</span>
   </article>
 </template>

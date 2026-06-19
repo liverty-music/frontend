@@ -19,7 +19,10 @@
 
 			position: relative;
 
-			overflow: hidden;
+			/* No overflow clip: the gradient is rounded by border-radius, the
+			   noise ::after self-rounds via border-radius:inherit, and the
+			   matched beam ::before is hidden at the corners by its mask — so
+			   the journey badge can bleed past the corner without a wrapper. */
 			display: flex;
 			flex-direction: column;
 			align-items: center;
@@ -74,63 +77,19 @@
 			color: var(--_label-color);
 		}
 
-		/* --- Journey status badge --- */
+		/* --- Journey status badge ---
+		   The status emoji alone, sitting on the top-right corner and bleeding
+		   half outside the card (notification-badge convention) so it never
+		   collides with the bottom-aligned artist name regardless of name
+		   length. No background/hue: the emoji is the sole, self-coloured cue. */
 		.journey-badge {
 			position: absolute;
 			inset-block-start: var(--space-3xs);
 			inset-inline-end: var(--space-3xs);
+			translate: 40% -40%;
 
-			display: inline-flex;
-			gap: var(--space-3xs);
-			align-items: center;
-
-			/* stylelint-disable-next-line cube/require-token-variables -- badge pill needs tighter padding than any token */
-			padding-block: 1px;
-			padding-inline: var(--space-3xs);
-			border-radius: var(--radius-button);
-
-			font-size: var(--step--1);
-			font-weight: 600;
-			line-height: var(--leading-snug);
-			color: var(--_journey-text);
-			text-transform: uppercase;
-			letter-spacing: 0.03em;
-
-			background: var(--_journey-bg);
-		}
-
-		/* Emoji keeps its own colour — exempt it from the badge text tint. */
-		.journey-badge-icon {
 			font-size: var(--step--1);
 			line-height: var(--leading-none);
-		}
-
-		/* Hues sourced from shared journey-hue tokens; the badge keeps its own
-		   translucent-pill lightness/chroma. Single source of semantic identity
-		   shared with the detail-sheet flow nodes. */
-		.journey-badge[data-journey-status="tracking"] {
-			--_journey-bg: oklch(65% 0.18 var(--journey-hue-tracking) / 85%);
-			--_journey-text: oklch(95% 0.02 var(--journey-hue-tracking));
-		}
-
-		.journey-badge[data-journey-status="applied"] {
-			--_journey-bg: oklch(65% 0.15 var(--journey-hue-applied) / 85%);
-			--_journey-text: oklch(95% 0.02 var(--journey-hue-applied));
-		}
-
-		.journey-badge[data-journey-status="lost"] {
-			--_journey-bg: oklch(45% 0.08 var(--journey-hue-lost) / 85%);
-			--_journey-text: oklch(75% 0.05 var(--journey-hue-lost));
-		}
-
-		.journey-badge[data-journey-status="unpaid"] {
-			--_journey-bg: oklch(65% 0.18 var(--journey-hue-unpaid) / 85%);
-			--_journey-text: oklch(95% 0.02 var(--journey-hue-unpaid));
-		}
-
-		.journey-badge[data-journey-status="paid"] {
-			--_journey-bg: oklch(65% 0.18 var(--journey-hue-paid) / 85%);
-			--_journey-text: oklch(95% 0.02 var(--journey-hue-paid));
 		}
 
 		/* =============================================
