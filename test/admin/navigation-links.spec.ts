@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import approvalQueueHtml from '../../admin/approval-queue/approval-queue-route.html?raw'
+import approvedConcertsHtml from '../../admin/approved-concerts/approved-concerts-route.html?raw'
 import authCallbackHtml from '../../admin/auth-callback/auth-callback-route.html?raw'
 import welcomeHtml from '../../admin/welcome/welcome-route.html?raw'
 
@@ -20,6 +21,7 @@ describe('admin sibling navigation uses parent-relative paths', () => {
 	const cases: ReadonlyArray<[name: string, html: string, target: string]> = [
 		['welcome-route', welcomeHtml, '../approval-queue'],
 		['approval-queue-route', approvalQueueHtml, '../welcome'],
+		['approved-concerts-route', approvedConcertsHtml, '../welcome'],
 		['auth-callback-route', authCallbackHtml, '../welcome'],
 	]
 

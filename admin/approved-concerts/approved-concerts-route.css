@@ -1,0 +1,160 @@
+@layer block {
+	@scope (approved-concerts-route) {
+		:scope {
+			--_radius: 0.5rem;
+			--_radius-round: 50%;
+			--_pad-btn: 0.5rem 1rem;
+			--_spinner-size: 1.25rem;
+			--_border: color-mix(
+				in oklch,
+				var(--color-text-secondary) 25%,
+				transparent
+			);
+			--_surface-raised: oklch(24% 0.04 275deg);
+		}
+
+		.approved-concerts {
+			--flow-space: var(--space-l);
+
+			max-inline-size: 80rem;
+			margin-inline: auto;
+			padding: var(--space-l) var(--space-m);
+		}
+
+		.approved-concerts-header {
+			--flow-space: var(--space-s);
+		}
+
+		.approved-concerts-brand {
+			font-size: var(--step--1);
+			font-weight: 700;
+			color: var(--color-brand-primary);
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+		}
+
+		.approved-concerts-title {
+			font-size: var(--step-3);
+			color: var(--color-text-primary);
+		}
+
+		.approved-concerts-subtitle {
+			color: var(--color-text-secondary);
+		}
+
+		.approved-concerts-back-link {
+			display: inline-block;
+			color: var(--color-brand-primary);
+			text-decoration: underline;
+		}
+
+		.approved-concerts-status {
+			display: flex;
+			gap: var(--space-s);
+			align-items: center;
+			color: var(--color-text-secondary);
+		}
+
+		.approved-concerts-spinner {
+			inline-size: var(--_spinner-size);
+			block-size: var(--_spinner-size);
+			border: 2px solid var(--color-brand-primary);
+			border-block-start-color: transparent;
+			border-radius: var(--_radius-round);
+
+			animation: spin 1s linear infinite;
+		}
+
+		.approved-concerts-state {
+			padding: var(--space-l);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			color: var(--color-text-secondary);
+			text-align: center;
+
+			&[data-state="error"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+		}
+
+		.approved-concerts-error-detail {
+			font-size: var(--step--1);
+			white-space: pre-wrap;
+		}
+
+		.approved-concerts-group {
+			--flow-space: var(--space-m);
+		}
+
+		.approved-concerts-artist {
+			font-size: var(--step-1);
+			color: var(--color-text-primary);
+		}
+
+		.approved-concerts-table {
+			border-collapse: collapse;
+			inline-size: 100%;
+
+			& th,
+			& td {
+				padding: var(--space-s);
+				border-block-end: 1px solid var(--_border);
+				text-align: start;
+				vertical-align: top;
+			}
+
+			& th {
+				font-size: var(--step--1);
+				color: var(--color-text-secondary);
+				text-transform: uppercase;
+				letter-spacing: 0.04em;
+			}
+
+			& tr[data-busy="true"] {
+				opacity: 0.6;
+			}
+		}
+
+		.approved-concerts-confirm {
+			--flow-space: var(--space-s);
+
+			min-inline-size: 16rem;
+		}
+
+		.approved-concerts-confirm-prompt {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.approved-concerts-btn {
+			cursor: pointer;
+
+			padding: var(--_pad-btn);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+
+			&[data-variant="delete"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+		}
+
+		.approved-concerts-row-error {
+			margin-block-start: var(--space-s);
+			font-size: var(--step--1);
+			color: var(--color-error);
+		}
+	}
+}

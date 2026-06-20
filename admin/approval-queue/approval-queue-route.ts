@@ -1,7 +1,7 @@
-import type { PendingConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_moderation_service_pb.js'
+import type { PendingConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import { sanitizeUrl } from '../../shared/utils/sanitize-url'
-import { IConcertModerationClient } from '../services/concert-moderation-client'
+import { IConcertClient } from '../services/concert-client'
 
 /** Coarse lifecycle phase for the initial list fetch. */
 type LoadPhase = 'loading' | 'ready' | 'error'
@@ -92,7 +92,7 @@ function toRow(concert: PendingConcert): QueueRow {
 /**
  * Concert approval-queue screen. Loads the pending queue on attach and lets a
  * reviewer approve or reject each discovered concert. Approve/reject run
- * against the admin-local {@link IConcertModerationClient}; on success the row
+ * against the admin-local {@link IConcertClient}; on success the row
  * is removed from the list, on failure a per-row error is surfaced and the row
  * stays put so the action can be retried.
  */
@@ -101,7 +101,7 @@ export class ApprovalQueueRoute {
 	public loadError = ''
 	public rows: QueueRow[] = []
 
-	private readonly client = resolve(IConcertModerationClient)
+	private readonly client = resolve(IConcertClient)
 	private readonly logger = resolve(ILogger).scopeTo('ApprovalQueueRoute')
 
 	/**

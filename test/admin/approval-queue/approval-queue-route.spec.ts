@@ -18,18 +18,18 @@ import {
 import {
 	PendingConcert,
 	ResolvedVenue,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_moderation_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
 import { Timestamp } from '@bufbuild/protobuf'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// The route resolves IConcertModerationClient. Replace the real module (which
-// would build a Connect transport over the generated client) with a fresh
-// interface token + a no-op class so the fixture binds to the test double.
-const IConcertModerationClient = DI.createInterface('IConcertModerationClient')
+// The route resolves IConcertClient. Replace the real module (which would build
+// a Connect transport over the generated client) with a fresh interface token +
+// a no-op class so the fixture binds to the test double.
+const IConcertClient = DI.createInterface('IConcertClient')
 
-vi.mock('../../../admin/services/concert-moderation-client', () => ({
-	IConcertModerationClient,
+vi.mock('../../../admin/services/concert-client', () => ({
+	IConcertClient,
 }))
 
 const { ApprovalQueueRoute } = await import(
@@ -90,10 +90,7 @@ function unresolvedConcert(): PendingConcert {
 async function build(client: MockClient) {
 	const fixture = createFixture
 		.html('<approval-queue-route component.ref="route"></approval-queue-route>')
-		.deps(
-			ApprovalQueueRoute,
-			Registration.instance(IConcertModerationClient, client),
-		)
+		.deps(ApprovalQueueRoute, Registration.instance(IConcertClient, client))
 		.build()
 	await fixture.started
 	return fixture
