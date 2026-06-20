@@ -28,6 +28,11 @@ import { route } from '@aurelia/router'
 			title: 'Approval Queue',
 		},
 		{
+			path: 'approved-concerts',
+			component: import('../approved-concerts/approved-concerts-route'),
+			title: 'Approved Concerts',
+		},
+		{
 			path: 'auth/callback',
 			component: import('../auth-callback/auth-callback-route'),
 			title: 'Signing In',
