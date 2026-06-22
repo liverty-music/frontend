@@ -11,6 +11,13 @@
 				transparent
 			);
 			--_surface-raised: oklch(24% 0.04 275deg);
+			--_backdrop-bg: oklch(0% 0 0deg / 50%);
+
+			/* Shared column track template. Applied identically to the header row
+			   and every event row across every series/artist so columns line up
+			   page-wide — separate grid containers align because the tracks are
+			   identical and content-independent (no auto tracks). */
+			--_cols: 7rem 5rem 5rem minmax(0, 1fr) 8rem;
 		}
 
 		.approved-concerts {
@@ -84,8 +91,8 @@
 			white-space: pre-wrap;
 		}
 
-		.approved-concerts-group {
-			--flow-space: var(--space-m);
+		.approved-concerts-artist-group {
+			--flow-space: var(--space-s);
 		}
 
 		.approved-concerts-artist {
@@ -93,39 +100,79 @@
 			color: var(--color-text-primary);
 		}
 
-		.approved-concerts-table {
-			border-collapse: collapse;
-			inline-size: 100%;
+		.approved-concerts-series {
+			overflow: clip;
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
 
-			& th,
-			& td {
-				padding: var(--space-s);
-				border-block-end: 1px solid var(--_border);
-				text-align: start;
-				vertical-align: top;
+			& + & {
+				margin-block-start: var(--space-xs);
+			}
+		}
+
+		.approved-concerts-series-summary {
+			cursor: pointer;
+
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-xs) var(--space-m);
+			align-items: baseline;
+			justify-content: space-between;
+
+			padding: var(--space-s) var(--space-m);
+
+			font-weight: 600;
+			color: var(--color-text-primary);
+
+			&:hover {
+				background: var(--_surface-raised);
+			}
+		}
+
+		.approved-concerts-series-meta {
+			font-size: var(--step--1);
+			font-weight: 400;
+			color: var(--color-text-secondary);
+		}
+
+		.approved-concerts-events {
+			border-block-start: 1px solid var(--_border);
+		}
+
+		.approved-concerts-row {
+			display: grid;
+			grid-template-columns: var(--_cols);
+			gap: var(--space-xs) var(--space-s);
+			align-items: center;
+
+			padding: var(--space-s) var(--space-m);
+
+			& + & {
+				border-block-start: 1px solid var(--_border);
 			}
 
-			& th {
-				font-size: var(--step--1);
-				color: var(--color-text-secondary);
-				text-transform: uppercase;
-				letter-spacing: 0.04em;
-			}
-
-			& tr[data-busy="true"] {
+			&[data-busy="true"] {
 				opacity: 0.6;
 			}
 		}
 
-		.approved-concerts-confirm {
-			--flow-space: var(--space-s);
-
-			min-inline-size: 16rem;
-		}
-
-		.approved-concerts-confirm-prompt {
+		.approved-concerts-head-row {
 			font-size: var(--step--1);
 			color: var(--color-text-secondary);
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+
+			background: var(--_surface-raised);
+		}
+
+		.approved-concerts-row-actions {
+			justify-self: start;
+		}
+
+		.approved-concerts-row-error {
+			grid-column: 1 / -1;
+			font-size: var(--step--1);
+			color: var(--color-error);
 		}
 
 		.approved-concerts-btn {
@@ -151,10 +198,41 @@
 			}
 		}
 
-		.approved-concerts-row-error {
-			margin-block-start: var(--space-s);
+		.approved-concerts-dialog {
+			max-inline-size: min(28rem, 92vi);
+			margin: auto;
+			padding: var(--space-l);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-base);
+
+			&::backdrop {
+				background: var(--_backdrop-bg);
+			}
+		}
+
+		.approved-concerts-dialog-body {
+			--flow-space: var(--space-s);
+		}
+
+		.approved-concerts-dialog-title {
+			font-size: var(--step-1);
+		}
+
+		.approved-concerts-dialog-target {
+			color: var(--color-text-secondary);
+		}
+
+		.approved-concerts-dialog-warn {
 			font-size: var(--step--1);
 			color: var(--color-error);
+		}
+
+		.approved-concerts-dialog-actions {
+			justify-content: flex-end;
 		}
 	}
 }
