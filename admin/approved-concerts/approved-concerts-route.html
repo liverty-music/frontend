@@ -3,7 +3,8 @@
     <p class="approved-concerts-brand">Liverty Admin</p>
     <h1 class="approved-concerts-title">Approved concerts</h1>
     <p class="approved-concerts-subtitle">
-      Review published concerts by artist and remove any approved in error.
+      Published concerts by artist and series. Expand a series to review or remove
+      its individual dates.
     </p>
     <a load="../welcome" class="approved-concerts-back-link">← Back to console</a>
   </header>
@@ -37,79 +38,92 @@
 
   <section
     repeat.for="group of groups"
-    class="[ approved-concerts-group ] [ flow ]"
+    class="[ approved-concerts-artist-group ] [ flow ]"
   >
     <h2 class="approved-concerts-artist">${group.artistName}</h2>
-    <table class="approved-concerts-table">
-      <thead>
-        <tr>
-          <th scope="col">Title</th>
-          <th scope="col">Local date</th>
-          <th scope="col">Venue</th>
-          <th scope="col">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr repeat.for="row of group.rows" data-busy.bind="row.busy">
-          <td>${row.title}</td>
-          <td>${row.localDate}</td>
-          <td>${row.venueName}</td>
-          <td class="approved-concerts-actions">
-            <div
-              if.bind="!row.confirming"
-              class="[ approved-concerts-action-bar ] [ cluster ]"
-            >
-              <button
-                type="button"
-                class="approved-concerts-btn"
-                data-variant="delete"
-                disabled.bind="row.busy"
-                click.trigger="startDelete(row)"
-              >
-                Delete
-              </button>
-            </div>
 
-            <div
-              else
-              class="[ approved-concerts-confirm ] [ flow ]"
-              role="group"
-              aria-label="Confirm deletion"
-            >
-              <p class="approved-concerts-confirm-prompt">
-                Permanently delete this concert? This cannot be undone.
-              </p>
-              <div class="[ approved-concerts-action-bar ] [ cluster ]">
-                <button
-                  type="button"
-                  class="approved-concerts-btn"
-                  data-variant="delete"
-                  disabled.bind="row.busy"
-                  click.trigger="confirmDelete(group, row)"
-                >
-                  Confirm delete
-                </button>
-                <button
-                  type="button"
-                  class="approved-concerts-btn"
-                  disabled.bind="row.busy"
-                  click.trigger="cancelDelete(row)"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+    <details
+      repeat.for="series of group.series"
+      class="approved-concerts-series"
+    >
+      <summary class="approved-concerts-series-summary">
+        <span class="approved-concerts-series-title">${series.seriesTitle}</span>
+        <span class="approved-concerts-series-meta">
+          ${series.rows.length} ${series.rows.length === 1 ? 'date' : 'dates'} · ${series.dateRange}
+        </span>
+      </summary>
 
-            <p
-              if.bind="row.actionError"
-              class="approved-concerts-row-error"
-              role="alert"
+      <div class="approved-concerts-events" role="table" aria-label.bind="series.seriesTitle">
+        <div class="[ approved-concerts-row ] [ approved-concerts-head-row ]" role="row">
+          <span role="columnheader">Date</span>
+          <span role="columnheader">Start</span>
+          <span role="columnheader">Open</span>
+          <span role="columnheader">Venue</span>
+          <span role="columnheader">Actions</span>
+        </div>
+
+        <div
+          repeat.for="row of series.rows"
+          class="approved-concerts-row"
+          role="row"
+          data-busy.bind="row.busy"
+        >
+          <span role="cell">${row.localDate}</span>
+          <span role="cell">${row.startTime}</span>
+          <span role="cell">${row.openTime}</span>
+          <span role="cell">${row.venueName}</span>
+          <span role="cell" class="approved-concerts-row-actions">
+            <button
+              type="button"
+              class="approved-concerts-btn"
+              data-variant="delete"
+              disabled.bind="row.busy"
+              click.trigger="requestDelete(group, series, row)"
             >
-              ${row.actionError}
-            </p>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+              Delete
+            </button>
+          </span>
+          <p
+            if.bind="row.actionError"
+            class="approved-concerts-row-error"
+            role="alert"
+          >
+            ${row.actionError}
+          </p>
+        </div>
+      </div>
+    </details>
   </section>
+
+  <dialog
+    ref="deleteDialog"
+    class="approved-concerts-dialog"
+    close.trigger="onDialogClose()"
+  >
+    <div class="[ approved-concerts-dialog-body ] [ flow ]">
+      <h2 class="approved-concerts-dialog-title">Delete concert?</h2>
+      <p class="approved-concerts-dialog-target">${pendingLabel}</p>
+      <p class="approved-concerts-dialog-warn">
+        This permanently deletes the concert and cannot be undone.
+      </p>
+      <div class="[ approved-concerts-dialog-actions ] [ cluster ]">
+        <button
+          type="button"
+          class="approved-concerts-btn"
+          click.trigger="cancelDelete()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="approved-concerts-btn"
+          data-variant="delete"
+          autofocus
+          click.trigger="confirmDelete()"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </dialog>
 </main>
