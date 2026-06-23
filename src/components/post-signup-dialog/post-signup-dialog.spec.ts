@@ -5,12 +5,16 @@ fakeLogger.scopeTo.mockReturnValue(fakeLogger)
 
 let fakeCanShowFab = true
 let fakeIsIos = false
+let fakeCanShowInstallOption = true
 const fakePwaInstall = {
 	get canShowFab() {
 		return fakeCanShowFab
 	},
 	get isIos() {
 		return fakeIsIos
+	},
+	get canShowInstallOption() {
+		return fakeCanShowInstallOption
 	},
 	install: vi.fn().mockResolvedValue(undefined),
 }
@@ -47,6 +51,7 @@ describe('PostSignupDialog', () => {
 	beforeEach(() => {
 		fakeCanShowFab = true
 		fakeIsIos = false
+		fakeCanShowInstallOption = true
 		fakeNotificationManager.permission = 'default'
 		vi.clearAllMocks()
 		// Restore default mock implementations after clearAllMocks resets them.
@@ -62,25 +67,54 @@ describe('PostSignupDialog', () => {
 	})
 
 	describe('canInstallPwa', () => {
-		it('returns true when canShowFab is true and not iOS', () => {
-			fakeCanShowFab = true
-			fakeIsIos = false
+		it('returns true when canShowInstallOption is true', () => {
+			fakeCanShowInstallOption = true
 
 			expect(sut.canInstallPwa).toBe(true)
 		})
 
-		it('returns false on iOS regardless of canShowFab', () => {
-			fakeCanShowFab = true
-			fakeIsIos = true
+		it('returns true when canShowInstallOption is true but canShowFab is false', () => {
+			fakeCanShowInstallOption = true
+			fakeCanShowFab = false
+
+			expect(sut.canInstallPwa).toBe(true)
+		})
+
+		it('returns false when canShowInstallOption is false (installed or unsupported)', () => {
+			fakeCanShowInstallOption = false
 
 			expect(sut.canInstallPwa).toBe(false)
 		})
+	})
 
-		it('returns false when canShowFab is false', () => {
-			fakeCanShowFab = false
+	describe('canInstallNatively (watcher)', () => {
+		it('starts false before binding', () => {
+			expect(sut.canInstallNatively).toBe(false)
+		})
+
+		it('initialises from canShowFab && !isIos in binding()', () => {
+			fakeCanShowFab = true
 			fakeIsIos = false
+			sut.binding()
 
-			expect(sut.canInstallPwa).toBe(false)
+			expect(sut.canInstallNatively).toBe(true)
+		})
+
+		it('stays false in binding() on iOS even when canShowFab is true', () => {
+			fakeCanShowFab = true
+			fakeIsIos = true
+			sut.binding()
+
+			expect(sut.canInstallNatively).toBe(false)
+		})
+
+		it('becomes true when canShowFab changes to true', () => {
+			expect(sut.canInstallNatively).toBe(false)
+
+			fakeCanShowFab = true
+			sut.canShowFabChanged()
+
+			expect(sut.canInstallNatively).toBe(true)
 		})
 	})
 
@@ -157,9 +191,8 @@ describe('PostSignupDialog', () => {
 	})
 
 	describe('isAllDone', () => {
-		it('is false when canInstallPwa is true', () => {
-			fakeCanShowFab = true
-			fakeIsIos = false
+		it('is false when canShowInstallOption is true', () => {
+			fakeCanShowInstallOption = true
 			fakeNotificationManager.permission = 'granted'
 			sut = new PostSignupDialog()
 
@@ -167,25 +200,23 @@ describe('PostSignupDialog', () => {
 		})
 
 		it('is false when permission is not granted', () => {
-			fakeCanShowFab = false
-			fakeIsIos = false
+			fakeCanShowInstallOption = false
 			fakeNotificationManager.permission = 'default'
 			sut = new PostSignupDialog()
 
 			expect(sut.isAllDone).toBe(false)
 		})
 
-		it('is true when PWA installed and notification granted', () => {
-			fakeCanShowFab = false
-			fakeIsIos = false
+		it('is true when PWA install option unavailable and notification granted', () => {
+			fakeCanShowInstallOption = false
 			fakeNotificationManager.permission = 'granted'
 			sut = new PostSignupDialog()
 
 			expect(sut.isAllDone).toBe(true)
 		})
 
-		it('is true when iOS (canInstallPwa always false) and notification granted', () => {
-			fakeCanShowFab = true
+		it('is true when iOS (canShowInstallOption always false) and notification granted', () => {
+			fakeCanShowInstallOption = false
 			fakeIsIos = true
 			fakeNotificationManager.permission = 'granted'
 			sut = new PostSignupDialog()
@@ -194,8 +225,7 @@ describe('PostSignupDialog', () => {
 		})
 
 		it('becomes true when permission changes to granted after dialog creation', () => {
-			fakeCanShowFab = false
-			fakeIsIos = false
+			fakeCanShowInstallOption = false
 			fakeNotificationManager.permission = 'default'
 			sut = new PostSignupDialog()
 			expect(sut.isAllDone).toBe(false)

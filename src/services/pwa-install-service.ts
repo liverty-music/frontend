@@ -40,10 +40,23 @@ export class PwaInstallService {
 	}
 
 	get isIos(): boolean {
-		if ('BeforeInstallPromptEvent' in window) return false
+		if (this.browserSupportsPwa) return false
 		if (/iphone|ipad|ipod/i.test(navigator.userAgent)) return true
 		// iPadOS 13+ reports a macOS desktop user-agent; detect via touch capability
 		return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+	}
+
+	// True when the browser exposes the PWA install API (Chrome/Edge/Samsung
+	// Internet). False on iOS Safari and other browsers without it.
+	get browserSupportsPwa(): boolean {
+		return 'BeforeInstallPromptEvent' in window
+	}
+
+	// Whether the PostSignupDialog should offer an install path. Unlike
+	// `canShowFab`, this does not require the `beforeinstallprompt` event to
+	// have been captured — a manual instruction fallback covers that case.
+	get canShowInstallOption(): boolean {
+		return !this.installed && this.browserSupportsPwa
 	}
 
 	private listenForInstallPrompt(): void {

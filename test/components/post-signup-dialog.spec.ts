@@ -30,6 +30,7 @@ describe('PostSignupDialog', () => {
 	let mockPwa: {
 		canShowFab: boolean
 		isIos: boolean
+		canShowInstallOption: boolean
 		install: ReturnType<typeof vi.fn>
 	}
 	let mockCoordinator: { markShown: ReturnType<typeof vi.fn> }
@@ -42,6 +43,7 @@ describe('PostSignupDialog', () => {
 		mockPwa = {
 			canShowFab: false,
 			isIos: false,
+			canShowInstallOption: false,
 			install: vi.fn().mockResolvedValue(undefined),
 		}
 		mockCoordinator = { markShown: vi.fn() }
@@ -114,18 +116,18 @@ describe('PostSignupDialog', () => {
 	})
 
 	describe('canInstallPwa', () => {
-		it('reflects pwaInstall.canShowFab (false when not eligible)', () => {
+		it('reflects pwaInstall.canShowInstallOption (false when not eligible)', () => {
 			expect(sut.canInstallPwa).toBe(false)
 		})
 
-		it('is true when canShowFab is true and not iOS', () => {
-			mockPwa.canShowFab = true
+		it('is true when canShowInstallOption is true even without a captured prompt', () => {
+			mockPwa.canShowInstallOption = true
+			mockPwa.canShowFab = false
 			expect(sut.canInstallPwa).toBe(true)
 		})
 
-		it('is false when canShowFab is true but iOS (iOS uses FAB sheet instead)', () => {
-			mockPwa.canShowFab = true
-			mockPwa.isIos = true
+		it('is false when canShowInstallOption is false (installed or iOS Safari)', () => {
+			mockPwa.canShowInstallOption = false
 			expect(sut.canInstallPwa).toBe(false)
 		})
 	})

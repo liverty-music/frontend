@@ -6,6 +6,7 @@ import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
 import { IAuthService } from '../src/services/auth-service'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 import { IOnboardingService } from '../src/services/onboarding-service'
+import { IPwaInstallService } from '../src/services/pwa-install-service'
 
 // Mock dynamic imports used by the @route decorator on AppShell.
 // Route modules are mocked to prevent vitest from loading the full
@@ -133,6 +134,13 @@ describe('app-shell', () => {
 					identify: vi.fn(),
 					reset: vi.fn(),
 					getFeatureFlag: vi.fn(),
+				}),
+				// AppShell eagerly resolves IPwaInstallService in its class body
+				// (to register the `beforeinstallprompt` listener before routing).
+				// Register a stub so DI does not jit-construct the real service,
+				// whose constructor reads `window.matchMedia` (absent in jsdom).
+				Registration.instance(IPwaInstallService, {
+					canShowFab: false,
 				}),
 			)
 			container.register(AppShell)
