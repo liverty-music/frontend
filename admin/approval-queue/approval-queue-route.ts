@@ -33,7 +33,22 @@ export interface QueueRow {
 	actionError: string
 }
 
+/** All pending concerts for one tour/show title within one artist bucket. */
+export interface PendingSeriesGroup {
+	readonly seriesTitle: string
+	rows: QueueRow[]
+	unresolvedCount: number
+}
+
+/** All series grouped under a single performing artist. */
+export interface PendingArtistGroup {
+	readonly artistName: string
+	series: PendingSeriesGroup[]
+}
+
 const EMPTY = '—'
+const UNKNOWN_ARTIST = 'Unknown artist'
+const UNTITLED_SERIES = 'Untitled series'
 
 function formatLocalDate(concert: PendingConcert): string {
 	const d = concert.localDate?.value
@@ -90,16 +105,58 @@ function toRow(concert: PendingConcert): QueueRow {
 }
 
 /**
+ * Groups a flat pending-concert list into Artist → Series. Uses
+ * `performer.name` as the artist key and `title.value` as the series proxy
+ * (no `series.id` exists on `PendingConcert` until approval). First-seen order
+ * is preserved; `unresolvedCount` tracks rows lacking a resolved venue so the
+ * collapsed summary can surface triage priority.
+ */
+function groupQueueByArtistAndSeries(
+	concerts: PendingConcert[],
+): PendingArtistGroup[] {
+	const groups: PendingArtistGroup[] = []
+	const artistByName = new Map<string, PendingArtistGroup>()
+	const seriesByKey = new Map<string, PendingSeriesGroup>()
+
+	for (const concert of concerts) {
+		const artistName = concert.performer?.name?.value ?? UNKNOWN_ARTIST
+		let artist = artistByName.get(artistName)
+		if (!artist) {
+			artist = { artistName, series: [] }
+			artistByName.set(artistName, artist)
+			groups.push(artist)
+		}
+
+		const seriesTitle = concert.title?.value ?? UNTITLED_SERIES
+		// Null byte separator prevents "A\0B" vs "AB\0" key collisions.
+		const seriesKey = `${artistName}\0${seriesTitle}`
+		let series = seriesByKey.get(seriesKey)
+		if (!series) {
+			series = { seriesTitle, rows: [], unresolvedCount: 0 }
+			seriesByKey.set(seriesKey, series)
+			artist.series.push(series)
+		}
+
+		const row = toRow(concert)
+		series.rows.push(row)
+		if (!row.hasResolvedVenue) series.unresolvedCount++
+	}
+
+	return groups
+}
+
+/**
  * Concert approval-queue screen. Loads the pending queue on attach and lets a
- * reviewer approve or reject each discovered concert. Approve/reject run
- * against the admin-local {@link IConcertClient}; on success the row
- * is removed from the list, on failure a per-row error is surfaced and the row
- * stays put so the action can be retried.
+ * reviewer approve or reject each discovered concert, grouped by artist then
+ * series title. Approve/reject run against the admin-local
+ * {@link IConcertClient}; on success the row is removed and empty
+ * series/artist headings are pruned, on failure a per-row error is surfaced
+ * and the row stays put so the action can be retried.
  */
 export class ApprovalQueueRoute {
 	public phase: LoadPhase = 'loading'
 	public loadError = ''
-	public rows: QueueRow[] = []
+	public groups: PendingArtistGroup[] = []
 
 	private readonly client = resolve(IConcertClient)
 	private readonly logger = resolve(ILogger).scopeTo('ApprovalQueueRoute')
@@ -121,7 +178,7 @@ export class ApprovalQueueRoute {
 		this.loadError = ''
 		try {
 			const pending = await this.client.listPending()
-			this.rows = pending.map(toRow)
+			this.groups = groupQueueByArtistAndSeries(pending)
 			this.phase = 'ready'
 		} catch (err) {
 			this.loadError =
@@ -133,13 +190,17 @@ export class ApprovalQueueRoute {
 		}
 	}
 
-	public async approve(row: QueueRow): Promise<void> {
+	public async approve(
+		group: PendingArtistGroup,
+		series: PendingSeriesGroup,
+		row: QueueRow,
+	): Promise<void> {
 		if (row.busy) return
 		row.busy = true
 		row.actionError = ''
 		try {
 			await this.client.approve(row.stagedId)
-			this.removeRow(row)
+			this.removeRow(group, series, row)
 		} catch (err) {
 			row.actionError =
 				err instanceof Error ? err.message : 'Approval failed. Try again.'
@@ -160,7 +221,11 @@ export class ApprovalQueueRoute {
 		row.rejectReason = ''
 	}
 
-	public async confirmReject(row: QueueRow): Promise<void> {
+	public async confirmReject(
+		group: PendingArtistGroup,
+		series: PendingSeriesGroup,
+		row: QueueRow,
+	): Promise<void> {
 		if (row.busy) return
 		const reason = row.rejectReason.trim()
 		if (reason.length === 0) {
@@ -171,7 +236,7 @@ export class ApprovalQueueRoute {
 		row.actionError = ''
 		try {
 			await this.client.reject(row.stagedId, reason)
-			this.removeRow(row)
+			this.removeRow(group, series, row)
 		} catch (err) {
 			row.actionError =
 				err instanceof Error ? err.message : 'Rejection failed. Try again.'
@@ -181,11 +246,26 @@ export class ApprovalQueueRoute {
 	}
 
 	public get isEmpty(): boolean {
-		return this.phase === 'ready' && this.rows.length === 0
+		return this.phase === 'ready' && this.groups.length === 0
 	}
 
-	private removeRow(row: QueueRow): void {
-		const idx = this.rows.indexOf(row)
-		if (idx !== -1) this.rows.splice(idx, 1)
+	private removeRow(
+		group: PendingArtistGroup,
+		series: PendingSeriesGroup,
+		row: QueueRow,
+	): void {
+		if (!row.hasResolvedVenue) series.unresolvedCount--
+		const rowIdx = series.rows.indexOf(row)
+		if (rowIdx !== -1) series.rows.splice(rowIdx, 1)
+		// Drop the series heading once its last concert is gone...
+		if (series.rows.length === 0) {
+			const sIdx = group.series.indexOf(series)
+			if (sIdx !== -1) group.series.splice(sIdx, 1)
+		}
+		// ...and the artist heading once its last series is gone.
+		if (group.series.length === 0) {
+			const gIdx = this.groups.indexOf(group)
+			if (gIdx !== -1) this.groups.splice(gIdx, 1)
+		}
 	}
 }

@@ -35,112 +35,131 @@
     <p>No concerts awaiting review.</p>
   </section>
 
-  <table if.bind="phase === 'ready' && rows.length" class="approval-queue-table">
-    <thead>
-      <tr>
-        <th scope="col">Artist</th>
-        <th scope="col">Title</th>
-        <th scope="col">Local date</th>
-        <th scope="col">Start time</th>
-        <th scope="col">Listed venue</th>
-        <th scope="col">Resolved venue</th>
-        <th scope="col">Source</th>
-        <th scope="col">Discovered</th>
-        <th scope="col">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr repeat.for="row of rows" data-busy.bind="row.busy">
-        <td>${row.performerName}</td>
-        <td>${row.title}</td>
-        <td>${row.localDate}</td>
-        <td>${row.startTime}</td>
-        <td>${row.listedVenueName}</td>
-        <td>
-          <span if.bind="row.hasResolvedVenue">
-            ${row.resolvedVenueName}
-            <small class="approval-queue-admin-area">${row.resolvedAdminArea}</small>
-          </span>
-          <span else class="approval-queue-unresolved" data-state="unresolved">
-            Unresolved venue — review
-          </span>
-        </td>
-        <td>
-          <a
-            if.bind="sanitizeUrl(row.sourceUrl)"
-            href.bind="sanitizeUrl(row.sourceUrl)"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="approval-queue-source-link"
-          >
-            Open source
-          </a>
-          <span else>${'—'}</span>
-        </td>
-        <td>${row.discoveredTime}</td>
-        <td class="approval-queue-actions">
-          <div if.bind="!row.rejecting" class="[ approval-queue-action-bar ] [ cluster ]">
-            <button
-              type="button"
-              class="approval-queue-btn"
-              data-variant="approve"
-              disabled.bind="row.busy"
-              click.trigger="approve(row)"
-            >
-              Approve
-            </button>
-            <button
-              type="button"
-              class="approval-queue-btn"
-              data-variant="reject"
-              disabled.bind="row.busy"
-              click.trigger="startReject(row)"
-            >
-              Reject
-            </button>
-          </div>
+  <section
+    repeat.for="group of groups"
+    class="[ approval-queue-artist-group ] [ flow ]"
+  >
+    <h2 class="approval-queue-artist">${group.artistName}</h2>
 
-          <form
-            else
-            class="[ approval-queue-reject-form ] [ flow ]"
-            submit.trigger="confirmReject(row)"
-          >
-            <label class="approval-queue-reject-label">
-              Rejection reason
-              <input
-                type="text"
-                class="approval-queue-reject-input"
-                value.bind="row.rejectReason"
-                placeholder="Why is this concert being rejected?"
-                disabled.bind="row.busy"
-                aria-label="Rejection reason"
-              />
-            </label>
-            <div class="[ approval-queue-action-bar ] [ cluster ]">
-              <button
-                type="submit"
-                class="approval-queue-btn"
-                data-variant="reject"
-                disabled.bind="row.busy"
-              >
-                Confirm reject
-              </button>
-              <button
-                type="button"
-                class="approval-queue-btn"
-                disabled.bind="row.busy"
-                click.trigger="cancelReject(row)"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+    <details
+      repeat.for="series of group.series"
+      class="approval-queue-series"
+    >
+      <summary class="approval-queue-series-summary">
+        <span class="approval-queue-series-title">${series.seriesTitle}</span>
+        <span class="approval-queue-series-meta">
+          ${series.rows.length} ${series.rows.length === 1 ? 'date' : 'dates'}
+          <span
+            if.bind="series.unresolvedCount > 0"
+            class="approval-queue-unresolved-badge"
+          >⚠ ${series.unresolvedCount} unresolved</span>
+        </span>
+      </summary>
 
-          <p if.bind="row.actionError" class="approval-queue-row-error" role="alert">
-            ${row.actionError}
-          </p>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+      <table class="approval-queue-table">
+        <thead>
+          <tr>
+            <th scope="col">Local date</th>
+            <th scope="col">Start time</th>
+            <th scope="col">Listed venue</th>
+            <th scope="col">Resolved venue</th>
+            <th scope="col">Source</th>
+            <th scope="col">Discovered</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr repeat.for="row of series.rows" data-busy.bind="row.busy">
+            <td>${row.localDate}</td>
+            <td>${row.startTime}</td>
+            <td>${row.listedVenueName}</td>
+            <td>
+              <span if.bind="row.hasResolvedVenue">
+                ${row.resolvedVenueName}
+                <small class="approval-queue-admin-area">${row.resolvedAdminArea}</small>
+              </span>
+              <span else class="approval-queue-unresolved" data-state="unresolved">
+                Unresolved venue — review
+              </span>
+            </td>
+            <td>
+              <a
+                if.bind="sanitizeUrl(row.sourceUrl)"
+                href.bind="sanitizeUrl(row.sourceUrl)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="approval-queue-source-link"
+              >
+                Open source
+              </a>
+              <span else>${'—'}</span>
+            </td>
+            <td>${row.discoveredTime}</td>
+            <td class="approval-queue-actions">
+              <div if.bind="!row.rejecting" class="[ approval-queue-action-bar ] [ cluster ]">
+                <button
+                  type="button"
+                  class="approval-queue-btn"
+                  data-variant="approve"
+                  disabled.bind="row.busy"
+                  click.trigger="approve(group, series, row)"
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  class="approval-queue-btn"
+                  data-variant="reject"
+                  disabled.bind="row.busy"
+                  click.trigger="startReject(row)"
+                >
+                  Reject
+                </button>
+              </div>
+
+              <form
+                else
+                class="[ approval-queue-reject-form ] [ flow ]"
+                submit.trigger="confirmReject(group, series, row)"
+              >
+                <label class="approval-queue-reject-label">
+                  Rejection reason
+                  <input
+                    type="text"
+                    class="approval-queue-reject-input"
+                    value.bind="row.rejectReason"
+                    placeholder="Why is this concert being rejected?"
+                    disabled.bind="row.busy"
+                    aria-label="Rejection reason"
+                  />
+                </label>
+                <div class="[ approval-queue-action-bar ] [ cluster ]">
+                  <button
+                    type="submit"
+                    class="approval-queue-btn"
+                    data-variant="reject"
+                    disabled.bind="row.busy"
+                  >
+                    Confirm reject
+                  </button>
+                  <button
+                    type="button"
+                    class="approval-queue-btn"
+                    disabled.bind="row.busy"
+                    click.trigger="cancelReject(row)"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+
+              <p if.bind="row.actionError" class="approval-queue-row-error" role="alert">
+                ${row.actionError}
+              </p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
+  </section>
 </main>
