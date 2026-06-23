@@ -82,6 +82,60 @@
 			white-space: pre-wrap;
 		}
 
+		.approval-queue-artist-group {
+			--flow-space: var(--space-s);
+		}
+
+		.approval-queue-artist {
+			font-size: var(--step-1);
+			color: var(--color-text-primary);
+		}
+
+		.approval-queue-series {
+			overflow: clip;
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			& + & {
+				margin-block-start: var(--space-xs);
+			}
+		}
+
+		.approval-queue-series-summary {
+			cursor: pointer;
+
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-xs) var(--space-m);
+			align-items: baseline;
+			justify-content: space-between;
+
+			padding: var(--space-s) var(--space-m);
+
+			font-weight: 600;
+			color: var(--color-text-primary);
+
+			&:hover {
+				background: var(--_surface-raised);
+			}
+		}
+
+		.approval-queue-series-meta {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-xs);
+			align-items: baseline;
+
+			font-size: var(--step--1);
+			font-weight: 400;
+			color: var(--color-text-secondary);
+		}
+
+		.approval-queue-unresolved-badge {
+			font-weight: 700;
+			color: var(--color-error);
+		}
+
 		.approval-queue-table {
 			border-collapse: collapse;
 			inline-size: 100%;
