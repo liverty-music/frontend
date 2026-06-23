@@ -1,4 +1,4 @@
-import { bindable, ILogger, resolve } from 'aurelia'
+import { bindable, ILogger, observable, resolve, watch } from 'aurelia'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPromptCoordinator } from '../../services/prompt-coordinator'
 import { IPushService } from '../../services/push-service'
@@ -11,6 +11,13 @@ export class PostSignupDialog {
 	public notificationDone = false
 	public notificationError = false
 
+	// True when the native `beforeinstallprompt` prompt is available, so the
+	// install row can offer a one-tap install. Driven by an explicit `@watch`
+	// on `canShowFab` (see below) rather than a plain getter: `if.bind` on a
+	// getter that traverses an injected service's `@observable` is not
+	// guaranteed to update reactively.
+	@observable public canInstallNatively = false
+
 	private readonly logger = resolve(ILogger).scopeTo('PostSignupDialog')
 	public readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
@@ -18,15 +25,37 @@ export class PostSignupDialog {
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
 
 	public get canInstallPwa(): boolean {
-		// On iOS, beforeinstallprompt never fires — hide the dialog row.
-		// iOS users use the persistent FAB with the instruction sheet instead.
-		return this.pwaInstall.canShowFab && !this.pwaInstall.isIos
+		// Show the install row whenever the browser supports PWA install, even
+		// if the native prompt has not been captured — a manual instruction
+		// fallback covers that case. iOS is excluded implicitly because it
+		// lacks `BeforeInstallPromptEvent` (`canShowInstallOption` is false).
+		return this.pwaInstall.canShowInstallOption
 	}
 
 	public get isAllDone(): boolean {
 		return (
-			!this.canInstallPwa && this.notificationManager.permission === 'granted'
+			!this.pwaInstall.canShowInstallOption &&
+			this.notificationManager.permission === 'granted'
 		)
+	}
+
+	// `@watch` does not fire on initial bind, so seed the value here.
+	public binding(): void {
+		this.syncCanInstallNatively()
+	}
+
+	// Upgrade the install row to the native button as soon as the deferred
+	// prompt arrives, even if the dialog is already open.
+	@watch((vm: PostSignupDialog) => vm.pwaInstall.canShowFab)
+	public canShowFabChanged(): void {
+		this.syncCanInstallNatively()
+	}
+
+	private syncCanInstallNatively(): void {
+		// A one-tap native install needs a captured prompt (`canShowFab`) and is
+		// never available on iOS (no `beforeinstallprompt`).
+		this.canInstallNatively =
+			this.pwaInstall.canShowFab && !this.pwaInstall.isIos
 	}
 
 	public activeChanged(): void {

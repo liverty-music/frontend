@@ -31,17 +31,28 @@
       </div>
     </div>
 
-    <!-- PWA install row (only if installable) -->
+    <!-- PWA install row (shown whenever the browser supports PWA install) -->
     <div class="post-signup-row" if.bind="canInstallPwa">
       <span class="post-signup-row-icon">📱</span>
       <div class="post-signup-row-body">
         <p class="post-signup-row-label" t="postSignup.pwaLabel"></p>
+        <!-- Native one-tap install when the deferred prompt is available -->
         <button
+          if.bind="canInstallNatively"
           type="button"
           class="post-signup-btn"
           busy-on-click.bind="() => onInstallPwa()"
           t="postSignup.pwaInstall"
         ></button>
+        <!-- Fallback: native disclosure of manual install steps (no JS state) -->
+        <details if.bind="!canInstallNatively" class="post-signup-install-guide">
+          <summary class="post-signup-btn" t="postSignup.pwaInstallGuide"></summary>
+          <ol class="post-signup-install-steps">
+            <li t="postSignup.pwaGuideStep1"></li>
+            <li t="postSignup.pwaGuideStep2"></li>
+            <li t="postSignup.pwaGuideStep3"></li>
+          </ol>
+        </details>
       </div>
     </div>
 

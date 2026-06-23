@@ -5,6 +5,7 @@ import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IOnboardingService } from './services/onboarding-service'
+import { IPwaInstallService } from './services/pwa-install-service'
 @route({
 	title: 'Liverty Music',
 	routes: [
@@ -114,6 +115,13 @@ export class AppShell {
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
 	private readonly analytics = resolve(IAnalyticsService)
 	private readonly logger = resolve(ILogger).scopeTo('AppShell')
+
+	// Eagerly construct PwaInstallService so its `beforeinstallprompt` listener
+	// is registered before any routing begins. AppShell activates ahead of the
+	// first navigation, so this captures the event Chrome fires during the
+	// `/auth/callback` page load — otherwise the prompt is silently lost.
+	// biome-ignore lint/correctness/noUnusedPrivateClassMembers: held only for its DI construction side-effect (listener registration)
+	private readonly _pwaInstall = resolve(IPwaInstallService)
 
 	private readonly subscriptions: IDisposable[] = []
 

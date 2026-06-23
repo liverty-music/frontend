@@ -342,6 +342,10 @@
 		"notificationDenied": "Notifications are blocked in your browser settings. You can change this in your browser.",
 		"pwaLabel": "Add to home screen for a better experience",
 		"pwaInstall": "Add to home screen",
+		"pwaInstallGuide": "How to add",
+		"pwaGuideStep1": "Tap the menu (⋮) in your browser",
+		"pwaGuideStep2": "Select \"Add to Home Screen\"",
+		"pwaGuideStep3": "Tap \"Add\" to finish",
 		"defer": "Later",
 		"close": "Close"
 	},

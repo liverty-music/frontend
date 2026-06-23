@@ -170,4 +170,60 @@ describe('PwaInstallService', () => {
 				.BeforeInstallPromptEvent
 		})
 	})
+
+	describe('browserSupportsPwa', () => {
+		it('returns true when BeforeInstallPromptEvent is in window', () => {
+			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
+				value: class {},
+				configurable: true,
+			})
+			const sut = new PwaInstallService()
+
+			expect(sut.browserSupportsPwa).toBe(true)
+
+			delete (window as unknown as Record<string, unknown>)
+				.BeforeInstallPromptEvent
+		})
+
+		it('returns false when BeforeInstallPromptEvent is not in window', () => {
+			const sut = new PwaInstallService()
+
+			expect(sut.browserSupportsPwa).toBe(false)
+		})
+	})
+
+	describe('canShowInstallOption', () => {
+		it('is true when not installed and browser supports PWA', () => {
+			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
+				value: class {},
+				configurable: true,
+			})
+			const sut = new PwaInstallService()
+
+			expect(sut.canShowInstallOption).toBe(true)
+
+			delete (window as unknown as Record<string, unknown>)
+				.BeforeInstallPromptEvent
+		})
+
+		it('is false when already installed even if browser supports PWA', () => {
+			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
+				value: class {},
+				configurable: true,
+			})
+			localStorage.setItem(StorageKeys.pwaInstalled, 'true')
+			const sut = new PwaInstallService()
+
+			expect(sut.canShowInstallOption).toBe(false)
+
+			delete (window as unknown as Record<string, unknown>)
+				.BeforeInstallPromptEvent
+		})
+
+		it('is false when the browser does not support PWA install', () => {
+			const sut = new PwaInstallService()
+
+			expect(sut.canShowInstallOption).toBe(false)
+		})
+	})
 })
