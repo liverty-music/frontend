@@ -4,49 +4,30 @@
   <header class="consent-header">
     <h1 t="onboarding.consent.title" class="consent-title"></h1>
     <p t="onboarding.consent.intro" class="consent-paragraph"></p>
-    <p t="onboarding.consent.commitment" class="consent-paragraph consent-paragraph-emphasis"></p>
   </header>
 
   <section class="[ consent-card ] [ flow ]">
-    <!-- Analytics toggle row -->
-    <button
-      click.trigger="toggleAnalytics()"
-      role="switch"
-      aria-checked.bind="analyticsConsent"
-      class="consent-row"
-    >
-      <div class="consent-row-text">
-        <div class="consent-row-label-line">
-          <svg-icon name="info" class="consent-row-icon"></svg-icon>
-          <span t="onboarding.consent.analytics.label" class="consent-row-label"></span>
-        </div>
-        <span t="onboarding.consent.analytics.description" class="consent-row-description"></span>
-      </div>
-      <div class="settings-toggle-track" data-on.bind="analyticsConsent">
-        <div class="settings-toggle-thumb" data-on.bind="analyticsConsent"></div>
-      </div>
-    </button>
-
-    <hr class="[ consent-divider ]">
-
-    <!-- Cross-border marketing measurement toggle row -->
-    <button
-      click.trigger="toggleMarketing()"
-      role="switch"
-      aria-checked.bind="marketingConsent"
-      class="consent-row"
-    >
+    <div class="consent-row">
       <div class="consent-row-text">
         <div class="consent-row-label-line">
           <svg-icon name="globe" class="consent-row-icon"></svg-icon>
-          <span t="onboarding.consent.marketing.label" class="consent-row-label"></span>
+          <span t="onboarding.consent.processor.label" class="consent-row-label"></span>
         </div>
-        <span t="onboarding.consent.marketing.description" class="consent-row-description"></span>
+        <span t="onboarding.consent.processor.description" class="consent-row-description"></span>
       </div>
-      <div class="settings-toggle-track" data-on.bind="marketingConsent">
-        <div class="settings-toggle-thumb" data-on.bind="marketingConsent"></div>
+    </div>
+
+    <hr class="[ consent-divider ]">
+
+    <div class="consent-row">
+      <div class="consent-row-text">
+        <div class="consent-row-label-line">
+          <svg-icon name="info" class="consent-row-icon"></svg-icon>
+          <span t="onboarding.consent.optOut.label" class="consent-row-label"></span>
+        </div>
+        <span t="onboarding.consent.optOut.description" class="consent-row-description"></span>
       </div>
-    </button>
+    </div>
   </section>
 
   <p class="consent-policy-line">
@@ -61,19 +42,14 @@
 
   <footer class="[ consent-actions ]">
     <button
-      busy-on-click.bind="() => acceptSelected()"
+      busy-on-click.bind="() => acknowledge()"
       class="consent-btn-primary"
-      t="onboarding.consent.actions.accept"
+      t="onboarding.consent.actions.acknowledge"
     ></button>
     <button
-      busy-on-click.bind="() => declineAll()"
-      class="consent-btn-secondary"
-      t="onboarding.consent.actions.decline"
-    ></button>
-    <button
-      busy-on-click.bind="() => setUpLater()"
+      busy-on-click.bind="() => openSettings()"
       class="consent-btn-text"
-      t="onboarding.consent.actions.later"
+      t="onboarding.consent.actions.manage"
     ></button>
   </footer>
 </main>

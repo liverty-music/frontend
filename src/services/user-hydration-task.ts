@@ -61,14 +61,12 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	const current = userStore.current
 	if (!current) return
 
-	// Identify the just-loaded user to AnalyticsService. The service
-	// internally gates on `consent.analytics` — when consent is denied
-	// (the steady state for new signups before they reach the consent
-	// screen at the end of onboarding), the user_id is buffered and
-	// replayed if/when the user grants consent later. Calling identify
-	// here regardless of consent state keeps the wiring declarative:
-	// "this user just hydrated, future consent decisions can attach
-	// to them" rather than racing the consent screen.
+	// Identify the just-loaded user to AnalyticsService. Under the opt-out
+	// model analytics is on by default, so this normally calls
+	// `posthog.identify(user.id, …)` immediately — with NO preceding
+	// reset() — so the anonymous pre-identification discovery history merges
+	// into the identified profile. The service short-circuits internally
+	// only when the user has explicitly opted out of analytics.
 	container.get(IAnalyticsService).identify(current.id)
 
 	if (current.preferredLanguage) {

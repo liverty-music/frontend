@@ -477,7 +477,7 @@ describe('SettingsRoute', () => {
 		})
 	})
 
-	describe('consent description disclosure', () => {
+	describe('opt-out description disclosure', () => {
 		it('toggleAnalyticsDesc flips the analytics disclosure state', () => {
 			expect(sut.analyticsDescExpanded).toBe(false)
 			sut.toggleAnalyticsDesc()
@@ -487,32 +487,44 @@ describe('SettingsRoute', () => {
 		})
 
 		it('disclosure toggle does not change the switch value (independent controls)', () => {
-			const before = sut.consent.marketingMeasurement
-			sut.toggleMarketingDesc()
-			expect(sut.marketingDescExpanded).toBe(true)
+			const before = sut.consent.sessionReplay
+			sut.toggleSessionReplayDesc()
+			expect(sut.sessionReplayDescExpanded).toBe(true)
 			// The disclosure and the switch are separate controls — expanding
-			// the description must not grant/revoke the consent.
-			expect(sut.consent.marketingMeasurement).toBe(before)
+			// the description must not opt the user in/out.
+			expect(sut.consent.sessionReplay).toBe(before)
 		})
 	})
 
-	describe('consent toggle binding', () => {
-		it('reflects an external consent change with no component-local mirror', () => {
-			expect(sut.consent.analytics).toBe(false)
-			// External change (e.g. the onboarding consent screen) — no Settings
-			// toggle handler is involved.
-			sut.consent.grant('analytics')
+	describe('opt-out toggle binding', () => {
+		it('both toggles default ON (opt-out model)', () => {
+			expect(sut.consent.analytics).toBe(true)
+			expect(sut.consent.sessionReplay).toBe(true)
+		})
+
+		it('reflects an external opt-out change with no component-local mirror', () => {
+			expect(sut.consent.analytics).toBe(true)
+			// External change — no Settings toggle handler is involved.
+			sut.consent.revoke('analytics')
 			// The template binds `consent.analytics` directly, so the toggle
 			// reflects the new value without any manual re-sync in the component.
-			expect(sut.consent.analytics).toBe(true)
+			expect(sut.consent.analytics).toBe(false)
 		})
 
 		it('handleAnalyticsToggle writes through to the consent service', () => {
-			expect(sut.consent.analytics).toBe(false)
-			sut.handleAnalyticsToggle()
 			expect(sut.consent.analytics).toBe(true)
 			sut.handleAnalyticsToggle()
 			expect(sut.consent.analytics).toBe(false)
+			sut.handleAnalyticsToggle()
+			expect(sut.consent.analytics).toBe(true)
+		})
+
+		it('handleSessionReplayToggle writes through independently of analytics', () => {
+			expect(sut.consent.sessionReplay).toBe(true)
+			sut.handleSessionReplayToggle()
+			expect(sut.consent.sessionReplay).toBe(false)
+			// Analytics is unaffected by toggling session replay.
+			expect(sut.consent.analytics).toBe(true)
 		})
 	})
 

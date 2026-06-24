@@ -3,12 +3,6 @@ import type { AppConfig } from '../../config/app-config'
 import { Events } from '../../services/analytics-events'
 
 // ── PostHog SDK mock ───────────────────────────────────────────────────────
-//
-// `import('posthog-js')` is awaited inside AnalyticsService.init(). Vitest
-// resolves the dynamic import against this `vi.mock` so no real SDK code
-// (and no network) runs. We expose the captured init args + a per-test
-// resettable spy bag via the module's `default` export, matching the
-// shape AnalyticsService consumes (`module.default.init/capture/...`).
 
 const posthogStub = {
 	init: vi.fn(),
@@ -26,11 +20,6 @@ vi.mock('posthog-js', () => ({
 }))
 
 // ── OpenTelemetry mock ─────────────────────────────────────────────────────
-//
-// AnalyticsService calls `trace.getActiveSpan()` at every dispatch. The
-// span return value is controlled per-test via `setActiveSpanForTest()`
-// so we can cover the "trace_id injected" and "trace_id omitted" branches
-// without standing up a real tracer provider.
 
 let activeSpan:
 	| {
@@ -59,11 +48,6 @@ vi.mock('@opentelemetry/api', async (importOriginal) => {
 })
 
 // ── Aurelia DI mock ────────────────────────────────────────────────────────
-//
-// Same `friendlyName`-keyed resolver stub the existing `concert-store`
-// spec uses. `config` and `consent` are mutated per-test via the
-// references captured below, so the SUT sees the runtime values selected
-// by the test without re-instantiating the mock map.
 
 const mockLogger = {
 	scopeTo: () => ({
@@ -79,15 +63,12 @@ const mockConfig: { current: Partial<AppConfig> } = {
 	current: { posthogProjectKey: 'phc_test_key' },
 }
 
-const mockConsent: { analytics: boolean; marketingMeasurement: boolean } = {
-	analytics: false,
-	marketingMeasurement: false,
+// Default-on opt-out posture: both purposes enabled unless a test opts out.
+const mockConsent: { analytics: boolean; sessionReplay: boolean } = {
+	analytics: true,
+	sessionReplay: true,
 }
 
-// Minimal pub/sub modeled after IEventAggregator: subscribers keyed on
-// the event class reference so `subscribe(ConsentChanged, handler)` and
-// `publish(new ConsentChanged(state))` line up. The test bag below is
-// reset per-test via `mockEa.reset()`.
 type ChannelKey = unknown
 type Handler = (event: unknown) => void
 const eaChannels = new Map<ChannelKey, Set<Handler>>()
@@ -146,11 +127,6 @@ import { AnalyticsService } from './analytics-service'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-/**
- * Suppress `requestIdleCallback` so the constructor doesn't fire init
- * before the test arranges its preconditions. Tests that want to drive
- * init call `_waitForInitForTests()` explicitly.
- */
 function stubIdleCallback(): void {
 	Object.defineProperty(globalThis, 'requestIdleCallback', {
 		configurable: true,
@@ -178,8 +154,8 @@ describe('AnalyticsService', () => {
 			posthogProjectKey: 'phc_test_key',
 			posthogApiHost: 'https://eu.i.posthog.com',
 		}
-		mockConsent.analytics = false
-		mockConsent.marketingMeasurement = false
+		mockConsent.analytics = true
+		mockConsent.sessionReplay = true
 		mockEa.reset()
 		setActiveSpan(undefined)
 		stubIdleCallback()
@@ -197,10 +173,6 @@ describe('AnalyticsService', () => {
 
 			new AnalyticsService()
 
-			// scheduleInit() short-circuits before requestIdleCallback —
-			// proving the SDK dynamic import is never queued in nil-config
-			// mode. This is what mirrors the backend's `client == nil`
-			// posture: no key → no network → no surprises.
 			expect(idle).not.toHaveBeenCalled()
 			expect(posthogStub.init).not.toHaveBeenCalled()
 		})
@@ -212,9 +184,6 @@ describe('AnalyticsService', () => {
 			sut.capture(Events.PageViewed, { path: '/welcome', title: 'Welcome' })
 			await sut._waitForInitForTests()
 
-			// No init AND no buffered events: a stuck CMS / missing
-			// ConfigMap deployment MUST NOT silently buffer 100s of
-			// events in memory.
 			expect(posthogStub.init).not.toHaveBeenCalled()
 			expect(posthogStub.capture).not.toHaveBeenCalled()
 		})
@@ -223,48 +192,74 @@ describe('AnalyticsService', () => {
 			mockConfig.current = { posthogProjectKey: undefined }
 			const sut = new AnalyticsService()
 
-			// Defaulting is what lets route guards stay synchronous and
-			// fail-closed: without a key, every gate decides "off"
-			// regardless of what the production project would say.
 			expect(sut.getFeatureFlag('new-onboarding', false)).toBe(false)
 			expect(sut.getFeatureFlag('experiment-bucket', 'control')).toBe('control')
 		})
 	})
 
-	describe('enabled mode', () => {
-		it('buffers capture() calls before init and replays them after init resolves', async () => {
+	describe('default-on (opt-out) mode', () => {
+		it('initialises with persistent storage + opt-in by default and replays buffered captures', async () => {
 			const sut = new AnalyticsService()
 
 			sut.capture(Events.PageViewed, { path: '/welcome', title: 'Welcome' })
-			sut.capture(Events.ArtistSearch, {
-				query_length: 3,
-				result_count: 5,
-			})
+			sut.capture(Events.ArtistSearch, { query_length: 3, result_count: 5 })
 
-			// Neither event has hit posthog.capture yet — they're sitting
-			// in the pre-init queue.
 			expect(posthogStub.capture).not.toHaveBeenCalled()
 
 			await sut._waitForInitForTests()
 
-			// init was called with the EU host + the privacy-default config
-			// the OpenSpec change pins for the pre-consent posture.
+			// Default-on posture: localStorage+cookie persistence + IP so
+			// anonymous funnels survive reloads and merge into the identified
+			// profile.
 			expect(posthogStub.init).toHaveBeenCalledTimes(1)
 			const [key, config] = posthogStub.init.mock.calls[0]
 			expect(key).toBe('phc_test_key')
 			expect(config).toMatchObject({
 				api_host: 'https://eu.i.posthog.com',
-				persistence: 'memory',
-				ip: false,
+				persistence: 'localStorage+cookie',
+				ip: true,
 				autocapture: false,
 				capture_pageview: false,
-				disable_session_recording: true,
 			})
+			// opt_in_capturing is asserted because a returning user who opted
+			// out then back in needs the explicit opt-in.
+			expect(posthogStub.opt_in_capturing).toHaveBeenCalled()
 
 			// Both buffered events flush in insertion order.
 			expect(posthogStub.capture).toHaveBeenCalledTimes(2)
 			expect(posthogStub.capture.mock.calls[0][0]).toBe(Events.PageViewed)
 			expect(posthogStub.capture.mock.calls[1][0]).toBe(Events.ArtistSearch)
+		})
+
+		it('keeps session recording hard-disabled at boot even when sessionReplay is on (Decision 12)', async () => {
+			mockConsent.sessionReplay = true
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			// Recording is hard-disabled in current scope per design Decision
+			// 12 (masking 8.1–8.3 + sampling 8.5 deferred). The init config
+			// disables it, AND any set_config touching recording must keep it
+			// off, regardless of the default-on sessionReplay preference.
+			const [, config] = posthogStub.init.mock.calls[0]
+			expect(config).toMatchObject({ disable_session_recording: true })
+			const recordingCalls = posthogStub.set_config.mock.calls.filter(
+				(c) => 'disable_session_recording' in (c[0] as object),
+			)
+			for (const call of recordingCalls) {
+				expect(call[0]).toMatchObject({ disable_session_recording: true })
+			}
+		})
+
+		it('initialises opted-out (memory-only, no capture) when analytics is opted out at boot', async () => {
+			mockConsent.analytics = false
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			const [, config] = posthogStub.init.mock.calls[0]
+			expect(config).toMatchObject({ persistence: 'memory', ip: false })
+			// Opted out: suppress capture entirely.
+			expect(posthogStub.opt_out_capturing).toHaveBeenCalled()
+			expect(posthogStub.opt_in_capturing).not.toHaveBeenCalled()
 		})
 
 		it('warns and drops excess events when the pre-init queue overflows 100 entries', async () => {
@@ -280,36 +275,15 @@ describe('AnalyticsService', () => {
 
 			const sut = new AnalyticsService()
 
-			// Push 150 events while the SDK is still queued — 100 fit, 50
-			// MUST be dropped (and ONE warn emitted, not 50).
 			for (let i = 0; i < 150; i++) {
-				sut.capture(Events.PageViewed, {
-					path: `/p${i}`,
-					title: 't',
-				})
+				sut.capture(Events.PageViewed, { path: `/p${i}`, title: 't' })
 			}
 
 			await sut._waitForInitForTests()
 
-			// Only the first 100 are replayed.
 			expect(posthogStub.capture).toHaveBeenCalledTimes(100)
-			// And the overflow warn fires exactly once — a stuck init
-			// must NOT flood the log sink with one warn per dropped event.
 			expect(warn).toHaveBeenCalledTimes(1)
 			expect(warn.mock.calls[0][0]).toMatch(/overflow/i)
-		})
-
-		it('skips PostHog.identify when consent.analytics is false', async () => {
-			mockConsent.analytics = false
-			const sut = new AnalyticsService()
-			await sut._waitForInitForTests()
-
-			sut.identify('user-123', { plan: 'pro' })
-
-			// Hard gate: PostHog MUST NOT see the real user id until
-			// the consent screen flips `consent.analytics` to true.
-			// This is the central privacy contract of the change.
-			expect(posthogStub.identify).not.toHaveBeenCalled()
 		})
 
 		it('injects trace_id from the active OTel span into capture properties', async () => {
@@ -323,9 +297,6 @@ describe('AnalyticsService', () => {
 			expect(posthogStub.capture).toHaveBeenCalledTimes(1)
 			const [name, props] = posthogStub.capture.mock.calls[0]
 			expect(name).toBe(Events.PageViewed)
-			// trace_id MUST be the active span's traceId so paired FE/BE
-			// events can be joined in PostHog dashboards. The original
-			// properties pass through unchanged.
 			expect(props).toMatchObject({
 				path: '/dashboard',
 				title: 'Dashboard',
@@ -343,153 +314,57 @@ describe('AnalyticsService', () => {
 
 			expect(posthogStub.capture).toHaveBeenCalledTimes(1)
 			const [, props] = posthogStub.capture.mock.calls[0]
-			// No span → no trace_id key in the payload at all (not even
-			// an empty string). This keeps standalone UI events
-			// distinguishable from RPC-correlated ones in PostHog.
 			expect(props).not.toHaveProperty('trace_id')
-			expect(props).toMatchObject({
-				path: '/welcome',
-				title: 'Welcome',
-			})
+			expect(props).toMatchObject({ path: '/welcome', title: 'Welcome' })
 		})
+	})
 
-		it('upgrades PostHog persistence to localStorage+cookie on consent grant', async () => {
+	describe('identify — anonymous→identified merge', () => {
+		it('identifies by default (not opted out) without a preceding reset() so anonymous history merges', async () => {
+			mockConsent.analytics = true
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 
-			// The init() path applies pendingConsent first then flushes
-			// the queue — neither happens here because mockConsent.analytics
-			// stays false in beforeEach. Reset the set_config spy so the
-			// assertions below only see the post-grant call.
-			posthogStub.set_config.mockReset()
-			posthogStub.opt_in_capturing.mockReset()
+			sut.identify('user-123', { plan: 'pro' })
 
-			mockEa.publish(
-				new ConsentChanged({ analytics: true, marketingMeasurement: false }),
-			)
-
-			// Grant MUST opt-in (PostHog tracks the opt state internally —
-			// the SDK refuses to capture while opted out regardless of
-			// persistence) AND lift the persistence to localStorage+cookie
-			// so distinct_id survives reload + IP capture is re-enabled.
-			expect(posthogStub.opt_in_capturing).toHaveBeenCalledTimes(1)
-			expect(posthogStub.set_config).toHaveBeenCalledTimes(1)
-			expect(posthogStub.set_config.mock.calls[0][0]).toMatchObject({
-				persistence: 'localStorage+cookie',
-				ip: true,
+			// Merge contract: identify is called and NO reset() precedes it.
+			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
+			expect(posthogStub.identify).toHaveBeenCalledWith('user-123', {
+				plan: 'pro',
 			})
-			// reset() MUST NOT fire on grant — a grant is the privacy
-			// extension, not the contraction. Calling reset here would
-			// drop a distinct_id the user explicitly opted to persist.
 			expect(posthogStub.reset).not.toHaveBeenCalled()
 		})
 
-		// Batch 3c-1: identify replay across consent transitions.
-		// UserHydrationTask fires identify before the user reaches the
-		// consent screen (which is the last onboarding step). The
-		// AnalyticsService must buffer the user_id and replay it once
-		// consent is granted, so the user_id seen in PostHog is the real
-		// one — not the anonymous bootstrap id.
-
-		it('replays a suppressed identify when consent is later granted', async () => {
+		it('suppresses identify when analytics is opted out', async () => {
 			mockConsent.analytics = false
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 
-			sut.identify('user-abc', { signup_month: '2026-05' })
+			sut.identify('user-123', { plan: 'pro' })
 
-			// Pre-grant: identify is gated, posthog.identify is NOT called.
-			expect(posthogStub.identify).not.toHaveBeenCalled()
-
-			// The consent transition flips the gate. AnalyticsService MUST
-			// replay the buffered identify with the same payload so the
-			// session post-consent is attributed to the real user_id
-			// rather than the anonymous bootstrap id.
-			//
-			// In production, ConsentService mutates state BEFORE
-			// publishing ConsentChanged — so when the AnalyticsService
-			// handler fires, `consent.analytics` already reads true.
-			// Mirror that order in the test so `replayPendingIdentifyIfAllowed`
-			// reads the live (granted) state.
-			posthogStub.identify.mockReset()
-			mockConsent.analytics = true
-			mockEa.publish(
-				new ConsentChanged({ analytics: true, marketingMeasurement: false }),
-			)
-
-			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
-			expect(posthogStub.identify.mock.calls[0]).toEqual([
-				'user-abc',
-				{ signup_month: '2026-05' },
-			])
-		})
-
-		it('clears the pending identify buffer on revoke so a later grant does not silently re-identify', async () => {
-			mockConsent.analytics = false
-			const sut = new AnalyticsService()
-			await sut._waitForInitForTests()
-
-			sut.identify('user-abc')
-
-			// First grant: state goes false → true; production order is
-			// mutate-then-publish, so the live consent flips before the
-			// handler runs.
-			mockConsent.analytics = true
-			mockEa.publish(
-				new ConsentChanged({ analytics: true, marketingMeasurement: false }),
-			)
-			// First grant replays — verified by the test above. Drop the
-			// counter to focus on the revoke→grant cycle.
-			posthogStub.identify.mockReset()
-
-			// Revoke clears the pendingIdentify buffer.
-			mockConsent.analytics = false
-			mockEa.publish(
-				new ConsentChanged({ analytics: false, marketingMeasurement: false }),
-			)
-			// A second grant must NOT re-identify the user — they would
-			// need a fresh UserHydrationTask call (typically on the next
-			// boot) to repopulate the buffer.
-			mockConsent.analytics = true
-			mockEa.publish(
-				new ConsentChanged({ analytics: true, marketingMeasurement: false }),
-			)
-
+			// Opted out: no identity link may be created.
 			expect(posthogStub.identify).not.toHaveBeenCalled()
 		})
 
-		it('replays a pre-init identify after the SDK loads exactly once', async () => {
-			// Consent is already granted at construction time. identify
-			// fired BEFORE init resolves must still reach PostHog once the
-			// SDK is ready — this is the steady state for returning users
-			// whose previous-boot consent grant persisted to localStorage.
+		it('replays a pre-init identify after the SDK loads exactly once (no reset)', async () => {
 			mockConsent.analytics = true
 			const sut = new AnalyticsService()
 
-			// Note: NOT awaiting _waitForInitForTests yet — identify fires
-			// in the pre-init window.
+			// identify fires BEFORE init resolves.
 			sut.identify('user-xyz')
 
 			expect(posthogStub.identify).not.toHaveBeenCalled()
 
 			await sut._waitForInitForTests()
 
-			// After init: the buffered identify replays automatically as
-			// part of the init callback. CRITICALLY exactly once — the
-			// init path runs `applyConsentToSdk(true)` AND
-			// `replayPendingIdentifyIfAllowed()` back-to-back when
-			// consent.analytics is true at boot; without the one-shot
-			// clear inside the helper, both would dispatch and PostHog
-			// would see two identify calls for the same user_id.
 			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
 			expect(posthogStub.identify).toHaveBeenCalledWith('user-xyz', undefined)
+			expect(posthogStub.reset).not.toHaveBeenCalled()
 		})
+	})
 
-		it('drops PostHog to memory persistence + reset() on consent revoke', async () => {
-			// Start the user in granted state so the revoke transition has
-			// somewhere to fall from. _waitForInitForTests applies the
-			// pending consent inside init() (since mockConsent.analytics is
-			// already true here, the init path re-applies it directly).
+	describe('opt-out / opt-in transitions', () => {
+		it('opts out: suppresses capture, reverts to memory, drops IP, and resets()', async () => {
 			mockConsent.analytics = true
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
@@ -498,23 +373,148 @@ describe('AnalyticsService', () => {
 			posthogStub.opt_out_capturing.mockReset()
 			posthogStub.reset.mockReset()
 
+			mockConsent.analytics = false
 			mockEa.publish(
-				new ConsentChanged({ analytics: false, marketingMeasurement: false }),
+				new ConsentChanged({ analytics: false, sessionReplay: true }),
 			)
 
-			// Revoke MUST opt-out the SDK, downgrade persistence to memory
-			// (so the distinct_id does not survive reload), drop IP, AND
-			// call reset() so any prior identification linkage is severed
-			// at the SDK boundary. This is the central privacy contract
-			// of the change — a revoke MUST leave the user
-			// indistinguishable on the wire from a never-consenting user.
 			expect(posthogStub.opt_out_capturing).toHaveBeenCalledTimes(1)
-			expect(posthogStub.set_config).toHaveBeenCalledTimes(1)
-			expect(posthogStub.set_config.mock.calls[0][0]).toMatchObject({
+			const memoryCall = posthogStub.set_config.mock.calls.find(
+				(c) => (c[0] as { persistence?: string }).persistence === 'memory',
+			)
+			expect(memoryCall?.[0]).toMatchObject({
 				persistence: 'memory',
 				ip: false,
 			})
+			// reset() severs the identity link on opt-out.
 			expect(posthogStub.reset).toHaveBeenCalledTimes(1)
+		})
+
+		it('re-enables: opt_in + persistent storage + identify (no reset)', async () => {
+			// Start opted out, then opt back in.
+			mockConsent.analytics = false
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			// A fresh identify arrives after re-enabling (UserHydrationTask is
+			// re-run, or identify is called once analytics is back on).
+			posthogStub.opt_in_capturing.mockReset()
+			posthogStub.set_config.mockReset()
+			posthogStub.identify.mockReset()
+			posthogStub.reset.mockReset()
+
+			mockConsent.analytics = true
+			mockEa.publish(
+				new ConsentChanged({ analytics: true, sessionReplay: true }),
+			)
+			sut.identify('user-abc')
+
+			expect(posthogStub.opt_in_capturing).toHaveBeenCalledTimes(1)
+			const persistCall = posthogStub.set_config.mock.calls.find(
+				(c) =>
+					(c[0] as { persistence?: string }).persistence ===
+					'localStorage+cookie',
+			)
+			expect(persistCall?.[0]).toMatchObject({
+				persistence: 'localStorage+cookie',
+				ip: true,
+			})
+			expect(posthogStub.identify).toHaveBeenCalledWith('user-abc', undefined)
+			// No reset() on the re-enable identify path — merge semantics.
+			expect(posthogStub.reset).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('session replay — recording hard-disabled (Decision 12)', () => {
+		// Recording is out of scope until masking (8.1–8.3) + sampling (8.5)
+		// land. The sessionReplay consent toggle is tracked + persisted, but
+		// must NOT start/stop actual recording yet: toggling it either
+		// direction leaves recording off and never touches capture / identity.
+		function assertRecordingStaysOff(): void {
+			const recordingCalls = posthogStub.set_config.mock.calls.filter(
+				(c) => 'disable_session_recording' in (c[0] as object),
+			)
+			for (const call of recordingCalls) {
+				expect(call[0]).toMatchObject({ disable_session_recording: true })
+			}
+		}
+
+		it('turning session replay OFF keeps recording off and leaves capture + identity untouched', async () => {
+			mockConsent.analytics = true
+			mockConsent.sessionReplay = true
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			posthogStub.set_config.mockReset()
+			posthogStub.opt_out_capturing.mockReset()
+			posthogStub.reset.mockReset()
+			posthogStub.identify.mockReset()
+
+			// User turns session replay OFF but keeps analytics ON.
+			mockConsent.sessionReplay = false
+			mockEa.publish(
+				new ConsentChanged({ analytics: true, sessionReplay: false }),
+			)
+
+			// Recording stays disabled; analytics events + identity unaffected.
+			assertRecordingStaysOff()
+			expect(posthogStub.opt_out_capturing).not.toHaveBeenCalled()
+			expect(posthogStub.reset).not.toHaveBeenCalled()
+		})
+
+		it('turning session replay ON does NOT start recording (deferred per Decision 12)', async () => {
+			mockConsent.analytics = true
+			mockConsent.sessionReplay = false
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			posthogStub.set_config.mockReset()
+
+			// User turns session replay back ON.
+			mockConsent.sessionReplay = true
+			mockEa.publish(
+				new ConsentChanged({ analytics: true, sessionReplay: true }),
+			)
+
+			// The preference flips, but recording must NOT actually enable —
+			// no set_config call may set disable_session_recording: false.
+			assertRecordingStaysOff()
+		})
+	})
+
+	describe('要配慮 sensitive-property exclusion', () => {
+		it('strips a sensitive-category property before emission', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			// `medical_condition` matches the sensitive denylist. Cast through
+			// unknown because the typed catalogue does not declare it — the
+			// filter is the last-line defence regardless of types.
+			sut.capture(Events.PageViewed, {
+				path: '/dashboard',
+				title: 'Dashboard',
+				medical_condition: 'asthma',
+			} as unknown as { path: string; title: string })
+
+			expect(posthogStub.capture).toHaveBeenCalledTimes(1)
+			const [, props] = posthogStub.capture.mock.calls[0]
+			expect(props).not.toHaveProperty('medical_condition')
+			expect(props).toMatchObject({ path: '/dashboard', title: 'Dashboard' })
+		})
+
+		it('bucketizes a precise age into a coarse range', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			sut.capture(Events.PageViewed, {
+				path: '/profile',
+				title: 'Profile',
+				age: 29,
+			} as unknown as { path: string; title: string })
+
+			const [, props] = posthogStub.capture.mock.calls[0]
+			expect(props).not.toHaveProperty('age')
+			expect(props).toMatchObject({ age_bucket: '25_34' })
 		})
 	})
 })
