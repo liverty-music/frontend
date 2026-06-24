@@ -27,10 +27,10 @@ export class SettingsRoute {
 	private readonly i18n = resolve(I18N)
 	private readonly router = resolve(IRouter)
 	private readonly audio = resolve(IAudioEngine)
-	// Public so the template binds the consent toggles to the service's
+	// Public so the template binds the opt-out toggles to the service's
 	// `@observable` state directly (`consent.analytics` /
-	// `consent.marketingMeasurement`) — no component-local mirror. Mirrors the
-	// `auth` exposure pattern.
+	// `consent.sessionReplay`) — no component-local mirror. Mirrors the
+	// `auth` exposure pattern. Both default ON under the opt-out model.
 	public readonly consent = resolve(IConsentService)
 
 	public soundEnabled = !this.audio.muted
@@ -43,7 +43,7 @@ export class SettingsRoute {
 	private isToggling = false
 
 	/**
-	 * Per-row disclosure state for the Privacy & Analytics consent
+	 * Per-row disclosure state for the Privacy & Analytics opt-out
 	 * descriptions. The description is hidden until the user expands it,
 	 * keeping each card compact while the full rationale stays one tap away.
 	 * Kept separate from the switch value so the disclosure and the switch
@@ -51,7 +51,7 @@ export class SettingsRoute {
 	 * button never nests another interactive element).
 	 */
 	public analyticsDescExpanded = false
-	public marketingDescExpanded = false
+	public sessionReplayDescExpanded = false
 
 	public resendSuccess = false
 
@@ -105,42 +105,39 @@ export class SettingsRoute {
 	}
 
 	public async loading(): Promise<void> {
-		// Consent toggles bind `consent.analytics` / `consent.marketingMeasurement`
-		// (the service's `@observable` state) directly, so first paint reflects a
-		// choice made on the onboarding consent screen or a prior visit with no
-		// seeding here.
+		// Opt-out toggles bind `consent.analytics` / `consent.sessionReplay`
+		// (the service's `@observable` state) directly, so first paint reflects
+		// the default-on posture or a prior opt-out with no seeding here.
 		await this.resolveNotificationToggleState()
 	}
 
-	/** Persist an analytics consent toggle tap; the bound observable state drives the UI. */
+	/** Toggle the Analytics opt-out; the bound observable state drives the UI. */
 	public handleAnalyticsToggle(): void {
 		this.writeConsent('analytics', !this.consent.analytics)
 	}
 
-	public handleMarketingToggle(): void {
-		this.writeConsent(
-			'marketingMeasurement',
-			!this.consent.marketingMeasurement,
-		)
+	/** Toggle the Session-replay opt-out (recording only; events unaffected). */
+	public handleSessionReplayToggle(): void {
+		this.writeConsent('sessionReplay', !this.consent.sessionReplay)
 	}
 
-	/** Toggle the analytics consent description disclosure. */
+	/** Toggle the Analytics opt-out description disclosure. */
 	public toggleAnalyticsDesc(): void {
 		this.analyticsDescExpanded = !this.analyticsDescExpanded
 	}
 
-	/** Toggle the marketing-measurement consent description disclosure. */
-	public toggleMarketingDesc(): void {
-		this.marketingDescExpanded = !this.marketingDescExpanded
+	/** Toggle the Session-replay opt-out description disclosure. */
+	public toggleSessionReplayDesc(): void {
+		this.sessionReplayDescExpanded = !this.sessionReplayDescExpanded
 	}
 
-	private writeConsent(purpose: ConsentPurpose, grant: boolean): void {
-		if (grant) {
+	private writeConsent(purpose: ConsentPurpose, enabled: boolean): void {
+		if (enabled) {
 			this.consent.grant(purpose)
 		} else {
 			this.consent.revoke(purpose)
 		}
-		this.logger.info('Consent setting changed', { purpose, grant })
+		this.logger.info('Opt-out setting changed', { purpose, enabled })
 	}
 
 	/**

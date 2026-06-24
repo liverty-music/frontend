@@ -157,37 +157,56 @@
         </div>
       </li>
 
-      <!-- Marketing-measurement consent. Labeled by purpose (ad-effectiveness
-           measurement), not by data geography. -->
+      <!-- Session-replay opt-out. Independent of Analytics: turning this off
+           stops session recording only — catalogue events and the identified
+           profile continue. Defaults ON. -->
       <li class="settings-list-item">
         <div class="[ settings-row ] [ settings-row-toggle ]">
-          <svg-icon name="globe" class="settings-icon"></svg-icon>
+          <svg-icon name="lock" class="settings-icon"></svg-icon>
           <button
-            click.trigger="toggleMarketingDesc()"
-            aria-expanded.bind="marketingDescExpanded"
+            click.trigger="toggleSessionReplayDesc()"
+            aria-expanded.bind="sessionReplayDescExpanded"
             class="settings-expand"
           >
             <span class="settings-expand-head">
-              <span t="settings.analytics.marketingLabel" class="settings-row-label"></span>
-              <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="marketingDescExpanded"></svg-icon>
+              <span t="settings.analytics.sessionReplayLabel" class="settings-row-label"></span>
+              <svg-icon name="chevron-right" class="settings-expand-caret" data-expanded.bind="sessionReplayDescExpanded"></svg-icon>
             </span>
             <span
-              if.bind="marketingDescExpanded"
-              t="settings.analytics.marketingDescription"
+              if.bind="sessionReplayDescExpanded"
+              t="settings.analytics.sessionReplayDescription"
               class="settings-toggle-desc"
             ></span>
           </button>
           <button
-            click.trigger="handleMarketingToggle()"
+            click.trigger="handleSessionReplayToggle()"
             role="switch"
-            aria-checked.bind="consent.marketingMeasurement"
+            aria-checked.bind="consent.sessionReplay"
             class="settings-switch"
           >
-            <div class="settings-toggle-track" data-on.bind="consent.marketingMeasurement">
-              <div class="settings-toggle-thumb" data-on.bind="consent.marketingMeasurement"></div>
+            <div class="settings-toggle-track" data-on.bind="consent.sessionReplay">
+              <div class="settings-toggle-thumb" data-on.bind="consent.sessionReplay"></div>
             </div>
           </button>
         </div>
+      </li>
+
+      <!-- Privacy-policy anchor for both opt-out toggles. The policy names
+           the analytics processor (PostHog / Klant Solutions B.V.) and the
+           cross-border purpose; the toggles above are the always-available
+           opt-out controls. Anchor lives as a sibling row rather than nested
+           inside a disclosure button (an <a> inside a <button> is invalid). -->
+      <li class="settings-list-item">
+        <a
+          href="https://liverty.me/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="settings-row"
+        >
+          <svg-icon name="info" class="settings-icon"></svg-icon>
+          <span t="settings.analytics.privacyPolicyLink" class="settings-row-label"></span>
+          <svg-icon name="link" class="settings-chevron"></svg-icon>
+        </a>
       </li>
     </ul>
   </section>

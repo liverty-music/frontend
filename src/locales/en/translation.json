@@ -289,10 +289,11 @@
 		"languageChangeError": "Couldn't save the language change. Wait a moment and try again.",
 		"analytics": {
 			"sectionTitle": "Privacy & Analytics",
-			"toggleLabel": "Help improve the experience",
-			"toggleDescription": "We use anonymous data to find where people get stuck, so we can make the next update better. No personally identifying information is collected.",
-			"marketingLabel": "Help measure ad effectiveness",
-			"marketingDescription": "We anonymously measure how people who arrive via ads move through the app, to improve how we reach them. Turning this off has no effect on other features."
+			"toggleLabel": "Analytics",
+			"toggleDescription": "On by default. We use anonymous usage data — sent to PostHog Cloud EU — to find where people get stuck and improve the app. No personally identifying or sensitive information is collected. Turn this off to stop all analytics.",
+			"sessionReplayLabel": "Session replay",
+			"sessionReplayDescription": "On by default. Records anonymised screen interactions so we can see where the interface confuses people. Turning this off stops recording only — your other analytics and account stay unaffected.",
+			"privacyPolicyLink": "Read our Privacy Policy"
 		},
 		"guestHero": {
 			"heading": "Sign in for the full experience",
@@ -301,21 +302,19 @@
 	},
 	"onboarding": {
 		"consent": {
-			"title": "Our privacy commitment",
-			"intro": "Liverty Music keeps your personal data inside Japan by default. Anything you turn on below is opt-in — and you can change your mind any time in Settings.",
-			"commitment": "This is a commitment that goes beyond what the law requires. We only ask for anonymous, aggregated usage signals because they help us build a better timetable for you — never for advertising or sale.",
-			"analytics": {
-				"label": "Share anonymous usage insights",
-				"description": "Tells us which screens fans love and which ones get in the way. No names, no contacts — just patterns."
+			"title": "How we use analytics",
+			"intro": "Liverty Music uses anonymous product analytics, on by default, to understand how fans use the app and to build a better experience. You can turn it off any time in Settings.",
+			"processor": {
+				"label": "Processed by PostHog (EU)",
+				"description": "Usage data is sent to PostHog Cloud EU, operated by Klant Solutions B.V. in the Netherlands, for product analytics. This cross-border transfer relies on Japan’s EU adequacy designation."
 			},
-			"marketing": {
-				"label": "Help measure ad effectiveness",
-				"description": "We anonymously measure how people who arrive via ads move through the app, to improve how we reach them. Turning this off has no effect on other features."
+			"optOut": {
+				"label": "Always opt-out, never sold",
+				"description": "No names, contacts, or sensitive information are collected, and we never sell your data. Manage or turn off Analytics and Session replay any time in Settings."
 			},
 			"actions": {
-				"accept": "Accept selected",
-				"decline": "Decline all",
-				"later": "Set up later"
+				"acknowledge": "Got it",
+				"manage": "Manage in Settings"
 			}
 		}
 	},

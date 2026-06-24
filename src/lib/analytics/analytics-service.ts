@@ -15,66 +15,69 @@ import {
 } from '../../services/analytics-events'
 import { ConsentChanged } from '../consent/consent-changed'
 import { IConsentService } from '../consent/consent-service'
+import {
+	type SanitizedProps,
+	sanitizeEventProps,
+} from './sensitive-property-filter'
 
 /**
  * Public surface for the typed PostHog wrapper. Every consumer (route VMs,
  * services, app-shell page-view wiring) MUST resolve through this interface
  * — the concrete class is registered as a singleton in `main.ts`. Keeping
  * the surface minimal protects call sites from PostHog SDK churn and makes
- * the nil-config / pre-init / pre-consent branches the *only* code paths
- * that ever observe the wrapped SDK directly.
+ * the nil-config / pre-init / opted-out branches the *only* code paths that
+ * ever observe the wrapped SDK directly.
  *
- * Owns the contract for the `introduce-analytics-tool` OpenSpec change
- * (Batch 3a). Consent UI lives in Batch 3b; per-event instrumentation in
- * Batch 3c.
+ * Operates under the EU-adequacy opt-out model: identified analytics is
+ * enabled by default for authenticated users; the user opts out from
+ * settings. There is NO pre-collection consent gate.
  */
 export interface IAnalyticsService {
 	/**
-	 * Typed event emission. The `name` literal pins the required
-	 * property shape at compile time (see `analytics-events.ts` for the
-	 * `EventName` → `EventProps<E>` mapping). Mismatched name/props pairs
-	 * fail the typecheck.
+	 * Typed event emission. The `name` literal pins the required property
+	 * shape at compile time (see `analytics-events.ts`). Mismatched
+	 * name/props pairs fail the typecheck.
 	 *
 	 * Behaviour matrix:
 	 *   - nil-config (no `posthogProjectKey`): debug-log and return.
-	 *   - pre-init: enqueue to a bounded in-memory buffer; flushed
-	 *     verbatim on init.
-	 *   - post-init: forward to PostHog with `trace_id` injected from
-	 *     the active OTel span (best-effort).
+	 *   - pre-init: enqueue to a bounded in-memory buffer; flushed verbatim
+	 *     on init.
+	 *   - post-init: forward to PostHog with `trace_id` injected from the
+	 *     active OTel span (best-effort).
 	 *
-	 * Consent gating does NOT block `capture` — PostHog runs in
-	 * `persistence: 'memory'` until consent is granted, which is the
-	 * privacy-equivalent posture (no persistent storage, no IP
-	 * collection, anonymous distinct id). Only `identify` is hard-gated.
+	 * By default (not opted out) the FULL non-PII catalogue is captured
+	 * anonymously before identification, persisted via `localStorage` with an
+	 * anonymous id so anonymous funnels survive reloads. When the user has
+	 * opted out, `posthog.opt_out_capturing()` suppresses every emission
+	 * regardless of this method being called.
+	 *
+	 * Every payload passes through the 要配慮個人情報 (sensitive personal
+	 * information) filter before reaching PostHog: sensitive categories and
+	 * precise birth date / age are stripped, age-derived values bucketized.
 	 */
 	capture<E extends EventName>(name: E, props: EventProps<E>): void
 
 	/**
-	 * Associates the current session with a real user id. Hard-gated on
-	 * `IConsentService.analytics`; called from the (Batch 3c)
-	 * `UserHydrationTask` integration after consent is confirmed.
-	 * No-op when consent is denied OR when running in nil-config mode.
+	 * Associates the current session with the real user id. Called from
+	 * `UserHydrationTask` after `UserService.GetMe`. No-op when analytics is
+	 * opted out OR when running in nil-config mode. Does NOT call `reset()`
+	 * on this path so the anonymous pre-identification history MERGES into
+	 * the identified profile.
 	 */
 	identify(userId: string, properties?: Readonly<Record<string, unknown>>): void
 
 	/**
-	 * Clears the current identification (e.g. on sign-out). Forwards to
-	 * `posthog.reset()` once initialised; also clears the pre-init queue
-	 * so any buffered events captured under the prior identity are
-	 * dropped. No-op in nil-config mode.
+	 * Clears the current identification (sign-out). Forwards to
+	 * `posthog.reset()` once initialised; also clears the pre-init queue so
+	 * any buffered events captured under the prior identity are dropped.
+	 * No-op in nil-config mode.
 	 */
 	reset(): void
 
 	/**
-	 * Returns the current value of a PostHog feature flag, or the
-	 * supplied default when:
-	 *   - The service is in nil-config mode (no `posthogProjectKey`).
-	 *   - The SDK has not finished initialising yet (no value to read).
-	 *   - PostHog returns `undefined` (flag is unknown to the project).
-	 *
-	 * Synchronous by design so callers (route guards, UI gates) do not
-	 * need to await initialisation. Use the default to encode the
-	 * fail-closed behaviour expected by the gate.
+	 * Returns the current value of a PostHog feature flag, or the supplied
+	 * default when nil-config, pre-init, or the flag is unknown. Synchronous
+	 * by design so callers (route guards, UI gates) need not await init.
 	 */
 	getFeatureFlag(key: string, defaultValue: unknown): unknown
 }
@@ -95,23 +98,18 @@ type QueuedCapture = {
 }[EventName]
 
 /**
- * Upper bound on the pre-init queue. The deferred-init window is bounded
- * by `requestIdleCallback` firing (at most ~2s due to the explicit
- * timeout below), so realistic pre-init traffic is a handful of events —
- * the boot page-view plus whatever the welcome route emits. 100 leaves
- * comfortable headroom while preventing a runaway page from flooding
- * memory if init somehow stalls (e.g. the SDK dynamic import throws and
- * is retried by a misbehaving caller). Matches the cap defined in the
- * `introduce-analytics-tool` OpenSpec tasks.
+ * Upper bound on the pre-init queue. The deferred-init window is bounded by
+ * `requestIdleCallback` firing (at most ~2s due to the explicit timeout
+ * below), so realistic pre-init traffic is a handful of events. 100 leaves
+ * comfortable headroom while preventing a runaway page from flooding memory
+ * if init somehow stalls.
  */
 const PRE_INIT_QUEUE_LIMIT = 100
 
 /**
- * Hard cap on how long the browser may defer the init callback. Without
- * a timeout, `requestIdleCallback` MAY never fire on a permanently busy
- * tab. 2 seconds is roughly the LCP budget for the dashboard, so deferring
- * past that point yields diminishing returns — we'd rather take the small
- * INP hit and start capturing events than block analytics indefinitely.
+ * Hard cap on how long the browser may defer the init callback. Without a
+ * timeout, `requestIdleCallback` MAY never fire on a permanently busy tab.
+ * 2 seconds is roughly the LCP budget for the dashboard.
  */
 const INIT_IDLE_TIMEOUT_MS = 2_000
 
@@ -124,10 +122,8 @@ export class AnalyticsService implements IAnalyticsService {
 	/**
 	 * Truthy iff PostHog initialisation has completed. Until this flips,
 	 * `capture` enqueues; after it flips, `capture` forwards directly.
-	 * Initialisation can fail (network, ad-blocker) — in that case
-	 * `posthog` stays `null` and the service degrades to log-and-drop,
-	 * matching the backend's nil-client posture so missing analytics
-	 * never break the product surface.
+	 * Initialisation can fail (network, ad-blocker) — in that case `posthog`
+	 * stays `null` and the service degrades to log-and-drop.
 	 */
 	private posthog: PostHog | null = null
 	private initStarted = false
@@ -135,21 +131,11 @@ export class AnalyticsService implements IAnalyticsService {
 	private queueOverflowed = false
 
 	/**
-	 * Buffers the most recent `identify()` request. Two cases:
-	 *
-	 *   1. The caller fired identify BEFORE PostHog finished loading
-	 *      (e.g. UserHydrationTask runs as an AppTask.activating which
-	 *      can resolve faster than the requestIdleCallback that schedules
-	 *      `posthog.init`). The init callback consults this field and
-	 *      replays identify once the SDK is ready.
-	 *
-	 *   2. The caller fired identify while consent.analytics was false.
-	 *      The user_id is stashed so a later ConsentChanged grant can
-	 *      elevate the anonymous session to identified without the
-	 *      caller having to fire identify again. Cleared on `reset()`.
-	 *
-	 * Both cases use the same field because they share the same replay
-	 * semantics: "apply when the SDK is ready AND consent is granted".
+	 * Buffers the most recent `identify()` request fired BEFORE PostHog
+	 * finished loading (e.g. UserHydrationTask runs as an AppTask.activating
+	 * which can resolve faster than the requestIdleCallback that schedules
+	 * `posthog.init`). The init callback consults this field and replays
+	 * identify once the SDK is ready. Cleared on `reset()` and on opt-out.
 	 */
 	private pendingIdentify: {
 		userId: string
@@ -157,25 +143,25 @@ export class AnalyticsService implements IAnalyticsService {
 	} | null = null
 
 	/**
-	 * Buffers a consent change that fired before PostHog finished loading.
-	 * The pre-consent privacy posture (`persistence: 'memory'`, anonymous
-	 * id) is already in place during init, so a `grant` arriving early is
-	 * harmless to drop AT init time — but we MUST apply it once the SDK
-	 * resolves so the user's choice takes effect within the same boot.
-	 *
-	 * Carries the boolean value of `state.analytics` only; the marketing
-	 * purpose is not wired to a PostHog config flag in this batch.
+	 * Buffers an opt-out transition that fired before PostHog finished
+	 * loading. Carries `state.analytics` (whether analytics is enabled) so
+	 * `init()` can apply the latest analytics posture once the SDK resolves.
 	 */
-	private pendingConsent: boolean | null = null
+	private pendingAnalyticsEnabled: boolean | null = null
+
+	// NOTE: there is intentionally no pending-buffer for the sessionReplay
+	// preference. Recording is hard-disabled in current scope (design
+	// Decision 12), so a pre-init sessionReplay toggle has no SDK effect to
+	// defer — only the persisted preference matters and ConsentService owns
+	// that.
 
 	private readonly consentSubscription: IDisposable
 
 	public constructor() {
-		// Subscribe BEFORE scheduling init so a consent grant emitted in
-		// the same task as construction (e.g. the consent screen tapping
-		// `grant` then immediately reading `analytics.capture`) is captured
-		// — even in the test environment where `scheduleInit` runs init
-		// synchronously, the subscribe call is still ordered first.
+		// Subscribe BEFORE scheduling init so an opt-out emitted in the same
+		// task as construction is captured — even in the test environment
+		// where `scheduleInit` runs init synchronously, the subscribe call is
+		// still ordered first.
 		this.consentSubscription = this.ea.subscribe(
 			ConsentChanged,
 			(event: ConsentChanged) => this.handleConsentChanged(event),
@@ -183,12 +169,6 @@ export class AnalyticsService implements IAnalyticsService {
 		this.scheduleInit()
 	}
 
-	/**
-	 * Public entry point — see `IAnalyticsService.capture` for the
-	 * documented behaviour matrix. The runtime branching here MUST stay
-	 * O(1): every call site emits at least one event per user action,
-	 * and a measurable hit on INP would defeat the purpose.
-	 */
 	public capture<E extends EventName>(name: E, props: EventProps<E>): void {
 		if (!this.isEnabled()) {
 			this.logger.debug('capture suppressed (nil-config mode)', { name })
@@ -210,28 +190,34 @@ export class AnalyticsService implements IAnalyticsService {
 			return
 		}
 
-		// Remember the most recent identify request so a later consent
-		// grant can elevate the anonymous session to identified without
-		// the caller having to re-fire identify. The properties payload
-		// is also buffered so a deferred replay is faithful to the
-		// original call. Cleared on `reset()`.
-		this.pendingIdentify = { userId, properties }
-
+		// Opted out: no identity link may be created. Do NOT buffer either —
+		// while opted out, capture is fully suppressed, so there is no
+		// anonymous telemetry to attribute, and re-enabling analytics later
+		// re-runs identify via its own path.
 		if (!this.consent.analytics) {
-			this.logger.debug('identify suppressed (consent denied)', { userId })
+			this.logger.debug('identify suppressed (analytics opted out)', { userId })
 			return
 		}
+
+		// Buffer for a pre-init replay. Sanitize identify properties through
+		// the same sensitive-property filter as events.
+		const safeProps =
+			properties === undefined
+				? undefined
+				: sanitizeEventProps('identify', properties, this.logger)
+		this.pendingIdentify = { userId, properties: safeProps }
+
 		if (this.posthog === null) {
-			// Pre-init identify is intentionally dropped from the SDK
-			// path rather than queued: pairing it with the deferred-flush
-			// capture queue would replay identifications out-of-order
-			// against later reset() calls in the same boot. The
-			// pendingIdentify buffer above still carries the request, and
-			// `init()` consults it after the SDK loads (see scheduleInit).
+			// Pre-init identify is intentionally dropped from the SDK path
+			// rather than queued; the pendingIdentify buffer carries the
+			// request and `init()` consults it after the SDK loads.
 			this.logger.debug('identify deferred to SDK init', { userId })
 			return
 		}
-		this.posthog.identify(userId, properties)
+		// IMPORTANT: no preceding reset() — the anonymous pre-identification
+		// history MERGES into the identified profile so pre-signup discovery
+		// stays connected to post-signup conversion.
+		this.posthog.identify(userId, safeProps)
 	}
 
 	public reset(): void {
@@ -240,16 +226,11 @@ export class AnalyticsService implements IAnalyticsService {
 			return
 		}
 		// Clear any buffered events regardless of init state — they were
-		// captured under the prior identity and forwarding them after a
-		// reset would attribute pre-signout actions to the post-signout
-		// anonymous id. Cheaper than walking the queue to filter.
+		// captured under the prior identity and forwarding them after a reset
+		// would attribute pre-signout actions to the post-signout anonymous
+		// id.
 		this.queue.length = 0
 		this.queueOverflowed = false
-		// Also drop the pendingIdentify buffer: a consent grant arriving
-		// AFTER reset() (e.g. user signs out, then re-grants consent in
-		// settings before signing back in) MUST NOT re-elevate the prior
-		// identity. The next UserHydrationTask call will populate this
-		// field afresh.
 		this.pendingIdentify = null
 		if (this.posthog === null) {
 			this.logger.debug('reset queue-only (pre-init)')
@@ -277,18 +258,15 @@ export class AnalyticsService implements IAnalyticsService {
 	}
 
 	/**
-	 * Schedules the actual SDK import + init for the next idle slot.
-	 * Using `requestIdleCallback` keeps PostHog's dynamic import off the
-	 * critical path so it cannot regress INP / LCP. Safari < 16 lacks
-	 * `requestIdleCallback`; fall back to `setTimeout(0)` which still
-	 * yields one task before init runs.
+	 * Schedules the actual SDK import + init for the next idle slot. Using
+	 * `requestIdleCallback` keeps PostHog's dynamic import off the critical
+	 * path so it cannot regress INP / LCP. Safari < 16 lacks
+	 * `requestIdleCallback`; fall back to `setTimeout(0)`.
 	 */
 	private scheduleInit(): void {
 		if (this.initStarted) return
 		this.initStarted = true
 		if (!this.isEnabled()) {
-			// In nil-config mode we still flip initStarted so subsequent
-			// constructor calls (test isolation) don't redundantly log.
 			return
 		}
 		const win = globalThis as typeof globalThis & {
@@ -308,17 +286,17 @@ export class AnalyticsService implements IAnalyticsService {
 	}
 
 	/**
-	 * Loads the PostHog SDK dynamically (kept out of the main bundle)
-	 * and initialises it with the privacy-default posture: in-memory
-	 * persistence, no IP collection, anonymous distinct id. The Batch 3b
-	 * consent-grant path will upgrade these settings (`set_config` plus
-	 * `identify`) after the user opts in.
+	 * Loads the PostHog SDK dynamically (kept out of the main bundle) and
+	 * initialises it. Under the opt-out model the DEFAULT posture is fully
+	 * enabled: `persistence: 'localStorage+cookie'` with an anonymous id so
+	 * anonymous discovery funnels survive reloads and later merge into the
+	 * identified profile. When the user has opted out, the privacy posture
+	 * (`persistence: 'memory'`, `ip: false`) PLUS `opt_out_capturing()` is
+	 * applied so nothing emits.
 	 *
-	 * Failure here is non-fatal — the catch path logs and leaves
-	 * `posthog === null`, so subsequent captures fall back to the
-	 * nil-config branch. We do NOT retry: a failed init usually means
-	 * an ad-blocker or a tracking-protection extension is in play, and
-	 * retry would only waste cycles.
+	 * Failure here is non-fatal — the catch path logs and leaves `posthog ===
+	 * null`, so subsequent captures fall back to the nil-config branch. We do
+	 * NOT retry: a failed init usually means an ad-blocker is in play.
 	 */
 	private async init(): Promise<void> {
 		try {
@@ -328,66 +306,64 @@ export class AnalyticsService implements IAnalyticsService {
 				this.config.posthogApiHost && this.config.posthogApiHost.length > 0
 					? this.config.posthogApiHost
 					: 'https://eu.i.posthog.com'
+
+			// Resolve the analytics posture to apply: a pre-init transition
+			// takes priority, otherwise the live opt-out state.
+			const analyticsEnabled =
+				this.pendingAnalyticsEnabled !== null
+					? this.pendingAnalyticsEnabled
+					: this.consent.analytics
+			this.pendingAnalyticsEnabled = null
+
+			// The session-replay opt-out preference is read + persisted by
+			// ConsentService, but the actual recording stays hard-disabled in
+			// current scope (see `applySessionReplayToSdk` / design Decision
+			// 12), so there is nothing to apply from it here.
+
 			const initConfig: Partial<PostHogConfig> = {
 				api_host: apiHost,
-				// Pre-consent posture. `persistence: 'memory'` keeps the
-				// session-scoped anonymous id off disk so refresh /
-				// re-open generates a fresh id (the tracking-protection
-				// equivalent of the backend's anonymous-by-default
-				// stance). `ip: false` prevents PostHog from recording
-				// the source IP for any event captured in this state.
-				// `disable_persistence` is intentionally not used — the
-				// Batch 3b consent-grant flow switches `persistence` to
-				// `localStorage+cookie` via `set_config`, which the
-				// `disable_persistence` flag would block.
-				persistence: 'memory',
-				ip: false,
-				// Autocapture is disabled: every event in this app is
-				// catalogued through `analytics-events.ts`. Implicit
-				// captures would create rogue events outside the
-				// catalogue and undermine the CI catalogue check
-				// planned in the OpenSpec tasks.
+				// Default-on posture: persist the anonymous id so anonymous
+				// funnels survive reloads and merge into the identified profile.
+				// The opt-out branch below downgrades this to memory-only.
+				persistence: analyticsEnabled ? 'localStorage+cookie' : 'memory',
+				ip: analyticsEnabled,
+				// Autocapture is disabled: every event is catalogued through
+				// `analytics-events.ts`. Implicit captures would create rogue
+				// events outside the catalogue.
 				autocapture: false,
-				// Identification and feature-flag bootstrap are
-				// orchestrated by AnalyticsService itself (see
-				// `identify`) rather than by SDK helpers, so the
-				// session-recording defaults stay off until Batch 3b
-				// wires the consent-aware initialisation block.
+				// AnalyticsService orchestrates page views and identification
+				// itself rather than via SDK helpers.
 				capture_pageview: false,
+				// Session recording is hard-disabled in current scope per design
+				// Decision 12 — replay-dependent PII masking (tasks 8.1–8.3) and
+				// sampling (8.5) are not yet implemented, so recording must never
+				// start regardless of the user's sessionReplay preference. The
+				// `sessionReplay` consent value is still tracked so the toggle
+				// reflects the user's intent for when replay ships.
 				disable_session_recording: true,
-				// Suppress PostHog's own console noise in dev — the
-				// Aurelia logger pipeline owns telemetry-of-telemetry.
 				loaded: () => {
 					this.logger.debug('PostHog SDK loaded')
 				},
 			}
 			posthog.init(this.config.posthogProjectKey, initConfig)
 			this.posthog = posthog
-			// If a consent transition fired before init() resolved, apply
-			// it now so the user's choice is in effect for the queue
-			// replay below. Falling back to the live consent state when
-			// no pending value exists keeps the early-grant-via-stored-
-			// state path consistent (a returning user with consent
-			// granted on a prior boot will be re-elevated to
-			// localStorage+cookie persistence here without needing a
-			// fresh ConsentChanged event).
-			const consentToApply =
-				this.pendingConsent !== null
-					? this.pendingConsent
-					: this.consent.analytics
-			this.pendingConsent = null
-			if (consentToApply) {
-				this.applyConsentToSdk(true)
+
+			if (analyticsEnabled) {
+				// Default state: ensure capture is opted in (the SDK persists
+				// the opt flag, so a returning user who opted out then back in
+				// needs an explicit opt_in_capturing).
+				posthog.opt_in_capturing()
+				// Reassert the recording posture (no-op enable yet — see below).
+				this.applySessionReplayToSdk()
+			} else {
+				// Opted out: suppress all capture and revert to memory-only.
+				this.applyAnalyticsOptOutToSdk()
 			}
+
 			this.flushQueue()
-			// Replay a buffered identify (from a pre-init UserHydration
-			// call) AFTER the queue flush so any pre-init `capture` is
-			// attributed to the anonymous id first and then the
-			// identification re-aliases the session to the real user_id.
-			// `applyConsentToSdk(true)` above also handles its own
-			// identify-replay, but only when consent transitions; this
-			// branch covers the steady-state case where consent was
-			// already granted at boot.
+			// Replay a buffered identify AFTER the queue flush so any pre-init
+			// `capture` is attributed to the anonymous id first; identify then
+			// MERGES that history into the real user_id (no reset()).
 			this.replayPendingIdentifyIfAllowed()
 		} catch (err) {
 			this.logger.warn(
@@ -399,8 +375,6 @@ export class AnalyticsService implements IAnalyticsService {
 
 	private enqueue(entry: QueuedCapture): void {
 		if (this.queue.length >= PRE_INIT_QUEUE_LIMIT) {
-			// Log only once per session — a stuck init would otherwise
-			// flood the logger with the same warn every capture.
 			if (!this.queueOverflowed) {
 				this.queueOverflowed = true
 				this.logger.warn(
@@ -422,22 +396,19 @@ export class AnalyticsService implements IAnalyticsService {
 	}
 
 	/**
-	 * The single place that touches `posthog.capture`. Injects the
-	 * active OTel `trace_id` so paired FE/BE events can be correlated in
-	 * PostHog (matches the backend posthog adapter contract referenced
-	 * in `analytics-events.ts`). The OTel browser SDK does not own a
-	 * tracer here — spans come from the existing fetch instrumentation
-	 * in `services/otel-init.ts` — so `getActiveSpan()` returns the
-	 * caller's span only if the capture happens during a fetch handler.
-	 * That is fine: server-paired events (e.g. `artist.follow.requested`
-	 * → `artist.follow.completed`) are emitted from RPC call sites
-	 * already wrapped by `FetchInstrumentation`, and standalone UI
-	 * events (e.g. `page.viewed`) intentionally have no trace
-	 * correlation.
+	 * The single place that touches `posthog.capture`. Runs every payload
+	 * through the 要配慮個人情報 filter (sensitive categories + precise
+	 * birth date / age stripped, age-derived values bucketized) and injects
+	 * the active OTel `trace_id` so paired FE/BE events can be correlated.
 	 */
 	private dispatch<E extends EventName>(name: E, props: EventProps<E>): void {
 		if (this.posthog === null) return
-		const enriched: Record<string, unknown> = { ...props }
+		const sanitized: SanitizedProps = sanitizeEventProps(
+			name,
+			props,
+			this.logger,
+		)
+		const enriched: Record<string, unknown> = { ...sanitized }
 		const span = trace.getActiveSpan()
 		if (span !== undefined) {
 			const ctx = span.spanContext()
@@ -449,84 +420,92 @@ export class AnalyticsService implements IAnalyticsService {
 	}
 
 	/**
-	 * React to a consent state transition. On grant we lift PostHog into
-	 * its full persistence posture (localStorage+cookie) so subsequent
-	 * captures survive page reloads and the same distinct_id ties the
-	 * session together. On revoke we drop back to memory-only AND clear
-	 * the locally-stored distinct_id via `reset()` so any prior linkage
-	 * to a real user id is severed at the SDK boundary.
+	 * React to an opt-out state transition. `analytics` controls event
+	 * capture / identification / persistence:
+	 *   - analytics ON  → opt_in_capturing + localStorage+cookie + identify
+	 *     merge (NO reset); analytics OFF → opt_out_capturing + reset +
+	 *     memory-only.
 	 *
-	 * Tolerates pre-init firing: the new persistence value is buffered in
-	 * `pendingConsent` and applied inside `init()` after the SDK loads.
-	 * `opt_in/out_capturing` are idempotent, so re-applying the same
-	 * posture on every event is cheap.
+	 * The `sessionReplay` preference is read + persisted by ConsentService,
+	 * but the actual recording is hard-disabled in current scope (design
+	 * Decision 12), so toggling it does NOT start/stop recording here — see
+	 * `applySessionReplayToSdk`. Event capture and identity are unaffected by
+	 * the sessionReplay toggle either way.
+	 *
+	 * Tolerates pre-init firing: the latest analytics value is buffered and
+	 * applied inside `init()` once the SDK loads.
 	 */
 	private handleConsentChanged(event: ConsentChanged): void {
-		const analytics = event.state.analytics
+		const analyticsEnabled = event.state.analytics
 		if (this.posthog === null) {
-			// Init has not resolved yet. Stash the decision so init() can
-			// pick it up after `posthog.init()` returns. We do NOT touch
-			// the pre-init queue: the privacy-equivalent posture is
-			// already in effect (memory persistence, anonymous id) so
-			// queued events are safe to flush regardless of the eventual
-			// grant decision.
-			this.pendingConsent = analytics
+			this.pendingAnalyticsEnabled = analyticsEnabled
+			// sessionReplay preference is intentionally not buffered for an SDK
+			// effect: recording stays off in current scope regardless.
 			return
 		}
-		this.applyConsentToSdk(analytics)
-	}
-
-	private applyConsentToSdk(analytics: boolean): void {
-		if (this.posthog === null) return
-		if (analytics) {
-			// Idempotent: PostHog tracks the opt state internally and
-			// re-opting in is a no-op when already opted in. We still
-			// re-issue set_config because the post-init default is
-			// memory-only and we need to upgrade it.
+		if (analyticsEnabled) {
 			this.posthog.opt_in_capturing()
 			this.posthog.set_config({
 				persistence: 'localStorage+cookie',
 				ip: true,
 			})
-			// Late-identify: if UserHydrationTask called identify before
-			// the user granted consent (the consent screen is the LAST
-			// onboarding step, so this is the steady-state for new
-			// signups), elevate the anonymous session to identified now.
+			// Re-identify if a user_id was buffered (e.g. UserHydrationTask
+			// ran while opted out — though identify() does not buffer in that
+			// case; this covers a re-enable within the same boot). No reset().
 			this.replayPendingIdentifyIfAllowed()
-			this.logger.debug('Consent granted — PostHog persistence upgraded')
-			return
+			this.logger.debug('Analytics opted in — persistence upgraded')
+		} else {
+			this.applyAnalyticsOptOutToSdk()
+			this.logger.debug('Analytics opted out — capture suppressed')
 		}
+		// Reassert the recording posture. This is a no-op enable in current
+		// scope (recording stays disabled per Decision 12) but keeps the
+		// single wiring point explicit for when replay ships.
+		this.applySessionReplayToSdk()
+	}
+
+	/**
+	 * Opted-out posture: suppress all capture, revert persistence to
+	 * memory-only, drop IP, and reset() to sever any identity link. Drops the
+	 * buffered identify so a future re-enable does not silently re-identify
+	 * with a stale user_id.
+	 */
+	private applyAnalyticsOptOutToSdk(): void {
+		if (this.posthog === null) return
 		this.posthog.opt_out_capturing()
 		this.posthog.set_config({ persistence: 'memory', ip: false })
-		// reset() drops the locally-stored distinct_id so any prior
-		// identification is severed at the SDK boundary. Safe to call
-		// even when no identify has occurred — PostHog generates a fresh
-		// anonymous id afterwards.
 		this.posthog.reset()
-		// Drop the buffered identify too: the user revoked, so a future
-		// reconsent should NOT silently re-identify them with the old
-		// user_id. A fresh UserHydrationTask call (typically on next
-		// boot) is required to populate this field.
 		this.pendingIdentify = null
-		this.logger.debug(
-			'Consent revoked — PostHog persistence reverted to memory',
-		)
+	}
+
+	/**
+	 * SINGLE WIRING POINT for PostHog session recording — never touches
+	 * capture or identity.
+	 *
+	 * Session replay is HARD-DISABLED in current scope per design Decision
+	 * 12: the replay-dependent PII masking (tasks 8.1–8.3) and sampling (8.5)
+	 * are not yet implemented, so enabling recording would re-introduce a
+	 * PII-leak + free-tier-cost risk. Recording therefore stays off
+	 * regardless of the user's `sessionReplay` opt-out preference — the
+	 * preference is still tracked + persisted so the settings toggle reflects
+	 * the user's intent for WHEN replay ships.
+	 *
+	 * To deliberately enable replay once masking + sampling land, gate the
+	 * recording state on `this.consent.sessionReplay` here (e.g.
+	 * `disable_session_recording: !(this.consent.analytics &&
+	 * this.consent.sessionReplay)`) plus the masking/sampling init config.
+	 * This is the ONLY place that should flip recording on.
+	 */
+	private applySessionReplayToSdk(): void {
+		if (this.posthog === null) return
+		this.posthog.set_config({ disable_session_recording: true })
 	}
 
 	/**
 	 * Calls `posthog.identify` with the buffered user_id iff the SDK is
-	 * loaded AND consent is currently granted. No-op otherwise; the
-	 * buffer stays in place for a future grant. Pulled into a helper
-	 * because both `init()` (steady-state already-granted boot) and
-	 * `applyConsentToSdk(true)` (consent-grant transition) need the same
-	 * behaviour.
-	 *
-	 * One-shot: clears `pendingIdentify` immediately after dispatch.
-	 * Without this, the steady-state boot path (`init()` calls
-	 * `applyConsentToSdk(true)` THEN this helper directly) would double-
-	 * dispatch the same identify. Consistent with the `reset()` doc
-	 * comment: re-populating the buffer requires a fresh
-	 * UserHydrationTask call.
+	 * loaded AND analytics is not opted out. No reset() precedes it, so the
+	 * anonymous history merges. One-shot: clears `pendingIdentify` after
+	 * dispatch so the steady-state boot path does not double-dispatch.
 	 */
 	private replayPendingIdentifyIfAllowed(): void {
 		if (this.posthog === null) return
@@ -538,38 +517,26 @@ export class AnalyticsService implements IAnalyticsService {
 	}
 
 	/**
-	 * Disposes the consent subscription. AnalyticsService is registered
-	 * as a singleton in `main.ts` and therefore lives for the full page
-	 * lifetime — Aurelia does not invoke a lifecycle hook on the service
-	 * itself, so production code never calls this. Tests and any future
-	 * dynamic re-binding can call it to release the IEventAggregator
-	 * subscription.
+	 * Disposes the consent subscription. AnalyticsService is a singleton and
+	 * lives for the full page lifetime, so production code never calls this;
+	 * tests use it to release the IEventAggregator subscription.
 	 */
 	public dispose(): void {
 		this.consentSubscription.dispose()
 	}
 
 	/**
-	 * @internal Test hook — awaits the queued init so specs don't have
-	 *   to poll `requestIdleCallback` timing. Production code never
-	 *   calls this; it is not part of `IAnalyticsService` and DI hands
-	 *   callers the interface type only.
+	 * @internal Test hook — awaits the queued init so specs don't have to
+	 *   poll `requestIdleCallback` timing.
 	 */
 	public async _waitForInitForTests(): Promise<void> {
-		// init() is queued via requestIdleCallback / setTimeout; flush
-		// the microtask + macrotask queues by awaiting a 0-ms timeout,
-		// then awaiting any in-flight init promise.
 		await new Promise((r) => setTimeout(r, 0))
-		// init() is fire-and-forget from scheduleInit; we re-issue it
-		// synchronously here so the spec can await the resulting
-		// promise deterministically.
 		if (this.posthog === null && this.isEnabled()) {
 			await this.init()
 		}
 	}
 }
 
-// Re-export the catalogue for ergonomic single-import consumption in
-// instrumented call sites (Batch 3c). Keeps `import { Events,
-// IAnalyticsService }` on one line at the use site.
+// Re-export the catalogue for ergonomic single-import consumption at
+// instrumented call sites.
 export { Events }
