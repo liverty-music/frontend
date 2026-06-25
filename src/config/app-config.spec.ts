@@ -18,6 +18,7 @@ const validConfig: AppConfig = {
 	previewArtistIds: ['019c8655-7a05-71ef-82b4-a4ac2494e29f'],
 	previewArtistNames: ['Mrs. GREEN APPLE'],
 	logLevel: 'debug',
+	internalTrafficUserIds: [],
 }
 
 function mockFetchJson(body: unknown, ok = true, status = 200): void {
@@ -118,6 +119,37 @@ describe('app-config', () => {
 			mockFetchJson({ ...validConfig, circuitBaseUrl: '' })
 			const result = await loadAppConfig()
 			expect(result.circuitBaseUrl).toBe('')
+		})
+
+		it('defaults internalTrafficUserIds to an empty array when the field is absent', async () => {
+			const partial = { ...validConfig } as Record<string, unknown>
+			delete partial.internalTrafficUserIds
+			mockFetchJson(partial)
+			const result = await loadAppConfig()
+			expect(result.internalTrafficUserIds).toEqual([])
+		})
+
+		it('passes through a populated internalTrafficUserIds allowlist', async () => {
+			mockFetchJson({
+				...validConfig,
+				internalTrafficUserIds: ['staff-1', 'staff-2'],
+			})
+			const result = await loadAppConfig()
+			expect(result.internalTrafficUserIds).toEqual(['staff-1', 'staff-2'])
+		})
+
+		it('throws when internalTrafficUserIds is present but not an array', async () => {
+			mockFetchJson({ ...validConfig, internalTrafficUserIds: 'staff-1' })
+			await expect(loadAppConfig()).rejects.toThrow(
+				/internalTrafficUserIds.*must be an array/,
+			)
+		})
+
+		it('throws when internalTrafficUserIds contains a non-string element', async () => {
+			mockFetchJson({ ...validConfig, internalTrafficUserIds: ['staff-1', 42] })
+			await expect(loadAppConfig()).rejects.toThrow(
+				/internalTrafficUserIds.*non-string element/,
+			)
 		})
 	})
 

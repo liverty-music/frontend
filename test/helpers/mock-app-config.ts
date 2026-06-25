@@ -16,6 +16,7 @@ export function createMockAppConfig(overrides?: Partial<AppConfig>): AppConfig {
 		previewArtistIds: [],
 		previewArtistNames: [],
 		logLevel: 'warn',
+		internalTrafficUserIds: [],
 		...overrides,
 	}
 }

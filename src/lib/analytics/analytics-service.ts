@@ -140,6 +140,7 @@ export class AnalyticsService implements IAnalyticsService {
 	private pendingIdentify: {
 		userId: string
 		properties?: Readonly<Record<string, unknown>>
+		internal: boolean
 	} | null = null
 
 	/**
@@ -205,19 +206,25 @@ export class AnalyticsService implements IAnalyticsService {
 			properties === undefined
 				? undefined
 				: sanitizeEventProps('identify', properties, this.logger)
-		this.pendingIdentify = { userId, properties: safeProps }
+		// Resolve the STABLE internal-identity marker: a user whose id is in
+		// the configured allowlist is tagged `internal_traffic: true` so
+		// production funnels / retention can filter the session out without
+		// discarding it. NOT a heuristic — purely the configured list.
+		const internal = this.isInternalUserId(userId)
+		this.pendingIdentify = { userId, properties: safeProps, internal }
 
 		if (this.posthog === null) {
 			// Pre-init identify is intentionally dropped from the SDK path
 			// rather than queued; the pendingIdentify buffer carries the
-			// request and `init()` consults it after the SDK loads.
+			// request (and its internal flag) and `init()` consults it after
+			// the SDK loads, so a pre-init internal identify is still tagged.
 			this.logger.debug('identify deferred to SDK init', { userId })
 			return
 		}
 		// IMPORTANT: no preceding reset() — the anonymous pre-identification
 		// history MERGES into the identified profile so pre-signup discovery
 		// stays connected to post-signup conversion.
-		this.posthog.identify(userId, safeProps)
+		this.applyIdentify(userId, safeProps, internal)
 	}
 
 	public reset(): void {
@@ -513,7 +520,45 @@ export class AnalyticsService implements IAnalyticsService {
 		const buffered = this.pendingIdentify
 		if (buffered === null) return
 		this.pendingIdentify = null
-		this.posthog.identify(buffered.userId, buffered.properties)
+		this.applyIdentify(buffered.userId, buffered.properties, buffered.internal)
+	}
+
+	/**
+	 * The single place that calls `posthog.identify`. Applies the
+	 * `internal_traffic` marker for an allowlisted (internal) user:
+	 *   - adds `internal_traffic: true` as a PERSON property on the identify
+	 *     call (person-level dashboard filters), AND
+	 *   - registers it as a SUPER property so every subsequently captured
+	 *     event also carries `internal_traffic: true` (event-level filters).
+	 *
+	 * The flag is a plain boolean — not PII — so it intentionally bypasses the
+	 * 要配慮 sensitive-property filter (which only touches event payloads) and
+	 * survives into PostHog unchanged. A non-internal user takes the
+	 * unchanged path: no extra property, no register call.
+	 */
+	private applyIdentify(
+		userId: string,
+		properties: Readonly<Record<string, unknown>> | undefined,
+		internal: boolean,
+	): void {
+		if (this.posthog === null) return
+		if (!internal) {
+			this.posthog.identify(userId, properties)
+			return
+		}
+		this.posthog.identify(userId, { ...properties, internal_traffic: true })
+		// Super-property: stamps every future capture so event-level filters
+		// (not just person-level) can exclude internal traffic.
+		this.posthog.register({ internal_traffic: true })
+	}
+
+	/**
+	 * True iff `userId` is in the configured internal-traffic allowlist. The
+	 * empty / missing-config case (the normal production user) returns false,
+	 * so no marker is applied.
+	 */
+	private isInternalUserId(userId: string): boolean {
+		return this.config.internalTrafficUserIds.includes(userId)
 	}
 
 	/**
