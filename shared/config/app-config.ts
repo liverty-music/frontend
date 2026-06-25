@@ -47,6 +47,18 @@ export interface AppConfig {
 	 * serves `/config.json` will populate this in a follow-up PR.
 	 */
 	readonly posthogProjectKey?: string
+	/**
+	 * Allowlist of internal platform `UserId`s whose analytics should be
+	 * tagged with `internal_traffic: true` so production funnels / retention
+	 * can filter out staff / E2E sessions WITHOUT discarding the data. This is
+	 * the STABLE internal-identity marker mandated by the product-analytics
+	 * spec — an explicit configured list of user ids, NOT a heuristic.
+	 *
+	 * Populated per-environment by ops via `config.json`. Defaults to an empty
+	 * array when absent: a missing field is a strict no-op (no user is ever
+	 * tagged), never a crash.
+	 */
+	readonly internalTrafficUserIds: readonly string[]
 }
 
 export const IAppConfig = DI.createInterface<AppConfig>('IAppConfig')
@@ -217,6 +229,14 @@ function validateAppConfig(parsed: unknown): AppConfig {
 	const posthogApiHost = readOptionalString(o, 'posthogApiHost')
 	const posthogProjectKey = readOptionalString(o, 'posthogProjectKey')
 
+	// Optional internal-traffic allowlist. Absent from every existing
+	// ConfigMap until ops populates it per-environment; a missing field
+	// defaults to an empty array so no user is ever tagged (strict no-op).
+	const internalTrafficUserIds = readOptionalStringArray(
+		o,
+		'internalTrafficUserIds',
+	)
+
 	// Optional: present only in the admin console's ConfigMap. Absent from the
 	// consumer ConfigMap, so admin clients fall back to apiBaseUrl until the
 	// cutover sets it.
@@ -240,6 +260,7 @@ function validateAppConfig(parsed: unknown): AppConfig {
 		logLevel: logLevel as AppConfig['logLevel'],
 		...(posthogApiHost !== undefined ? { posthogApiHost } : {}),
 		...(posthogProjectKey !== undefined ? { posthogProjectKey } : {}),
+		internalTrafficUserIds,
 	}
 }
 
@@ -286,6 +307,32 @@ function requireStringArray(
 	key: string,
 ): readonly string[] {
 	const v = o[key]
+	if (!Array.isArray(v)) {
+		throw new Error(`config.json field '${key}' must be an array`)
+	}
+	for (const item of v) {
+		if (typeof item !== 'string') {
+			throw new Error(
+				`config.json field '${key}' contains a non-string element`,
+			)
+		}
+	}
+	return v as string[]
+}
+
+/**
+ * Returns the array when present, or an empty array when the key is absent
+ * or null. Rejects a present-but-non-array value, and any non-string element,
+ * loudly so a malformed ConfigMap surfaces during boot. A missing field is a
+ * deliberate no-op default — never a crash — which is the required behaviour
+ * for the optional `internalTrafficUserIds` allowlist.
+ */
+function readOptionalStringArray(
+	o: Record<string, unknown>,
+	key: string,
+): readonly string[] {
+	const v = o[key]
+	if (v === undefined || v === null) return []
 	if (!Array.isArray(v)) {
 		throw new Error(`config.json field '${key}' must be an array`)
 	}

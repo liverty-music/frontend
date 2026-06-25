@@ -13,6 +13,7 @@ const posthogStub = {
 	opt_in_capturing: vi.fn(),
 	opt_out_capturing: vi.fn(),
 	set_config: vi.fn(),
+	register: vi.fn(),
 }
 
 vi.mock('posthog-js', () => ({
@@ -150,9 +151,11 @@ describe('AnalyticsService', () => {
 		posthogStub.opt_in_capturing.mockReset()
 		posthogStub.opt_out_capturing.mockReset()
 		posthogStub.set_config.mockReset()
+		posthogStub.register.mockReset()
 		mockConfig.current = {
 			posthogProjectKey: 'phc_test_key',
 			posthogApiHost: 'https://eu.i.posthog.com',
+			internalTrafficUserIds: [],
 		}
 		mockConsent.analytics = true
 		mockConsent.sessionReplay = true
@@ -359,6 +362,123 @@ describe('AnalyticsService', () => {
 
 			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
 			expect(posthogStub.identify).toHaveBeenCalledWith('user-xyz', undefined)
+			expect(posthogStub.reset).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('internal-traffic tagging', () => {
+		it('tags an allowlisted user: internal_traffic person property + register super-property', async () => {
+			mockConfig.current = {
+				...mockConfig.current,
+				internalTrafficUserIds: ['staff-1', 'staff-2'],
+			}
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			sut.identify('staff-2', { plan: 'pro' })
+
+			// Person-level: identify carries internal_traffic alongside the
+			// original (sanitized) properties.
+			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
+			expect(posthogStub.identify).toHaveBeenCalledWith('staff-2', {
+				plan: 'pro',
+				internal_traffic: true,
+			})
+			// Event-level: super-property stamps every future capture.
+			expect(posthogStub.register).toHaveBeenCalledTimes(1)
+			expect(posthogStub.register).toHaveBeenCalledWith({
+				internal_traffic: true,
+			})
+			// Merge contract preserved — no reset() on the identify path.
+			expect(posthogStub.reset).not.toHaveBeenCalled()
+		})
+
+		it('tags an allowlisted user with no identify properties', async () => {
+			mockConfig.current = {
+				...mockConfig.current,
+				internalTrafficUserIds: ['staff-1'],
+			}
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			sut.identify('staff-1')
+
+			expect(posthogStub.identify).toHaveBeenCalledWith('staff-1', {
+				internal_traffic: true,
+			})
+			expect(posthogStub.register).toHaveBeenCalledWith({
+				internal_traffic: true,
+			})
+		})
+
+		it('does NOT tag a non-internal user (id absent from a populated allowlist)', async () => {
+			mockConfig.current = {
+				...mockConfig.current,
+				internalTrafficUserIds: ['staff-1', 'staff-2'],
+			}
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			sut.identify('user-123', { plan: 'pro' })
+
+			// Normal user: identify carries only the original props, no marker.
+			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
+			expect(posthogStub.identify).toHaveBeenCalledWith('user-123', {
+				plan: 'pro',
+			})
+			expect(posthogStub.register).not.toHaveBeenCalled()
+		})
+
+		it('does NOT tag any user when the allowlist is empty', async () => {
+			mockConfig.current = { ...mockConfig.current, internalTrafficUserIds: [] }
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			sut.identify('user-123')
+
+			expect(posthogStub.identify).toHaveBeenCalledWith('user-123', undefined)
+			expect(posthogStub.register).not.toHaveBeenCalled()
+		})
+
+		it('treats a missing internalTrafficUserIds config field as empty (no crash, no tagging)', async () => {
+			// Simulate the loader default: a `config.json` without the field is
+			// normalised to an empty array, so the service must not crash and
+			// must not tag anyone.
+			mockConfig.current = {
+				posthogProjectKey: 'phc_test_key',
+				posthogApiHost: 'https://eu.i.posthog.com',
+				internalTrafficUserIds: [],
+			}
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			expect(() => sut.identify('user-123')).not.toThrow()
+			expect(posthogStub.identify).toHaveBeenCalledWith('user-123', undefined)
+			expect(posthogStub.register).not.toHaveBeenCalled()
+		})
+
+		it('tags a pre-init (buffered) identify for an internal user once the SDK loads', async () => {
+			mockConfig.current = {
+				...mockConfig.current,
+				internalTrafficUserIds: ['staff-1'],
+			}
+			const sut = new AnalyticsService()
+
+			// identify fires BEFORE init resolves — the marker must survive the
+			// buffered/replay path.
+			sut.identify('staff-1', { plan: 'pro' })
+			expect(posthogStub.identify).not.toHaveBeenCalled()
+
+			await sut._waitForInitForTests()
+
+			expect(posthogStub.identify).toHaveBeenCalledTimes(1)
+			expect(posthogStub.identify).toHaveBeenCalledWith('staff-1', {
+				plan: 'pro',
+				internal_traffic: true,
+			})
+			expect(posthogStub.register).toHaveBeenCalledWith({
+				internal_traffic: true,
+			})
 			expect(posthogStub.reset).not.toHaveBeenCalled()
 		})
 	})
