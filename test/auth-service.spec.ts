@@ -17,6 +17,7 @@ interface MockUserManagerEvents {
 interface MockUserManager {
 	signinRedirect: ReturnType<typeof vi.fn>
 	signinCallback: ReturnType<typeof vi.fn>
+	signinSilent: ReturnType<typeof vi.fn>
 	signoutRedirect: ReturnType<typeof vi.fn>
 	getUser: ReturnType<typeof vi.fn>
 	events: MockUserManagerEvents
@@ -32,6 +33,7 @@ describe('AuthService', () => {
 			signinCallback: vi.fn().mockResolvedValue({
 				profile: { preferred_username: 'test-user' },
 			}),
+			signinSilent: vi.fn().mockResolvedValue(null),
 			signoutRedirect: vi.fn(),
 			getUser: vi.fn().mockResolvedValue(null),
 			events: {
@@ -84,6 +86,61 @@ describe('AuthService', () => {
 	it('ready resolves after initial getUser completes', async () => {
 		await sut.ready
 		expect(userManagerMock.getUser).toHaveBeenCalledOnce()
+	})
+
+	// Build a fresh AuthService after the getUser/signinSilent mocks have been
+	// arranged, so the constructor's boot-time restore observes them.
+	const buildSut = (): IAuthService => {
+		const container = createTestContainer()
+		container.register(AuthService)
+		return container.get(IAuthService)
+	}
+
+	it('restores the session via signinSilent when the stored access token is expired', async () => {
+		const renewedUser = {
+			expired: false,
+			profile: { preferred_username: 'renewed-user' },
+		}
+		userManagerMock.getUser.mockResolvedValue({
+			expired: true,
+			profile: { preferred_username: 'stale-user' },
+		})
+		userManagerMock.signinSilent.mockResolvedValue(renewedUser)
+
+		const freshSut = buildSut()
+		await freshSut.ready
+
+		expect(userManagerMock.signinSilent).toHaveBeenCalledOnce()
+		expect(freshSut.isAuthenticated).toBe(true)
+		expect(freshSut.user?.profile.preferred_username).toBe('renewed-user')
+	})
+
+	it('ends unauthenticated when signinSilent fails for an expired token', async () => {
+		userManagerMock.getUser.mockResolvedValue({
+			expired: true,
+			profile: { preferred_username: 'stale-user' },
+		})
+		userManagerMock.signinSilent.mockRejectedValue(new Error('refresh failed'))
+
+		const freshSut = buildSut()
+		await freshSut.ready
+
+		expect(userManagerMock.signinSilent).toHaveBeenCalledOnce()
+		expect(freshSut.isAuthenticated).toBe(false)
+		expect(freshSut.user).toBeNull()
+	})
+
+	it('does not call signinSilent when the stored access token is still valid', async () => {
+		userManagerMock.getUser.mockResolvedValue({
+			expired: false,
+			profile: { preferred_username: 'valid-user' },
+		})
+
+		const freshSut = buildSut()
+		await freshSut.ready
+
+		expect(userManagerMock.signinSilent).not.toHaveBeenCalled()
+		expect(freshSut.isAuthenticated).toBe(true)
 	})
 
 	it('signIn calls signinRedirect', async () => {

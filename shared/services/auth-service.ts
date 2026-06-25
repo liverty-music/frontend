@@ -28,10 +28,13 @@ function createSettings(config: AppConfig): UserManagerSettings {
 		loadUserInfo: true,
 		// Use localStorage instead of sessionStorage for better compatibility with Playwright storageState
 		userStore: new WebStorageStateStore({ store: window.localStorage }),
-		// Disable session monitor in dev: Zitadel's check_session_iframe returns
-		// frame-ancestors 'none', causing oidc-client-ts to fire userUnloaded
-		// repeatedly (~10s) which re-bootstraps the entire Aurelia app.
-		monitorSession: !import.meta.env.DEV,
+		// Disable session monitor in all environments: the self-hosted Zitadel
+		// serves check_session_iframe with frame-ancestors 'none', so the hidden
+		// iframe cannot load and oidc-client-ts fires spurious userUnloaded events
+		// (~10s) that re-bootstrap the entire Aurelia app. Session-change detection
+		// degrades to next-token-refresh detection (<=30m), the standard posture
+		// for SPAs against a Zitadel that blocks iframe embedding.
+		monitorSession: false,
 	}
 }
 
@@ -60,11 +63,31 @@ export class AuthService {
 
 		this.userManager.events.addUserLoaded((user) => this.updateState(user))
 		this.userManager.events.addUserUnloaded(() => this.updateState(null))
-		this.userManager.getUser().then((user) => {
+		this.restoreSession().then((user) => {
 			this.updateState(user)
-			// Resolve the ready promise after initial user state is loaded
+			// Resolve the ready promise only after the boot-time renewal attempt
+			// (if any) has settled, so route guards observe a stable auth state.
 			this.readyResolve?.()
 		})
+	}
+
+	// Restore the session on cold start. oidc-client-ts issue #2012: when the app
+	// boots with an already-expired access token, automaticSilentRenew drops the
+	// renewal timer based on the access token alone and never consults the still-
+	// valid refresh token, leaving the user unauthenticated. Work around it by
+	// explicitly calling signinSilent() when the stored user is expired, so a
+	// valid refresh token transparently restores the session.
+	private async restoreSession(): Promise<User | null> {
+		const user = await this.userManager.getUser()
+		if (user?.expired) {
+			try {
+				return await this.userManager.signinSilent()
+			} catch (err) {
+				this.logger.info('Silent session restore failed; signing out', err)
+				return null
+			}
+		}
+		return user
 	}
 
 	public user: User | null = null
