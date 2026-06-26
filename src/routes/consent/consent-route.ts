@@ -43,4 +43,13 @@ export class ConsentRoute implements IRouteViewModel {
 	public async openSettings(): Promise<void> {
 		await this.router.load('/settings')
 	}
+
+	/**
+	 * Navigate to the in-app Privacy Policy. Loads the absolute `/legal/privacy`
+	 * route via the root router rather than an external link: the policy is an
+	 * in-app route, not an off-repo page.
+	 */
+	public async openPrivacyPolicy(): Promise<void> {
+		await this.router.load('/legal/privacy')
+	}
 }

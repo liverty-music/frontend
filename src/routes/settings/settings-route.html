@@ -191,22 +191,18 @@
         </div>
       </li>
 
-      <!-- Privacy-policy anchor for both opt-out toggles. The policy names
+      <!-- Privacy-policy link for both opt-out toggles. The policy names
            the analytics processor (PostHog / Klant Solutions B.V.) and the
            cross-border purpose; the toggles above are the always-available
-           opt-out controls. Anchor lives as a sibling row rather than nested
-           inside a disclosure button (an <a> inside a <button> is invalid). -->
+           opt-out controls. Navigates in-app via the same openLegal handler
+           as the ABOUT-section Privacy Policy row, so there is a single
+           consistent in-app navigation path to /legal/privacy. -->
       <li class="settings-list-item">
-        <a
-          href="https://liverty.me/privacy"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="settings-row"
-        >
+        <button type="button" click.trigger="openLegal('/legal/privacy')" class="settings-row">
           <svg-icon name="info" class="settings-icon"></svg-icon>
           <span t="settings.analytics.privacyPolicyLink" class="settings-row-label"></span>
-          <svg-icon name="link" class="settings-chevron"></svg-icon>
-        </a>
+          <svg-icon name="chevron-right" class="settings-chevron"></svg-icon>
+        </button>
       </li>
     </ul>
   </section>
