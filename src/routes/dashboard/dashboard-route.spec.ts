@@ -362,14 +362,14 @@ describe('DashboardRoute', () => {
 		})
 	})
 
-	describe('maybeCelebrate (via attached / onHomeSelected)', () => {
-		it('shows the guest light celebration (no confetti) on first dashboard arrival', () => {
+	describe('maybeCelebrate (via observed data arrival / onHomeSelected)', () => {
+		it('shows the guest light celebration (no confetti) on first dashboard arrival', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(false)
@@ -381,13 +381,13 @@ describe('DashboardRoute', () => {
 			)
 		})
 
-		it('persists the one-shot flag for a guest only once the overlay opens', () => {
+		it('persists the one-shot flag for a guest only once the overlay opens', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 			expect(mockStorage.setItem).not.toHaveBeenCalledWith(
 				'onboarding.celebrationShown',
 				'1',
@@ -401,7 +401,7 @@ describe('DashboardRoute', () => {
 			)
 		})
 
-		it('does not burn the one-shot flag when the overlay is suppressed', () => {
+		it('does not burn the one-shot flag when the overlay is suppressed', async () => {
 			// A suppressed overlay (never opened) must leave the flag untouched so the
 			// celebration can still appear on a later eligible arrival.
 			mockAuth.isAuthenticated = false
@@ -409,7 +409,7 @@ describe('DashboardRoute', () => {
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
 			expect(sut.showCelebration).toBe(false)
 			expect(mockStorage.setItem).not.toHaveBeenCalledWith(
@@ -430,18 +430,18 @@ describe('DashboardRoute', () => {
 			)
 		})
 
-		it('does not show the light celebration for a completed guest (not onboarding)', () => {
+		it('does not show the light celebration for a completed guest (not onboarding)', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = false
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
 			expect(sut.showCelebration).toBe(false)
 		})
 
-		it('does not replay the guest light celebration once shown', () => {
+		it('does not replay the guest light celebration once shown', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			mockStorage.getItem.mockImplementation((k: string) =>
@@ -450,18 +450,20 @@ describe('DashboardRoute', () => {
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
 			expect(sut.showCelebration).toBe(false)
 		})
 
-		it('defers the celebration while a region is still needed', () => {
+		it('defers the celebration while a region is still needed', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			sut = new DashboardRoute()
 			sut.needsRegion = true
 
-			sut.attached()
+			// Even though data arrives, the gated handler must not celebrate over a
+			// region-less (blurred) timetable.
+			await sut.loadData()
 
 			expect(sut.showCelebration).toBe(false)
 		})
@@ -481,7 +483,7 @@ describe('DashboardRoute', () => {
 			expect(sut.celebrationConfetti).toBe(false)
 		})
 
-		it('shows the post-signup full celebration (confetti) then the dialog', () => {
+		it('shows the post-signup full celebration (confetti) then the dialog', async () => {
 			mockAuth.isAuthenticated = true
 			mockStorage.getItem.mockImplementation((k: string) =>
 				k === 'liverty:postSignup:shown' ? 'pending' : null,
@@ -489,7 +491,7 @@ describe('DashboardRoute', () => {
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(true)
@@ -504,31 +506,50 @@ describe('DashboardRoute', () => {
 			expect(sut.showPostSignupDialog).toBe(true)
 		})
 
-		it('does not celebrate for an authenticated returning user', () => {
+		it('does not celebrate for an authenticated returning user', async () => {
 			mockAuth.isAuthenticated = true
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
+			await sut.loadData()
+
+			expect(sut.showCelebration).toBe(false)
+		})
+
+		it('does not celebrate over a still-loading timetable (data not yet arrived)', () => {
+			mockAuth.isAuthenticated = true
+			mockStorage.getItem.mockImplementation((k: string) =>
+				k === 'liverty:postSignup:shown' ? 'pending' : null,
+			)
+			// Fetch never resolves → timetableLoaded never flips.
+			mockConcertService.listByFollower.mockReturnValueOnce(
+				new Promise(() => {}),
+			)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			void sut.loadData()
 			sut.attached()
 
+			expect(sut.isLoading).toBe(true)
 			expect(sut.showCelebration).toBe(false)
 		})
 	})
 
-	describe('completion latch (finish via attached / onHomeSelected)', () => {
-		it('latches finish() on a meaningful first arrival (region set, data loaded, followedCount >= 1)', () => {
+	describe('completion latch (finish via observed data arrival / onHomeSelected)', () => {
+		it('latches finish() on a meaningful first arrival (region set, data loaded, followedCount >= 1)', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			mockFollowStore.followedCount = 1
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
 			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
 		})
 
-		it('still latches when the celebration is suppressed (celebrationShown === "1")', () => {
+		it('still latches when the celebration is suppressed (celebrationShown === "1")', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			mockFollowStore.followedCount = 3
@@ -538,7 +559,7 @@ describe('DashboardRoute', () => {
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
 			// Celebration is suppressed but the latch is driven by data-ready +
 			// engaged, not by the overlay rendering.
@@ -546,15 +567,31 @@ describe('DashboardRoute', () => {
 			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
 		})
 
-		it('does NOT latch on a zero-follow arrival', () => {
+		it('does NOT latch on a zero-follow arrival', async () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			mockFollowStore.followedCount = 0
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
+		})
+
+		it('does NOT latch while the load is still in flight (data not yet arrived)', () => {
+			mockAuth.isAuthenticated = false
+			mockOnboarding.isOnboarding = true
+			mockFollowStore.followedCount = 2
+			mockConcertService.listByFollower.mockReturnValueOnce(
+				new Promise(() => {}),
+			)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			void sut.loadData()
+
+			expect(sut.isLoading).toBe(true)
 			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 		})
 

@@ -149,13 +149,13 @@ describe('DiscoveryRoute', () => {
 		vi.restoreAllMocks()
 	})
 
-	describe('loading', () => {
+	describe('loadInitialBubbles', () => {
 		it('should load initial artists via artistClient.listTop', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[makeArtist('a1', 'Artist One')],
 			)
 
-			await sut.loading()
+			await sut.loadInitialBubbles()
 
 			expect(mockArtistClient.listTop).toHaveBeenCalledWith('Japan', '', 50)
 		})
@@ -165,10 +165,30 @@ describe('DiscoveryRoute', () => {
 				new Error('fail'),
 			)
 
-			await sut.loading()
+			await sut.loadInitialBubbles()
 
 			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
 			expect(mockEa.published[0].severity).toBe('error')
+		})
+	})
+
+	describe('loading', () => {
+		it('is non-blocking: returns before the initial bubble fetch settles', () => {
+			let resolveLoad: (v: Artist[]) => void = () => {}
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockReturnValue(
+				new Promise((r) => {
+					resolveLoad = r
+				}),
+			)
+
+			// loading() returns synchronously (void) without awaiting the fetch, so
+			// the router attaches the view immediately.
+			const result = sut.loading()
+
+			expect(result).toBeUndefined()
+			expect(mockArtistClient.listTop).toHaveBeenCalled()
+
+			resolveLoad([])
 		})
 
 		it('should call listConcerts (not searchNewConcerts) for pre-seeded guest follows during onboarding', async () => {
@@ -474,7 +494,7 @@ describe('DiscoveryRoute', () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				initial,
 			)
-			await sut.loading()
+			await sut.loadInitialBubbles()
 
 			// Mock canvas bubbleCount to match pool
 			;(sut.dnaOrbCanvas as never as { bubbleCount: number }).bubbleCount = 50
@@ -548,12 +568,12 @@ describe('DiscoveryRoute', () => {
 
 			await sut.onFollowFromSearch(makeArtist('f1', 'Followed One'))
 
-			// Now loading should call listSimilar (seed) instead of listTop
+			// Now the initial load should call listSimilar (seed) instead of listTop
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
 			).mockResolvedValue([makeArtist('s1', 'Seed Similar')])
 
-			await sut.loading()
+			await sut.loadInitialBubbles()
 
 			expect(mockArtistClient.listSimilar).toHaveBeenCalled()
 		})
@@ -666,7 +686,7 @@ describe('DiscoveryRoute', () => {
 				[makeArtist('a1', 'Pool Artist')],
 			)
 
-			await sut.loading()
+			await sut.loadInitialBubbles()
 
 			expect(sut.poolBubbles).toHaveLength(1)
 			expect(sut.poolBubbles[0].name).toBe('Pool Artist')

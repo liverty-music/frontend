@@ -26,6 +26,12 @@ export class DashboardRoute {
 	@observable public filteredStatuses: JourneyStatus[] = []
 	public needsRegion = false
 	public isLoading = false
+	// Readiness latch flipped true by loadData() once a successful (non-abort)
+	// fetch settles and isLoading has cleared. Its @observable change handler
+	// re-anchors the data-ready side effects (celebration + completion latch) to
+	// observed data arrival, replacing the old attached()-timing assumption that
+	// loading() had already awaited the fetch.
+	@observable public timetableLoaded = false
 	public loadError: unknown = null
 	public showSignupBanner = false
 	public showPostSignupDialog = false
@@ -175,14 +181,14 @@ export class DashboardRoute {
 			this.needsRegion = !UserHomeSelector.getStoredHome()
 		}
 
-		// When region is set, await data so stage headers exist by attached().
-		// When needsRegion, data can't load yet (API returns [] without homeCode),
-		// so fire-and-forget — the @watch handler will react when data arrives.
-		if (this.needsRegion) {
-			void this.loadData()
-		} else {
-			await this.loadData()
-		}
+		// Fire-and-forget the fetch in BOTH branches so the router attaches this
+		// view immediately (render-then-fetch) instead of freezing the outgoing
+		// screen until the RPC resolves. The data-ready side effects no longer
+		// depend on the fetch being awaited here — they fire when timetableLoaded
+		// is observed to flip true (see timetableLoadedChanged). When needsRegion,
+		// the API returns [] without a homeCode anyway; the real load runs from
+		// onHomeSelected() once the region is chosen.
+		void this.loadData()
 
 		// Show signup banner for unauthenticated users who completed onboarding
 		if (!this.authService.isAuthenticated && this.onboarding.isCompleted) {
@@ -195,14 +201,20 @@ export class DashboardRoute {
 		this.abortController = new AbortController()
 		this.loadError = null
 		this.isLoading = true
+		// Reset so every load produces a fresh false→true transition; the
+		// needsRegion→onHomeSelected path loads twice and the second arrival must
+		// still re-fire the gated handler.
+		this.timetableLoaded = false
 		const signal = this.abortController.signal
 
+		let succeeded = false
 		try {
 			this.dateGroups = await this.loadDashboardEvents(signal)
 			this.loadError = null
 			this.logger.info('Dashboard loaded', {
 				groups: this.dateGroups.length,
 			})
+			succeeded = true
 		} catch (err) {
 			if ((err as Error).name === 'AbortError') return
 			this.logger.error('Failed to load dashboard', { error: err })
@@ -211,6 +223,14 @@ export class DashboardRoute {
 			}
 		} finally {
 			this.isLoading = false
+		}
+
+		// Flip AFTER isLoading clears so the gated handler never evaluates the
+		// celebration over a still-loading spinner. Only on a genuine (non-abort)
+		// successful load — an aborted load returns early above and leaves this
+		// false so a stale arrival can't fire the celebration.
+		if (succeeded) {
+			this.timetableLoaded = true
 		}
 	}
 
@@ -255,14 +275,24 @@ export class DashboardRoute {
 		if (this.needsRegion) {
 			this.homeSelector?.open()
 		}
+		// The celebration + completion-latch decisions are NO LONGER run here.
+		// loading() now fires the fetch non-blocking, so attached() can run while
+		// the timetable is still a spinner. The decisions are re-anchored to
+		// observed data arrival via timetableLoadedChanged().
+	}
 
-		// Run the celebration + completion-latch decisions once the timetable is
-		// real. While needsRegion is true the home-selector is open and the
-		// timetable is blurred, so this is deferred to onHomeSelected(); otherwise
-		// data was already awaited in loading().
-		if (!this.needsRegion) {
-			this.onTimetableReady()
-		}
+	/**
+	 * Re-anchor the data-ready side effects to observed data arrival. loadData()
+	 * flips timetableLoaded true once a successful fetch settles AND isLoading has
+	 * cleared, from BOTH arrival paths (loading()-driven and onHomeSelected-driven),
+	 * so the celebration never renders over a spinner and the completion latch
+	 * never reads not-yet-loaded engagement data. Guarded so it only acts on the
+	 * true edge and only when the timetable is genuinely real.
+	 */
+	protected timetableLoadedChanged(loaded: boolean): void {
+		if (!loaded) return
+		if (this.needsRegion || this.isLoading) return
+		this.onTimetableReady()
 	}
 
 	public async onHomeSelected(code: string): Promise<void> {
@@ -271,10 +301,10 @@ export class DashboardRoute {
 		if (!this.authService.isAuthenticated) {
 			this.userStore.setGuestHome(code)
 		}
+		// Timetable becomes real once the region is chosen; loadData() flips
+		// timetableLoaded → timetableLoadedChanged() runs the deferred celebration
+		// + completion-latch decisions. No explicit call needed here.
 		await this.loadData()
-		// Timetable is now real (region was just selected) — run the deferred
-		// celebration + completion-latch decisions.
-		this.onTimetableReady()
 	}
 
 	/**
