@@ -101,6 +101,14 @@
 			&:hover {
 				background: color-mix(in oklch, var(--_hover-bg) 5%, transparent);
 			}
+
+			/* Tap feedback for list rows. A deeper background reads better on a
+			   full-width row than a scale; `transform: none` suppresses the
+			   global button press so button- and anchor-rows feel identical. */
+			&:active {
+				transform: none;
+				background: color-mix(in oklch, var(--_hover-bg) 10%, transparent);
+			}
 		}
 
 		/* Column placement. Each property targets whichever element is a DIRECT

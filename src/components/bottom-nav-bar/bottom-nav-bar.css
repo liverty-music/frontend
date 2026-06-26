@@ -50,7 +50,15 @@
 
 			transition:
 				color var(--transition-normal),
-				box-shadow var(--transition-normal);
+				box-shadow var(--transition-normal),
+				transform 50ms ease-out;
+		}
+
+		/* Press feedback: the tab is an <a>, so the global button rule never
+		   reaches it. Scale-in on tap mirrors the app-wide press convention. */
+		.nav-tab:active {
+			transform: scale(0.92);
+			transition: transform 50ms ease-in;
 		}
 
 		.nav-icon {
@@ -98,6 +106,15 @@
 		.nav-tab[data-dimmed] {
 			opacity: 0.3;
 			transition: opacity var(--transition-normal);
+		}
+
+		/* Reduced motion: swap the press scale for a brief accent-tinted
+		   background so the tap still registers. */
+		@media (prefers-reduced-motion: reduce) {
+			.nav-tab:active {
+				transform: none;
+				background: oklch(from var(--color-brand-accent) l c h / 8%);
+			}
 		}
 	}
 }

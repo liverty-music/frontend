@@ -53,7 +53,18 @@
 
 		transition:
 			background-color var(--transition-fast) ease-out,
-			opacity var(--transition-fast) ease-out;
+			opacity var(--transition-fast) ease-out,
+			transform var(--transition-fast) ease-out;
+	}
+
+	/* Press feedback baseline. This is a touch-first PWA and the reset clears
+	   `-webkit-tap-highlight-color`, so taps need an explicit response. Scale-in
+	   matches the convention used by component buttons (welcome, consent,
+	   event-card, pwa-fab). Component `@layer block` rules override this, so
+	   buttons with their own `:active` keep it. */
+	:where(button):active:not(:disabled) {
+		transform: scale(0.97);
+		transition: transform 50ms ease-in; /* fast press-in, matches convention */
 	}
 
 	:where(input, textarea, select) {
@@ -93,6 +104,15 @@
 		:where(:focus-visible) {
 			outline: 3px solid currentcolor;
 			outline-offset: 2px;
+		}
+	}
+
+	/* Reduced motion: drop the press scale but keep a non-motion cue so taps
+	   still feel acknowledged. */
+	@media (prefers-reduced-motion: reduce) {
+		:where(button):active:not(:disabled) {
+			transform: none;
+			opacity: 0.85;
 		}
 	}
 
