@@ -174,15 +174,15 @@ describe('EventDetailSheet', () => {
 		it('fires concert.detail.viewed on open with the supplied source', () => {
 			const event = makeEvent()
 
-			sut.open(event, 'recommendation')
+			sut.open(event, 'dashboard')
 
 			expect(mockAnalytics.capture).toHaveBeenCalledTimes(1)
 			expect(mockAnalytics.capture).toHaveBeenCalledWith(
 				'concert.detail.viewed',
 				{
-					concert_id: 'c1',
+					event_id: 'c1',
 					artist_id: 'a1',
-					source: 'recommendation',
+					source: 'dashboard',
 				},
 			)
 		})

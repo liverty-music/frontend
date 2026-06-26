@@ -42,7 +42,7 @@ export type EventSource =
 	| 'page'
 	| 'artist_page'
 	| 'search_result'
-	| 'recommendation'
+	| 'dashboard'
 	| 'notification'
 	| 'discovery_orb'
 
@@ -78,15 +78,15 @@ export type PageViewedProps = {
 
 /**
  * The user clicked the signup CTA or otherwise entered the signup flow.
- * Paired with the backend `account.signup.completed` to measure the
- * signup funnel.
+ * Paired with the backend `user.created` to measure the signup funnel.
  */
 export type AccountSignupStartedProps = {
 	source: 'landing' | 'cta' | 'deep_link' | 'post_signup_dialog'
 }
 
 /**
- * Paired with `concert.recommendation.served` for impression measurement.
+ * Recorded when an artist surfaces in a discovery surface for impression
+ * measurement.
  */
 export type ArtistDiscoveryViewedProps = {
 	artist_id: string
@@ -109,19 +109,9 @@ export type ArtistFollowRequestedProps = {
 }
 
 export type ConcertDetailViewedProps = {
-	concert_id: string
+	event_id: string
 	artist_id: string
 	source: EventSource
-}
-
-/**
- * The user clicked a concert recommendation. Paired with the backend
- * `concert.recommendation.served` impression event.
- */
-export type ConcertRecommendationClickedProps = {
-	concert_id: string
-	artist_id: string
-	position: number
 }
 
 /**
@@ -129,7 +119,7 @@ export type ConcertRecommendationClickedProps = {
  * `ticket.lottery.entry.accepted` / `.rejected` events.
  */
 export type TicketLotteryEntrySubmittedProps = {
-	concert_id: string
+	event_id: string
 	lottery_round: number
 }
 
@@ -139,7 +129,7 @@ export type TicketLotteryEntrySubmittedProps = {
  */
 export type TicketPurchaseInitiatedProps = {
 	ticket_id: string
-	concert_id: string
+	event_id: string
 	price_bucket: string
 }
 
@@ -163,7 +153,7 @@ export type NotificationRequestedProps = {
 
 export type NotificationOpenedProps = {
 	notification_id: string
-	concert_id?: string
+	event_id?: string
 	artist_id?: string
 }
 
@@ -181,7 +171,7 @@ export type NotificationDismissedProps = {
  *
  *   analytics.capture(Events.ArtistFollowRequested, {
  *     artist_id: artist.id.value,
- *     source: 'recommendation',
+ *     source: 'dashboard',
  *   })
  */
 export const Events = {
@@ -191,7 +181,6 @@ export const Events = {
 	ArtistSearch: 'artist.search',
 	ArtistFollowRequested: 'artist.follow.requested',
 	ConcertDetailViewed: 'concert.detail.viewed',
-	ConcertRecommendationClicked: 'concert.recommendation.clicked',
 	TicketLotteryEntrySubmitted: 'ticket.lottery.entry.submitted',
 	TicketPurchaseInitiated: 'ticket.purchase.initiated',
 	EntryCheckinAttempted: 'entry.checkin.attempted',
@@ -215,7 +204,6 @@ export type EventPropsMap = {
 	'artist.search': ArtistSearchProps
 	'artist.follow.requested': ArtistFollowRequestedProps
 	'concert.detail.viewed': ConcertDetailViewedProps
-	'concert.recommendation.clicked': ConcertRecommendationClickedProps
 	'ticket.lottery.entry.submitted': TicketLotteryEntrySubmittedProps
 	'ticket.purchase.initiated': TicketPurchaseInitiatedProps
 	'entry.checkin.attempted': EntryCheckinAttemptedProps
