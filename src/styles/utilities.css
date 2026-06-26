@@ -151,10 +151,27 @@
 
 		background: var(--color-brand-primary);
 
-		transition: background-color 150ms ease-out;
+		transition:
+			background-color 150ms ease-out,
+			transform 150ms ease-out;
 
 		&:hover {
 			background: oklch(from var(--color-brand-primary) l c h / 80%);
+		}
+
+		/* The discover CTA is an <a> styled as a primary button, so the global
+		   <button> baseline cannot reach it — give it the same press cue here. */
+		&:active {
+			/* Press-in phase: fast ease-in, consistent with the button baseline. */
+			transform: scale(0.97);
+			transition: transform 50ms ease-in;
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			&:active {
+				transform: none;
+				opacity: 0.7;
+			}
 		}
 	}
 
