@@ -61,8 +61,33 @@ export class MyArtistsRoute {
 	}
 
 	public async loading(): Promise<void> {
+		// Synchronous prelude only — set before first paint. The fetch is kicked
+		// off non-blocking so the router attaches this view immediately instead of
+		// holding the outgoing screen frozen until the RPC resolves. The
+		// AbortController is owned by loadArtists() (single owner): creating it
+		// here too would let loadArtists()'s abort-first abort the just-created
+		// controller, AbortError-ing the very first load.
 		this.isLoading = true
+		void this.loadArtists()
+
+		// Signup banner visible for any guest user on this page (during AND after
+		// onboarding) — per signup-prompt-banner capability "Banner appears for
+		// guest user during onboarding" / "after onboarding" scenarios.
+		if (!this.isAuthenticated) {
+			this.showSignupBanner = true
+		}
+	}
+
+	/**
+	 * Fetch followed artists. Owns the request AbortController (abort-first then
+	 * create), mirroring dashboard-route.ts's loadData(). Returns a Promise so
+	 * production can fire-and-forget it (`void this.loadArtists()`) while tests
+	 * await it deterministically.
+	 */
+	public async loadArtists(): Promise<void> {
+		this.abortController?.abort()
 		this.abortController = new AbortController()
+		this.isLoading = true
 
 		try {
 			const followed = await this.followStore.listFollowed(
@@ -82,13 +107,6 @@ export class MyArtistsRoute {
 			}
 		} finally {
 			this.isLoading = false
-		}
-
-		// Signup banner visible for any guest user on this page (during AND after
-		// onboarding) — per signup-prompt-banner capability "Banner appears for
-		// guest user during onboarding" / "after onboarding" scenarios.
-		if (!this.isAuthenticated) {
-			this.showSignupBanner = true
 		}
 	}
 

@@ -96,9 +96,9 @@ describe('MyArtistsRoute', () => {
 		}
 	})
 
-	describe('loading', () => {
+	describe('loadArtists', () => {
 		it('should fetch and populate followed artists', async () => {
-			await sut.loading()
+			await sut.loadArtists()
 
 			expect(sut.isLoading).toBe(false)
 			expect(sut.artists).toHaveLength(3)
@@ -109,7 +109,7 @@ describe('MyArtistsRoute', () => {
 
 		it('should handle empty response', async () => {
 			mockFollowService.listFollowed.mockResolvedValue([])
-			await sut.loading()
+			await sut.loadArtists()
 
 			expect(sut.artists).toHaveLength(0)
 			expect(sut.isLoading).toBe(false)
@@ -119,7 +119,7 @@ describe('MyArtistsRoute', () => {
 			mockFollowService.listFollowed.mockRejectedValue(
 				new Error('Network error'),
 			)
-			await sut.loading()
+			await sut.loadArtists()
 
 			expect(sut.isLoading).toBe(false)
 			expect(sut.artists).toHaveLength(0)
@@ -131,13 +131,33 @@ describe('MyArtistsRoute', () => {
 				makeFollowedArtist('g-1', 'Guest Artist', 'watch'),
 			])
 
-			await sut.loading()
+			await sut.loadArtists()
 
 			expect(sut.isLoading).toBe(false)
 			expect(sut.artists).toHaveLength(1)
 			expect(sut.artists[0].artist.name).toBe('Guest Artist')
 			expect(sut.artists[0].hype).toBe('watch')
 			expect(mockFollowService.listFollowed).toHaveBeenCalled()
+		})
+	})
+
+	describe('loading', () => {
+		it('is non-blocking: resolves before the fetch settles, isLoading true at attach', async () => {
+			let resolveFetch: (v: unknown[]) => void = () => {}
+			mockFollowService.listFollowed.mockReturnValue(
+				new Promise((r) => {
+					resolveFetch = r
+				}),
+			)
+
+			await sut.loading()
+
+			// loading() resolved even though the fetch is still pending, so the
+			// view attaches immediately with the spinner visible.
+			expect(sut.isLoading).toBe(true)
+			expect(sut.artists).toHaveLength(0)
+
+			resolveFetch([makeFollowedArtist('id-1', 'RADWIMPS')])
 		})
 
 		it('should show signup banner for unauthenticated user with completed onboarding', async () => {
@@ -159,7 +179,7 @@ describe('MyArtistsRoute', () => {
 
 	describe('delete button', () => {
 		beforeEach(async () => {
-			await sut.loading()
+			await sut.loadArtists()
 		})
 
 		it('should unfollow and publish undo snack', () => {
@@ -187,7 +207,7 @@ describe('MyArtistsRoute', () => {
 			)
 			container.register(MyArtistsRoute)
 			const onboardingSut = container.get(MyArtistsRoute)
-			await onboardingSut.loading()
+			await onboardingSut.loadArtists()
 
 			onboardingSut.unfollowArtist(onboardingSut.artists[0])
 
@@ -198,7 +218,7 @@ describe('MyArtistsRoute', () => {
 	describe('undo', () => {
 		beforeEach(async () => {
 			vi.useFakeTimers()
-			await sut.loading()
+			await sut.loadArtists()
 		})
 
 		afterEach(() => {
@@ -240,7 +260,7 @@ describe('MyArtistsRoute', () => {
 
 	describe('detaching', () => {
 		it('should clean up timers and abort controller', async () => {
-			await sut.loading()
+			await sut.loadArtists()
 			sut.detaching()
 			// No errors thrown, cleanup completed
 			expect(sut.isLoading).toBe(false)
@@ -275,7 +295,7 @@ describe('MyArtistsRoute', () => {
 				)
 				container.register(MyArtistsRoute)
 				onboardingSut = container.get(MyArtistsRoute)
-				await onboardingSut.loading()
+				await onboardingSut.loadArtists()
 			})
 
 			it('applies and persists a hype change without mutating onboarding state', () => {
@@ -321,7 +341,7 @@ describe('MyArtistsRoute', () => {
 		describe('unauthenticated user', () => {
 			beforeEach(async () => {
 				mockAuth.isAuthenticated = false
-				await sut.loading()
+				await sut.loadArtists()
 			})
 
 			it('should accept hype change and persist via the follow service (guest routing is internal)', () => {
@@ -348,7 +368,7 @@ describe('MyArtistsRoute', () => {
 		describe('authenticated user', () => {
 			beforeEach(async () => {
 				mockAuth.isAuthenticated = true
-				await sut.loading()
+				await sut.loadArtists()
 			})
 
 			it('should accept hype change and call setHype RPC', () => {

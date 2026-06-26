@@ -206,38 +206,26 @@ describe('DashboardRoute', () => {
 			await sut.loading()
 			expect(sut.showSignupBanner).toBe(false)
 		})
+
+		it('is non-blocking: resolves before the data fetch settles, isLoading true at attach', async () => {
+			mockAuth.isAuthenticated = true
+			mockUser.current = { home: { countryCode: 'JP', level1: 'JP-13' } }
+			// Fetch never resolves → the timetable would stay a spinner.
+			mockConcert.listByFollower.mockReturnValue(new Promise(() => {}))
+			sut = buildSut()
+
+			await sut.loading()
+
+			// loading() resolved without awaiting the fetch: region is computed and
+			// the spinner is showing.
+			expect(sut.needsRegion).toBe(false)
+			expect(sut.isLoading).toBe(true)
+		})
 	})
 
 	// ---- attached() ----
 
 	describe('attached', () => {
-		it('shows the post-signup celebration then opens the dialog on dismissal', () => {
-			mockAuth.isAuthenticated = true
-			mockStorage = createMockLocalStorage({
-				[StorageKeys.postSignupShown]: 'pending',
-			})
-			sut = buildSut()
-
-			sut.attached()
-
-			// Emotion first: confetti celebration; dialog deferred until dismissal.
-			expect(sut.showCelebration).toBe(true)
-			expect(sut.celebrationConfetti).toBe(true)
-			expect(mockStorage.removeItem).toHaveBeenCalledWith(
-				StorageKeys.postSignupShown,
-			)
-			expect(sut.showPostSignupDialog).toBe(false)
-
-			sut.onCelebrationDismissed()
-
-			expect(sut.showPostSignupDialog).toBe(true)
-		})
-
-		it('does not show postSignupDialog when flag is absent', () => {
-			sut.attached()
-			expect(sut.showPostSignupDialog).toBe(false)
-		})
-
 		it('opens home selector when needsRegion is true', () => {
 			sut.needsRegion = true
 			const mockHomeSelector = { open: vi.fn() }
@@ -258,36 +246,102 @@ describe('DashboardRoute', () => {
 			expect(mockHomeSelector.open).not.toHaveBeenCalled()
 		})
 
-		it('latches finish() on a meaningful first dashboard arrival (onboarding + follows + region set)', () => {
+		it('does not fire the celebration at attached() while the load is still in flight', () => {
+			mockAuth.isAuthenticated = true
+			mockStorage = createMockLocalStorage({
+				[StorageKeys.postSignupShown]: 'pending',
+			})
+			// Fetch never resolves → timetable stays a spinner.
+			mockConcert.listByFollower.mockReturnValue(new Promise(() => {}))
+			sut = buildSut()
+			sut.needsRegion = false
+
+			void sut.loadData()
+			sut.attached()
+
+			// attached() ran over a still-loading timetable: no celebration over a spinner.
+			expect(sut.isLoading).toBe(true)
+			expect(sut.showCelebration).toBe(false)
+		})
+	})
+
+	// ---- data-ready side effects (gated on observed data arrival) ----
+
+	describe('data-ready side effects', () => {
+		it('shows the post-signup celebration on observed data arrival, then opens the dialog on dismissal', async () => {
+			mockAuth.isAuthenticated = true
+			mockStorage = createMockLocalStorage({
+				[StorageKeys.postSignupShown]: 'pending',
+			})
+			sut = buildSut()
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			// Emotion first: confetti celebration; dialog deferred until dismissal.
+			expect(sut.showCelebration).toBe(true)
+			expect(sut.celebrationConfetti).toBe(true)
+			expect(mockStorage.removeItem).toHaveBeenCalledWith(
+				StorageKeys.postSignupShown,
+			)
+			expect(sut.showPostSignupDialog).toBe(false)
+
+			sut.onCelebrationDismissed()
+
+			expect(sut.showPostSignupDialog).toBe(true)
+		})
+
+		it('does not show postSignupDialog when flag is absent', async () => {
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			expect(sut.showPostSignupDialog).toBe(false)
+		})
+
+		it('latches finish() on a meaningful first dashboard arrival (onboarding + follows + region set)', async () => {
 			mockOnboarding = makeOnboarding(true)
 			mockFollow.followedCount = 1
 			sut = buildSut()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
 			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
 		})
 
-		it('does not latch when onboarding is already completed', () => {
+		it('does not latch when onboarding is already completed', async () => {
 			mockOnboarding = makeOnboarding(false)
 			mockFollow.followedCount = 5
 			sut = buildSut()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
 			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 		})
 
-		it('does not latch on a zero-follow arrival', () => {
+		it('does not latch on a zero-follow arrival', async () => {
 			mockOnboarding = makeOnboarding(true)
 			mockFollow.followedCount = 0
 			sut = buildSut()
 			sut.needsRegion = false
 
-			sut.attached()
+			await sut.loadData()
 
+			expect(mockOnboarding.finish).not.toHaveBeenCalled()
+		})
+
+		it('does not latch while the timetable is still loading', () => {
+			mockOnboarding = makeOnboarding(true)
+			mockFollow.followedCount = 1
+			mockConcert.listByFollower.mockReturnValue(new Promise(() => {}))
+			sut = buildSut()
+			sut.needsRegion = false
+
+			void sut.loadData()
+
+			expect(sut.isLoading).toBe(true)
 			expect(mockOnboarding.finish).not.toHaveBeenCalled()
 		})
 	})

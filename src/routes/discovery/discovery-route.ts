@@ -136,9 +136,11 @@ export class DiscoveryRoute {
 		}
 	}
 
-	public async loading(): Promise<void> {
+	public loading(): void {
 		this.logger.info('Loading discovery page')
 
+		// Synchronous onboarding hydrate prelude runs before the fetch so seeded
+		// follows are present when the bubble field loads.
 		if (this.isOnboarding) {
 			const persisted = this.followStore.guestFollows
 			if (persisted.length > 0) {
@@ -146,6 +148,26 @@ export class DiscoveryRoute {
 			}
 		}
 
+		// Fire-and-forget the initial bubble load so the router attaches this view
+		// immediately. The canvas seeds bubbles order-independently (artistsChanged
+		// with its !this.ctx guard + the attached() seed), so they render whether
+		// the data resolves before or after attach.
+		void this.loadInitialBubbles()
+
+		// Resume concert search for pre-seeded follows (fire concurrently)
+		if (this.isOnboarding) {
+			for (const f of this.followStore.guestFollows) {
+				void this.searchConcertsForArtist(f.artist.id, f.artist.name)
+			}
+		}
+	}
+
+	/**
+	 * Load the initial bubble field. Returns a Promise so production fires it
+	 * non-blocking (`void this.loadInitialBubbles()`) while tests await it
+	 * deterministically. A failure surfaces a Snack and is swallowed.
+	 */
+	public async loadInitialBubbles(): Promise<void> {
 		try {
 			await this.bubbles.loadInitialArtists(
 				this.followStore.followedArtists,
@@ -155,13 +177,6 @@ export class DiscoveryRoute {
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
 			this.ea.publish(new Snack(this.i18n.tr('discovery.loadFailed'), 'error'))
-		}
-
-		// Resume concert search for pre-seeded follows (fire concurrently)
-		if (this.isOnboarding) {
-			for (const f of this.followStore.guestFollows) {
-				void this.searchConcertsForArtist(f.artist.id, f.artist.name)
-			}
 		}
 	}
 
