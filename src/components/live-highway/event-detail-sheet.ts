@@ -98,7 +98,7 @@ export class EventDetailSheet {
 
 		// Fire after the sheet state flips — listeners observe consistent state.
 		this.analytics.capture(Events.ConcertDetailViewed, {
-			concert_id: event.id,
+			event_id: event.id,
 			artist_id: event.artistId,
 			source,
 		})
