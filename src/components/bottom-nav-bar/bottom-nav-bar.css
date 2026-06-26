@@ -50,7 +50,18 @@
 
 			transition:
 				color var(--transition-normal),
-				box-shadow var(--transition-normal);
+				box-shadow var(--transition-normal),
+				transform var(--transition-normal);
+		}
+
+		/* Press cue at the moment of tap. The nav tabs are <a> elements the global
+		   <button> baseline cannot reach, so the press feedback is defined here.
+		   Distinct from the persistent [data-active] selected-tab state — this is
+		   transient on touch. Large-target scale magnitude (matches the FAB). */
+		.nav-tab:active {
+			/* Press-in phase: fast ease-in. */
+			transform: scale(0.92);
+			transition: transform 50ms ease-in;
 		}
 
 		.nav-icon {
@@ -98,6 +109,15 @@
 		.nav-tab[data-dimmed] {
 			opacity: 0.3;
 			transition: opacity var(--transition-normal);
+		}
+
+		/* Reduced motion: drop the press scale, acknowledge the tap with a brief
+		   accent-tinted background instead. */
+		@media (prefers-reduced-motion: reduce) {
+			.nav-tab:active {
+				transform: none;
+				background: oklch(from var(--color-brand-accent) l c h / 12%);
+			}
 		}
 	}
 }

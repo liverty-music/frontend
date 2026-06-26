@@ -53,7 +53,18 @@
 
 		transition:
 			background-color var(--transition-fast) ease-out,
-			opacity var(--transition-fast) ease-out;
+			opacity var(--transition-fast) ease-out,
+			transform var(--transition-fast) ease-out;
+	}
+
+	/* App-wide press-feedback baseline: every native button acknowledges a touch
+	   on :active so no per-component code is needed. Wrapped in :where() for zero
+	   specificity so components that define their own :active in @layer block keep
+	   precedence; :not(:disabled) leaves disabled controls inert. */
+	:where(button:active:not(:disabled)) {
+		/* Press-in phase: fast ease-in, matching the existing component convention. */
+		transform: scale(0.97);
+		transition: transform 50ms ease-in;
 	}
 
 	:where(input, textarea, select) {
@@ -109,6 +120,15 @@
 		:where(svg) {
 			fill: CanvasText;
 			stroke: CanvasText;
+		}
+	}
+
+	/* Reduced motion: drop the button press scale but keep a non-motion
+	   acknowledgement so the tap still registers. */
+	@media (prefers-reduced-motion: reduce) {
+		:where(button:active:not(:disabled)) {
+			transform: none;
+			opacity: 0.7;
 		}
 	}
 }
