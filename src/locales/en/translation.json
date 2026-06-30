@@ -459,7 +459,7 @@
 		},
 		"privacy": {
 			"title": "Privacy Policy",
-			"lastUpdated": "June 5, 2026",
+			"lastUpdated": "June 26, 2026",
 			"intro": "pannpers.dev (\"we\" or \"us\") establishes this Privacy Policy (the \"Policy\") regarding the handling of users' personal information in the application \"Liverty Music\" (the \"Service\"), as set out below. We comply with Japan's Act on the Protection of Personal Information (the \"APPI\") and other applicable laws.",
 			"sections": [
 				{
@@ -498,7 +498,7 @@
 					"heading": "4. Provision to Third Parties and Outsourcing",
 					"body": [
 						"In providing the Service, we entrust the handling of personal information to, or integrate with, the following external services:",
-						"- PostHog (product analytics)",
+						"- PostHog (product analytics), operated by Klant Solutions B.V. in the Netherlands",
 						"- Resend (email delivery)",
 						"- Google (push notification delivery via Firebase Cloud Messaging / Web Push)",
 						"- Google (concert information search via Gemini / Vertex AI)",
@@ -517,7 +517,8 @@
 				{
 					"heading": "6. Cross-Border Transfer of Personal Data",
 					"body": [
-						"The Service transfers usage analytics data to PostHog Cloud EU (within the European Union). This constitutes the provision of personal data to a third party in a foreign country under Article 28 of the APPI.",
+						"The Service transfers usage analytics data to PostHog Cloud EU, operated by Klant Solutions B.V. in the Netherlands. PostHog handles this data as our processor — on our behalf and under our instructions (an entrustment of handling, not provision to an independent third party). Because the processor is located in a foreign country (the Netherlands), this cross-border transfer is subject to Article 28 of the APPI and relies on Japan's designation of the EU, which includes the Netherlands, as providing an equivalent standard of personal-data protection.",
+						"For this transfer, the categories of data transferred are interaction / usage events captured via cookies and localStorage, and the purpose of the transfer is product analytics: improving the Service and measuring its effectiveness.",
 						"In addition, some of the external services above handle personal information on servers located in the United States or the United Kingdom.",
 						"We ensure the appropriate handling of personal data by confirming, through contracts and other means, that these transfer recipients have established systems conforming to the standards required by Japan's APPI."
 					]

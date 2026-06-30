@@ -123,6 +123,12 @@
 		}
 
 		.consent-policy-link {
+			/* Rendered as a <button> driving in-app navigation; strip the global
+			   button padding/display-font so it reads as the inline text link it
+			   replaces. */
+			padding: 0;
+
+			font: inherit;
 			color: var(--color-brand-accent);
 			text-decoration: underline;
 			text-underline-offset: 3px;
