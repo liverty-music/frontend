@@ -16,6 +16,10 @@ import {
 import { ConsentChanged } from '../consent/consent-changed'
 import { IConsentService } from '../consent/consent-service'
 import {
+	NOTIFICATION_FLUSH_MESSAGE,
+	writeIdentitySnapshot,
+} from './notification-interaction'
+import {
 	type SanitizedProps,
 	sanitizeEventProps,
 } from './sensitive-property-filter'
@@ -129,6 +133,14 @@ export class AnalyticsService implements IAnalyticsService {
 	private initStarted = false
 	private readonly queue: QueuedCapture[] = []
 	private queueOverflowed = false
+
+	/**
+	 * Last distinct_id we identified, so the service-worker identity snapshot
+	 * can be refreshed on an opt-out toggle even before/without the SDK
+	 * resolving a distinct_id of its own. Notifications only reach signed-in
+	 * users, so this is the recipient's platform user id in practice.
+	 */
+	private lastDistinctId: string | null = null
 
 	/**
 	 * Buffers the most recent `identify()` request fired BEFORE PostHog
@@ -372,6 +384,11 @@ export class AnalyticsService implements IAnalyticsService {
 			// `capture` is attributed to the anonymous id first; identify then
 			// MERGES that history into the real user_id (no reset()).
 			this.replayPendingIdentifyIfAllowed()
+			// Publish the initial snapshot (covers the opted-out-at-boot and
+			// no-pending-identify cases) and flush any interactions the SW
+			// stashed while offline on a prior session.
+			this.syncIdentitySnapshot()
+			this.nudgeServiceWorkerFlush()
 		} catch (err) {
 			this.logger.warn(
 				'PostHog SDK failed to load; analytics disabled for this session',
@@ -465,6 +482,9 @@ export class AnalyticsService implements IAnalyticsService {
 			this.applyAnalyticsOptOutToSdk()
 			this.logger.debug('Analytics opted out — capture suppressed')
 		}
+		// Reflect the new opt-out posture into the service-worker snapshot so
+		// notificationclick / notificationclose honour it immediately.
+		this.syncIdentitySnapshot()
 		// Reassert the recording posture. This is a no-op enable in current
 		// scope (recording stays disabled per Decision 12) but keeps the
 		// single wiring point explicit for when replay ships.
@@ -542,14 +562,70 @@ export class AnalyticsService implements IAnalyticsService {
 		internal: boolean,
 	): void {
 		if (this.posthog === null) return
+		this.lastDistinctId = userId
 		if (!internal) {
 			this.posthog.identify(userId, properties)
+		} else {
+			this.posthog.identify(userId, { ...properties, internal_traffic: true })
+			// Super-property: stamps every future capture so event-level filters
+			// (not just person-level) can exclude internal traffic.
+			this.posthog.register({ internal_traffic: true })
+		}
+		// Refresh the service-worker identity snapshot so notificationclick /
+		// notificationclose can attribute interactions to this user and honour
+		// the current opt-out state.
+		this.syncIdentitySnapshot()
+	}
+
+	/**
+	 * Persists the `{ distinct_id, opted_out, api_host, project_key }` snapshot
+	 * the service worker reads to report notification opens / dismissals (the
+	 * SW cannot run posthog-js). Best-effort and fire-and-forget: a Cache write
+	 * failure only means the SW keeps the prior snapshot. Skipped in nil-config
+	 * mode or before any distinct_id is known.
+	 */
+	private syncIdentitySnapshot(): void {
+		if (!this.isEnabled()) return
+		// Prefer the SDK's live distinct_id; fall back to the last identify.
+		// Guard the call so a stubbed/partial SDK cannot throw here.
+		const fromSdk =
+			typeof this.posthog?.get_distinct_id === 'function'
+				? this.posthog.get_distinct_id()
+				: undefined
+		const distinctId = fromSdk ?? this.lastDistinctId
+		if (distinctId === null || distinctId === undefined || distinctId === '') {
 			return
 		}
-		this.posthog.identify(userId, { ...properties, internal_traffic: true })
-		// Super-property: stamps every future capture so event-level filters
-		// (not just person-level) can exclude internal traffic.
-		this.posthog.register({ internal_traffic: true })
+		const apiHost =
+			this.config.posthogApiHost && this.config.posthogApiHost.length > 0
+				? this.config.posthogApiHost
+				: 'https://eu.i.posthog.com'
+		void writeIdentitySnapshot({
+			distinctId,
+			optedOut: !this.consent.analytics,
+			apiHost,
+			projectKey: this.config.posthogProjectKey ?? '',
+		}).catch((err) => {
+			this.logger.debug('identity snapshot write failed', { error: err })
+		})
+	}
+
+	/**
+	 * Nudges the active service worker to flush any interactions it stashed
+	 * while offline. Called once on init so a reconnect-then-reopen delivers
+	 * queued opens / dismissals even on browsers without Background Sync.
+	 */
+	private nudgeServiceWorkerFlush(): void {
+		const nav = (globalThis as { navigator?: Navigator }).navigator
+		const container = nav?.serviceWorker
+		if (container === undefined) return
+		void container.ready
+			.then((registration) => {
+				registration.active?.postMessage({ type: NOTIFICATION_FLUSH_MESSAGE })
+			})
+			.catch(() => {
+				// No controlling SW yet (first load) — nothing to flush.
+			})
 	}
 
 	/**
