@@ -8,6 +8,15 @@ import { ExpirationPlugin } from 'workbox-expiration'
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { CacheFirst, NetworkOnly } from 'workbox-strategies'
+import {
+	flushInteractionStash,
+	NOTIFICATION_FLUSH_MESSAGE,
+	NOTIFICATION_SYNC_TAG,
+	type PushPayload,
+	reportNotificationInteraction,
+	resolvePushMetadata,
+} from './lib/analytics/notification-interaction'
+import { Events } from './services/analytics-events'
 
 // ---------------------------------------------------------------------------
 // Precache app shell assets injected by vite-plugin-pwa at build time.
@@ -147,53 +156,120 @@ registerRoute(
 // Push notification handler.
 // ---------------------------------------------------------------------------
 self.addEventListener('push', (event) => {
-	let data:
-		| { title?: string; body?: string; tag?: string; url?: string }
-		| undefined
+	let payload: PushPayload | undefined
 	try {
-		data = event.data?.json()
+		payload = event.data?.json()
 	} catch {
-		data = undefined
+		payload = undefined
 	}
-	data = data ?? { title: 'Liverty Music', body: 'New notification' }
+	payload = payload ?? { title: 'Liverty Music', body: 'New notification' }
+
+	// Compat shim (removed once both sides are deployed): resolve url /
+	// notification_id from the nested `data`, falling back to the legacy
+	// top-level fields.
+	const { url, notificationId } = resolvePushMetadata(payload)
 
 	const options: NotificationOptions = {
-		body: data.body,
+		body: payload.body,
 		icon: '/icons/icon-192x192.png',
 		badge: '/favicon-96x96.png',
-		tag: data.tag || 'liverty-default',
-		data: { url: data.url || '/' },
+		tag: payload.tag || 'liverty-default',
+		// Map the passthrough metadata straight into options.data so
+		// notificationclick/close read event.notification.data.{url,notification_id}.
+		data: { url, notification_id: notificationId },
 	}
 
 	event.waitUntil(
-		self.registration.showNotification(data.title || 'Liverty Music', options),
+		self.registration.showNotification(
+			payload.title || 'Liverty Music',
+			options,
+		),
 	)
 })
 
 self.addEventListener('notificationclick', (event) => {
 	event.notification.close()
-	const url: string = event.notification.data?.url || '/'
+	const data = (event.notification.data ?? {}) as {
+		url?: string
+		notification_id?: string
+	}
+	const url: string = data.url || '/'
+	const notificationId: string = data.notification_id ?? ''
 
 	event.waitUntil(
-		self.clients
-			.matchAll({ type: 'window', includeUncontrolled: true })
-			.then((clients) => {
-				let targetUrl: URL
-				try {
-					targetUrl = new URL(url, self.location.origin)
-				} catch {
-					targetUrl = new URL('/', self.location.origin)
+		(async () => {
+			// Report the open at interaction time (orthogonal to navigation). Kept
+			// first so the capture is issued even if focus/openWindow throws.
+			await reportNotificationInteraction(
+				{
+					event: Events.NotificationOpened,
+					notificationId,
+					uuid: crypto.randomUUID(),
+					timestamp: new Date().toISOString(),
+				},
+				self.registration,
+			)
+
+			const clients = await self.clients.matchAll({
+				type: 'window',
+				includeUncontrolled: true,
+			})
+			let targetUrl: URL
+			try {
+				targetUrl = new URL(url, self.location.origin)
+			} catch {
+				targetUrl = new URL('/', self.location.origin)
+			}
+			for (const client of clients) {
+				const clientUrl = new URL(client.url)
+				if (clientUrl.href === targetUrl.href && 'focus' in client) {
+					return client.focus()
 				}
-				for (const client of clients) {
-					const clientUrl = new URL(client.url)
-					if (clientUrl.href === targetUrl.href && 'focus' in client) {
-						return client.focus()
-					}
-				}
-				// Only open same-origin URLs to prevent external redirects.
-				const safeUrl =
-					targetUrl.origin === self.location.origin ? targetUrl.href : '/'
-				return self.clients.openWindow(safeUrl)
-			}),
+			}
+			// Only open same-origin URLs to prevent external redirects.
+			const safeUrl =
+				targetUrl.origin === self.location.origin ? targetUrl.href : '/'
+			return self.clients.openWindow(safeUrl)
+		})(),
 	)
+})
+
+self.addEventListener('notificationclose', (event) => {
+	const data = (event.notification.data ?? {}) as { notification_id?: string }
+	event.waitUntil(
+		reportNotificationInteraction(
+			{
+				event: Events.NotificationDismissed,
+				notificationId: data.notification_id ?? '',
+				uuid: crypto.randomUUID(),
+				timestamp: new Date().toISOString(),
+			},
+			self.registration,
+		),
+	)
+})
+
+// Offline fallback flush points: retry stashed interactions when the platform
+// fires a Background Sync, on SW activation, and when the app signals it opened.
+//
+// The `sync` event (Background Sync API) is not in the default TS SW lib types,
+// so it is registered via the untyped listener and narrowed locally.
+type SyncEventLike = ExtendableEvent & { tag: string }
+;(self as ServiceWorkerGlobalScope).addEventListener(
+	'sync' as keyof ServiceWorkerGlobalScopeEventMap,
+	((event: SyncEventLike) => {
+		if (event.tag === NOTIFICATION_SYNC_TAG) {
+			event.waitUntil(flushInteractionStash())
+		}
+	}) as EventListener,
+)
+
+self.addEventListener('activate', (event) => {
+	event.waitUntil(flushInteractionStash())
+})
+
+self.addEventListener('message', (event) => {
+	if (event.data?.type === NOTIFICATION_FLUSH_MESSAGE) {
+		event.waitUntil(flushInteractionStash())
+	}
 })
