@@ -22,7 +22,12 @@
     </label>
   </fieldset>
 
-  <!-- With preview data: single scroll-affordance that reveals Screen 2 -->
+  <!-- With preview data: single scroll-affordance that reveals Screen 2. The
+       button only triggers the scroll; smooth vs instant motion is governed by
+       the scroll container's CSS `scroll-behavior` (and its reduced-motion
+       override), so no motion logic lives in JS. A native `<a href="#…">` was
+       rejected because the Aurelia router intercepts URL/hash changes and tears
+       the route down. -->
   <button
     if.bind="dateGroups.length > 0"
     click.trigger="scrollToPreview()"

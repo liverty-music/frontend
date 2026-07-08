@@ -191,30 +191,17 @@ export class WelcomeRoute implements IRouteViewModel {
 	}
 
 	/**
-	 * Smooth-scrolls the viewport to Screen 2 (the preview section). Honors the
-	 * user's `prefers-reduced-motion` setting by jumping instantly instead. No-op
-	 * when Screen 2 is not rendered (i.e. `dateGroups` is empty).
+	 * Scrolls Screen 2 (the preview section) into view. Whether the scroll is
+	 * smooth or instant is decided entirely by the scroll container's CSS
+	 * `scroll-behavior` (`smooth`, overridden to `auto` under
+	 * `prefers-reduced-motion`) — no `behavior` is passed here, so motion policy
+	 * has a single source of truth in CSS. No-op when Screen 2 is not rendered
+	 * (i.e. `dateGroups` is empty).
 	 */
 	scrollToPreview(): void {
-		const target = this.host.querySelector('.welcome-screen-2')
-		if (!target) {
-			this.logger.debug('scrollToPreview invoked but preview section absent')
-			return
-		}
-
-		const prefersReducedMotion =
-			typeof window !== 'undefined' &&
-			typeof window.matchMedia === 'function' &&
-			window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-		this.logger.debug('Scroll affordance activated', {
-			reducedMotion: prefersReducedMotion,
-		})
-
-		target.scrollIntoView({
-			behavior: prefersReducedMotion ? 'auto' : 'smooth',
-			block: 'start',
-		})
+		this.host
+			.querySelector('.welcome-screen-2')
+			?.scrollIntoView({ block: 'start' })
 	}
 
 	async handleGetStarted(): Promise<void> {
