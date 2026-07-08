@@ -1,6 +1,5 @@
 import { IRouter, IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
-import { Events, IAnalyticsService } from './lib/analytics/analytics-service'
 import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
@@ -113,7 +112,6 @@ export class AppShell {
 	public readonly onboarding = resolve(IOnboardingService)
 	public readonly coachMark = resolve(ICoachMarkService)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
-	private readonly analytics = resolve(IAnalyticsService)
 	private readonly logger = resolve(ILogger).scopeTo('AppShell')
 
 	// Eagerly construct PwaInstallService so its `beforeinstallprompt` listener
@@ -164,25 +162,6 @@ export class AppShell {
 				).instructions
 				const name = instruction?.[0]?.component?.name ?? 'unknown'
 				this.errorBoundary.addBreadcrumb('navigation', name)
-
-				// Analytics page-view emission. PII discipline (see
-				// services/analytics-events.ts lines 51–72):
-				//   - path: window.location.pathname ONLY. Never include
-				//     `.search` (the auth/callback route carries OIDC
-				//     `code` / `state` tokens there) or `.hash`. The
-				//     router updates window.location synchronously
-				//     before publishing navigation-end, so reading
-				//     `pathname` here is the live value for the just-
-				//     completed navigation.
-				//   - title: read from document.title which the router
-				//     has already set from the static `title:` on each
-				//     route definition. This is the static label, not
-				//     anything derived from a query string or user input,
-				//     so it is safe to forward to PostHog.
-				const path =
-					typeof window !== 'undefined' ? window.location.pathname : ''
-				const title = typeof document !== 'undefined' ? document.title : ''
-				this.analytics.capture(Events.PageViewed, { path, title })
 			}),
 		)
 	}

@@ -10,8 +10,8 @@
  * Trust-critical events (ticket purchase completion, ZK proof verification,
  * push delivery confirmation, account state changes) are emitted from the
  * backend through `backend/internal/usecase/analytics_events.go` and are NOT
- * listed here. Paired events such as `artist.follow.requested` (FE) and
- * `artist.follow.completed` (BE) intentionally appear in both catalogues to
+ * listed here. Paired events such as `notification.requested` (FE) and
+ * `notification.subscribed` (BE) intentionally appear in both catalogues to
  * measure the gap between user intent and server-confirmed outcome.
  *
  * Type-safety contract:
@@ -25,7 +25,7 @@
  *
  *     capture<E extends EventName>(name: E, props: EventProps<E>): void
  *
- *   Misuse such as `capture(Events.PageViewed, somePurchaseProps)` fails
+ *   Misuse such as `capture(Events.ArtistSearch, someConcertProps)` fails
  *   the typecheck — name and props cannot drift apart.
  *
  * OpenTelemetry trace correlation:
@@ -48,64 +48,10 @@ export type EventSource =
 
 // -- Per-event property type declarations -------------------------------------
 
-/**
- * PII safety contract for `path`, `title`, `referrer`:
- *
- * TypeScript cannot constrain these as strings, so the caller is
- * responsible for stripping sensitive content before emission. The
- * `auth-callback` route in particular receives OIDC tokens in the URL
- * (`?code=...&state=...`); passing `pathname + search` would forward
- * those tokens to PostHog. The `Document.referrer` header routinely
- * carries OAuth return URLs and magic-link tokens for the same reason.
- *
- * - `path` MUST be `window.location.pathname` only; never include
- *   `search` or `hash`. The router emits an internal route path, not
- *   the raw URL.
- * - `title` MUST be the static route title; never inject query-derived
- *   text (e.g. a search-result title that echoes the user's query).
- * - `referrer` SHOULD be the referrer's origin only or omitted when
- *   the referring URL is from an OIDC / magic-link / OAuth provider.
- *
- * Batch 3 ships an AnalyticsService that exposes a sanitised
- * `SafePath` branded type so the contract is enforced at the type
- * level rather than by convention.
- */
-export type PageViewedProps = {
-	path: string
-	title: string
-	referrer?: string
-}
-
-/**
- * The user clicked the signup CTA or otherwise entered the signup flow.
- * Paired with the backend `user.created` to measure the signup funnel.
- */
-export type AccountSignupStartedProps = {
-	source: 'landing' | 'cta' | 'deep_link' | 'post_signup_dialog'
-}
-
-/**
- * Recorded when an artist surfaces in a discovery surface for impression
- * measurement.
- */
-export type ArtistDiscoveryViewedProps = {
-	artist_id: string
-	source: EventSource
-}
-
 export type ArtistSearchProps = {
 	/** Length of the query string; the query text itself is NOT captured. */
 	query_length: number
 	result_count: number
-}
-
-/**
- * The user pressed the follow button. Paired with the backend
- * `artist.follow.completed` to measure intent-to-confirmation latency.
- */
-export type ArtistFollowRequestedProps = {
-	artist_id: string
-	source: EventSource
 }
 
 export type ConcertDetailViewedProps = {
@@ -169,17 +115,14 @@ export type NotificationDismissedProps = {
  * via the outer `as const`; no runtime carrier object is allocated for
  * properties.
  *
- *   analytics.capture(Events.ArtistFollowRequested, {
+ *   analytics.capture(Events.ConcertDetailViewed, {
+ *     event_id: event.id.value,
  *     artist_id: artist.id.value,
  *     source: 'dashboard',
  *   })
  */
 export const Events = {
-	PageViewed: 'page.viewed',
-	AccountSignupStarted: 'account.signup.started',
-	ArtistDiscoveryViewed: 'artist.discovery.viewed',
 	ArtistSearch: 'artist.search',
-	ArtistFollowRequested: 'artist.follow.requested',
 	ConcertDetailViewed: 'concert.detail.viewed',
 	TicketLotteryEntrySubmitted: 'ticket.lottery.entry.submitted',
 	TicketPurchaseInitiated: 'ticket.purchase.initiated',
@@ -198,11 +141,7 @@ export type EventName = (typeof Events)[keyof typeof Events]
  * clause on the line below verifies coverage at compile time.
  */
 export type EventPropsMap = {
-	'page.viewed': PageViewedProps
-	'account.signup.started': AccountSignupStartedProps
-	'artist.discovery.viewed': ArtistDiscoveryViewedProps
 	'artist.search': ArtistSearchProps
-	'artist.follow.requested': ArtistFollowRequestedProps
 	'concert.detail.viewed': ConcertDetailViewedProps
 	'ticket.lottery.entry.submitted': TicketLotteryEntrySubmittedProps
 	'ticket.purchase.initiated': TicketPurchaseInitiatedProps
