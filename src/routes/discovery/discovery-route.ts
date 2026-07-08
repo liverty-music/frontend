@@ -251,21 +251,6 @@ export class DiscoveryRoute {
 			artist: artist.name,
 		})
 
-		// Analytics: bubble-tap simultaneously surfaces the artist on
-		// screen (viewed) and expresses follow intent (follow.requested).
-		// Both fire BEFORE the followStore call so the events capture
-		// intent regardless of follow outcome — backend
-		// artist.follow.completed (PR #317) is the trust-critical outcome
-		// signal that pairs with follow.requested for the funnel.
-		this.analytics.capture(Events.ArtistDiscoveryViewed, {
-			artist_id: artistId,
-			source: 'discovery_orb',
-		})
-		this.analytics.capture(Events.ArtistFollowRequested, {
-			artist_id: artistId,
-			source: 'discovery_orb',
-		})
-
 		// Optimistic UI: remove from pool
 		this.bubbles.pool.remove(artistId)
 
@@ -326,19 +311,6 @@ export class DiscoveryRoute {
 
 		this.logger.info('Following artist from search', {
 			artist: artist.name,
-		})
-
-		// Same intent-capture pattern as the bubble-tap path: both
-		// viewed and follow.requested fire BEFORE the followStore call
-		// so search-driven discovery shows up in the funnel even when
-		// the backend follow eventually fails.
-		this.analytics.capture(Events.ArtistDiscoveryViewed, {
-			artist_id: artistId,
-			source: 'search_result',
-		})
-		this.analytics.capture(Events.ArtistFollowRequested, {
-			artist_id: artistId,
-			source: 'search_result',
 		})
 
 		try {

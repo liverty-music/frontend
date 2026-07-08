@@ -184,7 +184,7 @@ describe('AnalyticsService', () => {
 			mockConfig.current = { posthogProjectKey: undefined }
 			const sut = new AnalyticsService()
 
-			sut.capture(Events.PageViewed, { path: '/welcome', title: 'Welcome' })
+			sut.capture(Events.ArtistSearch, { query_length: 7, result_count: 3 })
 			await sut._waitForInitForTests()
 
 			expect(posthogStub.init).not.toHaveBeenCalled()
@@ -204,7 +204,11 @@ describe('AnalyticsService', () => {
 		it('initialises with persistent storage + opt-in by default and replays buffered captures', async () => {
 			const sut = new AnalyticsService()
 
-			sut.capture(Events.PageViewed, { path: '/welcome', title: 'Welcome' })
+			sut.capture(Events.ConcertDetailViewed, {
+				event_id: 'evt-1',
+				artist_id: 'art-1',
+				source: 'dashboard',
+			})
 			sut.capture(Events.ArtistSearch, { query_length: 3, result_count: 5 })
 
 			expect(posthogStub.capture).not.toHaveBeenCalled()
@@ -230,7 +234,9 @@ describe('AnalyticsService', () => {
 
 			// Both buffered events flush in insertion order.
 			expect(posthogStub.capture).toHaveBeenCalledTimes(2)
-			expect(posthogStub.capture.mock.calls[0][0]).toBe(Events.PageViewed)
+			expect(posthogStub.capture.mock.calls[0][0]).toBe(
+				Events.ConcertDetailViewed,
+			)
 			expect(posthogStub.capture.mock.calls[1][0]).toBe(Events.ArtistSearch)
 		})
 
@@ -279,7 +285,7 @@ describe('AnalyticsService', () => {
 			const sut = new AnalyticsService()
 
 			for (let i = 0; i < 150; i++) {
-				sut.capture(Events.PageViewed, { path: `/p${i}`, title: 't' })
+				sut.capture(Events.ArtistSearch, { query_length: i, result_count: 1 })
 			}
 
 			await sut._waitForInitForTests()
@@ -295,14 +301,14 @@ describe('AnalyticsService', () => {
 
 			setActiveSpan('00112233445566778899aabbccddeeff')
 
-			sut.capture(Events.PageViewed, { path: '/dashboard', title: 'Dashboard' })
+			sut.capture(Events.ArtistSearch, { query_length: 4, result_count: 2 })
 
 			expect(posthogStub.capture).toHaveBeenCalledTimes(1)
 			const [name, props] = posthogStub.capture.mock.calls[0]
-			expect(name).toBe(Events.PageViewed)
+			expect(name).toBe(Events.ArtistSearch)
 			expect(props).toMatchObject({
-				path: '/dashboard',
-				title: 'Dashboard',
+				query_length: 4,
+				result_count: 2,
 				trace_id: '00112233445566778899aabbccddeeff',
 			})
 		})
@@ -313,12 +319,12 @@ describe('AnalyticsService', () => {
 
 			setActiveSpan(undefined)
 
-			sut.capture(Events.PageViewed, { path: '/welcome', title: 'Welcome' })
+			sut.capture(Events.ArtistSearch, { query_length: 7, result_count: 3 })
 
 			expect(posthogStub.capture).toHaveBeenCalledTimes(1)
 			const [, props] = posthogStub.capture.mock.calls[0]
 			expect(props).not.toHaveProperty('trace_id')
-			expect(props).toMatchObject({ path: '/welcome', title: 'Welcome' })
+			expect(props).toMatchObject({ query_length: 7, result_count: 3 })
 		})
 	})
 
@@ -610,27 +616,27 @@ describe('AnalyticsService', () => {
 			// `medical_condition` matches the sensitive denylist. Cast through
 			// unknown because the typed catalogue does not declare it — the
 			// filter is the last-line defence regardless of types.
-			sut.capture(Events.PageViewed, {
-				path: '/dashboard',
-				title: 'Dashboard',
+			sut.capture(Events.ArtistSearch, {
+				query_length: 5,
+				result_count: 3,
 				medical_condition: 'asthma',
-			} as unknown as { path: string; title: string })
+			} as unknown as { query_length: number; result_count: number })
 
 			expect(posthogStub.capture).toHaveBeenCalledTimes(1)
 			const [, props] = posthogStub.capture.mock.calls[0]
 			expect(props).not.toHaveProperty('medical_condition')
-			expect(props).toMatchObject({ path: '/dashboard', title: 'Dashboard' })
+			expect(props).toMatchObject({ query_length: 5, result_count: 3 })
 		})
 
 		it('bucketizes a precise age into a coarse range', async () => {
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()
 
-			sut.capture(Events.PageViewed, {
-				path: '/profile',
-				title: 'Profile',
+			sut.capture(Events.ArtistSearch, {
+				query_length: 5,
+				result_count: 3,
 				age: 29,
-			} as unknown as { path: string; title: string })
+			} as unknown as { query_length: number; result_count: number })
 
 			const [, props] = posthogStub.capture.mock.calls[0]
 			expect(props).not.toHaveProperty('age')
