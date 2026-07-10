@@ -196,19 +196,6 @@
 		   Keyframes
 		   ============================================= */
 
-		/* Beam descends from above — scroll-triggered (GPU-composited) */
-		@keyframes beam-descend {
-			from {
-				transform: scaleY(0);
-				opacity: 0;
-			}
-
-			to {
-				transform: scaleY(1);
-				opacity: 1;
-			}
-		}
-
 		/* Contact glow fades in after beam arrives */
 		@keyframes contact-glow {
 			from {

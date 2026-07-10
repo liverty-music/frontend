@@ -25,6 +25,14 @@ export class ConcertHighway {
 	private scrollContainer: Element | null = null
 	private readonly onScroll = (): void => this.scheduleBeamUpdate()
 
+	/**
+	 * Cached anchor→card element map, keyed by beam-anchor index. Rebuilt only
+	 * when the beam set changes, so the per-frame update resolves each beam's
+	 * card from this map instead of a per-frame `querySelector`.
+	 */
+	private readonly beamElements = new Map<number, HTMLElement>()
+	private beamElementsDirty = false
+
 	public dateGroupsChanged(): void {
 		if (this.isAttached) {
 			this.buildBeamIndexMap()
@@ -47,6 +55,8 @@ export class ConcertHighway {
 			cancelAnimationFrame(this.beamRafId)
 			this.beamRafId = 0
 		}
+		this.beamElements.clear()
+		this.beamElementsDirty = true
 	}
 
 	/** Assign sequential beam indices to matched events across all groups. */
@@ -82,7 +92,24 @@ export class ConcertHighway {
 
 		this.beamIndexMap = map
 		this.laserBeams = beams
+		// The beam set changed; the cached anchor→element map must be rebuilt.
+		// The actual DOM query is deferred to the scheduled rAF, where Aurelia
+		// has already flushed the new `data-beam-index` attributes.
+		this.beamElementsDirty = true
 		this.scheduleBeamUpdate()
+	}
+
+	/** Rebuild the anchor→card element map from the current DOM. */
+	private rebuildBeamElements(): void {
+		this.beamElements.clear()
+		const cards =
+			this.element.querySelectorAll<HTMLElement>('[data-beam-index]')
+		for (const card of cards) {
+			const idx = card.dataset.beamIndex
+			if (idx == null) continue
+			this.beamElements.set(Number(idx), card)
+		}
+		this.beamElementsDirty = false
 	}
 
 	/** Wire scroll listener for JS-based beam height tracking. */
@@ -105,14 +132,20 @@ export class ConcertHighway {
 
 	/** Set beam dimensions so triangle wraps card diagonally (bottom-left to top-right). */
 	private updateBeamPositions(): void {
+		if (this.beamElementsDirty) {
+			this.rebuildBeamElements()
+		}
 		const beamEls = this.element.querySelectorAll<HTMLElement>('.laser-beam')
 		const vh = window.innerHeight
+
+		// Read phase: collect every beam's geometry before mutating any style,
+		// so no layout read follows a style write within this frame.
+		const writes: { beamEl: HTMLElement; height: string; topPct?: string }[] =
+			[]
 		for (const beamEl of beamEls) {
 			const idx = beamEl.dataset.beamAnchor
 			if (idx == null) continue
-			const card = this.element.querySelector<HTMLElement>(
-				`[data-beam-index="${idx}"]`,
-			)
+			const card = this.beamElements.get(Number(idx))
 			if (!card) continue
 			const rect = card.getBoundingClientRect()
 			const visible = rect.bottom > 0 && rect.top < vh
@@ -120,10 +153,17 @@ export class ConcertHighway {
 				const bottom = Math.max(0, rect.bottom)
 				const topPct =
 					bottom > 0 ? `${(Math.max(0, rect.top) / bottom) * 100}%` : '80%'
-				beamEl.style.setProperty('--beam-h', `${bottom}px`)
-				beamEl.style.setProperty('--beam-top-pct', topPct)
+				writes.push({ beamEl, height: `${bottom}px`, topPct })
 			} else {
-				beamEl.style.setProperty('--beam-h', '0')
+				writes.push({ beamEl, height: '0' })
+			}
+		}
+
+		// Write phase: apply all style writes after every read has completed.
+		for (const { beamEl, height, topPct } of writes) {
+			beamEl.style.setProperty('--beam-h', height)
+			if (topPct != null) {
+				beamEl.style.setProperty('--beam-top-pct', topPct)
 			}
 		}
 	}
