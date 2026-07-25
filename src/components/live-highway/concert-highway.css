@@ -66,6 +66,10 @@
 
 			overflow-block: auto;
 			overflow-inline: hidden;
+
+			/* Contain overscroll so a scroll-boundary bounce never chains into the
+			   (root-locked) document. Defense-in-depth alongside the root scroll lock. */
+			overscroll-behavior: contain;
 			display: grid;
 			grid-column: lane-home / lane-away;
 			grid-template-columns: subgrid;

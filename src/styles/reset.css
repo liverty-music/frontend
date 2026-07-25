@@ -11,8 +11,14 @@
 		text-size-adjust: none;
 	}
 
-	:where(body) {
-		min-block-size: 100dvh;
+	/* Root scroll lock: make the document a non-scrolling frame so the standalone
+	   PWA pull-to-refresh / overscroll gesture can never shift the fixed shell
+	   chrome. The app-shell grid (block-size: 100dvh) owns height; all scrolling
+	   is confined to inner containers (e.g. .concert-scroll). */
+	:where(html, body) {
+		overflow: hidden;
+		overscroll-behavior: none;
+		block-size: 100%;
 	}
 
 	:where(img, picture, video, canvas, svg) {
