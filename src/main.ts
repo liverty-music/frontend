@@ -78,8 +78,11 @@ import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IProofService } from './services/proof-service'
 import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
+import { IResumeRevalidator } from './services/resume-revalidator'
 import { ITicketEmailService } from './services/ticket-email-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
+import { ITicketJourneyStore } from './services/ticket-journey-store'
+import { ITicketStore } from './services/ticket-store'
 import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserStore } from './services/user-store'
 import { DateValueConverter } from './value-converters/date'
@@ -227,11 +230,14 @@ async function bootstrap(): Promise<void> {
 	au.register(IPromptCoordinator)
 	au.register(IPwaInstallService)
 	au.register(ITicketJourneyService)
+	au.register(ITicketJourneyStore)
+	au.register(IResumeRevalidator)
 	au.register(ITicketEmailService)
 	au.register(IArtistRpcClient)
 	au.register(IConcertRpcClient)
 	au.register(IFollowRpcClient)
 	au.register(ITicketRpcClient)
+	au.register(ITicketStore)
 	au.register(ITicketJourneyRpcClient)
 	au.register(IEntryRpcClient)
 	au.register(IUserRpcClient)

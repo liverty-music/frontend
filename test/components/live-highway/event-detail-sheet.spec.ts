@@ -2,8 +2,10 @@ import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IHistory } from '../../../src/adapter/browser/history'
 import type { LiveEvent } from '../../../src/components/live-highway/live-event'
+import type { JourneyStatus } from '../../../src/entities/concert'
 import { IAnalyticsService } from '../../../src/lib/analytics/analytics-service'
 import { IAuthService } from '../../../src/services/auth-service'
+import { ITicketJourneyStore } from '../../../src/services/ticket-journey-store'
 import { createTestContainer } from '../../helpers/create-container'
 import { createMockHistory } from '../../helpers/mock-history'
 
@@ -41,6 +43,20 @@ describe('EventDetailSheet', () => {
 		reset: ReturnType<typeof vi.fn>
 		getFeatureFlag: ReturnType<typeof vi.fn>
 	}
+	// Journey status now lives in the store (single source of truth). Back the mock
+	// with a real map so `statusFor` reflects write-through writes.
+	let journeyState: Map<string, JourneyStatus>
+	let mockJourneyStore: {
+		statusFor: ReturnType<typeof vi.fn>
+		setStatus: ReturnType<typeof vi.fn>
+		delete: ReturnType<typeof vi.fn>
+	}
+
+	/** Seed the store status for the fixed event id used by makeEvent ('c1'). */
+	function setStoreStatus(status: JourneyStatus | undefined): void {
+		journeyState.clear()
+		if (status) journeyState.set('c1', status)
+	}
 
 	beforeEach(() => {
 		mockHistory = createMockHistory()
@@ -50,11 +66,24 @@ describe('EventDetailSheet', () => {
 			reset: vi.fn(),
 			getFeatureFlag: vi.fn((_key: string, fallback: unknown) => fallback),
 		}
+		journeyState = new Map<string, JourneyStatus>()
+		mockJourneyStore = {
+			statusFor: vi.fn((id?: string) =>
+				id ? journeyState.get(id) : undefined,
+			),
+			setStatus: vi.fn(async (id: string, status: JourneyStatus) => {
+				journeyState.set(id, status)
+			}),
+			delete: vi.fn(async (id: string) => {
+				journeyState.delete(id)
+			}),
+		}
 
 		const container = createTestContainer(
 			Registration.instance(IAuthService, createMockAuthService()),
 			Registration.instance(IHistory, mockHistory),
 			Registration.instance(IAnalyticsService, mockAnalytics),
+			Registration.instance(ITicketJourneyStore, mockJourneyStore),
 		)
 		container.register(EventDetailSheet)
 		sut = container.get(EventDetailSheet)
@@ -242,7 +271,8 @@ describe('EventDetailSheet', () => {
 
 	describe('journey view-model', () => {
 		it('marks passed states completed, current solid, future outlined (paid)', () => {
-			sut.event = makeEvent({ journeyStatus: 'paid' })
+			setStoreStatus('paid')
+			sut.event = makeEvent()
 
 			expect(sut.nodeStates).toEqual({
 				tracking: 'completed',
@@ -254,7 +284,8 @@ describe('EventDetailSheet', () => {
 		})
 
 		it('treats outcome as future while applied (result pending)', () => {
-			sut.event = makeEvent({ journeyStatus: 'applied' })
+			setStoreStatus('applied')
+			sut.event = makeEvent()
 
 			expect(sut.nodeStates).toEqual({
 				tracking: 'completed',
@@ -267,22 +298,26 @@ describe('EventDetailSheet', () => {
 		})
 
 		it('keeps outcome pending for tracking and undefined', () => {
-			sut.event = makeEvent({ journeyStatus: 'tracking' })
+			setStoreStatus('tracking')
+			sut.event = makeEvent()
 			expect(sut.outcomePending).toBe(true)
 
-			sut.event = makeEvent({ journeyStatus: undefined })
+			setStoreStatus(undefined)
+			sut.event = makeEvent()
 			expect(sut.outcomePending).toBe(true)
 		})
 
 		it('clears outcome pending once a result is recorded', () => {
 			for (const status of ['lost', 'unpaid', 'paid'] as const) {
-				sut.event = makeEvent({ journeyStatus: status })
+				setStoreStatus(status)
+				sut.event = makeEvent()
 				expect(sut.outcomePending).toBe(false)
 			}
 		})
 
 		it('dims the win route when a loss is recorded', () => {
-			sut.event = makeEvent({ journeyStatus: 'lost' })
+			setStoreStatus('lost')
+			sut.event = makeEvent()
 
 			expect(sut.successDimmed).toBe(true)
 			expect(sut.failureDimmed).toBe(false)
@@ -291,7 +326,8 @@ describe('EventDetailSheet', () => {
 
 		it('dims the loss route when a win is recorded', () => {
 			for (const status of ['unpaid', 'paid'] as const) {
-				sut.event = makeEvent({ journeyStatus: status })
+				setStoreStatus(status)
+				sut.event = makeEvent()
 				expect(sut.failureDimmed).toBe(true)
 				expect(sut.successDimmed).toBe(false)
 			}
@@ -305,7 +341,8 @@ describe('EventDetailSheet', () => {
 				'unpaid',
 				'paid',
 			] as const) {
-				sut.event = makeEvent({ journeyStatus: status })
+				setStoreStatus(status)
+				sut.event = makeEvent()
 				const current = Object.values(sut.nodeStates).filter(
 					(s) => s === 'current',
 				)
@@ -329,36 +366,29 @@ describe('EventDetailSheet', () => {
 		}
 
 		it('gives the selected status the only tab stop (roving tabindex)', () => {
-			sut.event = makeEvent({ journeyStatus: 'paid' })
+			setStoreStatus('paid')
+			sut.event = makeEvent()
 			expect(sut.journeyTabindex('paid')).toBe(0)
 			expect(sut.journeyTabindex('tracking')).toBe(-1)
 			expect(sut.journeyTabindex('lost')).toBe(-1)
 		})
 
 		it('makes the first node the tab stop when nothing is selected', () => {
-			sut.event = makeEvent({ journeyStatus: undefined })
+			setStoreStatus(undefined)
+			sut.event = makeEvent()
 			expect(sut.journeyTabindex('tracking')).toBe(0)
 			expect(sut.journeyTabindex('applied')).toBe(-1)
 		})
 
 		it('ArrowRight selects the next node and moves focus to it', async () => {
-			sut.event = makeEvent({ journeyStatus: 'tracking' })
-			const setStatus = vi
-				.spyOn(
-					(
-						sut as unknown as {
-							journeyService: { setStatus: () => Promise<void> }
-						}
-					).journeyService,
-					'setStatus',
-				)
-				.mockResolvedValue(undefined)
+			setStoreStatus('tracking')
+			sut.event = makeEvent()
 			const { event, group, focused } = makeKeydown('ArrowRight')
 
 			await sut.onJourneyKeydown(event)
 
 			expect(event.preventDefault).toHaveBeenCalled()
-			expect(setStatus).toHaveBeenCalledWith('c1', 'applied')
+			expect(mockJourneyStore.setStatus).toHaveBeenCalledWith('c1', 'applied')
 			expect(group.querySelector).toHaveBeenCalledWith(
 				'[data-journey-status="applied"]',
 			)
@@ -366,61 +396,37 @@ describe('EventDetailSheet', () => {
 		})
 
 		it('ArrowLeft wraps from the first node to the last', async () => {
-			sut.event = makeEvent({ journeyStatus: 'tracking' })
-			const setStatus = vi
-				.spyOn(
-					(
-						sut as unknown as {
-							journeyService: { setStatus: () => Promise<void> }
-						}
-					).journeyService,
-					'setStatus',
-				)
-				.mockResolvedValue(undefined)
+			setStoreStatus('tracking')
+			sut.event = makeEvent()
 
 			await sut.onJourneyKeydown(makeKeydown('ArrowLeft').event)
 
-			expect(setStatus).toHaveBeenCalledWith('c1', 'lost')
+			expect(mockJourneyStore.setStatus).toHaveBeenCalledWith('c1', 'lost')
 		})
 
 		it('Home and End jump to the first and last nodes', async () => {
-			sut.event = makeEvent({ journeyStatus: 'unpaid' })
-			const setStatus = vi
-				.spyOn(
-					(
-						sut as unknown as {
-							journeyService: { setStatus: () => Promise<void> }
-						}
-					).journeyService,
-					'setStatus',
-				)
-				.mockResolvedValue(undefined)
+			setStoreStatus('unpaid')
+			sut.event = makeEvent()
 
 			await sut.onJourneyKeydown(makeKeydown('Home').event)
-			expect(setStatus).toHaveBeenLastCalledWith('c1', 'tracking')
+			expect(mockJourneyStore.setStatus).toHaveBeenLastCalledWith(
+				'c1',
+				'tracking',
+			)
 
 			await sut.onJourneyKeydown(makeKeydown('End').event)
-			expect(setStatus).toHaveBeenLastCalledWith('c1', 'lost')
+			expect(mockJourneyStore.setStatus).toHaveBeenLastCalledWith('c1', 'lost')
 		})
 
 		it('ignores non-navigation keys', async () => {
-			sut.event = makeEvent({ journeyStatus: 'tracking' })
-			const setStatus = vi
-				.spyOn(
-					(
-						sut as unknown as {
-							journeyService: { setStatus: () => Promise<void> }
-						}
-					).journeyService,
-					'setStatus',
-				)
-				.mockResolvedValue(undefined)
+			setStoreStatus('tracking')
+			sut.event = makeEvent()
 			const { event } = makeKeydown('a')
 
 			await sut.onJourneyKeydown(event)
 
 			expect(event.preventDefault).not.toHaveBeenCalled()
-			expect(setStatus).not.toHaveBeenCalled()
+			expect(mockJourneyStore.setStatus).not.toHaveBeenCalled()
 		})
 	})
 

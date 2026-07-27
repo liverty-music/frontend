@@ -12,12 +12,14 @@ import { UserHomeSelector } from '../../components/user-home-selector/user-home-
 import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist, CountedArtist } from '../../entities/artist'
 import type { Concert, JourneyStatus } from '../../entities/concert'
+import type { Hype } from '../../entities/follow'
 import { isJourneyStatus } from '../../entities/ticket-journey'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
-import { ITicketJourneyService } from '../../services/ticket-journey-service'
+import { IResumeRevalidator } from '../../services/resume-revalidator'
+import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore } from '../../services/user-store'
 
 export class DashboardRoute {
@@ -51,12 +53,18 @@ export class DashboardRoute {
 	private readonly authService = resolve(IAuthService)
 	private readonly concertService = resolve(IConcertStore)
 	private readonly followStore = resolve(IFollowStore)
-	private readonly journeyService = resolve(ITicketJourneyService)
+	private readonly journeyStore = resolve(ITicketJourneyStore)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly history = resolve(IHistory)
+	private readonly resumeRevalidator = resolve(IResumeRevalidator)
 	private abortController: AbortController | null = null
+	// The followed-artist map from the most recent full load. Reused by background
+	// revalidation so it does not re-issue ListFollowed just to rebuild dateGroups
+	// (the follow set can only change while the app is foregrounded).
+	private lastArtistMap: Map<string, { artist: Artist; hype: Hype }> | null =
+		null
 
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
@@ -188,7 +196,15 @@ export class DashboardRoute {
 		// is observed to flip true (see timetableLoadedChanged). When needsRegion,
 		// the API returns [] without a homeCode anyway; the real load runs from
 		// onHomeSelected() once the region is chosen.
-		void this.loadData()
+		//
+		// If the concert list is already cached (route re-entry), paint it first
+		// via loadData(), then force a background revalidation so a long-lived
+		// session refreshes without a manual reload. On a cold miss loadData()
+		// already fetches fresh, so skip the redundant refresh.
+		const hadCache = this.concertService.hasFollowerCache()
+		void this.loadData().then(() => {
+			if (hadCache) this.revalidate()
+		})
 
 		// Show signup banner for unauthenticated users who completed onboarding
 		if (!this.authService.isAuthenticated && this.onboarding.isCompleted) {
@@ -244,6 +260,7 @@ export class DashboardRoute {
 			this.concertService.listByFollower(signal),
 			this.fetchJourneyMap(signal),
 		])
+		this.lastArtistMap = artistMap
 
 		if (groups.length === 0) {
 			this.logger.info('No concert groups returned')
@@ -256,11 +273,10 @@ export class DashboardRoute {
 	private async fetchJourneyMap(
 		signal?: AbortSignal,
 	): Promise<Map<string, JourneyStatus>> {
-		if (!this.authService.isAuthenticated) {
-			return new Map()
-		}
+		// The store owns the journey map (network-first, guest→empty). A fetch
+		// failure must not blank the dashboard, so fall back to an empty map.
 		try {
-			return await this.journeyService.listByUser(signal)
+			return await this.journeyStore.load(signal)
 		} catch (err) {
 			this.logger.warn('Journey fetch failed, continuing without statuses', {
 				error: err,
@@ -269,7 +285,67 @@ export class DashboardRoute {
 		}
 	}
 
+	/**
+	 * Keep the concerts' rendered `journeyStatus` in sync with the single source
+	 * of truth: when the store's observable map changes (e.g. a write from the
+	 * detail sheet), re-stamp each concert in place so the dashboard cards and
+	 * journey filter reflect the change without a re-fetch or route re-entry.
+	 */
+	@watch((vm: DashboardRoute) => vm.journeyStore.journeyMap)
+	protected onJourneyMapChanged(map: Map<string, JourneyStatus>): void {
+		for (const group of this.dateGroups) {
+			for (const concert of [...group.home, ...group.nearby, ...group.away]) {
+				if (concert.id) {
+					concert.journeyStatus = map.get(concert.id)
+				}
+			}
+		}
+	}
+
+	/**
+	 * Force a background refresh of the concert list and swap it into the timetable
+	 * in place — no spinner, no scroll reset, no celebration re-trigger. Bound to
+	 * both Dashboard route entry (after the cache paints) and PWA resume.
+	 */
+	public readonly revalidate = (): void => {
+		void this.revalidateDashboard()
+	}
+
+	private async revalidateDashboard(): Promise<void> {
+		if (this.needsRegion || this.isLoading) return
+		const signal = this.abortController?.signal
+		try {
+			// Only the concert list is force-refreshed. The followed-artist map is
+			// reused from the last full load (follows can't change while backgrounded
+			// or between the same-tick paint), and journey status is read from its
+			// store — the single source of truth already kept fresh by loadData and
+			// write-through. This avoids re-issuing ListFollowed + ListByUser (which
+			// loadData just fetched) and never blanks journey badges on a fetch error.
+			const groups = await this.concertService.revalidateFollower()
+			if (signal?.aborted) return
+			const artistMap =
+				this.lastArtistMap ??
+				(await this.followStore.getFollowedArtistMap(signal))
+			if (signal?.aborted) return
+			// In-place swap of the observable state; the router view is untouched so
+			// scroll position is preserved.
+			this.dateGroups = this.concertService.toDateGroups(
+				groups,
+				artistMap,
+				this.journeyStore.journeyMap,
+			)
+		} catch (err) {
+			if ((err as Error).name === 'AbortError') return
+			this.logger.warn('Dashboard revalidation failed', { error: err })
+		}
+	}
+
 	public attached(): void {
+		// Revalidate the dashboard's cached concert list when the installed PWA
+		// returns to the foreground. Only the active route is registered, so the
+		// resume signal never fans out to inactive routes' stores.
+		this.resumeRevalidator.register(this.revalidate)
+
 		// Open the home selector when the user has no region set.
 		// Done in attached() so the BottomSheet is in the DOM and showPopover() works.
 		if (this.needsRegion) {
@@ -406,6 +482,7 @@ export class DashboardRoute {
 	}
 
 	public detaching(): void {
+		this.resumeRevalidator.unregister(this.revalidate)
 		this.abortController?.abort()
 		this.abortController = null
 	}

@@ -17,8 +17,15 @@ import {
 } from '../entities/concert'
 import { DEFAULT_HYPE, type Hype } from '../entities/follow'
 import { IAuthService } from './auth-service'
+import { CachedResource } from './cache/cached-resource'
 
 export type { ProtoConcert, ProximityGroup }
+
+interface ProximityInput {
+	artistIds: readonly string[]
+	countryCode: string
+	level1: string
+}
 
 export const IConcertStore = DI.createInterface<IConcertStore>(
 	'IConcertStore',
@@ -32,13 +39,35 @@ export class ConcertStore {
 	private readonly authService = resolve(IAuthService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
 
-	private static readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000
-	private cachedGroups: ProximityGroup[] | null = null
-	private cacheTimestamp: number | null = null
-	// Coalesces concurrent cache-miss calls onto a single RPC.
-	private inFlightListByFollower: Promise<ProximityGroup[]> | null = null
-	// Bumped on invalidate; in-flight .then() checks it to fence superseded cache writes.
-	private cacheGeneration = 0
+	// The follower-concert list caching (was a bespoke in-store 24h TTL).
+	// listByFollower serves the cached value; route follow/unfollow/setHype
+	// invalidate through it; route entry + resume force a background revalidation.
+	// Single key: one user per singleton session, so exactly one entry.
+	private readonly followerConcerts = new CachedResource<
+		void,
+		ProximityGroup[]
+	>(
+		() => 'listByFollower',
+		(_input, signal) => this.rpcClient.listByFollower(signal),
+	)
+
+	// Guest / preview proximity list, keyed by the sorted artist-id set plus
+	// country + level-1 area, so a changed follow set produces a new key (no
+	// write-side invalidation needed).
+	private readonly proximityConcerts = new CachedResource<
+		ProximityInput,
+		ProximityGroup[]
+	>(
+		({ artistIds, countryCode, level1 }) =>
+			proximityKey(artistIds, countryCode, level1),
+		({ artistIds, countryCode, level1 }, signal) =>
+			this.rpcClient.listWithProximity(
+				[...artistIds],
+				countryCode,
+				level1,
+				signal,
+			),
+	)
 
 	@observable public artistsWithConcerts = new Set<string>()
 
@@ -63,58 +92,48 @@ export class ConcertStore {
 		return this.rpcClient.listConcerts(artistId, signal)
 	}
 
+	/**
+	 * The follower-scoped concert list (authenticated) or the guest proximity
+	 * list. Authenticated reads are served stale-while-revalidate from the shared
+	 * primitive (24h stale window). A stale hit paints instantly and refreshes in
+	 * the background; route entry / PWA resume force a refresh via
+	 * {@link revalidateFollower}.
+	 */
 	public async listByFollower(signal?: AbortSignal): Promise<ProximityGroup[]> {
 		if (!this.authService.isAuthenticated) {
 			return this.listByFollowerGuest(signal)
 		}
-		const now = Date.now()
-		if (
-			this.cachedGroups !== null &&
-			this.cacheTimestamp !== null &&
-			now - this.cacheTimestamp < ConcertStore.CACHE_TTL_MS
-		) {
-			return this.cachedGroups
+		return this.followerConcerts.read(undefined, signal)
+	}
+
+	/**
+	 * Force a background refresh of the follower-concert list (authenticated) or
+	 * the guest proximity list, regardless of staleness, and return the fresh
+	 * value. Called on Dashboard route entry and PWA resume so a long-lived
+	 * session refreshes without a manual reload. Runs as a forced background
+	 * refresh, so it takes no `AbortSignal`.
+	 */
+	public async revalidateFollower(): Promise<ProximityGroup[]> {
+		if (!this.authService.isAuthenticated) {
+			// Guests read via proximity; force-refresh that same key so resume
+			// actually refreshes instead of serving the still-fresh cached value.
+			const input = this.guestProximityInput()
+			return input ? this.proximityConcerts.revalidate(input) : []
 		}
-		// Signal-less callers coalesce safely; signal-bearing ones can't (shared promise honors only first caller's signal).
-		if (this.inFlightListByFollower !== null && signal === undefined) {
-			return await this.inFlightListByFollower
+		return this.followerConcerts.revalidate(undefined)
+	}
+
+	/** Whether a (possibly stale) concert list is cached for the current viewer. */
+	public hasFollowerCache(): boolean {
+		if (!this.authService.isAuthenticated) {
+			const input = this.guestProximityInput()
+			return input ? this.proximityConcerts.has(input) : false
 		}
-		const generationAtIssue = this.cacheGeneration
-		// `promise` is captured in both .then() (for the generation
-		// fence) and .finally() (for the own-promise identity check
-		// that prevents this stale finally from evicting a newer
-		// in-flight registered post-invalidate).
-		const promise: Promise<ProximityGroup[]> = this.rpcClient
-			.listByFollower(signal)
-			.then((result) => {
-				// Skip cache write if invalidated since RPC issued.
-				if (generationAtIssue === this.cacheGeneration) {
-					this.cachedGroups = result
-					this.cacheTimestamp = Date.now()
-				}
-				return result
-			})
-			.finally(() => {
-				// Own-promise identity check: only clear the slot if
-				// it still points at THIS promise. Without the guard,
-				// a stale finally would clobber a post-invalidate
-				// in-flight (RPC-2) that legitimately occupies the slot.
-				if (this.inFlightListByFollower === promise) {
-					this.inFlightListByFollower = null
-				}
-			})
-		if (signal === undefined) {
-			this.inFlightListByFollower = promise
-		}
-		return await promise
+		return this.followerConcerts.has(undefined)
 	}
 
 	public invalidateFollowerCache(): void {
-		this.cachedGroups = null
-		this.cacheTimestamp = null
-		this.cacheGeneration++
-		// Post-invalidate callers must issue a fresh RPC, not join the now-stale in-flight.
-		this.inFlightListByFollower = null
+		this.followerConcerts.invalidate(undefined)
 	}
 
 	public async listWithProximity(
@@ -123,10 +142,8 @@ export class ConcertStore {
 		level1: string,
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
-		return this.rpcClient.listWithProximity(
-			[...artistIds],
-			countryCode,
-			level1,
+		return this.proximityConcerts.read(
+			{ artistIds, countryCode, level1 },
 			signal,
 		)
 	}
@@ -296,25 +313,50 @@ export class ConcertStore {
 	private async listByFollowerGuest(
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
-		// Read the guest follow queue + home directly from the localStorage
-		// adapter. Both are persisted synchronously by their @observable owners
-		// (FollowStore/FollowServiceClient for follows, UserStore for home) on
-		// every write, so the adapter read reflects the latest value without a DI
-		// dependency on those stores — which would form a resolution cycle
-		// (FollowServiceClient → ConcertStore).
-		const follows = loadFollows()
-		const homeCode = loadHome()
+		const input = this.guestProximityInput()
 		this.logger.info('Guest: listing concerts with proximity', {
-			count: follows.length,
+			count: input?.artistIds.length ?? 0,
 		})
-		if (follows.length === 0 || !homeCode) return []
-
-		const { countryCode, level1 } = codeToHome(homeCode)
-		return this.rpcClient.listWithProximity(
-			follows.map((a) => a.artist.id),
-			countryCode,
-			level1,
+		if (!input) return []
+		return this.listWithProximity(
+			input.artistIds,
+			input.countryCode,
+			input.level1,
 			signal,
 		)
 	}
+
+	/**
+	 * Resolve the guest proximity inputs (followed artist ids + home area) from
+	 * the localStorage adapter. Both are persisted synchronously by their
+	 * @observable owners (FollowStore for follows, UserStore for home) on every
+	 * write, so the adapter read reflects the latest value without a DI dependency
+	 * on those stores — which would form a resolution cycle (FollowStore →
+	 * ConcertStore). Returns null when the guest has no follows or no home yet.
+	 */
+	private guestProximityInput(): ProximityInput | null {
+		const follows = loadFollows()
+		const homeCode = loadHome()
+		if (follows.length === 0 || !homeCode) return null
+		const { countryCode, level1 } = codeToHome(homeCode)
+		return {
+			artistIds: follows.map((a) => a.artist.id),
+			countryCode,
+			level1,
+		}
+	}
+}
+
+/**
+ * Complete cache key for `listWithProximity`: the sorted artist-id set plus
+ * country and level-1 area. Sorting makes the key order-independent so the same
+ * follow set always hits the same entry; a changed follow set (or area) yields a
+ * new key, which is why this path needs no write-side invalidation.
+ */
+function proximityKey(
+	artistIds: readonly string[],
+	countryCode: string,
+	level1: string,
+): string {
+	return `${[...artistIds].sort().join(',')}|${countryCode}|${level1}`
 }
