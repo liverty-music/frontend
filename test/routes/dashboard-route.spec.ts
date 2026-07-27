@@ -9,7 +9,8 @@ import { createMockLocalStorage } from '../helpers/mock-local-storage'
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIFollowStore = DI.createInterface('IFollowStore')
-const mockITicketJourneyService = DI.createInterface('ITicketJourneyService')
+const mockITicketJourneyStore = DI.createInterface('ITicketJourneyStore')
+const mockIResumeRevalidator = DI.createInterface('IResumeRevalidator')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIUserStore = DI.createInterface('IUserStore')
 const mockILocalStorage = DI.createInterface('ILocalStorage')
@@ -24,8 +25,11 @@ vi.mock('../../src/services/concert-store', () => ({
 vi.mock('../../src/services/follow-store', () => ({
 	IFollowStore: mockIFollowStore,
 }))
-vi.mock('../../src/services/ticket-journey-service', () => ({
-	ITicketJourneyService: mockITicketJourneyService,
+vi.mock('../../src/services/ticket-journey-store', () => ({
+	ITicketJourneyStore: mockITicketJourneyStore,
+}))
+vi.mock('../../src/services/resume-revalidator', () => ({
+	IResumeRevalidator: mockIResumeRevalidator,
 }))
 vi.mock('../../src/services/onboarding-service', () => ({
 	IOnboardingService: mockIOnboardingService,
@@ -65,6 +69,8 @@ function makeOnboarding(isOnboarding = false) {
 function makeConcertService() {
 	return {
 		listByFollower: vi.fn().mockResolvedValue([]),
+		revalidateFollower: vi.fn().mockResolvedValue([]),
+		hasFollowerCache: vi.fn().mockReturnValue(false),
 		toDateGroups: vi.fn().mockReturnValue([]),
 		listConcerts: vi.fn().mockResolvedValue([]),
 	}
@@ -78,9 +84,18 @@ function makeFollowService() {
 	}
 }
 
-function makeJourneyService() {
+function makeJourneyStore() {
 	return {
-		listByUser: vi.fn().mockResolvedValue(new Map()),
+		journeyMap: new Map(),
+		load: vi.fn().mockResolvedValue(new Map()),
+		statusFor: vi.fn().mockReturnValue(undefined),
+	}
+}
+
+function makeResumeRevalidator() {
+	return {
+		register: vi.fn(),
+		unregister: vi.fn(),
 	}
 }
 
@@ -102,7 +117,8 @@ describe('DashboardRoute', () => {
 	let mockAuth: { isAuthenticated: boolean; signUp: ReturnType<typeof vi.fn> }
 	let mockConcert: ReturnType<typeof makeConcertService>
 	let mockFollow: ReturnType<typeof makeFollowService>
-	let mockJourney: ReturnType<typeof makeJourneyService>
+	let mockJourney: ReturnType<typeof makeJourneyStore>
+	let mockResume: ReturnType<typeof makeResumeRevalidator>
 	let mockOnboarding: ReturnType<typeof makeOnboarding>
 	let mockUserStore: ReturnType<typeof makeUserStore>
 	// Alias to the merged store so the existing `mockUser.current` assertions
@@ -116,7 +132,8 @@ describe('DashboardRoute', () => {
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockIConcertStore, mockConcert),
 			Registration.instance(mockIFollowStore, mockFollow),
-			Registration.instance(mockITicketJourneyService, mockJourney),
+			Registration.instance(mockITicketJourneyStore, mockJourney),
+			Registration.instance(mockIResumeRevalidator, mockResume),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIUserStore, mockUserStore),
 			Registration.instance(mockILocalStorage, mockStorage),
@@ -132,7 +149,8 @@ describe('DashboardRoute', () => {
 		mockAuth = { isAuthenticated: false, signUp: vi.fn() }
 		mockConcert = makeConcertService()
 		mockFollow = makeFollowService()
-		mockJourney = makeJourneyService()
+		mockJourney = makeJourneyStore()
+		mockResume = makeResumeRevalidator()
 		mockOnboarding = makeOnboarding()
 		mockUserStore = makeUserStore()
 		mockUser = mockUserStore

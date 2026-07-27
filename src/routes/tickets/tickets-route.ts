@@ -1,8 +1,9 @@
 import { ILogger, resolve } from 'aurelia'
 import QRCode from 'qrcode'
-import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
 import type { Ticket } from '../../entities/ticket'
 import { IProofService } from '../../services/proof-service'
+import { IResumeRevalidator } from '../../services/resume-revalidator'
+import { ITicketStore } from '../../services/ticket-store'
 import { IUserStore } from '../../services/user-store'
 
 export class TicketsRoute {
@@ -17,9 +18,10 @@ export class TicketsRoute {
 	public generatingTicketId = ''
 
 	private readonly logger = resolve(ILogger).scopeTo('TicketsRoute')
-	private readonly ticketClient = resolve(ITicketRpcClient)
+	private readonly ticketStore = resolve(ITicketStore)
 	private readonly proofService = resolve(IProofService)
 	private readonly userStore = resolve(IUserStore)
+	private readonly resumeRevalidator = resolve(IResumeRevalidator)
 	private abortController: AbortController | null = null
 
 	public async loading(): Promise<void> {
@@ -34,11 +36,15 @@ export class TicketsRoute {
 				return
 			}
 
-			this.tickets = await this.ticketClient.listTickets(
+			// Paint from cache (SWR) on re-entry; on a cold miss this fetches fresh.
+			const hadCache = this.ticketStore.hasCache(userId)
+			this.tickets = await this.ticketStore.listTickets(
 				userId,
 				this.abortController.signal,
 			)
 			this.logger.info('Tickets loaded', { count: this.tickets.length })
+			// Route re-entry: force a background refresh and swap in place.
+			if (hadCache) this.revalidate()
 		} catch (err) {
 			if ((err as Error).name !== 'AbortError') {
 				this.logger.error('Failed to load tickets', { error: err })
@@ -46,6 +52,33 @@ export class TicketsRoute {
 			}
 		} finally {
 			this.isLoading = false
+		}
+	}
+
+	public attached(): void {
+		// Refresh the cached ticket list when the installed PWA returns to the
+		// foreground (only while this route is the active one).
+		this.resumeRevalidator.register(this.revalidate)
+	}
+
+	/**
+	 * Force a background refresh of the ticket list and swap it in place — no
+	 * spinner, no scroll reset. Bound to route re-entry and PWA resume.
+	 */
+	public readonly revalidate = (): void => {
+		void this.revalidateTickets()
+	}
+
+	private async revalidateTickets(): Promise<void> {
+		const userId = this.userStore.current?.id
+		if (!userId) return
+		try {
+			const fresh = await this.ticketStore.revalidateTickets(userId)
+			if (this.abortController?.signal.aborted) return
+			this.tickets = fresh
+		} catch (err) {
+			if ((err as Error).name === 'AbortError') return
+			this.logger.warn('Ticket revalidation failed', { error: err })
 		}
 	}
 
@@ -117,6 +150,7 @@ export class TicketsRoute {
 	}
 
 	public detaching(): void {
+		this.resumeRevalidator.unregister(this.revalidate)
 		this.abortController?.abort()
 		this.abortController = null
 	}

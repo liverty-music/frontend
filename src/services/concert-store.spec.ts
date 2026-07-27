@@ -10,8 +10,19 @@ const mockAuth = { isAuthenticated: true }
 const mockRpcClient = {
 	listByFollower: vi.fn(async (): Promise<ProximityGroup[]> => []),
 	listConcerts: vi.fn(),
-	listWithProximity: vi.fn(),
+	listWithProximity: vi.fn(async (): Promise<ProximityGroup[]> => []),
 }
+
+// Guest path reads follows/home from the storage adapter and maps the home code.
+const guestFollows = vi.fn(() => [{ artist: { id: 'a1' } }])
+const guestHome = vi.fn((): string | null => 'JP-13')
+vi.mock('../adapter/storage/guest-storage', () => ({
+	loadFollows: () => guestFollows(),
+	loadHome: () => guestHome(),
+}))
+vi.mock('../constants/iso3166', () => ({
+	codeToHome: () => ({ countryCode: 'JP', level1: 'JP-13' }),
+}))
 
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
@@ -81,7 +92,7 @@ describe('ConcertStore', () => {
 			expect(result).toEqual(groups)
 		})
 
-		it('re-fetches after cache TTL has expired', async () => {
+		it('serves the stale value then revalidates in the background after TTL expiry', async () => {
 			const first = makeGroups(1)
 			const second = makeGroups(2)
 			mockRpcClient.listByFollower
@@ -90,13 +101,50 @@ describe('ConcertStore', () => {
 
 			await sut.listByFollower()
 
-			// Advance time past 24h TTL
+			// Advance time past the 24h stale window.
 			vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 25 * 60 * 60 * 1000)
 
-			const result = await sut.listByFollower()
+			// Stale-while-revalidate: the stale value is served immediately while a
+			// background refresh is issued.
+			const served = await sut.listByFollower()
+			expect(served).toEqual(first)
 
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
-			expect(result).toEqual(second)
+			// The background revalidation runs and stores the fresh value.
+			await vi.waitFor(() =>
+				expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2),
+			)
+			const refreshed = await sut.listByFollower()
+			expect(refreshed).toEqual(second)
+		})
+	})
+
+	describe('guest proximity — resume revalidation', () => {
+		it('force-refreshes the guest proximity list even within the stale window', async () => {
+			mockAuth.isAuthenticated = false
+			mockRpcClient.listWithProximity
+				.mockResolvedValueOnce(makeGroups(1))
+				.mockResolvedValueOnce(makeGroups(2))
+
+			// Guest read caches the proximity list.
+			await sut.listByFollower()
+			expect(mockRpcClient.listWithProximity).toHaveBeenCalledTimes(1)
+
+			// Resume: revalidateFollower must FORCE a refresh (not serve the
+			// still-fresh cache), so a second RPC is issued.
+			const fresh = await sut.revalidateFollower()
+
+			expect(mockRpcClient.listWithProximity).toHaveBeenCalledTimes(2)
+			expect(fresh).toEqual(makeGroups(2))
+		})
+
+		it('revalidateFollower returns [] for a guest with no follows/home', async () => {
+			mockAuth.isAuthenticated = false
+			guestHome.mockReturnValueOnce(null)
+
+			const result = await sut.revalidateFollower()
+
+			expect(result).toEqual([])
+			expect(mockRpcClient.listWithProximity).not.toHaveBeenCalled()
 		})
 	})
 

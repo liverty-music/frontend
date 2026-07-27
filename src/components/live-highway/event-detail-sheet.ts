@@ -15,7 +15,7 @@ import {
 } from '../../lib/analytics/analytics-service'
 import type { EventSource } from '../../services/analytics-events'
 import { IAuthService } from '../../services/auth-service'
-import { ITicketJourneyService } from '../../services/ticket-journey-service'
+import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import type { JourneyStatus, LiveEvent } from './live-event'
 
 export class EventDetailSheet {
@@ -28,7 +28,7 @@ export class EventDetailSheet {
 	public readonly journeyConfig = JOURNEY_STATUS_CONFIG_MAP
 
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
-	private readonly journeyService = resolve(ITicketJourneyService)
+	private readonly journeyStore = resolve(ITicketJourneyStore)
 	private readonly authService = resolve(IAuthService)
 	private readonly history = resolve(IHistory)
 	private readonly analytics = resolve(IAnalyticsService)
@@ -43,6 +43,16 @@ export class EventDetailSheet {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
+	}
+
+	/**
+	 * The event's journey status, read from the single source of truth
+	 * (`TicketJourneyStore`) rather than a local copy on `event`. Reading the
+	 * observable map here means a write from any surface reflects in this sheet
+	 * without a re-fetch, and the sheet and Dashboard can never diverge.
+	 */
+	public get status(): JourneyStatus | undefined {
+		return this.journeyStore.statusFor(this.event?.id)
 	}
 
 	public get backgroundUrl(): string | undefined {
@@ -125,7 +135,7 @@ export class EventDetailSheet {
 	 * routes is handled at the route-container level (see successDimmed/failureDimmed).
 	 */
 	public get nodeStates(): Record<JourneyStatus, JourneyNodeState> {
-		const current = this.event?.journeyStatus
+		const current = this.status
 		return {
 			tracking: journeyNodeState('tracking', current),
 			applied: journeyNodeState('applied', current),
@@ -140,7 +150,7 @@ export class EventDetailSheet {
 	 * (the selected status, or the first node when nothing is selected yet).
 	 */
 	public journeyTabindex(status: JourneyStatus): number {
-		const active = this.event?.journeyStatus ?? JOURNEY_NAV_ORDER[0]
+		const active = this.status ?? JOURNEY_NAV_ORDER[0]
 		return status === active ? 0 : -1
 	}
 
@@ -151,7 +161,7 @@ export class EventDetailSheet {
 	 */
 	public async onJourneyKeydown(event: KeyboardEvent): Promise<void> {
 		const order = JOURNEY_NAV_ORDER
-		const current = this.event?.journeyStatus ?? order[0]
+		const current = this.status ?? order[0]
 		let index = order.indexOf(current)
 		switch (event.key) {
 			case 'ArrowRight':
@@ -187,7 +197,7 @@ export class EventDetailSheet {
 	 * dimming below all derive from it so the rule lives in one place.
 	 */
 	public get outcome(): JourneyOutcome {
-		return journeyOutcome(this.event?.journeyStatus)
+		return journeyOutcome(this.status)
 	}
 
 	/** The outcome phase is shown dimmed ("結果待ち") until a result is reached. */
@@ -216,8 +226,10 @@ export class EventDetailSheet {
 		const event = this.event
 		this.journeyUpdating = true
 		try {
-			await this.journeyService.setStatus(event.id, status)
-			event.journeyStatus = status
+			// Write-through the store (the single source of truth); it updates its
+			// observable map on success, which re-renders this sheet and the
+			// Dashboard without a re-fetch. No local `event.journeyStatus` copy.
+			await this.journeyStore.setStatus(event.id, status)
 		} catch (err) {
 			this.logger.warn('Failed to set journey status', { error: err })
 		} finally {
@@ -230,8 +242,7 @@ export class EventDetailSheet {
 		const event = this.event
 		this.journeyUpdating = true
 		try {
-			await this.journeyService.delete(event.id)
-			event.journeyStatus = undefined
+			await this.journeyStore.delete(event.id)
 		} catch (err) {
 			this.logger.warn('Failed to remove journey', { error: err })
 		} finally {

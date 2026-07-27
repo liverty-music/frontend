@@ -204,6 +204,10 @@ export class FollowStore {
 			return
 		}
 		await this.rpcClient.setHype(artistId, hype)
+		// Hype is rendered from the follower-scoped concert list, so a successful
+		// change must invalidate it (after the RPC succeeds) or the dashboard would
+		// paint the old hype lane from cache for up to the stale window.
+		this.concertStore.invalidateFollowerCache()
 	}
 
 	/**

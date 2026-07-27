@@ -16,6 +16,7 @@ import { ICoachMarkService } from '../../services/coach-mark-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
+import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { detectCountryFromTimezone } from '../../util/detect-country'
 import { BubbleManager } from './bubble-manager'
 import { GenreFilterController } from './genre-filter-controller'
@@ -29,6 +30,7 @@ export class DiscoveryRoute {
 	private readonly ea = resolve(IEventAggregator)
 	private readonly concertService = resolve(IConcertStore)
 	private readonly analytics = resolve(IAnalyticsService)
+	private readonly resumeRevalidator = resolve(IResumeRevalidator)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
 
@@ -182,13 +184,29 @@ export class DiscoveryRoute {
 
 	public attached(): void {
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
+		this.resumeRevalidator.register(this.revalidate)
 	}
 
 	public detaching(): void {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
+		this.resumeRevalidator.unregister(this.revalidate)
 		this.search.dispose()
 		this.coachMark.deactivate()
+	}
+
+	/**
+	 * On PWA resume, refresh the cached top-artist pool the user is actually
+	 * looking at (whatever country/tag/limit was last requested) in the background,
+	 * so the next bubble load / route re-entry uses fresh data. The visible physics
+	 * field is intentionally NOT reloaded in place — that fights the canvas
+	 * lifecycle and would rearrange bubbles under the user; warming the cache is the
+	 * non-destructive equivalent for this route.
+	 */
+	public readonly revalidate = (): void => {
+		void this.artistClient.revalidateLastTop().catch((err) => {
+			this.logger.warn('Top-artist revalidation failed', { error: err })
+		})
 	}
 
 	private readonly onVisibilityChange = (): void => {

@@ -11,6 +11,8 @@ const mockLogger = {
 const mockAuth = { isAuthenticated: false }
 const mockConcertService = {
 	listByFollower: vi.fn(async () => []),
+	revalidateFollower: vi.fn(async () => []),
+	hasFollowerCache: vi.fn(() => false),
 	toDateGroups: vi.fn(() => []),
 }
 const mockFollowStore = {
@@ -18,7 +20,12 @@ const mockFollowStore = {
 	followedCount: 0,
 	getFollowedArtistMap: vi.fn(async () => new Map()),
 }
-const mockJourneyService = { listByUser: vi.fn(async () => new Map()) }
+const mockJourneyStore = {
+	journeyMap: new Map(),
+	load: vi.fn(async () => new Map()),
+	statusFor: vi.fn(() => undefined),
+}
+const mockResumeRevalidator = { register: vi.fn(), unregister: vi.fn() }
 const mockOnboarding = {
 	isOnboarding: false,
 	isCompleted: false,
@@ -47,7 +54,8 @@ vi.mock('aurelia', async (importOriginal) => {
 				IAuthService: mockAuth,
 				IConcertStore: mockConcertService,
 				IFollowStore: mockFollowStore,
-				ITicketJourneyService: mockJourneyService,
+				ITicketJourneyStore: mockJourneyStore,
+				IResumeRevalidator: mockResumeRevalidator,
 				IOnboardingService: mockOnboarding,
 				IUserStore: mockUserStore,
 				I18N: mockI18n,
@@ -96,6 +104,18 @@ function makeArtist(id: string, name: string): Artist {
 /** Call the protected URL-sync watcher handler directly in unit tests. */
 function syncFilterUrl(route: DashboardRoute): void {
 	;(route as unknown as { syncFilterUrl(): void }).syncFilterUrl()
+}
+
+/** Call the protected journey-map watch handler directly in unit tests. */
+function onJourneyMapChanged(
+	route: DashboardRoute,
+	map: Map<string, JourneyStatus>,
+): void {
+	;(
+		route as unknown as {
+			onJourneyMapChanged(m: Map<string, JourneyStatus>): void
+		}
+	).onJourneyMapChanged(map)
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -245,6 +265,35 @@ describe('DashboardRoute', () => {
 			const counts = sut.countedArtists
 			expect(counts).toHaveLength(2)
 			expect(counts.find((a) => a.id === 'a2')?.count).toBe(1)
+		})
+	})
+
+	describe('journey write-through consistency (onJourneyMapChanged)', () => {
+		it('re-stamps concert journeyStatus from the store map without a re-fetch', () => {
+			// makeGroup uses id `h-${artistId}`; seed with no status, then simulate a
+			// detail-sheet write landing in the store map.
+			sut.dateGroups = [makeGroup('a1'), makeGroup('a2')]
+			expect(sut.dateGroups[0].home[0].journeyStatus).toBeUndefined()
+
+			onJourneyMapChanged(
+				sut,
+				new Map<JourneyStatus | string, JourneyStatus>([
+					['h-a1', 'applied'],
+				]) as Map<string, JourneyStatus>,
+			)
+
+			// The dashboard reflects the sheet's write in place; no listByFollower call.
+			expect(sut.dateGroups[0].home[0].journeyStatus).toBe('applied')
+			expect(sut.dateGroups[1].home[0].journeyStatus).toBeUndefined()
+			expect(mockConcertService.listByFollower).not.toHaveBeenCalled()
+		})
+
+		it('clears a stamped status when the store entry is removed', () => {
+			sut.dateGroups = [makeGroup('a1', 'applied')]
+
+			onJourneyMapChanged(sut, new Map())
+
+			expect(sut.dateGroups[0].home[0].journeyStatus).toBeUndefined()
 		})
 	})
 
