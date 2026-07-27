@@ -162,4 +162,91 @@
       </table>
     </details>
   </section>
+
+  <dialog
+    ref="conflictDialog"
+    class="approval-queue-conflict"
+    aria-labelledby="conflict-heading"
+    close.trigger="cancelConflict()"
+  >
+    <div if.bind="conflictView" class="[ approval-queue-conflict-body ] [ flow ]">
+      <h2 id="conflict-heading" class="approval-queue-conflict-title">
+        Duplicate concert detected
+      </h2>
+      <p class="approval-queue-conflict-lede">
+        A published event already exists at this venue and date. Keep the existing
+        record, or replace its display fields with the staged one.
+      </p>
+
+      <div class="approval-queue-conflict-grid">
+        <section class="approval-queue-conflict-card" data-side="existing">
+          <h3>Existing (published)</h3>
+          <dl class="approval-queue-conflict-fields">
+            <dt>Title</dt>
+            <dd>${conflictView.existingTitle}</dd>
+            <dt>Listed venue</dt>
+            <dd>${conflictView.existingListedVenueName}</dd>
+            <dt>Local date</dt>
+            <dd>${conflictView.existingLocalDate}</dd>
+            <dt>Start time</dt>
+            <dd>${conflictView.existingStartTime}</dd>
+            <dt>Open time</dt>
+            <dd>${conflictView.existingOpenTime}</dd>
+          </dl>
+        </section>
+
+        <section class="approval-queue-conflict-card" data-side="staged">
+          <h3>Staged (proposed)</h3>
+          <dl class="approval-queue-conflict-fields">
+            <dt>Title</dt>
+            <dd>${conflictView.stagedTitle}</dd>
+            <dt>Listed venue</dt>
+            <dd>${conflictView.stagedListedVenueName}</dd>
+            <dt>Local date</dt>
+            <dd>${conflictView.stagedLocalDate}</dd>
+            <dt>Start time</dt>
+            <dd>${conflictView.stagedStartTime}</dd>
+            <dt>Open time</dt>
+            <dd>${'—'}</dd>
+          </dl>
+        </section>
+      </div>
+
+      <p
+        if.bind="conflictError"
+        class="approval-queue-row-error"
+        role="alert"
+      >
+        ${conflictError}
+      </p>
+
+      <div class="[ approval-queue-action-bar ] [ cluster ]">
+        <button
+          type="button"
+          class="approval-queue-btn"
+          data-variant="approve"
+          disabled.bind="conflictBusy"
+          click.trigger="adoptStaged()"
+        >
+          Adopt staged
+        </button>
+        <button
+          type="button"
+          class="approval-queue-btn"
+          disabled.bind="conflictBusy"
+          click.trigger="keepExisting()"
+        >
+          Keep existing
+        </button>
+        <button
+          type="button"
+          class="approval-queue-btn"
+          disabled.bind="conflictBusy"
+          click.trigger="cancelConflict()"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </dialog>
 </main>

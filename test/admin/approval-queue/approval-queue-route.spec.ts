@@ -10,13 +10,18 @@ import {
 	Title,
 	Url,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
+import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { StagedConcertId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/staged_concert_pb.js'
 import {
 	AdminArea,
 	VenueName,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/venue_pb.js'
 import {
+	ApproveResponse,
+	DuplicateConflict,
+	ExistingEvent,
 	PendingConcert,
+	Resolution,
 	ResolvedVenue,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
 import { Timestamp } from '@bufbuild/protobuf'
@@ -45,10 +50,28 @@ interface MockClient {
 function createMockClient(overrides: Partial<MockClient> = {}): MockClient {
 	return {
 		listPending: vi.fn().mockResolvedValue([]),
-		approve: vi.fn().mockResolvedValue(undefined),
+		// approve resolves to an ApproveResponse; no conflict = published.
+		approve: vi.fn().mockResolvedValue(new ApproveResponse({})),
 		reject: vi.fn().mockResolvedValue(undefined),
 		...overrides,
 	}
+}
+
+/** Builds an ApproveResponse carrying a duplicate conflict against a staged row. */
+function conflictResponse(staged: PendingConcert): ApproveResponse {
+	return new ApproveResponse({
+		conflict: new DuplicateConflict({
+			existing: new ExistingEvent({
+				eventId: new EventId({ value: 'event-existing' }),
+				title: new Title({ value: 'Existing Title' }),
+				listedVenueName: new ListedVenueName({ value: 'Existing Venue' }),
+				localDate: new LocalDate({
+					value: new GoogleDate({ year: 2026, month: 7, day: 4 }),
+				}),
+			}),
+			staged,
+		}),
+	})
 }
 
 function makeConcert(opts: {
@@ -336,7 +359,10 @@ describe('ApprovalQueueRoute', () => {
 
 			await vm.approve(group, series, row)
 
-			expect(client.approve).toHaveBeenCalledWith('staged-1')
+			expect(client.approve).toHaveBeenCalledWith(
+				'staged-1',
+				Resolution.UNSPECIFIED,
+			)
 			// Row removed → series pruned → artist group pruned.
 			expect(vm.groups).toHaveLength(0)
 		})
@@ -427,6 +453,129 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.groups).toHaveLength(1)
 			expect(vm.groups[0].series).toHaveLength(1)
 			expect(vm.groups[0].series[0].seriesTitle).toBe('Tour Y')
+		})
+	})
+
+	describe('duplicate reconciliation', () => {
+		it('opens the conflict dialog without mutating when approve returns a conflict', async () => {
+			const staged = resolvedConcert()
+			const client = createMockClient({
+				listPending: vi.fn().mockResolvedValue([staged]),
+				approve: vi.fn().mockResolvedValue(conflictResponse(staged)),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			const row = series.rows[0]
+			await vm.approve(group, series, row)
+
+			// First call used UNSPECIFIED; conflict surfaced; row kept.
+			expect(client.approve).toHaveBeenCalledWith(
+				'staged-1',
+				Resolution.UNSPECIFIED,
+			)
+			expect(vm.conflictView).not.toBeNull()
+			expect(vm.conflictView?.existingTitle).toBe('Existing Title')
+			expect(vm.conflictView?.existingListedVenueName).toBe('Existing Venue')
+			expect(vm.conflictView?.stagedTitle).toBe('Summer Tour')
+			expect(row.busy).toBe(false)
+			expect(vm.groups).toHaveLength(1)
+		})
+
+		it('KEEP_EXISTING re-calls approve and removes the row', async () => {
+			const staged = resolvedConcert()
+			const client = createMockClient({
+				listPending: vi.fn().mockResolvedValue([staged]),
+				approve: vi
+					.fn()
+					.mockResolvedValueOnce(conflictResponse(staged))
+					.mockResolvedValueOnce(new ApproveResponse({})),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			await vm.approve(group, series, series.rows[0])
+			await vm.keepExisting()
+
+			expect(client.approve).toHaveBeenNthCalledWith(
+				2,
+				'staged-1',
+				Resolution.KEEP_EXISTING,
+			)
+			expect(vm.conflictView).toBeNull()
+			expect(vm.groups).toHaveLength(0)
+		})
+
+		it('ADOPT_STAGED re-calls approve and removes the row', async () => {
+			const staged = resolvedConcert()
+			const client = createMockClient({
+				listPending: vi.fn().mockResolvedValue([staged]),
+				approve: vi
+					.fn()
+					.mockResolvedValueOnce(conflictResponse(staged))
+					.mockResolvedValueOnce(new ApproveResponse({})),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			await vm.approve(group, series, series.rows[0])
+			await vm.adoptStaged()
+
+			expect(client.approve).toHaveBeenNthCalledWith(
+				2,
+				'staged-1',
+				Resolution.ADOPT_STAGED,
+			)
+			expect(vm.conflictView).toBeNull()
+			expect(vm.groups).toHaveLength(0)
+		})
+
+		it('cancel keeps the row and closes the dialog', async () => {
+			const staged = resolvedConcert()
+			const client = createMockClient({
+				listPending: vi.fn().mockResolvedValue([staged]),
+				approve: vi.fn().mockResolvedValue(conflictResponse(staged)),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			await vm.approve(group, series, series.rows[0])
+			vm.cancelConflict()
+
+			// Only the initial UNSPECIFIED call; row still present.
+			expect(client.approve).toHaveBeenCalledTimes(1)
+			expect(vm.conflictView).toBeNull()
+			expect(vm.groups).toHaveLength(1)
+		})
+
+		it('keeps the dialog open and surfaces an error when reconciliation fails', async () => {
+			const staged = resolvedConcert()
+			const client = createMockClient({
+				listPending: vi.fn().mockResolvedValue([staged]),
+				approve: vi
+					.fn()
+					.mockResolvedValueOnce(conflictResponse(staged))
+					.mockRejectedValueOnce(new Error('reconcile boom')),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			await vm.approve(group, series, series.rows[0])
+			await vm.adoptStaged()
+
+			expect(vm.conflictView).not.toBeNull()
+			expect(vm.conflictError).toContain('reconcile boom')
+			expect(vm.groups).toHaveLength(1)
 		})
 	})
 
