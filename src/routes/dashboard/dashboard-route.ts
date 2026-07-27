@@ -12,7 +12,6 @@ import { UserHomeSelector } from '../../components/user-home-selector/user-home-
 import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist, CountedArtist } from '../../entities/artist'
 import type { Concert, JourneyStatus } from '../../entities/concert'
-import type { Hype } from '../../entities/follow'
 import { isJourneyStatus } from '../../entities/ticket-journey'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
@@ -60,11 +59,6 @@ export class DashboardRoute {
 	private readonly history = resolve(IHistory)
 	private readonly resumeRevalidator = resolve(IResumeRevalidator)
 	private abortController: AbortController | null = null
-	// The followed-artist map from the most recent full load. Reused by background
-	// revalidation so it does not re-issue ListFollowed just to rebuild dateGroups
-	// (the follow set can only change while the app is foregrounded).
-	private lastArtistMap: Map<string, { artist: Artist; hype: Hype }> | null =
-		null
 
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
@@ -210,15 +204,18 @@ export class DashboardRoute {
 		// the single source of truth already kept current by write-through.
 		// Only the concert list needs a forced refresh; ListFollowed and ListByUser
 		// are intentionally NOT re-issued here to avoid the double-fetch.
+		// Both peekFollowerGroups() and peekArtistMap() live on the ConcertStore
+		// singleton, so they survive DashboardRoute re-instantiation on re-entry.
 		const cachedGroups = this.concertService.peekFollowerGroups()
+		const cachedArtistMap = this.concertService.peekArtistMap()
 		if (
 			cachedGroups !== null &&
-			this.lastArtistMap !== null &&
+			cachedArtistMap !== null &&
 			!this.needsRegion
 		) {
 			this.dateGroups = this.concertService.toDateGroups(
 				cachedGroups,
-				this.lastArtistMap,
+				cachedArtistMap,
 				this.journeyStore.journeyMap,
 			)
 			this.timetableLoaded = true
@@ -271,7 +268,10 @@ export class DashboardRoute {
 			this.concertService.listByFollower(signal),
 			this.fetchJourneyMap(signal),
 		])
-		this.lastArtistMap = artistMap
+		// Persist in the singleton store so the next DashboardRoute instance
+		// (re-instantiated on re-entry) can paint from cache without waiting on
+		// ListFollowed again.
+		this.concertService.setArtistMap(artistMap)
 
 		if (groups.length === 0) {
 			this.logger.info('No concert groups returned')
@@ -335,7 +335,7 @@ export class DashboardRoute {
 			const groups = await this.concertService.revalidateFollower()
 			if (signal?.aborted) return
 			const artistMap =
-				this.lastArtistMap ??
+				this.concertService.peekArtistMap() ??
 				(await this.followStore.getFollowedArtistMap(signal))
 			if (signal?.aborted) return
 			// In-place swap of the observable state; the router view is untouched so
