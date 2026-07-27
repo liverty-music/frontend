@@ -13,6 +13,7 @@ const mockConcertService = {
 	listByFollower: vi.fn(async () => []),
 	revalidateFollower: vi.fn(async () => []),
 	hasFollowerCache: vi.fn(() => false),
+	peekFollowerGroups: vi.fn(() => null),
 	toDateGroups: vi.fn(() => []),
 }
 const mockFollowStore = {
@@ -265,6 +266,54 @@ describe('DashboardRoute', () => {
 			const counts = sut.countedArtists
 			expect(counts).toHaveLength(2)
 			expect(counts.find((a) => a.id === 'a2')?.count).toBe(1)
+		})
+	})
+
+	describe('loadData() fast-path (warm re-entry)', () => {
+		it('paints from cache synchronously without setting isLoading when groups + artistMap are available', async () => {
+			const cached = [
+				{ dateKey: '2026-04-01', label: '4/1', home: [], nearby: [], away: [] },
+			]
+			mockConcertService.peekFollowerGroups.mockReturnValue(cached)
+			mockConcertService.toDateGroups.mockReturnValue(cached)
+			// Simulate a previous load having populated lastArtistMap.
+			;(sut as unknown as { lastArtistMap: unknown }).lastArtistMap = new Map()
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			// Spinner must never have been raised.
+			expect(sut.isLoading).toBe(false)
+			// Data rendered from cache.
+			expect(sut.dateGroups).toEqual(cached)
+			// Network RPCs NOT issued (no cold-load fetch).
+			expect(mockConcertService.listByFollower).not.toHaveBeenCalled()
+		})
+
+		it('falls through to cold load when no cache exists (first visit)', () => {
+			mockConcertService.peekFollowerGroups.mockReturnValue(null)
+			sut.needsRegion = false
+
+			// Never resolves → stays loading; use once so subsequent tests are clean.
+			mockConcertService.listByFollower.mockReturnValueOnce(
+				new Promise(() => {}),
+			)
+			void sut.loadData()
+
+			expect(sut.isLoading).toBe(true)
+		})
+
+		it('falls through to cold load when lastArtistMap is null (first visit, cache cold)', () => {
+			// peek returns a non-null value but lastArtistMap is null → cold path.
+			mockConcertService.peekFollowerGroups.mockReturnValue([])
+			sut.needsRegion = false
+
+			mockConcertService.listByFollower.mockReturnValueOnce(
+				new Promise(() => {}),
+			)
+			void sut.loadData()
+
+			expect(sut.isLoading).toBe(true)
 		})
 	})
 

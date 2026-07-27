@@ -189,22 +189,9 @@ export class DashboardRoute {
 			this.needsRegion = !UserHomeSelector.getStoredHome()
 		}
 
-		// Fire-and-forget the fetch in BOTH branches so the router attaches this
-		// view immediately (render-then-fetch) instead of freezing the outgoing
-		// screen until the RPC resolves. The data-ready side effects no longer
-		// depend on the fetch being awaited here — they fire when timetableLoaded
-		// is observed to flip true (see timetableLoadedChanged). When needsRegion,
-		// the API returns [] without a homeCode anyway; the real load runs from
-		// onHomeSelected() once the region is chosen.
-		//
-		// If the concert list is already cached (route re-entry), paint it first
-		// via loadData(), then force a background revalidation so a long-lived
-		// session refreshes without a manual reload. On a cold miss loadData()
-		// already fetches fresh, so skip the redundant refresh.
-		const hadCache = this.concertService.hasFollowerCache()
-		void this.loadData().then(() => {
-			if (hadCache) this.revalidate()
-		})
+		// Fire-and-forget. loadData() self-selects the fast path (cache paint +
+		// background refresh) or the cold-load path (spinner + full fetch).
+		void this.loadData()
 
 		// Show signup banner for unauthenticated users who completed onboarding
 		if (!this.authService.isAuthenticated && this.onboarding.isCompleted) {
@@ -216,6 +203,30 @@ export class DashboardRoute {
 		this.abortController?.abort()
 		this.abortController = new AbortController()
 		this.loadError = null
+
+		// Fast path: concert list already cached + previous follow map available.
+		// Paint synchronously from cache (no spinner) and revalidate in the
+		// background. Journey status comes from the store's observable map —
+		// the single source of truth already kept current by write-through.
+		// Only the concert list needs a forced refresh; ListFollowed and ListByUser
+		// are intentionally NOT re-issued here to avoid the double-fetch.
+		const cachedGroups = this.concertService.peekFollowerGroups()
+		if (
+			cachedGroups !== null &&
+			this.lastArtistMap !== null &&
+			!this.needsRegion
+		) {
+			this.dateGroups = this.concertService.toDateGroups(
+				cachedGroups,
+				this.lastArtistMap,
+				this.journeyStore.journeyMap,
+			)
+			this.timetableLoaded = true
+			void this.revalidateDashboard()
+			return
+		}
+
+		// Cold load: show spinner and fetch everything.
 		this.isLoading = true
 		// Reset so every load produces a fresh false→true transition; the
 		// needsRegion→onHomeSelected path loads twice and the second arrival must

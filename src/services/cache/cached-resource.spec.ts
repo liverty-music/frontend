@@ -56,6 +56,22 @@ describe('CachedResource', () => {
 		expect(fetch).toHaveBeenCalledTimes(2)
 	})
 
+	it('peek() returns the cached value synchronously without fetching', async () => {
+		const fetch = vi.fn(async () => 42)
+		const res = new CachedResource<string, number>(
+			(k) => k,
+			() => fetch(),
+		)
+
+		expect(res.peek('k')).toBeUndefined()
+		await res.read('k')
+		expect(res.peek('k')).toBe(42)
+		expect(fetch).toHaveBeenCalledTimes(1)
+		// peek does not trigger a second fetch
+		res.peek('k')
+		expect(fetch).toHaveBeenCalledTimes(1)
+	})
+
 	it('has() reflects cache presence; invalidate() forces the next read to refetch', async () => {
 		const fetch = vi.fn(async () => 1)
 		const res = makeResource(fetch)
