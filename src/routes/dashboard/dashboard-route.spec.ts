@@ -14,6 +14,8 @@ const mockConcertService = {
 	revalidateFollower: vi.fn(async () => []),
 	hasFollowerCache: vi.fn(() => false),
 	peekFollowerGroups: vi.fn(() => null),
+	peekArtistMap: vi.fn(() => null),
+	setArtistMap: vi.fn(),
 	toDateGroups: vi.fn(() => []),
 }
 const mockFollowStore = {
@@ -275,9 +277,9 @@ describe('DashboardRoute', () => {
 				{ dateKey: '2026-04-01', label: '4/1', home: [], nearby: [], away: [] },
 			]
 			mockConcertService.peekFollowerGroups.mockReturnValue(cached)
+			// Artist map lives in ConcertStore singleton, so peekArtistMap provides it.
+			mockConcertService.peekArtistMap.mockReturnValue(new Map())
 			mockConcertService.toDateGroups.mockReturnValue(cached)
-			// Simulate a previous load having populated lastArtistMap.
-			;(sut as unknown as { lastArtistMap: unknown }).lastArtistMap = new Map()
 			sut.needsRegion = false
 
 			await sut.loadData()
@@ -303,9 +305,10 @@ describe('DashboardRoute', () => {
 			expect(sut.isLoading).toBe(true)
 		})
 
-		it('falls through to cold load when lastArtistMap is null (first visit, cache cold)', () => {
-			// peek returns a non-null value but lastArtistMap is null → cold path.
+		it('falls through to cold load when peekArtistMap is null (first visit)', () => {
+			// Concert groups are cached but artist map not yet → cold path.
 			mockConcertService.peekFollowerGroups.mockReturnValue([])
+			mockConcertService.peekArtistMap.mockReturnValue(null)
 			sut.needsRegion = false
 
 			mockConcertService.listByFollower.mockReturnValueOnce(

@@ -72,6 +72,8 @@ function makeConcertService() {
 		revalidateFollower: vi.fn().mockResolvedValue([]),
 		hasFollowerCache: vi.fn().mockReturnValue(false),
 		peekFollowerGroups: vi.fn().mockReturnValue(null),
+		peekArtistMap: vi.fn().mockReturnValue(null),
+		setArtistMap: vi.fn(),
 		toDateGroups: vi.fn().mockReturnValue([]),
 		listConcerts: vi.fn().mockResolvedValue([]),
 	}
