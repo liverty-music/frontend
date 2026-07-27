@@ -1,4 +1,10 @@
-import type { PendingConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
+import type {
+	ExistingEvent,
+	PendingConcert,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
+// Import the Resolution enum value from the generated package directly (not via
+// the concert-client re-export) so it survives the client module being mocked.
+import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import { sanitizeUrl } from '../../shared/utils/sanitize-url'
 import { IConcertClient } from '../services/concert-client'
@@ -50,14 +56,29 @@ const EMPTY = '—'
 const UNKNOWN_ARTIST = 'Unknown artist'
 const UNTITLED_SERIES = 'Untitled series'
 
-function formatLocalDate(concert: PendingConcert): string {
-	const d = concert.localDate?.value
+function formatDateValue(d?: {
+	year: number
+	month: number
+	day: number
+}): string {
 	if (!d) return EMPTY
 	// google.type.Date is a plain Y/M/D triple (no timezone). Pad to ISO-ish
 	// YYYY-MM-DD so review rows sort/read consistently regardless of locale.
 	const mm = String(d.month).padStart(2, '0')
 	const dd = String(d.day).padStart(2, '0')
 	return `${d.year}-${mm}-${dd}`
+}
+
+function formatTimeOfDay(ts?: { toDate(): Date }): string {
+	if (!ts) return EMPTY
+	try {
+		return ts.toDate().toLocaleTimeString([], {
+			hour: '2-digit',
+			minute: '2-digit',
+		})
+	} catch {
+		return EMPTY
+	}
 }
 
 function formatTimestamp(ts?: { toDate(): Date }): string {
@@ -69,16 +90,43 @@ function formatTimestamp(ts?: { toDate(): Date }): string {
 	}
 }
 
+function formatLocalDate(concert: PendingConcert): string {
+	return formatDateValue(concert.localDate?.value)
+}
+
 function formatStartTime(concert: PendingConcert): string {
-	const ts = concert.startTime?.value
-	if (!ts) return EMPTY
-	try {
-		return ts.toDate().toLocaleTimeString([], {
-			hour: '2-digit',
-			minute: '2-digit',
-		})
-	} catch {
-		return EMPTY
+	return formatTimeOfDay(concert.startTime?.value)
+}
+
+/**
+ * Flattened display fields for the two sides of a duplicate conflict, so the
+ * reconciliation dialog renders without optional-chaining noise. The staged side
+ * reuses the queue row's precomputed strings; the existing side is derived here
+ * from the {@link ExistingEvent} preview the server returned.
+ */
+export interface ConflictView {
+	readonly stagedTitle: string
+	readonly stagedListedVenueName: string
+	readonly stagedLocalDate: string
+	readonly stagedStartTime: string
+	readonly existingTitle: string
+	readonly existingListedVenueName: string
+	readonly existingLocalDate: string
+	readonly existingStartTime: string
+	readonly existingOpenTime: string
+}
+
+function toConflictView(row: QueueRow, existing: ExistingEvent): ConflictView {
+	return {
+		stagedTitle: row.title,
+		stagedListedVenueName: row.listedVenueName,
+		stagedLocalDate: row.localDate,
+		stagedStartTime: row.startTime,
+		existingTitle: existing.title?.value ?? EMPTY,
+		existingListedVenueName: existing.listedVenueName?.value ?? EMPTY,
+		existingLocalDate: formatDateValue(existing.localDate?.value),
+		existingStartTime: formatTimeOfDay(existing.startTime?.value),
+		existingOpenTime: formatTimeOfDay(existing.openTime?.value),
 	}
 }
 
@@ -158,6 +206,24 @@ export class ApprovalQueueRoute {
 	public loadError = ''
 	public groups: PendingArtistGroup[] = []
 
+	/**
+	 * The duplicate-conflict currently being reconciled, or null when the dialog
+	 * is closed. Holds the queue location so the row can be pruned once the
+	 * reviewer picks a resolution.
+	 */
+	public conflictView: ConflictView | null = null
+	public conflictBusy = false
+	public conflictError = ''
+
+	/** Bound via ref; the native <dialog> reused for every reconciliation. */
+	public conflictDialog?: HTMLDialogElement
+
+	private activeConflict: {
+		group: PendingArtistGroup
+		series: PendingSeriesGroup
+		row: QueueRow
+	} | null = null
+
 	private readonly client = resolve(IConcertClient)
 	private readonly logger = resolve(ILogger).scopeTo('ApprovalQueueRoute')
 
@@ -199,7 +265,23 @@ export class ApprovalQueueRoute {
 		row.busy = true
 		row.actionError = ''
 		try {
-			await this.client.approve(row.stagedId)
+			const response = await this.client.approve(
+				row.stagedId,
+				Resolution.UNSPECIFIED,
+			)
+			// A duplicate existing event was detected: the server mutated nothing and
+			// returned both records. Prompt the reviewer to reconcile instead of
+			// silently dropping or dead-ending.
+			if (response.conflict?.existing) {
+				this.activeConflict = { group, series, row }
+				this.conflictView = toConflictView(row, response.conflict.existing)
+				this.conflictError = ''
+				row.busy = false
+				// Optional-call guards the jsdom test environment, which does not
+				// implement HTMLDialogElement.showModal.
+				this.conflictDialog?.showModal?.()
+				return
+			}
 			this.removeRow(group, series, row)
 		} catch (err) {
 			row.actionError =
@@ -207,6 +289,52 @@ export class ApprovalQueueRoute {
 			row.busy = false
 			this.logger.error('Approve failed', { stagedId: row.stagedId, err })
 		}
+	}
+
+	/** Reviewer chose to keep the existing event; the staged row is logged + cleared. */
+	public async keepExisting(): Promise<void> {
+		await this.resolveConflict(Resolution.KEEP_EXISTING)
+	}
+
+	/** Reviewer chose to adopt the staged row's display fields onto the existing event. */
+	public async adoptStaged(): Promise<void> {
+		await this.resolveConflict(Resolution.ADOPT_STAGED)
+	}
+
+	/** Dismisses the conflict dialog without resolving; the row stays in the queue. */
+	public cancelConflict(): void {
+		this.closeConflict()
+	}
+
+	private async resolveConflict(resolution: Resolution): Promise<void> {
+		const active = this.activeConflict
+		if (!active || this.conflictBusy) return
+		this.conflictBusy = true
+		this.conflictError = ''
+		try {
+			// The second phase re-calls Approve with the chosen resolution; the
+			// server re-reads the staged row and is idempotent if it is already gone.
+			await this.client.approve(active.row.stagedId, resolution)
+			this.removeRow(active.group, active.series, active.row)
+			this.closeConflict()
+		} catch (err) {
+			this.conflictError =
+				err instanceof Error ? err.message : 'Reconciliation failed. Try again.'
+			this.logger.error('Conflict resolution failed', {
+				stagedId: active.row.stagedId,
+				resolution,
+				err,
+			})
+		} finally {
+			this.conflictBusy = false
+		}
+	}
+
+	private closeConflict(): void {
+		this.conflictDialog?.close?.()
+		this.activeConflict = null
+		this.conflictView = null
+		this.conflictError = ''
 	}
 
 	/** Opens the inline reject form for a row. */

@@ -1,10 +1,14 @@
-import { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { StagedConcertId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/staged_concert_pb.js'
 import type {
+	ApproveResponse,
+	DuplicateConflict,
+	ExistingEvent,
 	PendingConcert,
 	ResolvedVenue,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
+import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/admin/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -12,7 +16,15 @@ import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
 import { createAdminTransport } from './admin-transport'
 
-export type { Concert, PendingConcert, ResolvedVenue }
+export type {
+	ApproveResponse,
+	Concert,
+	DuplicateConflict,
+	ExistingEvent,
+	PendingConcert,
+	ResolvedVenue,
+}
+export { Resolution }
 
 export const IConcertClient = DI.createInterface<IConcertClient>(
 	'IConcertClient',
@@ -82,12 +94,21 @@ export class ConcertClient {
 		}
 	}
 
-	/** Publishes a pending concert to fans. Idempotent server-side. */
-	public async approve(stagedId: string, signal?: AbortSignal): Promise<void> {
-		this.logger.info('Approving concert', { stagedId })
+	/**
+	 * Publishes a pending concert to fans, or — when it duplicates an existing
+	 * event and `resolution` is `UNSPECIFIED` — returns a response carrying a
+	 * `conflict` without mutating state, so the caller can prompt the reviewer and
+	 * re-call with `KEEP_EXISTING` or `ADOPT_STAGED`. Idempotent server-side.
+	 */
+	public async approve(
+		stagedId: string,
+		resolution: Resolution = Resolution.UNSPECIFIED,
+		signal?: AbortSignal,
+	): Promise<ApproveResponse> {
+		this.logger.info('Approving concert', { stagedId, resolution })
 		try {
-			await this.client.approve(
-				{ stagedId: new StagedConcertId({ value: stagedId }) },
+			return await this.client.approve(
+				{ stagedId: new StagedConcertId({ value: stagedId }), resolution },
 				{ signal },
 			)
 		} catch (err) {
