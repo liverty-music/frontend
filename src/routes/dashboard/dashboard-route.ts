@@ -208,11 +208,15 @@ export class DashboardRoute {
 		// singleton, so they survive DashboardRoute re-instantiation on re-entry.
 		const cachedGroups = this.concertService.peekFollowerGroups()
 		const cachedArtistMap = this.concertService.peekArtistMap()
+		this.logger.info('[fast-path] peekFollowerGroups=' + (cachedGroups !== null ? cachedGroups.length : 'null') +
+			' peekArtistMap=' + (cachedArtistMap !== null ? cachedArtistMap.size : 'null') +
+			' needsRegion=' + this.needsRegion)
 		if (
 			cachedGroups !== null &&
 			cachedArtistMap !== null &&
 			!this.needsRegion
 		) {
+			this.logger.info('[fast-path] TAKING fast path')
 			this.dateGroups = this.concertService.toDateGroups(
 				cachedGroups,
 				cachedArtistMap,
@@ -222,6 +226,7 @@ export class DashboardRoute {
 			void this.revalidateDashboard()
 			return
 		}
+		this.logger.info('[fast-path] COLD LOAD path')
 
 		// Cold load: show spinner and fetch everything.
 		this.isLoading = true
