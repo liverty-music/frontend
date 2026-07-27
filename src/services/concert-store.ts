@@ -123,6 +123,18 @@ export class ConcertStore {
 		return this.followerConcerts.revalidate(undefined)
 	}
 
+	/**
+	 * Synchronous peek at the cached concert groups — null when absent. Used by
+	 * the Dashboard fast-path to paint from cache before any RPC resolves.
+	 */
+	public peekFollowerGroups(): ProximityGroup[] | null {
+		if (!this.authService.isAuthenticated) {
+			const input = this.guestProximityInput()
+			return (input && this.proximityConcerts.peek(input)) ?? null
+		}
+		return this.followerConcerts.peek(undefined) ?? null
+	}
+
 	/** Whether a (possibly stale) concert list is cached for the current viewer. */
 	public hasFollowerCache(): boolean {
 		if (!this.authService.isAuthenticated) {

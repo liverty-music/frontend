@@ -39,6 +39,11 @@ export class CachedResource<I, T> {
 		return this.cache.has(this.keyOf(input))
 	}
 
+	/** Synchronous cached read — undefined when absent. Does not trigger a fetch. */
+	public peek(input: I): T | undefined {
+		return this.cache.peek(this.keyOf(input))
+	}
+
 	/** Invalidate `input` so its next read refetches (mutations). */
 	public invalidate(input: I): void {
 		this.cache.invalidate(this.keyOf(input))

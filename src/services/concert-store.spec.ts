@@ -286,4 +286,30 @@ describe('ConcertStore', () => {
 			expect(c).toEqual(b)
 		})
 	})
+
+	describe('peekFollowerGroups', () => {
+		it('returns null before any load (cold, authenticated)', () => {
+			expect(sut.peekFollowerGroups()).toBeNull()
+		})
+
+		it('returns the cached groups after a successful listByFollower', async () => {
+			const groups = makeGroups(2)
+			mockRpcClient.listByFollower.mockResolvedValueOnce(groups)
+			await sut.listByFollower()
+			expect(sut.peekFollowerGroups()).toBe(groups)
+		})
+
+		it('returns null after invalidation', async () => {
+			mockRpcClient.listByFollower.mockResolvedValueOnce(makeGroups(1))
+			await sut.listByFollower()
+			sut.invalidateFollowerCache()
+			expect(sut.peekFollowerGroups()).toBeNull()
+		})
+
+		it('returns null for guest with no follows/home', () => {
+			mockAuth.isAuthenticated = false
+			guestHome.mockReturnValueOnce(null)
+			expect(sut.peekFollowerGroups()).toBeNull()
+		})
+	})
 })
