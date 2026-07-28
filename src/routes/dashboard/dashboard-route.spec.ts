@@ -12,10 +12,8 @@ const mockAuth = { isAuthenticated: false }
 const mockConcertService = {
 	listByFollower: vi.fn(async () => []),
 	revalidateFollower: vi.fn(async () => []),
-	hasFollowerCache: vi.fn(() => false),
-	peekFollowerGroups: vi.fn(() => null),
-	peekArtistMap: vi.fn(() => null),
-	setArtistMap: vi.fn(),
+	peekDateGroups: vi.fn(() => null),
+	setDateGroups: vi.fn(),
 	toDateGroups: vi.fn(() => []),
 }
 const mockFollowStore = {
@@ -272,43 +270,25 @@ describe('DashboardRoute', () => {
 	})
 
 	describe('loadData() fast-path (warm re-entry)', () => {
-		it('paints from cache synchronously without setting isLoading when groups + artistMap are available', async () => {
+		it('paints from cache without setting isLoading when lastDateGroups is available', async () => {
 			const cached = [
 				{ dateKey: '2026-04-01', label: '4/1', home: [], nearby: [], away: [] },
 			]
-			mockConcertService.peekFollowerGroups.mockReturnValue(cached)
-			// Artist map lives in ConcertStore singleton, so peekArtistMap provides it.
-			mockConcertService.peekArtistMap.mockReturnValue(new Map())
-			mockConcertService.toDateGroups.mockReturnValue(cached)
+			mockConcertService.peekDateGroups.mockReturnValue(cached)
 			sut.needsRegion = false
 
 			await sut.loadData()
 
-			// Spinner must never have been raised.
 			expect(sut.isLoading).toBe(false)
-			// Data rendered from cache.
+			// Data rendered from cache immediately.
 			expect(sut.dateGroups).toEqual(cached)
-			// Network RPCs NOT issued (no cold-load fetch).
-			expect(mockConcertService.listByFollower).not.toHaveBeenCalled()
+			// The spinner is never raised — that's the invariant. The background
+			// refresh issues listByFollower (fire-and-forget), but isLoading stays false.
+			expect(sut.isLoading).toBe(false)
 		})
 
 		it('falls through to cold load when no cache exists (first visit)', () => {
-			mockConcertService.peekFollowerGroups.mockReturnValue(null)
-			sut.needsRegion = false
-
-			// Never resolves → stays loading; use once so subsequent tests are clean.
-			mockConcertService.listByFollower.mockReturnValueOnce(
-				new Promise(() => {}),
-			)
-			void sut.loadData()
-
-			expect(sut.isLoading).toBe(true)
-		})
-
-		it('falls through to cold load when peekArtistMap is null (first visit)', () => {
-			// Concert groups are cached but artist map not yet → cold path.
-			mockConcertService.peekFollowerGroups.mockReturnValue([])
-			mockConcertService.peekArtistMap.mockReturnValue(null)
+			mockConcertService.peekDateGroups.mockReturnValue(null)
 			sut.needsRegion = false
 
 			mockConcertService.listByFollower.mockReturnValueOnce(

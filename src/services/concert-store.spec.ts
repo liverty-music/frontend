@@ -287,29 +287,23 @@ describe('ConcertStore', () => {
 		})
 	})
 
-	describe('peekFollowerGroups', () => {
-		it('returns null before any load (cold, authenticated)', () => {
-			expect(sut.peekFollowerGroups()).toBeNull()
+	describe('peekDateGroups / setDateGroups', () => {
+		it('returns null before any load is stored', () => {
+			expect(sut.peekDateGroups()).toBeNull()
 		})
 
-		it('returns the cached groups after a successful listByFollower', async () => {
-			const groups = makeGroups(2)
-			mockRpcClient.listByFollower.mockResolvedValueOnce(groups)
-			await sut.listByFollower()
-			expect(sut.peekFollowerGroups()).toBe(groups)
+		it('returns stored date groups after setDateGroups', () => {
+			const groups = [
+				{ dateKey: '2026-04-01', label: '', home: [], nearby: [], away: [] },
+			] as never
+			sut.setDateGroups(groups)
+			expect(sut.peekDateGroups()).toBe(groups)
 		})
 
-		it('returns null after invalidation', async () => {
-			mockRpcClient.listByFollower.mockResolvedValueOnce(makeGroups(1))
-			await sut.listByFollower()
+		it('clears date groups on invalidateFollowerCache', () => {
+			sut.setDateGroups([])
 			sut.invalidateFollowerCache()
-			expect(sut.peekFollowerGroups()).toBeNull()
-		})
-
-		it('returns null for guest with no follows/home', () => {
-			mockAuth.isAuthenticated = false
-			guestHome.mockReturnValueOnce(null)
-			expect(sut.peekFollowerGroups()).toBeNull()
+			expect(sut.peekDateGroups()).toBeNull()
 		})
 	})
 })
