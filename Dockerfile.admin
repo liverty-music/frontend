@@ -15,6 +15,10 @@ RUN npm ci
 
 COPY . .
 
+# Inject the 7-char git SHA for the Settings "アプリ情報" build-SHA display.
+ARG GITHUB_SHA
+ENV GITHUB_SHA=$GITHUB_SHA
+
 # Env-agnostic build: the bundle fetches /config.json at runtime from a per-env
 # K8s ConfigMap (the admin pod mounts its OWN config.json carrying the admin org
 # id + admin client id at the canonical path, so the shared AuthService scopes

@@ -92,6 +92,10 @@ import { DateValueConverter } from './value-converters/date'
 // Stored after Aurelia.start() so the PWA update toast can publish via EA + I18N.
 let _pwaEa: IEventAggregator | null = null
 let _pwaI18n: I18N | null = null
+// Latched true once bootstrap() completes. Guards the silent-apply path in
+// onNeedRefresh to boot-time only: a keyboard/wheel-only user (who never fires
+// pointerdown/touchstart) must not receive a silent forced reload mid-session.
+let _bootComplete = false
 
 function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
 	const map: Record<AppConfig['logLevel'], LogLevel> = {
@@ -283,6 +287,8 @@ async function bootstrap(): Promise<void> {
 	// Store EA + I18N so the PWA onNeedRefresh callback can publish the update toast.
 	_pwaEa = au.container.get(IEventAggregator)
 	_pwaI18n = au.container.get(I18N)
+	// Latch bootComplete so onNeedRefresh knows the app is fully running.
+	_bootComplete = true
 
 	// Remove the inline loading indicator now that Aurelia has rendered.
 	removeBootstrapLoadingIndicator()
@@ -338,8 +344,12 @@ if (!import.meta.env.DEV) {
 
 	const updateSW = registerSW({
 		onNeedRefresh() {
-			if (!hasInteracted) {
-				// Boot-time: no interaction yet — apply silently (no toast).
+			if (!hasInteracted && !_bootComplete) {
+				// Boot-time only: no interaction yet and Aurelia hasn't started —
+				// apply silently. Bounding on _bootComplete prevents a forced
+				// silent reload mid-session for keyboard/wheel-only users (who
+				// never fire pointerdown/touchstart) when visibilitychange
+				// triggers a registration.update() after a new deploy lands.
 				updateSW(true)
 				return
 			}
