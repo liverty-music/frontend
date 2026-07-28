@@ -242,7 +242,7 @@ export class BubblePhysics {
 			if (bubble.isSpawning) {
 				bubble.spawnProgress = Math.min(
 					1,
-					bubble.spawnProgress + delta * 0.0015,
+					bubble.spawnProgress + delta * 0.003,
 				)
 				bubble.scale = easeOutBack(bubble.spawnProgress)
 				// Quadratic ease-in so color/text bleeds in gently during the second

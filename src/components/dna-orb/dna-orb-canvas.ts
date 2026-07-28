@@ -581,29 +581,6 @@ export class DnaOrbCanvas {
 		this.ctx.stroke()
 		this.ctx.restore()
 
-		// Checkmark for already-followed artists
-		if (isFollowed) {
-			const checkSize = Math.max(8, r * 0.35)
-			this.ctx.globalAlpha = 0.9
-			this.ctx.fillStyle = 'rgba(74, 222, 128, 0.9)'
-			this.ctx.beginPath()
-			this.ctx.arc(x + r * 0.55, y - r * 0.55, checkSize, 0, Math.PI * 2)
-			this.ctx.fill()
-			this.ctx.strokeStyle = 'white'
-			this.ctx.lineWidth = 2
-			this.ctx.beginPath()
-			this.ctx.moveTo(x + r * 0.55 - checkSize * 0.3, y - r * 0.55)
-			this.ctx.lineTo(
-				x + r * 0.55 - checkSize * 0.05,
-				y - r * 0.55 + checkSize * 0.25,
-			)
-			this.ctx.lineTo(
-				x + r * 0.55 + checkSize * 0.3,
-				y - r * 0.55 - checkSize * 0.2,
-			)
-			this.ctx.stroke()
-		}
-
 		this.ctx.restore()
 	}
 
