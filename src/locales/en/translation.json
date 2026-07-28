@@ -301,8 +301,8 @@
 			"heading": "Sign in for the full experience",
 			"body": "Use your favorites and notifications on any device"
 		},
-		"appInfo": "App Info",
-		"copyVersionSuccess": "Version info copied"
+		"version": "Version",
+		"copyVersionSuccess": "Version copied"
 	},
 	"onboarding": {
 		"consent": {

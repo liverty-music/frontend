@@ -301,7 +301,7 @@
 			"heading": "ログインして、もっと便利に",
 			"body": "お気に入りと通知を、どの端末でもそのまま使えます"
 		},
-		"appInfo": "アプリ情報",
+		"version": "バージョン",
 		"copyVersionSuccess": "バージョン情報をコピーしました"
 	},
 	"onboarding": {
