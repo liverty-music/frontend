@@ -208,11 +208,20 @@ export class DashboardRoute {
 		// singleton, so they survive DashboardRoute re-instantiation on re-entry.
 		const cachedGroups = this.concertService.peekFollowerGroups()
 		const cachedArtistMap = this.concertService.peekArtistMap()
+		this.logger.info('[cache-debug] loadData', {
+			auth: this.authService.isAuthenticated,
+			needsRegion: this.needsRegion,
+			hasCachedGroups: cachedGroups !== null,
+			groups: cachedGroups?.length ?? null,
+			hasArtistMap: cachedArtistMap !== null,
+			artists: cachedArtistMap?.size ?? null,
+		})
 		if (
 			cachedGroups !== null &&
 			cachedArtistMap !== null &&
 			!this.needsRegion
 		) {
+			this.logger.info('[cache-debug] fast-path: painted from cache')
 			this.dateGroups = this.concertService.toDateGroups(
 				cachedGroups,
 				cachedArtistMap,
