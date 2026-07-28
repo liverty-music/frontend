@@ -84,26 +84,42 @@ describe('app-shell', () => {
 	})
 
 	describe('showNav', () => {
-		let mockRouter: Record<string, unknown>
+		let navigationEndHandler: (() => void) | undefined
+		let mockRouteTree: {
+			root: {
+				children: Array<{
+					data: Record<string, unknown>
+					context: { component: { name: string } }
+				}>
+			}
+		}
 		let container: ReturnType<typeof DI.createContainer>
 		let sut: AppShell
 
-		function setCurrentPath(path: string) {
-			mockRouter.routeTree = {
-				root: {
-					children: [{ computeAbsolutePath: () => path }],
-				},
-			}
+		function simulateNavigation(data?: Record<string, unknown>) {
+			mockRouteTree.root.children = [
+				{ data: data ?? {}, context: { component: { name: 'test' } } },
+			]
+			navigationEndHandler?.()
 		}
 
 		beforeEach(() => {
-			mockRouter = {}
-			setCurrentPath('')
+			navigationEndHandler = undefined
+			mockRouteTree = { root: { children: [] } }
 			container = DI.createContainer()
 			container.register(
-				Registration.instance(IRouter, mockRouter as IRouter),
+				Registration.instance(IRouter, {
+					get routeTree() {
+						return mockRouteTree
+					},
+				} as unknown as IRouter),
 				Registration.instance(IRouterEvents, {
-					subscribe: vi.fn(() => ({ dispose: vi.fn() })),
+					subscribe: vi.fn((event: string, handler: () => void) => {
+						if (event === 'au:router:navigation-end') {
+							navigationEndHandler = handler
+						}
+						return { dispose: vi.fn() }
+					}),
 				}),
 				Registration.instance(IErrorBoundaryService, {
 					captureError: vi.fn(),
@@ -131,40 +147,37 @@ describe('app-shell', () => {
 			)
 			container.register(AppShell)
 			sut = container.get(AppShell)
+			sut.binding()
 		})
 
-		it('should return false for empty path (root)', () => {
-			setCurrentPath('')
-			expect(sut.showNav).toBe(false)
-		})
-
-		it('should return false for welcome route', () => {
-			setCurrentPath('welcome')
-			expect(sut.showNav).toBe(false)
-		})
-
-		it('should return true for discovery route', () => {
-			setCurrentPath('discovery')
+		it('defaults to true before first navigation', () => {
 			expect(sut.showNav).toBe(true)
 		})
 
-		it('should return false for auth/callback route', () => {
-			setCurrentPath('auth/callback')
+		it('returns false for routes with nav: false (welcome, auth/callback)', () => {
+			simulateNavigation({ auth: false, nav: false })
 			expect(sut.showNav).toBe(false)
 		})
 
-		it('should return true for dashboard route', () => {
-			setCurrentPath('dashboard')
+		it('returns true when nav is not set (discovery, dashboard, etc.)', () => {
+			simulateNavigation({ auth: false })
 			expect(sut.showNav).toBe(true)
 		})
 
-		it('should return true for about route', () => {
-			setCurrentPath('about')
+		it('returns true when nav is explicitly true', () => {
+			simulateNavigation({ nav: true })
 			expect(sut.showNav).toBe(true)
 		})
 
-		it('should return true for unknown route', () => {
-			setCurrentPath('some/other/route')
+		it('returns true for routes with no data', () => {
+			simulateNavigation()
+			expect(sut.showNav).toBe(true)
+		})
+
+		it('toggles correctly across navigations', () => {
+			simulateNavigation({ nav: false })
+			expect(sut.showNav).toBe(false)
+			simulateNavigation({ auth: false })
 			expect(sut.showNav).toBe(true)
 		})
 	})
