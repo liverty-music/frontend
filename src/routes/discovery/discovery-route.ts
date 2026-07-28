@@ -12,6 +12,7 @@ import {
 	IAnalyticsService,
 } from '../../lib/analytics/analytics-service'
 import { IArtistStore } from '../../services/artist-store'
+import { BubblePool } from '../../services/bubble-pool'
 import { ICoachMarkService } from '../../services/coach-mark-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
@@ -150,11 +151,19 @@ export class DiscoveryRoute {
 			}
 		}
 
-		// Fire-and-forget the initial bubble load so the router attaches this view
-		// immediately. The canvas seeds bubbles order-independently (artistsChanged
-		// with its !this.ctx guard + the attached() seed), so they render whether
-		// the data resolves before or after attach.
-		void this.loadInitialBubbles()
+		// Re-entry fast path: if a previous visit cached the bubble pool in the
+		// ArtistStore singleton, paint real artists immediately (no ghost bubbles).
+		// Background refresh runs after attach. Same pattern as Dashboard.
+		const cachedBubbles = this.artistClient.peekBubbles()
+		if (cachedBubbles !== null) {
+			this.bubbles.pool.replace(cachedBubbles)
+			void this.loadInitialBubbles()
+		} else {
+			// Cold visit: pre-populate with ghost placeholder bubbles so the canvas
+			// is never blank while loadInitialBubbles fetches.
+			this.bubbles.pool.replace(makeGhostArtists(BubblePool.MAX_BUBBLES))
+			void this.loadInitialBubbles()
+		}
 
 		// Resume concert search for pre-seeded follows (fire concurrently)
 		if (this.isOnboarding) {
@@ -176,6 +185,9 @@ export class DiscoveryRoute {
 				detectCountryFromTimezone(),
 				'',
 			)
+			// Persist the final pool in the singleton so the next re-entry can paint
+			// real artists immediately without waiting on network RPCs.
+			this.artistClient.setBubbles(this.bubbles.pool.availableBubbles)
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
 			this.ea.publish(new Snack(this.i18n.tr('discovery.loadFailed'), 'error'))
@@ -388,4 +400,14 @@ export class DiscoveryRoute {
 			})
 		}
 	}
+}
+
+/** Create N placeholder ghost artists for the pre-load skeleton. */
+function makeGhostArtists(count: number): Artist[] {
+	return Array.from({ length: count }, (_, i) => ({
+		id: `__ghost__${i}`,
+		name: '',
+		mbid: '',
+		isGhost: true as const,
+	}))
 }

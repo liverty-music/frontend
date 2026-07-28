@@ -25,6 +25,9 @@ export function createMockArtistServiceClient(): Partial<IArtistStore> {
 		listTop: vi.fn().mockResolvedValue([]),
 		listSimilar: vi.fn().mockResolvedValue([]),
 		search: vi.fn().mockResolvedValue([]),
+		peekBubbles: vi.fn().mockReturnValue(null),
+		setBubbles: vi.fn(),
+		revalidateLastTop: vi.fn().mockResolvedValue(undefined),
 		getClient: vi.fn().mockReturnValue({
 			getTopArtists: vi.fn().mockResolvedValue({ artists: [] }),
 			getSimilarArtists: vi.fn().mockResolvedValue({ artists: [] }),

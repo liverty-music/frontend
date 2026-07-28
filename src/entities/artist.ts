@@ -7,6 +7,8 @@ export interface Artist {
 	readonly name: string
 	readonly mbid: string
 	readonly fanart?: ArtistFanart
+	/** Prototype-only flag: marks a placeholder bubble shown during loading. */
+	readonly isGhost?: true
 }
 
 /**
