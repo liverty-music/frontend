@@ -59,11 +59,14 @@ export class SnackBar {
 			el?.showPopover()
 		})
 
-		// Auto-dismiss
-		snack.dismissTimer = setTimeout(() => {
-			snack.dismissTimer = null
-			this.dismiss(snack)
-		}, event.durationMs)
+		// Auto-dismiss. Skip when duration is Infinity: setTimeout(fn, Infinity)
+		// coerces to setTimeout(fn, 0) (ToInt32 overflow) and dismisses immediately.
+		if (event.durationMs !== Infinity) {
+			snack.dismissTimer = setTimeout(() => {
+				snack.dismissTimer = null
+				this.dismiss(snack)
+			}, event.durationMs)
+		}
 	}
 
 	private dismiss(snack: SnackItem): void {

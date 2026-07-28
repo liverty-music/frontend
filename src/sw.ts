@@ -265,11 +265,14 @@ type SyncEventLike = ExtendableEvent & { tag: string }
 )
 
 self.addEventListener('activate', (event) => {
-	event.waitUntil(flushInteractionStash())
+	event.waitUntil(Promise.all([self.clients.claim(), flushInteractionStash()]))
 })
 
 self.addEventListener('message', (event) => {
 	if (event.data?.type === NOTIFICATION_FLUSH_MESSAGE) {
 		event.waitUntil(flushInteractionStash())
+	}
+	if (event.data?.type === 'SKIP_WAITING') {
+		self.skipWaiting()
 	}
 })
