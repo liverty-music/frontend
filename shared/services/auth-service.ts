@@ -35,6 +35,13 @@ function createSettings(config: AppConfig): UserManagerSettings {
 		// degrades to next-token-refresh detection (<=30m), the standard posture
 		// for SPAs against a Zitadel that blocks iframe embedding.
 		monitorSession: false,
+		// Zitadel enforces refresh token rotation — each use invalidates the old token
+		// and issues a new one. The background timer races with a SW-triggered page
+		// reload: both the old and new page call signinSilent() with the same refresh
+		// token, and Zitadel rejects the second with RefreshTokenInvalid. Disable the
+		// timer; token refresh occurs on-demand only (boot via restoreSession, 401 via
+		// connect-error-router).
+		automaticSilentRenew: false,
 	}
 }
 
@@ -71,12 +78,6 @@ export class AuthService {
 		})
 	}
 
-	// Restore the session on cold start. oidc-client-ts issue #2012: when the app
-	// boots with an already-expired access token, automaticSilentRenew drops the
-	// renewal timer based on the access token alone and never consults the still-
-	// valid refresh token, leaving the user unauthenticated. Work around it by
-	// explicitly calling signinSilent() when the stored user is expired, so a
-	// valid refresh token transparently restores the session.
 	private async restoreSession(): Promise<User | null> {
 		const user = await this.userManager.getUser()
 		if (user?.expired) {

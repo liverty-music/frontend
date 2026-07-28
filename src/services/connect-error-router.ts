@@ -1,5 +1,8 @@
 import { Code, ConnectError, type Interceptor } from '@connectrpc/connect'
+import type { User } from 'oidc-client-ts'
 import type { IAuthService } from './auth-service'
+
+let refreshPromise: Promise<User | null> | null = null
 
 /**
  * Creates a Connect interceptor that handles Unauthenticated errors
@@ -23,15 +26,20 @@ export const createAuthRetryInterceptor = (auth: IAuthService): Interceptor => {
 				throw err
 			}
 
-			// Attempt silent token refresh via OIDC signinSilent
-			try {
-				const user = await auth.getUserManager().signinSilent()
-				if (user?.access_token) {
-					req.header.set('Authorization', `Bearer ${user.access_token}`)
-					return await next(req)
-				}
-			} catch {
-				// Silent refresh failed — redirect to login
+			if (refreshPromise === null) {
+				refreshPromise = auth
+					.getUserManager()
+					.signinSilent()
+					.catch(() => null)
+					.finally(() => {
+						refreshPromise = null
+					})
+			}
+			const user = await refreshPromise
+
+			if (user?.access_token) {
+				req.header.set('Authorization', `Bearer ${user.access_token}`)
+				return await next(req)
 			}
 
 			// Clear auth state and redirect to landing page
