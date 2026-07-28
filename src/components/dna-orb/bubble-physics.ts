@@ -240,10 +240,7 @@ export class BubblePhysics {
 		for (const bubble of this.bubbleMap.values()) {
 			const id = bubble.artist.id
 			if (bubble.isSpawning) {
-				bubble.spawnProgress = Math.min(
-					1,
-					bubble.spawnProgress + delta * 0.0015,
-				)
+				bubble.spawnProgress = Math.min(1, bubble.spawnProgress + delta * 0.003)
 				bubble.scale = easeOutBack(bubble.spawnProgress)
 				// Quadratic ease-in so color/text bleeds in gently during the second
 				// half of the spawn rather than appearing abruptly with the circle.
@@ -297,7 +294,8 @@ export class BubblePhysics {
 				overflow.push(artist)
 				continue
 			}
-			const bubble = this.bubbleMap.get(ghostId)!
+			const bubble = this.bubbleMap.get(ghostId)
+			if (!bubble) continue
 			this.bubbleMap.delete(ghostId)
 			// Swap artist reference in place — physics position/velocity unchanged.
 			// Restart the spawn animation so the real artist appears with the same
