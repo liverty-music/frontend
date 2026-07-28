@@ -29,11 +29,11 @@ describe('BottomNavBar (fixture)', () => {
 			.build()
 	}
 
-	it('renders 5 nav tabs', async () => {
+	it('renders 4 nav tabs', async () => {
 		const fixture = await createNav().started
 
 		const tabs = fixture.getAllBy('.nav-tab')
-		expect(tabs.length).toBe(5)
+		expect(tabs.length).toBe(4)
 	})
 
 	it('sets data-active=true on the matching tab', async () => {
