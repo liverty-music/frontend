@@ -239,6 +239,28 @@
     </ul>
   </section>
 
+  <!-- APP INFO Section. Visible to all users (authenticated and guest).
+       The version row copies the combined version string to clipboard on tap
+       as a support affordance — no navigation. -->
+  <section>
+    <h2 t="settings.appInfo" class="settings-section-title"></h2>
+    <ul class="settings-card" role="list">
+      <li class="settings-list-item">
+        <button
+          type="button"
+          click.trigger="copyVersion()"
+          class="settings-row"
+          aria-label="${releaseVersion} (${buildSha})"
+        >
+          <div class="settings-toggle-col">
+            <span class="settings-row-label">${releaseVersion}</span>
+            <span class="settings-toggle-desc">${buildSha}</span>
+          </div>
+        </button>
+      </li>
+    </ul>
+  </section>
+
   <!-- ACCOUNT Section. Authenticated-only: the guest sign-in / sign-up entry
        lives in the top hero, so this section is hidden entirely for guests. -->
   <section if.bind="auth.isAuthenticated">

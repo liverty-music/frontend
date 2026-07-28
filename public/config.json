@@ -33,5 +33,6 @@
     "ONE OK ROCK",
     "RADWIMPS"
   ],
-  "logLevel": "debug"
+  "logLevel": "debug",
+  "releaseVersion": "dev"
 }

@@ -18,6 +18,9 @@ const devApiTarget =
 	env.VITE_DEV_API_TARGET || 'https://api.dev.liverty-music.app'
 
 export default defineConfig({
+	define: {
+		__BUILD_SHA__: JSON.stringify(process.env.GITHUB_SHA?.slice(0, 7) ?? 'dev'),
+	},
 	server: {
 		// Default-open targets the consumer entry (index.html). The admin entry
 		// is reachable at /admin.html on the same dev server.
@@ -89,6 +92,7 @@ export default defineConfig({
 		}),
 		nodePolyfills(),
 		VitePWA({
+			registerType: 'prompt',
 			strategies: 'injectManifest',
 			srcDir: 'src',
 			filename: 'sw.ts',

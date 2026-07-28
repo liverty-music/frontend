@@ -12,9 +12,14 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application. No env-specific build-args: the resulting bundle
-# is env-agnostic and fetches /config.json at runtime from a per-env K8s
-# ConfigMap. See OpenSpec change `adopt-runtime-config-for-frontend`.
+# Inject the 7-char git SHA into the bundle at build time so the Settings
+# screen can show which exact commit the image was built from.
+ARG GITHUB_SHA
+ENV GITHUB_SHA=$GITHUB_SHA
+
+# Build the application. Only GITHUB_SHA is a build-arg; all per-env values
+# come from /config.json at runtime (K8s ConfigMap) so the bundle is
+# otherwise env-agnostic. See OpenSpec change `adopt-runtime-config-for-frontend`.
 RUN npm run build
 
 # Defense-in-depth: assert every route chunk still contains its compiled

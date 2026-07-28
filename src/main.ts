@@ -1,5 +1,6 @@
 import './styles/main.css'
-import { I18nConfiguration } from '@aurelia/i18n'
+import { registerSW } from 'virtual:pwa-register'
+import { I18N, I18nConfiguration } from '@aurelia/i18n'
 import { RouterConfiguration } from '@aurelia/router'
 import Aurelia, {
 	ConsoleSink,
@@ -33,6 +34,7 @@ import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
 import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
 import { SignupPromptBanner } from './components/signup-prompt-banner/signup-prompt-banner'
+import type { SnackHandle } from './components/snack-bar/snack'
 import { Snack } from './components/snack-bar/snack'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SvgIcon } from './components/svg-icon/svg-icon'
@@ -86,6 +88,14 @@ import { ITicketStore } from './services/ticket-store'
 import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserStore } from './services/user-store'
 import { DateValueConverter } from './value-converters/date'
+
+// Stored after Aurelia.start() so the PWA update toast can publish via EA + I18N.
+let _pwaEa: IEventAggregator | null = null
+let _pwaI18n: I18N | null = null
+// Latched true once bootstrap() completes. Guards the silent-apply path in
+// onNeedRefresh to boot-time only: a keyboard/wheel-only user (who never fires
+// pointerdown/touchstart) must not receive a silent forced reload mid-session.
+let _bootComplete = false
 
 function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
 	const map: Record<AppConfig['logLevel'], LogLevel> = {
@@ -274,6 +284,12 @@ async function bootstrap(): Promise<void> {
 	au.app(AppShell)
 	await au.start()
 
+	// Store EA + I18N so the PWA onNeedRefresh callback can publish the update toast.
+	_pwaEa = au.container.get(IEventAggregator)
+	_pwaI18n = au.container.get(I18N)
+	// Latch bootComplete so onNeedRefresh knows the app is fully running.
+	_bootComplete = true
+
 	// Remove the inline loading indicator now that Aurelia has rendered.
 	removeBootstrapLoadingIndicator()
 
@@ -299,11 +315,73 @@ async function bootstrap(): Promise<void> {
 
 bootstrap().catch(showStaticErrorPage)
 
-// Register Service Worker for push notifications (production only).
-// In dev mode, vite-plugin-node-polyfills injects Buffer/global/process shims
-// into the SW bundle, which breaks ServiceWorker evaluation.
-if ('serviceWorker' in navigator && !import.meta.env.DEV) {
-	navigator.serviceWorker.register('/sw.js').catch((err) => {
-		console.warn('Service Worker registration failed:', err)
+// Register Service Worker via virtual:pwa-register (production only).
+// virtual:pwa-register handles updatefound → statechange → controllerchange →
+// single-shot location.reload() internally, so NO manual controllerchange
+// listener should be added here (double-reload risk per design D1).
+if (!import.meta.env.DEV) {
+	// Track whether the user has interacted so onNeedRefresh can decide between
+	// a silent boot-time apply and the visible update toast.
+	let hasInteracted = false
+	window.addEventListener(
+		'pointerdown',
+		() => {
+			hasInteracted = true
+		},
+		{ once: true },
+	)
+	window.addEventListener(
+		'touchstart',
+		() => {
+			hasInteracted = true
+		},
+		{ once: true },
+	)
+
+	// Active update Snack handle — non-null while a toast is showing. Used to
+	// dismiss and replace before publishing a second onNeedRefresh toast.
+	let activeUpdateSnackHandle: SnackHandle | null = null
+
+	const updateSW = registerSW({
+		onNeedRefresh() {
+			if (!hasInteracted && !_bootComplete) {
+				// Boot-time only: no interaction yet and Aurelia hasn't started —
+				// apply silently. Bounding on _bootComplete prevents a forced
+				// silent reload mid-session for keyboard/wheel-only users (who
+				// never fire pointerdown/touchstart) when visibilitychange
+				// triggers a registration.update() after a new deploy lands.
+				updateSW(true)
+				return
+			}
+
+			// Dismiss any existing update toast before publishing a replacement.
+			if (activeUpdateSnackHandle !== null) {
+				activeUpdateSnackHandle.dismiss()
+				activeUpdateSnackHandle = null
+			}
+
+			// _pwaEa/_pwaI18n are set by bootstrap() after au.start(). If
+			// onNeedRefresh fires before Aurelia has started, skip the toast.
+			if (!_pwaEa || !_pwaI18n) return
+
+			const snack = new Snack(_pwaI18n.tr('pwa.updateAvailable'), 'info', {
+				duration: Infinity,
+				action: {
+					label: _pwaI18n.tr('pwa.updateAction'),
+					callback: () => updateSW(true),
+				},
+			})
+			_pwaEa.publish(snack)
+			activeUpdateSnackHandle = snack.handle
+		},
+		onRegisteredSW(_url, registration) {
+			if (!registration) return
+			registration.update()
+			document.addEventListener('visibilitychange', () => {
+				if (document.visibilityState === 'visible') {
+					registration.update()
+				}
+			})
+		},
 	})
 }
