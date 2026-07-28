@@ -143,7 +143,7 @@ export class AppShell {
 			this.routerEvents.subscribe('au:router:navigation-end', () => {
 				const node = this.router.routeTree.root.children[0]
 				this.showNav = node?.data?.nav !== false
-				const name = node?.context?.component?.name ?? 'unknown'
+				const name = node?.path ?? 'unknown'
 				this.errorBoundary.addBreadcrumb('navigation', name)
 			}),
 		)
