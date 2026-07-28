@@ -51,12 +51,13 @@ export class ConcertStore {
 		(_input, signal) => this.rpcClient.listByFollower(signal),
 	)
 
-	// The followed-artist map from the most recent successful dashboard load.
+	// The rendered DateGroup[] from the most recent successful dashboard load.
 	// Stored here (not on DashboardRoute) because DashboardRoute is re-instantiated
-	// on every navigation — storing it on the route component means it is always
-	// null on re-entry and the fast-path never fires.
-	private lastArtistMap: Map<string, { artist: Artist; hype: Hype }> | null =
-		null
+	// on every navigation. On re-entry this is painted immediately (no spinner);
+	// a background refresh then replaces it with fresh data.
+	// Cleared on invalidateFollowerCache() so a follow/unfollow always shows
+	// a fresh load rather than stale groups.
+	private lastDateGroups: DateGroup[] | null = null
 
 	// Guest / preview proximity list, keyed by the sorted artist-id set plus
 	// country + level-1 area, so a changed follow set produces a new key (no
@@ -131,41 +132,27 @@ export class ConcertStore {
 	}
 
 	/**
-	 * Synchronous peek at the cached concert groups — null when absent. Used by
-	 * the Dashboard fast-path to paint from cache before any RPC resolves.
+	 * Synchronous peek at the last successfully rendered concert groups for this
+	 * user. Survives across `DashboardRoute` re-instantiations because this store
+	 * is a singleton. Non-null after any successful dashboard load.
 	 */
-	public peekFollowerGroups(): ProximityGroup[] | null {
-		if (!this.authService.isAuthenticated) {
-			const input = this.guestProximityInput()
-			return (input && this.proximityConcerts.peek(input)) ?? null
-		}
-		return this.followerConcerts.peek(undefined) ?? null
+	public peekDateGroups(): DateGroup[] | null {
+		return this.lastDateGroups
 	}
 
 	/**
-	 * Synchronous peek at the most recently fetched followed-artist map. Survives
-	 * across `DashboardRoute` re-instantiations because this store is a singleton.
+	 * Persist the latest rendered concert groups so the next DashboardRoute
+	 * instance (re-instantiated on re-entry) can paint immediately.
 	 */
-	public peekArtistMap(): Map<string, { artist: Artist; hype: Hype }> | null {
-		return this.lastArtistMap
-	}
-
-	/** Record the latest followed-artist map so re-entry fast-paths can use it. */
-	public setArtistMap(map: Map<string, { artist: Artist; hype: Hype }>): void {
-		this.lastArtistMap = map
-	}
-
-	/** Whether a (possibly stale) concert list is cached for the current viewer. */
-	public hasFollowerCache(): boolean {
-		if (!this.authService.isAuthenticated) {
-			const input = this.guestProximityInput()
-			return input ? this.proximityConcerts.has(input) : false
-		}
-		return this.followerConcerts.has(undefined)
+	public setDateGroups(groups: DateGroup[]): void {
+		this.lastDateGroups = groups
 	}
 
 	public invalidateFollowerCache(): void {
 		this.followerConcerts.invalidate(undefined)
+		// Clear the cached output too so the next visit shows a fresh spinner
+		// rather than stale groups with the unfollowed/newly-followed artist.
+		this.lastDateGroups = null
 	}
 
 	public async listWithProximity(

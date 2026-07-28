@@ -198,41 +198,19 @@ export class DashboardRoute {
 		this.abortController = new AbortController()
 		this.loadError = null
 
-		// Fast path: concert list already cached + previous follow map available.
-		// Paint synchronously from cache (no spinner) and revalidate in the
-		// background. Journey status comes from the store's observable map —
-		// the single source of truth already kept current by write-through.
-		// Only the concert list needs a forced refresh; ListFollowed and ListByUser
-		// are intentionally NOT re-issued here to avoid the double-fetch.
-		// Both peekFollowerGroups() and peekArtistMap() live on the ConcertStore
-		// singleton, so they survive DashboardRoute re-instantiation on re-entry.
-		const cachedGroups = this.concertService.peekFollowerGroups()
-		const cachedArtistMap = this.concertService.peekArtistMap()
-		this.logger.info('[cache-debug] loadData', {
-			auth: this.authService.isAuthenticated,
-			needsRegion: this.needsRegion,
-			hasCachedGroups: cachedGroups !== null,
-			groups: cachedGroups?.length ?? null,
-			hasArtistMap: cachedArtistMap !== null,
-			artists: cachedArtistMap?.size ?? null,
-		})
-		if (
-			cachedGroups !== null &&
-			cachedArtistMap !== null &&
-			!this.needsRegion
-		) {
-			this.logger.info('[cache-debug] fast-path: painted from cache')
-			this.dateGroups = this.concertService.toDateGroups(
-				cachedGroups,
-				cachedArtistMap,
-				this.journeyStore.journeyMap,
-			)
+		// Fast path: we have a previous render for this user — paint it instantly
+		// (no spinner) then refresh in the background. Works for both guest and
+		// authenticated because lastDateGroups lives in the ConcertStore singleton,
+		// which survives DashboardRoute re-instantiation on every navigation.
+		const cachedDateGroups = this.concertService.peekDateGroups()
+		if (cachedDateGroups !== null && !this.needsRegion) {
+			this.dateGroups = cachedDateGroups
 			this.timetableLoaded = true
-			void this.revalidateDashboard()
+			void this.refreshInBackground()
 			return
 		}
 
-		// Cold load: show spinner and fetch everything.
+		// Cold load: first visit, or follow set changed, or region not set.
 		this.isLoading = true
 		// Reset so every load produces a fresh false→true transition; the
 		// needsRegion→onHomeSelected path loads twice and the second arrival must
@@ -277,17 +255,24 @@ export class DashboardRoute {
 			this.concertService.listByFollower(signal),
 			this.fetchJourneyMap(signal),
 		])
-		// Persist in the singleton store so the next DashboardRoute instance
-		// (re-instantiated on re-entry) can paint from cache without waiting on
-		// ListFollowed again.
-		this.concertService.setArtistMap(artistMap)
 
 		if (groups.length === 0) {
 			this.logger.info('No concert groups returned')
+			// Cache the empty result so re-entry shows the empty state immediately
+			// rather than a spinner, then refreshes in the background.
+			this.concertService.setDateGroups([])
 			return []
 		}
 
-		return this.concertService.toDateGroups(groups, artistMap, journeyMap)
+		const result = this.concertService.toDateGroups(
+			groups,
+			artistMap,
+			journeyMap,
+		)
+		// Persist the rendered output in the singleton so the next DashboardRoute
+		// instance (re-created on every navigation) paints instantly on re-entry.
+		this.concertService.setDateGroups(result)
+		return result
 	}
 
 	private async fetchJourneyMap(
@@ -323,40 +308,23 @@ export class DashboardRoute {
 	}
 
 	/**
-	 * Force a background refresh of the concert list and swap it into the timetable
-	 * in place — no spinner, no scroll reset, no celebration re-trigger. Bound to
-	 * both Dashboard route entry (after the cache paints) and PWA resume.
+	 * Fetch fresh data in the background and swap it in place — no spinner, no
+	 * scroll reset. Called after the cache paint on re-entry, and on PWA resume.
 	 */
 	public readonly revalidate = (): void => {
-		void this.revalidateDashboard()
+		void this.refreshInBackground()
 	}
 
-	private async revalidateDashboard(): Promise<void> {
+	private async refreshInBackground(): Promise<void> {
 		if (this.needsRegion || this.isLoading) return
 		const signal = this.abortController?.signal
 		try {
-			// Only the concert list is force-refreshed. The followed-artist map is
-			// reused from the last full load (follows can't change while backgrounded
-			// or between the same-tick paint), and journey status is read from its
-			// store — the single source of truth already kept fresh by loadData and
-			// write-through. This avoids re-issuing ListFollowed + ListByUser (which
-			// loadData just fetched) and never blanks journey badges on a fetch error.
-			const groups = await this.concertService.revalidateFollower()
+			const fresh = await this.loadDashboardEvents(signal)
 			if (signal?.aborted) return
-			const artistMap =
-				this.concertService.peekArtistMap() ??
-				(await this.followStore.getFollowedArtistMap(signal))
-			if (signal?.aborted) return
-			// In-place swap of the observable state; the router view is untouched so
-			// scroll position is preserved.
-			this.dateGroups = this.concertService.toDateGroups(
-				groups,
-				artistMap,
-				this.journeyStore.journeyMap,
-			)
+			this.dateGroups = fresh
 		} catch (err) {
 			if ((err as Error).name === 'AbortError') return
-			this.logger.warn('Dashboard revalidation failed', { error: err })
+			this.logger.warn('Dashboard background refresh failed', { error: err })
 		}
 	}
 
