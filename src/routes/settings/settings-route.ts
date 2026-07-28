@@ -353,15 +353,9 @@ export class SettingsRoute {
 		return this.appConfig.releaseVersion ?? '—'
 	}
 
-	public get buildSha(): string {
-		return __BUILD_SHA__
-	}
-
 	public async copyVersion(): Promise<void> {
 		try {
-			await navigator.clipboard.writeText(
-				`${this.releaseVersion} (${this.buildSha})`,
-			)
+			await navigator.clipboard.writeText(this.releaseVersion)
 			this.ea.publish(
 				new Snack(this.i18n.tr('settings.copyVersionSuccess'), 'info'),
 			)
