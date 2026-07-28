@@ -827,4 +827,35 @@ describe('DiscoveryRoute', () => {
 			)
 		})
 	})
+
+	describe('bubble pool cap — 50 upper limit', () => {
+		it('ghost pool is initialised to exactly MAX_BUBBLES on cold visit', () => {
+			;(
+				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
+			).mockReturnValue(null)
+
+			sut.loading()
+
+			// All 50 slots filled with ghost placeholders — pool never exceeds cap.
+			expect(sut.bubbles.pool.availableBubbles.length).toBe(50)
+			expect(
+				sut.bubbles.pool.availableBubbles.every((a) => a.isGhost === true),
+			).toBe(true)
+		})
+
+		it('re-entry with cached pool does not exceed MAX_BUBBLES', () => {
+			const cached = Array.from({ length: 50 }, (_, i) => ({
+				id: `artist-${i}`,
+				name: `Artist ${i}`,
+				mbid: '',
+			}))
+			;(
+				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
+			).mockReturnValue(cached)
+
+			sut.loading()
+
+			expect(sut.bubbles.pool.availableBubbles.length).toBeLessThanOrEqual(50)
+		})
+	})
 })

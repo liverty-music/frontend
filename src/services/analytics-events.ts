@@ -107,6 +107,38 @@ export type NotificationDismissedProps = {
 	notification_id: string
 }
 
+export type WebVitalsProps = {
+	/** Metric name: LCP, INP, or CLS. */
+	name: 'LCP' | 'INP' | 'CLS'
+	/** Value in milliseconds (CLS is unitless 0–∞). */
+	value: number
+	rating: 'good' | 'needs-improvement' | 'poor'
+	/** Soft or hard navigation type. */
+	navigation_type: string
+	/** Current route pathname at measurement time. */
+	route: string
+}
+
+export type LongAnimationFrameProps = {
+	/** Frame duration in milliseconds (≥ 100ms). */
+	duration_ms: number
+	/** sourceFunctionName of the longest script in the frame. */
+	top_function: string
+	/** sourceURL of the longest script in the frame. */
+	top_script: string
+	/** Route pathname where the long frame occurred. */
+	route: string
+}
+
+export type SlowInteractionProps = {
+	/** Pointer, keyboard, or click event type. */
+	interaction_type: string
+	/** Interaction processing duration in milliseconds (≥ 150ms). */
+	duration_ms: number
+	/** Route pathname where the slow interaction occurred. */
+	route: string
+}
+
 // -- Name catalogue and type-level wiring --------------------------------------
 
 /**
@@ -130,6 +162,9 @@ export const Events = {
 	NotificationRequested: 'notification.requested',
 	NotificationOpened: 'notification.opened',
 	NotificationDismissed: 'notification.dismissed',
+	WebVitals: 'web.vitals',
+	LongAnimationFrame: 'perf.long_animation_frame',
+	SlowInteraction: 'perf.slow_interaction',
 } as const satisfies Record<string, string>
 
 /** The union of every valid event-name literal. */
@@ -149,6 +184,9 @@ export type EventPropsMap = {
 	'notification.requested': NotificationRequestedProps
 	'notification.opened': NotificationOpenedProps
 	'notification.dismissed': NotificationDismissedProps
+	'web.vitals': WebVitalsProps
+	'perf.long_animation_frame': LongAnimationFrameProps
+	'perf.slow_interaction': SlowInteractionProps
 }
 
 /**
