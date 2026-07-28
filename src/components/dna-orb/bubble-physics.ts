@@ -1,5 +1,6 @@
 import type Matter from 'matter-js'
 import type { Artist } from '../../entities/artist'
+import { BubblePool } from '../../services/bubble-pool'
 import { easeOutBack } from './easing'
 
 /** A physics-enabled bubble wrapping an Artist with position and radius. */
@@ -126,6 +127,8 @@ export class BubblePhysics {
 
 	public addBubbles(params: BubbleArtistParams[]): void {
 		for (const { artist, radius } of params) {
+			// Defensive cap: physics engine must never exceed the spec'd maximum.
+			if (this.bubbleMap.size >= BubblePool.MAX_BUBBLES) break
 			const id = artist.id
 			if (!id || this.bubbleMap.has(id)) continue
 
@@ -271,6 +274,10 @@ export class BubblePhysics {
 
 	public getBubbles(): PhysicsBubble[] {
 		return Array.from(this.bubbleMap.values())
+	}
+
+	public getBubbleEntries(): IterableIterator<[string, PhysicsBubble]> {
+		return this.bubbleMap.entries()
 	}
 
 	public get bubbleCount(): number {

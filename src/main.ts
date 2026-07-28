@@ -10,6 +10,7 @@ import Aurelia, {
 	Registration,
 } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
+import { onCLS, onINP, onLCP } from 'web-vitals/attribution'
 import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
 import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
 import { IEntryRpcClient } from './adapter/rpc/client/entry-client'
@@ -59,10 +60,14 @@ import { LongPressCustomAttribute } from './custom-attributes/long-press'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
-import { IAnalyticsService } from './lib/analytics/analytics-service'
+import {
+	IAnalyticsService,
+	type IAnalyticsService as IAnalyticsServiceType,
+} from './lib/analytics/analytics-service'
 import { IConsentService } from './lib/consent/consent-service'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
+import { Events } from './services/analytics-events'
 import { IArtistStore } from './services/artist-store'
 import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
@@ -287,6 +292,10 @@ async function bootstrap(): Promise<void> {
 	// Store EA + I18N so the PWA onNeedRefresh callback can publish the update toast.
 	_pwaEa = au.container.get(IEventAggregator)
 	_pwaI18n = au.container.get(I18N)
+
+	// Register performance observers. All three send to PostHog via the same
+	// IAnalyticsService that handles consent opt-out suppression internally.
+	registerPerfObservers(au.container.get(IAnalyticsService))
 	// Flush any SW update notification that arrived before bootstrap completed.
 	if (_pendingRefresh) {
 		_showUpdateToast?.()
@@ -364,4 +373,74 @@ if (!import.meta.env.DEV) {
 			})
 		},
 	})
+}
+
+/**
+ * Register performance observers that send real-user metrics to PostHog.
+ * Registered once after Aurelia bootstraps; active for the whole session.
+ * IAnalyticsService handles consent opt-out suppression internally so
+ * observers can always call capture() without extra gating here.
+ */
+function registerPerfObservers(analytics: IAnalyticsServiceType): void {
+	const route = (): string => window.location.pathname
+
+	// Core Web Vitals (web-vitals/attribution) — LCP, INP, CLS
+	const sendVital = (metric: {
+		name: string
+		value: number
+		rating: string
+		navigationType?: string
+	}): void => {
+		if (metric.name !== 'LCP' && metric.name !== 'INP' && metric.name !== 'CLS')
+			return
+		analytics.capture(Events.WebVitals, {
+			name: metric.name as 'LCP' | 'INP' | 'CLS',
+			value: Math.round(metric.value),
+			rating: metric.rating as 'good' | 'needs-improvement' | 'poor',
+			navigation_type: metric.navigationType ?? 'unknown',
+			route: route(),
+		})
+	}
+	onLCP(sendVital)
+	onINP(sendVital)
+	onCLS(sendVital)
+
+	if (!('PerformanceObserver' in window)) return
+
+	// Long Animation Frames — frames ≥ 100ms (50–99ms intentionally excluded to limit volume)
+	try {
+		new PerformanceObserver((list) => {
+			for (const entry of list.getEntries()) {
+				if (entry.duration < 100) continue
+				const loaf = entry as PerformanceLongAnimationFrameTiming
+				const topScript = loaf.scripts?.[0]
+				analytics.capture(Events.LongAnimationFrame, {
+					duration_ms: Math.round(entry.duration),
+					top_function: topScript?.sourceFunctionName ?? '',
+					top_script: topScript?.sourceURL ?? '',
+					route: route(),
+				})
+			}
+		}).observe({ type: 'long-animation-frame', buffered: true })
+	} catch {
+		// long-animation-frame not supported in this browser
+	}
+
+	// Slow interactions — processing duration ≥ 150ms.
+	// Register without durationThreshold (browser minimum 104ms applies);
+	// the 150ms cutoff is applied in the callback to avoid missing 104–149ms events.
+	try {
+		new PerformanceObserver((list) => {
+			for (const entry of list.getEntries()) {
+				if (entry.duration < 150) continue
+				analytics.capture(Events.SlowInteraction, {
+					interaction_type: entry.name,
+					duration_ms: Math.round(entry.duration),
+					route: route(),
+				})
+			}
+		}).observe({ type: 'event', buffered: true })
+	} catch {
+		// event timing not supported in this browser
+	}
 }
