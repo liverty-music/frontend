@@ -1,4 +1,4 @@
-import { IRouterEvents } from '@aurelia/router'
+import { IRouter, IRouterEvents } from '@aurelia/router'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppShell } from '../src/app-shell'
@@ -84,29 +84,42 @@ describe('app-shell', () => {
 	})
 
 	describe('showNav', () => {
-		let navigationEndHandler: ((event: unknown) => void) | undefined
+		let navigationEndHandler: (() => void) | undefined
+		let mockRouteTree: {
+			root: {
+				children: Array<{
+					data: Record<string, unknown>
+					context: { component: { name: string } }
+				}>
+			}
+		}
 		let container: ReturnType<typeof DI.createContainer>
 		let sut: AppShell
 
 		function simulateNavigation(data?: Record<string, unknown>) {
-			navigationEndHandler?.({
-				instructions: [{ component: { name: 'test' }, route: { data } }],
-			})
+			mockRouteTree.root.children = [
+				{ data: data ?? {}, context: { component: { name: 'test' } } },
+			]
+			navigationEndHandler?.()
 		}
 
 		beforeEach(() => {
 			navigationEndHandler = undefined
+			mockRouteTree = { root: { children: [] } }
 			container = DI.createContainer()
 			container.register(
+				Registration.instance(IRouter, {
+					get routeTree() {
+						return mockRouteTree
+					},
+				} as unknown as IRouter),
 				Registration.instance(IRouterEvents, {
-					subscribe: vi.fn(
-						(event: string, handler: (event: unknown) => void) => {
-							if (event === 'au:router:navigation-end') {
-								navigationEndHandler = handler
-							}
-							return { dispose: vi.fn() }
-						},
-					),
+					subscribe: vi.fn((event: string, handler: () => void) => {
+						if (event === 'au:router:navigation-end') {
+							navigationEndHandler = handler
+						}
+						return { dispose: vi.fn() }
+					}),
 				}),
 				Registration.instance(IErrorBoundaryService, {
 					captureError: vi.fn(),

@@ -1,4 +1,4 @@
-import { IRouterEvents, route } from '@aurelia/router'
+import { IRouter, IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
@@ -106,6 +106,7 @@ import { IPwaInstallService } from './services/pwa-install-service'
 	fallback: import('./routes/not-found/not-found-route'),
 })
 export class AppShell {
+	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
 	public readonly onboarding = resolve(IOnboardingService)
@@ -139,18 +140,10 @@ export class AppShell {
 		)
 
 		this.subscriptions.push(
-			this.routerEvents.subscribe('au:router:navigation-end', (event) => {
-				const instructions = (
-					event as unknown as {
-						instructions?: Array<{
-							component?: { name?: string }
-							route?: { data?: Record<string, unknown> }
-						}>
-					}
-				).instructions
-				const data = instructions?.[0]?.route?.data
-				this.showNav = data?.nav !== false
-				const name = instructions?.[0]?.component?.name ?? 'unknown'
+			this.routerEvents.subscribe('au:router:navigation-end', () => {
+				const node = this.router.routeTree.root.children[0]
+				this.showNav = node?.data?.nav !== false
+				const name = node?.context?.component?.name ?? 'unknown'
 				this.errorBoundary.addBreadcrumb('navigation', name)
 			}),
 		)
