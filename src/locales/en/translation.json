@@ -186,7 +186,9 @@
 		"title": "Add to Home Screen",
 		"description": "Install Liverty Music for faster access and offline browsing.",
 		"install": "Install",
-		"notNow": "Not now"
+		"notNow": "Not now",
+		"updateAvailable": "A new version is available",
+		"updateAction": "Update"
 	},
 	"pwaFab": {
 		"ariaLabel": "Add to home screen",
@@ -298,7 +300,9 @@
 		"guestHero": {
 			"heading": "Sign in for the full experience",
 			"body": "Use your favorites and notifications on any device"
-		}
+		},
+		"appInfo": "App Info",
+		"copyVersionSuccess": "Version info copied"
 	},
 	"onboarding": {
 		"consent": {

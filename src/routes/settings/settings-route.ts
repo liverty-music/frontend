@@ -27,6 +27,7 @@ export class SettingsRoute {
 	private readonly i18n = resolve(I18N)
 	private readonly router = resolve(IRouter)
 	private readonly audio = resolve(IAudioEngine)
+	private readonly appConfig = resolve(IAppConfig)
 	// Public so the template binds the opt-out toggles to the service's
 	// `@observable` state directly (`consent.analytics` /
 	// `consent.sessionReplay`) — no component-local mirror. Mirrors the
@@ -346,6 +347,27 @@ export class SettingsRoute {
 	 */
 	public async openLegal(path: string): Promise<void> {
 		await this.router.load(path)
+	}
+
+	public get releaseVersion(): string {
+		return this.appConfig.releaseVersion ?? '—'
+	}
+
+	public get buildSha(): string {
+		return __BUILD_SHA__
+	}
+
+	public async copyVersion(): Promise<void> {
+		try {
+			await navigator.clipboard.writeText(
+				`${this.releaseVersion} (${this.buildSha})`,
+			)
+			this.ea.publish(
+				new Snack(this.i18n.tr('settings.copyVersionSuccess'), 'info'),
+			)
+		} catch (err) {
+			this.logger.warn('Failed to copy version to clipboard', err)
+		}
 	}
 
 	/** Guest auth entry — start the OIDC sign-in flow from Settings. */

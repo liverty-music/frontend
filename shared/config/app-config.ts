@@ -59,6 +59,13 @@ export interface AppConfig {
 	 * tagged), never a crash.
 	 */
 	readonly internalTrafficUserIds: readonly string[]
+	/**
+	 * Semver release tag for the deployed image (e.g. `"v1.26.0"`). Written by
+	 * the prod pin-bump workflow into the per-environment config.json ConfigMap.
+	 * Optional — absent during the rollout window before cloud-provisioning
+	 * catches up; the Settings UI renders `—` when absent.
+	 */
+	readonly releaseVersion?: string
 }
 
 export const IAppConfig = DI.createInterface<AppConfig>('IAppConfig')
@@ -242,6 +249,10 @@ function validateAppConfig(parsed: unknown): AppConfig {
 	// cutover sets it.
 	const adminApiBaseUrl = readOptionalString(o, 'adminApiBaseUrl')
 
+	// Optional: written by the prod pin-bump workflow; absent during the
+	// rollout window between a GH Release and the cloud-provisioning PR merge.
+	const releaseVersion = readOptionalString(o, 'releaseVersion')
+
 	return {
 		environment: env as AppConfig['environment'],
 		apiBaseUrl: requireString(o, 'apiBaseUrl'),
@@ -261,6 +272,7 @@ function validateAppConfig(parsed: unknown): AppConfig {
 		...(posthogApiHost !== undefined ? { posthogApiHost } : {}),
 		...(posthogProjectKey !== undefined ? { posthogProjectKey } : {}),
 		internalTrafficUserIds,
+		...(releaseVersion !== undefined ? { releaseVersion } : {}),
 	}
 }
 
