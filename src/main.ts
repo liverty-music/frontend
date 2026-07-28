@@ -92,10 +92,10 @@ import { DateValueConverter } from './value-converters/date'
 // Stored after Aurelia.start() so the PWA update toast can publish via EA + I18N.
 let _pwaEa: IEventAggregator | null = null
 let _pwaI18n: I18N | null = null
-// Latched true once bootstrap() completes. Guards the silent-apply path in
-// onNeedRefresh to boot-time only: a keyboard/wheel-only user (who never fires
-// pointerdown/touchstart) must not receive a silent forced reload mid-session.
-let _bootComplete = false
+// Set to true if onNeedRefresh fires before bootstrap() completes (EA/I18N not
+// yet available). bootstrap() flushes it via _showUpdateToast after au.start().
+let _pendingRefresh = false
+let _showUpdateToast: (() => void) | null = null
 
 function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
 	const map: Record<AppConfig['logLevel'], LogLevel> = {
@@ -287,8 +287,11 @@ async function bootstrap(): Promise<void> {
 	// Store EA + I18N so the PWA onNeedRefresh callback can publish the update toast.
 	_pwaEa = au.container.get(IEventAggregator)
 	_pwaI18n = au.container.get(I18N)
-	// Latch bootComplete so onNeedRefresh knows the app is fully running.
-	_bootComplete = true
+	// Flush any SW update notification that arrived before bootstrap completed.
+	if (_pendingRefresh) {
+		_showUpdateToast?.()
+		_pendingRefresh = false
+	}
 
 	// Remove the inline loading indicator now that Aurelia has rendered.
 	removeBootstrapLoadingIndicator()
@@ -320,59 +323,36 @@ bootstrap().catch(showStaticErrorPage)
 // single-shot location.reload() internally, so NO manual controllerchange
 // listener should be added here (double-reload risk per design D1).
 if (!import.meta.env.DEV) {
-	// Track whether the user has interacted so onNeedRefresh can decide between
-	// a silent boot-time apply and the visible update toast.
-	let hasInteracted = false
-	window.addEventListener(
-		'pointerdown',
-		() => {
-			hasInteracted = true
-		},
-		{ once: true },
-	)
-	window.addEventListener(
-		'touchstart',
-		() => {
-			hasInteracted = true
-		},
-		{ once: true },
-	)
-
 	// Active update Snack handle — non-null while a toast is showing. Used to
 	// dismiss and replace before publishing a second onNeedRefresh toast.
 	let activeUpdateSnackHandle: SnackHandle | null = null
 
+	const showUpdateToast = () => {
+		if (!_pwaEa || !_pwaI18n) return
+		if (activeUpdateSnackHandle !== null) {
+			activeUpdateSnackHandle.dismiss()
+			activeUpdateSnackHandle = null
+		}
+		const snack = new Snack(_pwaI18n.tr('pwa.updateAvailable'), 'info', {
+			duration: Infinity,
+			action: {
+				label: _pwaI18n.tr('pwa.updateAction'),
+				callback: () => updateSW(true),
+			},
+		})
+		_pwaEa.publish(snack)
+		activeUpdateSnackHandle = snack.handle
+	}
+	_showUpdateToast = showUpdateToast
+
 	const updateSW = registerSW({
 		onNeedRefresh() {
-			if (!hasInteracted && !_bootComplete) {
-				// Boot-time only: no interaction yet and Aurelia hasn't started —
-				// apply silently. Bounding on _bootComplete prevents a forced
-				// silent reload mid-session for keyboard/wheel-only users (who
-				// never fire pointerdown/touchstart) when visibilitychange
-				// triggers a registration.update() after a new deploy lands.
-				updateSW(true)
+			if (!_pwaEa || !_pwaI18n) {
+				// Bootstrap not yet complete — defer until after au.start().
+				_pendingRefresh = true
 				return
 			}
-
-			// Dismiss any existing update toast before publishing a replacement.
-			if (activeUpdateSnackHandle !== null) {
-				activeUpdateSnackHandle.dismiss()
-				activeUpdateSnackHandle = null
-			}
-
-			// _pwaEa/_pwaI18n are set by bootstrap() after au.start(). If
-			// onNeedRefresh fires before Aurelia has started, skip the toast.
-			if (!_pwaEa || !_pwaI18n) return
-
-			const snack = new Snack(_pwaI18n.tr('pwa.updateAvailable'), 'info', {
-				duration: Infinity,
-				action: {
-					label: _pwaI18n.tr('pwa.updateAction'),
-					callback: () => updateSW(true),
-				},
-			})
-			_pwaEa.publish(snack)
-			activeUpdateSnackHandle = snack.handle
+			showUpdateToast()
 		},
 		onRegisteredSW(_url, registration) {
 			if (!registration) return
