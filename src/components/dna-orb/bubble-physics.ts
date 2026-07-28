@@ -139,14 +139,17 @@ export class BubblePhysics {
 			})
 
 			this.Matter?.Composite.add(this.world, body)
+			// Instant appearance — ghost placeholders and cached re-entry bubbles
+			// must paint immediately with no delay. The pop-in animation is reserved
+			// for revealGhostBubbles (ghost→real swap) and spawnBubblesAt (tap flow).
 			this.bubbleMap.set(id, {
 				body,
 				artist,
 				radius,
-				scale: 0,
-				opacity: 0,
-				isSpawning: true,
-				spawnProgress: 0,
+				scale: 1,
+				opacity: 1,
+				isSpawning: false,
+				spawnProgress: 1,
 				isFadingOut: false,
 				fadeOutProgress: 0,
 			})
