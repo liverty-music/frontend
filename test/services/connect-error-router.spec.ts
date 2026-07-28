@@ -125,6 +125,54 @@ describe('createAuthRetryInterceptor', () => {
 
 		await expect(handler(makeRequest())).rejects.toThrow(error)
 	})
+
+	it('should deduplicate concurrent Unauthenticated errors to a single signinSilent call', async () => {
+		const response = { message: 'ok' }
+
+		let resolveSignin: (user: { access_token: string }) => void = () => {}
+		const signinDeferred = new Promise<{ access_token: string }>((res) => {
+			resolveSignin = res
+		})
+
+		mockAuth.user = { access_token: 'old-token' } as any
+
+		const mockUserManager = {
+			signinSilent: vi.fn().mockReturnValue(signinDeferred),
+			removeUser: vi.fn(),
+		}
+		mockAuth.getUserManager = vi.fn().mockReturnValue(mockUserManager)
+
+		const next = vi
+			.fn()
+			.mockRejectedValueOnce(
+				new ConnectError('unauthenticated', Code.Unauthenticated),
+			)
+			.mockRejectedValueOnce(
+				new ConnectError('unauthenticated', Code.Unauthenticated),
+			)
+			.mockResolvedValue(response)
+
+		const interceptor = createAuthRetryInterceptor(mockAuth as any)
+		const handler = interceptor(next)
+
+		// Start both requests concurrently
+		const p1 = handler(makeRequest())
+		const p2 = handler(makeRequest())
+
+		// Allow microtasks to drain so both handlers reach await refreshPromise
+		await Promise.resolve()
+
+		// Exactly one signinSilent should have been initiated
+		expect(mockUserManager.signinSilent).toHaveBeenCalledTimes(1)
+
+		// Resolve the deferred signin and await both requests
+		resolveSignin({ access_token: 'new-token' })
+
+		const [r1, r2] = await Promise.all([p1, p2])
+		expect(r1).toBe(response)
+		expect(r2).toBe(response)
+		expect(mockUserManager.signinSilent).toHaveBeenCalledTimes(1)
+	})
 })
 
 describe('createRetryInterceptor', () => {
