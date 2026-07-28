@@ -6,7 +6,7 @@
 
 <au-viewport></au-viewport>
 
-<bottom-nav-bar show.bind="showNav"></bottom-nav-bar>
+<bottom-nav-bar if.bind="showNav"></bottom-nav-bar>
 
 <!-- Top-layer overlays: rendered via popover/dialog in browser top layer,
      DOM position is irrelevant. Placed outside viewport to avoid grid interference. -->

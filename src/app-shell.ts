@@ -1,4 +1,4 @@
-import { IRouter, IRouterEvents, route } from '@aurelia/router'
+import { IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
@@ -16,7 +16,7 @@ import { IPwaInstallService } from './services/pwa-install-service'
 			path: 'welcome',
 			component: import('./routes/welcome/welcome-route'),
 			title: 'Welcome',
-			data: { auth: false },
+			data: { auth: false, nav: false },
 		},
 		{
 			path: 'about',
@@ -28,7 +28,7 @@ import { IPwaInstallService } from './services/pwa-install-service'
 			path: 'auth/callback',
 			component: import('./routes/auth-callback/auth-callback-route'),
 			title: 'Signing In',
-			data: { auth: false },
+			data: { auth: false, nav: false },
 		},
 		{
 			path: 'dashboard',
@@ -106,7 +106,6 @@ import { IPwaInstallService } from './services/pwa-install-service'
 	fallback: import('./routes/not-found/not-found-route'),
 })
 export class AppShell {
-	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
 	public readonly onboarding = resolve(IOnboardingService)
@@ -123,23 +122,9 @@ export class AppShell {
 
 	private readonly subscriptions: IDisposable[] = []
 
-	private readonly fullscreenRoutes = ['', 'welcome', 'auth/callback']
-
-	public get currentPath(): string {
-		const tree = (
-			this.router as IRouter & {
-				routeTree?: {
-					root?: { children?: Array<{ computeAbsolutePath?: () => string }> }
-				}
-			}
-		).routeTree
-		return tree?.root?.children?.[0]?.computeAbsolutePath?.() ?? ''
-	}
-
-	public get showNav(): boolean {
-		const path = this.currentPath
-		return !this.fullscreenRoutes.some((r) => path === r)
-	}
+	// Updated on every navigation-end via route data `nav: false`.
+	// Defaults to true so authenticated routes show the nav bar immediately.
+	public showNav = true
 
 	public binding(): void {
 		this.subscriptions.push(
@@ -155,12 +140,17 @@ export class AppShell {
 
 		this.subscriptions.push(
 			this.routerEvents.subscribe('au:router:navigation-end', (event) => {
-				const instruction = (
+				const instructions = (
 					event as unknown as {
-						instructions?: Array<{ component?: { name?: string } }>
+						instructions?: Array<{
+							component?: { name?: string }
+							route?: { data?: Record<string, unknown> }
+						}>
 					}
 				).instructions
-				const name = instruction?.[0]?.component?.name ?? 'unknown'
+				const data = instructions?.[0]?.route?.data
+				this.showNav = data?.nav !== false
+				const name = instructions?.[0]?.component?.name ?? 'unknown'
 				this.errorBoundary.addBreadcrumb('navigation', name)
 			}),
 		)
