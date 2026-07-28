@@ -143,10 +143,10 @@ export class BubblePhysics {
 				body,
 				artist,
 				radius,
-				scale: 1,
-				opacity: 1,
-				isSpawning: false,
-				spawnProgress: 1,
+				scale: 0,
+				opacity: 0,
+				isSpawning: true,
+				spawnProgress: 0,
 				isFadingOut: false,
 				fadeOutProgress: 0,
 			})
@@ -237,9 +237,14 @@ export class BubblePhysics {
 		for (const bubble of this.bubbleMap.values()) {
 			const id = bubble.artist.id
 			if (bubble.isSpawning) {
-				bubble.spawnProgress = Math.min(1, bubble.spawnProgress + delta * 0.004)
+				bubble.spawnProgress = Math.min(
+					1,
+					bubble.spawnProgress + delta * 0.0015,
+				)
 				bubble.scale = easeOutBack(bubble.spawnProgress)
-				bubble.opacity = bubble.spawnProgress
+				// Quadratic ease-in so color/text bleeds in gently during the second
+				// half of the spawn rather than appearing abruptly with the circle.
+				bubble.opacity = bubble.spawnProgress * bubble.spawnProgress
 				if (bubble.spawnProgress >= 1) {
 					bubble.isSpawning = false
 					bubble.scale = 1
@@ -270,6 +275,42 @@ export class BubblePhysics {
 
 	public get bubbleCount(): number {
 		return this.bubbleMap.size
+	}
+
+	/**
+	 * Swap ghost placeholder bodies in-place for real artist data.
+	 * The physics body (position, velocity, radius) is preserved so the bubble
+	 * stays exactly where it is. Returns real artists that had no ghost to occupy.
+	 */
+	public revealGhostBubbles(realArtists: Artist[]): Artist[] {
+		const ghostIds = Array.from(this.bubbleMap.keys()).filter((id) =>
+			id.startsWith('__ghost__'),
+		)
+		const overflow: Artist[] = []
+		for (let i = 0; i < realArtists.length; i++) {
+			const artist = realArtists[i]
+			const ghostId = ghostIds[i]
+			if (!ghostId) {
+				overflow.push(artist)
+				continue
+			}
+			const bubble = this.bubbleMap.get(ghostId)!
+			this.bubbleMap.delete(ghostId)
+			// Swap artist reference in place — physics position/velocity unchanged.
+			// Restart the spawn animation so the real artist appears with the same
+			// scale-from-zero + easeOutBack bounce as any other new bubble.
+			bubble.artist = artist
+			bubble.isSpawning = true
+			bubble.spawnProgress = 0
+			bubble.scale = 0
+			bubble.opacity = 0
+			this.bubbleMap.set(artist.id, bubble)
+		}
+		// Fade out any ghost bodies left over (more ghosts than real artists).
+		for (let i = realArtists.length; i < ghostIds.length; i++) {
+			this.fadeOutBubble(ghostIds[i])
+		}
+		return overflow
 	}
 
 	public reset(): void {

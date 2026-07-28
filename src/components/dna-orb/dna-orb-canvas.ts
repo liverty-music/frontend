@@ -92,6 +92,16 @@ export class DnaOrbCanvas {
 
 	public artistsChanged(newVal: Artist[]): void {
 		if (!this.ctx) return // not yet attached
+		// If there are ghost placeholder bodies, swap them in-place for real artists
+		// so bubbles stay at their current physics positions.
+		const hasGhosts = newVal.some((a) => a.isGhost)
+		if (!hasGhosts) {
+			const overflow = this.physics.revealGhostBubbles(newVal)
+			if (overflow.length > 0) {
+				this.physics.addBubbles(overflow.map((a) => toBubbleParams(a)))
+			}
+			return
+		}
 		const params = newVal.map((a) => toBubbleParams(a))
 		this.physics.addBubbles(params)
 	}
@@ -486,6 +496,38 @@ export class DnaOrbCanvas {
 		if (r < 1 || opacity < 0.01) return
 
 		this.ctx.save()
+
+		// Ghost bubbles: translucent placeholder shown during loading — no label.
+		if (artist.isGhost) {
+			this.ctx.globalAlpha = opacity * 0.35
+			const ghostGrad = this.ctx.createRadialGradient(
+				x - r * 0.25,
+				y - r * 0.25,
+				0,
+				x,
+				y,
+				r,
+			)
+			ghostGrad.addColorStop(0, 'hsla(260, 40%, 65%, 0.6)')
+			ghostGrad.addColorStop(0.7, 'hsla(250, 30%, 45%, 0.4)')
+			ghostGrad.addColorStop(1, 'hsla(240, 20%, 30%, 0.2)')
+			this.ctx.fillStyle = ghostGrad
+			this.ctx.beginPath()
+			this.ctx.arc(x, y, r, 0, Math.PI * 2)
+			this.ctx.fill()
+			this.ctx.save()
+			this.ctx.shadowBlur = r * 0.35
+			this.ctx.shadowColor = 'rgba(180, 160, 255, 0.25)'
+			this.ctx.strokeStyle = 'rgba(180, 160, 255, 0.05)'
+			this.ctx.lineWidth = 2
+			this.ctx.beginPath()
+			this.ctx.arc(x, y, r, 0, Math.PI * 2)
+			this.ctx.stroke()
+			this.ctx.restore()
+			this.ctx.restore()
+			return
+		}
+
 		this.ctx.globalAlpha = isFollowed ? opacity * 0.4 : opacity
 
 		// Focus ring for keyboard navigation
@@ -517,15 +559,27 @@ export class DnaOrbCanvas {
 		this.ctx.arc(x, y, r, 0, Math.PI * 2)
 		this.ctx.fill()
 
-		// Artist name (adaptive sizing + word wrap)
-		this.renderBubbleText(artistName, x, y, r)
+		// Artist name fades in during the second half of the spawn so color
+		// fills the bubble before text bleeds through.
+		if (opacity > 0.55) {
+			this.ctx.globalAlpha = isFollowed
+				? opacity * 0.4
+				: Math.min(1, (opacity - 0.55) / 0.45)
+			this.renderBubbleText(artistName, x, y, r)
+			this.ctx.globalAlpha = isFollowed ? opacity * 0.4 : opacity
+		}
 
-		// Subtle outline
-		this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
-		this.ctx.lineWidth = 1
+		// Soft bubble rim: shadowBlur blooms the stroke outward, mimicking the
+		// way a real soap bubble has a glowing, blurry edge rather than a hard line.
+		this.ctx.save()
+		this.ctx.shadowBlur = r * 0.35
+		this.ctx.shadowColor = 'rgba(255, 255, 255, 0.35)'
+		this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'
+		this.ctx.lineWidth = 2
 		this.ctx.beginPath()
 		this.ctx.arc(x, y, r, 0, Math.PI * 2)
 		this.ctx.stroke()
+		this.ctx.restore()
 
 		// Checkmark for already-followed artists
 		if (isFollowed) {

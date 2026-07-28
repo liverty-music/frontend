@@ -781,4 +781,50 @@ describe('DiscoveryRoute', () => {
 			expect(mockCoachMark.deactivate).toHaveBeenCalled()
 		})
 	})
+
+	describe('loading() — bubble cache (re-entry fast path)', () => {
+		it('uses ghost bubbles on cold visit (peekBubbles returns null)', () => {
+			;(
+				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
+			).mockReturnValue(null)
+
+			sut.loading()
+
+			// Ghost bubbles are all isGhost: true — none of the pool artists have real names.
+			const pool = sut.bubbles.pool.availableBubbles
+			expect(pool.length).toBe(50)
+			expect(pool.every((a) => a.isGhost === true)).toBe(true)
+		})
+
+		it('uses cached real artists on re-entry (peekBubbles returns data)', () => {
+			const cached = [
+				{ id: 'a1', name: 'YOASOBI', mbid: '' },
+				{ id: 'a2', name: 'Ado', mbid: '' },
+			]
+			;(
+				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
+			).mockReturnValue(cached)
+
+			sut.loading()
+
+			const pool = sut.bubbles.pool.availableBubbles
+			expect(pool).toEqual(cached)
+			expect(pool.every((a) => !a.isGhost)).toBe(true)
+		})
+
+		it('persists the pool after loadInitialBubbles succeeds', async () => {
+			;(
+				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
+			).mockReturnValue(null)
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[{ id: 'a1', name: 'YOASOBI', mbid: '' }],
+			)
+
+			await sut.loadInitialBubbles()
+
+			expect(mockArtistClient.setBubbles).toHaveBeenCalledWith(
+				sut.bubbles.pool.availableBubbles,
+			)
+		})
+	})
 })
