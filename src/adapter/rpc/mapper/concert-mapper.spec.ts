@@ -34,9 +34,7 @@ describe('resolveVenueName', () => {
 		})
 
 		it('falls back to listed_venue_name when venue.name is absent', () => {
-			expect(resolveVenueName(undefined, '日本武道館', 'en')).toBe(
-				'日本武道館',
-			)
+			expect(resolveVenueName(undefined, '日本武道館', 'en')).toBe('日本武道館')
 		})
 
 		it('falls back to listed_venue_name when venue.name is empty string', () => {
