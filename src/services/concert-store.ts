@@ -4,11 +4,11 @@ import {
 	type ProtoConcert,
 	type ProximityGroup,
 } from '../adapter/rpc/client/concert-client'
-import { concertFrom } from '../adapter/rpc/mapper/concert-mapper'
 import { loadFollows, loadHome } from '../adapter/storage/guest-storage'
-import { codeToHome } from '../constants/iso3166'
+import { codeToHome, displayName } from '../constants/iso3166'
 import type { Artist } from '../entities/artist'
 import {
+	type Concert,
 	type DateGroup,
 	type HypeLevel,
 	isHypeMatched,
@@ -243,8 +243,10 @@ export class ConcertStore {
 				// concertFrom so the entity's artistId / artistName / artist
 				// fields stay internally consistent. When no Artist is
 				// resolved all three fields are left blank (no headliner
-				// fallback — see concert-mapper.ts for why symmetric blanks
-				// are required).
+				// fallback — leaving all three fields empty keeps artistId /
+				// artistName / artist internally consistent; a partial fill
+				// (e.g. artistId from headliner while name is blank) would
+				// silently break dashboard filters and card rendering).
 				// Tiebreaker note: when the user follows multiple
 				// performers on the same bill (e.g. both the headliner
 				// and a support act), the FIRST matched performer wins —
@@ -381,4 +383,88 @@ function proximityKey(
 	level1: string,
 ): string {
 	return `${[...artistIds].sort().join(',')}|${countryCode}|${level1}`
+}
+
+/**
+ * Map a ProtoConcert proto to a Concert UI entity.
+ *
+ * Returns null when the proto has no usable local date (missing or any
+ * zero component — a proto3-defaulted field with month=0 would roll
+ * `new Date(2026, -1, 15)` to 2025-12-15 and misbucket the concert).
+ *
+ * `artistId` uses `||` (not `??`) so an empty-string Artist.id is treated
+ * the same as absent, keeping the artistId / artistName / artist trio
+ * symmetric: all populated or all empty.
+ */
+function concertFrom(
+	proto: ProtoConcert,
+	artistName: string,
+	hypeLevel: HypeLevel,
+	matched: boolean,
+	artist?: Artist,
+	lang = 'en',
+): Concert | null {
+	const localDate = proto.localDate?.value
+	if (!localDate) return null
+	if (localDate.year === 0 || localDate.month === 0 || localDate.day === 0) {
+		return null
+	}
+
+	const jsDate = new Date(localDate.year, localDate.month - 1, localDate.day)
+
+	const startTime = proto.startTime?.value
+		? timestampToTimeString(Number(proto.startTime.value.seconds))
+		: ''
+	const openTime = proto.openTime?.value
+		? timestampToTimeString(Number(proto.openTime.value.seconds))
+		: undefined
+
+	const venueName = resolveVenueName(
+		proto.venue?.name?.value,
+		proto.listedVenueName?.value,
+		lang,
+	)
+	const adminArea = proto.venue?.adminArea?.value
+	const locationLabel = adminArea ? displayName(adminArea) : ''
+
+	// proto.series is guaranteed non-null on Concert by the v0.41.0+ BSR
+	// schema (required field). The `?.` chain is defensive against
+	// proto3's permissive-field-default typing, NOT a fallback for a
+	// legitimately series-less concert.
+	return {
+		id: proto.id?.value ?? '',
+		artistName,
+		artistId: artist?.id || '',
+		venueName,
+		locationLabel,
+		date: jsDate,
+		startTime,
+		openTime,
+		title: proto.series?.title?.value ?? '',
+		sourceUrl: proto.series?.sourceUrl?.value ?? '',
+		merchUrl: proto.series?.merchUrl?.value ?? '',
+		hypeLevel,
+		matched,
+		artist,
+	}
+}
+
+// resolveVenueName picks the venue display name based on the viewer's language.
+// Japanese users prefer listed_venue_name (scraped from the official Japanese site);
+// English users prefer venue.name (Google Places canonical). Each direction falls
+// back to the other field when the preferred field is absent.
+function resolveVenueName(
+	venueName: string | undefined,
+	listedVenueName: string | undefined,
+	lang = 'en',
+): string {
+	if (lang === 'ja') {
+		return listedVenueName || venueName || ''
+	}
+	return venueName || listedVenueName || ''
+}
+
+function timestampToTimeString(epochSeconds: number): string {
+	const d = new Date(epochSeconds * 1000)
+	return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
