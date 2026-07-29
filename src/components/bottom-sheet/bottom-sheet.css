@@ -12,7 +12,7 @@
 
 			/* Exit/enter duration. Shorter than the legacy 300ms so the
 			   slide-out and backdrop fade feel responsive after dismiss. */
-			--_duration: 240ms;
+			--_duration: 160ms;
 			--_duration-reduced: 0.01ms;
 
 			/* Modal host: full-viewport, top-layer, transparent. Resets the
