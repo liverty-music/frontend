@@ -45,9 +45,7 @@ export class DnaOrbCanvas {
 		`),
 	]
 	@bindable public followedCount = 0
-	@bindable public showFollowedIndicator = false
 	@bindable public artists: Artist[] = []
-	@bindable public followedIds: ReadonlySet<string> = new Set()
 
 	private readonly element = resolve(INode) as HTMLElement
 	private canvas!: HTMLCanvasElement
@@ -502,10 +500,7 @@ export class DnaOrbCanvas {
 		const x = body.position.x
 		const y = body.position.y
 		const r = radius * scale
-		const artistId = artist.id
 		const artistName = artist.name
-		const isFollowed =
-			this.showFollowedIndicator && this.followedIds.has(artistId)
 
 		if (r < 1 || opacity < 0.01) return
 
@@ -542,7 +537,7 @@ export class DnaOrbCanvas {
 			return
 		}
 
-		this.ctx.globalAlpha = isFollowed ? opacity * 0.4 : opacity
+		this.ctx.globalAlpha = opacity
 
 		// Focus ring for keyboard navigation
 		if (focused) {
@@ -576,11 +571,9 @@ export class DnaOrbCanvas {
 		// Artist name fades in during the second half of the spawn so color
 		// fills the bubble before text bleeds through.
 		if (opacity > 0.55) {
-			this.ctx.globalAlpha = isFollowed
-				? opacity * 0.4
-				: Math.min(1, (opacity - 0.55) / 0.45)
+			this.ctx.globalAlpha = Math.min(1, (opacity - 0.55) / 0.45)
 			this.renderBubbleText(artistName, x, y, r)
-			this.ctx.globalAlpha = isFollowed ? opacity * 0.4 : opacity
+			this.ctx.globalAlpha = opacity
 		}
 
 		// Soft bubble rim: shadowBlur blooms the stroke outward, mimicking the

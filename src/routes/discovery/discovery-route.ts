@@ -156,7 +156,12 @@ export class DiscoveryRoute {
 		// Background refresh runs after attach. Same pattern as Dashboard.
 		const cachedBubbles = this.artistClient.peekBubbles()
 		if (cachedBubbles !== null) {
-			this.bubbles.pool.replace(cachedBubbles)
+			// Filter out artists the user has since followed so they don't reappear
+			// as faint bubbles on re-entry while the background refresh is in flight.
+			const followedIds = this.followStore.followedIds
+			this.bubbles.pool.replace(
+				cachedBubbles.filter((a) => !followedIds.has(a.id)),
+			)
 			void this.loadInitialBubbles()
 		} else {
 			// Cold visit: pre-populate with ghost placeholder bubbles so the canvas
@@ -353,6 +358,10 @@ export class DiscoveryRoute {
 		// Transition to bubble view and play absorption animation
 		this.search.clearSearch()
 		this.search.exitSearchMode()
+
+		// Remove from pool so artistsChanged fades out any existing physics bubble
+		// for this artist via the stale-body eviction path in dna-orb-canvas.
+		this.bubbles.pool.remove(artistId)
 
 		this.bubbles.spawnAndAbsorbAfterSearch(artist, this.dnaOrbCanvas)
 
