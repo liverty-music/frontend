@@ -357,12 +357,11 @@ export class DiscoveryRoute {
 
 		// Transition to bubble view and play absorption animation
 		this.search.clearSearch()
-		this.search.exitSearchMode() // resumes the canvas animation loop
+		this.search.exitSearchMode()
 
-		// Fade out any existing physics bubble for this artist.
-		// Must run after exitSearchMode() so the animation loop is active.
+		// Remove from pool so artistsChanged fades out any existing physics bubble
+		// for this artist via the stale-body eviction path in dna-orb-canvas.
 		this.bubbles.pool.remove(artistId)
-		void this.dnaOrbCanvas.fadeOutBubbles([artistId])
 
 		this.bubbles.spawnAndAbsorbAfterSearch(artist, this.dnaOrbCanvas)
 
