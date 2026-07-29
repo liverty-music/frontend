@@ -9,6 +9,7 @@ export function concertFrom(
 	hypeLevel: HypeLevel,
 	matched: boolean,
 	artist?: Artist,
+	lang = 'en',
 ): Concert | null {
 	const localDate = proto.localDate?.value
 	if (!localDate) return null
@@ -31,8 +32,11 @@ export function concertFrom(
 		? timestampToTimeString(Number(proto.openTime.value.seconds))
 		: undefined
 
-	const venueName =
-		proto.venue?.name?.value ?? proto.listedVenueName?.value ?? ''
+	const venueName = resolveVenueName(
+		proto.venue?.name?.value,
+		proto.listedVenueName?.value,
+		lang,
+	)
 	const adminArea = proto.venue?.adminArea?.value
 	const locationLabel = adminArea ? displayName(adminArea) : ''
 
@@ -78,6 +82,21 @@ export function concertFrom(
 		matched,
 		artist,
 	}
+}
+
+// resolveVenueName picks the venue display name based on the viewer's language.
+// Japanese users prefer listed_venue_name (scraped from the official Japanese site);
+// English users prefer venue.name (Google Places canonical). Each direction falls
+// back to the other field when the preferred field is absent.
+export function resolveVenueName(
+	venueName: string | undefined,
+	listedVenueName: string | undefined,
+	lang = 'en',
+): string {
+	if (lang === 'ja') {
+		return listedVenueName || venueName || ''
+	}
+	return venueName || listedVenueName || ''
 }
 
 export function timestampToTimeString(epochSeconds: number): string {

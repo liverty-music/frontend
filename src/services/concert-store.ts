@@ -17,6 +17,7 @@ import {
 } from '../entities/concert'
 import { DEFAULT_HYPE, type Hype } from '../entities/follow'
 import { IAuthService } from './auth-service'
+import { IUserStore } from './user-store'
 import { CachedResource } from './cache/cached-resource'
 
 export type { ProtoConcert, ProximityGroup }
@@ -38,6 +39,7 @@ export class ConcertStore {
 	private readonly logger = resolve(ILogger).scopeTo('ConcertStore')
 	private readonly authService = resolve(IAuthService)
 	private readonly rpcClient = resolve(IConcertRpcClient)
+	private readonly userStore = resolve(IUserStore)
 
 	// The follower-concert list caching (was a bespoke in-store 24h TTL).
 	// listByFollower serves the cached value; route follow/unfollow/setHype
@@ -293,6 +295,7 @@ export class ConcertStore {
 					hypeLevel,
 					isHypeMatched(hypeLevel, lane),
 					entry?.artist,
+					this.userStore.currentLanguage,
 				)
 				if (!event) return []
 				const eventId = c.id?.value

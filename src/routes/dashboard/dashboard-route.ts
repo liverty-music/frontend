@@ -296,6 +296,18 @@ export class DashboardRoute {
 	 * detail sheet), re-stamp each concert in place so the dashboard cards and
 	 * journey filter reflect the change without a re-fetch or route re-entry.
 	 */
+	/**
+	 * Re-derive concert groups when the user's effective language changes.
+	 * This fires once after UserHydrationTask resolves preferredLanguage from the
+	 * server — e.g. a user with preferredLanguage='en' on a device whose i18n
+	 * locale defaulted to 'ja'. refreshInBackground re-runs toDateGroups over the
+	 * already-cached RPC data (no network round-trip) with the correct lang value.
+	 */
+	@watch((vm: DashboardRoute) => vm.userStore.currentLanguage)
+	protected onCurrentLanguageChanged(): void {
+		void this.refreshInBackground()
+	}
+
 	@watch((vm: DashboardRoute) => vm.journeyStore.journeyMap)
 	protected onJourneyMapChanged(map: Map<string, JourneyStatus>): void {
 		for (const group of this.dateGroups) {
