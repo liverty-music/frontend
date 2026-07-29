@@ -7,6 +7,8 @@ import {
 import {
 	ListedVenueName,
 	LocalDate,
+	OpenTime,
+	StartTime,
 	Title,
 	Url,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
@@ -83,6 +85,8 @@ function makeConcert(opts: {
 	day: number
 	resolvedVenue?: { name: string; adminArea: string }
 	sourceUrl?: string
+	openTime?: Timestamp
+	startTime?: Timestamp
 }): PendingConcert {
 	return new PendingConcert({
 		stagedId: new StagedConcertId({ value: opts.stagedId }),
@@ -105,6 +109,12 @@ function makeConcert(opts: {
 				})
 			: undefined,
 		sourceUrl: opts.sourceUrl ? new Url({ value: opts.sourceUrl }) : undefined,
+		openTime: opts.openTime
+			? new OpenTime({ value: opts.openTime })
+			: undefined,
+		startTime: opts.startTime
+			? new StartTime({ value: opts.startTime })
+			: undefined,
 		discoveredTime: Timestamp.fromDate(new Date('2026-06-01T12:00:00Z')),
 	})
 }
@@ -615,6 +625,93 @@ describe('ApprovalQueueRoute', () => {
 
 			expect(client.reject).toHaveBeenCalledWith('staged-1', 'wrong date')
 			expect(vm.groups).toHaveLength(0)
+		})
+	})
+
+	describe('toRow openTime mapping', () => {
+		it('formats openTime via formatTimeOfDay when present', async () => {
+			const openTs = Timestamp.fromDate(new Date('2026-07-15T18:00:00Z'))
+			const concert = makeConcert({
+				stagedId: 'staged-1',
+				artist: 'The Resolved Band',
+				title: 'Summer Tour',
+				year: 2026,
+				month: 7,
+				day: 4,
+				resolvedVenue: { name: 'Nippon Budokan', adminArea: 'JP-13' },
+				openTime: openTs,
+			})
+			const client = createMockClient({
+				listPending: vi.fn().mockResolvedValue([concert]),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const row = vm.groups[0].series[0].rows[0]
+			// formatTimeOfDay uses toLocaleTimeString; in test env it produces HH:MM.
+			expect(row.openTime).not.toBe('—')
+			expect(row.openTime).toMatch(/\d{1,2}:\d{2}/)
+		})
+
+		it('returns dash placeholder when openTime is absent', async () => {
+			const concert = resolvedConcert()
+			const client = createMockClient({
+				listPending: vi.fn().mockResolvedValue([concert]),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const row = vm.groups[0].series[0].rows[0]
+			expect(row.openTime).toBe('—')
+		})
+	})
+
+	describe('toConflictView stagedOpenTime mapping', () => {
+		it('sets stagedOpenTime from row.openTime when present', async () => {
+			const openTs = Timestamp.fromDate(new Date('2026-07-15T18:00:00Z'))
+			const concert = makeConcert({
+				stagedId: 'staged-1',
+				artist: 'The Resolved Band',
+				title: 'Summer Tour',
+				year: 2026,
+				month: 7,
+				day: 4,
+				resolvedVenue: { name: 'Nippon Budokan', adminArea: 'JP-13' },
+				openTime: openTs,
+			})
+			const client = createMockClient({
+				listPending: vi.fn().mockResolvedValue([concert]),
+				approve: vi.fn().mockResolvedValue(conflictResponse(concert)),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			const row = series.rows[0]
+			await vm.approve(group, series, row)
+
+			expect(vm.conflictView).not.toBeNull()
+			expect(vm.conflictView!.stagedOpenTime).toBe(row.openTime)
+			expect(vm.conflictView!.stagedOpenTime).not.toBe('—')
+		})
+
+		it('sets stagedOpenTime to dash placeholder when openTime is absent', async () => {
+			const concert = resolvedConcert()
+			const client = createMockClient({
+				listPending: vi.fn().mockResolvedValue([concert]),
+				approve: vi.fn().mockResolvedValue(conflictResponse(concert)),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			const row = series.rows[0]
+			await vm.approve(group, series, row)
+
+			expect(vm.conflictView).not.toBeNull()
+			expect(vm.conflictView!.stagedOpenTime).toBe('—')
 		})
 	})
 })
