@@ -100,7 +100,7 @@
 			--_spot-bright: oklch(80% 0.4 var(--artist-hue));
 			--_spot-mid: oklch(65% 0.3 var(--artist-hue));
 			--_spot-dim: oklch(55% 0.2 var(--artist-hue));
-			--_spot-glow: oklch(75% 0.4 var(--artist-hue) / 70%);
+			--_spot-glow: oklch(75% 0.4 var(--artist-hue) / 50%);
 
 			/* Vivid neon border */
 			border: 2px solid var(--_spot-bright);
