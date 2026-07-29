@@ -27,6 +27,7 @@ export interface QueueRow {
 	readonly title: string
 	readonly localDate: string
 	readonly startTime: string
+	readonly openTime: string
 	readonly listedVenueName: string
 	readonly resolvedVenueName: string
 	readonly resolvedAdminArea: string
@@ -109,6 +110,7 @@ export interface ConflictView {
 	readonly stagedListedVenueName: string
 	readonly stagedLocalDate: string
 	readonly stagedStartTime: string
+	readonly stagedOpenTime: string
 	readonly existingTitle: string
 	readonly existingListedVenueName: string
 	readonly existingLocalDate: string
@@ -122,6 +124,7 @@ function toConflictView(row: QueueRow, existing: ExistingEvent): ConflictView {
 		stagedListedVenueName: row.listedVenueName,
 		stagedLocalDate: row.localDate,
 		stagedStartTime: row.startTime,
+		stagedOpenTime: row.openTime,
 		existingTitle: existing.title?.value ?? EMPTY,
 		existingListedVenueName: existing.listedVenueName?.value ?? EMPTY,
 		existingLocalDate: formatDateValue(existing.localDate?.value),
@@ -139,6 +142,7 @@ function toRow(concert: PendingConcert): QueueRow {
 		title: concert.title?.value ?? EMPTY,
 		localDate: formatLocalDate(concert),
 		startTime: formatStartTime(concert),
+		openTime: formatTimeOfDay(concert.openTime?.value),
 		listedVenueName: concert.listedVenueName?.value ?? EMPTY,
 		resolvedVenueName: resolved?.name?.value ?? EMPTY,
 		resolvedAdminArea: resolved?.adminArea?.value ?? EMPTY,

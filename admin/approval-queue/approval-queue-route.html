@@ -61,6 +61,7 @@
           <tr>
             <th scope="col">Local date</th>
             <th scope="col">Start time</th>
+            <th scope="col">Open time</th>
             <th scope="col">Listed venue</th>
             <th scope="col">Resolved venue</th>
             <th scope="col">Source</th>
@@ -72,6 +73,7 @@
           <tr repeat.for="row of series.rows" data-busy.bind="row.busy">
             <td>${row.localDate}</td>
             <td>${row.startTime}</td>
+            <td>${row.openTime}</td>
             <td>${row.listedVenueName}</td>
             <td>
               <span if.bind="row.hasResolvedVenue">
@@ -207,7 +209,7 @@
             <dt>Start time</dt>
             <dd>${conflictView.stagedStartTime}</dd>
             <dt>Open time</dt>
-            <dd>${'—'}</dd>
+            <dd>${conflictView.stagedOpenTime}</dd>
           </dl>
         </section>
       </div>
