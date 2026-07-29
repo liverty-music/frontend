@@ -178,9 +178,22 @@ export class ConcertStore {
 		artistMap: Map<string, { artist: Artist; hype: Hype }>,
 		journeyMap: Map<string, JourneyStatus> = new Map(),
 	): DateGroup[] {
-		return groups.map((g) =>
-			this.protoGroupToDateGroup(g, artistMap, journeyMap),
-		)
+		let lastMonthKey = ''
+		return groups.map((g) => {
+			const group = this.protoGroupToDateGroup(g, artistMap, journeyMap)
+			const monthKey = group.dateKey.slice(0, 7) // "2026-07"
+			const isFirstOfMonth = monthKey !== '' && monthKey !== lastMonthKey
+			if (isFirstOfMonth) lastMonthKey = monthKey
+			let monthSeparatorLabel = ''
+			if (isFirstOfMonth) {
+				const [year, month] = monthKey.split('-').map(Number)
+				monthSeparatorLabel = new Date(year, month - 1, 1).toLocaleDateString(
+					'ja-JP',
+					{ year: 'numeric', month: 'long' },
+				)
+			}
+			return { ...group, isFirstOfMonth, monthSeparatorLabel }
+		})
 	}
 
 	// --- Private ---
@@ -310,6 +323,8 @@ export class ConcertStore {
 		const result = {
 			label,
 			dateKey,
+			isFirstOfMonth: false,
+			monthSeparatorLabel: '',
 			home: convert(group.home, 'home'),
 			nearby: convert(group.nearby, 'nearby'),
 			away: convert(group.away, 'away'),

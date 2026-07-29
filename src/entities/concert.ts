@@ -39,6 +39,10 @@ export interface Concert {
 export interface DateGroup {
 	label: string
 	dateKey: string
+	/** True when this group is the first entry for its month (drives separator rendering). */
+	isFirstOfMonth: boolean
+	/** Formatted month label shown in the separator, e.g. "2026年7月". Empty when !isFirstOfMonth. */
+	monthSeparatorLabel: string
 	home: Concert[]
 	nearby: Concert[]
 	away: Concert[]

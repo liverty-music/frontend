@@ -59,6 +59,8 @@ describe('ConcertHighway', () => {
 				{
 					label: '2026-04-01',
 					dateKey: '2026-04-01',
+					isFirstOfMonth: false,
+					monthSeparatorLabel: '',
 					home: [],
 					nearby: [],
 					away: [],
@@ -112,6 +114,8 @@ describe('ConcertHighway', () => {
 				{
 					label: '2026-04-01',
 					dateKey: '2026-04-01',
+					isFirstOfMonth: false,
+					monthSeparatorLabel: '',
 					home: [makeConcert({ id: 'e1', matched: true })],
 					nearby: [],
 					away: [],
@@ -159,6 +163,8 @@ describe('ConcertHighway', () => {
 				{
 					label: '2026-04-01',
 					dateKey: '2026-04-01',
+					isFirstOfMonth: false,
+					monthSeparatorLabel: '',
 					home: [makeConcert({ id: 'e1', matched: true })],
 					nearby: [],
 					away: [],
