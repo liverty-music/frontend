@@ -242,12 +242,6 @@
 			.event-card[data-matched] {
 				animation: none;
 			}
-
-			.event-card[data-matched]::after {
-				/* Show static glow bar — visual effect without pulsing */
-				opacity: 1;
-				animation: none;
-			}
 		}
 
 		/* =============================================
