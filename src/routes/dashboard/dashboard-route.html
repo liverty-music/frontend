@@ -1,3 +1,5 @@
+<import from="./dashboard-route.css"></import>
+
 <page-header title-key="nav.home">
   <artist-filter-bar
     if.bind="!isOnboarding"
@@ -6,6 +8,17 @@
     selected-statuses.two-way="filteredStatuses"
     is-authenticated.bind="isAuthenticated"
   ></artist-filter-bar>
+  <button
+    if.bind="!isOnboarding"
+    type="button"
+    class="beam-toggle"
+    click.trigger="toggleBeams()"
+    data-active.bind="showBeams"
+    aria-pressed.bind="showBeams"
+    aria-label="レーザービーム"
+  >
+    <svg-icon name="spotlight" size="sm"></svg-icon>
+  </button>
   <page-help page="dashboard"></page-help>
 </page-header>
 
@@ -38,7 +51,7 @@
 <!-- Concert highway — always in DOM for E2E compatibility -->
 <concert-highway
   date-groups.bind="filteredDateGroups"
-  show-beams="true"
+  show-beams.bind="showBeams"
   data-blurred.bind="needsRegion"
   event-selected.trigger="onEventSelected($event)"
 ></concert-highway>
