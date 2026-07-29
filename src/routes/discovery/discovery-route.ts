@@ -156,7 +156,12 @@ export class DiscoveryRoute {
 		// Background refresh runs after attach. Same pattern as Dashboard.
 		const cachedBubbles = this.artistClient.peekBubbles()
 		if (cachedBubbles !== null) {
-			this.bubbles.pool.replace(cachedBubbles)
+			// Filter out artists the user has since followed so they don't reappear
+			// as faint bubbles on re-entry while the background refresh is in flight.
+			const followedIds = this.followStore.followedIds
+			this.bubbles.pool.replace(
+				cachedBubbles.filter((a) => !followedIds.has(a.id)),
+			)
 			void this.loadInitialBubbles()
 		} else {
 			// Cold visit: pre-populate with ghost placeholder bubbles so the canvas

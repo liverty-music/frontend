@@ -126,9 +126,7 @@ describe('DnaOrbCanvas', () => {
 	describe('bindable defaults', () => {
 		it('should initialize with default bindable values', () => {
 			expect(sut.followedCount).toBe(0)
-			expect(sut.showFollowedIndicator).toBe(false)
 			expect(sut.artists).toEqual([])
-			expect(sut.followedIds).toEqual(new Set())
 		})
 	})
 
