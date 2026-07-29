@@ -56,6 +56,7 @@ async function seedGuest(page: Page, hype: string): Promise<void> {
 		localStorage.setItem('onboardingStep', 'completed')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
+		localStorage.setItem('liverty:beams:enabled', 'true')
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: h }]),
