@@ -92,6 +92,8 @@ function makeGroup(artistId: string, journeyStatus?: JourneyStatus): DateGroup {
 	return {
 		label: '4月1日(火)',
 		dateKey: '2026-04-01',
+		isFirstOfMonth: false,
+		monthSeparatorLabel: '',
 		home: [{ artistId, id: `h-${artistId}`, journeyStatus } as never],
 		nearby: [],
 		away: [],
@@ -272,7 +274,15 @@ describe('DashboardRoute', () => {
 	describe('loadData() fast-path (warm re-entry)', () => {
 		it('paints from cache without setting isLoading when lastDateGroups is available', async () => {
 			const cached = [
-				{ dateKey: '2026-04-01', label: '4/1', home: [], nearby: [], away: [] },
+				{
+					dateKey: '2026-04-01',
+					label: '4/1',
+					isFirstOfMonth: false,
+					monthSeparatorLabel: '',
+					home: [],
+					nearby: [],
+					away: [],
+				},
 			]
 			mockConcertService.peekDateGroups.mockReturnValue(cached)
 			sut.needsRegion = false

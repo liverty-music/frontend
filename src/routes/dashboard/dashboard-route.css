@@ -49,6 +49,45 @@
 			animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 		}
 
+		/* ── Beam toggle button — pill style matching .filter-trigger ── */
+		.beam-toggle {
+			cursor: pointer;
+
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			padding: var(--space-3xs) var(--space-2xs);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-full);
+
+			color: var(--color-text-muted);
+
+			background: transparent;
+
+			transition:
+				color var(--transition-fast),
+				border-color var(--transition-fast);
+
+			&[data-active="true"] {
+				border-color: color-mix(
+					in oklch,
+					var(--color-brand-primary) 40%,
+					transparent
+				);
+				color: var(--color-brand-primary);
+			}
+
+			&:hover {
+				color: var(--color-text-secondary);
+			}
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
+			}
+		}
+
 		/* ── Empty state typography ── */
 		.dashboard-empty-title {
 			margin-block-end: var(--space-3xs);

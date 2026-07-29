@@ -38,6 +38,9 @@ export class BottomSheet {
 
 	public detaching(): void {
 		// Programmatic teardown — do not emit `sheet-closed`.
+		if (this.scrollArea) {
+			this.scrollArea.style.pointerEvents = ''
+		}
 		this.closeDialog()
 	}
 
@@ -58,6 +61,7 @@ export class BottomSheet {
 	public onClose(): void {
 		const dismissed = this.userDismiss
 		this.userDismiss = false
+		if (this.scrollArea) this.scrollArea.style.pointerEvents = ''
 		if (this.open) {
 			this.open = false
 		}
@@ -77,12 +81,32 @@ export class BottomSheet {
 	 * zone fires before the full scroll settle, so close immediately rather
 	 * than waiting on the UA-controlled `scrollend`. `onScrollEnd` remains the
 	 * fallback where `scrollsnapchange` is unsupported.
+	 *
+	 * Locking pointer-events on the scroll area prevents a quick upward swipe
+	 * from re-snapping to the sheet body after dismiss-zone detection.
 	 */
 	public onSnapChange(e: Event): void {
 		if (!this.dismissable) return
 		const snapTarget = (e as Event & { snapTargetBlock?: Element | null })
 			.snapTargetBlock
 		if (snapTarget && snapTarget === this.dismissZone) {
+			if (this.scrollArea) this.scrollArea.style.pointerEvents = 'none'
+			this.requestClose()
+		}
+	}
+
+	/**
+	 * Early close on pointer-up: if the scroll position is already within
+	 * the dismiss-zone threshold (< 25% of max scroll), close immediately
+	 * without waiting for scrollend or scrollsnapchange. Provides consistent
+	 * dismiss behaviour on browsers that lack scrollsnapchange (e.g. Safari).
+	 */
+	public onPointerUp(): void {
+		if (!this.dismissable || !this.scrollArea) return
+		const { scrollTop, scrollHeight, clientHeight } = this.scrollArea
+		const maxScroll = scrollHeight - clientHeight
+		if (maxScroll > 0 && scrollTop / maxScroll < 0.25) {
+			this.scrollArea.style.pointerEvents = 'none'
 			this.requestClose()
 		}
 	}

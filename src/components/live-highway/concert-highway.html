@@ -18,6 +18,9 @@
 
   <ol class="[ concert-scroll ] [ date-group-list ]" data-testid="concert-scroll">
     <li repeat.for="group of dateGroups; key.bind: group.dateKey">
+      <div if.bind="group.isFirstOfMonth" class="[ month-separator ]" aria-hidden="true">
+        ${group.monthSeparatorLabel}
+      </div>
       <header class="[ date-separator ]">
         <time datetime.bind="group.dateKey">${group.label}</time>
       </header>

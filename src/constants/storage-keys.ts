@@ -15,6 +15,8 @@ export const StorageKeys = {
 	// Discovery bubble sound-effect preferences. '1'/'0' for mute, '0'..'1' for volume.
 	soundMuted: 'liverty:sound:muted',
 	soundVolume: 'liverty:sound:volume',
+	// Laser beam spotlight effect on dashboard. 'true'/'false', defaults to off.
+	beamsEnabled: 'liverty:beams:enabled',
 	// Anonymous-period UI language. See UserHydrationTask for cleanup.
 	language: 'language',
 } as const

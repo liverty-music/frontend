@@ -85,6 +85,30 @@
 			}
 		}
 
+		.month-separator {
+			display: flex;
+			grid-column: 1 / -1;
+			gap: var(--space-s);
+			align-items: center;
+
+			padding-block: var(--space-m) var(--space-2xs);
+			padding-inline: var(--space-xs);
+
+			font-size: var(--step--2);
+			font-weight: 600;
+			color: var(--color-text-muted);
+			text-transform: uppercase;
+			letter-spacing: 0.06em;
+
+			&::before,
+			&::after {
+				content: "";
+				flex: 1;
+				block-size: 1px;
+				background: var(--_border-faint);
+			}
+		}
+
 		.date-separator {
 			position: sticky;
 			inset-block-start: 0;

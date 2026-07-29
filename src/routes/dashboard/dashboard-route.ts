@@ -25,6 +25,7 @@ export class DashboardRoute {
 	public dateGroups: DateGroup[] = []
 	@observable public filteredArtistIds: string[] = []
 	@observable public filteredStatuses: JourneyStatus[] = []
+	public showBeams = false
 	public needsRegion = false
 	public isLoading = false
 	// Readiness latch flipped true by loadData() once a successful (non-abort)
@@ -158,7 +159,17 @@ export class DashboardRoute {
 		this.history.replaceState(null, '', url)
 	}
 
+	public toggleBeams(): void {
+		this.showBeams = !this.showBeams
+		this.storage.setItem(
+			StorageKeys.beamsEnabled,
+			this.showBeams ? 'true' : 'false',
+		)
+	}
+
 	public async loading(_params?: Params, next?: RouteNode): Promise<void> {
+		this.showBeams = this.storage.getItem(StorageKeys.beamsEnabled) === 'true'
+
 		// Restore filters from URL query params (ignored during onboarding)
 		if (!this.isOnboarding && next) {
 			const rawArtists = next.queryParams.get('artists')
