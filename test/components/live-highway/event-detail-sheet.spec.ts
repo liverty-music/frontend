@@ -395,13 +395,31 @@ describe('EventDetailSheet', () => {
 			expect(focused.focus).toHaveBeenCalled()
 		})
 
-		it('ArrowLeft wraps from the first node to the last', async () => {
+		it('ArrowLeft from the first node is a no-op (clamped, not wrapped)', async () => {
 			setStoreStatus('tracking')
 			sut.event = makeEvent()
 
 			await sut.onJourneyKeydown(makeKeydown('ArrowLeft').event)
 
-			expect(mockJourneyStore.setStatus).toHaveBeenCalledWith('c1', 'lost')
+			expect(mockJourneyStore.setStatus).not.toHaveBeenCalled()
+		})
+
+		it('ArrowRight from paid does not cross to lost (mutually exclusive outcomes)', async () => {
+			setStoreStatus('paid')
+			sut.event = makeEvent()
+
+			await sut.onJourneyKeydown(makeKeydown('ArrowRight').event)
+
+			expect(mockJourneyStore.setStatus).not.toHaveBeenCalled()
+		})
+
+		it('ArrowLeft from lost does not cross to paid (mutually exclusive outcomes)', async () => {
+			setStoreStatus('lost')
+			sut.event = makeEvent()
+
+			await sut.onJourneyKeydown(makeKeydown('ArrowLeft').event)
+
+			expect(mockJourneyStore.setStatus).not.toHaveBeenCalled()
 		})
 
 		it('Home and End jump to the first and last nodes', async () => {

@@ -166,11 +166,11 @@ export class EventDetailSheet {
 		switch (event.key) {
 			case 'ArrowRight':
 			case 'ArrowDown':
-				index = (index + 1) % order.length
+				index = Math.min(index + 1, order.length - 1)
 				break
 			case 'ArrowLeft':
 			case 'ArrowUp':
-				index = (index - 1 + order.length) % order.length
+				index = Math.max(index - 1, 0)
 				break
 			case 'Home':
 				index = 0
@@ -186,6 +186,14 @@ export class EventDetailSheet {
 		// once the event finishes dispatching.
 		const group = event.currentTarget as HTMLElement
 		const next = order[index]
+		// No-op if clamped to the same position as the current effective status.
+		if (next === current) return
+		// Block navigation between mutually exclusive outcome branches: a user on
+		// the win route must not accidentally overwrite 'paid' with 'lost' (or vice
+		// versa) via a single arrow keypress.
+		const outcome = this.outcome
+		if (outcome === 'won' && next === 'lost') return
+		if (outcome === 'lost' && (next === 'unpaid' || next === 'paid')) return
 		await this.setJourneyStatus(next)
 		// Move focus only after the status update settles, so the target button
 		// (briefly disabled while updating) is focusable again.
