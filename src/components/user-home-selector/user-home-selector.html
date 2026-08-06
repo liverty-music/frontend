@@ -18,8 +18,8 @@
             repeat.for="city of quickCities; key.bind: city.code"
             busy-on-click.bind="() => selectQuickCity(city.code)"
             class="selector-btn"
-            data-selected.bind="city.code === currentHomeCode"
-            aria-current.bind="city.code === currentHomeCode"
+            data-selected.bind="city.code === currentCode"
+            aria-current.bind="city.code === currentCode"
           >
             <span t.bind="'userHome.cities.' + city.key"></span>
           </button>
@@ -64,8 +64,8 @@
           repeat.for="pref of selectedRegion.prefectures; key.bind: pref.code"
           busy-on-click.bind="() => selectPrefecture(pref.code)"
           class="selector-btn"
-          data-selected.bind="pref.code === currentHomeCode"
-          aria-current.bind="pref.code === currentHomeCode"
+          data-selected.bind="pref.code === currentCode"
+          aria-current.bind="pref.code === currentCode"
         >
           <span t.bind="'userHome.prefectures.' + pref.key"></span>
         </button>

@@ -12,7 +12,7 @@ import { WelcomeRoute } from './welcome-route'
  *
  * To preview the full "Promise → Proof" composition (Screen 1 with scroll-CTA
  * and peek + Screen 2 with preview and CTAs), run the application against a
- * real or stubbed backend where `ConcertService/ListWithProximity` returns
+ * real or stubbed backend where `ConcertService/ListByArtists` returns
  * concerts for the configured preview artists.
  */
 const meta = {

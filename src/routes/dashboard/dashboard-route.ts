@@ -3,16 +3,24 @@ import type { Params, RouteNode } from '@aurelia/router'
 import { ILogger, observable, resolve, watch } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
+import { rangeCacheKey } from '../../components/all-nearby/date-presets'
+import type { DateRange } from '../../components/all-nearby/date-presets'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
 	DateGroup,
 	LiveEvent,
 } from '../../components/live-highway/live-event'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
+import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist, CountedArtist } from '../../entities/artist'
 import type { Concert, JourneyStatus } from '../../entities/concert'
 import { isJourneyStatus } from '../../entities/ticket-journey'
+import {
+	type GeoLocationInit,
+	displayName,
+	geoLocationFromLevel1,
+} from '../../entities/user'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
@@ -20,6 +28,9 @@ import { IOnboardingService } from '../../services/onboarding-service'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore } from '../../services/user-store'
+
+/** Dashboard concert view mode. Session-only — never persisted. */
+export type ViewMode = 'timetable' | 'allNearby'
 
 export class DashboardRoute {
 	public dateGroups: DateGroup[] = []
@@ -47,6 +58,42 @@ export class DashboardRoute {
 
 	public homeSelector: UserHomeSelector | undefined
 	public detailSheet: EventDetailSheet | undefined
+	public areaSelector: UserHomeSelector | undefined
+
+	// --- All Nearby mode (session-only, never persisted) ---
+
+	/**
+	 * Active dashboard view. Route-local session state — a fresh DashboardRoute
+	 * instance (created on every navigation) always starts on My Timetable.
+	 */
+	@observable public viewMode: ViewMode = 'timetable'
+
+	/**
+	 * Area override for All Nearby, an ISO 3166-2 code chosen via the area
+	 * selector. Null means "use the user's home area". Not persisted — it does
+	 * NOT call userStore.updateHome().
+	 */
+	public selectedAreaCode: string | null = null
+
+	/** The active All Nearby date range, resolved by the preset selector. */
+	public allNearbyRange: DateRange | null = null
+
+	/** Derived DateGroup[] for the current All Nearby filter, rendered as-is. */
+	public allNearbyDateGroups: DateGroup[] = []
+
+	public allNearbyLoading = false
+	public allNearbyError: unknown = null
+
+	/**
+	 * Route-local All Nearby cache, keyed by (adminArea + from + to). Kept
+	 * separate from the My Timetable cache (owned by ConcertStore) so switching
+	 * modes never refetches or disturbs either side; re-selecting All Nearby with
+	 * unchanged filters reuses the cached DateGroup[].
+	 */
+	private readonly allNearbyCache = new Map<string, DateGroup[]>()
+
+	/** AbortController for the in-flight All Nearby request, aborted on filter change. */
+	private allNearbyAbort: AbortController | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('DashboardRoute')
 	public readonly i18n = resolve(I18N)
@@ -67,6 +114,35 @@ export class DashboardRoute {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
+	}
+
+	public get isAllNearby(): boolean {
+		return this.viewMode === 'allNearby'
+	}
+
+	/**
+	 * The effective area code for All Nearby: the explicit override, else the
+	 * user's home area, else null (prompt the user to pick one).
+	 */
+	public get effectiveAreaCode(): string | null {
+		return this.selectedAreaCode ?? this.userStore.currentHome
+	}
+
+	/** Display name of the effective All Nearby area, or empty when none is set. */
+	public get selectedAreaName(): string {
+		const code = this.effectiveAreaCode
+		if (!code) return ''
+		const lang = this.userStore.currentLanguage === 'ja' ? 'ja' : 'en'
+		return displayName(code, lang)
+	}
+
+	/**
+	 * True when All Nearby has no resolvable area yet (unauthenticated visitor
+	 * with no home, no override). The area selector must be opened before any
+	 * listByLocation call can run.
+	 */
+	public get allNearbyNeedsArea(): boolean {
+		return this.effectiveAreaCode === null
 	}
 
 	/**
@@ -385,7 +461,16 @@ export class DashboardRoute {
 	public async onHomeSelected(code: string): Promise<void> {
 		this.logger.info('Home area configured', { code })
 		this.needsRegion = false
-		if (!this.authService.isAuthenticated) {
+		// UserHomeSelector no longer persists — the onboarding caller owns it:
+		// authenticated users write through UserService.updateHome, guests to
+		// localStorage.
+		if (this.authService.isAuthenticated) {
+			try {
+				await this.userStore.updateHome(codeToHome(code))
+			} catch (err) {
+				this.logger.error('Failed to update home via RPC', err)
+			}
+		} else {
 			this.userStore.setGuestHome(code)
 		}
 		// Timetable becomes real once the region is chosen; loadData() flips
@@ -485,16 +570,158 @@ export class DashboardRoute {
 	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {
 		// Tag the source as the dashboard so concert.detail.viewed events from
 		// the dashboard concert list are attributable to that surface in PostHog.
-		this.detailSheet?.open(event.detail.event, 'dashboard')
+		// Thread the All Nearby flag so the sheet surfaces the follow CTA only in
+		// that context; My Timetable stays unchanged (isAllNearby === false).
+		this.detailSheet?.open(event.detail.event, 'dashboard', this.isAllNearby)
+	}
+
+	// --- All Nearby mode ---
+
+	/** Switch the dashboard view. My Timetable is never refetched on switch. */
+	public switchMode(mode: ViewMode): void {
+		if (this.viewMode === mode) return
+		this.viewMode = mode
+	}
+
+	/**
+	 * React to the view switch: entering All Nearby triggers a load (served from
+	 * the route-local cache when the filter is unchanged); leaving it aborts any
+	 * in-flight request but leaves both caches intact.
+	 */
+	protected viewModeChanged(mode: ViewMode): void {
+		if (mode === 'allNearby') {
+			void this.loadAllNearby()
+		} else {
+			this.allNearbyAbort?.abort()
+		}
+	}
+
+	/** Preset selector emitted a new resolved range. */
+	public onRangeChanged(event: CustomEvent<DateRange>): void {
+		this.allNearbyRange = event.detail
+		if (this.isAllNearby) {
+			void this.loadAllNearby()
+		}
+	}
+
+	/** Open the area selector bottom sheet. */
+	public openAreaSelector(): void {
+		this.areaSelector?.open()
+	}
+
+	/**
+	 * Area override chosen. Updates route-local state ONLY — never calls
+	 * userStore.updateHome(). Triggers a refetch for the new area.
+	 */
+	public onAreaSelected(code: string): void {
+		this.logger.info('All Nearby area override selected', { code })
+		this.selectedAreaCode = code
+		if (this.isAllNearby) {
+			void this.loadAllNearby()
+		}
+	}
+
+	/**
+	 * Resolve the GeoLocation reference point for listByLocation. Uses the
+	 * override centroid when set, else the user's home. The FE `User` type does
+	 * not carry a centroid, so the home path resolves via geoLocationFromLevel1
+	 * over the home level-1 code. Returns null when no area is resolvable.
+	 */
+	private resolveGeoLocation(): GeoLocationInit | null {
+		if (this.selectedAreaCode) {
+			return geoLocationFromLevel1(this.selectedAreaCode) ?? null
+		}
+		const home = this.userStore.currentHome
+		if (!home) return null
+		return geoLocationFromLevel1(home) ?? null
+	}
+
+	/**
+	 * Load (or serve from cache) the All Nearby concert list for the current
+	 * area + date range. Aborts any in-flight request, dedupes on the
+	 * (area, from, to) cache key, and converts the ProximityGroup[] to
+	 * DateGroup[] for rendering. Only HOME/NEARBY lanes are populated by the
+	 * backend for this path.
+	 */
+	public async loadAllNearby(): Promise<void> {
+		const range = this.allNearbyRange
+		if (!range) return
+
+		const geo = this.resolveGeoLocation()
+		if (!geo) {
+			// No area resolvable (unauthenticated, no home, no override). Prompt the
+			// user to choose one rather than firing a location-less request.
+			this.allNearbyDateGroups = []
+			this.allNearbyError = null
+			this.openAreaSelector()
+			return
+		}
+
+		const key = rangeCacheKey(geo.adminArea, range.from, range.to)
+		const cached = this.allNearbyCache.get(key)
+		if (cached) {
+			this.allNearbyDateGroups = cached
+			this.allNearbyError = null
+			return
+		}
+
+		// Abort a superseded in-flight request before starting a new one.
+		this.allNearbyAbort?.abort()
+		this.allNearbyAbort = new AbortController()
+		const signal = this.allNearbyAbort.signal
+
+		this.allNearbyLoading = true
+		this.allNearbyError = null
+		try {
+			const groups = await this.concertService.listByLocation(
+				geo,
+				range.from,
+				range.to,
+				signal,
+			)
+			if (signal.aborted) return
+			// All Nearby has no per-user artist/journey context: pass empty maps so
+			// every resolved performer renders without hype/journey enrichment.
+			const dateGroups = this.concertService.toDateGroups(
+				groups,
+				new Map(),
+				new Map(),
+			)
+			this.allNearbyCache.set(key, dateGroups)
+			this.allNearbyDateGroups = dateGroups
+			this.logger.info('All Nearby loaded', {
+				adminArea: geo.adminArea,
+				groups: dateGroups.length,
+			})
+		} catch (err) {
+			if ((err as Error).name === 'AbortError') return
+			this.logger.error('Failed to load All Nearby', { error: err })
+			this.allNearbyError = err
+			this.allNearbyDateGroups = []
+		} finally {
+			if (!signal.aborted) this.allNearbyLoading = false
+		}
 	}
 
 	public onSignupRequested(): void {
 		this.authService.signUp()
 	}
 
+	/**
+	 * A guest tapped the All Nearby follow CTA. Instead of an immediate OIDC
+	 * redirect, surface the persistent sign-up prompt banner — following is the
+	 * conversion moment, and the banner keeps the discovered concert in view.
+	 */
+	public onFollowSignupRequested(): void {
+		if (this.isAuthenticated) return
+		this.showSignupBanner = true
+	}
+
 	public detaching(): void {
 		this.resumeRevalidator.unregister(this.revalidate)
 		this.abortController?.abort()
 		this.abortController = null
+		this.allNearbyAbort?.abort()
+		this.allNearbyAbort = null
 	}
 }

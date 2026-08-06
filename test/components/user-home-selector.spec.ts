@@ -1,46 +1,22 @@
-import { DI, Registration } from 'aurelia'
+import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../helpers/create-container'
-
-const mockIAuthService = DI.createInterface('IAuthService')
-const mockIUserStore = DI.createInterface('IUserStore')
-
-vi.mock('../../src/services/auth-service', () => ({
-	IAuthService: mockIAuthService,
-}))
-vi.mock('../../src/services/user-store', () => ({
-	IUserStore: mockIUserStore,
-}))
 
 const { UserHomeSelector } = await import(
 	'../../src/components/user-home-selector/user-home-selector'
 )
 
+// UserHomeSelector is a pure selection UI after the passive-concert-discovery
+// refactor: it injects no IUserStore / IAuthService and performs no persistence.
+// Its sole output is the onHomeSelected(code) callback; callers own the save.
 describe('UserHomeSelector', () => {
 	let sut: UserHomeSelector
-	let mockAuth: { isAuthenticated: boolean }
-	let mockUserStore: {
-		setGuestHome: ReturnType<typeof vi.fn>
-		updateHome: ReturnType<typeof vi.fn>
-	}
-	// Alias to the merged store so the existing `mockUser.updateHome`
-	// assertions read naturally against the one IUserStore the selector injects.
-	let mockUser: typeof mockUserStore
 	let onHomeSelected: ReturnType<typeof vi.fn>
 
 	beforeEach(() => {
-		mockAuth = { isAuthenticated: false }
-		mockUserStore = {
-			setGuestHome: vi.fn(),
-			updateHome: vi.fn().mockResolvedValue(undefined),
-		}
-		mockUser = mockUserStore
 		onHomeSelected = vi.fn()
 
-		const container = createTestContainer(
-			Registration.instance(mockIAuthService, mockAuth),
-			Registration.instance(mockIUserStore, mockUserStore),
-		)
+		const container = createTestContainer()
 		container.register(UserHomeSelector)
 		sut = container.get(UserHomeSelector)
 		sut.onHomeSelected = onHomeSelected
@@ -81,38 +57,35 @@ describe('UserHomeSelector', () => {
 		})
 	})
 
-	describe('confirmSelection (guest)', () => {
-		it('calls userStore.setGuestHome for unauthenticated user', async () => {
-			await sut.selectPrefecture('JP-13')
+	describe('confirmSelection', () => {
+		it('emits onHomeSelected with the prefecture code and closes', () => {
+			sut.open()
+			sut.selectPrefecture('JP-13')
 
-			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
 			expect(onHomeSelected).toHaveBeenCalledWith('JP-13')
 			expect(sut.isOpen).toBe(false)
+			expect(sut.selectedRegion).toBeNull()
 		})
 
-		it('does not call userService for guest', async () => {
-			await sut.selectPrefecture('JP-13')
-			expect(mockUser.updateHome).not.toHaveBeenCalled()
-		})
-	})
-
-	describe('confirmSelection (authenticated)', () => {
-		it('calls userService.updateHome for authenticated user', async () => {
-			mockAuth.isAuthenticated = true
-
-			await sut.selectPrefecture('JP-13')
-
-			expect(mockUser.updateHome).toHaveBeenCalled()
-			expect(onHomeSelected).toHaveBeenCalledWith('JP-13')
+		it('does not write to localStorage (caller owns persistence)', () => {
+			sut.selectPrefecture('JP-13')
+			expect(localStorage.getItem('guest.home')).toBeNull()
 		})
 	})
 
 	describe('quickCity selection', () => {
-		it('confirms selection via quick city', async () => {
-			await sut.selectQuickCity('JP-13')
+		it('confirms selection via quick city', () => {
+			sut.selectQuickCity('JP-13')
 
 			expect(onHomeSelected).toHaveBeenCalledWith('JP-13')
 			expect(sut.isOpen).toBe(false)
+		})
+	})
+
+	describe('currentCode highlight', () => {
+		it('accepts a currentCode bindable used to highlight the active option', () => {
+			sut.currentCode = 'JP-27'
+			expect(sut.currentCode).toBe('JP-27')
 		})
 	})
 

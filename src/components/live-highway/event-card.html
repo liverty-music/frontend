@@ -16,7 +16,7 @@ class="[ event-card ]"
     <span class="artist-name">
       ${event.artistName}
     </span>
-    <span if.bind="lane !== 'home'" class="location-label">
+    <span if.bind="showLocation" class="location-label">
       ${event.locationLabel}
     </span>
     <span

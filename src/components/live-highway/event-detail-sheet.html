@@ -191,6 +191,26 @@
         ></button>
       </section>
 
+      <!-- Follow CTA — All Nearby context only. Converts a discovered concert
+           into a followed artist. No DNA Orb animation on success; the button
+           simply flips to a static "Following" state. -->
+      <section if.bind="isAllNearby && event.artist" class="sheet-follow" data-testid="all-nearby-follow">
+        <button
+          if.bind="!isFollowed"
+          type="button"
+          class="follow-btn"
+          disabled.bind="followUpdating"
+          click.trigger="follow()"
+          t="allNearby.follow.action"
+        ></button>
+        <p
+          else
+          class="follow-state"
+          data-testid="all-nearby-following"
+          t="allNearby.follow.following"
+        ></p>
+      </section>
+
       <!-- Action buttons -->
       <footer class="sheet-actions">
         <a

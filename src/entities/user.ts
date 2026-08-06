@@ -89,6 +89,98 @@ export const JP_PREFECTURES: Record<string, PrefectureEntry> = {
 }
 
 /**
+ * Approximate WGS 84 centroid coordinates for each Japanese prefecture, keyed by
+ * the same ISO 3166-2 code space as {@link JP_PREFECTURES} (single source of
+ * truth — every key here MUST exist there). Used to resolve a `GeoLocation`
+ * reference point on the client before calling `ConcertService.ListByLocation`,
+ * so the server never needs ISO 3166-2 centroid-resolution logic for the
+ * area-override path. Values are prefecture geographic centers (not capitals),
+ * accurate enough for a 200 km proximity classification.
+ */
+export const JP_PREFECTURE_CENTROIDS: Record<
+	string,
+	{ lat: number; lng: number }
+> = {
+	'JP-01': { lat: 43.386, lng: 142.837 }, // Hokkaido
+	'JP-02': { lat: 40.749, lng: 140.884 }, // Aomori
+	'JP-03': { lat: 39.599, lng: 141.377 }, // Iwate
+	'JP-04': { lat: 38.457, lng: 140.966 }, // Miyagi
+	'JP-05': { lat: 39.752, lng: 140.407 }, // Akita
+	'JP-06': { lat: 38.457, lng: 140.108 }, // Yamagata
+	'JP-07': { lat: 37.437, lng: 140.315 }, // Fukushima
+	'JP-08': { lat: 36.303, lng: 140.319 }, // Ibaraki
+	'JP-09': { lat: 36.694, lng: 139.813 }, // Tochigi
+	'JP-10': { lat: 36.541, lng: 138.947 }, // Gunma
+	'JP-11': { lat: 35.997, lng: 139.442 }, // Saitama
+	'JP-12': { lat: 35.394, lng: 140.243 }, // Chiba
+	'JP-13': { lat: 35.686, lng: 139.556 }, // Tokyo
+	'JP-14': { lat: 35.401, lng: 139.353 }, // Kanagawa
+	'JP-15': { lat: 37.522, lng: 138.919 }, // Niigata
+	'JP-16': { lat: 36.637, lng: 137.264 }, // Toyama
+	'JP-17': { lat: 36.591, lng: 136.726 }, // Ishikawa
+	'JP-18': { lat: 35.845, lng: 136.264 }, // Fukui
+	'JP-19': { lat: 35.607, lng: 138.573 }, // Yamanashi
+	'JP-20': { lat: 36.152, lng: 138.028 }, // Nagano
+	'JP-21': { lat: 35.783, lng: 137.058 }, // Gifu
+	'JP-22': { lat: 34.917, lng: 138.313 }, // Shizuoka
+	'JP-23': { lat: 35.036, lng: 137.212 }, // Aichi
+	'JP-24': { lat: 34.469, lng: 136.359 }, // Mie
+	'JP-25': { lat: 35.222, lng: 136.135 }, // Shiga
+	'JP-26': { lat: 35.253, lng: 135.529 }, // Kyoto
+	'JP-27': { lat: 34.622, lng: 135.508 }, // Osaka
+	'JP-28': { lat: 34.985, lng: 134.813 }, // Hyogo
+	'JP-29': { lat: 34.339, lng: 135.877 }, // Nara
+	'JP-30': { lat: 33.913, lng: 135.499 }, // Wakayama
+	'JP-31': { lat: 35.393, lng: 133.804 }, // Tottori
+	'JP-32': { lat: 35.037, lng: 132.708 }, // Shimane
+	'JP-33': { lat: 34.897, lng: 133.792 }, // Okayama
+	'JP-34': { lat: 34.593, lng: 132.774 }, // Hiroshima
+	'JP-35': { lat: 34.219, lng: 131.573 }, // Yamaguchi
+	'JP-36': { lat: 33.919, lng: 134.315 }, // Tokushima
+	'JP-37': { lat: 34.256, lng: 133.964 }, // Kagawa
+	'JP-38': { lat: 33.665, lng: 132.936 }, // Ehime
+	'JP-39': { lat: 33.469, lng: 133.462 }, // Kochi
+	'JP-40': { lat: 33.526, lng: 130.618 }, // Fukuoka
+	'JP-41': { lat: 33.281, lng: 130.081 }, // Saga
+	'JP-42': { lat: 33.147, lng: 129.612 }, // Nagasaki
+	'JP-43': { lat: 32.649, lng: 130.783 }, // Kumamoto
+	'JP-44': { lat: 33.208, lng: 131.427 }, // Oita
+	'JP-45': { lat: 32.166, lng: 131.278 }, // Miyazaki
+	'JP-46': { lat: 31.56, lng: 130.559 }, // Kagoshima
+	'JP-47': { lat: 26.459, lng: 127.937 }, // Okinawa
+}
+
+/**
+ * The init shape of a `liverty_music.entity.v1.GeoLocation` proto message. The
+ * generated protobuf-es constructor accepts this object directly
+ * (`new GeoLocation(geoLocationFromLevel1(code))`), mirroring how
+ * {@link codeToHome} feeds `new Home(...)`. Keeping the entities layer free of
+ * generated-proto imports is intentional — the RPC client owns the wrapping.
+ */
+export interface GeoLocationInit {
+	latitude: number
+	longitude: number
+	adminArea: string
+}
+
+/**
+ * Resolves an ISO 3166-2 prefecture code into a `GeoLocation` init object using
+ * {@link JP_PREFECTURE_CENTROIDS}. Returns `undefined` when the code has no known
+ * centroid (non-JP or unknown code), so callers can fall back to the user's home
+ * coordinates.
+ *
+ * @example geoLocationFromLevel1('JP-13')
+ *   -> { latitude: 35.686, longitude: 139.556, adminArea: 'JP-13' }
+ */
+export function geoLocationFromLevel1(
+	level1: string,
+): GeoLocationInit | undefined {
+	const centroid = JP_PREFECTURE_CENTROIDS[level1]
+	if (!centroid) return undefined
+	return { latitude: centroid.lat, longitude: centroid.lng, adminArea: level1 }
+}
+
+/**
  * Returns the display name for an ISO 3166-2 code in the given locale.
  * Falls back to the code itself if not found.
  */

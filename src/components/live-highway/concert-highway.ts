@@ -6,6 +6,12 @@ export class ConcertHighway {
 	@bindable public dateGroups: DateGroup[] = []
 	@bindable public isReadonly: boolean = false
 	@bindable public showBeams: boolean = true
+	/**
+	 * When true, every card renders its venue/location label including HOME-lane
+	 * cards. Set by the All Nearby dashboard view; default false preserves the My
+	 * Timetable behavior where HOME cards suppress the label.
+	 */
+	@bindable public showVenueAlways: boolean = false
 
 	private readonly element = resolve(INode) as HTMLElement
 

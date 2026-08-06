@@ -1,7 +1,10 @@
 import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert as ProtoConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import { LocalDate } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
+import { GeoLocation } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/geo_location_pb.js'
 import { Home } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import type { ProximityGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
+import type { GeoLocationInit } from '../../../entities/user'
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -60,13 +63,13 @@ export class ConcertRpcClient {
 		}
 	}
 
-	public async listWithProximity(
+	public async listByArtists(
 		artistIds: string[],
 		countryCode: string,
 		level1: string,
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
-		const response = await this.client.listWithProximity(
+		const response = await this.client.listByArtists(
 			{
 				artistIds: artistIds.map((id) => new ArtistId({ value: id })),
 				home: new Home({ countryCode, level1 }),
@@ -75,4 +78,43 @@ export class ConcertRpcClient {
 		)
 		return response.groups
 	}
+
+	public async listByLocation(
+		location: GeoLocationInit,
+		from: CalendarDate,
+		to: CalendarDate,
+		signal?: AbortSignal,
+	): Promise<ProximityGroup[]> {
+		this.logger.info('Listing concerts by location', {
+			adminArea: location.adminArea,
+		})
+		try {
+			const response = await this.client.listByLocation(
+				{
+					location: new GeoLocation(location),
+					from: new LocalDate({ value: from }),
+					to: new LocalDate({ value: to }),
+				},
+				{ signal },
+			)
+			return response.groups
+		} catch (err) {
+			this.logger.warn('Concert listByLocation failed', {
+				adminArea: location.adminArea,
+				error: err,
+			})
+			throw err
+		}
+	}
+}
+
+/**
+ * A calendar date as year / 1-based month / day, matching the shape of
+ * `google.type.Date` (the value carried by `entity.v1.LocalDate`). Callers build
+ * these from the date-preset selector; the RPC client wraps them in `LocalDate`.
+ */
+export interface CalendarDate {
+	year: number
+	month: number
+	day: number
 }

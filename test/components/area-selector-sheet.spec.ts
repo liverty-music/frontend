@@ -75,11 +75,12 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('prefecture selection', () => {
-		it('should call userStore.setGuestHome for guest user and close', async () => {
+		it('should not persist and should close (caller owns persistence)', () => {
 			sut.open()
-			await sut.selectPrefecture('JP-13')
+			sut.selectPrefecture('JP-13')
 
-			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
+			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
+			expect(mockUserStore.updateHome).not.toHaveBeenCalled()
 			expect(sut.isOpen).toBe(false)
 		})
 
@@ -93,11 +94,12 @@ describe('UserHomeSelector', () => {
 	})
 
 	describe('quick city selection', () => {
-		it('should call userStore.setGuestHome for guest user and close', async () => {
+		it('should not persist and should close (caller owns persistence)', () => {
 			sut.open()
-			await sut.selectQuickCity('JP-13')
+			sut.selectQuickCity('JP-13')
 
-			expect(mockUserStore.setGuestHome).toHaveBeenCalledWith('JP-13')
+			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
+			expect(mockUserStore.updateHome).not.toHaveBeenCalled()
 			expect(sut.isOpen).toBe(false)
 		})
 

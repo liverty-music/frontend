@@ -1,16 +1,27 @@
 import { bindable, ILogger, resolve } from 'aurelia'
 import {
-	codeToHome,
 	QUICK_SELECT_CITIES,
 	REGION_GROUPS,
 	type RegionGroup,
 } from '../../constants/iso3166'
-import { IAuthService } from '../../services/auth-service'
-import { IUserStore } from '../../services/user-store'
 
+/**
+ * A pure home-area selection UI. It emits the chosen ISO 3166-2 code via
+ * {@link onHomeSelected} and owns no persistence: it does NOT call
+ * `UserService.updateHome()`, write to localStorage, or resolve `IUserStore` /
+ * `IAuthService`. Every save/no-save decision belongs to the caller (Settings,
+ * onboarding, or the Dashboard All Nearby area selector).
+ */
 export class UserHomeSelector {
 	@bindable public onHomeSelected?: (code: string) => void
 	@bindable public required = false
+	/**
+	 * The currently active ISO 3166-2 code (e.g. `JP-13`), or null when none is
+	 * active. Drives the selected-state highlight on the city / prefecture
+	 * buttons. Supplied by the caller — the component does NOT derive it from any
+	 * store. When null, no option is highlighted.
+	 */
+	@bindable public currentCode: string | null = null
 
 	public isOpen = false
 	public regions = REGION_GROUPS
@@ -18,20 +29,6 @@ export class UserHomeSelector {
 	public selectedRegion: RegionGroup | null = null
 
 	private readonly logger = resolve(ILogger).scopeTo('UserHomeSelector')
-	private readonly authService = resolve(IAuthService)
-	private readonly userStore = resolve(IUserStore)
-
-	/**
-	 * The user's current home-area code (ISO 3166-2, e.g. `JP-13`), or null when
-	 * unset. Derived from `UserStore.currentHome` — the observable single owner
-	 * that resolves authed (`User.home.level1`) vs guest internally — so the
-	 * selected-state highlight on the city / prefecture options re-evaluates
-	 * reactively. `codeToHome(code).level1 === code`, so this compares directly
-	 * against each option's `code`.
-	 */
-	public get currentHomeCode(): string | null {
-		return this.userStore.currentHome
-	}
 
 	public static getStoredHome(): string | null {
 		return localStorage.getItem('guest.home')
@@ -63,19 +60,8 @@ export class UserHomeSelector {
 		this.confirmSelection(code)
 	}
 
-	private async confirmSelection(code: string): Promise<void> {
+	private confirmSelection(code: string): void {
 		this.logger.info('Home area selected', { code })
-
-		if (this.authService.isAuthenticated) {
-			try {
-				await this.userStore.updateHome(codeToHome(code))
-			} catch (err) {
-				this.logger.error('Failed to update home via RPC', err)
-			}
-		} else {
-			this.userStore.setGuestHome(code)
-		}
-
 		this.isOpen = false
 		this.selectedRegion = null
 		this.onHomeSelected?.(code)

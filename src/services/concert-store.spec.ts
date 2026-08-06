@@ -10,7 +10,7 @@ const mockAuth = { isAuthenticated: true }
 const mockRpcClient = {
 	listByFollower: vi.fn(async (): Promise<ProximityGroup[]> => []),
 	listConcerts: vi.fn(),
-	listWithProximity: vi.fn(async (): Promise<ProximityGroup[]> => []),
+	listByArtists: vi.fn(async (): Promise<ProximityGroup[]> => []),
 }
 
 // Guest path reads follows/home from the storage adapter and maps the home code.
@@ -121,19 +121,19 @@ describe('ConcertStore', () => {
 	describe('guest proximity — resume revalidation', () => {
 		it('force-refreshes the guest proximity list even within the stale window', async () => {
 			mockAuth.isAuthenticated = false
-			mockRpcClient.listWithProximity
+			mockRpcClient.listByArtists
 				.mockResolvedValueOnce(makeGroups(1))
 				.mockResolvedValueOnce(makeGroups(2))
 
 			// Guest read caches the proximity list.
 			await sut.listByFollower()
-			expect(mockRpcClient.listWithProximity).toHaveBeenCalledTimes(1)
+			expect(mockRpcClient.listByArtists).toHaveBeenCalledTimes(1)
 
 			// Resume: revalidateFollower must FORCE a refresh (not serve the
 			// still-fresh cache), so a second RPC is issued.
 			const fresh = await sut.revalidateFollower()
 
-			expect(mockRpcClient.listWithProximity).toHaveBeenCalledTimes(2)
+			expect(mockRpcClient.listByArtists).toHaveBeenCalledTimes(2)
 			expect(fresh).toEqual(makeGroups(2))
 		})
 
@@ -144,7 +144,7 @@ describe('ConcertStore', () => {
 			const result = await sut.revalidateFollower()
 
 			expect(result).toEqual([])
-			expect(mockRpcClient.listWithProximity).not.toHaveBeenCalled()
+			expect(mockRpcClient.listByArtists).not.toHaveBeenCalled()
 		})
 	})
 

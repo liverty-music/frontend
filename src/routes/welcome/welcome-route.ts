@@ -67,7 +67,7 @@ export class WelcomeRoute implements IRouteViewModel {
 		this.abortController = new AbortController()
 
 		try {
-			const groups = await this.concertService.listWithProximity(
+			const groups = await this.concertService.listByArtists(
 				previewIds,
 				'JP',
 				'JP-13',

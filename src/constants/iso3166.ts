@@ -5,6 +5,9 @@
 export {
 	codeToHome,
 	displayName,
+	type GeoLocationInit,
+	geoLocationFromLevel1,
+	JP_PREFECTURE_CENTROIDS,
 	JP_PREFECTURES,
 	translationKey,
 } from '../entities/user'
