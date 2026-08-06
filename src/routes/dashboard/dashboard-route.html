@@ -165,8 +165,11 @@
 ></user-home-selector>
 
 <!-- All Nearby area-override selector. Route-local only — does NOT persist to
-     userStore.updateHome(). -->
+     userStore.updateHome(). Rendered only in All Nearby mode so it never
+     collides with the onboarding selector above (two user-home-selector
+     instances would otherwise both be in the DOM). -->
 <user-home-selector
+  if.bind="isAllNearby"
   component.ref="areaSelector"
   current-code.bind="selectedAreaCode ?? userStore.currentHome"
   on-home-selected.bind="(code) => onAreaSelected(code)"

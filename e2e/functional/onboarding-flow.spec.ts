@@ -89,7 +89,7 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
  * Mock Connect-RPC with concert data.
  * - ConcertService/List: returns 1 concert per artist (drives
  *   artistsWithConcertsCount >= 3 → coach mark)
- * - ListWithProximity: returns concerts in the away lane
+ * - ListByArtists: returns concerts in the away lane
  * - ListFollowed: returns 3 followed artists
  */
 async function mockRpcRoutes(page: Page): Promise<void> {
@@ -122,7 +122,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListWithProximity')) {
+		if (url.includes('ListByArtists')) {
 			// Return concerts for 6 preview artists to satisfy
 			// PREVIEW_MIN_ARTISTS_WITH_CONCERTS (=5). Performer IDs MUST
 			// match `config.json` `previewArtistIds` — otherwise
@@ -743,7 +743,7 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 		await mockRpcRoutes(page)
 		await mockLastFmApi(page)
 
-		// Seed: still onboarding, 3 follows, home set (needed for ListWithProximity
+		// Seed: still onboarding, 3 follows, home set (needed for ListByArtists
 		// on dashboard). celebrationShown suppresses the light celebration overlay
 		// so it never intercepts nav-tab clicks (covered by dashboard unit tests).
 		await page.addInitScript(() => {

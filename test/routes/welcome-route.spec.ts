@@ -56,7 +56,7 @@ describe('WelcomeRoute', () => {
 		isOnboarding: boolean
 	}
 	let mockConcert: {
-		listWithProximity: ReturnType<typeof vi.fn>
+		listByArtists: ReturnType<typeof vi.fn>
 		toDateGroups: ReturnType<typeof vi.fn>
 	}
 	let mockUserStore: {
@@ -78,7 +78,7 @@ describe('WelcomeRoute', () => {
 			isOnboarding: false,
 		}
 		mockConcert = {
-			listWithProximity: vi.fn().mockResolvedValue([]),
+			listByArtists: vi.fn().mockResolvedValue([]),
 			toDateGroups: vi.fn().mockReturnValue([]),
 		}
 		// The language picker reads its checked state from UserStore's reactive

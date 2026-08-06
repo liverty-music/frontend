@@ -54,7 +54,7 @@ function concertListPayload() {
 	}
 }
 
-/** Mock RPC routes with concert data for onboarding (ConcertService/ListWithProximity). */
+/** Mock RPC routes with concert data for onboarding (ConcertService/ListByArtists). */
 async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
@@ -67,8 +67,8 @@ async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		// ListWithProximity (check before List to avoid substring match)
-		if (url.includes('ListWithProximity')) {
+		// ListByArtists (check before List to avoid substring match)
+		if (url.includes('ListByArtists')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -171,9 +171,9 @@ test.describe('Dashboard lane classification after home selection', () => {
 		const regionDialog = page.locator('user-home-selector bottom-sheet')
 		await expect(regionDialog).toBeVisible({ timeout: 10_000 })
 
-		// Select a home region — expect loadData() to fire (ListWithProximity RPC)
+		// Select a home region — expect loadData() to fire (ListByArtists RPC)
 		const reloadPromise = page.waitForResponse(
-			(resp) => resp.url().includes('ListWithProximity'),
+			(resp) => resp.url().includes('ListByArtists'),
 			{ timeout: 10_000 },
 		)
 		const regionOption = regionDialog.locator('button').first()

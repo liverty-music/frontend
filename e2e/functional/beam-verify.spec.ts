@@ -11,7 +11,7 @@ tomorrow.setDate(tomorrow.getDate() + 1)
 async function mockRpc(page: Page, lane: 'home' | 'nearby' | 'away'): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
-		if (url.includes('ListWithProximity')) {
+		if (url.includes('ListByArtists')) {
 			const group: Record<string, unknown[]> = { home: [], nearby: [], away: [] }
 			group[lane] = [
 				{

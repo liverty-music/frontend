@@ -31,7 +31,7 @@ import { expect, type Page, test } from '@playwright/test'
 // to scroll.
 test.use({ viewport: { width: 390, height: 600 } })
 
-/** A ConcertService/ListWithProximity payload with many concerts across several
+/** A ConcertService/ListByArtists payload with many concerts across several
  *  dates, so the inner `.concert-scroll` list overflows the short viewport. */
 function proximityPayload() {
 	const base = new Date()
@@ -73,7 +73,7 @@ function proximityPayload() {
 async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
-		if (url.includes('ListWithProximity')) {
+		if (url.includes('ListByArtists')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',

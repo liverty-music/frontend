@@ -30,8 +30,8 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		// ListWithProximity (check before ListByFollower/List)
-		if (url.includes('ListWithProximity')) {
+		// ListByArtists (check before ListByFollower/List)
+		if (url.includes('ListByArtists')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
