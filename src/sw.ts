@@ -4,10 +4,9 @@ declare const self: ServiceWorkerGlobalScope & {
 }
 
 import { BackgroundSyncPlugin } from 'workbox-background-sync'
-import { ExpirationPlugin } from 'workbox-expiration'
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
-import { CacheFirst, NetworkOnly } from 'workbox-strategies'
+import { NetworkOnly } from 'workbox-strategies'
 import {
 	flushInteractionStash,
 	NOTIFICATION_FLUSH_MESSAGE,
@@ -46,44 +45,6 @@ precacheAndRoute(self.__WB_MANIFEST)
 // image's dist output beyond the `public/` fallback.
 // ---------------------------------------------------------------------------
 registerRoute(({ url }) => url.pathname === '/config.json', new NetworkOnly())
-
-// ---------------------------------------------------------------------------
-// ZK circuit artifacts — CacheFirst with 30-day TTL.
-// ---------------------------------------------------------------------------
-const ZK_CACHE = 'zk-circuits-v1'
-const CIRCUIT_URLS = ['/ticketcheck.wasm', '/ticketcheck.zkey']
-
-registerRoute(
-	({ url }) => url.pathname.endsWith('.wasm') || url.pathname.endsWith('.zkey'),
-	new CacheFirst({
-		cacheName: ZK_CACHE,
-		plugins: [
-			new ExpirationPlugin({
-				maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
-			}),
-		],
-	}),
-)
-
-// Pre-cache circuit files during SW install (non-blocking on failure).
-self.addEventListener('install', (event) => {
-	event.waitUntil(
-		caches.open(ZK_CACHE).then(async (cache) => {
-			const existing = await cache.keys()
-			const cached = new Set(existing.map((r) => new URL(r.url).pathname))
-			const missing = CIRCUIT_URLS.filter((u) => !cached.has(u))
-			if (missing.length === 0) return
-			try {
-				await cache.addAll(missing)
-			} catch (err) {
-				console.warn(
-					'[SW] Circuit pre-cache failed (will retry at runtime):',
-					err,
-				)
-			}
-		}),
-	)
-})
 
 // ---------------------------------------------------------------------------
 // PWA Share Target handler — DISABLED.

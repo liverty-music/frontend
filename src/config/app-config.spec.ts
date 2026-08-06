@@ -14,7 +14,6 @@ const validConfig: AppConfig = {
 	zitadelClientId: '371355407710421859',
 	zitadelOrgId: '371348346264093539',
 	vapidPublicKey: 'BNg-test-key',
-	circuitBaseUrl: '/circuits/ticketcheck-v1',
 	previewArtistIds: ['019c8655-7a05-71ef-82b4-a4ac2494e29f'],
 	previewArtistNames: ['Mrs. GREEN APPLE'],
 	logLevel: 'debug',
@@ -113,12 +112,6 @@ describe('app-config', () => {
 				previewArtistNames: ['x'],
 			})
 			await expect(loadAppConfig()).rejects.toThrow(/length mismatch/)
-		})
-
-		it('accepts empty circuitBaseUrl', async () => {
-			mockFetchJson({ ...validConfig, circuitBaseUrl: '' })
-			const result = await loadAppConfig()
-			expect(result.circuitBaseUrl).toBe('')
 		})
 
 		it('defaults internalTrafficUserIds to an empty array when the field is absent', async () => {

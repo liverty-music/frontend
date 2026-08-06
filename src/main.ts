@@ -13,10 +13,8 @@ import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { onCLS, onINP, onLCP } from 'web-vitals/attribution'
 import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
 import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
-import { IEntryRpcClient } from './adapter/rpc/client/entry-client'
 import { IFollowRpcClient } from './adapter/rpc/client/follow-client'
 import { IPushRpcClient } from './adapter/rpc/client/push-client'
-import { ITicketRpcClient } from './adapter/rpc/client/ticket-client'
 import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
@@ -82,14 +80,12 @@ import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
 import { OtelLogSink } from './services/otel-log-sink'
 import { IPromptCoordinator } from './services/prompt-coordinator'
-import { IProofService } from './services/proof-service'
 import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
 import { IResumeRevalidator } from './services/resume-revalidator'
 import { ITicketEmailService } from './services/ticket-email-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
 import { ITicketJourneyStore } from './services/ticket-journey-store'
-import { ITicketStore } from './services/ticket-store'
 import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserStore } from './services/user-store'
 import { DateValueConverter } from './value-converters/date'
@@ -251,13 +247,9 @@ async function bootstrap(): Promise<void> {
 	au.register(IArtistRpcClient)
 	au.register(IConcertRpcClient)
 	au.register(IFollowRpcClient)
-	au.register(ITicketRpcClient)
-	au.register(ITicketStore)
 	au.register(ITicketJourneyRpcClient)
-	au.register(IEntryRpcClient)
 	au.register(IUserRpcClient)
 	au.register(IPushRpcClient)
-	au.register(IProofService)
 	au.register(ArtistUnfollowSheet)
 	au.register(ArtistFilterBar)
 	au.register(BottomNavBar)
