@@ -1,11 +1,13 @@
 import { DI, ILogger, observable, resolve } from 'aurelia'
 import {
+	type CalendarDate,
 	IConcertRpcClient,
 	type ProtoConcert,
 	type ProximityGroup,
 } from '../adapter/rpc/client/concert-client'
 import { loadFollows, loadHome } from '../adapter/storage/guest-storage'
 import { codeToHome, displayName } from '../constants/iso3166'
+import type { GeoLocationInit } from '../entities/user'
 import type { Artist } from '../entities/artist'
 import {
 	type Concert,
@@ -71,12 +73,7 @@ export class ConcertStore {
 		({ artistIds, countryCode, level1 }) =>
 			proximityKey(artistIds, countryCode, level1),
 		({ artistIds, countryCode, level1 }, signal) =>
-			this.rpcClient.listWithProximity(
-				[...artistIds],
-				countryCode,
-				level1,
-				signal,
-			),
+			this.rpcClient.listByArtists([...artistIds], countryCode, level1, signal),
 	)
 
 	@observable public artistsWithConcerts = new Set<string>()
@@ -157,7 +154,7 @@ export class ConcertStore {
 		this.lastDateGroups = null
 	}
 
-	public async listWithProximity(
+	public async listByArtists(
 		artistIds: readonly string[],
 		countryCode: string,
 		level1: string,
@@ -167,6 +164,21 @@ export class ConcertStore {
 			{ artistIds, countryCode, level1 },
 			signal,
 		)
+	}
+
+	/**
+	 * The "All Nearby" concert list: every catalog concert HOME/NEARBY to a
+	 * geographic reference point within a date range. Unlike the follower/artist
+	 * paths this is not cached here — the Dashboard route owns a route-local cache
+	 * keyed by (area, date range) so it stays separate from the My Timetable cache.
+	 */
+	public async listByLocation(
+		location: GeoLocationInit,
+		from: CalendarDate,
+		to: CalendarDate,
+		signal?: AbortSignal,
+	): Promise<ProximityGroup[]> {
+		return this.rpcClient.listByLocation(location, from, to, signal)
 	}
 
 	/**
@@ -357,7 +369,7 @@ export class ConcertStore {
 			count: input?.artistIds.length ?? 0,
 		})
 		if (!input) return []
-		return this.listWithProximity(
+		return this.listByArtists(
 			input.artistIds,
 			input.countryCode,
 			input.level1,
@@ -387,7 +399,7 @@ export class ConcertStore {
 }
 
 /**
- * Complete cache key for `listWithProximity`: the sorted artist-id set plus
+ * Complete cache key for `listByArtists`: the sorted artist-id set plus
  * country and level-1 area. Sorting makes the key order-independent so the same
  * follow set always hits the same entry; a changed follow set (or area) yields a
  * new key, which is why this path needs no write-side invalidation.

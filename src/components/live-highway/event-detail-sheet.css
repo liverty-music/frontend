@@ -316,6 +316,66 @@
 			}
 		}
 
+		/* Follow CTA (All Nearby context) */
+		.sheet-follow {
+			display: flex;
+			justify-content: center;
+			margin-block-start: var(--space-m);
+		}
+
+		.follow-btn {
+			cursor: pointer;
+
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			inline-size: 100%;
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-m);
+			border: none;
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+			box-shadow: var(--shadow-button);
+
+			transition: background-color 150ms ease-out;
+
+			&:disabled {
+				cursor: default;
+				opacity: 0.6;
+			}
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
+			}
+
+			&:hover:not(:disabled) {
+				background: var(--color-brand-secondary);
+			}
+		}
+
+		.follow-state {
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			inline-size: 100%;
+			margin: 0;
+			padding-block: var(--space-2xs);
+
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-brand-primary);
+		}
+
 		/* Action buttons */
 		.sheet-actions {
 			display: flex;

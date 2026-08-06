@@ -305,6 +305,7 @@
 <!-- Home Area Selector Bottom Sheet -->
 <user-home-selector
   component.ref="homeSelector"
+  current-code.bind="userStore.currentHome"
   on-home-selected.bind="(code) => onHomeSelected(code)"
 ></user-home-selector>
 

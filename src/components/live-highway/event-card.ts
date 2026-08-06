@@ -60,4 +60,17 @@ export class EventCard {
 
 	/** Sequential beam index assigned by dashboard for JS beam tracking. */
 	@bindable public beamIndex: number | null = null
+
+	/**
+	 * When true, the venue/location label renders for ALL lanes including HOME.
+	 * In the default My Timetable view HOME-lane cards suppress the label (the
+	 * lane already implies the user's home area); the All Nearby view sets this
+	 * so every card shows where the concert is.
+	 */
+	@bindable public showVenueAlways = false
+
+	/** Whether to render the location label for this card's lane. */
+	public get showLocation(): boolean {
+		return this.showVenueAlways || this.lane !== 'home'
+	}
 }

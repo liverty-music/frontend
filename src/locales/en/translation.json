@@ -561,5 +561,34 @@
 			"sourceLabel": "View source",
 			"viewLicenseText": "View full license text"
 		}
+	},
+	"allNearby": {
+		"modeToggle": {
+			"groupLabel": "Concert view",
+			"timetable": "My Timetable",
+			"allNearby": "All Nearby"
+		},
+		"area": {
+			"choose": "Choose an area"
+		},
+		"datePreset": {
+			"groupLabel": "Date range",
+			"weekend": "This weekend",
+			"week": "Within 7 days",
+			"month": "Within 30 days",
+			"custom": "Custom",
+			"from": "From",
+			"to": "To",
+			"rangeHint": "Pick a range of up to {{days}} days."
+		},
+		"empty": {
+			"title": "No concerts found for this area and dates",
+			"subtitle": "Try a wider date range or a different area.",
+			"discoverLink": "Discover Artists"
+		},
+		"follow": {
+			"action": "Follow this artist",
+			"following": "Following"
+		}
 	}
 }

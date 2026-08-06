@@ -15,14 +15,31 @@ import {
 } from '../../lib/analytics/analytics-service'
 import type { EventSource } from '../../services/analytics-events'
 import { IAuthService } from '../../services/auth-service'
+import { IFollowStore } from '../../services/follow-store'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import type { JourneyStatus, LiveEvent } from './live-event'
 
 export class EventDetailSheet {
 	@bindable public event: LiveEvent | null = null
 
+	/**
+	 * True when the sheet was opened from the All Nearby discovery view. Only in
+	 * that context does the follow CTA surface — the My Timetable context already
+	 * implies a followed artist, so the CTA stays hidden and the sheet is
+	 * unchanged there.
+	 */
+	@bindable public isAllNearby = false
+
+	/**
+	 * Invoked when an unauthenticated visitor taps the follow CTA. The host route
+	 * owns the sign-up prompt banner; a callback (not a DOM event) keeps this
+	 * component free of element injection and testable via plain DI construction.
+	 */
+	@bindable public onSignupRequested?: () => void
+
 	public isOpen = false
 	public journeyUpdating = false
+	public followUpdating = false
 
 	/** Canonical label/icon/hue per status, sourced once for every node. */
 	public readonly journeyConfig = JOURNEY_STATUS_CONFIG_MAP
@@ -30,6 +47,7 @@ export class EventDetailSheet {
 	private readonly logger = resolve(ILogger).scopeTo('EventDetailSheet')
 	private readonly journeyStore = resolve(ITicketJourneyStore)
 	private readonly authService = resolve(IAuthService)
+	private readonly followStore = resolve(IFollowStore)
 	private readonly history = resolve(IHistory)
 	private readonly analytics = resolve(IAnalyticsService)
 
@@ -43,6 +61,66 @@ export class EventDetailSheet {
 
 	public get isAuthenticated(): boolean {
 		return this.authService.isAuthenticated
+	}
+
+	/** Whether the current event's artist is already in the follow set. */
+	public get isFollowed(): boolean {
+		const id = this.event?.artistId
+		return id ? this.followStore.followedIds.has(id) : false
+	}
+
+	/**
+	 * Show the follow CTA only in the All Nearby context, only for an event whose
+	 * artist is resolved (a resolvable performer identity) and not already
+	 * followed. My Timetable events implicitly belong to a followed artist, so the
+	 * CTA never shows there.
+	 */
+	public get showFollowCta(): boolean {
+		return this.isAllNearby && !!this.event?.artist && !this.isFollowed
+	}
+
+	/**
+	 * Follow the event's artist from the All Nearby CTA. Unauthenticated visitors
+	 * are routed to the sign-up prompt instead of a guest follow — the discovery
+	 * follow is the conversion moment. A missing/unresolved artist is guarded
+	 * (logged, no-op) so a performer-less card can never crash the sheet.
+	 */
+	public async follow(): Promise<void> {
+		if (this.followUpdating || this.isFollowed) return
+
+		if (!this.isAuthenticated) {
+			// Guest: surface the sign-up prompt rather than a guest follow. The
+			// banner is owned by the host route via the onSignupRequested callback.
+			this.onSignupRequested?.()
+			return
+		}
+
+		const artist = this.event?.artist
+		if (!artist) {
+			// Unresolved performer: the button is already hidden by showFollowCta,
+			// but guard the write path so a stale invocation cannot throw.
+			this.logger.warn(
+				'Follow requested for an event with no resolved artist',
+				{
+					eventId: this.event?.id,
+				},
+			)
+			return
+		}
+
+		this.followUpdating = true
+		try {
+			await this.followStore.follow(artist)
+			this.logger.info('Artist followed from All Nearby', {
+				artistId: artist.id,
+			})
+		} catch (err) {
+			this.logger.warn('Failed to follow artist from All Nearby', {
+				error: err,
+			})
+		} finally {
+			this.followUpdating = false
+		}
 	}
 
 	/**
@@ -94,8 +172,13 @@ export class EventDetailSheet {
 		return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.title)}&dates=${dateStr}T${startStr}/${endDateStr}T${endStr}&location=${encodeURIComponent(e.venueName)}`
 	}
 
-	public open(event: LiveEvent, source: EventSource = 'page'): void {
+	public open(
+		event: LiveEvent,
+		source: EventSource = 'page',
+		isAllNearby = false,
+	): void {
 		this.event = event
+		this.isAllNearby = isAllNearby
 		this.isOpen = true
 
 		// Push URL without triggering Aurelia Router navigation — the sheet is an

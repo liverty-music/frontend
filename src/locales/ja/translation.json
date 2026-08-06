@@ -561,5 +561,34 @@
 			"sourceLabel": "ソースを表示",
 			"viewLicenseText": "ライセンス全文を表示"
 		}
+	},
+	"allNearby": {
+		"modeToggle": {
+			"groupLabel": "ライブの表示切り替え",
+			"timetable": "マイタイムテーブル",
+			"allNearby": "近くのすべて"
+		},
+		"area": {
+			"choose": "エリアを選択"
+		},
+		"datePreset": {
+			"groupLabel": "期間",
+			"weekend": "今週末",
+			"week": "7日以内",
+			"month": "30日以内",
+			"custom": "カスタム",
+			"from": "開始",
+			"to": "終了",
+			"rangeHint": "最大{{days}}日間の期間を選択できます。"
+		},
+		"empty": {
+			"title": "このエリア・期間のライブは見つかりませんでした",
+			"subtitle": "期間を広げるか、別のエリアを試してみてください。",
+			"discoverLink": "アーティストを探す"
+		},
+		"follow": {
+			"action": "このアーティストをフォロー",
+			"following": "フォロー中"
+		}
 	}
 }

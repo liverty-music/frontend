@@ -5,7 +5,7 @@ import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Snack } from '../../components/snack-bar/snack'
 import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
-import { translationKey } from '../../constants/iso3166'
+import { codeToHome, translationKey } from '../../constants/iso3166'
 import {
 	type ConsentPurpose,
 	IConsentService,
@@ -196,14 +196,21 @@ export class SettingsRoute {
 		this.homeSelector.open()
 	}
 
-	public onHomeSelected(code: string): void {
-		// UserHomeSelector already persists via userStore.updateHome before
-		// firing this callback, and `currentHome` is derived from
-		// userStore.current.home — so the view updates automatically. The
-		// handler stays solely to surface a structured log line for the
-		// settings-originated update path (distinct from onboarding /
-		// auth-callback / hydration write paths).
+	public async onHomeSelected(code: string): Promise<void> {
+		// UserHomeSelector is now a pure selection UI — the caller owns
+		// persistence. Authenticated users write through UserService.updateHome;
+		// guests persist to localStorage via setGuestHome. `currentHome` is
+		// derived from the store, so the view updates reactively afterwards.
 		this.logger.info('Home area updated from settings', { code })
+		if (this.auth.isAuthenticated) {
+			try {
+				await this.userStore.updateHome(codeToHome(code))
+			} catch (err) {
+				this.logger.error('Failed to update home via RPC', err)
+			}
+		} else {
+			this.userStore.setGuestHome(code)
+		}
 	}
 
 	public openLanguageSelector(): void {

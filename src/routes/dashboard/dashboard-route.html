@@ -1,15 +1,16 @@
 <import from="./dashboard-route.css"></import>
+<import from="../../components/all-nearby/date-preset-selector"></import>
 
 <page-header title-key="nav.home">
   <artist-filter-bar
-    if.bind="!isOnboarding"
+    if.bind="!isOnboarding && !isAllNearby"
     counted-artists.bind="countedArtists"
     selected-ids.two-way="filteredArtistIds"
     selected-statuses.two-way="filteredStatuses"
     is-authenticated.bind="isAuthenticated"
   ></artist-filter-bar>
   <button
-    if.bind="!isOnboarding"
+    if.bind="!isOnboarding && !isAllNearby"
     type="button"
     class="beam-toggle"
     click.trigger="toggleBeams()"
@@ -22,42 +23,131 @@
   <page-help page="dashboard"></page-help>
 </page-header>
 
-<!-- Loading state -->
-<p if.bind="isLoading" class="loading-text" data-testid="dashboard-loading" t="dashboard.loading"></p>
+<!-- Controls row: mode toggle + (in All Nearby) the date/area filter bar. -->
+<div if.bind="!isOnboarding" class="[ dashboard-controls ] [ flow ]">
+  <!-- Mode toggle: My Timetable / All Nearby. Session-only, default My Timetable. -->
+  <div
+    class="[ mode-toggle ]"
+    role="group"
+    t="[aria-label]allNearby.modeToggle.groupLabel"
+  >
+    <button
+      type="button"
+      class="mode-toggle-btn"
+      data-active.bind="!isAllNearby"
+      aria-pressed.bind="!isAllNearby"
+      click.trigger="switchMode('timetable')"
+      t="allNearby.modeToggle.timetable"
+    ></button>
+    <button
+      type="button"
+      class="mode-toggle-btn"
+      data-active.bind="isAllNearby"
+      aria-pressed.bind="isAllNearby"
+      click.trigger="switchMode('allNearby')"
+      t="allNearby.modeToggle.allNearby"
+    ></button>
+  </div>
 
-<!-- Error state -->
-<inline-error
-  if.bind="loadError"
-  message.bind="i18n.tr('dashboard.error.load')"
-  error.bind="loadError"
-  retry-action.bind="() => loadData()"
-></inline-error>
+  <!-- All Nearby filters: date preset + area selector (All Nearby mode only). -->
+  <div if.bind="isAllNearby" class="[ all-nearby-filters ] [ flow ]">
+    <button
+      type="button"
+      class="area-selector"
+      click.trigger="openAreaSelector()"
+    >
+      <svg-icon name="map-pin" size="sm"></svg-icon>
+      <span
+        if.bind="selectedAreaName"
+        class="area-name"
+      >${selectedAreaName}</span>
+      <span
+        else
+        class="area-name area-name-empty"
+        t="allNearby.area.choose"
+      ></span>
+    </button>
+    <date-preset-selector
+      range-changed.trigger="onRangeChanged($event)"
+    ></date-preset-selector>
+  </div>
+</div>
 
-<!-- Guest empty-state CTA: unauthenticated visitor with zero follows. Soft gate
-     guidance toward discovery instead of a guard redirect. -->
-<state-placeholder if.bind="!isLoading && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
-  <p t="dashboard.guestEmpty.title" class="dashboard-empty-title"></p>
-  <p t="dashboard.guestEmpty.subtitle" class="dashboard-empty-subtitle"></p>
-  <a href.bind="'discovery'" t="dashboard.guestEmpty.cta" class="discover-cta"></a>
-</state-placeholder>
+<!-- ── My Timetable view ── -->
+<template if.bind="!isAllNearby">
+  <!-- Loading state -->
+  <p if.bind="isLoading" class="loading-text" data-testid="dashboard-loading" t="dashboard.loading"></p>
 
-<!-- Empty state -->
-<state-placeholder if.bind="!isLoading && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
-  <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
-  <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
-  <a href.bind="'discovery'" t="dashboard.empty.discoverLink" class="discover-cta"></a>
-</state-placeholder>
+  <!-- Error state -->
+  <inline-error
+    if.bind="loadError"
+    message.bind="i18n.tr('dashboard.error.load')"
+    error.bind="loadError"
+    retry-action.bind="() => loadData()"
+  ></inline-error>
 
-<!-- Concert highway — always in DOM for E2E compatibility -->
-<concert-highway
-  date-groups.bind="filteredDateGroups"
-  show-beams.bind="showBeams"
-  data-blurred.bind="needsRegion"
-  event-selected.trigger="onEventSelected($event)"
-></concert-highway>
+  <!-- Guest empty-state CTA: unauthenticated visitor with zero follows. Soft gate
+       guidance toward discovery instead of a guard redirect. -->
+  <state-placeholder if.bind="!isLoading && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
+    <p t="dashboard.guestEmpty.title" class="dashboard-empty-title"></p>
+    <p t="dashboard.guestEmpty.subtitle" class="dashboard-empty-subtitle"></p>
+    <a href.bind="'discovery'" t="dashboard.guestEmpty.cta" class="discover-cta"></a>
+  </state-placeholder>
 
-<!-- Bottom sheet for event details (top-layer dialog) -->
-<event-detail-sheet component.ref="detailSheet"></event-detail-sheet>
+  <!-- Empty state -->
+  <state-placeholder if.bind="!isLoading && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
+    <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
+    <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
+    <a href.bind="'discovery'" t="dashboard.empty.discoverLink" class="discover-cta"></a>
+  </state-placeholder>
+
+  <!-- Concert highway — always in DOM for E2E compatibility -->
+  <concert-highway
+    date-groups.bind="filteredDateGroups"
+    show-beams.bind="showBeams"
+    data-blurred.bind="needsRegion"
+    event-selected.trigger="onEventSelected($event)"
+  ></concert-highway>
+</template>
+
+<!-- ── All Nearby view ── -->
+<template if.bind="isAllNearby">
+  <!-- Loading state -->
+  <p if.bind="allNearbyLoading" class="loading-text" data-testid="all-nearby-loading" t="dashboard.loading"></p>
+
+  <!-- Error state -->
+  <inline-error
+    if.bind="allNearbyError"
+    message.bind="i18n.tr('dashboard.error.load')"
+    error.bind="allNearbyError"
+    retry-action.bind="() => loadAllNearby()"
+  ></inline-error>
+
+  <!-- Empty state: no concerts for the selected area + date range. -->
+  <state-placeholder
+    if.bind="!allNearbyLoading && !allNearbyError && allNearbyDateGroups.length === 0"
+    icon="clock"
+  >
+    <p t="allNearby.empty.title" class="dashboard-empty-title"></p>
+    <p t="allNearby.empty.subtitle" class="dashboard-empty-subtitle"></p>
+    <a href.bind="'discovery'" t="allNearby.empty.discoverLink" class="discover-cta"></a>
+  </state-placeholder>
+
+  <!-- All Nearby highway — every card shows its venue, incl. HOME lane. -->
+  <concert-highway
+    date-groups.bind="allNearbyDateGroups"
+    show-beams.bind="false"
+    show-venue-always.bind="true"
+    event-selected.trigger="onEventSelected($event)"
+  ></concert-highway>
+</template>
+
+<!-- Bottom sheet for event details (top-layer dialog). The All Nearby follow CTA
+     dispatches signup-requested for guests → surface the sign-up prompt banner. -->
+<event-detail-sheet
+  component.ref="detailSheet"
+  on-signup-requested.bind="() => onFollowSignupRequested()"
+></event-detail-sheet>
 
 <!-- Signup prompt banner for unauthenticated users (non-dismissable) -->
 <signup-prompt-banner
@@ -66,11 +156,23 @@
   signup-requested.trigger="onSignupRequested()">
 </signup-prompt-banner>
 
-<!-- Home area selector bottom sheet -->
+<!-- Home area selector bottom sheet (onboarding / region setup) -->
 <user-home-selector
   component.ref="homeSelector"
+  current-code.bind="userStore.currentHome"
   on-home-selected.bind="(code) => onHomeSelected(code)"
   required.bind="isOnboarding"
+></user-home-selector>
+
+<!-- All Nearby area-override selector. Route-local only — does NOT persist to
+     userStore.updateHome(). Rendered only in All Nearby mode so it never
+     collides with the onboarding selector above (two user-home-selector
+     instances would otherwise both be in the DOM). -->
+<user-home-selector
+  if.bind="isAllNearby"
+  component.ref="areaSelector"
+  current-code.bind="selectedAreaCode ?? userStore.currentHome"
+  on-home-selected.bind="(code) => onAreaSelected(code)"
 ></user-home-selector>
 
 <!-- Celebration overlay — two tiers (guest light / post-signup confetti),

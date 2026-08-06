@@ -28,9 +28,9 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		// ListByFollower is the authenticated path; ListWithProximity is the guest
+		// ListByFollower is the authenticated path; ListByArtists is the guest
 		// path (ConcertStore.listByFollowerGuest). Both return the same groups.
-		if (url.includes('ListByFollower') || url.includes('ListWithProximity')) {
+		if (url.includes('ListByFollower') || url.includes('ListByArtists')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',

@@ -6,7 +6,7 @@ import { createMockAuth } from '../helpers/mock-auth'
 const mockConcertRpcClient = {
 	listConcerts: vi.fn().mockResolvedValue([]),
 	listByFollower: vi.fn().mockResolvedValue([]),
-	listWithProximity: vi.fn().mockResolvedValue([]),
+	listByArtists: vi.fn().mockResolvedValue([]),
 }
 
 const mockIConcertRpcClient = DI.createInterface('IConcertRpcClient')
@@ -44,7 +44,7 @@ describe('ConcertStore', () => {
 		vi.clearAllMocks()
 		mockConcertRpcClient.listConcerts.mockResolvedValue([])
 		mockConcertRpcClient.listByFollower.mockResolvedValue([])
-		mockConcertRpcClient.listWithProximity.mockResolvedValue([])
+		mockConcertRpcClient.listByArtists.mockResolvedValue([])
 
 		const mockAuth = createMockAuth({ isAuthenticated: true })
 
