@@ -61,11 +61,6 @@ import { IPwaInstallService } from './services/pwa-install-service'
 			data: { auth: false },
 		},
 		{
-			path: 'tickets',
-			component: import('./routes/tickets/tickets-route'),
-			title: 'Tickets',
-		},
-		{
 			path: 'settings',
 			component: import('./routes/settings/settings-route'),
 			title: 'Settings',

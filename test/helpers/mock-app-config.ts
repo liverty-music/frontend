@@ -12,7 +12,6 @@ export function createMockAppConfig(overrides?: Partial<AppConfig>): AppConfig {
 		zitadelClientId: 'test-client-id',
 		zitadelOrgId: 'test-org-id',
 		vapidPublicKey: 'BNg-test-vapid-key',
-		circuitBaseUrl: '/circuits/test',
 		previewArtistIds: [],
 		previewArtistNames: [],
 		logLevel: 'warn',

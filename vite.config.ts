@@ -94,7 +94,6 @@ export default defineConfig({
 			srcDir: 'src',
 			filename: 'sw.ts',
 			injectManifest: {
-				maximumFileSizeToCacheInBytes: 60 * 1024 * 1024, // 60 MB
 				// Scope the precache manifest to the consumer entry. The admin
 				// entry ships NO service worker and must never enter the consumer
 				// SW precache (design "Risks" — PWA over-precaching). All

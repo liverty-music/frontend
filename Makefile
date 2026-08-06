@@ -1,4 +1,4 @@
-.PHONY: lint lint-brand-vocabulary lint-boundaries lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation build-prover
+.PHONY: lint lint-brand-vocabulary lint-boundaries lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation
 
 ## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary + import-boundaries (matches CI)
 lint: lint-brand-vocabulary lint-boundaries
@@ -14,11 +14,6 @@ lint-boundaries:
 ## lint-brand-vocabulary: enforce entity.* i18n namespace parity and known-entity rules
 lint-brand-vocabulary:
 	npx tsx scripts/check-brand-vocabulary.ts
-
-## build-prover: rebuild the MIT/Apache arkworks WASM prover (requires rust + wasm-pack).
-## prover/pkg/ is committed as the prebuilt artifact; run this only after changing prover/.
-build-prover:
-	cd prover && wasm-pack build --target web --release
 
 ## fix: auto-fix formatting and lint issues
 fix:

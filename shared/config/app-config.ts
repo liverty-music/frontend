@@ -26,7 +26,6 @@ export interface AppConfig {
 	readonly zitadelClientId: string
 	readonly zitadelOrgId: string
 	readonly vapidPublicKey: string
-	readonly circuitBaseUrl: string
 	readonly previewArtistIds: readonly string[]
 	readonly previewArtistNames: readonly string[]
 	readonly logLevel: 'trace' | 'debug' | 'info' | 'warn' | 'error'
@@ -261,11 +260,6 @@ function validateAppConfig(parsed: unknown): AppConfig {
 		zitadelClientId: requireString(o, 'zitadelClientId'),
 		zitadelOrgId: requireString(o, 'zitadelOrgId'),
 		vapidPublicKey: requireString(o, 'vapidPublicKey'),
-		// circuitBaseUrl is the ONLY required-present-but-MAY-be-empty
-		// string in the schema — empty signals "ZK circuits unavailable
-		// in this environment" per the frontend-runtime-config spec.
-		// All other required fields use requireString (rejects empty).
-		circuitBaseUrl: optionalString(o, 'circuitBaseUrl'),
 		previewArtistIds,
 		previewArtistNames,
 		logLevel: logLevel as AppConfig['logLevel'],
@@ -280,15 +274,6 @@ function requireString(o: Record<string, unknown>, key: string): string {
 	const v = o[key]
 	if (typeof v !== 'string' || v.length === 0) {
 		throw new Error(`config.json missing or empty required field: ${key}`)
-	}
-	return v
-}
-
-function optionalString(o: Record<string, unknown>, key: string): string {
-	const v = o[key]
-	if (v === undefined || v === null) return ''
-	if (typeof v !== 'string') {
-		throw new Error(`config.json field '${key}' must be a string`)
 	}
 	return v
 }

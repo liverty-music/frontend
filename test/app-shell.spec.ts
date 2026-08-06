@@ -28,9 +28,6 @@ vi.mock('../src/routes/discovery/discovery-route', () => ({
 vi.mock('../src/routes/my-artists/my-artists-route', () => ({
 	MyArtistsRoute: class MyArtistsRoute {},
 }))
-vi.mock('../src/routes/tickets/tickets-route', () => ({
-	TicketsRoute: class TicketsRoute {},
-}))
 vi.mock('../src/routes/settings/settings-route', () => ({
 	SettingsRoute: class SettingsRoute {},
 }))
