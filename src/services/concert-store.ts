@@ -182,6 +182,38 @@ export class ConcertStore {
 	}
 
 	/**
+	 * Convert All Nearby ProximityGroup[] into DateGroup[], resolving each card's
+	 * artist identity from the concert's OWN performers.
+	 *
+	 * The follower/artist paths resolve performers against the user's followed-artist
+	 * map; in All Nearby the concerts belong to arbitrary catalog artists the user
+	 * does not follow, so that map is empty and every card would render a blank
+	 * artist name (only the location showed). Building the map from the proto
+	 * performers themselves makes the headliner name render. No hype/journey context
+	 * applies here, so hype defaults and the journey map is empty.
+	 */
+	public toDateGroupsForLocation(groups: ProximityGroup[]): DateGroup[] {
+		const artistMap = new Map<string, { artist: Artist; hype: Hype }>()
+		for (const g of groups) {
+			for (const c of [...g.home, ...g.nearby, ...g.away]) {
+				for (const p of c.performers ?? []) {
+					const id = p.id?.value
+					if (!id || artistMap.has(id)) continue
+					artistMap.set(id, {
+						artist: {
+							id,
+							name: p.name?.value ?? '',
+							mbid: p.mbid?.value ?? '',
+						},
+						hype: DEFAULT_HYPE,
+					})
+				}
+			}
+		}
+		return this.toDateGroups(groups, artistMap, new Map())
+	}
+
+	/**
 	 * Convert ProximityGroup[] into DateGroup[] for rendering.
 	 * Shared by dashboard-route (authenticated) and welcome-route (preview).
 	 */

@@ -577,10 +577,54 @@ export class DashboardRoute {
 
 	// --- All Nearby mode ---
 
-	/** Switch the dashboard view. My Timetable is never refetched on switch. */
+	/**
+	 * The page-header title for the active mode. Timetable keeps the existing
+	 * `nav.home` title (unchanged from every other page); All Nearby swaps to its
+	 * own title. Both render in the same shared page-header H1, so the dashboard
+	 * stays structurally consistent with the other routes.
+	 */
+	public get modeTitleKey(): string {
+		return this.isAllNearby ? 'allNearby.modeTitle' : 'nav.home'
+	}
+
+	/** Label for the swap control — always names the OTHER mode (the destination). */
+	public get swapLabelKey(): string {
+		return this.isAllNearby
+			? 'allNearby.modeToggle.timetable'
+			: 'allNearby.modeToggle.allNearby'
+	}
+
+	/** Toggle to the opposite view (bound to the header swap control). */
+	public toggleMode(): void {
+		this.switchMode(this.isAllNearby ? 'timetable' : 'allNearby')
+	}
+
+	/**
+	 * Switch the dashboard view. My Timetable is never refetched on switch. The
+	 * mode change is wrapped in a View Transition so the header title morphs and
+	 * the content cross-fades; falls back to an instant swap when the API is
+	 * unavailable or the user prefers reduced motion. The rAF-settled promise lets
+	 * Aurelia flush the `if.bind` view swap before the transition captures the new
+	 * state.
+	 */
 	public switchMode(mode: ViewMode): void {
 		if (this.viewMode === mode) return
-		this.viewMode = mode
+		const doc = document as Document & {
+			startViewTransition?: (cb: () => unknown) => unknown
+		}
+		const reduce = window.matchMedia?.(
+			'(prefers-reduced-motion: reduce)',
+		).matches
+		if (!doc.startViewTransition || reduce) {
+			this.viewMode = mode
+			return
+		}
+		doc.startViewTransition(() => {
+			this.viewMode = mode
+			return new Promise<void>((resolve) =>
+				requestAnimationFrame(() => resolve()),
+			)
+		})
 	}
 
 	/**
@@ -680,13 +724,9 @@ export class DashboardRoute {
 				signal,
 			)
 			if (signal.aborted) return
-			// All Nearby has no per-user artist/journey context: pass empty maps so
-			// every resolved performer renders without hype/journey enrichment.
-			const dateGroups = this.concertService.toDateGroups(
-				groups,
-				new Map(),
-				new Map(),
-			)
+			// Resolve each card's artist from the concert's own performers (these
+			// catalog artists are not in the user's follow set), so names render.
+			const dateGroups = this.concertService.toDateGroupsForLocation(groups)
 			this.allNearbyCache.set(key, dateGroups)
 			this.allNearbyDateGroups = dateGroups
 			this.logger.info('All Nearby loaded', {

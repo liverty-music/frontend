@@ -73,4 +73,17 @@ export class EventCard {
 	public get showLocation(): boolean {
 		return this.showVenueAlways || this.lane !== 'home'
 	}
+
+	/**
+	 * What the location line shows. In the All Nearby view (showVenueAlways) the
+	 * venue name is the useful signal — the user already chose the area, so the
+	 * prefecture is redundant; fall back to the prefecture label only when the
+	 * venue name is absent. My Timetable keeps the prefecture label (locationLabel).
+	 */
+	public get displayedLocation(): string {
+		if (this.showVenueAlways) {
+			return this.event.venueName || this.event.locationLabel
+		}
+		return this.event.locationLabel
+	}
 }

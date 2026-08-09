@@ -9,11 +9,11 @@
 </div>
 
 <!-- Concert grid (stage header + scrollable lanes) -->
-<section class="[ concert-grid-wrapper ]">
+<section class="[ concert-grid-wrapper ]" data-hide-away.bind="hideAway">
   <header class="[ stage-header ]" if.bind="dateGroups.length > 0">
     <span data-stage="home">HOME STAGE</span>
     <span data-stage="near">NEAR STAGE</span>
-    <span data-stage="away">AWAY STAGE</span>
+    <span if.bind="!hideAway" data-stage="away">AWAY STAGE</span>
   </header>
 
   <ol class="[ concert-scroll ] [ date-group-list ]" data-testid="concert-scroll">
@@ -46,7 +46,7 @@
             beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>
-        <li class="[ lane ]" data-lane="away" data-empty.bind="group.away.length === 0">
+        <li if.bind="!hideAway" class="[ lane ]" data-lane="away" data-empty.bind="group.away.length === 0">
           <event-card
             repeat.for="ev of group.away; key.bind: ev.id"
             event.bind="ev"
