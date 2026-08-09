@@ -1,6 +1,6 @@
 {
 	"name": "Liverty Music",
-	"short_name": "Liverty",
+	"short_name": "LivertyMusic",
 	"description": "Live music ticketing with privacy-preserving entry",
 	"start_url": "/",
 	"display": "standalone",
