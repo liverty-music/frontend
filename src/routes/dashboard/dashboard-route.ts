@@ -1,6 +1,6 @@
 import { I18N } from '@aurelia/i18n'
 import type { Params, RouteNode } from '@aurelia/router'
-import { ILogger, observable, resolve, watch } from 'aurelia'
+import { ILogger, observable, resolve, runTasks, watch } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { rangeCacheKey } from '../../components/all-nearby/date-presets'
@@ -603,14 +603,18 @@ export class DashboardRoute {
 	 * Switch the dashboard view. My Timetable is never refetched on switch. The
 	 * mode change is wrapped in a View Transition so the header title morphs and
 	 * the content cross-fades; falls back to an instant swap when the API is
-	 * unavailable or the user prefers reduced motion. The rAF-settled promise lets
-	 * Aurelia flush the `if.bind` view swap before the transition captures the new
-	 * state.
+	 * unavailable or the user prefers reduced motion.
+	 *
+	 * The callback flushes Aurelia's queued DOM writes SYNCHRONOUSLY via runTasks
+	 * and returns void — so the transition captures the new state immediately after
+	 * the callback. It must NOT return a promise that awaits requestAnimationFrame:
+	 * the browser suspends rAF during the transition's snapshot phase, so an
+	 * rAF-settled promise never resolves and the transition times out.
 	 */
 	public switchMode(mode: ViewMode): void {
 		if (this.viewMode === mode) return
 		const doc = document as Document & {
-			startViewTransition?: (cb: () => unknown) => unknown
+			startViewTransition?: (cb: () => void) => unknown
 		}
 		const reduce = window.matchMedia?.(
 			'(prefers-reduced-motion: reduce)',
@@ -621,9 +625,7 @@ export class DashboardRoute {
 		}
 		doc.startViewTransition(() => {
 			this.viewMode = mode
-			return new Promise<void>((resolve) =>
-				requestAnimationFrame(() => resolve()),
-			)
+			runTasks()
 		})
 	}
 
