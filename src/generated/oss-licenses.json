@@ -322,7 +322,7 @@
 		},
 		{
 			"name": "dompurify",
-			"version": "3.4.11",
+			"version": "3.4.13",
 			"license": "(MPL-2.0 OR Apache-2.0)",
 			"publisher": "Dr.-Ing. Mario Heiderich, Cure53 <mario@cure53.de> (https://cure53.de/)",
 			"repository": "git://github.com/cure53/DOMPurify",
