@@ -94,23 +94,18 @@ export class DnaOrbCanvas {
 		// so bubbles stay at their current physics positions.
 		const hasGhosts = newVal.some((a) => a.isGhost)
 		if (!hasGhosts) {
-			// Before adding new artists, fade out any real bodies that are no longer
-			// in the incoming set. This prevents physics bodies from accumulating
-			// across re-entry + background refresh cycles (the root cause of the
-			// bubble count exceeding MAX_BUBBLES). Skip bodies already fading out.
-			const newIds = new Set(newVal.map((a) => a.id))
-			for (const [id, bubble] of this.physics.getBubbleEntries()) {
-				if (
-					!id.startsWith('__ghost__') &&
-					!bubble.isFadingOut &&
-					!newIds.has(id)
-				) {
-					this.physics.fadeOutBubble(id)
-				}
-			}
-			const overflow = this.physics.revealGhostBubbles(newVal)
-			if (overflow.length > 0) {
-				this.physics.addBubbles(overflow.map((a) => toBubbleParams(a)))
+			// Real-artist field: reconcile the rendered bodies to exactly this set.
+			// The physics layer keeps matching bodies, fades out stale ones, and
+			// adds new ones — capping only against live bodies so members are not
+			// dropped while stale bodies are still fading out.
+			const dropped = this.physics.reconcile(
+				newVal.map((a) => toBubbleParams(a)),
+			)
+			if (dropped > 0) {
+				this.logger.warn(
+					'Bubble reconcile hit the hard capacity ceiling; some artists were not rendered',
+					{ dropped },
+				)
 			}
 			return
 		}

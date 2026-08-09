@@ -125,12 +125,26 @@ export class BubblePhysics {
 		})
 	}
 
-	public addBubbles(params: BubbleArtistParams[]): void {
+	/**
+	 * Add artist bodies to the simulation. Returns the number of artists that
+	 * could not be added because the live-body ceiling was reached; callers
+	 * SHOULD log a non-zero return rather than treat it as success. The cap
+	 * counts only live (non-fading-out) bodies: bodies mid-fade-out are about to
+	 * be removed and MUST NOT block new members, otherwise a background refresh
+	 * that replaces the field silently shrinks it (real vs rendered divergence).
+	 */
+	public addBubbles(params: BubbleArtistParams[]): number {
+		let dropped = 0
 		for (const { artist, radius } of params) {
-			// Defensive cap: physics engine must never exceed the spec'd maximum.
-			if (this.bubbleMap.size >= BubblePool.MAX_BUBBLES) break
 			const id = artist.id
 			if (!id || this.bubbleMap.has(id)) continue
+			if (this.liveBubbleCount() >= BubblePool.MAX_BUBBLES) {
+				// Hard safety ceiling. The field owner guarantees the target is within
+				// capacity, so reaching this means an upstream cap failed — surface it
+				// via the return value instead of silently dropping a target member.
+				dropped++
+				continue
+			}
 
 			const x = Math.random() * (this.width - 100) + 50
 			const y = Math.random() * (this.height * 0.5) + 50
@@ -157,6 +171,61 @@ export class BubblePhysics {
 				fadeOutProgress: 0,
 			})
 		}
+		return dropped
+	}
+
+	/**
+	 * Count bodies that are live (not fading out). This is the capacity-relevant
+	 * count: fading-out bodies are transient and excluded so they do not block
+	 * replacements during a field refresh.
+	 */
+	private liveBubbleCount(): number {
+		let count = 0
+		for (const bubble of this.bubbleMap.values()) {
+			if (!bubble.isFadingOut) count++
+		}
+		return count
+	}
+
+	/**
+	 * Reconcile the rendered bodies to match a target field: keep bodies whose
+	 * artist is still in the target, fade out bodies no longer in it, and add
+	 * bodies for new target artists (reusing ghost placeholders in-place when
+	 * present for a smooth reveal). The physics layer applies NO policy —
+	 * deduplication, followed-exclusion, and the 50-bubble cap are the field
+	 * owner's responsibility; the target is assumed already within capacity.
+	 * Returns the number of target artists dropped by the hard safety ceiling
+	 * (0 in normal operation).
+	 */
+	public reconcile(target: BubbleArtistParams[]): number {
+		const paramsById = new Map<string, BubbleArtistParams>()
+		for (const p of target) {
+			if (p.artist.id) paramsById.set(p.artist.id, p)
+		}
+
+		// Reconcile existing bodies: revive a target member that is mid-fade (it was
+		// removed then re-added within the ~300ms fade window, e.g. a genre toggle
+		// A→B→A) so it is retained instead of silently disappearing when the fade
+		// completes; fade out real bodies no longer in the target.
+		for (const [id, bubble] of this.bubbleMap) {
+			if (id.startsWith('__ghost__')) continue
+			if (paramsById.has(id)) {
+				if (bubble.isFadingOut) this.reviveBubble(id, bubble)
+			} else if (!bubble.isFadingOut) {
+				this.fadeOutBubble(id)
+			}
+		}
+
+		// Reuse ghost placeholders in-place (smooth cold-visit reveal); returns
+		// target artists that had no ghost slot and are not already rendered.
+		const overflow = this.revealGhostBubbles(target.map((p) => p.artist))
+
+		const overflowParams: BubbleArtistParams[] = []
+		for (const artist of overflow) {
+			const p = paramsById.get(artist.id)
+			if (p) overflowParams.push(p)
+		}
+		return this.addBubbles(overflowParams)
 	}
 
 	public spawnBubblesAt(
@@ -212,6 +281,25 @@ export class BubblePhysics {
 		if (!bubble || bubble.isFadingOut) return
 		bubble.isFadingOut = true
 		bubble.fadeOutProgress = 0
+	}
+
+	/**
+	 * Cancel an in-progress fade-out so a body that re-entered the target within
+	 * the fade window is kept instead of being deleted by `update()` when the fade
+	 * completes. Also releases the id from any pending `fadeOutBubbles` promise.
+	 */
+	private reviveBubble(artistId: string, bubble: PhysicsBubble): void {
+		bubble.isFadingOut = false
+		bubble.fadeOutProgress = 0
+		bubble.opacity = 1
+		if (
+			this.fadeOutPendingIds.delete(artistId) &&
+			this.fadeOutPendingIds.size === 0 &&
+			this.fadeOutResolve
+		) {
+			this.fadeOutResolve()
+			this.fadeOutResolve = null
+		}
 	}
 
 	public fadeOutBubbles(artistIds: string[]): Promise<void> {
