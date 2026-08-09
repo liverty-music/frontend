@@ -157,6 +157,28 @@ describe('BubblePhysics.reconcile', () => {
 		).toEqual(ids('new', 33).sort())
 	})
 
+	it('revives a mid-fade target member re-added within the fade window instead of dropping it', () => {
+		const physics = new BubblePhysics()
+		physics.addBubbles(params(['a', 'b']))
+
+		// reconcile #1: 'a' leaves the target and starts fading (still in bubbleMap).
+		physics.reconcile(params(['b']))
+		const fading = physics.getBubbles().find((x) => x.artist.id === 'a')
+		expect(fading?.isFadingOut).toBe(true)
+
+		// reconcile #2 within the fade window: 'a' is back — it must be revived in
+		// place, not skipped and later deleted by update() (silent divergence).
+		const dropped = physics.reconcile(params(['a', 'b']))
+		expect(dropped).toBe(0)
+		const revived = physics.getBubbles().find((x) => x.artist.id === 'a')
+		expect(revived).toBe(fading)
+		expect(revived?.isFadingOut).toBe(false)
+
+		// After fades flush, 'a' survives in the field.
+		physics.update(1000)
+		expect(liveIds(physics)).toEqual(['a', 'b'])
+	})
+
 	it('does not let fading-out bodies block replacements up to the cap', () => {
 		const physics = new BubblePhysics()
 		physics.addBubbles(params(ids('old', BubblePool.MAX_BUBBLES)))

@@ -203,11 +203,17 @@ export class BubblePhysics {
 			if (p.artist.id) paramsById.set(p.artist.id, p)
 		}
 
-		// Fade out real (non-ghost) bodies that are no longer in the target.
+		// Reconcile existing bodies: revive a target member that is mid-fade (it was
+		// removed then re-added within the ~300ms fade window, e.g. a genre toggle
+		// A→B→A) so it is retained instead of silently disappearing when the fade
+		// completes; fade out real bodies no longer in the target.
 		for (const [id, bubble] of this.bubbleMap) {
 			if (id.startsWith('__ghost__')) continue
-			if (bubble.isFadingOut) continue
-			if (!paramsById.has(id)) this.fadeOutBubble(id)
+			if (paramsById.has(id)) {
+				if (bubble.isFadingOut) this.reviveBubble(id, bubble)
+			} else if (!bubble.isFadingOut) {
+				this.fadeOutBubble(id)
+			}
 		}
 
 		// Reuse ghost placeholders in-place (smooth cold-visit reveal); returns
@@ -275,6 +281,25 @@ export class BubblePhysics {
 		if (!bubble || bubble.isFadingOut) return
 		bubble.isFadingOut = true
 		bubble.fadeOutProgress = 0
+	}
+
+	/**
+	 * Cancel an in-progress fade-out so a body that re-entered the target within
+	 * the fade window is kept instead of being deleted by `update()` when the fade
+	 * completes. Also releases the id from any pending `fadeOutBubbles` promise.
+	 */
+	private reviveBubble(artistId: string, bubble: PhysicsBubble): void {
+		bubble.isFadingOut = false
+		bubble.fadeOutProgress = 0
+		bubble.opacity = 1
+		if (
+			this.fadeOutPendingIds.delete(artistId) &&
+			this.fadeOutPendingIds.size === 0 &&
+			this.fadeOutResolve
+		) {
+			this.fadeOutResolve()
+			this.fadeOutResolve = null
+		}
 	}
 
 	public fadeOutBubbles(artistIds: string[]): Promise<void> {
