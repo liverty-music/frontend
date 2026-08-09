@@ -17,6 +17,14 @@
 			min-block-size: 0;
 		}
 
+		/* All Nearby (hideAway): collapse the AWAY column to zero width so the grid
+		   reads as two lanes (HOME + NEAR). The away header span and away lane are
+		   removed from the DOM (if.bind="!hideAway"); overriding only the columns
+		   keeps every named area/line intact so the subgrid spans stay valid. */
+		:scope:has([data-hide-away="true"]) {
+			grid-template-columns: 1fr 1fr 0;
+		}
+
 		/* Section wrapper — transparent to grid via display:contents */
 		.concert-grid-wrapper {
 			display: contents;

@@ -14,17 +14,6 @@
 			background: var(--color-surface-base);
 		}
 
-		/* Mode toggle + All Nearby filter bar share the controls row (between the
-		   page header and the scrollable content). */
-		.dashboard-controls {
-			--flow-space: var(--space-2xs);
-
-			display: flex;
-			grid-area: controls;
-			flex-direction: column;
-			align-items: center;
-		}
-
 		/* All content after page-header shares the content grid area */
 		concert-highway,
 		.loading-text,
@@ -33,41 +22,48 @@
 			grid-area: content;
 		}
 
-		/* ── Mode toggle (My Timetable / All Nearby) ── */
-		.mode-toggle {
-			display: inline-flex;
-			gap: var(--space-3xs);
-			align-self: center;
-
-			margin-block: var(--space-2xs);
-			padding: var(--space-3xs);
-			border-radius: var(--radius-full);
-
-			background: var(--color-surface-raised);
-		}
-
-		.mode-toggle-btn {
+		/* ── Mode swap pill (lives in the page-header trailing cluster) ──
+		   Names the OTHER view; tap switches. Compact so it fits beside the title
+		   and the existing action icons. Brand-tinted while All Nearby is active. */
+		.mode-swap {
 			cursor: pointer;
 
-			padding: var(--space-3xs) var(--space-m);
-			border: none;
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			min-block-size: 2.25rem;
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-2xs);
+			border: 1px solid var(--color-border-muted);
 			border-radius: var(--radius-full);
 
 			font-size: var(--step--1);
-			color: var(--color-text-muted);
+			font-weight: 600;
+			color: var(--color-text-secondary);
 
-			background: transparent;
+			background: var(--color-surface-overlay);
 
 			transition:
 				color var(--transition-fast),
+				border-color var(--transition-fast),
 				background var(--transition-fast);
+
+			& .mode-swap-glyph {
+				color: var(--color-brand-primary);
+			}
 
 			&[data-active="true"] {
 				color: var(--color-text-primary);
+				border-color: color-mix(
+					in oklch,
+					var(--color-brand-primary) 55%,
+					transparent
+				);
 				background: color-mix(
 					in oklch,
-					var(--color-brand-primary) 22%,
-					var(--color-surface-raised)
+					var(--color-brand-primary) 18%,
+					var(--color-surface-overlay)
 				);
 			}
 
@@ -77,10 +73,11 @@
 			}
 		}
 
-		/* ── All Nearby filter bar ── */
+		/* ── All Nearby filter bar (occupies the controls grid row) ── */
 		.all-nearby-filters {
 			--flow-space: var(--space-2xs);
 
+			grid-area: controls;
 			align-self: stretch;
 			padding-block-end: var(--space-2xs);
 			padding-inline: var(--space-s);

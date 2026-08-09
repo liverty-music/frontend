@@ -28,6 +28,13 @@
 				font-weight: 600;
 				color: var(--color-text-primary);
 				letter-spacing: -0.01em;
+
+				/* Opt-in: lets a same-document View Transition morph the title text
+				   (dashboard My Timetable ↔ All Nearby). Only one page-header is
+				   mounted per route, so a fixed name is safe. */
+				&.morph-title {
+					view-transition-name: page-header-title;
+				}
 			}
 		}
 	}

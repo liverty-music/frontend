@@ -12,6 +12,13 @@ export class ConcertHighway {
 	 * Timetable behavior where HOME cards suppress the label.
 	 */
 	@bindable public showVenueAlways: boolean = false
+	/**
+	 * When true, the AWAY stage/lane is omitted entirely and the grid collapses to
+	 * two columns (HOME + NEAR). Set by the All Nearby view, which by definition
+	 * returns only HOME/NEARBY concerts; default false keeps the three-lane My
+	 * Timetable layout.
+	 */
+	@bindable public hideAway: boolean = false
 
 	private readonly element = resolve(INode) as HTMLElement
 

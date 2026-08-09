@@ -588,6 +588,7 @@
 		"follow": {
 			"action": "Follow this artist",
 			"following": "Following"
-		}
+		},
+		"modeTitle": "All Nearby"
 	}
 }

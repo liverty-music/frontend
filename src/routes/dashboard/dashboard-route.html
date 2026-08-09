@@ -1,7 +1,23 @@
 <import from="./dashboard-route.css"></import>
 <import from="../../components/all-nearby/date-preset-selector"></import>
 
-<page-header title-key="nav.home">
+<!-- Title reflects the active mode and morphs across a View Transition. The mode
+     swap lives in the header (not a detached row) so the dashboard keeps the
+     shared "H1 + trailing controls" structure of every other page. -->
+<page-header title-key.bind="modeTitleKey" morph-title.bind="true">
+  <!-- Mode swap: names the OTHER view and switches to it on tap. Placed first in
+       the trailing cluster, where other pages put their action controls. -->
+  <button
+    if.bind="!isOnboarding"
+    type="button"
+    class="mode-swap"
+    click.trigger="toggleMode()"
+    data-active.bind="isAllNearby"
+    t="[aria-label]allNearby.modeToggle.groupLabel"
+  >
+    <span class="mode-swap-glyph" aria-hidden="true">⇄</span>
+    <span class="mode-swap-label" t.bind="swapLabelKey"></span>
+  </button>
   <artist-filter-bar
     if.bind="!isOnboarding && !isAllNearby"
     counted-artists.bind="countedArtists"
@@ -23,54 +39,14 @@
   <page-help page="dashboard"></page-help>
 </page-header>
 
-<!-- Controls row: mode toggle + (in All Nearby) the date/area filter bar. -->
-<div if.bind="!isOnboarding" class="[ dashboard-controls ] [ flow ]">
-  <!-- Mode toggle: My Timetable / All Nearby. Session-only, default My Timetable. -->
-  <div
-    class="[ mode-toggle ]"
-    role="group"
-    t="[aria-label]allNearby.modeToggle.groupLabel"
-  >
-    <button
-      type="button"
-      class="mode-toggle-btn"
-      data-active.bind="!isAllNearby"
-      aria-pressed.bind="!isAllNearby"
-      click.trigger="switchMode('timetable')"
-      t="allNearby.modeToggle.timetable"
-    ></button>
-    <button
-      type="button"
-      class="mode-toggle-btn"
-      data-active.bind="isAllNearby"
-      aria-pressed.bind="isAllNearby"
-      click.trigger="switchMode('allNearby')"
-      t="allNearby.modeToggle.allNearby"
-    ></button>
-  </div>
-
-  <!-- All Nearby filters: date preset + area selector (All Nearby mode only). -->
-  <div if.bind="isAllNearby" class="[ all-nearby-filters ] [ flow ]">
-    <button
-      type="button"
-      class="area-selector"
-      click.trigger="openAreaSelector()"
-    >
-      <svg-icon name="map-pin" size="sm"></svg-icon>
-      <span
-        if.bind="selectedAreaName"
-        class="area-name"
-      >${selectedAreaName}</span>
-      <span
-        else
-        class="area-name area-name-empty"
-        t="allNearby.area.choose"
-      ></span>
-    </button>
-    <date-preset-selector
-      range-changed.trigger="onRangeChanged($event)"
-    ></date-preset-selector>
-  </div>
+<!-- All Nearby filters: area selector + date preset (All Nearby mode only). -->
+<div if.bind="isAllNearby" class="[ all-nearby-filters ] [ flow ]">
+  <button type="button" class="area-selector" click.trigger="openAreaSelector()">
+    <svg-icon name="map-pin" size="sm"></svg-icon>
+    <span if.bind="selectedAreaName" class="area-name">${selectedAreaName}</span>
+    <span else class="area-name area-name-empty" t="allNearby.area.choose"></span>
+  </button>
+  <date-preset-selector range-changed.trigger="onRangeChanged($event)"></date-preset-selector>
 </div>
 
 <!-- ── My Timetable view ── -->
@@ -133,11 +109,12 @@
     <a href.bind="'discovery'" t="allNearby.empty.discoverLink" class="discover-cta"></a>
   </state-placeholder>
 
-  <!-- All Nearby highway — every card shows its venue, incl. HOME lane. -->
+  <!-- All Nearby highway — venue shown on every card; AWAY lane omitted (2 lanes). -->
   <concert-highway
     date-groups.bind="allNearbyDateGroups"
     show-beams.bind="false"
     show-venue-always.bind="true"
+    hide-away.bind="true"
     event-selected.trigger="onEventSelected($event)"
   ></concert-highway>
 </template>
