@@ -3,8 +3,12 @@ import type { Params, RouteNode } from '@aurelia/router'
 import { ILogger, observable, resolve, runTasks, watch } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
-import { rangeCacheKey } from '../../components/all-nearby/date-presets'
 import type { DateRange } from '../../components/all-nearby/date-presets'
+import { rangeCacheKey } from '../../components/all-nearby/date-presets'
+import type {
+	DateRangeSheet,
+	RangeChangedDetail,
+} from '../../components/all-nearby/date-range-sheet'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
 	DateGroup,
@@ -17,8 +21,8 @@ import type { Artist, CountedArtist } from '../../entities/artist'
 import type { Concert, JourneyStatus } from '../../entities/concert'
 import { isJourneyStatus } from '../../entities/ticket-journey'
 import {
-	type GeoLocationInit,
 	displayName,
+	type GeoLocationInit,
 	geoLocationFromLevel1,
 } from '../../entities/user'
 import { IAuthService } from '../../services/auth-service'
@@ -59,6 +63,7 @@ export class DashboardRoute {
 	public homeSelector: UserHomeSelector | undefined
 	public detailSheet: EventDetailSheet | undefined
 	public areaSelector: UserHomeSelector | undefined
+	public dateSheet: DateRangeSheet | undefined
 
 	// --- All Nearby mode (session-only, never persisted) ---
 
@@ -75,8 +80,16 @@ export class DashboardRoute {
 	 */
 	public selectedAreaCode: string | null = null
 
-	/** The active All Nearby date range, resolved by the preset selector. */
+	/** The active All Nearby date range, resolved by the date-range sheet. */
 	public allNearbyRange: DateRange | null = null
+
+	/**
+	 * Display label for the date chip — a preset name (今週末 / 7日以内 / 30日以内)
+	 * when a preset is active, else a localized range (e.g. `8/12〜8/20`). Supplied
+	 * by the date-range sheet alongside the resolved range so the chip never
+	 * re-derives it.
+	 */
+	public dateChipLabel = ''
 
 	/** Derived DateGroup[] for the current All Nearby filter, rendered as-is. */
 	public allNearbyDateGroups: DateGroup[] = []
@@ -642,12 +655,19 @@ export class DashboardRoute {
 		}
 	}
 
-	/** Preset selector emitted a new resolved range. */
-	public onRangeChanged(event: CustomEvent<DateRange>): void {
-		this.allNearbyRange = event.detail
+	/** The date-range sheet emitted a new resolved range + display label. */
+	public onRangeChanged(event: CustomEvent<RangeChangedDetail>): void {
+		const { label, ...range } = event.detail
+		this.allNearbyRange = range
+		this.dateChipLabel = label
 		if (this.isAllNearby) {
 			void this.loadAllNearby()
 		}
+	}
+
+	/** Open the date-range bottom sheet. */
+	public openDateSheet(): void {
+		this.dateSheet?.open()
 	}
 
 	/** Open the area selector bottom sheet. */

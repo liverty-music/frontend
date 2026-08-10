@@ -562,26 +562,37 @@
 	},
 	"allNearby": {
 		"modeToggle": {
-			"groupLabel": "ライブの表示切り替え",
+			"groupLabel": "表示するライブを切り替える",
 			"timetable": "マイタイムテーブル",
-			"allNearby": "近くのすべて"
+			"allNearby": "近くのライブ"
+		},
+		"filterBar": {
+			"label": "エリアと期間を絞り込む"
 		},
 		"area": {
-			"choose": "エリアを選択"
+			"choose": "エリアを選ぶ"
 		},
 		"datePreset": {
-			"groupLabel": "期間",
+			"groupLabel": "期間を選ぶ",
 			"weekend": "今週末",
 			"week": "7日以内",
 			"month": "30日以内",
-			"custom": "カスタム",
-			"from": "開始",
-			"to": "終了",
-			"rangeHint": "最大{{days}}日間の期間を選択できます。"
+			"from": "開始日",
+			"to": "終了日"
+		},
+		"dateRange": {
+			"title": "期間を選ぶ",
+			"presetsLabel": "かんたん選択",
+			"customLabel": "期間を指定",
+			"apply": "この期間で表示",
+			"hintSpan": "{{days}}日間",
+			"hintIncomplete": "開始日と終了日を選んでください",
+			"hintOrder": "終了日は開始日より後にしてください",
+			"hintTooLong": "選べるのは最大{{days}}日間までです"
 		},
 		"empty": {
-			"title": "このエリア・期間のライブは見つかりませんでした",
-			"subtitle": "期間を広げるか、別のエリアを試してみてください。",
+			"title": "このエリア・期間にライブは見つかりませんでした",
+			"subtitle": "期間を広げるか、別のエリアで探してみてください。",
 			"discoverLink": "アーティストを探す"
 		},
 		"follow": {

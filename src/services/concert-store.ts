@@ -7,7 +7,6 @@ import {
 } from '../adapter/rpc/client/concert-client'
 import { loadFollows, loadHome } from '../adapter/storage/guest-storage'
 import { codeToHome, displayName } from '../constants/iso3166'
-import type { GeoLocationInit } from '../entities/user'
 import type { Artist } from '../entities/artist'
 import {
 	type Concert,
@@ -18,9 +17,10 @@ import {
 	type LaneType,
 } from '../entities/concert'
 import { DEFAULT_HYPE, type Hype } from '../entities/follow'
+import type { GeoLocationInit } from '../entities/user'
 import { IAuthService } from './auth-service'
-import { IUserStore } from './user-store'
 import { CachedResource } from './cache/cached-resource'
+import { IUserStore } from './user-store'
 
 export type { ProtoConcert, ProximityGroup }
 

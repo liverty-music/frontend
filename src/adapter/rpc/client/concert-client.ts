@@ -4,11 +4,11 @@ import { LocalDate } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/e
 import { GeoLocation } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/geo_location_pb.js'
 import { Home } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import type { ProximityGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
-import type { GeoLocationInit } from '../../../entities/user'
 import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
+import type { GeoLocationInit } from '../../../entities/user'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
 
