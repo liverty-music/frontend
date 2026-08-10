@@ -1,0 +1,67 @@
+<import from="./date-range-sheet.css"></import>
+<import from="../bottom-sheet/bottom-sheet"></import>
+
+<!-- sheet-closed keeps isOpen in sync when the user swipes / taps outside -->
+<bottom-sheet
+  open.bind="isOpen"
+  sheet-closed.trigger="onSheetClosed()"
+  aria-labelledby="date-range-sheet-title"
+>
+  <div class="[ date-range-sheet ] [ flow ]">
+    <h2 class="sheet-title" id="date-range-sheet-title" t="allNearby.dateRange.title"></h2>
+
+    <!-- Quick presets: apply-and-close in one tap -->
+    <section class="preset-section">
+      <p class="section-label" t="allNearby.dateRange.presetsLabel"></p>
+      <div class="[ preset-group ] [ cluster ]" role="group" t="[aria-label]allNearby.datePreset.groupLabel">
+        <button
+          repeat.for="p of presets"
+          type="button"
+          class="preset-chip"
+          data-active.bind="isPresetActive(p)"
+          aria-pressed.bind="isPresetActive(p)"
+          click.trigger="selectPreset(p)"
+          t.bind="'allNearby.datePreset.' + p"
+        ></button>
+      </div>
+    </section>
+
+    <!-- Editable custom range: keeps the sheet open while editing -->
+    <section class="custom-section">
+      <p class="section-label" t="allNearby.dateRange.customLabel"></p>
+      <div class="[ custom-range ] [ cluster ]">
+        <label class="custom-field">
+          <span class="custom-field-label" t="allNearby.datePreset.from"></span>
+          <input
+            type="date"
+            class="custom-input"
+            value.bind="draftFrom"
+            change.trigger="onDraftChanged()"
+          />
+        </label>
+        <label class="custom-field">
+          <span class="custom-field-label" t="allNearby.datePreset.to"></span>
+          <input
+            type="date"
+            class="custom-input"
+            value.bind="draftTo"
+            min.bind="toMin"
+            max.bind="toMax"
+            change.trigger="onDraftChanged()"
+          />
+        </label>
+      </div>
+      <output class="range-hint" data-invalid.bind="!isDraftValid">${hint}</output>
+    </section>
+
+    <div class="apply-row">
+      <button
+        type="button"
+        class="btn-apply"
+        click.trigger="applyCustom()"
+        disabled.bind="!isDraftValid"
+        t="allNearby.dateRange.apply"
+      ></button>
+    </div>
+  </div>
+</bottom-sheet>

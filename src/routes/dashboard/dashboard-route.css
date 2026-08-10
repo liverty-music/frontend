@@ -54,12 +54,12 @@
 			}
 
 			&[data-active="true"] {
-				color: var(--color-text-primary);
 				border-color: color-mix(
 					in oklch,
 					var(--color-brand-primary) 55%,
 					transparent
 				);
+				color: var(--color-text-primary);
 				background: color-mix(
 					in oklch,
 					var(--color-brand-primary) 18%,
@@ -73,24 +73,31 @@
 			}
 		}
 
-		/* ── All Nearby filter bar (occupies the controls grid row) ── */
+		/* ── All Nearby filter bar (occupies the controls grid row) ──
+		   A single fixed-height row of exactly two chips (area + date). No inline
+		   expansion, so the ConcertHighway height below never shifts. */
 		.all-nearby-filters {
-			--flow-space: var(--space-2xs);
+			--cluster-gap: var(--space-2xs);
 
 			grid-area: controls;
+			align-items: center;
 			align-self: stretch;
+
 			padding-block-end: var(--space-2xs);
 			padding-inline: var(--space-s);
 		}
 
-		.area-selector {
+		/* Area chip + date chip: identical pill affordance, each opens a sheet. */
+		.filter-chip {
 			cursor: pointer;
 
 			display: inline-flex;
 			gap: var(--space-3xs);
 			align-items: center;
 
-			padding: var(--space-3xs) var(--space-s);
+			min-block-size: 2.75rem;
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-s);
 			border: 1px solid var(--color-border-subtle);
 			border-radius: var(--radius-full);
 
@@ -115,9 +122,15 @@
 				outline: 2px solid var(--color-brand-primary);
 				outline-offset: 2px;
 			}
+
+			/* Trailing caret cue: muted, smaller than the leading icon. */
+			& .chip-caret {
+				color: var(--color-text-muted);
+			}
 		}
 
-		.area-name-empty {
+		/* "Choose area" prompt reads as placeholder text. */
+		.chip-label-empty {
 			color: var(--color-text-muted);
 		}
 

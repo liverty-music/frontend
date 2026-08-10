@@ -1,5 +1,5 @@
 <import from="./dashboard-route.css"></import>
-<import from="../../components/all-nearby/date-preset-selector"></import>
+<import from="../../components/all-nearby/date-range-sheet"></import>
 
 <!-- Title reflects the active mode and morphs across a View Transition. The mode
      swap lives in the header (not a detached row) so the dashboard keeps the
@@ -39,14 +39,21 @@
   <page-help page="dashboard"></page-help>
 </page-header>
 
-<!-- All Nearby filters: area selector + date preset (All Nearby mode only). -->
-<div if.bind="isAllNearby" class="[ all-nearby-filters ] [ flow ]">
-  <button type="button" class="area-selector" click.trigger="openAreaSelector()">
+<!-- All Nearby filters: a fixed-height row of exactly two chips — area + date.
+     Neither expands inline, so the ConcertHighway timetable height is stable.
+     Each chip opens a bottom sheet. (All Nearby mode only.) -->
+<div if.bind="isAllNearby" class="[ all-nearby-filters ] [ cluster ]" role="group" t="[aria-label]allNearby.filterBar.label">
+  <button type="button" class="filter-chip" click.trigger="openAreaSelector()">
     <svg-icon name="map-pin" size="sm"></svg-icon>
-    <span if.bind="selectedAreaName" class="area-name">${selectedAreaName}</span>
-    <span else class="area-name area-name-empty" t="allNearby.area.choose"></span>
+    <span if.bind="selectedAreaName" class="chip-label">${selectedAreaName}</span>
+    <span else class="chip-label chip-label-empty" t="allNearby.area.choose"></span>
+    <svg-icon name="chevron-right" size="xs" class="chip-caret"></svg-icon>
   </button>
-  <date-preset-selector range-changed.trigger="onRangeChanged($event)"></date-preset-selector>
+  <button type="button" class="filter-chip" click.trigger="openDateSheet()">
+    <svg-icon name="calendar" size="sm"></svg-icon>
+    <span class="chip-label">${dateChipLabel}</span>
+    <svg-icon name="chevron-right" size="xs" class="chip-caret"></svg-icon>
+  </button>
 </div>
 
 <!-- ── My Timetable view ── -->
@@ -151,6 +158,16 @@
   current-code.bind="selectedAreaCode ?? userStore.currentHome"
   on-home-selected.bind="(code) => onAreaSelected(code)"
 ></user-home-selector>
+
+<!-- All Nearby date-range sheet. Rendered only in All Nearby mode so its
+     bound()-time initial emit fires on entry (seeding allNearbyRange +
+     dateChipLabel and driving the first load), and it never lingers in the DOM
+     for My Timetable. -->
+<date-range-sheet
+  if.bind="isAllNearby"
+  component.ref="dateSheet"
+  range-changed.trigger="onRangeChanged($event)"
+></date-range-sheet>
 
 <!-- Celebration overlay — two tiers (guest light / post-signup confetti),
      gated on timetable readiness via maybeCelebrate() -->

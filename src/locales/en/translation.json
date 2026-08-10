@@ -562,22 +562,33 @@
 	},
 	"allNearby": {
 		"modeToggle": {
-			"groupLabel": "Concert view",
+			"groupLabel": "Switch concert view",
 			"timetable": "My Timetable",
 			"allNearby": "All Nearby"
+		},
+		"filterBar": {
+			"label": "Filter by area and dates"
 		},
 		"area": {
 			"choose": "Choose an area"
 		},
 		"datePreset": {
-			"groupLabel": "Date range",
+			"groupLabel": "Choose dates",
 			"weekend": "This weekend",
 			"week": "Within 7 days",
 			"month": "Within 30 days",
-			"custom": "Custom",
-			"from": "From",
-			"to": "To",
-			"rangeHint": "Pick a range of up to {{days}} days."
+			"from": "Start",
+			"to": "End"
+		},
+		"dateRange": {
+			"title": "Choose dates",
+			"presetsLabel": "Quick pick",
+			"customLabel": "Custom range",
+			"apply": "Show this range",
+			"hintSpan": "{{days}} days",
+			"hintIncomplete": "Pick a start and end date",
+			"hintOrder": "The end date must be after the start date",
+			"hintTooLong": "You can pick up to {{days}} days"
 		},
 		"empty": {
 			"title": "No concerts found for this area and dates",
