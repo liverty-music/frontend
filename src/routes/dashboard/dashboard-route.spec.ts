@@ -121,6 +121,37 @@ function onJourneyMapChanged(
 	).onJourneyMapChanged(map)
 }
 
+/** Read/write the private pendingConcertId deep-link target in unit tests. */
+function setPendingConcertId(route: DashboardRoute, id: string | null): void {
+	;(route as unknown as { pendingConcertId: string | null }).pendingConcertId =
+		id
+}
+function getPendingConcertId(route: DashboardRoute): string | null {
+	return (route as unknown as { pendingConcertId: string | null })
+		.pendingConcertId
+}
+
+/** Invoke the private deep-link resolver directly in unit tests. */
+function resolvePendingDeepLink(route: DashboardRoute): void {
+	;(
+		route as unknown as { resolvePendingDeepLink(): void }
+	).resolvePendingDeepLink()
+}
+
+/** A detail sheet stub exposing only the open() spy the route calls. */
+function stubDetailSheet(route: DashboardRoute): {
+	open: ReturnType<typeof vi.fn>
+} {
+	const sheet = { open: vi.fn() }
+	;(route as unknown as { detailSheet: unknown }).detailSheet = sheet
+	return sheet
+}
+
+/** Let queued microtasks (fire-and-forget background refresh) settle. */
+function flushMicrotasks(): Promise<void> {
+	return new Promise((r) => setTimeout(r, 0))
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe('DashboardRoute', () => {
@@ -450,6 +481,109 @@ describe('DashboardRoute', () => {
 			await sut.loading({}, makeRouteNode(null, 'applied,unpaid'))
 
 			expect(sut.filteredStatuses).toEqual([])
+		})
+	})
+
+	describe('deep-link auto-open (/concerts/:id)', () => {
+		function makeRouteNode() {
+			return { queryParams: { get: () => null } } as never
+		}
+
+		it('records the :id route param as the pending deep-link target', async () => {
+			await sut.loading({ id: 'h-artist-1' }, makeRouteNode())
+
+			expect(getPendingConcertId(sut)).toBe('h-artist-1')
+		})
+
+		it('ignores the :id param during onboarding', async () => {
+			mockOnboarding.isOnboarding = true
+			sut = new DashboardRoute()
+
+			await sut.loading({ id: 'h-artist-1' }, makeRouteNode())
+
+			expect(getPendingConcertId(sut)).toBeNull()
+		})
+
+		it('opens the sheet and derives the artist filter when the concert resolves', () => {
+			sut.dateGroups = [makeGroup('artist-1'), makeGroup('artist-2')]
+			const sheet = stubDetailSheet(sut)
+			setPendingConcertId(sut, 'h-artist-2')
+
+			resolvePendingDeepLink(sut)
+
+			expect(sheet.open).toHaveBeenCalledTimes(1)
+			expect(sheet.open).toHaveBeenCalledWith(sut.dateGroups[1].home[0])
+			expect(sut.filteredArtistIds).toEqual(['artist-2'])
+		})
+
+		it('degrades to no-op (no sheet, no filter, no error) when the concert is absent', () => {
+			sut.dateGroups = [makeGroup('artist-1')]
+			const sheet = stubDetailSheet(sut)
+			setPendingConcertId(sut, 'missing-id')
+
+			expect(() => resolvePendingDeepLink(sut)).not.toThrow()
+
+			expect(sheet.open).not.toHaveBeenCalled()
+			expect(sut.filteredArtistIds).toEqual([])
+		})
+
+		it('self-clears so a later resolve pass never re-opens the sheet', () => {
+			sut.dateGroups = [makeGroup('artist-1')]
+			const sheet = stubDetailSheet(sut)
+			setPendingConcertId(sut, 'h-artist-1')
+
+			resolvePendingDeepLink(sut)
+			resolvePendingDeepLink(sut)
+
+			expect(sheet.open).toHaveBeenCalledTimes(1)
+			expect(getPendingConcertId(sut)).toBeNull()
+		})
+
+		it('resolves against the authoritative cold-load fetch', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserStore.current = { home: 'JP-13' }
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			mockConcertService.peekDateGroups.mockReturnValueOnce(null)
+			mockConcertService.listByFollower.mockResolvedValueOnce([{}] as never)
+			mockConcertService.toDateGroups.mockReturnValueOnce([
+				makeGroup('artist-1'),
+			])
+			const sheet = stubDetailSheet(sut)
+			setPendingConcertId(sut, 'h-artist-1')
+
+			await sut.loadData()
+
+			expect(sheet.open).toHaveBeenCalledTimes(1)
+			expect(sut.filteredArtistIds).toEqual(['artist-1'])
+		})
+
+		it('resolves on the background fetch, not the cache first-paint', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserStore.current = { home: 'JP-13' }
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			// Cache paint has no matching concert; the authoritative refresh does.
+			mockConcertService.peekDateGroups.mockReturnValueOnce([
+				makeGroup('artist-9'),
+			])
+			mockConcertService.listByFollower.mockResolvedValueOnce([{}] as never)
+			mockConcertService.toDateGroups.mockReturnValueOnce([
+				makeGroup('artist-1'),
+			])
+			const sheet = stubDetailSheet(sut)
+			setPendingConcertId(sut, 'h-artist-1')
+
+			await sut.loadData()
+			// Cache painted, but the deep-link must NOT resolve off it.
+			expect(sheet.open).not.toHaveBeenCalled()
+
+			await flushMicrotasks()
+			// The background fetch settled with the concert present → sheet opens.
+			expect(sheet.open).toHaveBeenCalledTimes(1)
+			expect(sut.filteredArtistIds).toEqual(['artist-1'])
 		})
 	})
 

@@ -65,6 +65,14 @@ export class DashboardRoute {
 	public areaSelector: UserHomeSelector | undefined
 	public dateSheet: DateRangeSheet | undefined
 
+	/**
+	 * Concert id from a `/concerts/:id` deep-link, pending resolution against the
+	 * authoritative concert fetch. Null when navigated to a bare `/dashboard` or
+	 * during onboarding. Self-clears once resolved so a PWA resume / background
+	 * refresh never re-opens the sheet. See resolvePendingDeepLink.
+	 */
+	private pendingConcertId: string | null = null
+
 	// --- All Nearby mode (session-only, never persisted) ---
 
 	/**
@@ -256,8 +264,14 @@ export class DashboardRoute {
 		)
 	}
 
-	public async loading(_params?: Params, next?: RouteNode): Promise<void> {
+	public async loading(params?: Params, next?: RouteNode): Promise<void> {
 		this.showBeams = this.storage.getItem(StorageKeys.beamsEnabled) === 'true'
+
+		// Deep-link target from `/concerts/:id` (e.g. a tapped push notification).
+		// Recorded here but resolved only after the authoritative listByFollower
+		// fetch settles (see resolvePendingDeepLink), never off the cache paint.
+		// Suppressed during onboarding, mirroring the query-param handling below.
+		this.pendingConcertId = !this.isOnboarding && params?.id ? params.id : null
 
 		// Restore filters from URL query params (ignored during onboarding)
 		if (!this.isOnboarding && next) {
@@ -342,7 +356,52 @@ export class DashboardRoute {
 		// false so a stale arrival can't fire the celebration.
 		if (succeeded) {
 			this.timetableLoaded = true
+			// Cold-load path resolved the authoritative fetch above — safe to act on
+			// a pending `/concerts/:id` deep-link now. The fast path resolves it in
+			// refreshInBackground once the background fetch settles.
+			this.resolvePendingDeepLink()
 		}
+	}
+
+	/**
+	 * Resolve a pending `/concerts/:id` deep-link against the authoritative concert
+	 * list once it has settled — from the cold-load await or the background refresh,
+	 * never off the cache first-paint.
+	 *
+	 * On match: derive the artist filter from the concert, flush that URL write,
+	 * then open the detail sheet so the sheet's pushed `/concerts/:id` URL is the
+	 * final history entry and wins while the sheet is open (two URL writers race —
+	 * the sheet must win; the filter URL applies after close). On no match
+	 * (unfollowed after send, zero-date, or unresolved performer): degrade silently
+	 * — no sheet, no error. The artist is only derivable from the concert, so with
+	 * the concert absent there is nothing to filter to; the view is left unchanged.
+	 *
+	 * Self-clears pendingConcertId so a later PWA resume or background refresh never
+	 * re-opens the sheet.
+	 */
+	private resolvePendingDeepLink(): void {
+		const id = this.pendingConcertId
+		if (!id) return
+		this.pendingConcertId = null
+
+		const concert = this.findConcertById(id)
+		if (!concert?.artistId) return
+
+		this.filteredArtistIds = [concert.artistId]
+		runTasks()
+		this.detailSheet?.open(concert)
+	}
+
+	/** Find a concert by id across all lanes of the loaded date groups. */
+	private findConcertById(id: string): Concert | undefined {
+		for (const group of this.dateGroups) {
+			const found =
+				group.home.find((c) => c.id === id) ??
+				group.nearby.find((c) => c.id === id) ??
+				group.away.find((c) => c.id === id)
+			if (found) return found
+		}
+		return undefined
 	}
 
 	private async loadDashboardEvents(
@@ -434,6 +493,9 @@ export class DashboardRoute {
 			const fresh = await this.loadDashboardEvents(signal)
 			if (signal?.aborted) return
 			this.dateGroups = fresh
+			// Fast path: this background fetch is the authoritative list. Resolve any
+			// pending `/concerts/:id` deep-link now that fresh data has settled.
+			this.resolvePendingDeepLink()
 		} catch (err) {
 			if ((err as Error).name === 'AbortError') return
 			this.logger.warn('Dashboard background refresh failed', { error: err })
