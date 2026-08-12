@@ -147,13 +147,13 @@ describe('DiscoveryRoute', () => {
 		vi.restoreAllMocks()
 	})
 
-	describe('loadInitialBubbles', () => {
+	describe('refreshField', () => {
 		it('should load initial artists via artistClient.listTop', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[makeArtist('a1', 'Artist One')],
 			)
 
-			await sut.loadInitialBubbles()
+			await sut.refreshField()
 
 			expect(mockArtistClient.listTop).toHaveBeenCalledWith('Japan', '', 50)
 		})
@@ -163,7 +163,7 @@ describe('DiscoveryRoute', () => {
 				new Error('fail'),
 			)
 
-			await sut.loadInitialBubbles()
+			await sut.refreshField()
 
 			expect(mockEa.publish).toHaveBeenCalledWith(expect.any(Snack))
 			expect(mockEa.published[0].severity).toBe('error')
@@ -474,7 +474,7 @@ describe('DiscoveryRoute', () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				initial,
 			)
-			await sut.loadInitialBubbles()
+			await sut.refreshField()
 			expect(sut.bubbleStore.field).toHaveLength(50)
 
 			const similar = [makeArtist('new1', 'New One')]
@@ -553,7 +553,7 @@ describe('DiscoveryRoute', () => {
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
 			).mockResolvedValue([makeArtist('s1', 'Seed Similar')])
 
-			await sut.loadInitialBubbles()
+			await sut.refreshField()
 
 			expect(mockArtistClient.listSimilar).toHaveBeenCalled()
 		})
@@ -666,7 +666,7 @@ describe('DiscoveryRoute', () => {
 				[makeArtist('a1', 'Field Artist')],
 			)
 
-			await sut.loadInitialBubbles()
+			await sut.refreshField()
 
 			expect(sut.bubbleStore.field).toHaveLength(1)
 			expect(sut.bubbleStore.field[0].name).toBe('Field Artist')
@@ -792,7 +792,7 @@ describe('DiscoveryRoute', () => {
 			expect(field.every((a) => !a.isGhost)).toBe(true)
 		})
 
-		it('persists the field after loadInitialBubbles succeeds', async () => {
+		it('persists the field after refreshField succeeds', async () => {
 			;(
 				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
 			).mockReturnValue(null)
@@ -800,7 +800,7 @@ describe('DiscoveryRoute', () => {
 				[{ id: 'a1', name: 'YOASOBI', mbid: '' }],
 			)
 
-			await sut.loadInitialBubbles()
+			await sut.refreshField()
 
 			expect(mockArtistClient.setBubbles).toHaveBeenCalledWith([
 				...sut.bubbleStore.field,

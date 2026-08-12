@@ -144,15 +144,16 @@ export class DiscoveryRoute {
 		// Re-entry fast path: if a previous visit cached the bubble field in the
 		// ArtistStore singleton, paint real artists immediately through the field
 		// owner (followed-exclusion applied there). Otherwise show ghost
-		// placeholders so the canvas is never blank. The background load refreshes
-		// the field via the single reconcile writer. Same pattern as Dashboard.
+		// placeholders so the canvas is never blank. The background refresh then
+		// preserves the in-session field (non-destructive delta) rather than
+		// re-rolling it, unless it has gone stale. Same pattern as Dashboard.
 		const cachedBubbles = this.artistClient.peekBubbles()
 		if (cachedBubbles !== null) {
 			this.bubbleStore.paintFromCache(cachedBubbles)
 		} else {
 			this.bubbleStore.paintGhosts()
 		}
-		void this.loadInitialBubbles()
+		void this.refreshField()
 
 		// Resume concert search for pre-seeded follows (fire concurrently)
 		if (this.isOnboarding) {
@@ -163,15 +164,17 @@ export class DiscoveryRoute {
 	}
 
 	/**
-	 * Kick off the background initial field load. Returns a Promise so production
-	 * fires it non-blocking (`void`) while tests await it deterministically. A
+	 * Kick off the background field refresh on route entry. Returns a Promise so
+	 * production fires it non-blocking (`void`) while tests await it
+	 * deterministically. Delegates to the field owner, which reuses the fresh
+	 * in-session field with a non-destructive delta (or reloads when stale). A
 	 * failure surfaces a Snack and is swallowed.
 	 */
-	public async loadInitialBubbles(): Promise<void> {
+	public async refreshField(): Promise<void> {
 		try {
-			await this.bubbleStore.loadInitial()
+			await this.bubbleStore.reenter()
 		} catch (err) {
-			this.logger.error('Failed to load initial artists', err)
+			this.logger.error('Failed to refresh discovery field', err)
 			this.ea.publish(new Snack(this.i18n.tr('discovery.loadFailed'), 'error'))
 		}
 	}
