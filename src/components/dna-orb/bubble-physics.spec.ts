@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { Artist } from '../../entities/artist'
-import { BubblePool } from '../../services/bubble-pool'
+import { MAX_BUBBLES } from '../../services/bubble-invariants'
 import type { BubbleArtistParams, PhysicsBubble } from './bubble-physics'
 import { BubblePhysics, findClosestBubble } from './bubble-physics'
 
@@ -181,16 +181,34 @@ describe('BubblePhysics.reconcile', () => {
 
 	it('does not let fading-out bodies block replacements up to the cap', () => {
 		const physics = new BubblePhysics()
-		physics.addBubbles(params(ids('old', BubblePool.MAX_BUBBLES)))
+		physics.addBubbles(params(ids('old', MAX_BUBBLES)))
 
-		const dropped = physics.reconcile(
-			params(ids('new', BubblePool.MAX_BUBBLES)),
-		)
+		const dropped = physics.reconcile(params(ids('new', MAX_BUBBLES)))
 
 		expect(dropped).toBe(0)
-		expect(liveIds(physics)).toHaveLength(BubblePool.MAX_BUBBLES)
+		expect(liveIds(physics)).toHaveLength(MAX_BUBBLES)
 		physics.update(1000)
-		expect(physics.bubbleCount).toBe(BubblePool.MAX_BUBBLES)
+		expect(physics.bubbleCount).toBe(MAX_BUBBLES)
+	})
+
+	it('spawns a placed new target from its placement point with the pop animation', async () => {
+		const physics = new BubblePhysics()
+		await physics.init(400, 600) // load Matter so real bodies are created
+		physics.addBubbles(params(['a']))
+
+		// 'b' is added with a placement hint (a tap top-up); it must spawn (scale
+		// from zero) from the given point rather than appear instantly at random.
+		physics.reconcile(params(['a', 'b']), {
+			placements: new Map([['b', { x: 123, y: 45 }]]),
+		})
+
+		const b = physics.getBubbles().find((x) => x.artist.id === 'b')
+		expect(b?.isSpawning).toBe(true)
+		expect(b?.body.position.x).toBeCloseTo(123)
+		expect(b?.body.position.y).toBeCloseTo(45)
+		// An unplaced add stays instant (no spawn animation).
+		const a = physics.getBubbles().find((x) => x.artist.id === 'a')
+		expect(a?.isSpawning).toBe(false)
 	})
 })
 
@@ -198,11 +216,9 @@ describe('BubblePhysics.addBubbles capacity', () => {
 	it('caps live bodies at MAX and reports the dropped count instead of silently truncating', () => {
 		const physics = new BubblePhysics()
 
-		const dropped = physics.addBubbles(
-			params(ids('x', BubblePool.MAX_BUBBLES + 10)),
-		)
+		const dropped = physics.addBubbles(params(ids('x', MAX_BUBBLES + 10)))
 
-		expect(physics.bubbleCount).toBe(BubblePool.MAX_BUBBLES)
+		expect(physics.bubbleCount).toBe(MAX_BUBBLES)
 		expect(dropped).toBe(10)
 	})
 })

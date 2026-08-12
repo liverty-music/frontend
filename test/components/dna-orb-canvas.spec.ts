@@ -248,79 +248,18 @@ describe('DnaOrbCanvas', () => {
 		})
 	})
 
-	describe('spawnBubblesAt', () => {
-		it('should delegate to physics.spawnBubblesAt', async () => {
+	describe('artistsChanged — reconcile placements', () => {
+		it('forwards the bound placement hints to physics.reconcile', async () => {
 			await sut.attached()
-			const spawnSpy = vi.spyOn((sut as any).physics, 'spawnBubblesAt')
-			const artists = [makeArtist('s1', 'Spawn')]
+			const reconcileSpy = vi.spyOn((sut as any).physics, 'reconcile')
 
-			sut.spawnBubblesAt(artists, 100, 200)
+			const placements = new Map([['b', { x: 12, y: 34 }]])
+			sut.placements = placements
+			sut.artistsChanged([makeArtist('a', 'A'), makeArtist('b', 'B')])
 
-			expect(spawnSpy).toHaveBeenCalledWith(
-				[
-					expect.objectContaining({
-						artist: artists[0],
-						radius: expect.any(Number),
-					}),
-				],
-				100,
-				200,
-			)
-		})
-	})
-
-	describe('fadeOutBubbles', () => {
-		it('should delegate to physics.fadeOutBubbles', async () => {
-			await sut.attached()
-			const fadeOutSpy = vi
-				.spyOn((sut as any).physics, 'fadeOutBubbles')
-				.mockResolvedValue(undefined)
-
-			await sut.fadeOutBubbles(['a1', 'a2'])
-
-			expect(fadeOutSpy).toHaveBeenCalledWith(['a1', 'a2'])
-		})
-	})
-
-	describe('reloadBubbles', () => {
-		it('should reset physics and add new artists', async () => {
-			await sut.attached()
-			const resetSpy = vi.spyOn((sut as any).physics, 'reset')
-			const initSpy = vi
-				.spyOn((sut as any).physics, 'init')
-				.mockResolvedValue(undefined)
-			const addSpy = vi.spyOn((sut as any).physics, 'addBubbles')
-
-			const newArtists = [makeArtist('r1', 'Reloaded')]
-			sut.reloadBubbles(newArtists)
-
-			expect(resetSpy).toHaveBeenCalled()
-
-			// Wait for init promise
-			await vi.advanceTimersByTimeAsync(0)
-
-			expect(initSpy).toHaveBeenCalledWith(400, 600)
-			expect(addSpy).toHaveBeenCalledWith([
-				expect.objectContaining({
-					artist: newArtists[0],
-					radius: expect.any(Number),
-				}),
-			])
-		})
-
-		it('should skip if element has zero dimensions', async () => {
-			await sut.attached()
-			;(
-				mockElement.getBoundingClientRect as ReturnType<typeof vi.fn>
-			).mockReturnValue({
-				width: 0,
-				height: 0,
+			expect(reconcileSpy).toHaveBeenCalledWith(expect.any(Array), {
+				placements,
 			})
-
-			const resetSpy = vi.spyOn((sut as any).physics, 'reset')
-			sut.reloadBubbles([makeArtist('r1', 'Skip')])
-
-			expect(resetSpy).not.toHaveBeenCalled()
 		})
 	})
 
