@@ -56,7 +56,8 @@
     <div class="bubble-area">
       <dna-orb-canvas
         component.ref="dnaOrbCanvas"
-        artists.bind="poolBubbles"
+        artists.bind="bubbleStore.field"
+        placements.bind="bubbleStore.pendingPlacements"
         followed-count.bind="followedCount"
         artist-selected.trigger="onArtistSelected($event)"
         need-more-bubbles.trigger="onNeedMoreBubbles($event)"

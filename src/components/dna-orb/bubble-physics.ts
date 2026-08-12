@@ -1,6 +1,6 @@
 import type Matter from 'matter-js'
 import type { Artist } from '../../entities/artist'
-import { BubblePool } from '../../services/bubble-pool'
+import { MAX_BUBBLES } from '../../services/bubble-invariants'
 import { easeOutBack } from './easing'
 
 /** A physics-enabled bubble wrapping an Artist with position and radius. */
@@ -138,7 +138,7 @@ export class BubblePhysics {
 		for (const { artist, radius } of params) {
 			const id = artist.id
 			if (!id || this.bubbleMap.has(id)) continue
-			if (this.liveBubbleCount() >= BubblePool.MAX_BUBBLES) {
+			if (this.liveBubbleCount() >= MAX_BUBBLES) {
 				// Hard safety ceiling. The field owner guarantees the target is within
 				// capacity, so reaching this means an upstream cap failed — surface it
 				// via the return value instead of silently dropping a target member.
@@ -196,8 +196,18 @@ export class BubblePhysics {
 	 * owner's responsibility; the target is assumed already within capacity.
 	 * Returns the number of target artists dropped by the hard safety ceiling
 	 * (0 in normal operation).
+	 *
+	 * `opts.placements` carries spawn-origin hints (from a tap top-up): a new
+	 * target id present in the map is spawned FROM that point with the pop-outward
+	 * animation instead of the instant random placement. This keeps a SINGLE path
+	 * into physics (reconcile) with no ordering contract — the field owner sets
+	 * the placements alongside the field, so the tap-origin animation is preserved
+	 * without a separate `spawnBubblesAt` call racing the field reassignment.
 	 */
-	public reconcile(target: BubbleArtistParams[]): number {
+	public reconcile(
+		target: BubbleArtistParams[],
+		opts?: { placements?: ReadonlyMap<string, { x: number; y: number }> },
+	): number {
 		const paramsById = new Map<string, BubbleArtistParams>()
 		for (const p of target) {
 			if (p.artist.id) paramsById.set(p.artist.id, p)
@@ -220,12 +230,20 @@ export class BubblePhysics {
 		// target artists that had no ghost slot and are not already rendered.
 		const overflow = this.revealGhostBubbles(target.map((p) => p.artist))
 
-		const overflowParams: BubbleArtistParams[] = []
+		const placements = opts?.placements
+		const instantParams: BubbleArtistParams[] = []
 		for (const artist of overflow) {
 			const p = paramsById.get(artist.id)
-			if (p) overflowParams.push(p)
+			if (!p) continue
+			const pos = placements?.get(artist.id)
+			if (pos) {
+				// Tap-origin add: pop outward from the tap point (spawn animation).
+				this.spawnBubblesAt([p], pos.x, pos.y)
+			} else {
+				instantParams.push(p)
+			}
 		}
-		return this.addBubbles(overflowParams)
+		return this.addBubbles(instantParams)
 	}
 
 	public spawnBubblesAt(

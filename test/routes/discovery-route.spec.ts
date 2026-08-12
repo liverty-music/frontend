@@ -131,14 +131,12 @@ describe('DiscoveryRoute', () => {
 		container.register(DiscoveryRoute)
 		sut = container.get(DiscoveryRoute)
 
-		// Stub the dnaOrbCanvas ref
+		// Stub the dnaOrbCanvas ref. The field owner (ArtistBubbleStore) now drives
+		// physics via the field binding; the route only calls the absorb flourish.
 		sut.dnaOrbCanvas = {
 			pause: vi.fn(),
 			resume: vi.fn(),
-			reloadBubbles: vi.fn(),
-			spawnBubblesAt: vi.fn(),
-			spawnAndAbsorb: vi.fn(),
-			fadeOutBubbles: vi.fn(),
+			spawnAndAbsorbAfterSearch: vi.fn(),
 			bubbleCount: 0,
 			canvasRect: { width: 400, height: 600 },
 		} as never
@@ -335,41 +333,24 @@ describe('DiscoveryRoute', () => {
 
 			expect(sut.search.isSearchMode).toBe(true)
 			expect(sut.search.searchQuery).toBe('test')
-			expect(sut.dnaOrbCanvas.spawnAndAbsorb).not.toHaveBeenCalled()
+			expect(sut.dnaOrbCanvas.spawnAndAbsorbAfterSearch).not.toHaveBeenCalled()
 		})
 
-		it('should exit search mode and trigger spawnAndAbsorb on success', async () => {
-			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
-				cb(0)
-				return 0
-			})
-
+		it('should exit search mode and trigger the absorb flourish on success', async () => {
 			sut.search.isSearchMode = true
 			sut.search.searchQuery = 'query'
 			sut.search.searchResults = [makeArtist('a1', 'Artist')]
 
-			await sut.onFollowFromSearch(makeArtist('a1', 'Artist'))
+			const artist = makeArtist('a1', 'Artist')
+			await sut.onFollowFromSearch(artist)
 
 			expect(sut.search.isSearchMode).toBe(false)
 			expect(sut.search.searchQuery).toBe('')
 			expect(sut.search.searchResults).toHaveLength(0)
-			expect(sut.dnaOrbCanvas.spawnAndAbsorb).toHaveBeenCalledTimes(1)
-		})
-
-		it('should call spawnAndAbsorb with center-x and 17% height position', async () => {
-			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
-				cb(0)
-				return 0
-			})
-
-			const artist = makeArtist('a1', 'Artist')
-			await sut.onFollowFromSearch(artist)
-
-			// canvasRect mock: { width: 400, height: 600 }
-			expect(sut.dnaOrbCanvas.spawnAndAbsorb).toHaveBeenCalledWith(
+			// The route removes the artist from the field and delegates the absorb
+			// animation to the canvas (which owns the rAF + zero-rect guard).
+			expect(sut.dnaOrbCanvas.spawnAndAbsorbAfterSearch).toHaveBeenCalledWith(
 				artist,
-				200, // 400 / 2
-				expect.closeTo(102, 0), // 600 * 0.17
 			)
 		})
 	})
@@ -415,7 +396,7 @@ describe('DiscoveryRoute', () => {
 			expect(mockConcert.listConcerts).not.toHaveBeenCalled()
 		})
 
-		it('should re-spawn bubble at original position on follow failure', async () => {
+		it('should re-add the bubble to the field on follow failure', async () => {
 			;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('fail'),
 			)
@@ -428,20 +409,18 @@ describe('DiscoveryRoute', () => {
 			})
 			await sut.onArtistSelected(event)
 
-			expect(sut.dnaOrbCanvas.spawnBubblesAt).toHaveBeenCalledWith(
-				[
-					expect.objectContaining({
-						id: 'a1',
-					}),
-				],
-				100,
-				200,
-			)
+			// Rollback re-adds it to the field (the reconcile pops it back in at the
+			// tap position via the recorded placement hint).
+			expect(sut.bubbleStore.field.some((a) => a.id === 'a1')).toBe(true)
+			expect(sut.bubbleStore.pendingPlacements.get('a1')).toEqual({
+				x: 100,
+				y: 200,
+			})
 		})
 	})
 
 	describe('onNeedMoreBubbles', () => {
-		it('should fetch similar artists and spawn them at tap position', async () => {
+		it('should fetch similar artists and add them at the tap position', async () => {
 			const similar = [makeArtist('s1', 'Similar 1')]
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
@@ -458,11 +437,12 @@ describe('DiscoveryRoute', () => {
 			await sut.onNeedMoreBubbles(event)
 
 			expect(mockArtistClient.listSimilar).toHaveBeenCalledWith('a1', 30)
-			expect(sut.dnaOrbCanvas.spawnBubblesAt).toHaveBeenCalledWith(
-				similar,
-				50,
-				50,
-			)
+			// The field owner adds the similar artist with the tap-position placement.
+			expect(sut.bubbleStore.field.some((a) => a.id === 's1')).toBe(true)
+			expect(sut.bubbleStore.pendingPlacements.get('s1')).toEqual({
+				x: 50,
+				y: 50,
+			})
 		})
 
 		it('should fall back to top artists when similar returns empty', async () => {
@@ -483,11 +463,11 @@ describe('DiscoveryRoute', () => {
 			await sut.onNeedMoreBubbles(event)
 
 			expect(mockArtistClient.listTop).toHaveBeenCalled()
-			expect(sut.dnaOrbCanvas.spawnBubblesAt).toHaveBeenCalled()
+			expect(sut.bubbleStore.field.some((a) => a.id === 't1')).toBe(true)
 		})
 
-		it('should evict oldest bubbles when pool is full', async () => {
-			// Fill the pool up to MAX
+		it('should evict the oldest bubbles (FIFO) when the field is full', async () => {
+			// Fill the field to MAX with oldest→newest.
 			const initial = Array.from({ length: 50 }, (_, i) =>
 				makeArtist(`existing${i}`, `Existing ${i}`),
 			)
@@ -495,17 +475,12 @@ describe('DiscoveryRoute', () => {
 				initial,
 			)
 			await sut.loadInitialBubbles()
-
-			// Mock canvas bubbleCount to match pool
-			;(sut.dnaOrbCanvas as never as { bubbleCount: number }).bubbleCount = 50
+			expect(sut.bubbleStore.field).toHaveLength(50)
 
 			const similar = [makeArtist('new1', 'New One')]
 			;(
 				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
 			).mockResolvedValue(similar)
-			;(
-				sut.dnaOrbCanvas.fadeOutBubbles as ReturnType<typeof vi.fn>
-			).mockResolvedValue(undefined)
 
 			const event = new CustomEvent('need-more-bubbles', {
 				detail: {
@@ -516,7 +491,12 @@ describe('DiscoveryRoute', () => {
 			})
 			await sut.onNeedMoreBubbles(event)
 
-			expect(sut.dnaOrbCanvas.fadeOutBubbles).toHaveBeenCalled()
+			// New similar admitted, oldest evicted, still capped at 50.
+			expect(sut.bubbleStore.field).toHaveLength(50)
+			expect(sut.bubbleStore.field.some((a) => a.id === 'new1')).toBe(true)
+			expect(sut.bubbleStore.field.some((a) => a.id === 'existing0')).toBe(
+				false,
+			)
 		})
 
 		it('should show info toast when no new bubbles are available', async () => {
@@ -680,16 +660,16 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('poolBubbles', () => {
-		it('should reflect pool availableBubbles', async () => {
+	describe('bubble field', () => {
+		it('reflects the artists loaded by the field owner', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
-				[makeArtist('a1', 'Pool Artist')],
+				[makeArtist('a1', 'Field Artist')],
 			)
 
 			await sut.loadInitialBubbles()
 
-			expect(sut.poolBubbles).toHaveLength(1)
-			expect(sut.poolBubbles[0].name).toBe('Pool Artist')
+			expect(sut.bubbleStore.field).toHaveLength(1)
+			expect(sut.bubbleStore.field[0].name).toBe('Field Artist')
 		})
 	})
 
@@ -790,10 +770,10 @@ describe('DiscoveryRoute', () => {
 
 			sut.loading()
 
-			// Ghost bubbles are all isGhost: true — none of the pool artists have real names.
-			const pool = sut.bubbles.pool.availableBubbles
-			expect(pool.length).toBe(50)
-			expect(pool.every((a) => a.isGhost === true)).toBe(true)
+			// Ghost bubbles are all isGhost: true — none of the field artists have real names.
+			const field = sut.bubbleStore.field
+			expect(field.length).toBe(50)
+			expect(field.every((a) => a.isGhost === true)).toBe(true)
 		})
 
 		it('uses cached real artists on re-entry (peekBubbles returns data)', () => {
@@ -807,12 +787,12 @@ describe('DiscoveryRoute', () => {
 
 			sut.loading()
 
-			const pool = sut.bubbles.pool.availableBubbles
-			expect(pool).toEqual(cached)
-			expect(pool.every((a) => !a.isGhost)).toBe(true)
+			const field = sut.bubbleStore.field
+			expect(field).toEqual(cached)
+			expect(field.every((a) => !a.isGhost)).toBe(true)
 		})
 
-		it('persists the pool after loadInitialBubbles succeeds', async () => {
+		it('persists the field after loadInitialBubbles succeeds', async () => {
 			;(
 				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
 			).mockReturnValue(null)
@@ -822,28 +802,26 @@ describe('DiscoveryRoute', () => {
 
 			await sut.loadInitialBubbles()
 
-			expect(mockArtistClient.setBubbles).toHaveBeenCalledWith(
-				sut.bubbles.pool.availableBubbles,
-			)
+			expect(mockArtistClient.setBubbles).toHaveBeenCalledWith([
+				...sut.bubbleStore.field,
+			])
 		})
 	})
 
-	describe('bubble pool cap — 50 upper limit', () => {
-		it('ghost pool is initialised to exactly MAX_BUBBLES on cold visit', () => {
+	describe('bubble field cap — 50 upper limit', () => {
+		it('ghost field is initialised to exactly MAX_BUBBLES on cold visit', () => {
 			;(
 				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
 			).mockReturnValue(null)
 
 			sut.loading()
 
-			// All 50 slots filled with ghost placeholders — pool never exceeds cap.
-			expect(sut.bubbles.pool.availableBubbles.length).toBe(50)
-			expect(
-				sut.bubbles.pool.availableBubbles.every((a) => a.isGhost === true),
-			).toBe(true)
+			// All 50 slots filled with ghost placeholders — field never exceeds cap.
+			expect(sut.bubbleStore.field.length).toBe(50)
+			expect(sut.bubbleStore.field.every((a) => a.isGhost === true)).toBe(true)
 		})
 
-		it('re-entry with cached pool does not exceed MAX_BUBBLES', () => {
+		it('re-entry with a cached field does not exceed MAX_BUBBLES', () => {
 			const cached = Array.from({ length: 50 }, (_, i) => ({
 				id: `artist-${i}`,
 				name: `Artist ${i}`,
@@ -855,7 +833,7 @@ describe('DiscoveryRoute', () => {
 
 			sut.loading()
 
-			expect(sut.bubbles.pool.availableBubbles.length).toBeLessThanOrEqual(50)
+			expect(sut.bubbleStore.field.length).toBeLessThanOrEqual(50)
 		})
 	})
 })

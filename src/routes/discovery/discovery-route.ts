@@ -11,20 +11,19 @@ import {
 	Events,
 	IAnalyticsService,
 } from '../../lib/analytics/analytics-service'
+import { IArtistBubbleStore } from '../../services/artist-bubble-store'
 import { IArtistStore } from '../../services/artist-store'
-import { BubblePool } from '../../services/bubble-pool'
 import { ICoachMarkService } from '../../services/coach-mark-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
-import { detectCountryFromTimezone } from '../../util/detect-country'
-import { BubbleManager } from './bubble-manager'
 import { GenreFilterController } from './genre-filter-controller'
 import { SearchController } from './search-controller'
 
 export class DiscoveryRoute {
 	private readonly artistClient = resolve(IArtistStore)
+	public readonly bubbleStore = resolve(IArtistBubbleStore)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly coachMark = resolve(ICoachMarkService)
@@ -41,12 +40,6 @@ export class DiscoveryRoute {
 	private dashboardCoachMarkShown = false
 
 	// Controllers
-	public readonly bubbles = new BubbleManager(
-		this.artistClient,
-		resolve(ILogger).scopeTo('BubbleManager'),
-		() => this.followStore.followedIds,
-	)
-
 	public readonly search = new SearchController(
 		this.artistClient,
 		{
@@ -65,21 +58,14 @@ export class DiscoveryRoute {
 	)
 
 	public readonly genre = new GenreFilterController(
-		this.artistClient,
-		this.bubbles.pool,
-		() => this.followStore.followedArtists,
+		this.bubbleStore,
 		{
-			onBubblesReloaded: (artists) => this.dnaOrbCanvas.reloadBubbles(artists),
 			onError: (key, params) =>
 				this.ea.publish(new Snack(this.i18n.tr(key, params), 'error')),
 		},
 		resolve(ILogger).scopeTo('GenreFilterController'),
 		() => this.abortController.signal,
 	)
-
-	public get poolBubbles(): Artist[] {
-		return this.bubbles.poolBubbles
-	}
 
 	public get followedIds(): ReadonlySet<string> {
 		return this.followStore.followedIds
@@ -151,24 +137,22 @@ export class DiscoveryRoute {
 			}
 		}
 
-		// Re-entry fast path: if a previous visit cached the bubble pool in the
-		// ArtistStore singleton, paint real artists immediately (no ghost bubbles).
-		// Background refresh runs after attach. Same pattern as Dashboard.
+		// Per-visit reset (re-detect country); the field owner keeps its cached
+		// field across the route churn.
+		this.bubbleStore.enterRoute()
+
+		// Re-entry fast path: if a previous visit cached the bubble field in the
+		// ArtistStore singleton, paint real artists immediately through the field
+		// owner (followed-exclusion applied there). Otherwise show ghost
+		// placeholders so the canvas is never blank. The background load refreshes
+		// the field via the single reconcile writer. Same pattern as Dashboard.
 		const cachedBubbles = this.artistClient.peekBubbles()
 		if (cachedBubbles !== null) {
-			// Filter out artists the user has since followed so they don't reappear
-			// as faint bubbles on re-entry while the background refresh is in flight.
-			const followedIds = this.followStore.followedIds
-			this.bubbles.pool.replace(
-				cachedBubbles.filter((a) => !followedIds.has(a.id)),
-			)
-			void this.loadInitialBubbles()
+			this.bubbleStore.paintFromCache(cachedBubbles)
 		} else {
-			// Cold visit: pre-populate with ghost placeholder bubbles so the canvas
-			// is never blank while loadInitialBubbles fetches.
-			this.bubbles.pool.replace(makeGhostArtists(BubblePool.MAX_BUBBLES))
-			void this.loadInitialBubbles()
+			this.bubbleStore.paintGhosts()
 		}
+		void this.loadInitialBubbles()
 
 		// Resume concert search for pre-seeded follows (fire concurrently)
 		if (this.isOnboarding) {
@@ -179,20 +163,13 @@ export class DiscoveryRoute {
 	}
 
 	/**
-	 * Load the initial bubble field. Returns a Promise so production fires it
-	 * non-blocking (`void this.loadInitialBubbles()`) while tests await it
-	 * deterministically. A failure surfaces a Snack and is swallowed.
+	 * Kick off the background initial field load. Returns a Promise so production
+	 * fires it non-blocking (`void`) while tests await it deterministically. A
+	 * failure surfaces a Snack and is swallowed.
 	 */
 	public async loadInitialBubbles(): Promise<void> {
 		try {
-			await this.bubbles.loadInitialArtists(
-				this.followStore.followedArtists,
-				detectCountryFromTimezone(),
-				'',
-			)
-			// Persist the final pool in the singleton so the next re-entry can paint
-			// real artists immediately without waiting on network RPCs.
-			this.artistClient.setBubbles(this.bubbles.pool.availableBubbles)
+			await this.bubbleStore.loadInitial()
 		} catch (err) {
 			this.logger.error('Failed to load initial artists', err)
 			this.ea.publish(new Snack(this.i18n.tr('discovery.loadFailed'), 'error'))
@@ -252,7 +229,7 @@ export class DiscoveryRoute {
 	/**
 	 * Reset the bubble field to the global Top 50, clearing any active genre
 	 * filter and the accumulated similar-artist bubbles. Reuses the genre
-	 * loading flag as the shared pool-reload guard so genre chips and the reset
+	 * loading flag as the shared reload guard so genre chips and the reset
 	 * control disable together and concurrent reloads are prevented.
 	 */
 	public async onReset(): Promise<void> {
@@ -262,9 +239,7 @@ export class DiscoveryRoute {
 		this.genre.clearActiveTag()
 		this.genre.isLoadingTag = true
 		try {
-			await this.bubbles.reset(this.followStore.followedArtists)
-			if (this.abortController.signal.aborted) return
-			this.dnaOrbCanvas.reloadBubbles(this.poolBubbles)
+			await this.bubbleStore.reset()
 		} catch (err) {
 			this.logger.error('Failed to reset discovery bubbles', err)
 			this.ea.publish(new Snack(this.i18n.tr('discovery.resetFailed'), 'error'))
@@ -286,15 +261,14 @@ export class DiscoveryRoute {
 			artist: artist.name,
 		})
 
-		// Optimistic UI: remove from pool
-		this.bubbles.pool.remove(artistId)
+		// Optimistic UI: remove from the field (reconcile fades the body out).
+		this.bubbleStore.remove(artistId)
 
 		try {
 			await this.followStore.follow(artist)
 		} catch {
-			// Rollback UI
-			this.bubbles.pool.add([artist])
-			this.dnaOrbCanvas.spawnBubblesAt([artist], position.x, position.y)
+			// Rollback: re-add at the tap position (reconcile pops it back in).
+			this.bubbleStore.addAt([artist], position)
 			return
 		}
 		if (this.abortController.signal.aborted) return
@@ -311,12 +285,7 @@ export class DiscoveryRoute {
 	): Promise<void> {
 		const { artistId, artistName, position } = event.detail
 		try {
-			const spawned = await this.bubbles.onNeedMoreBubbles(
-				artistId,
-				artistName,
-				position,
-				this.dnaOrbCanvas,
-			)
+			const spawned = await this.bubbleStore.loadSimilar(artistId, position)
 			if (!spawned) {
 				this.ea.publish(
 					new Snack(
@@ -359,11 +328,11 @@ export class DiscoveryRoute {
 		this.search.clearSearch()
 		this.search.exitSearchMode()
 
-		// Remove from pool so artistsChanged fades out any existing physics bubble
-		// for this artist via the stale-body eviction path in dna-orb-canvas.
-		this.bubbles.pool.remove(artistId)
+		// Remove from the field so the reconcile fades out any existing physics
+		// bubble for this artist; the absorb animation is a transient flourish.
+		this.bubbleStore.remove(artistId)
 
-		this.bubbles.spawnAndAbsorbAfterSearch(artist, this.dnaOrbCanvas)
+		this.dnaOrbCanvas.spawnAndAbsorbAfterSearch(artist)
 
 		void this.searchConcertsForArtist(artistId, artist.name)
 	}
@@ -409,14 +378,4 @@ export class DiscoveryRoute {
 			})
 		}
 	}
-}
-
-/** Create N placeholder ghost artists for the pre-load skeleton. */
-function makeGhostArtists(count: number): Artist[] {
-	return Array.from({ length: count }, (_, i) => ({
-		id: `__ghost__${i}`,
-		name: '',
-		mbid: '',
-		isGhost: true as const,
-	}))
 }

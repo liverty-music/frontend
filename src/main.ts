@@ -66,6 +66,7 @@ import { IConsentService } from './lib/consent/consent-service'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
 import { Events } from './services/analytics-events'
+import { IArtistBubbleStore } from './services/artist-bubble-store'
 import { IArtistStore } from './services/artist-store'
 import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
@@ -212,6 +213,7 @@ async function bootstrap(): Promise<void> {
 	au.register(IAnalyticsService)
 	au.register(UserHydrationTask)
 	au.register(IArtistStore)
+	au.register(IArtistBubbleStore)
 	au.register(IConcertStore)
 	au.register(IOnboardingService)
 	au.register(ICoachMarkService)

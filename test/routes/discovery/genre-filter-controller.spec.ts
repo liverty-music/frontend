@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Artist } from '../../../src/entities/artist'
-import { BubblePool } from '../../../src/services/bubble-pool'
+import type { IArtistBubbleStore } from '../../../src/services/artist-bubble-store'
 import { createMockLogger } from '../../../test/helpers/mock-logger'
 
 vi.mock('../../../src/util/detect-country', () => ({
@@ -10,39 +9,22 @@ vi.mock('../../../src/util/detect-country', () => ({
 const { GenreFilterController } = await import(
 	'../../../src/routes/discovery/genre-filter-controller'
 )
-type GenreArtistClient =
-	import('../../../src/routes/discovery/genre-filter-controller').GenreArtistClient
 type GenreFilterCallbacks =
 	import('../../../src/routes/discovery/genre-filter-controller').GenreFilterCallbacks
 
-function makeArtist(id: string, name: string): Artist {
-	return { id, name, mbid: '' }
-}
-
 describe('GenreFilterController', () => {
 	let sut: GenreFilterController
-	let mockClient: GenreArtistClient
+	let mockStore: { loadTop: ReturnType<typeof vi.fn> }
 	let mockCallbacks: GenreFilterCallbacks
-	let pool: BubblePool
 	let abortController: AbortController
 
 	beforeEach(() => {
-		mockClient = {
-			listTop: vi.fn().mockResolvedValue([]),
-		}
-
-		mockCallbacks = {
-			onBubblesReloaded: vi.fn(),
-			onError: vi.fn(),
-		}
-
-		pool = new BubblePool()
+		mockStore = { loadTop: vi.fn().mockResolvedValue(undefined) }
+		mockCallbacks = { onError: vi.fn() }
 		abortController = new AbortController()
 
 		sut = new GenreFilterController(
-			mockClient,
-			pool,
-			() => [],
+			mockStore as unknown as IArtistBubbleStore,
 			mockCallbacks,
 			createMockLogger(),
 			() => abortController.signal,
@@ -50,89 +32,57 @@ describe('GenreFilterController', () => {
 	})
 
 	describe('onGenreSelected', () => {
-		it('should activate a genre tag and reload bubbles', async () => {
-			const artists = [makeArtist('a1', 'Rock Artist')]
-			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
-				artists,
-			)
-
+		it('activates a genre tag and loads the field for that tag (global, no country)', async () => {
 			await sut.onGenreSelected('Rock')
 
 			expect(sut.activeTag).toBe('Rock')
-			expect(mockClient.listTop).toHaveBeenCalledWith('', 'rock', 50)
-			expect(mockCallbacks.onBubblesReloaded).toHaveBeenCalled()
+			expect(mockStore.loadTop).toHaveBeenCalledWith('', 'rock')
 		})
 
-		it('should deactivate when selecting same tag', async () => {
-			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([])
-
+		it('deactivates when selecting the same tag and reloads the regional top', async () => {
 			await sut.onGenreSelected('Rock')
 			await sut.onGenreSelected('Rock')
 
 			expect(sut.activeTag).toBe('')
-			expect(mockClient.listTop).toHaveBeenLastCalledWith('Japan', '', 50)
+			expect(mockStore.loadTop).toHaveBeenLastCalledWith('Japan', '')
 		})
 
-		it('should set isLoadingTag during load', async () => {
-			let resolveListTop: (value: Artist[]) => void
-			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockReturnValue(
-				new Promise<Artist[]>((resolve) => {
-					resolveListTop = resolve
+		it('sets isLoadingTag during the load', async () => {
+			let resolveLoad: () => void = () => {}
+			mockStore.loadTop.mockReturnValue(
+				new Promise<void>((r) => {
+					resolveLoad = r
 				}),
 			)
 
 			const promise = sut.onGenreSelected('Jazz')
 			expect(sut.isLoadingTag).toBe(true)
 
-			resolveListTop!([])
+			resolveLoad()
 			await promise
 			expect(sut.isLoadingTag).toBe(false)
 		})
 
-		it('should ignore requests while loading', async () => {
-			let resolveListTop: (value: Artist[]) => void
-			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockReturnValue(
-				new Promise<Artist[]>((resolve) => {
-					resolveListTop = resolve
+		it('ignores requests while loading', async () => {
+			let resolveLoad: () => void = () => {}
+			mockStore.loadTop.mockReturnValue(
+				new Promise<void>((r) => {
+					resolveLoad = r
 				}),
 			)
 
 			const first = sut.onGenreSelected('Rock')
-			await sut.onGenreSelected('Pop') // Should be ignored
+			await sut.onGenreSelected('Pop') // ignored
 
-			resolveListTop!([])
+			resolveLoad()
 			await first
 
 			expect(sut.activeTag).toBe('Rock')
-			expect(mockClient.listTop).toHaveBeenCalledTimes(1)
+			expect(mockStore.loadTop).toHaveBeenCalledTimes(1)
 		})
 
-		it('should exclude followed artists from dedup', async () => {
-			const followed = [makeArtist('f1', 'Followed Artist')]
-			sut = new GenreFilterController(
-				mockClient,
-				pool,
-				() => followed,
-				mockCallbacks,
-				createMockLogger(),
-				() => abortController.signal,
-			)
-
-			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue([
-				makeArtist('f1', 'Followed Artist'),
-				makeArtist('a1', 'Available Artist'),
-			])
-
-			await sut.onGenreSelected('Rock')
-
-			expect(pool.availableBubbles).toHaveLength(1)
-			expect(pool.availableBubbles[0].id).toBe('a1')
-		})
-
-		it('should reset activeTag and call onError on failure', async () => {
-			;(mockClient.listTop as ReturnType<typeof vi.fn>).mockRejectedValue(
-				new Error('network'),
-			)
+		it('resets activeTag and calls onError on failure', async () => {
+			mockStore.loadTop.mockRejectedValue(new Error('network'))
 
 			await sut.onGenreSelected('Metal')
 

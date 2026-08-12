@@ -6,6 +6,7 @@ import {
 	shadowCSS,
 	useShadowDOM,
 } from 'aurelia'
+import { artistHue as hashArtistHue } from '../../adapter/view/artist-color'
 import type { Artist } from '../../entities/artist'
 import { IAudioEngine } from '../../services/audio-engine'
 import {
@@ -46,6 +47,12 @@ export class DnaOrbCanvas {
 	]
 	@bindable public followedCount = 0
 	@bindable public artists: Artist[] = []
+	// Spawn-origin hints for a tap top-up (bound from the field owner). Read in
+	// `artistsChanged` so newly-added ids pop outward from the tap point. Bound
+	// alongside `artists`; the owner publishes it BEFORE the field so it is
+	// current when `artistsChanged` fires.
+	@bindable public placements: ReadonlyMap<string, { x: number; y: number }> =
+		new Map()
 
 	private readonly element = resolve(INode) as HTMLElement
 	private canvas!: HTMLCanvasElement
@@ -64,8 +71,12 @@ export class DnaOrbCanvas {
 	private reducedMotionUnsub: (() => void) | null = null
 
 	private focusedBubbleIndex = -1
-	private reloadGeneration = 0
 	private isProcessing = false
+
+	// Per-artist hue memo: hue is a pure function of the artist, so compute it
+	// once (keyed by id, falling back to name) instead of re-hashing the name on
+	// every render frame per bubble. Survives the ghost→real reference swap.
+	private readonly hueByArtist = new Map<string, number>()
 
 	// Performance monitoring
 	private frameTimes: number[] = []
@@ -100,6 +111,7 @@ export class DnaOrbCanvas {
 			// dropped while stale bodies are still fading out.
 			const dropped = this.physics.reconcile(
 				newVal.map((a) => toBubbleParams(a)),
+				{ placements: this.placements },
 			)
 			if (dropped > 0) {
 				this.logger.warn(
@@ -187,37 +199,34 @@ export class DnaOrbCanvas {
 		this.logger.info('Physics resumed')
 	}
 
-	public reloadBubbles(artists: Artist[]): void {
-		const rect = this.element.getBoundingClientRect()
-		if (rect.width === 0 || rect.height === 0) return
-
-		const gen = ++this.reloadGeneration
-		this.physics.reset()
-		void this.physics.init(rect.width, rect.height).then(() => {
-			if (gen !== this.reloadGeneration) return // stale
-			const params = artists.map((a) => toBubbleParams(a))
-			this.physics.addBubbles(params)
-			this.focusedBubbleIndex = -1
-		})
-	}
-
 	/**
-	 * Spawn new bubbles at a specific position (called by parent after fetching similar artists).
+	 * Spawn a bubble for a search-followed artist and absorb it into the orb.
+	 * Defers the canvas read until the element is visible via
+	 * `requestAnimationFrame` so a follow-absorb never reads a `0×0` canvas and
+	 * spawns at `(0,0)` (the search→bubble view transition may not have laid out
+	 * the canvas yet). Membership is handled separately by the field owner
+	 * (`store.remove`) — this is a transient flourish, not a field addition.
 	 */
-	public spawnBubblesAt(artists: Artist[], x: number, y: number): void {
-		const params = artists.map((a) => toBubbleParams(a))
-		this.physics.spawnBubblesAt(params, x, y)
+	public spawnAndAbsorbAfterSearch(artist: Artist): void {
+		requestAnimationFrame(() => {
+			const rect = this.element.getBoundingClientRect()
+			if (rect.width === 0 || rect.height === 0) {
+				this.logger.warn('Canvas still hidden after rAF, skipping absorption')
+				return
+			}
+			this.spawnAndAbsorb(artist, rect.width / 2, rect.height * 0.17)
+		})
 	}
 
 	/**
 	 * Spawn a temporary bubble and immediately absorb it into the orb.
 	 * Used when following an artist from search results.
 	 */
-	public spawnAndAbsorb(artist: Artist, x: number, y: number): void {
+	private spawnAndAbsorb(artist: Artist, x: number, y: number): void {
 		const id = artist.id
 		const name = artist.name
 		const radius = 30 + Math.random() * 15
-		const hue = this.artistHue(name)
+		const hue = this.artistHue(artist)
 		// Reuse the same feedback path as a direct tap so search-triggered
 		// follows sound and feel identical.
 		this.emitTapFeedback(hue)
@@ -243,13 +252,6 @@ export class DnaOrbCanvas {
 				},
 			}),
 		)
-	}
-
-	/**
-	 * Fade out specific bubbles by ID (called by parent for eviction).
-	 */
-	public async fadeOutBubbles(ids: string[]): Promise<void> {
-		await this.physics.fadeOutBubbles(ids)
 	}
 
 	private async resize(): Promise<void> {
@@ -334,7 +336,7 @@ export class DnaOrbCanvas {
 			const artist = bubble.artist
 			const artistId = artist.id
 			const artistName = artist.name
-			const hue = this.artistHue(artistName)
+			const hue = this.artistHue(artist)
 			const radius = bubble.radius
 
 			// Frame 0: immediate, coincident tap feedback (audio "puryu" + haptic).
@@ -482,12 +484,14 @@ export class DnaOrbCanvas {
 		this.orbRenderer.renderStrobeFlash(this.ctx)
 	}
 
-	private artistHue(name: string): number {
-		let hash = 0
-		for (const ch of name) {
-			hash = ((hash << 5) - hash + ch.charCodeAt(0)) | 0
-		}
-		return ((hash % 360) + 360) % 360
+	/** Memoized per-artist hue (keyed by id, falling back to name). */
+	private artistHue(artist: Artist): number {
+		const key = artist.id || artist.name
+		const cached = this.hueByArtist.get(key)
+		if (cached !== undefined) return cached
+		const hue = hashArtistHue(artist.name)
+		this.hueByArtist.set(key, hue)
+		return hue
 	}
 
 	private renderBubble(bubble: PhysicsBubble, focused: boolean): void {
@@ -546,7 +550,7 @@ export class DnaOrbCanvas {
 		}
 
 		// Per-artist color bubble gradient
-		const hue = this.artistHue(artistName)
+		const hue = this.artistHue(artist)
 		const grad = this.ctx.createRadialGradient(
 			x - r * 0.3,
 			y - r * 0.3,
