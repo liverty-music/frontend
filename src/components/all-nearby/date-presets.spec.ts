@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { CalendarDate } from '../../lib/plain-date'
 import {
 	calendarDatesEqual,
 	type DateRange,
@@ -10,12 +11,13 @@ import {
 	parseDateInput,
 	rangeCacheKey,
 	resolvePreset,
-	toCalendarDate,
 } from './date-presets'
 
-// A fixed local reference date keeps every preset computation deterministic
-// across machines/timezones. 2026-08-12 is a Wednesday.
-const WED = new Date(2026, 7, 12) // Aug is month index 7
+// A fixed reference date keeps every preset computation deterministic across
+// machines/timezones. 2026-08-12 is a Wednesday. The `today` argument is a
+// `CalendarDate` (never a native `Date`) so it stays on the engine-agnostic
+// boundary.
+const WED: CalendarDate = { year: 2026, month: 8, day: 12 }
 
 describe('resolvePreset', () => {
 	it('week spans today through +6 days inclusive (7 days)', () => {
@@ -44,7 +46,7 @@ describe('resolvePreset', () => {
 		})
 
 		it('Saturday → today (Sat)..tomorrow (Sun)', () => {
-			const sat = new Date(2026, 7, 15) // 2026-08-15 is a Saturday
+			const sat: CalendarDate = { year: 2026, month: 8, day: 15 }
 			expect(resolvePreset('weekend', sat)).toEqual({
 				from: { year: 2026, month: 8, day: 15 },
 				to: { year: 2026, month: 8, day: 16 },
@@ -52,7 +54,7 @@ describe('resolvePreset', () => {
 		})
 
 		it('Sunday → single-day today range', () => {
-			const sun = new Date(2026, 7, 16) // 2026-08-16 is a Sunday
+			const sun: CalendarDate = { year: 2026, month: 8, day: 16 }
 			expect(resolvePreset('weekend', sun)).toEqual({
 				from: { year: 2026, month: 8, day: 16 },
 				to: { year: 2026, month: 8, day: 16 },
@@ -155,10 +157,6 @@ describe('helpers', () => {
 				{ year: 2026, month: 8, day: 13 },
 			),
 		).toBe(false)
-	})
-
-	it('toCalendarDate uses local components', () => {
-		expect(toCalendarDate(WED)).toEqual({ year: 2026, month: 8, day: 12 })
 	})
 
 	it('rangeCacheKey is stable for the same area + range', () => {
