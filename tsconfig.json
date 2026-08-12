@@ -7,7 +7,11 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "importHelpers": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "plain-date-engine": ["src/lib/plain-date/date-impl.ts"]
+    }
   },
   "include": [
     "src",

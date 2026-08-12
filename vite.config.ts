@@ -17,6 +17,19 @@ const env = loadEnv(
 const devApiTarget =
 	env.VITE_DEV_API_TARGET || 'https://api.dev.liverty-music.app'
 
+// Build-time selection of the plain-date engine. `date-impl` (native `Date`)
+// is the production default and the only engine bundled; `temporal-impl` is
+// opt-in via `VITE_DATE_ENGINE=temporal` for the differential-equivalence build
+// only, until TC39 Temporal is Baseline. Resolving via `resolve.alias` (not a
+// runtime branch) keeps the unselected engine out of the module graph entirely,
+// so the production bundle stays at +0 KB. See OpenSpec
+// `introduce-swappable-plain-date-lib`, design D2.
+const plainDateEngine =
+	env.VITE_DATE_ENGINE === 'temporal' ? 'temporal-impl' : 'date-impl'
+const plainDateEnginePath = fileURLToPath(
+	new URL(`./src/lib/plain-date/${plainDateEngine}.ts`, import.meta.url),
+)
+
 export default defineConfig({
 	server: {
 		// Default-open targets the consumer entry (index.html). The admin entry
@@ -76,6 +89,9 @@ export default defineConfig({
 	},
 	resolve: {
 		conditions: ['browser', 'import', 'module', 'default'],
+		alias: {
+			'plain-date-engine': plainDateEnginePath,
+		},
 	},
 	plugins: [
 		aurelia({

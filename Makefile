@@ -52,10 +52,12 @@ lint-no-div-role-status:
 lint-templates: lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status
 
 ## verify-bundle-isolation: build then assert the consumer entry graph
-## contains no admin-origin chunk (OpenSpec `add-admin-console`, design D2).
+## contains no admin-origin chunk (OpenSpec `add-admin-console`, design D2) and
+## no Temporal polyfill (OpenSpec `introduce-swappable-plain-date-lib`, D5).
 verify-bundle-isolation:
 	npm run build
 	npm run verify:bundle-isolation
+	npm run verify:no-temporal-polyfill
 
 ## check: full local pre-commit check.
 ## Mirrors CI's fast lanes (Lint + Test). Playwright suites (smoke / e2e /
