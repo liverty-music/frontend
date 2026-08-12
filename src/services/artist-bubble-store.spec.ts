@@ -258,4 +258,82 @@ describe('ArtistBubbleStore', () => {
 			expect(sut.field).toHaveLength(0)
 		})
 	})
+
+	describe('reenter — in-session field preservation (Phase 2)', () => {
+		it('reuses a fresh field without re-fetching when nothing was followed', async () => {
+			mockArtistStore.listTop.mockResolvedValue(ids('a', 40))
+			await sut.loadInitial() // field=40, freshly built
+			mockArtistStore.listTop.mockClear()
+
+			await sut.reenter()
+
+			// Fresh + above floor + no new follows → pure reuse, no wholesale re-fetch.
+			expect(mockArtistStore.listTop).not.toHaveBeenCalled()
+			expect(sut.field).toHaveLength(40)
+		})
+
+		it('removes only artists followed while away and keeps the rest (above floor → no top-up)', async () => {
+			mockArtistStore.listTop.mockResolvedValue(ids('a', 40))
+			await sut.loadInitial()
+			// Followed a0–a4 on another route while away.
+			followedArtists = ids('a', 5)
+			mockArtistStore.listTop.mockClear()
+
+			await sut.reenter()
+
+			expect(sut.field).toHaveLength(35)
+			expect(sut.field.some((x) => x.id === 'a0')).toBe(false)
+			expect(sut.field.some((x) => x.id === 'a10')).toBe(true)
+			expect(mockArtistStore.listTop).not.toHaveBeenCalled()
+		})
+
+		it('tops up to the display floor when follows thinned the field below it', async () => {
+			mockArtistStore.listTop.mockResolvedValue(ids('a', 32))
+			await sut.loadInitial() // field=32 (a0..a31), all tracked as seen
+			followedArtists = ids('a', 10) // a0..a9 followed while away → 22 remain
+			// Top-up fetch returns the seen a's (filtered) plus fresh b's.
+			mockArtistStore.listTop.mockResolvedValue([
+				...ids('a', 32),
+				...ids('b', 20),
+			])
+
+			await sut.reenter()
+
+			// 22 kept + 8 fresh b's = display floor (30); never a wholesale re-roll.
+			expect(mockArtistStore.listTop).toHaveBeenCalled()
+			expect(sut.field).toHaveLength(30)
+			expect(sut.field.some((x) => x.id === 'a10')).toBe(true)
+			expect(sut.field.filter((x) => x.id.startsWith('b'))).toHaveLength(8)
+		})
+
+		it('falls back to a full cold reload when the field is stale (past the reuse TTL)', async () => {
+			vi.useFakeTimers()
+			try {
+				vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+				mockArtistStore.listTop.mockResolvedValue(ids('a', 40))
+				await sut.loadInitial()
+
+				// Return well past the 15-minute reuse TTL.
+				vi.setSystemTime(new Date('2026-01-01T01:00:00Z'))
+				mockArtistStore.listTop.mockClear()
+				mockArtistStore.listTop.mockResolvedValue(ids('c', 40))
+
+				await sut.reenter()
+
+				expect(mockArtistStore.listTop).toHaveBeenCalled()
+				expect(sut.field.some((x) => x.id === 'c0')).toBe(true)
+			} finally {
+				vi.useRealTimers()
+			}
+		})
+
+		it('does a full load when there is no field yet (cold visit)', async () => {
+			mockArtistStore.listTop.mockResolvedValue(ids('a', 10))
+
+			await sut.reenter()
+
+			expect(mockArtistStore.listTop).toHaveBeenCalled()
+			expect(sut.field).toHaveLength(10)
+		})
+	})
 })

@@ -51,6 +51,16 @@ export class ArtistBubbleStore {
 	// Below this many seed-similar results, top up the initial field with global
 	// top artists so it stays full regardless of follow count.
 	private static readonly SEED_SIMILAR_TARGET = 30
+	// Re-entry keeps the in-session field intact as long as its data is at least
+	// this full after removing artists followed while away; below it, the field is
+	// topped up to this floor (never a wholesale re-roll). Kept under a healthy
+	// field size (SEED_SIMILAR_TARGET) so a full field is preserved untouched.
+	private static readonly DISPLAY_FLOOR = 30
+	// Session-scoped freshness window for reusing the field on re-entry. Within
+	// it, re-entry applies a non-destructive delta; past it, re-entry does a full
+	// cold-style reload so recommendations refresh periodically. Distinct from the
+	// raw listTop SWR staleTime (24h) — this governs field reuse, not the RPC cache.
+	private static readonly FIELD_REUSE_TTL_MS = 15 * 60 * 1000
 
 	private readonly artists = resolve(IArtistStore)
 	private readonly followStore = resolve(IFollowStore)
@@ -79,6 +89,10 @@ export class ArtistBubbleStore {
 	private readonly seen = new SeenTracker()
 	private country = detectCountryFromTimezone()
 	private isLoading = false
+	// Wall-clock (ms) of the last full field FETCH (loadInitial/loadTop) — NOT
+	// bumped by a cache repaint or a re-entry delta, so freshness reflects when the
+	// data was last fetched. Drives the re-entry reuse-vs-reload decision.
+	private fieldBuiltAt = 0
 
 	constructor() {
 		// A shared singleton must not leak one user's field/dedup memory to the
@@ -91,7 +105,7 @@ export class ArtistBubbleStore {
 	 * Per-visit reset run from the router `loading()` hook: re-detect the country
 	 * for this entry. The field is intentionally NOT cleared — it backs the
 	 * instant re-entry paint and is refreshed via `paintFromCache` + a background
-	 * `loadInitial`.
+	 * `reenter` (non-destructive delta when fresh, full reload when stale).
 	 */
 	public enterRoute(): void {
 		this.country = detectCountryFromTimezone()
@@ -154,7 +168,51 @@ export class ArtistBubbleStore {
 			}
 
 			this.setField(next)
+			this.fieldBuiltAt = Date.now()
 			// Persist the final field so the next re-entry paints instantly.
+			this.artists.setBubbles([...this.field])
+		} finally {
+			this.isLoading = false
+		}
+	}
+
+	/**
+	 * Re-entry field refresh (router `loading()` background). Preserves the
+	 * in-session field instead of re-rolling it: when the field's data is still
+	 * fresh (within the reuse TTL), apply only a non-destructive delta — remove
+	 * artists followed while away, and top up to the display floor ONLY if the
+	 * field fell below it. When stale or empty, fall back to a full cold-style
+	 * reload. This replaces the old unconditional wholesale background reload.
+	 */
+	public async reenter(): Promise<void> {
+		const real = this.realField()
+		const fresh =
+			real.length > 0 &&
+			Date.now() - this.fieldBuiltAt < ArtistBubbleStore.FIELD_REUSE_TTL_MS
+		if (!fresh) {
+			await this.loadInitial()
+			return
+		}
+		if (this.isLoading) return
+		this.isLoading = true
+		try {
+			// Keep the visible field; drop only artists followed while away.
+			let next = excludeFollowed(real, this.followStore.followedIds)
+			// Top up ONLY when the field fell below the floor (e.g. follows thinned
+			// it) — never a wholesale re-fetch that recomposes a healthy field.
+			if (next.length < ArtistBubbleStore.DISPLAY_FLOOR) {
+				this.logger.info('Re-entry field below floor, topping up', {
+					count: next.length,
+				})
+				this.seen.trackAll(next)
+				const top = await this.artists.listTop(this.country, '', MAX_BUBBLES)
+				next = capTo(
+					[...next, ...this.freshFrom(top)],
+					ArtistBubbleStore.DISPLAY_FLOOR,
+				)
+			}
+			this.seen.trackAll(next)
+			this.commitField(next, new Map())
 			this.artists.setBubbles([...this.field])
 		} finally {
 			this.isLoading = false
@@ -179,6 +237,7 @@ export class ArtistBubbleStore {
 		this.seen.resetWith(this.followStore.followedArtists)
 		const raw = await this.artists.listTop(country, tag, MAX_BUBBLES)
 		this.setField(raw)
+		this.fieldBuiltAt = Date.now()
 		this.artists.setBubbles([...this.field])
 	}
 
@@ -335,6 +394,7 @@ export class ArtistBubbleStore {
 	private clear(): void {
 		this.seen.clear()
 		this.country = detectCountryFromTimezone()
+		this.fieldBuiltAt = 0
 		this.commitField([], new Map())
 		this.logger.info('Bubble field cleared')
 	}
