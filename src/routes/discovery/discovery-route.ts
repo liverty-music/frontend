@@ -141,18 +141,13 @@ export class DiscoveryRoute {
 		// field across the route churn.
 		this.bubbleStore.enterRoute()
 
-		// Re-entry fast path: if a previous visit cached the bubble field in the
-		// ArtistStore singleton, paint real artists immediately through the field
-		// owner (followed-exclusion applied there). Otherwise show ghost
-		// placeholders so the canvas is never blank. The background refresh then
+		// Prepare the instant paint: the field owner is an app-singleton that holds
+		// the in-session field across route churn, so a re-entry re-applies
+		// invariants to its persisted field (dropping artists followed while away)
+		// and a cold visit shows ghost placeholders. The background refresh then
 		// preserves the in-session field (non-destructive delta) rather than
-		// re-rolling it, unless it has gone stale. Same pattern as Dashboard.
-		const cachedBubbles = this.artistClient.peekBubbles()
-		if (cachedBubbles !== null) {
-			this.bubbleStore.paintFromCache(cachedBubbles)
-		} else {
-			this.bubbleStore.paintGhosts()
-		}
+		// re-rolling it, unless it has gone stale.
+		this.bubbleStore.prepareEntry()
 		void this.refreshField()
 
 		// Resume concert search for pre-seeded follows (fire concurrently)

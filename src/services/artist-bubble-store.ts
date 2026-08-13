@@ -27,13 +27,15 @@ export interface Placement {
 
 /**
  * The single owner of the Discovery display FIELD — the authoritative
- * `Artist[]` set of artists currently on the canvas. Every other representation
- * (the physics bodies, the re-entry cache) is a derived projection of this
- * field; nothing else holds authoritative membership.
+ * `Artist[]` set of artists currently on the canvas, and the SINGLE bubble-field
+ * cache. Every other representation (the physics bodies) is a derived projection
+ * of this field; nothing else holds authoritative membership. `ArtistStore`
+ * keeps only the raw `listTop` SWR cache — the display field is not duplicated
+ * there.
  *
  * "Bubble" in the name is this feature's ubiquitous language (`bubble-physics`,
- * `peekBubbles`, ...). The store owns `Artist[]`, NOT physics bodies — those are
- * reconciled by the canvas from the field snapshot.
+ * ...). The store owns `Artist[]`, NOT physics bodies — those are reconciled by
+ * the canvas from the field snapshot.
  *
  * It also owns the fetch orchestration folded out of the retired per-route
  * `BubbleManager` (initial load, seed-similar + top-up, reset/genre, similar-on-
@@ -41,9 +43,9 @@ export interface Placement {
  * applies the field invariants (exclude-followed + dedup + 50-cap) in exactly
  * one place (`setField` / `addAt`) — downstream consumers never re-apply them.
  *
- * App-lifetime DI singleton: it survives the per-route component churn (so it
- * can back the instant re-entry paint), which means per-visit and per-user state
- * must be reset explicitly (see `enterRoute` and the `SignedOut` subscription).
+ * App-lifetime DI singleton: its `field` survives the per-route component churn,
+ * so it IS the in-session field cache (no second snapshot). Per-visit and
+ * per-user state is reset explicitly (see `enterRoute` and `SignedOut`).
  */
 export class ArtistBubbleStore {
 	private static readonly SIMILAR_LIMIT_ON_TAP = 30
@@ -103,20 +105,30 @@ export class ArtistBubbleStore {
 
 	/**
 	 * Per-visit reset run from the router `loading()` hook: re-detect the country
-	 * for this entry. The field is intentionally NOT cleared — it backs the
-	 * instant re-entry paint and is refreshed via `paintFromCache` + a background
-	 * `reenter` (non-destructive delta when fresh, full reload when stale).
+	 * for this entry. The field is intentionally NOT cleared — this app-singleton
+	 * IS the single bubble-field cache, so its `field` persists across the route
+	 * component churn and backs the instant re-entry paint. It is refreshed via a
+	 * background `reenter` (non-destructive delta when fresh, full reload stale).
 	 */
 	public enterRoute(): void {
 		this.country = detectCountryFromTimezone()
 	}
 
 	/**
-	 * Paint the field from a re-entry cache snapshot synchronously (invariants
-	 * applied), so `loading()` can show real artists immediately with no ghosts.
+	 * Prepare the field for a route entry (called synchronously from `loading()`).
+	 * Cold visit (no real field yet) → ghost placeholders so the canvas is never
+	 * blank while `loadInitial` fetches. Re-entry → re-apply the invariants to the
+	 * persisted field so artists followed while away are dropped from the instant
+	 * paint before the canvas re-attaches; the background `reenter` then applies
+	 * the full non-destructive delta.
 	 */
-	public paintFromCache(cached: Artist[]): void {
-		this.setField(cached)
+	public prepareEntry(): void {
+		const real = this.realField()
+		if (real.length === 0) {
+			this.paintGhosts()
+		} else {
+			this.setField(real)
+		}
 	}
 
 	/**
@@ -131,8 +143,8 @@ export class ArtistBubbleStore {
 	/**
 	 * Load the initial field: global top artists when nothing is followed, else
 	 * seed-similar from the followed artists topped up with top artists so the
-	 * field stays full regardless of follow count. Persists the result to the
-	 * re-entry cache. Guarded against concurrent loads.
+	 * field stays full regardless of follow count. The result lives in `field`
+	 * (this singleton is the cache). Guarded against concurrent loads.
 	 */
 	public async loadInitial(): Promise<void> {
 		if (this.isLoading) return
@@ -169,8 +181,6 @@ export class ArtistBubbleStore {
 
 			this.setField(next)
 			this.fieldBuiltAt = Date.now()
-			// Persist the final field so the next re-entry paints instantly.
-			this.artists.setBubbles([...this.field])
 		} finally {
 			this.isLoading = false
 		}
@@ -213,7 +223,6 @@ export class ArtistBubbleStore {
 			}
 			this.seen.trackAll(next)
 			this.commitField(next, new Map())
-			this.artists.setBubbles([...this.field])
 		} finally {
 			this.isLoading = false
 		}
@@ -238,7 +247,6 @@ export class ArtistBubbleStore {
 		const raw = await this.artists.listTop(country, tag, MAX_BUBBLES)
 		this.setField(raw)
 		this.fieldBuiltAt = Date.now()
-		this.artists.setBubbles([...this.field])
 	}
 
 	/**
@@ -270,7 +278,6 @@ export class ArtistBubbleStore {
 			if (fresh.length === 0) return false
 
 			const added = this.addAt(fresh, pos)
-			this.artists.setBubbles([...this.field])
 			return added.length > 0
 		} finally {
 			this.isLoading = false

@@ -16,7 +16,6 @@ const mockLogger = {
 const mockArtistStore = {
 	listTop: vi.fn(async (): Promise<Artist[]> => []),
 	listSimilar: vi.fn(async (): Promise<Artist[]> => []),
-	setBubbles: vi.fn(),
 }
 
 let followedArtists: Artist[] = []
@@ -71,6 +70,17 @@ function ids(prefix: string, n: number): Artist[] {
 	return Array.from({ length: n }, (_, i) => artist(`${prefix}${i}`))
 }
 
+// Seed the field through the production load path (the store is now the single
+// cache; the field is only mutated via its own methods). Uses the global-top
+// path (no follows), so callers set `followedArtists` AFTER seeding.
+async function seed(
+	store: ArtistBubbleStore,
+	artists: Artist[],
+): Promise<void> {
+	mockArtistStore.listTop.mockResolvedValueOnce(artists)
+	await store.loadInitial()
+}
+
 describe('ArtistBubbleStore', () => {
 	let sut: ArtistBubbleStore
 
@@ -98,10 +108,11 @@ describe('ArtistBubbleStore', () => {
 			expect(sut.field.map((a) => a.id)).toEqual(['a', 'b', 'c'])
 		})
 
-		it('persists the final field to the re-entry cache', async () => {
+		it('holds the loaded field as the single in-session cache', async () => {
 			mockArtistStore.listTop.mockResolvedValue([artist('a')])
 			await sut.loadInitial()
-			expect(mockArtistStore.setBubbles).toHaveBeenCalledWith([artist('a')])
+			// The singleton's field IS the cache — no second snapshot is persisted.
+			expect(sut.field.map((a) => a.id)).toEqual(['a'])
 		})
 	})
 
@@ -168,18 +179,25 @@ describe('ArtistBubbleStore', () => {
 		})
 	})
 
-	describe('paintFromCache', () => {
-		it('excludes followed artists from the cached snapshot synchronously', () => {
-			followedArtists = [artist('b')]
-			sut.paintFromCache([artist('a'), artist('b'), artist('c')])
+	describe('prepareEntry', () => {
+		it('re-applies invariants on entry, dropping artists followed while away', async () => {
+			await seed(sut, [artist('a'), artist('b'), artist('c')])
+			followedArtists = [artist('b')] // followed b on another route while away
+			sut.prepareEntry()
 			expect(sut.field.map((a) => a.id)).toEqual(['a', 'c'])
+		})
+
+		it('paints ghost placeholders on a cold visit (empty field)', () => {
+			sut.prepareEntry()
+			expect(sut.field).toHaveLength(50)
+			expect(sut.field.every((a) => a.isGhost === true)).toBe(true)
 		})
 	})
 
 	describe('addAt — FIFO top-up', () => {
-		it('keeps new candidates and evicts the oldest existing when over cap', () => {
+		it('keeps new candidates and evicts the oldest existing when over cap', async () => {
 			// Fill the field with 50 oldest→newest.
-			sut.paintFromCache(ids('old', 50))
+			await seed(sut, ids('old', 50))
 			const added = sut.addAt([artist('new0'), artist('new1')], {
 				x: 10,
 				y: 20,
@@ -194,14 +212,14 @@ describe('ArtistBubbleStore', () => {
 			expect(sut.field.some((a) => a.id === 'new1')).toBe(true)
 		})
 
-		it('records placement hints for the added ids', () => {
-			sut.paintFromCache([artist('a')])
+		it('records placement hints for the added ids', async () => {
+			await seed(sut, [artist('a')])
 			sut.addAt([artist('b')], { x: 42, y: 7 })
 			expect(sut.pendingPlacements.get('b')).toEqual({ x: 42, y: 7 })
 		})
 
 		it('clears placement hints on the next full replace', async () => {
-			sut.paintFromCache([artist('a')])
+			await seed(sut, [artist('a')])
 			sut.addAt([artist('b')], { x: 42, y: 7 })
 			mockArtistStore.listTop.mockResolvedValue([artist('c')])
 			await sut.loadTop('US', '')
@@ -210,8 +228,8 @@ describe('ArtistBubbleStore', () => {
 	})
 
 	describe('remove', () => {
-		it('removes an artist from the field', () => {
-			sut.paintFromCache([artist('a'), artist('b')])
+		it('removes an artist from the field', async () => {
+			await seed(sut, [artist('a'), artist('b')])
 			sut.remove('a')
 			expect(sut.field.map((x) => x.id)).toEqual(['b'])
 		})
@@ -219,7 +237,7 @@ describe('ArtistBubbleStore', () => {
 
 	describe('loadSimilar', () => {
 		it('falls back to top artists when similar is exhausted', async () => {
-			sut.paintFromCache([artist('tapped')])
+			await seed(sut, [artist('tapped')])
 			mockArtistStore.listSimilar.mockResolvedValue([]) // exhausted
 			mockArtistStore.listTop.mockResolvedValue([artist('r1'), artist('r2')])
 
