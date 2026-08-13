@@ -69,6 +69,11 @@ export class DnaOrbCanvas {
 	private readonly audio = resolve(IAudioEngine)
 	private readonly logger = resolve(ILogger).scopeTo('DnaOrbCanvas')
 	private reducedMotionUnsub: (() => void) | null = null
+	// One-shot observer that waits for a non-zero layout size before the first
+	// physics init/paint when the element attaches at 0×0 (SPA re-entry).
+	private sizeObserver: ResizeObserver | null = null
+	// Set in `detaching` so a still-pending `initWhenSized` bails after the wait.
+	private detached = false
 
 	private focusedBubbleIndex = -1
 	private isProcessing = false
@@ -126,6 +131,7 @@ export class DnaOrbCanvas {
 	}
 
 	public async attached(): Promise<void> {
+		this.detached = false
 		const ctx = this.canvas.getContext('2d')
 		if (!ctx) {
 			this.logger.error('Failed to get 2D context')
@@ -141,19 +147,51 @@ export class DnaOrbCanvas {
 			this.applyReducedMotion(reduced),
 		)
 
-		await this.resize()
 		window.addEventListener('resize', this.onResize)
 		this.canvas.addEventListener('pointerdown', this.onPointerDown)
 		this.canvas.addEventListener('keydown', this.onKeyDown)
 
-		const params = this.artists.map((a) => toBubbleParams(a))
-		this.physics.addBubbles(params)
+		// On SPA re-entry the element can still be 0×0 at `attached()`; `resize()`
+		// would then skip `physics.init()`, and painting into an uninitialized
+		// physics layer produced bodyless bubbles (render crash, empty canvas).
+		// Wait for a real layout size before initializing + the first paint.
+		await this.initWhenSized()
+		if (this.detached) return // detached while waiting for layout
+		this.physics.addBubbles(this.artists.map((a) => toBubbleParams(a)))
 
 		this.lastTime = performance.now()
 		this.animFrameId = requestAnimationFrame(this.loop)
 	}
 
+	/**
+	 * Resolve once the host element has a non-zero layout size, then run the
+	 * initial `resize()` (which initializes the physics engine). Immediate when
+	 * already laid out; otherwise a one-shot `ResizeObserver` waits for the first
+	 * non-zero size (SPA route-enter before layout).
+	 */
+	private async initWhenSized(): Promise<void> {
+		const rect = this.element.getBoundingClientRect()
+		if (rect.width === 0 || rect.height === 0) {
+			await new Promise<void>((resolve) => {
+				this.sizeObserver = new ResizeObserver(() => {
+					const r = this.element.getBoundingClientRect()
+					if (r.width > 0 && r.height > 0) {
+						this.sizeObserver?.disconnect()
+						this.sizeObserver = null
+						resolve()
+					}
+				})
+				this.sizeObserver.observe(this.element)
+			})
+			if (this.detached) return
+		}
+		await this.resize()
+	}
+
 	public detaching(): void {
+		this.detached = true
+		this.sizeObserver?.disconnect()
+		this.sizeObserver = null
 		cancelAnimationFrame(this.animFrameId)
 		window.removeEventListener('resize', this.onResize)
 		this.canvas.removeEventListener('pointerdown', this.onPointerDown)

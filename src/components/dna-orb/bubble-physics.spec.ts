@@ -107,9 +107,17 @@ function liveIds(physics: BubblePhysics): string[] {
 		.sort()
 }
 
+// Physics only creates bodies after init() loads Matter — addBubbles/spawnBubblesAt
+// no-op before then (they must never store bodyless bubbles).
+async function mkPhysics(): Promise<BubblePhysics> {
+	const physics = new BubblePhysics()
+	await physics.init(400, 600)
+	return physics
+}
+
 describe('BubblePhysics.reconcile', () => {
-	it('adds new target artists and fades out stale ones', () => {
-		const physics = new BubblePhysics()
+	it('adds new target artists and fades out stale ones', async () => {
+		const physics = await mkPhysics()
 		physics.addBubbles(params(['a', 'b', 'c']))
 
 		const dropped = physics.reconcile(params(['b', 'c', 'd']))
@@ -120,8 +128,8 @@ describe('BubblePhysics.reconcile', () => {
 		expect(stale?.isFadingOut).toBe(true)
 	})
 
-	it('keeps matching bodies in place without recreating them', () => {
-		const physics = new BubblePhysics()
+	it('keeps matching bodies in place without recreating them', async () => {
+		const physics = await mkPhysics()
 		physics.addBubbles(params(['a', 'b']))
 		const before = physics.getBubbles().find((b) => b.artist.id === 'a')
 
@@ -132,8 +140,8 @@ describe('BubblePhysics.reconcile', () => {
 		expect(liveIds(physics)).toEqual(['a', 'b'])
 	})
 
-	it('preserves render parity across a background refresh to a disjoint field', () => {
-		const physics = new BubblePhysics()
+	it('preserves render parity across a background refresh to a disjoint field', async () => {
+		const physics = await mkPhysics()
 		// Cache paint: 41 real bodies.
 		physics.addBubbles(params(ids('old', 41)))
 		expect(liveIds(physics)).toHaveLength(41)
@@ -157,8 +165,8 @@ describe('BubblePhysics.reconcile', () => {
 		).toEqual(ids('new', 33).sort())
 	})
 
-	it('revives a mid-fade target member re-added within the fade window instead of dropping it', () => {
-		const physics = new BubblePhysics()
+	it('revives a mid-fade target member re-added within the fade window instead of dropping it', async () => {
+		const physics = await mkPhysics()
 		physics.addBubbles(params(['a', 'b']))
 
 		// reconcile #1: 'a' leaves the target and starts fading (still in bubbleMap).
@@ -179,8 +187,8 @@ describe('BubblePhysics.reconcile', () => {
 		expect(liveIds(physics)).toEqual(['a', 'b'])
 	})
 
-	it('does not let fading-out bodies block replacements up to the cap', () => {
-		const physics = new BubblePhysics()
+	it('does not let fading-out bodies block replacements up to the cap', async () => {
+		const physics = await mkPhysics()
 		physics.addBubbles(params(ids('old', MAX_BUBBLES)))
 
 		const dropped = physics.reconcile(params(ids('new', MAX_BUBBLES)))
@@ -192,8 +200,7 @@ describe('BubblePhysics.reconcile', () => {
 	})
 
 	it('spawns a placed new target from its placement point with the pop animation', async () => {
-		const physics = new BubblePhysics()
-		await physics.init(400, 600) // load Matter so real bodies are created
+		const physics = await mkPhysics()
 		physics.addBubbles(params(['a']))
 
 		// 'b' is added with a placement hint (a tap top-up); it must spawn (scale
@@ -213,12 +220,38 @@ describe('BubblePhysics.reconcile', () => {
 })
 
 describe('BubblePhysics.addBubbles capacity', () => {
-	it('caps live bodies at MAX and reports the dropped count instead of silently truncating', () => {
-		const physics = new BubblePhysics()
+	it('caps live bodies at MAX and reports the dropped count instead of silently truncating', async () => {
+		const physics = await mkPhysics()
 
 		const dropped = physics.addBubbles(params(ids('x', MAX_BUBBLES + 10)))
 
 		expect(physics.bubbleCount).toBe(MAX_BUBBLES)
 		expect(dropped).toBe(10)
+	})
+})
+
+describe('BubblePhysics init guard (regression #526)', () => {
+	it('addBubbles no-ops before init — never stores a bodyless bubble', () => {
+		const physics = new BubblePhysics() // not initialized → Matter is null
+		const dropped = physics.addBubbles(params(['a', 'b']))
+		expect(physics.bubbleCount).toBe(0)
+		expect(dropped).toBe(0)
+	})
+
+	it('spawnBubblesAt no-ops before init', () => {
+		const physics = new BubblePhysics()
+		physics.spawnBubblesAt(params(['a']), 10, 20)
+		expect(physics.bubbleCount).toBe(0)
+	})
+
+	it('paints real bodies once init has run', async () => {
+		const physics = new BubblePhysics()
+		physics.addBubbles(params(['a', 'b'])) // pre-init: dropped
+		expect(physics.bubbleCount).toBe(0)
+
+		await physics.init(400, 600)
+		physics.addBubbles(params(['a', 'b'])) // post-init: real bodies
+		expect(physics.bubbleCount).toBe(2)
+		expect(physics.getBubbles().every((b) => b.body?.position)).toBe(true)
 	})
 })
