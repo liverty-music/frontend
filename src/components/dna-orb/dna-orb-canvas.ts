@@ -72,6 +72,9 @@ export class DnaOrbCanvas {
 	// One-shot observer that waits for a non-zero layout size before the first
 	// physics init/paint when the element attaches at 0×0 (SPA re-entry).
 	private sizeObserver: ResizeObserver | null = null
+	// Resolver for the size-wait promise, so `detaching()` can settle it (avoids a
+	// forever-pending `attached()` when detached while still 0×0).
+	private sizeResolve: (() => void) | null = null
 	// Set in `detaching` so a still-pending `initWhenSized` bails after the wait.
 	private detached = false
 
@@ -173,13 +176,14 @@ export class DnaOrbCanvas {
 		const rect = this.element.getBoundingClientRect()
 		if (rect.width === 0 || rect.height === 0) {
 			await new Promise<void>((resolve) => {
+				// Capture the resolver so `detaching()` can settle this wait too —
+				// otherwise a detach while still 0×0 would leave the promise (and the
+				// component it closes over) pending forever, and the `detached` guard
+				// below would be unreachable.
+				this.sizeResolve = resolve
 				this.sizeObserver = new ResizeObserver(() => {
 					const r = this.element.getBoundingClientRect()
-					if (r.width > 0 && r.height > 0) {
-						this.sizeObserver?.disconnect()
-						this.sizeObserver = null
-						resolve()
-					}
+					if (r.width > 0 && r.height > 0) this.settleSizeWait()
 				})
 				this.sizeObserver.observe(this.element)
 			})
@@ -188,10 +192,17 @@ export class DnaOrbCanvas {
 		await this.resize()
 	}
 
-	public detaching(): void {
-		this.detached = true
+	/** Stop the size wait: disconnect the observer and resolve the pending promise. */
+	private settleSizeWait(): void {
 		this.sizeObserver?.disconnect()
 		this.sizeObserver = null
+		this.sizeResolve?.()
+		this.sizeResolve = null
+	}
+
+	public detaching(): void {
+		this.detached = true
+		this.settleSizeWait()
 		cancelAnimationFrame(this.animFrameId)
 		window.removeEventListener('resize', this.onResize)
 		this.canvas.removeEventListener('pointerdown', this.onPointerDown)
