@@ -409,4 +409,31 @@ describe('DnaOrbCanvas', () => {
 			expect(pulseSpy).toHaveBeenCalled()
 		})
 	})
+
+	describe('attached() 0×0 layout deferral (regression #526/#527)', () => {
+		it('settles attached() when detached while still waiting for a non-zero size', async () => {
+			// Element is 0×0 at attach → attached() awaits a ResizeObserver that never
+			// fires here. detaching() must resolve that wait so attached() does not
+			// hang forever (leaking the component).
+			;(
+				mockElement.getBoundingClientRect as ReturnType<typeof vi.fn>
+			).mockReturnValue({ width: 0, height: 0, top: 0, left: 0 })
+			class MockResizeObserver {
+				observe(): void {}
+				disconnect(): void {}
+				unobserve(): void {}
+			}
+			vi.stubGlobal('ResizeObserver', MockResizeObserver)
+			try {
+				const addSpy = vi.spyOn((sut as any).physics, 'addBubbles')
+				const attachedPromise = sut.attached()
+				sut.detaching()
+				await expect(attachedPromise).resolves.toBeUndefined()
+				// Bailed via the detached guard — never painted into an uninitialized layer.
+				expect(addSpy).not.toHaveBeenCalled()
+			} finally {
+				vi.unstubAllGlobals()
+			}
+		})
+	})
 })

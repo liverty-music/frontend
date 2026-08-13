@@ -134,6 +134,10 @@ export class BubblePhysics {
 	 * that replaces the field silently shrinks it (real vs rendered divergence).
 	 */
 	public addBubbles(params: BubbleArtistParams[]): number {
+		// Never create bodyless bubbles: if init has not run yet (Matter/world not
+		// loaded — e.g. `attached()`/`artistsChanged` firing before the canvas has a
+		// non-zero layout), skip. The canvas re-paints once `init()` completes.
+		if (!this.Matter || !this.world) return 0
 		let dropped = 0
 		for (const { artist, radius } of params) {
 			const id = artist.id
@@ -251,6 +255,8 @@ export class BubblePhysics {
 		fromX: number,
 		fromY: number,
 	): void {
+		// Skip if init has not run yet — never store a bodyless bubble (see addBubbles).
+		if (!this.Matter || !this.world) return
 		for (const { artist, radius } of params) {
 			const id = artist.id
 			if (!id || this.bubbleMap.has(id)) continue
