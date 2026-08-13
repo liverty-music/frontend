@@ -17,10 +17,14 @@ interface TopInput {
 }
 
 /**
- * Artist read facade. Caches the global top-artists pool (`listTop`) via the
- * shared SWR primitive so Discovery re-entry reuses the cached field without a
- * refetch, while `listSimilar` and `search` stay uncached pass-throughs
- * (per-artist one-shots / always-fresh search).
+ * Artist read repository. Caches the global top-artists pool (`listTop`) via the
+ * shared SWR primitive so Discovery reuses the cached raw RPC without a refetch,
+ * while `listSimilar` and `search` stay uncached pass-throughs (per-artist
+ * one-shots / always-fresh search).
+ *
+ * This holds ONLY the raw-RPC SWR cache. The display bubble field and its
+ * in-session persistence are owned by `ArtistBubbleStore` (the single field
+ * cache) — this store no longer keeps a second bubble snapshot.
  *
  * The cache key MUST include `country + tag + limit`: the discovery flow requests
  * `listTop` with different limits (`MAX_BUBBLES` vs `MAX_BUBBLES / seedCount`), so
@@ -39,11 +43,6 @@ export class ArtistStore {
 	// base pool.
 	private lastTopInput: TopInput | null = null
 
-	// The last successfully generated bubble pool (dedup + top-up applied).
-	// Stored here (not on DiscoveryRoute) because DiscoveryRoute is re-instantiated
-	// on every navigation — same pattern as ConcertStore.lastDateGroups for Dashboard.
-	private lastBubbles: Artist[] | null = null
-
 	/** Global top artists, cached per `country + tag + limit`. */
 	public async listTop(
 		country: string,
@@ -61,19 +60,6 @@ export class ArtistStore {
 	public async revalidateLastTop(): Promise<Artist[] | undefined> {
 		if (!this.lastTopInput) return undefined
 		return this.top.revalidate(this.lastTopInput)
-	}
-
-	/**
-	 * Synchronous peek at the last successfully generated bubble pool.
-	 * Survives DiscoveryRoute re-instantiation because this store is a singleton.
-	 */
-	public peekBubbles(): Artist[] | null {
-		return this.lastBubbles
-	}
-
-	/** Persist the latest bubble pool so the next DiscoveryRoute re-entry paints instantly. */
-	public setBubbles(artists: Artist[]): void {
-		this.lastBubbles = artists
 	}
 
 	/** Uncached pass-through: per-artist one-shot (see the audit — ~zero cache hits). */

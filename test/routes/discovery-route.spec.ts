@@ -762,12 +762,8 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
-	describe('loading() — bubble cache (re-entry fast path)', () => {
-		it('uses ghost bubbles on cold visit (peekBubbles returns null)', () => {
-			;(
-				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
-			).mockReturnValue(null)
-
+	describe('loading() — single-cache re-entry paint', () => {
+		it('shows ghost bubbles on a cold visit (empty field owner)', () => {
 			sut.loading()
 
 			// Ghost bubbles are all isGhost: true — none of the field artists have real names.
@@ -776,44 +772,37 @@ describe('DiscoveryRoute', () => {
 			expect(field.every((a) => a.isGhost === true)).toBe(true)
 		})
 
-		it('uses cached real artists on re-entry (peekBubbles returns data)', () => {
-			const cached = [
-				{ id: 'a1', name: 'YOASOBI', mbid: '' },
-				{ id: 'a2', name: 'Ado', mbid: '' },
-			]
-			;(
-				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
-			).mockReturnValue(cached)
+		it('re-uses the persisted field on re-entry (no ghosts) and re-applies invariants', async () => {
+			// Warm the field owner (the singleton IS the cache).
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[
+					{ id: 'a1', name: 'YOASOBI', mbid: '' },
+					{ id: 'a2', name: 'Ado', mbid: '' },
+				],
+			)
+			await sut.refreshField()
 
+			// Re-entry: the persisted field is re-applied (real artists, no ghosts).
 			sut.loading()
 
 			const field = sut.bubbleStore.field
-			expect(field).toEqual(cached)
+			expect(field.map((a) => a.id)).toEqual(['a1', 'a2'])
 			expect(field.every((a) => !a.isGhost)).toBe(true)
 		})
 
-		it('persists the field after refreshField succeeds', async () => {
-			;(
-				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
-			).mockReturnValue(null)
+		it('holds the loaded field in the owner (no second cache) after refreshField', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[{ id: 'a1', name: 'YOASOBI', mbid: '' }],
 			)
 
 			await sut.refreshField()
 
-			expect(mockArtistClient.setBubbles).toHaveBeenCalledWith([
-				...sut.bubbleStore.field,
-			])
+			expect(sut.bubbleStore.field.map((a) => a.id)).toEqual(['a1'])
 		})
 	})
 
 	describe('bubble field cap — 50 upper limit', () => {
 		it('ghost field is initialised to exactly MAX_BUBBLES on cold visit', () => {
-			;(
-				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
-			).mockReturnValue(null)
-
 			sut.loading()
 
 			// All 50 slots filled with ghost placeholders — field never exceeds cap.
@@ -821,15 +810,15 @@ describe('DiscoveryRoute', () => {
 			expect(sut.bubbleStore.field.every((a) => a.isGhost === true)).toBe(true)
 		})
 
-		it('re-entry with a cached field does not exceed MAX_BUBBLES', () => {
-			const cached = Array.from({ length: 50 }, (_, i) => ({
-				id: `artist-${i}`,
-				name: `Artist ${i}`,
-				mbid: '',
-			}))
-			;(
-				mockArtistClient.peekBubbles as ReturnType<typeof vi.fn>
-			).mockReturnValue(cached)
+		it('re-entry with a warm field does not exceed MAX_BUBBLES', async () => {
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				Array.from({ length: 60 }, (_, i) => ({
+					id: `artist-${i}`,
+					name: `Artist ${i}`,
+					mbid: '',
+				})),
+			)
+			await sut.refreshField()
 
 			sut.loading()
 
