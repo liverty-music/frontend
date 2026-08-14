@@ -59,12 +59,12 @@
 		"workbox-strategies": "^7.4.0"
 	},
 	"scripts": {
-		"lint:js": "biome lint --write src admin shared test",
-		"format": "biome format --write src admin shared test",
-		"lint:css": "stylelint \"src/**/*.css\" \"admin/**/*.css\"",
-		"lint:boundaries": "depcruise src admin shared test",
+		"lint:js": "biome lint --write src admin organizer shared test",
+		"format": "biome format --write src admin organizer shared test",
+		"lint:css": "stylelint \"src/**/*.css\" \"admin/**/*.css\" \"organizer/**/*.css\"",
+		"lint:boundaries": "depcruise src admin organizer shared test",
 		"lint": "npm run lint:js && npm run lint:css && npm run lint:boundaries",
-		"check": "biome check --write src admin shared test && npm run lint:css && npm run lint:boundaries",
+		"check": "biome check --write src admin organizer shared test && npm run lint:css && npm run lint:boundaries",
 		"pretest": "npm run lint",
 		"start": "vite",
 		"build": "vite build",

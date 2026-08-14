@@ -4,8 +4,9 @@
  *
  * Run via `npm run verify:bundle-isolation` (wired into the consumer Dockerfile
  * after `npm run build`, and into `make check`). Fails the build if the
- * consumer entry (index.html) chunk graph references any admin-origin module
- * (OpenSpec change `add-admin-console`, design D2 bundle-isolation requirement).
+ * consumer entry (index.html) chunk graph references any admin- or
+ * organizer-origin module (OpenSpec changes `add-admin-console` /
+ * `organizer-console`, design D2 bundle-isolation requirement).
  */
 
 import { argv, exit } from 'node:process'
@@ -26,11 +27,11 @@ function run(distDir: string): never {
 			exit(2)
 		case 'leaked':
 			console.error(
-				'[verify-bundle-isolation] FAILED: consumer entry graph references admin-origin chunks:',
+				'[verify-bundle-isolation] FAILED: consumer entry graph references admin-/organizer-origin chunks:',
 			)
 			for (const l of result.leaks) console.error(`  - ${l}`)
 			console.error(
-				'The consumer SPA must not load any module from admin/. Check for a stray src/ -> admin/ import.',
+				'The consumer SPA must not load any module from admin/ or organizer/. Check for a stray src/ -> admin/ or src/ -> organizer/ import.',
 			)
 			exit(1)
 		case 'ok':

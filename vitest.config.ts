@@ -41,6 +41,7 @@ export default mergeConfig(
           // Main entry points (not unit testable)
           "src/main.ts",
           "admin/main.ts",
+          "organizer/main.ts",
           // Canvas components (require complex setup, deferred)
           "src/components/dna-orb/**",
           // Scripts directory

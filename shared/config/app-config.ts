@@ -24,7 +24,19 @@ export interface AppConfig {
 	readonly adminApiBaseUrl?: string
 	readonly zitadelIssuer: string
 	readonly zitadelClientId: string
-	readonly zitadelOrgId: string
+	/**
+	 * Fixed Zitadel organization id whose login policy sign-in is scoped to
+	 * (via the `urn:zitadel:iam:org:id:<id>` scope). Required for the consumer
+	 * SPA and admin console — both pin a single org at build/deploy time.
+	 *
+	 * Optional because the organizer console omits it by contract: one client
+	 * serves every Organizer tenant and the org is pinned per session by
+	 * org-pinned entry (an org handle), not baked into config. The organizer
+	 * entry loads config with `requireOrgId: false` and folds the
+	 * runtime-resolved org id in before registering it. See OpenSpec change
+	 * `organizer-console`.
+	 */
+	readonly zitadelOrgId?: string
 	readonly vapidPublicKey: string
 	readonly previewArtistIds: readonly string[]
 	readonly previewArtistNames: readonly string[]
@@ -81,21 +93,38 @@ let _inflight: Promise<AppConfig> | null = null
 const CONFIG_FETCH_TIMEOUT_MS = 5_000
 
 /**
+ * Options for {@link loadAppConfig}.
+ */
+export interface LoadAppConfigOptions {
+	/**
+	 * Whether `zitadelOrgId` is a required field. Defaults to `true` (the
+	 * consumer SPA and admin console both pin a fixed org). The organizer
+	 * console passes `false`: it omits a fixed org id and pins the tenant per
+	 * session by org-pinned entry. See OpenSpec change `organizer-console`.
+	 */
+	readonly requireOrgId?: boolean
+}
+
+/**
  * Fetches `/config.json`, validates the schema, and caches the result for
  * synchronous access via {@link getAppConfig}. MUST be awaited before
  * `Aurelia.start()` and before any module-level code that calls
  * `getAppConfig()` evaluates.
  */
-export function loadAppConfig(): Promise<AppConfig> {
+export function loadAppConfig(
+	options?: LoadAppConfigOptions,
+): Promise<AppConfig> {
 	if (_config) return Promise.resolve(_config)
 	if (_inflight) return _inflight
-	_inflight = doLoadAppConfig().finally(() => {
+	_inflight = doLoadAppConfig(options).finally(() => {
 		_inflight = null
 	})
 	return _inflight
 }
 
-async function doLoadAppConfig(): Promise<AppConfig> {
+async function doLoadAppConfig(
+	options?: LoadAppConfigOptions,
+): Promise<AppConfig> {
 	const res = await fetch('/config.json', {
 		cache: 'no-store',
 		signal: AbortSignal.timeout(CONFIG_FETCH_TIMEOUT_MS),
@@ -113,7 +142,7 @@ async function doLoadAppConfig(): Promise<AppConfig> {
 			`config.json parse failed: ${err instanceof Error ? err.message : String(err)}`,
 		)
 	}
-	const config = validateAppConfig(parsed)
+	const config = validateAppConfig(parsed, options)
 	// Opt-in only: the local override is attempted solely when a developer has
 	// set `VITE_DEV_API_TARGET` in a gitignored `.env.local` (the local-backend
 	// signal). This keeps the extra fetch out of every normal dev/CI bootstrap.
@@ -199,7 +228,10 @@ export function validateEnvironmentMatchesHost(config: AppConfig): void {
 	}
 }
 
-function validateAppConfig(parsed: unknown): AppConfig {
+function validateAppConfig(
+	parsed: unknown,
+	options?: LoadAppConfigOptions,
+): AppConfig {
 	if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		throw new Error('config.json: top-level value must be a JSON object')
 	}
@@ -252,13 +284,22 @@ function validateAppConfig(parsed: unknown): AppConfig {
 	// rollout window between a GH Release and the cloud-provisioning PR merge.
 	const releaseVersion = readOptionalString(o, 'releaseVersion')
 
+	// `zitadelOrgId` is required by default (consumer SPA + admin console pin a
+	// fixed org). The organizer console passes `requireOrgId: false` — it omits
+	// a fixed org id and pins the tenant per session by org-pinned entry. When
+	// not required, a present value is still validated as a string.
+	const requireOrgId = options?.requireOrgId ?? true
+	const zitadelOrgId = requireOrgId
+		? requireString(o, 'zitadelOrgId')
+		: readOptionalString(o, 'zitadelOrgId')
+
 	return {
 		environment: env as AppConfig['environment'],
 		apiBaseUrl: requireString(o, 'apiBaseUrl'),
 		...(adminApiBaseUrl !== undefined ? { adminApiBaseUrl } : {}),
 		zitadelIssuer: requireString(o, 'zitadelIssuer'),
 		zitadelClientId: requireString(o, 'zitadelClientId'),
-		zitadelOrgId: requireString(o, 'zitadelOrgId'),
+		...(zitadelOrgId !== undefined ? { zitadelOrgId } : {}),
 		vapidPublicKey: requireString(o, 'vapidPublicKey'),
 		previewArtistIds,
 		previewArtistNames,

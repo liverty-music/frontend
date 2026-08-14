@@ -47,39 +47,49 @@ export default defineConfig({
 	},
 	build: {
 		rollupOptions: {
-			// Two HTML entry points → two independent Rollup chunk graphs. The
-			// consumer (`main`) graph never references admin-only modules, so the
-			// fan-facing bundle does not grow (design D2; verified post-build by
-			// scripts/verify-bundle-isolation.ts). A single `npm run build`
-			// emits both entries into dist/.
+			// Three HTML entry points → three independent Rollup chunk graphs. The
+			// consumer (`main`) graph never references admin- or organizer-only
+			// modules, so the fan-facing bundle does not grow (design D2; verified
+			// post-build by scripts/verify-bundle-isolation.ts). A single
+			// `npm run build` emits all entries into dist/.
 			input: {
 				main: fileURLToPath(new URL('./index.html', import.meta.url)),
 				admin: fileURLToPath(new URL('./admin.html', import.meta.url)),
+				organizer: fileURLToPath(
+					new URL('./organizer.html', import.meta.url),
+				),
 			},
 			output: {
-				// Route admin-EXCLUSIVE chunks/assets into `assets/admin/` so the
-				// consumer SW precache (and any name-based tooling) can exclude the
-				// whole admin graph with a single `assets/admin/**` glob. Chunks
-				// shared by BOTH entries (e.g. the OIDC AuthService / config loader
-				// from shared/) stay in `assets/` — the consumer already loads
-				// them, so they belong in its precache. A chunk is admin-exclusive
-				// when every one of its module ids lives under the admin/ source
-				// root (no module shared with the consumer graph).
+				// Route admin- / organizer-EXCLUSIVE chunks/assets into
+				// `assets/admin/` and `assets/organizer/` so the consumer SW precache
+				// (and any name-based tooling) can exclude each whole graph with a
+				// single glob. Chunks shared by MULTIPLE entries (e.g. the OIDC
+				// AuthService / config loader from shared/) stay in `assets/` — the
+				// consumer already loads them, so they belong in its precache. A chunk
+				// is admin/organizer-exclusive when every one of its module ids lives
+				// under that entry's source root (no module shared with the consumer
+				// graph).
 				chunkFileNames: (chunkInfo) => {
-					const ids = chunkInfo.moduleIds ?? []
-					const adminOnly =
-						ids.length > 0 &&
-						ids.every((id) => /\/admin\/[^/]/.test(id.replace(/\\/g, '/')))
-					return adminOnly
-						? 'assets/admin/[name]-[hash].js'
-						: 'assets/[name]-[hash].js'
+					const ids = (chunkInfo.moduleIds ?? []).map((id) =>
+						id.replace(/\\/g, '/'),
+					)
+					const allUnder = (root: string) =>
+						ids.length > 0 && ids.every((id) => id.includes(`/${root}/`))
+					if (allUnder('admin')) return 'assets/admin/[name]-[hash].js'
+					if (allUnder('organizer')) return 'assets/organizer/[name]-[hash].js'
+					return 'assets/[name]-[hash].js'
 				},
 				assetFileNames: (assetInfo) => {
-					const src = (assetInfo.originalFileNames ?? []).join('|')
-					const fromAdmin = /(^|\/)admin\//.test(src.replace(/\\/g, '/'))
-					return fromAdmin
-						? 'assets/admin/[name]-[hash][extname]'
-						: 'assets/[name]-[hash][extname]'
+					const src = (assetInfo.originalFileNames ?? [])
+						.join('|')
+						.replace(/\\/g, '/')
+					if (/(^|\/)admin\//.test(src)) {
+						return 'assets/admin/[name]-[hash][extname]'
+					}
+					if (/(^|\/)organizer\//.test(src)) {
+						return 'assets/organizer/[name]-[hash][extname]'
+					}
+					return 'assets/[name]-[hash][extname]'
 				},
 			},
 		},
@@ -97,11 +107,17 @@ export default defineConfig({
 		aurelia({
 			useDev: true,
 			// The plugin defaults to `src/**/*.{ts,js,html}`. Extend it so the
-			// admin entry's components (under `admin/`) and any shared components
-			// (under `shared/`) also get convention pairing + template compilation;
-			// without this, admin `.html`/`.css` are never compiled into their
-			// chunks and the admin views render empty.
-			include: ['src/**/*.{ts,js,html}', 'admin/**/*.{ts,js,html}', 'shared/**/*.{ts,js,html}'],
+			// admin and organizer entries' components (under `admin/` /
+			// `organizer/`) and any shared components (under `shared/`) also get
+			// convention pairing + template compilation; without this, their
+			// `.html`/`.css` are never compiled into their chunks and the views
+			// render empty.
+			include: [
+				'src/**/*.{ts,js,html}',
+				'admin/**/*.{ts,js,html}',
+				'organizer/**/*.{ts,js,html}',
+				'shared/**/*.{ts,js,html}',
+			],
 		}),
 		nodePolyfills(),
 		VitePWA({
@@ -110,19 +126,24 @@ export default defineConfig({
 			srcDir: 'src',
 			filename: 'sw.ts',
 			injectManifest: {
-				// Scope the precache manifest to the consumer entry. The admin
-				// entry ships NO service worker and must never enter the consumer
-				// SW precache (design "Risks" — PWA over-precaching). All
-				// admin-exclusive output lands in `assets/admin/` (see the
-				// rollupOptions.output filename functions above) plus the entry
-				// `admin.html` and its `admin-*` entry chunk, so a single glob set
-				// excludes the entire admin graph. Shared chunks the consumer also
-				// loads stay in `assets/` and remain precached, as intended.
+				// Scope the precache manifest to the consumer entry. The admin and
+				// organizer entries ship NO service worker and must never enter the
+				// consumer SW precache (design "Risks" — PWA over-precaching). All
+				// admin/organizer-exclusive output lands in `assets/admin/` /
+				// `assets/organizer/` (see the rollupOptions.output filename
+				// functions above) plus each entry HTML and its `admin-*` /
+				// `organizer-*` entry chunk, so a single glob set excludes both
+				// graphs. Shared chunks the consumer also loads stay in `assets/` and
+				// remain precached, as intended.
 				globIgnores: [
 					'**/admin.html',
 					'**/admin/**',
 					'assets/admin-*.js',
 					'assets/admin-*.css',
+					'**/organizer.html',
+					'**/organizer/**',
+					'assets/organizer-*.js',
+					'assets/organizer-*.css',
 				],
 			},
 			manifest: false, // Use public/manifest.json directly
