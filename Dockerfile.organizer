@@ -1,0 +1,53 @@
+# Organizer console image. Built from the SAME single `npm run build` as the
+# consumer image (one build emits all entries into dist/, design D4), but serves
+# ONLY the organizer entry's output: `organizer.html` as the SPA fallback, the
+# organizer chunks, and the shared chunks the organizer graph references. It
+# does NOT serve the consumer `index.html`, the admin entry, the consumer
+# service worker (`sw.js` / `registerSW.js`), or the PWA manifest.
+
+# Stage 1: Build the frontend application (all entries)
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# Env-agnostic build: the bundle fetches /config.json at runtime from a per-env
+# K8s ConfigMap (the organizer pod mounts its OWN config.json carrying the
+# organizer client id at the canonical path; the tenant org is pinned per
+# session by org-pinned entry, so no org id is baked in). See OpenSpec change
+# `organizer-console`.
+RUN npm run build
+
+# Defense-in-depth: the consumer entry graph must not reference admin or
+# organizer code. Run the same isolation gate here so the organizer image build
+# also fails on a boundary violation (a single `npm run build` produced every
+# graph).
+RUN npm run verify:bundle-isolation
+
+# Assemble the organizer-only serving root. Copy the shared `assets/` (content-
+# hashed chunks; the organizer entry references shared chunks that live here)
+# and the organizer entry HTML + runtime config + icons, but deliberately
+# EXCLUDE the consumer index.html, the admin entry, the service worker, and the
+# PWA manifest.
+RUN mkdir -p /organizer-srv/assets \
+	&& cp -r /app/dist/assets/. /organizer-srv/assets/ \
+	&& cp /app/dist/organizer.html /organizer-srv/organizer.html \
+	&& cp /app/dist/config.json /organizer-srv/config.json \
+	&& cp /app/dist/favicon.ico /organizer-srv/favicon.ico \
+	&& cp /app/dist/favicon-96x96.png /organizer-srv/favicon-96x96.png \
+	&& cp /app/dist/apple-touch-icon.png /organizer-srv/apple-touch-icon.png \
+	&& if [ -d /app/dist/icons ]; then cp -r /app/dist/icons /organizer-srv/icons; fi
+
+#----------------------------
+
+# Stage 2: Serve with Caddy
+FROM caddy:2-alpine
+
+COPY --from=builder /organizer-srv /srv
+COPY Caddyfile.organizer /etc/caddy/Caddyfile
+
+EXPOSE 80

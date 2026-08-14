@@ -104,6 +104,34 @@ describe('checkBundleIsolation', () => {
 		expect(result.leaks).toContain('assets/admin-EEEE.js')
 	})
 
+	it('flags a leak when the consumer statically imports an assets/organizer chunk', () => {
+		scaffold(
+			workDir,
+			{
+				'assets/main-AAAA.js': 'import"./organizer/welcome-route-HHHH.js"',
+				'assets/organizer/welcome-route-HHHH.js': '// organizer only',
+			},
+			'<script src="/assets/main-AAAA.js"></script>',
+		)
+		const result = checkBundleIsolation(workDir)
+		assert(result.kind === 'leaked')
+		expect(result.leaks).toContain('assets/organizer/welcome-route-HHHH.js')
+	})
+
+	it('flags a leak when the consumer dynamically imports the organizer entry chunk', () => {
+		scaffold(
+			workDir,
+			{
+				'assets/main-AAAA.js': 'const x=()=>import("./organizer-IIII.js")',
+				'assets/organizer-IIII.js': '// organizer entry',
+			},
+			'<script src="/assets/main-AAAA.js"></script>',
+		)
+		const result = checkBundleIsolation(workDir)
+		assert(result.kind === 'leaked')
+		expect(result.leaks).toContain('assets/organizer-IIII.js')
+	})
+
 	it('flags a leak reached transitively through a shared chunk', () => {
 		scaffold(
 			workDir,

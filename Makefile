@@ -2,14 +2,14 @@
 
 ## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary + import-boundaries (matches CI)
 lint: lint-brand-vocabulary lint-boundaries
-	npx biome lint src admin shared test
-	npx biome format src admin shared test
+	npx biome lint src admin organizer shared test
+	npx biome format src admin organizer shared test
 	npm run lint:css
 	npx tsc --noEmit
 
-## lint-boundaries: enforce src/ <-> admin/ isolation (only shared/ crosses)
+## lint-boundaries: enforce src/ <-> admin/ <-> organizer/ isolation (only shared/ crosses)
 lint-boundaries:
-	npx depcruise src admin shared test
+	npx depcruise src admin organizer shared test
 
 ## lint-brand-vocabulary: enforce entity.* i18n namespace parity and known-entity rules
 lint-brand-vocabulary:

@@ -1,20 +1,22 @@
 /**
  * Pure library for `verify-bundle-isolation.ts`. Walks the CONSUMER entry
  * (`index.html`) chunk graph in a built `dist/` and asserts that no chunk
- * reachable from it is an admin-origin module — enforcing the bundle-isolation
- * requirement of OpenSpec change `add-admin-console` (design D2):
+ * reachable from it is an admin- OR organizer-origin module — enforcing the
+ * bundle-isolation requirement of OpenSpec changes `add-admin-console` and
+ * `organizer-console` (design D2):
  *
  *   "the network requests for the consumer entry's chunk graph contain no
- *    module originating from the admin source directory".
+ *    module originating from the admin/organizer source directory".
  *
  * Mirrors the structure/style of `verify-build-templates.lib.ts`: pure (no
  * process.exit, no console writes), returns a structured result.
  *
- * Admin-origin chunks are identified positionally: the build routes every
- * admin-EXCLUSIVE chunk into `assets/admin/` and names the admin entry chunk
- * `assets/admin-*.js` (see vite.config.ts rollupOptions.output). So a consumer
- * graph is isolated iff none of its reachable chunks is under `assets/admin/`
- * or is the `admin-*` entry chunk.
+ * Isolated chunks are identified positionally: the build routes every
+ * admin-/organizer-EXCLUSIVE chunk into `assets/admin/` / `assets/organizer/`
+ * and names each entry chunk `assets/admin-*.js` / `assets/organizer-*.js`
+ * (see vite.config.ts rollupOptions.output). So a consumer graph is isolated
+ * iff none of its reachable chunks is under `assets/admin/` or
+ * `assets/organizer/`, nor is the `admin-*` / `organizer-*` entry chunk.
  */
 
 import { existsSync, readFileSync } from 'node:fs'
@@ -28,12 +30,18 @@ export type IsolationResult =
 
 const STATIC_IMPORT_RE = /(?:from|import)\s*\(?\s*["']\.\/([A-Za-z0-9_./-]+\.js)["']/g
 
-function isAdminChunk(rel: string): boolean {
+function isIsolatedEntryChunk(rel: string): boolean {
 	// `rel` is a path relative to dist/, e.g. "assets/admin/welcome-route-x.js"
-	// or "assets/admin-x.js" (entry) or "assets/welcome-route-y.js" (consumer).
+	// or "assets/organizer-x.js" (entry) or "assets/welcome-route-y.js"
+	// (consumer). A chunk belongs to the admin or organizer graph iff it lives
+	// under that entry's assets subdir or is that entry's `<name>-*.js` chunk.
 	const norm = rel.replace(/\\/g, '/')
-	if (norm.startsWith('assets/admin/')) return true
-	if (/^assets\/admin-[A-Za-z0-9_-]+\.js$/.test(norm)) return true
+	for (const entry of ['admin', 'organizer']) {
+		if (norm.startsWith(`assets/${entry}/`)) return true
+		if (new RegExp(`^assets/${entry}-[A-Za-z0-9_-]+\\.js$`).test(norm)) {
+			return true
+		}
+	}
 	return false
 }
 
@@ -81,9 +89,9 @@ export function checkBundleIsolation(distDir: string): IsolationResult {
 		if (visited.has(rel)) continue
 		visited.add(rel)
 
-		if (isAdminChunk(rel)) {
+		if (isIsolatedEntryChunk(rel)) {
 			leaks.add(rel)
-			// Keep walking siblings, but do not descend into the admin chunk's
+			// Keep walking siblings, but do not descend into the isolated chunk's
 			// graph — it is already a confirmed leak.
 			continue
 		}

@@ -1,0 +1,8 @@
+<main class="[ organizer-callback-layout ]">
+  <output if.bind="!error" class="organizer-callback-loading" role="status" aria-busy="true">
+    <div class="organizer-callback-spinner"></div>
+    <p class="organizer-callback-status">Verifying authentication…</p>
+  </output>
+  <section if.bind="error" class="organizer-callback-error">${error}</section>
+  <a if.bind="error" load="../welcome" class="organizer-callback-home-link">Return to console</a>
+</main>
