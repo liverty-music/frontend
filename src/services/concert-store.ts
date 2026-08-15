@@ -46,13 +46,16 @@ export class ConcertStore {
 	// The follower-concert list caching (was a bespoke in-store 24h TTL).
 	// listByFollower serves the cached value; route follow/unfollow/setHype
 	// invalidate through it; route entry + resume force a background revalidation.
-	// Single key: one user per singleton session, so exactly one entry.
+	// Keyed by the `from` lower bound so switching between the today-onward default
+	// and a past date does not serve a stale set (each date window caches
+	// independently). A follow-set change clears every date-window key at once via
+	// invalidateFollowerCache().
 	private readonly followerConcerts = new CachedResource<
-		void,
+		CalendarDate | undefined,
 		ProximityGroup[]
 	>(
-		() => 'listByFollower',
-		(_input, signal) => this.rpcClient.listByFollower(signal),
+		(from) => followerKey(from),
+		(from, signal) => this.rpcClient.listByFollower(from, signal),
 	)
 
 	// The rendered DateGroup[] from the most recent successful dashboard load.
@@ -106,11 +109,14 @@ export class ConcertStore {
 	 * the background; route entry / PWA resume force a refresh via
 	 * {@link revalidateFollower}.
 	 */
-	public async listByFollower(signal?: AbortSignal): Promise<ProximityGroup[]> {
+	public async listByFollower(
+		from?: CalendarDate,
+		signal?: AbortSignal,
+	): Promise<ProximityGroup[]> {
 		if (!this.authService.isAuthenticated) {
 			return this.listByFollowerGuest(signal)
 		}
-		return this.followerConcerts.read(undefined, signal)
+		return this.followerConcerts.read(from, signal)
 	}
 
 	/**
@@ -120,14 +126,16 @@ export class ConcertStore {
 	 * session refreshes without a manual reload. Runs as a forced background
 	 * refresh, so it takes no `AbortSignal`.
 	 */
-	public async revalidateFollower(): Promise<ProximityGroup[]> {
+	public async revalidateFollower(
+		from?: CalendarDate,
+	): Promise<ProximityGroup[]> {
 		if (!this.authService.isAuthenticated) {
 			// Guests read via proximity; force-refresh that same key so resume
 			// actually refreshes instead of serving the still-fresh cached value.
 			const input = this.guestProximityInput()
 			return input ? this.proximityConcerts.revalidate(input) : []
 		}
-		return this.followerConcerts.revalidate(undefined)
+		return this.followerConcerts.revalidate(from)
 	}
 
 	/**
@@ -148,9 +156,21 @@ export class ConcertStore {
 	}
 
 	public invalidateFollowerCache(): void {
-		this.followerConcerts.invalidate(undefined)
+		// A follow-set change invalidates every date-window variant, so clear all
+		// keys, not just the today-onward one.
+		this.followerConcerts.clear()
 		// Clear the cached output too so the next visit shows a fresh spinner
 		// rather than stale groups with the unfollowed/newly-followed artist.
+		this.lastDateGroups = null
+	}
+
+	/**
+	 * Drop the last rendered groups without touching the SWR cache. Used when the
+	 * active date filter changes: the fast-path first-paint (which is not keyed by
+	 * `from`) must not repaint the previous window's groups, but each date window's
+	 * fetched result stays cached in followerConcerts for instant reuse on switch-back.
+	 */
+	public clearRenderedGroups(): void {
 		this.lastDateGroups = null
 	}
 
@@ -442,6 +462,19 @@ function proximityKey(
 	level1: string,
 ): string {
 	return `${[...artistIds].sort().join(',')}|${countryCode}|${level1}`
+}
+
+/**
+ * Cache key for `listByFollower`, incorporating the `from` lower bound so the
+ * today-onward default and any past/future date window each cache under their
+ * own entry. An absent `from` keeps the bare `listByFollower` key (the server's
+ * today-onward default).
+ */
+function followerKey(from?: CalendarDate): string {
+	if (!from) return 'listByFollower'
+	const m = String(from.month).padStart(2, '0')
+	const d = String(from.day).padStart(2, '0')
+	return `listByFollower|${from.year}-${m}-${d}`
 }
 
 /**

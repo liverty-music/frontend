@@ -23,6 +23,8 @@
     counted-artists.bind="countedArtists"
     selected-ids.two-way="filteredArtistIds"
     selected-statuses.two-way="filteredStatuses"
+    active-from.bind="fromDate"
+    date-changed.trigger="onDateFilterChanged($event)"
     is-authenticated.bind="isAuthenticated"
   ></artist-filter-bar>
   <button

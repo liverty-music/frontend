@@ -114,9 +114,10 @@ describe('ConcertStore', () => {
 			const controller = new AbortController()
 			mockConcertRpcClient.listByFollower.mockResolvedValue([])
 
-			await sut.listByFollower(controller.signal)
+			await sut.listByFollower(undefined, controller.signal)
 
 			expect(mockConcertRpcClient.listByFollower).toHaveBeenCalledWith(
+				undefined,
 				controller.signal,
 			)
 		})

@@ -15,6 +15,7 @@ const mockConcertService = {
 	peekDateGroups: vi.fn(() => null),
 	setDateGroups: vi.fn(),
 	toDateGroups: vi.fn(() => []),
+	clearRenderedGroups: vi.fn(),
 }
 const mockFollowStore = {
 	followedArtists: [] as unknown[],
@@ -416,6 +417,99 @@ describe('DashboardRoute', () => {
 				'',
 				'/dashboard?artists=id-1&journey=applied,unpaid',
 			)
+		})
+
+		it('omits the from param when the date is the today-onward default', () => {
+			// fromDate defaults to today at construction → no `from` param.
+			syncFilterUrl(sut)
+
+			expect(mockHistory.replaceState).toHaveBeenCalledWith(
+				null,
+				'',
+				'/dashboard',
+			)
+		})
+
+		it('writes the from param for a non-default (past) date', () => {
+			sut.fromDate = { year: 2020, month: 1, day: 1 }
+			syncFilterUrl(sut)
+
+			expect(mockHistory.replaceState).toHaveBeenCalledWith(
+				null,
+				'',
+				'/dashboard?from=2020-01-01',
+			)
+		})
+
+		it('writes artists, journey, and from together in one replaceState', () => {
+			sut.filteredArtistIds = ['id-1']
+			sut.filteredStatuses = ['applied']
+			sut.fromDate = { year: 2020, month: 1, day: 1 }
+			syncFilterUrl(sut)
+
+			expect(mockHistory.replaceState).toHaveBeenCalledTimes(1)
+			expect(mockHistory.replaceState).toHaveBeenCalledWith(
+				null,
+				'',
+				'/dashboard?artists=id-1&journey=applied&from=2020-01-01',
+			)
+		})
+	})
+
+	describe('date filter — from param + re-fetch', () => {
+		function makeRouteNode(fromParam: string | null) {
+			return {
+				queryParams: {
+					get: (key: string) => (key === 'from' ? fromParam : null),
+				},
+			} as never
+		}
+
+		it('restores fromDate from a valid ?from param', async () => {
+			await sut.loading({}, makeRouteNode('2020-01-01'))
+
+			expect(sut.fromDate).toEqual({ year: 2020, month: 1, day: 1 })
+		})
+
+		it('falls back to today when the ?from value is malformed', async () => {
+			await sut.loading({}, makeRouteNode('not-a-date'))
+
+			// Malformed → default today-onward, so no from param round-trips out.
+			expect(
+				(sut as unknown as { isDefaultFrom(): boolean }).isDefaultFrom(),
+			).toBe(true)
+		})
+
+		it('re-fetches ListByFollower with the new from on a date change', () => {
+			mockConcertService.listByFollower.mockClear()
+			const past = { year: 2020, month: 1, day: 1 }
+
+			;(
+				sut as unknown as {
+					onDateFilterChanged(e: CustomEvent<typeof past>): void
+				}
+			).onDateFilterChanged(new CustomEvent('date-changed', { detail: past }))
+
+			expect(sut.fromDate).toEqual(past)
+			expect(mockConcertService.clearRenderedGroups).toHaveBeenCalledTimes(1)
+			expect(mockConcertService.listByFollower).toHaveBeenCalledWith(
+				past,
+				expect.anything(),
+			)
+		})
+
+		it('ignores a date change that matches the active from (no re-fetch)', () => {
+			const same = sut.fromDate
+			mockConcertService.listByFollower.mockClear()
+
+			;(
+				sut as unknown as {
+					onDateFilterChanged(e: CustomEvent<typeof same>): void
+				}
+			).onDateFilterChanged(new CustomEvent('date-changed', { detail: same }))
+
+			expect(mockConcertService.clearRenderedGroups).not.toHaveBeenCalled()
+			expect(mockConcertService.listByFollower).not.toHaveBeenCalled()
 		})
 	})
 

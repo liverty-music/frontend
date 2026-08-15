@@ -25,6 +25,12 @@ import {
 	type GeoLocationInit,
 	geoLocationFromLevel1,
 } from '../../entities/user'
+import {
+	type CalendarDate,
+	formatDateInput,
+	parseDateInput,
+	todayCalendarDate,
+} from '../../lib/plain-date'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
@@ -40,6 +46,13 @@ export class DashboardRoute {
 	public dateGroups: DateGroup[] = []
 	@observable public filteredArtistIds: string[] = []
 	@observable public filteredStatuses: JourneyStatus[] = []
+	/**
+	 * The active lower bound sent as `from` to ListByFollower. Defaults to the
+	 * client's local date (today onward); a past date widens the timetable into
+	 * the past. Restored from the `from` URL query param on load. Unlike the
+	 * artist/journey facets (client-side narrowing), changing this re-fetches.
+	 */
+	@observable public fromDate: CalendarDate = todayCalendarDate()
 	public showBeams = false
 	public needsRegion = false
 	public isLoading = false
@@ -241,7 +254,7 @@ export class DashboardRoute {
 	 */
 	@watch(
 		(vm: DashboardRoute) =>
-			`${vm.filteredArtistIds.join(',')}|${vm.filteredStatuses.join(',')}`,
+			`${vm.filteredArtistIds.join(',')}|${vm.filteredStatuses.join(',')}|${formatDateInput(vm.fromDate)}`,
 	)
 	protected syncFilterUrl(): void {
 		const parts: string[] = []
@@ -251,9 +264,36 @@ export class DashboardRoute {
 		if (this.filteredStatuses.length > 0) {
 			parts.push(`journey=${this.filteredStatuses.join(',')}`)
 		}
+		// The date filter is a URL param only when it deviates from the today-onward
+		// default; clearing it back to today drops the param (and reverts the view).
+		if (!this.isDefaultFrom()) {
+			parts.push(`from=${formatDateInput(this.fromDate)}`)
+		}
 		const url =
 			parts.length > 0 ? `/dashboard?${parts.join('&')}` : '/dashboard'
 		this.history.replaceState(null, '', url)
+	}
+
+	/** Whether the active `from` equals the client's local date (the default view). */
+	private isDefaultFrom(): boolean {
+		return sameCalendarDate(this.fromDate, todayCalendarDate())
+	}
+
+	/**
+	 * The filter sheet committed a new date lower bound. Unlike the artist/journey
+	 * facets (pure client-side narrowing over the loaded set), a `from` change alters
+	 * what the server returns, so re-fetch. The store cache is keyed by `from`, so a
+	 * previously loaded window returns instantly; a new window fetches once. The
+	 * fast-path first-paint is not keyed by `from`, so drop the last rendered groups
+	 * before reloading to avoid repainting the previous window. The @watch above then
+	 * syncs the new date to the URL (or removes the param when back to today).
+	 */
+	public onDateFilterChanged(event: CustomEvent<CalendarDate>): void {
+		const from = event.detail
+		if (sameCalendarDate(from, this.fromDate)) return
+		this.fromDate = from
+		this.concertService.clearRenderedGroups()
+		void this.loadData()
 	}
 
 	public toggleBeams(): void {
@@ -289,6 +329,15 @@ export class DashboardRoute {
 			this.filteredStatuses = rawJourney
 				? rawJourney.split(',').filter(isJourneyStatus)
 				: []
+
+			// Restore the date lower bound from the `from` param. Missing/malformed
+			// values are ignored (parseDateInput returns null) and fall back to the
+			// client's local date (today onward). Setting this before loadData() means
+			// the first fetch uses the restored window; the @watch above then writes
+			// the (unchanged) URL back, a no-op.
+			const rawFrom = next.queryParams.get('from')
+			const parsedFrom = rawFrom ? parseDateInput(rawFrom) : null
+			this.fromDate = parsedFrom ?? todayCalendarDate()
 		}
 
 		if (this.authService.isAuthenticated) {
@@ -411,7 +460,7 @@ export class DashboardRoute {
 
 		const [artistMap, groups, journeyMap] = await Promise.all([
 			this.followStore.getFollowedArtistMap(signal),
-			this.concertService.listByFollower(signal),
+			this.concertService.listByFollower(this.fromDate, signal),
 			this.fetchJourneyMap(signal),
 		])
 
@@ -848,4 +897,9 @@ export class DashboardRoute {
 		this.allNearbyAbort?.abort()
 		this.allNearbyAbort = null
 	}
+}
+
+/** Structural equality for two calendar dates (year/month/day). */
+function sameCalendarDate(a: CalendarDate, b: CalendarDate): boolean {
+	return a.year === b.year && a.month === b.month && a.day === b.day
 }

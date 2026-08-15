@@ -299,6 +299,62 @@
 			line-height: var(--leading-none);
 		}
 
+		/* ── Date facet: collapsible "過去のコンサートも表示" affordance ── */
+		.date-facet-toggle {
+			cursor: pointer;
+
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+
+			padding: 0;
+			border: none;
+
+			background: transparent;
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
+			}
+		}
+
+		.date-facet-caret {
+			color: var(--color-text-muted);
+			transition: transform var(--transition-fast);
+
+			&[data-expanded="true"] {
+				transform: rotate(90deg);
+			}
+		}
+
+		.date-facet-field {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			padding-block-start: var(--space-2xs);
+		}
+
+		.date-field-label {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.date-field-input {
+			padding: var(--space-3xs) var(--space-s);
+			border: 1px solid var(--color-border-muted);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-raised);
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 2px;
+			}
+		}
+
 		/* ── Confirm button row ── */
 		.confirm-row {
 			display: flex;

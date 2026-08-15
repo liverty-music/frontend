@@ -52,10 +52,24 @@ export class ConcertRpcClient {
 		}
 	}
 
-	public async listByFollower(signal?: AbortSignal): Promise<ProximityGroup[]> {
-		this.logger.info('Listing concerts by follower')
+	/**
+	 * The follower-scoped concert list. When `from` is provided the server returns
+	 * concerts on or after that date (including past dates); when omitted the
+	 * server defaults to today onward. The dashboard always passes the client's
+	 * local date so the "today" boundary is anchored to the caller's timezone.
+	 */
+	public async listByFollower(
+		from?: CalendarDate,
+		signal?: AbortSignal,
+	): Promise<ProximityGroup[]> {
+		this.logger.info('Listing concerts by follower', { from })
 		try {
-			const response = await this.client.listByFollower({}, { signal })
+			// Wrap the optional client date in LocalDate (mirrors listByLocation).
+			// Omitting from lets the server apply its today-onward default.
+			const response = await this.client.listByFollower(
+				from ? { from: new LocalDate({ value: from }) } : {},
+				{ signal },
+			)
 			return response.groups
 		} catch (err) {
 			this.logger.warn('Concert listByFollower failed', { error: err })

@@ -7,7 +7,7 @@
   class="filter-trigger"
   click.trigger="openSheet()"
   aria-label="絞り込む"
-  data-active.bind="selectedIds.length > 0 || selectedStatuses.length > 0"
+  data-active.bind="isFilterActive"
 >
   <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16">
     <path d="M3 6h18M7 12h10M11 18h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -91,6 +91,32 @@
           </label>
         </li>
       </ul>
+    </section>
+
+    <!-- Date facet: a collapsed affordance that expands a single "from" date
+         field. Unlike the artist/journey facets it widens the timetable into the
+         past (re-fetch on confirm); collapsed by default so the timetable stays
+         today-onward. Available even when the timetable is empty. -->
+    <section class="filter-facet filter-facet-date" aria-labelledby="filter-date-heading">
+      <button
+        type="button"
+        class="date-facet-toggle"
+        click.trigger="toggleDateFacet()"
+        aria-expanded.bind="isDateFacetExpanded"
+        aria-controls="filter-date-field"
+      >
+        <h3 class="facet-heading" id="filter-date-heading">過去のコンサートも表示</h3>
+        <svg-icon name="chevron-right" size="xs" class="date-facet-caret" data-expanded.bind="isDateFacetExpanded"></svg-icon>
+      </button>
+      <div if.bind="isDateFacetExpanded" id="filter-date-field" class="date-facet-field">
+        <label class="date-field-label" for="filter-from-input">この日付以降を表示</label>
+        <input
+          id="filter-from-input"
+          type="date"
+          class="date-field-input"
+          value.bind="pendingFrom"
+        />
+      </div>
     </section>
 
     <div class="confirm-row">
