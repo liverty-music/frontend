@@ -23,6 +23,16 @@ export type BrowserPushSubscription = {
 	auth: string
 }
 
+/**
+ * Resolved push state after a recovery pass:
+ * - `enabled`: the browser has a subscription registered with the backend.
+ * - `needs-permission`: notification permission is not granted; the UI must
+ *   surface a re-enable affordance rather than silently staying OFF.
+ * - `error`: subscribe/register failed; the toggle must reflect OFF (never a
+ *   success state) and the failure is surfaced, not swallowed.
+ */
+export type PushRecoveryState = 'enabled' | 'needs-permission' | 'error'
+
 export class PushServiceClient {
 	private static readonly SW_READY_TIMEOUT_MS = 10_000
 
@@ -32,6 +42,13 @@ export class PushServiceClient {
 
 	// VAPID public key sourced from runtime AppConfig (see IAppConfig)
 	private readonly vapidPublicKey = resolve(IAppConfig).vapidPublicKey
+
+	// Guards the auto re-subscribe path against overlapping runs (e.g. an
+	// app-open recovery racing a settings-load recovery). The real "run once per
+	// loss" gate is the state check itself: after a successful re-subscribe
+	// `getSubscription()` is non-null, so resolvePushState no longer takes the
+	// subscribe branch.
+	private resubscribing = false
 
 	private async getRegistration(): Promise<ServiceWorkerRegistration> {
 		const timeout = new Promise<never>((_, reject) =>
@@ -141,6 +158,66 @@ export class PushServiceClient {
 	 */
 	public async createFrom(sub: BrowserPushSubscription): Promise<void> {
 		await this.rpcClient.create(sub)
+	}
+
+	/**
+	 * Reconciles the browser's push subscription with the backend without any
+	 * user interaction, covering both divergence directions:
+	 *
+	 * - Browser HAS a subscription the backend is missing → re-register it via
+	 *   `Create` (the existing self-heal).
+	 * - Browser has NO subscription but permission is granted → auto re-subscribe
+	 *   with the VAPID key and register it, so a permission-granted user is never
+	 *   left silently unsubscribed (the exact gap behind the 2026-08 outage).
+	 *
+	 * When permission is NOT granted, returns `needs-permission` so the caller can
+	 * surface a re-enable affordance instead of silently staying OFF. Any
+	 * subscribe/register failure returns `error` (logged, never swallowed) so the
+	 * UI reflects OFF rather than a false success.
+	 *
+	 * The auto re-subscribe is gated on the state check (`getSubscription()` null
+	 * AND permission granted) so it runs once per actual loss, not on every
+	 * navigation.
+	 */
+	public async resolvePushState(userId?: string): Promise<PushRecoveryState> {
+		if (this.notificationManager.permission !== 'granted') {
+			return 'needs-permission'
+		}
+
+		try {
+			const browserSub = await this.getBrowserSubscription()
+
+			if (browserSub) {
+				// Browser has a subscription. Ensure the backend has the row too.
+				if (userId) {
+					const exists = await this.existsOnBackend(userId, browserSub.endpoint)
+					if (!exists) {
+						this.logger.info(
+							'Push subscription exists on browser but not on backend; self-healing via Create',
+						)
+						await this.createFrom(browserSub)
+					}
+				}
+				return 'enabled'
+			}
+
+			// Permission granted but the browser has no subscription (410 cleanup,
+			// PWA reinstall, site-data clear). Auto re-subscribe once per loss.
+			if (this.resubscribing) return 'enabled'
+			this.resubscribing = true
+			try {
+				this.logger.info(
+					'Permission granted but no browser subscription; auto re-subscribing',
+				)
+				const endpoint = await this.create()
+				return endpoint ? 'enabled' : 'error'
+			} finally {
+				this.resubscribing = false
+			}
+		} catch (err) {
+			this.logger.error('Failed to resolve push state', err)
+			return 'error'
+		}
 	}
 
 	/**

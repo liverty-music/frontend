@@ -288,6 +288,7 @@
 		"signOut": "Sign Out",
 		"signOutError": "Sign-out failed. Please try again.",
 		"languageChangeError": "Couldn't save the language change. Wait a moment and try again.",
+		"notificationError": "Couldn't turn on notifications. Wait a moment and try again.",
 		"analytics": {
 			"sectionTitle": "Privacy & Analytics",
 			"toggleLabel": "Analytics",

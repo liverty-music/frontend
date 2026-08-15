@@ -77,6 +77,7 @@ describe('SettingsRoute', () => {
 		createFrom: ReturnType<typeof vi.fn>
 		create: ReturnType<typeof vi.fn>
 		delete: ReturnType<typeof vi.fn>
+		resolvePushState: ReturnType<typeof vi.fn>
 	}
 	let mockEa: { publish: ReturnType<typeof vi.fn> }
 
@@ -128,6 +129,7 @@ describe('SettingsRoute', () => {
 			createFrom: vi.fn().mockResolvedValue(undefined),
 			create: vi.fn().mockResolvedValue('https://push.example.com/endpoint'),
 			delete: vi.fn().mockResolvedValue(undefined),
+			resolvePushState: vi.fn().mockResolvedValue('needs-permission'),
 		}
 		mockEa = { publish: vi.fn() }
 		mockRouter = { load: vi.fn().mockResolvedValue(undefined) }
@@ -176,63 +178,30 @@ describe('SettingsRoute', () => {
 			expect(sut.currentHome).toBeNull()
 		})
 
-		it('sets toggle OFF when permission is not granted', async () => {
-			mockNotification.permission = 'denied'
-			await sut.loading()
-			expect(sut.notificationsEnabled).toBe(false)
-			expect(mockPush.getBrowserSubscription).not.toHaveBeenCalled()
-		})
-
-		it('sets toggle OFF when browser has no subscription', async () => {
-			mockNotification.permission = 'granted'
-			mockPush.getBrowserSubscription.mockResolvedValue(null)
-			await sut.loading()
-			expect(sut.notificationsEnabled).toBe(false)
-			expect(mockPush.existsOnBackend).not.toHaveBeenCalled()
-		})
-
-		it('sets toggle ON when browser subscription exists on backend', async () => {
-			mockNotification.permission = 'granted'
-			mockPush.getBrowserSubscription.mockResolvedValue({
-				endpoint: 'https://push.example.com/endpoint',
-				p256dh: 'key',
-				auth: 'secret',
-			})
-			mockPush.existsOnBackend.mockResolvedValue(true)
+		// The push toggle state is now resolved by the push-service recovery pass
+		// (resolvePushState), which owns the browser⇄backend reconciliation matrix
+		// (covered in push-service.spec.ts). These tests assert the route maps that
+		// resolved state onto the toggle + error surfacing.
+		it('sets toggle ON when recovery resolves enabled', async () => {
+			mockPush.resolvePushState.mockResolvedValue('enabled')
 			await sut.loading()
 			expect(sut.notificationsEnabled).toBe(true)
-			expect(mockPush.existsOnBackend).toHaveBeenCalledWith(
-				'user-uuid-1',
-				'https://push.example.com/endpoint',
-			)
-			expect(mockPush.createFrom).not.toHaveBeenCalled()
+			expect(mockPush.resolvePushState).toHaveBeenCalledWith('user-uuid-1')
+			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
-		it('self-heals via createFrom when browser has subscription but backend does not', async () => {
-			mockNotification.permission = 'granted'
-			const sub = {
-				endpoint: 'https://push.example.com/endpoint',
-				p256dh: 'key',
-				auth: 'secret',
-			}
-			mockPush.getBrowserSubscription.mockResolvedValue(sub)
-			mockPush.existsOnBackend.mockResolvedValue(false)
-			await sut.loading()
-			expect(mockPush.createFrom).toHaveBeenCalledWith(sub)
-			expect(sut.notificationsEnabled).toBe(true)
-		})
-
-		it('sets toggle OFF when self-heal fails', async () => {
-			mockNotification.permission = 'granted'
-			mockPush.getBrowserSubscription.mockResolvedValue({
-				endpoint: 'https://push.example.com/endpoint',
-				p256dh: 'key',
-				auth: 'secret',
-			})
-			mockPush.existsOnBackend.mockResolvedValue(false)
-			mockPush.createFrom.mockRejectedValue(new Error('boom'))
+		it('sets toggle OFF when recovery needs permission (re-enable affordance stays)', async () => {
+			mockPush.resolvePushState.mockResolvedValue('needs-permission')
 			await sut.loading()
 			expect(sut.notificationsEnabled).toBe(false)
+			expect(mockEa.publish).not.toHaveBeenCalled()
+		})
+
+		it('sets toggle OFF and surfaces a Snack when recovery errors', async () => {
+			mockPush.resolvePushState.mockResolvedValue('error')
+			await sut.loading()
+			expect(sut.notificationsEnabled).toBe(false)
+			expect(mockEa.publish).toHaveBeenCalledTimes(1)
 		})
 	})
 
