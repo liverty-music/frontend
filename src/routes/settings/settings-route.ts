@@ -12,7 +12,6 @@ import {
 } from '../../lib/consent/consent-service'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
-import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
@@ -20,7 +19,6 @@ import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
-	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pushService = resolve(IPushService)
 	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
 	private readonly ea = resolve(IEventAggregator)
@@ -142,53 +140,26 @@ export class SettingsRoute {
 	}
 
 	/**
-	 * Derives the push notifications toggle state from (1) the browser's
-	 * `PushManager` subscription and (2) the backend's `push_subscriptions`
-	 * row. When the browser has a subscription but the backend does not —
-	 * e.g., a prior Create RPC failed silently or another device unsubscribed
-	 * globally in an older build — this method self-heals by re-registering
-	 * the existing browser subscription via the `Create` RPC.
+	 * Derives the push notifications toggle state via the push-service recovery
+	 * pass, which reconciles the browser subscription with the backend in both
+	 * directions without user interaction:
+	 *   - browser has a subscription the backend is missing → re-register it;
+	 *   - permission granted but the browser has no subscription → auto
+	 *     re-subscribe (no silent OFF for a permission-granted user);
+	 *   - permission not granted → OFF, and the enable toggle stays the
+	 *     re-enable affordance.
+	 * A subscribe/register failure reflects OFF (never a false success).
 	 */
 	private async resolveNotificationToggleState(): Promise<void> {
-		if (this.notificationManager.permission !== 'granted') {
-			this.notificationsEnabled = false
-			return
-		}
-
-		const browserSub = await this.pushService.getBrowserSubscription()
-		if (!browserSub) {
-			this.notificationsEnabled = false
-			return
-		}
-
 		const userId = this.userStore.current?.id ?? ''
-		if (!userId) {
-			this.logger.warn(
-				'Cannot resolve push toggle state without authenticated userId',
+		const state = await this.pushService.resolvePushState(userId || undefined)
+		this.notificationsEnabled = state === 'enabled'
+		if (state === 'error') {
+			// Non-silent: the recovery already logged the cause; reflect the
+			// failure to the user so a believed-ON state is not shown as success.
+			this.ea.publish(
+				new Snack(this.i18n.tr('settings.notificationError'), 'error'),
 			)
-			this.notificationsEnabled = false
-			return
-		}
-
-		try {
-			const exists = await this.pushService.existsOnBackend(
-				userId,
-				browserSub.endpoint,
-			)
-			if (exists) {
-				this.notificationsEnabled = true
-				return
-			}
-			// Self-heal: browser has subscription but backend is missing the row.
-			// Re-register using the existing material — no permission prompt needed.
-			this.logger.info(
-				'Push subscription exists on browser but not on backend; self-healing via Create',
-			)
-			await this.pushService.createFrom(browserSub)
-			this.notificationsEnabled = true
-		} catch (err) {
-			this.logger.error('Failed to resolve push notification toggle state', err)
-			this.notificationsEnabled = false
 		}
 	}
 
@@ -300,7 +271,13 @@ export class SettingsRoute {
 				this.notificationsEnabled = false
 			}
 		} catch (err) {
+			// subscribe()/Create failed. Never leave a false success: reflect OFF
+			// and surface the failure rather than swallowing it.
 			this.logger.error('Failed to toggle push notifications', err)
+			this.notificationsEnabled = false
+			this.ea.publish(
+				new Snack(this.i18n.tr('settings.notificationError'), 'error'),
+			)
 		} finally {
 			this.isToggling = false
 		}

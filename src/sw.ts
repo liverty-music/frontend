@@ -15,6 +15,7 @@ import {
 	reportNotificationInteraction,
 	resolvePushMetadata,
 } from './lib/analytics/notification-interaction'
+import { handlePushSubscriptionChange } from './lib/push/push-renewal'
 import { Events } from './services/analytics-events'
 
 // ---------------------------------------------------------------------------
@@ -194,6 +195,29 @@ self.addEventListener('notificationclick', (event) => {
 		})(),
 	)
 })
+
+// ---------------------------------------------------------------------------
+// Push subscription renewal.
+//
+// The browser rotates/expires push subscriptions and fires
+// `pushsubscriptionchange` — possibly with no client open. Renew the browser
+// subscription with the VAPID key (read cache-first from `/config.json`) so a
+// valid endpoint keeps existing; the actual backend re-registration is done by
+// an open client (or the app-open recovery path), since the SW cannot read the
+// JWT. `pushsubscriptionchange` is not in the default SW lib types, so it is
+// registered via the untyped listener and narrowed locally.
+// ---------------------------------------------------------------------------
+;(self as ServiceWorkerGlobalScope).addEventListener(
+	'pushsubscriptionchange' as keyof ServiceWorkerGlobalScopeEventMap,
+	((event: ExtendableEvent) => {
+		event.waitUntil(
+			handlePushSubscriptionChange({
+				registration: self.registration,
+				clients: self.clients,
+			}),
+		)
+	}) as EventListener,
+)
 
 self.addEventListener('notificationclose', (event) => {
 	const data = (event.notification.data ?? {}) as { notification_id?: string }

@@ -63,6 +63,7 @@ import {
 	type IAnalyticsService as IAnalyticsServiceType,
 } from './lib/analytics/analytics-service'
 import { IConsentService } from './lib/consent/consent-service'
+import { PUSH_SUBSCRIPTION_CHANGED_MESSAGE } from './lib/push/push-renewal'
 import en from './locales/en/translation.json'
 import ja from './locales/ja/translation.json'
 import { Events } from './services/analytics-events'
@@ -298,6 +299,28 @@ async function bootstrap(): Promise<void> {
 
 	// Remove the inline loading indicator now that Aurelia has rendered.
 	removeBootstrapLoadingIndicator()
+
+	// Push subscription recovery. On app open, reconcile the browser⇄backend
+	// push subscription so a permission-granted user whose subscription lapsed
+	// (410 cleanup, PWA reinstall, data clear) is auto re-subscribed instead of
+	// left silently OFF — the primary safety net for the 2026-08 silent outage.
+	// resolvePushState is permission-gated (returns immediately when permission
+	// is not `granted`), so this is cheap and never prompts. It also handles the
+	// SW `pushsubscriptionchange` signal, which the SW forwards to open clients
+	// because it cannot call the authenticated Create RPC itself.
+	{
+		const pushService = au.container.get(IPushService)
+		const userStore = au.container.get(IUserStore)
+		const recoverPush = (): void => {
+			void pushService.resolvePushState(userStore.current?.id ?? undefined)
+		}
+		recoverPush()
+		navigator.serviceWorker?.addEventListener('message', (event) => {
+			if (event.data?.type === PUSH_SUBSCRIPTION_CHANGED_MESSAGE) {
+				recoverPush()
+			}
+		})
+	}
 
 	// Test-only bridge: expose EA publish for snack-bar E2E tests.
 	// This allows Playwright to trigger real snack toasts without needing
