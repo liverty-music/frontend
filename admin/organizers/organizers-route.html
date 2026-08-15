@@ -1,0 +1,214 @@
+<main class="[ organizers ] [ flow ]">
+  <header class="organizers-header">
+    <p class="organizers-brand">Liverty Admin</p>
+    <h1 class="organizers-title">Organizers</h1>
+    <p class="organizers-subtitle">
+      Create and manage the vetted sellers that represent artists.
+    </p>
+    <a load="../welcome" class="organizers-back-link">← Back to console</a>
+  </header>
+
+  <div class="organizers-layout">
+    <!-- Left pane: create form + organizer list -->
+    <section class="[ organizers-list-pane ] [ flow ]">
+      <form
+        class="[ organizers-create ] [ flow ]"
+        submit.trigger="createOrganizer()"
+      >
+        <h2 class="organizers-section-title">Create organizer</h2>
+        <label class="organizers-field">
+          Name
+          <input
+            type="text"
+            class="organizers-input"
+            value.bind="newName"
+            placeholder="Label or promoter name"
+            disabled.bind="creating"
+            required
+          />
+        </label>
+        <label class="organizers-field">
+          Operator email
+          <input
+            type="email"
+            class="organizers-input"
+            value.bind="newOperatorEmail"
+            placeholder="owner@example.com"
+            disabled.bind="creating"
+            required
+          />
+        </label>
+        <button
+          type="submit"
+          class="organizers-btn"
+          data-variant="primary"
+          disabled.bind="creating"
+        >
+          ${creating ? 'Creating…' : 'Create organizer'}
+        </button>
+        <p if.bind="createError" class="organizers-error" role="alert">
+          ${createError}
+        </p>
+      </form>
+
+      <output
+        if.bind="phase === 'loading'"
+        class="organizers-status"
+        role="status"
+        aria-busy="true"
+      >
+        <span class="organizers-spinner"></span>
+        <span>Loading organizers…</span>
+      </output>
+
+      <section
+        if.bind="phase === 'error'"
+        class="organizers-state"
+        role="alert"
+        data-state="error"
+      >
+        <p>Could not load organizers.</p>
+        <p class="organizers-error-detail">${loadError}</p>
+        <button type="button" class="organizers-btn" click.trigger="load()">
+          Retry
+        </button>
+      </section>
+
+      <section if.bind="isEmpty" class="organizers-state" data-state="empty">
+        <p>No organizers yet. Create one to get started.</p>
+      </section>
+
+      <ul if.bind="phase === 'ready'" class="organizers-list">
+        <li repeat.for="row of organizers">
+          <button
+            type="button"
+            class="organizers-list-item"
+            data-selected.bind="isSelected(row)"
+            click.trigger="select(row)"
+          >
+            <span class="organizers-list-name">${row.name}</span>
+          </button>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Right pane: selected organizer detail + roster + associate -->
+    <section class="[ organizers-detail-pane ] [ flow ]">
+      <p if.bind="!selected" class="organizers-detail-empty">
+        Select an organizer to inspect its represented artists.
+      </p>
+
+      <div if.bind="selected" class="[ organizers-detail ] [ flow ]">
+        <div class="organizers-detail-head">
+          <h2 class="organizers-section-title">${selected.name}</h2>
+          <button
+            type="button"
+            class="organizers-btn"
+            data-variant="danger"
+            disabled.bind="deactivating"
+            click.trigger="deactivate()"
+          >
+            ${deactivating ? 'Deactivating…' : 'Deactivate'}
+          </button>
+        </div>
+        <p class="organizers-detail-id">ID: ${selected.id}</p>
+        <p if.bind="deactivateError" class="organizers-error" role="alert">
+          ${deactivateError}
+        </p>
+
+        <section class="[ organizers-roster ] [ flow ]">
+          <h3 class="organizers-subsection-title">Represented artists</h3>
+
+          <output
+            if.bind="detailPhase === 'loading'"
+            class="organizers-status"
+            role="status"
+            aria-busy="true"
+          >
+            <span class="organizers-spinner"></span>
+            <span>Loading roster…</span>
+          </output>
+
+          <p
+            if.bind="detailPhase === 'error'"
+            class="organizers-error"
+            role="alert"
+          >
+            ${detailError}
+          </p>
+
+          <p
+            if.bind="detailPhase === 'ready' && artists.length === 0"
+            class="organizers-muted"
+          >
+            This organizer represents no artists yet.
+          </p>
+
+          <ul
+            if.bind="detailPhase === 'ready' && artists.length > 0"
+            class="organizers-roster-list"
+          >
+            <li repeat.for="artist of artists" class="organizers-roster-item">
+              <span>${artist.name}</span>
+              <button
+                type="button"
+                class="organizers-btn"
+                data-variant="ghost"
+                click.trigger="disassociate(artist)"
+              >
+                Remove
+              </button>
+            </li>
+          </ul>
+        </section>
+
+        <section class="[ organizers-associate ] [ flow ]">
+          <h3 class="organizers-subsection-title">Associate an artist</h3>
+          <label class="organizers-field">
+            Search artists
+            <input
+              type="search"
+              class="organizers-input"
+              value.bind="searchQuery"
+              input.trigger="onSearchInput()"
+              placeholder="Type an artist name…"
+              aria-label="Search artists to associate"
+            />
+          </label>
+
+          <output
+            if.bind="searching"
+            class="organizers-status"
+            role="status"
+            aria-busy="true"
+          >
+            <span class="organizers-spinner"></span>
+            <span>Searching…</span>
+          </output>
+
+          <p if.bind="searchError" class="organizers-error" role="alert">
+            ${searchError}
+          </p>
+          <p if.bind="associateError" class="organizers-error" role="alert">
+            ${associateError}
+          </p>
+
+          <ul if.bind="hasSearchResults" class="organizers-results-list">
+            <li repeat.for="result of searchResults" class="organizers-result-item">
+              <span>${result.name}</span>
+              <button
+                type="button"
+                class="organizers-btn"
+                data-variant="primary"
+                disabled.bind="associatingId === result.id"
+                click.trigger="associate(result)"
+              >
+                ${associatingId === result.id ? 'Adding…' : 'Associate'}
+              </button>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </section>
+  </div>
+</main>

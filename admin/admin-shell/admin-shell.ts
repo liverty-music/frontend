@@ -33,6 +33,11 @@ import { route } from '@aurelia/router'
 			title: 'Approved Concerts',
 		},
 		{
+			path: 'organizers',
+			component: import('../organizers/organizers-route'),
+			title: 'Organizers',
+		},
+		{
 			path: 'auth/callback',
 			component: import('../auth-callback/auth-callback-route'),
 			title: 'Signing In',
