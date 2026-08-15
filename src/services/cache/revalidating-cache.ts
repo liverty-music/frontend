@@ -114,6 +114,29 @@ export class RevalidatingCache<T> {
 		this.inFlight.delete(key)
 	}
 
+	/**
+	 * Drop every cached entry and fence all in-flight fetches. Used when a change
+	 * invalidates the whole resource across all keys (e.g. a follow-set change
+	 * invalidates every date-window variant of the follower list), where a
+	 * single-key {@link invalidate} would leave sibling keys stale.
+	 */
+	public clear(): void {
+		// Bump the generation of every known key — stored, in-flight, or previously
+		// tracked — so an in-flight fetch that has not yet stored its result is still
+		// fenced (its post-settle cache write is skipped), matching single-key
+		// invalidate() semantics across the whole resource.
+		const keys = new Set<string>([
+			...this.store.keys(),
+			...this.inFlight.keys(),
+			...this.generation.keys(),
+		])
+		for (const key of keys) {
+			this.generation.set(key, (this.generation.get(key) ?? 0) + 1)
+		}
+		this.store.clear()
+		this.inFlight.clear()
+	}
+
 	/** Synchronous cached read (no fetch). Undefined when absent. */
 	public peek(key: string): T | undefined {
 		return this.store.get(key)?.value

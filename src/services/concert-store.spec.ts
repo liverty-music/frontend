@@ -116,6 +116,47 @@ describe('ConcertStore', () => {
 			const refreshed = await sut.listByFollower()
 			expect(refreshed).toEqual(second)
 		})
+
+		it('caches per `from` — a different date window issues a fresh RPC', async () => {
+			const today = { year: 2026, month: 8, day: 15 }
+			const past = { year: 2026, month: 1, day: 1 }
+			const todayGroups = makeGroups(1)
+			const pastGroups = makeGroups(2)
+			mockRpcClient.listByFollower
+				.mockResolvedValueOnce(todayGroups)
+				.mockResolvedValueOnce(pastGroups)
+
+			// First window (today) caches; a repeat read hits the cache.
+			await sut.listByFollower(today)
+			await sut.listByFollower(today)
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(1)
+
+			// A different window (past) is a distinct key → a fresh RPC.
+			const pastResult = await sut.listByFollower(past)
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			expect(pastResult).toEqual(pastGroups)
+
+			// Switching back to the first window serves its cached value (no RPC).
+			const backToToday = await sut.listByFollower(today)
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			expect(backToToday).toEqual(todayGroups)
+		})
+
+		it('invalidateFollowerCache clears every `from` window', async () => {
+			const today = { year: 2026, month: 8, day: 15 }
+			const past = { year: 2026, month: 1, day: 1 }
+			mockRpcClient.listByFollower.mockResolvedValue(makeGroups(1))
+
+			await sut.listByFollower(today)
+			await sut.listByFollower(past)
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+
+			// A follow-set change invalidates all windows, so both re-fetch.
+			sut.invalidateFollowerCache()
+			await sut.listByFollower(today)
+			await sut.listByFollower(past)
+			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(4)
+		})
 	})
 
 	describe('guest proximity — resume revalidation', () => {
@@ -209,8 +250,8 @@ describe('ConcertStore', () => {
 			const ctrlA = new AbortController()
 			const ctrlB = new AbortController()
 			await Promise.all([
-				sut.listByFollower(ctrlA.signal),
-				sut.listByFollower(ctrlB.signal),
+				sut.listByFollower(undefined, ctrlA.signal),
+				sut.listByFollower(undefined, ctrlB.signal),
 			])
 
 			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)

@@ -48,4 +48,14 @@ export class CachedResource<I, T> {
 	public invalidate(input: I): void {
 		this.cache.invalidate(this.keyOf(input))
 	}
+
+	/**
+	 * Invalidate every cached key at once. Use when a change invalidates the whole
+	 * resource regardless of input (e.g. a follow-set change invalidates all
+	 * date-window variants), where a single-key {@link invalidate} would miss
+	 * sibling keys.
+	 */
+	public clear(): void {
+		this.cache.clear()
+	}
 }
