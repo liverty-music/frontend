@@ -1,6 +1,7 @@
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockAppConfig } from '../../helpers/mock-app-config'
+import { createMockAuth } from '../../helpers/mock-auth'
 
 const mockRpc = { search: vi.fn() }
 
@@ -9,20 +10,24 @@ vi.mock('@connectrpc/connect', async (importOriginal) => {
 	return { ...actual, createClient: vi.fn().mockReturnValue(mockRpc) }
 })
 
-const mockCreateConnectTransport = vi.fn().mockReturnValue({})
-vi.mock('@connectrpc/connect-web', () => ({
-	createConnectTransport: mockCreateConnectTransport,
+// ArtistService.Search is called over the authenticated admin transport (served
+// by the admin server via api.admin). The transport has its own spec; stub it.
+const mockCreateAdminTransport = vi.fn().mockReturnValue({})
+vi.mock('../../../admin/services/admin-transport', () => ({
+	createAdminTransport: mockCreateAdminTransport,
 }))
 
 const { IAppConfig } = await import('../../../shared/config/app-config')
+const { IAuthService } = await import('../../../shared/services/auth-service')
 const { IArtistSearchClient } = await import(
 	'../../../admin/services/artist-search-client'
 )
 
-function resolveClient(apiBaseUrl = 'https://api.consumer.test') {
+function resolveClient() {
 	const container = DI.createContainer()
 	container.register(
-		Registration.instance(IAppConfig, createMockAppConfig({ apiBaseUrl })),
+		Registration.instance(IAppConfig, createMockAppConfig()),
+		Registration.instance(IAuthService, createMockAuth() as never),
 		IArtistSearchClient,
 	)
 	return container.get(IArtistSearchClient)
@@ -33,12 +38,11 @@ describe('ArtistSearchClient', () => {
 		vi.clearAllMocks()
 	})
 
-	it('targets the consumer API host (not the admin host)', () => {
-		resolveClient('https://api.consumer.test')
-		const call = mockCreateConnectTransport.mock.calls.at(-1)?.[0]
-		expect(call.baseUrl).toBe('https://api.consumer.test')
-		// Public procedure: no interceptors are attached.
-		expect(call.interceptors).toBeUndefined()
+	it('uses the authenticated admin transport (not a consumer transport)', () => {
+		resolveClient()
+		// Search rides the admin host + admin token, so no cross-origin call to
+		// the consumer API is made.
+		expect(mockCreateAdminTransport).toHaveBeenCalledTimes(1)
 	})
 
 	it('search forwards the query and returns the artists array', async () => {
