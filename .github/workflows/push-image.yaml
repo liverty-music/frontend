@@ -71,7 +71,11 @@ jobs:
       REGION: ${{ vars.REGION }}
       PROJECT_ID: ${{ vars.PROJECT_ID }}
       REPOSITORY: ${{ github.event.repository.name }}
-      IMAGE: web-app
+      # unify-workload-naming: the fan-facing web bundle is `fan-web` (successor
+      # to `web-app`). CI now builds + retags `frontend/fan-web`. The cloud-
+      # provisioning `bump-prod-pin.yml` `frontend` component + prod overlay pin
+      # were switched to `fan-web` in lockstep, so the release pin-bump resolves.
+      IMAGE: fan-web
       WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
       SERVICE_ACCOUNT: ${{ vars.SERVICE_ACCOUNT }}
 
