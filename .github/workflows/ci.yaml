@@ -171,6 +171,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # See the E2E job for rationale — cache browsers so a slow Playwright CDN
+      # can't consume the job timeout mid-download. Chromium-only key.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
@@ -206,6 +214,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Cache the downloaded browser binaries. Without this, every run
+      # re-downloads chromium + webkit; when the Playwright CDN is slow the
+      # download can consume the whole job timeout and the job is canceled
+      # mid-install. On a cache hit `playwright install` skips the download and
+      # only (re)installs the small apt --with-deps set. Key on the lockfile so
+      # a @playwright/test bump invalidates it.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-webkit-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
@@ -247,6 +267,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # See the E2E job for rationale — cache browsers so a slow Playwright CDN
+      # can't consume the job timeout mid-download. Chromium-only key.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
