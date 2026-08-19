@@ -594,7 +594,11 @@ jobs:
       REGION: ${{ vars.REGION }}
       PROJECT_ID: ${{ vars.PROJECT_ID }}
       REPOSITORY: ${{ github.event.repository.name }}
-      IMAGE: organizer-app
+      # unify-workload-naming: the organizer console bundle is `organizer-console-web`
+      # (successor to `organizer-app`). CI builds + retags
+      # `frontend/organizer-console-web`. The cloud-provisioning bump-prod-pin.yml
+      # `frontend-organizer` routing + prod overlay pin switch in lockstep.
+      IMAGE: organizer-console-web
       WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
       SERVICE_ACCOUNT: ${{ vars.SERVICE_ACCOUNT }}
 
