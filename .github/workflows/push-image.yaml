@@ -394,7 +394,11 @@ jobs:
       REGION: ${{ vars.REGION }}
       PROJECT_ID: ${{ vars.PROJECT_ID }}
       REPOSITORY: ${{ github.event.repository.name }}
-      IMAGE: admin-app
+      # unify-workload-naming: the admin console bundle is `admin-console-web`
+      # (successor to `admin-app`). CI builds + retags `frontend/admin-console-web`.
+      # The cloud-provisioning bump-prod-pin.yml `frontend-admin` routing + prod
+      # overlay pin switch to admin-console-web in lockstep.
+      IMAGE: admin-console-web
       WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
       SERVICE_ACCOUNT: ${{ vars.SERVICE_ACCOUNT }}
 
