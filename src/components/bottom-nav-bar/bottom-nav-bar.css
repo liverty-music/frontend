@@ -10,7 +10,7 @@
 
 			display: flex;
 			align-items: center;
-			justify-content: space-around;
+			justify-content: center;
 
 			block-size: 3.5rem;
 			padding-block-end: var(--_safe-area-bottom);
@@ -40,12 +40,18 @@
 			position: relative;
 
 			display: flex;
+
+			/* Grow to fill the bar on phones, but cap per-tab width so on wide
+			   viewports the four tabs form a centered ~30rem cluster instead of
+			   being flung to the screen corners. The bar background stays
+			   full-width; only the tab group is constrained. */
 			flex: 1;
 			flex-direction: column;
 			gap: var(--_tab-gap);
 			align-items: center;
 			justify-content: center;
 
+			max-inline-size: 7.5rem;
 			block-size: 100%;
 
 			transition:
