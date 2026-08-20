@@ -43,14 +43,17 @@
       <thead>
         <tr class="artists-thead-row">
           <th scope="col" class="[ visually-hidden ]" t="myArtists.table.artistCol"></th>
-          <!-- Hype tier labels are Layer B brand expressions (per brand-vocabulary spec):
-               rendered invariantly in English in every locale, not via i18n. -->
-          <th scope="col" class="hype-col-header">👀<small>Watch</small></th>
-          <th scope="col" class="hype-col-header">🔥<small>Home</small></th>
-          <th scope="col" class="hype-col-header">🔥🔥<small>Nearby</small></th>
-          <th scope="col" class="hype-col-header">🔥🔥🔥<small>Away</small></th>
-          <!-- Remove column header: visually empty; accessible name is on each button. -->
-          <th scope="col" aria-label="Remove"></th>
+          <!-- Hype tier headers hidden in edit mode; remove column takes their place. -->
+          <template if.bind="!editing">
+            <!-- Hype tier labels are Layer B brand expressions (per brand-vocabulary spec):
+                 rendered invariantly in English in every locale, not via i18n. -->
+            <th scope="col" class="hype-col-header">👀<small>Watch</small></th>
+            <th scope="col" class="hype-col-header">🔥<small>Home</small></th>
+            <th scope="col" class="hype-col-header">🔥🔥<small>Nearby</small></th>
+            <th scope="col" class="hype-col-header">🔥🔥🔥<small>Away</small></th>
+          </template>
+          <!-- Remove column header: only visible in edit mode. -->
+          <th if.bind="editing" scope="col" aria-label="Remove"></th>
         </tr>
       </thead>
       <tbody data-artist-rows>
@@ -65,34 +68,35 @@
             <span class="artist-row-name">${artist.artist.name}</span>
           </th>
 
-          <!-- Hype dot cells -->
-          <td repeat.for="level of hypeLevels" class="hype-col">
-            <label class="hype-label">
-              <input
-                type="radio"
-                class="[ visually-hidden ]"
-                name.bind="'hype-' + artist.artist.id"
-                model.bind="level"
-                change.trigger="onHypeInput(artist, level)"
-              >
-              <span
-                class="hype-dot"
-                data-active.bind="level === artist.hype"
-                data-level.bind="level"
-              ></span>
-            </label>
-          </td>
+          <!-- Hype dot cells: hidden in edit mode to avoid layout shift. -->
+          <template if.bind="!editing">
+            <td repeat.for="level of hypeLevels" class="hype-col">
+              <label class="hype-label">
+                <input
+                  type="radio"
+                  class="[ visually-hidden ]"
+                  name.bind="'hype-' + artist.artist.id"
+                  model.bind="level"
+                  change.trigger="onHypeInput(artist, level)"
+                >
+                <span
+                  class="hype-dot"
+                  data-active.bind="level === artist.hype"
+                  data-level.bind="level"
+                ></span>
+              </label>
+            </td>
+          </template>
 
-          <!-- Remove cell: button visible only in edit mode. -->
-          <td class="artist-remove-col">
+          <!-- Remove cell: replaces hype columns in edit mode. -->
+          <td if.bind="editing" class="artist-remove-col">
             <button
-              if.bind="editing"
               type="button"
               class="artist-remove-btn"
               aria-label.bind="i18n.tr('myArtists.unfollowArtist', { name: artist.artist.name })"
               click.trigger="unfollowArtist(artist)"
             >
-              <span aria-hidden="true">−</span>
+              <svg-icon name="trash" aria-hidden="true"></svg-icon>
             </button>
           </td>
         </tr>
