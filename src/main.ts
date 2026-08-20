@@ -19,7 +19,6 @@ import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-cli
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
 import { ArtistFilterBar } from './components/artist-filter-bar/artist-filter-bar'
-import { ArtistUnfollowSheet } from './components/artist-unfollow-sheet/artist-unfollow-sheet'
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
 import { CelebrationOverlay } from './components/celebration-overlay/celebration-overlay'
@@ -54,7 +53,6 @@ import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
-import { LongPressCustomAttribute } from './custom-attributes/long-press'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
@@ -253,7 +251,6 @@ async function bootstrap(): Promise<void> {
 	au.register(ITicketJourneyRpcClient)
 	au.register(IUserRpcClient)
 	au.register(IPushRpcClient)
-	au.register(ArtistUnfollowSheet)
 	au.register(ArtistFilterBar)
 	au.register(BottomNavBar)
 	au.register(BottomSheet)
@@ -274,7 +271,6 @@ async function bootstrap(): Promise<void> {
 	au.register(UserHomeSelector)
 	au.register(AuthHook)
 	au.register(ArtistColorCustomAttribute)
-	au.register(LongPressCustomAttribute)
 	au.register(BusyOnClickCustomAttribute)
 	au.register(BeamVarsCustomAttribute)
 	au.register(DotColorCustomAttribute)

@@ -4,6 +4,15 @@
      / empty / populated states. The hype-table column headers below carry
      their own labels, so duplication isn't a concern. -->
 <page-header title-key="nav.myArtists">
+  <!-- Edit toggle: visible only in the populated state (nothing to edit otherwise). -->
+  <button
+    if.bind="!isLoading && artists.length > 0"
+    type="button"
+    class="edit-toggle"
+    aria-pressed.bind="editing"
+    t.bind="editing ? 'myArtists.done' : 'myArtists.edit'"
+    click.trigger="toggleEditing()"
+  ></button>
   <page-help page="my-artists"></page-help>
 </page-header>
 
@@ -40,7 +49,8 @@
           <th scope="col" class="hype-col-header">🔥<small>Home</small></th>
           <th scope="col" class="hype-col-header">🔥🔥<small>Nearby</small></th>
           <th scope="col" class="hype-col-header">🔥🔥🔥<small>Away</small></th>
-          <th scope="col" class="[ visually-hidden ]" t="myArtists.table.unfollowCol"></th>
+          <!-- Remove column header: visually empty; accessible name is on each button. -->
+          <th scope="col" aria-label="Remove"></th>
         </tr>
       </thead>
       <tbody data-artist-rows>
@@ -48,7 +58,6 @@
           repeat.for="artist of artists; key.bind: artist.artist.id"
           class="artist-row"
           css="--_vt-name: artist-${artist.artist.id}; --_dot-color: ${artist.color}"
-          long-press.bind="() => openUnfollowSheet(artist)"
         >
           <!-- Artist name cell -->
           <th scope="row" class="artist-name-cell">
@@ -74,28 +83,22 @@
             </label>
           </td>
 
-          <!-- Unfollow cell -->
-          <td class="artist-unfollow-col">
+          <!-- Remove cell: button visible only in edit mode. -->
+          <td class="artist-remove-col">
             <button
+              if.bind="editing"
               type="button"
-              class="artist-unfollow-btn"
+              class="artist-remove-btn"
               aria-label.bind="i18n.tr('myArtists.unfollowArtist', { name: artist.artist.name })"
               click.trigger="unfollowArtist(artist)"
             >
-              <svg-icon name="trash" aria-hidden="true"></svg-icon>
+              <span aria-hidden="true">−</span>
             </button>
           </td>
         </tr>
       </tbody>
     </table>
   </fieldset>
-
-  <artist-unfollow-sheet
-    artist.bind="selectedArtistForUnfollow"
-    open.bind="unfollowSheetOpen"
-    sheet-closed.trigger="unfollowSheetOpen = false"
-    unfollow-confirmed.trigger="onUnfollowConfirmed()"
-  ></artist-unfollow-sheet>
 </main>
 
 <!-- Signup prompt banner — non-dismissable; visible whenever the user is a guest.

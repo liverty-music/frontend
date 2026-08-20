@@ -74,8 +74,7 @@
     </template>
 
     <template case="my-artists">
-      <!-- My Artists: Hype sub-section (always rendered) +
-           Unfollow sub-section (only on touch devices, per existing isPointerCoarse gate). -->
+      <!-- My Artists: Hype sub-section + Unfollow (Edit mode) sub-section. -->
       <section class="page-help-content">
         <header class="page-help-header">
           <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
@@ -120,12 +119,13 @@
         <p class="page-help-note" t="pageHelp.myArtists.tip"></p>
       </section>
 
-      <section if.bind="isPointerCoarse" class="page-help-content">
+      <!-- Unfollow section: Edit-mode guidance, shown to all users on all devices. -->
+      <section class="page-help-content">
         <header class="page-help-header">
           <svg-icon name="info" class="page-help-icon" data-size="sm"></svg-icon>
           <h3 class="help-section-title" t="pageHelp.myArtists.unfollowSectionTitle"></h3>
         </header>
-        <p class="page-help-desc" t="pageHelp.myArtists.longPressTip"></p>
+        <p class="page-help-desc" t="pageHelp.myArtists.editModeTip"></p>
       </section>
     </template>
 

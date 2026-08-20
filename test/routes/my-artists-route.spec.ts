@@ -177,7 +177,7 @@ describe('MyArtistsRoute', () => {
 		})
 	})
 
-	describe('delete button', () => {
+	describe('remove button (edit mode)', () => {
 		beforeEach(async () => {
 			await sut.loadArtists()
 		})
@@ -191,7 +191,7 @@ describe('MyArtistsRoute', () => {
 			expect(publishedSnacks[0].action?.label).toBe('myArtists.undo')
 		})
 
-		it('should not unfollow during onboarding', async () => {
+		it('should not unfollow during onboarding (onboarding block)', async () => {
 			const mockOnboarding = {
 				currentStep: 'my-artists',
 				isOnboarding: true,
@@ -212,6 +212,88 @@ describe('MyArtistsRoute', () => {
 			onboardingSut.unfollowArtist(onboardingSut.artists[0])
 
 			expect(onboardingSut.artists).toHaveLength(3)
+		})
+	})
+
+	describe('editing mode', () => {
+		beforeEach(async () => {
+			await sut.loadArtists()
+		})
+
+		it('toggleEditing enters and leaves edit mode', () => {
+			expect(sut.editing).toBe(false)
+
+			sut.toggleEditing()
+			expect(sut.editing).toBe(true)
+
+			sut.toggleEditing()
+			expect(sut.editing).toBe(false)
+		})
+
+		it('edit mode is not persisted across navigation: loading() resets to false', async () => {
+			sut.editing = true
+			await sut.loading()
+			expect(sut.editing).toBe(false)
+		})
+
+		it('auto-exits edit mode when the last artist is removed', () => {
+			sut.editing = true
+			// Remove all artists one by one
+			for (let i = sut.artists.length - 1; i >= 0; i--) {
+				sut.unfollowArtist(sut.artists[i])
+			}
+			expect(sut.artists).toHaveLength(0)
+			expect(sut.editing).toBe(false)
+		})
+
+		it('removes artist and triggers undo snack in edit mode (remove-unfollow path)', () => {
+			sut.editing = true
+			const artist = sut.artists[0]
+
+			sut.unfollowArtist(artist)
+
+			expect(sut.artists).toHaveLength(2)
+			expect(publishedSnacks).toHaveLength(1)
+		})
+
+		it('undo restores artist removed via edit mode', () => {
+			sut.editing = true
+			const artist = sut.artists[1]
+			sut.unfollowArtist(artist)
+
+			expect(sut.artists).toHaveLength(2)
+
+			publishedSnacks[0].action?.callback()
+
+			expect(sut.artists).toHaveLength(3)
+			expect(sut.artists[1].artist.name).toBe('ONE OK ROCK')
+		})
+
+		it('undo after auto-exit restores editing=true so remove buttons reappear', () => {
+			// Reproduce the bug: last artist removed → editing auto-exits → undo
+			sut.editing = true
+			// Remove down to 1 artist first
+			sut.unfollowArtist(sut.artists[2])
+			sut.unfollowArtist(sut.artists[1])
+			expect(sut.artists).toHaveLength(1)
+			expect(sut.editing).toBe(true)
+
+			// Remove the last artist — editing must auto-exit
+			sut.unfollowArtist(sut.artists[0])
+			expect(sut.artists).toHaveLength(0)
+			expect(sut.editing).toBe(false)
+
+			// Undo — editing must be restored
+			publishedSnacks[publishedSnacks.length - 1].action?.callback()
+
+			expect(sut.artists).toHaveLength(1)
+			expect(sut.editing).toBe(true)
+		})
+
+		it('detaching resets editing to false', async () => {
+			sut.editing = true
+			sut.detaching()
+			expect(sut.editing).toBe(false)
 		})
 	})
 
