@@ -86,42 +86,49 @@ describe('BottomSheet', () => {
 		})
 	})
 
-	describe('onScrollEnd()', () => {
-		it('does not dismiss when dismissable=false', () => {
-			sut.dismissable = false
-			Object.defineProperty(scrollArea, 'scrollTop', { value: 0 })
-			Object.defineProperty(scrollArea, 'scrollHeight', { value: 1000 })
-			Object.defineProperty(scrollArea, 'clientHeight', { value: 500 })
-
-			sut.onScrollEnd()
-
-			expect(dialog.close).not.toHaveBeenCalled()
+	describe('onSnapChange()', () => {
+		beforeEach(() => {
+			// Seed settled=true so the just-opened guard does not suppress signals.
+			Object.defineProperty(sut, 'settled', { value: true, writable: true })
 		})
 
-		it('dismisses when dismissable=true and scrolled to the dismiss zone', () => {
+		it('closes and emits sheet-closed when dismissable and snap target is dismiss zone', () => {
 			sut.dismissable = true
 			sut.open = true
 			dialog.open = true
-			Object.defineProperty(scrollArea, 'scrollTop', {
-				value: 0,
-				configurable: true,
-			})
-			Object.defineProperty(scrollArea, 'scrollHeight', {
-				value: 1000,
-				configurable: true,
-			})
-			Object.defineProperty(scrollArea, 'clientHeight', {
-				value: 500,
-				configurable: true,
-			})
 
-			sut.onScrollEnd()
+			sut.onSnapChange({
+				snapTargetBlock: dismissZone,
+			} as unknown as Event)
 			sut.onClose()
 
 			expect(sut.open).toBe(false)
 			expect(host.dispatchEvent).toHaveBeenCalledWith(
 				expect.objectContaining({ type: 'sheet-closed' }),
 			)
+		})
+
+		it('does not dismiss when dismissable=false', () => {
+			sut.dismissable = false
+			dialog.open = true
+
+			sut.onSnapChange({
+				snapTargetBlock: dismissZone,
+			} as unknown as Event)
+
+			expect(dialog.close).not.toHaveBeenCalled()
+		})
+
+		it('does not dismiss when not yet settled (just-opened guard)', () => {
+			sut.dismissable = true
+			dialog.open = true
+			Object.defineProperty(sut, 'settled', { value: false, writable: true })
+
+			sut.onSnapChange({
+				snapTargetBlock: dismissZone,
+			} as unknown as Event)
+
+			expect(dialog.close).not.toHaveBeenCalled()
 		})
 	})
 

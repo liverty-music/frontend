@@ -290,46 +290,51 @@
 			}
 		}
 
-		/* ── Unfollow column ── */
-		.artist-unfollow-col {
+		/* ── Edit toggle (page-header slot) ── */
+		.edit-toggle {
+			padding-inline: var(--space-xs);
+			padding-block: var(--space-2xs);
+			border-radius: var(--_radius-sm);
+
+			font-size: var(--step--1);
+			font-weight: 500;
+			color: var(--color-text-primary);
+
+			transition: color 150ms ease-out;
+
+			&:hover,
+			&:focus-visible {
+				color: var(--color-brand-primary);
+			}
+		}
+
+		/* ── Remove column (edit mode) ── */
+		.artist-remove-col {
 			padding-inline: var(--space-2xs);
 			text-align: center;
 			vertical-align: middle;
 		}
 
-		.artist-unfollow-btn {
+		.artist-remove-btn {
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
 
-			inline-size: 2rem;
-			block-size: 2rem;
+			/* 44 px minimum tap target on both pointer types (WCAG 2.5.5). */
+			min-inline-size: 44px;
+			min-block-size: 44px;
 			border-radius: var(--_radius-sm);
 
-			color: oklch(from var(--_danger) l c h / 40%);
+			font-size: var(--step-1);
+			color: var(--_danger);
 
-			transition: color 150ms ease-out;
-
-			& svg {
-				inline-size: 1rem;
-				block-size: 1rem;
-			}
+			transition:
+				color 150ms ease-out,
+				background-color 150ms ease-out;
 
 			&:hover,
 			&:focus-visible {
-				color: var(--_danger);
-			}
-		}
-
-		@media (pointer: coarse) {
-			.artist-unfollow-col {
-				display: none;
-			}
-
-			.artist-row td:last-child {
-				border-inline-end: 1px solid var(--_white-10);
-				border-start-end-radius: var(--radius-card);
-				border-end-end-radius: var(--radius-card);
+				background-color: var(--_danger-10);
 			}
 		}
 

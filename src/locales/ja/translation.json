@@ -206,23 +206,19 @@
 			"discoverButton": "アーティストを探す"
 		},
 		"table": {
-			"artistCol": "アーティスト",
-			"unfollowCol": "フォロー解除"
+			"artistCol": "アーティスト"
 		},
 		"signupBanner": {
 			"message": "フォロー情報を保存してライブ通知を受け取ろう！"
 		},
+		"edit": "編集",
+		"done": "完了",
 		"unfollowed": "{{name}}のフォローを解除しました",
 		"undo": "元に戻す",
 		"unfollow": "フォロー解除",
 		"unfollowArtist": "{{name}}のフォローを解除",
 		"failedUnfollow": "{{name}}のフォロー解除に失敗しました",
-		"failedHype": "Hypeの更新に失敗しました",
-		"unfollowSheet": {
-			"confirm": "フォロー解除",
-			"cancel": "キャンセル",
-			"sheetLabel": "フォロー解除"
-		}
+		"failedHype": "Hypeの更新に失敗しました"
 	},
 	"discovery": {
 		"coachMark": {
@@ -383,7 +379,7 @@
 			"awayDesc": "全てのライブを通知",
 			"tip": "遠征してでも見たいアーティストは Away に設定してみましょう！",
 			"unfollowSectionTitle": "フォロー解除",
-			"longPressTip": "アーティスト行を長押しするとフォロー解除の確認が表示されます。"
+			"editModeTip": "ヘッダーの「編集」をタップすると各行に削除ボタンが表示され、フォローを解除できます。"
 		}
 	},
 	"legal": {

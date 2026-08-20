@@ -18,9 +18,8 @@ export class MyArtistsRoute {
 
 	public showSignupBanner = false
 
-	// Unfollow sheet state
-	public selectedArtistForUnfollow: MyArtist | null = null
-	public unfollowSheetOpen = false
+	// Edit-mode state: toggles per-row remove controls
+	public editing = false
 
 	// Hype state tracking
 	private prevHypes = new Map<string, Hype>()
@@ -68,6 +67,8 @@ export class MyArtistsRoute {
 		// here too would let loadArtists()'s abort-first abort the just-created
 		// controller, AbortError-ing the very first load.
 		this.isLoading = true
+		// Edit mode is not persisted across navigation — always start fresh.
+		this.editing = false
 		void this.loadArtists()
 
 		// Signup banner visible for any guest user on this page (during AND after
@@ -114,23 +115,13 @@ export class MyArtistsRoute {
 		this.abortController?.abort()
 		this.abortController = null
 		this.undoHandle?.dismiss()
+		this.editing = false
 	}
 
-	// --- Long-press unfollow sheet ---
+	// --- Edit-mode toggle ---
 
-	public openUnfollowSheet(artist: MyArtist): void {
-		this.selectedArtistForUnfollow = artist
-		this.unfollowSheetOpen = true
-	}
-
-	public onUnfollowConfirmed(): void {
-		if (this.selectedArtistForUnfollow) {
-			this.unfollowArtist(this.selectedArtistForUnfollow)
-		}
-		this.selectedArtistForUnfollow = null
-		// Sheet is closed by the confirm() method inside ArtistUnfollowSheet via bottom-sheet's
-		// sheet-closed event → unfollowSheetOpen = false binding. Reset here too for symmetry.
-		this.unfollowSheetOpen = false
+	public toggleEditing(): void {
+		this.editing = !this.editing
 	}
 
 	// --- Unfollow with undo ---
@@ -152,6 +143,10 @@ export class MyArtistsRoute {
 			this.artists.splice(index, 1)
 			this.undoArtist = artist
 			this.undoIndex = index
+			// Auto-exit edit mode when the last artist is removed.
+			if (this.artists.length === 0) {
+				this.editing = false
+			}
 		}
 
 		if (document.startViewTransition) {
@@ -190,6 +185,11 @@ export class MyArtistsRoute {
 		// Re-insert at original position
 		const insertAt = Math.min(this.undoIndex, this.artists.length)
 		this.artists.splice(insertAt, 0, this.undoArtist)
+
+		// unfollowArtist() is only reachable via the edit-mode remove button, so
+		// edit mode was active when this artist was removed. Restore it so the user
+		// can continue removing without having to re-enter edit mode.
+		this.editing = true
 
 		this.logger.info('Undo unfollow', {
 			name: this.artistName(this.undoArtist),

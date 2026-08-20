@@ -206,23 +206,19 @@
 			"discoverButton": "Discover Artists"
 		},
 		"table": {
-			"artistCol": "Artist",
-			"unfollowCol": "Unfollow"
+			"artistCol": "Artist"
 		},
 		"signupBanner": {
 			"message": "Save your followed artists and get live show notifications."
 		},
+		"edit": "Edit",
+		"done": "Done",
 		"unfollowed": "{{name}} unfollowed",
 		"undo": "Undo",
 		"unfollow": "Unfollow",
 		"unfollowArtist": "Unfollow {{name}}",
 		"failedUnfollow": "Failed to unfollow {{name}}",
-		"failedHype": "Failed to update Hype",
-		"unfollowSheet": {
-			"confirm": "Unfollow",
-			"cancel": "Cancel",
-			"sheetLabel": "Unfollow artist"
-		}
+		"failedHype": "Failed to update Hype"
 	},
 	"discovery": {
 		"coachMark": {
@@ -383,7 +379,7 @@
 			"awayDesc": "Notify for every concert",
 			"tip": "Set artists you'd travel for to Away to never miss them!",
 			"unfollowSectionTitle": "Unfollowing",
-			"longPressTip": "Long-press an artist row to see the unfollow confirmation."
+			"editModeTip": "Tap Edit in the header to reveal per-row remove controls and unfollow artists."
 		}
 	},
 	"legal": {
