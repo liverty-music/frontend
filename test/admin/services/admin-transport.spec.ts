@@ -38,8 +38,8 @@ describe('admin-transport', () => {
 
 			const call = mockCreateConnectTransport.mock.calls.at(-1)?.[0]
 			expect(call.baseUrl).toBe('https://api.admin.test.local')
-			// Auth + logging only — no consumer OTEL/retry interceptors.
-			expect(call.interceptors).toHaveLength(2)
+			// logging + auth + auth-retry — no consumer OTEL/transient-retry.
+			expect(call.interceptors).toHaveLength(3)
 		})
 
 		it('falls back to apiBaseUrl when adminApiBaseUrl is absent', () => {

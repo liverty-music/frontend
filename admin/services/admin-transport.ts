@@ -3,16 +3,22 @@ import { createConnectTransport } from '@connectrpc/connect-web'
 import type { ILogger } from 'aurelia'
 import type { AppConfig } from '../../shared/config/app-config'
 import type { IAuthService } from '../../shared/services/auth-service'
+import { createAdminAuthRetryInterceptor } from './admin-auth-retry-interceptor'
 
 /**
- * Creates a Connect transport for the admin console with authentication and
- * logging interceptors.
+ * Creates a Connect transport for the admin console with authentication,
+ * token-refresh-on-401, and logging interceptors.
  *
  * Deliberately admin-local and minimal: it must NOT import the consumer's
  * `src/services/grpc-transport.ts` (bundle-isolation / import-boundary rule —
- * admin code may only cross into `shared/`). It therefore drops the consumer's
- * OTEL and retry interceptors, keeping just the two an admin reviewer needs:
- * bearer-token injection and request/response logging.
+ * admin code may only cross into `shared/`). It drops the consumer's OTEL and
+ * transient-retry interceptors, keeping the three an admin reviewer needs:
+ * bearer-token injection, silent-refresh-and-retry on `Unauthenticated`, and
+ * request/response logging. The auth-retry interceptor is required because the
+ * shared AuthService disables background silent-renew (`automaticSilentRenew:
+ * false`); without it an expired access token is resent indefinitely and every
+ * admin RPC fails with `unauthenticated: "exp" not satisfied` until a full
+ * page reload (see `admin-auth-retry-interceptor.ts`).
  *
  * Accepts `IAuthService`, `ILogger`, and `AppConfig` as parameters rather than
  * calling `resolve()` internally so it can run outside a DI resolution context
@@ -27,7 +33,7 @@ import type { IAuthService } from '../../shared/services/auth-service'
  * @param auth - Shared AuthService used to read the OIDC access token
  * @param logger - Logger scoped to the admin transport
  * @param config - Resolved runtime AppConfig providing `adminApiBaseUrl` (falls back to `apiBaseUrl`)
- * @returns A configured Connect transport with auth + logging interceptors
+ * @returns A configured Connect transport with logging, auth, and auth-retry interceptors
  */
 export const createAdminTransport = (
 	auth: IAuthService,
@@ -64,8 +70,16 @@ export const createAdminTransport = (
 		}
 	}
 
+	// Order (outer → inner): logging wraps everything; authInterceptor injects
+	// the current token; the auth-retry interceptor (innermost, closest to the
+	// call) catches Unauthenticated, silently refreshes, and retries with the
+	// fresh token. Mirrors the consumer transport's auth/retry ordering.
 	return createConnectTransport({
 		baseUrl: config.adminApiBaseUrl ?? config.apiBaseUrl,
-		interceptors: [loggingInterceptor, authInterceptor],
+		interceptors: [
+			loggingInterceptor,
+			authInterceptor,
+			createAdminAuthRetryInterceptor(auth),
+		],
 	})
 }
