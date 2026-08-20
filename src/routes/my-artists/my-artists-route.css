@@ -309,9 +309,11 @@
 		}
 
 		/* ── Remove column (edit mode) ── */
+		/* In edit mode this cell replaces all hype columns, so the row uses the
+		   same structure as normal mode — no layout shift, no height change. */
 		.artist-remove-col {
 			padding-inline: var(--space-2xs);
-			text-align: center;
+			text-align: end;
 			vertical-align: middle;
 		}
 
@@ -325,15 +327,20 @@
 			min-block-size: 44px;
 			border-radius: var(--_radius-sm);
 
-			font-size: var(--step-1);
-			color: var(--_danger);
+			color: oklch(from var(--_danger) l c h / 40%);
 
 			transition:
 				color 150ms ease-out,
 				background-color 150ms ease-out;
 
+			& svg {
+				inline-size: 1rem;
+				block-size: 1rem;
+			}
+
 			&:hover,
 			&:focus-visible {
+				color: var(--_danger);
 				background-color: var(--_danger-10);
 			}
 		}
