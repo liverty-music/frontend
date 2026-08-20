@@ -38,7 +38,8 @@
 			}
 		}
 
-		@media (height <= 640px) {
+		/* stylelint-disable-next-line media-feature-name-disallowed-list -- viewport width needed alongside height to isolate SE-class devices (375px) from wider phones; container queries cannot combine with @media height */
+		@media (height <= 700px) and (width < 390px) {
 			header {
 				padding-block: var(--space-2xs);
 			}

@@ -428,7 +428,8 @@
 			display: none;
 		}
 
-		@media (height <= 640px) {
+		/* stylelint-disable-next-line media-feature-name-disallowed-list -- viewport width needed alongside height to isolate SE-class devices (375px) from wider phones; container queries cannot combine with @media height */
+		@media (height <= 700px) and (width < 390px) {
 			.search-bar {
 				margin-block-start: var(--space-3xs);
 				padding-block: var(--space-3xs);
