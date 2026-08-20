@@ -292,8 +292,8 @@
 
 		/* ── Edit toggle (page-header slot) ── */
 		.edit-toggle {
-			padding-inline: var(--space-xs);
 			padding-block: var(--space-2xs);
+			padding-inline: var(--space-xs);
 			border-radius: var(--_radius-sm);
 
 			font-size: var(--step--1);
@@ -309,6 +309,7 @@
 		}
 
 		/* ── Remove column (edit mode) ── */
+
 		/* In edit mode this cell replaces all hype columns, so the row uses the
 		   same structure as normal mode — no layout shift, no height change. */
 		.artist-remove-col {
