@@ -15,6 +15,15 @@ export class BottomSheet {
 	// close driven by the parent toggling `open` (which already knows).
 	private userDismiss = false
 
+	// True once the CSS `initial-snap` animation completes and the sheet has
+	// settled on .sheet-body. Suppresses dismiss signals during the open
+	// transition so a programmatic re-snap cannot auto-close the sheet.
+	private settled = false
+
+	// IntersectionObserver used as the dismiss fallback on engines that do not
+	// support scrollsnapchange (e.g. Firefox). Null when not armed.
+	private io: IntersectionObserver | null = null
+
 	public openChanged(isOpen: boolean): void {
 		if (isOpen) {
 			this.showDialog()
@@ -40,7 +49,10 @@ export class BottomSheet {
 		// Programmatic teardown — do not emit `sheet-closed`.
 		if (this.scrollArea) {
 			this.scrollArea.style.pointerEvents = ''
+			this.scrollArea.removeEventListener('animationend', this.onAnimationEnd)
 		}
+		this.io?.disconnect()
+		this.io = null
 		this.closeDialog()
 	}
 
@@ -61,7 +73,16 @@ export class BottomSheet {
 	public onClose(): void {
 		const dismissed = this.userDismiss
 		this.userDismiss = false
-		if (this.scrollArea) this.scrollArea.style.pointerEvents = ''
+		this.settled = false
+		this.io?.disconnect()
+		this.io = null
+		if (this.scrollArea) {
+			// Remove the animationend listener in case the dialog closed before the
+			// initial-snap animation fired — prevents a stale post-close arm of the
+			// IntersectionObserver (see armIntersectionObserver).
+			this.scrollArea.removeEventListener('animationend', this.onAnimationEnd)
+			this.scrollArea.style.pointerEvents = ''
+		}
 		if (this.open) {
 			this.open = false
 		}
@@ -77,16 +98,18 @@ export class BottomSheet {
 	}
 
 	/**
-	 * Responsive swipe dismiss: the snapped target changing to the dismiss
-	 * zone fires before the full scroll settle, so close immediately rather
-	 * than waiting on the UA-controlled `scrollend`. `onScrollEnd` remains the
-	 * fallback where `scrollsnapchange` is unsupported.
+	 * Primary swipe-dismiss signal. `scrollsnapchange` fires only for a user
+	 * scroll gesture (per the CSS Scroll Snap module) — not for programmatic or
+	 * initial-layout re-snaps — so the iOS/WebKit "flash then close" defect
+	 * (where the `initial-snap` animation's re-snap to the dismiss zone was
+	 * misread as a user swipe) cannot occur. Supported in Chrome 129+ and
+	 * Safari 18.2+; `IntersectionObserver` fallback handles Firefox.
 	 *
-	 * Locking pointer-events on the scroll area prevents a quick upward swipe
-	 * from re-snapping to the sheet body after dismiss-zone detection.
+	 * Locking pointer-events prevents a quick upward swipe from re-snapping to
+	 * the sheet body after the dismiss-zone snap is detected.
 	 */
 	public onSnapChange(e: Event): void {
-		if (!this.dismissable) return
+		if (!this.dismissable || !this.settled) return
 		const snapTarget = (e as Event & { snapTargetBlock?: Element | null })
 			.snapTargetBlock
 		if (snapTarget && snapTarget === this.dismissZone) {
@@ -95,41 +118,15 @@ export class BottomSheet {
 		}
 	}
 
-	/**
-	 * Early close on pointer-up: if the scroll position is already within
-	 * the dismiss-zone threshold (< 25% of max scroll), close immediately
-	 * without waiting for scrollend or scrollsnapchange. Provides consistent
-	 * dismiss behaviour on browsers that lack scrollsnapchange (e.g. Safari).
-	 */
-	public onPointerUp(): void {
-		if (!this.dismissable || !this.scrollArea) return
-		const { scrollTop, scrollHeight, clientHeight } = this.scrollArea
-		const maxScroll = scrollHeight - clientHeight
-		if (maxScroll > 0 && scrollTop / maxScroll < 0.25) {
-			this.scrollArea.style.pointerEvents = 'none'
-			this.requestClose()
-		}
-	}
-
-	/** Fallback swipe detection: close once the scroll settles in the dismiss zone. */
-	public onScrollEnd(): void {
-		if (!this.dismissable) return
-
-		const { scrollTop, scrollHeight, clientHeight } = this.scrollArea
-		const maxScroll = scrollHeight - clientHeight
-		const scrollRatio = maxScroll > 0 ? scrollTop / maxScroll : 1
-
-		// Swiped down to the dismiss zone (top) → close.
-		if (scrollRatio < 0.1) {
-			this.requestClose()
-		}
-	}
-
 	/** Open as a modal: native focus-trap, inert background, ESC / Android back close request. */
 	private showDialog(): void {
 		try {
 			if (!this.dialogEl.open) {
+				this.settled = false
 				this.dialogEl.showModal()
+				// Arm the settle guard: release once the CSS `initial-snap` animation
+				// completes and the scroll position has landed on .sheet-body.
+				this.scrollArea.addEventListener('animationend', this.onAnimationEnd)
 			}
 		} catch {
 			// Pre-attach: <dialog> ref not yet resolved. attached() retries.
@@ -168,5 +165,41 @@ export class BottomSheet {
 		if (label) {
 			this.dialogEl.setAttribute('aria-label', label)
 		}
+	}
+
+	// Fires when the CSS `initial-snap` animation on .scroll-area ends, meaning
+	// the sheet has settled on .sheet-body and the dismiss guard can be released.
+	private readonly onAnimationEnd = (e: AnimationEvent): void => {
+		if (e.animationName !== 'initial-snap') return
+		this.scrollArea.removeEventListener('animationend', this.onAnimationEnd)
+		this.settled = true
+		this.armIntersectionObserver()
+	}
+
+	// Fallback dismiss detection for engines without scrollsnapchange (Firefox).
+	// Observes the dismiss zone within the scroll container; when it enters the
+	// visible scroll area the user has swiped toward it → close the sheet.
+	// Only armed after the just-opened guard releases (settled = true).
+	private armIntersectionObserver(): void {
+		if (!this.dismissable) return
+		// Primary signal (scrollsnapchange) is available — no fallback needed.
+		// Cast to Record to avoid TypeScript complaining about a non-standard property.
+		if ('onscrollsnapchange' in (this.scrollArea as Record<string, unknown>))
+			return
+
+		this.io = new IntersectionObserver(
+			(entries) => {
+				if (!this.dismissable || !this.settled) return
+				for (const entry of entries) {
+					if (entry.isIntersecting) {
+						if (this.scrollArea) this.scrollArea.style.pointerEvents = 'none'
+						this.requestClose()
+						break
+					}
+				}
+			},
+			{ root: this.scrollArea, threshold: 0 },
+		)
+		this.io.observe(this.dismissZone)
 	}
 }

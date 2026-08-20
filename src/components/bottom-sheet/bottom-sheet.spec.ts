@@ -177,51 +177,56 @@ describe('BottomSheet', () => {
 		})
 	})
 
-	describe('swipe dismiss', () => {
-		const scrolledToTop = {
-			scrollTop: 0,
-			scrollHeight: 1000,
-			clientHeight: 500,
-		}
+	describe('swipe dismiss (scrollsnapchange)', () => {
+		let dismissZone: HTMLElement
 
-		it('closes when scrolled to the dismiss zone and dismissable', () => {
-			sut.open = true
-			sut.dismissable = true
-			dialog.open = true
-			Object.defineProperty(sut, 'scrollArea', {
-				value: scrolledToTop,
-				writable: true,
-			})
-
-			sut.onScrollEnd()
-
-			expect(dialog.close).toHaveBeenCalledOnce()
-		})
-
-		it('does not close when not dismissable', () => {
-			sut.dismissable = false
-			Object.defineProperty(sut, 'scrollArea', {
-				value: scrolledToTop,
-				writable: true,
-			})
-
-			sut.onScrollEnd()
-
-			expect(dialog.close).not.toHaveBeenCalled()
-		})
-
-		it('closes on snap-change to the dismiss zone', () => {
-			const dismissZone = {} as HTMLElement
+		beforeEach(() => {
+			dismissZone = {} as HTMLElement
 			Object.defineProperty(sut, 'dismissZone', {
 				value: dismissZone,
 				writable: true,
 			})
+			// Seed settled=true so the guard does not suppress dismiss signals.
+			Object.defineProperty(sut, 'settled', { value: true, writable: true })
+		})
+
+		it('closes on snap-change to the dismiss zone when dismissable and settled', () => {
 			dialog.open = true
 			sut.dismissable = true
 
 			sut.onSnapChange({ snapTargetBlock: dismissZone } as unknown as Event)
 
 			expect(dialog.close).toHaveBeenCalledOnce()
+		})
+
+		it('does not close when not dismissable', () => {
+			dialog.open = true
+			sut.dismissable = false
+
+			sut.onSnapChange({ snapTargetBlock: dismissZone } as unknown as Event)
+
+			expect(dialog.close).not.toHaveBeenCalled()
+		})
+
+		it('does not close before the sheet has settled (just-opened guard)', () => {
+			dialog.open = true
+			sut.dismissable = true
+			// Override: settled=false simulates the guard being active during open transition.
+			Object.defineProperty(sut, 'settled', { value: false, writable: true })
+
+			sut.onSnapChange({ snapTargetBlock: dismissZone } as unknown as Event)
+
+			expect(dialog.close).not.toHaveBeenCalled()
+		})
+
+		it('does not close when snap target is not the dismiss zone', () => {
+			dialog.open = true
+			sut.dismissable = true
+			const otherEl = {} as HTMLElement
+
+			sut.onSnapChange({ snapTargetBlock: otherEl } as unknown as Event)
+
+			expect(dialog.close).not.toHaveBeenCalled()
 		})
 	})
 
