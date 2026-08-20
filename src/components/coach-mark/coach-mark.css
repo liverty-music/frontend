@@ -84,7 +84,7 @@
 		flex-direction: column;
 		align-items: start;
 
-		max-inline-size: 320px;
+		max-inline-size: min(320px, calc(100dvi - 2 * var(--space-s)));
 		margin-block: var(--space-s) 0;
 		padding: var(--space-s);
 

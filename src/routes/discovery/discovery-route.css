@@ -427,5 +427,12 @@
 		.discovery-layout:not([data-search-mode="true"]) .search-results {
 			display: none;
 		}
+
+		@media (height <= 640px) {
+			.search-bar {
+				margin-block-start: var(--space-3xs);
+				padding-block: var(--space-3xs);
+			}
+		}
 	}
 }

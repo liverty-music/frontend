@@ -646,7 +646,7 @@ export class OrbRenderer {
 
 	public setFollowCount(count: number): void {
 		this.baseIntensity = count > 0 ? 1 - 1 / (1 + count * 0.5) : 0
-		this.stageParams = getStageParams(count)
+		this.stageParams = getStageParams(count, this.canvasWidth)
 		for (const p of this.particles) {
 			p.trail = []
 		}

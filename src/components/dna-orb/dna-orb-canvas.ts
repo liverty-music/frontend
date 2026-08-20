@@ -78,6 +78,8 @@ export class DnaOrbCanvas {
 	// Set in `detaching` so a still-pending `initWhenSized` bails after the wait.
 	private detached = false
 
+	private displayLimit = 50
+
 	private focusedBubbleIndex = -1
 	private isProcessing = false
 
@@ -130,7 +132,7 @@ export class DnaOrbCanvas {
 			return
 		}
 		const params = newVal.map((a) => toBubbleParams(a))
-		this.physics.addBubbles(params)
+		this.physics.addBubbles(params.slice(0, this.displayLimit))
 	}
 
 	public async attached(): Promise<void> {
@@ -160,7 +162,10 @@ export class DnaOrbCanvas {
 		// Wait for a real layout size before initializing + the first paint.
 		await this.initWhenSized()
 		if (this.detached) return // detached while waiting for layout
-		this.physics.addBubbles(this.artists.map((a) => toBubbleParams(a)))
+		const displayLimit = Math.min(this.artists.length, this.displayLimit)
+		this.physics.addBubbles(
+			this.artists.slice(0, displayLimit).map((a) => toBubbleParams(a)),
+		)
 
 		this.lastTime = performance.now()
 		this.animFrameId = requestAnimationFrame(this.loop)
@@ -307,6 +312,8 @@ export class DnaOrbCanvas {
 		const dpr = window.devicePixelRatio || 1
 		const rect = this.element.getBoundingClientRect()
 		if (!rect || rect.width === 0 || rect.height === 0) return
+
+		this.displayLimit = rect.width < 390 ? 30 : 50
 
 		this.canvas.width = rect.width * dpr
 		this.canvas.height = rect.height * dpr
