@@ -234,15 +234,27 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 	test('unfollow shows undo toast with action button', async ({ page }) => {
 		test.setTimeout(30_000)
 
-		// Click the unfollow (trash) button on the first artist row.
+		// Unfollow is now reached via Edit mode: tap the Edit toggle first,
+		// then tap the per-row remove (-) button.
 		// page-help's .dismiss-zone may intercept real pointer events,
-		// so dispatch the click via JS to bypass interception.
+		// so dispatch clicks via JS to bypass interception.
 		const firstRow = page.locator('.artist-row').first()
 		await expect(firstRow).toBeVisible()
 
+		// Enter edit mode.
 		await page.evaluate(() => {
-			const btn = document.querySelector<HTMLElement>('.artist-unfollow-btn')
-			if (!btn) throw new Error('.artist-unfollow-btn not found')
+			const btn = document.querySelector<HTMLElement>('.edit-toggle')
+			if (!btn) throw new Error('.edit-toggle not found')
+			btn.click()
+		})
+
+		// Wait for Aurelia to render the per-row remove buttons.
+		await expect(page.locator('.artist-remove-btn').first()).toBeVisible()
+
+		// Click the remove button on the first artist row.
+		await page.evaluate(() => {
+			const btn = document.querySelector<HTMLElement>('.artist-remove-btn')
+			if (!btn) throw new Error('.artist-remove-btn not found')
 			btn.click()
 		})
 

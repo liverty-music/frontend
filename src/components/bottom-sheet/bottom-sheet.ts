@@ -183,8 +183,12 @@ export class BottomSheet {
 	private armIntersectionObserver(): void {
 		if (!this.dismissable) return
 		// Primary signal (scrollsnapchange) is available — no fallback needed.
-		// Cast to Record to avoid TypeScript complaining about a non-standard property.
-		if ('onscrollsnapchange' in (this.scrollArea as Record<string, unknown>))
+		// Double-cast via unknown: HTMLElement doesn't declare onscrollsnapchange
+		// (non-standard property) so the direct cast to Record would be rejected.
+		if (
+			'onscrollsnapchange' in
+			(this.scrollArea as unknown as Record<string, unknown>)
+		)
 			return
 
 		this.io = new IntersectionObserver(
