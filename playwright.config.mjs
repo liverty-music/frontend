@@ -59,9 +59,35 @@ export default defineConfig({
         'e2e/functional/dashboard-lane-classification.spec.ts',
         'e2e/functional/toast-notification.spec.ts',
         'e2e/functional/artist-image-ui.spec.ts',
+        // Covered by webkit-repro / chromium-control projects (engine-specific)
+        'e2e/functional/page-help-sheet-webkit.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:9000',
+      },
+    },
+    // WebKit regression guard: real WebKit engine, iPhone 14 viewport.
+    // RED before the bottom-sheet dismiss fix, GREEN after.
+    // Requires the WebKit browser to be installed:
+    //   npx @playwright/mcp install-browser chrome-for-testing  (or `npx playwright install webkit`)
+    {
+      name: 'webkit-repro',
+      testMatch: 'e2e/functional/page-help-sheet-webkit.spec.ts',
+      use: {
+        ...devices['iPhone 14'],
+        browserName: 'webkit',
+        baseURL: 'http://localhost:9000',
+      },
+    },
+    // Chromium control for the WebKit regression guard: same viewport, Chromium engine.
+    // Must stay GREEN before and after the fix (proves the fix doesn't break Chromium).
+    {
+      name: 'chromium-control',
+      testMatch: 'e2e/functional/page-help-sheet-webkit.spec.ts',
+      use: {
+        ...devices['iPhone 14'],
+        browserName: 'chromium',
         baseURL: 'http://localhost:9000',
       },
     },
