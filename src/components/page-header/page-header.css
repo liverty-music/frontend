@@ -37,5 +37,11 @@
 				}
 			}
 		}
+
+		@media (height <= 700px) {
+			header {
+				padding-block: var(--space-2xs);
+			}
+		}
 	}
 }

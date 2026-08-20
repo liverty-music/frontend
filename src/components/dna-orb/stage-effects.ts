@@ -32,9 +32,17 @@ const MAX_ORBITALS = 12
 const MAX_LIGHT_RAYS = 14
 const FULL_SHOW = 5
 
-export function getStageParams(followCount: number): StageParams {
+export function getStageParams(
+	followCount: number,
+	canvasWidth = 9999,
+): StageParams {
 	const level = followCount
 	const fc = followCount
+
+	const effectiveMaxRadius = Math.min(
+		MAX_RADIUS,
+		canvasWidth < 390 ? 70 : MAX_RADIUS,
+	)
 
 	// Orb radius: linear for 0-4, logarithmic tail for 5+
 	let orbRadius: number
@@ -44,7 +52,7 @@ export function getStageParams(followCount: number): StageParams {
 		const linearMax = BASE_RADIUS + LINEAR_STEPS * GROWTH_PER_FOLLOW
 		orbRadius = linearMax + Math.log2(fc - LINEAR_STEPS + 1) * 8
 	}
-	orbRadius = Math.min(MAX_RADIUS, orbRadius)
+	orbRadius = Math.min(effectiveMaxRadius, orbRadius)
 
 	// Breathing pulse
 	const breathAmplitude = fc > 0 ? Math.min(0.05, 0.01 + fc * 0.01) : 0
