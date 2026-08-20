@@ -38,7 +38,7 @@
 			}
 		}
 
-		@media (height <= 700px) {
+		@media (height <= 640px) {
 			header {
 				padding-block: var(--space-2xs);
 			}
