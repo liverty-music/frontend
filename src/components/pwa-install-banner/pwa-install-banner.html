@@ -1,0 +1,86 @@
+<import from="./pwa-install-banner.css"></import>
+<import from="../bottom-sheet/bottom-sheet"></import>
+
+<!--
+  if.bind (not show.bind): the banner holds two interactive controls (CTA +
+  close). Removing it from the DOM when hidden keeps both out of the tab order
+  automatically, avoiding per-child aria-hidden/tabindex management (D2).
+-->
+<aside
+  if.bind="isVisible"
+  t="[aria-label]pwaInstallBanner.ariaLabel"
+  class="[ pwa-banner ]"
+>
+  <p class="pwa-banner-label" t="pwaInstallBanner.label"></p>
+
+  <!-- One CTA, two modes: native one-tap install, or open the guide sheet. -->
+  <button
+    type="button"
+    class="pwa-banner-cta"
+    busy-on-click.bind="() => onCta()"
+    t="pwaInstallBanner.cta"
+    data-testid="pwa-install-banner-cta"
+  ></button>
+
+  <button
+    type="button"
+    class="pwa-banner-close"
+    click.trigger="dismiss()"
+    t="[aria-label]pwaInstallBanner.close"
+    data-testid="pwa-install-banner-close"
+  >
+    <svg class="pwa-banner-close-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+    </svg>
+  </button>
+
+  <!-- Guide sheet: manual install steps for iOS Safari / no deferred prompt. -->
+  <bottom-sheet
+    open.bind="isGuideSheetOpen"
+    t="[aria-label]pwaInstallBanner.guideTitle"
+    sheet-closed.trigger="isGuideSheetOpen = false"
+  >
+    <section class="pwa-banner-sheet" aria-labelledby="pwa-banner-sheet-title">
+      <h2 id="pwa-banner-sheet-title" class="pwa-banner-sheet-title" t="pwaInstallBanner.guideTitle"></h2>
+
+      <ol if.bind="isIos" class="pwa-banner-sheet-steps">
+        <li class="pwa-banner-sheet-step">
+          <span class="pwa-banner-step-num" aria-hidden="true">1</span>
+          <span t="pwaInstallBanner.iosStep1"></span>
+        </li>
+        <li class="pwa-banner-sheet-step">
+          <span class="pwa-banner-step-num" aria-hidden="true">2</span>
+          <span t="pwaInstallBanner.iosStep2"></span>
+        </li>
+        <li class="pwa-banner-sheet-step">
+          <span class="pwa-banner-step-num" aria-hidden="true">3</span>
+          <span t="pwaInstallBanner.iosStep3"></span>
+        </li>
+      </ol>
+
+      <ol else class="pwa-banner-sheet-steps">
+        <li class="pwa-banner-sheet-step">
+          <span class="pwa-banner-step-num" aria-hidden="true">1</span>
+          <span t="pwaInstallBanner.chromeStep1"></span>
+        </li>
+        <li class="pwa-banner-sheet-step">
+          <span class="pwa-banner-step-num" aria-hidden="true">2</span>
+          <span t="pwaInstallBanner.chromeStep2"></span>
+        </li>
+        <li class="pwa-banner-sheet-step">
+          <span class="pwa-banner-step-num" aria-hidden="true">3</span>
+          <span t="pwaInstallBanner.chromeStep3"></span>
+        </li>
+      </ol>
+
+      <button
+        type="button"
+        class="pwa-banner-sheet-confirm"
+        click.trigger="onConfirmInstalled()"
+        t="pwaInstallBanner.guideConfirm"
+        data-testid="pwa-install-banner-confirm"
+      ></button>
+    </section>
+  </bottom-sheet>
+</aside>

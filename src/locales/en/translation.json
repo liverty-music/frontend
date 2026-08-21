@@ -190,14 +190,19 @@
 		"updateAvailable": "A new version is available",
 		"updateAction": "Update"
 	},
-	"pwaFab": {
-		"ariaLabel": "Add to home screen",
-		"sheetAriaLabel": "How to add to home screen",
-		"sheetTitle": "Add to Home Screen",
-		"step1": "Tap the Share button (□↑) at the bottom of Safari",
-		"step2": "Select \"Add to Home Screen\"",
-		"step3": "Tap \"Add\" to finish",
-		"close": "Close"
+	"pwaInstallBanner": {
+		"ariaLabel": "Install the app",
+		"label": "📲 Add to your home screen for concert alerts",
+		"cta": "Install",
+		"close": "Close",
+		"guideTitle": "Add to Home Screen",
+		"guideConfirm": "I've added it",
+		"iosStep1": "Tap the Share button (□↑) in Safari",
+		"iosStep2": "Select \"Add to Home Screen\"",
+		"iosStep3": "Tap \"Add\" to finish",
+		"chromeStep1": "Tap the browser menu (⋮)",
+		"chromeStep2": "Select \"Add to Home Screen\"",
+		"chromeStep3": "Tap \"Add\" to finish"
 	},
 	"myArtists": {
 		"empty": {
