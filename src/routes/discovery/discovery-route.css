@@ -322,6 +322,8 @@
 			grid-area: bubbles;
 
 			min-block-size: 0;
+
+			mask-image: linear-gradient(to bottom, transparent, black var(--space-m));
 		}
 
 		.search-results {
