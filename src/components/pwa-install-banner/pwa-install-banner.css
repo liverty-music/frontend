@@ -13,9 +13,8 @@
 		.pwa-banner {
 			position: relative;
 
-			/* Close is absolute (top-right corner), so only 3 grid columns needed. */
-			display: grid;
-			grid-template-columns: auto 1fr auto;
+			/* Flex left-packs icon → label → Install; close floats absolute right. */
+			display: flex;
 			gap: var(--space-xs);
 			align-items: center;
 
@@ -65,10 +64,10 @@
 			}
 		}
 
-		/* Span bottom-sheet across all columns; its <dialog> uses top-layer. */
+		/* Collapse bottom-sheet: its <dialog> uses top-layer regardless. */
 		bottom-sheet {
 			overflow: visible;
-			grid-column: 1 / -1;
+			flex-shrink: 0;
 			block-size: 0;
 		}
 
@@ -85,7 +84,11 @@
 		}
 
 		.pwa-banner-label {
+			/* Shrinks to content; truncates only when the banner is truly narrow. */
 			overflow: hidden;
+			flex-shrink: 1;
+
+			min-inline-size: 0;
 
 			font-size: var(--step--1);
 			font-weight: 500;
