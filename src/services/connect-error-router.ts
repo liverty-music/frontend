@@ -1,15 +1,16 @@
 import { Code, ConnectError, type Interceptor } from '@connectrpc/connect'
-import type { User } from 'oidc-client-ts'
+import { currentInAppLocation } from '../../shared/utils/return-to'
 import type { IAuthService } from './auth-service'
 
-let refreshPromise: Promise<User | null> | null = null
-
 /**
- * Creates a Connect interceptor that handles Unauthenticated errors
- * by attempting a silent token refresh and retrying the original request.
- * If the refresh fails and the user was previously authenticated, they are
- * redirected to the landing page. Guest/onboarding users are never redirected
- * because they have no session to recover.
+ * Creates a Connect interceptor that handles Unauthenticated errors by
+ * attempting a silent token refresh (via the shared single-flight
+ * {@link IAuthService.ensureFreshToken}) and retrying the original request
+ * once. If the refresh fails and the user was previously authenticated, the
+ * session is cleared gracefully (publishing `SignedOut` + preserving the
+ * return-to location) and the user is sent to the landing page to
+ * re-authenticate. Guest/onboarding users are never redirected because they
+ * have no session to recover — their error propagates for local handling.
  */
 export const createAuthRetryInterceptor = (auth: IAuthService): Interceptor => {
 	return (next) => async (req) => {
@@ -19,31 +20,37 @@ export const createAuthRetryInterceptor = (auth: IAuthService): Interceptor => {
 			if (!(err instanceof ConnectError)) throw err
 			if (err.code !== Code.Unauthenticated) throw err
 
-			// If the user was never authenticated (guest/onboarding mode),
-			// skip silent refresh and redirect — just propagate the error
-			// so the caller can handle it gracefully.
+			// Guest/onboarding caller has no session to recover — propagate.
 			if (!auth.user) {
 				throw err
 			}
 
-			if (refreshPromise === null) {
-				refreshPromise = auth
-					.getUserManager()
-					.signinSilent()
-					.catch(() => null)
-					.finally(() => {
-						refreshPromise = null
-					})
-			}
-			const user = await refreshPromise
-
+			// Single-flight refresh shared with boot restore, resume, and any
+			// concurrent 401s. Retry the original request ONCE with the new token.
+			const user = await auth.ensureFreshToken()
 			if (user?.access_token) {
 				req.header.set('Authorization', `Bearer ${user.access_token}`)
-				return await next(req)
+				try {
+					return await next(req)
+				} catch (retryErr) {
+					// The retry is bounded to once. A non-auth failure is a genuine
+					// downstream error — propagate it. A retried-still-Unauthenticated
+					// (e.g. clock skew, immediate re-expiry) falls through to the
+					// unrecoverable path rather than looping.
+					if (
+						!(retryErr instanceof ConnectError) ||
+						retryErr.code !== Code.Unauthenticated
+					) {
+						throw retryErr
+					}
+				}
 			}
 
-			// Clear auth state and redirect to landing page
-			await auth.getUserManager().removeUser()
+			// Unrecoverable (refresh token expired/invalid, or the retry still
+			// returned Unauthenticated): clear the session the same way a voluntary
+			// sign-out does (publish SignedOut so stores self-clear), preserve
+			// return-to, and send the user to re-authenticate.
+			await auth.prepareForcedReauth(currentInAppLocation())
 			window.location.href = '/welcome'
 			throw err
 		}
