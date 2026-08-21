@@ -13,13 +13,16 @@
 		.pwa-banner {
 			position: relative;
 
+			/* Close is absolute (top-right corner), so only 3 grid columns needed. */
 			display: grid;
-			grid-template-columns: auto 1fr auto auto;
+			grid-template-columns: auto 1fr auto;
 			gap: var(--space-xs);
 			align-items: center;
 
 			padding-block: var(--space-xs);
-			padding-inline-start: var(--space-s);
+
+			/* End padding reserves space for the absolute-positioned close button. */
+			padding-inline: var(--space-s) 2.75rem;
 
 			background:
 				linear-gradient(
@@ -100,7 +103,7 @@
 			flex-shrink: 0;
 
 			padding-block: var(--space-3xs);
-			padding-inline: var(--space-m);
+			padding-inline: var(--space-s);
 			border: none;
 			border-radius: var(--radius-full);
 
@@ -132,17 +135,18 @@
 		.pwa-banner-close {
 			cursor: pointer;
 
-			/* In-flow within the grid — no absolute positioning */
-			position: static;
+			/* Absolute — top-right corner so it doesn't consume grid space. */
+			position: absolute;
+			inset-block-start: 0;
+			inset-inline-end: 0;
 
 			display: flex;
-			flex-shrink: 0;
 			align-items: center;
 			justify-content: center;
 
-			/* 44px touch target */
+			/* 44px minimum touch target. */
 			inline-size: 2.75rem;
-			block-size: 2.75rem;
+			block-size: 100%;
 			padding: 0;
 			border: none;
 
