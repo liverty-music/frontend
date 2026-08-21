@@ -43,7 +43,7 @@ const MAX_PALETTE = 20
 const MAX_LIGHT_RAYS = 16
 
 // Gap (px) between the orb bottom and the canvas floor on narrow canvases.
-const ORB_BOTTOM_GAP = 20
+const ORB_BOTTOM_GAP = 12
 
 export class OrbRenderer {
 	private particles: OrbParticle[] = []
