@@ -6,6 +6,7 @@ import type {
 } from '@aurelia/router'
 import { type ILifecycleHooks, ILogger, lifecycleHooks, resolve } from 'aurelia'
 import { IAuthService } from '../../shared/services/auth-service'
+import { ILoginHint } from '../services/login-hint'
 import { hasOwnerRole } from './roles'
 
 /**
@@ -31,6 +32,7 @@ export class OrganizerAuthHook
 	implements ILifecycleHooks<IRouteViewModel, 'canLoad'>
 {
 	private readonly authService = resolve(IAuthService)
+	private readonly loginHint = resolve(ILoginHint)
 	private readonly logger = resolve(ILogger).scopeTo('OrganizerAuthHook')
 
 	async canLoad(
@@ -50,8 +52,12 @@ export class OrganizerAuthHook
 		if (!this.authService.isAuthenticated) {
 			// Not signed in — start the OIDC redirect and abort the in-app nav. The
 			// browser navigates away to Zitadel, so no organizer content renders.
+			// Pass login_hint when present (invitation link, first sign-in) so
+			// Zitadel pre-fills the operator's email address (design D5).
 			this.logger.info('Unauthenticated organizer access; starting sign-in')
-			await this.authService.signIn()
+			await this.authService.signIn(
+				this.loginHint ? { loginHint: this.loginHint } : undefined,
+			)
 			return false
 		}
 
