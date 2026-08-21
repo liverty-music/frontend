@@ -13,8 +13,10 @@
 		.pwa-banner {
 			position: relative;
 
-			/* Flex left-packs icon → label → Install; close floats absolute right. */
-			display: flex;
+			/* Label takes 1fr so Install sits at the right edge.
+			   Close is absolute in the top-right corner (not a grid item). */
+			display: grid;
+			grid-template-columns: auto 1fr auto;
 			gap: var(--space-xs);
 			align-items: center;
 
@@ -64,10 +66,10 @@
 			}
 		}
 
-		/* Collapse bottom-sheet: its <dialog> uses top-layer regardless. */
+		/* Span bottom-sheet across all columns; its <dialog> uses top-layer. */
 		bottom-sheet {
 			overflow: visible;
-			flex-shrink: 0;
+			grid-column: 1 / -1;
 			block-size: 0;
 		}
 
