@@ -106,15 +106,12 @@ export class PwaInstallService {
 		this.updateBannerVisibility()
 	}
 
-	// Banner eligibility is broader than the FAB on platform (no captured
-	// deferred prompt required — guide-mode fallback covers that — and iOS Safari
-	// is included), but it keeps the same onboarding gate: the install CTA must
-	// not surface until onboarding is complete (prompt-timing spec).
+	// Platform eligibility only. The onboarding gate is redundant: auth-callback
+	// always calls onboarding.finish() before redirecting, so isAuthenticated
+	// (enforced at the app-shell level) implies isCompleted.
 	private updateBannerVisibility(): void {
 		this.shouldShowInstallBanner =
-			!this.installed &&
-			this.onboarding.isCompleted &&
-			(this.browserSupportsPwa || this.isIos)
+			!this.installed && (this.browserSupportsPwa || this.isIos)
 	}
 
 	// Explicit install confirmation, primarily for iOS where the `appinstalled`
@@ -146,6 +143,13 @@ export class PwaInstallService {
 
 		this.deferredPrompt = null
 		this.canShowFab = false
+
+		if (outcome === 'dismissed') {
+			// Chrome does not re-fire beforeinstallprompt immediately after
+			// cancellation, so evaluateVisibility() won't be called again.
+			// Re-assert banner visibility so it stays visible in guide mode.
+			this.updateBannerVisibility()
+		}
 	}
 }
 
