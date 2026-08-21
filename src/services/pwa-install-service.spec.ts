@@ -135,6 +135,27 @@ describe('PwaInstallService', () => {
 			expect(sut.canShowFab).toBe(false)
 		})
 
+		it('keeps shouldShowInstallBanner true when the native dialog is dismissed', async () => {
+			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
+				value: class {},
+				configurable: true,
+			})
+			fakeOnboardingIsCompleted = true
+			const sut = new PwaInstallService()
+			const event = makeBeforeInstallPromptEvent()
+			event.userChoice = Promise.resolve({ outcome: 'dismissed' as const })
+			window.dispatchEvent(event)
+			expect(sut.shouldShowInstallBanner).toBe(true)
+
+			await sut.install()
+
+			expect(sut.canShowFab).toBe(false)
+			expect(sut.shouldShowInstallBanner).toBe(true)
+
+			delete (window as unknown as Record<string, unknown>)
+				.BeforeInstallPromptEvent
+		})
+
 		it('does nothing if no deferredPrompt', async () => {
 			const sut = new PwaInstallService()
 
@@ -193,12 +214,11 @@ describe('PwaInstallService', () => {
 	})
 
 	describe('shouldShowInstallBanner', () => {
-		it('is true for Chrome/Edge non-installed users after onboarding', () => {
+		it('is true for Chrome/Edge non-installed users', () => {
 			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
 				value: class {},
 				configurable: true,
 			})
-			fakeOnboardingIsCompleted = true
 			const sut = new PwaInstallService()
 
 			expect(sut.shouldShowInstallBanner).toBe(true)
@@ -207,14 +227,13 @@ describe('PwaInstallService', () => {
 				.BeforeInstallPromptEvent
 		})
 
-		it('is true for iOS Safari non-installed users after onboarding', () => {
+		it('is true for iOS Safari non-installed users', () => {
 			const originalUa = navigator.userAgent
 			Object.defineProperty(navigator, 'userAgent', {
 				value:
 					'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
 				configurable: true,
 			})
-			fakeOnboardingIsCompleted = true
 			// No BeforeInstallPromptEvent → browserSupportsPwa is false → isIos true.
 			const sut = new PwaInstallService()
 
@@ -226,27 +245,12 @@ describe('PwaInstallService', () => {
 			})
 		})
 
-		it('is false while onboarding is not completed', () => {
-			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
-				value: class {},
-				configurable: true,
-			})
-			fakeOnboardingIsCompleted = false
-			const sut = new PwaInstallService()
-
-			expect(sut.shouldShowInstallBanner).toBe(false)
-
-			delete (window as unknown as Record<string, unknown>)
-				.BeforeInstallPromptEvent
-		})
-
 		it('is false when already installed via localStorage flag', () => {
 			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
 				value: class {},
 				configurable: true,
 			})
 			localStorage.setItem(StorageKeys.pwaInstalled, 'true')
-			fakeOnboardingIsCompleted = true
 			const sut = new PwaInstallService()
 
 			expect(sut.shouldShowInstallBanner).toBe(false)
@@ -256,7 +260,6 @@ describe('PwaInstallService', () => {
 		})
 
 		it('is false when the browser lacks PWA support and is not iOS', () => {
-			fakeOnboardingIsCompleted = true
 			const sut = new PwaInstallService()
 
 			expect(sut.shouldShowInstallBanner).toBe(false)
@@ -267,7 +270,6 @@ describe('PwaInstallService', () => {
 				value: class {},
 				configurable: true,
 			})
-			fakeOnboardingIsCompleted = true
 			const sut = new PwaInstallService()
 			expect(sut.shouldShowInstallBanner).toBe(true)
 
@@ -289,6 +291,8 @@ describe('PwaInstallService', () => {
 			fakeOnboardingIsCompleted = true
 			const sut = new PwaInstallService()
 			window.dispatchEvent(makeBeforeInstallPromptEvent())
+			// canShowFab requires deferredPrompt + onboarding; shouldShowInstallBanner
+			// only requires platform support (onboarding gate removed).
 			expect(sut.canShowFab).toBe(true)
 			expect(sut.shouldShowInstallBanner).toBe(true)
 
