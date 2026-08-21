@@ -1,5 +1,5 @@
 <import from="./components/error-banner/error-banner"></import>
-<import from="./components/pwa-install-fab/pwa-install-fab"></import>
+<import from="./components/pwa-install-banner/pwa-install-banner"></import>
 <import from="./components/notification-prompt/notification-prompt"></import>
 <import from="./components/snack-bar/snack-bar"></import>
 <import from="./components/coach-mark/coach-mark"></import>
@@ -10,8 +10,12 @@
 
 <!-- Top-layer overlays: rendered via popover/dialog in browser top layer,
      DOM position is irrelevant. Placed outside viewport to avoid grid interference. -->
-<!-- Single instance guaranteed by app-shell — safe to use static id="pwa-fab-sheet-title" inside -->
-<pwa-install-fab if.bind="showNav"></pwa-install-fab>
+<!-- Auth-gated (D5): guests already see signup-prompt-banner, so gating on
+     isAuthenticated keeps the two banners mutually exclusive. Suppressed while a
+     post-signup surface (celebration overlay / PostSignupDialog) occupies the
+     bottom of the screen to avoid overlap (D7). Single instance guaranteed by
+     app-shell — safe to use static ids inside. -->
+<pwa-install-banner if.bind="showNav && auth.isAuthenticated && !isPostSignupSurfaceOpen"></pwa-install-banner>
 <notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
 <snack-bar></snack-bar>
 <error-banner></error-banner>

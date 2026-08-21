@@ -21,6 +21,13 @@ export class PwaInstallService {
 
 	@observable public canShowFab = false
 
+	// Visibility predicate for the `pwa-install-banner`. Unlike `canShowFab`,
+	// this does not require the `beforeinstallprompt` event to have been
+	// captured and includes iOS Safari (guided install fallback). Kept as an
+	// explicit `@observable` (not a getter) so templates react when the private
+	// `installed` field flips via `appinstalled` or `confirmInstalled()`.
+	@observable public shouldShowInstallBanner = false
+
 	constructor() {
 		this.installed = this.detectInstalled()
 		this.listenForInstallPrompt()
@@ -70,11 +77,19 @@ export class PwaInstallService {
 	private listenForAppInstalled(): void {
 		window.addEventListener('appinstalled', () => {
 			this.logger.info('App installed')
-			this.installed = true
-			localStorage.setItem(StorageKeys.pwaInstalled, 'true')
-			this.deferredPrompt = null
-			this.canShowFab = false
+			this.markInstalled()
 		})
+	}
+
+	// Single source of truth for recording an install: persists the flag and
+	// clears every visibility signal. Shared by the `appinstalled` event and the
+	// explicit iOS `confirmInstalled()` path so the two can never diverge.
+	private markInstalled(): void {
+		this.installed = true
+		localStorage.setItem(StorageKeys.pwaInstalled, 'true')
+		this.deferredPrompt = null
+		this.canShowFab = false
+		this.shouldShowInstallBanner = false
 	}
 
 	private evaluateVisibility(): void {
@@ -87,6 +102,26 @@ export class PwaInstallService {
 		if (this.canShowFab) {
 			this.logger.info('PWA install FAB ready to show')
 		}
+
+		this.updateBannerVisibility()
+	}
+
+	// Banner eligibility is broader than the FAB on platform (no captured
+	// deferred prompt required — guide-mode fallback covers that — and iOS Safari
+	// is included), but it keeps the same onboarding gate: the install CTA must
+	// not surface until onboarding is complete (prompt-timing spec).
+	private updateBannerVisibility(): void {
+		this.shouldShowInstallBanner =
+			!this.installed &&
+			this.onboarding.isCompleted &&
+			(this.browserSupportsPwa || this.isIos)
+	}
+
+	// Explicit install confirmation, primarily for iOS where the `appinstalled`
+	// event is unreliable. Records the install so the banner is permanently
+	// removed; a subsequent standalone launch re-confirms via `detectInstalled`.
+	public confirmInstalled(): void {
+		this.markInstalled()
 	}
 
 	@watch((vm: PwaInstallService) => vm.onboarding.isCompleted)

@@ -1,0 +1,214 @@
+@layer block {
+	@scope (pwa-install-banner) {
+		:scope {
+			--_surface-bg: oklch(18% 0.04 275deg / 85%);
+			--_gradient-from: var(--color-brand-primary);
+			--_gradient-to: var(--color-brand-secondary);
+
+			position: fixed;
+			inset-block-end: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+			inset-inline: 0;
+		}
+
+		.pwa-banner {
+			position: relative;
+
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-xs);
+
+			padding-block: var(--space-xs) var(--space-s);
+			padding-inline: var(--space-s);
+			border-block-start: 2px solid;
+			border-image: linear-gradient(
+					to right,
+					var(--_gradient-from),
+					var(--_gradient-to)
+				)
+				1;
+
+			background: var(--_surface-bg);
+			backdrop-filter: blur(12px);
+		}
+
+		.pwa-banner-label {
+			/* Leave room for the absolutely positioned close button. */
+			padding-inline-end: var(--space-xl);
+
+			font-size: var(--step-0);
+			color: var(--color-text-secondary);
+		}
+
+		.pwa-banner-cta {
+			cursor: pointer;
+
+			align-self: center;
+
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-xl);
+			border: none;
+			border-radius: var(--radius-button);
+
+			font-family: var(--font-display);
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+
+			transition: opacity 150ms ease-out;
+
+			&:hover,
+			&:focus-visible {
+				opacity: 0.85;
+			}
+
+			&:active {
+				transform: scale(0.98);
+			}
+		}
+
+		.pwa-banner-close {
+			cursor: pointer;
+
+			position: absolute;
+			inset-block-start: var(--space-3xs);
+			inset-inline-end: var(--space-3xs);
+
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			/* Minimum 44px touch target for accessibility. */
+			inline-size: 2.75rem;
+			block-size: 2.75rem;
+			border: none;
+
+			color: var(--color-text-secondary);
+
+			background: none;
+
+			transition: color 150ms ease-out;
+
+			&:hover,
+			&:focus-visible {
+				color: var(--color-text-primary);
+			}
+		}
+
+		.pwa-banner-close-icon {
+			inline-size: 1.25rem;
+			block-size: 1.25rem;
+		}
+
+		/* Guide sheet — manual install instructions. */
+		.pwa-banner-sheet {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-m);
+
+			padding-block: var(--space-s) var(--space-l);
+			padding-inline: var(--space-m);
+		}
+
+		.pwa-banner-sheet-title {
+			font-size: var(--step-1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.pwa-banner-sheet-steps {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+
+			padding: 0;
+
+			list-style: none;
+		}
+
+		.pwa-banner-sheet-step {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: flex-start;
+
+			font-size: var(--step-0);
+			color: var(--color-text-secondary);
+		}
+
+		.pwa-banner-step-num {
+			display: flex;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: center;
+
+			inline-size: 1.5rem;
+			block-size: 1.5rem;
+			border-radius: var(--radius-full);
+
+			font-size: var(--step--1);
+			font-weight: 700;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+		}
+
+		.pwa-banner-sheet-confirm {
+			cursor: pointer;
+
+			align-self: center;
+
+			padding-block: var(--space-xs);
+			padding-inline: var(--space-xl);
+			border: none;
+			border-radius: var(--radius-button);
+
+			font-family: var(--font-display);
+			font-size: var(--step-0);
+			font-weight: 600;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+
+			transition: opacity 150ms ease-out;
+
+			&:hover,
+			&:focus-visible {
+				opacity: 0.85;
+			}
+		}
+
+		@media (prefers-reduced-motion: no-preference) {
+			:scope {
+				animation: banner-enter 400ms ease-out;
+			}
+
+			.pwa-banner-cta {
+				animation: cta-glow 2.5s ease-in-out infinite;
+			}
+		}
+
+		@keyframes banner-enter {
+			from {
+				transform: translateY(100%);
+				opacity: 0;
+			}
+
+			to {
+				transform: translateY(0);
+				opacity: 1;
+			}
+		}
+
+		@keyframes cta-glow {
+			0%,
+			100% {
+				box-shadow: 0 0 8px oklch(from var(--color-brand-primary) l c h / 30%);
+			}
+
+			50% {
+				box-shadow: 0 0 18px oklch(from var(--color-brand-primary) l c h / 55%);
+			}
+		}
+	}
+}

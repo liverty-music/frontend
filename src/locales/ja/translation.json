@@ -190,14 +190,19 @@
 		"updateAvailable": "新しいバージョンが利用可能です",
 		"updateAction": "更新"
 	},
-	"pwaFab": {
-		"ariaLabel": "ホーム画面に追加",
-		"sheetAriaLabel": "ホーム画面への追加手順",
-		"sheetTitle": "ホーム画面に追加する方法",
-		"step1": "Safari 下部の共有ボタン（□↑）をタップ",
-		"step2": "「ホーム画面に追加」を選択",
-		"step3": "「追加」をタップして完了",
-		"close": "閉じる"
+	"pwaInstallBanner": {
+		"ariaLabel": "アプリをインストール",
+		"label": "📲 ホーム画面に追加して通知を受け取る",
+		"cta": "インストール",
+		"close": "閉じる",
+		"guideTitle": "ホーム画面に追加",
+		"guideConfirm": "追加しました",
+		"iosStep1": "Safari の共有ボタン（□↑）をタップ",
+		"iosStep2": "「ホーム画面に追加」を選択",
+		"iosStep3": "「追加」をタップ",
+		"chromeStep1": "ブラウザのメニュー（⋮）をタップ",
+		"chromeStep2": "「ホーム画面に追加」を選択",
+		"chromeStep3": "「追加」をタップ"
 	},
 	"myArtists": {
 		"empty": {
