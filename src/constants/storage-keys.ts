@@ -42,6 +42,11 @@ export const SessionKeys = {
 	// scoping is acceptable because the backend Follow/SetHype calls are
 	// idempotent and the receipt makes queue-level migration exactly-once.
 	followReconcileAttempted: 'liverty:follow:reconcileAttempted',
+	// Set when the user dismisses the pwa-install-banner via its close button.
+	// Session-scoped on purpose: the banner re-surfaces next session so a
+	// close-on-impulse does not permanently suppress the install CTA, while
+	// still relieving in-session pressure. Never mirrored to localStorage.
+	pwaBannerDismissed: 'liverty:pwaBanner:dismissed',
 } as const
 
 // Per-external_id namespaced key holding the internal user_id resolved from
