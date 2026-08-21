@@ -15,6 +15,7 @@ import {
 import { IAuthService } from '../shared/services/auth-service'
 import { OrganizerAuthHook } from './hooks/auth-hook'
 import { OrganizerShell } from './organizer-shell/organizer-shell'
+import { ILoginHint, readLoginHintFromSearch } from './services/login-hint'
 import { resolveOrgId } from './services/org-handle'
 
 function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
@@ -96,10 +97,17 @@ async function bootstrap(): Promise<void> {
 		? { ...config, zitadelOrgId: orgId }
 		: config
 
+	// login_hint pre-fill (design D5): present on first sign-in only, embedded
+	// in the invitation link as ?login_hint=<email> by the provisioning backend.
+	// Passed to AuthService.signIn() via the auth hook so Zitadel pre-fills the
+	// email field, skipping one manual input step for the operator.
+	const loginHint = readLoginHintFromSearch(window.location.search)
+
 	const au = new Aurelia()
 
 	// AppConfig first so AuthService (constructed during start) can resolve it.
 	au.register(Registration.instance(IAppConfig, effectiveConfig))
+	au.register(Registration.instance(ILoginHint, loginHint))
 	au.register(RouterConfiguration)
 	au.register(
 		LoggerConfiguration.create({

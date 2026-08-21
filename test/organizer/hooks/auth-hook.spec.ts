@@ -5,13 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../../helpers/create-container'
 import { createMockAuth } from '../../helpers/mock-auth'
 
-// The organizer guard resolves IAuthService from the shared surface. Mock that
-// module so the guard binds to the test double rather than constructing a real
-// UserManager (which would hit oidc-client-ts).
+// Mock IAuthService and ILoginHint so the guard binds to test doubles rather
+// than constructing a real UserManager (oidc-client-ts) or reading window.location.
 const mockIAuthService = DI.createInterface('IAuthService')
+const mockILoginHint = DI.createInterface<string | null>('ILoginHint')
 
 vi.mock('../../../shared/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
+}))
+
+vi.mock('../../../organizer/services/login-hint', () => ({
+	ILoginHint: mockILoginHint,
 }))
 
 const { OrganizerAuthHook } = await import('../../../organizer/hooks/auth-hook')
@@ -30,10 +34,14 @@ describe('OrganizerAuthHook', () => {
 	let sut: InstanceType<typeof OrganizerAuthHook>
 	let mockAuth: ReturnType<typeof createMockAuth>
 
-	function build(authOverrides: Parameters<typeof createMockAuth>[0]) {
+	function build(
+		authOverrides: Parameters<typeof createMockAuth>[0],
+		loginHint: string | null = null,
+	) {
 		mockAuth = createMockAuth(authOverrides)
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
+			Registration.instance(mockILoginHint, loginHint),
 		)
 		container.register(OrganizerAuthHook)
 		sut = container.get(OrganizerAuthHook)
@@ -61,6 +69,26 @@ describe('OrganizerAuthHook', () => {
 
 		expect(result).toBe(false)
 		expect(mockAuth.signIn).toHaveBeenCalledTimes(1)
+	})
+
+	it('passes loginHint to signIn when an invitation link is followed', async () => {
+		build({ isAuthenticated: false }, 'operator@example.com')
+		const next = makeRouteNode({})
+
+		await sut.canLoad({} as never, {}, next, null)
+
+		expect(mockAuth.signIn).toHaveBeenCalledWith({
+			loginHint: 'operator@example.com',
+		})
+	})
+
+	it('calls signIn with no options when loginHint is absent', async () => {
+		build({ isAuthenticated: false }, null)
+		const next = makeRouteNode({})
+
+		await sut.canLoad({} as never, {}, next, null)
+
+		expect(mockAuth.signIn).toHaveBeenCalledWith(undefined)
 	})
 
 	it('admits an authenticated operator holding the owner role', async () => {
