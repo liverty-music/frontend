@@ -192,7 +192,7 @@
 	},
 	"pwaInstallBanner": {
 		"ariaLabel": "Install the app",
-		"label": "📲 Add to your home screen for concert alerts",
+		"label": "📲 Add to home screen — get concert alerts",
 		"cta": "Install",
 		"close": "Close",
 		"guideTitle": "Add to Home Screen",
