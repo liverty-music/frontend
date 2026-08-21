@@ -45,6 +45,14 @@ function createSettings(config: AppConfig): UserManagerSettings {
 	}
 }
 
+/** True when the user's access token is already expired or expires within the
+ *  skew window — i.e. it should be refreshed before the next request. */
+function isExpiringWithinSkew(user: User): boolean {
+	if (user.expires_at == null) return user.expired === true
+	const nowSec = Math.floor(Date.now() / 1000)
+	return user.expires_at - nowSec <= EXPIRY_SKEW_SEC
+}
+
 export const IAuthService = DI.createInterface<IAuthService>(
 	'IAuthService',
 	(x) => x.singleton(AuthService),
@@ -52,12 +60,26 @@ export const IAuthService = DI.createInterface<IAuthService>(
 
 export interface IAuthService extends AuthService {}
 
+/** Refresh the token when it expires within this many seconds (skew window). */
+const EXPIRY_SKEW_SEC = 60
+/** sessionStorage key holding the in-app location to return to after an
+ *  involuntary re-authentication. */
+const RETURN_TO_KEY = 'liverty:auth:returnTo'
+
 export class AuthService {
 	private userManager: UserManager
 	private readonly logger = resolve(ILogger).scopeTo('AuthService')
 	private readonly ea = resolve(IEventAggregator)
 	private readyResolve?: () => void
 	public readonly ready: Promise<void>
+	/** Single in-flight refresh shared by boot restore, the resume hook, and the
+	 *  reactive interceptors, so at most one `signinSilent()` runs at a time —
+	 *  the antidote to Zitadel's refresh-token rotation race. */
+	private refreshInFlight: Promise<User | null> | null = null
+	/** Latch so concurrent unrecoverable 401s trigger the forced re-auth cleanup
+	 *  and redirect exactly once (a double `signinRedirect()` would race PKCE
+	 *  state). Reset naturally by the full-page redirect that unloads the app. */
+	private reauthInFlight = false
 
 	constructor() {
 		this.logger.debug('Initializing AuthService')
@@ -76,17 +98,107 @@ export class AuthService {
 			// (if any) has settled, so route guards observe a stable auth state.
 			this.readyResolve?.()
 		})
+
+		// Resume-time refresh: the background renewal timer is disabled, so a token
+		// that goes cold while the tab is idle would 401 the first foreground RPC.
+		// Refresh proactively when the tab returns to the foreground, before the
+		// user's next action — the same "refresh-if-expired-before-any-call" the
+		// boot restore does (which is why a manual reload recovers the session).
+		if (typeof document !== 'undefined') {
+			document.addEventListener('visibilitychange', this.onVisibilityChange)
+		}
+	}
+
+	private readonly onVisibilityChange = (): void => {
+		if (document.visibilityState !== 'visible') return
+		void this.refreshOnResumeIfStale()
+	}
+
+	/** On foreground resume, refresh once if an authenticated user's token is
+	 *  expired or within the skew window. No-op for guests or fresh tokens. */
+	private async refreshOnResumeIfStale(): Promise<void> {
+		// Never refresh while the OIDC callback is exchanging the auth code: at
+		// that point `this.user` is not yet set, so we would fall back to the
+		// still-stored expired user and fire `signinSilent()` with the OLD refresh
+		// token, racing (and rotating out) the token the callback is establishing.
+		if (
+			typeof window !== 'undefined' &&
+			window.location.pathname.startsWith('/auth/callback')
+		) {
+			return
+		}
+		const user = this.user ?? (await this.userManager.getUser())
+		if (!user || !isExpiringWithinSkew(user)) return
+		this.logger.info('Resume: token stale, refreshing before next RPC')
+		await this.ensureFreshToken()
+	}
+
+	/**
+	 * Single-flight silent refresh. Concurrent callers (boot restore, resume
+	 * hook, reactive interceptors) share ONE `signinSilent()` call and all
+	 * observe its result. Returns the refreshed user, or `null` if the refresh
+	 * failed (e.g. the refresh token itself is expired/invalid). Never throws.
+	 */
+	public async ensureFreshToken(): Promise<User | null> {
+		if (this.refreshInFlight) return this.refreshInFlight
+		this.refreshInFlight = this.userManager
+			.signinSilent()
+			.catch((err) => {
+				this.logger.info('Silent refresh failed', err)
+				return null
+			})
+			.finally(() => {
+				this.refreshInFlight = null
+			})
+		return this.refreshInFlight
+	}
+
+	/**
+	 * Cleanup for an INVOLUNTARY logout (unrecoverable `Unauthenticated`). Mirrors
+	 * the voluntary {@link signOut} cleanup — publishes {@link SignedOut} so
+	 * user-specific stores self-clear — and captures the in-app location to return
+	 * to after re-authentication.
+	 *
+	 * Single-shot: returns `true` for the first caller (which SHOULD perform the
+	 * entry-appropriate redirect — landing page for the consumer, sign-in for the
+	 * consoles) and `false` for concurrent callers, so N simultaneous 401s do not
+	 * fire N `signinRedirect()` calls (a double redirect races PKCE state). The
+	 * latch resets naturally when the redirect unloads the app.
+	 */
+	public async prepareForcedReauth(returnTo?: string): Promise<boolean> {
+		if (this.reauthInFlight) return false
+		this.reauthInFlight = true
+		this.logger.info('Forced re-auth: clearing session', { returnTo })
+		if (returnTo) {
+			try {
+				sessionStorage.setItem(RETURN_TO_KEY, returnTo)
+			} catch {
+				// Storage unavailable — return-to is best-effort, not fatal.
+			}
+		}
+		this.ea.publish(new SignedOut())
+		await this.userManager.removeUser()
+		return true
+	}
+
+	/** Consume the stored return-to location (used by the auth callback to route
+	 *  the user back to where they were). Returns null when none is stored. */
+	public takeReturnTo(): string | null {
+		try {
+			const v = sessionStorage.getItem(RETURN_TO_KEY)
+			if (v) sessionStorage.removeItem(RETURN_TO_KEY)
+			return v
+		} catch {
+			return null
+		}
 	}
 
 	private async restoreSession(): Promise<User | null> {
 		const user = await this.userManager.getUser()
 		if (user?.expired) {
-			try {
-				return await this.userManager.signinSilent()
-			} catch (err) {
-				this.logger.info('Silent session restore failed; signing out', err)
-				return null
-			}
+			// Route boot restore through the shared single-flight so an early RPC
+			// that 401s during boot joins this refresh instead of racing it.
+			return await this.ensureFreshToken()
 		}
 		return user
 	}

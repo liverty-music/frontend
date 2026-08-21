@@ -48,12 +48,9 @@ describe('createAuthRetryInterceptor', () => {
 
 		// auth.user must be truthy to attempt silent refresh
 		mockAuth.user = { access_token: 'old-token' } as any
-
-		const mockUserManager = {
-			signinSilent: vi.fn().mockResolvedValue({ access_token: 'new-token' }),
-			removeUser: vi.fn(),
-		}
-		mockAuth.getUserManager = vi.fn().mockReturnValue(mockUserManager)
+		mockAuth.ensureFreshToken = vi
+			.fn()
+			.mockResolvedValue({ access_token: 'new-token' })
 
 		const interceptor = createAuthRetryInterceptor(mockAuth as any)
 		const handler = interceptor(next)
@@ -62,9 +59,32 @@ describe('createAuthRetryInterceptor', () => {
 		const result = await handler(req)
 
 		expect(result).toBe(response)
-		expect(mockUserManager.signinSilent).toHaveBeenCalled()
+		expect(mockAuth.ensureFreshToken).toHaveBeenCalledTimes(1)
 		expect(req.header.get('Authorization')).toBe('Bearer new-token')
 		expect(next).toHaveBeenCalledTimes(2)
+	})
+
+	it('should NOT retry a second time if the retried request also 401s', async () => {
+		const next = vi
+			.fn()
+			.mockRejectedValue(
+				new ConnectError('unauthenticated', Code.Unauthenticated),
+			)
+
+		mockAuth.user = { access_token: 'old-token' } as any
+		mockAuth.ensureFreshToken = vi
+			.fn()
+			.mockResolvedValue({ access_token: 'new-token' })
+
+		const interceptor = createAuthRetryInterceptor(mockAuth as any)
+		const handler = interceptor(next)
+
+		await expect(handler(makeRequest())).rejects.toThrow()
+		// Bounded to once: initial + exactly one retry, no loop.
+		expect(next).toHaveBeenCalledTimes(2)
+		expect(mockAuth.ensureFreshToken).toHaveBeenCalledTimes(1)
+		// Retried-still-401 is treated as unrecoverable → forced re-auth cleanup.
+		expect(mockAuth.prepareForcedReauth).toHaveBeenCalledTimes(1)
 	})
 
 	it('should propagate Unauthenticated error for guest users without refresh', async () => {
@@ -81,7 +101,7 @@ describe('createAuthRetryInterceptor', () => {
 		expect(mockAuth.getUserManager).not.toHaveBeenCalled()
 	})
 
-	it('should remove user and rethrow when token refresh fails', async () => {
+	it('should force graceful re-auth and rethrow when token refresh fails', async () => {
 		const next = vi
 			.fn()
 			.mockRejectedValue(
@@ -90,19 +110,18 @@ describe('createAuthRetryInterceptor', () => {
 
 		// auth.user must be truthy to attempt silent refresh
 		mockAuth.user = { access_token: 'old-token' } as any
-
-		const mockUserManager = {
-			signinSilent: vi.fn().mockRejectedValue(new Error('refresh failed')),
-			removeUser: vi.fn().mockResolvedValue(undefined),
-		}
-		mockAuth.getUserManager = vi.fn().mockReturnValue(mockUserManager)
+		// Refresh fails (refresh token expired/invalid) → null
+		mockAuth.ensureFreshToken = vi.fn().mockResolvedValue(null)
 
 		const interceptor = createAuthRetryInterceptor(mockAuth as any)
 		const handler = interceptor(next)
 
 		await expect(handler(makeRequest())).rejects.toThrow()
-		expect(mockUserManager.removeUser).toHaveBeenCalled()
-		// window.location.href is set to '/welcome' but jsdom assignment is not easily spied
+		// Graceful forced logout: publishes SignedOut + preserves return-to.
+		expect(mockAuth.prepareForcedReauth).toHaveBeenCalledTimes(1)
+		// No second retry when refresh fails.
+		expect(next).toHaveBeenCalledTimes(1)
+		// window.location.href is set to '/welcome' (jsdom assignment not spied)
 	})
 
 	it('should re-throw non-Unauthenticated ConnectErrors', async () => {
@@ -126,53 +145,9 @@ describe('createAuthRetryInterceptor', () => {
 		await expect(handler(makeRequest())).rejects.toThrow(error)
 	})
 
-	it('should deduplicate concurrent Unauthenticated errors to a single signinSilent call', async () => {
-		const response = { message: 'ok' }
-
-		let resolveSignin: (user: { access_token: string }) => void = () => {}
-		const signinDeferred = new Promise<{ access_token: string }>((res) => {
-			resolveSignin = res
-		})
-
-		mockAuth.user = { access_token: 'old-token' } as any
-
-		const mockUserManager = {
-			signinSilent: vi.fn().mockReturnValue(signinDeferred),
-			removeUser: vi.fn(),
-		}
-		mockAuth.getUserManager = vi.fn().mockReturnValue(mockUserManager)
-
-		const next = vi
-			.fn()
-			.mockRejectedValueOnce(
-				new ConnectError('unauthenticated', Code.Unauthenticated),
-			)
-			.mockRejectedValueOnce(
-				new ConnectError('unauthenticated', Code.Unauthenticated),
-			)
-			.mockResolvedValue(response)
-
-		const interceptor = createAuthRetryInterceptor(mockAuth as any)
-		const handler = interceptor(next)
-
-		// Start both requests concurrently
-		const p1 = handler(makeRequest())
-		const p2 = handler(makeRequest())
-
-		// Allow microtasks to drain so both handlers reach await refreshPromise
-		await Promise.resolve()
-
-		// Exactly one signinSilent should have been initiated
-		expect(mockUserManager.signinSilent).toHaveBeenCalledTimes(1)
-
-		// Resolve the deferred signin and await both requests
-		resolveSignin({ access_token: 'new-token' })
-
-		const [r1, r2] = await Promise.all([p1, p2])
-		expect(r1).toBe(response)
-		expect(r2).toBe(response)
-		expect(mockUserManager.signinSilent).toHaveBeenCalledTimes(1)
-	})
+	// Note: the single-flight dedup guarantee moved into AuthService
+	// (`ensureFreshToken`), which the interceptor delegates to. Concurrency is
+	// covered by the AuthService single-flight test, not here.
 })
 
 describe('createRetryInterceptor', () => {
