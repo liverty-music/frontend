@@ -42,6 +42,9 @@ const MAX_SHOCKWAVES = 5
 const MAX_PALETTE = 20
 const MAX_LIGHT_RAYS = 16
 
+// Gap (px) between the orb bottom and the canvas floor on narrow canvases.
+const ORB_BOTTOM_GAP = 20
+
 export class OrbRenderer {
 	private particles: OrbParticle[] = []
 	private orbitals: OrbitalParticle[] = []
@@ -76,11 +79,26 @@ export class OrbRenderer {
 		this.canvasWidth = canvasWidth
 		this.canvasHeight = canvasHeight
 		this.orbX = canvasWidth / 2
-		this.orbY = canvasHeight - 80
+		this.orbY = this.computeOrbY()
 		this.initParticles()
 		this.initOrbitals()
 		this.initShockwaves()
 		this.initLightRays()
+	}
+
+	/**
+	 * Vertical center of the orb. On narrow canvases (< 390px) the orb bottom is
+	 * anchored a fixed distance above the canvas floor, so a smaller orb sits on
+	 * the same baseline as a larger one and grows upward as follows accumulate —
+	 * removing the dead space a fixed center leaves under a small orb. Wide
+	 * canvases keep the original fixed center to preserve existing layout (and the
+	 * iPhone-14 visual-regression baseline).
+	 */
+	private computeOrbY(): number {
+		if (this.canvasWidth < 390) {
+			return this.canvasHeight - this.orbRadius - ORB_BOTTOM_GAP
+		}
+		return this.canvasHeight - 80
 	}
 
 	private initParticles(): void {
@@ -651,6 +669,9 @@ export class OrbRenderer {
 			p.trail = []
 		}
 		this.orbRadius = this.stageParams.orbRadius
+		// Re-anchor after the radius changes so the narrow-canvas orb keeps its
+		// bottom on a fixed baseline (no-op on wide canvases).
+		this.orbY = this.computeOrbY()
 		this.distributeColorsToOrbitals()
 	}
 

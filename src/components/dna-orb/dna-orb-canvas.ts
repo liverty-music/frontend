@@ -323,6 +323,19 @@ export class DnaOrbCanvas {
 
 		await this.physics.init(rect.width, rect.height)
 		this.orbRenderer.init(rect.width, rect.height)
+		// Recompute the orb radius/position for the current follow count with the
+		// now-known canvas width. `init()` alone leaves the orb at its
+		// width-agnostic default (radius 60), so without this the narrow-canvas
+		// orb would render full-size on first paint and only shrink after the
+		// first follow event fires `followedCountChanged`.
+		this.orbRenderer.setFollowCount(this.followedCount)
+		// On narrow canvases the orb is smaller and bottom-anchored, so align the
+		// physics floor with its top here; init() resets the bottom wall to a
+		// width-agnostic default. Left untouched on wide canvases to preserve the
+		// established layout (and the iPhone-14 visual-regression baseline).
+		if (rect.width < 390) {
+			this.physics.updateOrbZone(this.orbRenderer.getStageParams().orbRadius)
+		}
 	}
 
 	private resizeTimeout = 0
