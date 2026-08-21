@@ -30,10 +30,11 @@ const LOG_TAIL = 8
 const LINEAR_STEPS = 4
 const MAX_RADIUS = 90
 
-// Narrow-canvas (< 390px) orb radius curve: smaller seed, gentler growth, lower
-// ceiling. Progression: 16 → 23 → 30 → 37 → 44 → … → 56 (diameter 32 → 112).
-const NARROW_BASE_RADIUS = 16
-const NARROW_GROWTH_PER_FOLLOW = 7
+// Narrow-canvas (< 390px) orb radius curve: smaller seed and lower ceiling than
+// wide screens, but still a substantial presence.
+// Progression: 24 → 30 → 36 → 42 → 48 → … → 56 (diameter 48 → 112).
+const NARROW_BASE_RADIUS = 24
+const NARROW_GROWTH_PER_FOLLOW = 6
 const NARROW_LOG_TAIL = 5
 const NARROW_MAX_RADIUS = 56
 const MAX_ORBITALS = 12

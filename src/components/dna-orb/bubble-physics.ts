@@ -151,7 +151,13 @@ export class BubblePhysics {
 			}
 
 			const x = Math.random() * (this.width - 100) + 50
-			const y = Math.random() * (this.height * 0.5) + 50
+			// Spread bubbles across the upper portion of the canvas. On narrow
+			// canvases the field is tall and the orb is small and bottom-anchored,
+			// so fill further down (80% vs 50%) to avoid a void between the bubble
+			// cluster and the orb. Wide canvases keep 50% (preserves the existing
+			// layout and the iPhone-14 visual-regression baseline).
+			const spawnFraction = this.width < 390 ? 0.8 : 0.5
+			const y = Math.random() * (this.height * spawnFraction) + 50
 			const body = this.Matter?.Bodies.circle(x, y, radius, {
 				restitution: 0.6,
 				friction: 0.1,
