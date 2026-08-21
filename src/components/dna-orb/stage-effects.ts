@@ -26,8 +26,16 @@ export interface StageParams {
 
 const BASE_RADIUS = 60
 const GROWTH_PER_FOLLOW = 7.5
+const LOG_TAIL = 8
 const LINEAR_STEPS = 4
 const MAX_RADIUS = 90
+
+// Narrow-canvas (< 390px) orb radius curve: smaller seed, gentler growth, lower
+// ceiling. Progression: 16 → 23 → 30 → 37 → 44 → … → 56 (diameter 32 → 112).
+const NARROW_BASE_RADIUS = 16
+const NARROW_GROWTH_PER_FOLLOW = 7
+const NARROW_LOG_TAIL = 5
+const NARROW_MAX_RADIUS = 56
 const MAX_ORBITALS = 12
 const MAX_LIGHT_RAYS = 14
 const FULL_SHOW = 5
@@ -39,17 +47,24 @@ export function getStageParams(
 	const level = followCount
 	const fc = followCount
 
-	const radiusScale = canvasWidth < 390 ? 2 / 3 : 1
+	// Orb radius: linear for 0-4, logarithmic tail for 5+.
+	// Narrow canvases (< 390px) use a smaller-footprint curve so the orb starts
+	// as an unobtrusive "seed" and grows with follows, instead of dominating the
+	// screen from the first paint.
+	const narrow = canvasWidth < 390
+	const base = narrow ? NARROW_BASE_RADIUS : BASE_RADIUS
+	const growth = narrow ? NARROW_GROWTH_PER_FOLLOW : GROWTH_PER_FOLLOW
+	const tail = narrow ? NARROW_LOG_TAIL : LOG_TAIL
+	const max = narrow ? NARROW_MAX_RADIUS : MAX_RADIUS
 
-	// Orb radius: linear for 0-4, logarithmic tail for 5+
 	let orbRadius: number
 	if (fc <= LINEAR_STEPS) {
-		orbRadius = BASE_RADIUS + fc * GROWTH_PER_FOLLOW
+		orbRadius = base + fc * growth
 	} else {
-		const linearMax = BASE_RADIUS + LINEAR_STEPS * GROWTH_PER_FOLLOW
-		orbRadius = linearMax + Math.log2(fc - LINEAR_STEPS + 1) * 8
+		const linearMax = base + LINEAR_STEPS * growth
+		orbRadius = linearMax + Math.log2(fc - LINEAR_STEPS + 1) * tail
 	}
-	orbRadius = Math.min(MAX_RADIUS, orbRadius) * radiusScale
+	orbRadius = Math.min(max, orbRadius)
 
 	// Breathing pulse
 	const breathAmplitude = fc > 0 ? Math.min(0.05, 0.01 + fc * 0.01) : 0

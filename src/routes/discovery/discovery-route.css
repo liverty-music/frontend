@@ -434,8 +434,16 @@
 		@media (height <= 700px) and (width < 390px) {
 			.search-bar {
 				block-size: 2.5rem;
-				margin-block-start: var(--space-3xs);
+
+				/* Symmetric 8px whitespace: this top margin matches the genre-bar's
+				   top padding below, so the search field sits evenly between the
+				   header and the genre chips. */
+				margin-block-start: var(--space-2xs);
 				padding-block: 0;
+			}
+
+			.genre-bar {
+				padding-block: var(--space-2xs) var(--space-3xs);
 			}
 		}
 	}
