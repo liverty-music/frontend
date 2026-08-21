@@ -14,11 +14,10 @@
 			position: relative;
 
 			display: grid;
-			grid-template-columns: 1fr auto auto;
+			grid-template-columns: auto 1fr auto auto;
 			gap: var(--space-xs);
 			align-items: center;
 
-			/* Generous vertical padding for a confident, tall feel */
 			padding-block: var(--space-xs);
 			padding-inline-start: var(--space-s);
 
@@ -68,6 +67,18 @@
 			overflow: visible;
 			grid-column: 1 / -1;
 			block-size: 0;
+		}
+
+		.pwa-banner-icon {
+			display: block;
+			flex-shrink: 0;
+
+			inline-size: 2rem;
+			block-size: 2rem;
+			border-radius: var(--radius-button);
+
+			object-fit: cover;
+			box-shadow: var(--shadow-s, 0 1px 6px oklch(0% 0 0deg / 35%));
 		}
 
 		.pwa-banner-label {

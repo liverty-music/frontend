@@ -192,8 +192,8 @@
 	},
 	"pwaInstallBanner": {
 		"ariaLabel": "アプリをインストール",
-		"label": "📲 ホーム画面に追加してライブ通知をオン",
-		"cta": "インストール",
+		"label": "新着ライブ通知を受け取ろう",
+		"cta": "Install",
 		"close": "閉じる",
 		"guideTitle": "ホーム画面に追加",
 		"guideConfirm": "追加しました",
