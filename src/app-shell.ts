@@ -4,6 +4,7 @@ import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IOnboardingService } from './services/onboarding-service'
+import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IPwaInstallService } from './services/pwa-install-service'
 @route({
 	title: 'Liverty Music',
@@ -115,8 +116,16 @@ export class AppShell {
 	// `/auth/callback` page load — otherwise the prompt is silently lost.
 	// biome-ignore lint/correctness/noUnusedPrivateClassMembers: held only for its DI construction side-effect (listener registration)
 	private readonly _pwaInstall = resolve(IPwaInstallService)
+	private readonly promptCoordinator = resolve(IPromptCoordinator)
 
 	private readonly subscriptions: IDisposable[] = []
+
+	// Suppresses the pwa-install-banner while a post-signup surface (celebration
+	// overlay or PostSignupDialog) occupies the bottom of the screen so they do
+	// not overlap (D7). Reactive because the coordinator flag is an `@observable`.
+	public get isPostSignupSurfaceOpen(): boolean {
+		return this.promptCoordinator.isPostSignupSurfaceOpen
+	}
 
 	// Updated on every navigation-end via route data `nav: false`.
 	// Defaults to true so authenticated routes show the nav bar immediately.
