@@ -120,7 +120,7 @@ export class DnaOrbCanvas {
 			// adds new ones — capping only against live bodies so members are not
 			// dropped while stale bodies are still fading out.
 			const dropped = this.physics.reconcile(
-				newVal.map((a) => toBubbleParams(a)),
+				newVal.slice(0, this.displayLimit).map((a) => toBubbleParams(a)),
 				{ placements: this.placements },
 			)
 			if (dropped > 0) {
