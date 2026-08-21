@@ -49,9 +49,11 @@ export const createAuthRetryInterceptor = (auth: IAuthService): Interceptor => {
 			// Unrecoverable (refresh token expired/invalid, or the retry still
 			// returned Unauthenticated): clear the session the same way a voluntary
 			// sign-out does (publish SignedOut so stores self-clear), preserve
-			// return-to, and send the user to re-authenticate.
-			await auth.prepareForcedReauth(currentInAppLocation())
-			window.location.href = '/welcome'
+			// return-to, and send the user to re-authenticate. The single-shot latch
+			// ensures only the first of N concurrent 401s performs the redirect.
+			if (await auth.prepareForcedReauth(currentInAppLocation())) {
+				window.location.href = '/welcome'
+			}
 			throw err
 		}
 	}

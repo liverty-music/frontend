@@ -56,10 +56,12 @@ export const createAdminAuthRetryInterceptor = (
 			// Unrecoverable (refresh token expired/invalid, or the retry still
 			// returned Unauthenticated): clear the session gracefully — publish
 			// SignedOut so stores self-clear, preserve return-to — then restart the
-			// OIDC sign-in flow. Surface the original error so the in-flight call
-			// fails fast rather than hanging.
-			await auth.prepareForcedReauth(currentInAppLocation())
-			await auth.signIn()
+			// OIDC sign-in flow. The single-shot latch ensures only the first of N
+			// concurrent 401s calls signIn() (a double signinRedirect races PKCE
+			// state). Surface the original error so the in-flight call fails fast.
+			if (await auth.prepareForcedReauth(currentInAppLocation())) {
+				await auth.signIn()
+			}
 			throw err
 		}
 	}

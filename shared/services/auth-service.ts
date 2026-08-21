@@ -76,6 +76,10 @@ export class AuthService {
 	 *  reactive interceptors, so at most one `signinSilent()` runs at a time —
 	 *  the antidote to Zitadel's refresh-token rotation race. */
 	private refreshInFlight: Promise<User | null> | null = null
+	/** Latch so concurrent unrecoverable 401s trigger the forced re-auth cleanup
+	 *  and redirect exactly once (a double `signinRedirect()` would race PKCE
+	 *  state). Reset naturally by the full-page redirect that unloads the app. */
+	private reauthInFlight = false
 
 	constructor() {
 		this.logger.debug('Initializing AuthService')
@@ -113,6 +117,16 @@ export class AuthService {
 	/** On foreground resume, refresh once if an authenticated user's token is
 	 *  expired or within the skew window. No-op for guests or fresh tokens. */
 	private async refreshOnResumeIfStale(): Promise<void> {
+		// Never refresh while the OIDC callback is exchanging the auth code: at
+		// that point `this.user` is not yet set, so we would fall back to the
+		// still-stored expired user and fire `signinSilent()` with the OLD refresh
+		// token, racing (and rotating out) the token the callback is establishing.
+		if (
+			typeof window !== 'undefined' &&
+			window.location.pathname.startsWith('/auth/callback')
+		) {
+			return
+		}
 		const user = this.user ?? (await this.userManager.getUser())
 		if (!user || !isExpiringWithinSkew(user)) return
 		this.logger.info('Resume: token stale, refreshing before next RPC')
@@ -143,10 +157,17 @@ export class AuthService {
 	 * Cleanup for an INVOLUNTARY logout (unrecoverable `Unauthenticated`). Mirrors
 	 * the voluntary {@link signOut} cleanup — publishes {@link SignedOut} so
 	 * user-specific stores self-clear — and captures the in-app location to return
-	 * to after re-authentication. The caller performs the entry-appropriate
-	 * redirect (landing page for the consumer, sign-in for the consoles).
+	 * to after re-authentication.
+	 *
+	 * Single-shot: returns `true` for the first caller (which SHOULD perform the
+	 * entry-appropriate redirect — landing page for the consumer, sign-in for the
+	 * consoles) and `false` for concurrent callers, so N simultaneous 401s do not
+	 * fire N `signinRedirect()` calls (a double redirect races PKCE state). The
+	 * latch resets naturally when the redirect unloads the app.
 	 */
-	public async prepareForcedReauth(returnTo?: string): Promise<void> {
+	public async prepareForcedReauth(returnTo?: string): Promise<boolean> {
+		if (this.reauthInFlight) return false
+		this.reauthInFlight = true
 		this.logger.info('Forced re-auth: clearing session', { returnTo })
 		if (returnTo) {
 			try {
@@ -157,6 +178,7 @@ export class AuthService {
 		}
 		this.ea.publish(new SignedOut())
 		await this.userManager.removeUser()
+		return true
 	}
 
 	/** Consume the stored return-to location (used by the auth callback to route

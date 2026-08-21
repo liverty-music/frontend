@@ -321,4 +321,46 @@ describe('AuthService', () => {
 		// One-shot: a second read is null.
 		expect(sut.takeReturnTo()).toBeNull()
 	})
+
+	it('prepareForcedReauth is single-shot: only the first call initiates cleanup', async () => {
+		const publish = vi.fn()
+		const container = createTestContainer(
+			Registration.instance(IEventAggregator, {
+				publish,
+				subscribe: vi.fn(),
+			}),
+		)
+		container.register(AuthService)
+		const s = container.get(IAuthService)
+		await s.ready
+
+		const first = await s.prepareForcedReauth('/a')
+		const second = await s.prepareForcedReauth('/b')
+
+		expect(first).toBe(true)
+		expect(second).toBe(false)
+		// Only the first published SignedOut and removed the user.
+		expect(publish).toHaveBeenCalledTimes(1)
+		expect(userManagerMock.removeUser).toHaveBeenCalledTimes(1)
+		// The second call did not overwrite the first's return-to.
+		expect(sessionStorage.getItem('liverty:auth:returnTo')).toBe('/a')
+	})
+
+	it('resume does NOT refresh while on the /auth/callback route', async () => {
+		window.history.pushState({}, '', '/auth/callback?code=x')
+		userManagerMock.getUser.mockResolvedValue(null)
+		const { s, fire } = buildSutWithResumeHandler()
+		await s.ready
+		const loaded = userManagerMock.events.addUserLoaded.mock.calls.at(-1)?.[0]
+		loaded?.({ expired: false, expires_at: nowSec() + 5, profile: {} })
+		userManagerMock.signinSilent.mockClear()
+
+		setVisible(true)
+		fire()
+		await Promise.resolve()
+		await Promise.resolve()
+
+		expect(userManagerMock.signinSilent).not.toHaveBeenCalled()
+		window.history.pushState({}, '', '/')
+	})
 })
