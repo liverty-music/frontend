@@ -35,6 +35,7 @@ import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
+import { IPromptCoordinator } from '../../services/prompt-coordinator'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore } from '../../services/user-store'
@@ -136,6 +137,7 @@ export class DashboardRoute {
 	private readonly followStore = resolve(IFollowStore)
 	private readonly journeyStore = resolve(ITicketJourneyStore)
 	private readonly onboarding = resolve(IOnboardingService)
+	private readonly promptCoordinator = resolve(IPromptCoordinator)
 	private readonly userStore = resolve(IUserStore)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly history = resolve(IHistory)
@@ -635,6 +637,11 @@ export class DashboardRoute {
 			this.celebrationSubMessage = this.i18n.tr('dashboard.celebration.explore')
 			this.celebrationLeadsToDialog = true
 			this.showCelebration = true
+			// Suppress the bottom-anchored pwa-install-banner for the whole
+			// post-signup sequence (this celebration → PostSignupDialog) so it does
+			// not overlap them (D7). Released by the dialog on dismissal, or by
+			// detaching() if the user leaves mid-celebration.
+			this.promptCoordinator.isPostSignupSurfaceOpen = true
 			return
 		}
 
@@ -896,6 +903,9 @@ export class DashboardRoute {
 		this.abortController = null
 		this.allNearbyAbort?.abort()
 		this.allNearbyAbort = null
+		// Release the post-signup banner suppression if the user navigates away
+		// mid-celebration (before the PostSignupDialog takes over the flag).
+		this.promptCoordinator.isPostSignupSurfaceOpen = false
 	}
 }
 

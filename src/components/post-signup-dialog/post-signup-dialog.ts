@@ -62,9 +62,18 @@ export class PostSignupDialog {
 		if (this.active) {
 			this.isOpen = true
 			// Suppress the standalone notification prompt for this session —
-			// the dialog handles it inline. FAB is not suppressed.
+			// the dialog handles it inline.
 			this.promptCoordinator.markShown('notification')
+			// Suppress the bottom-anchored pwa-install-banner while this dialog
+			// occupies the same space (D7).
+			this.promptCoordinator.isPostSignupSurfaceOpen = true
 		}
+	}
+
+	public unbinding(): void {
+		// Torn down on route change — release the banner suppression so it can
+		// re-appear on other routes.
+		this.promptCoordinator.isPostSignupSurfaceOpen = false
 	}
 
 	public async onEnableNotifications(): Promise<void> {
@@ -91,5 +100,7 @@ export class PostSignupDialog {
 
 	public onDefer(): void {
 		this.isOpen = false
+		// Dialog dismissed — allow the pwa-install-banner to surface (D7).
+		this.promptCoordinator.isPostSignupSurfaceOpen = false
 	}
 }
