@@ -150,6 +150,9 @@ export class AuthCallbackRoute {
 				return this.authService.takeReturnTo() ?? '/dashboard'
 			}
 
+			// Hard failure: discard any stored return-to so it can't be replayed by
+			// a later, unrelated successful sign-in.
+			this.authService.takeReturnTo()
 			// Let the component render with the error message
 			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
 			return true

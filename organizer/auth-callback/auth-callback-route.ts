@@ -92,6 +92,9 @@ export class AuthCallbackRoute {
 				return false
 			}
 
+			// Hard failure: discard any stored return-to so it can't be replayed by
+			// a later, unrelated successful sign-in.
+			this.authService.takeReturnTo()
 			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
 			return true
 		}

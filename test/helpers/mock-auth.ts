@@ -36,7 +36,8 @@ export function createMockAuth(
 		// failed refresh (null); tests override with the refreshed user.
 		ensureFreshToken: vi.fn().mockResolvedValue(null),
 		// Involuntary-logout cleanup (publishes SignedOut + captures return-to).
-		prepareForcedReauth: vi.fn().mockResolvedValue(undefined),
+		// Returns true = this caller should perform the redirect (single-shot latch).
+		prepareForcedReauth: vi.fn().mockResolvedValue(true),
 		takeReturnTo: vi.fn().mockReturnValue(null),
 	}
 
