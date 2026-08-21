@@ -2,9 +2,9 @@
 <import from="../bottom-sheet/bottom-sheet"></import>
 
 <!--
-  if.bind (not show.bind): the banner holds two interactive controls (CTA +
-  close). Removing it from the DOM when hidden keeps both out of the tab order
-  automatically, avoiding per-child aria-hidden/tabindex management (D2).
+  if.bind (not show.bind): removes both buttons from the tab order when
+  hidden, avoiding per-child aria-hidden/tabindex management (D2).
+  Grid layout: [label 1fr] [cta auto] [close auto] — single row, no wrap.
 -->
 <aside
   if.bind="isVisible"
@@ -13,7 +13,6 @@
 >
   <p class="pwa-banner-label" t="pwaInstallBanner.label"></p>
 
-  <!-- One CTA, two modes: native one-tap install, or open the guide sheet. -->
   <button
     type="button"
     class="pwa-banner-cta"
@@ -29,13 +28,13 @@
     t="[aria-label]pwaInstallBanner.close"
     data-testid="pwa-install-banner-close"
   >
-    <svg class="pwa-banner-close-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <svg class="pwa-banner-close-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <line x1="6" y1="6" x2="18" y2="18"></line>
       <line x1="18" y1="6" x2="6" y2="18"></line>
     </svg>
   </button>
 
-  <!-- Guide sheet: manual install steps for iOS Safari / no deferred prompt. -->
+  <!-- Outside the grid — the <dialog> inside goes to top-layer regardless -->
   <bottom-sheet
     open.bind="isGuideSheetOpen"
     t="[aria-label]pwaInstallBanner.guideTitle"
