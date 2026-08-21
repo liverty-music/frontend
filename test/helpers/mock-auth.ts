@@ -32,6 +32,12 @@ export function createMockAuth(
 		getUserManager: vi.fn().mockReturnValue({
 			getUser: vi.fn().mockResolvedValue(null),
 		}),
+		// Single-flight silent refresh (graceful-session-reauth). Defaults to a
+		// failed refresh (null); tests override with the refreshed user.
+		ensureFreshToken: vi.fn().mockResolvedValue(null),
+		// Involuntary-logout cleanup (publishes SignedOut + captures return-to).
+		prepareForcedReauth: vi.fn().mockResolvedValue(undefined),
+		takeReturnTo: vi.fn().mockReturnValue(null),
 	}
 
 	return mockAuth as Partial<IAuthService>

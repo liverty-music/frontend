@@ -62,6 +62,11 @@ function toUserMessage(err: unknown, fallback: string): string {
 				return 'This organizer is deactivated and can no longer be changed.'
 			case Code.InvalidArgument:
 				return err.rawMessage || 'The request was invalid. Check the fields.'
+			case Code.Unauthenticated:
+				// Never surface the raw transport-level token error (e.g.
+				// `... "exp" not satisfied`). The auth-retry interceptor is
+				// re-authenticating; show a neutral, human-readable state.
+				return 'Your session expired — signing you back in…'
 			default:
 				return err.rawMessage || fallback
 		}
