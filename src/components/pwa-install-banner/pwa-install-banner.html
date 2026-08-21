@@ -4,13 +4,15 @@
 <!--
   if.bind (not show.bind): removes both buttons from the tab order when
   hidden, avoiding per-child aria-hidden/tabindex management (D2).
-  Grid layout: [label 1fr] [cta auto] [close auto] — single row, no wrap.
+  Grid layout: [icon auto] [label 1fr] [cta auto] [close auto] — single row.
 -->
 <aside
   if.bind="isVisible"
   t="[aria-label]pwaInstallBanner.ariaLabel"
   class="[ pwa-banner ]"
 >
+  <img class="pwa-banner-icon" src="/icons/icon-192x192.png" alt="" aria-hidden="true">
+
   <p class="pwa-banner-label" t="pwaInstallBanner.label"></p>
 
   <button
