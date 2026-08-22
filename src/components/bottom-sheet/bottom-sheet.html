@@ -1,12 +1,12 @@
-<!-- Non-modal popover host: promoted to the Top Layer via showPopover() for the
-     ::backdrop and stacking, WITHOUT a modal's pointer-blocking backdrop. The
+<!-- Non-modal popover host: a native <dialog> shown via showPopover() (NOT
+     showModal()) for Top-Layer promotion and the ::backdrop WITHOUT a modal's
+     pointer-blocking backdrop. Using <dialog> keeps the native dialog role; the
      view-model manages focus-trap, background `inert`, and the Escape close
-     request (a popover, unlike <dialog>.showModal(), provides none of these). -->
-<div
+     request, which a non-modal popover does not provide. -->
+<dialog
   ref="popoverEl"
   class="sheet-popover"
   popover="manual"
-  role="dialog"
   aria-modal="true"
 >
   <div
@@ -29,4 +29,4 @@
       <au-slot></au-slot>
     </section>
   </div>
-</div>
+</dialog>
