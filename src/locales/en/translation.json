@@ -28,11 +28,21 @@
 		},
 		"guestFriendly": "No account needed · 30 seconds to try",
 		"preview": {
-			"label": "↓ Pick your artists, and this becomes yours!"
+			"label": "Your personal timetable."
+		},
+		"notification": {
+			"mockTitle": "Vaundy",
+			"mockText": "1 new concert found"
 		},
 		"error": {
 			"navigation": "Navigation failed. Please try again.",
 			"login": "Could not start login — your connection may be unstable. Wait a moment and try again."
+		},
+		"demo": {
+			"notificationLead": "Just follow your artists",
+			"notificationTap": "Tap to open",
+			"coachMark": "Tap a card for tickets, goods, and venue",
+			"sheetHint": "Venue directions and merch — all right here!"
 		}
 	},
 	"signup": {

@@ -99,3 +99,37 @@ describe('EventDetailSheet — journey via the store', () => {
 		expect(mockJourneyStore.setStatus).toHaveBeenCalledTimes(1)
 	})
 })
+
+describe('EventDetailSheet — history management', () => {
+	let sut: EventDetailSheet
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		sut = new EventDetailSheet()
+	})
+
+	it('pushes/restores the URL by default (dashboard context)', () => {
+		sut.open(makeEvent('e1'))
+		expect(mockHistory.pushState).toHaveBeenCalledWith(
+			{ concertId: 'e1' },
+			'',
+			'/concerts/e1',
+		)
+		sut.close()
+		expect(mockHistory.replaceState).toHaveBeenCalledWith(
+			null,
+			'',
+			'/dashboard',
+		)
+	})
+
+	it('never touches history when manageHistory is false (landing page)', () => {
+		sut.manageHistory = false
+		sut.open(makeEvent('e2'))
+		expect(mockHistory.pushState).not.toHaveBeenCalled()
+		sut.close()
+		expect(mockHistory.replaceState).not.toHaveBeenCalled()
+		// Still opens/closes normally.
+		expect(sut.isOpen).toBe(false)
+	})
+})

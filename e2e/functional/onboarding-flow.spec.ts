@@ -69,9 +69,21 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
 				contentType: 'application/json',
 				body: JSON.stringify({
 					artists: [
-						{ id: { value: 'a-1' }, name: { value: 'Artist 1' }, hype: 'watch' },
-						{ id: { value: 'a-2' }, name: { value: 'Artist 2' }, hype: 'watch' },
-						{ id: { value: 'a-3' }, name: { value: 'Artist 3' }, hype: 'watch' },
+						{
+							id: { value: 'a-1' },
+							name: { value: 'Artist 1' },
+							hype: 'watch',
+						},
+						{
+							id: { value: 'a-2' },
+							name: { value: 'Artist 2' },
+							hype: 'watch',
+						},
+						{
+							id: { value: 'a-3' },
+							name: { value: 'Artist 3' },
+							hype: 'watch',
+						},
 					],
 				}),
 			})
@@ -242,9 +254,21 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				contentType: 'application/json',
 				body: JSON.stringify({
 					artists: [
-						{ id: { value: 'a-1' }, name: { value: 'Artist 1' }, hype: 'watch' },
-						{ id: { value: 'a-2' }, name: { value: 'Artist 2' }, hype: 'watch' },
-						{ id: { value: 'a-3' }, name: { value: 'Artist 3' }, hype: 'watch' },
+						{
+							id: { value: 'a-1' },
+							name: { value: 'Artist 1' },
+							hype: 'watch',
+						},
+						{
+							id: { value: 'a-2' },
+							name: { value: 'Artist 2' },
+							hype: 'watch',
+						},
+						{
+							id: { value: 'a-3' },
+							name: { value: 'Artist 3' },
+							hype: 'watch',
+						},
 					],
 				}),
 			})
@@ -323,92 +347,110 @@ test.describe('Onboarding flow (single-flag model)', () => {
 	// Welcome page (entry)
 	// -------------------------------------------------------------------------
 
-	test('Welcome page shows scroll affordance above the fold, CTAs on Screen 2', async ({
+	// Advance the guided demo (notification → interactive timetable) by tapping
+	// the mock push notification. Motion is enabled by default in CI, so the
+	// notification phase renders before the timetable.
+	async function advanceDemoToTimetable(
+		page: import('@playwright/test').Page,
+	): Promise<void> {
+		await page.locator('[data-testid="welcome-demo"]').scrollIntoViewIfNeeded()
+		const notification = page.locator('.welcome-notification-trigger')
+		await expect(notification).toBeVisible({ timeout: 10_000 })
+		await notification.click()
+		await expect(page.locator('[data-testid="welcome-timetable"]')).toBeVisible(
+			{
+				timeout: 6000,
+			},
+		)
+	}
+
+	test('Welcome hero shows the scroll affordance; the guided demo opens on the notification', async ({
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/')
 
-		// Screen 1 shows the [See how it works] scroll-affordance, not [Pick your artists]
-		const scrollCta = page.locator('.welcome-scroll-cta')
-		await expect(scrollCta).toBeVisible({ timeout: 10_000 })
+		// Screen 1 shows the scroll-affordance (message-first), not a commit CTA.
+		await expect(page.locator('.welcome-scroll-cta')).toBeVisible({
+			timeout: 10_000,
+		})
+		await expect(
+			page
+				.locator('.welcome-hero button')
+				.filter({ hasText: /pick your artists/i }),
+		).toHaveCount(0)
 
-		// [Pick your artists] is attached (in Screen 2) but not within the initial
-		// viewport — assert it exists via toBeAttached (DOM) and does NOT satisfy
-		// toBeInViewport (visual position).
-		const getStarted = page
-			.locator('button')
-			.filter({ hasText: /pick your artists/i })
-			.first()
-		await expect(getStarted).toBeAttached()
-		await expect(getStarted).not.toBeInViewport()
+		// The guided demo is attached below the hero and opens on the notification.
+		await expect(page.locator('[data-testid="welcome-demo"]')).toBeAttached({
+			timeout: 10_000,
+		})
+		await expect(
+			page.locator('[data-testid="welcome-demo-notification"]'),
+		).toBeAttached()
 	})
 
-	test('Tapping See how it works scrolls to Screen 2, then Pick your artists navigates to Discovery', async ({
+	test('Scroll affordance reveals the demo; advancing exposes Pick your artists → Discovery', async ({
 		page,
 	}) => {
 		await page.goto('http://localhost:9000/')
 
-		// Tap scroll affordance on Screen 1
+		// Tap the scroll affordance to reveal the guided demo below the hero.
 		await page.locator('.welcome-scroll-cta').click()
+		await advanceDemoToTimetable(page)
 
-		// Screen 2's primary CTA becomes visible after the smooth scroll completes
+		// The timetable's primary CTA is visible and navigates to Discovery.
 		const getStarted = page
-			.locator('.welcome-screen-2 button')
+			.locator('[data-testid="welcome-timetable"] button')
 			.filter({ hasText: /pick your artists/i })
-		await expect(getStarted).toBeInViewport({ timeout: 3000 })
-
+		await expect(getStarted).toBeVisible({ timeout: 5000 })
 		await getStarted.click()
 		await expect(page).toHaveURL(/discovery/, { timeout: 10_000 })
 	})
 
-	test('Completed: welcome page still exposes the primary CTA on Screen 2', async ({
+	test('Completed: welcome still exposes the primary CTA in the guided demo', async ({
 		page,
 	}) => {
 		await page.addInitScript(seedCompleted)
 		await page.goto('http://localhost:9000/')
 
-		// Screen 2's primary CTA is attached (accessible via scroll) even if not
-		// currently in viewport.
+		await advanceDemoToTimetable(page)
+
 		await expect(
 			page
-				.locator('.welcome-screen-2 button')
+				.locator('[data-testid="welcome-timetable"] button')
 				.filter({ hasText: /pick your artists/i }),
 		).toBeAttached({ timeout: 5000 })
 	})
 
-	test('Screen 2 sits at or below the fold on initial load', async ({ page }) => {
+	test('The guided demo sits at or below the fold on initial load', async ({
+		page,
+	}) => {
 		await page.goto('http://localhost:9000/')
 
-		// Hero is full-viewport (100svh). Screen 2 is attached but its top edge
-		// sits at or beyond the fold; the explicit `↓` CTA carries the "more
-		// below" affordance instead of a partial peek.
-		const screen2 = page.locator('.welcome-screen-2')
-		await expect(screen2).toBeAttached({ timeout: 10_000 })
+		// Hero is full-viewport (100svh); the demo section's top sits at or beyond
+		// the fold — the explicit `↓` scroll CTA carries the "more below" affordance.
+		const demo = page.locator('[data-testid="welcome-demo"]')
+		await expect(demo).toBeAttached({ timeout: 10_000 })
 
 		const viewport = page.viewportSize()
-		const box = await screen2.boundingBox()
+		const box = await demo.boundingBox()
 		expect(box).not.toBeNull()
 		if (box && viewport) {
 			expect(box.y).toBeGreaterThanOrEqual(viewport.height)
 		}
 	})
 
-	test('Dashboard preview renders when concert data is available', async ({
+	test('Timetable preview renders when concert data is available', async ({
 		page,
 	}) => {
-		// mockRpcRoutes (via beforeEach) returns concerts for ConcertService/List.
-		// loadPreviewConcerts iterates PREVIEW_ARTIST_IDS and stops after ≥3 artists
-		// return concerts. The preview section only renders when previewDateGroups.length > 0.
+		// mockRpcRoutes (via beforeEach) returns concerts, so the guided demo renders;
+		// the timetable preview lives in the demo's interactive second phase.
 		await page.goto('http://localhost:9000/')
 
-		// Preview section is present in DOM (in scroll-snap Screen 2)
+		await advanceDemoToTimetable(page)
+
+		// The preview is present and renders at least one event card.
 		const preview = page.locator('[data-testid="welcome-preview"]')
 		await expect(preview).toBeAttached({ timeout: 10_000 })
-
-		// Scroll to Screen 2 to make preview visible
-		await preview.scrollIntoViewIfNeeded()
-
-		// At least one event card rendered inside the preview
 		const cards = preview.locator('event-card')
 		await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 	})
@@ -600,9 +642,9 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		// CTA toward discovery instead of a guard redirect. The CTA placeholder is
 		// gated on `!isLoading` settling, so allow the initial load to complete.
 		await expect(page).toHaveURL(/dashboard/)
-		await expect(
-			page.locator('state-placeholder').first(),
-		).toBeVisible({ timeout: 15_000 })
+		await expect(page.locator('state-placeholder').first()).toBeVisible({
+			timeout: 15_000,
+		})
 	})
 
 	test('Celebration does not replay after page reload', async ({ page }) => {

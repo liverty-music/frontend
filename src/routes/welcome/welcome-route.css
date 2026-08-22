@@ -1,8 +1,15 @@
+/* @property makes --brand-sweep (background-position %) interpolate. */
+@property --brand-sweep {
+	syntax: "<percentage>";
+	inherits: false;
+	initial-value: 0%;
+}
+
 @layer block {
 	@scope (welcome-route) {
 		:scope {
 			scroll-behavior: smooth;
-			scroll-snap-type: y proximity;
+			scroll-snap-type: y mandatory;
 
 			overflow-y: auto;
 			display: block;
@@ -17,15 +24,29 @@
 			);
 		}
 
-		/* ── Screen 1: Hero hook ──
-		   Always full-viewport. Earlier iterations used 95svh to leak a
-		   5svh peek of Screen 2's top, but that peek caught either the
-		   preview-label text or the timetable's stage headers — neither
-		   served as a clean "more below" hint. The explicit
-		   `↓ サンプルを覗く` scroll CTA covers that affordance role
-		   instead, so Screen 1 stays clean. */
+		/* Ambient canvas: fixed, full-viewport, screen-blend glow, no pointer input. */
+		.welcome-ambient {
+			pointer-events: none;
+
+			position: fixed;
+			inset: 0;
+
+			inline-size: 100%;
+			block-size: 100%;
+
+			mix-blend-mode: screen;
+		}
+
+		/* Positioned so content paints above the fixed ambient canvas by DOM order. */
+		.welcome-hero,
+		.welcome-demo {
+			position: relative;
+		}
+
+		/* ── Screen 1: Hero hook ── */
 		.welcome-hero {
 			scroll-snap-align: start;
+			scroll-snap-stop: always;
 
 			display: flex;
 			flex-direction: column;
@@ -37,7 +58,7 @@
 
 			text-align: center;
 
-			animation: fade-in 600ms ease-out both;
+			animation: fade-in 700ms ease-out both;
 		}
 
 		.welcome-hero-fallback {
@@ -51,22 +72,32 @@
 			max-inline-size: 28rem;
 		}
 
+		/* Wordmark filled by a moving spotlight gradient clipped to the text. */
 		.welcome-brand {
 			margin-block-end: var(--space-l);
 
 			font-family: var(--font-display);
 			font-size: var(--step-2);
 			font-weight: 600;
-			color: var(--color-brand-accent);
 
-			/* Same festival-spotlight vocabulary as the subtitle action
-			   verbs and event-card[data-matched]. The brand sits at the
-			   top of the visual hierarchy so it earns the brightest glow. */
+			background: linear-gradient(
+				100deg,
+				var(--color-brand-accent) 0%,
+				color-mix(in oklch, var(--color-brand-accent) 45%, white) 50%,
+				var(--color-brand-accent) 100%
+			);
+			background-clip: text;
+			background-size: 250% 100%;
+			background-position: var(--brand-sweep) center;
+			-webkit-text-fill-color: transparent;
+
 			text-shadow:
-				0 0 8px oklch(from var(--color-brand-accent) l c h / 60%),
-				0 0 18px oklch(from var(--color-brand-accent) l c h / 35%);
+				0 0 8px oklch(from var(--color-brand-accent) l c h / 55%),
+				0 0 18px oklch(from var(--color-brand-accent) l c h / 32%);
 			text-transform: uppercase;
 			letter-spacing: 0.2em;
+
+			animation: brand-sweep 7s ease-in-out infinite alternate;
 		}
 
 		.welcome-title {
@@ -78,9 +109,6 @@
 			line-height: var(--leading-snug);
 			color: var(--color-text-primary);
 
-			/* Phrase-aware wrapping for CJK headlines: balance distributes
-			   line lengths evenly; auto-phrase prefers natural phrase
-			   boundaries (Chrome 119+; gracefully ignored elsewhere). */
 			text-wrap: balance;
 			word-break: auto-phrase;
 		}
@@ -93,25 +121,14 @@
 			line-height: var(--leading-relaxed);
 			color: var(--color-text-secondary);
 
-			/* Balance line lengths + prefer phrase-level break points so
-			   neither line strands a tail like「は」or「だけ。」alone
-			   and CJK words don't split mid-character. */
 			text-wrap: balance;
 			word-break: auto-phrase;
 		}
 
-		/* The second line of the subtitle (action / role-reversal) closes
-		   the hero paragraph; it gets the larger bottom margin so the
-		   following lang switcher / scroll CTA is properly spaced. */
 		.welcome-subtitle-action {
 			margin-block-end: var(--space-xl);
 		}
 
-		/* Emphasized verbs in the role-reversal line ("追う" / "行く" /
-		   "tracks" / "go"). Reuses the festival-spotlight glow vocabulary
-		   established by event-card[data-matched] and celebration-overlay
-		   so the verbs read as "this is the brand voice speaking" rather
-		   than just bold body copy. */
 		.welcome-subtitle-action strong {
 			font-weight: 600;
 			color: var(--color-brand-accent);
@@ -149,57 +166,148 @@
 			&::after {
 				content: "↓";
 				display: inline-block;
+				animation: arrow-bob 1.5s ease-in-out infinite alternate;
 			}
 
-			&:hover {
-				border-color: var(--color-brand-primary);
-				color: var(--color-text-primary);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 8%,
-					transparent
-				);
+			&:active {
+				scale: 0.98;
 			}
 
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);
 				outline-offset: 2px;
 			}
-
-			&:active {
-				transform: scale(0.98);
-			}
 		}
 
-		/* ── Screen 2: Preview + CTA ── */
-		.welcome-screen-2 {
+		/* ── Guided demo section ── */
+		.welcome-demo {
 			scroll-snap-align: start;
+			scroll-snap-stop: always;
 
-			display: grid;
-			grid-template-rows: auto 1fr auto;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
 
-			block-size: 100svh;
-			min-block-size: 0;
+			min-block-size: 100svh;
+			padding-block: var(--space-xl);
+			padding-inline: var(--space-m);
 		}
 
-		.welcome-preview-label {
-			padding-block: var(--space-s) var(--space-xs);
-			padding-inline: var(--space-m);
+		/* ── S0 Notification ── */
+		.welcome-demo-notification {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-l);
+			align-items: center;
+		}
 
+		.welcome-demo-lead {
 			font-family: var(--font-display);
-			font-size: var(--step-0);
+			font-size: var(--step-2);
 			font-weight: normal;
+			line-height: var(--leading-snug);
 			color: var(--color-brand-accent);
 			text-align: center;
 
-			/* Same wrap-balance as the hero subtitle */
 			text-wrap: balance;
-			letter-spacing: 0.05em;
 			word-break: auto-phrase;
+
+			text-shadow:
+				0 0 6px oklch(from var(--color-brand-accent) l c h / 40%),
+				0 0 16px oklch(from var(--color-brand-accent) l c h / 25%);
 		}
 
+		.welcome-notification-trigger {
+			cursor: pointer;
+
+			inline-size: 100%;
+			max-inline-size: 36rem;
+			padding: 0;
+			border: none;
+
+			background: transparent;
+
+			&:active {
+				scale: 0.99;
+			}
+
+			&:focus-visible {
+				outline: 2px solid var(--color-brand-primary);
+				outline-offset: 4px;
+				border-radius: var(--radius-card);
+			}
+		}
+
+		/* Entrance fires only once the demo scrolls into view (data-entered). The
+		   ~500ms delay lets the scroll-snap settle first, so the drop-in isn't lost
+		   in the scroll motion. `both` holds the hidden pre-state during the delay.
+		   A heads-up push slides down from above and settles with an overshoot. */
+		.welcome-demo[data-entered] .welcome-notification-trigger {
+			animation: notif-enter 700ms 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+		}
+
+		/* Exit: the notification dismisses upward and fades. The VM holds this state
+		   (`data-exiting`) for the animation's duration, then swaps in the timetable
+		   — so the dismiss fully completes before the timetable appears. */
+		.welcome-demo-notification[data-exiting] {
+			animation: notif-exit 380ms ease-in both;
+		}
+
+		.welcome-demo-hint {
+			font-size: var(--step-0);
+			color: var(--color-text-muted);
+			text-align: center;
+
+			/* Delay the invite until after the card has dropped in. */
+			animation: hint-pulse 1.6s ease-in-out 700ms infinite;
+		}
+
+		/* ── S2 Timetable + CTA (interactive) ──
+		   One screen: tagline (auto) / timetable (1fr) / CTA (auto), filling the
+		   demo section — the original Screen 2 "preview + footer" shape. */
+		.welcome-demo-timetable {
+			display: grid;
+			grid-template-rows: auto 1fr auto;
+			gap: var(--space-s);
+
+			flex: 1;
+			inline-size: 100%;
+			min-block-size: 0;
+
+			/* Enters only after the notification has fully dismissed (the VM swaps
+			   this in once the exit completes), so the two never overlap. */
+			animation: timetable-in 450ms ease-out both;
+		}
+
+		/* CTA footer under the timetable (commit CTAs live here, never on hero). */
+		.welcome-actions {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+		}
+
+		.welcome-section-tagline {
+			font-family: var(--font-display);
+			font-size: var(--step-2);
+			font-weight: normal;
+			line-height: var(--leading-snug);
+			color: var(--color-brand-accent);
+			text-align: center;
+
+			text-wrap: balance;
+			word-break: auto-phrase;
+
+			text-shadow:
+				0 0 6px oklch(from var(--color-brand-accent) l c h / 40%),
+				0 0 16px oklch(from var(--color-brand-accent) l c h / 25%);
+		}
+
+		/* Timetable presented full, composed (no cropped peek). */
 		.welcome-preview {
 			position: relative;
+
+			inline-size: 100%;
 			min-block-size: 0;
 
 			/* Bottom fade-out mask */
@@ -223,17 +331,6 @@
 
 		.welcome-preview > concert-highway {
 			block-size: 100%;
-		}
-
-		/* ── CTA footer ── */
-		.welcome-actions {
-			display: flex;
-			flex-direction: column;
-			flex-shrink: 0;
-			align-items: center;
-
-			padding-block: var(--space-s) var(--space-xs);
-			padding-inline: var(--space-m);
 		}
 
 		.welcome-guest-friendly {
@@ -270,10 +367,6 @@
 				box-shadow 200ms,
 				transform 200ms;
 
-			&:hover {
-				background: var(--color-brand-secondary);
-			}
-
 			&:active {
 				transform: scale(0.98);
 			}
@@ -297,15 +390,6 @@
 				background 200ms,
 				border-color 200ms,
 				transform 200ms;
-
-			&:hover {
-				border-color: var(--color-brand-primary);
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 8%,
-					transparent
-				);
-			}
 
 			&:active {
 				transform: scale(0.98);
@@ -335,10 +419,6 @@
 			transition: color 200ms;
 		}
 
-		.welcome-lang-label:hover > .welcome-lang-text {
-			color: var(--color-text-primary);
-		}
-
 		.welcome-lang-label:has(input:checked) > .welcome-lang-text {
 			font-weight: 600;
 			color: var(--color-text-primary);
@@ -346,13 +426,75 @@
 			text-underline-offset: 4px;
 		}
 
+		/* ── Keyframes ── */
+		@keyframes brand-sweep {
+			from {
+				--brand-sweep: 0%;
+			}
+
+			to {
+				--brand-sweep: 100%;
+			}
+		}
+
+		@keyframes arrow-bob {
+			to {
+				translate: 0 8px;
+			}
+		}
+
+		@keyframes notif-enter {
+			from {
+				opacity: 0;
+				transform: translateY(-4.5rem) scale(0.9);
+			}
+		}
+
+		@keyframes hint-pulse {
+			0%,
+			100% {
+				opacity: 0.5;
+			}
+
+			50% {
+				opacity: 1;
+			}
+		}
+
+		/* Notification dismiss: slide up and fade (sequential exit). */
+		@keyframes notif-exit {
+			to {
+				opacity: 0;
+				transform: translateY(-2.5rem) scale(0.94);
+			}
+		}
+
+		/* Timetable arrival: fade + slight rise, after the notification has left. */
+		@keyframes timetable-in {
+			from {
+				opacity: 0;
+				transform: translateY(1.5rem) scale(0.99);
+			}
+		}
+
+		/* Reduced motion: freeze all ambient/entrance motion; content stays put. */
 		@media (prefers-reduced-motion: reduce) {
 			:scope {
 				scroll-behavior: auto;
 			}
 
-			.welcome-hero {
+			.welcome-hero,
+			.welcome-brand,
+			.welcome-scroll-cta::after,
+			.welcome-demo[data-entered] .welcome-notification-trigger,
+			.welcome-demo-notification[data-exiting],
+			.welcome-demo-timetable,
+			.welcome-demo-hint {
 				animation: none;
+			}
+
+			.welcome-brand {
+				background-position: 50% center;
 			}
 		}
 	}

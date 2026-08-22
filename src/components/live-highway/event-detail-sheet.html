@@ -211,6 +211,14 @@
         ></p>
       </section>
 
+      <!-- Optional inline hint (landing page only). A real coach-mark overlay
+           can't point into this top-layer dialog, so the guidance rides inline,
+           right above the actions it describes. -->
+      <p if.bind="actionsHint" class="sheet-actions-hint" role="note">
+        <svg-icon name="info"></svg-icon>
+        <span>${actionsHint}</span>
+      </p>
+
       <!-- Action buttons -->
       <footer class="sheet-actions">
         <a

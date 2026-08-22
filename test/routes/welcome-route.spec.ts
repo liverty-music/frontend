@@ -223,31 +223,31 @@ describe('WelcomeRoute', () => {
 	})
 
 	describe('scrollToPreview', () => {
-		let screen2: HTMLElement
+		let firstValueSection: HTMLElement
 		let scrollIntoViewSpy: ReturnType<typeof vi.fn>
 
 		beforeEach(() => {
-			screen2 = document.createElement('section')
-			screen2.className = 'welcome-screen-2'
+			firstValueSection = document.createElement('section')
+			firstValueSection.className = 'welcome-demo'
 			scrollIntoViewSpy = vi.fn()
-			screen2.scrollIntoView = scrollIntoViewSpy
-			host.appendChild(screen2)
+			firstValueSection.scrollIntoView = scrollIntoViewSpy
+			host.appendChild(firstValueSection)
 		})
 
 		// No `behavior` is passed: smooth-vs-instant motion is governed by the
 		// scroll container's CSS `scroll-behavior` (with a `prefers-reduced-motion`
 		// override), so motion policy has a single source of truth in CSS.
-		it('scrolls the preview section into view without a behavior override', () => {
+		it('scrolls the first value section into view without a behavior override', () => {
 			sut.scrollToPreview()
 
 			expect(scrollIntoViewSpy).toHaveBeenCalledOnce()
 			expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: 'start' })
 		})
 
-		it('is a no-op when the preview section is not rendered', () => {
-			// Remove the preview section to simulate the empty-preview state
-			// (dateGroups.length === 0 — Screen 2 is excluded by if.bind).
-			host.removeChild(screen2)
+		it('is a no-op when the value sections are not rendered', () => {
+			// Remove the section to simulate the empty-preview state
+			// (dateGroups.length === 0 — the demo is excluded by if.bind).
+			host.removeChild(firstValueSection)
 
 			sut.scrollToPreview()
 
