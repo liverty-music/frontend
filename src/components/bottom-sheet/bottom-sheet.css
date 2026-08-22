@@ -1,22 +1,24 @@
 @layer block {
 	@scope (bottom-sheet) {
-		/* The CE host is a layout-transparent wrapper; the inner <dialog>
-		   owns top-layer promotion, the ::backdrop, and all sheet styling. */
+		/* The CE host is a layout-transparent wrapper; the inner popover
+		   owns Top-Layer promotion, the ::backdrop, and all sheet styling. */
 		:scope {
 			display: contents;
 		}
 
-		.sheet-dialog {
+		.sheet-popover {
 			--_backdrop-bg: oklch(0% 0 0deg / 60%);
 			--_handle-bg: oklch(100% 0 0deg / 20%);
 
-			/* Exit/enter duration. Shorter than the legacy 300ms so the
-			   slide-out and backdrop fade feel responsive after dismiss. */
+			/* Entry fade duration. The CLOSE is the dismiss scroll (see
+			   .scroll-area), so there is deliberately NO fixed-duration exit
+			   fade here — a decoupled opacity/overlay fade is what caused the
+			   bounce-back and the during-close operation lock. */
 			--_duration: 160ms;
 			--_duration-reduced: 0.01ms;
 
-			/* Modal host: full-viewport, top-layer, transparent. Resets the
-			   UA <dialog> defaults (centred, auto-sized, bordered, margin). */
+			/* Top-Layer host: full-viewport, transparent. Resets the UA popover
+			   defaults (centred, auto-sized, bordered, margin). */
 			position: fixed;
 			inset: 0;
 
@@ -34,36 +36,36 @@
 
 			background: transparent;
 
-			transition:
-				opacity var(--_duration) ease-out,
-				overlay var(--_duration) ease-out allow-discrete,
-				display var(--_duration) ease-out allow-discrete;
+			/* Opacity-only entry transition. `overlay` is intentionally NOT
+			   transitioned: the popover leaves the Top Layer immediately on
+			   close, so its ::backdrop stops intercepting pointer events at
+			   once — the background is interactive during the dismiss scroll. */
+			transition: opacity var(--_duration) ease-out;
 
 			&::backdrop {
 				background: var(--_backdrop-bg);
 				backdrop-filter: blur(4px);
-				transition:
-					opacity var(--_duration) ease-out,
-					overlay var(--_duration) ease-out allow-discrete,
-					display var(--_duration) ease-out allow-discrete;
+
+				/* Fallback fade for engines without scroll-driven animations. */
+				transition: opacity var(--_duration) ease-out;
 			}
 
-			&:not([open]) {
+			&:not(:popover-open) {
 				display: none;
 				opacity: 0;
 			}
 
-			&:not([open])::backdrop {
+			&:not(:popover-open)::backdrop {
 				opacity: 0;
 			}
 		}
 
 		@starting-style {
-			.sheet-dialog[open] {
+			.sheet-popover:popover-open {
 				opacity: 0;
 			}
 
-			.sheet-dialog[open]::backdrop {
+			.sheet-popover:popover-open::backdrop {
 				opacity: 0;
 			}
 		}
@@ -71,17 +73,16 @@
 		/*
 		  Gesture-coupled backdrop fade: tie the ::backdrop opacity to the
 		  scroll position so the blur tracks the swipe and is gone by the
-		  dismiss threshold, instead of fading only after `scrollend`.
-		  Restores the pre-refactor behaviour (commit 8d905f3), re-scoped to
-		  the inner <dialog>. Gated behind @supports so unsupported engines
-		  (Firefox) keep the opacity transition above as the fallback.
+		  dismiss threshold, instead of fading only after `scrollend`. Gated
+		  behind @supports so unsupported engines (Firefox) keep the opacity
+		  transition above as the fallback.
 
 		  Only dismissable sheets define the timeline; without a timeline the
 		  ::backdrop animation is inert and the base/transition opacity applies
 		  (non-dismissable sheets keep a steady backdrop).
 		*/
 		@supports (animation-timeline: scroll()) {
-			.sheet-dialog {
+			.sheet-popover {
 				timeline-scope: --sheet-scroll;
 			}
 
@@ -89,7 +90,7 @@
 				scroll-timeline: --sheet-scroll block;
 			}
 
-			.sheet-dialog::backdrop {
+			.sheet-popover::backdrop {
 				animation: backdrop-fade linear both;
 				animation-timeline: --sheet-scroll;
 			}
@@ -112,6 +113,11 @@
 		  .sheet-body so the browser re-snaps to the sheet (bottom) on open.
 		  After the animation ends, dismiss-zone regains its snap alignment.
 		  See: https://drafts.csswg.org/css-scroll-snap-1/#re-snap
+
+		  Retained deliberately for cross-browser support. The declarative
+		  `scroll-initial-target: nearest` alternative is Chromium-only
+		  (unsupported in Safari and Firefox as of 2026-08) and not Baseline;
+		  replace this keyframe hack with it only once it reaches Baseline.
 		*/
 		@keyframes initial-snap {
 			from,
@@ -126,10 +132,14 @@
 			scroll-snap-type: y mandatory;
 
 			overflow-y: auto;
-			overscroll-behavior-y: contain;
+
+			/* Fully stop the dismiss swipe from chaining into page scroll. */
+			overscroll-behavior: none;
 			display: block;
 
-			block-size: 100dvh;
+			/* `svh` (not `dvh`/`vh`) so the sheet height does not jump when the
+			   iOS Safari address bar resizes mid-swipe. */
+			block-size: 100svh;
 
 			animation: initial-snap 0.01s backwards;
 		}
@@ -143,7 +153,7 @@
 
 		.dismiss-zone {
 			scroll-snap-align: var(--_snap-align, start);
-			block-size: 100dvh;
+			block-size: 100svh;
 		}
 
 		.scroll-area:not([data-dismissable="true"]) .dismiss-zone {
@@ -178,11 +188,17 @@
 			contain: layout;
 			overflow-y: auto;
 
-			max-block-size: 90dvh;
+			max-block-size: 90svh;
 			border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
 
 			background: var(--sheet-bg, var(--color-surface-raised));
 			box-shadow: var(--shadow-sheet);
+
+			/* Focus target on open; suppress the focus ring on the container
+			   itself (interactive children keep their own rings). */
+			&:focus {
+				outline: none;
+			}
 		}
 
 		.handle-bar {
@@ -208,9 +224,17 @@
 			}
 		}
 
+		/* The dismiss close is a scroll to the top snap stop; make it smooth
+		   unless the user prefers reduced motion (then it jump-scrolls). */
+		@media (prefers-reduced-motion: no-preference) {
+			.scroll-area {
+				scroll-behavior: smooth;
+			}
+		}
+
 		@media (prefers-reduced-motion: reduce) {
-			.sheet-dialog,
-			.sheet-dialog::backdrop {
+			.sheet-popover,
+			.sheet-popover::backdrop {
 				transition-duration: var(--_duration-reduced);
 			}
 		}

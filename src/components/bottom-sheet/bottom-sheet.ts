@@ -1,43 +1,70 @@
 import { bindable, INode, resolve } from 'aurelia'
 
+/**
+ * Bottom-sheet primitive built on the web.dev `navigation-drawer` pattern
+ * (non-modal `popover` + scroll-snap dismiss), adapted to a vertical sheet.
+ *
+ * Dismiss is the scroll: a swipe (or a programmatic/tap/ESC close) scrolls the
+ * container to the top snap stop (the dismiss zone); an `IntersectionObserver`
+ * on the sheet body is the single source of truth and fires `hidePopover()`
+ * only once the body has left the viewport. Because nothing commits a close
+ * mid-gesture and there is no fixed-duration exit fade competing with the
+ * scroll, reversing the gesture is honoured (no bounce-back) and the background
+ * is interactive during the close (no operation lock).
+ */
 export class BottomSheet {
 	@bindable public open = false
 	@bindable public dismissable = true
 	@bindable public ariaLabel = ''
 
 	private readonly host = resolve(INode) as HTMLElement
-	private dialogEl!: HTMLDialogElement
+	private popoverEl!: HTMLElement
 	private scrollArea!: HTMLElement
-	private dismissZone!: HTMLElement
+	private sheetBody!: HTMLElement
 
-	// Distinguishes a user-initiated dismiss (ESC / Android back / swipe / tap)
-	// — which MUST notify the parent via `sheet-closed` — from a programmatic
-	// close driven by the parent toggling `open` (which already knows).
-	private userDismiss = false
+	// True while the popover is shown; guards double show/close.
+	private showing = false
 
-	// True once the CSS `initial-snap` animation completes and the sheet has
-	// settled on .sheet-body. Suppresses dismiss signals during the open
-	// transition so a programmatic re-snap cannot auto-close the sheet.
+	// True once the sheet has settled on .sheet-body. Suppresses dismiss signals
+	// during the open transition so the initial re-snap cannot auto-close it.
 	private settled = false
 
-	// IntersectionObserver used as the dismiss fallback on engines that do not
-	// support scrollsnapchange (e.g. Firefox). Null when not armed.
+	// True while a close is in flight (scroll-to-closed underway).
+	private dismissing = false
+
+	// Distinguishes a programmatic close (parent toggled `open`) — which does NOT
+	// emit `sheet-closed` — from a user dismiss (swipe / tap / ESC / Android back)
+	// which MUST notify the parent.
+	private programmaticClose = false
+
+	// IntersectionObserver on the sheet body: the single dismiss source of truth.
 	private io: IntersectionObserver | null = null
+
+	// Background elements the CE made `inert` while open (restored on close).
+	private inerted: HTMLElement[] = []
+
+	// Element focused before the sheet opened; focus is restored to it on close.
+	private previouslyFocused: HTMLElement | null = null
+
+	// Smooth scroll-to-closed watchers (settle detection).
+	private scrollFallbackTimer: ReturnType<typeof setTimeout> | undefined
+	private scrollEndHandler: (() => void) | undefined
 
 	public openChanged(isOpen: boolean): void {
 		if (isOpen) {
-			this.showDialog()
+			this.show()
 		} else {
-			this.closeDialog()
+			// Parent toggled `open` off → programmatic close.
+			this.startDismiss(true)
 		}
 	}
 
 	public attached(): void {
 		this.applyAriaLabel()
-		// `open` may have been bound `true` before the inner <dialog> ref was
-		// wired; showModal() then threw and was swallowed. Retry now.
+		// `open` may have been bound `true` before the popover ref was wired;
+		// showPopover() then threw and was swallowed. Retry now.
 		if (this.open) {
-			this.showDialog()
+			this.show()
 		}
 	}
 
@@ -47,105 +74,253 @@ export class BottomSheet {
 
 	public detaching(): void {
 		// Programmatic teardown — do not emit `sheet-closed`.
-		if (this.scrollArea) {
-			this.scrollArea.style.pointerEvents = ''
-			this.scrollArea.removeEventListener('animationend', this.onAnimationEnd)
-		}
+		this.clearScrollWatch()
 		this.io?.disconnect()
 		this.io = null
-		this.closeDialog()
-	}
-
-	/**
-	 * Native close request (ESC key / Android back). For a non-dismissable
-	 * sheet the request is suppressed; otherwise it is allowed to proceed and
-	 * is treated as a user dismiss surfaced by the subsequent `close` event.
-	 */
-	public onCancel(e: Event): void {
-		if (!this.dismissable) {
-			e.preventDefault()
-			return
-		}
-		this.userDismiss = true
-	}
-
-	/** Fired after the <dialog> closes by any path; sync `open` and notify the parent. */
-	public onClose(): void {
-		const dismissed = this.userDismiss
-		this.userDismiss = false
-		this.settled = false
-		this.io?.disconnect()
-		this.io = null
-		if (this.scrollArea) {
-			// Remove the animationend listener in case the dialog closed before the
-			// initial-snap animation fired — prevents a stale post-close arm of the
-			// IntersectionObserver (see armIntersectionObserver).
-			this.scrollArea.removeEventListener('animationend', this.onAnimationEnd)
-			this.scrollArea.style.pointerEvents = ''
-		}
-		if (this.open) {
-			this.open = false
-		}
-		if (dismissed) {
-			this.emitClosed()
-		}
+		this.removeKeydown()
+		this.removeInert()
+		this.hide()
+		this.showing = false
 	}
 
 	/** Tap on the dimmed area above the sheet body closes a dismissable sheet. */
 	public onDismissZoneClick(): void {
 		if (!this.dismissable) return
-		this.requestClose()
+		this.startDismiss(false)
 	}
 
 	/**
-	 * Primary swipe-dismiss signal. `scrollsnapchange` fires only for a user
-	 * scroll gesture (per the CSS Scroll Snap module) — not for programmatic or
-	 * initial-layout re-snaps — so the iOS/WebKit "flash then close" defect
-	 * (where the `initial-snap` animation's re-snap to the dismiss zone was
-	 * misread as a user swipe) cannot occur. Supported in Chrome 129+ and
-	 * Safari 18.2+; `IntersectionObserver` fallback handles Firefox.
-	 *
-	 * Locking pointer-events prevents a quick upward swipe from re-snapping to
-	 * the sheet body after the dismiss-zone snap is detected.
+	 * IntersectionObserver core, split out so it is unit-testable without a real
+	 * observer. `ratio` is the sheet body's visible fraction: ~1 when the sheet
+	 * is open (settled on the body), ~0 when it has scrolled off to the dismiss
+	 * zone.
 	 */
-	public onSnapChange(e: Event): void {
-		if (!this.dismissable || !this.settled) return
-		const snapTarget = (e as Event & { snapTargetBlock?: Element | null })
-			.snapTargetBlock
-		if (snapTarget && snapTarget === this.dismissZone) {
-			if (this.scrollArea) this.scrollArea.style.pointerEvents = 'none'
-			this.requestClose()
+	public updateVisibility(ratio: number): void {
+		if (!this.showing) return
+		if (ratio >= 0.9) {
+			// Sheet body fully visible → release the just-opened guard.
+			this.settled = true
+			return
+		}
+		// Body has left the viewport. Honour it only once settled, so the initial
+		// re-snap during open cannot trigger a dismiss (the "flash then close" bug).
+		if (this.settled && ratio <= 0.1) {
+			this.finalizeClose()
 		}
 	}
 
-	/** Open as a modal: native focus-trap, inert background, ESC / Android back close request. */
-	private showDialog(): void {
+	/** Show the popover and set up focus-trap, background inert, and observers. */
+	private show(): void {
+		if (!this.popoverEl || this.showing) return
 		try {
-			if (!this.dialogEl.open) {
-				this.settled = false
-				this.dialogEl.showModal()
-				// Arm the settle guard: release once the CSS `initial-snap` animation
-				// completes and the scroll position has landed on .sheet-body.
-				this.scrollArea.addEventListener('animationend', this.onAnimationEnd)
-			}
+			this.settled = false
+			this.dismissing = false
+			this.programmaticClose = false
+			this.popoverEl.showPopover()
+			this.showing = true
+			this.previouslyFocused =
+				(document.activeElement as HTMLElement | null) ?? null
+			this.applyInert()
+			this.armObserver()
+			this.addKeydown()
+			this.focusSheet()
 		} catch {
-			// Pre-attach: <dialog> ref not yet resolved. attached() retries.
+			// Pre-attach: popover ref not resolved / not connected. attached() retries.
 		}
 	}
 
-	private closeDialog(): void {
+	/**
+	 * Begin a dismiss: scroll to the top (dismiss zone) snap stop. The
+	 * IntersectionObserver (or the settle watcher) hides the popover once the
+	 * body is off-screen.
+	 */
+	private startDismiss(programmatic: boolean): void {
+		if (!this.showing || this.dismissing) return
+		this.dismissing = true
+		this.programmaticClose = programmatic
+		// Lift inert as the close begins so the background is interactive during
+		// the dismiss scroll (removes the prior during-close operation lock).
+		this.removeInert()
+		this.scrollToClosed()
+	}
+
+	private scrollToClosed(): void {
+		if (!this.scrollArea) {
+			this.finalizeClose()
+			return
+		}
+		if (this.prefersReducedMotion()) {
+			this.scrollArea.scrollTop = 0
+			this.finalizeClose()
+			return
+		}
+		// Smooth scroll: finalize when it settles. Prefer `scrollend`; fall back
+		// to a timeout for engines that do not fire it (and for the no-op case
+		// where the sheet is already at the top, which emits no scroll event).
+		const finish = (): void => {
+			this.clearScrollWatch()
+			if (this.dismissing) this.finalizeClose()
+		}
+		this.scrollEndHandler = finish
+		this.scrollArea.addEventListener('scrollend', finish, { once: true })
+		this.scrollFallbackTimer = setTimeout(finish, 400)
 		try {
-			if (this.dialogEl?.open) {
-				this.dialogEl.close()
-			}
+			this.scrollArea.scrollTo({ top: 0, behavior: 'smooth' })
 		} catch {
-			// Already closed or not in DOM.
+			this.scrollArea.scrollTop = 0
 		}
 	}
 
-	private requestClose(): void {
-		this.userDismiss = true
-		this.closeDialog()
+	/** Complete the close: hide, restore focus, sync `open`, and notify parent. */
+	private finalizeClose(): void {
+		if (!this.showing) return
+		this.showing = false
+		this.settled = false
+		this.dismissing = false
+		this.clearScrollWatch()
+		this.io?.disconnect()
+		this.io = null
+		this.removeKeydown()
+		this.removeInert()
+		const emit = !this.programmaticClose
+		this.programmaticClose = false
+		this.hide()
+		this.restoreFocus()
+		if (this.open) {
+			this.open = false
+		}
+		if (emit) {
+			this.emitClosed()
+		}
+	}
+
+	private hide(): void {
+		try {
+			this.popoverEl?.hidePopover()
+		} catch {
+			// Already hidden or not in DOM.
+		}
+	}
+
+	private armObserver(): void {
+		if (typeof IntersectionObserver === 'undefined' || !this.sheetBody) return
+		this.io?.disconnect()
+		this.io = new IntersectionObserver(this.onIntersect, {
+			threshold: [0, 0.1, 0.9, 1],
+		})
+		this.io.observe(this.sheetBody)
+	}
+
+	private readonly onIntersect = (
+		entries: IntersectionObserverEntry[],
+	): void => {
+		const last = entries[entries.length - 1]
+		if (last) this.updateVisibility(last.intersectionRatio)
+	}
+
+	/**
+	 * Make everything except the popover subtree `inert`, so focus and assistive
+	 * technology are confined to the sheet while it is open. Walks up from the
+	 * popover, inerting the siblings at each ancestor level — this works even
+	 * though the popover is nested deep in the component tree.
+	 */
+	private applyInert(): void {
+		if (!this.popoverEl || typeof document === 'undefined') return
+		const body = document.body
+		let node: HTMLElement | null = this.popoverEl
+		while (node && node !== body && node.parentElement) {
+			const parent = node.parentElement
+			for (const sib of Array.from(parent.children)) {
+				if (sib !== node && sib instanceof HTMLElement && !sib.inert) {
+					sib.inert = true
+					this.inerted.push(sib)
+				}
+			}
+			node = parent
+		}
+	}
+
+	private removeInert(): void {
+		for (const el of this.inerted) {
+			el.inert = false
+		}
+		this.inerted = []
+	}
+
+	private focusSheet(): void {
+		this.sheetBody?.focus?.()
+	}
+
+	private restoreFocus(): void {
+		this.previouslyFocused?.focus?.()
+		this.previouslyFocused = null
+	}
+
+	private readonly onKeydown = (e: KeyboardEvent): void => {
+		if (!this.showing) return
+		if (e.key === 'Escape') {
+			// A popover="manual" does not emit a native close request; handle ESC.
+			e.preventDefault()
+			if (this.dismissable) this.startDismiss(false)
+			return
+		}
+		if (e.key === 'Tab') {
+			this.trapTab(e)
+		}
+	}
+
+	private addKeydown(): void {
+		if (typeof document !== 'undefined') {
+			document.addEventListener('keydown', this.onKeydown)
+		}
+	}
+
+	private removeKeydown(): void {
+		if (typeof document !== 'undefined') {
+			document.removeEventListener('keydown', this.onKeydown)
+		}
+	}
+
+	/** Wrap Tab focus within the popover (a popover has no native focus trap). */
+	private trapTab(e: KeyboardEvent): void {
+		if (!this.popoverEl) return
+		const focusable = Array.from(
+			this.popoverEl.querySelectorAll<HTMLElement>(
+				'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+			),
+		)
+		if (focusable.length === 0) {
+			e.preventDefault()
+			this.focusSheet()
+			return
+		}
+		const first = focusable[0]
+		const last = focusable[focusable.length - 1]
+		const active = document.activeElement
+		if (e.shiftKey && active === first) {
+			e.preventDefault()
+			last.focus()
+		} else if (!e.shiftKey && active === last) {
+			e.preventDefault()
+			first.focus()
+		}
+	}
+
+	private clearScrollWatch(): void {
+		if (this.scrollFallbackTimer) {
+			clearTimeout(this.scrollFallbackTimer)
+			this.scrollFallbackTimer = undefined
+		}
+		if (this.scrollEndHandler && this.scrollArea) {
+			this.scrollArea.removeEventListener('scrollend', this.scrollEndHandler)
+		}
+		this.scrollEndHandler = undefined
+	}
+
+	private prefersReducedMotion(): boolean {
+		return typeof matchMedia !== 'undefined'
+			? matchMedia('(prefers-reduced-motion: reduce)').matches
+			: false
 	}
 
 	private emitClosed(): void {
@@ -153,57 +328,17 @@ export class BottomSheet {
 	}
 
 	/**
-	 * Mirror the accessible name onto the inner <dialog>. Consumers supply it
+	 * Mirror the accessible name onto the popover host. Consumers supply it
 	 * either through the `ariaLabel` bindable (`aria-label="..."` /
 	 * `aria-label.bind="..."`) or via the `t="[aria-label]..."` i18n attribute,
 	 * which sets `aria-label` on the host element — so fall back to reading it
 	 * off the host when the bindable is empty.
 	 */
 	private applyAriaLabel(): void {
-		if (!this.dialogEl) return
+		if (!this.popoverEl) return
 		const label = this.ariaLabel || this.host.getAttribute('aria-label') || ''
 		if (label) {
-			this.dialogEl.setAttribute('aria-label', label)
+			this.popoverEl.setAttribute('aria-label', label)
 		}
-	}
-
-	// Fires when the CSS `initial-snap` animation on .scroll-area ends, meaning
-	// the sheet has settled on .sheet-body and the dismiss guard can be released.
-	private readonly onAnimationEnd = (e: AnimationEvent): void => {
-		if (e.animationName !== 'initial-snap') return
-		this.scrollArea.removeEventListener('animationend', this.onAnimationEnd)
-		this.settled = true
-		this.armIntersectionObserver()
-	}
-
-	// Fallback dismiss detection for engines without scrollsnapchange (Firefox).
-	// Observes the dismiss zone within the scroll container; when it enters the
-	// visible scroll area the user has swiped toward it → close the sheet.
-	// Only armed after the just-opened guard releases (settled = true).
-	private armIntersectionObserver(): void {
-		if (!this.dismissable) return
-		// Primary signal (scrollsnapchange) is available — no fallback needed.
-		// Double-cast via unknown: HTMLElement doesn't declare onscrollsnapchange
-		// (non-standard property) so the direct cast to Record would be rejected.
-		if (
-			'onscrollsnapchange' in
-			(this.scrollArea as unknown as Record<string, unknown>)
-		)
-			return
-
-		this.io = new IntersectionObserver(
-			(entries) => {
-				if (!this.dismissable || !this.settled) return
-				for (const entry of entries) {
-					if (entry.isIntersecting) {
-						if (this.scrollArea) this.scrollArea.style.pointerEvents = 'none'
-						this.requestClose()
-						break
-					}
-				}
-			},
-			{ root: this.scrollArea, threshold: 0 },
-		)
-		this.io.observe(this.dismissZone)
 	}
 }

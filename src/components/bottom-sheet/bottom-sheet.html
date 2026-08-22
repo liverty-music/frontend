@@ -1,30 +1,32 @@
-<!-- Inner native <dialog>: opened via showModal() for top-layer promotion,
-     focus-trap, inert background, and ESC / Android back close requests. -->
-<dialog
-  ref="dialogEl"
-  class="sheet-dialog"
-  cancel.trigger="onCancel($event)"
-  close.trigger="onClose()"
+<!-- Non-modal popover host: promoted to the Top Layer via showPopover() for the
+     ::backdrop and stacking, WITHOUT a modal's pointer-blocking backdrop. The
+     view-model manages focus-trap, background `inert`, and the Escape close
+     request (a popover, unlike <dialog>.showModal(), provides none of these). -->
+<div
+  ref="popoverEl"
+  class="sheet-popover"
+  popover="manual"
+  role="dialog"
+  aria-modal="true"
 >
   <div
     ref="scrollArea"
     class="scroll-area"
     data-dismissable.bind="dismissable"
-    scrollsnapchange.trigger="onSnapChange($event)"
   >
     <!-- Dismiss zone (always in DOM; CSS controls snap behavior via data-dismissable).
          Tap-outside: clicking the dimmed area closes a dismissable sheet. -->
     <div
-      ref="dismissZone"
       class="dismiss-zone"
       aria-hidden="true"
       click.trigger="onDismissZoneClick()"
     ></div>
 
-    <!-- Sheet body (scroll-snap target at bottom, initially visible) -->
-    <section class="sheet-body">
+    <!-- Sheet body (scroll-snap target at bottom, initially visible). Focusable
+         (tabindex="-1") so focus can be moved into it on open. -->
+    <section ref="sheetBody" class="sheet-body" tabindex="-1">
       <div class="handle-bar"></div>
       <au-slot></au-slot>
     </section>
   </div>
-</dialog>
+</div>

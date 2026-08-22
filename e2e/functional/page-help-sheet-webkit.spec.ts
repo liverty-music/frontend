@@ -8,9 +8,11 @@ import { expect, test } from '@playwright/test'
  * `pointerup` scroll-ratio heuristics misread as a user swipe-to-dismiss.
  * This caused the page-help sheet to open and immediately close on WebKit.
  *
- * Fix: replace those heuristics with `scrollsnapchange` (user-gesture-only
- * per spec) and an `IntersectionObserver` fallback. The programmatic re-snap
- * cannot fire `scrollsnapchange`, so the sheet no longer auto-closes.
+ * Fix: the sheet is a non-modal `popover` whose dismiss is driven by an
+ * `IntersectionObserver` on the sheet body, armed only after the body has
+ * settled fully visible (the "just-opened" guard). The transient off-screen
+ * ratio during the initial re-snap is ignored, so the sheet no longer
+ * auto-closes.
  *
  * Projects:
  *  - webkit-repro:     real WebKit, iPhone 14 — RED before the fix, GREEN after
@@ -32,30 +34,28 @@ test('page-help sheet opens and stays open (not auto-dismissed)', async ({ page 
 	await expect(helpBtn).toBeVisible()
 	await helpBtn.click()
 
-	// Wait for the bottom-sheet <dialog> to open.
-	const dialog = page.locator('bottom-sheet dialog').first()
-	await expect(dialog).toBeVisible()
+	// Wait for the bottom-sheet popover to open.
+	const popover = page.locator('bottom-sheet [popover]').first()
+	await expect(popover).toBeVisible()
 
-	// Sample dialog.open over ~1.5 s (15 × 100 ms intervals).
+	// Sample :popover-open over ~1.5 s (15 × 100 ms intervals).
 	// On the buggy build this fails within the first few samples because the
-	// scroll-ratio heuristics fire on the programmatic initial re-snap and
-	// call close() before the user has interacted.
+	// dismiss heuristics fire on the programmatic initial re-snap and close the
+	// sheet before the user has interacted.
 	const samples: boolean[] = []
 	for (let i = 0; i < 15; i++) {
 		await page.waitForTimeout(100)
-		const isOpen = await dialog.evaluate(
-			(el) => (el as HTMLDialogElement).open,
-		)
+		const isOpen = await popover.evaluate((el) => el.matches(':popover-open'))
 		samples.push(isOpen)
 	}
 
-	// Every sample must be true — dialog must stay open the entire 1.5 s.
+	// Every sample must be true — the popover must stay open the entire 1.5 s.
 	for (const [i, isOpen] of samples.entries()) {
-		expect(isOpen, `dialog.open was false at sample ${i + 1}`).toBe(true)
+		expect(isOpen, `popover was not open at sample ${i + 1}`).toBe(true)
 	}
 
-	// Also verify that sheet CONTENT is visible, not merely the dialog element.
+	// Also verify that sheet CONTENT is visible, not merely the popover element.
 	// If WebKit parks the scroll on the dismiss zone (ratio 0) after the
-	// initial-snap, the sheet body would be off-screen while dialog.open=true.
+	// initial-snap, the sheet body would be off-screen while the popover is open.
 	await expect(page.locator('.sheet-body')).toBeVisible()
 })
