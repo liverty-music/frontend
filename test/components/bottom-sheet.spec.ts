@@ -2,47 +2,44 @@ import { DI, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BottomSheet } from '../../src/components/bottom-sheet/bottom-sheet'
 
-function makeDialog() {
+function makePopover() {
 	return {
-		open: false,
-		showModal: vi.fn(function (this: { open: boolean }) {
-			this.open = true
-		}),
-		close: vi.fn(function (this: { open: boolean }) {
-			this.open = false
-		}),
+		showPopover: vi.fn(),
+		hidePopover: vi.fn(),
 		setAttribute: vi.fn(),
+		querySelectorAll: vi.fn(() => [] as unknown as NodeListOf<HTMLElement>),
 	}
 }
 
 describe('BottomSheet', () => {
 	let sut: BottomSheet
 	let host: HTMLElement
-	let dialog: ReturnType<typeof makeDialog>
+	let popover: ReturnType<typeof makePopover>
 	let scrollArea: HTMLDivElement
-	let dismissZone: HTMLDivElement
+	let sheetBody: HTMLElement
 
 	beforeEach(() => {
 		host = document.createElement('div')
 		host.dispatchEvent = vi.fn().mockReturnValue(true)
 
-		dialog = makeDialog()
+		popover = makePopover()
 		scrollArea = document.createElement('div')
 		scrollArea.className = 'scroll-area'
-		dismissZone = document.createElement('div')
-		dismissZone.className = 'dismiss-zone'
+		scrollArea.scrollTo = vi.fn()
+		sheetBody = document.createElement('section')
+		sheetBody.className = 'sheet-body'
 
 		const container = DI.createContainer()
 		container.register(Registration.instance(INode, host))
 		sut = container.get(BottomSheet)
 
-		Object.defineProperty(sut, 'dialogEl', { value: dialog, writable: true })
+		Object.defineProperty(sut, 'popoverEl', { value: popover, writable: true })
 		Object.defineProperty(sut, 'scrollArea', {
 			value: scrollArea,
 			writable: true,
 		})
-		Object.defineProperty(sut, 'dismissZone', {
-			value: dismissZone,
+		Object.defineProperty(sut, 'sheetBody', {
+			value: sheetBody,
 			writable: true,
 		})
 	})
@@ -51,114 +48,91 @@ describe('BottomSheet', () => {
 		vi.restoreAllMocks()
 	})
 
+	// Drive the sheet to open+settled without a real IntersectionObserver.
+	function openAndSettle(): void {
+		sut.openChanged(true)
+		sut.updateVisibility(1)
+	}
+
 	describe('openChanged()', () => {
-		it('calls showModal on the inner dialog when opening', () => {
+		it('calls showPopover on the host when opening', () => {
 			sut.openChanged(true)
 
-			expect(dialog.showModal).toHaveBeenCalledOnce()
+			expect(popover.showPopover).toHaveBeenCalledOnce()
 		})
 
-		it('calls close on the inner dialog when closing', () => {
-			dialog.open = true
+		it('scrolls to the dismiss zone (closed stop) when closing', () => {
+			openAndSettle()
+
 			sut.openChanged(false)
 
-			expect(dialog.close).toHaveBeenCalledOnce()
+			expect(scrollArea.scrollTo).toHaveBeenCalledWith(
+				expect.objectContaining({ top: 0 }),
+			)
 		})
 	})
 
-	describe('close request (cancel)', () => {
-		it('prevents default for a non-dismissable sheet', () => {
-			const e = { preventDefault: vi.fn() } as unknown as Event
-			sut.dismissable = false
-
-			sut.onCancel(e)
-
-			expect(e.preventDefault).toHaveBeenCalledOnce()
-		})
-
-		it('allows the request for a dismissable sheet', () => {
-			const e = { preventDefault: vi.fn() } as unknown as Event
-			sut.dismissable = true
-
-			sut.onCancel(e)
-
-			expect(e.preventDefault).not.toHaveBeenCalled()
-		})
-	})
-
-	describe('onSnapChange()', () => {
-		beforeEach(() => {
-			// Seed settled=true so the just-opened guard does not suppress signals.
-			Object.defineProperty(sut, 'settled', { value: true, writable: true })
-		})
-
-		it('closes and emits sheet-closed when dismissable and snap target is dismiss zone', () => {
-			sut.dismissable = true
+	describe('dismiss via IntersectionObserver', () => {
+		it('hides and emits sheet-closed when the body leaves the viewport after settling', () => {
+			openAndSettle()
 			sut.open = true
-			dialog.open = true
 
-			sut.onSnapChange({
-				snapTargetBlock: dismissZone,
-			} as unknown as Event)
-			sut.onClose()
+			sut.updateVisibility(0)
 
+			expect(popover.hidePopover).toHaveBeenCalledOnce()
 			expect(sut.open).toBe(false)
 			expect(host.dispatchEvent).toHaveBeenCalledWith(
 				expect.objectContaining({ type: 'sheet-closed' }),
 			)
 		})
 
-		it('does not dismiss when dismissable=false', () => {
-			sut.dismissable = false
-			dialog.open = true
+		it('does not dismiss before the sheet has settled (just-opened guard)', () => {
+			sut.openChanged(true)
+			// Transient off-screen ratio during the open re-snap, before settle.
+			sut.updateVisibility(0)
 
-			sut.onSnapChange({
-				snapTargetBlock: dismissZone,
-			} as unknown as Event)
-
-			expect(dialog.close).not.toHaveBeenCalled()
+			expect(popover.hidePopover).not.toHaveBeenCalled()
 		})
 
-		it('does not dismiss when not yet settled (just-opened guard)', () => {
-			sut.dismissable = true
-			dialog.open = true
-			Object.defineProperty(sut, 'settled', { value: false, writable: true })
+		it('stays open when the gesture reverses back to the body (no bounce-back)', () => {
+			openAndSettle()
 
-			sut.onSnapChange({
-				snapTargetBlock: dismissZone,
-			} as unknown as Event)
+			sut.updateVisibility(0.5)
+			sut.updateVisibility(1)
 
-			expect(dialog.close).not.toHaveBeenCalled()
+			expect(popover.hidePopover).not.toHaveBeenCalled()
+			expect(host.dispatchEvent).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('tap-outside dismiss', () => {
 		it('closes a dismissable sheet on dismiss-zone click', () => {
-			dialog.open = true
+			openAndSettle()
 			sut.dismissable = true
 
 			sut.onDismissZoneClick()
 
-			expect(dialog.close).toHaveBeenCalledOnce()
+			expect(scrollArea.scrollTo).toHaveBeenCalled()
 		})
 
 		it('does not close a non-dismissable sheet on dismiss-zone click', () => {
-			dialog.open = true
+			openAndSettle()
 			sut.dismissable = false
+			;(scrollArea.scrollTo as ReturnType<typeof vi.fn>).mockClear()
 
 			sut.onDismissZoneClick()
 
-			expect(dialog.close).not.toHaveBeenCalled()
+			expect(scrollArea.scrollTo).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('detaching()', () => {
-		it('closes the dialog without emitting sheet-closed', () => {
-			dialog.open = true
+		it('hides the popover without emitting sheet-closed', () => {
+			openAndSettle()
 
 			sut.detaching()
 
-			expect(dialog.close).toHaveBeenCalledOnce()
+			expect(popover.hidePopover).toHaveBeenCalledOnce()
 			expect(host.dispatchEvent).not.toHaveBeenCalled()
 		})
 	})
