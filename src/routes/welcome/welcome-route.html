@@ -1,3 +1,10 @@
+<import from="../../components/coach-mark/coach-mark"></import>
+
+<!-- Ambient background: fixed, full-page, screen-blended particle glow behind
+     all content. Decorative only (pointer-events: none, aria-hidden), disabled
+     under reduced motion. Managed by the ambient-glow custom attribute. -->
+<canvas class="[ welcome-ambient ]" ambient-glow aria-hidden="true"></canvas>
+
 <!-- Screen 1: Hero-only hook screen -->
 <header class="[ welcome-hero ]">
   <p class="welcome-brand">
@@ -22,8 +29,8 @@
     </label>
   </fieldset>
 
-  <!-- With preview data: single scroll-affordance that reveals Screen 2. The
-       button only triggers the scroll; smooth vs instant motion is governed by
+  <!-- With preview data: single scroll-affordance that reveals the guided demo.
+       The button only triggers the scroll; smooth vs instant motion is governed by
        the scroll container's CSS `scroll-behavior` (and its reduced-motion
        override), so no motion logic lives in JS. A native `<a href="#…">` was
        rejected because the Aurelia router intercepts URL/hash changes and tears
@@ -35,8 +42,8 @@
     t="welcome.hero.seePreview"
   ></button>
 
-  <!-- Without preview data: no Screen 2 exists, so fall back to inline CTAs
-       so unauthenticated users can still start onboarding or sign in. The
+  <!-- Without preview data: no demo exists, so fall back to inline CTAs so
+       unauthenticated users can still start onboarding or sign in. The
        guest-friendly note rides above the CTA group per the landing-page spec
        so the no-account-required message stays visible without scrolling. -->
   <div else class="[ welcome-hero-fallback ]">
@@ -56,32 +63,94 @@
   </div>
 </header>
 
-<!-- Screen 2: Live dashboard preview + CTA -->
-<section class="[ welcome-screen-2 ]" if.bind="dateGroups.length > 0">
-  <p t="welcome.preview.label" class="welcome-preview-label"></p>
-  <div class="[ welcome-preview ]" data-testid="welcome-preview" role="presentation">
-    <concert-highway
-      date-groups.bind="dateGroups"
-      is-readonly="true"
-      show-beams="true"
-    ></concert-highway>
+<!-- Guided product demo: only rendered when preview data is available.
+     S0 notification → tap / auto-advance → View Transitions morph → S2 interactive
+     timetable → coach-mark → real detail sheet. Without preview data the hero
+     fallback above shows inline CTAs instead, so the page never shows a
+     half-built narrative. -->
+<section
+  if.bind="dateGroups.length > 0"
+  ref="demoEl"
+  class="[ welcome-demo ]"
+  data-testid="welcome-demo"
+  data-entered.bind="demoEntered || undefined"
+>
+  <!-- S0 — mock new-concert push notification (the push pillar). Tapping it (or
+       an auto-advance) plays the exit, then reveals the timetable — the two are
+       sequential, driven by `data-exiting` + the VM's swap. -->
+  <div
+    if.bind="demoPhase === 'notification'"
+    class="[ welcome-demo-notification ]"
+    data-exiting.bind="demoExiting || undefined"
+    data-testid="welcome-demo-notification"
+  >
+    <p t="welcome.demo.notificationLead" class="welcome-demo-lead"></p>
+    <button
+      type="button"
+      class="[ welcome-notification-trigger ]"
+      click.trigger="onNotificationTap()"
+      aria-label.bind="'welcome.demo.notificationTap' | t"
+    >
+      <notification-mock-card></notification-mock-card>
+    </button>
+    <p t="welcome.demo.notificationTap" class="welcome-demo-hint"></p>
   </div>
 
-  <footer class="[ welcome-actions ]">
-    <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
-
-    <div class="welcome-cta-group">
-      <button
-        busy-on-click.bind="() => handleGetStarted()"
-        class="welcome-btn-primary"
-        t="welcome.cta.getStarted"
-      ></button>
-
-      <button
-        busy-on-click.bind="() => handleLogin()"
-        class="welcome-btn-secondary"
-        t="welcome.cta.login"
-      ></button>
+  <!-- S2 — interactive timetable (the auto-collection pillar). Cards are NOT
+       read-only here: tapping one fires `event-selected`, which opens the real
+       detail sheet (the ticket/goods pillar). -->
+  <!-- S2 timetable + the commit CTAs, composed as one screen (auto / preview /
+       auto) — the same "preview + CTA footer" grouping as the original Screen 2.
+       Keeping the CTAs here preserves the two-layer intent: they never sit on the
+       hero when preview data exists. -->
+  <div
+    else
+    class="[ welcome-demo-timetable ]"
+    data-testid="welcome-timetable"
+  >
+    <p t="welcome.preview.label" class="welcome-section-tagline"></p>
+    <div class="[ welcome-preview ]" data-testid="welcome-preview">
+      <concert-highway
+        date-groups.bind="dateGroups"
+        show-beams="true"
+        event-selected.trigger="onEventSelected($event)"
+      ></concert-highway>
     </div>
-  </footer>
+    <footer class="[ welcome-actions ]">
+      <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
+      <div class="welcome-cta-group">
+        <button
+          busy-on-click.bind="() => handleGetStarted()"
+          class="welcome-btn-primary"
+          t="welcome.cta.getStarted"
+        ></button>
+        <button
+          busy-on-click.bind="() => handleLogin()"
+          class="welcome-btn-secondary"
+          t="welcome.cta.login"
+        ></button>
+      </div>
+    </footer>
+  </div>
 </section>
+
+<!-- The product's real detail sheet, opened by a concert-card tap. The
+     ticket-journey block inside is gated by `isAuthenticated`, so it stays hidden
+     for the anonymous visitor. `manage-history=false`: on Welcome there is no
+     /concerts or /dashboard route, so the sheet must not rewrite the URL. -->
+<event-detail-sheet
+  component.ref="detailSheet"
+  manage-history.bind="false"
+  actions-hint.bind="'welcome.demo.sheetHint' | t"
+></event-detail-sheet>
+
+<!-- Coach-mark: once the timetable is interactive, it spotlights the first card
+     and invites the tap. Tapping it forwards the click to the card (opening the
+     sheet); an outside tap light-dismisses. No hover dependency. -->
+<coach-mark
+  active.bind="coachActive"
+  target-selector=".welcome-demo-timetable [data-live-card]"
+  message.bind="'welcome.demo.coachMark' | t"
+  on-tap.bind="() => onCoachTap()"
+  on-dismiss.bind="() => onCoachDismiss()"
+></coach-mark>

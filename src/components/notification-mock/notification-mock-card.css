@@ -1,0 +1,66 @@
+@layer block {
+	@scope (notification-mock-card) {
+		:scope {
+			/* A real OS notification is a light surface with dark text — kept
+			   local so it reads as "a system notification" over the dark LP. */
+			--_notif-surface: oklch(96% 0.004 250deg);
+			--_notif-title: oklch(24% 0.02 265deg);
+			--_notif-body: oklch(42% 0.02 265deg);
+			--_notif-meta: oklch(55% 0.02 265deg);
+		}
+
+		.notification-mock-card {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: start;
+
+			max-inline-size: 30rem;
+			padding: var(--space-s);
+			border-radius: var(--radius-card);
+
+			background: var(--_notif-surface);
+			box-shadow: var(--shadow-card-glow);
+		}
+
+		.notification-mock-icon {
+			flex-shrink: 0;
+
+			inline-size: 40px;
+			block-size: 40px;
+			border-radius: var(--radius-button);
+		}
+
+		.notification-mock-body {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			min-inline-size: 0;
+		}
+
+		.notification-mock-header {
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			font-size: var(--step--1);
+			color: var(--_notif-meta);
+		}
+
+		.notification-mock-app {
+			font-weight: 600;
+		}
+
+		.notification-mock-title {
+			font-size: var(--step-0);
+			font-weight: 700;
+			color: var(--_notif-title);
+			line-height: var(--leading-snug);
+		}
+
+		.notification-mock-text {
+			font-size: var(--step--1);
+			color: var(--_notif-body);
+			line-height: var(--leading-snug);
+		}
+	}
+}

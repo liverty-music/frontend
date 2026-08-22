@@ -28,6 +28,7 @@ import { ConcertHighway } from './components/live-highway/concert-highway'
 import { EventCard } from './components/live-highway/event-card'
 import { EventDetailSheet } from './components/live-highway/event-detail-sheet'
 import { LoadingSpinner } from './components/loading-spinner/loading-spinner'
+import { NotificationMockCard } from './components/notification-mock/notification-mock-card'
 import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
 import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
@@ -49,6 +50,7 @@ import {
 	StorageKeys,
 	trackSessionForPrompts,
 } from './constants/storage-keys'
+import { AmbientGlowCustomAttribute } from './custom-attributes/ambient-glow'
 import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
@@ -259,6 +261,7 @@ async function bootstrap(): Promise<void> {
 	au.register(EventCard)
 	au.register(EventDetailSheet)
 	au.register(InlineError)
+	au.register(NotificationMockCard)
 	au.register(LegalDocument)
 	au.register(LoadingSpinner)
 	au.register(SignupPromptBanner)
@@ -270,6 +273,7 @@ async function bootstrap(): Promise<void> {
 	au.register(SvgIcon)
 	au.register(UserHomeSelector)
 	au.register(AuthHook)
+	au.register(AmbientGlowCustomAttribute)
 	au.register(ArtistColorCustomAttribute)
 	au.register(BusyOnClickCustomAttribute)
 	au.register(BeamVarsCustomAttribute)

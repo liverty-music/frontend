@@ -376,12 +376,36 @@
 			color: var(--color-brand-primary);
 		}
 
+		/* Coach-style hint above the actions (landing page only). */
+		.sheet-actions-hint {
+			display: flex;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			margin-block-start: var(--space-m);
+			padding: var(--space-2xs) var(--space-s);
+			border: 1px solid oklch(from var(--color-brand-accent) l c h / 35%);
+			border-radius: var(--radius-button);
+
+			font-size: var(--step--1);
+			font-weight: 500;
+			color: var(--color-brand-accent);
+			text-align: center;
+			text-wrap: balance;
+			word-break: auto-phrase;
+
+			background: oklch(from var(--color-brand-accent) l c h / 10%);
+
+			animation: fade-slide-up 400ms 200ms ease-out both;
+		}
+
 		/* Action buttons */
 		.sheet-actions {
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-2xs);
-			margin-block-start: var(--space-m);
+			margin-block-start: var(--space-s);
 		}
 
 		.sheet-btn-primary,

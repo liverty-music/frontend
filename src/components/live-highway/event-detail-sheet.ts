@@ -1,6 +1,5 @@
 import { bindable, ILogger, resolve } from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
-import { bestBackgroundUrl } from '../../entities/artist'
 import {
 	JOURNEY_NAV_ORDER,
 	JOURNEY_STATUS_CONFIG_MAP,
@@ -17,6 +16,13 @@ import type { EventSource } from '../../services/analytics-events'
 import { IAuthService } from '../../services/auth-service'
 import { IFollowStore } from '../../services/follow-store'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
+import {
+	eventBackgroundUrl,
+	eventCalendarUrl,
+	eventGoogleMapsUrl,
+	eventHasMerchUrl,
+	eventOpenTimeOrFallback,
+} from './event-detail-utils'
 import type { JourneyStatus, LiveEvent } from './live-event'
 
 export class EventDetailSheet {
@@ -36,6 +42,23 @@ export class EventDetailSheet {
 	 * component free of element injection and testable via plain DI construction.
 	 */
 	@bindable public onSignupRequested?: () => void
+
+	/**
+	 * Whether the sheet manages browser history on open/close. On the dashboard
+	 * (the default) it pushes `/concerts/:id` and restores `/dashboard` so the
+	 * back button closes the sheet and the deep-link URL is shareable. On the
+	 * landing page there is no such route, so the host sets this `false` to avoid
+	 * changing the URL (a reload of `/concerts/:id` or `/dashboard` would navigate
+	 * the anonymous visitor away from Welcome).
+	 */
+	@bindable public manageHistory = true
+
+	/**
+	 * Optional coach-style hint rendered above the action buttons. The landing
+	 * page sets it to explain that venue and goods info are one tap away; the
+	 * dashboard leaves it unset so nothing extra shows there.
+	 */
+	@bindable public actionsHint?: string
 
 	public isOpen = false
 	public journeyUpdating = false
@@ -134,42 +157,19 @@ export class EventDetailSheet {
 	}
 
 	public get backgroundUrl(): string | undefined {
-		return bestBackgroundUrl(this.event?.artist)
+		return eventBackgroundUrl(this.event)
 	}
 
 	public get hasMerchUrl(): boolean {
-		return Boolean(this.event?.merchUrl)
+		return eventHasMerchUrl(this.event)
 	}
 
 	public get googleMapsUrl(): string {
-		if (!this.event) return '#'
-		const area = this.event.locationLabel
-		const query = area
-			? `${this.event.venueName} ${area}`
-			: this.event.venueName
-		return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+		return eventGoogleMapsUrl(this.event)
 	}
 
 	public get calendarUrl(): string {
-		if (!this.event) return '#'
-		const e = this.event
-		const dateStr = [
-			e.date.getFullYear(),
-			String(e.date.getMonth() + 1).padStart(2, '0'),
-			String(e.date.getDate()).padStart(2, '0'),
-		].join('')
-		const startTime = e.startTime || '19:00'
-		const startStr = `${startTime.replace(':', '')}00`
-		const [hours, mins] = startTime.split(':').map(Number)
-		const endDate = new Date(e.date)
-		endDate.setHours(hours + 2, mins)
-		const endDateStr = [
-			endDate.getFullYear(),
-			String(endDate.getMonth() + 1).padStart(2, '0'),
-			String(endDate.getDate()).padStart(2, '0'),
-		].join('')
-		const endStr = `${String(endDate.getHours()).padStart(2, '0')}${String(endDate.getMinutes()).padStart(2, '0')}00`
-		return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(e.title)}&dates=${dateStr}T${startStr}/${endDateStr}T${endStr}&location=${encodeURIComponent(e.venueName)}`
+		return eventCalendarUrl(this.event)
 	}
 
 	public open(
@@ -181,13 +181,19 @@ export class EventDetailSheet {
 		this.isAllNearby = isAllNearby
 		this.isOpen = true
 
-		// Push URL without triggering Aurelia Router navigation — the sheet is an
-		// overlay on the dashboard, not a separate route component. A full navigation
-		// would destroy and recreate the dashboard component (and this sheet).
-		this.history.pushState({ concertId: event.id }, '', `/concerts/${event.id}`)
+		if (this.manageHistory) {
+			// Push URL without triggering Aurelia Router navigation — the sheet is an
+			// overlay on the dashboard, not a separate route component. A full navigation
+			// would destroy and recreate the dashboard component (and this sheet).
+			this.history.pushState(
+				{ concertId: event.id },
+				'',
+				`/concerts/${event.id}`,
+			)
 
-		// Listen for browser back navigation (popstate) to close the sheet.
-		window.addEventListener('popstate', this.onPopstate)
+			// Listen for browser back navigation (popstate) to close the sheet.
+			window.addEventListener('popstate', this.onPopstate)
+		}
 
 		// Fire after the sheet state flips — listeners observe consistent state.
 		this.analytics.capture(Events.ConcertDetailViewed, {
@@ -197,12 +203,14 @@ export class EventDetailSheet {
 		})
 	}
 
-	/** Programmatic close — replaces current history entry with dashboard URL */
+	/** Programmatic close — restores the dashboard URL when this sheet manages history. */
 	public close(): void {
 		if (!this.isOpen) return
 		this.isOpen = false
-		window.removeEventListener('popstate', this.onPopstate)
-		this.history.replaceState(null, '', '/dashboard')
+		if (this.manageHistory) {
+			window.removeEventListener('popstate', this.onPopstate)
+			this.history.replaceState(null, '', '/dashboard')
+		}
 	}
 
 	/** Handles the sheet-closed event dispatched by <bottom-sheet> on light-dismiss or swipe */
@@ -307,7 +315,7 @@ export class EventDetailSheet {
 	}
 
 	public get openTimeOrFallback(): string {
-		return this.event?.openTime ?? '—'
+		return eventOpenTimeOrFallback(this.event)
 	}
 
 	public async setJourneyStatus(status: JourneyStatus): Promise<void> {

@@ -1,0 +1,26 @@
+<template>
+  <import from="./notification-mock-card.css"></import>
+
+  <!-- Decorative mock of a real OS/web push, styled after an Android/Chrome
+       notification: app icon (the real PWA icon), app name + time, bold title
+       (the artist), then the body. aria-hidden so screen readers skip the fake
+       system chrome and focus on the surrounding section copy. -->
+  <div class="notification-mock-card" aria-hidden="true">
+    <img
+      class="notification-mock-icon"
+      src="/icons/icon-192x192.png"
+      alt=""
+      width="40"
+      height="40"
+    />
+    <div class="notification-mock-body">
+      <div class="notification-mock-header">
+        <span class="notification-mock-app">Liverty Music</span>
+        <span class="notification-mock-dot">·</span>
+        <span class="notification-mock-time">now</span>
+      </div>
+      <p t="welcome.notification.mockTitle" class="notification-mock-title"></p>
+      <p t="welcome.notification.mockText" class="notification-mock-text"></p>
+    </div>
+  </div>
+</template>
