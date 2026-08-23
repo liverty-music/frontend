@@ -189,7 +189,13 @@
 			align-items: center;
 			justify-content: center;
 
-			min-block-size: 100svh;
+			/* Definite height (not just a minimum) so the flex:1 → grid 1fr →
+			   concert-highway block-size:100% chain resolves: the timetable fills
+			   the demo screen with its own internal scroll and the CTA footer stays
+			   pinned on-screen. A bare min-block-size would leave the section
+			   content-sized, collapsing every downstream 1fr/100% to natural height
+			   and pushing the CTA off-screen. */
+			block-size: 100svh;
 			padding-block: var(--space-xl);
 			padding-inline: var(--space-m);
 		}
@@ -309,6 +315,11 @@
 
 			inline-size: 100%;
 			min-block-size: 0;
+
+			/* Clip the internally-scrolled timetable at the bottom fade mask so it
+			   never spills past the demo screen (concert-highway keeps its own
+			   .concert-scroll — this only trims sub-pixel overflow at the frame). */
+			overflow: hidden;
 
 			/* Bottom fade-out mask */
 			&::after {
