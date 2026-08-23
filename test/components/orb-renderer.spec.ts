@@ -60,46 +60,49 @@ describe('OrbRenderer', () => {
 		})
 	})
 
-	describe('setFollowCount / baseIntensity', () => {
+	describe('applyLevel / baseIntensity', () => {
 		it('should return 0 for count 0', () => {
 			const renderer = createRenderer()
-			renderer.setFollowCount(0)
+			renderer.applyLevel(0)
 			expect(renderer.baseIntensity).toBe(0)
 		})
 
 		it('should follow diminishing-returns curve 1 - 1/(1 + count*0.5)', () => {
-			const renderer = createRenderer()
-
-			renderer.setFollowCount(1)
-			expect(renderer.baseIntensity).toBeCloseTo(1 - 1 / 1.5, 10)
-
-			renderer.setFollowCount(2)
-			expect(renderer.baseIntensity).toBeCloseTo(1 - 1 / 2, 10)
-
-			renderer.setFollowCount(5)
-			expect(renderer.baseIntensity).toBeCloseTo(1 - 1 / 3.5, 10)
-
-			renderer.setFollowCount(10)
-			expect(renderer.baseIntensity).toBeCloseTo(1 - 1 / 6, 10)
+			// The first apply on a fresh renderer is the entry seed, which snaps to
+			// the stage — so baseIntensity reflects the curve exactly. (Subsequent
+			// applies ease on the render loop; that is covered separately below.)
+			const cases: [number, number][] = [
+				[1, 1 - 1 / 1.5],
+				[2, 1 - 1 / 2],
+				[5, 1 - 1 / 3.5],
+				[10, 1 - 1 / 6],
+			]
+			for (const [count, expected] of cases) {
+				const renderer = createRenderer()
+				renderer.applyLevel(count)
+				expect(renderer.baseIntensity).toBeCloseTo(expected, 10)
+			}
 		})
 
 		it('should asymptotically approach 1 for large counts', () => {
 			const renderer = createRenderer()
-			renderer.setFollowCount(100)
+			renderer.applyLevel(100)
 			expect(renderer.baseIntensity).toBeGreaterThan(0.95)
 			expect(renderer.baseIntensity).toBeLessThan(1)
 		})
 
-		it('should update orbRadius via stageParams', () => {
-			const renderer = createRenderer()
-			renderer.setFollowCount(0)
-			expect(renderer.orbRadius).toBe(60)
+		it('should update orbRadius via stageParams on the entry seed', () => {
+			const r0 = createRenderer()
+			r0.applyLevel(0)
+			expect(r0.orbRadius).toBe(60)
 
-			renderer.setFollowCount(3)
-			expect(renderer.orbRadius).toBe(82.5)
+			const r3 = createRenderer()
+			r3.applyLevel(3)
+			expect(r3.orbRadius).toBe(82.5)
 
-			renderer.setFollowCount(5)
-			expect(renderer.orbRadius).toBe(90)
+			const r5 = createRenderer()
+			r5.applyLevel(5)
+			expect(r5.orbRadius).toBe(90)
 		})
 
 		it('should influence swirlMultiplier in update()', () => {
@@ -120,7 +123,7 @@ describe('OrbRenderer', () => {
 			)
 
 			const renderer2 = createRenderer()
-			renderer2.setFollowCount(5)
+			renderer2.applyLevel(5)
 			const before2 = getParticles(renderer2).map((p) => p.angle)
 			for (let i = 0; i < 10; i++) renderer2.update(100)
 			const after2 = getParticles(renderer2).map((p) => p.angle)
@@ -205,19 +208,19 @@ describe('OrbRenderer', () => {
 	describe('orbital count reflects stageParams', () => {
 		it('should return 0 orbitals at follow count 0', () => {
 			const renderer = createRenderer()
-			renderer.setFollowCount(0)
+			renderer.applyLevel(0)
 			expect(renderer.orbitalCount).toBe(0)
 		})
 
 		it('should return 2 orbitals at follow count 1', () => {
 			const renderer = createRenderer()
-			renderer.setFollowCount(1)
+			renderer.applyLevel(1)
 			expect(renderer.orbitalCount).toBe(2)
 		})
 
 		it('should increase orbitals with follow count', () => {
 			const renderer = createRenderer()
-			renderer.setFollowCount(5)
+			renderer.applyLevel(5)
 			expect(renderer.orbitalCount).toBe(12)
 		})
 	})
@@ -253,7 +256,7 @@ describe('OrbRenderer', () => {
 
 		it('should suppress orbital rotation', () => {
 			const renderer = createReducedMotionRenderer()
-			renderer.setFollowCount(5)
+			renderer.applyLevel(5)
 
 			const orbitals = (
 				renderer as unknown as {
@@ -269,7 +272,7 @@ describe('OrbRenderer', () => {
 
 		it('should suppress breathing amplitude in render', () => {
 			const renderer = createReducedMotionRenderer()
-			renderer.setFollowCount(5)
+			renderer.applyLevel(5)
 
 			const rm = (renderer as unknown as { reducedMotion: boolean })
 				.reducedMotion
@@ -278,7 +281,7 @@ describe('OrbRenderer', () => {
 
 		it('should use swirlMultiplier of 1 regardless of intensity', () => {
 			const renderer = createReducedMotionRenderer()
-			renderer.setFollowCount(5)
+			renderer.applyLevel(5)
 			renderer.injectColor(100)
 
 			const p0Angle = (
@@ -290,7 +293,7 @@ describe('OrbRenderer', () => {
 					.angle - p0Angle
 
 			const normalRenderer = createRenderer()
-			normalRenderer.setFollowCount(5)
+			normalRenderer.applyLevel(5)
 			normalRenderer.injectColor(100)
 
 			const p0Angle2 = (
@@ -306,7 +309,7 @@ describe('OrbRenderer', () => {
 
 		it('should suppress beat sync', () => {
 			const renderer = createReducedMotionRenderer()
-			renderer.setFollowCount(5)
+			renderer.applyLevel(5)
 			renderer.update(100)
 
 			const beatPhase = (renderer as unknown as { beatPhase: number }).beatPhase
@@ -315,8 +318,8 @@ describe('OrbRenderer', () => {
 
 		it('should suppress strobe flash', () => {
 			const renderer = createReducedMotionRenderer()
-			renderer.setFollowCount(5)
-			renderer.pulse()
+			renderer.applyLevel(5)
+			renderer.celebrate(200)
 
 			const strobeFlash = (renderer as unknown as { strobeFlash: boolean })
 				.strobeFlash
@@ -325,13 +328,119 @@ describe('OrbRenderer', () => {
 
 		it('should suppress light ray alpha spike', () => {
 			const renderer = createReducedMotionRenderer()
-			renderer.setFollowCount(5)
-			renderer.pulse()
+			renderer.applyLevel(5)
+			renderer.celebrate(200)
 
 			const lightRayAlphaSpike = (
 				renderer as unknown as { lightRayAlphaSpike: number }
 			).lightRayAlphaSpike
 			expect(lightRayAlphaSpike).toBe(0)
+		})
+	})
+
+	describe('applyLevel — silent, idempotent stage level', () => {
+		/** Run enough render-loop frames for the eased quantities to converge. */
+		function settle(r: OrbRenderer, frames = 240): void {
+			for (let i = 0; i < frames; i++) r.update(16)
+		}
+
+		it('seeds the stage on the first apply, snapping to the level with no pulse', () => {
+			const renderer = createRenderer()
+			const pulseSpy = vi.spyOn(
+				renderer as unknown as { pulse: () => void },
+				'pulse',
+			)
+
+			renderer.applyLevel(3)
+
+			// First paint reflects stage 3 immediately (no ease-up from the default).
+			expect(renderer.orbRadius).toBe(82.5)
+			expect(renderer.getStageParams().level).toBe(3)
+			// Seeding is silent — no celebration side effects.
+			expect(pulseSpy).not.toHaveBeenCalled()
+			expect(renderer.swirlIntensity).toBe(0)
+			expect(renderer.activeShockwaveCount).toBe(0)
+		})
+
+		it('applies non-gesture updates silently — no pulse, color, or shockwave', () => {
+			const renderer = createRenderer()
+			renderer.applyLevel(1) // seed
+			const pulseSpy = vi.spyOn(
+				renderer as unknown as { pulse: () => void },
+				'pulse',
+			)
+
+			// Simulate hydrate/migrate/unfollow/rollback: repeated level changes.
+			renderer.applyLevel(5)
+			renderer.applyLevel(2)
+			renderer.applyLevel(0)
+
+			expect(pulseSpy).not.toHaveBeenCalled()
+			expect(renderer.swirlIntensity).toBe(0)
+			expect(renderer.activeShockwaveCount).toBe(0)
+			expect(renderer.colorPalette).toHaveLength(0)
+		})
+
+		it('eases the radius toward the target after the seed rather than snapping', () => {
+			const renderer = createRenderer()
+			renderer.applyLevel(0) // seed at stage 0
+			const seededRadius = renderer.orbRadius
+
+			renderer.applyLevel(5) // grow to stage 5
+			renderer.update(16)
+			// One frame in: moved toward but not yet at the target.
+			expect(renderer.orbRadius).toBeGreaterThan(seededRadius)
+			expect(renderer.orbRadius).toBeLessThan(90)
+
+			settle(renderer)
+			expect(renderer.orbRadius).toBeCloseTo(90, 1)
+		})
+
+		it('does not reset in-flight particle trails on a repeated apply', () => {
+			const renderer = createRenderer()
+			renderer.applyLevel(3) // stage 3 enables vortex trails
+			settle(renderer, 30) // build up trail points on the render loop
+			const before = renderer.trailPointCount
+			expect(before).toBeGreaterThan(0)
+
+			renderer.applyLevel(3)
+			expect(renderer.trailPointCount).toBe(before)
+			renderer.applyLevel(5)
+			expect(renderer.trailPointCount).toBe(before)
+		})
+	})
+
+	describe('celebrate — gesture-only unified activation', () => {
+		it('unifies pulse + color injection + stage-gated shockwave on one call', () => {
+			const renderer = createRenderer()
+			renderer.applyLevel(3) // shockwaveEnabled at stage 3+
+			const pulseSpy = vi.spyOn(
+				renderer as unknown as { pulse: () => void },
+				'pulse',
+			)
+
+			renderer.celebrate(200)
+
+			expect(pulseSpy).toHaveBeenCalledTimes(1)
+			expect(renderer.swirlIntensity).toBe(1)
+			expect(renderer.colorPalette).toContain(200)
+			expect(renderer.activeShockwaveCount).toBe(1)
+		})
+
+		it('withholds the shockwave when the current stage disables it', () => {
+			const renderer = createRenderer()
+			renderer.applyLevel(1) // shockwave disabled below stage 3
+			const pulseSpy = vi.spyOn(
+				renderer as unknown as { pulse: () => void },
+				'pulse',
+			)
+
+			renderer.celebrate(120)
+
+			expect(pulseSpy).toHaveBeenCalledTimes(1)
+			expect(renderer.swirlIntensity).toBe(1)
+			expect(renderer.colorPalette).toContain(120)
+			expect(renderer.activeShockwaveCount).toBe(0)
 		})
 	})
 })
