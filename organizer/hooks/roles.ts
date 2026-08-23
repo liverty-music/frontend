@@ -38,3 +38,36 @@ export function hasOwnerRole(
 	}
 	return Object.hasOwn(roles as Record<string, unknown>, ORGANIZER_OWNER_ROLE)
 }
+
+/**
+ * Returns the tenant org ids for which the token carries the `owner` role — the
+ * keys of the `owner` map in the project-roles claim. Empty when the claim is
+ * missing or malformed.
+ */
+export function ownerOrgIds(
+	profile: Record<string, unknown> | undefined | null,
+): string[] {
+	if (!profile) return []
+	const roles = profile[PROJECT_ROLES_CLAIM]
+	if (roles === null || typeof roles !== 'object' || Array.isArray(roles)) {
+		return []
+	}
+	const owner = (roles as Record<string, unknown>)[ORGANIZER_OWNER_ROLE]
+	if (owner === null || typeof owner !== 'object' || Array.isArray(owner)) {
+		return []
+	}
+	return Object.keys(owner as Record<string, unknown>)
+}
+
+/**
+ * Returns true iff the token grants the `owner` role in the given tenant org.
+ * The callback uses this to enforce that the authenticated session is the
+ * INTENDED tenant (design D-D): a reused SSO session for a different org fails
+ * this check, so the operator is not silently onboarded into the wrong org.
+ */
+export function tokenGrantsOwnerInOrg(
+	profile: Record<string, unknown> | undefined | null,
+	orgId: string,
+): boolean {
+	return ownerOrgIds(profile).includes(orgId)
+}
