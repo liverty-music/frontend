@@ -102,8 +102,22 @@ export class DnaOrbCanvas {
 	}
 
 	public followedCountChanged(newVal: number, _oldVal: number): void {
-		this.orbRenderer.pulse()
-		this.orbRenderer.setFollowCount(newVal)
+		// Follow-count changes only move the persistent stage level — silently and
+		// idempotently. The celebration is fired exclusively from a real follow
+		// absorption (`onAbsorbComplete`), so hydration, migration, unfollow, and
+		// optimistic-update rollbacks no longer misfire the flash.
+		this.applyLevel(newVal)
+	}
+
+	/**
+	 * Apply the persistent stage level for `count`: set the renderer's eased stage
+	 * targets and mirror the derived physics orb-zone and comet-trail flag. Silent
+	 * and idempotent — no celebration. Runs on Discovery entry (the seed in
+	 * `attached()`) and on every subsequent follow-count change, so both paths keep
+	 * the physics and animator in sync with the stage.
+	 */
+	private applyLevel(count: number): void {
+		this.orbRenderer.applyLevel(count)
 		const sp = this.orbRenderer.getStageParams()
 		this.physics.updateOrbZone(sp.orbRadius)
 		this.absorptionAnimator.cometTrailEnabled = sp.cometTrailEnabled
@@ -162,6 +176,13 @@ export class DnaOrbCanvas {
 		// Wait for a real layout size before initializing + the first paint.
 		await this.initWhenSized()
 		if (this.detached) return // detached while waiting for layout
+		// Seed the stage level for the count present on entry. Aurelia 2 does not
+		// call `followedCountChanged` for the value bound at init, so a returning
+		// user already following N artists would otherwise render at stage 0 until
+		// the count next changes. Read `followedCount` here (post-await) to capture
+		// any change that landed during the size wait; idempotency makes a later
+		// `followedCountChanged` apply harmless.
+		this.applyLevel(this.followedCount)
 		const displayLimit = Math.min(this.artists.length, this.displayLimit)
 		this.physics.addBubbles(
 			this.artists.slice(0, displayLimit).map((a) => toBubbleParams(a)),
@@ -328,7 +349,7 @@ export class DnaOrbCanvas {
 		// width-agnostic default (radius 60), so without this the narrow-canvas
 		// orb would render full-size on first paint and only shrink after the
 		// first follow event fires `followedCountChanged`.
-		this.orbRenderer.setFollowCount(this.followedCount)
+		this.orbRenderer.applyLevel(this.followedCount)
 		// On narrow canvases the orb is smaller and bottom-anchored, so align the
 		// physics floor with its top here; init() resets the bottom wall to a
 		// width-agnostic default. Left untouched on wide canvases to preserve the
@@ -456,14 +477,14 @@ export class DnaOrbCanvas {
 	}
 
 	/**
-	 * Shared absorption-completion feedback: inject the artist color, fire the
-	 * orb shockwave, and play the synced landing tone — all on the same frame.
+	 * Sole trigger for the orb's celebratory activation: a genuine follow gesture's
+	 * bubble absorption completing. Fires the unified celebration (pulse/strobe +
+	 * color injection + stage-gated shockwave) and the synced landing tone on the
+	 * same frame. The shockwave gate lives inside `celebrate`, reading the same
+	 * `stageParams` the seed/apply path set.
 	 */
 	private onAbsorbComplete(hue: number): void {
-		this.orbRenderer.injectColor(hue)
-		if (this.orbRenderer.getStageParams().shockwaveEnabled) {
-			this.orbRenderer.spawnShockwave(hue)
-		}
+		this.orbRenderer.celebrate(hue)
 		this.audio.playLanding(hue)
 	}
 

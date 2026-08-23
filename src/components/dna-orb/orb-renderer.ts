@@ -56,6 +56,15 @@ export class OrbRenderer {
 	private pulseIntensity = 0
 	public swirlIntensity = 0
 	public baseIntensity = 0
+	// Eased-toward targets for the continuous stage quantities. `applyLevel` sets
+	// these; `update()` eases the current values toward them each frame so a stage
+	// change transitions smoothly instead of snapping.
+	private targetBaseIntensity = 0
+	private targetOrbRadius = 60
+	// Whether a stage level has been applied yet. The first application (the entry
+	// seed) snaps to its stage so the orb paints at the right level on first frame;
+	// subsequent applications ease.
+	private seeded = false
 	private stageParams: StageParams = getStageParams(0)
 	private canvasWidth = 0
 	private canvasHeight = 0
@@ -148,7 +157,22 @@ export class OrbRenderer {
 		}
 	}
 
-	public pulse(): void {
+	/**
+	 * Fire the one-shot gesture celebration on a single frame: the pulse/strobe
+	 * flash, the artist color injection, and — when the current stage enables it —
+	 * the shockwave. This is the only path that triggers `pulse()`, so the flash
+	 * can no longer misfire on a non-gesture follow-count change. The caller pairs
+	 * this with the landing tone at the same absorption-completion moment.
+	 */
+	public celebrate(hue: number): void {
+		this.pulse()
+		this.injectColor(hue)
+		if (this.stageParams.shockwaveEnabled) {
+			this.spawnShockwave(hue)
+		}
+	}
+
+	private pulse(): void {
 		this.pulseIntensity = 1.0
 		this.lightRayAlphaSpike = this.reducedMotion ? 0 : 0.8
 
@@ -212,6 +236,18 @@ export class OrbRenderer {
 
 	public update(delta: number): void {
 		this.time += delta * 0.001
+
+		// Ease the continuous stage quantities toward their targets on the render
+		// loop (mirrors the pulse/swirl decay below). Exponential smoothing makes
+		// rapid successive follows collapse to the latest target without stacking
+		// per-call tweens, and keeps all stage animation off Aurelia's task queue.
+		const stageEase = Math.min(1, delta / 200)
+		this.baseIntensity +=
+			(this.targetBaseIntensity - this.baseIntensity) * stageEase
+		this.orbRadius += (this.targetOrbRadius - this.orbRadius) * stageEase
+		// Track the eased radius so the narrow-canvas orb stays bottom-anchored as
+		// it grows/shrinks (no-op on wide canvases).
+		this.orbY = this.computeOrbY()
 
 		if (this.pulseIntensity > 0) {
 			this.pulseIntensity = Math.max(0, this.pulseIntensity - delta / 300)
@@ -288,7 +324,7 @@ export class OrbRenderer {
 		const breathScale = this.reducedMotion
 			? 1
 			: 1 + Math.sin(this.time * sp.breathSpeed) * sp.breathAmplitude
-		const renderRadius = sp.orbRadius * breathScale
+		const renderRadius = this.orbRadius * breathScale
 
 		ctx.save()
 
@@ -488,7 +524,7 @@ export class OrbRenderer {
 		const breathScale = this.reducedMotion
 			? 1
 			: 1 + Math.sin(this.time * sp.breathSpeed) * sp.breathAmplitude
-		const renderRadius = sp.orbRadius * breathScale
+		const renderRadius = this.orbRadius * breathScale
 		const beatSizeFactor = 1 + this.beatPhase * 0.1
 		const tailArcRad = (sp.orbitalTailArc * Math.PI) / 180
 
@@ -555,7 +591,7 @@ export class OrbRenderer {
 		ctx.save()
 		ctx.globalCompositeOperation = 'screen'
 
-		const rayLength = sp.orbRadius * 2.5
+		const rayLength = this.orbRadius * 2.5
 		const baseAlpha = Math.max(sp.lightRayAlpha, this.lightRayAlphaSpike)
 		const beatAlpha = baseAlpha * (1 + this.beatPhase * 0.1)
 		const rotationOffset = this.reducedMotion
@@ -609,7 +645,7 @@ export class OrbRenderer {
 		for (const sw of this.shockwaves) {
 			if (!sw.active) continue
 			const t = sw.progress
-			const radius = this.stageParams.orbRadius * (1 + t * 2)
+			const radius = this.orbRadius * (1 + t * 2)
 			const alpha = 0.6 * (1 - t)
 			const lineWidth = 3 - t * 2.5
 
@@ -662,17 +698,34 @@ export class OrbRenderer {
 		this.strobeFlash = false
 	}
 
-	public setFollowCount(count: number): void {
-		this.baseIntensity = count > 0 ? 1 - 1 / (1 + count * 0.5) : 0
+	/**
+	 * Apply the persistent stage level for `count`: recompute `stageParams` and set
+	 * the eased targets for the continuous quantities (`baseIntensity`,
+	 * `orbRadius`). Silent and idempotent — no celebration, and it MUST NOT reset
+	 * transient effects (e.g. in-flight particle trails), so repeated calls with
+	 * the same or changing counts never hitch the render. Called on entry (seed)
+	 * and on every follow-count change from any source.
+	 */
+	public applyLevel(count: number): void {
 		this.stageParams = getStageParams(count, this.canvasWidth)
-		for (const p of this.particles) {
-			p.trail = []
+		this.targetBaseIntensity = count > 0 ? 1 - 1 / (1 + count * 0.5) : 0
+		this.targetOrbRadius = this.stageParams.orbRadius
+		if (!this.seeded) {
+			// Entry seed: snap to the stage so the orb paints at its level on the
+			// first frame instead of easing up from the default radius.
+			this.baseIntensity = this.targetBaseIntensity
+			this.orbRadius = this.targetOrbRadius
+			this.seeded = true
 		}
-		this.orbRadius = this.stageParams.orbRadius
-		// Re-anchor after the radius changes so the narrow-canvas orb keeps its
-		// bottom on a fixed baseline (no-op on wide canvases).
+		// Re-anchor after the radius (target) changes so the narrow-canvas orb keeps
+		// its bottom on a fixed baseline (no-op on wide canvases).
 		this.orbY = this.computeOrbY()
 		this.distributeColorsToOrbitals()
+	}
+
+	/** Total recorded vortex-trail points across inner particles (diagnostics/tests). */
+	public get trailPointCount(): number {
+		return this.particles.reduce((sum, p) => sum + p.trail.length, 0)
 	}
 
 	public getStageParams(): StageParams {

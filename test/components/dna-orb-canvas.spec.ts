@@ -26,6 +26,7 @@ vi.mock('matter-js', () => ({
 		},
 		Body: {
 			applyForce: vi.fn(),
+			setPosition: vi.fn(),
 		},
 	},
 }))
@@ -403,10 +404,45 @@ describe('DnaOrbCanvas', () => {
 	})
 
 	describe('followedCountChanged', () => {
-		it('should pulse the orb renderer', () => {
-			const pulseSpy = vi.spyOn((sut as any).orbRenderer, 'pulse')
+		it('applies the stage level silently without celebrating', () => {
+			// Non-gesture count changes (hydrate/migrate/unfollow/rollback) must only
+			// move the persistent stage level — never fire the celebration.
+			const applySpy = vi.spyOn((sut as any).orbRenderer, 'applyLevel')
+			const celebrateSpy = vi.spyOn((sut as any).orbRenderer, 'celebrate')
+
 			sut.followedCountChanged(5, 4)
-			expect(pulseSpy).toHaveBeenCalled()
+
+			expect(applySpy).toHaveBeenCalledWith(5)
+			expect(celebrateSpy).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('onAbsorbComplete (gesture celebration)', () => {
+		it('fires the unified celebration and landing tone exactly once', async () => {
+			await sut.attached()
+			const celebrateSpy = vi.spyOn((sut as any).orbRenderer, 'celebrate')
+			const landingSpy = vi.spyOn((sut as any).audio, 'playLanding')
+
+			;(sut as any).onAbsorbComplete(200)
+
+			expect(celebrateSpy).toHaveBeenCalledTimes(1)
+			expect(celebrateSpy).toHaveBeenCalledWith(200)
+			expect(landingSpy).toHaveBeenCalledWith(200)
+		})
+	})
+
+	describe('attached() stage seed', () => {
+		it('seeds the stage level for the entry follow count with no celebration', async () => {
+			// Aurelia does not fire followedCountChanged for the value bound at init,
+			// so attached() must seed the stage for a returning user already at N.
+			sut.followedCount = 3
+			const applySpy = vi.spyOn((sut as any).orbRenderer, 'applyLevel')
+			const celebrateSpy = vi.spyOn((sut as any).orbRenderer, 'celebrate')
+
+			await sut.attached()
+
+			expect(applySpy).toHaveBeenCalledWith(3)
+			expect(celebrateSpy).not.toHaveBeenCalled()
 		})
 	})
 
