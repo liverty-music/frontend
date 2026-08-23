@@ -773,32 +773,29 @@ jobs:
   # =====================================================================
   # Release path: trigger the automated prod kustomize pin-bump.
   # =====================================================================
-  # After the retag succeeds, emit a `repository_dispatch` to
-  # cloud-provisioning, which runs `bump-prod-pin.yml` to rewrite the prod
-  # overlay pin (`web-app` newTag) + version label and push to its own main
-  # (ArgoCD then auto-syncs). Per OpenSpec change `automate-prod-pin-bump`:
-  # gated on `build-and-push` succeeding so a failed retag never bumps the
-  # pin to a tag whose prod image is missing.
+  # After all three frontend bundle retags succeed, emit a SINGLE
+  # `repository_dispatch` to cloud-provisioning, which runs `bump-prod-pin.yml`
+  # to rewrite all three frontend prod pins (`fan-web`, `admin-console-web`,
+  # `organizer-console-web` newTags) + the consumer version label in ONE atomic
+  # commit and push to its own main (ArgoCD then auto-syncs). One dispatch per
+  # release keeps the pin atomic and — because a concurrency group only holds
+  # one running + one pending run — avoids the pending-eviction that the former
+  # per-bundle three-dispatch fan-out caused (a bundle silently left unpinned;
+  # see OpenSpec change `batch-frontend-prod-pin-dispatch`).
   #
   # The cross-repo trigger uses a GitHub App installation token (short-lived,
   # auditable) minted at runtime and scoped to cloud-provisioning. The
-  # dispatches API requires `Contents: write` (no narrower scope exists), so
-  # the security boundary is branch protection: cloud-provisioning:main lets
-  # only `github-actions[bot]` bypass, so this token cannot push to the one ref
-  # ArgoCD tracks — its reach is bounded to non-`main` refs.
+  # dispatches API requires `Contents: write` (no narrower scope exists); the
+  # ci-bot App is the `cloud-provisioning:main` ruleset bypass actor, so the
+  # security boundary is the prod-environment scoping + the bump's provenance
+  # gate + the Release-as-human-gate (see bump-prod-pin design D9).
   dispatch-prod-pin:
-    # Emits BOTH the consumer (`frontend`) and admin (`frontend-admin`) pin-bump
-    # dispatches, but they stay decoupled: the job `if` requires ONLY
-    # build-and-push (consumer) success — wrapped in always() so a failed/absent
-    # admin job does NOT skip the consumer dispatch — and the admin dispatch step
-    # below is individually gated on build-and-push-admin success. So the consumer
-    # prod rollout is never blocked by the admin image job, while the admin
-    # dispatch fires only once admin-app:${tag} exists in prod AR.
+    # All-or-nothing: the default needs-success gate skips this job unless all
+    # three bundle retags succeeded, so an incomplete frontend release is never
+    # partially pinned. (No `always()` — a failed bundle retag must suppress the
+    # whole dispatch.)
     needs: [build-and-push, build-and-push-admin, build-and-push-organizer]
-    if: |
-      always() &&
-      github.event_name == 'release' &&
-      needs.build-and-push.result == 'success'
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     # `prod` environment so the dispatch-credential secrets resolve. On a
     # release event the ref is the `vX.Y.Z` tag, which matches the prod
@@ -815,7 +812,11 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: cloud-provisioning
 
-      - name: Dispatch bump-prod-pin to cloud-provisioning (consumer)
+      # Single dispatch covering all frontend bundles. cloud-provisioning
+      # `bump-prod-pin.yml` maps `component: "frontend"` to the fan-web +
+      # admin-console-web + organizer-console-web image entries and pins them
+      # (plus the fan-web version label) in one atomic commit.
+      - name: Dispatch bump-prod-pin to cloud-provisioning (all frontend bundles)
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           OWNER: ${{ github.repository_owner }}
@@ -825,48 +826,6 @@ jobs:
           set -euo pipefail
           payload=$(jq -nc --arg t "$TAG" --arg s "$SHA" \
             '{event_type:"bump-prod-pin",client_payload:{component:"frontend",tag:$t,sha:$s}}')
-          echo "Dispatching: $payload"
-          echo "$payload" | gh api "repos/${OWNER}/cloud-provisioning/dispatches" --input -
-
-      # Admin image pin-bump. Independent component (design D5): the admin
-      # (`frontend-admin`) and consumer (`frontend`) prod pins advance
-      # separately. cloud-provisioning `bump-prod-pin.yml` routes `frontend-admin`
-      # to the frontend overlay but edits ONLY the `admin-app` image entry (and
-      # leaves the consumer version label untouched). Gated on build-and-push-admin
-      # so a dispatch is only emitted once admin-app:${tag} exists in prod AR.
-      # See docs/runbooks/prod-image-tag-pinning.md (admin console release path).
-      - name: Dispatch bump-prod-pin to cloud-provisioning (admin)
-        if: needs.build-and-push-admin.result == 'success'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          OWNER: ${{ github.repository_owner }}
-          TAG: ${{ github.event.release.tag_name }}
-          SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          payload=$(jq -nc --arg t "$TAG" --arg s "$SHA" \
-            '{event_type:"bump-prod-pin",client_payload:{component:"frontend-admin",tag:$t,sha:$s}}')
-          echo "Dispatching: $payload"
-          echo "$payload" | gh api "repos/${OWNER}/cloud-provisioning/dispatches" --input -
-
-      # Organizer image pin-bump. Independent component (design D3/D4): the
-      # organizer (`frontend-organizer`) prod pin advances separately from the
-      # consumer (`frontend`) and admin (`frontend-admin`) pins.
-      # cloud-provisioning `bump-prod-pin.yml` routes `frontend-organizer` to the
-      # frontend overlay but edits ONLY the `organizer-app` image entry. Gated on
-      # build-and-push-organizer so a dispatch is only emitted once
-      # organizer-app:${tag} exists in prod AR.
-      - name: Dispatch bump-prod-pin to cloud-provisioning (organizer)
-        if: needs.build-and-push-organizer.result == 'success'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          OWNER: ${{ github.repository_owner }}
-          TAG: ${{ github.event.release.tag_name }}
-          SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          payload=$(jq -nc --arg t "$TAG" --arg s "$SHA" \
-            '{event_type:"bump-prod-pin",client_payload:{component:"frontend-organizer",tag:$t,sha:$s}}')
           echo "Dispatching: $payload"
           echo "$payload" | gh api "repos/${OWNER}/cloud-provisioning/dispatches" --input -
 
