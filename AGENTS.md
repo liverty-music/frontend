@@ -14,6 +14,23 @@
 
 <agent-rules>
 
+## Consuming New Proto Types (after BSR gen)
+
+When a specification Release has published new schema to BSR (see the
+specification repo's AGENTS.md for the cross-repo release flow), upgrade and
+adopt the generated types here:
+
+```bash
+# Install the released schema package (pin the version when needed)
+npm install @buf/liverty-music_schema.connectrpc_es@latest
+make check
+```
+
+Then swap the placeholder types for the generated ones at each
+`TODO: swap to generated type after BSR gen` marker and run `make check` again.
+Open (or push) the PR only after this succeeds — do NOT open a draft PR before
+BSR gen completes, as CI will fail on the missing types.
+
 ## Stack
 
 | Stack            | Technology                                           |
