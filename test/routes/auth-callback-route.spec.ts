@@ -12,12 +12,19 @@ import { createMockAuth } from '../helpers/mock-auth'
 import type { createMockI18n } from '../helpers/mock-i18n'
 
 /**
- * Build the handleCallback result: the OIDC User. handleCallback no longer
- * round-trips a sign-up flag — the callback keys behavior on the backend
- * new-account signal (ProvisionResult.created), not the sign-up FLOW.
+ * Build the handleCallback result: the OIDC User. `flow` mirrors the OIDC
+ * application `state` that `signUp()` round-trips ({ flow: 'signup' }); omit it
+ * to simulate a sign-in or an older in-flight redirect that carries no marker.
+ * The callback gates the post-signup dialog on this marker AND `created`.
  */
-function authUser(email: string | undefined): { profile: { email?: string } } {
-	return { profile: email ? { email } : {} }
+function authUser(
+	email: string | undefined,
+	flow?: 'signup',
+): { profile: { email?: string }; state?: { flow: 'signup' } } {
+	return {
+		profile: email ? { email } : {},
+		...(flow ? { state: { flow } } : {}),
+	}
 }
 
 function createMockOnboarding() {
@@ -138,10 +145,10 @@ describe('AuthCallbackRoute', () => {
 			expect(result).toBe('/dashboard')
 		})
 
-		it('explicitly calls Create with home when guest selected one — created=true sets postSignupShown flag', async () => {
+		it('explicitly calls Create with home when guest selected one — sign-up flow + created=true sets postSignupShown flag', async () => {
 			mockAuth.handleCallback = vi
 				.fn()
-				.mockResolvedValue(authUser('new@example.com'))
+				.mockResolvedValue(authUser('new@example.com', 'signup'))
 			setup('JP-13')
 			// Genuinely new account: Create minted a fresh row.
 			mockUserService.create = vi
@@ -166,14 +173,14 @@ describe('AuthCallbackRoute', () => {
 			expect(localStorage.getItem('liverty:postSignup:shown')).toBe('pending')
 		})
 
-		it('a NEW no-home account still migrates and shows postSignup (migration fires regardless of home; created=true)', async () => {
+		it('a NEW no-home account still migrates and shows postSignup (sign-up flow; migration fires regardless of home; created=true)', async () => {
 			// New account where the visitor skipped home selection: guestHome is
 			// null so provisioning goes through ensureLoaded (not Create), which
-			// reports created=true (cache-miss Create path). The migration trigger
-			// and the postSignup flag MUST still fire.
+			// reports created=true (cache-miss Create path). Arriving via the sign-up
+			// flow, the migration trigger and the postSignup flag MUST still fire.
 			mockAuth.handleCallback = vi
 				.fn()
-				.mockResolvedValue(authUser('new@example.com'))
+				.mockResolvedValue(authUser('new@example.com', 'signup'))
 			setup(null)
 			mockUserService.ensureLoaded = vi
 				.fn()
@@ -217,6 +224,48 @@ describe('AuthCallbackRoute', () => {
 			// But no new-account dialog (Correction 2).
 			expect(result).toBe('/dashboard')
 			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
+		})
+
+		it('a RETURNING sign-in with an EMPTY local cache (created=true) does NOT set postSignup', async () => {
+			// The reported bug: a returning user on a new browser/device, with
+			// cleared storage, or after guest-then-sign-in has no cached user_id, so
+			// ensureLoaded reports created=true — indistinguishable from a brand-new
+			// account by the cache-miss proxy alone. Because the sign-in flow carries
+			// NO sign-up marker, the celebration MUST stay suppressed regardless.
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('returning@example.com'))
+			setup(null)
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockResolvedValue({ user: mockUserService.current, created: true })
+
+			localStorage.removeItem('liverty:postSignup:shown')
+			const result = await sut.canLoad({}, {} as RouteNode)
+
+			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
+			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
+			expect(result).toBe('/dashboard')
+		})
+
+		it('a callback MISSING the flow marker fails closed — no postSignup even when created=true', async () => {
+			// Robustness per design D3: an older in-flight redirect started before
+			// this signal existed, or a direct /auth/callback hit, arrives with no
+			// marker. Treat it as NOT sign-up (fail closed) — at worst a brand-new
+			// user misses the one-time confetti; no returning user is ever celebrated.
+			mockAuth.handleCallback = vi
+				.fn()
+				.mockResolvedValue(authUser('someone@example.com'))
+			setup(null)
+			mockUserService.ensureLoaded = vi
+				.fn()
+				.mockResolvedValue({ user: mockUserService.current, created: true })
+
+			localStorage.removeItem('liverty:postSignup:shown')
+			const result = await sut.canLoad({}, {} as RouteNode)
+
+			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
+			expect(result).toBe('/dashboard')
 		})
 
 		it('redirects to dashboard on error if already authenticated', async () => {

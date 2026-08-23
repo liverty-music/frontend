@@ -45,6 +45,26 @@ function createSettings(config: AppConfig): UserManagerSettings {
 	}
 }
 
+/**
+ * Application-defined state round-tripped through the OIDC authorization
+ * request via `signinRedirect({ state })`. oidc-client-ts persists it (keyed by
+ * the OIDC state id) and returns it intact on the resolved `User.state`, giving
+ * the auth-callback a reliable signal of which flow the user initiated.
+ */
+export interface AuthFlowState {
+	/** Set to 'signup' only when the user arrived via `signUp()`. */
+	flow?: 'signup'
+}
+
+/**
+ * Read the flow marker off a resolved OIDC user. Returns undefined when no
+ * marker is present (a sign-in, or an older in-flight redirect started before
+ * this signal existed) — callers MUST treat undefined as "not sign-up".
+ */
+export function resolveAuthFlow(user: User): AuthFlowState['flow'] {
+	return (user.state as AuthFlowState | undefined)?.flow
+}
+
 export const IAuthService = DI.createInterface<IAuthService>(
 	'IAuthService',
 	(x) => x.singleton(AuthService),
@@ -119,13 +139,17 @@ export class AuthService {
 
 	public async signUp(): Promise<void> {
 		this.logger.info('Starting sign-up flow')
-		// Zitadel supports prompt=create to default to sign-up form. No custom
-		// `state` round-trip: the callback no longer keys behavior on the sign-up
-		// FLOW. Guest-follow migration fires on every authenticated callback, and
-		// the post-signup dialog keys on the backend new-account signal — neither
-		// needs an isSignUp flag, so plumbing one through OIDC state would be dead.
+		// Zitadel's prompt=create defaults the hosted UI to the sign-up form, but
+		// `prompt` is a request-only hint that is NOT echoed back to the callback.
+		// Stamp the OIDC application `state` with a flow marker so the callback can
+		// reliably tell sign-up from sign-in: oidc-client-ts persists it and returns
+		// it intact on the resolved `User.state`. The auth-callback gates the
+		// post-signup celebration on this marker, so a returning sign-in — which
+		// carries no marker — never triggers the first-run dialog, regardless of
+		// local cache state. `signIn()` deliberately omits the marker.
 		await this.userManager.signinRedirect({
 			prompt: 'create',
+			state: { flow: 'signup' } satisfies AuthFlowState,
 		})
 	}
 

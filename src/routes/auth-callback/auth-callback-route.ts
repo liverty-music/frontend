@@ -3,7 +3,7 @@ import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
-import { IAuthService } from '../../services/auth-service'
+import { IAuthService, resolveAuthFlow } from '../../services/auth-service'
 import { GuestMigrationRequested } from '../../services/events/guest-migration-requested'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserStore, type ProvisionResult } from '../../services/user-store'
@@ -120,13 +120,21 @@ export class AuthCallbackRoute {
 			this.userStore.clearGuest()
 			this.onboarding.finish()
 
-			// On a GENUINELY NEW account: set flag so dashboard shows
-			// PostSignupDialog. Keyed on the new-account signal from provisioning
-			// (backend minted a fresh row, not an idempotent ALREADY_EXISTS
-			// return), NOT on the OIDC sign-up FLOW — a returning user who taps
-			// "Sign up" (settings / auth-status have no guard) must not get the
-			// new-user dialog.
-			if (created) {
+			// Set the flag so the dashboard shows the PostSignupDialog only on a
+			// genuine first sign-up. Gate on the OIDC sign-up FLOW marker (which
+			// button the user actually pressed — round-tripped through OIDC state)
+			// AND-narrowed by the `created` cache-miss signal. The flow marker is
+			// the reliable half: the backend Create is idempotent and wire-identical
+			// for new vs. returning identities, and `created` alone is a cache-miss
+			// proxy that mis-fires for a returning user with an empty local cache
+			// (new browser/device, cleared storage, or guest-then-sign-in) — the
+			// bug this gate fixes. A sign-in carries no marker, so it never
+			// celebrates. A missing marker (older in-flight redirect, direct
+			// callback hit) fails closed to "not sign-up" per design D3. The
+			// `created` AND-condition additionally suppresses the residual
+			// same-device "returning user taps Sign up" case at zero extra cost.
+			const isSignUpFlow = resolveAuthFlow(user) === 'signup'
+			if (isSignUpFlow && created) {
 				localStorage.setItem(StorageKeys.postSignupShown, 'pending')
 			}
 
@@ -158,9 +166,10 @@ export class AuthCallbackRoute {
 	// Get, cache miss → idempotent Create using the JWT email.
 	//
 	// Returns the provisioned/loaded user (so the caller has the internal
-	// user_id for the migration trigger) plus `created`, which is true only when
-	// a GENUINELY NEW backend account was minted — the caller keys the
-	// post-signup dialog on that, NOT on the OIDC sign-up flow.
+	// user_id for the migration trigger) plus `created`, a cache-miss proxy that
+	// the caller uses only to AND-narrow the post-signup dialog gate. The primary
+	// gate is the OIDC sign-up FLOW marker (see canLoad); `created` alone is
+	// unreliable because a returning user can arrive with an empty local cache.
 	private async ensureUserProvisioned(
 		email: string | undefined,
 	): Promise<ProvisionResult> {
