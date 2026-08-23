@@ -45,6 +45,10 @@ export class DnaOrbCanvas {
 			}
 		`),
 	]
+	// The user's TOTAL follow count, bound from the route. Retained for the route
+	// contract, but it intentionally does NOT drive the orb: the orb's activation is
+	// gesture-driven (see `activationLevel`), so a returning user who already follows
+	// N artists still enters Discovery with a dormant orb.
 	@bindable public followedCount = 0
 	@bindable public artists: Artist[] = []
 	// Spawn-origin hints for a tap top-up (bound from the field owner). Read in
@@ -83,6 +87,13 @@ export class DnaOrbCanvas {
 	private focusedBubbleIndex = -1
 	private isProcessing = false
 
+	// Orb stage level derived from genuine follow gestures completed this session.
+	// Starts at 0 (dormant) on entry and increments once per follow absorption, so
+	// the orb activates ONLY in response to a real follow — never from the bound
+	// total count or its non-gesture changes. Reset to 0 on every re-entry because a
+	// fresh component (and renderer) is created per Discovery mount.
+	private activationLevel = 0
+
 	// Per-artist hue memo: hue is a pure function of the artist, so compute it
 	// once (keyed by id, falling back to name) instead of re-hashing the name on
 	// every render frame per bubble. Survives the ghost→real reference swap.
@@ -101,23 +112,20 @@ export class DnaOrbCanvas {
 		return { width: rect.width, height: rect.height }
 	}
 
-	public followedCountChanged(newVal: number, _oldVal: number): void {
-		// Follow-count changes only move the persistent stage level — silently and
-		// idempotently. The celebration is fired exclusively from a real follow
-		// absorption (`onAbsorbComplete`), so hydration, migration, unfollow, and
-		// optimistic-update rollbacks no longer misfire the flash.
-		this.applyLevel(newVal)
-	}
-
 	/**
-	 * Apply the persistent stage level for `count`: set the renderer's eased stage
-	 * targets and mirror the derived physics orb-zone and comet-trail flag. Silent
-	 * and idempotent — no celebration. Runs on Discovery entry (the seed in
-	 * `attached()`) and on every subsequent follow-count change, so both paths keep
-	 * the physics and animator in sync with the stage.
+	 * Apply orb stage `level`: set the renderer's eased stage targets and mirror the
+	 * derived physics orb-zone and comet-trail flag. Silent — no celebration.
+	 *
+	 * The orb's activation is GESTURE-DRIVEN: `level` is `activationLevel` (the count
+	 * of genuine follow gestures completed this Discovery session), NOT the bound
+	 * total `followedCount`. The orb therefore enters dormant (level 0) regardless of
+	 * how many artists the user already follows, and grows one stage per real follow
+	 * absorption — so it never reads as "activated" before a genuine follow (the
+	 * bound total-count changes from hydration/migration/unfollow/rollback do not
+	 * move the orb at all).
 	 */
-	private applyLevel(count: number): void {
-		this.orbRenderer.applyLevel(count)
+	private applyLevel(level: number): void {
+		this.orbRenderer.applyLevel(level)
 		const sp = this.orbRenderer.getStageParams()
 		this.physics.updateOrbZone(sp.orbRadius)
 		this.absorptionAnimator.cometTrailEnabled = sp.cometTrailEnabled
@@ -176,13 +184,10 @@ export class DnaOrbCanvas {
 		// Wait for a real layout size before initializing + the first paint.
 		await this.initWhenSized()
 		if (this.detached) return // detached while waiting for layout
-		// Seed the stage level for the count present on entry. Aurelia 2 does not
-		// call `followedCountChanged` for the value bound at init, so a returning
-		// user already following N artists would otherwise render at stage 0 until
-		// the count next changes. Read `followedCount` here (post-await) to capture
-		// any change that landed during the size wait; idempotency makes a later
-		// `followedCountChanged` apply harmless.
-		this.applyLevel(this.followedCount)
+		// Seed the orb DORMANT on entry (stage 0) regardless of the user's total
+		// follow count — the orb must not read as "activated" before a genuine follow
+		// this session. It grows only via `onAbsorbComplete` (a real follow gesture).
+		this.applyLevel(this.activationLevel)
 		const displayLimit = Math.min(this.artists.length, this.displayLimit)
 		this.physics.addBubbles(
 			this.artists.slice(0, displayLimit).map((a) => toBubbleParams(a)),
@@ -344,12 +349,11 @@ export class DnaOrbCanvas {
 
 		await this.physics.init(rect.width, rect.height)
 		this.orbRenderer.init(rect.width, rect.height)
-		// Recompute the orb radius/position for the current follow count with the
-		// now-known canvas width. `init()` alone leaves the orb at its
-		// width-agnostic default (radius 60), so without this the narrow-canvas
-		// orb would render full-size on first paint and only shrink after the
-		// first follow event fires `followedCountChanged`.
-		this.orbRenderer.applyLevel(this.followedCount)
+		// Re-apply the current session activation level for the now-known canvas
+		// width. `init()` alone leaves the orb at its width-agnostic default (radius
+		// 60); this keeps the orb at whatever stage the session's follows have
+		// reached (dormant stage 0 until the first follow).
+		this.orbRenderer.applyLevel(this.activationLevel)
 		// On narrow canvases the orb is smaller and bottom-anchored, so align the
 		// physics floor with its top here; init() resets the bottom wall to a
 		// width-agnostic default. Left untouched on wide canvases to preserve the
@@ -477,13 +481,16 @@ export class DnaOrbCanvas {
 	}
 
 	/**
-	 * Sole trigger for the orb's celebratory activation: a genuine follow gesture's
-	 * bubble absorption completing. Fires the unified celebration (pulse/strobe +
+	 * Sole trigger for the orb's activation: a genuine follow gesture's bubble
+	 * absorption completing. Advances the orb one stage (session-scoped
+	 * `activationLevel`, eased) and fires the unified celebration (pulse/strobe +
 	 * color injection + stage-gated shockwave) and the synced landing tone on the
-	 * same frame. The shockwave gate lives inside `celebrate`, reading the same
-	 * `stageParams` the seed/apply path set.
+	 * same frame. Because both the growth and the celebration originate here, the orb
+	 * activates only on a real follow — never on entry or a non-gesture count change.
 	 */
 	private onAbsorbComplete(hue: number): void {
+		this.activationLevel++
+		this.applyLevel(this.activationLevel)
 		this.orbRenderer.celebrate(hue)
 		this.audio.playLanding(hue)
 	}
