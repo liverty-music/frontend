@@ -403,45 +403,42 @@ describe('DnaOrbCanvas', () => {
 		})
 	})
 
-	describe('followedCountChanged', () => {
-		it('applies the stage level silently without celebrating', () => {
-			// Non-gesture count changes (hydrate/migrate/unfollow/rollback) must only
-			// move the persistent stage level — never fire the celebration.
-			const applySpy = vi.spyOn((sut as any).orbRenderer, 'applyLevel')
-			const celebrateSpy = vi.spyOn((sut as any).orbRenderer, 'celebrate')
-
-			sut.followedCountChanged(5, 4)
-
-			expect(applySpy).toHaveBeenCalledWith(5)
-			expect(celebrateSpy).not.toHaveBeenCalled()
-		})
-	})
-
-	describe('onAbsorbComplete (gesture celebration)', () => {
-		it('fires the unified celebration and landing tone exactly once', async () => {
+	describe('onAbsorbComplete (gesture-driven activation)', () => {
+		it('advances the orb one stage, celebrates, and plays the tone on each follow', async () => {
 			await sut.attached()
+			const applySpy = vi.spyOn((sut as any).orbRenderer, 'applyLevel')
 			const celebrateSpy = vi.spyOn((sut as any).orbRenderer, 'celebrate')
 			const landingSpy = vi.spyOn((sut as any).audio, 'playLanding')
 
 			;(sut as any).onAbsorbComplete(200)
 
+			// First genuine follow this session grows the orb to stage 1 and celebrates.
+			expect(applySpy).toHaveBeenCalledWith(1)
 			expect(celebrateSpy).toHaveBeenCalledTimes(1)
 			expect(celebrateSpy).toHaveBeenCalledWith(200)
 			expect(landingSpy).toHaveBeenCalledWith(200)
+
+			;(sut as any).onAbsorbComplete(120)
+
+			// Second follow advances to stage 2 — gradual, session-scoped growth.
+			expect(applySpy).toHaveBeenCalledWith(2)
+			expect(celebrateSpy).toHaveBeenCalledTimes(2)
 		})
 	})
 
-	describe('attached() stage seed', () => {
-		it('seeds the stage level for the entry follow count with no celebration', async () => {
-			// Aurelia does not fire followedCountChanged for the value bound at init,
-			// so attached() must seed the stage for a returning user already at N.
-			sut.followedCount = 3
+	describe('attached() enters dormant', () => {
+		it('seeds the orb dormant (stage 0) regardless of the total follow count, with no celebration', async () => {
+			// A returning user already following N artists must still enter Discovery
+			// with a dormant orb — the orb activates only via a genuine follow gesture,
+			// never from the bound total count on entry.
+			sut.followedCount = 5
 			const applySpy = vi.spyOn((sut as any).orbRenderer, 'applyLevel')
 			const celebrateSpy = vi.spyOn((sut as any).orbRenderer, 'celebrate')
 
 			await sut.attached()
 
-			expect(applySpy).toHaveBeenCalledWith(3)
+			expect(applySpy).toHaveBeenCalledWith(0)
+			expect(applySpy).not.toHaveBeenCalledWith(5)
 			expect(celebrateSpy).not.toHaveBeenCalled()
 		})
 	})
