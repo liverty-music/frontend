@@ -1,9 +1,14 @@
 import {
+	type User,
 	UserManager,
 	type UserManager as UserManagerType,
 } from 'oidc-client-ts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { AuthService, IAuthService } from '../src/services/auth-service'
+import {
+	AuthService,
+	IAuthService,
+	resolveAuthFlow,
+} from '../src/services/auth-service'
 import { createTestContainer } from './helpers/create-container'
 
 // Mock oidc-client-ts
@@ -143,15 +148,20 @@ describe('AuthService', () => {
 		expect(freshSut.isAuthenticated).toBe(true)
 	})
 
-	it('signIn calls signinRedirect', async () => {
+	it('signIn calls signinRedirect without a sign-up flow marker', async () => {
 		await sut.signIn()
 		expect(userManagerMock.signinRedirect).toHaveBeenCalled()
+		// The sign-in flow must NOT carry the sign-up flow marker, otherwise the
+		// auth-callback would wrongly celebrate a returning sign-in.
+		const arg = userManagerMock.signinRedirect.mock.calls[0]?.[0] ?? {}
+		expect(arg.state).toBeUndefined()
 	})
 
-	it('signUp calls signinRedirect with prompt=create', async () => {
+	it('signUp calls signinRedirect with prompt=create and the sign-up flow marker', async () => {
 		await sut.signUp()
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
 			prompt: 'create',
+			state: { flow: 'signup' },
 		})
 	})
 
@@ -172,5 +182,22 @@ describe('AuthService', () => {
 		userManagerMock.signinCallback.mockResolvedValue(null)
 
 		await expect(sut.handleCallback()).rejects.toThrow(/no user/)
+	})
+})
+
+describe('resolveAuthFlow', () => {
+	it("returns 'signup' when the sign-up marker round-tripped through state", () => {
+		const user = { state: { flow: 'signup' } } as unknown as User
+		expect(resolveAuthFlow(user)).toBe('signup')
+	})
+
+	it('returns undefined for a sign-in (no state)', () => {
+		const user = { state: undefined } as unknown as User
+		expect(resolveAuthFlow(user)).toBeUndefined()
+	})
+
+	it('returns undefined when state carries no flow marker', () => {
+		const user = { state: { other: true } } as unknown as User
+		expect(resolveAuthFlow(user)).toBeUndefined()
 	})
 })

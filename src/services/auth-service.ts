@@ -7,6 +7,8 @@
  * nor `admin/`).
  */
 export {
+	type AuthFlowState,
 	AuthService,
 	IAuthService,
+	resolveAuthFlow,
 } from '../../shared/services/auth-service'
