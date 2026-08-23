@@ -125,14 +125,21 @@ export class AuthService {
 		})
 	}
 
-	public async signIn(options?: { loginHint?: string }): Promise<void> {
+	public async signIn(options?: {
+		loginHint?: string
+		forceLogin?: boolean
+	}): Promise<void> {
 		this.logger.info('Starting sign-in flow')
-		// In dev, force re-authentication to bypass Zitadel session cookies,
-		// making it easy to switch between test users without clearing cookies.
+		// `prompt=login` forces Zitadel to re-authenticate instead of silently
+		// reusing an existing SSO session. In dev this eases test-user switching;
+		// callers also request it (forceLogin) to recover from a reused session
+		// that resolved to the wrong org (organizer callback org enforcement).
 		// Optional OIDC params are spread in a single pass so adding a new param
 		// (e.g. acr_values) only requires one spread expression, not two branches.
 		await this.userManager.signinRedirect({
-			...(import.meta.env.DEV ? { prompt: 'login' } : {}),
+			...(import.meta.env.DEV || options?.forceLogin
+				? { prompt: 'login' }
+				: {}),
 			...(options?.loginHint ? { login_hint: options.loginHint } : {}),
 		})
 	}
