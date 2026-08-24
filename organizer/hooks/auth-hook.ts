@@ -5,8 +5,10 @@ import type {
 	RouteNode,
 } from '@aurelia/router'
 import { type ILifecycleHooks, ILogger, lifecycleHooks, resolve } from 'aurelia'
+import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
 import { ILoginHint } from '../services/login-hint'
+import { enforceIntendedOrg } from './org-enforcement'
 import { hasOwnerRole } from './roles'
 
 /**
@@ -32,6 +34,7 @@ export class OrganizerAuthHook
 	implements ILifecycleHooks<IRouteViewModel, 'canLoad'>
 {
 	private readonly authService = resolve(IAuthService)
+	private readonly config = resolve(IAppConfig)
 	private readonly loginHint = resolve(ILoginHint)
 	private readonly logger = resolve(ILogger).scopeTo('OrganizerAuthHook')
 
@@ -62,10 +65,32 @@ export class OrganizerAuthHook
 		}
 
 		// Authenticated. Routes flagged `role: false` (the denied placeholder)
-		// skip the role check so a signed-in non-owner still sees an explanation
-		// rather than bouncing in a redirect loop.
+		// skip the remaining checks so a signed-in non-owner still sees an
+		// explanation rather than bouncing in a redirect loop.
 		if (next.data?.role === false) {
 			return true
+		}
+
+		// Enforce the authenticated session is the INTENDED tenant (design D-D).
+		// This must be in the guard, not only the callback: a pre-existing console
+		// session for a different org is admitted here WITHOUT a fresh OIDC
+		// exchange (no callback), so a callback-only check would miss it and
+		// silently onboard the wrong operator.
+		const gate = await enforceIntendedOrg(
+			this.authService,
+			this.config.zitadelOrgId,
+			this.authService.user?.profile as Record<string, unknown> | undefined,
+			this.logger,
+		)
+		if (gate === 'reauth') {
+			// Re-auth started; the browser navigates to Zitadel — abort in-app nav.
+			return false
+		}
+		if (gate === 'denied') {
+			this.logger.info(
+				'Still signed in to a different org after re-auth; denying',
+			)
+			return '/denied'
 		}
 
 		if (hasOwnerRole(this.authService.user?.profile)) {

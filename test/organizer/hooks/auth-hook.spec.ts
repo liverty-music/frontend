@@ -30,6 +30,15 @@ function userWithRoles(roles: Record<string, unknown>): User {
 	return { profile: { [ROLES_CLAIM]: roles } } as unknown as User
 }
 
+// createMockAppConfig (via createTestContainer) defaults zitadelOrgId to
+// 'test-org-id' — the intended tenant the guard enforces.
+const INTENDED_ORG = 'test-org-id'
+
+/** A token holding the owner role in a specific tenant org. */
+function userOwnerInOrg(orgId: string): User {
+	return userWithRoles({ owner: { [orgId]: 'tenant.example' } })
+}
+
 describe('OrganizerAuthHook', () => {
 	let sut: InstanceType<typeof OrganizerAuthHook>
 	let mockAuth: ReturnType<typeof createMockAuth>
@@ -48,6 +57,7 @@ describe('OrganizerAuthHook', () => {
 	}
 
 	beforeEach(() => {
+		window.sessionStorage.clear()
 		build({ isAuthenticated: true, user: userWithRoles({ owner: {} }) })
 	})
 
@@ -98,6 +108,43 @@ describe('OrganizerAuthHook', () => {
 		const result = await sut.canLoad({} as never, {}, next, null)
 
 		expect(result).toBe(true)
+		expect(mockAuth.signIn).not.toHaveBeenCalled()
+	})
+
+	it('admits when the authenticated session belongs to the intended org', async () => {
+		build({ isAuthenticated: true, user: userOwnerInOrg(INTENDED_ORG) })
+		const next = makeRouteNode({})
+
+		const result = await sut.canLoad({} as never, {}, next, null)
+
+		expect(result).toBe(true)
+		expect(mockAuth.signIn).not.toHaveBeenCalled()
+	})
+
+	it('forces re-auth once when the session belongs to a DIFFERENT org', async () => {
+		// Reproduces the org-test-40 → org-test-21 mix: a pre-existing session for
+		// another org is admitted without a fresh OIDC exchange; the guard must
+		// re-authenticate as the intended tenant instead of admitting it.
+		build({ isAuthenticated: true, user: userOwnerInOrg('some-other-org') })
+		const next = makeRouteNode({})
+
+		const result = await sut.canLoad({} as never, {}, next, null)
+
+		expect(result).toBe(false)
+		expect(mockAuth.signIn).toHaveBeenCalledWith({ forceLogin: true })
+		expect(
+			window.sessionStorage.getItem('liverty:organizer:org-mismatch-retry'),
+		).toBe('1')
+	})
+
+	it('denies (no second re-auth) if still the wrong org after a retry', async () => {
+		window.sessionStorage.setItem('liverty:organizer:org-mismatch-retry', '1')
+		build({ isAuthenticated: true, user: userOwnerInOrg('some-other-org') })
+		const next = makeRouteNode({})
+
+		const result = await sut.canLoad({} as never, {}, next, null)
+
+		expect(result).toBe('/denied')
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
 	})
 

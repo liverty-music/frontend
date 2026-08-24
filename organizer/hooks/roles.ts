@@ -40,11 +40,13 @@ export function hasOwnerRole(
 }
 
 /**
- * Returns the tenant org ids for which the token carries the `owner` role — the
- * keys of the `owner` map in the project-roles claim. Empty when the claim is
- * missing or malformed.
+ * Returns every tenant org id the token carries ANY project-role grant in — the
+ * union of the org-id keys across all roles in the project-roles claim. Used as
+ * the org membership signal (independent of which role), so the guard can tell a
+ * "different-org session" apart from a "no-grants" session. Empty when the claim
+ * is missing or malformed.
  */
-export function ownerOrgIds(
+export function tokenOrgIds(
 	profile: Record<string, unknown> | undefined | null,
 ): string[] {
 	if (!profile) return []
@@ -52,22 +54,13 @@ export function ownerOrgIds(
 	if (roles === null || typeof roles !== 'object' || Array.isArray(roles)) {
 		return []
 	}
-	const owner = (roles as Record<string, unknown>)[ORGANIZER_OWNER_ROLE]
-	if (owner === null || typeof owner !== 'object' || Array.isArray(owner)) {
-		return []
+	const ids = new Set<string>()
+	for (const grant of Object.values(roles as Record<string, unknown>)) {
+		if (grant !== null && typeof grant === 'object' && !Array.isArray(grant)) {
+			for (const orgId of Object.keys(grant as Record<string, unknown>)) {
+				ids.add(orgId)
+			}
+		}
 	}
-	return Object.keys(owner as Record<string, unknown>)
-}
-
-/**
- * Returns true iff the token grants the `owner` role in the given tenant org.
- * The callback uses this to enforce that the authenticated session is the
- * INTENDED tenant (design D-D): a reused SSO session for a different org fails
- * this check, so the operator is not silently onboarded into the wrong org.
- */
-export function tokenGrantsOwnerInOrg(
-	profile: Record<string, unknown> | undefined | null,
-	orgId: string,
-): boolean {
-	return ownerOrgIds(profile).includes(orgId)
+	return [...ids]
 }
