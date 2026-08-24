@@ -114,4 +114,14 @@ Application state (onboarding progress, guest artist data) is managed through si
 
 New vs returning users are distinguished by the `isSignUp` flag in the OIDC state. The auth callback routes sign-up users to artist discovery and sign-in users directly to the dashboard.
 
+## Review criteria (flag violations; quote the rule + link the existing code compared against)
+
+- No direct `localStorage` in services — persist `@observable` state via `src/adapter/storage/` (cf. `follow-store.ts`).
+- A route reachable without auth MUST set `data: { auth: false }` in `app-shell.ts`; the gate lives in `auth-hook.ts`, not components.
+- Any `attached()` that adds a listener / starts a `requestAnimationFrame` / subscribes MUST release it in `detaching()` (cf. `concert-highway.ts`).
+- RPC goes through a client in `src/adapter/rpc/client/` built with `createTransport`; auth is at the transport, not the call site.
+- Services export an `IName` token via `DI.createInterface()`, register `.singleton()`, and re-export the interface (cf. `concert-store.ts`).
+- `@observable` mutations update optimistically and roll back on RPC failure (cf. `follow-store.ts follow()`).
+- ConnectError is routed via `IConnectErrorRouter`, not swallowed in a component.
+
 </agent-rules>
