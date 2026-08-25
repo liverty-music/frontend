@@ -41,8 +41,8 @@
 		"demo": {
 			"notificationLead": "Just follow your artists",
 			"notificationTap": "Tap to open",
-			"coachMark": "Tap a card for tickets, goods, and venue",
-			"sheetHint": "Venue directions and merch — all right here!"
+			"coachMark": "Tap a card for tickets and venue",
+			"sheetHint": "Venue directions and calendar — all right here!"
 		}
 	},
 	"signup": {
@@ -133,7 +133,6 @@
 		"ticketStatus": "Ticket Status",
 		"stopTracking": "Stop tracking",
 		"viewOfficialInfo": "View Official Info",
-		"viewMerch": "View Merch Info",
 		"addToCalendar": "Add to Calendar",
 		"journeyPhase": {
 			"process": "Application",

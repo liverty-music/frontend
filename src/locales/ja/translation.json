@@ -42,7 +42,7 @@
 			"notificationLead": "アーティストをフォローするだけで",
 			"notificationTap": "タップして開く",
 			"coachMark": "カードをタップして、チケットや会場をチェック",
-			"sheetHint": "会場アクセスやグッズ情報も、ここからすぐに！"
+			"sheetHint": "会場アクセスやカレンダー登録も、ここからすぐに！"
 		}
 	},
 	"signup": {
@@ -133,7 +133,6 @@
 		"ticketStatus": "チケット状況",
 		"stopTracking": "追跡を停止",
 		"viewOfficialInfo": "公式情報を見る",
-		"viewMerch": "グッズ情報を見る",
 		"addToCalendar": "カレンダーに追加",
 		"journeyPhase": {
 			"process": "申込フロー",

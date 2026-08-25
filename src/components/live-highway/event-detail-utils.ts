@@ -8,11 +8,6 @@ export function eventBackgroundUrl(
 	return bestBackgroundUrl(event?.artist)
 }
 
-/** True when the event has a known merchandise URL. */
-export function eventHasMerchUrl(event: LiveEvent | null | undefined): boolean {
-	return Boolean(event?.merchUrl)
-}
-
 /** Google Maps search URL for the event's venue. */
 export function eventGoogleMapsUrl(
 	event: LiveEvent | null | undefined,
