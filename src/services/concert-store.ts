@@ -534,7 +534,6 @@ function concertFrom(
 		openTime,
 		title: proto.series?.title?.value ?? '',
 		sourceUrl: proto.series?.sourceUrl?.value ?? '',
-		merchUrl: proto.series?.merchUrl?.value ?? '',
 		hypeLevel,
 		matched,
 		artist,

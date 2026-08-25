@@ -20,7 +20,6 @@ import {
 	eventBackgroundUrl,
 	eventCalendarUrl,
 	eventGoogleMapsUrl,
-	eventHasMerchUrl,
 	eventOpenTimeOrFallback,
 } from './event-detail-utils'
 import type { JourneyStatus, LiveEvent } from './live-event'
@@ -158,10 +157,6 @@ export class EventDetailSheet {
 
 	public get backgroundUrl(): string | undefined {
 		return eventBackgroundUrl(this.event)
-	}
-
-	public get hasMerchUrl(): boolean {
-		return eventHasMerchUrl(this.event)
 	}
 
 	public get googleMapsUrl(): string {

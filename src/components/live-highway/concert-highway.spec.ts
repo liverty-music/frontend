@@ -29,7 +29,6 @@ function makeConcert(overrides: Partial<Concert>): Concert {
 		startTime: '18:00',
 		title: 'Live',
 		sourceUrl: '',
-		merchUrl: '',
 		hypeLevel: 'home',
 		matched: true,
 		...overrides,
