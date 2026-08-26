@@ -1,0 +1,124 @@
+<main class="[ concerts ] [ flow ]">
+  <header class="concerts-header">
+    <p class="concerts-brand">Liverty Organizer</p>
+    <h1 class="concerts-title">Your concerts</h1>
+    <p class="concerts-subtitle">
+      Create, publish, and manage the concerts you present.
+    </p>
+    <a load="../concerts/new" class="concerts-btn" data-variant="primary">
+      + New concert
+    </a>
+  </header>
+
+  <output
+    if.bind="phase === 'loading'"
+    class="concerts-status"
+    role="status"
+    aria-busy="true"
+  >
+    <span class="concerts-spinner"></span>
+    <span>Loading your concerts…</span>
+  </output>
+
+  <section
+    if.bind="phase === 'error'"
+    class="concerts-state"
+    role="alert"
+    data-state="error"
+  >
+    <p>Could not load your concerts.</p>
+    <p class="concerts-error-detail">${loadError}</p>
+    <button type="button" class="concerts-btn" click.trigger="load()">
+      Retry
+    </button>
+  </section>
+
+  <section if.bind="isEmpty" class="concerts-state" data-state="empty">
+    <p>You have not created any concerts yet.</p>
+    <a load="../concerts/new" class="concerts-btn" data-variant="primary">
+      Create your first concert
+    </a>
+  </section>
+
+  <ul if.bind="phase === 'ready' && rows.length > 0" class="concerts-list">
+    <li repeat.for="row of rows" class="[ concert-card ] [ flow ]">
+      <div class="concert-card-head">
+        <h2 class="concert-card-title">${row.title}</h2>
+        <div class="[ concert-card-badges ] [ cluster ]">
+          <span
+            class="concert-badge"
+            data-state.bind="row.publishState"
+          >${row.publishLabel}</span>
+          <span class="concert-badge" data-variant="visibility"
+            >${row.visibilityLabel}</span
+          >
+        </div>
+      </div>
+
+      <p class="concert-card-dates">${row.dateRange}</p>
+
+      <div class="[ concert-card-actions ] [ cluster ]">
+        <a
+          if.bind="row.canEdit"
+          load="../concerts/edit/${row.seriesId}"
+          class="concerts-btn"
+          data-variant="ghost"
+        >
+          Edit
+        </a>
+        <button
+          if.bind="row.canPublish"
+          type="button"
+          class="concerts-btn"
+          data-variant="primary"
+          disabled.bind="row.busy"
+          click.trigger="publish(row)"
+        >
+          ${row.busy ? 'Publishing…' : 'Publish'}
+        </button>
+        <button
+          if.bind="row.canCancel && !isConfirmingCancel(row)"
+          type="button"
+          class="concerts-btn"
+          data-variant="danger"
+          disabled.bind="row.busy"
+          click.trigger="confirmCancel(row)"
+        >
+          Cancel
+        </button>
+      </div>
+
+      <div
+        if.bind="isConfirmingCancel(row)"
+        class="[ concert-card-confirm ] [ flow ]"
+        role="group"
+        aria-label="Confirm cancellation"
+      >
+        <p>Cancelling is permanent and drops this concert from fans. Continue?</p>
+        <div class="[ concert-card-actions ] [ cluster ]">
+          <button
+            type="button"
+            class="concerts-btn"
+            data-variant="danger"
+            disabled.bind="row.busy"
+            click.trigger="cancel(row)"
+          >
+            ${row.busy ? 'Cancelling…' : 'Yes, cancel'}
+          </button>
+          <button
+            type="button"
+            class="concerts-btn"
+            data-variant="ghost"
+            click.trigger="dismissCancel()"
+          >
+            Keep it
+          </button>
+        </div>
+      </div>
+
+      <p if.bind="row.actionError" class="concerts-error" role="alert">
+        ${row.actionError}
+      </p>
+    </li>
+  </ul>
+</main>

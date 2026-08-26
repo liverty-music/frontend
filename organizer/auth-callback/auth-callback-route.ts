@@ -32,11 +32,11 @@ function isRecoverableStateMiss(err: unknown): boolean {
 
 /**
  * Organizer OIDC callback handler. Completes the authorization-code exchange and
- * routes to the welcome page. It does NOT enforce the intended org or the owner
- * role itself — the route guard (`OrganizerAuthHook`) does that when routing to
- * `/welcome`, which also covers the path where a pre-existing session is admitted
- * without a callback. The callback keeps only the cross-context state-miss
- * self-heal.
+ * routes to the concerts dashboard (the post-login landing). It does NOT enforce
+ * the intended org or the owner role itself — the route guard
+ * (`OrganizerAuthHook`) does that when routing to `/concerts`, which also covers
+ * the path where a pre-existing session is admitted without a callback. The
+ * callback keeps only the cross-context state-miss self-heal.
  *
  * Uses `canLoad` to return a NavigationInstruction so the redirect happens
  * inside the router transition pipeline (the same pattern the admin/consumer
@@ -60,15 +60,15 @@ export class AuthCallbackRoute {
 			this.logger.info('Organizer auth callback succeeded')
 			// Clear the one-shot self-heal marker; the guard enforces org + role.
 			clearSessionFlag(CALLBACK_RETRY_FLAG)
-			return '/welcome'
+			return '/concerts'
 		} catch (err) {
 			this.logger.error('Organizer auth callback error:', err)
 
-			// If a prior callback already established the session, route to welcome
-			// (the guard re-checks the intended org and the owner role).
+			// If a prior callback already established the session, route to the
+			// dashboard (the guard re-checks the intended org and the owner role).
 			if (this.authService.isAuthenticated) {
 				clearSessionFlag(CALLBACK_RETRY_FLAG)
-				return '/welcome'
+				return '/concerts'
 			}
 
 			// Self-heal a cross-context "No matching state" dead-end: restart the

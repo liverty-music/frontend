@@ -19,7 +19,7 @@ const STATE_MISS = new Error('No matching state found in storage')
 
 // The callback only completes the code exchange + the cross-context state-miss
 // self-heal. The intended-org enforcement + owner-role check live in the guard
-// (OrganizerAuthHook), which runs when the callback routes to /welcome.
+// (OrganizerAuthHook), which runs when the callback routes to /concerts.
 describe('Organizer AuthCallbackRoute', () => {
 	let sut: InstanceType<typeof AuthCallbackRoute>
 	let mockAuth: ReturnType<typeof createMockAuth>
@@ -38,11 +38,11 @@ describe('Organizer AuthCallbackRoute', () => {
 		build({})
 	})
 
-	it('completes the code exchange and routes to welcome', async () => {
+	it('completes the code exchange and routes to the concerts dashboard', async () => {
 		build({})
 		const result = await sut.canLoad({} as never, {} as never)
 
-		expect(result).toBe('/welcome')
+		expect(result).toBe('/concerts')
 		expect(mockAuth.handleCallback).toHaveBeenCalledTimes(1)
 	})
 
@@ -91,13 +91,13 @@ describe('Organizer AuthCallbackRoute', () => {
 		expect(sut.error).toContain('token endpoint 500')
 	})
 
-	it('recovers to welcome when a prior callback already established the session', async () => {
+	it('recovers to the dashboard when a prior callback already established the session', async () => {
 		build({ isAuthenticated: true })
 		mockAuth.handleCallback = vi.fn().mockRejectedValue(STATE_MISS)
 
 		const result = await sut.canLoad({} as never, {} as never)
 
-		expect(result).toBe('/welcome')
+		expect(result).toBe('/concerts')
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
 	})
 })
