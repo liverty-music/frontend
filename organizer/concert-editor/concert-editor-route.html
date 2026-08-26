@@ -1,0 +1,251 @@
+<main class="[ editor ] [ flow ]">
+  <header class="editor-header">
+    <a load="../concerts" class="editor-back-link">← Back to your concerts</a>
+    <h1 class="editor-title">
+      ${isEdit ? 'Edit concert' : 'New concert'}
+    </h1>
+    <p if.bind="isEdit && isPublished" class="editor-note">
+      This concert is published. Edits are corrections and do not re-notify
+      followers.
+    </p>
+  </header>
+
+  <output
+    if.bind="phase === 'loading'"
+    class="organizer-status"
+    role="status"
+    aria-busy="true"
+  >
+    <span class="organizer-spinner"></span>
+    <span>Loading…</span>
+  </output>
+
+  <section
+    if.bind="phase === 'error'"
+    class="organizer-state"
+    role="alert"
+    data-state="error"
+  >
+    <p>Could not open the editor.</p>
+    <p class="organizer-error">${loadError}</p>
+    <a load="../concerts" class="organizer-btn">Back to your concerts</a>
+  </section>
+
+  <form
+    if.bind="phase === 'ready'"
+    class="[ editor-form ] [ flow ]"
+    submit.trigger="save()"
+  >
+    <!-- Series metadata -->
+    <label class="organizer-field">
+      Title (required)
+      <input
+        type="text"
+        class="organizer-input"
+        value.bind="model.title"
+        input.trigger="revalidate()"
+        placeholder="e.g. Spring One-Man Tour 2026"
+      />
+    </label>
+    <p if.bind="submitted && errors.title" class="organizer-error" role="alert">
+      ${errors.title}
+    </p>
+
+    <label class="organizer-field">
+      Description (optional)
+      <textarea
+        class="organizer-textarea"
+        value.bind="model.description"
+        placeholder="Notes shown on the concert page"
+      ></textarea>
+    </label>
+
+    <div class="[ editor-grid ] [ cluster ]">
+      <label class="organizer-field">
+        Type
+        <select class="organizer-select" value.bind="model.type" change.trigger="revalidate()">
+          <option model.bind="SeriesType.SINGLE">Single</option>
+          <option model.bind="SeriesType.TOUR">Tour</option>
+          <option model.bind="SeriesType.FESTIVAL">Festival</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Performers -->
+    <fieldset class="[ editor-fieldset ] [ flow ]">
+      <legend>Performers (represented artists)</legend>
+      <p if.bind="performers.length === 0" class="organizer-error">
+        You represent no artists yet, so a concert cannot be created.
+      </p>
+      <div class="[ editor-performers ] [ cluster ]">
+        <label
+          repeat.for="option of performers"
+          class="editor-performer"
+          data-selected.bind="option.selected"
+        >
+          <input
+            type="checkbox"
+            checked.bind="option.selected"
+            change.trigger="togglePerformer(option)"
+          />
+          ${option.name}
+        </label>
+      </div>
+      <p
+        if.bind="submitted && errors.artistIds"
+        class="organizer-error"
+        role="alert"
+      >
+        ${errors.artistIds}
+      </p>
+    </fieldset>
+
+    <!-- Events -->
+    <fieldset class="[ editor-fieldset ] [ flow ]">
+      <legend>Events</legend>
+      <div
+        repeat.for="row of model.events"
+        class="[ editor-event ] [ flow ]"
+      >
+        <div class="editor-event-head">
+          <span class="editor-event-index">Event ${$index + 1}</span>
+          <button
+            if.bind="model.events.length > 1"
+            type="button"
+            class="organizer-btn"
+            data-variant="ghost"
+            click.trigger="removeEvent($index)"
+          >
+            Remove
+          </button>
+        </div>
+
+        <label class="organizer-field">
+          Venue name (required)
+          <input
+            type="text"
+            class="organizer-input"
+            value.bind="row.venueName"
+            input.trigger="revalidate()"
+            placeholder="e.g. Zepp Tokyo"
+          />
+        </label>
+        <label class="organizer-field">
+          Google place id (optional)
+          <input
+            type="text"
+            class="organizer-input"
+            value.bind="row.placeId"
+            placeholder="ChIJ…"
+          />
+        </label>
+        <label class="organizer-field">
+          Date (required)
+          <input
+            type="date"
+            class="organizer-input"
+            value.bind="row.localDate"
+            input.trigger="revalidate()"
+          />
+        </label>
+        <div class="[ editor-grid ] [ cluster ]">
+          <label class="organizer-field">
+            Open time (optional)
+            <input
+              type="time"
+              class="organizer-input"
+              value.bind="row.openTime"
+              input.trigger="revalidate()"
+            />
+          </label>
+          <label class="organizer-field">
+            Start time (optional)
+            <input
+              type="time"
+              class="organizer-input"
+              value.bind="row.startTime"
+              input.trigger="revalidate()"
+            />
+          </label>
+        </div>
+
+        <p
+          if.bind="submitted && errors.rows[$index].venueName"
+          class="organizer-error"
+          role="alert"
+        >
+          ${errors.rows[$index].venueName}
+        </p>
+        <p
+          if.bind="submitted && errors.rows[$index].localDate"
+          class="organizer-error"
+          role="alert"
+        >
+          ${errors.rows[$index].localDate}
+        </p>
+        <p
+          if.bind="submitted && errors.rows[$index].time"
+          class="organizer-error"
+          role="alert"
+        >
+          ${errors.rows[$index].time}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="organizer-btn"
+        data-variant="ghost"
+        click.trigger="addEvent()"
+      >
+        + Add another event
+      </button>
+      <p if.bind="submitted && errors.events" class="organizer-error" role="alert">
+        ${errors.events}
+      </p>
+    </fieldset>
+
+    <div class="[ editor-actions ] [ cluster ]">
+      <button
+        type="submit"
+        class="organizer-btn"
+        data-variant="primary"
+        disabled.bind="saving"
+      >
+        ${saving ? 'Saving…' : (isEdit ? 'Save changes' : 'Create draft')}
+      </button>
+    </div>
+    <p if.bind="saveError" class="organizer-error" role="alert">${saveError}</p>
+  </form>
+
+  <!-- Cover image: edit mode only (needs a persisted id) -->
+  <section
+    if.bind="phase === 'ready' && isEdit"
+    class="[ editor-panel ] [ flow ]"
+  >
+    <h2 class="editor-subtitle">Cover image</h2>
+    <img
+      if.bind="coverImageUrl"
+      class="editor-cover-preview"
+      src.bind="coverImageUrl"
+      alt="Current cover image"
+    />
+    <label class="organizer-field">
+      Upload a cover image (JPEG, PNG, or WebP, ≤ ${maxImageMiB} MiB)
+      <input
+        type="file"
+        class="organizer-input"
+        accept="image/jpeg,image/png,image/webp"
+        disabled.bind="uploadingCover"
+        change.trigger="onCoverSelected($event)"
+      />
+    </label>
+    <output if.bind="uploadingCover" class="organizer-status" role="status">
+      <span class="organizer-spinner"></span>
+      <span>Uploading…</span>
+    </output>
+    <p if.bind="coverImageError" class="organizer-error" role="alert">
+      ${coverImageError}
+    </p>
+  </section>
+</main>

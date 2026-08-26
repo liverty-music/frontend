@@ -26,18 +26,31 @@
 @layer tokens {
 	:root {
 		--color-brand-primary: oklch(65% 0.28 350deg);
+		--color-brand-on: oklch(98.5% 0 0deg);
 		--color-surface-base: oklch(18% 0.04 275deg);
+		--color-surface-raised: oklch(24% 0.04 275deg);
+		--color-border: oklch(40% 0.03 275deg);
 		--color-text-primary: oklch(98.5% 0 0deg);
 		--color-text-secondary: oklch(82% 0.02 275deg);
 		--color-error: oklch(65% 0.2 25deg);
+		--color-success: oklch(72% 0.16 150deg);
+		--space-3xs: 0.25rem;
+		--space-2xs: 0.5rem;
+		--space-xs: 0.75rem;
 		--space-s: 1rem;
 		--space-m: 1.5rem;
 		--space-l: 2rem;
 		--step--1: 0.833rem;
 		--step-0: 1rem;
+		--step-1: 1.2rem;
+		--step-2: 1.44rem;
 		--step-3: 1.953rem;
+		--radius-s: 0.375rem;
+		--radius-m: 0.75rem;
+		--radius-round: 50%;
 		--font-body: "Poppins", system-ui, sans-serif;
 		--font-display: "Outfit", system-ui, sans-serif;
+		--font-mono: ui-monospace, "SFMono-Regular", monospace;
 		--leading-snug: 1.2;
 		--leading-relaxed: 1.5;
 	}
@@ -77,5 +90,151 @@
 		flex-wrap: wrap;
 		gap: var(--cluster-space, var(--space-s));
 		align-items: center;
+	}
+}
+
+/*
+ * Console-wide UI primitives shared by every organizer screen (buttons, form
+ * fields, status/error, badges). Kept here rather than duplicated per screen so
+ * each screen's own stylesheet stays a small context-specific block. The
+ * consumer `src/` component library is intentionally NOT imported (bundle
+ * isolation), so the organizer entry declares only the primitives it uses.
+ */
+@layer block {
+	/*
+	 * Console-wide primitives are scoped to the document root so they qualify as
+	 * proper CUBE blocks (the methodology requires block rules to live inside an
+	 * @scope). `body` is the broadest root that still satisfies the rule and keeps
+	 * these shared across every organizer screen.
+	 */
+	@scope (body) {
+		.concerts-btn,
+		.organizer-btn {
+			cursor: pointer;
+
+			display: inline-flex;
+			gap: var(--space-2xs);
+			align-items: center;
+			justify-content: center;
+
+			padding: var(--space-2xs) var(--space-s);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-s);
+
+			font: inherit;
+			font-weight: 600;
+			color: var(--color-text-primary);
+			text-decoration: none;
+
+			background: transparent;
+
+			&[data-variant="primary"] {
+				border-color: transparent;
+				color: var(--color-brand-on);
+				background: var(--color-brand-primary);
+			}
+
+			&[data-variant="danger"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+
+			&[data-variant="ghost"] {
+				border-color: transparent;
+			}
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.6;
+			}
+		}
+
+		.organizer-field {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.organizer-input,
+		.organizer-textarea,
+		.organizer-select {
+			padding: var(--space-2xs) var(--space-xs);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-s);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-base);
+		}
+
+		.organizer-textarea {
+			resize: vertical;
+			min-block-size: 5rem;
+		}
+
+		.concerts-error,
+		.organizer-error {
+			font-size: var(--step--1);
+			color: var(--color-error);
+		}
+
+		.concerts-status,
+		.organizer-status {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+			color: var(--color-text-secondary);
+		}
+
+		.concerts-spinner,
+		.organizer-spinner {
+			inline-size: 1rem;
+			block-size: 1rem;
+			border: 2px solid var(--color-border);
+			border-block-start-color: var(--color-brand-primary);
+			border-radius: var(--radius-round);
+
+			animation: spin 0.8s linear infinite;
+		}
+
+		.concerts-state,
+		.organizer-state {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+			align-items: flex-start;
+
+			padding: var(--space-l);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-m);
+
+			text-align: start;
+
+			background: var(--color-surface-raised);
+		}
+
+		.concert-badge {
+			padding: var(--space-3xs) var(--space-2xs);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-s);
+
+			font-size: var(--step--1);
+			font-weight: 600;
+
+			/* PublishState enum: 1 DRAFT, 2 PUBLISHED, 3 CANCELLED. */
+			&[data-state="2"] {
+				border-color: var(--color-success);
+				color: var(--color-success);
+			}
+
+			&[data-state="3"] {
+				border-color: var(--color-error);
+				color: var(--color-error);
+			}
+		}
 	}
 }
