@@ -21,11 +21,7 @@ import {
 	toSeriesDraftInput,
 	validateConcertForm,
 } from './concert-form'
-import {
-	MAX_IMAGE_BYTES,
-	readFileBytes,
-	validateCoverImage,
-} from './cover-image'
+import { MAX_IMAGE_BYTES, validateCoverImage } from './cover-image'
 
 /** Coarse lifecycle phase for the initial editor bootstrap. */
 type LoadPhase = 'loading' | 'ready' | 'error'
@@ -83,8 +79,15 @@ export class ConcertEditorRoute {
 
 	public performers: PerformerOption[] = []
 
-	// Cover image (edit mode only — requires a persisted series id).
+	// Cover image (edit mode only — requires a persisted series id). The served
+	// `large` variant is 404 until async processing completes, so an optimistic
+	// object-URL preview of the just-picked file bridges the gap (and is the
+	// fallback if the variant never appears). See onCoverSelected / renderedCover.
 	public coverImageUrl = ''
+	/** Object URL of the locally picked file; shown until the variant is live. */
+	public localPreviewUrl = ''
+	/** Set when the served variant 404s (still processing or never produced). */
+	public coverVariantBroken = false
 	public coverImageError = ''
 	public uploadingCover = false
 
@@ -114,6 +117,7 @@ export class ConcertEditorRoute {
 
 	public detaching(): void {
 		this.abort?.abort()
+		this.revokeLocalPreview()
 	}
 
 	public get isEdit(): boolean {
@@ -122,6 +126,36 @@ export class ConcertEditorRoute {
 
 	public get isPublished(): boolean {
 		return this.publishState === PublishState.PUBLISHED
+	}
+
+	/**
+	 * The cover source to render: the served `large` variant when it is live,
+	 * otherwise the optimistic local preview. Falls back to the preview when the
+	 * variant 404s (still processing, or never produced — the operator re-uploads).
+	 */
+	public get renderedCover(): string {
+		if (this.coverImageUrl && !this.coverVariantBroken)
+			return this.coverImageUrl
+		return this.localPreviewUrl
+	}
+
+	/** True while the served variant is not yet available but a preview exists. */
+	public get coverProcessing(): boolean {
+		return (
+			this.localPreviewUrl !== '' && this.renderedCover === this.localPreviewUrl
+		)
+	}
+
+	/** The served variant 404'd (processing not finished, or failed): fall back. */
+	public onCoverError(): void {
+		this.coverVariantBroken = true
+	}
+
+	private revokeLocalPreview(): void {
+		if (this.localPreviewUrl) {
+			URL.revokeObjectURL(this.localPreviewUrl)
+			this.localPreviewUrl = ''
+		}
 	}
 
 	private async bootstrap(): Promise<void> {
@@ -177,7 +211,11 @@ export class ConcertEditorRoute {
 	private hydrate(concert: AuthoredConcert): void {
 		const series = concert.series
 		this.publishState = series?.publishState ?? PublishState.UNSPECIFIED
-		this.coverImageUrl = series?.coverImage?.value ?? ''
+		// The editor renders the full-width `large` variant; a list would use
+		// `thumb`. Both 404 until async processing finishes (see renderedCover).
+		const nextCover = series?.media?.attributes?.large?.value ?? ''
+		if (nextCover !== this.coverImageUrl) this.coverVariantBroken = false
+		this.coverImageUrl = nextCover
 		this.model = {
 			title: series?.title?.value ?? '',
 			description: series?.description?.value ?? '',
@@ -276,6 +314,14 @@ export class ConcertEditorRoute {
 
 	// --- Cover image --------------------------------------------------------
 
+	/**
+	 * Runs the async cover-image pipeline for the picked file:
+	 * `createMediaUploadUrl` → direct `PUT` to the signed GCS URL → `attachMedia`.
+	 * On a successful attach it shows an optimistic object-URL preview of the
+	 * picked file, since the served variant is not live until async processing
+	 * finishes (see {@link renderedCover}). The client-side type/size pre-check
+	 * still runs first so an invalid file never round-trips.
+	 */
 	public async onCoverSelected(event: Event): Promise<void> {
 		const input = event.target as HTMLInputElement
 		const file = input.files?.[0]
@@ -287,15 +333,18 @@ export class ConcertEditorRoute {
 			input.value = ''
 			return
 		}
+		const signal = this.abort?.signal
 		this.uploadingCover = true
 		try {
-			const bytes = await readFileBytes(file)
-			const url = await this.client.uploadCoverImage(
-				this.seriesId,
-				bytes,
-				file.type,
-			)
-			if (url) this.coverImageUrl = url
+			const ticket = await this.client.createMediaUploadUrl(file.type, signal)
+			await this.client.uploadToSignedUrl(ticket, file, file.type, signal)
+			await this.client.attachMedia(this.seriesId, ticket.mediaId, signal)
+			// Processing is async: the served variant 404s until it completes, so
+			// show the local file optimistically and let it bridge to the variant.
+			this.revokeLocalPreview()
+			this.localPreviewUrl = URL.createObjectURL(file)
+			this.coverVariantBroken = false
+			this.coverImageUrl = ''
 		} catch (err) {
 			this.coverImageError = toOrganizerErrorMessage(
 				err,

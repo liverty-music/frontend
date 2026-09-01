@@ -15,6 +15,7 @@ import {
 	PlaceId,
 	VenueName,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/venue_pb.js'
+import { MediaId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/media_pb.js'
 import type {
 	AuthoredConcert,
 	EventDraft as ProtoEventDraft,
@@ -118,12 +119,23 @@ export const IConcertAuthoringClient =
 
 export interface IConcertAuthoringClient extends ConcertAuthoringClient {}
 
+/** A minted signed-upload authorization: where to `PUT`, the media identity,
+ * and the size ceiling the signed URL was bound to. */
+export interface MediaUploadTicket {
+	/** The short-lived GCS V4 signed `PUT` URL the client uploads the bytes to. */
+	readonly uploadUrl: string
+	/** The media identity to record via {@link ConcertAuthoringClient.attachMedia}. */
+	readonly mediaId: string
+	/** The upper byte bound the signed URL was minted with (for the range header). */
+	readonly maxBytes: number
+}
+
 /**
  * Organizer-local wrapper around the generated organizer `ConcertService`
  * client: the authoring surface (create / update / publish / cancel /
- * uploadCoverImage / regenerateToken / list). The caller's Organizer is
- * resolved from the token, so no request carries an organizer id; a series is
- * addressed by its {@link SeriesId}.
+ * createMediaUploadUrl / attachMedia / regenerateToken / list). The caller's
+ * Organizer is resolved from the token, so no request carries an organizer id;
+ * a series is addressed by its {@link SeriesId}.
  *
  * Built from organizer/shared modules via {@link createOrganizerTransport}; it
  * never imports the consumer `src/` nor the sibling `admin/` bundle. Callers
@@ -228,33 +240,94 @@ export class ConcertAuthoringClient {
 	}
 
 	/**
-	 * Uploads a cover image for a series and returns the stable served URL. The
-	 * image is validated server-side (content type + size); the console
-	 * pre-validates too. Bytes are supplied as a `Uint8Array` read from a `File`.
+	 * Step 1 of the async cover-image pipeline: mints a media identity and a
+	 * short-lived GCS V4 signed `PUT` URL bound to `contentType`. The client then
+	 * uploads the bytes directly to that URL (see {@link uploadToSignedUrl}) and
+	 * records the attachment via {@link attachMedia}. The image is not live until
+	 * the backend finishes async processing (variants 404 until then).
 	 */
-	public async uploadCoverImage(
-		seriesId: string,
-		imageData: Uint8Array,
+	public async createMediaUploadUrl(
 		contentType: string,
 		signal?: AbortSignal,
-	): Promise<string | undefined> {
-		this.logger.info('Uploading cover image', {
-			seriesId,
-			contentType,
-			bytes: imageData.byteLength,
-		})
+	): Promise<MediaUploadTicket> {
+		this.logger.info('Creating media upload URL', { contentType })
 		try {
-			const response = await this.client.uploadCoverImage(
+			const response = await this.client.createMediaUploadURL(
+				{ contentType },
+				{ signal },
+			)
+			const uploadUrl = response.uploadUrl?.value
+			const mediaId = response.mediaId?.value
+			if (!uploadUrl || !mediaId) {
+				throw new Error('CreateMediaUploadURL returned an incomplete ticket.')
+			}
+			return { uploadUrl, mediaId, maxBytes: Number(response.maxBytes) }
+		} catch (err) {
+			this.logger.warn('createMediaUploadUrl failed', {
+				contentType,
+				error: err,
+			})
+			throw err
+		}
+	}
+
+	/**
+	 * Step 2 of the async cover-image pipeline: uploads the picked file's bytes
+	 * directly to the signed `PUT` URL. `x-goog-content-length-range` mirrors the
+	 * server-minted ceiling so GCS rejects an oversized body before it lands.
+	 * This is a plain `fetch` (not a Connect call): the signed URL carries its
+	 * own auth, so the organizer transport is deliberately bypassed.
+	 */
+	public async uploadToSignedUrl(
+		ticket: MediaUploadTicket,
+		body: Blob,
+		contentType: string,
+		signal?: AbortSignal,
+	): Promise<void> {
+		this.logger.info('Uploading media bytes', {
+			mediaId: ticket.mediaId,
+			contentType,
+			bytes: body.size,
+		})
+		const response = await fetch(ticket.uploadUrl, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': contentType,
+				'x-goog-content-length-range': `0,${ticket.maxBytes}`,
+			},
+			body,
+			signal,
+		})
+		if (!response.ok) {
+			this.logger.warn('Signed upload failed', {
+				mediaId: ticket.mediaId,
+				status: response.status,
+			})
+			throw new Error(`Upload failed with status ${response.status}.`)
+		}
+	}
+
+	/**
+	 * Step 3 of the async cover-image pipeline: records the uploaded media on the
+	 * series and enqueues async processing. Returns once the attachment is
+	 * recorded; the served variants appear only after processing completes.
+	 */
+	public async attachMedia(
+		seriesId: string,
+		mediaId: string,
+		signal?: AbortSignal,
+	): Promise<void> {
+		this.logger.info('Attaching media', { seriesId, mediaId })
+		try {
+			await this.client.attachMedia(
 				{
 					seriesId: new SeriesId({ value: seriesId }),
-					imageData,
-					contentType,
+					mediaId: new MediaId({ value: mediaId }),
 				},
 				{ signal },
 			)
-			return response.coverImage?.value
 		} catch (err) {
-			this.logger.warn('uploadCoverImage failed', { seriesId, error: err })
+			this.logger.warn('attachMedia failed', { seriesId, mediaId, error: err })
 			throw err
 		}
 	}

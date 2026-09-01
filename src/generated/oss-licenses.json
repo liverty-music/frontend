@@ -114,7 +114,7 @@
 		},
 		{
 			"name": "@buf/bufbuild_protovalidate.connectrpc_es",
-			"version": "1.6.1-20250717185734-6c6e0d3c608e.2",
+			"version": "1.6.1-20250717185734-6c6e0d3c608e.1",
 			"license": "UNKNOWN",
 			"publisher": null,
 			"repository": null,
@@ -130,7 +130,7 @@
 		},
 		{
 			"name": "@buf/googleapis_googleapis.connectrpc_es",
-			"version": "1.6.1-20250411203938-61b203b9a916.2",
+			"version": "1.6.1-20250411203938-61b203b9a916.1",
 			"license": "UNKNOWN",
 			"publisher": null,
 			"repository": null,
@@ -138,7 +138,7 @@
 		},
 		{
 			"name": "@buf/liverty-music_schema.bufbuild_es",
-			"version": "1.10.0-20260825031039-7209129a7f20.1",
+			"version": "1.10.0-20260830052230-2a3654853564.1",
 			"license": "UNKNOWN",
 			"publisher": null,
 			"repository": null,
@@ -146,7 +146,7 @@
 		},
 		{
 			"name": "@buf/liverty-music_schema.connectrpc_es",
-			"version": "1.6.1-20260825031039-7209129a7f20.2",
+			"version": "1.6.1-20260830052230-2a3654853564.1",
 			"license": "UNKNOWN",
 			"publisher": null,
 			"repository": null,
