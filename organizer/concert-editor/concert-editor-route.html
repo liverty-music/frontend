@@ -225,11 +225,16 @@
   >
     <h2 class="editor-subtitle">Cover image</h2>
     <img
-      if.bind="coverImageUrl"
+      if.bind="renderedCover"
       class="editor-cover-preview"
-      src.bind="coverImageUrl"
-      alt="Current cover image"
+      src.bind="renderedCover"
+      error.trigger="onCoverError()"
+      alt="Cover image"
     />
+    <p if.bind="coverProcessing" class="editor-note" role="status">
+      Preview shown — the optimised image is still being processed and will
+      appear shortly. If it never does, upload again.
+    </p>
     <label class="organizer-field">
       Upload a cover image (JPEG, PNG, or WebP, ≤ ${maxImageMiB} MiB)
       <input
