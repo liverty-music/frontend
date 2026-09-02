@@ -1,54 +1,20 @@
 import { Code, ConnectError, type Interceptor } from '@connectrpc/connect'
-import type { User } from 'oidc-client-ts'
+import { createTokenRefreshInterceptor } from '../../shared/services/auth-retry-interceptor'
 import type { IAuthService } from './auth-service'
 
-let refreshPromise: Promise<User | null> | null = null
-
 /**
- * Creates a Connect interceptor that handles Unauthenticated errors
- * by attempting a silent token refresh and retrying the original request.
- * If the refresh fails and the user was previously authenticated, they are
- * redirected to the landing page. Guest/onboarding users are never redirected
- * because they have no session to recover.
+ * Consumer auth-retry interceptor. Delegates the shared refresh/retry mechanics
+ * to {@link createTokenRefreshInterceptor}; the consumer specifics are its
+ * guest/onboarding mode (401s without a session propagate for local handling)
+ * and its unrecoverable-expiry redirect to the landing page.
  */
-export const createAuthRetryInterceptor = (auth: IAuthService): Interceptor => {
-	return (next) => async (req) => {
-		try {
-			return await next(req)
-		} catch (err) {
-			if (!(err instanceof ConnectError)) throw err
-			if (err.code !== Code.Unauthenticated) throw err
-
-			// If the user was never authenticated (guest/onboarding mode),
-			// skip silent refresh and redirect — just propagate the error
-			// so the caller can handle it gracefully.
-			if (!auth.user) {
-				throw err
-			}
-
-			if (refreshPromise === null) {
-				refreshPromise = auth
-					.getUserManager()
-					.signinSilent()
-					.catch(() => null)
-					.finally(() => {
-						refreshPromise = null
-					})
-			}
-			const user = await refreshPromise
-
-			if (user?.access_token) {
-				req.header.set('Authorization', `Bearer ${user.access_token}`)
-				return await next(req)
-			}
-
-			// Clear auth state and redirect to landing page
-			await auth.getUserManager().removeUser()
+export const createAuthRetryInterceptor = (auth: IAuthService): Interceptor =>
+	createTokenRefreshInterceptor(auth, {
+		propagateWhenNoUser: true,
+		onUnrecoverable: () => {
 			window.location.href = '/welcome'
-			throw err
-		}
-	}
-}
+		},
+	})
 
 /**
  * Creates a Connect interceptor that retries transient errors

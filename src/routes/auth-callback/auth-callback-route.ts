@@ -138,7 +138,8 @@ export class AuthCallbackRoute {
 				localStorage.setItem(StorageKeys.postSignupShown, 'pending')
 			}
 
-			return '/dashboard'
+			// After an involuntary re-auth, return to where the user was.
+			return this.authService.takeReturnTo() ?? '/dashboard'
 		} catch (err) {
 			this.logger.error('Auth callback error:', err)
 
@@ -146,9 +147,12 @@ export class AuthCallbackRoute {
 				this.logger.warn(
 					'User is already authenticated. Redirecting despite callback error...',
 				)
-				return '/dashboard'
+				return this.authService.takeReturnTo() ?? '/dashboard'
 			}
 
+			// Hard failure: discard any stored return-to so it can't be replayed by
+			// a later, unrelated successful sign-in.
+			this.authService.takeReturnTo()
 			// Let the component render with the error message
 			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
 			return true

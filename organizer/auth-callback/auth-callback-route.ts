@@ -60,7 +60,9 @@ export class AuthCallbackRoute {
 			this.logger.info('Organizer auth callback succeeded')
 			// Clear the one-shot self-heal marker; the guard enforces org + role.
 			clearSessionFlag(CALLBACK_RETRY_FLAG)
-			return '/concerts'
+			// After an involuntary re-auth, return the operator to where they were;
+			// otherwise land on the concerts dashboard (the guard re-checks org + role).
+			return this.authService.takeReturnTo() ?? '/concerts'
 		} catch (err) {
 			this.logger.error('Organizer auth callback error:', err)
 
@@ -68,7 +70,8 @@ export class AuthCallbackRoute {
 			// dashboard (the guard re-checks the intended org and the owner role).
 			if (this.authService.isAuthenticated) {
 				clearSessionFlag(CALLBACK_RETRY_FLAG)
-				return '/concerts'
+				// After an involuntary re-auth, return the operator to where they were.
+				return this.authService.takeReturnTo() ?? '/concerts'
 			}
 
 			// Self-heal a cross-context "No matching state" dead-end: restart the
@@ -89,6 +92,9 @@ export class AuthCallbackRoute {
 				return false
 			}
 
+			// Hard failure: discard any stored return-to so it can't be replayed by
+			// a later, unrelated successful sign-in.
+			this.authService.takeReturnTo()
 			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
 			return true
 		}
