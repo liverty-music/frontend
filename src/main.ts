@@ -11,7 +11,6 @@ import Aurelia, {
 } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { onCLS, onINP, onLCP } from 'web-vitals/attribution'
-import { IPocketSignVerifyClient } from './adapter/pocket-sign/pocket-sign-verify-client'
 import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
 import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
 import { IFollowRpcClient } from './adapter/rpc/client/follow-client'
@@ -260,9 +259,6 @@ async function bootstrap(): Promise<void> {
 	au.register(IUserRpcClient)
 	au.register(IPushRpcClient)
 	au.register(IIdentityVerificationRpcClient)
-	// Pocket Sign Verify SDK seam — currently the stub (reports unavailable)
-	// pending onboarding (identity-ekyc-jpki Section 0).
-	au.register(IPocketSignVerifyClient)
 	au.register(ILotteryRpcClient)
 	au.register(IStripeService)
 	au.register(ArtistFilterBar)

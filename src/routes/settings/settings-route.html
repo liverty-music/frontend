@@ -293,13 +293,13 @@
         </div>
       </li>
 
-      <!-- Identity verification (identity-ekyc-jpki, task 5.1). Shows the
-           account's verification status (UNVERIFIED / IDENTITY_VERIFIED, plus
-           method + dedupe strength when verified). The status badge is a polite
-           live region (<output>) carrying a non-colour status icon so state is
-           not conveyed by colour alone. The "verify identity" button surfaces a
-           friendly "coming soon" note while the Pocket Sign Verify SDK is
-           pending onboarding (Section 0) rather than a broken flow. -->
+      <!-- Identity verification (identity-ekyc-jpki, PocketSign Stamp flow,
+           schema v0.60.0). Shows the account's verification status (UNVERIFIED /
+           IDENTITY_VERIFIED, plus method + dedupe strength when verified). The
+           status badge is a polite live region (<output>) carrying a non-colour
+           status icon so state is not conveyed by colour alone. Tapping
+           "PocketSign で本人確認" calls StartVerify and redirects the browser to
+           the PocketSign app; the fan returns via the /verify/callback route. -->
       <li class="settings-list-item">
         <div class="[ settings-row ] [ settings-row-toggle ]">
           <svg-icon name="shield-check" class="settings-icon"></svg-icon>
@@ -323,9 +323,9 @@
               <span t.bind="verificationMethodKey"></span>
               <span t.bind="dedupeStrengthKey" class="settings-identity-dedupe"></span>
             </span>
-            <!-- Friendly vendor-pending note, shown after tapping Verify. -->
-            <span if.bind="verificationComingSoon" t="settings.identity.comingSoon" class="settings-toggle-desc" aria-live="polite"></span>
           </div>
+          <!-- "PocketSign アプリで本人確認" button: redirects to PocketSign Stamp.
+               Hidden once the account is IDENTITY_VERIFIED. -->
           <button
             if.bind="!isIdentityVerified"
             busy-on-click.bind="() => verifyIdentity()"
