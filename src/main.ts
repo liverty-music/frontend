@@ -16,6 +16,7 @@ import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
 import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
 import { IFollowRpcClient } from './adapter/rpc/client/follow-client'
 import { IIdentityVerificationRpcClient } from './adapter/rpc/client/identity-verification-client'
+import { ILotteryRpcClient } from './adapter/rpc/client/lottery-client'
 import { IPushRpcClient } from './adapter/rpc/client/push-client'
 import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
@@ -88,6 +89,7 @@ import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
 import { IResumeRevalidator } from './services/resume-revalidator'
+import { IStripeService } from './services/stripe-service'
 import { ITicketEmailService } from './services/ticket-email-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
 import { ITicketJourneyStore } from './services/ticket-journey-store'
@@ -261,6 +263,8 @@ async function bootstrap(): Promise<void> {
 	// Pocket Sign Verify SDK seam — currently the stub (reports unavailable)
 	// pending onboarding (identity-ekyc-jpki Section 0).
 	au.register(IPocketSignVerifyClient)
+	au.register(ILotteryRpcClient)
+	au.register(IStripeService)
 	au.register(ArtistFilterBar)
 	au.register(BottomNavBar)
 	au.register(BottomSheet)

@@ -38,6 +38,18 @@ export interface AppConfig {
 	 */
 	readonly zitadelOrgId?: string
 	readonly vapidPublicKey: string
+	/**
+	 * Stripe publishable key (`pk_live_…` / `pk_test_…`) used to initialize
+	 * Stripe.js in the browser for the lottery card-authorization flow. This is
+	 * a *publishable* key by design — safe to ship to the client — but its value
+	 * is provisioned externally per environment by ops (written into the
+	 * `config.json` ConfigMap by cloud-provisioning); it MUST NOT be hardcoded in
+	 * the bundle. Optional: absent from every ConfigMap until the lottery feature
+	 * is enabled for an environment. When absent (or empty), the lottery apply
+	 * flow surfaces a "payment unavailable" state instead of crashing, mirroring
+	 * the nil-config posture of `posthogProjectKey`.
+	 */
+	readonly stripePublishableKey?: string
 	readonly previewArtistIds: readonly string[]
 	readonly previewArtistNames: readonly string[]
 	readonly logLevel: 'trace' | 'debug' | 'info' | 'warn' | 'error'
@@ -284,6 +296,12 @@ function validateAppConfig(
 	// rollout window between a GH Release and the cloud-provisioning PR merge.
 	const releaseVersion = readOptionalString(o, 'releaseVersion')
 
+	// Optional publishable Stripe key for the lottery card-authorization flow.
+	// Absent from every ConfigMap until ops enables lottery for an environment;
+	// a missing key is a strict no-op (the apply flow reports "payment
+	// unavailable" rather than crashing).
+	const stripePublishableKey = readOptionalString(o, 'stripePublishableKey')
+
 	// `zitadelOrgId` is required by default (consumer SPA + admin console pin a
 	// fixed org). The organizer console passes `requireOrgId: false` — it omits
 	// a fixed org id and pins the tenant per session by org-pinned entry. When
@@ -301,6 +319,7 @@ function validateAppConfig(
 		zitadelClientId: requireString(o, 'zitadelClientId'),
 		...(zitadelOrgId !== undefined ? { zitadelOrgId } : {}),
 		vapidPublicKey: requireString(o, 'vapidPublicKey'),
+		...(stripePublishableKey !== undefined ? { stripePublishableKey } : {}),
 		previewArtistIds,
 		previewArtistNames,
 		logLevel: logLevel as AppConfig['logLevel'],

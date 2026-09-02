@@ -5,8 +5,9 @@ import { route } from '@aurelia/router'
  * `<organizer-shell>` and owns the organizer route table.
  *
  * `OrganizerAuthHook` (registered globally in `organizer/main.ts`) runs as a
- * shared `canLoad` guard for every route. The default landing (`concerts`) and
- * the authoring routes are therefore authentication- AND owner-role-gated;
+ * shared `canLoad` guard for every route. The default landing (`concerts`),
+ * the authoring routes, and the lottery configure/status routes are therefore
+ * authentication- AND owner-role-gated;
  * `auth/callback` opts out of both via `data: { auth: false }` so the OIDC code
  * exchange can complete before a session exists, and `denied` opts out of the
  * role check via `data: { role: false }` so a signed-in non-owner sees an
@@ -38,6 +39,23 @@ import { route } from '@aurelia/router'
 			path: 'concerts/edit/:seriesId',
 			component: import('../concert-editor/concert-editor-route'),
 			title: 'Edit concert',
+		},
+		{
+			// Configure a lottery phase on a PUBLISHED event (roadmap ④, task 5.1).
+			// Reached by the target event id. TODO(entry-point): the concerts
+			// dashboard has no per-event "put on sale" affordance yet (its rows are
+			// series-scoped and carry no event ids), so this route is currently
+			// reachable only by deep link — wire a dashboard/edit-screen link once
+			// the console exposes event ids.
+			path: 'lottery/configure/:eventId',
+			component: import('../lottery-phase-editor/lottery-phase-editor-route'),
+			title: 'Configure lottery phase',
+		},
+		{
+			// Lottery phase status / draw-outcome summary (roadmap ④, task 5.2).
+			path: 'lottery/status/:phaseId',
+			component: import('../lottery-status/lottery-status-route'),
+			title: 'Lottery phase status',
 		},
 		{
 			path: 'welcome',

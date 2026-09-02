@@ -20,6 +20,7 @@
 		"@opentelemetry/resources": "^2.8.0",
 		"@opentelemetry/sdk-trace-web": "^2.8.0",
 		"@opentelemetry/semantic-conventions": "^1.39.0",
+		"@stripe/stripe-js": "^9.15.0",
 		"aurelia": "^2.0.0-rc.1",
 		"i18next-browser-languagedetector": "^8.2.1",
 		"matter-js": "^0.20.0",

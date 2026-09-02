@@ -1,0 +1,102 @@
+<main class="[ lottery-status ] [ flow ]">
+  <header class="lottery-status-header">
+    <a load="../concerts" class="lottery-status-back-link">← Back to your concerts</a>
+    <h1 class="lottery-status-title">Lottery phase status</h1>
+  </header>
+
+  <output
+    if.bind="phase === 'loading'"
+    class="organizer-status"
+    role="status"
+    aria-busy="true"
+  >
+    <span class="organizer-spinner"></span>
+    <span>Loading status…</span>
+  </output>
+
+  <section
+    if.bind="phase === 'error'"
+    class="organizer-state"
+    role="alert"
+    data-state="error"
+  >
+    <p>Could not load the lottery phase status.</p>
+    <p class="organizer-error">${loadError}</p>
+    <button type="button" class="organizer-btn" click.trigger="load()">Retry</button>
+  </section>
+
+  <section if.bind="isEmpty" class="organizer-state" data-state="empty">
+    <p>That lottery phase could not be found.</p>
+    <a load="../concerts" class="organizer-btn">Back to your concerts</a>
+  </section>
+
+  <div if.bind="phase === 'ready' && view" class="[ lottery-status-body ] [ flow ]">
+    <section class="[ lottery-status-panel ] [ flow ]">
+      <h2 class="lottery-status-subtitle">Application window</h2>
+      <p class="lottery-status-badge" data-open.bind="view.windowOpen">
+        ${view.windowLabel}
+      </p>
+      <dl class="lottery-status-facts">
+        <div>
+          <dt>Opens</dt>
+          <dd>${view.openTimeLabel}</dd>
+        </div>
+        <div>
+          <dt>Closes (draw runs)</dt>
+          <dd>${view.closeTimeLabel}</dd>
+        </div>
+        <div>
+          <dt>Ticket capacity</dt>
+          <dd>${view.ticketCapacity}</dd>
+        </div>
+        <div>
+          <dt>Max per application</dt>
+          <dd>${view.maxTicketsPerApplication}</dd>
+        </div>
+        <div>
+          <dt>Ticket price</dt>
+          <dd>¥${view.ticketPrice}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="[ lottery-status-panel ] [ flow ]">
+      <h2 class="lottery-status-subtitle">Draw outcome</h2>
+      <p class="lottery-status-badge" data-drawn.bind="view.drawCompleted">
+        ${view.drawCompleted ? 'Draw completed' : 'Draw not yet run'}
+      </p>
+
+      <!-- Demand tallies are meaningful before and after the draw. -->
+      <dl class="lottery-status-facts">
+        <div>
+          <dt>Applications</dt>
+          <dd>${view.applicationCount}</dd>
+        </div>
+        <div>
+          <dt>Tickets requested</dt>
+          <dd>${view.requestedTicketCount}</dd>
+        </div>
+      </dl>
+
+      <!-- Outcome tallies are only meaningful once the draw has run. -->
+      <dl if.bind="view.drawCompleted" class="lottery-status-facts">
+        <div>
+          <dt>Winning applications</dt>
+          <dd>${view.winningApplicationCount}</dd>
+        </div>
+        <div>
+          <dt>Tickets won</dt>
+          <dd>${view.wonTicketCount}</dd>
+        </div>
+        <div>
+          <dt>Waitlisted applications</dt>
+          <dd>${view.waitlistedApplicationCount}</dd>
+        </div>
+      </dl>
+      <p if.bind="!view.drawCompleted" class="lottery-status-hint">
+        Winner, won-ticket, and waitlist tallies appear once the window closes
+        and the draw runs.
+      </p>
+    </section>
+  </div>
+</main>

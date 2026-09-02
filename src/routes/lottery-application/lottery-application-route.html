@@ -1,0 +1,152 @@
+<template class="[ lottery-application-route ] [ flow ]">
+	<header class="lottery-application-header">
+		<h1 class="lottery-application-title">お申し込みの状況</h1>
+	</header>
+
+	<!-- Loading -->
+	<section
+		class="lottery-application-panel"
+		if.bind="step === 'loading'"
+	>
+		<p class="lottery-application-lead">読み込んでいます…</p>
+	</section>
+
+	<!-- Empty: no application for this phase -->
+	<section
+		class="[ lottery-application-panel ] [ flow ]"
+		if.bind="step === 'empty'"
+	>
+		<h2 class="lottery-application-step-title">お申し込みはありません</h2>
+		<p class="lottery-application-lead">
+			この抽選へのお申し込みは見つかりませんでした。
+		</p>
+	</section>
+
+	<!-- Error -->
+	<section
+		class="[ lottery-application-panel ] [ flow ]"
+		if.bind="step === 'error'"
+	>
+		<h2 class="lottery-application-step-title">読み込みに失敗しました</h2>
+		<p class="lottery-application-error">${error}</p>
+		<button
+			type="button"
+			class="lottery-application-btn-primary"
+			click.trigger="load()"
+		>
+			再読み込み
+		</button>
+	</section>
+
+	<!-- Loaded -->
+	<section
+		class="[ lottery-application-panel ] [ flow ]"
+		if.bind="step === 'loaded'"
+	>
+		<!-- Prominent result / status badge -->
+		<output
+			class="lottery-application-status"
+			data-kind.bind="resultKind"
+		>
+			<span class="lottery-application-status-label">${stateLabel}</span>
+		</output>
+
+		<!-- Pre-draw: awaiting the draw -->
+		<p
+			class="lottery-application-lead"
+			if.bind="resultKind === 'waiting'"
+		>
+			抽選結果が出るまでお待ちください。カードには与信枠を確保しています（この時点では請求は発生しません）。当選した場合のみ請求されます。
+		</p>
+
+		<!-- Won -->
+		<p
+			class="lottery-application-lead"
+			if.bind="resultKind === 'won'"
+		>
+			当選しました。確保していた金額がカードに<strong>請求</strong>されます。チケットの発行手続きへ進みます。
+		</p>
+
+		<!-- Lost -->
+		<p
+			class="lottery-application-lead"
+			if.bind="resultKind === 'lost'"
+		>
+			今回は落選となりました。確保していた与信枠は<strong>解除</strong>され、請求は発生しません。
+		</p>
+
+		<!-- Withdrawn -->
+		<p
+			class="lottery-application-lead"
+			if.bind="resultKind === 'withdrawn'"
+		>
+			このお申し込みは取り下げられました。確保していた与信枠は<strong>解除</strong>され、請求は発生しません。
+		</p>
+
+		<!-- Application summary -->
+		<dl class="lottery-application-summary">
+			<div class="lottery-application-summary-row">
+				<dt class="lottery-application-summary-key">申込枚数</dt>
+				<dd class="lottery-application-summary-val">${applicationCount}枚</dd>
+			</div>
+			<div class="lottery-application-summary-row">
+				<dt class="lottery-application-summary-key">お名前</dt>
+				<dd class="lottery-application-summary-val">${applicantName}</dd>
+			</div>
+			<div class="lottery-application-summary-row">
+				<dt class="lottery-application-summary-key">電話番号</dt>
+				<dd class="lottery-application-summary-val">${applicantPhone}</dd>
+			</div>
+			<div class="lottery-application-summary-row">
+				<dt class="lottery-application-summary-key">状態</dt>
+				<dd class="lottery-application-summary-val">${stateLabel}</dd>
+			</div>
+		</dl>
+
+		<p class="lottery-application-error" if.bind="error">${error}</p>
+
+		<!-- Withdraw (task 4.3): only while APPLIED, before the draw. -->
+		<div
+			class="[ lottery-application-actions ] [ flow ]"
+			if.bind="canWithdraw"
+		>
+			<!-- Trigger -->
+			<button
+				type="button"
+				class="lottery-application-btn-secondary"
+				click.trigger="askWithdraw()"
+				if.bind="!confirmingWithdraw"
+			>
+				申込を取下げる
+			</button>
+
+			<!-- Confirm step -->
+			<div
+				class="[ lottery-application-confirm ] [ flow ]"
+				if.bind="confirmingWithdraw"
+			>
+				<p class="lottery-application-lead">
+					お申し込みを取り下げますか？確保していた与信枠は解除され、この抽選には参加できなくなります。
+				</p>
+				<div class="[ lottery-application-confirm-actions ] [ cluster ]">
+					<button
+						type="button"
+						class="lottery-application-btn-secondary"
+						click.trigger="cancelWithdraw()"
+						disabled.bind="withdrawing"
+					>
+						やめる
+					</button>
+					<button
+						type="button"
+						class="lottery-application-btn-danger"
+						click.trigger="confirmWithdraw()"
+						disabled.bind="withdrawing"
+					>
+						${withdrawing ? '処理中…' : '取下げる'}
+					</button>
+				</div>
+			</div>
+		</div>
+	</section>
+</template>

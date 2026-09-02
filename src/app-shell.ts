@@ -74,6 +74,34 @@ import { IPwaInstallService } from './services/pwa-install-service'
 			title: 'Import Ticket Email',
 			data: { auth: false },
 		},
+		// Lottery APPLY flow (roadmap ④). Authenticated by default (Apply
+		// resolves the fan from the token). `maxTickets` / `ticketPrice` ride the
+		// path because the fan surface of LotteryService has no phase-read RPC
+		// yet; the server re-validates both. TODO(lottery): drop these params and
+		// load the phase once a fan-facing phase-read RPC exists, and decide the
+		// production entry point (deep link from a concert/phase card) — this
+		// route is intentionally reachable only via the explicit lottery path for
+		// now, not wired into the bottom nav.
+		{
+			path: 'lottery/:phaseId/apply/:maxTickets/:ticketPrice',
+			component: import('./routes/lottery-apply/lottery-apply-route'),
+			title: 'Lottery Application',
+		},
+		// Lottery MY-APPLICATION + RESULT view (roadmap ④, tasks 4.2/4.3).
+		// Authenticated by default (the application is resolved from the token +
+		// phase). Renders the caller's application, its state (抽選待ち / 当選 /
+		// 落選 / 取下げ済み) and the pre-draw notice, and hosts the withdraw action
+		// while APPLIED. Like the apply route it is reachable only via the explicit
+		// lottery path for now — NOT wired into the bottom nav; the production entry
+		// point (deep link from a concert/phase card or a "my applications" list)
+		// is decided in a later increment.
+		{
+			path: 'lottery/:phaseId/application',
+			component: import(
+				'./routes/lottery-application/lottery-application-route'
+			),
+			title: 'My Lottery Application',
+		},
 		// Legal documents. Public (`auth: false`) so guests can open them
 		// without an account, and so each has a stable, directly-linkable URL
 		// (the product ships as a PWA only — there is no app-store listing).
