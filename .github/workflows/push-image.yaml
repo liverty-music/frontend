@@ -917,7 +917,11 @@ jobs:
         env:
           TARGET_URL: ${{ steps.target.outputs.url }}
         run: |
-          expected_bundle=$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
+          # The consumer entry chunk is `assets/main-<hash>.js`: Vite names it
+          # after the multi-entry input key `main` (index.html), NOT `index`
+          # (organizer.html→`organizer`, admin.html→`admin`). Matching the stale
+          # `index-` name made this smoke step fail on every push-to-main deploy.
+          expected_bundle=$(grep -oE 'assets/main-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
           if [ -z "$expected_bundle" ]; then
             echo "::error::Could not parse expected bundle hash from local dist/index.html"
             exit 1
@@ -932,7 +936,7 @@ jobs:
               sleep 20
               continue
             }
-            live_bundle=$(echo "$http_body" | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+            live_bundle=$(echo "$http_body" | grep -oE 'assets/main-[A-Za-z0-9_-]+\.js' | head -1)
             if [ "$live_bundle" = "$expected_bundle" ]; then
               echo "ArgoCD rollout complete after $((attempt * 20))s"
               exit 0
