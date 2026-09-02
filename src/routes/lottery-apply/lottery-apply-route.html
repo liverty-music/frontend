@@ -1,0 +1,145 @@
+<template class="[ lottery-apply-route ] [ flow ]">
+	<header class="lottery-apply-header">
+		<h1 class="lottery-apply-title">チケット抽選に申し込む</h1>
+	</header>
+
+	<!-- Stripe not configured for this environment: fail closed. -->
+	<section
+		class="lottery-apply-panel"
+		if.bind="step === 'unavailable'"
+	>
+		<p class="lottery-apply-lead">
+			現在、この環境ではお支払いをご利用いただけません。時間をおいて再度お試しください。
+		</p>
+	</section>
+
+	<!-- Step 1: ticket count -->
+	<section
+		class="[ lottery-apply-panel ] [ flow ]"
+		if.bind="step === 'count'"
+	>
+		<h2 class="lottery-apply-step-title">枚数を選ぶ</h2>
+		<label class="lottery-apply-field">
+			<span class="lottery-apply-label">チケット枚数（1〜${maxTickets}枚）</span>
+			<input
+				type="number"
+				min="1"
+				max.bind="maxTickets"
+				step="1"
+				value.bind="ticketCount"
+				class="lottery-apply-input"
+			/>
+		</label>
+		<p class="lottery-apply-total">
+			総額：<strong>${totalAmountLabel}</strong>（${ticketPriceLabel} × ${ticketCount}枚）
+		</p>
+		<p class="lottery-apply-error" if.bind="error">${error}</p>
+		<button
+			type="button"
+			class="lottery-apply-btn-primary"
+			click.trigger="toIdentity()"
+			disabled.bind="!isCountValid"
+		>
+			本人確認へ進む
+		</button>
+	</section>
+
+	<!-- Step 2: 本人確認 -->
+	<section
+		class="[ lottery-apply-panel ] [ flow ]"
+		if.bind="step === 'identity'"
+	>
+		<h2 class="lottery-apply-step-title">本人確認</h2>
+		<label class="lottery-apply-field">
+			<span class="lottery-apply-label">お名前（フルネーム）</span>
+			<input
+				type="text"
+				autocomplete="name"
+				value.bind="fullName"
+				class="lottery-apply-input"
+			/>
+		</label>
+		<label class="lottery-apply-field">
+			<span class="lottery-apply-label">電話番号</span>
+			<input
+				type="tel"
+				autocomplete="tel"
+				inputmode="tel"
+				value.bind="phoneNumber"
+				class="lottery-apply-input"
+			/>
+		</label>
+		<p class="lottery-apply-error" if.bind="error">${error}</p>
+		<div class="[ lottery-apply-actions ] [ cluster ]">
+			<button
+				type="button"
+				class="lottery-apply-btn-secondary"
+				click.trigger="backToCount()"
+			>
+				戻る
+			</button>
+			<button
+				type="button"
+				class="lottery-apply-btn-primary"
+				click.trigger="toPayment()"
+				disabled.bind="!isIdentityValid || authorizing"
+			>
+				カード認証へ進む
+			</button>
+		</div>
+	</section>
+
+	<!-- Step 3: card authorization + 特商法 final confirmation -->
+	<section
+		class="[ lottery-apply-panel ] [ flow ]"
+		if.bind="step === 'payment' || step === 'submitting'"
+	>
+		<h2 class="lottery-apply-step-title">お支払い情報の登録（カード認証）</h2>
+
+		<!-- 特商法 最終確認画面 (compliance copy, task 6.3) -->
+		<div class="[ lottery-apply-terms ] [ flow ]" role="note">
+			<p class="lottery-apply-terms-lead">
+				お申し込み時点でカードに
+				<strong>${totalAmountLabel}</strong>（${ticketPriceLabel} × ${ticketCount}枚）の<strong>与信枠の確保（オーソリ）</strong>を行います。
+			</p>
+			<ul class="lottery-apply-terms-list">
+				<li>この時点では<strong>請求は発生しません</strong>。金額はカードに「確保」されるのみです。</li>
+				<li><strong>当選した場合のみ</strong>、確保した金額が<strong>請求</strong>されます。</li>
+				<li><strong>落選した場合</strong>、確保は<strong>解除</strong>され、請求は発生しません。</li>
+				<li>抽選前であればお申し込みを取り消すことができ、その場合も確保は解除されます。</li>
+			</ul>
+			<p class="lottery-apply-terms-brands">
+				ご利用いただけるカード：<strong>日本円建ての Visa / Mastercard / JCB / Diners Club / Discover</strong>。
+				<br />
+				<strong>American Express（アメックス）はご利用いただけません。</strong>
+			</p>
+		</div>
+
+		<!-- Stripe Payment Element mounts here (Amex excluded server-side). -->
+		<div
+			class="lottery-apply-payment-element"
+			ref="paymentElementHost"
+		></div>
+
+		<p class="lottery-apply-error" if.bind="error">${error}</p>
+		<button
+			type="button"
+			class="lottery-apply-btn-primary"
+			click.trigger="confirmAndApply()"
+			disabled.bind="step === 'submitting'"
+		>
+			${step === 'submitting' ? '処理中…' : '同意して申し込む'}
+		</button>
+	</section>
+
+	<!-- Terminal: success -->
+	<section
+		class="[ lottery-apply-panel ] [ flow ]"
+		if.bind="step === 'done'"
+	>
+		<h2 class="lottery-apply-step-title">お申し込みを受け付けました</h2>
+		<p class="lottery-apply-lead">
+			抽選結果が出るまでお待ちください。カードは当選した場合のみ請求されます。
+		</p>
+	</section>
+</template>

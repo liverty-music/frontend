@@ -1,0 +1,70 @@
+@layer block {
+	@scope (lottery-phase-editor-route) {
+		.lottery-editor {
+			--flow-space: var(--space-m);
+
+			max-inline-size: 48rem;
+			margin-inline: auto;
+			padding: var(--space-l) var(--space-m);
+		}
+
+		.lottery-editor-header {
+			--flow-space: var(--space-2xs);
+		}
+
+		.lottery-editor-back-link {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.lottery-editor-title {
+			font-size: var(--step-3);
+		}
+
+		.lottery-editor-note,
+		.lottery-editor-hint {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.lottery-editor-subtitle {
+			font-size: var(--step-2);
+		}
+
+		.lottery-editor-fieldset {
+			--flow-space: var(--space-xs);
+
+			padding: var(--space-s);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-m);
+		}
+
+		.lottery-editor-panel {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-s);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-m);
+			background: var(--color-surface-raised);
+		}
+
+		.lottery-editor-summary {
+			display: grid;
+			gap: var(--space-2xs);
+
+			& div {
+				display: flex;
+				gap: var(--space-s);
+				justify-content: space-between;
+			}
+
+			& dt {
+				color: var(--color-text-secondary);
+			}
+
+			& dd {
+				font-weight: 600;
+			}
+		}
+	}
+}
