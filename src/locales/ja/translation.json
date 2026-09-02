@@ -286,6 +286,18 @@
 		"privacyPolicy": "プライバシーポリシー",
 		"ossLicenses": "OSSライセンス",
 		"account": "アカウント",
+		"identity": {
+			"label": "本人確認",
+			"levelVerified": "確認済み",
+			"levelUnverified": "未確認",
+			"methodPrefix": "方法:",
+			"methodJpki": "マイナンバーカード (JPKI)",
+			"methodDriverLicence": "運転免許証",
+			"dedupeStrong": "強い重複排除",
+			"dedupeWeak": "弱い重複排除",
+			"verifyCta": "本人確認する",
+			"comingSoon": "本人確認は近日対応予定です。"
+		},
 		"signIn": "ログイン",
 		"signUp": "新規登録",
 		"emailVerified": "認証済み",

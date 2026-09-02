@@ -7,11 +7,17 @@ import type { UserHomeSelector } from '../../components/user-home-selector/user-
 import { IAppConfig } from '../../config/app-config'
 import { codeToHome, translationKey } from '../../constants/iso3166'
 import {
+	dedupeStrengthLabelKey,
+	type MyVerificationStatus,
+	verificationMethodLabelKey,
+} from '../../entities/verified-identity'
+import {
 	type ConsentPurpose,
 	IConsentService,
 } from '../../lib/consent/consent-service'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
+import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
@@ -26,6 +32,10 @@ export class SettingsRoute {
 	private readonly router = resolve(IRouter)
 	private readonly audio = resolve(IAudioEngine)
 	private readonly appConfig = resolve(IAppConfig)
+	// Identity verification (identity-ekyc-jpki, task 5.1). Public so the
+	// template can bind `identity.verifyAvailable` directly (mirrors the `auth`
+	// / `consent` exposure pattern).
+	public readonly identity = resolve(IIdentityVerificationService)
 	// Public so the template binds the opt-out toggles to the service's
 	// `@observable` state directly (`consent.analytics` /
 	// `consent.sessionReplay`) — no component-local mirror. Mirrors the
@@ -53,6 +63,13 @@ export class SettingsRoute {
 	public sessionReplayDescExpanded = false
 
 	public resendSuccess = false
+
+	/**
+	 * Whether to show the "本人確認は近日対応予定です (verification coming soon)"
+	 * note. Set when the fan taps "verify identity" while the Pocket Sign Verify
+	 * SDK is not yet integrated (Section 0) — a friendly state, not a broken flow.
+	 */
+	public verificationComingSoon = false
 
 	/**
 	 * Whether the running platform is iOS/iPadOS. Used to gate the
@@ -103,11 +120,87 @@ export class SettingsRoute {
 		)
 	}
 
+	// ── Identity verification (identity-ekyc-jpki, task 5.1) ──────────────────
+	// These getters derive from the service's observable `status`, so the badge
+	// and detail rows re-evaluate in place when verification completes — no
+	// component-local mirror (mirrors the UserStore-derived getters above).
+
+	/** Whether the account is IDENTITY_VERIFIED. */
+	public get isIdentityVerified(): boolean {
+		return this.identity.status?.level === 'identityVerified'
+	}
+
+	/** The backing verification, present only when verified. */
+	private get verifiedIdentity(): MyVerificationStatus['identity'] {
+		return this.isIdentityVerified ? this.identity.status?.identity : undefined
+	}
+
+	/** i18n key for the verified method (JPKI / driver's licence), or null. */
+	public get verificationMethodKey(): string | null {
+		const vi = this.verifiedIdentity
+		return vi ? verificationMethodLabelKey(vi.method) : null
+	}
+
+	/** i18n key for the dedupe strength (strong / weak), or null. */
+	public get dedupeStrengthKey(): string | null {
+		const vi = this.verifiedIdentity
+		return vi ? dedupeStrengthLabelKey(vi.dedupeStrength) : null
+	}
+
 	public async loading(): Promise<void> {
 		// Opt-out toggles bind `consent.analytics` / `consent.sessionReplay`
 		// (the service's `@observable` state) directly, so first paint reflects
 		// the default-on posture or a prior opt-out with no seeding here.
 		await this.resolveNotificationToggleState()
+		await this.loadVerificationStatus()
+	}
+
+	/**
+	 * Load the caller's verification status for the ACCOUNT-section badge. Only
+	 * `getMyVerificationStatus` reaches the backend (StartVerify / CompleteVerify
+	 * are backend-stubbed → UNAVAILABLE today); a failure here is non-fatal — the
+	 * rest of Settings must still render — so it is logged, not surfaced.
+	 */
+	private async loadVerificationStatus(): Promise<void> {
+		if (!this.auth.isAuthenticated) return
+		try {
+			await this.identity.getMyVerificationStatus()
+		} catch (err) {
+			this.logger.warn('Failed to load verification status', { error: err })
+		}
+	}
+
+	/**
+	 * "Verify identity" entry point (task 5.1). While the Pocket Sign Verify SDK
+	 * is pending onboarding (Section 0) this surfaces a friendly "coming soon"
+	 * note rather than starting an un-completable flow. Once the SDK lands, the
+	 * `verified` branch drives the badge update in place via the service's
+	 * observable `status`.
+	 *
+	 * TODO (identity-ekyc 5.2): where a lottery phase REQUIRES verification, an
+	 * apply-flow would prompt the fan to verify before applying — there is no
+	 * first-party apply flow in the frontend yet, so no prompt is wired here.
+	 * TODO (identity-ekyc 5.3): the 運転免許証 fallback (Verify CardInfo) picks a
+	 * method other than JPKI; no method picker is built (needs the SDK).
+	 */
+	public async verifyIdentity(): Promise<void> {
+		this.verificationComingSoon = false
+		const outcome = await this.identity.verify('jpki')
+		switch (outcome.kind) {
+			case 'vendorUnavailable':
+				// Friendly, expected pre-onboarding state.
+				this.verificationComingSoon = true
+				break
+			case 'verified':
+				// The observable `status` already updated the badge; nothing to do.
+				this.logger.info('Identity verified')
+				break
+			case 'notAuthenticated':
+				// Unreachable from this row (rendered authenticated-only); logged
+				// defensively in case the row is ever surfaced to a guest.
+				this.logger.warn('Verify requested without an authenticated account')
+				break
+		}
 	}
 
 	/** Toggle the Analytics opt-out; the bound observable state drives the UI. */
