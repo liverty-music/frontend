@@ -32,7 +32,11 @@ export function toOrganizerErrorMessage(
 			case Code.FailedPrecondition:
 				return err.rawMessage || 'This concert can no longer be changed.'
 			case Code.Unauthenticated:
-				return 'Your session has expired. Please sign in again.'
+				// Never surface the raw transport-level token error (e.g.
+				// `... "exp" not satisfied`). The auth-retry interceptor is already
+				// re-authenticating; show a neutral, human-readable state that
+				// matches the admin console rather than telling the operator to act.
+				return 'Your session expired — signing you back in…'
 			default:
 				return err.rawMessage || fallback
 		}

@@ -83,8 +83,13 @@ export interface IAuthService extends AuthService {}
 /** Refresh the token when it expires within this many seconds (skew window). */
 const EXPIRY_SKEW_SEC = 60
 /** sessionStorage key holding the in-app location to return to after an
- *  involuntary re-authentication. */
+ *  involuntary re-authentication. Value is JSON `{ loc, exp }`. */
 const RETURN_TO_KEY = 'liverty:auth:returnTo'
+/** A stored return-to older than this is treated as stale and ignored. It was
+ *  most likely left by a re-auth the user abandoned; without a bound it would
+ *  survive in sessionStorage for the whole tab session and hijack a later,
+ *  unrelated voluntary sign-in — sending the user to a page they didn't ask for. */
+const RETURN_TO_TTL_MS = 10 * 60 * 1000
 
 export class AuthService {
 	private userManager: UserManager
@@ -191,7 +196,10 @@ export class AuthService {
 		this.logger.info('Forced re-auth: clearing session', { returnTo })
 		if (returnTo) {
 			try {
-				sessionStorage.setItem(RETURN_TO_KEY, returnTo)
+				sessionStorage.setItem(
+					RETURN_TO_KEY,
+					JSON.stringify({ loc: returnTo, exp: Date.now() + RETURN_TO_TTL_MS }),
+				)
 			} catch {
 				// Storage unavailable — return-to is best-effort, not fatal.
 			}
@@ -202,12 +210,18 @@ export class AuthService {
 	}
 
 	/** Consume the stored return-to location (used by the auth callback to route
-	 *  the user back to where they were). Returns null when none is stored. */
+	 *  the user back to where they were). Always clears the entry. Returns null
+	 *  when none is stored, the payload is malformed, or it is past its TTL (a
+	 *  stale entry from an abandoned re-auth must not hijack this sign-in). */
 	public takeReturnTo(): string | null {
 		try {
-			const v = sessionStorage.getItem(RETURN_TO_KEY)
-			if (v) sessionStorage.removeItem(RETURN_TO_KEY)
-			return v
+			const raw = sessionStorage.getItem(RETURN_TO_KEY)
+			if (!raw) return null
+			sessionStorage.removeItem(RETURN_TO_KEY)
+			const { loc, exp } = JSON.parse(raw) as { loc?: string; exp?: number }
+			if (typeof loc !== 'string' || typeof exp !== 'number') return null
+			if (Date.now() > exp) return null
+			return loc
 		} catch {
 			return null
 		}

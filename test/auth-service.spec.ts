@@ -320,9 +320,9 @@ describe('AuthService', () => {
 		expect(publish).toHaveBeenCalledTimes(1)
 		expect(publish.mock.calls[0][0].constructor.name).toBe('SignedOut')
 		expect(userManagerMock.removeUser).toHaveBeenCalledTimes(1)
-		expect(sessionStorage.getItem('liverty:auth:returnTo')).toBe(
-			'/organizers?x=1',
-		)
+		expect(
+			JSON.parse(sessionStorage.getItem('liverty:auth:returnTo') ?? '{}').loc,
+		).toBe('/organizers?x=1')
 	})
 
 	it('takeReturnTo returns and clears the stored location, then null', async () => {
@@ -330,6 +330,21 @@ describe('AuthService', () => {
 		expect(sut.takeReturnTo()).toBe('/approval-queue')
 		// One-shot: a second read is null.
 		expect(sut.takeReturnTo()).toBeNull()
+	})
+
+	it('takeReturnTo ignores a stale return-to past its TTL', async () => {
+		vi.useFakeTimers()
+		try {
+			await sut.prepareForcedReauth('/approval-queue')
+			// Advance past the 10-minute TTL: an abandoned re-auth must not hijack a
+			// later, unrelated sign-in in the same tab session.
+			vi.advanceTimersByTime(11 * 60 * 1000)
+			expect(sut.takeReturnTo()).toBeNull()
+			// The stale entry is still cleared, so it cannot linger.
+			expect(sessionStorage.getItem('liverty:auth:returnTo')).toBeNull()
+		} finally {
+			vi.useRealTimers()
+		}
 	})
 
 	it('prepareForcedReauth is single-shot: only the first call initiates cleanup', async () => {
@@ -353,7 +368,9 @@ describe('AuthService', () => {
 		expect(publish).toHaveBeenCalledTimes(1)
 		expect(userManagerMock.removeUser).toHaveBeenCalledTimes(1)
 		// The second call did not overwrite the first's return-to.
-		expect(sessionStorage.getItem('liverty:auth:returnTo')).toBe('/a')
+		expect(
+			JSON.parse(sessionStorage.getItem('liverty:auth:returnTo') ?? '{}').loc,
+		).toBe('/a')
 	})
 
 	it('resume does NOT refresh while on the /auth/callback route', async () => {
