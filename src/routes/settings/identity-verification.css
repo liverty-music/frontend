@@ -1,0 +1,33 @@
+/* Identity-verification row styles (identity-ekyc-jpki, task 5.1). Split out of
+   settings-route.css so each file holds a single @scope block (per
+   cube/one-block-per-file) and settings-route.css stays within the block line
+   budget. Scoped to `settings-route` because the markup lives in the ACCOUNT
+   section of the settings-route template. */
+@layer block {
+	@scope (settings-route) {
+		/* Content column (col2) for the identity row: label + status badge +
+		   optional method/dedupe detail stacked. `[ stack ]` supplies the rhythm;
+		   this only owns col placement + shrink guard. */
+		.settings-identity {
+			--stack-gap: var(--space-3xs);
+
+			align-items: flex-start;
+			min-inline-size: 0;
+		}
+
+		/* Method + dedupe strength line, shown only when verified. */
+		.settings-identity-detail {
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		/* Dedupe-strength qualifier, de-emphasised relative to the method. */
+		.settings-identity-dedupe {
+			color: var(--color-text-muted);
+		}
+	}
+}

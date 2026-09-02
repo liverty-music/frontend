@@ -1,4 +1,5 @@
 <import from="./language-selector.css"></import>
+<import from="./identity-verification.css"></import>
 
 <page-header title-key="nav.settings" data-testid="settings-header"></page-header>
 
@@ -288,6 +289,49 @@
           >
             <span if.bind="resendSuccess" t="settings.resendSent"></span>
             <span if.bind="!resendSuccess" t="settings.resendVerification"></span>
+          </button>
+        </div>
+      </li>
+
+      <!-- Identity verification (identity-ekyc-jpki, task 5.1). Shows the
+           account's verification status (UNVERIFIED / IDENTITY_VERIFIED, plus
+           method + dedupe strength when verified). The status badge is a polite
+           live region (<output>) carrying a non-colour status icon so state is
+           not conveyed by colour alone. The "verify identity" button surfaces a
+           friendly "coming soon" note while the Pocket Sign Verify SDK is
+           pending onboarding (Section 0) rather than a broken flow. -->
+      <li class="settings-list-item">
+        <div class="[ settings-row ] [ settings-row-toggle ]">
+          <svg-icon name="shield-check" class="settings-icon"></svg-icon>
+          <div class="[ settings-identity ] [ stack ]">
+            <span id="identity-label" t="settings.identity.label" class="settings-row-label"></span>
+            <output
+              id="identity-status"
+              class="settings-verification-badge"
+              aria-live="polite"
+              aria-describedby="identity-label"
+              data-verified.bind="isIdentityVerified"
+            >
+              <svg-icon if.bind="isIdentityVerified" name="check" class="settings-verification-icon"></svg-icon>
+              <svg-icon if.bind="!isIdentityVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
+              <span if.bind="isIdentityVerified" t="settings.identity.levelVerified"></span>
+              <span if.bind="!isIdentityVerified" t="settings.identity.levelUnverified"></span>
+            </output>
+            <!-- Method + dedupe strength, verified-only. -->
+            <span if.bind="isIdentityVerified && verificationMethodKey" class="settings-identity-detail">
+              <span t="settings.identity.methodPrefix"></span>
+              <span t.bind="verificationMethodKey"></span>
+              <span t.bind="dedupeStrengthKey" class="settings-identity-dedupe"></span>
+            </span>
+            <!-- Friendly vendor-pending note, shown after tapping Verify. -->
+            <span if.bind="verificationComingSoon" t="settings.identity.comingSoon" class="settings-toggle-desc" aria-live="polite"></span>
+          </div>
+          <button
+            if.bind="!isIdentityVerified"
+            busy-on-click.bind="() => verifyIdentity()"
+            class="settings-resend-btn"
+          >
+            <span t="settings.identity.verifyCta"></span>
           </button>
         </div>
       </li>

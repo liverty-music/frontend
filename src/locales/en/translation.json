@@ -286,6 +286,18 @@
 		"privacyPolicy": "Privacy Policy",
 		"ossLicenses": "OSS Licenses",
 		"account": "Account",
+		"identity": {
+			"label": "Identity verification",
+			"levelVerified": "Verified",
+			"levelUnverified": "Not verified",
+			"methodPrefix": "via",
+			"methodJpki": "My Number Card (JPKI)",
+			"methodDriverLicence": "Driver's licence",
+			"dedupeStrong": "strong dedupe",
+			"dedupeWeak": "weaker dedupe",
+			"verifyCta": "Verify identity",
+			"comingSoon": "Identity verification is coming soon (本人確認は近日対応予定です)."
+		},
 		"signIn": "Sign in",
 		"signUp": "Sign up",
 		"emailVerified": "Verified",

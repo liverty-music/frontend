@@ -11,9 +11,11 @@ import Aurelia, {
 } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { onCLS, onINP, onLCP } from 'web-vitals/attribution'
+import { IPocketSignVerifyClient } from './adapter/pocket-sign/pocket-sign-verify-client'
 import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
 import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
 import { IFollowRpcClient } from './adapter/rpc/client/follow-client'
+import { IIdentityVerificationRpcClient } from './adapter/rpc/client/identity-verification-client'
 import { IPushRpcClient } from './adapter/rpc/client/push-client'
 import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
@@ -77,6 +79,7 @@ import { IErrorBoundaryService } from './services/error-boundary-service'
 import { FollowReconcileTask } from './services/follow-reconcile-task'
 import { IFollowStore } from './services/follow-store'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
+import { IIdentityVerificationService } from './services/identity-verification-service'
 import { INotificationManager } from './services/notification-manager'
 import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
@@ -245,6 +248,7 @@ async function bootstrap(): Promise<void> {
 	au.register(IPwaInstallService)
 	au.register(ITicketJourneyService)
 	au.register(ITicketJourneyStore)
+	au.register(IIdentityVerificationService)
 	au.register(IResumeRevalidator)
 	au.register(ITicketEmailService)
 	au.register(IArtistRpcClient)
@@ -253,6 +257,10 @@ async function bootstrap(): Promise<void> {
 	au.register(ITicketJourneyRpcClient)
 	au.register(IUserRpcClient)
 	au.register(IPushRpcClient)
+	au.register(IIdentityVerificationRpcClient)
+	// Pocket Sign Verify SDK seam — currently the stub (reports unavailable)
+	// pending onboarding (identity-ekyc-jpki Section 0).
+	au.register(IPocketSignVerifyClient)
 	au.register(ArtistFilterBar)
 	au.register(BottomNavBar)
 	au.register(BottomSheet)
