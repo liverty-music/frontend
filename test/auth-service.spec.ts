@@ -10,6 +10,10 @@ import {
 	IAuthService,
 	resolveAuthFlow,
 } from '../src/services/auth-service'
+import {
+	RETURN_TO_KEY,
+	RETURN_TO_TTL_MS,
+} from '../shared/services/auth-service'
 import { createTestContainer } from './helpers/create-container'
 
 const nowSec = () => Math.floor(Date.now() / 1000)
@@ -320,9 +324,9 @@ describe('AuthService', () => {
 		expect(publish).toHaveBeenCalledTimes(1)
 		expect(publish.mock.calls[0][0].constructor.name).toBe('SignedOut')
 		expect(userManagerMock.removeUser).toHaveBeenCalledTimes(1)
-		expect(
-			JSON.parse(sessionStorage.getItem('liverty:auth:returnTo') ?? '{}').loc,
-		).toBe('/organizers?x=1')
+		expect(JSON.parse(sessionStorage.getItem(RETURN_TO_KEY) ?? '{}').loc).toBe(
+			'/organizers?x=1',
+		)
 	})
 
 	it('takeReturnTo returns and clears the stored location, then null', async () => {
@@ -338,10 +342,10 @@ describe('AuthService', () => {
 			await sut.prepareForcedReauth('/approval-queue')
 			// Advance past the 10-minute TTL: an abandoned re-auth must not hijack a
 			// later, unrelated sign-in in the same tab session.
-			vi.advanceTimersByTime(11 * 60 * 1000)
+			vi.advanceTimersByTime(RETURN_TO_TTL_MS + 60_000)
 			expect(sut.takeReturnTo()).toBeNull()
 			// The stale entry is still cleared, so it cannot linger.
-			expect(sessionStorage.getItem('liverty:auth:returnTo')).toBeNull()
+			expect(sessionStorage.getItem(RETURN_TO_KEY)).toBeNull()
 		} finally {
 			vi.useRealTimers()
 		}
@@ -368,9 +372,28 @@ describe('AuthService', () => {
 		expect(publish).toHaveBeenCalledTimes(1)
 		expect(userManagerMock.removeUser).toHaveBeenCalledTimes(1)
 		// The second call did not overwrite the first's return-to.
-		expect(
-			JSON.parse(sessionStorage.getItem('liverty:auth:returnTo') ?? '{}').loc,
-		).toBe('/a')
+		expect(JSON.parse(sessionStorage.getItem(RETURN_TO_KEY) ?? '{}').loc).toBe(
+			'/a',
+		)
+	})
+
+	it('releaseForcedReauthLatch re-arms prepareForcedReauth after a failed hand-off', async () => {
+		const container = createTestContainer(
+			Registration.instance(IEventAggregator, {
+				publish: vi.fn(),
+				subscribe: vi.fn(),
+			}),
+		)
+		container.register(AuthService)
+		const s = container.get(IAuthService)
+		await s.ready
+
+		expect(await s.prepareForcedReauth('/a')).toBe(true)
+		// Latch is set — a concurrent 401 is deduped.
+		expect(await s.prepareForcedReauth('/b')).toBe(false)
+		// The terminal redirect failed; releasing the latch lets a later 401 retry.
+		s.releaseForcedReauthLatch()
+		expect(await s.prepareForcedReauth('/c')).toBe(true)
 	})
 
 	it('resume does NOT refresh while on the /auth/callback route', async () => {

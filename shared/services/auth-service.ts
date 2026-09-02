@@ -83,13 +83,14 @@ export interface IAuthService extends AuthService {}
 /** Refresh the token when it expires within this many seconds (skew window). */
 const EXPIRY_SKEW_SEC = 60
 /** sessionStorage key holding the in-app location to return to after an
- *  involuntary re-authentication. Value is JSON `{ loc, exp }`. */
-const RETURN_TO_KEY = 'liverty:auth:returnTo'
+ *  involuntary re-authentication. Value is JSON `{ loc, exp }`. Exported so
+ *  tests assert against a single source of truth rather than a copied string. */
+export const RETURN_TO_KEY = 'liverty:auth:returnTo'
 /** A stored return-to older than this is treated as stale and ignored. It was
  *  most likely left by a re-auth the user abandoned; without a bound it would
  *  survive in sessionStorage for the whole tab session and hijack a later,
  *  unrelated voluntary sign-in — sending the user to a page they didn't ask for. */
-const RETURN_TO_TTL_MS = 10 * 60 * 1000
+export const RETURN_TO_TTL_MS = 10 * 60 * 1000
 
 export class AuthService {
 	private userManager: UserManager
@@ -207,6 +208,18 @@ export class AuthService {
 		this.ea.publish(new SignedOut())
 		await this.userManager.removeUser()
 		return true
+	}
+
+	/**
+	 * Release the single-shot forced-reauth latch. Called ONLY when the terminal
+	 * hand-off after {@link prepareForcedReauth} failed to navigate away (e.g.
+	 * `signinRedirect()` rejected, or a CSP blocked the location change), so the
+	 * app is left signed-out but still mounted. Resetting the latch lets a later
+	 * 401 retry the hand-off instead of silently skipping cleanup forever. The
+	 * repeated `SignedOut`/`removeUser` on retry are idempotent no-ops.
+	 */
+	public releaseForcedReauthLatch(): void {
+		this.reauthInFlight = false
 	}
 
 	/** Consume the stored return-to location (used by the auth callback to route

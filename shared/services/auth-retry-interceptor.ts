@@ -90,7 +90,17 @@ export const createTokenRefreshInterceptor = (
 			// return-to, and hand off to the entry-specific terminal action. The
 			// single-shot latch ensures only the first of N concurrent 401s runs it.
 			if (await auth.prepareForcedReauth(currentInAppLocation())) {
-				await options.onUnrecoverable()
+				try {
+					await options.onUnrecoverable()
+				} catch {
+					// The terminal hand-off failed to navigate away (e.g.
+					// signinRedirect() rejected, or a CSP blocked the redirect). Release
+					// the latch so a later 401 can retry the hand-off rather than leaving
+					// the app signed-out-but-mounted forever, and fall through to rethrow
+					// the ORIGINAL Unauthenticated error (not the hand-off failure) so
+					// the in-flight caller's error handling stays consistent.
+					auth.releaseForcedReauthLatch()
+				}
 			}
 			throw err
 		}

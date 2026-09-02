@@ -38,6 +38,7 @@ export function createMockAuth(
 		// Involuntary-logout cleanup (publishes SignedOut + captures return-to).
 		// Returns true = this caller should perform the redirect (single-shot latch).
 		prepareForcedReauth: vi.fn().mockResolvedValue(true),
+		releaseForcedReauthLatch: vi.fn(),
 		takeReturnTo: vi.fn().mockReturnValue(null),
 	}
 
