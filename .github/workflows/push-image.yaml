@@ -836,8 +836,14 @@ jobs:
   # existed but ran only on demand.
   #
   # Path matrix:
-  #   - push to main      -> wait for ArgoCD Image Updater to pick up
-  #                          dev AR :latest, then smoke dev URL
+  #   - push to main      -> SKIP. The dev environment is intentionally
+  #                          stopped to save cost, so there is no live dev
+  #                          URL to smoke: the poll below would proxy a
+  #                          dead host and fail the run on every push (a
+  #                          persistent SSL_ERROR_SYSCALL, not a rollout
+  #                          lag). Verify in prod via workflow_dispatch
+  #                          after the pin-bump instead. Re-enable this
+  #                          branch if dev is ever brought back up.
   #   - release published -> SKIP (prod does not auto-deploy; the
   #                          pin-bump PR in cloud-provisioning is the
   #                          gate. Re-run this workflow via
@@ -847,12 +853,13 @@ jobs:
   #                          (no build, no wait)
   post-deploy-smoke:
     needs: build-and-push
-    # Skip if the upstream build failed/was skipped (e.g., release path
-    # wants prod smoke deferred to the manual pin-bump).
-    if: |
-      always() &&
-      ((github.event_name == 'push' && needs.build-and-push.result == 'success') ||
-       github.event_name == 'workflow_dispatch')
+    # Only the operator-driven path runs: workflow_dispatch smokes prod
+    # after the pin-bump merges. push-to-main is skipped while the dev
+    # environment is intentionally stopped (see path matrix above);
+    # release defers prod smoke to that same manual dispatch. always() is
+    # required because build-and-push is skipped on workflow_dispatch and
+    # a skipped dependency would otherwise skip this job.
+    if: always() && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
