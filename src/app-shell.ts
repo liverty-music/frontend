@@ -92,7 +92,10 @@ import { IPwaInstallService } from './services/pwa-install-service'
 		// route is intentionally reachable only via the explicit lottery path for
 		// now, not wired into the bottom nav.
 		{
-			path: 'lottery/:phaseId/apply/:maxTickets/:ticketPrice',
+			// Trailing `verificationRequired` ("true"/"false") is optional so
+			// existing links resolve unchanged; when "true" the flow gates
+			// UNVERIFIED fans on a verify-first prompt (identity-ekyc-jpki 5.2).
+			path: 'lottery/:phaseId/apply/:maxTickets/:ticketPrice/:verificationRequired?',
 			component: import('./routes/lottery-apply/lottery-apply-route'),
 			title: 'Lottery Application',
 		},

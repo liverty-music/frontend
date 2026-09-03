@@ -13,6 +13,28 @@
 		</p>
 	</section>
 
+	<!-- Verification gate: phase requires identity verification and the fan is
+	     UNVERIFIED (identity-ekyc-jpki 5.2). -->
+	<section
+		class="[ lottery-apply-panel ] [ flow ]"
+		if.bind="step === 'verify-required'"
+	>
+		<h2 class="lottery-apply-step-title">本人確認が必要です</h2>
+		<p class="lottery-apply-lead">
+			この抽選は、不正転売を防ぐため<strong>マイナンバーカードによる本人確認</strong>を済ませた方のみお申し込みいただけます。
+		</p>
+		<p class="lottery-apply-lead">
+			本人確認は「設定」画面から行えます。完了後、あらためてこの画面からお申し込みください。
+		</p>
+		<button
+			type="button"
+			class="lottery-apply-btn-primary"
+			click.trigger="goToVerify()"
+		>
+			本人確認を行う
+		</button>
+	</section>
+
 	<!-- Step 1: ticket count -->
 	<section
 		class="[ lottery-apply-panel ] [ flow ]"
