@@ -93,7 +93,7 @@ describe('PageHelp', () => {
 		it('opens on help tap regardless of page', () => {
 			sut.page = 'dashboard'
 
-			sut.onHelpTap()
+			sut.open()
 
 			expect(sut.isOpen).toBe(true)
 		})
@@ -102,7 +102,7 @@ describe('PageHelp', () => {
 			fakeOnboarding.isOnboarding = false
 			sut.page = 'discovery'
 
-			sut.onHelpTap()
+			sut.open()
 
 			expect(sut.isOpen).toBe(true)
 		})
@@ -136,7 +136,7 @@ describe('PageHelp', () => {
 		})
 
 		it('does not reset isOpen when page changes', () => {
-			sut.onHelpTap()
+			sut.open()
 			expect(sut.isOpen).toBe(true)
 
 			sut.page = 'dashboard'

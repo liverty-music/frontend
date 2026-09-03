@@ -116,6 +116,26 @@
           >
         </div>
       </li>
+
+      <!-- Left-handed mode: mirrors the FAB action launcher to the bottom-left
+           corner. Persisted via the storage adapter (fab-action-launcher spec). -->
+      <li class="settings-list-item">
+        <button
+          click.trigger="fabMenu.toggleHanded()"
+          role="switch"
+          aria-checked.bind="fabMenu.isLeftHanded"
+          class="[ settings-row ] [ settings-row-toggle ]"
+        >
+          <svg-icon name="swap" class="settings-icon"></svg-icon>
+          <div class="settings-toggle-col">
+            <span t="settings.leftHanded" class="settings-row-label"></span>
+            <span t="settings.leftHandedDesc" class="settings-toggle-desc"></span>
+          </div>
+          <div class="settings-toggle-track" data-on.bind="fabMenu.isLeftHanded">
+            <div class="settings-toggle-thumb" data-on.bind="fabMenu.isLeftHanded"></div>
+          </div>
+        </button>
+      </li>
     </ul>
   </section>
 

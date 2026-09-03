@@ -28,6 +28,7 @@ const mockJourneyStore = {
 	statusFor: vi.fn(() => undefined),
 }
 const mockResumeRevalidator = { register: vi.fn(), unregister: vi.fn() }
+const mockFabMenu = { register: vi.fn(() => vi.fn()) }
 const mockOnboarding = {
 	isOnboarding: false,
 	isCompleted: false,
@@ -58,6 +59,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IFollowStore: mockFollowStore,
 				ITicketJourneyStore: mockJourneyStore,
 				IResumeRevalidator: mockResumeRevalidator,
+				IFabMenuService: mockFabMenu,
 				IOnboardingService: mockOnboarding,
 				IUserStore: mockUserStore,
 				I18N: mockI18n,

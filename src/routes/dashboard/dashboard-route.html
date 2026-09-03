@@ -1,45 +1,26 @@
 <import from="./dashboard-route.css"></import>
 <import from="../../components/all-nearby/date-range-sheet"></import>
 
-<!-- Title reflects the active mode and morphs across a View Transition. The mode
-     swap lives in the header (not a detached row) so the dashboard keeps the
-     shared "H1 + trailing controls" structure of every other page. -->
-<page-header title-key.bind="modeTitleKey" morph-title.bind="true">
-  <!-- Mode swap: names the OTHER view and switches to it on tap. Placed first in
-       the trailing cluster, where other pages put their action controls. -->
-  <button
-    if.bind="!isOnboarding"
-    type="button"
-    class="mode-swap"
-    click.trigger="toggleMode()"
-    data-active.bind="isAllNearby"
-    t="[aria-label]allNearby.modeToggle.groupLabel"
-  >
-    <span class="mode-swap-glyph" aria-hidden="true">⇄</span>
-    <span class="mode-swap-label" t.bind="swapLabelKey"></span>
-  </button>
-  <artist-filter-bar
-    if.bind="!isOnboarding && !isAllNearby"
-    counted-artists.bind="countedArtists"
-    selected-ids.two-way="filteredArtistIds"
-    selected-statuses.two-way="filteredStatuses"
-    active-from.bind="fromDate"
-    date-changed.trigger="onDateFilterChanged($event)"
-    is-authenticated.bind="isAuthenticated"
-  ></artist-filter-bar>
-  <button
-    if.bind="!isOnboarding && !isAllNearby"
-    type="button"
-    class="beam-toggle"
-    click.trigger="toggleBeams()"
-    data-active.bind="showBeams"
-    aria-pressed.bind="showBeams"
-    aria-label="レーザービーム"
-  >
-    <svg-icon name="spotlight" size="sm"></svg-icon>
-  </button>
-  <page-help page="dashboard"></page-help>
-</page-header>
+<!-- Title reflects the active mode and morphs across a View Transition. The
+     header is title-only: the mode swap, filter, beam toggle, and help triggers
+     all moved into the global FAB action launcher (see fab-action-launcher). -->
+<page-header title-key.bind="modeTitleKey" morph-title.bind="true"></page-header>
+
+<!-- Filter + help surfaces stay owned by the dashboard: only their triggers
+     moved to the FAB launcher, so the components render sheet-only here (their
+     bottom sheets and bindings are unchanged). The launcher opens them via the
+     component refs. -->
+<artist-filter-bar
+  if.bind="!isOnboarding && !isAllNearby"
+  component.ref="filterBar"
+  counted-artists.bind="countedArtists"
+  selected-ids.two-way="filteredArtistIds"
+  selected-statuses.two-way="filteredStatuses"
+  active-from.bind="fromDate"
+  date-changed.trigger="onDateFilterChanged($event)"
+  is-authenticated.bind="isAuthenticated"
+></artist-filter-bar>
+<page-help component.ref="pageHelp" page="dashboard"></page-help>
 
 <!-- All Nearby filters: a fixed-height row of exactly two chips — area + date.
      Neither expands inline, so the ConcertHighway timetable height is stable.

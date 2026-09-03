@@ -2,9 +2,11 @@
   <import from="./discovery-route.css"></import>
   <import from="../../components/dna-orb/dna-orb-canvas"></import>
 
-  <page-header title-key="nav.discovery">
-    <page-help page="discovery"></page-help>
-  </page-header>
+  <page-header title-key="nav.discovery"></page-header>
+
+  <!-- Help sheet: the `?` trigger moved to the FAB action launcher; opened via
+       the ref. Auto-open on first visit is unchanged. -->
+  <page-help component.ref="pageHelp" page="discovery"></page-help>
 
   <main class="[ discovery-layout ]" data-search-mode.bind="search.isSearchMode">
 

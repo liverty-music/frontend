@@ -1,11 +1,8 @@
 <import from="./page-help.css"></import>
 
-<button
-  class="page-help-trigger"
-  t="[aria-label]pageHelp.triggerAriaLabel;[title]pageHelp.triggerAriaLabel"
-  click.trigger="onHelpTap()"
-  type="button"
->?</button>
+<!-- The `?` trigger moved to the FAB action launcher; this component now renders
+     only its per-page help sheet, opened via open() (auto-open on first visit is
+     unchanged). See onboarding-page-help capability spec. -->
 
 <!-- Each per-page <template case="…"> contains one or more <section> sub-blocks.
      Each sub-section carries its own .help-section-title heading; there is no
