@@ -140,6 +140,14 @@ describe('verified-identity-mapper', () => {
 			).toBeUndefined()
 		})
 
+		it('returns undefined when the status is unspecified (never render an unknown lifecycle as active)', () => {
+			expect(
+				verifiedIdentityFrom(
+					makeProtoIdentity({ status: ProtoVerificationStatus.UNSPECIFIED }),
+				),
+			).toBeUndefined()
+		})
+
 		it('returns undefined when the pocket-sign user id is empty', () => {
 			expect(
 				verifiedIdentityFrom(makeProtoIdentity({ pocketSignUserId: '' })),

@@ -151,6 +151,19 @@ describe('VerifyCallbackRoute', () => {
 
 			expect(sut.errorKey).toBe('verifyCallback.error.generic')
 		})
+
+		it('maps a ConnectError with an UNMAPPED code to the generic key', async () => {
+			// A ConnectError whose code is not in the switch (e.g. Internal) must
+			// fall through to the generic key — distinct from the non-ConnectError case.
+			mockCompleteFromCallback.mockResolvedValueOnce({
+				kind: 'verificationFailed',
+				error: new ConnectError('boom', Code.Internal),
+			})
+
+			await sut.loading()
+
+			expect(sut.errorKey).toBe('verifyCallback.error.generic')
+		})
 	})
 
 	describe('errorKey', () => {

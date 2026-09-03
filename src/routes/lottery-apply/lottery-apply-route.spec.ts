@@ -308,6 +308,13 @@ describe('LotteryApplyRoute', () => {
 			expect(sut.step).toBe('count')
 		})
 
+		it('treats an explicit verificationRequired="false" as not-required (no status check, no gate)', async () => {
+			const sut = new LotteryApplyRoute()
+			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'false' })
+			expect(mockIdentity.getMyVerificationStatus).not.toHaveBeenCalled()
+			expect(sut.step).toBe('count')
+		})
+
 		it('fails OPEN (proceeds to count) when the status load errors', async () => {
 			mockIdentity.getMyVerificationStatus.mockRejectedValueOnce(
 				new Error('UNAVAILABLE'),
