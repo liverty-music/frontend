@@ -72,6 +72,52 @@
 			border: none;
 		}
 
+		/* Reserve scroll space so the last row clears the fixed Done bar. */
+		.artists-fieldset[data-editing="true"] {
+			padding-block-end: var(--space-2xl);
+		}
+
+		/* ── Edit-mode Done bar (fixed above the bottom nav) ── */
+		.edit-action-bar {
+			position: fixed;
+			inset-block-end: calc(
+				var(--bottom-nav-height, 3.5rem) +
+				env(safe-area-inset-bottom, 0px)
+			);
+			inset-inline: 0;
+
+			display: flex;
+			justify-content: center;
+
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-s);
+			border-block-start: 1px solid var(--color-border-subtle);
+
+			background: var(--color-surface-raised);
+		}
+
+		.edit-done-btn {
+			cursor: pointer;
+
+			display: inline-flex;
+			gap: var(--space-2xs);
+			align-items: center;
+			justify-content: center;
+
+			min-block-size: 3rem;
+			padding-inline: var(--space-xl);
+			border: none;
+			border-radius: var(--radius-full);
+
+			font-family: var(--font-body);
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--md-color-on-primary-container);
+
+			background: var(--md-color-primary-container);
+			box-shadow: var(--shadow-soft);
+		}
+
 		/* ── Table ── */
 		.artists-table {
 			border-spacing: 0 var(--space-3xs);
@@ -287,24 +333,6 @@
 					0 0 48px
 					oklch(from var(--_dot-color, oklch(70% 0.15 60deg)) l c h / 20%);
 				animation: dot-pulse 1.5s ease-in-out infinite;
-			}
-		}
-
-		/* ── Edit toggle (page-header slot) ── */
-		.edit-toggle {
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-xs);
-			border-radius: var(--_radius-sm);
-
-			font-size: var(--step--1);
-			font-weight: 500;
-			color: var(--color-text-primary);
-
-			transition: color 150ms ease-out;
-
-			&:hover,
-			&:focus-visible {
-				color: var(--color-brand-primary);
 			}
 		}
 

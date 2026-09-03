@@ -1,10 +1,16 @@
 import { I18N } from '@aurelia/i18n'
-import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { IEventAggregator, ILogger, observable, resolve, watch } from 'aurelia'
 import { artistColor } from '../../adapter/view/artist-color'
 import { HYPE_TIERS } from '../../adapter/view/hype-display'
+import type { PageHelp } from '../../components/page-help/page-help'
 import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
+import {
+	type FabAction,
+	helpAction,
+	IFabMenuService,
+} from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 
@@ -18,8 +24,10 @@ export class MyArtistsRoute {
 
 	public showSignupBanner = false
 
-	// Edit-mode state: toggles per-row remove controls
-	public editing = false
+	// Edit-mode state: toggles per-row remove controls. @observable so the FAB
+	// context @watch re-registers when edit mode enters/exits (the launcher hides
+	// while editing; exit is via the in-list Done bar).
+	@observable public editing = false
 
 	// Hype state tracking
 	private prevHypes = new Map<string, Hype>()
@@ -39,7 +47,13 @@ export class MyArtistsRoute {
 	private readonly followStore = resolve(IFollowStore)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly ea = resolve(IEventAggregator)
+	private readonly fabMenu = resolve(IFabMenuService)
 	private abortController: AbortController | null = null
+
+	/** Help sheet ref; its trigger lives in the FAB launcher. */
+	public pageHelp: PageHelp | undefined
+	/** Disposer for this route's contributed FAB actions. */
+	private fabDisposer: (() => void) | null = null
 
 	public get isOnboarding(): boolean {
 		return this.onboarding.isOnboarding
@@ -111,7 +125,57 @@ export class MyArtistsRoute {
 		}
 	}
 
+	public attached(): void {
+		// @watch does not fire on initial bind, so seed the registration here.
+		this.refreshFabActions()
+	}
+
+	/** Edit is available only once there are followed artists to edit. */
+	private get canEdit(): boolean {
+		return !this.isLoading && this.artists.length > 0
+	}
+
+	/**
+	 * This route's FAB actions. Edit lives in the launcher — not the top-right
+	 * header "dead zone" this feature exists to eliminate. It is a COMMAND (not a
+	 * toggle): tapping it enters edit mode and closes the launcher so the user
+	 * lands directly on the un-dimmed, editable list. While editing, the launcher
+	 * contributes nothing (the FAB hides); exit is via the in-list Done bar.
+	 */
+	private buildFabActions(): FabAction[] {
+		if (this.editing) return []
+		const actions: FabAction[] = [helpAction(() => this.pageHelp?.open())]
+		if (this.canEdit) {
+			actions.push({
+				id: 'edit',
+				labelKey: 'myArtists.edit',
+				icon: 'edit',
+				kind: 'command',
+				invoke: () => this.toggleEditing(),
+			})
+		}
+		return actions
+	}
+
+	/**
+	 * Re-register whenever edit mode or edit-availability changes, so the launcher
+	 * hides on entering edit and the edit item appears/drops with the list — one
+	 * declarative trigger rather than scattered manual refresh calls (mirrors the
+	 * dashboard's context @watch).
+	 */
+	@watch((vm: MyArtistsRoute) => `${vm.editing}|${vm.canEdit}`)
+	protected onFabContextChanged(): void {
+		this.refreshFabActions()
+	}
+
+	private refreshFabActions(): void {
+		this.fabDisposer?.()
+		this.fabDisposer = this.fabMenu.register(this, this.buildFabActions())
+	}
+
 	public detaching(): void {
+		this.fabDisposer?.()
+		this.fabDisposer = null
 		this.abortController?.abort()
 		this.abortController = null
 		this.undoHandle?.dismiss()
@@ -143,7 +207,8 @@ export class MyArtistsRoute {
 			this.artists.splice(index, 1)
 			this.undoArtist = artist
 			this.undoIndex = index
-			// Auto-exit edit mode when the last artist is removed.
+			// Auto-exit edit mode when the last artist is removed (the FAB context
+			// @watch re-registers the launcher off the `editing` change).
 			if (this.artists.length === 0) {
 				this.editing = false
 			}

@@ -241,11 +241,21 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 		const firstRow = page.locator('.artist-row').first()
 		await expect(firstRow).toBeVisible()
 
-		// Enter edit mode.
+		// Enter edit mode. Edit moved from the header into the FAB action launcher
+		// as a command: open the FAB, tap Edit — it enters edit mode and closes
+		// the launcher on its own (the FAB hides while editing), so no extra
+		// dismiss is needed and the per-row remove buttons are immediately live.
 		await page.evaluate(() => {
-			const btn = document.querySelector<HTMLElement>('.edit-toggle')
-			if (!btn) throw new Error('.edit-toggle not found')
-			btn.click()
+			const fab = document.querySelector<HTMLElement>('fab-menu .fab-toggle')
+			if (!fab) throw new Error('fab-menu .fab-toggle not found')
+			fab.click()
+		})
+		await page.evaluate(() => {
+			const edit = document.querySelector<HTMLElement>(
+				'fab-menu .fab-item[data-action-id="edit"]',
+			)
+			if (!edit) throw new Error('FAB edit item not found')
+			edit.click()
 		})
 
 		// Wait for Aurelia to render the per-row remove buttons.
