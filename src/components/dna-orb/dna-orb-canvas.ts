@@ -9,6 +9,7 @@ import {
 import { artistHue as hashArtistHue } from '../../adapter/view/artist-color'
 import type { Artist } from '../../entities/artist'
 import { IAudioEngine } from '../../services/audio-engine'
+import { IHapticService } from '../../services/haptic-service'
 import {
 	onReducedMotionChange,
 	prefersReducedMotion,
@@ -21,9 +22,6 @@ import {
 } from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'
 import { TapEffects } from './tap-effects'
-
-/** Haptic pulse duration (ms) for a bubble tap. */
-const HAPTIC_TAP_MS = 10
 
 @useShadowDOM()
 export class DnaOrbCanvas {
@@ -71,6 +69,7 @@ export class DnaOrbCanvas {
 	private tapEffects = new TapEffects()
 
 	private readonly audio = resolve(IAudioEngine)
+	private readonly haptic = resolve(IHapticService)
 	private readonly logger = resolve(ILogger).scopeTo('DnaOrbCanvas')
 	private reducedMotionUnsub: (() => void) | null = null
 	// One-shot observer that waits for a non-zero layout size before the first
@@ -261,7 +260,7 @@ export class DnaOrbCanvas {
 	private emitTapFeedback(hue: number): void {
 		this.audio.unlock()
 		this.audio.playTap(hue)
-		this.vibrate(HAPTIC_TAP_MS)
+		this.haptic.tap()
 	}
 
 	public pause(): void {
@@ -493,17 +492,6 @@ export class DnaOrbCanvas {
 		this.applyLevel(this.activationLevel)
 		this.orbRenderer.celebrate(hue)
 		this.audio.playLanding(hue)
-	}
-
-	/** Trigger a brief haptic pulse where the Vibration API is available. */
-	private vibrate(ms: number): void {
-		if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-			try {
-				navigator.vibrate(ms)
-			} catch {
-				// Vibration may be blocked by the platform; ignore.
-			}
-		}
 	}
 
 	private readonly loop = (time: number): void => {

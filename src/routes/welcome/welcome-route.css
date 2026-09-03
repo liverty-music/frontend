@@ -250,7 +250,7 @@
 		   in the scroll motion. `both` holds the hidden pre-state during the delay.
 		   A heads-up push slides down from above and settles with an overshoot. */
 		.welcome-demo[data-entered] .welcome-notification-trigger {
-			animation: notif-enter 700ms 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+			animation: notif-enter 700ms 500ms var(--md-spring-spatial) both;
 		}
 
 		/* Exit: the notification dismisses upward and fades. The VM holds this state

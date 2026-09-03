@@ -255,7 +255,8 @@
 
 		@media (prefers-reduced-motion: no-preference) {
 			:scope {
-				animation: pwa-banner-enter 380ms cubic-bezier(0.16, 1, 0.3, 1);
+				animation: pwa-banner-enter var(--md-duration-medium3)
+					var(--md-easing-emphasized-decelerate);
 			}
 
 			.pwa-banner-cta {

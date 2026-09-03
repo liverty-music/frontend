@@ -186,8 +186,8 @@
 	/* stylelint-disable-next-line cube/utility-single-property */
 	[data-busy] {
 		pointer-events: none;
-		position: relative;
 		cursor: progress;
+		position: relative;
 		opacity: 0.65;
 	}
 
@@ -196,15 +196,18 @@
 	/* stylelint-disable-next-line cube/utility-single-property */
 	[data-busy]::after {
 		content: "";
+
 		position: absolute;
 		inset-block-start: 50%;
 		inset-inline-start: 50%;
+		transform: translate(-50%, -50%);
+
 		inline-size: 1rem;
 		block-size: 1rem;
 		border: 1.5px solid oklch(from var(--color-brand-accent) l c h / 30%);
 		border-block-start-color: var(--color-brand-accent);
 		border-radius: var(--radius-full);
-		transform: translate(-50%, -50%);
+
 		animation: busy-spin 0.8s linear infinite;
 	}
 
@@ -225,6 +228,153 @@
 		clip: rect(0 0 0 0);
 	}
 
+	/* ── Press feedback (M3): contact-point ripple + round↔squircle morph ──
+	   Attached by the `press-feedback` custom attribute, which sets
+	   `data-press-feedback` and injects the ripple overlay/spans. Lives in the
+	   utility layer so component (block-layer) shape/`:active` rules keep
+	   precedence; the ripple is JS-driven so it fires regardless of layer. */
+	@keyframes press-ripple {
+		from {
+			transform: scale(0);
+			opacity: 0.24;
+		}
+
+		to {
+			transform: scale(1);
+			opacity: 0;
+		}
+	}
+
+	/* stylelint-disable-next-line cube/utility-single-property */
+	.press-ripple-container {
+		pointer-events: none;
+
+		position: absolute;
+		inset: 0;
+
+		overflow: hidden;
+
+		border-radius: inherit;
+	}
+
+	/* Single ripple circle; geometry set inline from the pointer contact point.
+	   currentcolor ink via a var so the token-variables rule is satisfied. */
+	/* stylelint-disable-next-line cube/utility-single-property */
+	.press-ripple {
+		position: absolute;
+		inset-block-start: var(--ripple-y);
+		inset-inline-start: var(--ripple-x);
+		transform: scale(0);
+
+		inline-size: var(--ripple-size);
+		block-size: var(--ripple-size);
+		border-radius: var(--md-shape-full);
+
+		background: var(--ripple-ink, currentcolor);
+
+		animation: press-ripple var(--md-spring-effects-duration)
+			var(--md-easing-standard) forwards;
+	}
+
+	/* Corner morph on press: rounds up a step with a spatial spring, then
+	   settles on release. Re-declares background/transform transitions so the
+	   shorthand doesn't drop the global button feedback. Consumers can retune
+	   the target via --press-morph-radius.
+
+	   Cascade note: this lives in the utility layer, so it applies to controls
+	   that don't pin their own :active shape (plain buttons, the discover CTA);
+	   components that define a bespoke :active corner treatment in the block
+	   layer (e.g. event-card) intentionally keep theirs. The ripple above is the
+	   universal, layer-independent acknowledgement. */
+	/* stylelint-disable-next-line cube/utility-single-property */
+	[data-press-feedback] {
+		transition:
+			border-radius var(--md-spring-spatial-fast-duration)
+			var(--md-spring-spatial-fast),
+			background-color var(--md-duration-short3) var(--md-easing-standard),
+			transform var(--md-duration-short3) var(--md-easing-standard);
+	}
+
+	[data-press-feedback]:active {
+		border-radius: var(--press-morph-radius, var(--md-shape-large-increased));
+	}
+
+	/* ── Skeleton loading placeholder (M3) ──
+	   Layout-preserving block; consumers size it (inline-size/block-size) so the
+	   swap to real content is shift-free. Shimmer via a moving gradient using
+	   the effects/on-surface tokens; static under reduced motion (below). */
+	@keyframes skeleton-shimmer {
+		from {
+			background-position: 200% 0;
+		}
+
+		to {
+			background-position: -200% 0;
+		}
+	}
+
+	/* stylelint-disable-next-line cube/utility-single-property */
+	.skeleton {
+		border-radius: var(--md-shape-small);
+
+		background-color: var(--md-color-surface-container-high);
+		background-image: linear-gradient(
+			100deg,
+			transparent 30%,
+			color-mix(in oklab, var(--md-color-on-surface) 8%, transparent) 50%,
+			transparent 70%
+		);
+		background-size: 200% 100%;
+
+		animation: skeleton-shimmer 1.6s ease-in-out infinite;
+	}
+
+	/* ── List enter transitions (M3) ──
+	   `@starting-style` animates inserted items in via `data-list-item`.
+	   Reduced-motion fallback lands the end state. Note: on table rows
+	   (display: table-row, e.g. my-artists) transforms are ignored by the
+	   engine, so those rows get the opacity fade only — which is the intended
+	   graceful degradation. Item EXIT is owned by the View Transitions API where
+	   a screen animates removal (e.g. my-artists unfollow), so there is no
+	   `data-leaving` CSS path here. */
+	/* stylelint-disable-next-line cube/utility-single-property */
+	[data-list-item] {
+		transition:
+			opacity var(--md-duration-medium2) var(--md-easing-emphasized-decelerate),
+			transform var(--md-duration-medium2)
+			var(--md-easing-emphasized-decelerate);
+	}
+
+	@starting-style {
+		[data-list-item] {
+			transform: translateY(8px);
+			opacity: 0;
+		}
+	}
+
+	/* ── Selection spring-morph (M3) ──
+	   Selected controls (nav tabs, filter chips) morph rounder with a spatial
+	   spring plus a persistent selected state layer, driven by a real
+	   selection attribute (never hover). Applied via `data-selected-morph`;
+	   components layer their own selected color on top. */
+	/* stylelint-disable-next-line cube/utility-single-property */
+	[data-selected-morph] {
+		transition:
+			background-color var(--md-duration-medium1) var(--md-spring-effects),
+			border-radius var(--md-duration-medium1) var(--md-spring-spatial);
+	}
+
+	[data-selected-morph][aria-selected="true"],
+	[data-selected-morph][aria-pressed="true"],
+	[data-selected-morph][data-selected] {
+		border-radius: var(--md-shape-large-increased);
+		background: color-mix(
+			in oklab,
+			currentcolor var(--md-state-selected),
+			transparent
+		);
+	}
+
 	/* Reduced motion override */
 	@media (prefers-reduced-motion: reduce) {
 		[class*="animate-"] {
@@ -238,6 +388,22 @@
 		::view-transition-old(root),
 		::view-transition-new(root) {
 			animation: none;
+		}
+
+		/* Feedback primitives: drop shimmer/springs but land the end state so
+		   the acknowledgement (state layer, radius, selection) still resolves. */
+		.skeleton {
+			animation: none;
+		}
+
+		.press-ripple {
+			display: none;
+		}
+
+		[data-press-feedback],
+		[data-list-item],
+		[data-selected-morph] {
+			transition-duration: var(--md-duration-instant);
 		}
 	}
 }

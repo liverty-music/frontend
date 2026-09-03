@@ -57,6 +57,28 @@
 			transform var(--transition-fast) ease-out;
 	}
 
+	/* App-wide state-layer baseline: hover and keyboard focus composite the M3
+	   state-layer opacity of the button's ink (currentcolor) over its base, per
+	   the shared --md-state-* scale rather than a bespoke per-component opacity.
+	   Zero-specificity :where() so components with their own fills keep
+	   precedence; :focus-visible (not bare :focus) so mouse clicks don't leave a
+	   stuck layer. */
+	:where(button:hover:not(:disabled)) {
+		background: color-mix(
+			in oklab,
+			currentcolor var(--md-state-hover),
+			transparent
+		);
+	}
+
+	:where(button:focus-visible) {
+		background: color-mix(
+			in oklab,
+			currentcolor var(--md-state-focus),
+			transparent
+		);
+	}
+
 	/* App-wide press-feedback baseline: every native button acknowledges a touch
 	   on :active so no per-component code is needed. Wrapped in :where() for zero
 	   specificity so components that define their own :active in @layer block keep

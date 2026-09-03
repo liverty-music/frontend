@@ -58,6 +58,7 @@ import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
+import { PressFeedbackCustomAttribute } from './custom-attributes/press-feedback'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
 import { AuthHook } from './hooks/auth-hook'
@@ -81,6 +82,7 @@ import { IFabMenuService } from './services/fab-menu-service'
 import { FollowReconcileTask } from './services/follow-reconcile-task'
 import { IFollowStore } from './services/follow-store'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
+import { IHapticService } from './services/haptic-service'
 import { IIdentityVerificationService } from './services/identity-verification-service'
 import { INotificationManager } from './services/notification-manager'
 import { IOnboardingService } from './services/onboarding-service'
@@ -245,6 +247,7 @@ async function bootstrap(): Promise<void> {
 	// any sign-up / sign-out fires.
 	au.register(FollowReconcileTask)
 	au.register(IAudioEngine)
+	au.register(IHapticService)
 	au.register(INotificationManager)
 	au.register(IPushService)
 	au.register(IPromptCoordinator)
@@ -290,6 +293,7 @@ async function bootstrap(): Promise<void> {
 	au.register(BusyOnClickCustomAttribute)
 	au.register(BeamVarsCustomAttribute)
 	au.register(DotColorCustomAttribute)
+	au.register(PressFeedbackCustomAttribute)
 	au.register(SpotlightRadiusCustomAttribute)
 	au.register(TileColorCustomAttribute)
 	au.register(DateValueConverter)

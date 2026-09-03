@@ -122,13 +122,57 @@
 		--md-spring-spatial-duration: 500ms;
 		--md-spring-spatial-fast: cubic-bezier(0.42, 1.67, 0.21, 0.9);
 		--md-spring-spatial-fast-duration: 350ms;
+		--md-spring-spatial-slow: cubic-bezier(0.39, 1.29, 0.35, 0.98);
+		--md-spring-spatial-slow-duration: 650ms;
 		--md-spring-effects: cubic-bezier(0.34, 0.8, 0.34, 1);
 		--md-spring-effects-duration: 200ms;
+		--md-spring-effects-fast: cubic-bezier(0.31, 0.94, 0.34, 1);
+		--md-spring-effects-fast-duration: 150ms;
+
+		/* ── M3 easing curves ──
+		   Standard set = everyday motion (minimal personality); emphasized set =
+		   more characterful curves for larger/important transitions. Entering
+		   elements decelerate, leaving elements accelerate, in-screen moves do
+		   both (standard). Use with the duration scale below for non-spring
+		   (effects-class) transitions; use the springs above for spatial motion. */
+		--md-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+		--md-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+		--md-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+		--md-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+		--md-easing-emphasized-accelerate: cubic-bezier(0.3, 0.8, 0.15, 1);
+
+		/* ── M3 duration scale ──
+		   Match duration to the size of the change and distance travelled; keep
+		   interactive feedback (hover/press) in the short band. Supersedes the
+		   ad-hoc --transition-fast/normal/slow values above (kept as legacy
+		   aliases until every consumer migrates). */
+		--md-duration-short1: 50ms;
+		--md-duration-short2: 100ms;
+		--md-duration-short3: 150ms;
+		--md-duration-short4: 200ms;
+		--md-duration-medium1: 250ms;
+		--md-duration-medium2: 300ms;
+		--md-duration-medium3: 350ms;
+		--md-duration-medium4: 400ms;
+		--md-duration-long2: 500ms;
+		--md-duration-long4: 600ms;
+
+		/* Near-instant: reduced-motion fallback that still fires transitionend. */
+		--md-duration-instant: 1ms;
 
 		/* ── Material 3 role tokens (mapped onto the oklch brand palette) ──
 		   Single dark ("stage-lit") theme; roles are encoded (not raw colors)
 		   so a light theme could be generated later without touching components.
-		   The FAB launcher is the screen's single hero moment. */
+		   Strategy A (design D1): roles are semantic ALIASES over the existing
+		   physical brand/surface tokens; only genuinely-missing roles (on-*,
+		   containers, outline, extra surface tiers) get new oklch values derived
+		   via relative color syntax. Every fill role has a paired on-* role whose
+		   lightness is pushed to the opposite end of the same hue so the pair
+		   clears the M3 contrast target (4.5:1 body / 3:1 large & UI). */
+
+		/* Accent — primary (festival magenta). */
+		--md-color-primary: var(--color-brand-primary);
+		--md-color-on-primary: oklch(from var(--color-brand-primary) 18% 0.06 h);
 		--md-color-primary-container: oklch(
 			from var(--color-brand-primary) 48% 0.19 h
 		);
@@ -136,11 +180,89 @@
 			from var(--color-brand-primary) 96% 0.04 h
 		);
 
+		/* Accent — secondary (electric blue). */
+		--md-color-secondary: var(--color-brand-secondary);
+		--md-color-on-secondary: oklch(
+			from var(--color-brand-secondary) 18% 0.06 h
+		);
+		--md-color-secondary-container: oklch(
+			from var(--color-brand-secondary) 45% 0.15 h
+		);
+		--md-color-on-secondary-container: oklch(
+			from var(--color-brand-secondary) 95% 0.03 h
+		);
+
+		/* Accent — tertiary (expressive lime; maps brand-accent). Reach for this
+		   for hero-moment pops that need a genuinely different hue from primary. */
+		--md-color-tertiary: var(--color-brand-accent);
+		--md-color-on-tertiary: oklch(from var(--color-brand-accent) 20% 0.06 h);
+		--md-color-tertiary-container: oklch(
+			from var(--color-brand-accent) 45% 0.12 h
+		);
+		--md-color-on-tertiary-container: oklch(
+			from var(--color-brand-accent) 95% 0.04 h
+		);
+
+		/* Error (aliases the physical state color + derived companions). */
+		--md-color-error: var(--color-error);
+		--md-color-on-error: oklch(from var(--color-error) 18% 0.05 h);
+		--md-color-error-container: oklch(from var(--color-error) 42% 0.14 h);
+		--md-color-on-error-container: oklch(from var(--color-error) 95% 0.03 h);
+
+		/* Neutral / surface roles (aliases over the physical surface + text
+		   tokens). on-surface = body text; on-surface-variant = secondary text. */
+		--md-color-surface: var(--color-surface-base);
+		--md-color-on-surface: var(--color-text-primary);
+		--md-color-on-surface-variant: var(--color-text-secondary);
+		--md-color-outline: var(--color-border-muted);
+		--md-color-outline-variant: var(--color-border-subtle);
+
+		/* ── Tonal surface-container tiers (M3: five tiers, lowest → highest) ──
+		   Depth is expressed by tonal tier, not shadow, so surfaces survive
+		   forced-colors. Physical↔semantic mapping: -low/-container/-high alias
+		   the existing base/raised/overlay tokens; -lowest and -highest are the
+		   two derived extremes (same hue/chroma, lightness stepped ±3%). */
+		--md-color-surface-container-lowest: oklch(
+			from var(--color-surface-base) 15% c h
+		);
+		--md-color-surface-container-low: var(--color-surface-base);
+		--md-color-surface-container: var(--color-surface-raised);
+		--md-color-surface-container-high: var(--color-surface-overlay);
+		--md-color-surface-container-highest: oklch(
+			from var(--color-surface-overlay) 30% c h
+		);
+
 		/* Raised, strong-contrast surface for the expanded menu panel. */
 		--md-color-menu-surface: oklch(30% 0.035 275deg);
 
 		/* Modal backdrop scrim (dims the page behind the open panel). */
 		--md-color-scrim: oklch(0% 0 0deg / 45%);
+
+		/* ── M3 state-layer opacities ──
+		   A single scale, overlaid as the element's on-* role at the given
+		   opacity, replacing per-component one-off opacities. Selected is a
+		   persistent layer that stacks under hover/press. (The --fab-state-*
+		   tokens above are the launcher's pre-existing local copy.) */
+		--md-state-hover: 8%;
+		--md-state-focus: 12%;
+		--md-state-pressed: 12%;
+		--md-state-dragged: 16%;
+		--md-state-selected: 12%;
+
+		/* ── M3 shape roles ──
+		   Aliases over the existing radius tokens where they line up, plus the
+		   Expressive -increased emphasis steps as new values. Consume these with
+		   LOGICAL radius properties (border-start-start-radius, …) so directional
+		   rounding mirrors correctly under RTL. Radius must match component size:
+		   small controls → small, sheets → extra-large, pills/avatars → full. */
+		--md-shape-extra-small: 0.25rem; /* 4px — snackbars, small chips */
+		--md-shape-small: var(--radius-sm); /* 8px — chips, small cards */
+		--md-shape-medium: var(--radius-button); /* 12px — buttons */
+		--md-shape-large: var(--radius-card); /* 16px — cards, FABs */
+		--md-shape-large-increased: 1.25rem; /* 20px — Expressive emphasis */
+		--md-shape-extra-large: var(--radius-sheet); /* 24px — sheets */
+		--md-shape-extra-large-increased: 2rem; /* 32px — Expressive emphasis */
+		--md-shape-full: var(--radius-full); /* pills, avatars */
 
 		/* ── FAB launcher layout + interaction tokens ── */
 		--fab-size: 3.5rem; /* 56px M3 FAB */

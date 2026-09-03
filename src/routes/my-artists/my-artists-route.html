@@ -12,10 +12,9 @@
 <page-help component.ref="pageHelp" page="my-artists"></page-help>
 
 <main>
-  <!-- Loading state -->
-  <div if.bind="isLoading" class="state-center">
-    <loading-spinner></loading-spinner>
-  </div>
+  <!-- Loading state: content-shaped skeleton rows (replaces the centered
+       spinner) so the swap to the hype table is layout-shift-free. -->
+  <state-placeholder if.bind="isLoading" loading.bind="true" rows.bind="6"></state-placeholder>
 
   <!-- Empty state -->
   <state-placeholder
@@ -28,6 +27,7 @@
       href.bind="'discovery'"
       t="myArtists.empty.discoverButton"
       class="discover-cta"
+      press-feedback
     ></a>
   </state-placeholder>
 
@@ -55,6 +55,7 @@
         <tr
           repeat.for="artist of artists; key.bind: artist.artist.id"
           class="artist-row"
+          data-list-item
           css="--_vt-name: artist-${artist.artist.id}; --_dot-color: ${artist.color}"
         >
           <!-- Artist name cell -->
