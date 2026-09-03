@@ -1,5 +1,4 @@
 import { I18N } from '@aurelia/i18n'
-import type { Params, RouteNode } from '@aurelia/router'
 import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
@@ -11,11 +10,14 @@ import { IIdentityVerificationService } from '../../services/identity-verificati
  * schema v0.60.0).
  *
  * The PocketSign app returns the fan here after the card read completes (or is
- * abandoned/fails). The URL carries a `session_id` query parameter. This route:
- *   1. Reads `session_id` from the query string in the router `loading()` hook.
- *   2. Calls `identityService.completeFromCallback(session_id)`.
- *   3. Shows a brief success or failure message.
- *   4. Navigates back to `/settings` automatically (historyStrategy: 'replace'
+ * abandoned/fails). The callback URL carries NO query parameters — the backend
+ * creates the session with callbackWithSessionId=false (per the official
+ * PocketSign reference flow), so the session id is read from the service's own
+ * persisted storage, not the URL. This route:
+ *   1. Calls `identityService.completeFromCallback()` in the `loading()` hook,
+ *      which reads the persisted session id and finalizes the Stamp session.
+ *   2. Shows a brief success or failure message.
+ *   3. Navigates back to `/settings` automatically (historyStrategy: 'replace'
  *      so the callback URL is not in the back-stack).
  *
  * Route path: `verify/callback` (absolute: `/verify/callback`).
@@ -50,13 +52,11 @@ export class VerifyCallbackRoute {
 	 * The UI state to render. `undefined` while the RPC is in flight; set to the
 	 * outcome once `completeFromCallback` resolves.
 	 */
-	public outcome: CompleteOutcome | 'missingParam' | undefined = undefined
+	public outcome: CompleteOutcome | undefined = undefined
 
 	/** Human-readable error i18n key for the template. `null` on success. */
 	public get errorKey(): string | null {
 		if (!this.outcome) return null
-		if (this.outcome === 'missingParam')
-			return 'verifyCallback.error.missingParam'
 		if (this.outcome.kind === 'sessionMismatch') {
 			return 'verifyCallback.error.sessionMismatch'
 		}
@@ -68,16 +68,14 @@ export class VerifyCallbackRoute {
 
 	/** Whether verification succeeded. */
 	public get isSuccess(): boolean {
-		return (
-			this.outcome !== undefined &&
-			this.outcome !== 'missingParam' &&
-			this.outcome.kind === 'verified'
-		)
+		return this.outcome !== undefined && this.outcome.kind === 'verified'
 	}
 
 	/**
 	 * Aurelia router lifecycle hook — runs before the component activates.
-	 * Reads `session_id` from the query params and finalizes the Stamp session.
+	 * Finalizes the Stamp session using the session id the service persisted in
+	 * leg 1 (the callback URL carries no `session_id` — callbackWithSessionId is
+	 * false, per the official flow).
 	 *
 	 * The router awaits this hook before mounting the view, so `isPending` is
 	 * `false` when the template first renders. The template therefore does not
@@ -85,22 +83,12 @@ export class VerifyCallbackRoute {
 	 * mounted only after the outcome is known. `isPending` is kept for forward
 	 * compatibility if the hook is ever made non-blocking.
 	 */
-	public async loading(_params: Params, next: RouteNode): Promise<void> {
+	public async loading(): Promise<void> {
 		this.isPending = true
 		this.outcome = undefined
 
-		const sessionId = next.queryParams.get('session_id')
-
-		if (!sessionId) {
-			this.logger.warn('Verify callback arrived without session_id param')
-			this.outcome = 'missingParam'
-			this.isPending = false
-			await this.navigateToSettings()
-			return
-		}
-
-		this.logger.info('Verify callback: finalizing Stamp session', { sessionId })
-		const outcome = await this.identity.completeFromCallback(sessionId)
+		this.logger.info('Verify callback: finalizing Stamp session')
+		const outcome = await this.identity.completeFromCallback()
 		this.outcome = outcome
 		this.isPending = false
 

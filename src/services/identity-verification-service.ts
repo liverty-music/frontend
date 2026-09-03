@@ -40,8 +40,8 @@ export type VerifyOutcome =
 export type CompleteOutcome =
 	// The session finalized successfully; the account is now IDENTITY_VERIFIED.
 	| { readonly kind: 'verified'; readonly status: MyVerificationStatus }
-	// The session_id in the callback did not match the persisted one (stale,
-	// replayed, or tampered).
+	// No verify session was in progress: nothing was persisted when the callback
+	// ran (e.g. storage was cleared, or the callback URL was opened directly).
 	| { readonly kind: 'sessionMismatch' }
 	// The backend rejected the finalization (session not yet complete, expired,
 	// signature mismatch, revoked certificate, or duplicate person id).
@@ -58,8 +58,8 @@ export type CompleteOutcome =
  *     (the browser opens the PocketSign app; the service returns immediately
  *     after initiating the navigation).
  *
- *   Leg 2 — `completeFromCallback(session_id)` (called by VerifyCallbackRoute):
- *     Validate session_id against the persisted value → CompleteVerify RPC →
+ *   Leg 2 — `completeFromCallback()` (called by VerifyCallbackRoute):
+ *     Read the session id from persisted storage → CompleteVerify RPC →
  *     update observable `status` → return CompleteOutcome for the UI.
  *
  * Registered as a `.singleton()` via `IIdentityVerificationService`, mirroring
@@ -152,29 +152,33 @@ export class IdentityVerificationService {
 
 	/**
 	 * Leg 2 of the Stamp flow: called by VerifyCallbackRoute when the PocketSign
-	 * app returns the fan to `/verify/callback?session_id=<id>`.
+	 * app returns the fan to `/verify/callback` (no query parameters — the backend
+	 * sets callbackWithSessionId=false, per the official reference flow).
 	 *
-	 * Validates the `session_id` from the URL against the persisted value (the
-	 * anti-replay check the client performs before even calling the backend),
-	 * finalizes the session via CompleteVerify, updates the observable `status`,
-	 * clears the persisted session id, and returns a `CompleteOutcome` for the
-	 * callback route to display.
+	 * Reads the session id from persisted storage (saved in leg 1 before the
+	 * redirect), finalizes the session via CompleteVerify, updates the observable
+	 * `status`, clears the persisted session id, and returns a `CompleteOutcome`
+	 * for the callback route to display.
 	 *
 	 * The persisted session id is always cleared regardless of outcome so the
 	 * callback cannot be replayed by reloading the callback URL.
 	 */
 	public async completeFromCallback(
-		callbackSessionId: string,
 		signal?: AbortSignal,
 	): Promise<CompleteOutcome> {
+		// The session id is read from OUR persisted storage, NOT from a callback
+		// query parameter. The backend creates the Stamp session with
+		// callbackWithSessionId=false (matching the official PocketSign reference
+		// implementation, which carries the session id in a cookie), so the
+		// callback URL has no `?session_id`. Reading our own persisted value also
+		// means a third party cannot substitute a different session id via the URL.
+		// Anti-replay / anti-redirect is enforced by the metadata nonce the backend
+		// compares at FinalizeSession.
 		const persistedSessionId = loadVerifySessionId()
 		clearVerifySessionId()
 
-		if (!persistedSessionId || persistedSessionId !== callbackSessionId) {
-			this.logger.warn('Verify callback session_id mismatch', {
-				callbackSessionId,
-				hasPersisted: !!persistedSessionId,
-			})
+		if (!persistedSessionId) {
+			this.logger.warn('Verify callback: no persisted session id to finalize')
 			return { kind: 'sessionMismatch' }
 		}
 
@@ -182,11 +186,11 @@ export class IdentityVerificationService {
 
 		try {
 			this.logger.info('Completing Stamp verification', {
-				sessionId: callbackSessionId,
+				sessionId: persistedSessionId,
 			})
 			const status = await this.rpcClient.completeVerify(
 				userId,
-				callbackSessionId,
+				persistedSessionId,
 				signal,
 			)
 			this.status = status
@@ -194,7 +198,7 @@ export class IdentityVerificationService {
 			return { kind: 'verified', status }
 		} catch (err) {
 			this.logger.warn('CompleteVerify failed in callback', {
-				sessionId: callbackSessionId,
+				sessionId: persistedSessionId,
 				error: err,
 			})
 			return { kind: 'verificationFailed', error: err }

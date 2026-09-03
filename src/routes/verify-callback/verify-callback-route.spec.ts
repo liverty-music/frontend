@@ -1,4 +1,3 @@
-import type { Params, RouteNode } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CompleteOutcome } from '../../services/identity-verification-service'
@@ -12,8 +11,10 @@ const mockLogger = {
 const mockRouter = { load: vi.fn(async () => {}) }
 const mockI18n = { tr: vi.fn((key: string) => key) }
 
+// completeFromCallback takes NO session id argument: the service reads it from
+// its own persisted storage (callbackWithSessionId=false → no query param).
 const mockCompleteFromCallback = vi.fn(
-	async (_sessionId: string, _signal?: AbortSignal): Promise<CompleteOutcome> =>
+	async (_signal?: AbortSignal): Promise<CompleteOutcome> =>
 		({ kind: 'sessionMismatch' }) as CompleteOutcome,
 )
 
@@ -38,22 +39,6 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-/**
- * Build a minimal RouteNode substitute with a URLSearchParams-backed
- * `queryParams` property — the only thing VerifyCallbackRoute reads.
- */
-function makeRouteNode(params: Record<string, string> = {}): RouteNode {
-	return {
-		queryParams: new URLSearchParams(params),
-	} as unknown as RouteNode
-}
-
-const noParams = makeRouteNode()
-const withSessionId = makeRouteNode({ session_id: 'sess-abc' })
-const mismatchedId = makeRouteNode({ session_id: 'sess-tampered' })
-
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 import { VerifyCallbackRoute } from './verify-callback-route'
@@ -66,21 +51,8 @@ describe('VerifyCallbackRoute', () => {
 		sut = new VerifyCallbackRoute()
 	})
 
-	describe('loading() — missing session_id param', () => {
-		it('sets outcome to missingParam and navigates to Settings', async () => {
-			await sut.loading({} as Params, noParams)
-
-			expect(sut.outcome).toBe('missingParam')
-			expect(sut.isSuccess).toBe(false)
-			expect(mockCompleteFromCallback).not.toHaveBeenCalled()
-			expect(mockRouter.load).toHaveBeenCalledWith('/settings', {
-				historyStrategy: 'replace',
-			})
-		})
-	})
-
-	describe('loading() — session present', () => {
-		it('calls completeFromCallback with the query session_id', async () => {
+	describe('loading()', () => {
+		it('finalizes via completeFromCallback() with NO argument (session id comes from persisted storage)', async () => {
 			const verifiedOutcome: CompleteOutcome = {
 				kind: 'verified',
 				status: {
@@ -97,9 +69,10 @@ describe('VerifyCallbackRoute', () => {
 			}
 			mockCompleteFromCallback.mockResolvedValueOnce(verifiedOutcome)
 
-			await sut.loading({} as Params, withSessionId)
+			await sut.loading()
 
-			expect(mockCompleteFromCallback).toHaveBeenCalledWith('sess-abc')
+			expect(mockCompleteFromCallback).toHaveBeenCalledTimes(1)
+			expect(mockCompleteFromCallback).toHaveBeenCalledWith()
 			expect(sut.outcome).toBe(verifiedOutcome)
 			expect(sut.isSuccess).toBe(true)
 			expect(sut.isPending).toBe(false)
@@ -108,11 +81,11 @@ describe('VerifyCallbackRoute', () => {
 			})
 		})
 
-		it('sets isSuccess=false and errorKey on sessionMismatch', async () => {
+		it('sets isSuccess=false and the sessionMismatch key when no session was in progress', async () => {
 			const mismatch: CompleteOutcome = { kind: 'sessionMismatch' }
 			mockCompleteFromCallback.mockResolvedValueOnce(mismatch)
 
-			await sut.loading({} as Params, mismatchedId)
+			await sut.loading()
 
 			expect(sut.isSuccess).toBe(false)
 			expect(sut.errorKey).toBe('verifyCallback.error.sessionMismatch')
@@ -123,88 +96,60 @@ describe('VerifyCallbackRoute', () => {
 
 		it('maps UNAVAILABLE ConnectError to the correct i18n key', async () => {
 			const unavailable = new ConnectError('unavailable', Code.Unavailable)
-			const failedOutcome: CompleteOutcome = {
+			mockCompleteFromCallback.mockResolvedValueOnce({
 				kind: 'verificationFailed',
 				error: unavailable,
-			}
-			mockCompleteFromCallback.mockResolvedValueOnce(failedOutcome)
+			})
 
-			await sut.loading({} as Params, withSessionId)
+			await sut.loading()
 
 			expect(sut.isSuccess).toBe(false)
 			expect(sut.errorKey).toBe('verifyCallback.error.unavailable')
 		})
 
 		it('maps FAILED_PRECONDITION to the session-not-completed key', async () => {
-			const failedPrecondition = new ConnectError(
-				'not completed',
-				Code.FailedPrecondition,
-			)
-			const failedOutcome: CompleteOutcome = {
+			mockCompleteFromCallback.mockResolvedValueOnce({
 				kind: 'verificationFailed',
-				error: failedPrecondition,
-			}
-			mockCompleteFromCallback.mockResolvedValueOnce(failedOutcome)
+				error: new ConnectError('not completed', Code.FailedPrecondition),
+			})
 
-			await sut.loading({} as Params, withSessionId)
+			await sut.loading()
 
 			expect(sut.errorKey).toBe('verifyCallback.error.notCompleted')
 		})
 
 		it('maps ALREADY_EXISTS to the already-verified key', async () => {
-			const alreadyExists = new ConnectError('exists', Code.AlreadyExists)
-			const failedOutcome: CompleteOutcome = {
+			mockCompleteFromCallback.mockResolvedValueOnce({
 				kind: 'verificationFailed',
-				error: alreadyExists,
-			}
-			mockCompleteFromCallback.mockResolvedValueOnce(failedOutcome)
+				error: new ConnectError('exists', Code.AlreadyExists),
+			})
 
-			await sut.loading({} as Params, withSessionId)
+			await sut.loading()
 
 			expect(sut.errorKey).toBe('verifyCallback.error.alreadyVerified')
 		})
 
 		it('maps PERMISSION_DENIED to the permissionDenied key (anti-replay / nonce-mismatch signal)', async () => {
-			const permissionDenied = new ConnectError(
-				'nonce mismatch',
-				Code.PermissionDenied,
-			)
-			const failedOutcome: CompleteOutcome = {
+			mockCompleteFromCallback.mockResolvedValueOnce({
 				kind: 'verificationFailed',
-				error: permissionDenied,
-			}
-			mockCompleteFromCallback.mockResolvedValueOnce(failedOutcome)
+				error: new ConnectError('nonce mismatch', Code.PermissionDenied),
+			})
 
-			await sut.loading({} as Params, withSessionId)
+			await sut.loading()
 
 			expect(sut.isSuccess).toBe(false)
 			expect(sut.errorKey).toBe('verifyCallback.error.permissionDenied')
 		})
 
 		it('maps an unknown error to the generic key', async () => {
-			const failedOutcome: CompleteOutcome = {
+			mockCompleteFromCallback.mockResolvedValueOnce({
 				kind: 'verificationFailed',
 				error: new Error('something unexpected'),
-			}
-			mockCompleteFromCallback.mockResolvedValueOnce(failedOutcome)
+			})
 
-			await sut.loading({} as Params, withSessionId)
+			await sut.loading()
 
 			expect(sut.errorKey).toBe('verifyCallback.error.generic')
-		})
-
-		it('navigates to Settings with historyStrategy replace on success', async () => {
-			const verifiedOutcome: CompleteOutcome = {
-				kind: 'verified',
-				status: { level: 'identityVerified' },
-			}
-			mockCompleteFromCallback.mockResolvedValueOnce(verifiedOutcome)
-
-			await sut.loading({} as Params, withSessionId)
-
-			expect(mockRouter.load).toHaveBeenCalledWith('/settings', {
-				historyStrategy: 'replace',
-			})
 		})
 	})
 
@@ -214,12 +159,11 @@ describe('VerifyCallbackRoute', () => {
 		})
 
 		it('returns null when isSuccess (verified outcome)', async () => {
-			const verifiedOutcome: CompleteOutcome = {
+			mockCompleteFromCallback.mockResolvedValueOnce({
 				kind: 'verified',
 				status: { level: 'identityVerified' },
-			}
-			mockCompleteFromCallback.mockResolvedValueOnce(verifiedOutcome)
-			await sut.loading({} as Params, withSessionId)
+			})
+			await sut.loading()
 
 			expect(sut.errorKey).toBeNull()
 		})
