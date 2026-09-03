@@ -55,9 +55,14 @@ describe('AuthService', () => {
 				addUserUnloaded: vi.fn(),
 			},
 		}
-		vi.mocked(UserManager).mockImplementation(
-			() => userManagerMock as unknown as UserManagerType,
-		)
+		// Vitest 4 invokes a mocked class's `mockImplementation` via `new`, so it
+		// must be a constructable function expression (arrow functions throw
+		// "is not a constructor"). Returning an object from a constructor yields
+		// that object as the instance.
+		// biome-ignore lint/complexity/useArrowFunction: must stay a constructable function expression for `new`
+		vi.mocked(UserManager).mockImplementation(function () {
+			return userManagerMock as unknown as UserManagerType
+		} as unknown as typeof UserManager)
 
 		const container = createTestContainer()
 		container.register(AuthService)

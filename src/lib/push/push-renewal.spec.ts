@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+	type ClientNotifier,
 	handlePushSubscriptionChange,
 	PUSH_SUBSCRIPTION_CHANGED_MESSAGE,
 	readVapidPublicKeyCacheFirst,
@@ -35,10 +36,13 @@ function fakeCacheStorage(seed?: Response) {
 
 function fakeClients(
 	clients: Array<{ postMessage: ReturnType<typeof vi.fn> }>,
-) {
+): ClientNotifier {
+	// Cast through unknown: Vitest 4's `vi.fn()` return type
+	// (`Mock<Procedure | Constructable>`) no longer structurally matches the
+	// `postMessage(message: unknown): void` member of ClientNotifier.
 	return {
 		matchAll: vi.fn(async () => clients),
-	}
+	} as unknown as ClientNotifier
 }
 
 describe('readVapidPublicKeyCacheFirst', () => {

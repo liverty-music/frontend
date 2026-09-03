@@ -27,15 +27,19 @@ describe('AuthService org-pinned sign-in (organizer)', () => {
 	let lastSettings: UserManagerSettings
 
 	beforeEach(() => {
-		vi.mocked(UserManager).mockImplementation(
-			(settings: UserManagerSettings) => {
-				lastSettings = settings
-				return {
-					events: { addUserLoaded: vi.fn(), addUserUnloaded: vi.fn() },
-					getUser: vi.fn().mockResolvedValue(null),
-				} as unknown as UserManagerType
-			},
-		)
+		// Vitest 4 invokes a mocked class's `mockImplementation` via `new`, so it
+		// must be a constructable function expression (arrow functions throw
+		// "is not a constructor").
+		// biome-ignore lint/complexity/useArrowFunction: must stay a constructable function expression for `new`
+		vi.mocked(UserManager).mockImplementation(function (
+			settings: UserManagerSettings,
+		) {
+			lastSettings = settings
+			return {
+				events: { addUserLoaded: vi.fn(), addUserUnloaded: vi.fn() },
+				getUser: vi.fn().mockResolvedValue(null),
+			} as unknown as UserManagerType
+		} as unknown as typeof UserManager)
 	})
 
 	function buildWith(orgId: string | undefined): IAuthService {
