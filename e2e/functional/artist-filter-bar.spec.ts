@@ -11,6 +11,24 @@ import { expect, type Page, test } from '@playwright/test'
 const tomorrow = new Date()
 tomorrow.setDate(tomorrow.getDate() + 1)
 
+// The filter trigger moved from a header button into the FAB action launcher:
+// open the FAB, then tap the filter command (which opens the sheet and closes
+// the launcher panel).
+async function openFilterSheet(page: Page): Promise<void> {
+	await page.click('fab-menu .fab-toggle')
+	await page.click('fab-menu .fab-item[data-action-id="filter"]')
+}
+
+// The active-filter indicator now lives on the launcher's filter item. Reopen
+// the FAB to read it, then dismiss the launcher again.
+async function expectFilterActive(page: Page): Promise<void> {
+	await page.click('fab-menu .fab-toggle')
+	await expect(
+		page.locator('fab-menu .fab-item[data-action-id="filter"]'),
+	).toHaveAttribute('data-active', 'true')
+	await page.keyboard.press('Escape')
+}
+
 async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
@@ -156,8 +174,8 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await page.goto('/dashboard')
 		await page.waitForLoadState('networkidle')
 
-		// Open the filter sheet
-		await page.click('button[aria-label="絞り込む"]')
+		// Open the filter sheet (via the FAB launcher)
+		await openFilterSheet(page)
 
 		// Sheet should be open with artist list
 		const sheet = page.locator('artist-filter-bar bottom-sheet')
@@ -192,7 +210,7 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await page.goto('/dashboard')
 		await page.waitForLoadState('networkidle')
 
-		await page.click('button[aria-label="絞り込む"]')
+		await openFilterSheet(page)
 		const yoasobiChip = page.locator('label.artist-chip', {
 			hasText: 'YOASOBI',
 		})
@@ -204,9 +222,8 @@ test.describe('Artist filter bar bottom sheet', () => {
 		// Confirm
 		await page.click('button.btn-confirm')
 
-		// Filter button should show active state; no chips in the header
-		const filterBtn = page.locator('button[aria-label="絞り込む"]')
-		await expect(filterBtn).toHaveAttribute('data-active', 'true')
+		// The launcher's filter item shows active state; no chips in the header
+		await expectFilterActive(page)
 		await expect(page.locator('.chip-name')).toHaveCount(0)
 	})
 
@@ -230,11 +247,10 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await page.goto('/dashboard?artists=artist-1')
 		await page.waitForLoadState('networkidle')
 
-		const filterBtn = page.locator('button[aria-label="絞り込む"]')
-		await expect(filterBtn).toHaveAttribute('data-active', 'true')
+		await expectFilterActive(page)
 
 		// Open the sheet; the deep-linked artist is pre-selected.
-		await filterBtn.click()
+		await openFilterSheet(page)
 		const yoasobiChip = page.locator('label.artist-chip', { hasText: 'YOASOBI' })
 		await expect(yoasobiChip.locator('input')).toBeChecked()
 
