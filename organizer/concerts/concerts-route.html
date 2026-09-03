@@ -86,6 +86,14 @@
         >
           Cancel
         </button>
+        <a
+          repeat.for="lottery of row.lotteryEvents"
+          load="../lottery/configure/${lottery.eventId}"
+          class="concerts-btn"
+          data-variant="secondary"
+        >
+          ${lottery.label}
+        </a>
       </div>
 
       <div
