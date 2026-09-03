@@ -164,6 +164,20 @@ describe('IdentityVerificationService', () => {
 			await expect(sut.verify('jpki')).rejects.toThrow('UNAVAILABLE')
 		})
 
+		it('does NOT persist a session id or navigate when StartVerify throws (no partial navigation)', async () => {
+			mockRpcClient.startVerify.mockRejectedValueOnce(
+				new Error('UNAVAILABLE: PocketSign not configured'),
+			)
+
+			await expect(sut.verify('jpki')).rejects.toThrow('UNAVAILABLE')
+
+			// StartVerify is awaited BEFORE saveVerifySessionId / window.location.href,
+			// so a throw must leave both untouched — the browser must not navigate to a
+			// half-built URL, and no stale session id may linger for the next attempt.
+			expect(saveVerifySessionId).not.toHaveBeenCalled()
+			expect(window.location.href).toBe('')
+		})
+
 		it('saveVerifySessionId is called BEFORE window.location.href is set (load-bearing order)', async () => {
 			// The code comment in identity-verification-service.ts states this is load-bearing:
 			// if window.location.href were set first the browser would navigate away and the
