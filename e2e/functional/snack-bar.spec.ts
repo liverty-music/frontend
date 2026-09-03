@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Page, test } from '../support/test'
 
 /**
  * E2E tests for snack-bar (renamed from snack-bar) using the Popover API.
@@ -152,7 +152,10 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		})
 		await mockRpcRoutes(page)
 		await page.goto('http://localhost:9000/dashboard')
-		await page.waitForSelector('snack-bar', { state: 'attached', timeout: 10_000 })
+		await page.waitForSelector('snack-bar', {
+			state: 'attached',
+			timeout: 10_000,
+		})
 	})
 
 	test('3 rapid toasts appear as popover-open, then auto-dismiss without zombies', async ({
@@ -308,7 +311,10 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 		test.setTimeout(30_000)
 
 		await page.goto('http://localhost:9000/dashboard')
-		await page.waitForSelector('snack-bar', { state: 'attached', timeout: 10_000 })
+		await page.waitForSelector('snack-bar', {
+			state: 'attached',
+			timeout: 10_000,
+		})
 
 		// Open a dialog programmatically to simulate a modal being open
 		await page.evaluate(() => {

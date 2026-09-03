@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Page, test } from '../support/test'
 
 /**
  * Settings push-notification toggle E2E.

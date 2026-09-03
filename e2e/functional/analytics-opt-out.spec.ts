@@ -1,5 +1,5 @@
 import { gunzipSync } from 'node:zlib'
-import { expect, type Page, type Route, test } from '@playwright/test'
+import { expect, type Page, type Route, test } from '../support/test'
 
 /**
  * E2E smoke test for the analytics OPT-OUT model (OpenSpec task 10.6).
