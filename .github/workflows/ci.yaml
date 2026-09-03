@@ -53,6 +53,7 @@ jobs:
               - '**/*.stories.*'
               - '.storybook/**'
               - 'vitest.config.ts'
+              - 'vite.config.ts'
               - 'package.json'
               - 'package-lock.json'
               - '.github/workflows/**'

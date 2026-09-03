@@ -87,6 +87,10 @@ export const DismissInvokesService = {
 			register: [ErrorBanner],
 		}),
 	play: async ({ canvasElement }) => {
+		// The spy is module-scoped (so this play can assert on it), so reset its
+		// call count first — a story replay/retry would otherwise accumulate calls
+		// and break `toHaveBeenCalledOnce`.
+		dismissService.dismiss.mockClear()
 		const canvas = within(canvasElement)
 		await userEvent.click(canvas.getByRole('button', { name: 'Dismiss' }))
 		await expect(dismissService.dismiss).toHaveBeenCalledOnce()
