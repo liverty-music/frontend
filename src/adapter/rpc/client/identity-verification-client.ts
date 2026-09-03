@@ -25,14 +25,22 @@ export interface IIdentityVerificationRpcClient
 	extends IdentityVerificationRpcClient {}
 
 /**
- * Connect client for `IdentityVerificationService` (identity-ekyc-jpki). Wraps
- * the generated proto request/response types and maps them to/from the domain
- * shapes at the boundary, mirroring `TicketJourneyRpcClient`. Auth is applied at
- * the transport, not per call.
+ * Connect client for `IdentityVerificationService` (identity-ekyc-jpki,
+ * schema v0.60.0 — PocketSign Stamp redirect flow). Wraps the generated proto
+ * request/response types and maps them to/from the domain shapes at the
+ * boundary, mirroring `TicketJourneyRpcClient`. Auth is applied at the
+ * transport, not per call.
  *
- * NOTE: the backend currently returns UNAVAILABLE for StartVerify /
- * CompleteVerify (also stubbed pending Pocket Sign onboarding — Section 0), so
- * only `getMyVerificationStatus` returns a real result (UNVERIFIED) today.
+ * v0.60.0 changes:
+ * - `startVerify` now returns `{ sessionId, redirectUrl }` (Url wrapper, not
+ *   a `challenge: Uint8Array`). The client navigates to `redirectUrl` and the
+ *   card is read in the PocketSign app — not in our app.
+ * - `completeVerify` no longer accepts a `signedResponse` (reserved field 3);
+ *   the backend finalizes by `session_id` only.
+ *
+ * NOTE: the backend returns UNAVAILABLE for StartVerify / CompleteVerify until
+ * PocketSign onboarding (Section 0) completes. `getMyVerificationStatus` works
+ * and returns UNVERIFIED for new accounts.
  */
 export class IdentityVerificationRpcClient {
 	private readonly logger = resolve(ILogger).scopeTo(
@@ -71,18 +79,19 @@ export class IdentityVerificationRpcClient {
 	}
 
 	/**
-	 * Open a verification attempt; returns the challenge (Nonce) the Pocket Sign
-	 * Verify SDK signs against the card, plus the session id echoed back on
-	 * completion.
+	 * Open a PocketSign Stamp session. Returns the session id (to persist until
+	 * the callback arrives) and the redirect URL to open in the PocketSign app.
+	 * The client MUST navigate to `redirectUrl` immediately after persisting the
+	 * `sessionId`; the card is read in the PocketSign app, not here.
 	 *
-	 * NOTE: backend-stubbed → currently rejects with UNAVAILABLE.
+	 * NOTE: backend returns UNAVAILABLE until PocketSign onboarding completes.
 	 */
 	public async startVerify(
 		userId: string,
 		method: VerificationMethod,
 		signal?: AbortSignal,
-	): Promise<{ sessionId: string; challenge: Uint8Array }> {
-		this.logger.info('Starting verification', { method })
+	): Promise<{ sessionId: string; redirectUrl: string }> {
+		this.logger.info('Starting verification (Stamp session)', { method })
 		try {
 			const response = await this.client.startVerify(
 				{
@@ -91,9 +100,15 @@ export class IdentityVerificationRpcClient {
 				},
 				{ signal },
 			)
+			const redirectUrl = response.redirectUrl?.value
+			if (!redirectUrl) {
+				throw new Error(
+					'StartVerify: server returned a StartVerifyResponse without a redirect_url',
+				)
+			}
 			return {
 				sessionId: response.sessionId,
-				challenge: response.challenge,
+				redirectUrl,
 			}
 		} catch (err) {
 			this.logger.warn('StartVerify failed', { method, error: err })
@@ -102,24 +117,24 @@ export class IdentityVerificationRpcClient {
 	}
 
 	/**
-	 * Submit the SDK-signed response for validation. On success the account
-	 * becomes IDENTITY_VERIFIED and the backing identity is returned.
+	 * Finalize the Stamp session. The backend retrieves the signed result from
+	 * Pocket Sign by `session_id` (no signed payload from the client — the card
+	 * was read in the PocketSign app). On success the account becomes
+	 * IDENTITY_VERIFIED and the backing identity is returned.
 	 *
-	 * NOTE: backend-stubbed → currently rejects with UNAVAILABLE.
+	 * NOTE: backend returns UNAVAILABLE until PocketSign onboarding completes.
 	 */
 	public async completeVerify(
 		userId: string,
 		sessionId: string,
-		signedResponse: Uint8Array,
 		signal?: AbortSignal,
 	): Promise<MyVerificationStatus> {
-		this.logger.info('Completing verification', { sessionId })
+		this.logger.info('Completing verification (Stamp finalize)', { sessionId })
 		try {
 			const response = await this.client.completeVerify(
 				{
 					userId: new UserId({ value: userId }),
 					sessionId,
-					signedResponse,
 				},
 				{ signal },
 			)

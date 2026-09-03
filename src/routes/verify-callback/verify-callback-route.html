@@ -1,0 +1,25 @@
+<import from="./verify-callback-route.css"></import>
+
+<main class="[ verify-callback ]">
+  <!-- Loading state — in-flight CompleteVerify RPC -->
+  <output if.bind="isPending" class="[ verify-loading ] [ cluster ]" aria-live="polite" aria-busy="true">
+    <loading-spinner></loading-spinner>
+    <p t="verifyCallback.loading"></p>
+  </output>
+
+  <!-- Success state -->
+  <section if.bind="!isPending && isSuccess" class="[ verify-result ] [ stack ]" aria-live="polite">
+    <svg-icon name="shield-check" class="verify-icon" data-variant="success"></svg-icon>
+    <h1 t="verifyCallback.success.heading" class="verify-heading"></h1>
+    <p t="verifyCallback.success.body" class="verify-body"></p>
+    <p t="verifyCallback.redirecting" class="verify-redirect-note"></p>
+  </section>
+
+  <!-- Error state -->
+  <section if.bind="!isPending && !isSuccess && outcome !== undefined" class="[ verify-result ] [ stack ]" aria-live="polite">
+    <svg-icon name="alert-triangle" class="verify-icon" data-variant="error"></svg-icon>
+    <h1 t="verifyCallback.error.heading" class="verify-heading"></h1>
+    <p t.bind="errorKey" class="verify-body"></p>
+    <p t="verifyCallback.redirecting" class="verify-redirect-note"></p>
+  </section>
+</main>

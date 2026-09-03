@@ -32,9 +32,10 @@ export class SettingsRoute {
 	private readonly router = resolve(IRouter)
 	private readonly audio = resolve(IAudioEngine)
 	private readonly appConfig = resolve(IAppConfig)
-	// Identity verification (identity-ekyc-jpki, task 5.1). Public so the
-	// template can bind `identity.verifyAvailable` directly (mirrors the `auth`
-	// / `consent` exposure pattern).
+	// Identity verification (identity-ekyc-jpki, Stamp flow). Public so the
+	// template can bind `identity.status` directly (mirrors the `auth` /
+	// `consent` exposure pattern). The service drives the PocketSign Stamp
+	// redirect flow — verify() redirects the browser to the PocketSign app.
 	public readonly identity = resolve(IIdentityVerificationService)
 	// Public so the template binds the opt-out toggles to the service's
 	// `@observable` state directly (`consent.analytics` /
@@ -63,13 +64,6 @@ export class SettingsRoute {
 	public sessionReplayDescExpanded = false
 
 	public resendSuccess = false
-
-	/**
-	 * Whether to show the "本人確認は近日対応予定です (verification coming soon)"
-	 * note. Set when the fan taps "verify identity" while the Pocket Sign Verify
-	 * SDK is not yet integrated (Section 0) — a friendly state, not a broken flow.
-	 */
-	public verificationComingSoon = false
 
 	/**
 	 * Whether the running platform is iOS/iPadOS. Used to gate the
@@ -171,29 +165,29 @@ export class SettingsRoute {
 	}
 
 	/**
-	 * "Verify identity" entry point (task 5.1). While the Pocket Sign Verify SDK
-	 * is pending onboarding (Section 0) this surfaces a friendly "coming soon"
-	 * note rather than starting an un-completable flow. Once the SDK lands, the
-	 * `verified` branch drives the badge update in place via the service's
-	 * observable `status`.
+	 * "Verify identity" entry point for the PocketSign Stamp flow (task 5.1,
+	 * schema v0.60.0). Calls `identity.verify()` which in turn calls StartVerify,
+	 * persists the session_id, and navigates the browser to the PocketSign app.
+	 * The browser navigates away immediately — the method does not return to the
+	 * caller after the redirect, so there is no branch to handle here beyond error
+	 * paths.
+	 *
+	 * Errors (ConnectError) from StartVerify surface as a snack notification
+	 * before the busy-on-click guard releases, mirroring the push-toggle pattern.
 	 *
 	 * TODO (identity-ekyc 5.2): where a lottery phase REQUIRES verification, an
 	 * apply-flow would prompt the fan to verify before applying — there is no
 	 * first-party apply flow in the frontend yet, so no prompt is wired here.
 	 * TODO (identity-ekyc 5.3): the 運転免許証 fallback (Verify CardInfo) picks a
-	 * method other than JPKI; no method picker is built (needs the SDK).
+	 * method other than JPKI; no method picker is built (post-MVP).
 	 */
 	public async verifyIdentity(): Promise<void> {
-		this.verificationComingSoon = false
 		const outcome = await this.identity.verify('jpki')
 		switch (outcome.kind) {
-			case 'vendorUnavailable':
-				// Friendly, expected pre-onboarding state.
-				this.verificationComingSoon = true
-				break
-			case 'verified':
-				// The observable `status` already updated the badge; nothing to do.
-				this.logger.info('Identity verified')
+			case 'redirecting':
+				// The browser is navigating to the PocketSign app. Nothing further
+				// to do in this method — the callback route handles the return leg.
+				this.logger.info('Redirecting to PocketSign for identity verification')
 				break
 			case 'notAuthenticated':
 				// Unreachable from this row (rendered authenticated-only); logged

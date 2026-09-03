@@ -1,9 +1,10 @@
 import { DI, ILogger, observable, resolve } from 'aurelia'
-import {
-	IPocketSignVerifyClient,
-	PocketSignUnavailableError,
-} from '../adapter/pocket-sign/pocket-sign-verify-client'
 import { IIdentityVerificationRpcClient } from '../adapter/rpc/client/identity-verification-client'
+import {
+	clearVerifySessionId,
+	loadVerifySessionId,
+	saveVerifySessionId,
+} from '../adapter/storage/verify-session-storage'
 import type {
 	MyVerificationStatus,
 	VerificationMethod,
@@ -20,25 +21,46 @@ export const IIdentityVerificationService =
 export interface IIdentityVerificationService
 	extends IdentityVerificationService {}
 
-/** Terminal result of a `verify()` orchestration, for the UI to branch on. */
+/**
+ * Terminal result of a `verify()` orchestration, for the settings UI and the
+ * verify-callback route to branch on.
+ */
 export type VerifyOutcome =
-	// The Pocket Sign Verify SDK is not integrated yet (Section 0) — show the
-	// friendly "coming soon" state rather than a broken flow.
-	| { readonly kind: 'vendorUnavailable' }
-	// The full challenge–response completed and the account is now verified.
-	| { readonly kind: 'verified'; readonly status: MyVerificationStatus }
+	// The full Stamp redirect was initiated; the browser is about to navigate
+	// to the PocketSign app. The caller should not expect a return value — the
+	// browser navigates away.
+	| { readonly kind: 'redirecting' }
 	// A guest (no authenticated account) cannot verify.
 	| { readonly kind: 'notAuthenticated' }
 
 /**
- * Fan-facing identity-verification service (identity-ekyc-jpki, task 5.1).
+ * Terminal result of a `completeFromCallback()` call, for the callback route
+ * to display success/failure UI before navigating back to Settings.
+ */
+export type CompleteOutcome =
+	// The session finalized successfully; the account is now IDENTITY_VERIFIED.
+	| { readonly kind: 'verified'; readonly status: MyVerificationStatus }
+	// The session_id in the callback did not match the persisted one (stale,
+	// replayed, or tampered).
+	| { readonly kind: 'sessionMismatch' }
+	// The backend rejected the finalization (session not yet complete, expired,
+	// signature mismatch, revoked certificate, or duplicate person id).
+	| { readonly kind: 'verificationFailed'; readonly error: unknown }
+
+/**
+ * Fan-facing identity-verification service (identity-ekyc-jpki, PocketSign
+ * Stamp redirect flow — schema v0.60.0).
  *
- * Orchestrates the account verification lane: it reads the caller's current
- * verification status over RPC and drives the Pocket Sign challenge–response
- * (StartVerify → SDK card-read → CompleteVerify). It owns the observable
- * `status` the settings UI binds to, and re-exports `verifyAvailable` so the UI
- * can render the "verification coming soon" state while the vendor SDK is
- * pending onboarding.
+ * This service drives the two-leg Stamp flow:
+ *
+ *   Leg 1 — `verify()`:
+ *     StartVerify RPC → persist session_id → navigate to redirectUrl
+ *     (the browser opens the PocketSign app; the service returns immediately
+ *     after initiating the navigation).
+ *
+ *   Leg 2 — `completeFromCallback(session_id)` (called by VerifyCallbackRoute):
+ *     Validate session_id against the persisted value → CompleteVerify RPC →
+ *     update observable `status` → return CompleteOutcome for the UI.
  *
  * Registered as a `.singleton()` via `IIdentityVerificationService`, mirroring
  * the other stateful services (cf. `concert-store.ts`).
@@ -48,14 +70,13 @@ export class IdentityVerificationService {
 		'IdentityVerificationService',
 	)
 	private readonly rpcClient = resolve(IIdentityVerificationRpcClient)
-	private readonly pocketSign = resolve(IPocketSignVerifyClient)
 	private readonly auth = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
 
 	/**
 	 * The caller's verification snapshot. `undefined` until first loaded. The
-	 * settings UI binds to this and to the derived getters below; direct property
-	 * mutation drives the DOM (no immutable replacement — Aurelia observes it).
+	 * settings UI binds to this; direct property mutation drives the DOM (no
+	 * immutable replacement — Aurelia observes it directly).
 	 */
 	@observable public status: MyVerificationStatus | undefined = undefined
 
@@ -63,19 +84,9 @@ export class IdentityVerificationService {
 	public loaded = false
 
 	/**
-	 * Whether the real Pocket Sign Verify SDK card-read is available. `false`
-	 * while the vendor seam is the stub (pre-onboarding), so the UI shows the
-	 * "coming soon" affordance instead of starting an un-completable flow.
-	 */
-	public get verifyAvailable(): boolean {
-		return this.pocketSign.isAvailable
-	}
-
-	/**
-	 * Load the caller's verification status. Guests have no account to verify, so
-	 * this returns an `unverified` snapshot without an RPC. On the authenticated
-	 * path only `getMyVerificationStatus` reaches the backend (StartVerify /
-	 * CompleteVerify are backend-stubbed → UNAVAILABLE today).
+	 * Load the caller's verification status. Guests have no account to verify,
+	 * so this returns an `unverified` snapshot without an RPC. On the
+	 * authenticated path only `getMyVerificationStatus` reaches the backend.
 	 */
 	public async getMyVerificationStatus(
 		signal?: AbortSignal,
@@ -94,86 +105,99 @@ export class IdentityVerificationService {
 	}
 
 	/**
-	 * Open a verification attempt for the given method. Returns the challenge
-	 * (Nonce) the Pocket Sign Verify SDK signs against the card, plus the session
-	 * id to pass back to `completeVerify`.
+	 * Leg 1 of the Stamp flow: open a Stamp session, persist the session_id for
+	 * the callback leg, and navigate the browser to the PocketSign app via the
+	 * returned redirect URL.
 	 *
-	 * NOTE: backend-stubbed → currently rejects with UNAVAILABLE; the full flow
-	 * is exercised end-to-end only after Pocket Sign onboarding (Section 0).
-	 */
-	public async startVerify(
-		method: VerificationMethod,
-		signal?: AbortSignal,
-	): Promise<{ sessionId: string; challenge: Uint8Array }> {
-		const userId = this.requireUserId()
-		return this.rpcClient.startVerify(userId, method, signal)
-	}
-
-	/**
-	 * Submit the SDK-signed response for validation. On success the account
-	 * becomes IDENTITY_VERIFIED; the returned snapshot is also written to the
-	 * observable `status` so the UI updates in place.
+	 * The method intentionally performs `window.location.href = redirectUrl` as
+	 * its last step — the browser navigates away and the function does not return
+	 * a meaningful value to its caller after that assignment. The caller (settings
+	 * route) should treat the returned `{ kind: 'redirecting' }` as a terminal
+	 * signal.
 	 *
-	 * NOTE: backend-stubbed → currently rejects with UNAVAILABLE.
-	 */
-	public async completeVerify(
-		sessionId: string,
-		signedResponse: Uint8Array,
-		signal?: AbortSignal,
-	): Promise<MyVerificationStatus> {
-		const userId = this.requireUserId()
-		const status = await this.rpcClient.completeVerify(
-			userId,
-			sessionId,
-			signedResponse,
-			signal,
-		)
-		this.status = status
-		this.loaded = true
-		return status
-	}
-
-	/**
-	 * End-to-end verification convenience for the "verify identity" button:
-	 * StartVerify → Pocket Sign SDK card-read → CompleteVerify. While the vendor
-	 * SDK is the pre-onboarding stub this short-circuits to `vendorUnavailable`
-	 * (no RPC, no broken flow); the UI renders the "coming soon" message.
+	 * NOTE: the backend returns UNAVAILABLE for StartVerify until PocketSign
+	 * onboarding (Section 0) completes. The error propagates to the caller as a
+	 * thrown ConnectError, which the settings route routes via IConnectErrorRouter.
 	 *
-	 * TODO (identity-ekyc 5.3): when `method` is `driverLicence`, this is the
-	 * 運転免許証 fallback (Verify CardInfo) path — the SDK read differs and the
-	 * resulting account is flagged weaker-dedupe. No fallback UI is built yet
-	 * (needs the SDK); wire it here once available.
+	 * TODO (identity-ekyc 5.3): when `method` is `driverLicence`, the 運転免許証
+	 * fallback (Verify CardInfo) path uses a different Stamp method selector —
+	 * no fallback UI is built yet (post-MVP); wire it here once available.
 	 */
 	public async verify(
 		method: VerificationMethod = 'jpki',
 		signal?: AbortSignal,
 	): Promise<VerifyOutcome> {
-		if (!this.currentUserId()) {
+		const userId = this.currentUserId()
+		if (!userId) {
 			return { kind: 'notAuthenticated' }
 		}
-		if (!this.pocketSign.isAvailable) {
-			// TODO: integrate Pocket Sign Verify SDK card-read after onboarding
-			// (identity-ekyc-jpki Section 0). Until then the card read cannot run,
-			// so surface the "coming soon" state instead of calling StartVerify.
-			this.logger.info('Verify requested but Pocket Sign SDK is unavailable')
-			return { kind: 'vendorUnavailable' }
+
+		this.logger.info('Starting Stamp verify session', { method })
+		const { sessionId, redirectUrl } = await this.rpcClient.startVerify(
+			userId,
+			method,
+			signal,
+		)
+
+		// Persist before navigating away — if the write fails (private Safari,
+		// sandboxed iframe) the callback will detect the mismatch and show an
+		// error rather than silently completing with an un-validated session.
+		saveVerifySessionId(sessionId)
+
+		this.logger.info('Redirecting to PocketSign app', { sessionId })
+		window.location.href = redirectUrl
+
+		return { kind: 'redirecting' }
+	}
+
+	/**
+	 * Leg 2 of the Stamp flow: called by VerifyCallbackRoute when the PocketSign
+	 * app returns the fan to `/verify/callback?session_id=<id>`.
+	 *
+	 * Validates the `session_id` from the URL against the persisted value (the
+	 * anti-replay check the client performs before even calling the backend),
+	 * finalizes the session via CompleteVerify, updates the observable `status`,
+	 * clears the persisted session id, and returns a `CompleteOutcome` for the
+	 * callback route to display.
+	 *
+	 * The persisted session id is always cleared regardless of outcome so the
+	 * callback cannot be replayed by reloading the callback URL.
+	 */
+	public async completeFromCallback(
+		callbackSessionId: string,
+		signal?: AbortSignal,
+	): Promise<CompleteOutcome> {
+		const persistedSessionId = loadVerifySessionId()
+		clearVerifySessionId()
+
+		if (!persistedSessionId || persistedSessionId !== callbackSessionId) {
+			this.logger.warn('Verify callback session_id mismatch', {
+				callbackSessionId,
+				hasPersisted: !!persistedSessionId,
+			})
+			return { kind: 'sessionMismatch' }
 		}
 
+		const userId = this.requireUserId()
+
 		try {
-			const { sessionId, challenge } = await this.startVerify(method, signal)
-			const signedResponse = await this.pocketSign.readCard(method, challenge)
-			const status = await this.completeVerify(
-				sessionId,
-				signedResponse,
+			this.logger.info('Completing Stamp verification', {
+				sessionId: callbackSessionId,
+			})
+			const status = await this.rpcClient.completeVerify(
+				userId,
+				callbackSessionId,
 				signal,
 			)
+			this.status = status
+			this.loaded = true
 			return { kind: 'verified', status }
 		} catch (err) {
-			if (err instanceof PocketSignUnavailableError) {
-				// The stub (or a future unusable runtime) rejected the card read.
-				return { kind: 'vendorUnavailable' }
-			}
-			throw err
+			this.logger.warn('CompleteVerify failed in callback', {
+				sessionId: callbackSessionId,
+				error: err,
+			})
+			return { kind: 'verificationFailed', error: err }
 		}
 	}
 
@@ -186,7 +210,7 @@ export class IdentityVerificationService {
 		const userId = this.currentUserId()
 		if (!userId) {
 			throw new Error(
-				'Cannot verify identity without an authenticated user account',
+				'Cannot complete identity verification without an authenticated user account',
 			)
 		}
 		return userId

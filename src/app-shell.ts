@@ -66,6 +66,15 @@ import { IPwaInstallService } from './services/pwa-install-service'
 			component: import('./routes/settings/settings-route'),
 			title: 'Settings',
 		},
+		// PocketSign Stamp callback (identity-ekyc-jpki, Stamp redirect flow).
+		// The PocketSign app returns here after the fan reads their card. Auth is
+		// required: the fan must be authenticated when they return from the app.
+		// No `data: { auth: false }` — the AuthHook guards this route.
+		{
+			path: 'verify/callback',
+			component: import('./routes/verify-callback/verify-callback-route'),
+			title: 'Identity Verification',
+		},
 		{
 			path: 'import/ticket-email',
 			component: import(
