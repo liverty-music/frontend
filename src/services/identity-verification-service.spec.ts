@@ -196,10 +196,12 @@ describe('IdentityVerificationService', () => {
 	})
 
 	describe('completeFromCallback (Stamp finalize — leg 2)', () => {
-		it('validates session_id, calls CompleteVerify, updates status, and returns verified', async () => {
+		it('finalizes with the PERSISTED session_id (no query param), updates status, and returns verified', async () => {
 			vi.mocked(loadVerifySessionId).mockReturnValue('sess-1')
 
-			const outcome = await sut.completeFromCallback('sess-1')
+			// No argument: the session id comes from persisted storage, matching the
+			// official flow (callbackWithSessionId=false → the callback URL has none).
+			const outcome = await sut.completeFromCallback()
 
 			expect(clearVerifySessionId).toHaveBeenCalled()
 			expect(mockRpcClient.completeVerify).toHaveBeenCalledWith(
@@ -215,22 +217,13 @@ describe('IdentityVerificationService', () => {
 			expect(sut.loaded).toBe(true)
 		})
 
-		it('returns sessionMismatch when the callback session_id differs from persisted', async () => {
-			vi.mocked(loadVerifySessionId).mockReturnValue('sess-ORIGINAL')
+		it('returns sessionMismatch and does NOT call CompleteVerify when no session_id is persisted', async () => {
+			vi.mocked(loadVerifySessionId).mockReturnValue(null)
 
-			const outcome = await sut.completeFromCallback('sess-TAMPERED')
+			const outcome = await sut.completeFromCallback()
 
 			expect(clearVerifySessionId).toHaveBeenCalled()
 			expect(mockRpcClient.completeVerify).not.toHaveBeenCalled()
-			expect(outcome.kind).toBe('sessionMismatch')
-		})
-
-		it('returns sessionMismatch when no session_id is persisted (e.g. storage unavailable)', async () => {
-			vi.mocked(loadVerifySessionId).mockReturnValue(null)
-
-			const outcome = await sut.completeFromCallback('sess-1')
-
-			expect(clearVerifySessionId).toHaveBeenCalled()
 			expect(outcome.kind).toBe('sessionMismatch')
 		})
 
@@ -240,7 +233,7 @@ describe('IdentityVerificationService', () => {
 				new Error('FAILED_PRECONDITION'),
 			)
 
-			const outcome = await sut.completeFromCallback('sess-1')
+			const outcome = await sut.completeFromCallback()
 
 			expect(clearVerifySessionId).toHaveBeenCalled()
 			expect(outcome.kind).toBe('verificationFailed')
@@ -251,7 +244,7 @@ describe('IdentityVerificationService', () => {
 			const rpcError = new Error('FAILED_PRECONDITION: session expired')
 			mockRpcClient.completeVerify.mockRejectedValueOnce(rpcError)
 
-			const outcome = await sut.completeFromCallback('sess-9')
+			const outcome = await sut.completeFromCallback()
 
 			expect(outcome.kind).toBe('verificationFailed')
 			if (outcome.kind === 'verificationFailed') {
