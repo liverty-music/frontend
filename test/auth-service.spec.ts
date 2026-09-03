@@ -6,14 +6,14 @@ import {
 } from 'oidc-client-ts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+	RETURN_TO_KEY,
+	RETURN_TO_TTL_MS,
+} from '../shared/services/auth-service'
+import {
 	AuthService,
 	IAuthService,
 	resolveAuthFlow,
 } from '../src/services/auth-service'
-import {
-	RETURN_TO_KEY,
-	RETURN_TO_TTL_MS,
-} from '../shared/services/auth-service'
 import { createTestContainer } from './helpers/create-container'
 
 const nowSec = () => Math.floor(Date.now() / 1000)

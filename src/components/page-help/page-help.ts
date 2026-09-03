@@ -36,10 +36,6 @@ export class PageHelp {
 		this.isOpen = true
 	}
 
-	public onHelpTap(): void {
-		this.isOpen = true
-	}
-
 	public onSheetClosed(): void {
 		this.isOpen = false
 	}

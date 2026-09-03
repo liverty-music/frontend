@@ -3,18 +3,13 @@
 <!-- Header always renders so the page identity is preserved across loading
      / empty / populated states. The hype-table column headers below carry
      their own labels, so duplication isn't a concern. -->
-<page-header title-key="nav.myArtists">
-  <!-- Edit toggle: visible only in the populated state (nothing to edit otherwise). -->
-  <button
-    if.bind="!isLoading && artists.length > 0"
-    type="button"
-    class="edit-toggle"
-    aria-pressed.bind="editing"
-    t.bind="editing ? 'myArtists.done' : 'myArtists.edit'"
-    click.trigger="toggleEditing()"
-  ></button>
-  <page-help page="my-artists"></page-help>
-</page-header>
+<!-- Header is title-only: the edit toggle moved to the FAB action launcher
+     (the top-right header is the thumb "dead zone" this feature eliminates). -->
+<page-header title-key="nav.myArtists"></page-header>
+
+<!-- Help sheet + edit toggle both live in the FAB launcher now; page-help
+     renders sheet-only and is opened via its ref. -->
+<page-help component.ref="pageHelp" page="my-artists"></page-help>
 
 <main>
   <!-- Loading state -->
@@ -37,7 +32,7 @@
   </state-placeholder>
 
   <!-- Artist hype table -->
-  <fieldset if.bind="!isLoading && artists.length > 0" class="artists-fieldset">
+  <fieldset if.bind="!isLoading && artists.length > 0" class="artists-fieldset" data-editing.bind="editing">
     <legend class="[ visually-hidden ]" t="nav.myArtists"></legend>
     <table class="artists-table">
       <thead>
@@ -105,11 +100,22 @@
   </fieldset>
 </main>
 
+<!-- Edit-mode action bar: fixed just above the bottom nav, thumb-reachable. The
+     FAB is hidden while editing, so this is the sole (and unambiguous) exit.
+     Shown only in edit mode. -->
+<div if.bind="editing" class="edit-action-bar" role="toolbar" aria-label="編集">
+  <button type="button" class="edit-done-btn" click.trigger="toggleEditing()">
+    <svg-icon name="check" size="sm" aria-hidden="true"></svg-icon>
+    <span t="myArtists.done"></span>
+  </button>
+</div>
+
 <!-- Signup prompt banner — non-dismissable; visible whenever the user is a guest.
-     Per signup-prompt-banner capability spec, the dismiss button is removed
-     entirely and visibility is host-controlled by `showSignupBanner`. -->
+     Suppressed during edit so it doesn't compete with the Done bar for the
+     bottom band. Per spec the dismiss button is removed; visibility is
+     host-controlled by `showSignupBanner`. -->
 <signup-prompt-banner
-  visible.bind="showSignupBanner && !isAuthenticated"
+  visible.bind="showSignupBanner && !isAuthenticated && !editing"
   message.bind="i18n.tr('myArtists.signupBanner.message')"
   signup-requested.trigger="onSignupRequested()">
 </signup-prompt-banner>

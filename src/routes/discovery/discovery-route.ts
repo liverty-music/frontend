@@ -1,6 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
+import type { PageHelp } from '../../components/page-help/page-help'
 import { Snack } from '../../components/snack-bar/snack'
 import {
 	DASHBOARD_CONCERT_TARGET,
@@ -15,6 +16,7 @@ import { IArtistBubbleStore } from '../../services/artist-bubble-store'
 import { IArtistStore } from '../../services/artist-store'
 import { ICoachMarkService } from '../../services/coach-mark-service'
 import { IConcertStore } from '../../services/concert-store'
+import { helpAction, IFabMenuService } from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
@@ -31,10 +33,16 @@ export class DiscoveryRoute {
 	private readonly concertService = resolve(IConcertStore)
 	private readonly analytics = resolve(IAnalyticsService)
 	private readonly resumeRevalidator = resolve(IResumeRevalidator)
+	private readonly fabMenu = resolve(IFabMenuService)
 	private readonly logger = resolve(ILogger).scopeTo('DiscoveryRoute')
 	public readonly i18n = resolve(I18N)
 
 	public dnaOrbCanvas!: DnaOrbCanvas
+
+	/** Help sheet ref; its trigger lives in the FAB launcher. */
+	public pageHelp: PageHelp | undefined
+	/** Disposer for this route's contributed FAB actions. */
+	private fabDisposer: (() => void) | null = null
 
 	private abortController = new AbortController()
 	private dashboardCoachMarkShown = false
@@ -177,12 +185,18 @@ export class DiscoveryRoute {
 	public attached(): void {
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
 		this.resumeRevalidator.register(this.revalidate)
+		// Contribute the help action to the FAB launcher (this page has help).
+		this.fabDisposer = this.fabMenu.register(this, [
+			helpAction(() => this.pageHelp?.open()),
+		])
 	}
 
 	public detaching(): void {
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		this.resumeRevalidator.unregister(this.revalidate)
+		this.fabDisposer?.()
+		this.fabDisposer = null
 		this.search.dispose()
 		this.coachMark.deactivate()
 	}

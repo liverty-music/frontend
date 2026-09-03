@@ -1,18 +1,9 @@
 <import from="./artist-filter-bar.css"></import>
 <import from="../bottom-sheet/bottom-sheet"></import>
 
-<!-- Filter trigger button (always visible) -->
-<button
-  type="button"
-  class="filter-trigger"
-  click.trigger="openSheet()"
-  aria-label="絞り込む"
-  data-active.bind="isFilterActive"
->
-  <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16">
-    <path d="M3 6h18M7 12h10M11 18h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </svg>
-</button>
+<!-- The filter trigger moved to the FAB action launcher; this component now
+     renders only its bottom sheet, opened via openSheet(). The sheet and its
+     dashboard-owned bindings are unchanged. See dashboard-artist-filter spec. -->
 
 <!-- Filter bottom sheet -->
 <!-- sheet-closed keeps isSheetOpen in sync when user swipes/clicks outside -->

@@ -24,6 +24,7 @@ import { ArtistFilterBar } from './components/artist-filter-bar/artist-filter-ba
 import { BottomNavBar } from './components/bottom-nav-bar/bottom-nav-bar'
 import { BottomSheet } from './components/bottom-sheet/bottom-sheet'
 import { CelebrationOverlay } from './components/celebration-overlay/celebration-overlay'
+import { FabMenu } from './components/fab-menu/fab-menu'
 import { InlineError } from './components/inline-error/inline-error'
 import { LegalDocument } from './components/legal-document/legal-document'
 import { ConcertHighway } from './components/live-highway/concert-highway'
@@ -76,6 +77,7 @@ import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
 import { IConcertStore } from './services/concert-store'
 import { IErrorBoundaryService } from './services/error-boundary-service'
+import { IFabMenuService } from './services/fab-menu-service'
 import { FollowReconcileTask } from './services/follow-reconcile-task'
 import { IFollowStore } from './services/follow-store'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
@@ -251,6 +253,7 @@ async function bootstrap(): Promise<void> {
 	au.register(ITicketJourneyStore)
 	au.register(IIdentityVerificationService)
 	au.register(IResumeRevalidator)
+	au.register(IFabMenuService)
 	au.register(ITicketEmailService)
 	au.register(IArtistRpcClient)
 	au.register(IConcertRpcClient)
@@ -268,6 +271,7 @@ async function bootstrap(): Promise<void> {
 	au.register(ConcertHighway)
 	au.register(EventCard)
 	au.register(EventDetailSheet)
+	au.register(FabMenu)
 	au.register(InlineError)
 	au.register(NotificationMockCard)
 	au.register(LegalDocument)

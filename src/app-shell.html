@@ -3,6 +3,7 @@
 <import from="./components/notification-prompt/notification-prompt"></import>
 <import from="./components/snack-bar/snack-bar"></import>
 <import from="./components/coach-mark/coach-mark"></import>
+<import from="./components/fab-menu/fab-menu"></import>
 
 <au-viewport></au-viewport>
 
@@ -19,6 +20,10 @@
 <notification-prompt if.bind="auth.isAuthenticated && onboarding.isCompleted && showNav"></notification-prompt>
 <snack-bar></snack-bar>
 <error-banner></error-banner>
+
+<!-- Global FAB action launcher (top layer). Shown only with the bottom nav and
+     only when the current route has contributed at least one action. -->
+<fab-menu if.bind="showNav && fabMenu.actions.length"></fab-menu>
 
 <!-- Onboarding coach mark: single instance driven by CoachMarkService -->
 <coach-mark

@@ -1,0 +1,328 @@
+@layer block {
+	@scope (fab-menu) {
+		:scope {
+			/* Float clear of the bottom nav AND any persistent bottom CTA banner
+			   (e.g. the guest signup-prompt-banner, which publishes its rendered
+			   height as --bottom-banner-height). No hard-coded pixel constant
+			   (design D7); the banner term is 0 when absent. --space-m (not -s)
+			   lifts the FAB into a more comfortable thumb-reach zone. */
+			--_fab-bottom: calc(
+				var(--bottom-nav-height, 3.5rem) +
+				env(safe-area-inset-bottom) +
+				var(--bottom-banner-height, 0px) +
+				var(--space-m)
+			);
+
+			/* Near-instant duration for the reduced-motion fallback (lands the end
+			   state without overshoot; not 0 so transition-dependent logic settles).
+			   Matches the bottom-sheet / toast convention. */
+			--_duration-reduced: 0.01ms;
+		}
+
+		/* ── Collapsed FAB (the hero moment) ── */
+		.fab-toggle {
+			isolation: isolate;
+			position: fixed;
+			inset-block: auto;
+			inset-block-end: var(--_fab-bottom);
+			inset-inline: auto var(--fab-inset);
+
+			display: grid;
+			place-items: center;
+
+			inline-size: var(--fab-size);
+			block-size: var(--fab-size);
+
+			/* Reset the popover UA box (inset:0 + margin:auto centers it). */
+			margin: 0;
+			padding: 0;
+			border: none;
+			border-radius: var(--fab-radius-collapsed);
+
+			color: var(--md-color-on-primary-container);
+
+			background: var(--md-color-primary-container);
+			box-shadow: var(--shadow-card-glow);
+
+			/* Spatial spring on the press cue (transform = spatial family). */
+			transition: transform var(--md-spring-spatial-fast-duration)
+				var(--md-spring-spatial-fast);
+		}
+
+		/* Left-handed: mirror to the bottom-left corner (logical inset swap). */
+		.fab-toggle[data-handed="left"] {
+			inset-inline: var(--fab-inset) auto;
+		}
+
+		.fab-toggle:active {
+			transform: scale(0.92);
+		}
+
+		/* M3 state layer: on-color overlay composited over the fill. */
+		.fab-toggle::after {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			border-radius: inherit;
+
+			opacity: 0;
+			background: var(--md-color-on-primary-container);
+
+			transition: opacity var(--md-spring-effects-duration)
+				var(--md-spring-effects);
+		}
+
+		.fab-toggle:hover::after {
+			opacity: var(--fab-state-hover);
+		}
+
+		.fab-toggle:focus-visible::after {
+			opacity: var(--fab-state-focus);
+		}
+
+		.fab-toggle:active::after {
+			opacity: var(--fab-state-pressed);
+		}
+
+		/* `+` rotates 45° into `×` on open (spatial-fast spring). */
+		.fab-glyph {
+			display: grid;
+			place-items: center;
+			transition: transform var(--md-spring-spatial-fast-duration)
+				var(--md-spring-spatial-fast);
+		}
+
+		.fab-glyph[data-open="true"] {
+			transform: rotate(45deg);
+		}
+
+		/* ── Expanded menu (top-layer popover) ──
+		   Per the M3 FAB Menu, the menu is NOT one shared surface — each action is
+		   its own elevated pill (see .fab-item). This popover is only a transparent
+		   layout container positioning the pills above the FAB: no background,
+		   border, or shadow of its own. */
+		.fab-panel {
+			position: fixed;
+			inset-block: auto;
+			inset-block-end: calc(
+				var(--_fab-bottom) +
+				var(--fab-size) +
+				var(--space-2xs)
+			);
+			inset-inline: auto var(--fab-inset);
+
+			/* Pills carry their own shadow — never clip it. */
+			overflow: visible;
+
+			max-inline-size: calc(100vi - 2 * var(--fab-inset));
+			margin: 0;
+			padding: 0;
+			border: none;
+
+			color: var(--color-text-primary);
+
+			/* Closed / exit state (base). Fades in at its final size (opacity only,
+			   no scale/move — a scale grow would jitter the pills as it settles); the
+			   "emerging" feel comes from the FAB glyph rotate, the scrim, and the
+			   staggered per-pill fade. display/overlay animate discretely so it stays
+			   in the top layer through its exit. */
+			opacity: 0;
+			background: transparent;
+
+			transition:
+				opacity var(--md-spring-effects-duration) var(--md-spring-effects),
+				display var(--md-spring-effects-duration) allow-discrete,
+				overlay var(--md-spring-effects-duration) allow-discrete;
+		}
+
+		.fab-panel[data-handed="left"] {
+			inset-inline: var(--fab-inset) auto;
+		}
+
+		.fab-panel:popover-open {
+			opacity: 1;
+
+			@starting-style {
+				opacity: 0;
+			}
+		}
+
+		/* Animated scrim behind the open panel (communicates the dismiss region). */
+		.fab-panel::backdrop {
+			background: transparent;
+			transition:
+				background var(--md-spring-effects-duration) var(--md-spring-effects),
+				display var(--md-spring-effects-duration) allow-discrete,
+				overlay var(--md-spring-effects-duration) allow-discrete;
+		}
+
+		.fab-panel:popover-open::backdrop {
+			background: var(--md-color-scrim);
+
+			@starting-style {
+				background: transparent;
+			}
+		}
+
+		.fab-list {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+
+			/* Pills size to their content and align to the FAB edge (right-handed →
+			   right; mirrored for left-handed), stacking above the FAB. */
+			align-items: flex-end;
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+		}
+
+		.fab-panel[data-handed="left"] .fab-list {
+			align-items: flex-start;
+		}
+
+		/* Items fade in in a short staggered sequence on open — OPACITY only, no
+		   movement, matching the official M3 menu (md-menu items animate opacity,
+		   not transform; a translate here made the icons visibly settle/bounce
+		   after the panel appeared). Per-item delay via :nth-child steps (~40ms
+		   apart). Explicit steps cover up to 6 items — comfortably above the
+		   ~4-action design ceiling; a 7th+ item enters with no extra delay
+		   (acceptable degradation, not a break). */
+		.fab-list-item {
+			opacity: 0;
+			transition: opacity var(--md-spring-effects-duration)
+				var(--md-spring-effects);
+		}
+
+		.fab-panel:popover-open .fab-list-item {
+			opacity: 1;
+
+			@starting-style {
+				opacity: 0;
+			}
+		}
+
+		.fab-panel:popover-open .fab-list-item:nth-child(1) {
+			transition-delay: 0ms;
+		}
+
+		.fab-panel:popover-open .fab-list-item:nth-child(2) {
+			transition-delay: 40ms;
+		}
+
+		.fab-panel:popover-open .fab-list-item:nth-child(3) {
+			transition-delay: 80ms;
+		}
+
+		.fab-panel:popover-open .fab-list-item:nth-child(4) {
+			transition-delay: 120ms;
+		}
+
+		.fab-panel:popover-open .fab-list-item:nth-child(5) {
+			transition-delay: 160ms;
+		}
+
+		.fab-panel:popover-open .fab-list-item:nth-child(6) {
+			transition-delay: 200ms;
+		}
+
+		/* Each action is an individual elevated pill (M3 FAB Menu item): fully
+		   rounded, its own raised surface + shadow, sized to its content, with a
+		   leading icon and label. */
+		.fab-item {
+			cursor: pointer;
+
+			isolation: isolate;
+			position: relative;
+
+			display: inline-flex;
+			gap: var(--space-2xs);
+			align-items: center;
+
+			/* Pill sized to content; 56px height per the M3 menu item spec. */
+			inline-size: fit-content;
+			min-block-size: 3.5rem;
+			padding-inline: var(--space-s);
+			border: none;
+			border-radius: var(--radius-full);
+
+			font-family: var(--font-body);
+			font-size: var(--step--1);
+			font-weight: 500;
+			color: var(--color-text-primary);
+			text-align: start;
+			white-space: nowrap;
+
+			background: var(--md-color-menu-surface);
+			box-shadow: var(--shadow-soft);
+		}
+
+		.fab-item-icon {
+			flex-shrink: 0;
+		}
+
+		.fab-item-label {
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		/* State layer over the item's on-color (currentColor adapts to the selected
+		   pill's on-primary-container ink). */
+		.fab-item::after {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			border-radius: inherit;
+
+			opacity: 0;
+			background: currentcolor;
+
+			transition: opacity var(--md-spring-effects-duration)
+				var(--md-spring-effects);
+		}
+
+		.fab-item:hover::after {
+			opacity: var(--fab-state-hover);
+		}
+
+		.fab-item:focus-visible::after {
+			opacity: var(--fab-state-focus);
+		}
+
+		.fab-item:active::after {
+			opacity: var(--fab-state-pressed);
+		}
+
+		/* Selected/active pill = filled brand container (the M3 "on" treatment).
+		   Covers the beam toggle (aria-pressed) and the filter command (data-active). */
+		.fab-item[aria-pressed="true"],
+		.fab-item[data-active="true"] {
+			color: var(--md-color-on-primary-container);
+			background: var(--md-color-primary-container);
+		}
+
+		/* Reduced motion: land the end state near-instantly — no overshoot, no
+		   stagger. Keep the scrim (its fade collapses to ~instant). Near-instant
+		   (not `none`) so any transition-dependent logic still settles. */
+		@media (prefers-reduced-motion: reduce) {
+			.fab-toggle,
+			.fab-glyph,
+			.fab-panel,
+			.fab-panel::backdrop,
+			.fab-list-item,
+			.fab-item::after,
+			.fab-toggle::after {
+				transition-delay: 0ms;
+				transition-duration: var(--_duration-reduced);
+			}
+		}
+	}
+}

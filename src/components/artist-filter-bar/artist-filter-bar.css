@@ -5,44 +5,8 @@
 			display: contents;
 		}
 
-		/* ── Filter trigger ── */
-		.filter-trigger {
-			cursor: pointer;
-
-			display: flex;
-			align-items: center;
-			justify-content: center;
-
-			padding: var(--space-3xs) var(--space-2xs);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-full);
-
-			color: var(--color-text-muted);
-
-			background: transparent;
-
-			transition:
-				color var(--transition-fast),
-				border-color var(--transition-fast);
-
-			&[data-active="true"] {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 40%,
-					transparent
-				);
-				color: var(--color-brand-primary);
-			}
-
-			&:hover {
-				color: var(--color-text-secondary);
-			}
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
-		}
+		/* The filter trigger moved to the FAB action launcher; only the bottom
+		   sheet styles remain here. */
 
 		/* ── Bottom sheet content ── */
 		.filter-sheet-content {

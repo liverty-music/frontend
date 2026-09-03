@@ -324,7 +324,9 @@
 			"body": "Use your favorites and notifications on any device"
 		},
 		"version": "Version",
-		"copyVersionSuccess": "Version copied"
+		"copyVersionSuccess": "Version copied",
+		"leftHanded": "Left-handed mode",
+		"leftHandedDesc": "Place the action button in the bottom-left corner"
 	},
 	"onboarding": {
 		"consent": {
@@ -623,5 +625,14 @@
 			"following": "Following"
 		},
 		"modeTitle": "All Nearby"
+	},
+	"fabMenu": {
+		"toggleAriaLabel": "Actions",
+		"panelAriaLabel": "Actions",
+		"beam": "Laser effect",
+		"filter": "Filter concerts",
+		"help": "Help",
+		"leftHanded": "Left-handed mode",
+		"leftHandedDesc": "Place the action button in the bottom-left corner"
 	}
 }

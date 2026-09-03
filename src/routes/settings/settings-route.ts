@@ -17,6 +17,7 @@ import {
 } from '../../lib/consent/consent-service'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
+import { IFabMenuService } from '../../services/fab-menu-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
@@ -42,6 +43,10 @@ export class SettingsRoute {
 	// `consent.sessionReplay`) — no component-local mirror. Mirrors the
 	// `auth` exposure pattern. Both default ON under the opt-out model.
 	public readonly consent = resolve(IConsentService)
+	// Public so the left-handed-mode toggle binds the launcher placement
+	// (`fabMenu.isLeftHanded`) directly; toggleHanded() persists via the storage
+	// adapter (mirrors the consent/auth exposure pattern).
+	public readonly fabMenu = resolve(IFabMenuService)
 
 	public soundEnabled = !this.audio.muted
 	public soundVolume = Math.round(this.audio.volume * 100)

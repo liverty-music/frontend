@@ -324,7 +324,9 @@
 			"body": "お気に入りと通知を、どの端末でもそのまま使えます"
 		},
 		"version": "バージョン",
-		"copyVersionSuccess": "バージョン情報をコピーしました"
+		"copyVersionSuccess": "バージョン情報をコピーしました",
+		"leftHanded": "左利きモード",
+		"leftHandedDesc": "アクションボタンを左下に配置します"
 	},
 	"onboarding": {
 		"consent": {
@@ -623,5 +625,14 @@
 			"following": "フォロー中"
 		},
 		"modeTitle": "近くのライブ"
+	},
+	"fabMenu": {
+		"toggleAriaLabel": "アクションメニュー",
+		"panelAriaLabel": "アクション",
+		"beam": "レーザー演出切り替え",
+		"filter": "コンサート一覧の絞り込み",
+		"help": "ヘルプ",
+		"leftHanded": "左利きモード",
+		"leftHandedDesc": "アクションボタンを左下に配置します"
 	}
 }

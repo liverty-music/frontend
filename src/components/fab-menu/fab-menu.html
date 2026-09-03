@@ -1,0 +1,56 @@
+<import from="./fab-menu.css"></import>
+
+<!-- Collapsed FAB: a disclosure button (aria-expanded + aria-controls), NOT an
+     ARIA menu. It is itself a manual popover (shown on attach) so it floats in
+     the top layer, and controls the panel via popovertarget so the browser
+     handles the open/close toggle natively (no invoker double-fire). -->
+<button
+  ref="fabButton"
+  type="button"
+  class="fab-toggle"
+  popover="manual"
+  popovertarget="fab-menu-panel"
+  popovertargetaction="toggle"
+  data-handed.bind="fabMenu.handed"
+  aria-controls="fab-menu-panel"
+  aria-expanded.bind="isOpen"
+  t="[aria-label]fabMenu.toggleAriaLabel"
+>
+  <span class="fab-glyph" data-open.bind="isOpen" aria-hidden="true">
+    <svg-icon name="plus" size="md"></svg-icon>
+  </span>
+</button>
+
+<!-- Expanded panel: top-layer auto popover, a role="group" of plain buttons
+     (disclosure, not menu). Uses a dialog element (project lint requires popovers
+     to be dialogs, not divs); the popover="auto" attribute governs behavior
+     (light-dismiss + Esc), not modal dialog semantics, and role="group" keeps the
+     disclosure contract. Each item is icon + text label (labels mandatory);
+     toggle items carry aria-pressed, command/active items carry data-active. -->
+<dialog
+  ref="panel"
+  id="fab-menu-panel"
+  popover="auto"
+  role="group"
+  class="fab-panel"
+  data-handed.bind="fabMenu.handed"
+  t="[aria-label]fabMenu.panelAriaLabel"
+  toggle.trigger="onPanelToggle($event)"
+>
+  <ul class="fab-list">
+    <li repeat.for="action of fabMenu.actions" key.bind="action.id" class="fab-list-item">
+      <button
+        type="button"
+        class="fab-item"
+        data-action-id.bind="action.id"
+        data-kind.bind="action.kind"
+        data-active.bind="isActive(action) & signal:'fab-menu:state'"
+        aria-pressed.bind="(action.kind === 'toggle' ? isPressed(action) : null) & signal:'fab-menu:state'"
+        click.trigger="onAction(action)"
+      >
+        <svg-icon name.bind="action.icon" size="md" class="fab-item-icon"></svg-icon>
+        <span class="fab-item-label" t.bind="action.labelKey"></span>
+      </button>
+    </li>
+  </ul>
+</dialog>

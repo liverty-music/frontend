@@ -9,11 +9,13 @@ import type {
 	DateRangeSheet,
 	RangeChangedDetail,
 } from '../../components/all-nearby/date-range-sheet'
+import type { ArtistFilterBar } from '../../components/artist-filter-bar/artist-filter-bar'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
 	DateGroup,
 	LiveEvent,
 } from '../../components/live-highway/live-event'
+import type { PageHelp } from '../../components/page-help/page-help'
 import { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
@@ -33,6 +35,11 @@ import {
 } from '../../lib/plain-date'
 import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
+import {
+	type FabAction,
+	helpAction,
+	IFabMenuService,
+} from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IPromptCoordinator } from '../../services/prompt-coordinator'
@@ -45,6 +52,8 @@ export type ViewMode = 'timetable' | 'allNearby'
 
 export class DashboardRoute {
 	public dateGroups: DateGroup[] = []
+	/** Beam-effect state; @observable so the FAB toggle item reflects it live. */
+	@observable public showBeams = false
 	@observable public filteredArtistIds: string[] = []
 	@observable public filteredStatuses: JourneyStatus[] = []
 	/**
@@ -54,7 +63,6 @@ export class DashboardRoute {
 	 * artist/journey facets (client-side narrowing), changing this re-fetches.
 	 */
 	@observable public fromDate: CalendarDate = todayCalendarDate()
-	public showBeams = false
 	public needsRegion = false
 	public isLoading = false
 	// Readiness latch flipped true by loadData() once a successful (non-abort)
@@ -78,6 +86,12 @@ export class DashboardRoute {
 	public detailSheet: EventDetailSheet | undefined
 	public areaSelector: UserHomeSelector | undefined
 	public dateSheet: DateRangeSheet | undefined
+	// The filter + help surfaces stay owned by the dashboard (their sheets and
+	// bindings are unchanged); only their triggers moved into the FAB launcher.
+	public filterBar: ArtistFilterBar | undefined
+	public pageHelp: PageHelp | undefined
+	/** Disposer for this route's contributed FAB actions; released in detaching(). */
+	private fabDisposer: (() => void) | null = null
 
 	/**
 	 * Concert id from a `/concerts/:id` deep-link, pending resolution against the
@@ -134,6 +148,7 @@ export class DashboardRoute {
 	public readonly i18n = resolve(I18N)
 	private readonly authService = resolve(IAuthService)
 	private readonly concertService = resolve(IConcertStore)
+	private readonly fabMenu = resolve(IFabMenuService)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly journeyStore = resolve(ITicketJourneyStore)
 	private readonly onboarding = resolve(IOnboardingService)
@@ -304,6 +319,76 @@ export class DashboardRoute {
 			StorageKeys.beamsEnabled,
 			this.showBeams ? 'true' : 'false',
 		)
+	}
+
+	/**
+	 * Build this route's FAB launcher action set for the current context. Order
+	 * is DOM top→bottom (the panel expands upward, so the last item sits closest
+	 * to the thumb): help, mode-swap, filter, beam (design D3). The beam toggle
+	 * and the filter/mode commands are only present in My Timetable and outside
+	 * onboarding — mirroring the header gating they replace.
+	 */
+	private buildFabActions(): FabAction[] {
+		// Order is DOM top→bottom (the panel expands upward, so the last item sits
+		// closest to the thumb): help, mode-swap, filter, beam (design D3).
+		const actions: FabAction[] = [helpAction(() => this.pageHelp?.open())]
+
+		// Mode swap: available in both views (names the destination).
+		actions.push({
+			id: 'mode-swap',
+			// Names the OTHER view (the destination); recomputed on re-register.
+			labelKey: this.swapLabelKey,
+			icon: 'swap',
+			kind: 'command',
+			// Highlight while All Nearby is active (parity with the old header pill).
+			isOn: () => this.isAllNearby,
+			invoke: () => this.toggleMode(),
+		})
+
+		// Filter + beam are My Timetable-only (per the beam/filter specs). Only the
+		// FILTER is additionally suppressed during onboarding (dashboard-artist-filter
+		// spec: "Filter still suppressed during onboarding"); beam is not.
+		if (!this.isAllNearby) {
+			if (!this.isOnboarding) {
+				actions.push({
+					id: 'filter',
+					labelKey: 'fabMenu.filter',
+					icon: 'filter',
+					kind: 'command',
+					isOn: () => this.filterBar?.isFilterActive ?? false,
+					invoke: () => this.filterBar?.openSheet(),
+				})
+			}
+			actions.push({
+				id: 'beam',
+				labelKey: 'fabMenu.beam',
+				icon: 'spotlight',
+				kind: 'toggle',
+				isOn: () => this.showBeams,
+				invoke: () => this.toggleBeams(),
+			})
+		}
+		return actions
+	}
+
+	/**
+	 * (Re-)contribute this route's actions to the launcher. Owner-keyed, so a
+	 * mode switch or onboarding transition replaces the set without accumulating
+	 * (design D2). Re-runs on the context @watch below and on attach.
+	 */
+	private registerFabActions(): void {
+		this.fabDisposer?.()
+		this.fabDisposer = this.fabMenu.register(this, this.buildFabActions())
+	}
+
+	/**
+	 * Re-register the FAB actions whenever the mode or onboarding state changes,
+	 * so the launcher never shows a stale or duplicated set (My Timetable-only
+	 * items must drop in All Nearby).
+	 */
+	@watch((vm: DashboardRoute) => `${vm.isAllNearby}|${vm.isOnboarding}`)
+	protected onFabContextChanged(): void {
+		this.registerFabActions()
 	}
 
 	public async loading(params?: Params, next?: RouteNode): Promise<void> {
@@ -558,6 +643,9 @@ export class DashboardRoute {
 		// returns to the foreground. Only the active route is registered, so the
 		// resume signal never fans out to inactive routes' stores.
 		this.resumeRevalidator.register(this.revalidate)
+
+		// Contribute this route's contextual FAB launcher actions.
+		this.registerFabActions()
 
 		// Open the home selector when the user has no region set.
 		// Done in attached() so the BottomSheet is in the DOM and showPopover() works.
@@ -899,6 +987,9 @@ export class DashboardRoute {
 
 	public detaching(): void {
 		this.resumeRevalidator.unregister(this.revalidate)
+		// Remove this route's FAB actions so they never linger after navigation.
+		this.fabDisposer?.()
+		this.fabDisposer = null
 		this.abortController?.abort()
 		this.abortController = null
 		this.allNearbyAbort?.abort()

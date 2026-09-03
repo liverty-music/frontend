@@ -1,12 +1,17 @@
-import { observable, resolve, watch } from 'aurelia'
+import { INode, observable, resolve, watch } from 'aurelia'
 import { SessionKeys } from '../../constants/storage-keys'
 import { IPwaInstallService } from '../../services/pwa-install-service'
 
 /** Which CTA the banner offers, driven reactively by the deferred prompt. */
 type InstallMode = 'native' | 'guide'
 
+/** Global CSS variable the FAB launcher offsets above (shared with signup-prompt-banner). */
+const BANNER_HEIGHT_VAR = '--bottom-banner-height'
+
 export class PwaInstallBanner {
 	private readonly pwaInstall = resolve(IPwaInstallService)
+	private readonly element = resolve(INode) as HTMLElement
+	private resizeObserver: ResizeObserver | null = null
 
 	// isIos is immutable after boot — evaluated once and stored.
 	public readonly isIos: boolean = this.pwaInstall.isIos
@@ -30,6 +35,28 @@ export class PwaInstallBanner {
 	@watch((vm: PwaInstallBanner) => vm.pwaInstall.canShowFab)
 	public canShowFabChanged(): void {
 		this.syncInstallMode()
+	}
+
+	public attached(): void {
+		// Publish the banner's rendered height so the FAB launcher offsets clear of
+		// it (same mechanism as signup-prompt-banner; the two are mutually exclusive
+		// — guest vs authenticated — so they share one variable safely).
+		this.resizeObserver = new ResizeObserver(() => this.publishHeight())
+		this.resizeObserver.observe(this.element)
+		this.publishHeight()
+	}
+
+	public detaching(): void {
+		this.resizeObserver?.disconnect()
+		this.resizeObserver = null
+		document.documentElement.style.removeProperty(BANNER_HEIGHT_VAR)
+	}
+
+	private publishHeight(): void {
+		document.documentElement.style.setProperty(
+			BANNER_HEIGHT_VAR,
+			`${this.element.offsetHeight}px`,
+		)
 	}
 
 	private syncInstallMode(): void {
