@@ -17,6 +17,9 @@ export const StorageKeys = {
 	soundVolume: 'liverty:sound:volume',
 	// Laser beam spotlight effect on dashboard. 'true'/'false', defaults to off.
 	beamsEnabled: 'liverty:beams:enabled',
+	// FAB action-launcher placement (left-handed mode). 'left'/'right',
+	// defaults to 'right' (bottom-right corner). Mirrors the beam preference.
+	fabHanded: 'liverty:fab:handed',
 	// Anonymous-period UI language. See UserHydrationTask for cleanup.
 	language: 'language',
 } as const

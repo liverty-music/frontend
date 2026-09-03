@@ -12,7 +12,9 @@
 			align-items: center;
 			justify-content: center;
 
-			block-size: 3.5rem;
+			/* Height published as a shared token so the FAB launcher can offset
+			   above the nav without a hard-coded constant (design D7). */
+			block-size: var(--bottom-nav-height);
 			padding-block-end: var(--_safe-area-bottom);
 
 			background: var(--color-surface-raised);

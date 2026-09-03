@@ -23,7 +23,8 @@
 		notification-prompt,
 		snack-bar,
 		error-banner,
-		coach-mark {
+		coach-mark,
+		fab-menu {
 			position: fixed;
 			overflow: hidden;
 			block-size: 0;
