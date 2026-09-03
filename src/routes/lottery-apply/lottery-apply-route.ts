@@ -1,4 +1,4 @@
-import type { Params } from '@aurelia/router'
+import { IRouter, type Params } from '@aurelia/router'
 import type { StripePaymentElement } from '@stripe/stripe-js'
 import { ILogger, resolve } from 'aurelia'
 import {
@@ -6,14 +6,23 @@ import {
 	ILotteryRpcClient,
 } from '../../adapter/rpc/client/lottery-client'
 import { formatJpy } from '../../lib/format-currency'
+import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IStripeService } from '../../services/stripe-service'
 
 /**
  * Discrete UI phases of the apply flow. The fan advances
  * count → identity → payment, then submits. `submitting` covers the
  * confirm-authorization + apply round-trip; `done` is the success terminal.
+ *
+ * `verify-required` is a pre-flow gate: when the phase requires identity
+ * verification (identity-ekyc-jpki) and the fan is UNVERIFIED, the flow parks
+ * here — informing them of the requirement and routing them to Settings to
+ * verify — before any count/identity/payment step is reachable. The backend
+ * still enforces the requirement authoritatively at Apply (FAILED_PRECONDITION);
+ * this only surfaces it up-front instead of after a card hold.
  */
 export type ApplyStep =
+	| 'verify-required'
 	| 'count'
 	| 'identity'
 	| 'payment'
@@ -46,6 +55,14 @@ export class LotteryApplyRoute {
 	public maxTickets = 1
 	/** Per-ticket price in JPY minor-unit-free yen (JPY has no minor unit). */
 	public ticketPrice = 0
+	/**
+	 * Whether this phase REQUIRES identity verification (identity-ekyc-jpki).
+	 * Caller-supplied (route param / bindable), mirroring `maxTickets`/`ticketPrice`
+	 * — the backend re-validates at Apply. When true and the fan is UNVERIFIED, the
+	 * flow gates on the `verify-required` step. TODO(lottery): source this from a
+	 * fan-facing phase-read RPC once one exists, alongside max/price.
+	 */
+	public verificationRequired = false
 
 	// ── Flow state ────────────────────────────────────────────────────────────
 	public step: ApplyStep = 'count'
@@ -76,6 +93,8 @@ export class LotteryApplyRoute {
 	private readonly logger = resolve(ILogger).scopeTo('LotteryApplyRoute')
 	private readonly lottery = resolve(ILotteryRpcClient)
 	private readonly stripe = resolve(IStripeService)
+	private readonly identity = resolve(IIdentityVerificationService)
+	private readonly router = resolve(IRouter)
 	private abortController: AbortController | null = null
 
 	// Stripe handles held between createAuthorization and confirm. Typed loosely
@@ -85,7 +104,7 @@ export class LotteryApplyRoute {
 		null
 	private paymentElement: StripePaymentElement | null = null
 
-	public loading(params: Params): void {
+	public async loading(params: Params): Promise<void> {
 		// Route params override defaults when present; otherwise the bindable
 		// inputs (Storybook / parent composition) are used as-is.
 		if (params.phaseId) this.phaseId = String(params.phaseId)
@@ -96,6 +115,9 @@ export class LotteryApplyRoute {
 		if (params.ticketPrice) {
 			const p = Number(params.ticketPrice)
 			if (Number.isFinite(p) && p >= 0) this.ticketPrice = Math.floor(p)
+		}
+		if (params.verificationRequired != null) {
+			this.verificationRequired = String(params.verificationRequired) === 'true'
 		}
 
 		// Abort any request still in flight from a prior activation (Aurelia may
@@ -108,6 +130,30 @@ export class LotteryApplyRoute {
 			// No publishable key provisioned for this environment: fail closed with
 			// a friendly state instead of attempting to load Stripe.js.
 			this.step = 'unavailable'
+			return
+		}
+
+		// Verification gate (identity-ekyc-jpki 5.2): when the phase requires
+		// verification, check the fan's status up-front and park them on the
+		// `verify-required` step if they are UNVERIFIED — informing them and
+		// routing them to Settings before any card hold. On a status-load failure
+		// we fail OPEN (proceed to the flow): the backend re-validates at Apply, so
+		// the requirement is never bypassed, only surfaced later in that case.
+		if (this.verificationRequired) {
+			try {
+				const status = await this.identity.getMyVerificationStatus(
+					this.abortController.signal,
+				)
+				if (status.level !== 'identityVerified') {
+					this.step = 'verify-required'
+				}
+			} catch (err) {
+				if ((err as Error).name !== 'AbortError') {
+					this.logger.warn('verification status load failed; failing open', {
+						error: err,
+					})
+				}
+			}
 		}
 	}
 
@@ -159,6 +205,16 @@ export class LotteryApplyRoute {
 	}
 
 	// ── Step transitions ──────────────────────────────────────────────────────
+
+	/**
+	 * From the `verify-required` gate: route the fan to Settings, where the
+	 * identity-verification entry point lives (the Stamp redirect leaves the app
+	 * for the PocketSign app, so the flow cannot complete inline here). After
+	 * verifying they re-open the apply flow.
+	 */
+	public async goToVerify(): Promise<void> {
+		await this.router.load('/settings')
+	}
 
 	public toIdentity(): void {
 		if (!this.isCountValid) {

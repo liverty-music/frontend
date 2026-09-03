@@ -46,6 +46,14 @@ const mockStripe = {
 	),
 }
 
+const mockIdentity = {
+	getMyVerificationStatus: vi.fn(async () => ({ level: 'unverified' })),
+}
+
+const mockRouter = {
+	load: vi.fn(async () => true),
+}
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -55,6 +63,8 @@ vi.mock('aurelia', async (importOriginal) => {
 				ILogger: mockLogger,
 				ILotteryRpcClient: mockLottery,
 				IStripeService: mockStripe,
+				IIdentityVerificationService: mockIdentity,
+				IRouter: mockRouter,
 			}
 			const tokenAny = token as { friendlyName?: string }
 			return map[tokenAny.friendlyName ?? ''] ?? {}
@@ -265,6 +275,53 @@ describe('LotteryApplyRoute', () => {
 			const sut = new LotteryApplyRoute()
 			sut.loading({ phaseId: 'phase-1' })
 			expect(sut.step).toBe('unavailable')
+		})
+	})
+
+	describe('verification gate (5.2)', () => {
+		beforeEach(() => {
+			mockIdentity.getMyVerificationStatus.mockResolvedValue({
+				level: 'unverified',
+			})
+		})
+
+		it('parks an UNVERIFIED fan on verify-required when the phase requires it', async () => {
+			const sut = new LotteryApplyRoute()
+			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'true' })
+			expect(mockIdentity.getMyVerificationStatus).toHaveBeenCalledOnce()
+			expect(sut.step).toBe('verify-required')
+		})
+
+		it('lets a VERIFIED fan straight into the count step', async () => {
+			mockIdentity.getMyVerificationStatus.mockResolvedValueOnce({
+				level: 'identityVerified',
+			})
+			const sut = new LotteryApplyRoute()
+			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'true' })
+			expect(sut.step).toBe('count')
+		})
+
+		it('does NOT check status when the phase does not require verification', async () => {
+			const sut = new LotteryApplyRoute()
+			await sut.loading({ phaseId: 'phase-1' })
+			expect(mockIdentity.getMyVerificationStatus).not.toHaveBeenCalled()
+			expect(sut.step).toBe('count')
+		})
+
+		it('fails OPEN (proceeds to count) when the status load errors', async () => {
+			mockIdentity.getMyVerificationStatus.mockRejectedValueOnce(
+				new Error('UNAVAILABLE'),
+			)
+			const sut = new LotteryApplyRoute()
+			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'true' })
+			expect(sut.step).toBe('count')
+		})
+
+		it('routes to Settings from the gate', async () => {
+			const sut = new LotteryApplyRoute()
+			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'true' })
+			await sut.goToVerify()
+			expect(mockRouter.load).toHaveBeenCalledWith('/settings')
 		})
 	})
 })
