@@ -163,6 +163,36 @@ describe('IdentityVerificationService', () => {
 
 			await expect(sut.verify('jpki')).rejects.toThrow('UNAVAILABLE')
 		})
+
+		it('saveVerifySessionId is called BEFORE window.location.href is set (load-bearing order)', async () => {
+			// The code comment in identity-verification-service.ts states this is load-bearing:
+			// if window.location.href were set first the browser would navigate away and the
+			// session id would never be persisted, causing every callback to sessionMismatch.
+			const callOrder: string[] = []
+
+			vi.mocked(saveVerifySessionId).mockImplementation((_id: string) => {
+				callOrder.push('saveVerifySessionId')
+				return true
+			})
+
+			// Intercept the href setter; it fires synchronously when the assignment happens.
+			Object.defineProperty(window, 'location', {
+				configurable: true,
+				writable: true,
+				value: {
+					get href() {
+						return ''
+					},
+					set href(_url: string) {
+						callOrder.push('window.location.href')
+					},
+				},
+			})
+
+			await sut.verify('jpki')
+
+			expect(callOrder).toEqual(['saveVerifySessionId', 'window.location.href'])
+		})
 	})
 
 	describe('completeFromCallback (Stamp finalize — leg 2)', () => {

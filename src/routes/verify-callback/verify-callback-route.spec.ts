@@ -164,6 +164,23 @@ describe('VerifyCallbackRoute', () => {
 			expect(sut.errorKey).toBe('verifyCallback.error.alreadyVerified')
 		})
 
+		it('maps PERMISSION_DENIED to the permissionDenied key (anti-replay / nonce-mismatch signal)', async () => {
+			const permissionDenied = new ConnectError(
+				'nonce mismatch',
+				Code.PermissionDenied,
+			)
+			const failedOutcome: CompleteOutcome = {
+				kind: 'verificationFailed',
+				error: permissionDenied,
+			}
+			mockCompleteFromCallback.mockResolvedValueOnce(failedOutcome)
+
+			await sut.loading({} as Params, withSessionId)
+
+			expect(sut.isSuccess).toBe(false)
+			expect(sut.errorKey).toBe('verifyCallback.error.permissionDenied')
+		})
+
 		it('maps an unknown error to the generic key', async () => {
 			const failedOutcome: CompleteOutcome = {
 				kind: 'verificationFailed',
