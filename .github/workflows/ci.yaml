@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       src: ${{ steps.filter.outputs.src }}
+      storybook: ${{ steps.filter.outputs.storybook }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -37,12 +38,24 @@ jobs:
               - 'tsconfig*.json'
               - 'vite.config.ts'
               - 'vitest.config.ts'
-              - 'vitest.scripts.config.ts'
               - 'biome.json'
               - '.stylelintrc.json'
               - 'Makefile'
               - 'playwright.config.mjs'
               - 'playwright.smoke.config.mjs'
+              - '.github/workflows/**'
+            # Anything that can change a component's rendered output must
+            # (re)run the browser component tests — including a component
+            # .ts/.html/.css edit with no story change (spec: "Component tests
+            # are skipped when no relevant files change").
+            storybook:
+              - 'src/components/**'
+              - '**/*.stories.*'
+              - '.storybook/**'
+              - 'vitest.config.ts'
+              - 'vite.config.ts'
+              - 'package.json'
+              - 'package-lock.json'
               - '.github/workflows/**'
 
   lint:
@@ -249,11 +262,18 @@ jobs:
     steps:
       - run: echo "No relevant changes, skipping E2E tests"
 
-  visual:
+  storybook-test:
     needs: changes
-    if: needs.changes.outputs.src == 'true'
-    name: Visual Regression
+    if: needs.changes.outputs.storybook == 'true'
+    name: Storybook Component Tests
     runs-on: ubuntu-latest
+    # Run inside the pinned official Playwright image so component rendering is
+    # byte-deterministic with the committed `toMatchScreenshot` baselines (which
+    # are generated in this same image). The image ships Chromium, so no separate
+    # Playwright browser install/cache is needed. Keep the tag in lockstep with
+    # the `@playwright/test` version and with the baseline-generation image.
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.1-noble
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -268,69 +288,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # See the E2E job for rationale — cache browsers so a slow Playwright CDN
-      # can't consume the job timeout mid-download. Chromium-only key.
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+      # Compares each story's render against its committed baseline
+      # (src/components/**/__screenshots__/). No baseline artifact download/upload:
+      # baselines live in git and are reviewed in the PR diff (design D4). The
+      # HTML report captures the actual/diff images for any visual failure.
+      - name: Run Storybook component tests
+        run: npx vitest run --project=storybook --reporter=default --reporter=html --outputFile.html=./storybook-test-report/index.html
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Download baseline screenshots
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          name: visual-baselines
-          path: e2e/__screenshots__/
-          branch: main
-          workflow: ci.yaml
-          if_no_artifact_found: warn
-
-      - name: Check if baselines exist
-        id: baselines
-        run: test -d e2e/__screenshots__ && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
-
-      - name: Run visual regression tests (compare)
-        if: steps.baselines.outputs.exists == 'true'
-        run: npx playwright test --project=mobile-visual
-
-      - name: Generate initial baselines (first run)
-        if: steps.baselines.outputs.exists == 'false'
-        run: npx playwright test --project=mobile-visual --update-snapshots
-
-      - name: Upload updated baselines
-        uses: actions/upload-artifact@v4
-        with:
-          name: visual-baselines
-          path: e2e/__screenshots__/
-          retention-days: 90
-          overwrite: true
-
-      - name: Upload diff on failure
+      - name: Upload visual diff report on failure
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: visual-diff
-          path: test-results/
+          name: storybook-visual-diff
+          path: storybook-test-report/
           retention-days: 7
+          if-no-files-found: ignore
 
-  visual-skip:
+  storybook-test-skip:
     needs: changes
-    if: needs.changes.outputs.src == 'false'
-    name: Visual Regression
+    if: needs.changes.outputs.storybook == 'false'
+    name: Storybook Component Tests
     runs-on: ubuntu-latest
     steps:
-      - run: echo "No relevant changes, skipping visual regression tests"
+      - run: echo "No component/story/config changes, skipping component tests"
 
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [changes, lint, lint-skip, test, test-skip, security, security-skip, smoke, smoke-skip, e2e, e2e-skip, visual, visual-skip]
+    needs: [changes, lint, lint-skip, test, test-skip, security, security-skip, smoke, smoke-skip, e2e, e2e-skip, storybook-test, storybook-test-skip]
     if: always()
     steps:
       - uses: re-actors/alls-green@release/v1
         with:
-          allowed-skips: lint, lint-skip, test, test-skip, security, security-skip, smoke, smoke-skip, e2e, e2e-skip, visual, visual-skip
+          allowed-skips: lint, lint-skip, test, test-skip, security, security-skip, smoke, smoke-skip, e2e, e2e-skip, storybook-test, storybook-test-skip
           jobs: ${{ toJSON(needs) }}

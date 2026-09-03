@@ -5,7 +5,12 @@ lint: lint-brand-vocabulary lint-boundaries
 	npx biome lint src admin organizer shared test
 	npx biome format src admin organizer shared test
 	npm run lint:css
-	npx tsc --noEmit
+	# Invoke the project's TypeScript 5.x compiler directly. `npx tsc` is
+	# ambiguous: `@aurelia/vite-plugin`'s `plugin-conventions` pulls a transitive
+	# `@typescript/typescript6` (TS 6.0) whose `tsc` bin can win the
+	# `node_modules/.bin/tsc` symlink and reject this repo's tsconfig (node10 /
+	# baseUrl are removed in TS 6). Pin to the installed `typescript` package.
+	node ./node_modules/typescript/bin/tsc --noEmit
 
 ## lint-boundaries: enforce src/ <-> admin/ <-> organizer/ isolation (only shared/ crosses)
 lint-boundaries:
@@ -19,10 +24,10 @@ lint-brand-vocabulary:
 fix:
 	npx biome check --write src test
 
-## test: unit tests with coverage + scripts tests (separate vitest config)
+## test: unit + scripts projects with coverage (Vitest 4 test.projects layout)
+## The `storybook` browser project is gated separately in CI (test-storybook).
 test:
-	npx vitest run --coverage
-	npx vitest run --config vitest.scripts.config.ts
+	npx vitest run --coverage --project=unit --project=scripts
 
 ## lint-no-style: ban style attributes in templates (CSS owns presentation)
 lint-no-style:

@@ -18,6 +18,9 @@
     "admin",
     "shared"
   ],
+  "exclude": [
+    "**/*.stories.ts"
+  ],
   "files": [
     "src/resource.d.ts"
   ]

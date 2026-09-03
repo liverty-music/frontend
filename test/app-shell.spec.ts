@@ -37,6 +37,15 @@ vi.mock('../src/routes/consent/consent-route', () => ({
 vi.mock('../src/routes/import-ticket-email/import-ticket-email-route', () => ({
 	ImportTicketEmailRoute: class ImportTicketEmailRoute {},
 }))
+vi.mock('../src/routes/verify-callback/verify-callback-route', () => ({
+	VerifyCallbackRoute: class VerifyCallbackRoute {},
+}))
+vi.mock('../src/routes/lottery-apply/lottery-apply-route', () => ({
+	LotteryApplyRoute: class LotteryApplyRoute {},
+}))
+vi.mock('../src/routes/lottery-application/lottery-application-route', () => ({
+	LotteryApplicationRoute: class LotteryApplicationRoute {},
+}))
 vi.mock('../src/routes/legal/terms-route', () => ({
 	TermsRoute: class TermsRoute {},
 }))

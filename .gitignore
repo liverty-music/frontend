@@ -36,6 +36,9 @@ node_modules
 /coverage
 /test-results
 /playwright-report
+# (retired) page-level Playwright visual baselines — visual regression now lives
+# in committed component-level Storybook baselines under src/components/**
+# /__screenshots__/. This entry is kept only to ignore any stale local dir.
 e2e/__screenshots__/
 
 tmp/*
@@ -74,3 +77,10 @@ __pycache__/
 # Backup/junk files
 *.orig
 *.bak
+
+# Storybook component-test HTML report (CI failure artifact only, never committed)
+storybook-test-report/
+# Storybook static build output
+storybook-static/
+# Vitest browser-mode failure attachments (screenshots/diffs) — transient
+.vitest-attachments/

@@ -19,12 +19,7 @@ export default defineConfig({
      * For example in `await expect(locator).toHaveText();`
      */
     timeout: 5000,
-    toHaveScreenshot: {
-      maxDiffPixelRatio: 0.01,
-      animations: 'disabled',
-    },
   },
-  snapshotPathTemplate: '{testDir}/__screenshots__/{projectName}/{testFilePath}/{arg}{ext}',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -120,29 +115,12 @@ export default defineConfig({
         baseURL: 'http://localhost:9000',
       },
     },
-    // Layer 4: Visual Regression — layout screenshot comparison (iPhone 14 viewport, Chromium)
-    {
-      name: 'mobile-visual',
-      testMatch: 'e2e/visual/**/*.spec.ts',
-      testIgnore: 'e2e/visual/**/*.auth.visual.spec.ts',
-      use: {
-        ...devices['iPhone 14'],
-        // Override WebKit default to Chromium — only Chromium is installed in CI
-        browserName: 'chromium',
-        baseURL: 'http://localhost:9000',
-      },
-    },
-    // Layer 4: Visual Regression — authenticated pages
-    {
-      name: 'authenticated-visual',
-      testMatch: 'e2e/visual/**/*.auth.visual.spec.ts',
-      use: {
-        ...devices['iPhone 14'],
-        browserName: 'chromium',
-        baseURL: 'http://localhost:9000',
-        storageState: '.auth/storageState.json',
-      },
-    },
+    // Visual regression has moved to component-level Storybook browser tests
+    // (Vitest `toMatchScreenshot`, `npm run test-storybook`). The page-level
+    // Playwright `mobile-visual` / `authenticated-visual` projects and their
+    // `e2e/visual/**` specs were retired to keep a single visual-regression
+    // pipeline (OpenSpec `adopt-storybook-component-testing`). Page-level route
+    // composition remains covered by the functional/smoke e2e projects.
     // Layer 5: PWA — service worker tests (non-authenticated)
     {
       name: 'pwa',

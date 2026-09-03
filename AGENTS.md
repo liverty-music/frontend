@@ -4,11 +4,13 @@
   <essential-commands>
     make lint              # Biome lint + format check + stylelint + typecheck + brand-vocabulary (matches CI)
     make fix               # Auto-fix formatting (biome check --write)
-    make test              # Unit tests with coverage (vitest)
+    make test              # unit + scripts vitest projects with coverage
     make check             # Full pre-commit check (lint + test)
+    npm run test-storybook # Storybook component tests (browser mode; run in the pinned Playwright container for visual baselines)
     npm start              # Dev server
+    npm run storybook      # Storybook dev UI (port 6006)
     npm run build          # Production build
-    npx playwright test    # E2E tests
+    npx playwright test    # E2E tests (functional/smoke/onboarding/pwa — no visual project)
   </essential-commands>
 </poly-repo-context>
 
@@ -40,8 +42,8 @@ BSR gen completes, as CI will fail on the missing types.
 | **Styling**      | CUBE CSS methodology (`@layer`, `@scope`)             |
 | **Linter**       | Biome (`@biomejs/biome`)                              |
 | **Auth**         | Zitadel via `oidc-client-ts`                          |
-| **Testing**      | Vitest + `@aurelia/testing`, Playwright (E2E)         |
-| **Stories**      | Storybook (`@aurelia/storybook`)                      |
+| **Testing**      | Vitest 4 `test.projects` (unit/scripts/storybook) + `@aurelia/testing`, Playwright (E2E) |
+| **Stories**      | Storybook 10 (`@aurelia/storybook` 3) — CSF3 component tests + a11y + visual (see below) |
 
 ## File Organization
 
@@ -69,6 +71,59 @@ src/
 
 Aurelia 2 coding conventions (DI, events, lifecycle, routing, templates, logging) are defined
 in the `aurelia2-component` skill. Read it before writing any component code.
+
+## Component Stories & Testing (Storybook + Vitest)
+
+Testing runs as Vitest 4 `test.projects` in a single `vitest.config.ts`:
+
+| Project     | Env                  | Runs                                        | Command |
+|-------------|----------------------|---------------------------------------------|---------|
+| `unit`      | jsdom                | `**/*.spec.ts` (+ coverage, thresholds)     | `make test` / `npm test` |
+| `scripts`   | node (no polyfills)  | `scripts/**/*.spec.ts` (real `node:*`)      | `npm run test:scripts` |
+| `storybook` | Chromium (Playwright)| CSF stories as component tests              | `npm run test-storybook` |
+
+- `make test` runs `unit` + `scripts` only; `storybook` is a separate CI job (`storybook-test`).
+- Coverage thresholds: statements/functions/lines 70, **branches 60** (Vitest 4's `ast-v8` branch
+  remapping counts far more branches than v2 — recalibrated, not a real regression).
+- Node 25's broken Web Storage stub is replaced by a polyfill in `test/setup.ts` (Vitest 4 no longer
+  forwards `--no-experimental-webstorage` to workers); a `matchMedia` stub lives there too.
+
+### Story-authoring scope
+
+Story **only presentational custom elements under `src/components/`** — components whose render is a
+pure function of their `@bindable` inputs. Story files are colocated: `src/components/<name>/<name>.stories.ts`
+(CSF3, `satisfies Meta<typeof X>` / `StoryObj<typeof meta>`), tagged `['test', 'autodocs']`.
+
+- Enumerate each visually distinct state as a named story; expose `@bindable`s as `argTypes` controls.
+- Add `play` functions (`storybook/test`: `expect`/`within`/`userEvent`) for interaction assertions.
+- a11y (axe) runs on every story and **fails** on violations (`.storybook/story-annotations.ts` sets
+  `a11y.test: 'error'`; wired in `.storybook/vitest.setup.ts`).
+- Shared config (i18n, global `svg-icon`/`bottom-sheet` registration, a11y param) lives in
+  `.storybook/story-annotations.ts` — parameters inside `definePreview` do NOT propagate through
+  `setProjectAnnotations`, so that module is composed as a plain trailing annotation in the setup file.
+- For DI/child-bound components use `defineAureliaStory({ template, props, register, items })` — e.g.
+  register an `IErrorBoundaryService`/`I18N` mock via `items`, or drive an EA-published component from a host.
+
+**Do NOT story**: route/page components, `dna-orb` (canvas/Matter.js), or anything requiring live
+RPC/auth/canvas context. The previous route-targeted story was removed.
+
+### Visual regression
+
+Component-level only, via Vitest browser `expect.element(el).toMatchScreenshot()` (pixelmatch,
+`allowedMismatchedPixelRatio: 0.001`) on the static design-system subset (svg-icon, inline-error,
+state-placeholder, page-header). Baselines are **committed** under
+`src/components/*/__screenshots__/**/*-chromium-linux.png` and reviewed in the PR diff (no CI artifact).
+
+- Generate/compare baselines INSIDE the pinned container so rendering is deterministic with CI:
+  ```bash
+  # regenerate after an intentional visual change, then commit the PNGs
+  docker run --rm -v "$PWD":/work -w /work -e HOME=/tmp \
+    mcr.microsoft.com/playwright:v1.58.1-noble \
+    npx vitest run --project=storybook --update
+  ```
+- The `storybook-test` CI job runs in that same image; on failure it uploads the Vitest HTML report
+  (`storybook-test-report/`, which embeds the diff/actual images). Page-level visual regression
+  (the old Playwright `mobile-visual`) has been retired — one visual pipeline only.
 
 ## Playwright MCP (Authenticated E2E Testing)
 
