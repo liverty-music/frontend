@@ -1,4 +1,11 @@
-import { Title } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
+import {
+	LocalDate,
+	Title,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
+import {
+	Event,
+	EventId,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import {
 	PublishState,
 	Series,
@@ -30,11 +37,25 @@ interface MockClient {
 	cancel: ReturnType<typeof vi.fn>
 }
 
+/**
+ * Builds an event with an id and a calendar date. The month/day increment with
+ * `dayOffset` so multi-event rows get distinguishable date labels.
+ */
+function makeEvent(eventId: string, dayOffset = 0): Event {
+	return new Event({
+		id: new EventId({ value: eventId }),
+		localDate: new LocalDate({
+			value: { year: 2026, month: 9, day: 10 + dayOffset },
+		}),
+	})
+}
+
 function makeConcert(
 	id: string,
 	title: string,
 	publishState: PublishState,
 	visibility: Visibility,
+	events: Event[] = [],
 ): AuthoredConcert {
 	return new AuthoredConcert({
 		series: new Series({
@@ -44,7 +65,7 @@ function makeConcert(
 			visibility,
 			publishState,
 		}),
-		events: [],
+		events,
 		performers: [],
 	})
 }
@@ -158,6 +179,68 @@ describe('ConcertsRoute', () => {
 
 		expect(vm.rows[0].actionError).toContain('can no longer be published')
 		expect(vm.rows[0].busy).toBe(false)
+	})
+
+	it('exposes a lottery entry point per event on a published concert', async () => {
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeConcert(
+						's1',
+						'Published Show',
+						PublishState.PUBLISHED,
+						Visibility.PUBLIC,
+						[makeEvent('e1')],
+					),
+				]),
+		})
+		const vm = build(client)
+		await vm.attached()
+
+		expect(vm.rows[0].lotteryEvents).toEqual([
+			{ eventId: 'e1', label: 'Configure lottery' },
+		])
+	})
+
+	it('labels each lottery entry point with its date when a series has several events', async () => {
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeConcert('s1', 'Tour', PublishState.PUBLISHED, Visibility.PUBLIC, [
+						makeEvent('e1', 0),
+						makeEvent('e2', 1),
+					]),
+				]),
+		})
+		const vm = build(client)
+		await vm.attached()
+
+		expect(vm.rows[0].lotteryEvents).toEqual([
+			{ eventId: 'e1', label: 'Configure lottery · 2026-09-10' },
+			{ eventId: 'e2', label: 'Configure lottery · 2026-09-11' },
+		])
+	})
+
+	it('offers no lottery entry point on a draft concert', async () => {
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeConcert(
+						's1',
+						'Draft Show',
+						PublishState.DRAFT,
+						Visibility.PUBLIC,
+						[makeEvent('e1')],
+					),
+				]),
+		})
+		const vm = build(client)
+		await vm.attached()
+
+		expect(vm.rows[0].lotteryEvents).toEqual([])
 	})
 
 	it('confirms then cancels a concert', async () => {

@@ -31,6 +31,16 @@ export interface ConcertListRow {
 	readonly canEdit: boolean
 	readonly canPublish: boolean
 	readonly canCancel: boolean
+	/**
+	 * Per-event entry points to lottery-phase configuration. Non-empty only for
+	 * a `PUBLISHED` series — a lottery phase requires a published event. Each
+	 * entry carries the `eventId` so the console deep-links to
+	 * `lottery/configure/:eventId` without the Organizer knowing the id.
+	 */
+	readonly lotteryEvents: readonly {
+		readonly eventId: string
+		readonly label: string
+	}[]
 	/** True while a publish/cancel action for this row is in flight. */
 	busy: boolean
 	actionError: string
@@ -67,6 +77,28 @@ function formatDateRange(concert: AuthoredConcert): string {
 	return `${first} – ${last}`
 }
 
+/**
+ * Builds the per-event lottery entry points for a published series. Empty for
+ * any non-published series (a lottery phase requires a published event) and for
+ * events lacking an id. When a series has several events the label carries the
+ * event date so each link is distinguishable.
+ */
+function toLotteryEvents(
+	concert: AuthoredConcert,
+	publishState: PublishState,
+): ConcertListRow['lotteryEvents'] {
+	if (publishState !== PublishState.PUBLISHED) return []
+	const multi = concert.events.length > 1
+	return concert.events
+		.map((event, index) => ({
+			eventId: event.id?.value ?? '',
+			label: multi
+				? `Configure lottery · ${formatEventDate(concert, index)}`
+				: 'Configure lottery',
+		}))
+		.filter((entry) => entry.eventId !== '')
+}
+
 function toRow(concert: AuthoredConcert): ConcertListRow {
 	const series = concert.series
 	const publishState = series?.publishState ?? PublishState.UNSPECIFIED
@@ -82,6 +114,7 @@ function toRow(concert: AuthoredConcert): ConcertListRow {
 		canEdit: publishState !== PublishState.CANCELLED,
 		canPublish: publishState === PublishState.DRAFT,
 		canCancel: publishState !== PublishState.CANCELLED,
+		lotteryEvents: toLotteryEvents(concert, publishState),
 		busy: false,
 		actionError: '',
 	}

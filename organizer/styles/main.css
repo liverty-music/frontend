@@ -143,6 +143,11 @@
 				border-color: transparent;
 			}
 
+			&[data-variant="secondary"] {
+				border-color: var(--color-brand-primary);
+				color: var(--color-brand-primary);
+			}
+
 			&:disabled {
 				cursor: not-allowed;
 				opacity: 0.6;
