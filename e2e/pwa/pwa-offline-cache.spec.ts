@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '../support/test'
 
 test.describe('Offline Concert Cache', () => {
 	test('shows stale indicator or error when going offline after initial load', async ({

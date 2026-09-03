@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Page, test } from '../support/test'
 
 /**
  * E2E tests for dashboard lane classification after home selection.
@@ -232,7 +232,9 @@ test.describe('Dashboard lane classification after home selection', () => {
 		await expect(blurElement).toHaveCount(0)
 
 		// Home selector dialog should NOT be open
-		const regionDialog = page.locator('user-home-selector bottom-sheet:popover-open')
+		const regionDialog = page.locator(
+			'user-home-selector bottom-sheet:popover-open',
+		)
 		await expect(regionDialog).toHaveCount(0)
 	})
 })

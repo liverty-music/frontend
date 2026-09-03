@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '../support/test'
 
 // The dashboard is reachable any time under the soft gate. Mark onboarding
 // complete and set the guest home region so the region-setup dialog (and its

@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Page, test } from '../support/test'
 
 /**
  * E2E tests for artist image UI integration.
@@ -20,9 +20,6 @@ const FANART_BG_URL =
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPj/HwADBwIAMCbHYQAAAABJRU5ErkJggg=='
 const FANART_THUMB_URL =
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-
-const OIDC_AUTHORITY = 'https://auth.dev.liverty-music.app'
-const OIDC_CLIENT_ID = '371355407710421859'
 
 const tomorrow = new Date()
 tomorrow.setDate(tomorrow.getDate() + 1)
@@ -229,27 +226,6 @@ async function mockLastFmApi(page: Page): Promise<void> {
 	})
 }
 
-/** Mock OIDC discovery endpoint to prevent real calls. */
-async function mockOidcDiscovery(page: Page): Promise<void> {
-	await page.route(
-		`${OIDC_AUTHORITY}/.well-known/openid-configuration`,
-		(route) => {
-			route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({
-					issuer: OIDC_AUTHORITY,
-					authorization_endpoint: `${OIDC_AUTHORITY}/oauth/v2/authorize`,
-					token_endpoint: `${OIDC_AUTHORITY}/oauth/v2/token`,
-					userinfo_endpoint: `${OIDC_AUTHORITY}/oidc/v1/userinfo`,
-					end_session_endpoint: `${OIDC_AUTHORITY}/oidc/v1/end_session`,
-					jwks_uri: `${OIDC_AUTHORITY}/oauth/v2/keys`,
-				}),
-			})
-		},
-	)
-}
-
 /**
  * Seed completed onboarding state with a fake OIDC user so the app uses
  * the RPC code path (which returns fanart URLs from the mocked ListFollowed).
@@ -304,7 +280,7 @@ test.describe('Event card logo display', () => {
 	test.beforeEach(async ({ page }) => {
 		await mockRpcRoutes(page)
 		await mockLastFmApi(page)
-		await mockOidcDiscovery(page)
+		// OIDC discovery is stubbed globally by the shared `test` fixture.
 		await page.addInitScript(seedAuthenticatedState())
 	})
 
@@ -354,7 +330,7 @@ test.describe('Event detail sheet hero image', () => {
 	test.beforeEach(async ({ page }) => {
 		await mockRpcRoutes(page)
 		await mockLastFmApi(page)
-		await mockOidcDiscovery(page)
+		// OIDC discovery is stubbed globally by the shared `test` fixture.
 		await page.addInitScript(seedAuthenticatedState())
 	})
 

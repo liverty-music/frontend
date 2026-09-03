@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '../support/test'
 
 /**
  * WebKit regression guard for the "flash then close" bottom-sheet defect.
@@ -22,7 +22,9 @@ import { expect, test } from '@playwright/test'
  * to avoid running a redundant Chromium pass; the `chromium-control` project
  * serves that role on the same viewport.
  */
-test('page-help sheet opens and stays open (not auto-dismissed)', async ({ page }) => {
+test('page-help sheet opens and stays open (not auto-dismissed)', async ({
+	page,
+}) => {
 	await page.goto('/my-artists')
 
 	// Click the `?` help trigger button to open the page-help sheet.

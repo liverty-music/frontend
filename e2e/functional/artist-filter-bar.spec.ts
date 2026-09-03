@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Page, test } from '../support/test'
 
 /**
  * E2E tests for the artist filter bar bottom sheet.
@@ -165,8 +165,14 @@ test.describe('Artist filter bar bottom sheet', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: 'watch' },
-					{ artist: { id: 'artist-2', name: 'Vaundy', mbid: '' }, hype: 'watch' },
+					{
+						artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' },
+						hype: 'watch',
+					},
+					{
+						artist: { id: 'artist-2', name: 'Vaundy', mbid: '' },
+						hype: 'watch',
+					},
 				]),
 			)
 		})
@@ -201,8 +207,14 @@ test.describe('Artist filter bar bottom sheet', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: 'watch' },
-					{ artist: { id: 'artist-2', name: 'Vaundy', mbid: '' }, hype: 'watch' },
+					{
+						artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' },
+						hype: 'watch',
+					},
+					{
+						artist: { id: 'artist-2', name: 'Vaundy', mbid: '' },
+						hype: 'watch',
+					},
 				]),
 			)
 		})
@@ -237,8 +249,14 @@ test.describe('Artist filter bar bottom sheet', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: 'watch' },
-					{ artist: { id: 'artist-2', name: 'Vaundy', mbid: '' }, hype: 'watch' },
+					{
+						artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' },
+						hype: 'watch',
+					},
+					{
+						artist: { id: 'artist-2', name: 'Vaundy', mbid: '' },
+						hype: 'watch',
+					},
 				]),
 			)
 		})
@@ -251,7 +269,9 @@ test.describe('Artist filter bar bottom sheet', () => {
 
 		// Open the sheet; the deep-linked artist is pre-selected.
 		await openFilterSheet(page)
-		const yoasobiChip = page.locator('label.artist-chip', { hasText: 'YOASOBI' })
+		const yoasobiChip = page.locator('label.artist-chip', {
+			hasText: 'YOASOBI',
+		})
 		await expect(yoasobiChip.locator('input')).toBeChecked()
 
 		// Add the second artist and confirm — the URL reflects both, written once.

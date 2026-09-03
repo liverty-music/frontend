@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '../support/test'
 
 /**
  * Smoke tests that navigate to each public route and assert no console
