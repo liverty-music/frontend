@@ -22,9 +22,12 @@
 </button>
 
 <!-- Expanded panel: top-layer auto popover, a role="group" of plain buttons
-     (disclosure, not menu). Each item is icon + text label (labels mandatory);
+     (disclosure, not menu). Uses a dialog element (project lint requires popovers
+     to be dialogs, not divs); the popover="auto" attribute governs behavior
+     (light-dismiss + Esc), not modal dialog semantics, and role="group" keeps the
+     disclosure contract. Each item is icon + text label (labels mandatory);
      toggle items carry aria-pressed, command/active items carry data-active. -->
-<div
+<dialog
   ref="panel"
   id="fab-menu-panel"
   popover="auto"
@@ -50,4 +53,4 @@
       </button>
     </li>
   </ul>
-</div>
+</dialog>
