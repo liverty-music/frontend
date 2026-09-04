@@ -41,8 +41,9 @@
 
 <!-- ── My Timetable view ── -->
 <template if.bind="!isAllNearby">
-  <!-- Loading state -->
-  <p if.bind="isLoading" class="loading-text" data-testid="dashboard-loading" t="dashboard.loading"></p>
+  <!-- Loading state: content-shaped skeleton (no bare loading text) so the
+       swap to the timetable is layout-shift-free. -->
+  <state-placeholder if.bind="isLoading" loading.bind="true" rows.bind="6" data-testid="dashboard-loading"></state-placeholder>
 
   <!-- Error state -->
   <inline-error
@@ -57,14 +58,14 @@
   <state-placeholder if.bind="!isLoading && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
     <p t="dashboard.guestEmpty.title" class="dashboard-empty-title"></p>
     <p t="dashboard.guestEmpty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href.bind="'discovery'" t="dashboard.guestEmpty.cta" class="discover-cta"></a>
+    <a href.bind="'discovery'" t="dashboard.guestEmpty.cta" class="discover-cta" press-feedback></a>
   </state-placeholder>
 
   <!-- Empty state -->
   <state-placeholder if.bind="!isLoading && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
     <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
     <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href.bind="'discovery'" t="dashboard.empty.discoverLink" class="discover-cta"></a>
+    <a href.bind="'discovery'" t="dashboard.empty.discoverLink" class="discover-cta" press-feedback></a>
   </state-placeholder>
 
   <!-- Concert highway — always in DOM for E2E compatibility -->
@@ -78,8 +79,8 @@
 
 <!-- ── All Nearby view ── -->
 <template if.bind="isAllNearby">
-  <!-- Loading state -->
-  <p if.bind="allNearbyLoading" class="loading-text" data-testid="all-nearby-loading" t="dashboard.loading"></p>
+  <!-- Loading state: content-shaped skeleton (see My Timetable above). -->
+  <state-placeholder if.bind="allNearbyLoading" loading.bind="true" rows.bind="6" data-testid="all-nearby-loading"></state-placeholder>
 
   <!-- Error state -->
   <inline-error
@@ -96,7 +97,7 @@
   >
     <p t="allNearby.empty.title" class="dashboard-empty-title"></p>
     <p t="allNearby.empty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href.bind="'discovery'" t="allNearby.empty.discoverLink" class="discover-cta"></a>
+    <a href.bind="'discovery'" t="allNearby.empty.discoverLink" class="discover-cta" press-feedback></a>
   </state-placeholder>
 
   <!-- All Nearby highway — venue shown on every card; AWAY lane omitted (2 lanes). -->

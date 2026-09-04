@@ -17,6 +17,7 @@ import { IAuthService } from './auth-service'
 import { IConcertStore } from './concert-store'
 import { GuestMigrationRequested } from './events/guest-migration-requested'
 import { SignedOut } from './events/signed-out'
+import { IHapticService } from './haptic-service'
 
 export const IFollowStore = DI.createInterface<IFollowStore>(
 	'IFollowStore',
@@ -64,6 +65,7 @@ export class FollowStore {
 	private readonly concertStore = resolve(IConcertStore)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly ea = resolve(IEventAggregator)
+	private readonly haptic = resolve(IHapticService)
 
 	@observable public followedArtists: Artist[] = []
 
@@ -139,6 +141,10 @@ export class FollowStore {
 
 		if (!this.authService.isAuthenticated) {
 			this.followGuest(artist)
+			// Meaningful confirm: pulse only once the action has committed (guest
+			// writes are synchronous), never on a path that rolls back. No-op
+			// where the Vibration API is unavailable.
+			this.haptic.confirm()
 			this.logger.info('Artist followed (guest)', {
 				followed: this.followedCount,
 			})
@@ -147,6 +153,9 @@ export class FollowStore {
 
 		try {
 			await this.rpcClient.follow(artist.id)
+			// Confirm only after the RPC resolves, so a failed follow (rolled back
+			// below) never delivers a false "committed" pulse.
+			this.haptic.confirm()
 			this.concertStore.invalidateFollowerCache()
 			this.logger.info('Artist followed', {
 				followed: this.followedCount,
@@ -172,9 +181,15 @@ export class FollowStore {
 			this.followedArtists = this.followedArtists.filter(
 				(a) => a.id !== artistId,
 			)
+			// Meaningful confirm: only after the removal has committed. No-op
+			// where the Vibration API is unavailable.
+			this.haptic.confirm()
 			return
 		}
 		await this.rpcClient.unfollow(artistId)
+		// Confirm only after the RPC resolves, so a rejected unfollow never
+		// pulses for an action that did not take effect.
+		this.haptic.confirm()
 		this.concertStore.invalidateFollowerCache()
 		this.followedArtists = this.followedArtists.filter((a) => a.id !== artistId)
 	}

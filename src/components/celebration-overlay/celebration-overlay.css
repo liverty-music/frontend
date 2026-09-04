@@ -106,7 +106,7 @@
 			text-wrap: balance;
 			word-break: auto-phrase;
 
-			animation: text-enter 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+			animation: text-enter 600ms var(--md-easing-emphasized-decelerate) both;
 		}
 
 		.celebration-sub-text {
@@ -130,7 +130,8 @@
 				0 0 2px var(--_text-outline),
 				0 1px 5px var(--_text-contrast);
 
-			animation: text-enter 600ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+			animation: text-enter 600ms var(--md-easing-emphasized-decelerate) 200ms
+				both;
 		}
 
 		@keyframes text-enter {

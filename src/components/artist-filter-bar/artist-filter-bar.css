@@ -93,13 +93,12 @@
 
 		/* ── Artist chip list (flex wrap — single-axis wrapping flow) ── */
 		.artists-list {
+			overflow-y: auto;
 			display: flex;
 			flex-wrap: wrap;
 			gap: var(--space-2xs);
 
 			max-block-size: 40dvh;
-			overflow-y: auto;
-
 			margin: 0;
 			padding: 0;
 
@@ -130,7 +129,11 @@
 
 			padding: var(--space-3xs) var(--space-s);
 			border: 1px solid var(--color-border-muted);
-			border-radius: var(--radius-full);
+
+			/* Selection spring-morph (2.6): rests as a squircle, morphs to a full
+			   pill when selected with a spatial spring; color changes use the
+			   non-bouncy effects family. */
+			border-radius: var(--md-shape-large);
 
 			font-size: var(--step--1);
 			color: var(--color-text-secondary);
@@ -138,9 +141,11 @@
 			background: var(--color-surface-raised);
 
 			transition:
-				border-color var(--transition-fast),
-				background var(--transition-fast),
-				color var(--transition-fast);
+				border-color var(--md-duration-short4) var(--md-easing-standard),
+				background var(--md-duration-short4) var(--md-easing-standard),
+				color var(--md-duration-short4) var(--md-easing-standard),
+				border-radius var(--md-spring-spatial-fast-duration)
+				var(--md-spring-spatial-fast);
 
 			/* checkmark icon — hidden until checked */
 			& .chip-check {
@@ -167,6 +172,7 @@
 			/* checked state */
 			&:has(input:checked) {
 				border-color: var(--color-brand-primary);
+				border-radius: var(--md-shape-full);
 				color: var(--color-text-primary);
 				background: color-mix(
 					in oklch,
@@ -210,7 +216,9 @@
 
 			padding: var(--space-3xs) var(--space-s);
 			border: 1px solid var(--color-border-muted);
-			border-radius: var(--radius-full);
+
+			/* Selection spring-morph (2.6): squircle → pill on select. */
+			border-radius: var(--md-shape-large);
 
 			font-size: var(--step--1);
 			color: var(--color-text-secondary);
@@ -218,9 +226,11 @@
 			background: var(--color-surface-raised);
 
 			transition:
-				border-color var(--transition-fast),
-				background var(--transition-fast),
-				color var(--transition-fast);
+				border-color var(--md-duration-short4) var(--md-easing-standard),
+				background var(--md-duration-short4) var(--md-easing-standard),
+				color var(--md-duration-short4) var(--md-easing-standard),
+				border-radius var(--md-spring-spatial-fast-duration)
+				var(--md-spring-spatial-fast);
 
 			&[data-journey-status="tracking"] {
 				--_hue: var(--journey-hue-tracking);
@@ -254,6 +264,7 @@
 			/* Selected: fill with the status hue, label flips to high-contrast. */
 			&:has(input:checked) {
 				border-color: oklch(65% 0.16 var(--_hue));
+				border-radius: var(--md-shape-full);
 				color: var(--color-white);
 				background: oklch(58% 0.16 var(--_hue));
 			}
@@ -347,6 +358,14 @@
 			&:focus-visible {
 				outline: 2px solid var(--color-brand-primary);
 				outline-offset: 2px;
+			}
+		}
+
+		/* Land the chip selection morph end state without the spring. */
+		@media (prefers-reduced-motion: reduce) {
+			.artist-chip,
+			.journey-chip {
+				transition-duration: var(--md-duration-instant);
 			}
 		}
 	}

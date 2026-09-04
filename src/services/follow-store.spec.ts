@@ -73,6 +73,12 @@ const mockEa = {
 	publish: vi.fn(),
 }
 
+const mockHaptic = {
+	tap: vi.fn(),
+	confirm: vi.fn(),
+	pulse: vi.fn(),
+}
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
@@ -85,6 +91,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IConcertStore: mockConcertStore,
 				ILocalStorage: mockStorage,
 				IEventAggregator: mockEa,
+				IHapticService: mockHaptic,
 			}
 			const tokenAny = token as { friendlyName?: string }
 			return map[tokenAny.friendlyName ?? ''] ?? {}

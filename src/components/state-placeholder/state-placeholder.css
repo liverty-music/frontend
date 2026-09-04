@@ -23,5 +23,32 @@
 		.state-icon {
 			color: var(--color-brand-accent);
 		}
+
+		/* Loading variant: a stack of skeleton bars that mirrors a text list so
+		   the swap to real content is layout-shift-free. Visual (shimmer, radius)
+		   comes from the shared `.skeleton` utility; here we only own layout. */
+		.state-skeleton {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+
+			inline-size: 100%;
+			padding-block: var(--space-s);
+			padding-inline: var(--space-s);
+		}
+
+		.skeleton-row {
+			block-size: var(--space-m);
+		}
+
+		/* Stagger the bar widths so the placeholder reads as text lines, not
+		   solid blocks; the last bar is short like a trailing line. */
+		.skeleton-row:nth-child(3n) {
+			inline-size: 70%;
+		}
+
+		.skeleton-row:last-child {
+			inline-size: 45%;
+		}
 	}
 }

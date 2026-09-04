@@ -48,10 +48,11 @@
 			box-shadow: var(--shadow-card-glow);
 
 			transition:
-				transform var(--transition-slow) cubic-bezier(0.16, 1, 0.3, 1),
-				opacity var(--transition-slow) ease,
-				display var(--transition-slow) allow-discrete,
-				overlay var(--transition-slow) allow-discrete;
+				transform var(--md-duration-medium2)
+				var(--md-easing-emphasized-decelerate),
+				opacity var(--md-duration-medium2) var(--md-easing-standard),
+				display var(--md-duration-medium2) allow-discrete,
+				overlay var(--md-duration-medium2) allow-discrete;
 
 			&:popover-open {
 				transform: translateY(0);

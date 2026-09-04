@@ -101,7 +101,7 @@
   <template if.bind="step === 'confirm'">
     <div class="wizard-step">
       <h2>解析結果の確認</h2>
-      <div repeat.for="email of createdEmails" class="parsed-result">
+      <div repeat.for="email of createdEmails" class="parsed-result" data-list-item>
         <dl>
           <template if.bind="email.lotteryStart">
             <dt>抽選受付開始</dt>

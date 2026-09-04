@@ -56,10 +56,16 @@
 			max-inline-size: 7.5rem;
 			block-size: 100%;
 
+			/* Selection spring-morph (design 2.6): the corner radius rounds with a
+			   spatial spring (overshoot) when selected; color/box-shadow use the
+			   non-bouncy effects family. Owned here (not via the shared
+			   [data-selected-morph] utility) because the component's own
+			   transition would otherwise clobber the utility's. */
 			transition:
-				color var(--transition-normal),
-				box-shadow var(--transition-normal),
-				transform var(--transition-normal);
+				color var(--md-duration-medium1) var(--md-spring-effects),
+				box-shadow var(--md-duration-medium1) var(--md-spring-effects),
+				border-radius var(--md-spring-spatial-duration) var(--md-spring-spatial),
+				transform var(--md-duration-medium1) var(--md-easing-standard);
 		}
 
 		/* Press cue at the moment of tap. The nav tabs are <a> elements the global
@@ -88,7 +94,15 @@
 		   1) brand-accent color, 2) bolder label weight,
 		   3) a 2px accent bar at the top edge as a visual anchor. */
 		.nav-tab[data-active="true"] {
+			/* Rounder shape (spring-morphed via the transition above) + a persistent
+			   selected state layer, per the M3 selection treatment. */
+			border-radius: var(--md-shape-large-increased);
 			color: var(--color-brand-accent);
+			background: color-mix(
+				in oklab,
+				var(--color-brand-accent) var(--md-state-selected),
+				transparent
+			);
 			box-shadow: inset 0 2px 8px
 				oklch(from var(--color-brand-accent) l c h / 20%);
 
@@ -122,6 +136,11 @@
 		/* Reduced motion: drop the press scale, acknowledge the tap with a brief
 		   accent-tinted background instead. */
 		@media (prefers-reduced-motion: reduce) {
+			.nav-tab {
+				/* Land the selection shape/color end state without the spring. */
+				transition-duration: var(--md-duration-instant);
+			}
+
 			.nav-tab:active {
 				transform: none;
 				background: oklch(from var(--color-brand-accent) l c h / 12%);

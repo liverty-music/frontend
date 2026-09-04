@@ -195,8 +195,10 @@
 			box-shadow: var(--shadow-sheet);
 
 			/* Focus target on open; suppress the focus ring on the container
-			   itself (interactive children keep their own rings). */
-			&:focus {
+			   itself (interactive children keep their own rings). Scoped to
+			   :focus-visible so only genuine keyboard focus is considered, per
+			   the app's focus-visible convention. */
+			&:focus-visible {
 				outline: none;
 			}
 		}
