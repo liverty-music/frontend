@@ -17,19 +17,6 @@ vi.mock('../../src/services/ticket-email-service', () => ({
 	ITicketEmailService: mockITicketEmailService,
 }))
 
-vi.mock(
-	'@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js',
-	() => ({
-		TicketJourneyStatus: {
-			TRACKING: 0,
-			APPLIED: 1,
-			LOST: 2,
-			UNPAID: 3,
-			PAID: 4,
-		},
-	}),
-)
-
 const { ImportTicketEmailRoute } = await import(
 	'../../src/routes/import-ticket-email/import-ticket-email-route'
 )
@@ -194,12 +181,12 @@ describe('ImportTicketEmailRoute', () => {
 
 	describe('formatJourneyStatus', () => {
 		it('formats known statuses', () => {
-			expect(sut.formatJourneyStatus(1)).toBe('申し込み済')
-			expect(sut.formatJourneyStatus(4)).toBe('支払済')
+			expect(sut.formatJourneyStatus('applied')).toBe('申し込み済')
+			expect(sut.formatJourneyStatus('paid')).toBe('支払済')
 		})
 
 		it('returns unknown for unrecognized status', () => {
-			expect(sut.formatJourneyStatus(99 as never)).toBe('不明')
+			expect(sut.formatJourneyStatus('bogus' as never)).toBe('不明')
 		})
 	})
 

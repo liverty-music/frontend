@@ -105,11 +105,11 @@
         <dl>
           <template if.bind="email.lotteryStart">
             <dt>抽選受付開始</dt>
-            <dd>${email.lotteryStart.toDate() | date}</dd>
+            <dd>${email.lotteryStart | date}</dd>
           </template>
           <template if.bind="email.lotteryEnd">
             <dt>抽選受付終了</dt>
-            <dd>${email.lotteryEnd.toDate() | date}</dd>
+            <dd>${email.lotteryEnd | date}</dd>
           </template>
           <template if.bind="email.applicationUrl">
             <dt>申し込みURL</dt>
@@ -121,7 +121,7 @@
           </template>
           <template if.bind="email.paymentDeadline">
             <dt>入金期限</dt>
-            <dd>${email.paymentDeadline.toDate() | date}</dd>
+            <dd>${email.paymentDeadline | date}</dd>
           </template>
         </dl>
       </div>

@@ -2,14 +2,15 @@ import {
 	ApplicantIdentity,
 	LotterySalesPhaseId,
 	PaymentAuthorization,
-	type TicketApplication,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
 import { LotteryService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/lottery/v1/lottery_service_connect.js'
 import { type Client, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
+import type { TicketApplication } from '../../../entities/lottery'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
+import { ticketApplicationFrom } from '../mapper/lottery-mapper'
 
 export const ILotteryRpcClient = DI.createInterface<ILotteryRpcClient>(
 	'ILotteryRpcClient',
@@ -117,6 +118,8 @@ export class LotteryRpcClient {
 			{ signal },
 		)
 		return resp.application
+			? ticketApplicationFrom(resp.application)
+			: undefined
 	}
 
 	/**
@@ -147,6 +150,8 @@ export class LotteryRpcClient {
 			{ signal },
 		)
 		return resp.application
+			? ticketApplicationFrom(resp.application)
+			: undefined
 	}
 
 	/**
@@ -162,5 +167,7 @@ export class LotteryRpcClient {
 			{ signal },
 		)
 		return resp.application
+			? ticketApplicationFrom(resp.application)
+			: undefined
 	}
 }

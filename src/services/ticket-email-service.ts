@@ -1,15 +1,9 @@
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
+import { DI, resolve } from 'aurelia'
 import {
-	type TicketEmail,
-	TicketEmailType,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_email_pb.js'
-import type { TicketJourneyStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js'
-import { TicketEmailService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/ticket_email/v1/ticket_email_service_connect.js'
-import { createClient } from '@connectrpc/connect'
-import { DI, ILogger, resolve } from 'aurelia'
-import { IAppConfig } from '../config/app-config'
-import { IAuthService } from './auth-service'
-import { createTransport } from './grpc-transport'
+	ITicketEmailRpcClient,
+	type TicketEmailCorrections,
+} from '../adapter/rpc/client/ticket-email-client'
+import type { TicketEmail, TicketEmailType } from '../entities/ticket-email'
 
 export const ITicketEmailService = DI.createInterface<ITicketEmailService>(
 	'ITicketEmailService',
@@ -18,74 +12,37 @@ export const ITicketEmailService = DI.createInterface<ITicketEmailService>(
 
 export interface ITicketEmailService extends TicketEmailServiceClient {}
 
-export type EmailType = 'lottery_info' | 'lottery_result'
+/**
+ * Legacy alias kept for the route's existing import; the canonical type is
+ * `TicketEmailType` in `entities/ticket-email`.
+ */
+export type EmailType = TicketEmailType
 
+/** User corrections applied to a previously created ticket email. */
+export type UpdateCorrections = TicketEmailCorrections
+
+/**
+ * Thin application-service facade over {@link ITicketEmailRpcClient}. Delegates to
+ * the RPC adapter and exposes domain `TicketEmail` entities; it no longer imports
+ * any generated (`@buf/*`) type, keeping the adapter boundary clean.
+ */
 export class TicketEmailServiceClient {
-	private readonly logger = resolve(ILogger).scopeTo('TicketEmailService')
-	private readonly authService = resolve(IAuthService)
-	private readonly client = createClient(
-		TicketEmailService,
-		createTransport(
-			this.authService,
-			resolve(ILogger).scopeTo('Transport'),
-			resolve(IAppConfig),
-		),
-	)
+	private readonly client = resolve(ITicketEmailRpcClient)
 
-	public async create(
+	public create(
 		rawBody: string,
 		emailType: EmailType,
 		eventIds: string[],
 		signal?: AbortSignal,
 	): Promise<TicketEmail[]> {
-		this.logger.info('Creating ticket email', {
-			emailType,
-			eventCount: eventIds.length,
-		})
-		try {
-			const response = await this.client.createTicketEmail(
-				{
-					rawBody,
-					emailType: emailTypeToProto[emailType],
-					eventIds: eventIds.map((id) => new EventId({ value: id })),
-				},
-				{ signal },
-			)
-			return response.ticketEmails
-		} catch (err) {
-			this.logger.warn('CreateTicketEmail failed', { error: err })
-			throw err
-		}
+		return this.client.create(rawBody, emailType, eventIds, signal)
 	}
 
-	public async update(
+	public update(
 		ticketEmailId: string,
 		corrections: UpdateCorrections,
 		signal?: AbortSignal,
 	): Promise<TicketEmail | undefined> {
-		this.logger.info('Updating ticket email', { ticketEmailId })
-		try {
-			const response = await this.client.updateTicketEmail(
-				{
-					ticketEmailId: { value: ticketEmailId },
-					...corrections,
-				},
-				{ signal },
-			)
-			return response.ticketEmail
-		} catch (err) {
-			this.logger.warn('UpdateTicketEmail failed', { error: err })
-			throw err
-		}
+		return this.client.update(ticketEmailId, corrections, signal)
 	}
-}
-
-export interface UpdateCorrections {
-	applicationUrl?: string
-	journeyStatus?: TicketJourneyStatus
-}
-
-const emailTypeToProto: Record<EmailType, TicketEmailType> = {
-	lottery_info: TicketEmailType.LOTTERY_INFO,
-	lottery_result: TicketEmailType.LOTTERY_RESULT,
 }

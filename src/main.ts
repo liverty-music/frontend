@@ -17,6 +17,7 @@ import { IFollowRpcClient } from './adapter/rpc/client/follow-client'
 import { IIdentityVerificationRpcClient } from './adapter/rpc/client/identity-verification-client'
 import { ILotteryRpcClient } from './adapter/rpc/client/lottery-client'
 import { IPushRpcClient } from './adapter/rpc/client/push-client'
+import { ITicketEmailRpcClient } from './adapter/rpc/client/ticket-email-client'
 import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
@@ -266,6 +267,7 @@ async function bootstrap(): Promise<void> {
 	au.register(IPushRpcClient)
 	au.register(IIdentityVerificationRpcClient)
 	au.register(ILotteryRpcClient)
+	au.register(ITicketEmailRpcClient)
 	au.register(IStripeService)
 	au.register(ArtistFilterBar)
 	au.register(BottomNavBar)

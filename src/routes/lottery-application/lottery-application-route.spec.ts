@@ -1,9 +1,9 @@
-import {
-	TicketApplication,
-	TicketApplicationState,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type {
+	TicketApplication,
+	TicketApplicationState,
+} from '../../entities/lottery'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -47,11 +47,11 @@ import { LotteryApplicationRoute } from './lottery-application-route'
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
 function appWith(state: TicketApplicationState): TicketApplication {
-	return new TicketApplication({
+	return {
 		requestedTicketCount: 2,
 		identity: { fullName: '山田太郎', phoneNumber: '09012345678' },
 		state,
-	})
+	}
 }
 
 async function makeSut(): Promise<LotteryApplicationRoute> {
@@ -84,9 +84,7 @@ describe('LotteryApplicationRoute', () => {
 		})
 
 		it('loads the application and its 本人確認 summary', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.APPLIED),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
 			const sut = await makeSut()
 			expect(sut.step).toBe('loaded')
 			expect(sut.applicationCount).toBe(2)
@@ -97,36 +95,28 @@ describe('LotteryApplicationRoute', () => {
 
 	describe('state → UI mapping', () => {
 		it('maps APPLIED to the waiting (抽選待ち) state', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.APPLIED),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
 			const sut = await makeSut()
 			expect(sut.resultKind).toBe('waiting')
 			expect(sut.stateLabel).toBe('抽選待ち')
 		})
 
 		it('maps WON to 当選', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.WON),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('won'))
 			const sut = await makeSut()
 			expect(sut.resultKind).toBe('won')
 			expect(sut.stateLabel).toBe('当選')
 		})
 
 		it('maps LOST to 落選', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.LOST),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('lost'))
 			const sut = await makeSut()
 			expect(sut.resultKind).toBe('lost')
 			expect(sut.stateLabel).toBe('落選')
 		})
 
 		it('maps WITHDRAWN to 取下げ済み', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.WITHDRAWN),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('withdrawn'))
 			const sut = await makeSut()
 			expect(sut.resultKind).toBe('withdrawn')
 			expect(sut.stateLabel).toBe('取下げ済み')
@@ -135,19 +125,14 @@ describe('LotteryApplicationRoute', () => {
 
 	describe('withdraw availability', () => {
 		it('offers withdraw only while APPLIED', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.APPLIED),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
 			const sut = await makeSut()
 			expect(sut.canWithdraw).toBe(true)
 		})
 
 		it('hides withdraw once WON / LOST / WITHDRAWN', async () => {
-			for (const state of [
-				TicketApplicationState.WON,
-				TicketApplicationState.LOST,
-				TicketApplicationState.WITHDRAWN,
-			]) {
+			const finalStates: TicketApplicationState[] = ['won', 'lost', 'withdrawn']
+			for (const state of finalStates) {
 				mockLottery.getMyApplication.mockResolvedValue(appWith(state))
 				const sut = await makeSut()
 				expect(sut.canWithdraw).toBe(false)
@@ -157,9 +142,7 @@ describe('LotteryApplicationRoute', () => {
 
 	describe('withdraw happy path (APPLIED → confirm → WITHDRAWN)', () => {
 		it('withdraws after confirm and reflects the withdrawn state', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.APPLIED),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
 			const sut = await makeSut()
 
 			sut.askWithdraw()
@@ -178,9 +161,7 @@ describe('LotteryApplicationRoute', () => {
 		})
 
 		it('cancelWithdraw dismisses the confirm step without calling the RPC', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.APPLIED),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
 			const sut = await makeSut()
 			sut.askWithdraw()
 			sut.cancelWithdraw()
@@ -189,9 +170,7 @@ describe('LotteryApplicationRoute', () => {
 		})
 
 		it('does not withdraw when not APPLIED', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.WON),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('won'))
 			const sut = await makeSut()
 			sut.askWithdraw()
 			await sut.confirmWithdraw()
@@ -202,18 +181,14 @@ describe('LotteryApplicationRoute', () => {
 
 	describe('withdraw error surfacing', () => {
 		it('handles FAILED_PRECONDITION (draw already ran) by reloading', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.APPLIED),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
 			const sut = await makeSut()
 
 			mockLottery.withdrawApplication.mockRejectedValueOnce(
 				new ConnectError('draw ran', Code.FailedPrecondition),
 			)
 			// The reload after the precondition failure returns the final WON result.
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.WON),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('won'))
 
 			sut.askWithdraw()
 			await sut.confirmWithdraw()
@@ -224,9 +199,7 @@ describe('LotteryApplicationRoute', () => {
 		})
 
 		it('surfaces a generic withdraw failure without changing state', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.APPLIED),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
 			const sut = await makeSut()
 
 			mockLottery.withdrawApplication.mockRejectedValueOnce(new Error('boom'))
@@ -241,9 +214,7 @@ describe('LotteryApplicationRoute', () => {
 
 	describe('pre-draw handling', () => {
 		it('renders the waiting state for an APPLIED application (抽選待ち)', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(
-				appWith(TicketApplicationState.APPLIED),
-			)
+			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
 			const sut = await makeSut()
 
 			// The view derives pre-draw purely from getMyApplication's state; no
