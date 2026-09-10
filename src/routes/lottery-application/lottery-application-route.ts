@@ -1,8 +1,8 @@
 import type { Params } from '@aurelia/router'
-import { TicketApplicationState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { ILotteryRpcClient } from '../../adapter/rpc/client/lottery-client'
+import type { TicketApplicationState } from '../../entities/lottery'
 
 /**
  * Discrete UI phases of the my-application / result view.
@@ -57,7 +57,7 @@ export class LotteryApplicationRoute {
 	public applicationCount = 0
 	public applicantName = ''
 	public applicantPhone = ''
-	private state: TicketApplicationState = TicketApplicationState.UNSPECIFIED
+	private state: TicketApplicationState = 'unspecified'
 
 	/** Confirm-step gate for the withdraw action. */
 	public confirmingWithdraw = false
@@ -118,11 +118,11 @@ export class LotteryApplicationRoute {
 	/** The visual bucket the template renders for the current state. */
 	public get resultKind(): ResultKind {
 		switch (this.state) {
-			case TicketApplicationState.WON:
+			case 'won':
 				return 'won'
-			case TicketApplicationState.LOST:
+			case 'lost':
 				return 'lost'
-			case TicketApplicationState.WITHDRAWN:
+			case 'withdrawn':
 				return 'withdrawn'
 			default:
 				return 'waiting'
@@ -132,13 +132,13 @@ export class LotteryApplicationRoute {
 	/** Clear Japanese label for the current lifecycle state. */
 	public get stateLabel(): string {
 		switch (this.state) {
-			case TicketApplicationState.APPLIED:
+			case 'applied':
 				return '抽選待ち'
-			case TicketApplicationState.WON:
+			case 'won':
 				return '当選'
-			case TicketApplicationState.LOST:
+			case 'lost':
 				return '落選'
-			case TicketApplicationState.WITHDRAWN:
+			case 'withdrawn':
 				return '取下げ済み'
 			default:
 				return '—'
@@ -151,7 +151,7 @@ export class LotteryApplicationRoute {
 	 * the round-trip.
 	 */
 	public get canWithdraw(): boolean {
-		return this.state === TicketApplicationState.APPLIED && !this.withdrawing
+		return this.state === 'applied' && !this.withdrawing
 	}
 
 	// ── Withdraw flow (task 4.3) ───────────────────────────────────────────────
@@ -175,7 +175,7 @@ export class LotteryApplicationRoute {
 	 * application is reloaded so the now-final result renders.
 	 */
 	public async confirmWithdraw(): Promise<void> {
-		if (this.state !== TicketApplicationState.APPLIED) return
+		if (this.state !== 'applied') return
 		this.withdrawing = true
 		this.error = ''
 		try {
@@ -183,7 +183,7 @@ export class LotteryApplicationRoute {
 				this.phaseId,
 				this.abortController?.signal,
 			)
-			this.state = TicketApplicationState.WITHDRAWN
+			this.state = 'withdrawn'
 			this.confirmingWithdraw = false
 		} catch (err) {
 			if ((err as Error).name === 'AbortError') return

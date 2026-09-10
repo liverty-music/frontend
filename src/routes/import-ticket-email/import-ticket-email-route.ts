@@ -1,9 +1,9 @@
 import type { Params, RouteNode } from '@aurelia/router'
-import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import type { TicketEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_email_pb.js'
-import { TicketJourneyStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js'
 import { ILogger, resolve } from 'aurelia'
+import type { ProtoConcert } from '../../adapter/rpc/client/concert-client'
+import type { JourneyStatus } from '../../entities/concert'
 import type { FollowedArtist } from '../../entities/follow'
+import type { TicketEmail } from '../../entities/ticket-email'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
 import {
@@ -47,7 +47,7 @@ export class ImportTicketEmailRoute {
 	public selectedArtistId = ''
 
 	// Step 4: Concert selection
-	public concerts: Concert[] = []
+	public concerts: ProtoConcert[] = []
 	public selectedEventIds: string[] = []
 
 	// Step 5: Editable body
@@ -195,7 +195,7 @@ export class ImportTicketEmailRoute {
 			for (const email of this.createdEmails) {
 				if (email.id) {
 					await this.ticketEmailService.update(
-						email.id.value,
+						email.id,
 						{},
 						this.abortController?.signal,
 					)
@@ -245,17 +245,17 @@ export class ImportTicketEmailRoute {
 		return ''
 	}
 
-	public formatJourneyStatus(status: TicketJourneyStatus): string {
+	public formatJourneyStatus(status: JourneyStatus): string {
 		switch (status) {
-			case TicketJourneyStatus.TRACKING:
+			case 'tracking':
 				return 'トラッキング中'
-			case TicketJourneyStatus.APPLIED:
+			case 'applied':
 				return '申し込み済'
-			case TicketJourneyStatus.LOST:
+			case 'lost':
 				return '落選'
-			case TicketJourneyStatus.UNPAID:
+			case 'unpaid':
 				return '当選（未払い）'
-			case TicketJourneyStatus.PAID:
+			case 'paid':
 				return '支払済'
 			default:
 				return '不明'
