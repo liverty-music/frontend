@@ -1,4 +1,5 @@
 import type { Params } from '@aurelia/router'
+import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { toOrganizerErrorMessage } from '../services/connect-error-copy'
 import { ILotteryPhaseClient } from '../services/lottery-phase-client'
@@ -28,10 +29,10 @@ export interface LotteryStatusView {
 
 const EMPTY = '—'
 
-/** Formats a proto Timestamp-ish value into a local date-time label, or `—`. */
-function formatInstant(ts: { toDate(): Date } | undefined): string {
+/** Formats a proto Timestamp value into a local date-time label, or `—`. */
+function formatInstant(ts: Timestamp | undefined): string {
 	if (!ts) return EMPTY
-	return ts.toDate().toLocaleString()
+	return timestampDate(ts).toLocaleString()
 }
 
 /**
@@ -120,8 +121,8 @@ export class LotteryStatusRoute {
 		const p = status.phase
 		if (!p) return undefined
 		const now = Date.now()
-		const open = p.openTime?.toDate().getTime()
-		const close = p.closeTime?.toDate().getTime()
+		const open = p.openTime ? timestampDate(p.openTime).getTime() : undefined
+		const close = p.closeTime ? timestampDate(p.closeTime).getTime() : undefined
 		const windowOpen =
 			open !== undefined && close !== undefined && now >= open && now < close
 		let windowLabel = EMPTY

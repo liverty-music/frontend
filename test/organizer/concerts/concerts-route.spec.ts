@@ -1,19 +1,17 @@
 import {
-	LocalDate,
-	Title,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
-import {
-	Event,
-	EventId,
+	type Event,
+	EventSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import {
 	PublishState,
-	Series,
-	SeriesId,
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { AuthoredConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/concert_service_pb.js'
+import {
+	type AuthoredConcert,
+	AuthoredConcertSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/concert_service_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -42,11 +40,11 @@ interface MockClient {
  * `dayOffset` so multi-event rows get distinguishable date labels.
  */
 function makeEvent(eventId: string, dayOffset = 0): Event {
-	return new Event({
-		id: new EventId({ value: eventId }),
-		localDate: new LocalDate({
+	return create(EventSchema, {
+		id: { value: eventId },
+		localDate: {
 			value: { year: 2026, month: 9, day: 10 + dayOffset },
-		}),
+		},
 	})
 }
 
@@ -57,14 +55,14 @@ function makeConcert(
 	visibility: Visibility,
 	events: Event[] = [],
 ): AuthoredConcert {
-	return new AuthoredConcert({
-		series: new Series({
-			id: new SeriesId({ value: id }),
-			title: new Title({ value: title }),
+	return create(AuthoredConcertSchema, {
+		series: {
+			id: { value: id },
+			title: { value: title },
 			type: SeriesType.SINGLE,
 			visibility,
 			publishState,
-		}),
+		},
 		events,
 		performers: [],
 	})

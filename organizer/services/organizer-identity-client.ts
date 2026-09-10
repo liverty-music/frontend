@@ -1,7 +1,6 @@
 import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
-import { OrganizerId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
-import { OrganizerService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/organizer/v1/organizer_service_connect.js'
+import { OrganizerService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/organizer_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
@@ -70,7 +69,7 @@ export class OrganizerIdentityClient {
 		this.logger.info('Listing represented artists', { organizerId })
 		try {
 			const response = await this.client.listArtists(
-				{ organizerId: new OrganizerId({ value: organizerId }) },
+				{ organizerId: { value: organizerId } },
 				{ signal },
 			)
 			return response.artists

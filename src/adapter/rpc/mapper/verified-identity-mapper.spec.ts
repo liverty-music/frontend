@@ -1,16 +1,13 @@
+import { VerificationLevel as ProtoVerificationLevel } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import {
-	VerificationLevel as ProtoVerificationLevel,
-	UserId,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
-import {
-	PocketSignUserId,
 	DedupeStrength as ProtoDedupeStrength,
 	VerificationMethod as ProtoVerificationMethod,
 	VerificationStatus as ProtoVerificationStatus,
-	VerifiedIdentity as ProtoVerifiedIdentity,
-	VerifiedIdentityId,
+	type VerifiedIdentity as ProtoVerifiedIdentity,
+	VerifiedIdentitySchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/verified_identity_pb.js'
-import { Timestamp } from '@bufbuild/protobuf'
+import { create } from '@bufbuild/protobuf'
+import { TimestampSchema } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
 	verificationLevelFrom,
@@ -29,18 +26,18 @@ function makeProtoIdentity(
 		verifiedAtSeconds: bigint
 	}> = {},
 ): ProtoVerifiedIdentity {
-	return new ProtoVerifiedIdentity({
-		id: new VerifiedIdentityId({ value: overrides.id ?? 'vi-1' }),
-		accountRef: new UserId({ value: overrides.accountRef ?? 'user-1' }),
+	return create(VerifiedIdentitySchema, {
+		id: { value: overrides.id ?? 'vi-1' },
+		accountRef: { value: overrides.accountRef ?? 'user-1' },
 		method: overrides.method ?? ProtoVerificationMethod.JPKI,
-		pocketSignUserId: new PocketSignUserId({
+		pocketSignUserId: {
 			value: overrides.pocketSignUserId ?? 'ps-user-1',
-		}),
+		},
 		dedupeStrength: overrides.dedupeStrength ?? ProtoDedupeStrength.STRONG,
 		status: overrides.status ?? ProtoVerificationStatus.ACTIVE,
 		verifiedAt:
 			overrides.verifiedAtSeconds !== undefined
-				? new Timestamp({ seconds: overrides.verifiedAtSeconds })
+				? create(TimestampSchema, { seconds: overrides.verifiedAtSeconds })
 				: undefined,
 	})
 }

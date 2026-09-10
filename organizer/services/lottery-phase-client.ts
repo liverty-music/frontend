@@ -1,9 +1,7 @@
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import type { LotterySalesPhase } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
-import { LotterySalesPhaseId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
 import type { GetLotteryPhaseStatusResponse } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/lottery_service_pb.js'
-import { LotteryService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/organizer/v1/lottery_service_connect.js'
-import { Timestamp } from '@bufbuild/protobuf'
+import { LotteryService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/lottery_service_pb.js'
+import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
@@ -74,9 +72,9 @@ export class LotteryPhaseClient {
 		try {
 			const response = await this.client.configureLotteryPhase(
 				{
-					eventId: new EventId({ value: input.eventId }),
-					openTime: Timestamp.fromDate(input.openTime),
-					closeTime: Timestamp.fromDate(input.closeTime),
+					eventId: { value: input.eventId },
+					openTime: timestampFromDate(input.openTime),
+					closeTime: timestampFromDate(input.closeTime),
 					ticketCapacity: input.ticketCapacity,
 					maxTicketsPerApplication: input.maxTicketsPerApplication,
 					// JPY whole-yen; the wire field is int64 → bigint.
@@ -106,7 +104,7 @@ export class LotteryPhaseClient {
 		this.logger.info('Getting lottery phase status', { phaseId })
 		try {
 			return await this.client.getLotteryPhaseStatus(
-				{ phaseId: new LotterySalesPhaseId({ value: phaseId }) },
+				{ phaseId: { value: phaseId } },
 				{ signal },
 			)
 		} catch (err) {

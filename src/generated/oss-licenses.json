@@ -2,7 +2,7 @@
 	"packages": [
 		{
 			"name": "@aurelia/expression-parser",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -10,7 +10,7 @@
 		},
 		{
 			"name": "@aurelia/fetch-client",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -18,7 +18,7 @@
 		},
 		{
 			"name": "@aurelia/i18n",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -26,7 +26,7 @@
 		},
 		{
 			"name": "@aurelia/kernel",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -34,7 +34,7 @@
 		},
 		{
 			"name": "@aurelia/metadata",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -42,7 +42,7 @@
 		},
 		{
 			"name": "@aurelia/platform",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -50,7 +50,7 @@
 		},
 		{
 			"name": "@aurelia/platform-browser",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -58,7 +58,7 @@
 		},
 		{
 			"name": "@aurelia/route-recognizer",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -66,7 +66,7 @@
 		},
 		{
 			"name": "@aurelia/router",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -74,7 +74,7 @@
 		},
 		{
 			"name": "@aurelia/runtime",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -82,7 +82,7 @@
 		},
 		{
 			"name": "@aurelia/runtime-html",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -90,7 +90,7 @@
 		},
 		{
 			"name": "@aurelia/template-compiler",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -106,47 +106,23 @@
 		},
 		{
 			"name": "@buf/bufbuild_protovalidate.bufbuild_es",
-			"version": "1.10.0-20250717185734-6c6e0d3c608e.1",
-			"license": "UNKNOWN",
-			"publisher": null,
-			"repository": null,
-			"licenseText": null
-		},
-		{
-			"name": "@buf/bufbuild_protovalidate.connectrpc_es",
-			"version": "1.6.1-20250717185734-6c6e0d3c608e.1",
-			"license": "UNKNOWN",
+			"version": "2.14.1-20250717185734-6c6e0d3c608e.3",
+			"license": "Apache-2.0",
 			"publisher": null,
 			"repository": null,
 			"licenseText": null
 		},
 		{
 			"name": "@buf/googleapis_googleapis.bufbuild_es",
-			"version": "1.10.0-20250411203938-61b203b9a916.1",
-			"license": "UNKNOWN",
-			"publisher": null,
-			"repository": null,
-			"licenseText": null
-		},
-		{
-			"name": "@buf/googleapis_googleapis.connectrpc_es",
-			"version": "1.6.1-20250411203938-61b203b9a916.1",
-			"license": "UNKNOWN",
+			"version": "2.14.1-20250411203938-61b203b9a916.3",
+			"license": "Apache-2.0",
 			"publisher": null,
 			"repository": null,
 			"licenseText": null
 		},
 		{
 			"name": "@buf/liverty-music_schema.bufbuild_es",
-			"version": "1.10.0-20260902025722-26d5641c4b30.1",
-			"license": "UNKNOWN",
-			"publisher": null,
-			"repository": null,
-			"licenseText": null
-		},
-		{
-			"name": "@buf/liverty-music_schema.connectrpc_es",
-			"version": "1.6.1-20260902025722-26d5641c4b30.1",
+			"version": "2.14.1-20260902095528-98cf6c870a23.3",
 			"license": "UNKNOWN",
 			"publisher": null,
 			"repository": null,
@@ -154,7 +130,7 @@
 		},
 		{
 			"name": "@bufbuild/protobuf",
-			"version": "1.10.1",
+			"version": "2.14.1",
 			"license": "(Apache-2.0 AND BSD-3-Clause)",
 			"publisher": null,
 			"repository": "https://github.com/bufbuild/protobuf-es",
@@ -162,7 +138,7 @@
 		},
 		{
 			"name": "@connectrpc/connect",
-			"version": "1.7.0",
+			"version": "2.2.0",
 			"license": "Apache-2.0",
 			"publisher": null,
 			"repository": "https://github.com/connectrpc/connect-es",
@@ -170,10 +146,42 @@
 		},
 		{
 			"name": "@connectrpc/connect-web",
-			"version": "1.7.0",
+			"version": "2.2.0",
 			"license": "Apache-2.0",
 			"publisher": null,
 			"repository": "https://github.com/connectrpc/connect-es",
+			"licenseText": null
+		},
+		{
+			"name": "@emnapi/core",
+			"version": "1.11.3",
+			"license": "MIT",
+			"publisher": "toyobayashi",
+			"repository": "https://github.com/toyobayashi/emnapi",
+			"licenseText": "MIT License\n\nCopyright (c) 2021-present Toyobayashi\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+		},
+		{
+			"name": "@emnapi/runtime",
+			"version": "1.11.3",
+			"license": "MIT",
+			"publisher": "toyobayashi",
+			"repository": "https://github.com/toyobayashi/emnapi",
+			"licenseText": "MIT License\n\nCopyright (c) 2021-present Toyobayashi\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+		},
+		{
+			"name": "@emnapi/wasi-threads",
+			"version": "1.2.3",
+			"license": "MIT",
+			"publisher": "toyobayashi",
+			"repository": "https://github.com/toyobayashi/emnapi",
+			"licenseText": "MIT License\n\nCopyright (c) 2021-present Toyobayashi\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+		},
+		{
+			"name": "@napi-rs/wasm-runtime",
+			"version": "1.2.3",
+			"license": "MIT",
+			"publisher": "LongYinan",
+			"repository": "https://github.com/napi-rs/napi-rs",
 			"licenseText": null
 		},
 		{
@@ -273,6 +281,14 @@
 			"licenseText": "MIT License\n\nCopyright (c) 2017 Stripe\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
 		},
 		{
+			"name": "@tybys/wasm-util",
+			"version": "0.10.3",
+			"license": "MIT",
+			"publisher": "toyobayashi",
+			"repository": "https://github.com/toyobayashi/wasm-util",
+			"licenseText": null
+		},
+		{
 			"name": "@types/trusted-types",
 			"version": "2.0.7",
 			"license": "MIT",
@@ -298,7 +314,7 @@
 		},
 		{
 			"name": "aurelia",
-			"version": "2.0.0-rc.1",
+			"version": "2.0.0-rc.2",
 			"license": "MIT",
 			"publisher": null,
 			"repository": "https://github.com/aurelia/aurelia",
@@ -338,7 +354,7 @@
 		},
 		{
 			"name": "fflate",
-			"version": "0.4.8",
+			"version": "0.4.9",
 			"license": "MIT",
 			"publisher": "Arjun Barrett",
 			"repository": "https://github.com/101arrowz/fflate",
@@ -447,6 +463,14 @@
 			"publisher": "Thomas Watson Steen <w@tson.dk> (https://twitter.com/wa7son)",
 			"repository": "https://github.com/nodejs/require-in-the-middle",
 			"licenseText": "The MIT License (MIT)\n\nCopyright (c) 2016-2019, Thomas Watson Steen\nCopyright (c) 2019-2025, Elasticsearch B.V.\nCopyright (c) 2025+, require-in-the-middle contributors\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+		},
+		{
+			"name": "tslib",
+			"version": "2.8.1",
+			"license": "0BSD",
+			"publisher": "Microsoft Corp.",
+			"repository": "https://github.com/Microsoft/tslib",
+			"licenseText": "Copyright (c) Microsoft Corporation.\r\n\r\nPermission to use, copy, modify, and/or distribute this software for any\r\npurpose with or without fee is hereby granted.\r\n\r\nTHE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH\r\nREGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY\r\nAND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,\r\nINDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM\r\nLOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR\r\nOTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR\r\nPERFORMANCE OF THIS SOFTWARE."
 		},
 		{
 			"name": "typescript",

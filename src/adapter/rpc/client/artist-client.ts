@@ -1,6 +1,5 @@
-import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import { ArtistService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/artist/v1/artist_service_connect.js'
-import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
+import { ArtistService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/artist/v1/artist_service_pb.js'
+import { type Client, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
 import type { Artist } from '../../../entities/artist'
@@ -17,7 +16,7 @@ export interface IArtistRpcClient extends ArtistRpcClient {}
 
 export class ArtistRpcClient {
 	private readonly logger = resolve(ILogger).scopeTo('ArtistRpcClient')
-	private readonly client: PromiseClient<typeof ArtistService>
+	private readonly client: Client<typeof ArtistService>
 
 	constructor() {
 		this.logger.debug('Initializing ArtistRpcClient')
@@ -29,7 +28,7 @@ export class ArtistRpcClient {
 			resolve(IAppConfig),
 		)
 
-		this.client = createPromiseClient(ArtistService, transport)
+		this.client = createClient(ArtistService, transport)
 	}
 
 	public async listTop(
@@ -43,7 +42,7 @@ export class ArtistRpcClient {
 
 	public async listSimilar(artistId: string, limit: number): Promise<Artist[]> {
 		const resp = await this.client.listSimilar({
-			artistId: new ArtistId({ value: artistId }),
+			artistId: { value: artistId },
 			limit,
 		})
 		return resp.artists.map(artistFrom)

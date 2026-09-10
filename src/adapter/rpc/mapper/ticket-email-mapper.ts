@@ -2,6 +2,7 @@ import {
 	type TicketEmail as ProtoTicketEmail,
 	TicketEmailType as ProtoTicketEmailType,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_email_pb.js'
+import { timestampDate } from '@bufbuild/protobuf/wkt'
 import type {
 	TicketEmail,
 	TicketEmailType,
@@ -36,9 +37,13 @@ export function ticketEmailFrom(proto: ProtoTicketEmail): TicketEmail {
 		emailType: protoToEmailType[proto.emailType] ?? 'lottery_info',
 		rawBody: proto.rawBody,
 		applicationUrl: proto.applicationUrl,
-		lotteryStart: proto.lotteryStart?.toDate(),
-		lotteryEnd: proto.lotteryEnd?.toDate(),
-		paymentDeadline: proto.paymentDeadline?.toDate(),
+		lotteryStart: proto.lotteryStart
+			? timestampDate(proto.lotteryStart)
+			: undefined,
+		lotteryEnd: proto.lotteryEnd ? timestampDate(proto.lotteryEnd) : undefined,
+		paymentDeadline: proto.paymentDeadline
+			? timestampDate(proto.paymentDeadline)
+			: undefined,
 		journeyStatus:
 			proto.journeyStatus !== undefined
 				? journeyStatusFrom(proto.journeyStatus)

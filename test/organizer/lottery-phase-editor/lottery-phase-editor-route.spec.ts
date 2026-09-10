@@ -1,8 +1,9 @@
 import { IRouter } from '@aurelia/router'
 import {
-	LotterySalesPhase,
-	LotterySalesPhaseId,
+	type LotterySalesPhase,
+	LotterySalesPhaseSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -39,7 +40,7 @@ function createMockClient(overrides: Partial<MockClient> = {}): MockClient {
 }
 
 function makePhase(id: string): LotterySalesPhase {
-	return new LotterySalesPhase({ id: new LotterySalesPhaseId({ value: id }) })
+	return create(LotterySalesPhaseSchema, { id: { value: id } })
 }
 
 function build(

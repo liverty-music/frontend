@@ -1,5 +1,4 @@
-import { UserId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
-import { IdentityVerificationService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/identity/v1/identity_verification_service_connect.js'
+import { IdentityVerificationService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/identity/v1/identity_verification_service_pb.js'
 import { type Client, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
@@ -65,7 +64,7 @@ export class IdentityVerificationRpcClient {
 		this.logger.info('Getting my verification status')
 		try {
 			const response = await this.client.getMyVerificationStatus(
-				{ userId: new UserId({ value: userId }) },
+				{ userId: { value: userId } },
 				{ signal },
 			)
 			return {
@@ -95,7 +94,7 @@ export class IdentityVerificationRpcClient {
 		try {
 			const response = await this.client.startVerify(
 				{
-					userId: new UserId({ value: userId }),
+					userId: { value: userId },
 					method: verificationMethodTo(method),
 				},
 				{ signal },
@@ -133,7 +132,7 @@ export class IdentityVerificationRpcClient {
 		try {
 			const response = await this.client.completeVerify(
 				{
-					userId: new UserId({ value: userId }),
+					userId: { value: userId },
 					sessionId,
 				},
 				{ signal },

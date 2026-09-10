@@ -1,6 +1,5 @@
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import type { TicketJourney } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js'
-import { TicketJourneyService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/ticket_journey/v1/ticket_journey_service_connect.js'
+import { TicketJourneyService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/ticket_journey/v1/ticket_journey_service_pb.js'
 import { type Client, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
@@ -55,7 +54,7 @@ export class TicketJourneyRpcClient {
 		try {
 			await this.client.setStatus(
 				{
-					eventId: new EventId({ value: eventId }),
+					eventId: { value: eventId },
 					status: journeyStatusTo(status),
 				},
 				{ signal },
@@ -69,10 +68,7 @@ export class TicketJourneyRpcClient {
 	public async delete(eventId: string, signal?: AbortSignal): Promise<void> {
 		this.logger.info('Deleting ticket journey', { eventId })
 		try {
-			await this.client.delete(
-				{ eventId: new EventId({ value: eventId }) },
-				{ signal },
-			)
+			await this.client.delete({ eventId: { value: eventId } }, { signal })
 		} catch (err) {
 			this.logger.warn('Delete failed', { eventId, error: err })
 			throw err

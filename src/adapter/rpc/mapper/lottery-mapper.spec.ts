@@ -1,8 +1,8 @@
 import {
-	ApplicantIdentity,
-	TicketApplication as ProtoTicketApplication,
 	TicketApplicationState as ProtoTicketApplicationState,
+	TicketApplicationSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { describe, expect, it } from 'vitest'
 import {
 	ticketApplicationFrom,
@@ -32,12 +32,12 @@ describe('lottery-mapper', () => {
 
 	describe('ticketApplicationFrom', () => {
 		it('maps count, 本人確認, and state to the domain entity', () => {
-			const proto = new ProtoTicketApplication({
+			const proto = create(TicketApplicationSchema, {
 				requestedTicketCount: 2,
-				identity: new ApplicantIdentity({
+				identity: {
 					fullName: '山田太郎',
 					phoneNumber: '09012345678',
-				}),
+				},
 				state: ProtoTicketApplicationState.APPLIED,
 			})
 
@@ -49,7 +49,7 @@ describe('lottery-mapper', () => {
 		})
 
 		it('defaults identity fields to empty strings when identity is unset', () => {
-			const proto = new ProtoTicketApplication({
+			const proto = create(TicketApplicationSchema, {
 				requestedTicketCount: 1,
 				state: ProtoTicketApplicationState.WON,
 			})

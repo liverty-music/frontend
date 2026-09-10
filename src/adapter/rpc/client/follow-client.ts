@@ -1,6 +1,5 @@
-import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import { FollowService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/follow/v1/follow_service_connect.js'
-import { createPromiseClient, type PromiseClient } from '@connectrpc/connect'
+import { FollowService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/follow/v1/follow_service_pb.js'
+import { type Client, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
 import type { FollowedArtist, Hype } from '../../../entities/follow'
@@ -18,7 +17,7 @@ export interface IFollowRpcClient extends FollowRpcClient {}
 
 export class FollowRpcClient {
 	private readonly logger = resolve(ILogger).scopeTo('FollowRpcClient')
-	private readonly client: PromiseClient<typeof FollowService>
+	private readonly client: Client<typeof FollowService>
 
 	constructor() {
 		this.logger.debug('Initializing FollowRpcClient')
@@ -30,18 +29,18 @@ export class FollowRpcClient {
 			resolve(IAppConfig),
 		)
 
-		this.client = createPromiseClient(FollowService, transport)
+		this.client = createClient(FollowService, transport)
 	}
 
 	public async follow(artistId: string): Promise<void> {
 		await this.client.follow({
-			artistId: new ArtistId({ value: artistId }),
+			artistId: { value: artistId },
 		})
 	}
 
 	public async unfollow(artistId: string): Promise<void> {
 		await this.client.unfollow({
-			artistId: new ArtistId({ value: artistId }),
+			artistId: { value: artistId },
 		})
 	}
 
@@ -60,7 +59,7 @@ export class FollowRpcClient {
 
 	public async setHype(artistId: string, hype: Hype): Promise<void> {
 		await this.client.setHype({
-			artistId: new ArtistId({ value: artistId }),
+			artistId: { value: artistId },
 			hype: hypeTo(hype),
 		})
 	}

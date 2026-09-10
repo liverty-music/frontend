@@ -1,6 +1,4 @@
 import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
-import { StagedConcertId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/staged_concert_pb.js'
 import type {
 	ApproveResponse,
 	DuplicateConflict,
@@ -8,8 +6,10 @@ import type {
 	PendingConcert,
 	ResolvedVenue,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
-import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
-import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/admin/v1/concert_service_connect.js'
+import {
+	ConcertService,
+	Resolution,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
@@ -72,10 +72,7 @@ export class ConcertClient {
 	public async delete(eventId: string, signal?: AbortSignal): Promise<void> {
 		this.logger.info('Deleting concert', { eventId })
 		try {
-			await this.client.delete(
-				{ eventId: new EventId({ value: eventId }) },
-				{ signal },
-			)
+			await this.client.delete({ eventId: { value: eventId } }, { signal })
 		} catch (err) {
 			this.logger.warn('delete failed', { eventId, error: err })
 			throw err
@@ -108,7 +105,7 @@ export class ConcertClient {
 		this.logger.info('Approving concert', { stagedId, resolution })
 		try {
 			return await this.client.approve(
-				{ stagedId: new StagedConcertId({ value: stagedId }), resolution },
+				{ stagedId: { value: stagedId }, resolution },
 				{ signal },
 			)
 		} catch (err) {
@@ -126,7 +123,7 @@ export class ConcertClient {
 		this.logger.info('Rejecting concert', { stagedId })
 		try {
 			await this.client.reject(
-				{ stagedId: new StagedConcertId({ value: stagedId }), reason },
+				{ stagedId: { value: stagedId }, reason },
 				{ signal },
 			)
 		} catch (err) {

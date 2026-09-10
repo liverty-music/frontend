@@ -1,10 +1,5 @@
-import {
-	PushEndpoint,
-	PushKeys,
-	type PushSubscription,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/push_subscription_pb.js'
-import { UserId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
-import { PushNotificationService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/push_notification/v1/push_notification_service_connect.js'
+import type { PushSubscription } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/push_subscription_pb.js'
+import { PushNotificationService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/push_notification/v1/push_notification_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
@@ -38,11 +33,11 @@ export class PushRpcClient {
 		auth: string
 	}): Promise<PushSubscription> {
 		const resp = await this.pushClient.create({
-			endpoint: new PushEndpoint({ value: subscription.endpoint }),
-			keys: new PushKeys({
+			endpoint: { value: subscription.endpoint },
+			keys: {
 				p256dh: subscription.p256dh,
 				auth: subscription.auth,
-			}),
+			},
 		})
 		if (!resp.subscription) {
 			throw new Error('Create response missing subscription')
@@ -60,8 +55,8 @@ export class PushRpcClient {
 		endpoint: string,
 	): Promise<PushSubscription> {
 		const resp = await this.pushClient.get({
-			userId: new UserId({ value: userId }),
-			endpoint: new PushEndpoint({ value: endpoint }),
+			userId: { value: userId },
+			endpoint: { value: endpoint },
 		})
 		if (!resp.subscription) {
 			throw new Error('Get response missing subscription')
@@ -76,8 +71,8 @@ export class PushRpcClient {
 	 */
 	public async delete(userId: string, endpoint: string): Promise<void> {
 		await this.pushClient.delete({
-			userId: new UserId({ value: userId }),
-			endpoint: new PushEndpoint({ value: endpoint }),
+			userId: { value: userId },
+			endpoint: { value: endpoint },
 		})
 	}
 }

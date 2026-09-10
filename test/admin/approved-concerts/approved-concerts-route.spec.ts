@@ -1,26 +1,10 @@
 import { createFixture } from '@aurelia/testing'
-import { Date as GoogleDate } from '@buf/googleapis_googleapis.bufbuild_es/google/type/date_pb.js'
 import {
-	Artist,
-	ArtistName,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import {
-	LocalDate,
-	OpenTime,
-	StartTime,
-	Title,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
-import {
-	Series,
-	SeriesId,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import {
-	Venue,
-	VenueName,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/venue_pb.js'
-import { Timestamp } from '@bufbuild/protobuf'
+	type Concert,
+	ConcertSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import { create } from '@bufbuild/protobuf'
+import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -60,33 +44,36 @@ function concert(opts: {
 	startHourUtc?: number
 	openHourUtc?: number
 }): Concert {
-	const c = new Concert({
-		id: new EventId({ value: opts.eventId }),
-		series: new Series({
-			id: new SeriesId({ value: opts.seriesId }),
-			title: new Title({ value: opts.seriesTitle }),
-		}),
-		localDate: new LocalDate({
-			value: new GoogleDate({ year: 2026, month: 7, day: opts.day }),
-		}),
-		venue: new Venue({ name: new VenueName({ value: opts.venue }) }),
-		performers: [new Artist({ name: new ArtistName({ value: opts.artist }) })],
+	return create(ConcertSchema, {
+		id: { value: opts.eventId },
+		series: {
+			id: { value: opts.seriesId },
+			title: { value: opts.seriesTitle },
+		},
+		localDate: {
+			value: { year: 2026, month: 7, day: opts.day },
+		},
+		venue: { name: { value: opts.venue } },
+		performers: [{ name: { value: opts.artist } }],
+		...(opts.startHourUtc !== undefined
+			? {
+					startTime: {
+						value: timestampFromDate(
+							new Date(Date.UTC(2026, 6, opts.day, opts.startHourUtc)),
+						),
+					},
+				}
+			: {}),
+		...(opts.openHourUtc !== undefined
+			? {
+					openTime: {
+						value: timestampFromDate(
+							new Date(Date.UTC(2026, 6, opts.day, opts.openHourUtc)),
+						),
+					},
+				}
+			: {}),
 	})
-	if (opts.startHourUtc !== undefined) {
-		c.startTime = new StartTime({
-			value: Timestamp.fromDate(
-				new Date(Date.UTC(2026, 6, opts.day, opts.startHourUtc)),
-			),
-		})
-	}
-	if (opts.openHourUtc !== undefined) {
-		c.openTime = new OpenTime({
-			value: Timestamp.fromDate(
-				new Date(Date.UTC(2026, 6, opts.day, opts.openHourUtc)),
-			),
-		})
-	}
-	return c
 }
 
 async function build(client: MockClient) {
