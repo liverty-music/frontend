@@ -16,7 +16,6 @@
 
 		/* All content after page-header shares the content grid area */
 		concert-highway,
-		.loading-text,
 		inline-error,
 		state-placeholder {
 			grid-area: content;
@@ -99,19 +98,6 @@
 			pointer-events: none;
 			overflow: hidden;
 			filter: blur(4px);
-		}
-
-		.loading-text {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-
-			block-size: 100%;
-
-			font-size: var(--step--1);
-			color: var(--color-text-muted);
-
-			animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 		}
 
 		/* ── Empty state typography ── */
