@@ -18,7 +18,11 @@
 		/* Text colors (warm-tinted) */
 		--color-text-primary: oklch(98.5% 0 0deg);
 		--color-text-secondary: oklch(82% 0.02 275deg);
-		--color-text-muted: oklch(60% 0.03 275deg);
+
+		/* Lightness raised 60%→68% so muted text clears the M3 4.5:1 body-text
+		   contrast target on the dark surface tiers (verified via axe in the
+		   Storybook a11y run). Stays the dimmest text tier (< secondary 82%). */
+		--color-text-muted: oklch(68% 0.03 275deg);
 
 		/* State colors */
 		--color-error: oklch(65% 0.2 25deg);
