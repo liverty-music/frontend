@@ -241,4 +241,18 @@ describe('createRetryInterceptor', () => {
 		await expect(handler(makeRequest())).rejects.toThrow(error)
 		expect(next).toHaveBeenCalledTimes(1)
 	})
+
+	it('should not retry a DeadlineExceeded error (client-side timeout)', async () => {
+		// The shared transport's `defaultTimeoutMs` rejects a hung RPC with
+		// DeadlineExceeded; the generic-retry interceptor must let it surface
+		// rather than retrying into the already-elapsed deadline.
+		const error = new ConnectError('deadline exceeded', Code.DeadlineExceeded)
+		const next = vi.fn().mockRejectedValue(error)
+
+		const interceptor = createRetryInterceptor(3)
+		const handler = interceptor(next)
+
+		await expect(handler(makeRequest())).rejects.toThrow(error)
+		expect(next).toHaveBeenCalledTimes(1)
+	})
 })

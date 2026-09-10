@@ -29,6 +29,14 @@ export const PUSH_SUBSCRIPTION_CHANGED_MESSAGE =
 const CONFIG_CACHE_NAME = 'liverty-runtime-config'
 const CONFIG_URL = '/config.json'
 
+/**
+ * Upper bound on the cache-miss network `fetch()` for `/config.json`, so a
+ * `pushsubscriptionchange` handler cannot hang on a stalled network read. On
+ * abort the fetch throws, the surrounding try/catch returns `null`, and renewal
+ * is skipped (retried on a later event / app open) — never throwing.
+ */
+const VAPID_CONFIG_FETCH_TIMEOUT_MS = 5_000
+
 /** Outcome of a renewal attempt, for logging/tests. */
 export type PushRenewalResult = 'renewed' | 'skipped' | 'failed'
 
@@ -70,7 +78,10 @@ export async function readVapidPublicKeyCacheFirst(
 			const cache = await cacheStorage.open(CONFIG_CACHE_NAME)
 			response = await cache.match(CONFIG_URL)
 			if (!response) {
-				const fresh = await fetchImpl(CONFIG_URL, { cache: 'no-store' })
+				const fresh = await fetchImpl(CONFIG_URL, {
+					cache: 'no-store',
+					signal: AbortSignal.timeout(VAPID_CONFIG_FETCH_TIMEOUT_MS),
+				})
 				if (fresh?.ok) {
 					await cache.put(CONFIG_URL, fresh.clone())
 					response = fresh

@@ -8,6 +8,7 @@
 export {
 	__resetAppConfigForTests,
 	type AppConfig,
+	DEFAULT_RPC_TIMEOUT_MS,
 	getAppConfig,
 	IAppConfig,
 	KNOWN_HOSTS,

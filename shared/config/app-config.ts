@@ -89,6 +89,19 @@ export interface AppConfig {
 	 * catches up; the Settings UI renders `—` when absent.
 	 */
 	readonly releaseVersion?: string
+	/**
+	 * Default client-side deadline (in milliseconds) applied to every
+	 * Connect-RPC call issued through the shared transports (fan-web, admin,
+	 * organizer), so a hung backend fails within a known window instead of
+	 * leaving the request pending indefinitely.
+	 *
+	 * The `config.json` field is optional — a missing or malformed value falls
+	 * back to {@link DEFAULT_RPC_TIMEOUT_MS} during validation, so the resolved
+	 * config always carries a concrete positive number (mirrors the always-
+	 * defaulted `internalTrafficUserIds`). Kept runtime-configurable so the
+	 * value can be tuned per environment via the ConfigMap without a rebuild.
+	 */
+	readonly rpcTimeoutMs: number
 }
 
 export const IAppConfig = DI.createInterface<AppConfig>('IAppConfig')
@@ -103,6 +116,10 @@ let _inflight: Promise<AppConfig> | null = null
  *  endpoint fails closed (showStaticErrorPage) within a known window
  *  rather than leaving the user staring at a blank page indefinitely. */
 const CONFIG_FETCH_TIMEOUT_MS = 5_000
+
+/** Built-in fallback for the default RPC deadline (10 s) when `/config.json`
+ *  omits `rpcTimeoutMs` or supplies a non-positive / non-numeric value. */
+export const DEFAULT_RPC_TIMEOUT_MS = 10_000
 
 /**
  * Options for {@link loadAppConfig}.
@@ -296,6 +313,12 @@ function validateAppConfig(
 	// rollout window between a GH Release and the cloud-provisioning PR merge.
 	const releaseVersion = readOptionalString(o, 'releaseVersion')
 
+	// Optional default RPC deadline. Unlike the other optional fields, a malformed
+	// value MUST NOT fail bootstrap — it falls back to the built-in 10s default so
+	// a config typo can never leave the SPA unable to start (see spec scenario
+	// "Configuration supplies an invalid timeout value").
+	const rpcTimeoutMs = resolveRpcTimeoutMs(o)
+
 	// Optional publishable Stripe key for the lottery card-authorization flow.
 	// Absent from every ConfigMap until ops enables lottery for an environment;
 	// a missing key is a strict no-op (the apply flow reports "payment
@@ -327,7 +350,21 @@ function validateAppConfig(
 		...(posthogProjectKey !== undefined ? { posthogProjectKey } : {}),
 		internalTrafficUserIds,
 		...(releaseVersion !== undefined ? { releaseVersion } : {}),
+		rpcTimeoutMs,
 	}
+}
+
+/**
+ * Resolves the default RPC deadline from the optional `rpcTimeoutMs` field.
+ * Returns the configured value only when it is a positive, finite number;
+ * otherwise (absent, null, zero, negative, or non-numeric) returns the built-in
+ * {@link DEFAULT_RPC_TIMEOUT_MS}. Deliberately never throws — a malformed value
+ * must degrade to the default rather than break bootstrap.
+ */
+function resolveRpcTimeoutMs(o: Record<string, unknown>): number {
+	const v = o.rpcTimeoutMs
+	if (typeof v === 'number' && Number.isFinite(v) && v > 0) return v
+	return DEFAULT_RPC_TIMEOUT_MS
 }
 
 function requireString(o: Record<string, unknown>, key: string): string {

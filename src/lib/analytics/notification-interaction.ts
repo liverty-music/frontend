@@ -261,7 +261,16 @@ export function buildCaptureBody(
 
 // -- Reporting ----------------------------------------------------------------
 
-/** POSTs one interaction to PostHog. Throws on network / non-2xx so callers can stash. */
+/**
+ * Upper bound on the PostHog `/capture` POST. A slow (not failed) response is
+ * turned into an `AbortError` so it takes the same throw → stash → resend path
+ * as an offline failure instead of holding the short-lived SW activation open.
+ * The resend reuses the interaction's `$insert_id`, which PostHog de-duplicates
+ * server-side, so a slow-but-eventually-delivered capture is not double-counted.
+ */
+const CAPTURE_FETCH_TIMEOUT_MS = 10_000
+
+/** POSTs one interaction to PostHog. Throws on network / timeout / non-2xx so callers can stash. */
 async function sendInteraction(
 	snapshot: AnalyticsIdentitySnapshot,
 	interaction: NotificationInteraction,
@@ -272,6 +281,7 @@ async function sendInteraction(
 		keepalive: true,
 		headers: { 'content-type': 'application/json' },
 		body: JSON.stringify(buildCaptureBody(snapshot, interaction)),
+		signal: AbortSignal.timeout(CAPTURE_FETCH_TIMEOUT_MS),
 	})
 	if (!res.ok) {
 		throw new Error(`posthog capture failed: ${res.status}`)

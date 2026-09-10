@@ -71,6 +71,26 @@ describe('grpc-transport', () => {
 			const call = mockCreateConnectTransport.mock.calls[0][0]
 			expect(call.interceptors).toHaveLength(5)
 		})
+
+		it('applies the configured rpcTimeoutMs as the default RPC deadline', () => {
+			const mockAuth = createMockAuth({ isAuthenticated: true })
+			const mockLogger = {
+				scopeTo: vi.fn().mockReturnThis(),
+				debug: vi.fn(),
+				info: vi.fn(),
+				warn: vi.fn(),
+				error: vi.fn(),
+			}
+
+			createTransport(
+				mockAuth as any,
+				mockLogger as any,
+				createMockAppConfig({ rpcTimeoutMs: 12_345 }),
+			)
+
+			const call = mockCreateConnectTransport.mock.calls.at(-1)?.[0]
+			expect(call.defaultTimeoutMs).toBe(12_345)
+		})
 	})
 
 	describe('authInterceptor', () => {

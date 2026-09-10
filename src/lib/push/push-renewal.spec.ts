@@ -67,8 +67,26 @@ describe('readVapidPublicKeyCacheFirst', () => {
 		expect(key).toBe(VAPID)
 		expect(fetchImpl).toHaveBeenCalledWith('/config.json', {
 			cache: 'no-store',
+			signal: expect.any(AbortSignal),
 		})
 		expect(cacheStorage._cache.put).toHaveBeenCalled()
+	})
+
+	it('returns null (never throws) when the cache-miss fetch times out', async () => {
+		const cacheStorage = fakeCacheStorage()
+		const fetchImpl = vi.fn(async () => {
+			// AbortSignal.timeout firing rejects the fetch with a TimeoutError.
+			throw new DOMException('The operation timed out.', 'TimeoutError')
+		})
+
+		await expect(
+			readVapidPublicKeyCacheFirst({ cacheStorage, fetchImpl }),
+		).resolves.toBeNull()
+		// The cache-miss fetch is bounded by an AbortSignal.
+		expect(fetchImpl).toHaveBeenCalledWith('/config.json', {
+			cache: 'no-store',
+			signal: expect.any(AbortSignal),
+		})
 	})
 
 	it('returns null when the fetch fails (never throws)', async () => {
