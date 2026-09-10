@@ -76,6 +76,9 @@ export const createAdminTransport = (
 	// fresh token. Mirrors the consumer transport's auth/retry ordering.
 	return createConnectTransport({
 		baseUrl: config.adminApiBaseUrl ?? config.apiBaseUrl,
+		// Shared client-side RPC deadline (see `AppConfig.rpcTimeoutMs`), applied
+		// uniformly across all three apps so no admin RPC can hang unbounded.
+		defaultTimeoutMs: config.rpcTimeoutMs,
 		interceptors: [
 			loggingInterceptor,
 			authInterceptor,

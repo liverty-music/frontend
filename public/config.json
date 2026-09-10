@@ -33,5 +33,6 @@
     "RADWIMPS"
   ],
   "logLevel": "debug",
-  "releaseVersion": "dev"
+  "releaseVersion": "dev",
+  "rpcTimeoutMs": 10000
 }

@@ -131,6 +131,11 @@ export const createTransport = (
 
 	return createConnectTransport({
 		baseUrl: config.apiBaseUrl,
+		// Single client-side deadline for every RPC (no per-method override). The
+		// one deadline is shared across the interceptor chain — including the
+		// auth silent-refresh retry and the transient-`Unavailable` backoff — so a
+		// hung backend rejects with `Code.DeadlineExceeded` within a known window.
+		defaultTimeoutMs: config.rpcTimeoutMs,
 		interceptors: [
 			otelInterceptor,
 			loggingInterceptor,

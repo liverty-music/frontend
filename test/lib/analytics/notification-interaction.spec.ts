@@ -253,6 +253,40 @@ describe('reportNotificationInteraction', () => {
 		expect(fetchMock).toHaveBeenCalledTimes(2)
 	})
 
+	it('bounds the capture fetch and stashes a timed-out send for resend with the reused insert_id', async () => {
+		await writeIdentitySnapshot(SNAPSHOT)
+		// A stalled response: AbortSignal.timeout fires, rejecting with a
+		// TimeoutError DOMException (what the browser raises on abort).
+		fetchMock.mockRejectedValueOnce(
+			new DOMException('The operation timed out.', 'TimeoutError'),
+		)
+
+		await reportNotificationInteraction(OPENED, registration)
+
+		// The capture POST carries an AbortSignal (the timeout bound).
+		const firstInit = fetchMock.mock.calls[0][1] as RequestInit
+		expect(firstInit.signal).toBeInstanceOf(AbortSignal)
+
+		// Timed-out send is treated as a failure: nothing delivered, stash written,
+		// Background Sync retry registered.
+		expect(fetchMock).toHaveBeenCalledTimes(1)
+		expect(
+			(
+				registration as unknown as {
+					sync: { register: ReturnType<typeof vi.fn> }
+				}
+			).sync.register,
+		).toHaveBeenCalledWith('flush-notification-analytics')
+
+		// Reconnected: the flush resends exactly once, reusing the same $insert_id
+		// so PostHog de-duplicates it server-side.
+		fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
+		await flushInteractionStash()
+		expect(fetchMock).toHaveBeenCalledTimes(2)
+		const resendBody = JSON.parse(fetchMock.mock.calls[1][1].body as string)
+		expect(resendBody.properties.$insert_id).toBe('uuid-1')
+	})
+
 	it('flush discards the stash without sending when the user has since opted out', async () => {
 		await writeIdentitySnapshot(SNAPSHOT)
 		fetchMock.mockRejectedValueOnce(new Error('offline'))

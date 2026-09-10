@@ -75,6 +75,9 @@ export const createOrganizerTransport = (
 	// fresh token. Mirrors the admin transport's auth/retry ordering.
 	return createConnectTransport({
 		baseUrl: config.apiBaseUrl,
+		// Shared client-side RPC deadline (see `AppConfig.rpcTimeoutMs`), applied
+		// uniformly across all three apps so no organizer RPC can hang unbounded.
+		defaultTimeoutMs: config.rpcTimeoutMs,
 		interceptors: [
 			loggingInterceptor,
 			authInterceptor,

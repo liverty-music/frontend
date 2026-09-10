@@ -18,6 +18,7 @@ const validConfig: AppConfig = {
 	previewArtistNames: ['Mrs. GREEN APPLE'],
 	logLevel: 'debug',
 	internalTrafficUserIds: [],
+	rpcTimeoutMs: 10_000,
 }
 
 function mockFetchJson(body: unknown, ok = true, status = 200): void {
@@ -143,6 +144,33 @@ describe('app-config', () => {
 			await expect(loadAppConfig()).rejects.toThrow(
 				/internalTrafficUserIds.*non-string element/,
 			)
+		})
+
+		it('uses a valid rpcTimeoutMs value from config', async () => {
+			mockFetchJson({ ...validConfig, rpcTimeoutMs: 15_000 })
+			const result = await loadAppConfig()
+			expect(result.rpcTimeoutMs).toBe(15_000)
+		})
+
+		it('defaults rpcTimeoutMs to 10s when the field is absent', async () => {
+			const partial = { ...validConfig } as Record<string, unknown>
+			delete partial.rpcTimeoutMs
+			mockFetchJson(partial)
+			const result = await loadAppConfig()
+			expect(result.rpcTimeoutMs).toBe(10_000)
+		})
+
+		it.each([
+			['zero', 0],
+			['negative', -1],
+			['non-numeric', 'soon'],
+			['NaN', Number.NaN],
+			['infinite', Number.POSITIVE_INFINITY],
+			['null', null],
+		])('falls back to 10s (without failing bootstrap) when rpcTimeoutMs is %s', async (_label, value) => {
+			mockFetchJson({ ...validConfig, rpcTimeoutMs: value })
+			const result = await loadAppConfig()
+			expect(result.rpcTimeoutMs).toBe(10_000)
 		})
 	})
 

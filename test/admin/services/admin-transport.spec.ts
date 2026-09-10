@@ -57,5 +57,18 @@ describe('admin-transport', () => {
 			const call = mockCreateConnectTransport.mock.calls.at(-1)?.[0]
 			expect(call.baseUrl).toBe('https://api.test.local')
 		})
+
+		it('applies the shared rpcTimeoutMs as the default RPC deadline', () => {
+			const config = createMockAppConfig({ rpcTimeoutMs: 12_345 })
+
+			createAdminTransport(
+				createMockAuth({ isAuthenticated: true }) as any,
+				mockLogger() as any,
+				config,
+			)
+
+			const call = mockCreateConnectTransport.mock.calls.at(-1)?.[0]
+			expect(call.defaultTimeoutMs).toBe(12_345)
+		})
 	})
 })
