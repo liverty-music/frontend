@@ -116,6 +116,19 @@ pure function of their `@bindable` inputs. Story files are colocated: `src/compo
 (CSF3, `satisfies Meta<typeof X>` / `StoryObj<typeof meta>`), tagged `['test', 'autodocs']`.
 
 - Enumerate each visually distinct state as a named story; expose `@bindable`s as `argTypes` controls.
+  **This is a contract, not a nicety**: adding a new visual state (a new `@bindable` that selects
+  loading/skeleton, `variant`, `selected`/`pressed`, empty/error, etc.) REQUIRES adding a named story for
+  it in the same change — otherwise the state ships untested and the story set silently drifts. When a
+  storied component's `.ts`/`.html`/`.css` changes, re-check its stories still represent it.
+- **Storybook fidelity**: `.storybook/preview.ts` imports `../src/styles/main.css`, so stories render with
+  the SAME global M3 tokens + utilities (`@layer` tokens/global/utility) as the app — the shared axe
+  `color-contrast` rule then verifies REAL role/`on-*` contrast, and global primitives (`.skeleton`,
+  `[data-selected-morph]`, state layers) actually render. **Do NOT remove that import**; without it stories
+  test token-less fallback rendering and both a11y and visual baselines become meaningless.
+- **Global M3 primitives/tokens** (things in the `@layer` chain, not a single component) get their own
+  `Foundations/*` story (see `src/styles/m3-primitives.stories.ts`) so new roles/utilities are contrast-
+  and render-checked. Do NOT `toMatchScreenshot` an animated element (e.g. `.skeleton` shimmer) — the
+  baseline is non-deterministic; assert DOM/a11y instead.
 - Add `play` functions (`storybook/test`: `expect`/`within`/`userEvent`) for interaction assertions.
 - a11y (axe) runs on every story and **fails** on violations (`.storybook/story-annotations.ts` sets
   `a11y.test: 'error'`; wired in `.storybook/vitest.setup.ts`).
@@ -145,6 +158,17 @@ state-placeholder, page-header). Baselines are **committed** under
 - The `storybook-test` CI job runs in that same image; on failure it uploads the Vitest HTML report
   (`storybook-test-report/`, which embeds the diff/actual images). Page-level visual regression
   (the old Playwright `mobile-visual`) has been retired — one visual pipeline only.
+
+## Build-time-only guards (run locally before release)
+
+Some correctness checks run ONLY inside the Docker image build (`push-image.yaml`), not in `make check`
+or PR CI, so they surface at deploy time if missed:
+
+- `verify:build-templates` (`scripts/verify-build-templates.ts`) — asserts each route chunk still contains
+  a template-derived marker (see `scripts/verify-build-templates.lib.ts` `ROUTE_MARKERS`), guarding against
+  template stripping. **If you change a route's template structure (remove/rename a marker class/element),
+  run `npm run build && npm run verify:build-templates` locally and update `ROUTE_MARKERS` if needed** — do
+  not discover it at deploy. (A dashboard `loading-text` removal once broke the prod image build this way.)
 
 ## Playwright MCP (Authenticated E2E Testing)
 

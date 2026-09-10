@@ -17,6 +17,15 @@ const meta = {
 			description:
 				'Optional `svg-icon` name shown above the projected content.',
 		},
+		loading: {
+			control: 'boolean',
+			description:
+				'Loading/skeleton variant: renders layout-preserving skeleton bars instead of the icon + projected content.',
+		},
+		rows: {
+			control: 'number',
+			description: 'Number of skeleton bars rendered in the loading variant.',
+		},
 	},
 	args: { icon: 'bell' },
 } satisfies Meta<typeof StatePlaceholder>
@@ -64,4 +73,25 @@ export const NoIcon = {
 			register: [StatePlaceholder],
 		}),
 	args: { icon: '' },
+} satisfies Story
+
+// Loading/skeleton variant — layout-preserving shimmer bars (the M3 skeleton
+// primitive). Exercises the global `.skeleton` utility (shimmer + tokens),
+// which only renders because the preview loads the global style layer.
+export const Loading = {
+	render: (args) =>
+		defineAureliaStory({
+			template: `<state-placeholder loading.bind="loading" rows.bind="rows"></state-placeholder>`,
+			props: args,
+			register: [StatePlaceholder],
+		}),
+	args: { loading: true, rows: 3 },
+	play: async ({ canvasElement }) => {
+		// Skeleton bars are present and match the requested row count. No visual
+		// screenshot here: the `.skeleton` shimmer animates (background-position),
+		// so a pixel baseline would be non-deterministic/flaky. Layout + a11y are
+		// asserted instead; axe (via the shared annotations) covers contrast.
+		const bars = canvasElement.querySelectorAll('.skeleton.skeleton-row')
+		vitestExpect(bars.length).toBe(3)
+	},
 } satisfies Story
