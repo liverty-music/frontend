@@ -1,3 +1,4 @@
+import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,9 +31,9 @@ function build(client: MockClient): InstanceType<typeof LotteryStatusRoute> {
 	return vm
 }
 
-/** A proto-Timestamp-ish stub exposing `toDate()`. */
-function ts(date: Date): { toDate(): Date } {
-	return { toDate: () => date }
+/** Builds a protobuf-es v2 `Timestamp` message from a Date. */
+function ts(date: Date) {
+	return timestampFromDate(date)
 }
 
 interface StatusOverrides {

@@ -1,32 +1,13 @@
 import { createFixture } from '@aurelia/testing'
-import { Date as GoogleDate } from '@buf/googleapis_googleapis.bufbuild_es/google/type/date_pb.js'
 import {
-	Artist,
-	ArtistName,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import {
-	ListedVenueName,
-	LocalDate,
-	OpenTime,
-	StartTime,
-	Title,
-	Url,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
-import { StagedConcertId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/staged_concert_pb.js'
-import {
-	AdminArea,
-	VenueName,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/venue_pb.js'
-import {
-	ApproveResponse,
-	DuplicateConflict,
-	ExistingEvent,
-	PendingConcert,
+	type ApproveResponse,
+	ApproveResponseSchema,
+	type PendingConcert,
+	PendingConcertSchema,
 	Resolution,
-	ResolvedVenue,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
-import { Timestamp } from '@bufbuild/protobuf'
+import { create } from '@bufbuild/protobuf'
+import { type Timestamp, timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -53,7 +34,7 @@ function createMockClient(overrides: Partial<MockClient> = {}): MockClient {
 	return {
 		listPending: vi.fn().mockResolvedValue([]),
 		// approve resolves to an ApproveResponse; no conflict = published.
-		approve: vi.fn().mockResolvedValue(new ApproveResponse({})),
+		approve: vi.fn().mockResolvedValue(create(ApproveResponseSchema, {})),
 		reject: vi.fn().mockResolvedValue(undefined),
 		...overrides,
 	}
@@ -61,18 +42,18 @@ function createMockClient(overrides: Partial<MockClient> = {}): MockClient {
 
 /** Builds an ApproveResponse carrying a duplicate conflict against a staged row. */
 function conflictResponse(staged: PendingConcert): ApproveResponse {
-	return new ApproveResponse({
-		conflict: new DuplicateConflict({
-			existing: new ExistingEvent({
-				eventId: new EventId({ value: 'event-existing' }),
-				title: new Title({ value: 'Existing Title' }),
-				listedVenueName: new ListedVenueName({ value: 'Existing Venue' }),
-				localDate: new LocalDate({
-					value: new GoogleDate({ year: 2026, month: 7, day: 4 }),
-				}),
-			}),
+	return create(ApproveResponseSchema, {
+		conflict: {
+			existing: {
+				eventId: { value: 'event-existing' },
+				title: { value: 'Existing Title' },
+				listedVenueName: { value: 'Existing Venue' },
+				localDate: {
+					value: { year: 2026, month: 7, day: 4 },
+				},
+			},
 			staged,
-		}),
+		},
 	})
 }
 
@@ -88,34 +69,30 @@ function makeConcert(opts: {
 	openTime?: Timestamp
 	startTime?: Timestamp
 }): PendingConcert {
-	return new PendingConcert({
-		stagedId: new StagedConcertId({ value: opts.stagedId }),
-		performer: new Artist({
-			name: new ArtistName({ value: opts.artist }),
-		}),
-		title: new Title({ value: opts.title }),
-		localDate: new LocalDate({
-			value: new GoogleDate({
+	return create(PendingConcertSchema, {
+		stagedId: { value: opts.stagedId },
+		performer: {
+			name: { value: opts.artist },
+		},
+		title: { value: opts.title },
+		localDate: {
+			value: {
 				year: opts.year,
 				month: opts.month,
 				day: opts.day,
-			}),
-		}),
-		listedVenueName: new ListedVenueName({ value: 'listed venue' }),
+			},
+		},
+		listedVenueName: { value: 'listed venue' },
 		resolvedVenue: opts.resolvedVenue
-			? new ResolvedVenue({
-					name: new VenueName({ value: opts.resolvedVenue.name }),
-					adminArea: new AdminArea({ value: opts.resolvedVenue.adminArea }),
-				})
+			? {
+					name: { value: opts.resolvedVenue.name },
+					adminArea: { value: opts.resolvedVenue.adminArea },
+				}
 			: undefined,
-		sourceUrl: opts.sourceUrl ? new Url({ value: opts.sourceUrl }) : undefined,
-		openTime: opts.openTime
-			? new OpenTime({ value: opts.openTime })
-			: undefined,
-		startTime: opts.startTime
-			? new StartTime({ value: opts.startTime })
-			: undefined,
-		discoveredTime: Timestamp.fromDate(new Date('2026-06-01T12:00:00Z')),
+		sourceUrl: opts.sourceUrl ? { value: opts.sourceUrl } : undefined,
+		openTime: opts.openTime ? { value: opts.openTime } : undefined,
+		startTime: opts.startTime ? { value: opts.startTime } : undefined,
+		discoveredTime: timestampFromDate(new Date('2026-06-01T12:00:00Z')),
 	})
 }
 
@@ -501,7 +478,7 @@ describe('ApprovalQueueRoute', () => {
 				approve: vi
 					.fn()
 					.mockResolvedValueOnce(conflictResponse(staged))
-					.mockResolvedValueOnce(new ApproveResponse({})),
+					.mockResolvedValueOnce(create(ApproveResponseSchema, {})),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -527,7 +504,7 @@ describe('ApprovalQueueRoute', () => {
 				approve: vi
 					.fn()
 					.mockResolvedValueOnce(conflictResponse(staged))
-					.mockResolvedValueOnce(new ApproveResponse({})),
+					.mockResolvedValueOnce(create(ApproveResponseSchema, {})),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -630,7 +607,7 @@ describe('ApprovalQueueRoute', () => {
 
 	describe('toRow openTime mapping', () => {
 		it('formats openTime via formatTimeOfDay when present', async () => {
-			const openTs = Timestamp.fromDate(new Date('2026-07-15T18:00:00Z'))
+			const openTs = timestampFromDate(new Date('2026-07-15T18:00:00Z'))
 			const concert = makeConcert({
 				stagedId: 'staged-1',
 				artist: 'The Resolved Band',
@@ -668,7 +645,7 @@ describe('ApprovalQueueRoute', () => {
 
 	describe('toConflictView stagedOpenTime mapping', () => {
 		it('sets stagedOpenTime from row.openTime when present', async () => {
-			const openTs = Timestamp.fromDate(new Date('2026-07-15T18:00:00Z'))
+			const openTs = timestampFromDate(new Date('2026-07-15T18:00:00Z'))
 			const concert = makeConcert({
 				stagedId: 'staged-1',
 				artist: 'The Resolved Band',

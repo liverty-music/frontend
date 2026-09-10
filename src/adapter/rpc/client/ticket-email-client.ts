@@ -1,5 +1,4 @@
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
-import { TicketEmailService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/ticket_email/v1/ticket_email_service_connect.js'
+import { TicketEmailService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/ticket_email/v1/ticket_email_service_pb.js'
 import { type Client, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
@@ -62,7 +61,7 @@ export class TicketEmailRpcClient {
 				{
 					rawBody,
 					emailType: emailTypeTo(emailType),
-					eventIds: eventIds.map((id) => new EventId({ value: id })),
+					eventIds: eventIds.map((id) => ({ value: id })),
 				},
 				{ signal },
 			)

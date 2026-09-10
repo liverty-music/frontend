@@ -1,10 +1,8 @@
-import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert as ProtoConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import { LocalDate } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
-import { GeoLocation } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/geo_location_pb.js'
-import { Home } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
-import type { ProximityGroup } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
-import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/concert/v1/concert_service_connect.js'
+import {
+	ConcertService,
+	type ProximityGroup,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
@@ -41,7 +39,7 @@ export class ConcertRpcClient {
 		try {
 			const response = await this.client.list(
 				{
-					artistId: new ArtistId({ value: artistId }),
+					artistId: { value: artistId },
 				},
 				{ signal },
 			)
@@ -67,7 +65,7 @@ export class ConcertRpcClient {
 			// Wrap the optional client date in LocalDate (mirrors listByLocation).
 			// Omitting from lets the server apply its today-onward default.
 			const response = await this.client.listByFollower(
-				from ? { from: new LocalDate({ value: from }) } : {},
+				from ? { from: { value: from } } : {},
 				{ signal },
 			)
 			return response.groups
@@ -85,8 +83,8 @@ export class ConcertRpcClient {
 	): Promise<ProximityGroup[]> {
 		const response = await this.client.listByArtists(
 			{
-				artistIds: artistIds.map((id) => new ArtistId({ value: id })),
-				home: new Home({ countryCode, level1 }),
+				artistIds: artistIds.map((id) => ({ value: id })),
+				home: { countryCode, level1 },
 			},
 			{ signal },
 		)
@@ -105,9 +103,9 @@ export class ConcertRpcClient {
 		try {
 			const response = await this.client.listByLocation(
 				{
-					location: new GeoLocation(location),
-					from: new LocalDate({ value: from }),
-					to: new LocalDate({ value: to }),
+					location: location,
+					from: { value: from },
+					to: { value: to },
 				},
 				{ signal },
 			)

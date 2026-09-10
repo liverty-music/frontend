@@ -1,12 +1,6 @@
 import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
-import {
-	OrganizerId,
-	OrganizerName,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
-import { UserEmail } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
-import { OrganizerService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/admin/organizer/v1/organizer_service_connect.js'
+import { OrganizerService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/organizer/v1/organizer_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
@@ -58,8 +52,8 @@ export class OrganizerClient {
 		try {
 			const response = await this.client.create(
 				{
-					name: new OrganizerName({ value: name }),
-					operatorEmail: new UserEmail({ value: operatorEmail }),
+					name: { value: name },
+					operatorEmail: { value: operatorEmail },
 				},
 				{ signal },
 			)
@@ -90,7 +84,7 @@ export class OrganizerClient {
 		this.logger.info('Getting organizer', { organizerId })
 		try {
 			const response = await this.client.get(
-				{ organizerId: new OrganizerId({ value: organizerId }) },
+				{ organizerId: { value: organizerId } },
 				{ signal },
 			)
 			return response.organizer
@@ -108,7 +102,7 @@ export class OrganizerClient {
 		this.logger.info('Listing organizer artists', { organizerId })
 		try {
 			const response = await this.client.listArtists(
-				{ organizerId: new OrganizerId({ value: organizerId }) },
+				{ organizerId: { value: organizerId } },
 				{ signal },
 			)
 			return response.artists
@@ -128,8 +122,8 @@ export class OrganizerClient {
 		try {
 			await this.client.associateArtist(
 				{
-					organizerId: new OrganizerId({ value: organizerId }),
-					artistId: new ArtistId({ value: artistId }),
+					organizerId: { value: organizerId },
+					artistId: { value: artistId },
 				},
 				{ signal },
 			)
@@ -153,8 +147,8 @@ export class OrganizerClient {
 		try {
 			await this.client.disassociateArtist(
 				{
-					organizerId: new OrganizerId({ value: organizerId }),
-					artistId: new ArtistId({ value: artistId }),
+					organizerId: { value: organizerId },
+					artistId: { value: artistId },
 				},
 				{ signal },
 			)
@@ -176,7 +170,7 @@ export class OrganizerClient {
 		this.logger.info('Deactivating organizer', { organizerId })
 		try {
 			await this.client.deactivate(
-				{ organizerId: new OrganizerId({ value: organizerId }) },
+				{ organizerId: { value: organizerId } },
 				{ signal },
 			)
 		} catch (err) {

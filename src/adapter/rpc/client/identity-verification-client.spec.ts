@@ -1,21 +1,19 @@
-import { Url } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
-import {
-	UserId,
-	VerificationLevel,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
+import { VerificationLevel } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import {
 	DedupeStrength,
 	VerificationMethod,
 	VerificationStatus,
-	VerifiedIdentity,
-	VerifiedIdentityId,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/verified_identity_pb.js'
 import {
-	CompleteVerifyResponse,
-	GetMyVerificationStatusResponse,
-	StartVerifyResponse,
+	type CompleteVerifyResponse,
+	CompleteVerifyResponseSchema,
+	type GetMyVerificationStatusResponse,
+	GetMyVerificationStatusResponseSchema,
+	IdentityVerificationService as IdentityVerificationServiceDef,
+	type StartVerifyResponse,
+	StartVerifyResponseSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/identity/v1/identity_verification_service_pb.js'
-import { IdentityVerificationService as IdentityVerificationServiceDef } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/identity/v1/identity_verification_service_connect.js'
+import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -77,19 +75,19 @@ function makeRouterTransport(handlers: {
 			getMyVerificationStatus: async (_req) =>
 				handlers.getMyVerificationStatus
 					? handlers.getMyVerificationStatus(
-							new GetMyVerificationStatusResponse(),
+							create(GetMyVerificationStatusResponseSchema),
 						)
-					: new GetMyVerificationStatusResponse({
+					: create(GetMyVerificationStatusResponseSchema, {
 							verificationLevel: VerificationLevel.UNVERIFIED,
 						}),
 			startVerify: async (_req) =>
 				handlers.startVerify
 					? handlers.startVerify()
-					: new StartVerifyResponse(),
+					: create(StartVerifyResponseSchema),
 			completeVerify: async (_req) =>
 				handlers.completeVerify
 					? handlers.completeVerify()
-					: new CompleteVerifyResponse({
+					: create(CompleteVerifyResponseSchema, {
 							verificationLevel: VerificationLevel.IDENTITY_VERIFIED,
 						}),
 		})
@@ -115,11 +113,11 @@ describe('IdentityVerificationRpcClient', () => {
 		it('happy path: returns sessionId and redirectUrl from the response', async () => {
 			const transport = makeRouterTransport({
 				startVerify: () =>
-					new StartVerifyResponse({
+					create(StartVerifyResponseSchema, {
 						sessionId: 'sess-abc-123',
-						redirectUrl: new Url({
+						redirectUrl: {
 							value: 'https://pocketsign.example.com/stamp/sess-abc-123',
-						}),
+						},
 					}),
 			})
 			const client = makeClient(transport)
@@ -135,7 +133,7 @@ describe('IdentityVerificationRpcClient', () => {
 		it('guard: throws when redirect_url is absent (nil field)', async () => {
 			const transport = makeRouterTransport({
 				startVerify: () =>
-					new StartVerifyResponse({
+					create(StartVerifyResponseSchema, {
 						sessionId: 'sess-no-url',
 						// redirectUrl intentionally absent
 					}),
@@ -150,9 +148,9 @@ describe('IdentityVerificationRpcClient', () => {
 		it('guard: throws when redirect_url.value is empty string', async () => {
 			const transport = makeRouterTransport({
 				startVerify: () =>
-					new StartVerifyResponse({
+					create(StartVerifyResponseSchema, {
 						sessionId: 'sess-empty-url',
-						redirectUrl: new Url({ value: '' }),
+						redirectUrl: { value: '' },
 					}),
 			})
 			const client = makeClient(transport)
@@ -194,7 +192,7 @@ describe('IdentityVerificationRpcClient', () => {
 					completeVerify: async (req) => {
 						capturedUserId = req.userId?.value
 						capturedSessionId = req.sessionId
-						return new CompleteVerifyResponse({
+						return create(CompleteVerifyResponseSchema, {
 							verificationLevel: VerificationLevel.IDENTITY_VERIFIED,
 						})
 					},
@@ -213,18 +211,18 @@ describe('IdentityVerificationRpcClient', () => {
 		it('maps the response verification level and identity to the domain type', async () => {
 			const transport = makeRouterTransport({
 				completeVerify: () =>
-					new CompleteVerifyResponse({
+					create(CompleteVerifyResponseSchema, {
 						verificationLevel: VerificationLevel.IDENTITY_VERIFIED,
 						// verifiedIdentityFrom() returns undefined when pocketSignUserId is
 						// absent; include all required fields to get a non-undefined identity.
-						verifiedIdentity: new VerifiedIdentity({
-							id: new VerifiedIdentityId({ value: 'vi-99' }),
-							accountRef: new UserId({ value: 'user-1' }),
+						verifiedIdentity: {
+							id: { value: 'vi-99' },
+							accountRef: { value: 'user-1' },
 							method: VerificationMethod.JPKI,
 							pocketSignUserId: { value: 'ps-user-99' },
 							dedupeStrength: DedupeStrength.STRONG,
 							status: VerificationStatus.ACTIVE,
-						}),
+						},
 					}),
 			})
 			const client = makeClient(transport)
@@ -258,7 +256,7 @@ describe('IdentityVerificationRpcClient', () => {
 		it('maps UNVERIFIED level correctly', async () => {
 			const transport = makeRouterTransport({
 				getMyVerificationStatus: () =>
-					new GetMyVerificationStatusResponse({
+					create(GetMyVerificationStatusResponseSchema, {
 						verificationLevel: VerificationLevel.UNVERIFIED,
 					}),
 			})
@@ -273,18 +271,18 @@ describe('IdentityVerificationRpcClient', () => {
 		it('maps IDENTITY_VERIFIED level with a populated identity', async () => {
 			const transport = makeRouterTransport({
 				getMyVerificationStatus: () =>
-					new GetMyVerificationStatusResponse({
+					create(GetMyVerificationStatusResponseSchema, {
 						verificationLevel: VerificationLevel.IDENTITY_VERIFIED,
 						// verifiedIdentityFrom() returns undefined when pocketSignUserId is
 						// absent; include all required fields to get a non-undefined identity.
-						verifiedIdentity: new VerifiedIdentity({
-							id: new VerifiedIdentityId({ value: 'vi-1' }),
-							accountRef: new UserId({ value: 'user-1' }),
+						verifiedIdentity: {
+							id: { value: 'vi-1' },
+							accountRef: { value: 'user-1' },
 							method: VerificationMethod.JPKI,
 							pocketSignUserId: { value: 'ps-user-1' },
 							dedupeStrength: DedupeStrength.STRONG,
 							status: VerificationStatus.ACTIVE,
-						}),
+						},
 					}),
 			})
 			const client = makeClient(transport)

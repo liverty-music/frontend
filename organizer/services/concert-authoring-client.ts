@@ -1,32 +1,19 @@
-import { ArtistId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import {
-	Description,
-	LocalDate,
-	OpenTime,
-	StartTime,
-	Title,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
 import type {
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { SeriesId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import {
-	PlaceId,
-	VenueName,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/venue_pb.js'
-import { MediaId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/media_pb.js'
 import type {
 	AuthoredConcert,
 	EventDraft as ProtoEventDraft,
 	SeriesDraft as ProtoSeriesDraft,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/concert_service_pb.js'
 import {
-	EventDraft,
-	SeriesDraft,
+	ConcertService,
+	EventDraftSchema,
+	SeriesDraftSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/concert_service_pb.js'
-import { ConcertService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/organizer/v1/concert_service_connect.js'
-import { Timestamp } from '@bufbuild/protobuf'
+import { create } from '@bufbuild/protobuf'
+import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
@@ -67,47 +54,37 @@ export interface SeriesDraftInput {
 }
 
 /** Marshals a plain event input into the generated `EventDraft` message. */
-function toEventDraft(input: EventDraftInput): EventDraft {
-	return new EventDraft({
-		venueName: new VenueName({ value: input.venueName }),
-		...(input.placeId
-			? { placeId: new PlaceId({ value: input.placeId }) }
-			: {}),
+function toEventDraft(input: EventDraftInput): ProtoEventDraft {
+	return create(EventDraftSchema, {
+		venueName: { value: input.venueName },
+		...(input.placeId ? { placeId: { value: input.placeId } } : {}),
 		// LocalDate wraps a google.type.Date (a plain Y/M/D triple). Pass the
-		// calendar triple directly as a PartialMessage rather than constructing
+		// calendar triple directly as a message init rather than constructing
 		// the googleapis Date message shell.
-		localDate: new LocalDate({
+		localDate: {
 			value: {
 				year: input.localDate.year,
 				month: input.localDate.month,
 				day: input.localDate.day,
 			},
-		}),
+		},
 		...(input.startTime
-			? {
-					startTime: new StartTime({
-						value: Timestamp.fromDate(input.startTime),
-					}),
-				}
+			? { startTime: { value: timestampFromDate(input.startTime) } }
 			: {}),
 		...(input.openTime
-			? {
-					openTime: new OpenTime({ value: Timestamp.fromDate(input.openTime) }),
-				}
+			? { openTime: { value: timestampFromDate(input.openTime) } }
 			: {}),
 	})
 }
 
 /** Marshals a plain series input into the generated `SeriesDraft` message. */
-export function toSeriesDraft(input: SeriesDraftInput): SeriesDraft {
-	return new SeriesDraft({
-		title: new Title({ value: input.title }),
+export function toSeriesDraft(input: SeriesDraftInput): ProtoSeriesDraft {
+	return create(SeriesDraftSchema, {
+		title: { value: input.title },
 		type: input.type,
 		visibility: input.visibility,
-		...(input.description
-			? { description: new Description({ value: input.description }) }
-			: {}),
-		artistIds: input.artistIds.map((id) => new ArtistId({ value: id })),
+		...(input.description ? { description: { value: input.description } } : {}),
+		artistIds: input.artistIds.map((id) => ({ value: id })),
 		events: input.events.map(toEventDraft),
 	})
 }
@@ -195,7 +172,7 @@ export class ConcertAuthoringClient {
 		try {
 			const response = await this.client.update(
 				{
-					seriesId: new SeriesId({ value: seriesId }),
+					seriesId: { value: seriesId },
 					draft: toSeriesDraft(draft),
 				},
 				{ signal },
@@ -215,7 +192,7 @@ export class ConcertAuthoringClient {
 		this.logger.info('Publishing concert', { seriesId })
 		try {
 			const response = await this.client.publish(
-				{ seriesId: new SeriesId({ value: seriesId }) },
+				{ seriesId: { value: seriesId } },
 				{ signal },
 			)
 			return response.concert
@@ -229,10 +206,7 @@ export class ConcertAuthoringClient {
 	public async cancel(seriesId: string, signal?: AbortSignal): Promise<void> {
 		this.logger.info('Cancelling concert', { seriesId })
 		try {
-			await this.client.cancel(
-				{ seriesId: new SeriesId({ value: seriesId }) },
-				{ signal },
-			)
+			await this.client.cancel({ seriesId: { value: seriesId } }, { signal })
 		} catch (err) {
 			this.logger.warn('cancel failed', { seriesId, error: err })
 			throw err
@@ -321,8 +295,8 @@ export class ConcertAuthoringClient {
 		try {
 			await this.client.attachMedia(
 				{
-					seriesId: new SeriesId({ value: seriesId }),
-					mediaId: new MediaId({ value: mediaId }),
+					seriesId: { value: seriesId },
+					mediaId: { value: mediaId },
 				},
 				{ signal },
 			)
@@ -343,7 +317,7 @@ export class ConcertAuthoringClient {
 		this.logger.info('Regenerating share token', { seriesId })
 		try {
 			const response = await this.client.regenerateToken(
-				{ seriesId: new SeriesId({ value: seriesId }) },
+				{ seriesId: { value: seriesId } },
 				{ signal },
 			)
 			return response.shareUrl?.value

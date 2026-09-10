@@ -2,6 +2,7 @@ import {
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
 	type SeriesDraftInput,
@@ -43,8 +44,16 @@ describe('toSeriesDraft', () => {
 		expect(event.localDate?.value?.year).toBe(2026)
 		expect(event.localDate?.value?.month).toBe(6)
 		expect(event.localDate?.value?.day).toBe(16)
-		expect(event.startTime?.value?.toDate().getHours()).toBe(19)
-		expect(event.openTime?.value?.toDate().getHours()).toBe(18)
+		expect(
+			event.startTime?.value
+				? timestampDate(event.startTime.value).getHours()
+				: undefined,
+		).toBe(19)
+		expect(
+			event.openTime?.value
+				? timestampDate(event.openTime.value).getHours()
+				: undefined,
+		).toBe(18)
 	})
 
 	it('omits description, place id, and times when absent', () => {

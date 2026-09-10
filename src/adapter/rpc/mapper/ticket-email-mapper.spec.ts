@@ -1,11 +1,10 @@
-import { EventId } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import {
-	TicketEmail as ProtoTicketEmail,
 	TicketEmailType as ProtoTicketEmailType,
-	TicketEmailId,
+	TicketEmailSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_email_pb.js'
 import { TicketJourneyStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_journey_pb.js'
-import { Timestamp } from '@bufbuild/protobuf'
+import { create } from '@bufbuild/protobuf'
+import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import { emailTypeTo, ticketEmailFrom } from './ticket-email-mapper'
 
@@ -14,14 +13,14 @@ describe('ticket-email-mapper', () => {
 		it('maps a fully populated LOTTERY_INFO proto to the domain entity', () => {
 			const start = new Date('2026-01-10T09:00:00Z')
 			const end = new Date('2026-01-20T09:00:00Z')
-			const proto = new ProtoTicketEmail({
-				id: new TicketEmailId({ value: 'email-1' }),
-				eventId: new EventId({ value: 'event-1' }),
+			const proto = create(TicketEmailSchema, {
+				id: { value: 'email-1' },
+				eventId: { value: 'event-1' },
 				emailType: ProtoTicketEmailType.LOTTERY_INFO,
 				rawBody: '抽選受付のお知らせ',
 				applicationUrl: 'https://example.com/apply',
-				lotteryStart: Timestamp.fromDate(start),
-				lotteryEnd: Timestamp.fromDate(end),
+				lotteryStart: timestampFromDate(start),
+				lotteryEnd: timestampFromDate(end),
 				journeyStatus: TicketJourneyStatus.TRACKING,
 			})
 
@@ -40,12 +39,12 @@ describe('ticket-email-mapper', () => {
 
 		it('maps a LOTTERY_RESULT proto with a payment deadline', () => {
 			const deadline = new Date('2026-02-01T15:00:00Z')
-			const proto = new ProtoTicketEmail({
-				id: new TicketEmailId({ value: 'email-2' }),
-				eventId: new EventId({ value: 'event-2' }),
+			const proto = create(TicketEmailSchema, {
+				id: { value: 'email-2' },
+				eventId: { value: 'event-2' },
 				emailType: ProtoTicketEmailType.LOTTERY_RESULT,
 				rawBody: '当選のお知らせ',
-				paymentDeadline: Timestamp.fromDate(deadline),
+				paymentDeadline: timestampFromDate(deadline),
 				journeyStatus: TicketJourneyStatus.UNPAID,
 			})
 
@@ -58,7 +57,7 @@ describe('ticket-email-mapper', () => {
 		})
 
 		it('defaults id/event to empty strings and journey status to undefined when unset', () => {
-			const proto = new ProtoTicketEmail({
+			const proto = create(TicketEmailSchema, {
 				emailType: ProtoTicketEmailType.LOTTERY_INFO,
 				rawBody: 'body',
 			})
@@ -70,7 +69,7 @@ describe('ticket-email-mapper', () => {
 		})
 
 		it('falls back to lottery_info for an unspecified email type', () => {
-			const proto = new ProtoTicketEmail({
+			const proto = create(TicketEmailSchema, {
 				emailType: ProtoTicketEmailType.UNSPECIFIED,
 				rawBody: 'body',
 			})

@@ -5,6 +5,7 @@ import {
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import {
 	type AuthoredConcert,
@@ -231,9 +232,11 @@ export class ConcertEditorRoute {
 					? `${e.localDate.value.year}-${String(e.localDate.value.month).padStart(2, '0')}-${String(e.localDate.value.day).padStart(2, '0')}`
 					: '',
 				startTime: e.startTime?.value
-					? this.hhmm(e.startTime.value.toDate())
+					? this.hhmm(timestampDate(e.startTime.value))
 					: '',
-				openTime: e.openTime?.value ? this.hhmm(e.openTime.value.toDate()) : '',
+				openTime: e.openTime?.value
+					? this.hhmm(timestampDate(e.openTime.value))
+					: '',
 			})),
 		}
 		if (this.model.events.length === 0) {

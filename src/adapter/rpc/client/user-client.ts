@@ -1,8 +1,4 @@
-import {
-	UserEmail,
-	UserId,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
-import { UserService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/user/v1/user_service_connect.js'
+import { UserService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/user/v1/user_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
@@ -30,7 +26,7 @@ export class UserRpcClient {
 
 	public async get(userId: string): Promise<User | undefined> {
 		const resp = await this.userClient.get({
-			userId: new UserId({ value: userId }),
+			userId: { value: userId },
 		})
 		return resp.user ? userFrom(resp.user) : undefined
 	}
@@ -41,7 +37,7 @@ export class UserRpcClient {
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<User | undefined> {
 		const resp = await this.userClient.create({
-			email: new UserEmail({ value: email }),
+			email: { value: email },
 			preferredLanguage,
 			...(home ? { home } : {}),
 		})
@@ -57,7 +53,7 @@ export class UserRpcClient {
 		},
 	): Promise<User | undefined> {
 		const resp = await this.userClient.updateHome({
-			userId: new UserId({ value: userId }),
+			userId: { value: userId },
 			home,
 		})
 		return resp.user ? userFrom(resp.user) : undefined
@@ -68,7 +64,7 @@ export class UserRpcClient {
 		preferredLanguage: string,
 	): Promise<User | undefined> {
 		const resp = await this.userClient.updatePreferredLanguage({
-			userId: new UserId({ value: userId }),
+			userId: { value: userId },
 			preferredLanguage,
 		})
 		return resp.user ? userFrom(resp.user) : undefined
@@ -76,7 +72,7 @@ export class UserRpcClient {
 
 	public async resendEmailVerification(userId: string): Promise<void> {
 		await this.userClient.resendEmailVerification({
-			userId: new UserId({ value: userId }),
+			userId: { value: userId },
 		})
 	}
 }

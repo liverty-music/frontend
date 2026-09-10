@@ -5,6 +5,7 @@ import type {
 // Import the Resolution enum value from the generated package directly (not via
 // the concert-client re-export) so it survives the client module being mocked.
 import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
+import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { sanitizeUrl } from '../../shared/utils/sanitize-url'
 import { IConcertClient } from '../services/concert-client'
@@ -70,10 +71,10 @@ function formatDateValue(d?: {
 	return `${d.year}-${mm}-${dd}`
 }
 
-function formatTimeOfDay(ts?: { toDate(): Date }): string {
+function formatTimeOfDay(ts?: Timestamp): string {
 	if (!ts) return EMPTY
 	try {
-		return ts.toDate().toLocaleTimeString([], {
+		return timestampDate(ts).toLocaleTimeString([], {
 			hour: '2-digit',
 			minute: '2-digit',
 		})
@@ -82,10 +83,10 @@ function formatTimeOfDay(ts?: { toDate(): Date }): string {
 	}
 }
 
-function formatTimestamp(ts?: { toDate(): Date }): string {
+function formatTimestamp(ts?: Timestamp): string {
 	if (!ts) return EMPTY
 	try {
-		return ts.toDate().toLocaleString()
+		return timestampDate(ts).toLocaleString()
 	} catch {
 		return EMPTY
 	}

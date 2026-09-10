@@ -1,9 +1,4 @@
-import {
-	ApplicantIdentity,
-	LotterySalesPhaseId,
-	PaymentAuthorization,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
-import { LotteryService } from '@buf/liverty-music_schema.connectrpc_es/liverty_music/rpc/lottery/v1/lottery_service_connect.js'
+import { LotteryService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/lottery/v1/lottery_service_pb.js'
 import { type Client, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
@@ -78,7 +73,7 @@ export class LotteryRpcClient {
 		})
 		const resp = await this.client.createAuthorization(
 			{
-				phaseId: new LotterySalesPhaseId({ value: phaseId }),
+				phaseId: { value: phaseId },
 				requestedTicketCount,
 			},
 			{ signal },
@@ -107,13 +102,13 @@ export class LotteryRpcClient {
 		})
 		const resp = await this.client.apply(
 			{
-				phaseId: new LotterySalesPhaseId({ value: phaseId }),
+				phaseId: { value: phaseId },
 				requestedTicketCount,
-				identity: new ApplicantIdentity({
+				identity: {
 					fullName: identity.fullName,
 					phoneNumber: identity.phoneNumber,
-				}),
-				authorization: new PaymentAuthorization({ paymentIntentRef }),
+				},
+				authorization: { paymentIntentRef },
 			},
 			{ signal },
 		)
@@ -132,7 +127,7 @@ export class LotteryRpcClient {
 	): Promise<void> {
 		this.logger.info('Withdrawing lottery application', { phaseId })
 		await this.client.withdrawApplication(
-			{ phaseId: new LotterySalesPhaseId({ value: phaseId }) },
+			{ phaseId: { value: phaseId } },
 			{ signal },
 		)
 	}
@@ -146,7 +141,7 @@ export class LotteryRpcClient {
 		signal?: AbortSignal,
 	): Promise<TicketApplication | undefined> {
 		const resp = await this.client.getMyApplication(
-			{ phaseId: new LotterySalesPhaseId({ value: phaseId }) },
+			{ phaseId: { value: phaseId } },
 			{ signal },
 		)
 		return resp.application
@@ -163,7 +158,7 @@ export class LotteryRpcClient {
 		signal?: AbortSignal,
 	): Promise<TicketApplication | undefined> {
 		const resp = await this.client.getResult(
-			{ phaseId: new LotterySalesPhaseId({ value: phaseId }) },
+			{ phaseId: { value: phaseId } },
 			{ signal },
 		)
 		return resp.application

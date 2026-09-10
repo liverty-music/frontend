@@ -1,14 +1,13 @@
 import { createFixture } from '@aurelia/testing'
 import {
-	Artist,
-	ArtistId,
-	ArtistName,
+	type Artist,
+	ArtistSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import {
-	Organizer,
-	OrganizerId,
-	OrganizerName,
+	type Organizer,
+	OrganizerSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -45,16 +44,16 @@ interface MockSearchClient {
 }
 
 function makeOrganizer(id: string, name: string): Organizer {
-	return new Organizer({
-		id: new OrganizerId({ value: id }),
-		name: new OrganizerName({ value: name }),
+	return create(OrganizerSchema, {
+		id: { value: id },
+		name: { value: name },
 	})
 }
 
 function makeArtist(id: string, name: string): Artist {
-	return new Artist({
-		id: new ArtistId({ value: id }),
-		name: new ArtistName({ value: name }),
+	return create(ArtistSchema, {
+		id: { value: id },
+		name: { value: name },
 	})
 }
 
