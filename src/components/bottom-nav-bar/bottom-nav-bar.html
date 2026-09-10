@@ -4,7 +4,7 @@
     href.bind="tab.path"
     data-nav.bind="tab.icon"
     class="nav-tab"
-    data-active.bind="isActive(tab.path)"
+    data-active.bind="tab.path === activeTab"
   >
     <svg-icon name.bind="tab.icon" class="nav-icon"></svg-icon>
     <span class="nav-label" t.bind="tab.labelKey"></span>

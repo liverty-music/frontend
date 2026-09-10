@@ -14,20 +14,26 @@
 			pointer-events: none;
 
 			position: fixed;
-			inset-block-start: 0;
+
+			/* Clear the page-header (top of every route) so toasts don't overlay
+			   the title. The header is content-sized (no fixed-height token);
+			   --space-2xl ≈ its height across viewports. */
+			inset-block-start: var(--space-2xl);
 			inset-inline: 0;
 
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-3xs);
 			align-items: center;
-
-			padding: var(--space-xs) 0 0;
 		}
 
 		.snack-item {
 			pointer-events: auto;
 
+			/* Each item is a top-layer `popover` (detached from .snack-stack when
+			   open), so it needs its own offset to clear the header — matching the
+			   stack above. */
+			inset-block-start: var(--space-2xl);
 			transform: translateY(-1rem);
 
 			display: flex;
