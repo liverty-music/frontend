@@ -329,29 +329,6 @@
 		animation: skeleton-shimmer 1.6s ease-in-out infinite;
 	}
 
-	/* ── List enter transitions (M3) ──
-	   `@starting-style` animates inserted items in via `data-list-item`.
-	   Reduced-motion fallback lands the end state. Note: on table rows
-	   (display: table-row, e.g. my-artists) transforms are ignored by the
-	   engine, so those rows get the opacity fade only — which is the intended
-	   graceful degradation. Item EXIT is owned by the View Transitions API where
-	   a screen animates removal (e.g. my-artists unfollow), so there is no
-	   `data-leaving` CSS path here. */
-	/* stylelint-disable-next-line cube/utility-single-property */
-	[data-list-item] {
-		transition:
-			opacity var(--md-duration-medium2) var(--md-easing-emphasized-decelerate),
-			transform var(--md-duration-medium2)
-			var(--md-easing-emphasized-decelerate);
-	}
-
-	@starting-style {
-		[data-list-item] {
-			transform: translateY(8px);
-			opacity: 0;
-		}
-	}
-
 	/* ── Selection spring-morph (M3) ──
 	   Selected controls (nav tabs, filter chips) morph rounder with a spatial
 	   spring plus a persistent selected state layer, driven by a real
@@ -401,7 +378,6 @@
 		}
 
 		[data-press-feedback],
-		[data-list-item],
 		[data-selected-morph] {
 			transition-duration: var(--md-duration-instant);
 		}

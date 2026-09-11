@@ -26,10 +26,58 @@
   <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script type="module" src="/src/main.ts"></script>
   <base href="/">
+  <!-- Pre-hydration placeholder: a content-shaped skeleton (NOT a "loading"
+       text) so the very first paint matches the app's in-route skeleton
+       loading treatment — one loading representation, not two. Self-contained
+       (no bundle CSS dependency) since this renders before the app hydrates.
+       CSP permits this inline style via style-src 'unsafe-inline'. -->
+  <style>
+    #bootstrap-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: calc(env(safe-area-inset-top, 0px) + 4.5rem) 1rem 1rem;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    #bootstrap-loading .bootstrap-skeleton-row {
+      block-size: 3.25rem;
+      border-radius: 12px;
+      background:
+        linear-gradient(
+          100deg,
+          rgba(255, 255, 255, 0.04) 20%,
+          rgba(255, 255, 255, 0.09) 50%,
+          rgba(255, 255, 255, 0.04) 70%
+        )
+        rgba(255, 255, 255, 0.05);
+      background-size: 200% 100%;
+      animation: bootstrap-shimmer 1.6s ease-in-out infinite;
+    }
+
+    @keyframes bootstrap-shimmer {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #bootstrap-loading .bootstrap-skeleton-row { animation: none; }
+    }
+  </style>
 </head>
 
 <body class="bg-surface-base text-text-primary">
-  <div id="bootstrap-loading" role="status" aria-live="polite" aria-label="Loading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#888;font:600 14px/1 system-ui;background:transparent;pointer-events:none">Loading…</div>
+  <div id="bootstrap-loading" role="status" aria-live="polite" aria-label="Loading">
+    <div class="bootstrap-skeleton-row"></div>
+    <div class="bootstrap-skeleton-row"></div>
+    <div class="bootstrap-skeleton-row"></div>
+    <div class="bootstrap-skeleton-row"></div>
+    <div class="bootstrap-skeleton-row"></div>
+    <div class="bootstrap-skeleton-row"></div>
+  </div>
   <app-shell></app-shell>
 </body>
 

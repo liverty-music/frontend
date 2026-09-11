@@ -115,6 +115,21 @@
 		animation: var(--transition-route-duration) var(--transition-route-easing)
 			both fade-in;
 	}
+
+	/* In-place list edits (e.g. my-artists unfollow) set `vt-suppress-root` so
+	   only their named rows animate; the `root` snapshot (header, bottom-nav,
+	   page chrome) swaps instantly instead of cross-fading — the simultaneous
+	   fade-out/fade-in otherwise dips unchanged chrome in opacity, reading as
+	   the header momentarily disappearing. */
+	:root.vt-suppress-root::view-transition-old(root) {
+		animation: none;
+		opacity: 0;
+	}
+
+	:root.vt-suppress-root::view-transition-new(root) {
+		animation: none;
+		opacity: 1;
+	}
 	/* stylelint-enable cube/prefer-where-in-reset */
 
 	/* High contrast: ensure borders and focus rings are visible */
