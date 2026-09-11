@@ -117,9 +117,9 @@
 		}
 
 		/* ── Individual chip ──
-		   input is visually-hidden; :has() drives checked state.
-		   Checkmark uses --color-text-primary for sufficient contrast
-		   against the brand-tinted chip background (>3:1). */
+		   input is visually-hidden; :has() drives checked state. Selection is
+		   signalled by color alone (border + background + text) — no check icon,
+		   which only padded the chip width without adding information. */
 		.artist-chip {
 			cursor: pointer;
 
@@ -130,8 +130,8 @@
 			padding: var(--space-3xs) var(--space-s);
 			border: 1px solid var(--color-border-muted);
 
-			/* Pill throughout. Selection is signalled by color + border + the
-			   check icon; no shape morph — a squircle→pill radius tween reads as
+			/* Pill throughout. Selection is signalled by color (border + background
+			   + text); no shape morph — a squircle→pill radius tween reads as
 			   janky because roundness saturates well before a full pill, so most
 			   of the tween is visually inert. */
 			border-radius: var(--radius-full);
@@ -145,15 +145,6 @@
 				border-color var(--md-duration-short4) var(--md-easing-standard),
 				background var(--md-duration-short4) var(--md-easing-standard),
 				color var(--md-duration-short4) var(--md-easing-standard);
-
-			/* checkmark icon — hidden until checked */
-			& .chip-check {
-				display: none;
-				flex-shrink: 0;
-
-				/* use text-primary for contrast against brand-tinted background */
-				color: var(--color-text-primary);
-			}
 
 			&:hover {
 				border-color: color-mix(
@@ -177,10 +168,6 @@
 					var(--color-brand-primary) 18%,
 					var(--color-surface-raised)
 				);
-
-				& .chip-check {
-					display: block;
-				}
 			}
 		}
 
