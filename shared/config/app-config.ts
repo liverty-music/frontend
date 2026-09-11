@@ -317,7 +317,11 @@ function validateAppConfig(
 	// value MUST NOT fail bootstrap — it falls back to the built-in 10s default so
 	// a config typo can never leave the SPA unable to start (see spec scenario
 	// "Configuration supplies an invalid timeout value").
-	const rpcTimeoutMs = resolveRpcTimeoutMs(o)
+	const rpcTimeoutMs = readOptionalPositiveNumber(
+		o,
+		'rpcTimeoutMs',
+		DEFAULT_RPC_TIMEOUT_MS,
+	)
 
 	// Optional publishable Stripe key for the lottery card-authorization flow.
 	// Absent from every ConfigMap until ops enables lottery for an environment;
@@ -355,16 +359,21 @@ function validateAppConfig(
 }
 
 /**
- * Resolves the default RPC deadline from the optional `rpcTimeoutMs` field.
- * Returns the configured value only when it is a positive, finite number;
- * otherwise (absent, null, zero, negative, or non-numeric) returns the built-in
- * {@link DEFAULT_RPC_TIMEOUT_MS}. Deliberately never throws — a malformed value
- * must degrade to the default rather than break bootstrap.
+ * Reads an optional positive-number field, returning `fallback` when the value
+ * is absent, null, or not a positive finite number (zero, negative, `NaN`,
+ * `Infinity`, or non-numeric all fall back). Unlike the string readers, this
+ * **never throws** — a malformed numeric knob (e.g. a config typo) must degrade
+ * to its default rather than break bootstrap. Companion to
+ * {@link readOptionalString} / {@link readOptionalStringArray} for the numeric
+ * config surface (currently `rpcTimeoutMs`).
  */
-function resolveRpcTimeoutMs(o: Record<string, unknown>): number {
-	const v = o.rpcTimeoutMs
-	if (typeof v === 'number' && Number.isFinite(v) && v > 0) return v
-	return DEFAULT_RPC_TIMEOUT_MS
+function readOptionalPositiveNumber(
+	o: Record<string, unknown>,
+	key: string,
+	fallback: number,
+): number {
+	const v = o[key]
+	return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : fallback
 }
 
 function requireString(o: Record<string, unknown>, key: string): string {

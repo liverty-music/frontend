@@ -87,6 +87,39 @@ describe('createAuthRetryInterceptor', () => {
 		expect(mockAuth.prepareForcedReauth).toHaveBeenCalledTimes(1)
 	})
 
+	it('propagates a DeadlineExceeded abort from the retried request WITHOUT forcing sign-out', async () => {
+		// Original 401 → refresh succeeds → the retried request is aborted by the
+		// shared client-side call deadline (DeadlineExceeded), NOT still-401. That
+		// is a timeout on a just-refreshed (presumed-valid) token, so it must
+		// surface as-is and must NOT trigger the graceful forced-reauth path (which
+		// would wrongly eject a healthy session on a slow network).
+		const deadline = new ConnectError(
+			'deadline exceeded',
+			Code.DeadlineExceeded,
+		)
+		const next = vi
+			.fn()
+			.mockRejectedValueOnce(
+				new ConnectError('unauthenticated', Code.Unauthenticated),
+			)
+			.mockRejectedValueOnce(deadline)
+
+		mockAuth.user = { access_token: 'old-token' } as any
+		mockAuth.ensureFreshToken = vi
+			.fn()
+			.mockResolvedValue({ access_token: 'new-token' })
+
+		const interceptor = createAuthRetryInterceptor(mockAuth as any)
+		const handler = interceptor(next)
+
+		await expect(handler(makeRequest())).rejects.toBe(deadline)
+		// initial + exactly one retry; the deadline abort is propagated.
+		expect(next).toHaveBeenCalledTimes(2)
+		expect(mockAuth.ensureFreshToken).toHaveBeenCalledTimes(1)
+		// A timeout is not an auth failure → no forced sign-out.
+		expect(mockAuth.prepareForcedReauth).not.toHaveBeenCalled()
+	})
+
 	it('should propagate Unauthenticated error for guest users without refresh', async () => {
 		const error = new ConnectError('unauthenticated', Code.Unauthenticated)
 		const next = vi.fn().mockRejectedValue(error)

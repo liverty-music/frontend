@@ -38,10 +38,20 @@ export interface TokenRefreshOptions {
  * one `signinSilent()` — the direct antidote to the rotation race.
  *
  * On `Unauthenticated`, it runs the single-flight refresh, retries the request
- * ONCE with the fresh token, and if the refresh (or the retry) fails, clears the
- * session gracefully via {@link IAuthService.prepareForcedReauth} (publishes
- * `SignedOut` so user-specific stores self-clear + preserves the return-to
- * location) and runs {@link TokenRefreshOptions.onUnrecoverable}.
+ * ONCE with the fresh token, and — if the refresh yields no usable token, or the
+ * retry is *still* `Unauthenticated` — clears the session gracefully via
+ * {@link IAuthService.prepareForcedReauth} (publishes `SignedOut` so
+ * user-specific stores self-clear + preserves the return-to location) and runs
+ * {@link TokenRefreshOptions.onUnrecoverable}.
+ *
+ * Any OTHER error from the retried request is a genuine downstream failure and
+ * is propagated unchanged — this deliberately INCLUDES a `DeadlineExceeded` /
+ * `Canceled` abort from the shared client-side call deadline (see
+ * `frontend-network-timeouts`). Such an abort is a timeout, not an auth failure:
+ * the just-refreshed token is presumed valid, so surfacing the timeout is
+ * correct, and forcing a sign-out on it would wrongly eject a user with a
+ * healthy session on a slow network. A truly dead session re-enters this path
+ * (and recovers gracefully) on the next RPC, resume, or boot restore.
  *
  * Each entry (consumer `src/`, admin `admin/`, organizer `organizer/`) wraps
  * this with its own options and re-exports under an entry-specific name. Keeping
@@ -72,9 +82,12 @@ export const createTokenRefreshInterceptor = (
 					return await next(req)
 				} catch (retryErr) {
 					// The retry is bounded to once. A non-auth failure is a genuine
-					// downstream error — propagate it. A retried-still-Unauthenticated
-					// (e.g. clock skew, immediate re-expiry) falls through to the
-					// unrecoverable path rather than looping.
+					// downstream error — propagate it. This includes a `DeadlineExceeded`
+					// / `Canceled` abort from the shared call deadline: that is a timeout
+					// on a just-refreshed (presumed-valid) token, NOT an auth failure, so
+					// it must NOT trigger a forced sign-out. Only a retried-still-
+					// `Unauthenticated` (e.g. clock skew, immediate re-expiry) falls
+					// through to the unrecoverable path rather than looping.
 					if (
 						!(retryErr instanceof ConnectError) ||
 						retryErr.code !== Code.Unauthenticated
