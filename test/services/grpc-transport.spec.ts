@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { Code, ConnectError } from '@connectrpc/connect'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createMockAppConfig } from '../helpers/mock-app-config'
 import { createMockAuth } from '../helpers/mock-auth'
 
@@ -10,9 +11,12 @@ vi.mock('@connectrpc/connect-web', () => ({
 }))
 
 vi.mock('@connectrpc/connect', () => ({
+	// Real Connect Code numeric values, enough for isCancellation +
+	// classifyRpcOutcome (Canceled / DeadlineExceeded).
+	Code: { Canceled: 1, DeadlineExceeded: 4, Unavailable: 14 },
 	ConnectError: class ConnectError extends Error {
-		code: string
-		constructor(message: string, code: string) {
+		code: number
+		constructor(message: string, code: number) {
 			super(message)
 			this.code = code
 		}
@@ -52,6 +56,9 @@ vi.mock('../../src/services/connect-error-router', () => ({
 }))
 
 const { createTransport } = await import('../../src/services/grpc-transport')
+const { setRpcTelemetrySink } = await import(
+	'../../src/lib/analytics/rpc-telemetry'
+)
 
 describe('grpc-transport', () => {
 	describe('createTransport', () => {
@@ -90,6 +97,74 @@ describe('grpc-transport', () => {
 
 			const call = mockCreateConnectTransport.mock.calls.at(-1)?.[0]
 			expect(call.defaultTimeoutMs).toBe(12_345)
+		})
+	})
+
+	describe('telemetry recording', () => {
+		afterEach(() => setRpcTelemetrySink(null))
+
+		// Extracts the loggingInterceptor (index 1: otel, logging, auth, authRetry,
+		// retry), which records via the module recordRpcCall seam.
+		const buildLoggingInterceptor = () => {
+			const mockLogger = {
+				scopeTo: vi.fn().mockReturnThis(),
+				debug: vi.fn(),
+				info: vi.fn(),
+				warn: vi.fn(),
+				error: vi.fn(),
+			}
+			createTransport(
+				createMockAuth() as any,
+				mockLogger as any,
+				createMockAppConfig(),
+			)
+			return mockCreateConnectTransport.mock.calls.at(-1)?.[0].interceptors[1]
+		}
+		const req = {
+			service: { typeName: 'TestService' },
+			method: { name: 'TestMethod' },
+		}
+
+		it('records a successful call as ok', async () => {
+			const sink = vi.fn()
+			setRpcTelemetrySink(sink)
+			const logging = buildLoggingInterceptor()
+			await logging(vi.fn().mockResolvedValue({ message: 'ok' }))(req)
+			expect(sink).toHaveBeenCalledWith(
+				'TestService/TestMethod',
+				expect.any(Number),
+				'ok',
+			)
+		})
+
+		it('records a client-deadline abort as deadline_exceeded', async () => {
+			const sink = vi.fn()
+			setRpcTelemetrySink(sink)
+			const logging = buildLoggingInterceptor()
+			const next = vi
+				.fn()
+				.mockRejectedValue(new ConnectError('deadline', Code.DeadlineExceeded))
+			await expect(logging(next)(req)).rejects.toThrow()
+			expect(sink).toHaveBeenCalledWith(
+				'TestService/TestMethod',
+				expect.any(Number),
+				'deadline_exceeded',
+			)
+		})
+
+		it('records a cancellation as canceled, NOT deadline_exceeded', async () => {
+			const sink = vi.fn()
+			setRpcTelemetrySink(sink)
+			const logging = buildLoggingInterceptor()
+			const next = vi
+				.fn()
+				.mockRejectedValue(new ConnectError('canceled', Code.Canceled))
+			await expect(logging(next)(req)).rejects.toThrow()
+			expect(sink).toHaveBeenCalledWith(
+				'TestService/TestMethod',
+				expect.any(Number),
+				'canceled',
+			)
 		})
 	})
 

@@ -3,6 +3,7 @@ import { registerSW } from 'virtual:pwa-register'
 import { I18N, I18nConfiguration } from '@aurelia/i18n'
 import { RouterConfiguration } from '@aurelia/router'
 import Aurelia, {
+	AppTask,
 	ConsoleSink,
 	IEventAggregator,
 	LoggerConfiguration,
@@ -93,6 +94,7 @@ import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
 import { IResumeRevalidator } from './services/resume-revalidator'
+import { IRpcTelemetry } from './services/rpc-telemetry-service'
 import { IStripeService } from './services/stripe-service'
 import { ITicketEmailService } from './services/ticket-email-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
@@ -221,6 +223,13 @@ async function bootstrap(): Promise<void> {
 	// registrations MUST be in place before app() is called below.
 	au.register(IConsentService)
 	au.register(IAnalyticsService)
+	// RPC telemetry records client-observed call durations/outcomes through the
+	// shared transport and flushes aggregates via AnalyticsService — register it
+	// after analytics/consent so its opt-out / nil-config gate resolves. The
+	// `creating` AppTask constructs the singleton at boot so it installs the
+	// transport recording sink before any RPC client is used.
+	au.register(IRpcTelemetry)
+	au.register(AppTask.creating(IRpcTelemetry, () => undefined))
 	au.register(UserHydrationTask)
 	au.register(IArtistStore)
 	au.register(IArtistBubbleStore)
