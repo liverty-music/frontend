@@ -58,14 +58,14 @@
   <state-placeholder if.bind="!isLoading && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
     <p t="dashboard.guestEmpty.title" class="dashboard-empty-title"></p>
     <p t="dashboard.guestEmpty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href.bind="'discovery'" t="dashboard.guestEmpty.cta" class="discover-cta" press-feedback></a>
+    <a href="/discovery" t="dashboard.guestEmpty.cta" class="discover-cta" press-feedback></a>
   </state-placeholder>
 
   <!-- Empty state -->
   <state-placeholder if.bind="!isLoading && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
     <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
     <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href.bind="'discovery'" t="dashboard.empty.discoverLink" class="discover-cta" press-feedback></a>
+    <a href="/discovery" t="dashboard.empty.discoverLink" class="discover-cta" press-feedback></a>
   </state-placeholder>
 
   <!-- Concert highway — always in DOM for E2E compatibility -->
@@ -97,7 +97,7 @@
   >
     <p t="allNearby.empty.title" class="dashboard-empty-title"></p>
     <p t="allNearby.empty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href.bind="'discovery'" t="allNearby.empty.discoverLink" class="discover-cta" press-feedback></a>
+    <a href="/discovery" t="allNearby.empty.discoverLink" class="discover-cta" press-feedback></a>
   </state-placeholder>
 
   <!-- All Nearby highway — venue shown on every card; AWAY lane omitted (2 lanes). -->
