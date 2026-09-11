@@ -139,6 +139,37 @@ export type SlowInteractionProps = {
 	route: string
 }
 
+/**
+ * One reporting-window aggregate of client-observed Connect-RPC call telemetry
+ * (see the `frontend-client-rpc-telemetry` capability). Emitted at most a few
+ * times per session — NOT per RPC. Carries only non-PII observability data:
+ * coarse latency-bucket counts, terminal-outcome tallies, and method identity,
+ * so p95/p99 (including the auth-retry tail) and the client-side
+ * `DeadlineExceeded` rate are computed at query time from the distribution.
+ */
+export type RpcCallTelemetryProps = {
+	/** Wall-clock span of the aggregated window, in ms. */
+	window_ms: number
+	/** Total RPC calls in the window. */
+	total: number
+	/** Calls that succeeded. */
+	ok: number
+	/** Calls aborted by the client-side deadline. */
+	deadline_exceeded: number
+	/** Calls cancelled intentionally (navigation/unmount). */
+	canceled: number
+	/** Calls that failed with any other error code. */
+	error: number
+	/**
+	 * Latency-bucket upper-bound (ms, string key) → count for non-empty buckets;
+	 * the `overflow` key counts calls slower than the largest bound. The
+	 * distribution is shipped as-is; percentiles are computed at query time.
+	 */
+	buckets: Record<string, number>
+	/** RPC method identity → `[total, deadline_exceeded]` compact tally. */
+	methods: Record<string, [number, number]>
+}
+
 // -- Name catalogue and type-level wiring --------------------------------------
 
 /**
@@ -165,6 +196,7 @@ export const Events = {
 	WebVitals: 'web.vitals',
 	LongAnimationFrame: 'perf.long_animation_frame',
 	SlowInteraction: 'perf.slow_interaction',
+	RpcCallTelemetry: 'perf.rpc_call_telemetry',
 } as const satisfies Record<string, string>
 
 /** The union of every valid event-name literal. */
@@ -187,6 +219,7 @@ export type EventPropsMap = {
 	'web.vitals': WebVitalsProps
 	'perf.long_animation_frame': LongAnimationFrameProps
 	'perf.slow_interaction': SlowInteractionProps
+	'perf.rpc_call_telemetry': RpcCallTelemetryProps
 }
 
 /**

@@ -4,6 +4,10 @@ import { createConnectTransport } from '@connectrpc/connect-web'
 import { SpanStatusCode, trace } from '@opentelemetry/api'
 import type { ILogger } from 'aurelia'
 import type { AppConfig } from '../config/app-config'
+import {
+	classifyRpcOutcome,
+	recordRpcCall,
+} from '../lib/analytics/rpc-telemetry'
 import type { IAuthService } from './auth-service'
 import {
 	createAuthRetryInterceptor,
@@ -64,10 +68,19 @@ export const createTransport = (
 			const response = await next(req)
 			const durationMs = Math.round(performance.now() - start)
 			logger.debug('RPC response', method, `${durationMs}ms`)
+			// Records the full client-observed duration — this measurement point
+			// wraps the whole interceptor chain, so it spans the shared deadline
+			// window (auth silent-refresh + Unavailable backoff). Goes through the
+			// module seam so the transport stays decoupled from the analytics graph.
+			recordRpcCall(method, durationMs, 'ok')
 			return response
 		} catch (err) {
+			const durationMs = Math.round(performance.now() - start)
+			// Record every terminal call, including a cancelled/aborted one —
+			// classifyRpcOutcome keeps `Canceled` distinct from `DeadlineExceeded`
+			// so a user-navigation abort does not inflate the deadline-firing rate.
+			recordRpcCall(method, durationMs, classifyRpcOutcome(err))
 			if (!isCancellation(err)) {
-				const durationMs = Math.round(performance.now() - start)
 				if (err instanceof ConnectError) {
 					logger.error(
 						'RPC error',
