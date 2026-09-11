@@ -34,9 +34,6 @@ vi.mock('../src/routes/settings/settings-route', () => ({
 vi.mock('../src/routes/consent/consent-route', () => ({
 	ConsentRoute: class ConsentRoute {},
 }))
-vi.mock('../src/routes/import-ticket-email/import-ticket-email-route', () => ({
-	ImportTicketEmailRoute: class ImportTicketEmailRoute {},
-}))
 vi.mock('../src/routes/verify-callback/verify-callback-route', () => ({
 	VerifyCallbackRoute: class VerifyCallbackRoute {},
 }))

@@ -76,14 +76,6 @@ import { IPwaInstallService } from './services/pwa-install-service'
 			component: import('./routes/verify-callback/verify-callback-route'),
 			title: 'Identity Verification',
 		},
-		{
-			path: 'import/ticket-email',
-			component: import(
-				'./routes/import-ticket-email/import-ticket-email-route'
-			),
-			title: 'Import Ticket Email',
-			data: { auth: false },
-		},
 		// Lottery APPLY flow (roadmap ④). Authenticated by default (Apply
 		// resolves the fan from the token). `maxTickets` / `ticketPrice` ride the
 		// path because the fan surface of LotteryService has no phase-read RPC
