@@ -1,8 +1,9 @@
 @layer block {
 	@scope (app-shell) {
 		/* Shell layout: single shell-hosted page header (row 1) + viewport content
-		   (row 2) + bottom nav (row 3). The `header` row is `auto`, so it collapses
-		   to zero height on header-less routes (the <page-header> is not rendered).
+		   (row 2) + bottom nav (row 3). The `header` and `nav` rows are `auto`, so
+		   they collapse to zero height on routes where those elements are hidden
+		   (the <page-header> / <bottom-nav-bar> are not rendered).
 		   The column track is `minmax(0, 1fr)`, not the implicit `auto`. An `auto`
 		   column has a `min-content` minimum, so a route with wide/unbreakable
 		   content (e.g. long scoped package names on /legal/licenses) would blow
@@ -16,6 +17,22 @@
 				"nav" auto
 				/ minmax(0, 1fr);
 			block-size: 100dvh;
+		}
+
+		/* Deterministically place the viewport and nav in their grid areas so their
+		   position never depends on DOM order or on whether the (conditionally
+		   rendered) <page-header> / <bottom-nav-bar> are present. Without this,
+		   `<au-viewport>` auto-places into the first row — which, when the header is
+		   hidden (showNav=false), is the `auto` header row, collapsing the route to
+		   zero block-size (breaks height-dependent routes, e.g. the discovery
+		   canvas). Placement only — no other layout is imposed on the viewport; its
+		   block-size still comes from the `1fr` row's grid stretch. */
+		au-viewport {
+			grid-area: viewport;
+		}
+
+		bottom-nav-bar {
+			grid-area: nav;
 		}
 
 		/* Overlay components use top-layer APIs (popover/dialog).
