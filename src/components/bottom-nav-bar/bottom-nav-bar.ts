@@ -1,5 +1,5 @@
-import { IRouter, IRouterEvents } from '@aurelia/router'
-import { type IDisposable, observable, resolve } from 'aurelia'
+import { resolve } from 'aurelia'
+import { IPageHeaderState } from '../../services/page-header-state'
 
 interface NavTab {
 	path: string
@@ -17,54 +17,25 @@ const tabs: NavTab[] = [
 export class BottomNavBar {
 	public readonly tabs = tabs
 
+	// Active-tab highlight is derived from the shared page-identity state's
+	// `activePath`, which the shell sets optimistically at navigation intent — so
+	// the highlight is instant (it no longer waits on router route-tree
+	// processing). Public so the template reads `pageHeader.activePath` directly:
+	// the `data-active` binding then observes that observable and re-renders on
+	// every change. (Passing it INTO `isActive` is deliberate — Aurelia only
+	// tracks property reads that appear in the template expression, not ones
+	// buried inside a method body, so the read must be in the binding.)
+	public readonly pageHeader = resolve(IPageHeaderState)
+
 	/**
-	 * The currently-active tab's `path`. `@observable` so the template's
-	 * `data-active` binding re-evaluates on every navigation.
-	 *
-	 * The previous `isActive(path)` method read `router.routeTree` directly —
-	 * router internals Aurelia's binding system cannot observe — so the active
-	 * state was computed once at bind time and never updated after navigating
-	 * (every tab stayed `data-active="false"`, so the selected-tab treatment and
-	 * its spring-morph never showed). We now recompute it on the router's
-	 * `navigation-end` event, mirroring `app-shell`'s nav tracking.
+	 * Whether `path`'s tab should be highlighted for the given `activePath`. A pure
+	 * function of its arguments (keeping the sub-path highlight rules, e.g.
+	 * `concerts/:id` highlights Home) — no router, no injected-state read.
 	 */
-	@observable public activeTab = ''
-
-	private readonly router = resolve(IRouter)
-	private readonly routerEvents = resolve(IRouterEvents)
-	private navSub: IDisposable | null = null
-
-	public binding(): void {
-		// Seed the initial active tab (navigation-end has already fired for the
-		// first route by the time this nested component binds).
-		this.updateActiveTab()
-	}
-
-	public attached(): void {
-		this.navSub = this.routerEvents.subscribe('au:router:navigation-end', () =>
-			this.updateActiveTab(),
-		)
-	}
-
-	public detaching(): void {
-		this.navSub?.dispose()
-		this.navSub = null
-	}
-
-	private updateActiveTab(): void {
-		// Null-safe: the route tree may not be populated yet when this first runs
-		// (e.g. binding() before the initial navigation, or a stub router in tests).
-		const node = this.router.routeTree?.root?.children?.[0]
-		const current = node?.computeAbsolutePath?.() ?? ''
-		this.activeTab =
-			tabs.find((tab) => this.matches(tab.path, current))?.path ?? ''
-	}
-
-	private matches(path: string, current: string): boolean {
-		// Match exact path or sub-paths (e.g. concerts/:id still highlights Home).
+	public isActive(path: string, activePath: string): boolean {
 		if (path === 'dashboard') {
-			return current === 'dashboard' || current.startsWith('concerts/')
+			return activePath === 'dashboard' || activePath.startsWith('concerts/')
 		}
-		return current === path || current.startsWith(`${path}/`)
+		return activePath === path || activePath.startsWith(`${path}/`)
 	}
 }

@@ -1,10 +1,9 @@
 <import from="./dashboard-route.css"></import>
 <import from="../../components/all-nearby/date-range-sheet"></import>
 
-<!-- Title reflects the active mode and morphs across a View Transition. The
-     header is title-only: the mode swap, filter, beam toggle, and help triggers
-     all moved into the global FAB action launcher (see fab-action-launcher). -->
-<page-header title-key.bind="modeTitleKey" morph-title.bind="true"></page-header>
+<!-- The page title is owned by the shell-hosted <page-header>; the dashboard
+     writes its active-mode title (My Timetable ↔ All Nearby) to the shared
+     page-identity state in switchMode(), preserving the title morph. -->
 
 <!-- Filter + help surfaces stay owned by the dashboard: only their triggers
      moved to the FAB launcher, so the components render sheet-only here (their

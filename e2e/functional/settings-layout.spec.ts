@@ -45,7 +45,11 @@ test.describe('Settings layout (guest)', () => {
 		await page.goto('/settings')
 		await page.waitForSelector('settings-route', { timeout: 10_000 })
 
-		const header = page.getByTestId('settings-header')
+		// The page title header is now a single shell-hosted <page-header> above the
+		// viewport in the shell grid (no longer a per-route element). The layout
+		// mechanism this guards is unchanged: the route's scroll container must stay
+		// at or below the header's bottom edge.
+		const header = page.locator('page-header')
 		const scroll = page.getByTestId('settings-scroll')
 
 		await expect(header).toBeVisible()

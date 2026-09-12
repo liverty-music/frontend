@@ -10,10 +10,8 @@
 			--_radius-sm: var(--radius-sm);
 
 			display: grid;
-			grid-template-areas:
-				"header"
-				"content";
-			grid-template-rows: auto 1fr;
+			grid-template-areas: "content";
+			grid-template-rows: 1fr;
 
 			block-size: 100%;
 			min-block-size: 0;

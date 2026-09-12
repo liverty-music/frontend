@@ -42,6 +42,7 @@ import {
 } from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
+import { IPageHeaderState } from '../../services/page-header-state'
 import { IPromptCoordinator } from '../../services/prompt-coordinator'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
@@ -152,6 +153,7 @@ export class DashboardRoute {
 	private readonly followStore = resolve(IFollowStore)
 	private readonly journeyStore = resolve(ITicketJourneyStore)
 	private readonly onboarding = resolve(IOnboardingService)
+	private readonly pageHeaderState = resolve(IPageHeaderState)
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
 	private readonly userStore = resolve(IUserStore)
 	private readonly storage = resolve(ILocalStorage)
@@ -840,10 +842,15 @@ export class DashboardRoute {
 		).matches
 		if (!doc.startViewTransition || reduce) {
 			this.viewMode = mode
+			this.pageHeaderState.setTitle(this.modeTitleKey, { morph: true })
 			return
 		}
 		doc.startViewTransition(() => {
 			this.viewMode = mode
+			// Write the active-mode title to the shared state INSIDE the transition
+			// callback so the shell header's <h1> (stable view-transition-name) morphs
+			// as the content cross-fades. modeTitleKey derives from the just-set mode.
+			this.pageHeaderState.setTitle(this.modeTitleKey, { morph: true })
 			runTasks()
 		})
 	}

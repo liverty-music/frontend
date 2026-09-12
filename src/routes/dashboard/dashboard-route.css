@@ -3,10 +3,9 @@
 		:scope {
 			display: grid;
 			grid-template-areas:
-				"header"
 				"controls"
 				"content";
-			grid-template-rows: auto auto minmax(0, 1fr);
+			grid-template-rows: auto minmax(0, 1fr);
 
 			block-size: 100%;
 			min-block-size: 0;
@@ -14,7 +13,8 @@
 			background: var(--color-surface-base);
 		}
 
-		/* All content after page-header shares the content grid area */
+		/* Route content shares the content grid area (the title header is owned by
+		   the app shell, so this route no longer defines a `header` area). */
 		concert-highway,
 		inline-error,
 		state-placeholder {

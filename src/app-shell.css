@@ -1,6 +1,8 @@
 @layer block {
 	@scope (app-shell) {
-		/* Shell layout: viewport content (row 1) + bottom nav (row 2).
+		/* Shell layout: single shell-hosted page header (row 1) + viewport content
+		   (row 2) + bottom nav (row 3). The `header` row is `auto`, so it collapses
+		   to zero height on header-less routes (the <page-header> is not rendered).
 		   The column track is `minmax(0, 1fr)`, not the implicit `auto`. An `auto`
 		   column has a `min-content` minimum, so a route with wide/unbreakable
 		   content (e.g. long scoped package names on /legal/licenses) would blow
@@ -9,6 +11,7 @@
 		:scope {
 			display: grid;
 			grid-template:
+				"header" auto
 				"viewport" minmax(0, 1fr)
 				"nav" auto
 				/ minmax(0, 1fr);
