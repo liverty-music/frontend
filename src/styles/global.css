@@ -132,6 +132,19 @@
 	}
 	/* stylelint-enable cube/prefer-where-in-reset */
 
+	/* Persistent bottom banners (signup / install) sit above the nav. When one
+	   is showing, lift bottom-anchored transient surfaces (the M3 snackbar)
+	   above it via --bottom-banner-clearance so a toast never covers the
+	   banner's CTA. Clearance is banner-specific (signup wraps to ~2 lines +
+	   button, so it is the tallest); 0 when no banner is present. */
+	:root:has(.signup-banner) {
+		--bottom-banner-clearance: 8.5rem;
+	}
+
+	:root:has(pwa-install-banner) {
+		--bottom-banner-clearance: 4.5rem;
+	}
+
 	/* High contrast: ensure borders and focus rings are visible */
 	@media (prefers-contrast: more) {
 		:where(button, input, textarea, select) {

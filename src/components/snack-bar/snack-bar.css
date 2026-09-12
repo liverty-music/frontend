@@ -3,46 +3,57 @@
 		:scope {
 			--_bg-from: var(--color-brand-primary);
 			--_bg-to: var(--color-brand-secondary);
-			--_action-pill-border: oklch(100% 0 0deg / 55%);
-			--_action-pill-bg: oklch(100% 0 0deg / 12%);
-			--_action-pill-bg-hover: oklch(100% 0 0deg / 22%);
-			--_action-pulse-glow-0: oklch(100% 0 0deg / 0%);
-			--_action-pulse-glow-50: oklch(100% 0 0deg / 22%);
+			--_action-bg-hover: oklch(100% 0 0deg / 18%);
+
+			/* Material 3 snackbar placement: bottom of screen, above the
+			   persistent bottom navigation, animating up from the bottom edge.
+			   --bottom-banner-clearance (set on :root by global.css when a
+			   persistent bottom banner is showing) lifts the toast above that
+			   banner so it never covers its CTA; 0 otherwise. */
+			--_inset-end: calc(
+				var(--bottom-nav-height) +
+				env(safe-area-inset-bottom, 0px) +
+				var(--bottom-banner-clearance, 0px) +
+				var(--space-s)
+			);
 		}
 
 		.snack-stack {
 			pointer-events: none;
 
 			position: fixed;
-
-			/* Clear the page-header (top of every route) so toasts don't overlay
-			   the title. The header is content-sized (no fixed-height token);
-			   --space-2xl ≈ its height across viewports. */
-			inset-block-start: var(--space-2xl);
+			inset-block-end: var(--_inset-end);
 			inset-inline: 0;
 
 			display: flex;
-			flex-direction: column;
+			flex-direction: column-reverse;
 			gap: var(--space-3xs);
 			align-items: center;
 		}
 
+		/* Brand-gradient container (M3 Expressive keeps the brand identity),
+		   carrying the M3 structural traits: bottom placement, extra-small (4dp)
+		   shape, a single constrained-width row with side margins (not
+		   full-bleed), a text-button action, and up-from-bottom motion. Each
+		   item is a top-layer `popover` (detached from .snack-stack when open)
+		   so it carries its own offset. */
 		.snack-item {
 			pointer-events: auto;
 
-			/* Each item is a top-layer `popover` (detached from .snack-stack when
-			   open), so it needs its own offset to clear the header — matching the
-			   stack above. */
-			inset-block-start: var(--space-2xl);
-			transform: translateY(-1rem);
+			inset-block: auto var(--_inset-end);
+			inset-inline: 0;
+			transform: translateY(1rem);
 
 			display: flex;
-			gap: var(--space-3xs);
+			gap: var(--space-2xs);
 			align-items: center;
 
-			padding: var(--space-2xs) var(--space-s);
+			inline-size: min(100% - 2 * var(--space-s), 40rem);
+			margin-inline: auto;
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-s);
 			border: none;
-			border-radius: var(--radius-card);
+			border-radius: var(--md-shape-extra-small);
 
 			font-family: var(--font-display);
 			font-weight: 600;
@@ -50,7 +61,6 @@
 
 			opacity: 0;
 			background: linear-gradient(to right, var(--_bg-from), var(--_bg-to));
-			backdrop-filter: blur(8px);
 			box-shadow: var(--shadow-card-glow);
 
 			transition:
@@ -65,12 +75,13 @@
 				opacity: 1;
 
 				@starting-style {
-					transform: translateY(-1rem);
+					transform: translateY(1rem);
 					opacity: 0;
 				}
 			}
 		}
 
+		/* Severity recolors the container gradient (info keeps the brand hues). */
 		.snack-item[data-severity="warning"] {
 			--_bg-from: oklch(55% 0.16 75deg);
 			--_bg-to: oklch(60% 0.16 75deg);
@@ -87,49 +98,33 @@
 			block-size: 1.25rem;
 		}
 
+		/* M3 text-button action (no pill / border / pulse), white on the brand
+		   container. */
 		.snack-action-btn {
 			flex-shrink: 0;
 
 			margin-inline-start: auto;
 			padding-block: var(--space-3xs);
-			padding-inline: var(--space-xs);
-			border: 1.5px solid var(--_action-pill-border);
-			border-radius: var(--radius-full);
+			padding-inline: var(--space-2xs);
+			border: none;
+			border-radius: var(--md-shape-full);
 
 			font-size: var(--step--1);
 			font-weight: 600;
 			color: var(--color-white);
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
 
-			background: var(--_action-pill-bg);
+			background: transparent;
 
 			transition: background var(--transition-fast) ease-out;
-			animation: snack-action-pulse 1.8s ease-in-out infinite;
 
 			&:hover {
-				background: var(--_action-pill-bg-hover);
-			}
-		}
-
-		@keyframes snack-action-pulse {
-			0%,
-			100% {
-				box-shadow: 0 0 0 0 var(--_action-pulse-glow-0);
-			}
-
-			50% {
-				box-shadow: 0 0 0 5px var(--_action-pulse-glow-50);
+				background: var(--_action-bg-hover);
 			}
 		}
 
 		@media (prefers-reduced-motion: reduce) {
 			.snack-item {
 				transition: none;
-			}
-
-			.snack-action-btn {
-				animation: none;
 			}
 		}
 	}
