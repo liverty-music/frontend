@@ -89,6 +89,7 @@ import { INotificationManager } from './services/notification-manager'
 import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
 import { OtelLogSink } from './services/otel-log-sink'
+import { IPageHeaderState } from './services/page-header-state'
 import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IPushService } from './services/push-service'
 import { IPwaInstallService } from './services/pwa-install-service'
@@ -265,6 +266,10 @@ async function bootstrap(): Promise<void> {
 	au.register(IIdentityVerificationService)
 	au.register(IResumeRevalidator)
 	au.register(IFabMenuService)
+	// Shared page-identity state: the single source of truth for the shell-hosted
+	// page header title and the bottom-nav active tab. Resolved by the shell (which
+	// drives it from router lifecycle events), the nav bar, and the dashboard.
+	au.register(IPageHeaderState)
 	au.register(IArtistRpcClient)
 	au.register(IConcertRpcClient)
 	au.register(IFollowRpcClient)

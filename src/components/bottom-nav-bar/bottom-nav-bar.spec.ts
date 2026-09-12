@@ -1,21 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-let mockCurrentPath = ''
-
+// BottomNavBar resolves IPageHeaderState in its class body (its `activePath` is
+// read by the template, not by `isActive`). Stub `resolve` so `new BottomNavBar()`
+// works without a DI container; `isActive` itself is a pure function of its args.
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
 		...actual,
-		// Both IRouter and IRouterEvents resolve to this shape: `routeTree` for
-		// the current-path read, `subscribe` for the navigation-end listener.
-		resolve: vi.fn(() => ({
-			routeTree: {
-				root: {
-					children: [{ computeAbsolutePath: () => mockCurrentPath }],
-				},
-			},
-			subscribe: vi.fn(() => ({ dispose: vi.fn() })),
-		})),
+		resolve: vi.fn(() => ({ activePath: '' })),
 	}
 })
 
@@ -25,7 +17,6 @@ describe('BottomNavBar', () => {
 	let sut: BottomNavBar
 
 	beforeEach(() => {
-		mockCurrentPath = ''
 		sut = new BottomNavBar()
 	})
 
@@ -49,49 +40,33 @@ describe('BottomNavBar', () => {
 		})
 	})
 
-	// `activeTab` is recomputed on `binding()` (and on each navigation-end); the
-	// template binds `data-active="tab.path === activeTab"`.
-	describe('activeTab', () => {
-		it('is the exact-matching tab path', () => {
-			mockCurrentPath = 'dashboard'
-			sut.binding()
-			expect(sut.activeTab).toBe('dashboard')
+	// `isActive(path, activePath)` is a pure comparison of the tab path against the
+	// shared state's `activePath` (with the existing sub-path highlight rules).
+	describe('isActive', () => {
+		it('is true for the exact-matching tab path', () => {
+			expect(sut.isActive('dashboard', 'dashboard')).toBe(true)
 		})
 
-		it('reflects a different active route', () => {
-			mockCurrentPath = 'settings'
-			sut.binding()
-			expect(sut.activeTab).toBe('settings')
+		it('is false for a non-matching tab path', () => {
+			expect(sut.isActive('settings', 'dashboard')).toBe(false)
 		})
 
-		it('resolves dashboard for a concerts/ sub-path', () => {
-			mockCurrentPath = 'concerts/abc-123'
-			sut.binding()
-			expect(sut.activeTab).toBe('dashboard')
+		it('highlights dashboard for a concerts/ sub-path', () => {
+			expect(sut.isActive('dashboard', 'concerts/abc-123')).toBe(true)
 		})
 
-		it('resolves the owning tab for a sub-path', () => {
-			mockCurrentPath = 'my-artists/detail'
-			sut.binding()
-			expect(sut.activeTab).toBe('my-artists')
+		it('highlights the owning tab for a sub-path', () => {
+			expect(sut.isActive('my-artists', 'my-artists/detail')).toBe(true)
 		})
 
-		it('is empty when no tab matches the current path', () => {
-			mockCurrentPath = ''
-			sut.binding()
-			expect(sut.activeTab).toBe('')
+		it('is false for every tab when no path is active', () => {
+			expect(sut.tabs.every((t) => !sut.isActive(t.path, ''))).toBe(true)
 		})
 
-		it('updates when navigation changes the current path', () => {
-			mockCurrentPath = 'dashboard'
-			sut.binding()
-			expect(sut.activeTab).toBe('dashboard')
-
-			// Simulate a navigation to another tab, then the navigation-end
-			// recompute (invoked here directly via binding()).
-			mockCurrentPath = 'discovery'
-			sut.binding()
-			expect(sut.activeTab).toBe('discovery')
+		it('reflects a change of the active path', () => {
+			expect(sut.isActive('dashboard', 'dashboard')).toBe(true)
+			expect(sut.isActive('dashboard', 'discovery')).toBe(false)
+			expect(sut.isActive('discovery', 'discovery')).toBe(true)
 		})
 	})
 })

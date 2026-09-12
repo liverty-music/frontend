@@ -1,11 +1,8 @@
 <import from="./my-artists-route.css"></import>
 
-<!-- Header always renders so the page identity is preserved across loading
-     / empty / populated states. The hype-table column headers below carry
-     their own labels, so duplication isn't a concern. -->
-<!-- Header is title-only: the edit toggle moved to the FAB action launcher
-     (the top-right header is the thumb "dead zone" this feature eliminates). -->
-<page-header title-key="nav.myArtists"></page-header>
+<!-- The page title ("My Artists") is owned by the shell-hosted <page-header>,
+     driven from the route's data.titleKey; it stays mounted across this route's
+     loading / empty / populated states. -->
 
 <!-- Help sheet + edit toggle both live in the FAB launcher now; page-help
      renders sheet-only and is opened via its ref. -->

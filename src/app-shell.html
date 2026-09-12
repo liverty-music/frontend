@@ -5,6 +5,18 @@
 <import from="./components/coach-mark/coach-mark"></import>
 <import from="./components/fab-menu/fab-menu"></import>
 
+<!-- Single shell-hosted page header, positioned in the shell grid's `header`
+     area (the CE sets its own `grid-area: header`). Bound to the shared
+     page-identity state so its title switches at navigation intent, ahead of
+     the incoming route's content. Gated on `showNav` (same visibility as the
+     nav bar) AND a non-empty title, so header-less routes (legal, about,
+     not-found) render no header row. -->
+<page-header
+  if.bind="showNav && pageHeader.titleKey"
+  title-key.bind="pageHeader.titleKey"
+  morph-title.bind="pageHeader.morphTitle"
+></page-header>
+
 <au-viewport></au-viewport>
 
 <bottom-nav-bar if.bind="showNav"></bottom-nav-bar>

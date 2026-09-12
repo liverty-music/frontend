@@ -7,17 +7,15 @@
 			--_signout-color: var(--color-error);
 
 			display: grid;
-			grid-template-areas:
-				"header"
-				"content";
-			grid-template-rows: auto 1fr;
+			grid-template-areas: "content";
+			grid-template-rows: 1fr;
 
 			block-size: 100%;
 			min-block-size: 0;
 		}
 
-		/* Shell: fixed page-header in the `header` row, this `main` in the
-		   `content` (1fr) track. `min-block-size: 0` lets the grid item shrink
+		/* This `main` fills the single `content` (1fr) track (the title header is
+		   owned by the app shell). `min-block-size: 0` lets the grid item shrink
 		   below its content height so the inner `.settings-scroll` can own the
 		   overflow — without it the track grows past the route box and the list
 		   slides under the header. Matches the my-artists / tickets / dashboard
