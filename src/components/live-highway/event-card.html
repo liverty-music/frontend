@@ -1,7 +1,7 @@
 <template>
   <import from="./event-card.css"></import>
 
-  <article
+  <div
     data-live-card
     data-lane.bind="lane"
     data-matched.bind="event.matched || undefined"
@@ -12,7 +12,7 @@
     press-feedback
     artist-color.bind="event.artistName"
     data-beam-index.bind="beamIndex"
-class="[ event-card ]"
+    class="[ event-card ]"
   >
     <span class="artist-name">
       ${event.artistName}
@@ -28,5 +28,5 @@ class="[ event-card ]"
       role="img"
       aria-label.bind="journeyConfig.labelKey | t"
     >${journeyConfig.icon}</span>
-  </article>
+  </div>
 </template>
