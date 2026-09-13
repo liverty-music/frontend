@@ -91,9 +91,12 @@
 				   layout. The inline size is grid-controlled (grid-column: 1 / -1),
 				   so only the block size needs an estimate; `auto` caches each
 				   group's real rendered height after first paint, and the literal
-				   fallback only covers a group that has never rendered. */
+				   fallback only covers a group that has never rendered. The 160px
+				   fallback is sized to the measured typical group height (~152px on
+				   the prod timetable); an over-large value inflates the scroll
+				   height of never-rendered groups and makes the scrollbar jump. */
 				content-visibility: auto;
-				contain-intrinsic-block-size: auto 320px;
+				contain-intrinsic-block-size: auto 160px;
 
 				display: grid;
 				grid-column: 1 / -1;

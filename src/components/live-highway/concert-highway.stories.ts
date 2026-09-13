@@ -115,7 +115,7 @@ export const PopulatedTimetable = {
 		// P2: viewport-scoped layout is applied to each date group.
 		const first = getComputedStyle(groups[0])
 		await expect(first.contentVisibility).toBe('auto')
-		await expect(first.containIntrinsicBlockSize).toContain('320px')
+		await expect(first.containIntrinsicBlockSize).toContain('160px')
 
 		// Sticky date separators survive the containment (Open Question guard).
 		const separator =
