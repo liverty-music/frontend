@@ -21,6 +21,8 @@ export interface TicketView {
 	id: string
 	// TODO(tickets): resolve event title once a fan-facing event-read RPC exists.
 	eventId: string
+	/** The order that issued this ticket; used to link to the Order detail route. */
+	orderId: string
 	holderName: string
 	holderPhone: string
 	issuedAt: Date | null
@@ -103,6 +105,7 @@ export class TicketsRoute {
 		return {
 			id: t.id?.value ?? '',
 			eventId: t.eventId?.value ?? '',
+			orderId: t.orderId?.value ?? '',
 			holderName: t.holderIdentity?.fullName ?? '',
 			holderPhone: t.holderIdentity?.phoneNumber ?? '',
 			issuedAt: t.issuedAt ? timestampDate(t.issuedAt) : null,

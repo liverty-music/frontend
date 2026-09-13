@@ -1,0 +1,389 @@
+@layer block {
+	@scope (order-route) {
+		:scope {
+			--flow-space: var(--space-m);
+
+			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-m);
+
+			block-size: 100%;
+			padding-block: var(--space-l);
+			padding-inline: var(--space-m);
+
+			background: var(--color-surface-base);
+		}
+
+		.order-title {
+			font-family: var(--font-display);
+			font-size: var(--step-2);
+			font-weight: normal;
+			line-height: var(--leading-snug);
+			color: var(--color-text-primary);
+			text-wrap: balance;
+		}
+
+		.order-panel {
+			--flow-space: var(--space-m);
+
+			inline-size: 100%;
+			max-inline-size: 36rem;
+			margin-inline: auto;
+			padding: var(--space-m);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+
+			background: var(--color-surface-raised);
+		}
+
+		.order-content {
+			--flow-space: var(--space-m);
+
+			inline-size: 100%;
+			max-inline-size: 36rem;
+			margin-inline: auto;
+		}
+
+		.order-section-title {
+			font-size: var(--step-0);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.order-step-title {
+			font-size: var(--step-1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.order-lead {
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-secondary);
+			text-wrap: pretty;
+		}
+
+		/* §5.2 Refund / Failed prominent banner */
+		.order-status-banner {
+			--flow-space: var(--space-s);
+
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-xs);
+
+			inline-size: 100%;
+			max-inline-size: 36rem;
+			margin-inline: auto;
+			padding: var(--space-m);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+
+			background: color-mix(
+				in oklch,
+				var(--color-text-secondary) 8%,
+				transparent
+			);
+
+			&[data-kind="refunded"] {
+				border-color: color-mix(
+					in oklch,
+					var(--color-brand-primary) 45%,
+					transparent
+				);
+				background: color-mix(
+					in oklch,
+					var(--color-brand-primary) 8%,
+					transparent
+				);
+			}
+
+			&[data-kind="failed"] {
+				border-color: color-mix(
+					in oklch,
+					var(--color-danger, oklch(62% 0.2 25deg)) 35%,
+					transparent
+				);
+				background: color-mix(
+					in oklch,
+					var(--color-danger, oklch(62% 0.2 25deg)) 8%,
+					transparent
+				);
+			}
+		}
+
+		.order-status-banner-label {
+			font-size: var(--step-1);
+			font-weight: 700;
+			color: var(--color-text-primary);
+		}
+
+		.order-status-banner-desc {
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-secondary);
+			text-wrap: pretty;
+		}
+
+		/* Payment status badge (inline, within the payment card) */
+		.order-payment-status-label {
+			font-size: var(--step--1);
+			font-weight: 600;
+		}
+
+		.order-payment-status {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-button);
+
+			background: var(--color-surface-base);
+
+			&[data-kind="paid"] {
+				border-color: color-mix(
+					in oklch,
+					var(--color-brand-primary) 45%,
+					transparent
+				);
+				background: color-mix(
+					in oklch,
+					var(--color-brand-primary) 10%,
+					transparent
+				);
+
+				& .order-payment-status-label {
+					color: var(--color-brand-primary);
+				}
+			}
+
+			&[data-kind="refunded"] {
+				background: color-mix(
+					in oklch,
+					var(--color-text-secondary) 8%,
+					transparent
+				);
+
+				& .order-payment-status-label {
+					color: var(--color-text-secondary);
+				}
+			}
+
+			&[data-kind="failed"] {
+				border-color: color-mix(
+					in oklch,
+					var(--color-danger, oklch(62% 0.2 25deg)) 45%,
+					transparent
+				);
+				background: color-mix(
+					in oklch,
+					var(--color-danger, oklch(62% 0.2 25deg)) 10%,
+					transparent
+				);
+
+				& .order-payment-status-label {
+					color: var(--color-danger, oklch(62% 0.2 25deg));
+				}
+			}
+		}
+
+		/* Summary definition list */
+		.order-summary {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+
+			padding: var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+		}
+
+		.order-summary-row {
+			display: flex;
+			gap: var(--space-s);
+			align-items: baseline;
+			justify-content: space-between;
+		}
+
+		.order-summary-key {
+			flex-shrink: 0;
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-secondary);
+		}
+
+		.order-summary-val {
+			font-size: var(--step-0);
+			color: var(--color-text-primary);
+			text-align: end;
+		}
+
+		/* Amount row — larger to emphasise the total */
+		.order-summary-amount {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: baseline;
+
+			font-size: var(--step-1);
+			font-weight: 700;
+			color: var(--color-text-primary);
+			text-align: end;
+		}
+
+		.order-tax-label {
+			font-size: var(--step--2);
+			font-weight: normal;
+			color: var(--color-text-secondary);
+		}
+
+		/* Ticket list within the order */
+		.order-ticket-list {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+		}
+
+		/* Individual ticket card */
+		.order-ticket-card {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-m);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+			background: var(--color-surface-base);
+
+			/* Voided tickets are visually de-emphasised */
+			&[data-voided="true"] {
+				opacity: 0.55;
+			}
+		}
+
+		/* Ticket status badge */
+		.order-ticket-status-label {
+			font-size: var(--step--1);
+			font-weight: 600;
+		}
+
+		.order-ticket-status {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-button);
+
+			background: var(--color-surface-raised);
+
+			&[data-issued="true"] {
+				border-color: color-mix(
+					in oklch,
+					var(--color-brand-primary) 45%,
+					transparent
+				);
+				background: color-mix(
+					in oklch,
+					var(--color-brand-primary) 10%,
+					transparent
+				);
+
+				& .order-ticket-status-label {
+					color: var(--color-brand-primary);
+				}
+			}
+
+			&[data-voided="true"] {
+				background: color-mix(
+					in oklch,
+					var(--color-text-secondary) 8%,
+					transparent
+				);
+
+				& .order-ticket-status-label {
+					color: var(--color-text-secondary);
+				}
+			}
+		}
+
+		/* Ticket summary definition list */
+		.order-ticket-summary {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-2xs);
+
+			padding: var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+		}
+
+		.order-ticket-summary-row {
+			display: flex;
+			gap: var(--space-s);
+			justify-content: space-between;
+		}
+
+		.order-ticket-summary-key {
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-secondary);
+		}
+
+		.order-ticket-summary-val {
+			font-size: var(--step-0);
+			color: var(--color-text-primary);
+			text-align: end;
+		}
+
+		/* 特定興行入場券 resale-prohibition notice */
+		.order-ticket-resale-notice {
+			padding: var(--space-xs);
+			border-inline-start: 2px solid var(--color-border-subtle);
+
+			font-size: var(--step--2);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-secondary);
+		}
+
+		.order-error {
+			font-size: var(--step--1);
+			color: var(--color-danger, oklch(62% 0.2 25deg));
+		}
+
+		.order-btn-primary {
+			cursor: pointer;
+
+			inline-size: 100%;
+			min-block-size: 48px;
+			padding-block: var(--space-xs);
+			padding-inline: var(--space-m);
+			border-radius: var(--radius-button);
+
+			font-weight: 600;
+			color: var(--color-white);
+
+			background: var(--color-brand-primary);
+			box-shadow: var(--shadow-button);
+
+			transition:
+				background 200ms,
+				transform 200ms;
+
+			&:hover {
+				background: var(--color-brand-secondary);
+			}
+
+			&:active {
+				transform: scale(0.98);
+			}
+		}
+	}
+}

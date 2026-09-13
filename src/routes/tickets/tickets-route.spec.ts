@@ -46,6 +46,7 @@ function makeTicketView(overrides: Partial<TicketView> = {}): TicketView {
 	return {
 		id: 't-1',
 		eventId: 'event-1',
+		orderId: 'order-1',
 		holderName: '山田太郎',
 		holderPhone: '09012345678',
 		issuedAt: new Date('2026-09-01'),

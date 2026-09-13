@@ -53,6 +53,12 @@ vi.mock('../src/routes/legal/privacy-route', () => ({
 vi.mock('../src/routes/legal/licenses-route', () => ({
 	LicensesRoute: class LicensesRoute {},
 }))
+vi.mock('../src/routes/tickets/tickets-route', () => ({
+	TicketsRoute: class TicketsRoute {},
+}))
+vi.mock('../src/routes/order/order-route', () => ({
+	OrderRoute: class OrderRoute {},
+}))
 vi.mock('../src/routes/not-found/not-found-route', () => ({
 	NotFoundRoute: class NotFoundRoute {},
 }))

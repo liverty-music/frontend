@@ -30,6 +30,7 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'not-found', marker: 'not-found-code' },
 	{ route: 'settings', marker: 'settings-section-title' },
 	{ route: 'tickets', marker: 'tickets-card' },
+	{ route: 'order', marker: 'order-ticket-card' },
 ]
 
 export type CheckResult =
