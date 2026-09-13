@@ -11,7 +11,7 @@ import { route } from '@aurelia/router'
  * session exists.
  */
 @route({
-	title: 'Liverty Admin',
+	title: 'Liverty Music Admin',
 	routes: [
 		{
 			path: '',

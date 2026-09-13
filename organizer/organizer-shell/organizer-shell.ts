@@ -19,7 +19,7 @@ import { route } from '@aurelia/router'
  * no longer the default.
  */
 @route({
-	title: 'Liverty Organizer',
+	title: 'Liverty Music Organizer',
 	routes: [
 		{
 			path: '',
