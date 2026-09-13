@@ -129,6 +129,15 @@ const routes = [
 		title: 'My Tickets',
 		data: { titleKey: 'nav.tickets' },
 	},
+	// Order detail (roadmap ⑤, §5.1/§5.2). Authenticated by default — the order
+	// must belong to the caller (non-revealing NotFound otherwise). Reached by
+	// link from My Tickets; NOT wired into the bottom nav.
+	{
+		path: 'orders/:orderId',
+		component: import('./routes/order/order-route'),
+		title: 'Order Detail',
+		data: { titleKey: 'nav.order' },
+	},
 	// Legal documents. Public (`auth: false`) so guests can open them
 	// without an account, and so each has a stable, directly-linkable URL
 	// (the product ships as a PWA only — there is no app-store listing).

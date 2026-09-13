@@ -351,6 +351,7 @@
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
+		"order": "注文詳細",
 		"settings": "Settings"
 	},
 	"tickets": {
@@ -369,7 +370,40 @@
 			"holderName": "お名前",
 			"issuedAt": "発行日"
 		},
-		"resaleProhibited": "このチケットは特定興行入場券です。主催者の同意なく転売することは法律により禁じられています。"
+		"resaleProhibited": "このチケットは特定興行入場券です。主催者の同意なく転売することは法律により禁じられています。",
+		"viewOrder": "注文詳細を見る"
+	},
+	"order": {
+		"title": "注文詳細",
+		"loading": "読み込んでいます…",
+		"notFound": {
+			"title": "注文が見つかりません",
+			"subtitle": "この注文は存在しないか、あなたの注文ではありません。"
+		},
+		"error": {
+			"title": "読み込みに失敗しました",
+			"retry": "再読み込み"
+		},
+		"payment": {
+			"title": "お支払い情報",
+			"amount": "合計金額",
+			"taxIncluded": "（税込）",
+			"paidAt": "支払日",
+			"card": "お支払いカード"
+		},
+		"status": {
+			"refundedDesc": "このご注文は返金済みです。チケットは無効になっています。",
+			"failedDesc": "発券処理に失敗したため、お支払いは自動的に返金されました。"
+		},
+		"tickets": {
+			"title": "発行チケット",
+			"field": {
+				"eventId": "イベント",
+				"holderName": "お名前",
+				"issuedAt": "発行日"
+			},
+			"resaleProhibited": "このチケットは特定興行入場券です。主催者の同意なく転売することは法律により禁じられています。"
+		}
 	},
 	"languages": {
 		"ja": "日本語",

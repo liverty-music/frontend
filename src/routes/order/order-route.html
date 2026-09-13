@@ -1,0 +1,148 @@
+<template class="[ order-route ] [ flow ]">
+	<header class="order-header">
+		<h1 class="order-title" t="order.title"></h1>
+	</header>
+
+	<!-- Loading -->
+	<section
+		class="order-panel"
+		if.bind="step === 'loading'"
+	>
+		<p class="order-lead" t="order.loading"></p>
+	</section>
+
+	<!-- Not found: non-revealing — order not the caller's or does not exist -->
+	<section
+		class="[ order-panel ] [ flow ]"
+		if.bind="step === 'notfound'"
+	>
+		<h2 class="order-step-title" t="order.notFound.title"></h2>
+		<p class="order-lead" t="order.notFound.subtitle"></p>
+	</section>
+
+	<!-- Error -->
+	<section
+		class="[ order-panel ] [ flow ]"
+		if.bind="step === 'error'"
+	>
+		<h2 class="order-step-title" t="order.error.title"></h2>
+		<p class="order-error">${error}</p>
+		<button
+			type="button"
+			class="order-btn-primary"
+			click.trigger="load()"
+			t="order.error.retry"
+		></button>
+	</section>
+
+	<!-- Loaded -->
+	<section
+		class="[ order-content ] [ flow ]"
+		if.bind="step === 'loaded'"
+	>
+		<!-- §5.2 Refund / Failed banner (shown prominently before payment details) -->
+		<output
+			class="order-status-banner"
+			data-kind.bind="order.statusKind"
+			if.bind="order.statusKind === 'refunded' || order.statusKind === 'failed'"
+		>
+			<span class="order-status-banner-label">${statusLabel}</span>
+			<p
+				class="order-status-banner-desc"
+				if.bind="order.statusKind === 'refunded'"
+				t="order.status.refundedDesc"
+			></p>
+			<p
+				class="order-status-banner-desc"
+				if.bind="order.statusKind === 'failed'"
+				t="order.status.failedDesc"
+			></p>
+		</output>
+
+		<!-- §5.1 Payment result card -->
+		<article class="[ order-panel ] [ flow ]">
+			<h2 class="order-section-title" t="order.payment.title"></h2>
+
+			<!-- Payment status badge -->
+			<output
+				class="order-payment-status"
+				data-kind.bind="order.statusKind"
+			>
+				<span class="order-payment-status-label">${statusLabel}</span>
+			</output>
+
+			<!-- Payment summary -->
+			<dl class="order-summary">
+				<!-- Tax-inclusive total (総額表示; §6 per-fee breakdown is deferred) -->
+				<div class="order-summary-row">
+					<dt class="order-summary-key" t="order.payment.amount"></dt>
+					<dd class="order-summary-amount">${order.amountFormatted}<span class="order-tax-label" t="order.payment.taxIncluded"></span></dd>
+				</div>
+
+				<!-- Paid date -->
+				<div class="order-summary-row" if.bind="order.paidAt">
+					<dt class="order-summary-key" t="order.payment.paidAt"></dt>
+					<dd class="order-summary-val">${formatDate(order.paidAt)}</dd>
+				</div>
+
+				<!-- Card brand + last4 (shown when available) -->
+				<div
+					class="order-summary-row"
+					if.bind="order.cardLast4"
+				>
+					<dt class="order-summary-key" t="order.payment.card"></dt>
+					<dd class="order-summary-val">${order.cardBrand} •••• ${order.cardLast4}</dd>
+				</div>
+			</dl>
+		</article>
+
+		<!-- §5.1 Issued tickets for this order -->
+		<article
+			class="[ order-panel ] [ flow ]"
+			if.bind="tickets.length > 0"
+		>
+			<h2 class="order-section-title" t="order.tickets.title"></h2>
+
+			<ul class="order-ticket-list">
+				<li
+					class="[ order-ticket-card ] [ flow ]"
+					repeat.for="ticket of tickets"
+					data-voided.bind="ticket.isVoided"
+				>
+					<!-- Status badge -->
+					<output
+						class="order-ticket-status"
+						data-issued.bind="ticket.isIssued"
+						data-voided.bind="ticket.isVoided"
+					>
+						<span class="order-ticket-status-label">${ticketStatusLabel(ticket)}</span>
+					</output>
+
+					<!-- Ticket details -->
+					<dl class="order-ticket-summary">
+						<div class="order-ticket-summary-row">
+							<dt class="order-ticket-summary-key" t="order.tickets.field.eventId"></dt>
+							<!-- TODO(tickets): resolve event title once a fan-facing event-read RPC exists -->
+							<dd class="order-ticket-summary-val">${ticket.eventId}</dd>
+						</div>
+						<div class="order-ticket-summary-row">
+							<dt class="order-ticket-summary-key" t="order.tickets.field.holderName"></dt>
+							<dd class="order-ticket-summary-val">${ticket.holderName}</dd>
+						</div>
+						<div class="order-ticket-summary-row">
+							<dt class="order-ticket-summary-key" t="order.tickets.field.issuedAt"></dt>
+							<dd class="order-ticket-summary-val">${formatDate(ticket.issuedAt)}</dd>
+						</div>
+					</dl>
+
+					<!-- 特定興行入場券 resale-prohibition notice -->
+					<p
+						class="order-ticket-resale-notice"
+						if.bind="ticket.resaleWithoutConsentProhibited"
+						t="order.tickets.resaleProhibited"
+					></p>
+				</li>
+			</ul>
+		</article>
+	</section>
+</template>

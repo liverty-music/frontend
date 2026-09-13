@@ -351,6 +351,7 @@
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
 		"tickets": "Tickets",
+		"order": "Order Detail",
 		"settings": "Settings"
 	},
 	"tickets": {
@@ -369,7 +370,40 @@
 			"holderName": "Name",
 			"issuedAt": "Issued"
 		},
-		"resaleProhibited": "This is a designated live-entertainment ticket (特定興行入場券). Resale without the organizer's consent is prohibited by law."
+		"resaleProhibited": "This is a designated live-entertainment ticket (特定興行入場券). Resale without the organizer's consent is prohibited by law.",
+		"viewOrder": "View order details"
+	},
+	"order": {
+		"title": "Order Detail",
+		"loading": "Loading…",
+		"notFound": {
+			"title": "Order not found",
+			"subtitle": "This order does not exist or does not belong to your account."
+		},
+		"error": {
+			"title": "Failed to load order",
+			"retry": "Retry"
+		},
+		"payment": {
+			"title": "Payment",
+			"amount": "Total",
+			"taxIncluded": "(tax incl.)",
+			"paidAt": "Paid on",
+			"card": "Card"
+		},
+		"status": {
+			"refundedDesc": "This order has been refunded. All tickets have been voided.",
+			"failedDesc": "Ticket issuance failed; your payment was automatically refunded."
+		},
+		"tickets": {
+			"title": "Issued Tickets",
+			"field": {
+				"eventId": "Event",
+				"holderName": "Name",
+				"issuedAt": "Issued"
+			},
+			"resaleProhibited": "This is a designated live-entertainment ticket (特定興行入場券). Resale without the organizer's consent is prohibited by law."
+		}
 	},
 	"languages": {
 		"ja": "日本語",

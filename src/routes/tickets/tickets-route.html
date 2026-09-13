@@ -45,6 +45,13 @@
 			repeat.for="ticket of tickets"
 			data-voided.bind="ticket.isVoided"
 		>
+			<!-- Link to order detail when this ticket has an associated order -->
+			<a
+				class="tickets-order-link"
+				href.bind="'orders/' + ticket.orderId"
+				if.bind="ticket.orderId"
+				t="tickets.viewOrder"
+			></a>
 			<!-- Status badge -->
 			<output
 				class="tickets-status"
