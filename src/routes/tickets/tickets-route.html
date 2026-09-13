@@ -1,0 +1,82 @@
+<template class="[ tickets-route ] [ flow ]">
+	<header class="tickets-header">
+		<h1 class="tickets-title" t="tickets.title"></h1>
+	</header>
+
+	<!-- Loading -->
+	<section
+		class="tickets-panel"
+		if.bind="step === 'loading'"
+	>
+		<p class="tickets-lead" t="tickets.loading"></p>
+	</section>
+
+	<!-- Empty: no issued tickets yet -->
+	<section
+		class="[ tickets-panel ] [ flow ]"
+		if.bind="step === 'empty'"
+	>
+		<h2 class="tickets-step-title" t="tickets.empty.title"></h2>
+		<p class="tickets-lead" t="tickets.empty.subtitle"></p>
+	</section>
+
+	<!-- Error -->
+	<section
+		class="[ tickets-panel ] [ flow ]"
+		if.bind="step === 'error'"
+	>
+		<h2 class="tickets-step-title" t="tickets.error.title"></h2>
+		<p class="tickets-error">${error}</p>
+		<button
+			type="button"
+			class="tickets-btn-primary"
+			click.trigger="load()"
+			t="tickets.error.retry"
+		></button>
+	</section>
+
+	<!-- Loaded: ticket list -->
+	<section
+		class="[ tickets-list ] [ flow ]"
+		if.bind="step === 'loaded'"
+	>
+		<article
+			class="[ tickets-card ] [ flow ]"
+			repeat.for="ticket of tickets"
+			data-voided.bind="ticket.isVoided"
+		>
+			<!-- Status badge -->
+			<output
+				class="tickets-status"
+				data-issued.bind="ticket.isIssued"
+				data-voided.bind="ticket.isVoided"
+			>
+				<span class="tickets-status-label">${statusLabel(ticket)}</span>
+			</output>
+
+			<!-- Ticket details -->
+			<dl class="tickets-summary">
+				<div class="tickets-summary-row">
+					<dt class="tickets-summary-key" t="tickets.field.eventId"></dt>
+					<!-- TODO(tickets): resolve event title once a fan-facing event-read RPC exists -->
+					<dd class="tickets-summary-val">${ticket.eventId}</dd>
+				</div>
+				<div class="tickets-summary-row">
+					<dt class="tickets-summary-key" t="tickets.field.holderName"></dt>
+					<dd class="tickets-summary-val">${ticket.holderName}</dd>
+				</div>
+				<div class="tickets-summary-row">
+					<dt class="tickets-summary-key" t="tickets.field.issuedAt"></dt>
+					<dd class="tickets-summary-val">${formatDate(ticket.issuedAt)}</dd>
+				</div>
+			</dl>
+
+			<!-- 特定興行入場券 resale-prohibition notice (shown only when applicable) -->
+			<p
+				class="tickets-resale-notice"
+				if.bind="ticket.resaleWithoutConsentProhibited"
+				t="tickets.resaleProhibited"
+			></p>
+		</article>
+	</section>
+</template>

@@ -25,16 +25,17 @@ describe('BottomNavBar', () => {
 	})
 
 	describe('tabs', () => {
-		it('has 4 navigation tabs', () => {
-			expect(sut.tabs).toHaveLength(4)
+		it('has 5 navigation tabs', () => {
+			expect(sut.tabs).toHaveLength(5)
 		})
 
-		it('includes dashboard, discovery, my-artists, settings', () => {
+		it('includes dashboard, discovery, my-artists, tickets, settings', () => {
 			const paths = sut.tabs.map((t) => t.path)
 			expect(paths).toEqual([
 				'dashboard',
 				'discovery',
 				'my-artists',
+				'tickets',
 				'settings',
 			])
 		})

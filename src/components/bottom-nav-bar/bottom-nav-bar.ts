@@ -11,6 +11,8 @@ const tabs: NavTab[] = [
 	{ path: 'dashboard', labelKey: 'nav.home', icon: 'home' },
 	{ path: 'discovery', labelKey: 'nav.discovery', icon: 'discovery' },
 	{ path: 'my-artists', labelKey: 'nav.myArtists', icon: 'my-artists' },
+	// Uses the existing 'ticket' icon (svg-icon.html case="ticket").
+	{ path: 'tickets', labelKey: 'nav.tickets', icon: 'ticket' },
 	{ path: 'settings', labelKey: 'nav.settings', icon: 'settings' },
 ]
 
