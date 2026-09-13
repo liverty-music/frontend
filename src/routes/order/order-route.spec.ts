@@ -104,6 +104,16 @@ describe('OrderRoute', () => {
 			expect(sut.order?.statusKind).toBe('failed')
 		})
 
+		it('fails safe: UNSPECIFIED/unknown status is NOT rendered as paid', async () => {
+			mockTicketClient.getOrder.mockResolvedValue(
+				makeOrder({ status: OrderStatus.UNSPECIFIED }),
+			)
+			const sut = await makeSut()
+			expect(sut.step).toBe('loaded')
+			expect(sut.order?.statusKind).toBe('unknown')
+			expect(sut.order?.statusKind).not.toBe('paid')
+		})
+
 		it('shows notfound when getOrder throws ConnectError NotFound', async () => {
 			mockTicketClient.getOrder.mockRejectedValue(
 				new ConnectError('not found', Code.NotFound),
@@ -236,6 +246,14 @@ describe('OrderRoute', () => {
 			)
 			const sut = await makeSut()
 			expect(sut.statusLabel).toBe('失敗')
+		})
+
+		it('returns 状態不明 for an unknown/UNSPECIFIED status (fail-safe, not 支払済み)', async () => {
+			mockTicketClient.getOrder.mockResolvedValue(
+				makeOrder({ status: OrderStatus.UNSPECIFIED }),
+			)
+			const sut = await makeSut()
+			expect(sut.statusLabel).toBe('状態不明')
 		})
 
 		it('returns — when no order is loaded', () => {
