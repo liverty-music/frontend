@@ -87,6 +87,14 @@
 			list-style: none;
 
 			& > li {
+				/* Viewport-scope each date group: off-screen groups skip style +
+				   layout. The inline size is grid-controlled (grid-column: 1 / -1),
+				   so only the block size needs an estimate; `auto` caches each
+				   group's real rendered height after first paint, and the literal
+				   fallback only covers a group that has never rendered. */
+				content-visibility: auto;
+				contain-intrinsic-block-size: auto 320px;
+
 				display: grid;
 				grid-column: 1 / -1;
 				grid-template-columns: subgrid;

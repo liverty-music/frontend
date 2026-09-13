@@ -6,13 +6,6 @@
 			--_noise-url: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
 		}
 
-		[artist-color] {
-			--artist-color: oklch(
-				75% 0.4 calc(var(--artist-hue) + var(--hue-drift, 0))
-			);
-			--artist-color-dim: oklch(75% 0.4 var(--artist-hue));
-		}
-
 		/* Card base styles */
 		.event-card {
 			cursor: pointer;
@@ -120,7 +113,6 @@
 				0 0 40px var(--_spot-glow),
 				0 0 80px oklch(60% 0.3 var(--artist-hue) / 25%),
 				inset 0 4px 30px var(--_spot-mid);
-			animation: color-drift 8s ease-in-out infinite;
 		}
 
 		/* Spotlight beam cone — contained within card using clipped ::before */
@@ -193,53 +185,13 @@
 		}
 
 		/* =============================================
-		   Keyframes
-		   ============================================= */
-
-		/* Contact glow fades in after beam arrives */
-		@keyframes contact-glow {
-			from {
-				opacity: 0;
-			}
-
-			to {
-				opacity: 1;
-			}
-		}
-
-		/* Top-edge pulse — beam contact point flicker */
-		@keyframes pulse-glow {
-			0%,
-			100% {
-				opacity: 1;
-			}
-
-			50% {
-				opacity: 0.5;
-			}
-		}
-
-		/* Color drift — stage lighting hue oscillation */
-		@keyframes color-drift {
-			0%,
-			100% {
-				--hue-drift: 0;
-			}
-
-			33% {
-				--hue-drift: 30;
-			}
-
-			66% {
-				--hue-drift: -30;
-			}
-		}
-
-		/* =============================================
 		   Reduced motion
 		   ============================================= */
 		@media (prefers-reduced-motion: reduce) {
-			.event-card[data-matched] {
+			/* Suppress the fade-slide-up entrance so reduced-motion users get a
+			   fully static card (the matched-card hue drift that used to be gated
+			   here was removed as dead per-frame style-recalc work). */
+			.event-card {
 				animation: none;
 			}
 		}
@@ -273,10 +225,4 @@
 			}
 		}
 	}
-}
-
-@property --hue-drift {
-	inherits: false;
-	initial-value: 0;
-	syntax: "<number>";
 }
