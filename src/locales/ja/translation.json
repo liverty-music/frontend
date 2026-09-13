@@ -350,7 +350,26 @@
 		"home": "Timetable",
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
+		"tickets": "Tickets",
 		"settings": "Settings"
+	},
+	"tickets": {
+		"title": "マイチケット",
+		"loading": "読み込んでいます…",
+		"empty": {
+			"title": "まだチケットがありません",
+			"subtitle": "抽選に当選してチケットが発行されると、ここに表示されます。"
+		},
+		"error": {
+			"title": "読み込みに失敗しました",
+			"retry": "再読み込み"
+		},
+		"field": {
+			"eventId": "イベント",
+			"holderName": "お名前",
+			"issuedAt": "発行日"
+		},
+		"resaleProhibited": "このチケットは特定興行入場券です。主催者の同意なく転売することは法律により禁じられています。"
 	},
 	"languages": {
 		"ja": "日本語",

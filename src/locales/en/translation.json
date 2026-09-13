@@ -350,7 +350,26 @@
 		"home": "Timetable",
 		"discovery": "Discovery",
 		"myArtists": "My Artists",
+		"tickets": "Tickets",
 		"settings": "Settings"
+	},
+	"tickets": {
+		"title": "My Tickets",
+		"loading": "Loading…",
+		"empty": {
+			"title": "No tickets yet",
+			"subtitle": "Tickets issued from your lottery wins will appear here."
+		},
+		"error": {
+			"title": "Failed to load tickets",
+			"retry": "Retry"
+		},
+		"field": {
+			"eventId": "Event",
+			"holderName": "Name",
+			"issuedAt": "Issued"
+		},
+		"resaleProhibited": "This is a designated live-entertainment ticket (特定興行入場券). Resale without the organizer's consent is prohibited by law."
 	},
 	"languages": {
 		"ja": "日本語",

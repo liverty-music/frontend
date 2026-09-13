@@ -120,6 +120,15 @@ const routes = [
 		component: import('./routes/lottery-application/lottery-application-route'),
 		title: 'My Lottery Application',
 	},
+	// My Tickets (roadmap ⑤, task 5.1). Authenticated by default — tickets are
+	// account-bound covered tickets issued from captured lottery wins (④).
+	// Wired into the bottom nav bar as the Tickets tab.
+	{
+		path: 'tickets',
+		component: import('./routes/tickets/tickets-route'),
+		title: 'My Tickets',
+		data: { titleKey: 'nav.tickets' },
+	},
 	// Legal documents. Public (`auth: false`) so guests can open them
 	// without an account, and so each has a stable, directly-linkable URL
 	// (the product ships as a PWA only — there is no app-store listing).
