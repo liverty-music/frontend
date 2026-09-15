@@ -112,21 +112,16 @@ export const PopulatedTimetable = {
 		)
 		await expect(groups.length).toBe(DATE_GROUPS.length)
 
-		// P2: viewport-scoping lives on the LANE, not the date-group `<li>`. The
-		// `<li>` is `grid-template-columns: subgrid`, and content-visibility's
-		// containment disables subgrid on the element it applies to — so it must
-		// NOT be on the `<li>` (that collapsed the columns and made cards overflow
-		// their lane). It belongs on `.lane`, which is a plain grid item.
+		// Lane/column layout regression guard. `content-visibility` (P2) was
+		// reverted: it always adds paint containment, which both disables the
+		// `<li>` subgrid (cards overflowed their lane) and clipped the matched
+		// card's spotlight glow, and the only un-clip mechanism (overflow-clip-
+		// margin) is Firefox-only and conflicts with the sticky header. So there
+		// must be NO content-visibility here, the `<li>` must keep its subgrid,
+		// each lane must be ~1/3 of the row, and a card must not spill past its lane.
 		const lanes = groups[0].querySelectorAll<HTMLElement>('.lane')
 		await expect(lanes.length).toBe(3)
-		const laneStyle = getComputedStyle(lanes[0])
-		await expect(laneStyle.contentVisibility).toBe('auto')
-		await expect(laneStyle.containIntrinsicBlockSize).toContain('160px')
-
-		// Regression guard for the lane-overflow bug: the `<li>` subgrid must stay
-		// intact (not `none`), each lane must be confined to ~1/3 of the row, and a
-		// card must not spill past its lane. (content-visibility on the subgrid
-		// `<li>` broke all three.)
+		await expect(getComputedStyle(lanes[0]).contentVisibility).toBe('visible')
 		await expect(getComputedStyle(groups[0]).gridTemplateColumns).toContain(
 			'subgrid',
 		)
@@ -137,7 +132,7 @@ export const PopulatedTimetable = {
 		if (!card) throw new Error('event-card not rendered')
 		await expect(card.getBoundingClientRect().width).toBeLessThanOrEqual(laneW)
 
-		// Sticky date separators survive the containment (Open Question guard).
+		// Sticky date separators.
 		const separator =
 			canvasElement.querySelector<HTMLElement>('.date-separator')
 		if (!separator) throw new Error('date-separator not rendered')
