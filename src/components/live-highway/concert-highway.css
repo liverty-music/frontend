@@ -152,21 +152,8 @@
 		}
 
 		.lane {
-			/* Viewport-scope each lane so off-screen groups skip laying out their
-			   cards. This MUST live on the lane, not the date-group `<li>`: the
-			   `<li>` (and `.lane-grid`) are `grid-template-columns: subgrid`, and
-			   `content-visibility`'s containment disables subgrid on the element it
-			   applies to — putting it on the `<li>` collapsed the three lane columns
-			   to full width (cards overflowed their lane). The lane is a plain grid
-			   item, so containing it keeps the subgrid intact. `auto` caches each
-			   lane's real height after first paint; 160px is the typical group
-			   height (a group's row height is the tallest of its three lanes). */
-			content-visibility: auto;
-			contain-intrinsic-block-size: auto 160px;
-
 			container-name: lane;
 			container-type: inline-size;
-
 			padding: var(--space-2xs);
 
 			&:not(:last-child) {
