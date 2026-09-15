@@ -112,20 +112,36 @@ export const PopulatedTimetable = {
 		)
 		await expect(groups.length).toBe(DATE_GROUPS.length)
 
-		// P2: viewport-scoped layout is applied to each date group.
-		const first = getComputedStyle(groups[0])
-		await expect(first.contentVisibility).toBe('auto')
-		await expect(first.containIntrinsicBlockSize).toContain('160px')
+		// P2: viewport-scoping lives on the LANE, not the date-group `<li>`. The
+		// `<li>` is `grid-template-columns: subgrid`, and content-visibility's
+		// containment disables subgrid on the element it applies to — so it must
+		// NOT be on the `<li>` (that collapsed the columns and made cards overflow
+		// their lane). It belongs on `.lane`, which is a plain grid item.
+		const lanes = groups[0].querySelectorAll<HTMLElement>('.lane')
+		await expect(lanes.length).toBe(3)
+		const laneStyle = getComputedStyle(lanes[0])
+		await expect(laneStyle.contentVisibility).toBe('auto')
+		await expect(laneStyle.containIntrinsicBlockSize).toContain('160px')
+
+		// Regression guard for the lane-overflow bug: the `<li>` subgrid must stay
+		// intact (not `none`), each lane must be confined to ~1/3 of the row, and a
+		// card must not spill past its lane. (content-visibility on the subgrid
+		// `<li>` broke all three.)
+		await expect(getComputedStyle(groups[0]).gridTemplateColumns).toContain(
+			'subgrid',
+		)
+		const rowW = groups[0].getBoundingClientRect().width
+		const laneW = lanes[0].getBoundingClientRect().width
+		await expect(laneW).toBeLessThan(rowW * 0.5) // one column, not full width
+		const card = groups[0].querySelector<HTMLElement>('.event-card')
+		if (!card) throw new Error('event-card not rendered')
+		await expect(card.getBoundingClientRect().width).toBeLessThanOrEqual(laneW)
 
 		// Sticky date separators survive the containment (Open Question guard).
 		const separator =
 			canvasElement.querySelector<HTMLElement>('.date-separator')
 		if (!separator) throw new Error('date-separator not rendered')
 		await expect(getComputedStyle(separator).position).toBe('sticky')
-
-		// Three lanes per group render, and the subgrid columns are content-driven
-		// by the fixed parent tracks (so containment cannot shift them).
-		await expect(groups[0].querySelectorAll('.lane').length).toBe(3)
 
 		// One laser beam per matched card — beams are generated from data, so they
 		// exist even when a matched card sits in an off-screen (skipped) group.
