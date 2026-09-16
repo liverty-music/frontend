@@ -58,7 +58,7 @@ export class EventCard {
 		)
 	}
 
-	/** Sequential beam index assigned by dashboard for JS beam tracking. */
+	/** Sequential beam index assigned by the highway; null when not matched. */
 	@bindable public beamIndex: number | null = null
 
 	/**

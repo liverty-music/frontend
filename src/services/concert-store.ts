@@ -155,6 +155,17 @@ export class ConcertStore {
 		this.lastDateGroups = groups
 	}
 
+	/**
+	 * Scroll offset of the rendered timetable, so returning to the dashboard puts
+	 * the fan back where they left instead of at the top. Lives here rather than
+	 * on the route for the same reason the groups do: a new `DashboardRoute` is
+	 * created on every navigation, so route-local state cannot survive the trip.
+	 *
+	 * Cleared alongside the groups — an offset is meaningless against a different
+	 * list, and restoring one would land somewhere arbitrary.
+	 */
+	public timetableScrollOffset = 0
+
 	public invalidateFollowerCache(): void {
 		// A follow-set change invalidates every date-window variant, so clear all
 		// keys, not just the today-onward one.
@@ -162,6 +173,7 @@ export class ConcertStore {
 		// Clear the cached output too so the next visit shows a fresh spinner
 		// rather than stale groups with the unfollowed/newly-followed artist.
 		this.lastDateGroups = null
+		this.timetableScrollOffset = 0
 	}
 
 	/**
@@ -172,6 +184,7 @@ export class ConcertStore {
 	 */
 	public clearRenderedGroups(): void {
 		this.lastDateGroups = null
+		this.timetableScrollOffset = 0
 	}
 
 	public async listByArtists(

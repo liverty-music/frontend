@@ -82,24 +82,45 @@ describe('SettingsRoute — identity verification', () => {
 	})
 
 	describe('loadVerificationStatus() (via loading())', () => {
-		it('loads the status when authenticated', async () => {
+		/** Let the fire-and-forget loads settle without awaiting loading() itself. */
+		const flush = () => new Promise((r) => setTimeout(r, 0))
+
+		it('starts the status load when authenticated', async () => {
 			mockAuth.isAuthenticated = true
-			await sut.loading()
+			sut.loading()
+			await flush()
 			expect(mockIdentity.getMyVerificationStatus).toHaveBeenCalledTimes(1)
 		})
 
 		it('does NOT reach the backend for a guest (unauthenticated)', async () => {
 			mockAuth.isAuthenticated = false
-			await sut.loading()
+			sut.loading()
+			await flush()
 			expect(mockIdentity.getMyVerificationStatus).not.toHaveBeenCalled()
 		})
 
-		it('is non-fatal — a getMyVerificationStatus failure is swallowed (loading resolves)', async () => {
+		it('does not block the view swap on the RPC', () => {
+			mockAuth.isAuthenticated = true
+			// Never resolves: if loading() awaited it, the router would hold the
+			// outgoing screen for as long as the network took. Returning void is the
+			// contract — Settings is a bottom-nav tab like the others.
+			mockIdentity.getMyVerificationStatus.mockReturnValueOnce(
+				new Promise(() => {}),
+			)
+
+			expect(sut.loading()).toBeUndefined()
+		})
+
+		it('is non-fatal — a getMyVerificationStatus failure is swallowed', async () => {
 			mockAuth.isAuthenticated = true
 			mockIdentity.getMyVerificationStatus.mockRejectedValueOnce(
 				new Error('UNAVAILABLE'),
 			)
-			await expect(sut.loading()).resolves.toBeUndefined()
+
+			expect(() => sut.loading()).not.toThrow()
+			// The rejection is handled inside the load routine, so nothing escapes to
+			// become an unhandled rejection once it settles.
+			await flush()
 		})
 	})
 

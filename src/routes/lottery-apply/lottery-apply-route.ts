@@ -139,6 +139,14 @@ export class LotteryApplyRoute {
 		// routing them to Settings before any card hold. On a status-load failure
 		// we fail OPEN (proceed to the flow): the backend re-validates at Apply, so
 		// the requirement is never bypassed, only surfaced later in that case.
+		//
+		// DELIBERATE EXCEPTION to the non-blocking-loading contract: this `await`
+		// holds the view swap until the status resolves. Everywhere else that is a
+		// defect — it freezes the outgoing screen on the network. Here it is the
+		// point: starting the fan in the payment flow and yanking them to
+		// `verify-required` a moment later would show them a step they are not
+		// eligible for, mid-way into a purchase. This route is not a bottom-nav tab
+		// and is entered deliberately, so the cost is bounded and paid once.
 		if (this.verificationRequired) {
 			try {
 				const status = await this.identity.getMyVerificationStatus(

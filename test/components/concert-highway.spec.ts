@@ -112,24 +112,17 @@ describe('ConcertHighway', () => {
 	})
 
 	describe('detaching', () => {
-		it('removes scroll listener', () => {
-			sut.attached()
-			const scrollEl = mockElement.querySelector('.concert-scroll')!
-			const removeSpy = vi.spyOn(scrollEl, 'removeEventListener')
-
-			sut.detaching()
-
-			expect(removeSpy).toHaveBeenCalledWith('scroll', expect.any(Function))
-		})
-
-		it('cancels pending rAF', () => {
-			const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame')
-			vi.spyOn(globalThis, 'requestAnimationFrame').mockReturnValue(42)
+		it('has nothing to tear down — the beams are driven by CSS', () => {
+			const addSpy = vi.spyOn(globalThis, 'requestAnimationFrame')
 
 			sut.attached()
 			sut.detaching()
 
-			expect(cancelSpy).toHaveBeenCalledWith(42)
+			// The component used to own a scroll listener and a rAF loop that
+			// measured every matched card. Both are gone: the beams now follow their
+			// anchor concert through a view timeline, so there is no per-frame work
+			// to schedule and nothing to unsubscribe.
+			expect(addSpy).not.toHaveBeenCalled()
 		})
 	})
 

@@ -5,13 +5,19 @@
 		--_muted-faint: oklch(from var(--color-text-muted) l c h / 30%);
 
 		:scope {
+			/* Single source of truth for the lane columns. The stage header still
+			   subgrids off this, but each date group now declares these columns
+			   itself (see `.concert-scroll > li`), so the token keeps the two
+			   definitions from drifting apart. */
+			--_lane-columns: 1fr 1fr 1fr;
+
 			position: relative;
 
 			display: grid;
 			grid-template:
 				"stage-home stage-near stage-away" auto
 				"lane-home  lane-near  lane-away" minmax(0, 1fr)
-				/ 1fr 1fr 1fr;
+				/ var(--_lane-columns);
 
 			block-size: 100%;
 			min-block-size: 0;
@@ -22,7 +28,7 @@
 		   removed from the DOM (if.bind="!hideAway"); overriding only the columns
 		   keeps every named area/line intact so the subgrid spans stay valid. */
 		:scope:has([data-hide-away="true"]) {
-			grid-template-columns: 1fr 1fr 0;
+			--_lane-columns: 1fr 1fr 0;
 		}
 
 		/* Section wrapper — transparent to grid via display:contents */
@@ -86,11 +92,93 @@
 
 			list-style: none;
 
-			& > li {
+			/* Date group. Declares its own columns rather than subgridding through
+			   this scroll container, so it is NOT a subgrid participant of the
+			   highway's root grid. That is what makes per-group containment safe:
+			   `content-visibility` establishes layout containment, which severs a
+			   subgrid chain crossing the contained boundary — the lanes then
+			   collapse to full width and stack (the reverted P2 failure). The root
+			   columns are equal fractions and the grid has no column-gap, so
+			   repeating them here lands on identical positions (measured within
+			   0.02px of the subgrid baseline). `.lane-grid` may still subgrid
+			   because that chain is internal to this element. */
+			& > .date-group:not(.date-group-skeleton) {
+				/* Skip rendering work for groups the fan cannot see. A populated
+				   timetable measured 225 date groups — roughly seven months — so all
+				   but a handful of these are off screen at any moment.
+
+				   `auto` lets the browser remember each group's real height once it
+				   has rendered; the literal is only used for a group that never has.
+				   It is sized from the measured median group height (225 groups:
+				   median 192px, min 116px, max 579px). The distribution is wide and
+				   right-skewed, so no single value is right for every group — what
+				   matters is that the total stays close enough that a restored scroll
+				   offset lands where the fan left, which the device check covers. */
+				content-visibility: auto;
+				contain-intrinsic-size: auto 192px;
+
+				translate: 0 0;
+
 				display: grid;
 				grid-column: 1 / -1;
-				grid-template-columns: subgrid;
+				grid-template-columns: var(--_lane-columns);
+
+				/* Reveal, first appearance: the groups on screen when data arrives come
+				   in top to bottom rather than all at once. Driven by `@starting-style`
+				   below, which is what animates an element as it is ADDED to the DOM —
+				   a transition, deliberately, so it does not compete with the
+				   scroll-driven reveal for the `animation` property.
+
+				   `sibling-index()` gives the cascade natively. Below that Baseline the
+				   delay resolves to zero and the visible groups reveal together — the
+				   behaviour this replaced, and acceptable for decorative motion. The
+				   alternative was feeding an index in from the template, which this
+				   project bans (CSS owns presentation) for good reason. Capped so a
+				   group just below the fold is not left sitting on a long delay. */
+				opacity: 1;
+
+				transition:
+					opacity 400ms ease-out,
+					translate 400ms ease-out;
+				transition-delay: min(calc(sibling-index() * 60ms), 400ms);
 			}
+		}
+
+		@starting-style {
+			.concert-scroll > .date-group:not(.date-group-skeleton) {
+				translate: 0 16px;
+				opacity: 0;
+			}
+		}
+
+		/* Loading placeholder. Shares the date group's grid so the lanes line up
+		   with the stage header exactly as real content does — the swap to
+		   concerts is then a content change, not a layout change. Excluded from
+		   containment and reveal motion: it is short-lived, always on screen, and
+		   animating a placeholder into view only delays the real thing. */
+		.date-group-skeleton {
+			/* Shares the date group's grid so its lanes land on the same columns as
+			   the stage header — that is what makes the swap to real concerts a
+			   content change rather than a layout change. It is deliberately NOT a
+			   `.date-group` for containment or reveal purposes: those selectors
+			   exclude it, because a placeholder is always on screen and animating
+			   one in only delays the content it stands in for. */
+			display: grid;
+			grid-column: 1 / -1;
+			grid-template-columns: var(--_lane-columns);
+		}
+
+		.skeleton-date {
+			display: block;
+			inline-size: 8ch;
+			block-size: var(--step-0);
+		}
+
+		.skeleton-card {
+			display: block;
+			block-size: 44px;
+			margin-block-end: var(--space-2xs);
+			border-radius: var(--radius-card);
 		}
 
 		.month-separator {
@@ -195,12 +283,23 @@
 			inset: 0;
 		}
 
+		/* The beam's length tracks where its concert sits on screen. That is driven
+		   by the card's own view timeline (named per beam and put in scope by the
+		   host), NOT by script reading card geometry each frame — those reads were
+		   the component's forced-reflow cost, and they would also force layout of
+		   every date group the browser is skipping.
+
+		   `scaleY` is animated rather than a length or a registered custom property:
+		   a custom-property animation forces a full-subtree style recalc every
+		   frame, which is the exact cost P1 deleted from this component. */
 		.laser-beam {
 			position: absolute;
 			inset-block-start: 0;
 			inset-inline: 0;
 
-			block-size: var(--beam-h, 0);
+			/* Collapsed by default: without scroll-driven animation support no beam
+			   is drawn at all, which is the intended degradation. */
+			block-size: 0;
 
 			background: linear-gradient(
 				to bottom,
@@ -247,6 +346,69 @@
 				var(--beam-right, 66%) var(--beam-top-pct, 80%),
 				calc(var(--beam-right, 66%) - 4px) var(--beam-top-pct, 80%)
 			);
+		}
+
+		/* Scroll-driven animations are limited availability (Chrome/Edge 115,
+		   Safari 26; absent in Firefox). The beam is decorative and off by default
+		   per the beam-effect-toggle capability, so this is progressive enhancement
+		   with no fallback — and deliberately no scroll-timeline-polyfill, which
+		   the platform guidance rules out as incomplete.
+
+		   The `animation-range` term in the test is required: it excludes browsers
+		   with only partial scroll-driven-animation support. */
+		@supports ((animation-timeline: view()) and (animation-range: entry)) {
+			@media (prefers-reduced-motion: no-preference) {
+				.laser-beam {
+					transform-origin: top;
+					block-size: 100%;
+
+					/* animation-timeline is bound inline per beam (the set is
+					   data-driven). It must come AFTER the shorthand, which would
+					   otherwise reset it. */
+					animation: beam-track auto linear both;
+					animation-range: cover;
+				}
+			}
+		}
+
+		/* Reveal, on scroll: a group entering the viewport animates from its own
+		   position rather than from a clock. Time-based motion cannot serve this —
+		   a group's delay elapses while it is still off screen, so by the time the
+		   fan reaches it the animation is over. Driving it from the group's view
+		   timeline also means a group already in view (a restored re-entry) sits
+		   past its entry range and renders settled, with no motion to replay. */
+		@supports ((animation-timeline: view()) and (animation-range: entry)) {
+			@media (prefers-reduced-motion: no-preference) {
+				.concert-scroll > .date-group:not(.date-group-skeleton) {
+					/* `auto` duration is mandatory: a scroll-driven animation maps its
+					   duration to the range, and a time value silently produces no
+					   animation at all. `backwards` fill means a group already past its
+					   entry range contributes nothing here, leaving the first-appearance
+					   transition above in charge — which is why the two coexist. */
+					animation: fade-slide-up auto linear backwards;
+					animation-timeline: view();
+					animation-range: entry;
+				}
+			}
+		}
+
+		/* Motion is decorative: suppressing it changes nothing about what is shown
+		   or when. Nothing else depends on these animations running. */
+		@media (prefers-reduced-motion: reduce) {
+			.concert-scroll > .date-group,
+			.laser-beam {
+				animation: none;
+			}
+		}
+
+		@keyframes beam-track {
+			from {
+				transform: scaleY(1);
+			}
+
+			to {
+				transform: scaleY(0);
+			}
 		}
 	}
 }

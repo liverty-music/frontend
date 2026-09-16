@@ -74,6 +74,7 @@
 		"start": "vite",
 		"build": "vite build",
 		"verify:build-templates": "npx tsx scripts/verify-build-templates.ts",
+		"verify:route-loading": "npx tsx scripts/verify-route-loading.ts",
 		"verify:bundle-isolation": "npx tsx scripts/verify-bundle-isolation.ts",
 		"verify:no-temporal-polyfill": "npx tsx scripts/verify-no-temporal-polyfill.ts",
 		"licenses:generate": "npx tsx scripts/generate-licenses.ts",

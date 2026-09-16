@@ -100,7 +100,7 @@ describe('ConcertHighway composition', () => {
 		expect(timeEls[1].textContent).toContain('4月2日')
 	})
 
-	it('hides stage header when dateGroups is empty', async () => {
+	it('renders the stage header with no dateGroups, so the frame is on screen while data loads', async () => {
 		const result = await createFixture(
 			'<concert-highway date-groups.bind="groups"></concert-highway>',
 			class App {
@@ -110,8 +110,14 @@ describe('ConcertHighway composition', () => {
 		).started
 		fixture = result as any
 
+		// The stage header needs no data — it is the App Shell part of the
+		// timetable. It used to be gated on `dateGroups.length > 0`, which withheld
+		// the frame for exactly the window it exists to fill.
 		const stageHeader = result.appHost.querySelector('.stage-header')
-		expect(stageHeader).toBeNull()
+		expect(stageHeader).not.toBeNull()
+		expect(
+			result.appHost.querySelectorAll('.stage-header > span'),
+		).toHaveLength(3)
 	})
 
 	it('builds beam index map for matched events', async () => {

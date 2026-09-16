@@ -90,14 +90,17 @@ test.describe('Instant page switch (guest)', () => {
 		await expect(homeTab).toHaveAttribute('data-active', 'true')
 		await expect(discoveryTab).toHaveAttribute('data-active', 'false')
 		await expect(title).toHaveText('Timetable')
+		// The placeholder is now one element per skeleton date row, so scope to the
+		// first: it is the timetable's own structure standing in for the concerts,
+		// not a single generic bar stack.
 		await expect(
-			page.locator('[data-testid="dashboard-loading"]'),
+			page.locator('[data-testid="dashboard-loading"]').first(),
 		).toBeVisible()
 
 		// And once the delayed data resolves, the loading state clears — the content
 		// caught up to the identity that already switched.
 		await expect(
-			page.locator('[data-testid="dashboard-loading"]'),
+			page.locator('[data-testid="dashboard-loading"]').first(),
 		).toBeHidden({ timeout: 10_000 })
 	})
 })
