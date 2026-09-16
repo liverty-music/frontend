@@ -1,3 +1,4 @@
+import { I18nConfiguration } from '@aurelia/i18n'
 import { IRouter, IRouterEvents } from '@aurelia/router'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -64,33 +65,69 @@ vi.mock('../src/routes/not-found/not-found-route', () => ({
 }))
 
 describe('app-shell', () => {
-	// TODO: Fix landing page test - requires complex mocking of auth service and RPC client
-	it.skip('should render the landing page message', async () => {
-		// This test is currently skipped due to complex dependencies (AuthService, Router, RPC client)
-		// The landing page component requires proper mocking of the artist service RPC client
-		// which is created at module level and difficult to mock in unit tests.
-		// Consider integration tests or refactoring to inject the RPC client as a dependency.
-	})
+	/**
+	 * Renders the real AppShell template through Aurelia. These are the
+	 * assertions an Aurelia upgrade would most plausibly break — template
+	 * compilation, `if.bind` evaluation and viewport registration — and
+	 * Aurelia automerge is gated on them (OpenSpec change
+	 * `automate-dependency-updates`, design D17). Do not re-skip.
+	 */
+	describe('shell rendering', () => {
+		async function renderShell() {
+			const { createFixture } = await import('@aurelia/testing')
+			const fixture = createFixture('<app-shell></app-shell>', {}, [
+				AppShell,
+				// Child CEs in the shell template (error-banner, snack-bar, …)
+				// resolve I18N at construction, so the real plugin must be
+				// registered for the shell to hydrate at all.
+				I18nConfiguration.customize((options) => {
+					options.initOptions = {
+						lng: 'en',
+						resources: { en: { translation: {} } },
+						fallbackLng: 'en',
+						interpolation: { escapeValue: false },
+					}
+				}),
+				IPageHeaderState,
+				Registration.instance(IRouter, {
+					get routeTree() {
+						return { root: { children: [] } }
+					},
+				} as unknown as IRouter),
+				Registration.instance(IRouterEvents, {
+					subscribe: vi.fn(() => ({ dispose: vi.fn() })),
+				}),
+				Registration.instance(IErrorBoundaryService, {
+					captureError: vi.fn(),
+					addBreadcrumb: vi.fn(),
+				}),
+				Registration.instance(IAuthService, { isAuthenticated: false }),
+				Registration.instance(IOnboardingService, {
+					isOnboarding: false,
+					isCompleted: false,
+					currentStep: 'lp',
+					spotlightActive: false,
+					spotlightTarget: '',
+					spotlightMessage: '',
+					spotlightRadius: '12px',
+				}),
+				Registration.instance(IPwaInstallService, { canShowFab: false }),
+			])
+			await fixture.started
+			return fixture
+		}
 
-	// TODO(#24): Unskip once createFixture-based integration tests are supported.
-	// Requires full router bootstrapping and viewport mocking that is out of scope
-	// for this unit test PR. Tracked in: https://github.com/liverty-music/frontend/issues/24
-	it.skip('should have a layout with navigation and viewport', async () => {
-		const { createFixture } = await import('@aurelia/testing')
-		const { appHost } = await createFixture('<app-shell></app-shell>', {}, [
-			AppShell,
-		]).started
+		it('renders the routing viewport', async () => {
+			const fixture = await renderShell()
+			expect(fixture.appHost.querySelector('au-viewport')).not.toBeNull()
+			await fixture.stop(true)
+		})
 
-		const myApp = appHost.querySelector('app-shell')
-		expect(myApp).not.toBeNull()
-
-		const shadowRoot = myApp?.shadowRoot
-		// AppShell might NOT be shadow DOM if it's the root component without @useShadowDOM (though defined in vite plugin)
-		// Actually, the vite plugin sets defaultShadowOptions to 'open'.
-		const root = shadowRoot || myApp
-
-		expect(root?.querySelector('nav')).not.toBeNull()
-		expect(root?.querySelector('au-viewport')).not.toBeNull()
+		it('renders the navigation bar when showNav is true', async () => {
+			const fixture = await renderShell()
+			expect(fixture.appHost.querySelector('bottom-nav-bar')).not.toBeNull()
+			await fixture.stop(true)
+		})
 	})
 
 	describe('router wiring', () => {
