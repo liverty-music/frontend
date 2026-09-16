@@ -24,8 +24,12 @@
 			padding: var(--space-xs);
 			border-radius: var(--radius-card);
 
+			/* No entrance animation here. It used to run on every card at once,
+			   which meant off-screen cards burned their animation long before the
+			   fan scrolled to them, and on-screen cards all appeared in the same
+			   instant. Reveal motion now belongs to the date group — see
+			   concert-highway.css. */
 			transition: transform 200ms ease-out;
-			animation: fade-slide-up 400ms ease-out both;
 
 			&:active {
 				transform: scale(0.97);
@@ -188,11 +192,12 @@
 		   Reduced motion
 		   ============================================= */
 		@media (prefers-reduced-motion: reduce) {
-			/* Suppress the fade-slide-up entrance so reduced-motion users get a
-			   fully static card (the matched-card hue drift that used to be gated
-			   here was removed as dead per-frame style-recalc work). */
+			/* The card's press transition is the only motion left here; the entrance
+			   moved to the date group, which suppresses itself under the same query.
+			   (The matched-card hue drift that used to be gated here was removed as
+			   dead per-frame style-recalc work.) */
 			.event-card {
-				animation: none;
+				transition: none;
 			}
 		}
 

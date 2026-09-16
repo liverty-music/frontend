@@ -40,9 +40,11 @@
 
 <!-- ── My Timetable view ── -->
 <template if.bind="!isAllNearby">
-  <!-- Loading state: content-shaped skeleton (no bare loading text) so the
-       swap to the timetable is layout-shift-free. -->
-  <state-placeholder if.bind="isLoading" loading.bind="true" rows.bind="6" data-testid="dashboard-loading"></state-placeholder>
+  <!-- The loading placeholder lives inside <concert-highway>, which owns the
+       lane grid and so can shape it like the real timetable — see its `loading`
+       binding below. A generic bar stack here would have had to be replaced by a
+       differently-shaped grid, shifting layout at exactly the moment the fan is
+       watching. -->
 
   <!-- Error state -->
   <inline-error
@@ -54,14 +56,16 @@
 
   <!-- Guest empty-state CTA: unauthenticated visitor with zero follows. Soft gate
        guidance toward discovery instead of a guard redirect. -->
-  <state-placeholder if.bind="!isLoading && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
+  <state-placeholder if.bind="hasSettled && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
     <p t="dashboard.guestEmpty.title" class="dashboard-empty-title"></p>
     <p t="dashboard.guestEmpty.subtitle" class="dashboard-empty-subtitle"></p>
     <a href="/discovery" t="dashboard.guestEmpty.cta" class="discover-cta" press-feedback></a>
   </state-placeholder>
 
-  <!-- Empty state -->
-  <state-placeholder if.bind="!isLoading && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
+  <!-- Empty state. `hasSettled` is required: `filteredDateGroups.length === 0`
+       alone is also true before the cached groups have been reflected, which is
+       exactly when this must NOT render. -->
+  <state-placeholder if.bind="hasSettled && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
     <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
     <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
     <a href="/discovery" t="dashboard.empty.discoverLink" class="discover-cta" press-feedback></a>
@@ -69,6 +73,8 @@
 
   <!-- Concert highway — always in DOM for E2E compatibility -->
   <concert-highway
+    component.ref="highway"
+    loading.bind="!hasSettled && !loadError"
     date-groups.bind="filteredDateGroups"
     show-beams.bind="showBeams"
     data-blurred.bind="needsRegion"

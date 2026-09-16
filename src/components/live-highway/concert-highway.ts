@@ -19,6 +19,24 @@ export class ConcertHighway {
 	 * Timetable layout.
 	 */
 	@bindable public hideAway: boolean = false
+	/**
+	 * Show the loading placeholder. Owned by the caller because only it knows
+	 * whether a load has settled — the highway cannot tell "no concerts yet" from
+	 * "no concerts at all", and guessing from an empty list is exactly the
+	 * inference that flashes an empty state on re-entry.
+	 */
+	@bindable public loading: boolean = false
+
+	/**
+	 * Placeholder rows, sized to roughly fill a phone viewport. Only rendered
+	 * while there is nothing real to show; once groups arrive they replace it in
+	 * the same structure, so nothing shifts.
+	 */
+	public readonly skeletonRows = [0, 1, 2, 3]
+
+	public get showSkeleton(): boolean {
+		return this.loading && this.dateGroups.length === 0
+	}
 
 	private readonly element = resolve(INode) as HTMLElement
 
@@ -33,18 +51,7 @@ export class ConcertHighway {
 		right: string
 	}[] = []
 
-	private beamRafId = 0
 	private isAttached = false
-	private scrollContainer: Element | null = null
-	private readonly onScroll = (): void => this.scheduleBeamUpdate()
-
-	/**
-	 * Cached anchor→card element map, keyed by beam-anchor index. Rebuilt only
-	 * when the beam set changes, so the per-frame update resolves each beam's
-	 * card from this map instead of a per-frame `querySelector`.
-	 */
-	private readonly beamElements = new Map<number, HTMLElement>()
-	private beamElementsDirty = false
 
 	public dateGroupsChanged(): void {
 		if (this.isAttached) {
@@ -54,22 +61,40 @@ export class ConcertHighway {
 
 	public attached(): void {
 		this.isAttached = true
-		this.setupBeamTracking()
 		this.buildBeamIndexMap()
 	}
 
 	public detaching(): void {
 		this.isAttached = false
-		if (this.scrollContainer) {
-			this.scrollContainer.removeEventListener('scroll', this.onScroll)
-			this.scrollContainer = null
-		}
-		if (this.beamRafId) {
-			cancelAnimationFrame(this.beamRafId)
-			this.beamRafId = 0
-		}
-		this.beamElements.clear()
-		this.beamElementsDirty = true
+	}
+
+	/**
+	 * The timetable's scroll position. Exposed as component API because this
+	 * component owns the scroll container — the dashboard needs to save and
+	 * restore the fan's place across navigation, and reaching into another
+	 * component's DOM to do it would couple the route to this markup.
+	 *
+	 * Reading before the view is in the DOM yields 0; writing then is a no-op, so
+	 * a restore has to happen after the content is rendered.
+	 */
+	public get scrollOffset(): number {
+		return this.scrollEl?.scrollTop ?? 0
+	}
+
+	public set scrollOffset(value: number) {
+		const el = this.scrollEl
+		if (!el) return
+		// Clamp: off-screen groups are sized from an intrinsic estimate until they
+		// render, and a refresh can return a shorter list, so a saved offset can
+		// exceed the current extent.
+		el.scrollTop = Math.min(
+			Math.max(0, value),
+			Math.max(0, el.scrollHeight - el.clientHeight),
+		)
+	}
+
+	private get scrollEl(): HTMLElement | null {
+		return this.element.querySelector<HTMLElement>('.concert-scroll')
 	}
 
 	/** Assign sequential beam indices to matched events across all groups. */
@@ -105,79 +130,26 @@ export class ConcertHighway {
 
 		this.beamIndexMap = map
 		this.laserBeams = beams
-		// The beam set changed; the cached anchor→element map must be rebuilt.
-		// The actual DOM query is deferred to the scheduled rAF, where Aurelia
-		// has already flushed the new `data-beam-index` attributes.
-		this.beamElementsDirty = true
-		this.scheduleBeamUpdate()
+
+		// Each beam is animated by a view timeline declared on its anchor card, but
+		// the beams live in a viewport-fixed overlay that is a SIBLING of the scroll
+		// container, not a descendant of any card. A named timeline only resolves
+		// across that boundary if a common ancestor puts the name in scope, so the
+		// host element carries `timeline-scope` for the whole current beam set.
+		// Written once per beam-set change — never per frame.
+		this.element.style.setProperty(
+			'timeline-scope',
+			beams.length > 0
+				? beams.map((b) => beamTimelineName(b.anchorIndex)).join(', ')
+				: 'none',
+		)
 	}
+}
 
-	/** Rebuild the anchor→card element map from the current DOM. */
-	private rebuildBeamElements(): void {
-		this.beamElements.clear()
-		const cards =
-			this.element.querySelectorAll<HTMLElement>('[data-beam-index]')
-		for (const card of cards) {
-			const idx = card.dataset.beamIndex
-			if (idx == null) continue
-			this.beamElements.set(Number(idx), card)
-		}
-		this.beamElementsDirty = false
-	}
-
-	/** Wire scroll listener for JS-based beam height tracking. */
-	private setupBeamTracking(): void {
-		const scroll = this.element.querySelector('.concert-scroll')
-		if (scroll) {
-			this.scrollContainer = scroll
-			scroll.addEventListener('scroll', this.onScroll, { passive: true })
-			this.scheduleBeamUpdate()
-		}
-	}
-
-	private scheduleBeamUpdate(): void {
-		if (this.beamRafId) return
-		this.beamRafId = requestAnimationFrame(() => {
-			this.beamRafId = 0
-			this.updateBeamPositions()
-		})
-	}
-
-	/** Set beam dimensions so triangle wraps card diagonally (bottom-left to top-right). */
-	private updateBeamPositions(): void {
-		if (this.beamElementsDirty) {
-			this.rebuildBeamElements()
-		}
-		const beamEls = this.element.querySelectorAll<HTMLElement>('.laser-beam')
-		const vh = window.innerHeight
-
-		// Read phase: collect every beam's geometry before mutating any style,
-		// so no layout read follows a style write within this frame.
-		const writes: { beamEl: HTMLElement; height: string; topPct?: string }[] =
-			[]
-		for (const beamEl of beamEls) {
-			const idx = beamEl.dataset.beamAnchor
-			if (idx == null) continue
-			const card = this.beamElements.get(Number(idx))
-			if (!card) continue
-			const rect = card.getBoundingClientRect()
-			const visible = rect.bottom > 0 && rect.top < vh
-			if (visible) {
-				const bottom = Math.max(0, rect.bottom)
-				const topPct =
-					bottom > 0 ? `${(Math.max(0, rect.top) / bottom) * 100}%` : '80%'
-				writes.push({ beamEl, height: `${bottom}px`, topPct })
-			} else {
-				writes.push({ beamEl, height: '0' })
-			}
-		}
-
-		// Write phase: apply all style writes after every read has completed.
-		for (const { beamEl, height, topPct } of writes) {
-			beamEl.style.setProperty('--beam-h', height)
-			if (topPct != null) {
-				beamEl.style.setProperty('--beam-top-pct', topPct)
-			}
-		}
-	}
+/**
+ * Timeline name for a beam anchor. The set of beams is data-driven, so the names
+ * are generated rather than declared in the stylesheet.
+ */
+export function beamTimelineName(anchorIndex: number): string {
+	return `--beam-${anchorIndex}`
 }

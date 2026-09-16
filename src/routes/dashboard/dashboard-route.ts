@@ -10,6 +10,7 @@ import type {
 	RangeChangedDetail,
 } from '../../components/all-nearby/date-range-sheet'
 import type { ArtistFilterBar } from '../../components/artist-filter-bar/artist-filter-bar'
+import type { ConcertHighway } from '../../components/live-highway/concert-highway'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type {
 	DateGroup,
@@ -66,6 +67,27 @@ export class DashboardRoute {
 	@observable public fromDate: CalendarDate = todayCalendarDate()
 	public needsRegion = false
 	public isLoading = false
+	/**
+	 * True once a load has settled (succeeded or failed), making "zero groups"
+	 * meaningful. The template gates its empty states on this instead of on
+	 * `dateGroups.length === 0 && !isLoading`, which cannot tell "not assigned
+	 * yet" from "genuinely zero" and so flashes an empty state on re-entry.
+	 * Kept separate from `isLoading` deliberately: `isLoading` also guards
+	 * refreshInBackground(), so reusing it to drive the skeleton would suppress
+	 * the background refresh.
+	 */
+	public hasSettled = false
+	/**
+	 * Cached timetable parked by loadData()'s fast path, waiting to be reflected
+	 * from the component lifecycle. Never assigned to `dateGroups` inside the
+	 * pre-activation `loading()` hook — that is what put the full render into the
+	 * component's first render and starved the shell's paint.
+	 */
+	private pendingCachedGroups: DateGroup[] | null = null
+	/** Set once a background refresh has assigned fresher groups, so a later cache reflection cannot clobber them. */
+	private freshGroupsLanded = false
+	/** Whether the view is attached, so a same-instance reload knows to reflect immediately. */
+	private isAttached = false
 	// Readiness latch flipped true by loadData() once a successful (non-abort)
 	// fetch settles and isLoading has cleared. Its @observable change handler
 	// re-anchors the data-ready side effects (celebration + completion latch) to
@@ -91,6 +113,8 @@ export class DashboardRoute {
 	// bindings are unchanged); only their triggers moved into the FAB launcher.
 	public filterBar: ArtistFilterBar | undefined
 	public pageHelp: PageHelp | undefined
+	/** The My Timetable highway, for saving and restoring the fan's scroll place. */
+	public highway: ConcertHighway | undefined
 	/** Disposer for this route's contributed FAB actions; released in detaching(). */
 	private fabDisposer: (() => void) | null = null
 
@@ -450,19 +474,29 @@ export class DashboardRoute {
 		this.abortController = new AbortController()
 		this.loadError = null
 
-		// Fast path: we have a previous render for this user — paint it instantly
-		// (no spinner) then refresh in the background. Works for both guest and
-		// authenticated because lastDateGroups lives in the ConcertStore singleton,
+		// Fast path: we have a previous render for this user. The groups are parked
+		// here rather than assigned, because loadData() is reached from loading() —
+		// a PRE-ACTIVATION router hook. Assigning render state there puts the whole
+		// timetable inside the component's first render, so the shell's optimistic
+		// header/nav update and a full timetable render land in one rendering task
+		// and the browser paints once, after the render. attached() reflects them
+		// instead (see reflectCachedGroups), so the first render carries only the
+		// frame and skeleton. lastDateGroups lives in the ConcertStore singleton,
 		// which survives DashboardRoute re-instantiation on every navigation.
 		const cachedDateGroups = this.concertService.peekDateGroups()
 		if (cachedDateGroups !== null && !this.needsRegion) {
-			this.dateGroups = cachedDateGroups
-			this.timetableLoaded = true
+			this.pendingCachedGroups = cachedDateGroups
+			this.freshGroupsLanded = false
+			// Already attached (a same-instance reload, e.g. the date filter) — there
+			// is no upcoming activation to reflect on, so do it now.
+			if (this.isAttached) this.reflectCachedGroups()
 			void this.refreshInBackground()
 			return
 		}
 
 		// Cold load: first visit, or follow set changed, or region not set.
+		this.pendingCachedGroups = null
+		this.hasSettled = false
 		this.isLoading = true
 		// Reset so every load produces a fresh false→true transition; the
 		// needsRegion→onHomeSelected path loads twice and the second arrival must
@@ -498,6 +532,50 @@ export class DashboardRoute {
 			// a pending `/concerts/:id` deep-link now. The fast path resolves it in
 			// refreshInBackground once the background fetch settles.
 			this.resolvePendingDeepLink()
+		}
+
+		// A settled load — success or failure — is what makes "zero groups" mean
+		// "genuinely empty" rather than "not assigned yet". The template gates its
+		// empty states on this, never on `dateGroups.length` alone. An aborted load
+		// returned early above and deliberately leaves this false.
+		this.hasSettled = true
+	}
+
+	/**
+	 * Reflect the cached timetable parked by loadData()'s fast path. Runs from the
+	 * component lifecycle so it lands after the component's first render, which
+	 * carries only the frame and skeleton.
+	 *
+	 * Skipped when the background refresh already assigned fresher groups: the
+	 * refresh is kicked off without awaiting, so on a fast connection — and always
+	 * with a microtask-resolving test double — it can settle before this runs, and
+	 * writing the cache afterwards would replace fresh data with stale.
+	 */
+	private reflectCachedGroups(): void {
+		const cached = this.pendingCachedGroups
+		this.pendingCachedGroups = null
+		if (cached === null || this.freshGroupsLanded) return
+
+		this.dateGroups = cached
+		this.hasSettled = true
+		this.timetableLoaded = true
+		this.restoreTimetableScroll()
+	}
+
+	/**
+	 * Put the fan back where they left the timetable. Runs after the cached groups
+	 * are reflected, never before: against an unrendered list the container has no
+	 * scroll extent, so the offset would be clamped to zero and silently lost.
+	 *
+	 * Clamped to the restored content rather than trusted — off-screen groups are
+	 * sized from an intrinsic estimate until they have rendered, so the extent at
+	 * this moment is an approximation, and a refresh can return a shorter list than
+	 * the one the offset was taken from.
+	 */
+	private restoreTimetableScroll(): void {
+		const offset = this.concertService.timetableScrollOffset
+		if (offset > 0 && this.highway) {
+			this.highway.scrollOffset = offset
 		}
 	}
 
@@ -631,6 +709,11 @@ export class DashboardRoute {
 			const fresh = await this.loadDashboardEvents(signal)
 			if (signal?.aborted) return
 			this.dateGroups = fresh
+			// Claim the render state so a cache reflection that has not run yet can
+			// never overwrite this fresher result with the stale cache.
+			this.freshGroupsLanded = true
+			this.pendingCachedGroups = null
+			this.hasSettled = true
 			// Fast path: this background fetch is the authoritative list. Resolve any
 			// pending `/concerts/:id` deep-link now that fresh data has settled.
 			this.resolvePendingDeepLink()
@@ -641,6 +724,13 @@ export class DashboardRoute {
 	}
 
 	public attached(): void {
+		this.isAttached = true
+		// Reflect the cached timetable now that the component has produced its
+		// first render (frame + skeleton). Doing this here rather than in the
+		// pre-activation loading() hook is what keeps the full timetable render out
+		// of that first render.
+		this.reflectCachedGroups()
+
 		// Revalidate the dashboard's cached concert list when the installed PWA
 		// returns to the foreground. Only the active route is registered, so the
 		// resume signal never fans out to inactive routes' stores.
@@ -992,7 +1082,24 @@ export class DashboardRoute {
 		this.showSignupBanner = true
 	}
 
+	/**
+	 * Remember where the fan left the timetable. `unloading` is the route
+	 * lifecycle's "save state" hook and runs while the view is still in the DOM,
+	 * so the scroll container can still be read — by `detaching()` the position is
+	 * already gone. Navigation-scoped, which is exactly the lifetime this memory
+	 * needs: it should survive a trip to another tab, not a reload.
+	 */
+	public unloading(): void {
+		if (this.highway) {
+			this.concertService.timetableScrollOffset = this.highway.scrollOffset
+		}
+	}
+
 	public detaching(): void {
+		this.isAttached = false
+		// Drop any cache reflection that never ran, so it cannot write into a
+		// torn-down route (mirrors the abortController discipline below).
+		this.pendingCachedGroups = null
 		this.resumeRevalidator.unregister(this.revalidate)
 		// Remove this route's FAB actions so they never linger after navigation.
 		this.fabDisposer?.()

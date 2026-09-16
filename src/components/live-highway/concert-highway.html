@@ -5,19 +5,55 @@
     class="[ laser-beam ]"
     data-beam-anchor.bind="b.anchorIndex"
     beam-vars="hue.bind: b.hue; left.bind: b.left; right.bind: b.right"
+    style="animation-timeline: --beam-${b.anchorIndex}"
   ></div>
 </div>
 
 <!-- Concert grid (stage header + scrollable lanes) -->
 <section class="[ concert-grid-wrapper ]" data-hide-away.bind="hideAway">
-  <header class="[ stage-header ]" if.bind="dateGroups.length > 0">
+  <!-- The stage header needs no data, so it is not gated on having any: it is
+       the App Shell part of the timetable and must be on screen from the first
+       render, while the concerts are still loading. Gating it on
+       `dateGroups.length` withheld the frame for exactly the window it is there
+       to fill. -->
+  <header class="[ stage-header ]">
     <span data-stage="home">HOME STAGE</span>
     <span data-stage="near">NEAR STAGE</span>
     <span if.bind="!hideAway" data-stage="away">AWAY STAGE</span>
   </header>
 
   <ol class="[ concert-scroll ] [ date-group-list ]" data-testid="concert-scroll">
-    <li repeat.for="group of dateGroups; key.bind: group.dateKey">
+    <!-- Loading placeholder. Built from the timetable's own structure — real
+         date groups, real lanes, card-shaped blocks — rather than a generic bar
+         stack, so the swap to concerts moves nothing. The stage header above is
+         already on screen, so what the fan sees while data loads is the actual
+         frame with its lanes filling in. -->
+    <template if.bind="showSkeleton">
+    <li
+      class="[ date-group ] [ date-group-skeleton ]"
+      repeat.for="row of skeletonRows"
+      data-testid="dashboard-loading"
+      aria-hidden="true"
+    >
+      <header class="[ date-separator ]">
+        <span class="skeleton skeleton-date"></span>
+      </header>
+      <ol class="[ lane-grid ]">
+        <li class="[ lane ]" data-lane="home"><span class="skeleton skeleton-card"></span></li>
+        <li class="[ lane ]" data-lane="near"><span class="skeleton skeleton-card"></span></li>
+        <li if.bind="!hideAway" class="[ lane ]" data-lane="away"><span class="skeleton skeleton-card"></span></li>
+      </ol>
+    </li>
+    </template>
+
+    <!-- The date group is the unit of viewport-scoped rendering, of reveal
+         motion, and of the beam loop's skip check, so it is addressable by
+         class rather than by its position in the markup. -->
+    <li
+      class="[ date-group ]"
+      repeat.for="group of dateGroups; key.bind: group.dateKey"
+      style="--_reveal-index: ${$index + 1}"
+    >
       <div if.bind="group.isFirstOfMonth" class="[ month-separator ]" aria-hidden="true">
         ${group.monthSeparatorLabel}
       </div>

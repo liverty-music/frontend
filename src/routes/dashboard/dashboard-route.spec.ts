@@ -16,6 +16,7 @@ const mockConcertService = {
 	setDateGroups: vi.fn(),
 	toDateGroups: vi.fn(() => []),
 	clearRenderedGroups: vi.fn(),
+	timetableScrollOffset: 0,
 }
 const mockFollowStore = {
 	followedArtists: [] as unknown[],
@@ -45,6 +46,13 @@ const mockStorage = {
 	setItem: vi.fn(),
 	removeItem: vi.fn(),
 }
+
+/**
+ * Stand-in for the timetable component. It owns the scroll container, so the
+ * route saves and restores the fan's place through this API rather than by
+ * querying another component's DOM.
+ */
+const mockHighway = { scrollOffset: 0 }
 
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
@@ -107,6 +115,21 @@ function makeArtist(id: string, name: string): Artist {
 	return { id, name } as Artist
 }
 
+/** A one-group cached timetable, as ConcertStore.peekDateGroups() would return. */
+function makeCachedGroups(dateKey = '2026-04-01'): DateGroup[] {
+	return [
+		{
+			dateKey,
+			label: '4/1',
+			isFirstOfMonth: false,
+			monthSeparatorLabel: '',
+			home: [],
+			nearby: [],
+			away: [],
+		},
+	]
+}
+
 /** Call the protected URL-sync watcher handler directly in unit tests. */
 function syncFilterUrl(route: DashboardRoute): void {
 	;(route as unknown as { syncFilterUrl(): void }).syncFilterUrl()
@@ -162,6 +185,8 @@ describe('DashboardRoute', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
+		mockHighway.scrollOffset = 0
+		mockConcertService.timetableScrollOffset = 0
 		mockOnboarding.isOnboarding = false
 		mockAuth.isAuthenticated = false
 		mockFollowStore.followedArtists = []
@@ -306,29 +331,105 @@ describe('DashboardRoute', () => {
 	})
 
 	describe('loadData() fast-path (warm re-entry)', () => {
-		it('paints from cache without setting isLoading when lastDateGroups is available', async () => {
-			const cached = [
-				{
-					dateKey: '2026-04-01',
-					label: '4/1',
-					isFirstOfMonth: false,
-					monthSeparatorLabel: '',
-					home: [],
-					nearby: [],
-					away: [],
-				},
-			]
+		it('parks the cache for the component lifecycle instead of rendering it in loading()', async () => {
+			const cached = makeCachedGroups()
 			mockConcertService.peekDateGroups.mockReturnValue(cached)
 			sut.needsRegion = false
 
 			await sut.loadData()
 
+			// loadData() is reached from the pre-activation loading() hook. Assigning
+			// render state there puts the whole timetable into the component's first
+			// render, which is the freeze this route is being changed to avoid.
+			expect(sut.dateGroups).toEqual([])
+			// Not settled yet, so the template shows the skeleton — NOT an empty
+			// state, which `dateGroups.length === 0` alone cannot distinguish.
+			expect(sut.hasSettled).toBe(false)
+			// The spinner is never raised on this path — that invariant is unchanged,
+			// and it is why the skeleton cannot be gated on isLoading.
 			expect(sut.isLoading).toBe(false)
-			// Data rendered from cache immediately.
+
+			sut.attached()
+
 			expect(sut.dateGroups).toEqual(cached)
-			// The spinner is never raised — that's the invariant. The background
-			// refresh issues listByFollower (fire-and-forget), but isLoading stays false.
+			expect(sut.hasSettled).toBe(true)
 			expect(sut.isLoading).toBe(false)
+		})
+
+		it('never renders an empty state while a cached paint is pending', async () => {
+			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			// Both empty-state placeholders are gated on hasSettled, so the window
+			// between loading() and attached() shows the skeleton.
+			expect(sut.hasSettled).toBe(false)
+			expect(sut.dateGroups).toEqual([])
+		})
+
+		it('still fires the background refresh on the fast path', async () => {
+			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
+			sut.needsRegion = false
+
+			await sut.loadData()
+
+			// refreshInBackground() bails on `isLoading`, so driving the skeleton from
+			// isLoading instead of hasSettled would silently stop re-entry refreshing.
+			expect(mockConcertService.listByFollower).toHaveBeenCalled()
+		})
+
+		it('does not clobber fresher groups that landed before the cache was reflected', async () => {
+			const cached = makeCachedGroups('2026-04-01')
+			const fresh = makeCachedGroups('2026-05-05')
+			mockConcertService.peekDateGroups.mockReturnValue(cached)
+			mockConcertService.toDateGroups.mockReturnValue(fresh)
+			mockConcertService.listByFollower.mockResolvedValue([{}])
+			sut.needsRegion = false
+
+			await sut.loadData()
+			// The refresh is fire-and-forget; letting it settle before attached()
+			// models the fast-network case. Reflecting the cache afterwards would
+			// replace fresh data with stale.
+			await flushMicrotasks()
+
+			sut.attached()
+
+			expect(sut.dateGroups).toEqual(fresh)
+		})
+
+		it('saves the scroll offset on the way out and restores it on re-entry', async () => {
+			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
+			sut.needsRegion = false
+
+			// The fan scrolls deep, then leaves. `unloading` runs while the view is
+			// still in the DOM, which is why the offset can be read at all.
+			sut.highway = mockHighway as never
+			mockHighway.scrollOffset = 900
+			sut.unloading()
+			expect(mockConcertService.timetableScrollOffset).toBe(900)
+
+			// Coming back: a NEW route instance, which is why the offset has to live
+			// in the store rather than on the route.
+			const next = new DashboardRoute()
+			next.highway = mockHighway as never
+			mockHighway.scrollOffset = 0
+			await next.loadData()
+			next.attached()
+
+			expect(mockHighway.scrollOffset).toBe(900)
+		})
+
+		it('does not restore when the timetable is not present', async () => {
+			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
+			mockConcertService.timetableScrollOffset = 900
+			sut.needsRegion = false
+			// No highway ref (All Nearby mode, or before the view resolves it).
+			sut.highway = undefined
+
+			await sut.loadData()
+
+			expect(() => sut.attached()).not.toThrow()
 		})
 
 		it('falls through to cold load when no cache exists (first visit)', () => {

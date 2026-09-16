@@ -4,6 +4,7 @@ import {
 	JOURNEY_STATUS_CONFIG_MAP,
 	type JourneyStatusConfig,
 } from '../../entities/ticket-journey'
+import { beamTimelineName } from './concert-highway'
 import type { LaneType, LiveEvent } from './live-event'
 
 export class EventCard {
@@ -58,8 +59,24 @@ export class EventCard {
 		)
 	}
 
-	/** Sequential beam index assigned by dashboard for JS beam tracking. */
+	/** Sequential beam index assigned by the highway; null when not matched. */
 	@bindable public beamIndex: number | null = null
+
+	/**
+	 * Declares this card as the scroll subject driving its laser beam, by naming a
+	 * view timeline the beam binds its `animation-timeline` to. The beam is not a
+	 * descendant of this card (it lives in a viewport-fixed overlay), so the name
+	 * is what carries the link; the highway puts it in scope.
+	 *
+	 * Inline rather than in the stylesheet because the beam set is data-driven —
+	 * there is no static list of names to declare. Empty when this card has no
+	 * beam, so unmatched cards declare no timeline at all.
+	 */
+	public get beamTimelineStyle(): string {
+		return this.beamIndex === null
+			? ''
+			: `view-timeline: ${beamTimelineName(this.beamIndex)} block`
+	}
 
 	/**
 	 * When true, the venue/location label renders for ALL lanes including HOME.
