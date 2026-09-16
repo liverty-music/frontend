@@ -146,12 +146,21 @@ export class SettingsRoute {
 		return vi ? dedupeStrengthLabelKey(vi.dedupeStrength) : null
 	}
 
-	public async loading(): Promise<void> {
+	public loading(): void {
 		// Opt-out toggles bind `consent.analytics` / `consent.sessionReplay`
 		// (the service's `@observable` state) directly, so first paint reflects
 		// the default-on posture or a prior opt-out with no seeding here.
-		await this.resolveNotificationToggleState()
-		await this.loadVerificationStatus()
+		//
+		// Both loads are fire-and-forget. The router awaits `loading()` before
+		// swapping the view, so awaiting an RPC here holds the OUTGOING screen
+		// frozen until the network answers — on a slow connection, for seconds.
+		// Settings is a bottom-nav tab, so the non-blocking contract applies to it
+		// exactly as it does to the other tabs; it only escaped because the
+		// capability named the three tabs that existed when it was written.
+		// Neither value gates the page: the toggles and the badge fill in when
+		// their state arrives.
+		void this.resolveNotificationToggleState()
+		void this.loadVerificationStatus()
 	}
 
 	/**
