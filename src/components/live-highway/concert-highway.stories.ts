@@ -7,6 +7,7 @@ import { expect } from 'storybook/test'
 import { ArtistColorCustomAttribute } from '../../custom-attributes/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
 import { PressFeedbackCustomAttribute } from '../../custom-attributes/press-feedback'
+import { BeamTimelineCustomAttribute } from '../../custom-attributes/view-timeline'
 import type { Concert, DateGroup, LaneType } from '../../entities/concert'
 import { ConcertHighway } from './concert-highway'
 import { EventCard } from './event-card'
@@ -85,6 +86,7 @@ function highwayStory(dateGroups: DateGroup[], hideAway = false) {
 			ArtistColorCustomAttribute,
 			PressFeedbackCustomAttribute,
 			BeamVarsCustomAttribute,
+			BeamTimelineCustomAttribute,
 		],
 	})
 }
@@ -299,6 +301,8 @@ export const LoadingPlaceholder = {
 				ArtistColorCustomAttribute,
 				PressFeedbackCustomAttribute,
 				BeamVarsCustomAttribute,
+				BeamTimelineCustomAttribute,
+				BeamTimelineCustomAttribute,
 			],
 		}),
 	play: async ({ canvasElement }) => {

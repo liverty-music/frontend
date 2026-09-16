@@ -99,9 +99,8 @@ for (const hype of ['home', 'nearby', 'away'] as const) {
 		await page.waitForLoadState('networkidle')
 		await page.waitForSelector('[data-live-card]', { timeout: 10000 })
 
-		// Give rAF time to run
-		await page.waitForTimeout(500)
-
+		// Nothing to wait for: the beams follow their concert's scroll position
+		// through a CSS view timeline, so there is no frame loop to settle.
 		const results = await page.evaluate(() => {
 			const cards = Array.from(
 				document.querySelectorAll('[data-live-card]'),
@@ -109,14 +108,23 @@ for (const hype of ['home', 'nearby', 'away'] as const) {
 				lane: c.getAttribute('data-lane'),
 				matched: c.getAttribute('data-matched'),
 				beamIndex: c.getAttribute('data-beam-index'),
+				viewTimeline: getComputedStyle(c).viewTimelineName,
 			}))
 			const beams = Array.from(document.querySelectorAll('.laser-beam')).map(
 				(b) => ({
 					anchor: (b as HTMLElement).dataset.beamAnchor,
-					beamH: (b as HTMLElement).style.getPropertyValue('--beam-h'),
+					timeline: getComputedStyle(b as HTMLElement).animationTimeline,
 				}),
 			)
-			return { cards, beams }
+			const host = document.querySelector('concert-highway')
+			return {
+				cards,
+				beams,
+				scope: host ? getComputedStyle(host).timelineScope : '',
+				supportsScrollDriven: CSS.supports(
+					'(animation-timeline: view()) and (animation-range: entry)',
+				),
+			}
 		})
 
 		// Card must be matched
@@ -124,13 +132,33 @@ for (const hype of ['home', 'nearby', 'away'] as const) {
 		expect(matchedCard, 'expected a matched card').toBeTruthy()
 		expect(matchedCard?.beamIndex, 'beam-index must be set').not.toBeNull()
 
-		// Laser beam must exist with non-zero height
 		expect(
 			results.beams.length,
 			'expected at least one laser-beam',
 		).toBeGreaterThan(0)
+
+		// The beam is no longer positioned by script writing --beam-h each frame;
+		// it follows its anchor concert's view timeline. So the contract to hold is
+		// the link: the card names a timeline, the beam binds to that same name, and
+		// a common ancestor scopes it — the beam lives in a viewport-fixed overlay
+		// and is not the card's descendant, so without the scope it silently does
+		// nothing.
+		// Where the platform cannot drive a scroll-driven animation the beams are
+		// simply absent — decorative degradation, per beam-effect-toggle — so the
+		// wiring assertions only apply where it can.
+		if (!results.supportsScrollDriven) return
+
 		const beam = results.beams[0]
-		expect(beam.beamH, '--beam-h must be set').toBeTruthy()
-		expect(beam.beamH, '--beam-h must not be 0').not.toBe('0')
+		const expectedName = `--beam-${beam.anchor}`
+		expect(beam.timeline, 'beam must bind its anchor timeline').toBe(
+			expectedName,
+		)
+		expect(results.scope, 'the timeline name must be in scope').toContain(
+			expectedName,
+		)
+		expect(
+			results.cards.some((c) => c.viewTimeline === expectedName),
+			'the anchor card must declare that timeline',
+		).toBe(true)
 	})
 }

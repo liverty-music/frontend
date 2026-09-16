@@ -4,8 +4,7 @@
     repeat.for="b of laserBeams"
     class="[ laser-beam ]"
     data-beam-anchor.bind="b.anchorIndex"
-    beam-vars="hue.bind: b.hue; left.bind: b.left; right.bind: b.right"
-    style="animation-timeline: --beam-${b.anchorIndex}"
+    beam-vars="hue.bind: b.hue; left.bind: b.left; right.bind: b.right; anchor.bind: b.anchorIndex"
   ></div>
 </div>
 
@@ -52,7 +51,6 @@
     <li
       class="[ date-group ]"
       repeat.for="group of dateGroups; key.bind: group.dateKey"
-      style="--_reveal-index: ${$index + 1}"
     >
       <div if.bind="group.isFirstOfMonth" class="[ month-separator ]" aria-hidden="true">
         ${group.monthSeparatorLabel}

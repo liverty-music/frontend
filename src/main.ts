@@ -62,6 +62,7 @@ import { DotColorCustomAttribute } from './custom-attributes/dot-color'
 import { PressFeedbackCustomAttribute } from './custom-attributes/press-feedback'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
+import { BeamTimelineCustomAttribute } from './custom-attributes/view-timeline'
 import { AuthHook } from './hooks/auth-hook'
 import {
 	IAnalyticsService,
@@ -304,6 +305,7 @@ async function bootstrap(): Promise<void> {
 	au.register(ArtistColorCustomAttribute)
 	au.register(BusyOnClickCustomAttribute)
 	au.register(BeamVarsCustomAttribute)
+	au.register(BeamTimelineCustomAttribute)
 	au.register(DotColorCustomAttribute)
 	au.register(PressFeedbackCustomAttribute)
 	au.register(SpotlightRadiusCustomAttribute)

@@ -129,17 +129,17 @@
 				   a transition, deliberately, so it does not compete with the
 				   scroll-driven reveal for the `animation` property.
 
-				   `sibling-index()` gives the cascade natively; the earlier
-				   `--_reveal-index` declaration is the fallback for browsers below that
-				   Baseline, and the template supplies the value from the repeat index —
-				   no script, no DOM query, nothing to keep in sync at runtime. Capped so
-				   a group just below the fold is not left sitting on a long delay. */
+				   `sibling-index()` gives the cascade natively. Below that Baseline the
+				   delay resolves to zero and the visible groups reveal together — the
+				   behaviour this replaced, and acceptable for decorative motion. The
+				   alternative was feeding an index in from the template, which this
+				   project bans (CSS owns presentation) for good reason. Capped so a
+				   group just below the fold is not left sitting on a long delay. */
 				opacity: 1;
 
 				transition:
 					opacity 400ms ease-out,
 					translate 400ms ease-out;
-				transition-delay: min(calc(var(--_reveal-index, 1) * 60ms), 400ms);
 				transition-delay: min(calc(sibling-index() * 60ms), 400ms);
 			}
 		}
