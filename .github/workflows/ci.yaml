@@ -243,8 +243,21 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
 
+      # webkit-repro / chromium-control are the owners of
+      # page-help-sheet-webkit.spec.ts, which the `functional` project excludes
+      # on the grounds that they cover it. They must therefore run here, or
+      # that spec has no CI coverage at all.
       - name: Run E2E tests
-        run: npx playwright test --project=functional --project=pwa
+        run: npx playwright test --project=functional --project=webkit-repro --project=chromium-control
+
+      # PWA / service-worker specs run from their own config against a
+      # production build (`vite preview`). vite-plugin-pwa disables the service
+      # worker in dev, so running these against the dev server verifies
+      # nothing — which is why the offline-cache spec sat excluded from CI with
+      # a stale reason. Separate step so the production build it needs does not
+      # slow the rest of the e2e run.
+      - name: Run PWA tests
+        run: npm run test:pwa
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

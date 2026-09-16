@@ -72,6 +72,8 @@
 		"check": "biome check --write src admin organizer shared test && npm run lint:css && npm run lint:boundaries",
 		"pretest": "npm run lint",
 		"start": "vite",
+		"preview": "vite preview --port 9100 --strictPort",
+		"test:pwa": "playwright test --config=playwright.pwa.config.mjs",
 		"build": "vite build",
 		"verify:build-templates": "npx tsx scripts/verify-build-templates.ts",
 		"verify:route-loading": "npx tsx scripts/verify-route-loading.ts",

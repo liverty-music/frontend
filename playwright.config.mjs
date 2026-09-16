@@ -49,10 +49,8 @@ export default defineConfig({
       testIgnore: [
         // Covered by onboarding project (Pixel 7 viewport)
         'e2e/functional/onboarding-flow.spec.ts',
-        'e2e/functional/css-antipattern-verification.spec.ts',
         'e2e/functional/detail-sheet-dismiss.spec.ts',
         'e2e/functional/dashboard-lane-classification.spec.ts',
-        'e2e/functional/toast-notification.spec.ts',
         'e2e/functional/artist-image-ui.spec.ts',
         // Covered by webkit-repro / chromium-control projects (engine-specific)
         'e2e/functional/page-help-sheet-webkit.spec.ts',
@@ -91,10 +89,8 @@ export default defineConfig({
       name: 'onboarding',
       testMatch: [
         'e2e/functional/onboarding-flow.spec.ts',
-        'e2e/functional/css-antipattern-verification.spec.ts',
         'e2e/functional/detail-sheet-dismiss.spec.ts',
         'e2e/functional/dashboard-lane-classification.spec.ts',
-        'e2e/functional/toast-notification.spec.ts',
         'e2e/functional/artist-image-ui.spec.ts',
       ],
       use: {
@@ -121,24 +117,23 @@ export default defineConfig({
     // `e2e/visual/**` specs were retired to keep a single visual-regression
     // pipeline (OpenSpec `adopt-storybook-component-testing`). Page-level route
     // composition remains covered by the functional/smoke e2e projects.
-    // Layer 5: PWA — service worker tests (non-authenticated)
-    {
-      name: 'pwa',
-      testMatch: 'e2e/pwa/**/*.spec.ts',
-      testIgnore: [
-        // Requires auth storageState — covered by authenticated project
-        'e2e/pwa/pwa-settings.spec.ts',
-        // Requires Service Worker + offline — not available in CI headless
-        'e2e/pwa/pwa-offline-cache.spec.ts',
-        // Requires beforeinstallprompt — not available in CI headless
-        'e2e/pwa/pwa-install-prompt.spec.ts',
-      ],
-      use: {
-        ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:9000',
-      },
-    },
-    // Authenticated E2E (non-visual)
+    // Layer 5: PWA — service worker tests.
+    // These live in `playwright.pwa.config.mjs`, NOT here: they must run
+    // against a production build (`vite preview`), because vite-plugin-pwa
+    // disables the service worker in dev. Running them against this config's
+    // dev server would verify nothing. See that file for the known gap.
+    // Authenticated E2E (non-visual).
+    //
+    // NOT RUN IN CI, and cannot be: `storageState` is produced by
+    // `npm run auth:capture:password`, which drives a real OIDC login against
+    // the dev Zitadel using a credential held in ESC. CI has no way to obtain
+    // it, and `.auth/` is gitignored.
+    //
+    // KNOWN GAP: pwa-settings.spec.ts is the only spec this project owns, so
+    // the push-notification settings surface has no pipeline coverage. Note
+    // that the spec stubs `navigator.serviceWorker` wholesale, so it would not
+    // constitute workbox coverage even if it did run — that is covered by
+    // playwright.pwa.config.mjs instead.
     {
       name: 'authenticated',
       testMatch: 'e2e/pwa/pwa-settings.spec.ts',
