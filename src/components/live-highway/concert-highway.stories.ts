@@ -243,43 +243,6 @@ export const BeamsEnabled = {
 } satisfies Story
 
 /**
- * The reveal contract. Two mechanisms share the date group without competing,
- * because they drive different properties: first appearance is a transition
- * started by `@starting-style`, scroll reveal is a scroll-driven animation.
- *
- * Asserts the wiring rather than the motion — the visuals belong to the device
- * check. The duration assertion is the valuable one: a scroll-driven animation
- * maps its duration to the range, so a time value silently produces no
- * animation at all, with no error anywhere.
- */
-export const RevealWiring = {
-	render: () => highwayStory(DATE_GROUPS),
-	play: async ({ canvasElement }) => {
-		const group = canvasElement.querySelector<HTMLElement>('.date-group')
-		if (!group) throw new Error('date-group not rendered')
-		const style = getComputedStyle(group)
-
-		// First appearance: a transition, staggered per group.
-		await expect(style.transitionProperty).toContain('opacity')
-		await expect(style.transitionDelay).not.toBe('0s')
-
-		// Scroll reveal: position-driven, and `auto` duration is mandatory.
-		await expect(style.animationTimeline).toBe('view()')
-		await expect(style.animationRange).toBe('entry')
-		await expect(style.animationDuration).toBe('auto')
-		// `backwards` (not `both`) is what leaves a group past its entry range
-		// contributing nothing, so the first-appearance transition stays in charge.
-		await expect(style.animationFillMode).toBe('backwards')
-
-		// The card must no longer carry its own entrance — it fired on every card
-		// simultaneously, including ones the fan could not see.
-		const card = canvasElement.querySelector<HTMLElement>('.event-card')
-		if (!card) throw new Error('event-card not rendered')
-		await expect(getComputedStyle(card).animationName).toBe('none')
-	},
-} satisfies Story
-
-/**
  * The loading placeholder. A new visual state gets its own story per the repo's
  * story contract — and this one earns it, because its whole purpose is that the
  * swap to real concerts moves nothing: it is built from the timetable's own

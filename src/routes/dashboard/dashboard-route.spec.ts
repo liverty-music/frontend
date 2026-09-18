@@ -77,6 +77,9 @@ vi.mock('aurelia', async (importOriginal) => {
 			return map[tokenAny.friendlyName ?? ''] ?? {}
 		}),
 		observable: actual.observable,
+		// Flushes Aurelia's queued DOM writes. The route calls it before restoring
+		// scroll, so a test can use it to model "the rows exist now".
+		runTasks: vi.fn(),
 	}
 })
 
@@ -95,6 +98,7 @@ vi.mock('@aurelia/runtime-html', async (importOriginal) => {
 	return { ...actual, watch: () => () => {} }
 })
 
+import { runTasks } from 'aurelia'
 import { DashboardRoute } from './dashboard-route'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -418,6 +422,37 @@ describe('DashboardRoute', () => {
 			next.attached()
 
 			expect(mockHighway.scrollOffset).toBe(900)
+		})
+
+		it('restores only after the rows have rendered', async () => {
+			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
+			mockConcertService.timetableScrollOffset = 900
+			sut.needsRegion = false
+
+			// Model the real failure: assigning dateGroups only SCHEDULES the render,
+			// so a restore in the same synchronous block writes into a container with
+			// no extent and the clamp pins it to zero. The route must flush the queued
+			// DOM writes first.
+			let rendered = false
+			const highway = {
+				get scrollOffset() {
+					return 0
+				},
+				set scrollOffset(v: number) {
+					if (!rendered) throw new Error('restored before the rows rendered')
+					restored = v
+				},
+			}
+			let restored = 0
+			vi.mocked(runTasks).mockImplementation(() => {
+				rendered = true
+			})
+			sut.highway = highway as never
+
+			await sut.loadData()
+			sut.attached()
+
+			expect(restored).toBe(900)
 		})
 
 		it('does not restore when the timetable is not present', async () => {

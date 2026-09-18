@@ -559,6 +559,13 @@ export class DashboardRoute {
 		this.dateGroups = cached
 		this.hasSettled = true
 		this.timetableLoaded = true
+
+		// Flush the queued DOM writes before restoring. Assigning `dateGroups` only
+		// schedules the render; without this the rows do not exist yet, the scroll
+		// container has no extent, and the clamp in `scrollOffset` pins the restored
+		// offset to zero — which silently looks exactly like "restore not
+		// implemented".
+		runTasks()
 		this.restoreTimetableScroll()
 	}
 
