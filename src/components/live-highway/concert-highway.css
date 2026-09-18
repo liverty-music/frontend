@@ -248,30 +248,51 @@
 			}
 		}
 
-		/* ── Laser beam overlay (viewport-fixed) ── */
+		/* ── Laser beam overlay ── */
+
+		/* Bounded to the lane row, not the viewport. That is not cosmetic: a beam's
+		   length is driven by how far its concert has travelled through the SCROLL
+		   AREA, so the box being scaled has to be that same area or the two
+		   disagree by their height ratio. Measured with a viewport-sized overlay,
+		   that mismatch alone put the beam up to 130px past its card. */
 		.beam-overlay {
 			pointer-events: none;
-			position: fixed;
+			position: absolute;
+			grid-row: lane-home / lane-away;
+			grid-column: lane-home / lane-away;
 			inset: 0;
 		}
 
-		/* The beam's length tracks where its concert sits on screen. That is driven
-		   by the card's own view timeline (named per beam and put in scope by the
-		   host), NOT by script reading card geometry each frame — those reads were
-		   the component's forced-reflow cost, and they would also force layout of
-		   every date group the browser is skipping.
+		/* The beam reaches from the top of the lane area down to its concert's card,
+		   and stops exactly on the card's top edge.
 
-		   `scaleY` is animated rather than a length or a registered custom property:
-		   a custom-property animation forces a full-subtree style recalc every
-		   frame, which is the exact cost P1 deleted from this component. */
+		   Exactness is the whole point here, and it comes from making two spans the
+		   same. The animation's range runs from "this card's top edge is at the
+		   BOTTOM of the scroll area" to "its top edge is at the TOP" — so progress
+		   0 to 1 covers precisely the distance the beam has to span, and the beam's
+		   own 0 to 100% is that same distance because the overlay is the scroll
+		   area. Get either half wrong and the beam drifts: the shipped version used
+		   the plain `cover` range against a viewport-sized overlay and was -70px
+		   short at the top of the screen and +68px long at the bottom.
+
+		   `scaleY` is animated rather than a length or a registered custom
+		   property: a custom-property animation forces a full-subtree style recalc
+		   every frame, the exact cost this component deleted its beam script to
+		   avoid. */
 		.laser-beam {
 			position: absolute;
 			inset-block-start: 0;
 			inset-inline: 0;
 
-			/* Collapsed by default: without scroll-driven animation support no beam
-			   is drawn at all, which is the intended degradation. */
-			block-size: 0;
+			block-size: 100%;
+			transform-origin: top;
+
+			/* Collapsed by default, which is also the off-screen state: with no fill
+			   mode the animation contributes nothing outside its range, so a concert
+			   the fan has not reached is simply dark. That used to be `both`, whose
+			   backwards fill held the opening keyframe — the full-length beam — and
+			   lit every matched concert in the timetable at once. */
+			transform: scaleY(0);
 
 			background: linear-gradient(
 				to bottom,
@@ -279,10 +300,14 @@
 				oklch(60% 0.1 var(--beam-hue, 180) / 7%) 60%,
 				oklch(50% 0.08 var(--beam-hue, 180) / 3%) 100%
 			);
+
+			/* Both edges land on 100%, which IS the card's top edge. The shape used
+			   to need a third, per-card ratio saying where that edge fell inside the
+			   beam; anchoring the foot to it removes the term entirely. */
 			clip-path: polygon(
 				0% 0%,
 				var(--beam-left, 34%) 100%,
-				var(--beam-right, 66%) var(--beam-top-pct, 80%)
+				var(--beam-right, 66%) 100%
 			);
 			filter: drop-shadow(0 0 4px oklch(85% 0.3 var(--beam-hue, 180) / 55%))
 				drop-shadow(0 0 12px oklch(75% 0.25 var(--beam-hue, 180) / 28%))
@@ -291,6 +316,7 @@
 			mask-image: linear-gradient(to bottom, black 65%, transparent);
 		}
 
+		/* The two bright leading edges. */
 		.laser-beam::before,
 		.laser-beam::after {
 			pointer-events: none;
@@ -315,8 +341,8 @@
 			clip-path: polygon(
 				0% 0%,
 				4px 0%,
-				var(--beam-right, 66%) var(--beam-top-pct, 80%),
-				calc(var(--beam-right, 66%) - 4px) var(--beam-top-pct, 80%)
+				var(--beam-right, 66%) 100%,
+				calc(var(--beam-right, 66%) - 4px) 100%
 			);
 		}
 
@@ -331,28 +357,17 @@
 		@supports ((animation-timeline: view()) and (animation-range: entry)) {
 			@media (prefers-reduced-motion: no-preference) {
 				.laser-beam {
-					transform-origin: top;
-					block-size: 100%;
+					/* The range, not the keyframes, is what makes the beam land on its
+					   card. `cover 0%` is the card's top edge at the bottom of the
+					   scroll area and `contain 100%` is that same edge at the top, so
+					   progress spans exactly the distance the beam spans. Plain `cover`
+					   runs one card-height further and misses by that much.
 
-					/* Collapsed unless the anchor card is actually on screen. The fill mode
-					   used to be `both`, which lit every beam whose card the fan had not
-					   reached yet: before its range a backwards fill holds the `from`
-					   keyframe, and `from` is the full-length beam. On a populated timetable
-					   that is every matched card in ~225 date groups at once. Measured: 37 of
-					   37 off-screen beams lit at the top of the list, 35 of 39 and 30 of 39
-					   further down; with no fill and a collapsed base, 0 at every position,
-					   while the on-screen ones stay lit.
-
-					   The base also covers a card inside a group the browser is skipping: its
-					   view timeline is inactive, the animation contributes nothing, and what
-					   is left must be an unlit beam. */
-					transform: scaleY(0);
-
-					/* animation-timeline is bound inline per beam (the set is
+					   animation-timeline is bound inline per beam (the set is
 					   data-driven). It must come AFTER the shorthand, which would
 					   otherwise reset it. */
-					animation: beam-track auto linear;
-					animation-range: cover;
+					animation: beam-length auto linear;
+					animation-range: cover 0% contain 100%;
 				}
 			}
 		}
@@ -365,7 +380,7 @@
 			}
 		}
 
-		@keyframes beam-track {
+		@keyframes beam-length {
 			from {
 				transform: scaleY(1);
 			}

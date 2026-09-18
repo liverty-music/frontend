@@ -62,10 +62,71 @@ export class ConcertHighway {
 	public attached(): void {
 		this.isAttached = true
 		this.buildBeamIndexMap()
+		this.scrollEl?.addEventListener(
+			'contentvisibilityautostatechange',
+			this.onGroupRenderedChanged,
+		)
+		// The very first skipped-to-rendered transition is the browser settling on
+		// an initial state rather than changing one, so no event is dispatched for
+		// it. One pass after the first layout covers the groups that start on
+		// screen; the listener above covers every group reached by scrolling.
+		this.redeclareFrame = requestAnimationFrame(() => {
+			this.redeclareFrame = 0
+			for (const group of this.element.querySelectorAll<HTMLElement>(
+				'.date-group',
+			)) {
+				this.redeclareTimelines(group)
+			}
+		})
 	}
 
 	public detaching(): void {
 		this.isAttached = false
+		this.scrollEl?.removeEventListener(
+			'contentvisibilityautostatechange',
+			this.onGroupRenderedChanged,
+		)
+		if (this.redeclareFrame !== 0) {
+			cancelAnimationFrame(this.redeclareFrame)
+			this.redeclareFrame = 0
+		}
+	}
+
+	private redeclareFrame = 0
+
+	/**
+	 * Re-declare a date group's view timelines the moment the browser starts
+	 * rendering it.
+	 *
+	 * A named view timeline only registers if the name is declared while its
+	 * element is being rendered, and a `content-visibility: auto` group starts out
+	 * skipped — before the first layout, every group is. The names are written
+	 * from the template binding, which runs before that, so on their own not one
+	 * of them takes: measured, 0 of 40 timelines were live, and re-declaring the
+	 * same names after layout brought back exactly the 18 whose groups were on
+	 * screen. The rest stay dark, which is what they should be.
+	 *
+	 * This costs nothing per frame and reads no geometry — it fires only when a
+	 * group crosses in or out of rendering, which is the only moment the
+	 * declaration can land.
+	 */
+	private readonly onGroupRenderedChanged = (event: Event): void => {
+		const { target, skipped } = event as Event & {
+			skipped?: boolean
+		}
+		if (skipped !== false || !(target instanceof HTMLElement)) return
+		this.redeclareTimelines(target)
+	}
+
+	private redeclareTimelines(group: HTMLElement): void {
+		for (const card of group.querySelectorAll<HTMLElement>(
+			'[data-beam-index]',
+		)) {
+			const declared = card.style.getPropertyValue('view-timeline')
+			if (declared === '') continue
+			card.style.removeProperty('view-timeline')
+			card.style.setProperty('view-timeline', declared)
+		}
 	}
 
 	/**
