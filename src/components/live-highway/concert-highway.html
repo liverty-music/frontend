@@ -45,9 +45,8 @@
     </li>
     </template>
 
-    <!-- The date group is the unit of viewport-scoped rendering, of reveal
-         motion, and of the beam loop's skip check, so it is addressable by
-         class rather than by its position in the markup. -->
+    <!-- The date group is the unit of viewport-scoped rendering, so it is
+         addressable by class rather than by its position in the markup. -->
     <li
       class="[ date-group ]"
       repeat.for="group of dateGroups; key.bind: group.dateKey"

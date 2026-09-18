@@ -24,11 +24,14 @@
 			padding: var(--space-xs);
 			border-radius: var(--radius-card);
 
-			/* No entrance animation here. It used to run on every card at once,
-			   which meant off-screen cards burned their animation long before the
-			   fan scrolled to them, and on-screen cards all appeared in the same
-			   instant. Reveal motion now belongs to the date group — see
-			   concert-highway.css. */
+			/* No entrance animation. The previous one ran on every card at once,
+			   so off-screen cards burned it long before the fan scrolled to them
+			   and on-screen cards all appeared in the same instant. Its replacement
+			   — a staggered reveal on the date group — did not work: measured, every
+			   row moved together despite correctly staggered delays, and neither
+			   removing the scroll-driven animation nor disabling containment changed
+			   it. Rather than ship motion that does not run, reveal is deferred to
+			   its own change where the cause can be found. */
 			transition: transform 200ms ease-out;
 
 			&:active {
