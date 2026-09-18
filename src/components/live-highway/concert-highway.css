@@ -334,10 +334,24 @@
 					transform-origin: top;
 					block-size: 100%;
 
+					/* Collapsed unless the anchor card is actually on screen. The fill mode
+					   used to be `both`, which lit every beam whose card the fan had not
+					   reached yet: before its range a backwards fill holds the `from`
+					   keyframe, and `from` is the full-length beam. On a populated timetable
+					   that is every matched card in ~225 date groups at once. Measured: 37 of
+					   37 off-screen beams lit at the top of the list, 35 of 39 and 30 of 39
+					   further down; with no fill and a collapsed base, 0 at every position,
+					   while the on-screen ones stay lit.
+
+					   The base also covers a card inside a group the browser is skipping: its
+					   view timeline is inactive, the animation contributes nothing, and what
+					   is left must be an unlit beam. */
+					transform: scaleY(0);
+
 					/* animation-timeline is bound inline per beam (the set is
 					   data-driven). It must come AFTER the shorthand, which would
 					   otherwise reset it. */
-					animation: beam-track auto linear both;
+					animation: beam-track auto linear;
 					animation-range: cover;
 				}
 			}

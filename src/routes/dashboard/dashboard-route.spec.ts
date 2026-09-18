@@ -16,7 +16,7 @@ const mockConcertService = {
 	setDateGroups: vi.fn(),
 	toDateGroups: vi.fn(() => []),
 	clearRenderedGroups: vi.fn(),
-	timetableScrollOffset: 0,
+	timetableScrollAnchor: null as { dateKey: string; offset: number } | null,
 }
 const mockFollowStore = {
 	followedArtists: [] as unknown[],
@@ -52,7 +52,10 @@ const mockStorage = {
  * route saves and restores the fan's place through this API rather than by
  * querying another component's DOM.
  */
-const mockHighway = { scrollOffset: 0 }
+const ANCHOR = { dateKey: '2026-07-18', offset: 60 }
+const mockHighway = {
+	scrollAnchor: null as { dateKey: string; offset: number } | null,
+}
 
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
@@ -189,8 +192,8 @@ describe('DashboardRoute', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
-		mockHighway.scrollOffset = 0
-		mockConcertService.timetableScrollOffset = 0
+		mockHighway.scrollAnchor = null
+		mockConcertService.timetableScrollAnchor = null
 		mockOnboarding.isOnboarding = false
 		mockAuth.isAuthenticated = false
 		mockFollowStore.followedArtists = []
@@ -402,48 +405,48 @@ describe('DashboardRoute', () => {
 			expect(sut.dateGroups).toEqual(fresh)
 		})
 
-		it('saves the scroll offset on the way out and restores it on re-entry', async () => {
+		it('saves the anchor on the way out and restores it on re-entry', async () => {
 			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
 			sut.needsRegion = false
 
 			// The fan scrolls deep, then leaves. `unloading` runs while the view is
-			// still in the DOM, which is why the offset can be read at all.
+			// still in the DOM, which is why the anchor can be read at all.
 			sut.highway = mockHighway as never
-			mockHighway.scrollOffset = 900
+			mockHighway.scrollAnchor = ANCHOR
 			sut.unloading()
-			expect(mockConcertService.timetableScrollOffset).toBe(900)
+			expect(mockConcertService.timetableScrollAnchor).toEqual(ANCHOR)
 
-			// Coming back: a NEW route instance, which is why the offset has to live
+			// Coming back: a NEW route instance, which is why the anchor has to live
 			// in the store rather than on the route.
 			const next = new DashboardRoute()
 			next.highway = mockHighway as never
-			mockHighway.scrollOffset = 0
+			mockHighway.scrollAnchor = null
 			await next.loadData()
 			next.attached()
 
-			expect(mockHighway.scrollOffset).toBe(900)
+			expect(mockHighway.scrollAnchor).toEqual(ANCHOR)
 		})
 
 		it('restores only after the rows have rendered', async () => {
 			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
-			mockConcertService.timetableScrollOffset = 900
+			mockConcertService.timetableScrollAnchor = ANCHOR
 			sut.needsRegion = false
 
 			// Model the real failure: assigning dateGroups only SCHEDULES the render,
-			// so a restore in the same synchronous block writes into a container with
-			// no extent and the clamp pins it to zero. The route must flush the queued
-			// DOM writes first.
+			// so a restore in the same synchronous block cannot find the anchored
+			// group — it does not exist yet — and the restore silently does nothing.
+			// The route must flush the queued DOM writes first.
 			let rendered = false
+			let restored: { dateKey: string; offset: number } | null = null
 			const highway = {
-				get scrollOffset() {
-					return 0
+				get scrollAnchor() {
+					return null
 				},
-				set scrollOffset(v: number) {
+				set scrollAnchor(v: { dateKey: string; offset: number } | null) {
 					if (!rendered) throw new Error('restored before the rows rendered')
 					restored = v
 				},
 			}
-			let restored = 0
 			vi.mocked(runTasks).mockImplementation(() => {
 				rendered = true
 			})
@@ -452,12 +455,12 @@ describe('DashboardRoute', () => {
 			await sut.loadData()
 			sut.attached()
 
-			expect(restored).toBe(900)
+			expect(restored).toEqual(ANCHOR)
 		})
 
 		it('does not restore when the timetable is not present', async () => {
 			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
-			mockConcertService.timetableScrollOffset = 900
+			mockConcertService.timetableScrollAnchor = ANCHOR
 			sut.needsRegion = false
 			// No highway ref (All Nearby mode, or before the view resolves it).
 			sut.highway = undefined

@@ -50,6 +50,7 @@
     <li
       class="[ date-group ]"
       repeat.for="group of dateGroups; key.bind: group.dateKey"
+      data-date-key.bind="group.dateKey"
     >
       <div if.bind="group.isFirstOfMonth" class="[ month-separator ]" aria-hidden="true">
         ${group.monthSeparatorLabel}

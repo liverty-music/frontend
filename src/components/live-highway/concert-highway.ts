@@ -1,6 +1,6 @@
 import { bindable, INode, observable, resolve } from 'aurelia'
 import { artistHue } from '../../adapter/view/artist-color'
-import type { DateGroup } from '../../entities/concert'
+import type { DateGroup, TimetableAnchor } from '../../entities/concert'
 
 export class ConcertHighway {
 	@bindable public dateGroups: DateGroup[] = []
@@ -69,28 +69,55 @@ export class ConcertHighway {
 	}
 
 	/**
-	 * The timetable's scroll position. Exposed as component API because this
+	 * Where the fan is in the timetable, as the date group at the top edge plus
+	 * how far into it they have scrolled. Exposed as component API because this
 	 * component owns the scroll container — the dashboard needs to save and
 	 * restore the fan's place across navigation, and reaching into another
 	 * component's DOM to do it would couple the route to this markup.
 	 *
-	 * Reading before the view is in the DOM yields 0; writing then is a no-op, so
-	 * a restore has to happen after the content is rendered.
+	 * Deliberately not a pixel offset: see `TimetableAnchor`. Reading before the
+	 * view is in the DOM yields null; writing then is a no-op, so a restore has to
+	 * happen after the content is rendered.
 	 */
-	public get scrollOffset(): number {
-		return this.scrollEl?.scrollTop ?? 0
+	public get scrollAnchor(): TimetableAnchor | null {
+		const el = this.scrollEl
+		if (!el) return null
+
+		const edge = el.getBoundingClientRect().top
+		for (const group of el.querySelectorAll<HTMLElement>('[data-date-key]')) {
+			const box = group.getBoundingClientRect()
+			// The first group still crossing the top edge is the one the fan is
+			// looking at; anything above it has been scrolled past.
+			if (box.bottom > edge + 0.5) {
+				const dateKey = group.dataset.dateKey
+				if (dateKey === undefined) return null
+				return { dateKey, offset: Math.max(0, edge - box.top) }
+			}
+		}
+		return null
 	}
 
-	public set scrollOffset(value: number) {
+	public set scrollAnchor(anchor: TimetableAnchor | null) {
 		const el = this.scrollEl
-		if (!el) return
-		// Clamp: off-screen groups are sized from an intrinsic estimate until they
-		// render, and a refresh can return a shorter list, so a saved offset can
-		// exceed the current extent.
-		el.scrollTop = Math.min(
-			Math.max(0, value),
-			Math.max(0, el.scrollHeight - el.clientHeight),
+		if (!el || anchor === null) return
+
+		// Matched by value rather than built into a selector: a date key is data,
+		// and interpolating data into a selector is a habit worth not having.
+		const group = [...el.querySelectorAll<HTMLElement>('[data-date-key]')].find(
+			(node) => node.dataset.dateKey === anchor.dateKey,
 		)
+		// The group can legitimately be gone — a background refresh may have
+		// dropped a date that has since passed. Staying put beats guessing.
+		if (!group) return
+
+		// `scrollIntoView` rather than arithmetic on `scrollTop`. Computing the
+		// delta ourselves cannot converge: every correction renders more groups,
+		// which changes the intrinsic-size estimates the next correction reads, so
+		// it oscillates. Measured against a 225-group list, a hand-rolled
+		// correction loop still landed 1-3 groups out at every depth, while this
+		// landed exactly on the anchor at every depth.
+		group.scrollIntoView({ block: 'start', inline: 'nearest' })
+		el.scrollTop += anchor.offset
 	}
 
 	private get scrollEl(): HTMLElement | null {
