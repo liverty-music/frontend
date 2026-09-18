@@ -261,22 +261,34 @@ export const BeamsEnabled = {
 } satisfies Story
 
 /**
- * Many groups in a short viewport: the beams for concerts the fan has not
- * scrolled to yet must be dark.
+ * Many groups in a short viewport. Two things must hold at once, and each is a
+ * defect this component actually shipped.
  *
- * This is the guard for a real production defect. The beam animation carried
- * `animation-fill-mode: both`, so before its range a backwards fill held the
- * `from` keyframe — the full-length beam — and every matched card in the whole
- * timetable lit up at once, ~225 date groups deep. The fix is no fill plus a
- * collapsed base, which also covers a card inside a group the browser is
- * skipping, whose view timeline is inactive and whose animation therefore
- * contributes nothing.
+ * A beam must land on its card. The length was once derived from scroll progress
+ * over the plain `cover` range against a viewport-sized overlay — two spans that
+ * do not match the distance the beam covers — so it fell short near the top of
+ * the screen and overshot near the bottom. It is exact now only because the
+ * range and the overlay both describe that same distance, and either one drifting
+ * back would show up here as a gap between the beam's foot and the card.
+ *
+ * A beam for a concert the fan has not reached must be dark. The animation once
+ * carried `animation-fill-mode: both`, whose backwards fill held the opening
+ * keyframe — the full-length beam — so every matched concert in the timetable lit
+ * up at once.
  */
 export const BeamsDarkOffScreen = {
 	render: () => highwayStory(MANY_GROUPS),
 	play: async ({ canvasElement }) => {
 		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
 		if (!scroll) throw new Error('concert-scroll not rendered')
+
+		// A view timeline can only be declared while its group is being rendered,
+		// so the component re-declares them once the browser has settled which
+		// groups those are. Let that frame happen before measuring.
+		await new Promise((r) =>
+			requestAnimationFrame(() => requestAnimationFrame(r)),
+		)
+
 		const edge = scroll.getBoundingClientRect()
 
 		const beams = [
@@ -286,22 +298,34 @@ export const BeamsDarkOffScreen = {
 
 		let offScreen = 0
 		let offScreenLit = 0
+		let onScreenLit = 0
 		for (const beam of beams) {
 			const card = canvasElement.querySelector<HTMLElement>(
 				`[data-beam-index="${beam.dataset.beamAnchor}"]`,
 			)
 			if (!card) continue
 			const box = card.getBoundingClientRect()
-			const visible = box.bottom > edge.top && box.top < edge.bottom
-			if (visible) continue
-			offScreen += 1
-			if (beam.getBoundingClientRect().height > 1) offScreenLit += 1
+			const rect = beam.getBoundingClientRect()
+			const lit = rect.height > 1
+
+			if (box.top < edge.top || box.top > edge.bottom) {
+				offScreen += 1
+				if (lit) offScreenLit += 1
+				continue
+			}
+			if (!lit) continue
+			onScreenLit += 1
+
+			// The beam's foot sits on the card's top edge. A tolerance of 1px is for
+			// fractional layout — anything larger is the mapping having drifted.
+			await expect(Math.abs(rect.bottom - box.top)).toBeLessThan(1)
 		}
 
 		// The story only proves anything if there is something off screen to prove
-		// it about.
+		// it about, and something on screen to measure.
 		await expect(offScreen).toBeGreaterThan(5)
 		await expect(offScreenLit).toBe(0)
+		await expect(onScreenLit).toBeGreaterThan(0)
 	},
 } satisfies Story
 

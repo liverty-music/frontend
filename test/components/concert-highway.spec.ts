@@ -112,17 +112,21 @@ describe('ConcertHighway', () => {
 	})
 
 	describe('detaching', () => {
-		it('has nothing to tear down — the beams are driven by CSS', () => {
-			const addSpy = vi.spyOn(globalThis, 'requestAnimationFrame')
+		it('releases the one frame and the one listener it takes', () => {
+			const rafSpy = vi.spyOn(globalThis, 'requestAnimationFrame')
+			const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame')
 
 			sut.attached()
 			sut.detaching()
 
 			// The component used to own a scroll listener and a rAF loop that
-			// measured every matched card. Both are gone: the beams now follow their
-			// anchor concert through a view timeline, so there is no per-frame work
-			// to schedule and nothing to unsubscribe.
-			expect(addSpy).not.toHaveBeenCalled()
+			// measured every matched card each frame. That is gone — the beams
+			// follow their concert through a view timeline now. What remains is a
+			// SINGLE frame: a view timeline only registers while its date group is
+			// being rendered, and before the first layout every group is skipped, so
+			// the names have to be declared again once. Exactly one, and released.
+			expect(rafSpy).toHaveBeenCalledTimes(1)
+			expect(cancelSpy).toHaveBeenCalledTimes(1)
 		})
 	})
 
