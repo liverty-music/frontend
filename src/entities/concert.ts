@@ -68,3 +68,22 @@ export const LANE_ORDER: Record<LaneType, number> = {
 export function isHypeMatched(hype: HypeLevel, lane: LaneType): boolean {
 	return HYPE_ORDER[hype] >= LANE_ORDER[lane]
 }
+
+/**
+ * Where the fan was in the timetable, expressed as the date group at the top of
+ * the viewport rather than a pixel offset.
+ *
+ * A pixel offset cannot survive navigation here. Off-screen groups are sized
+ * from `contain-intrinsic-size` until they render, and the browser remembers
+ * each group's real size only for as long as the element lives — leaving the
+ * route destroys those elements, so every group reverts to the estimate and the
+ * same pixel value points somewhere else. Measured: returning from 120 groups
+ * down landed 23 groups away, and from 180 down, 41 groups away. Naming the
+ * group instead is immune to the estimate, because nothing depends on the total.
+ */
+export interface TimetableAnchor {
+	/** `dateKey` of the group that was at the top edge. */
+	dateKey: string
+	/** How far the fan had scrolled into that group, in pixels. */
+	offset: number
+}

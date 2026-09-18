@@ -84,46 +84,76 @@ describe('ConcertHighway', () => {
 			expect(sut.beamIndexMap.unknown).toBeUndefined()
 		})
 	})
-	describe('scrollOffset', () => {
-		function withScroller(
-			el: {
-				scrollTop: number
-				scrollHeight: number
-				clientHeight: number
-			} | null,
-		) {
-			fakeElement.querySelector.mockImplementation(((sel: string) =>
-				sel === '.concert-scroll' ? el : null) as never)
+	describe('scrollAnchor', () => {
+		function group(dateKey: string, top: number, bottom: number) {
+			return {
+				dataset: { dateKey },
+				getBoundingClientRect: () => ({ top, bottom }),
+				scrollIntoView: vi.fn(),
+			}
 		}
 
-		it('reads and writes the timetable scroll position', () => {
-			const scroller = { scrollTop: 120, scrollHeight: 2000, clientHeight: 500 }
-			withScroller(scroller)
+		function withScroller(
+			scroller: { scrollTop: number } | null,
+			top = 100,
+			groups: ReturnType<typeof group>[] = [],
+		) {
+			const el = scroller && {
+				...scroller,
+				getBoundingClientRect: () => ({ top }),
+				querySelectorAll: () => groups,
+			}
+			fakeElement.querySelector.mockImplementation(((sel: string) =>
+				sel === '.concert-scroll' ? el : null) as never)
+			return el
+		}
 
-			expect(sut.scrollOffset).toBe(120)
+		it('names the group at the top edge and how far into it', () => {
+			withScroller({ scrollTop: 0 }, 100, [
+				// Scrolled past: its bottom is above the edge.
+				group('2026-07-15', -300, 40),
+				// The one the fan is looking at, 60px in.
+				group('2026-07-18', 40, 500),
+				group('2026-07-20', 500, 900),
+			])
 
-			sut.scrollOffset = 400
-			expect(scroller.scrollTop).toBe(400)
+			expect(sut.scrollAnchor).toEqual({ dateKey: '2026-07-18', offset: 60 })
 		})
 
-		it('clamps a restored offset to the content that is actually there', () => {
-			// Off-screen groups are sized from an intrinsic estimate until they
-			// render, and a refresh can return a shorter list, so a saved offset can
-			// exceed the current extent. Landing past the end must clamp.
-			const scroller = { scrollTop: 0, scrollHeight: 2000, clientHeight: 500 }
-			withScroller(scroller)
+		it('restores by scrolling the named group into view, not by arithmetic', () => {
+			// Pixel arithmetic cannot land: off-screen groups are sized from an
+			// intrinsic estimate, and correcting for it renders more groups, which
+			// moves the estimate again. The browser has to resolve it.
+			const target = group('2026-07-18', 4000, 4400)
+			const scroller = withScroller({ scrollTop: 0 }, 100, [target])
 
-			sut.scrollOffset = 5000
+			sut.scrollAnchor = { dateKey: '2026-07-18', offset: 60 }
 
-			expect(scroller.scrollTop).toBe(1500)
+			expect(target.scrollIntoView).toHaveBeenCalledWith({
+				block: 'start',
+				inline: 'nearest',
+			})
+			expect(scroller?.scrollTop).toBe(60)
+		})
+
+		it('stays put when the anchored date is no longer in the list', () => {
+			// A background refresh can drop a date that has since passed. Guessing
+			// at a replacement would land the fan somewhere they never were.
+			const scroller = withScroller({ scrollTop: 250 }, 100, [
+				group('2026-07-20', 40, 500),
+			])
+
+			sut.scrollAnchor = { dateKey: '2026-07-18', offset: 60 }
+
+			expect(scroller?.scrollTop).toBe(250)
 		})
 
 		it('is inert before the view is in the DOM', () => {
 			withScroller(null)
 
-			expect(sut.scrollOffset).toBe(0)
+			expect(sut.scrollAnchor).toBeNull()
 			expect(() => {
-				sut.scrollOffset = 400
+				sut.scrollAnchor = { dateKey: '2026-07-18', offset: 60 }
 			}).not.toThrow()
 		})
 	})

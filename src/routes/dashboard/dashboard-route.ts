@@ -561,28 +561,26 @@ export class DashboardRoute {
 		this.timetableLoaded = true
 
 		// Flush the queued DOM writes before restoring. Assigning `dateGroups` only
-		// schedules the render; without this the rows do not exist yet, the scroll
-		// container has no extent, and the clamp in `scrollOffset` pins the restored
-		// offset to zero — which silently looks exactly like "restore not
-		// implemented".
+		// schedules the render; without this the rows do not exist yet, so there is
+		// no anchored group to scroll to and the restore silently does nothing —
+		// which looks exactly like "restore not implemented".
 		runTasks()
 		this.restoreTimetableScroll()
 	}
 
 	/**
 	 * Put the fan back where they left the timetable. Runs after the cached groups
-	 * are reflected, never before: against an unrendered list the container has no
-	 * scroll extent, so the offset would be clamped to zero and silently lost.
+	 * are reflected, never before: against an unrendered list there is no anchored
+	 * group to scroll to, and the restore is silently lost.
 	 *
-	 * Clamped to the restored content rather than trusted — off-screen groups are
-	 * sized from an intrinsic estimate until they have rendered, so the extent at
-	 * this moment is an approximation, and a refresh can return a shorter list than
-	 * the one the offset was taken from.
+	 * The anchor names a date group rather than a pixel offset, because a pixel
+	 * offset does not survive the trip — see `TimetableAnchor`. A group that is no
+	 * longer in the list leaves the fan where they are.
 	 */
 	private restoreTimetableScroll(): void {
-		const offset = this.concertService.timetableScrollOffset
-		if (offset > 0 && this.highway) {
-			this.highway.scrollOffset = offset
+		const anchor = this.concertService.timetableScrollAnchor
+		if (anchor !== null && this.highway) {
+			this.highway.scrollAnchor = anchor
 		}
 	}
 
@@ -1098,7 +1096,7 @@ export class DashboardRoute {
 	 */
 	public unloading(): void {
 		if (this.highway) {
-			this.concertService.timetableScrollOffset = this.highway.scrollOffset
+			this.concertService.timetableScrollAnchor = this.highway.scrollAnchor
 		}
 	}
 

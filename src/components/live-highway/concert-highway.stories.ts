@@ -64,6 +64,24 @@ const DATE_GROUPS: DateGroup[] = [
 	},
 ]
 
+/**
+ * Enough date groups to push most of them out of the viewport — the condition the
+ * off-screen beam guard needs, and the one a two-group fixture cannot create.
+ */
+const MANY_GROUPS: DateGroup[] = Array.from({ length: 20 }, (_, i) => {
+	const day = 1 + i
+	const date = `2026-08-${String(day).padStart(2, '0')}`
+	return {
+		label: `8月${day}日`,
+		dateKey: date,
+		isFirstOfMonth: i === 0,
+		monthSeparatorLabel: i === 0 ? '2026年8月' : '',
+		home: [ev('VAUNDY', 'home', true, `${date}T19:00:00+09:00`)],
+		nearby: [ev('Aimer', 'nearby', true, `${date}T19:00:00+09:00`)],
+		away: [ev('King Gnu', 'away', false, `${date}T19:00:00+09:00`)],
+	}
+})
+
 // Matched cards across both groups → expected laser-beam count.
 const MATCHED_COUNT = DATE_GROUPS.flatMap((g) => [
 	...g.home,
@@ -239,6 +257,51 @@ export const BeamsEnabled = {
 			if (!card) throw new Error(`no card for beam ${idx}`)
 			await expect(getComputedStyle(card).viewTimelineName).toBe(name)
 		}
+	},
+} satisfies Story
+
+/**
+ * Many groups in a short viewport: the beams for concerts the fan has not
+ * scrolled to yet must be dark.
+ *
+ * This is the guard for a real production defect. The beam animation carried
+ * `animation-fill-mode: both`, so before its range a backwards fill held the
+ * `from` keyframe — the full-length beam — and every matched card in the whole
+ * timetable lit up at once, ~225 date groups deep. The fix is no fill plus a
+ * collapsed base, which also covers a card inside a group the browser is
+ * skipping, whose view timeline is inactive and whose animation therefore
+ * contributes nothing.
+ */
+export const BeamsDarkOffScreen = {
+	render: () => highwayStory(MANY_GROUPS),
+	play: async ({ canvasElement }) => {
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+		const edge = scroll.getBoundingClientRect()
+
+		const beams = [
+			...canvasElement.querySelectorAll<HTMLElement>('.laser-beam'),
+		]
+		await expect(beams.length).toBeGreaterThan(10)
+
+		let offScreen = 0
+		let offScreenLit = 0
+		for (const beam of beams) {
+			const card = canvasElement.querySelector<HTMLElement>(
+				`[data-beam-index="${beam.dataset.beamAnchor}"]`,
+			)
+			if (!card) continue
+			const box = card.getBoundingClientRect()
+			const visible = box.bottom > edge.top && box.top < edge.bottom
+			if (visible) continue
+			offScreen += 1
+			if (beam.getBoundingClientRect().height > 1) offScreenLit += 1
+		}
+
+		// The story only proves anything if there is something off screen to prove
+		// it about.
+		await expect(offScreen).toBeGreaterThan(5)
+		await expect(offScreenLit).toBe(0)
 	},
 } satisfies Story
 

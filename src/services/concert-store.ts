@@ -15,6 +15,7 @@ import {
 	isHypeMatched,
 	type JourneyStatus,
 	type LaneType,
+	type TimetableAnchor,
 } from '../entities/concert'
 import { DEFAULT_HYPE, type Hype } from '../entities/follow'
 import type { GeoLocationInit } from '../entities/user'
@@ -161,10 +162,10 @@ export class ConcertStore {
 	 * on the route for the same reason the groups do: a new `DashboardRoute` is
 	 * created on every navigation, so route-local state cannot survive the trip.
 	 *
-	 * Cleared alongside the groups — an offset is meaningless against a different
+	 * Cleared alongside the groups — an anchor is meaningless against a different
 	 * list, and restoring one would land somewhere arbitrary.
 	 */
-	public timetableScrollOffset = 0
+	public timetableScrollAnchor: TimetableAnchor | null = null
 
 	public invalidateFollowerCache(): void {
 		// A follow-set change invalidates every date-window variant, so clear all
@@ -173,7 +174,7 @@ export class ConcertStore {
 		// Clear the cached output too so the next visit shows a fresh spinner
 		// rather than stale groups with the unfollowed/newly-followed artist.
 		this.lastDateGroups = null
-		this.timetableScrollOffset = 0
+		this.timetableScrollAnchor = null
 	}
 
 	/**
@@ -184,7 +185,7 @@ export class ConcertStore {
 	 */
 	public clearRenderedGroups(): void {
 		this.lastDateGroups = null
-		this.timetableScrollOffset = 0
+		this.timetableScrollAnchor = null
 	}
 
 	public async listByArtists(
