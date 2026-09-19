@@ -3,6 +3,7 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
+import { CustomElement } from 'aurelia'
 import { expect } from 'storybook/test'
 import { ArtistColorCustomAttribute } from '../../custom-attributes/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
@@ -79,6 +80,31 @@ const MANY_GROUPS: DateGroup[] = Array.from({ length: 20 }, (_, i) => {
 		home: [ev('VAUNDY', 'home', true, `${date}T19:00:00+09:00`)],
 		nearby: [ev('Aimer', 'nearby', true, `${date}T19:00:00+09:00`)],
 		away: [ev('King Gnu', 'away', false, `${date}T19:00:00+09:00`)],
+	}
+})
+
+/**
+ * Groups of deliberately uneven height. Height is what the defect turned on: a
+ * saved pixel offset only misses if the groups it counts past are not all the
+ * size the browser guessed, so a list of identical groups would pass a broken
+ * implementation.
+ */
+const UNEVEN_GROUPS: DateGroup[] = Array.from({ length: 30 }, (_, i) => {
+	const day = 1 + i
+	const date = `2026-09-${String(day).padStart(2, '0')}`
+	const count = 1 + (i % 4)
+	return {
+		label: `9月${day}日`,
+		dateKey: date,
+		isFirstOfMonth: i === 0,
+		monthSeparatorLabel: i === 0 ? '2026年9月' : '',
+		home: Array.from({ length: count }, () =>
+			ev('VAUNDY', 'home', true, `${date}T19:00:00+09:00`),
+		),
+		nearby: [],
+		away: Array.from({ length: 1 + ((i + 2) % 3) }, () =>
+			ev('King Gnu', 'away', false, `${date}T19:00:00+09:00`),
+		),
 	}
 })
 
@@ -326,6 +352,78 @@ export const BeamsDarkOffScreen = {
 		await expect(offScreen).toBeGreaterThan(5)
 		await expect(offScreenLit).toBe(0)
 		await expect(onScreenLit).toBeGreaterThan(0)
+	},
+} satisfies Story
+
+/**
+ * Leaving the timetable deep in the list and coming back to the same date.
+ *
+ * This is a real defect twice over, so the story reproduces the mechanism rather
+ * than the symptom. Off-screen groups are sized from an estimate until they
+ * render, and the browser remembers each real height only for as long as the
+ * element lives — navigation destroys them all. Emptying and refilling the
+ * timetable does the same thing here: every group comes back as a new element
+ * with its estimate restored.
+ *
+ * A saved pixel offset cannot survive that, because the same number now counts
+ * past a different set of groups; measured against a 225-group list it landed 41
+ * groups away. What is saved is therefore the date at the top edge, and the
+ * assertion is that the fan gets that date back — not that some number round
+ * trips.
+ */
+export const ScrollAnchorSurvivesRerender = {
+	render: () => highwayStory(UNEVEN_GROUPS),
+	play: async ({ canvasElement }) => {
+		const host = canvasElement.querySelector<HTMLElement>('concert-highway')
+		if (!host) throw new Error('concert-highway not rendered')
+		const vm = CustomElement.for<ConcertHighway>(host).viewModel
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+
+		const settle = async () => {
+			for (let i = 0; i < 3; i++) {
+				await new Promise((r) => requestAnimationFrame(() => r(null)))
+			}
+		}
+		const topDateKey = () => {
+			const edge = scroll.getBoundingClientRect().top
+			for (const group of scroll.querySelectorAll<HTMLElement>(
+				'[data-date-key]',
+			)) {
+				if (group.getBoundingClientRect().bottom > edge + 0.5) {
+					return group.dataset.dateKey
+				}
+			}
+			return undefined
+		}
+
+		// Scroll the way a fan does, a screen at a time, so the groups passed
+		// through actually render and the browser learns their real heights. A
+		// single jump would leave every estimate untouched and prove nothing.
+		for (let i = 1; i <= 8; i++) {
+			scroll.scrollTop = i * scroll.clientHeight
+			await settle()
+		}
+		const left = topDateKey()
+		await expect(left).toBeDefined()
+		// Deep enough that the estimates have something to be wrong about.
+		await expect(scroll.scrollTop).toBeGreaterThan(1000)
+
+		const saved = vm.scrollAnchor
+		await expect(saved?.dateKey).toBe(left)
+
+		// Leave and come back: every group element is destroyed and rebuilt, which
+		// is what discards the remembered heights.
+		vm.dateGroups = []
+		await settle()
+		vm.dateGroups = UNEVEN_GROUPS
+		await settle()
+		await expect(scroll.scrollTop).toBe(0)
+
+		vm.scrollAnchor = saved
+		await settle()
+
+		await expect(topDateKey()).toBe(left)
 	},
 } satisfies Story
 
