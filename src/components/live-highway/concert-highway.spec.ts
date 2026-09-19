@@ -219,43 +219,21 @@ describe('ConcertHighway', () => {
 			)
 		})
 
-		it('never measures a card, even while re-declaring timelines', () => {
-			const measure = vi.fn(() => ({ top: 0, bottom: 0 }))
-			const card = {
-				style: {
-					getPropertyValue: vi.fn(() => '--beam-0 block'),
-					removeProperty: vi.fn(),
-					setProperty: vi.fn(),
-				},
-				getBoundingClientRect: measure,
-			}
-			const group = {
-				querySelectorAll: vi.fn(() => [card]),
-				getBoundingClientRect: measure,
-			}
-			fakeElement.querySelectorAll.mockImplementation((selector: string) =>
-				selector === '.date-group' ? [group] : [],
-			)
-			const frames: FrameRequestCallback[] = []
-			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
-				frames.push(cb)
-				return 1
-			})
+		it('reads no card geometry and schedules no frames', () => {
+			const rafSpy = vi.spyOn(globalThis, 'requestAnimationFrame')
 
 			sut.dateGroups = matchedGroups(4)
 			sut.attached()
-			for (const frame of frames) frame(0)
 
 			// The whole point of driving beams from CSS: measuring cards forced
-			// layout of content the browser would otherwise skip. The component may
-			// now touch the DOM to re-declare a timeline name — that is a style
-			// write, and writes are free — but it must still never ask anything
-			// where it is or how big it is.
-			expect(measure).not.toHaveBeenCalled()
-			expect(card.style.setProperty).toHaveBeenCalledWith(
-				'view-timeline',
-				'--beam-0 block',
-			)
+			// layout of content the browser would otherwise skip, so the component
+			// must not query or measure the timetable at all. Nor schedule a frame —
+			// a view timeline registers on its own once the browser has laid the
+			// group out; a component-side nudge was tried and measured to change
+			// nothing (18 of 40 live either way).
+			expect(fakeElement.querySelectorAll).not.toHaveBeenCalled()
+			expect(fakeElement.querySelector).not.toHaveBeenCalled()
+			expect(rafSpy).not.toHaveBeenCalled()
 		})
 	})
 })
