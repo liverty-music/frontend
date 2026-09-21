@@ -196,6 +196,36 @@ The script is fully headless, drives the OIDC username/password flow, and self-v
 
 If navigation to a protected route redirects away from the requested page, the storageState has likely expired. Re-run the capture script.
 
+## npm `overrides` — exit conditions, not neglect
+
+`package.json` carries two `overrides`. Both are live security pins, and both
+are resolved by REMOVAL rather than by upgrade — so neither is a stale entry
+somebody forgot, and neither should be "fixed" by bumping it.
+
+| entry | why | exit condition |
+|---|---|---|
+| `fflate: "0.4.9"` | `posthog-js` caps `fflate` at `^0.4.8`; `0.4.9` is the last release of that line | `posthog-js` widens its range → delete the override |
+| `dompurify: "^3.4.13"` | same driver: forces the advisory-free version under `posthog-js` | `posthog-js` widens its range → delete the override |
+
+The exact pin on `fflate` is not a mistake. There is nothing newer in the `0.4.x`
+line to move to, and moving off it would break the `posthog-js` constraint.
+
+**Keeping `posthog-js` itself current is the root-cause remedy for both.** When
+it widens its ranges, delete the override and let normal resolution take over;
+do not replace it with a newer pin.
+
+Renovate can raise the version *inside* an override but cannot decide that an
+override should cease to exist, which is why `overrides` are excluded from
+automerge in `renovate.json`. A pull request touching one is a request for that
+judgement, not a routine bump.
+
+Two earlier entries are gone for the same reason and are worth knowing about as
+precedent: `bfj` was dead (its origin, snarkjs, left with the ZKP feature) and
+was deleted with zero lockfile change; `minimatch` had an equally dead origin
+but was NOT inert — it forced `filelist`'s transitive resolution five majors
+above what `filelist` asked for — so removing it needed a lockfile regeneration
+and a verification run rather than a deletion.
+
 ## Key Technical Decisions
 
 ### 1. Canvas + Matter.js for Artist Discovery
