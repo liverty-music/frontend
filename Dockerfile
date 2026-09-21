@@ -1,5 +1,5 @@
 # Stage 1: Build the frontend application
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:b6f26b36c8ff49624cfdac716b8ea1138d606df02586a77d364bb5536a634f85 AS builder
 
 WORKDIR /app
 
@@ -32,7 +32,7 @@ RUN npm run verify:bundle-isolation
 #----------------------------
 
 # Stage 2: Serve with Caddy
-FROM caddy:2-alpine
+FROM caddy:2-alpine@sha256:de23def33b17fb5d1290b0f6c2add1d70780e52341896c00a4c8a2a2fe9d355e
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /srv
