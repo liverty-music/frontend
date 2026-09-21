@@ -29,6 +29,13 @@ export class BottomSheet {
 	// during the open transition so the initial re-snap cannot auto-close it.
 	private settled = false
 
+	// True once the user has actually touched the scroll area since this sheet
+	// opened. A swipe-dismiss is BY DEFINITION a user gesture, so the observer
+	// may only act on one after this is set. Without it, a scroll the engine
+	// performs on its own is indistinguishable from a swipe — see
+	// `updateVisibility`.
+	private userInteracted = false
+
 	// True while a close is in flight (scroll-to-closed underway).
 	private dismissing = false
 
@@ -39,6 +46,19 @@ export class BottomSheet {
 
 	// IntersectionObserver on the sheet body: the single dismiss source of truth.
 	private io: IntersectionObserver | null = null
+
+	// Input that counts as the user touching the sheet. Pointer covers mouse,
+	// touch and pen; `touchstart` is kept for engines that fire it without a
+	// preceding `pointerdown`.
+	private static readonly INTERACTION_EVENTS = [
+		'pointerdown',
+		'touchstart',
+		'wheel',
+		'keydown',
+	] as const
+
+	// Installed listener, retained so it can be removed on close.
+	private markInteracted: (() => void) | undefined
 
 	// Background elements the CE made `inert` while open (restored on close).
 	private inerted: HTMLElement[] = []
@@ -75,6 +95,7 @@ export class BottomSheet {
 	public detaching(): void {
 		// Programmatic teardown — do not emit `sheet-closed`.
 		this.clearScrollWatch()
+		this.clearInteractionWatch()
 		this.io?.disconnect()
 		this.io = null
 		this.removeKeydown()
@@ -102,9 +123,31 @@ export class BottomSheet {
 			this.settled = true
 			return
 		}
-		// Body has left the viewport. Honour it only once settled, so the initial
-		// re-snap during open cannot trigger a dismiss (the "flash then close" bug).
-		if (this.settled && ratio <= 0.1) {
+		// Body has left the viewport. Two conditions must hold before that counts
+		// as a dismiss:
+		//
+		//   `settled`        — the sheet reached the body at least once, so the
+		//                      initial snap during open is not read as a close.
+		//   `userInteracted` — a human scrolled. A swipe-dismiss is a gesture;
+		//                      a scroll the engine performed on its own is not.
+		//
+		// `settled` alone is not enough, and that was the "flash then close"
+		// defect on WebKit (issue #540, reopened by this guard): the
+		// `initial-snap` keyframe suppresses the dismiss-zone snap point for
+		// 0.01s so the browser lands on the body, and when that animation ends
+		// the snap point returns and WebKit RE-SNAPS. By then the body has been
+		// fully visible, so `settled` is already true, and the engine's own
+		// scroll away from the body satisfied the old condition — the sheet shut
+		// itself roughly 400ms after opening, without anyone touching it.
+		//
+		// Gating on interaction fixes it by meaning rather than by timing: no
+		// delay to tune, and nothing that breaks when the animation duration or
+		// the engine's re-snap scheduling changes.
+		//
+		// The other close paths do not come through here — tap-outside, ESC and
+		// a programmatic close all run `startDismiss()`, which finalizes from
+		// its own scroll watcher.
+		if (this.settled && this.userInteracted && ratio <= 0.1) {
 			this.finalizeClose()
 		}
 	}
@@ -114,6 +157,7 @@ export class BottomSheet {
 		if (!this.popoverEl || this.showing) return
 		try {
 			this.settled = false
+			this.userInteracted = false
 			this.dismissing = false
 			this.programmaticClose = false
 			this.popoverEl.showPopover()
@@ -122,6 +166,7 @@ export class BottomSheet {
 				(document.activeElement as HTMLElement | null) ?? null
 			this.applyInert()
 			this.armObserver()
+			this.armInteractionWatch()
 			this.addKeydown()
 			this.focusSheet()
 		} catch {
@@ -176,8 +221,10 @@ export class BottomSheet {
 		if (!this.showing) return
 		this.showing = false
 		this.settled = false
+		this.userInteracted = false
 		this.dismissing = false
 		this.clearScrollWatch()
+		this.clearInteractionWatch()
 		this.io?.disconnect()
 		this.io = null
 		this.removeKeydown()
@@ -200,6 +247,36 @@ export class BottomSheet {
 		} catch {
 			// Already hidden or not in DOM.
 		}
+	}
+
+	/**
+	 * Record the first real user interaction with the scroll area. Listeners are
+	 * passive and `once` — this only ever needs to latch, never to track.
+	 *
+	 * `keydown` is included because the scroll area is focusable and a sheet can
+	 * be scrolled with the keyboard; that is a user action like any other.
+	 */
+	private armInteractionWatch(): void {
+		if (!this.scrollArea) return
+		this.clearInteractionWatch()
+		const mark = (): void => {
+			this.userInteracted = true
+		}
+		this.markInteracted = mark
+		for (const type of BottomSheet.INTERACTION_EVENTS) {
+			this.scrollArea.addEventListener(type, mark, {
+				passive: true,
+				once: true,
+			})
+		}
+	}
+
+	private clearInteractionWatch(): void {
+		if (!this.markInteracted || !this.scrollArea) return
+		for (const type of BottomSheet.INTERACTION_EVENTS) {
+			this.scrollArea.removeEventListener(type, this.markInteracted)
+		}
+		this.markInteracted = undefined
 	}
 
 	private armObserver(): void {

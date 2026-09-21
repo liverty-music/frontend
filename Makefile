@@ -1,7 +1,7 @@
 .PHONY: lint lint-brand-vocabulary lint-boundaries lint-route-loading lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation
 
-## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary + import-boundaries + route-loading (matches CI)
-lint: lint-brand-vocabulary lint-boundaries lint-route-loading
+## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary + import-boundaries + route-loading + e2e-coverage (matches CI)
+lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
 	npx biome lint src admin organizer shared test
 	npx biome format src admin organizer shared test
 	npm run lint:css
@@ -23,6 +23,10 @@ lint-brand-vocabulary:
 ## lint-route-loading: no route may hold the view swap on its data (see non-blocking-menu-navigation)
 lint-route-loading:
 	npm run verify:route-loading
+
+## lint-e2e-coverage: every Playwright spec is run by CI or recorded as a known gap
+lint-e2e-coverage:
+	npm run verify:e2e-coverage
 
 ## fix: auto-fix formatting and lint issues
 fix:

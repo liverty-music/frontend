@@ -25,19 +25,36 @@ import { expect, test } from '../support/test'
 test('page-help sheet opens and stays open (not auto-dismissed)', async ({
 	page,
 }) => {
+	// Mark the page help as already seen. On a first visit the sheet
+	// auto-opens, which leaves the `?` trigger in a state this spec does not
+	// exercise — the regression under test is the sheet closing itself after a
+	// USER opens it. Seeding this makes the run deterministic and starts the
+	// page with the sheet closed. (Key: `saveHelpSeen()` in
+	// `src/adapter/storage/onboarding-storage.ts`.)
+	await page.addInitScript(() => {
+		localStorage.setItem('liverty:onboarding:helpSeen:my-artists', '1')
+	})
+
 	await page.goto('/my-artists')
 
-	// Click the `?` help trigger button to open the page-help sheet.
-	// The `?` button renders in the page-header for all states (loading,
+	// Open the page-help sheet from the FAB launcher. The help trigger used to
+	// be a `?` button in the page-header; it now lives in the FAB menu
+	// (`helpAction()` in `src/services/fab-menu-service.ts`, registered by
+	// `my-artists-route.ts`). The FAB renders for all route states (loading,
 	// empty, populated), so no artist data is required.
-	const helpBtn = page.getByRole('button', {
-		name: /show help/i,
-	})
+	const fabToggle = page.locator('fab-menu .fab-toggle')
+	await expect(fabToggle).toBeVisible()
+	await fabToggle.click()
+
+	const helpBtn = page.locator('fab-menu [data-action-id="help"]')
 	await expect(helpBtn).toBeVisible()
 	await helpBtn.click()
 
-	// Wait for the bottom-sheet popover to open.
-	const popover = page.locator('bottom-sheet [popover]').first()
+	// Wait for the bottom-sheet popover to open. Scope every locator to
+	// <page-help>: other components mount their own <bottom-sheet> (error-banner
+	// does), so a bare `.sheet-body` / `[popover]` selector matches more than one
+	// element and resolves to whichever happens to come first in the DOM.
+	const popover = page.locator('page-help bottom-sheet [popover]').first()
 	await expect(popover).toBeVisible()
 
 	// Sample :popover-open over ~1.5 s (15 × 100 ms intervals).
@@ -59,5 +76,5 @@ test('page-help sheet opens and stays open (not auto-dismissed)', async ({
 	// Also verify that sheet CONTENT is visible, not merely the popover element.
 	// If WebKit parks the scroll on the dismiss zone (ratio 0) after the
 	// initial-snap, the sheet body would be off-screen while the popover is open.
-	await expect(page.locator('.sheet-body')).toBeVisible()
+	await expect(page.locator('page-help .sheet-body')).toBeVisible()
 })

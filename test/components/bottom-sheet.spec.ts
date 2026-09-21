@@ -48,10 +48,17 @@ describe('BottomSheet', () => {
 		vi.restoreAllMocks()
 	})
 
-	// Drive the sheet to open+settled without a real IntersectionObserver.
+	// Drive the sheet to open+settled without a real IntersectionObserver,
+	// including the user gesture a swipe-dismiss implies.
 	function openAndSettle(): void {
 		sut.openChanged(true)
 		sut.updateVisibility(1)
+		swipeStart()
+	}
+
+	/** Fire the first user gesture on the scroll area, as a real swipe would. */
+	function swipeStart(): void {
+		scrollArea.dispatchEvent(new Event('pointerdown'))
 	}
 
 	describe('openChanged()', () => {
@@ -92,6 +99,34 @@ describe('BottomSheet', () => {
 			sut.updateVisibility(0)
 
 			expect(popover.hidePopover).not.toHaveBeenCalled()
+		})
+
+		it('does not dismiss on an engine re-snap the user never triggered', () => {
+			// Regression guard for the WebKit "flash then close" defect (#540).
+			// The `initial-snap` keyframe suppresses the dismiss-zone snap point
+			// for 0.01s so the browser lands on the body; when it ends the snap
+			// point returns and WebKit re-snaps AWAY. The sheet has settled by
+			// then, so `settled` alone let that engine scroll close it ~400ms
+			// after opening, untouched.
+			sut.openChanged(true)
+			sut.updateVisibility(1) // settled
+			sut.updateVisibility(0) // engine's scroll, NOT a gesture
+
+			expect(popover.hidePopover).not.toHaveBeenCalled()
+		})
+
+		it('still dismisses once the user has touched the sheet', () => {
+			// The guard must not make the sheet undismissable.
+			sut.openChanged(true)
+			sut.updateVisibility(1)
+			sut.updateVisibility(0)
+			expect(popover.hidePopover).not.toHaveBeenCalled()
+
+			swipeStart()
+			sut.updateVisibility(1)
+			sut.updateVisibility(0)
+
+			expect(popover.hidePopover).toHaveBeenCalledOnce()
 		})
 
 		it('stays open when the gesture reverses back to the body (no bounce-back)', () => {

@@ -34,7 +34,7 @@
 		"@aurelia/vite-plugin": "^2.0.0-rc.2",
 		"@biomejs/biome": "2.3.14",
 		"@js-temporal/polyfill": "^0.5.1",
-		"@playwright/test": "^1.49.1",
+		"@playwright/test": "1.58.1",
 		"@storybook/addon-a11y": "^10.6.0",
 		"@storybook/addon-docs": "^10.6.0",
 		"@storybook/addon-vitest": "^10.6.0",
@@ -72,11 +72,14 @@
 		"check": "biome check --write src admin organizer shared test && npm run lint:css && npm run lint:boundaries",
 		"pretest": "npm run lint",
 		"start": "vite",
+		"preview": "vite preview --port 9100 --strictPort",
+		"test:pwa": "playwright test --config=playwright.pwa.config.mjs",
 		"build": "vite build",
 		"verify:build-templates": "npx tsx scripts/verify-build-templates.ts",
 		"verify:route-loading": "npx tsx scripts/verify-route-loading.ts",
 		"verify:bundle-isolation": "npx tsx scripts/verify-bundle-isolation.ts",
 		"verify:no-temporal-polyfill": "npx tsx scripts/verify-no-temporal-polyfill.ts",
+		"verify:e2e-coverage": "npx tsx scripts/verify-e2e-coverage.ts",
 		"licenses:generate": "npx tsx scripts/generate-licenses.ts",
 		"prebuild": "npm run licenses:generate",
 		"test": "vitest run --project=unit --project=scripts",
@@ -90,7 +93,6 @@
 	},
 	"type": "module",
 	"overrides": {
-		"minimatch": "^10.2.1",
 		"dompurify": "^3.4.13",
 		"fflate": "0.4.9"
 	}
