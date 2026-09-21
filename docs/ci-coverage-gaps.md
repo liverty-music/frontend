@@ -11,22 +11,34 @@ authority to merge. Anything on this list is **not** verified by that gate, and
 the automerge policy in the `dependency-update-automation` capability must
 withhold the dependencies it governs.
 
-## How to regenerate
+## This list is enforced
 
 ```bash
-# every spec that exists
-find e2e -name '*.spec.ts' | sort
-
-# every spec some executed project actually runs
-for p in functional webkit-repro chromium-control onboarding smoke; do
-  npx playwright test --project=$p --list
-done
-npx playwright test --config=playwright.pwa.config.mjs --list
+npm run verify:e2e-coverage   # wired into `make lint`
 ```
 
-The difference between the two is this table. A project that lists zero tests is
-itself a finding — `pwa` silently ran **0 tests in 0 files** for as long as all
-three of its specs sat in `testIgnore`, while CI reported it as passing.
+`scripts/verify-e2e-coverage.ts` derives the executed set by reading which
+projects the workflows actually invoke, then diffs it against every spec on
+disk. It fails on three things:
+
+| failure | meaning |
+|---|---|
+| `empty-project` | CI runs a project that matches no spec — it verifies nothing |
+| `uncovered-spec` | a spec no project runs, and no gap below records |
+| `stale-gap` | a gap entry that is now covered, or names a deleted spec |
+
+The project list is derived, never hardcoded: a hardcoded one would claim full
+coverage while CI ran something else, which is the exact failure this check
+exists to catch.
+
+`empty-project` is checked separately from the coverage diff on purpose. An
+empty project removes nothing from the uncovered set, so a diff alone reports
+success — which is how `pwa` ran **0 tests in 0 files** while CI called it
+green, for as long as all three of its specs sat in `testIgnore`.
+
+Adding a gap means editing `KNOWN_GAPS` in that script AND this file. The
+script holds the machine-checkable claim; this file holds the reasoning and the
+named control.
 
 ## What CI executes
 
