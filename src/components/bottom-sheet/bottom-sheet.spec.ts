@@ -64,10 +64,21 @@ describe('BottomSheet', () => {
 		vi.restoreAllMocks()
 	})
 
-	// Drives the sheet to the open+settled state without a real IntersectionObserver.
+	// Drives the sheet to the open+settled state without a real
+	// IntersectionObserver, including the user interaction a swipe implies.
 	function openAndSettle(): void {
 		sut.openChanged(true)
 		sut.updateVisibility(1) // body fully visible → settled
+		touchScrollArea()
+	}
+
+	/** Fire the first user gesture on the scroll area, as a real swipe would. */
+	function touchScrollArea(): void {
+		const call = scrollArea.addEventListener.mock.calls.find(
+			([type]: [string]) => type === 'pointerdown',
+		)
+		expect(call, 'pointerdown listener should be armed while open').toBeTruthy()
+		call?.[1]()
 	}
 
 	describe('open state', () => {
@@ -197,6 +208,37 @@ describe('BottomSheet', () => {
 			sut.updateVisibility(0)
 
 			expect(popover.hidePopover).not.toHaveBeenCalled()
+		})
+
+		it('does not close on an engine re-snap the user never triggered', () => {
+			// Regression guard for the WebKit "flash then close" defect (#540).
+			// The `initial-snap` keyframe suppresses the dismiss-zone snap point
+			// for 0.01s so the browser lands on the body; when it ends, the snap
+			// point returns and WebKit re-snaps AWAY from the body. By then the
+			// sheet has settled, so `settled` alone let that engine-driven scroll
+			// close the sheet ~400ms after opening, untouched.
+			sut.openChanged(true)
+			sut.updateVisibility(1) // settled — body was fully visible
+			// NO user gesture here: this scroll is the engine's, not a swipe.
+			sut.updateVisibility(0)
+
+			expect(popover.hidePopover).not.toHaveBeenCalled()
+			expect(mockHost.dispatchEvent).not.toHaveBeenCalled()
+		})
+
+		it('closes once the user has touched the sheet, after an engine re-snap', () => {
+			// The guard must not make the sheet un-dismissable: the same ratio
+			// that was ignored above closes it once a real gesture has happened.
+			sut.openChanged(true)
+			sut.updateVisibility(1)
+			sut.updateVisibility(0) // engine re-snap — ignored
+			expect(popover.hidePopover).not.toHaveBeenCalled()
+
+			touchScrollArea()
+			sut.updateVisibility(1) // user drags back to the body
+			sut.updateVisibility(0) // then swipes it away
+
+			expect(popover.hidePopover).toHaveBeenCalledOnce()
 		})
 
 		it('stays open when the gesture reverses back to the body (no bounce-back)', () => {
