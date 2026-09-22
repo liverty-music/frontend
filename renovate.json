@@ -28,6 +28,13 @@
       "groupName": "playwright"
     },
     {
+      "description": "NEVER automerge vite-plugin-pwa. Its surface has two halves and CI covers only one. The caching half is covered — the `pwa` Playwright project runs against a production build and asserts the service worker activates, controls the page and precaches the app shell. The manifest / install-prompt half is not: `pwa-install-prompt.spec.ts` cannot run in CI because `beforeinstallprompt` depends on browser install heuristics, and it is an enumerated gap in docs/ci-coverage-gaps.md with no compensating control. Do NOT resolve this by routing the pull request to a human instead — a reviewer sees a version number and a lock file and cannot evaluate install-prompt behaviour any better than the pipeline can. It stays proposed-but-unmerged until that gap has a control. Note this package is a devDependency, so without this rule the organization preset's devDependencies automerge would carry it. See change task 10.4c.",
+      "matchPackageNames": [
+        "vite-plugin-pwa"
+      ],
+      "automerge": false
+    },
+    {
       "description": "NEVER automerge an npm `overrides` entry. These encode a human judgement about a transitive advisory, and their correct resolution is often REMOVAL rather than upgrade — `fflate` and `dompurify` are both pinned because posthog-js caps them, and they go away when posthog-js widens its ranges. Renovate can raise the version inside an override but cannot decide the override should cease to exist.",
       "matchDepTypes": [
         "overrides"
