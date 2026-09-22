@@ -23,11 +23,20 @@ export default defineConfig({
 		// Requires auth storageState — covered by the `authenticated` project in
 		// the main config.
 		'pwa-settings.spec.ts',
-		// Requires `beforeinstallprompt`, which Chromium only fires once its
-		// install heuristics are satisfied. Headless CI never satisfies them and
-		// Playwright exposes no way to synthesise the event. KNOWN GAP:
-		// vite-plugin-pwa manifest behaviour has no pipeline coverage — see
+		// The install banner is behind `auth.isAuthenticated` in
+		// `app-shell.html`, so this needs the same `storageState` as
+		// `pwa-settings.spec.ts` and CI cannot produce it.
+		//
+		// This reason replaces a wrong one ("Playwright exposes no way to
+		// synthesise `beforeinstallprompt`") — the spec dispatches the event
+		// itself, and headless Chromium exposes `BeforeInstallPromptEvent`
+		// anyway. The spec is also stale: it seeds `pwa.sessionCount`, a key
+		// `src/constants/storage-keys.ts` now DELETES as deprecated. Do not
+		// re-enable it without repairing it first; see
 		// docs/ci-coverage-gaps.md.
+		//
+		// `vite-plugin-pwa` is no longer uncovered by this exclusion —
+		// `pwa-manifest.spec.ts` asserts what it generates.
 		'pwa-install-prompt.spec.ts',
 	],
 	timeout: 60 * 1000,

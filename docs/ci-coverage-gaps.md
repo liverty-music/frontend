@@ -53,12 +53,43 @@ named control.
 
 | Spec | Why it cannot run in CI | Named control | Dependencies left unverified |
 |---|---|---|---|
-| `e2e/pwa/pwa-install-prompt.spec.ts` | `beforeinstallprompt` fires only once Chromium's install heuristics are satisfied. Headless CI never satisfies them, and Playwright exposes no API to synthesise the event. | **None today.** Not human review — a reviewer reading a version bump sees strictly less than the pipeline does. | `vite-plugin-pwa` *manifest / install-prompt* behaviour only. Precaching is covered (see below). |
+| `e2e/pwa/pwa-install-prompt.spec.ts` | The banner is behind `auth.isAuthenticated` in `app-shell.html`, and CI cannot produce a `storageState` (same obstacle as `pwa-settings.spec.ts`). The spec is ALSO stale — see below. | `e2e/pwa/pwa-manifest.spec.ts` for what `vite-plugin-pwa` generates, and `src/services/pwa-install-service.spec.ts` for the banner logic itself. | Nothing that a dependency upgrade changes. The uncovered part is the end-to-end path from event to rendered banner, which is our own code. |
 | `e2e/pwa/pwa-settings.spec.ts` | Needs `storageState` from `npm run auth:capture:password`, which drives a real OIDC login with a credential held in ESC. CI cannot obtain it; `.auth/` is gitignored. | **None today.** | Push-notification settings UI. Not a workbox control — the spec stubs `navigator.serviceWorker` wholesale, so it asserts nothing about a real service worker even when it does run. |
 
 Both gaps are recorded against the `authenticated` project and the
 `playwright.pwa.config.mjs` `testIgnore` respectively, at the point of
 exclusion, as the capability requires.
+
+## The install-prompt reason was wrong, twice
+
+Recorded because the wrong reason sat in `playwright.pwa.config.mjs` as a
+`testIgnore` comment for as long as the spec was excluded, and two people
+(the same one, twice) read it and moved on.
+
+**It said Playwright cannot synthesise `beforeinstallprompt`.** Every one of
+that spec's tests dispatches the event itself with `page.evaluate`. It never
+waits for Chromium's install heuristics, and it never needed to. Chromium
+exposes `BeforeInstallPromptEvent` in headless mode out of the box — measured
+with and without `--enable-features=WebAppInstallation`, `true` in all three
+configurations.
+
+**The spec had also rotted while unrun.** It seeds `pwa.sessionCount` and
+asserts on `pwa.installPromptDismissed`. Both keys are *deleted* by
+`src/constants/storage-keys.ts` as deprecated — session counting moved to
+`ui.sessionCount` — and the session-count gate the spec is written around no
+longer exists in `PwaInstallService` at all. Run today it is 3 passed, 3
+failed, and the three failures are the spec describing a version of the app
+that has not existed for some time.
+
+**The real obstacle is the auth gate**, which is the same one
+`pwa-settings.spec.ts` has. That is worth knowing because it is the obstacle
+that would have to be removed, and no amount of work on install heuristics
+would have touched it.
+
+This is the second exclusion reason in this file to survive review while being
+false — `pwa-offline-cache.spec.ts` was the first. Both were inherited rather
+than measured. An exclusion comment is a claim about the world, and it decays
+at the same rate as the code it sits beside.
 
 ## Gaps that were closed
 
