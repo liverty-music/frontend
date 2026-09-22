@@ -106,7 +106,7 @@
 		},
 		{
 			"name": "@buf/bufbuild_protovalidate.bufbuild_es",
-			"version": "2.14.1-20250717185734-6c6e0d3c608e.3",
+			"version": "2.15.0-20250717185734-6c6e0d3c608e.1",
 			"license": "Apache-2.0",
 			"publisher": null,
 			"repository": null,
@@ -114,7 +114,7 @@
 		},
 		{
 			"name": "@buf/googleapis_googleapis.bufbuild_es",
-			"version": "2.14.1-20250411203938-61b203b9a916.3",
+			"version": "2.15.0-20250411203938-61b203b9a916.1",
 			"license": "Apache-2.0",
 			"publisher": null,
 			"repository": null,
@@ -122,7 +122,7 @@
 		},
 		{
 			"name": "@buf/liverty-music_schema.bufbuild_es",
-			"version": "2.14.1-20260911061343-6c0aab490716.3",
+			"version": "2.15.0-20260913052028-ce6e594ac619.1",
 			"license": "UNKNOWN",
 			"publisher": null,
 			"repository": null,
@@ -130,7 +130,7 @@
 		},
 		{
 			"name": "@bufbuild/protobuf",
-			"version": "2.14.1",
+			"version": "2.15.0",
 			"license": "(Apache-2.0 AND BSD-3-Clause)",
 			"publisher": null,
 			"repository": "https://github.com/bufbuild/protobuf-es",
