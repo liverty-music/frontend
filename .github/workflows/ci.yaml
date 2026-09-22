@@ -43,6 +43,10 @@ jobs:
               - 'Makefile'
               - 'playwright.config.mjs'
               - 'playwright.smoke.config.mjs'
+              # playwright.pwa.config.mjs is the config the PWA step runs from.
+              # Without it here, a PR touching only that file skips the whole e2e
+              # job and still reports CI Success green.
+              - 'playwright.pwa.config.mjs'
               - '.github/workflows/**'
             # Anything that can change a component's rendered output must
             # (re)run the browser component tests — including a component
