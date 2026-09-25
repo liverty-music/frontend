@@ -1,0 +1,12 @@
+# Gitignored files Claude Code copies into every new worktree it creates
+# (claude --worktree, EnterWorktree, subagent/background worktrees).
+# Only files that match here AND are gitignored are copied; this file holds
+# patterns only, never secret values. Copies are snapshots: refresh a stale
+# session by re-running the capture in the main checkout and recreating the
+# worktree (see .auth/README.md).
+
+# Playwright authenticated session for the dev Zitadel tenant, consumed by the
+# playwright-auth MCP server and the authenticated Playwright projects.
+.auth/storageState.json
+# Test-user password used to re-capture the session above.
+.auth/password.md
