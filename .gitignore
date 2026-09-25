@@ -84,3 +84,6 @@ storybook-test-report/
 storybook-static/
 # Vitest browser-mode failure attachments (screenshots/diffs) — transient
 .vitest-attachments/
+
+# Claude Code worktrees (claude --worktree / EnterWorktree)
+.claude/worktrees/
