@@ -40,7 +40,7 @@
 		"@storybook/addon-vitest": "10.6.0",
 		"@storybook/builder-vite": "10.6.0",
 		"@types/matter-js": "0.20.2",
-		"@types/node": "22.19.8",
+		"@types/node": "22.20.4",
 		"@vitest/browser": "4.1.11",
 		"@vitest/browser-playwright": "4.1.11",
 		"@vitest/coverage-v8": "4.1.11",
