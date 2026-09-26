@@ -171,7 +171,7 @@ state-placeholder, page-header). Baselines are **committed** under
   ```bash
   # regenerate after an intentional visual change, then commit the PNGs
   docker run --rm -v "$PWD":/work -w /work -e HOME=/tmp \
-    mcr.microsoft.com/playwright:v1.58.1-noble \
+    mcr.microsoft.com/playwright:v1.63.0-noble \
     npx vitest run --project=storybook --update
   ```
 - The `storybook-test` CI job runs in that same image; on failure it uploads the Vitest HTML report
