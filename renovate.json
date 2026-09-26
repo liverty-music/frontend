@@ -28,6 +28,16 @@
       "groupName": "playwright"
     },
     {
+      "description": "Do NOT let the github-actions manager propose the Playwright CI container on its own. The `container: image:` in .github/workflows/ci.yaml is ALSO detected by that manager as a plain docker dependency, which opened a second branch (`renovate/mcr.microsoft.com-playwright-1.x`) that moves the container tag without the package — and, being a github-actions minor, it fell under the organization's stage 1 automerge. The custom manager below already moves this tag together with @playwright/test inside the `playwright` group, so this path adds nothing but a way to split them. Matching `datasource: docker` leaves the custom manager's dependency (`@playwright/test` on the npm datasource) untouched.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "mcr.microsoft.com/playwright"
+      ],
+      "enabled": false
+    },
+    {
       "description": "NEVER automerge vite-plugin-pwa. Its surface has two halves and CI covers only one. The caching half is covered — the `pwa` Playwright project runs against a production build and asserts the service worker activates, controls the page and precaches the app shell. The manifest / install-prompt half is not: `pwa-install-prompt.spec.ts` cannot run in CI because `beforeinstallprompt` depends on browser install heuristics, and it is an enumerated gap in docs/ci-coverage-gaps.md with no compensating control. Do NOT resolve this by routing the pull request to a human instead — a reviewer sees a version number and a lock file and cannot evaluate install-prompt behaviour any better than the pipeline can. It stays proposed-but-unmerged until that gap has a control. Note this package is a devDependency, so without this rule the organization preset's devDependencies automerge would carry it. See change task 10.4c.",
       "matchPackageNames": [
         "vite-plugin-pwa"
