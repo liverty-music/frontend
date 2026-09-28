@@ -399,6 +399,121 @@ describe('DashboardRoute', () => {
 
 	// ---- detaching ----
 
+	// ---- Mode toggle (My Timetable ↔ All Nearby) ----
+
+	describe('mode toggle', () => {
+		type ModeSwap = { id: string; labelKey: string; isOn?: () => boolean }
+		const modeSwap = (): ModeSwap | undefined =>
+			(sut as unknown as { buildFabActions(): ModeSwap[] })
+				.buildFabActions()
+				.find((a) => a.id === 'mode-swap')
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Default mode is My Timetable"
+		it('starts on My Timetable on every load, with the toggle showing it selected', async () => {
+			await sut.loading()
+			expect(sut.viewMode).toBe('timetable')
+			expect(sut.isAllNearby).toBe(false)
+			// The toggle is not highlighted and offers the other mode.
+			expect(modeSwap()?.isOn?.()).toBe(false)
+			expect(modeSwap()?.labelKey).toBe('allNearby.modeToggle.allNearby')
+
+			// A reload builds a fresh route instance, which starts over on My
+			// Timetable even if the previous one had switched away.
+			vi.spyOn(sut, 'loadAllNearby').mockResolvedValue()
+			sut.switchMode('allNearby')
+			const reloaded = buildSut()
+			await reloaded.loading()
+			expect(reloaded.viewMode).toBe('timetable')
+		})
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Mode-specific filters appear only in All Nearby"
+		it('gates the area and date filters on All Nearby', async () => {
+			vi.spyOn(sut, 'loadAllNearby').mockResolvedValue()
+			expect(sut.isAllNearby).toBe(false)
+			sut.switchMode('allNearby')
+			expect(sut.isAllNearby).toBe(true)
+			sut.switchMode('timetable')
+			expect(sut.isAllNearby).toBe(false)
+
+			// The template renders the filter row (area chip + date chip) and both
+			// of their sheets only while `isAllNearby` holds.
+			const { default: html } = await import(
+				'../../src/routes/dashboard/dashboard-route.html?raw'
+			)
+			const doc = new DOMParser().parseFromString(
+				`<body>${html}</body>`,
+				'text/html',
+			)
+			const gated = [
+				'.all-nearby-filters',
+				'user-home-selector[component\\.ref="areaSelector"]',
+				'date-range-sheet',
+			].map((selector) => doc.querySelector(selector)?.getAttribute('if.bind'))
+			expect(gated).toEqual(['isAllNearby', 'isAllNearby', 'isAllNearby'])
+			expect(
+				doc
+					.querySelector('.all-nearby-filters')
+					?.querySelectorAll('button.filter-chip'),
+			).toHaveLength(2)
+		})
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Switching modes replaces the concert list"
+		it('loads All Nearby by location and date range, then reverts to the cached timetable', async () => {
+			const timetable = [
+				{ date: 'timetable' },
+			] as unknown as typeof sut.dateGroups
+			const nearby = [{ date: 'nearby' }] as unknown as typeof sut.dateGroups
+			const proximityGroups = [{ key: 'p' }]
+			const listByLocation = vi.fn().mockResolvedValue(proximityGroups)
+			const toDateGroupsForLocation = vi.fn().mockReturnValue(nearby)
+			Object.assign(mockConcert, { listByLocation, toDateGroupsForLocation })
+			sut = buildSut()
+			sut.dateGroups = timetable
+			sut.selectedAreaCode = 'JP-13'
+			const range = { from: '2026-10-01', to: '2026-10-07' }
+			sut.allNearbyRange = range as unknown as typeof sut.allNearbyRange
+
+			sut.switchMode('allNearby')
+			await vi.waitFor(() => expect(sut.allNearbyDateGroups).toBe(nearby))
+			expect(listByLocation).toHaveBeenCalledWith(
+				expect.objectContaining({ adminArea: 'JP-13' }),
+				range.from,
+				range.to,
+				expect.any(AbortSignal),
+			)
+			expect(toDateGroupsForLocation).toHaveBeenCalledWith(proximityGroups)
+
+			const followerCalls = mockConcert.listByFollower.mock.calls.length
+			sut.switchMode('timetable')
+			expect(sut.isAllNearby).toBe(false)
+			// My Timetable comes back from what it already had, not a refetch.
+			expect(sut.dateGroups).toBe(timetable)
+			expect(mockConcert.listByFollower).toHaveBeenCalledTimes(followerCalls)
+		})
+	})
+
+	// ---- switchMode() ----
+
+	describe('switchMode', () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Header title does not change with the mode"
+		it('switches only the mode; the header title stays the route’s own', () => {
+			vi.spyOn(sut, 'loadAllNearby').mockResolvedValue()
+
+			sut.switchMode('allNearby')
+			expect(sut.viewMode).toBe('allNearby')
+			// The toggle names the other mode, so it reflects the new selection.
+			expect(sut.swapLabelKey).toBe('allNearby.modeToggle.timetable')
+
+			sut.switchMode('timetable')
+			expect(sut.viewMode).toBe('timetable')
+			expect(sut.swapLabelKey).toBe('allNearby.modeToggle.allNearby')
+
+			// The dashboard owns no header title: the shell header shows the
+			// route's configured `data.titleKey` in both modes.
+			expect('modeTitleKey' in sut).toBe(false)
+		})
+	})
+
 	describe('detaching', () => {
 		it('aborts active request', () => {
 			sut.loadData()

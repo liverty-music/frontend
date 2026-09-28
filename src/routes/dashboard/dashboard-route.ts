@@ -43,7 +43,6 @@ import {
 } from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
-import { IPageHeaderState } from '../../services/page-header-state'
 import { IPromptCoordinator } from '../../services/prompt-coordinator'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
@@ -177,7 +176,6 @@ export class DashboardRoute {
 	private readonly followStore = resolve(IFollowStore)
 	private readonly journeyStore = resolve(ITicketJourneyStore)
 	private readonly onboarding = resolve(IOnboardingService)
-	private readonly pageHeaderState = resolve(IPageHeaderState)
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
 	private readonly userStore = resolve(IUserStore)
 	private readonly storage = resolve(ILocalStorage)
@@ -893,16 +891,6 @@ export class DashboardRoute {
 
 	// --- All Nearby mode ---
 
-	/**
-	 * The page-header title for the active mode. Timetable keeps the existing
-	 * `nav.home` title (unchanged from every other page); All Nearby swaps to its
-	 * own title. Both render in the same shared page-header H1, so the dashboard
-	 * stays structurally consistent with the other routes.
-	 */
-	public get modeTitleKey(): string {
-		return this.isAllNearby ? 'allNearby.modeTitle' : 'nav.home'
-	}
-
 	/** Label for the swap control — always names the OTHER mode (the destination). */
 	public get swapLabelKey(): string {
 		return this.isAllNearby
@@ -917,9 +905,10 @@ export class DashboardRoute {
 
 	/**
 	 * Switch the dashboard view. My Timetable is never refetched on switch. The
-	 * mode change is wrapped in a View Transition so the header title morphs and
-	 * the content cross-fades; falls back to an instant swap when the API is
-	 * unavailable or the user prefers reduced motion.
+	 * header title stays the dashboard's in both modes (the toggle shows the
+	 * mode). The mode change is wrapped in a View Transition so the content
+	 * cross-fades; falls back to an instant swap when the API is unavailable or
+	 * the user prefers reduced motion.
 	 *
 	 * The callback flushes Aurelia's queued DOM writes SYNCHRONOUSLY via runTasks
 	 * and returns void — so the transition captures the new state immediately after
@@ -937,15 +926,10 @@ export class DashboardRoute {
 		).matches
 		if (!doc.startViewTransition || reduce) {
 			this.viewMode = mode
-			this.pageHeaderState.setTitle(this.modeTitleKey, { morph: true })
 			return
 		}
 		doc.startViewTransition(() => {
 			this.viewMode = mode
-			// Write the active-mode title to the shared state INSIDE the transition
-			// callback so the shell header's <h1> (stable view-transition-name) morphs
-			// as the content cross-fades. modeTitleKey derives from the just-set mode.
-			this.pageHeaderState.setTitle(this.modeTitleKey, { morph: true })
 			runTasks()
 		})
 	}

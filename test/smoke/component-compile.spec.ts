@@ -1,5 +1,5 @@
 import { I18N } from '@aurelia/i18n'
-import { IRouter } from '@aurelia/router'
+import { IRouteContext, IRouter } from '@aurelia/router'
 import { createFixture } from '@aurelia/testing'
 import { IEventAggregator, Registration } from 'aurelia'
 import { describe, it, vi } from 'vitest'
@@ -68,9 +68,31 @@ describe('Component template compilation smoke tests', () => {
 	it('BottomNavBar compiles and renders nav element', async () => {
 		const fixture = await createFixture
 			.html('<bottom-nav-bar></bottom-nav-bar>')
-			.deps(...sharedRegistrations, BottomNavBar, SvgIcon)
+			.deps(
+				...sharedRegistrations,
+				BottomNavBar,
+				SvgIcon,
+				// The bar reads its tabs from the root route context's navigation model.
+				Registration.instance(IRouteContext, {
+					routeConfigContext: {
+						navigationModel: {
+							routes: [
+								{
+									id: 'dashboard',
+									path: ['dashboard'],
+									title: null,
+									data: { icon: 'home', labelKey: 'nav.home' },
+									isActive: true,
+								},
+							],
+							resolve: () => undefined,
+						},
+					},
+				}),
+			)
 			.build().started
 
 		fixture.getBy('.nav-bar')
+		await vi.waitFor(() => fixture.assertAttr('.nav-tab', 'data-nav', 'home'))
 	})
 })

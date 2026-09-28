@@ -1,9 +1,9 @@
 <import from="./dashboard-route.css"></import>
 <import from="../../components/all-nearby/date-range-sheet"></import>
 
-<!-- The page title is owned by the shell-hosted <page-header>; the dashboard
-     writes its active-mode title (My Timetable ↔ All Nearby) to the shared
-     page-identity state in switchMode(), preserving the title morph. -->
+<!-- The page title is owned by the shell-hosted <page-header>, driven from
+     the route's data.titleKey; it stays the same in both modes (the mode
+     toggle shows which one is active). -->
 
 <!-- Filter + help surfaces stay owned by the dashboard: only their triggers
      moved to the FAB launcher, so the components render sheet-only here (their

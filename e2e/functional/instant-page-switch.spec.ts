@@ -1,41 +1,25 @@
 import { expect, type Page, test } from '../support/test'
 
 /**
- * CI guard for the instant-page-switch change.
- *
- * Page identity (the shell page-header title + the active bottom-nav tab) is
- * driven optimistically from the router's navigation-start event, so it switches
- * at navigation intent — before the incoming route's content has loaded or
- * finished its entrance transition. This test forces that gap by delaying the
- * dashboard's ListByArtists response, taps the Home tab from Discovery, and
- * asserts the tab highlight and the header title have already switched while the
- * dashboard content is still in its loading state.
+ * Page identity (the shell page-header title + the active bottom-nav tab)
+ * matches the route that is displayed. Both are read from the displayed route's
+ * configuration through the router, so they change when a navigation completes
+ * and never show a navigation that did not complete.
  *
  * Runs in the `functional` CI project (no auth — AuthHook gives guests free
- * roam); RPC is mocked so the assertion never needs a live backend.
+ * roam); RPC is mocked so the assertions never need a live backend.
  */
 
 test.use({ viewport: { width: 390, height: 700 } })
 
 async function mockRpcRoutes(page: Page): Promise<void> {
-	await page.route('**/liverty_music.rpc.**', async (route) => {
-		const url = route.request().url()
-		if (url.includes('ListByArtists')) {
-			// Hold the dashboard content back so the loading state persists long
-			// enough to prove identity switched ahead of it.
-			await new Promise((resolve) => setTimeout(resolve, 1500))
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({ groups: [] }),
-			})
-		}
-		return route.fulfill({
+	await page.route('**/liverty_music.rpc.**', (route) =>
+		route.fulfill({
 			status: 200,
 			contentType: 'application/json',
 			body: JSON.stringify({}),
-		})
-	})
+		}),
+	)
 	await page.route('**/ws.audioscrobbler.com/**', (route) =>
 		route.fulfill({
 			status: 200,
@@ -45,62 +29,148 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	)
 }
 
-test.describe('Instant page switch (guest)', () => {
-	test('tab highlight and header title switch before content settles', async ({
+/**
+ * Give the My Artists route a `canLoad` guard that refuses while
+ * `window.__blockMyArtists` is true. No product route refuses a guest, so the
+ * guard is appended to the route module the dev server serves; the rest of the
+ * app is untouched.
+ */
+async function guardMyArtists(page: Page): Promise<void> {
+	await page.route('**/src/routes/my-artists/my-artists-route.ts*', async (route) => {
+		const response = await route.fetch()
+		const body = `${await response.text()}
+MyArtistsRoute.prototype.canLoad = function () {
+	return window.__blockMyArtists !== true
+}
+`
+		await route.fulfill({ response, body })
+	})
+}
+
+async function seedGuest(page: Page): Promise<void> {
+	// A guest with a home region + one follow, so the dashboard renders without
+	// the home selector.
+	await page.addInitScript(() => {
+		localStorage.setItem('onboardingComplete', 'true')
+		localStorage.setItem('onboarding.celebrationShown', '1')
+		localStorage.setItem('guest.home', 'JP-13')
+		localStorage.setItem(
+			'guest.followedArtists',
+			JSON.stringify([
+				{
+					artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+					home: 'JP-13',
+				},
+			]),
+		)
+	})
+}
+
+const title = (page: Page) => page.locator('page-header h1')
+const tab = (page: Page, icon: string) =>
+	page.locator(`.nav-tab[data-nav="${icon}"]`)
+const activeTabs = (page: Page) => page.locator('.nav-tab[data-active="true"]')
+
+test.describe('Page identity follows the displayed route (guest)', () => {
+	test.beforeEach(async ({ page }) => {
+		await mockRpcRoutes(page)
+		await seedGuest(page)
+	})
+
+	// @spec components/infrastructure/fan/web/global/page-header "Header title and active tab match the route shown"
+	test('a tab switch shows the target route’s title and tab', async ({
 		page,
 	}) => {
-		await mockRpcRoutes(page)
-
-		// Seed a guest with a home region + one follow so the dashboard renders
-		// (unblurred, no home-selector) once its delayed data finally arrives.
-		await page.addInitScript(() => {
-			localStorage.setItem('onboardingComplete', 'true')
-			localStorage.setItem('onboarding.celebrationShown', '1')
-			localStorage.setItem('guest.home', 'JP-13')
-			localStorage.setItem(
-				'guest.followedArtists',
-				JSON.stringify([
-					{
-						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
-						home: 'JP-13',
-					},
-				]),
-			)
-		})
-
 		await page.goto('http://localhost:9000/discovery')
 		await page.waitForSelector('discovery-route', { timeout: 10_000 })
 
-		const title = page.locator('page-header h1')
-		const homeTab = page.locator('.nav-tab[data-nav="home"]')
-		const discoveryTab = page.locator('.nav-tab[data-nav="discovery"]')
+		await expect(tab(page, 'discovery')).toHaveAttribute('data-active', 'true')
+		await expect(title(page)).toHaveText('Discovery')
 
-		// Baseline: on Discovery the Discovery tab is active and the header reads
-		// "Discovery".
-		await expect(discoveryTab).toHaveAttribute('data-active', 'true')
-		await expect(title).toHaveText('Discovery')
+		await tab(page, 'home').click()
+		await page.waitForSelector('dashboard-route', { timeout: 10_000 })
 
-		// Tap Home. Its data (ListByArtists) is held back 1.5s, so the dashboard
-		// stays in its loading state.
-		await homeTab.click()
+		await expect(tab(page, 'home')).toHaveAttribute('data-active', 'true')
+		await expect(activeTabs(page)).toHaveCount(1)
+		await expect(title(page)).toHaveText('Timetable')
+	})
 
-		// Identity switches immediately: Home tab active + header title "Timetable",
-		// while the dashboard content is still loading (skeleton shown, no concert
-		// cards yet). This is the whole point — identity leads content.
-		await expect(homeTab).toHaveAttribute('data-active', 'true')
-		await expect(discoveryTab).toHaveAttribute('data-active', 'false')
-		await expect(title).toHaveText('Timetable')
-		// The placeholder is now one element per skeleton date row, so scope to the
-		// first: it is the timetable's own structure standing in for the concerts,
-		// not a single generic bar stack.
-		await expect(
-			page.locator('[data-testid="dashboard-loading"]').first(),
-		).toBeVisible()
+	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Concert deep-link highlights Home"
+	test('a concert deep-link highlights Home', async ({ page }) => {
+		await page.goto('http://localhost:9000/concerts/concert-1')
+		await page.waitForSelector('dashboard-route', { timeout: 10_000 })
 
-		// And once the delayed data resolves, the loading state clears — the content
-		// caught up to the identity that already switched.
-		await expect(
-			page.locator('[data-testid="dashboard-loading"]').first(),
-		).toBeHidden({ timeout: 10_000 })
+		await expect(tab(page, 'home')).toHaveAttribute('data-active', 'true')
+		await expect(activeTabs(page)).toHaveCount(1)
+		await expect(title(page)).toHaveText('Timetable')
+	})
+
+	// @spec components/infrastructure/fan/web/global/page-header "A failed navigation leaves identity unchanged"
+	test('a navigation blocked by a guard leaves the previous title and tab', async ({
+		page,
+	}) => {
+		await guardMyArtists(page)
+		await page.goto('http://localhost:9000/settings')
+		await page.waitForSelector('settings-route', { timeout: 10_000 })
+		await expect(title(page)).toHaveText('Settings')
+
+		// Record every change to the header and the nav bar from here on, then
+		// tap a tab whose route refuses to load.
+		await page.evaluate(() => {
+			const w = window as unknown as {
+				__blockMyArtists: boolean
+				__identityWrites: string[]
+			}
+			w.__blockMyArtists = true
+			w.__identityWrites = []
+			const inIdentity = (n: Node | null) =>
+				n instanceof Element &&
+				n.closest('page-header, bottom-nav-bar') != null
+			new MutationObserver((records) => {
+				for (const r of records) {
+					if (
+						r.type === 'attributes' ||
+						inIdentity(r.target) ||
+						inIdentity(r.target.parentElement) ||
+						[...r.addedNodes, ...r.removedNodes].some(
+							(n) => n instanceof Element && n.matches('page-header, bottom-nav-bar'),
+						)
+					) {
+						w.__identityWrites.push(r.type)
+					}
+				}
+			}).observe(document.body, {
+				subtree: true,
+				childList: true,
+				characterData: true,
+				attributes: true,
+				attributeFilter: ['data-active'],
+			})
+		})
+		await tab(page, 'my-artists').click()
+		// Let the refused navigation run its course.
+		await page.waitForTimeout(500)
+
+		await expect(page.locator('settings-route')).toBeVisible()
+		await expect(page.locator('my-artists-route')).toHaveCount(0)
+		await expect(title(page)).toHaveText('Settings')
+		await expect(tab(page, 'settings')).toHaveAttribute('data-active', 'true')
+		await expect(activeTabs(page)).toHaveCount(1)
+		// At no point did the header or the tab highlight change.
+		expect(
+			await page.evaluate(
+				() => (window as unknown as { __identityWrites: string[] }).__identityWrites,
+			),
+		).toEqual([])
+
+		// Control: once the guard allows it, the same tap switches identity.
+		await page.evaluate(() => {
+			;(window as unknown as { __blockMyArtists: boolean }).__blockMyArtists =
+				false
+		})
+		await tab(page, 'my-artists').click()
+		await page.waitForSelector('my-artists-route', { timeout: 10_000 })
+		await expect(title(page)).toHaveText('My Artists')
+		await expect(tab(page, 'my-artists')).toHaveAttribute('data-active', 'true')
 	})
 })
