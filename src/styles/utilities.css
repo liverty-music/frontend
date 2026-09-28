@@ -224,8 +224,6 @@
 		white-space: nowrap;
 
 		clip-path: inset(50%);
-
-		clip: rect(0 0 0 0);
 	}
 
 	/* ── Press feedback (M3): contact-point ripple + round↔squircle morph ──
