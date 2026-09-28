@@ -1,16 +1,17 @@
 {
   "compilerOptions": {
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
     "target": "ES2017",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "importHelpers": true,
     "sourceMap": true,
-    "baseUrl": ".",
+    "strict": false,
+    "types": ["*"],
     "paths": {
-      "plain-date-engine": ["src/lib/plain-date/date-impl.ts"]
+      "plain-date-engine": ["./src/lib/plain-date/date-impl.ts"]
     }
   },
   "include": [

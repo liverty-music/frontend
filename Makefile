@@ -5,11 +5,12 @@ lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
 	npx biome lint src admin organizer shared test
 	npx biome format src admin organizer shared test
 	npm run lint:css
-	# Invoke the project's TypeScript 5.x compiler directly. `npx tsc` is
+	# Invoke the project's own TypeScript compiler directly. `npx tsc` is
 	# ambiguous: `@aurelia/vite-plugin`'s `plugin-conventions` pulls a transitive
 	# `@typescript/typescript6` (TS 6.0) whose `tsc` bin can win the
-	# `node_modules/.bin/tsc` symlink and reject this repo's tsconfig (node10 /
-	# baseUrl are removed in TS 6). Pin to the installed `typescript` package.
+	# `node_modules/.bin/tsc` symlink, so the typecheck would silently run on a
+	# different compiler than the one pinned in package.json. Pin to the
+	# installed `typescript` package.
 	node ./node_modules/typescript/bin/tsc --noEmit
 
 ## lint-boundaries: enforce src/ <-> admin/ <-> organizer/ isolation (only shared/ crosses)
