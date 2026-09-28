@@ -21,6 +21,21 @@
       "groupName": "stylelint"
     },
     {
+      "description": "HOLD vite below 8. Two independent breaks, both seen in Renovate's Vite 8 pull request (#667). (1) Vite 8 transforms TypeScript with Oxc instead of esbuild, and Oxc does not lower native (TC39 2023-11) decorators yet — the Vite 8 migration guide says so and offers a Babel or SWC plugin as the workaround. Every Aurelia component is declared with native decorators, so this is the production build, not only the ten unit suites that failed with `SyntaxError: Invalid or unexpected token` on an inline `@customElement`. (2) Vite 8 minifies CSS with Lightning CSS, which rejects a rule in our stylesheets (`[lightningcss minify] Invalid qualified rule`), so `vite build` — and with it the E2E web server — fails. Adding a Babel/SWC pass to every build for a Vite upgrade that delivers nothing on its own was judged not worth it, especially while Vitest 5 is held too (see the next rule). REMOVE THIS RULE when Oxc lowers native decorators (then fix the Lightning CSS rejection, or set `build.cssMinify: 'esbuild'`), or when a decision is made to adopt the Babel/SWC workaround.",
+      "matchPackageNames": [
+        "vite"
+      ],
+      "allowedVersions": "<8"
+    },
+    {
+      "description": "HOLD Vitest below 5. `@storybook/addon-vitest` (10.6.0, the current Storybook 10 line) declares `vitest`, `@vitest/browser` and `@vitest/runner` as `^3.0.0 || ^4.0.0` and `@vitest/browser-playwright` as `^4.0.0`, so Renovate's Vitest 5 pull request (#669) failed `npm ci` with ERESOLVE. Vitest 5 support arrives with Storybook 11, which is still alpha. REMOVE THIS RULE when a stable `@storybook/addon-vitest` accepts Vitest 5 — Storybook 11 will likely need to move in the same pull request. cloud-provisioning has no Storybook and is already on Vitest 5; this hold is frontend-only.",
+      "matchPackageNames": [
+        "vitest",
+        "@vitest/**"
+      ],
+      "allowedVersions": "<5"
+    },
+    {
       "description": "The liverty-music schema SDK is advanced by the OpenSpec change that alters the schema, together with the code migration that change requires. `enabled: false` rather than `ignoreDeps` keeps it visible on the dependency dashboard, so a schema release whose consumers were never advanced is detectable. See design D7.",
       "matchPackageNames": [
         "@buf/liverty-music_schema.**"
