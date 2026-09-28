@@ -191,7 +191,7 @@ jobs:
       # See the E2E job for rationale — cache browsers so a slow Playwright CDN
       # can't consume the job timeout mid-download. Chromium-only key.
       - name: Cache Playwright browsers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
@@ -239,7 +239,7 @@ jobs:
       # only (re)installs the small apt --with-deps set. Key on the lockfile so
       # a @playwright/test bump invalidates it.
       - name: Cache Playwright browsers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-webkit-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
