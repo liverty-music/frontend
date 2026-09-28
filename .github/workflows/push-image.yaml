@@ -192,7 +192,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
       # No env-specific build-args: per OpenSpec archive
       # `adopt-runtime-config-for-frontend`, the bundle is env-agnostic.
@@ -470,7 +470,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
       - name: Build and Push Admin Docker Image
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
@@ -670,7 +670,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
       - name: Build and Push Organizer Docker Image
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
