@@ -1,73 +1,111 @@
+import { I18nConfiguration } from '@aurelia/i18n'
+import { IRouter, RouterConfiguration, route } from '@aurelia/router'
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
+import { CustomElement } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-// BottomNavBar resolves IPageHeaderState in its class body (its `activePath` is
-// read by the template, not by `isActive`). Stub `resolve` so `new BottomNavBar()`
-// works without a DI container; `isActive` itself is a pure function of its args.
-vi.mock('aurelia', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('aurelia')>()
-	return {
-		...actual,
-		resolve: vi.fn(() => ({ activePath: '' })),
-	}
-})
-
+import { SvgIcon } from '../svg-icon/svg-icon'
 import { BottomNavBar } from './bottom-nav-bar'
 
+const page = (name: string) =>
+	CustomElement.define({ name, template: `<p>${name}</p>` }, class {})
+// A lazily-imported route, as the app's route table declares them.
+const lazy = (name: string) => Promise.resolve({ [name]: page(name) })
+
+@route({
+	routes: [
+		{ path: '', redirectTo: 'a' },
+		{
+			path: ['a', 'a-detail/:id'],
+			component: lazy('route-a'),
+			nav: true,
+			data: { icon: 'home', labelKey: 'nav.a' },
+		},
+		{ path: 'hidden', component: lazy('route-hidden'), nav: false },
+		{
+			path: 'b',
+			component: page('route-b'),
+			nav: true,
+			data: { icon: 'settings', labelKey: 'nav.b' },
+		},
+	],
+})
+class Root {}
+
 describe('BottomNavBar', () => {
-	let sut: BottomNavBar
+	let fixture: Awaited<ReturnType<typeof createFixture>['started']>
+	let router: IRouter
 
-	beforeEach(() => {
-		sut = new BottomNavBar()
+	const tabs = () => [...fixture.appHost.querySelectorAll('a.nav-tab')]
+
+	beforeEach(async () => {
+		window.history.replaceState(null, '', '/')
+		fixture = await createFixture(
+			'<au-viewport></au-viewport><bottom-nav-bar></bottom-nav-bar>',
+			Root,
+			[
+				RouterConfiguration,
+				I18nConfiguration.customize((options) => {
+					options.initOptions = {
+						lng: 'en',
+						resources: { en: { translation: {} } },
+						fallbackLng: 'en',
+					}
+				}),
+				BottomNavBar,
+				SvgIcon,
+			],
+		).started
+		router = fixture.container.get(IRouter)
+		await vi.waitFor(() => expect(tabs()).toHaveLength(2))
 	})
 
-	afterEach(() => {
-		vi.restoreAllMocks()
+	afterEach(async () => {
+		await fixture.stop(true)
 	})
 
-	describe('tabs', () => {
-		it('has 5 navigation tabs', () => {
-			expect(sut.tabs).toHaveLength(5)
-		})
-
-		it('includes dashboard, discovery, my-artists, tickets, settings', () => {
-			const paths = sut.tabs.map((t) => t.path)
-			expect(paths).toEqual([
-				'dashboard',
-				'discovery',
-				'my-artists',
-				'tickets',
-				'settings',
-			])
-		})
+	it('renders one tab per `nav: true` route, in route order', () => {
+		expect(tabs().map((t) => t.getAttribute('data-nav'))).toEqual([
+			'home',
+			'settings',
+		])
 	})
 
-	// `isActive(path, activePath)` is a pure comparison of the tab path against the
-	// shared state's `activePath` (with the existing sub-path highlight rules).
-	describe('isActive', () => {
-		it('is true for the exact-matching tab path', () => {
-			expect(sut.isActive('dashboard', 'dashboard')).toBe(true)
-		})
+	it('links each tab to its route’s first path', () => {
+		expect(
+			tabs().map((t) => new URL(t.getAttribute('href') ?? '').pathname),
+		).toEqual(['/a', '/b'])
+	})
 
-		it('is false for a non-matching tab path', () => {
-			expect(sut.isActive('settings', 'dashboard')).toBe(false)
-		})
+	it('renders the icon and label from the route data', () => {
+		const [first] = tabs()
+		const icon = CustomElement.for<SvgIcon>(
+			first.querySelector('svg-icon') as HTMLElement,
+		)
+		expect(icon.viewModel.name).toBe('home')
+		expect(first.querySelector('.nav-label')?.textContent).toBe('nav.a')
+	})
 
-		it('highlights dashboard for a concerts/ sub-path', () => {
-			expect(sut.isActive('dashboard', 'concerts/abc-123')).toBe(true)
-		})
+	it('binds data-active to the router’s isActive, including a second path', async () => {
+		await router.load('b')
+		await tasksSettled()
+		expect(tabs().map((t) => t.getAttribute('data-active'))).toEqual([
+			'false',
+			'true',
+		])
 
-		it('highlights the owning tab for a sub-path', () => {
-			expect(sut.isActive('my-artists', 'my-artists/detail')).toBe(true)
-		})
+		await router.load('a-detail/1')
+		await tasksSettled()
+		expect(tabs().map((t) => t.getAttribute('data-active'))).toEqual([
+			'true',
+			'false',
+		])
 
-		it('is false for every tab when no path is active', () => {
-			expect(sut.tabs.every((t) => !sut.isActive(t.path, ''))).toBe(true)
-		})
-
-		it('reflects a change of the active path', () => {
-			expect(sut.isActive('dashboard', 'dashboard')).toBe(true)
-			expect(sut.isActive('dashboard', 'discovery')).toBe(false)
-			expect(sut.isActive('discovery', 'discovery')).toBe(true)
-		})
+		await router.load('hidden')
+		await tasksSettled()
+		expect(tabs().map((t) => t.getAttribute('data-active'))).toEqual([
+			'false',
+			'false',
+		])
 	})
 })

@@ -16,13 +16,8 @@ const meta = {
 			control: 'text',
 			description: 'i18n key resolved into the H1 via the `t` binding.',
 		},
-		morphTitle: {
-			control: 'boolean',
-			description:
-				'Give the H1 a stable view-transition-name for cross-page title morphing.',
-		},
 	},
-	args: { titleKey: 'entity.artist.label', morphTitle: false },
+	args: { titleKey: 'entity.artist.label' },
 } satisfies Meta<typeof PageHeader>
 
 export default meta
@@ -53,7 +48,7 @@ export const WithSlottedAction = {
 	render: (args) =>
 		defineAureliaStory({
 			template: `
-				<page-header title-key.bind="titleKey" morph-title.bind="morphTitle">
+				<page-header title-key.bind="titleKey">
 					<button type="button">Filter</button>
 				</page-header>
 			`,

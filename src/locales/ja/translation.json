@@ -676,8 +676,7 @@
 		"follow": {
 			"action": "このアーティストをフォロー",
 			"following": "フォロー中"
-		},
-		"modeTitle": "近くのライブ"
+		}
 	},
 	"fabMenu": {
 		"toggleAriaLabel": "アクションメニュー",

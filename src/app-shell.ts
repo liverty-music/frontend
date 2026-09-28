@@ -1,23 +1,33 @@
-import { IRouter, IRouterEvents, route } from '@aurelia/router'
+import { ICurrentRoute, IRouter, IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFabMenuService } from './services/fab-menu-service'
 import { IOnboardingService } from './services/onboarding-service'
-import {
-	IPageHeaderState,
-	type PageIdentity,
-} from './services/page-header-state'
 import { IPromptCoordinator } from './services/prompt-coordinator'
 import { IPwaInstallService } from './services/pwa-install-service'
 
-// Route table hoisted to a module-level const so both the `@route` decorator and
-// the optimistic navigation-start resolver read the same definitions. Per-route
-// page identity is colocated here as `data.titleKey` (the i18n key the shell
-// header renders) and, for the dashboard, `data.morphTitle` (opt-in title
-// View-Transition morph); routes without a `titleKey` render no header.
-const routes = [
+/**
+ * Shell-owned route data. Page identity lives here and nowhere else: the shell
+ * header renders `titleKey` (routes without one render no header), and a route
+ * with `nav: true` is a bottom-nav tab rendered from the router's navigation
+ * model with `icon` / `labelKey`. `chrome: false` hides the header, nav bar and
+ * other shell chrome (welcome, auth callback).
+ */
+export interface ShellRouteData {
+	auth?: boolean
+	chrome?: boolean
+	titleKey?: string
+	icon?: string
+	labelKey?: string
+}
+
+// Route table. The router's `nav` defaults to true, so `withNavDefault` below
+// flips it: only the five tab routes opt in with `nav: true`, and the bottom
+// nav shows them in their order here (Home, Discovery, My Artists, Tickets,
+// Settings).
+const routeTable = [
 	{
 		path: '',
 		redirectTo: 'welcome',
@@ -26,7 +36,7 @@ const routes = [
 		path: 'welcome',
 		component: import('./routes/welcome/welcome-route'),
 		title: 'Welcome',
-		data: { auth: false, nav: false },
+		data: { auth: false, chrome: false },
 	},
 	{
 		path: 'about',
@@ -38,34 +48,41 @@ const routes = [
 		path: 'auth/callback',
 		component: import('./routes/auth-callback/auth-callback-route'),
 		title: 'Signing In',
-		data: { auth: false, nav: false },
+		data: { auth: false, chrome: false },
 	},
 	{
-		path: 'dashboard',
+		// `concerts/:id` is a deep-link into the same dashboard (it opens the
+		// concert's detail sheet), so it is a second path of this route: the
+		// navigation model then highlights Home for it with no special case.
+		id: 'dashboard',
+		path: ['dashboard', 'concerts/:id'],
 		component: import('./routes/dashboard/dashboard-route'),
 		title: 'Dashboard',
-		// morphTitle: the dashboard swaps its title in place (My Timetable ↔ All
-		// Nearby), so the shell header keeps a stable view-transition-name here.
-		data: { titleKey: 'nav.home', morphTitle: true },
-	},
-	{
-		path: 'concerts/:id',
-		component: import('./routes/dashboard/dashboard-route'),
-		title: 'Concert',
-		// Reuses the dashboard component, so it shares the dashboard's identity.
-		data: { titleKey: 'nav.home', morphTitle: true },
+		nav: true,
+		data: { titleKey: 'nav.home', icon: 'home', labelKey: 'nav.home' },
 	},
 	{
 		path: 'discovery',
 		component: import('./routes/discovery/discovery-route'),
 		title: 'Discovery',
-		data: { auth: false, titleKey: 'nav.discovery' },
+		nav: true,
+		data: {
+			auth: false,
+			titleKey: 'nav.discovery',
+			icon: 'discovery',
+			labelKey: 'nav.discovery',
+		},
 	},
 	{
 		path: 'my-artists',
 		component: import('./routes/my-artists/my-artists-route'),
 		title: 'My Artists',
-		data: { titleKey: 'nav.myArtists' },
+		nav: true,
+		data: {
+			titleKey: 'nav.myArtists',
+			icon: 'my-artists',
+			labelKey: 'nav.myArtists',
+		},
 	},
 	{
 		path: 'consent',
@@ -75,12 +92,6 @@ const routes = [
 		// of the onboarding step machine (removed); consent application logic
 		// is unchanged and lives in ConsentService.
 		data: { auth: false },
-	},
-	{
-		path: 'settings',
-		component: import('./routes/settings/settings-route'),
-		title: 'Settings',
-		data: { titleKey: 'nav.settings' },
 	},
 	// PocketSign Stamp callback (identity-ekyc-jpki, Stamp redirect flow).
 	// The PocketSign app returns here after the fan reads their card. Auth is
@@ -127,7 +138,20 @@ const routes = [
 		path: 'tickets',
 		component: import('./routes/tickets/tickets-route'),
 		title: 'My Tickets',
-		data: { titleKey: 'nav.tickets' },
+		nav: true,
+		// Uses the existing 'ticket' icon (svg-icon.html case="ticket").
+		data: { titleKey: 'nav.tickets', icon: 'ticket', labelKey: 'nav.tickets' },
+	},
+	{
+		path: 'settings',
+		component: import('./routes/settings/settings-route'),
+		title: 'Settings',
+		nav: true,
+		data: {
+			titleKey: 'nav.settings',
+			icon: 'settings',
+			labelKey: 'nav.settings',
+		},
 	},
 	// Order detail (roadmap ⑤, §5.1/§5.2). Authenticated by default — the order
 	// must belong to the caller (non-revealing NotFound otherwise). Reached by
@@ -165,47 +189,20 @@ const routes = [
 ]
 
 /**
- * Normalize a router path to a bare route path: drop a leading slash and any
- * query string / fragment, leaving e.g. `dashboard` or `concerts/abc-123`.
+ * Apply the shell's `nav: false` default, so a route is a bottom-nav tab only
+ * when it says so (the router's own default is `nav: true`). Redirects are left
+ * as they are: the router accepts only `path` / `redirectTo` on them, and keeps
+ * them out of the navigation model anyway.
  */
-function normalizePath(path: string): string {
-	return path.replace(/^\//, '').split(/[?#]/)[0]
+function withNavDefault<T extends { nav?: boolean; redirectTo?: string }>(
+	table: T[],
+): T[] {
+	return table.map((r) =>
+		r.redirectTo === undefined ? { nav: false, ...r } : r,
+	)
 }
 
-/**
- * Match a concrete path against a configured route pattern, treating `:param`
- * segments as wildcards (e.g. `concerts/:id` matches `concerts/abc-123`).
- */
-function pathMatches(pattern: string, actual: string): boolean {
-	if (pattern === actual) return true
-	const p = pattern.split('/')
-	const a = actual.split('/')
-	if (p.length !== a.length) return false
-	return p.every((seg, i) => seg.startsWith(':') || seg === a[i])
-}
-
-/**
- * Optimistic page identity for a navigation-start target path: the target
- * route's `data.titleKey` / `data.morphTitle` and the (normalized) path used to
- * compute the active nav tab. A path with no configured `titleKey` (legal,
- * about, not-found, …) resolves to an empty title, so the shell renders no
- * header — matching the pre-change behavior on those routes.
- */
-export function resolvePageIdentity(path: string): PageIdentity {
-	const clean = normalizePath(path)
-	for (const r of routes) {
-		const data = (r as { data?: { titleKey?: string; morphTitle?: boolean } })
-			.data
-		if (data?.titleKey && pathMatches(r.path, clean)) {
-			return {
-				titleKey: data.titleKey,
-				morphTitle: data.morphTitle === true,
-				activePath: clean,
-			}
-		}
-	}
-	return { titleKey: '', morphTitle: false, activePath: clean }
-}
+export const routes = withNavDefault(routeTable)
 
 @route({
 	title: 'Liverty Music',
@@ -222,9 +219,8 @@ export class AppShell {
 	// instance and gates its visibility on `showNav && actions.length`.
 	public readonly fabMenu = resolve(IFabMenuService)
 	private readonly errorBoundary = resolve(IErrorBoundaryService)
-	// Shared page-identity state driven from the router lifecycle below and read
-	// by the shell-hosted <page-header> and the bottom nav bar.
-	public readonly pageHeader = resolve(IPageHeaderState)
+	// The router's record of the displayed route, updated on navigation-end.
+	private readonly currentRoute = resolve(ICurrentRoute)
 	private readonly logger = resolve(ILogger).scopeTo('AppShell')
 
 	// Eagerly construct PwaInstallService so its `beforeinstallprompt` listener
@@ -244,22 +240,24 @@ export class AppShell {
 		return this.promptCoordinator.isPostSignupSurfaceOpen
 	}
 
-	// Updated on every navigation-end via route data `nav: false`.
+	/**
+	 * i18n key of the displayed route's header title (`data.titleKey`), or empty
+	 * for a route without one (legal, about, the not-found fallback), which then
+	 * renders no header. Read from the router's current route, so it changes
+	 * only when a navigation completes.
+	 */
+	public get titleKey(): string {
+		const data = this.currentRoute.parameterInformation[0]?.config?.data as
+			| ShellRouteData
+			| undefined
+		return data?.titleKey ?? ''
+	}
+
+	// Updated on every navigation-end via route data `chrome: false`.
 	// Defaults to true so authenticated routes show the nav bar immediately.
 	public showNav = true
 
 	public binding(): void {
-		// Optimistic: switch page identity at navigation intent, from the target
-		// route, so the header title and active tab move before the incoming route
-		// module loads and its entrance transition begins.
-		this.subscriptions.push(
-			this.routerEvents.subscribe('au:router:navigation-start', (event) => {
-				this.pageHeader.setOptimistic(
-					resolvePageIdentity(event.instructions.toPath()),
-				)
-			}),
-		)
-
 		this.subscriptions.push(
 			this.routerEvents.subscribe('au:router:navigation-error', (event) => {
 				this.logger.error('Navigation error', { event })
@@ -267,45 +265,17 @@ export class AppShell {
 					event.error ?? 'Navigation failed',
 					'router:navigation-error',
 				)
-				// Restore the last confirmed identity so the header title and active
-				// tab keep matching the route that remains displayed.
-				this.pageHeader.rollback()
 			}),
 		)
 
 		this.subscriptions.push(
 			this.routerEvents.subscribe('au:router:navigation-end', () => {
 				const node = this.router.routeTree.root.children[0]
-				this.showNav = node?.data?.nav !== false
+				this.showNav = (node?.data as ShellRouteData)?.chrome !== false
 				const name = node?.path ?? 'unknown'
 				this.errorBoundary.addBreadcrumb('navigation', name)
-				// Authoritative reconcile: overrides the optimistic guess so redirects,
-				// the not-found fallback, and dynamic titles are reflected correctly.
-				this.pageHeader.confirm(this.identityFromNode(node))
 			}),
 		)
-	}
-
-	/**
-	 * Resolve the confirmed page identity from the current route node: the route's
-	 * `data.titleKey` / `data.morphTitle` and its absolute path. A node without a
-	 * `titleKey` (legal, about, fallback, …) yields an empty title, so the shell
-	 * renders no header for it.
-	 */
-	private identityFromNode(
-		node:
-			| {
-					data?: { titleKey?: string; morphTitle?: boolean; nav?: boolean }
-					computeAbsolutePath?: () => string
-			  }
-			| undefined,
-	): PageIdentity {
-		const data = node?.data ?? {}
-		return {
-			titleKey: data.titleKey ?? '',
-			morphTitle: data.morphTitle === true,
-			activePath: node?.computeAbsolutePath?.() ?? '',
-		}
 	}
 
 	public unbinding(): void {

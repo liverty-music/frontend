@@ -1,43 +1,30 @@
+import { type INavigationRoute, IRouteContext } from '@aurelia/router'
 import { resolve } from 'aurelia'
-import { IPageHeaderState } from '../../services/page-header-state'
 
-interface NavTab {
-	path: string
-	labelKey: string
-	icon: string
-}
-
-const tabs: NavTab[] = [
-	{ path: 'dashboard', labelKey: 'nav.home', icon: 'home' },
-	{ path: 'discovery', labelKey: 'nav.discovery', icon: 'discovery' },
-	{ path: 'my-artists', labelKey: 'nav.myArtists', icon: 'my-artists' },
-	// Uses the existing 'ticket' icon (svg-icon.html case="ticket").
-	{ path: 'tickets', labelKey: 'nav.tickets', icon: 'ticket' },
-	{ path: 'settings', labelKey: 'nav.settings', icon: 'settings' },
-]
-
+/**
+ * The bottom navigation bar. Its tabs are the shell routes marked `nav: true`,
+ * rendered from the router's navigation model in route-table order; each tab's
+ * icon and label come from the route's `data.icon` / `data.labelKey`, and the
+ * highlight is the router's own `isActive` for that route (so a second path of a
+ * tab route, e.g. `concerts/:id` on Home, highlights it too).
+ */
 export class BottomNavBar {
-	public readonly tabs = tabs
+	// The bar sits beside the shell's <au-viewport>, so this is the root route
+	// context, whose navigation model holds the top-level routes.
+	private readonly routeContext = resolve(IRouteContext)
 
-	// Active-tab highlight is derived from the shared page-identity state's
-	// `activePath`, which the shell sets optimistically at navigation intent — so
-	// the highlight is instant (it no longer waits on router route-tree
-	// processing). Public so the template reads `pageHeader.activePath` directly:
-	// the `data-active` binding then observes that observable and re-renders on
-	// every change. (Passing it INTO `isActive` is deliberate — Aurelia only
-	// tracks property reads that appear in the template expression, not ones
-	// buried inside a method body, so the read must be in the binding.)
-	public readonly pageHeader = resolve(IPageHeaderState)
+	/** Tab routes, available once the lazily-imported route configs resolve. */
+	public tabs: readonly INavigationRoute[] = []
 
-	/**
-	 * Whether `path`'s tab should be highlighted for the given `activePath`. A pure
-	 * function of its arguments (keeping the sub-path highlight rules, e.g.
-	 * `concerts/:id` highlights Home) — no router, no injected-state read.
-	 */
-	public isActive(path: string, activePath: string): boolean {
-		if (path === 'dashboard') {
-			return activePath === 'dashboard' || activePath.startsWith('concerts/')
-		}
-		return activePath === path || activePath.startsWith(`${path}/`)
+	public binding(): void {
+		const model = this.routeContext.routeConfigContext.navigationModel
+		if (model === null) return
+		// The model reserves a placeholder slot per lazily-imported route until it
+		// resolves; read the routes only once all are in. Routing itself waits on
+		// the same resolution before the first navigation, so this does not delay
+		// the tabs past the first route.
+		void Promise.resolve(model.resolve()).then(() => {
+			this.tabs = model.routes
+		})
 	}
 }

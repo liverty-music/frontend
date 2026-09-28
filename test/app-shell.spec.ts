@@ -1,85 +1,81 @@
 import { I18nConfiguration } from '@aurelia/i18n'
-import { IRouter, IRouterEvents } from '@aurelia/router'
-import { DI, Registration } from 'aurelia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { IRouter, RouterConfiguration } from '@aurelia/router'
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
+import { CustomElement, Registration } from 'aurelia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppShell } from '../src/app-shell'
+import { BottomNavBar } from '../src/components/bottom-nav-bar/bottom-nav-bar'
+import { PageHeader } from '../src/components/page-header/page-header'
+import { SvgIcon } from '../src/components/svg-icon/svg-icon'
 import { IAuthService } from '../src/services/auth-service'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
 import { IOnboardingService } from '../src/services/onboarding-service'
-import { IPageHeaderState } from '../src/services/page-header-state'
 import { IPwaInstallService } from '../src/services/pwa-install-service'
+import { myArtistsGuard } from './helpers/route-stubs'
 
-// Mock dynamic imports used by the @route decorator on AppShell.
-// Route modules are mocked to prevent vitest from loading the full
-// component dependency tree (template convention → child CEs → resolve(INode)).
-vi.mock('../src/routes/welcome/welcome-route', () => ({
-	WelcomeRoute: class WelcomeRoute {},
+// Route modules are replaced by one-element stubs so the real router can load
+// and display them without each route's full component tree.
+const { stub } = vi.hoisted(() => ({
+	stub: (name: string) => () =>
+		import('./helpers/route-stubs').then((m) => m.routeModule(name)),
 }))
-vi.mock('../src/routes/about/about-route', () => ({
-	AboutRoute: class AboutRoute {},
-}))
-vi.mock('../src/routes/auth-callback/auth-callback-route', () => ({
-	AuthCallbackRoute: class AuthCallbackRoute {},
-}))
-vi.mock('../src/routes/dashboard/dashboard-route', () => ({
-	DashboardRoute: class DashboardRoute {},
-}))
-vi.mock('../src/routes/discovery/discovery-route', () => ({
-	DiscoveryRoute: class DiscoveryRoute {},
-}))
-vi.mock('../src/routes/my-artists/my-artists-route', () => ({
-	MyArtistsRoute: class MyArtistsRoute {},
-}))
-vi.mock('../src/routes/settings/settings-route', () => ({
-	SettingsRoute: class SettingsRoute {},
-}))
-vi.mock('../src/routes/consent/consent-route', () => ({
-	ConsentRoute: class ConsentRoute {},
-}))
-vi.mock('../src/routes/verify-callback/verify-callback-route', () => ({
-	VerifyCallbackRoute: class VerifyCallbackRoute {},
-}))
-vi.mock('../src/routes/lottery-apply/lottery-apply-route', () => ({
-	LotteryApplyRoute: class LotteryApplyRoute {},
-}))
-vi.mock('../src/routes/lottery-application/lottery-application-route', () => ({
-	LotteryApplicationRoute: class LotteryApplicationRoute {},
-}))
-vi.mock('../src/routes/legal/terms-route', () => ({
-	TermsRoute: class TermsRoute {},
-}))
-vi.mock('../src/routes/legal/privacy-route', () => ({
-	PrivacyRoute: class PrivacyRoute {},
-}))
-vi.mock('../src/routes/legal/licenses-route', () => ({
-	LicensesRoute: class LicensesRoute {},
-}))
-vi.mock('../src/routes/tickets/tickets-route', () => ({
-	TicketsRoute: class TicketsRoute {},
-}))
-vi.mock('../src/routes/order/order-route', () => ({
-	OrderRoute: class OrderRoute {},
-}))
-vi.mock('../src/routes/not-found/not-found-route', () => ({
-	NotFoundRoute: class NotFoundRoute {},
-}))
+vi.mock('../src/routes/welcome/welcome-route', stub('WelcomeRoute'))
+vi.mock('../src/routes/about/about-route', stub('AboutRoute'))
+vi.mock(
+	'../src/routes/auth-callback/auth-callback-route',
+	stub('AuthCallbackRoute'),
+)
+vi.mock('../src/routes/dashboard/dashboard-route', stub('DashboardRoute'))
+vi.mock('../src/routes/discovery/discovery-route', stub('DiscoveryRoute'))
+vi.mock('../src/routes/my-artists/my-artists-route', stub('MyArtistsRoute'))
+vi.mock('../src/routes/settings/settings-route', stub('SettingsRoute'))
+vi.mock('../src/routes/consent/consent-route', stub('ConsentRoute'))
+vi.mock(
+	'../src/routes/verify-callback/verify-callback-route',
+	stub('VerifyCallbackRoute'),
+)
+vi.mock(
+	'../src/routes/lottery-apply/lottery-apply-route',
+	stub('LotteryApplyRoute'),
+)
+vi.mock(
+	'../src/routes/lottery-application/lottery-application-route',
+	stub('LotteryApplicationRoute'),
+)
+vi.mock('../src/routes/legal/terms-route', stub('TermsRoute'))
+vi.mock('../src/routes/legal/privacy-route', stub('PrivacyRoute'))
+vi.mock('../src/routes/legal/licenses-route', stub('LicensesRoute'))
+vi.mock('../src/routes/tickets/tickets-route', stub('TicketsRoute'))
+vi.mock('../src/routes/order/order-route', stub('OrderRoute'))
+vi.mock('../src/routes/not-found/not-found-route', stub('NotFoundRoute'))
 
+const PAGE_HEADER = 'page-header'
+const BOTTOM_NAV = 'bottom-nav-bar'
+
+/**
+ * Renders the real AppShell (template, route table and fallback) under the
+ * real router. These are the assertions an Aurelia upgrade would most
+ * plausibly break — template compilation, `if.bind` evaluation, viewport
+ * registration and the router's navigation model — and Aurelia automerge is
+ * gated on them (OpenSpec change `automate-dependency-updates`, design D17).
+ * Do not re-skip.
+ */
 describe('app-shell', () => {
-	/**
-	 * Renders the real AppShell template through Aurelia. These are the
-	 * assertions an Aurelia upgrade would most plausibly break — template
-	 * compilation, `if.bind` evaluation and viewport registration — and
-	 * Aurelia automerge is gated on them (OpenSpec change
-	 * `automate-dependency-updates`, design D17). Do not re-skip.
-	 */
-	describe('shell rendering', () => {
-		async function renderShell() {
-			const { createFixture } = await import('@aurelia/testing')
-			const fixture = createFixture('<app-shell></app-shell>', {}, [
-				AppShell,
+	let fixture: Awaited<ReturnType<typeof renderShell>>
+	let router: IRouter
+	let captureError: ReturnType<typeof vi.fn>
+
+	async function renderShell() {
+		captureError = vi.fn()
+		const shell = createFixture(
+			CustomElement.getDefinition(AppShell).template as string,
+			AppShell,
+			[
+				RouterConfiguration,
 				// Child CEs in the shell template (error-banner, snack-bar, …)
-				// resolve I18N at construction, so the real plugin must be
-				// registered for the shell to hydrate at all.
+				// resolve I18N at construction, so the real plugin is registered;
+				// with no resources `t` renders the key itself.
 				I18nConfiguration.customize((options) => {
 					options.initOptions = {
 						lng: 'en',
@@ -88,17 +84,11 @@ describe('app-shell', () => {
 						interpolation: { escapeValue: false },
 					}
 				}),
-				IPageHeaderState,
-				Registration.instance(IRouter, {
-					get routeTree() {
-						return { root: { children: [] } }
-					},
-				} as unknown as IRouter),
-				Registration.instance(IRouterEvents, {
-					subscribe: vi.fn(() => ({ dispose: vi.fn() })),
-				}),
+				BottomNavBar,
+				PageHeader,
+				SvgIcon,
 				Registration.instance(IErrorBoundaryService, {
-					captureError: vi.fn(),
+					captureError,
 					addBreadcrumb: vi.fn(),
 				}),
 				Registration.instance(IAuthService, { isAuthenticated: false }),
@@ -111,180 +101,217 @@ describe('app-shell', () => {
 					spotlightMessage: '',
 					spotlightRadius: '12px',
 				}),
+				// AppShell eagerly resolves IPwaInstallService; a stub keeps DI from
+				// constructing the real one, which reads `window.matchMedia`.
 				Registration.instance(IPwaInstallService, { canShowFab: false }),
-			])
-			await fixture.started
-			return fixture
-		}
+			],
+		)
+		await shell.started
+		return shell
+	}
 
-		it('renders the routing viewport', async () => {
-			const fixture = await renderShell()
-			expect(fixture.appHost.querySelector('au-viewport')).not.toBeNull()
-			await fixture.stop(true)
+	async function go(path: string): Promise<void> {
+		await router.load(path).catch(() => undefined)
+		await tasksSettled()
+	}
+
+	const host = () => fixture.appHost
+	const displayedRoute = () =>
+		host().querySelector('au-viewport [data-route]')?.getAttribute('data-route')
+	const headerTitle = () =>
+		host().querySelector(`${PAGE_HEADER} h1`)?.textContent ?? null
+	const activeTabs = () =>
+		[...host().querySelectorAll(`${BOTTOM_NAV} [data-active="true"]`)].map(
+			(a) => a.getAttribute('data-nav'),
+		)
+
+	/** Whether `action` changes anything in the page header or the nav bar. */
+	async function identityWritesDuring(action: () => Promise<void>) {
+		const writes: MutationRecord[] = []
+		const observer = new MutationObserver((records) => writes.push(...records))
+		observer.observe(host(), {
+			subtree: true,
+			childList: true,
+			characterData: true,
+			attributes: true,
+			attributeFilter: ['data-active'],
+		})
+		await action()
+		writes.push(...observer.takeRecords())
+		observer.disconnect()
+		const isIdentity = (n: Node | null): boolean =>
+			n instanceof Element && n.closest(`${PAGE_HEADER}, ${BOTTOM_NAV}`) != null
+		return writes.some(
+			(r) =>
+				r.type === 'attributes' ||
+				isIdentity(r.target) ||
+				isIdentity(r.target.parentElement) ||
+				[...r.addedNodes, ...r.removedNodes].some(isIdentity),
+		)
+	}
+
+	beforeEach(async () => {
+		window.history.replaceState(null, '', '/')
+		myArtistsGuard.allow = true
+		myArtistsGuard.fail = false
+		fixture = await renderShell()
+		router = fixture.container.get(IRouter)
+	})
+
+	afterEach(async () => {
+		await fixture.stop(true)
+	})
+
+	describe('shell rendering', () => {
+		it('renders the routing viewport', () => {
+			expect(host().querySelector('au-viewport')).not.toBeNull()
 		})
 
-		it('renders the navigation bar when showNav is true', async () => {
-			const fixture = await renderShell()
-			expect(fixture.appHost.querySelector('bottom-nav-bar')).not.toBeNull()
-			await fixture.stop(true)
+		it('renders the navigation bar when the route shows chrome', async () => {
+			await go('discovery')
+			expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
 		})
 	})
 
-	describe('router wiring', () => {
-		type EventHandler = (event?: unknown) => void
-		let handlers: Map<string, EventHandler>
-		let mockRouteTree: {
-			root: {
-				children: Array<{
-					data: Record<string, unknown>
-					path?: string
-					computeAbsolutePath?: () => string
-				}>
-			}
-		}
-		let container: ReturnType<typeof DI.createContainer>
-		let sut: AppShell
-		let pageHeader: IPageHeaderState
-
-		/** Fire navigation-end with the given resolved route node. */
-		function simulateNavigation(
-			data?: Record<string, unknown>,
-			absolutePath = '',
-		) {
-			mockRouteTree.root.children = [
-				{ data: data ?? {}, computeAbsolutePath: () => absolutePath },
-			]
-			handlers.get('au:router:navigation-end')?.()
-		}
-
-		/** Fire navigation-start with a target path (via the instruction tree). */
-		function simulateNavigationStart(targetPath: string) {
-			handlers.get('au:router:navigation-start')?.({
-				instructions: { toPath: () => targetPath },
-			})
-		}
-
-		beforeEach(() => {
-			handlers = new Map()
-			mockRouteTree = { root: { children: [] } }
-			container = DI.createContainer()
-			container.register(
-				IPageHeaderState,
-				Registration.instance(IRouter, {
-					get routeTree() {
-						return mockRouteTree
-					},
-				} as unknown as IRouter),
-				Registration.instance(IRouterEvents, {
-					subscribe: vi.fn((event: string, handler: EventHandler) => {
-						handlers.set(event, handler)
-						return { dispose: vi.fn() }
-					}),
-				}),
-				Registration.instance(IErrorBoundaryService, {
-					captureError: vi.fn(),
-					addBreadcrumb: vi.fn(),
-				}),
-				Registration.instance(IAuthService, {
-					isAuthenticated: false,
-				}),
-				Registration.instance(IOnboardingService, {
-					isOnboarding: false,
-					isCompleted: false,
-					currentStep: 'lp',
-					spotlightActive: false,
-					spotlightTarget: '',
-					spotlightMessage: '',
-					spotlightRadius: '12px',
-				}),
-				// AppShell eagerly resolves IPwaInstallService in its class body
-				// (to register the `beforeinstallprompt` listener before routing).
-				// Register a stub so DI does not jit-construct the real service,
-				// whose constructor reads `window.matchMedia` (absent in jsdom).
-				Registration.instance(IPwaInstallService, {
-					canShowFab: false,
-				}),
-			)
-			container.register(AppShell)
-			sut = container.get(AppShell)
-			pageHeader = container.get(IPageHeaderState)
-			sut.binding()
+	describe('chrome', () => {
+		it.each([
+			'welcome',
+			'auth/callback',
+		])('hides the header and nav bar on %s (data.chrome: false)', async (path) => {
+			await go('discovery')
+			await go(path)
+			expect(host().querySelector(BOTTOM_NAV)).toBeNull()
+			expect(host().querySelector(PAGE_HEADER)).toBeNull()
 		})
 
-		describe('showNav', () => {
-			it('defaults to true before first navigation', () => {
-				expect(sut.showNav).toBe(true)
-			})
+		it('shows the nav bar again when leaving a chrome-less route', async () => {
+			await go('welcome')
+			await go('settings')
+			expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
+		})
+	})
 
-			it('returns false for routes with nav: false (welcome, auth/callback)', () => {
-				simulateNavigation({ auth: false, nav: false })
-				expect(sut.showNav).toBe(false)
-			})
+	describe('page identity', () => {
+		// @spec components/infrastructure/fan/web/global/page-header "Header title and active tab match the route shown"
+		it('shows the displayed tab route’s title and highlights its tab', async () => {
+			await go('settings')
+			expect(headerTitle()).toBe('nav.settings')
+			expect(activeTabs()).toEqual(['settings'])
 
-			it('returns true when nav is not set (discovery, dashboard, etc.)', () => {
-				simulateNavigation({ auth: false })
-				expect(sut.showNav).toBe(true)
-			})
+			await go('my-artists')
+			expect(headerTitle()).toBe('nav.myArtists')
+			expect(activeTabs()).toEqual(['my-artists'])
 
-			it('returns true when nav is explicitly true', () => {
-				simulateNavigation({ nav: true })
-				expect(sut.showNav).toBe(true)
-			})
-
-			it('returns true for routes with no data', () => {
-				simulateNavigation()
-				expect(sut.showNav).toBe(true)
-			})
-
-			it('toggles correctly across navigations', () => {
-				simulateNavigation({ nav: false })
-				expect(sut.showNav).toBe(false)
-				simulateNavigation({ auth: false })
-				expect(sut.showNav).toBe(true)
-			})
+			await go('dashboard')
+			expect(headerTitle()).toBe('nav.home')
+			expect(activeTabs()).toEqual(['home'])
 		})
 
-		describe('page identity', () => {
-			it('sets the state optimistically on navigation-start', () => {
-				simulateNavigationStart('settings')
-				expect(pageHeader.titleKey).toBe('nav.settings')
-				expect(pageHeader.activePath).toBe('settings')
-			})
+		// @spec components/infrastructure/fan/web/global/page-header "A failed navigation leaves identity unchanged"
+		it.each([
+			[
+				'cancelled by a guard',
+				() => {
+					myArtistsGuard.allow = false
+				},
+			],
+			[
+				'failed in a guard',
+				() => {
+					myArtistsGuard.fail = true
+				},
+			],
+		])('keeps the previous identity when the navigation is %s', async (_, block) => {
+			await go('settings')
+			block()
 
-			it('resolves the dashboard identity (with morph) from a concerts sub-path', () => {
-				simulateNavigationStart('concerts/abc-123')
-				expect(pageHeader.titleKey).toBe('nav.home')
-				expect(pageHeader.morphTitle).toBe(true)
-				expect(pageHeader.activePath).toBe('concerts/abc-123')
-			})
+			// No write to the header or the tab highlight may happen while the
+			// failing navigation runs.
+			expect(await identityWritesDuring(() => go('my-artists'))).toBe(false)
 
-			it('leaves the title empty for a header-less route', () => {
-				simulateNavigationStart('legal/terms')
-				expect(pageHeader.titleKey).toBe('')
-				expect(pageHeader.activePath).toBe('legal/terms')
-			})
+			expect(displayedRoute()).toBe('settings-route')
+			expect(headerTitle()).toBe('nav.settings')
+			expect(activeTabs()).toEqual(['settings'])
 
-			it('reconciles the state authoritatively on navigation-end', () => {
-				// Optimistic guess is overridden by the resolved route node.
-				simulateNavigationStart('discovery')
-				simulateNavigation(
-					{ titleKey: 'nav.myArtists', nav: true },
-					'my-artists',
+			// Control: the same observation does see a navigation that succeeds.
+			myArtistsGuard.allow = true
+			myArtistsGuard.fail = false
+			expect(await identityWritesDuring(() => go('my-artists'))).toBe(true)
+		})
+
+		// @spec components/infrastructure/fan/web/global/page-header "Redirects and the fallback route are reflected"
+		it('reflects the not-found fallback, not the requested path', async () => {
+			await go('settings')
+			await go('no/such/page')
+			expect(displayedRoute()).toBe('not-found-route')
+			expect(host().querySelector(PAGE_HEADER)).toBeNull()
+			expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
+			expect(activeTabs()).toEqual([])
+		})
+
+		// @spec components/infrastructure/fan/web/global/page-header "Redirects and the fallback route are reflected"
+		it('reflects the redirect target, not the requested path', async () => {
+			await go('settings')
+			await go('')
+			expect(displayedRoute()).toBe('welcome-route')
+			// Welcome hides the chrome, so neither the header nor a tab remains.
+			expect(host().querySelector(PAGE_HEADER)).toBeNull()
+			expect(host().querySelector(BOTTOM_NAV)).toBeNull()
+		})
+
+		// @spec components/infrastructure/fan/web/global/page-header "Routes without a title show no header"
+		it.each([
+			'legal/terms',
+			'about',
+		])('renders no header on %s', async (path) => {
+			await go('settings')
+			await go(path)
+			expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
+			expect(host().querySelector(PAGE_HEADER)).toBeNull()
+		})
+	})
+
+	describe('single shell-hosted page header', () => {
+		// @spec components/infrastructure/fan/web/global/page-header "Single shell-hosted instance across route changes"
+		it('keeps one header instance and updates its title in place', async () => {
+			await go('settings')
+			const header = host().querySelector(PAGE_HEADER)
+			expect(header).not.toBeNull()
+
+			await go('my-artists')
+			expect(host().querySelectorAll(PAGE_HEADER)).toHaveLength(1)
+			expect(host().querySelector(PAGE_HEADER)).toBe(header)
+			expect(headerTitle()).toBe('nav.myArtists')
+		})
+
+		// @spec components/infrastructure/fan/web/global/page-header "Title bound to the displayed route, not per-route markup"
+		it('sources the title from route configuration; no route authors a header', async () => {
+			await go('tickets')
+			expect(headerTitle()).toBe('nav.tickets')
+			expect(host().querySelector(`au-viewport ${PAGE_HEADER}`)).toBeNull()
+
+			const templates = import.meta.glob('../src/routes/**/*.html', {
+				query: '?raw',
+				import: 'default',
+				eager: true,
+			}) as Record<string, string>
+			expect(Object.keys(templates).length).toBeGreaterThan(0)
+			const authoring = Object.entries(templates)
+				.filter(([, html]) =>
+					/<page-header[\s>]/.test(html.replace(/<!--[\s\S]*?-->/g, '')),
 				)
-				expect(pageHeader.titleKey).toBe('nav.myArtists')
-				expect(pageHeader.activePath).toBe('my-artists')
-			})
-
-			it('rolls back to the last confirmed identity on navigation-error', () => {
-				// Confirm my-artists, then a failing navigation to settings.
-				simulateNavigation({ titleKey: 'nav.myArtists' }, 'my-artists')
-				simulateNavigationStart('settings')
-				expect(pageHeader.titleKey).toBe('nav.settings')
-
-				handlers.get('au:router:navigation-error')?.({ error: new Error('x') })
-				expect(pageHeader.titleKey).toBe('nav.myArtists')
-				expect(pageHeader.activePath).toBe('my-artists')
-			})
+				.map(([file]) => file)
+			expect(authoring).toEqual([])
 		})
+	})
+
+	it('reports a failed navigation to the error boundary', async () => {
+		await go('settings')
+		myArtistsGuard.fail = true
+		await go('my-artists')
+		expect(captureError).toHaveBeenCalledWith(
+			expect.anything(),
+			'router:navigation-error',
+		)
 	})
 })
