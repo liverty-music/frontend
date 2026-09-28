@@ -45,7 +45,7 @@
 		"@vitest/browser-playwright": "4.1.11",
 		"@vitest/coverage-v8": "4.1.11",
 		"@vitest/ui": "4.1.11",
-		"dependency-cruiser": "16.10.4",
+		"dependency-cruiser": "18.4.0",
 		"jsdom": "25.0.1",
 		"storybook": "10.6.0",
 		"stylelint": "16.26.1",
