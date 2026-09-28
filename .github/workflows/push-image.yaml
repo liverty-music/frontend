@@ -203,7 +203,7 @@ jobs:
       # the v1.0.0 blank-screen Sev-1).
       - name: Build and Push Docker Image
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           push: true
@@ -474,7 +474,7 @@ jobs:
 
       - name: Build and Push Admin Docker Image
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           file: Dockerfile.admin
@@ -674,7 +674,7 @@ jobs:
 
       - name: Build and Push Organizer Docker Image
         if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           file: Dockerfile.organizer
