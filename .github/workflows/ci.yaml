@@ -290,7 +290,7 @@ jobs:
     # Playwright browser install/cache is needed. Keep the tag in lockstep with
     # the `@playwright/test` version and with the baseline-generation image.
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
     timeout-minutes: 15
     steps:
       - name: Checkout
