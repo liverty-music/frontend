@@ -5,12 +5,20 @@
   ],
   "packageRules": [
     {
-      "description": "Aurelia moves as one unit. No upstream group covers it — `aurelia` and the `@aurelia/*` packages publish from the same release train and mixing versions across them is not supported. Storybook, Vitest, OpenTelemetry JS, stylelint, Vite and workbox are deliberately NOT re-grouped here: maintained upstream presets already cover them, and a local copy would not learn about packages added to those families later. The observation phase checks that assumption before any of them automerges.",
+      "description": "Aurelia moves as one unit. No upstream group covers it — `aurelia` and the `@aurelia/*` packages publish from the same release train and mixing versions across them is not supported. Storybook, Vitest, OpenTelemetry JS, Vite and workbox are deliberately NOT re-grouped here: maintained upstream presets already cover them, and a local copy would not learn about packages added to those families later. The observation phase checks that assumption before any of them automerges.",
       "matchPackageNames": [
         "aurelia",
         "@aurelia/**"
       ],
       "groupName": "aurelia"
+    },
+    {
+      "description": "stylelint and its plugins/configs move together. Unlike the families above, no upstream preset groups them — the Aurelia rule once claimed one did, and the first major wave disproved it: stylelint 17 and stylelint-config-standard 40 arrived as separate pull requests, and because each new major's peer range excludes the other's current version (`stylelint-config-standard@40` peers `stylelint@^17`), neither could produce an installable lock file on its own and both failed `npm ci`. This is real version coupling through peer dependencies, not noise reduction.",
+      "matchPackageNames": [
+        "stylelint",
+        "stylelint-*"
+      ],
+      "groupName": "stylelint"
     },
     {
       "description": "The liverty-music schema SDK is advanced by the OpenSpec change that alters the schema, together with the code migration that change requires. `enabled: false` rather than `ignoreDeps` keeps it visible on the dependency dashboard, so a schema release whose consumers were never advanced is detectable. See design D7.",
