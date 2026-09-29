@@ -30,8 +30,6 @@ import {
 export class PressFeedbackCustomAttribute {
 	private readonly element = resolve(INode) as HTMLElement
 	private overlay: HTMLElement | null = null
-	// Whether we set position:relative ourselves, so detaching() can restore it.
-	private setPosition = false
 	// Live-tracked reduced-motion preference (updated via subscription below), so
 	// a mid-session OS toggle takes effect without remounting — using the shared
 	// helper rather than a one-shot matchMedia snapshot.
@@ -98,13 +96,14 @@ export class PressFeedbackCustomAttribute {
 	}
 
 	public attached(): void {
+		// The attribute alone establishes the ripple's positioning context: the
+		// utility layer gives `[data-press-feedback]` a zero-specificity
+		// `position: relative`, which any component that sets its own position
+		// overrides. Attach performs no layout read, because this runs once per
+		// host in a single task — reading computed style here forced a full style
+		// and layout pass per tappable card, which stalled the dashboard for
+		// seconds on a long timetable.
 		this.element.setAttribute('data-press-feedback', '')
-		// Establish a positioning context off the interaction hot path (once at
-		// attach), without disturbing components that already set their own.
-		if (getComputedStyle(this.element).position === 'static') {
-			this.element.style.position = 'relative'
-			this.setPosition = true
-		}
 		this.element.addEventListener('pointerdown', this.onPointerDown)
 		this.element.addEventListener('keydown', this.onKeyDown)
 		this.unsubReducedMotion = onReducedMotionChange((reduced) => {
@@ -120,11 +119,5 @@ export class PressFeedbackCustomAttribute {
 		this.overlay?.remove()
 		this.overlay = null
 		this.element.removeAttribute('data-press-feedback')
-		// Restore the inline position we added, so a reused DOM node is left as we
-		// found it.
-		if (this.setPosition) {
-			this.element.style.position = ''
-			this.setPosition = false
-		}
 	}
 }
