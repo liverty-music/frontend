@@ -58,7 +58,21 @@ const scriptsProject = defineProject({
 // definition found") — `storybookTest` does not add an Aurelia transform of its
 // own, so there is no double-compile. The `include` mirrors the app plugin so
 // components under every entry's source root resolve.
-const storybookProject = {
+//
+// The same setup builds a second project, `storybook-reduced-motion`, that runs
+// only stories tagged `reduced-motion` in a browser context whose
+// `prefers-reduced-motion` is `reduce`. Such a story asserts the motion that
+// matches the context it runs in, so it is checked once with and once without
+// the preference.
+const storybookProjectFor = ({
+	name,
+	tags,
+	contextOptions,
+}: {
+	name: string
+	tags?: { include: string[] }
+	contextOptions?: { reducedMotion: 'reduce' }
+}) => ({
 	plugins: [
 		aurelia({
 			useDev: true,
@@ -71,6 +85,7 @@ const storybookProject = {
 		}),
 		storybookTest({
 			configDir: fileURLToPath(new URL('./.storybook', import.meta.url)),
+			...(tags ? { tags } : {}),
 		}),
 	],
 	resolve: {
@@ -100,21 +115,33 @@ const storybookProject = {
 		],
 	},
 	test: {
-		name: 'storybook',
+		name,
 		setupFiles: ['./.storybook/vitest.setup.ts'],
 		browser: {
 			enabled: true,
 			headless: true,
-			provider: playwright({}),
+			provider: playwright(contextOptions ? { contextOptions } : {}),
 			instances: [{ browser: 'chromium' }],
 		},
 	},
-}
+})
+
+const storybookProject = storybookProjectFor({ name: 'storybook' })
+const storybookReducedMotionProject = storybookProjectFor({
+	name: 'storybook-reduced-motion',
+	tags: { include: ['reduced-motion'] },
+	contextOptions: { reducedMotion: 'reduce' },
+})
 
 export default defineConfig({
 	test: {
 		watch: false,
-		projects: [unitProject, scriptsProject, storybookProject],
+		projects: [
+			unitProject,
+			scriptsProject,
+			storybookProject,
+			storybookReducedMotionProject,
+		],
 		// Coverage is aggregated across projects at the root; the `unit` project is
 		// the only instrumented suite. Thresholds are preserved from the pre-Vitest-4
 		// single-config setup (spec: "Unit coverage thresholds are preserved").

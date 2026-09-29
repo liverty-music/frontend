@@ -98,10 +98,13 @@ export const Matched = {
 		// The color identity source (--artist-hue, set by the artist-color
 		// attribute) is present …
 		await expect(style.getPropertyValue('--artist-hue').trim()).not.toBe('')
-		// … while the dead derived var removed by this change is absent, and the
-		// per-frame `color-drift` animation no longer drives style recalcalation.
+		// … while the dead derived var removed by this change is absent.
 		await expect(style.getPropertyValue('--artist-color').trim()).toBe('')
-		await expect(style.animationName).not.toContain('color-drift')
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Idle timetable does no continuous rendering work"
+		// A card runs no animation at all, so an idle card never schedules
+		// per-frame style recalculation. (The removed `color-drift` animation did.)
+		await expect(style.animationName).toBe('none')
 	},
 } satisfies Story
 

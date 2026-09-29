@@ -219,7 +219,14 @@ export const PopulatedTimetable = {
 			'subgrid',
 		)
 
-		// Sticky date separators.
+		// @spec components/infrastructure/fan/web/route/dashboard "Off-screen timetable content is not styled or laid out eagerly"
+		// Every date group is skipped by the browser while it is off screen.
+		for (const group of groups) {
+			await expect(getComputedStyle(group).contentVisibility).toBe('auto')
+		}
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
+		// Sticky date separators, alongside the lane alignment asserted above.
 		const separator =
 			canvasElement.querySelector<HTMLElement>('.date-separator')
 		if (!separator) throw new Error('date-separator not rendered')
@@ -229,6 +236,43 @@ export const PopulatedTimetable = {
 		// is complete regardless of which groups are currently rendered.
 		const beams = canvasElement.querySelectorAll('.laser-beam')
 		await expect(beams.length).toBe(MATCHED_COUNT)
+	},
+} satisfies Story
+
+/**
+ * Motion follows the fan's system preference. The story runs twice: in the
+ * `storybook` project, where motion is allowed, and in the
+ * `storybook-reduced-motion` project, whose browser requests reduced motion. It
+ * reads the preference from the browser and asserts the matching presentation,
+ * so the same story is valid in either context.
+ */
+export const MotionFollowsSystemPreference = {
+	tags: ['reduced-motion'],
+	render: () => highwayStory(DATE_GROUPS),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Reduced motion is respected"
+		const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+
+		const cards = [
+			...canvasElement.querySelectorAll<HTMLElement>('.event-card'),
+		]
+		await expect(cards.length).toBeGreaterThan(0)
+		for (const card of cards) {
+			// The press feedback is the card's only motion.
+			await expect(getComputedStyle(card).transitionProperty).toBe(
+				reduce ? 'none' : 'transform',
+			)
+		}
+
+		const beams = [
+			...canvasElement.querySelectorAll<HTMLElement>('.laser-beam'),
+		]
+		await expect(beams.length).toBe(MATCHED_COUNT)
+		for (const beam of beams) {
+			await expect(getComputedStyle(beam).animationName).toBe(
+				reduce ? 'none' : 'beam-length',
+			)
+		}
 	},
 } satisfies Story
 
