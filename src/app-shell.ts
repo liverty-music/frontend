@@ -1,4 +1,10 @@
-import { ICurrentRoute, IRouter, IRouterEvents, route } from '@aurelia/router'
+import {
+	ICurrentRoute,
+	IRouter,
+	IRouterEvents,
+	type RouteNode,
+	route,
+} from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
 import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
@@ -57,7 +63,10 @@ const routeTable = [
 		id: 'dashboard',
 		path: ['dashboard', 'concerts/:id'],
 		component: import('./routes/dashboard/dashboard-route'),
-		title: 'Dashboard',
+		// The document title still tells the two paths apart: a deep-link (e.g.
+		// from a push notification) opens a concert, not the bare timetable.
+		title: (node: RouteNode) =>
+			node.path.startsWith('concerts/') ? 'Concert' : 'Dashboard',
 		nav: true,
 		data: { titleKey: 'nav.home', icon: 'home', labelKey: 'nav.home' },
 	},

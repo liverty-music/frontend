@@ -305,6 +305,19 @@ describe('app-shell', () => {
 		})
 	})
 
+	describe('document title', () => {
+		it('names the concert deep-link "Concert" and the dashboard "Dashboard"', async () => {
+			await go('dashboard')
+			expect(document.title).toMatch(/^Dashboard\b/)
+
+			await go('concerts/concert-1')
+			expect(document.title).toMatch(/^Concert\b/)
+
+			await go('dashboard')
+			expect(document.title).toMatch(/^Dashboard\b/)
+		})
+	})
+
 	it('reports a failed navigation to the error boundary', async () => {
 		await go('settings')
 		myArtistsGuard.fail = true
