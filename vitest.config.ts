@@ -63,15 +63,17 @@ const scriptsProject = defineProject({
 // only stories tagged `reduced-motion` in a browser context whose
 // `prefers-reduced-motion` is `reduce`. Such a story asserts the motion that
 // matches the context it runs in, so it is checked once with and once without
-// the preference.
+// the preference. Each project also passes the preference it emulates as the
+// `reducedMotion` global, so a context that silently fails to emulate it fails
+// the story instead of passing on the other branch.
 const storybookProjectFor = ({
 	name,
 	tags,
-	contextOptions,
+	reducedMotion,
 }: {
 	name: string
 	tags?: { include: string[] }
-	contextOptions?: { reducedMotion: 'reduce' }
+	reducedMotion: boolean
 }) => ({
 	plugins: [
 		aurelia({
@@ -86,6 +88,9 @@ const storybookProjectFor = ({
 		storybookTest({
 			configDir: fileURLToPath(new URL('./.storybook', import.meta.url)),
 			...(tags ? { tags } : {}),
+			// Tells a story which motion preference this project means to emulate,
+			// so a story can fail when the browser context does not match it.
+			initialGlobals: { reducedMotion },
 		}),
 	],
 	resolve: {
@@ -120,17 +125,22 @@ const storybookProjectFor = ({
 		browser: {
 			enabled: true,
 			headless: true,
-			provider: playwright(contextOptions ? { contextOptions } : {}),
+			provider: playwright(
+				reducedMotion ? { contextOptions: { reducedMotion: 'reduce' } } : {},
+			),
 			instances: [{ browser: 'chromium' }],
 		},
 	},
 })
 
-const storybookProject = storybookProjectFor({ name: 'storybook' })
+const storybookProject = storybookProjectFor({
+	name: 'storybook',
+	reducedMotion: false,
+})
 const storybookReducedMotionProject = storybookProjectFor({
 	name: 'storybook-reduced-motion',
 	tags: { include: ['reduced-motion'] },
-	contextOptions: { reducedMotion: 'reduce' },
+	reducedMotion: true,
 })
 
 export default defineConfig({
