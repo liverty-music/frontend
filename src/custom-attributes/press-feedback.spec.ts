@@ -41,6 +41,23 @@ describe('PressFeedbackCustomAttribute', () => {
 		expect(element.hasAttribute('data-press-feedback')).toBe(true)
 	})
 
+	it('reads no computed style or layout on attach', () => {
+		// Attach runs once per tappable host in one task (every timetable card), so
+		// any read here forces a style and layout pass per host.
+		sut.detaching()
+		const computed = vi.spyOn(window, 'getComputedStyle')
+		const rect = vi.spyOn(element, 'getBoundingClientRect')
+
+		sut = new PressFeedbackCustomAttribute()
+		sut.attached()
+
+		expect(computed).not.toHaveBeenCalled()
+		expect(rect).not.toHaveBeenCalled()
+		// The positioning context comes from CSS, not an inline style.
+		expect(element.style.position).toBe('')
+		computed.mockRestore()
+	})
+
 	it('spawns a contact-point ripple inside a clip container on pointerdown', () => {
 		pointerDown(element, 50, 20)
 

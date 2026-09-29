@@ -243,6 +243,13 @@
 		}
 	}
 
+	/* Positioning context for the ripple overlay. Zero specificity, so a host
+	   that sets its own position (in any layer above, or inline) keeps it; the
+	   attribute never needs to read computed style to decide. */
+	:where([data-press-feedback]) {
+		position: relative;
+	}
+
 	/* stylelint-disable-next-line cube/utility-single-property */
 	.press-ripple-container {
 		pointer-events: none;
