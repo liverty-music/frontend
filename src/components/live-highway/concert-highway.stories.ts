@@ -219,7 +219,8 @@ export const PopulatedTimetable = {
 			'subgrid',
 		)
 
-		// Sticky date separators.
+		// @spec components/infrastructure/fan/web/route/dashboard "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
+		// Sticky date separators, alongside the lane alignment asserted above.
 		const separator =
 			canvasElement.querySelector<HTMLElement>('.date-separator')
 		if (!separator) throw new Error('date-separator not rendered')
@@ -229,6 +230,93 @@ export const PopulatedTimetable = {
 		// is complete regardless of which groups are currently rendered.
 		const beams = canvasElement.querySelectorAll('.laser-beam')
 		await expect(beams.length).toBe(MATCHED_COUNT)
+	},
+} satisfies Story
+
+/**
+ * Motion follows the fan's system preference. The story runs twice: in the
+ * `storybook` project, where motion is allowed, and in the
+ * `storybook-reduced-motion` project, whose browser requests reduced motion. It
+ * reads the preference from the browser and asserts the matching presentation,
+ * so the same story is valid in either context.
+ *
+ * Under Vitest each project also names the preference it emulates in the
+ * `reducedMotion` global. The story first checks that the browser reports that
+ * preference, so a project whose emulation silently stops working fails here
+ * instead of passing both runs on the same branch.
+ */
+export const MotionFollowsSystemPreference = {
+	tags: ['reduced-motion'],
+	render: () => highwayStory(DATE_GROUPS),
+	play: async ({ canvasElement, globals }) => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Reduced motion is respected"
+		const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+		if (import.meta.env.MODE === 'test') {
+			await expect(typeof globals.reducedMotion).toBe('boolean')
+			await expect(reduce).toBe(globals.reducedMotion)
+		}
+
+		const cards = [
+			...canvasElement.querySelectorAll<HTMLElement>('.event-card'),
+		]
+		await expect(cards.length).toBeGreaterThan(0)
+		for (const card of cards) {
+			// The press feedback is the card's only motion.
+			await expect(getComputedStyle(card).transitionProperty).toBe(
+				reduce ? 'none' : 'transform',
+			)
+		}
+
+		const beams = [
+			...canvasElement.querySelectorAll<HTMLElement>('.laser-beam'),
+		]
+		await expect(beams.length).toBe(MATCHED_COUNT)
+		for (const beam of beams) {
+			await expect(getComputedStyle(beam).animationName).toBe(
+				reduce ? 'none' : 'beam-length',
+			)
+		}
+	},
+} satisfies Story
+
+/**
+ * Many groups in a short viewport. Date groups below the fold are skipped by the
+ * browser: their contents are neither styled nor laid out until they scroll into
+ * view. `checkVisibility({ contentVisibilityAuto: true })` reports exactly that
+ * skipping, so it is asserted on a card in the first group (rendered) and on a
+ * card in the last group (skipped).
+ */
+export const OffScreenDatesSkipped = {
+	render: () => highwayStory(MANY_GROUPS),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Off-screen timetable content is not styled or laid out eagerly"
+		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
+		if (!scroll) throw new Error('concert-scroll not rendered')
+
+		// The browser decides which groups are relevant on the frame after layout.
+		await new Promise((r) =>
+			requestAnimationFrame(() => requestAnimationFrame(r)),
+		)
+
+		const groups = [...scroll.querySelectorAll<HTMLElement>(':scope > li')]
+		await expect(groups.length).toBe(MANY_GROUPS.length)
+
+		const first = groups[0].querySelector<HTMLElement>('.event-card')
+		const last =
+			groups[groups.length - 1].querySelector<HTMLElement>('.event-card')
+		if (!first || !last) throw new Error('event-card not rendered')
+
+		// The last group must really be off screen for the check to mean anything.
+		await expect(
+			groups[groups.length - 1].getBoundingClientRect().top,
+		).toBeGreaterThan(scroll.getBoundingClientRect().bottom)
+
+		await expect(first.checkVisibility({ contentVisibilityAuto: true })).toBe(
+			true,
+		)
+		await expect(last.checkVisibility({ contentVisibilityAuto: true })).toBe(
+			false,
+		)
 	},
 } satisfies Story
 

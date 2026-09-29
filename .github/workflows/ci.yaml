@@ -310,7 +310,7 @@ jobs:
       # baselines live in git and are reviewed in the PR diff (design D4). The
       # HTML report captures the actual/diff images for any visual failure.
       - name: Run Storybook component tests
-        run: npx vitest run --project=storybook --reporter=default --reporter=html --outputFile.html=./storybook-test-report/index.html
+        run: npx vitest run --project=storybook --project=storybook-reduced-motion --reporter=default --reporter=html --outputFile.html=./storybook-test-report/index.html
 
       - name: Upload visual diff report on failure
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

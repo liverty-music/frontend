@@ -58,7 +58,23 @@ const scriptsProject = defineProject({
 // definition found") — `storybookTest` does not add an Aurelia transform of its
 // own, so there is no double-compile. The `include` mirrors the app plugin so
 // components under every entry's source root resolve.
-const storybookProject = {
+//
+// The same setup builds a second project, `storybook-reduced-motion`, that runs
+// only stories tagged `reduced-motion` in a browser context whose
+// `prefers-reduced-motion` is `reduce`. Such a story asserts the motion that
+// matches the context it runs in, so it is checked once with and once without
+// the preference. Each project also passes the preference it emulates as the
+// `reducedMotion` global, so a context that silently fails to emulate it fails
+// the story instead of passing on the other branch.
+const storybookProjectFor = ({
+	name,
+	tags,
+	reducedMotion,
+}: {
+	name: string
+	tags?: { include: string[] }
+	reducedMotion: boolean
+}) => ({
 	plugins: [
 		aurelia({
 			useDev: true,
@@ -71,6 +87,10 @@ const storybookProject = {
 		}),
 		storybookTest({
 			configDir: fileURLToPath(new URL('./.storybook', import.meta.url)),
+			...(tags ? { tags } : {}),
+			// Tells a story which motion preference this project means to emulate,
+			// so a story can fail when the browser context does not match it.
+			initialGlobals: { reducedMotion },
 		}),
 	],
 	resolve: {
@@ -100,21 +120,38 @@ const storybookProject = {
 		],
 	},
 	test: {
-		name: 'storybook',
+		name,
 		setupFiles: ['./.storybook/vitest.setup.ts'],
 		browser: {
 			enabled: true,
 			headless: true,
-			provider: playwright({}),
+			provider: playwright(
+				reducedMotion ? { contextOptions: { reducedMotion: 'reduce' } } : {},
+			),
 			instances: [{ browser: 'chromium' }],
 		},
 	},
-}
+})
+
+const storybookProject = storybookProjectFor({
+	name: 'storybook',
+	reducedMotion: false,
+})
+const storybookReducedMotionProject = storybookProjectFor({
+	name: 'storybook-reduced-motion',
+	tags: { include: ['reduced-motion'] },
+	reducedMotion: true,
+})
 
 export default defineConfig({
 	test: {
 		watch: false,
-		projects: [unitProject, scriptsProject, storybookProject],
+		projects: [
+			unitProject,
+			scriptsProject,
+			storybookProject,
+			storybookReducedMotionProject,
+		],
 		// Coverage is aggregated across projects at the root; the `unit` project is
 		// the only instrumented suite. Thresholds are preserved from the pre-Vitest-4
 		// single-config setup (spec: "Unit coverage thresholds are preserved").

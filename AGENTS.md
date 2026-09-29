@@ -121,8 +121,12 @@ Testing runs as Vitest 4 `test.projects` in a single `vitest.config.ts`:
 | `unit`      | jsdom                | `**/*.spec.ts` (+ coverage, thresholds)     | `make test` / `npm test` |
 | `scripts`   | node (no polyfills)  | `scripts/**/*.spec.ts` (real `node:*`)      | `npm run test:scripts` |
 | `storybook` | Chromium (Playwright)| CSF stories as component tests              | `npm run test-storybook` |
+| `storybook-reduced-motion` | Chromium, `prefers-reduced-motion: reduce` | stories tagged `reduced-motion` | `npm run test-storybook` |
 
-- `make test` runs `unit` + `scripts` only; `storybook` is a separate CI job (`storybook-test`).
+- `make test` runs `unit` + `scripts` only; both storybook projects run in a separate CI job (`storybook-test`).
+- A story tagged `reduced-motion` runs in both storybook projects. It reads
+  `matchMedia('(prefers-reduced-motion: reduce)')` and asserts the motion that matches, so one story
+  covers both presentations.
 - Coverage thresholds: statements/functions/lines 70, **branches 60** (Vitest 4's `ast-v8` branch
   remapping counts far more branches than v2 — recalibrated, not a real regression).
 - Node 25's broken Web Storage stub is replaced by a polyfill in `test/setup.ts` (Vitest 4 no longer
