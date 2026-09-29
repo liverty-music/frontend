@@ -195,10 +195,11 @@
 		   Reduced motion
 		   ============================================= */
 		@media (prefers-reduced-motion: reduce) {
-			/* The card's press transition is the only motion left here; the entrance
-			   moved to the date group, which suppresses itself under the same query.
-			   (The matched-card hue drift that used to be gated here was removed as
-			   dead per-frame style-recalc work.) */
+			/* The press transition is the card's only motion: it has no entrance
+			   animation (see `.event-card` above). The laser beams stop under the
+			   same query in concert-highway.css. (The matched-card hue drift that
+			   used to be gated here was removed as dead per-frame style-recalc
+			   work.) */
 			.event-card {
 				transition: none;
 			}
