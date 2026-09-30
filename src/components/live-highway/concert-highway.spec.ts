@@ -32,6 +32,7 @@ function makeConcert(overrides: Partial<Concert>): Concert {
 		sourceUrl: '',
 		hypeLevel: 'home',
 		matched: true,
+		artistHue: 0,
 		...overrides,
 	}
 }
@@ -79,11 +80,6 @@ describe('ConcertHighway', () => {
 		})
 	})
 
-	describe('beam index map', () => {
-		it('returns undefined for unknown event ID', () => {
-			expect(sut.beamIndexMap.unknown).toBeUndefined()
-		})
-	})
 	describe('scrollAnchor', () => {
 		function group(dateKey: string, top: number, bottom: number) {
 			return {
@@ -121,9 +117,8 @@ describe('ConcertHighway', () => {
 		})
 
 		it('restores by scrolling the named group into view, not by arithmetic', () => {
-			// Pixel arithmetic cannot land: off-screen groups are sized from an
-			// intrinsic estimate, and correcting for it renders more groups, which
-			// moves the estimate again. The browser has to resolve it.
+			// The browser resolves where the group is; only then is the fan's offset
+			// into it applied.
 			const target = group('2026-07-18', 4000, 4400)
 			const scroller = withScroller({ scrollTop: 0 }, 100, [target])
 
@@ -136,15 +131,32 @@ describe('ConcertHighway', () => {
 			expect(scroller?.scrollTop).toBe(60)
 		})
 
-		it('stays put when the anchored date is no longer in the list', () => {
-			// A background refresh can drop a date that has since passed. Guessing
-			// at a replacement would land the fan somewhere they never were.
-			const scroller = withScroller({ scrollTop: 250 }, 100, [
-				group('2026-07-20', 40, 500),
-			])
+		// @spec components/infrastructure/fan/web/route/dashboard "The anchored date is gone"
+		it('lands on the nearest later date when the anchored date is gone', () => {
+			// A background refresh can drop a date that has since passed. The fan
+			// lands on the next date that remains, not at the top — and without the
+			// offset, which was measured into the date that is gone.
+			const earlier = group('2026-07-15', -300, 40)
+			const later = group('2026-07-20', 40, 500)
+			const scroller = withScroller({ scrollTop: 250 }, 100, [earlier, later])
 
 			sut.scrollAnchor = { dateKey: '2026-07-18', offset: 60 }
 
+			expect(earlier.scrollIntoView).not.toHaveBeenCalled()
+			expect(later.scrollIntoView).toHaveBeenCalledWith({
+				block: 'start',
+				inline: 'nearest',
+			})
+			expect(scroller?.scrollTop).toBe(250)
+		})
+
+		it('stays put when no date at or after the anchor remains', () => {
+			const only = group('2026-07-15', 40, 500)
+			const scroller = withScroller({ scrollTop: 250 }, 100, [only])
+
+			sut.scrollAnchor = { dateKey: '2026-07-18', offset: 60 }
+
+			expect(only.scrollIntoView).not.toHaveBeenCalled()
 			expect(scroller?.scrollTop).toBe(250)
 		})
 
@@ -175,17 +187,23 @@ describe('ConcertHighway', () => {
 			]
 		}
 
-		it('assigns one beam per matched concert and names a timeline for each', () => {
+		it('assigns one beam per matched concert, named after the concert', () => {
 			sut.dateGroups = matchedGroups(3)
+			sut.binding()
 			sut.attached()
 
-			expect(sut.laserBeams).toHaveLength(3)
-			expect(sut.laserBeams.map((b) => b.anchorIndex)).toEqual([0, 1, 2])
-			expect(sut.beamIndexMap).toEqual({ e0: 0, e1: 1, e2: 2 })
+			// Named by concert, not by a running index, so the name a card carries
+			// from the moment it is built never has to change.
+			expect(sut.laserBeams.map((b) => b.timeline)).toEqual([
+				'--beam-e0',
+				'--beam-e1',
+				'--beam-e2',
+			])
 		})
 
 		it('puts every beam timeline in scope on the host', () => {
 			sut.dateGroups = matchedGroups(2)
+			sut.binding()
 			sut.attached()
 
 			// The beams sit in a viewport-fixed overlay and are NOT descendants of
@@ -194,7 +212,7 @@ describe('ConcertHighway', () => {
 			// component no longer touches the DOM per frame at all.
 			expect(fakeElement.style.setProperty).toHaveBeenCalledWith(
 				'timeline-scope',
-				'--beam-0, --beam-1',
+				'--beam-e0, --beam-e1',
 			)
 		})
 
@@ -210,6 +228,7 @@ describe('ConcertHighway', () => {
 					away: [],
 				},
 			]
+			sut.binding()
 			sut.attached()
 
 			expect(sut.laserBeams).toHaveLength(0)
@@ -223,6 +242,7 @@ describe('ConcertHighway', () => {
 			const rafSpy = vi.spyOn(globalThis, 'requestAnimationFrame')
 
 			sut.dateGroups = matchedGroups(4)
+			sut.binding()
 			sut.attached()
 
 			// The whole point of driving beams from CSS: measuring cards forced

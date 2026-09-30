@@ -5,10 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { CustomElement } from 'aurelia'
 import { expect } from 'storybook/test'
-import { ArtistColorCustomAttribute } from '../../custom-attributes/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
-import { PressFeedbackCustomAttribute } from '../../custom-attributes/press-feedback'
-import { BeamTimelineCustomAttribute } from '../../custom-attributes/view-timeline'
 import type { Concert, DateGroup, LaneType } from '../../entities/concert'
 import { ConcertHighway } from './concert-highway'
 import { EventCard } from './event-card'
@@ -38,9 +35,8 @@ function ev(
 
 /**
  * Two date groups with matched cards across lanes. Multiple groups are required
- * to exercise the render-cost change: `content-visibility: auto` on each
- * date-group `<li>` and the sticky date separators only matter across a
- * multi-group scroll, and laser beams are generated one-per-matched-card.
+ * because the sticky date separators only matter across a multi-group scroll,
+ * and laser beams are generated one-per-matched-card.
  */
 const DATE_GROUPS: DateGroup[] = [
 	{
@@ -115,6 +111,13 @@ const MATCHED_COUNT = DATE_GROUPS.flatMap((g) => [
 	...g.away,
 ]).filter((e) => e.matched).length
 
+/** The card a beam follows, matched by value rather than built into a selector. */
+function cardFor(root: HTMLElement, timeline: string): HTMLElement | undefined {
+	return [...root.querySelectorAll<HTMLElement>('[data-live-card]')].find(
+		(card) => card.dataset.beamName === timeline,
+	)
+}
+
 function highwayStory(dateGroups: DateGroup[], hideAway = false) {
 	return defineAureliaStory({
 		// A sized grid host so the highway (block-size: 100%) lays out its lanes.
@@ -124,14 +127,7 @@ function highwayStory(dateGroups: DateGroup[], hideAway = false) {
 			</div>
 		`,
 		props: { dateGroups, hideAway },
-		register: [
-			ConcertHighway,
-			EventCard,
-			ArtistColorCustomAttribute,
-			PressFeedbackCustomAttribute,
-			BeamVarsCustomAttribute,
-			BeamTimelineCustomAttribute,
-		],
+		register: [ConcertHighway, EventCard, BeamVarsCustomAttribute],
 	})
 }
 
@@ -155,7 +151,9 @@ async function assertLanesAlignWithStageHeader(
 	await expect(headers.length).toBe(expectedLanes)
 
 	const groups = [
-		...canvasElement.querySelectorAll<HTMLElement>('.concert-scroll > li'),
+		...canvasElement.querySelectorAll<HTMLElement>(
+			'.concert-scroll > .date-group',
+		),
 	]
 	const probes = [groups[0], groups[groups.length - 1]].filter(Boolean)
 
@@ -192,32 +190,20 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * The three-lane timetable. Guards the layout contract that viewport-scoped
- * rendering depends on: lanes line up with the stage header, the date group owns
- * its columns rather than subgridding through the scroll container, the date
- * separators stay `position: sticky`, and one laser beam renders per matched
- * card (the beam JS resolves geometry from data, so beams exist even for a
- * matched card in a group that is skipped while off screen).
+ * The three-lane timetable. Guards its layout contract: lanes line up with the
+ * stage header, the date separators stay `position: sticky`, and one laser beam
+ * renders per matched card of a built date.
  */
 export const PopulatedTimetable = {
 	render: () => highwayStory(DATE_GROUPS),
 	play: async ({ canvasElement }) => {
 		const groups = canvasElement.querySelectorAll<HTMLElement>(
-			'.concert-scroll > li',
+			'.concert-scroll > .date-group',
 		)
+		// A short list fits in the window, so every date is built.
 		await expect(groups.length).toBe(DATE_GROUPS.length)
 
 		await assertLanesAlignWithStageHeader(canvasElement, 3)
-
-		// The date group must NOT be a subgrid participant. This is the
-		// precondition for per-group containment: `content-visibility` establishes
-		// layout containment, which severs a subgrid chain that crosses the
-		// contained boundary — that is what collapsed the lanes to full width and
-		// forced the P2 revert. The group declaring its own columns is what makes
-		// containment safe, so assert the columns resolve to lengths, not `subgrid`.
-		await expect(getComputedStyle(groups[0]).gridTemplateColumns).not.toContain(
-			'subgrid',
-		)
 
 		// @spec components/infrastructure/fan/web/route/dashboard "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
 		// Sticky date separators, alongside the lane alignment asserted above.
@@ -226,10 +212,59 @@ export const PopulatedTimetable = {
 		if (!separator) throw new Error('date-separator not rendered')
 		await expect(getComputedStyle(separator).position).toBe('sticky')
 
-		// One laser beam per matched card. The beam set is derived from data, so it
-		// is complete regardless of which groups are currently rendered.
+		// One laser beam per matched card of a built date.
 		const beams = canvasElement.querySelectorAll('.laser-beam')
 		await expect(beams.length).toBe(MATCHED_COUNT)
+	},
+} satisfies Story
+
+/** A long timetable: 225 dates, the size of the reference account. */
+const LONG_GROUPS: DateGroup[] = Array.from({ length: 225 }, (_, i) => {
+	const d = new Date(Date.UTC(2026, 0, 1 + i))
+	const date = d.toISOString().slice(0, 10)
+	return {
+		label: date,
+		dateKey: date,
+		isFirstOfMonth: d.getUTCDate() === 1,
+		monthSeparatorLabel: '',
+		home: [ev('VAUNDY', 'home', i % 5 === 0, `${date}T19:00:00+09:00`)],
+		nearby: [ev('Aimer', 'nearby', false, `${date}T19:00:00+09:00`)],
+		away: [],
+	}
+})
+
+/**
+ * The render-cost guard. It used to assert `content-visibility` on every date
+ * group — which skipped style and layout for off-screen dates but still built
+ * all of them. What bounds the cost now is the date window: of 225 loaded dates
+ * only a window is built, and nothing is left for containment to skip.
+ */
+export const WindowedLongTimetable = {
+	render: () => highwayStory(LONG_GROUPS),
+	play: async ({ canvasElement }) => {
+		const groups = [
+			...canvasElement.querySelectorAll<HTMLElement>(
+				'.concert-scroll > .date-group',
+			),
+		]
+		await expect(groups.length).toBeGreaterThan(0)
+		await expect(groups.length).toBeLessThanOrEqual(24)
+		await expect(groups[0].dataset.dateKey).toBe(LONG_GROUPS[0].dateKey)
+
+		for (const group of groups) {
+			await expect(getComputedStyle(group).contentVisibility).not.toBe('auto')
+		}
+
+		// Beams exist only for matched concerts of built dates.
+		const built = new Set(groups.map((g) => g.dataset.dateKey))
+		const expected = LONG_GROUPS.filter((g) => built.has(g.dateKey)).flatMap(
+			(g) => g.home.filter((e) => e.matched),
+		).length
+		await expect(canvasElement.querySelectorAll('.laser-beam').length).toBe(
+			expected,
+		)
+
+		await assertLanesAlignWithStageHeader(canvasElement, 3)
 	},
 } satisfies Story
 
@@ -280,43 +315,33 @@ export const MotionFollowsSystemPreference = {
 } satisfies Story
 
 /**
- * Many groups in a short viewport. Date groups below the fold are skipped by the
- * browser: their contents are neither styled nor laid out until they scroll into
- * view. `checkVisibility({ contentVisibilityAuto: true })` reports exactly that
- * skipping, so it is asserted on a card in the first group (rendered) and on a
- * card in the last group (skipped).
+ * Many groups in a short viewport. Dates outside the window are not built at
+ * all, so there is nothing of theirs to style or lay out: the window's own
+ * dates are in the document and rendered, and the dates past it are absent
+ * until the fan scrolls toward them.
  */
-export const OffScreenDatesSkipped = {
+export const OffScreenDatesNotBuilt = {
 	render: () => highwayStory(MANY_GROUPS),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/fan/web/route/dashboard "Off-screen timetable content is not styled or laid out eagerly"
 		const scroll = canvasElement.querySelector<HTMLElement>('.concert-scroll')
 		if (!scroll) throw new Error('concert-scroll not rendered')
 
-		// The browser decides which groups are relevant on the frame after layout.
-		await new Promise((r) =>
-			requestAnimationFrame(() => requestAnimationFrame(r)),
-		)
+		const built = [
+			...scroll.querySelectorAll<HTMLElement>(':scope > .date-group'),
+		]
+		// The story only proves anything if the list is longer than the window.
+		await expect(MANY_GROUPS.length).toBeGreaterThan(built.length)
+		await expect(built.length).toBeGreaterThan(0)
 
-		const groups = [...scroll.querySelectorAll<HTMLElement>(':scope > li')]
-		await expect(groups.length).toBe(MANY_GROUPS.length)
+		const first = built[0].querySelector<HTMLElement>('.event-card')
+		if (!first) throw new Error('event-card not rendered')
+		await expect(first.checkVisibility()).toBe(true)
 
-		const first = groups[0].querySelector<HTMLElement>('.event-card')
-		const last =
-			groups[groups.length - 1].querySelector<HTMLElement>('.event-card')
-		if (!first || !last) throw new Error('event-card not rendered')
-
-		// The last group must really be off screen for the check to mean anything.
-		await expect(
-			groups[groups.length - 1].getBoundingClientRect().top,
-		).toBeGreaterThan(scroll.getBoundingClientRect().bottom)
-
-		await expect(first.checkVisibility({ contentVisibilityAuto: true })).toBe(
-			true,
-		)
-		await expect(last.checkVisibility({ contentVisibilityAuto: true })).toBe(
-			false,
-		)
+		// The last loaded date has no element at all, so it cannot contribute
+		// style, layout or paint work.
+		const last = MANY_GROUPS[MANY_GROUPS.length - 1].dateKey
+		await expect(built.map((g) => g.dataset.dateKey)).not.toContain(last)
 	},
 } satisfies Story
 
@@ -340,8 +365,8 @@ export const HideAwayTwoLane = {
 /**
  * Beams on. They are driven entirely by each anchor concert's view timeline, so
  * this asserts the wiring the CSS depends on: a scoped timeline name per beam on
- * the host, a matching `view-timeline` on the card, and `animation-timeline` on
- * the beam. It deliberately does not assert beam geometry — that is now the
+ * the host, a matching `view-timeline` on the card — declared by the stylesheet
+ * from the name the card carries — and `animation-timeline` on the beam. It deliberately does not assert beam geometry — that is now the
  * browser's job, and there is no script left to verify.
  */
 export const BeamsEnabled = {
@@ -357,18 +382,15 @@ export const BeamsEnabled = {
 		const scope = getComputedStyle(host).timelineScope
 
 		for (const beam of beams) {
-			const idx = beam.dataset.beamAnchor
-			const name = `--beam-${idx}`
+			const name = beam.dataset.beamTimeline ?? ''
 
 			// The beam is not a descendant of its card, so the name must be scoped
 			// on a common ancestor or the timeline silently fails to resolve.
 			await expect(scope).toContain(name)
 			await expect(getComputedStyle(beam).animationTimeline).toBe(name)
 
-			const card = canvasElement.querySelector<HTMLElement>(
-				`[data-beam-index="${idx}"]`,
-			)
-			if (!card) throw new Error(`no card for beam ${idx}`)
+			const card = cardFor(canvasElement, name)
+			if (!card) throw new Error(`no card for beam ${name}`)
 			await expect(getComputedStyle(card).viewTimelineName).toBe(name)
 		}
 	},
@@ -414,9 +436,7 @@ export const BeamsDarkOffScreen = {
 		let offScreenLit = 0
 		let onScreenLit = 0
 		for (const beam of beams) {
-			const card = canvasElement.querySelector<HTMLElement>(
-				`[data-beam-index="${beam.dataset.beamAnchor}"]`,
-			)
+			const card = cardFor(canvasElement, beam.dataset.beamTimeline ?? '')
 			if (!card) continue
 			const box = card.getBoundingClientRect()
 			const rect = beam.getBoundingClientRect()
@@ -446,18 +466,11 @@ export const BeamsDarkOffScreen = {
 /**
  * Leaving the timetable deep in the list and coming back to the same date.
  *
- * This is a real defect twice over, so the story reproduces the mechanism rather
- * than the symptom. Off-screen groups are sized from an estimate until they
- * render, and the browser remembers each real height only for as long as the
- * element lives — navigation destroys them all. Emptying and refilling the
- * timetable does the same thing here: every group comes back as a new element
- * with its estimate restored.
- *
- * A saved pixel offset cannot survive that, because the same number now counts
- * past a different set of groups; measured against a 225-group list it landed 41
- * groups away. What is saved is therefore the date at the top edge, and the
- * assertion is that the fan gets that date back — not that some number round
- * trips.
+ * Coming back destroys every group, and the window is then built around the
+ * remembered date, so the dates above it do not exist yet and a saved pixel
+ * offset would count past a different set of groups. What is saved is therefore
+ * the date at the top edge, and the assertion is that the fan gets that date
+ * back — not that some number round trips.
  */
 export const ScrollAnchorSurvivesRerender = {
 	render: () => highwayStory(UNEVEN_GROUPS),
@@ -485,28 +498,28 @@ export const ScrollAnchorSurvivesRerender = {
 			return undefined
 		}
 
-		// Scroll the way a fan does, a screen at a time, so the groups passed
-		// through actually render and the browser learns their real heights. A
-		// single jump would leave every estimate untouched and prove nothing.
+		// Scroll the way a fan does, a screen at a time, so the window grows the
+		// way it does in use.
 		for (let i = 1; i <= 8; i++) {
 			scroll.scrollTop = i * scroll.clientHeight
 			await settle()
 		}
 		const left = topDateKey()
 		await expect(left).toBeDefined()
-		// Deep enough that the estimates have something to be wrong about.
+		// Deep enough that the remembered date is not in the first window.
 		await expect(scroll.scrollTop).toBeGreaterThan(1000)
 
 		const saved = vm.scrollAnchor
 		await expect(saved?.dateKey).toBe(left)
 
-		// Leave and come back: every group element is destroyed and rebuilt, which
-		// is what discards the remembered heights.
+		// Leave and come back: every group element is destroyed and rebuilt, and
+		// the window is built afresh around the remembered date — the way the
+		// dashboard hands it over on re-entry — so that date exists to land on.
 		vm.dateGroups = []
 		await settle()
+		vm.initialAnchor = saved ?? null
 		vm.dateGroups = UNEVEN_GROUPS
 		await settle()
-		await expect(scroll.scrollTop).toBe(0)
 
 		vm.scrollAnchor = saved
 		await settle()
@@ -531,15 +544,7 @@ export const LoadingPlaceholder = {
 				</div>
 			`,
 			props: {},
-			register: [
-				ConcertHighway,
-				EventCard,
-				ArtistColorCustomAttribute,
-				PressFeedbackCustomAttribute,
-				BeamVarsCustomAttribute,
-				BeamTimelineCustomAttribute,
-				BeamTimelineCustomAttribute,
-			],
+			register: [ConcertHighway, EventCard, BeamVarsCustomAttribute],
 		}),
 	play: async ({ canvasElement }) => {
 		// The frame is on screen while the concerts are not — that is the point.

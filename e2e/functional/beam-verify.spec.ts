@@ -107,12 +107,12 @@ for (const hype of ['home', 'nearby', 'away'] as const) {
 			).map((c) => ({
 				lane: c.getAttribute('data-lane'),
 				matched: c.getAttribute('data-matched'),
-				beamIndex: c.getAttribute('data-beam-index'),
+				beamName: c.getAttribute('data-beam-name'),
 				viewTimeline: getComputedStyle(c).viewTimelineName,
 			}))
 			const beams = Array.from(document.querySelectorAll('.laser-beam')).map(
 				(b) => ({
-					anchor: (b as HTMLElement).dataset.beamAnchor,
+					anchor: (b as HTMLElement).dataset.beamTimeline,
 					timeline: getComputedStyle(b as HTMLElement).animationTimeline,
 				}),
 			)
@@ -130,7 +130,9 @@ for (const hype of ['home', 'nearby', 'away'] as const) {
 		// Card must be matched
 		const matchedCard = results.cards.find((c) => c.matched === 'true')
 		expect(matchedCard, 'expected a matched card').toBeTruthy()
-		expect(matchedCard?.beamIndex, 'beam-index must be set').not.toBeNull()
+		expect(matchedCard?.beamName, 'the card must carry its beam name').toBe(
+			'--beam-c-1',
+		)
 
 		expect(
 			results.beams.length,
@@ -149,7 +151,7 @@ for (const hype of ['home', 'nearby', 'away'] as const) {
 		if (!results.supportsScrollDriven) return
 
 		const beam = results.beams[0]
-		const expectedName = `--beam-${beam.anchor}`
+		const expectedName = beam.anchor ?? ''
 		expect(beam.timeline, 'beam must bind its anchor timeline').toBe(
 			expectedName,
 		)

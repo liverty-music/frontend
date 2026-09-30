@@ -12,6 +12,7 @@ import {
 	resolve,
 	runTasks,
 } from 'aurelia'
+import { artistHue } from '../../adapter/view/artist-color'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type { LiveEvent } from '../../components/live-highway/live-event'
 import { Snack } from '../../components/snack-bar/snack'
@@ -499,6 +500,7 @@ function buildDevPreviewGroups(): DateGroup[] {
 		sourceUrl: 'https://example.com',
 		hypeLevel: 'watch',
 		matched: false,
+		artistHue: artistHue(name),
 		artist: artist(id, name),
 	})
 

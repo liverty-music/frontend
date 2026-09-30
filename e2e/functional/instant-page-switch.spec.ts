@@ -36,15 +36,18 @@ async function mockRpcRoutes(page: Page): Promise<void> {
  * app is untouched.
  */
 async function guardMyArtists(page: Page): Promise<void> {
-	await page.route('**/src/routes/my-artists/my-artists-route.ts*', async (route) => {
-		const response = await route.fetch()
-		const body = `${await response.text()}
+	await page.route(
+		'**/src/routes/my-artists/my-artists-route.ts*',
+		async (route) => {
+			const response = await route.fetch()
+			const body = `${await response.text()}
 MyArtistsRoute.prototype.canLoad = function () {
 	return window.__blockMyArtists !== true
 }
 `
-		await route.fulfill({ response, body })
-	})
+			await route.fulfill({ response, body })
+		},
+	)
 }
 
 async function seedGuest(page: Page): Promise<void> {
@@ -124,8 +127,7 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 			w.__blockMyArtists = true
 			w.__identityWrites = []
 			const inIdentity = (n: Node | null) =>
-				n instanceof Element &&
-				n.closest('page-header, bottom-nav-bar') != null
+				n instanceof Element && n.closest('page-header, bottom-nav-bar') != null
 			new MutationObserver((records) => {
 				for (const r of records) {
 					if (
@@ -133,7 +135,9 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 						inIdentity(r.target) ||
 						inIdentity(r.target.parentElement) ||
 						[...r.addedNodes, ...r.removedNodes].some(
-							(n) => n instanceof Element && n.matches('page-header, bottom-nav-bar'),
+							(n) =>
+								n instanceof Element &&
+								n.matches('page-header, bottom-nav-bar'),
 						)
 					) {
 						w.__identityWrites.push(r.type)
@@ -159,7 +163,9 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 		// At no point did the header or the tab highlight change.
 		expect(
 			await page.evaluate(
-				() => (window as unknown as { __identityWrites: string[] }).__identityWrites,
+				() =>
+					(window as unknown as { __identityWrites: string[] })
+						.__identityWrites,
 			),
 		).toEqual([])
 
@@ -172,5 +178,169 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 		await page.waitForSelector('my-artists-route', { timeout: 10_000 })
 		await expect(title(page)).toHaveText('My Artists')
 		await expect(tab(page, 'my-artists')).toHaveAttribute('data-active', 'true')
+	})
+})
+
+test.describe('Timetable tab (guest)', () => {
+	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Tapping a menu tab swaps the view immediately"
+	test('the dashboard view replaces Discovery while its data is still in flight', async ({
+		page,
+	}) => {
+		await page.route('**/liverty_music.rpc.**', async (route) => {
+			if (route.request().url().includes('ListByArtists')) {
+				// Hold the dashboard's data back: the view must not wait for it.
+				await new Promise((resolve) => setTimeout(resolve, 1500))
+				return route.fulfill({
+					status: 200,
+					contentType: 'application/json',
+					body: JSON.stringify({ groups: [] }),
+				})
+			}
+			return route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: '{}',
+			})
+		})
+		await page.route('**/ws.audioscrobbler.com/**', (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: '{}',
+			}),
+		)
+		await seedGuest(page)
+		await page.goto('http://localhost:9000/discovery')
+		await page.waitForSelector('discovery-route', { timeout: 10_000 })
+
+		await tab(page, 'home').click()
+		// The dashboard is attached and showing its loading state while the fetch
+		// is still held, and Discovery is no longer on screen.
+		await expect(
+			page.locator('dashboard-route [data-testid="dashboard-loading"]').first(),
+		).toBeVisible()
+		await expect(page.locator('discovery-route')).toHaveCount(0)
+		// Once the data arrives, the loading state clears.
+		await expect(
+			page.locator('dashboard-route [data-testid="dashboard-loading"]').first(),
+		).toBeHidden({ timeout: 10_000 })
+	})
+
+	// @spec components/infrastructure/fan/web/route/dashboard "Header and nav switch before the timetable renders"
+	test('re-entry switches identity and shows the cached timetable together, with no skeleton', async ({
+		page,
+	}) => {
+		const day = new Date()
+		day.setDate(day.getDate() + 1)
+		const localDate = {
+			value: {
+				year: day.getFullYear(),
+				month: day.getMonth() + 1,
+				day: day.getDate(),
+			},
+		}
+		await page.route('**/liverty_music.rpc.**', (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: route.request().url().includes('ListByArtists')
+					? JSON.stringify({
+							groups: [
+								{
+									date: localDate,
+									home: [
+										{
+											id: { value: 'c-1' },
+											performers: [
+												{
+													id: { value: 'artist-1' },
+													name: { value: 'YOASOBI' },
+													mbid: { value: '' },
+												},
+											],
+											series: {
+												id: { value: 's-1' },
+												title: { value: 'Live' },
+											},
+											localDate,
+											venue: {
+												name: { value: 'Zepp' },
+												adminArea: { value: 'JP-13' },
+											},
+											sourceUrl: { value: 'https://example.com' },
+										},
+									],
+									nearby: [],
+									away: [],
+								},
+							],
+						})
+					: '{}',
+			}),
+		)
+		await page.addInitScript(() => {
+			localStorage.setItem('onboardingStep', 'completed')
+			localStorage.setItem('onboarding.celebrationShown', '1')
+			localStorage.setItem('guest.home', 'JP-13')
+			localStorage.setItem(
+				'guest.followedArtists',
+				JSON.stringify([
+					{
+						artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' },
+						hype: 'home',
+					},
+				]),
+			)
+		})
+
+		// First visit fills the cache.
+		await page.goto('http://localhost:9000/dashboard')
+		await page.locator('[data-live-card]').first().waitFor({ timeout: 10_000 })
+		await page.locator('.nav-tab[data-nav="discovery"]').click()
+		await page.waitForSelector('discovery-route', { timeout: 10_000 })
+
+		// From the tap on, record each frame: the active tab, the header title,
+		// whether the timetable's cards are there, and whether the skeleton is.
+		await page.evaluate(() => {
+			const w = window as unknown as { __frames: unknown[] }
+			w.__frames = []
+			const tick = () => {
+				w.__frames.push({
+					home:
+						document
+							.querySelector('.nav-tab[data-nav="home"]')
+							?.getAttribute('data-active') === 'true',
+					title: document.querySelector('page-header h1')?.textContent?.trim(),
+					cards: !!document.querySelector('dashboard-route [data-live-card]'),
+					skeleton: !!document.querySelector(
+						'dashboard-route [data-testid="dashboard-loading"]',
+					),
+				})
+				if (w.__frames.length < 90) requestAnimationFrame(tick)
+			}
+			requestAnimationFrame(tick)
+		})
+		await page.locator('.nav-tab[data-nav="home"]').click()
+		await page.locator('dashboard-route [data-live-card]').first().waitFor()
+		await page.waitForTimeout(300)
+
+		const frames = await page.evaluate(
+			() =>
+				(
+					window as unknown as {
+						__frames: {
+							home: boolean
+							title: string
+							cards: boolean
+							skeleton: boolean
+						}[]
+					}
+				).__frames,
+		)
+		// The cached timetable is never preceded by a skeleton on re-entry…
+		expect(frames.some((f) => f.skeleton)).toBe(false)
+		// …and in the first frame that shows it, page identity has switched too.
+		const first = frames.find((f) => f.cards)
+		expect(first).toMatchObject({ home: true, title: 'Timetable' })
 	})
 })

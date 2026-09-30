@@ -9,6 +9,7 @@ function file(path: string, source: string) {
 }
 
 describe('checkRouteLoading', () => {
+	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "A newly added bottom-nav tab is covered"
 	it('catches the Settings regression this check exists for', () => {
 		// Verbatim shape of the bug: Settings awaited two calls, one an RPC, so
 		// tapping its bottom-nav tab held the previous screen until the network
@@ -67,8 +68,8 @@ describe('checkRouteLoading', () => {
 	})
 
 	it('catches assigning a cache read to render state in the hook', () => {
-		// The dashboard's original freeze: not an await, but the same effect —
-		// the component's first render then contained the whole timetable.
+		// Render state assigned from a cache in a router hook — the shape the
+		// dashboard once had. The component lifecycle is where it belongs.
 		const result = checkRouteLoading(
 			file(
 				'src/routes/dashboard/dashboard-route.ts',

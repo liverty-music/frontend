@@ -9,10 +9,8 @@
     keydown.trigger="handleKeydown($event)"
     role="button"
     tabindex="0"
-    press-feedback
-    artist-color.bind="event.artistName"
-    data-beam-index.bind="beamIndex"
-    beam-timeline.bind="beamIndex"
+    style="--artist-hue: ${event.artistHue}"
+    data-beam-name.one-time="beamName"
     class="[ event-card ]"
   >
     <span class="artist-name">

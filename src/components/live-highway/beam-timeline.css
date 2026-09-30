@@ -1,0 +1,19 @@
+/* Kept apart from concert-highway.css only because Biome 2.3 cannot parse typed
+   `attr()` (`type(<custom-ident>)`); biome.json excludes this one file. Fold it
+   back once Biome is at 2.5 or later (Renovate PR liverty-music/frontend#640).
+   Stylelint still checks it. */
+@layer block {
+	@scope (concert-highway) {
+		/* Each matched card is the scroll subject its beam follows. Every card
+		   carries its timeline name as data from the moment it is built; this
+		   rule is the only thing that turns the name into a timeline, and only
+		   under the beams-on marker. So the effect is off at no per-card cost,
+		   and turning it on rebuilds nothing — it is a restyle of the matched
+		   cards. Browsers without typed `attr()` drop the declaration, no
+		   timeline exists, and the beams stay collapsed: the required
+		   degradation, with no detection anywhere. */
+		[data-beams] [data-matched][data-beam-name] {
+			view-timeline: attr(data-beam-name type(<custom-ident>)) block;
+		}
+	}
+}

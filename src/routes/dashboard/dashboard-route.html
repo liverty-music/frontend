@@ -59,7 +59,7 @@
   <state-placeholder if.bind="hasSettled && !loadError && showGuestEmptyState && !needsRegion" icon="clock">
     <p t="dashboard.guestEmpty.title" class="dashboard-empty-title"></p>
     <p t="dashboard.guestEmpty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href="/discovery" t="dashboard.guestEmpty.cta" class="discover-cta" press-feedback></a>
+    <a href="/discovery" t="dashboard.guestEmpty.cta" class="[ discover-cta ] [ pressable ]"></a>
   </state-placeholder>
 
   <!-- Empty state. `hasSettled` is required: `filteredDateGroups.length === 0`
@@ -68,7 +68,7 @@
   <state-placeholder if.bind="hasSettled && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0" icon="clock">
     <p t="dashboard.empty.title" class="dashboard-empty-title"></p>
     <p t="dashboard.empty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href="/discovery" t="dashboard.empty.discoverLink" class="discover-cta" press-feedback></a>
+    <a href="/discovery" t="dashboard.empty.discoverLink" class="[ discover-cta ] [ pressable ]"></a>
   </state-placeholder>
 
   <!-- Concert highway — always in DOM for E2E compatibility -->
@@ -76,6 +76,7 @@
     component.ref="highway"
     loading.bind="!hasSettled && !loadError"
     date-groups.bind="filteredDateGroups"
+    initial-anchor.bind="timetableAnchor"
     show-beams.bind="showBeams"
     data-blurred.bind="needsRegion"
     event-selected.trigger="onEventSelected($event)"
@@ -102,7 +103,7 @@
   >
     <p t="allNearby.empty.title" class="dashboard-empty-title"></p>
     <p t="allNearby.empty.subtitle" class="dashboard-empty-subtitle"></p>
-    <a href="/discovery" t="allNearby.empty.discoverLink" class="discover-cta" press-feedback></a>
+    <a href="/discovery" t="allNearby.empty.discoverLink" class="[ discover-cta ] [ pressable ]"></a>
   </state-placeholder>
 
   <!-- All Nearby highway — venue shown on every card; AWAY lane omitted (2 lanes). -->

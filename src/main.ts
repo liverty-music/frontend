@@ -55,14 +55,11 @@ import {
 	trackSessionForPrompts,
 } from './constants/storage-keys'
 import { AmbientGlowCustomAttribute } from './custom-attributes/ambient-glow'
-import { ArtistColorCustomAttribute } from './custom-attributes/artist-color'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
 import { DotColorCustomAttribute } from './custom-attributes/dot-color'
-import { PressFeedbackCustomAttribute } from './custom-attributes/press-feedback'
 import { SpotlightRadiusCustomAttribute } from './custom-attributes/spotlight-radius'
 import { TileColorCustomAttribute } from './custom-attributes/tile-color'
-import { BeamTimelineCustomAttribute } from './custom-attributes/view-timeline'
 import { AuthHook } from './hooks/auth-hook'
 import {
 	IAnalyticsService,
@@ -297,12 +294,9 @@ async function bootstrap(): Promise<void> {
 	au.register(UserHomeSelector)
 	au.register(AuthHook)
 	au.register(AmbientGlowCustomAttribute)
-	au.register(ArtistColorCustomAttribute)
 	au.register(BusyOnClickCustomAttribute)
 	au.register(BeamVarsCustomAttribute)
-	au.register(BeamTimelineCustomAttribute)
 	au.register(DotColorCustomAttribute)
-	au.register(PressFeedbackCustomAttribute)
 	au.register(SpotlightRadiusCustomAttribute)
 	au.register(TileColorCustomAttribute)
 	au.register(DateValueConverter)

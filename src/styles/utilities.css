@@ -226,73 +226,17 @@
 		clip-path: inset(50%);
 	}
 
-	/* ── Press feedback (M3): contact-point ripple + round↔squircle morph ──
-	   Attached by the `press-feedback` custom attribute, which sets
-	   `data-press-feedback` and injects the ripple overlay/spans. Lives in the
-	   utility layer so component (block-layer) shape/`:active` rules keep
-	   precedence; the ripple is JS-driven so it fires regardless of layer. */
-	@keyframes press-ripple {
-		from {
-			transform: scale(0);
-			opacity: 0.24;
-		}
-
-		to {
-			transform: scale(1);
-			opacity: 0;
-		}
-	}
-
-	/* Positioning context for the ripple overlay. Zero specificity, so a host
-	   that sets its own position (in any layer above, or inline) keeps it; the
-	   attribute never needs to read computed style to decide. */
-	:where([data-press-feedback]) {
+	/* ── Press state (M3 Expressive): state layer + corner morph ──
+	   Opt in with the `pressable` class. Keyed off `:active` alone, so a control
+	   costs nothing until it is pressed: no script, no listener, no style read
+	   when a screen is built. The layer is painted by a pseudo-element over the
+	   control's own box, and only the visual corner radius morphs, so the
+	   clickable bounds stay stable. Lives in the utility layer so component
+	   (block-layer) shape/`:active` rules keep precedence. */
+	/* stylelint-disable-next-line cube/utility-single-property */
+	.pressable {
 		position: relative;
-	}
 
-	/* stylelint-disable-next-line cube/utility-single-property */
-	.press-ripple-container {
-		pointer-events: none;
-
-		position: absolute;
-		inset: 0;
-
-		overflow: hidden;
-
-		border-radius: inherit;
-	}
-
-	/* Single ripple circle; geometry set inline from the pointer contact point.
-	   currentcolor ink via a var so the token-variables rule is satisfied. */
-	/* stylelint-disable-next-line cube/utility-single-property */
-	.press-ripple {
-		position: absolute;
-		inset-block-start: var(--ripple-y);
-		inset-inline-start: var(--ripple-x);
-		transform: scale(0);
-
-		inline-size: var(--ripple-size);
-		block-size: var(--ripple-size);
-		border-radius: var(--md-shape-full);
-
-		background: var(--ripple-ink, currentcolor);
-
-		animation: press-ripple var(--md-spring-effects-duration)
-			var(--md-easing-standard) forwards;
-	}
-
-	/* Corner morph on press: rounds up a step with a spatial spring, then
-	   settles on release. Re-declares background/transform transitions so the
-	   shorthand doesn't drop the global button feedback. Consumers can retune
-	   the target via --press-morph-radius.
-
-	   Cascade note: this lives in the utility layer, so it applies to controls
-	   that don't pin their own :active shape (plain buttons, the discover CTA);
-	   components that define a bespoke :active corner treatment in the block
-	   layer (e.g. event-card) intentionally keep theirs. The ripple above is the
-	   universal, layer-independent acknowledgement. */
-	/* stylelint-disable-next-line cube/utility-single-property */
-	[data-press-feedback] {
 		transition:
 			border-radius var(--md-spring-spatial-fast-duration)
 			var(--md-spring-spatial-fast),
@@ -300,8 +244,28 @@
 			transform var(--md-duration-short3) var(--md-easing-standard);
 	}
 
-	[data-press-feedback]:active {
+	/* stylelint-disable-next-line cube/utility-single-property */
+	.pressable::after {
+		pointer-events: none;
+		content: "";
+
+		position: absolute;
+		inset: 0;
+
+		border-radius: inherit;
+
+		opacity: 0;
+		background: currentcolor;
+
+		transition: opacity var(--md-duration-short3) var(--md-easing-standard);
+	}
+
+	.pressable:active {
 		border-radius: var(--press-morph-radius, var(--md-shape-large-increased));
+	}
+
+	.pressable:active::after {
+		opacity: var(--md-state-pressed);
 	}
 
 	/* ── Skeleton loading placeholder (M3) ──
@@ -373,16 +337,14 @@
 		}
 
 		/* Feedback primitives: drop shimmer/springs but land the end state so
-		   the acknowledgement (state layer, radius, selection) still resolves. */
+		   the acknowledgement (state layer, radius, selection) still resolves —
+		   a press still shows its state layer, just without the transition. */
 		.skeleton {
 			animation: none;
 		}
 
-		.press-ripple {
-			display: none;
-		}
-
-		[data-press-feedback],
+		.pressable,
+		.pressable::after,
 		[data-selected-morph] {
 			transition-duration: var(--md-duration-instant);
 		}

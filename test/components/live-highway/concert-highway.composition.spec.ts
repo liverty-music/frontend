@@ -1,6 +1,12 @@
 import { I18N } from '@aurelia/i18n'
 import { createFixture } from '@aurelia/testing'
-import { IEventAggregator, Registration } from 'aurelia'
+import {
+	BindingMode,
+	CustomElement,
+	IEventAggregator,
+	Registration,
+	runTasks,
+} from 'aurelia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ConcertHighway } from '../../../src/components/live-highway/concert-highway'
 import { EventCard } from '../../../src/components/live-highway/event-card'
@@ -120,7 +126,23 @@ describe('ConcertHighway composition', () => {
 		).toHaveLength(3)
 	})
 
-	it('builds beam index map for matched events', async () => {
+	/** Bindings on a card's own element that target `attr`, with their modes. */
+	function bindingModesFor(card: Element, attr: string): number[] {
+		const host = card.closest('event-card') as HTMLElement
+		const controller = CustomElement.for(host) as unknown as {
+			bindings: unknown[] | null
+		}
+		return (controller.bindings ?? [])
+			.filter(
+				(b: any) =>
+					b.target === card &&
+					(b.targetAttribute === attr || b.targetProperty === attr),
+			)
+			.map((b: any) => b.mode)
+	}
+
+	// @spec components/infrastructure/fan/web/global/live-highway "Disabled beams cost nothing"
+	it('builds a timetable with beams off that carries no beam work', async () => {
 		const groups: DateGroup[] = [
 			makeDateGroup({
 				home: [makeConcert({ id: 'h1', matched: true })],
@@ -130,28 +152,77 @@ describe('ConcertHighway composition', () => {
 		]
 
 		const result = await createFixture(
-			'<concert-highway date-groups.bind="groups"></concert-highway>',
+			'<concert-highway date-groups.bind="groups" show-beams.bind="false"></concert-highway>',
 			class App {
 				groups = groups
 			},
 			sharedDeps,
 		).started
 		fixture = result as any
+		const host = result.appHost
 
-		// Access the ConcertHighway component viewModel
-		const ceEl = result.appHost.querySelector('concert-highway')
-		expect(ceEl).not.toBeNull()
+		// No beam set, no overlay, and the stylesheet's beams-on marker is absent,
+		// so no card declares a timeline.
+		expect(host.querySelectorAll('.laser-beam')).toHaveLength(0)
+		expect(host.querySelector('[data-beams]')).toBeNull()
 
-		// Find the concert-highway's viewModel via the CE element
-		const hwVm = (ceEl as any).$controller?.viewModel as
-			| ConcertHighway
-			| undefined
-		if (hwVm) {
-			expect(hwVm.beamIndexMap.size).toBe(2)
-			expect(hwVm.beamIndexMap.has('h1')).toBe(true)
-			expect(hwVm.beamIndexMap.has('n1')).toBe(true)
-			expect(hwVm.beamIndexMap.has('a1')).toBe(false)
+		const cards = [...host.querySelectorAll<HTMLElement>('[data-live-card]')]
+		expect(cards).toHaveLength(3)
+		for (const card of cards) {
+			expect(card.style.getPropertyValue('view-timeline')).toBe('')
+			expect(card.hasAttribute('data-beam-index')).toBe(false)
+			// The only beam-related thing a card has is its fixed name, set once:
+			// a one-time binding, never observed for changes.
+			expect(card.dataset.beamName).toMatch(/^--beam-/)
+			const modes = bindingModesFor(card, 'data-beam-name')
+			expect(modes).toEqual([BindingMode.oneTime])
 		}
+	})
+
+	// @spec components/infrastructure/fan/web/global/live-highway "Turning beams on reaches the concerts already on screen"
+	it('turns beams on in place without rebuilding any group or card', async () => {
+		const groups: DateGroup[] = [
+			makeDateGroup({
+				home: [makeConcert({ id: 'h1', matched: true })],
+				nearby: [makeConcert({ id: 'n1', matched: false })],
+				away: [makeConcert({ id: 'a1', matched: true })],
+			}),
+		]
+
+		const result = await createFixture(
+			'<concert-highway date-groups.bind="groups" show-beams.bind="beams"></concert-highway>',
+			class App {
+				groups = groups
+				beams = false
+			},
+			sharedDeps,
+		).started
+		fixture = result as any
+		const host = result.appHost
+
+		const groupsBefore = [...host.querySelectorAll('.date-group')]
+		const cardsBefore = [...host.querySelectorAll('[data-live-card]')]
+
+		;(result.component as { beams: boolean }).beams = true
+		runTasks()
+
+		// The marker the stylesheet keys the timelines off, and one beam per
+		// matched concert, each following the name its card already carries.
+		expect(host.querySelector('[data-beams]')).not.toBeNull()
+		const beams = [...host.querySelectorAll<HTMLElement>('.laser-beam')]
+		expect(beams.map((b) => b.dataset.beamTimeline)).toEqual([
+			'--beam-h1',
+			'--beam-a1',
+		])
+		for (const name of ['--beam-h1', '--beam-a1']) {
+			expect(
+				cardsBefore.some((c) => (c as HTMLElement).dataset.beamName === name),
+			).toBe(true)
+		}
+
+		// Nothing was rebuilt: the very same group and card nodes are in place.
+		expect([...host.querySelectorAll('.date-group')]).toEqual(groupsBefore)
+		expect([...host.querySelectorAll('[data-live-card]')]).toEqual(cardsBefore)
 	})
 
 	it('does not dispatch event-selected in readonly mode', async () => {

@@ -29,6 +29,12 @@ export interface Concert {
 	// --- UI-only ---
 	hypeLevel: HypeLevel
 	matched: boolean
+	/**
+	 * The artist's colour identity as an OKLCH hue (0–359), derived from the
+	 * artist name. Computed once when the concert is built, so a card hands it
+	 * to CSS as data instead of hashing the name while it renders.
+	 */
+	artistHue: number
 	artist?: Artist
 	journeyStatus?: JourneyStatus
 }
@@ -73,13 +79,11 @@ export function isHypeMatched(hype: HypeLevel, lane: LaneType): boolean {
  * Where the fan was in the timetable, expressed as the date group at the top of
  * the viewport rather than a pixel offset.
  *
- * A pixel offset cannot survive navigation here. Off-screen groups are sized
- * from `contain-intrinsic-size` until they render, and the browser remembers
- * each group's real size only for as long as the element lives — leaving the
- * route destroys those elements, so every group reverts to the estimate and the
- * same pixel value points somewhere else. Measured: returning from 120 groups
- * down landed 23 groups away, and from 180 down, 41 groups away. Naming the
- * group instead is immune to the estimate, because nothing depends on the total.
+ * A pixel offset cannot survive navigation here: the timetable builds only a
+ * window of dates, and on return that window starts at the remembered date, so
+ * the dates above it are not built and a pixel value would count past a
+ * different set of groups. Naming the date is independent of what is built
+ * around it.
  */
 export interface TimetableAnchor {
 	/** `dateKey` of the group that was at the top edge. */

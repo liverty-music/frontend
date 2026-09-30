@@ -33,7 +33,10 @@
 			}
 		},
 		{
-			"includes": ["src/components/coach-mark/coach-mark.css"],
+			"includes": [
+				"src/components/coach-mark/coach-mark.css",
+				"src/components/live-highway/beam-timeline.css"
+			],
 			"linter": { "enabled": false },
 			"formatter": { "enabled": false }
 		}
