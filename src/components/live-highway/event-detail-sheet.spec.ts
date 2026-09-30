@@ -105,6 +105,7 @@ describe('EventDetailSheet — history management', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
+		window.history.replaceState(null, '', '/dashboard')
 		sut = new EventDetailSheet()
 	})
 
@@ -117,6 +118,62 @@ describe('EventDetailSheet — history management', () => {
 		)
 		sut.close()
 		expect(mockHistory.replaceState).toHaveBeenCalledWith(
+			null,
+			'',
+			'/dashboard',
+		)
+	})
+
+	// @spec components/infrastructure/fan/web/route/dashboard "Closing keeps the active filters in the URL"
+	it('closes back to the filtered dashboard URL it opened from', () => {
+		window.history.replaceState(
+			null,
+			'',
+			'/dashboard?artists=a1,a2&journey=applied&from=2026-10-01',
+		)
+		sut.open(makeEvent('e1'))
+		sut.close()
+		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
+			null,
+			'',
+			'/dashboard?artists=a1,a2&journey=applied&from=2026-10-01',
+		)
+	})
+
+	// @spec components/infrastructure/fan/web/route/dashboard "Closing keeps the active filters in the URL"
+	it('reverts to the recorded dashboard URL when the bottom sheet reports it closed', () => {
+		// Light dismiss and swipe down both surface as the bottom sheet's
+		// sheet-closed event, which the sheet handles in onSheetClosed().
+		window.history.replaceState(null, '', '/dashboard?artists=a1')
+		sut.open(makeEvent('e1'))
+		sut.onSheetClosed()
+		expect(sut.isOpen).toBe(false)
+		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
+			null,
+			'',
+			'/dashboard?artists=a1',
+		)
+	})
+
+	it('keeps the URL from before the first concert when another opens over it', () => {
+		window.history.replaceState(null, '', '/dashboard?artists=a1')
+		sut.open(makeEvent('e1'))
+		// The sheet pushed its own URL; opening another concert must not record it.
+		window.history.replaceState(null, '', '/concerts/e1')
+		sut.open(makeEvent('e2'))
+		sut.close()
+		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
+			null,
+			'',
+			'/dashboard?artists=a1',
+		)
+	})
+
+	it('falls back to /dashboard when it opened from a non-dashboard URL', () => {
+		window.history.replaceState(null, '', '/concerts/e1')
+		sut.open(makeEvent('e1'))
+		sut.close()
+		expect(mockHistory.replaceState).toHaveBeenLastCalledWith(
 			null,
 			'',
 			'/dashboard',
