@@ -2,14 +2,7 @@
   <responsibilities>Aurelia 2 single-page PWA for music fans. Vite build, CUBE CSS methodology,
   Biome linter, Zitadel OIDC auth, Vitest + Playwright testing.</responsibilities>
   <essential-commands>
-    make lint              # Biome lint + format check + stylelint + typecheck + brand-vocabulary (matches CI)
-    make fix               # Auto-fix formatting (biome check --write)
-    make test              # unit + scripts vitest projects with coverage
-    make check             # Full pre-commit check (lint + test)
     npm run test-storybook # Storybook component tests (browser mode; run in the pinned Playwright container for visual baselines)
-    npm start              # Dev server
-    npm run storybook      # Storybook dev UI (port 6006)
-    npm run build          # Production build
     npx playwright test    # E2E tests (functional/smoke/onboarding/pwa — no visual project)
   </essential-commands>
 </poly-repo-context>
@@ -43,19 +36,8 @@ old `connectrpc_es` connect codegen into `protoc-gen-es` output — there is **n
 `connectrpc_es` package anymore; service descriptors are exported from the
 `*_service_pb.js` files alongside the messages).
 
-When a specification Release has published new schema to BSR (see the
-specification repo's AGENTS.md for the cross-repo release flow), upgrade and
-adopt the generated types here:
+Upgrade and placeholder-swap procedure: see the `consume-proto-release` skill.
 
-```bash
-# Install the released schema package. @latest now resolves to the v2 build,
-# matching the app's @bufbuild/protobuf@^2 — no manual v1-pin dance needed.
-npm install @buf/liverty-music_schema.bufbuild_es@latest
-make check
-```
-
-Then swap the placeholder types for the generated ones at each
-`TODO: swap to generated type after BSR gen` marker and run `make check` again.
 Open (or push) the PR only after this succeeds — do NOT open a draft PR before
 BSR gen completes, as CI will fail on the missing types.
 
@@ -73,44 +55,10 @@ BSR gen completes, as CI will fail on the missing types.
   `Timestamp.fromDate()` are gone).
 - Enums remain TypeScript `enum`s, unchanged from v1.
 
-## Stack
-
-| Stack            | Technology                                           |
-|------------------|------------------------------------------------------|
-| **Framework**    | Aurelia 2 (`aurelia`, `@aurelia/router`)              |
-| **Build**        | Vite (`@aurelia/vite-plugin`)                         |
-| **Styling**      | CUBE CSS methodology (`@layer`, `@scope`)             |
-| **Linter**       | Biome (`@biomejs/biome`)                              |
-| **Auth**         | Zitadel via `oidc-client-ts`                          |
-| **Testing**      | Vitest 4 `test.projects` (unit/scripts/storybook) + `@aurelia/testing`, Playwright (E2E) |
-| **Stories**      | Storybook 10 (`@aurelia/storybook` 3) — CSF3 component tests + a11y + visual (see below) |
-
-## File Organization
-
-```
-src/
-  app-shell.ts / .html       # Shell component + route definitions
-  main.ts                     # Aurelia bootstrap + DI registrations
-  routes/
-    auth-callback.ts / .html  # OAuth callback handler
-    artist-discovery/         # Onboarding discovery page
-  components/
-    auth-status.ts / .html    # Auth status display
-    dna-orb/                  # Canvas-based artist discovery (Matter.js physics)
-    bottom-sheet/             # Shared bottom-sheet dialog primitive
-    loading-spinner/          # Shared loading indicator
-    snack-bar/                # App-level snack notifications
-    toast/                    # Shared popover banner primitive
-  services/
-    auth-service.ts           # Zitadel OIDC integration
-    lastfm-service.ts         # Last.fm API client
-    artist-discovery-service.ts # Discovery state management
-```
-
 ## Aurelia 2 Conventions
 
 Aurelia 2 coding conventions (DI, events, lifecycle, routing, templates, logging) are defined
-in the `aurelia2-component` skill. Read it before writing any component code.
+in the `aurelia-specialist` skill. Read it before writing any component code.
 
 ### Inline styles (CUBE CSS)
 
@@ -123,16 +71,7 @@ a controller to every element it sits on.
 
 ## Component Stories & Testing (Storybook + Vitest)
 
-Testing runs as Vitest 4 `test.projects` in a single `vitest.config.ts`:
-
-| Project     | Env                  | Runs                                        | Command |
-|-------------|----------------------|---------------------------------------------|---------|
-| `unit`      | jsdom                | `**/*.spec.ts` (+ coverage, thresholds)     | `make test` / `npm test` |
-| `scripts`   | node (no polyfills)  | `scripts/**/*.spec.ts` (real `node:*`)      | `npm run test:scripts` |
-| `storybook` | Chromium (Playwright)| CSF stories as component tests              | `npm run test-storybook` |
-| `storybook-reduced-motion` | Chromium, `prefers-reduced-motion: reduce` | stories tagged `reduced-motion` | `npm run test-storybook` |
-
-- `make test` runs `unit` + `scripts` only; both storybook projects run in a separate CI job (`storybook-test`).
+- `make test` runs `unit` + `scripts` only; both storybook projects (`storybook`, `storybook-reduced-motion`; see `vitest.config.ts`) run in a separate CI job (`storybook-test`).
 - A story tagged `reduced-motion` runs in both storybook projects. It reads
   `matchMedia('(prefers-reduced-motion: reduce)')` and asserts the motion that matches, so one story
   covers both presentations.
@@ -175,21 +114,7 @@ RPC/auth/canvas context. The previous route-targeted story was removed.
 
 ### Visual regression
 
-Component-level only, via Vitest browser `expect.element(el).toMatchScreenshot()` (pixelmatch,
-`allowedMismatchedPixelRatio: 0.001`) on the static design-system subset (svg-icon, inline-error,
-state-placeholder, page-header). Baselines are **committed** under
-`src/components/*/__screenshots__/**/*-chromium-linux.png` and reviewed in the PR diff (no CI artifact).
-
-- Generate/compare baselines INSIDE the pinned container so rendering is deterministic with CI:
-  ```bash
-  # regenerate after an intentional visual change, then commit the PNGs
-  docker run --rm -v "$PWD":/work -w /work -e HOME=/tmp \
-    mcr.microsoft.com/playwright:v1.63.0-noble \
-    npx vitest run --project=storybook --update
-  ```
-- The `storybook-test` CI job runs in that same image; on failure it uploads the Vitest HTML report
-  (`storybook-test-report/`, which embeds the diff/actual images). Page-level visual regression
-  (the old Playwright `mobile-visual`) has been retired — one visual pipeline only.
+Baseline generation, the pinned container, and the CI job: see the `visual-baselines` skill.
 
 ## Build-time-only guards (run locally before release)
 
@@ -206,27 +131,7 @@ or PR CI, so they surface at deploy time if missed:
 
 All routes require authentication by default (`AuthHook` in `src/hooks/auth-hook.ts`). Public routes explicitly set `data: { auth: false }` in route config.
 
-The dev Zitadel hosts a single Pulumi-managed test user for E2E:
-
-| Test user | Auth | Capture command |
-|---|---|---|
-| `e2e-test-password@dev.liverty-music.app` | Username + password | `npm run auth:capture:password` |
-
-Capture runs headless against `https://auth.dev.liverty-music.app` — no display server required, works on macOS / Linux / WSL2 + WSLg / CI runners. The script writes `.auth/storageState.json`, which the `playwright-auth` MCP server (configured in `.claude/settings.json`) consumes automatically.
-
-Setup:
-
-1. Retrieve the password from ESC once and mirror it locally:
-   ```bash
-   esc env get liverty-music/dev pulumiConfig.zitadel.e2eTestUser.password --show-secrets
-   # write the value into frontend/.auth/password.md (gitignored)
-   ```
-2. Start the dev server: `npm start`
-3. Run: `npm run auth:capture:password`
-
-The script is fully headless, drives the OIDC username/password flow, and self-verifies (atomic write — fails non-zero without destroying any prior working `storageState.json`). See [`frontend/.auth/README.md`](.auth/README.md) for the full setup, rotation protocol, and credential-file conventions.
-
-If navigation to a protected route redirects away from the requested page, the storageState has likely expired. Re-run the capture script.
+Authenticated E2E setup (test user, `npm run auth:capture:password`, expired storageState): see the `e2e-auth` skill.
 
 ## npm `overrides` — exit conditions, not neglect
 
