@@ -71,6 +71,8 @@ export class EventDetailSheet {
 	private readonly authService = resolve(IAuthService)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly history = resolve(IHistory)
+	/** Where a programmatic close returns to; recorded when the sheet opens. */
+	private returnUrl = '/dashboard'
 	private readonly analytics = resolve(IAnalyticsService)
 
 	// Arrow function to allow `removeEventListener` with the same reference
@@ -174,9 +176,19 @@ export class EventDetailSheet {
 	): void {
 		this.event = event
 		this.isAllNearby = isAllNearby
+		const alreadyOpen = this.isOpen
 		this.isOpen = true
 
 		if (this.manageHistory) {
+			// The dashboard URL the fan is on, filters included, so closing can
+			// return to exactly it. Only when the sheet was closed: opening another
+			// concert over an open sheet keeps the URL from before the first one.
+			if (!alreadyOpen) {
+				const { pathname, search } = window.location
+				this.returnUrl = pathname.startsWith('/dashboard')
+					? `${pathname}${search}`
+					: '/dashboard'
+			}
 			// Push URL without triggering Aurelia Router navigation — the sheet is an
 			// overlay on the dashboard, not a separate route component. A full navigation
 			// would destroy and recreate the dashboard component (and this sheet).
@@ -198,13 +210,18 @@ export class EventDetailSheet {
 		})
 	}
 
-	/** Programmatic close — restores the dashboard URL when this sheet manages history. */
+	/**
+	 * Programmatic close — returns to the dashboard URL the fan was on when the
+	 * sheet opened, filters included, when this sheet manages history. A bare
+	 * `/dashboard` here would drop the filters still shown behind the sheet, so a
+	 * reload or a shared link would show a different timetable.
+	 */
 	public close(): void {
 		if (!this.isOpen) return
 		this.isOpen = false
 		if (this.manageHistory) {
 			window.removeEventListener('popstate', this.onPopstate)
-			this.history.replaceState(null, '', '/dashboard')
+			this.history.replaceState(null, '', this.returnUrl)
 		}
 	}
 
