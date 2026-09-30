@@ -27,6 +27,7 @@ const deps = [
 class FakeObserver {
 	static current: FakeObserver | null = null
 	readonly targets = new Set<Element>()
+	observed = 0
 	constructor(
 		private readonly callback: IntersectionObserverCallback,
 		readonly options: IntersectionObserverInit,
@@ -35,6 +36,7 @@ class FakeObserver {
 	}
 	observe(target: Element) {
 		this.targets.add(target)
+		this.observed += 1
 	}
 	unobserve(target: Element) {
 		this.targets.delete(target)
@@ -225,6 +227,43 @@ describe('ConcertHighway date window', () => {
 		expect(after[0]).toBe(before[0])
 		expect(after).not.toContain(groups[31].dateKey)
 		expect(after).toContain(groups[30].dateKey)
+	})
+
+	it('reopens a full window when every built date leaves the list', async () => {
+		const groups = dates(60)
+		const fixture = await mount(groups, {
+			dateKey: groups[40].dateKey,
+			offset: 0,
+		})
+		expect(builtKeys(fixture.appHost)[0]).toBe(groups[38].dateKey)
+
+		// A filter keeps only dates before anything that was built.
+		const earlier = dates(60).slice(0, 20)
+		;(fixture.component as { groups: DateGroup[] }).groups = earlier
+		runTasks()
+
+		// Not collapsed to one date: a full window over what remains.
+		expect(builtKeys(fixture.appHost)).toHaveLength(12)
+		expect(builtKeys(fixture.appHost).at(-1)).toBe(earlier[19].dateKey)
+	})
+
+	it('reports its edges afresh when the list is replaced', async () => {
+		const groups = dates(60)
+		const fixture = await mount(groups, {
+			dateKey: groups[30].dateKey,
+			offset: 0,
+		})
+		const observer = FakeObserver.current
+		if (!observer) throw new Error('no edge observer')
+		const before = observer.observed
+
+		// An edge already in reach stays in reach across the replacement, so the
+		// observer would never report it again unless it is observed afresh.
+		;(fixture.component as { groups: DateGroup[] }).groups = dates(60)
+		runTasks()
+
+		expect(observer.observed).toBe(before + 2)
+		expect(observer.targets.size).toBe(2)
 	})
 
 	it('releases its observer when detached', async () => {

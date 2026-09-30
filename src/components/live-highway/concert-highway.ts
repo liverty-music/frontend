@@ -95,6 +95,7 @@ export class ConcertHighway {
 		}
 		if (this.isAttached) {
 			this.buildBeams()
+			this.reobserveEdges()
 		}
 	}
 
@@ -139,10 +140,21 @@ export class ConcertHighway {
 	private keepWindow(): void {
 		const first = this.visibleGroups[0].dateKey
 		const last = this.visibleGroups[this.visibleGroups.length - 1].dateKey
-		this.windowStart = this.indexAtOrAfter(first)
+		const start = this.dateGroups.findIndex((g) => g.dateKey >= first)
+		if (start === -1) {
+			// Every built date, and everything after it, has left the list (a
+			// filter kept only earlier dates): there is no span to keep, so show
+			// a full window ending at the last date that remains.
+			this.windowStart = Math.max(0, this.dateGroups.length - WINDOW_SIZE)
+			this.windowEnd = this.dateGroups.length
+			this.sliceWindow()
+			return
+		}
+		const end = this.dateGroups.findIndex((g) => g.dateKey > last)
+		this.windowStart = start
 		this.windowEnd = Math.max(
-			this.windowStart + WINDOW_SIZE,
-			this.indexAtOrAfter(last) + 1,
+			start + WINDOW_SIZE,
+			end === -1 ? this.dateGroups.length : end,
 		)
 		this.sliceWindow()
 	}
@@ -200,6 +212,22 @@ export class ConcertHighway {
 		)
 		if (this.topEdge) this.edgeObserver.observe(this.topEdge)
 		if (this.bottomEdge) this.edgeObserver.observe(this.bottomEdge)
+	}
+
+	/**
+	 * Have the observer report both edges once more. An edge that was already in
+	 * reach before the window changed is still in reach after it, and an
+	 * observer reports only changes, so without this a replaced list that
+	 * gained dates beyond an edge in reach would never grow toward them.
+	 */
+	private reobserveEdges(): void {
+		const observer = this.edgeObserver
+		if (!observer) return
+		for (const edge of [this.topEdge, this.bottomEdge]) {
+			if (!edge) continue
+			observer.unobserve(edge)
+			observer.observe(edge)
+		}
 	}
 
 	private onEdgesSeen(entries: IntersectionObserverEntry[]): void {

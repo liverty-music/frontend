@@ -65,8 +65,13 @@ function dropTypedAttr(page: Page) {
 					rule instanceof CSSStyleRule &&
 					/view-timeline:\s*attr\(/.test(rule.cssText)
 				) {
-					;(rule.parentRule as CSSGroupingRule | null)?.deleteRule?.(i) ??
+					// `i` indexes the rule within its own parent (a grouping rule such as
+					// `@layer` or `@scope`, or the sheet itself), so delete it from there.
+					if (rule.parentRule) {
+						;(rule.parentRule as CSSGroupingRule).deleteRule(i)
+					} else {
 						rule.parentStyleSheet?.deleteRule(i)
+					}
 					removed++
 				} else if ('cssRules' in rule) {
 					walk((rule as CSSGroupingRule).cssRules)

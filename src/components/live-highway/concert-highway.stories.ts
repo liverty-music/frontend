@@ -5,6 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { CustomElement } from 'aurelia'
 import { expect } from 'storybook/test'
+import { artistHue } from '../../adapter/view/artist-color'
 import { BeamVarsCustomAttribute } from '../../custom-attributes/beam-vars'
 import type { Concert, DateGroup, LaneType } from '../../entities/concert'
 import { ConcertHighway } from './concert-highway'
@@ -30,6 +31,7 @@ function ev(
 		sourceUrl: 'https://example.com',
 		hypeLevel: lane === 'home' ? 'home' : lane === 'nearby' ? 'nearby' : 'away',
 		matched,
+		artistHue: artistHue(artistName),
 	}
 }
 
@@ -211,6 +213,15 @@ export const PopulatedTimetable = {
 			canvasElement.querySelector<HTMLElement>('.date-separator')
 		if (!separator) throw new Error('date-separator not rendered')
 		await expect(getComputedStyle(separator).position).toBe('sticky')
+
+		// Every card carries its artist's hue as a number: the colour identity
+		// the card's gradients are drawn from.
+		for (const card of canvasElement.querySelectorAll<HTMLElement>(
+			'.event-card',
+		)) {
+			const hue = card.style.getPropertyValue('--artist-hue').trim()
+			await expect(Number.isFinite(Number.parseFloat(hue))).toBe(true)
+		}
 
 		// One laser beam per matched card of a built date.
 		const beams = canvasElement.querySelectorAll('.laser-beam')
