@@ -101,7 +101,7 @@ vi.mock('@aurelia/runtime-html', async (importOriginal) => {
 	return { ...actual, watch: () => () => {} }
 })
 
-import { runTasks } from 'aurelia'
+import { queueTask, runTasks } from 'aurelia'
 import { DashboardRoute } from './dashboard-route'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -748,12 +748,13 @@ describe('DashboardRoute', () => {
 			expect(getPendingConcertId(sut)).toBeNull()
 		})
 
-		it('opens the sheet and derives the artist filter when the concert resolves', () => {
+		it('opens the sheet and derives the artist filter when the concert resolves', async () => {
 			sut.dateGroups = [makeGroup('artist-1'), makeGroup('artist-2')]
 			const sheet = stubDetailSheet(sut)
 			setPendingConcertId(sut, 'h-artist-2')
 
 			resolvePendingDeepLink(sut)
+			await flushMicrotasks()
 
 			expect(sheet.open).toHaveBeenCalledTimes(1)
 			expect(sheet.open).toHaveBeenCalledWith(sut.dateGroups[1].home[0])
@@ -771,16 +772,38 @@ describe('DashboardRoute', () => {
 			expect(sut.filteredArtistIds).toEqual([])
 		})
 
-		it('self-clears so a later resolve pass never re-opens the sheet', () => {
+		it('self-clears so a later resolve pass never re-opens the sheet', async () => {
 			sut.dateGroups = [makeGroup('artist-1')]
 			const sheet = stubDetailSheet(sut)
 			setPendingConcertId(sut, 'h-artist-1')
 
 			resolvePendingDeepLink(sut)
 			resolvePendingDeepLink(sut)
+			await flushMicrotasks()
 
 			expect(sheet.open).toHaveBeenCalledTimes(1)
 			expect(getPendingConcertId(sut)).toBeNull()
+		})
+
+		it('opens the sheet behind tasks already queued, without a synchronous flush', async () => {
+			sut.dateGroups = [makeGroup('artist-1')]
+			const order: string[] = []
+			const sheet = stubDetailSheet(sut)
+			sheet.open.mockImplementation(() => order.push('sheet'))
+			setPendingConcertId(sut, 'h-artist-1')
+
+			// Stands in for the filter's URL write, which its @watch queues when
+			// the filter is assigned: it must run before the sheet pushes its URL.
+			queueTask(() => order.push('filter-url'))
+			resolvePendingDeepLink(sut)
+			// Nothing is flushed synchronously: on a slow device a flush of the
+			// filtered timetable's render exceeded the 100 ms budget, threw, and
+			// dropped every queued task.
+			expect(runTasks).not.toHaveBeenCalled()
+			expect(sheet.open).not.toHaveBeenCalled()
+
+			await flushMicrotasks()
+			expect(order).toEqual(['filter-url', 'sheet'])
 		})
 
 		it('resolves against the authoritative cold-load fetch', async () => {

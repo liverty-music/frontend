@@ -1,6 +1,13 @@
 import { I18N } from '@aurelia/i18n'
 import type { Params, RouteNode } from '@aurelia/router'
-import { ILogger, observable, resolve, runTasks, watch } from 'aurelia'
+import {
+	ILogger,
+	observable,
+	queueTask,
+	resolve,
+	runTasks,
+	watch,
+} from 'aurelia'
 import { IHistory } from '../../adapter/browser/history'
 import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { DateRange } from '../../components/all-nearby/date-presets'
@@ -574,10 +581,11 @@ export class DashboardRoute {
 	 * list once it has settled — from the cold-load await or the background refresh,
 	 * never off the cache first-paint.
 	 *
-	 * On match: derive the artist filter from the concert, flush that URL write,
-	 * then open the detail sheet so the sheet's pushed `/concerts/:id` URL is the
-	 * final history entry and wins while the sheet is open (two URL writers race —
-	 * the sheet must win; the filter URL applies after close). On no match
+	 * On match: derive the artist filter from the concert, then open the detail
+	 * sheet in a task queued behind that filter's URL write, so the sheet's pushed
+	 * `/concerts/:id` URL is the final history entry and wins while the sheet is
+	 * open (two URL writers race — the sheet must win; the filter URL applies
+	 * after close). On no match
 	 * (unfollowed after send, zero-date, or unresolved performer): degrade silently
 	 * — no sheet, no error. The artist is only derivable from the concert, so with
 	 * the concert absent there is nothing to filter to; the view is left unchanged.
@@ -594,8 +602,15 @@ export class DashboardRoute {
 		if (!concert?.artistId) return
 
 		this.filteredArtistIds = [concert.artistId]
-		runTasks()
-		this.detailSheet?.open(concert)
+		// Open the sheet as a queued task rather than after a synchronous flush.
+		// The filter's URL write (`syncFilterUrl`) is queued by its @watch when
+		// the filter is assigned, and the queue runs in order, so the sheet's
+		// pushed `/concerts/:id` still lands after it and wins while the sheet
+		// is open. A `runTasks()` here would also flush the filtered
+		// timetable's render, and on a slow device that exceeds Aurelia's
+		// 100 ms synchronous budget: the flush throws "Potential deadlock"
+		// and drops every queued task — the render included.
+		queueTask(() => this.detailSheet?.open(concert))
 	}
 
 	/** Find a concert by id across all lanes of the loaded date groups. */
