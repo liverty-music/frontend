@@ -108,6 +108,41 @@ describe('ConcertHighway beams', () => {
 	})
 })
 
+describe('ConcertHighway loading placeholder', () => {
+	it('drops the placeholder in the same step that builds the window', () => {
+		const container = createTestContainer(
+			Registration.instance(INode, document.createElement('div')),
+		)
+		container.register(ConcertHighway)
+		const sut = container.get(ConcertHighway)
+		sut.loading = true
+		sut.binding()
+		expect(sut.showSkeleton).toBe(true)
+
+		// The data arrives: the groups that replace the placeholder are built in
+		// this same call, so the placeholder must go in it too — never a frame
+		// with both on screen.
+		sut.attached()
+		sut.dateGroups = [group('2026-01-01', [{ id: 'e1', matched: false }])]
+		sut.dateGroupsChanged()
+		expect(sut.visibleGroups).toHaveLength(1)
+		expect(sut.showSkeleton).toBe(false)
+	})
+
+	it('shows no placeholder once loading ends, even with nothing to show', () => {
+		const container = createTestContainer(
+			Registration.instance(INode, document.createElement('div')),
+		)
+		container.register(ConcertHighway)
+		const sut = container.get(ConcertHighway)
+		sut.loading = true
+		sut.binding()
+		sut.loading = false
+		sut.loadingChanged()
+		expect(sut.showSkeleton).toBe(false)
+	})
+})
+
 describe('beamTimelineName', () => {
 	it('is a dashed ident derived from the concert id', () => {
 		expect(beamTimelineName('0193a1b2-c3d4-7e5f')).toBe(
