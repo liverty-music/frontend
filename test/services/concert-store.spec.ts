@@ -1,5 +1,6 @@
 import { DI, ILogger, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { artistHue } from '../../src/adapter/view/artist-color'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
 
@@ -187,6 +188,23 @@ describe('ConcertStore', () => {
 			expect(dg.home[0].artistName).toBe('Headliner')
 			expect(dg.home[0].artist).toBe(artist)
 			expect(mockLoggerWarn).not.toHaveBeenCalled()
+		})
+
+		it("carries the resolved artist's hue, computed once from its name", () => {
+			const group = {
+				date: { value: dateLD },
+				home: [makeConcert()],
+				nearby: [],
+				away: [],
+			}
+			const artist = { id: 'a-headliner', name: 'Headliner', mbid: '' }
+			const artistMap = new Map([
+				['a-headliner', { artist, hype: 'watch' as const }],
+			])
+			const [dg] = sut.toDateGroups([group as never], artistMap)
+			// The card hands this to CSS as-is, so it has to be the same hue the
+			// name always maps to — the colour identity a fan learns.
+			expect(dg.home[0].artistHue).toBe(artistHue('Headliner'))
 		})
 
 		it('picks the first MATCHED performer, not necessarily performers[0]', () => {

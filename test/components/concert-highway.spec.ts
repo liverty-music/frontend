@@ -1,19 +1,32 @@
 import { INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beamTimelineName } from '../../src/components/live-highway/beam-name'
 import { ConcertHighway } from '../../src/components/live-highway/concert-highway'
 import type { DateGroup } from '../../src/entities/concert'
 import { createTestContainer } from '../helpers/create-container'
+import { makeConcert } from '../helpers/mock-date-groups'
 
-describe('ConcertHighway', () => {
+function group(
+	dateKey: string,
+	ids: { id: string; matched: boolean }[],
+): DateGroup {
+	return {
+		label: dateKey,
+		dateKey,
+		isFirstOfMonth: false,
+		monthSeparatorLabel: '',
+		home: ids.map((c) => makeConcert(c)),
+		nearby: [],
+		away: [],
+	}
+}
+
+describe('ConcertHighway beams', () => {
 	let sut: ConcertHighway
 	let mockElement: HTMLElement
 
 	beforeEach(() => {
 		mockElement = document.createElement('div')
-		const scrollChild = document.createElement('div')
-		scrollChild.classList.add('concert-scroll')
-		mockElement.appendChild(scrollChild)
-
 		const container = createTestContainer(
 			Registration.instance(INode, mockElement),
 		)
@@ -25,142 +38,84 @@ describe('ConcertHighway', () => {
 		vi.restoreAllMocks()
 	})
 
-	describe('buildBeamIndexMap', () => {
-		it('assigns sequential indices to matched events', () => {
-			const groups: DateGroup[] = [
-				{
-					label: 'Jan 1',
-					dateKey: '2026-01-01',
-					home: [
-						{
-							id: 'e1',
-							matched: true,
-							artistName: 'Artist A',
-						} as DateGroup['home'][0],
-					],
-					nearby: [],
-					away: [
-						{
-							id: 'e2',
-							matched: true,
-							artistName: 'Artist B',
-						} as DateGroup['away'][0],
-					],
-				},
-			]
+	it('builds one beam per matched concert only', () => {
+		sut.dateGroups = [
+			group('2026-01-01', [
+				{ id: 'e1', matched: true },
+				{ id: 'e2', matched: false },
+			]),
+			group('2026-01-02', [{ id: 'e3', matched: true }]),
+		]
+		sut.binding()
+		sut.attached()
 
-			sut.dateGroups = groups
-			sut.attached()
-
-			expect(sut.beamIndexMap.e1).toBe(0)
-			expect(sut.beamIndexMap.e2).toBe(1)
-			expect(sut.laserBeams.length).toBe(2)
-		})
-
-		it('does not assign indices to non-matched events', () => {
-			const groups: DateGroup[] = [
-				{
-					label: 'Jan 1',
-					dateKey: '2026-01-01',
-					home: [
-						{
-							id: 'e1',
-							matched: false,
-							artistName: 'A',
-						} as DateGroup['home'][0],
-					],
-					nearby: [],
-					away: [],
-				},
-			]
-
-			sut.dateGroups = groups
-			sut.attached()
-
-			expect(Object.keys(sut.beamIndexMap).length).toBe(0)
-			expect(sut.laserBeams.length).toBe(0)
-		})
+		expect(sut.laserBeams.map((b) => b.timeline)).toEqual([
+			'--beam-e1',
+			'--beam-e3',
+		])
 	})
 
-	describe('beamIndexMap lookup', () => {
-		it('returns index for matched event', () => {
-			sut.dateGroups = [
-				{
-					label: 'Jan 1',
-					dateKey: '2026-01-01',
-					home: [
-						{
-							id: 'e1',
-							matched: true,
-							artistName: 'A',
-						} as DateGroup['home'][0],
-					],
-					nearby: [],
-					away: [],
-				},
-			]
-			sut.attached()
+	// @spec components/infrastructure/fan/web/global/live-highway "Disabled beams cost nothing"
+	it('computes no beam set while the effect is off', () => {
+		sut.showBeams = false
+		sut.dateGroups = [group('2026-01-01', [{ id: 'e1', matched: true }])]
+		sut.binding()
+		sut.attached()
 
-			expect(sut.beamIndexMap.e1).toBe(0)
-		})
-
-		it('returns undefined for unknown event', () => {
-			sut.attached()
-
-			expect(sut.beamIndexMap.unknown).toBeUndefined()
-		})
+		expect(sut.laserBeams).toEqual([])
+		expect(mockElement.style.getPropertyValue('timeline-scope')).toBe('none')
 	})
 
-	describe('detaching', () => {
-		it('has nothing to tear down — the beams are driven by CSS', () => {
-			const addSpy = vi.spyOn(globalThis, 'requestAnimationFrame')
+	it('builds the beam set when the effect is turned on, and clears it when off', () => {
+		sut.showBeams = false
+		sut.dateGroups = [group('2026-01-01', [{ id: 'e1', matched: true }])]
+		sut.binding()
+		sut.attached()
 
-			sut.attached()
-			sut.detaching()
+		sut.showBeams = true
+		sut.showBeamsChanged()
+		expect(sut.laserBeams.map((b) => b.timeline)).toEqual(['--beam-e1'])
+		expect(mockElement.style.getPropertyValue('timeline-scope')).toBe(
+			'--beam-e1',
+		)
 
-			// The component used to own a scroll listener and a rAF loop that
-			// measured every matched card. Both are gone: the beams now follow their
-			// anchor concert through a view timeline, so there is no per-frame work
-			// to schedule and nothing to unsubscribe.
-			expect(addSpy).not.toHaveBeenCalled()
-		})
+		sut.showBeams = false
+		sut.showBeamsChanged()
+		expect(sut.laserBeams).toEqual([])
+		expect(mockElement.style.getPropertyValue('timeline-scope')).toBe('none')
 	})
 
-	describe('dateGroupsChanged', () => {
-		it('rebuilds beam map when attached and groups change', () => {
-			sut.attached()
+	it('rebuilds the beam set when the groups change after attach, not before', () => {
+		sut.dateGroups = [group('2026-02-01', [{ id: 'x', matched: true }])]
+		sut.dateGroupsChanged()
+		expect(sut.laserBeams).toEqual([])
 
-			sut.dateGroups = [
-				{
-					label: 'Feb 1',
-					dateKey: '2026-02-01',
-					home: [
-						{ id: 'x', matched: true, artistName: 'X' } as DateGroup['home'][0],
-					],
-					nearby: [],
-					away: [],
-				},
-			]
-			sut.dateGroupsChanged()
+		sut.binding()
+		sut.attached()
+		sut.dateGroups = [group('2026-02-02', [{ id: 'y', matched: true }])]
+		sut.dateGroupsChanged()
+		expect(sut.laserBeams.map((b) => b.timeline)).toEqual(['--beam-y'])
+	})
 
-			expect(sut.beamIndexMap.x).toBe(0)
-		})
+	it('has nothing to tear down — the beams are driven by CSS', () => {
+		const rafSpy = vi.spyOn(globalThis, 'requestAnimationFrame')
 
-		it('does not rebuild beam map before attached', () => {
-			sut.dateGroups = [
-				{
-					label: 'Feb 1',
-					dateKey: '2026-02-01',
-					home: [
-						{ id: 'x', matched: true, artistName: 'X' } as DateGroup['home'][0],
-					],
-					nearby: [],
-					away: [],
-				},
-			]
-			sut.dateGroupsChanged()
+		sut.binding()
+		sut.attached()
+		sut.detaching()
 
-			expect(Object.keys(sut.beamIndexMap).length).toBe(0)
-		})
+		expect(rafSpy).not.toHaveBeenCalled()
+	})
+})
+
+describe('beamTimelineName', () => {
+	it('is a dashed ident derived from the concert id', () => {
+		expect(beamTimelineName('0193a1b2-c3d4-7e5f')).toBe(
+			'--beam-0193a1b2-c3d4-7e5f',
+		)
+	})
+
+	it('replaces characters an identifier cannot hold', () => {
+		expect(beamTimelineName('a.b/c d')).toBe('--beam-a_b_c_d')
 	})
 })

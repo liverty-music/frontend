@@ -21,7 +21,11 @@ import { UserHomeSelector } from '../../components/user-home-selector/user-home-
 import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import type { Artist, CountedArtist } from '../../entities/artist'
-import type { Concert, JourneyStatus } from '../../entities/concert'
+import type {
+	Concert,
+	JourneyStatus,
+	TimetableAnchor,
+} from '../../entities/concert'
 import { isJourneyStatus } from '../../entities/ticket-journey'
 import {
 	displayName,
@@ -78,9 +82,9 @@ export class DashboardRoute {
 	public hasSettled = false
 	/**
 	 * Cached timetable parked by loadData()'s fast path, waiting to be reflected
-	 * from the component lifecycle. Never assigned to `dateGroups` inside the
-	 * pre-activation `loading()` hook — that is what put the full render into the
-	 * component's first render and starved the shell's paint.
+	 * from the component lifecycle (`bound()`). Never assigned to `dateGroups`
+	 * inside the pre-activation `loading()` hook: render state belongs to the
+	 * component lifecycle, not to the router's.
 	 */
 	private pendingCachedGroups: DateGroup[] | null = null
 	/** Set once a background refresh has assigned fresher groups, so a later cache reflection cannot clobber them. */
@@ -112,8 +116,13 @@ export class DashboardRoute {
 	// bindings are unchanged); only their triggers moved into the FAB launcher.
 	public filterBar: ArtistFilterBar | undefined
 	public pageHelp: PageHelp | undefined
-	/** The My Timetable highway, for saving and restoring the fan's scroll place. */
+	/** The My Timetable highway, for saving the fan's scroll place on the way out. */
 	public highway: ConcertHighway | undefined
+	/**
+	 * The date the fan left the timetable on, handed to the highway so it builds
+	 * its first window around that date and opens on it. Read in `bound()`.
+	 */
+	public timetableAnchor: TimetableAnchor | null = null
 	/** Disposer for this route's contributed FAB actions; released in detaching(). */
 	private fabDisposer: (() => void) | null = null
 
@@ -474,13 +483,12 @@ export class DashboardRoute {
 
 		// Fast path: we have a previous render for this user. The groups are parked
 		// here rather than assigned, because loadData() is reached from loading() —
-		// a PRE-ACTIVATION router hook. Assigning render state there puts the whole
-		// timetable inside the component's first render, so the shell's optimistic
-		// header/nav update and a full timetable render land in one rendering task
-		// and the browser paints once, after the render. attached() reflects them
-		// instead (see reflectCachedGroups), so the first render carries only the
-		// frame and skeleton. lastDateGroups lives in the ConcertStore singleton,
-		// which survives DashboardRoute re-instantiation on every navigation.
+		// a PRE-ACTIVATION router hook, which must not assign render state.
+		// bound() reflects them instead (see reflectCachedGroups), so the first
+		// render already shows the timetable; that render is bounded by the
+		// highway's date window, whatever the number of cached dates.
+		// lastDateGroups lives in the ConcertStore singleton, which survives
+		// DashboardRoute re-instantiation on every navigation.
 		const cachedDateGroups = this.concertService.peekDateGroups()
 		if (cachedDateGroups !== null && !this.needsRegion) {
 			this.pendingCachedGroups = cachedDateGroups
@@ -541,8 +549,10 @@ export class DashboardRoute {
 
 	/**
 	 * Reflect the cached timetable parked by loadData()'s fast path. Runs from the
-	 * component lifecycle so it lands after the component's first render, which
-	 * carries only the frame and skeleton.
+	 * component lifecycle, before the first render (`bound()`), so re-entry paints
+	 * the cached timetable directly instead of a skeleton and then the content.
+	 * The highway builds only a window of it, around `timetableAnchor`, and
+	 * positions itself there in its own `attached()` — nothing is forced to flush.
 	 *
 	 * Skipped when the background refresh already assigned fresher groups: the
 	 * refresh is kicked off without awaiting, so on a fast connection — and always
@@ -557,29 +567,6 @@ export class DashboardRoute {
 		this.dateGroups = cached
 		this.hasSettled = true
 		this.timetableLoaded = true
-
-		// Flush the queued DOM writes before restoring. Assigning `dateGroups` only
-		// schedules the render; without this the rows do not exist yet, so there is
-		// no anchored group to scroll to and the restore silently does nothing —
-		// which looks exactly like "restore not implemented".
-		runTasks()
-		this.restoreTimetableScroll()
-	}
-
-	/**
-	 * Put the fan back where they left the timetable. Runs after the cached groups
-	 * are reflected, never before: against an unrendered list there is no anchored
-	 * group to scroll to, and the restore is silently lost.
-	 *
-	 * The anchor names a date group rather than a pixel offset, because a pixel
-	 * offset does not survive the trip — see `TimetableAnchor`. A group that is no
-	 * longer in the list leaves the fan where they are.
-	 */
-	private restoreTimetableScroll(): void {
-		const anchor = this.concertService.timetableScrollAnchor
-		if (anchor !== null && this.highway) {
-			this.highway.scrollAnchor = anchor
-		}
 	}
 
 	/**
@@ -726,13 +713,19 @@ export class DashboardRoute {
 		}
 	}
 
+	/**
+	 * Reflect the cached timetable before the first render. `bound()` is a
+	 * component-lifecycle hook that runs after the router's `loading()` and
+	 * before this component's children bind, so the highway builds its first
+	 * window from the cache and around the remembered date.
+	 */
+	public bound(): void {
+		this.timetableAnchor = this.concertService.timetableScrollAnchor
+		this.reflectCachedGroups()
+	}
+
 	public attached(): void {
 		this.isAttached = true
-		// Reflect the cached timetable now that the component has produced its
-		// first render (frame + skeleton). Doing this here rather than in the
-		// pre-activation loading() hook is what keeps the full timetable render out
-		// of that first render.
-		this.reflectCachedGroups()
 
 		// Revalidate the dashboard's cached concert list when the installed PWA
 		// returns to the foreground. Only the active route is registered, so the

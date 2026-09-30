@@ -126,9 +126,12 @@ export function checkRouteLoading(
 			m = awaitRe.exec(own)
 		}
 
-		// Assigning a cache read to render state puts the full render inside the
-		// component's first render, which is the same freeze by a different route.
-		// Narrow by design: it matches the cache-read shape (`peek*` / `getCached*`)
+		// Render state belongs to the component lifecycle, not to a router hook.
+		// A route MAY reflect cached content before its first render (e.g. from
+		// `bound()`) when the render it causes is bounded by what the fan can see —
+		// the dashboard does, behind the timetable's date window — but it must not
+		// do it in `loading()`, where the router, not the component, decides when it
+		// runs and what it holds back. Narrow by design: it matches the cache-read shape (`peek*` / `getCached*`)
 		// rather than guessing which fields the template renders, so it reports no
 		// false positives and does not catch every possible instance.
 		const cacheRe = /this\.(\w+)\s*=\s*[^=\n]*\b(peek\w*|getCached\w*)\s*\(/g
@@ -138,7 +141,7 @@ export function checkRouteLoading(
 				file: path,
 				line: lineOf(source, match.index) + lineOf(own, c.index) - 1,
 				kind: 'assigns-cache-in-loading',
-				detail: `\`this.${c[1]}\` is assigned from a cache read inside loading(), a pre-activation hook — the component's first render then contains the whole thing. Reflect it from the component lifecycle instead.`,
+				detail: `\`this.${c[1]}\` is assigned from a cache read inside loading(), a pre-activation router hook. Reflect it from the component lifecycle instead (e.g. \`bound()\`, keeping the render it causes bounded by what the fan can see).`,
 			})
 			c = cacheRe.exec(own)
 		}

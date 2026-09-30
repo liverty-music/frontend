@@ -1,9 +1,23 @@
 import { bindable, INode, observable, resolve } from 'aurelia'
-import { artistHue } from '../../adapter/view/artist-color'
 import type { DateGroup, TimetableAnchor } from '../../entities/concert'
+import { beamTimelineName } from './beam-name'
+
+/**
+ * Date groups built when the timetable is first shown, and added per growth
+ * step. Twelve median-height groups (192px) is about three phone screens.
+ */
+export const WINDOW_SIZE = 12
+/** Dates kept above the anchored one, so the fan lands with context above. */
+export const WINDOW_CONTEXT = 2
 
 export class ConcertHighway {
 	@bindable public dateGroups: DateGroup[] = []
+	/**
+	 * Where to open the timetable: the date the fan left it on. The first
+	 * window is built around it, and `attached()` positions the view on it, so
+	 * the first paint already shows that date. Null opens at the first date.
+	 */
+	@bindable public initialAnchor: TimetableAnchor | null = null
 	@bindable public isReadonly: boolean = false
 	@bindable public showBeams: boolean = true
 	/**
@@ -40,12 +54,28 @@ export class ConcertHighway {
 
 	private readonly element = resolve(INode) as HTMLElement
 
-	/** Beam indices keyed by event ID, for laser beam tracking. */
-	@observable public beamIndexMap: Record<string, number> = {}
+	/**
+	 * The date groups actually built: a window `[start, end)` of `dateGroups`
+	 * around where the fan is. Dates outside it are not built at all, so what
+	 * a render costs is bounded by the window, not by how many dates are
+	 * loaded. The window only grows while the fan stays on the page.
+	 */
+	public visibleGroups: DateGroup[] = []
+	private windowStart = 0
+	private windowEnd = 0
 
-	/** Triangular laser beams — one per matched card. */
+	/** Empty markers at either end of the window; seeing one grows that side. */
+	public topEdge?: HTMLElement
+	public bottomEdge?: HTMLElement
+	private edgeObserver: IntersectionObserver | null = null
+
+	/**
+	 * Triangular laser beams — one per matched card, and none at all while the
+	 * effect is off. `timeline` is the view-timeline name the anchor card
+	 * carries (see `beamTimelineName`).
+	 */
 	@observable public laserBeams: {
-		anchorIndex: number
+		timeline: string
 		hue: number
 		left: string
 		right: string
@@ -53,19 +83,183 @@ export class ConcertHighway {
 
 	private isAttached = false
 
+	public binding(): void {
+		this.openWindow(this.initialAnchor?.dateKey ?? null)
+	}
+
 	public dateGroupsChanged(): void {
+		if (this.isAttached && this.visibleGroups.length > 0) {
+			this.keepingPlace(() => this.keepWindow())
+		} else {
+			this.openWindow(this.initialAnchor?.dateKey ?? null)
+		}
 		if (this.isAttached) {
-			this.buildBeamIndexMap()
+			this.buildBeams()
+			this.reobserveEdges()
+		}
+	}
+
+	public showBeamsChanged(): void {
+		if (this.isAttached) {
+			this.buildBeams()
 		}
 	}
 
 	public attached(): void {
 		this.isAttached = true
-		this.buildBeamIndexMap()
+		this.buildBeams()
+		// The window's groups are already in the DOM here — a component's
+		// repeated content is activated before its `attached()` — so the view
+		// can be positioned before the first paint, with nothing forced.
+		if (this.initialAnchor !== null && this.visibleGroups.length > 0) {
+			this.scrollAnchor = this.initialAnchor
+		}
+		this.observeEdges()
 	}
 
 	public detaching(): void {
 		this.isAttached = false
+		this.edgeObserver?.disconnect()
+		this.edgeObserver = null
+	}
+
+	/** First window: from a little above the given date, or from the top. */
+	private openWindow(dateKey: string | null): void {
+		const at = dateKey === null ? 0 : this.indexAtOrAfter(dateKey)
+		this.windowStart = Math.max(0, at - WINDOW_CONTEXT)
+		this.windowEnd = this.windowStart + WINDOW_SIZE
+		this.sliceWindow()
+	}
+
+	/**
+	 * `dateGroups` was replaced (a filter or a background refresh) while the
+	 * fan is on the page. Keep the same span of dates built, so what they are
+	 * looking at stays built and in place; only dates that have left the list
+	 * leave the window.
+	 */
+	private keepWindow(): void {
+		const first = this.visibleGroups[0].dateKey
+		const last = this.visibleGroups[this.visibleGroups.length - 1].dateKey
+		const start = this.dateGroups.findIndex((g) => g.dateKey >= first)
+		if (start === -1) {
+			// Every built date, and everything after it, has left the list (a
+			// filter kept only earlier dates): there is no span to keep, so show
+			// a full window ending at the last date that remains.
+			this.windowStart = Math.max(0, this.dateGroups.length - WINDOW_SIZE)
+			this.windowEnd = this.dateGroups.length
+			this.sliceWindow()
+			return
+		}
+		const end = this.dateGroups.findIndex((g) => g.dateKey > last)
+		this.windowStart = start
+		this.windowEnd = Math.max(
+			start + WINDOW_SIZE,
+			end === -1 ? this.dateGroups.length : end,
+		)
+		this.sliceWindow()
+	}
+
+	private sliceWindow(): void {
+		const total = this.dateGroups.length
+		this.windowStart = Math.min(this.windowStart, Math.max(0, total - 1))
+		this.windowEnd = Math.min(total, this.windowEnd)
+		this.visibleGroups = this.dateGroups.slice(this.windowStart, this.windowEnd)
+	}
+
+	/**
+	 * Index of the given date, or of the nearest later one when it has left the
+	 * list (date keys are ISO dates, so they sort as strings). Past the end, the
+	 * last date.
+	 */
+	private indexAtOrAfter(dateKey: string): number {
+		const i = this.dateGroups.findIndex((g) => g.dateKey >= dateKey)
+		return i === -1 ? Math.max(0, this.dateGroups.length - 1) : i
+	}
+
+	/**
+	 * Change the built window without moving what the fan is looking at: note
+	 * the date at the top edge and how far into it they are, apply the change,
+	 * and put that date back where it was.
+	 *
+	 * The window's DOM is complete as soon as it is sliced, so this needs no
+	 * flush or scheduling. Reading the position after the change lays out the
+	 * new groups a little earlier than the next frame would have — the same
+	 * work, not additional work. Done here rather than left to the browser's
+	 * scroll anchoring, which measured unreliable on this list (a fixed partial
+	 * correction on about 40% of prepends in Chromium) and which Safari does
+	 * not implement; the scroll container therefore opts out of it
+	 * (`overflow-anchor: none`), so the two never both correct.
+	 */
+	private keepingPlace(change: () => void): void {
+		const place = this.scrollAnchor
+		change()
+		if (place !== null) this.scrollAnchor = place
+	}
+
+	/**
+	 * Grow the window before the fan reaches either edge. One observer, rooted
+	 * at the scroll container, watches both edge markers half a screen ahead.
+	 * Dates added above the fan keep what they are looking at in place (see
+	 * `keepingPlace`); dates added below cannot move it.
+	 */
+	private observeEdges(): void {
+		if (typeof IntersectionObserver === 'undefined') return
+		const root = this.scrollEl
+		if (!root) return
+		this.edgeObserver = new IntersectionObserver(
+			(entries) => this.onEdgesSeen(entries),
+			{ root, rootMargin: '50% 0px' },
+		)
+		if (this.topEdge) this.edgeObserver.observe(this.topEdge)
+		if (this.bottomEdge) this.edgeObserver.observe(this.bottomEdge)
+	}
+
+	/**
+	 * Have the observer report both edges once more. An edge that was already in
+	 * reach before the window changed is still in reach after it, and an
+	 * observer reports only changes, so without this a replaced list that
+	 * gained dates beyond an edge in reach would never grow toward them.
+	 */
+	private reobserveEdges(): void {
+		const observer = this.edgeObserver
+		if (!observer) return
+		for (const edge of [this.topEdge, this.bottomEdge]) {
+			if (!edge) continue
+			observer.unobserve(edge)
+			observer.observe(edge)
+		}
+	}
+
+	private onEdgesSeen(entries: IntersectionObserverEntry[]): void {
+		let above = false
+		let below = false
+		for (const entry of entries) {
+			if (!entry.isIntersecting) continue
+			if (entry.target === this.topEdge && this.windowStart > 0) {
+				this.windowStart = Math.max(0, this.windowStart - WINDOW_SIZE)
+				above = true
+			} else if (
+				entry.target === this.bottomEdge &&
+				this.windowEnd < this.dateGroups.length
+			) {
+				this.windowEnd += WINDOW_SIZE
+				below = true
+			}
+		}
+		if (!above && !below) return
+		if (above) {
+			this.keepingPlace(() => this.sliceWindow())
+		} else {
+			this.sliceWindow()
+		}
+		this.buildBeams()
+		// An observer reports only changes, so an edge that is still in reach
+		// after growing — short groups, a tall screen — would never report
+		// again. Observing it afresh reports its state once more, after layout.
+		for (const entry of entries) {
+			this.edgeObserver?.unobserve(entry.target)
+			this.edgeObserver?.observe(entry.target)
+		}
 	}
 
 	/**
@@ -77,7 +271,8 @@ export class ConcertHighway {
 	 *
 	 * Deliberately not a pixel offset: see `TimetableAnchor`. Reading before the
 	 * view is in the DOM yields null; writing then is a no-op, so a restore has to
-	 * happen after the content is rendered.
+	 * happen once the window is rendered — `attached()` does it for
+	 * `initialAnchor`.
 	 */
 	public get scrollAnchor(): TimetableAnchor | null {
 		const el = this.scrollEl
@@ -103,32 +298,43 @@ export class ConcertHighway {
 
 		// Matched by value rather than built into a selector: a date key is data,
 		// and interpolating data into a selector is a habit worth not having.
+		// The date can legitimately be gone — a background refresh may have
+		// dropped one that has since passed — so land on the nearest later date
+		// that remains (groups are in date order), without the offset, which
+		// belonged to the date that is gone.
 		const group = [...el.querySelectorAll<HTMLElement>('[data-date-key]')].find(
-			(node) => node.dataset.dateKey === anchor.dateKey,
+			(node) => (node.dataset.dateKey ?? '') >= anchor.dateKey,
 		)
-		// The group can legitimately be gone — a background refresh may have
-		// dropped a date that has since passed. Staying put beats guessing.
 		if (!group) return
 
-		// `scrollIntoView` rather than arithmetic on `scrollTop`. Computing the
-		// delta ourselves cannot converge: every correction renders more groups,
-		// which changes the intrinsic-size estimates the next correction reads, so
-		// it oscillates. Measured against a 225-group list, a hand-rolled
-		// correction loop still landed 1-3 groups out at every depth, while this
-		// landed exactly on the anchor at every depth.
+		// `scrollIntoView` rather than arithmetic on `scrollTop`: the browser
+		// resolves where the group is, and only built groups are laid out.
 		group.scrollIntoView({ block: 'start', inline: 'nearest' })
-		el.scrollTop += anchor.offset
+		if (group.dataset.dateKey === anchor.dateKey) {
+			el.scrollTop += anchor.offset
+		}
 	}
 
 	private get scrollEl(): HTMLElement | null {
 		return this.element.querySelector<HTMLElement>('.concert-scroll')
 	}
 
-	/** Assign sequential beam indices to matched events across all groups. */
-	private buildBeamIndexMap(): void {
-		const map: Record<string, number> = {}
+	/**
+	 * Build the beam set: one beam per matched concert, named after it. Only
+	 * while the effect is on — off, nothing is computed and the set is empty.
+	 *
+	 * The cards need nothing from this: each already carries its timeline name,
+	 * and the stylesheet declares the timeline only under the beams-on marker.
+	 * So turning beams on or off rebuilds no card.
+	 */
+	private buildBeams(): void {
+		if (!this.showBeams) {
+			this.laserBeams = []
+			this.element.style.setProperty('timeline-scope', 'none')
+			return
+		}
+
 		const beams: typeof this.laserBeams = []
-		let idx = 0
 
 		const LANE_PCT = [
 			{ left: 1, right: 32 },
@@ -136,26 +342,25 @@ export class ConcertHighway {
 			{ left: 68, right: 99 },
 		]
 
-		for (const group of this.dateGroups) {
+		// Only built dates: a concert whose date is not built has no card, so it
+		// has no beam either.
+		for (const group of this.visibleGroups) {
 			const lanes = [group.home, group.nearby, group.away]
 			for (let laneIdx = 0; laneIdx < lanes.length; laneIdx++) {
 				for (const ev of lanes[laneIdx]) {
 					if (ev.matched) {
-						map[ev.id] = idx
 						const { left, right } = LANE_PCT[laneIdx]
 						beams.push({
-							anchorIndex: idx,
-							hue: artistHue(ev.artistName),
+							timeline: beamTimelineName(ev.id),
+							hue: ev.artistHue,
 							left: `${left}%`,
 							right: `${right}%`,
 						})
-						idx++
 					}
 				}
 			}
 		}
 
-		this.beamIndexMap = map
 		this.laserBeams = beams
 
 		// Each beam is animated by a view timeline declared on its anchor card, but
@@ -166,17 +371,7 @@ export class ConcertHighway {
 		// Written once per beam-set change — never per frame.
 		this.element.style.setProperty(
 			'timeline-scope',
-			beams.length > 0
-				? beams.map((b) => beamTimelineName(b.anchorIndex)).join(', ')
-				: 'none',
+			beams.length > 0 ? beams.map((b) => b.timeline).join(', ') : 'none',
 		)
 	}
-}
-
-/**
- * Timeline name for a beam anchor. The set of beams is data-driven, so the names
- * are generated rather than declared in the stylesheet.
- */
-export function beamTimelineName(anchorIndex: number): string {
-	return `--beam-${anchorIndex}`
 }

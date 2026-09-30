@@ -1,15 +1,24 @@
+<import from="./beam-timeline.css"></import>
+
 <!-- Laser beams — before header so header paints on top -->
 <div class="[ beam-overlay ]" if.bind="showBeams && laserBeams.length > 0">
   <div
     repeat.for="b of laserBeams"
     class="[ laser-beam ]"
-    data-beam-anchor.bind="b.anchorIndex"
-    beam-vars="hue.bind: b.hue; left.bind: b.left; right.bind: b.right; anchor.bind: b.anchorIndex"
+    data-beam-timeline.bind="b.timeline"
+    beam-vars="hue.bind: b.hue; left.bind: b.left; right.bind: b.right; timeline.bind: b.timeline"
   ></div>
 </div>
 
 <!-- Concert grid (stage header + scrollable lanes) -->
-<section class="[ concert-grid-wrapper ]" data-hide-away.bind="hideAway">
+<!-- `data-beams` is the only thing the beam effect changes on the timetable:
+     the stylesheet declares each matched card's view timeline under it, from the
+     name every card already carries. Toggling it rebuilds nothing. -->
+<section
+  class="[ concert-grid-wrapper ]"
+  data-hide-away.bind="hideAway"
+  data-beams.bind="showBeams || undefined"
+>
   <!-- The stage header needs no data, so it is not gated on having any: it is
        the App Shell part of the timetable and must be on screen from the first
        render, while the concerts are still loading. Gating it on
@@ -45,11 +54,16 @@
     </li>
     </template>
 
-    <!-- The date group is the unit of viewport-scoped rendering, so it is
-         addressable by class rather than by its position in the markup. -->
+    <!-- Edge markers of the date window. Seeing one grows the window on that
+         side; they are empty and outside the accessibility tree. -->
+    <li class="[ window-edge ]" ref="topEdge" aria-hidden="true"></li>
+
+    <!-- The date group is the unit of the date window, so it is addressable by
+         class rather than by its position in the markup. Only the groups in the
+         window are built. -->
     <li
       class="[ date-group ]"
-      repeat.for="group of dateGroups; key.bind: group.dateKey"
+      repeat.for="group of visibleGroups; key.bind: group.dateKey"
       data-date-key.bind="group.dateKey"
     >
       <div if.bind="group.isFirstOfMonth" class="[ month-separator ]" aria-hidden="true">
@@ -67,7 +81,6 @@
             lane="home"
             readonly.bind="isReadonly"
             show-venue-always.bind="showVenueAlways"
-            beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>
         <li class="[ lane ]" data-lane="near" data-empty.bind="group.nearby.length === 0">
@@ -77,7 +90,6 @@
             lane="nearby"
             readonly.bind="isReadonly"
             show-venue-always.bind="showVenueAlways"
-            beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>
         <li if.bind="!hideAway" class="[ lane ]" data-lane="away" data-empty.bind="group.away.length === 0">
@@ -87,10 +99,11 @@
             lane="away"
             readonly.bind="isReadonly"
             show-venue-always.bind="showVenueAlways"
-            beam-index.bind="beamIndexMap[ev.id] ?? null"
           ></event-card>
         </li>
       </ol>
     </li>
+
+    <li class="[ window-edge ]" ref="bottomEdge" aria-hidden="true"></li>
   </ol>
 </section>

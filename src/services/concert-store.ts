@@ -6,6 +6,7 @@ import {
 	type ProximityGroup,
 } from '../adapter/rpc/client/concert-client'
 import { loadFollows, loadHome } from '../adapter/storage/guest-storage'
+import { artistHue } from '../adapter/view/artist-color'
 import { codeToHome, displayName } from '../constants/iso3166'
 import type { Artist } from '../entities/artist'
 import {
@@ -550,6 +551,7 @@ function concertFrom(
 		sourceUrl: proto.series?.sourceUrl?.value ?? '',
 		hypeLevel,
 		matched,
+		artistHue: artistHue(artistName),
 		artist,
 	}
 }

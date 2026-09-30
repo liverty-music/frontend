@@ -226,6 +226,7 @@ describe('DashboardRoute', () => {
 			expect(sut.showSignupBanner).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Data fetch is kicked off non-blocking from loading()"
 		it('is non-blocking: resolves before the data fetch settles, isLoading true at attach', async () => {
 			mockAuth.isAuthenticated = true
 			mockUser.current = { home: { countryCode: 'JP', level1: 'JP-13' } }

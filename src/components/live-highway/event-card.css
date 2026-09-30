@@ -192,15 +192,49 @@
 		}
 
 		/* =============================================
+		   PRESSED — state layer
+		   ============================================= */
+
+		/* The card cannot use the shared `pressable` utility: its ::before and
+		   ::after already paint the spotlight (matched) and the grain
+		   (unmatched). Each treatment leaves the other pseudo-element free, so the
+		   state layer takes that one. Keyed off `:active` alone, so no card does
+		   any press work until it is pressed; the `scale(0.97)` above is the
+		   shape change. */
+		.event-card[data-matched]::after,
+		.event-card:not([data-matched])::before {
+			pointer-events: none;
+			content: "";
+
+			position: absolute;
+			inset: 0;
+
+			border-radius: inherit;
+
+			opacity: 0;
+			background: var(--color-white);
+
+			transition: opacity var(--md-duration-short3) var(--md-easing-standard);
+		}
+
+		.event-card[data-matched]:active::after,
+		.event-card:not([data-matched]):active::before {
+			opacity: var(--md-state-pressed);
+		}
+
+		/* =============================================
 		   Reduced motion
 		   ============================================= */
 		@media (prefers-reduced-motion: reduce) {
-			/* The press transition is the card's only motion: it has no entrance
-			   animation (see `.event-card` above). The laser beams stop under the
-			   same query in concert-highway.css. (The matched-card hue drift that
-			   used to be gated here was removed as dead per-frame style-recalc
-			   work.) */
-			.event-card {
+			/* The press is the card's only motion: it has no entrance animation (see
+			   `.event-card` above), and the laser beams stop under the same query in
+			   concert-highway.css. Without the transition the state layer still
+			   appears, so the press is still acknowledged. (The matched-card hue
+			   drift that used to be gated here was removed as dead per-frame
+			   style-recalc work.) */
+			.event-card,
+			.event-card[data-matched]::after,
+			.event-card:not([data-matched])::before {
 				transition: none;
 			}
 		}

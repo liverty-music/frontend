@@ -1,9 +1,11 @@
+import { artistHue } from '../../src/adapter/view/artist-color'
 import type { Concert, DateGroup } from '../../src/entities/concert'
 
 /** Create a minimal Concert for testing. */
 export function makeConcert(
 	overrides: Partial<Concert> & Pick<Concert, 'id'>,
 ): Concert {
+	const artistName = overrides.artistName ?? 'Test Artist'
 	return {
 		artistName: 'Test Artist',
 		artistId: 'artist-1',
@@ -15,6 +17,7 @@ export function makeConcert(
 		sourceUrl: 'https://example.com',
 		hypeLevel: 'home',
 		matched: false,
+		artistHue: artistHue(artistName),
 		...overrides,
 	}
 }

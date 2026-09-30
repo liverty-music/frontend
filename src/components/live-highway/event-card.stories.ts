@@ -4,8 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect, within } from 'storybook/test'
-import { ArtistColorCustomAttribute } from '../../custom-attributes/artist-color'
-import { PressFeedbackCustomAttribute } from '../../custom-attributes/press-feedback'
+import { artistHue } from '../../adapter/view/artist-color'
 import type { Concert, JourneyStatus, LaneType } from '../../entities/concert'
 import { EventCard } from './event-card'
 
@@ -16,6 +15,7 @@ import { EventCard } from './event-card'
  * removed the dead `color-drift` custom-property animation.
  */
 function makeEvent(overrides: Partial<Concert> = {}): Concert {
+	const artistName = overrides.artistName ?? 'VAUNDY'
 	return {
 		id: 'ev-1',
 		artistName: 'VAUNDY',
@@ -28,21 +28,18 @@ function makeEvent(overrides: Partial<Concert> = {}): Concert {
 		sourceUrl: 'https://example.com',
 		hypeLevel: 'home',
 		matched: false,
+		artistHue: artistHue(artistName),
 		...overrides,
 	}
 }
 
-// All stories drive the card through defineAureliaStory so the card's own custom
-// attributes (`artist-color`, `press-feedback`) are registered alongside it.
+// All stories drive the card through defineAureliaStory so it renders through a
+// real template, the way the timetable mounts it.
 function cardStory(event: Concert, lane: LaneType = 'home') {
 	return defineAureliaStory({
 		template: `<event-card event.bind="event" lane.bind="lane" readonly.bind="true"></event-card>`,
 		props: { event, lane },
-		register: [
-			EventCard,
-			ArtistColorCustomAttribute,
-			PressFeedbackCustomAttribute,
-		],
+		register: [EventCard],
 	})
 }
 
@@ -95,8 +92,8 @@ export const Matched = {
 		await expect(style.borderTopWidth).toBe('2px')
 		await expect(style.boxShadow).not.toBe('none')
 
-		// The color identity source (--artist-hue, set by the artist-color
-		// attribute) is present …
+		// The color identity source (--artist-hue, handed to CSS from the
+		// concert's precomputed hue) is present …
 		await expect(style.getPropertyValue('--artist-hue').trim()).not.toBe('')
 		// … while the dead derived var removed by this change is absent.
 		await expect(style.getPropertyValue('--artist-color').trim()).toBe('')

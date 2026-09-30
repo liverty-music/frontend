@@ -338,16 +338,16 @@ describe('DashboardRoute', () => {
 	})
 
 	describe('loadData() fast-path (warm re-entry)', () => {
-		it('parks the cache for the component lifecycle instead of rendering it in loading()', async () => {
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "A cached result is reflected from the component lifecycle"
+		it('parks the cache in loading() and reflects it from bound(), before the first render', async () => {
 			const cached = makeCachedGroups()
 			mockConcertService.peekDateGroups.mockReturnValue(cached)
 			sut.needsRegion = false
 
 			await sut.loadData()
 
-			// loadData() is reached from the pre-activation loading() hook. Assigning
-			// render state there puts the whole timetable into the component's first
-			// render, which is the freeze this route is being changed to avoid.
+			// loadData() is reached from the pre-activation loading() hook, which
+			// must not assign render state.
 			expect(sut.dateGroups).toEqual([])
 			// Not settled yet, so the template shows the skeleton — NOT an empty
 			// state, which `dateGroups.length === 0` alone cannot distinguish.
@@ -356,11 +356,15 @@ describe('DashboardRoute', () => {
 			// and it is why the skeleton cannot be gated on isLoading.
 			expect(sut.isLoading).toBe(false)
 
-			sut.attached()
+			// bound() is a component-lifecycle hook that runs before the first
+			// render, so re-entry renders the timetable directly — no skeleton first,
+			// and nothing forced to flush.
+			sut.bound()
 
 			expect(sut.dateGroups).toEqual(cached)
 			expect(sut.hasSettled).toBe(true)
 			expect(sut.isLoading).toBe(false)
+			expect(runTasks).not.toHaveBeenCalled()
 		})
 
 		it('never renders an empty state while a cached paint is pending', async () => {
@@ -369,8 +373,8 @@ describe('DashboardRoute', () => {
 
 			await sut.loadData()
 
-			// Both empty-state placeholders are gated on hasSettled, so the window
-			// between loading() and attached() shows the skeleton.
+			// Both empty-state placeholders are gated on hasSettled, so nothing can
+			// flash an empty state between loading() and bound().
 			expect(sut.hasSettled).toBe(false)
 			expect(sut.dateGroups).toEqual([])
 		})
@@ -395,17 +399,17 @@ describe('DashboardRoute', () => {
 			sut.needsRegion = false
 
 			await sut.loadData()
-			// The refresh is fire-and-forget; letting it settle before attached()
+			// The refresh is fire-and-forget; letting it settle before bound()
 			// models the fast-network case. Reflecting the cache afterwards would
 			// replace fresh data with stale.
 			await flushMicrotasks()
 
-			sut.attached()
+			sut.bound()
 
 			expect(sut.dateGroups).toEqual(fresh)
 		})
 
-		it('saves the anchor on the way out and restores it on re-entry', async () => {
+		it('saves the anchor on the way out and hands it to the highway on re-entry', async () => {
 			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
 			sut.needsRegion = false
 
@@ -417,57 +421,62 @@ describe('DashboardRoute', () => {
 			expect(mockConcertService.timetableScrollAnchor).toEqual(ANCHOR)
 
 			// Coming back: a NEW route instance, which is why the anchor has to live
-			// in the store rather than on the route.
+			// in the store rather than on the route. The highway receives it as its
+			// initial anchor, builds its window around it and positions itself in
+			// its own attached() — the route no longer restores anything.
 			const next = new DashboardRoute()
-			next.highway = mockHighway as never
-			mockHighway.scrollAnchor = null
 			await next.loadData()
-			next.attached()
+			next.bound()
 
-			expect(mockHighway.scrollAnchor).toEqual(ANCHOR)
+			expect(next.timetableAnchor).toEqual(ANCHOR)
+			expect(next.dateGroups).toEqual(makeCachedGroups())
 		})
 
-		it('restores only after the rows have rendered', async () => {
+		it('hands no anchor over on a first visit', async () => {
 			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
-			mockConcertService.timetableScrollAnchor = ANCHOR
+			mockConcertService.timetableScrollAnchor = null
 			sut.needsRegion = false
 
-			// Model the real failure: assigning dateGroups only SCHEDULES the render,
-			// so a restore in the same synchronous block cannot find the anchored
-			// group — it does not exist yet — and the restore silently does nothing.
-			// The route must flush the queued DOM writes first.
-			let rendered = false
-			let restored: { dateKey: string; offset: number } | null = null
-			const highway = {
-				get scrollAnchor() {
-					return null
-				},
-				set scrollAnchor(v: { dateKey: string; offset: number } | null) {
-					if (!rendered) throw new Error('restored before the rows rendered')
-					restored = v
-				},
-			}
-			vi.mocked(runTasks).mockImplementation(() => {
-				rendered = true
-			})
-			sut.highway = highway as never
-
 			await sut.loadData()
-			sut.attached()
+			sut.bound()
 
-			expect(restored).toEqual(ANCHOR)
+			expect(sut.timetableAnchor).toBeNull()
 		})
 
-		it('does not restore when the timetable is not present', async () => {
-			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
-			mockConcertService.timetableScrollAnchor = ANCHOR
+		// @spec components/infrastructure/fan/web/route/dashboard "Deferring the render preserves load-path side effects"
+		it('keeps the refresh, the data-ready latch and a pending deep-link when reflecting in bound()', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserStore.current = { home: 'JP-13' }
+			sut = new DashboardRoute()
 			sut.needsRegion = false
-			// No highway ref (All Nearby mode, or before the view resolves it).
-			sut.highway = undefined
+			const onLoaded = vi.spyOn(
+				sut as unknown as { timetableLoadedChanged: (v: boolean) => void },
+				'timetableLoadedChanged',
+			)
+			mockConcertService.peekDateGroups.mockReturnValueOnce([
+				makeGroup('artist-9'),
+			])
+			mockConcertService.listByFollower.mockResolvedValueOnce([{}] as never)
+			mockConcertService.toDateGroups.mockReturnValueOnce([
+				makeGroup('artist-1'),
+			])
+			const sheet = stubDetailSheet(sut)
+			setPendingConcertId(sut, 'h-artist-1')
 
 			await sut.loadData()
+			sut.bound()
+			// The data-ready latch fires once, from the lifecycle reflection.
+			expect(sut.timetableLoaded).toBe(true)
+			expect(onLoaded).toHaveBeenCalledTimes(1)
+			expect(sheet.open).not.toHaveBeenCalled()
 
-			expect(() => sut.attached()).not.toThrow()
+			await flushMicrotasks()
+			// The background refresh still fetched and swapped in fresh data, and
+			// the deep-link resolved against it.
+			expect(mockConcertService.listByFollower).toHaveBeenCalled()
+			expect(sut.dateGroups).toEqual([makeGroup('artist-1')])
+			expect(sheet.open).toHaveBeenCalledTimes(1)
+			expect(onLoaded).toHaveBeenCalledTimes(1)
 		})
 
 		it('falls through to cold load when no cache exists (first visit)', () => {

@@ -4,6 +4,7 @@ import {
 	JOURNEY_STATUS_CONFIG_MAP,
 	type JourneyStatusConfig,
 } from '../../entities/ticket-journey'
+import { beamTimelineName } from './beam-name'
 import type { LaneType, LiveEvent } from './live-event'
 
 export class EventCard {
@@ -58,8 +59,15 @@ export class EventCard {
 		)
 	}
 
-	/** Sequential beam index assigned by the highway; null when not matched. */
-	@bindable public beamIndex: number | null = null
+	/**
+	 * The view-timeline name this card's beam follows. Bound one-time: it is
+	 * derived from the concert id alone, and a card view never changes concert
+	 * (the lane repeat is keyed by id). The card itself never declares the
+	 * timeline — the highway's stylesheet does, and only while beams are on.
+	 */
+	public get beamName(): string {
+		return beamTimelineName(this.event.id)
+	}
 
 	/**
 	 * When true, the venue/location label renders for ALL lanes including HOME.

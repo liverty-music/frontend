@@ -112,6 +112,15 @@ src/
 Aurelia 2 coding conventions (DI, events, lifecycle, routing, templates, logging) are defined
 in the `aurelia2-component` skill. Read it before writing any component code.
 
+### Inline styles (CUBE CSS)
+
+Styling lives in stylesheets (CUBE layers, `@scope`). A template MAY set **CSS custom
+properties from data** inline, and nothing else: `style="--artist-hue: ${event.artistHue}"`
+is allowed; `style="color: …"`, layout, or any other declaration is not. Compute the value
+when the data is built (e.g. `Concert.artistHue`), not in a custom attribute that runs per
+element — a custom attribute whose only job is to copy a value into a custom property adds
+a controller to every element it sits on.
+
 ## Component Stories & Testing (Storybook + Vitest)
 
 Testing runs as Vitest 4 `test.projects` in a single `vitest.config.ts`:

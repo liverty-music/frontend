@@ -79,7 +79,7 @@
 		);
 	}
 
-	/* App-wide press-feedback baseline: every native button acknowledges a touch
+	/* App-wide press baseline: every native button acknowledges a touch
 	   on :active so no per-component code is needed. Wrapped in :where() for zero
 	   specificity so components that define their own :active in @layer block keep
 	   precedence; :not(:disabled) leaves disabled controls inert. */
