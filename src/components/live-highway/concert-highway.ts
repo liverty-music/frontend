@@ -48,8 +48,23 @@ export class ConcertHighway {
 	 */
 	public readonly skeletonRows = [0, 1, 2, 3]
 
-	public get showSkeleton(): boolean {
-		return this.loading && this.dateGroups.length === 0
+	/**
+	 * Whether the loading placeholder is shown: while loading, with nothing
+	 * real built. A field set in the same step that builds the window
+	 * (`sliceWindow`), not a getter: the window's groups are inserted the moment
+	 * it is sliced, and a getter's `if` re-evaluates in a later task — so a frame
+	 * could paint the placeholder and the first groups together, and the groups
+	 * then jumped up by the placeholder's height when it went (CLS ≈ 0.5).
+	 * Updating both in one step swaps them in the same frame.
+	 */
+	public showSkeleton = false
+
+	public loadingChanged(): void {
+		this.updateSkeleton()
+	}
+
+	private updateSkeleton(): void {
+		this.showSkeleton = this.loading && this.visibleGroups.length === 0
 	}
 
 	private readonly element = resolve(INode) as HTMLElement
@@ -164,6 +179,7 @@ export class ConcertHighway {
 		this.windowStart = Math.min(this.windowStart, Math.max(0, total - 1))
 		this.windowEnd = Math.min(total, this.windowEnd)
 		this.visibleGroups = this.dateGroups.slice(this.windowStart, this.windowEnd)
+		this.updateSkeleton()
 	}
 
 	/**
