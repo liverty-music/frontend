@@ -38,9 +38,11 @@ fix:
 test:
 	npx vitest run --coverage --project=unit --project=scripts
 
-## lint-no-style: ban style attributes in templates (CSS owns presentation)
+## lint-no-style: ban style attributes in templates (CSS owns presentation).
+## The one exception (AGENTS.md "Inline styles"): an attribute that only sets CSS
+## custom properties from data, e.g. style="--artist-hue: ${event.artistHue}".
 lint-no-style:
-	! grep -rn 'style[.= ]' --include='*.html' src/
+	! grep -rn 'style[.= ]' --include='*.html' src/ | grep -vE 'style="(--[a-z0-9-]+: *\$$\{[^}"]*\};? *)+"'
 
 ## lint-no-class-ternary: ban class interpolation (use data-* instead)
 lint-no-class-ternary:
