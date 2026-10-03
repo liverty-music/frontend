@@ -94,6 +94,6 @@
 	"type": "module",
 	"overrides": {
 		"dompurify": "^3.4.13",
-		"fflate": "0.4.9"
+		"fflate": "0.8.3"
 	}
 }
