@@ -138,7 +138,7 @@ for (const hype of ['home', 'nearby', 'away'] as const) {
 		const matchedCard = results.cards.find((c) => c.matched === 'true')
 		expect(matchedCard, 'expected a matched card').toBeTruthy()
 		expect(matchedCard?.beamName, 'the card must carry its beam name').toBe(
-			'--beam-c-1',
+			'--beam-00000000-0000-4000-8000-c10000000001',
 		)
 
 		expect(

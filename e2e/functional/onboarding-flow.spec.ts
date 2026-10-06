@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -161,7 +162,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 						nearby: [],
 						away: [
 							{
-								id: { value: `c-${aid}` },
+								id: { value: fakeId(`c-${aid}`) },
 								performers: [
 									{
 										id: { value: aid },
@@ -170,7 +171,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 									},
 								],
 								series: {
-									id: { value: `s-${aid}` },
+									id: { value: fakeId(`s-${aid}`) },
 									title: { value: `Concert ${i + 1}` },
 									sourceUrl: { value: '' },
 								},
@@ -296,7 +297,7 @@ async function mockLastFmApi(page: Page): Promise<void> {
 					topartists: {
 						artist: Array.from({ length: 10 }, (_, i) => ({
 							name: `Artist ${i + 1}`,
-							mbid: `mbid-${i + 1}`,
+							mbid: fakeId(`mbid-${i + 1}`),
 							image: [
 								{ '#text': '', size: 'medium' },
 								{ '#text': '', size: 'large' },

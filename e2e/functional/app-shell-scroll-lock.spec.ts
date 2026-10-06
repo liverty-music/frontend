@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -46,7 +47,7 @@ function proximityPayload() {
 			},
 		}
 		const home = Array.from({ length: 3 }, (_, i) => ({
-			id: { value: `c-${dayOffset}-${i}` },
+			id: { value: fakeId(`c-${dayOffset}-${i}`) },
 			performers: [
 				{
 					id: { value: '00000000-0000-4000-8000-a00000000001' },
@@ -55,7 +56,7 @@ function proximityPayload() {
 				},
 			],
 			series: {
-				id: { value: `s-${dayOffset}-${i}` },
+				id: { value: fakeId(`s-${dayOffset}-${i}`) },
 				title: { value: 'Zepp DiverCity Live' },
 			},
 			localDate,

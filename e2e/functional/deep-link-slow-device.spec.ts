@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, test } from '../support/test'
 
 /**
@@ -17,7 +18,7 @@ function localDate(offset: number) {
 }
 
 const artists = Array.from({ length: 10 }, (_, i) => ({
-	id: `artist-${i}`,
+	id: fakeId(`artist-${i}`),
 	name: `ARTIST ${i}`,
 	mbid: '',
 }))
@@ -32,7 +33,7 @@ function concert(id: string, day: number, artist: (typeof artists)[number]) {
 				mbid: { value: '' },
 			},
 		],
-		series: { id: { value: `s-${id}` }, title: { value: 'Live' } },
+		series: { id: { value: fakeId(`s-${id}`) }, title: { value: 'Live' } },
 		localDate: localDate(day),
 		venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
 		sourceUrl: { value: 'https://example.com' },
@@ -42,7 +43,7 @@ function concert(id: string, day: number, artist: (typeof artists)[number]) {
 const groups = Array.from({ length: 212 }, (_, i) => ({
 	date: localDate(i + 1),
 	home: Array.from({ length: 1 + (i % 3) }, (_, k) =>
-		concert(`h-${i}-${k}`, i + 1, artists[(i + k) % artists.length]),
+		concert(fakeId(`h-${i}-${k}`), i + 1, artists[(i + k) % artists.length]),
 	),
 	nearby: [],
 	away: [],
@@ -88,7 +89,7 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 	const cdp = await context.newCDPSession(page)
 	await cdp.send('Emulation.setCPUThrottlingRate', { rate: 10 })
 
-	await page.goto('http://localhost:9000/concerts/h-150-0')
+	await page.goto(`http://localhost:9000/concerts/${fakeId('h-150-0')}`)
 
 	// The sheet opens for the linked concert, and its URL is the final entry.
 	await expect
@@ -103,7 +104,7 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 			{ timeout: 60_000 },
 		)
 		.toBe(true)
-	await expect(page).toHaveURL(/\/concerts\/h-150-0$/)
+	await expect(page).toHaveURL(new RegExp(`/concerts/${fakeId('h-150-0')}$`))
 	// The filtered timetable rendered behind it.
 	await expect
 		.poll(() => page.locator('concert-highway .date-group').count())

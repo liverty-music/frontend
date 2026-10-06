@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -23,7 +24,7 @@ async function mockRpc(page: Page): Promise<void> {
 		date: localDate(i + 1),
 		home: [
 			{
-				id: { value: `c-${i}` },
+				id: { value: fakeId(`c-${i}`) },
 				performers: [
 					{
 						id: { value: '00000000-0000-4000-8000-a00000000001' },
@@ -31,7 +32,10 @@ async function mockRpc(page: Page): Promise<void> {
 						mbid: { value: '' },
 					},
 				],
-				series: { id: { value: `s-${i}` }, title: { value: 'Test Live' } },
+				series: {
+					id: { value: fakeId(`s-${i}`) },
+					title: { value: 'Test Live' },
+				},
 				localDate: localDate(i + 1),
 				venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
 				sourceUrl: { value: 'https://example.com' },

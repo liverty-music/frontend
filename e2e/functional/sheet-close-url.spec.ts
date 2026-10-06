@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -17,7 +18,7 @@ function localDate(offset: number) {
 }
 
 const artists = Array.from({ length: 3 }, (_, i) => ({
-	id: `artist-${i}`,
+	id: fakeId(`artist-${i}`),
 	name: `ARTIST ${i}`,
 	mbid: '',
 }))
@@ -26,7 +27,7 @@ const groups = Array.from({ length: 12 }, (_, i) => ({
 	date: localDate(i + 1),
 	home: [
 		{
-			id: { value: `c-${i}` },
+			id: { value: fakeId(`c-${i}`) },
 			performers: [
 				{
 					id: { value: artists[i % 3].id },
@@ -34,7 +35,7 @@ const groups = Array.from({ length: 12 }, (_, i) => ({
 					mbid: { value: '' },
 				},
 			],
-			series: { id: { value: `s-${i}` }, title: { value: 'Live' } },
+			series: { id: { value: fakeId(`s-${i}`) }, title: { value: 'Live' } },
 			localDate: localDate(i + 1),
 			venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
 			sourceUrl: { value: 'https://example.com' },
@@ -92,11 +93,9 @@ test('@spec components/infrastructure/fan/web/route/dashboard "Closing a deep-li
 	page,
 }) => {
 	await prepare(page)
-	await page.goto(`${APP}/concerts/00000000-0000-4000-8000-c10000000004`)
+	await page.goto(`${APP}/concerts/${fakeId('c-4')}`)
 	await expect.poll(() => sheetOpen(page), { timeout: 15_000 }).toBe(true)
-	await expect(page).toHaveURL(
-		/\/concerts\/00000000-0000-4000-8000-c10000000004$/,
-	)
+	await expect(page).toHaveURL(new RegExp(`/concerts/${fakeId('c-4')}$`))
 
 	await page.keyboard.press('Escape')
 	await expect.poll(() => sheetOpen(page)).toBe(false)

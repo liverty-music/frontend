@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -30,7 +31,7 @@ function concert(id: string, day: number, artist: string, area: string) {
 				mbid: { value: '' },
 			},
 		],
-		series: { id: { value: `s-${id}` }, title: { value: 'Live' } },
+		series: { id: { value: fakeId(`s-${id}`) }, title: { value: 'Live' } },
 		localDate: localDate(day),
 		venue: { name: { value: 'Zepp' }, adminArea: { value: area } },
 		sourceUrl: { value: 'https://example.com' },
@@ -45,7 +46,7 @@ function groups() {
 			date: localDate(day),
 			home: Array.from({ length: 1 + (i % 3) }, (_, k) =>
 				concert(
-					`h-${i}-${k}`,
+					fakeId(`h-${i}-${k}`),
 					day,
 					'00000000-0000-4000-8000-a00000000001',
 					'JP-13',
@@ -55,7 +56,7 @@ function groups() {
 				i % 2 === 0
 					? [
 							concert(
-								`n-${i}`,
+								fakeId(`n-${i}`),
 								day,
 								'00000000-0000-4000-8000-a00000000001',
 								'JP-14',
@@ -66,7 +67,7 @@ function groups() {
 				i % 4 === 0
 					? [
 							concert(
-								`a-${i}`,
+								fakeId(`a-${i}`),
 								day,
 								'00000000-0000-4000-8000-a00000000001',
 								'JP-27',
