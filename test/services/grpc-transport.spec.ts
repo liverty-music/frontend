@@ -55,6 +55,15 @@ vi.mock('../../src/services/connect-error-router', () => ({
 		),
 }))
 
+vi.mock('../../src/services/validate-interceptor', () => ({
+	loadSharedValidator: vi.fn(),
+	createValidateInterceptor: vi
+		.fn()
+		.mockReturnValue(
+			(next: (req: unknown) => unknown) => (req: unknown) => next(req),
+		),
+}))
+
 const { createTransport } = await import('../../src/services/grpc-transport')
 const { setRpcTelemetrySink } = await import(
 	'../../src/lib/analytics/rpc-telemetry'
@@ -76,7 +85,7 @@ describe('grpc-transport', () => {
 
 			expect(mockCreateConnectTransport).toHaveBeenCalledTimes(1)
 			const call = mockCreateConnectTransport.mock.calls[0][0]
-			expect(call.interceptors).toHaveLength(5)
+			expect(call.interceptors).toHaveLength(6)
 		})
 
 		it('applies the configured rpcTimeoutMs as the default RPC deadline', () => {
@@ -103,7 +112,7 @@ describe('grpc-transport', () => {
 	describe('telemetry recording', () => {
 		afterEach(() => setRpcTelemetrySink(null))
 
-		// Extracts the loggingInterceptor (index 1: otel, logging, auth, authRetry,
+		// Extracts the loggingInterceptor (index 1: otel, logging, validate, auth, authRetry,
 		// retry), which records via the module recordRpcCall seam.
 		const buildLoggingInterceptor = () => {
 			const mockLogger = {
@@ -195,7 +204,7 @@ describe('grpc-transport', () => {
 					mockCreateConnectTransport.mock.calls.length - 1
 				][0].interceptors
 
-			const authInterceptor = interceptors[2]
+			const authInterceptor = interceptors[3]
 
 			const mockHeaders = new Map<string, string>()
 			const mockReq = {
@@ -235,7 +244,7 @@ describe('grpc-transport', () => {
 					mockCreateConnectTransport.mock.calls.length - 1
 				][0].interceptors
 
-			const authInterceptor = interceptors[2]
+			const authInterceptor = interceptors[3]
 
 			const mockHeaders = new Map<string, string>()
 			const mockReq = {
@@ -275,7 +284,7 @@ describe('grpc-transport', () => {
 					mockCreateConnectTransport.mock.calls.length - 1
 				][0].interceptors
 
-			const authInterceptor = interceptors[2]
+			const authInterceptor = interceptors[3]
 
 			const mockHeaders = new Map<string, string>()
 			const mockReq = {

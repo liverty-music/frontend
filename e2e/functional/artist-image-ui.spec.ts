@@ -25,18 +25,18 @@ const tomorrow = new Date()
 tomorrow.setDate(tomorrow.getDate() + 1)
 
 /** ListFollowed response with mixed fanart data:
- *  - artist-1 (YOASOBI): has all fanart images
- *  - artist-2 (Vaundy): has no fanart
- *  - artist-3 (Ado): has only music_logo (no hd_music_logo)
+ *  - artist 1 (YOASOBI): has all fanart images
+ *  - artist 2 (Vaundy): has no fanart
+ *  - artist 3 (Ado): has only music_logo (no hd_music_logo)
  */
 function listFollowedResponse() {
 	return {
 		artists: [
 			{
 				artist: {
-					id: { value: 'artist-1' },
+					id: { value: '00000000-0000-4000-8000-a00000000001' },
 					name: { value: 'YOASOBI' },
-					mbid: { value: 'mbid-1' },
+					mbid: { value: '00000000-0000-4000-8000-b00000000001' },
 					fanart: {
 						hdMusicLogo: { value: FANART_LOGO_URL },
 						artistBackground: { value: FANART_BG_URL },
@@ -47,17 +47,17 @@ function listFollowedResponse() {
 			},
 			{
 				artist: {
-					id: { value: 'artist-2' },
+					id: { value: '00000000-0000-4000-8000-a00000000002' },
 					name: { value: 'Vaundy' },
-					mbid: { value: 'mbid-2' },
+					mbid: { value: '00000000-0000-4000-8000-b00000000002' },
 				},
 				hype: 2, // HOME
 			},
 			{
 				artist: {
-					id: { value: 'artist-3' },
+					id: { value: '00000000-0000-4000-8000-a00000000003' },
 					name: { value: 'Ado' },
-					mbid: { value: 'mbid-3' },
+					mbid: { value: '00000000-0000-4000-8000-b00000000003' },
 					fanart: {
 						musicLogo: { value: FANART_LOGO_URL },
 					},
@@ -82,16 +82,16 @@ function listByFollowerResponse() {
 				},
 				home: [
 					{
-						id: { value: 'c-2' },
+						id: { value: '00000000-0000-4000-8000-c10000000002' },
 						performers: [
 							{
-								id: { value: 'artist-2' },
+								id: { value: '00000000-0000-4000-8000-a00000000002' },
 								name: { value: 'Vaundy' },
 								mbid: { value: '' },
 							},
 						],
 						series: {
-							id: { value: 's-2' },
+							id: { value: '00000000-0000-4000-8000-5e0000000002' },
 							title: { value: 'Vaundy Tour 2026' },
 						},
 						localDate: {
@@ -120,16 +120,16 @@ function listByFollowerResponse() {
 				nearby: [],
 				away: [
 					{
-						id: { value: 'c-1' },
+						id: { value: '00000000-0000-4000-8000-c10000000001' },
 						performers: [
 							{
-								id: { value: 'artist-1' },
+								id: { value: '00000000-0000-4000-8000-a00000000001' },
 								name: { value: 'YOASOBI' },
 								mbid: { value: '' },
 							},
 						],
 						series: {
-							id: { value: 's-1' },
+							id: { value: '00000000-0000-4000-8000-5e0000000001' },
 							title: { value: 'YOASOBI Live 2026' },
 							sourceUrl: { value: 'https://example.com/yoasobi' },
 						},
@@ -180,7 +180,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				contentType: 'application/json',
 				body: JSON.stringify({
 					user: {
-						id: { value: 'test-user-123' },
+						id: { value: '00000000-0000-4000-8000-d00000000002' },
 						email: { value: 'test@example.com' },
 						home: {
 							countryCode: 'JP',
@@ -257,7 +257,7 @@ function seedAuthenticatedState() {
 				token_type: 'Bearer',
 				scope: 'openid profile email',
 				profile: {
-					sub: 'test-user-123',
+					sub: '00000000-0000-4000-8000-d00000000002',
 					preferred_username: 'test@example.com',
 					name: 'Test User',
 				},
@@ -268,7 +268,10 @@ function seedAuthenticatedState() {
 		// Pre-seed the userID cache so ensureLoaded() takes the cache-hit
 		// branch (calls Get) instead of cache-miss (would call Create, which
 		// is unmocked here).
-		localStorage.setItem('liverty:userId:test-user-123', 'test-user-123')
+		localStorage.setItem(
+			'liverty:userId:00000000-0000-4000-8000-d00000000002',
+			'00000000-0000-4000-8000-d00000000002',
+		)
 	}
 }
 

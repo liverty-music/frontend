@@ -30,16 +30,16 @@ async function mockRpc(page: Page, withConcert: boolean): Promise<void> {
 							date: localDate,
 							home: [
 								{
-									id: { value: 'c-1' },
+									id: { value: '00000000-0000-4000-8000-c10000000001' },
 									performers: [
 										{
-											id: { value: 'artist-1' },
+											id: { value: '00000000-0000-4000-8000-a00000000001' },
 											name: { value: 'YOASOBI' },
 											mbid: { value: '' },
 										},
 									],
 									series: {
-										id: { value: 's-1' },
+										id: { value: '00000000-0000-4000-8000-5e0000000001' },
 										title: { value: 'Test Live' },
 									},
 									localDate,
@@ -79,7 +79,11 @@ async function seedGuest(page: Page, followed: boolean): Promise<void> {
 				f
 					? [
 							{
-								artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' },
+								artist: {
+									id: '00000000-0000-4000-8000-a00000000001',
+									name: 'YOASOBI',
+									mbid: '',
+								},
 								hype: 'home',
 							},
 						]

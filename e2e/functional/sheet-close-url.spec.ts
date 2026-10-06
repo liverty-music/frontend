@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -17,7 +18,7 @@ function localDate(offset: number) {
 }
 
 const artists = Array.from({ length: 3 }, (_, i) => ({
-	id: `artist-${i}`,
+	id: fakeId(`artist-${i}`),
 	name: `ARTIST ${i}`,
 	mbid: '',
 }))
@@ -26,7 +27,7 @@ const groups = Array.from({ length: 12 }, (_, i) => ({
 	date: localDate(i + 1),
 	home: [
 		{
-			id: { value: `c-${i}` },
+			id: { value: fakeId(`c-${i}`) },
 			performers: [
 				{
 					id: { value: artists[i % 3].id },
@@ -34,7 +35,7 @@ const groups = Array.from({ length: 12 }, (_, i) => ({
 					mbid: { value: '' },
 				},
 			],
-			series: { id: { value: `s-${i}` }, title: { value: 'Live' } },
+			series: { id: { value: fakeId(`s-${i}`) }, title: { value: 'Live' } },
 			localDate: localDate(i + 1),
 			venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
 			sourceUrl: { value: 'https://example.com' },
@@ -92,14 +93,14 @@ test('@spec components/infrastructure/fan/web/route/dashboard "Closing a deep-li
 	page,
 }) => {
 	await prepare(page)
-	await page.goto(`${APP}/concerts/c-4`)
+	await page.goto(`${APP}/concerts/${fakeId('c-4')}`)
 	await expect.poll(() => sheetOpen(page), { timeout: 15_000 }).toBe(true)
-	await expect(page).toHaveURL(/\/concerts\/c-4$/)
+	await expect(page).toHaveURL(new RegExp(`/concerts/${fakeId('c-4')}$`))
 
 	await page.keyboard.press('Escape')
 	await expect.poll(() => sheetOpen(page)).toBe(false)
 	// The filter the deep-link derived is in the URL…
-	await expect(page).toHaveURL(`${APP}/dashboard?artists=artist-1`)
+	await expect(page).toHaveURL(`${APP}/dashboard?artists=${fakeId('artist-1')}`)
 	expect(await shownArtists(page)).toEqual(['ARTIST 1'])
 
 	// …so a reload shows the same filtered timetable.
@@ -112,7 +113,7 @@ test('@spec components/infrastructure/fan/web/route/dashboard "Closing keeps the
 	page,
 }) => {
 	await prepare(page)
-	await page.goto(`${APP}/dashboard?artists=artist-2`)
+	await page.goto(`${APP}/dashboard?artists=${fakeId('artist-2')}`)
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 15_000 })
 	expect(await shownArtists(page)).toEqual(['ARTIST 2'])
 
@@ -122,5 +123,5 @@ test('@spec components/infrastructure/fan/web/route/dashboard "Closing keeps the
 
 	await page.keyboard.press('Escape')
 	await expect.poll(() => sheetOpen(page)).toBe(false)
-	await expect(page).toHaveURL(`${APP}/dashboard?artists=artist-2`)
+	await expect(page).toHaveURL(`${APP}/dashboard?artists=${fakeId('artist-2')}`)
 })

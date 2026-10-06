@@ -39,8 +39,9 @@ export async function runUserHydration(container: IContainer): Promise<void> {
 	// Create-on-cache-miss path and the backfill RPC send identical strings.
 	//
 	// Normalize so out-of-range navigator codes don't round-trip into
-	// Create / UpdatePreferredLanguage where the backend protovalidate
-	// constraint would reject them. normalizeToSupportedLanguage handles
+	// Create / UpdatePreferredLanguage, where the `preferred_language` proto
+	// rule (checked by the transport's validation interceptor, then by the
+	// backend) would reject them. normalizeToSupportedLanguage handles
 	// BCP 47 region tags too ('en-US' → 'en') so English-browser users
 	// get accounts created with 'en' rather than the fallbackLng 'ja'.
 	const clientLocale = normalizeToSupportedLanguage(i18n.getLocale())

@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -46,16 +47,16 @@ function proximityPayload() {
 			},
 		}
 		const home = Array.from({ length: 3 }, (_, i) => ({
-			id: { value: `c-${dayOffset}-${i}` },
+			id: { value: fakeId(`c-${dayOffset}-${i}`) },
 			performers: [
 				{
-					id: { value: 'artist-1' },
+					id: { value: '00000000-0000-4000-8000-a00000000001' },
 					name: { value: 'YOASOBI' },
 					mbid: { value: '' },
 				},
 			],
 			series: {
-				id: { value: `s-${dayOffset}-${i}` },
+				id: { value: fakeId(`s-${dayOffset}-${i}`) },
 				title: { value: 'Zepp DiverCity Live' },
 			},
 			localDate,
@@ -111,7 +112,11 @@ test.describe('App shell scroll lock (guest)', () => {
 				'guest.followedArtists',
 				JSON.stringify([
 					{
-						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000001',
+							name: 'YOASOBI',
+							mbid: '00000000-0000-4000-8000-b00000000001',
+						},
 						home: 'JP-13',
 					},
 				]),

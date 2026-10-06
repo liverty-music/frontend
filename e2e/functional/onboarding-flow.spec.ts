@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -70,17 +71,17 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
 				body: JSON.stringify({
 					artists: [
 						{
-							id: { value: 'a-1' },
+							id: { value: '00000000-0000-4000-8000-a10000000001' },
 							name: { value: 'Artist 1' },
 							hype: 'watch',
 						},
 						{
-							id: { value: 'a-2' },
+							id: { value: '00000000-0000-4000-8000-a10000000002' },
 							name: { value: 'Artist 2' },
 							hype: 'watch',
 						},
 						{
-							id: { value: 'a-3' },
+							id: { value: '00000000-0000-4000-8000-a10000000003' },
 							name: { value: 'Artist 3' },
 							hype: 'watch',
 						},
@@ -115,16 +116,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				body: JSON.stringify({
 					concerts: [
 						{
-							id: { value: 'c-1' },
+							id: { value: '00000000-0000-4000-8000-c10000000001' },
 							performers: [
 								{
-									id: { value: 'a-1' },
+									id: { value: '00000000-0000-4000-8000-a10000000001' },
 									name: { value: 'Test Artist' },
 									mbid: { value: '' },
 								},
 							],
 							series: {
-								id: { value: 's-1' },
+								id: { value: '00000000-0000-4000-8000-5e0000000001' },
 								title: { value: 'Test Concert' },
 							},
 							localDate: { value: { year: 2026, month: 6, day: 15 } },
@@ -161,7 +162,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 						nearby: [],
 						away: [
 							{
-								id: { value: `c-${aid}` },
+								id: { value: fakeId(`c-${aid}`) },
 								performers: [
 									{
 										id: { value: aid },
@@ -170,7 +171,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 									},
 								],
 								series: {
-									id: { value: `s-${aid}` },
+									id: { value: fakeId(`s-${aid}`) },
 									title: { value: `Concert ${i + 1}` },
 									sourceUrl: { value: '' },
 								},
@@ -198,16 +199,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 							date: { value: { year: 2026, month: 6, day: 15 } },
 							away: [
 								{
-									id: { value: 'c-1' },
+									id: { value: '00000000-0000-4000-8000-c10000000001' },
 									performers: [
 										{
-											id: { value: 'a-1' },
+											id: { value: '00000000-0000-4000-8000-a10000000001' },
 											name: { value: 'Test Artist' },
 											mbid: { value: '' },
 										},
 									],
 									series: {
-										id: { value: 's-1' },
+										id: { value: '00000000-0000-4000-8000-5e0000000001' },
 										title: { value: 'Test Concert' },
 									},
 									localDate: { value: { year: 2026, month: 6, day: 15 } },
@@ -229,16 +230,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				body: JSON.stringify({
 					concerts: [
 						{
-							id: { value: 'c-1' },
+							id: { value: '00000000-0000-4000-8000-c10000000001' },
 							performers: [
 								{
-									id: { value: 'a-1' },
+									id: { value: '00000000-0000-4000-8000-a10000000001' },
 									name: { value: 'Test Artist' },
 									mbid: { value: '' },
 								},
 							],
 							series: {
-								id: { value: 's-1' },
+								id: { value: '00000000-0000-4000-8000-5e0000000001' },
 								title: { value: 'Test Concert' },
 							},
 							localDate: { value: { year: 2026, month: 6, day: 15 } },
@@ -255,17 +256,17 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				body: JSON.stringify({
 					artists: [
 						{
-							id: { value: 'a-1' },
+							id: { value: '00000000-0000-4000-8000-a10000000001' },
 							name: { value: 'Artist 1' },
 							hype: 'watch',
 						},
 						{
-							id: { value: 'a-2' },
+							id: { value: '00000000-0000-4000-8000-a10000000002' },
 							name: { value: 'Artist 2' },
 							hype: 'watch',
 						},
 						{
-							id: { value: 'a-3' },
+							id: { value: '00000000-0000-4000-8000-a10000000003' },
 							name: { value: 'Artist 3' },
 							hype: 'watch',
 						},
@@ -296,7 +297,7 @@ async function mockLastFmApi(page: Page): Promise<void> {
 					topartists: {
 						artist: Array.from({ length: 10 }, (_, i) => ({
 							name: `Artist ${i + 1}`,
-							mbid: `mbid-${i + 1}`,
+							mbid: fakeId(`mbid-${i + 1}`),
 							image: [
 								{ '#text': '', size: 'medium' },
 								{ '#text': '', size: 'large' },
@@ -523,9 +524,27 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
-					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
-					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000001',
+							name: 'Artist 1',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000002',
+							name: 'Artist 2',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000003',
+							name: 'Artist 3',
+						},
+						home: null,
+					},
 				]),
 			)
 		})
@@ -551,9 +570,27 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
-					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
-					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000001',
+							name: 'Artist 1',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000002',
+							name: 'Artist 2',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000003',
+							name: 'Artist 3',
+						},
+						home: null,
+					},
 				]),
 			)
 		})
@@ -589,9 +626,27 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
-					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
-					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000001',
+							name: 'Artist 1',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000002',
+							name: 'Artist 2',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000003',
+							name: 'Artist 3',
+						},
+						home: null,
+					},
 				]),
 			)
 		})
@@ -616,9 +671,27 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
-					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
-					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000001',
+							name: 'Artist 1',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000002',
+							name: 'Artist 2',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000003',
+							name: 'Artist 3',
+						},
+						home: null,
+					},
 				]),
 			)
 		})
@@ -724,9 +797,27 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
-					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
-					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000001',
+							name: 'Artist 1',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000002',
+							name: 'Artist 2',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000003',
+							name: 'Artist 3',
+						},
+						home: null,
+					},
 				]),
 			)
 		})
@@ -801,9 +892,27 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
-					{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
-					{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000001',
+							name: 'Artist 1',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000002',
+							name: 'Artist 2',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000003',
+							name: 'Artist 3',
+						},
+						home: null,
+					},
 				]),
 			)
 		})

@@ -174,7 +174,7 @@ async function mockPushRpc(
 					body: JSON.stringify({
 						subscription: {
 							id: { value: '11111111-1111-1111-1111-111111111111' },
-							userId: { value: 'e2e-user' },
+							userId: { value: '00000000-0000-4000-8000-d00000000001' },
 							endpoint: { value: FAKE_ENDPOINT },
 							keys: { p256Dh: 'fake-p256dh-key', auth: 'fake-auth-secret' },
 						},
@@ -201,7 +201,7 @@ async function mockPushRpc(
 					body: JSON.stringify({
 						subscription: {
 							id: { value: '22222222-2222-2222-2222-222222222222' },
-							userId: { value: 'e2e-user' },
+							userId: { value: '00000000-0000-4000-8000-d00000000001' },
 							endpoint: { value: FAKE_ENDPOINT },
 							keys: { p256Dh: 'fake-p256dh-key', auth: 'fake-auth-secret' },
 						},

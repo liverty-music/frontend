@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -18,7 +19,7 @@ function localDate(offset: number) {
 }
 
 const artists = Array.from({ length: 10 }, (_, i) => ({
-	id: `artist-${i}`,
+	id: fakeId(`artist-${i}`),
 	name: `ARTIST ${i}`,
 	mbid: '',
 }))
@@ -28,7 +29,7 @@ const groups = Array.from({ length: 212 }, (_, i) => ({
 	home: Array.from({ length: 1 + (i % 3) }, (_, k) => {
 		const artist = artists[(i + k) % artists.length]
 		return {
-			id: { value: `h-${i}-${k}` },
+			id: { value: fakeId(`h-${i}-${k}`) },
 			performers: [
 				{
 					id: { value: artist.id },
@@ -36,7 +37,10 @@ const groups = Array.from({ length: 212 }, (_, i) => ({
 					mbid: { value: '' },
 				},
 			],
-			series: { id: { value: `s-${i}-${k}` }, title: { value: 'Live' } },
+			series: {
+				id: { value: fakeId(`s-${i}-${k}`) },
+				title: { value: 'Live' },
+			},
 			localDate: localDate(i + 1),
 			venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
 			sourceUrl: { value: 'https://example.com' },
@@ -114,7 +118,7 @@ async function prepare(page: Page): Promise<void> {
 	)
 }
 
-for (const path of ['/dashboard', '/concerts/h-150-0']) {
+for (const path of ['/dashboard', `/concerts/${fakeId('h-150-0')}`]) {
 	// @spec components/infrastructure/fan/web/route/dashboard "Viewport-scoping off-screen content does not regress sticky headers or shift layout"
 	test(`the placeholder and the concerts swap in one frame (${path})`, async ({
 		page,

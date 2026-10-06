@@ -52,7 +52,7 @@ export async function installAuthMocks(page: Page): Promise<void> {
 		route.fulfill({
 			status: 200,
 			contentType: 'application/json',
-			body: '{"sub":"test-user-123"}',
+			body: '{"sub":"00000000-0000-4000-8000-d00000000002"}',
 		}),
 	)
 }

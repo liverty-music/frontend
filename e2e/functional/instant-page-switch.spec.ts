@@ -61,7 +61,11 @@ async function seedGuest(page: Page): Promise<void> {
 			'guest.followedArtists',
 			JSON.stringify([
 				{
-					artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+					artist: {
+						id: '00000000-0000-4000-8000-a00000000001',
+						name: 'YOASOBI',
+						mbid: '00000000-0000-4000-8000-b00000000001',
+					},
 					home: 'JP-13',
 				},
 			]),
@@ -100,7 +104,9 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Concert deep-link highlights Home"
 	test('a concert deep-link highlights Home', async ({ page }) => {
-		await page.goto('http://localhost:9000/concerts/concert-1')
+		await page.goto(
+			'http://localhost:9000/concerts/00000000-0000-4000-8000-c00000000001',
+		)
 		await page.waitForSelector('dashboard-route', { timeout: 10_000 })
 
 		await expect(tab(page, 'home')).toHaveAttribute('data-active', 'true')
@@ -250,16 +256,16 @@ test.describe('Timetable tab (guest)', () => {
 									date: localDate,
 									home: [
 										{
-											id: { value: 'c-1' },
+											id: { value: '00000000-0000-4000-8000-c10000000001' },
 											performers: [
 												{
-													id: { value: 'artist-1' },
+													id: { value: '00000000-0000-4000-8000-a00000000001' },
 													name: { value: 'YOASOBI' },
 													mbid: { value: '' },
 												},
 											],
 											series: {
-												id: { value: 's-1' },
+												id: { value: '00000000-0000-4000-8000-5e0000000001' },
 												title: { value: 'Live' },
 											},
 											localDate,
@@ -286,7 +292,11 @@ test.describe('Timetable tab (guest)', () => {
 				'guest.followedArtists',
 				JSON.stringify([
 					{
-						artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000001',
+							name: 'YOASOBI',
+							mbid: '',
+						},
 						hype: 'home',
 					},
 				]),

@@ -41,16 +41,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 							date: { value: tomorrowDate },
 							home: [
 								{
-									id: { value: 'c-1' },
+									id: { value: '00000000-0000-4000-8000-c10000000001' },
 									performers: [
 										{
-											id: { value: 'a-1' },
+											id: { value: '00000000-0000-4000-8000-a10000000001' },
 											name: { value: 'Artist 1' },
 											mbid: { value: '' },
 										},
 									],
 									series: {
-										id: { value: 's-1' },
+										id: { value: '00000000-0000-4000-8000-5e0000000001' },
 										title: { value: 'Test Concert' },
 										sourceUrl: { value: 'https://example.com' },
 									},
@@ -81,16 +81,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 							nearby: [],
 							away: [
 								{
-									id: { value: 'c-1' },
+									id: { value: '00000000-0000-4000-8000-c10000000001' },
 									performers: [
 										{
-											id: { value: 'a-1' },
+											id: { value: '00000000-0000-4000-8000-a10000000001' },
 											name: { value: 'Artist 1' },
 											mbid: { value: '' },
 										},
 									],
 									series: {
-										id: { value: 's-1' },
+										id: { value: '00000000-0000-4000-8000-5e0000000001' },
 										title: { value: 'Test Concert' },
 										sourceUrl: { value: 'https://example.com' },
 									},
@@ -114,16 +114,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				body: JSON.stringify({
 					concerts: [
 						{
-							id: { value: 'c-1' },
+							id: { value: '00000000-0000-4000-8000-c10000000001' },
 							performers: [
 								{
-									id: { value: 'a-1' },
+									id: { value: '00000000-0000-4000-8000-a10000000001' },
 									name: { value: 'Artist 1' },
 									mbid: { value: '' },
 								},
 							],
 							series: {
-								id: { value: 's-1' },
+								id: { value: '00000000-0000-4000-8000-5e0000000001' },
 								title: { value: 'Test Concert' },
 								sourceUrl: { value: 'https://example.com' },
 							},
@@ -144,9 +144,21 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				contentType: 'application/json',
 				body: JSON.stringify({
 					artists: [
-						{ id: { value: 'a-1' }, name: { value: 'Artist 1' }, hype: 0 },
-						{ id: { value: 'a-2' }, name: { value: 'Artist 2' }, hype: 0 },
-						{ id: { value: 'a-3' }, name: { value: 'Artist 3' }, hype: 0 },
+						{
+							id: { value: '00000000-0000-4000-8000-a10000000001' },
+							name: { value: 'Artist 1' },
+							hype: 0,
+						},
+						{
+							id: { value: '00000000-0000-4000-8000-a10000000002' },
+							name: { value: 'Artist 2' },
+							hype: 0,
+						},
+						{
+							id: { value: '00000000-0000-4000-8000-a10000000003' },
+							name: { value: 'Artist 3' },
+							hype: 0,
+						},
 					],
 				}),
 			})
@@ -173,9 +185,27 @@ function seedMyArtistsSpotlightState() {
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
-				{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
-				{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+				{
+					artist: {
+						id: '00000000-0000-4000-8000-a10000000001',
+						name: 'Artist 1',
+					},
+					home: null,
+				},
+				{
+					artist: {
+						id: '00000000-0000-4000-8000-a10000000002',
+						name: 'Artist 2',
+					},
+					home: null,
+				},
+				{
+					artist: {
+						id: '00000000-0000-4000-8000-a10000000003',
+						name: 'Artist 3',
+					},
+					home: null,
+				},
 			]),
 		)
 	}
@@ -190,9 +220,27 @@ function seedPostDashboardState() {
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ artist: { id: 'a-1', name: 'Artist 1' }, home: null },
-				{ artist: { id: 'a-2', name: 'Artist 2' }, home: null },
-				{ artist: { id: 'a-3', name: 'Artist 3' }, home: null },
+				{
+					artist: {
+						id: '00000000-0000-4000-8000-a10000000001',
+						name: 'Artist 1',
+					},
+					home: null,
+				},
+				{
+					artist: {
+						id: '00000000-0000-4000-8000-a10000000002',
+						name: 'Artist 2',
+					},
+					home: null,
+				},
+				{
+					artist: {
+						id: '00000000-0000-4000-8000-a10000000003',
+						name: 'Artist 3',
+					},
+					home: null,
+				},
 			]),
 		)
 	}

@@ -139,17 +139,37 @@ describe('LotteryApplyRoute', () => {
 			).toBe(false)
 		})
 
-		it('rejects a malformed phone number', () => {
+		// @spec components/infrastructure/fan/web/route/lottery-apply "Number fits neither form"
+		it.each([
+			'12345',
+			'9012345678',
+		])('keeps continue disabled and flags %j as invalid', async (phone) => {
+			const sut = makeSut({
+				step: 'identity',
+				fullName: '山田太郎',
+				phoneNumber: phone,
+			})
+			expect(sut.isIdentityValid).toBe(false)
+			expect(sut.isPhoneInvalid).toBe(true)
+			await sut.toPayment()
+			expect(mockLottery.createAuthorization).not.toHaveBeenCalled()
+			expect(sut.step).toBe('identity')
+		})
+
+		it('does not flag an empty phone number as invalid', () => {
 			expect(
-				makeSut({ fullName: '山田太郎', phoneNumber: '123' }).isIdentityValid,
+				makeSut({ fullName: '山田太郎', phoneNumber: '  ' }).isPhoneInvalid,
 			).toBe(false)
 		})
 
-		it('accepts a well-formed identity (separators tolerated)', () => {
-			expect(
-				makeSut({ fullName: '山田太郎', phoneNumber: '090-1234-5678' })
-					.isIdentityValid,
-			).toBe(true)
+		it.each([
+			'090-1234-5678',
+			'03 1234 5678',
+			'+81 90 1234 5678',
+		])('accepts %j as a well-formed identity', (phone) => {
+			const sut = makeSut({ fullName: '山田太郎', phoneNumber: phone })
+			expect(sut.isIdentityValid).toBe(true)
+			expect(sut.isPhoneInvalid).toBe(false)
 		})
 
 		it('does not create an authorization when identity is invalid', async () => {
@@ -206,12 +226,43 @@ describe('LotteryApplyRoute', () => {
 			expect(mockLottery.apply).toHaveBeenCalledWith(
 				'phase-1',
 				2,
-				{ fullName: '山田太郎', phoneNumber: '09012345678' },
+				{ fullName: '山田太郎', phoneNumber: '+819012345678' },
 				'pi_confirmed_999',
 				expect.anything(),
 			)
 			expect(sut.step).toBe('done')
 			expect(sut.error).toBe('')
+		})
+
+		it.each([
+			// @spec components/infrastructure/fan/web/route/lottery-apply "Domestic number with hyphens"
+			['090-1234-5678', '+819012345678'],
+			// @spec components/infrastructure/fan/web/route/lottery-apply "Landline number"
+			['03 1234 5678', '+81312345678'],
+			// @spec components/infrastructure/fan/web/route/lottery-apply "E.164 number with spaces"
+			['+81 90 1234 5678', '+819012345678'],
+		])('applies %j with the phone number %j', async (typed, sent) => {
+			const sut = makeSut({
+				step: 'identity',
+				ticketCount: 1,
+				fullName: '山田太郎',
+				phoneNumber: typed,
+			})
+			sut.paymentElementHost = document.createElement('div')
+			await sut.toPayment()
+			await flush()
+
+			await sut.confirmAndApply()
+
+			expect(mockLottery.apply).toHaveBeenCalledWith(
+				'phase-1',
+				1,
+				{ fullName: '山田太郎', phoneNumber: sent },
+				'pi_confirmed_999',
+				expect.anything(),
+			)
+			// The field keeps what the fan typed.
+			expect(sut.phoneNumber).toBe(typed)
 		})
 	})
 

@@ -1,3 +1,4 @@
+import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -23,15 +24,18 @@ async function mockRpc(page: Page): Promise<void> {
 		date: localDate(i + 1),
 		home: [
 			{
-				id: { value: `c-${i}` },
+				id: { value: fakeId(`c-${i}`) },
 				performers: [
 					{
-						id: { value: 'artist-1' },
+						id: { value: '00000000-0000-4000-8000-a00000000001' },
 						name: { value: 'YOASOBI' },
 						mbid: { value: '' },
 					},
 				],
-				series: { id: { value: `s-${i}` }, title: { value: 'Test Live' } },
+				series: {
+					id: { value: fakeId(`s-${i}`) },
+					title: { value: 'Test Live' },
+				},
 				localDate: localDate(i + 1),
 				venue: { name: { value: 'Zepp' }, adminArea: { value: 'JP-13' } },
 				sourceUrl: { value: 'https://example.com' },
@@ -101,7 +105,14 @@ test('beams are absent without typed attr(), and nothing else changes', async ({
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: 'home' },
+				{
+					artist: {
+						id: '00000000-0000-4000-8000-a00000000001',
+						name: 'YOASOBI',
+						mbid: '',
+					},
+					hype: 'home',
+				},
 			]),
 		)
 	})
