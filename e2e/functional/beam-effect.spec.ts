@@ -34,7 +34,7 @@ async function mockRpc(page: Page): Promise<void> {
 					id: { value: `c-${i}` },
 					performers: [
 						{
-							id: { value: 'artist-1' },
+							id: { value: '00000000-0000-4000-8000-a00000000001' },
 							name: { value: 'YOASOBI' },
 							mbid: { value: '' },
 						},
@@ -68,7 +68,14 @@ async function openDashboard(page: Page, beams: boolean): Promise<void> {
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: 'home' },
+				{
+					artist: {
+						id: '00000000-0000-4000-8000-a00000000001',
+						name: 'YOASOBI',
+						mbid: '',
+					},
+					hype: 'home',
+				},
 			]),
 		)
 	}, beams)

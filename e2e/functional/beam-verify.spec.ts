@@ -22,16 +22,16 @@ async function mockRpc(
 			}
 			group[lane] = [
 				{
-					id: { value: 'c-1' },
+					id: { value: '00000000-0000-4000-8000-c10000000001' },
 					performers: [
 						{
-							id: { value: 'artist-1' },
+							id: { value: '00000000-0000-4000-8000-a00000000001' },
 							name: { value: 'YOASOBI' },
 							mbid: { value: '' },
 						},
 					],
 					series: {
-						id: { value: 's-1' },
+						id: { value: '00000000-0000-4000-8000-5e0000000001' },
 						title: { value: 'Test Live' },
 					},
 					localDate: {
@@ -84,7 +84,14 @@ async function seedGuest(page: Page, hype: string): Promise<void> {
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
-				{ artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' }, hype: h },
+				{
+					artist: {
+						id: '00000000-0000-4000-8000-a00000000001',
+						name: 'YOASOBI',
+						mbid: '',
+					},
+					hype: h,
+				},
 			]),
 		)
 	}, hype)

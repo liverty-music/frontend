@@ -39,8 +39,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				contentType: 'application/json',
 				body: JSON.stringify({
 					artists: [
-						{ id: { value: 'artist-1' }, name: { value: 'YOASOBI' }, hype: 0 },
-						{ id: { value: 'artist-2' }, name: { value: 'Vaundy' }, hype: 0 },
+						{
+							id: { value: '00000000-0000-4000-8000-a00000000001' },
+							name: { value: 'YOASOBI' },
+							hype: 0,
+						},
+						{
+							id: { value: '00000000-0000-4000-8000-a00000000002' },
+							name: { value: 'Vaundy' },
+							hype: 0,
+						},
 					],
 				}),
 			})
@@ -64,16 +72,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 							},
 							home: [
 								{
-									id: { value: 'c-1' },
+									id: { value: '00000000-0000-4000-8000-c10000000001' },
 									performers: [
 										{
-											id: { value: 'artist-1' },
+											id: { value: '00000000-0000-4000-8000-a00000000001' },
 											name: { value: 'YOASOBI' },
 											mbid: { value: '' },
 										},
 									],
 									series: {
-										id: { value: 's-1' },
+										id: { value: '00000000-0000-4000-8000-5e0000000001' },
 										title: { value: 'Zepp Live' },
 									},
 									localDate: {
@@ -90,16 +98,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 									sourceUrl: { value: 'https://example.com' },
 								},
 								{
-									id: { value: 'c-2' },
+									id: { value: '00000000-0000-4000-8000-c10000000002' },
 									performers: [
 										{
-											id: { value: 'artist-2' },
+											id: { value: '00000000-0000-4000-8000-a00000000002' },
 											name: { value: 'Vaundy' },
 											mbid: { value: '' },
 										},
 									],
 									series: {
-										id: { value: 's-2' },
+										id: { value: '00000000-0000-4000-8000-5e0000000002' },
 										title: { value: 'Zepp Live' },
 									},
 									localDate: {
@@ -166,11 +174,19 @@ test.describe('Artist filter bar bottom sheet', () => {
 				'guest.followedArtists',
 				JSON.stringify([
 					{
-						artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000001',
+							name: 'YOASOBI',
+							mbid: '',
+						},
 						hype: 'watch',
 					},
 					{
-						artist: { id: 'artist-2', name: 'Vaundy', mbid: '' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000002',
+							name: 'Vaundy',
+							mbid: '',
+						},
 						hype: 'watch',
 					},
 				]),
@@ -208,11 +224,19 @@ test.describe('Artist filter bar bottom sheet', () => {
 				'guest.followedArtists',
 				JSON.stringify([
 					{
-						artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000001',
+							name: 'YOASOBI',
+							mbid: '',
+						},
 						hype: 'watch',
 					},
 					{
-						artist: { id: 'artist-2', name: 'Vaundy', mbid: '' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000002',
+							name: 'Vaundy',
+							mbid: '',
+						},
 						hype: 'watch',
 					},
 				]),
@@ -250,11 +274,19 @@ test.describe('Artist filter bar bottom sheet', () => {
 				'guest.followedArtists',
 				JSON.stringify([
 					{
-						artist: { id: 'artist-1', name: 'YOASOBI', mbid: '' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000001',
+							name: 'YOASOBI',
+							mbid: '',
+						},
 						hype: 'watch',
 					},
 					{
-						artist: { id: 'artist-2', name: 'Vaundy', mbid: '' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000002',
+							name: 'Vaundy',
+							mbid: '',
+						},
 						hype: 'watch',
 					},
 				]),
@@ -262,7 +294,7 @@ test.describe('Artist filter bar bottom sheet', () => {
 		})
 
 		// Deep link: the artist filter is parsed from the URL on load.
-		await page.goto('/dashboard?artists=artist-1')
+		await page.goto('/dashboard?artists=00000000-0000-4000-8000-a00000000001')
 		await page.waitForLoadState('networkidle')
 
 		await expectFilterActive(page)
@@ -278,6 +310,8 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await page.locator('label.artist-chip', { hasText: 'Vaundy' }).click()
 		await page.click('button.btn-confirm')
 
-		await expect(page).toHaveURL(/\/dashboard\?artists=artist-1,artist-2$/)
+		await expect(page).toHaveURL(
+			/\/dashboard\?artists=00000000-0000-4000-8000-a00000000001,00000000-0000-4000-8000-a00000000002$/,
+		)
 	})
 })

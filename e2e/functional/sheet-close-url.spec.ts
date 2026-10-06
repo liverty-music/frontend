@@ -92,14 +92,18 @@ test('@spec components/infrastructure/fan/web/route/dashboard "Closing a deep-li
 	page,
 }) => {
 	await prepare(page)
-	await page.goto(`${APP}/concerts/c-4`)
+	await page.goto(`${APP}/concerts/00000000-0000-4000-8000-c10000000004`)
 	await expect.poll(() => sheetOpen(page), { timeout: 15_000 }).toBe(true)
-	await expect(page).toHaveURL(/\/concerts\/c-4$/)
+	await expect(page).toHaveURL(
+		/\/concerts\/00000000-0000-4000-8000-c10000000004$/,
+	)
 
 	await page.keyboard.press('Escape')
 	await expect.poll(() => sheetOpen(page)).toBe(false)
 	// The filter the deep-link derived is in the URL…
-	await expect(page).toHaveURL(`${APP}/dashboard?artists=artist-1`)
+	await expect(page).toHaveURL(
+		`${APP}/dashboard?artists=00000000-0000-4000-8000-a00000000001`,
+	)
 	expect(await shownArtists(page)).toEqual(['ARTIST 1'])
 
 	// …so a reload shows the same filtered timetable.
@@ -112,7 +116,9 @@ test('@spec components/infrastructure/fan/web/route/dashboard "Closing keeps the
 	page,
 }) => {
 	await prepare(page)
-	await page.goto(`${APP}/dashboard?artists=artist-2`)
+	await page.goto(
+		`${APP}/dashboard?artists=00000000-0000-4000-8000-a00000000002`,
+	)
 	await page.locator('[data-live-card]').first().waitFor({ timeout: 15_000 })
 	expect(await shownArtists(page)).toEqual(['ARTIST 2'])
 
@@ -122,5 +128,7 @@ test('@spec components/infrastructure/fan/web/route/dashboard "Closing keeps the
 
 	await page.keyboard.press('Escape')
 	await expect.poll(() => sheetOpen(page)).toBe(false)
-	await expect(page).toHaveURL(`${APP}/dashboard?artists=artist-2`)
+	await expect(page).toHaveURL(
+		`${APP}/dashboard?artists=00000000-0000-4000-8000-a00000000002`,
+	)
 })

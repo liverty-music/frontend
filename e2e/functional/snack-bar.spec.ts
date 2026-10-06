@@ -21,17 +21,17 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 				body: JSON.stringify({
 					artists: [
 						{
-							id: { value: 'a-1' },
+							id: { value: '00000000-0000-4000-8000-a10000000001' },
 							name: { value: 'YOASOBI' },
 							hype: 0,
 						},
 						{
-							id: { value: 'a-2' },
+							id: { value: '00000000-0000-4000-8000-a10000000002' },
 							name: { value: 'Vaundy' },
 							hype: 0,
 						},
 						{
-							id: { value: 'a-3' },
+							id: { value: '00000000-0000-4000-8000-a10000000003' },
 							name: { value: 'Ado' },
 							hype: 0,
 						},
@@ -58,16 +58,16 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 							date: { value: { year: 2026, month: 3, day: 15 } },
 							away: [
 								{
-									id: { value: 'c-1' },
+									id: { value: '00000000-0000-4000-8000-c10000000001' },
 									performers: [
 										{
-											id: { value: 'a-1' },
+											id: { value: '00000000-0000-4000-8000-a10000000001' },
 											name: { value: 'Test Artist' },
 											mbid: { value: '' },
 										},
 									],
 									series: {
-										id: { value: 's-1' },
+										id: { value: '00000000-0000-4000-8000-5e0000000001' },
 										title: { value: 'Test Concert' },
 									},
 									localDate: {
@@ -144,9 +144,24 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'a-1', name: 'YOASOBI' }, home: null },
-					{ artist: { id: 'a-2', name: 'Vaundy' }, home: null },
-					{ artist: { id: 'a-3', name: 'Ado' }, home: null },
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000001',
+							name: 'YOASOBI',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000002',
+							name: 'Vaundy',
+						},
+						home: null,
+					},
+					{
+						artist: { id: '00000000-0000-4000-8000-a10000000003', name: 'Ado' },
+						home: null,
+					},
 				]),
 			)
 		})
@@ -216,14 +231,29 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 				'guest.followedArtists',
 				JSON.stringify([
 					{
-						artist: { id: 'a-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000001',
+							name: 'YOASOBI',
+							mbid: '00000000-0000-4000-8000-b00000000001',
+						},
 						home: 'JP-13',
 					},
 					{
-						artist: { id: 'a-2', name: 'Vaundy', mbid: 'mbid-2' },
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000002',
+							name: 'Vaundy',
+							mbid: '00000000-0000-4000-8000-b00000000002',
+						},
 						home: 'JP-13',
 					},
-					{ artist: { id: 'a-3', name: 'Ado', mbid: 'mbid-3' }, home: 'JP-13' },
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000003',
+							name: 'Ado',
+							mbid: '00000000-0000-4000-8000-b00000000003',
+						},
+						home: 'JP-13',
+					},
 				]),
 			)
 		})
@@ -296,9 +326,24 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
-					{ artist: { id: 'a-1', name: 'YOASOBI' }, home: null },
-					{ artist: { id: 'a-2', name: 'Vaundy' }, home: null },
-					{ artist: { id: 'a-3', name: 'Ado' }, home: null },
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000001',
+							name: 'YOASOBI',
+						},
+						home: null,
+					},
+					{
+						artist: {
+							id: '00000000-0000-4000-8000-a10000000002',
+							name: 'Vaundy',
+						},
+						home: null,
+					},
+					{
+						artist: { id: '00000000-0000-4000-8000-a10000000003', name: 'Ado' },
+						home: null,
+					},
 				]),
 			)
 		})

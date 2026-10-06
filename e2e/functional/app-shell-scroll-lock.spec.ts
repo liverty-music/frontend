@@ -49,7 +49,7 @@ function proximityPayload() {
 			id: { value: `c-${dayOffset}-${i}` },
 			performers: [
 				{
-					id: { value: 'artist-1' },
+					id: { value: '00000000-0000-4000-8000-a00000000001' },
 					name: { value: 'YOASOBI' },
 					mbid: { value: '' },
 				},
@@ -111,7 +111,11 @@ test.describe('App shell scroll lock (guest)', () => {
 				'guest.followedArtists',
 				JSON.stringify([
 					{
-						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000001',
+							name: 'YOASOBI',
+							mbid: '00000000-0000-4000-8000-b00000000001',
+						},
 						home: 'JP-13',
 					},
 				]),

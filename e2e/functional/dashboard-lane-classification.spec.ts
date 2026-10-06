@@ -25,16 +25,16 @@ function concertListPayload() {
 	return {
 		concerts: [
 			{
-				id: { value: 'c-1' },
+				id: { value: '00000000-0000-4000-8000-c10000000001' },
 				performers: [
 					{
-						id: { value: 'artist-1' },
+						id: { value: '00000000-0000-4000-8000-a00000000001' },
 						name: { value: 'YOASOBI' },
 						mbid: { value: '' },
 					},
 				],
 				series: {
-					id: { value: 's-1' },
+					id: { value: '00000000-0000-4000-8000-5e0000000001' },
 					title: { value: 'Zepp DiverCity Live' },
 				},
 				localDate: {
@@ -99,9 +99,21 @@ async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 				contentType: 'application/json',
 				body: JSON.stringify({
 					artists: [
-						{ id: { value: 'artist-1' }, name: { value: 'YOASOBI' }, hype: 0 },
-						{ id: { value: 'artist-2' }, name: { value: 'Vaundy' }, hype: 0 },
-						{ id: { value: 'artist-3' }, name: { value: 'Ado' }, hype: 0 },
+						{
+							id: { value: '00000000-0000-4000-8000-a00000000001' },
+							name: { value: 'YOASOBI' },
+							hype: 0,
+						},
+						{
+							id: { value: '00000000-0000-4000-8000-a00000000002' },
+							name: { value: 'Vaundy' },
+							hype: 0,
+						},
+						{
+							id: { value: '00000000-0000-4000-8000-a00000000003' },
+							name: { value: 'Ado' },
+							hype: 0,
+						},
 					],
 				}),
 			})
@@ -146,15 +158,27 @@ test.describe('Dashboard lane classification after home selection', () => {
 				'guest.followedArtists',
 				JSON.stringify([
 					{
-						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000001',
+							name: 'YOASOBI',
+							mbid: '00000000-0000-4000-8000-b00000000001',
+						},
 						home: null,
 					},
 					{
-						artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000002',
+							name: 'Vaundy',
+							mbid: '00000000-0000-4000-8000-b00000000002',
+						},
 						home: null,
 					},
 					{
-						artist: { id: 'artist-3', name: 'Ado', mbid: 'mbid-3' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000003',
+							name: 'Ado',
+							mbid: '00000000-0000-4000-8000-b00000000003',
+						},
 						home: null,
 					},
 				]),
@@ -205,15 +229,27 @@ test.describe('Dashboard lane classification after home selection', () => {
 				'guest.followedArtists',
 				JSON.stringify([
 					{
-						artist: { id: 'artist-1', name: 'YOASOBI', mbid: 'mbid-1' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000001',
+							name: 'YOASOBI',
+							mbid: '00000000-0000-4000-8000-b00000000001',
+						},
 						home: 'JP-13',
 					},
 					{
-						artist: { id: 'artist-2', name: 'Vaundy', mbid: 'mbid-2' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000002',
+							name: 'Vaundy',
+							mbid: '00000000-0000-4000-8000-b00000000002',
+						},
 						home: 'JP-13',
 					},
 					{
-						artist: { id: 'artist-3', name: 'Ado', mbid: 'mbid-3' },
+						artist: {
+							id: '00000000-0000-4000-8000-a00000000003',
+							name: 'Ado',
+							mbid: '00000000-0000-4000-8000-b00000000003',
+						},
 						home: 'JP-13',
 					},
 				]),
