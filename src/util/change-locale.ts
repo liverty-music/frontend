@@ -18,8 +18,11 @@ export function isSupportedLanguage(lang: string): lang is SupportedLanguage {
 
 /**
  * Coerce an arbitrary detector-emitted locale string to one of the values
- * the backend protovalidate constraint accepts (ISO 639-1 two-letter,
- * lowercase). Handles three input shapes:
+ * the `preferred_language` proto rule accepts (ISO 639-1 two-letter,
+ * lowercase). This is coercion, not validation: the rule itself is enforced
+ * client-side by the transport's validation interceptor
+ * (`services/validate-interceptor.ts`) and authoritatively by the backend.
+ * Handles three input shapes:
  *
  *   - already in `SUPPORTED_LANGUAGES` (`'ja'`, `'en'`) → returned as-is.
  *   - BCP 47 region tag (`'en-US'`, `'ja-JP'`, `'zh-Hant-TW'`) → strip the

@@ -13,6 +13,10 @@ import {
 	createAuthRetryInterceptor,
 	createRetryInterceptor,
 } from './connect-error-router'
+import {
+	createValidateInterceptor,
+	loadSharedValidator,
+} from './validate-interceptor'
 
 const tracer = trace.getTracer('connect-rpc')
 
@@ -22,7 +26,8 @@ const isCancellation = (err: unknown): boolean =>
 	(err instanceof ConnectError && err.code === Code.Canceled)
 
 /**
- * Creates a Connect transport with authentication, logging, and OTEL interceptors.
+ * Creates a Connect transport with authentication, logging, request
+ * validation, and OTEL interceptors.
  *
  * This factory function accepts IAuthService, ILogger, and AppConfig as
  * dependencies to avoid calling resolve() outside of a DI resolution context,
@@ -152,6 +157,9 @@ export const createTransport = (
 		interceptors: [
 			otelInterceptor,
 			loggingInterceptor,
+			// After logging so a locally rejected request is still traced and
+			// logged; before auth/retry so it is never authenticated or retried.
+			createValidateInterceptor(loadSharedValidator, logger),
 			authInterceptor,
 			createAuthRetryInterceptor(auth),
 			createRetryInterceptor(),

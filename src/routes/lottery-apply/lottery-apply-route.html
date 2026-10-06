@@ -88,9 +88,17 @@
 				autocomplete="tel"
 				inputmode="tel"
 				value.bind="phoneNumber"
+				aria-invalid.bind="isPhoneInvalid"
+				aria-describedby.bind="isPhoneInvalid ? 'lottery-apply-phone-error' : null"
 				class="lottery-apply-input"
 			/>
 		</label>
+		<p
+			id="lottery-apply-phone-error"
+			class="lottery-apply-error"
+			if.bind="isPhoneInvalid"
+			t="lotteryApply.phoneInvalid"
+		></p>
 		<p class="lottery-apply-error" if.bind="error">${error}</p>
 		<div class="[ lottery-apply-actions ] [ cluster ]">
 			<button

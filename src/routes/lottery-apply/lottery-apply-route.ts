@@ -8,6 +8,7 @@ import {
 import { formatJpy } from '../../lib/format-currency'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IStripeService } from '../../services/stripe-service'
+import { toE164 } from './to-e164'
 
 /**
  * Discrete UI phases of the apply flow. The fan advances
@@ -186,15 +187,23 @@ export class LotteryApplyRoute {
 		)
 	}
 
-	/** Both 本人確認 fields non-blank; phone is a lenient digit/format check. */
+	/**
+	 * The phone number in E.164 form, or `null` while the input fits neither a
+	 * Japanese domestic number nor E.164. The input keeps what the fan typed;
+	 * this is what Apply sends.
+	 */
+	public get phoneE164(): string | null {
+		return toE164(this.phoneNumber)
+	}
+
+	/** True once the fan has typed a phone number that cannot be sent. */
+	public get isPhoneInvalid(): boolean {
+		return this.phoneNumber.trim().length > 0 && this.phoneE164 === null
+	}
+
+	/** Name non-blank and the phone number convertible to E.164. */
 	public get isIdentityValid(): boolean {
-		const name = this.fullName.trim()
-		const phone = this.phoneNumber.trim()
-		if (name.length === 0 || phone.length === 0) return false
-		// Lenient: 10-11 digits after stripping common separators. The backend
-		// performs the authoritative validation; this only blocks obvious typos.
-		const digits = phone.replace(/[\s()+-]/g, '')
-		return /^\d{10,11}$/.test(digits)
+		return this.fullName.trim().length > 0 && this.phoneE164 !== null
 	}
 
 	/** 総額 = per-ticket price × count, in JPY. */
@@ -334,7 +343,9 @@ export class LotteryApplyRoute {
 
 		const identity: ApplicantIdentityInput = {
 			fullName: this.fullName.trim(),
-			phoneNumber: this.phoneNumber.trim(),
+			// isIdentityValid gated the identity → payment transition, so the
+			// number is convertible here.
+			phoneNumber: this.phoneE164 ?? '',
 		}
 
 		try {

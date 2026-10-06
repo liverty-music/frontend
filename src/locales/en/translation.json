@@ -686,5 +686,8 @@
 		"help": "Help",
 		"leftHanded": "Left-handed mode",
 		"leftHandedDesc": "Place the action button in the bottom-left corner"
+	},
+	"lotteryApply": {
+		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
 	}
 }
