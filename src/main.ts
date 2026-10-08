@@ -95,6 +95,7 @@ import { IRpcTelemetry } from './services/rpc-telemetry-service'
 import { IStripeService } from './services/stripe-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
 import { ITicketJourneyStore } from './services/ticket-journey-store'
+import { ITicketWallet } from './services/ticket-wallet'
 import { UserHydrationTask } from './services/user-hydration-task'
 import { IUserStore } from './services/user-store'
 import { DateValueConverter } from './value-converters/date'
@@ -226,6 +227,10 @@ async function bootstrap(): Promise<void> {
 	// transport recording sink before any RPC client is used.
 	au.register(IRpcTelemetry)
 	au.register(AppTask.creating(IRpcTelemetry, () => undefined))
+	// The ticket wallet keeps the device key pair and the last tickets list in
+	// IndexedDB and removes both on SignedOut; construct it at boot so that
+	// subscription is live even when the tickets screen was never opened.
+	au.register(AppTask.creating(ITicketWallet, () => undefined))
 	au.register(UserHydrationTask)
 	au.register(IArtistStore)
 	au.register(IArtistBubbleStore)

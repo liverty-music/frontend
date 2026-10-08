@@ -363,15 +363,53 @@
 		},
 		"error": {
 			"title": "Failed to load tickets",
+			"message": "We couldn't load your tickets. Please try again later.",
 			"retry": "Retry"
 		},
+		"offline": "No connection. Showing the tickets loaded at {{time}}.",
+		"event": {
+			"unknown": "Event details could not be loaded",
+			"date": "Date",
+			"venue": "Venue",
+			"open": "Doors",
+			"start": "Start"
+		},
+		"ticketN": "Ticket {{n}}",
+		"state": {
+			"not-entered": "Not entered",
+			"entered": "Entered",
+			"void": "Void"
+		},
 		"field": {
-			"eventId": "Event",
 			"holderName": "Name",
-			"issuedAt": "Issued"
+			"seat": "Seat",
+			"noSeat": "Not assigned"
 		},
 		"resaleProhibited": "This is a designated live-entertainment ticket (特定興行入場券). Resale without the organizer's consent is prohibited by law.",
-		"viewOrder": "View order details"
+		"viewOrder": "View order details",
+		"device": {
+			"needsConnection": "To show your entry QR code, open this screen once while connected to the internet.",
+			"failed": "Your entry QR code could not be set up. Reload where the signal is good.",
+			"movedHere": "Your entry QR code now works on this device only. Codes from your previous device will not admit you.",
+			"otherDevice": "Your entry QR code is set to another device, so it cannot be shown here.",
+			"useThisDevice": "Use this device to enter",
+			"confirmMove": "If you switch to this device, the entry QR code on your other device stops working. Switch?",
+			"confirm": "Switch to this device",
+			"cancel": "Cancel",
+			"moveFailed": "Could not switch. Try again where the signal is good."
+		},
+		"code": {
+			"show": "Show entry QR code",
+			"title": "Entry QR code",
+			"headCount": "Admits {{count}}",
+			"alt": "Entry QR code (admits {{count}})",
+			"making": "Making the QR code…",
+			"noneTicked": "Choose the tickets that are entering.",
+			"rotation": "The QR code changes every 15 seconds. Screenshots will not admit you.",
+			"brightness": "Turn up your screen brightness so it scans easily.",
+			"who": "Tickets entering together",
+			"close": "Close"
+		}
 	},
 	"order": {
 		"title": "Order Detail",
