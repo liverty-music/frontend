@@ -38,11 +38,11 @@
 		<button
 			type="button"
 			class="tickets-btn-secondary"
-			if.bind="!confirmingMove && !offline"
+			if.bind="canOfferMove && !confirmingMove"
 			click.trigger="askToUseThisDevice()"
 			t="tickets.device.useThisDevice"
 		></button>
-		<template if.bind="confirmingMove">
+		<template if.bind="canOfferMove && confirmingMove">
 			<p t="tickets.device.confirmMove"></p>
 			<output class="tickets-error" if.bind="moveFailed" t="tickets.device.moveFailed"></output>
 			<div class="cluster">

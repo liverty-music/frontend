@@ -370,12 +370,50 @@ describe('TicketsRoute', () => {
 			expect(keyClient.register).not.toHaveBeenCalled()
 			expect(serverKey).toEqual(phoneKey)
 
-			// Offline later, the PC still offers no code.
-			pc.detaching()
+			expect(pc.canOfferMove).toBe(true)
+		})
+
+		it('says the code is set to another device again offline and offers neither the code nor the move', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Other device without a connection"
+			serverKey = await otherDeviceKey()
+			ticketClient.getMyTickets.mockResolvedValueOnce([protoTicket(1)])
+			const online = await open()
+			expect(online.device).toBe('other-device')
+			online.detaching()
+
 			ticketClient.getMyTickets.mockRejectedValue(offlineError())
-			const offlinePc = await open()
-			expect(offlinePc.device).toBe('other-device')
-			expect(offlinePc.canShowCode).toBe(false)
+			keyClient.get.mockRejectedValue(offlineError())
+			const sut = await open()
+
+			expect(sut.offline).toBe(true)
+			expect(sut.device).toBe('other-device')
+			expect(sut.canShowCode).toBe(false)
+			sut.openCode(sut.groups[0])
+			expect(sut.isCodeOpen).toBe(false)
+			expect(sut.canOfferMove).toBe(false)
+			sut.askToUseThisDevice()
+			expect(sut.confirmingMove).toBe(false)
+			expect(keyClient.register).not.toHaveBeenCalled()
+		})
+
+		it('still offers the code on the entry device when the key cannot be read', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Key cannot be read"
+			await prepareOnline([protoTicket(1)])
+			keyClient.register.mockClear()
+
+			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			keyClient.get.mockRejectedValueOnce(
+				new ConnectError('internal', Code.Internal),
+			)
+			const sut = await open()
+
+			expect(sut.offline).toBe(false)
+			expect(sut.device).toBe('ready')
+			expect(sut.canShowCode).toBe(true)
+			expect(keyClient.register).not.toHaveBeenCalled()
+			sut.openCode(sut.groups[0])
+			await currentCode(sut)
+			sut.closeCode()
 		})
 
 		it('moves the entry device to a new phone only after the fan confirms', async () => {
@@ -434,7 +472,7 @@ describe('TicketsRoute', () => {
 			expect(old.canShowCode).toBe(false)
 		})
 
-		it('keeps the other device when the fan cancels or the move fails', async () => {
+		it('keeps the other device when the fan cancels', async () => {
 			serverKey = await otherDeviceKey()
 			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
 			const sut = await open()
@@ -443,14 +481,38 @@ describe('TicketsRoute', () => {
 			sut.cancelMove()
 			expect(sut.confirmingMove).toBe(false)
 			expect(keyClient.register).not.toHaveBeenCalled()
+			expect(sut.device).toBe('other-device')
+		})
 
-			keyClient.register.mockRejectedValueOnce(offlineError())
+		it('says the move failed, offers to try again and offers no code', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Moving fails"
+			const phoneKey = await otherDeviceKey()
+			serverKey = phoneKey
+			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			const sut = await open()
+
+			keyClient.register.mockRejectedValueOnce(
+				new ConnectError('internal', Code.Internal),
+			)
 			sut.askToUseThisDevice()
 			await sut.confirmUseThisDevice()
+
 			expect(sut.moveFailed).toBe(true)
+			expect(ja.tickets.device.moveFailed).toContain('切り替えられませんでした')
+			// The confirmation stays open, so the fan can try again.
 			expect(sut.confirmingMove).toBe(true)
+			expect(sut.canOfferMove).toBe(true)
 			expect(sut.device).toBe('other-device')
 			expect(sut.canShowCode).toBe(false)
+			sut.openCode(sut.groups[0])
+			expect(sut.isCodeOpen).toBe(false)
+			expect(serverKey).toEqual(phoneKey)
+
+			// Trying again works.
+			await sut.confirmUseThisDevice()
+			expect(sut.moveFailed).toBe(false)
+			expect(sut.device).toBe('ready')
+			expect(sut.movedToThisDevice).toBe(true)
 		})
 
 		it('says a connection is needed once when opened offline on an unprepared phone', async () => {

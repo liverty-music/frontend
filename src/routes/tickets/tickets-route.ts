@@ -195,8 +195,17 @@ export class TicketsRoute {
 
 	// ── Entry device ─────────────────────────────────────────────────────────
 
+	/**
+	 * Whether to offer moving the entry QR code here: only on a device that is
+	 * not the entry device, and only with a connection.
+	 */
+	public get canOfferMove(): boolean {
+		return this.device === 'other-device' && !this.offline
+	}
+
 	/** Offer to move the entry QR code to this device (asks first). */
 	public askToUseThisDevice(): void {
+		if (!this.canOfferMove) return
 		this.moveFailed = false
 		this.confirmingMove = true
 	}
