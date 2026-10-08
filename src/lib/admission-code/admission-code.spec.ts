@@ -187,14 +187,20 @@ describe('signed AdmissionCode (test vector cross-check)', () => {
 		).toBe(false)
 	})
 
-	it('reads back from the rendered QR code', async () => {
-		const keys = await newKeyPair()
-		const text = await signAdmissionCode(keys.privateKey, {
-			userId: USER,
-			eventId: EVENT,
-			ticketIds: Array.from({ length: 10 }, (_, i) => ticket(i + 1)),
-			signTime: 1_791_000_000,
-		})
+	it('reads back from the rendered QR code', () => {
+		// A fixed signature keeps the code deterministic: the library decoder
+		// misses a few percent of random, perfectly rendered codes (measured
+		// in the task 0.4 spike), which would make a random signature flaky.
+		const signature = Uint8Array.from({ length: 64 }, (_, i) => (i * 37) & 0xff)
+		const text = encodeAdmissionCode(
+			buildSignedBytes({
+				userId: USER,
+				eventId: EVENT,
+				ticketIds: Array.from({ length: 10 }, (_, i) => ticket(i + 1)),
+				signTime: 1_791_000_000,
+			}),
+			signature,
+		)
 
 		// Rasterise the modules (4-module quiet zone, 4 px per module) and decode.
 		const modules = admissionQrModules(text)
