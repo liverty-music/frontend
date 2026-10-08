@@ -166,6 +166,7 @@ describe('BottomSheet', () => {
 
 	describe('tap-outside dismiss', () => {
 		it('closes a dismissable sheet on dismiss-zone click and emits sheet-closed', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Dismiss sheet by tapping outside it or pressing Escape"
 			openAndSettle()
 			sut.dismissable = true
 
@@ -191,6 +192,7 @@ describe('BottomSheet', () => {
 
 	describe('swipe dismiss (IntersectionObserver)', () => {
 		it('closes and emits sheet-closed when the body leaves the viewport after settling', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Dismiss sheet via swipe down"
 			openAndSettle()
 
 			// User swipes the body off-screen.
@@ -259,6 +261,7 @@ describe('BottomSheet', () => {
 		}
 
 		it('dismisses a dismissable sheet on Escape', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Dismiss sheet by tapping outside it or pressing Escape"
 			openAndSettle()
 			sut.dismissable = true
 			const e = {

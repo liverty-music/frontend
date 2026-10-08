@@ -502,6 +502,36 @@ describe('DashboardRoute', () => {
 		})
 	})
 
+	describe('loadData() cold load — loading and empty states', () => {
+		it('stays unsettled while loading, then settles with no groups', async () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Loading and empty states"
+			mockConcertService.peekDateGroups.mockReturnValue(null)
+			mockConcertService.toDateGroups.mockReturnValue([])
+			let release: (v: never[]) => void = () => {}
+			mockConcertService.listByFollower.mockReturnValueOnce(
+				new Promise((r) => {
+					release = r
+				}),
+			)
+			sut.needsRegion = false
+
+			const load = sut.loadData()
+
+			// Loading: the highway's loading placeholder is bound to !hasSettled,
+			// and both empty states are gated on hasSettled.
+			expect(sut.hasSettled).toBe(false)
+
+			release([])
+			await load
+
+			// Settled with nothing to show: the empty state (with its Discovery
+			// link) renders.
+			expect(sut.hasSettled).toBe(true)
+			expect(sut.loadError).toBeNull()
+			expect(sut.filteredDateGroups).toEqual([])
+		})
+	})
+
 	describe('journey write-through consistency (onJourneyMapChanged)', () => {
 		it('re-stamps concert journeyStatus from the store map without a re-fetch', () => {
 			// makeGroup uses id `h-${artistId}`; seed with no status, then simulate a
