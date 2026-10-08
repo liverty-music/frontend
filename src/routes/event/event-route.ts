@@ -101,8 +101,10 @@ export class EventRoute implements IRouteViewModel {
 			return
 		}
 
-		// Neither blocks the page: the dates and the purchased line fill in.
+		// None blocks the page: the dates, the follow state and the purchased
+		// line fill in.
 		void this.loadSeriesEvents(this.event.seriesId, signal)
+		void this.loadFollowed(signal)
 		void this.loadPurchasedTickets(signal)
 	}
 
@@ -121,6 +123,23 @@ export class EventRoute implements IRouteViewModel {
 			if (signal.aborted) return
 			// The other dates are optional; the page stands without them.
 			this.logger.warn('Series dates read failed', { seriesId, error: err })
+		}
+	}
+
+	/**
+	 * Load the fan's follows so each performer's control shows whether it is
+	 * already followed. A guest's follows are local; a signed-in fan's come
+	 * from the backend, which no other surface may have loaded yet when the
+	 * fan lands here from a shared link.
+	 */
+	private async loadFollowed(signal: AbortSignal): Promise<void> {
+		try {
+			await this.authService.ready
+			if (signal.aborted) return
+			await this.followStore.listFollowed(signal)
+		} catch (err) {
+			if (signal.aborted) return
+			this.logger.warn('Follow list read failed', { error: err })
 		}
 	}
 
@@ -214,8 +233,17 @@ export class EventRoute implements IRouteViewModel {
 		return id ? `/dashboard?artists=${encodeURIComponent(id)}` : '/dashboard'
 	}
 
+	/**
+	 * Ids of the artists the fan follows. The template reads `.has(id)` on this
+	 * getter rather than calling a method, so the binding observes the store's
+	 * follow list and updates when a follow changes.
+	 */
+	public get followedIds(): ReadonlySet<string> {
+		return this.followStore.followedIds
+	}
+
 	public isFollowed(performer: EventPerformer): boolean {
-		return this.followStore.followedIds.has(performer.id)
+		return this.followedIds.has(performer.id)
 	}
 
 	// --- Actions ---

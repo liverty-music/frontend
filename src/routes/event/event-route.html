@@ -65,12 +65,12 @@
         <button
           type="button"
           class="[ event-follow ] [ pressable ]"
-          data-followed.bind="isFollowed(performer)"
-          aria-pressed.bind="isFollowed(performer)"
+          data-followed.bind="followedIds.has(performer.id)"
+          aria-pressed.bind="followedIds.has(performer.id)"
           disabled.bind="followUpdatingId === performer.id"
           click.trigger="toggleFollow(performer)"
           data-testid="event-follow"
-          t.bind="isFollowed(performer) ? 'eventPage.follow.following' : 'eventPage.follow.action'"
+          t.bind="followedIds.has(performer.id) ? 'eventPage.follow.following' : 'eventPage.follow.action'"
         ></button>
       </li>
     </ul>

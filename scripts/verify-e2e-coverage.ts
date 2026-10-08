@@ -40,6 +40,16 @@ const KNOWN_GAPS: KnownGap[] = [
 			'Needs `storageState` from a real OIDC login with an ESC-held credential; CI cannot obtain it and `.auth/` is gitignored.',
 	},
 	{
+		spec: 'e2e/prod/open-a-shared-event-link.guest.spec.ts',
+		reason:
+			"Runs against production with a test Organizer's Event ids (`playwright.prod.config.mjs`); a pull-request build has neither.",
+	},
+	{
+		spec: 'e2e/prod/open-a-shared-event-link.authenticated.spec.ts',
+		reason:
+			"Needs the prod E2E user's `storageState` from a real OIDC login with an ESC-held credential, plus production Event ids.",
+	},
+	{
 		spec: 'e2e/smoke/post-deploy.spec.ts',
 		reason:
 			'Runs against a deployed URL from push-image.yaml (`SMOKE_BASE_URL`), not against a PR build. Covered, but not by pull-request CI.',
@@ -104,7 +114,13 @@ function ciInvocations(): Invocation[] {
 
 /** Ask Playwright which specs a project matches. `--list` starts no server. */
 function listSpecs(config: string, project?: string): string[] {
-	const args = ['playwright', 'test', `--config=${config}`, '--list', '--reporter=json']
+	const args = [
+		'playwright',
+		'test',
+		`--config=${config}`,
+		'--list',
+		'--reporter=json',
+	]
 	if (project) args.push(`--project=${project}`)
 	let raw: string
 	try {
