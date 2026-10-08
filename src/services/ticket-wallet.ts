@@ -1,13 +1,13 @@
 import { DI, IEventAggregator, ILogger, resolve } from 'aurelia'
+import {
+	type AdmissionCodeContent,
+	signAdmissionCode,
+} from '../../shared/lib/admission-code/admission-code'
 import { IWalletPublicKeyRpcClient } from '../adapter/rpc/client/wallet-public-key-client'
 import {
 	type DeviceKeyRecord,
 	IWalletStorage,
 } from '../adapter/storage/wallet-storage'
-import {
-	type AdmissionCodeContent,
-	signAdmissionCode,
-} from '../lib/admission-code/admission-code'
 import { SignedOut } from './events/signed-out'
 
 export const ITicketWallet = DI.createInterface<ITicketWallet>(
