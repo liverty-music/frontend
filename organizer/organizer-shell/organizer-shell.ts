@@ -9,7 +9,8 @@ import { route } from '@aurelia/router'
  * the authoring routes, and the lottery configure/status routes are therefore
  * authentication- AND owner-role-gated;
  * `auth/callback` opts out of both via `data: { auth: false }` so the OIDC code
- * exchange can complete before a session exists, and `denied` opts out of the
+ * exchange can complete before a session exists, `reception/:token` opts out
+ * because venue staff open it from a reception link without an account, and `denied` opts out of the
  * role check via `data: { role: false }` so a signed-in non-owner sees an
  * explanation. The authoring routes deliberately DO NOT set `auth: false` — the
  * global hook guards them.
@@ -56,6 +57,23 @@ import { route } from '@aurelia/router'
 			path: 'lottery/status/:phaseId',
 			component: import('../lottery-status/lottery-status-route'),
 			title: 'Lottery phase status',
+		},
+		{
+			// Reception links of one event (ticket-wallet-and-checkin, task 5.1),
+			// reached from the event's row on the concerts dashboard.
+			path: 'reception-links/:eventId',
+			component: import('../reception-links/reception-links-route'),
+			title: 'Reception links',
+		},
+		{
+			// The reception screen venue staff open from a reception link (task
+			// 5.2). Staff have no account: the route is exempt from the console
+			// sign-in and the owner-role check, and the link token comes from the
+			// URL. Every call it makes is signed by the device the link is bound to.
+			path: 'reception/:token',
+			component: import('../reception/reception-route'),
+			title: '受付',
+			data: { auth: false },
 		},
 		{
 			path: 'welcome',

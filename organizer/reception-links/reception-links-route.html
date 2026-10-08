@@ -1,0 +1,185 @@
+<main class="[ reception-links ] [ flow ]" lang="ja">
+  <header class="[ reception-links-header ] [ flow ]">
+    <a load="../concerts" class="reception-links-back">← 公演一覧へ戻る</a>
+    <h1 class="reception-links-title">受付リンク</h1>
+    <p if.bind="concertTitle" class="reception-links-event">
+      ${concertTitle}<span if.bind="eventDate">・${eventDate}</span>
+    </p>
+  </header>
+
+  <output
+    if.bind="phase === 'loading'"
+    class="organizer-status"
+    role="status"
+    aria-busy="true"
+  >
+    <span class="organizer-spinner"></span>
+    <span>読み込み中…</span>
+  </output>
+
+  <section
+    if.bind="phase === 'error'"
+    class="organizer-state"
+    role="alert"
+    data-state="error"
+  >
+    <p>${loadError}</p>
+    <button type="button" class="organizer-btn" click.trigger="load()">再読み込み</button>
+  </section>
+
+  <section if.bind="phase === 'not-found'" class="organizer-state" role="alert">
+    <p>この公演は見つかりませんでした。</p>
+  </section>
+
+  <template if.bind="phase === 'ready'">
+    <section class="[ reception-links-about ] [ flow ]">
+      <p if.bind="windowOpen">
+        受付時間: <strong>${windowOpen} 〜 ${windowClose}</strong>
+      </p>
+      <p>
+        受付端末1台につきリンクを1つ発行します。各リンクは最初に開いた端末でだけ使えます。端末を替えるときは「取り消して再発行」してください。
+      </p>
+    </section>
+
+    <p
+      if.bind="issueBlock === 'draft'"
+      class="reception-links-block"
+      role="note"
+    >
+      受付リンクを発行するには、先に公演を公開してください。
+    </p>
+    <p
+      if.bind="issueBlock === 'no-start-time'"
+      class="reception-links-block"
+      role="note"
+    >
+      受付リンクを発行するには、公演の開始時刻を設定してください。
+      <a load="../concerts/edit/${seriesId}">公演を編集する</a>
+    </p>
+    <p
+      if.bind="issueBlock === 'cancelled'"
+      class="reception-links-block"
+      role="note"
+    >
+      中止した公演には受付リンクを発行できません。
+    </p>
+
+    <div if.bind="issueBlock === 'none'" class="cluster">
+      <button
+        type="button"
+        class="organizer-btn"
+        data-variant="primary"
+        disabled.bind="!canIssue"
+        click.trigger="issue()"
+      >
+        ${busy ? '処理中…' : '受付リンクを発行'}
+      </button>
+      <button type="button" class="organizer-btn" data-variant="ghost" click.trigger="load()">
+        状態を更新
+      </button>
+    </div>
+
+    <p if.bind="actionError" class="organizer-error" role="alert">${actionError}</p>
+
+    <p if.bind="rows.length === 0" class="reception-links-empty">
+      まだ受付リンクはありません。
+    </p>
+
+    <ul if.bind="rows.length" class="reception-links-list" role="list">
+      <li
+        repeat.for="row of rows"
+        class="[ link-card ] [ flow ]"
+        data-status.bind="row.statusKey"
+        data-new.bind="row.id === issuedId"
+      >
+        <div class="[ link-card-head ] [ cluster ]">
+          <h2 class="link-card-label">${row.label}</h2>
+          <span class="link-card-status">${row.statusLabel}</span>
+          <span if.bind="row.boundSince" class="link-card-time"
+            >${row.boundSince} から</span
+          >
+          <span if.bind="row.revokedAt" class="link-card-time"
+            >${row.revokedAt} に取り消し</span
+          >
+        </div>
+
+        <div if.bind="row.url" class="[ link-card-url ] [ flow ]">
+          <label class="organizer-field">
+            URL
+            <input class="organizer-input" type="url" readonly value.bind="row.url" />
+          </label>
+          <div class="cluster">
+            <button type="button" class="organizer-btn" click.trigger="copy(row)">
+              ${copiedId === row.id ? 'コピーしました' : 'URLをコピー'}
+            </button>
+            <button
+              if.bind="canShare"
+              type="button"
+              class="organizer-btn"
+              click.trigger="share(row)"
+            >
+              共有
+            </button>
+          </div>
+        </div>
+
+        <div
+          if.bind="row.canRevoke && !isConfirming(row, 'revoke') && !isConfirming(row, 'reissue')"
+          class="cluster"
+        >
+          <button
+            type="button"
+            class="organizer-btn"
+            data-variant="ghost"
+            disabled.bind="busy"
+            click.trigger="askConfirm(row, 'reissue')"
+          >
+            取り消して再発行
+          </button>
+          <button
+            type="button"
+            class="organizer-btn"
+            data-variant="danger"
+            disabled.bind="busy"
+            click.trigger="askConfirm(row, 'revoke')"
+          >
+            取り消す
+          </button>
+        </div>
+
+        <div
+          if.bind="isConfirming(row, 'revoke') || isConfirming(row, 'reissue')"
+          class="[ link-card-confirm ] [ flow ]"
+          role="group"
+          aria-label="${row.label} の取り消しの確認"
+        >
+          <p if.bind="isConfirming(row, 'revoke')">
+            ${row.label} を取り消します。この端末ではすぐに受付できなくなります。よろしいですか？
+          </p>
+          <p if.bind="isConfirming(row, 'reissue')">
+            ${row.label} を取り消して、新しい受付リンクを発行します。今の端末ではすぐに受付できなくなります。よろしいですか？
+          </p>
+          <div class="cluster">
+            <button
+              type="button"
+              class="organizer-btn"
+              data-variant="danger"
+              disabled.bind="busy"
+              click.trigger="confirm()"
+            >
+              ${isConfirming(row, 'reissue') ? '取り消して再発行する' : '取り消す'}
+            </button>
+            <button
+              type="button"
+              class="organizer-btn"
+              data-variant="ghost"
+              click.trigger="dismissConfirm()"
+            >
+              やめる
+            </button>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </template>
+</main>

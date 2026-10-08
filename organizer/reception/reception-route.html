@@ -1,0 +1,171 @@
+<main class="[ reception ] [ flow ]" lang="ja">
+  <header class="reception-header">
+    <p class="reception-brand">Liverty Music 受付</p>
+    <h1 class="reception-label" if.bind="linkLabel">${linkLabel}</h1>
+  </header>
+
+  <output
+    if.bind="phase === 'opening'"
+    class="organizer-status"
+    role="status"
+    aria-busy="true"
+  >
+    <span class="organizer-spinner"></span>
+    <span>受付リンクを確認しています…</span>
+  </output>
+
+  <section
+    if.bind="phase === 'unusable'"
+    class="reception-notice"
+    role="alert"
+    data-state="error"
+  >
+    <h2>この受付リンクはもう使えません</h2>
+    <p>主催者に新しい受付リンクを発行してもらってください。</p>
+  </section>
+
+  <section
+    if.bind="phase === 'other-device'"
+    class="reception-notice"
+    role="alert"
+    data-state="error"
+  >
+    <h2>この受付リンクは別の端末で使用中です</h2>
+    <p>
+      受付リンクは最初に開いた端末でだけ使えます。この端末で受付をするには、主催者にリンクを再発行してもらってください。
+    </p>
+  </section>
+
+  <section
+    if.bind="phase === 'throttled'"
+    class="reception-notice"
+    role="alert"
+    data-state="error"
+  >
+    <h2>しばらく開けません</h2>
+    <p>10分ほど待ってから、もう一度開いてください。</p>
+  </section>
+
+  <section
+    if.bind="phase === 'unreachable'"
+    class="reception-notice"
+    role="alert"
+    data-state="error"
+  >
+    <h2>サーバーに接続できませんでした</h2>
+    <p>電波やWi-Fiを確認してから、もう一度お試しください。</p>
+    <button type="button" class="organizer-btn" click.trigger="open()">
+      もう一度試す
+    </button>
+  </section>
+
+  <template if.bind="phase === 'ready'">
+    <section
+      if.bind="windowState === 'before'"
+      class="reception-notice"
+      data-state="waiting"
+    >
+      <h2>受付は ${windowOpenLabel} から始まります</h2>
+      <p>受付時間: ${windowOpenLabel} 〜 ${windowCloseLabel}</p>
+      <button type="button" class="organizer-btn" click.trigger="open()">
+        もう一度確認する
+      </button>
+    </section>
+
+    <section
+      if.bind="windowState === 'after'"
+      class="reception-notice"
+      data-state="waiting"
+    >
+      <h2>受付は ${windowCloseLabel} に終了しました</h2>
+      <p>受付時間: ${windowOpenLabel} 〜 ${windowCloseLabel}</p>
+    </section>
+
+    <section
+      if.bind="windowState === 'none'"
+      class="reception-notice"
+      data-state="waiting"
+    >
+      <h2>受付時間が決まっていません</h2>
+      <p>公演の開始時刻が未設定です。主催者に確認してください。</p>
+    </section>
+
+    <section if.bind="canScan" class="[ reception-scan ] [ flow ]">
+      <p class="reception-window">受付時間: ${windowOpenLabel} 〜 ${windowCloseLabel}</p>
+
+      <video
+        ref="video"
+        class="reception-camera"
+        data-state.bind="scanning"
+        aria-label="カメラの映像"
+        muted
+        playsinline
+      ></video>
+
+      <output class="reception-verdict" aria-live="assertive">
+        <div
+          if.bind="verdict"
+          class="[ verdict ] [ flow ]"
+          data-tone.bind="verdict.tone"
+        >
+          <p class="verdict-headline">
+            <span>${verdict.headline}</span>
+            <span if.bind="verdict.admittedLabel" class="verdict-count"
+              >${verdict.admittedLabel}</span
+            >
+          </p>
+          <p if.bind="verdict.tone === 'partial'" class="verdict-partial">
+            ${verdict.admittedLabel}だけ入場させてください。
+          </p>
+          <ul if.bind="verdict.reasons.length" class="[ verdict-reasons ] [ flow ]">
+            <li repeat.for="r of verdict.reasons">
+              <p class="verdict-reason">
+                ${r.reason}<span if.bind="r.detail">（${r.detail}）</span
+                ><span if.bind="verdict.tone === 'partial' || r.count > 1">
+                  ${r.count}名</span
+                >
+              </p>
+              <p class="verdict-next">${r.nextStep}</p>
+            </li>
+          </ul>
+          <button
+            if.bind="verdict.tone === 'undecided'"
+            type="button"
+            class="organizer-btn"
+            data-variant="primary"
+            disabled.bind="deciding"
+            click.trigger="retry()"
+          >
+            もう一度送信する
+          </button>
+        </div>
+        <p if.bind="deciding" class="reception-deciding">判定中…</p>
+      </output>
+
+      <div class="[ reception-actions ] [ cluster ]">
+        <button
+          if.bind="!scanning"
+          type="button"
+          class="organizer-btn"
+          data-variant="primary"
+          disabled.bind="startingCamera"
+          click.trigger="startScanning()"
+        >
+          ${startingCamera ? 'カメラを起動中…' : 'スキャンを開始'}
+        </button>
+        <button
+          if.bind="scanning"
+          type="button"
+          class="organizer-btn"
+          data-variant="ghost"
+          click.trigger="stopScanning()"
+        >
+          スキャンを停止
+        </button>
+      </div>
+      <p if.bind="cameraError" class="organizer-error" role="alert">
+        ${cameraError}
+      </p>
+    </section>
+  </template>
+</main>

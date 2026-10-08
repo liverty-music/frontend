@@ -9,8 +9,39 @@
     </p>
   </header>
 
+  <output
+    if.bind="phase === 'ready' && eventCheck === 'checking'"
+    class="organizer-status"
+    role="status"
+    aria-busy="true"
+  >
+    <span class="organizer-spinner"></span>
+    <span>Checking the event…</span>
+  </output>
+
+  <section
+    if.bind="phase === 'ready' && eventCheck === 'no-start-time'"
+    class="[ lottery-editor-panel ] [ flow ]"
+    role="alert"
+    data-state="no-start-time"
+  >
+    <h2 class="lottery-editor-subtitle">Set the start time first</h2>
+    <p>
+      This event has no start time. Set its start time in the concert editor
+      before the event can go on sale. (The open time is optional.)
+    </p>
+    <a
+      if.bind="seriesId"
+      load="../concerts/edit/${seriesId}"
+      class="organizer-btn"
+      data-variant="primary"
+    >
+      Open the concert editor
+    </a>
+  </section>
+
   <form
-    if.bind="phase === 'ready'"
+    if.bind="phase === 'ready' && eventCheck === 'ok'"
     class="[ lottery-editor-form ] [ flow ]"
     submit.trigger="save()"
   >

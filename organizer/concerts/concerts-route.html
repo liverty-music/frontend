@@ -94,6 +94,14 @@
         >
           ${lottery.label}
         </a>
+        <a
+          repeat.for="reception of row.receptionEvents"
+          load="../reception-links/${reception.eventId}"
+          class="concerts-btn"
+          data-variant="secondary"
+        >
+          ${reception.label}
+        </a>
       </div>
 
       <div

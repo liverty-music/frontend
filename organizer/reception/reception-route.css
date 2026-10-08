@@ -1,0 +1,118 @@
+@layer block {
+	@scope (reception-route) {
+		.reception {
+			--flow-space: var(--space-m);
+
+			max-inline-size: 36rem;
+			margin-inline: auto;
+			padding: var(--space-m) var(--space-s);
+		}
+
+		.reception-brand {
+			font-size: var(--step--1);
+			font-weight: 700;
+			color: var(--color-brand-primary);
+		}
+
+		.reception-label {
+			font-family: var(--font-display);
+			font-size: var(--step-3);
+		}
+
+		.reception-notice {
+			--flow-space: var(--space-xs);
+
+			padding: var(--space-s);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-m);
+			background: var(--color-surface-raised);
+
+			&[data-state="error"] {
+				border-color: var(--color-error);
+			}
+		}
+
+		.reception-window {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.reception-camera {
+			display: none;
+			inline-size: 100%;
+			aspect-ratio: 4 / 3;
+			border-radius: var(--radius-m);
+			object-fit: cover;
+			background: oklch(0% 0 0deg);
+
+			&[data-state="true"] {
+				display: block;
+			}
+		}
+
+		.reception-verdict {
+			display: block;
+		}
+
+		.reception-deciding {
+			font-size: var(--step-1);
+			color: var(--color-text-secondary);
+		}
+	}
+}
+
+/* The verdict: large type, and its tone in both colour and text. */
+@layer block {
+	@scope (reception-route) {
+		.verdict {
+			--flow-space: var(--space-xs);
+			--verdict-bg: var(--color-surface-raised);
+			--verdict-fg: var(--color-text-primary);
+
+			padding: var(--space-m) var(--space-s);
+			border-radius: var(--radius-m);
+			color: var(--verdict-fg);
+			background: var(--verdict-bg);
+
+			&[data-tone="ok"] {
+				--verdict-bg: oklch(45% 0.14 150deg);
+			}
+
+			&[data-tone="partial"] {
+				--verdict-bg: oklch(80% 0.15 85deg);
+				--verdict-fg: oklch(18% 0.03 85deg);
+			}
+
+			&[data-tone="ng"] {
+				--verdict-bg: oklch(48% 0.19 25deg);
+			}
+
+			&[data-tone="undecided"] {
+				--verdict-bg: oklch(35% 0.02 275deg);
+			}
+		}
+
+		.verdict-headline {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-s);
+			align-items: baseline;
+
+			font-family: var(--font-display);
+			font-size: clamp(2.5rem, 16vw, 5.5rem);
+			font-weight: 900;
+			line-height: 1;
+		}
+
+		.verdict-partial,
+		.verdict-reason {
+			font-size: var(--step-1);
+			font-weight: 700;
+		}
+
+		.verdict-reasons {
+			padding: 0;
+			list-style: none;
+		}
+	}
+}

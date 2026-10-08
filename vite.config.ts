@@ -55,9 +55,7 @@ export default defineConfig({
 			input: {
 				main: fileURLToPath(new URL('./index.html', import.meta.url)),
 				admin: fileURLToPath(new URL('./admin.html', import.meta.url)),
-				organizer: fileURLToPath(
-					new URL('./organizer.html', import.meta.url),
-				),
+				organizer: fileURLToPath(new URL('./organizer.html', import.meta.url)),
 			},
 			output: {
 				// Route admin- / organizer-EXCLUSIVE chunks/assets into
@@ -76,7 +74,13 @@ export default defineConfig({
 					const allUnder = (root: string) =>
 						ids.length > 0 && ids.every((id) => id.includes(`/${root}/`))
 					if (allUnder('admin')) return 'assets/admin/[name]-[hash].js'
-					if (allUnder('organizer')) return 'assets/organizer/[name]-[hash].js'
+					// A chunk holding ANY organizer module is organizer-only too: the
+					// consumer never imports organizer code (lint:boundaries), and Rollup
+					// groups modules by the entries that load them, so shared/ modules
+					// hoisted into such a chunk are loaded by the organizer alone (e.g.
+					// the reception screen with the shared admission-code lib).
+					if (ids.some((id) => id.includes('/organizer/')))
+						return 'assets/organizer/[name]-[hash].js'
 					return 'assets/[name]-[hash].js'
 				},
 				assetFileNames: (assetInfo) => {
@@ -91,6 +95,19 @@ export default defineConfig({
 					}
 					return 'assets/[name]-[hash][extname]'
 				},
+			},
+		},
+	},
+	// The only Web Worker is the organizer reception screen's QR decoder (ZXing
+	// WebAssembly). Its bundle and its `.wasm` go to `assets/organizer/`, so the
+	// consumer SW precache (which ignores that folder) never downloads them.
+	worker: {
+		format: 'es',
+		rollupOptions: {
+			output: {
+				entryFileNames: 'assets/organizer/[name]-[hash].js',
+				chunkFileNames: 'assets/organizer/[name]-[hash].js',
+				assetFileNames: 'assets/organizer/[name]-[hash][extname]',
 			},
 		},
 	},
