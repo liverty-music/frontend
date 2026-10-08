@@ -3,30 +3,45 @@
 		<h1 class="tickets-title" t="tickets.title"></h1>
 	</header>
 
+	<!-- Saved list shown without a connection -->
+	<output class="tickets-notice" if.bind="offline && step === 'loaded'">
+		<span t="tickets.offline" t-params.bind="{ time: savedAtLabel() }"></span>
+	</output>
+
+	<!-- Device preparation messages -->
+	<output
+		class="tickets-notice"
+		data-tone="warning"
+		if.bind="device === 'needs-connection' && step === 'loaded'"
+		t="tickets.device.needsConnection"
+	></output>
+	<output
+		class="tickets-notice"
+		data-tone="warning"
+		if.bind="device === 'failed' && step === 'loaded'"
+		t="tickets.device.failed"
+	></output>
+	<output
+		class="tickets-notice"
+		if.bind="movedToThisDevice"
+		t="tickets.device.movedHere"
+	></output>
+
 	<!-- Loading -->
-	<section
-		class="tickets-panel"
-		if.bind="step === 'loading'"
-	>
+	<section class="tickets-panel" if.bind="step === 'loading'">
 		<p class="tickets-lead" t="tickets.loading"></p>
 	</section>
 
 	<!-- Empty: no issued tickets yet -->
-	<section
-		class="[ tickets-panel ] [ flow ]"
-		if.bind="step === 'empty'"
-	>
+	<section class="[ tickets-panel ] [ flow ]" if.bind="step === 'empty'">
 		<h2 class="tickets-step-title" t="tickets.empty.title"></h2>
 		<p class="tickets-lead" t="tickets.empty.subtitle"></p>
 	</section>
 
 	<!-- Error -->
-	<section
-		class="[ tickets-panel ] [ flow ]"
-		if.bind="step === 'error'"
-	>
+	<section class="[ tickets-panel ] [ flow ]" if.bind="step === 'error'">
 		<h2 class="tickets-step-title" t="tickets.error.title"></h2>
-		<p class="tickets-error">${error}</p>
+		<p class="tickets-error" t="tickets.error.message"></p>
 		<button
 			type="button"
 			class="tickets-btn-primary"
@@ -35,55 +50,141 @@
 		></button>
 	</section>
 
-	<!-- Loaded: ticket list -->
-	<section
-		class="[ tickets-list ] [ flow ]"
-		if.bind="step === 'loaded'"
-	>
-		<article
-			class="[ tickets-card ] [ flow ]"
-			repeat.for="ticket of tickets"
-			data-voided.bind="ticket.isVoided"
+	<!-- Loaded: tickets grouped by event, nearest first -->
+	<div class="[ tickets-list ] [ flow ]" if.bind="step === 'loaded'">
+		<section
+			class="[ tickets-event ] [ flow ]"
+			repeat.for="group of groups"
+			aria-labelledby.bind="'tickets-event-' + group.eventId"
 		>
-			<!-- Link to order detail when this ticket has an associated order -->
-			<a
-				class="tickets-order-link"
-				href.bind="'/orders/' + ticket.orderId"
-				if.bind="ticket.orderId"
-				t="tickets.viewOrder"
-			></a>
-			<!-- Status badge -->
-			<output
-				class="tickets-status"
-				data-issued.bind="ticket.isIssued"
-				data-voided.bind="ticket.isVoided"
-			>
-				<span class="tickets-status-label">${statusLabel(ticket)}</span>
-			</output>
+			<header class="[ tickets-event-head ] [ flow ]">
+				<h2 class="tickets-event-title" id.bind="'tickets-event-' + group.eventId">
+					<template if.bind="group.event">${group.event.title}</template>
+					<template else><span t="tickets.event.unknown"></span></template>
+				</h2>
+				<dl class="tickets-summary" if.bind="group.event">
+					<div class="tickets-summary-row">
+						<dt class="tickets-summary-key" t="tickets.event.date"></dt>
+						<dd class="tickets-summary-val">${eventDate(group)}</dd>
+					</div>
+					<div class="tickets-summary-row">
+						<dt class="tickets-summary-key" t="tickets.event.venue"></dt>
+						<dd class="tickets-summary-val">${group.event.venueName}</dd>
+					</div>
+					<div class="tickets-summary-row" if.bind="group.event.openTime">
+						<dt class="tickets-summary-key" t="tickets.event.open"></dt>
+						<dd class="tickets-summary-val">${time(group.event.openTime)}</dd>
+					</div>
+					<div class="tickets-summary-row" if.bind="group.event.startTime">
+						<dt class="tickets-summary-key" t="tickets.event.start"></dt>
+						<dd class="tickets-summary-val">${time(group.event.startTime)}</dd>
+					</div>
+				</dl>
+			</header>
 
-			<!-- Ticket details -->
-			<dl class="tickets-summary">
-				<div class="tickets-summary-row">
-					<dt class="tickets-summary-key" t="tickets.field.eventId"></dt>
-					<!-- TODO(tickets): resolve event title once a fan-facing event-read RPC exists -->
-					<dd class="tickets-summary-val">${ticket.eventId}</dd>
-				</div>
-				<div class="tickets-summary-row">
-					<dt class="tickets-summary-key" t="tickets.field.holderName"></dt>
-					<dd class="tickets-summary-val">${ticket.holderName}</dd>
-				</div>
-				<div class="tickets-summary-row">
-					<dt class="tickets-summary-key" t="tickets.field.issuedAt"></dt>
-					<dd class="tickets-summary-val">${formatDate(ticket.issuedAt)}</dd>
-				</div>
-			</dl>
+			<ul class="[ tickets-cards ] [ flow ]" role="list">
+				<li
+					class="[ tickets-card ] [ flow ]"
+					repeat.for="ticket of group.tickets"
+					data-state.bind="ticket.state"
+				>
+					<div class="[ tickets-card-head ] [ cluster ]">
+						<span class="tickets-number" t="tickets.ticketN" t-params.bind="{ n: ticketNumber(group, ticket) }"></span>
+						<span class="tickets-status" data-state.bind="ticket.state">
+							${stateLabel(ticket)}
+						</span>
+						<span class="tickets-admitted" if.bind="ticket.state === 'entered'">
+							${admitted(ticket)}
+						</span>
+					</div>
 
-			<!-- 特定興行入場券 resale-prohibition notice (shown only when applicable) -->
-			<p
-				class="tickets-resale-notice"
-				if.bind="ticket.resaleWithoutConsentProhibited"
-				t="tickets.resaleProhibited"
-			></p>
-		</article>
-	</section>
+					<!-- 特定興行入場券 face: eligible person's name, no seat, resale notice -->
+					<dl class="tickets-summary">
+						<div class="tickets-summary-row">
+							<dt class="tickets-summary-key" t="tickets.field.holderName"></dt>
+							<dd class="tickets-summary-val">${ticket.holderName}</dd>
+						</div>
+						<div class="tickets-summary-row">
+							<dt class="tickets-summary-key" t="tickets.field.seat"></dt>
+							<dd class="tickets-summary-val" t="tickets.field.noSeat"></dd>
+						</div>
+					</dl>
+					<p
+						class="tickets-resale-notice"
+						if.bind="ticket.resaleWithoutConsentProhibited"
+						t="tickets.resaleProhibited"
+					></p>
+					<a
+						class="tickets-order-link"
+						href.bind="'/orders/' + ticket.orderId"
+						if.bind="ticket.orderId && !offline"
+						t="tickets.viewOrder"
+					></a>
+				</li>
+			</ul>
+
+			<button
+				type="button"
+				class="tickets-btn-primary"
+				if.bind="offersCode(group)"
+				disabled.bind="!canShowCode"
+				click.trigger="openCode(group)"
+				t="tickets.code.show"
+			></button>
+		</section>
+	</div>
+
+	<!-- Entry QR code for the ticked tickets -->
+	<bottom-sheet
+		open.bind="isCodeOpen"
+		dismissable.bind="true"
+		sheet-closed.trigger="closeCode()"
+		aria-label.bind="i18n.tr('tickets.code.title')"
+	>
+		<div class="[ tickets-code ] [ flow ]" if.bind="codeGroup">
+			<h2 class="tickets-step-title" t="tickets.code.title"></h2>
+			<p class="tickets-code-event">${codeGroup.event?.title}</p>
+
+			<p class="tickets-code-count" if.bind="headCount > 0">
+				<span t="tickets.code.headCount" t-params.bind="{ count: headCount }"></span>
+			</p>
+
+			<figure class="tickets-code-figure" if.bind="headCount > 0">
+				<img
+					class="tickets-code-image"
+					if.bind="codeImage"
+					src.bind="codeImage"
+					alt.bind="i18n.tr('tickets.code.alt', { count: headCount })"
+				>
+				<p class="tickets-lead" else t="tickets.code.making"></p>
+			</figure>
+			<p class="tickets-lead" if.bind="headCount === 0" t="tickets.code.noneTicked"></p>
+
+			<p class="tickets-lead" t="tickets.code.rotation"></p>
+			<p class="tickets-lead" t="tickets.code.brightness"></p>
+
+			<fieldset class="[ tickets-code-picks ] [ flow ]">
+				<legend class="tickets-summary-key" t="tickets.code.who"></legend>
+				<label
+					class="[ tickets-code-pick ] [ cluster ]"
+					repeat.for="ticket of enterable(codeGroup)"
+				>
+					<input
+						type="checkbox"
+						checked.one-way="isSelected(ticket.id)"
+						disabled.bind="!canSelect(ticket.id)"
+						change.trigger="toggle(ticket.id, $event.target.checked)"
+					>
+					<span t="tickets.ticketN" t-params.bind="{ n: ticketNumber(codeGroup, ticket) }"></span>
+				</label>
+			</fieldset>
+
+			<button
+				type="button"
+				class="tickets-btn-secondary"
+				click.trigger="closeCode()"
+				t="tickets.code.close"
+			></button>
+		</div>
+	</bottom-sheet>
 </template>

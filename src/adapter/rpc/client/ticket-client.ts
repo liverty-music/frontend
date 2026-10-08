@@ -70,4 +70,27 @@ export class TicketRpcClient {
 			throw err
 		}
 	}
+
+	/**
+	 * registerWalletPublicKey makes this device's public key the caller's
+	 * WalletPublicKey (the 65-byte uncompressed SEC1 point from
+	 * `exportKey('raw')`). Only the public key is sent; the private key never
+	 * leaves the device. Returns whether another device's key was replaced.
+	 */
+	public async registerWalletPublicKey(
+		publicKey: Uint8Array,
+		signal?: AbortSignal,
+	): Promise<{ replacedOtherKey: boolean }> {
+		this.logger.info('Registering wallet public key')
+		try {
+			const response = await this.client.registerWalletPublicKey(
+				{ publicKey: { value: publicKey } },
+				{ signal },
+			)
+			return { replacedOtherKey: response.replacedOtherKey }
+		} catch (err) {
+			this.logger.warn('RegisterWalletPublicKey failed', { error: err })
+			throw err
+		}
+	}
 }

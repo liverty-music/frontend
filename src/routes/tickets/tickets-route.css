@@ -76,67 +76,159 @@
 			}
 		}
 
-		/* Individual ticket card */
-		.tickets-card {
+		/* One event and its tickets */
+		.tickets-event {
 			--flow-space: var(--space-s);
 
 			padding: var(--space-m);
 			border: 1px solid var(--color-border-subtle);
 			border-radius: var(--radius-card);
 			background: var(--color-surface-raised);
+		}
 
-			/* Voided tickets are visually de-emphasised */
-			&[data-voided="true"] {
-				opacity: 0.55;
+		.tickets-event-head {
+			--flow-space: var(--space-xs);
+		}
+
+		.tickets-event-title {
+			font-size: var(--step-1);
+			font-weight: 700;
+			color: var(--color-text-primary);
+			text-wrap: balance;
+		}
+
+		/* Individual ticket card (the covered-ticket face) */
+		.tickets-card {
+			--flow-space: var(--space-xs);
+
+			padding: var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+			background: var(--color-surface-base);
+
+			/* Void and entered tickets are de-emphasised */
+			&[data-state="void"],
+			&[data-state="entered"] {
+				opacity: 0.7;
 			}
 		}
 
-		/* Status badge */
-		.tickets-status-label {
-			font-size: var(--step--1);
-			font-weight: 600;
+		.tickets-card-head {
+			--cluster-gap: var(--space-xs);
 		}
 
-		.tickets-status {
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
+		.tickets-number {
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
 
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-s);
+		.tickets-admitted {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		/* State badge: 未入場 / 入場済み / 無効 */
+		.tickets-status {
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-xs);
 			border: 1px solid var(--color-border-subtle);
 			border-radius: var(--radius-button);
 
-			background: var(--color-surface-base);
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--color-text-secondary);
 
-			&[data-issued="true"] {
+			&[data-state="not-entered"] {
 				border-color: color-mix(
 					in oklch,
 					var(--color-brand-primary) 45%,
 					transparent
 				);
+				color: var(--color-brand-primary);
 				background: color-mix(
 					in oklch,
 					var(--color-brand-primary) 10%,
 					transparent
 				);
-
-				& .tickets-status-label {
-					color: var(--color-brand-primary);
-				}
 			}
+		}
 
-			&[data-voided="true"] {
-				background: color-mix(
+		/* Offline / device notices */
+		.tickets-notice {
+			display: block;
+
+			inline-size: 100%;
+			max-inline-size: 36rem;
+			margin-inline: auto;
+			padding: var(--space-s);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-card);
+
+			font-size: var(--step--1);
+			line-height: var(--leading-relaxed);
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-raised);
+
+			&[data-tone="warning"] {
+				border-color: color-mix(
 					in oklch,
-					var(--color-text-secondary) 8%,
+					var(--color-brand-primary) 45%,
 					transparent
 				);
-
-				& .tickets-status-label {
-					color: var(--color-text-secondary);
-				}
 			}
+		}
+
+		/* Entry QR code sheet */
+		.tickets-code {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-m);
+			text-align: center;
+		}
+
+		.tickets-code-event {
+			font-weight: 600;
+			color: var(--color-text-primary);
+		}
+
+		.tickets-code-count {
+			font-family: var(--font-display);
+			font-size: var(--step-3);
+			color: var(--color-text-primary);
+		}
+
+		.tickets-code-figure {
+			display: grid;
+			place-items: center;
+
+			aspect-ratio: 1;
+			inline-size: min(100%, 20rem);
+			margin-inline: auto;
+			border-radius: var(--radius-card);
+
+			/* High contrast whatever the theme; the SVG carries its own quiet zone */
+			background: var(--color-white);
+		}
+
+		.tickets-code-image {
+			inline-size: 100%;
+			block-size: 100%;
+		}
+
+		.tickets-code-picks {
+			--flow-space: var(--space-2xs);
+
+			border: 0;
+			text-align: start;
+		}
+
+		.tickets-code-pick {
+			--cluster-gap: var(--space-xs);
+
+			min-block-size: 44px;
+			color: var(--color-text-primary);
 		}
 
 		/* Summary definition list */
@@ -209,6 +301,27 @@
 			&:active {
 				transform: scale(0.98);
 			}
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+		}
+
+		.tickets-btn-secondary {
+			cursor: pointer;
+
+			inline-size: 100%;
+			min-block-size: 48px;
+			padding-block: var(--space-xs);
+			padding-inline: var(--space-m);
+			border: 1px solid var(--color-border-subtle);
+			border-radius: var(--radius-button);
+
+			font-weight: 600;
+			color: var(--color-text-primary);
+
+			background: transparent;
 		}
 	}
 }
