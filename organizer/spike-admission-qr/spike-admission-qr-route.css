@@ -1,0 +1,86 @@
+/* TEMPORARY SPIKE (task 0.4): delete after the measurements. */
+@layer block {
+	@scope (spike-admission-qr-route) {
+		.spike-layout {
+			--flow-space: var(--space-m);
+
+			overflow-y: auto;
+
+			max-inline-size: 40rem;
+			block-size: 100%;
+			margin-inline: auto;
+			padding: var(--space-m);
+		}
+
+		.spike-title {
+			font-size: var(--step-1);
+			font-weight: 700;
+		}
+
+		.spike-panel {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-m);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-m);
+		}
+
+		.organizer-btn {
+			min-block-size: 44px;
+
+			&[aria-pressed="true"] {
+				border-color: var(--color-brand-primary);
+				color: var(--color-brand-primary);
+			}
+		}
+
+		.spike-code {
+			inline-size: min(100%, 22rem);
+			margin-inline: auto;
+
+			& img {
+				display: block;
+				inline-size: 100%;
+			}
+
+			&[data-dim="true"] img {
+				filter: brightness(0.55) contrast(0.6);
+			}
+		}
+
+		.spike-note,
+		.spike-status {
+			display: block;
+			font-size: var(--step--1);
+		}
+
+		.spike-video {
+			inline-size: 100%;
+			max-block-size: 50vh;
+			background: var(--color-surface-raised);
+		}
+
+		.spike-table-wrap {
+			overflow-x: auto;
+		}
+
+		.spike-table {
+			border-collapse: collapse;
+			inline-size: 100%;
+			font-size: var(--step--1);
+
+			& th,
+			& td {
+				padding: var(--space-3xs);
+				border-block-end: 1px solid var(--color-border);
+				text-align: start;
+			}
+		}
+
+		.spike-json {
+			overflow-x: auto;
+			font-size: var(--step--1);
+			white-space: pre;
+		}
+	}
+}

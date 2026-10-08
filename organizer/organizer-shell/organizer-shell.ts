@@ -69,6 +69,17 @@ import { route } from '@aurelia/router'
 			data: { role: false },
 		},
 		{
+			// TEMPORARY SPIKE (ticket-wallet-and-checkin task 0.4): AdmissionCode
+			// QR generate/decode timing on real phones. Dev only — the route's
+			// canLoad refuses unless config.json says `environment: dev` — and
+			// open without sign-in so test phones need no organizer account.
+			// Delete with organizer/spike-admission-qr after the measurements.
+			path: 'spike/admission-qr',
+			component: import('../spike-admission-qr/spike-admission-qr-route'),
+			title: 'AdmissionCode QR spike',
+			data: { auth: false, role: false },
+		},
+		{
 			path: 'auth/callback',
 			component: import('../auth-callback/auth-callback-route'),
 			title: 'Signing In',

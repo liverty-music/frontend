@@ -1,0 +1,84 @@
+<!-- TEMPORARY SPIKE (task 0.4): delete after the measurements. Dev only. -->
+<main class="[ spike-layout ] [ flow ]" if.bind="enabled">
+  <h1 class="spike-title">AdmissionCode QR spike (dev)</h1>
+
+  <div class="cluster" role="group" aria-label="Mode">
+    <button type="button" class="organizer-btn" aria-pressed.bind="mode === 'generator'" click.trigger="setMode('generator')">Generator (fan phone)</button>
+    <button type="button" class="organizer-btn" aria-pressed.bind="mode === 'scanner'" click.trigger="setMode('scanner')">Scanner (reception phone)</button>
+  </div>
+
+  <section class="[ spike-panel ] [ flow ]" if.bind="mode === 'generator'" aria-labelledby="spike-generator">
+    <h2 id="spike-generator">Generator</h2>
+    <div class="cluster" role="group" aria-label="Tickets">
+      <button
+        type="button"
+        class="organizer-btn"
+        repeat.for="n of ticketCounts"
+        aria-pressed.bind="ticketCount === n"
+        click.trigger="setTicketCount(n)"
+      >${n} tickets</button>
+    </div>
+    <figure class="spike-code" data-dim.bind="dim">
+      <img if.bind="codeImage" src.bind="codeImage" alt="AdmissionCode QR code for ${ticketCount} tickets">
+    </figure>
+    <p>${codeBytes} bytes · ${codeChars} Base45 characters · signed ${signedAt} (renews every 15 s)</p>
+    <button type="button" class="organizer-btn" aria-pressed.bind="dim" click.trigger="toggleDim()">Dim the code</button>
+    <p class="spike-note">The dim toggle only lowers contrast on the page. Also lower the device brightness for the low-brightness runs.</p>
+  </section>
+
+  <section class="[ spike-panel ] [ flow ]" if.bind="mode === 'scanner'" aria-labelledby="spike-scanner">
+    <h2 id="spike-scanner">Scanner</h2>
+    <fieldset class="flow">
+      <legend>Decoder</legend>
+      <label class="cluster">
+        <input type="radio" name="decoder" model.bind="'barcode-detector'" checked.bind="decoder" disabled.bind="scanning">
+        <span>BarcodeDetector (qr_code supported: ${barcodeSupported === null ? 'checking' : barcodeSupported ? 'yes' : 'no'})</span>
+      </label>
+      <label class="cluster">
+        <input type="radio" name="decoder" model.bind="'paulmillr-worker'" checked.bind="decoder" disabled.bind="scanning">
+        <span>@paulmillr/qr in a Web Worker</span>
+      </label>
+    </fieldset>
+    <fieldset class="flow">
+      <legend>Fan screen brightness</legend>
+      <label class="cluster">
+        <input type="radio" name="brightness" model.bind="'normal'" checked.bind="brightness" disabled.bind="scanning">
+        <span>normal</span>
+      </label>
+      <label class="cluster">
+        <input type="radio" name="brightness" model.bind="'low'" checked.bind="brightness" disabled.bind="scanning">
+        <span>low</span>
+      </label>
+    </fieldset>
+    <div class="cluster">
+      <button type="button" class="organizer-btn" click.trigger="startScan()" disabled.bind="scanning">Start scan</button>
+      <button type="button" class="organizer-btn" click.trigger="stopScan()" disabled.bind="!scanning">Stop</button>
+    </div>
+    <video class="spike-video" ref="video" playsinline muted></video>
+    <output class="spike-status">${status} · frames ${frames} · failures ${failures} · ignored ${ignored}</output>
+  </section>
+
+  <section class="[ spike-panel ] [ flow ]" aria-labelledby="spike-runs">
+    <h2 id="spike-runs">Runs (${runs.length})</h2>
+    <div class="cluster">
+      <button type="button" class="organizer-btn" click.trigger="copyRuns()" disabled.bind="runs.length === 0">Copy all as JSON</button>
+      <button type="button" class="organizer-btn" click.trigger="clearRuns()" disabled.bind="runs.length === 0">Clear</button>
+    </div>
+    <div class="spike-table-wrap">
+      <table class="spike-table">
+        <thead>
+          <tr><th scope="col">decoder</th><th scope="col">tickets</th><th scope="col">ms</th><th scope="col">frames</th><th scope="col">failures</th><th scope="col">ignored</th><th scope="col">brightness</th><th scope="col">time</th></tr>
+        </thead>
+        <tbody>
+          <tr repeat.for="run of runs">
+            <td>${run.decoder}</td><td>${run.ticketCount}</td><td>${run.ms}</td><td>${run.frames}</td><td>${run.failures}</td><td>${run.ignored}</td><td>${run.brightness}</td><td>${run.timestamp}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <details>
+      <summary>JSON</summary>
+      <pre class="spike-json" ref="jsonPre">${runsJson}</pre>
+    </details>
+  </section>
+</main>
