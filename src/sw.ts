@@ -4,8 +4,8 @@ declare const self: ServiceWorkerGlobalScope & {
 }
 
 import { BackgroundSyncPlugin } from 'workbox-background-sync'
-import { precacheAndRoute } from 'workbox-precaching'
-import { registerRoute } from 'workbox-routing'
+import { matchPrecache, precacheAndRoute } from 'workbox-precaching'
+import { NavigationRoute, registerRoute } from 'workbox-routing'
 import { NetworkOnly } from 'workbox-strategies'
 import {
 	flushInteractionStash,
@@ -15,6 +15,10 @@ import {
 	reportNotificationInteraction,
 	resolvePushMetadata,
 } from './lib/analytics/notification-interaction'
+import {
+	configNetworkFirst,
+	navigateOrShell,
+} from './lib/offline/offline-fallback'
 import { handlePushSubscriptionChange } from './lib/push/push-renewal'
 import { Events } from './services/analytics-events'
 
@@ -24,28 +28,39 @@ import { Events } from './services/analytics-events'
 precacheAndRoute(self.__WB_MANIFEST)
 
 // ---------------------------------------------------------------------------
-// Runtime config endpoint — NetworkOnly.
+// Runtime config endpoint — network-first, last good copy offline.
 //
-// Why NetworkOnly: ConfigMap updates (followed by Reloader-triggered pod
-// rollout) MUST propagate on the next page load without depending on
-// cache busting. Caching `/config.json` in the SW would create a window
-// where the SPA boots against stale config after an operator change.
-//
-// OFFLINE TRADE-OFF (intentional, scoped non-goal for this change):
-// A user who has previously loaded the app and then goes offline will
-// see `showStaticErrorPage` from `loadAppConfig()` rather than a
-// partial cached experience. Auth and gRPC already require network, so
-// offline support was always limited. If offline-tolerant config
-// becomes a goal, swap this for a `NetworkFirst` (or
-// `StaleWhileRevalidate`) strategy with a short TTL — additive change.
-// See OpenSpec change `adopt-runtime-config-for-frontend` design D6
-// Risks/Trade-offs for the full rationale.
+// Online, every boot reads `/config.json` from the network (never a cached
+// copy), so ConfigMap updates (followed by a Reloader-triggered pod rollout)
+// still propagate on the next page load without cache busting. The response
+// is also kept, and served ONLY when the network request fails, so a fan can
+// reopen the app without a connection: the tickets screen shows the last
+// loaded tickets and makes entry QR codes offline (OpenSpec change
+// `ticket-wallet-and-checkin`). This is the additive change anticipated by
+// `adopt-runtime-config-for-frontend` design D6.
 //
 // `/config.json` is intentionally NOT in `__WB_MANIFEST` — it is
 // mounted from a K8s ConfigMap at deploy time, not shipped in the
 // image's dist output beyond the `public/` fallback.
 // ---------------------------------------------------------------------------
-registerRoute(({ url }) => url.pathname === '/config.json', new NetworkOnly())
+registerRoute(
+	({ url }) => url.pathname === '/config.json',
+	({ request }) => configNetworkFirst(request),
+)
+
+// ---------------------------------------------------------------------------
+// Navigations — network-first, precached app shell offline.
+//
+// Online navigations go to the server unchanged (Caddy templating, link
+// previews). When the network fails, the precached `index.html` is served so
+// the client-side router opens the route offline (e.g. `/tickets` in a venue
+// without signal).
+// ---------------------------------------------------------------------------
+registerRoute(
+	new NavigationRoute(({ request }) =>
+		navigateOrShell(request, () => matchPrecache('/index.html')),
+	),
+)
 
 // ---------------------------------------------------------------------------
 // Background Sync for artist operations (listTop / listSimilar / search).
