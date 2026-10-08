@@ -54,6 +54,28 @@ function createSettings(config: AppConfig): UserManagerSettings {
 export interface AuthFlowState {
 	/** Set to 'signup' only when the user arrived via `signUp()`. */
 	flow?: 'signup'
+	/**
+	 * Where the sign-up started, when that changes what follows it. A sign-up
+	 * from an Event page returns there and skips the post-signup celebration
+	 * and dialog (the purchase flow owns its own follow-up prompts).
+	 */
+	origin?: AuthFlowOrigin
+	/**
+	 * In-app path to show after the callback. Carried in the OIDC state rather
+	 * than sessionStorage so it survives a sign-up that outlasts the
+	 * return-to TTL (e.g. waiting for an email verification code).
+	 */
+	returnTo?: string
+}
+
+/** Surfaces that start a sign-up with their own follow-up. */
+export type AuthFlowOrigin = 'event-page'
+
+/** Options of {@link AuthService.signUp}. */
+export interface SignUpOptions {
+	/** In-app path (starting with a single `/`) to return to after sign-up. */
+	returnTo?: string
+	origin?: AuthFlowOrigin
 }
 
 /**
@@ -63,6 +85,30 @@ export interface AuthFlowState {
  */
 export function resolveAuthFlow(user: User): AuthFlowState['flow'] {
 	return (user.state as AuthFlowState | undefined)?.flow
+}
+
+/** Read the sign-up origin marker off a resolved OIDC user, if any. */
+export function resolveAuthOrigin(user: User): AuthFlowOrigin | undefined {
+	return (user.state as AuthFlowState | undefined)?.origin
+}
+
+/**
+ * Read the return path carried in the OIDC state, accepting only an in-app
+ * path so a tampered state can never redirect off the app.
+ */
+export function resolveAuthReturnTo(user: User): string | undefined {
+	const loc = (user.state as AuthFlowState | undefined)?.returnTo
+	return isInAppPath(loc) ? loc : undefined
+}
+
+/** True for a same-origin path: one leading `/`, not `//` or a backslash. */
+export function isInAppPath(loc: unknown): loc is string {
+	return (
+		typeof loc === 'string' &&
+		loc.startsWith('/') &&
+		!loc.startsWith('//') &&
+		!loc.includes('\\')
+	)
 }
 
 /** True when the user's access token is already expired or expires within the
@@ -283,8 +329,8 @@ export class AuthService {
 		})
 	}
 
-	public async signUp(): Promise<void> {
-		this.logger.info('Starting sign-up flow')
+	public async signUp(options: SignUpOptions = {}): Promise<void> {
+		this.logger.info('Starting sign-up flow', { origin: options.origin })
 		// Zitadel's prompt=create defaults the hosted UI to the sign-up form, but
 		// `prompt` is a request-only hint that is NOT echoed back to the callback.
 		// Stamp the OIDC application `state` with a flow marker so the callback can
@@ -293,10 +339,10 @@ export class AuthService {
 		// post-signup celebration on this marker, so a returning sign-in — which
 		// carries no marker — never triggers the first-run dialog, regardless of
 		// local cache state. `signIn()` deliberately omits the marker.
-		await this.userManager.signinRedirect({
-			prompt: 'create',
-			state: { flow: 'signup' } satisfies AuthFlowState,
-		})
+		const state: AuthFlowState = { flow: 'signup' }
+		if (options.origin) state.origin = options.origin
+		if (isInAppPath(options.returnTo)) state.returnTo = options.returnTo
+		await this.userManager.signinRedirect({ prompt: 'create', state })
 	}
 
 	public async signOut(): Promise<void> {

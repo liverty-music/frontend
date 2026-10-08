@@ -27,5 +27,12 @@
       role="img"
       aria-label.bind="journeyConfig.labelKey | t"
     >${journeyConfig.icon}</span>
+    <span
+      if.bind="isPurchased"
+      class="journey-badge"
+      data-testid="purchased-badge"
+      role="img"
+      t="[aria-label]eventCard.purchased"
+    >🎫</span>
   </div>
 </template>

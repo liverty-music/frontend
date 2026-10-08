@@ -20,6 +20,7 @@ vi.mock(
 	stub('AuthCallbackRoute'),
 )
 vi.mock('../../src/routes/dashboard/dashboard-route', stub('DashboardRoute'))
+vi.mock('../../src/routes/event/event-route', stub('EventRoute'))
 vi.mock('../../src/routes/discovery/discovery-route', stub('DiscoveryRoute'))
 vi.mock('../../src/routes/my-artists/my-artists-route', stub('MyArtistsRoute'))
 vi.mock('../../src/routes/settings/settings-route', stub('SettingsRoute'))
@@ -119,6 +120,13 @@ describe('BottomNavBar (fixture, app route table)', () => {
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Concert deep-link highlights Home"
 	it('highlights Home for a concert deep-link', async () => {
 		await go('concerts/abc-123')
+		expect(activeTabs()).toEqual(['home'])
+	})
+
+	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Event page highlights Home"
+	it('highlights Home for an event page', async () => {
+		await go('settings')
+		await go('events/019a0000-0000-7000-8000-0000000000e1')
 		expect(activeTabs()).toEqual(['home'])
 	})
 

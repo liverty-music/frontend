@@ -13,6 +13,7 @@ import {
 	AuthService,
 	IAuthService,
 	resolveAuthFlow,
+	resolveAuthReturnTo,
 } from '../src/services/auth-service'
 import { createTestContainer } from './helpers/create-container'
 
@@ -173,6 +174,22 @@ describe('AuthService', () => {
 
 	it('signUp calls signinRedirect with prompt=create and the sign-up flow marker', async () => {
 		await sut.signUp()
+		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
+			prompt: 'create',
+			state: { flow: 'signup' },
+		})
+	})
+
+	it('signUp from an Event page carries its origin and return path in the OIDC state', async () => {
+		await sut.signUp({ origin: 'event-page', returnTo: '/events/ev-1' })
+		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
+			prompt: 'create',
+			state: { flow: 'signup', origin: 'event-page', returnTo: '/events/ev-1' },
+		})
+	})
+
+	it('signUp drops a return path that leaves the app', async () => {
+		await sut.signUp({ returnTo: 'https://evil.example.com' })
 		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
 			prompt: 'create',
 			state: { flow: 'signup' },
@@ -434,5 +451,22 @@ describe('resolveAuthFlow', () => {
 	it('returns undefined when state carries no flow marker', () => {
 		const user = { state: { other: true } } as unknown as User
 		expect(resolveAuthFlow(user)).toBeUndefined()
+	})
+})
+
+describe('resolveAuthReturnTo', () => {
+	it('returns an in-app path carried in the state', () => {
+		const user = { state: { returnTo: '/events/ev-1' } } as unknown as User
+		expect(resolveAuthReturnTo(user)).toBe('/events/ev-1')
+	})
+
+	it.each([
+		'//evil.example.com',
+		'https://evil.example.com',
+		'/\\evil',
+		'',
+	])('rejects %s', (returnTo) => {
+		const user = { state: { returnTo } } as unknown as User
+		expect(resolveAuthReturnTo(user)).toBeUndefined()
 	})
 })

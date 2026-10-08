@@ -26,6 +26,7 @@ function makeEvent(overrides: Partial<Concert> = {}): Concert {
 		startTime: '19:00',
 		title: 'Summer Live 2026',
 		sourceUrl: 'https://example.com',
+		isFirstParty: false,
 		hypeLevel: 'home',
 		matched: false,
 		artistHue: artistHue(artistName),
@@ -115,5 +116,25 @@ export const MatchedWithJourneyBadge = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
 		await expect(canvas.getByTestId('journey-badge')).toBeInTheDocument()
+	},
+} satisfies Story
+
+/** First-party card the fan has bought tickets for: the purchased badge. */
+export const FirstPartyPurchased = {
+	render: () =>
+		cardStory(
+			makeEvent({
+				matched: true,
+				isFirstParty: true,
+				purchasedTicketCount: 2,
+				// A journey on a first-party concert is not shown.
+				journeyStatus: 'applied' as JourneyStatus,
+			}),
+			'home',
+		),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		await expect(canvas.getByTestId('purchased-badge')).toBeInTheDocument()
+		await expect(canvas.queryByTestId('journey-badge')).toBeNull()
 	},
 } satisfies Story

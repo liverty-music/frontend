@@ -18,10 +18,20 @@ export class EventCard {
 		return bestLogoUrl(this.event.artist)
 	}
 
-	/** Canonical label/icon/hue for the concert's journey status, if any. */
+	/**
+	 * Canonical label/icon/hue for the concert's journey status, if any. A
+	 * first-party concert never shows a journey badge: it shows what the fan
+	 * bought instead (see {@link isPurchased}).
+	 */
 	public get journeyConfig(): JourneyStatusConfig | undefined {
+		if (this.event.isFirstParty) return undefined
 		const status = this.event.journeyStatus
 		return status ? JOURNEY_STATUS_CONFIG_MAP[status] : undefined
+	}
+
+	/** True when the fan holds an Issued ticket for this first-party concert. */
+	public get isPurchased(): boolean {
+		return this.event.isFirstParty && (this.event.purchasedTicketCount ?? 0) > 0
 	}
 
 	public eventChanged(): void {

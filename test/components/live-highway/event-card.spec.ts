@@ -41,6 +41,53 @@ describe('EventCard', () => {
 		})
 	})
 
+	describe('badges', () => {
+		const base = {
+			artistName: 'Artist',
+			id: 'event-1',
+			artistId: 'artist-1',
+			venueName: 'Venue',
+			locationLabel: 'Tokyo',
+			date: new Date(2026, 2, 15),
+			startTime: '19:00',
+			title: 'Concert',
+			sourceUrl: '',
+			hypeLevel: 'home' as const,
+			matched: true,
+			artistHue: 0,
+		}
+
+		it('shows the journey badge on a discovered concert', () => {
+			component.event = { ...base, isFirstParty: false, journeyStatus: 'paid' }
+			expect(component.journeyConfig).toBeDefined()
+			expect(component.isPurchased).toBe(false)
+		})
+
+		it('shows the purchased badge and no journey badge on a purchased first-party concert', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Purchased first-party concert"
+			component.event = {
+				...base,
+				isFirstParty: true,
+				purchasedTicketCount: 2,
+				journeyStatus: 'applied',
+			}
+			expect(component.isPurchased).toBe(true)
+			expect(component.journeyConfig).toBeUndefined()
+		})
+
+		it('shows no badge on a first-party concert without tickets', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "First-party concert not purchased"
+			component.event = {
+				...base,
+				isFirstParty: true,
+				purchasedTicketCount: 0,
+				journeyStatus: 'applied',
+			}
+			expect(component.isPurchased).toBe(false)
+			expect(component.journeyConfig).toBeUndefined()
+		})
+	})
+
 	describe('onClick', () => {
 		const liveEvent: LiveEvent = {
 			artistName: 'Artist',

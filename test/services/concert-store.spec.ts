@@ -148,6 +148,75 @@ describe('ConcertStore', () => {
 		})
 	})
 
+	describe('toDateGroups (badges)', () => {
+		const dateLD = { year: 2026, month: 3, day: 15 }
+		const artist = { id: 'a1', name: 'Band', mbid: '' }
+		const artistMap = new Map([['a1', { artist, hype: 'watch' as const }]])
+
+		function group(organizerId?: string) {
+			return {
+				date: { value: dateLD },
+				home: [
+					{
+						id: { value: 'c1' },
+						performers: [{ id: { value: 'a1' }, name: { value: 'Band' } }],
+						series: {
+							id: { value: 's1' },
+							title: { value: 'Show' },
+							...(organizerId ? { organizerId: { value: organizerId } } : {}),
+						},
+						localDate: { value: dateLD },
+						venue: { name: { value: 'Venue' } },
+					},
+				],
+				nearby: [],
+				away: [],
+			}
+		}
+
+		it('stamps the journey status on a discovered concert', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Tracked concert"
+			const [dg] = sut.toDateGroups(
+				[group() as never],
+				artistMap,
+				new Map([['c1', 'applied' as const]]),
+			)
+			expect(dg.home[0].isFirstParty).toBe(false)
+			expect(dg.home[0].journeyStatus).toBe('applied')
+		})
+
+		it('leaves a discovered concert without a journey unbadged', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Concert without a journey"
+			const [dg] = sut.toDateGroups([group() as never], artistMap, new Map())
+			expect(dg.home[0].journeyStatus).toBeUndefined()
+		})
+
+		it('stamps the purchased count and no journey on a first-party concert', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Purchased first-party concert"
+			const [dg] = sut.toDateGroups(
+				[group('org-1') as never],
+				artistMap,
+				new Map([['c1', 'applied' as const]]),
+				new Map([['c1', 2]]),
+			)
+			expect(dg.home[0].isFirstParty).toBe(true)
+			expect(dg.home[0].purchasedTicketCount).toBe(2)
+			expect(dg.home[0].journeyStatus).toBeUndefined()
+		})
+
+		it('gives a first-party concert with only a journey no badge', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "First-party concert not purchased"
+			const [dg] = sut.toDateGroups(
+				[group('org-1') as never],
+				artistMap,
+				new Map([['c1', 'applied' as const]]),
+				new Map(),
+			)
+			expect(dg.home[0].purchasedTicketCount).toBe(0)
+			expect(dg.home[0].journeyStatus).toBeUndefined()
+		})
+	})
+
 	describe('toDateGroups (performer resolution)', () => {
 		function makeConcert(overrides: Record<string, unknown> = {}) {
 			return {

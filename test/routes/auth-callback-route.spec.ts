@@ -146,6 +146,7 @@ describe('AuthCallbackRoute', () => {
 		})
 
 		it('explicitly calls Create with home when guest selected one — sign-up flow + created=true sets postSignupShown flag', async () => {
+			// @spec components/infrastructure/fan/web/global/post-signup-dialog "Sign-up from the landing page"
 			mockAuth.handleCallback = vi
 				.fn()
 				.mockResolvedValue(authUser('new@example.com', 'signup'))
@@ -171,6 +172,60 @@ describe('AuthCallbackRoute', () => {
 			expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
 			expect(localStorage.getItem('liverty:postSignup:shown')).toBe('pending')
+		})
+
+		describe('sign-up started on an Event page', () => {
+			function eventPageUser(returnTo: string) {
+				return {
+					profile: { email: 'new@example.com' },
+					state: { flow: 'signup', origin: 'event-page', returnTo },
+				}
+			}
+
+			it('returns to the event page with onboarding complete and follows migrated, without arming the post-signup surfaces', async () => {
+				// @spec components/infrastructure/fan/web/route/event "Guest signs up to buy"
+				// @spec components/infrastructure/fan/web/global/post-signup-dialog "Guest signs up while buying"
+				mockAuth.handleCallback = vi
+					.fn()
+					.mockResolvedValue(eventPageUser('/events/ev-1'))
+				setup(null)
+				mockUserService.ensureLoaded = vi
+					.fn()
+					.mockResolvedValue({ user: mockUserService.current, created: true })
+
+				localStorage.removeItem('liverty:postSignup:shown')
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(result).toBe('/events/ev-1')
+				expect(mockOnboarding.finish).toHaveBeenCalled()
+				expect(mockEa.publish).toHaveBeenCalledWith(
+					new GuestMigrationRequested('u1'),
+				)
+				// Without the flag the Dashboard shows neither the celebration
+				// overlay nor the PostSignupDialog later.
+				expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
+			})
+
+			it('ignores a return path that leaves the app', async () => {
+				mockAuth.handleCallback = vi
+					.fn()
+					.mockResolvedValue(eventPageUser('//evil.example.com/x'))
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(result).toBe('/dashboard')
+			})
+
+			it('prefers a forced re-auth return-to over the sign-up return path', async () => {
+				mockAuth.handleCallback = vi
+					.fn()
+					.mockResolvedValue(eventPageUser('/events/ev-1'))
+				mockAuth.takeReturnTo = vi.fn().mockReturnValue('/tickets')
+
+				const result = await sut.canLoad({}, {} as RouteNode)
+
+				expect(result).toBe('/tickets')
+			})
 		})
 
 		it('a NEW no-home account still migrates and shows postSignup (sign-up flow; migration fires regardless of home; created=true)', async () => {

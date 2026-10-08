@@ -1,15 +1,18 @@
+import { IRouter } from '@aurelia/router'
 import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StorageKeys } from '../../src/constants/storage-keys'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockHistory } from '../helpers/mock-history'
 import { createMockLocalStorage } from '../helpers/mock-local-storage'
+import { createMockRouter } from '../helpers/mock-router'
 
 // --- DI tokens (must be created before vi.mock calls) ---
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIConcertStore = DI.createInterface('IConcertStore')
 const mockIFollowStore = DI.createInterface('IFollowStore')
 const mockITicketJourneyStore = DI.createInterface('ITicketJourneyStore')
+const mockIPurchasedTicketStore = DI.createInterface('IPurchasedTicketStore')
 const mockIResumeRevalidator = DI.createInterface('IResumeRevalidator')
 const mockIOnboardingService = DI.createInterface('IOnboardingService')
 const mockIUserStore = DI.createInterface('IUserStore')
@@ -27,6 +30,9 @@ vi.mock('../../src/services/follow-store', () => ({
 }))
 vi.mock('../../src/services/ticket-journey-store', () => ({
 	ITicketJourneyStore: mockITicketJourneyStore,
+}))
+vi.mock('../../src/services/purchased-ticket-store', () => ({
+	IPurchasedTicketStore: mockIPurchasedTicketStore,
 }))
 vi.mock('../../src/services/resume-revalidator', () => ({
 	IResumeRevalidator: mockIResumeRevalidator,
@@ -93,6 +99,13 @@ function makeJourneyStore() {
 	}
 }
 
+function makePurchasedTicketStore() {
+	return {
+		countByEvent: new Map<string, number>(),
+		load: vi.fn().mockResolvedValue(new Map()),
+	}
+}
+
 function makeResumeRevalidator() {
 	return {
 		register: vi.fn(),
@@ -119,6 +132,8 @@ describe('DashboardRoute', () => {
 	let mockConcert: ReturnType<typeof makeConcertService>
 	let mockFollow: ReturnType<typeof makeFollowService>
 	let mockJourney: ReturnType<typeof makeJourneyStore>
+	let mockPurchased: ReturnType<typeof makePurchasedTicketStore>
+	let mockRouter: ReturnType<typeof createMockRouter>
 	let mockResume: ReturnType<typeof makeResumeRevalidator>
 	let mockOnboarding: ReturnType<typeof makeOnboarding>
 	let mockUserStore: ReturnType<typeof makeUserStore>
@@ -134,6 +149,8 @@ describe('DashboardRoute', () => {
 			Registration.instance(mockIConcertStore, mockConcert),
 			Registration.instance(mockIFollowStore, mockFollow),
 			Registration.instance(mockITicketJourneyStore, mockJourney),
+			Registration.instance(mockIPurchasedTicketStore, mockPurchased),
+			Registration.instance(IRouter, mockRouter),
 			Registration.instance(mockIResumeRevalidator, mockResume),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockIUserStore, mockUserStore),
@@ -151,6 +168,8 @@ describe('DashboardRoute', () => {
 		mockConcert = makeConcertService()
 		mockFollow = makeFollowService()
 		mockJourney = makeJourneyStore()
+		mockPurchased = makePurchasedTicketStore()
+		mockRouter = createMockRouter()
 		mockResume = makeResumeRevalidator()
 		mockOnboarding = makeOnboarding()
 		mockUserStore = makeUserStore()
@@ -482,7 +501,10 @@ describe('DashboardRoute', () => {
 				range.to,
 				expect.any(AbortSignal),
 			)
-			expect(toDateGroupsForLocation).toHaveBeenCalledWith(proximityGroups)
+			expect(toDateGroupsForLocation).toHaveBeenCalledWith(
+				proximityGroups,
+				mockPurchased.countByEvent,
+			)
 
 			const followerCalls = mockConcert.listByFollower.mock.calls.length
 			sut.switchMode('timetable')
@@ -512,6 +534,84 @@ describe('DashboardRoute', () => {
 			// The dashboard owns no header title: the shell header shows the
 			// route's configured `data.titleKey` in both modes.
 			expect('modeTitleKey' in sut).toBe(false)
+		})
+	})
+
+	describe('badge data', () => {
+		it('still shows the concerts without badges when statuses and tickets fail to load', async () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Statuses cannot be loaded"
+			const groups = [{ date: {}, home: [], nearby: [], away: [] }]
+			const rendered = [{ dateKey: '2026-11-20' }]
+			mockConcert.listByFollower.mockResolvedValue(groups)
+			mockConcert.toDateGroups.mockReturnValue(rendered)
+			mockJourney.load.mockRejectedValue(new Error('journey down'))
+			mockPurchased.load.mockRejectedValue(new Error('tickets down'))
+
+			const result = await (
+				sut as unknown as { loadDashboardEvents(): Promise<unknown> }
+			).loadDashboardEvents()
+
+			expect(result).toBe(rendered)
+			expect(mockConcert.toDateGroups).toHaveBeenCalledWith(
+				groups,
+				expect.any(Map),
+				new Map(),
+				new Map(),
+			)
+		})
+	})
+
+	describe('event selection', () => {
+		function selected(isFirstParty: boolean) {
+			return new CustomEvent('event-selected', {
+				detail: {
+					event: { id: 'ev-1', artistId: 'a1', isFirstParty },
+				},
+			}) as unknown as Parameters<typeof sut.onEventSelected>[0]
+		}
+
+		it('opens the detail sheet for a discovered concert', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Open detail from dashboard"
+			// @spec components/infrastructure/fan/web/route/dashboard "Event selection handled by dashboard"
+			const open = vi.fn()
+			sut.detailSheet = { open } as unknown as typeof sut.detailSheet
+
+			sut.onEventSelected(selected(false))
+
+			expect(open).toHaveBeenCalledWith(
+				expect.objectContaining({ id: 'ev-1' }),
+				'dashboard',
+				false,
+			)
+			expect(mockRouter.load).not.toHaveBeenCalled()
+		})
+
+		it('navigates to the event page for a first-party concert', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "First-party concert opens its event page"
+			const open = vi.fn()
+			sut.detailSheet = { open } as unknown as typeof sut.detailSheet
+
+			sut.onEventSelected(selected(true))
+
+			expect(mockRouter.load).toHaveBeenCalledWith('/events/ev-1', {
+				historyStrategy: 'push',
+			})
+			expect(open).not.toHaveBeenCalled()
+		})
+
+		it('restores the timetable at the date the fan left on return', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Back from the event page"
+			const anchor = { dateKey: '2026-11-20', offset: 120 }
+			sut.highway = { scrollAnchor: anchor } as unknown as typeof sut.highway
+			Object.assign(mockConcert, { timetableScrollAnchor: null })
+
+			sut.onEventSelected(selected(true))
+			sut.unloading()
+
+			// The back control re-creates the route, which reads the anchor.
+			const returned = buildSut()
+			returned.bound()
+			expect(returned.timetableAnchor).toEqual(anchor)
 		})
 	})
 

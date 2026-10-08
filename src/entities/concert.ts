@@ -25,6 +25,12 @@ export interface Concert {
 	openTime?: string
 	title: string
 	sourceUrl: string
+	/**
+	 * True when the concert's Series belongs to an Organizer (it carries an
+	 * organizer id). A first-party concert has a public Event page
+	 * (`/events/:id`) and shows the purchased badge instead of a journey badge.
+	 */
+	isFirstParty: boolean
 
 	// --- UI-only ---
 	hypeLevel: HypeLevel
@@ -37,6 +43,11 @@ export interface Concert {
 	artistHue: number
 	artist?: Artist
 	journeyStatus?: JourneyStatus
+	/**
+	 * Issued tickets the signed-in fan holds for this concert. Set only on a
+	 * first-party concert; drives its purchased badge.
+	 */
+	purchasedTicketCount?: number
 }
 
 /** A group of concerts for a single date, split by proximity lane. */

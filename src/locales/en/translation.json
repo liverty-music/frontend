@@ -689,5 +689,51 @@
 	},
 	"lotteryApply": {
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
+	},
+	"eventCard": {
+		"purchased": "Purchased"
+	},
+	"eventPage": {
+		"loading": "Loading…",
+		"open": "OPEN",
+		"start": "START",
+		"addToCalendar": "Add to calendar",
+		"ended": "This concert has ended",
+		"notFound": {
+			"title": "Concert not found",
+			"body": "This page does not exist or is not public.",
+			"toDashboard": "Go to Timetable"
+		},
+		"error": {
+			"body": "Could not load the concert.",
+			"retry": "Retry"
+		},
+		"cancelled": {
+			"title": "This concert has been cancelled",
+			"noSale": "Tickets are no longer sold.",
+			"refund": "Purchased tickets will be refunded.",
+			"otherConcerts": "See the artist's other concerts"
+		},
+		"follow": {
+			"action": "Follow",
+			"following": "Following",
+			"failed": "Could not update the follow"
+		},
+		"share": {
+			"action": "Share",
+			"copied": "Link copied",
+			"failed": "Could not copy the link"
+		},
+		"dates": {
+			"label": "Dates",
+			"others": "Other dates"
+		},
+		"tickets": {
+			"title": "Tickets",
+			"purchased": "{{count}} tickets purchased",
+			"toTickets": "View tickets",
+			"signUpHint": "You need an account to buy tickets.",
+			"signUp": "Create an account"
+		}
 	}
 }

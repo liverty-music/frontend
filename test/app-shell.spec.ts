@@ -27,6 +27,7 @@ vi.mock(
 	stub('AuthCallbackRoute'),
 )
 vi.mock('../src/routes/dashboard/dashboard-route', stub('DashboardRoute'))
+vi.mock('../src/routes/event/event-route', stub('EventRoute'))
 vi.mock('../src/routes/discovery/discovery-route', stub('DiscoveryRoute'))
 vi.mock('../src/routes/my-artists/my-artists-route', stub('MyArtistsRoute'))
 vi.mock('../src/routes/settings/settings-route', stub('SettingsRoute'))

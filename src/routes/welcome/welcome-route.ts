@@ -498,6 +498,7 @@ function buildDevPreviewGroups(): DateGroup[] {
 		openTime: open,
 		title,
 		sourceUrl: 'https://example.com',
+		isFirstParty: false,
 		hypeLevel: 'watch',
 		matched: false,
 		artistHue: artistHue(name),
