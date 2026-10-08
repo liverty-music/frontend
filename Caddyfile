@@ -1,7 +1,5 @@
 :80 {
 	root * /srv
-	file_server
-	try_files {path} /index.html
 
 	@config path /config.json
 	header @config Cache-Control "no-store"
@@ -10,4 +8,46 @@
 	@sw path /sw.js
 	header @sw Cache-Control "no-cache"
 	header @sw Service-Worker-Allowed "/"
+
+	# Event page link previews (OpenSpec change public-event-page, design D4).
+	# index.html carries the placeholder
+	#   <!--{{httpInclude (printf "/__link-preview%s" .OriginalReq.URL.Path)}}-->
+	# which, for /events/*, includes this sub-request's answer: fan-api's
+	# escaped og:/twitter: tags for the event, or an empty body.
+	#
+	# httpInclude fails the whole page on a non-2xx sub-response or a dial
+	# error, so every failure here becomes an empty 200 and the site-default
+	# tags in index.html stand; a slow fan-api is cut off after 1s.
+	handle_path /__link-preview/* {
+		rewrite * /link-preview{path}
+		reverse_proxy {$FAN_API_UPSTREAM:fan-api-svc.backend.svc.cluster.local:80} {
+			transport http {
+				dial_timeout 500ms
+				response_header_timeout 1s
+			}
+			@notok status 1xx 3xx 4xx 5xx
+			handle_response @notok {
+				respond "" 200
+			}
+		}
+	}
+
+	handle {
+		# try_files rewrites the path to /index.html before templates runs, so
+		# the matcher tests the original request path.
+		@event expression {http.request.orig_uri.path}.startsWith("/events/")
+		templates @event {
+			between "<!--{{" "}}-->"
+		}
+		# The event HTML embeds per-event tags; revalidate it on every load.
+		header @event Cache-Control "no-cache"
+
+		try_files {path} /index.html
+		file_server
+	}
+
+	handle_errors {
+		@preview path /__link-preview/*
+		respond @preview "" 200
+	}
 }

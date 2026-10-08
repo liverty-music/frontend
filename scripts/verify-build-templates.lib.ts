@@ -31,7 +31,17 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'settings', marker: 'settings-section-title' },
 	{ route: 'tickets', marker: 'tickets-card' },
 	{ route: 'order', marker: 'order-ticket-card' },
+	{ route: 'event', marker: 'event-performer-name' },
 ]
+
+/**
+ * The Caddy `templates` placeholder in `index.html` that pulls an Event
+ * page's link-preview tags from fan-api (OpenSpec change `public-event-page`,
+ * design D4). A build that minifies HTML comments away would silently drop
+ * every event preview, so the built `index.html` must still carry it verbatim.
+ */
+export const LINK_PREVIEW_PLACEHOLDER =
+	'<!--{{httpInclude (printf "/__link-preview%s" .OriginalReq.URL.Path)}}-->'
 
 export type CheckResult =
 	| { kind: 'ok'; checked: number }
@@ -91,6 +101,16 @@ export function checkBuildTemplates(distDir: string): CheckResult {
 				`route '${route}': chunk ${lookup.path} does not contain marker '${marker}'. Template stripping suspected — see OpenSpec archive \`2026-05-16-adopt-runtime-config-for-frontend\` design D10.`,
 			)
 		}
+	}
+
+	const indexPath = join(distDir, 'index.html')
+	if (
+		!existsSync(indexPath) ||
+		!readFileSync(indexPath, 'utf-8').includes(LINK_PREVIEW_PLACEHOLDER)
+	) {
+		failures.push(
+			`${indexPath} does not contain the link-preview placeholder '${LINK_PREVIEW_PLACEHOLDER}'. Event page link previews would fall back to the site defaults.`,
+		)
 	}
 
 	if (failures.length > 0) return { kind: 'failed', failures }

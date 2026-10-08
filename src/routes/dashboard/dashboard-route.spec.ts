@@ -28,6 +28,11 @@ const mockJourneyStore = {
 	load: vi.fn(async () => new Map()),
 	statusFor: vi.fn(() => undefined),
 }
+const mockPurchasedTickets = {
+	countByEvent: new Map<string, number>(),
+	load: vi.fn(async () => new Map<string, number>()),
+}
+const mockRouter = { load: vi.fn(async () => true) }
 const mockResumeRevalidator = { register: vi.fn(), unregister: vi.fn() }
 const mockFabMenu = { register: vi.fn(() => vi.fn()) }
 const mockOnboarding = {
@@ -69,6 +74,8 @@ vi.mock('aurelia', async (importOriginal) => {
 				IConcertStore: mockConcertService,
 				IFollowStore: mockFollowStore,
 				ITicketJourneyStore: mockJourneyStore,
+				IPurchasedTicketStore: mockPurchasedTickets,
+				IRouter: mockRouter,
 				IResumeRevalidator: mockResumeRevalidator,
 				IFabMenuService: mockFabMenu,
 				IOnboardingService: mockOnboarding,
@@ -91,7 +98,10 @@ vi.mock('@aurelia/i18n', async (importOriginal) => {
 	return { ...actual, I18N: { friendlyName: 'I18N' } }
 })
 
-vi.mock('@aurelia/router', () => ({ RouteNode: class {} }))
+vi.mock('@aurelia/router', () => ({
+	RouteNode: class {},
+	IRouter: { friendlyName: 'IRouter' },
+}))
 vi.mock('@aurelia/runtime', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('@aurelia/runtime')>()
 	return { ...actual, queueTask: vi.fn((fn: () => void) => fn()) }

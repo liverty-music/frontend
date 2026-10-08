@@ -7,8 +7,12 @@
  * nor `admin/`).
  */
 export {
+	type AuthFlowOrigin,
 	type AuthFlowState,
 	AuthService,
 	IAuthService,
 	resolveAuthFlow,
+	resolveAuthOrigin,
+	resolveAuthReturnTo,
+	type SignUpOptions,
 } from '../../shared/services/auth-service'

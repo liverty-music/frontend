@@ -3,7 +3,12 @@ import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
-import { IAuthService, resolveAuthFlow } from '../../services/auth-service'
+import {
+	IAuthService,
+	resolveAuthFlow,
+	resolveAuthOrigin,
+	resolveAuthReturnTo,
+} from '../../services/auth-service'
 import { GuestMigrationRequested } from '../../services/events/guest-migration-requested'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IUserStore, type ProvisionResult } from '../../services/user-store'
@@ -133,13 +138,24 @@ export class AuthCallbackRoute {
 			// callback hit) fails closed to "not sign-up" per design D3. The
 			// `created` AND-condition additionally suppresses the residual
 			// same-device "returning user taps Sign up" case at zero extra cost.
+			//
+			// A sign-up started on an Event page skips both surfaces: the fan
+			// returns to the event to buy, and the purchase flow owns the
+			// notification / install prompts that follow it.
 			const isSignUpFlow = resolveAuthFlow(user) === 'signup'
-			if (isSignUpFlow && created) {
+			const fromEventPage = resolveAuthOrigin(user) === 'event-page'
+			if (isSignUpFlow && created && !fromEventPage) {
 				localStorage.setItem(StorageKeys.postSignupShown, 'pending')
 			}
 
-			// After an involuntary re-auth, return to where the user was.
-			return this.authService.takeReturnTo() ?? '/dashboard'
+			// After an involuntary re-auth, return to where the user was;
+			// otherwise to where the sign-up started (carried in the OIDC state).
+			// takeReturnTo() runs first so its single-shot entry is always consumed.
+			return (
+				this.authService.takeReturnTo() ??
+				resolveAuthReturnTo(user) ??
+				'/dashboard'
+			)
 		} catch (err) {
 			this.logger.error('Auth callback error:', err)
 

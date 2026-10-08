@@ -689,5 +689,51 @@
 	},
 	"lotteryApply": {
 		"phoneInvalid": "電話番号を正しく入力してください（例：090-1234-5678、+81 90 1234 5678）。"
+	},
+	"eventCard": {
+		"purchased": "購入済み"
+	},
+	"eventPage": {
+		"loading": "読み込み中…",
+		"open": "OPEN",
+		"start": "START",
+		"addToCalendar": "カレンダーに追加",
+		"ended": "このライブは終了しました",
+		"notFound": {
+			"title": "ライブが見つかりません",
+			"body": "このページは存在しないか、公開されていません。",
+			"toDashboard": "タイムテーブルへ"
+		},
+		"error": {
+			"body": "ライブ情報を読み込めませんでした。",
+			"retry": "再読み込み"
+		},
+		"cancelled": {
+			"title": "このライブは中止になりました",
+			"noSale": "チケットの販売は終了しました。",
+			"refund": "購入済みのチケットは払い戻されます。",
+			"otherConcerts": "このアーティストの他のライブを見る"
+		},
+		"follow": {
+			"action": "フォロー",
+			"following": "フォロー中",
+			"failed": "フォローを更新できませんでした"
+		},
+		"share": {
+			"action": "共有",
+			"copied": "リンクをコピーしました",
+			"failed": "リンクをコピーできませんでした"
+		},
+		"dates": {
+			"label": "公演日",
+			"others": "ほかの公演日"
+		},
+		"tickets": {
+			"title": "チケット",
+			"purchased": "{{count}}枚購入済み",
+			"toTickets": "チケットを見る",
+			"signUpHint": "チケットの購入にはアカウントが必要です。",
+			"signUp": "アカウントを作成"
+		}
 	}
 }

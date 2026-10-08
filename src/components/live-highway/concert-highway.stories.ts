@@ -29,6 +29,7 @@ function ev(
 		startTime: '19:00',
 		title: `${artistName} Live`,
 		sourceUrl: 'https://example.com',
+		isFirstParty: false,
 		hypeLevel: lane === 'home' ? 'home' : lane === 'nearby' ? 'nearby' : 'away',
 		matched,
 		artistHue: artistHue(artistName),

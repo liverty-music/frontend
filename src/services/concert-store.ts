@@ -227,7 +227,10 @@ export class ConcertStore {
 	 * performers themselves makes the headliner name render. No hype/journey context
 	 * applies here, so hype defaults and the journey map is empty.
 	 */
-	public toDateGroupsForLocation(groups: ProximityGroup[]): DateGroup[] {
+	public toDateGroupsForLocation(
+		groups: ProximityGroup[],
+		purchasedMap: Map<string, number> = new Map(),
+	): DateGroup[] {
 		const artistMap = new Map<string, { artist: Artist; hype: Hype }>()
 		for (const g of groups) {
 			for (const c of [...g.home, ...g.nearby, ...g.away]) {
@@ -245,7 +248,7 @@ export class ConcertStore {
 				}
 			}
 		}
-		return this.toDateGroups(groups, artistMap, new Map())
+		return this.toDateGroups(groups, artistMap, new Map(), purchasedMap)
 	}
 
 	/**
@@ -256,10 +259,16 @@ export class ConcertStore {
 		groups: ProximityGroup[],
 		artistMap: Map<string, { artist: Artist; hype: Hype }>,
 		journeyMap: Map<string, JourneyStatus> = new Map(),
+		purchasedMap: Map<string, number> = new Map(),
 	): DateGroup[] {
 		let lastMonthKey = ''
 		return groups.map((g) => {
-			const group = this.protoGroupToDateGroup(g, artistMap, journeyMap)
+			const group = this.protoGroupToDateGroup(
+				g,
+				artistMap,
+				journeyMap,
+				purchasedMap,
+			)
 			const monthKey = group.dateKey.slice(0, 7) // "2026-07"
 			const isFirstOfMonth = monthKey !== '' && monthKey !== lastMonthKey
 			if (isFirstOfMonth) lastMonthKey = monthKey
@@ -281,6 +290,7 @@ export class ConcertStore {
 		group: ProximityGroup,
 		artistMap: Map<string, { artist: Artist; hype: Hype }>,
 		journeyMap: Map<string, JourneyStatus>,
+		purchasedMap: Map<string, number>,
 	): DateGroup {
 		// Same zero-component guard concertFrom applies to per-concert
 		// dates — a proto3-defaulted ProximityGroup.date with any zero
@@ -394,7 +404,13 @@ export class ConcertStore {
 				if (!event) return []
 				const eventId = c.id?.value
 				if (eventId) {
-					event.journeyStatus = journeyMap.get(eventId)
+					// A first-party concert shows what the fan bought, not the
+					// self-reported journey.
+					if (event.isFirstParty) {
+						event.purchasedTicketCount = purchasedMap.get(eventId) ?? 0
+					} else {
+						event.journeyStatus = journeyMap.get(eventId)
+					}
 				}
 				return [event]
 			})
@@ -549,6 +565,7 @@ function concertFrom(
 		openTime,
 		title: proto.series?.title?.value ?? '',
 		sourceUrl: proto.series?.sourceUrl?.value ?? '',
+		isFirstParty: !!proto.series?.organizerId?.value,
 		hypeLevel,
 		matched,
 		artistHue: artistHue(artistName),

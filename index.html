@@ -12,10 +12,27 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' https://*.zitadel.cloud https://*.liverty-music.app https://eu.i.posthog.com https://eu-assets.i.posthog.com https://api.stripe.com;
-    img-src 'self' data: blob: https://assets.fanart.tv https://eu.i.posthog.com;
+    img-src 'self' data: blob: https://assets.fanart.tv https://eu.i.posthog.com https://media.liverty-music.app https://media.dev.liverty-music.app;
     frame-src https://*.zitadel.cloud https://js.stripe.com https://hooks.stripe.com;
     worker-src 'self' blob:;
   ">
+  <!-- Link previews. On /events/* the fan web's Caddy replaces the comment
+       below with the event's own og:/twitter: tags, written first so that
+       crawlers (which take the first occurrence) use them; everywhere else the
+       comment is inert. The site-wide defaults follow it. -->
+  <!--{{httpInclude (printf "/__link-preview%s" .OriginalReq.URL.Path)}}-->
+  <meta name="description" content="大好きなあのバンドのライブ、絶対に見逃さない。公式サイト、SNS、チケットサイトのパトロールはもう終わり。">
+  <meta property="og:title" content="Liverty Music">
+  <meta property="og:description" content="大好きなあのバンドのライブ、絶対に見逃さない。公式サイト、SNS、チケットサイトのパトロールはもう終わり。">
+  <meta property="og:image" content="https://liverty-music.app/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="https://liverty-music.app/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Liverty Music">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
   <link rel="shortcut icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">

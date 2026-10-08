@@ -1,5 +1,5 @@
 import { I18N } from '@aurelia/i18n'
-import type { Params, RouteNode } from '@aurelia/router'
+import { IRouter, type Params, type RouteNode } from '@aurelia/router'
 import {
 	ILogger,
 	observable,
@@ -55,6 +55,7 @@ import {
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IPromptCoordinator } from '../../services/prompt-coordinator'
+import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore } from '../../services/user-store'
@@ -191,11 +192,13 @@ export class DashboardRoute {
 	private readonly fabMenu = resolve(IFabMenuService)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly journeyStore = resolve(ITicketJourneyStore)
+	private readonly purchasedTickets = resolve(IPurchasedTicketStore)
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly promptCoordinator = resolve(IPromptCoordinator)
 	private readonly userStore = resolve(IUserStore)
 	private readonly storage = resolve(ILocalStorage)
 	private readonly history = resolve(IHistory)
+	private readonly router = resolve(IRouter)
 	private readonly resumeRevalidator = resolve(IResumeRevalidator)
 	private abortController: AbortController | null = null
 
@@ -601,6 +604,13 @@ export class DashboardRoute {
 		const concert = this.findConcertById(id)
 		if (!concert?.artistId) return
 
+		// A first-party concert has its own Event page and never opens the
+		// sheet; an older `/concerts/:id` link to one is forwarded there.
+		if (concert.isFirstParty) {
+			void this.openEventPage(concert, 'replace')
+			return
+		}
+
 		this.filteredArtistIds = [concert.artistId]
 		// Open the sheet as a queued task rather than after a synchronous flush.
 		// The filter's URL write (`syncFilterUrl`) is queued by its @watch when
@@ -630,10 +640,11 @@ export class DashboardRoute {
 	): Promise<DateGroup[]> {
 		this.logger.info('Loading dashboard events')
 
-		const [artistMap, groups, journeyMap] = await Promise.all([
+		const [artistMap, groups, journeyMap, purchasedMap] = await Promise.all([
 			this.followStore.getFollowedArtistMap(signal),
 			this.concertService.listByFollower(this.fromDate, signal),
 			this.fetchJourneyMap(signal),
+			this.fetchPurchasedMap(signal),
 		])
 
 		if (groups.length === 0) {
@@ -648,6 +659,7 @@ export class DashboardRoute {
 			groups,
 			artistMap,
 			journeyMap,
+			purchasedMap,
 		)
 		// Persist the rendered output in the singleton so the next DashboardRoute
 		// instance (re-created on every navigation) paints instantly on re-entry.
@@ -664,6 +676,22 @@ export class DashboardRoute {
 			return await this.journeyStore.load(signal)
 		} catch (err) {
 			this.logger.warn('Journey fetch failed, continuing without statuses', {
+				error: err,
+			})
+			return new Map()
+		}
+	}
+
+	private async fetchPurchasedMap(
+		signal?: AbortSignal,
+	): Promise<Map<string, number>> {
+		// One GetMyTickets per dashboard load drives the first-party purchased
+		// badges. Like the journey map, a failure must not blank the dashboard:
+		// the cards then show no purchased badge.
+		try {
+			return await this.purchasedTickets.load(signal)
+		} catch (err) {
+			this.logger.warn('Ticket fetch failed, continuing without badges', {
 				error: err,
 			})
 			return new Map()
@@ -692,7 +720,8 @@ export class DashboardRoute {
 	protected onJourneyMapChanged(map: Map<string, JourneyStatus>): void {
 		for (const group of this.dateGroups) {
 			for (const concert of [...group.home, ...group.nearby, ...group.away]) {
-				if (concert.id) {
+				// A first-party card shows the purchased badge, not a journey.
+				if (concert.id && !concert.isFirstParty) {
 					concert.journeyStatus = map.get(concert.id)
 				}
 			}
@@ -890,11 +919,25 @@ export class DashboardRoute {
 	}
 
 	public onEventSelected(event: CustomEvent<{ event: LiveEvent }>): void {
+		// A first-party concert opens its public Event page instead of the
+		// sheet. Leaving the route saves the timetable anchor (unloading), so
+		// the back control returns to the date the fan left.
+		if (event.detail.event.isFirstParty) {
+			void this.openEventPage(event.detail.event)
+			return
+		}
 		// Tag the source as the dashboard so concert.detail.viewed events from
 		// the dashboard concert list are attributable to that surface in PostHog.
 		// Thread the All Nearby flag so the sheet surfaces the follow CTA only in
 		// that context; My Timetable stays unchanged (isAllNearby === false).
 		this.detailSheet?.open(event.detail.event, 'dashboard', this.isAllNearby)
+	}
+
+	private async openEventPage(
+		concert: LiveEvent,
+		historyStrategy: 'push' | 'replace' = 'push',
+	): Promise<void> {
+		await this.router.load(`/events/${concert.id}`, { historyStrategy })
 	}
 
 	// --- All Nearby mode ---
@@ -1048,7 +1091,10 @@ export class DashboardRoute {
 			if (signal.aborted) return
 			// Resolve each card's artist from the concert's own performers (these
 			// catalog artists are not in the user's follow set), so names render.
-			const dateGroups = this.concertService.toDateGroupsForLocation(groups)
+			const dateGroups = this.concertService.toDateGroupsForLocation(
+				groups,
+				this.purchasedTickets.countByEvent,
+			)
 			this.allNearbyCache.set(key, dateGroups)
 			this.allNearbyDateGroups = dateGroups
 			this.logger.info('All Nearby loaded', {

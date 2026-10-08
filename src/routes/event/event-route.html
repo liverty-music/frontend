@@ -1,0 +1,147 @@
+<import from="./event-route.css"></import>
+<import from="../../components/event-date-tabs/event-date-tabs"></import>
+
+<article class="[ event-page ] [ flow ]" data-state.bind="state">
+  <!-- Loading -->
+  <p if.bind="state === 'loading'" class="event-status" role="status" t="eventPage.loading"></p>
+
+  <!-- No event page: identical for every reason (unknown, discovered, draft, unlisted). -->
+  <section if.bind="state === 'not-found'" class="event-empty" data-testid="event-not-found">
+    <h1 class="event-empty-title" t="eventPage.notFound.title"></h1>
+    <p t="eventPage.notFound.body"></p>
+    <a href="/dashboard" class="[ event-btn-primary ] [ pressable ]" t="eventPage.notFound.toDashboard"></a>
+  </section>
+
+  <!-- Any other failure: retry -->
+  <div if.bind="state === 'error'" class="event-empty" data-testid="event-error">
+    <p t="eventPage.error.body"></p>
+    <button type="button" class="[ event-btn-primary ] [ pressable ]" click.trigger="retry()" t="eventPage.error.retry"></button>
+  </div>
+
+  <template if.bind="state === 'ready' && event">
+    <!-- Cover image, or the brand placeholder -->
+    <figure class="event-cover">
+      <img
+        if.bind="event.coverUrl"
+        src.bind="event.coverUrl"
+        alt=""
+        decoding="async"
+        fetchpriority="high"
+        class="event-cover-img"
+        data-testid="event-cover"
+      />
+      <div else class="event-cover-placeholder" data-testid="event-cover-placeholder" role="presentation">
+        <svg-icon name="music"></svg-icon>
+      </div>
+    </figure>
+
+    <!-- Cancelled banner -->
+    <div if.bind="isCancelled" class="event-banner" data-testid="event-cancelled" role="note">
+      <p class="event-banner-title" t="eventPage.cancelled.title"></p>
+      <p t="eventPage.cancelled.noSale"></p>
+      <p t="eventPage.cancelled.refund"></p>
+      <a href.bind="otherConcertsUrl" class="event-link" t="eventPage.cancelled.otherConcerts"></a>
+    </div>
+
+    <!-- Ended notice -->
+    <p if.bind="isEnded && !isCancelled" class="event-banner" data-testid="event-ended" role="note" t="eventPage.ended"></p>
+
+    <!-- Date tabs (2–4 Events) -->
+    <event-date-tabs
+      if.bind="dateNav === 'tabs'"
+      tabs.bind="dateTabs"
+      label.bind="'eventPage.dates.label' | t"
+      data-testid="event-date-tabs"
+    ></event-date-tabs>
+
+    <header class="event-header">
+      <h1 class="event-title" data-testid="event-title">${event.title}</h1>
+    </header>
+
+    <!-- Performers with follow controls -->
+    <ul class="event-performers" role="list">
+      <li repeat.for="performer of event.performers; key.bind: performer.id" class="event-performer">
+        <span class="event-performer-name">${performer.name}</span>
+        <button
+          type="button"
+          class="[ event-follow ] [ pressable ]"
+          data-followed.bind="isFollowed(performer)"
+          aria-pressed.bind="isFollowed(performer)"
+          disabled.bind="followUpdatingId === performer.id"
+          click.trigger="toggleFollow(performer)"
+          data-testid="event-follow"
+          t.bind="isFollowed(performer) ? 'eventPage.follow.following' : 'eventPage.follow.action'"
+        ></button>
+      </li>
+    </ul>
+
+    <!-- Date and times -->
+    <section class="event-details">
+      <div class="event-detail-row">
+        <svg-icon name="calendar" class="event-detail-icon"></svg-icon>
+        <div>
+          <time datetime.bind="event.dateKey" class="event-detail-primary" data-testid="event-date">${dateLabel}</time>
+          <p class="event-times" data-testid="event-times">
+            <span if.bind="openTimeLabel"><span t="eventPage.open"></span> ${openTimeLabel}</span>
+            <span if.bind="startTimeLabel"><span t="eventPage.start"></span> ${startTimeLabel}</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Venue -->
+      <div class="event-detail-row">
+        <svg-icon name="map-pin" class="event-detail-icon"></svg-icon>
+        <div>
+          <p class="event-detail-primary" data-testid="event-venue">${event.venueName}</p>
+          <p if.bind="prefecture" class="event-detail-secondary" data-testid="event-prefecture">${prefecture}</p>
+          <a
+            href.bind="mapsUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="event-link"
+            data-testid="event-maps"
+            t="eventDetail.openInGoogleMaps"
+          ></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Description, as entered -->
+    <p if.bind="event.description" class="event-description" data-testid="event-description">${event.description}</p>
+
+    <!-- Share and add-to-calendar -->
+    <div class="[ event-actions ] [ cluster ]">
+      <button type="button" class="[ event-btn-secondary ] [ pressable ]" click.trigger="share()" data-testid="event-share">
+        <svg-icon name="link"></svg-icon>
+        <span t="eventPage.share.action"></span>
+      </button>
+      <button type="button" class="[ event-btn-secondary ] [ pressable ]" click.trigger="addToCalendar()" data-testid="event-calendar">
+        <svg-icon name="calendar"></svg-icon>
+        <span t="eventPage.addToCalendar"></span>
+      </button>
+    </div>
+
+    <!-- Ticket section (none once the event has ended) -->
+    <section if.bind="showTicketSection" class="event-tickets" data-testid="event-tickets" aria-labelledby="event-tickets-title">
+      <h2 id="event-tickets-title" class="event-section-title" t="eventPage.tickets.title"></h2>
+      <p if.bind="purchasedCount > 0" data-testid="event-purchased">
+        <span t="eventPage.tickets.purchased" t-params.bind="{ count: purchasedCount }"></span>
+        <a href="/tickets" class="event-link" t="eventPage.tickets.toTickets"></a>
+      </p>
+      <template if.bind="isGuest && !isCancelled">
+        <p t="eventPage.tickets.signUpHint"></p>
+        <button type="button" class="[ event-btn-primary ] [ pressable ]" click.trigger="signUp()" data-testid="event-signup" t="eventPage.tickets.signUp"></button>
+      </template>
+    </section>
+
+    <!-- Other dates (more than 4 Events) -->
+    <section if.bind="dateNav === 'list'" class="event-other-dates" data-testid="event-other-dates" aria-labelledby="event-other-dates-title">
+      <h2 id="event-other-dates-title" class="event-section-title" t="eventPage.dates.others"></h2>
+      <ul role="list">
+        <li repeat.for="d of otherDates; key.bind: d.id">
+          <a href="/events/${d.id}" class="event-link">${d.label}</a>
+        </li>
+      </ul>
+    </section>
+  </template>
+</article>

@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
 	checkBuildTemplates,
+	LINK_PREVIEW_PLACEHOLDER,
 	ROUTE_MARKERS,
 } from './verify-build-templates.lib'
 
@@ -25,6 +26,11 @@ function scaffoldDist(
 		const content = overrides[route] ?? `// marker:${marker}`
 		writeFileSync(join(assetsDir, `${route}-route-XXXX.js`), content)
 	}
+	writeFileSync(
+		join(distDir, 'index.html'),
+		overrides['index.html'] ??
+			`<head>${LINK_PREVIEW_PLACEHOLDER}<title>x</title></head>`,
+	)
 }
 
 describe('checkBuildTemplates', () => {
@@ -53,6 +59,14 @@ describe('checkBuildTemplates', () => {
 		const result = checkBuildTemplates(workDir)
 		assert(result.kind === 'ok')
 		expect(result.checked).toBe(ROUTE_MARKERS.length)
+	})
+
+	it('returns failed when the built index.html lost the link-preview placeholder', () => {
+		scaffoldDist(workDir, { 'index.html': '<head><title>x</title></head>' })
+		const result = checkBuildTemplates(workDir)
+		assert(result.kind === 'failed')
+		expect(result.failures).toHaveLength(1)
+		expect(result.failures[0]).toContain('link-preview placeholder')
 	})
 
 	it('returns failed when a chunk is missing for a route', () => {

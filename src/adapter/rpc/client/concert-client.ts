@@ -31,6 +31,52 @@ export class ConcertRpcClient {
 		),
 	)
 
+	/**
+	 * The concert of one event for its public event page. Rejects with a
+	 * ConnectError of Code.NotFound when the event has no page (unknown id,
+	 * discovered, draft or unlisted series), the same for every reason.
+	 */
+	public async get(
+		eventId: string,
+		signal?: AbortSignal,
+	): Promise<ProtoConcert> {
+		this.logger.info('Getting concert', { eventId })
+		try {
+			const response = await this.client.get(
+				{ eventId: { value: eventId } },
+				{ signal },
+			)
+			if (!response.concert) {
+				throw new Error('ConcertService.Get returned no concert')
+			}
+			return response.concert
+		} catch (err) {
+			this.logger.warn('Concert get failed', { eventId, error: err })
+			throw err
+		}
+	}
+
+	/**
+	 * The concerts of one series that has an event page, ordered by date and
+	 * start time. Rejects with Code.NotFound like {@link get}.
+	 */
+	public async listBySeries(
+		seriesId: string,
+		signal?: AbortSignal,
+	): Promise<ProtoConcert[]> {
+		this.logger.info('Listing concerts by series', { seriesId })
+		try {
+			const response = await this.client.listBySeries(
+				{ seriesId: { value: seriesId } },
+				{ signal },
+			)
+			return response.concerts
+		} catch (err) {
+			this.logger.warn('Concert listBySeries failed', { seriesId, error: err })
+			throw err
+		}
+	}
+
 	public async listConcerts(
 		artistId: string,
 		signal?: AbortSignal,

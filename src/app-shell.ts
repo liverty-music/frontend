@@ -19,7 +19,9 @@ import { IPwaInstallService } from './services/pwa-install-service'
  * header renders `titleKey` (routes without one render no header), and a route
  * with `nav: true` is a bottom-nav tab rendered from the router's navigation
  * model with `icon` / `labelKey`. `chrome: false` hides the header, nav bar and
- * other shell chrome (welcome, auth callback).
+ * other shell chrome (welcome, auth callback). `section` names the tab route
+ * (by `id`) a non-tab route belongs to, so the bottom nav highlights that tab
+ * while it is displayed (the Event page belongs to Home).
  */
 export interface ShellRouteData {
 	auth?: boolean
@@ -27,6 +29,7 @@ export interface ShellRouteData {
 	titleKey?: string
 	icon?: string
 	labelKey?: string
+	section?: string
 }
 
 // Route table. The router's `nav` defaults to true, so `withNavDefault` below
@@ -69,6 +72,15 @@ const routeTable = [
 			node.path.startsWith('concerts/') ? 'Concert' : 'Dashboard',
 		nav: true,
 		data: { titleKey: 'nav.home', icon: 'home', labelKey: 'nav.home' },
+	},
+	{
+		// The public, shareable page of one first-party Event. Guests open it
+		// from shared links, so it does not wait for auth readiness. It belongs
+		// to Home: the dashboard's first-party cards open it.
+		path: 'events/:id',
+		component: import('./routes/event/event-route'),
+		title: 'Event',
+		data: { auth: false, section: 'dashboard' },
 	},
 	{
 		path: 'discovery',
