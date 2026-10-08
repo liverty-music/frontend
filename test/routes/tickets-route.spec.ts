@@ -10,15 +10,15 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+	decodeAdmissionCode,
+	SIGN_ALGORITHM,
+} from '../../shared/lib/admission-code/admission-code'
 import { IScreenWakeLock } from '../../src/adapter/browser/screen-wake-lock'
 import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
 import { ITicketRpcClient } from '../../src/adapter/rpc/client/ticket-client'
 import { IWalletPublicKeyRpcClient } from '../../src/adapter/rpc/client/wallet-public-key-client'
 import { IWalletStorage } from '../../src/adapter/storage/wallet-storage'
-import {
-	decodeAdmissionCode,
-	SIGN_ALGORITHM,
-} from '../../src/lib/admission-code/admission-code'
 import ja from '../../src/locales/ja/translation.json'
 import { TicketsRoute } from '../../src/routes/tickets/tickets-route'
 import { ITicketWallet, TicketWallet } from '../../src/services/ticket-wallet'
