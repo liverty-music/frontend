@@ -60,12 +60,14 @@ describe('EventDetailSheet — journey via the store', () => {
 	})
 
 	it('reads status from the store, not a local event copy', () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Display ticket journey status"
 		expect(sut.status).toBeUndefined()
 		journey.set('e1', 'applied')
 		expect(sut.status).toBe('applied')
 	})
 
 	it('writes through the store on setJourneyStatus and reflects it via status', async () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Set ticket journey status from detail view"
 		await sut.setJourneyStatus('applied')
 
 		expect(mockJourneyStore.setStatus).toHaveBeenCalledWith('e1', 'applied')
@@ -75,11 +77,22 @@ describe('EventDetailSheet — journey via the store', () => {
 	})
 
 	it('write-through delete clears the status', async () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Remove ticket journey from detail view"
 		await sut.setJourneyStatus('applied')
 		await sut.removeJourney()
 
 		expect(mockJourneyStore.delete).toHaveBeenCalledWith('e1')
 		expect(sut.status).toBeUndefined()
+	})
+
+	it('starts tracking a concert that has no journey yet', async () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Start tracking from detail view"
+		expect(sut.status).toBeUndefined()
+
+		await sut.setJourneyStatus('tracking')
+
+		expect(mockJourneyStore.setStatus).toHaveBeenCalledWith('e1', 'tracking')
+		expect(sut.status).toBe('tracking')
 	})
 
 	it('does not double-fire while a write is in flight', async () => {

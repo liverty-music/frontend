@@ -212,6 +212,8 @@ describe('EventDetailSheet', () => {
 
 	describe('onSheetClosed', () => {
 		it('should close and call replaceState when bottom-sheet fires sheet-closed', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Dismiss sheet by tapping outside it or pressing Escape"
+			// @spec components/infrastructure/fan/web/route/dashboard "Dismiss sheet via swipe down"
 			sut.open(makeEvent())
 
 			sut.onSheetClosed()
@@ -233,11 +235,14 @@ describe('EventDetailSheet', () => {
 
 	describe('popstate handling', () => {
 		it('should close sheet when popstate fires', () => {
+			// @spec components/infrastructure/fan/web/route/dashboard "Dismiss sheet via browser back button"
 			sut.open(makeEvent())
 
 			window.dispatchEvent(new PopStateEvent('popstate'))
 
 			expect(sut.isOpen).toBe(false)
+			// The browser already navigated back; rewriting the URL would clobber it.
+			expect(mockHistory.replaceState).not.toHaveBeenCalled()
 		})
 
 		it('should not close when popstate fires and sheet is not open', () => {
