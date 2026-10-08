@@ -7,10 +7,10 @@ import {
 	TicketStatus,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import {
-	type GetMyTicketsResponse,
-	GetMyTicketsResponseSchema,
 	type GetOrderResponse,
 	GetOrderResponseSchema,
+	type ListResponse,
+	ListResponseSchema,
 	TicketService as TicketServiceDef,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/ticket/v1/ticket_service_pb.js'
 import { create } from '@bufbuild/protobuf'
@@ -51,7 +51,7 @@ import { TicketRpcClient } from './ticket-client'
 
 function makeRouterTransport(handlers: {
 	getOrder?: () => GetOrderResponse
-	getMyTickets?: () => GetMyTicketsResponse
+	getMyTickets?: () => ListResponse
 }) {
 	return createRouterTransport((router) => {
 		router.service(TicketServiceDef, {
@@ -59,10 +59,10 @@ function makeRouterTransport(handlers: {
 				handlers.getOrder
 					? handlers.getOrder()
 					: create(GetOrderResponseSchema),
-			getMyTickets: async (_req) =>
+			list: async (_req) =>
 				handlers.getMyTickets
 					? handlers.getMyTickets()
-					: create(GetMyTicketsResponseSchema),
+					: create(ListResponseSchema),
 		})
 	})
 }
@@ -118,7 +118,7 @@ describe('TicketRpcClient', () => {
 		it('returns the account issued covered tickets', async () => {
 			const transport = makeRouterTransport({
 				getMyTickets: () =>
-					create(GetMyTicketsResponseSchema, {
+					create(ListResponseSchema, {
 						tickets: [
 							create(TicketSchema, {
 								id: { value: 't-1' },

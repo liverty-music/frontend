@@ -63,10 +63,10 @@ export class TicketRpcClient {
 	public async getMyTickets(signal?: AbortSignal): Promise<Ticket[]> {
 		this.logger.info('Listing my tickets')
 		try {
-			const response = await this.client.getMyTickets({}, { signal })
+			const response = await this.client.list({}, { signal })
 			return response.tickets
 		} catch (err) {
-			this.logger.warn('GetMyTickets failed', { error: err })
+			this.logger.warn('List failed', { error: err })
 			throw err
 		}
 	}

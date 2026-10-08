@@ -1,9 +1,9 @@
+import type { Params } from '@aurelia/router'
 import type { Order } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/order_pb.js'
 import { OrderStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/order_pb.js'
 import type { Ticket } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import { TicketStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
-import type { Params } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
@@ -149,7 +149,7 @@ export class OrderRoute {
 			currency: o.currency,
 			cardBrand: o.payment?.cardBrand ?? '',
 			cardLast4: o.payment?.cardLast4 ?? '',
-			paidAt: o.paidAt ? timestampDate(o.paidAt) : null,
+			paidAt: o.payTime ? timestampDate(o.payTime) : null,
 		}
 	}
 
@@ -159,7 +159,7 @@ export class OrderRoute {
 			eventId: t.eventId?.value ?? '',
 			holderName: t.holderIdentity?.fullName ?? '',
 			holderPhone: t.holderIdentity?.phoneNumber ?? '',
-			issuedAt: t.issuedAt ? timestampDate(t.issuedAt) : null,
+			issuedAt: t.issueTime ? timestampDate(t.issueTime) : null,
 			isIssued: t.status === TicketStatus.ISSUED,
 			isVoided: t.status === TicketStatus.VOIDED,
 			resaleWithoutConsentProhibited: t.resaleWithoutConsentProhibited,

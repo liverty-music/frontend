@@ -104,8 +104,8 @@ export function verifiedIdentityFrom(
 		dedupeStrength,
 		status,
 		// Timestamp is seconds (bigint) + nanos; millis is enough for display.
-		verifiedAt: proto.verifiedAt
-			? Number(proto.verifiedAt.seconds) * 1000
+		verifiedAt: proto.verifyTime
+			? Number(proto.verifyTime.seconds) * 1000
 			: undefined,
 	}
 }

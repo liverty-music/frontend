@@ -5,13 +5,13 @@ import {
 	VerificationStatus,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/verified_identity_pb.js'
 import {
-	type CompleteVerifyResponse,
-	CompleteVerifyResponseSchema,
-	type GetMyVerificationStatusResponse,
-	GetMyVerificationStatusResponseSchema,
+	type CompleteResponse,
+	CompleteResponseSchema,
+	type GetStatusResponse,
+	GetStatusResponseSchema,
 	IdentityVerificationService as IdentityVerificationServiceDef,
-	type StartVerifyResponse,
-	StartVerifyResponseSchema,
+	type StartResponse,
+	StartResponseSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/identity/v1/identity_verification_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect'
@@ -64,30 +64,26 @@ import { IdentityVerificationRpcClient } from './identity-verification-client'
  * `.mockImplementationOnce(...)`.
  */
 function makeRouterTransport(handlers: {
-	getMyVerificationStatus?: (
-		req: GetMyVerificationStatusResponse,
-	) => GetMyVerificationStatusResponse
-	startVerify?: () => StartVerifyResponse
-	completeVerify?: () => CompleteVerifyResponse
+	getMyVerificationStatus?: (req: GetStatusResponse) => GetStatusResponse
+	startVerify?: () => StartResponse
+	completeVerify?: () => CompleteResponse
 }) {
 	return createRouterTransport((router) => {
 		router.service(IdentityVerificationServiceDef, {
-			getMyVerificationStatus: async (_req) =>
+			getStatus: async (_req) =>
 				handlers.getMyVerificationStatus
-					? handlers.getMyVerificationStatus(
-							create(GetMyVerificationStatusResponseSchema),
-						)
-					: create(GetMyVerificationStatusResponseSchema, {
+					? handlers.getMyVerificationStatus(create(GetStatusResponseSchema))
+					: create(GetStatusResponseSchema, {
 							verificationLevel: VerificationLevel.UNVERIFIED,
 						}),
-			startVerify: async (_req) =>
+			start: async (_req) =>
 				handlers.startVerify
 					? handlers.startVerify()
-					: create(StartVerifyResponseSchema),
-			completeVerify: async (_req) =>
+					: create(StartResponseSchema),
+			complete: async (_req) =>
 				handlers.completeVerify
 					? handlers.completeVerify()
-					: create(CompleteVerifyResponseSchema, {
+					: create(CompleteResponseSchema, {
 							verificationLevel: VerificationLevel.IDENTITY_VERIFIED,
 						}),
 		})
@@ -113,7 +109,7 @@ describe('IdentityVerificationRpcClient', () => {
 		it('happy path: returns sessionId and redirectUrl from the response', async () => {
 			const transport = makeRouterTransport({
 				startVerify: () =>
-					create(StartVerifyResponseSchema, {
+					create(StartResponseSchema, {
 						sessionId: 'sess-abc-123',
 						redirectUrl: {
 							value: 'https://pocketsign.example.com/stamp/sess-abc-123',
@@ -133,7 +129,7 @@ describe('IdentityVerificationRpcClient', () => {
 		it('guard: throws when redirect_url is absent (nil field)', async () => {
 			const transport = makeRouterTransport({
 				startVerify: () =>
-					create(StartVerifyResponseSchema, {
+					create(StartResponseSchema, {
 						sessionId: 'sess-no-url',
 						// redirectUrl intentionally absent
 					}),
@@ -141,14 +137,14 @@ describe('IdentityVerificationRpcClient', () => {
 			const client = makeClient(transport)
 
 			await expect(client.startVerify('user-1', 'jpki')).rejects.toThrow(
-				'StartVerify: server returned a StartVerifyResponse without a redirect_url',
+				'Start: server returned a StartResponse without a redirect_url',
 			)
 		})
 
 		it('guard: throws when redirect_url.value is empty string', async () => {
 			const transport = makeRouterTransport({
 				startVerify: () =>
-					create(StartVerifyResponseSchema, {
+					create(StartResponseSchema, {
 						sessionId: 'sess-empty-url',
 						redirectUrl: { value: '' },
 					}),
@@ -156,14 +152,14 @@ describe('IdentityVerificationRpcClient', () => {
 			const client = makeClient(transport)
 
 			await expect(client.startVerify('user-1', 'jpki')).rejects.toThrow(
-				'StartVerify: server returned a StartVerifyResponse without a redirect_url',
+				'Start: server returned a StartResponse without a redirect_url',
 			)
 		})
 
 		it('propagates an RPC ConnectError thrown by the transport', async () => {
 			const transport = createRouterTransport((router) => {
 				router.service(IdentityVerificationServiceDef, {
-					startVerify: async () => {
+					start: async () => {
 						throw new ConnectError(
 							'PocketSign not configured',
 							Code.Unavailable,
@@ -189,10 +185,10 @@ describe('IdentityVerificationRpcClient', () => {
 
 			const transport = createRouterTransport((router) => {
 				router.service(IdentityVerificationServiceDef, {
-					completeVerify: async (req) => {
+					complete: async (req) => {
 						capturedUserId = req.userId?.value
 						capturedSessionId = req.sessionId
-						return create(CompleteVerifyResponseSchema, {
+						return create(CompleteResponseSchema, {
 							verificationLevel: VerificationLevel.IDENTITY_VERIFIED,
 						})
 					},
@@ -211,7 +207,7 @@ describe('IdentityVerificationRpcClient', () => {
 		it('maps the response verification level and identity to the domain type', async () => {
 			const transport = makeRouterTransport({
 				completeVerify: () =>
-					create(CompleteVerifyResponseSchema, {
+					create(CompleteResponseSchema, {
 						verificationLevel: VerificationLevel.IDENTITY_VERIFIED,
 						// verifiedIdentityFrom() returns undefined when pocketSignUserId is
 						// absent; include all required fields to get a non-undefined identity.
@@ -237,7 +233,7 @@ describe('IdentityVerificationRpcClient', () => {
 		it('propagates an RPC ConnectError thrown by the transport', async () => {
 			const transport = createRouterTransport((router) => {
 				router.service(IdentityVerificationServiceDef, {
-					completeVerify: async () => {
+					complete: async () => {
 						throw new ConnectError('session expired', Code.FailedPrecondition)
 					},
 				})
@@ -256,7 +252,7 @@ describe('IdentityVerificationRpcClient', () => {
 		it('maps UNVERIFIED level correctly', async () => {
 			const transport = makeRouterTransport({
 				getMyVerificationStatus: () =>
-					create(GetMyVerificationStatusResponseSchema, {
+					create(GetStatusResponseSchema, {
 						verificationLevel: VerificationLevel.UNVERIFIED,
 					}),
 			})
@@ -271,7 +267,7 @@ describe('IdentityVerificationRpcClient', () => {
 		it('maps IDENTITY_VERIFIED level with a populated identity', async () => {
 			const transport = makeRouterTransport({
 				getMyVerificationStatus: () =>
-					create(GetMyVerificationStatusResponseSchema, {
+					create(GetStatusResponseSchema, {
 						verificationLevel: VerificationLevel.IDENTITY_VERIFIED,
 						// verifiedIdentityFrom() returns undefined when pocketSignUserId is
 						// absent; include all required fields to get a non-undefined identity.
@@ -297,7 +293,7 @@ describe('IdentityVerificationRpcClient', () => {
 		it('propagates an RPC ConnectError thrown by the transport', async () => {
 			const transport = createRouterTransport((router) => {
 				router.service(IdentityVerificationServiceDef, {
-					getMyVerificationStatus: async () => {
+					getStatus: async () => {
 						throw new ConnectError('permission denied', Code.PermissionDenied)
 					},
 				})

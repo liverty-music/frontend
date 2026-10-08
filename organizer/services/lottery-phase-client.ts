@@ -1,6 +1,6 @@
 import type { LotterySalesPhase } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
-import type { GetLotteryPhaseStatusResponse } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/lottery_service_pb.js'
-import { LotteryService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/lottery_service_pb.js'
+import type { GetStatusResponse as GetLotteryPhaseStatusResponse } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/lottery/v1/lottery_service_pb.js'
+import { LotteryService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/lottery/v1/lottery_service_pb.js'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -70,7 +70,7 @@ export class LotteryPhaseClient {
 	): Promise<LotterySalesPhase | undefined> {
 		this.logger.info('Configuring lottery phase', { eventId: input.eventId })
 		try {
-			const response = await this.client.configureLotteryPhase(
+			const response = await this.client.configure(
 				{
 					eventId: { value: input.eventId },
 					openTime: timestampFromDate(input.openTime),
@@ -84,7 +84,7 @@ export class LotteryPhaseClient {
 			)
 			return response.phase
 		} catch (err) {
-			this.logger.warn('configureLotteryPhase failed', {
+			this.logger.warn('Configure failed', {
 				eventId: input.eventId,
 				error: err,
 			})
@@ -103,12 +103,12 @@ export class LotteryPhaseClient {
 	): Promise<GetLotteryPhaseStatusResponse> {
 		this.logger.info('Getting lottery phase status', { phaseId })
 		try {
-			return await this.client.getLotteryPhaseStatus(
+			return await this.client.getStatus(
 				{ phaseId: { value: phaseId } },
 				{ signal },
 			)
 		} catch (err) {
-			this.logger.warn('getLotteryPhaseStatus failed', { phaseId, error: err })
+			this.logger.warn('GetStatus failed', { phaseId, error: err })
 			throw err
 		}
 	}

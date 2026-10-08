@@ -126,10 +126,7 @@ export class LotteryRpcClient {
 		signal?: AbortSignal,
 	): Promise<void> {
 		this.logger.info('Withdrawing lottery application', { phaseId })
-		await this.client.withdrawApplication(
-			{ phaseId: { value: phaseId } },
-			{ signal },
-		)
+		await this.client.withdraw({ phaseId: { value: phaseId } }, { signal })
 	}
 
 	/**
@@ -140,7 +137,7 @@ export class LotteryRpcClient {
 		phaseId: string,
 		signal?: AbortSignal,
 	): Promise<TicketApplication | undefined> {
-		const resp = await this.client.getMyApplication(
+		const resp = await this.client.getApplication(
 			{ phaseId: { value: phaseId } },
 			{ signal },
 		)
