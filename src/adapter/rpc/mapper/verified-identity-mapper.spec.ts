@@ -35,7 +35,7 @@ function makeProtoIdentity(
 		},
 		dedupeStrength: overrides.dedupeStrength ?? ProtoDedupeStrength.STRONG,
 		status: overrides.status ?? ProtoVerificationStatus.ACTIVE,
-		verifiedAt:
+		verifyTime:
 			overrides.verifiedAtSeconds !== undefined
 				? create(TimestampSchema, { seconds: overrides.verifiedAtSeconds })
 				: undefined,

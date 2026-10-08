@@ -685,7 +685,7 @@ export class DashboardRoute {
 	private async fetchPurchasedMap(
 		signal?: AbortSignal,
 	): Promise<Map<string, number>> {
-		// One GetMyTickets per dashboard load drives the first-party purchased
+		// One TicketService.List per dashboard load drives the first-party purchased
 		// badges. Like the journey map, a failure must not blank the dashboard:
 		// the cards then show no purchased badge.
 		try {

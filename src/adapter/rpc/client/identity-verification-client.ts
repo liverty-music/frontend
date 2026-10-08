@@ -37,7 +37,7 @@ export interface IIdentityVerificationRpcClient
  * - `completeVerify` no longer accepts a `signedResponse` (reserved field 3);
  *   the backend finalizes by `session_id` only.
  *
- * NOTE: the backend returns UNAVAILABLE for StartVerify / CompleteVerify until
+ * NOTE: the backend returns UNAVAILABLE for Start / Complete until
  * PocketSign onboarding (Section 0) completes. `getMyVerificationStatus` works
  * and returns UNVERIFIED for new accounts.
  */
@@ -63,7 +63,7 @@ export class IdentityVerificationRpcClient {
 	): Promise<MyVerificationStatus> {
 		this.logger.info('Getting my verification status')
 		try {
-			const response = await this.client.getMyVerificationStatus(
+			const response = await this.client.getStatus(
 				{ userId: { value: userId } },
 				{ signal },
 			)
@@ -72,7 +72,7 @@ export class IdentityVerificationRpcClient {
 				identity: verifiedIdentityFrom(response.verifiedIdentity),
 			}
 		} catch (err) {
-			this.logger.warn('GetMyVerificationStatus failed', { error: err })
+			this.logger.warn('GetStatus failed', { error: err })
 			throw err
 		}
 	}
@@ -92,7 +92,7 @@ export class IdentityVerificationRpcClient {
 	): Promise<{ sessionId: string; redirectUrl: string }> {
 		this.logger.info('Starting verification (Stamp session)', { method })
 		try {
-			const response = await this.client.startVerify(
+			const response = await this.client.start(
 				{
 					userId: { value: userId },
 					method: verificationMethodTo(method),
@@ -102,7 +102,7 @@ export class IdentityVerificationRpcClient {
 			const redirectUrl = response.redirectUrl?.value
 			if (!redirectUrl) {
 				throw new Error(
-					'StartVerify: server returned a StartVerifyResponse without a redirect_url',
+					'Start: server returned a StartResponse without a redirect_url',
 				)
 			}
 			return {
@@ -110,7 +110,7 @@ export class IdentityVerificationRpcClient {
 				redirectUrl,
 			}
 		} catch (err) {
-			this.logger.warn('StartVerify failed', { method, error: err })
+			this.logger.warn('Start failed', { method, error: err })
 			throw err
 		}
 	}
@@ -130,7 +130,7 @@ export class IdentityVerificationRpcClient {
 	): Promise<MyVerificationStatus> {
 		this.logger.info('Completing verification (Stamp finalize)', { sessionId })
 		try {
-			const response = await this.client.completeVerify(
+			const response = await this.client.complete(
 				{
 					userId: { value: userId },
 					sessionId,
@@ -142,7 +142,7 @@ export class IdentityVerificationRpcClient {
 				identity: verifiedIdentityFrom(response.verifiedIdentity),
 			}
 		} catch (err) {
-			this.logger.warn('CompleteVerify failed', { sessionId, error: err })
+			this.logger.warn('Complete failed', { sessionId, error: err })
 			throw err
 		}
 	}

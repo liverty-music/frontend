@@ -5,11 +5,11 @@ import type {
 	ExistingEvent,
 	PendingConcert,
 	ResolvedVenue,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert/v1/concert_service_pb.js'
 import {
 	ConcertService,
 	Resolution,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/v1/concert_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert/v1/concert_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'

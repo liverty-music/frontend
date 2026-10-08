@@ -31,7 +31,7 @@ export function countIssuedByEvent(
 /**
  * Single observable owner of the signed-in fan's purchased (Issued) ticket
  * counts per event id. The Dashboard's first-party cards and the Event page's
- * ticket section both read it, from one `GetMyTickets` call per load.
+ * ticket section both read it, from one `TicketService.List` call per load.
  *
  * Reads are network-first. Guests have no tickets: an empty map, no RPC.
  * Cleared on sign-out so a next visitor on a shared browser never sees the

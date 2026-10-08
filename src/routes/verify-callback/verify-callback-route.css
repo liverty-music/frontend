@@ -1,6 +1,6 @@
 /* Verify-callback route styles (identity-ekyc-jpki, Stamp flow).
    Mirrors the auth-callback layout: a centered transient screen that shows
-   while CompleteVerify is in flight and briefly after, before auto-navigating
+   while the Complete RPC is in flight and briefly after, before auto-navigating
    back to Settings. */
 @layer block {
 	@scope (verify-callback-route) {

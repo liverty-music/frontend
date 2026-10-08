@@ -1,7 +1,7 @@
 /**
  * Persistence adapter for the in-flight PocketSign Stamp verify session.
  *
- * When the fan taps "verify identity" the service calls StartVerify, receives a
+ * When the fan taps "verify identity" the service calls IdentityVerificationService.Start, receives a
  * session_id + redirect_url, stores the session_id here, and immediately
  * navigates the browser to the redirect_url to open the PocketSign app. Because
  * the browser navigates away (full-page redirect), the session_id must survive
@@ -15,7 +15,7 @@
  * returns via a custom URL scheme / app link that may open a fresh tab on some
  * platforms, which would clear sessionStorage. localStorage is the safe choice.
  *
- * Key lifetime: written at StartVerify, read+deleted at CompleteVerify (or on a
+ * Key lifetime: written at Start, read+deleted at Complete (or on a
  * mis-matched / error callback). A stale key (e.g. the fan closed the app
  * without completing) is harmless — the backend session expires independently.
  */
@@ -51,7 +51,7 @@ export function loadVerifySessionId(): string | null {
 }
 
 /**
- * Remove the persisted session id. Called after CompleteVerify (success or
+ * Remove the persisted session id. Called after Complete (success or
  * failure) so the callback cannot be replayed by re-navigating to the URL.
  */
 export function clearVerifySessionId(): void {

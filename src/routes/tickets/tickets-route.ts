@@ -108,7 +108,7 @@ export class TicketsRoute {
 			orderId: t.orderId?.value ?? '',
 			holderName: t.holderIdentity?.fullName ?? '',
 			holderPhone: t.holderIdentity?.phoneNumber ?? '',
-			issuedAt: t.issuedAt ? timestampDate(t.issuedAt) : null,
+			issuedAt: t.issueTime ? timestampDate(t.issueTime) : null,
 			isIssued: t.status === TicketStatus.ISSUED,
 			isVoided: t.status === TicketStatus.VOIDED,
 			resaleWithoutConsentProhibited: t.resaleWithoutConsentProhibited,

@@ -6,12 +6,12 @@ import type {
 	AuthoredConcert,
 	EventDraft as ProtoEventDraft,
 	SeriesDraft as ProtoSeriesDraft,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/concert_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
 import {
 	ConcertService,
 	EventDraftSchema,
 	SeriesDraftSchema,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/v1/concert_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { createClient } from '@connectrpc/connect'
