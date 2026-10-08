@@ -27,6 +27,43 @@
 		t="tickets.device.movedHere"
 	></output>
 
+	<!-- The entry QR code is set to another device: offer to move it here -->
+	<section
+		class="[ tickets-notice ] [ flow ]"
+		data-tone="warning"
+		if.bind="device === 'other-device' && step === 'loaded'"
+		aria-labelledby="tickets-other-device"
+	>
+		<p id="tickets-other-device" t="tickets.device.otherDevice"></p>
+		<button
+			type="button"
+			class="tickets-btn-secondary"
+			if.bind="!confirmingMove && !offline"
+			click.trigger="askToUseThisDevice()"
+			t="tickets.device.useThisDevice"
+		></button>
+		<template if.bind="confirmingMove">
+			<p t="tickets.device.confirmMove"></p>
+			<output class="tickets-error" if.bind="moveFailed" t="tickets.device.moveFailed"></output>
+			<div class="cluster">
+				<button
+					type="button"
+					class="tickets-btn-primary"
+					disabled.bind="moving"
+					click.trigger="confirmUseThisDevice()"
+					t="tickets.device.confirm"
+				></button>
+				<button
+					type="button"
+					class="tickets-btn-secondary"
+					disabled.bind="moving"
+					click.trigger="cancelMove()"
+					t="tickets.device.cancel"
+				></button>
+			</div>
+		</template>
+	</section>
+
 	<!-- Loading -->
 	<section class="tickets-panel" if.bind="step === 'loading'">
 		<p class="tickets-lead" t="tickets.loading"></p>
@@ -126,8 +163,7 @@
 			<button
 				type="button"
 				class="tickets-btn-primary"
-				if.bind="offersCode(group)"
-				disabled.bind="!canShowCode"
+				if.bind="canShowCode && offersCode(group)"
 				click.trigger="openCode(group)"
 				t="tickets.code.show"
 			></button>

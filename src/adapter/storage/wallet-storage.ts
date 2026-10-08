@@ -1,15 +1,24 @@
 import { DI } from 'aurelia'
 
 /**
- * The device's key pair for showing tickets. The private key is a
+ * This device's key pair for entry QR codes and whether it was the fan's
+ * entry device at the last online check. The private key is a
  * non-extractable WebCrypto `CryptoKey`: IndexedDB keeps the key object itself
  * (structured clone), never its bytes, so page script cannot read it out.
  */
 export interface DeviceKeyRecord {
-	readonly keyPair: CryptoKeyPair
-	/** True once the server accepted the public key as the fan's key. */
-	readonly registered: boolean
+	/** Null until this device first becomes, or is asked to become, the entry device. */
+	readonly keyPair: CryptoKeyPair | null
+	/**
+	 * The last online check: `entry` when the fan's WalletPublicKey was this
+	 * device's public key, `other` when it was another device's, `unchecked`
+	 * before any completed check. Without a connection the QR code is offered
+	 * only on `entry`.
+	 */
+	readonly lastCheck: EntryDeviceCheck
 }
+
+export type EntryDeviceCheck = 'entry' | 'other' | 'unchecked'
 
 /**
  * IndexedDB persistence for the ticket wallet: the device key pair and the last

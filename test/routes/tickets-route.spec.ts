@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IScreenWakeLock } from '../../src/adapter/browser/screen-wake-lock'
 import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
 import { ITicketRpcClient } from '../../src/adapter/rpc/client/ticket-client'
+import { IWalletPublicKeyRpcClient } from '../../src/adapter/rpc/client/wallet-public-key-client'
 import { IWalletStorage } from '../../src/adapter/storage/wallet-storage'
 import {
 	decodeAdmissionCode,
@@ -73,13 +74,50 @@ function protoConcert(id: string, day: number) {
 	})
 }
 
+function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
+	return a.length === b.length && a.every((v, i) => v === b[i])
+}
+
+/** The raw public key of a key pair made on some other device. */
+async function otherDeviceKey(): Promise<Uint8Array> {
+	const pair = await crypto.subtle.generateKey(
+		{ name: 'ECDSA', namedCurve: 'P-256' },
+		false,
+		['sign', 'verify'],
+	)
+	return new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey))
+}
+
+async function verifies(
+	publicKey: Uint8Array,
+	signature: Uint8Array,
+	signed: Uint8Array,
+): Promise<boolean> {
+	const key = await crypto.subtle.importKey(
+		'raw',
+		new Uint8Array(publicKey),
+		{ name: 'ECDSA', namedCurve: 'P-256' },
+		false,
+		['verify'],
+	)
+	return crypto.subtle.verify(
+		SIGN_ALGORITHM,
+		key,
+		new Uint8Array(signature),
+		new Uint8Array(signed),
+	)
+}
+
 const offlineError = () => new ConnectError('Failed to fetch', Code.Unavailable)
 
 describe('TicketsRoute', () => {
 	let storage: FakeWalletStorage
-	let ticketClient: {
-		getMyTickets: ReturnType<typeof vi.fn>
-		registerWalletPublicKey: ReturnType<typeof vi.fn>
+	let ticketClient: { getMyTickets: ReturnType<typeof vi.fn> }
+	/** The fan's WalletPublicKey on the server (null: no entry device). */
+	let serverKey: Uint8Array | null
+	let keyClient: {
+		get: ReturnType<typeof vi.fn>
+		register: ReturnType<typeof vi.fn>
 	}
 	let concertClient: { get: ReturnType<typeof vi.fn> }
 	let wakeLock: {
@@ -91,6 +129,7 @@ describe('TicketsRoute', () => {
 	function build(): TicketsRoute {
 		const container = createTestContainer(
 			Registration.instance(ITicketRpcClient, ticketClient),
+			Registration.instance(IWalletPublicKeyRpcClient, keyClient),
 			Registration.instance(IConcertRpcClient, concertClient),
 			Registration.instance(IWalletStorage, storage),
 			Registration.singleton(ITicketWallet, TicketWallet),
@@ -111,7 +150,7 @@ describe('TicketsRoute', () => {
 		return sut
 	}
 
-	/** Open the screen online once so the device is prepared. */
+	/** Open the screen online once so this device becomes the entry device. */
 	async function prepareOnline(tickets: Ticket[]): Promise<void> {
 		ticketClient.getMyTickets.mockResolvedValueOnce(tickets)
 		const first = await open()
@@ -128,11 +167,16 @@ describe('TicketsRoute', () => {
 
 	beforeEach(() => {
 		storage = new FakeWalletStorage()
-		ticketClient = {
-			getMyTickets: vi.fn().mockResolvedValue([]),
-			registerWalletPublicKey: vi
-				.fn()
-				.mockResolvedValue({ replacedOtherKey: false }),
+		ticketClient = { getMyTickets: vi.fn().mockResolvedValue([]) }
+		serverKey = null
+		keyClient = {
+			get: vi.fn(async () => serverKey),
+			register: vi.fn(async (key: Uint8Array) => {
+				const replacedOtherKey =
+					serverKey !== null && !sameBytes(serverKey, key)
+				serverKey = new Uint8Array(key)
+				return { replacedOtherKey }
+			}),
 		}
 		concertClient = {
 			get: vi.fn(async (id: string) =>
@@ -262,18 +306,18 @@ describe('TicketsRoute', () => {
 		})
 	})
 
-	describe('the device is prepared once while online', () => {
-		it('registers a public key on the first online visit and shows the code offline afterwards', async () => {
+	describe('the entry device is chosen once and moves only when the fan asks', () => {
+		it('makes a phone the entry device without asking when the fan has none, and shows the code offline afterwards', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "First visit on a phone"
 			await prepareOnline([protoTicket(1)])
 
-			expect(ticketClient.registerWalletPublicKey).toHaveBeenCalledTimes(1)
-			const publicKey = ticketClient.registerWalletPublicKey.mock
-				.calls[0][0] as Uint8Array
+			expect(keyClient.get).toHaveBeenCalledTimes(1)
+			expect(keyClient.register).toHaveBeenCalledTimes(1)
+			const publicKey = keyClient.register.mock.calls[0][0] as Uint8Array
 			expect(publicKey).toHaveLength(65)
 			expect(publicKey[0]).toBe(0x04)
-			expect(storage.deviceKey?.registered).toBe(true)
-			expect(storage.deviceKey?.keyPair.privateKey.extractable).toBe(false)
+			expect(storage.deviceKey?.lastCheck).toBe('entry')
+			expect(storage.deviceKey?.keyPair?.privateKey.extractable).toBe(false)
 
 			// Later, in the venue without a connection.
 			ticketClient.getMyTickets.mockRejectedValue(offlineError())
@@ -282,19 +326,9 @@ describe('TicketsRoute', () => {
 			expect(sut.canShowCode).toBe(true)
 			sut.openCode(sut.groups[0])
 			const code = await currentCode(sut)
-
-			// The code verifies with the key the phone registered.
-			const serverKey = await crypto.subtle.importKey(
-				'raw',
-				new Uint8Array(publicKey),
-				{ name: 'ECDSA', namedCurve: 'P-256' },
-				false,
-				['verify'],
-			)
 			expect(
-				await crypto.subtle.verify(
-					SIGN_ALGORITHM,
-					serverKey,
+				await verifies(
+					publicKey,
 					code?.signature ?? new Uint8Array(),
 					code?.signedBytes ?? new Uint8Array(),
 				),
@@ -302,27 +336,127 @@ describe('TicketsRoute', () => {
 			sut.closeCode()
 		})
 
-		it('keeps the same key on later online visits', async () => {
+		it('registers nothing when reloaded on the entry device and offers the code', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Reloading on the entry device"
 			await prepareOnline([protoTicket(1)])
-			await prepareOnline([protoTicket(1)])
-			const [first, second] = ticketClient.registerWalletPublicKey.mock.calls
-			expect(second[0]).toEqual(first[0])
-		})
+			keyClient.register.mockClear()
+			keyClient.get.mockClear()
 
-		it('says tickets are now shown from this device only when another key was replaced', async () => {
-			ticketClient.registerWalletPublicKey.mockResolvedValue({
-				replacedOtherKey: true,
-			})
 			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
 			const sut = await open()
-			expect(sut.movedToThisDevice).toBe(true)
+
+			expect(keyClient.get).toHaveBeenCalledTimes(1)
+			expect(keyClient.register).not.toHaveBeenCalled()
+			expect(sut.device).toBe('ready')
+			expect(sut.canShowCode).toBe(true)
+			expect(sut.movedToThisDevice).toBe(false)
+		})
+
+		it('shows the tickets on another device without a QR code and leaves the phone the entry device', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Viewing on another device"
+			const phoneKey = await otherDeviceKey()
+			serverKey = phoneKey
+			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+
+			const pc = await open()
+
+			expect(pc.step).toBe('loaded')
+			expect(pc.groups[0].tickets).toHaveLength(1)
+			expect(pc.device).toBe('other-device')
+			expect(ja.tickets.device.otherDevice).toContain('別の端末')
+			expect(pc.canShowCode).toBe(false)
+			pc.openCode(pc.groups[0])
+			expect(pc.isCodeOpen).toBe(false)
+			expect(keyClient.register).not.toHaveBeenCalled()
+			expect(serverKey).toEqual(phoneKey)
+
+			// Offline later, the PC still offers no code.
+			pc.detaching()
+			ticketClient.getMyTickets.mockRejectedValue(offlineError())
+			const offlinePc = await open()
+			expect(offlinePc.device).toBe('other-device')
+			expect(offlinePc.canShowCode).toBe(false)
+		})
+
+		it('moves the entry device to a new phone only after the fan confirms', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Moving to a new phone"
+			const oldPhone = storage
+			await prepareOnline([protoTicket(1)])
+			const oldKey = serverKey ?? new Uint8Array()
+
+			storage = new FakeWalletStorage()
+			keyClient.register.mockClear()
+			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			const newPhone = await open()
+			expect(newPhone.device).toBe('other-device')
+
+			newPhone.askToUseThisDevice()
+			expect(newPhone.confirmingMove).toBe(true)
+			expect(keyClient.register).not.toHaveBeenCalled()
+
+			await newPhone.confirmUseThisDevice()
+			expect(keyClient.register).toHaveBeenCalledTimes(1)
+			expect(newPhone.device).toBe('ready')
+			expect(newPhone.movedToThisDevice).toBe(true)
+			expect(newPhone.confirmingMove).toBe(false)
 			expect(ja.tickets.device.movedHere).toContain('この端末でのみ')
+			const newKey = serverKey ?? new Uint8Array()
+			expect(sameBytes(newKey, oldKey)).toBe(false)
+
+			newPhone.openCode(newPhone.groups[0])
+			const code = await currentCode(newPhone)
+			expect(
+				await verifies(
+					newKey,
+					code?.signature ?? new Uint8Array(),
+					code?.signedBytes ?? new Uint8Array(),
+				),
+			).toBe(true)
+			newPhone.closeCode()
+
+			// A code the old phone still makes no longer verifies with the fan's key.
+			const oldPair = oldPhone.deviceKey?.keyPair
+			expect(oldPair).toBeTruthy()
+			const signed = new Uint8Array([1, 2, 3])
+			const oldSignature = new Uint8Array(
+				await crypto.subtle.sign(
+					SIGN_ALGORITHM,
+					oldPair?.privateKey as CryptoKey,
+					signed,
+				),
+			)
+			expect(await verifies(newKey, oldSignature, signed)).toBe(false)
+
+			// The old phone, opened online again, is no longer the entry device.
+			storage = oldPhone
+			const old = await open()
+			expect(old.device).toBe('other-device')
+			expect(old.canShowCode).toBe(false)
+		})
+
+		it('keeps the other device when the fan cancels or the move fails', async () => {
+			serverKey = await otherDeviceKey()
+			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			const sut = await open()
+
+			sut.askToUseThisDevice()
+			sut.cancelMove()
+			expect(sut.confirmingMove).toBe(false)
+			expect(keyClient.register).not.toHaveBeenCalled()
+
+			keyClient.register.mockRejectedValueOnce(offlineError())
+			sut.askToUseThisDevice()
+			await sut.confirmUseThisDevice()
+			expect(sut.moveFailed).toBe(true)
+			expect(sut.confirmingMove).toBe(true)
+			expect(sut.device).toBe('other-device')
+			expect(sut.canShowCode).toBe(false)
 		})
 
 		it('says a connection is needed once when opened offline on an unprepared phone', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Not prepared and offline"
 			ticketClient.getMyTickets.mockResolvedValueOnce([protoTicket(1)])
-			ticketClient.registerWalletPublicKey.mockRejectedValueOnce(offlineError())
+			keyClient.get.mockRejectedValueOnce(offlineError())
 			const first = await open()
 			expect(first.device).toBe('failed')
 			first.detaching()
@@ -333,6 +467,7 @@ describe('TicketsRoute', () => {
 			expect(sut.canShowCode).toBe(false)
 			sut.openCode(sut.groups[0])
 			expect(sut.isCodeOpen).toBe(false)
+			expect(keyClient.register).not.toHaveBeenCalled()
 			expect(ja.tickets.device.needsConnection).toContain(
 				'一度インターネットに接続',
 			)

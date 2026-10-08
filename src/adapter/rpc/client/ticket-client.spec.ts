@@ -11,8 +11,6 @@ import {
 	GetOrderResponseSchema,
 	type ListResponse,
 	ListResponseSchema,
-	type RegisterWalletPublicKeyResponse,
-	RegisterWalletPublicKeyResponseSchema,
 	TicketService as TicketServiceDef,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/ticket/v1/ticket_service_pb.js'
 import { create } from '@bufbuild/protobuf'
@@ -54,7 +52,6 @@ import { TicketRpcClient } from './ticket-client'
 function makeRouterTransport(handlers: {
 	getOrder?: () => GetOrderResponse
 	getMyTickets?: () => ListResponse
-	register?: (publicKey: Uint8Array) => RegisterWalletPublicKeyResponse
 }) {
 	return createRouterTransport((router) => {
 		router.service(TicketServiceDef, {
@@ -66,10 +63,6 @@ function makeRouterTransport(handlers: {
 				handlers.getMyTickets
 					? handlers.getMyTickets()
 					: create(ListResponseSchema),
-			registerWalletPublicKey: async (req) =>
-				handlers.register
-					? handlers.register(req.publicKey?.value ?? new Uint8Array())
-					: create(RegisterWalletPublicKeyResponseSchema),
 		})
 	})
 }
@@ -156,42 +149,6 @@ describe('TicketRpcClient', () => {
 			const client = makeClient(makeRouterTransport({}))
 			const tickets = await client.getMyTickets()
 			expect(tickets).toEqual([])
-		})
-	})
-
-	describe('registerWalletPublicKey', () => {
-		it('sends the public key and reports whether another key was replaced', async () => {
-			const received: Uint8Array[] = []
-			const client = makeClient(
-				makeRouterTransport({
-					register: (publicKey) => {
-						received.push(publicKey)
-						return create(RegisterWalletPublicKeyResponseSchema, {
-							replacedOtherKey: true,
-						})
-					},
-				}),
-			)
-			const key = new Uint8Array(65).fill(7)
-			key[0] = 0x04
-
-			const result = await client.registerWalletPublicKey(key)
-
-			expect(result).toEqual({ replacedOtherKey: true })
-			expect(received[0]).toEqual(key)
-		})
-
-		it('propagates a failure', async () => {
-			const client = makeClient(
-				makeRouterTransport({
-					register: () => {
-						throw new ConnectError('offline', Code.Unavailable)
-					},
-				}),
-			)
-			await expect(
-				client.registerWalletPublicKey(new Uint8Array(65)),
-			).rejects.toMatchObject({ code: Code.Unavailable })
 		})
 	})
 })

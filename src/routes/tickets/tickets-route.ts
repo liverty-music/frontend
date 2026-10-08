@@ -5,7 +5,10 @@ import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
 import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
 import { MAX_TICKETS_PER_CODE } from '../../lib/admission-code/admission-code'
 import { admissionQrDataUrl } from '../../lib/admission-code/qr-svg'
-import { ITicketWallet } from '../../services/ticket-wallet'
+import {
+	type DeviceReadiness,
+	ITicketWallet,
+} from '../../services/ticket-wallet'
 import { IUserStore } from '../../services/user-store'
 import {
 	type EventPageEvent,
@@ -35,9 +38,9 @@ export type TicketsViewStep = 'loading' | 'empty' | 'error' | 'loaded'
 
 /**
  * How this device stands for showing entry QR codes (see DeviceReadiness),
- * plus `checking` while it is being prepared.
+ * plus `checking` while the entry device is being checked.
  */
-export type DeviceState = 'checking' | 'ready' | 'needs-connection' | 'failed'
+export type DeviceState = 'checking' | DeviceReadiness
 
 /** While a code is shown and online, look for admissions this often. */
 export const ADMISSION_POLL_MS = 5000
@@ -49,8 +52,12 @@ export const ADMISSION_POLL_MS = 5000
  *
  * - The last loaded list is saved on the device and shown at once on the next
  *   visit, so it stays viewable without a connection.
- * - On an online visit the device is prepared (key pair created when missing,
- *   public key registered); offline, the code works only once that happened.
+ * - On an online visit the screen checks whether this is the fan's entry
+ *   device; it becomes one without asking only when the fan has none, and
+ *   otherwise only when the fan confirms "use this device" (key pair created
+ *   when missing,
+ *   public key registered); offline, the code is offered only on a device
+ *   that was the entry device at the last online check.
  * - The code is signed on the device every 15 seconds, with or without a
  *   connection, while the display is kept awake.
  */
@@ -75,6 +82,12 @@ export class TicketsRoute {
 	public device: DeviceState = 'checking'
 	/** Registering on this visit moved the fan's key here from another device. */
 	public movedToThisDevice = false
+	/** The fan asked to use this device and is being asked to confirm. */
+	public confirmingMove = false
+	/** Registering this device is in flight. */
+	public moving = false
+	/** Using this device failed; a retry is offered. */
+	public moveFailed = false
 
 	// ── Entry code state ─────────────────────────────────────────────────────
 	public codeGroup: WalletEventGroup | null = null
@@ -99,7 +112,7 @@ export class TicketsRoute {
 
 	/**
 	 * Show the saved list at once, then read the live list. A live read saves
-	 * the list and prepares the device; a failed one keeps the saved list.
+	 * the list and checks the entry device; a failed one keeps the saved list.
 	 */
 	public async load(): Promise<void> {
 		this.abortController?.abort()
@@ -122,9 +135,9 @@ export class TicketsRoute {
 			} else {
 				this.step = 'error'
 			}
-			const prepared = await this.wallet.prepareDevice(false)
+			const check = await this.wallet.checkDevice(false)
 			if (signal.aborted) return
-			this.device = prepared.readiness
+			this.device = check.readiness
 			return
 		}
 		if (signal.aborted) return
@@ -137,10 +150,10 @@ export class TicketsRoute {
 			groups: live,
 		})
 
-		const prepared = await this.wallet.prepareDevice(true, signal)
+		const check = await this.wallet.checkDevice(true, signal)
 		if (signal.aborted) return
-		this.device = prepared.readiness
-		this.movedToThisDevice = prepared.replacedOtherKey
+		this.device = check.readiness
+		this.movedToThisDevice = check.replacedOtherKey
 	}
 
 	/** The live list, with event details (falling back to saved ones). */
@@ -178,6 +191,38 @@ export class TicketsRoute {
 		this.offline = true
 		this.savedAt = saved.savedAt
 		this.step = saved.groups.length === 0 ? 'empty' : 'loaded'
+	}
+
+	// ── Entry device ─────────────────────────────────────────────────────────
+
+	/** Offer to move the entry QR code to this device (asks first). */
+	public askToUseThisDevice(): void {
+		this.moveFailed = false
+		this.confirmingMove = true
+	}
+
+	public cancelMove(): void {
+		this.confirmingMove = false
+	}
+
+	/**
+	 * The fan confirmed: register this device's key, replacing the other
+	 * device's, so codes from the other device stop working.
+	 */
+	public async confirmUseThisDevice(): Promise<void> {
+		if (this.moving) return
+		this.moving = true
+		try {
+			const result = await this.wallet.useThisDevice(
+				this.abortController?.signal,
+			)
+			this.device = result.readiness
+			this.movedToThisDevice = result.replacedOtherKey
+			this.moveFailed = result.failed === true
+			if (!result.failed) this.confirmingMove = false
+		} finally {
+			this.moving = false
+		}
 	}
 
 	// ── Entry code ───────────────────────────────────────────────────────────

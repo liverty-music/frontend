@@ -390,7 +390,13 @@
 		"device": {
 			"needsConnection": "To show your entry QR code, open this screen once while connected to the internet.",
 			"failed": "Your entry QR code could not be set up. Reload where the signal is good.",
-			"movedHere": "Your tickets are now shown from this device only. QR codes from your previous device no longer work."
+			"movedHere": "Your entry QR code now works on this device only. Codes from your previous device will not admit you.",
+			"otherDevice": "Your entry QR code is set to another device, so it cannot be shown here.",
+			"useThisDevice": "Use this device to enter",
+			"confirmMove": "If you switch to this device, the entry QR code on your other device stops working. Switch?",
+			"confirm": "Switch to this device",
+			"cancel": "Cancel",
+			"moveFailed": "Could not switch. Try again where the signal is good."
 		},
 		"code": {
 			"show": "Show entry QR code",
