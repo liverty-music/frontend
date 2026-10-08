@@ -117,3 +117,20 @@ No need to refresh `.auth/password.md` — the password itself hasn't rotated.
 ## Historical note
 
 Earlier revisions of this project documented a second, passkey-based capture path against `pepperoni9+playwright-1@gmail.com` via `scripts/capture-auth-state.ts`. That user was a Zitadel-Cloud-era Self-Registration account that was wiped by `self-hosted-zitadel §10`'s `truncate_users_for_zitadel_migration` migration and was never re-provisioned on self-hosted dev Zitadel. The script was removed by OpenSpec change `remove-passkey-capture-path`. If a future need for WebAuthn / passkey CI regression testing surfaces, the design should use Chrome DevTools virtual authenticator (`webAuthn.addVirtualAuthenticator`) — not a fork of the deleted script's lineage.
+
+---
+
+## Production
+
+Prod has its own password test user, `e2e-test-password@liverty-music.app` (cloud-provisioning `E2eTestUserComponent`, password in ESC `liverty-music/prod`).
+
+```bash
+pulumi env get liverty-music/prod pulumiConfig.zitadel.e2eTestUser.password --value string --show-secrets > .auth/password.prod.md
+npm run auth:capture:password:prod     # signs in on https://liverty-music.app → .auth/storageState.prod.json
+E2E_EVENT_PUBLIC_ID=… E2E_EVENT_UPCOMING_ID=… E2E_EVENT_UNLISTED_ID=… E2E_EVENT_CANCELLED_ID=… \
+  npm run test:e2e:prod               # playwright.prod.config.mjs: prod-guest + prod-authenticated
+```
+
+No dev server is needed. On a host without Chromium's system libraries, run either command inside the pinned image: `docker run --rm --user $(id -u):$(id -g) -v "$PWD":/work -w /work -e HOME=/tmp mcr.microsoft.com/playwright:v1.63.0-noble <command>`.
+
+**Do not rotate or reset the prod test user's password casually.** A `user.human.password.changed` event is what exposed the Zitadel trigger-worker deadlock on 2026-10-08 (cloud-provisioning `docs/runbooks/zitadel-hang.md`).

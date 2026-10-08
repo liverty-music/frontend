@@ -54,6 +54,12 @@ export class EventRoute implements IRouteViewModel {
 	/** All Events of the Series in date order; empty until they load. */
 	public seriesEvents: EventPageEvent[] = []
 	public followUpdatingId = ''
+	/**
+	 * False until the fan's follows are loaded. The follow controls stay
+	 * disabled until then, so a tap cannot race the load, whose result would
+	 * overwrite the tap's optimistic state.
+	 */
+	public followsLoaded = false
 
 	private eventId = ''
 	private abortController: AbortController | null = null
@@ -78,6 +84,7 @@ export class EventRoute implements IRouteViewModel {
 		this.state = 'loading'
 		this.event = null
 		this.seriesEvents = []
+		this.followsLoaded = false
 		try {
 			const proto = await this.concertClient.get(this.eventId, signal)
 			const event = eventFromProto(proto)
@@ -101,8 +108,10 @@ export class EventRoute implements IRouteViewModel {
 			return
 		}
 
-		// Neither blocks the page: the dates and the purchased line fill in.
+		// None blocks the page: the dates, the follow state and the purchased
+		// line fill in.
 		void this.loadSeriesEvents(this.event.seriesId, signal)
+		void this.loadFollowed(signal)
 		void this.loadPurchasedTickets(signal)
 	}
 
@@ -122,6 +131,26 @@ export class EventRoute implements IRouteViewModel {
 			// The other dates are optional; the page stands without them.
 			this.logger.warn('Series dates read failed', { seriesId, error: err })
 		}
+	}
+
+	/**
+	 * Load the fan's follows so each performer's control shows whether it is
+	 * already followed. A guest's follows are local; a signed-in fan's come
+	 * from the backend, which no other surface may have loaded yet when the
+	 * fan lands here from a shared link.
+	 */
+	private async loadFollowed(signal: AbortSignal): Promise<void> {
+		try {
+			await this.authService.ready
+			if (signal.aborted) return
+			await this.followStore.listFollowed(signal)
+		} catch (err) {
+			if (signal.aborted) return
+			this.logger.warn('Follow list read failed', { error: err })
+		}
+		// On failure the controls still work; they just start from what the
+		// store already holds.
+		if (!signal.aborted) this.followsLoaded = true
 	}
 
 	private async loadPurchasedTickets(signal: AbortSignal): Promise<void> {
@@ -214,14 +243,23 @@ export class EventRoute implements IRouteViewModel {
 		return id ? `/dashboard?artists=${encodeURIComponent(id)}` : '/dashboard'
 	}
 
+	/**
+	 * Ids of the artists the fan follows. The template reads `.has(id)` on this
+	 * getter rather than calling a method, so the binding observes the store's
+	 * follow list and updates when a follow changes.
+	 */
+	public get followedIds(): ReadonlySet<string> {
+		return this.followStore.followedIds
+	}
+
 	public isFollowed(performer: EventPerformer): boolean {
-		return this.followStore.followedIds.has(performer.id)
+		return this.followedIds.has(performer.id)
 	}
 
 	// --- Actions ---
 
 	public async toggleFollow(performer: EventPerformer): Promise<void> {
-		if (this.followUpdatingId) return
+		if (this.followUpdatingId || !this.followsLoaded) return
 		this.followUpdatingId = performer.id
 		try {
 			if (this.isFollowed(performer)) {

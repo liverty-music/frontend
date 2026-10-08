@@ -1,6 +1,6 @@
 /**
- * Captures an authenticated Playwright session via the dev self-hosted
- * Zitadel password flow.
+ * Captures an authenticated Playwright session via the self-hosted Zitadel
+ * password flow, for dev (default) or prod (`E2E_ENV=prod`).
  *
  * Headless. No display server required. Suitable for WSL2 + WSLg hosts
  * where `capture-auth-state.ts` (headed Chromium) cannot render the
@@ -8,22 +8,26 @@
  *
  * Usage:
  *
- *   npm run auth:capture:password
+ *   npm run auth:capture:password        # dev, against the local dev server
+ *   npm run auth:capture:password:prod   # prod, against https://liverty-music.app
  *
  * Prerequisites:
  *
- *   - The frontend dev server must be running: `npm start`
+ *   - dev: the frontend dev server must be running (`npm start`). prod
+ *     needs nothing local: it signs in on the deployed fan web.
  *   - The password test user has been provisioned via Pulumi
  *     (`cloud-provisioning` change `playwright-password-test-user`).
  *   - The test user's password is present either at `.auth/password.md`
- *     (preferred — mirror of the ESC secret) or in `E2E_PASSWORD`.
+ *     (dev) / `.auth/password.prod.md` (prod) — mirrors of the ESC secret
+ *     of that environment — or in `E2E_PASSWORD`.
  *
  * See `.auth/README.md` for the first-time setup procedure and the
  * ESC retrieval command.
  *
  * Output:
  *
- *   `.auth/storageState.json` (gitignored).
+ *   `.auth/storageState.json` (dev) or `.auth/storageState.prod.json`
+ *   (prod), both gitignored.
  *
  * The script exits non-zero if any step fails — it never produces a
  * silently-broken storageState. The Playwright `authenticated` and
@@ -33,13 +37,33 @@
 
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { chromium } from '@playwright/test'
+import { chromium, type Locator, type Page } from '@playwright/test'
 
-const APP_URL = process.env.APP_URL || 'http://localhost:9000'
+/** Where each environment's test user signs in and its files live. */
+const TARGETS = {
+	dev: {
+		appUrl: 'http://localhost:9000',
+		authHost: /auth\.dev\.liverty-music\.app/,
+		username: 'e2e-test-password@dev.liverty-music.app',
+		passwordFile: 'password.md',
+		stateFile: 'storageState.json',
+	},
+	prod: {
+		appUrl: 'https://liverty-music.app',
+		authHost: /auth\.liverty-music\.app/,
+		username: 'e2e-test-password@liverty-music.app',
+		passwordFile: 'password.prod.md',
+		stateFile: 'storageState.prod.json',
+	},
+} as const
+
+const E2E_ENV = process.env.E2E_ENV === 'prod' ? 'prod' : 'dev'
+const TARGET = TARGETS[E2E_ENV]
+const APP_URL = process.env.APP_URL || TARGET.appUrl
 const OUTPUT_DIR = path.join(import.meta.dirname, '..', '.auth')
-const STORAGE_STATE_PATH = path.join(OUTPUT_DIR, 'storageState.json')
-const PASSWORD_PATH = path.join(OUTPUT_DIR, 'password.md')
-const DEFAULT_USERNAME = 'e2e-test-password@dev.liverty-music.app'
+const STORAGE_STATE_PATH = path.join(OUTPUT_DIR, TARGET.stateFile)
+const PASSWORD_PATH = path.join(OUTPUT_DIR, TARGET.passwordFile)
+const DEFAULT_USERNAME = TARGET.username
 
 function loadPassword(): string {
 	const envPassword = process.env.E2E_PASSWORD
@@ -48,7 +72,9 @@ function loadPassword(): string {
 	}
 	if (!fs.existsSync(PASSWORD_PATH)) {
 		console.error(`[error] Password file not found: ${PASSWORD_PATH}`)
-		console.error('Either set E2E_PASSWORD or create .auth/password.md.')
+		console.error(
+			`Either set E2E_PASSWORD or create .auth/${TARGET.passwordFile}.`,
+		)
 		console.error('See .auth/README.md "First-time setup" for the ESC command.')
 		process.exit(1)
 	}
@@ -58,6 +84,30 @@ function loadPassword(): string {
 		process.exit(1)
 	}
 	return contents
+}
+
+/**
+ * Fill a Login V2 field and submit. The form's submit button stays disabled
+ * until the Next.js page has hydrated and seen the input, and a value filled
+ * before hydration is not registered — so re-fill until the button enables.
+ */
+async function fillUntilSubmittable(
+	page: Page,
+	input: Locator,
+	value: string,
+): Promise<void> {
+	const submit = page.locator('button[type="submit"]:not([disabled])').first()
+	for (let attempt = 0; attempt < 10; attempt++) {
+		await input.fill(value)
+		try {
+			await submit.waitFor({ state: 'visible', timeout: 2_000 })
+			await submit.click()
+			return
+		} catch {
+			// not hydrated yet — fill again
+		}
+	}
+	throw new Error('Login form submit button never became enabled')
 }
 
 async function captureAuthStatePassword(): Promise<void> {
@@ -83,13 +133,27 @@ async function captureAuthStatePassword(): Promise<void> {
 		// button has class `welcome-btn-secondary` (the welcome HTML
 		// renders one of two button groups depending on `dateGroups.length`;
 		// `.first()` picks whichever is visible).
+		//
+		// When the welcome page has preview data, the CTA group sits in the
+		// footer below the sample timetable and is only built once scrolled
+		// toward, so scroll until it exists.
 		const loginButton = page.locator('button.welcome-btn-secondary').first()
+		for (let i = 0; i < 20 && (await loginButton.count()) === 0; i++) {
+			await page.mouse.wheel(0, 1500)
+			await page.waitForTimeout(500)
+		}
+		// The landing page keeps animating (the sample timetable's beams), so
+		// Playwright's stability wait never settles; scroll and click directly.
+		await loginButton.evaluate((el) => el.scrollIntoView({ block: 'center' }))
 		await loginButton.waitFor({ state: 'visible' })
-		await loginButton.click()
+		await loginButton.click({ force: true })
 		// Wait for the cross-origin navigation to the Zitadel auth server.
 		// `waitForURL` matches against the full URL; the regex tolerates
 		// any path under the auth host.
-		await page.waitForURL(/auth\.dev\.liverty-music\.app/, { timeout: 30_000 })
+		await page.waitForURL(TARGET.authHost, {
+			timeout: 30_000,
+			waitUntil: 'commit',
+		})
 
 		console.log('[3/4] Submitting username…')
 		// Zitadel Login V2 — username input. The locator tolerates either
@@ -101,16 +165,14 @@ async function captureAuthStatePassword(): Promise<void> {
 			)
 			.first()
 		await usernameInput.waitFor({ state: 'visible' })
-		await usernameInput.fill(username)
-		await page.locator('button[type="submit"]').first().click()
+		await fillUntilSubmittable(page, usernameInput, username)
 
 		console.log('[4/4] Submitting password and waiting for OIDC callback…')
 		const passwordInput = page
 			.locator('input[type="password"], input[name="password"]')
 			.first()
 		await passwordInput.waitFor({ state: 'visible' })
-		await passwordInput.fill(password)
-		await page.locator('button[type="submit"]').first().click()
+		await fillUntilSubmittable(page, passwordInput, password)
 
 		await page.waitForFunction(
 			() => {

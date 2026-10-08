@@ -75,6 +75,7 @@ function makeFollowStore() {
 		follow: vi.fn(async (artist: Artist) => {
 			store.followedArtists = [...store.followedArtists, artist]
 		}),
+		listFollowed: vi.fn(async () => []),
 		unfollow: vi.fn(async (id: string) => {
 			store.followedArtists = store.followedArtists.filter((a) => a.id !== id)
 		}),
@@ -245,6 +246,38 @@ describe('EventRoute', () => {
 				mbid: '',
 			})
 			expect(sut.isFollowed(performer)).toBe(true)
+		})
+
+		it("loads a signed-in fan's follows so a followed performer shows as followed", async () => {
+			auth = createMockAuth({ isAuthenticated: true })
+			follow.listFollowed.mockImplementation(async () => {
+				follow.followedArtists = [{ id: ARTIST_ID, name: 'The Band', mbid: '' }]
+				return []
+			})
+			const sut = build()
+			await open(sut)
+
+			expect(follow.listFollowed).toHaveBeenCalled()
+			expect(sut.followedIds.has(ARTIST_ID)).toBe(true)
+		})
+
+		it('ignores a follow tap until the follows have loaded', async () => {
+			let release: () => void = () => {}
+			follow.listFollowed.mockReturnValue(
+				new Promise((r) => {
+					release = () => r([])
+				}),
+			)
+			const sut = build()
+			sut.loading({ id: EVENT_ID })
+			await vi.waitFor(() => expect(sut.state).toBe('ready'))
+
+			expect(sut.followsLoaded).toBe(false)
+			await sut.toggleFollow(sut.event!.performers[0])
+			expect(follow.follow).not.toHaveBeenCalled()
+
+			release()
+			await vi.waitFor(() => expect(sut.followsLoaded).toBe(true))
 		})
 
 		it('unfollows a followed performer', async () => {
