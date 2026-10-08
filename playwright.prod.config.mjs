@@ -44,7 +44,13 @@ export default defineConfig({
 			testMatch: '**/*.authenticated.spec.ts',
 			use: {
 				...devices['Pixel 7'],
+				// Required: the spec fails when it is missing (see its beforeAll).
 				storageState: existsSync(STORAGE_STATE) ? STORAGE_STATE : undefined,
+				// A trace records every fill(), including the test user's real
+				// password in the sign-up test; never write one for this project.
+				trace: 'off',
+				screenshot: 'off',
+				video: 'off',
 			},
 		},
 	],

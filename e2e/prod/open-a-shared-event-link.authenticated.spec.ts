@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { EVENTS, fillAndSubmit, testUser } from './support'
 
@@ -6,13 +7,30 @@ import { EVENTS, fillAndSubmit, testUser } from './support'
  * (`.auth/storageState.prod.json`, from `npm run auth:capture:password:prod`).
  */
 test.describe('open a shared event link (signed in)', () => {
+	test.beforeAll(() => {
+		// Without the captured state this project would silently run as a
+		// guest, and guest follows persist locally, so the follow test would
+		// still pass. Fail instead.
+		if (!existsSync('.auth/storageState.prod.json')) {
+			throw new Error(
+				'.auth/storageState.prod.json is missing: run npm run auth:capture:password:prod',
+			)
+		}
+	})
+
 	test('keeps a follow made on the event page on the account', async ({
 		page,
 	}) => {
 		test.skip(!EVENTS.public, 'E2E_EVENT_PUBLIC_ID is required')
 		await page.goto(`/events/${EVENTS.public}`)
+		// The captured session must still be signed in.
+		expect(
+			await page.evaluate(() =>
+				Object.keys(localStorage).some((k) => k.startsWith('oidc.user:')),
+			),
+		).toBe(true)
 		const follow = page.getByTestId('event-follow').first()
-		await expect(follow).toBeVisible()
+		await expect(follow).toBeEnabled()
 
 		// Start from "not followed" so the run is repeatable.
 		if ((await follow.getAttribute('aria-pressed')) === 'true') {
@@ -39,18 +57,21 @@ test.describe('open a shared event link (signed in)', () => {
 
 	test('returns a guest who follows and signs up to the same event page', async ({
 		browser,
+		baseURL,
 	}) => {
 		// @spec stories/open-a-shared-event-link "Guest follows, then signs up"
 		test.skip(!EVENTS.upcoming, 'E2E_EVENT_UPCOMING_ID is required')
 		const { username, password } = testUser()
 		test.skip(!password, '.auth/password.prod.md or E2E_PASSWORD is required')
 
-		// A fresh guest: no storage state.
-		const context = await browser.newContext()
+		// A fresh guest: no storage state. A context made from `browser` does
+		// not inherit the project's `use`, so pass the base URL explicitly.
+		const context = await browser.newContext({ baseURL })
 		const page = await context.newPage()
 		await page.goto(`/events/${EVENTS.upcoming}`)
 
 		const follow = page.getByTestId('event-follow').first()
+		await expect(follow).toBeEnabled()
 		if ((await follow.getAttribute('aria-pressed')) !== 'true') {
 			await follow.click()
 		}

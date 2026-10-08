@@ -261,6 +261,25 @@ describe('EventRoute', () => {
 			expect(sut.followedIds.has(ARTIST_ID)).toBe(true)
 		})
 
+		it('ignores a follow tap until the follows have loaded', async () => {
+			let release: () => void = () => {}
+			follow.listFollowed.mockReturnValue(
+				new Promise((r) => {
+					release = () => r([])
+				}),
+			)
+			const sut = build()
+			sut.loading({ id: EVENT_ID })
+			await vi.waitFor(() => expect(sut.state).toBe('ready'))
+
+			expect(sut.followsLoaded).toBe(false)
+			await sut.toggleFollow(sut.event!.performers[0])
+			expect(follow.follow).not.toHaveBeenCalled()
+
+			release()
+			await vi.waitFor(() => expect(sut.followsLoaded).toBe(true))
+		})
+
 		it('unfollows a followed performer', async () => {
 			follow.followedArtists = [{ id: ARTIST_ID, name: 'The Band', mbid: '' }]
 			const sut = build()

@@ -54,6 +54,12 @@ export class EventRoute implements IRouteViewModel {
 	/** All Events of the Series in date order; empty until they load. */
 	public seriesEvents: EventPageEvent[] = []
 	public followUpdatingId = ''
+	/**
+	 * False until the fan's follows are loaded. The follow controls stay
+	 * disabled until then, so a tap cannot race the load, whose result would
+	 * overwrite the tap's optimistic state.
+	 */
+	public followsLoaded = false
 
 	private eventId = ''
 	private abortController: AbortController | null = null
@@ -78,6 +84,7 @@ export class EventRoute implements IRouteViewModel {
 		this.state = 'loading'
 		this.event = null
 		this.seriesEvents = []
+		this.followsLoaded = false
 		try {
 			const proto = await this.concertClient.get(this.eventId, signal)
 			const event = eventFromProto(proto)
@@ -141,6 +148,9 @@ export class EventRoute implements IRouteViewModel {
 			if (signal.aborted) return
 			this.logger.warn('Follow list read failed', { error: err })
 		}
+		// On failure the controls still work; they just start from what the
+		// store already holds.
+		if (!signal.aborted) this.followsLoaded = true
 	}
 
 	private async loadPurchasedTickets(signal: AbortSignal): Promise<void> {
@@ -249,7 +259,7 @@ export class EventRoute implements IRouteViewModel {
 	// --- Actions ---
 
 	public async toggleFollow(performer: EventPerformer): Promise<void> {
-		if (this.followUpdatingId) return
+		if (this.followUpdatingId || !this.followsLoaded) return
 		this.followUpdatingId = performer.id
 		try {
 			if (this.isFollowed(performer)) {
