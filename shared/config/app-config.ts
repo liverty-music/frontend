@@ -22,6 +22,14 @@ export interface AppConfig {
 	 * compatibility — when absent, admin clients fall back to `apiBaseUrl`.
 	 */
 	readonly adminApiBaseUrl?: string
+	/**
+	 * Origin of the reception app (`https://reception.{domain}`), on which the
+	 * organizer console builds reception link URLs (`<receptionBaseUrl>/#<token>`).
+	 * Required by the organizer console (it loads config with
+	 * `requireReceptionBaseUrl: true`); absent from the consumer and admin
+	 * ConfigMaps, which ignore it. See OpenSpec change `isolate-venue-reception`.
+	 */
+	readonly receptionBaseUrl?: string
 	readonly zitadelIssuer: string
 	readonly zitadelClientId: string
 	/**
@@ -132,6 +140,12 @@ export interface LoadAppConfigOptions {
 	 * session by org-pinned entry. See OpenSpec change `organizer-console`.
 	 */
 	readonly requireOrgId?: boolean
+	/**
+	 * Whether `receptionBaseUrl` is a required field. Defaults to `false`; the
+	 * organizer console passes `true` because it builds reception link URLs on
+	 * that origin. See OpenSpec change `isolate-venue-reception`.
+	 */
+	readonly requireReceptionBaseUrl?: boolean
 }
 
 /**
@@ -338,10 +352,21 @@ function validateAppConfig(
 		? requireString(o, 'zitadelOrgId')
 		: readOptionalString(o, 'zitadelOrgId')
 
+	// The reception app's origin, where the organizer console points reception
+	// links. Required only by the organizer console; when present it must be an
+	// absolute http(s) URL, kept without a trailing slash.
+	const receptionBaseUrl = options?.requireReceptionBaseUrl
+		? requireString(o, 'receptionBaseUrl')
+		: readOptionalString(o, 'receptionBaseUrl')
+	if (receptionBaseUrl !== undefined) validateBaseUrl(receptionBaseUrl)
+
 	return {
 		environment: env as AppConfig['environment'],
 		apiBaseUrl: requireString(o, 'apiBaseUrl'),
 		...(adminApiBaseUrl !== undefined ? { adminApiBaseUrl } : {}),
+		...(receptionBaseUrl !== undefined
+			? { receptionBaseUrl: receptionBaseUrl.replace(/\/+$/, '') }
+			: {}),
 		zitadelIssuer: requireString(o, 'zitadelIssuer'),
 		zitadelClientId: requireString(o, 'zitadelClientId'),
 		...(zitadelOrgId !== undefined ? { zitadelOrgId } : {}),
@@ -374,6 +399,23 @@ function readOptionalPositiveNumber(
 ): number {
 	const v = o[key]
 	return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : fallback
+}
+
+/** Rejects a value that is not an absolute http(s) URL. */
+function validateBaseUrl(value: string): void {
+	let url: URL
+	try {
+		url = new URL(value)
+	} catch {
+		throw new Error(
+			`config.json: receptionBaseUrl must be an absolute URL, got '${value}'`,
+		)
+	}
+	if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+		throw new Error(
+			`config.json: receptionBaseUrl must be an http(s) URL, got '${value}'`,
+		)
+	}
 }
 
 function requireString(o: Record<string, unknown>, key: string): string {

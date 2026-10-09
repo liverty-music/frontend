@@ -3,6 +3,7 @@ import { ReceptionLinkStatus } from '@buf/liverty-music_schema.bufbuild_es/liver
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../shared/config/app-config'
 import {
 	formatJstDateTime,
 	receptionLinkLabel,
@@ -54,14 +55,15 @@ const STATUS_KEYS: Record<ReceptionLinkStatus, LinkRow['statusKey']> = {
 }
 
 /**
- * The reception screen URL for a link token, on this console's own origin. The
- * token is in the fragment, so it never reaches a web server or its logs.
+ * The reception screen URL for a link token, on the reception app's origin
+ * (`receptionBaseUrl`), separate from the console's. The token is in the
+ * fragment, so it never reaches a web server or its logs.
  */
-export function receptionUrl(origin: string, token: string): string {
-	return `${origin}/reception#${token}`
+export function receptionUrl(receptionBaseUrl: string, token: string): string {
+	return `${receptionBaseUrl}/#${token}`
 }
 
-function toRow(link: ReceptionLink, origin: string): LinkRow {
+function toRow(link: ReceptionLink, receptionBaseUrl: string): LinkRow {
 	const number = link.number?.value ?? 0
 	const token = link.token?.value ?? ''
 	return {
@@ -73,7 +75,7 @@ function toRow(link: ReceptionLink, origin: string): LinkRow {
 		statusKey: STATUS_KEYS[link.status],
 		url:
 			link.status === ReceptionLinkStatus.UNUSED && token
-				? receptionUrl(origin, token)
+				? receptionUrl(receptionBaseUrl, token)
 				: '',
 		boundSince: link.bindTime
 			? formatJstDateTime(timestampDate(link.bindTime))
@@ -118,7 +120,8 @@ export class ReceptionLinksRoute {
 		typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
 	private abort: AbortController | null = null
-	private readonly origin = window.location.origin
+	/** Required by the organizer config loader (`requireReceptionBaseUrl`). */
+	private readonly receptionBaseUrl = resolve(IAppConfig).receptionBaseUrl ?? ''
 
 	private readonly concerts = resolve(IConcertAuthoringClient)
 	private readonly links = resolve(IReceptionLinkClient)
@@ -180,7 +183,7 @@ export class ReceptionLinksRoute {
 			const links = await this.links.list(this.eventId, abort.signal)
 			if (abort.signal.aborted) return
 			this.rows = links
-				.map((l) => toRow(l, this.origin))
+				.map((l) => toRow(l, this.receptionBaseUrl))
 				.sort((a, b) => a.number - b.number)
 			this.phase = 'ready'
 		} catch (err) {
@@ -283,7 +286,7 @@ export class ReceptionLinksRoute {
 	}
 
 	private upsert(link: ReceptionLink): void {
-		const row = toRow(link, this.origin)
+		const row = toRow(link, this.receptionBaseUrl)
 		const i = this.rows.findIndex((r) => r.id === row.id)
 		if (i >= 0) this.rows.splice(i, 1, row)
 		else {

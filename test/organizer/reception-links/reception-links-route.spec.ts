@@ -14,6 +14,7 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { IAppConfig } from '../../../shared/config/app-config'
 
 const IConcertAuthoringClient = DI.createInterface('IConcertAuthoringClient')
 const IReceptionLinkClient = DI.createInterface('IReceptionLinkClient')
@@ -109,6 +110,7 @@ async function build(m: Mocks) {
 			ReceptionLinksRoute,
 			Registration.instance(IConcertAuthoringClient, m.concerts),
 			Registration.instance(IReceptionLinkClient, m.links),
+			Registration.instance(IAppConfig, { receptionBaseUrl: RECEPTION }),
 		)
 		.build()
 	await fixture.started
@@ -129,7 +131,8 @@ async function build(m: Mocks) {
 	return { fixture, route, text, cards, buttons }
 }
 
-const ORIGIN = window.location.origin
+/** The reception app's origin from the organizer config, not the console's. */
+const RECEPTION = 'https://reception.liverty-music.app'
 
 describe('ReceptionLinksRoute', () => {
 	beforeEach(() => vi.clearAllMocks())
@@ -162,8 +165,8 @@ describe('ReceptionLinksRoute', () => {
 			fixture.appHost.querySelectorAll<HTMLInputElement>('.link-card input'),
 		).map((i) => i.value)
 		expect(urls).toEqual([
-			`${ORIGIN}/reception#${tokenOf(1)}`,
-			`${ORIGIN}/reception#${tokenOf(2)}`,
+			`${RECEPTION}/#${tokenOf(1)}`,
+			`${RECEPTION}/#${tokenOf(2)}`,
 		])
 		expect(
 			fixture.appHost.querySelectorAll('.link-card button').length,
@@ -177,7 +180,7 @@ describe('ReceptionLinksRoute', () => {
 			configurable: true,
 		})
 		await route.copy(route.rows[0])
-		expect(writeText).toHaveBeenCalledWith(`${ORIGIN}/reception#${tokenOf(1)}`)
+		expect(writeText).toHaveBeenCalledWith(`${RECEPTION}/#${tokenOf(1)}`)
 		expect(route.copiedId).toBe('link-1')
 	})
 
@@ -195,7 +198,7 @@ describe('ReceptionLinksRoute', () => {
 		expect(first).toContain('受付1')
 		expect(first).toContain('使用中')
 		expect(first).toContain('14:10')
-		expect(first).not.toContain('/reception#')
+		expect(first).not.toContain(RECEPTION)
 		expect(
 			fixture.appHost.querySelectorAll('.link-card')[0].querySelector('input'),
 		).toBeNull()
@@ -234,7 +237,7 @@ describe('ReceptionLinksRoute', () => {
 		expect(first).toContain('取り消し済み')
 		expect(third).toContain('受付3')
 		expect(third).toContain('未使用')
-		expect(route.rows[2].url).toBe(`${ORIGIN}/reception#${tokenOf(3)}`)
+		expect(route.rows[2].url).toBe(`${RECEPTION}/#${tokenOf(3)}`)
 		expect(route.issuedId).toBe('link-3')
 	})
 
@@ -310,9 +313,9 @@ describe('ReceptionLinksRoute', () => {
 		expect(m.links.list).not.toHaveBeenCalled()
 	})
 
-	it('builds the reception URL on the console origin', () => {
-		expect(receptionUrl('https://organizer.example', 'abc')).toBe(
-			'https://organizer.example/reception#abc',
+	it('builds the reception URL on the reception origin with the token in the fragment', () => {
+		expect(receptionUrl('https://reception.example', 'abc')).toBe(
+			'https://reception.example/#abc',
 		)
 	})
 })
