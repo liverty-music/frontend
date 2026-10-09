@@ -8,11 +8,11 @@
 
   <output
     if.bind="phase === 'opening'"
-    class="organizer-status"
+    class="reception-status"
     role="status"
     aria-busy="true"
   >
-    <span class="organizer-spinner"></span>
+    <span class="reception-spinner"></span>
     <span>受付リンクを確認しています…</span>
   </output>
 
@@ -58,7 +58,7 @@
   >
     <h2>サーバーに接続できませんでした</h2>
     <p>電波やWi-Fiを確認してから、もう一度お試しください。</p>
-    <button type="button" class="organizer-btn" click.trigger="open()">
+    <button type="button" class="reception-btn" click.trigger="open()">
       もう一度試す
     </button>
   </section>
@@ -71,7 +71,7 @@
     >
       <h2>受付は ${windowOpenLabel} から始まります</h2>
       <p>受付時間: ${windowOpenLabel} 〜 ${windowCloseLabel}</p>
-      <button type="button" class="organizer-btn" click.trigger="open()">
+      <button type="button" class="reception-btn" click.trigger="open()">
         もう一度確認する
       </button>
     </section>
@@ -111,7 +111,7 @@
         <button
           if.bind="verdict.tone === 'undecided'"
           type="button"
-          class="organizer-btn"
+          class="reception-btn"
           data-variant="primary"
           disabled.bind="deciding"
           click.trigger="retry()"
@@ -125,7 +125,7 @@
         <button
           if.bind="!scanning"
           type="button"
-          class="organizer-btn"
+          class="reception-btn"
           data-variant="primary"
           disabled.bind="startingCamera"
           click.trigger="startScanning()"
@@ -135,14 +135,14 @@
         <button
           if.bind="scanning"
           type="button"
-          class="organizer-btn"
+          class="reception-btn"
           data-variant="ghost"
           click.trigger="stopScanning()"
         >
           スキャンを停止
         </button>
       </div>
-      <p if.bind="cameraError" class="organizer-error" role="alert">
+      <p if.bind="cameraError" class="reception-error" role="alert">
         ${cameraError}
       </p>
     </section>

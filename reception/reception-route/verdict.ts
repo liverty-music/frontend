@@ -1,7 +1,10 @@
 import { RejectedScanReason } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/rejected_scan_pb.js'
 import type { AdmitResponse } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/reception/v1/reception_service_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
-import { formatJstTime, receptionLinkLabel } from './jst-format'
+import {
+	formatJstTime,
+	receptionLinkLabel,
+} from '../../shared/lib/reception/jst-format'
 
 /**
  * - `ok`: every presented ticket admitted.

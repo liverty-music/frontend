@@ -3,8 +3,8 @@ import {
 	base64urlNoPad,
 	buildReceptionSignatureInput,
 	RECEPTION_SIGNATURE_CONTEXT,
-} from '../../../organizer/reception/call-signature'
-import { receptionProcedure } from '../../../organizer/services/reception-client'
+} from '../../../reception/reception-route/call-signature'
+import { receptionProcedure } from '../../../reception/services/reception-client'
 
 const decode = (b: Uint8Array) => new TextDecoder().decode(b)
 

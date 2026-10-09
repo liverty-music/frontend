@@ -62,3 +62,55 @@ describe('loadAppConfig — zitadelOrgId requirement', () => {
 		expect(config.zitadelOrgId).toBe('org-abc')
 	})
 })
+
+/**
+ * The `receptionBaseUrl` contract added by OpenSpec change
+ * `isolate-venue-reception`: the organizer console builds reception link URLs
+ * on the reception origin, so it requires the field; the consumer and admin
+ * configs omit it.
+ */
+describe('loadAppConfig — receptionBaseUrl', () => {
+	beforeEach(() => {
+		__resetAppConfigForTests()
+	})
+
+	afterEach(() => {
+		vi.unstubAllGlobals()
+		__resetAppConfigForTests()
+	})
+
+	it('is optional by default (consumer/admin contract)', async () => {
+		mockConfigFetch({ ...BASE_CONFIG, zitadelOrgId: 'org-abc' })
+		const config = await loadAppConfig()
+		expect(config.receptionBaseUrl).toBeUndefined()
+	})
+
+	it('rejects a config missing it when required (organizer)', async () => {
+		mockConfigFetch(BASE_CONFIG)
+		await expect(
+			loadAppConfig({ requireOrgId: false, requireReceptionBaseUrl: true }),
+		).rejects.toThrow(/receptionBaseUrl/)
+	})
+
+	it('keeps the origin without a trailing slash', async () => {
+		mockConfigFetch({
+			...BASE_CONFIG,
+			receptionBaseUrl: 'https://reception.test.local/',
+		})
+		const config = await loadAppConfig({
+			requireOrgId: false,
+			requireReceptionBaseUrl: true,
+		})
+		expect(config.receptionBaseUrl).toBe('https://reception.test.local')
+	})
+
+	it('rejects a value that is not an absolute http(s) URL', async () => {
+		mockConfigFetch({
+			...BASE_CONFIG,
+			receptionBaseUrl: 'reception.test.local',
+		})
+		await expect(
+			loadAppConfig({ requireOrgId: false, requireReceptionBaseUrl: true }),
+		).rejects.toThrow(/absolute URL/)
+	})
+})

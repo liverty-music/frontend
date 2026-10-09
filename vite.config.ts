@@ -77,8 +77,7 @@ export default defineConfig({
 					// A chunk holding ANY organizer module is organizer-only too: the
 					// consumer never imports organizer code (lint:boundaries), and Rollup
 					// groups modules by the entries that load them, so shared/ modules
-					// hoisted into such a chunk are loaded by the organizer alone (e.g.
-					// the reception screen with the shared admission-code lib).
+					// hoisted into such a chunk are loaded by the organizer alone.
 					if (ids.some((id) => id.includes('/organizer/')))
 						return 'assets/organizer/[name]-[hash].js'
 					return 'assets/[name]-[hash].js'
@@ -95,19 +94,6 @@ export default defineConfig({
 					}
 					return 'assets/[name]-[hash][extname]'
 				},
-			},
-		},
-	},
-	// The only Web Worker is the organizer reception screen's QR decoder (ZXing
-	// WebAssembly). Its bundle and its `.wasm` go to `assets/organizer/`, so the
-	// consumer SW precache (which ignores that folder) never downloads them.
-	worker: {
-		format: 'es',
-		rollupOptions: {
-			output: {
-				entryFileNames: 'assets/organizer/[name]-[hash].js',
-				chunkFileNames: 'assets/organizer/[name]-[hash].js',
-				assetFileNames: 'assets/organizer/[name]-[hash][extname]',
 			},
 		},
 	},
@@ -128,11 +114,15 @@ export default defineConfig({
 			// `organizer/`) and any shared components (under `shared/`) also get
 			// convention pairing + template compilation; without this, their
 			// `.html`/`.css` are never compiled into their chunks and the views
-			// render empty.
+			// render empty. `reception/` is listed only for the unit tests, which
+			// merge this config: the reception app is built by
+			// `vite.reception.config.ts`, and no entry of this build imports it
+			// (lint:boundaries).
 			include: [
 				'src/**/*.{ts,js,html}',
 				'admin/**/*.{ts,js,html}',
 				'organizer/**/*.{ts,js,html}',
+				'reception/**/*.{ts,js,html}',
 				'shared/**/*.{ts,js,html}',
 			],
 		}),

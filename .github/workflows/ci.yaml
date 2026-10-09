@@ -28,6 +28,12 @@ jobs:
           filters: |
             src:
               - 'src/**'
+              # The reception app (its own build) and the shared/ modules it
+              # imports from source: the Lint job builds and checks it.
+              - 'reception/**'
+              - 'shared/**'
+              - 'reception.html'
+              - 'vite.reception.config.ts'
               - 'test/**'
               - 'e2e/**'
               - 'scripts/**'
@@ -83,6 +89,12 @@ jobs:
 
       - name: Run make lint
         run: make lint lint-templates
+
+      # The reception app's own build, then the check that its output holds no
+      # OIDC client or console code (prints the output size). OpenSpec change
+      # `isolate-venue-reception`, design D4.
+      - name: Build and check the reception app
+        run: make verify-reception-bundle
 
   lint-skip:
     needs: changes

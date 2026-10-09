@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <title>受付 | Liverty Music</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1333">
+  <!-- Content-Security-Policy and Permissions-Policy are response headers set by
+       Caddyfile.reception (frame-ancestors cannot be set from a meta tag). -->
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script type="module" src="/reception/main.ts"></script>
+  <base href="/">
+</head>
+
+<body>
+  <div id="bootstrap-loading" role="status" aria-live="polite" aria-label="読み込み中" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#888;font:600 14px/1 system-ui;background:transparent;pointer-events:none">読み込み中…</div>
+  <reception-shell></reception-shell>
+</body>
+
+</html>

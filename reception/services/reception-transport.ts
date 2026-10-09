@@ -1,19 +1,24 @@
 import type { Interceptor, Transport } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
 import type { ILogger } from 'aurelia'
-import type { AppConfig } from '../../shared/config/app-config'
+import type { ReceptionConfig } from '../config/reception-config'
+
+/**
+ * Default client-side deadline for every reception call, the same 10 s the
+ * console transports default to, so a hung API fails within a known window.
+ */
+export const RECEPTION_RPC_TIMEOUT_MS = 10_000
 
 /**
  * Creates the Connect transport the reception screen calls ReceptionService
- * through. Unlike {@link ./organizer-transport}, it carries NO bearer token and
- * no sign-in retry: reception staff have no account, and the caller is the
- * link token plus the device's signature carried in each request. Sending an
- * operator's console token from a shared browser would add nothing and widen
- * what a reception call carries.
+ * through, on the reception API host. It carries NO bearer token and no
+ * sign-in retry: reception staff have no account, and the caller is the link
+ * token plus the device's signature carried in each request. The reception
+ * app has no sign-in code at all, so no console token can reach a call.
  */
 export const createReceptionTransport = (
 	logger: ILogger,
-	config: AppConfig,
+	config: ReceptionConfig,
 ): Transport => {
 	/** Logs each call with its duration; never the request body. */
 	const loggingInterceptor: Interceptor = (next) => async (req) => {
@@ -40,7 +45,7 @@ export const createReceptionTransport = (
 
 	return createConnectTransport({
 		baseUrl: config.apiBaseUrl,
-		defaultTimeoutMs: config.rpcTimeoutMs,
+		defaultTimeoutMs: RECEPTION_RPC_TIMEOUT_MS,
 		interceptors: [loggingInterceptor],
 	})
 }

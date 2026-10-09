@@ -1,0 +1,24 @@
+:80 {
+	root * /srv
+	file_server
+	# SPA fallback to the reception entry. Mirrors Caddyfile.organizer, swapping
+	# the entry document. Reception links are `/#<token>`: the token is in the
+	# fragment, which never reaches this server.
+	try_files {path} /reception.html
+
+	@config path /config.json
+	header @config Cache-Control "no-store"
+	header @config Content-Type "application/json; charset=utf-8"
+
+	# Same sources as the organizer entry's CSP (organizer.html), narrowed to
+	# what the reception screen loads: no identity provider, and connect-src
+	# only this origin and the reception API. 'wasm-unsafe-eval' runs the ZXing
+	# WebAssembly QR decoder in its worker. The reception API origin defaults to
+	# prod; another environment sets RECEPTION_API_ORIGIN on the container.
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' {$RECEPTION_API_ORIGIN:https://api.reception.liverty-music.app}; img-src 'self' data: blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+		# The rear camera scans QR codes; nothing else is needed.
+		Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+		X-Content-Type-Options "nosniff"
+	}
+}
