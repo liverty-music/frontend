@@ -206,6 +206,31 @@ describe('OrganizersRoute', () => {
 			expect(vm.createError).toContain('name too long')
 			expect(vm.creating).toBe(false)
 		})
+
+		it('maps ALREADY_EXISTS on create to the operator-email-in-use message', async () => {
+			const client = createMockOrganizerClient({
+				create: vi
+					.fn()
+					.mockRejectedValue(
+						new ConnectError(
+							'operator email is already used by another account',
+							Code.AlreadyExists,
+						),
+					),
+			})
+			const fixture = await build(client, createMockSearchClient())
+			const vm = routeOf(fixture)
+
+			vm.newName = 'Org'
+			vm.newOperatorEmail = 'taken@example.com'
+			await vm.createOrganizer()
+
+			expect(vm.createError).toBe(
+				'That operator email is already used by another account. Use a different email.',
+			)
+			expect(vm.createError).not.toContain('artist')
+			expect(vm.creating).toBe(false)
+		})
 	})
 
 	describe('select + roster', () => {
@@ -391,7 +416,9 @@ describe('OrganizersRoute', () => {
 
 			await vm.associate({ id: 'a9', name: 'Found Act' })
 
-			expect(vm.associateError).toContain('already represented')
+			expect(vm.associateError).toBe(
+				'That artist is already represented by an organizer.',
+			)
 			expect(vm.associatingId).toBe('')
 		})
 
