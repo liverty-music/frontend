@@ -1,0 +1,55 @@
+@layer block {
+	@scope (reception-verdict) {
+		.verdict {
+			--flow-space: var(--space-xs);
+			--verdict-bg: var(--color-surface-raised);
+			--verdict-fg: var(--color-text-primary);
+			--verdict-size: clamp(2.5rem, 16vi, 5.5rem);
+
+			padding: var(--space-m) var(--space-s);
+			border-radius: var(--radius-m);
+			color: var(--verdict-fg);
+			background: var(--verdict-bg);
+
+			&[data-tone="ok"] {
+				--verdict-bg: oklch(45% 0.14 150deg);
+			}
+
+			&[data-tone="partial"] {
+				--verdict-bg: oklch(80% 0.15 85deg);
+				--verdict-fg: oklch(18% 0.03 85deg);
+			}
+
+			&[data-tone="ng"] {
+				--verdict-bg: oklch(48% 0.19 25deg);
+			}
+
+			&[data-tone="undecided"] {
+				--verdict-bg: oklch(35% 0.02 275deg);
+				--verdict-size: var(--step-3);
+			}
+		}
+
+		.verdict-headline {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-s);
+			align-items: baseline;
+
+			font-family: var(--font-display);
+			font-size: var(--verdict-size);
+			font-weight: 900;
+			line-height: var(--leading-snug);
+		}
+
+		.verdict-emphasis {
+			font-size: var(--step-1);
+			font-weight: 700;
+		}
+
+		.verdict-reasons {
+			padding: 0;
+			list-style: none;
+		}
+	}
+}

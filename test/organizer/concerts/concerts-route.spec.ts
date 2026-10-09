@@ -241,6 +241,37 @@ describe('ConcertsRoute', () => {
 		expect(vm.rows[0].lotteryEvents).toEqual([])
 	})
 
+	it('reaches the reception links of every event of a concert that is not cancelled', async () => {
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeConcert('s1', 'Tour', PublishState.PUBLISHED, Visibility.PUBLIC, [
+						makeEvent('e1', 0),
+						makeEvent('e2', 1),
+					]),
+					makeConcert('s2', 'Draft', PublishState.DRAFT, Visibility.PUBLIC, [
+						makeEvent('e3'),
+					]),
+					makeConcert('s3', 'Gone', PublishState.CANCELLED, Visibility.PUBLIC, [
+						makeEvent('e4'),
+					]),
+				]),
+		})
+		const vm = build(client)
+		await vm.attached()
+
+		expect(vm.rows[0].receptionEvents).toEqual([
+			{ eventId: 'e1', label: 'Reception links · 2026-09-10' },
+			{ eventId: 'e2', label: 'Reception links · 2026-09-11' },
+		])
+		// A draft reaches the screen, which says to publish first.
+		expect(vm.rows[1].receptionEvents).toEqual([
+			{ eventId: 'e3', label: 'Reception links' },
+		])
+		expect(vm.rows[2].receptionEvents).toEqual([])
+	})
+
 	it('confirms then cancels a concert', async () => {
 		const row = makeConcert('s1', 'Show', PublishState.DRAFT, Visibility.PUBLIC)
 		const cancelled = makeConcert(

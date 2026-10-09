@@ -79,17 +79,21 @@ export class QrScanner {
 		if (this.running) return
 		this.running = true
 		try {
-			const [stream, decoder] = await Promise.all([
+			const [stream, decoder] = await Promise.allSettled([
 				this.deps.getUserMedia(CAMERA_CONSTRAINTS),
 				this.deps.createDecoder(),
 			])
-			this.stream = stream
-			this.decoder = decoder
+			// Keep whichever succeeded, so a failure of the other releases it.
+			if (stream.status === 'fulfilled') this.stream = stream.value
+			if (decoder.status === 'fulfilled') this.decoder = decoder.value
+			if (stream.status === 'rejected') throw stream.reason
+			if (decoder.status === 'rejected') throw decoder.reason
+			const media = stream.value
 			if (!this.running) {
 				this.release()
 				return
 			}
-			this.video.srcObject = stream
+			this.video.srcObject = media
 			this.video.muted = true
 			this.video.playsInline = true
 			await this.video.play()

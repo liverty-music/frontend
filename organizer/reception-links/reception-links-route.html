@@ -124,7 +124,7 @@
         </div>
 
         <div
-          if.bind="row.canRevoke && !isConfirming(row, 'revoke') && !isConfirming(row, 'reissue')"
+          if.bind="row.canRevoke && confirmingId !== row.id"
           class="cluster"
         >
           <button
@@ -148,15 +148,15 @@
         </div>
 
         <div
-          if.bind="isConfirming(row, 'revoke') || isConfirming(row, 'reissue')"
+          if.bind="confirmingId === row.id"
           class="[ link-card-confirm ] [ flow ]"
           role="group"
           aria-label="${row.label} の取り消しの確認"
         >
-          <p if.bind="isConfirming(row, 'revoke')">
+          <p if.bind="confirmAction === 'revoke'">
             ${row.label} を取り消します。この端末ではすぐに受付できなくなります。よろしいですか？
           </p>
-          <p if.bind="isConfirming(row, 'reissue')">
+          <p if.bind="confirmAction === 'reissue'">
             ${row.label} を取り消して、新しい受付リンクを発行します。今の端末ではすぐに受付できなくなります。よろしいですか？
           </p>
           <div class="cluster">
@@ -167,7 +167,7 @@
               disabled.bind="busy"
               click.trigger="confirm()"
             >
-              ${isConfirming(row, 'reissue') ? '取り消して再発行する' : '取り消す'}
+              ${confirmAction === 'reissue' ? '取り消して再発行する' : '取り消す'}
             </button>
             <button
               type="button"

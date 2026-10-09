@@ -1,9 +1,15 @@
 import { IRouter } from '@aurelia/router'
+import { createFixture } from '@aurelia/testing'
 import {
 	type LotterySalesPhase,
 	LotterySalesPhaseSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
+import {
+	type AuthoredConcert,
+	AuthoredConcertSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
 import { create } from '@bufbuild/protobuf'
+import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,6 +22,11 @@ const ILotteryPhaseClient = DI.createInterface('ILotteryPhaseClient')
 
 vi.mock('../../../organizer/services/lottery-phase-client', () => ({
 	ILotteryPhaseClient,
+}))
+
+const IConcertAuthoringClient = DI.createInterface('IConcertAuthoringClient')
+vi.mock('../../../organizer/services/concert-authoring-client', () => ({
+	IConcertAuthoringClient,
 }))
 
 const { LotteryPhaseEditorRoute } = await import(
@@ -43,17 +54,40 @@ function makePhase(id: string): LotterySalesPhase {
 	return create(LotterySalesPhaseSchema, { id: { value: id } })
 }
 
+/** The operator's concerts, holding event-1 with or without a start time. */
+function concertsWith(startTime: boolean): AuthoredConcert[] {
+	return [
+		create(AuthoredConcertSchema, {
+			series: { id: { value: 'series-1' } },
+			events: [
+				{
+					id: { value: 'event-1' },
+					...(startTime
+						? { startTime: { value: timestampFromDate(new Date()) } }
+						: {}),
+				},
+			],
+		}),
+	]
+}
+
 function build(
 	client: MockClient,
 	router: MockRouter = { load: vi.fn().mockResolvedValue(undefined) },
+	concerts: { list: ReturnType<typeof vi.fn> } = {
+		list: vi.fn().mockResolvedValue(concertsWith(true)),
+	},
 ): InstanceType<typeof LotteryPhaseEditorRoute> {
 	const container = createTestContainer(
 		Registration.instance(ILotteryPhaseClient, client),
 		Registration.instance(IRouter, router),
+		Registration.instance(IConcertAuthoringClient, concerts),
 	)
 	container.register(LotteryPhaseEditorRoute)
 	const vm = container.get(LotteryPhaseEditorRoute)
 	vm.canLoad({ eventId: 'event-1' })
+	// The start-time check normally runs on attach.
+	vm.eventCheck = 'ok'
 	return vm
 }
 
@@ -101,7 +135,7 @@ describe('LotteryPhaseEditorRoute', () => {
 		expect(vm.saveError).toBe('')
 	})
 
-	it('surfaces FAILED_PRECONDITION (concert still a draft) copy', async () => {
+	it('surfaces FAILED_PRECONDITION (draft concert or no start time) copy', async () => {
 		const client = createMockClient({
 			configureLotteryPhase: vi
 				.fn()
@@ -111,7 +145,7 @@ describe('LotteryPhaseEditorRoute', () => {
 		fillValid(vm)
 		await vm.save()
 		expect(vm.phase).toBe('ready')
-		expect(vm.saveError).toContain('still a draft')
+		expect(vm.saveError).toContain('set its start time')
 	})
 
 	it('surfaces PERMISSION_DENIED copy', async () => {
@@ -150,5 +184,66 @@ describe('LotteryPhaseEditorRoute', () => {
 		await vm.save()
 		await vm.viewStatus()
 		expect(router.load).toHaveBeenCalledWith('../lottery/status/phase-9')
+	})
+
+	describe('an event goes on sale only with its start time', () => {
+		it('says the start time must be set first, links to the concert editor, and offers no save', async () => {
+			// @spec components/infrastructure/organizer/web/route/lottery-phase-editor "Start time not set"
+			const client = createMockClient()
+			const concerts = { list: vi.fn().mockResolvedValue(concertsWith(false)) }
+			const fixture = createFixture
+				.html(
+					'<lottery-phase-editor-route component.ref="route"></lottery-phase-editor-route>',
+				)
+				.deps(
+					LotteryPhaseEditorRoute,
+					Registration.instance(ILotteryPhaseClient, client),
+					Registration.instance(IRouter, { load: vi.fn() }),
+					Registration.instance(IConcertAuthoringClient, concerts),
+				)
+				.build()
+			await fixture.started
+			const vm = (
+				fixture.component as {
+					route: InstanceType<typeof LotteryPhaseEditorRoute>
+				}
+			).route
+			vm.canLoad({ eventId: 'event-1' })
+			await vm.checkEvent()
+
+			expect(vm.eventCheck).toBe('no-start-time')
+			const host = fixture.appHost
+			expect(host.textContent).toContain('Set the start time first')
+			const editorLink = Array.from(host.querySelectorAll('a')).find((a) =>
+				a.textContent?.includes('concert editor'),
+			)
+			// Without a router in the fixture, the interpolated `load` lands on the
+			// element's property; with the router it is the navigation target.
+			expect(
+				(editorLink as unknown as { load?: string } | undefined)?.load,
+			).toBe('../concerts/edit/series-1')
+			expect(host.querySelector('form')).toBeNull()
+			expect(host.querySelector('button[type="submit"]')).toBeNull()
+
+			fillValid(vm)
+			await vm.save()
+			expect(client.configureLotteryPhase).not.toHaveBeenCalled()
+		})
+
+		it('goes on sale as usual without an open time', async () => {
+			const vm = build(createMockClient(), undefined, {
+				list: vi.fn().mockResolvedValue(concertsWith(true)),
+			})
+			await vm.checkEvent()
+			expect(vm.eventCheck).toBe('ok')
+		})
+
+		it('leaves the decision to the server when the event cannot be read', async () => {
+			const vm = build(createMockClient(), undefined, {
+				list: vi.fn().mockRejectedValue(new Error('offline')),
+			})
+			await vm.checkEvent()
+			expect(vm.eventCheck).toBe('ok')
+		})
 	})
 })

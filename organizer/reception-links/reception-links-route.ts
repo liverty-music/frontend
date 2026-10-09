@@ -101,8 +101,9 @@ export class ReceptionLinksRoute {
 	public rows: LinkRow[] = []
 	public busy = false
 	public actionError = ''
-	/** The link whose confirmation is open, and what it confirms. */
-	public confirming: { id: string; action: ConfirmAction } | null = null
+	/** The link whose confirmation is open (empty when none), and what it confirms. */
+	public confirmingId = ''
+	public confirmAction: ConfirmAction = 'revoke'
 	/** The link just issued, whose URL is highlighted. */
 	public issuedId = ''
 	public copiedId = ''
@@ -202,22 +203,23 @@ export class ReceptionLinksRoute {
 
 	public askConfirm(row: LinkRow, action: ConfirmAction): void {
 		this.actionError = ''
-		this.confirming = { id: row.id, action }
+		this.confirmingId = row.id
+		this.confirmAction = action
 	}
 
 	public dismissConfirm(): void {
-		this.confirming = null
+		this.confirmingId = ''
 	}
 
 	public isConfirming(row: LinkRow, action: ConfirmAction): boolean {
-		return this.confirming?.id === row.id && this.confirming.action === action
+		return this.confirmingId === row.id && this.confirmAction === action
 	}
 
 	/** Revokes the confirmed link; for `reissue`, issues its replacement. */
 	public async confirm(): Promise<void> {
-		const pending = this.confirming
-		if (!pending || this.busy) return
-		this.confirming = null
+		const pending = { id: this.confirmingId, action: this.confirmAction }
+		if (!pending.id || this.busy) return
+		this.confirmingId = ''
 		await this.run(async () => {
 			this.upsert(await this.links.revoke(pending.id))
 			if (pending.action === 'reissue') {

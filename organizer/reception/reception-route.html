@@ -1,3 +1,5 @@
+<import from="./reception-verdict"></import>
+
 <main class="[ reception ] [ flow ]" lang="ja">
   <header class="reception-header">
     <p class="reception-brand">Liverty Music 受付</p>
@@ -103,42 +105,17 @@
       ></video>
 
       <output class="reception-verdict" aria-live="assertive">
-        <div
-          if.bind="verdict"
-          class="[ verdict ] [ flow ]"
-          data-tone.bind="verdict.tone"
+        <reception-verdict verdict.bind="verdict"></reception-verdict>
+        <button
+          if.bind="verdict.tone === 'undecided'"
+          type="button"
+          class="organizer-btn"
+          data-variant="primary"
+          disabled.bind="deciding"
+          click.trigger="retry()"
         >
-          <p class="verdict-headline">
-            <span>${verdict.headline}</span>
-            <span if.bind="verdict.admittedLabel" class="verdict-count"
-              >${verdict.admittedLabel}</span
-            >
-          </p>
-          <p if.bind="verdict.tone === 'partial'" class="verdict-partial">
-            ${verdict.admittedLabel}だけ入場させてください。
-          </p>
-          <ul if.bind="verdict.reasons.length" class="[ verdict-reasons ] [ flow ]">
-            <li repeat.for="r of verdict.reasons">
-              <p class="verdict-reason">
-                ${r.reason}<span if.bind="r.detail">（${r.detail}）</span
-                ><span if.bind="verdict.tone === 'partial' || r.count > 1">
-                  ${r.count}名</span
-                >
-              </p>
-              <p class="verdict-next">${r.nextStep}</p>
-            </li>
-          </ul>
-          <button
-            if.bind="verdict.tone === 'undecided'"
-            type="button"
-            class="organizer-btn"
-            data-variant="primary"
-            disabled.bind="deciding"
-            click.trigger="retry()"
-          >
-            もう一度送信する
-          </button>
-        </div>
+          もう一度送信する
+        </button>
         <p if.bind="deciding" class="reception-deciding">判定中…</p>
       </output>
 
