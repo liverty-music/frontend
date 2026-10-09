@@ -9,11 +9,12 @@ import { route } from '@aurelia/router'
  * the authoring routes, and the lottery configure/status routes are therefore
  * authentication- AND owner-role-gated;
  * `auth/callback` opts out of both via `data: { auth: false }` so the OIDC code
- * exchange can complete before a session exists, `reception` opts out
- * because venue staff open it from a reception link without an account, and `denied` opts out of the
+ * exchange can complete before a session exists, and `denied` opts out of the
  * role check via `data: { role: false }` so a signed-in non-owner sees an
  * explanation. The authoring routes deliberately DO NOT set `auth: false` — the
- * global hook guards them.
+ * global hook guards them. The reception screen venue staff open from a
+ * reception link is not a console route: it is its own app (`reception/`) on
+ * its own origin.
  *
  * The post-login landing is the concerts dashboard: an authenticated owner goes
  * straight to their own catalog. `welcome` is kept as a reachable route but is
@@ -64,18 +65,6 @@ import { route } from '@aurelia/router'
 			path: 'reception-links/:eventId',
 			component: import('../reception-links/reception-links-route'),
 			title: 'Reception links',
-		},
-		{
-			// The reception screen venue staff open from a reception link (task
-			// 5.2). Staff have no account: the route is exempt from the console
-			// sign-in and the owner-role check. The link token is in the URL
-			// fragment (`/reception#<token>`), never in the path, so it is never
-			// sent to a server. Every call is signed by the device the link is
-			// bound to.
-			path: 'reception',
-			component: import('../reception/reception-route'),
-			title: '受付',
-			data: { auth: false },
 		},
 		{
 			path: 'welcome',

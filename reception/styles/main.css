@@ -1,0 +1,152 @@
+/*
+ * Reception app stylesheet. Self-contained like the admin and organizer
+ * entries' stylesheets: the reception app shares no bundle with the console,
+ * so it declares only the design tokens and primitives the reception screen
+ * uses. Token values are kept in sync with `src/styles/tokens.css` (the
+ * organizer stylesheet carries the same values).
+ */
+@layer reset, tokens, global, composition, block;
+
+@layer reset {
+	:where(*, *::before, *::after) {
+		box-sizing: border-box;
+	}
+
+	:where(*) {
+		margin: 0;
+	}
+
+	:where(html, body) {
+		block-size: 100%;
+	}
+}
+
+@layer tokens {
+	:root {
+		--color-brand-primary: oklch(65% 0.28 350deg);
+		--color-brand-on: oklch(98.5% 0 0deg);
+		--color-surface-base: oklch(18% 0.04 275deg);
+		--color-surface-raised: oklch(24% 0.04 275deg);
+		--color-border: oklch(40% 0.03 275deg);
+		--color-text-primary: oklch(98.5% 0 0deg);
+		--color-text-secondary: oklch(82% 0.02 275deg);
+		--color-error: oklch(65% 0.2 25deg);
+		--space-2xs: 0.5rem;
+		--space-xs: 0.75rem;
+		--space-s: 1rem;
+		--space-m: 1.5rem;
+		--step--1: 0.833rem;
+		--step-0: 1rem;
+		--step-1: 1.2rem;
+		--step-3: 1.953rem;
+		--radius-s: 0.375rem;
+		--radius-m: 0.75rem;
+		--radius-round: 50%;
+		--font-body: "Poppins", system-ui, sans-serif;
+		--font-display: "Outfit", system-ui, sans-serif;
+		--leading-snug: 1.2;
+		--leading-relaxed: 1.5;
+	}
+}
+
+@layer global {
+	:where(body) {
+		font-family: var(--font-body);
+		font-size: var(--step-0);
+		line-height: var(--leading-relaxed);
+		color: var(--color-text-primary);
+
+		background: var(--color-surface-base);
+	}
+
+	:where(h1, h2, h3) {
+		font-family: var(--font-display);
+		line-height: var(--leading-snug);
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+}
+
+@layer composition {
+	/* Every Layout: vertical rhythm via the owl selector. No visual treatment. */
+	.flow > * + * {
+		margin-block-start: var(--flow-space, var(--space-s));
+	}
+
+	/* Every Layout: cluster — wrap items with consistent gap, no width math. */
+	.cluster {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--cluster-space, var(--space-s));
+		align-items: center;
+	}
+}
+
+/*
+ * App-wide primitives (button, status, error). Scoped to the document root so
+ * they qualify as CUBE blocks (block rules live inside an @scope).
+ */
+@layer block {
+	@scope (body) {
+		.reception-btn {
+			cursor: pointer;
+
+			display: inline-flex;
+			gap: var(--space-2xs);
+			align-items: center;
+			justify-content: center;
+
+			padding: var(--space-2xs) var(--space-s);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-s);
+
+			font: inherit;
+			font-weight: 600;
+			color: var(--color-text-primary);
+			text-decoration: none;
+
+			background: transparent;
+
+			&[data-variant="primary"] {
+				border-color: transparent;
+				color: var(--color-brand-on);
+				background: var(--color-brand-primary);
+			}
+
+			&[data-variant="ghost"] {
+				border-color: transparent;
+			}
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.6;
+			}
+		}
+
+		.reception-error {
+			font-size: var(--step--1);
+			color: var(--color-error);
+		}
+
+		.reception-status {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+			color: var(--color-text-secondary);
+		}
+
+		.reception-spinner {
+			inline-size: 1rem;
+			block-size: 1rem;
+			border: 2px solid var(--color-border);
+			border-block-start-color: var(--color-brand-primary);
+			border-radius: var(--radius-round);
+
+			animation: spin 0.8s linear infinite;
+		}
+	}
+}

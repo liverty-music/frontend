@@ -32,6 +32,7 @@ node_modules
 
 # Compiled files
 /dist
+/dist-reception
 /.nyc_output
 /coverage
 /test-results

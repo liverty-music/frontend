@@ -1,9 +1,9 @@
-.PHONY: lint lint-brand-vocabulary lint-boundaries lint-route-loading lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation
+.PHONY: lint lint-brand-vocabulary lint-boundaries lint-route-loading lint-no-style lint-no-class-ternary lint-no-data-interpolation lint-no-bind-ternary lint-no-div-popover lint-no-div-role-status lint-templates fix test check verify-bundle-isolation verify-reception-bundle
 
 ## lint: biome lint + format check + stylelint + typecheck + brand-vocabulary + import-boundaries + route-loading + e2e-coverage (matches CI)
 lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
-	npx biome lint src admin organizer shared test
-	npx biome format src admin organizer shared test
+	npx biome lint src admin organizer reception shared test
+	npx biome format src admin organizer reception shared test
 	npm run lint:css
 	# Invoke the project's own TypeScript compiler directly. `npx tsc` is
 	# ambiguous: `@aurelia/vite-plugin`'s `plugin-conventions` pulls a transitive
@@ -13,9 +13,9 @@ lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
 	# installed `typescript` package.
 	node ./node_modules/typescript/bin/tsc --noEmit
 
-## lint-boundaries: enforce src/ <-> admin/ <-> organizer/ isolation (only shared/ crosses)
+## lint-boundaries: enforce src/ <-> admin/ <-> organizer/ <-> reception/ isolation (only shared/ crosses)
 lint-boundaries:
-	npx depcruise src admin organizer shared test
+	npx depcruise src admin organizer reception shared test
 
 ## lint-brand-vocabulary: enforce entity.* i18n namespace parity and known-entity rules
 lint-brand-vocabulary:
@@ -81,4 +81,11 @@ verify-bundle-isolation:
 ## from CI artifacts, and a running dev server, none of which are
 ## deterministic in pre-commit. Run those locally on demand via
 ## `npx playwright test --project=<name>`.
-check: lint lint-templates test verify-bundle-isolation
+## verify-reception-bundle: build the reception app on its own (vite.reception.config.ts)
+## and assert dist-reception/ holds no OIDC client or console code; prints the
+## output size (OpenSpec `isolate-venue-reception`, design D4).
+verify-reception-bundle:
+	npm run build:reception
+	npm run verify:reception-bundle
+
+check: lint lint-templates test verify-bundle-isolation verify-reception-bundle

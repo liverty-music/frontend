@@ -11,19 +11,20 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import shellSource from '../../../organizer/organizer-shell/organizer-shell.ts?raw'
-import type { QrScannerFactory } from '../../../organizer/reception/reception-route'
+import mainSource from '../../../reception/main.ts?raw'
+import type { QrScannerFactory } from '../../../reception/reception-route/reception-route'
+import shellSource from '../../../reception/reception-shell/reception-shell.ts?raw'
 import { signAdmissionCode } from '../../../shared/lib/admission-code/admission-code'
 
 // Replace the RPC client module with a fresh token so the route binds to the
 // test double instead of building a real Connect transport.
 const IReceptionClient = DI.createInterface('IReceptionClient')
-vi.mock('../../../organizer/services/reception-client', () => ({
+vi.mock('../../../reception/services/reception-client', () => ({
 	IReceptionClient,
 }))
 
 const { ReceptionRoute, IQrScannerFactory } = await import(
-	'../../../organizer/reception/reception-route'
+	'../../../reception/reception-route/reception-route'
 )
 
 const TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG'
@@ -124,12 +125,14 @@ describe('ReceptionRoute', () => {
 			expect(client.open).toHaveBeenCalledWith(TOKEN, expect.any(AbortSignal))
 			expect(route.phase).toBe('ready')
 			expect(text()).toContain('受付1')
-			// The route is exempt from the console sign-in in the shell's table,
-			// and its path carries no token (the token is in the fragment).
+			// The reception app is the screen at the root of its own origin, with
+			// no sign-in at all, and its path carries no token (the token is in
+			// the fragment).
 			expect(shellSource).toMatch(
-				/path: 'reception',[\s\S]*?data: \{ auth: false \}/,
+				/path: '',\s*component: import\('\.\.\/reception-route\/reception-route'\)/,
 			)
-			expect(shellSource).not.toMatch(/path: 'reception\/:/)
+			expect(shellSource).not.toMatch(/path: '[^']*:/)
+			expect(mainSource).not.toMatch(/auth-service|IAuthService/)
 		})
 
 		it('says the link is in use on another device', async () => {

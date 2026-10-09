@@ -6,7 +6,7 @@ import type { DecodeReply, DecodeRequest } from './qr-decoder'
 /**
  * The ZXing WebAssembly decoder, off the main thread. The `.wasm` is served
  * from this app's own origin (bundled by Vite), never from the package's
- * default CDN, so it falls under the organizer CSP's `'self'` and
+ * default CDN, so it falls under the reception CSP's `'self'` and
  * `'wasm-unsafe-eval'`.
  */
 prepareZXingModule({

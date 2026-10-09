@@ -3,8 +3,11 @@ import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { decodeAdmissionCode } from '../../shared/lib/admission-code/admission-code'
+import {
+	formatJstDateTime,
+	receptionLinkLabel,
+} from '../../shared/lib/reception/jst-format'
 import { IReceptionClient } from '../services/reception-client'
-import { formatJstDateTime, receptionLinkLabel } from './jst-format'
 import { QrScanner } from './qr-scanner'
 import { toVerdict, undecidedVerdict, type Verdict } from './verdict'
 
@@ -50,7 +53,7 @@ const UNDECIDED_COOLDOWN_MS = 3_000
 
 /**
  * The reception screen venue staff open from a ReceptionLink in a browser tab,
- * without a sign-in or an install (the route sets `auth: false`). On first
+ * without a sign-in or an install (the reception app has no sign-in). On first
  * open this device creates its key pair and binds the link to it (Open); every
  * later call is signed by it. Inside the reception window staff tap to start
  * the rear camera; each QR code read is sent to Admit and the verdict is shown
@@ -92,7 +95,7 @@ export class ReceptionRoute {
 	}
 
 	/**
-	 * The link token travels in the URL fragment (`/reception#<token>`), which
+	 * The link token travels in the URL fragment (`/#<token>`), which
 	 * browsers never send to a server, so it stays out of request paths and
 	 * access logs.
 	 */

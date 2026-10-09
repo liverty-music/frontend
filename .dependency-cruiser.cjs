@@ -1,14 +1,18 @@
 /**
  * Import-boundary enforcement for the consumer (`src/`), admin (`admin/`),
- * organizer (`organizer/`), and the single shared surface (`shared/`). See
- * OpenSpec changes `add-admin-console` / `organizer-console`, design D2/D3 and
- * the "import boundary erosion" risk.
+ * organizer (`organizer/`), reception (`reception/`), and the single shared
+ * surface (`shared/`). See OpenSpec changes `add-admin-console` /
+ * `organizer-console`, design D2/D3 and the "import boundary erosion" risk,
+ * and `isolate-venue-reception`, design D4.
  *
  * Directional rules:
- *   - `src/`, `admin/`, `organizer/` are mutually isolated (no cross-imports)
- *   - all three MAY import `shared/`
- *   - `shared/` MUST NOT import `src/`, `admin/`, or `organizer/` (it stays a
- *     leaf)
+ *   - `src/`, `admin/`, `organizer/`, `reception/` are mutually isolated (no
+ *     cross-imports)
+ *   - all four MAY import `shared/`, except that `reception/` MUST NOT reach
+ *     `shared/services/auth-service` (the OIDC client), directly or through
+ *     another module
+ *   - `shared/` MUST NOT import `src/`, `admin/`, `organizer/` or
+ *     `reception/` (it stays a leaf)
  *
  * Wired into `make lint` and CI via `npm run lint:boundaries`. A cross-import
  * fails the build (exit code non-zero).
@@ -70,7 +74,33 @@ module.exports = {
 				'shared/ is the single cross-app import surface and must stay a leaf: it must not import src/, admin/, or organizer/.',
 			severity: 'error',
 			from: { path: '^shared/' },
+			to: { path: '^(src|admin|organizer|reception)/' },
+		},
+		// The reception app is served on its own origin and must never be able
+		// to touch console sign-in state (isolate-venue-reception, design D4).
+		{
+			name: 'reception-not-to-other-apps',
+			comment:
+				'Reception code (reception/) must not import the consumer (src/), admin (admin/) or organizer (organizer/) code. Cross-app code goes through shared/.',
+			severity: 'error',
+			from: { path: '^reception/' },
 			to: { path: '^(src|admin|organizer)/' },
+		},
+		{
+			name: 'reception-not-to-auth-service',
+			comment:
+				'Reception code (reception/) must not reach shared/services/auth-service (the OIDC client and console tokens), directly or transitively. The reception app has no sign-in.',
+			severity: 'error',
+			from: { path: '^reception/' },
+			to: { path: '^shared/services/auth-service', reachable: true },
+		},
+		{
+			name: 'other-apps-not-to-reception',
+			comment:
+				'Consumer, admin and organizer code must not import reception-only code (reception/); it ships in its own build and image.',
+			severity: 'error',
+			from: { path: '^(src|admin|organizer)/' },
+			to: { path: '^reception/' },
 		},
 		// Tests live under test/ (mirroring src/) and test/admin/ (admin-side).
 		// Enforce the same boundary there so erosion can't re-enter via the test
@@ -108,6 +138,22 @@ module.exports = {
 			from: { path: '^test/organizer/' },
 			to: { path: '^src/' },
 		},
+		{
+			name: 'reception-test-not-to-other-apps',
+			comment:
+				'Reception-side tests (test/reception/) must not import consumer, admin or organizer code.',
+			severity: 'error',
+			from: { path: '^test/reception/' },
+			to: { path: '^(src|admin|organizer)/' },
+		},
+		{
+			name: 'other-tests-not-to-reception',
+			comment:
+				'Tests outside test/reception/ must not import reception-only code (reception/).',
+			severity: 'error',
+			from: { path: '^test/', pathNot: '^test/reception/' },
+			to: { path: '^reception/' },
+		},
 	],
 	options: {
 		doNotFollow: { path: 'node_modules' },
@@ -116,7 +162,7 @@ module.exports = {
 		enhancedResolveOptions: {
 			extensions: ['.ts', '.js', '.mjs', '.cjs', '.html'],
 		},
-		// Only report on first-party source under the four roots + tests.
-		includeOnly: '^(src|admin|organizer|shared|test)/',
+		// Only report on first-party source under the five roots + tests.
+		includeOnly: '^(src|admin|organizer|reception|shared|test)/',
 	},
 }

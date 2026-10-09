@@ -4,13 +4,13 @@ import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
-	formatJstDateTime,
-	formatJstTime,
-} from '../../../organizer/reception/jst-format'
-import {
 	toVerdict,
 	undecidedVerdict,
-} from '../../../organizer/reception/verdict'
+} from '../../../reception/reception-route/verdict'
+import {
+	formatJstDateTime,
+	formatJstTime,
+} from '../../../shared/lib/reception/jst-format'
 
 describe('toVerdict', () => {
 	it('has a reason and a next step for every whole-scan reason', () => {

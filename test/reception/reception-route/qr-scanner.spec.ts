@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { QrDecoder } from '../../../organizer/reception/decoder/qr-decoder'
+import type { QrDecoder } from '../../../reception/reception-route/decoder/qr-decoder'
 import {
 	CAMERA_CONSTRAINTS,
 	QrScanner,
 	type ScannerDeps,
-} from '../../../organizer/reception/qr-scanner'
+} from '../../../reception/reception-route/qr-scanner'
 
 function fakeStream() {
 	const track = { stop: vi.fn() }

@@ -5,12 +5,12 @@ import type {
 import { ReceptionService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/reception/v1/reception_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
-import { IAppConfig } from '../../shared/config/app-config'
+import { IReceptionConfig } from '../config/reception-config'
 import {
 	base64urlNoPad,
 	buildReceptionSignatureInput,
 	RECEPTION_SIGN_ALGORITHM,
-} from '../reception/call-signature'
+} from '../reception-route/call-signature'
 import { IReceptionKeyStore } from './reception-key-store'
 import { createReceptionTransport } from './reception-transport'
 
@@ -48,7 +48,7 @@ export class ReceptionClient {
 		ReceptionService,
 		createReceptionTransport(
 			resolve(ILogger).scopeTo('ReceptionTransport'),
-			resolve(IAppConfig),
+			resolve(IReceptionConfig),
 		),
 	)
 

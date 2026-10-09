@@ -3,7 +3,10 @@ import { ReceptionLinkStatus } from '@buf/liverty-music_schema.bufbuild_es/liver
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
-import { formatJstDateTime, receptionLinkLabel } from '../reception/jst-format'
+import {
+	formatJstDateTime,
+	receptionLinkLabel,
+} from '../../shared/lib/reception/jst-format'
 import { IConcertAuthoringClient } from '../services/concert-authoring-client'
 import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
 import {

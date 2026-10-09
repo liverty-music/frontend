@@ -5,7 +5,7 @@ import {
 	type DecodeReply,
 	type DecodeRequest,
 	type WorkerLike,
-} from '../../../../organizer/reception/decoder/qr-decoder'
+} from '../../../../reception/reception-route/decoder/qr-decoder'
 
 function frame(width = 4, height = 2): ImageData {
 	return {

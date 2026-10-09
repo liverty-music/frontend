@@ -188,6 +188,7 @@ export default defineConfig({
 				'src/main.ts',
 				'admin/main.ts',
 				'organizer/main.ts',
+				'reception/main.ts',
 				// Canvas components (require complex setup, deferred)
 				'src/components/dna-orb/**',
 				// Scripts directory

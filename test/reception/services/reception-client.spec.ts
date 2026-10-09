@@ -5,29 +5,33 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/reception/v1/reception_service_pb.js'
 import { toBinary } from '@bufbuild/protobuf'
 import { createRouterTransport } from '@connectrpc/connect'
-import { Registration } from 'aurelia'
+import { DI, ILogger, Registration } from 'aurelia'
 import { IDBFactory } from 'fake-indexeddb'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+	IReceptionConfig,
+	type ReceptionConfig,
+} from '../../../reception/config/reception-config'
 import {
 	base64urlNoPad,
 	buildReceptionSignatureInput,
 	RECEPTION_SIGN_ALGORITHM,
-} from '../../../organizer/reception/call-signature'
+} from '../../../reception/reception-route/call-signature'
 import {
 	IndexedDbReceptionKeyStore,
 	IReceptionKeyStore,
-} from '../../../organizer/services/reception-key-store'
-import { createTestContainer } from '../../helpers/create-container'
+} from '../../../reception/services/reception-key-store'
+import { createMockLogger } from '../../helpers/mock-logger'
 
-vi.mock('../../../organizer/services/reception-transport', () => ({
+vi.mock('../../../reception/services/reception-transport', () => ({
 	createReceptionTransport: vi.fn(),
 }))
 
 const { createReceptionTransport } = await import(
-	'../../../organizer/services/reception-transport'
+	'../../../reception/services/reception-transport'
 )
 const { ReceptionClient } = await import(
-	'../../../organizer/services/reception-client'
+	'../../../reception/services/reception-client'
 )
 
 const TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG'
@@ -102,7 +106,15 @@ describe('ReceptionClient', () => {
 	})
 
 	function build(store: IndexedDbReceptionKeyStore) {
-		const container = createTestContainer(
+		const config: ReceptionConfig = {
+			environment: 'prod',
+			apiBaseUrl: 'https://api.reception.example',
+			logLevel: 'info',
+		}
+		const container = DI.createContainer()
+		container.register(
+			Registration.instance(ILogger, createMockLogger()),
+			Registration.instance(IReceptionConfig, config),
 			Registration.instance(IReceptionKeyStore, store),
 		)
 		container.register(Registration.singleton(ReceptionClient, ReceptionClient))
