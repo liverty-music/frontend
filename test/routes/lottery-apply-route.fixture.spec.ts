@@ -53,24 +53,27 @@ describe('LotteryApplyRoute phone field (fixture)', () => {
 	it.each([
 		['ja', ja.lotteryApply.phoneInvalid],
 		['en', en.lotteryApply.phoneInvalid],
-	] as const)('shows the %s invalid-number message and disables continue', async (lng, message) => {
-		const { fixture, vm } = await render(lng)
+	] as const)(
+		'shows the %s invalid-number message and disables continue',
+		async (lng, message) => {
+			const { fixture, vm } = await render(lng)
 
-		vm.phoneNumber = '12345'
-		await tasksSettled()
+			vm.phoneNumber = '12345'
+			await tasksSettled()
 
-		const host = fixture.appHost
-		expect(phoneError(host)?.textContent).toBe(message)
-		expect(phoneInput(host).getAttribute('aria-invalid')).toBe('true')
-		expect(phoneInput(host).getAttribute('aria-describedby')).toBe(
-			'lottery-apply-phone-error',
-		)
-		const proceed = host.querySelector(
-			'.lottery-apply-actions .lottery-apply-btn-primary',
-		) as HTMLButtonElement
-		expect(proceed.disabled).toBe(true)
-		await fixture.stop(true)
-	})
+			const host = fixture.appHost
+			expect(phoneError(host)?.textContent).toBe(message)
+			expect(phoneInput(host).getAttribute('aria-invalid')).toBe('true')
+			expect(phoneInput(host).getAttribute('aria-describedby')).toBe(
+				'lottery-apply-phone-error',
+			)
+			const proceed = host.querySelector(
+				'.lottery-apply-actions .lottery-apply-btn-primary',
+			) as HTMLButtonElement
+			expect(proceed.disabled).toBe(true)
+			await fixture.stop(true)
+		},
+	)
 
 	it('hides the message for an empty or convertible number', async () => {
 		const { fixture, vm } = await render('ja')

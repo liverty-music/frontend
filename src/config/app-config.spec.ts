@@ -167,11 +167,14 @@ describe('app-config', () => {
 			['NaN', Number.NaN],
 			['infinite', Number.POSITIVE_INFINITY],
 			['null', null],
-		])('falls back to 10s (without failing bootstrap) when rpcTimeoutMs is %s', async (_label, value) => {
-			mockFetchJson({ ...validConfig, rpcTimeoutMs: value })
-			const result = await loadAppConfig()
-			expect(result.rpcTimeoutMs).toBe(10_000)
-		})
+		])(
+			'falls back to 10s (without failing bootstrap) when rpcTimeoutMs is %s',
+			async (_label, value) => {
+				mockFetchJson({ ...validConfig, rpcTimeoutMs: value })
+				const result = await loadAppConfig()
+				expect(result.rpcTimeoutMs).toBe(10_000)
+			},
+		)
 	})
 
 	describe('getAppConfig', () => {

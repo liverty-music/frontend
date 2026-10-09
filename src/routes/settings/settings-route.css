@@ -83,6 +83,8 @@
 			display: grid;
 			grid-column: 1 / -1;
 			grid-template-columns: auto 1fr auto;
+
+			/* biome-ignore lint/suspicious/noDuplicateProperties: the declaration above is the fallback for browsers without subgrid */
 			grid-template-columns: subgrid;
 			column-gap: var(--space-xs);
 			align-items: center;
@@ -169,7 +171,8 @@
 		   contain <hr>, and SR announced them as separator noise). A hairline on
 		   every row after the first, except a sub-row (`.settings-list-subitem`,
 		   e.g. the volume slider) which reads as a continuation of the row above. */
-		.settings-list-item + .settings-list-item:not(.settings-list-subitem)
+		.settings-list-item
+			+ .settings-list-item:not(.settings-list-subitem)
 			> .settings-row {
 			border-block-start: 1px solid
 				color-mix(in oklch, var(--color-white) 5%, transparent);

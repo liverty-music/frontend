@@ -69,12 +69,10 @@ describe('hypeTo', () => {
 })
 
 describe('hypeFrom + hypeTo round-trip', () => {
-	it.each([
-		'watch',
-		'home',
-		'nearby',
-		'away',
-	] as const)('round-trips %s', (hype) => {
-		expect(hypeFrom(hypeTo(hype))).toBe(hype)
-	})
+	it.each(['watch', 'home', 'nearby', 'away'] as const)(
+		'round-trips %s',
+		(hype) => {
+			expect(hypeFrom(hypeTo(hype))).toBe(hype)
+		},
+	)
 })
