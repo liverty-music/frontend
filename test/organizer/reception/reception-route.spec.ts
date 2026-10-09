@@ -13,6 +13,7 @@ import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import shellSource from '../../../organizer/organizer-shell/organizer-shell.ts?raw'
 import type { QrScannerFactory } from '../../../organizer/reception/reception-route'
+import { signAdmissionCode } from '../../../shared/lib/admission-code/admission-code'
 
 // Replace the RPC client module with a fresh token so the route binds to the
 // test double instead of building a real Connect transport.
@@ -26,6 +27,11 @@ const { ReceptionRoute, IQrScannerFactory } = await import(
 )
 
 const TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG'
+const USER = '019a0000-0000-7000-8000-000000000001'
+const EVENT = '019a0000-0000-7000-8000-0000000000e1'
+const TICKET_1 = '019a0000-0000-7000-8000-000000000101'
+const TICKET_2 = '019a0000-0000-7000-8000-000000000102'
+const TICKET_3 = '019a0000-0000-7000-8000-000000000103'
 const CAPABILITY = 'components/infrastructure/organizer/web/route/reception'
 
 /** 2026-11-20 15:00 JST and 2026-11-21 04:00 JST. */
@@ -84,8 +90,9 @@ async function build(client: MockClient) {
 	const route = (
 		fixture.component as { route: InstanceType<typeof ReceptionRoute> }
 	).route
-	// The route parameter arrives through canLoad, before attach in the app.
-	route.canLoad({ token: TOKEN })
+	// The token arrives in the URL fragment; canLoad reads it before attach.
+	window.location.hash = `#${TOKEN}`
+	route.canLoad({})
 	await route.open()
 	return {
 		fixture,
@@ -117,10 +124,12 @@ describe('ReceptionRoute', () => {
 			expect(client.open).toHaveBeenCalledWith(TOKEN, expect.any(AbortSignal))
 			expect(route.phase).toBe('ready')
 			expect(text()).toContain('受付1')
-			// The route is exempt from the console sign-in in the shell's table.
+			// The route is exempt from the console sign-in in the shell's table,
+			// and its path carries no token (the token is in the fragment).
 			expect(shellSource).toMatch(
-				/path: 'reception\/:token',[\s\S]*?data: \{ auth: false \}/,
+				/path: 'reception',[\s\S]*?data: \{ auth: false \}/,
 			)
+			expect(shellSource).not.toMatch(/path: 'reception\/:/)
 		})
 
 		it('says the link is in use on another device', async () => {
@@ -153,14 +162,43 @@ describe('ReceptionRoute', () => {
 
 			expect(route.phase).toBe('unusable')
 			expect(text()).toContain('この受付リンクはもう使えません')
+			expect(text()).toContain('時計')
 			expect(text()).toContain('新しい受付リンク')
+		})
+
+		it('asks to check the phone clock when a call is refused as not allowed', async () => {
+			// @spec components/infrastructure/organizer/web/route/reception "Phone clock far off"
+			// The server's time; the phone runs 2 minutes slow.
+			const serverNow = new Date('2026-11-20T07:00:00Z')
+			vi.useFakeTimers({ toFake: ['Date'] })
+			vi.setSystemTime(new Date(serverNow.getTime() - 120_000))
+			// A server that, like ReceptionService, refuses a call whose sign time
+			// is more than 30 s before or 15 s after its own clock.
+			const client: MockClient = {
+				open: vi.fn(async () => {
+					const signTime = Math.floor(Date.now() / 1000)
+					const skew = signTime - serverNow.getTime() / 1000
+					if (skew < -30 || skew > 15) {
+						throw new ConnectError('not proven', Code.PermissionDenied)
+					}
+					return openResponse(true)
+				}),
+				admit: vi.fn(),
+			}
+			const { route, text } = await build(client)
+
+			expect(route.phase).toBe('unusable')
+			expect(text()).toContain('この受付リンクはもう使えません')
+			expect(text()).toContain('時計')
+			expect(text()).not.toContain('スキャンを開始')
 		})
 
 		it('treats a malformed token as an unusable link without calling the server', async () => {
 			const client: MockClient = { open: vi.fn(), admit: vi.fn() }
 			const { route } = await build(client)
 			client.open.mockClear()
-			route.canLoad({ token: 'short' })
+			window.location.hash = '#short'
+			route.canLoad({})
 			await route.open()
 			expect(route.phase).toBe('unusable')
 			expect(client.open).not.toHaveBeenCalled()
@@ -206,16 +244,38 @@ describe('ReceptionRoute', () => {
 			expect(scanners).toHaveLength(0)
 		})
 
-		it('says reception has ended after the window', async () => {
+		it('says when reception ended after the window and does not start the camera', async () => {
+			// @spec components/infrastructure/organizer/web/route/reception "Reception over"
 			vi.useFakeTimers({ toFake: ['Date'] })
+			// 2026-11-21 05:00 JST; the window closed at 04:00 JST.
 			vi.setSystemTime(new Date('2026-11-20T20:00:00Z'))
 			const client: MockClient = {
 				open: vi.fn().mockResolvedValue(openResponse(false)),
 				admit: vi.fn(),
 			}
-			const { route, text } = await build(client)
+			const { route, scanners, text } = await build(client)
 			expect(route.windowState).toBe('after')
-			expect(text()).toContain('2026-11-21 04:00 に終了しました')
+			expect(text()).toContain('受付は 2026-11-21 04:00 に終了しました')
+			expect(text()).not.toContain('スキャンを開始')
+			await route.startScanning()
+			expect(scanners).toHaveLength(0)
+		})
+
+		it('says reception times are not set when the event has no window', async () => {
+			const client: MockClient = {
+				open: vi.fn().mockResolvedValue(
+					create(OpenResponseSchema, {
+						receptionLink: { number: { value: 1 } },
+						insideWindow: false,
+					}),
+				),
+				admit: vi.fn(),
+			}
+			const { route, scanners, text } = await build(client)
+			expect(route.windowState).toBe('none')
+			expect(text()).toContain('受付時間が決まっていません')
+			await route.startScanning()
+			expect(scanners).toHaveLength(0)
 		})
 
 		it('starts the camera only on tap and scans what it reads', async () => {
@@ -380,18 +440,52 @@ describe('ReceptionRoute', () => {
 			expect(text()).toContain('1名')
 		})
 
-		it('does not send the same group again while it is still in view', async () => {
+		it('keeps OK and sends no further code of that fan for 20 seconds', async () => {
+			// @spec components/infrastructure/organizer/web/route/reception "Code still in view after OK"
+			vi.useFakeTimers({ toFake: ['Date'] })
+			const t0 = new Date('2026-11-20T09:00:00Z')
+			vi.setSystemTime(t0)
+			// The fan's phone renews its code every 15 s: same group, new text.
+			const { privateKey } = await crypto.subtle.generateKey(
+				{ name: 'ECDSA', namedCurve: 'P-256' },
+				false,
+				['sign', 'verify'],
+			)
+			const code = (signTime: number) =>
+				signAdmissionCode(privateKey, {
+					userId: USER,
+					eventId: EVENT,
+					ticketIds: [TICKET_1, TICKET_2, TICKET_3],
+					signTime,
+				})
+			const first = await code(t0.getTime() / 1000)
+			const renewed = await code(t0.getTime() / 1000 + 15)
+			const afterward = await code(t0.getTime() / 1000 + 30)
+			expect(renewed).not.toBe(first)
+
 			const client: MockClient = {
 				open: vi.fn().mockResolvedValue(openResponse(true)),
 				admit: vi
 					.fn()
-					.mockResolvedValue(admitResponse({ admittedTicketCount: 1 })),
+					.mockResolvedValue(admitResponse({ admittedTicketCount: 3 })),
 			}
-			const { route, scanners } = await build(client)
+			const { route, scanners, text } = await build(client)
 			await route.startScanning()
-			await scanners[0].onText('SAME')
-			await scanners[0].onText('SAME')
+			await scanners[0].onText(first)
+			expect(route.verdict?.tone).toBe('ok')
+
+			vi.setSystemTime(new Date(t0.getTime() + 15_000))
+			await scanners[0].onText(first)
+			await scanners[0].onText(renewed)
 			expect(client.admit).toHaveBeenCalledTimes(1)
+			expect(route.verdict?.tone).toBe('ok')
+			expect(text()).toContain('3名')
+			expect(text()).not.toContain('NG')
+
+			// After 20 seconds the same fan's code is sent again.
+			vi.setSystemTime(new Date(t0.getTime() + 20_001))
+			await scanners[0].onText(afterward)
+			expect(client.admit).toHaveBeenCalledTimes(2)
 		})
 	})
 
@@ -406,17 +500,23 @@ describe('ReceptionRoute', () => {
 					.mockRejectedValueOnce(new TypeError('Failed to fetch'))
 					.mockResolvedValue(admitResponse({ admittedTicketCount: 1 })),
 			}
+			vi.useFakeTimers({ toFake: ['Date'] })
+			const t0 = new Date('2026-11-20T09:00:00Z')
+			vi.setSystemTime(t0)
 			const { route, scanners, text } = await build(client)
 			await route.startScanning()
 			await scanners[0].onText('CODE')
 
+			// While the code stays in view, it is retried by itself at most every 3 s.
+			await scanners[0].onText('CODE')
+			expect(client.admit).toHaveBeenCalledTimes(1)
+			vi.setSystemTime(new Date(t0.getTime() + 3_000))
+			await scanners[0].onText('CODE')
+			expect(client.admit).toHaveBeenCalledTimes(2)
+
 			expect(route.verdict?.tone).toBe('undecided')
 			expect(text()).toContain('判定できませんでした')
 			expect(text()).toContain('もう一度送信する')
-			expect(text()).not.toContain('OK')
-
-			await route.retry()
-			expect(route.verdict?.tone).toBe('undecided')
 			expect(text()).not.toContain('OK')
 
 			await route.retry()

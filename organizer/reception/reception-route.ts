@@ -1,4 +1,4 @@
-import type { Params } from '@aurelia/router'
+import type { Params, RouteNode } from '@aurelia/router'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -11,7 +11,9 @@ import { toVerdict, undecidedVerdict, type Verdict } from './verdict'
 /**
  * - `opening`: Open is in flight.
  * - `ready`: the link is bound to this device.
- * - `unusable`: unknown or revoked link (the server does not tell them apart).
+ * - `unusable`: refused as not allowed — an unknown or revoked link, or a call
+ *   not proven, which a phone clock far off also causes (the server does not
+ *   tell them apart).
  * - `other-device`: the link is bound to another device.
  * - `throttled`: too many unknown links were tried from here.
  * - `unreachable`: Open could not reach the server.
@@ -89,8 +91,15 @@ export class ReceptionRoute {
 		if (document.visibilityState === 'hidden') this.stopScanning()
 	}
 
-	public canLoad(params: Params): boolean {
-		this.linkToken = params.token ?? ''
+	/**
+	 * The link token travels in the URL fragment (`/reception#<token>`), which
+	 * browsers never send to a server, so it stays out of request paths and
+	 * access logs.
+	 */
+	public canLoad(_params: Params, next?: RouteNode): boolean {
+		this.linkToken = tokenFromFragment(
+			window.location.hash || next?.fragment || '',
+		)
 		return true
 	}
 
@@ -229,8 +238,19 @@ export class ReceptionRoute {
 		// Not decided (no connection, timeout, server failure): never OK.
 		this.verdict = undecidedVerdict()
 		this.undecidedText = text
-		this.recent.set(text, Date.now() + UNDECIDED_COOLDOWN_MS)
+		// Retried by itself while the code stays in view, at most every 3 s
+		// (also across the codes the fan's phone renews meanwhile).
+		const until = Date.now() + UNDECIDED_COOLDOWN_MS
+		this.recent.set(text, until)
+		const group = groupKey(text)
+		if (group) this.recent.set(group, until)
 	}
+}
+
+/** The token from a URL fragment such as `#<token>`. */
+export function tokenFromFragment(fragment: string): string {
+	// The token alphabet is base64url, which needs no percent-decoding.
+	return fragment.replace(/^#/, '')
 }
 
 function phaseForOpenError(err: unknown): ReceptionPhase {

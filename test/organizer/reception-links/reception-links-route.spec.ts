@@ -162,8 +162,8 @@ describe('ReceptionLinksRoute', () => {
 			fixture.appHost.querySelectorAll<HTMLInputElement>('.link-card input'),
 		).map((i) => i.value)
 		expect(urls).toEqual([
-			`${ORIGIN}/reception/${tokenOf(1)}`,
-			`${ORIGIN}/reception/${tokenOf(2)}`,
+			`${ORIGIN}/reception#${tokenOf(1)}`,
+			`${ORIGIN}/reception#${tokenOf(2)}`,
 		])
 		expect(
 			fixture.appHost.querySelectorAll('.link-card button').length,
@@ -177,7 +177,7 @@ describe('ReceptionLinksRoute', () => {
 			configurable: true,
 		})
 		await route.copy(route.rows[0])
-		expect(writeText).toHaveBeenCalledWith(`${ORIGIN}/reception/${tokenOf(1)}`)
+		expect(writeText).toHaveBeenCalledWith(`${ORIGIN}/reception#${tokenOf(1)}`)
 		expect(route.copiedId).toBe('link-1')
 	})
 
@@ -195,7 +195,7 @@ describe('ReceptionLinksRoute', () => {
 		expect(first).toContain('受付1')
 		expect(first).toContain('使用中')
 		expect(first).toContain('14:10')
-		expect(first).not.toContain('/reception/')
+		expect(first).not.toContain('/reception#')
 		expect(
 			fixture.appHost.querySelectorAll('.link-card')[0].querySelector('input'),
 		).toBeNull()
@@ -234,7 +234,7 @@ describe('ReceptionLinksRoute', () => {
 		expect(first).toContain('取り消し済み')
 		expect(third).toContain('受付3')
 		expect(third).toContain('未使用')
-		expect(route.rows[2].url).toBe(`${ORIGIN}/reception/${tokenOf(3)}`)
+		expect(route.rows[2].url).toBe(`${ORIGIN}/reception#${tokenOf(3)}`)
 		expect(route.issuedId).toBe('link-3')
 	})
 
@@ -312,7 +312,7 @@ describe('ReceptionLinksRoute', () => {
 
 	it('builds the reception URL on the console origin', () => {
 		expect(receptionUrl('https://organizer.example', 'abc')).toBe(
-			'https://organizer.example/reception/abc',
+			'https://organizer.example/reception#abc',
 		)
 	})
 })

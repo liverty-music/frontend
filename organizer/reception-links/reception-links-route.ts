@@ -50,9 +50,12 @@ const STATUS_KEYS: Record<ReceptionLinkStatus, LinkRow['statusKey']> = {
 	[ReceptionLinkStatus.REVOKED]: 'revoked',
 }
 
-/** The reception screen URL for a link token, on this console's own origin. */
+/**
+ * The reception screen URL for a link token, on this console's own origin. The
+ * token is in the fragment, so it never reaches a web server or its logs.
+ */
 export function receptionUrl(origin: string, token: string): string {
-	return `${origin}/reception/${token}`
+	return `${origin}/reception#${token}`
 }
 
 function toRow(link: ReceptionLink, origin: string): LinkRow {
