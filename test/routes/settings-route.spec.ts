@@ -382,16 +382,15 @@ describe('SettingsRoute', () => {
 		// ABSOLUTE path. A relative instruction or a `load`/`href` attribute
 		// resolves against `/settings` (→ `/settings/legal/terms`), which has no
 		// route and fails. See SettingsRoute.openLegal.
-		it.each([
-			'/legal/terms',
-			'/legal/privacy',
-			'/legal/licenses',
-		])('navigates to %s via the root router', async (path) => {
-			await sut.openLegal(path)
+		it.each(['/legal/terms', '/legal/privacy', '/legal/licenses'])(
+			'navigates to %s via the root router',
+			async (path) => {
+				await sut.openLegal(path)
 
-			expect(mockRouter.load).toHaveBeenCalledWith(path)
-			expect(path.startsWith('/legal/')).toBe(true)
-		})
+				expect(mockRouter.load).toHaveBeenCalledWith(path)
+				expect(path.startsWith('/legal/')).toBe(true)
+			},
+		)
 	})
 
 	describe('guest mode', () => {

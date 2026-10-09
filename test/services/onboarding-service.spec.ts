@@ -56,36 +56,33 @@ describe('OnboardingService', () => {
 	})
 
 	describe('legacy onboardingStep migration', () => {
-		it.each([
-			'completed',
-			'7',
-		])('migrates completed marker %s to completed (isOnboarding=false)', (legacy) => {
-			localStorage.setItem(KEY_LEGACY_STEP, legacy)
+		it.each(['completed', '7'])(
+			'migrates completed marker %s to completed (isOnboarding=false)',
+			(legacy) => {
+				localStorage.setItem(KEY_LEGACY_STEP, legacy)
 
-			const sut = createService()
+				const sut = createService()
 
-			expect(sut.isCompleted).toBe(true)
-			expect(sut.isOnboarding).toBe(false)
-			expect(localStorage.getItem(KEY_COMPLETE)).toBe('true')
-			expect(localStorage.getItem(KEY_LEGACY_STEP)).toBeNull()
-		})
+				expect(sut.isCompleted).toBe(true)
+				expect(sut.isOnboarding).toBe(false)
+				expect(localStorage.getItem(KEY_COMPLETE)).toBe('true')
+				expect(localStorage.getItem(KEY_LEGACY_STEP)).toBeNull()
+			},
+		)
 
-		it.each([
-			'discovery',
-			'my-artists',
-			'detail',
-			'lp',
-			'dashboard',
-		])('migrates non-completed value %s to still-onboarding (isOnboarding=true)', (legacy) => {
-			localStorage.setItem(KEY_LEGACY_STEP, legacy)
+		it.each(['discovery', 'my-artists', 'detail', 'lp', 'dashboard'])(
+			'migrates non-completed value %s to still-onboarding (isOnboarding=true)',
+			(legacy) => {
+				localStorage.setItem(KEY_LEGACY_STEP, legacy)
 
-			const sut = createService()
+				const sut = createService()
 
-			expect(sut.isOnboarding).toBe(true)
-			expect(sut.isCompleted).toBe(false)
-			expect(localStorage.getItem(KEY_COMPLETE)).toBe('false')
-			expect(localStorage.getItem(KEY_LEGACY_STEP)).toBeNull()
-		})
+				expect(sut.isOnboarding).toBe(true)
+				expect(sut.isCompleted).toBe(false)
+				expect(localStorage.getItem(KEY_COMPLETE)).toBe('false')
+				expect(localStorage.getItem(KEY_LEGACY_STEP)).toBeNull()
+			},
+		)
 
 		it('runs at most once (legacy key deleted after migration)', () => {
 			localStorage.setItem(KEY_LEGACY_STEP, 'completed')

@@ -52,15 +52,14 @@ describe('validateLotteryPhaseForm — window bounds', () => {
 		).toBe(true)
 	})
 
-	it.each([
-		MIN_WINDOW_DAYS,
-		7,
-		MAX_WINDOW_DAYS,
-	])('accepts a %s-day window (within 1–14)', (days) => {
-		const errors = validateLotteryPhaseForm(validModel(days))
-		expect(errors.window).toBeUndefined()
-		expect(isFormValid(errors)).toBe(true)
-	})
+	it.each([MIN_WINDOW_DAYS, 7, MAX_WINDOW_DAYS])(
+		'accepts a %s-day window (within 1–14)',
+		(days) => {
+			const errors = validateLotteryPhaseForm(validModel(days))
+			expect(errors.window).toBeUndefined()
+			expect(isFormValid(errors)).toBe(true)
+		},
+	)
 
 	it('rejects a window shorter than 1 day', () => {
 		const errors = validateLotteryPhaseForm(validModel(0.5))
@@ -91,43 +90,34 @@ describe('validateLotteryPhaseForm — window bounds', () => {
 })
 
 describe('validateLotteryPhaseForm — ticket fields', () => {
-	it.each([
-		'',
-		'0',
-		'-5',
-		'3.5',
-		'abc',
-	])('rejects a non-positive-integer capacity (%s)', (value) => {
-		const model = validModel()
-		model.ticketCapacity = value
-		expect(validateLotteryPhaseForm(model).ticketCapacity).toBeDefined()
-	})
+	it.each(['', '0', '-5', '3.5', 'abc'])(
+		'rejects a non-positive-integer capacity (%s)',
+		(value) => {
+			const model = validModel()
+			model.ticketCapacity = value
+			expect(validateLotteryPhaseForm(model).ticketCapacity).toBeDefined()
+		},
+	)
 
-	it.each([
-		'',
-		'0',
-		'-1',
-		'2.2',
-		'x',
-	])('rejects a non-positive-integer max-per-application (%s)', (value) => {
-		const model = validModel()
-		model.maxTicketsPerApplication = value
-		expect(
-			validateLotteryPhaseForm(model).maxTicketsPerApplication,
-		).toBeDefined()
-	})
+	it.each(['', '0', '-1', '2.2', 'x'])(
+		'rejects a non-positive-integer max-per-application (%s)',
+		(value) => {
+			const model = validModel()
+			model.maxTicketsPerApplication = value
+			expect(
+				validateLotteryPhaseForm(model).maxTicketsPerApplication,
+			).toBeDefined()
+		},
+	)
 
-	it.each([
-		'',
-		'0',
-		'-100',
-		'12.5',
-		'free',
-	])('rejects a non-positive-integer price (%s)', (value) => {
-		const model = validModel()
-		model.ticketPrice = value
-		expect(validateLotteryPhaseForm(model).ticketPrice).toBeDefined()
-	})
+	it.each(['', '0', '-100', '12.5', 'free'])(
+		'rejects a non-positive-integer price (%s)',
+		(value) => {
+			const model = validModel()
+			model.ticketPrice = value
+			expect(validateLotteryPhaseForm(model).ticketPrice).toBeDefined()
+		},
+	)
 
 	it('rejects max-per-application exceeding capacity', () => {
 		const model = validModel()

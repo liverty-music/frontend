@@ -460,13 +460,11 @@ describe('resolveAuthReturnTo', () => {
 		expect(resolveAuthReturnTo(user)).toBe('/events/ev-1')
 	})
 
-	it.each([
-		'//evil.example.com',
-		'https://evil.example.com',
-		'/\\evil',
-		'',
-	])('rejects %s', (returnTo) => {
-		const user = { state: { returnTo } } as unknown as User
-		expect(resolveAuthReturnTo(user)).toBeUndefined()
-	})
+	it.each(['//evil.example.com', 'https://evil.example.com', '/\\evil', ''])(
+		'rejects %s',
+		(returnTo) => {
+			const user = { state: { returnTo } } as unknown as User
+			expect(resolveAuthReturnTo(user)).toBeUndefined()
+		},
+	)
 })

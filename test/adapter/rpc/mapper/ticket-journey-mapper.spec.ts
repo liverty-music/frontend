@@ -53,13 +53,10 @@ describe('journeyStatusTo', () => {
 })
 
 describe('journeyStatusFrom + journeyStatusTo round-trip', () => {
-	it.each([
-		'tracking',
-		'applied',
-		'lost',
-		'unpaid',
-		'paid',
-	] as const)('round-trips %s', (status) => {
-		expect(journeyStatusFrom(journeyStatusTo(status))).toBe(status)
-	})
+	it.each(['tracking', 'applied', 'lost', 'unpaid', 'paid'] as const)(
+		'round-trips %s',
+		(status) => {
+			expect(journeyStatusFrom(journeyStatusTo(status))).toBe(status)
+		},
+	)
 })

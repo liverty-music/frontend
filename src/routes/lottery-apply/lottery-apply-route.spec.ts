@@ -140,21 +140,21 @@ describe('LotteryApplyRoute', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/route/lottery-apply "Number fits neither form"
-		it.each([
-			'12345',
-			'9012345678',
-		])('keeps continue disabled and flags %j as invalid', async (phone) => {
-			const sut = makeSut({
-				step: 'identity',
-				fullName: '山田太郎',
-				phoneNumber: phone,
-			})
-			expect(sut.isIdentityValid).toBe(false)
-			expect(sut.isPhoneInvalid).toBe(true)
-			await sut.toPayment()
-			expect(mockLottery.createAuthorization).not.toHaveBeenCalled()
-			expect(sut.step).toBe('identity')
-		})
+		it.each(['12345', '9012345678'])(
+			'keeps continue disabled and flags %j as invalid',
+			async (phone) => {
+				const sut = makeSut({
+					step: 'identity',
+					fullName: '山田太郎',
+					phoneNumber: phone,
+				})
+				expect(sut.isIdentityValid).toBe(false)
+				expect(sut.isPhoneInvalid).toBe(true)
+				await sut.toPayment()
+				expect(mockLottery.createAuthorization).not.toHaveBeenCalled()
+				expect(sut.step).toBe('identity')
+			},
+		)
 
 		it('does not flag an empty phone number as invalid', () => {
 			expect(
@@ -162,15 +162,14 @@ describe('LotteryApplyRoute', () => {
 			).toBe(false)
 		})
 
-		it.each([
-			'090-1234-5678',
-			'03 1234 5678',
-			'+81 90 1234 5678',
-		])('accepts %j as a well-formed identity', (phone) => {
-			const sut = makeSut({ fullName: '山田太郎', phoneNumber: phone })
-			expect(sut.isIdentityValid).toBe(true)
-			expect(sut.isPhoneInvalid).toBe(false)
-		})
+		it.each(['090-1234-5678', '03 1234 5678', '+81 90 1234 5678'])(
+			'accepts %j as a well-formed identity',
+			(phone) => {
+				const sut = makeSut({ fullName: '山田太郎', phoneNumber: phone })
+				expect(sut.isIdentityValid).toBe(true)
+				expect(sut.isPhoneInvalid).toBe(false)
+			},
+		)
 
 		it('does not create an authorization when identity is invalid', async () => {
 			const sut = makeSut({

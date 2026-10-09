@@ -131,14 +131,13 @@ describe('BottomNavBar (fixture, app route table)', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Route outside every tab"
-	it.each([
-		'orders/ord-1',
-		'legal/terms',
-		'about',
-	])('highlights no tab on %s', async (path) => {
-		await go('settings')
-		await go(path)
-		expect(tabs()).toHaveLength(5)
-		expect(activeTabs()).toEqual([])
-	})
+	it.each(['orders/ord-1', 'legal/terms', 'about'])(
+		'highlights no tab on %s',
+		async (path) => {
+			await go('settings')
+			await go(path)
+			expect(tabs()).toHaveLength(5)
+			expect(activeTabs()).toEqual([])
+		},
+	)
 })

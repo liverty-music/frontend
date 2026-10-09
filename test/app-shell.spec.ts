@@ -175,15 +175,15 @@ describe('app-shell', () => {
 	})
 
 	describe('chrome', () => {
-		it.each([
-			'welcome',
-			'auth/callback',
-		])('hides the header and nav bar on %s (data.chrome: false)', async (path) => {
-			await go('discovery')
-			await go(path)
-			expect(host().querySelector(BOTTOM_NAV)).toBeNull()
-			expect(host().querySelector(PAGE_HEADER)).toBeNull()
-		})
+		it.each(['welcome', 'auth/callback'])(
+			'hides the header and nav bar on %s (data.chrome: false)',
+			async (path) => {
+				await go('discovery')
+				await go(path)
+				expect(host().querySelector(BOTTOM_NAV)).toBeNull()
+				expect(host().querySelector(PAGE_HEADER)).toBeNull()
+			},
+		)
 
 		it('shows the nav bar again when leaving a chrome-less route', async () => {
 			await go('welcome')
@@ -222,23 +222,26 @@ describe('app-shell', () => {
 					myArtistsGuard.fail = true
 				},
 			],
-		])('keeps the previous identity when the navigation is %s', async (_, block) => {
-			await go('settings')
-			block()
+		])(
+			'keeps the previous identity when the navigation is %s',
+			async (_, block) => {
+				await go('settings')
+				block()
 
-			// No write to the header or the tab highlight may happen while the
-			// failing navigation runs.
-			expect(await identityWritesDuring(() => go('my-artists'))).toBe(false)
+				// No write to the header or the tab highlight may happen while the
+				// failing navigation runs.
+				expect(await identityWritesDuring(() => go('my-artists'))).toBe(false)
 
-			expect(displayedRoute()).toBe('settings-route')
-			expect(headerTitle()).toBe('nav.settings')
-			expect(activeTabs()).toEqual(['settings'])
+				expect(displayedRoute()).toBe('settings-route')
+				expect(headerTitle()).toBe('nav.settings')
+				expect(activeTabs()).toEqual(['settings'])
 
-			// Control: the same observation does see a navigation that succeeds.
-			myArtistsGuard.allow = true
-			myArtistsGuard.fail = false
-			expect(await identityWritesDuring(() => go('my-artists'))).toBe(true)
-		})
+				// Control: the same observation does see a navigation that succeeds.
+				myArtistsGuard.allow = true
+				myArtistsGuard.fail = false
+				expect(await identityWritesDuring(() => go('my-artists'))).toBe(true)
+			},
+		)
 
 		// @spec components/infrastructure/fan/web/global/page-header "Redirects and the fallback route are reflected"
 		it('reflects the not-found fallback, not the requested path', async () => {
@@ -261,15 +264,15 @@ describe('app-shell', () => {
 		})
 
 		// @spec components/infrastructure/fan/web/global/page-header "Routes without a title show no header"
-		it.each([
-			'legal/terms',
-			'about',
-		])('renders no header on %s', async (path) => {
-			await go('settings')
-			await go(path)
-			expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
-			expect(host().querySelector(PAGE_HEADER)).toBeNull()
-		})
+		it.each(['legal/terms', 'about'])(
+			'renders no header on %s',
+			async (path) => {
+				await go('settings')
+				await go(path)
+				expect(host().querySelector(BOTTOM_NAV)).not.toBeNull()
+				expect(host().querySelector(PAGE_HEADER)).toBeNull()
+			},
+		)
 	})
 
 	describe('single shell-hosted page header', () => {
