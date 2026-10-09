@@ -157,6 +157,10 @@ module.exports = {
 	],
 	options: {
 		doNotFollow: { path: 'node_modules' },
+		// dependency-cruiser's TypeScript parser supports TypeScript < 7 only;
+		// with typescript 7 it silently cruises 0 modules. swc parses the
+		// sources independently of the installed TypeScript.
+		parser: 'swc',
 		tsConfig: { fileName: 'tsconfig.json' },
 		tsPreCompilationDeps: true,
 		enhancedResolveOptions: {
