@@ -771,12 +771,213 @@ jobs:
             "${PROD_AR_IMAGE}:${GITHUB_SHA}"
 
   # =====================================================================
+  # Reception app image (OpenSpec change `isolate-venue-reception`, design D4).
+  # =====================================================================
+  # A FOURTH artifact, structurally identical to `build-and-push-organizer`, for
+  # the reception app served at `reception.<domain>`: image `reception-web` in
+  # the SAME `frontend` AR repo, built from `Dockerfile.reception`. Unlike the
+  # other three, it comes from its own build (`vite.reception.config.ts`, output
+  # `dist-reception/`), not the shared multi-entry `npm run build`, so the image
+  # holds no console, consumer or OIDC code. Independently releasable: its own
+  # build-vs-inherit decision over the pushed range, scoped to
+  # reception-relevant files, and its own release retag.
+  build-and-push-reception:
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'release' && github.event.action == 'published')
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event_name == 'release' && 'prod' || 'dev' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      REGION: ${{ vars.REGION }}
+      PROJECT_ID: ${{ vars.PROJECT_ID }}
+      REPOSITORY: ${{ github.event.repository.name }}
+      # `<audience>-<tier>` naming (unify-workload-naming): the reception web
+      # workload is `reception-web`; CI builds + retags `frontend/reception-web`.
+      IMAGE: reception-web
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+      SERVICE_ACCOUNT: ${{ vars.SERVICE_ACCOUNT }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify release commit is on main
+        if: github.event_name == 'release'
+        run: |
+          git fetch origin main --depth=100
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::Release tag at $(git rev-parse HEAD) is not reachable from origin/main ($(git rev-parse origin/main)). Refusing to push prod images."
+            exit 1
+          fi
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      # Reception build-relevant glob: the reception app sources, the shared/
+      # modules it imports from source, its own build config and serving layer,
+      # and the dependency manifests. `public/` is included for the site icons
+      # the reception build copies; `scripts/` for its post-build check. The
+      # main `vite.config.ts` and src/ / admin/ / organizer/ never affect it.
+      - name: Decide build vs inherit (push path)
+        if: github.event_name == 'push'
+        id: decide
+        env:
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+          FORCED: ${{ github.event.forced }}
+          CREATED: ${{ github.event.created }}
+        run: |
+          set -uo pipefail
+          if [ "${FORCED}" = "true" ] || [ "${CREATED}" = "true" ] || [ -z "${BEFORE}" ] || [ "${BEFORE}" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "Force-push / branch-creation / unresolvable parent -> build."
+            echo "mode=build" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --name-only "${BEFORE}" "${SHA}")
+          echo "Changed files in ${BEFORE}..${SHA}:"
+          echo "${changed}"
+          if echo "${changed}" | grep -qE '^reception/|^shared/|^public/|^scripts/|^reception\.html$|^package\.json$|^package-lock\.json$|^vite\.reception\.config\.ts$|^Dockerfile\.reception$|^Caddyfile\.reception$|^\.github/workflows/push-image\.yaml$'; then
+            echo "Reception-relevant change detected -> build."
+            echo "mode=build" >> "$GITHUB_OUTPUT"
+          else
+            echo "No reception-relevant change -> inherit parent digest."
+            echo "mode=inherit" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set Image URI (dev path)
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
+        run: echo "IMAGE_URI=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}" >> $GITHUB_ENV
+
+      - name: Set Image Tags (dev path)
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
+        run: echo "IMAGE_TAGS=${{ env.IMAGE_URI }}:latest,${{ env.IMAGE_URI }}:${{ github.sha }},${{ env.IMAGE_URI }}:main" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+
+      - name: Build and Push Reception Docker Image
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'build'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: Dockerfile.reception
+          push: true
+          tags: ${{ env.IMAGE_TAGS }}
+          cache-from: type=gha,scope=reception
+          cache-to: type=gha,mode=max,scope=reception
+
+      - name: Install crane
+        if: github.event_name == 'release' || (github.event_name == 'push' && steps.decide.outputs.mode == 'inherit')
+        uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
+
+      - name: Inherit parent dev AR digest (push path, no rebuild)
+        if: github.event_name == 'push' && steps.decide.outputs.mode == 'inherit'
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          stderr_file=$(mktemp)
+          digest=""
+          for attempt in $(seq 1 3); do
+            rc=0
+            digest=$(gcloud artifacts docker images describe "${DEV_AR_IMAGE}:${BEFORE}" \
+              --format='value(image_summary.digest)' 2>"$stderr_file") || rc=$?
+            if [ "$rc" -eq 0 ] && [ -n "$digest" ]; then break; fi
+            body=$(cat "$stderr_file")
+            if echo "$body" | grep -qE 'PERMISSION_DENIED|Permission .* denied|HTTPError 403|403 Forbidden|UNAUTHENTICATED|401'; then
+              echo "::error::Auth failure resolving ${DEV_AR_IMAGE}:${BEFORE} (reception dev AR read). stderr: ${body}"
+              rm -f "$stderr_file"; exit 1
+            fi
+            digest=""
+            if [ "$attempt" -lt 3 ]; then
+              echo "Attempt ${attempt}/3: ${DEV_AR_IMAGE}:${BEFORE} not resolvable yet; retrying in 20s..."
+              sleep 20
+            fi
+          done
+          rm -f "$stderr_file"
+          if [ -z "${digest}" ]; then
+            echo "::error::Cannot resolve parent reception dev image ${DEV_AR_IMAGE}:${BEFORE}. The inherit chain is broken — push a reception-relevant change to force a fresh build."
+            exit 1
+          fi
+          echo "Inheriting reception digest ${digest} onto :${SHA}, :main, :latest."
+          crane copy "${DEV_AR_IMAGE}@${digest}" "${DEV_AR_IMAGE}:${SHA}"
+          crane copy "${DEV_AR_IMAGE}@${digest}" "${DEV_AR_IMAGE}:main"
+          crane copy "${DEV_AR_IMAGE}@${digest}" "${DEV_AR_IMAGE}:latest"
+
+      - name: Resolve dev AR digest for github.sha
+        if: github.event_name == 'release'
+        id: resolve_digest
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+        run: |
+          for attempt in $(seq 1 6); do
+            digest=$(gcloud artifacts docker images describe \
+              "${DEV_AR_IMAGE}:${GITHUB_SHA}" \
+              --format='value(image_summary.digest)' \
+              2>/dev/null || echo "")
+            if [ -n "$digest" ]; then
+              echo "Resolved reception digest on attempt ${attempt}/6: $digest"
+              echo "digest=$digest" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ "$attempt" -lt 6 ]; then
+              echo "Attempt ${attempt}/6: reception dev AR :sha not yet available; waiting 60s..."
+              sleep 60
+            fi
+          done
+          echo "::error::reception dev AR tag :${GITHUB_SHA} not found after 6 attempts (~5 min). Re-run the push-path run for this SHA."
+          exit 1
+
+      - name: Promote reception dev AR digest to prod AR (semver tag)
+        if: github.event_name == 'release'
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          PROD_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          DIGEST: ${{ steps.resolve_digest.outputs.digest }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          crane copy \
+            "${DEV_AR_IMAGE}@${DIGEST}" \
+            "${PROD_AR_IMAGE}:${RELEASE_TAG}"
+
+      - name: Promote reception dev AR digest to prod AR (commit SHA tag)
+        if: github.event_name == 'release'
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          PROD_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          DIGEST: ${{ steps.resolve_digest.outputs.digest }}
+        run: |
+          crane copy \
+            "${DEV_AR_IMAGE}@${DIGEST}" \
+            "${PROD_AR_IMAGE}:${GITHUB_SHA}"
+
+  # =====================================================================
   # Release path: trigger the automated prod kustomize pin-bump.
   # =====================================================================
-  # After all three frontend bundle retags succeed, emit a SINGLE
+  # After all four frontend bundle retags succeed, emit a SINGLE
   # `repository_dispatch` to cloud-provisioning, which runs `bump-prod-pin.yml`
-  # to rewrite all three frontend prod pins (`fan-web`, `admin-console-web`,
-  # `organizer-console-web` newTags) + the consumer version label in ONE atomic
+  # to rewrite the frontend prod pins (`fan-web`, `admin-console-web`,
+  # `organizer-console-web` newTags; `reception-web` once bump-prod-pin.yml
+  # maps it) + the consumer version label in ONE atomic
   # commit and push to its own main (ArgoCD then auto-syncs). One dispatch per
   # release keeps the pin atomic and — because a concurrency group only holds
   # one running + one pending run — avoids the pending-eviction that the former
@@ -791,10 +992,16 @@ jobs:
   # gate + the Release-as-human-gate (see bump-prod-pin design D9).
   dispatch-prod-pin:
     # All-or-nothing: the default needs-success gate skips this job unless all
-    # three bundle retags succeeded, so an incomplete frontend release is never
+    # four bundle retags succeeded, so an incomplete frontend release is never
     # partially pinned. (No `always()` — a failed bundle retag must suppress the
     # whole dispatch.)
-    needs: [build-and-push, build-and-push-admin, build-and-push-organizer]
+    needs:
+      [
+        build-and-push,
+        build-and-push-admin,
+        build-and-push-organizer,
+        build-and-push-reception,
+      ]
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
     # `prod` environment so the dispatch-credential secrets resolve. On a
