@@ -92,7 +92,7 @@
       <p>公演の開始時刻が未設定です。主催者に確認してください。</p>
     </section>
 
-    <section if.bind="canScan" class="[ reception-scan ] [ flow ]">
+    <section if.bind="canScan" class="[ reception-scan ] [ flow ]" aria-label="スキャン">
       <p class="reception-window">受付時間: ${windowOpenLabel} 〜 ${windowCloseLabel}</p>
 
       <video

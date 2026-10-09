@@ -32,7 +32,7 @@
   </section>
 
   <template if.bind="phase === 'ready'">
-    <section class="[ reception-links-about ] [ flow ]">
+    <section class="[ reception-links-about ] [ flow ]" aria-label="受付時間と使い方">
       <p if.bind="windowOpen">
         受付時間: <strong>${windowOpen} 〜 ${windowClose}</strong>
       </p>
