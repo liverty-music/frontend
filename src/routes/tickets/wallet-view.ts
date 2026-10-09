@@ -1,7 +1,7 @@
 import type { Ticket } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import { TicketStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
-import { MAX_TICKETS_PER_CODE } from '../../lib/admission-code/admission-code'
+import { MAX_TICKETS_PER_CODE } from '../../../shared/lib/admission-code/admission-code'
 import { type EventPageEvent, todayInJapan } from '../event/event-page'
 
 /**

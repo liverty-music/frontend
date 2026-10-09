@@ -1,4 +1,4 @@
-import { CODE_ROTATION_MS } from '../../lib/admission-code/admission-code'
+import { CODE_ROTATION_MS } from '../../../shared/lib/admission-code/admission-code'
 
 /** Wait before trying again when signing failed. */
 const RETRY_MS = 1000

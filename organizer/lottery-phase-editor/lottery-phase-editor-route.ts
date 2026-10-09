@@ -2,6 +2,7 @@ import type { Params } from '@aurelia/router'
 import { IRouter } from '@aurelia/router'
 import type { LotterySalesPhase } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
 import { ILogger, resolve } from 'aurelia'
+import { IConcertAuthoringClient } from '../services/concert-authoring-client'
 import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
 import { ILotteryPhaseClient } from '../services/lottery-phase-client'
 import {
@@ -17,6 +18,14 @@ import {
 
 /** Coarse lifecycle phase for the screen. */
 type ScreenPhase = 'ready' | 'done'
+
+/**
+ * Whether the event can go on sale: `checking` while the event is read,
+ * `no-start-time` when it has no start time (no form, no save), `ok`
+ * otherwise. When the event cannot be read the form stays available and the
+ * server's own check decides.
+ */
+export type EventCheck = 'checking' | 'ok' | 'no-start-time'
 
 /**
  * The lottery-phase configuration screen (roadmap ④, task 5.1). Attaches a new
@@ -50,12 +59,17 @@ export class LotteryPhaseEditorRoute {
 	public saving = false
 	public saveError = ''
 
+	public eventCheck: EventCheck = 'checking'
+	/** The event's series, for the link to the concert editor. */
+	public seriesId = ''
+
 	/** The created phase, populated on a successful configure. */
 	public createdPhase: LotterySalesPhase | undefined
 
 	private abort: AbortController | null = null
 
 	private readonly client = resolve(ILotteryPhaseClient)
+	private readonly concerts = resolve(IConcertAuthoringClient)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('LotteryPhaseEditorRoute')
 
@@ -70,6 +84,32 @@ export class LotteryPhaseEditorRoute {
 
 	public attached(): void {
 		this.revalidate()
+		void this.checkEvent()
+	}
+
+	/**
+	 * Reads the event from the operator's concerts: an event without a start
+	 * time cannot go on sale, so the screen says so, links to the concert
+	 * editor and offers no save. The open time stays optional.
+	 */
+	public async checkEvent(): Promise<void> {
+		this.eventCheck = 'checking'
+		try {
+			const concerts = await this.concerts.list()
+			const concert = concerts.find((c) =>
+				c.events.some((e) => e.id?.value === this.eventId),
+			)
+			const event = concert?.events.find((e) => e.id?.value === this.eventId)
+			this.seriesId = concert?.series?.id?.value ?? ''
+			this.eventCheck =
+				event && !event.startTime?.value ? 'no-start-time' : 'ok'
+		} catch (err) {
+			this.logger.warn(
+				'Reading the event failed; the server will check it',
+				err,
+			)
+			this.eventCheck = 'ok'
+		}
 	}
 
 	public detaching(): void {
@@ -89,7 +129,7 @@ export class LotteryPhaseEditorRoute {
 	}
 
 	public async save(): Promise<void> {
-		if (this.saving) return
+		if (this.saving || this.eventCheck !== 'ok') return
 		this.submitted = true
 		this.revalidate()
 		if (!this.formValid) return
@@ -113,7 +153,7 @@ export class LotteryPhaseEditorRoute {
 				'Failed to configure the lottery phase.',
 				{
 					[Code.FailedPrecondition]:
-						'This concert is still a draft. Publish it before putting an event on sale.',
+						'This event cannot go on sale yet: publish its concert and set its start time first.',
 					[Code.PermissionDenied]:
 						'You are not allowed to configure a lottery phase on this event.',
 				},

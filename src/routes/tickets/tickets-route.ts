@@ -1,10 +1,10 @@
 import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve } from 'aurelia'
+import { MAX_TICKETS_PER_CODE } from '../../../shared/lib/admission-code/admission-code'
+import { admissionQrDataUrl } from '../../../shared/lib/admission-code/qr-svg'
 import { IScreenWakeLock } from '../../adapter/browser/screen-wake-lock'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
 import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
-import { MAX_TICKETS_PER_CODE } from '../../lib/admission-code/admission-code'
-import { admissionQrDataUrl } from '../../lib/admission-code/qr-svg'
 import {
 	type DeviceReadiness,
 	ITicketWallet,

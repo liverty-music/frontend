@@ -1,0 +1,24 @@
+<div
+  if.bind="verdict"
+  class="[ verdict ] [ flow ]"
+  data-tone.bind="verdict.tone"
+>
+  <p class="verdict-headline">
+    <span>${verdict.headline}</span>
+    <span if.bind="verdict.admittedLabel">${verdict.admittedLabel}</span>
+  </p>
+  <p if.bind="verdict.tone === 'partial'" class="verdict-emphasis">
+    ${verdict.admittedLabel}だけ入場させてください。
+  </p>
+  <ul if.bind="verdict.reasons.length" class="[ verdict-reasons ] [ flow ]">
+    <li repeat.for="r of verdict.reasons">
+      <p class="verdict-emphasis">
+        ${r.reason}<span if.bind="r.detail">（${r.detail}）</span
+        ><span if.bind="verdict.tone === 'partial' || r.count > 1">
+          ${r.count}名</span
+        >
+      </p>
+      <p>${r.nextStep}</p>
+    </li>
+  </ul>
+</div>

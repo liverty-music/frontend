@@ -14,6 +14,10 @@ import { IEventAggregator, Registration } from 'aurelia'
 import { IDBFactory } from 'fake-indexeddb'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+	decodeAdmissionCode,
+	SIGN_ALGORITHM,
+} from '../../shared/lib/admission-code/admission-code'
+import {
 	ITicketRpcClient,
 	TicketRpcClient,
 } from '../../src/adapter/rpc/client/ticket-client'
@@ -25,10 +29,6 @@ import {
 	IndexedDbWalletStorage,
 	IWalletStorage,
 } from '../../src/adapter/storage/wallet-storage'
-import {
-	decodeAdmissionCode,
-	SIGN_ALGORITHM,
-} from '../../src/lib/admission-code/admission-code'
 import { IAuthService } from '../../src/services/auth-service'
 import { SignedOut } from '../../src/services/events/signed-out'
 import { TicketWallet } from '../../src/services/ticket-wallet'

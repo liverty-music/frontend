@@ -1,0 +1,85 @@
+@layer block {
+	@scope (reception-links-route) {
+		.reception-links {
+			--flow-space: var(--space-m);
+
+			max-inline-size: 48rem;
+			margin-inline: auto;
+			padding: var(--space-l) var(--space-m);
+		}
+
+		.reception-links-header {
+			--flow-space: var(--space-2xs);
+		}
+
+		.reception-links-back,
+		.reception-links-event,
+		.reception-links-empty {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.reception-links-title {
+			font-size: var(--step-3);
+		}
+
+		.reception-links-about {
+			--flow-space: var(--space-2xs);
+
+			font-size: var(--step--1);
+		}
+
+		.reception-links-block {
+			padding: var(--space-s);
+			border: 1px solid var(--color-error);
+			border-radius: var(--radius-m);
+		}
+
+		.reception-links-list {
+			display: grid;
+			gap: var(--space-s);
+			padding: 0;
+			list-style: none;
+		}
+
+		.link-card {
+			--flow-space: var(--space-xs);
+
+			padding: var(--space-s);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-m);
+			background: var(--color-surface-raised);
+
+			&[data-new="true"] {
+				border-color: var(--color-brand-primary);
+			}
+
+			&[data-status="revoked"] {
+				opacity: 0.7;
+			}
+		}
+
+		.link-card-head {
+			align-items: baseline;
+		}
+
+		.link-card-label {
+			font-size: var(--step-2);
+		}
+
+		.link-card-status {
+			font-weight: 700;
+		}
+
+		.link-card-time {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.link-card-confirm {
+			padding: var(--space-s);
+			border: 1px solid var(--color-error);
+			border-radius: var(--radius-m);
+		}
+	}
+}

@@ -41,6 +41,15 @@ export interface ConcertListRow {
 		readonly eventId: string
 		readonly label: string
 	}[]
+	/**
+	 * Per-event entry points to the reception-links screen. Present for every
+	 * event of a series that is not cancelled; the screen itself explains why
+	 * a draft event or an event without a start time cannot have links yet.
+	 */
+	readonly receptionEvents: readonly {
+		readonly eventId: string
+		readonly label: string
+	}[]
 	/** True while a publish/cancel action for this row is in flight. */
 	busy: boolean
 	actionError: string
@@ -99,6 +108,23 @@ function toLotteryEvents(
 		.filter((entry) => entry.eventId !== '')
 }
 
+/** Builds the per-event reception-links entry points of a series. */
+function toReceptionEvents(
+	concert: AuthoredConcert,
+	publishState: PublishState,
+): ConcertListRow['receptionEvents'] {
+	if (publishState === PublishState.CANCELLED) return []
+	const multi = concert.events.length > 1
+	return concert.events
+		.map((event, index) => ({
+			eventId: event.id?.value ?? '',
+			label: multi
+				? `Reception links · ${formatEventDate(concert, index)}`
+				: 'Reception links',
+		}))
+		.filter((entry) => entry.eventId !== '')
+}
+
 function toRow(concert: AuthoredConcert): ConcertListRow {
 	const series = concert.series
 	const publishState = series?.publishState ?? PublishState.UNSPECIFIED
@@ -115,6 +141,7 @@ function toRow(concert: AuthoredConcert): ConcertListRow {
 		canPublish: publishState === PublishState.DRAFT,
 		canCancel: publishState !== PublishState.CANCELLED,
 		lotteryEvents: toLotteryEvents(concert, publishState),
+		receptionEvents: toReceptionEvents(concert, publishState),
 		busy: false,
 		actionError: '',
 	}
