@@ -137,14 +137,16 @@ Authenticated E2E setup (test user, `npm run auth:capture:password`, expired sto
 
 ## npm `overrides` — exit conditions, not neglect
 
-`package.json` carries two `overrides`. Both are live security pins, and both
-are resolved by REMOVAL rather than by upgrade — so neither is a stale entry
-somebody forgot, and neither should be "fixed" by bumping it.
+`package.json` carries three `overrides`. The first two are live security pins,
+and both are resolved by REMOVAL rather than by upgrade — so neither is a stale
+entry somebody forgot, and neither should be "fixed" by bumping it. The third,
+`playwright`, is a version binding and is the one entry that moves on upgrade.
 
 | entry | why | exit condition |
 |---|---|---|
 | `fflate: "0.4.9"` | `posthog-js` caps `fflate` at `^0.4.8`; `0.4.9` is the last release of that line | `posthog-js` widens its range → delete the override |
 | `dompurify: "^3.4.13"` | same driver: forces the advisory-free version under `posthog-js` | `posthog-js` widens its range → delete the override |
+| `playwright: "1.63.0"` | `@vitest/browser-playwright` peers `playwright: *`, so a lock regeneration resolves the newest release while the CI container ships only the browsers of `@playwright/test`'s version | none — it always equals `@playwright/test`; Renovate moves both in the `playwright` group |
 
 The exact pin on `fflate` is not a mistake. There is nothing newer in the `0.4.x`
 line to move to, and moving off it would break the `posthog-js` constraint.

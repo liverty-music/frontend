@@ -45,7 +45,8 @@
     {
       "description": "NEVER automerge @playwright/test. A version bump changes Chromium's rendering and therefore invalidates every committed toMatchScreenshot baseline, which Renovate cannot regenerate — CI goes red and stays red until a human regenerates them inside the pinned container. The package version, the CI container tag and the tag in the documented regeneration command must also move together; see the custom manager binding them.",
       "matchPackageNames": [
-        "@playwright/test"
+        "@playwright/test",
+        "playwright"
       ],
       "automerge": false,
       "groupName": "playwright"
