@@ -4,6 +4,7 @@ import {
 	emptyFormModel,
 	isFormValid,
 	type LotteryPhaseFormModel,
+	MAX_TICKETS_PER_APPLICATION,
 	MAX_WINDOW_DAYS,
 	MIN_WINDOW_DAYS,
 	parseDateTimeLocal,
@@ -127,6 +128,30 @@ describe('validateLotteryPhaseForm — ticket fields', () => {
 		expect(errors.maxTicketsPerApplication).toBeDefined()
 		expect(isFormValid(errors)).toBe(false)
 	})
+
+	it('rejects max-per-application above one entry code (11)', () => {
+		// @spec components/entity/lottery-sales-phase "Group larger than one entry code"
+		const model = validModel()
+		model.ticketCapacity = '100'
+		model.maxTicketsPerApplication = '11'
+		const errors = validateLotteryPhaseForm(model)
+		expect(errors.maxTicketsPerApplication).toContain(
+			String(MAX_TICKETS_PER_APPLICATION),
+		)
+		expect(isFormValid(errors)).toBe(false)
+	})
+
+	it.each(['1', '10'])(
+		'accepts max-per-application at the bound (%s)',
+		(value) => {
+			const model = validModel()
+			model.ticketCapacity = '100'
+			model.maxTicketsPerApplication = value
+			const errors = validateLotteryPhaseForm(model)
+			expect(errors.maxTicketsPerApplication).toBeUndefined()
+			expect(isFormValid(errors)).toBe(true)
+		},
+	)
 
 	it('accepts max-per-application equal to capacity', () => {
 		const model = validModel()

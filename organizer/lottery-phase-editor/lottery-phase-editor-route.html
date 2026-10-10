@@ -105,10 +105,11 @@
       </p>
 
       <label class="organizer-field">
-        Max tickets per application
+        Max tickets per application (1–10)
         <input
           type="number"
           min="1"
+          max="10"
           step="1"
           class="organizer-input"
           value.bind="model.maxTicketsPerApplication"

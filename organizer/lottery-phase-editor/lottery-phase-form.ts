@@ -10,6 +10,12 @@ export const MIN_WINDOW_DAYS = 1
  * window (mirrors the backend + schema constraint).
  */
 export const MAX_WINDOW_DAYS = 14
+/**
+ * Maximum accepted tickets per application (inclusive). One entry QR code
+ * presents at most 10 tickets and a companion group enters together with one
+ * code (mirrors the backend + schema constraint).
+ */
+export const MAX_TICKETS_PER_APPLICATION = 10
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
@@ -27,7 +33,7 @@ export interface LotteryPhaseFormModel {
 	closeTime: string
 	/** Positive integer (ticket capacity), as a raw input string. */
 	ticketCapacity: string
-	/** Positive integer, ≤ capacity, as a raw input string. */
+	/** Positive integer, ≤ capacity and ≤ {@link MAX_TICKETS_PER_APPLICATION}, as a raw input string. */
 	maxTicketsPerApplication: string
 	/** Positive whole-yen JPY price, as a raw input string. */
 	ticketPrice: string
@@ -105,7 +111,8 @@ export function windowDurationDays(open: Date, close: Date): number {
  * inline errors before a round-trip: open/close required and parseable; the
  * window must be {@link MIN_WINDOW_DAYS}–{@link MAX_WINDOW_DAYS} days long with
  * close strictly after open; capacity, max-per-application, and price each a
- * positive integer; and max must not exceed capacity.
+ * positive integer; and max must not exceed {@link MAX_TICKETS_PER_APPLICATION}
+ * or the capacity.
  */
 export function validateLotteryPhaseForm(
 	model: LotteryPhaseFormModel,
@@ -138,6 +145,8 @@ export function validateLotteryPhaseForm(
 	if (max === null) {
 		errors.maxTicketsPerApplication =
 			'Max tickets per application must be a positive whole number.'
+	} else if (max > MAX_TICKETS_PER_APPLICATION) {
+		errors.maxTicketsPerApplication = `Max tickets per application cannot exceed ${MAX_TICKETS_PER_APPLICATION} (one entry QR code covers at most ${MAX_TICKETS_PER_APPLICATION} tickets).`
 	} else if (capacity !== null && max > capacity) {
 		errors.maxTicketsPerApplication =
 			'Max tickets per application cannot exceed the ticket capacity.'
