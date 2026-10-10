@@ -1,9 +1,13 @@
-import { ConcertSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { EventSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
+import {
+	PublishState,
+	SeriesSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
 import type { Reservation } from '../../entities/reservation'
 import type { TicketSale } from '../../entities/ticket-sale'
 import ja from '../../locales/ja/translation.json'
@@ -26,13 +30,16 @@ function jst(day: number, hour: number, minute = 0): Date {
 	return new Date(Date.UTC(2026, 10, day, hour - 9, minute))
 }
 
-const concert = create(ConcertSchema, {
-	id: { value: EVENT_ID },
-	localDate: { value: { year: 2026, month: 11, day: 20 } },
-	openTime: { value: timestampFromDate(jst(20, 18)) },
-	startTime: { value: timestampFromDate(jst(20, 19)) },
-	listedVenueName: { value: 'Shibuya WWW' },
-	series: {
+const concert: ResolvedConcert = {
+	event: create(EventSchema, {
+		id: { value: EVENT_ID },
+		localDate: { value: { year: 2026, month: 11, day: 20 } },
+		openTime: { value: timestampFromDate(jst(20, 18)) },
+		startTime: { value: timestampFromDate(jst(20, 19)) },
+		listedVenueName: { value: 'Shibuya WWW' },
+		seriesId: { value: 's1' },
+	}),
+	series: create(SeriesSchema, {
 		id: { value: 's1' },
 		title: { value: 'ONE MAN LIVE' },
 		organizerId: { value: 'org-1' },
@@ -48,8 +55,9 @@ const concert = create(ConcertSchema, {
 				contactEmail: 'info@example.com',
 			},
 		},
-	},
-})
+	}),
+	artists: [],
+}
 
 function sale(o: Partial<TicketSale> = {}): TicketSale {
 	return {

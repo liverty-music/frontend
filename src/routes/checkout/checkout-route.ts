@@ -28,12 +28,12 @@ import {
 import { IUserStore } from '../../services/user-store'
 import {
 	type EventPageEvent,
-	eventFromProto,
+	eventFromConcert,
 	formatEventDate,
 	formatEventTime,
 	formatSaleStart,
 } from '../event/event-page'
-import { type SellerDetails, sellerDetailsFromProto } from './seller-details'
+import { type SellerDetails, sellerDetailsFromConcert } from './seller-details'
 
 /**
  * - `loading`: the event and its sale are read, and a held checkout resumed.
@@ -152,8 +152,8 @@ export class CheckoutRoute implements IRouteViewModel {
 				this.saleClient.get(this.eventId, signal),
 			])
 			if (signal.aborted) return
-			this.event = eventFromProto(concert)
-			this.seller = sellerDetailsFromProto(concert)
+			this.event = eventFromConcert(concert)
+			this.seller = sellerDetailsFromConcert(concert)
 			this.sale = sale
 		} catch (err) {
 			if (signal.aborted) return

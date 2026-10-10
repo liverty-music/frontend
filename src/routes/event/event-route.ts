@@ -19,7 +19,7 @@ import {
 	dateNavMode,
 	type EventPageEvent,
 	type EventPerformer,
-	eventFromProto,
+	eventFromConcert,
 	formatEventDate,
 	formatEventTime,
 	formatSaleStart,
@@ -94,7 +94,7 @@ export class EventRoute implements IRouteViewModel {
 		this.followsLoaded = false
 		try {
 			const proto = await this.concertClient.get(this.eventId, signal)
-			const event = eventFromProto(proto)
+			const event = eventFromConcert(proto)
 			if (!event) {
 				this.state = 'not-found'
 				return
@@ -131,7 +131,7 @@ export class EventRoute implements IRouteViewModel {
 			const protos = await this.concertClient.listBySeries(seriesId, signal)
 			if (signal.aborted) return
 			this.seriesEvents = protos.flatMap((p) => {
-				const e = eventFromProto(p)
+				const e = eventFromConcert(p)
 				return e ? [e] : []
 			})
 		} catch (err) {

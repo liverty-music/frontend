@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
@@ -49,7 +50,7 @@ async function mockRpc(page: Page): Promise<void> {
 			status: 200,
 			contentType: 'application/json',
 			body: route.request().url().includes('ListByArtists')
-				? JSON.stringify({ groups })
+				? JSON.stringify(concertWire({ groups }))
 				: '{}',
 		}),
 	)

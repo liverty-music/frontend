@@ -4,7 +4,7 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import {
-	type AuthoredConcert,
+	type AuthoredSeries,
 	IConcertAuthoringClient,
 } from '../services/concert-authoring-client'
 import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
@@ -79,7 +79,7 @@ const VISIBILITY_LABELS: Record<Visibility, string> = {
 }
 
 /** Formats an event's local date triple as `YYYY-MM-DD`, or `—`. */
-function formatEventDate(concert: AuthoredConcert, index: number): string {
+function formatEventDate(concert: AuthoredSeries, index: number): string {
 	const d = concert.events[index]?.localDate?.value
 	if (!d) return EMPTY
 	const mm = String(d.month).padStart(2, '0')
@@ -88,7 +88,7 @@ function formatEventDate(concert: AuthoredConcert, index: number): string {
 }
 
 /** Summarises a series' events as a single date or a `first – last` range. */
-function formatDateRange(concert: AuthoredConcert): string {
+function formatDateRange(concert: AuthoredSeries): string {
 	if (concert.events.length === 0) return EMPTY
 	const first = formatEventDate(concert, 0)
 	if (concert.events.length === 1) return first
@@ -103,7 +103,7 @@ function formatDateRange(concert: AuthoredConcert): string {
  * event date so each link is distinguishable.
  */
 function toLotteryEvents(
-	concert: AuthoredConcert,
+	concert: AuthoredSeries,
 	publishState: PublishState,
 ): ConcertListRow['lotteryEvents'] {
 	if (publishState !== PublishState.PUBLISHED) return []
@@ -120,7 +120,7 @@ function toLotteryEvents(
 
 /** Builds the per-event reception-links entry points of a series. */
 function toReceptionEvents(
-	concert: AuthoredConcert,
+	concert: AuthoredSeries,
 	publishState: PublishState,
 ): ConcertListRow['receptionEvents'] {
 	if (publishState === PublishState.CANCELLED) return []
@@ -137,7 +137,7 @@ function toReceptionEvents(
 
 /** Builds the per-event first-come sale entry points of a series. */
 function toTicketSaleEvents(
-	concert: AuthoredConcert,
+	concert: AuthoredSeries,
 	publishState: PublishState,
 ): ConcertListRow['ticketSaleEvents'] {
 	if (publishState === PublishState.CANCELLED) return []
@@ -152,7 +152,7 @@ function toTicketSaleEvents(
 		.filter((entry) => entry.eventId !== '')
 }
 
-function toRow(concert: AuthoredConcert): ConcertListRow {
+function toRow(concert: AuthoredSeries): ConcertListRow {
 	const series = concert.series
 	const publishState = series?.publishState ?? PublishState.UNSPECIFIED
 	const visibility = series?.visibility ?? Visibility.UNSPECIFIED

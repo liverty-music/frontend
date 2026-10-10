@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -52,32 +53,34 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					groups: [
-						{
-							date: { value: { year: 2026, month: 3, day: 15 } },
-							away: [
-								{
-									id: { value: '00000000-0000-4000-8000-c10000000001' },
-									performers: [
-										{
-											id: { value: '00000000-0000-4000-8000-a10000000001' },
-											name: { value: 'Test Artist' },
-											mbid: { value: '' },
+				body: JSON.stringify(
+					concertWire({
+						groups: [
+							{
+								date: { value: { year: 2026, month: 3, day: 15 } },
+								away: [
+									{
+										id: { value: '00000000-0000-4000-8000-c10000000001' },
+										performers: [
+											{
+												id: { value: '00000000-0000-4000-8000-a10000000001' },
+												name: { value: 'Test Artist' },
+												mbid: { value: '' },
+											},
+										],
+										series: {
+											id: { value: '00000000-0000-4000-8000-5e0000000001' },
+											title: { value: 'Test Concert' },
 										},
-									],
-									series: {
-										id: { value: '00000000-0000-4000-8000-5e0000000001' },
-										title: { value: 'Test Concert' },
+										localDate: {
+											value: { year: 2026, month: 3, day: 15 },
+										},
 									},
-									localDate: {
-										value: { year: 2026, month: 3, day: 15 },
-									},
-								},
-							],
-						},
-					],
-				}),
+								],
+							},
+						],
+					}),
+				),
 			})
 		}
 

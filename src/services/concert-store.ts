@@ -2,8 +2,8 @@ import { DI, ILogger, observable, resolve } from 'aurelia'
 import {
 	type CalendarDate,
 	IConcertRpcClient,
-	type ProtoConcert,
 	type ProximityGroup,
+	type ResolvedConcert,
 } from '../adapter/rpc/client/concert-client'
 import { loadFollows, loadHome } from '../adapter/storage/guest-storage'
 import { artistHue } from '../adapter/view/artist-color'
@@ -24,7 +24,7 @@ import { IAuthService } from './auth-service'
 import { CachedResource } from './cache/cached-resource'
 import { IUserStore } from './user-store'
 
-export type { ProtoConcert, ProximityGroup }
+export type { ProximityGroup, ResolvedConcert }
 
 interface ProximityInput {
 	artistIds: readonly string[]
@@ -100,7 +100,7 @@ export class ConcertStore {
 	public async listConcerts(
 		artistId: string,
 		signal?: AbortSignal,
-	): Promise<ProtoConcert[]> {
+	): Promise<ResolvedConcert[]> {
 		return this.rpcClient.listConcerts(artistId, signal)
 	}
 
@@ -218,7 +218,7 @@ export class ConcertStore {
 
 	/**
 	 * Convert All Nearby ProximityGroup[] into DateGroup[], resolving each card's
-	 * artist identity from the concert's OWN performers.
+	 * artist identity from the concert's OWN artists.
 	 *
 	 * The follower/artist paths resolve performers against the user's followed-artist
 	 * map; in All Nearby the concerts belong to arbitrary catalog artists the user
@@ -234,7 +234,7 @@ export class ConcertStore {
 		const artistMap = new Map<string, { artist: Artist; hype: Hype }>()
 		for (const g of groups) {
 			for (const c of [...g.home, ...g.nearby, ...g.away]) {
-				for (const p of c.performers ?? []) {
+				for (const p of c.artists) {
 					const id = p.id?.value
 					if (!id || artistMap.has(id)) continue
 					artistMap.set(id, {
@@ -333,10 +333,10 @@ export class ConcertStore {
 		// today but cheap to defend) still collapse to one entry.
 		const unresolved: Array<{ id: string; lane: LaneType }> = []
 		const unresolvedSeen = new Set<string>()
-		const convert = (concerts: ProtoConcert[], lane: LaneType) =>
+		const convert = (concerts: ResolvedConcert[], lane: LaneType) =>
 			concerts.flatMap((c) => {
-				// Concert proto v0.41.0+ exposes performers as a repeated
-				// field. For follower-based listing the user may follow any
+				// A concert can have several performing artists. For
+				// follower-based listing the user may follow any
 				// performer on the bill, not necessarily the headliner — a
 				// festival concert can return with the followed support act
 				// as performers[1+], so probe every performer and pick the
@@ -353,7 +353,7 @@ export class ConcertStore {
 				// performers on the same bill (e.g. both the headliner
 				// and a support act), the FIRST matched performer wins —
 				// the loop breaks on the first hit. Order is whatever
-				// the backend serialised in `performers[]`, which is the
+				// the backend serialised in `artistIds`, which is the
 				// billing/series order today. A more nuanced policy
 				// (e.g. "highest hype tier wins") would require ranking
 				// candidates instead of breaking on first match; intent
@@ -361,7 +361,7 @@ export class ConcertStore {
 				// primary identity for this card", consistent with the
 				// dashboard's single-artist-per-row model.
 				let entry: { artist: Artist; hype: Hype } | undefined
-				for (const p of c.performers ?? []) {
+				for (const p of c.artists) {
 					// Skip performers whose id is missing/empty — otherwise an
 					// `artistMap.get('')` would spuriously resolve if any
 					// followed artist happens to be stored under a blank key
@@ -383,7 +383,7 @@ export class ConcertStore {
 					// to whichever lane the flatMap reached first. The
 					// concert itself is still processed by concertFrom
 					// below; only the diagnostic entry is deduped.
-					const concertId = c.id?.value
+					const concertId = c.event.id?.value
 					if (concertId) {
 						const key = `${concertId}|${lane}`
 						if (!unresolvedSeen.has(key)) {
@@ -402,7 +402,7 @@ export class ConcertStore {
 					this.userStore.currentLanguage,
 				)
 				if (!event) return []
-				const eventId = c.id?.value
+				const eventId = c.event.id?.value
 				if (eventId) {
 					// A first-party concert shows what the fan bought, not the
 					// self-reported journey.
@@ -509,7 +509,7 @@ function followerKey(from?: CalendarDate): string {
 }
 
 /**
- * Map a ProtoConcert proto to a Concert UI entity.
+ * Map a resolved Concert to a Concert UI entity.
  *
  * Returns null when the proto has no usable local date (missing or any
  * zero component — a proto3-defaulted field with month=0 would roll
@@ -520,13 +520,14 @@ function followerKey(from?: CalendarDate): string {
  * symmetric: all populated or all empty.
  */
 function concertFrom(
-	proto: ProtoConcert,
+	concert: ResolvedConcert,
 	artistName: string,
 	hypeLevel: HypeLevel,
 	matched: boolean,
 	artist?: Artist,
 	lang = 'en',
 ): Concert | null {
+	const proto = concert.event
 	const localDate = proto.localDate?.value
 	if (!localDate) return null
 	if (localDate.year === 0 || localDate.month === 0 || localDate.day === 0) {
@@ -550,10 +551,9 @@ function concertFrom(
 	const adminArea = proto.venue?.adminArea?.value
 	const locationLabel = adminArea ? displayName(adminArea) : ''
 
-	// proto.series is guaranteed non-null on Concert by the v0.41.0+ BSR
-	// schema (required field). The `?.` chain is defensive against
-	// proto3's permissive-field-default typing, NOT a fallback for a
-	// legitimately series-less concert.
+	// The response carries the Series of every Concert it returns; the `?.`
+	// chain only guards against a response that omits it.
+	const series = concert.series
 	return {
 		id: proto.id?.value ?? '',
 		artistName,
@@ -563,9 +563,9 @@ function concertFrom(
 		date: jsDate,
 		startTime,
 		openTime,
-		title: proto.series?.title?.value ?? '',
-		sourceUrl: proto.series?.sourceUrl?.value ?? '',
-		isFirstParty: !!proto.series?.organizerId?.value,
+		title: series?.title?.value ?? '',
+		sourceUrl: series?.sourceUrl?.value ?? '',
+		isFirstParty: !!series?.organizerId?.value,
 		hypeLevel,
 		matched,
 		artistHue: artistHue(artistName),

@@ -1,12 +1,12 @@
 import { createFixture } from '@aurelia/testing'
-import {
-	type Concert,
-	ConcertSchema,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import { ArtistSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
+import { EventSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
+import { SeriesSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ResolvedConcert } from '../../../shared/lib/concert/resolve-concert'
 
 // The route resolves IConcertClient. Replace the real module (which would build
 // a Connect transport over the generated client) with a fresh interface token +
@@ -43,18 +43,14 @@ function concert(opts: {
 	day: number
 	startHourUtc?: number
 	openHourUtc?: number
-}): Concert {
-	return create(ConcertSchema, {
+}): ResolvedConcert {
+	const event = create(EventSchema, {
 		id: { value: opts.eventId },
-		series: {
-			id: { value: opts.seriesId },
-			title: { value: opts.seriesTitle },
-		},
+		seriesId: { value: opts.seriesId },
 		localDate: {
 			value: { year: 2026, month: 7, day: opts.day },
 		},
 		venue: { name: { value: opts.venue } },
-		performers: [{ name: { value: opts.artist } }],
 		...(opts.startHourUtc !== undefined
 			? {
 					startTime: {
@@ -74,6 +70,14 @@ function concert(opts: {
 				}
 			: {}),
 	})
+	return {
+		event,
+		series: create(SeriesSchema, {
+			id: { value: opts.seriesId },
+			title: { value: opts.seriesTitle },
+		}),
+		artists: [create(ArtistSchema, { name: { value: opts.artist } })],
+	}
 }
 
 async function build(client: MockClient) {

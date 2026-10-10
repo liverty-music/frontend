@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -60,75 +61,77 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					groups: [
-						{
-							date: {
-								value: {
-									year: tomorrow.getFullYear(),
-									month: tomorrow.getMonth() + 1,
-									day: tomorrow.getDate(),
+				body: JSON.stringify(
+					concertWire({
+						groups: [
+							{
+								date: {
+									value: {
+										year: tomorrow.getFullYear(),
+										month: tomorrow.getMonth() + 1,
+										day: tomorrow.getDate(),
+									},
 								},
+								home: [
+									{
+										id: { value: '00000000-0000-4000-8000-c10000000001' },
+										performers: [
+											{
+												id: { value: '00000000-0000-4000-8000-a00000000001' },
+												name: { value: 'YOASOBI' },
+												mbid: { value: '' },
+											},
+										],
+										series: {
+											id: { value: '00000000-0000-4000-8000-5e0000000001' },
+											title: { value: 'Zepp Live' },
+										},
+										localDate: {
+											value: {
+												year: tomorrow.getFullYear(),
+												month: tomorrow.getMonth() + 1,
+												day: tomorrow.getDate(),
+											},
+										},
+										venue: {
+											name: { value: 'Zepp DiverCity' },
+											adminArea: { value: 'JP-13' },
+										},
+										sourceUrl: { value: 'https://example.com' },
+									},
+									{
+										id: { value: '00000000-0000-4000-8000-c10000000002' },
+										performers: [
+											{
+												id: { value: '00000000-0000-4000-8000-a00000000002' },
+												name: { value: 'Vaundy' },
+												mbid: { value: '' },
+											},
+										],
+										series: {
+											id: { value: '00000000-0000-4000-8000-5e0000000002' },
+											title: { value: 'Zepp Live' },
+										},
+										localDate: {
+											value: {
+												year: tomorrow.getFullYear(),
+												month: tomorrow.getMonth() + 1,
+												day: tomorrow.getDate(),
+											},
+										},
+										venue: {
+											name: { value: 'Zepp DiverCity' },
+											adminArea: { value: 'JP-13' },
+										},
+										sourceUrl: { value: 'https://example.com' },
+									},
+								],
+								nearby: [],
+								away: [],
 							},
-							home: [
-								{
-									id: { value: '00000000-0000-4000-8000-c10000000001' },
-									performers: [
-										{
-											id: { value: '00000000-0000-4000-8000-a00000000001' },
-											name: { value: 'YOASOBI' },
-											mbid: { value: '' },
-										},
-									],
-									series: {
-										id: { value: '00000000-0000-4000-8000-5e0000000001' },
-										title: { value: 'Zepp Live' },
-									},
-									localDate: {
-										value: {
-											year: tomorrow.getFullYear(),
-											month: tomorrow.getMonth() + 1,
-											day: tomorrow.getDate(),
-										},
-									},
-									venue: {
-										name: { value: 'Zepp DiverCity' },
-										adminArea: { value: 'JP-13' },
-									},
-									sourceUrl: { value: 'https://example.com' },
-								},
-								{
-									id: { value: '00000000-0000-4000-8000-c10000000002' },
-									performers: [
-										{
-											id: { value: '00000000-0000-4000-8000-a00000000002' },
-											name: { value: 'Vaundy' },
-											mbid: { value: '' },
-										},
-									],
-									series: {
-										id: { value: '00000000-0000-4000-8000-5e0000000002' },
-										title: { value: 'Zepp Live' },
-									},
-									localDate: {
-										value: {
-											year: tomorrow.getFullYear(),
-											month: tomorrow.getMonth() + 1,
-											day: tomorrow.getDate(),
-										},
-									},
-									venue: {
-										name: { value: 'Zepp DiverCity' },
-										adminArea: { value: 'JP-13' },
-									},
-									sourceUrl: { value: 'https://example.com' },
-								},
-							],
-							nearby: [],
-							away: [],
-						},
-					],
-				}),
+						],
+					}),
+				),
 			})
 		}
 

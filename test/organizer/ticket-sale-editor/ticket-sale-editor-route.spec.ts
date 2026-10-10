@@ -10,15 +10,13 @@ import {
 	TicketSaleSchema,
 	TicketSaleState,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
-import {
-	type AuthoredConcert,
-	AuthoredConcertSchema,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AuthoredSeries } from '../../../organizer/services/concert-authoring-client'
+import { authoredSeries } from '../authored-series'
 
 // Replace the RPC client modules with fresh interface tokens so the route
 // binds to test doubles instead of building real Connect transports.
@@ -46,10 +44,10 @@ const EVENT_START = new Date(Date.UTC(2026, 10, 20, 10, 0))
 
 function concertWith(
 	opts: { startTime?: boolean; publishState?: PublishState } = {},
-): AuthoredConcert[] {
+): AuthoredSeries[] {
 	const { startTime = true, publishState = PublishState.PUBLISHED } = opts
 	return [
-		create(AuthoredConcertSchema, {
+		authoredSeries({
 			series: {
 				id: { value: 'series-1' },
 				title: { value: 'One-Man Live' },
@@ -111,7 +109,7 @@ interface Mocks {
 
 function mocks(
 	opts: {
-		concerts?: AuthoredConcert[]
+		concerts?: AuthoredSeries[]
 		organizer?: Organizer
 		sale?: TicketSale
 	} = {},

@@ -8,7 +8,7 @@ import {
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import {
-	type AuthoredConcert,
+	type AuthoredSeries,
 	IConcertAuthoringClient,
 } from '../services/concert-authoring-client'
 import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
@@ -204,12 +204,12 @@ export class ConcertEditorRoute {
 	private async loadConcert(
 		seriesId: string,
 		signal: AbortSignal,
-	): Promise<AuthoredConcert | undefined> {
+	): Promise<AuthoredSeries | undefined> {
 		const concerts = await this.client.list(signal)
 		return concerts.find((c) => c.series?.id?.value === seriesId)
 	}
 
-	private hydrate(concert: AuthoredConcert): void {
+	private hydrate(concert: AuthoredSeries): void {
 		const series = concert.series
 		this.publishState = series?.publishState ?? PublishState.UNSPECIFIED
 		// The editor renders the full-width `large` variant; a list would use

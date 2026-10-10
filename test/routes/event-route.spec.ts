@@ -1,13 +1,18 @@
+import { ArtistSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { ConcertSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import {
+	PublishState,
+	SeriesSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+	concertResolver,
 	IConcertRpcClient,
-	type ProtoConcert,
+	type ResolvedConcert,
 } from '../../src/adapter/rpc/client/concert-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import type { Artist } from '../../src/entities/artist'
@@ -39,33 +44,47 @@ interface ConcertOpts {
 	title?: string
 }
 
-function protoConcert(o: ConcertOpts = {}): ProtoConcert {
+/**
+ * A Concert as ConcertService returns it — the Concert with its Series and
+ * Artist in the side lists — resolved the way the RPC client resolves it.
+ */
+function protoConcert(o: ConcertOpts = {}): ResolvedConcert {
 	const day = o.day ?? 20
-	return create(ConcertSchema, {
-		id: { value: o.id ?? EVENT_ID },
-		localDate: { value: { year: 2026, month: 11, day } },
-		openTime: o.open ? { value: timestampFromDate(o.open) } : undefined,
-		startTime: o.start ? { value: timestampFromDate(o.start) } : undefined,
-		listedVenueName: { value: 'Shibuya WWW' },
-		venue: { name: { value: 'WWW' }, adminArea: { value: 'JP-13' } },
-		performers: [{ id: { value: ARTIST_ID }, name: { value: 'The Band' } }],
-		series: {
-			id: { value: SERIES_ID },
-			title: { value: o.title ?? 'ONE MAN LIVE' },
-			description: { value: '二夜連続公演' },
-			organizerId: { value: 'org-1' },
-			publishState: o.state ?? PublishState.PUBLISHED,
-			media: o.cover
-				? {
-						id: { value: 'm1' },
-						attributes: {
-							thumb: { value: 'https://media.example/thumb.webp' },
-							large: { value: 'https://media.example/large.webp' },
-						},
-					}
-				: undefined,
+	const concert = create(ConcertSchema, {
+		event: {
+			id: { value: o.id ?? EVENT_ID },
+			localDate: { value: { year: 2026, month: 11, day } },
+			openTime: o.open ? { value: timestampFromDate(o.open) } : undefined,
+			startTime: o.start ? { value: timestampFromDate(o.start) } : undefined,
+			listedVenueName: { value: 'Shibuya WWW' },
+			venue: { name: { value: 'WWW' }, adminArea: { value: 'JP-13' } },
+			seriesId: { value: SERIES_ID },
 		},
+		artistIds: [{ value: ARTIST_ID }],
 	})
+	const series = create(SeriesSchema, {
+		id: { value: SERIES_ID },
+		title: { value: o.title ?? 'ONE MAN LIVE' },
+		description: { value: '二夜連続公演' },
+		organizerId: { value: 'org-1' },
+		publishState: o.state ?? PublishState.PUBLISHED,
+		media: o.cover
+			? {
+					id: { value: 'm1' },
+					attributes: {
+						thumb: { value: 'https://media.example/thumb.webp' },
+						large: { value: 'https://media.example/large.webp' },
+					},
+				}
+			: undefined,
+	})
+	const artist = create(ArtistSchema, {
+		id: { value: ARTIST_ID },
+		name: { value: 'The Band' },
+	})
+	const resolved = concertResolver([series], [artist])(concert)
+	if (!resolved) throw new Error('fixture concert has no event')
+	return resolved
 }
 
 function makeFollowStore() {

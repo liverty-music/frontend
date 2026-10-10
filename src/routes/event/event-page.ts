@@ -1,6 +1,6 @@
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
-import type { ProtoConcert } from '../../adapter/rpc/client/concert-client'
+import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
 import { displayName } from '../../entities/user'
 
 /** Japan time, in which every event date and time is held and compared. */
@@ -37,18 +37,21 @@ export interface EventPageEvent {
 	readonly cancelled: boolean
 }
 
-/** Build the Event page's view of a proto Concert, or null without a date. */
-export function eventFromProto(proto: ProtoConcert): EventPageEvent | null {
+/** Build the Event page's view of a resolved Concert, or null without a date. */
+export function eventFromConcert(
+	concert: ResolvedConcert,
+): EventPageEvent | null {
+	const proto = concert.event
 	const d = proto.localDate?.value
 	if (!d || d.year === 0 || d.month === 0 || d.day === 0) return null
-	const series = proto.series
+	const series = concert.series
 	return {
 		id: proto.id?.value ?? '',
 		seriesId: series?.id?.value ?? '',
 		title: series?.title?.value ?? '',
 		description: series?.description?.value ?? '',
 		coverUrl: series?.media?.attributes?.large?.value ?? '',
-		performers: (proto.performers ?? []).flatMap((p) => {
+		performers: concert.artists.flatMap((p) => {
 			const id = p.id?.value
 			return id
 				? [{ id, name: p.name?.value ?? '', mbid: p.mbid?.value ?? '' }]

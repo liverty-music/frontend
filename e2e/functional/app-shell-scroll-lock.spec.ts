@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
@@ -78,7 +79,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify(proximityPayload()),
+				body: JSON.stringify(concertWire(proximityPayload())),
 			})
 		}
 		return route.fulfill({

@@ -158,15 +158,18 @@ describe('ConcertStore', () => {
 				date: { value: dateLD },
 				home: [
 					{
-						id: { value: 'c1' },
-						performers: [{ id: { value: 'a1' }, name: { value: 'Band' } }],
+						event: {
+							id: { value: 'c1' },
+							seriesId: { value: 's1' },
+							localDate: { value: dateLD },
+							venue: { name: { value: 'Venue' } },
+						},
+						artists: [{ id: { value: 'a1' }, name: { value: 'Band' } }],
 						series: {
 							id: { value: 's1' },
 							title: { value: 'Show' },
 							...(organizerId ? { organizerId: { value: organizerId } } : {}),
 						},
-						localDate: { value: dateLD },
-						venue: { name: { value: 'Venue' } },
 					},
 				],
 				nearby: [],
@@ -218,10 +221,21 @@ describe('ConcertStore', () => {
 	})
 
 	describe('toDateGroups (performer resolution)', () => {
-		function makeConcert(overrides: Record<string, unknown> = {}) {
+		// A Concert as the RPC client resolves it: its Event, its Series and
+		// its performing Artists.
+		function makeConcert(
+			overrides: Record<string, unknown> = {},
+			eventOverrides: Record<string, unknown> = {},
+		) {
 			return {
-				id: { value: 'c1' },
-				performers: [
+				event: {
+					id: { value: 'c1' },
+					seriesId: { value: 's1' },
+					localDate: { value: { year: 2026, month: 3, day: 15 } },
+					venue: { name: { value: 'Venue' }, adminArea: { value: 'JP-13' } },
+					...eventOverrides,
+				},
+				artists: [
 					{
 						id: { value: 'a-headliner' },
 						name: { value: 'Headliner' },
@@ -233,8 +247,6 @@ describe('ConcertStore', () => {
 					title: { value: 'Test Show' },
 					sourceUrl: { value: '' },
 				},
-				localDate: { value: { year: 2026, month: 3, day: 15 } },
-				venue: { name: { value: 'Venue' }, adminArea: { value: 'JP-13' } },
 				...overrides,
 			}
 		}
@@ -282,7 +294,7 @@ describe('ConcertStore', () => {
 			// resolve the support act so the entity's artist context is
 			// internally consistent.
 			const concert = makeConcert({
-				performers: [
+				artists: [
 					{
 						id: { value: 'a-unfollowed-headliner' },
 						name: { value: 'Headliner' },
@@ -347,7 +359,7 @@ describe('ConcertStore', () => {
 		it('excludes a concert whose localDate is missing', () => {
 			const group = {
 				date: { value: dateLD },
-				home: [makeConcert({ localDate: undefined })],
+				home: [makeConcert({}, { localDate: undefined })],
 				nearby: [],
 				away: [],
 			}

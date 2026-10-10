@@ -1,16 +1,53 @@
+import type { Artist as ProtoArtist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Concert as ProtoConcert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import type { LocalDate } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/entity_pb.js'
+import type { Series as ProtoSeries } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import {
 	ConcertService,
-	type ProximityGroup,
+	type ProximityGroup as ProtoProximityGroup,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/concert/v1/concert_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
+import {
+	concertResolver,
+	type ResolvedConcert,
+	resolveConcerts,
+} from '../../../../shared/lib/concert/resolve-concert'
 import { IAppConfig } from '../../../config/app-config'
 import type { GeoLocationInit } from '../../../entities/user'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
 
-export type { ProtoConcert, ProximityGroup }
+export type { ResolvedConcert }
+export { concertResolver, resolveConcerts }
+
+/** A date's concerts, by proximity lane, with each Concert resolved. */
+export interface ProximityGroup {
+	readonly date?: LocalDate
+	readonly home: ResolvedConcert[]
+	readonly nearby: ResolvedConcert[]
+	readonly away: ResolvedConcert[]
+}
+
+/** Resolve a grouped response's Concerts against its `series` and `artists`. */
+export function resolveGroups(response: {
+	groups: readonly ProtoProximityGroup[]
+	series: readonly ProtoSeries[]
+	artists: readonly ProtoArtist[]
+}): ProximityGroup[] {
+	const resolve = concertResolver(response.series, response.artists)
+	const lane = (concerts: readonly ProtoConcert[]) =>
+		concerts.flatMap((c) => {
+			const r = resolve(c)
+			return r ? [r] : []
+		})
+	return response.groups.map((g) => ({
+		date: g.date,
+		home: lane(g.home),
+		nearby: lane(g.nearby),
+		away: lane(g.away),
+	}))
+}
 
 export const IConcertRpcClient = DI.createInterface<IConcertRpcClient>(
 	'IConcertRpcClient',
@@ -39,17 +76,20 @@ export class ConcertRpcClient {
 	public async get(
 		eventId: string,
 		signal?: AbortSignal,
-	): Promise<ProtoConcert> {
+	): Promise<ResolvedConcert> {
 		this.logger.info('Getting concert', { eventId })
 		try {
 			const response = await this.client.get(
 				{ eventId: { value: eventId } },
 				{ signal },
 			)
-			if (!response.concert) {
+			const concert = response.concert
+				? concertResolver(response.series, response.artists)(response.concert)
+				: null
+			if (!concert) {
 				throw new Error('ConcertService.Get returned no concert')
 			}
-			return response.concert
+			return concert
 		} catch (err) {
 			this.logger.warn('Concert get failed', { eventId, error: err })
 			throw err
@@ -63,14 +103,14 @@ export class ConcertRpcClient {
 	public async listBySeries(
 		seriesId: string,
 		signal?: AbortSignal,
-	): Promise<ProtoConcert[]> {
+	): Promise<ResolvedConcert[]> {
 		this.logger.info('Listing concerts by series', { seriesId })
 		try {
 			const response = await this.client.listBySeries(
 				{ seriesId: { value: seriesId } },
 				{ signal },
 			)
-			return response.concerts
+			return resolveConcerts(response)
 		} catch (err) {
 			this.logger.warn('Concert listBySeries failed', { seriesId, error: err })
 			throw err
@@ -80,7 +120,7 @@ export class ConcertRpcClient {
 	public async listConcerts(
 		artistId: string,
 		signal?: AbortSignal,
-	): Promise<ProtoConcert[]> {
+	): Promise<ResolvedConcert[]> {
 		this.logger.info('Listing concerts', { artistId })
 		try {
 			const response = await this.client.list(
@@ -89,7 +129,7 @@ export class ConcertRpcClient {
 				},
 				{ signal },
 			)
-			return response.concerts
+			return resolveConcerts(response)
 		} catch (err) {
 			this.logger.warn('Concert list failed', { artistId, error: err })
 			throw err
@@ -114,7 +154,7 @@ export class ConcertRpcClient {
 				from ? { from: { value: from } } : {},
 				{ signal },
 			)
-			return response.groups
+			return resolveGroups(response)
 		} catch (err) {
 			this.logger.warn('Concert listByFollower failed', { error: err })
 			throw err
@@ -134,7 +174,7 @@ export class ConcertRpcClient {
 			},
 			{ signal },
 		)
-		return response.groups
+		return resolveGroups(response)
 	}
 
 	public async listByLocation(
@@ -155,7 +195,7 @@ export class ConcertRpcClient {
 				},
 				{ signal },
 			)
-			return response.groups
+			return resolveGroups(response)
 		} catch (err) {
 			this.logger.warn('Concert listByLocation failed', {
 				adminArea: location.adminArea,

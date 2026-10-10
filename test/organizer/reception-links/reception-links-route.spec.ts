@@ -5,16 +5,14 @@ import {
 	ReceptionLinkStatus,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/reception_link_pb.js'
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import {
-	type AuthoredConcert,
-	AuthoredConcertSchema,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AuthoredSeries } from '../../../organizer/services/concert-authoring-client'
 import { IAppConfig } from '../../../shared/config/app-config'
+import { authoredSeries } from '../authored-series'
 
 const IConcertAuthoringClient = DI.createInterface('IConcertAuthoringClient')
 const IReceptionLinkClient = DI.createInterface('IReceptionLinkClient')
@@ -35,8 +33,8 @@ const SERIES_ID = '019a0000-0000-7000-8000-0000000000s1'
 function concert(
 	publishState: PublishState,
 	opts: { startTime?: Date; openTime?: Date } = {},
-): AuthoredConcert {
-	return create(AuthoredConcertSchema, {
+): AuthoredSeries {
+	return authoredSeries({
 		series: {
 			id: { value: SERIES_ID },
 			title: { value: 'Basement Night' },
@@ -90,7 +88,7 @@ interface Mocks {
 	}
 }
 
-function mocks(c: AuthoredConcert, links: ReceptionLink[] = []): Mocks {
+function mocks(c: AuthoredSeries, links: ReceptionLink[] = []): Mocks {
 	return {
 		concerts: { list: vi.fn().mockResolvedValue([c]) },
 		links: {

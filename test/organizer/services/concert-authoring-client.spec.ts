@@ -1,10 +1,16 @@
+import { ArtistSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
+import { ConcertSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import {
+	PublishState,
+	SeriesSchema,
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
+	authoredSeriesFrom,
 	type SeriesDraftInput,
 	toSeriesDraft,
 } from '../../../organizer/services/concert-authoring-client'
@@ -74,5 +80,43 @@ describe('toSeriesDraft', () => {
 		expect(draft.events[0].placeId).toBeUndefined()
 		expect(draft.events[0].startTime).toBeUndefined()
 		expect(draft.events[0].openTime).toBeUndefined()
+	})
+})
+
+describe('authoredSeriesFrom', () => {
+	const date = (seriesId: string, eventId: string, ...artistIds: string[]) =>
+		create(ConcertSchema, {
+			event: { id: { value: eventId }, seriesId: { value: seriesId } },
+			artistIds: artistIds.map((value) => ({ value })),
+		})
+
+	it('groups the concerts back into one entry per series, artists once', () => {
+		const list = authoredSeriesFrom({
+			series: [
+				create(SeriesSchema, {
+					id: { value: 's-draft' },
+					publishState: PublishState.DRAFT,
+				}),
+				create(SeriesSchema, { id: { value: 's-empty' } }),
+			],
+			concerts: [date('s-draft', 'd1', 'a1'), date('s-draft', 'd2', 'a1')],
+			artists: [create(ArtistSchema, { id: { value: 'a1' } })],
+		})
+
+		expect(list.map((s) => s.series.id?.value)).toEqual(['s-draft', 's-empty'])
+		expect(list[0].events.map((e) => e.id?.value)).toEqual(['d1', 'd2'])
+		expect(list[0].performers.map((a) => a.id?.value)).toEqual(['a1'])
+		expect(list[1].events).toEqual([])
+		expect(list[1].performers).toEqual([])
+	})
+
+	it('drops a concert whose series the response does not list', () => {
+		const [only] = authoredSeriesFrom({
+			series: [create(SeriesSchema, { id: { value: 's1' } })],
+			concerts: [date('s1', 'e1'), date('s-unknown', 'e2')],
+			artists: [],
+		})
+
+		expect(only.events.map((e) => e.id?.value)).toEqual(['e1'])
 	})
 })

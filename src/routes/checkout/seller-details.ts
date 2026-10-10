@@ -1,4 +1,4 @@
-import type { ProtoConcert } from '../../adapter/rpc/client/concert-client'
+import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
 
 /**
  * The event's Organizer's 特商法 (Specified Commercial Transactions Act)
@@ -15,8 +15,8 @@ export interface SellerDetails {
 }
 
 /** The seller details carried by the Concert's first-party Series. */
-export function sellerDetailsFromProto(
-	concert: ProtoConcert,
+export function sellerDetailsFromConcert(
+	concert: ResolvedConcert,
 ): SellerDetails | null {
 	const d = concert.series?.organizer?.sellerDetails
 	if (!d) return null

@@ -4,17 +4,15 @@ import {
 	type LotterySalesPhase,
 	LotterySalesPhaseSchema,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
-import {
-	type AuthoredConcert,
-	AuthoredConcertSchema,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyFormModel } from '../../../organizer/lottery-phase-editor/lottery-phase-form'
+import type { AuthoredSeries } from '../../../organizer/services/concert-authoring-client'
 import { createTestContainer } from '../../helpers/create-container'
+import { authoredSeries } from '../authored-series'
 
 // Replace the RPC client module with a fresh interface token so the route binds
 // to the test double instead of building a real Connect transport.
@@ -55,9 +53,9 @@ function makePhase(id: string): LotterySalesPhase {
 }
 
 /** The operator's concerts, holding event-1 with or without a start time. */
-function concertsWith(startTime: boolean): AuthoredConcert[] {
+function concertsWith(startTime: boolean): AuthoredSeries[] {
 	return [
-		create(AuthoredConcertSchema, {
+		authoredSeries({
 			series: { id: { value: 'series-1' } },
 			events: [
 				{

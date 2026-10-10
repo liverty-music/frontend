@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -59,29 +60,23 @@ async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		if (url.includes('SearchNewConcerts')) {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({}),
-			})
-		}
-
 		// ListByArtists (check before List to avoid substring match)
 		if (url.includes('ListByArtists')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					groups: [
-						{
-							date: concertListPayload().concerts[0].localDate,
-							home: concertListPayload().concerts,
-							nearby: [],
-							away: [],
-						},
-					],
-				}),
+				body: JSON.stringify(
+					concertWire({
+						groups: [
+							{
+								date: concertListPayload().concerts[0].localDate,
+								home: concertListPayload().concerts,
+								nearby: [],
+								away: [],
+							},
+						],
+					}),
+				),
 			})
 		}
 
@@ -89,7 +84,7 @@ async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify(concertListPayload()),
+				body: JSON.stringify(concertWire(concertListPayload())),
 			})
 		}
 
