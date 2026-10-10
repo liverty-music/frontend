@@ -1,0 +1,104 @@
+@layer block {
+	@scope (organizer-commercial-terms) {
+		:scope {
+			--_radius: 0.5rem;
+			--_gap-xs: 0.25rem;
+			--_step-1: 1.25rem;
+			--_step-0: 1rem;
+			--_pad-input: 0.5rem;
+			--_pad-btn: 0.5rem 1rem;
+			--_rate-size: 7ch;
+			--_border: color-mix(
+				in oklch,
+				var(--color-text-secondary) 25%,
+				transparent
+			);
+			--_surface-raised: oklch(24% 0.04 275deg);
+
+			display: block;
+		}
+
+		.commercial-terms {
+			--flow-space: var(--space-m);
+		}
+
+		.commercial-terms-title {
+			font-size: var(--_step-1);
+			color: var(--color-text-primary);
+		}
+
+		.commercial-terms-form {
+			--flow-space: var(--space-s);
+		}
+
+		.commercial-terms-form-title {
+			font-size: var(--_step-0);
+			color: var(--color-text-primary);
+		}
+
+		.commercial-terms-field {
+			display: flex;
+			flex-direction: column;
+			gap: var(--_gap-xs);
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.commercial-terms-input {
+			padding: var(--_pad-input);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+
+			&[aria-invalid="true"] {
+				border-color: var(--color-error);
+			}
+
+			&[data-variant="rate"] {
+				inline-size: var(--_rate-size);
+				text-align: end;
+			}
+		}
+
+		.commercial-terms-hint,
+		.commercial-terms-status {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.commercial-terms-hint[data-state="missing"],
+		.commercial-terms-error {
+			font-size: var(--step--1);
+			color: var(--color-error);
+		}
+
+		.commercial-terms-btn {
+			cursor: pointer;
+
+			padding: var(--_pad-btn);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			font: inherit;
+			color: var(--color-text-primary);
+
+			background: var(--_surface-raised);
+
+			&:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+
+			&[data-variant="primary"] {
+				border-color: var(--color-brand-primary);
+				color: var(--color-surface-base);
+				background: var(--color-brand-primary);
+			}
+		}
+	}
+}

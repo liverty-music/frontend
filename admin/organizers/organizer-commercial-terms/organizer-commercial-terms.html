@@ -1,0 +1,234 @@
+<section class="[ commercial-terms ] [ flow ]" aria-labelledby="commercial-terms-title">
+  <h3 id="commercial-terms-title" class="commercial-terms-title">
+    Commercial terms
+  </h3>
+
+  <output
+    if.bind="phase === 'loading'"
+    class="commercial-terms-status"
+    role="status"
+    aria-busy="true"
+  >
+    Loading commercial terms…
+  </output>
+
+  <div if.bind="phase === 'error'" class="[ cluster ]" role="alert">
+    <p class="commercial-terms-error">${loadError}</p>
+    <button type="button" class="commercial-terms-btn" click.trigger="load()">
+      Retry
+    </button>
+  </div>
+
+  <template if.bind="phase === 'ready'">
+    <form
+      class="[ commercial-terms-form ] [ flow ]"
+      novalidate
+      submit.trigger="saveSellerDetails()"
+    >
+      <h4 class="commercial-terms-form-title">Seller details (特商法)</h4>
+      <p class="commercial-terms-hint">
+        Shown to fans at checkout and in the purchase email. All five values
+        are required and are saved together.
+      </p>
+      <p
+        if.bind="!hasSellerDetails"
+        class="commercial-terms-hint"
+        data-state="missing"
+      >
+        Not entered yet: this organizer's events cannot go on sale until the
+        seller details are saved.
+      </p>
+
+      <label class="commercial-terms-field">
+        Legal name (販売業者の名称)
+        <input
+          type="text"
+          class="commercial-terms-input"
+          name="legalName"
+          value.bind="seller.legalName"
+          maxlength="200"
+          autocomplete="organization"
+          required
+          aria-invalid.bind="!!sellerErrors.legalName"
+          aria-describedby="seller-legal-name-error"
+          disabled.bind="savingSeller"
+        />
+      </label>
+      <p
+        id="seller-legal-name-error"
+        if.bind="sellerErrors.legalName"
+        class="commercial-terms-error"
+      >
+        ${sellerErrors.legalName}
+      </p>
+
+      <label class="commercial-terms-field">
+        Representative (代表者または業務責任者)
+        <input
+          type="text"
+          class="commercial-terms-input"
+          name="representativeName"
+          value.bind="seller.representativeName"
+          maxlength="100"
+          autocomplete="name"
+          required
+          aria-invalid.bind="!!sellerErrors.representativeName"
+          aria-describedby="seller-representative-name-error"
+          disabled.bind="savingSeller"
+        />
+      </label>
+      <p
+        id="seller-representative-name-error"
+        if.bind="sellerErrors.representativeName"
+        class="commercial-terms-error"
+      >
+        ${sellerErrors.representativeName}
+      </p>
+
+      <label class="commercial-terms-field">
+        Address (所在地)
+        <input
+          type="text"
+          class="commercial-terms-input"
+          name="address"
+          value.bind="seller.address"
+          maxlength="300"
+          autocomplete="street-address"
+          required
+          aria-invalid.bind="!!sellerErrors.address"
+          aria-describedby="seller-address-error"
+          disabled.bind="savingSeller"
+        />
+      </label>
+      <p
+        id="seller-address-error"
+        if.bind="sellerErrors.address"
+        class="commercial-terms-error"
+      >
+        ${sellerErrors.address}
+      </p>
+
+      <label class="commercial-terms-field">
+        Phone number (電話番号)
+        <input
+          type="tel"
+          class="commercial-terms-input"
+          name="phoneNumber"
+          value.bind="seller.phoneNumber"
+          maxlength="16"
+          autocomplete="tel"
+          placeholder="+81312345678"
+          required
+          aria-invalid.bind="!!sellerErrors.phoneNumber"
+          aria-describedby="seller-phone-number-hint seller-phone-number-error"
+          disabled.bind="savingSeller"
+        />
+      </label>
+      <p id="seller-phone-number-hint" class="commercial-terms-hint">
+        International form: + country code, then the number without the
+        leading 0.
+      </p>
+      <p
+        id="seller-phone-number-error"
+        if.bind="sellerErrors.phoneNumber"
+        class="commercial-terms-error"
+      >
+        ${sellerErrors.phoneNumber}
+      </p>
+
+      <label class="commercial-terms-field">
+        Contact email (メールアドレス)
+        <input
+          type="email"
+          class="commercial-terms-input"
+          name="contactEmail"
+          value.bind="seller.contactEmail"
+          autocomplete="email"
+          required
+          aria-invalid.bind="!!sellerErrors.contactEmail"
+          aria-describedby="seller-contact-email-error"
+          disabled.bind="savingSeller"
+        />
+      </label>
+      <p
+        id="seller-contact-email-error"
+        if.bind="sellerErrors.contactEmail"
+        class="commercial-terms-error"
+      >
+        ${sellerErrors.contactEmail}
+      </p>
+
+      <div class="[ cluster ]">
+        <button
+          type="submit"
+          class="commercial-terms-btn"
+          data-variant="primary"
+          disabled.bind="savingSeller"
+        >
+          ${savingSeller ? 'Saving…' : 'Save seller details'}
+        </button>
+        <output if.bind="sellerSaved" class="commercial-terms-status">
+          Saved.
+        </output>
+      </div>
+      <p if.bind="sellerSaveError" class="commercial-terms-error" role="alert">
+        ${sellerSaveError}
+      </p>
+    </form>
+
+    <form
+      class="[ commercial-terms-form ] [ flow ]"
+      novalidate
+      submit.trigger="saveFeeRate()"
+    >
+      <h4 class="commercial-terms-form-title">Platform fee rate</h4>
+      <p class="commercial-terms-hint">
+        Applies to this organizer's future orders. Orders already issued keep
+        their rate.
+      </p>
+
+      <label class="commercial-terms-field">
+        Rate (%, 0 to 30, up to two decimals)
+        <span class="[ cluster ]">
+          <input
+            type="text"
+            class="commercial-terms-input"
+            data-variant="rate"
+            name="platformFeeRate"
+            inputmode="decimal"
+            value.bind="feeRateText"
+            required
+            aria-invalid.bind="!!feeRateError"
+            aria-describedby="fee-rate-error"
+            disabled.bind="savingFeeRate"
+          />
+          <span aria-hidden="true">%</span>
+        </span>
+      </label>
+      <p
+        id="fee-rate-error"
+        if.bind="feeRateError"
+        class="commercial-terms-error"
+      >
+        ${feeRateError}
+      </p>
+
+      <div class="[ cluster ]">
+        <button
+          type="submit"
+          class="commercial-terms-btn"
+          data-variant="primary"
+          disabled.bind="savingFeeRate"
+        >
+          ${savingFeeRate ? 'Saving…' : 'Save rate'}
+        </button>
+        <output if.bind="feeRateSaved" class="commercial-terms-status">
+          Saved.
+        </output>
+      </div>
+      <p if.bind="feeRateSaveError" class="commercial-terms-error" role="alert">
+        ${feeRateSaveError}
+      </p>
+    </form>
+  </template>
+</section>
