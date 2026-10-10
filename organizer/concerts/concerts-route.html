@@ -77,7 +77,7 @@
           ${row.busy ? 'Publishing…' : 'Publish'}
         </button>
         <button
-          if.bind="row.canCancel && !isConfirmingCancel(row)"
+          if.bind="row.canCancel && confirmingCancelId !== row.seriesId"
           type="button"
           class="concerts-btn"
           data-variant="danger"
@@ -105,7 +105,7 @@
       </div>
 
       <div
-        if.bind="isConfirmingCancel(row)"
+        if.bind="confirmingCancelId === row.seriesId"
         class="[ concert-card-confirm ] [ flow ]"
         role="group"
         aria-label="Confirm cancellation"
