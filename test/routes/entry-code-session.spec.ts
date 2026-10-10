@@ -48,7 +48,7 @@ describe('EntryCodeSession', () => {
 		session.stop()
 	})
 
-	it('remakes the code at once when the ticked tickets change', async () => {
+	it('remakes the code at once when the presented tickets change', async () => {
 		const session = new EntryCodeSession(signer)
 		await session.start(['a', 'b'])
 		await session.setTickets(['a'])

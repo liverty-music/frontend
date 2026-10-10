@@ -42,7 +42,10 @@ export class EntryCodeSession {
 		return this.setTickets(ticketIds)
 	}
 
-	/** Change the ticked tickets: the code is remade at once for the new set. */
+	/**
+	 * Change the presented tickets (some were admitted while the code was
+	 * shown): the code is remade at once for the new set.
+	 */
 	public setTickets(ticketIds: readonly string[]): Promise<void> {
 		this.ticketIds = [...ticketIds]
 		return this.refresh()

@@ -170,7 +170,7 @@
 		</section>
 	</div>
 
-	<!-- Entry QR code for the ticked tickets -->
+	<!-- Entry QR code for every not-yet-entered ticket of the event (up to 10) -->
 	<bottom-sheet
 		open.bind="isCodeOpen"
 		dismissable.bind="true"
@@ -194,26 +194,26 @@
 				>
 				<p class="tickets-lead" else t="tickets.code.making"></p>
 			</figure>
-			<p class="tickets-lead" if.bind="headCount === 0" t="tickets.code.noneTicked"></p>
+			<p class="tickets-lead" if.bind="headCount === 0" t="tickets.code.allEntered"></p>
 
 			<p class="tickets-lead" t="tickets.code.rotation"></p>
 			<p class="tickets-lead" t="tickets.code.brightness"></p>
 
-			<fieldset class="[ tickets-code-picks ] [ flow ]">
-				<legend class="tickets-summary-key" t="tickets.code.who"></legend>
-				<label
-					class="[ tickets-code-pick ] [ cluster ]"
-					repeat.for="ticket of enterable(codeGroup)"
-				>
-					<input
-						type="checkbox"
-						checked.one-way="isSelected(ticket.id)"
-						disabled.bind="!canSelect(ticket.id)"
-						change.trigger="toggle(ticket.id, $event.target.checked)"
-					>
-					<span t="tickets.ticketN" t-params.bind="{ n: ticketNumber(codeGroup, ticket) }"></span>
-				</label>
-			</fieldset>
+			<!-- The tickets the code presents; none can be left out -->
+			<section
+				class="[ tickets-code-who ] [ flow ]"
+				if.bind="headCount > 0"
+				aria-labelledby="tickets-code-who"
+			>
+				<h3 class="tickets-summary-key" id="tickets-code-who" t="tickets.code.who"></h3>
+				<ul class="[ tickets-code-tickets ] [ cluster ]" role="list">
+					<li
+						repeat.for="ticket of presented"
+						t="tickets.ticketN"
+						t-params.bind="{ n: ticketNumber(codeGroup, ticket) }"
+					></li>
+				</ul>
+			</section>
 
 			<button
 				type="button"
