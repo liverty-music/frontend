@@ -1,3 +1,4 @@
+import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import { RejectedScanReason } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/rejected_scan_pb.js'
 import {
@@ -564,6 +565,34 @@ describe('ReceptionRoute', () => {
 			await route.retry()
 			expect(client.admit).toHaveBeenLastCalledWith(TOKEN, 'CODE')
 			expect(route.verdict?.tone).toBe('ok')
+		})
+	})
+
+	describe('scanning again', () => {
+		it('clears the previous verdict when staff start scanning again', async () => {
+			// @spec components/infrastructure/organizer/web/route/reception "Scanning again after stopping"
+			const client: MockClient = {
+				open: vi.fn().mockResolvedValue(openResponse(true)),
+				admit: vi
+					.fn()
+					.mockResolvedValue(admitResponse({ admittedTicketCount: 3 })),
+			}
+			const { route, scanners, text } = await build(client)
+
+			await route.startScanning()
+			await scanners[0].onText('CODE-A')
+			expect(route.verdict?.tone).toBe('ok')
+			await tasksSettled()
+			expect(text()).toContain('3名')
+
+			route.stopScanning()
+			// The last verdict stays readable while scanning is stopped.
+			expect(route.verdict?.tone).toBe('ok')
+
+			await route.startScanning()
+			await tasksSettled()
+			expect(route.verdict).toBeNull()
+			expect(text()).not.toContain('3名')
 		})
 	})
 })
