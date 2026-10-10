@@ -25,7 +25,7 @@ vi.mock('../../../organizer/services/reception-link-client', () => ({
 	IReceptionLinkClient,
 }))
 
-const { ReceptionLinksRoute, receptionUrl } = await import(
+const { ReceptionLinksRoute, receptionGuideUrl, receptionUrl } = await import(
 	'../../../organizer/reception-links/reception-links-route'
 )
 
@@ -316,6 +316,23 @@ describe('ReceptionLinksRoute', () => {
 	it('builds the reception URL on the reception origin with the token in the fragment', () => {
 		expect(receptionUrl('https://reception.example', 'abc')).toBe(
 			'https://reception.example/#abc',
+		)
+	})
+
+	it('links the reception guide on the reception origin, opened in a new tab', async () => {
+		const m = mocks(concert(PublishState.PUBLISHED, { startTime: START }))
+		const { fixture } = await build(m)
+
+		const guide = fixture.appHost.querySelector<HTMLAnchorElement>(
+			'a[href$="/guide.html"]',
+		)
+		expect(guide).not.toBeNull()
+		expect(guide?.getAttribute('href')).toBe(`${RECEPTION}/guide.html`)
+		expect(guide?.getAttribute('target')).toBe('_blank')
+		expect(guide?.getAttribute('rel')).toContain('noopener')
+		expect(guide?.textContent).toContain('受付スタッフ向けの使い方')
+		expect(receptionGuideUrl('https://reception.example')).toBe(
+			'https://reception.example/guide.html',
 		)
 	})
 })

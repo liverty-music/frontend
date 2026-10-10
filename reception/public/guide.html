@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>入場受付スタッフガイド</title>
+<!--
+  Static guide for venue reception staff (OpenSpec ticket-wallet-and-checkin,
+  task 7.2). It is a plain page of the reception build: no script, no app
+  bootstrap, no sign-in. The reception screen and the console's reception-links
+  screen link here and open it in a new tab. Screen texts quoted below must
+  match reception/reception-route/*.html and verdict.ts; the guide test checks
+  the key ones.
+-->
+<style>
+/* Layout: one narrow reading column for a phone held at the door; steps, then verdicts, then troubleshooting. */
+:root {
+  --bg: #f6f7f4;
+  --surface: #ffffff;
+  --fg: #1d2420;
+  --muted: #56615a;
+  --line: #d7ddd8;
+  --accent: #1f5f8b;
+  --ok: #1b7a43;
+  --ok-bg: #e3f3e8;
+  --ng: #b3261e;
+  --ng-bg: #fbe7e5;
+  --warn: #8a5a00;
+  --warn-bg: #fdf1d8;
+  --wait: #4a5560;
+  --wait-bg: #e9edf0;
+  --font: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "BIZ UDPGothic", "Noto Sans JP", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  --s1: 0.5rem; --s2: 0.75rem; --s3: 1rem; --s4: 1.5rem; --s5: 2.25rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141917; --surface: #1d2421; --fg: #e8ece9; --muted: #a3ada6; --line: #33403a;
+    --accent: #7fb8de; --ok: #7fd3a0; --ok-bg: #1d3427; --ng: #f2a19a; --ng-bg: #3b2220;
+    --warn: #f0c46b; --warn-bg: #3a2e14; --wait: #b9c3cc; --wait-bg: #262e33;
+    color-scheme: dark;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.75; }
+.page { max-width: 40rem; margin: 0 auto; padding-inline: 16px; padding-block: calc(var(--s4) + env(safe-area-inset-top, 0px)) calc(var(--s5) + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: var(--s5); }
+h1, h2, h3 { line-height: 1.35; text-wrap: balance; margin: 0; }
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.3rem; padding-bottom: var(--s1); border-bottom: 2px solid var(--fg); }
+h3 { font-size: 1.05rem; }
+p { margin: 0; }
+section { display: flex; flex-direction: column; gap: var(--s3); }
+header { display: flex; flex-direction: column; gap: var(--s2); }
+.lead { color: var(--muted); }
+.eyebrow { font-size: 0.8rem; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; }
+.toc { display: flex; flex-wrap: wrap; gap: var(--s1); padding: 0; margin: 0; list-style: none; }
+.toc a { display: inline-block; padding: 0.35rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; color: var(--fg); text-decoration: none; font-size: 0.9rem; background: var(--surface); }
+a:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }
+.rule strong { font-size: 1.05rem; }
+ol.steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s3); }
+ol.steps > li { counter-increment: step; display: grid; grid-template-columns: 2.25rem 1fr; gap: var(--s2); }
+ol.steps > li::before { content: counter(step); width: 2.25rem; height: 2.25rem; border-radius: 50%; background: var(--fg); color: var(--bg); display: grid; place-items: center; font-weight: 700; }
+ol.steps > li > div { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.screen { font-weight: 700; }
+.screen::before { content: "画面: "; font-weight: 400; color: var(--muted); }
+.key { font-weight: 700; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 0.4rem; background: var(--surface); white-space: nowrap; }
+.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--s2); }
+.verdict { border-radius: 10px; padding: var(--s3); display: flex; flex-direction: column; gap: 0.25rem; border-left: 6px solid; }
+.verdict .big { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.v-ok { background: var(--ok-bg); border-color: var(--ok); }
+.v-ok .big { color: var(--ok); }
+.v-partial { background: var(--warn-bg); border-color: var(--warn); }
+.v-partial .big { color: var(--warn); }
+.v-ng { background: var(--ng-bg); border-color: var(--ng); }
+.v-ng .big { color: var(--ng); }
+.v-wait { background: var(--wait-bg); border-color: var(--wait); }
+.v-wait .big { color: var(--wait); }
+.reasons { display: flex; flex-direction: column; gap: var(--s2); padding: 0; margin: 0; list-style: none; }
+.reasons > li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s3); display: flex; flex-direction: column; gap: 0.25rem; }
+.reasons .reason { font-weight: 700; color: var(--ng); }
+.reasons .cause { color: var(--muted); font-size: 0.95rem; }
+.reasons .cause::before { content: "よくある原因: "; }
+.say { padding-left: var(--s1); border-left: 3px solid var(--line); }
+.say::before { content: "お客様へ: "; color: var(--muted); }
+.trouble { display: flex; flex-direction: column; gap: var(--s2); }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s2) var(--s3); }
+details[open] { padding-bottom: var(--s3); }
+summary { cursor: pointer; font-weight: 700; }
+details > div { margin-top: var(--s2); display: flex; flex-direction: column; gap: var(--s1); }
+ul.plain { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.note { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }
+.note strong { color: var(--accent); }
+.organizer { background: var(--surface); border: 2px solid var(--accent); border-radius: 12px; padding: var(--s3); }
+.organizer h2 { border-bottom-color: var(--accent); }
+.foot { color: var(--muted); font-size: 0.85rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <p class="eyebrow">Liverty Music 受付</p>
+    <h1>入場受付スタッフガイド</h1>
+    <p class="lead">お客様のスマートフォンに表示された入場QRコードを、受付用のスマートフォンで読み取って入場を判定します。アプリのインストールやアカウントは必要ありません。</p>
+    <ul class="toc" aria-label="目次">
+      <li><a href="#before">受付の前に</a></li>
+      <li><a href="#steps">受付の手順</a></li>
+      <li><a href="#verdict">判定の見方</a></li>
+      <li><a href="#ng">NGのとき</a></li>
+      <li><a href="#trouble">困ったとき</a></li>
+      <li><a href="#organizer">主催者の準備</a></li>
+    </ul>
+  </header>
+
+  <section id="before" aria-labelledby="before-h">
+    <h2 id="before-h">受付の前に知っておくこと</h2>
+    <div class="rule">
+      <strong>受付リンクは1台に1つ</strong>
+      <p>主催者から受け取った受付リンク（URL）は、最初に開いたスマートフォンでしか使えません。ほかの人にURLを転送しても、その人のスマートフォンでは使えません。</p>
+    </div>
+    <div class="rule">
+      <strong>受付できるのは受付時間の間だけ</strong>
+      <p>開場の3時間前（開場時刻が決まっていないときは開演の3時間前）から、公演日の翌日の朝4時までです。受付時間は受付画面に表示されます。</p>
+    </div>
+    <div class="rule">
+      <strong>電波が必要です</strong>
+      <p>読み取るたびにサーバーで判定します。受付用のスマートフォンは、会場のWi-Fiか電波の届く場所で使ってください。お客様のスマートフォンは電波がなくてもQRコードを表示できます。</p>
+    </div>
+    <div class="rule">
+      <strong>お客様の名前は表示されません</strong>
+      <p>受付画面には人数と判定だけが出ます。本人確認が必要なときは、お客様のチケット画面に表示されている名前と身分証を見比べてください。</p>
+    </div>
+  </section>
+
+  <section id="steps" aria-labelledby="steps-h">
+    <h2 id="steps-h">受付の手順</h2>
+    <ol class="steps">
+      <li><div>
+        <h3>受付リンクをブラウザで開く</h3>
+        <p>iPhoneは<strong>Safari</strong>、Androidは<strong>Chrome</strong>で開きます。ホーム画面には追加しないでください（追加するとカメラの許可を何度も聞かれることがあります）。</p>
+        <p class="screen">「受付1」のように、受付リンクの番号が表示されます</p>
+        <p>受付の前日までに一度開いておくと安心です。受付時間の前は「受付は ○○ から始まります」と表示されます。</p>
+      </div></li>
+      <li><div>
+        <h3>受付時間になったら <span class="key">スキャンを開始</span> を押す</h3>
+        <p>カメラの使用を聞かれたら「許可」を選んでください。背面カメラが起動します。</p>
+      </div></li>
+      <li><div>
+        <h3>お客様のQRコードをカメラに映す</h3>
+        <p>お客様にはチケット画面のQRコードを見せてもらいます。読み取ると自動で判定されます（「判定中…」と表示されます）。</p>
+        <p>QRコードは15秒ごとに変わります。そのまま映し続けて大丈夫です。</p>
+      </div></li>
+      <li><div>
+        <h3>判定を見て、表示された人数だけ入場させる</h3>
+        <p>判定の見方は次のとおりです。</p>
+      </div></li>
+      <li><div>
+        <h3>受付が終わったら <span class="key">スキャンを停止</span> を押す</h3>
+        <p>画面を閉じるとカメラも止まります。</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section id="verdict" aria-labelledby="verdict-h">
+    <h2 id="verdict-h">判定の見方</h2>
+    <div class="verdicts">
+      <div class="verdict v-ok"><span class="big">OK 3名</span><p>表示された人数を入場させてください。</p></div>
+      <div class="verdict v-partial"><span class="big">OK 2名</span><p>「2名だけ入場させてください。」と出たら、その人数だけ入場させ、残りの方には下に出る理由を伝えてください。</p></div>
+      <div class="verdict v-ng"><span class="big">NG</span><p>入場させないでください。理由と、お客様に伝えることが表示されます。</p></div>
+      <div class="verdict v-wait"><span class="big">判定できませんでした</span><p>まだ入場させないでください。通信が戻ると自動でもう一度送ります。<span class="key">もう一度送信する</span> でも送れます。</p></div>
+    </div>
+    <p>同じお客様のQRコードを続けて映しても、OKのあと20秒は送り直しません。OKの表示はそのまま残ります。</p>
+  </section>
+
+  <section id="ng" aria-labelledby="ng-h">
+    <h2 id="ng-h">NGのときにお客様へ伝えること</h2>
+    <ul class="reasons">
+      <li>
+        <p class="reason">QRコードの有効期限切れです</p>
+        <p class="cause">スクリーンショットや、しばらく開いたままの古い画面</p>
+        <p class="say">チケット画面のQRコードを開き直してください。</p>
+      </li>
+      <li>
+        <p class="reason">有効な入場QRコードではありません</p>
+        <p class="cause">別のアプリのQRコード、画像の転送、機種変更前の古いスマートフォン</p>
+        <p class="say">チケットを登録したスマートフォンのチケット画面から、QRコードを表示してください。</p>
+      </li>
+      <li>
+        <p class="reason">本人のチケットではありません</p>
+        <p class="cause">ほかの人のチケットが混ざっている</p>
+        <p class="say">チケットを持っている本人のスマートフォンから、QRコードを表示してください。</p>
+      </li>
+      <li>
+        <p class="reason">別の公演のチケットです</p>
+        <p class="cause">日付や公演の違うチケット</p>
+        <p class="say">この公演のチケットか確認してください。</p>
+      </li>
+      <li>
+        <p class="reason">使用済みです</p>
+        <p class="cause">すでに入場済み。ほかの受付で先に読み取られた（「18:32 受付1」のように、前に入場した時刻と受付番号が出ます）</p>
+        <p>入場させずに主催者へ確認してください。表示された時刻と受付番号を伝えると早く確認できます。</p>
+      </li>
+      <li>
+        <p class="reason">無効なチケットです（払い戻し・リセール済み）</p>
+        <p class="cause">払い戻しや公式リセールで無効になったチケット</p>
+        <p>このチケットでは入場できません。主催者へ確認してください。</p>
+      </li>
+    </ul>
+    <div class="note">
+      <strong>迷ったら入場させない</strong>
+      <p>判定がOK以外のときは、自分の判断で入場させないでください。主催者に確認してから対応してください。</p>
+    </div>
+  </section>
+
+  <section id="trouble" aria-labelledby="trouble-h">
+    <h2 id="trouble-h">困ったとき</h2>
+    <div class="trouble">
+      <details>
+        <summary>「この受付リンクはもう使えません」と出る</summary>
+        <div>
+          <p>まず、スマートフォンの時計（日時）が正しいか確認してください。設定で日付と時刻を自動で合わせるようにします。</p>
+          <p>時計が正しいのに直らないときは、リンクが取り消されています。主催者に新しい受付リンクを発行してもらってください。</p>
+        </div>
+      </details>
+      <details>
+        <summary>「この受付リンクは別の端末で使用中です」と出る</summary>
+        <div>
+          <p>このリンクはほかのスマートフォンで先に開かれています。受付に使うスマートフォンを替える場合は、主催者に「取り消して再発行」してもらい、新しいリンクを開いてください。</p>
+        </div>
+      </details>
+      <details>
+        <summary>受付用のスマートフォンをなくした・壊れた</summary>
+        <div>
+          <p>すぐに主催者へ連絡してください。主催者がそのリンクを取り消すと、なくしたスマートフォンでは受付できなくなります。新しいリンクを別のスマートフォンで開けば受付を続けられます。</p>
+        </div>
+      </details>
+      <details>
+        <summary>「サーバーに接続できませんでした」「判定できませんでした」と出る</summary>
+        <div>
+          <p>まだ入場させないでください。電波やWi-Fiを確認してから、もう一度読み取ります。</p>
+        </div>
+      </details>
+      <details>
+        <summary>「しばらく開けません」と出る</summary>
+        <div>
+          <p>10分ほど待ってから、もう一度開いてください。続く場合は主催者に連絡してください。</p>
+        </div>
+      </details>
+      <details>
+        <summary>「受付は ○○ から始まります」「受付は ○○ に終了しました」と出る</summary>
+        <div>
+          <p>受付時間の外です。開始時刻になったら <span class="key">もう一度確認する</span> を押すと、スキャンを始められます。</p>
+        </div>
+      </details>
+      <details>
+        <summary>「受付時間が決まっていません」と出る</summary>
+        <div>
+          <p>公演の開始時刻がまだ設定されていません。主催者に確認してください。</p>
+        </div>
+      </details>
+      <details>
+        <summary>QRコードがなかなか読み取れない</summary>
+        <div>
+          <ul class="plain">
+            <li>お客様に画面の明るさを上げてもらう</li>
+            <li>QRコード全体がカメラに収まるよう、15〜25cmほど離す</li>
+            <li>照明が画面に反射しない角度にする</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary>お客様の画面に「別の端末に設定されています」と出ている</summary>
+        <div>
+          <p>そのお客様の入場用QRコードは別のスマートフォンに設定されています。お客様に、電波のある場所でチケット画面の「この端末で入場する」を押してもらうと、その端末でQRコードを表示できます。</p>
+        </div>
+      </details>
+      <details>
+        <summary>お客様が「QRコードが出ない」と言っている</summary>
+        <div>
+          <p>チケット画面は、電波のある場所で一度開いておく必要があります。電波の届く場所（入口の外など）で一度チケット画面を開いてもらってください。</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section id="organizer" class="organizer" aria-labelledby="organizer-h">
+    <h2 id="organizer-h">主催者の準備</h2>
+    <ul class="plain">
+      <li>公演を公開し、<strong>開始時刻</strong>を設定します。開始時刻のない公演には受付リンクを発行できません。</li>
+      <li>主催者コンソールの公演一覧で <span class="key">Reception links</span> を開き、<strong>受付用のスマートフォン1台につき1つ</strong>受付リンクを発行します（受付1、受付2…と番号が付きます）。</li>
+      <li>各リンクの <span class="key">URLをコピー</span> か <span class="key">共有</span> で、このガイドと一緒に受付スタッフへ渡します。スタッフが開くと「使用中」になります。</li>
+      <li>スマートフォンの紛失・交換のときは <span class="key">取り消して再発行</span> を使います。取り消したリンクはすぐに使えなくなります。</li>
+      <li>お客様には、公演の前に<strong>電波のある場所でチケット画面を一度開いておく</strong>よう案内してください。会場で電波がなくてもQRコードを表示できるようになります。</li>
+      <li>本番前のリハーサルは、本番とは別のテスト用の公演で行ってください。</li>
+    </ul>
+  </section>
+
+  <p class="foot">画面の文言は 2026年10月時点の受付画面に合わせています。</p>
+</main>
+</body>
+</html>
