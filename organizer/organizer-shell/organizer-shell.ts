@@ -60,6 +60,13 @@ import { route } from '@aurelia/router'
 			title: 'Lottery phase status',
 		},
 		{
+			// First-come ticket sale of one event (first-come-ticket-sales, task
+			// 7.1), reached from the event's row on the concerts dashboard.
+			path: 'ticket-sale/:eventId',
+			component: import('../ticket-sale-editor/ticket-sale-editor-route'),
+			title: 'First-come sale',
+		},
+		{
 			// Reception links of one event (ticket-wallet-and-checkin, task 5.1),
 			// reached from the event's row on the concerts dashboard.
 			path: 'reception-links/:eventId',

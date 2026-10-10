@@ -1,0 +1,92 @@
+@layer block {
+	@scope (ticket-sale-editor-route) {
+		.ticket-sale-editor {
+			--flow-space: var(--space-m);
+
+			max-inline-size: 48rem;
+			margin-inline: auto;
+			padding: var(--space-l) var(--space-m);
+		}
+
+		.ticket-sale-editor-header {
+			--flow-space: var(--space-2xs);
+		}
+
+		.ticket-sale-editor-back-link {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.ticket-sale-editor-title {
+			font-size: var(--step-3);
+		}
+
+		.ticket-sale-editor-note,
+		.ticket-sale-editor-hint {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
+		.ticket-sale-editor-subtitle {
+			font-size: var(--step-2);
+		}
+
+		.ticket-sale-editor-state {
+			font-size: var(--step--1);
+			font-weight: 400;
+			color: var(--color-text-secondary);
+		}
+
+		.ticket-sale-editor-fieldset {
+			--flow-space: var(--space-xs);
+
+			padding: var(--space-s);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-m);
+		}
+
+		.ticket-sale-editor-panel {
+			--flow-space: var(--space-s);
+
+			padding: var(--space-s);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-m);
+			background: var(--color-surface-raised);
+		}
+
+		.ticket-sale-editor-blocks {
+			--flow-space: var(--space-xs);
+
+			padding-inline-start: var(--space-m);
+		}
+
+		.ticket-sale-editor-counts {
+			display: grid;
+			gap: var(--space-2xs);
+
+			& div {
+				display: flex;
+				gap: var(--space-s);
+				justify-content: space-between;
+			}
+
+			& dt {
+				color: var(--color-text-secondary);
+			}
+
+			& dd {
+				font-weight: 600;
+			}
+		}
+
+		.ticket-sale-editor-locked-price {
+			font-size: var(--step-1);
+			color: var(--color-text-primary);
+		}
+
+		.ticket-sale-editor-saved {
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+	}
+}

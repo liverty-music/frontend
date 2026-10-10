@@ -1,3 +1,5 @@
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
 import {
 	type Event,
 	EventSchema,
@@ -13,8 +15,6 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError } from '@connectrpc/connect'
-import { tasksSettled } from '@aurelia/runtime'
-import { createFixture } from '@aurelia/testing'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../../helpers/create-container'
@@ -272,6 +272,37 @@ describe('ConcertsRoute', () => {
 			{ eventId: 'e3', label: 'Reception links' },
 		])
 		expect(vm.rows[2].receptionEvents).toEqual([])
+	})
+
+	it('reaches the first-come sale editor from every event of a concert that is not cancelled', async () => {
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeConcert('s1', 'Tour', PublishState.PUBLISHED, Visibility.PUBLIC, [
+						makeEvent('e1', 0),
+						makeEvent('e2', 1),
+					]),
+					makeConcert('s2', 'Draft', PublishState.DRAFT, Visibility.PUBLIC, [
+						makeEvent('e3'),
+					]),
+					makeConcert('s3', 'Gone', PublishState.CANCELLED, Visibility.PUBLIC, [
+						makeEvent('e4'),
+					]),
+				]),
+		})
+		const vm = build(client)
+		await vm.attached()
+
+		expect(vm.rows[0].ticketSaleEvents).toEqual([
+			{ eventId: 'e1', label: 'First-come sale · 2026-09-10' },
+			{ eventId: 'e2', label: 'First-come sale · 2026-09-11' },
+		])
+		// A draft reaches the editor, which says to publish first.
+		expect(vm.rows[1].ticketSaleEvents).toEqual([
+			{ eventId: 'e3', label: 'First-come sale' },
+		])
+		expect(vm.rows[2].ticketSaleEvents).toEqual([])
 	})
 
 	it('confirms then cancels a concert', async () => {
