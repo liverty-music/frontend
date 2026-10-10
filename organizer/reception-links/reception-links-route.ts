@@ -63,6 +63,14 @@ export function receptionUrl(receptionBaseUrl: string, token: string): string {
 	return `${receptionBaseUrl}/#${token}`
 }
 
+/**
+ * The reception guide for venue staff: a static page of the reception app, on
+ * the reception origin next to the reception screen.
+ */
+export function receptionGuideUrl(receptionBaseUrl: string): string {
+	return `${receptionBaseUrl}/guide.html`
+}
+
 function toRow(link: ReceptionLink, receptionBaseUrl: string): LinkRow {
 	const number = link.number?.value ?? 0
 	const token = link.token?.value ?? ''
@@ -122,6 +130,9 @@ export class ReceptionLinksRoute {
 	private abort: AbortController | null = null
 	/** Required by the organizer config loader (`requireReceptionBaseUrl`). */
 	private readonly receptionBaseUrl = resolve(IAppConfig).receptionBaseUrl ?? ''
+
+	/** The reception guide to hand to venue staff, opened in a new tab. */
+	public readonly guideUrl = receptionGuideUrl(this.receptionBaseUrl)
 
 	private readonly concerts = resolve(IConcertAuthoringClient)
 	private readonly links = resolve(IReceptionLinkClient)

@@ -54,7 +54,7 @@ describe('toVerdict', () => {
 						earlierAdmitTime: at,
 						earlierReceptionLinkNumber: { value: 2 },
 					},
-					{ reason: RejectedScanReason.NOT_HOLDER },
+					{ reason: RejectedScanReason.VOIDED },
 					{
 						reason: RejectedScanReason.ALREADY_ADMITTED,
 						earlierAdmitTime: at,
@@ -76,7 +76,9 @@ describe('toVerdict', () => {
 			[1, ''],
 			[1, '18:32'],
 		])
-		expect(v.reasons[1].reason).toBe('本人のチケットではありません')
+		expect(v.reasons[1].reason).toBe(
+			'無効なチケットです（払い戻し・リセール済み）',
+		)
 	})
 
 	it('is NG when every presented ticket is refused', () => {

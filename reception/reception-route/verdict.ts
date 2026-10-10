@@ -41,10 +41,16 @@ interface ReasonCopy {
 	readonly nextStep: string
 }
 
-const COPY: Record<
-	Exclude<RejectedScanReason, RejectedScanReason.UNSPECIFIED>,
-	ReasonCopy
-> = {
+/**
+ * The reasons the server returns. NOT_HOLDER is no longer returned: a code
+ * presenting someone else's ticket is refused as a whole with FORGED.
+ */
+type ReturnedReason = Exclude<
+	RejectedScanReason,
+	RejectedScanReason.UNSPECIFIED | RejectedScanReason.NOT_HOLDER
+>
+
+const COPY: Record<ReturnedReason, ReasonCopy> = {
 	[RejectedScanReason.FORGED]: {
 		reason: '有効な入場QRコードではありません',
 		nextStep:
@@ -57,11 +63,6 @@ const COPY: Record<
 	[RejectedScanReason.OTHER_EVENT]: {
 		reason: '別の公演のチケットです',
 		nextStep: 'この公演のチケットか確認してもらってください。',
-	},
-	[RejectedScanReason.NOT_HOLDER]: {
-		reason: '本人のチケットではありません',
-		nextStep:
-			'チケットを持っている本人のスマートフォンから、QRコードを表示してもらってください。',
 	},
 	[RejectedScanReason.VOIDED]: {
 		reason: '無効なチケットです（払い戻し・リセール済み）',
@@ -79,7 +80,10 @@ const UNKNOWN_COPY: ReasonCopy = {
 }
 
 function copyFor(reason: RejectedScanReason): ReasonCopy {
-	return reason === RejectedScanReason.UNSPECIFIED ? UNKNOWN_COPY : COPY[reason]
+	return reason === RejectedScanReason.UNSPECIFIED ||
+		reason === RejectedScanReason.NOT_HOLDER
+		? UNKNOWN_COPY
+		: COPY[reason]
 }
 
 /** The verdict for one decided scan. */

@@ -112,6 +112,45 @@ describe('ReceptionRoute', () => {
 		vi.useRealTimers()
 	})
 
+	describe('the reception guide is one tap away', () => {
+		const guideLink = (host: Element) =>
+			host.querySelector<HTMLAnchorElement>('a[href="/guide.html"]')
+
+		it('links the guide in a new tab while the screen keeps its state', async () => {
+			// @spec components/infrastructure/organizer/web/route/reception "Staff open the guide"
+			const client: MockClient = {
+				open: vi.fn().mockResolvedValue(openResponse(true)),
+				admit: vi.fn(),
+			}
+			const { fixture, route, scanners } = await build(client)
+			await route.startScanning()
+			expect(scanners).toHaveLength(1)
+
+			const link = guideLink(fixture.appHost)
+			expect(link).not.toBeNull()
+			expect(link?.textContent).toContain('受付の使い方')
+			expect(link?.getAttribute('target')).toBe('_blank')
+			expect(link?.getAttribute('rel')).toContain('noopener')
+			// A new tab leaves this screen as it was: still scanning, camera on.
+			expect(route.phase).toBe('ready')
+			expect(scanners[0].stopped).toBe(0)
+		})
+
+		it('offers the guide when the link cannot be used', async () => {
+			const client: MockClient = {
+				open: vi
+					.fn()
+					.mockRejectedValue(
+						new ConnectError('revoked', Code.PermissionDenied),
+					),
+				admit: vi.fn(),
+			}
+			const { fixture, route } = await build(client)
+			expect(route.phase).toBe('unusable')
+			expect(guideLink(fixture.appHost)).not.toBeNull()
+		})
+	})
+
 	describe('opened from the link without signing in', () => {
 		it('opens without a sign-in and shows the link label', async () => {
 			// @spec components/infrastructure/organizer/web/route/reception "Staff open the link"

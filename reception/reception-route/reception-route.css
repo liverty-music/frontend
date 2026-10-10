@@ -19,6 +19,12 @@
 			font-size: var(--step-3);
 		}
 
+		.reception-guide-link {
+			display: inline-block;
+			padding-block: var(--space-2xs);
+			font-size: var(--step--1);
+		}
+
 		.reception-notice {
 			--flow-space: var(--space-xs);
 
