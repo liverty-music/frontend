@@ -1,6 +1,5 @@
 import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve } from 'aurelia'
-import { MAX_TICKETS_PER_CODE } from '../../../shared/lib/admission-code/admission-code'
 import { admissionQrDataUrl } from '../../../shared/lib/admission-code/qr-svg'
 import { IScreenWakeLock } from '../../adapter/browser/screen-wake-lock'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
@@ -18,9 +17,9 @@ import {
 } from '../event/event-page'
 import { EntryCodeSession } from './entry-code-session'
 import {
-	defaultSelection,
 	enterableTickets,
 	groupByEvent,
+	presentedTickets,
 	type WalletEventGroup,
 	type WalletSnapshot,
 	type WalletTicket,
@@ -58,6 +57,9 @@ export const ADMISSION_POLL_MS = 5000
  *   when missing,
  *   public key registered); offline, the code is offered only on a device
  *   that was the entry device at the last online check.
+ * - The code presents every not-yet-entered ticket of the event (up to 10)
+ *   with no way to leave one out: the fan and their companions enter
+ *   together.
  * - The code is signed on the device every 15 seconds, with or without a
  *   connection, while the display is kept awake.
  */
@@ -91,8 +93,8 @@ export class TicketsRoute {
 
 	// ── Entry code state ─────────────────────────────────────────────────────
 	public codeGroup: WalletEventGroup | null = null
-	/** Ticket ids ticked for the code, in the fan's order. */
-	public selectedIds: string[] = []
+	/** The tickets the code presents: every enterable one, up to 10. */
+	public presented: WalletTicket[] = []
 	public readonly session = new EntryCodeSession((ticketIds, signTime) =>
 		this.signFor(ticketIds, signTime),
 	)
@@ -241,16 +243,12 @@ export class TicketsRoute {
 		return enterableTickets(group).length > 0
 	}
 
-	public enterable(group: WalletEventGroup): WalletTicket[] {
-		return enterableTickets(group)
-	}
-
 	public get canShowCode(): boolean {
 		return this.device === 'ready'
 	}
 
 	public get headCount(): number {
-		return this.selectedIds.length
+		return this.presented.length
 	}
 
 	/** The QR image of the current code, or empty when none may be shown. */
@@ -263,46 +261,26 @@ export class TicketsRoute {
 		return this.codeGroup !== null
 	}
 
-	/** Open the code for a group with every enterable ticket (up to 10) ticked. */
+	/** Open the code for a group, presenting every enterable ticket (up to 10). */
 	public openCode(group: WalletEventGroup): void {
 		if (!this.canShowCode || !this.offersCode(group)) return
 		this.codeGroup = group
-		this.selectedIds = defaultSelection(group)
-		void this.session.start(this.selectedIds)
+		this.presented = presentedTickets(group)
+		void this.session.start(this.presentedIds())
 		void this.wakeLock.acquire()
 		document.addEventListener('visibilitychange', this.onVisibilityChange)
 		this.startPolling()
 	}
 
-	public isSelected(ticketId: string): boolean {
-		return this.selectedIds.includes(ticketId)
-	}
-
-	/** A ticket can be ticked unless 10 already are. */
-	public canSelect(ticketId: string): boolean {
-		return (
-			this.isSelected(ticketId) ||
-			this.selectedIds.length < MAX_TICKETS_PER_CODE
-		)
-	}
-
-	/** Tick or untick a ticket: the code is remade at once for the new set. */
-	public toggle(ticketId: string, ticked: boolean): void {
-		const without = this.selectedIds.filter((id) => id !== ticketId)
-		if (ticked && this.canSelect(ticketId)) without.push(ticketId)
-		this.selectedIds = without
-		this.selectionChanged()
-	}
-
-	private selectionChanged(): void {
-		void this.session.setTickets(this.selectedIds)
+	private presentedIds(): string[] {
+		return this.presented.map((t) => t.id)
 	}
 
 	/** Close the code: withdraw it, let the display sleep again. */
 	public closeCode(): void {
 		if (this.codeGroup === null) return
 		this.codeGroup = null
-		this.selectedIds = []
+		this.presented = []
 		this.session.stop()
 		void this.wakeLock.release()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
@@ -378,12 +356,11 @@ export class TicketsRoute {
 			const eventId = this.codeGroup.eventId
 			this.codeGroup =
 				this.groups.find((g) => g.eventId === eventId) ?? this.codeGroup
-			const stillEnterable = this.selectedIds.filter(
-				(id) => byId.get(id)?.state === 'not-entered' || !byId.has(id),
-			)
-			if (stillEnterable.length !== this.selectedIds.length) {
-				this.selectedIds = stillEnterable
-				this.selectionChanged()
+			const before = this.presentedIds().join()
+			this.presented = presentedTickets(this.codeGroup)
+			// Admitted tickets leave the code: remake it for the rest at once.
+			if (this.presentedIds().join() !== before) {
+				void this.session.setTickets(this.presentedIds())
 			}
 		}
 	}

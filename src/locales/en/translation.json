@@ -404,7 +404,7 @@
 			"headCount": "Admits {{count}}",
 			"alt": "Entry QR code (admits {{count}})",
 			"making": "Making the QR code…",
-			"noneTicked": "Choose the tickets that are entering.",
+			"allEntered": "Every ticket has entered.",
 			"rotation": "The QR code changes every 15 seconds. Screenshots will not admit you.",
 			"brightness": "Turn up your screen brightness so it scans easily.",
 			"who": "Tickets entering together",

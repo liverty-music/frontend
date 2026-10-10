@@ -217,17 +217,15 @@
 			block-size: 100%;
 		}
 
-		.tickets-code-picks {
+		.tickets-code-who {
 			--flow-space: var(--space-2xs);
 
-			border: 0;
 			text-align: start;
 		}
 
-		.tickets-code-pick {
+		.tickets-code-tickets {
 			--cluster-gap: var(--space-xs);
 
-			min-block-size: 44px;
 			color: var(--color-text-primary);
 		}
 

@@ -8,7 +8,10 @@ import {
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
-import { Registration } from 'aurelia'
+import { I18nConfiguration } from '@aurelia/i18n'
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
+import { CustomElement, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
 	decodeAdmissionCode,
@@ -107,6 +110,19 @@ async function verifies(
 		new Uint8Array(signed),
 	)
 }
+
+/**
+ * A pass-through bottom sheet (jsdom has no Popover API); its own behaviour is
+ * covered by the bottom-sheet specs.
+ */
+const BottomSheetStub = CustomElement.define(
+	{
+		name: 'bottom-sheet',
+		template: '<au-slot></au-slot>',
+		bindables: ['open', 'dismissable', 'ariaLabel'],
+	},
+	class {},
+)
 
 const offlineError = () => new ConnectError('Failed to fetch', Code.Unavailable)
 
@@ -266,8 +282,7 @@ describe('TicketsRoute', () => {
 
 			// In a group with other tickets, the void one is never in the code.
 			sut.openCode(mixed)
-			expect(sut.selectedIds).toEqual([ticketId(3)])
-			expect(sut.enterable(mixed).map((t) => t.id)).toEqual([ticketId(3)])
+			expect(sut.presented.map((t) => t.id)).toEqual([ticketId(3)])
 			sut.closeCode()
 		})
 
@@ -563,31 +578,64 @@ describe('TicketsRoute', () => {
 			sut.closeCode()
 		})
 
-		it('states 2名 when one ticket is unticked, and the unticked one stays 未入場 after the scan', async () => {
-			// @spec components/infrastructure/fan/web/route/tickets "Companion arrives later"
+		it('presents all three tickets and renders no way to leave one out', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "No ticket left out"
 			ticketClient.getMyTickets.mockResolvedValue([
 				protoTicket(1),
 				protoTicket(2),
 				protoTicket(3),
 			])
-			const sut = await open()
+			const fixture = await createFixture(
+				'<tickets-route component.ref="route"></tickets-route>',
+				class Host {
+					public route!: TicketsRoute
+				},
+				[
+					I18nConfiguration.customize((o) => {
+						o.initOptions = {
+							lng: 'ja',
+							resources: { ja: { translation: ja } },
+						}
+					}),
+					TicketsRoute,
+					BottomSheetStub,
+					Registration.instance(ITicketRpcClient, ticketClient),
+					Registration.instance(IWalletPublicKeyRpcClient, keyClient),
+					Registration.instance(IConcertRpcClient, concertClient),
+					Registration.instance(IWalletStorage, storage),
+					Registration.singleton(ITicketWallet, TicketWallet),
+					Registration.instance(IScreenWakeLock, wakeLock),
+					Registration.instance(IUserStore, { currentLanguage: 'ja' }),
+				],
+			).started
+			const sut = fixture.component.route
+			// The router calls loading(); the fixture has no router.
+			sut.loading()
+			await vi.waitFor(() => expect(sut.device).toBe('ready'))
+
 			sut.openCode(sut.groups[0])
-			sut.toggle(ticketId(3), false)
-
-			expect(sut.headCount).toBe(2)
 			const code = await currentCode(sut)
-			expect(code?.ticketIds).toEqual([ticketId(1), ticketId(2)])
+			await tasksSettled()
 
-			// Staff scan the code: the two ticked tickets are admitted.
-			ticketClient.getMyTickets.mockResolvedValue([
-				protoTicket(1, { admitted: jst(10, 12) }),
-				protoTicket(2, { admitted: jst(10, 12) }),
-				protoTicket(3),
+			expect(sut.headCount).toBe(3)
+			expect(code?.ticketIds).toEqual([ticketId(1), ticketId(2), ticketId(3)])
+			const sheet = fixture.appHost.querySelector('.tickets-code')
+			expect(sheet?.textContent).toContain('3名')
+			const presented = [
+				...(sheet?.querySelectorAll('.tickets-code-tickets li') ?? []),
+			].map((li) => li.textContent?.trim())
+			expect(presented).toEqual(['チケット 1', 'チケット 2', 'チケット 3'])
+			// Nothing in the sheet can take a ticket out of the code.
+			expect(
+				sheet?.querySelectorAll('input, select, [role="checkbox"]'),
+			).toHaveLength(0)
+			const buttons = [...(sheet?.querySelectorAll('button') ?? [])]
+			expect(buttons.map((b) => b.textContent?.trim())).toEqual([
+				ja.tickets.code.close,
 			])
-			await sut.refreshStates()
-			const states = sut.groups[0].tickets.map((t) => t.state)
-			expect(states).toEqual(['entered', 'entered', 'not-entered'])
+
 			sut.closeCode()
+			await fixture.stop(true)
 		})
 
 		it('never presents more than 10 tickets', async () => {
@@ -597,21 +645,10 @@ describe('TicketsRoute', () => {
 			const sut = await open()
 			sut.openCode(sut.groups[0])
 			expect(sut.headCount).toBe(10)
-			expect(sut.canSelect(ticketId(11))).toBe(false)
-			sut.toggle(ticketId(11), true)
-			expect(sut.headCount).toBe(10)
-			sut.closeCode()
-		})
-
-		it('shows no code when nothing is ticked', async () => {
-			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
-			const sut = await open()
-			sut.openCode(sut.groups[0])
-			await currentCode(sut)
-			sut.toggle(ticketId(1), false)
-			expect(sut.headCount).toBe(0)
-			expect(sut.session.text).toBeNull()
-			expect(sut.codeImage).toBe('')
+			const code = await currentCode(sut)
+			expect(code?.ticketIds).toEqual(
+				Array.from({ length: 10 }, (_, i) => ticketId(i + 1)),
+			)
 			sut.closeCode()
 		})
 
@@ -677,6 +714,7 @@ describe('TicketsRoute', () => {
 			expect(sut.admitted(t1)).toContain('12:00')
 			// Nothing is left to enter, so no code is shown.
 			expect(sut.headCount).toBe(0)
+			expect(ja.tickets.code.allEntered).toContain('入場済み')
 			expect(sut.session.text).toBeNull()
 			sut.closeCode()
 		})

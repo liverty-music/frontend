@@ -106,9 +106,10 @@ export function enterableTickets(group: WalletEventGroup): WalletTicket[] {
 	return group.tickets.filter((t) => t.state === 'not-entered')
 }
 
-/** Tickets ticked by default for the entry code: every enterable one, up to 10. */
-export function defaultSelection(group: WalletEventGroup): string[] {
-	return enterableTickets(group)
-		.slice(0, MAX_TICKETS_PER_CODE)
-		.map((t) => t.id)
+/**
+ * The tickets the entry code presents: every enterable one, up to 10. The fan
+ * and their companions enter together, so none can be left out.
+ */
+export function presentedTickets(group: WalletEventGroup): WalletTicket[] {
+	return enterableTickets(group).slice(0, MAX_TICKETS_PER_CODE)
 }
