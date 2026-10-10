@@ -4,301 +4,657 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>入場受付スタッフガイド</title>
+<meta name="theme-color" content="#1a1333">
+<title>受付ガイド | Liverty Music</title>
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <!--
   Static guide for venue reception staff (OpenSpec ticket-wallet-and-checkin,
-  task 7.2). It is a plain page of the reception build: no script, no app
-  bootstrap, no sign-in. The reception screen and the console's reception-links
-  screen link here and open it in a new tab. Screen texts quoted below must
-  match reception/reception-route/*.html and verdict.ts; the guide test checks
-  the key ones.
+  task 7.2). A plain page of the reception build: no script, no app bootstrap,
+  no sign-in. The reception screen and the console's reception-links screen
+  link here in a new tab.
+
+  Structure follows the staff's story map: staff at the door look up what the
+  screen shows, so the verdicts and notices are drawn as they appear on the
+  reception screen (same colours as reception-verdict.css) and each leads
+  straight to "let in or not", what to tell the fan and what to do next.
+  Screen texts must match reception/reception-route/*.html and verdict.ts;
+  test/reception/guide.spec.ts checks the key ones.
 -->
 <style>
-/* Layout: one narrow reading column for a phone held at the door; steps, then verdicts, then troubleshooting. */
+/* Layout: one phone-width column under a sticky bottom nav; mock screens carry the meaning, text stays short. */
 :root {
-  --bg: #f6f7f4;
-  --surface: #ffffff;
-  --fg: #1d2420;
-  --muted: #56615a;
-  --line: #d7ddd8;
-  --accent: #1f5f8b;
-  --ok: #1b7a43;
-  --ok-bg: #e3f3e8;
-  --ng: #b3261e;
-  --ng-bg: #fbe7e5;
-  --warn: #8a5a00;
-  --warn-bg: #fdf1d8;
-  --wait: #4a5560;
-  --wait-bg: #e9edf0;
-  --font: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "BIZ UDPGothic", "Noto Sans JP", "Yu Gothic", "Meiryo", system-ui, sans-serif;
-  --s1: 0.5rem; --s2: 0.75rem; --s3: 1rem; --s4: 1.5rem; --s5: 2.25rem;
-  color-scheme: light;
+  /* Liverty Music stage-lit palette (src/styles/tokens.css, reception/styles/main.css). */
+  --brand: oklch(65% 0.28 350deg);
+  --brand-container: oklch(48% 0.19 350deg);
+  --on-brand-container: oklch(96% 0.04 350deg);
+  --blue: oklch(62% 0.25 255deg);
+  --lime: oklch(82% 0.22 140deg);
+  --surface: oklch(18% 0.04 275deg);
+  --surface-raised: oklch(22% 0.04 275deg);
+  --surface-overlay: oklch(26% 0.04 275deg);
+  --surface-deep: oklch(15% 0.04 275deg);
+  --text: oklch(98.5% 0 0deg);
+  --text-2: oklch(82% 0.02 275deg);
+  --text-3: oklch(68% 0.03 275deg);
+  --line: oklch(98.5% 0 0deg / 12%);
+  --line-strong: oklch(98.5% 0 0deg / 22%);
+  --error: oklch(65% 0.2 25deg);
+  /* Verdict colours, as on the reception screen (reception-verdict.css). */
+  --v-ok: oklch(45% 0.14 150deg);
+  --v-partial: oklch(80% 0.15 85deg);
+  --v-partial-on: oklch(18% 0.03 85deg);
+  --v-ng: oklch(48% 0.19 25deg);
+  --v-wait: oklch(35% 0.02 275deg);
+
+  --font-display: "Righteous", "Outfit", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+  --font-body: "Poppins", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+
+  --step--1: clamp(0.83rem, calc(0.78rem + 0.29vi), 0.95rem);
+  --step-0: clamp(1rem, calc(0.95rem + 0.25vi), 1.0625rem);
+  --step-1: clamp(1.15rem, calc(1.07rem + 0.4vi), 1.3rem);
+  --step-2: clamp(1.35rem, calc(1.2rem + 0.7vi), 1.65rem);
+  --step-3: clamp(1.7rem, calc(1.45rem + 1.2vi), 2.2rem);
+
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-s: 1rem;
+  --space-m: 1.5rem;
+  --space-l: 2rem;
+  --space-xl: 3rem;
+
+  --radius-s: 0.5rem;
+  --radius-m: 0.75rem;
+  --radius-l: 1rem;
+  --radius-xl: 1.5rem;
+
+  --nav-h: 4rem;
+  color-scheme: dark;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #141917; --surface: #1d2421; --fg: #e8ece9; --muted: #a3ada6; --line: #33403a;
-    --accent: #7fb8de; --ok: #7fd3a0; --ok-bg: #1d3427; --ng: #f2a19a; --ng-bg: #3b2220;
-    --warn: #f0c46b; --warn-bg: #3a2e14; --wait: #b9c3cc; --wait-bg: #262e33;
-    color-scheme: dark;
-  }
-}
+
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.75; }
-.page { max-width: 40rem; margin: 0 auto; padding-inline: 16px; padding-block: calc(var(--s4) + env(safe-area-inset-top, 0px)) calc(var(--s5) + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: var(--s5); }
-h1, h2, h3 { line-height: 1.35; text-wrap: balance; margin: 0; }
-h1 { font-size: 1.75rem; }
-h2 { font-size: 1.3rem; padding-bottom: var(--s1); border-bottom: 2px solid var(--fg); }
-h3 { font-size: 1.05rem; }
-p { margin: 0; }
-section { display: flex; flex-direction: column; gap: var(--s3); }
-header { display: flex; flex-direction: column; gap: var(--s2); }
-.lead { color: var(--muted); }
-.eyebrow { font-size: 0.8rem; letter-spacing: 0.08em; color: var(--accent); font-weight: 700; }
-.toc { display: flex; flex-wrap: wrap; gap: var(--s1); padding: 0; margin: 0; list-style: none; }
-.toc a { display: inline-block; padding: 0.35rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; color: var(--fg); text-decoration: none; font-size: 0.9rem; background: var(--surface); }
-a:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }
-.rule strong { font-size: 1.05rem; }
-ol.steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s3); }
-ol.steps > li { counter-increment: step; display: grid; grid-template-columns: 2.25rem 1fr; gap: var(--s2); }
-ol.steps > li::before { content: counter(step); width: 2.25rem; height: 2.25rem; border-radius: 50%; background: var(--fg); color: var(--bg); display: grid; place-items: center; font-weight: 700; }
-ol.steps > li > div { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
-.screen { font-weight: 700; }
-.screen::before { content: "画面: "; font-weight: 400; color: var(--muted); }
-.key { font-weight: 700; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 0.4rem; background: var(--surface); white-space: nowrap; }
-.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--s2); }
-.verdict { border-radius: 10px; padding: var(--s3); display: flex; flex-direction: column; gap: 0.25rem; border-left: 6px solid; }
-.verdict .big { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
-.v-ok { background: var(--ok-bg); border-color: var(--ok); }
-.v-ok .big { color: var(--ok); }
-.v-partial { background: var(--warn-bg); border-color: var(--warn); }
-.v-partial .big { color: var(--warn); }
-.v-ng { background: var(--ng-bg); border-color: var(--ng); }
-.v-ng .big { color: var(--ng); }
-.v-wait { background: var(--wait-bg); border-color: var(--wait); }
-.v-wait .big { color: var(--wait); }
-.reasons { display: flex; flex-direction: column; gap: var(--s2); padding: 0; margin: 0; list-style: none; }
-.reasons > li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s3); display: flex; flex-direction: column; gap: 0.25rem; }
-.reasons .reason { font-weight: 700; color: var(--ng); }
-.reasons .cause { color: var(--muted); font-size: 0.95rem; }
-.reasons .cause::before { content: "よくある原因: "; }
-.say { padding-left: var(--s1); border-left: 3px solid var(--line); }
-.say::before { content: "お客様へ: "; color: var(--muted); }
-.trouble { display: flex; flex-direction: column; gap: var(--s2); }
-details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: var(--s2) var(--s3); }
-details[open] { padding-bottom: var(--s3); }
-summary { cursor: pointer; font-weight: 700; }
-details > div { margin-top: var(--s2); display: flex; flex-direction: column; gap: var(--s1); }
-ul.plain { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
-.note { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }
-.note strong { color: var(--accent); }
-.organizer { background: var(--surface); border: 2px solid var(--accent); border-radius: 12px; padding: var(--s3); }
-.organizer h2 { border-bottom-color: var(--accent); }
-.foot { color: var(--muted); font-size: 0.85rem; }
+* { margin: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: var(--space-s); }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--surface);
+  background-image:
+    radial-gradient(60rem 30rem at 85% -10%, oklch(65% 0.28 350deg / 18%), transparent 60%),
+    radial-gradient(40rem 24rem at -10% 10%, oklch(62% 0.25 255deg / 14%), transparent 60%);
+  background-repeat: no-repeat;
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+}
+h1, h2, h3 { line-height: 1.3; text-wrap: balance; }
+a { color: inherit; }
+a:focus-visible, summary:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; border-radius: var(--radius-s); }
+strong { font-weight: 700; }
+
+.page {
+  max-inline-size: 36rem;
+  margin-inline: auto;
+  padding-inline: 16px;
+  padding-block: calc(var(--space-m) + env(safe-area-inset-top, 0px)) var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* ---------- Hero ---------- */
+.hero { display: flex; flex-direction: column; gap: var(--space-s); }
+.brand { display: flex; align-items: center; gap: var(--space-2xs); font-family: "Righteous", var(--font-display); letter-spacing: 0.02em; }
+.brand .dot { inline-size: 0.6rem; block-size: 0.6rem; border-radius: 50%; background: var(--brand); box-shadow: 0 0 12px var(--brand); }
+.brand .name { font-size: var(--step-0); }
+.brand .tag { margin-inline-start: auto; font-family: var(--font-body); font-size: var(--step--1); color: var(--text-3); border: 1px solid var(--line-strong); border-radius: 999px; padding: 0.1rem 0.6rem; }
+.hero h1 { font-family: "Righteous", var(--font-display); font-weight: 400; font-size: var(--step-3); letter-spacing: 0.02em; }
+.hero h1 em { font-style: normal; color: var(--brand); margin-inline-start: 0.15em; }
+.hero p { color: var(--text-2); }
+
+.entry { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xs); }
+.entry a {
+  display: flex; flex-direction: column; gap: var(--space-3xs);
+  padding: var(--space-s);
+  border-radius: var(--radius-l);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  text-decoration: none;
+  min-block-size: 6.5rem;
+}
+.entry a .k { font-size: var(--step--1); color: var(--text-3); }
+.entry a .t { font-weight: 700; font-size: var(--step-0); line-height: 1.35; }
+.entry a.primary { grid-column: 1 / -1; background: linear-gradient(135deg, var(--brand-container), oklch(42% 0.17 300deg)); border-color: transparent; color: var(--on-brand-container); min-block-size: auto; }
+.entry a.primary .k { color: oklch(96% 0.04 350deg / 80%); }
+
+/* ---------- Sections ---------- */
+section { display: flex; flex-direction: column; gap: var(--space-s); }
+.sec-head { display: flex; flex-direction: column; gap: var(--space-3xs); }
+.eyebrow { font-family: "Righteous", var(--font-display); font-size: var(--step--1); letter-spacing: 0.12em; text-transform: uppercase; color: var(--brand); }
+.sec-head h2 { font-size: var(--step-2); }
+.sec-head p { color: var(--text-2); font-size: var(--step--1); }
+
+/* ---------- Mock phone screen ---------- */
+.phone {
+  inline-size: 100%;
+  max-inline-size: 15rem;
+  margin-inline: auto;
+  aspect-ratio: 9 / 16;
+  border-radius: 1.6rem;
+  padding: 0.45rem;
+  background: oklch(10% 0.02 275deg);
+  box-shadow: 0 0 0 1px var(--line-strong), 0 16px 40px -12px oklch(0% 0 0deg / 70%);
+}
+.screen {
+  block-size: 100%;
+  border-radius: 1.25rem;
+  background: var(--surface);
+  padding: 0.9rem 0.75rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  overflow: hidden;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+.screen .s-brand { color: var(--brand); font-weight: 700; font-size: 0.62rem; }
+.screen .s-label { font-family: "Outfit", var(--font-display); font-weight: 700; font-size: 1.25rem; }
+.screen .s-window { color: var(--text-2); font-size: 0.6rem; }
+.screen .s-cam {
+  flex: 1;
+  min-block-size: 0;
+  border-radius: 0.6rem;
+  background: repeating-linear-gradient(45deg, oklch(26% 0.04 275deg) 0 6px, oklch(23% 0.04 275deg) 6px 12px);
+  display: grid; place-items: center;
+  position: relative;
+}
+.screen .s-cam .qr { inline-size: 42%; aspect-ratio: 1; border-radius: 0.3rem; background:
+  conic-gradient(from 90deg at 30% 30%, #000 25%, #fff 0 50%, #000 0 75%, #fff 0) 0 0 / 22% 22%;
+  outline: 0.35rem solid #fff; }
+.screen .s-btn { text-align: center; padding: 0.45rem; border-radius: 0.55rem; background: var(--brand); color: var(--surface); font-weight: 700; }
+.screen .s-btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line-strong); }
+.screen .s-notice { border: 1px solid var(--line-strong); border-radius: 0.55rem; padding: 0.55rem; background: var(--surface-raised); }
+.screen .s-notice.err { border-color: var(--error); }
+.screen .s-notice b { display: block; font-size: 0.8rem; margin-bottom: 0.2rem; }
+.screen .s-verdict { border-radius: 0.6rem; padding: 0.6rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.screen .s-verdict .h { font-family: "Outfit", var(--font-display); font-weight: 900; font-size: 1.9rem; line-height: 1.1; }
+.screen .s-guide { font-size: 0.58rem; text-decoration: underline; color: var(--text-2); }
+
+/* ---------- Steps ---------- */
+.steps { list-style: none; padding: 0; display: grid; gap: var(--space-m); counter-reset: step; }
+.step { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-s); align-items: start; padding: var(--space-s); border-radius: var(--radius-xl); background: var(--surface-raised); border: 1px solid var(--line); counter-increment: step; }
+/* The mock screen is drawn at full size and zoomed down beside the text. */
+.step .phone { zoom: 0.5; inline-size: 15rem; max-inline-size: none; }
+.step-head { display: flex; gap: var(--space-xs); align-items: flex-start; }
+.step-head::before {
+  content: counter(step);
+  flex: none;
+  inline-size: 2.25rem; block-size: 2.25rem;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-family: "Righteous", var(--font-display);
+  font-size: 1.15rem;
+  background: var(--brand);
+  color: var(--surface);
+}
+.step-head h3 { font-size: var(--step-1); }
+.step-head p { color: var(--text-2); font-size: var(--step--1); margin-top: var(--space-3xs); }
+.tips { list-style: none; padding: 0; display: grid; gap: var(--space-2xs); }
+.tips li { position: relative; padding-inline-start: 1rem; font-size: var(--step--1); color: var(--text-2); }
+.tips li::before { content: ""; position: absolute; inset-inline-start: 0; inset-block-start: 0.6rem; inline-size: 0.45rem; block-size: 0.45rem; border-radius: 50%; background: var(--lime); }
+.tips li.warn::before { background: var(--error); }
+
+/* ---------- Verdict cheat sheet ---------- */
+.verdicts { display: grid; gap: var(--space-xs); }
+.v-card { display: grid; grid-template-columns: 7.5rem 1fr; gap: var(--space-s); align-items: center; padding: var(--space-xs); border-radius: var(--radius-l); background: var(--surface-raised); border: 1px solid var(--line); }
+.v-tile { border-radius: var(--radius-m); padding: 0.7rem 0.6rem; min-block-size: 4.5rem; display: flex; flex-direction: column; justify-content: center; }
+.v-tile .h { font-family: "Outfit", var(--font-display); font-weight: 900; font-size: 1.6rem; line-height: 1.05; }
+.v-tile .h small { font-size: 0.9rem; font-weight: 700; }
+.v-tile .sub { font-size: 0.66rem; line-height: 1.35; margin-top: 0.15rem; }
+.v-ok { background: var(--v-ok); }
+.v-partial { background: var(--v-partial); color: var(--v-partial-on); }
+.v-ng { background: var(--v-ng); }
+.v-wait { background: var(--v-wait); }
+.v-wait .h { font-size: 0.95rem; font-weight: 700; }
+.v-do { display: flex; flex-direction: column; gap: var(--space-3xs); }
+.v-do .act { font-weight: 700; font-size: var(--step-1); line-height: 1.35; }
+.v-do .more { font-size: var(--step--1); color: var(--text-2); }
+
+/* ---------- Decision flow ---------- */
+.flow-fig { padding: var(--space-s); border-radius: var(--radius-xl); background: var(--surface-deep); border: 1px solid var(--line); }
+.flow-fig svg { display: block; inline-size: 100%; block-size: auto; }
+.flow-fig figcaption { font-size: var(--step--1); color: var(--text-3); margin-top: var(--space-2xs); }
+
+/* ---------- Reason cards ---------- */
+.reasons { display: grid; gap: var(--space-s); }
+.reason { border-radius: var(--radius-xl); background: var(--surface-raised); border: 1px solid var(--line); overflow: hidden; }
+.reason-top { padding: var(--space-s); background: var(--v-ng); display: flex; flex-direction: column; gap: var(--space-3xs); }
+.reason-top .ng { font-family: "Outfit", var(--font-display); font-weight: 900; font-size: 0.85rem; letter-spacing: 0.08em; opacity: 0.85; }
+.reason-top .msg { font-weight: 700; font-size: var(--step-1); line-height: 1.35; }
+.reason-top .detail { font-size: var(--step--1); opacity: 0.9; }
+.reason-body { padding: var(--space-s); display: grid; gap: var(--space-xs); }
+.verdict-line { display: inline-flex; align-items: center; gap: var(--space-2xs); font-weight: 700; }
+.badge { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 0.1rem 0.55rem; border-radius: 999px; }
+.badge.stop { background: oklch(48% 0.19 25deg / 35%); color: oklch(88% 0.08 25deg); border: 1px solid oklch(65% 0.2 25deg / 60%); }
+.badge.retry { background: oklch(82% 0.22 140deg / 18%); color: var(--lime); border: 1px solid oklch(82% 0.22 140deg / 50%); }
+.badge.ask { background: oklch(62% 0.25 255deg / 22%); color: oklch(85% 0.1 255deg); border: 1px solid oklch(62% 0.25 255deg / 55%); }
+.cause { font-size: var(--step--1); color: var(--text-3); }
+.say {
+  position: relative;
+  padding: var(--space-xs) var(--space-s);
+  border-radius: var(--radius-l);
+  border-start-start-radius: var(--radius-s);
+  background: var(--surface-overlay);
+  font-size: var(--step-0);
+}
+.say::before { content: "お客様へ"; display: block; font-size: 0.7rem; font-weight: 700; color: var(--brand); letter-spacing: 0.06em; margin-bottom: 0.15rem; }
+.next { font-size: var(--step--1); color: var(--text-2); }
+.next b { color: var(--text); }
+
+.rule-box { padding: var(--space-s); border-radius: var(--radius-l); border: 1px solid var(--brand); background: oklch(65% 0.28 350deg / 10%); display: flex; gap: var(--space-xs); align-items: flex-start; }
+.rule-box .icon { flex: none; inline-size: 1.75rem; block-size: 1.75rem; border-radius: 50%; display: grid; place-items: center; background: var(--brand); color: var(--surface); font-weight: 700; }
+.rule-box p { font-size: var(--step--1); color: var(--text-2); }
+.rule-box b { display: block; color: var(--text); font-size: var(--step-0); }
+
+/* ---------- Troubleshooting ---------- */
+.trouble { display: grid; gap: var(--space-xs); }
+details.t {
+  border-radius: var(--radius-l);
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+}
+details.t[open] { border-color: var(--line-strong); }
+details.t > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: var(--space-s);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-xs);
+  align-items: center;
+}
+details.t > summary::-webkit-details-marker { display: none; }
+details.t > summary::after { content: "+"; font-family: "Outfit", var(--font-display); font-size: 1.4rem; color: var(--text-3); line-height: 1; }
+details.t[open] > summary::after { content: "−"; }
+.t-q { display: flex; flex-direction: column; gap: 0.15rem; }
+.t-q .shown { font-size: 0.7rem; color: var(--text-3); letter-spacing: 0.04em; }
+.t-q .text { font-weight: 700; line-height: 1.4; }
+.t-a { padding: 0 var(--space-s) var(--space-s); display: grid; gap: var(--space-xs); }
+.t-a ol { padding-inline-start: 1.25rem; display: grid; gap: var(--space-3xs); font-size: var(--step--1); color: var(--text-2); }
+.t-a ol b { color: var(--text); }
+.group-label { font-size: var(--step--1); font-weight: 700; color: var(--text-3); margin-top: var(--space-xs); }
+
+/* ---------- Scan tips figure ---------- */
+.scan-fig { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2xs); }
+.scan-fig figure { padding: var(--space-xs); border-radius: var(--radius-l); background: var(--surface-raised); border: 1px solid var(--line); display: flex; flex-direction: column; gap: var(--space-2xs); align-items: center; text-align: center; }
+.scan-fig svg { inline-size: 100%; max-inline-size: 5.5rem; block-size: auto; }
+.scan-fig figcaption { font-size: 0.75rem; line-height: 1.4; color: var(--text-2); }
+.scan-fig figcaption b { display: block; color: var(--text); font-size: 0.82rem; }
+
+/* ---------- Checklist ---------- */
+.check { list-style: none; padding: 0; display: grid; gap: var(--space-2xs); }
+.check li { display: grid; grid-template-columns: 1.4rem 1fr; gap: var(--space-xs); padding: var(--space-xs) var(--space-s); border-radius: var(--radius-m); background: var(--surface-raised); border: 1px solid var(--line); }
+.check li::before { content: ""; inline-size: 1.15rem; block-size: 1.15rem; margin-top: 0.3rem; border-radius: 0.3rem; border: 2px solid var(--lime); }
+.check li > div { min-width: 0; }
+.check li p { line-height: 1.55; }
+.check li small { display: block; margin-top: var(--space-3xs); color: var(--text-3); font-size: var(--step--1); line-height: 1.5; }
+.when { display: block; font-family: "Righteous", var(--font-display); font-size: 0.75rem; letter-spacing: 0.08em; color: var(--blue); }
+
+/* ---------- Organizer ---------- */
+.organizer { padding: var(--space-m) var(--space-s); border-radius: var(--radius-xl); background: var(--surface-deep); border: 1px dashed var(--line-strong); }
+.organizer ol { padding-inline-start: 1.25rem; display: grid; gap: var(--space-2xs); font-size: var(--step--1); color: var(--text-2); }
+.organizer ol b { color: var(--text); }
+.key { display: inline-block; font-weight: 700; color: var(--text); padding: 0 0.45rem; border-radius: 0.4rem; border: 1px solid var(--line-strong); background: var(--surface-overlay); white-space: nowrap; font-size: 0.92em; }
+
+.foot { font-size: var(--step--1); color: var(--text-3); text-align: center; }
+
+/* ---------- Bottom nav ---------- */
+.nav {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 10;
+  padding-block-end: env(safe-area-inset-bottom, 0px);
+  background: oklch(15% 0.04 275deg / 92%);
+  border-top: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.nav ul { list-style: none; padding: 0; margin-inline: auto; max-inline-size: 36rem; display: grid; grid-template-columns: repeat(5, 1fr); block-size: var(--nav-h); }
+.nav a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; block-size: 100%; text-decoration: none; font-size: 0.68rem; color: var(--text-2); }
+.nav a svg { inline-size: 1.35rem; block-size: 1.35rem; }
+.nav a.hot { color: var(--brand); }
+
+@media (min-width: 40rem) {
+  .step .phone { zoom: 0.65; }
+  .v-card { grid-template-columns: 9rem 1fr; }
+}
 </style>
 </head>
 <body>
 <main class="page">
-  <header>
-    <p class="eyebrow">Liverty Music 受付</p>
-    <h1>入場受付スタッフガイド</h1>
-    <p class="lead">お客様のスマートフォンに表示された入場QRコードを、受付用のスマートフォンで読み取って入場を判定します。アプリのインストールやアカウントは必要ありません。</p>
-    <ul class="toc" aria-label="目次">
-      <li><a href="#before">受付の前に</a></li>
-      <li><a href="#steps">受付の手順</a></li>
-      <li><a href="#verdict">判定の見方</a></li>
-      <li><a href="#ng">NGのとき</a></li>
-      <li><a href="#trouble">困ったとき</a></li>
-      <li><a href="#organizer">主催者の準備</a></li>
-    </ul>
+
+  <!-- Hero: who this is for and the two ways in (first read vs. at the door). -->
+  <header class="hero" id="top">
+    <div class="brand"><span class="dot" aria-hidden="true"></span><span class="name">Liverty Music</span><span class="tag">受付スタッフ用</span></div>
+    <h1>入場受付<em>ガイド</em></h1>
+    <p>お客様のスマホの入場QRコードを、受付用スマホのカメラで読み取ります。受付中は、画面に出た<strong>色と文字</strong>でこのガイドを引いてください。</p>
+    <nav class="entry" aria-label="目的別の入口">
+      <a class="primary" href="#verdict"><span class="k">受付中に</span><span class="t">判定の見方とNGの対応</span></a>
+      <a href="#steps"><span class="k">はじめての方</span><span class="t">受付の3ステップ</span></a>
+      <a href="#trouble"><span class="k">画面が使えない</span><span class="t">困ったとき</span></a>
+    </nav>
   </header>
 
-  <section id="before" aria-labelledby="before-h">
-    <h2 id="before-h">受付の前に知っておくこと</h2>
-    <div class="rule">
-      <strong>受付リンクは1台に1つ</strong>
-      <p>主催者から受け取った受付リンク（URL）は、最初に開いたスマートフォンでしか使えません。ほかの人にURLを転送しても、その人のスマートフォンでは使えません。</p>
+  <!-- 1. Prepare: what to check before the day. -->
+  <section id="prep" aria-labelledby="prep-h">
+    <div class="sec-head">
+      <span class="eyebrow">Before</span>
+      <h2 id="prep-h">受付の前にやること</h2>
     </div>
-    <div class="rule">
-      <strong>受付できるのは受付時間の間だけ</strong>
-      <p>開場の3時間前（開場時刻が決まっていないときは開演の3時間前）から、公演日の翌日の朝4時までです。受付時間は受付画面に表示されます。</p>
-    </div>
-    <div class="rule">
-      <strong>電波が必要です</strong>
-      <p>読み取るたびにサーバーで判定します。受付用のスマートフォンは、会場のWi-Fiか電波の届く場所で使ってください。お客様のスマートフォンは電波がなくてもQRコードを表示できます。</p>
-    </div>
-    <div class="rule">
-      <strong>お客様の名前は表示されません</strong>
-      <p>受付画面には人数と判定だけが出ます。本人確認が必要なときは、お客様のチケット画面に表示されている名前と身分証を見比べてください。</p>
-    </div>
+    <ul class="check">
+      <li><div><span class="when">前日まで</span><p>主催者から届いた<strong>受付リンクを、受付に使うスマホで開く</strong></p><small>開いた端末だけで使えます。人に転送しても使えません。</small></div></li>
+      <li><div><span class="when">前日まで</span><p>iPhoneは<strong>Safari</strong>、Androidは<strong>Chrome</strong>で開く</p><small>ホーム画面には追加しないでください。カメラの許可を何度も聞かれます。</small></div></li>
+      <li><div><span class="when">当日</span><p>受付用のスマホを<strong>電波かWi-Fiのある場所</strong>で使う</p><small>読み取るたびにサーバーで判定します。お客様のスマホは電波がなくても大丈夫です。</small></div></li>
+      <li><div><span class="when">当日</span><p>スマホの<strong>時計（日時）が自動設定</strong>になっているか確認</p><small>時計が大きくずれていると受付リンクが使えません。</small></div></li>
+    </ul>
   </section>
 
+  <!-- 2. Steps with mock screens. -->
   <section id="steps" aria-labelledby="steps-h">
-    <h2 id="steps-h">受付の手順</h2>
+    <div class="sec-head">
+      <span class="eyebrow">How to</span>
+      <h2 id="steps-h">受付の3ステップ</h2>
+      <p>受付できるのは、開場の3時間前（開場時刻がない公演は開演の3時間前）から、公演日の翌朝4時までです。</p>
+    </div>
     <ol class="steps">
-      <li><div>
-        <h3>受付リンクをブラウザで開く</h3>
-        <p>iPhoneは<strong>Safari</strong>、Androidは<strong>Chrome</strong>で開きます。ホーム画面には追加しないでください（追加するとカメラの許可を何度も聞かれることがあります）。</p>
-        <p class="screen">「受付1」のように、受付リンクの番号が表示されます</p>
-        <p>受付の前日までに一度開いておくと安心です。受付時間の前は「受付は ○○ から始まります」と表示されます。</p>
-      </div></li>
-      <li><div>
-        <h3>受付時間になったら <span class="key">スキャンを開始</span> を押す</h3>
-        <p>カメラの使用を聞かれたら「許可」を選んでください。背面カメラが起動します。</p>
-      </div></li>
-      <li><div>
-        <h3>お客様のQRコードをカメラに映す</h3>
-        <p>お客様にはチケット画面のQRコードを見せてもらいます。読み取ると自動で判定されます（「判定中…」と表示されます）。</p>
-        <p>QRコードは15秒ごとに変わります。そのまま映し続けて大丈夫です。</p>
-      </div></li>
-      <li><div>
-        <h3>判定を見て、表示された人数だけ入場させる</h3>
-        <p>判定の見方は次のとおりです。</p>
-      </div></li>
-      <li><div>
-        <h3>受付が終わったら <span class="key">スキャンを停止</span> を押す</h3>
-        <p>画面を閉じるとカメラも止まります。</p>
-      </div></li>
+      <li class="step">
+        <div>
+          <div class="step-head"><div><h3>受付リンクを開く</h3><p>「受付1」のように番号が出たら準備完了。受付時間の前は「受付は ○○ から始まります」と出ます。</p></div></div>
+        </div>
+        <div class="phone" role="img" aria-label="受付画面の例。Liverty Music 受付、受付1、受付時間、スキャンを開始のボタン">
+          <div class="screen">
+            <span class="s-brand">Liverty Music 受付</span>
+            <span class="s-label">受付1</span>
+            <span class="s-guide">受付の使い方</span>
+            <span class="s-window">受付時間: 11/20 15:00 〜 11/21 04:00</span>
+            <div class="s-cam" aria-hidden="true"></div>
+            <span class="s-btn">スキャンを開始</span>
+          </div>
+        </div>
+      </li>
+      <li class="step">
+        <div>
+          <div class="step-head"><div><h3>スキャンを開始 → QRを映す</h3><p>カメラの許可は「許可」。お客様のチケット画面のQRコードを映すと、自動で「判定中…」になります。</p></div></div>
+          <ul class="tips" style="margin-top: var(--space-s)">
+            <li>QRコードは15秒ごとに変わります。映したままでOK。</li>
+            <li>読み取れないときは <a href="#scan-tips">読み取りのコツ</a></li>
+          </ul>
+        </div>
+        <div class="phone" role="img" aria-label="スキャン中の受付画面の例。カメラにQRコードが映っている">
+          <div class="screen">
+            <span class="s-brand">Liverty Music 受付</span>
+            <span class="s-label">受付1</span>
+            <div class="s-cam" aria-hidden="true"><span class="qr"></span></div>
+            <span class="s-window">判定中…</span>
+            <span class="s-btn ghost">スキャンを停止</span>
+          </div>
+        </div>
+      </li>
+      <li class="step">
+        <div>
+          <div class="step-head"><div><h3>判定を見て、その人数だけ通す</h3><p>緑の「OK 3名」なら3人通します。それ以外は <a href="#verdict">判定の見方</a> へ。</p></div></div>
+          <ul class="tips" style="margin-top: var(--space-s)">
+            <li>終わったら「スキャンを停止」。画面を閉じてもカメラは止まります。</li>
+          </ul>
+        </div>
+        <div class="phone" role="img" aria-label="判定の例。緑色の背景に OK 3名">
+          <div class="screen">
+            <span class="s-brand">Liverty Music 受付</span>
+            <span class="s-label">受付1</span>
+            <div class="s-verdict v-ok"><span class="h">OK 3名</span></div>
+            <div class="s-cam" aria-hidden="true"></div>
+            <span class="s-btn ghost">スキャンを停止</span>
+          </div>
+        </div>
+      </li>
     </ol>
   </section>
 
+  <!-- 3. Verdict cheat sheet: the most frequent lookup, first after the steps. -->
   <section id="verdict" aria-labelledby="verdict-h">
-    <h2 id="verdict-h">判定の見方</h2>
+    <div class="sec-head">
+      <span class="eyebrow">Verdict</span>
+      <h2 id="verdict-h">判定の見方</h2>
+      <p>画面の色で、まずこれだけ判断します。</p>
+    </div>
     <div class="verdicts">
-      <div class="verdict v-ok"><span class="big">OK 3名</span><p>表示された人数を入場させてください。</p></div>
-      <div class="verdict v-partial"><span class="big">OK 2名</span><p>「2名だけ入場させてください。」と出たら、その人数だけ入場させ、残りの方には下に出る理由を伝えてください。</p></div>
-      <div class="verdict v-ng"><span class="big">NG</span><p>入場させないでください。理由と、お客様に伝えることが表示されます。</p></div>
-      <div class="verdict v-wait"><span class="big">判定できませんでした</span><p>まだ入場させないでください。通信が戻ると自動でもう一度送ります。<span class="key">もう一度送信する</span> でも送れます。</p></div>
+      <div class="v-card">
+        <div class="v-tile v-ok" aria-hidden="true"><span class="h">OK <small>3名</small></span></div>
+        <div class="v-do"><span class="act">表示された人数を通す</span><span class="more">緑は全員OK。</span></div>
+      </div>
+      <div class="v-card">
+        <div class="v-tile v-ng" aria-hidden="true"><span class="h">NG</span><span class="sub">理由とお客様への案内が出ます</span></div>
+        <div class="v-do"><span class="act">通さない</span><span class="more">出た理由を <a href="#ng">NGの対応</a> で探します。</span></div>
+      </div>
+      <div class="v-card">
+        <div class="v-tile v-wait" aria-hidden="true"><span class="h">判定できませんでした</span></div>
+        <div class="v-do"><span class="act">まだ通さない</span><span class="more">通信が戻ると自動で送り直します。「もう一度送信する」でも送れます。</span></div>
+      </div>
+      <div class="v-card">
+        <div class="v-tile v-partial" aria-hidden="true"><span class="h">OK <small>2名</small></span><span class="sub">2名だけ入場させてください。</span></div>
+        <div class="v-do"><span class="act">その人数だけ通す</span><span class="more">まれです。グループの一部のチケットが払い戻しやリセールで無効になっていたときなどに出ます。残りの方には、下に出た理由を伝えて止めます。</span></div>
+      </div>
     </div>
-    <p>同じお客様のQRコードを続けて映しても、OKのあと20秒は送り直しません。OKの表示はそのまま残ります。</p>
+
+    <figure class="flow-fig">
+      <svg viewBox="0 0 340 250" role="img" aria-labelledby="flow-title">
+        <title id="flow-title">判定の流れ。QRを読み取り、OKなら表示人数を通す。一部OKならその人数だけ通し残りに理由を伝える。NGなら通さず理由で対応。判定できなければ通さず再送を待つ。</title>
+        <defs>
+          <marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 8 4 0 8z" fill="oklch(82% 0.02 275deg)"/></marker>
+        </defs>
+        <rect x="110" y="6" width="120" height="34" rx="17" fill="oklch(65% 0.28 350deg)"/>
+        <text x="170" y="28" text-anchor="middle" font-size="13" font-weight="700" fill="oklch(18% 0.04 275deg)">QRを読み取る</text>
+        <path d="M170 40v22" stroke="oklch(82% 0.02 275deg)" stroke-width="1.5" marker-end="url(#ar)" fill="none"/>
+        <path d="M44 72h252" stroke="oklch(82% 0.02 275deg)" stroke-width="1.5" fill="none"/>
+        <path d="M44 72v24M128 72v24M212 72v24M296 72v24" stroke="oklch(82% 0.02 275deg)" stroke-width="1.5" marker-end="url(#ar)" fill="none"/>
+        <rect x="6" y="100" width="76" height="40" rx="8" fill="oklch(45% 0.14 150deg)"/>
+        <text x="44" y="125" text-anchor="middle" font-size="13" font-weight="700" fill="oklch(98.5% 0 0deg)">OK</text>
+        <rect x="90" y="100" width="76" height="40" rx="8" fill="oklch(80% 0.15 85deg)"/>
+        <text x="128" y="125" text-anchor="middle" font-size="12" font-weight="700" fill="oklch(18% 0.03 85deg)">一部OK</text>
+        <rect x="174" y="100" width="76" height="40" rx="8" fill="oklch(48% 0.19 25deg)"/>
+        <text x="212" y="125" text-anchor="middle" font-size="13" font-weight="700" fill="oklch(98.5% 0 0deg)">NG</text>
+        <rect x="258" y="100" width="76" height="40" rx="8" fill="oklch(35% 0.02 275deg)"/>
+        <text x="296" y="119" text-anchor="middle" font-size="10" font-weight="700" fill="oklch(98.5% 0 0deg)">判定でき</text>
+        <text x="296" y="132" text-anchor="middle" font-size="10" font-weight="700" fill="oklch(98.5% 0 0deg)">ませんでした</text>
+        <path d="M44 140v22M128 140v22M212 140v22M296 140v22" stroke="oklch(82% 0.02 275deg)" stroke-width="1.5" marker-end="url(#ar)" fill="none"/>
+        <g font-size="11" fill="oklch(98.5% 0 0deg)" text-anchor="middle">
+          <rect x="6" y="166" width="76" height="76" rx="8" fill="oklch(22% 0.04 275deg)" stroke="oklch(98.5% 0 0deg / 22%)"/>
+          <text x="44" y="194">表示人数を</text><text x="44" y="210" font-weight="700">通す</text>
+          <rect x="90" y="166" width="76" height="76" rx="8" fill="oklch(22% 0.04 275deg)" stroke="oklch(98.5% 0 0deg / 22%)"/>
+          <text x="128" y="188">その人数だけ</text><text x="128" y="204" font-weight="700">通す</text><text x="128" y="224" fill="oklch(82% 0.02 275deg)">残りは理由を</text><text x="128" y="237" fill="oklch(82% 0.02 275deg)">伝える</text>
+          <rect x="174" y="166" width="76" height="76" rx="8" fill="oklch(22% 0.04 275deg)" stroke="oklch(98.5% 0 0deg / 22%)"/>
+          <text x="212" y="194" font-weight="700">通さない</text><text x="212" y="212" fill="oklch(82% 0.02 275deg)">理由ごとに</text><text x="212" y="226" fill="oklch(82% 0.02 275deg)">対応</text>
+          <rect x="258" y="166" width="76" height="76" rx="8" fill="oklch(22% 0.04 275deg)" stroke="oklch(98.5% 0 0deg / 22%)"/>
+          <text x="296" y="194" font-weight="700">まだ通さない</text><text x="296" y="212" fill="oklch(82% 0.02 275deg)">電波を確認</text><text x="296" y="226" fill="oklch(82% 0.02 275deg)">自動で再送</text>
+        </g>
+      </svg>
+      <figcaption>迷ったら通さず、主催者に確認します。</figcaption>
+    </figure>
   </section>
 
+  <!-- 4. NG reasons, most frequent first. Each card: verdict line, what to say, what next. -->
   <section id="ng" aria-labelledby="ng-h">
-    <h2 id="ng-h">NGのときにお客様へ伝えること</h2>
-    <ul class="reasons">
-      <li>
-        <p class="reason">QRコードの有効期限切れです</p>
-        <p class="cause">スクリーンショットや、しばらく開いたままの古い画面</p>
-        <p class="say">チケット画面のQRコードを開き直してください。</p>
-      </li>
-      <li>
-        <p class="reason">有効な入場QRコードではありません</p>
-        <p class="cause">別のアプリのQRコード、画像の転送、機種変更前の古いスマートフォン</p>
-        <p class="say">チケットを登録したスマートフォンのチケット画面から、QRコードを表示してください。</p>
-      </li>
-      <li>
-        <p class="reason">本人のチケットではありません</p>
-        <p class="cause">ほかの人のチケットが混ざっている</p>
-        <p class="say">チケットを持っている本人のスマートフォンから、QRコードを表示してください。</p>
-      </li>
-      <li>
-        <p class="reason">別の公演のチケットです</p>
-        <p class="cause">日付や公演の違うチケット</p>
-        <p class="say">この公演のチケットか確認してください。</p>
-      </li>
-      <li>
-        <p class="reason">使用済みです</p>
-        <p class="cause">すでに入場済み。ほかの受付で先に読み取られた（「18:32 受付1」のように、前に入場した時刻と受付番号が出ます）</p>
-        <p>入場させずに主催者へ確認してください。表示された時刻と受付番号を伝えると早く確認できます。</p>
-      </li>
-      <li>
-        <p class="reason">無効なチケットです（払い戻し・リセール済み）</p>
-        <p class="cause">払い戻しや公式リセールで無効になったチケット</p>
-        <p>このチケットでは入場できません。主催者へ確認してください。</p>
-      </li>
-    </ul>
-    <div class="note">
-      <strong>迷ったら入場させない</strong>
-      <p>判定がOK以外のときは、自分の判断で入場させないでください。主催者に確認してから対応してください。</p>
+    <div class="sec-head">
+      <span class="eyebrow">NG</span>
+      <h2 id="ng-h">NGの理由別の対応</h2>
+      <p>赤い画面に出た理由の文字で探します。よく起きる順に並んでいます。</p>
+    </div>
+    <div class="reasons">
+      <article class="reason" id="ng-expired">
+        <div class="reason-top"><span class="ng">NG</span><span class="msg">QRコードの有効期限切れです</span></div>
+        <div class="reason-body">
+          <span class="verdict-line"><span class="badge retry">開き直してもらえば通れる</span></span>
+          <p class="cause">よくある原因: スクリーンショット、しばらく開いたままの古い画面</p>
+          <p class="say">チケット画面のQRコードを開き直してください。</p>
+          <p class="next"><b>次に:</b> 開き直したQRをもう一度読み取ります。</p>
+        </div>
+      </article>
+      <article class="reason" id="ng-invalid">
+        <div class="reason-top"><span class="ng">NG</span><span class="msg">有効な入場QRコードではありません</span></div>
+        <div class="reason-body">
+          <span class="verdict-line"><span class="badge retry">正しい画面から出せば通れる</span></span>
+          <p class="cause">よくある原因: 別のアプリのQR、転送された画像、機種変更前の古いスマホ、他人のチケットを混ぜたQR</p>
+          <p class="say">チケットを登録したスマートフォンのチケット画面から、QRコードを表示してください。</p>
+          <p class="next"><b>次に:</b> お客様の画面に「別の端末に設定されています」と出ていたら、<a href="#t-other-device">こちら</a>。</p>
+        </div>
+      </article>
+      <article class="reason" id="ng-used">
+        <div class="reason-top"><span class="ng">NG</span><span class="msg">使用済みです</span><span class="detail">（18:32 受付1 のように、前に入場した時刻と受付番号が出ます）</span></div>
+        <div class="reason-body">
+          <span class="verdict-line"><span class="badge stop">通さない</span><span class="badge ask">主催者に確認</span></span>
+          <p class="cause">よくある原因: すでに入場済み。グループは全員一緒に入場するので、同じQRをもう一度見せた</p>
+          <p class="say">このチケットはすでに入場済みになっています。確認しますので少々お待ちください。</p>
+          <p class="next"><b>次に:</b> 表示された時刻と受付番号を主催者に伝えます。</p>
+        </div>
+      </article>
+      <article class="reason" id="ng-event">
+        <div class="reason-top"><span class="ng">NG</span><span class="msg">別の公演のチケットです</span></div>
+        <div class="reason-body">
+          <span class="verdict-line"><span class="badge stop">通さない</span></span>
+          <p class="cause">よくある原因: 日付や公演の違うチケット</p>
+          <p class="say">この公演のチケットか確認してください。</p>
+        </div>
+      </article>
+      <article class="reason" id="ng-void">
+        <div class="reason-top"><span class="ng">NG</span><span class="msg">無効なチケットです（払い戻し・リセール済み）</span></div>
+        <div class="reason-body">
+          <span class="verdict-line"><span class="badge stop">通さない</span><span class="badge ask">主催者に確認</span></span>
+          <p class="cause">よくある原因: 払い戻しや公式リセールで無効になったチケット</p>
+          <p class="say">このチケットでは入場できません。確認しますので少々お待ちください。</p>
+        </div>
+      </article>
+    </div>
+    <div class="rule-box">
+      <span class="icon" aria-hidden="true">!</span>
+      <p><b>OK以外は、自分の判断で通さない</b>受付画面にお客様の名前は出ません。本人確認が必要なときは、お客様のチケット画面の名前と身分証を見比べ、主催者に確認します。</p>
     </div>
   </section>
 
+  <!-- 5. Troubleshooting, grouped by who has the problem; summaries quote the screen. -->
   <section id="trouble" aria-labelledby="trouble-h">
-    <h2 id="trouble-h">困ったとき</h2>
+    <div class="sec-head">
+      <span class="eyebrow">Help</span>
+      <h2 id="trouble-h">困ったとき</h2>
+      <p>受付画面に出ている文字で探します。</p>
+    </div>
     <div class="trouble">
-      <details>
-        <summary>「この受付リンクはもう使えません」と出る</summary>
-        <div>
-          <p>まず、スマートフォンの時計（日時）が正しいか確認してください。設定で日付と時刻を自動で合わせるようにします。</p>
-          <p>時計が正しいのに直らないときは、リンクが取り消されています。主催者に新しい受付リンクを発行してもらってください。</p>
-        </div>
+      <p class="group-label">受付画面に出ている</p>
+      <details class="t" id="t-unusable">
+        <summary><span class="t-q"><span class="shown">画面の表示</span><span class="text">この受付リンクはもう使えません</span></span></summary>
+        <div class="t-a"><ol><li>スマホの<b>日付と時刻を自動設定</b>にして、開き直す</li><li>直らなければ、<b>主催者に新しい受付リンク</b>を発行してもらう</li></ol></div>
       </details>
-      <details>
-        <summary>「この受付リンクは別の端末で使用中です」と出る</summary>
-        <div>
-          <p>このリンクはほかのスマートフォンで先に開かれています。受付に使うスマートフォンを替える場合は、主催者に「取り消して再発行」してもらい、新しいリンクを開いてください。</p>
-        </div>
+      <details class="t" id="t-in-use">
+        <summary><span class="t-q"><span class="shown">画面の表示</span><span class="text">この受付リンクは別の端末で使用中です</span></span></summary>
+        <div class="t-a"><ol><li>リンクは最初に開いたスマホでしか使えません</li><li>このスマホで受付するなら、主催者に<b>「取り消して再発行」</b>してもらう</li></ol></div>
       </details>
-      <details>
-        <summary>受付用のスマートフォンをなくした・壊れた</summary>
-        <div>
-          <p>すぐに主催者へ連絡してください。主催者がそのリンクを取り消すと、なくしたスマートフォンでは受付できなくなります。新しいリンクを別のスマートフォンで開けば受付を続けられます。</p>
-        </div>
+      <details class="t" id="t-network">
+        <summary><span class="t-q"><span class="shown">画面の表示</span><span class="text">サーバーに接続できませんでした</span></span></summary>
+        <div class="t-a"><ol><li><b>まだ通さない</b></li><li>電波やWi-Fiを確認して「もう一度試す」、またはもう一度読み取る</li></ol></div>
       </details>
-      <details>
-        <summary>「サーバーに接続できませんでした」「判定できませんでした」と出る</summary>
-        <div>
-          <p>まだ入場させないでください。電波やWi-Fiを確認してから、もう一度読み取ります。</p>
-        </div>
+      <details class="t" id="t-window">
+        <summary><span class="t-q"><span class="shown">画面の表示</span><span class="text">受付は ○○ から始まります／受付は ○○ に終了しました</span></span></summary>
+        <div class="t-a"><ol><li>受付時間の外です。開始時刻になったら<b>「もう一度確認する」</b></li></ol></div>
       </details>
-      <details>
-        <summary>「しばらく開けません」と出る</summary>
-        <div>
-          <p>10分ほど待ってから、もう一度開いてください。続く場合は主催者に連絡してください。</p>
-        </div>
+      <details class="t" id="t-no-window">
+        <summary><span class="t-q"><span class="shown">画面の表示</span><span class="text">受付時間が決まっていません</span></span></summary>
+        <div class="t-a"><ol><li>公演の開始時刻が未設定です。<b>主催者に確認</b></li></ol></div>
       </details>
-      <details>
-        <summary>「受付は ○○ から始まります」「受付は ○○ に終了しました」と出る</summary>
-        <div>
-          <p>受付時間の外です。開始時刻になったら <span class="key">もう一度確認する</span> を押すと、スキャンを始められます。</p>
-        </div>
+      <details class="t" id="t-throttle">
+        <summary><span class="t-q"><span class="shown">画面の表示</span><span class="text">しばらく開けません</span></span></summary>
+        <div class="t-a"><ol><li><b>10分ほど待って</b>開き直す</li><li>続くときは主催者に連絡</li></ol></div>
       </details>
-      <details>
-        <summary>「受付時間が決まっていません」と出る</summary>
-        <div>
-          <p>公演の開始時刻がまだ設定されていません。主催者に確認してください。</p>
-        </div>
+
+      <p class="group-label">スマホ・お客様のこと</p>
+      <details class="t" id="t-lost">
+        <summary><span class="t-q"><span class="shown">受付用スマホ</span><span class="text">なくした・壊れた・電池切れ</span></span></summary>
+        <div class="t-a"><ol><li><b>すぐ主催者に連絡</b>。主催者がリンクを取り消すと、なくしたスマホでは受付できなくなります</li><li>主催者から新しいリンクをもらい、別のスマホで開く</li></ol></div>
       </details>
-      <details>
-        <summary>QRコードがなかなか読み取れない</summary>
-        <div>
-          <ul class="plain">
-            <li>お客様に画面の明るさを上げてもらう</li>
-            <li>QRコード全体がカメラに収まるよう、15〜25cmほど離す</li>
-            <li>照明が画面に反射しない角度にする</li>
-          </ul>
-        </div>
+      <details class="t" id="t-other-device">
+        <summary><span class="t-q"><span class="shown">お客様の画面</span><span class="text">「別の端末に設定されています」と出ている</span></span></summary>
+        <div class="t-a"><ol><li>電波のある場所で、お客様にチケット画面の<b>「この端末で入場する」</b>を押してもらう</li><li>表示されたQRを読み取る</li></ol></div>
       </details>
-      <details>
-        <summary>お客様の画面に「別の端末に設定されています」と出ている</summary>
-        <div>
-          <p>そのお客様の入場用QRコードは別のスマートフォンに設定されています。お客様に、電波のある場所でチケット画面の「この端末で入場する」を押してもらうと、その端末でQRコードを表示できます。</p>
-        </div>
+      <details class="t" id="t-no-qr">
+        <summary><span class="t-q"><span class="shown">お客様</span><span class="text">「QRコードが出ない」と言われた</span></span></summary>
+        <div class="t-a"><ol><li>チケット画面は、電波のある場所で一度開いておく必要があります</li><li>入口の外など<b>電波の届く場所</b>で、一度チケット画面を開いてもらう</li></ol></div>
       </details>
-      <details>
-        <summary>お客様が「QRコードが出ない」と言っている</summary>
-        <div>
-          <p>チケット画面は、電波のある場所で一度開いておく必要があります。電波の届く場所（入口の外など）で一度チケット画面を開いてもらってください。</p>
-        </div>
-      </details>
+    </div>
+
+    <div class="sec-head" id="scan-tips" style="margin-top: var(--space-s)">
+      <h3>QRコードが読み取りにくいとき</h3>
+    </div>
+    <div class="scan-fig">
+      <figure>
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <rect x="22" y="8" width="36" height="64" rx="6" fill="oklch(26% 0.04 275deg)" stroke="oklch(98.5% 0 0deg / 22%)"/>
+          <rect x="28" y="22" width="24" height="24" fill="#fff"/>
+          <path d="M40 4 l-6 6 h12 z" fill="oklch(82% 0.22 140deg)"/><path d="M40 0 v8" stroke="oklch(82% 0.22 140deg)" stroke-width="2"/>
+          <circle cx="40" cy="58" r="2" fill="oklch(82% 0.22 140deg)"/>
+        </svg>
+        <figcaption><b>明るさを上げる</b>お客様に画面を明るくしてもらう</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <rect x="6" y="24" width="20" height="34" rx="4" fill="oklch(26% 0.04 275deg)" stroke="oklch(98.5% 0 0deg / 22%)"/>
+          <rect x="54" y="24" width="20" height="34" rx="4" fill="oklch(26% 0.04 275deg)" stroke="oklch(98.5% 0 0deg / 22%)"/>
+          <rect x="58" y="33" width="12" height="12" fill="#fff"/>
+          <path d="M28 41 H52" stroke="oklch(82% 0.22 140deg)" stroke-width="2" stroke-dasharray="3 3"/>
+          <text x="40" y="70" text-anchor="middle" font-size="10" fill="oklch(82% 0.02 275deg)">15〜25cm</text>
+        </svg>
+        <figcaption><b>少し離す</b>QR全体がカメラに収まる距離に</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <circle cx="16" cy="14" r="7" fill="oklch(80% 0.15 85deg)"/>
+          <path d="M22 20 L38 36" stroke="oklch(80% 0.15 85deg)" stroke-width="2"/>
+          <rect x="34" y="28" width="22" height="38" rx="4" fill="oklch(26% 0.04 275deg)" stroke="oklch(98.5% 0 0deg / 22%)" transform="rotate(-18 45 47)"/>
+          <path d="M60 18 A18 18 0 0 1 70 38" stroke="oklch(82% 0.22 140deg)" stroke-width="2" fill="none"/><path d="M70 38 l-5 -2 l4 -4z" fill="oklch(82% 0.22 140deg)"/>
+        </svg>
+        <figcaption><b>角度を変える</b>照明が画面に反射しないように</figcaption>
+      </figure>
     </div>
   </section>
 
-  <section id="organizer" class="organizer" aria-labelledby="organizer-h">
-    <h2 id="organizer-h">主催者の準備</h2>
-    <ul class="plain">
-      <li>公演を公開し、<strong>開始時刻</strong>を設定します。開始時刻のない公演には受付リンクを発行できません。</li>
-      <li>主催者コンソールの公演一覧で <span class="key">Reception links</span> を開き、<strong>受付用のスマートフォン1台につき1つ</strong>受付リンクを発行します（受付1、受付2…と番号が付きます）。</li>
-      <li>各リンクの <span class="key">URLをコピー</span> か <span class="key">共有</span> で、このガイドと一緒に受付スタッフへ渡します。スタッフが開くと「使用中」になります。</li>
-      <li>スマートフォンの紛失・交換のときは <span class="key">取り消して再発行</span> を使います。取り消したリンクはすぐに使えなくなります。</li>
-      <li>お客様には、公演の前に<strong>電波のある場所でチケット画面を一度開いておく</strong>よう案内してください。会場で電波がなくてもQRコードを表示できるようになります。</li>
-      <li>本番前のリハーサルは、本番とは別のテスト用の公演で行ってください。</li>
-    </ul>
+  <!-- 6. Organizer, visually apart: a different reader. -->
+  <section id="organizer" class="organizer" aria-labelledby="org-h">
+    <div class="sec-head">
+      <span class="eyebrow">For organizers</span>
+      <h2 id="org-h">主催者の準備</h2>
+    </div>
+    <ol>
+      <li>公演を公開し、<b>開始時刻を設定</b>する（開始時刻がないと受付リンクを発行できません）</li>
+      <li>主催者コンソールの公演一覧で <span class="key">Reception links</span> を開き、<b>受付用スマホ1台につき1つ</b> <span class="key">受付リンクを発行</span>（受付1、受付2…）</li>
+      <li><span class="key">URLをコピー</span> か <span class="key">共有</span> で、このガイドと一緒にスタッフへ渡す</li>
+      <li>紛失・交換のときは <span class="key">取り消して再発行</span>。取り消したリンクはすぐ使えなくなります</li>
+      <li>お客様には<b>公演前に電波のある場所でチケット画面を一度開いておく</b>よう案内する</li>
+      <li>リハーサルは本番とは別のテスト用公演で行う</li>
+    </ol>
   </section>
 
-  <p class="foot">画面の文言は 2026年10月時点の受付画面に合わせています。</p>
+  <p class="foot">Liverty Music 受付ガイド ・ 2026年10月の受付画面に合わせています</p>
 </main>
+
+<!-- Thumb-reach navigation, fixed to the bottom of the screen. -->
+<nav class="nav" aria-label="ページ内のメニュー">
+  <ul>
+    <li><a href="#prep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>準備</a></li>
+    <li><a href="#steps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>手順</a></li>
+    <li><a class="hot" href="#verdict"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>判定</a></li>
+    <li><a href="#ng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>NG</a></li>
+    <li><a href="#trouble"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><circle cx="12" cy="17.5" r=".6" fill="currentColor"/></svg>困った</a></li>
+  </ul>
+</nav>
 </body>
 </html>
