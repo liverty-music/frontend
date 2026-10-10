@@ -128,7 +128,32 @@
         <span t="eventPage.tickets.purchased" t-params.bind="{ count: purchasedCount }"></span>
         <a href="/tickets" class="event-link" t="eventPage.tickets.toTickets"></a>
       </p>
-      <template if.bind="isGuest && !isCancelled">
+      <!-- First-come sale, by its state; never a count -->
+      <div if.bind="shownSale" class="[ event-sale ] [ flow ]" data-testid="event-sale" data-sale-state.bind="shownSale.state">
+        <template switch.bind="shownSale.state">
+          <template case="notYetOnSale">
+            <p class="event-sale-status" data-testid="event-sale-opens" t="eventPage.tickets.sale.opens" t-params.bind="{ start: saleStartLabel }"></p>
+            <p class="event-sale-price" data-testid="event-sale-price" t="eventPage.tickets.sale.price" t-params.bind="{ price: salePrice }"></p>
+          </template>
+          <template case="onSale">
+            <p class="event-sale-price" data-testid="event-sale-price" t="eventPage.tickets.sale.price" t-params.bind="{ price: salePrice }"></p>
+            <p if.bind="shownSale.lowStock" class="event-sale-low" data-testid="event-sale-low" t="eventPage.tickets.sale.lowStock"></p>
+            <a if.bind="!isGuest" href.bind="checkoutUrl" class="[ event-btn-primary ] [ pressable ]" data-testid="event-buy" t="eventPage.tickets.sale.buy"></a>
+            <button else type="button" class="[ event-btn-primary ] [ pressable ]" click.trigger="signUp()" data-testid="event-buy" t="eventPage.tickets.sale.buy"></button>
+          </template>
+          <template case="allHeld">
+            <p class="event-sale-status" data-testid="event-sale-sold-out" t="eventPage.tickets.sale.soldOut"></p>
+            <p data-testid="event-sale-all-held" t="eventPage.tickets.sale.allHeldNote"></p>
+          </template>
+          <template case="soldOut">
+            <p class="event-sale-status" data-testid="event-sale-sold-out" t="eventPage.tickets.sale.soldOut"></p>
+          </template>
+          <template case="ended">
+            <p class="event-sale-status" data-testid="event-sale-ended" t="eventPage.tickets.sale.ended"></p>
+          </template>
+        </template>
+      </div>
+      <template if.bind="!shownSale && isGuest && !isCancelled">
         <p t="eventPage.tickets.signUpHint"></p>
         <button type="button" class="[ event-btn-primary ] [ pressable ]" click.trigger="signUp()" data-testid="event-signup" t="eventPage.tickets.signUp"></button>
       </template>

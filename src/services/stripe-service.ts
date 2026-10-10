@@ -29,6 +29,21 @@ export interface ConfirmAuthorizationResult {
 }
 
 /**
+ * The card a fan entered for a checkout, read from the ConfirmationToken
+ * before anything is charged, so the 特商法 final confirmation can name it.
+ */
+export interface CheckoutCard {
+	/** The ConfirmationToken that confirms the checkout's card hold. */
+	readonly tokenId: string
+	/** The card brand as Stripe names it, e.g. `visa`, `jcb`, `amex`. */
+	readonly brand: string
+	/** The card's last four digits. */
+	readonly last4: string
+	/** `apple_pay` or `google_pay` when a card wallet was used. */
+	readonly wallet?: string
+}
+
+/**
  * Card brands accepted by the lottery flow. American Express is deliberately
  * excluded: its authorization cannot be held to the draw, so the server
  * rejects it and Elements is constrained to hide it (task 6.3). JCB / Diners /
@@ -99,6 +114,112 @@ export class StripeService {
 		if (!stripe) return null
 		const elements = stripe.elements({ clientSecret })
 		return { stripe, elements }
+	}
+
+	/**
+	 * Creates an Elements group for a first-come checkout before its card hold
+	 * exists (deferred intent): the amount and manual capture match the
+	 * PaymentIntent the server opens at Authorize. Every card brand is
+	 * accepted. Returns null when Stripe is unavailable.
+	 */
+	public async createCheckoutElements(
+		amountYen: number,
+	): Promise<{ stripe: Stripe; elements: StripeElements } | null> {
+		const stripe = await this.getStripe()
+		if (!stripe) return null
+		const elements = stripe.elements({
+			mode: 'payment',
+			amount: amountYen,
+			currency: 'jpy',
+			captureMethod: 'manual',
+		})
+		return { stripe, elements }
+	}
+
+	/**
+	 * Validates the card form and turns it into a ConfirmationToken, which
+	 * carries the brand and last four digits shown before the order is placed.
+	 * Nothing is charged or held yet.
+	 */
+	public async createCheckoutCard(
+		stripe: Stripe,
+		elements: StripeElements,
+	): Promise<{ card?: CheckoutCard; errorMessage?: string }> {
+		const submitted = await elements.submit()
+		if (submitted.error) {
+			return {
+				errorMessage:
+					submitted.error.message ?? 'カード情報を確認してください。',
+			}
+		}
+		const { confirmationToken, error } = await stripe.createConfirmationToken({
+			elements,
+		})
+		if (error || !confirmationToken) {
+			this.logger.warn('Confirmation token creation failed', {
+				code: error?.code,
+			})
+			return {
+				errorMessage:
+					error?.message ??
+					'カード情報を確認できませんでした。もう一度お試しください。',
+			}
+		}
+		const card = confirmationToken.payment_method_preview.card
+		return {
+			card: {
+				tokenId: confirmationToken.id,
+				brand: card?.brand ?? '',
+				last4: card?.last4 ?? '',
+				wallet: card?.wallet?.type ?? undefined,
+			},
+		}
+	}
+
+	/**
+	 * Confirms a checkout's card hold with the card's ConfirmationToken,
+	 * completing the issuer's authentication (3D Secure) in the page. Succeeds
+	 * only when the hold is placed (`requires_capture`).
+	 */
+	public async confirmCheckoutHold(
+		stripe: Stripe,
+		clientSecret: string,
+		tokenId: string,
+	): Promise<{ errorMessage?: string }> {
+		const { paymentIntent, error } = await stripe.confirmPayment({
+			clientSecret,
+			confirmParams: { confirmation_token: tokenId },
+			redirect: 'if_required',
+		})
+		if (error) {
+			this.logger.warn('Checkout hold confirmation failed', {
+				code: error.code,
+			})
+			return {
+				errorMessage:
+					error.message ??
+					'カードを利用できませんでした。別のカードをお試しください。',
+			}
+		}
+		if (paymentIntent?.status !== 'requires_capture') {
+			this.logger.warn('Checkout hold not in requires_capture after confirm', {
+				status: paymentIntent?.status,
+			})
+			return {
+				errorMessage:
+					'カードの認証が完了しませんでした。もう一度お試しください。',
+			}
+		}
+		return {}
+	}
+
+	/** True when the checkout's card hold is already placed. */
+	public async isHoldPlaced(
+		stripe: Stripe,
+		clientSecret: string,
+	): Promise<boolean> {
+		const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret)
+		return paymentIntent?.status === 'requires_capture'
 	}
 
 	/**

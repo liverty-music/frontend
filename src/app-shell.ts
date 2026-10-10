@@ -83,6 +83,14 @@ const routeTable = [
 		data: { auth: false, section: 'dashboard' },
 	},
 	{
+		// The checkout of an Event's first-come sale. Signed-in fans only; a
+		// guest is sent through sign-up from the Event page.
+		path: 'events/:id/checkout',
+		component: import('./routes/checkout/checkout-route'),
+		title: 'Checkout',
+		data: { titleKey: 'checkout.title', section: 'dashboard' },
+	},
+	{
 		path: 'discovery',
 		component: import('./routes/discovery/discovery-route'),
 		title: 'Discovery',

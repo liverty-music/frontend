@@ -3,9 +3,11 @@ import type { IRouteViewModel, Params } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
+import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
 import type { EventDateTab } from '../../components/event-date-tabs/event-date-tabs'
 import { Snack } from '../../components/snack-bar/snack'
 import type { Artist } from '../../entities/artist'
+import type { TicketSale } from '../../entities/ticket-sale'
 import { IAuthService } from '../../services/auth-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
@@ -20,6 +22,7 @@ import {
 	eventFromProto,
 	formatEventDate,
 	formatEventTime,
+	formatSaleStart,
 	formatTabDate,
 	googleMapsUrl,
 	isEnded,
@@ -44,6 +47,7 @@ export class EventRoute implements IRouteViewModel {
 	private readonly i18n = resolve(I18N)
 	private readonly ea = resolve(IEventAggregator)
 	private readonly concertClient = resolve(IConcertRpcClient)
+	private readonly ticketSaleClient = resolve(ITicketSaleRpcClient)
 	private readonly authService = resolve(IAuthService)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly purchasedTickets = resolve(IPurchasedTicketStore)
@@ -53,6 +57,8 @@ export class EventRoute implements IRouteViewModel {
 	public event: EventPageEvent | null = null
 	/** All Events of the Series in date order; empty until they load. */
 	public seriesEvents: EventPageEvent[] = []
+	/** The event's first-come sale; null until loaded, or when it has none. */
+	public sale: TicketSale | null = null
 	public followUpdatingId = ''
 	/**
 	 * False until the fan's follows are loaded. The follow controls stay
@@ -84,6 +90,7 @@ export class EventRoute implements IRouteViewModel {
 		this.state = 'loading'
 		this.event = null
 		this.seriesEvents = []
+		this.sale = null
 		this.followsLoaded = false
 		try {
 			const proto = await this.concertClient.get(this.eventId, signal)
@@ -108,9 +115,10 @@ export class EventRoute implements IRouteViewModel {
 			return
 		}
 
-		// None blocks the page: the dates, the follow state and the purchased
-		// line fill in.
+		// None blocks the page: the dates, the sale, the follow state and the
+		// purchased line fill in.
 		void this.loadSeriesEvents(this.event.seriesId, signal)
+		void this.loadSale(signal)
 		void this.loadFollowed(signal)
 		void this.loadPurchasedTickets(signal)
 	}
@@ -130,6 +138,21 @@ export class EventRoute implements IRouteViewModel {
 			if (signal.aborted) return
 			// The other dates are optional; the page stands without them.
 			this.logger.warn('Series dates read failed', { seriesId, error: err })
+		}
+	}
+
+	/** Load the event's sale; the ticket section shows it once it arrives. */
+	private async loadSale(signal: AbortSignal): Promise<void> {
+		try {
+			const sale = await this.ticketSaleClient.get(this.eventId, signal)
+			if (!signal.aborted) this.sale = sale
+		} catch (err) {
+			if (signal.aborted) return
+			// The section falls back to the sign-up hint without a sale.
+			this.logger.warn('Ticket sale read failed', {
+				eventId: this.eventId,
+				error: err,
+			})
 		}
 	}
 
@@ -216,6 +239,26 @@ export class EventRoute implements IRouteViewModel {
 
 	public get isGuest(): boolean {
 		return !this.authService.isAuthenticated
+	}
+
+	/** The sale to show in the ticket section; none for a cancelled concert. */
+	public get shownSale(): TicketSale | null {
+		return this.isCancelled ? null : this.sale
+	}
+
+	/** The sale start in Japan time, e.g. "2026年11月1日(日) 10:00". */
+	public get saleStartLabel(): string {
+		return this.sale ? formatSaleStart(this.sale.saleStart, this.lang) : ''
+	}
+
+	/** The price of one ticket with thousands separators, e.g. "3,000". */
+	public get salePrice(): string {
+		return this.sale ? this.sale.price.toLocaleString('ja-JP') : ''
+	}
+
+	/** Where the action to buy leads a signed-in fan. */
+	public get checkoutUrl(): string {
+		return this.event ? `/events/${this.event.id}/checkout` : '#'
 	}
 
 	public get dateNav(): DateNavMode {
