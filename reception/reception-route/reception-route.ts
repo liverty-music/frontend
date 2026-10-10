@@ -160,6 +160,10 @@ export class ReceptionRoute {
 	public async startScanning(): Promise<void> {
 		if (!this.canScan || this.scanning || this.startingCamera || !this.video)
 			return
+		// A new round of scanning starts with no verdict, so staff never read
+		// the previous fan's result as the next one's.
+		this.verdict = null
+		this.undecidedText = ''
 		this.cameraError = ''
 		this.startingCamera = true
 		const scanner = this.scannerFactory(this.video, (text) =>
