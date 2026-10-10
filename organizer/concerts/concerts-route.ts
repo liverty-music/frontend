@@ -231,10 +231,6 @@ export class ConcertsRoute {
 		this.confirmingCancelId = ''
 	}
 
-	public isConfirmingCancel(row: ConcertListRow): boolean {
-		return this.confirmingCancelId === row.seriesId
-	}
-
 	public async cancel(row: ConcertListRow): Promise<void> {
 		if (row.busy || !row.canCancel) return
 		row.busy = true

@@ -13,6 +13,8 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError } from '@connectrpc/connect'
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../../helpers/create-container'
@@ -290,10 +292,53 @@ describe('ConcertsRoute', () => {
 		await vm.attached()
 
 		vm.confirmCancel(vm.rows[0])
-		expect(vm.isConfirmingCancel(vm.rows[0])).toBe(true)
+		expect(vm.confirmingCancelId).toBe('s1')
 		await vm.cancel(vm.rows[0])
 
 		expect(client.cancel).toHaveBeenCalledWith('s1')
 		expect(vm.rows[0].publishLabel).toBe('Cancelled')
+	})
+})
+
+// Renders the real template: the confirmation must appear when Cancel is
+// clicked. It is bound to `confirmingCancelId` directly, because a binding to a
+// method call is not re-evaluated when the state the method reads changes.
+describe('ConcertsRoute template', () => {
+	it('shows the confirmation when Cancel is clicked and hides it on Keep it', async () => {
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeConcert('s1', 'Show', PublishState.PUBLISHED, Visibility.PUBLIC),
+				]),
+		})
+		const fixture = await createFixture(
+			'<concerts-route></concerts-route>',
+			class {},
+			[ConcertsRoute, Registration.instance(IConcertAuthoringClient, client)],
+		).started
+		await tasksSettled()
+		const host = fixture.appHost
+		const button = (label: string) =>
+			[...host.querySelectorAll('button')].find(
+				(b) => b.textContent?.trim() === label,
+			)
+
+		expect(host.querySelector('[aria-label="Confirm cancellation"]')).toBeNull()
+
+		button('Cancel')?.click()
+		await tasksSettled()
+
+		expect(
+			host.querySelector('[aria-label="Confirm cancellation"]'),
+		).not.toBeNull()
+		expect(button('Cancel')).toBeUndefined()
+
+		button('Keep it')?.click()
+		await tasksSettled()
+
+		expect(host.querySelector('[aria-label="Confirm cancellation"]')).toBeNull()
+		expect(button('Cancel')).toBeDefined()
+		await fixture.stop(true)
 	})
 })
