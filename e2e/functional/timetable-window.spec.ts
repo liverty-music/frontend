@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
@@ -79,7 +80,7 @@ function groups() {
 }
 
 async function mockRpc(page: Page): Promise<void> {
-	const body = JSON.stringify({ groups: groups() })
+	const body = JSON.stringify(concertWire({ groups: groups() }))
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 		if (url.includes('ListByArtists') || url.includes('ListByLocation')) {

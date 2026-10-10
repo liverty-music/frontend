@@ -1,4 +1,3 @@
-import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import type {
 	ApproveResponse,
 	DuplicateConflict,
@@ -13,15 +12,19 @@ import {
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
+import {
+	type ResolvedConcert,
+	resolveConcerts,
+} from '../../shared/lib/concert/resolve-concert'
 import { IAuthService } from '../../shared/services/auth-service'
 import { createAdminTransport } from './admin-transport'
 
 export type {
 	ApproveResponse,
-	Concert,
 	DuplicateConflict,
 	ExistingEvent,
 	PendingConcert,
+	ResolvedConcert,
 	ResolvedVenue,
 }
 export { Resolution }
@@ -56,12 +59,15 @@ export class ConcertClient {
 		),
 	)
 
-	/** Returns every published concert for catalog review and management. */
-	public async list(signal?: AbortSignal): Promise<Concert[]> {
+	/**
+	 * Returns every published concert for catalog review and management, each
+	 * resolved against the Series and Artists the response carries once.
+	 */
+	public async list(signal?: AbortSignal): Promise<ResolvedConcert[]> {
 		this.logger.info('Listing published concerts')
 		try {
 			const response = await this.client.list({}, { signal })
-			return response.concerts
+			return resolveConcerts(response)
 		} catch (err) {
 			this.logger.warn('list failed', { error: err })
 			throw err

@@ -11,7 +11,7 @@ import {
 import { IUserStore } from '../../services/user-store'
 import {
 	type EventPageEvent,
-	eventFromProto,
+	eventFromConcert,
 	formatEventDate,
 	formatEventTime,
 } from '../event/event-page'
@@ -176,7 +176,9 @@ export class TicketsRoute {
 		await Promise.all(
 			eventIds.map(async (id) => {
 				try {
-					const event = eventFromProto(await this.concertClient.get(id, signal))
+					const event = eventFromConcert(
+						await this.concertClient.get(id, signal),
+					)
 					if (event) events.set(id, event)
 				} catch (err) {
 					this.logger.warn('Event read failed', { eventId: id, error: err })

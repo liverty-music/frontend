@@ -1,26 +1,81 @@
+import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
+import type { Concert } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
+import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import type {
+	Series,
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import type {
-	AuthoredConcert,
 	EventDraft as ProtoEventDraft,
 	SeriesDraft as ProtoSeriesDraft,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/series/v1/series_service_pb.js'
 import {
-	ConcertService,
 	EventDraftSchema,
 	SeriesDraftSchema,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
+	SeriesService,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/series/v1/series_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
+import { concertResolver } from '../../shared/lib/concert/resolve-concert'
 import { IAuthService } from '../../shared/services/auth-service'
 import { createOrganizerTransport } from './organizer-transport'
 
-export type { AuthoredConcert, ProtoEventDraft, ProtoSeriesDraft }
+export type { ProtoEventDraft, ProtoSeriesDraft }
+
+/**
+ * One authored Series as the console shows it: the Series, its dates and its
+ * performers. The SeriesService returns the Series, its dates as Concerts and
+ * each Artist once; {@link authoredSeriesFrom} groups the Concerts back by
+ * `event.seriesId`. A DRAFT Series' dates are its draft dates.
+ */
+export interface AuthoredSeries {
+	readonly series: Series
+	/** The dates of the Series, in the order the response lists them. */
+	readonly events: Event[]
+	/** The performing Artists, each once, in first-listed order. */
+	readonly performers: Artist[]
+}
+
+/** Group a SeriesService response into one {@link AuthoredSeries} per Series. */
+export function authoredSeriesFrom(response: {
+	series: readonly Series[]
+	concerts: readonly Concert[]
+	artists: readonly Artist[]
+}): AuthoredSeries[] {
+	const resolve = concertResolver(response.series, response.artists)
+	const bySeries = new Map<string, AuthoredSeries>()
+	for (const series of response.series) {
+		const id = series.id?.value
+		if (id) bySeries.set(id, { series, events: [], performers: [] })
+	}
+	for (const concert of response.concerts) {
+		const resolved = resolve(concert)
+		const entry = bySeries.get(resolved?.event.seriesId?.value ?? '')
+		if (!resolved || !entry) continue
+		entry.events.push(resolved.event)
+		for (const artist of resolved.artists) {
+			const id = artist.id?.value
+			if (!entry.performers.some((p) => p.id?.value === id)) {
+				entry.performers.push(artist)
+			}
+		}
+	}
+	return [...bySeries.values()]
+}
+
+/** The one {@link AuthoredSeries} of a single-Series response. */
+function oneAuthoredSeries(response: {
+	series?: Series
+	concerts: readonly Concert[]
+	artists: readonly Artist[]
+}): AuthoredSeries | undefined {
+	if (!response.series) return undefined
+	return authoredSeriesFrom({ ...response, series: [response.series] })[0]
+}
 
 /** A calendar date as year / 1-based month / day (matches `google.type.Date`). */
 export interface CalendarDate {
@@ -108,7 +163,7 @@ export interface MediaUploadTicket {
 }
 
 /**
- * Organizer-local wrapper around the generated organizer `ConcertService`
+ * Organizer-local wrapper around the generated organizer `SeriesService`
  * client: the authoring surface (create / update / publish / cancel /
  * createMediaUploadUrl / attachMedia / regenerateToken / list). The caller's
  * Organizer is resolved from the token, so no request carries an organizer id;
@@ -124,7 +179,7 @@ export class ConcertAuthoringClient {
 	private readonly logger = resolve(ILogger).scopeTo('ConcertAuthoringClient')
 	private readonly authService = resolve(IAuthService)
 	private readonly client = createClient(
-		ConcertService,
+		SeriesService,
 		createOrganizerTransport(
 			this.authService,
 			resolve(ILogger).scopeTo('OrganizerTransport'),
@@ -132,12 +187,12 @@ export class ConcertAuthoringClient {
 		),
 	)
 
-	/** Returns the caller's own authored concerts (drafts and published). */
-	public async list(signal?: AbortSignal): Promise<AuthoredConcert[]> {
-		this.logger.info('Listing authored concerts')
+	/** Returns the caller's own authored series (drafts and published). */
+	public async list(signal?: AbortSignal): Promise<AuthoredSeries[]> {
+		this.logger.info('Listing authored series')
 		try {
 			const response = await this.client.list({}, { signal })
-			return response.concerts
+			return authoredSeriesFrom(response)
 		} catch (err) {
 			this.logger.warn('list failed', { error: err })
 			throw err
@@ -148,14 +203,14 @@ export class ConcertAuthoringClient {
 	public async create(
 		draft: SeriesDraftInput,
 		signal?: AbortSignal,
-	): Promise<AuthoredConcert | undefined> {
+	): Promise<AuthoredSeries | undefined> {
 		this.logger.info('Creating draft concert', { title: draft.title })
 		try {
 			const response = await this.client.create(
 				{ draft: toSeriesDraft(draft) },
 				{ signal },
 			)
-			return response.concert
+			return oneAuthoredSeries(response)
 		} catch (err) {
 			this.logger.warn('create failed', { title: draft.title, error: err })
 			throw err
@@ -167,7 +222,7 @@ export class ConcertAuthoringClient {
 		seriesId: string,
 		draft: SeriesDraftInput,
 		signal?: AbortSignal,
-	): Promise<AuthoredConcert | undefined> {
+	): Promise<AuthoredSeries | undefined> {
 		this.logger.info('Updating concert', { seriesId })
 		try {
 			const response = await this.client.update(
@@ -177,7 +232,7 @@ export class ConcertAuthoringClient {
 				},
 				{ signal },
 			)
-			return response.concert
+			return oneAuthoredSeries(response)
 		} catch (err) {
 			this.logger.warn('update failed', { seriesId, error: err })
 			throw err
@@ -188,14 +243,14 @@ export class ConcertAuthoringClient {
 	public async publish(
 		seriesId: string,
 		signal?: AbortSignal,
-	): Promise<AuthoredConcert | undefined> {
+	): Promise<AuthoredSeries | undefined> {
 		this.logger.info('Publishing concert', { seriesId })
 		try {
 			const response = await this.client.publish(
 				{ seriesId: { value: seriesId } },
 				{ signal },
 			)
-			return response.concert
+			return oneAuthoredSeries(response)
 		} catch (err) {
 			this.logger.warn('publish failed', { seriesId, error: err })
 			throw err

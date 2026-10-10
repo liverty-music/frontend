@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { fakeId } from '../support/fake-id'
 import { expect, test } from '../support/test'
 
@@ -71,7 +72,7 @@ test('a concert deep-link opens its sheet on a slow device, and the timetable re
 			status: 200,
 			contentType: 'application/json',
 			body: route.request().url().includes('ListByArtists')
-				? JSON.stringify({ groups })
+				? JSON.stringify(concertWire({ groups }))
 				: '{}',
 		}),
 	)

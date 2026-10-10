@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -48,20 +49,22 @@ async function mockRpc(
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					groups: [
-						{
-							date: {
-								value: {
-									year: tomorrow.getFullYear(),
-									month: tomorrow.getMonth() + 1,
-									day: tomorrow.getDate(),
+				body: JSON.stringify(
+					concertWire({
+						groups: [
+							{
+								date: {
+									value: {
+										year: tomorrow.getFullYear(),
+										month: tomorrow.getMonth() + 1,
+										day: tomorrow.getDate(),
+									},
 								},
+								...group,
 							},
-							...group,
-						},
-					],
-				}),
+						],
+					}),
+				),
 			})
 		}
 		return route.fulfill({

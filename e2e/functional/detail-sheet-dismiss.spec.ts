@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -22,50 +23,44 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		if (url.includes('SearchNewConcerts')) {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({}),
-			})
-		}
-
 		// ListByArtists (check before ListByFollower/List)
 		if (url.includes('ListByArtists')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					groups: [
-						{
-							date: { value: tomorrowDate },
-							home: [
-								{
-									id: { value: '00000000-0000-4000-8000-c10000000001' },
-									performers: [
-										{
-											id: { value: '00000000-0000-4000-8000-a10000000001' },
-											name: { value: 'Artist 1' },
-											mbid: { value: '' },
+				body: JSON.stringify(
+					concertWire({
+						groups: [
+							{
+								date: { value: tomorrowDate },
+								home: [
+									{
+										id: { value: '00000000-0000-4000-8000-c10000000001' },
+										performers: [
+											{
+												id: { value: '00000000-0000-4000-8000-a10000000001' },
+												name: { value: 'Artist 1' },
+												mbid: { value: '' },
+											},
+										],
+										series: {
+											id: { value: '00000000-0000-4000-8000-5e0000000001' },
+											title: { value: 'Test Concert' },
+											sourceUrl: { value: 'https://example.com' },
 										},
-									],
-									series: {
-										id: { value: '00000000-0000-4000-8000-5e0000000001' },
-										title: { value: 'Test Concert' },
-										sourceUrl: { value: 'https://example.com' },
+										localDate: { value: tomorrowDate },
+										venue: {
+											name: { value: 'Test Venue' },
+											adminArea: { value: 'JP-13' },
+										},
 									},
-									localDate: { value: tomorrowDate },
-									venue: {
-										name: { value: 'Test Venue' },
-										adminArea: { value: 'JP-13' },
-									},
-								},
-							],
-							nearby: [],
-							away: [],
-						},
-					],
-				}),
+								],
+								nearby: [],
+								away: [],
+							},
+						],
+					}),
+				),
 			})
 		}
 
@@ -73,37 +68,39 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					groups: [
-						{
-							date: { value: tomorrowDate },
-							home: [],
-							nearby: [],
-							away: [
-								{
-									id: { value: '00000000-0000-4000-8000-c10000000001' },
-									performers: [
-										{
-											id: { value: '00000000-0000-4000-8000-a10000000001' },
-											name: { value: 'Artist 1' },
-											mbid: { value: '' },
+				body: JSON.stringify(
+					concertWire({
+						groups: [
+							{
+								date: { value: tomorrowDate },
+								home: [],
+								nearby: [],
+								away: [
+									{
+										id: { value: '00000000-0000-4000-8000-c10000000001' },
+										performers: [
+											{
+												id: { value: '00000000-0000-4000-8000-a10000000001' },
+												name: { value: 'Artist 1' },
+												mbid: { value: '' },
+											},
+										],
+										series: {
+											id: { value: '00000000-0000-4000-8000-5e0000000001' },
+											title: { value: 'Test Concert' },
+											sourceUrl: { value: 'https://example.com' },
 										},
-									],
-									series: {
-										id: { value: '00000000-0000-4000-8000-5e0000000001' },
-										title: { value: 'Test Concert' },
-										sourceUrl: { value: 'https://example.com' },
+										localDate: { value: tomorrowDate },
+										venue: {
+											name: { value: 'Test Venue' },
+											adminArea: { value: 'JP-13' },
+										},
 									},
-									localDate: { value: tomorrowDate },
-									venue: {
-										name: { value: 'Test Venue' },
-										adminArea: { value: 'JP-13' },
-									},
-								},
-							],
-						},
-					],
-				}),
+								],
+							},
+						],
+					}),
+				),
 			})
 		}
 
@@ -111,30 +108,32 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					concerts: [
-						{
-							id: { value: '00000000-0000-4000-8000-c10000000001' },
-							performers: [
-								{
-									id: { value: '00000000-0000-4000-8000-a10000000001' },
-									name: { value: 'Artist 1' },
-									mbid: { value: '' },
+				body: JSON.stringify(
+					concertWire({
+						concerts: [
+							{
+								id: { value: '00000000-0000-4000-8000-c10000000001' },
+								performers: [
+									{
+										id: { value: '00000000-0000-4000-8000-a10000000001' },
+										name: { value: 'Artist 1' },
+										mbid: { value: '' },
+									},
+								],
+								series: {
+									id: { value: '00000000-0000-4000-8000-5e0000000001' },
+									title: { value: 'Test Concert' },
+									sourceUrl: { value: 'https://example.com' },
 								},
-							],
-							series: {
-								id: { value: '00000000-0000-4000-8000-5e0000000001' },
-								title: { value: 'Test Concert' },
-								sourceUrl: { value: 'https://example.com' },
+								localDate: { value: tomorrowDate },
+								venue: {
+									name: { value: 'Test Venue' },
+									adminArea: { value: 'JP-13' },
+								},
 							},
-							localDate: { value: tomorrowDate },
-							venue: {
-								name: { value: 'Test Venue' },
-								adminArea: { value: 'JP-13' },
-							},
-						},
-					],
-				}),
+						],
+					}),
+				),
 			})
 		}
 

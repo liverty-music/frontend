@@ -9,15 +9,13 @@ import {
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import {
-	type AuthoredConcert,
-	AuthoredConcertSchema,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/concert/v1/concert_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AuthoredSeries } from '../../../organizer/services/concert-authoring-client'
 import { createTestContainer } from '../../helpers/create-container'
+import { authoredSeries } from '../authored-series'
 
 // Replace the RPC client module with a fresh interface token so the route binds
 // to the test double instead of building a real Connect transport.
@@ -56,8 +54,8 @@ function makeConcert(
 	publishState: PublishState,
 	visibility: Visibility,
 	events: Event[] = [],
-): AuthoredConcert {
-	return create(AuthoredConcertSchema, {
+): AuthoredSeries {
+	return authoredSeries({
 		series: {
 			id: { value: id },
 			title: { value: title },

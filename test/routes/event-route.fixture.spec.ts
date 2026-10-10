@@ -1,12 +1,19 @@
 import { I18nConfiguration } from '@aurelia/i18n'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
+import { ArtistSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import { ConcertSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import {
+	PublishState,
+	SeriesSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { observable, Registration } from 'aurelia'
 import { describe, expect, it, vi } from 'vitest'
-import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
+import {
+	concertResolver,
+	IConcertRpcClient,
+} from '../../src/adapter/rpc/client/concert-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import { EventDateTabs } from '../../src/components/event-date-tabs/event-date-tabs'
 import { SvgIcon } from '../../src/components/svg-icon/svg-icon'
@@ -40,18 +47,32 @@ describe('EventRoute (fixture)', () => {
 	it('shows a performer as followed as soon as the follow is stored', async () => {
 		// @spec components/infrastructure/fan/web/route/event "Guest follows the artist"
 		const follow = new ObservableFollowStore()
-		const concert = create(ConcertSchema, {
-			id: { value: EVENT_ID },
-			localDate: { value: { year: 2099, month: 11, day: 20 } },
-			listedVenueName: { value: 'Shibuya WWW' },
-			performers: [{ id: { value: ARTIST_ID }, name: { value: 'The Band' } }],
-			series: {
-				id: { value: 's1' },
-				title: { value: 'ONE MAN LIVE' },
-				organizerId: { value: 'org-1' },
-				publishState: PublishState.PUBLISHED,
-			},
-		})
+		const concert = concertResolver(
+			[
+				create(SeriesSchema, {
+					id: { value: 's1' },
+					title: { value: 'ONE MAN LIVE' },
+					organizerId: { value: 'org-1' },
+					publishState: PublishState.PUBLISHED,
+				}),
+			],
+			[
+				create(ArtistSchema, {
+					id: { value: ARTIST_ID },
+					name: { value: 'The Band' },
+				}),
+			],
+		)(
+			create(ConcertSchema, {
+				event: {
+					id: { value: EVENT_ID },
+					localDate: { value: { year: 2099, month: 11, day: 20 } },
+					listedVenueName: { value: 'Shibuya WWW' },
+					seriesId: { value: 's1' },
+				},
+				artistIds: [{ value: ARTIST_ID }],
+			}),
+		)
 		const fixture = await createFixture(
 			'<event-route component.ref="route"></event-route>',
 			class Host {

@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -165,14 +166,6 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		if (url.includes('SearchNewConcerts')) {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({}),
-			})
-		}
-
 		// UserService/Get: return a user with home area to skip region dialog
 		if (url.includes('UserService/Get')) {
 			return route.fulfill({
@@ -195,7 +188,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify(listByFollowerResponse()),
+				body: JSON.stringify(concertWire(listByFollowerResponse())),
 			})
 		}
 

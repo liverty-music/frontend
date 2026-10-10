@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
@@ -48,19 +49,11 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		if (url.includes('SearchNewConcerts')) {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({ concerts: [] }),
-			})
-		}
-
 		if (url.includes('ConcertService/List')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({ concerts: [] }),
+				body: JSON.stringify(concertWire({ concerts: [] })),
 			})
 		}
 
@@ -109,32 +102,6 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		if (url.includes('SearchNewConcerts')) {
-			return route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({
-					concerts: [
-						{
-							id: { value: '00000000-0000-4000-8000-c10000000001' },
-							performers: [
-								{
-									id: { value: '00000000-0000-4000-8000-a10000000001' },
-									name: { value: 'Test Artist' },
-									mbid: { value: '' },
-								},
-							],
-							series: {
-								id: { value: '00000000-0000-4000-8000-5e0000000001' },
-								title: { value: 'Test Concert' },
-							},
-							localDate: { value: { year: 2026, month: 6, day: 15 } },
-						},
-					],
-				}),
-			})
-		}
-
 		if (url.includes('ListByArtists')) {
 			// Return concerts for 6 preview artists to satisfy
 			// PREVIEW_MIN_ARTISTS_WITH_CONCERTS (=5). Performer IDs MUST
@@ -155,37 +122,39 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					groups: artists.map((aid, i) => ({
-						date: { value: { year: 2026, month: 6, day: 15 + i } },
-						home: [],
-						nearby: [],
-						away: [
-							{
-								id: { value: fakeId(`c-${aid}`) },
-								performers: [
-									{
-										id: { value: aid },
-										name: { value: `Artist ${i + 1}` },
-										mbid: { value: '' },
+				body: JSON.stringify(
+					concertWire({
+						groups: artists.map((aid, i) => ({
+							date: { value: { year: 2026, month: 6, day: 15 + i } },
+							home: [],
+							nearby: [],
+							away: [
+								{
+									id: { value: fakeId(`c-${aid}`) },
+									performers: [
+										{
+											id: { value: aid },
+											name: { value: `Artist ${i + 1}` },
+											mbid: { value: '' },
+										},
+									],
+									series: {
+										id: { value: fakeId(`s-${aid}`) },
+										title: { value: `Concert ${i + 1}` },
+										sourceUrl: { value: '' },
 									},
-								],
-								series: {
-									id: { value: fakeId(`s-${aid}`) },
-									title: { value: `Concert ${i + 1}` },
-									sourceUrl: { value: '' },
+									localDate: {
+										value: { year: 2026, month: 6, day: 15 + i },
+									},
+									venue: {
+										name: { value: `Venue ${i + 1}` },
+										adminArea: { value: 'JP-13' },
+									},
 								},
-								localDate: {
-									value: { year: 2026, month: 6, day: 15 + i },
-								},
-								venue: {
-									name: { value: `Venue ${i + 1}` },
-									adminArea: { value: 'JP-13' },
-								},
-							},
-						],
-					})),
-				}),
+							],
+						})),
+					}),
+				),
 			})
 		}
 
@@ -193,30 +162,32 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					groups: [
-						{
-							date: { value: { year: 2026, month: 6, day: 15 } },
-							away: [
-								{
-									id: { value: '00000000-0000-4000-8000-c10000000001' },
-									performers: [
-										{
-											id: { value: '00000000-0000-4000-8000-a10000000001' },
-											name: { value: 'Test Artist' },
-											mbid: { value: '' },
+				body: JSON.stringify(
+					concertWire({
+						groups: [
+							{
+								date: { value: { year: 2026, month: 6, day: 15 } },
+								away: [
+									{
+										id: { value: '00000000-0000-4000-8000-c10000000001' },
+										performers: [
+											{
+												id: { value: '00000000-0000-4000-8000-a10000000001' },
+												name: { value: 'Test Artist' },
+												mbid: { value: '' },
+											},
+										],
+										series: {
+											id: { value: '00000000-0000-4000-8000-5e0000000001' },
+											title: { value: 'Test Concert' },
 										},
-									],
-									series: {
-										id: { value: '00000000-0000-4000-8000-5e0000000001' },
-										title: { value: 'Test Concert' },
+										localDate: { value: { year: 2026, month: 6, day: 15 } },
 									},
-									localDate: { value: { year: 2026, month: 6, day: 15 } },
-								},
-							],
-						},
-					],
-				}),
+								],
+							},
+						],
+					}),
+				),
 			})
 		}
 
@@ -227,25 +198,27 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({
-					concerts: [
-						{
-							id: { value: '00000000-0000-4000-8000-c10000000001' },
-							performers: [
-								{
-									id: { value: '00000000-0000-4000-8000-a10000000001' },
-									name: { value: 'Test Artist' },
-									mbid: { value: '' },
+				body: JSON.stringify(
+					concertWire({
+						concerts: [
+							{
+								id: { value: '00000000-0000-4000-8000-c10000000001' },
+								performers: [
+									{
+										id: { value: '00000000-0000-4000-8000-a10000000001' },
+										name: { value: 'Test Artist' },
+										mbid: { value: '' },
+									},
+								],
+								series: {
+									id: { value: '00000000-0000-4000-8000-5e0000000001' },
+									title: { value: 'Test Concert' },
 								},
-							],
-							series: {
-								id: { value: '00000000-0000-4000-8000-5e0000000001' },
-								title: { value: 'Test Concert' },
+								localDate: { value: { year: 2026, month: 6, day: 15 } },
 							},
-							localDate: { value: { year: 2026, month: 6, day: 15 } },
-						},
-					],
-				}),
+						],
+					}),
+				),
 			})
 		}
 

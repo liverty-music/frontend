@@ -1,5 +1,8 @@
 import { ConcertSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
-import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import {
+	PublishState,
+	SeriesSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import {
 	type Ticket,
 	TicketSchema,
@@ -18,7 +21,10 @@ import {
 	SIGN_ALGORITHM,
 } from '../../shared/lib/admission-code/admission-code'
 import { IScreenWakeLock } from '../../src/adapter/browser/screen-wake-lock'
-import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
+import {
+	concertResolver,
+	IConcertRpcClient,
+} from '../../src/adapter/rpc/client/concert-client'
 import { ITicketRpcClient } from '../../src/adapter/rpc/client/ticket-client'
 import { IWalletPublicKeyRpcClient } from '../../src/adapter/rpc/client/wallet-public-key-client'
 import { IWalletStorage } from '../../src/adapter/storage/wallet-storage'
@@ -61,20 +67,25 @@ function protoTicket(i: number, o: TicketOpts = {}): Ticket {
 	})
 }
 
+/** A ConcertService.Get result, resolved the way the RPC client resolves it. */
 function protoConcert(id: string, day: number) {
-	return create(ConcertSchema, {
-		id: { value: id },
-		localDate: { value: { year: 2026, month: 11, day } },
-		openTime: { value: timestampFromDate(jst(day, 17, 30)) },
-		startTime: { value: timestampFromDate(jst(day, 18, 30)) },
-		listedVenueName: { value: 'Shibuya WWW' },
-		series: {
-			id: { value: 'series-1' },
-			title: { value: `LIVE ${day}` },
-			organizerId: { value: 'org-1' },
-			publishState: PublishState.PUBLISHED,
+	const concert = create(ConcertSchema, {
+		event: {
+			id: { value: id },
+			localDate: { value: { year: 2026, month: 11, day } },
+			openTime: { value: timestampFromDate(jst(day, 17, 30)) },
+			startTime: { value: timestampFromDate(jst(day, 18, 30)) },
+			listedVenueName: { value: 'Shibuya WWW' },
+			seriesId: { value: 'series-1' },
 		},
 	})
+	const series = create(SeriesSchema, {
+		id: { value: 'series-1' },
+		title: { value: `LIVE ${day}` },
+		organizerId: { value: 'org-1' },
+		publishState: PublishState.PUBLISHED,
+	})
+	return concertResolver([series], [])(concert)
 }
 
 function sameBytes(a: Uint8Array, b: Uint8Array): boolean {

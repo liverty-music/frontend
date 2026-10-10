@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -199,7 +200,7 @@ test.describe('Timetable tab (guest)', () => {
 				return route.fulfill({
 					status: 200,
 					contentType: 'application/json',
-					body: JSON.stringify({ groups: [] }),
+					body: JSON.stringify(concertWire({ groups: [] })),
 				})
 			}
 			return route.fulfill({
@@ -250,37 +251,41 @@ test.describe('Timetable tab (guest)', () => {
 				status: 200,
 				contentType: 'application/json',
 				body: route.request().url().includes('ListByArtists')
-					? JSON.stringify({
-							groups: [
-								{
-									date: localDate,
-									home: [
-										{
-											id: { value: '00000000-0000-4000-8000-c10000000001' },
-											performers: [
-												{
-													id: { value: '00000000-0000-4000-8000-a00000000001' },
-													name: { value: 'YOASOBI' },
-													mbid: { value: '' },
+					? JSON.stringify(
+							concertWire({
+								groups: [
+									{
+										date: localDate,
+										home: [
+											{
+												id: { value: '00000000-0000-4000-8000-c10000000001' },
+												performers: [
+													{
+														id: {
+															value: '00000000-0000-4000-8000-a00000000001',
+														},
+														name: { value: 'YOASOBI' },
+														mbid: { value: '' },
+													},
+												],
+												series: {
+													id: { value: '00000000-0000-4000-8000-5e0000000001' },
+													title: { value: 'Live' },
 												},
-											],
-											series: {
-												id: { value: '00000000-0000-4000-8000-5e0000000001' },
-												title: { value: 'Live' },
+												localDate,
+												venue: {
+													name: { value: 'Zepp' },
+													adminArea: { value: 'JP-13' },
+												},
+												sourceUrl: { value: 'https://example.com' },
 											},
-											localDate,
-											venue: {
-												name: { value: 'Zepp' },
-												adminArea: { value: 'JP-13' },
-											},
-											sourceUrl: { value: 'https://example.com' },
-										},
-									],
-									nearby: [],
-									away: [],
-								},
-							],
-						})
+										],
+										nearby: [],
+										away: [],
+									},
+								],
+							}),
+						)
 					: '{}',
 			}),
 		)

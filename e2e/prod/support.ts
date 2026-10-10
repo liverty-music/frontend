@@ -20,13 +20,52 @@ export const EVENTS = {
 const API_BASE =
 	process.env.PROD_API_BASE_URL ?? 'https://api.liverty-music.app'
 
-/** The fields of a Concert the assertions read (Connect JSON shape). */
+/**
+ * The fields of a Concert the assertions read, with its Series and performers
+ * joined in from the response's `series` and `artists` lists.
+ */
 export interface ApiConcert {
 	id: { value: string }
 	series: { id: { value: string }; title: { value: string } }
 	performers?: { id: { value: string }; name: { value: string } }[]
 	listedVenueName?: { value: string }
 	venue?: { name?: { value: string } }
+}
+
+/** A Concert in Connect JSON: its Event and the ids of its Artists. */
+interface WireConcert {
+	event: {
+		id: { value: string }
+		seriesId: { value: string }
+		listedVenueName?: { value: string }
+		venue?: { name?: { value: string } }
+	}
+	artistIds?: { value: string }[]
+}
+
+/** The side lists every response that returns Concerts carries. */
+interface SideLists {
+	series?: ApiConcert['series'][]
+	artists?: { id: { value: string }; name: { value: string } }[]
+}
+
+/** Join a wire Concert with the Series and Artists of its response. */
+function joined(concert: WireConcert, lists: SideLists): ApiConcert {
+	const series = (lists.series ?? []).find(
+		(s) => s.id.value === concert.event.seriesId.value,
+	)
+	if (!series) {
+		throw new Error(`response lacks series ${concert.event.seriesId.value}`)
+	}
+	return {
+		id: concert.event.id,
+		series,
+		performers: (concert.artistIds ?? []).flatMap(
+			(id) => (lists.artists ?? []).find((a) => a.id.value === id.value) ?? [],
+		),
+		listedVenueName: concert.event.listedVenueName,
+		venue: concert.event.venue,
+	}
 }
 
 async function call<T>(
@@ -49,10 +88,10 @@ export async function getConcert(
 	request: APIRequestContext,
 	eventId: string,
 ): Promise<ApiConcert> {
-	const res = await call<{ concert: ApiConcert }>(request, 'Get', {
+	const res = await call<{ concert: WireConcert } & SideLists>(request, 'Get', {
 		eventId: { value: eventId },
 	})
-	return res.concert
+	return joined(res.concert, res)
 }
 
 /** ConcertService.ListBySeries, as a guest. */
@@ -60,10 +99,12 @@ export async function listBySeries(
 	request: APIRequestContext,
 	seriesId: string,
 ): Promise<ApiConcert[]> {
-	const res = await call<{ concerts?: ApiConcert[] }>(request, 'ListBySeries', {
-		seriesId: { value: seriesId },
-	})
-	return res.concerts ?? []
+	const res = await call<{ concerts?: WireConcert[] } & SideLists>(
+		request,
+		'ListBySeries',
+		{ seriesId: { value: seriesId } },
+	)
+	return (res.concerts ?? []).map((c) => joined(c, res))
 }
 
 /** The first `<meta property|name="key" content="…">` in served HTML. */

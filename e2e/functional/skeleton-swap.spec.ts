@@ -1,3 +1,4 @@
+import { concertWire } from '../support/concert-wire'
 import { fakeId } from '../support/fake-id'
 import { expect, type Page, test } from '../support/test'
 
@@ -104,7 +105,7 @@ async function prepare(page: Page): Promise<void> {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
-				body: JSON.stringify({ groups }),
+				body: JSON.stringify(concertWire({ groups })),
 			})
 		}
 		return route.fulfill({
