@@ -88,3 +88,27 @@ describe('LotteryApplyRoute phone field (fixture)', () => {
 		await fixture.stop(true)
 	})
 })
+
+describe('LotteryApplyRoute ticket count field (fixture)', () => {
+	it('keeps continue enabled after the fan types a count', async () => {
+		const { fixture, vm } = await render('ja')
+		vm.maxTickets = 10
+		vm.step = 'count'
+		await tasksSettled()
+
+		const host = fixture.appHost
+		const input = host.querySelector('input[type="number"]') as HTMLInputElement
+		input.value = '3'
+		input.dispatchEvent(new Event('input'))
+		input.dispatchEvent(new Event('change'))
+		await tasksSettled()
+
+		// The count reaches the view model as a number, not the string "3".
+		expect(vm.ticketCount).toBe(3)
+		const proceed = host.querySelector(
+			'.lottery-apply-btn-primary',
+		) as HTMLButtonElement
+		expect(proceed.disabled).toBe(false)
+		await fixture.stop(true)
+	})
+})
