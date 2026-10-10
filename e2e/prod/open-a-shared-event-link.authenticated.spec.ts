@@ -64,9 +64,13 @@ test.describe('open a shared event link (signed in)', () => {
 		const { username, password } = testUser()
 		test.skip(!password, '.auth/password.prod.md or E2E_PASSWORD is required')
 
-		// A fresh guest: no storage state. A context made from `browser` does
-		// not inherit the project's `use`, so pass the base URL explicitly.
-		const context = await browser.newContext({ baseURL })
+		// A fresh guest. Playwright Test applies the project's `use` to
+		// `browser.newContext()` too, including this project's signed-in
+		// storage state, so clear it explicitly.
+		const context = await browser.newContext({
+			baseURL,
+			storageState: { cookies: [], origins: [] },
+		})
 		const page = await context.newPage()
 		await page.goto(`/events/${EVENTS.upcoming}`)
 
@@ -82,11 +86,11 @@ test.describe('open a shared event link (signed in)', () => {
 
 		// The test user already exists, so leave the registration form for the
 		// sign-in form; the callback still runs the event-page sign-up flow.
-		await page
-			.getByRole('link', { name: /log ?in|sign ?in|ログイン/i })
-			.or(page.getByRole('button', { name: /log ?in|sign ?in|ログイン/i }))
-			.first()
-			.click()
+		// Login V2's registration page offers no sign-in link, so open the
+		// login-name step for the same auth request (same query string).
+		const register = new URL(page.url())
+		register.pathname = register.pathname.replace(/\/register.*$/, '/loginname')
+		await page.goto(register.toString())
 		await fillAndSubmit(
 			page,
 			'input[name="loginName"], input[autocomplete="username"]',
