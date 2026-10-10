@@ -1,3 +1,5 @@
+<import from="./organizer-commercial-terms/organizer-commercial-terms"></import>
+
 <main class="[ organizers ] [ flow ]">
   <header class="organizers-header">
     <p class="organizers-brand">Liverty Music Admin</p>
@@ -115,6 +117,10 @@
         <p if.bind="deactivateError" class="organizers-error" role="alert">
           ${deactivateError}
         </p>
+
+        <organizer-commercial-terms
+          organizer-id.bind="selected.id"
+        ></organizer-commercial-terms>
 
         <section class="[ organizers-roster ] [ flow ]">
           <h3 class="organizers-subsection-title">Represented artists</h3>

@@ -20,5 +20,11 @@ export function userFrom(proto: ProtoUser): User {
 		// highlighting any selector option, which is the right "show, don't
 		// hide" posture for an unexpected DB state.
 		preferredLanguage: proto.preferredLanguage || undefined,
+		holderIdentity: proto.holderIdentity
+			? {
+					fullName: proto.holderIdentity.fullName,
+					phoneNumber: proto.holderIdentity.phoneNumber,
+				}
+			: undefined,
 	}
 }

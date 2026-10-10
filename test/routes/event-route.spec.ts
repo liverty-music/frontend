@@ -9,7 +9,9 @@ import {
 	IConcertRpcClient,
 	type ProtoConcert,
 } from '../../src/adapter/rpc/client/concert-client'
+import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import type { Artist } from '../../src/entities/artist'
+import type { TicketSale } from '../../src/entities/ticket-sale'
 import { EventRoute } from '../../src/routes/event/event-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { IFollowStore } from '../../src/services/follow-store'
@@ -100,6 +102,7 @@ describe('EventRoute', () => {
 	let follow: ReturnType<typeof makeFollowStore>
 	let purchased: ReturnType<typeof makePurchasedStore>
 	let userStore: { currentLanguage: string }
+	let ticketSaleClient: { get: ReturnType<typeof vi.fn> }
 
 	function build(): EventRoute {
 		const container = createTestContainer(
@@ -108,6 +111,7 @@ describe('EventRoute', () => {
 			Registration.instance(IFollowStore, follow),
 			Registration.instance(IPurchasedTicketStore, purchased),
 			Registration.instance(IUserStore, userStore),
+			Registration.instance(ITicketSaleRpcClient, ticketSaleClient),
 		)
 		container.register(EventRoute)
 		return container.get(EventRoute)
@@ -131,6 +135,7 @@ describe('EventRoute', () => {
 		follow = makeFollowStore()
 		purchased = makePurchasedStore()
 		userStore = { currentLanguage: 'ja' }
+		ticketSaleClient = { get: vi.fn().mockResolvedValue(null) }
 	})
 
 	afterEach(() => {
@@ -370,6 +375,99 @@ describe('EventRoute', () => {
 				origin: 'event-page',
 				returnTo: `/events/${EVENT_ID}`,
 			})
+		})
+	})
+
+	describe('sale', () => {
+		function sale(o: Partial<TicketSale> = {}): TicketSale {
+			return {
+				id: 'sale-1',
+				eventId: EVENT_ID,
+				saleStart: jst(1, 10),
+				saleEnd: jst(20, 18),
+				price: 3000,
+				perAccountLimit: 4,
+				state: 'onSale',
+				lowStock: false,
+				...o,
+			}
+		}
+
+		it('shows the price and few left without a count, with an action to buy', async () => {
+			// @spec components/infrastructure/fan/web/route/event "On sale with few left"
+			ticketSaleClient.get.mockResolvedValue(sale({ lowStock: true }))
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale?.state).toBe('onSale')
+			expect(sut.shownSale?.lowStock).toBe(true)
+			expect(sut.salePrice).toBe('3,000')
+			expect(Object.keys(sut.shownSale ?? {})).not.toContain('quantity')
+		})
+
+		it('starts sign-up from the action to buy and returns to the Event page', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Guest buys"
+			ticketSaleClient.get.mockResolvedValue(sale())
+			const sut = build()
+			await open(sut)
+			expect(sut.isGuest).toBe(true)
+
+			await sut.signUp()
+
+			expect(auth.signUp).toHaveBeenCalledWith({
+				origin: 'event-page',
+				returnTo: `/events/${EVENT_ID}`,
+			})
+		})
+
+		it('leads a signed-in fan to the checkout', async () => {
+			auth = createMockAuth({ isAuthenticated: true })
+			ticketSaleClient.get.mockResolvedValue(sale())
+			const sut = build()
+			await open(sut)
+
+			expect(sut.checkoutUrl).toBe(`/events/${EVENT_ID}/checkout`)
+		})
+
+		it('shows the opening date and time in Japan time before the sale opens', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Not yet on sale"
+			ticketSaleClient.get.mockResolvedValue(
+				sale({ state: 'notYetOnSale', saleStart: jst(1, 10) }),
+			)
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale?.state).toBe('notYetOnSale')
+			expect(sut.saleStartLabel).toBe('2026年11月1日(日) 10:00')
+		})
+
+		it('shows sold out with the note while every ticket is in a checkout', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Temporarily all held"
+			ticketSaleClient.get.mockResolvedValue(sale({ state: 'allHeld' }))
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale?.state).toBe('allHeld')
+		})
+
+		it('offers nothing for sale on a cancelled concert', async () => {
+			concertClient.get.mockResolvedValue(
+				protoConcert({ state: PublishState.CANCELLED }),
+			)
+			ticketSaleClient.get.mockResolvedValue(sale())
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale).toBeNull()
+		})
+
+		it('falls back to the sign-up hint when the sale cannot be read', async () => {
+			ticketSaleClient.get.mockRejectedValue(new Error('unavailable'))
+			const sut = build()
+			await open(sut)
+
+			expect(sut.state).toBe('ready')
+			expect(sut.shownSale).toBeNull()
 		})
 	})
 

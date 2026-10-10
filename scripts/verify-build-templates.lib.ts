@@ -32,6 +32,7 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'tickets', marker: 'tickets-card' },
 	{ route: 'order', marker: 'order-ticket-card' },
 	{ route: 'event', marker: 'event-performer-name' },
+	{ route: 'checkout', marker: 'checkout-terms' },
 ]
 
 /**

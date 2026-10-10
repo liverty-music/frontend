@@ -1,0 +1,175 @@
+<import from="./checkout-route.css"></import>
+
+<article class="[ checkout ] [ flow ]" data-step.bind="step">
+  <h1 class="checkout-title" t="checkout.title"></h1>
+
+  <p if.bind="step === 'loading'" class="checkout-status" role="status" t="checkout.loading"></p>
+
+  <section if.bind="step === 'unavailable'" class="checkout-panel" data-testid="checkout-unavailable">
+    <p t="checkout.unavailable"></p>
+  </section>
+
+  <section if.bind="step === 'not-found'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-not-found">
+    <p t="checkout.notFound"></p>
+    <a href="/events/${event.id}" if.bind="event" class="checkout-link" t="checkout.backToEvent"></a>
+  </section>
+
+  <!-- Event summary, shown on every step of the checkout -->
+  <section
+    if.bind="event && (step === 'count' || step === 'identity' || step === 'payment' || step === 'confirm')"
+    class="checkout-summary"
+    data-testid="checkout-summary"
+  >
+    <p class="checkout-event-title">${event.title}</p>
+    <p class="checkout-event-meta">${dateLabel} · ${event.venueName}</p>
+    <p if.bind="reservation" class="checkout-countdown" role="timer" aria-live="off" data-testid="checkout-countdown">
+      <span t="checkout.holdLeft"></span> <strong>${countdown}</strong>
+    </p>
+  </section>
+
+  <!-- Step 1: count -->
+  <section if.bind="step === 'count'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-count">
+    <h2 class="checkout-step-title" t="checkout.count.title"></h2>
+    <label class="checkout-field">
+      <span class="checkout-label" t="checkout.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
+      <select value.bind="ticketCount" class="checkout-input" data-testid="checkout-count-select">
+        <option repeat.for="n of countOptions" model.bind="n">${n}</option>
+      </select>
+    </label>
+    <p class="checkout-price" t="checkout.count.price" t-params.bind="{ price: yen(price) }"></p>
+    <p class="checkout-total" data-testid="checkout-total" t="checkout.total" t-params.bind="{ total: yen(price * ticketCount) }"></p>
+    <p if.bind="message" class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
+    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="hold()" disabled.bind="busy" data-testid="checkout-hold" t="checkout.count.continue"></button>
+  </section>
+
+  <!-- Step 2: 本人確認 -->
+  <section if.bind="step === 'identity'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-identity">
+    <h2 class="checkout-step-title" t="checkout.identity.title"></h2>
+    <p class="checkout-note" t="checkout.identity.note"></p>
+    <label class="checkout-field">
+      <span class="checkout-label" t="checkout.identity.name"></span>
+      <input type="text" autocomplete="name" value.bind="fullName" class="checkout-input" data-testid="checkout-name" />
+    </label>
+    <label class="checkout-field">
+      <span class="checkout-label" t="checkout.identity.phone"></span>
+      <input
+        type="tel"
+        autocomplete="tel"
+        inputmode="tel"
+        value.bind="phoneNumber"
+        aria-invalid.bind="isPhoneInvalid"
+        aria-describedby.bind="isPhoneInvalid ? 'checkout-phone-error' : null"
+        class="checkout-input"
+        data-testid="checkout-phone"
+      />
+    </label>
+    <p id="checkout-phone-error" if.bind="isPhoneInvalid" class="checkout-error" t="checkout.identity.phoneInvalid"></p>
+    <p if.bind="message" class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
+    <div class="[ checkout-actions ] [ cluster ]">
+      <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="backToCount()" t="checkout.back"></button>
+      <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="toPayment()" disabled.bind="!isIdentityValid || busy" data-testid="checkout-to-payment" t="checkout.identity.continue"></button>
+    </div>
+  </section>
+
+  <!-- Step 3: card -->
+  <section if.bind="step === 'payment'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-payment">
+    <h2 class="checkout-step-title" t="checkout.payment.title"></h2>
+    <p class="checkout-note" t="checkout.payment.notCharged"></p>
+    <div class="checkout-payment-element" ref="paymentElementHost"></div>
+    <p if.bind="cardError" class="checkout-error" role="alert" data-testid="checkout-card-error">
+      ${cardError} <span t="checkout.payment.tryAnother"></span>
+    </p>
+    <template if.bind="message">
+      <p class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
+      <button if.bind="message.key === 'checkout.payment.holdEnded'" type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
+    </template>
+    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="authorize()" disabled.bind="busy" data-testid="checkout-authorize" t="checkout.payment.continue"></button>
+  </section>
+
+  <!-- Step 4: 特商法 final confirmation -->
+  <section if.bind="step === 'confirm'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-confirm">
+    <h2 class="checkout-step-title" t="checkout.confirm.title"></h2>
+    <dl class="checkout-terms">
+      <dt t="checkout.confirm.event"></dt>
+      <dd data-testid="checkout-confirm-event">
+        ${event.title}<br />${dateLabel}<br />${event.venueName}
+        <template if.bind="openTimeLabel || startTimeLabel">
+          <br /><span if.bind="openTimeLabel"><span t="eventPage.open"></span> ${openTimeLabel}</span>
+          <span if.bind="startTimeLabel"><span t="eventPage.start"></span> ${startTimeLabel}</span>
+        </template>
+      </dd>
+
+      <dt t="checkout.confirm.tickets"></dt>
+      <dd data-testid="checkout-confirm-tickets" t="checkout.confirm.ticketsValue" t-params.bind="{ count: ticketCount, price: yen(price), total: yen(total) }"></dd>
+
+      <dt t="checkout.confirm.payment"></dt>
+      <dd data-testid="checkout-confirm-payment">
+        <span t="checkout.confirm.creditCard"></span> ${cardLabel}<br />
+        <span t="checkout.confirm.chargedOnOrder"></span>
+      </dd>
+
+      <dt t="checkout.confirm.delivery"></dt>
+      <dd t="checkout.confirm.deliveryValue"></dd>
+
+      <dt t="checkout.confirm.salePeriod"></dt>
+      <dd data-testid="checkout-confirm-period">${salePeriodLabel}</dd>
+
+      <dt t="checkout.confirm.holder"></dt>
+      <dd data-testid="checkout-confirm-holder">${fullName}</dd>
+
+      <dt t="checkout.confirm.resale"></dt>
+      <dd t="checkout.confirm.resaleValue"></dd>
+
+      <dt t="checkout.confirm.cancellation"></dt>
+      <dd t="checkout.confirm.cancellationValue"></dd>
+
+      <dt t="checkout.confirm.seller"></dt>
+      <dd data-testid="checkout-confirm-seller">
+        <template if.bind="seller">
+          ${seller.legalName}<br />
+          <span t="checkout.confirm.representative"></span> ${seller.representativeName}<br />
+          ${seller.address}<br />
+          ${seller.phoneNumber}<br />
+          ${seller.contactEmail}
+        </template>
+      </dd>
+    </dl>
+    <p if.bind="message" class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
+    <div class="[ checkout-actions ] [ cluster ]">
+      <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="changeCount()" t="checkout.confirm.changeCount"></button>
+      <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="changeIdentity()" t="checkout.confirm.changeIdentity"></button>
+    </div>
+    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="placeOrder()" disabled.bind="busy" data-testid="checkout-place-order" t="checkout.confirm.placeOrder" t-params.bind="{ total: yen(total) }"></button>
+  </section>
+
+  <!-- Completion -->
+  <section if.bind="step === 'done'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-done">
+    <h2 class="checkout-step-title" t="checkout.done.title"></h2>
+    <p data-testid="checkout-done-summary" t="checkout.done.summary" t-params.bind="{ event: event.title, count: ticketCount, total: yen(total) }"></p>
+    <a href="/tickets" class="[ checkout-btn-primary ] [ pressable ]" data-testid="checkout-to-tickets" t="checkout.done.toTickets"></a>
+    <button if.bind="canAllowNotifications" type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="allowNotifications()" data-testid="checkout-notifications" t="checkout.done.allowNotifications"></button>
+    <button if.bind="canInstallApp" type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="installApp()" data-testid="checkout-install" t="checkout.done.installApp"></button>
+  </section>
+
+  <!-- Placing the order failed -->
+  <section if.bind="step === 'outcome'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-outcome" data-outcome.bind="outcome">
+    <template switch.bind="outcome">
+      <template case="hold-ended">
+        <p t="checkout.outcome.holdEnded"></p>
+        <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
+      </template>
+      <template case="charge-failed">
+        <p t="checkout.outcome.chargeFailed"></p>
+        <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
+      </template>
+      <template case="replaced">
+        <p t="checkout.outcome.replaced"></p>
+        <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="goToNewerCheckout()" t="checkout.outcome.goToNewer"></button>
+      </template>
+      <template default-case>
+        <p t="checkout.outcome.completing"></p>
+        <a href="/tickets" class="[ checkout-btn-primary ] [ pressable ]" t="checkout.done.toTickets"></a>
+      </template>
+    </template>
+  </section>
+</article>

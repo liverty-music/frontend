@@ -128,6 +128,21 @@ export function prefectureLabel(event: EventPageEvent, lang: string): string {
 	return name === event.adminArea ? '' : name
 }
 
+/**
+ * A sale's start in Japan time with weekday, date and 24-hour time, e.g.
+ * "2026年11月1日(日) 10:00".
+ */
+export function formatSaleStart(start: Date, lang: string): string {
+	const date = new Intl.DateTimeFormat(lang, {
+		timeZone: EVENT_TIME_ZONE,
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+		weekday: 'short',
+	}).format(start)
+	return `${date} ${formatEventTime(start)}`
+}
+
 /** Google Maps search URL for the event's venue. */
 export function googleMapsUrl(event: EventPageEvent, lang: string): string {
 	const area = prefectureLabel(event, lang)

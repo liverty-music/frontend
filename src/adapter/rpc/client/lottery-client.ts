@@ -2,6 +2,7 @@ import { LotteryService } from '@buf/liverty-music_schema.bufbuild_es/liverty_mu
 import { type Client, createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
+import type { HolderIdentity } from '../../../entities/holder-identity'
 import type { TicketApplication } from '../../../entities/lottery'
 import { IAuthService } from '../../../services/auth-service'
 import { createTransport } from '../../../services/grpc-transport'
@@ -23,12 +24,6 @@ export interface ILotteryRpcClient extends LotteryRpcClient {}
 export interface AuthorizationDraft {
 	readonly clientSecret: string
 	readonly paymentIntentRef: string
-}
-
-/** The 本人確認 (identity verification) the fan supplies at application time. */
-export interface ApplicantIdentityInput {
-	readonly fullName: string
-	readonly phoneNumber: string
 }
 
 /**
@@ -92,7 +87,7 @@ export class LotteryRpcClient {
 	public async apply(
 		phaseId: string,
 		requestedTicketCount: number,
-		identity: ApplicantIdentityInput,
+		identity: HolderIdentity,
 		paymentIntentRef: string,
 		signal?: AbortSignal,
 	): Promise<TicketApplication | undefined> {

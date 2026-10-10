@@ -771,7 +771,94 @@
 			"purchased": "{{count}} tickets purchased",
 			"toTickets": "View tickets",
 			"signUpHint": "You need an account to buy tickets.",
-			"signUp": "Create an account"
+			"signUp": "Create an account",
+			"sale": {
+				"opens": "On sale from {{start}}",
+				"price": "¥{{price}} (tax included)",
+				"lowStock": "Few left",
+				"buy": "Buy tickets",
+				"soldOut": "Sold out",
+				"allHeldNote": "Other fans are checking out. Tickets may be available again in a few minutes.",
+				"ended": "The sale has ended"
+			}
+		}
+	},
+	"checkout": {
+		"title": "Buy tickets",
+		"loading": "Loading…",
+		"unavailable": "Payments are not available in this environment right now. Please try again later.",
+		"notFound": "Tickets for this event are not on sale.",
+		"backToEvent": "Back to the event",
+		"holdLeft": "Your tickets are held for",
+		"total": "Total ¥{{total}} (tax included)",
+		"back": "Back",
+		"startAgain": "Start again",
+		"count": {
+			"title": "How many tickets",
+			"label": "Tickets (1–{{limit}})",
+			"price": "¥{{price}} per ticket (tax included)",
+			"continue": "Hold tickets and continue",
+			"allHeld": "Sold out for now. Other fans are checking out, so tickets may be available again in a few minutes.",
+			"limit": "One account can buy up to {{limit}} tickets.",
+			"soldOut": "The tickets have sold out.",
+			"ended": "The sale has ended.",
+			"cancelled": "This concert was cancelled, so its tickets are not on sale."
+		},
+		"identity": {
+			"title": "Identity check",
+			"note": "Your name is printed on the tickets and checked at entry.",
+			"name": "Full name",
+			"phone": "Phone number",
+			"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678).",
+			"continue": "Continue to payment"
+		},
+		"payment": {
+			"title": "Payment",
+			"notCharged": "Your card is charged only when you place the order.",
+			"tryAnother": "You can try another card. Your tickets are still held.",
+			"continue": "Use this card",
+			"holdEnded": "The 15-minute hold has ended. Please start again."
+		},
+		"confirm": {
+			"title": "Review your order",
+			"event": "Concert",
+			"tickets": "Tickets and amount",
+			"ticketsValue": "{{count}} × ¥{{price}} = ¥{{total}} total (tax included)",
+			"payment": "Payment",
+			"creditCard": "Credit card",
+			"chargedOnOrder": "Your card is charged when you place the order.",
+			"delivery": "Delivery",
+			"deliveryValue": "Your tickets are available in the app's Tickets screen right after purchase.",
+			"salePeriod": "Sale period",
+			"holder": "Ticket holder",
+			"resale": "Resale",
+			"resaleValue": "Reselling tickets without the organizer's consent is prohibited. Tickets are issued in the buyer's name.",
+			"cancellation": "Cancellation and refunds",
+			"cancellationValue": "Orders cannot be cancelled or refunded unless the concert is cancelled. Cooling-off does not apply. Official resale opens only if the concert sells out.",
+			"seller": "Seller",
+			"representative": "Representative:",
+			"changeCount": "Change the number of tickets",
+			"changeIdentity": "Change name or phone",
+			"placeOrder": "Pay ¥{{total}} and buy"
+		},
+		"done": {
+			"title": "Purchase complete",
+			"summary": "You bought {{count}} tickets for {{event}} (paid ¥{{total}}).",
+			"toTickets": "View tickets",
+			"allowNotifications": "Allow notifications",
+			"installApp": "Add to home screen"
+		},
+		"outcome": {
+			"holdEnded": "The 15-minute hold ended, so the order was not placed. Your card was not charged. A temporary hold may show on your card statement for a few days.",
+			"chargeFailed": "Your card could not be charged. Please start again.",
+			"replaced": "This checkout was replaced by a newer one, for example in another tab.",
+			"goToNewer": "Go to the newer checkout",
+			"authenticationIncomplete": "Your card authentication is not complete. Please finish it and try again.",
+			"completing": "Your purchase is being completed. Your tickets will appear in the Tickets screen shortly."
+		},
+		"error": {
+			"retry": "Something went wrong. Please try again.",
+			"payment": "Payment could not be prepared. Please try again later."
 		}
 	}
 }

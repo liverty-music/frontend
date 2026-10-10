@@ -1,12 +1,13 @@
 import { I18nConfiguration } from '@aurelia/i18n'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
-import { create } from '@bufbuild/protobuf'
 import { ConcertSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { observable, Registration } from 'aurelia'
 import { describe, expect, it, vi } from 'vitest'
 import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
+import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import { EventDateTabs } from '../../src/components/event-date-tabs/event-date-tabs'
 import { SvgIcon } from '../../src/components/svg-icon/svg-icon'
 import type { Artist } from '../../src/entities/artist'
@@ -74,6 +75,9 @@ describe('EventRoute (fixture)', () => {
 					load: vi.fn(),
 				}),
 				Registration.instance(IUserStore, { currentLanguage: 'en' }),
+				Registration.instance(ITicketSaleRpcClient, {
+					get: vi.fn().mockResolvedValue(null),
+				}),
 			],
 		).started
 

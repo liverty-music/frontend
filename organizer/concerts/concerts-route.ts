@@ -50,6 +50,16 @@ export interface ConcertListRow {
 		readonly eventId: string
 		readonly label: string
 	}[]
+	/**
+	 * Per-event entry points to the first-come ticket sale editor. Present for
+	 * every event of a series that is not cancelled; the editor itself explains
+	 * why a draft event, an event without a start time or an Organizer without
+	 * seller details cannot go on sale yet.
+	 */
+	readonly ticketSaleEvents: readonly {
+		readonly eventId: string
+		readonly label: string
+	}[]
 	/** True while a publish/cancel action for this row is in flight. */
 	busy: boolean
 	actionError: string
@@ -125,6 +135,23 @@ function toReceptionEvents(
 		.filter((entry) => entry.eventId !== '')
 }
 
+/** Builds the per-event first-come sale entry points of a series. */
+function toTicketSaleEvents(
+	concert: AuthoredConcert,
+	publishState: PublishState,
+): ConcertListRow['ticketSaleEvents'] {
+	if (publishState === PublishState.CANCELLED) return []
+	const multi = concert.events.length > 1
+	return concert.events
+		.map((event, index) => ({
+			eventId: event.id?.value ?? '',
+			label: multi
+				? `First-come sale · ${formatEventDate(concert, index)}`
+				: 'First-come sale',
+		}))
+		.filter((entry) => entry.eventId !== '')
+}
+
 function toRow(concert: AuthoredConcert): ConcertListRow {
 	const series = concert.series
 	const publishState = series?.publishState ?? PublishState.UNSPECIFIED
@@ -142,6 +169,7 @@ function toRow(concert: AuthoredConcert): ConcertListRow {
 		canCancel: publishState !== PublishState.CANCELLED,
 		lotteryEvents: toLotteryEvents(concert, publishState),
 		receptionEvents: toReceptionEvents(concert, publishState),
+		ticketSaleEvents: toTicketSaleEvents(concert, publishState),
 		busy: false,
 		actionError: '',
 	}

@@ -1,5 +1,8 @@
 import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
+import type {
+	Organizer,
+	SellerDetails,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
 import { OrganizerService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/organizer/v1/organizer_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -7,7 +10,19 @@ import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
 import { createAdminTransport } from './admin-transport'
 
-export type { Artist, Organizer }
+export type { Artist, Organizer, SellerDetails }
+
+/**
+ * The five 特商法 seller-detail values as plain strings. The whole set is sent
+ * on every update: the server replaces seller details as a whole.
+ */
+export interface SellerDetailsInput {
+	readonly legalName: string
+	readonly representativeName: string
+	readonly address: string
+	readonly phoneNumber: string
+	readonly contactEmail: string
+}
 
 export const IOrganizerClient = DI.createInterface<IOrganizerClient>(
 	'IOrganizerClient',
@@ -175,6 +190,69 @@ export class OrganizerClient {
 			)
 		} catch (err) {
 			this.logger.warn('deactivate failed', { organizerId, error: err })
+			throw err
+		}
+	}
+
+	/**
+	 * Records the organizer's 特商法 seller details, replacing any previous set,
+	 * and returns the organizer with the stored details.
+	 */
+	public async updateSellerDetails(
+		organizerId: string,
+		details: SellerDetailsInput,
+		signal?: AbortSignal,
+	): Promise<Organizer | undefined> {
+		this.logger.info('Updating seller details', { organizerId })
+		try {
+			const response = await this.client.updateSellerDetails(
+				{
+					organizerId: { value: organizerId },
+					sellerDetails: {
+						legalName: details.legalName,
+						representativeName: details.representativeName,
+						address: details.address,
+						phoneNumber: details.phoneNumber,
+						contactEmail: details.contactEmail,
+					},
+				},
+				{ signal },
+			)
+			return response.organizer
+		} catch (err) {
+			this.logger.warn('updateSellerDetails failed', {
+				organizerId,
+				error: err,
+			})
+			throw err
+		}
+	}
+
+	/**
+	 * Sets the platform fee rate (basis points, 0 to 3000) applied to the
+	 * organizer's future orders and returns the organizer with the stored rate.
+	 */
+	public async setPlatformFeeRate(
+		organizerId: string,
+		platformFeeRateBps: number,
+		signal?: AbortSignal,
+	): Promise<Organizer | undefined> {
+		this.logger.info('Setting platform fee rate', {
+			organizerId,
+			platformFeeRateBps,
+		})
+		try {
+			const response = await this.client.setPlatformFeeRate(
+				{ organizerId: { value: organizerId }, platformFeeRateBps },
+				{ signal },
+			)
+			return response.organizer
+		} catch (err) {
+			this.logger.warn('setPlatformFeeRate failed', {
+				organizerId,
+				platformFeeRateBps,
+				error: err,
+			})
 			throw err
 		}
 	}
