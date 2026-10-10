@@ -4,7 +4,7 @@ const SEPARATORS = /[\s()-]/g
 /** Japanese domestic number: a leading 0 followed by 9-10 digits. */
 const DOMESTIC = /^0\d{9,10}$/
 
-/** E.164, as enforced by the `ApplicantIdentity.phone_number` proto rule. */
+/** E.164, as enforced by the `HolderIdentity.phone_number` proto rule. */
 const E164 = /^\+[1-9]\d{1,14}$/
 
 /**

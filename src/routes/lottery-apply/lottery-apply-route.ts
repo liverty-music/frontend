@@ -1,14 +1,12 @@
 import { IRouter, type Params } from '@aurelia/router'
 import type { StripePaymentElement } from '@stripe/stripe-js'
 import { ILogger, resolve } from 'aurelia'
-import {
-	type ApplicantIdentityInput,
-	ILotteryRpcClient,
-} from '../../adapter/rpc/client/lottery-client'
+import { ILotteryRpcClient } from '../../adapter/rpc/client/lottery-client'
+import type { HolderIdentity } from '../../entities/holder-identity'
 import { formatJpy } from '../../lib/format-currency'
+import { toE164 } from '../../lib/to-e164'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IStripeService } from '../../services/stripe-service'
-import { toE164 } from './to-e164'
 
 /**
  * Discrete UI phases of the apply flow. The fan advances
@@ -341,7 +339,7 @@ export class LotteryApplyRoute {
 			this.confirmedRef = confirm.paymentIntentId
 		}
 
-		const identity: ApplicantIdentityInput = {
+		const identity: HolderIdentity = {
 			fullName: this.fullName.trim(),
 			// isIdentityValid gated the identity → payment transition, so the
 			// number is convertible here.

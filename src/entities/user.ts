@@ -1,3 +1,5 @@
+import type { HolderIdentity } from './holder-identity'
+
 /**
  * A user's home area setting.
  * @source proto/liverty_music/entity/v1/user.proto — Home
@@ -25,6 +27,13 @@ export interface User {
 	 * @source proto/liverty_music/entity/v1/user.proto — User.preferred_language
 	 */
 	readonly preferredLanguage?: string
+	/**
+	 * The 本人確認 name and phone number the fan last checked out with, which
+	 * the checkout prefills. Absent until the fan first checks out.
+	 *
+	 * @source proto/liverty_music/entity/v1/user.proto — User.holder_identity
+	 */
+	readonly holderIdentity?: HolderIdentity
 }
 
 // ---------------------------------------------------------------------------
