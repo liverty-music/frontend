@@ -1,0 +1,121 @@
+<template class="[ lottery-entry-route ] [ flow ]">
+	<header class="lottery-entry-header">
+		<h1 class="lottery-entry-title" t="lotteryEntry.title"></h1>
+	</header>
+
+	<p if.bind="step === 'loading'" class="lottery-entry-lead" role="status" t="lotteryEntry.loading"></p>
+
+	<!-- Stripe not configured for this environment: fail closed. -->
+	<section class="lottery-entry-panel" if.bind="step === 'unavailable'" data-testid="lottery-entry-unavailable">
+		<p class="lottery-entry-lead" t="lotteryEntry.unavailable"></p>
+	</section>
+
+	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'not-found'" data-testid="lottery-entry-not-found">
+		<p class="lottery-entry-lead" t="lotteryEntry.notFound"></p>
+		<a href="/events/${event.id}" if.bind="event" t="lotteryEntry.backToEvent"></a>
+	</section>
+
+	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'closed'" data-testid="lottery-entry-closed">
+		<p class="lottery-entry-lead" t="lotteryEntry.closed"></p>
+		<a href="/events/${event.id}" if.bind="event" t="lotteryEntry.backToEvent"></a>
+	</section>
+
+	<!-- The TicketType entered: the sale's name, the event, the price and the limit -->
+	<section
+		if.bind="sale && event && (step === 'verify-required' || step === 'count' || step === 'personal-details' || step === 'payment' || step === 'submitting')"
+		class="[ lottery-entry-panel ] [ flow ]"
+		data-testid="lottery-entry-summary"
+	>
+		<p class="lottery-entry-step-title" data-testid="lottery-entry-sale-name">${sale.name}</p>
+		<p class="lottery-entry-lead" data-testid="lottery-entry-event">${event.title}<br />${dateLabel} · ${event.venueName}</p>
+		<p class="lottery-entry-lead" data-testid="lottery-entry-price" t="lotteryEntry.price" t-params.bind="{ price: yen(price) }"></p>
+		<p class="lottery-entry-lead" data-testid="lottery-entry-limit" t="lotteryEntry.limit" t-params.bind="{ limit: perAccountLimit }"></p>
+		<p class="lottery-entry-lead" t="lotteryEntry.window" t-params.bind="{ window: windowLabel }"></p>
+	</section>
+
+	<!-- Verification gate: the sale requires a verification the fan lacks. -->
+	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'verify-required'" data-testid="lottery-entry-verify">
+		<h2 class="lottery-entry-step-title" t="lotteryEntry.verify.title"></h2>
+		<p class="lottery-entry-lead" t="lotteryEntry.verify.body"></p>
+		<button type="button" class="lottery-entry-btn-primary" click.trigger="goToVerify()" t="lotteryEntry.verify.action"></button>
+	</section>
+
+	<!-- Step 1: ticket count -->
+	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'count'" data-testid="lottery-entry-count">
+		<h2 class="lottery-entry-step-title" t="lotteryEntry.count.title"></h2>
+		<label class="lottery-entry-field">
+			<span class="lottery-entry-label" t="lotteryEntry.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
+			<select value.bind="ticketCount" class="lottery-entry-input" data-testid="lottery-entry-count-select">
+				<option repeat.for="n of countOptions" model.bind="n">${n}</option>
+			</select>
+		</label>
+		<p class="lottery-entry-total" data-testid="lottery-entry-total" t="lotteryEntry.total" t-params.bind="{ total: yen(total) }"></p>
+		<p class="lottery-entry-error" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
+		<button type="button" class="lottery-entry-btn-primary" click.trigger="toPersonalDetails()" disabled.bind="busy" data-testid="lottery-entry-to-personal-details" t="lotteryEntry.count.continue"></button>
+	</section>
+
+	<!-- Step 2: 本人確認 -->
+	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'personal-details'" data-testid="lottery-entry-personal-details">
+		<h2 class="lottery-entry-step-title" t="lotteryEntry.personalDetails.title"></h2>
+		<p class="lottery-entry-lead" t="lotteryEntry.personalDetails.note"></p>
+		<label class="lottery-entry-field">
+			<span class="lottery-entry-label" t="lotteryEntry.personalDetails.name"></span>
+			<input type="text" autocomplete="name" value.bind="fullName" class="lottery-entry-input" data-testid="lottery-entry-name" />
+		</label>
+		<label class="lottery-entry-field">
+			<span class="lottery-entry-label" t="lotteryEntry.personalDetails.phone"></span>
+			<input
+				type="tel"
+				autocomplete="tel"
+				inputmode="tel"
+				value.bind="phoneNumber"
+				aria-invalid.bind="isPhoneInvalid"
+				aria-describedby.bind="isPhoneInvalid ? 'lottery-entry-phone-error' : null"
+				class="lottery-entry-input"
+				data-testid="lottery-entry-phone"
+			/>
+		</label>
+		<p id="lottery-entry-phone-error" class="lottery-entry-error" if.bind="isPhoneInvalid" t="lotteryEntry.phoneInvalid"></p>
+		<p class="lottery-entry-error" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
+		<div class="[ lottery-entry-actions ] [ cluster ]">
+			<button type="button" class="lottery-entry-btn-secondary" click.trigger="backToCount()" t="lotteryEntry.back"></button>
+			<button type="button" class="lottery-entry-btn-primary" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="lottery-entry-to-payment" t="lotteryEntry.personalDetails.continue"></button>
+		</div>
+	</section>
+
+	<!-- Step 3: card authorization + 特商法 final confirmation -->
+	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'payment' || step === 'submitting'" data-testid="lottery-entry-payment">
+		<h2 class="lottery-entry-step-title" t="lotteryEntry.payment.title"></h2>
+		<div class="[ lottery-entry-terms ] [ flow ]" role="note">
+			<p class="lottery-entry-terms-lead" t="lotteryEntry.payment.cardAuthorization" t-params.bind="{ total: yen(total), count: ticketCount, price: yen(price) }"></p>
+			<ul class="lottery-entry-terms-list">
+				<li t="lotteryEntry.payment.notCharged"></li>
+				<li t="lotteryEntry.payment.chargedOnWin"></li>
+				<li t="lotteryEntry.payment.releasedOnLoss"></li>
+				<li t="lotteryEntry.payment.withdraw"></li>
+			</ul>
+			<p class="lottery-entry-terms-brands" t="lotteryEntry.payment.brands"></p>
+		</div>
+
+		<!-- Stripe Payment Element mounts here (Amex excluded server-side). -->
+		<div class="lottery-entry-payment-element" ref="paymentElementHost"></div>
+
+		<p class="lottery-entry-error" if.bind="cardError" role="alert" data-testid="lottery-entry-card-error">${cardError}</p>
+		<p class="lottery-entry-error" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
+		<button
+			type="button"
+			class="lottery-entry-btn-primary"
+			click.trigger="confirmEntry()"
+			disabled.bind="step === 'submitting'"
+			data-testid="lottery-entry-confirm"
+			t.bind="step === 'submitting' ? 'lotteryEntry.payment.submitting' : 'lotteryEntry.payment.confirm'"
+		></button>
+	</section>
+
+	<!-- The entry was made (Confirm succeeded) -->
+	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'done'" data-testid="lottery-entry-done">
+		<h2 class="lottery-entry-step-title" t="lotteryEntry.done.title"></h2>
+		<p class="lottery-entry-lead" t="lotteryEntry.done.body" t-params.bind="{ sale: sale.name, count: entry.ticketCount }"></p>
+		<a href.bind="entryStatusUrl" class="lottery-entry-btn-primary" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>
+	</section>
+</template>

@@ -1,6 +1,6 @@
 import { Code, ConnectError } from '@connectrpc/connect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { CompleteOutcome } from '../../services/kyc-service'
+import type { CompleteOutcome } from '../../services/identity-verification-service'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -11,15 +11,15 @@ const mockLogger = {
 const mockRouter = { load: vi.fn(async () => {}) }
 const mockI18n = { tr: vi.fn((key: string) => key) }
 
-// completeFromCallback takes NO session id argument: the service reads it from
+// create takes NO session id argument: the service reads it from
 // its own persisted storage (callbackWithSessionId=false → no query param).
-const mockCompleteFromCallback = vi.fn(
+const mockCreate = vi.fn(
 	async (_signal?: AbortSignal): Promise<CompleteOutcome> =>
 		({ kind: 'sessionMismatch' }) as CompleteOutcome,
 )
 
-const mockKycService = {
-	completeFromCallback: mockCompleteFromCallback,
+const mockIdentityVerificationService = {
+	create: mockCreate,
 }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -29,7 +29,7 @@ vi.mock('aurelia', async (importOriginal) => {
 		resolve: vi.fn((token: unknown) => {
 			const tokenAny = token as { friendlyName?: string }
 			const map: Record<string, unknown> = {
-				IKycService: mockKycService,
+				IIdentityVerificationService: mockIdentityVerificationService,
 				IRouter: mockRouter,
 				I18N: mockI18n,
 				ILogger: mockLogger,
@@ -52,27 +52,24 @@ describe('VerifyCallbackRoute', () => {
 	})
 
 	describe('loading()', () => {
-		it('finalizes via completeFromCallback() with NO argument (session id comes from persisted storage)', async () => {
+		it('finalizes via create() with NO argument (session id comes from persisted storage)', async () => {
 			const verifiedOutcome: CompleteOutcome = {
 				kind: 'verified',
-				status: {
-					level: 'kycVerified',
-					kyc: {
-						id: 'kyc-1',
-						userId: 'user-1',
-						method: 'jpki',
-						pocketSignUserId: 'ps-1',
-						dedupeStrength: 'strong',
-						status: 'active',
-					},
+				identityVerification: {
+					id: 'iv-1',
+					userId: 'user-1',
+					method: 'jpki',
+					providerUserId: 'provider-1',
+					dedupeStrength: 'strong',
+					status: 'active',
 				},
 			}
-			mockCompleteFromCallback.mockResolvedValueOnce(verifiedOutcome)
+			mockCreate.mockResolvedValueOnce(verifiedOutcome)
 
 			await sut.loading()
 
-			expect(mockCompleteFromCallback).toHaveBeenCalledTimes(1)
-			expect(mockCompleteFromCallback).toHaveBeenCalledWith()
+			expect(mockCreate).toHaveBeenCalledTimes(1)
+			expect(mockCreate).toHaveBeenCalledWith()
 			expect(sut.outcome).toBe(verifiedOutcome)
 			expect(sut.isSuccess).toBe(true)
 			expect(sut.isPending).toBe(false)
@@ -83,7 +80,7 @@ describe('VerifyCallbackRoute', () => {
 
 		it('sets isSuccess=false and the sessionMismatch key when no session was in progress', async () => {
 			const mismatch: CompleteOutcome = { kind: 'sessionMismatch' }
-			mockCompleteFromCallback.mockResolvedValueOnce(mismatch)
+			mockCreate.mockResolvedValueOnce(mismatch)
 
 			await sut.loading()
 
@@ -96,7 +93,7 @@ describe('VerifyCallbackRoute', () => {
 
 		it('maps UNAVAILABLE ConnectError to the correct i18n key', async () => {
 			const unavailable = new ConnectError('unavailable', Code.Unavailable)
-			mockCompleteFromCallback.mockResolvedValueOnce({
+			mockCreate.mockResolvedValueOnce({
 				kind: 'verificationFailed',
 				error: unavailable,
 			})
@@ -108,7 +105,7 @@ describe('VerifyCallbackRoute', () => {
 		})
 
 		it('maps FAILED_PRECONDITION to the session-not-completed key', async () => {
-			mockCompleteFromCallback.mockResolvedValueOnce({
+			mockCreate.mockResolvedValueOnce({
 				kind: 'verificationFailed',
 				error: new ConnectError('not completed', Code.FailedPrecondition),
 			})
@@ -119,7 +116,7 @@ describe('VerifyCallbackRoute', () => {
 		})
 
 		it('maps ALREADY_EXISTS to the already-verified key', async () => {
-			mockCompleteFromCallback.mockResolvedValueOnce({
+			mockCreate.mockResolvedValueOnce({
 				kind: 'verificationFailed',
 				error: new ConnectError('exists', Code.AlreadyExists),
 			})
@@ -130,7 +127,7 @@ describe('VerifyCallbackRoute', () => {
 		})
 
 		it('maps PERMISSION_DENIED to the permissionDenied key (anti-replay / nonce-mismatch signal)', async () => {
-			mockCompleteFromCallback.mockResolvedValueOnce({
+			mockCreate.mockResolvedValueOnce({
 				kind: 'verificationFailed',
 				error: new ConnectError('nonce mismatch', Code.PermissionDenied),
 			})
@@ -142,7 +139,7 @@ describe('VerifyCallbackRoute', () => {
 		})
 
 		it('maps an unknown error to the generic key', async () => {
-			mockCompleteFromCallback.mockResolvedValueOnce({
+			mockCreate.mockResolvedValueOnce({
 				kind: 'verificationFailed',
 				error: new Error('something unexpected'),
 			})
@@ -155,7 +152,7 @@ describe('VerifyCallbackRoute', () => {
 		it('maps a ConnectError with an UNMAPPED code to the generic key', async () => {
 			// A ConnectError whose code is not in the switch (e.g. Internal) must
 			// fall through to the generic key — distinct from the non-ConnectError case.
-			mockCompleteFromCallback.mockResolvedValueOnce({
+			mockCreate.mockResolvedValueOnce({
 				kind: 'verificationFailed',
 				error: new ConnectError('boom', Code.Internal),
 			})
@@ -172,9 +169,9 @@ describe('VerifyCallbackRoute', () => {
 		})
 
 		it('returns null when isSuccess (verified outcome)', async () => {
-			mockCompleteFromCallback.mockResolvedValueOnce({
+			mockCreate.mockResolvedValueOnce({
 				kind: 'verified',
-				status: { level: 'kycVerified' },
+				identityVerification: undefined,
 			})
 			await sut.loading()
 

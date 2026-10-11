@@ -32,7 +32,7 @@ vi.mock('aurelia', async (importOriginal) => {
 			switch (token?.friendlyName) {
 				case 'ILogger':
 					return mockLogger
-				case 'IPushRpcClient':
+				case 'IPushSubscriptionRpcClient':
 					return mockRpc
 				case 'INotificationManager':
 					return mockNotificationManager
@@ -45,8 +45,8 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
-vi.mock('../adapter/rpc/client/push-client', () => ({
-	IPushRpcClient: { friendlyName: 'IPushRpcClient' },
+vi.mock('../adapter/rpc/client/push-subscription-client', () => ({
+	IPushSubscriptionRpcClient: { friendlyName: 'IPushSubscriptionRpcClient' },
 }))
 vi.mock('../config/app-config', () => ({
 	IAppConfig: { friendlyName: 'IAppConfig' },

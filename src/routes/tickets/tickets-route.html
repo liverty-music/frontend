@@ -138,12 +138,12 @@
 					<!-- 特定興行入場券 face: eligible person's name and phone, no seat, resale notice -->
 					<dl class="tickets-summary">
 						<div class="tickets-summary-row">
-							<dt class="tickets-summary-key" t="tickets.field.holderName"></dt>
-							<dd class="tickets-summary-val" data-testid="tickets-holder-name">${holder.fullName}</dd>
+							<dt class="tickets-summary-key" t="tickets.field.fullName"></dt>
+							<dd class="tickets-summary-val" data-testid="tickets-full-name">${personalDetails.fullName}</dd>
 						</div>
 						<div class="tickets-summary-row">
-							<dt class="tickets-summary-key" t="tickets.field.holderPhone"></dt>
-							<dd class="tickets-summary-val" data-testid="tickets-holder-phone">${holderPhone}</dd>
+							<dt class="tickets-summary-key" t="tickets.field.phoneNumber"></dt>
+							<dd class="tickets-summary-val" data-testid="tickets-phone-number">${phoneNumberDisplay}</dd>
 						</div>
 						<div class="tickets-summary-row">
 							<dt class="tickets-summary-key" t="tickets.field.seat"></dt>

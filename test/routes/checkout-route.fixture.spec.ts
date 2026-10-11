@@ -11,12 +11,12 @@ import { ICheckoutRpcClient } from '../../src/adapter/rpc/client/checkout-client
 import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import type { Checkout } from '../../src/entities/checkout'
-import type { KycStatus } from '../../src/entities/kyc'
+import type { IdentityVerification } from '../../src/entities/identity-verification'
 import type { TicketSale } from '../../src/entities/ticket-sale'
 import en from '../../src/locales/en/translation.json'
 import ja from '../../src/locales/ja/translation.json'
 import { CheckoutRoute } from '../../src/routes/checkout/checkout-route'
-import { IKycService } from '../../src/services/kyc-service'
+import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { INotificationManager } from '../../src/services/notification-manager'
 import { IPushService } from '../../src/services/push-service'
 import { IPwaInstallService } from '../../src/services/pwa-install-service'
@@ -30,8 +30,8 @@ const jpkiOnlySale: TicketSale = {
 	id: 'sale-1',
 	name: '一般発売',
 	method: 'firstCome',
-	saleStart: new Date(Date.now() - 60 * 60 * 1000),
-	saleEnd: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
+	saleStartTime: new Date(Date.now() - 60 * 60 * 1000),
+	saleEndTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
 	verificationRequirement: 'jpkiOnly',
 	ticketType: {
 		id: 'type-1',
@@ -66,28 +66,28 @@ const held: Checkout = {
 	holdExpireTime: new Date(Date.now() + 15 * 60 * 1000),
 }
 
-const noKyc: KycStatus = { level: 'unverified' }
-const activeJpkiKyc: KycStatus = {
-	level: 'kycVerified',
-	kyc: {
-		id: 'kyc-1',
-		userId: 'user-1',
-		method: 'jpki',
-		pocketSignUserId: 'ps-1',
-		dedupeStrength: 'strong',
-		status: 'active',
-	},
+const activeJpki: IdentityVerification = {
+	id: 'iv-1',
+	userId: 'user-1',
+	method: 'jpki',
+	providerUserId: 'provider-1',
+	dedupeStrength: 'strong',
+	status: 'active',
 }
 
 /**
  * Renders the real checkout template with the real translation bundles, for
- * a fan with the given 本人確認 snapshot, and waits for the first step.
+ * a fan with the given IdentityVerification (none when undefined), and waits
+ * for the first step.
  */
-async function render(lng: 'ja' | 'en', kyc: KycStatus) {
+async function render(
+	lng: 'ja' | 'en',
+	identityVerification: IdentityVerification | undefined,
+) {
 	const checkoutClient = {
 		start: vi.fn().mockResolvedValue(held),
 		get: vi.fn(),
-		authorize: vi.fn(),
+		authorizeCard: vi.fn(),
 		confirm: vi.fn(),
 	}
 	const router = { load: vi.fn() }
@@ -110,8 +110,8 @@ async function render(lng: 'ja' | 'en', kyc: KycStatus) {
 			}),
 			Registration.instance(ICheckoutRpcClient, checkoutClient),
 			Registration.instance(IStripeService, { isConfigured: true }),
-			Registration.instance(IKycService, {
-				getStatus: vi.fn().mockResolvedValue(kyc),
+			Registration.instance(IIdentityVerificationService, {
+				get: vi.fn().mockResolvedValue(identityVerification),
 			}),
 			Registration.instance(IUserStore, {
 				current: undefined,
@@ -144,7 +144,10 @@ describe('CheckoutRoute verified sale (fixture)', () => {
 
 	it('says the sale requires マイナンバーカード verification and offers to verify, without starting a checkout', async () => {
 		// @spec components/infrastructure/fan/web/route/checkout "Unverified fan on a verified sale"
-		const { fixture, vm, checkoutClient, router } = await render('ja', noKyc)
+		const { fixture, vm, checkoutClient, router } = await render(
+			'ja',
+			undefined,
+		)
 		const host = fixture.appHost
 
 		expect(vm.step).toBe('verify-required')
@@ -163,7 +166,7 @@ describe('CheckoutRoute verified sale (fixture)', () => {
 	})
 
 	it('says the requirement in English too', async () => {
-		const { fixture } = await render('en', noKyc)
+		const { fixture } = await render('en', undefined)
 
 		expect(
 			byTestId(fixture.appHost, 'checkout-verify-body')?.textContent,
@@ -171,9 +174,9 @@ describe('CheckoutRoute verified sale (fixture)', () => {
 		await fixture.stop(true)
 	})
 
-	it('starts the checkout as usual for a fan with an Active JPKI Kyc', async () => {
+	it('starts the checkout as usual for a fan with an Active JPKI IdentityVerification', async () => {
 		// @spec components/infrastructure/fan/web/route/checkout "Verified fan on a verified sale"
-		const { fixture, vm, checkoutClient } = await render('ja', activeJpkiKyc)
+		const { fixture, vm, checkoutClient } = await render('ja', activeJpki)
 		const host = fixture.appHost
 
 		expect(vm.step).toBe('count')
@@ -184,7 +187,7 @@ describe('CheckoutRoute verified sale (fixture)', () => {
 		)
 
 		byTestId(host, 'checkout-hold')?.click()
-		await vi.waitFor(() => expect(vm.step).toBe('identity'))
+		await vi.waitFor(() => expect(vm.step).toBe('personal-details'))
 
 		expect(checkoutClient.start).toHaveBeenCalledWith(
 			'type-1',

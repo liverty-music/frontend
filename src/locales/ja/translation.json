@@ -298,10 +298,10 @@
 			"saved": "名義を保存しました。",
 			"saveError": "名義を保存できませんでした。少し時間を置いてもう一度お試しください。"
 		},
-		"kyc": {
+		"identityVerification": {
 			"label": "本人確認",
-			"levelVerified": "確認済み",
-			"levelUnverified": "未確認",
+			"verified": "確認済み",
+			"unverified": "未確認",
 			"methodPrefix": "方法:",
 			"methodJpki": "マイナンバーカード (JPKI)",
 			"methodDriverLicence": "運転免許証",
@@ -393,8 +393,8 @@
 			"void": "無効"
 		},
 		"field": {
-			"holderName": "お名前",
-			"holderPhone": "電話番号",
+			"fullName": "お名前",
+			"phoneNumber": "電話番号",
 			"seat": "座席",
 			"noSeat": "指定なし"
 		},
@@ -439,7 +439,7 @@
 			"title": "お支払い情報",
 			"amount": "合計金額",
 			"taxIncluded": "（税込）",
-			"paidAt": "支払日",
+			"payTime": "支払日",
 			"card": "お支払いカード"
 		},
 		"status": {
@@ -450,8 +450,8 @@
 			"title": "発行チケット",
 			"field": {
 				"eventId": "イベント",
-				"holderName": "お名前",
-				"issuedAt": "発行日"
+				"fullName": "お名前",
+				"issueTime": "発行日"
 			},
 			"resaleProhibited": "このチケットは特定興行入場券です。主催者の同意なく転売することは法律により禁じられています。"
 		}
@@ -738,7 +738,7 @@
 		"leftHanded": "左利きモード",
 		"leftHandedDesc": "アクションボタンを左下に配置します"
 	},
-	"lotteryApply": {
+	"lotteryEntry": {
 		"title": "チケット抽選に申し込む",
 		"loading": "読み込んでいます…",
 		"unavailable": "現在、この環境ではお支払いをご利用いただけません。時間をおいて再度お試しください。",
@@ -761,7 +761,7 @@
 			"continue": "本人確認へ進む",
 			"limit": "このイベントのチケットは、すでにお持ちの枚数を含めて1つのアカウントにつき{{limit}}枚までです。"
 		},
-		"identity": {
+		"personalDetails": {
 			"title": "本人確認",
 			"note": "お名前と電話番号はアカウントに保存され、チケットの券面に表示されます。",
 			"name": "お名前（フルネーム）",
@@ -770,7 +770,7 @@
 		},
 		"payment": {
 			"title": "お支払い情報の登録（カード認証）",
-			"hold": "お申し込み時点でカードに {{total}}円（{{price}}円 × {{count}}枚）の与信枠の確保（オーソリ）を行います。",
+			"cardAuthorization": "お申し込み時点でカードに {{total}}円（{{price}}円 × {{count}}枚）の与信枠の確保（オーソリ）を行います。",
 			"notCharged": "この時点では請求は発生しません。金額はカードに確保されるのみです。",
 			"chargedOnWin": "当選した場合のみ、確保した金額が請求されます。",
 			"releasedOnLoss": "落選した場合、確保は解除され、請求は発生しません。",
@@ -791,7 +791,7 @@
 		},
 		"phoneInvalid": "電話番号を正しく入力してください（例：090-1234-5678、+81 90 1234 5678）。"
 	},
-	"lotteryApplication": {
+	"lotteryEntryStatus": {
 		"title": "お申し込みの状況",
 		"loading": "読み込んでいます…",
 		"empty": "この抽選へのお申し込みは見つかりませんでした。",
@@ -912,7 +912,7 @@
 			"ended": "販売は終了しました。",
 			"cancelled": "この公演は中止になったため、チケットは販売していません。"
 		},
-		"identity": {
+		"personalDetails": {
 			"title": "本人確認",
 			"note": "お名前と電話番号はアカウントに保存され、チケットの券面に表示されます。",
 			"name": "お名前（フルネーム）",
@@ -938,7 +938,7 @@
 			"delivery": "チケットの受け取り",
 			"deliveryValue": "購入後すぐに、アプリの「チケット」画面でご利用いただけます。",
 			"salePeriod": "販売期間",
-			"holder": "チケットの名義",
+			"nameOnTickets": "チケットの名義",
 			"resale": "転売について",
 			"resaleValue": "主催者の同意のないチケットの転売は禁止されています。チケットはご自身のアカウントとお名前で発行されます。",
 			"cancellation": "キャンセル・返金",
@@ -946,7 +946,7 @@
 			"seller": "販売業者",
 			"representative": "代表者",
 			"changeCount": "枚数を変更",
-			"changeIdentity": "名義・電話番号を変更",
+			"changePersonalDetails": "名義・電話番号を変更",
 			"placeOrder": "{{total}}円を支払って購入する"
 		},
 		"done": {

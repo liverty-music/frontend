@@ -25,7 +25,7 @@ export interface IConcertClient extends ConcertClient {}
  * interface, logger-scoped, error propagation) but is built entirely from
  * admin/shared modules — it never imports the consumer `src/`. It covers
  * published-catalog management (list/delete); the pending-review queue is on
- * `StagedConcertClient`. The wrapper only owns transport construction, request
+ * `ConcertCandidateClient`. The wrapper only owns transport construction, request
  * marshalling, logging, and error surfacing.
  */
 export class ConcertClient {

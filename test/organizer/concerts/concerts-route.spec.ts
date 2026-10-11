@@ -13,16 +13,16 @@ import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AuthoredSeries } from '../../../organizer/services/concert-authoring-client'
+import type { AuthoredSeries } from '../../../organizer/services/series-client'
 import { createTestContainer } from '../../helpers/create-container'
 import { authoredSeries } from '../authored-series'
 
 // Replace the RPC client module with a fresh interface token so the route binds
 // to the test double instead of building a real Connect transport.
-const IConcertAuthoringClient = DI.createInterface('IConcertAuthoringClient')
+const ISeriesClient = DI.createInterface('ISeriesClient')
 
-vi.mock('../../../organizer/services/concert-authoring-client', () => ({
-	IConcertAuthoringClient,
+vi.mock('../../../organizer/services/series-client', () => ({
+	ISeriesClient,
 }))
 
 const { ConcertsRoute } = await import(
@@ -79,7 +79,7 @@ function createMockClient(overrides: Partial<MockClient> = {}): MockClient {
 
 function build(client: MockClient): InstanceType<typeof ConcertsRoute> {
 	const container = createTestContainer(
-		Registration.instance(IConcertAuthoringClient, client),
+		Registration.instance(ISeriesClient, client),
 	)
 	container.register(ConcertsRoute)
 	return container.get(ConcertsRoute)
@@ -344,7 +344,7 @@ describe('ConcertsRoute template', () => {
 		const fixture = await createFixture(
 			'<concerts-route></concerts-route>',
 			class {},
-			[ConcertsRoute, Registration.instance(IConcertAuthoringClient, client)],
+			[ConcertsRoute, Registration.instance(ISeriesClient, client)],
 		).started
 		await tasksSettled()
 		const host = fixture.appHost

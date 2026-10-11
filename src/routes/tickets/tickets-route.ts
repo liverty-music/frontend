@@ -21,8 +21,9 @@ import {
 	enterableTickets,
 	groupByEvent,
 	presentedTickets,
+	savedPersonalDetailsOf,
 	type WalletEventGroup,
-	type WalletHolder,
+	type WalletPersonalDetails,
 	type WalletSnapshot,
 	type WalletTicket,
 	walletTicketFromProto,
@@ -81,8 +82,8 @@ export class TicketsRoute {
 	public offline = false
 	/** When the saved list was loaded, when `offline`. */
 	public savedAt: Date | null = null
-	/** The holder saved with the list last shown from the device. */
-	private savedHolder: WalletHolder | null = null
+	/** The personal details saved with the list last shown from the device. */
+	private savedPersonalDetails: WalletPersonalDetails | null = null
 
 	// ── Device state ─────────────────────────────────────────────────────────
 	public device: DeviceState = 'checking'
@@ -150,7 +151,7 @@ export class TicketsRoute {
 		this.groups = live
 		this.offline = false
 		this.savedAt = null
-		this.savedHolder = saved?.holder ?? null
+		this.savedPersonalDetails = savedPersonalDetailsOf(saved)
 		this.step = live.length === 0 ? 'empty' : 'loaded'
 		this.saveSnapshot()
 
@@ -165,7 +166,7 @@ export class TicketsRoute {
 		saved: WalletSnapshot | undefined,
 		signal: AbortSignal,
 	): Promise<WalletEventGroup[]> {
-		const tickets = (await this.ticketClient.getMyTickets(signal)).map(
+		const tickets = (await this.ticketClient.list(signal)).map(
 			walletTicketFromProto,
 		)
 		const savedEvents = new Map(
@@ -196,7 +197,7 @@ export class TicketsRoute {
 		this.groups = [...saved.groups]
 		this.offline = true
 		this.savedAt = saved.savedAt
-		this.savedHolder = saved.holder ?? null
+		this.savedPersonalDetails = savedPersonalDetailsOf(saved)
 		this.step = saved.groups.length === 0 ? 'empty' : 'loaded'
 	}
 
@@ -205,9 +206,9 @@ export class TicketsRoute {
 	 * number as their User records them now, or, before the User is read
 	 * (offline), as they were saved with the list.
 	 */
-	public get holder(): WalletHolder | null {
+	public get personalDetails(): WalletPersonalDetails | null {
 		const user = this.userStore.current
-		if (!user) return this.savedHolder
+		if (!user) return this.savedPersonalDetails
 		return {
 			fullName: user.fullName ?? '',
 			phoneNumber: user.phoneNumber ?? '',
@@ -215,11 +216,11 @@ export class TicketsRoute {
 	}
 
 	private saveSnapshot(): void {
-		const holder = this.holder
+		const personalDetails = this.personalDetails
 		void this.wallet.saveSnapshot<WalletSnapshot>({
 			savedAt: new Date(),
 			groups: this.groups,
-			...(holder ? { holder } : {}),
+			...(personalDetails ? { personalDetails } : {}),
 		})
 	}
 
@@ -324,12 +325,12 @@ export class TicketsRoute {
 		signTime: number,
 	): Promise<string> {
 		const group = this.codeGroup
-		const holder = group?.tickets.find((t) => ticketIds.includes(t.id))
-		if (!group || !holder) {
+		const ticket = group?.tickets.find((t) => ticketIds.includes(t.id))
+		if (!group || !ticket) {
 			return Promise.reject(new Error('no ticket to present'))
 		}
 		return this.wallet.signCode({
-			userId: holder.userId,
+			userId: ticket.userId,
 			eventId: group.eventId,
 			ticketIds,
 			signTime,
@@ -361,7 +362,7 @@ export class TicketsRoute {
 		const signal = this.abortController?.signal
 		let tickets: WalletTicket[]
 		try {
-			tickets = (await this.ticketClient.getMyTickets(signal)).map(
+			tickets = (await this.ticketClient.list(signal)).map(
 				walletTicketFromProto,
 			)
 		} catch {
@@ -397,10 +398,10 @@ export class TicketsRoute {
 		return group.tickets.findIndex((t) => t.id === ticket.id) + 1
 	}
 
-	/** The holder's phone number as a fan in Japan writes it. */
-	public get holderPhone(): string {
-		return this.holder?.phoneNumber
-			? toDomesticDisplay(this.holder.phoneNumber)
+	/** The fan's phone number as a fan in Japan writes it. */
+	public get phoneNumberDisplay(): string {
+		return this.personalDetails?.phoneNumber
+			? toDomesticDisplay(this.personalDetails.phoneNumber)
 			: ''
 	}
 

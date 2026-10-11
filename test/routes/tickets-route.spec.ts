@@ -138,7 +138,7 @@ const offlineError = () => new ConnectError('Failed to fetch', Code.Unavailable)
 
 describe('TicketsRoute', () => {
 	let storage: FakeWalletStorage
-	let ticketClient: { getMyTickets: ReturnType<typeof vi.fn> }
+	let ticketClient: { list: ReturnType<typeof vi.fn> }
 	/** The fan's WalletPublicKey on the server (null: no entry device). */
 	let serverKey: Uint8Array | null
 	let keyClient: {
@@ -183,7 +183,7 @@ describe('TicketsRoute', () => {
 
 	/** Open the screen online once so this device becomes the entry device. */
 	async function prepareOnline(tickets: Ticket[]): Promise<void> {
-		ticketClient.getMyTickets.mockResolvedValueOnce(tickets)
+		ticketClient.list.mockResolvedValueOnce(tickets)
 		const first = await open()
 		expect(first.device).toBe('ready')
 		first.detaching()
@@ -198,7 +198,7 @@ describe('TicketsRoute', () => {
 
 	beforeEach(() => {
 		storage = new FakeWalletStorage()
-		ticketClient = { getMyTickets: vi.fn().mockResolvedValue([]) }
+		ticketClient = { list: vi.fn().mockResolvedValue([]) }
 		userStore = {
 			currentLanguage: 'ja',
 			current: {
@@ -246,7 +246,7 @@ describe('TicketsRoute', () => {
 	describe('tickets grouped by event with their face', () => {
 		it('shows one event with its three tickets, each with the face and 未入場', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Fan opens their tickets"
-			ticketClient.getMyTickets.mockResolvedValue([
+			ticketClient.list.mockResolvedValue([
 				protoTicket(1),
 				protoTicket(2),
 				protoTicket(3),
@@ -261,8 +261,8 @@ describe('TicketsRoute', () => {
 			expect(sut.time(group.event?.openTime)).toBe('17:30')
 			expect(sut.time(group.event?.startTime)).toBe('18:30')
 			expect(group.tickets).toHaveLength(3)
-			expect(sut.holder?.fullName).toBe('山田太郎')
-			expect(sut.holderPhone).toBe('090-1234-5678')
+			expect(sut.personalDetails?.fullName).toBe('山田太郎')
+			expect(sut.phoneNumberDisplay).toBe('090-1234-5678')
 			for (const t of group.tickets) {
 				expect(t.state).toBe('not-entered')
 				expect(t.userId).toBe(USER)
@@ -278,10 +278,7 @@ describe('TicketsRoute', () => {
 
 		it("shows the User's new phone number on every ticket after a change", async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Fan corrected their phone number"
-			ticketClient.getMyTickets.mockResolvedValue([
-				protoTicket(1),
-				protoTicket(2),
-			])
+			ticketClient.list.mockResolvedValue([protoTicket(1), protoTicket(2)])
 			userStore.current = {
 				id: USER,
 				fullName: '山田太郎',
@@ -290,11 +287,11 @@ describe('TicketsRoute', () => {
 			const sut = await open()
 
 			expect(sut.groups[0].tickets).toHaveLength(2)
-			expect(sut.holderPhone).toBe('080-1111-2222')
+			expect(sut.phoneNumberDisplay).toBe('080-1111-2222')
 		})
 
 		it('lists the nearest event first, past events after upcoming ones', async () => {
-			ticketClient.getMyTickets.mockResolvedValue([
+			ticketClient.list.mockResolvedValue([
 				protoTicket(1, { event: PAST_EVENT }),
 				protoTicket(2, { event: LATER_EVENT }),
 				protoTicket(3, { event: EVENT }),
@@ -309,7 +306,7 @@ describe('TicketsRoute', () => {
 
 		it('shows a refunded ticket as 無効 without a QR code', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Refunded ticket"
-			ticketClient.getMyTickets.mockResolvedValue([
+			ticketClient.list.mockResolvedValue([
 				protoTicket(1, { status: TicketStatus.VOIDED }),
 				protoTicket(2, { event: LATER_EVENT, status: TicketStatus.VOIDED }),
 				protoTicket(3, { event: LATER_EVENT }),
@@ -330,14 +327,11 @@ describe('TicketsRoute', () => {
 
 		it('shows the tickets loaded earlier when opened without a connection', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "No signal in the venue"
-			ticketClient.getMyTickets.mockResolvedValueOnce([
-				protoTicket(1),
-				protoTicket(2),
-			])
+			ticketClient.list.mockResolvedValueOnce([protoTicket(1), protoTicket(2)])
 			const first = await open()
 			first.detaching()
 
-			ticketClient.getMyTickets.mockRejectedValue(offlineError())
+			ticketClient.list.mockRejectedValue(offlineError())
 			concertClient.get.mockRejectedValue(offlineError())
 			const sut = await open()
 
@@ -352,22 +346,22 @@ describe('TicketsRoute', () => {
 		})
 
 		it('shows the name and phone number saved with the list before the User is read', async () => {
-			ticketClient.getMyTickets.mockResolvedValueOnce([protoTicket(1)])
+			ticketClient.list.mockResolvedValueOnce([protoTicket(1)])
 			const first = await open()
 			first.detaching()
 
 			userStore.current = undefined
-			ticketClient.getMyTickets.mockRejectedValue(offlineError())
+			ticketClient.list.mockRejectedValue(offlineError())
 			concertClient.get.mockRejectedValue(offlineError())
 			const sut = await open()
 
 			expect(sut.offline).toBe(true)
-			expect(sut.holder?.fullName).toBe('山田太郎')
-			expect(sut.holderPhone).toBe('090-1234-5678')
+			expect(sut.personalDetails?.fullName).toBe('山田太郎')
+			expect(sut.phoneNumberDisplay).toBe('090-1234-5678')
 		})
 
 		it('shows the error state when offline with nothing saved', async () => {
-			ticketClient.getMyTickets.mockRejectedValue(offlineError())
+			ticketClient.list.mockRejectedValue(offlineError())
 			const sut = await open()
 			expect(sut.step).toBe('error')
 		})
@@ -392,7 +386,7 @@ describe('TicketsRoute', () => {
 			expect(storage.deviceKey?.keyPair?.privateKey.extractable).toBe(false)
 
 			// Later, in the venue without a connection.
-			ticketClient.getMyTickets.mockRejectedValue(offlineError())
+			ticketClient.list.mockRejectedValue(offlineError())
 			const sut = await open()
 			expect(sut.device).toBe('ready')
 			expect(sut.canShowCode).toBe(true)
@@ -414,7 +408,7 @@ describe('TicketsRoute', () => {
 			keyClient.register.mockClear()
 			keyClient.get.mockClear()
 
-			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
 			const sut = await open()
 
 			expect(keyClient.get).toHaveBeenCalledTimes(1)
@@ -428,7 +422,7 @@ describe('TicketsRoute', () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Viewing on another device"
 			const phoneKey = await otherDeviceKey()
 			serverKey = phoneKey
-			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
 
 			const pc = await open()
 
@@ -448,12 +442,12 @@ describe('TicketsRoute', () => {
 		it('says the code is set to another device again offline and offers neither the code nor the move', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Other device without a connection"
 			serverKey = await otherDeviceKey()
-			ticketClient.getMyTickets.mockResolvedValueOnce([protoTicket(1)])
+			ticketClient.list.mockResolvedValueOnce([protoTicket(1)])
 			const online = await open()
 			expect(online.device).toBe('other-device')
 			online.detaching()
 
-			ticketClient.getMyTickets.mockRejectedValue(offlineError())
+			ticketClient.list.mockRejectedValue(offlineError())
 			keyClient.get.mockRejectedValue(offlineError())
 			const sut = await open()
 
@@ -473,7 +467,7 @@ describe('TicketsRoute', () => {
 			await prepareOnline([protoTicket(1)])
 			keyClient.register.mockClear()
 
-			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
 			keyClient.get.mockRejectedValueOnce(
 				new ConnectError('internal', Code.Internal),
 			)
@@ -496,7 +490,7 @@ describe('TicketsRoute', () => {
 
 			storage = new FakeWalletStorage()
 			keyClient.register.mockClear()
-			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
 			const newPhone = await open()
 			expect(newPhone.device).toBe('other-device')
 
@@ -546,7 +540,7 @@ describe('TicketsRoute', () => {
 
 		it('keeps the other device when the fan cancels', async () => {
 			serverKey = await otherDeviceKey()
-			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
 			const sut = await open()
 
 			sut.askToUseThisDevice()
@@ -560,7 +554,7 @@ describe('TicketsRoute', () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Moving fails"
 			const phoneKey = await otherDeviceKey()
 			serverKey = phoneKey
-			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
 			const sut = await open()
 
 			keyClient.register.mockRejectedValueOnce(
@@ -589,13 +583,13 @@ describe('TicketsRoute', () => {
 
 		it('says a connection is needed once when opened offline on an unprepared phone', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Not prepared and offline"
-			ticketClient.getMyTickets.mockResolvedValueOnce([protoTicket(1)])
+			ticketClient.list.mockResolvedValueOnce([protoTicket(1)])
 			keyClient.get.mockRejectedValueOnce(offlineError())
 			const first = await open()
 			expect(first.device).toBe('failed')
 			first.detaching()
 
-			ticketClient.getMyTickets.mockRejectedValue(offlineError())
+			ticketClient.list.mockRejectedValue(offlineError())
 			const sut = await open()
 			expect(sut.device).toBe('needs-connection')
 			expect(sut.canShowCode).toBe(false)
@@ -611,7 +605,7 @@ describe('TicketsRoute', () => {
 	describe('one QR code for the tickets entering together', () => {
 		it('shows one code for 3名 that changes every 15 seconds', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Whole group"
-			ticketClient.getMyTickets.mockResolvedValue([
+			ticketClient.list.mockResolvedValue([
 				protoTicket(1),
 				protoTicket(2),
 				protoTicket(3),
@@ -637,7 +631,7 @@ describe('TicketsRoute', () => {
 
 		it('presents all three tickets and renders no way to leave one out', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "No ticket left out"
-			ticketClient.getMyTickets.mockResolvedValue([
+			ticketClient.list.mockResolvedValue([
 				protoTicket(1),
 				protoTicket(2),
 				protoTicket(3),
@@ -696,7 +690,7 @@ describe('TicketsRoute', () => {
 		})
 
 		it('never presents more than 10 tickets', async () => {
-			ticketClient.getMyTickets.mockResolvedValue(
+			ticketClient.list.mockResolvedValue(
 				Array.from({ length: 12 }, (_, i) => protoTicket(i + 1)),
 			)
 			const sut = await open()
@@ -712,7 +706,7 @@ describe('TicketsRoute', () => {
 		it('makes and rotates the code without a connection', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Shown without a connection"
 			await prepareOnline([protoTicket(1), protoTicket(2)])
-			ticketClient.getMyTickets.mockRejectedValue(offlineError())
+			ticketClient.list.mockRejectedValue(offlineError())
 			concertClient.get.mockRejectedValue(offlineError())
 			const sut = await open()
 			expect(sut.offline).toBe(true)
@@ -730,7 +724,7 @@ describe('TicketsRoute', () => {
 
 		it('keeps the display awake while the code is shown and lets it sleep on close', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "Screen stays on"
-			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
 			const sut = await open()
 			sut.openCode(sut.groups[0])
 			expect(wakeLock.acquire).toHaveBeenCalledTimes(1)
@@ -747,15 +741,12 @@ describe('TicketsRoute', () => {
 
 		it('shows tickets admitted while the code is shown as 入場済み with the admitted time', async () => {
 			// @spec components/infrastructure/fan/web/route/tickets "After entry"
-			ticketClient.getMyTickets.mockResolvedValue([
-				protoTicket(1),
-				protoTicket(2),
-			])
+			ticketClient.list.mockResolvedValue([protoTicket(1), protoTicket(2)])
 			const sut = await open()
 			sut.openCode(sut.groups[0])
 			await currentCode(sut)
 
-			ticketClient.getMyTickets.mockResolvedValue([
+			ticketClient.list.mockResolvedValue([
 				protoTicket(1, { admitted: jst(10, 12, 0, 3) }),
 				protoTicket(2, { admitted: jst(10, 12, 0, 3) }),
 			])
@@ -777,7 +768,7 @@ describe('TicketsRoute', () => {
 		})
 
 		it('withdraws the code when closed or when the screen leaves', async () => {
-			ticketClient.getMyTickets.mockResolvedValue([protoTicket(1)])
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
 			const sut = await open()
 			sut.openCode(sut.groups[0])
 			await currentCode(sut)

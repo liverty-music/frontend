@@ -2,22 +2,22 @@ import { createFixture } from '@aurelia/testing'
 import {
 	type ApproveResponse,
 	ApproveResponseSchema,
-	type PendingConcert,
-	PendingConcertSchema,
+	type ConcertCandidate,
+	ConcertCandidateSchema,
 	Resolution,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/staged_concert/v1/staged_concert_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert_candidate/v1/concert_candidate_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { type Timestamp, timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// The route resolves IStagedConcertClient. Replace the real module (which would build
+// The route resolves IConcertCandidateClient. Replace the real module (which would build
 // a Connect transport over the generated client) with a fresh interface token +
 // a no-op class so the fixture binds to the test double.
-const IStagedConcertClient = DI.createInterface('IStagedConcertClient')
+const IConcertCandidateClient = DI.createInterface('IConcertCandidateClient')
 
-vi.mock('../../../admin/services/staged-concert-client', () => ({
-	IStagedConcertClient,
+vi.mock('../../../admin/services/concert-candidate-client', () => ({
+	IConcertCandidateClient,
 }))
 
 const { ApprovalQueueRoute } = await import(
@@ -40,8 +40,8 @@ function createMockClient(overrides: Partial<MockClient> = {}): MockClient {
 	}
 }
 
-/** Builds an ApproveResponse carrying a duplicate conflict against a staged row. */
-function conflictResponse(staged: PendingConcert): ApproveResponse {
+/** Builds an ApproveResponse carrying a duplicate conflict against a candidate row. */
+function conflictResponse(candidate: ConcertCandidate): ApproveResponse {
 	return create(ApproveResponseSchema, {
 		conflict: {
 			existing: {
@@ -52,13 +52,13 @@ function conflictResponse(staged: PendingConcert): ApproveResponse {
 					value: { year: 2026, month: 7, day: 4 },
 				},
 			},
-			staged,
+			concertCandidate: candidate,
 		},
 	})
 }
 
 function makeConcert(opts: {
-	stagedId: string
+	concertCandidateId: string
 	artist: string
 	title: string
 	year: number
@@ -68,9 +68,9 @@ function makeConcert(opts: {
 	sourceUrl?: string
 	openTime?: Timestamp
 	startTime?: Timestamp
-}): PendingConcert {
-	return create(PendingConcertSchema, {
-		stagedId: { value: opts.stagedId },
+}): ConcertCandidate {
+	return create(ConcertCandidateSchema, {
+		id: { value: opts.concertCandidateId },
 		performer: {
 			name: { value: opts.artist },
 		},
@@ -96,9 +96,9 @@ function makeConcert(opts: {
 	})
 }
 
-function resolvedConcert(): PendingConcert {
+function resolvedConcert(): ConcertCandidate {
 	return makeConcert({
-		stagedId: 'staged-1',
+		concertCandidateId: 'candidate-1',
 		artist: 'The Resolved Band',
 		title: 'Summer Tour',
 		year: 2026,
@@ -109,9 +109,9 @@ function resolvedConcert(): PendingConcert {
 	})
 }
 
-function unresolvedConcert(): PendingConcert {
+function unresolvedConcert(): ConcertCandidate {
 	return makeConcert({
-		stagedId: 'staged-2',
+		concertCandidateId: 'candidate-2',
 		artist: 'No Venue Act',
 		title: 'Mystery Gig',
 		year: 2026,
@@ -126,7 +126,7 @@ async function build(client: MockClient) {
 		.html('<approval-queue-route component.ref="route"></approval-queue-route>')
 		.deps(
 			ApprovalQueueRoute,
-			Registration.instance(IStagedConcertClient, client),
+			Registration.instance(IConcertCandidateClient, client),
 		)
 		.build()
 	await fixture.started
@@ -152,7 +152,7 @@ describe('ApprovalQueueRoute', () => {
 			const client = createMockClient({
 				list: vi.fn().mockResolvedValue([
 					makeConcert({
-						stagedId: 's1',
+						concertCandidateId: 's1',
 						artist: 'Band A',
 						title: 'Tour X',
 						year: 2026,
@@ -161,7 +161,7 @@ describe('ApprovalQueueRoute', () => {
 						resolvedVenue: { name: 'Venue 1', adminArea: 'JP-13' },
 					}),
 					makeConcert({
-						stagedId: 's2',
+						concertCandidateId: 's2',
 						artist: 'Band A',
 						title: 'Tour X',
 						year: 2026,
@@ -170,7 +170,7 @@ describe('ApprovalQueueRoute', () => {
 						resolvedVenue: { name: 'Venue 2', adminArea: 'JP-14' },
 					}),
 					makeConcert({
-						stagedId: 's3',
+						concertCandidateId: 's3',
 						artist: 'Band A',
 						title: 'Tour Y',
 						year: 2026,
@@ -178,7 +178,7 @@ describe('ApprovalQueueRoute', () => {
 						day: 1,
 					}),
 					makeConcert({
-						stagedId: 's4',
+						concertCandidateId: 's4',
 						artist: 'Band B',
 						title: 'Festival',
 						year: 2026,
@@ -211,7 +211,7 @@ describe('ApprovalQueueRoute', () => {
 			const client = createMockClient({
 				list: vi.fn().mockResolvedValue([
 					makeConcert({
-						stagedId: 's1',
+						concertCandidateId: 's1',
 						artist: 'Band A',
 						title: 'Tour X',
 						year: 2026,
@@ -220,7 +220,7 @@ describe('ApprovalQueueRoute', () => {
 						resolvedVenue: { name: 'Venue 1', adminArea: 'JP-13' },
 					}),
 					makeConcert({
-						stagedId: 's2',
+						concertCandidateId: 's2',
 						artist: 'Band A',
 						title: 'Tour X',
 						year: 2026,
@@ -228,7 +228,7 @@ describe('ApprovalQueueRoute', () => {
 						day: 2,
 					}),
 					makeConcert({
-						stagedId: 's3',
+						concertCandidateId: 's3',
 						artist: 'Band A',
 						title: 'Tour X',
 						year: 2026,
@@ -288,7 +288,7 @@ describe('ApprovalQueueRoute', () => {
 
 		it('does not render a source link for a javascript: URL (XSS guard)', async () => {
 			const malicious = makeConcert({
-				stagedId: 'staged-xss',
+				concertCandidateId: 'candidate-xss',
 				artist: 'Sketchy Act',
 				title: 'Suspicious Show',
 				year: 2026,
@@ -353,7 +353,7 @@ describe('ApprovalQueueRoute', () => {
 			await vm.approve(group, series, row)
 
 			expect(client.approve).toHaveBeenCalledWith(
-				'staged-1',
+				'candidate-1',
 				Resolution.UNSPECIFIED,
 			)
 			// Row removed → series pruned → artist group pruned.
@@ -364,7 +364,7 @@ describe('ApprovalQueueRoute', () => {
 			const client = createMockClient({
 				list: vi.fn().mockResolvedValue([
 					makeConcert({
-						stagedId: 's1',
+						concertCandidateId: 's1',
 						artist: 'Band A',
 						title: 'Tour',
 						year: 2026,
@@ -372,7 +372,7 @@ describe('ApprovalQueueRoute', () => {
 						day: 1,
 					}),
 					makeConcert({
-						stagedId: 's2',
+						concertCandidateId: 's2',
 						artist: 'Band A',
 						title: 'Tour',
 						year: 2026,
@@ -416,7 +416,7 @@ describe('ApprovalQueueRoute', () => {
 			const client = createMockClient({
 				list: vi.fn().mockResolvedValue([
 					makeConcert({
-						stagedId: 's1',
+						concertCandidateId: 's1',
 						artist: 'Band A',
 						title: 'Tour X',
 						year: 2026,
@@ -425,7 +425,7 @@ describe('ApprovalQueueRoute', () => {
 						resolvedVenue: { name: 'Venue', adminArea: 'JP-13' },
 					}),
 					makeConcert({
-						stagedId: 's2',
+						concertCandidateId: 's2',
 						artist: 'Band A',
 						title: 'Tour Y',
 						year: 2026,
@@ -451,10 +451,10 @@ describe('ApprovalQueueRoute', () => {
 
 	describe('duplicate reconciliation', () => {
 		it('opens the conflict dialog without mutating when approve returns a conflict', async () => {
-			const staged = resolvedConcert()
+			const candidate = resolvedConcert()
 			const client = createMockClient({
-				list: vi.fn().mockResolvedValue([staged]),
-				approve: vi.fn().mockResolvedValue(conflictResponse(staged)),
+				list: vi.fn().mockResolvedValue([candidate]),
+				approve: vi.fn().mockResolvedValue(conflictResponse(candidate)),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -466,24 +466,24 @@ describe('ApprovalQueueRoute', () => {
 
 			// First call used UNSPECIFIED; conflict surfaced; row kept.
 			expect(client.approve).toHaveBeenCalledWith(
-				'staged-1',
+				'candidate-1',
 				Resolution.UNSPECIFIED,
 			)
 			expect(vm.conflictView).not.toBeNull()
 			expect(vm.conflictView?.existingTitle).toBe('Existing Title')
 			expect(vm.conflictView?.existingListedVenueName).toBe('Existing Venue')
-			expect(vm.conflictView?.stagedTitle).toBe('Summer Tour')
+			expect(vm.conflictView?.candidateTitle).toBe('Summer Tour')
 			expect(row.busy).toBe(false)
 			expect(vm.groups).toHaveLength(1)
 		})
 
 		it('KEEP_EXISTING re-calls approve and removes the row', async () => {
-			const staged = resolvedConcert()
+			const candidate = resolvedConcert()
 			const client = createMockClient({
-				list: vi.fn().mockResolvedValue([staged]),
+				list: vi.fn().mockResolvedValue([candidate]),
 				approve: vi
 					.fn()
-					.mockResolvedValueOnce(conflictResponse(staged))
+					.mockResolvedValueOnce(conflictResponse(candidate))
 					.mockResolvedValueOnce(create(ApproveResponseSchema, {})),
 			})
 			const fixture = await build(client)
@@ -496,7 +496,7 @@ describe('ApprovalQueueRoute', () => {
 
 			expect(client.approve).toHaveBeenNthCalledWith(
 				2,
-				'staged-1',
+				'candidate-1',
 				Resolution.KEEP_EXISTING,
 			)
 			expect(vm.conflictView).toBeNull()
@@ -504,12 +504,12 @@ describe('ApprovalQueueRoute', () => {
 		})
 
 		it('ADOPT_STAGED re-calls approve and removes the row', async () => {
-			const staged = resolvedConcert()
+			const candidate = resolvedConcert()
 			const client = createMockClient({
-				list: vi.fn().mockResolvedValue([staged]),
+				list: vi.fn().mockResolvedValue([candidate]),
 				approve: vi
 					.fn()
-					.mockResolvedValueOnce(conflictResponse(staged))
+					.mockResolvedValueOnce(conflictResponse(candidate))
 					.mockResolvedValueOnce(create(ApproveResponseSchema, {})),
 			})
 			const fixture = await build(client)
@@ -522,7 +522,7 @@ describe('ApprovalQueueRoute', () => {
 
 			expect(client.approve).toHaveBeenNthCalledWith(
 				2,
-				'staged-1',
+				'candidate-1',
 				Resolution.ADOPT_STAGED,
 			)
 			expect(vm.conflictView).toBeNull()
@@ -530,10 +530,10 @@ describe('ApprovalQueueRoute', () => {
 		})
 
 		it('cancel keeps the row and closes the dialog', async () => {
-			const staged = resolvedConcert()
+			const candidate = resolvedConcert()
 			const client = createMockClient({
-				list: vi.fn().mockResolvedValue([staged]),
-				approve: vi.fn().mockResolvedValue(conflictResponse(staged)),
+				list: vi.fn().mockResolvedValue([candidate]),
+				approve: vi.fn().mockResolvedValue(conflictResponse(candidate)),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -550,12 +550,12 @@ describe('ApprovalQueueRoute', () => {
 		})
 
 		it('keeps the dialog open and surfaces an error when reconciliation fails', async () => {
-			const staged = resolvedConcert()
+			const candidate = resolvedConcert()
 			const client = createMockClient({
-				list: vi.fn().mockResolvedValue([staged]),
+				list: vi.fn().mockResolvedValue([candidate]),
 				approve: vi
 					.fn()
-					.mockResolvedValueOnce(conflictResponse(staged))
+					.mockResolvedValueOnce(conflictResponse(candidate))
 					.mockRejectedValueOnce(new Error('reconcile boom')),
 			})
 			const fixture = await build(client)
@@ -607,7 +607,7 @@ describe('ApprovalQueueRoute', () => {
 			row.rejectReason = 'wrong date'
 			await vm.confirmReject(group, series, row)
 
-			expect(client.reject).toHaveBeenCalledWith('staged-1', 'wrong date')
+			expect(client.reject).toHaveBeenCalledWith('candidate-1', 'wrong date')
 			expect(vm.groups).toHaveLength(0)
 		})
 	})
@@ -616,7 +616,7 @@ describe('ApprovalQueueRoute', () => {
 		it('formats openTime via formatTimeOfDay when present', async () => {
 			const openTs = timestampFromDate(new Date('2026-07-15T18:00:00Z'))
 			const concert = makeConcert({
-				stagedId: 'staged-1',
+				concertCandidateId: 'candidate-1',
 				artist: 'The Resolved Band',
 				title: 'Summer Tour',
 				year: 2026,
@@ -650,11 +650,11 @@ describe('ApprovalQueueRoute', () => {
 		})
 	})
 
-	describe('toConflictView stagedOpenTime mapping', () => {
-		it('sets stagedOpenTime from row.openTime when present', async () => {
+	describe('toConflictView candidateOpenTime mapping', () => {
+		it('sets candidateOpenTime from row.openTime when present', async () => {
 			const openTs = timestampFromDate(new Date('2026-07-15T18:00:00Z'))
 			const concert = makeConcert({
-				stagedId: 'staged-1',
+				concertCandidateId: 'candidate-1',
 				artist: 'The Resolved Band',
 				title: 'Summer Tour',
 				year: 2026,
@@ -676,12 +676,12 @@ describe('ApprovalQueueRoute', () => {
 			await vm.approve(group, series, row)
 
 			expect(vm.conflictView).not.toBeNull()
-			expect(vm.conflictView!.stagedOpenTime).toBe(row.openTime)
-			expect(vm.conflictView!.stagedOpenTime).not.toBe('—')
+			expect(vm.conflictView!.candidateOpenTime).toBe(row.openTime)
+			expect(vm.conflictView!.candidateOpenTime).not.toBe('—')
 		})
 
 		// @spec components/infrastructure/admin/web/route/approval-queue "Conflict dialog shows open time for both staged and existing"
-		it('sets stagedOpenTime to dash placeholder when openTime is absent', async () => {
+		it('sets candidateOpenTime to dash placeholder when openTime is absent', async () => {
 			const concert = resolvedConcert()
 			const client = createMockClient({
 				list: vi.fn().mockResolvedValue([concert]),
@@ -696,7 +696,7 @@ describe('ApprovalQueueRoute', () => {
 			await vm.approve(group, series, row)
 
 			expect(vm.conflictView).not.toBeNull()
-			expect(vm.conflictView!.stagedOpenTime).toBe('—')
+			expect(vm.conflictView!.candidateOpenTime).toBe('—')
 			// The existing event in conflictResponse() has no open time either.
 			expect(vm.conflictView!.existingOpenTime).toBe('—')
 		})

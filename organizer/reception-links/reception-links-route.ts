@@ -8,12 +8,12 @@ import {
 	formatJstDateTime,
 	receptionLinkLabel,
 } from '../../shared/lib/reception/jst-format'
-import { IConcertAuthoringClient } from '../services/concert-authoring-client'
 import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
 import {
 	IReceptionLinkClient,
 	type ReceptionLink,
 } from '../services/reception-link-client'
+import { ISeriesClient } from '../services/series-client'
 import { receptionWindowOf } from './reception-window'
 
 type LoadPhase = 'loading' | 'ready' | 'not-found' | 'error'
@@ -134,7 +134,7 @@ export class ReceptionLinksRoute {
 	/** The reception guide to hand to venue staff, opened in a new tab. */
 	public readonly guideUrl = receptionGuideUrl(this.receptionBaseUrl)
 
-	private readonly concerts = resolve(IConcertAuthoringClient)
+	private readonly concerts = resolve(ISeriesClient)
 	private readonly links = resolve(IReceptionLinkClient)
 	private readonly logger = resolve(ILogger).scopeTo('ReceptionLinksRoute')
 

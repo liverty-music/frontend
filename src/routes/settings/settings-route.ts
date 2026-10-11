@@ -6,11 +6,12 @@ import { Snack } from '../../../shared/ui/snack-bar/snack'
 import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
 import { codeToHome, translationKey } from '../../constants/iso3166'
-import type { Kyc } from '../../entities/kyc'
 import {
 	dedupeStrengthLabelKey,
+	type IdentityVerification,
+	isVerified,
 	verificationMethodLabelKey,
-} from '../../entities/kyc'
+} from '../../entities/identity-verification'
 import type { User } from '../../entities/user'
 import {
 	type ConsentPurpose,
@@ -20,7 +21,7 @@ import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
 import { IFabMenuService } from '../../services/fab-menu-service'
-import { IKycService } from '../../services/kyc-service'
+import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
@@ -35,11 +36,12 @@ export class SettingsRoute {
 	private readonly router = resolve(IRouter)
 	private readonly audio = resolve(IAudioEngine)
 	private readonly appConfig = resolve(IAppConfig)
-	// 本人確認 (KYC, identity-ekyc-jpki, Stamp flow). Public so the template can
-	// bind `kyc.status` directly (mirrors the `auth` / `consent` exposure
-	// pattern). The service drives the PocketSign Stamp redirect flow —
-	// verify() redirects the browser to the PocketSign app.
-	public readonly kyc = resolve(IKycService)
+	// 本人確認 (identity verification, identity-ekyc-jpki, Stamp flow). Public
+	// so the template can bind `identityVerifications.current` directly (mirrors
+	// the `auth` / `consent` exposure pattern). The service drives the
+	// PocketSign Stamp redirect flow — start() redirects the browser to the
+	// PocketSign app.
+	public readonly identityVerifications = resolve(IIdentityVerificationService)
 	// Public so the template binds the opt-out toggles to the service's
 	// `@observable` state directly (`consent.analytics` /
 	// `consent.sessionReplay`) — no component-local mirror. Mirrors the
@@ -133,31 +135,31 @@ export class SettingsRoute {
 		)
 	}
 
-	// ── 本人確認 (KYC, identity-ekyc-jpki) ─────────────────────────────────────
-	// These getters derive from the service's observable `status`, so the badge
+	// ── 本人確認 (identity verification, identity-ekyc-jpki) ───────────────────
+	// These getters derive from the service's observable `current`, so the badge
 	// and detail rows re-evaluate in place when verification completes — no
 	// component-local mirror (mirrors the UserStore-derived getters above).
 
-	/** Whether the account is KYC_VERIFIED. */
-	public get isKycVerified(): boolean {
-		return this.kyc.status?.level === 'kycVerified'
+	/** Whether the fan has an Active IdentityVerification. */
+	public get isVerified(): boolean {
+		return isVerified(this.identityVerifications.current)
 	}
 
-	/** The fan's Kyc, present only when verified. */
-	private get verifiedKyc(): Kyc | undefined {
-		return this.isKycVerified ? this.kyc.status?.kyc : undefined
+	/** The fan's IdentityVerification, present only when it is Active. */
+	private get activeIdentityVerification(): IdentityVerification | undefined {
+		return this.isVerified ? this.identityVerifications.current : undefined
 	}
 
 	/** i18n key for the verified method (JPKI / driver's licence), or null. */
 	public get verificationMethodKey(): string | null {
-		const k = this.verifiedKyc
-		return k ? verificationMethodLabelKey(k.method) : null
+		const iv = this.activeIdentityVerification
+		return iv ? verificationMethodLabelKey(iv.method) : null
 	}
 
 	/** i18n key for the dedupe strength (strong / weak), or null. */
 	public get dedupeStrengthKey(): string | null {
-		const k = this.verifiedKyc
-		return k ? dedupeStrengthLabelKey(k.dedupeStrength) : null
+		const iv = this.activeIdentityVerification
+		return iv ? dedupeStrengthLabelKey(iv.dedupeStrength) : null
 	}
 
 	// ── Name and phone number on the tickets (UserService.Update) ─────────────
@@ -284,27 +286,30 @@ export class SettingsRoute {
 		// Neither value gates the page: the toggles and the badge fill in when
 		// their state arrives.
 		void this.resolveNotificationToggleState()
-		void this.loadKycStatus()
+		void this.loadIdentityVerification()
 	}
 
 	/**
-	 * Load the caller's 本人確認 status for the ACCOUNT-section badge. Only
-	 * `KycService.Get` reaches the backend (Start / Create are backend-stubbed →
-	 * UNAVAILABLE today); a failure here is non-fatal — the rest of Settings
-	 * must still render — so it is logged, not surfaced.
+	 * Load the caller's IdentityVerification for the ACCOUNT-section badge.
+	 * Only `IdentityVerificationService.Get` reaches the backend (Start / Create
+	 * are backend-stubbed → UNAVAILABLE today); a failure here is non-fatal —
+	 * the rest of Settings must still render — so it is logged, not surfaced.
 	 */
-	private async loadKycStatus(): Promise<void> {
+	private async loadIdentityVerification(): Promise<void> {
 		if (!this.auth.isAuthenticated) return
 		try {
-			await this.kyc.getStatus()
+			await this.identityVerifications.get()
 		} catch (err) {
-			this.logger.warn('Failed to load KYC status', { error: err })
+			this.logger.warn('Failed to load the identity verification', {
+				error: err,
+			})
 		}
 	}
 
 	/**
-	 * 本人確認 entry point for the PocketSign Stamp flow. Calls `kyc.verify()`
-	 * which in turn calls KycService.Start,
+	 * 本人確認 entry point for the PocketSign Stamp flow. Calls
+	 * `identityVerifications.start()`, which in turn calls
+	 * IdentityVerificationService.Start,
 	 * persists the session_id, and navigates the browser to the PocketSign app.
 	 * The browser navigates away immediately — the method does not return to the
 	 * caller after the redirect, so there is no branch to handle here beyond error
@@ -313,19 +318,19 @@ export class SettingsRoute {
 	 * Errors (ConnectError) from Start surface as a snack notification
 	 * before the busy-on-click guard releases, mirroring the push-toggle pattern.
 	 *
-	 * TODO (identity-ekyc 5.2): where a lottery phase REQUIRES verification, an
+	 * TODO (identity-ekyc 5.2): where a lottery sale REQUIRES verification, an
 	 * apply-flow would prompt the fan to verify before applying — there is no
 	 * first-party apply flow in the frontend yet, so no prompt is wired here.
 	 * TODO (identity-ekyc 5.3): the 運転免許証 fallback (Verify CardInfo) picks a
 	 * method other than JPKI; no method picker is built (post-MVP).
 	 */
-	public async verifyKyc(): Promise<void> {
-		const outcome = await this.kyc.verify('jpki')
+	public async startIdentityVerification(): Promise<void> {
+		const outcome = await this.identityVerifications.start('jpki')
 		switch (outcome.kind) {
 			case 'redirecting':
 				// The browser is navigating to the PocketSign app. Nothing further
 				// to do in this method — the callback route handles the return leg.
-				this.logger.info('Redirecting to PocketSign for KYC')
+				this.logger.info('Redirecting to PocketSign for identity verification')
 				break
 			case 'notAuthenticated':
 				// Unreachable from this row (rendered authenticated-only); logged

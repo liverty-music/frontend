@@ -5,12 +5,12 @@ import { createFixture } from '@aurelia/testing'
 import { CustomElement, IEventAggregator, Registration } from 'aurelia'
 import { describe, expect, it, vi } from 'vitest'
 import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
-import { IKycRpcClient } from '../../src/adapter/rpc/client/kyc-client'
+import { IIdentityVerificationRpcClient } from '../../src/adapter/rpc/client/identity-verification-client'
 import { ITicketJourneyRpcClient } from '../../src/adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from '../../src/adapter/rpc/client/user-client'
 import { IAppConfig } from '../../src/config/app-config'
 import { BusyOnClickCustomAttribute } from '../../src/custom-attributes/busy-on-click'
-import type { Kyc } from '../../src/entities/kyc'
+import type { IdentityVerification } from '../../src/entities/identity-verification'
 import { IConsentService } from '../../src/lib/consent/consent-service'
 import ja from '../../src/locales/ja/translation.json'
 import { SettingsRoute } from '../../src/routes/settings/settings-route'
@@ -19,7 +19,7 @@ import { IAuthService } from '../../src/services/auth-service'
 import { IConcertStore } from '../../src/services/concert-store'
 import { SignedOut } from '../../src/services/events/signed-out'
 import { IFabMenuService } from '../../src/services/fab-menu-service'
-import { IKycService } from '../../src/services/kyc-service'
+import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { IPushService } from '../../src/services/push-service'
 import { ITicketJourneyStore } from '../../src/services/ticket-journey-store'
 import { IUserStore } from '../../src/services/user-store'
@@ -39,11 +39,11 @@ const BottomSheetStub = CustomElement.define(
 	class {},
 )
 
-const activeKyc: Kyc = {
-	id: 'kyc-1',
+const activeIdentityVerification: IdentityVerification = {
+	id: 'iv-1',
 	userId: 'user-a',
 	method: 'jpki',
-	pocketSignUserId: 'ps-a',
+	providerUserId: 'provider-a',
 	dedupeStrength: 'strong',
 	status: 'active',
 }
@@ -67,7 +67,9 @@ describe('Sign-out from the settings screen (fixture)', () => {
 			listFollowed: vi.fn(async () => []),
 			listByArtists: vi.fn(async () => []),
 		}
-		const kycRpc = { get: vi.fn(async () => activeKyc) }
+		const identityVerificationRpc = {
+			get: vi.fn(async () => activeIdentityVerification),
+		}
 		const journeyRpc = {
 			list: vi.fn(async () => new Map([['event-1', 'tracking' as const]])),
 		}
@@ -95,7 +97,10 @@ describe('Sign-out from the settings screen (fixture)', () => {
 				Registration.instance(IAuthService, auth),
 				Registration.instance(IUserRpcClient, userRpc),
 				Registration.instance(IConcertRpcClient, concertRpc),
-				Registration.instance(IKycRpcClient, kycRpc),
+				Registration.instance(
+					IIdentityVerificationRpcClient,
+					identityVerificationRpc,
+				),
 				Registration.instance(ITicketJourneyRpcClient, journeyRpc),
 				Registration.instance(IPushService, {
 					resolvePushState: vi.fn(async () => 'needs-permission'),
@@ -120,13 +125,13 @@ describe('Sign-out from the settings screen (fixture)', () => {
 		// The signed-in account's state, as the app holds it after use.
 		const userStore = container.get(IUserStore)
 		const concertStore = container.get(IConcertStore)
-		const kyc = container.get(IKycService)
+		const identityVerifications = container.get(IIdentityVerificationService)
 		const journeys = container.get(ITicketJourneyStore)
 		await userStore.ensureLoaded('ja')
 		await concertStore.listFollowed()
 		concertStore.setDateGroups([])
 		concertStore.addArtistWithConcerts('artist-1')
-		await kyc.getStatus()
+		await identityVerifications.get()
 		await journeys.load()
 
 		const fixture = await builder.started
@@ -145,7 +150,7 @@ describe('Sign-out from the settings screen (fixture)', () => {
 		expect(userStore.current).toBeUndefined()
 		expect(concertStore.peekDateGroups()).toBeNull()
 		expect(concertStore.artistsWithConcertsCount).toBe(0)
-		expect(kyc.status).toBeUndefined()
+		expect(identityVerifications.current).toBeUndefined()
 		expect(journeys.journeyMap.size).toBe(0)
 
 		// The concert list is read again for whoever signs in next, not served

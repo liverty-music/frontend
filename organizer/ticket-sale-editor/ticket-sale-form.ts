@@ -24,8 +24,8 @@ const JST_OFFSET_HOURS = 9
  */
 export interface TicketSaleFormModel {
 	name: string
-	saleStart: string
-	saleEnd: string
+	saleStartTime: string
+	saleEndTime: string
 	price: string
 	quantity: string
 	perAccountLimit: string
@@ -34,8 +34,8 @@ export interface TicketSaleFormModel {
 /** Per-field errors, shown next to each control. */
 export interface TicketSaleFormErrors {
 	name?: string
-	saleStart?: string
-	saleEnd?: string
+	saleStartTime?: string
+	saleEndTime?: string
 	price?: string
 	quantity?: string
 	perAccountLimit?: string
@@ -91,8 +91,8 @@ export function formatYen(value: number | bigint): string {
 export function blankFormModel(eventStart: Date | null): TicketSaleFormModel {
 	return {
 		name: DEFAULT_SALE_NAME,
-		saleStart: '',
-		saleEnd: eventStart ? toJstDateTimeLocal(eventStart) : '',
+		saleStartTime: '',
+		saleEndTime: eventStart ? toJstDateTimeLocal(eventStart) : '',
 		price: '',
 		quantity: '',
 		perAccountLimit: String(DEFAULT_PER_ACCOUNT_LIMIT),
@@ -102,16 +102,18 @@ export function blankFormModel(eventStart: Date | null): TicketSaleFormModel {
 /** The form for an existing sale, from its stored values. */
 export function formModelOf(sale: {
 	readonly name: string
-	readonly saleStart: Date | null
-	readonly saleEnd: Date | null
+	readonly saleStartTime: Date | null
+	readonly saleEndTime: Date | null
 	readonly price: bigint
 	readonly quantity: number
 	readonly perAccountLimit: number
 }): TicketSaleFormModel {
 	return {
 		name: sale.name,
-		saleStart: sale.saleStart ? toJstDateTimeLocal(sale.saleStart) : '',
-		saleEnd: sale.saleEnd ? toJstDateTimeLocal(sale.saleEnd) : '',
+		saleStartTime: sale.saleStartTime
+			? toJstDateTimeLocal(sale.saleStartTime)
+			: '',
+		saleEndTime: sale.saleEndTime ? toJstDateTimeLocal(sale.saleEndTime) : '',
 		price: sale.price.toString(),
 		quantity: String(sale.quantity),
 		perAccountLimit: String(sale.perAccountLimit),
@@ -140,17 +142,17 @@ export function validateTicketSaleForm(
 		errors.name = `販売名は${MAX_NAME_LENGTH}文字以内で入力してください。`
 	}
 
-	const start = parseJstDateTimeLocal(model.saleStart)
-	const end = parseJstDateTimeLocal(model.saleEnd)
+	const start = parseJstDateTimeLocal(model.saleStartTime)
+	const end = parseJstDateTimeLocal(model.saleEndTime)
 	if (start === null) {
-		errors.saleStart = '販売開始日時を入力してください。'
+		errors.saleStartTime = '販売開始日時を入力してください。'
 	}
 	if (end === null) {
-		errors.saleEnd = '販売終了日時を入力してください。'
+		errors.saleEndTime = '販売終了日時を入力してください。'
 	} else if (ctx.eventStart && end.getTime() > ctx.eventStart.getTime()) {
-		errors.saleEnd = `販売終了は開演時刻（${formatJstDateTime(ctx.eventStart)}）以前にしてください。`
+		errors.saleEndTime = `販売終了は開演時刻（${formatJstDateTime(ctx.eventStart)}）以前にしてください。`
 	} else if (start !== null && end.getTime() <= start.getTime()) {
-		errors.saleEnd = '販売終了は販売開始より後にしてください。'
+		errors.saleEndTime = '販売終了は販売開始より後にしてください。'
 	}
 
 	const price = parseWholeNumber(model.price)
@@ -200,8 +202,8 @@ export function toCreateInput(
 		seriesId,
 		name: model.name.trim(),
 		method: 'firstCome',
-		saleStartTime: parseJstDateTimeLocal(model.saleStart) ?? new Date(0),
-		saleEndTime: parseJstDateTimeLocal(model.saleEnd) ?? undefined,
+		saleStartTime: parseJstDateTimeLocal(model.saleStartTime) ?? new Date(0),
+		saleEndTime: parseJstDateTimeLocal(model.saleEndTime) ?? undefined,
 		eventId,
 		price: Number(model.price.trim()),
 		quantity: Number(model.quantity.trim()),

@@ -1,6 +1,6 @@
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
-import { IPushRpcClient } from '../adapter/rpc/client/push-client'
+import { IPushSubscriptionRpcClient } from '../adapter/rpc/client/push-subscription-client'
 import { IAppConfig } from '../config/app-config'
 import { INotificationManager } from './notification-manager'
 
@@ -37,7 +37,7 @@ export class PushServiceClient {
 	private static readonly SW_READY_TIMEOUT_MS = 10_000
 
 	private readonly logger = resolve(ILogger).scopeTo('PushService')
-	private readonly rpcClient = resolve(IPushRpcClient)
+	private readonly rpcClient = resolve(IPushSubscriptionRpcClient)
 	private readonly notificationManager = resolve(INotificationManager)
 
 	// VAPID public key sourced from runtime AppConfig (see IAppConfig)

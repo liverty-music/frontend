@@ -26,7 +26,7 @@ export function lotteryEntryFrom(proto: ProtoLotteryEntry): LotteryEntry {
 	return {
 		id: proto.id?.value ?? '',
 		ticketTypeId: proto.ticketTypeId?.value ?? '',
-		requestedTicketCount: proto.requestedTicketCount,
+		ticketCount: proto.ticketCount,
 		state: lotteryEntryStateFrom(proto.state),
 	}
 }

@@ -20,10 +20,10 @@ export interface IStripeService extends StripeService {}
 /**
  * Result of confirming a card authorization (manual-capture PaymentIntent)
  * with Stripe Elements. On success, `paymentIntentId` is the confirmed
- * `pi_…` reference that Apply carries. On failure, `errorMessage` holds the
+ * `pi_…` reference of the card authorization. On failure, `errorMessage` holds the
  * localized (Stripe-provided) reason.
  */
-export interface ConfirmAuthorizationResult {
+export interface ConfirmCardAuthorizationResult {
 	readonly paymentIntentId?: string
 	readonly errorMessage?: string
 }
@@ -33,7 +33,7 @@ export interface ConfirmAuthorizationResult {
  * before anything is charged, so the 特商法 final confirmation can name it.
  */
 export interface CheckoutCard {
-	/** The ConfirmationToken that confirms the checkout's card hold. */
+	/** The ConfirmationToken that confirms the checkout's card authorization. */
 	readonly tokenId: string
 	/** The card brand as Stripe names it, e.g. `visa`, `jcb`, `amex`. */
 	readonly brand: string
@@ -103,8 +103,8 @@ export class StripeService {
 	}
 
 	/**
-	 * Creates a Stripe Elements group bound to the authorization's client
-	 * secret. The caller mounts a Payment Element from the returned group into
+	 * Creates a Stripe Elements group bound to the card authorization's secret
+	 * (Stripe's client secret). The caller mounts a Payment Element from the returned group into
 	 * the DOM. Returns null when Stripe is unavailable.
 	 */
 	public async createElements(
@@ -117,9 +117,9 @@ export class StripeService {
 	}
 
 	/**
-	 * Creates an Elements group for a first-come checkout before its card hold
-	 * exists (deferred intent): the amount and manual capture match the
-	 * PaymentIntent the server opens at Authorize. Every card brand is
+	 * Creates an Elements group for a first-come checkout before its card
+	 * authorization exists (deferred intent): the amount and manual capture
+	 * match the PaymentIntent the server opens at AuthorizeCard. Every card brand is
 	 * accepted. Returns null when Stripe is unavailable.
 	 */
 	public async createCheckoutElements(
@@ -139,7 +139,7 @@ export class StripeService {
 	/**
 	 * Validates the card form and turns it into a ConfirmationToken, which
 	 * carries the brand and last four digits shown before the order is placed.
-	 * Nothing is charged or held yet.
+	 * Nothing is charged or authorized yet.
 	 */
 	public async createCheckoutCard(
 		stripe: Stripe,
@@ -177,11 +177,11 @@ export class StripeService {
 	}
 
 	/**
-	 * Confirms a checkout's card hold with the card's ConfirmationToken,
-	 * completing the issuer's authentication (3D Secure) in the page. Succeeds
-	 * only when the hold is placed (`requires_capture`).
+	 * Confirms a checkout's card authorization with the card's
+	 * ConfirmationToken, completing the issuer's authentication (3D Secure) in
+	 * the page. Succeeds only when the card is authorized (`requires_capture`).
 	 */
-	public async confirmCheckoutHold(
+	public async confirmCheckoutCardAuthorization(
 		stripe: Stripe,
 		clientSecret: string,
 		tokenId: string,
@@ -192,7 +192,7 @@ export class StripeService {
 			redirect: 'if_required',
 		})
 		if (error) {
-			this.logger.warn('Checkout hold confirmation failed', {
+			this.logger.warn('Checkout card authorization confirmation failed', {
 				code: error.code,
 			})
 			return {
@@ -202,9 +202,10 @@ export class StripeService {
 			}
 		}
 		if (paymentIntent?.status !== 'requires_capture') {
-			this.logger.warn('Checkout hold not in requires_capture after confirm', {
-				status: paymentIntent?.status,
-			})
+			this.logger.warn(
+				'Checkout card authorization not in requires_capture after confirm',
+				{ status: paymentIntent?.status },
+			)
 			return {
 				errorMessage:
 					'カードの認証が完了しませんでした。もう一度お試しください。',
@@ -213,26 +214,17 @@ export class StripeService {
 		return {}
 	}
 
-	/** True when the checkout's card hold is already placed. */
-	public async isHoldPlaced(
-		stripe: Stripe,
-		clientSecret: string,
-	): Promise<boolean> {
-		const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecret)
-		return paymentIntent?.status === 'requires_capture'
-	}
-
 	/**
-	 * Confirms the manual-capture PaymentIntent (the card hold) with the mounted
-	 * Elements, completing 3DS in-place when required. `redirect: 'if_required'`
-	 * keeps the fan on-page for card payments; only a redirect-based method (not
-	 * offered here) would navigate away. Returns the confirmed PaymentIntent id
+	 * Confirms the manual-capture PaymentIntent (the card authorization) with the
+	 * mounted Elements, completing 3DS in-place when required.
+	 * `redirect: 'if_required'` keeps the fan on-page for card payments; only a
+	 * redirect-based method (not offered here) would navigate away. Returns the confirmed PaymentIntent id
 	 * on success, or a localized error message on failure.
 	 */
-	public async confirmAuthorization(
+	public async confirmCardAuthorization(
 		stripe: Stripe,
 		elements: StripeElements,
-	): Promise<ConfirmAuthorizationResult> {
+	): Promise<ConfirmCardAuthorizationResult> {
 		const { paymentIntent, error } = await stripe.confirmPayment({
 			elements,
 			redirect: 'if_required',
@@ -255,7 +247,7 @@ export class StripeService {
 		// A successfully-held manual-capture authorization is in `requires_capture`.
 		// Any other status (e.g. requires_action / requires_payment_method /
 		// processing) means the card is NOT authorized yet, so it must not be
-		// passed to Apply as if it were a valid hold.
+		// passed to Confirm as if it were a valid card authorization.
 		if (paymentIntent.status !== 'requires_capture') {
 			this.logger.warn('PaymentIntent not in requires_capture after confirm', {
 				status: paymentIntent.status,

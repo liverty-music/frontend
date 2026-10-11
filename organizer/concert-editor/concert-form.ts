@@ -6,7 +6,7 @@ import type {
 	CalendarDate,
 	EventDraftInput,
 	SeriesDraftInput,
-} from '../services/concert-authoring-client'
+} from '../services/series-client'
 
 /**
  * The editable, transport-agnostic model of a single event row in the editor.

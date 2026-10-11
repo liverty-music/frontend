@@ -270,20 +270,21 @@ export class EventRoute implements IRouteViewModel {
 	public get isLotteryEnded(): boolean {
 		const sale = this.shownSale
 		return (
-			sale?.method === 'lottery' && sale.saleEnd.getTime() <= this.now.getTime()
+			sale?.method === 'lottery' &&
+			sale.saleEndTime.getTime() <= this.now.getTime()
 		)
 	}
 
 	/** The sale start in Japan time, e.g. "2026年11月1日(日) 10:00". */
 	public get saleStartLabel(): string {
 		const sale = this.shownSale
-		return sale ? formatSaleStart(sale.saleStart, this.lang) : ''
+		return sale ? formatSaleStart(sale.saleStartTime, this.lang) : ''
 	}
 
 	/** The sale end in Japan time. */
 	public get saleEndLabel(): string {
 		const sale = this.shownSale
-		return sale ? formatSaleStart(sale.saleEnd, this.lang) : ''
+		return sale ? formatSaleStart(sale.saleEndTime, this.lang) : ''
 	}
 
 	/** The price of one ticket with thousands separators, e.g. "3,000". */

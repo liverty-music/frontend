@@ -33,10 +33,10 @@ export class TicketRpcClient {
 	}
 
 	/**
-	 * getMyTickets returns all account-bound covered tickets issued to the
+	 * list returns all account-bound covered tickets issued to the
 	 * caller. Empty when the caller has none.
 	 */
-	public async getMyTickets(signal?: AbortSignal): Promise<Ticket[]> {
+	public async list(signal?: AbortSignal): Promise<Ticket[]> {
 		this.logger.info('Listing my tickets')
 		try {
 			const response = await this.client.list({}, { signal })

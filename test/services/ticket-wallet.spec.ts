@@ -85,7 +85,7 @@ describe('TicketWallet', () => {
 							tickets: [
 								create(TicketSchema, {
 									id: { value: TICKET },
-									holderId: { value: USER },
+									userId: { value: USER },
 								}),
 							],
 						}
@@ -180,7 +180,7 @@ describe('TicketWallet', () => {
 		// First visit (Get → NotFound → Register), a reload (Get only), a move
 		// back after another device took over (Get, then Register on confirm).
 		expect((await wallet.checkDevice(true)).readiness).toBe('ready')
-		await client.getMyTickets()
+		await client.list()
 		expect((await wallet.checkDevice(true)).readiness).toBe('ready')
 		serverKey = new Uint8Array(65).fill(9)
 		expect((await wallet.checkDevice(true)).readiness).toBe('other-device')

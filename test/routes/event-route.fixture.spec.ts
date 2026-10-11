@@ -202,8 +202,8 @@ function onSale(o: Partial<TicketSale> = {}): TicketSale {
 		id: 'sale-1',
 		name: '一般発売',
 		method: 'firstCome',
-		saleStart: new Date(Date.now() - DAY),
-		saleEnd: new Date(Date.now() + DAY),
+		saleStartTime: new Date(Date.now() - DAY),
+		saleEndTime: new Date(Date.now() + DAY),
 		verificationRequirement: 'none',
 		ticketType: {
 			id: 'type-1',

@@ -16,7 +16,7 @@
 
   <!-- Event summary, shown on every step of the checkout -->
   <section
-    if.bind="event && (step === 'verify-required' || step === 'count' || step === 'identity' || step === 'payment' || step === 'confirm')"
+    if.bind="event && (step === 'verify-required' || step === 'count' || step === 'personal-details' || step === 'payment' || step === 'confirm')"
     class="checkout-summary"
     data-testid="checkout-summary"
   >
@@ -51,15 +51,15 @@
   </section>
 
   <!-- Step 2: 本人確認 -->
-  <section if.bind="step === 'identity'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-identity">
-    <h2 class="checkout-step-title" t="checkout.identity.title"></h2>
-    <p class="checkout-note" t="checkout.identity.note"></p>
+  <section if.bind="step === 'personal-details'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-personal-details">
+    <h2 class="checkout-step-title" t="checkout.personalDetails.title"></h2>
+    <p class="checkout-note" t="checkout.personalDetails.note"></p>
     <label class="checkout-field">
-      <span class="checkout-label" t="checkout.identity.name"></span>
+      <span class="checkout-label" t="checkout.personalDetails.name"></span>
       <input type="text" autocomplete="name" value.bind="fullName" class="checkout-input" data-testid="checkout-name" />
     </label>
     <label class="checkout-field">
-      <span class="checkout-label" t="checkout.identity.phone"></span>
+      <span class="checkout-label" t="checkout.personalDetails.phone"></span>
       <input
         type="tel"
         autocomplete="tel"
@@ -71,11 +71,11 @@
         data-testid="checkout-phone"
       />
     </label>
-    <p id="checkout-phone-error" if.bind="isPhoneInvalid" class="checkout-error" t="checkout.identity.phoneInvalid"></p>
+    <p id="checkout-phone-error" if.bind="isPhoneInvalid" class="checkout-error" t="checkout.personalDetails.phoneInvalid"></p>
     <p if.bind="message" class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
     <div class="[ checkout-actions ] [ cluster ]">
       <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="backToCount()" t="checkout.back"></button>
-      <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="toPayment()" disabled.bind="!isIdentityValid || busy" data-testid="checkout-to-payment" t="checkout.identity.continue"></button>
+      <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="checkout-to-payment" t="checkout.personalDetails.continue"></button>
     </div>
   </section>
 
@@ -91,7 +91,7 @@
       <p class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
       <button if.bind="message.key === 'checkout.payment.holdEnded'" type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
     </template>
-    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="authorize()" disabled.bind="busy" data-testid="checkout-authorize" t="checkout.payment.continue"></button>
+    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="authorizeCard()" disabled.bind="busy" data-testid="checkout-authorize-card" t="checkout.payment.continue"></button>
   </section>
 
   <!-- Step 4: 特商法 final confirmation -->
@@ -122,8 +122,8 @@
       <dt t="checkout.confirm.salePeriod"></dt>
       <dd data-testid="checkout-confirm-period">${salePeriodLabel}</dd>
 
-      <dt t="checkout.confirm.holder"></dt>
-      <dd data-testid="checkout-confirm-holder">${fullName}</dd>
+      <dt t="checkout.confirm.nameOnTickets"></dt>
+      <dd data-testid="checkout-confirm-full-name">${fullName}</dd>
 
       <dt t="checkout.confirm.resale"></dt>
       <dd t="checkout.confirm.resaleValue"></dd>
@@ -145,7 +145,7 @@
     <p if.bind="message" class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
     <div class="[ checkout-actions ] [ cluster ]">
       <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="changeCount()" t="checkout.confirm.changeCount"></button>
-      <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="changeIdentity()" t="checkout.confirm.changeIdentity"></button>
+      <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="changePersonalDetails()" t="checkout.confirm.changePersonalDetails"></button>
     </div>
     <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="placeOrder()" disabled.bind="busy" data-testid="checkout-place-order" t="checkout.confirm.placeOrder" t-params.bind="{ total: yen(total) }"></button>
   </section>

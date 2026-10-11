@@ -126,7 +126,7 @@ describe('StripeService', () => {
 		})
 	})
 
-	describe('confirmAuthorization', () => {
+	describe('confirmCardAuthorization', () => {
 		it('returns the PaymentIntent id when the hold is in requires_capture', async () => {
 			const stripe = fakeStripe({
 				confirmPayment: vi.fn(async () => ({
@@ -134,7 +134,7 @@ describe('StripeService', () => {
 				})),
 			})
 
-			const result = await new StripeService().confirmAuthorization(
+			const result = await new StripeService().confirmCardAuthorization(
 				stripe,
 				noopElements,
 			)
@@ -156,7 +156,7 @@ describe('StripeService', () => {
 				})),
 			})
 
-			const result = await new StripeService().confirmAuthorization(
+			const result = await new StripeService().confirmCardAuthorization(
 				stripe,
 				noopElements,
 			)
@@ -172,7 +172,7 @@ describe('StripeService', () => {
 				})),
 			})
 
-			const result = await new StripeService().confirmAuthorization(
+			const result = await new StripeService().confirmCardAuthorization(
 				stripe,
 				noopElements,
 			)
@@ -187,7 +187,7 @@ describe('StripeService', () => {
 				})),
 			})
 
-			const result = await new StripeService().confirmAuthorization(
+			const result = await new StripeService().confirmCardAuthorization(
 				stripe,
 				noopElements,
 			)
@@ -202,7 +202,7 @@ describe('StripeService', () => {
 				confirmPayment: vi.fn(async () => ({})),
 			})
 
-			const result = await new StripeService().confirmAuthorization(
+			const result = await new StripeService().confirmCardAuthorization(
 				stripe,
 				noopElements,
 			)

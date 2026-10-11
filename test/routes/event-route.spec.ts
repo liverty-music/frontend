@@ -68,13 +68,11 @@ function protoConcert(o: ConcertOpts = {}): ResolvedConcert {
 		description: { value: '二夜連続公演' },
 		organizerId: { value: 'org-1' },
 		publishState: o.state ?? PublishState.PUBLISHED,
-		media: o.cover
+		coverImage: o.cover
 			? {
-					id: { value: 'm1' },
-					attributes: {
-						thumb: { value: 'https://media.example/thumb.webp' },
-						large: { value: 'https://media.example/large.webp' },
-					},
+					id: { value: 'series-image-1' },
+					thumb: { value: 'https://images.example/thumb.webp' },
+					large: { value: 'https://images.example/large.webp' },
 				}
 			: undefined,
 	})
@@ -201,7 +199,7 @@ describe('EventRoute', () => {
 			concertClient.get.mockResolvedValue(protoConcert({ cover: true }))
 			const sut = build()
 			await open(sut)
-			expect(sut.event?.coverUrl).toBe('https://media.example/large.webp')
+			expect(sut.event?.coverUrl).toBe('https://images.example/large.webp')
 		})
 
 		it('shows the brand placeholder without a cover image', async () => {
@@ -407,8 +405,8 @@ describe('EventRoute', () => {
 				id: 'sale-1',
 				name: '一般発売',
 				method: 'firstCome',
-				saleStart: jst(1, 10),
-				saleEnd: jst(20, 18),
+				saleStartTime: jst(1, 10),
+				saleEndTime: jst(20, 18),
 				verificationRequirement: 'none',
 				ticketType: {
 					id: 'type-1',
@@ -431,8 +429,8 @@ describe('EventRoute', () => {
 					id: 'presale',
 					name: 'ファンクラブ先行',
 					method: 'lottery',
-					saleStart: jst(1, 10),
-					saleEnd: jst(10, 23),
+					saleStartTime: jst(1, 10),
+					saleEndTime: jst(10, 23),
 					...o,
 				},
 			)
@@ -489,7 +487,7 @@ describe('EventRoute', () => {
 		it('shows the opening date and time in Japan time before the sale opens', async () => {
 			// @spec components/infrastructure/fan/web/route/event "Not yet on sale"
 			ticketSaleClient.listByEvent.mockResolvedValue([
-				sale({ state: 'notYetOnSale' }, { saleStart: jst(1, 13) }),
+				sale({ state: 'notYetOnSale' }, { saleStartTime: jst(1, 13) }),
 			])
 			const sut = build()
 			await open(sut)
@@ -516,7 +514,7 @@ describe('EventRoute', () => {
 				presale(),
 				sale(
 					{ state: 'notYetOnSale' },
-					{ saleStart: jst(20, 10), saleEnd: jst(20, 18) },
+					{ saleStartTime: jst(20, 10), saleEndTime: jst(20, 18) },
 				),
 			])
 			const sut = build()
@@ -559,7 +557,7 @@ describe('EventRoute', () => {
 			vi.setSystemTime(jst(20, 18, 30))
 			ticketSaleClient.listByEvent.mockResolvedValue([
 				presale(),
-				sale({ state: 'ended' }, { saleStart: jst(15, 10) }),
+				sale({ state: 'ended' }, { saleStartTime: jst(15, 10) }),
 			])
 			const sut = build()
 			await open(sut)

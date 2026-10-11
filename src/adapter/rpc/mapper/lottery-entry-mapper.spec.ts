@@ -26,14 +26,14 @@ describe('lottery-entry-mapper', () => {
 		const proto = create(LotteryEntrySchema, {
 			id: { value: 'entry-1' },
 			ticketTypeId: { value: 'type-1' },
-			requestedTicketCount: 2,
+			ticketCount: 2,
 			state: ProtoLotteryEntryState.ENTERED,
 		})
 
 		expect(lotteryEntryFrom(proto)).toEqual({
 			id: 'entry-1',
 			ticketTypeId: 'type-1',
-			requestedTicketCount: 2,
+			ticketCount: 2,
 			state: 'entered',
 		})
 	})

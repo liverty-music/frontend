@@ -63,7 +63,7 @@ export class PurchasedTicketStore {
 			this.countByEvent = new Map()
 			return this.countByEvent
 		}
-		const tickets = await this.rpcClient.getMyTickets(signal)
+		const tickets = await this.rpcClient.list(signal)
 		this.countByEvent = countIssuedByEvent(tickets)
 		return this.countByEvent
 	}

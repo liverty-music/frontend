@@ -1,15 +1,15 @@
 import type {
+	ConcertCandidate,
 	ExistingEvent,
-	PendingConcert,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/staged_concert/v1/staged_concert_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert_candidate/v1/concert_candidate_service_pb.js'
 // Import the Resolution enum value from the generated package directly (not via
-// the staged-concert-client re-export) so it survives the client module being
+// the concert-candidate-client re-export) so it survives the client module being
 // mocked.
-import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/staged_concert/v1/staged_concert_service_pb.js'
+import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert_candidate/v1/concert_candidate_service_pb.js'
 import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { sanitizeUrl } from '../../shared/utils/sanitize-url'
-import { IStagedConcertClient } from '../services/staged-concert-client'
+import { IConcertCandidateClient } from '../services/concert-candidate-client'
 
 /** Coarse lifecycle phase for the initial list fetch. */
 type LoadPhase = 'loading' | 'ready' | 'error'
@@ -18,13 +18,13 @@ type LoadPhase = 'loading' | 'ready' | 'error'
  * One reviewable concert plus the per-row UI state the queue needs: whether an
  * approve/reject request is in flight (to disable the row's buttons), whether
  * the inline reject form is open, the bound reject reason, and any per-row
- * action error. The raw {@link PendingConcert} is kept so the template renders
+ * action error. The raw {@link ConcertCandidate} is kept so the template renders
  * the proto fields directly; the precomputed display strings flatten the proto
  * wrapper types so the template stays free of optional-chaining noise.
  */
 export interface QueueRow {
-	readonly concert: PendingConcert
-	readonly stagedId: string
+	readonly concert: ConcertCandidate
+	readonly concertCandidateId: string
 	readonly performerName: string
 	readonly title: string
 	readonly localDate: string
@@ -93,26 +93,26 @@ function formatTimestamp(ts?: Timestamp): string {
 	}
 }
 
-function formatLocalDate(concert: PendingConcert): string {
+function formatLocalDate(concert: ConcertCandidate): string {
 	return formatDateValue(concert.localDate?.value)
 }
 
-function formatStartTime(concert: PendingConcert): string {
+function formatStartTime(concert: ConcertCandidate): string {
 	return formatTimeOfDay(concert.startTime?.value)
 }
 
 /**
  * Flattened display fields for the two sides of a duplicate conflict, so the
- * reconciliation dialog renders without optional-chaining noise. The staged side
+ * reconciliation dialog renders without optional-chaining noise. The candidate side
  * reuses the queue row's precomputed strings; the existing side is derived here
  * from the {@link ExistingEvent} preview the server returned.
  */
 export interface ConflictView {
-	readonly stagedTitle: string
-	readonly stagedListedVenueName: string
-	readonly stagedLocalDate: string
-	readonly stagedStartTime: string
-	readonly stagedOpenTime: string
+	readonly candidateTitle: string
+	readonly candidateListedVenueName: string
+	readonly candidateLocalDate: string
+	readonly candidateStartTime: string
+	readonly candidateOpenTime: string
 	readonly existingTitle: string
 	readonly existingListedVenueName: string
 	readonly existingLocalDate: string
@@ -122,11 +122,11 @@ export interface ConflictView {
 
 function toConflictView(row: QueueRow, existing: ExistingEvent): ConflictView {
 	return {
-		stagedTitle: row.title,
-		stagedListedVenueName: row.listedVenueName,
-		stagedLocalDate: row.localDate,
-		stagedStartTime: row.startTime,
-		stagedOpenTime: row.openTime,
+		candidateTitle: row.title,
+		candidateListedVenueName: row.listedVenueName,
+		candidateLocalDate: row.localDate,
+		candidateStartTime: row.startTime,
+		candidateOpenTime: row.openTime,
 		existingTitle: existing.title?.value ?? EMPTY,
 		existingListedVenueName: existing.listedVenueName?.value ?? EMPTY,
 		existingLocalDate: formatDateValue(existing.localDate?.value),
@@ -135,11 +135,11 @@ function toConflictView(row: QueueRow, existing: ExistingEvent): ConflictView {
 	}
 }
 
-function toRow(concert: PendingConcert): QueueRow {
+function toRow(concert: ConcertCandidate): QueueRow {
 	const resolved = concert.resolvedVenue
 	return {
 		concert,
-		stagedId: concert.stagedId?.value ?? '',
+		concertCandidateId: concert.id?.value ?? '',
 		performerName: concert.performer?.name?.value ?? EMPTY,
 		title: concert.title?.value ?? EMPTY,
 		localDate: formatLocalDate(concert),
@@ -161,12 +161,12 @@ function toRow(concert: PendingConcert): QueueRow {
 /**
  * Groups a flat pending-concert list into Artist → Series. Uses
  * `performer.name` as the artist key and `title.value` as the series proxy
- * (no `series.id` exists on `PendingConcert` until approval). First-seen order
+ * (no `series.id` exists on `ConcertCandidate` until approval). First-seen order
  * is preserved; `unresolvedCount` tracks rows lacking a resolved venue so the
  * collapsed summary can surface triage priority.
  */
 function groupQueueByArtistAndSeries(
-	concerts: PendingConcert[],
+	concerts: ConcertCandidate[],
 ): PendingArtistGroup[] {
 	const groups: PendingArtistGroup[] = []
 	const artistByName = new Map<string, PendingArtistGroup>()
@@ -203,7 +203,7 @@ function groupQueueByArtistAndSeries(
  * Concert approval-queue screen. Loads the pending queue on attach and lets a
  * reviewer approve or reject each discovered concert, grouped by artist then
  * series title. Approve/reject run against the admin-local
- * {@link IStagedConcertClient}; on success the row is removed and empty
+ * {@link IConcertCandidateClient}; on success the row is removed and empty
  * series/artist headings are pruned, on failure a per-row error is surfaced
  * and the row stays put so the action can be retried.
  */
@@ -230,7 +230,7 @@ export class ApprovalQueueRoute {
 		row: QueueRow
 	} | null = null
 
-	private readonly client = resolve(IStagedConcertClient)
+	private readonly client = resolve(IConcertCandidateClient)
 	private readonly logger = resolve(ILogger).scopeTo('ApprovalQueueRoute')
 
 	/**
@@ -272,7 +272,7 @@ export class ApprovalQueueRoute {
 		row.actionError = ''
 		try {
 			const response = await this.client.approve(
-				row.stagedId,
+				row.concertCandidateId,
 				Resolution.UNSPECIFIED,
 			)
 			// A duplicate existing event was detected: the server mutated nothing and
@@ -293,16 +293,22 @@ export class ApprovalQueueRoute {
 			row.actionError =
 				err instanceof Error ? err.message : 'Approval failed. Try again.'
 			row.busy = false
-			this.logger.error('Approve failed', { stagedId: row.stagedId, err })
+			this.logger.error('Approve failed', {
+				concertCandidateId: row.concertCandidateId,
+				err,
+			})
 		}
 	}
 
-	/** Reviewer chose to keep the existing event; the staged row is logged + cleared. */
+	/** Reviewer chose to keep the existing event; the concert candidate is logged + cleared. */
 	public async keepExisting(): Promise<void> {
 		await this.resolveConflict(Resolution.KEEP_EXISTING)
 	}
 
-	/** Reviewer chose to adopt the staged row's display fields onto the existing event. */
+	/**
+	 * Reviewer chose to adopt the concert candidate's display fields onto the
+	 * existing event (`Resolution.ADOPT_STAGED`).
+	 */
 	public async adoptStaged(): Promise<void> {
 		await this.resolveConflict(Resolution.ADOPT_STAGED)
 	}
@@ -319,15 +325,15 @@ export class ApprovalQueueRoute {
 		this.conflictError = ''
 		try {
 			// The second phase re-calls Approve with the chosen resolution; the
-			// server re-reads the staged row and is idempotent if it is already gone.
-			await this.client.approve(active.row.stagedId, resolution)
+			// server re-reads the concert candidate and is idempotent if it is already gone.
+			await this.client.approve(active.row.concertCandidateId, resolution)
 			this.removeRow(active.group, active.series, active.row)
 			this.closeConflict()
 		} catch (err) {
 			this.conflictError =
 				err instanceof Error ? err.message : 'Reconciliation failed. Try again.'
 			this.logger.error('Conflict resolution failed', {
-				stagedId: active.row.stagedId,
+				concertCandidateId: active.row.concertCandidateId,
 				resolution,
 				err,
 			})
@@ -369,13 +375,16 @@ export class ApprovalQueueRoute {
 		row.busy = true
 		row.actionError = ''
 		try {
-			await this.client.reject(row.stagedId, reason)
+			await this.client.reject(row.concertCandidateId, reason)
 			this.removeRow(group, series, row)
 		} catch (err) {
 			row.actionError =
 				err instanceof Error ? err.message : 'Rejection failed. Try again.'
 			row.busy = false
-			this.logger.error('Reject failed', { stagedId: row.stagedId, err })
+			this.logger.error('Reject failed', {
+				concertCandidateId: row.concertCandidateId,
+				err,
+			})
 		}
 	}
 

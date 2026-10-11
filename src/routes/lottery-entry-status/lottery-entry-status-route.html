@@ -1,0 +1,69 @@
+<template class="[ lottery-entry-status-route ] [ flow ]">
+	<header class="lottery-entry-status-header">
+		<h1 class="lottery-entry-status-title" t="lotteryEntryStatus.title"></h1>
+	</header>
+
+	<section class="lottery-entry-status-panel" if.bind="step === 'loading'">
+		<p class="lottery-entry-status-lead" role="status" t="lotteryEntryStatus.loading"></p>
+	</section>
+
+	<section class="[ lottery-entry-status-panel ] [ flow ]" if.bind="step === 'empty'" data-testid="lottery-entry-status-empty">
+		<p class="lottery-entry-status-lead" t="lotteryEntryStatus.empty"></p>
+	</section>
+
+	<section class="[ lottery-entry-status-panel ] [ flow ]" if.bind="step === 'error'" data-testid="lottery-entry-status-error">
+		<p class="lottery-entry-status-error" t.bind="messageKey"></p>
+		<button type="button" class="lottery-entry-status-btn-primary" click.trigger="load()" t="lotteryEntryStatus.reload"></button>
+	</section>
+
+	<section class="[ lottery-entry-status-panel ] [ flow ]" if.bind="step === 'loaded'" data-testid="lottery-entry-status-entry">
+		<output class="lottery-entry-status-status" data-kind.bind="resultKind">
+			<span class="lottery-entry-status-status-label" t.bind="stateLabelKey"></span>
+		</output>
+
+		<p class="lottery-entry-status-lead" t.bind="'lotteryEntryStatus.note.' + resultKind"></p>
+
+		<dl class="lottery-entry-status-summary">
+			<div class="lottery-entry-status-summary-row">
+				<dt class="lottery-entry-status-summary-key" t="lotteryEntryStatus.count"></dt>
+				<dd class="lottery-entry-status-summary-val" t="lotteryEntryStatus.countValue" t-params.bind="{ count: entry.ticketCount }"></dd>
+			</div>
+			<div class="lottery-entry-status-summary-row">
+				<dt class="lottery-entry-status-summary-key" t="lotteryEntryStatus.status"></dt>
+				<dd class="lottery-entry-status-summary-val" t.bind="stateLabelKey"></dd>
+			</div>
+		</dl>
+
+		<p class="lottery-entry-status-error" if.bind="messageKey" role="alert" t.bind="messageKey"></p>
+
+		<div class="[ lottery-entry-status-actions ] [ flow ]" if.bind="canWithdraw">
+			<button
+				type="button"
+				class="lottery-entry-status-btn-secondary"
+				click.trigger="askWithdraw()"
+				if.bind="!confirmingWithdraw"
+				t="lotteryEntryStatus.withdraw.action"
+			></button>
+
+			<div class="[ lottery-entry-status-confirm ] [ flow ]" if.bind="confirmingWithdraw">
+				<p class="lottery-entry-status-lead" t="lotteryEntryStatus.withdraw.confirm"></p>
+				<div class="[ lottery-entry-status-confirm-actions ] [ cluster ]">
+					<button
+						type="button"
+						class="lottery-entry-status-btn-secondary"
+						click.trigger="cancelWithdraw()"
+						disabled.bind="withdrawing"
+						t="lotteryEntryStatus.withdraw.cancel"
+					></button>
+					<button
+						type="button"
+						class="lottery-entry-status-btn-danger"
+						click.trigger="confirmWithdraw()"
+						disabled.bind="withdrawing"
+						t.bind="withdrawing ? 'lotteryEntryStatus.withdraw.submitting' : 'lotteryEntryStatus.withdraw.submit'"
+					></button>
+				</div>
+			</div>
+		</div>
+	</section>
+</template>

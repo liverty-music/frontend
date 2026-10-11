@@ -29,6 +29,6 @@ export interface LotteryEntry {
 	readonly id: string
 	readonly ticketTypeId: string
 	/** How many tickets the entry asks for (the companion group's size). */
-	readonly requestedTicketCount: number
+	readonly ticketCount: number
 	readonly state: LotteryEntryState
 }

@@ -9,7 +9,9 @@ const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserStore = DI.createInterface('IUserStore')
 const mockINotificationManager = DI.createInterface('INotificationManager')
 const mockIPushService = DI.createInterface('IPushService')
-const mockIKycService = DI.createInterface('IKycService')
+const mockIIdentityVerificationService = DI.createInterface(
+	'IIdentityVerificationService',
+)
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
@@ -23,8 +25,8 @@ vi.mock('../../src/services/notification-manager', () => ({
 vi.mock('../../src/services/push-service', () => ({
 	IPushService: mockIPushService,
 }))
-vi.mock('../../src/services/kyc-service', () => ({
-	IKycService: mockIKycService,
+vi.mock('../../src/services/identity-verification-service', () => ({
+	IIdentityVerificationService: mockIIdentityVerificationService,
 }))
 
 vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
@@ -85,10 +87,10 @@ describe('SettingsRoute', () => {
 		resolvePushState: ReturnType<typeof vi.fn>
 	}
 	let mockEa: { publish: ReturnType<typeof vi.fn> }
-	const mockKyc = {
-		status: undefined,
-		getStatus: vi.fn().mockResolvedValue({ level: 'unverified' }),
-		verify: vi.fn(),
+	const mockIdentityVerifications = {
+		current: undefined,
+		get: vi.fn().mockResolvedValue(undefined),
+		start: vi.fn(),
 	}
 
 	beforeEach(() => {
@@ -151,7 +153,10 @@ describe('SettingsRoute', () => {
 			Registration.instance(mockIPushService, mockPush),
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(IRouter, mockRouter),
-			Registration.instance(mockIKycService, mockKyc),
+			Registration.instance(
+				mockIIdentityVerificationService,
+				mockIdentityVerifications,
+			),
 		)
 		container.register(SettingsRoute)
 		sut = container.get(SettingsRoute)
@@ -455,7 +460,10 @@ describe('SettingsRoute', () => {
 				Registration.instance(mockIPushService, mockPush),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(IRouter, mockRouter),
-				Registration.instance(mockIKycService, mockKyc),
+				Registration.instance(
+					mockIIdentityVerificationService,
+					mockIdentityVerifications,
+				),
 			)
 			container.register(SettingsRoute)
 			return container.get(SettingsRoute)

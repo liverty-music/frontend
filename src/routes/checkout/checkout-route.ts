@@ -15,6 +15,7 @@ import {
 	saveCheckoutId,
 } from '../../adapter/storage/checkout-storage'
 import type { Checkout } from '../../entities/checkout'
+import { isVerified } from '../../entities/identity-verification'
 import {
 	currentSale,
 	isBuyable,
@@ -22,7 +23,7 @@ import {
 	type VerificationRequirement,
 } from '../../entities/ticket-sale'
 import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
-import { IKycService } from '../../services/kyc-service'
+import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IPwaInstallService } from '../../services/pwa-install-service'
@@ -49,7 +50,7 @@ import {
  * - `not-found`: the event has no first-come sale (none, or cancelled).
  * - `verify-required`: the sale requires a verification the fan lacks; the
  *   screen offers to verify instead of starting the checkout.
- * - `count` → `identity` → `payment` → `confirm`: the checkout's steps.
+ * - `count` → `personal-details` → `payment` → `confirm`: the checkout's steps.
  * - `done`: the order was placed.
  * - `outcome`: placing the order failed; the screen says what happened.
  */
@@ -59,7 +60,7 @@ export type CheckoutStep =
 	| 'not-found'
 	| 'verify-required'
 	| 'count'
-	| 'identity'
+	| 'personal-details'
 	| 'payment'
 	| 'confirm'
 	| 'done'
@@ -82,8 +83,8 @@ export interface CheckoutMessage {
 /**
  * The fan's checkout of the TicketType of an event's first-come sale
  * (`/events/:id/checkout`):
- * choose the count and hold the tickets for 15 minutes, confirm the 本人確認
- * details, open the card hold, review the 特商法 final confirmation, and place
+ * choose the count and hold the tickets for 15 minutes, confirm the personal
+ * details, authorize the card, review the 特商法 final confirmation, and place
  * the order. Reopening the page during the hold resumes the same checkout.
  */
 export class CheckoutRoute implements IRouteViewModel {
@@ -96,7 +97,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	private readonly pushService = resolve(IPushService)
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pwaInstall = resolve(IPwaInstallService)
-	private readonly kyc = resolve(IKycService)
+	private readonly identityVerifications = resolve(IIdentityVerificationService)
 	private readonly router = resolve(IRouter)
 
 	public step: CheckoutStep = 'loading'
@@ -110,7 +111,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	public ticketCount = 1
 	public fullName = ''
 	public phoneNumber = ''
-	/** The card the hold was opened on, once authorized. */
+	/** The card that was authorized, once authorized. */
 	public card: CheckoutCard | null = null
 
 	/** The current step's message, or null. */
@@ -128,7 +129,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	public now = Date.now()
 
 	private eventId = ''
-	private clientSecret = ''
+	private cardAuthorizationSecret = ''
 	private abortController: AbortController | null = null
 	private timer: ReturnType<typeof setInterval> | null = null
 	private stripeHandles: { stripe: Stripe; elements: StripeElements } | null =
@@ -186,11 +187,11 @@ export class CheckoutRoute implements IRouteViewModel {
 			this.step = 'not-found'
 			return
 		}
-		this.prefillIdentity()
+		this.prefillPersonalDetails()
 		if (await this.resume(signal)) return
 		if (signal.aborted) return
 		// A held checkout passed the server's verification check at Start, so
-		// only a new one is gated on the fan's Kyc.
+		// only a new one is gated on the fan's IdentityVerification.
 		if (await this.lacksVerification(signal)) {
 			if (!signal.aborted) this.step = 'verify-required'
 			return
@@ -201,7 +202,8 @@ export class CheckoutRoute implements IRouteViewModel {
 
 	/**
 	 * True when the sale requires a verification the fan does not have: no
-	 * Active Kyc, or, on a JPKI-only sale, an Active Kyc by another method.
+	 * Active IdentityVerification, or, on a JPKI-only sale, an Active one by
+	 * another method.
 	 * On a status-read failure the checkout proceeds: the server checks the
 	 * requirement at Start, so it is never bypassed, only surfaced later.
 	 */
@@ -209,9 +211,11 @@ export class CheckoutRoute implements IRouteViewModel {
 		const requirement = this.verificationRequirement
 		if (requirement === 'none') return false
 		try {
-			const status = await this.kyc.getStatus(signal)
-			if (status.level !== 'kycVerified') return true
-			return requirement === 'jpkiOnly' && status.kyc?.method !== 'jpki'
+			const identityVerification = await this.identityVerifications.get(signal)
+			if (!isVerified(identityVerification)) return true
+			return (
+				requirement === 'jpkiOnly' && identityVerification?.method !== 'jpki'
+			)
 		} catch (err) {
 			if (!signal?.aborted) {
 				this.logger.warn('Verification status read failed; proceeding', {
@@ -223,7 +227,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	}
 
 	/** Prefill the full name and phone number saved on the fan's User. */
-	private prefillIdentity(): void {
+	private prefillPersonalDetails(): void {
 		const user = this.userStore.current
 		if (user?.fullName) this.fullName = user.fullName
 		if (user?.phoneNumber) {
@@ -246,7 +250,7 @@ export class CheckoutRoute implements IRouteViewModel {
 				checkout.ticketTypeId === this.sale?.ticketType.id
 			) {
 				this.holdWith(checkout)
-				this.step = 'identity'
+				this.step = 'personal-details'
 				return true
 			}
 		} catch (err) {
@@ -323,19 +327,20 @@ export class CheckoutRoute implements IRouteViewModel {
 		return this.phoneNumber.trim().length > 0 && this.phoneE164 === null
 	}
 
-	public get isIdentityValid(): boolean {
+	public get isPersonalDetailsValid(): boolean {
 		return this.fullName.trim().length > 0 && this.phoneE164 !== null
 	}
 
 	/**
-	 * Authorize the hold with the full name and phone number, which the
-	 * server saves on the fan's User; keep the User in step so the next
-	 * screen prefills them.
+	 * Authorize the card (`CheckoutService.AuthorizeCard`) with the full name
+	 * and phone number, which the server saves on the fan's User; keep the
+	 * User in step so the next screen prefills them. Returns the card
+	 * authorization secret.
 	 */
-	private async authorizeHold(checkoutId: string): Promise<string> {
+	private async requestCardAuthorization(checkoutId: string): Promise<string> {
 		const fullName = this.fullName.trim()
 		const phoneNumber = this.phoneE164 ?? ''
-		const secret = await this.checkoutClient.authorize(
+		const secret = await this.checkoutClient.authorizeCard(
 			checkoutId,
 			fullName,
 			phoneNumber,
@@ -364,7 +369,7 @@ export class CheckoutRoute implements IRouteViewModel {
 
 	public get salePeriodLabel(): string {
 		if (!this.sale) return ''
-		return `${formatSaleStart(this.sale.saleStart, this.lang)} – ${formatSaleStart(this.sale.saleEnd, this.lang)}`
+		return `${formatSaleStart(this.sale.saleStartTime, this.lang)} – ${formatSaleStart(this.sale.saleEndTime, this.lang)}`
 	}
 
 	/** The card as the final confirmation names it, e.g. "VISA •••• 4242". */
@@ -399,7 +404,7 @@ export class CheckoutRoute implements IRouteViewModel {
 			if (checkout.id !== this.checkout?.id) this.forgetCard()
 			this.holdWith(checkout)
 			saveCheckoutId(this.eventId, checkout.id)
-			this.step = 'identity'
+			this.step = 'personal-details'
 		} catch (err) {
 			if (this.signal?.aborted) return
 			await this.explainHoldFailure(err)
@@ -425,7 +430,7 @@ export class CheckoutRoute implements IRouteViewModel {
 			code === Code.FailedPrecondition &&
 			(await this.lacksVerification(this.signal))
 		) {
-			// The fan's Kyc does not meet the sale's requirement (none, or it
+			// The fan's IdentityVerification does not meet the sale's requirement (none, or it
 			// is no longer Active): that, not a limit, is why Start failed.
 			if (this.signal?.aborted) return
 			this.message = null
@@ -467,19 +472,19 @@ export class CheckoutRoute implements IRouteViewModel {
 		await this.router.load('/settings')
 	}
 
-	// ── Step 2: 本人確認 ───────────────────────────────────────────────────────
+	// ── Step 2: personal details (本人確認) ───────────────────────────────────────────────────────
 
 	/**
-	 * Continue from the 本人確認 step: to the card form, or, when the card is
-	 * already authorized (the fan came back to correct the details), record
-	 * the corrected details on the same hold and return to the final
-	 * confirmation.
+	 * Continue from the personal details step: to the card form, or, when the
+	 * card is already authorized (the fan came back to correct the details),
+	 * record the corrected details on the same card authorization and return to
+	 * the final confirmation.
 	 */
 	public async toPayment(): Promise<void> {
-		if (!this.isIdentityValid || this.busy || !this.checkout) return
+		if (!this.isPersonalDetailsValid || this.busy || !this.checkout) return
 		this.message = null
 		if (this.card) {
-			await this.reauthorize()
+			await this.reauthorizeCard()
 			return
 		}
 		this.busy = true
@@ -497,15 +502,15 @@ export class CheckoutRoute implements IRouteViewModel {
 		}
 	}
 
-	private async reauthorize(): Promise<void> {
+	private async reauthorizeCard(): Promise<void> {
 		if (!this.checkout) return
 		this.busy = true
 		try {
-			await this.authorizeHold(this.checkout.id)
+			await this.requestCardAuthorization(this.checkout.id)
 			this.step = 'confirm'
 		} catch (err) {
 			if (this.signal?.aborted) return
-			this.explainAuthorizeFailure(err)
+			this.explainAuthorizeCardFailure(err)
 		} finally {
 			this.busy = false
 		}
@@ -533,11 +538,11 @@ export class CheckoutRoute implements IRouteViewModel {
 	}
 
 	/**
-	 * Authorize the card: read it into a ConfirmationToken, record the 本人確認
-	 * details and open the card hold, then complete the issuer's
+	 * Authorize the card: read it into a ConfirmationToken, record the personal
+	 * details and open the card authorization, then complete the issuer's
 	 * authentication in the page. Nothing is charged until the order is placed.
 	 */
-	public async authorize(): Promise<void> {
+	public async authorizeCard(): Promise<void> {
 		if (this.busy || !this.stripeHandles || !this.checkout) return
 		this.busy = true
 		this.message = null
@@ -549,14 +554,16 @@ export class CheckoutRoute implements IRouteViewModel {
 				this.cardError = read.errorMessage ?? ''
 				return
 			}
-			this.clientSecret = await this.authorizeHold(this.checkout.id)
-			const confirmed = await this.stripe.confirmCheckoutHold(
+			this.cardAuthorizationSecret = await this.requestCardAuthorization(
+				this.checkout.id,
+			)
+			const confirmed = await this.stripe.confirmCheckoutCardAuthorization(
 				stripe,
-				this.clientSecret,
+				this.cardAuthorizationSecret,
 				read.card.tokenId,
 			)
 			if (confirmed.errorMessage) {
-				// The fan may try another card on the same hold.
+				// The fan may try another card on the same checkout.
 				this.cardError = confirmed.errorMessage
 				return
 			}
@@ -564,25 +571,25 @@ export class CheckoutRoute implements IRouteViewModel {
 			this.step = 'confirm'
 		} catch (err) {
 			if (this.signal?.aborted) return
-			this.explainAuthorizeFailure(err)
+			this.explainAuthorizeCardFailure(err)
 		} finally {
 			this.busy = false
 		}
 	}
 
-	private explainAuthorizeFailure(err: unknown): void {
+	private explainAuthorizeCardFailure(err: unknown): void {
 		if (ConnectError.from(err).code === Code.FailedPrecondition) {
 			// The hold ended: the fan starts again.
 			this.message = { key: 'checkout.payment.holdEnded' }
 			return
 		}
-		this.logger.error('Authorize failed', { error: err })
+		this.logger.error('AuthorizeCard failed', { error: err })
 		this.message = { key: 'checkout.error.retry' }
 	}
 
 	private forgetCard(): void {
 		this.card = null
-		this.clientSecret = ''
+		this.cardAuthorizationSecret = ''
 		this.destroyPaymentElement()
 	}
 
@@ -593,9 +600,9 @@ export class CheckoutRoute implements IRouteViewModel {
 		this.step = 'count'
 	}
 
-	public changeIdentity(): void {
+	public changePersonalDetails(): void {
 		this.message = null
-		this.step = 'identity'
+		this.step = 'personal-details'
 	}
 
 	/** Place the order once; on failure, say what became of the checkout. */
@@ -631,7 +638,7 @@ export class CheckoutRoute implements IRouteViewModel {
 			// The fan finishes the card authentication and tries again.
 			this.message = { key: 'checkout.outcome.authenticationIncomplete' }
 			this.forgetCard()
-			this.step = 'identity'
+			this.step = 'personal-details'
 			return
 		}
 		if (this.outcome !== 'completing') {

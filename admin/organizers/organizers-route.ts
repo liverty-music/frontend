@@ -1,8 +1,5 @@
 import { ILogger, resolve } from 'aurelia'
-import {
-	type Artist,
-	IArtistSearchClient,
-} from '../services/artist-search-client'
+import { type Artist, IArtistClient } from '../services/artist-client'
 import { IOrganizerClient, type Organizer } from '../services/organizer-client'
 import {
 	ARTIST_ALREADY_REPRESENTED,
@@ -58,9 +55,9 @@ function toArtistRow(artist: Artist): ArtistRow {
  * and deactivate an organizer.
  *
  * A master-detail layout: the list + create form on the left, the selected
- * organizer's detail + roster on the right. All RPCs run against the
- * admin-local {@link IOrganizerClient}; artist search runs against the public
- * consumer {@link IArtistSearchClient}. Errors are translated from
+ * organizer's detail + roster on the right. The Organizer RPCs run against the
+ * admin-local {@link IOrganizerClient}; artist search and the roster run against
+ * {@link IArtistClient}. Errors are translated from
  * `ConnectError` codes into user-facing copy per section.
  */
 export class OrganizersRoute {
@@ -98,7 +95,7 @@ export class OrganizersRoute {
 	private searchAbort: AbortController | null = null
 
 	private readonly client = resolve(IOrganizerClient)
-	private readonly searchClient = resolve(IArtistSearchClient)
+	private readonly artistClient = resolve(IArtistClient)
 	private readonly logger = resolve(ILogger).scopeTo('OrganizersRoute')
 
 	public async attached(): Promise<void> {
@@ -185,7 +182,7 @@ export class OrganizersRoute {
 		this.detailPhase = 'loading'
 		this.detailError = ''
 		try {
-			const artists = await this.client.listArtists(organizer.id)
+			const artists = await this.artistClient.listByOrganizer(organizer.id)
 			this.artists = artists.map(toArtistRow)
 			this.detailPhase = 'ready'
 		} catch (err) {
@@ -263,7 +260,7 @@ export class OrganizersRoute {
 		this.searching = true
 		this.searchError = ''
 		try {
-			const results = await this.searchClient.search(query, abort.signal)
+			const results = await this.artistClient.search(query, abort.signal)
 			if (abort.signal.aborted) return
 			this.searchResults = results.map(toArtistRow)
 		} catch (err) {

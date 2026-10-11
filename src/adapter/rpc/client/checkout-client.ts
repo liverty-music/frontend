@@ -63,17 +63,18 @@ export class CheckoutRpcClient {
 
 	/**
 	 * Saves the full name and phone number on the fan's account and opens the
-	 * holding checkout's card hold, returning the client secret the browser
-	 * confirms with Stripe. Authorizing again returns the same hold.
+	 * held checkout's card authorization, returning the card authorization
+	 * secret the browser confirms with the payment provider. Authorizing again
+	 * returns the same card authorization.
 	 */
-	public async authorize(
+	public async authorizeCard(
 		checkoutId: string,
 		fullName: string,
 		phoneNumber: string,
 		signal?: AbortSignal,
 	): Promise<string> {
-		this.logger.info('Authorizing checkout', { checkoutId })
-		const resp = await this.client.authorize(
+		this.logger.info('Authorizing card for checkout', { checkoutId })
+		const resp = await this.client.authorizeCard(
 			{
 				checkoutId: { value: checkoutId },
 				fullName: { value: fullName },
@@ -81,7 +82,11 @@ export class CheckoutRpcClient {
 			},
 			{ signal },
 		)
-		return resp.clientSecret
+		const secret = resp.cardAuthorizationSecret?.value
+		if (!secret) {
+			throw new Error('AuthorizeCard returned no card authorization secret')
+		}
+		return secret
 	}
 
 	/**

@@ -12,28 +12,32 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// The route resolves IOrganizerClient + IArtistSearchClient. Replace the real
+// The route resolves IOrganizerClient + IArtistClient. Replace the real
 // modules (which would build Connect transports over the generated clients) with
 // fresh interface tokens so the fixture binds to the test doubles.
 const IOrganizerClient = DI.createInterface('IOrganizerClient')
-const IArtistSearchClient = DI.createInterface('IArtistSearchClient')
+const IArtistClient = DI.createInterface('IArtistClient')
 
 vi.mock('../../../admin/services/organizer-client', () => ({
 	IOrganizerClient,
 }))
-vi.mock('../../../admin/services/artist-search-client', () => ({
-	IArtistSearchClient,
+vi.mock('../../../admin/services/artist-client', () => ({
+	IArtistClient,
 }))
 
 const { OrganizersRoute } = await import(
 	'../../../admin/organizers/organizers-route'
 )
 
+/**
+ * The Organizer RPCs, plus the roster read (`ArtistClient.listByOrganizer`)
+ * so each test sets up one Organizer's data in one place.
+ */
 interface MockOrganizerClient {
 	create: ReturnType<typeof vi.fn>
 	list: ReturnType<typeof vi.fn>
 	get: ReturnType<typeof vi.fn>
-	listArtists: ReturnType<typeof vi.fn>
+	listByOrganizer: ReturnType<typeof vi.fn>
 	associateArtist: ReturnType<typeof vi.fn>
 	disassociateArtist: ReturnType<typeof vi.fn>
 	deactivate: ReturnType<typeof vi.fn>
@@ -64,7 +68,7 @@ function createMockOrganizerClient(
 		create: vi.fn().mockResolvedValue(makeOrganizer('o-new', 'New Org')),
 		list: vi.fn().mockResolvedValue([]),
 		get: vi.fn().mockResolvedValue(makeOrganizer('o1', 'Org One')),
-		listArtists: vi.fn().mockResolvedValue([]),
+		listByOrganizer: vi.fn().mockResolvedValue([]),
 		associateArtist: vi.fn().mockResolvedValue(undefined),
 		disassociateArtist: vi.fn().mockResolvedValue(undefined),
 		deactivate: vi.fn().mockResolvedValue(undefined),
@@ -90,7 +94,10 @@ async function build(
 		.deps(
 			OrganizersRoute,
 			Registration.instance(IOrganizerClient, client),
-			Registration.instance(IArtistSearchClient, searchClient),
+			Registration.instance(IArtistClient, {
+				search: searchClient.search,
+				listByOrganizer: client.listByOrganizer,
+			}),
 		)
 		.build()
 	await fixture.started
@@ -170,7 +177,7 @@ describe('OrganizersRoute', () => {
 			const created = makeOrganizer('o-new', 'New Org')
 			const client = createMockOrganizerClient({
 				create: vi.fn().mockResolvedValue(created),
-				listArtists: vi.fn().mockResolvedValue([]),
+				listByOrganizer: vi.fn().mockResolvedValue([]),
 			})
 			const fixture = await build(client, createMockSearchClient())
 			const vm = routeOf(fixture)
@@ -185,7 +192,7 @@ describe('OrganizersRoute', () => {
 			expect(vm.organizers.map((o) => o.id)).toContain('o-new')
 			// Freshly created organizer becomes the selection + its roster loads.
 			expect(vm.selected?.id).toBe('o-new')
-			expect(client.listArtists).toHaveBeenCalledWith('o-new')
+			expect(client.listByOrganizer).toHaveBeenCalledWith('o-new')
 		})
 
 		it('maps INVALID_ARGUMENT to a user-facing create error', async () => {
@@ -237,7 +244,7 @@ describe('OrganizersRoute', () => {
 		it('loads the roster for the selected organizer', async () => {
 			const client = createMockOrganizerClient({
 				list: vi.fn().mockResolvedValue([makeOrganizer('o1', 'Org One')]),
-				listArtists: vi
+				listByOrganizer: vi
 					.fn()
 					.mockResolvedValue([makeArtist('a1', 'Artist One')]),
 			})
@@ -252,10 +259,10 @@ describe('OrganizersRoute', () => {
 			expect(fixture.appHost.textContent).toContain('Artist One')
 		})
 
-		it('shows a roster error when listArtists fails', async () => {
+		it('shows a roster error when listByOrganizer fails', async () => {
 			const client = createMockOrganizerClient({
 				list: vi.fn().mockResolvedValue([makeOrganizer('o1', 'Org One')]),
-				listArtists: vi.fn().mockRejectedValue(new Error('roster boom')),
+				listByOrganizer: vi.fn().mockRejectedValue(new Error('roster boom')),
 			})
 			const fixture = await build(client, createMockSearchClient())
 			const vm = routeOf(fixture)
@@ -279,7 +286,7 @@ describe('OrganizersRoute', () => {
 			await vm.deactivate()
 
 			expect(client.deactivate).toHaveBeenCalledWith('o1')
-			expect(client.listArtists).toHaveBeenCalledTimes(2)
+			expect(client.listByOrganizer).toHaveBeenCalledTimes(2)
 		})
 
 		it('maps FAILED_PRECONDITION to a deactivated message', async () => {
@@ -305,7 +312,7 @@ describe('OrganizersRoute', () => {
 		it('removes the artist from the roster on success', async () => {
 			const client = createMockOrganizerClient({
 				list: vi.fn().mockResolvedValue([makeOrganizer('o1', 'Org One')]),
-				listArtists: vi
+				listByOrganizer: vi
 					.fn()
 					.mockResolvedValue([
 						makeArtist('a1', 'Artist One'),
@@ -325,7 +332,7 @@ describe('OrganizersRoute', () => {
 		it('surfaces an error and keeps the artist when disassociate fails', async () => {
 			const client = createMockOrganizerClient({
 				list: vi.fn().mockResolvedValue([makeOrganizer('o1', 'Org One')]),
-				listArtists: vi
+				listByOrganizer: vi
 					.fn()
 					.mockResolvedValue([makeArtist('a1', 'Artist One')]),
 				disassociateArtist: vi.fn().mockRejectedValue(new Error('remove boom')),

@@ -21,8 +21,8 @@ const CTX: TicketSaleFormContext = {
 function valid(): TicketSaleFormModel {
 	return {
 		name: '一般発売',
-		saleStart: '2026-11-01T12:00',
-		saleEnd: '2026-11-20T19:00',
+		saleStartTime: '2026-11-01T12:00',
+		saleEndTime: '2026-11-20T19:00',
 		price: '3000',
 		quantity: '150',
 		perAccountLimit: '4',
@@ -58,10 +58,10 @@ describe('Japan-time inputs', () => {
 describe('blankFormModel', () => {
 	it('ends the sale at the event start and allows 4 per account', () => {
 		const model = blankFormModel(EVENT_START)
-		expect(model.saleEnd).toBe('2026-11-20T19:00')
+		expect(model.saleEndTime).toBe('2026-11-20T19:00')
 		expect(model.perAccountLimit).toBe('4')
 		expect(model.name).toBe('一般発売')
-		expect(model.saleStart).toBe('')
+		expect(model.saleStartTime).toBe('')
 	})
 })
 
@@ -72,27 +72,27 @@ describe('validateTicketSaleForm', () => {
 
 	it('rejects a sale end after the event start', () => {
 		const errors = validateTicketSaleForm(
-			{ ...valid(), saleEnd: '2026-11-20T19:30' },
+			{ ...valid(), saleEndTime: '2026-11-20T19:30' },
 			CTX,
 		)
-		expect(errors.saleEnd).toContain('2026-11-20 19:00')
+		expect(errors.saleEndTime).toContain('2026-11-20 19:00')
 	})
 
 	it('rejects an end that is not after the start', () => {
 		const errors = validateTicketSaleForm(
-			{ ...valid(), saleStart: '2026-11-20T19:00' },
+			{ ...valid(), saleStartTime: '2026-11-20T19:00' },
 			CTX,
 		)
-		expect(errors.saleEnd).toContain('販売開始より後')
+		expect(errors.saleEndTime).toContain('販売開始より後')
 	})
 
 	it('requires both times', () => {
 		const errors = validateTicketSaleForm(
-			{ ...valid(), saleStart: '', saleEnd: '' },
+			{ ...valid(), saleStartTime: '', saleEndTime: '' },
 			CTX,
 		)
-		expect(errors.saleStart).toBeDefined()
-		expect(errors.saleEnd).toBeDefined()
+		expect(errors.saleStartTime).toBeDefined()
+		expect(errors.saleEndTime).toBeDefined()
 	})
 
 	it.each([

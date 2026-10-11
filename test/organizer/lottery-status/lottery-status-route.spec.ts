@@ -54,7 +54,7 @@ function makeSale(o: SaleOverrides = {}) {
 		method: o.method ?? TicketSaleMethod.LOTTERY,
 		saleStartTime: timestampFromDate(o.open ?? new Date(Date.now() - 60_000)),
 		saleEndTime: timestampFromDate(o.close ?? new Date(Date.now() + 60_000)),
-		drawnTime: o.drawn ? timestampFromDate(new Date()) : undefined,
+		drawTime: o.drawn ? timestampFromDate(new Date()) : undefined,
 		ticketTypes: [
 			{
 				id: { value: 'type-1' },
@@ -71,7 +71,7 @@ function stats(o: Partial<Record<string, number>> = {}) {
 	return create(LotteryEntryStatsSchema, {
 		ticketTypeId: { value: 'type-1' },
 		entryCount: o.entryCount ?? 0,
-		requestedTicketCount: o.requestedTicketCount ?? 0,
+		ticketCount: o.ticketCount ?? 0,
 		wonEntryCount: o.wonEntryCount ?? 0,
 		wonTicketCount: o.wonTicketCount ?? 0,
 		lostEntryCount: o.lostEntryCount ?? 0,
@@ -95,7 +95,7 @@ describe('LotteryStatusRoute', () => {
 	it("reads the event's sales and shows an open window with pre-draw tallies", async () => {
 		const client = createMockClient(
 			[makeSale()],
-			[stats({ entryCount: 12, requestedTicketCount: 30 })],
+			[stats({ entryCount: 12, ticketCount: 30 })],
 		)
 		const vm = build(client)
 		await vm.load()
@@ -115,7 +115,7 @@ describe('LotteryStatusRoute', () => {
 		expect(view.price).toBe(6500)
 		expect(view.drawCompleted).toBe(false)
 		expect(view.entryCount).toBe(12)
-		expect(view.requestedTicketCount).toBe(30)
+		expect(view.ticketCount).toBe(30)
 	})
 
 	it('labels a not-yet-open window', async () => {
@@ -145,7 +145,7 @@ describe('LotteryStatusRoute', () => {
 				[
 					stats({
 						entryCount: 50,
-						requestedTicketCount: 120,
+						ticketCount: 120,
 						wonEntryCount: 40,
 						wonTicketCount: 100,
 						lostEntryCount: 10,

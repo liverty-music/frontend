@@ -44,7 +44,7 @@ export interface OrderView {
 	cardBrand: string
 	/** Last four digits of the card — empty string when unavailable. */
 	cardLast4: string
-	paidAt: Date | null
+	payTime: Date | null
 }
 
 /**
@@ -58,10 +58,13 @@ export interface OrderTicketView {
 	// TODO(tickets): resolve event title once a fan-facing event-read RPC exists.
 	eventId: string
 	/** The fan's full name as their User currently records it. */
-	holderName: string
-	/** The fan's phone number as their User currently records it. */
-	holderPhone: string
-	issuedAt: Date | null
+	fullName: string
+	/**
+	 * The fan's phone number as their User currently records it, in the
+	 * domestic form a fan in Japan writes.
+	 */
+	phoneNumber: string
+	issueTime: Date | null
 	isIssued: boolean
 	isVoided: boolean
 	resaleWithoutConsentProhibited: boolean
@@ -74,7 +77,7 @@ export interface OrderTicketView {
  * its associated issued covered tickets, then renders:
  *   - **§5.1 Payment result**: tax-inclusive (税込) total, payment status
  *     (支払済み / 返金済み / 失敗), card brand + •••• last4, paid date.
- *   - **§5.1 Issued tickets**: per-ticket holder name, issued date, status,
+ *   - **§5.1 Issued tickets**: per-ticket full name, issued date, status,
  *     特定興行入場券 resale-prohibition notice. Voided tickets de-emphasised.
  *   - **§5.2 Refund/cancellation status**: prominent 返金済み banner when
  *     ORDER_STATUS_REFUNDED; distinct 失敗 state when ORDER_STATUS_FAILED.
@@ -123,7 +126,7 @@ export class OrderRoute {
 			// Fetch order and tickets in parallel to minimize latency.
 			const [rawOrder, allTickets] = await Promise.all([
 				this.orderClient.get(this.orderId, this.abortController?.signal),
-				this.ticketClient.getMyTickets(this.abortController?.signal),
+				this.ticketClient.list(this.abortController?.signal),
 			])
 			this.order = this.toOrderView(rawOrder)
 			this.tickets = allTickets
@@ -156,7 +159,7 @@ export class OrderRoute {
 			currency: o.currency,
 			cardBrand: o.payment?.cardBrand ?? '',
 			cardLast4: o.payment?.cardLast4 ?? '',
-			paidAt: o.payTime ? timestampDate(o.payTime) : null,
+			payTime: o.payTime ? timestampDate(o.payTime) : null,
 		}
 	}
 
@@ -165,9 +168,9 @@ export class OrderRoute {
 		return {
 			id: t.id?.value ?? '',
 			eventId: t.eventId?.value ?? '',
-			holderName: user?.fullName ?? '',
-			holderPhone: user?.phoneNumber ? toDomesticDisplay(user.phoneNumber) : '',
-			issuedAt: t.issueTime ? timestampDate(t.issueTime) : null,
+			fullName: user?.fullName ?? '',
+			phoneNumber: user?.phoneNumber ? toDomesticDisplay(user.phoneNumber) : '',
+			issueTime: t.issueTime ? timestampDate(t.issueTime) : null,
 			isIssued: t.status === TicketStatus.ISSUED,
 			isVoided: t.status === TicketStatus.VOIDED,
 			resaleWithoutConsentProhibited: t.resaleWithoutConsentProhibited,
@@ -179,7 +182,7 @@ export class OrderRoute {
 		// REFUNDED, FAILED, the proto3 zero value ORDER_STATUS_UNSPECIFIED (the
 		// decode default for an unset/unknown field), or a future backend status —
 		// must NOT render the "支払済み" badge, so an unconfirmed order never looks
-		// paid (mirrors the unverified-degrade convention in verified-identity-mapper).
+		// paid (mirrors the unverified-degrade convention in identity-verification-mapper).
 		switch (status) {
 			case OrderStatus.PAID:
 				return 'paid'

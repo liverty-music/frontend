@@ -9,8 +9,6 @@ const mockRpc = {
 	create: vi.fn(),
 	list: vi.fn(),
 	get: vi.fn(),
-	// Admin ArtistService.ListByOrganizer, behind the same stubbed createClient.
-	listByOrganizer: vi.fn(),
 	associateArtist: vi.fn(),
 	disassociateArtist: vi.fn(),
 	deactivate: vi.fn(),
@@ -78,19 +76,6 @@ describe('OrganizerClient', () => {
 
 		const [req] = mockRpc.get.mock.calls.at(-1) ?? []
 		expect(req.organizerId?.value).toBe('o1')
-	})
-
-	it('listArtists wraps the organizer id and returns artists', async () => {
-		mockRpc.listByOrganizer.mockResolvedValue({
-			artists: [{ id: { value: 'a1' } }],
-		})
-		const client = resolveClient()
-
-		const artists = await client.listArtists('o1')
-
-		const [req] = mockRpc.listByOrganizer.mock.calls.at(-1) ?? []
-		expect(req.organizerId?.value).toBe('o1')
-		expect(artists).toHaveLength(1)
 	})
 
 	it('associateArtist wraps both ids', async () => {

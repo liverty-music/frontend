@@ -66,8 +66,8 @@ function sale(
 		id: 'sale-1',
 		name: '一般発売',
 		method: 'firstCome',
-		saleStart: jst(1, 10),
-		saleEnd: jst(20, 18),
+		saleStartTime: jst(1, 10),
+		saleEndTime: jst(20, 18),
 		verificationRequirement: 'none',
 		ticketType: {
 			id: 'type-1',
@@ -99,7 +99,7 @@ const mockSale = { listByEvent: vi.fn() }
 const mockCheckout = {
 	start: vi.fn(),
 	get: vi.fn(),
-	authorize: vi.fn(),
+	authorizeCard: vi.fn(),
 	confirm: vi.fn(),
 }
 const fakePaymentElement = { mount: vi.fn(), destroy: vi.fn() }
@@ -110,7 +110,7 @@ const mockStripe = {
 	isConfigured: true,
 	createCheckoutElements: vi.fn(),
 	createCheckoutCard: vi.fn(),
-	confirmCheckoutHold: vi.fn(),
+	confirmCheckoutCardAuthorization: vi.fn(),
 }
 const mockUserStore: { current: unknown; currentLanguage: string } = {
 	current: undefined,
@@ -119,7 +119,7 @@ const mockUserStore: { current: unknown; currentLanguage: string } = {
 const mockPush = { create: vi.fn() }
 const mockNotifications = { permission: 'default' }
 const mockPwa = { canShowInstallOption: false, install: vi.fn() }
-const mockKyc = { getStatus: vi.fn() }
+const mockIdentityVerifications = { get: vi.fn() }
 const mockRouter = { load: vi.fn() }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -137,7 +137,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				IPushService: mockPush,
 				INotificationManager: mockNotifications,
 				IPwaInstallService: mockPwa,
-				IKycService: mockKyc,
+				IIdentityVerificationService: mockIdentityVerifications,
 				IRouter: mockRouter,
 			}
 			return map[(token as { friendlyName?: string }).friendlyName ?? ''] ?? {}
@@ -164,7 +164,7 @@ async function holdTwo(): Promise<CheckoutRoute> {
 	return sut
 }
 
-/** Hold 2 tickets, fill in the identity and reach the card form. */
+/** Hold 2 tickets, fill in the personal details and reach the card form. */
 async function toCard(): Promise<CheckoutRoute> {
 	const sut = await holdTwo()
 	sut.fullName = '山田 花子'
@@ -178,7 +178,7 @@ async function toCard(): Promise<CheckoutRoute> {
 /** Reach the 特商法 final confirmation with a held card. */
 async function toConfirm(): Promise<CheckoutRoute> {
 	const sut = await toCard()
-	await sut.authorize()
+	await sut.authorizeCard()
 	return sut
 }
 
@@ -203,15 +203,15 @@ describe('CheckoutRoute', () => {
 		mockConcert.get.mockResolvedValue(concert)
 		mockSale.listByEvent.mockResolvedValue([sale()])
 		mockCheckout.start.mockResolvedValue(held())
-		mockCheckout.authorize.mockResolvedValue('pi_secret_1')
+		mockCheckout.authorizeCard.mockResolvedValue('card_authorization_secret_1')
 		mockCheckout.confirm.mockResolvedValue('order-1')
 		mockStripe.createCheckoutElements.mockResolvedValue({
 			stripe: fakeStripe,
 			elements: fakeElements,
 		})
 		mockStripe.createCheckoutCard.mockResolvedValue({ card })
-		mockStripe.confirmCheckoutHold.mockResolvedValue({})
-		mockKyc.getStatus.mockResolvedValue({ level: 'unverified' })
+		mockStripe.confirmCheckoutCardAuthorization.mockResolvedValue({})
+		mockIdentityVerifications.get.mockResolvedValue(undefined)
 	})
 
 	afterEach(() => {
@@ -235,7 +235,7 @@ describe('CheckoutRoute', () => {
 				2,
 				expect.anything(),
 			)
-			expect(sut.step).toBe('identity')
+			expect(sut.step).toBe('personal-details')
 			expect(sut.countdown).toBe('15:00')
 		})
 
@@ -250,7 +250,7 @@ describe('CheckoutRoute', () => {
 
 			const sut = await open()
 
-			expect(sut.step).toBe('identity')
+			expect(sut.step).toBe('personal-details')
 			expect(sut.ticketCount).toBe(2)
 			expect(sut.countdown).toBe('10:00')
 		})
@@ -320,26 +320,28 @@ describe('CheckoutRoute', () => {
 	})
 
 	describe('verification', () => {
-		const jpkiKyc = {
-			level: 'kycVerified',
-			kyc: { id: 'k1', userId: 'u1', method: 'jpki', status: 'active' },
+		const activeJpki = {
+			id: 'iv1',
+			userId: 'u1',
+			method: 'jpki',
+			status: 'active',
 		}
 
-		it('reads no Kyc on a sale that requires no verification', async () => {
+		it('reads no IdentityVerification on a sale that requires no verification', async () => {
 			const sut = await open()
 
 			expect(sut.step).toBe('count')
 			expect(sut.verificationNoteKey).toBeNull()
-			expect(mockKyc.getStatus).not.toHaveBeenCalled()
+			expect(mockIdentityVerifications.get).not.toHaveBeenCalled()
 		})
 
-		it('gates a fan whose Kyc is by licence on a JPKI-only sale', async () => {
+		it('gates a fan whose IdentityVerification is by licence on a JPKI-only sale', async () => {
 			mockSale.listByEvent.mockResolvedValue([
 				sale({}, { verificationRequirement: 'jpkiOnly' }),
 			])
-			mockKyc.getStatus.mockResolvedValue({
-				level: 'kycVerified',
-				kyc: { ...jpkiKyc.kyc, method: 'driverLicence' },
+			mockIdentityVerifications.get.mockResolvedValue({
+				...activeJpki,
+				method: 'driverLicence',
 			})
 
 			const sut = await open()
@@ -348,13 +350,13 @@ describe('CheckoutRoute', () => {
 			expect(mockCheckout.start).not.toHaveBeenCalled()
 		})
 
-		it('admits any Active Kyc on a sale that requires any verification', async () => {
+		it('admits any Active IdentityVerification on a sale that requires any verification', async () => {
 			mockSale.listByEvent.mockResolvedValue([
 				sale({}, { verificationRequirement: 'verifiedAny' }),
 			])
-			mockKyc.getStatus.mockResolvedValue({
-				level: 'kycVerified',
-				kyc: { ...jpkiKyc.kyc, method: 'driverLicence' },
+			mockIdentityVerifications.get.mockResolvedValue({
+				...activeJpki,
+				method: 'driverLicence',
 			})
 
 			const sut = await open()
@@ -363,17 +365,17 @@ describe('CheckoutRoute', () => {
 			expect(sut.verificationNoteKey).toBe('checkout.verify.noteAny')
 		})
 
-		it('shows a FailedPrecondition for a fan whose Kyc lapsed as the missing verification, not the limit', async () => {
+		it('shows a FailedPrecondition for a fan whose IdentityVerification lapsed as the missing verification, not the limit', async () => {
 			mockSale.listByEvent.mockResolvedValue([
 				sale({}, { verificationRequirement: 'jpkiOnly' }),
 			])
-			mockKyc.getStatus.mockResolvedValueOnce(jpkiKyc)
+			mockIdentityVerifications.get.mockResolvedValueOnce(activeJpki)
 			const sut = await open()
 			expect(sut.step).toBe('count')
-			// The Kyc needs re-verification by the time the fan continues.
-			mockKyc.getStatus.mockResolvedValue({
-				level: 'unverified',
-				kyc: { ...jpkiKyc.kyc, status: 'needsReverification' },
+			// The IdentityVerification needs re-verification by the time the fan continues.
+			mockIdentityVerifications.get.mockResolvedValue({
+				...activeJpki,
+				status: 'needsReverification',
 			})
 			mockCheckout.start.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
@@ -389,7 +391,7 @@ describe('CheckoutRoute', () => {
 			mockSale.listByEvent.mockResolvedValue([
 				sale({}, { verificationRequirement: 'jpkiOnly' }),
 			])
-			mockKyc.getStatus.mockResolvedValue(jpkiKyc)
+			mockIdentityVerifications.get.mockResolvedValue(activeJpki)
 			mockCheckout.start.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
@@ -412,9 +414,9 @@ describe('CheckoutRoute', () => {
 		})
 	})
 
-	describe('identity', () => {
+	describe('personal-details', () => {
 		it('prefills the saved name and phone number, which stay editable', async () => {
-			// @spec components/infrastructure/fan/web/route/checkout "Returning buyer"
+			// @spec components/infrastructure/fan/web/route/checkout "Returning fan"
 			mockUserStore.current = {
 				id: 'u1',
 				fullName: '山田 花子',
@@ -425,13 +427,13 @@ describe('CheckoutRoute', () => {
 			expect(sut.fullName).toBe('山田 花子')
 			expect(sut.phoneNumber).toBe('090-1234-5678')
 			sut.fullName = '山田 はな'
-			expect(sut.isIdentityValid).toBe(true)
+			expect(sut.isPersonalDetailsValid).toBe(true)
 		})
 
 		it('sends a domestic phone number in E.164 form', async () => {
 			const sut = await toConfirm()
 
-			expect(mockCheckout.authorize).toHaveBeenCalledWith(
+			expect(mockCheckout.authorizeCard).toHaveBeenCalledWith(
 				'res-1',
 				'山田 花子',
 				'+819012345678',
@@ -444,30 +446,30 @@ describe('CheckoutRoute', () => {
 	describe('card', () => {
 		it('lets the fan try another card without losing the hold', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Card declined"
-			mockStripe.confirmCheckoutHold.mockResolvedValueOnce({
+			mockStripe.confirmCheckoutCardAuthorization.mockResolvedValueOnce({
 				errorMessage: 'カードが拒否されました。',
 			})
 			const sut = await toCard()
 
-			await sut.authorize()
+			await sut.authorizeCard()
 
 			expect(sut.step).toBe('payment')
 			expect(sut.cardError).toBe('カードが拒否されました。')
 			expect(sut.checkout?.id).toBe('res-1')
 
-			await sut.authorize()
+			await sut.authorizeCard()
 			expect(sut.step).toBe('confirm')
 			expect(mockCheckout.start).toHaveBeenCalledTimes(1)
 		})
 
 		it('says the 15 minutes passed when authorizing after the hold ended', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Hold ended before authorizing"
-			mockCheckout.authorize.mockRejectedValue(
+			mockCheckout.authorizeCard.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
 			const sut = await toCard()
 
-			await sut.authorize()
+			await sut.authorizeCard()
 
 			expect(sut.message?.key).toBe('checkout.payment.holdEnded')
 			sut.startAgain()
@@ -506,19 +508,21 @@ describe('CheckoutRoute', () => {
 		it('keeps the hold when the fan goes back to correct the name', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Fan corrects the name"
 			const sut = await toConfirm()
-			sut.changeIdentity()
+			sut.changePersonalDetails()
 			sut.fullName = '山田 はな子'
 
 			await sut.toPayment()
 
 			expect(sut.step).toBe('confirm')
-			expect(mockCheckout.authorize).toHaveBeenLastCalledWith(
+			expect(mockCheckout.authorizeCard).toHaveBeenLastCalledWith(
 				'res-1',
 				'山田 はな子',
 				'+819012345678',
 				expect.anything(),
 			)
-			expect(mockStripe.confirmCheckoutHold).toHaveBeenCalledTimes(1)
+			expect(mockStripe.confirmCheckoutCardAuthorization).toHaveBeenCalledTimes(
+				1,
+			)
 			expect(sut.checkout?.id).toBe('res-1')
 		})
 
@@ -630,7 +634,7 @@ describe('CheckoutRoute', () => {
 
 			await sut.placeOrder()
 
-			expect(sut.step).toBe('identity')
+			expect(sut.step).toBe('personal-details')
 			expect(sut.message?.key).toBe('checkout.outcome.authenticationIncomplete')
 		})
 	})
@@ -654,7 +658,7 @@ describe('CheckoutRoute', () => {
 			mockSale.listByEvent.mockResolvedValue([
 				sale(
 					{ id: 'presale-type', state: 'ended' },
-					{ id: 'presale', method: 'lottery', saleEnd: jst(1, 9) },
+					{ id: 'presale', method: 'lottery', saleEndTime: jst(1, 9) },
 				),
 				sale(),
 			])
