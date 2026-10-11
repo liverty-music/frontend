@@ -50,6 +50,11 @@ const KNOWN_GAPS: KnownGap[] = [
 			"Needs the prod E2E user's `storageState` from a real OIDC login with an ESC-held credential, plus production Event ids.",
 	},
 	{
+		spec: 'e2e/prod/buy-tickets-first-come.authenticated.spec.ts',
+		reason:
+			"Places real Orders in production in Stripe test mode: needs the prod E2E user's `storageState`, a fresh test sale's Event id, and 16-minute waits for the hold to end.",
+	},
+	{
 		spec: 'e2e/smoke/post-deploy.spec.ts',
 		reason:
 			'Runs against a deployed URL from push-image.yaml (`SMOKE_BASE_URL`), not against a PR build. Covered, but not by pull-request CI.',
