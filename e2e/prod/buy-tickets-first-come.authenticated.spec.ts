@@ -1,39 +1,55 @@
 import { existsSync } from 'node:fs'
 import {
 	type APIRequestContext,
+	type Browser,
+	type BrowserContext,
+	devices,
 	expect,
 	type Frame,
 	type Page,
 	test,
 } from '@playwright/test'
+import { getConcert } from './support'
 
 /**
  * Story `buy-tickets-first-come` on PRODUCTION in Stripe test mode, signed in
  * as the prod E2E test user (`.auth/storageState.prod.json`).
  *
- * Needs a published Event of the test Organizer with a first-come sale, by id
- * in `E2E_SALE_EVENT_ID`. The tests run in order and share the sale:
+ * Needs a published Event of the test Organizer, by id in `E2E_SALE_EVENT_ID`,
+ * on which the test user holds no tickets (its Tickets for the event count
+ * against the per-account limit). With an organizer access token of the test
+ * Organizer in `E2E_ORGANIZER_TOKEN`, the run opens its own first-come sale on
+ * that event through the organizer `TicketSaleService.Create` (5 tickets of
+ * 3000 yen, a per-account limit of 10), ending the event's open first-come sale
+ * first. Without it, the event's open first-come sale is used as it stands and
+ * must have been created the same way in the organizer console.
+ *
+ * The tests run in order and share the sale:
  *   1. Two tickets bought: 2 sold.
  *   2. Double tap everywhere: 1 sold.
  *   3. Hold ran out: nothing sold (waits out a 15-minute hold).
- *   4. Fan closes the tab: holds every remaining ticket, then waits out the
- *      hold (waits 16 minutes).
- * A sale of 5 tickets, at any price, with a per-account limit of 10 leaves exactly 2 for
- * the fourth test, so its hold makes the sale AllHeld. Each run needs a fresh
- * sale, because the test user's purchases count against the limit.
+ *   4. Fan closes the tab: holds every remaining ticket (2), then waits out
+ *      the hold (waits 16 minutes).
+ *   5. Last ticket, two fans: the test user buys tickets until one remains,
+ *      then the test user and a second fan (`.auth/storageState.prod.fan2.json`,
+ *      from `E2E_USERNAME=… E2E_STATE_FILE=storageState.prod.fan2.json npm run
+ *      auth:capture:password:prod`) start a checkout for it at the same moment.
  *
  * Run it in the pinned Playwright container with the host network, which
  * keeps js.stripe.com reachable from inside it:
- *   docker run --rm --network host -e E2E_SALE_EVENT_ID=… -v "$PWD":/work \
- *     -w /work mcr.microsoft.com/playwright:v1.63.0-noble \
+ *   docker run --rm --network host -e E2E_SALE_EVENT_ID=… \
+ *     -e E2E_ORGANIZER_TOKEN -v "$PWD":/work -w /work \
+ *     mcr.microsoft.com/playwright:v1.63.0-noble \
  *     npx playwright test -c playwright.prod.config.mjs buy-tickets-first-come
  *
  * What a browser cannot see is checked separately against production:
  * one confirmation email per Order (`orders.confirmation_sent_at`), the card
- * hold released after an ended hold (`reservations.authorization_released_at`
+ * hold released after an ended hold (`checkouts.authorization_released_at`
  * and the PaymentIntent canceled), and the ticket journey Paid.
  */
 const SALE_EVENT_ID = process.env.E2E_SALE_EVENT_ID ?? ''
+const ORGANIZER_TOKEN = process.env.E2E_ORGANIZER_TOKEN ?? ''
+const SECOND_FAN_STATE = '.auth/storageState.prod.fan2.json'
 
 /** Stripe's test card that authorizes without 3D Secure. */
 const TEST_CARD = { number: '4242424242424242', expiry: '12 / 34', cvc: '123' }
@@ -44,19 +60,139 @@ const MARGIN_MS = 60 * 1000
 
 const API_BASE =
 	process.env.PROD_API_BASE_URL ?? 'https://api.liverty-music.app'
+const ORGANIZER_API_BASE =
+	process.env.PROD_ORGANIZER_API_BASE_URL ??
+	'https://api.organizer.liverty-music.app'
+
+/** The fields of a TicketSale in Connect JSON that the tests read. */
+interface WireTicketSale {
+	id: { value: string }
+	method: string
+	saleStartTime: string
+	saleEndTime: string
+	ticketTypes: {
+		id: { value: string }
+		price: { value: string }
+		quantity?: number
+		soldCount?: number
+		heldCount?: number
+		state: string
+	}[]
+}
+
+const FIRST_COME = 'TICKET_SALE_METHOD_FIRST_COME'
+
+/** The event's first-come sale whose window is open now, if any. */
+function openFirstCome(sales: WireTicketSale[]): WireTicketSale | undefined {
+	const now = Date.now()
+	return sales.find(
+		(s) =>
+			s.method === FIRST_COME &&
+			Date.parse(s.saleStartTime) <= now &&
+			now < Date.parse(s.saleEndTime),
+	)
+}
+
+async function rpc<T>(
+	request: APIRequestContext,
+	url: string,
+	body: unknown,
+	token?: string,
+): Promise<T> {
+	const res = await request.post(url, {
+		data: body,
+		headers: {
+			'content-type': 'application/json',
+			...(token ? { authorization: `Bearer ${token}` } : {}),
+		},
+	})
+	if (!res.ok()) {
+		throw new Error(`${url} failed: ${res.status()} ${await res.text()}`)
+	}
+	return (await res.json()) as T
+}
+
+/** The event's sales, through the fan or the organizer TicketSaleService. */
+async function listByEvent(
+	request: APIRequestContext,
+	as: 'fan' | 'organizer',
+): Promise<WireTicketSale[]> {
+	const url =
+		as === 'fan'
+			? `${API_BASE}/liverty_music.rpc.ticket_sale.v1.TicketSaleService/ListByEvent`
+			: `${ORGANIZER_API_BASE}/liverty_music.rpc.organizer.ticket_sale.v1.TicketSaleService/ListByEvent`
+	const res = await rpc<{ ticketSales?: WireTicketSale[] }>(
+		request,
+		url,
+		{ eventId: { value: SALE_EVENT_ID } },
+		as === 'organizer' ? ORGANIZER_TOKEN : undefined,
+	)
+	return res.ticketSales ?? []
+}
+
+/**
+ * Open a fresh first-come sale on the event as the test Organizer: end the
+ * event's open first-come sale now, then create one that starts now and ends
+ * at the event's start.
+ */
+async function openFreshSale(request: APIRequestContext): Promise<void> {
+	const organizerUrl = (method: string) =>
+		`${ORGANIZER_API_BASE}/liverty_music.rpc.organizer.ticket_sale.v1.TicketSaleService/${method}`
+	const now = new Date()
+	const open = openFirstCome(await listByEvent(request, 'organizer'))
+	if (open) {
+		await rpc(
+			request,
+			organizerUrl('SetWindow'),
+			{
+				ticketSaleId: open.id,
+				saleStartTime: open.saleStartTime,
+				saleEndTime: now.toISOString(),
+			},
+			ORGANIZER_TOKEN,
+		)
+	}
+	const concert = await getConcert(request, SALE_EVENT_ID)
+	await rpc(
+		request,
+		organizerUrl('Create'),
+		{
+			seriesId: concert.series.id,
+			name: { value: `E2E 先着 ${now.toISOString()}` },
+			method: FIRST_COME,
+			saleStartTime: now.toISOString(),
+			ticketTypes: [
+				{
+					eventId: { value: SALE_EVENT_ID },
+					price: { value: '3000' },
+					quantity: 5,
+					perAccountLimit: 10,
+				},
+			],
+		},
+		ORGANIZER_TOKEN,
+	)
+}
 
 /** The sale's price of one ticket in yen, read as a guest. */
 async function salePrice(request: APIRequestContext): Promise<number> {
-	const res = await request.post(
-		`${API_BASE}/liverty_music.rpc.ticket_sale.v1.TicketSaleService/Get`,
-		{
-			data: { eventId: { value: SALE_EVENT_ID } },
-			headers: { 'content-type': 'application/json' },
-		},
-	)
-	expect(res.ok()).toBe(true)
-	const body = (await res.json()) as { ticketSale: { price: string } }
-	return Number(body.ticketSale.price)
+	const sale = openFirstCome(await listByEvent(request, 'fan'))
+	expect(sale, 'the event has an open first-come sale').toBeDefined()
+	return Number(sale?.ticketTypes[0].price.value)
+}
+
+/**
+ * The tickets of the open sale nobody has bought or holds, as the organizer
+ * sees them. Undefined without an organizer token.
+ */
+async function remaining(
+	request: APIRequestContext,
+): Promise<number | undefined> {
+	if (!ORGANIZER_TOKEN) return undefined
+	const type = openFirstCome(await listByEvent(request, 'organizer'))
+		?.ticketTypes[0]
+	if (!type) throw new Error('the event has no open first-come sale')
+	return (type.quantity ?? 0) - (type.soldCount ?? 0) - (type.heldCount ?? 0)
 }
 
 /** A yen amount as the checkout writes it, e.g. "6,000". */
@@ -65,12 +201,13 @@ const yen = (n: number) => n.toLocaleString('ja-JP')
 test.describe.configure({ mode: 'serial' })
 
 test.describe('buy tickets first come (signed in)', () => {
-	test.beforeAll(() => {
+	test.beforeAll(async ({ request }) => {
 		if (!existsSync('.auth/storageState.prod.json')) {
 			throw new Error(
 				'.auth/storageState.prod.json is missing: run npm run auth:capture:password:prod',
 			)
 		}
+		if (SALE_EVENT_ID && ORGANIZER_TOKEN) await openFreshSale(request)
 	})
 
 	test.beforeEach(() => {
@@ -111,16 +248,16 @@ test.describe('buy tickets first come (signed in)', () => {
 		// @spec stories/buy-tickets-first-come "Double tap everywhere"
 		await openCheckout(page)
 		await page.getByTestId('checkout-count-select').selectOption('1')
-		const started = page.waitForResponse(/ReservationService\/Start$/)
+		const started = page.waitForResponse(/CheckoutService\/Start$/)
 		await page.getByTestId('checkout-hold').dblclick()
 		const start = (await (await started).json()) as {
-			reservation: { id: { value: string } }
+			checkout: { id: { value: string } }
 		}
 		await expect(page.getByTestId('checkout-identity')).toBeVisible()
 		await fillIdentity(page)
 		await authorizeCard(page)
 
-		const confirmed = page.waitForResponse(/ReservationService\/Confirm$/)
+		const confirmed = page.waitForResponse(/CheckoutService\/Confirm$/)
 		await page.getByTestId('checkout-place-order').dblclick()
 		const first = (await (await confirmed).json()) as {
 			order: { id: { value: string } }
@@ -137,9 +274,9 @@ test.describe('buy tickets first come (signed in)', () => {
 		// page, as a second tab would: the server returns the same Order and
 		// charges nothing more.
 		const again = await request.post(
-			`${API_BASE}/liverty_music.rpc.reservation.v1.ReservationService/Confirm`,
+			`${API_BASE}/liverty_music.rpc.checkout.v1.CheckoutService/Confirm`,
 			{
-				data: { reservationId: { value: start.reservation.id.value } },
+				data: { checkoutId: { value: start.checkout.id.value } },
 				headers: {
 					'content-type': 'application/json',
 					authorization: `Bearer ${await accessToken(page)}`,
@@ -202,7 +339,93 @@ test.describe('buy tickets first come (signed in)', () => {
 		)
 		await guest.close()
 	})
+
+	test('sells the last ticket to one of two fans and charges only that fan', async ({
+		page,
+		browser,
+		baseURL,
+		request,
+	}) => {
+		// @spec stories/buy-tickets-first-come "Last ticket, two fans"
+		test.skip(!existsSync(SECOND_FAN_STATE), `${SECOND_FAN_STATE} is required`)
+		test.setTimeout(10 * 60 * 1000)
+		// Buy until one ticket remains: 2 remain after the tests above.
+		const left = (await remaining(request)) ?? 2
+		for (let i = 1; i < left; i++) await buyOne(page)
+
+		const second = await secondFan(browser, baseURL)
+		const other = await second.newPage()
+		await Promise.all([openCheckout(page), openCheckout(other)])
+		const fans = [page, other]
+		for (const fan of fans) {
+			await fan.getByTestId('checkout-count-select').selectOption('1')
+		}
+
+		// Both fans continue at the same moment.
+		const starts = fans.map((fan) =>
+			fan.waitForResponse(/CheckoutService\/Start$/),
+		)
+		await Promise.all(
+			fans.map((fan) => fan.getByTestId('checkout-hold').click()),
+		)
+		const statuses = await Promise.all(
+			starts.map(async (start) => (await start).status()),
+		)
+		// One hold is made; the other Start fails with RESOURCE_EXHAUSTED
+		// (HTTP 429), so that fan has no checkout and no card hold.
+		expect(statuses.filter((s) => s === 200)).toHaveLength(1)
+		expect(statuses.filter((s) => s === 429)).toHaveLength(1)
+		const winner = fans[statuses.indexOf(200)]
+		const loser = fans[statuses.indexOf(429)]
+
+		await expect(loser.getByTestId('checkout-message')).toHaveText(
+			/現在売り切れです|Sold out for now/,
+		)
+		await expect(loser.getByTestId('checkout-identity')).toBeHidden()
+
+		await expect(winner.getByTestId('checkout-identity')).toBeVisible()
+		await fillIdentity(winner)
+		await authorizeCard(winner)
+		await winner.getByTestId('checkout-place-order').click()
+		await expect(winner.getByTestId('checkout-done')).toBeVisible({
+			timeout: 60_000,
+		})
+		await expect(winner.getByTestId('checkout-done-summary')).toContainText(
+			/1枚|1 tickets?/,
+		)
+		await second.close()
+
+		// The last ticket is sold: the sale is sold out, not held.
+		const sale = openFirstCome(await listByEvent(request, 'fan'))
+		expect(sale?.ticketTypes[0].state).toBe('TICKET_TYPE_STATE_SOLD_OUT')
+	})
 })
+
+/** A signed-in context for the second fan, on the project's device. */
+async function secondFan(
+	browser: Browser,
+	baseURL: string | undefined,
+): Promise<BrowserContext> {
+	return browser.newContext({
+		...devices['Pixel 7'],
+		baseURL,
+		locale: 'ja-JP',
+		timezoneId: 'Asia/Tokyo',
+		storageState: SECOND_FAN_STATE,
+	})
+}
+
+/** Buy one ticket through the whole checkout. */
+async function buyOne(page: Page): Promise<void> {
+	await openCheckout(page)
+	await holdTickets(page, 1)
+	await fillIdentity(page)
+	await authorizeCard(page)
+	await page.getByTestId('checkout-place-order').click()
+	await expect(page.getByTestId('checkout-done')).toBeVisible({
+		timeout: 60_000,
+	})
+}
 
 /** The signed-in fan's access token, as the app keeps it. */
 async function accessToken(page: Page): Promise<string> {
