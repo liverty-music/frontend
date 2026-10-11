@@ -1,4 +1,4 @@
-import { type IDisposable, IEventAggregator, resolve } from 'aurelia'
+import { bindable, type IDisposable, IEventAggregator, resolve } from 'aurelia'
 import { Snack, type SnackAction, type SnackSeverity } from './snack'
 
 interface SnackItem {
@@ -11,8 +11,21 @@ interface SnackItem {
 	dismissTimer: ReturnType<typeof setTimeout> | null
 }
 
+/**
+ * Shows `Snack` events published on the IEventAggregator at the bottom of the
+ * window. Shared by the fan app and the organizer console. Each snack carries
+ * its own duration (`SnackOptions.duration`, 2500 ms by default, `Infinity`
+ * to stay until dismissed).
+ */
 export class SnackBar {
 	private readonly ea = resolve(IEventAggregator)
+
+	/**
+	 * When true, a new snack dismisses the ones shown, so only one is visible
+	 * at a time (the Material 3 behavior the organizer console uses). When
+	 * false (the fan app), snacks stack.
+	 */
+	@bindable public replace = false
 
 	public snacks: SnackItem[] = []
 	private containerElement!: HTMLElement
@@ -34,6 +47,10 @@ export class SnackBar {
 	}
 
 	private show(event: Snack): void {
+		if (this.replace) {
+			for (const shown of [...this.snacks]) this.dismiss(shown)
+		}
+
 		const id = this.nextId++
 		const snack: SnackItem = {
 			id,

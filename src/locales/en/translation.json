@@ -1,6 +1,7 @@
 {
 	"common": {
 		"dismiss": "Dismiss",
+		"loading": "Loading",
 		"createAccount": "Create Account"
 	},
 	"entity": {
@@ -859,6 +860,23 @@
 		"error": {
 			"retry": "Something went wrong. Please try again.",
 			"payment": "Payment could not be prepared. Please try again later."
+		}
+	},
+	"verifyCallback": {
+		"loading": "Checking your identity verification…",
+		"redirecting": "Returning to Settings shortly.",
+		"success": {
+			"heading": "Identity verified",
+			"body": "Your identity has been verified with your My Number Card."
+		},
+		"error": {
+			"heading": "Identity verification could not be completed",
+			"sessionMismatch": "We could not find your verification. Please try again from Settings.",
+			"unavailable": "Identity verification is not available right now. Please try again later.",
+			"notCompleted": "The card read did not finish or has expired. Please try again.",
+			"alreadyVerified": "This My Number Card has already been used to verify another account.",
+			"permissionDenied": "The verification details did not match. Please try again from Settings.",
+			"generic": "Something went wrong during identity verification. Please try again."
 		}
 	}
 }

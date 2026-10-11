@@ -15,7 +15,7 @@ import {
 import { artistHue } from '../../adapter/view/artist-color'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type { LiveEvent } from '../../components/live-highway/live-event'
-import { Snack } from '../../components/snack-bar/snack'
+import { Snack } from '../../../shared/ui/snack-bar/snack'
 import {
 	getPreviewArtistIds,
 	getPreviewArtistNameMap,

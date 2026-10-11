@@ -29,6 +29,9 @@ const unitProject = mergeConfig(
 			exclude: [...configDefaults.exclude, 'e2e/**', 'scripts/**'],
 			root: fileURLToPath(new URL('./', import.meta.url)),
 			setupFiles: ['./test/setup.ts'],
+			// Stylesheets stay stubbed, except when a test imports one with `?raw`
+			// to read its source (test/shared/m3-sys-tokens.spec.ts).
+			css: { include: [/\.css\?raw$/] },
 		},
 	}),
 )

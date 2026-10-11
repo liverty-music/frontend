@@ -1,6 +1,6 @@
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Snack } from '../../src/components/snack-bar/snack'
+import { Snack } from '../../shared/ui/snack-bar/snack'
 import type { Artist } from '../../src/entities/artist'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'

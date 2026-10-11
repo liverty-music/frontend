@@ -33,7 +33,7 @@ class SnackDemo {
 }
 
 const meta = {
-	title: 'Components/SnackBar',
+	title: 'Shared/SnackBar',
 	component: SnackBar,
 	tags: ['test', 'autodocs'],
 } satisfies Meta<typeof SnackBar>

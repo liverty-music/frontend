@@ -9,6 +9,9 @@
  */
 @layer reset, tokens, global, composition, block;
 
+/* State-layer opacities, durations and easings shared with the fan app. */
+@import "../../shared/styles/m3-sys.css";
+
 @layer reset {
 	:where(*, *::before, *::after) {
 		box-sizing: border-box;

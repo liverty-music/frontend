@@ -42,7 +42,7 @@ export class VerifyCallbackRoute {
 	private readonly _i18n = resolve(I18N)
 
 	/**
-	 * Whether the CompleteVerify RPC is in flight. Drives the loading spinner in
+	 * Whether the CompleteVerify RPC is in flight. Drives the progress indicator in
 	 * the template. Named `isPending` (not `loading`) to avoid clashing with the
 	 * Aurelia router lifecycle hook of the same name.
 	 */

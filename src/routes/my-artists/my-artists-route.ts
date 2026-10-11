@@ -3,7 +3,7 @@ import { IEventAggregator, ILogger, observable, resolve, watch } from 'aurelia'
 import { artistColor } from '../../adapter/view/artist-color'
 import { HYPE_TIERS } from '../../adapter/view/hype-display'
 import type { PageHelp } from '../../components/page-help/page-help'
-import { Snack, type SnackHandle } from '../../components/snack-bar/snack'
+import { Snack, type SnackHandle } from '../../../shared/ui/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import {
