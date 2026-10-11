@@ -71,7 +71,7 @@
 	"scripts": {
 		"lint:js": "biome lint --write src admin organizer reception shared test",
 		"format": "biome format --write src admin organizer reception shared test",
-		"lint:css": "stylelint \"src/**/*.css\" \"admin/**/*.css\" \"organizer/**/*.css\" \"reception/**/*.css\"",
+		"lint:css": "stylelint \"src/**/*.css\" \"shared/**/*.css\" \"admin/**/*.css\" \"organizer/**/*.css\" \"reception/**/*.css\"",
 		"lint:boundaries": "depcruise src admin organizer reception shared test",
 		"lint": "npm run lint:js && npm run lint:css && npm run lint:boundaries",
 		"check": "biome check --write src admin organizer reception shared test && npm run lint:css && npm run lint:boundaries",

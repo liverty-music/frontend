@@ -138,28 +138,39 @@
 		   more characterful curves for larger/important transitions. Entering
 		   elements decelerate, leaving elements accelerate, in-screen moves do
 		   both (standard). Use with the duration scale below for non-spring
-		   (effects-class) transitions; use the springs above for spatial motion. */
-		--md-easing-standard: cubic-bezier(0.2, 0, 0, 1);
-		--md-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
-		--md-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
-		--md-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
-		--md-easing-emphasized-accelerate: cubic-bezier(0.3, 0.8, 0.15, 1);
+		   (effects-class) transitions; use the springs above for spatial motion.
+		   Aliases of the shared system tokens (shared/styles/m3-sys.css), which
+		   the organizer console uses too. */
+		--md-easing-standard: var(--md-sys-motion-easing-standard);
+		--md-easing-standard-decelerate: var(
+			--md-sys-motion-easing-standard-decelerate
+		);
+		--md-easing-standard-accelerate: var(
+			--md-sys-motion-easing-standard-accelerate
+		);
+		--md-easing-emphasized-decelerate: var(
+			--md-sys-motion-easing-emphasized-decelerate
+		);
+		--md-easing-emphasized-accelerate: var(
+			--md-sys-motion-easing-emphasized-accelerate
+		);
 
 		/* ── M3 duration scale ──
 		   Match duration to the size of the change and distance travelled; keep
 		   interactive feedback (hover/press) in the short band. Supersedes the
 		   ad-hoc --transition-fast/normal/slow values above (kept as legacy
-		   aliases until every consumer migrates). */
-		--md-duration-short1: 50ms;
-		--md-duration-short2: 100ms;
-		--md-duration-short3: 150ms;
-		--md-duration-short4: 200ms;
-		--md-duration-medium1: 250ms;
-		--md-duration-medium2: 300ms;
-		--md-duration-medium3: 350ms;
-		--md-duration-medium4: 400ms;
-		--md-duration-long2: 500ms;
-		--md-duration-long4: 600ms;
+		   aliases until every consumer migrates). Aliases of the shared system
+		   tokens, which drop to 0 ms under prefers-reduced-motion. */
+		--md-duration-short1: var(--md-sys-motion-duration-short1);
+		--md-duration-short2: var(--md-sys-motion-duration-short2);
+		--md-duration-short3: var(--md-sys-motion-duration-short3);
+		--md-duration-short4: var(--md-sys-motion-duration-short4);
+		--md-duration-medium1: var(--md-sys-motion-duration-medium1);
+		--md-duration-medium2: var(--md-sys-motion-duration-medium2);
+		--md-duration-medium3: var(--md-sys-motion-duration-medium3);
+		--md-duration-medium4: var(--md-sys-motion-duration-medium4);
+		--md-duration-long2: var(--md-sys-motion-duration-long2);
+		--md-duration-long4: var(--md-sys-motion-duration-long4);
 
 		/* Near-instant: reduced-motion fallback that still fires transitionend. */
 		--md-duration-instant: 1ms;
@@ -246,11 +257,15 @@
 		   A single scale, overlaid as the element's on-* role at the given
 		   opacity, replacing per-component one-off opacities. Selected is a
 		   persistent layer that stacks under hover/press. (The --fab-state-*
-		   tokens above are the launcher's pre-existing local copy.) */
-		--md-state-hover: 8%;
-		--md-state-focus: 12%;
-		--md-state-pressed: 12%;
-		--md-state-dragged: 16%;
+		   tokens above are the launcher's pre-existing local copy.) Hover, focus,
+		   pressed and dragged alias the shared system opacities in
+		   shared/styles/m3-sys.css, as percentages for color-mix(). */
+		--md-state-hover: calc(var(--md-sys-state-hover-opacity) * 100%);
+		--md-state-focus: calc(var(--md-sys-state-focus-opacity) * 100%);
+		--md-state-pressed: calc(var(--md-sys-state-pressed-opacity) * 100%);
+		--md-state-dragged: calc(var(--md-sys-state-dragged-opacity) * 100%);
+
+		/* Fan-local: M3 publishes no selected opacity (StateTokens.kt). */
 		--md-state-selected: 12%;
 
 		/* ── M3 shape roles ──

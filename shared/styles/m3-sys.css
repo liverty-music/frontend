@@ -1,0 +1,77 @@
+/*
+ * Material 3 system tokens shared by the fan app and the organizer console:
+ * state-layer opacities, motion durations and easing curves. Defined once here
+ * so a change applies to both apps; color, type and shape stay per app.
+ *
+ * Values come from the AndroidX Material 3 token sources: StateTokens.kt
+ * (hover/focus/pressed/dragged; M3 publishes no selected opacity, so the fan
+ * app keeps its own) and MotionTokens.kt (durations and easings).
+ */
+@layer tokens {
+	:root {
+		/* State-layer opacities, overlaid as the element's on-* role. */
+		--md-sys-state-hover-opacity: 0.08;
+		--md-sys-state-focus-opacity: 0.1;
+		--md-sys-state-pressed-opacity: 0.1;
+		--md-sys-state-dragged-opacity: 0.16;
+
+		/* Durations. */
+		--md-sys-motion-duration-short1: 50ms;
+		--md-sys-motion-duration-short2: 100ms;
+		--md-sys-motion-duration-short3: 150ms;
+		--md-sys-motion-duration-short4: 200ms;
+		--md-sys-motion-duration-medium1: 250ms;
+		--md-sys-motion-duration-medium2: 300ms;
+		--md-sys-motion-duration-medium3: 350ms;
+		--md-sys-motion-duration-medium4: 400ms;
+		--md-sys-motion-duration-long1: 450ms;
+		--md-sys-motion-duration-long2: 500ms;
+		--md-sys-motion-duration-long3: 550ms;
+		--md-sys-motion-duration-long4: 600ms;
+		--md-sys-motion-duration-extra-long1: 700ms;
+		--md-sys-motion-duration-extra-long2: 800ms;
+		--md-sys-motion-duration-extra-long3: 900ms;
+		--md-sys-motion-duration-extra-long4: 1000ms;
+
+		/* Easings: entering elements decelerate, leaving elements accelerate,
+		   in-screen moves use standard. */
+		--md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+		--md-sys-motion-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+		--md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+		--md-sys-motion-easing-emphasized-decelerate: cubic-bezier(
+			0.05,
+			0.7,
+			0.1,
+			1
+		);
+		--md-sys-motion-easing-emphasized-accelerate: cubic-bezier(
+			0.3,
+			0,
+			0.8,
+			0.15
+		);
+	}
+
+	/* Reduced motion: every duration collapses to 0 ms, so a transition built
+	   from these tokens lands its end state at once. */
+	@media (prefers-reduced-motion: reduce) {
+		:root {
+			--md-sys-motion-duration-short1: 0ms;
+			--md-sys-motion-duration-short2: 0ms;
+			--md-sys-motion-duration-short3: 0ms;
+			--md-sys-motion-duration-short4: 0ms;
+			--md-sys-motion-duration-medium1: 0ms;
+			--md-sys-motion-duration-medium2: 0ms;
+			--md-sys-motion-duration-medium3: 0ms;
+			--md-sys-motion-duration-medium4: 0ms;
+			--md-sys-motion-duration-long1: 0ms;
+			--md-sys-motion-duration-long2: 0ms;
+			--md-sys-motion-duration-long3: 0ms;
+			--md-sys-motion-duration-long4: 0ms;
+			--md-sys-motion-duration-extra-long1: 0ms;
+			--md-sys-motion-duration-extra-long2: 0ms;
+			--md-sys-motion-duration-extra-long3: 0ms;
+			--md-sys-motion-duration-extra-long4: 0ms;
+		}
+	}
+}

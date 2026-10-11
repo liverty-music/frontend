@@ -321,6 +321,18 @@
 		);
 	}
 
+	/* Hover on a selected control stacks the hover layer on top of the
+	   persistent selected layer (image over color) instead of replacing it. */
+	[data-selected-morph]:is(
+		[aria-selected="true"],
+		[aria-pressed="true"],
+		[data-selected]
+	):hover {
+		background-image: linear-gradient(
+			color-mix(in oklab, currentcolor var(--md-state-hover), transparent) 0 0
+		);
+	}
+
 	/* Reduced motion override */
 	@media (prefers-reduced-motion: reduce) {
 		[class*="animate-"] {
