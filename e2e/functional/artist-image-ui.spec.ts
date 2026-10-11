@@ -25,7 +25,7 @@ const FANART_THUMB_URL =
 const tomorrow = new Date()
 tomorrow.setDate(tomorrow.getDate() + 1)
 
-/** ListFollowed response with mixed fanart data:
+/** FollowService.List response with mixed fanart data:
  *  - artist 1 (YOASOBI): has all fanart images
  *  - artist 2 (Vaundy): has no fanart
  *  - artist 3 (Ado): has only music_logo (no hd_music_logo)
@@ -69,7 +69,7 @@ function listFollowedResponse() {
 	}
 }
 
-/** ListByFollower response with ProximityGroups for non-onboarding mode. */
+/** ConcertService.ListFollowed response with ProximityGroups for non-onboarding mode. */
 function listByFollowerResponse() {
 	return {
 		groups: [
@@ -184,7 +184,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListByFollower')) {
+		if (url.includes('ConcertService/ListFollowed')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -192,7 +192,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListFollowed')) {
+		if (url.includes('FollowService/List')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -221,12 +221,9 @@ async function mockLastFmApi(page: Page): Promise<void> {
 
 /**
  * Seed completed onboarding state with a fake OIDC user so the app uses
- * the RPC code path (which returns fanart URLs from the mocked ListFollowed).
- *
- * Also seeds the `liverty:userId:<sub>` cache so UserServiceClient takes the
- * "returning user" branch (calls Get with the cached user_id) instead of the
- * cache-miss branch which would call Create. The cached user_id MUST match
- * `id.value` returned by the mocked UserService/Get response.
+ * the RPC code path (which returns fanart URLs from the mocked
+ * FollowService.List). UserStore reads the User with the mocked
+ * UserService/Get, so it never reaches Create (unmocked here).
  *
  * NOTE: This function must be fully self-contained (no closures) because
  * Playwright serializes it via .toString() for addInitScript.
@@ -256,14 +253,6 @@ function seedAuthenticatedState() {
 				},
 				expires_at: 9999999999,
 			}),
-		)
-
-		// Pre-seed the userID cache so ensureLoaded() takes the cache-hit
-		// branch (calls Get) instead of cache-miss (would call Create, which
-		// is unmocked here).
-		localStorage.setItem(
-			'liverty:userId:00000000-0000-4000-8000-d00000000002',
-			'00000000-0000-4000-8000-d00000000002',
 		)
 	}
 }

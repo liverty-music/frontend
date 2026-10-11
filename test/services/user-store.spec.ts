@@ -3,9 +3,9 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { IUserRpcClient } from '../../src/adapter/rpc/client/user-client'
-import { ILocalStorage } from '../../src/adapter/storage/local-storage'
 import type { User } from '../../src/entities/user'
 import { IAuthService } from '../../src/services/auth-service'
+import { SignedOut } from '../../src/services/events/signed-out'
 import { IUserStore, UserStore } from '../../src/services/user-store'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
@@ -20,7 +20,6 @@ const DETECTOR_LANGUAGE_KEY = 'language'
 // Auth-bootstrap fixtures (absorbed from the former UserServiceClient suite).
 const externalID = 'ext-abc'
 const internalID = 'user-uuid-1'
-const cacheKey = `liverty:userId:${externalID}`
 const userEmail = 'u@test.com'
 
 const stubUser: User = {
@@ -37,9 +36,11 @@ type LocaleSubscriber = (payload: {
 
 function makeEa() {
 	let localeSubscriber: LocaleSubscriber | undefined
+	let signedOutSubscriber: (() => void) | undefined
 	const ea = {
-		subscribe: vi.fn((channel: string, cb: LocaleSubscriber) => {
+		subscribe: vi.fn((channel: unknown, cb: LocaleSubscriber) => {
 			if (channel === Signals.I18N_EA_CHANNEL) localeSubscriber = cb
+			if (channel === SignedOut) signedOutSubscriber = cb as () => void
 			return { dispose: vi.fn() }
 		}),
 		publish: vi.fn(),
@@ -50,6 +51,10 @@ function makeEa() {
 		emitLocaleChange(newLocale: string): void {
 			localeSubscriber?.({ oldLocale: 'ja', newLocale })
 		},
+		// Simulate AuthService publishing SignedOut.
+		emitSignedOut(): void {
+			signedOutSubscriber?.()
+		},
 	}
 }
 
@@ -59,7 +64,7 @@ function makeAuth(isAuthenticated: boolean): IAuthService {
 }
 
 // Auth stub carrying OIDC profile claims (sub/email) for the bootstrap tests
-// that exercise the per-external_id user_id cache and Create recovery.
+// that exercise the Get → Create recovery.
 function makeAuthWithProfile(opts?: { email?: string | null }) {
 	const profile: { sub: string; email?: string } = { sub: externalID }
 	if (opts?.email !== null) {
@@ -71,34 +76,19 @@ function makeAuthWithProfile(opts?: { email?: string | null }) {
 	})
 }
 
-function makeStorage() {
-	const map = new Map<string, string>()
-	return {
-		map,
-		impl: {
-			getItem: vi.fn((k: string) => map.get(k) ?? null),
-			setItem: vi.fn((k: string, v: string) => {
-				map.set(k, v)
-			}),
-			removeItem: vi.fn((k: string) => {
-				map.delete(k)
-			}),
-		},
-	}
-}
-
 function makeRpcClient() {
 	return {
 		get: vi.fn(),
 		create: vi.fn(),
-		updateHome: vi.fn(),
-		updatePreferredLanguage: vi.fn(),
+		update: vi.fn(),
+		setHome: vi.fn(),
+		setPreferredLanguage: vi.fn(),
 		resendEmailVerification: vi.fn(),
 	}
 }
 
 // UserStore now OWNS both the guest home slice (hydrating from localStorage on
-// construction) AND the authenticated User entity (the cache→Get→Create chain +
+// construction) AND the authenticated User entity (the Get→Create chain +
 // write-through updates, absorbed from the former UserService). Seed the
 // dedicated guest home key BEFORE building so the store's @observable field
 // picks it up. The anonymous locale has no store-owned key — it is derived from
@@ -110,21 +100,20 @@ function seedGuest(opts?: { home?: string | null }) {
 function build(opts: {
 	auth: IAuthService
 	rpc?: ReturnType<typeof makeRpcClient>
-	storage?: ReturnType<typeof makeStorage>
 }) {
-	const { ea, emitLocaleChange } = makeEa()
+	const { ea, emitLocaleChange, emitSignedOut } = makeEa()
 	const rpc = opts.rpc ?? makeRpcClient()
-	const storage = opts.storage ?? makeStorage()
 	const container = createTestContainer(
 		Registration.instance(IAuthService, opts.auth),
 		Registration.instance(IUserRpcClient, rpc as never),
-		Registration.instance(ILocalStorage, storage.impl as never),
 		Registration.instance(IEventAggregator, ea as never),
 	)
 	container.register(Registration.singleton(IUserStore, UserStore))
 	const store = container.get(IUserStore)
-	return { store, emitLocaleChange, ea, rpc, storage }
+	return { store, emitLocaleChange, emitSignedOut, ea, rpc }
 }
+
+const notFound = () => new ConnectError('no user', Code.NotFound)
 
 describe('UserStore', () => {
 	beforeEach(() => {
@@ -176,10 +165,9 @@ describe('UserStore', () => {
 			// Surfaces the active locale ('ja' from the mock i18n) ...
 			expect(store.currentLanguage).toBe('ja')
 			// ... and is a PURE projection: the backfill RPC is owned by
-			// user-hydration-task, never the getter (no retry storm, no
-			// requireUserId throw before a user is loaded).
+			// user-hydration-task, never the getter (no retry storm).
 			store.currentLanguage
-			expect(rpc.updatePreferredLanguage).not.toHaveBeenCalled()
+			expect(rpc.setPreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
 
@@ -251,33 +239,41 @@ describe('UserStore', () => {
 		})
 	})
 
-	// ── Authenticated User-entity bootstrap (absorbed from UserServiceClient) ──
-	//
 	// These exercise the auth-bootstrap chain that runs on every authed boot and
-	// the signup/signin path: the in-memory + localStorage user_id cache, the
-	// cache→Get→Create recovery, PermissionDenied self-heal, and the
-	// write-through update patterns. Behavior is MOVED verbatim from the former
-	// UserService — keep these assertions identical when refactoring the chain.
+	// the signup/signin path: Get for the signed-in caller, the idempotent
+	// Create when Get answers NotFound, and the write-through updates. No
+	// request names the user (unify-ticket-sales design D15), and nothing is
+	// cached in localStorage.
 
 	describe('ensureLoaded', () => {
-		it('falls back to idempotent Create when no user_id is cached and reports created=true', async () => {
+		it('reads the caller User with Get (no user id) and reports created=false', async () => {
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			rpc.create.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
+			rpc.get.mockResolvedValue(stubUser)
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 
 			const result = await store.ensureLoaded('ja')
 
-			expect(rpc.get).not.toHaveBeenCalled()
-			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja')
-			expect(result.user).toBe(stubUser)
-			// No cached user_id → reached Create on the new-account path.
-			expect(result.created).toBe(true)
-			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
+			expect(rpc.get).toHaveBeenCalledWith()
+			expect(rpc.create).not.toHaveBeenCalled()
+			expect(result).toEqual({ user: stubUser, created: false })
+			expect(localStorage.length).toBe(0)
 		})
 
-		it('returns undefined user (created=false) when no cache AND no email in JWT claims', async () => {
+		it('creates the User when Get answers NotFound and reports created=true', async () => {
 			const rpc = makeRpcClient()
+			rpc.get.mockRejectedValue(notFound())
+			rpc.create.mockResolvedValue(stubUser)
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
+
+			const result = await store.ensureLoaded('ja')
+
+			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja', undefined)
+			expect(result).toEqual({ user: stubUser, created: true })
+		})
+
+		it('returns undefined user (created=false) when there is no User and no email in the JWT claims', async () => {
+			const rpc = makeRpcClient()
+			rpc.get.mockRejectedValue(notFound())
 			const { store } = build({
 				auth: makeAuthWithProfile({ email: null }),
 				rpc,
@@ -285,165 +281,90 @@ describe('UserStore', () => {
 
 			const result = await store.ensureLoaded('ja')
 
-			expect(result.user).toBeUndefined()
-			expect(result.created).toBe(false)
-			expect(rpc.get).not.toHaveBeenCalled()
+			expect(result).toEqual({ user: undefined, created: false })
 			expect(rpc.create).not.toHaveBeenCalled()
 		})
 
-		it('calls Get with cached user_id, writes back to cache, and reports created=false', async () => {
+		it('returns the in-memory user (created=false) without re-issuing Get on subsequent calls', async () => {
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
 			rpc.get.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
-
-			const result = await store.ensureLoaded('ja')
-
-			expect(rpc.get).toHaveBeenCalledWith(internalID)
-			expect(rpc.create).not.toHaveBeenCalled()
-			expect(result.user).toBe(stubUser)
-			// Cache hit → returning account, not new.
-			expect(result.created).toBe(false)
-			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
-		})
-
-		it('returns the in-memory cached user (created=false) without re-issuing Get on subsequent calls', async () => {
-			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
-			rpc.get.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 
 			await store.ensureLoaded('ja')
 			const second = await store.ensureLoaded('ja')
 
 			expect(rpc.get).toHaveBeenCalledTimes(1)
-			expect(second.user).toBe(stubUser)
-			expect(second.created).toBe(false)
+			expect(second).toEqual({ user: stubUser, created: false })
 		})
 
-		it('self-heals when cached user_id is rejected with PermissionDenied — clears cache and recovers via Create', async () => {
+		it('rethrows any error from Get other than NotFound without creating', async () => {
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, 'stale-uuid')
-			rpc.get.mockRejectedValue(
-				new ConnectError('user_id mismatch', Code.PermissionDenied),
-			)
-			rpc.create.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
+			rpc.get.mockRejectedValue(new ConnectError('down', Code.Unavailable))
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 
-			const result = await store.ensureLoaded('ja')
-
-			expect(rpc.get).toHaveBeenCalledWith('stale-uuid')
-			expect(storage.impl.removeItem).toHaveBeenCalledWith(cacheKey)
-			expect(rpc.create).toHaveBeenCalledWith(userEmail, 'ja')
-			expect(result.user).toBe(stubUser)
-			// New userId should be cached after Create succeeds
-			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
-		})
-
-		it('rethrows non-PermissionDenied errors from Get without clearing cache', async () => {
-			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
-			rpc.get.mockRejectedValue(new ConnectError('not found', Code.NotFound))
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
-
-			await expect(store.ensureLoaded('ja')).rejects.toThrow(/not found/)
-			expect(storage.impl.removeItem).not.toHaveBeenCalled()
+			await expect(store.ensureLoaded('ja')).rejects.toThrow(/down/)
 			expect(rpc.create).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('create', () => {
-		it('writes the returned user_id to localStorage and reports created=true for a fresh-cache identity', async () => {
+		it('creates a new User with the guest home and reports created=true', async () => {
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
+			rpc.get.mockRejectedValue(notFound())
 			rpc.create.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
+			const home = { countryCode: 'JP', level1: 'JP-13' }
 
-			const result = await store.create('u@test.com', 'ja')
+			const result = await store.create('u@test.com', 'ja', home)
 
-			expect(result.user).toBe(stubUser)
-			// No cached user_id before the call → genuinely new account.
-			expect(result.created).toBe(true)
-			expect(rpc.create).toHaveBeenCalledWith('u@test.com', 'ja', undefined)
-			expect(storage.impl.setItem).toHaveBeenCalledWith(cacheKey, internalID)
+			expect(rpc.create).toHaveBeenCalledWith('u@test.com', 'ja', home)
+			expect(result).toEqual({ user: stubUser, created: true })
 		})
 
-		it('reports created=false when a user_id is already cached (returning identity tapping Sign up)', async () => {
-			// A returning user already has a cached user_id; the idempotent backend
-			// returns their existing row, so this is NOT a new account.
+		it('returns an existing User as stored and reports created=false (returning identity tapping Sign up)', async () => {
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
-			rpc.create.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
+			rpc.get.mockResolvedValue(stubUser)
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 
-			const result = await store.create('u@test.com', 'ja')
+			const result = await store.create('u@test.com', 'ja', {
+				countryCode: 'JP',
+				level1: 'JP-13',
+			})
 
-			expect(result.user).toBe(stubUser)
-			expect(result.created).toBe(false)
+			expect(rpc.create).not.toHaveBeenCalled()
+			expect(result).toEqual({ user: stubUser, created: false })
 		})
 	})
 
 	describe('updateHome', () => {
-		it('reads cached user_id, calls RPC, and writes back', async () => {
+		it('calls SetHome with the home only and replaces current', async () => {
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
-			rpc.updateHome.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
+			const updated = {
+				...stubUser,
+				home: { countryCode: 'JP', level1: 'JP-13' },
+			}
+			rpc.setHome.mockResolvedValue(updated)
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 
 			await store.updateHome({ countryCode: 'JP', level1: 'JP-13' })
 
-			expect(rpc.updateHome).toHaveBeenCalledWith(internalID, {
+			expect(rpc.setHome).toHaveBeenCalledWith({
 				countryCode: 'JP',
 				level1: 'JP-13',
 			})
-		})
-
-		it('throws when no user_id is cached and no in-memory current exists', async () => {
-			const { store } = build({ auth: makeAuthWithProfile() })
-
-			await expect(
-				store.updateHome({ countryCode: 'JP', level1: 'JP-13' }),
-			).rejects.toThrow(/user_id is not available/)
-		})
-
-		it('uses in-memory user_id when cache is missing but a previous Create has run', async () => {
-			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			rpc.create.mockResolvedValue(stubUser)
-			rpc.updateHome.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
-
-			await store.create('u@test.com', 'ja')
-			storage.map.delete(cacheKey)
-
-			await store.updateHome({ countryCode: 'JP', level1: 'JP-13' })
-
-			expect(rpc.updateHome).toHaveBeenCalledWith(internalID, {
-				countryCode: 'JP',
-				level1: 'JP-13',
-			})
+			expect(store.current).toBe(updated)
 		})
 
 		it('patches current.home locally when the RPC returns an empty payload', async () => {
-			// Mirrors the updatePreferredLanguage empty-payload test: the
-			// settings UI reads userStore.current.home immediately after the RPC
-			// resolves. If the backend omits the user field (valid proto3
+			// The settings UI reads userStore.current.home immediately after the
+			// RPC resolves. If the backend omits the user field (valid proto3
 			// default), wiping current with undefined would clear the rest of the
-			// session's profile (id, preferredLanguage) and break requireUserId
-			// guards on subsequent calls. The write-through patch must preserve
-			// everything except home.
+			// session's profile. The write-through patch must preserve everything
+			// except home.
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
 			rpc.get.mockResolvedValue(stubUser)
-			rpc.updateHome.mockResolvedValue(undefined)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
+			rpc.setHome.mockResolvedValue(undefined)
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 			await store.ensureLoaded('ja')
 
 			const result = await store.updateHome({
@@ -453,7 +374,6 @@ describe('UserStore', () => {
 
 			expect(result?.home?.level1).toBe('JP-13')
 			expect(result?.home?.countryCode).toBe('JP')
-			// Other fields preserved (didn't wipe current).
 			expect(store.current?.id).toBe(internalID)
 		})
 	})
@@ -461,94 +381,78 @@ describe('UserStore', () => {
 	describe('updatePreferredLanguage', () => {
 		it('replaces current with the populated User the RPC returns', async () => {
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
 			const updated = { ...stubUser, preferredLanguage: 'en' } as User
-			rpc.updatePreferredLanguage.mockResolvedValue(updated)
+			rpc.setPreferredLanguage.mockResolvedValue(updated)
 			rpc.get.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
-			// Hydrate current first so we have something to compare against.
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 			await store.ensureLoaded('ja')
 
 			const result = await store.updatePreferredLanguage('en')
 
-			expect(rpc.updatePreferredLanguage).toHaveBeenCalledWith(internalID, 'en')
+			expect(rpc.setPreferredLanguage).toHaveBeenCalledWith('en')
 			expect(result).toBe(updated)
 			expect(store.current).toBe(updated)
-			expect(store.current?.preferredLanguage).toBe('en')
 		})
 
 		it('patches current.preferredLanguage locally when the RPC returns an empty payload', async () => {
-			// Load-bearing path: the settings UI reads
-			// `userStore.current.preferredLanguage` immediately after the RPC
-			// resolves. If the backend omits the user field (valid proto3
-			// default), we must still surface the just-sent value from the
-			// in-memory cache rather than leave the stale one.
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
-			rpc.updatePreferredLanguage.mockResolvedValue(undefined)
+			rpc.setPreferredLanguage.mockResolvedValue(undefined)
 			rpc.get.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 			await store.ensureLoaded('ja')
-			const before = store.current
-			expect(before?.preferredLanguage).toBeUndefined()
+			expect(store.current?.preferredLanguage).toBeUndefined()
 
 			const result = await store.updatePreferredLanguage('en')
 
-			expect(rpc.updatePreferredLanguage).toHaveBeenCalledWith(internalID, 'en')
 			expect(result?.preferredLanguage).toBe('en')
 			expect(store.current?.preferredLanguage).toBe('en')
-			// Other fields preserved (didn't wipe current).
 			expect(store.current?.id).toBe(internalID)
 		})
+	})
 
-		it('throws when no user_id is available', async () => {
-			const { store } = build({ auth: makeAuthWithProfile() })
+	describe('updatePersonalDetails', () => {
+		it('calls Update with the given fields and replaces current', async () => {
+			const rpc = makeRpcClient()
+			const updated = { ...stubUser, phoneNumber: '+819098765432' }
+			rpc.update.mockResolvedValue(updated)
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 
-			await expect(store.updatePreferredLanguage('en')).rejects.toThrow(
-				/user_id is not available/,
-			)
+			const result = await store.updatePersonalDetails({
+				phoneNumber: '+819098765432',
+			})
+
+			expect(rpc.update).toHaveBeenCalledWith({ phoneNumber: '+819098765432' })
+			expect(result).toBe(updated)
+			expect(store.current).toBe(updated)
 		})
 	})
 
 	describe('resendEmailVerification', () => {
-		it('reads cached user_id and forwards it to the RPC client', async () => {
+		it('forwards to the RPC client without a user id', async () => {
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
 			rpc.resendEmailVerification.mockResolvedValue(undefined)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
+			const { store } = build({ auth: makeAuthWithProfile(), rpc })
 
 			await store.resendEmailVerification()
 
-			expect(rpc.resendEmailVerification).toHaveBeenCalledWith(internalID)
-		})
-
-		it('throws when no user_id is available', async () => {
-			const { store } = build({ auth: makeAuthWithProfile() })
-
-			await expect(store.resendEmailVerification()).rejects.toThrow(
-				/user_id is not available/,
-			)
+			expect(rpc.resendEmailVerification).toHaveBeenCalledWith()
 		})
 	})
 
-	describe('clear', () => {
-		it('removes the cached user_id and forgets the in-memory current', async () => {
+	describe('sign-out', () => {
+		it('forgets the in-memory User on SignedOut', async () => {
 			const rpc = makeRpcClient()
-			const storage = makeStorage()
-			storage.map.set(cacheKey, internalID)
 			rpc.get.mockResolvedValue(stubUser)
-			const { store } = build({ auth: makeAuthWithProfile(), rpc, storage })
-
+			const { store, emitSignedOut } = build({
+				auth: makeAuthWithProfile(),
+				rpc,
+			})
 			await store.ensureLoaded('ja')
 			expect(store.current).toBe(stubUser)
 
-			store.clear()
+			emitSignedOut()
 
 			expect(store.current).toBeUndefined()
-			expect(storage.impl.removeItem).toHaveBeenCalledWith(cacheKey)
 		})
 	})
 })

@@ -1,5 +1,15 @@
+import { EventSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
+import {
+	PublishState,
+	SeriesSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { create } from '@bufbuild/protobuf'
+import { timestampFromDate } from '@bufbuild/protobuf/wkt'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AuthorizationDraft } from '../../adapter/rpc/client/lottery-client'
+import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
+import type { LotteryEntry } from '../../entities/lottery-entry'
+import type { TicketSale } from '../../entities/ticket-sale'
 import type { ConfirmAuthorizationResult } from '../../services/stripe-service'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -13,17 +23,67 @@ const mockLogger = {
 	}),
 }
 
-const mockLottery = {
-	createAuthorization: vi.fn(
-		async (): Promise<AuthorizationDraft> => ({
-			clientSecret: 'cs_test_123',
-			paymentIntentRef: 'pi_ref_123',
-		}),
-	),
-	apply: vi.fn(async () => ({})),
-	withdrawApplication: vi.fn(async () => undefined),
-	getMyApplication: vi.fn(async () => undefined),
-	getResult: vi.fn(async () => undefined),
+const EVENT_ID = '019a0000-0000-7000-8000-0000000000e1'
+const TYPE_ID = '019a0000-0000-7000-8000-0000000000t1'
+
+/** An instant at the given Japan-time hour on a 2026-11 day. */
+function jst(day: number, hour: number): Date {
+	return new Date(Date.UTC(2026, 10, day, hour - 9))
+}
+
+const concert: ResolvedConcert = {
+	event: create(EventSchema, {
+		id: { value: EVENT_ID },
+		localDate: { value: { year: 2026, month: 11, day: 3 } },
+		startTime: { value: timestampFromDate(jst(3, 19)) },
+		listedVenueName: { value: 'Zepp Haneda' },
+		seriesId: { value: 's1' },
+	}),
+	series: create(SeriesSchema, {
+		id: { value: 's1' },
+		title: { value: 'ONE MAN LIVE' },
+		publishState: PublishState.PUBLISHED,
+	}),
+	artists: [],
+}
+
+/** The ファンクラブ先行 lottery, open now, 8000 yen with a limit of 4. */
+function presale(o: Partial<TicketSale> = {}): TicketSale {
+	return {
+		id: 'sale-1',
+		name: 'ファンクラブ先行',
+		method: 'lottery',
+		saleStart: new Date(Date.now() - 24 * 60 * 60 * 1000),
+		saleEnd: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
+		verificationRequirement: 'none',
+		ticketType: {
+			id: TYPE_ID,
+			eventId: EVENT_ID,
+			price: 8000,
+			perAccountLimit: 4,
+			state: 'ended',
+			lowStock: false,
+		},
+		...o,
+	}
+}
+
+function draft(o: Partial<LotteryEntry> = {}): LotteryEntry {
+	return {
+		id: 'entry-1',
+		ticketTypeId: TYPE_ID,
+		requestedTicketCount: 2,
+		state: 'draft',
+		...o,
+	}
+}
+
+const mockConcert = { get: vi.fn() }
+const mockSale = { listByEvent: vi.fn() }
+const mockEntry = {
+	start: vi.fn(),
+	authorize: vi.fn(),
+	confirm: vi.fn(),
 }
 
 // A minimal fake Elements group + Payment Element. The service's
@@ -35,23 +95,15 @@ const fakeStripe = {}
 
 const mockStripe = {
 	isConfigured: true,
-	createElements: vi.fn(async () => ({
-		stripe: fakeStripe,
-		elements: fakeElements,
-	})),
-	confirmAuthorization: vi.fn(
-		async (): Promise<ConfirmAuthorizationResult> => ({
-			paymentIntentId: 'pi_confirmed_999',
-		}),
-	),
+	createElements: vi.fn(),
+	confirmAuthorization: vi.fn(),
 }
 
-const mockIdentity = {
-	getMyVerificationStatus: vi.fn(async () => ({ level: 'unverified' })),
-}
-
-const mockRouter = {
-	load: vi.fn(async () => true),
+const mockKyc = { getStatus: vi.fn() }
+const mockRouter = { load: vi.fn(async () => true) }
+const mockUserStore: { current: unknown; currentLanguage: string } = {
+	current: undefined,
+	currentLanguage: 'ja',
 }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -61,13 +113,15 @@ vi.mock('aurelia', async (importOriginal) => {
 		resolve: vi.fn((token: unknown) => {
 			const map: Record<string, unknown> = {
 				ILogger: mockLogger,
-				ILotteryRpcClient: mockLottery,
+				IConcertRpcClient: mockConcert,
+				ITicketSaleRpcClient: mockSale,
+				ILotteryEntryRpcClient: mockEntry,
 				IStripeService: mockStripe,
-				IIdentityVerificationService: mockIdentity,
+				IKycService: mockKyc,
+				IUserStore: mockUserStore,
 				IRouter: mockRouter,
 			}
-			const tokenAny = token as { friendlyName?: string }
-			return map[tokenAny.friendlyName ?? ''] ?? {}
+			return map[(token as { friendlyName?: string }).friendlyName ?? ''] ?? {}
 		}),
 	}
 })
@@ -77,10 +131,29 @@ import { LotteryApplyRoute } from './lottery-apply-route'
 // Flush pending microtasks (the mount handshake uses queueMicrotask).
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
-function makeSut(overrides?: Partial<LotteryApplyRoute>): LotteryApplyRoute {
+async function open(): Promise<LotteryApplyRoute> {
 	const sut = new LotteryApplyRoute()
-	sut.loading({ phaseId: 'phase-1', maxTickets: '4', ticketPrice: '5000' })
-	Object.assign(sut, overrides)
+	sut.loading({ id: EVENT_ID, ticketTypeId: TYPE_ID })
+	await vi.waitFor(() => expect(sut.step).not.toBe('loading'))
+	return sut
+}
+
+/** Open the entry, start a Draft for 2 tickets and fill in the identity. */
+async function toIdentity(phone = '090-1234-5678'): Promise<LotteryApplyRoute> {
+	const sut = await open()
+	sut.ticketCount = 2
+	await sut.toIdentity()
+	sut.fullName = '山田 花子'
+	sut.phoneNumber = phone
+	return sut
+}
+
+/** Reach the card form with an authorized Draft. */
+async function toPayment(phone?: string): Promise<LotteryApplyRoute> {
+	const sut = await toIdentity(phone)
+	sut.paymentElementHost = document.createElement('div')
+	await sut.toPayment()
+	await flush()
 	return sut
 }
 
@@ -88,149 +161,140 @@ describe('LotteryApplyRoute', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockStripe.isConfigured = true
-		mockStripe.createElements.mockImplementation(async () => ({
+		mockUserStore.current = undefined
+		mockConcert.get.mockResolvedValue(concert)
+		mockSale.listByEvent.mockResolvedValue([presale()])
+		mockEntry.start.mockResolvedValue(draft())
+		mockEntry.authorize.mockResolvedValue('cs_test_123')
+		mockEntry.confirm.mockResolvedValue(draft({ state: 'entered' }))
+		mockStripe.createElements.mockResolvedValue({
 			stripe: fakeStripe,
 			elements: fakeElements,
-		}))
-		mockStripe.confirmAuthorization.mockImplementation(async () => ({
+		})
+		mockStripe.confirmAuthorization.mockResolvedValue({
 			paymentIntentId: 'pi_confirmed_999',
-		}))
+		} satisfies ConfirmAuthorizationResult)
+		mockKyc.getStatus.mockResolvedValue({ level: 'unverified' })
 	})
 
-	describe('count validation (1..max)', () => {
-		it('accepts an integer count within 1..max', () => {
-			const sut = makeSut({ ticketCount: 3 })
-			expect(sut.isCountValid).toBe(true)
-		})
+	describe('the TicketType entered', () => {
+		it('shows the sale name, the event, the price and offers 1 to the limit', async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-apply "Presale entry"
+			const sut = await open()
 
-		it('rejects 0 and negatives', () => {
-			expect(makeSut({ ticketCount: 0 }).isCountValid).toBe(false)
-			expect(makeSut({ ticketCount: -1 }).isCountValid).toBe(false)
-		})
-
-		it('rejects counts above the phase max', () => {
-			expect(makeSut({ ticketCount: 5 }).isCountValid).toBe(false)
-		})
-
-		it('rejects non-integers', () => {
-			expect(makeSut({ ticketCount: 1.5 }).isCountValid).toBe(false)
-		})
-
-		it('computes the JPY total as price × count', () => {
-			const sut = makeSut({ ticketCount: 3 })
-			expect(sut.totalAmount).toBe(15000)
-		})
-
-		it('does not advance past count when invalid', () => {
-			const sut = makeSut({ ticketCount: 9 })
-			sut.toIdentity()
 			expect(sut.step).toBe('count')
-			expect(sut.error).not.toBe('')
+			expect(sut.sale?.name).toBe('ファンクラブ先行')
+			expect(sut.event?.title).toBe('ONE MAN LIVE')
+			expect(sut.dateLabel).toBe('2026年11月3日(火)')
+			expect(sut.yen(sut.price)).toBe('8,000')
+			expect(sut.perAccountLimit).toBe(4)
+			expect(sut.countOptions).toEqual([1, 2, 3, 4])
+		})
+
+		it('shows not found for a TicketType the event does not offer by lottery', async () => {
+			mockSale.listByEvent.mockResolvedValue([presale({ method: 'firstCome' })])
+			const sut = await open()
+			expect(sut.step).toBe('not-found')
+		})
+
+		it('says the lottery takes no entries outside its window', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				presale({ saleEnd: new Date(Date.now() - 1000) }),
+			])
+			const sut = await open()
+			expect(sut.step).toBe('closed')
+		})
+
+		it('fails closed when payments are not configured', async () => {
+			mockStripe.isConfigured = false
+			const sut = await open()
+			expect(sut.step).toBe('unavailable')
 		})
 	})
 
-	describe('identity required', () => {
-		it('rejects blank name or phone', () => {
-			expect(
-				makeSut({ fullName: '', phoneNumber: '09012345678' }).isIdentityValid,
-			).toBe(false)
-			expect(
-				makeSut({ fullName: '山田太郎', phoneNumber: '' }).isIdentityValid,
-			).toBe(false)
+	describe('saved details are prefilled', () => {
+		it("fills in the fan's saved name and phone number", async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-apply "Returning fan"
+			mockUserStore.current = {
+				id: 'u1',
+				fullName: '山田 花子',
+				phoneNumber: '+819012345678',
+			}
+			const sut = await open()
+
+			expect(sut.fullName).toBe('山田 花子')
+			expect(sut.phoneNumber).toBe('090-1234-5678')
 		})
 
-		// @spec components/infrastructure/fan/web/route/lottery-apply "Number fits neither form"
-		it.each(['12345', '9012345678'])(
-			'keeps continue disabled and flags %j as invalid',
-			async (phone) => {
-				const sut = makeSut({
-					step: 'identity',
-					fullName: '山田太郎',
-					phoneNumber: phone,
-				})
-				expect(sut.isIdentityValid).toBe(false)
-				expect(sut.isPhoneInvalid).toBe(true)
-				await sut.toPayment()
-				expect(mockLottery.createAuthorization).not.toHaveBeenCalled()
-				expect(sut.step).toBe('identity')
-			},
-		)
+		it('leaves both fields empty for a fan who never gave them', async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-apply "First entry"
+			mockUserStore.current = { id: 'u1' }
+			const sut = await open()
 
-		it('does not flag an empty phone number as invalid', () => {
-			expect(
-				makeSut({ fullName: '山田太郎', phoneNumber: '  ' }).isPhoneInvalid,
-			).toBe(false)
-		})
-
-		it.each(['090-1234-5678', '03 1234 5678', '+81 90 1234 5678'])(
-			'accepts %j as a well-formed identity',
-			(phone) => {
-				const sut = makeSut({ fullName: '山田太郎', phoneNumber: phone })
-				expect(sut.isIdentityValid).toBe(true)
-				expect(sut.isPhoneInvalid).toBe(false)
-			},
-		)
-
-		it('does not create an authorization when identity is invalid', async () => {
-			const sut = makeSut({
-				step: 'identity',
-				ticketCount: 2,
-				fullName: '',
-				phoneNumber: '',
-			})
-			await sut.toPayment()
-			expect(mockLottery.createAuthorization).not.toHaveBeenCalled()
-			expect(sut.step).toBe('identity')
+			expect(sut.fullName).toBe('')
+			expect(sut.phoneNumber).toBe('')
 		})
 	})
 
-	describe('createAuthorization → confirm → apply happy path', () => {
-		it('creates the authorization and mounts the Payment Element', async () => {
-			const sut = makeSut({
-				step: 'identity',
-				ticketCount: 2,
-				fullName: '山田太郎',
-				phoneNumber: '09012345678',
-			})
-			sut.paymentElementHost = document.createElement('div')
+	describe('Start → Authorize → Confirm', () => {
+		it('starts a Draft for the TicketType and the count', async () => {
+			const sut = await toIdentity()
 
-			await sut.toPayment()
-			await flush()
-
-			expect(mockLottery.createAuthorization).toHaveBeenCalledWith(
-				'phase-1',
+			expect(mockEntry.start).toHaveBeenCalledWith(
+				TYPE_ID,
 				2,
 				expect.anything(),
 			)
-			expect(sut.paymentIntentRef).toBe('pi_ref_123')
+			expect(sut.step).toBe('identity')
+		})
+
+		it('authorizes with the name and E.164 phone number and mounts the card form', async () => {
+			const sut = await toPayment()
+
+			expect(mockEntry.authorize).toHaveBeenCalledWith(
+				'entry-1',
+				'山田 花子',
+				'+819012345678',
+				expect.anything(),
+			)
 			expect(mockStripe.createElements).toHaveBeenCalledWith('cs_test_123')
 			expect(fakePaymentElement.mount).toHaveBeenCalledOnce()
 			expect(sut.step).toBe('payment')
 		})
 
-		it('confirms the card hold and applies with the CONFIRMED intent id', async () => {
-			const sut = makeSut({
-				step: 'identity',
-				ticketCount: 2,
-				fullName: '山田太郎',
-				phoneNumber: '09012345678',
+		it('saves the authorized name and phone number on the User', async () => {
+			mockUserStore.current = { id: 'u1' }
+			await toPayment()
+
+			expect(mockUserStore.current).toEqual({
+				id: 'u1',
+				fullName: '山田 花子',
+				phoneNumber: '+819012345678',
 			})
-			sut.paymentElementHost = document.createElement('div')
-			await sut.toPayment()
+		})
+
+		it('shows the entry as made only after Confirm succeeds', async () => {
+			let resolveConfirm: (e: LotteryEntry) => void = () => {}
+			mockEntry.confirm.mockReturnValue(
+				new Promise<LotteryEntry>((r) => {
+					resolveConfirm = r
+				}),
+			)
+			const sut = await toPayment()
+
+			const done = sut.confirmEntry()
 			await flush()
-
-			await sut.confirmAndApply()
-
 			expect(mockStripe.confirmAuthorization).toHaveBeenCalledOnce()
-			expect(mockLottery.apply).toHaveBeenCalledWith(
-				'phase-1',
-				2,
-				{ fullName: '山田太郎', phoneNumber: '+819012345678' },
-				'pi_confirmed_999',
+			expect(mockEntry.confirm).toHaveBeenCalledWith(
+				'entry-1',
 				expect.anything(),
 			)
+			expect(sut.step).toBe('submitting')
+
+			resolveConfirm(draft({ state: 'entered' }))
+			await done
 			expect(sut.step).toBe('done')
-			expect(sut.error).toBe('')
+			expect(sut.entry?.state).toBe('entered')
 		})
 
 		it.each([
@@ -240,145 +304,159 @@ describe('LotteryApplyRoute', () => {
 			['03 1234 5678', '+81312345678'],
 			// @spec components/infrastructure/fan/web/route/lottery-apply "E.164 number with spaces"
 			['+81 90 1234 5678', '+819012345678'],
-		])('applies %j with the phone number %j', async (typed, sent) => {
-			const sut = makeSut({
-				step: 'identity',
-				ticketCount: 1,
-				fullName: '山田太郎',
-				phoneNumber: typed,
-			})
-			sut.paymentElementHost = document.createElement('div')
-			await sut.toPayment()
-			await flush()
+		])('enters %j with the phone number %j', async (typed, sent) => {
+			const sut = await toPayment(typed)
 
-			await sut.confirmAndApply()
+			await sut.confirmEntry()
 
-			expect(mockLottery.apply).toHaveBeenCalledWith(
-				'phase-1',
-				1,
-				{ fullName: '山田太郎', phoneNumber: sent },
-				'pi_confirmed_999',
+			expect(mockEntry.authorize).toHaveBeenCalledWith(
+				'entry-1',
+				'山田 花子',
+				sent,
 				expect.anything(),
 			)
 			// The field keeps what the fan typed.
 			expect(sut.phoneNumber).toBe(typed)
+			expect(sut.step).toBe('done')
+		})
+
+		it('opens the card hold anew after a new count replaces the Draft', async () => {
+			const sut = await toPayment()
+			sut.backToCount()
+			mockEntry.start.mockResolvedValue(
+				draft({ id: 'entry-2', requestedTicketCount: 3 }),
+			)
+			sut.ticketCount = 3
+
+			await sut.toIdentity()
+			await sut.toPayment()
+
+			expect(mockEntry.authorize).toHaveBeenLastCalledWith(
+				'entry-2',
+				'山田 花子',
+				'+819012345678',
+				expect.anything(),
+			)
+			expect(mockStripe.createElements).toHaveBeenCalledTimes(2)
 		})
 	})
 
-	describe('error surfacing', () => {
-		it('surfaces a createAuthorization failure and stays on identity', async () => {
-			mockLottery.createAuthorization.mockRejectedValueOnce(new Error('boom'))
-			const sut = makeSut({
-				step: 'identity',
-				ticketCount: 1,
-				fullName: '山田太郎',
-				phoneNumber: '09012345678',
+	describe('phone number entry', () => {
+		// @spec components/infrastructure/fan/web/route/lottery-apply "Number fits neither form"
+		it.each(['12345', '9012345678'])(
+			'keeps continue disabled and flags %j as invalid',
+			async (phone) => {
+				const sut = await toIdentity(phone)
+
+				expect(sut.isIdentityValid).toBe(false)
+				expect(sut.isPhoneInvalid).toBe(true)
+				await sut.toPayment()
+				expect(mockEntry.authorize).not.toHaveBeenCalled()
+				expect(sut.step).toBe('identity')
+			},
+		)
+
+		it('does not flag an empty phone number as invalid', async () => {
+			const sut = await toIdentity('  ')
+			expect(sut.isPhoneInvalid).toBe(false)
+			expect(sut.isIdentityValid).toBe(false)
+		})
+	})
+
+	describe('errors', () => {
+		it('says how many tickets one account may hold when Start is refused', async () => {
+			mockEntry.start.mockRejectedValue(
+				new ConnectError('limit', Code.FailedPrecondition),
+			)
+			const sut = await open()
+
+			await sut.toIdentity()
+
+			expect(sut.step).toBe('count')
+			expect(sut.message).toEqual({
+				key: 'lotteryApply.count.limit',
+				params: { limit: 4 },
 			})
-			await sut.toPayment()
-			expect(sut.error).not.toBe('')
-			expect(sut.step).toBe('identity')
 		})
 
-		it('surfaces a Stripe confirm error and does NOT call apply', async () => {
+		it('surfaces a card error and does not Confirm', async () => {
 			mockStripe.confirmAuthorization.mockResolvedValueOnce({
 				errorMessage: 'カードが拒否されました',
 			})
-			const sut = makeSut({
-				step: 'identity',
-				ticketCount: 1,
-				fullName: '山田太郎',
-				phoneNumber: '09012345678',
-			})
-			sut.paymentElementHost = document.createElement('div')
-			await sut.toPayment()
-			await flush()
+			const sut = await toPayment()
 
-			await sut.confirmAndApply()
+			await sut.confirmEntry()
 
-			expect(mockLottery.apply).not.toHaveBeenCalled()
-			expect(sut.error).toBe('カードが拒否されました')
+			expect(mockEntry.confirm).not.toHaveBeenCalled()
+			expect(sut.cardError).toBe('カードが拒否されました')
 			expect(sut.step).toBe('payment')
 		})
 
-		it('surfaces an apply failure and returns to the payment step', async () => {
-			mockLottery.apply.mockRejectedValueOnce(new Error('server rejected'))
-			const sut = makeSut({
-				step: 'identity',
-				ticketCount: 1,
-				fullName: '山田太郎',
-				phoneNumber: '09012345678',
-			})
-			sut.paymentElementHost = document.createElement('div')
-			await sut.toPayment()
-			await flush()
+		it('retries Confirm without confirming the card again', async () => {
+			mockEntry.confirm.mockRejectedValueOnce(new Error('server rejected'))
+			const sut = await toPayment()
 
-			await sut.confirmAndApply()
-
-			expect(sut.error).not.toBe('')
+			await sut.confirmEntry()
+			expect(sut.message?.key).toBe('lotteryApply.error.confirm')
 			expect(sut.step).toBe('payment')
+
+			await sut.confirmEntry()
+			expect(mockStripe.confirmAuthorization).toHaveBeenCalledOnce()
+			expect(mockEntry.confirm).toHaveBeenCalledTimes(2)
+			expect(sut.step).toBe('done')
 		})
 	})
 
-	describe('stripe unavailable', () => {
-		it('shows the unavailable step when no publishable key is configured', () => {
-			mockStripe.isConfigured = false
-			const sut = new LotteryApplyRoute()
-			sut.loading({ phaseId: 'phase-1' })
-			expect(sut.step).toBe('unavailable')
-		})
-	})
+	describe('verification gate', () => {
+		it('parks an unverified fan when the sale requires verification', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				presale({ verificationRequirement: 'verifiedAny' }),
+			])
+			const sut = await open()
 
-	describe('verification gate (5.2)', () => {
-		beforeEach(() => {
-			mockIdentity.getMyVerificationStatus.mockResolvedValue({
-				level: 'unverified',
+			expect(mockKyc.getStatus).toHaveBeenCalledOnce()
+			expect(sut.step).toBe('verify-required')
+			await sut.goToVerify()
+			expect(mockRouter.load).toHaveBeenCalledWith('/settings')
+		})
+
+		it('lets a verified fan straight into the count step', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				presale({ verificationRequirement: 'verifiedAny' }),
+			])
+			mockKyc.getStatus.mockResolvedValue({
+				level: 'kycVerified',
+				kyc: { method: 'driverLicence' },
 			})
+			const sut = await open()
+			expect(sut.step).toBe('count')
 		})
 
-		it('parks an UNVERIFIED fan on verify-required when the phase requires it', async () => {
-			const sut = new LotteryApplyRoute()
-			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'true' })
-			expect(mockIdentity.getMyVerificationStatus).toHaveBeenCalledOnce()
+		it('parks a fan verified by driver licence when the sale is JPKI only', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				presale({ verificationRequirement: 'jpkiOnly' }),
+			])
+			mockKyc.getStatus.mockResolvedValue({
+				level: 'kycVerified',
+				kyc: { method: 'driverLicence' },
+			})
+			const sut = await open()
 			expect(sut.step).toBe('verify-required')
 		})
 
-		it('lets a VERIFIED fan straight into the count step', async () => {
-			mockIdentity.getMyVerificationStatus.mockResolvedValueOnce({
-				level: 'identityVerified',
-			})
-			const sut = new LotteryApplyRoute()
-			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'true' })
+		it('does not read the status when the sale requires none', async () => {
+			const sut = await open()
+			expect(mockKyc.getStatus).not.toHaveBeenCalled()
 			expect(sut.step).toBe('count')
 		})
 
-		it('does NOT check status when the phase does not require verification', async () => {
-			const sut = new LotteryApplyRoute()
-			await sut.loading({ phaseId: 'phase-1' })
-			expect(mockIdentity.getMyVerificationStatus).not.toHaveBeenCalled()
+		it('proceeds when the status read fails (the server checks it at Start)', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				presale({ verificationRequirement: 'verifiedAny' }),
+			])
+			mockKyc.getStatus.mockRejectedValue(new Error('UNAVAILABLE'))
+			const sut = await open()
 			expect(sut.step).toBe('count')
-		})
-
-		it('treats an explicit verificationRequired="false" as not-required (no status check, no gate)', async () => {
-			const sut = new LotteryApplyRoute()
-			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'false' })
-			expect(mockIdentity.getMyVerificationStatus).not.toHaveBeenCalled()
-			expect(sut.step).toBe('count')
-		})
-
-		it('fails OPEN (proceeds to count) when the status load errors', async () => {
-			mockIdentity.getMyVerificationStatus.mockRejectedValueOnce(
-				new Error('UNAVAILABLE'),
-			)
-			const sut = new LotteryApplyRoute()
-			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'true' })
-			expect(sut.step).toBe('count')
-		})
-
-		it('routes to Settings from the gate', async () => {
-			const sut = new LotteryApplyRoute()
-			await sut.loading({ phaseId: 'phase-1', verificationRequired: 'true' })
-			await sut.goToVerify()
-			expect(mockRouter.load).toHaveBeenCalledWith('/settings')
 		})
 	})
 })

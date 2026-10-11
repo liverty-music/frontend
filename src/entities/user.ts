@@ -1,5 +1,3 @@
-import type { HolderIdentity } from './holder-identity'
-
 /**
  * A user's home area setting.
  * @source proto/liverty_music/entity/v1/user.proto — Home
@@ -28,12 +26,21 @@ export interface User {
 	 */
 	readonly preferredLanguage?: string
 	/**
-	 * The 本人確認 name and phone number the fan last checked out with, which
-	 * the checkout prefills. Absent until the fan first checks out.
+	 * The 本人確認 (identity check) full name shown on the fan's tickets and
+	 * prefilled at lottery entry and checkout. Absent until the fan first gives
+	 * it.
 	 *
-	 * @source proto/liverty_music/entity/v1/user.proto — User.holder_identity
+	 * @source proto/liverty_music/entity/v1/user.proto — User.full_name
 	 */
-	readonly holderIdentity?: HolderIdentity
+	readonly fullName?: string
+	/**
+	 * The 本人確認 phone number in E.164 form, shown on the fan's tickets and
+	 * prefilled at lottery entry and checkout. Absent until the fan first gives
+	 * it.
+	 *
+	 * @source proto/liverty_music/entity/v1/user.proto — User.phone_number
+	 */
+	readonly phoneNumber?: string
 }
 
 // ---------------------------------------------------------------------------

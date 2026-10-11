@@ -3,9 +3,9 @@
     <a load="../concerts" class="lottery-editor-back-link">← Back to your concerts</a>
     <h1 class="lottery-editor-title">Put an event on sale by lottery</h1>
     <p class="lottery-editor-note">
-      Fans apply within the application window; when it closes an automatic draw
-      allocates the ticket capacity. The event's concert must already be
-      published.
+      Fans enter within the window; when it closes an automatic draw allocates
+      the tickets. The event's concert must already be published, and the
+      window must not overlap another sale of the event.
     </p>
   </header>
 
@@ -46,7 +46,34 @@
     submit.trigger="save()"
   >
     <fieldset class="[ lottery-editor-fieldset ] [ flow ]">
-      <legend>Application window</legend>
+      <legend>Sale</legend>
+      <label class="organizer-field">
+        Name (shown to fans)
+        <input
+          type="text"
+          name="name"
+          maxlength="100"
+          class="organizer-input"
+          value.bind="model.name"
+          input.trigger="revalidate()"
+          aria-invalid.bind="submitted && !!errors.name"
+          aria-describedby="lottery-editor-name-error"
+          placeholder="e.g. ファンクラブ先行"
+        />
+      </label>
+      <p
+        id="lottery-editor-name-error"
+        if.bind="submitted && errors.name"
+        class="organizer-error"
+        role="alert"
+        data-error="name"
+      >
+        ${errors.name}
+      </p>
+    </fieldset>
+
+    <fieldset class="[ lottery-editor-fieldset ] [ flow ]">
+      <legend>Entry window</legend>
       <p class="lottery-editor-hint">
         The window must be ${minWindowDays}–${maxWindowDays} days long (defaults
         to 10 days).
@@ -77,7 +104,12 @@
       <p if.bind="submitted && errors.closeTime" class="organizer-error" role="alert">
         ${errors.closeTime}
       </p>
-      <p if.bind="submitted && errors.window" class="organizer-error" role="alert">
+      <p
+        if.bind="submitted && errors.window"
+        class="organizer-error"
+        role="alert"
+        data-error="window"
+      >
         ${errors.window}
       </p>
     </fieldset>
@@ -85,64 +117,70 @@
     <fieldset class="[ lottery-editor-fieldset ] [ flow ]">
       <legend>Tickets</legend>
       <label class="organizer-field">
-        Ticket capacity (total tickets drawn for)
+        Tickets (total tickets drawn for)
         <input
           type="number"
+          name="quantity"
           min="1"
           step="1"
           class="organizer-input"
-          value.bind="model.ticketCapacity"
+          value.bind="model.quantity"
           input.trigger="revalidate()"
           placeholder="e.g. 200"
         />
       </label>
       <p
-        if.bind="submitted && errors.ticketCapacity"
+        if.bind="submitted && errors.quantity"
         class="organizer-error"
         role="alert"
+        data-error="quantity"
       >
-        ${errors.ticketCapacity}
+        ${errors.quantity}
       </p>
 
       <label class="organizer-field">
-        Max tickets per application (1–10)
+        Tickets per account (1–${maxLimit}; counts the tickets a fan already
+        holds for the event)
         <input
           type="number"
+          name="perAccountLimit"
           min="1"
           max="10"
           step="1"
           class="organizer-input"
-          value.bind="model.maxTicketsPerApplication"
+          value.bind="model.perAccountLimit"
           input.trigger="revalidate()"
-          placeholder="e.g. 4"
         />
       </label>
       <p
-        if.bind="submitted && errors.maxTicketsPerApplication"
+        if.bind="submitted && errors.perAccountLimit"
         class="organizer-error"
         role="alert"
+        data-error="perAccountLimit"
       >
-        ${errors.maxTicketsPerApplication}
+        ${errors.perAccountLimit}
       </p>
 
       <label class="organizer-field">
-        Ticket price (JPY, whole yen)
+        Ticket price (JPY, whole yen, tax included)
         <input
           type="number"
+          name="price"
           min="1"
           step="1"
           class="organizer-input"
-          value.bind="model.ticketPrice"
+          value.bind="model.price"
           input.trigger="revalidate()"
           placeholder="e.g. 6500"
         />
       </label>
       <p
-        if.bind="submitted && errors.ticketPrice"
+        if.bind="submitted && errors.price"
         class="organizer-error"
         role="alert"
+        data-error="price"
       >
-        ${errors.ticketPrice}
+        ${errors.price}
       </p>
     </fieldset>
 
@@ -153,7 +191,7 @@
         data-variant="primary"
         disabled.bind="saving"
       >
-        ${saving ? 'Configuring…' : 'Configure lottery phase'}
+        ${saving ? 'Creating…' : 'Create lottery'}
       </button>
     </div>
     <p if.bind="saveError" class="organizer-error" role="alert">${saveError}</p>
@@ -164,20 +202,24 @@
     class="[ lottery-editor-panel ] [ flow ]"
     data-state="success"
   >
-    <h2 class="lottery-editor-subtitle">Lottery phase configured</h2>
-    <p>The application window is set. Fans can apply once it opens.</p>
+    <h2 class="lottery-editor-subtitle">Lottery created</h2>
+    <p>The entry window is set. Fans can enter once it opens.</p>
     <dl class="lottery-editor-summary">
       <div>
-        <dt>Ticket capacity</dt>
-        <dd>${model.ticketCapacity}</dd>
+        <dt>Name</dt>
+        <dd>${model.name}</dd>
       </div>
       <div>
-        <dt>Max per application</dt>
-        <dd>${model.maxTicketsPerApplication}</dd>
+        <dt>Tickets</dt>
+        <dd>${model.quantity}</dd>
+      </div>
+      <div>
+        <dt>Tickets per account</dt>
+        <dd>${model.perAccountLimit}</dd>
       </div>
       <div>
         <dt>Ticket price</dt>
-        <dd>¥${model.ticketPrice}</dd>
+        <dd>¥${model.price}</dd>
       </div>
     </dl>
     <div class="[ lottery-editor-actions ] [ cluster ]">
@@ -185,10 +227,10 @@
         type="button"
         class="organizer-btn"
         data-variant="primary"
-        disabled.bind="!createdPhaseId"
+        disabled.bind="!createdSaleId"
         click.trigger="viewStatus()"
       >
-        View phase status
+        View lottery status
       </button>
       <a load="../concerts" class="organizer-btn" data-variant="ghost">
         Back to your concerts

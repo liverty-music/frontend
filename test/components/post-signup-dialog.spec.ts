@@ -88,6 +88,7 @@ describe('PostSignupDialog', () => {
 	})
 
 	describe('onEnableNotifications', () => {
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Notification opt-in from dialog"
 		it('subscribes to push and sets done on success', async () => {
 			await sut.onEnableNotifications()
 
@@ -105,6 +106,7 @@ describe('PostSignupDialog', () => {
 			expect(sut.notificationError).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Notification opt-in from dialog"
 		it('sets error on failure', async () => {
 			mockPush.create.mockRejectedValue(new Error('denied'))
 

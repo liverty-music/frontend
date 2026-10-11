@@ -188,6 +188,11 @@
 			--flow-space: var(--space-2xs);
 		}
 
+		.event-sale-name {
+			font-weight: 600;
+			color: var(--color-text-secondary);
+		}
+
 		.event-sale-price,
 		.event-sale-status {
 			font-size: var(--step-1);

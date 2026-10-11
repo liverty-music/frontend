@@ -1,8 +1,8 @@
 import { I18N } from '@aurelia/i18n'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
+import { Snack } from '../../../shared/ui/snack-bar/snack'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import type { PageHelp } from '../../components/page-help/page-help'
-import { Snack } from '../../../shared/ui/snack-bar/snack'
 import {
 	DASHBOARD_CONCERT_TARGET,
 	DASHBOARD_FOLLOW_TARGET,
@@ -369,7 +369,7 @@ export class DiscoveryRoute {
 		artistName: string,
 	): Promise<void> {
 		try {
-			const concerts = await this.concertService.listConcerts(artistId)
+			const concerts = await this.concertService.listByArtist(artistId)
 
 			if (concerts.length > 0) {
 				this.concertService.addArtistWithConcerts(artistId)

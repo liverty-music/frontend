@@ -12,11 +12,13 @@ import Aurelia, {
 } from 'aurelia'
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { onCLS, onINP, onLCP } from 'web-vitals/attribution'
+import type { SnackHandle } from '../shared/ui/snack-bar/snack'
+import { Snack } from '../shared/ui/snack-bar/snack'
 import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
 import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
 import { IFollowRpcClient } from './adapter/rpc/client/follow-client'
-import { IIdentityVerificationRpcClient } from './adapter/rpc/client/identity-verification-client'
-import { ILotteryRpcClient } from './adapter/rpc/client/lottery-client'
+import { IKycRpcClient } from './adapter/rpc/client/kyc-client'
+import { ILotteryEntryRpcClient } from './adapter/rpc/client/lottery-entry-client'
 import { IPushRpcClient } from './adapter/rpc/client/push-client'
 import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
@@ -36,8 +38,6 @@ import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
 import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
 import { SignupPromptBanner } from './components/signup-prompt-banner/signup-prompt-banner'
-import type { SnackHandle } from '../shared/ui/snack-bar/snack'
-import { Snack } from '../shared/ui/snack-bar/snack'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SvgIcon } from './components/svg-icon/svg-icon'
 import { Toast } from './components/toast/toast'
@@ -81,7 +81,7 @@ import { FollowReconcileTask } from './services/follow-reconcile-task'
 import { IFollowStore } from './services/follow-store'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
 import { IHapticService } from './services/haptic-service'
-import { IIdentityVerificationService } from './services/identity-verification-service'
+import { IKycService } from './services/kyc-service'
 import { INotificationManager } from './services/notification-manager'
 import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
@@ -264,7 +264,7 @@ async function bootstrap(): Promise<void> {
 	au.register(IPwaInstallService)
 	au.register(ITicketJourneyService)
 	au.register(ITicketJourneyStore)
-	au.register(IIdentityVerificationService)
+	au.register(IKycService)
 	au.register(IResumeRevalidator)
 	au.register(IFabMenuService)
 	au.register(IArtistRpcClient)
@@ -273,8 +273,8 @@ async function bootstrap(): Promise<void> {
 	au.register(ITicketJourneyRpcClient)
 	au.register(IUserRpcClient)
 	au.register(IPushRpcClient)
-	au.register(IIdentityVerificationRpcClient)
-	au.register(ILotteryRpcClient)
+	au.register(IKycRpcClient)
+	au.register(ILotteryEntryRpcClient)
 	au.register(IStripeService)
 	au.register(ArtistFilterBar)
 	au.register(BottomNavBar)
@@ -334,7 +334,7 @@ async function bootstrap(): Promise<void> {
 		const pushService = au.container.get(IPushService)
 		const userStore = au.container.get(IUserStore)
 		const recoverPush = (): void => {
-			void pushService.resolvePushState(userStore.current?.id ?? undefined)
+			void pushService.resolvePushState(userStore.current !== undefined)
 		}
 		recoverPush()
 		navigator.serviceWorker?.addEventListener('message', (event) => {

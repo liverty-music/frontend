@@ -287,7 +287,18 @@
 		"privacyPolicy": "Privacy Policy",
 		"ossLicenses": "OSS Licenses",
 		"account": "Account",
-		"identity": {
+		"personalDetails": {
+			"title": "Name on your tickets",
+			"note": "Your name and phone number are shown on the face of your tickets.",
+			"name": "Full name",
+			"phone": "Phone number",
+			"nameRequired": "Enter your name.",
+			"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678).",
+			"save": "Save",
+			"saved": "Saved your ticket name.",
+			"saveError": "Couldn't save your ticket name. Please wait a moment and try again."
+		},
+		"kyc": {
 			"label": "Identity verification",
 			"levelVerified": "Verified",
 			"levelUnverified": "Not verified",
@@ -383,6 +394,7 @@
 		},
 		"field": {
 			"holderName": "Name",
+			"holderPhone": "Phone number",
 			"seat": "Seat",
 			"noSeat": "Not assigned"
 		},
@@ -727,7 +739,89 @@
 		"leftHandedDesc": "Place the action button in the bottom-left corner"
 	},
 	"lotteryApply": {
+		"title": "Enter the ticket lottery",
+		"loading": "Loading…",
+		"unavailable": "Payments are not available in this environment right now. Please try again later.",
+		"notFound": "This lottery could not be found.",
+		"closed": "This lottery is not taking entries now.",
+		"backToEvent": "Back to the event page",
+		"back": "Back",
+		"price": "¥{{price}} per ticket (tax included)",
+		"limit": "Up to {{limit}} tickets per account",
+		"window": "Entries {{window}}",
+		"total": "Total ¥{{total}} (tax included)",
+		"verify": {
+			"title": "Identity verification required",
+			"body": "Only fans who have verified their identity can enter this lottery. You can verify on the Settings screen, then come back here to enter.",
+			"action": "Verify my identity"
+		},
+		"count": {
+			"title": "Choose the number of tickets",
+			"label": "Tickets (1 to {{limit}})",
+			"continue": "Continue to identity check",
+			"limit": "One account can hold up to {{limit}} tickets for this event, counting the tickets it already holds."
+		},
+		"identity": {
+			"title": "Identity check",
+			"note": "Your name and phone number are saved on your account and shown on the face of your tickets.",
+			"name": "Full name",
+			"phone": "Phone number",
+			"continue": "Continue to card authorization"
+		},
+		"payment": {
+			"title": "Card authorization",
+			"hold": "When you enter, a hold of ¥{{total}} (¥{{price}} × {{count}}) is placed on your card.",
+			"notCharged": "You are not charged now. The amount is only held on your card.",
+			"chargedOnWin": "You are charged the held amount only if you win.",
+			"releasedOnLoss": "If you do not win, the hold is released and you are not charged.",
+			"withdraw": "You can withdraw your entry before the draw; the hold is then released too.",
+			"brands": "Accepted cards: Visa / Mastercard / JCB / Diners Club / Discover in Japanese yen. American Express is not accepted.",
+			"confirm": "Agree and enter",
+			"submitting": "Processing…"
+		},
+		"done": {
+			"title": "Your entry has been received",
+			"body": "You entered {{sale}} for {{count}} tickets. Please wait for the draw result. Your card is charged only if you win.",
+			"toStatus": "View your entry"
+		},
+		"error": {
+			"retry": "Something went wrong. Please try again.",
+			"payment": "Could not prepare the payment. Please try again later.",
+			"confirm": "Your entry could not be made. Please try again (the hold on your card is kept)."
+		},
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
+	},
+	"lotteryApplication": {
+		"title": "Your lottery entry",
+		"loading": "Loading…",
+		"empty": "No entry to this lottery was found.",
+		"error": "Your entry could not be loaded. Please try again later.",
+		"reload": "Reload",
+		"count": "Tickets",
+		"countValue": "{{count}}",
+		"status": "Status",
+		"state": {
+			"entered": "Awaiting the draw",
+			"won": "Won",
+			"lost": "Not won",
+			"withdrawn": "Withdrawn",
+			"unknown": "—"
+		},
+		"note": {
+			"entered": "Please wait for the draw result. A hold is placed on your card (you are not charged now); you are charged only if you win.",
+			"won": "You won. The held amount is charged to your card. Your tickets appear on the Tickets screen.",
+			"lost": "You did not win this time. The hold on your card is released and you are not charged.",
+			"withdrawn": "This entry was withdrawn. The hold on your card is released and you are not charged."
+		},
+		"withdraw": {
+			"action": "Withdraw my entry",
+			"confirm": "Withdraw your entry? The hold on your card is released and you will no longer take part in this lottery.",
+			"cancel": "Keep my entry",
+			"submit": "Withdraw",
+			"submitting": "Processing…",
+			"drawn": "The draw has already run, so the entry could not be withdrawn. The latest result is shown.",
+			"failed": "The entry could not be withdrawn. Please try again."
+		}
 	},
 	"eventCard": {
 		"purchased": "Purchased"
@@ -781,6 +875,11 @@
 				"soldOut": "Sold out",
 				"allHeldNote": "Other fans are checking out. Tickets may be available again in a few minutes.",
 				"ended": "The sale has ended"
+			},
+			"lottery": {
+				"window": "Entries {{start}} – {{end}}",
+				"enter": "Enter the lottery",
+				"ended": "Entries have closed"
 			}
 		}
 	},
@@ -794,20 +893,28 @@
 		"total": "Total ¥{{total}} (tax included)",
 		"back": "Back",
 		"startAgain": "Start again",
+		"verify": {
+			"title": "Verification required",
+			"noteJpki": "Only fans verified with their My Number Card (マイナンバーカード) can buy tickets in this sale.",
+			"noteAny": "Only verified fans can buy tickets in this sale.",
+			"bodyJpki": "Only fans verified with their My Number Card (マイナンバーカード) can buy tickets in this sale. You can verify on the Settings screen; then come back here to buy.",
+			"bodyAny": "Only verified fans can buy tickets in this sale. You can verify on the Settings screen; then come back here to buy.",
+			"action": "Verify my identity"
+		},
 		"count": {
 			"title": "How many tickets",
 			"label": "Tickets (1–{{limit}})",
 			"price": "¥{{price}} per ticket (tax included)",
 			"continue": "Hold tickets and continue",
 			"allHeld": "Sold out for now. Other fans are checking out, so tickets may be available again in a few minutes.",
-			"limit": "One account can buy up to {{limit}} tickets.",
+			"limit": "One account can hold up to {{limit}} tickets for this event, counting the tickets it already holds.",
 			"soldOut": "The tickets have sold out.",
 			"ended": "The sale has ended.",
 			"cancelled": "This concert was cancelled, so its tickets are not on sale."
 		},
 		"identity": {
 			"title": "Identity check",
-			"note": "Your name is printed on the tickets and checked at entry.",
+			"note": "Your name and phone number are saved on your account and shown on the face of your tickets.",
 			"name": "Full name",
 			"phone": "Phone number",
 			"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678).",
@@ -833,7 +940,7 @@
 			"salePeriod": "Sale period",
 			"holder": "Ticket holder",
 			"resale": "Resale",
-			"resaleValue": "Reselling tickets without the organizer's consent is prohibited. Tickets are issued in the buyer's name.",
+			"resaleValue": "Reselling tickets without the organizer's consent is prohibited. Tickets are issued to your own account and name.",
 			"cancellation": "Cancellation and refunds",
 			"cancellationValue": "Orders cannot be cancelled or refunded unless the concert is cancelled. Cooling-off does not apply. Official resale opens only if the concert sells out.",
 			"seller": "Seller",

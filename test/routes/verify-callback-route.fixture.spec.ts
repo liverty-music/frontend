@@ -5,7 +5,7 @@ import { Registration } from 'aurelia'
 import { describe, expect, it } from 'vitest'
 import ja from '../../src/locales/ja/translation.json'
 import { VerifyCallbackRoute } from '../../src/routes/verify-callback/verify-callback-route'
-import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
+import { IKycService } from '../../src/services/kyc-service'
 
 describe('VerifyCallbackRoute (fixture)', () => {
 	it('@spec components/infrastructure/fan/web/global/ui-primitives "Identity verification in progress"', async () => {
@@ -21,7 +21,7 @@ describe('VerifyCallbackRoute (fixture)', () => {
 						fallbackLng: 'ja',
 					}
 				}),
-				Registration.instance(IIdentityVerificationService, {}),
+				Registration.instance(IKycService, {}),
 				Registration.instance(IRouter, {}),
 				VerifyCallbackRoute,
 			)

@@ -2,12 +2,14 @@ import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { StorageKeys } from '../../src/constants/storage-keys'
 import { createTestContainer } from '../helpers/create-container'
 
 const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserStore = DI.createInterface('IUserStore')
 const mockINotificationManager = DI.createInterface('INotificationManager')
 const mockIPushService = DI.createInterface('IPushService')
+const mockIKycService = DI.createInterface('IKycService')
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
@@ -20,6 +22,9 @@ vi.mock('../../src/services/notification-manager', () => ({
 }))
 vi.mock('../../src/services/push-service', () => ({
 	IPushService: mockIPushService,
+}))
+vi.mock('../../src/services/kyc-service', () => ({
+	IKycService: mockIKycService,
 }))
 
 vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
@@ -80,6 +85,11 @@ describe('SettingsRoute', () => {
 		resolvePushState: ReturnType<typeof vi.fn>
 	}
 	let mockEa: { publish: ReturnType<typeof vi.fn> }
+	const mockKyc = {
+		status: undefined,
+		getStatus: vi.fn().mockResolvedValue({ level: 'unverified' }),
+		verify: vi.fn(),
+	}
 
 	beforeEach(() => {
 		mockAuth = {
@@ -141,6 +151,7 @@ describe('SettingsRoute', () => {
 			Registration.instance(mockIPushService, mockPush),
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(IRouter, mockRouter),
+			Registration.instance(mockIKycService, mockKyc),
 		)
 		container.register(SettingsRoute)
 		sut = container.get(SettingsRoute)
@@ -182,14 +193,22 @@ describe('SettingsRoute', () => {
 		// (resolvePushState), which owns the browser⇄backend reconciliation matrix
 		// (covered in push-service.spec.ts). These tests assert the route maps that
 		// resolved state onto the toggle + error surfacing.
+		// @spec components/infrastructure/fan/web/route/settings "Toggle state on page load — subscribed on this browser"
+		// @spec components/infrastructure/fan/web/route/settings "Self-heal on settings page load"
+		// @spec components/infrastructure/fan/web/route/settings "Toggle state on page load — browser has subscription but backend does not (self-heal)"
+		// @spec components/infrastructure/fan/web/route/settings "Auto re-subscribe when browser has no subscription but permission is granted"
+		// The browser⇄backend matrix itself is covered in push-service.spec.ts;
+		// here the route asks for it with the account loaded and maps the result.
 		it('sets toggle ON when recovery resolves enabled', async () => {
 			mockPush.resolvePushState.mockResolvedValue('enabled')
 			await sut.loading()
 			expect(sut.notificationsEnabled).toBe(true)
-			expect(mockPush.resolvePushState).toHaveBeenCalledWith('user-uuid-1')
+			expect(mockPush.resolvePushState).toHaveBeenCalledWith(true)
 			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
+		// @spec components/infrastructure/fan/web/route/settings "No self-heal when browser has no subscription"
+		// @spec components/infrastructure/fan/web/route/settings "Toggle state on page load — not subscribed on this browser"
 		it('sets toggle OFF when recovery needs permission (re-enable affordance stays)', async () => {
 			mockPush.resolvePushState.mockResolvedValue('needs-permission')
 			await sut.loading()
@@ -197,6 +216,7 @@ describe('SettingsRoute', () => {
 			expect(mockEa.publish).not.toHaveBeenCalled()
 		})
 
+		// @spec components/infrastructure/fan/web/route/settings "Self-heal failure degrades to OFF"
 		it('sets toggle OFF and surfaces a Snack when recovery errors', async () => {
 			mockPush.resolvePushState.mockResolvedValue('error')
 			await sut.loading()
@@ -299,6 +319,7 @@ describe('SettingsRoute', () => {
 	})
 
 	describe('toggleNotifications', () => {
+		// @spec components/infrastructure/fan/web/route/settings "Toggling notifications ON"
 		it('creates and enables when toggling on with granted permission', async () => {
 			mockNotification.permission = 'granted'
 			sut.notificationsEnabled = false
@@ -324,8 +345,39 @@ describe('SettingsRoute', () => {
 
 			await sut.toggleNotifications()
 
-			expect(mockPush.delete).toHaveBeenCalledWith('user-uuid-1')
+			expect(mockPush.delete).toHaveBeenCalledWith()
 			expect(sut.notificationsEnabled).toBe(false)
+		})
+
+		// @spec components/infrastructure/fan/web/route/settings "subscribe() throws during enable"
+		it('reflects OFF and surfaces the failure when subscribe() throws', async () => {
+			mockPush.create.mockRejectedValue(
+				new DOMException('denied', 'NotAllowedError'),
+			)
+			sut.notificationsEnabled = false
+
+			await sut.toggleNotifications()
+
+			expect(sut.notificationsEnabled).toBe(false)
+			expect(mockEa.publish).toHaveBeenCalledTimes(1)
+		})
+
+		// @spec components/infrastructure/fan/web/route/settings "Toggle state is not cached in localStorage"
+		it('neither reads nor writes a localStorage flag for the toggle', async () => {
+			localStorage.setItem('userNotificationsEnabled', 'true')
+			mockPush.resolvePushState.mockResolvedValue('needs-permission')
+
+			await sut.loading()
+			// The stale flag does not turn the toggle on.
+			expect(sut.notificationsEnabled).toBe(false)
+
+			localStorage.removeItem('userNotificationsEnabled')
+			await sut.toggleNotifications()
+			expect(sut.notificationsEnabled).toBe(true)
+			expect(localStorage.getItem('userNotificationsEnabled')).toBeNull()
+			expect(Object.values(StorageKeys)).not.toContain(
+				'userNotificationsEnabled',
+			)
 		})
 
 		it('prevents concurrent toggles', async () => {
@@ -340,7 +392,7 @@ describe('SettingsRoute', () => {
 			expect(mockPush.create).toHaveBeenCalledOnce()
 		})
 
-		it('skips toggle when userId is not yet available', async () => {
+		it('skips toggle when the account is not loaded yet', async () => {
 			mockUser.current = undefined
 			sut.notificationsEnabled = false
 
@@ -369,9 +421,8 @@ describe('SettingsRoute', () => {
 	})
 
 	describe('signOut', () => {
-		it('clears user service and calls auth signOut', async () => {
+		it('calls auth signOut, whose SignedOut event clears the stores', async () => {
 			await sut.signOut()
-			expect(mockUser.clear).toHaveBeenCalledOnce()
 			expect(mockAuth.signOut).toHaveBeenCalledOnce()
 		})
 	})
@@ -404,6 +455,7 @@ describe('SettingsRoute', () => {
 				Registration.instance(mockIPushService, mockPush),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(IRouter, mockRouter),
+				Registration.instance(mockIKycService, mockKyc),
 			)
 			container.register(SettingsRoute)
 			return container.get(SettingsRoute)

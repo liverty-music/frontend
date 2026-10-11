@@ -11,8 +11,8 @@ export function createMockConcertService(): Partial<IConcertStore> {
 	return {
 		artistsWithConcerts: new Set<string>(),
 		artistsWithConcertsCount: 0,
-		listConcerts: vi.fn().mockResolvedValue([]),
-		listByFollower: vi.fn().mockResolvedValue([]),
+		listByArtist: vi.fn().mockResolvedValue([]),
+		listFollowed: vi.fn().mockResolvedValue([]),
 		addArtistWithConcerts: vi.fn(),
 	}
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toE164 } from './to-e164'
+import { toDomesticDisplay, toE164 } from './to-e164'
 
 describe('toE164', () => {
 	// @spec components/infrastructure/fan/web/route/lottery-apply "Domestic number with hyphens"
@@ -38,4 +38,25 @@ describe('toE164', () => {
 	])('rejects %j', (input) => {
 		expect(toE164(input)).toBeNull()
 	})
+})
+
+describe('toDomesticDisplay', () => {
+	it('writes a Japanese mobile number with hyphens', () => {
+		expect(toDomesticDisplay('+819012345678')).toBe('090-1234-5678')
+	})
+
+	it('writes another Japanese number as its domestic digits', () => {
+		expect(toDomesticDisplay('+81312345678')).toBe('0312345678')
+	})
+
+	it('keeps a number of another country unchanged', () => {
+		expect(toDomesticDisplay('+14155550100')).toBe('+14155550100')
+	})
+
+	it.each(['+819012345678', '+81312345678', '+14155550100'])(
+		'reads %j back to the same E.164 number',
+		(e164) => {
+			expect(toE164(toDomesticDisplay(e164))).toBe(e164)
+		},
+	)
 })

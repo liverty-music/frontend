@@ -196,14 +196,14 @@ export class FollowStore {
 
 	/**
 	 * List followed artists. Unauthenticated users read from guest storage.
-	 * Authenticated users call the backend ListFollowed RPC.
+	 * Authenticated users call the backend FollowService.List RPC.
 	 */
 	public async listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
 		let result: FollowedArtist[]
 		if (!this.authService.isAuthenticated) {
 			result = [...this.guestFollowsState]
 		} else {
-			result = await this.rpcClient.listFollowed(signal)
+			result = await this.rpcClient.list(signal)
 		}
 		this.followedArtists = result.map((f) => f.artist)
 		return result
@@ -452,9 +452,9 @@ export class FollowStore {
 
 	/**
 	 * Remove every per-account guest-merge receipt on sign-out. Cleared by prefix
-	 * because the signed-out user's id is already gone from in-memory + cached
-	 * state by the time `SignedOut` fires (the sign-out call sites run
-	 * `userStore.clear()` first). This bounds the receipt's lifetime to a
+	 * because the signed-out user's id may already be gone from memory when this
+	 * handler runs (UserStore clears on the same `SignedOut`, in no fixed order).
+	 * This bounds the receipt's lifetime to a
 	 * single authenticated session: the within-session no-resurrection guarantee
 	 * stays intact (the receipt still blocks re-migrating reverted state WHILE
 	 * signed in), but a fresh guest session after sign-out can migrate again.

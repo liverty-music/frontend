@@ -1,3 +1,6 @@
+import { I18nConfiguration } from '@aurelia/i18n'
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
 import { ConcertSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/concert_pb.js'
 import {
 	PublishState,
@@ -11,9 +14,6 @@ import {
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
-import { I18nConfiguration } from '@aurelia/i18n'
-import { tasksSettled } from '@aurelia/runtime'
-import { createFixture } from '@aurelia/testing'
 import { CustomElement, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -58,8 +58,7 @@ function protoTicket(i: number, o: TicketOpts = {}): Ticket {
 		id: { value: ticketId(i) },
 		eventId: { value: o.event ?? EVENT },
 		orderId: { value: 'order-1' },
-		holderId: { value: USER },
-		holderIdentity: { fullName: '山田太郎', phoneNumber: '+819012345678' },
+		userId: { value: USER },
 		resaleWithoutConsentProhibited: true,
 		status: o.status ?? TicketStatus.ISSUED,
 		issueTime: timestampFromDate(jst(1, 10)),
@@ -147,6 +146,11 @@ describe('TicketsRoute', () => {
 		register: ReturnType<typeof vi.fn>
 	}
 	let concertClient: { get: ReturnType<typeof vi.fn> }
+	/** The signed-in fan's User as the app holds it. */
+	let userStore: {
+		currentLanguage: string
+		current?: { id: string; fullName?: string; phoneNumber?: string }
+	}
 	let wakeLock: {
 		acquire: ReturnType<typeof vi.fn>
 		release: ReturnType<typeof vi.fn>
@@ -161,7 +165,7 @@ describe('TicketsRoute', () => {
 			Registration.instance(IWalletStorage, storage),
 			Registration.singleton(ITicketWallet, TicketWallet),
 			Registration.instance(IScreenWakeLock, wakeLock),
-			Registration.instance(IUserStore, { currentLanguage: 'ja' }),
+			Registration.instance(IUserStore, userStore),
 		)
 		container.register(TicketsRoute)
 		return container.get(TicketsRoute)
@@ -195,6 +199,14 @@ describe('TicketsRoute', () => {
 	beforeEach(() => {
 		storage = new FakeWalletStorage()
 		ticketClient = { getMyTickets: vi.fn().mockResolvedValue([]) }
+		userStore = {
+			currentLanguage: 'ja',
+			current: {
+				id: USER,
+				fullName: '山田太郎',
+				phoneNumber: '+819012345678',
+			},
+		}
 		serverKey = null
 		keyClient = {
 			get: vi.fn(async () => serverKey),
@@ -249,9 +261,11 @@ describe('TicketsRoute', () => {
 			expect(sut.time(group.event?.openTime)).toBe('17:30')
 			expect(sut.time(group.event?.startTime)).toBe('18:30')
 			expect(group.tickets).toHaveLength(3)
+			expect(sut.holder?.fullName).toBe('山田太郎')
+			expect(sut.holderPhone).toBe('090-1234-5678')
 			for (const t of group.tickets) {
 				expect(t.state).toBe('not-entered')
-				expect(t.holderName).toBe('山田太郎')
+				expect(t.userId).toBe(USER)
 				expect(t.resaleWithoutConsentProhibited).toBe(true)
 				expect(sut.stateLabel(t)).toBe('tickets.state.not-entered')
 			}
@@ -260,6 +274,23 @@ describe('TicketsRoute', () => {
 			expect(ja.tickets.field.noSeat).toBe('指定なし')
 			// One read per event, not per ticket.
 			expect(concertClient.get).toHaveBeenCalledTimes(1)
+		})
+
+		it("shows the User's new phone number on every ticket after a change", async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Fan corrected their phone number"
+			ticketClient.getMyTickets.mockResolvedValue([
+				protoTicket(1),
+				protoTicket(2),
+			])
+			userStore.current = {
+				id: USER,
+				fullName: '山田太郎',
+				phoneNumber: '+818011112222',
+			}
+			const sut = await open()
+
+			expect(sut.groups[0].tickets).toHaveLength(2)
+			expect(sut.holderPhone).toBe('080-1111-2222')
 		})
 
 		it('lists the nearest event first, past events after upcoming ones', async () => {
@@ -318,6 +349,21 @@ describe('TicketsRoute', () => {
 				ticketId(1),
 				ticketId(2),
 			])
+		})
+
+		it('shows the name and phone number saved with the list before the User is read', async () => {
+			ticketClient.getMyTickets.mockResolvedValueOnce([protoTicket(1)])
+			const first = await open()
+			first.detaching()
+
+			userStore.current = undefined
+			ticketClient.getMyTickets.mockRejectedValue(offlineError())
+			concertClient.get.mockRejectedValue(offlineError())
+			const sut = await open()
+
+			expect(sut.offline).toBe(true)
+			expect(sut.holder?.fullName).toBe('山田太郎')
+			expect(sut.holderPhone).toBe('090-1234-5678')
 		})
 
 		it('shows the error state when offline with nothing saved', async () => {
@@ -616,7 +662,7 @@ describe('TicketsRoute', () => {
 					Registration.instance(IWalletStorage, storage),
 					Registration.singleton(ITicketWallet, TicketWallet),
 					Registration.instance(IScreenWakeLock, wakeLock),
-					Registration.instance(IUserStore, { currentLanguage: 'ja' }),
+					Registration.instance(IUserStore, userStore),
 				],
 			).started
 			const sut = fixture.component.route

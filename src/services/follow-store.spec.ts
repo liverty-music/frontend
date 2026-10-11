@@ -24,7 +24,7 @@ const mockLogger = {
 const mockAuth = { isAuthenticated: true }
 
 const mockRpcClient = {
-	listFollowed: vi.fn(async (): Promise<FollowedArtist[]> => []),
+	list: vi.fn(async (): Promise<FollowedArtist[]> => []),
 	follow: vi.fn(async (_id: string) => undefined),
 	unfollow: vi.fn(async (_id: string) => undefined),
 	setHype: vi.fn(async (_id: string, _hype: Hype) => undefined),
@@ -142,6 +142,7 @@ describe('FollowStore', () => {
 	}
 
 	describe('follow — cache invalidation', () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Cache invalidated after follow"
 		it('calls invalidateFollowerCache on successful follow', async () => {
 			mockRpcClient.follow.mockResolvedValueOnce(undefined)
 			const artist = makeArtist('a1', 'Artist One')
@@ -151,6 +152,7 @@ describe('FollowStore', () => {
 			expect(mockConcertStore.invalidateFollowerCache).toHaveBeenCalledOnce()
 		})
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Cache not invalidated on follow RPC failure"
 		it('does NOT call invalidateFollowerCache when follow RPC fails', async () => {
 			mockRpcClient.follow.mockRejectedValueOnce(new Error('network error'))
 			const artist = makeArtist('a1', 'Artist One')
@@ -192,33 +194,35 @@ describe('FollowStore', () => {
 	})
 
 	describe('getFollowedArtistMap — always issues RPC (hype data not cached)', () => {
-		it('calls listFollowed RPC when followedArtists is empty', async () => {
-			mockRpcClient.listFollowed.mockResolvedValueOnce([
+		// @spec components/infrastructure/fan/web/route/dashboard "Follow state not yet loaded"
+		it('calls FollowService.List RPC when followedArtists is empty', async () => {
+			mockRpcClient.list.mockResolvedValueOnce([
 				makeFollowedArtist('a1', 'Artist One'),
 			])
 
 			await sut.getFollowedArtistMap()
 
-			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
+			expect(mockRpcClient.list).toHaveBeenCalledTimes(1)
 		})
 
-		it('calls listFollowed RPC on each call (hype data lives in RPC response)', async () => {
-			mockRpcClient.listFollowed.mockResolvedValue([
+		// @spec components/infrastructure/fan/web/route/dashboard "Follow state already in memory"
+		it('calls FollowService.List RPC on each call (hype data lives in RPC response)', async () => {
+			mockRpcClient.list.mockResolvedValue([
 				makeFollowedArtist('a1', 'Artist One'),
 			])
-			// Even with followedArtists populated, listFollowed must be called
+			// Even with followedArtists populated, FollowService.List must be called
 			// to retrieve per-artist hype values which are not stored in followedArtists.
 			sut.followedArtists = [makeArtist('a1', 'Artist One')]
 
 			await sut.getFollowedArtistMap()
 
-			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
+			expect(mockRpcClient.list).toHaveBeenCalledTimes(1)
 		})
 	})
 
 	describe('listFollowed', () => {
 		it('sets followedArtists to the mapped Artist array when authenticated', async () => {
-			mockRpcClient.listFollowed.mockResolvedValueOnce([
+			mockRpcClient.list.mockResolvedValueOnce([
 				makeFollowedArtist('a1', 'Artist One'),
 				makeFollowedArtist('a2', 'Artist Two'),
 			])
@@ -243,7 +247,7 @@ describe('FollowStore', () => {
 		})
 
 		it('sets followedArtists to [] when result is empty', async () => {
-			mockRpcClient.listFollowed.mockResolvedValueOnce([])
+			mockRpcClient.list.mockResolvedValueOnce([])
 			sut.followedArtists = [makeArtist('stale', 'Stale Artist')]
 
 			await sut.listFollowed()

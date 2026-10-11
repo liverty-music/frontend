@@ -1,24 +1,26 @@
 import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
-import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
 import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
 import { codeToHome, translationKey } from '../../constants/iso3166'
+import type { Kyc } from '../../entities/kyc'
 import {
 	dedupeStrengthLabelKey,
-	type MyVerificationStatus,
 	verificationMethodLabelKey,
-} from '../../entities/verified-identity'
+} from '../../entities/kyc'
+import type { User } from '../../entities/user'
 import {
 	type ConsentPurpose,
 	IConsentService,
 } from '../../lib/consent/consent-service'
+import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
 import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
 import { IFabMenuService } from '../../services/fab-menu-service'
-import { IIdentityVerificationService } from '../../services/identity-verification-service'
+import { IKycService } from '../../services/kyc-service'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
 import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
@@ -33,11 +35,11 @@ export class SettingsRoute {
 	private readonly router = resolve(IRouter)
 	private readonly audio = resolve(IAudioEngine)
 	private readonly appConfig = resolve(IAppConfig)
-	// Identity verification (identity-ekyc-jpki, Stamp flow). Public so the
-	// template can bind `identity.status` directly (mirrors the `auth` /
-	// `consent` exposure pattern). The service drives the PocketSign Stamp
-	// redirect flow — verify() redirects the browser to the PocketSign app.
-	public readonly identity = resolve(IIdentityVerificationService)
+	// 本人確認 (KYC, identity-ekyc-jpki, Stamp flow). Public so the template can
+	// bind `kyc.status` directly (mirrors the `auth` / `consent` exposure
+	// pattern). The service drives the PocketSign Stamp redirect flow —
+	// verify() redirects the browser to the PocketSign app.
+	public readonly kyc = resolve(IKycService)
 	// Public so the template binds the opt-out toggles to the service's
 	// `@observable` state directly (`consent.analytics` /
 	// `consent.sessionReplay`) — no component-local mirror. Mirrors the
@@ -69,6 +71,18 @@ export class SettingsRoute {
 	public sessionReplayDescExpanded = false
 
 	public resendSuccess = false
+
+	/**
+	 * The name and phone number shown on the fan's tickets, as typed in the
+	 * form. Seeded from the saved User; the phone in the domestic form the fan
+	 * types (`090-1234-5678`), sent as E.164.
+	 */
+	public fullName = ''
+	public phoneNumber = ''
+	/** Set by a save attempt, so field errors appear only after one. */
+	public personalDetailsSubmitted = false
+	/** The form values last seeded from the saved User. */
+	private personalDetailsSeed = { fullName: '', phoneNumber: '' }
 
 	/**
 	 * Whether the running platform is iOS/iPadOS. Used to gate the
@@ -119,31 +133,141 @@ export class SettingsRoute {
 		)
 	}
 
-	// ── Identity verification (identity-ekyc-jpki, task 5.1) ──────────────────
+	// ── 本人確認 (KYC, identity-ekyc-jpki) ─────────────────────────────────────
 	// These getters derive from the service's observable `status`, so the badge
 	// and detail rows re-evaluate in place when verification completes — no
 	// component-local mirror (mirrors the UserStore-derived getters above).
 
-	/** Whether the account is IDENTITY_VERIFIED. */
-	public get isIdentityVerified(): boolean {
-		return this.identity.status?.level === 'identityVerified'
+	/** Whether the account is KYC_VERIFIED. */
+	public get isKycVerified(): boolean {
+		return this.kyc.status?.level === 'kycVerified'
 	}
 
-	/** The backing verification, present only when verified. */
-	private get verifiedIdentity(): MyVerificationStatus['identity'] {
-		return this.isIdentityVerified ? this.identity.status?.identity : undefined
+	/** The fan's Kyc, present only when verified. */
+	private get verifiedKyc(): Kyc | undefined {
+		return this.isKycVerified ? this.kyc.status?.kyc : undefined
 	}
 
 	/** i18n key for the verified method (JPKI / driver's licence), or null. */
 	public get verificationMethodKey(): string | null {
-		const vi = this.verifiedIdentity
-		return vi ? verificationMethodLabelKey(vi.method) : null
+		const k = this.verifiedKyc
+		return k ? verificationMethodLabelKey(k.method) : null
 	}
 
 	/** i18n key for the dedupe strength (strong / weak), or null. */
 	public get dedupeStrengthKey(): string | null {
-		const vi = this.verifiedIdentity
-		return vi ? dedupeStrengthLabelKey(vi.dedupeStrength) : null
+		const k = this.verifiedKyc
+		return k ? dedupeStrengthLabelKey(k.dedupeStrength) : null
+	}
+
+	// ── Name and phone number on the tickets (UserService.Update) ─────────────
+
+	/** The signed-in fan's saved User; watched to seed the form once it loads. */
+	public get savedUser(): User | undefined {
+		return this.userStore.current
+	}
+
+	/** The phone number as E.164, or null when it is not a valid number. */
+	private get phoneE164(): string | null {
+		return toE164(this.phoneNumber)
+	}
+
+	/** True when the form differs from the saved values. */
+	public get personalDetailsChanged(): boolean {
+		return (
+			this.fullName.trim() !== (this.savedUser?.fullName ?? '') ||
+			(this.phoneE164 ?? this.phoneNumber.trim()) !==
+				(this.savedUser?.phoneNumber ?? '')
+		)
+	}
+
+	/**
+	 * The name cannot be cleared: `UserService.Update` keeps a value it is not
+	 * given, so an empty name is only valid while none is saved.
+	 */
+	public get nameInvalid(): boolean {
+		return (
+			this.personalDetailsSubmitted &&
+			this.fullName.trim() === '' &&
+			!!this.savedUser?.fullName
+		)
+	}
+
+	/** A typed phone number must be a domestic or E.164 number. */
+	public get phoneInvalid(): boolean {
+		if (!this.personalDetailsSubmitted) return false
+		if (this.phoneNumber.trim() === '') return !!this.savedUser?.phoneNumber
+		return this.phoneE164 === null
+	}
+
+	@watch((vm: SettingsRoute) => vm.savedUser)
+	public savedUserChanged(): void {
+		// Re-seed only while the fan has not edited the form, so a late profile
+		// load fills the fields without overwriting what they typed.
+		if (
+			this.fullName === this.personalDetailsSeed.fullName &&
+			this.phoneNumber === this.personalDetailsSeed.phoneNumber
+		) {
+			this.seedPersonalDetails()
+		}
+	}
+
+	private seedPersonalDetails(): void {
+		const user = this.savedUser
+		this.personalDetailsSeed = {
+			fullName: user?.fullName ?? '',
+			phoneNumber: user?.phoneNumber ? toDomesticDisplay(user.phoneNumber) : '',
+		}
+		this.fullName = this.personalDetailsSeed.fullName
+		this.phoneNumber = this.personalDetailsSeed.phoneNumber
+		this.personalDetailsSubmitted = false
+	}
+
+	/**
+	 * Save the changed name, phone number or both with `UserService.Update`.
+	 * Only the changed fields are sent; the phone number is sent as E.164.
+	 */
+	public async savePersonalDetails(): Promise<void> {
+		this.personalDetailsSubmitted = true
+		if (this.nameInvalid || this.phoneInvalid) return
+
+		const saved = this.savedUser
+		const fullName = this.fullName.trim()
+		const phoneNumber = this.phoneE164
+		const details: { fullName?: string; phoneNumber?: string } = {}
+		if (fullName !== '' && fullName !== (saved?.fullName ?? '')) {
+			details.fullName = fullName
+		}
+		if (phoneNumber && phoneNumber !== (saved?.phoneNumber ?? '')) {
+			details.phoneNumber = phoneNumber
+		}
+		if (details.fullName === undefined && details.phoneNumber === undefined) {
+			this.personalDetailsSubmitted = false
+			return
+		}
+
+		try {
+			await this.userStore.updatePersonalDetails(details)
+		} catch (err) {
+			if (!(err instanceof ConnectError)) throw err
+			this.logger.error('Failed to save the name and phone number', {
+				error: err,
+			})
+			this.ea.publish(
+				new Snack(this.i18n.tr('settings.personalDetails.saveError'), 'error'),
+			)
+			return
+		}
+		this.seedPersonalDetails()
+		this.ea.publish(
+			new Snack(this.i18n.tr('settings.personalDetails.saved'), 'info'),
+		)
+	}
+
+	public binding(): void {
+		// Fill the name and phone fields from the saved User. A User that loads
+		// later fills them through `savedUserChanged`.
+		this.seedPersonalDetails()
 	}
 
 	public loading(): void {
@@ -160,33 +284,33 @@ export class SettingsRoute {
 		// Neither value gates the page: the toggles and the badge fill in when
 		// their state arrives.
 		void this.resolveNotificationToggleState()
-		void this.loadVerificationStatus()
+		void this.loadKycStatus()
 	}
 
 	/**
-	 * Load the caller's verification status for the ACCOUNT-section badge. Only
-	 * `getMyVerificationStatus` reaches the backend (StartVerify / CompleteVerify
-	 * are backend-stubbed → UNAVAILABLE today); a failure here is non-fatal — the
-	 * rest of Settings must still render — so it is logged, not surfaced.
+	 * Load the caller's 本人確認 status for the ACCOUNT-section badge. Only
+	 * `KycService.Get` reaches the backend (Start / Create are backend-stubbed →
+	 * UNAVAILABLE today); a failure here is non-fatal — the rest of Settings
+	 * must still render — so it is logged, not surfaced.
 	 */
-	private async loadVerificationStatus(): Promise<void> {
+	private async loadKycStatus(): Promise<void> {
 		if (!this.auth.isAuthenticated) return
 		try {
-			await this.identity.getMyVerificationStatus()
+			await this.kyc.getStatus()
 		} catch (err) {
-			this.logger.warn('Failed to load verification status', { error: err })
+			this.logger.warn('Failed to load KYC status', { error: err })
 		}
 	}
 
 	/**
-	 * "Verify identity" entry point for the PocketSign Stamp flow (task 5.1,
-	 * schema v0.60.0). Calls `identity.verify()` which in turn calls StartVerify,
+	 * 本人確認 entry point for the PocketSign Stamp flow. Calls `kyc.verify()`
+	 * which in turn calls KycService.Start,
 	 * persists the session_id, and navigates the browser to the PocketSign app.
 	 * The browser navigates away immediately — the method does not return to the
 	 * caller after the redirect, so there is no branch to handle here beyond error
 	 * paths.
 	 *
-	 * Errors (ConnectError) from StartVerify surface as a snack notification
+	 * Errors (ConnectError) from Start surface as a snack notification
 	 * before the busy-on-click guard releases, mirroring the push-toggle pattern.
 	 *
 	 * TODO (identity-ekyc 5.2): where a lottery phase REQUIRES verification, an
@@ -195,13 +319,13 @@ export class SettingsRoute {
 	 * TODO (identity-ekyc 5.3): the 運転免許証 fallback (Verify CardInfo) picks a
 	 * method other than JPKI; no method picker is built (post-MVP).
 	 */
-	public async verifyIdentity(): Promise<void> {
-		const outcome = await this.identity.verify('jpki')
+	public async verifyKyc(): Promise<void> {
+		const outcome = await this.kyc.verify('jpki')
 		switch (outcome.kind) {
 			case 'redirecting':
 				// The browser is navigating to the PocketSign app. Nothing further
 				// to do in this method — the callback route handles the return leg.
-				this.logger.info('Redirecting to PocketSign for identity verification')
+				this.logger.info('Redirecting to PocketSign for KYC')
 				break
 			case 'notAuthenticated':
 				// Unreachable from this row (rendered authenticated-only); logged
@@ -252,8 +376,9 @@ export class SettingsRoute {
 	 * A subscribe/register failure reflects OFF (never a false success).
 	 */
 	private async resolveNotificationToggleState(): Promise<void> {
-		const userId = this.userStore.current?.id ?? ''
-		const state = await this.pushService.resolvePushState(userId || undefined)
+		const state = await this.pushService.resolvePushState(
+			this.userStore.current !== undefined,
+		)
 		this.notificationsEnabled = state === 'enabled'
 		if (state === 'error') {
 			// Non-silent: the recovery already logged the cause; reflect the
@@ -347,10 +472,9 @@ export class SettingsRoute {
 
 		try {
 			const newValue = !this.notificationsEnabled
-			const userId = this.userStore.current?.id ?? ''
-			if (!userId) {
+			if (!this.userStore.current) {
 				this.logger.warn(
-					'Cannot toggle push notifications without authenticated userId',
+					'Cannot toggle push notifications before the account is loaded',
 				)
 				return
 			}
@@ -365,7 +489,7 @@ export class SettingsRoute {
 				this.notificationsEnabled = true
 			} else {
 				try {
-					await this.pushService.delete(userId)
+					await this.pushService.delete()
 				} catch (err) {
 					this.logger.error('Failed to unsubscribe push notifications', err)
 				}
@@ -461,7 +585,8 @@ export class SettingsRoute {
 
 	public async signOut(): Promise<void> {
 		try {
-			this.userStore.clear()
+			// AuthService publishes SignedOut before the redirect; every store
+			// (UserStore included) clears its own state on it.
 			await this.auth.signOut()
 		} catch (err) {
 			this.logger.error('Sign-out failed', { error: err })

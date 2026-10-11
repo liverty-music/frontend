@@ -100,6 +100,7 @@ describe('PostSignupDialog', () => {
 			expect(sut.canInstallNatively).toBe(true)
 		})
 
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "PWA install row hidden on iOS Safari"
 		it('stays false in binding() on iOS even when canShowFab is true', () => {
 			fakeCanShowFab = true
 			fakeIsIos = true
@@ -147,6 +148,7 @@ describe('PostSignupDialog', () => {
 	})
 
 	describe('onInstallPwa', () => {
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "PWA install from dialog — native prompt"
 		it('calls pwaInstall.install()', async () => {
 			await sut.onInstallPwa()
 
@@ -180,6 +182,7 @@ describe('PostSignupDialog', () => {
 	})
 
 	describe('onDefer', () => {
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Dialog dismissed"
 		it('closes the dialog without suppressing FAB', () => {
 			sut.active = true
 			sut.activeChanged()
@@ -191,6 +194,7 @@ describe('PostSignupDialog', () => {
 	})
 
 	describe('isAllDone', () => {
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Footer button label when actions remain"
 		it('is false when canShowInstallOption is true', () => {
 			fakeCanShowInstallOption = true
 			fakeNotificationManager.permission = 'granted'
@@ -199,6 +203,7 @@ describe('PostSignupDialog', () => {
 			expect(sut.isAllDone).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Footer button label when actions remain"
 		it('is false when permission is not granted', () => {
 			fakeCanShowInstallOption = false
 			fakeNotificationManager.permission = 'default'
@@ -207,6 +212,7 @@ describe('PostSignupDialog', () => {
 			expect(sut.isAllDone).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Footer button label when all actions are complete"
 		it('is true when PWA install option unavailable and notification granted', () => {
 			fakeCanShowInstallOption = false
 			fakeNotificationManager.permission = 'granted'

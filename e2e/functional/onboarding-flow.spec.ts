@@ -57,7 +57,7 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListFollowed')) {
+		if (url.includes('FollowService/List')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -96,7 +96,7 @@ async function mockRpcRoutesEmpty(page: Page): Promise<void> {
  * - ConcertService/List: returns 1 concert per artist (drives
  *   artistsWithConcertsCount >= 3 → coach mark)
  * - ListByArtists: returns concerts in the away lane
- * - ListFollowed: returns 3 followed artists
+ * - FollowService/List: returns 3 followed artists
  */
 async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
@@ -158,7 +158,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListByFollower')) {
+		if (url.includes('ConcertService/ListFollowed')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -222,7 +222,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListFollowed')) {
+		if (url.includes('FollowService/List')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',

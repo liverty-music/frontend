@@ -54,7 +54,7 @@ export async function runFollowReconcile(container: IContainer): Promise<void> {
 	// it returns the in-memory user if already loaded, otherwise resolves the
 	// Get/idempotent-Create chain. Awaiting it here guarantees `current.id` is
 	// available without racing UserHydrationTask. Pass the effective locale for
-	// the cache-miss Create path, mirroring UserHydrationTask.
+	// the Create path (no User yet), mirroring UserHydrationTask.
 	const clientLocale = normalizeToSupportedLanguage(
 		container.get(I18N).getLocale(),
 	)
@@ -70,7 +70,7 @@ export async function runFollowReconcile(container: IContainer): Promise<void> {
 
 	const userId = userStore.current?.id
 	if (!userId) {
-		// No user id even after ensureLoaded (e.g. no cached id AND no email in
+		// No user id even after ensureLoaded (e.g. no User yet AND no email in
 		// the JWT claims). Leave the session flag cleared so the next start can
 		// retry once a user id exists.
 		sessionStorage.removeItem(SessionKeys.followReconcileAttempted)

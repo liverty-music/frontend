@@ -9,7 +9,7 @@ import { expect, type Page, test } from '../support/test'
  * cached in `localStorage.userNotificationsEnabled`. Enabling push from the
  * PostSignupDialog never wrote that flag, so the settings page showed OFF
  * even though the backend had the subscription. The fix derives the state
- * from `PushManager.getSubscription()` ∧ `PushNotificationService.Get`, with
+ * from `PushManager.getSubscription()` ∧ `PushSubscriptionService.Get`, with
  * self-heal via `Create` when the two diverge.
  *
  * # What this suite locks in
@@ -140,7 +140,7 @@ interface RpcMockHandle {
 }
 
 /**
- * Mock the Connect-RPC `PushNotificationService`. Returns a handle so tests
+ * Mock the Connect-RPC `PushSubscriptionService`. Returns a handle so tests
  * can assert call counts (e.g. "Get was NOT called when browser had no sub").
  */
 async function mockPushRpc(
@@ -151,7 +151,7 @@ async function mockPushRpc(
 	const createOutcome: CreateResult = opts.create ?? 'success'
 
 	await page.route(
-		'**/liverty_music.rpc.push_notification.**',
+		'**/liverty_music.rpc.push_subscription.**',
 		async (route) => {
 			const url = route.request().url()
 
@@ -282,7 +282,7 @@ test.describe('Settings Push Notification Toggle', () => {
 		await expect(toggle).toHaveAttribute('aria-checked', 'false')
 
 		// Spec: settings.md "not subscribed on this browser":
-		// "the system SHALL NOT call PushNotificationService.Get for a non-existent endpoint"
+		// "the system SHALL NOT call PushSubscriptionService.Get for a non-existent endpoint"
 		expect(rpc.getCalls()).toBe(0)
 		expect(rpc.createCalls()).toBe(0)
 		await expectNoLegacyLocalStorageFlag(page)

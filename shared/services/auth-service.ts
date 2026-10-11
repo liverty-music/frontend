@@ -359,9 +359,21 @@ export class AuthService {
 	public async handleCallback(): Promise<User> {
 		this.logger.info('Processing auth callback')
 		try {
+			// The account stored before this sign-in, if any (e.g. one whose
+			// session lapsed without a sign-out). Read before signinCallback
+			// replaces it.
+			const previousSub = (await this.userManager.getUser())?.profile.sub
 			const user = await this.userManager.signinCallback()
 			if (!user) {
 				throw new Error('signinCallback returned no user')
+			}
+			if (previousSub && previousSub !== user.profile.sub) {
+				// Account switch: the previous account never signed out here, so its
+				// client state is still on this device. Clear it the same way a
+				// sign-out does before the new account's state loads, so nothing the
+				// previous account left can be shown or sent for the new one.
+				this.logger.info('Account switched; clearing previous account state')
+				this.ea.publish(new SignedOut())
 			}
 			this.logger.info('Auth callback processed successfully', {
 				user: user.profile.preferred_username,

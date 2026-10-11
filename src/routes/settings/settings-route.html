@@ -1,5 +1,6 @@
 <import from="./language-selector.css"></import>
-<import from="./identity-verification.css"></import>
+<import from="./kyc.css"></import>
+<import from="./personal-details.css"></import>
 
 <!-- The page title ("Settings") is owned by the shell-hosted <page-header>,
      driven from the route's data.titleKey. -->
@@ -56,7 +57,7 @@
            removes it from AT discovery) and the explanatory hint is associated
            via `aria-describedby`.
            Authenticated-only: a push subscription is persisted as a backend
-           `push_subscriptions` row keyed by userId, so before account creation
+           `push_subscriptions` row of the signed-in User, so before account creation
            (onboarding / guest) there is nothing to register and the toggle
            would no-op — hidden entirely, matching the ACCOUNT section below. -->
       <li if.bind="auth.isAuthenticated" class="settings-list-item">
@@ -274,6 +275,58 @@
     </ul>
   </section>
 
+  <!-- NAME ON YOUR TICKETS Section. Authenticated-only: the full name and
+       phone number saved on the User, shown on the face of the fan's tickets
+       and prefilled at lottery entry and checkout. Saved with
+       UserService.Update; the phone is typed in the domestic form and sent as
+       E.164. `novalidate`: the VM validates on submit and shows the errors
+       below each field, tied to it with aria-describedby. -->
+  <section if.bind="auth.isAuthenticated" aria-labelledby="personal-details-title">
+    <h2 id="personal-details-title" t="settings.personalDetails.title" class="settings-section-title"></h2>
+    <form
+      class="[ settings-personal-details ] [ stack ]"
+      submit.trigger="savePersonalDetails()"
+      novalidate
+      data-testid="settings-personal-details"
+    >
+      <p id="personal-details-note" t="settings.personalDetails.note" class="settings-personal-details-note"></p>
+      <label class="settings-field">
+        <span t="settings.personalDetails.name" class="settings-field-label"></span>
+        <input
+          type="text"
+          autocomplete="name"
+          value.bind="fullName"
+          aria-invalid.bind="nameInvalid"
+          aria-describedby="personal-details-note settings-name-error"
+          class="settings-field-input"
+          data-testid="settings-full-name"
+        />
+      </label>
+      <p id="settings-name-error" if.bind="nameInvalid" t="settings.personalDetails.nameRequired" class="settings-field-error"></p>
+      <label class="settings-field">
+        <span t="settings.personalDetails.phone" class="settings-field-label"></span>
+        <input
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel-national"
+          value.bind="phoneNumber"
+          aria-invalid.bind="phoneInvalid"
+          aria-describedby="personal-details-note settings-phone-error"
+          class="settings-field-input"
+          data-testid="settings-phone-number"
+        />
+      </label>
+      <p id="settings-phone-error" if.bind="phoneInvalid" t="settings.personalDetails.phoneInvalid" class="settings-field-error"></p>
+      <button
+        type="submit"
+        disabled.bind="!personalDetailsChanged"
+        t="settings.personalDetails.save"
+        class="settings-personal-details-save"
+        data-testid="settings-personal-details-save"
+      ></button>
+    </form>
+  </section>
+
   <!-- ACCOUNT Section. Authenticated-only: the guest sign-in / sign-up entry
        lives in the top hero, so this section is hidden entirely for guests. -->
   <section if.bind="auth.isAuthenticated">
@@ -314,45 +367,45 @@
         </div>
       </li>
 
-      <!-- Identity verification (identity-ekyc-jpki, PocketSign Stamp flow,
-           schema v0.60.0). Shows the account's verification status (UNVERIFIED /
-           IDENTITY_VERIFIED, plus method + dedupe strength when verified). The
-           status badge is a polite live region (<output>) carrying a non-colour
-           status icon so state is not conveyed by colour alone. Tapping
-           "PocketSign で本人確認" calls StartVerify and redirects the browser to
-           the PocketSign app; the fan returns via the /verify/callback route. -->
+      <!-- 本人確認 (KYC, identity-ekyc-jpki, PocketSign Stamp flow). Shows the
+           account's verification status (UNVERIFIED / KYC_VERIFIED, plus method
+           + dedupe strength when verified). The status badge is a polite live
+           region (<output>) carrying a non-colour status icon so state is not
+           conveyed by colour alone. Tapping "本人確認する" calls KycService.Start
+           and redirects the browser to the PocketSign app; the fan returns via
+           the /verify/callback route. -->
       <li class="settings-list-item">
         <div class="[ settings-row ] [ settings-row-toggle ]">
           <svg-icon name="shield-check" class="settings-icon"></svg-icon>
-          <div class="[ settings-identity ] [ stack ]">
-            <span id="identity-label" t="settings.identity.label" class="settings-row-label"></span>
+          <div class="[ settings-kyc ] [ stack ]">
+            <span id="kyc-label" t="settings.kyc.label" class="settings-row-label"></span>
             <output
-              id="identity-status"
+              id="kyc-status"
               class="settings-verification-badge"
               aria-live="polite"
-              aria-describedby="identity-label"
-              data-verified.bind="isIdentityVerified"
+              aria-describedby="kyc-label"
+              data-verified.bind="isKycVerified"
             >
-              <svg-icon if.bind="isIdentityVerified" name="check" class="settings-verification-icon"></svg-icon>
-              <svg-icon if.bind="!isIdentityVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
-              <span if.bind="isIdentityVerified" t="settings.identity.levelVerified"></span>
-              <span if.bind="!isIdentityVerified" t="settings.identity.levelUnverified"></span>
+              <svg-icon if.bind="isKycVerified" name="check" class="settings-verification-icon"></svg-icon>
+              <svg-icon if.bind="!isKycVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
+              <span if.bind="isKycVerified" t="settings.kyc.levelVerified"></span>
+              <span if.bind="!isKycVerified" t="settings.kyc.levelUnverified"></span>
             </output>
             <!-- Method + dedupe strength, verified-only. -->
-            <span if.bind="isIdentityVerified && verificationMethodKey" class="settings-identity-detail">
-              <span t="settings.identity.methodPrefix"></span>
+            <span if.bind="isKycVerified && verificationMethodKey" class="settings-kyc-detail">
+              <span t="settings.kyc.methodPrefix"></span>
               <span t.bind="verificationMethodKey"></span>
-              <span t.bind="dedupeStrengthKey" class="settings-identity-dedupe"></span>
+              <span t.bind="dedupeStrengthKey" class="settings-kyc-dedupe"></span>
             </span>
           </div>
-          <!-- "PocketSign アプリで本人確認" button: redirects to PocketSign Stamp.
-               Hidden once the account is IDENTITY_VERIFIED. -->
+          <!-- "本人確認する" button: redirects to PocketSign Stamp.
+               Hidden once the account is KYC_VERIFIED. -->
           <button
-            if.bind="!isIdentityVerified"
-            busy-on-click.bind="() => verifyIdentity()"
+            if.bind="!isKycVerified"
+            busy-on-click.bind="() => verifyKyc()"
             class="settings-resend-btn"
           >
-            <span t="settings.identity.verifyCta"></span>
+            <span t="settings.kyc.verifyCta"></span>
           </button>
         </div>
       </li>

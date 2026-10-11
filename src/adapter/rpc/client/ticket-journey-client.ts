@@ -32,15 +32,14 @@ export class TicketJourneyRpcClient {
 		this.client = createClient(TicketJourneyService, transport)
 	}
 
-	public async listByUser(
-		signal?: AbortSignal,
-	): Promise<Map<string, JourneyStatus>> {
+	/** The caller's ticket journeys by event id (`TicketJourneyService.List`). */
+	public async list(signal?: AbortSignal): Promise<Map<string, JourneyStatus>> {
 		this.logger.info('Listing ticket journeys for current user')
 		try {
-			const response = await this.client.listByUser({}, { signal })
+			const response = await this.client.list({}, { signal })
 			return toStatusMap(response.journeys)
 		} catch (err) {
-			this.logger.warn('ListByUser failed', { error: err })
+			this.logger.warn('List failed', { error: err })
 			throw err
 		}
 	}

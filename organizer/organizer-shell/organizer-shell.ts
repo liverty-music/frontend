@@ -43,7 +43,7 @@ import { route } from '@aurelia/router'
 			title: 'Edit concert',
 		},
 		{
-			// Configure a lottery phase on a PUBLISHED event (roadmap ④, task 5.1).
+			// Create a lottery sale for a PUBLISHED event.
 			// Reached by the target event id. TODO(entry-point): the concerts
 			// dashboard has no per-event "put on sale" affordance yet (its rows are
 			// series-scoped and carry no event ids), so this route is currently
@@ -51,17 +51,17 @@ import { route } from '@aurelia/router'
 			// the console exposes event ids.
 			path: 'lottery/configure/:eventId',
 			component: import('../lottery-phase-editor/lottery-phase-editor-route'),
-			title: 'Configure lottery phase',
+			title: 'Create lottery',
 		},
 		{
-			// Lottery phase status / draw-outcome summary (roadmap ④, task 5.2).
-			path: 'lottery/status/:phaseId',
+			// The event's lottery sales with their entry tallies and draw outcome.
+			path: 'lottery/status/:eventId',
 			component: import('../lottery-status/lottery-status-route'),
-			title: 'Lottery phase status',
+			title: 'Lottery status',
 		},
 		{
-			// First-come ticket sale of one event (first-come-ticket-sales, task
-			// 7.1), reached from the event's row on the concerts dashboard.
+			// First-come ticket sale of one event, reached from the event's row on
+			// the concerts dashboard.
 			path: 'ticket-sale/:eventId',
 			component: import('../ticket-sale-editor/ticket-sale-editor-route'),
 			title: 'First-come sale',

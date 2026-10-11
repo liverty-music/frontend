@@ -6,7 +6,10 @@ import { TicketStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_musi
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
+import { IOrderRpcClient } from '../../adapter/rpc/client/order-client'
 import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
+import { toDomesticDisplay } from '../../lib/to-e164'
+import { IUserStore } from '../../services/user-store'
 
 /**
  * Discrete UI phases of the Order detail view.
@@ -54,7 +57,9 @@ export interface OrderTicketView {
 	id: string
 	// TODO(tickets): resolve event title once a fan-facing event-read RPC exists.
 	eventId: string
+	/** The fan's full name as their User currently records it. */
 	holderName: string
+	/** The fan's phone number as their User currently records it. */
 	holderPhone: string
 	issuedAt: Date | null
 	isIssued: boolean
@@ -88,7 +93,9 @@ export class OrderRoute {
 	public tickets: OrderTicketView[] = []
 
 	private readonly logger = resolve(ILogger).scopeTo('OrderRoute')
+	private readonly orderClient = resolve(IOrderRpcClient)
 	private readonly ticketClient = resolve(ITicketRpcClient)
+	private readonly userStore = resolve(IUserStore)
 	private abortController: AbortController | null = null
 
 	public loading(params: Params): void {
@@ -115,7 +122,7 @@ export class OrderRoute {
 		try {
 			// Fetch order and tickets in parallel to minimize latency.
 			const [rawOrder, allTickets] = await Promise.all([
-				this.ticketClient.getOrder(this.orderId, this.abortController?.signal),
+				this.orderClient.get(this.orderId, this.abortController?.signal),
 				this.ticketClient.getMyTickets(this.abortController?.signal),
 			])
 			this.order = this.toOrderView(rawOrder)
@@ -131,7 +138,7 @@ export class OrderRoute {
 				this.step = 'notfound'
 				return
 			}
-			this.logger.error('getOrder / getMyTickets failed', { error: err })
+			this.logger.error('Order / ticket read failed', { error: err })
 			this.error =
 				'注文情報の読み込みに失敗しました。時間をおいて再度お試しください。'
 			this.step = 'error'
@@ -154,11 +161,12 @@ export class OrderRoute {
 	}
 
 	private toTicketView(t: Ticket): OrderTicketView {
+		const user = this.userStore.current
 		return {
 			id: t.id?.value ?? '',
 			eventId: t.eventId?.value ?? '',
-			holderName: t.holderIdentity?.fullName ?? '',
-			holderPhone: t.holderIdentity?.phoneNumber ?? '',
+			holderName: user?.fullName ?? '',
+			holderPhone: user?.phoneNumber ? toDomesticDisplay(user.phoneNumber) : '',
 			issuedAt: t.issueTime ? timestampDate(t.issueTime) : null,
 			isIssued: t.status === TicketStatus.ISSUED,
 			isVoided: t.status === TicketStatus.VOIDED,

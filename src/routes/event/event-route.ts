@@ -2,12 +2,16 @@ import { I18N } from '@aurelia/i18n'
 import type { IRouteViewModel, Params } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
 import type { EventDateTab } from '../../components/event-date-tabs/event-date-tabs'
-import { Snack } from '../../../shared/ui/snack-bar/snack'
 import type { Artist } from '../../entities/artist'
-import type { TicketSale } from '../../entities/ticket-sale'
+import {
+	currentSale,
+	isWindowOpen,
+	type TicketSale,
+} from '../../entities/ticket-sale'
 import { IAuthService } from '../../services/auth-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
@@ -57,8 +61,10 @@ export class EventRoute implements IRouteViewModel {
 	public event: EventPageEvent | null = null
 	/** All Events of the Series in date order; empty until they load. */
 	public seriesEvents: EventPageEvent[] = []
-	/** The event's first-come sale; null until loaded, or when it has none. */
-	public sale: TicketSale | null = null
+	/** The event's sales, each with its TicketType for the event. */
+	public sales: TicketSale[] = []
+	/** The current time, read when the sales arrive. */
+	public now = new Date()
 	public followUpdatingId = ''
 	/**
 	 * False until the fan's follows are loaded. The follow controls stay
@@ -90,7 +96,7 @@ export class EventRoute implements IRouteViewModel {
 		this.state = 'loading'
 		this.event = null
 		this.seriesEvents = []
-		this.sale = null
+		this.sales = []
 		this.followsLoaded = false
 		try {
 			const proto = await this.concertClient.get(this.eventId, signal)
@@ -141,11 +147,16 @@ export class EventRoute implements IRouteViewModel {
 		}
 	}
 
-	/** Load the event's sale; the ticket section shows it once it arrives. */
+	/** Load the event's sales; the ticket section shows one once they arrive. */
 	private async loadSale(signal: AbortSignal): Promise<void> {
 		try {
-			const sale = await this.ticketSaleClient.get(this.eventId, signal)
-			if (!signal.aborted) this.sale = sale
+			const sales = await this.ticketSaleClient.listByEvent(
+				this.eventId,
+				signal,
+			)
+			if (signal.aborted) return
+			this.now = new Date()
+			this.sales = sales
 		} catch (err) {
 			if (signal.aborted) return
 			// The section falls back to the sign-up hint without a sale.
@@ -241,24 +252,57 @@ export class EventRoute implements IRouteViewModel {
 		return !this.authService.isAuthenticated
 	}
 
-	/** The sale to show in the ticket section; none for a cancelled concert. */
+	/**
+	 * The sale the ticket section shows: the open one, otherwise the next to
+	 * open, otherwise the last that ended. None for a cancelled concert.
+	 */
 	public get shownSale(): TicketSale | null {
-		return this.isCancelled ? null : this.sale
+		return this.isCancelled ? null : currentSale(this.sales, this.now)
+	}
+
+	/** True while the shown lottery sale takes entries. */
+	public get isLotteryOpen(): boolean {
+		const sale = this.shownSale
+		return sale?.method === 'lottery' && isWindowOpen(sale, this.now)
+	}
+
+	/** True once the shown lottery sale's window has closed. */
+	public get isLotteryEnded(): boolean {
+		const sale = this.shownSale
+		return (
+			sale?.method === 'lottery' && sale.saleEnd.getTime() <= this.now.getTime()
+		)
 	}
 
 	/** The sale start in Japan time, e.g. "2026年11月1日(日) 10:00". */
 	public get saleStartLabel(): string {
-		return this.sale ? formatSaleStart(this.sale.saleStart, this.lang) : ''
+		const sale = this.shownSale
+		return sale ? formatSaleStart(sale.saleStart, this.lang) : ''
+	}
+
+	/** The sale end in Japan time. */
+	public get saleEndLabel(): string {
+		const sale = this.shownSale
+		return sale ? formatSaleStart(sale.saleEnd, this.lang) : ''
 	}
 
 	/** The price of one ticket with thousands separators, e.g. "3,000". */
 	public get salePrice(): string {
-		return this.sale ? this.sale.price.toLocaleString('ja-JP') : ''
+		const sale = this.shownSale
+		return sale ? sale.ticketType.price.toLocaleString('ja-JP') : ''
 	}
 
 	/** Where the action to buy leads a signed-in fan. */
 	public get checkoutUrl(): string {
 		return this.event ? `/events/${this.event.id}/checkout` : '#'
+	}
+
+	/** Where the action to enter leads a signed-in fan. */
+	public get lotteryEntryUrl(): string {
+		const sale = this.shownSale
+		return this.event && sale
+			? `/events/${this.event.id}/lottery/${sale.ticketType.id}`
+			: '#'
 	}
 
 	public get dateNav(): DateNavMode {

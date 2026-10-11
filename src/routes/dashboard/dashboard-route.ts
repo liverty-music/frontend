@@ -70,7 +70,7 @@ export class DashboardRoute {
 	@observable public filteredArtistIds: string[] = []
 	@observable public filteredStatuses: JourneyStatus[] = []
 	/**
-	 * The active lower bound sent as `from` to ListByFollower. Defaults to the
+	 * The active lower bound sent as `from` to ListFollowed. Defaults to the
 	 * client's local date (today onward); a past date widens the timetable into
 	 * the past. Restored from the `from` URL query param on load. Unlike the
 	 * artist/journey facets (client-side narrowing), changing this re-fetches.
@@ -438,7 +438,7 @@ export class DashboardRoute {
 		this.showBeams = this.storage.getItem(StorageKeys.beamsEnabled) === 'true'
 
 		// Deep-link target from `/concerts/:id` (e.g. a tapped push notification).
-		// Recorded here but resolved only after the authoritative listByFollower
+		// Recorded here but resolved only after the authoritative listFollowed
 		// fetch settles (see resolvePendingDeepLink), never off the cache paint.
 		// Suppressed during onboarding, mirroring the query-param handling below.
 		this.pendingConcertId = !this.isOnboarding && params?.id ? params.id : null
@@ -637,12 +637,15 @@ export class DashboardRoute {
 
 	private async loadDashboardEvents(
 		signal?: AbortSignal,
+		forceConcerts = false,
 	): Promise<DateGroup[]> {
 		this.logger.info('Loading dashboard events')
 
 		const [artistMap, groups, journeyMap, purchasedMap] = await Promise.all([
 			this.followStore.getFollowedArtistMap(signal),
-			this.concertService.listByFollower(this.fromDate, signal),
+			forceConcerts
+				? this.concertService.revalidateFollower(this.fromDate)
+				: this.concertService.listFollowed(this.fromDate, signal),
 			this.fetchJourneyMap(signal),
 			this.fetchPurchasedMap(signal),
 		])
@@ -729,18 +732,26 @@ export class DashboardRoute {
 	}
 
 	/**
-	 * Fetch fresh data in the background and swap it in place — no spinner, no
-	 * scroll reset. Called after the cache paint on re-entry, and on PWA resume.
+	 * PWA-resume callback: force a refetch of the concert list (bypassing the
+	 * 24h cache, which would otherwise hand back the cached value) and swap the
+	 * fresh result in place — no spinner, no scroll reset, no document reload.
 	 */
 	public readonly revalidate = (): void => {
-		void this.refreshInBackground()
+		void this.refreshInBackground({ force: true })
 	}
 
-	private async refreshInBackground(): Promise<void> {
+	/**
+	 * Re-derive the timetable in the background and swap it in place. With
+	 * `force`, the concert list is refetched regardless of the cache's staleness;
+	 * without it, the cached list is read (stale-while-revalidate).
+	 */
+	private async refreshInBackground(
+		opts: { force?: boolean } = {},
+	): Promise<void> {
 		if (this.needsRegion || this.isLoading) return
 		const signal = this.abortController?.signal
 		try {
-			const fresh = await this.loadDashboardEvents(signal)
+			const fresh = await this.loadDashboardEvents(signal, opts.force)
 			if (signal?.aborted) return
 			this.dateGroups = fresh
 			// Claim the render state so a cache reflection that has not run yet can

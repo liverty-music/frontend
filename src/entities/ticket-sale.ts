@@ -1,9 +1,23 @@
 /**
- * Where a TicketSale stands at the time it was read.
+ * How a TicketSale sells: by lottery, or first come, first served.
  *
- * @source proto/liverty_music/entity/v1/ticket_sale.proto — TicketSaleState
+ * @source proto/liverty_music/entity/v1/ticket_sale.proto — TicketSaleMethod
  */
-export type TicketSaleState =
+export type TicketSaleMethod = 'lottery' | 'firstCome'
+
+/**
+ * Which verification a fan needs before entering the sale or checking out.
+ *
+ * @source proto/liverty_music/entity/v1/ticket_sale.proto — VerificationRequirement
+ */
+export type VerificationRequirement = 'none' | 'verifiedAny' | 'jpkiOnly'
+
+/**
+ * Where a first-come TicketType stands at the time it was read.
+ *
+ * @source proto/liverty_music/entity/v1/ticket_type.proto — TicketTypeState
+ */
+export type TicketTypeState =
 	| 'notYetOnSale'
 	| 'onSale'
 	| 'allHeld'
@@ -11,26 +25,71 @@ export type TicketSaleState =
 	| 'ended'
 
 /**
- * The platform's own first-come sale of one event's tickets, as a fan sees it:
- * never with a count, only its state and whether few tickets are left.
+ * What a sale offers for one event, as a fan sees it: never with a count,
+ * only its price, limit and, for a first-come sale, its state and whether few
+ * tickets are left.
+ *
+ * @source proto/liverty_music/entity/v1/ticket_type.proto — TicketType
+ */
+export interface TicketType {
+	readonly id: string
+	readonly eventId: string
+	/** Price of one ticket in yen, 税込 (tax-inclusive). */
+	readonly price: number
+	/** Most tickets one account may hold for the event after this sale. */
+	readonly perAccountLimit: number
+	/** The first-come state; a lottery's TicketType reads `ended` here. */
+	readonly state: TicketTypeState
+	/** True when a first-come TicketType is on sale with few tickets left (残りわずか). */
+	readonly lowStock: boolean
+}
+
+/**
+ * One sale (受付) of an event, as the fan boundary returns it: its window and
+ * its TicketType for that event.
  *
  * @source proto/liverty_music/entity/v1/ticket_sale.proto — TicketSale
  */
 export interface TicketSale {
 	readonly id: string
-	readonly eventId: string
+	readonly name: string
+	readonly method: TicketSaleMethod
 	readonly saleStart: Date
 	readonly saleEnd: Date
-	/** Price of one ticket in yen, 税込 (tax-inclusive). */
-	readonly price: number
-	/** Most tickets one account may buy from the sale. */
-	readonly perAccountLimit: number
-	readonly state: TicketSaleState
-	/** True when the sale is on sale with few tickets left (残りわずか). */
-	readonly lowStock: boolean
+	readonly verificationRequirement: VerificationRequirement
+	/** The sale's TicketType for the event it was read for. */
+	readonly ticketType: TicketType
 }
 
-/** True while a fan can start a checkout on the sale. */
-export function isBuyable(sale: TicketSale): boolean {
-	return sale.state === 'onSale' || sale.state === 'allHeld'
+/** True while the sale's window is open at `now`. */
+export function isWindowOpen(sale: TicketSale, now: Date): boolean {
+	const t = now.getTime()
+	return sale.saleStart.getTime() <= t && t < sale.saleEnd.getTime()
+}
+
+/**
+ * The sale an event page shows: the one whose window is open, otherwise the
+ * next to open, otherwise the last that ended. Sales of one event never
+ * overlap, so at most one is open. Null when the event has no sale.
+ */
+export function currentSale(
+	sales: readonly TicketSale[],
+	now: Date,
+): TicketSale | null {
+	const open = sales.find((s) => isWindowOpen(s, now))
+	if (open) return open
+	const t = now.getTime()
+	const upcoming = sales
+		.filter((s) => s.saleStart.getTime() > t)
+		.sort((a, b) => a.saleStart.getTime() - b.saleStart.getTime())
+	if (upcoming.length > 0) return upcoming[0]
+	const ended = [...sales].sort(
+		(a, b) => b.saleEnd.getTime() - a.saleEnd.getTime(),
+	)
+	return ended[0] ?? null
+}
+
+/** True while a fan can start a checkout on the first-come TicketType. */
+export function isBuyable(ticketType: TicketType): boolean {
+	return ticketType.state === 'onSale' || ticketType.state === 'allHeld'
 }

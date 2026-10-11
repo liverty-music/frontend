@@ -131,34 +131,22 @@ const routeTable = [
 		component: import('./routes/verify-callback/verify-callback-route'),
 		title: 'Identity Verification',
 	},
-	// Lottery APPLY flow (roadmap ④). Authenticated by default (Apply
-	// resolves the fan from the token). `maxTickets` / `ticketPrice` ride the
-	// path because the fan surface of LotteryService has no phase-read RPC
-	// yet; the server re-validates both. TODO(lottery): drop these params and
-	// load the phase once a fan-facing phase-read RPC exists, and decide the
-	// production entry point (deep link from a concert/phase card) — this
-	// route is intentionally reachable only via the explicit lottery path for
-	// now, not wired into the bottom nav.
+	// The lottery entry of one TicketType of an Event's lottery sale, opened
+	// from the Event page's ticket section. Signed-in fans only; a guest is
+	// sent through sign-up from the Event page.
 	{
-		// Trailing `verificationRequired` ("true"/"false") is optional so
-		// existing links resolve unchanged; when "true" the flow gates
-		// UNVERIFIED fans on a verify-first prompt (identity-ekyc-jpki 5.2).
-		path: 'lottery/:phaseId/apply/:maxTickets/:ticketPrice/:verificationRequired?',
+		path: 'events/:id/lottery/:ticketTypeId',
 		component: import('./routes/lottery-apply/lottery-apply-route'),
-		title: 'Lottery Application',
+		title: 'Lottery Entry',
+		data: { titleKey: 'lotteryApply.title', section: 'dashboard' },
 	},
-	// Lottery MY-APPLICATION + RESULT view (roadmap ④, tasks 4.2/4.3).
-	// Authenticated by default (the application is resolved from the token +
-	// phase). Renders the caller's application, its state (抽選待ち / 当選 /
-	// 落選 / 取下げ済み) and the pre-draw notice, and hosts the withdraw action
-	// while APPLIED. Like the apply route it is reachable only via the explicit
-	// lottery path for now — NOT wired into the bottom nav; the production entry
-	// point (deep link from a concert/phase card or a "my applications" list)
-	// is decided in a later increment.
+	// The fan's entry for that TicketType: its state and the withdraw action.
+	// Reached from the entry screen once the entry is made.
 	{
-		path: 'lottery/:phaseId/application',
+		path: 'events/:id/lottery/:ticketTypeId/entry',
 		component: import('./routes/lottery-application/lottery-application-route'),
-		title: 'My Lottery Application',
+		title: 'My Lottery Entry',
+		data: { titleKey: 'lotteryApplication.title', section: 'dashboard' },
 	},
 	// My Tickets (roadmap ⑤, task 5.1). Authenticated by default — tickets are
 	// account-bound covered tickets issued from captured lottery wins (④).

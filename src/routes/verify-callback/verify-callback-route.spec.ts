@@ -1,6 +1,6 @@
 import { Code, ConnectError } from '@connectrpc/connect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { CompleteOutcome } from '../../services/identity-verification-service'
+import type { CompleteOutcome } from '../../services/kyc-service'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -18,7 +18,7 @@ const mockCompleteFromCallback = vi.fn(
 		({ kind: 'sessionMismatch' }) as CompleteOutcome,
 )
 
-const mockIdentityService = {
+const mockKycService = {
 	completeFromCallback: mockCompleteFromCallback,
 }
 
@@ -29,7 +29,7 @@ vi.mock('aurelia', async (importOriginal) => {
 		resolve: vi.fn((token: unknown) => {
 			const tokenAny = token as { friendlyName?: string }
 			const map: Record<string, unknown> = {
-				IIdentityVerificationService: mockIdentityService,
+				IKycService: mockKycService,
 				IRouter: mockRouter,
 				I18N: mockI18n,
 				ILogger: mockLogger,
@@ -56,10 +56,10 @@ describe('VerifyCallbackRoute', () => {
 			const verifiedOutcome: CompleteOutcome = {
 				kind: 'verified',
 				status: {
-					level: 'identityVerified',
-					identity: {
-						id: 'vi-1',
-						accountRef: 'user-1',
+					level: 'kycVerified',
+					kyc: {
+						id: 'kyc-1',
+						userId: 'user-1',
 						method: 'jpki',
 						pocketSignUserId: 'ps-1',
 						dedupeStrength: 'strong',
@@ -174,7 +174,7 @@ describe('VerifyCallbackRoute', () => {
 		it('returns null when isSuccess (verified outcome)', async () => {
 			mockCompleteFromCallback.mockResolvedValueOnce({
 				kind: 'verified',
-				status: { level: 'identityVerified' },
+				status: { level: 'kycVerified' },
 			})
 			await sut.loading()
 

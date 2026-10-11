@@ -86,13 +86,12 @@ beforeEach(() => {
 })
 
 describe('PushServiceClient.resolvePushState (recovery matrix)', () => {
+	// @spec components/infrastructure/fan/web/global/app-shell "Permission not granted"
 	it('permission not granted → needs-permission, no RPC calls', async () => {
 		mockNotificationManager.permission = 'default'
 		const svc = new PushServiceClient()
 
-		await expect(svc.resolvePushState('user-1')).resolves.toBe(
-			'needs-permission',
-		)
+		await expect(svc.resolvePushState(true)).resolves.toBe('needs-permission')
 		expect(mockRpc.get).not.toHaveBeenCalled()
 		expect(mockRpc.create).not.toHaveBeenCalled()
 	})
@@ -102,24 +101,36 @@ describe('PushServiceClient.resolvePushState (recovery matrix)', () => {
 		mockRpc.get.mockResolvedValue({ subscription: {} })
 		const svc = new PushServiceClient()
 
-		await expect(svc.resolvePushState('user-1')).resolves.toBe('enabled')
+		await expect(svc.resolvePushState(true)).resolves.toBe('enabled')
 		expect(mockRpc.create).not.toHaveBeenCalled()
 	})
 
+	// @spec components/infrastructure/fan/web/global/app-shell "Server lost the subscription"
 	it('granted + browser sub missing on backend → self-heal via Create → enabled', async () => {
 		pushManager.getSubscription.mockResolvedValue(browserSub('https://push/x'))
 		mockRpc.get.mockRejectedValue(notFound())
 		const svc = new PushServiceClient()
 
-		await expect(svc.resolvePushState('user-1')).resolves.toBe('enabled')
+		await expect(svc.resolvePushState(true)).resolves.toBe('enabled')
+		// The subscription is looked up by its endpoint alone: no user id.
+		expect(mockRpc.get).toHaveBeenCalledWith('https://push/x')
 		expect(mockRpc.create).toHaveBeenCalledTimes(1)
+	})
+
+	it('does not ask the backend before the account is loaded', async () => {
+		pushManager.getSubscription.mockResolvedValue(browserSub('https://push/x'))
+		const svc = new PushServiceClient()
+
+		await expect(svc.resolvePushState(false)).resolves.toBe('enabled')
+		expect(mockRpc.get).not.toHaveBeenCalled()
+		expect(mockRpc.create).not.toHaveBeenCalled()
 	})
 
 	it('granted + no browser sub → auto re-subscribe and register → enabled', async () => {
 		pushManager.getSubscription.mockResolvedValue(null)
 		const svc = new PushServiceClient()
 
-		await expect(svc.resolvePushState('user-1')).resolves.toBe('enabled')
+		await expect(svc.resolvePushState(true)).resolves.toBe('enabled')
 		expect(pushManager.subscribe).toHaveBeenCalledWith({
 			userVisibleOnly: true,
 			applicationServerKey: 'BNg-test-key',
@@ -136,7 +147,7 @@ describe('PushServiceClient.resolvePushState (recovery matrix)', () => {
 		)
 		const svc = new PushServiceClient()
 
-		await expect(svc.resolvePushState('user-1')).resolves.toBe('error')
+		await expect(svc.resolvePushState(true)).resolves.toBe('error')
 	})
 
 	it('Create RPC failure during self-heal → error (never a false enabled)', async () => {
@@ -145,6 +156,21 @@ describe('PushServiceClient.resolvePushState (recovery matrix)', () => {
 		mockRpc.create.mockRejectedValue(new Error('backend down'))
 		const svc = new PushServiceClient()
 
-		await expect(svc.resolvePushState('user-1')).resolves.toBe('error')
+		await expect(svc.resolvePushState(true)).resolves.toBe('error')
+	})
+})
+
+describe('PushServiceClient.delete', () => {
+	// @spec components/infrastructure/fan/web/route/settings "Toggling notifications OFF (this browser only)"
+	it('deletes this browser endpoint only, then unsubscribes the browser', async () => {
+		const sub = browserSub('https://push/this-browser')
+		pushManager.getSubscription.mockResolvedValue(sub)
+		const svc = new PushServiceClient()
+
+		await svc.delete()
+
+		// Only this endpoint is named; the backend takes the user from the token.
+		expect(mockRpc.delete).toHaveBeenCalledWith('https://push/this-browser')
+		expect(sub.unsubscribe).toHaveBeenCalledTimes(1)
 	})
 })

@@ -24,10 +24,9 @@ export class UserRpcClient {
 		),
 	)
 
-	public async get(userId: string): Promise<User | undefined> {
-		const resp = await this.userClient.get({
-			userId: { value: userId },
-		})
+	/** The signed-in caller's User. Rejects with NotFound when none exists. */
+	public async get(): Promise<User | undefined> {
+		const resp = await this.userClient.get({})
 		return resp.user ? userFrom(resp.user) : undefined
 	}
 
@@ -44,35 +43,45 @@ export class UserRpcClient {
 		return resp.user ? userFrom(resp.user) : undefined
 	}
 
-	public async updateHome(
-		userId: string,
-		home: {
-			countryCode: string
-			level1: string
-			level2?: string
-		},
-	): Promise<User | undefined> {
-		const resp = await this.userClient.updateHome({
-			userId: { value: userId },
-			home,
+	/**
+	 * Changes the caller's full name, phone number or both
+	 * (`UserService.Update`). A field left `undefined` keeps its value. The
+	 * phone number MUST already be in E.164 form.
+	 */
+	public async update(details: {
+		fullName?: string
+		phoneNumber?: string
+	}): Promise<User | undefined> {
+		const resp = await this.userClient.update({
+			...(details.fullName !== undefined
+				? { fullName: { value: details.fullName } }
+				: {}),
+			...(details.phoneNumber !== undefined
+				? { phoneNumber: { value: details.phoneNumber } }
+				: {}),
 		})
 		return resp.user ? userFrom(resp.user) : undefined
 	}
 
-	public async updatePreferredLanguage(
-		userId: string,
+	public async setHome(home: {
+		countryCode: string
+		level1: string
+		level2?: string
+	}): Promise<User | undefined> {
+		const resp = await this.userClient.setHome({ home })
+		return resp.user ? userFrom(resp.user) : undefined
+	}
+
+	public async setPreferredLanguage(
 		preferredLanguage: string,
 	): Promise<User | undefined> {
-		const resp = await this.userClient.updatePreferredLanguage({
-			userId: { value: userId },
+		const resp = await this.userClient.setPreferredLanguage({
 			preferredLanguage,
 		})
 		return resp.user ? userFrom(resp.user) : undefined
 	}
 
-	public async resendEmailVerification(userId: string): Promise<void> {
-		await this.userClient.resendEmailVerification({
-			userId: { value: userId },
-		})
+	public async resendEmailVerification(): Promise<void> {
+		await this.userClient.resendEmailVerification({})
 	}
 }

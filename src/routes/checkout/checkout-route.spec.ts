@@ -8,8 +8,8 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
-import type { Reservation } from '../../entities/reservation'
-import type { TicketSale } from '../../entities/ticket-sale'
+import type { Checkout } from '../../entities/checkout'
+import type { TicketSale, TicketType } from '../../entities/ticket-sale'
 import ja from '../../locales/ja/translation.json'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -47,36 +47,45 @@ const concert: ResolvedConcert = {
 		organizer: {
 			id: { value: 'org-1' },
 			name: { value: 'Liverty Records' },
-			sellerDetails: {
-				legalName: '株式会社リバティ',
-				representativeName: '山田 太郎',
-				address: '東京都渋谷区1-2-3',
-				phoneNumber: '+81312345678',
-				contactEmail: 'info@example.com',
-			},
+			legalName: { value: '株式会社リバティ' },
+			representativeName: { value: '山田 太郎' },
+			businessAddress: { value: '東京都渋谷区1-2-3' },
+			businessPhoneNumber: { value: '+81312345678' },
+			contactEmail: { value: 'info@example.com' },
 		},
 	}),
 	artists: [],
 }
 
-function sale(o: Partial<TicketSale> = {}): TicketSale {
+/** The event's first-come sale with its TicketType `type-1`. */
+function sale(
+	t: Partial<TicketType> = {},
+	o: Partial<TicketSale> = {},
+): TicketSale {
 	return {
 		id: 'sale-1',
-		eventId: EVENT_ID,
+		name: '一般発売',
+		method: 'firstCome',
 		saleStart: jst(1, 10),
 		saleEnd: jst(20, 18),
-		price: 3000,
-		perAccountLimit: 4,
-		state: 'onSale',
-		lowStock: false,
+		verificationRequirement: 'none',
+		ticketType: {
+			id: 'type-1',
+			eventId: EVENT_ID,
+			price: 3000,
+			perAccountLimit: 4,
+			state: 'onSale',
+			lowStock: false,
+			...t,
+		},
 		...o,
 	}
 }
 
-function held(o: Partial<Reservation> = {}): Reservation {
+function held(o: Partial<Checkout> = {}): Checkout {
 	return {
 		id: 'res-1',
-		ticketSaleId: 'sale-1',
+		ticketTypeId: 'type-1',
 		ticketCount: 2,
 		amount: 6000,
 		status: 'held',
@@ -86,8 +95,8 @@ function held(o: Partial<Reservation> = {}): Reservation {
 }
 
 const mockConcert = { get: vi.fn() }
-const mockSale = { get: vi.fn() }
-const mockReservation = {
+const mockSale = { listByEvent: vi.fn() }
+const mockCheckout = {
 	start: vi.fn(),
 	get: vi.fn(),
 	authorize: vi.fn(),
@@ -110,6 +119,8 @@ const mockUserStore: { current: unknown; currentLanguage: string } = {
 const mockPush = { create: vi.fn() }
 const mockNotifications = { permission: 'default' }
 const mockPwa = { canShowInstallOption: false, install: vi.fn() }
+const mockKyc = { getStatus: vi.fn() }
+const mockRouter = { load: vi.fn() }
 
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
@@ -120,12 +131,14 @@ vi.mock('aurelia', async (importOriginal) => {
 				ILogger: mockLogger,
 				IConcertRpcClient: mockConcert,
 				ITicketSaleRpcClient: mockSale,
-				IReservationRpcClient: mockReservation,
+				ICheckoutRpcClient: mockCheckout,
 				IStripeService: mockStripe,
 				IUserStore: mockUserStore,
 				IPushService: mockPush,
 				INotificationManager: mockNotifications,
 				IPwaInstallService: mockPwa,
+				IKycService: mockKyc,
+				IRouter: mockRouter,
 			}
 			return map[(token as { friendlyName?: string }).friendlyName ?? ''] ?? {}
 		}),
@@ -188,16 +201,17 @@ describe('CheckoutRoute', () => {
 		mockStripe.isConfigured = true
 		mockUserStore.current = undefined
 		mockConcert.get.mockResolvedValue(concert)
-		mockSale.get.mockResolvedValue(sale())
-		mockReservation.start.mockResolvedValue(held())
-		mockReservation.authorize.mockResolvedValue('pi_secret_1')
-		mockReservation.confirm.mockResolvedValue('order-1')
+		mockSale.listByEvent.mockResolvedValue([sale()])
+		mockCheckout.start.mockResolvedValue(held())
+		mockCheckout.authorize.mockResolvedValue('pi_secret_1')
+		mockCheckout.confirm.mockResolvedValue('order-1')
 		mockStripe.createCheckoutElements.mockResolvedValue({
 			stripe: fakeStripe,
 			elements: fakeElements,
 		})
 		mockStripe.createCheckoutCard.mockResolvedValue({ card })
 		mockStripe.confirmCheckoutHold.mockResolvedValue({})
+		mockKyc.getStatus.mockResolvedValue({ level: 'unverified' })
 	})
 
 	afterEach(() => {
@@ -216,8 +230,8 @@ describe('CheckoutRoute', () => {
 
 			await sut.hold()
 
-			expect(mockReservation.start).toHaveBeenCalledWith(
-				'sale-1',
+			expect(mockCheckout.start).toHaveBeenCalledWith(
+				'type-1',
 				2,
 				expect.anything(),
 			)
@@ -230,7 +244,7 @@ describe('CheckoutRoute', () => {
 			vi.useFakeTimers({ toFake: ['Date'] })
 			vi.setSystemTime(jst(5, 18, 5))
 			localStorage.setItem(`liverty:checkout:${EVENT_ID}`, 'res-1')
-			mockReservation.get.mockResolvedValue(
+			mockCheckout.get.mockResolvedValue(
 				held({ holdExpireTime: jst(5, 18, 15) }),
 			)
 
@@ -243,9 +257,7 @@ describe('CheckoutRoute', () => {
 
 		it('says other fans are checking out when the last tickets are held', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Last tickets in other checkouts"
-			mockReservation.start.mockRejectedValue(
-				connectError(Code.ResourceExhausted),
-			)
+			mockCheckout.start.mockRejectedValue(connectError(Code.ResourceExhausted))
 			const sut = await open()
 
 			await sut.hold()
@@ -254,9 +266,9 @@ describe('CheckoutRoute', () => {
 			expect(sut.message?.key).toBe('checkout.count.allHeld')
 		})
 
-		it('says how many tickets one account may buy over the limit', async () => {
+		it('says how many tickets one account may hold for the event over the limit', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Over the limit"
-			mockReservation.start.mockRejectedValue(
+			mockCheckout.start.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
 			const sut = await open()
@@ -267,15 +279,18 @@ describe('CheckoutRoute', () => {
 				key: 'checkout.count.limit',
 				params: { limit: 4 },
 			})
+			expect(ja_('checkout.count.limit', { limit: 4 })).toContain(
+				'すでにお持ちの枚数を含めて',
+			)
 		})
 
 		it('re-reads the sale and says it ended, not that the limit was reached', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Sale ended before continuing"
-			mockReservation.start.mockRejectedValue(
+			mockCheckout.start.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
 			const sut = await open()
-			mockSale.get.mockResolvedValue(sale({ state: 'ended' }))
+			mockSale.listByEvent.mockResolvedValue([sale({ state: 'ended' })])
 
 			await sut.hold()
 
@@ -283,11 +298,11 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('says the concert was cancelled when its sale is gone', async () => {
-			mockReservation.start.mockRejectedValue(
+			mockCheckout.start.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
 			const sut = await open()
-			mockSale.get.mockResolvedValue(null)
+			mockSale.listByEvent.mockResolvedValue([])
 
 			await sut.hold()
 
@@ -300,7 +315,100 @@ describe('CheckoutRoute', () => {
 			const second = sut.hold()
 			await Promise.all([first, second])
 
-			expect(mockReservation.start).toHaveBeenCalledTimes(1)
+			expect(mockCheckout.start).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe('verification', () => {
+		const jpkiKyc = {
+			level: 'kycVerified',
+			kyc: { id: 'k1', userId: 'u1', method: 'jpki', status: 'active' },
+		}
+
+		it('reads no Kyc on a sale that requires no verification', async () => {
+			const sut = await open()
+
+			expect(sut.step).toBe('count')
+			expect(sut.verificationNoteKey).toBeNull()
+			expect(mockKyc.getStatus).not.toHaveBeenCalled()
+		})
+
+		it('gates a fan whose Kyc is by licence on a JPKI-only sale', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				sale({}, { verificationRequirement: 'jpkiOnly' }),
+			])
+			mockKyc.getStatus.mockResolvedValue({
+				level: 'kycVerified',
+				kyc: { ...jpkiKyc.kyc, method: 'driverLicence' },
+			})
+
+			const sut = await open()
+
+			expect(sut.step).toBe('verify-required')
+			expect(mockCheckout.start).not.toHaveBeenCalled()
+		})
+
+		it('admits any Active Kyc on a sale that requires any verification', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				sale({}, { verificationRequirement: 'verifiedAny' }),
+			])
+			mockKyc.getStatus.mockResolvedValue({
+				level: 'kycVerified',
+				kyc: { ...jpkiKyc.kyc, method: 'driverLicence' },
+			})
+
+			const sut = await open()
+
+			expect(sut.step).toBe('count')
+			expect(sut.verificationNoteKey).toBe('checkout.verify.noteAny')
+		})
+
+		it('shows a FailedPrecondition for a fan whose Kyc lapsed as the missing verification, not the limit', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				sale({}, { verificationRequirement: 'jpkiOnly' }),
+			])
+			mockKyc.getStatus.mockResolvedValueOnce(jpkiKyc)
+			const sut = await open()
+			expect(sut.step).toBe('count')
+			// The Kyc needs re-verification by the time the fan continues.
+			mockKyc.getStatus.mockResolvedValue({
+				level: 'unverified',
+				kyc: { ...jpkiKyc.kyc, status: 'needsReverification' },
+			})
+			mockCheckout.start.mockRejectedValue(
+				connectError(Code.FailedPrecondition),
+			)
+
+			await sut.hold()
+
+			expect(sut.step).toBe('verify-required')
+			expect(sut.message).toBeNull()
+		})
+
+		it('says the limit was reached for a verified fan on a verified sale', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				sale({}, { verificationRequirement: 'jpkiOnly' }),
+			])
+			mockKyc.getStatus.mockResolvedValue(jpkiKyc)
+			mockCheckout.start.mockRejectedValue(
+				connectError(Code.FailedPrecondition),
+			)
+			const sut = await open()
+
+			await sut.hold()
+
+			expect(sut.message?.key).toBe('checkout.count.limit')
+		})
+
+		it('sends the fan to the Settings screen to verify', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				sale({}, { verificationRequirement: 'jpkiOnly' }),
+			])
+			const sut = await open()
+
+			await sut.goToVerify()
+
+			expect(mockRouter.load).toHaveBeenCalledWith('/settings')
 		})
 	})
 
@@ -309,12 +417,13 @@ describe('CheckoutRoute', () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Returning buyer"
 			mockUserStore.current = {
 				id: 'u1',
-				holderIdentity: { fullName: '山田 花子', phoneNumber: '+819012345678' },
+				fullName: '山田 花子',
+				phoneNumber: '+819012345678',
 			}
 			const sut = await holdTwo()
 
 			expect(sut.fullName).toBe('山田 花子')
-			expect(sut.phoneNumber).toBe('+819012345678')
+			expect(sut.phoneNumber).toBe('090-1234-5678')
 			sut.fullName = '山田 はな'
 			expect(sut.isIdentityValid).toBe(true)
 		})
@@ -322,9 +431,10 @@ describe('CheckoutRoute', () => {
 		it('sends a domestic phone number in E.164 form', async () => {
 			const sut = await toConfirm()
 
-			expect(mockReservation.authorize).toHaveBeenCalledWith(
+			expect(mockCheckout.authorize).toHaveBeenCalledWith(
 				'res-1',
-				{ fullName: '山田 花子', phoneNumber: '+819012345678' },
+				'山田 花子',
+				'+819012345678',
 				expect.anything(),
 			)
 			expect(sut.step).toBe('confirm')
@@ -343,16 +453,16 @@ describe('CheckoutRoute', () => {
 
 			expect(sut.step).toBe('payment')
 			expect(sut.cardError).toBe('カードが拒否されました。')
-			expect(sut.reservation?.id).toBe('res-1')
+			expect(sut.checkout?.id).toBe('res-1')
 
 			await sut.authorize()
 			expect(sut.step).toBe('confirm')
-			expect(mockReservation.start).toHaveBeenCalledTimes(1)
+			expect(mockCheckout.start).toHaveBeenCalledTimes(1)
 		})
 
 		it('says the 15 minutes passed when authorizing after the hold ended', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Hold ended before authorizing"
-			mockReservation.authorize.mockRejectedValue(
+			mockCheckout.authorize.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
 			const sut = await toCard()
@@ -384,8 +494,8 @@ describe('CheckoutRoute', () => {
 			expect(sut.seller).toEqual({
 				legalName: '株式会社リバティ',
 				representativeName: '山田 太郎',
-				address: '東京都渋谷区1-2-3',
-				phoneNumber: '+81312345678',
+				businessAddress: '東京都渋谷区1-2-3',
+				businessPhoneNumber: '+81312345678',
 				contactEmail: 'info@example.com',
 			})
 			expect(
@@ -402,13 +512,14 @@ describe('CheckoutRoute', () => {
 			await sut.toPayment()
 
 			expect(sut.step).toBe('confirm')
-			expect(mockReservation.authorize).toHaveBeenLastCalledWith(
+			expect(mockCheckout.authorize).toHaveBeenLastCalledWith(
 				'res-1',
-				{ fullName: '山田 はな子', phoneNumber: '+819012345678' },
+				'山田 はな子',
+				'+819012345678',
 				expect.anything(),
 			)
 			expect(mockStripe.confirmCheckoutHold).toHaveBeenCalledTimes(1)
-			expect(sut.reservation?.id).toBe('res-1')
+			expect(sut.checkout?.id).toBe('res-1')
 		})
 
 		it('places the order once on a double tap', async () => {
@@ -417,13 +528,13 @@ describe('CheckoutRoute', () => {
 
 			await Promise.all([sut.placeOrder(), sut.placeOrder()])
 
-			expect(mockReservation.confirm).toHaveBeenCalledTimes(1)
+			expect(mockCheckout.confirm).toHaveBeenCalledTimes(1)
 		})
 
 		it('authorizes the card again after a new count', async () => {
 			const sut = await toConfirm()
 			sut.changeCount()
-			mockReservation.start.mockResolvedValue(
+			mockCheckout.start.mockResolvedValue(
 				held({ id: 'res-2', ticketCount: 3, amount: 9000 }),
 			)
 
@@ -456,10 +567,10 @@ describe('CheckoutRoute', () => {
 
 		it('says the 15 minutes passed and nothing was charged when the hold ended', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Hold ended at the last step"
-			mockReservation.confirm.mockRejectedValue(
+			mockCheckout.confirm.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
-			mockReservation.get.mockResolvedValue(held({ status: 'expired' }))
+			mockCheckout.get.mockResolvedValue(held({ status: 'expired' }))
 			const sut = await toConfirm()
 
 			await sut.placeOrder()
@@ -471,8 +582,8 @@ describe('CheckoutRoute', () => {
 
 		it('says the purchase is being completed when the charge is still completing', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Charge still completing"
-			mockReservation.confirm.mockRejectedValue(connectError(Code.Unavailable))
-			mockReservation.get.mockResolvedValue(
+			mockCheckout.confirm.mockRejectedValue(connectError(Code.Unavailable))
+			mockCheckout.get.mockResolvedValue(
 				held({ status: 'committed', commitTime: new Date() }),
 			)
 			const sut = await toConfirm()
@@ -483,10 +594,10 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('says the card could not be charged after a commit', async () => {
-			mockReservation.confirm.mockRejectedValue(
+			mockCheckout.confirm.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
-			mockReservation.get.mockResolvedValue(
+			mockCheckout.get.mockResolvedValue(
 				held({ status: 'released', commitTime: new Date() }),
 			)
 			const sut = await toConfirm()
@@ -497,10 +608,10 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('offers the newer checkout when another tab replaced this one', async () => {
-			mockReservation.confirm.mockRejectedValue(
+			mockCheckout.confirm.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
-			mockReservation.get.mockResolvedValue(held({ status: 'released' }))
+			mockCheckout.get.mockResolvedValue(held({ status: 'released' }))
 			const sut = await toConfirm()
 			localStorage.setItem(`liverty:checkout:${EVENT_ID}`, 'res-9')
 
@@ -511,10 +622,10 @@ describe('CheckoutRoute', () => {
 		})
 
 		it('asks to finish the card authentication while the checkout is still held', async () => {
-			mockReservation.confirm.mockRejectedValue(
+			mockCheckout.confirm.mockRejectedValue(
 				connectError(Code.FailedPrecondition),
 			)
-			mockReservation.get.mockResolvedValue(held())
+			mockCheckout.get.mockResolvedValue(held())
 			const sut = await toConfirm()
 
 			await sut.placeOrder()
@@ -531,10 +642,42 @@ describe('CheckoutRoute', () => {
 			expect(sut.step).toBe('unavailable')
 		})
 
-		it('shows not found when the event has no sale', async () => {
-			mockSale.get.mockResolvedValue(null)
+		it('shows not found when the event has no first-come sale', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				sale({}, { method: 'lottery', name: 'ファンクラブ先行' }),
+			])
 			const sut = await open()
 			expect(sut.step).toBe('not-found')
+		})
+
+		it('checks out the TicketType of the first-come sale after a lottery presale', async () => {
+			mockSale.listByEvent.mockResolvedValue([
+				sale(
+					{ id: 'presale-type', state: 'ended' },
+					{ id: 'presale', method: 'lottery', saleEnd: jst(1, 9) },
+				),
+				sale(),
+			])
+			const sut = await open()
+
+			expect(sut.sale?.ticketType.id).toBe('type-1')
+			await sut.hold()
+			expect(mockCheckout.start).toHaveBeenCalledWith(
+				'type-1',
+				1,
+				expect.anything(),
+			)
+		})
+
+		it('saves the authorized name and phone number on the User for the next screen', async () => {
+			mockUserStore.current = { id: 'u1' }
+			await toConfirm()
+
+			expect(mockUserStore.current).toEqual({
+				id: 'u1',
+				fullName: '山田 花子',
+				phoneNumber: '+819012345678',
+			})
 		})
 	})
 })

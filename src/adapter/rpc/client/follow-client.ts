@@ -44,8 +44,9 @@ export class FollowRpcClient {
 		})
 	}
 
-	public async listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
-		const response = await this.client.listFollowed({}, { signal })
+	/** The caller's follows with their artists (`FollowService.List`). */
+	public async list(signal?: AbortSignal): Promise<FollowedArtist[]> {
+		const response = await this.client.list({}, { signal })
 		return response.artists.flatMap((fa) => {
 			if (!fa.artist) return []
 			return [

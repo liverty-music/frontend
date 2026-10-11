@@ -1,4 +1,4 @@
-import { DI, ILogger, observable, resolve } from 'aurelia'
+import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import {
 	type CalendarDate,
 	IConcertRpcClient,
@@ -22,6 +22,7 @@ import { DEFAULT_HYPE, type Hype } from '../entities/follow'
 import type { GeoLocationInit } from '../entities/user'
 import { IAuthService } from './auth-service'
 import { CachedResource } from './cache/cached-resource'
+import { SignedOut } from './events/signed-out'
 import { IUserStore } from './user-store'
 
 export type { ProximityGroup, ResolvedConcert }
@@ -46,7 +47,7 @@ export class ConcertStore {
 	private readonly userStore = resolve(IUserStore)
 
 	// The follower-concert list caching (was a bespoke in-store 24h TTL).
-	// listByFollower serves the cached value; route follow/unfollow/setHype
+	// listFollowed serves the cached value; route follow/unfollow/setHype
 	// invalidate through it; route entry + resume force a background revalidation.
 	// Keyed by the `from` lower bound so switching between the today-onward default
 	// and a past date does not serve a stale set (each date window caches
@@ -57,7 +58,7 @@ export class ConcertStore {
 		ProximityGroup[]
 	>(
 		(from) => followerKey(from),
-		(from, signal) => this.rpcClient.listByFollower(from, signal),
+		(from, signal) => this.rpcClient.listFollowed(from, signal),
 	)
 
 	// The rendered DateGroup[] from the most recent successful dashboard load.
@@ -83,6 +84,19 @@ export class ConcertStore {
 
 	@observable public artistsWithConcerts = new Set<string>()
 
+	constructor() {
+		// Sign-out and account switch: drop every concert list and view state
+		// read for the previous account (design D15 of unify-ticket-sales).
+		resolve(IEventAggregator).subscribe(SignedOut, () => this.clear())
+	}
+
+	/** Forget every cached concert list and the dashboard's view state. */
+	public clear(): void {
+		this.invalidateFollowerCache()
+		this.proximityConcerts.clear()
+		this.artistsWithConcerts = new Set<string>()
+	}
+
 	public get artistsWithConcertsCount(): number {
 		return this.artistsWithConcerts.size
 	}
@@ -97,11 +111,11 @@ export class ConcertStore {
 
 	// --- Existing RPC methods ---
 
-	public async listConcerts(
+	public async listByArtist(
 		artistId: string,
 		signal?: AbortSignal,
 	): Promise<ResolvedConcert[]> {
-		return this.rpcClient.listConcerts(artistId, signal)
+		return this.rpcClient.listByArtist(artistId, signal)
 	}
 
 	/**
@@ -111,12 +125,12 @@ export class ConcertStore {
 	 * the background; route entry / PWA resume force a refresh via
 	 * {@link revalidateFollower}.
 	 */
-	public async listByFollower(
+	public async listFollowed(
 		from?: CalendarDate,
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
 		if (!this.authService.isAuthenticated) {
-			return this.listByFollowerGuest(signal)
+			return this.listFollowedGuest(signal)
 		}
 		return this.followerConcerts.read(from, signal)
 	}
@@ -425,7 +439,7 @@ export class ConcertStore {
 			away: convert(group.away, 'away'),
 		}
 		if (unresolved.length > 0) {
-			// Single batched warn per group; backend ListByFollower SHOULD
+			// Single batched warn per group; backend ListFollowed SHOULD
 			// only return concerts that feature a followed artist, so any
 			// non-empty list here is a real signal (ID-format mismatch or
 			// schema-skew rollout). Use the scoped Aurelia logger so the
@@ -444,7 +458,7 @@ export class ConcertStore {
 		return result
 	}
 
-	private async listByFollowerGuest(
+	private async listFollowedGuest(
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
 		const input = this.guestProximityInput()
@@ -496,16 +510,16 @@ function proximityKey(
 }
 
 /**
- * Cache key for `listByFollower`, incorporating the `from` lower bound so the
+ * Cache key for `listFollowed`, incorporating the `from` lower bound so the
  * today-onward default and any past/future date window each cache under their
- * own entry. An absent `from` keeps the bare `listByFollower` key (the server's
+ * own entry. An absent `from` keeps the bare `listFollowed` key (the server's
  * today-onward default).
  */
 function followerKey(from?: CalendarDate): string {
-	if (!from) return 'listByFollower'
+	if (!from) return 'listFollowed'
 	const m = String(from.month).padStart(2, '0')
 	const d = String(from.day).padStart(2, '0')
-	return `listByFollower|${from.year}-${m}-${d}`
+	return `listFollowed|${from.year}-${m}-${d}`
 }
 
 /**

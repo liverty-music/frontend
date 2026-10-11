@@ -5,7 +5,7 @@ import {
 	parseJstDateTimeLocal,
 	type TicketSaleFormContext,
 	type TicketSaleFormModel,
-	toConfigureInput,
+	toCreateInput,
 	toJstDateTimeLocal,
 	validateTicketSaleForm,
 } from '../../../organizer/ticket-sale-editor/ticket-sale-form'
@@ -20,6 +20,7 @@ const CTX: TicketSaleFormContext = {
 
 function valid(): TicketSaleFormModel {
 	return {
+		name: '一般発売',
 		saleStart: '2026-11-01T12:00',
 		saleEnd: '2026-11-20T19:00',
 		price: '3000',
@@ -59,6 +60,7 @@ describe('blankFormModel', () => {
 		const model = blankFormModel(EVENT_START)
 		expect(model.saleEnd).toBe('2026-11-20T19:00')
 		expect(model.perAccountLimit).toBe('4')
+		expect(model.name).toBe('一般発売')
 		expect(model.saleStart).toBe('')
 	})
 })
@@ -135,10 +137,35 @@ describe('validateTicketSaleForm', () => {
 	})
 })
 
-describe('toConfigureInput', () => {
-	it('converts the model into absolute instants and numbers', () => {
-		const input = toConfigureInput('event-1', valid())
+describe('validateTicketSaleForm — name and limit', () => {
+	it.each([
+		['', true],
+		['一般発売', false],
+		['あ'.repeat(100), false],
+		['あ'.repeat(101), true],
+	])('name %j is an error: %s', (name, isError) => {
+		expect(
+			Boolean(validateTicketSaleForm({ ...valid(), name }, CTX).name),
+		).toBe(isError)
+	})
+
+	it('refuses a limit above the quantity', () => {
+		expect(
+			validateTicketSaleForm(
+				{ ...valid(), quantity: '3', perAccountLimit: '4' },
+				CTX,
+			).perAccountLimit,
+		).toContain('販売数以下')
+	})
+})
+
+describe('toCreateInput', () => {
+	it('converts the model into a FirstCome sale with absolute instants and numbers', () => {
+		const input = toCreateInput('series-1', 'event-1', valid())
 		expect(input).toEqual({
+			seriesId: 'series-1',
+			name: '一般発売',
+			method: 'firstCome',
 			eventId: 'event-1',
 			saleStartTime: new Date('2026-11-01T03:00:00Z'),
 			saleEndTime: EVENT_START,

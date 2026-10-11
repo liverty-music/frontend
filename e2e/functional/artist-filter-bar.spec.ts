@@ -34,7 +34,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		if (url.includes('ListFollowed')) {
+		if (url.includes('FollowService/List')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -55,9 +55,12 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		// ListByFollower is the authenticated path; ListByArtists is the guest
+		// ConcertService.ListFollowed is the authenticated path; ListByArtists is the guest
 		// path (ConcertStore.listByFollowerGuest). Both return the same groups.
-		if (url.includes('ListByFollower') || url.includes('ListByArtists')) {
+		if (
+			url.includes('ConcertService/ListFollowed') ||
+			url.includes('ListByArtists')
+		) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -135,7 +138,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListByUser')) {
+		if (url.includes('TicketJourneyService/List')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',

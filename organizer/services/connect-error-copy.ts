@@ -9,7 +9,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
  * message or a caller-supplied fallback. Kept organizer-local (not shared with
  * admin) so its wording can speak to an organizer operator, and `FAILED_
  * PRECONDITION` in particular can be overridden per call site — Publish, Cancel,
- * Update-published, RegenerateToken, and deactivated-organizer all surface that
+ * Update-published, RegenerateShareUrl, and deactivated-organizer all surface that
  * code but mean different things.
  *
  * @param err The thrown error (typically a `ConnectError`).

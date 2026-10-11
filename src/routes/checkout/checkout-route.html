@@ -16,20 +16,28 @@
 
   <!-- Event summary, shown on every step of the checkout -->
   <section
-    if.bind="event && (step === 'count' || step === 'identity' || step === 'payment' || step === 'confirm')"
+    if.bind="event && (step === 'verify-required' || step === 'count' || step === 'identity' || step === 'payment' || step === 'confirm')"
     class="checkout-summary"
     data-testid="checkout-summary"
   >
     <p class="checkout-event-title">${event.title}</p>
     <p class="checkout-event-meta">${dateLabel} · ${event.venueName}</p>
-    <p if.bind="reservation" class="checkout-countdown" role="timer" aria-live="off" data-testid="checkout-countdown">
+    <p if.bind="checkout" class="checkout-countdown" role="timer" aria-live="off" data-testid="checkout-countdown">
       <span t="checkout.holdLeft"></span> <strong>${countdown}</strong>
     </p>
+  </section>
+
+  <!-- Verification gate: the sale requires a verification the fan lacks -->
+  <section if.bind="step === 'verify-required'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-verify">
+    <h2 class="checkout-step-title" t="checkout.verify.title"></h2>
+    <p data-testid="checkout-verify-body" t.bind="verificationRequirement === 'jpkiOnly' ? 'checkout.verify.bodyJpki' : 'checkout.verify.bodyAny'"></p>
+    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="goToVerify()" data-testid="checkout-verify-action" t="checkout.verify.action"></button>
   </section>
 
   <!-- Step 1: count -->
   <section if.bind="step === 'count'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-count">
     <h2 class="checkout-step-title" t="checkout.count.title"></h2>
+    <p if.bind="verificationNoteKey" class="checkout-note" data-testid="checkout-verify-note" t.bind="verificationNoteKey"></p>
     <label class="checkout-field">
       <span class="checkout-label" t="checkout.count.label" t-params.bind="{ limit: perAccountLimit }"></span>
       <select value.bind="ticketCount" class="checkout-input" data-testid="checkout-count-select">
@@ -128,8 +136,8 @@
         <template if.bind="seller">
           ${seller.legalName}<br />
           <span t="checkout.confirm.representative"></span> ${seller.representativeName}<br />
-          ${seller.address}<br />
-          ${seller.phoneNumber}<br />
+          ${seller.businessAddress}<br />
+          ${seller.businessPhoneNumber}<br />
           ${seller.contactEmail}
         </template>
       </dd>

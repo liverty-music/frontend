@@ -19,7 +19,7 @@ export interface ITicketJourneyStore extends TicketJourneyStore {}
  * route re-entry — fixing the previous bug where each held a separate copy and
  * diverged until the dashboard route was re-entered.
  *
- * Reads (`load` → `listByUser`) are network-first (no stale window). Writes
+ * Reads (`load` → `list`) are network-first (no stale window). Writes
  * (`setStatus`, `delete`) are write-through: the RPC runs first, and the
  * observable map is updated only after it succeeds, so a failed write never
  * desyncs the store. The map reference is replaced on every mutation so Aurelia
@@ -61,7 +61,7 @@ export class TicketJourneyStore {
 			return this.journeyMap
 		}
 		const generationAtIssue = this.writeGeneration
-		const map = await this.rpcClient.listByUser(signal)
+		const map = await this.rpcClient.list(signal)
 		// Skip the assignment if a write-through (or clear) landed while this RPC
 		// was in flight — its result is newer than this server snapshot. Return the
 		// authoritative current map either way.

@@ -1,4 +1,4 @@
-import type { ConfigureLotteryPhaseInput } from '../services/lottery-phase-client'
+import type { CreateTicketSaleInput } from '../services/ticket-sale-client'
 
 /** Default application-window duration in days (server + console default). */
 export const DEFAULT_WINDOW_DAYS = 10
@@ -11,42 +11,56 @@ export const MIN_WINDOW_DAYS = 1
  */
 export const MAX_WINDOW_DAYS = 14
 /**
- * Maximum accepted tickets per application (inclusive). One entry QR code
- * presents at most 10 tickets and a companion group enters together with one
- * code (mirrors the backend + schema constraint).
+ * Maximum accepted per-account limit (inclusive). One entry QR code presents
+ * at most 10 tickets and a companion group enters together with one code
+ * (mirrors the backend + schema constraint).
  */
-export const MAX_TICKETS_PER_APPLICATION = 10
+export const MAX_PER_ACCOUNT_LIMIT = 10
+/** The per-account limit a new lottery starts with (server default too). */
+export const DEFAULT_PER_ACCOUNT_LIMIT = 4
+/** Maximum length of the sale's name, in characters. */
+export const MAX_NAME_LENGTH = 100
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 /**
- * The editable, transport-agnostic model of the lottery-phase form. Times are
+ * The editable, transport-agnostic model of the lottery form: the sale's name
+ * and window, and its one TicketType for the event. Times are
  * `datetime-local` strings (`YYYY-MM-DDTHH:mm`) bound directly onto native
  * `<input type="datetime-local">` controls; numeric fields are kept as strings
  * so an empty control is distinguishable from `0` and `value.bind` maps onto the
  * native `<input type="number">` without coercion surprises.
  */
 export interface LotteryPhaseFormModel {
+	/** The sale's name, e.g. ファンクラブ先行. */
+	name: string
 	/** `datetime-local` string; empty when unset. */
 	openTime: string
 	/** `datetime-local` string; empty when unset. */
 	closeTime: string
-	/** Positive integer (ticket capacity), as a raw input string. */
-	ticketCapacity: string
-	/** Positive integer, ≤ capacity and ≤ {@link MAX_TICKETS_PER_APPLICATION}, as a raw input string. */
-	maxTicketsPerApplication: string
+	/** Positive integer (tickets drawn for), as a raw input string. */
+	quantity: string
+	/** 1 to {@link MAX_PER_ACCOUNT_LIMIT}, ≤ quantity, as a raw input string. */
+	perAccountLimit: string
 	/** Positive whole-yen JPY price, as a raw input string. */
-	ticketPrice: string
+	price: string
 }
 
 /** Per-field validation errors, keyed for inline display next to each control. */
 export interface LotteryPhaseFormErrors {
+	name?: string
 	openTime?: string
 	closeTime?: string
 	window?: string
-	ticketCapacity?: string
-	maxTicketsPerApplication?: string
-	ticketPrice?: string
+	quantity?: string
+	perAccountLimit?: string
+	price?: string
+}
+
+/** What the form is checked against besides its own values. */
+export interface LotteryPhaseFormContext {
+	/** The event's start time; the lottery must close before it. */
+	readonly eventStart?: Date | null
 }
 
 /** Formats a `Date` as a local `YYYY-MM-DDTHH:mm` for a datetime-local input. */
@@ -60,17 +74,19 @@ export function toDateTimeLocal(date: Date): string {
 }
 
 /**
- * Returns a blank form model with the window defaulted: open now, close
- * {@link DEFAULT_WINDOW_DAYS} later. `now` is injected for deterministic tests.
+ * Returns a blank form model with the window defaulted (open now, close
+ * {@link DEFAULT_WINDOW_DAYS} later) and the limit
+ * {@link DEFAULT_PER_ACCOUNT_LIMIT}. `now` is injected for deterministic tests.
  */
 export function emptyFormModel(now: Date = new Date()): LotteryPhaseFormModel {
 	const close = new Date(now.getTime() + DEFAULT_WINDOW_DAYS * MS_PER_DAY)
 	return {
+		name: '',
 		openTime: toDateTimeLocal(now),
 		closeTime: toDateTimeLocal(close),
-		ticketCapacity: '',
-		maxTicketsPerApplication: '',
-		ticketPrice: '',
+		quantity: '',
+		perAccountLimit: String(DEFAULT_PER_ACCOUNT_LIMIT),
+		price: '',
 	}
 }
 
@@ -108,16 +124,25 @@ export function windowDurationDays(open: Date, close: Date): number {
 
 /**
  * Validates the form model, mirroring the backend boundary so an operator sees
- * inline errors before a round-trip: open/close required and parseable; the
- * window must be {@link MIN_WINDOW_DAYS}–{@link MAX_WINDOW_DAYS} days long with
- * close strictly after open; capacity, max-per-application, and price each a
- * positive integer; and max must not exceed {@link MAX_TICKETS_PER_APPLICATION}
- * or the capacity.
+ * inline errors before a round-trip: the name required and at most
+ * {@link MAX_NAME_LENGTH} characters; open/close required and parseable; the
+ * window {@link MIN_WINDOW_DAYS}–{@link MAX_WINDOW_DAYS} days long with close
+ * strictly after open and before the event's start time; quantity and price
+ * each a positive integer; and the limit 1–{@link MAX_PER_ACCOUNT_LIMIT} and
+ * not above the quantity.
  */
 export function validateLotteryPhaseForm(
 	model: LotteryPhaseFormModel,
+	ctx: LotteryPhaseFormContext = {},
 ): LotteryPhaseFormErrors {
 	const errors: LotteryPhaseFormErrors = {}
+
+	const name = model.name.trim()
+	if (name === '') {
+		errors.name = 'Enter a name for the sale, e.g. ファンクラブ先行.'
+	} else if ([...name].length > MAX_NAME_LENGTH) {
+		errors.name = `The name must be ${MAX_NAME_LENGTH} characters or fewer.`
+	}
 
 	const open = parseDateTimeLocal(model.openTime)
 	const close = parseDateTimeLocal(model.closeTime)
@@ -133,28 +158,31 @@ export function validateLotteryPhaseForm(
 			errors.window = 'The close time must be after the open time.'
 		} else if (days < MIN_WINDOW_DAYS || days > MAX_WINDOW_DAYS) {
 			errors.window = `The application window must be ${MIN_WINDOW_DAYS}–${MAX_WINDOW_DAYS} days long (it is currently ${days.toFixed(1)} days).`
+		} else if (ctx.eventStart && close.getTime() >= ctx.eventStart.getTime()) {
+			errors.window =
+				'The lottery must close before the event starts, so winners get their tickets before the doors open.'
 		}
 	}
 
-	const capacity = parsePositiveInt(model.ticketCapacity)
-	if (capacity === null) {
-		errors.ticketCapacity = 'Ticket capacity must be a positive whole number.'
+	const quantity = parsePositiveInt(model.quantity)
+	if (quantity === null) {
+		errors.quantity = 'The number of tickets must be a positive whole number.'
 	}
 
-	const max = parsePositiveInt(model.maxTicketsPerApplication)
-	if (max === null) {
-		errors.maxTicketsPerApplication =
-			'Max tickets per application must be a positive whole number.'
-	} else if (max > MAX_TICKETS_PER_APPLICATION) {
-		errors.maxTicketsPerApplication = `Max tickets per application cannot exceed ${MAX_TICKETS_PER_APPLICATION} (one entry QR code covers at most ${MAX_TICKETS_PER_APPLICATION} tickets).`
-	} else if (capacity !== null && max > capacity) {
-		errors.maxTicketsPerApplication =
-			'Max tickets per application cannot exceed the ticket capacity.'
+	const limit = parsePositiveInt(model.perAccountLimit)
+	if (limit === null) {
+		errors.perAccountLimit =
+			'The per-account limit must be a positive whole number.'
+	} else if (limit > MAX_PER_ACCOUNT_LIMIT) {
+		errors.perAccountLimit = `The per-account limit cannot exceed ${MAX_PER_ACCOUNT_LIMIT} (one entry QR code covers at most ${MAX_PER_ACCOUNT_LIMIT} tickets).`
+	} else if (quantity !== null && limit > quantity) {
+		errors.perAccountLimit =
+			'The per-account limit cannot exceed the number of tickets.'
 	}
 
-	const price = parsePositiveInt(model.ticketPrice)
+	const price = parsePositiveInt(model.price)
 	if (price === null) {
-		errors.ticketPrice = 'Ticket price (JPY) must be a positive whole number.'
+		errors.price = 'Ticket price (JPY) must be a positive whole number.'
 	}
 
 	return errors
@@ -162,33 +190,30 @@ export function validateLotteryPhaseForm(
 
 /** True when the validation result has no field-level errors. */
 export function isFormValid(errors: LotteryPhaseFormErrors): boolean {
-	return (
-		!errors.openTime &&
-		!errors.closeTime &&
-		!errors.window &&
-		!errors.ticketCapacity &&
-		!errors.maxTicketsPerApplication &&
-		!errors.ticketPrice
-	)
+	return Object.values(errors).every((e) => !e)
 }
 
 /**
- * Converts a validated form model into the transport-agnostic
- * {@link ConfigureLotteryPhaseInput}. Assumes the model already passed
- * {@link validateLotteryPhaseForm} (the caller gates on validity first); a
- * defensive parse failure falls back to a zero/epoch value the server rejects.
+ * Converts a validated form model into the input of a Lottery sale of the
+ * event's Series with one TicketType for the event. Assumes the model already
+ * passed {@link validateLotteryPhaseForm} (the caller gates on validity
+ * first); a defensive parse failure falls back to a zero/epoch value the
+ * server rejects.
  */
-export function toConfigureInput(
+export function toCreateInput(
+	seriesId: string,
 	eventId: string,
 	model: LotteryPhaseFormModel,
-): ConfigureLotteryPhaseInput {
+): CreateTicketSaleInput {
 	return {
+		seriesId,
+		name: model.name.trim(),
+		method: 'lottery',
+		saleStartTime: parseDateTimeLocal(model.openTime) ?? new Date(0),
+		saleEndTime: parseDateTimeLocal(model.closeTime) ?? new Date(0),
 		eventId,
-		openTime: parseDateTimeLocal(model.openTime) ?? new Date(0),
-		closeTime: parseDateTimeLocal(model.closeTime) ?? new Date(0),
-		ticketCapacity: Number(model.ticketCapacity.trim()) || 0,
-		maxTicketsPerApplication:
-			Number(model.maxTicketsPerApplication.trim()) || 0,
-		ticketPrice: Number(model.ticketPrice.trim()) || 0,
+		quantity: Number(model.quantity.trim()) || 0,
+		perAccountLimit: Number(model.perAccountLimit.trim()) || 0,
+		price: Number(model.price.trim()) || 0,
 	}
 }

@@ -74,12 +74,12 @@ function makeOnboarding(isOnboarding = false) {
 
 function makeConcertService() {
 	return {
-		listByFollower: vi.fn().mockResolvedValue([]),
+		listFollowed: vi.fn().mockResolvedValue([]),
 		revalidateFollower: vi.fn().mockResolvedValue([]),
 		peekDateGroups: vi.fn().mockReturnValue(null),
 		setDateGroups: vi.fn(),
 		toDateGroups: vi.fn().mockReturnValue([]),
-		listConcerts: vi.fn().mockResolvedValue([]),
+		listByArtist: vi.fn().mockResolvedValue([]),
 	}
 }
 
@@ -250,7 +250,7 @@ describe('DashboardRoute', () => {
 			mockAuth.isAuthenticated = true
 			mockUser.current = { home: { countryCode: 'JP', level1: 'JP-13' } }
 			// Fetch never resolves → the timetable would stay a spinner.
-			mockConcert.listByFollower.mockReturnValue(new Promise(() => {}))
+			mockConcert.listFollowed.mockReturnValue(new Promise(() => {}))
 			sut = buildSut()
 
 			await sut.loading()
@@ -291,7 +291,7 @@ describe('DashboardRoute', () => {
 				[StorageKeys.postSignupShown]: 'pending',
 			})
 			// Fetch never resolves → timetable stays a spinner.
-			mockConcert.listByFollower.mockReturnValue(new Promise(() => {}))
+			mockConcert.listFollowed.mockReturnValue(new Promise(() => {}))
 			sut = buildSut()
 			sut.needsRegion = false
 
@@ -374,7 +374,7 @@ describe('DashboardRoute', () => {
 		it('does not latch while the timetable is still loading', () => {
 			mockOnboarding = makeOnboarding(true)
 			mockFollow.followedCount = 1
-			mockConcert.listByFollower.mockReturnValue(new Promise(() => {}))
+			mockConcert.listFollowed.mockReturnValue(new Promise(() => {}))
 			sut = buildSut()
 			sut.needsRegion = false
 
@@ -506,12 +506,12 @@ describe('DashboardRoute', () => {
 				mockPurchased.countByEvent,
 			)
 
-			const followerCalls = mockConcert.listByFollower.mock.calls.length
+			const followerCalls = mockConcert.listFollowed.mock.calls.length
 			sut.switchMode('timetable')
 			expect(sut.isAllNearby).toBe(false)
 			// My Timetable comes back from what it already had, not a refetch.
 			expect(sut.dateGroups).toBe(timetable)
-			expect(mockConcert.listByFollower).toHaveBeenCalledTimes(followerCalls)
+			expect(mockConcert.listFollowed).toHaveBeenCalledTimes(followerCalls)
 		})
 	})
 
@@ -542,7 +542,7 @@ describe('DashboardRoute', () => {
 			// @spec components/infrastructure/fan/web/route/dashboard "Statuses cannot be loaded"
 			const groups = [{ date: {}, home: [], nearby: [], away: [] }]
 			const rendered = [{ dateKey: '2026-11-20' }]
-			mockConcert.listByFollower.mockResolvedValue(groups)
+			mockConcert.listFollowed.mockResolvedValue(groups)
 			mockConcert.toDateGroups.mockReturnValue(rendered)
 			mockJourney.load.mockRejectedValue(new Error('journey down'))
 			mockPurchased.load.mockRejectedValue(new Error('tickets down'))

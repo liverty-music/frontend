@@ -23,20 +23,20 @@
     <form
       class="[ commercial-terms-form ] [ flow ]"
       novalidate
-      submit.trigger="saveSellerDetails()"
+      submit.trigger="saveBusinessDetails()"
     >
-      <h4 class="commercial-terms-form-title">Seller details (特商法)</h4>
+      <h4 class="commercial-terms-form-title">Business details (特商法)</h4>
       <p class="commercial-terms-hint">
         Shown to fans at checkout and in the purchase email. All five values
         are required and are saved together.
       </p>
       <p
-        if.bind="!hasSellerDetails"
+        if.bind="!hasBusinessDetails"
         class="commercial-terms-hint"
         data-state="missing"
       >
         Not entered yet: this organizer's events cannot go on sale until the
-        seller details are saved.
+        business details are saved.
       </p>
 
       <label class="commercial-terms-field">
@@ -45,21 +45,21 @@
           type="text"
           class="commercial-terms-input"
           name="legalName"
-          value.bind="seller.legalName"
+          value.bind="business.legalName"
           maxlength="200"
           autocomplete="organization"
           required
-          aria-invalid.bind="!!sellerErrors.legalName"
-          aria-describedby="seller-legal-name-error"
-          disabled.bind="savingSeller"
+          aria-invalid.bind="!!businessErrors.legalName"
+          aria-describedby="business-legal-name-error"
+          disabled.bind="savingBusiness"
         />
       </label>
       <p
-        id="seller-legal-name-error"
-        if.bind="sellerErrors.legalName"
+        id="business-legal-name-error"
+        if.bind="businessErrors.legalName"
         class="commercial-terms-error"
       >
-        ${sellerErrors.legalName}
+        ${businessErrors.legalName}
       </p>
 
       <label class="commercial-terms-field">
@@ -68,72 +68,72 @@
           type="text"
           class="commercial-terms-input"
           name="representativeName"
-          value.bind="seller.representativeName"
+          value.bind="business.representativeName"
           maxlength="100"
           autocomplete="name"
           required
-          aria-invalid.bind="!!sellerErrors.representativeName"
-          aria-describedby="seller-representative-name-error"
-          disabled.bind="savingSeller"
+          aria-invalid.bind="!!businessErrors.representativeName"
+          aria-describedby="business-representative-name-error"
+          disabled.bind="savingBusiness"
         />
       </label>
       <p
-        id="seller-representative-name-error"
-        if.bind="sellerErrors.representativeName"
+        id="business-representative-name-error"
+        if.bind="businessErrors.representativeName"
         class="commercial-terms-error"
       >
-        ${sellerErrors.representativeName}
+        ${businessErrors.representativeName}
       </p>
 
       <label class="commercial-terms-field">
-        Address (所在地)
+        Business address (所在地)
         <input
           type="text"
           class="commercial-terms-input"
-          name="address"
-          value.bind="seller.address"
+          name="businessAddress"
+          value.bind="business.businessAddress"
           maxlength="300"
-          autocomplete="street-address"
+          autocomplete="street-businessAddress"
           required
-          aria-invalid.bind="!!sellerErrors.address"
-          aria-describedby="seller-address-error"
-          disabled.bind="savingSeller"
+          aria-invalid.bind="!!businessErrors.businessAddress"
+          aria-describedby="business-businessAddress-error"
+          disabled.bind="savingBusiness"
         />
       </label>
       <p
-        id="seller-address-error"
-        if.bind="sellerErrors.address"
+        id="business-businessAddress-error"
+        if.bind="businessErrors.businessAddress"
         class="commercial-terms-error"
       >
-        ${sellerErrors.address}
+        ${businessErrors.businessAddress}
       </p>
 
       <label class="commercial-terms-field">
-        Phone number (電話番号)
+        Business phone number (電話番号)
         <input
           type="tel"
           class="commercial-terms-input"
-          name="phoneNumber"
-          value.bind="seller.phoneNumber"
+          name="businessPhoneNumber"
+          value.bind="business.businessPhoneNumber"
           maxlength="16"
           autocomplete="tel"
           placeholder="+81312345678"
           required
-          aria-invalid.bind="!!sellerErrors.phoneNumber"
-          aria-describedby="seller-phone-number-hint seller-phone-number-error"
-          disabled.bind="savingSeller"
+          aria-invalid.bind="!!businessErrors.businessPhoneNumber"
+          aria-describedby="business-phone-number-hint business-phone-number-error"
+          disabled.bind="savingBusiness"
         />
       </label>
-      <p id="seller-phone-number-hint" class="commercial-terms-hint">
+      <p id="business-phone-number-hint" class="commercial-terms-hint">
         International form: + country code, then the number without the
         leading 0.
       </p>
       <p
-        id="seller-phone-number-error"
-        if.bind="sellerErrors.phoneNumber"
+        id="business-phone-number-error"
+        if.bind="businessErrors.businessPhoneNumber"
         class="commercial-terms-error"
       >
-        ${sellerErrors.phoneNumber}
+        ${businessErrors.businessPhoneNumber}
       </p>
 
       <label class="commercial-terms-field">
@@ -142,20 +142,20 @@
           type="email"
           class="commercial-terms-input"
           name="contactEmail"
-          value.bind="seller.contactEmail"
+          value.bind="business.contactEmail"
           autocomplete="email"
           required
-          aria-invalid.bind="!!sellerErrors.contactEmail"
-          aria-describedby="seller-contact-email-error"
-          disabled.bind="savingSeller"
+          aria-invalid.bind="!!businessErrors.contactEmail"
+          aria-describedby="business-contact-email-error"
+          disabled.bind="savingBusiness"
         />
       </label>
       <p
-        id="seller-contact-email-error"
-        if.bind="sellerErrors.contactEmail"
+        id="business-contact-email-error"
+        if.bind="businessErrors.contactEmail"
         class="commercial-terms-error"
       >
-        ${sellerErrors.contactEmail}
+        ${businessErrors.contactEmail}
       </p>
 
       <div class="[ cluster ]">
@@ -163,16 +163,16 @@
           type="submit"
           class="commercial-terms-btn"
           data-variant="primary"
-          disabled.bind="savingSeller"
+          disabled.bind="savingBusiness"
         >
-          ${savingSeller ? 'Saving…' : 'Save seller details'}
+          ${savingBusiness ? 'Saving…' : 'Save business details'}
         </button>
-        <output if.bind="sellerSaved" class="commercial-terms-status">
+        <output if.bind="businessSaved" class="commercial-terms-status">
           Saved.
         </output>
       </div>
-      <p if.bind="sellerSaveError" class="commercial-terms-error" role="alert">
-        ${sellerSaveError}
+      <p if.bind="businessSaveError" class="commercial-terms-error" role="alert">
+        ${businessSaveError}
       </p>
     </form>
 

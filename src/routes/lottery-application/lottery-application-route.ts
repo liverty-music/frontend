@@ -1,80 +1,64 @@
-import type { Params } from '@aurelia/router'
+import type { IRouteViewModel, Params } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import { ILotteryRpcClient } from '../../adapter/rpc/client/lottery-client'
-import type { TicketApplicationState } from '../../entities/lottery'
+import { ILotteryEntryRpcClient } from '../../adapter/rpc/client/lottery-entry-client'
+import type {
+	LotteryEntry,
+	LotteryEntryState,
+} from '../../entities/lottery-entry'
 
 /**
- * Discrete UI phases of the my-application / result view.
- *   - `loading`  — the initial `getMyApplication` round-trip is in flight.
- *   - `empty`    — the caller has no application for this phase (nothing to show).
- *   - `error`    — the load failed (non-NotFound); `error` carries the copy.
- *   - `loaded`   — an application is present; `application` + `resultState` drive
- *                  the render (pre-draw "抽選待ち" vs. post-draw result).
+ * Discrete UI phases of the entry status view.
+ *   - `loading` — the entries are being read.
+ *   - `empty`   — the fan made no entry for this TicketType.
+ *   - `error`   — the read failed; a reload is offered.
+ *   - `loaded`  — `entry` drives the render.
  */
 export type ApplicationViewStep = 'loading' | 'empty' | 'error' | 'loaded'
 
 /**
- * The visual bucket the view renders. Derived from the application's
- * `TicketApplicationState`: pre-draw APPLIED shows the waiting state; WON / LOST /
- * WITHDRAWN show the post-draw result prominently.
+ * The visual bucket the view renders: Entered shows the waiting state; Won,
+ * Lost and Withdrawn show the result prominently.
  */
-export type ResultKind = 'waiting' | 'won' | 'lost' | 'withdrawn'
+export type ResultKind = 'entered' | 'won' | 'lost' | 'withdrawn'
 
 /**
- * Fan-facing lottery MY-APPLICATION + RESULT view (roadmap ④, tasks 4.2/4.3).
- * Loads the caller's application for a phase via `getMyApplication` and renders:
- *   - the requested ticket count and 本人確認 summary,
- *   - the current state with clear Japanese labels (Applied / Won / Lost /
- *     Withdrawn), including the pre-draw "抽選待ち" state,
- *   - the post-draw result prominently (当選 / 落選 / 取下げ済み), noting the
- *     card charge (on win) or hold release (on loss/withdrawal),
- *   - a "申込を取下げる" action while the application is APPLIED (before the draw),
- *     which calls `withdrawApplication` after a confirm step and reflects the
- *     WITHDRAWN state.
- *
- * The whole view renders from `getMyApplication` alone: its
- * `TicketApplicationState` already distinguishes pre-draw (APPLIED → 抽選待ち)
- * from the post-draw result (WON / LOST / WITHDRAWN), so no separate `getResult`
- * round-trip is needed here.
- *
- * DEFERRED to a later increment (task 5.x): the organizer console.
- *
- * NOTE (phase metadata): the fan surface of `LotteryService` exposes no
- * phase-load RPC, so ticket price / max are not shown here — only the
- * application's own recorded `requestedTicketCount`. TODO(lottery): show phase
- * context (event, price) once a fan-facing phase-read RPC exists.
+ * The entry a status screen shows: the newest that is not a Draft. A Draft
+ * was never entered, so it is not an entry the fan made.
  */
-export class LotteryApplicationRoute {
-	// ── Inputs (bindable / route params) ──────────────────────────────────────
-	public phaseId = ''
+export function shownEntry(
+	entries: readonly LotteryEntry[],
+): LotteryEntry | null {
+	return entries.find((e) => e.state !== 'draft') ?? null
+}
 
-	// ── View state ────────────────────────────────────────────────────────────
+/**
+ * The fan's lottery entry status for one TicketType
+ * (`/events/:id/lottery/:ticketTypeId/entry`). Reads the fan's entries with
+ * LotteryEntryService.ListByTicketType (newest first, withdrawn ones
+ * included) and shows the newest entry made: its count and state (抽選待ち /
+ * 当選 / 落選 / 取下げ済み), and while it awaits the draw an action to
+ * withdraw it, which releases the card hold.
+ */
+export class LotteryApplicationRoute implements IRouteViewModel {
 	public step: ApplicationViewStep = 'loading'
-	public error = ''
-
-	/** The loaded application (plain fields read in the template). */
-	public applicationCount = 0
-	public applicantName = ''
-	public applicantPhone = ''
-	private state: TicketApplicationState = 'unspecified'
+	/** An i18n key for the current error or note, or ''. */
+	public messageKey = ''
+	public entry: LotteryEntry | null = null
 
 	/** Confirm-step gate for the withdraw action. */
 	public confirmingWithdraw = false
 	/** True while the withdraw round-trip is in flight (disables the action). */
 	public withdrawing = false
 
+	private ticketTypeId = ''
 	private readonly logger = resolve(ILogger).scopeTo('LotteryApplicationRoute')
-	private readonly lottery = resolve(ILotteryRpcClient)
+	private readonly entryClient = resolve(ILotteryEntryRpcClient)
 	private abortController: AbortController | null = null
 
 	public loading(params: Params): void {
-		if (params.phaseId) this.phaseId = String(params.phaseId)
-		// Abort any request still in flight from a prior activation (Aurelia may
-		// reuse this VM instance on a params-only re-navigation) so a stale
-		// response for the previous phase can never write into the new view.
-		this.abortController?.abort()
-		this.abortController = new AbortController()
+		this.ticketTypeId = params.ticketTypeId ?? ''
+		// Never hold the view swap on data: start the read and return.
 		void this.load()
 	}
 
@@ -82,122 +66,97 @@ export class LotteryApplicationRoute {
 		this.abortController?.abort()
 	}
 
-	/**
-	 * Loads the caller's application for the phase. No application → `empty`; any
-	 * non-cancel failure → `error`. On success the flat display fields are
-	 * populated and the step flips to `loaded`.
-	 */
+	private get signal(): AbortSignal | undefined {
+		return this.abortController?.signal
+	}
+
 	public async load(): Promise<void> {
+		this.abortController?.abort()
+		this.abortController = new AbortController()
+		const { signal } = this.abortController
 		this.step = 'loading'
-		this.error = ''
+		this.messageKey = ''
 		try {
-			const app = await this.lottery.getMyApplication(
-				this.phaseId,
-				this.abortController?.signal,
+			const entries = await this.entryClient.listByTicketType(
+				this.ticketTypeId,
+				signal,
 			)
-			if (!app) {
-				this.step = 'empty'
-				return
-			}
-			this.applicationCount = app.requestedTicketCount
-			this.applicantName = app.identity?.fullName ?? ''
-			this.applicantPhone = app.identity?.phoneNumber ?? ''
-			this.state = app.state
-			this.step = 'loaded'
+			if (signal.aborted) return
+			this.entry = shownEntry(entries)
+			this.step = this.entry ? 'loaded' : 'empty'
 		} catch (err) {
-			if ((err as Error).name === 'AbortError') return
-			this.logger.error('getMyApplication failed', { error: err })
-			this.error =
-				'お申し込み内容の読み込みに失敗しました。時間をおいて再度お試しください。'
+			if (signal.aborted) return
+			this.logger.error('Lottery entry read failed', { error: err })
+			this.messageKey = 'lotteryApplication.error'
 			this.step = 'error'
 		}
 	}
 
 	// ── Derived state ─────────────────────────────────────────────────────────
 
+	private get state(): LotteryEntryState {
+		return this.entry?.state ?? 'unknown'
+	}
+
 	/** The visual bucket the template renders for the current state. */
 	public get resultKind(): ResultKind {
 		switch (this.state) {
 			case 'won':
-				return 'won'
 			case 'lost':
-				return 'lost'
 			case 'withdrawn':
-				return 'withdrawn'
+				return this.state
 			default:
-				return 'waiting'
+				return 'entered'
 		}
 	}
 
-	/** Clear Japanese label for the current lifecycle state. */
-	public get stateLabel(): string {
-		switch (this.state) {
-			case 'applied':
-				return '抽選待ち'
-			case 'won':
-				return '当選'
-			case 'lost':
-				return '落選'
-			case 'withdrawn':
-				return '取下げ済み'
-			default:
-				return '—'
-		}
+	/** i18n key of the state's label. */
+	public get stateLabelKey(): string {
+		const known = ['entered', 'won', 'lost', 'withdrawn']
+		return `lotteryApplication.state.${known.includes(this.state) ? this.state : 'unknown'}`
 	}
 
-	/**
-	 * Withdraw is offered only while the application is APPLIED (before the draw):
-	 * once WON / LOST / WITHDRAWN it is hidden. `withdrawing` disables it during
-	 * the round-trip.
-	 */
+	/** Withdraw is offered only while the entry awaits the draw. */
 	public get canWithdraw(): boolean {
-		return this.state === 'applied' && !this.withdrawing
+		return this.state === 'entered' && !this.withdrawing
 	}
 
-	// ── Withdraw flow (task 4.3) ───────────────────────────────────────────────
+	// ── Withdraw ──────────────────────────────────────────────────────────────
 
-	/** Opens the confirm step for the withdraw action. */
 	public askWithdraw(): void {
 		if (!this.canWithdraw) return
-		this.error = ''
+		this.messageKey = ''
 		this.confirmingWithdraw = true
 	}
 
-	/** Dismisses the confirm step without withdrawing. */
 	public cancelWithdraw(): void {
 		this.confirmingWithdraw = false
 	}
 
 	/**
-	 * Confirms the withdrawal: calls `withdrawApplication`, then reflects the
-	 * WITHDRAWN state (the card authorization is released, noted in the template).
-	 * FAILED_PRECONDITION (the draw already ran) is surfaced gracefully and the
-	 * application is reloaded so the now-final result renders.
+	 * Withdraws the entry and reflects the Withdrawn state. When the draw ran
+	 * meanwhile (FailedPrecondition), the entries are read again so the result
+	 * shows.
 	 */
 	public async confirmWithdraw(): Promise<void> {
-		if (this.state !== 'applied') return
+		const entry = this.entry
+		if (entry?.state !== 'entered') return
 		this.withdrawing = true
-		this.error = ''
+		this.messageKey = ''
 		try {
-			await this.lottery.withdrawApplication(
-				this.phaseId,
-				this.abortController?.signal,
-			)
-			this.state = 'withdrawn'
+			await this.entryClient.withdraw(entry.id, this.signal)
+			this.entry = { ...entry, state: 'withdrawn' }
 			this.confirmingWithdraw = false
 		} catch (err) {
-			if ((err as Error).name === 'AbortError') return
-			if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
-				// The draw ran between load and withdraw: reload to show the result,
-				// then surface the note (load() clears `error`, so set it after).
+			if (this.signal?.aborted) return
+			if (ConnectError.from(err).code === Code.FailedPrecondition) {
 				this.confirmingWithdraw = false
 				await this.load()
-				this.error =
-					'抽選が確定したため取下げできませんでした。最新の結果を表示します。'
+				this.messageKey = 'lotteryApplication.withdraw.drawn'
 				return
 			}
-			this.logger.error('withdrawApplication failed', { error: err })
-			this.error = '取下げに失敗しました。もう一度お試しください。'
+			this.logger.error('Withdraw failed', { error: err })
+			this.messageKey = 'lotteryApplication.withdraw.failed'
 		} finally {
 			this.withdrawing = false
 		}

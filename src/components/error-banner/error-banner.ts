@@ -1,7 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
-import { IErrorBoundaryService } from '../../services/error-boundary-service'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
+import { IErrorBoundaryService } from '../../services/error-boundary-service'
 
 export class ErrorBanner {
 	public readonly errorBoundary = resolve(IErrorBoundaryService)

@@ -117,13 +117,14 @@ export class ConcertRpcClient {
 		}
 	}
 
-	public async listConcerts(
+	/** The artist's concerts, as a flat list (`ConcertService.ListByArtist`). */
+	public async listByArtist(
 		artistId: string,
 		signal?: AbortSignal,
 	): Promise<ResolvedConcert[]> {
-		this.logger.info('Listing concerts', { artistId })
+		this.logger.info('Listing concerts by artist', { artistId })
 		try {
-			const response = await this.client.list(
+			const response = await this.client.listByArtist(
 				{
 					artistId: { value: artistId },
 				},
@@ -131,32 +132,33 @@ export class ConcertRpcClient {
 			)
 			return resolveConcerts(response)
 		} catch (err) {
-			this.logger.warn('Concert list failed', { artistId, error: err })
+			this.logger.warn('Concert listByArtist failed', { artistId, error: err })
 			throw err
 		}
 	}
 
 	/**
-	 * The follower-scoped concert list. When `from` is provided the server returns
+	 * The concerts of the artists the caller follows
+	 * (`ConcertService.ListFollowed`). When `from` is provided the server returns
 	 * concerts on or after that date (including past dates); when omitted the
 	 * server defaults to today onward. The dashboard always passes the client's
 	 * local date so the "today" boundary is anchored to the caller's timezone.
 	 */
-	public async listByFollower(
+	public async listFollowed(
 		from?: CalendarDate,
 		signal?: AbortSignal,
 	): Promise<ProximityGroup[]> {
-		this.logger.info('Listing concerts by follower', { from })
+		this.logger.info('Listing concerts of followed artists', { from })
 		try {
 			// Wrap the optional client date in LocalDate (mirrors listByLocation).
 			// Omitting from lets the server apply its today-onward default.
-			const response = await this.client.listByFollower(
+			const response = await this.client.listFollowed(
 				from ? { from: { value: from } } : {},
 				{ signal },
 			)
 			return resolveGroups(response)
 		} catch (err) {
-			this.logger.warn('Concert listByFollower failed', { error: err })
+			this.logger.warn('Concert listFollowed failed', { error: err })
 			throw err
 		}
 	}

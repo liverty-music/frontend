@@ -7,7 +7,7 @@
  * silently ends (the 2026-08 outage). This module renews the browser
  * subscription with the configured VAPID key so a valid endpoint always exists.
  *
- * Re-registration with the backend `PushNotificationService.Create` RPC needs
+ * Re-registration with the backend `PushSubscriptionService.Create` RPC needs
  * the user's JWT, which lives in `localStorage` and is therefore UNREACHABLE
  * from a Service Worker. So the SW cannot call Create itself. Instead it renews
  * the browser subscription and notifies any open window client to run the

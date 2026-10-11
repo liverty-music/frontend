@@ -7,12 +7,12 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
+import { IArtistClient } from '../services/artist-client'
 import {
 	type AuthoredSeries,
 	IConcertAuthoringClient,
 } from '../services/concert-authoring-client'
 import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
-import { IOrganizerIdentityClient } from '../services/organizer-identity-client'
 import {
 	type ConcertFormErrors,
 	type ConcertFormModel,
@@ -49,11 +49,10 @@ function toPerformerOption(artist: Artist, selected: boolean): PerformerOption {
  * modes: the `edit/:seriesId` route supplies a series id (edit), its absence is
  * the `new` route (create).
  *
- * On bootstrap it resolves the caller's own Organizer via
- * {@link IOrganizerIdentityClient} (the sanctioned token bootstrap) and loads
- * the represented-artists roster for the performer picker. In edit mode it also
- * loads the existing concert from `List` (the organizer catalog is small and
- * has no single-get RPC) and hydrates the form.
+ * On bootstrap it loads the represented-artists roster for the performer
+ * picker via {@link IArtistClient} (the caller's Organizer comes from the
+ * token). In edit mode it also loads the existing concert from `List` (the
+ * organizer catalog is small and has no single-get RPC) and hydrates the form.
  *
  * Validation mirrors the backend boundary (see {@link validateConcertForm}) and
  * runs on every input so inline errors appear before a round-trip. Save calls
@@ -92,11 +91,10 @@ export class ConcertEditorRoute {
 	public coverImageError = ''
 	public uploadingCover = false
 
-	private organizerId = ''
 	private abort: AbortController | null = null
 
 	private readonly client = resolve(IConcertAuthoringClient)
-	private readonly identity = resolve(IOrganizerIdentityClient)
+	private readonly artists = resolve(IArtistClient)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertEditorRoute')
 
@@ -166,11 +164,7 @@ export class ConcertEditorRoute {
 		this.phase = 'loading'
 		this.loadError = ''
 		try {
-			const organizer = await this.identity.get(abort.signal)
-			this.organizerId = organizer?.id?.value ?? ''
-			const roster = this.organizerId
-				? await this.identity.listArtists(this.organizerId, abort.signal)
-				: []
+			const roster = await this.artists.list(abort.signal)
 			if (abort.signal.aborted) return
 
 			if (this.isEdit) {
