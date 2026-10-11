@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import {
 	type APIRequestContext,
 	expect,
+	type Frame,
 	type Page,
 	test,
 } from '@playwright/test'
@@ -96,26 +97,58 @@ test.describe('buy tickets first come (signed in)', () => {
 			timeout: 60_000,
 		})
 		const summary = page.getByTestId('checkout-done-summary')
-		await expect(summary).toContainText('2')
+		await expect(summary).toContainText(/2枚|2 tickets/)
 		await expect(summary).toContainText(total)
 		await page.getByTestId('checkout-to-tickets').click()
 		await expect(page).toHaveURL(/\/tickets$/)
+		await expect(page.locator('.tickets-list')).toBeVisible({ timeout: 30_000 })
 	})
 
-	test('holds, charges and orders once on double taps', async ({ page }) => {
+	test('holds, charges and orders once on double taps', async ({
+		page,
+		request,
+	}) => {
 		// @spec stories/buy-tickets-first-come "Double tap everywhere"
 		await openCheckout(page)
 		await page.getByTestId('checkout-count-select').selectOption('1')
+		const started = page.waitForResponse(/ReservationService\/Start$/)
 		await page.getByTestId('checkout-hold').dblclick()
+		const start = (await (await started).json()) as {
+			reservation: { id: { value: string } }
+		}
 		await expect(page.getByTestId('checkout-identity')).toBeVisible()
 		await fillIdentity(page)
 		await authorizeCard(page)
 
+		const confirmed = page.waitForResponse(/ReservationService\/Confirm$/)
 		await page.getByTestId('checkout-place-order').dblclick()
+		const first = (await (await confirmed).json()) as {
+			order: { id: { value: string } }
+		}
 		await expect(page.getByTestId('checkout-done')).toBeVisible({
 			timeout: 60_000,
 		})
-		await expect(page.getByTestId('checkout-done-summary')).toContainText('1')
+		await expect(page.getByTestId('checkout-done-summary')).toContainText(
+			/1枚|1 tickets?/,
+		)
+
+		// The page disables its buttons while a request is in flight, so a
+		// double tap sends one request. Place the same order again past the
+		// page, as a second tab would: the server returns the same Order and
+		// charges nothing more.
+		const again = await request.post(
+			`${API_BASE}/liverty_music.rpc.reservation.v1.ReservationService/Confirm`,
+			{
+				data: { reservationId: { value: start.reservation.id.value } },
+				headers: {
+					'content-type': 'application/json',
+					authorization: `Bearer ${await accessToken(page)}`,
+				},
+			},
+		)
+		expect(again.ok()).toBe(true)
+		const second = (await again.json()) as { order: { id: { value: string } } }
+		expect(second.order.id.value).toBe(first.order.id.value)
 	})
 
 	test('refuses the order after the hold ran out', async ({ page }) => {
@@ -170,6 +203,17 @@ test.describe('buy tickets first come (signed in)', () => {
 		await guest.close()
 	})
 })
+
+/** The signed-in fan's access token, as the app keeps it. */
+async function accessToken(page: Page): Promise<string> {
+	return page.evaluate(() => {
+		const key = Object.keys(localStorage).find((k) =>
+			k.startsWith('oidc.user:'),
+		)
+		const user = key ? JSON.parse(localStorage.getItem(key) ?? '{}') : {}
+		return (user as { access_token?: string }).access_token ?? ''
+	})
+}
 
 /** Open the checkout from the Event page's action to buy. */
 async function openCheckout(page: Page): Promise<void> {
