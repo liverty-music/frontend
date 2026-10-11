@@ -31,14 +31,13 @@ import { LegalDocument } from './components/legal-document/legal-document'
 import { ConcertHighway } from './components/live-highway/concert-highway'
 import { EventCard } from './components/live-highway/event-card'
 import { EventDetailSheet } from './components/live-highway/event-detail-sheet'
-import { LoadingSpinner } from './components/loading-spinner/loading-spinner'
 import { NotificationMockCard } from './components/notification-mock/notification-mock-card'
 import { PageHeader } from './components/page-header/page-header'
 import { PageHelp } from './components/page-help/page-help'
 import { PostSignupDialog } from './components/post-signup-dialog/post-signup-dialog'
 import { SignupPromptBanner } from './components/signup-prompt-banner/signup-prompt-banner'
-import type { SnackHandle } from './components/snack-bar/snack'
-import { Snack } from './components/snack-bar/snack'
+import type { SnackHandle } from '../shared/ui/snack-bar/snack'
+import { Snack } from '../shared/ui/snack-bar/snack'
 import { StatePlaceholder } from './components/state-placeholder/state-placeholder'
 import { SvgIcon } from './components/svg-icon/svg-icon'
 import { Toast } from './components/toast/toast'
@@ -288,7 +287,6 @@ async function bootstrap(): Promise<void> {
 	au.register(InlineError)
 	au.register(NotificationMockCard)
 	au.register(LegalDocument)
-	au.register(LoadingSpinner)
 	au.register(SignupPromptBanner)
 	au.register(Toast)
 	au.register(PageHeader)

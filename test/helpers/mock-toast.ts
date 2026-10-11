@@ -1,6 +1,6 @@
 import { IEventAggregator } from 'aurelia'
 import { vi } from 'vitest'
-import { Snack } from '../../src/components/snack-bar/snack'
+import { Snack } from '../../shared/ui/snack-bar/snack'
 
 /**
  * Creates a mock IEventAggregator that captures published Snack events.

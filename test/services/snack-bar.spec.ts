@@ -1,7 +1,7 @@
 import { DI, IEventAggregator, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Snack } from '../../src/components/snack-bar/snack'
-import { SnackBar } from '../../src/components/snack-bar/snack-bar'
+import { Snack } from '../../shared/ui/snack-bar/snack'
+import { SnackBar } from '../../shared/ui/snack-bar/snack-bar'
 
 // jsdom does not provide ToggleEvent — polyfill for tests
 if (typeof globalThis.ToggleEvent === 'undefined') {

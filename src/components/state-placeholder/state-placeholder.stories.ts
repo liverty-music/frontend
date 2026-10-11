@@ -5,6 +5,7 @@ import {
 } from '@aurelia/storybook'
 import { expect, within } from 'storybook/test'
 import { expect as vitestExpect } from 'vitest'
+import { CircularProgress } from '../../../shared/ui/circular-progress/circular-progress'
 import { StatePlaceholder } from './state-placeholder'
 
 const meta = {
@@ -46,10 +47,17 @@ export const Empty = {
 			register: [StatePlaceholder],
 		}),
 	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Rendering with icon only"
 		const canvas = within(canvasElement)
+		const icon = canvasElement.querySelector('svg-icon')
+		await expect(icon).not.toBeNull()
+		await expect(icon).toHaveAttribute('data-size', 'xl')
+		const copy = canvas.getByText('まだフォローしているアーティストがいません')
+		await expect(copy).toBeInTheDocument()
+		// The icon comes first, the projected content below it.
 		await expect(
-			canvas.getByText('まだフォローしているアーティストがいません'),
-		).toBeInTheDocument()
+			icon?.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy()
 		// Component-level visual regression against a committed baseline (D4/OQ2).
 		await vitestExpect
 			.element(canvasElement)
@@ -73,6 +81,41 @@ export const NoIcon = {
 			register: [StatePlaceholder],
 		}),
 	args: { icon: '' },
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/ui-primitives "No icon"
+		const canvas = within(canvasElement)
+		await expect(canvasElement.querySelector('svg-icon')).toBeNull()
+		await expect(
+			canvas.getByText('該当するライブが見つかりませんでした'),
+		).toBeInTheDocument()
+	},
+} satisfies Story
+
+// Pages project their own content, including a progress indicator.
+export const WithProgress = {
+	render: (args) =>
+		defineAureliaStory({
+			template: `
+				<state-placeholder icon.bind="icon">
+					<circular-progress></circular-progress>
+					<p>読み込んでいます</p>
+				</state-placeholder>
+			`,
+			props: args,
+			register: [StatePlaceholder, CircularProgress],
+		}),
+	args: { icon: '' },
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Custom content via slot"
+		const canvas = within(canvasElement)
+		const center = canvasElement.querySelector('.state-center')
+		await expect(center).not.toBeNull()
+		const bar = canvas.getByRole('progressbar')
+		await expect(center?.contains(bar)).toBe(true)
+		await expect(
+			within(center as HTMLElement).getByText('読み込んでいます'),
+		).toBeInTheDocument()
+	},
 } satisfies Story
 
 // Loading/skeleton variant — layout-preserving shimmer bars (the M3 skeleton

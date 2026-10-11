@@ -1,0 +1,103 @@
+@layer block {
+	@scope (circular-progress) {
+		/* Zero specificity so a parent's `color` wins. Fan role names are
+		   `--md-color-*`; the console's are `--md-sys-color-*`. */
+		:where(:scope) {
+			/* One full turn; M3 indeterminate container rotation. */
+			--_turn-duration: 1568ms;
+
+			display: inline-flex;
+			color: var(--md-sys-color-primary, var(--md-color-primary));
+		}
+
+		/* Inside a button the arc takes the button's content color. */
+		:where(button :scope) {
+			color: inherit;
+		}
+
+		.circular-progress {
+			display: block;
+			inline-size: 48px;
+			block-size: 48px;
+		}
+
+		/* 24 px box: the 48-unit viewBox is drawn at half scale, so a 6-unit
+		   stroke renders 3 px. */
+		.circular-progress[data-size="small"] {
+			inline-size: 24px;
+			block-size: 24px;
+		}
+
+		svg {
+			display: block;
+			inline-size: 100%;
+			block-size: 100%;
+			animation: circular-progress-rotate var(--_turn-duration) linear infinite;
+		}
+
+		circle {
+			r: 22px;
+			fill: none;
+			stroke: currentcolor;
+			stroke-width: 4;
+		}
+
+		.circular-progress[data-size="small"] circle {
+			r: 21px;
+			stroke-width: 6;
+		}
+
+		.track {
+			opacity: 0.24;
+		}
+
+		/* The arc grows from a dot to three quarters of the circle, then its
+		   tail catches up; together with the rotation this is the M3
+		   indeterminate motion. */
+		.arc {
+			transform-origin: center;
+
+			stroke-dasharray: 1 200;
+			stroke-dashoffset: 0;
+			stroke-linecap: round;
+
+			animation: circular-progress-arc 1333ms
+				var(--md-sys-motion-easing-standard) infinite;
+		}
+
+		@keyframes circular-progress-rotate {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		@keyframes circular-progress-arc {
+			0% {
+				stroke-dasharray: 1 200;
+				stroke-dashoffset: 0;
+			}
+
+			50% {
+				stroke-dasharray: 75 200;
+				stroke-dashoffset: -25;
+			}
+
+			100% {
+				stroke-dasharray: 75 200;
+				stroke-dashoffset: -99;
+			}
+		}
+
+		/* Reduced motion: a fixed-length arc that turns once every 2 s. */
+		@media (prefers-reduced-motion: reduce) {
+			:where(:scope) {
+				--_turn-duration: 2000ms;
+			}
+
+			.arc {
+				stroke-dasharray: 25 200;
+				animation: none;
+			}
+		}
+	}
+}

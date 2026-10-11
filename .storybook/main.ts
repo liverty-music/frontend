@@ -1,7 +1,10 @@
 import { defineMain } from '@aurelia/storybook/node'
 
 export default defineMain({
-	stories: ['../src/**/*.stories.@(ts|tsx|js|jsx|mdx)'],
+	stories: [
+		'../src/**/*.stories.@(ts|tsx|js|jsx|mdx)',
+		'../shared/**/*.stories.@(ts|tsx|js|jsx|mdx)',
+	],
 	addons: [
 		'@storybook/addon-a11y',
 		'@storybook/addon-docs',

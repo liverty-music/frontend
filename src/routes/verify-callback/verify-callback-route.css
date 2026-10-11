@@ -16,7 +16,7 @@
 			background: var(--color-surface-base);
 		}
 
-		/* Loading cluster: spinner + text side by side. */
+		/* Loading cluster: indicator + text side by side. */
 		.verify-loading {
 			--cluster-gap: var(--space-s);
 

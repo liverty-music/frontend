@@ -1,9 +1,10 @@
 <import from="./verify-callback-route.css"></import>
+<import from="../../../shared/ui/circular-progress/circular-progress"></import>
 
 <main class="[ verify-callback ]">
   <!-- Loading state — in-flight IdentityVerificationService.Complete RPC -->
   <output if.bind="isPending" class="[ verify-loading ] [ cluster ]" aria-live="polite" aria-busy="true">
-    <loading-spinner></loading-spinner>
+    <circular-progress></circular-progress>
     <p t="verifyCallback.loading"></p>
   </output>
 
