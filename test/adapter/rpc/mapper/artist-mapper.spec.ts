@@ -60,6 +60,7 @@ describe('artistFrom', () => {
 })
 
 describe('fanartFrom', () => {
+	// @spec components/infrastructure/fan/web/global/live-highway "ListFollowed returns artist with fanart"
 	it('maps all fanart fields', () => {
 		const proto = {
 			artistThumb: { value: 'thumb.png' },
@@ -77,6 +78,7 @@ describe('fanartFrom', () => {
 		expect(result.musicBanner).toBe('banner.png')
 	})
 
+	// @spec components/infrastructure/fan/web/global/live-highway "ListFollowed returns artist without fanart"
 	it('returns undefined for missing optional fields', () => {
 		const result = fanartFrom({} as any)
 

@@ -1,12 +1,14 @@
 import type {
-	SellerDetails,
-	SellerDetailsInput,
+	BusinessDetailsInput,
+	Organizer,
 } from '../../services/organizer-client'
 
 /**
- * Pure form logic for an Organizer's commercial terms: the 特商法 seller details
+ * Pure form logic for an Organizer's commercial terms: the 特商法 business details
  * and the platform fee rate. The limits mirror the protovalidate rules on
- * `liverty_music.entity.v1.SellerDetails` and
+ * the `liverty_music.entity.v1.Organizer` business-detail value messages
+ * (`LegalName`, `RepresentativeName`, `BusinessAddress`, `PhoneNumber`,
+ * `ContactEmail`) and
  * `SetPlatformFeeRateRequest.platform_fee_rate_bps`, so an invalid value is
  * caught next to its field before any request is sent.
  */
@@ -14,18 +16,18 @@ import type {
 /** Upper bound of the platform fee rate in basis points (30%). */
 export const MAX_PLATFORM_FEE_RATE_BPS = 3000
 
-/** Maximum character counts of the length-limited seller-detail fields. */
-export const SELLER_DETAILS_MAX_LENGTH = {
+/** Maximum character counts of the length-limited business-detail fields. */
+export const BUSINESS_DETAILS_MAX_LENGTH = {
 	legalName: 200,
 	representativeName: 100,
-	address: 300,
+	businessAddress: 300,
 } as const
 
 /** E.164, as in the proto: "+", a non-zero digit, then 1 to 14 digits. */
 const E164_PATTERN = /^\+[1-9][0-9]{1,14}$/
 
 /**
- * The WHATWG HTML "valid email address" grammar, which protovalidate's
+ * The WHATWG HTML "valid email businessAddress" grammar, which protovalidate's
  * `string.email` rule follows.
  */
 const EMAIL_PATTERN =
@@ -34,42 +36,50 @@ const EMAIL_PATTERN =
 /** A percentage with up to two decimals, e.g. "5", "5.5" or "5.00". */
 const PERCENT_PATTERN = /^(\d{1,3})(?:\.(\d{1,2}))?$/
 
-export type SellerDetailsField = keyof SellerDetailsInput
+export type BusinessDetailsField = keyof BusinessDetailsInput
 
 /** Per-field error copy; a field without an entry is valid. */
-export type SellerDetailsErrors = Partial<Record<SellerDetailsField, string>>
+export type BusinessDetailsErrors = Partial<
+	Record<BusinessDetailsField, string>
+>
 
-export const EMPTY_SELLER_DETAILS: SellerDetailsInput = {
+export const EMPTY_BUSINESS_DETAILS: BusinessDetailsInput = {
 	legalName: '',
 	representativeName: '',
-	address: '',
-	phoneNumber: '',
+	businessAddress: '',
+	businessPhoneNumber: '',
 	contactEmail: '',
 }
 
-/** Copies the stored seller details into form values; absent details give empty fields. */
-export function toSellerDetailsInput(
-	details: SellerDetails | undefined,
-): SellerDetailsInput {
-	if (!details) return { ...EMPTY_SELLER_DETAILS }
+/** Copies the Organizer's stored business details into form values; absent ones give empty fields. */
+export function toBusinessDetailsInput(
+	organizer: Organizer | undefined,
+): BusinessDetailsInput {
 	return {
-		legalName: details.legalName,
-		representativeName: details.representativeName,
-		address: details.address,
-		phoneNumber: details.phoneNumber,
-		contactEmail: details.contactEmail,
+		legalName: organizer?.legalName?.value ?? '',
+		representativeName: organizer?.representativeName?.value ?? '',
+		businessAddress: organizer?.businessAddress?.value ?? '',
+		businessPhoneNumber: organizer?.businessPhoneNumber?.value ?? '',
+		contactEmail: organizer?.contactEmail?.value ?? '',
 	}
 }
 
+/** True when the Organizer has all five business details stored. */
+export function hasStoredBusinessDetails(organizer: Organizer): boolean {
+	return Object.values(toBusinessDetailsInput(organizer)).every(
+		(v) => v.trim() !== '',
+	)
+}
+
 /** Trims every value; surrounding whitespace is never meaningful here. */
-export function trimSellerDetails(
-	input: SellerDetailsInput,
-): SellerDetailsInput {
+export function trimBusinessDetails(
+	input: BusinessDetailsInput,
+): BusinessDetailsInput {
 	return {
 		legalName: input.legalName.trim(),
 		representativeName: input.representativeName.trim(),
-		address: input.address.trim(),
-		phoneNumber: input.phoneNumber.trim(),
+		businessAddress: input.businessAddress.trim(),
+		businessPhoneNumber: input.businessPhoneNumber.trim(),
 		contactEmail: input.contactEmail.trim(),
 	}
 }
@@ -91,43 +101,43 @@ function lengthError(
 }
 
 /**
- * Validates trimmed seller details. All five values are required because the
+ * Validates trimmed business details. All five values are required because the
  * server replaces the details as a whole.
  */
-export function validateSellerDetails(
-	input: SellerDetailsInput,
-): SellerDetailsErrors {
-	const errors: SellerDetailsErrors = {}
+export function validateBusinessDetails(
+	input: BusinessDetailsInput,
+): BusinessDetailsErrors {
+	const errors: BusinessDetailsErrors = {}
 	const legalName = lengthError(
 		input.legalName,
-		SELLER_DETAILS_MAX_LENGTH.legalName,
+		BUSINESS_DETAILS_MAX_LENGTH.legalName,
 		'legal name',
 	)
 	if (legalName) errors.legalName = legalName
 	const representativeName = lengthError(
 		input.representativeName,
-		SELLER_DETAILS_MAX_LENGTH.representativeName,
+		BUSINESS_DETAILS_MAX_LENGTH.representativeName,
 		'representative name',
 	)
 	if (representativeName) errors.representativeName = representativeName
-	const address = lengthError(
-		input.address,
-		SELLER_DETAILS_MAX_LENGTH.address,
-		'address',
+	const businessAddress = lengthError(
+		input.businessAddress,
+		BUSINESS_DETAILS_MAX_LENGTH.businessAddress,
+		'business address',
 	)
-	if (address) errors.address = address
+	if (businessAddress) errors.businessAddress = businessAddress
 
-	if (input.phoneNumber.length === 0) {
-		errors.phoneNumber = 'Enter the phone number.'
-	} else if (!E164_PATTERN.test(input.phoneNumber)) {
-		errors.phoneNumber =
-			'Enter the phone number in international form, e.g. +81312345678 (not 03-1234-5678).'
+	if (input.businessPhoneNumber.length === 0) {
+		errors.businessPhoneNumber = 'Enter the business phone number.'
+	} else if (!E164_PATTERN.test(input.businessPhoneNumber)) {
+		errors.businessPhoneNumber =
+			'Enter the business phone number in international form, e.g. +81312345678 (not 03-1234-5678).'
 	}
 
 	if (input.contactEmail.length === 0) {
 		errors.contactEmail = 'Enter the contact email.'
 	} else if (!EMAIL_PATTERN.test(input.contactEmail)) {
-		errors.contactEmail = 'Enter a valid email address.'
+		errors.contactEmail = 'Enter a valid email businessAddress.'
 	}
 	return errors
 }
@@ -137,7 +147,9 @@ export function validateSellerDetails(
  * object is bound, Aurelia's property observers define every bound field on
  * it, so a valid field can be present with an `undefined` value.
  */
-export function hasSellerDetailsErrors(errors: SellerDetailsErrors): boolean {
+export function hasBusinessDetailsErrors(
+	errors: BusinessDetailsErrors,
+): boolean {
 	return Object.values(errors).some((message) => message !== undefined)
 }
 

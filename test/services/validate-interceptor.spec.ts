@@ -1,7 +1,7 @@
 import {
-	CreateAuthorizationRequestSchema,
-	LotteryService,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/lottery/v1/lottery_service_pb.js'
+	CreateRequestSchema,
+	KycService,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/kyc/v1/kyc_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { createValidator, type Validator } from '@bufbuild/protovalidate'
 import { Code, ConnectError } from '@connectrpc/connect'
@@ -21,21 +21,17 @@ const mockLogger = {
 function makeRequest(init: Record<string, unknown>, stream = false) {
 	return {
 		stream,
-		service: LotteryService,
-		method: LotteryService.method.createAuthorization,
+		service: KycService,
+		method: KycService.method.create,
 		header: new Headers(),
-		message: create(CreateAuthorizationRequestSchema, init),
+		message: create(CreateRequestSchema, init),
 	} as any
 }
 
-const validRequest = () =>
-	makeRequest({
-		phaseId: { value: '0190a8c4-0000-7000-8000-000000000001' },
-		requestedTicketCount: 2,
-	})
+const validRequest = () => makeRequest({ sessionId: 'sess-1' })
 
-// Missing phase_id and a zero count both violate the proto rules.
-const invalidRequest = () => makeRequest({ requestedTicketCount: 0 })
+// An empty session_id violates its min_len rule.
+const invalidRequest = () => makeRequest({ sessionId: '' })
 
 /** Resolves the loader and lets the interceptor's `.then` run. */
 async function loaded(validator: Validator = createValidator()) {

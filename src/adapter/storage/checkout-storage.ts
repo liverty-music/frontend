@@ -5,26 +5,23 @@
  *
  * localStorage, not sessionStorage: reopening the checkout from another tab is
  * also a resume. A stale entry is harmless: the checkout reads the
- * Reservation and starts over when it no longer holds tickets.
+ * Checkout and starts over when it no longer holds tickets.
  */
 
 const keyFor = (eventId: string) => `liverty:checkout:${eventId}`
 
-/** Remember the Reservation the fan is checking out with for the event. */
-export function saveCheckoutReservation(
-	eventId: string,
-	reservationId: string,
-): void {
+/** Remember the Checkout the fan is checking out with for the event. */
+export function saveCheckoutId(eventId: string, checkoutId: string): void {
 	try {
-		localStorage.setItem(keyFor(eventId), reservationId)
+		localStorage.setItem(keyFor(eventId), checkoutId)
 	} catch {
 		// Private mode or blocked storage: the checkout still works, it just
 		// cannot resume after a reload.
 	}
 }
 
-/** The Reservation the fan was checking out with for the event, if any. */
-export function loadCheckoutReservation(eventId: string): string | null {
+/** The Checkout the fan was checking out with for the event, if any. */
+export function loadCheckoutId(eventId: string): string | null {
 	try {
 		return localStorage.getItem(keyFor(eventId))
 	} catch {
@@ -33,7 +30,7 @@ export function loadCheckoutReservation(eventId: string): string | null {
 }
 
 /** Forget the event's checkout once it completed or can no longer resume. */
-export function clearCheckoutReservation(eventId: string): void {
+export function clearCheckoutId(eventId: string): void {
 	try {
 		localStorage.removeItem(keyFor(eventId))
 	} catch {

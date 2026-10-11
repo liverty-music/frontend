@@ -1,8 +1,6 @@
 import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
-import type {
-	Organizer,
-	SellerDetails,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
+import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
+import { ArtistService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/artist/v1/artist_service_pb.js'
 import { OrganizerService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/organizer/v1/organizer_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -10,17 +8,18 @@ import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
 import { createAdminTransport } from './admin-transport'
 
-export type { Artist, Organizer, SellerDetails }
+export type { Artist, Organizer }
 
 /**
- * The five 特商法 seller-detail values as plain strings. The whole set is sent
- * on every update: the server replaces seller details as a whole.
+ * The Organizer's five 特商法 business details as plain strings. The whole set
+ * is sent on every update: the server replaces them together.
  */
-export interface SellerDetailsInput {
+export interface BusinessDetailsInput {
 	readonly legalName: string
 	readonly representativeName: string
-	readonly address: string
-	readonly phoneNumber: string
+	readonly businessAddress: string
+	/** The business phone number in E.164 form. */
+	readonly businessPhoneNumber: string
 	readonly contactEmail: string
 }
 
@@ -40,7 +39,8 @@ export interface IOrganizerClient extends OrganizerClient {}
  * user-facing copy). It is built entirely from admin/shared modules and never
  * imports the consumer `src/`. Callers pass plain strings; this wrapper owns
  * wrapping them into the generated `OrganizerId` / `ArtistId` / `OrganizerName`
- * / `UserEmail` message shells the request fields require.
+ * / `UserEmail` / business-detail message shells the request fields require.
+ * An Organizer's artists are read from the admin `ArtistService`.
  *
  * All RPCs are served by the admin Connect server, so it reuses the same
  * {@link createAdminTransport} host (`adminApiBaseUrl`) as the concert client.
@@ -48,14 +48,13 @@ export interface IOrganizerClient extends OrganizerClient {}
 export class OrganizerClient {
 	private readonly logger = resolve(ILogger).scopeTo('OrganizerClient')
 	private readonly authService = resolve(IAuthService)
-	private readonly client = createClient(
-		OrganizerService,
-		createAdminTransport(
-			this.authService,
-			resolve(ILogger).scopeTo('AdminTransport'),
-			resolve(IAppConfig),
-		),
+	private readonly transport = createAdminTransport(
+		this.authService,
+		resolve(ILogger).scopeTo('AdminTransport'),
+		resolve(IAppConfig),
 	)
+	private readonly client = createClient(OrganizerService, this.transport)
+	private readonly artistClient = createClient(ArtistService, this.transport)
 
 	/** Registers a new organizer, seeding its initial operator as the owner. */
 	public async create(
@@ -109,14 +108,17 @@ export class OrganizerClient {
 		}
 	}
 
-	/** Returns the artists the organizer currently represents. */
+	/**
+	 * Returns the artists the organizer currently represents, read with the
+	 * admin `ArtistService.ListByOrganizer`.
+	 */
 	public async listArtists(
 		organizerId: string,
 		signal?: AbortSignal,
 	): Promise<Artist[]> {
 		this.logger.info('Listing organizer artists', { organizerId })
 		try {
-			const response = await this.client.listArtists(
+			const response = await this.artistClient.listByOrganizer(
 				{ organizerId: { value: organizerId } },
 				{ signal },
 			)
@@ -195,32 +197,30 @@ export class OrganizerClient {
 	}
 
 	/**
-	 * Records the organizer's 特商法 seller details, replacing any previous set,
-	 * and returns the organizer with the stored details.
+	 * Records the organizer's 特商法 business details, replacing any previous
+	 * set, and returns the organizer with the stored details.
 	 */
-	public async updateSellerDetails(
+	public async setBusinessDetails(
 		organizerId: string,
-		details: SellerDetailsInput,
+		details: BusinessDetailsInput,
 		signal?: AbortSignal,
 	): Promise<Organizer | undefined> {
-		this.logger.info('Updating seller details', { organizerId })
+		this.logger.info('Setting business details', { organizerId })
 		try {
-			const response = await this.client.updateSellerDetails(
+			const response = await this.client.setBusinessDetails(
 				{
 					organizerId: { value: organizerId },
-					sellerDetails: {
-						legalName: details.legalName,
-						representativeName: details.representativeName,
-						address: details.address,
-						phoneNumber: details.phoneNumber,
-						contactEmail: details.contactEmail,
-					},
+					legalName: { value: details.legalName },
+					representativeName: { value: details.representativeName },
+					businessAddress: { value: details.businessAddress },
+					businessPhoneNumber: { value: details.businessPhoneNumber },
+					contactEmail: { value: details.contactEmail },
 				},
 				{ signal },
 			)
 			return response.organizer
 		} catch (err) {
-			this.logger.warn('updateSellerDetails failed', {
+			this.logger.warn('setBusinessDetails failed', {
 				organizerId,
 				error: err,
 			})

@@ -1,14 +1,15 @@
 import type {
 	ExistingEvent,
 	PendingConcert,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert/v1/concert_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/staged_concert/v1/staged_concert_service_pb.js'
 // Import the Resolution enum value from the generated package directly (not via
-// the concert-client re-export) so it survives the client module being mocked.
-import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert/v1/concert_service_pb.js'
+// the staged-concert-client re-export) so it survives the client module being
+// mocked.
+import { Resolution } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/staged_concert/v1/staged_concert_service_pb.js'
 import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { sanitizeUrl } from '../../shared/utils/sanitize-url'
-import { IConcertClient } from '../services/concert-client'
+import { IStagedConcertClient } from '../services/staged-concert-client'
 
 /** Coarse lifecycle phase for the initial list fetch. */
 type LoadPhase = 'loading' | 'ready' | 'error'
@@ -202,7 +203,7 @@ function groupQueueByArtistAndSeries(
  * Concert approval-queue screen. Loads the pending queue on attach and lets a
  * reviewer approve or reject each discovered concert, grouped by artist then
  * series title. Approve/reject run against the admin-local
- * {@link IConcertClient}; on success the row is removed and empty
+ * {@link IStagedConcertClient}; on success the row is removed and empty
  * series/artist headings are pruned, on failure a per-row error is surfaced
  * and the row stays put so the action can be retried.
  */
@@ -229,7 +230,7 @@ export class ApprovalQueueRoute {
 		row: QueueRow
 	} | null = null
 
-	private readonly client = resolve(IConcertClient)
+	private readonly client = resolve(IStagedConcertClient)
 	private readonly logger = resolve(ILogger).scopeTo('ApprovalQueueRoute')
 
 	/**
@@ -248,7 +249,7 @@ export class ApprovalQueueRoute {
 		this.phase = 'loading'
 		this.loadError = ''
 		try {
-			const pending = await this.client.listPending()
+			const pending = await this.client.list()
 			this.groups = groupQueueByArtistAndSeries(pending)
 			this.phase = 'ready'
 		} catch (err) {

@@ -1,9 +1,11 @@
 import { IRouter } from '@aurelia/router'
+import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
 import {
-	type LotterySalesPhase,
-	LotterySalesPhaseSchema,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/lottery_application_pb.js'
+	type TicketSale,
+	TicketSaleMethod,
+	TicketSaleSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
@@ -16,10 +18,13 @@ import { authoredSeries } from '../authored-series'
 
 // Replace the RPC client module with a fresh interface token so the route binds
 // to the test double instead of building a real Connect transport.
-const ILotteryPhaseClient = DI.createInterface('ILotteryPhaseClient')
+const ITicketSaleClient = DI.createInterface('ITicketSaleClient')
 
-vi.mock('../../../organizer/services/lottery-phase-client', () => ({
-	ILotteryPhaseClient,
+vi.mock('../../../organizer/services/ticket-sale-client', async (original) => ({
+	...(await original<
+		typeof import('../../../organizer/services/ticket-sale-client')
+	>()),
+	ITicketSaleClient,
 }))
 
 const IConcertAuthoringClient = DI.createInterface('IConcertAuthoringClient')
@@ -31,9 +36,11 @@ const { LotteryPhaseEditorRoute } = await import(
 	'../../../organizer/lottery-phase-editor/lottery-phase-editor-route'
 )
 
+type Route = InstanceType<typeof LotteryPhaseEditorRoute>
+
 interface MockClient {
-	configureLotteryPhase: ReturnType<typeof vi.fn>
-	getLotteryPhaseStatus: ReturnType<typeof vi.fn>
+	create: ReturnType<typeof vi.fn>
+	listByEvent: ReturnType<typeof vi.fn>
 }
 
 interface MockRouter {
@@ -42,14 +49,16 @@ interface MockRouter {
 
 function createMockClient(overrides: Partial<MockClient> = {}): MockClient {
 	return {
-		configureLotteryPhase: vi.fn().mockResolvedValue(undefined),
-		getLotteryPhaseStatus: vi.fn().mockResolvedValue(undefined),
+		create: vi.fn().mockResolvedValue(undefined),
+		listByEvent: vi
+			.fn()
+			.mockResolvedValue({ ticketSales: [], lotteryEntryStats: [] }),
 		...overrides,
 	}
 }
 
-function makePhase(id: string): LotterySalesPhase {
-	return create(LotterySalesPhaseSchema, { id: { value: id } })
+function makeSale(id: string, o: Partial<TicketSale> = {}): TicketSale {
+	return create(TicketSaleSchema, { id: { value: id }, ...o })
 }
 
 /** The operator's concerts, holding event-1 with or without a start time. */
@@ -61,7 +70,11 @@ function concertsWith(startTime: boolean): AuthoredSeries[] {
 				{
 					id: { value: 'event-1' },
 					...(startTime
-						? { startTime: { value: timestampFromDate(new Date()) } }
+						? {
+								startTime: {
+									value: timestampFromDate(new Date(2026, 11, 20, 19, 0)),
+								},
+							}
 						: {}),
 				},
 			],
@@ -75,25 +88,27 @@ function build(
 	concerts: { list: ReturnType<typeof vi.fn> } = {
 		list: vi.fn().mockResolvedValue(concertsWith(true)),
 	},
-): InstanceType<typeof LotteryPhaseEditorRoute> {
+): Route {
 	const container = createTestContainer(
-		Registration.instance(ILotteryPhaseClient, client),
+		Registration.instance(ITicketSaleClient, client),
 		Registration.instance(IRouter, router),
 		Registration.instance(IConcertAuthoringClient, concerts),
 	)
 	container.register(LotteryPhaseEditorRoute)
 	const vm = container.get(LotteryPhaseEditorRoute)
 	vm.canLoad({ eventId: 'event-1' })
-	// The start-time check normally runs on attach.
+	// The event check normally runs on attach.
 	vm.eventCheck = 'ok'
+	vm.seriesId = 'series-1'
 	return vm
 }
 
-function fillValid(vm: InstanceType<typeof LotteryPhaseEditorRoute>): void {
-	vm.model = emptyFormModel(new Date(2026, 0, 1, 12, 0, 0))
-	vm.model.ticketCapacity = '200'
-	vm.model.maxTicketsPerApplication = '4'
-	vm.model.ticketPrice = '6500'
+/** ファンクラブ先行 with the default 10-day window from 2026-11-01 12:00. */
+function fillValid(vm: Route): void {
+	vm.model = emptyFormModel(new Date(2026, 10, 1, 12, 0, 0))
+	vm.model.name = 'ファンクラブ先行'
+	vm.model.quantity = '100'
+	vm.model.price = '8000'
 	vm.revalidate()
 }
 
@@ -108,34 +123,134 @@ describe('LotteryPhaseEditorRoute', () => {
 	it('does not submit an invalid form and shows errors', async () => {
 		const client = createMockClient()
 		const vm = build(client)
-		vm.model = emptyFormModel(new Date(2026, 0, 1, 12, 0, 0)) // blank numeric fields
+		vm.model = emptyFormModel(new Date(2026, 10, 1, 12, 0, 0)) // blank fields
 		vm.revalidate()
 		await vm.save()
 		expect(vm.submitted).toBe(true)
 		expect(vm.formValid).toBe(false)
-		expect(client.configureLotteryPhase).not.toHaveBeenCalled()
+		expect(client.create).not.toHaveBeenCalled()
 	})
 
-	it('configures a phase on the happy path and surfaces the created phase', async () => {
+	it('creates a named Lottery sale with one TicketType for the event', async () => {
+		// @spec components/infrastructure/organizer/web/route/lottery-phase-editor "Presale for one event"
 		const client = createMockClient({
-			configureLotteryPhase: vi.fn().mockResolvedValue(makePhase('phase-9')),
+			create: vi.fn().mockResolvedValue(makeSale('sale-9')),
 		})
 		const vm = build(client)
 		fillValid(vm)
+		expect(vm.model.perAccountLimit).toBe('4')
 		await vm.save()
-		expect(client.configureLotteryPhase).toHaveBeenCalledTimes(1)
-		const [input] = client.configureLotteryPhase.mock.calls[0]
-		expect(input.eventId).toBe('event-1')
-		expect(input.ticketCapacity).toBe(200)
-		expect(input.ticketPrice).toBe(6500)
+
+		expect(client.create).toHaveBeenCalledTimes(1)
+		const [input] = client.create.mock.calls[0]
+		expect(input).toMatchObject({
+			seriesId: 'series-1',
+			name: 'ファンクラブ先行',
+			method: 'lottery',
+			eventId: 'event-1',
+			quantity: 100,
+			price: 8000,
+			perAccountLimit: 4,
+		})
+		expect(input.saleEndTime.getTime() - input.saleStartTime.getTime()).toBe(
+			10 * 24 * 60 * 60 * 1000,
+		)
 		expect(vm.phase).toBe('done')
-		expect(vm.createdPhaseId).toBe('phase-9')
+		expect(vm.createdSaleId).toBe('sale-9')
 		expect(vm.saveError).toBe('')
 	})
 
-	it('surfaces FAILED_PRECONDITION (draft concert or no start time) copy', async () => {
+	it('shows an error next to the name and saves nothing without a name', async () => {
+		// @spec components/infrastructure/organizer/web/route/lottery-phase-editor "Missing name"
+		const client = createMockClient()
+		const fixture = createFixture
+			.html(
+				'<lottery-phase-editor-route component.ref="route"></lottery-phase-editor-route>',
+			)
+			.deps(
+				LotteryPhaseEditorRoute,
+				Registration.instance(ITicketSaleClient, client),
+				Registration.instance(IRouter, { load: vi.fn() }),
+				Registration.instance(IConcertAuthoringClient, {
+					list: vi.fn().mockResolvedValue(concertsWith(true)),
+				}),
+			)
+			.build()
+		await fixture.started
+		const vm = (fixture.component as { route: Route }).route
+		vm.canLoad({ eventId: 'event-1' })
+		await vm.checkEvent()
+		fillValid(vm)
+		vm.model.name = '  '
+
+		await vm.save()
+		await tasksSettled()
+
+		expect(client.create).not.toHaveBeenCalled()
+		const error = fixture.appHost.querySelector('[data-error="name"]')
+		expect(error?.textContent).toContain('Enter a name')
+		expect(
+			fixture.appHost
+				.querySelector('input[name="name"]')
+				?.getAttribute('aria-describedby'),
+		).toBe(error?.id)
+	})
+
+	it('says the window overlaps an existing sale of the event and saves nothing', async () => {
+		// @spec components/infrastructure/organizer/web/route/lottery-phase-editor "Overlapping window"
+		const existing = makeSale('presale', {
+			name: { value: '先行抽選' },
+			method: TicketSaleMethod.LOTTERY,
+			saleStartTime: timestampFromDate(new Date(2026, 10, 1, 0, 0)),
+			saleEndTime: timestampFromDate(new Date(2026, 10, 10, 23, 59)),
+		})
 		const client = createMockClient({
-			configureLotteryPhase: vi
+			listByEvent: vi
+				.fn()
+				.mockResolvedValue({ ticketSales: [existing], lotteryEntryStats: [] }),
+		})
+		const vm = build(client)
+		await vm.checkEvent()
+		fillValid(vm)
+		vm.model.openTime = '2026-11-08T12:00'
+		vm.model.closeTime = '2026-11-12T12:00'
+
+		await vm.save()
+
+		expect(client.create).not.toHaveBeenCalled()
+		expect(vm.errors.window).toContain('overlaps the sale 「先行抽選」')
+	})
+
+	it('shows an error next to the window and saves nothing for a 15-day window', async () => {
+		// @spec components/infrastructure/organizer/web/route/lottery-phase-editor "Window too long"
+		const client = createMockClient()
+		const vm = build(client)
+		fillValid(vm)
+		vm.model.closeTime = '2026-11-16T12:00'
+
+		await vm.save()
+
+		expect(client.create).not.toHaveBeenCalled()
+		expect(vm.errors.window).toContain('1–14 days')
+	})
+
+	it('refuses a window that does not close before the event starts', async () => {
+		const client = createMockClient()
+		const vm = build(client)
+		await vm.checkEvent()
+		fillValid(vm)
+		vm.model.openTime = '2026-12-15T12:00'
+		vm.model.closeTime = '2026-12-20T19:00'
+
+		await vm.save()
+
+		expect(client.create).not.toHaveBeenCalled()
+		expect(vm.errors.window).toContain('before the event starts')
+	})
+
+	it('surfaces FAILED_PRECONDITION copy', async () => {
+		const client = createMockClient({
+			create: vi
 				.fn()
 				.mockRejectedValue(new ConnectError('draft', Code.FailedPrecondition)),
 		})
@@ -144,11 +259,12 @@ describe('LotteryPhaseEditorRoute', () => {
 		await vm.save()
 		expect(vm.phase).toBe('ready')
 		expect(vm.saveError).toContain('set its start time')
+		expect(vm.saveError).toContain('overlap')
 	})
 
 	it('surfaces PERMISSION_DENIED copy', async () => {
 		const client = createMockClient({
-			configureLotteryPhase: vi
+			create: vi
 				.fn()
 				.mockRejectedValue(new ConnectError('nope', Code.PermissionDenied)),
 		})
@@ -160,28 +276,28 @@ describe('LotteryPhaseEditorRoute', () => {
 
 	it('surfaces INVALID_ARGUMENT raw message', async () => {
 		const client = createMockClient({
-			configureLotteryPhase: vi
+			create: vi
 				.fn()
 				.mockRejectedValue(
-					new ConnectError('capacity must be positive', Code.InvalidArgument),
+					new ConnectError('quantity must be positive', Code.InvalidArgument),
 				),
 		})
 		const vm = build(client)
 		fillValid(vm)
 		await vm.save()
-		expect(vm.saveError).toContain('capacity must be positive')
+		expect(vm.saveError).toContain('quantity must be positive')
 	})
 
-	it('navigates to the status view for the created phase', async () => {
+	it("navigates to the event's lottery status", async () => {
 		const router = { load: vi.fn().mockResolvedValue(undefined) }
 		const client = createMockClient({
-			configureLotteryPhase: vi.fn().mockResolvedValue(makePhase('phase-9')),
+			create: vi.fn().mockResolvedValue(makeSale('sale-9')),
 		})
 		const vm = build(client, router)
 		fillValid(vm)
 		await vm.save()
 		await vm.viewStatus()
-		expect(router.load).toHaveBeenCalledWith('../lottery/status/phase-9')
+		expect(router.load).toHaveBeenCalledWith('../lottery/status/event-1')
 	})
 
 	describe('an event goes on sale only with its start time', () => {
@@ -195,17 +311,13 @@ describe('LotteryPhaseEditorRoute', () => {
 				)
 				.deps(
 					LotteryPhaseEditorRoute,
-					Registration.instance(ILotteryPhaseClient, client),
+					Registration.instance(ITicketSaleClient, client),
 					Registration.instance(IRouter, { load: vi.fn() }),
 					Registration.instance(IConcertAuthoringClient, concerts),
 				)
 				.build()
 			await fixture.started
-			const vm = (
-				fixture.component as {
-					route: InstanceType<typeof LotteryPhaseEditorRoute>
-				}
-			).route
+			const vm = (fixture.component as { route: Route }).route
 			vm.canLoad({ eventId: 'event-1' })
 			await vm.checkEvent()
 
@@ -225,7 +337,7 @@ describe('LotteryPhaseEditorRoute', () => {
 
 			fillValid(vm)
 			await vm.save()
-			expect(client.configureLotteryPhase).not.toHaveBeenCalled()
+			expect(client.create).not.toHaveBeenCalled()
 		})
 
 		it('goes on sale as usual without an open time', async () => {

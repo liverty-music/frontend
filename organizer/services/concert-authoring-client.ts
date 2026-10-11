@@ -165,7 +165,7 @@ export interface MediaUploadTicket {
 /**
  * Organizer-local wrapper around the generated organizer `SeriesService`
  * client: the authoring surface (create / update / publish / cancel /
- * createMediaUploadUrl / attachMedia / regenerateToken / list). The caller's
+ * createMediaUploadUrl / attachMedia / regenerateShareUrl / list). The caller's
  * Organizer is resolved from the token, so no request carries an organizer id;
  * a series is addressed by its {@link SeriesId}.
  *
@@ -281,14 +281,14 @@ export class ConcertAuthoringClient {
 	): Promise<MediaUploadTicket> {
 		this.logger.info('Creating media upload URL', { contentType })
 		try {
-			const response = await this.client.createMediaUploadURL(
+			const response = await this.client.createMediaUploadUrl(
 				{ contentType },
 				{ signal },
 			)
 			const uploadUrl = response.uploadUrl?.value
 			const mediaId = response.mediaId?.value
 			if (!uploadUrl || !mediaId) {
-				throw new Error('CreateMediaUploadURL returned an incomplete ticket.')
+				throw new Error('CreateMediaUploadUrl returned an incomplete ticket.')
 			}
 			return { uploadUrl, mediaId, maxBytes: Number(response.maxBytes) }
 		} catch (err) {
@@ -365,19 +365,19 @@ export class ConcertAuthoringClient {
 	 * Rotates the signed share token for an UNLISTED series, invalidating the
 	 * previous share URL, and returns the new URL.
 	 */
-	public async regenerateToken(
+	public async regenerateShareUrl(
 		seriesId: string,
 		signal?: AbortSignal,
 	): Promise<string | undefined> {
-		this.logger.info('Regenerating share token', { seriesId })
+		this.logger.info('Regenerating share URL', { seriesId })
 		try {
-			const response = await this.client.regenerateToken(
+			const response = await this.client.regenerateShareUrl(
 				{ seriesId: { value: seriesId } },
 				{ signal },
 			)
 			return response.shareUrl?.value
 		} catch (err) {
-			this.logger.warn('regenerateToken failed', { seriesId, error: err })
+			this.logger.warn('regenerateShareUrl failed', { seriesId, error: err })
 			throw err
 		}
 	}

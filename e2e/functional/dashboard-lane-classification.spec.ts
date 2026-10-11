@@ -10,7 +10,7 @@ import { expect, type Page, test } from '../support/test'
  *
  * Note: During onboarding (guest phase), groupConcertsByDate() places ALL
  * concerts into the "away" lane. Server-side HOME/NEARBY/AWAY classification
- * only applies after sign-up when ListByFollower RPC is used. These tests
+ * only applies after sign-up when ConcertService.ListFollowed RPC is used. These tests
  * verify the reload mechanism and UI state, not lane placement logic.
  *
  * The authenticated path for Bug 2 (UserService/Get → user.home) cannot be
@@ -88,7 +88,7 @@ async function mockOnboardingRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListFollowed')) {
+		if (url.includes('FollowService/List')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',

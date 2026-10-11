@@ -5,8 +5,8 @@ import { createTestContainer } from '../helpers/create-container'
 import { createMockAuth } from '../helpers/mock-auth'
 
 const mockConcertRpcClient = {
-	listConcerts: vi.fn().mockResolvedValue([]),
-	listByFollower: vi.fn().mockResolvedValue([]),
+	listByArtist: vi.fn().mockResolvedValue([]),
+	listFollowed: vi.fn().mockResolvedValue([]),
 	listByArtists: vi.fn().mockResolvedValue([]),
 }
 
@@ -43,8 +43,8 @@ describe('ConcertStore', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
-		mockConcertRpcClient.listConcerts.mockResolvedValue([])
-		mockConcertRpcClient.listByFollower.mockResolvedValue([])
+		mockConcertRpcClient.listByArtist.mockResolvedValue([])
+		mockConcertRpcClient.listFollowed.mockResolvedValue([])
 		mockConcertRpcClient.listByArtists.mockResolvedValue([])
 
 		const mockAuth = createMockAuth({ isAuthenticated: true })
@@ -70,12 +70,12 @@ describe('ConcertStore', () => {
 		vi.restoreAllMocks()
 	})
 
-	describe('listConcerts', () => {
+	describe('listByArtist', () => {
 		it('should return concerts from the backend', async () => {
 			const fakeConcerts = [{ id: 'c1' }, { id: 'c2' }]
-			mockConcertRpcClient.listConcerts.mockResolvedValue(fakeConcerts)
+			mockConcertRpcClient.listByArtist.mockResolvedValue(fakeConcerts)
 
-			const result = await sut.listConcerts('artist-1')
+			const result = await sut.listByArtist('artist-1')
 
 			expect(result).toEqual(fakeConcerts)
 		})
@@ -83,52 +83,52 @@ describe('ConcertStore', () => {
 		it('should forward AbortSignal', async () => {
 			const controller = new AbortController()
 
-			await sut.listConcerts('artist-1', controller.signal)
+			await sut.listByArtist('artist-1', controller.signal)
 
-			expect(mockConcertRpcClient.listConcerts).toHaveBeenCalledWith(
+			expect(mockConcertRpcClient.listByArtist).toHaveBeenCalledWith(
 				'artist-1',
 				controller.signal,
 			)
 		})
 
 		it('should rethrow errors', async () => {
-			mockConcertRpcClient.listConcerts.mockRejectedValue(
+			mockConcertRpcClient.listByArtist.mockRejectedValue(
 				new Error('rpc error'),
 			)
 
-			await expect(sut.listConcerts('artist-1')).rejects.toThrow('rpc error')
+			await expect(sut.listByArtist('artist-1')).rejects.toThrow('rpc error')
 		})
 	})
 
-	describe('listByFollower', () => {
+	describe('listFollowed', () => {
 		it('should delegate to rpcClient when not onboarding', async () => {
 			const fakeGroups = [{ date: '2026-03-15' }]
-			mockConcertRpcClient.listByFollower.mockResolvedValue(fakeGroups)
+			mockConcertRpcClient.listFollowed.mockResolvedValue(fakeGroups)
 
-			const result = await sut.listByFollower()
+			const result = await sut.listFollowed()
 
 			expect(result).toEqual(fakeGroups)
-			expect(mockConcertRpcClient.listByFollower).toHaveBeenCalled()
+			expect(mockConcertRpcClient.listFollowed).toHaveBeenCalled()
 		})
 
 		it('should forward AbortSignal', async () => {
 			const controller = new AbortController()
-			mockConcertRpcClient.listByFollower.mockResolvedValue([])
+			mockConcertRpcClient.listFollowed.mockResolvedValue([])
 
-			await sut.listByFollower(undefined, controller.signal)
+			await sut.listFollowed(undefined, controller.signal)
 
-			expect(mockConcertRpcClient.listByFollower).toHaveBeenCalledWith(
+			expect(mockConcertRpcClient.listFollowed).toHaveBeenCalledWith(
 				undefined,
 				controller.signal,
 			)
 		})
 
 		it('should rethrow errors', async () => {
-			mockConcertRpcClient.listByFollower.mockRejectedValue(
+			mockConcertRpcClient.listFollowed.mockRejectedValue(
 				new Error('rpc error'),
 			)
 
-			await expect(sut.listByFollower()).rejects.toThrow('rpc error')
+			await expect(sut.listFollowed()).rejects.toThrow('rpc error')
 		})
 	})
 
@@ -217,6 +217,71 @@ describe('ConcertStore', () => {
 			)
 			expect(dg.home[0].purchasedTicketCount).toBe(0)
 			expect(dg.home[0].journeyStatus).toBeUndefined()
+		})
+	})
+
+	describe('toDateGroups (fanart enrichment)', () => {
+		// @spec components/infrastructure/fan/web/global/live-highway "Dashboard events enriched with fanart"
+		it('attaches the fanart of the followed artist, looked up by artist ID, to each LiveEvent', () => {
+			const dateLD = { year: 2026, month: 3, day: 15 }
+			const fanart = {
+				hdMusicLogo: 'https://assets.fanart.tv/hd-logo.png',
+				musicLogo: 'https://assets.fanart.tv/logo.png',
+				artistBackground: 'https://assets.fanart.tv/background.jpg',
+				artistThumb: 'https://assets.fanart.tv/thumb.jpg',
+			}
+			// The followed-artist map as the dashboard builds it from the
+			// FollowService.List response: keyed by artist ID.
+			const artistMap = new Map([
+				[
+					'a-followed',
+					{
+						artist: { id: 'a-followed', name: 'Support', mbid: '', fanart },
+						hype: 'watch' as const,
+					},
+				],
+				[
+					'a-plain',
+					{
+						artist: { id: 'a-plain', name: 'No Art', mbid: '' },
+						hype: 'watch' as const,
+					},
+				],
+			])
+			const concert = (id: string, performers: string[]) => ({
+				event: {
+					id: { value: id },
+					seriesId: { value: `s-${id}` },
+					localDate: { value: dateLD },
+					venue: { name: { value: 'Venue' } },
+				},
+				// The concert payload itself carries no fanart: only IDs and names.
+				artists: performers.map((p) => ({
+					id: { value: p },
+					name: { value: p },
+				})),
+				series: { id: { value: `s-${id}` }, title: { value: 'Show' } },
+			})
+
+			const [dg] = sut.toDateGroups(
+				[
+					{
+						date: { value: dateLD },
+						// The followed artist is the second performer on the bill, so
+						// the match is by ID, not by position.
+						home: [concert('c1', ['a-unfollowed', 'a-followed'])],
+						nearby: [concert('c2', ['a-plain'])],
+						away: [],
+					} as never,
+				],
+				artistMap,
+			)
+
+			expect(dg.home[0].artistId).toBe('a-followed')
+			expect(dg.home[0].artist?.fanart).toEqual(fanart)
+			// An artist with no fanart leaves the image fields empty (fallback UI).
+			expect(dg.nearby[0].artistId).toBe('a-plain')
+			expect(dg.nearby[0].artist?.fanart).toBeUndefined()
 		})
 	})
 

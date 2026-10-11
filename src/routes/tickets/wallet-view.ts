@@ -18,9 +18,7 @@ export interface WalletTicket {
 	readonly eventId: string
 	readonly orderId: string
 	/** The User holding the ticket; the AdmissionCode's user. */
-	readonly holderId: string
-	/** The eligible person's name on the covered-ticket face. */
-	readonly holderName: string
+	readonly userId: string
 	readonly resaleWithoutConsentProhibited: boolean
 	readonly state: TicketState
 	readonly admitTime: Date | null
@@ -34,10 +32,22 @@ export interface WalletEventGroup {
 	readonly tickets: readonly WalletTicket[]
 }
 
+/**
+ * The eligible person on every ticket's covered-ticket face: the fan's full
+ * name and phone number as their User currently records them.
+ */
+export interface WalletHolder {
+	readonly fullName: string
+	/** The phone number in E.164 form. */
+	readonly phoneNumber: string
+}
+
 /** The tickets list as last loaded, kept on the device for offline use. */
 export interface WalletSnapshot {
 	readonly savedAt: Date
 	readonly groups: readonly WalletEventGroup[]
+	/** The fan's details when the list was saved; absent in older saves. */
+	readonly holder?: WalletHolder
 }
 
 /** Map a proto Ticket to the screen's ticket. */
@@ -51,8 +61,7 @@ export function walletTicketFromProto(t: Ticket): WalletTicket {
 		id: t.id?.value ?? '',
 		eventId: t.eventId?.value ?? '',
 		orderId: t.orderId?.value ?? '',
-		holderId: t.holderId?.value ?? '',
-		holderName: t.holderIdentity?.fullName ?? '',
+		userId: t.userId?.value ?? '',
 		resaleWithoutConsentProhibited: t.resaleWithoutConsentProhibited,
 		state,
 		admitTime,

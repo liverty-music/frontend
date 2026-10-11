@@ -1,4 +1,3 @@
-import type { Order } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/order_pb.js'
 import type { Ticket } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import { TicketService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/ticket/v1/ticket_service_pb.js'
 import { type Client, createClient } from '@connectrpc/connect'
@@ -15,10 +14,9 @@ export const ITicketRpcClient = DI.createInterface<ITicketRpcClient>(
 export interface ITicketRpcClient extends TicketRpcClient {}
 
 /**
- * TicketRpcClient is the fan-facing read surface over the caller's own Order
- * (payment result) and issued, account-bound covered tickets (⑤
- * ticket-purchase-and-issuance). Issuance itself is server-side (keyed on ④'s
- * captured win); this client only reads.
+ * TicketRpcClient is the fan-facing read surface over the caller's issued,
+ * account-bound covered tickets. Issuance itself is server-side; this client
+ * only reads. The caller's Orders are read with `OrderRpcClient`.
  */
 export class TicketRpcClient {
 	private readonly logger = resolve(ILogger).scopeTo('TicketRpcClient')
@@ -32,28 +30,6 @@ export class TicketRpcClient {
 			resolve(IAppConfig),
 		)
 		this.client = createClient(TicketService, transport)
-	}
-
-	/**
-	 * getOrder returns one of the caller's own Orders (its payment result).
-	 * Throws a ConnectError with Code.NotFound when the order is not the
-	 * caller's (non-revealing).
-	 */
-	public async getOrder(orderId: string, signal?: AbortSignal): Promise<Order> {
-		this.logger.info('Getting order', { orderId })
-		try {
-			const response = await this.client.getOrder(
-				{ orderId: { value: orderId } },
-				{ signal },
-			)
-			if (!response.order) {
-				throw new Error('GetOrder returned no order')
-			}
-			return response.order
-		} catch (err) {
-			this.logger.warn('GetOrder failed', { orderId, error: err })
-			throw err
-		}
 	}
 
 	/**

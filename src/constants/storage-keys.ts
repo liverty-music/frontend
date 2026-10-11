@@ -52,14 +52,6 @@ export const SessionKeys = {
 	pwaBannerDismissed: 'liverty:pwaBanner:dismissed',
 } as const
 
-// Per-external_id namespaced key holding the internal user_id resolved from
-// User.Create or Get. Read by UserStore before issuing any authenticated
-// per-user RPC so the rpc-auth-scoping convention can be satisfied without an
-// extra Get round-trip.
-export function userIdStorageKey(externalID: string): string {
-	return `liverty:userId:${externalID}`
-}
-
 // Per-account guest-merge receipt. Written once a follow migration completes
 // for an account; its PRESENCE — not the presence of guest follow data —
 // decides whether boot reconciliation re-migrates. This makes follow migration
@@ -102,6 +94,13 @@ export function migrateStorageKeys(): void {
 		localStorage.setItem('ui.onboardingCompletedSessionCount', oldCompleted)
 	}
 	localStorage.removeItem('pwa.completedSessionCount')
+
+	// Remove the per-account user id cache (`liverty:userId:<sub>`). Requests no
+	// longer name the calling user, so nothing reads it.
+	for (let i = localStorage.length - 1; i >= 0; i--) {
+		const key = localStorage.key(i)
+		if (key?.startsWith('liverty:userId:')) localStorage.removeItem(key)
+	}
 
 	// Migrate the legacy `guest.language` key into the single-source `language`
 	// key (the i18next detector cache). `guest.language` was only ever written on

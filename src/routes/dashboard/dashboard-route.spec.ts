@@ -10,7 +10,7 @@ const mockLogger = {
 }
 const mockAuth = { isAuthenticated: false }
 const mockConcertService = {
-	listByFollower: vi.fn(async () => []),
+	listFollowed: vi.fn(async () => []),
 	revalidateFollower: vi.fn(async () => []),
 	peekDateGroups: vi.fn(() => null),
 	setDateGroups: vi.fn(),
@@ -112,6 +112,8 @@ vi.mock('@aurelia/runtime-html', async (importOriginal) => {
 })
 
 import { queueTask, runTasks } from 'aurelia'
+import { todayCalendarDate } from '../../lib/plain-date'
+import { ResumeRevalidator } from '../../services/resume-revalidator'
 import { DashboardRoute } from './dashboard-route'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -397,7 +399,7 @@ describe('DashboardRoute', () => {
 
 			// refreshInBackground() bails on `isLoading`, so driving the skeleton from
 			// isLoading instead of hasSettled would silently stop re-entry refreshing.
-			expect(mockConcertService.listByFollower).toHaveBeenCalled()
+			expect(mockConcertService.listFollowed).toHaveBeenCalled()
 		})
 
 		it('does not clobber fresher groups that landed before the cache was reflected', async () => {
@@ -405,7 +407,7 @@ describe('DashboardRoute', () => {
 			const fresh = makeCachedGroups('2026-05-05')
 			mockConcertService.peekDateGroups.mockReturnValue(cached)
 			mockConcertService.toDateGroups.mockReturnValue(fresh)
-			mockConcertService.listByFollower.mockResolvedValue([{}])
+			mockConcertService.listFollowed.mockResolvedValue([{}])
 			sut.needsRegion = false
 
 			await sut.loadData()
@@ -466,7 +468,7 @@ describe('DashboardRoute', () => {
 			mockConcertService.peekDateGroups.mockReturnValueOnce([
 				makeGroup('artist-9'),
 			])
-			mockConcertService.listByFollower.mockResolvedValueOnce([{}] as never)
+			mockConcertService.listFollowed.mockResolvedValueOnce([{}] as never)
 			mockConcertService.toDateGroups.mockReturnValueOnce([
 				makeGroup('artist-1'),
 			])
@@ -483,7 +485,7 @@ describe('DashboardRoute', () => {
 			await flushMicrotasks()
 			// The background refresh still fetched and swapped in fresh data, and
 			// the deep-link resolved against it.
-			expect(mockConcertService.listByFollower).toHaveBeenCalled()
+			expect(mockConcertService.listFollowed).toHaveBeenCalled()
 			expect(sut.dateGroups).toEqual([makeGroup('artist-1')])
 			expect(sheet.open).toHaveBeenCalledTimes(1)
 			expect(onLoaded).toHaveBeenCalledTimes(1)
@@ -493,9 +495,7 @@ describe('DashboardRoute', () => {
 			mockConcertService.peekDateGroups.mockReturnValue(null)
 			sut.needsRegion = false
 
-			mockConcertService.listByFollower.mockReturnValueOnce(
-				new Promise(() => {}),
-			)
+			mockConcertService.listFollowed.mockReturnValueOnce(new Promise(() => {}))
 			void sut.loadData()
 
 			expect(sut.isLoading).toBe(true)
@@ -508,7 +508,7 @@ describe('DashboardRoute', () => {
 			mockConcertService.peekDateGroups.mockReturnValue(null)
 			mockConcertService.toDateGroups.mockReturnValue([])
 			let release: (v: never[]) => void = () => {}
-			mockConcertService.listByFollower.mockReturnValueOnce(
+			mockConcertService.listFollowed.mockReturnValueOnce(
 				new Promise((r) => {
 					release = r
 				}),
@@ -546,10 +546,10 @@ describe('DashboardRoute', () => {
 				]) as Map<string, JourneyStatus>,
 			)
 
-			// The dashboard reflects the sheet's write in place; no listByFollower call.
+			// The dashboard reflects the sheet's write in place; no listFollowed call.
 			expect(sut.dateGroups[0].home[0].journeyStatus).toBe('applied')
 			expect(sut.dateGroups[1].home[0].journeyStatus).toBeUndefined()
-			expect(mockConcertService.listByFollower).not.toHaveBeenCalled()
+			expect(mockConcertService.listFollowed).not.toHaveBeenCalled()
 		})
 
 		it('clears a stamped status when the store entry is removed', () => {
@@ -609,6 +609,7 @@ describe('DashboardRoute', () => {
 			)
 		})
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Collapsing back to today onward"
 		it('omits the from param when the date is the today-onward default', () => {
 			// fromDate defaults to today at construction → no `from` param.
 			syncFilterUrl(sut)
@@ -647,6 +648,9 @@ describe('DashboardRoute', () => {
 	})
 
 	describe('date filter — from param + re-fetch', () => {
+		/** Let the fire-and-forget loadData() reach the concert fetch. */
+		const flushLoad = () => new Promise((r) => setTimeout(r, 0))
+
 		function makeRouteNode(fromParam: string | null) {
 			return {
 				queryParams: {
@@ -655,12 +659,45 @@ describe('DashboardRoute', () => {
 			} as never
 		}
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Past date from URL"
 		it('restores fromDate from a valid ?from param', async () => {
 			await sut.loading({}, makeRouteNode('2020-01-01'))
+			await flushLoad()
 
 			expect(sut.fromDate).toEqual({ year: 2020, month: 1, day: 1 })
+			expect(mockConcertService.listFollowed).toHaveBeenCalledWith(
+				{ year: 2020, month: 1, day: 1 },
+				expect.anything(),
+			)
 		})
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Fresh load defaults to today onward"
+		it('requests ListFollowed from the client local date when no ?from is given', async () => {
+			mockConcertService.listFollowed.mockClear()
+			await sut.loading({}, makeRouteNode(null))
+			await flushLoad()
+
+			expect(sut.fromDate).toEqual(todayCalendarDate())
+			expect(mockConcertService.listFollowed).toHaveBeenCalledWith(
+				todayCalendarDate(),
+				expect.anything(),
+			)
+		})
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Future date from URL"
+		it('requests ListFollowed from a future ?from date', async () => {
+			mockConcertService.listFollowed.mockClear()
+			await sut.loading({}, makeRouteNode('2099-12-31'))
+			await flushLoad()
+
+			expect(sut.fromDate).toEqual({ year: 2099, month: 12, day: 31 })
+			expect(mockConcertService.listFollowed).toHaveBeenCalledWith(
+				{ year: 2099, month: 12, day: 31 },
+				expect.anything(),
+			)
+		})
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Invalid or malformed date value"
 		it('falls back to today when the ?from value is malformed', async () => {
 			await sut.loading({}, makeRouteNode('not-a-date'))
 
@@ -670,8 +707,9 @@ describe('DashboardRoute', () => {
 			).toBe(true)
 		})
 
-		it('re-fetches ListByFollower with the new from on a date change', () => {
-			mockConcertService.listByFollower.mockClear()
+		// @spec components/infrastructure/fan/web/route/dashboard "Choosing a past date and confirming"
+		it('re-fetches ListFollowed with the new from on a date change', () => {
+			mockConcertService.listFollowed.mockClear()
 			const past = { year: 2020, month: 1, day: 1 }
 
 			;(
@@ -682,7 +720,7 @@ describe('DashboardRoute', () => {
 
 			expect(sut.fromDate).toEqual(past)
 			expect(mockConcertService.clearRenderedGroups).toHaveBeenCalledTimes(1)
-			expect(mockConcertService.listByFollower).toHaveBeenCalledWith(
+			expect(mockConcertService.listFollowed).toHaveBeenCalledWith(
 				past,
 				expect.anything(),
 			)
@@ -690,7 +728,7 @@ describe('DashboardRoute', () => {
 
 		it('ignores a date change that matches the active from (no re-fetch)', () => {
 			const same = sut.fromDate
-			mockConcertService.listByFollower.mockClear()
+			mockConcertService.listFollowed.mockClear()
 
 			;(
 				sut as unknown as {
@@ -699,7 +737,7 @@ describe('DashboardRoute', () => {
 			).onDateFilterChanged(new CustomEvent('date-changed', { detail: same }))
 
 			expect(mockConcertService.clearRenderedGroups).not.toHaveBeenCalled()
-			expect(mockConcertService.listByFollower).not.toHaveBeenCalled()
+			expect(mockConcertService.listFollowed).not.toHaveBeenCalled()
 		})
 	})
 
@@ -853,7 +891,7 @@ describe('DashboardRoute', () => {
 			sut.needsRegion = false
 
 			mockConcertService.peekDateGroups.mockReturnValueOnce(null)
-			mockConcertService.listByFollower.mockResolvedValueOnce([{}] as never)
+			mockConcertService.listFollowed.mockResolvedValueOnce([{}] as never)
 			mockConcertService.toDateGroups.mockReturnValueOnce([
 				makeGroup('artist-1'),
 			])
@@ -876,7 +914,7 @@ describe('DashboardRoute', () => {
 			mockConcertService.peekDateGroups.mockReturnValueOnce([
 				makeGroup('artist-9'),
 			])
-			mockConcertService.listByFollower.mockResolvedValueOnce([{}] as never)
+			mockConcertService.listFollowed.mockResolvedValueOnce([{}] as never)
 			mockConcertService.toDateGroups.mockReturnValueOnce([
 				makeGroup('artist-1'),
 			])
@@ -1054,9 +1092,7 @@ describe('DashboardRoute', () => {
 				k === 'liverty:postSignup:shown' ? 'pending' : null,
 			)
 			// Fetch never resolves → timetableLoaded never flips.
-			mockConcertService.listByFollower.mockReturnValueOnce(
-				new Promise(() => {}),
-			)
+			mockConcertService.listFollowed.mockReturnValueOnce(new Promise(() => {}))
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
@@ -1115,9 +1151,7 @@ describe('DashboardRoute', () => {
 			mockAuth.isAuthenticated = false
 			mockOnboarding.isOnboarding = true
 			mockFollowStore.followedCount = 2
-			mockConcertService.listByFollower.mockReturnValueOnce(
-				new Promise(() => {}),
-			)
+			mockConcertService.listFollowed.mockReturnValueOnce(new Promise(() => {}))
 			sut = new DashboardRoute()
 			sut.needsRegion = false
 
@@ -1143,6 +1177,198 @@ describe('DashboardRoute', () => {
 			// celebration still shows (region-less guest sees it before latch)
 			expect(sut.showCelebration).toBe(true)
 			expect(mockOnboarding.finish).toHaveBeenCalledTimes(1)
+		})
+	})
+	describe('PWA resume revalidation', () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Revalidation on PWA resume"
+		it('forces a ListFollowed refetch on foreground return and swaps the fresh timetable in place', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserStore.current = { home: 'JP-13' }
+			// The real app-level visibility hook, so the resume signal is the
+			// browser's `visibilitychange` event rather than a direct call.
+			const resume = new ResumeRevalidator()
+			mockResumeRevalidator.register.mockImplementation((fn: () => void) =>
+				resume.register(fn),
+			)
+			mockResumeRevalidator.unregister.mockImplementation((fn: () => void) =>
+				resume.unregister(fn),
+			)
+			const cached = makeCachedGroups('2026-04-01')
+			const fresh = makeCachedGroups('2026-05-05')
+			mockConcertService.peekDateGroups.mockReturnValue(cached)
+			mockConcertService.listFollowed.mockResolvedValue([{}] as never)
+			mockConcertService.toDateGroups.mockReturnValue(cached)
+			sut = new DashboardRoute()
+			sut.needsRegion = false
+
+			try {
+				// Dashboard entry: the cached timetable is on screen.
+				await sut.loadData()
+				sut.bound()
+				sut.attached()
+				await flushMicrotasks()
+				expect(sut.dateGroups).toEqual(cached)
+
+				mockConcertService.listFollowed.mockClear()
+				mockConcertService.setDateGroups.mockClear()
+				mockConcertService.revalidateFollower.mockResolvedValueOnce([
+					{},
+				] as never)
+				mockConcertService.toDateGroups.mockReturnValue(fresh)
+
+				// The installed PWA returns to the foreground.
+				document.dispatchEvent(new Event('visibilitychange'))
+				await flushMicrotasks()
+
+				// Revalidated, not served from the 24h cache.
+				expect(mockConcertService.revalidateFollower).toHaveBeenCalledTimes(1)
+				expect(mockConcertService.revalidateFollower).toHaveBeenCalledWith(
+					sut.fromDate,
+				)
+				expect(mockConcertService.listFollowed).not.toHaveBeenCalled()
+				// The refreshed value replaces the cached one in place: same route
+				// instance, no spinner, and the store's cached groups updated.
+				expect(sut.dateGroups).toEqual(fresh)
+				expect(sut.isLoading).toBe(false)
+				expect(sut.hasSettled).toBe(true)
+				expect(mockConcertService.setDateGroups).toHaveBeenCalledWith(fresh)
+			} finally {
+				sut.detaching()
+				mockResumeRevalidator.register.mockReset()
+				mockResumeRevalidator.unregister.mockReset()
+			}
+		})
+	})
+
+	describe('default timetable — empty upcoming', () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Empty upcoming timetable"
+		it('shows the empty state and keeps the filter sheet (with its date facet) reachable', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserStore.current = { home: 'JP-13' }
+			mockConcertService.peekDateGroups.mockReturnValue(null)
+			mockConcertService.listFollowed.mockResolvedValue([])
+			sut = new DashboardRoute()
+			const filterBar = { openSheet: vi.fn(), isFilterActive: false }
+			;(sut as unknown as { filterBar: unknown }).filterBar = filterBar
+
+			await sut.loading({}, {
+				queryParams: { get: () => null },
+			} as never)
+			await flushMicrotasks()
+
+			// Default (today-onward) view with no upcoming concerts.
+			expect(sut.fromDate).toEqual(todayCalendarDate())
+			expect(mockConcertService.listFollowed).toHaveBeenCalledWith(
+				todayCalendarDate(),
+				expect.anything(),
+			)
+			// The template's empty-state placeholder gate:
+			// hasSettled && !loadError && !showGuestEmptyState && filteredDateGroups.length === 0
+			expect(sut.hasSettled).toBe(true)
+			expect(sut.loadError).toBeNull()
+			expect(sut.showGuestEmptyState).toBe(false)
+			expect(sut.filteredDateGroups).toEqual([])
+
+			// The filter sheet (which holds "過去のコンサートも表示") stays mounted —
+			// its gate is `!isOnboarding && !isAllNearby` — and the FAB still offers
+			// the filter action that opens it.
+			expect(sut.isOnboarding).toBe(false)
+			expect(sut.isAllNearby).toBe(false)
+			sut.attached()
+			const calls = mockFabMenu.register.mock.calls as unknown as [
+				unknown,
+				{ id: string; invoke: () => void }[],
+			][]
+			const actions = calls[calls.length - 1]?.[1]
+			const filter = actions?.find((a) => a.id === 'filter')
+			expect(filter).toBeDefined()
+			filter?.invoke()
+			expect(filterBar.openSheet).toHaveBeenCalledTimes(1)
+			sut.detaching()
+		})
+	})
+
+	describe('date facet with artist and journey facets', () => {
+		function pastGroup(
+			dateKey: string,
+			concerts: { artistId: string; journeyStatus?: JourneyStatus }[],
+		): DateGroup {
+			return {
+				label: dateKey,
+				dateKey,
+				isFirstOfMonth: false,
+				monthSeparatorLabel: '',
+				home: concerts.map(
+					(c, i) =>
+						({
+							artistId: c.artistId,
+							id: `${dateKey}-${c.artistId}-${i}`,
+							journeyStatus: c.journeyStatus,
+						}) as never,
+				),
+				nearby: [],
+				away: [],
+			}
+		}
+
+		// @spec components/infrastructure/fan/web/route/dashboard "Date facet combines with artist and journey facets"
+		it('loads every concert from the past from date, then narrows by artist and journey; counts span the loaded set', async () => {
+			mockAuth.isAuthenticated = true
+			mockUserStore.current = { home: 'JP-13' }
+			mockFollowStore.followedArtists = [
+				makeArtist('a1', 'One'),
+				makeArtist('a2', 'Two'),
+			]
+			mockConcertService.peekDateGroups.mockReturnValue(null)
+			mockConcertService.listFollowed.mockResolvedValue([{}] as never)
+			// The loaded, past-inclusive set: a past and an upcoming date.
+			const loaded = [
+				pastGroup('2020-03-01', [
+					{ artistId: 'a1', journeyStatus: 'applied' },
+					{ artistId: 'a2', journeyStatus: 'applied' },
+				]),
+				pastGroup('2099-01-01', [
+					{ artistId: 'a1', journeyStatus: 'paid' },
+					{ artistId: 'a1', journeyStatus: 'applied' },
+				]),
+			]
+			mockConcertService.toDateGroups.mockReturnValue(loaded)
+			sut = new DashboardRoute()
+			const params: Record<string, string> = {
+				from: '2020-01-01',
+				artists: 'a1',
+				journey: 'applied',
+			}
+
+			await sut.loading({}, {
+				queryParams: { get: (k: string) => params[k] ?? null },
+			} as never)
+			await flushMicrotasks()
+
+			// First: load all followed-artist concerts on or after `from`.
+			expect(mockConcertService.listFollowed).toHaveBeenCalledWith(
+				{ year: 2020, month: 1, day: 1 },
+				expect.anything(),
+			)
+			expect(sut.dateGroups).toEqual(loaded)
+
+			// Then: narrow that set by the artist AND journey facets.
+			const shown = sut.filteredDateGroups.flatMap((g) => g.home)
+			expect(shown.map((c) => [c.artistId, c.journeyStatus])).toEqual([
+				['a1', 'applied'],
+				['a1', 'applied'],
+			])
+			expect(sut.filteredDateGroups.map((g) => g.dateKey)).toEqual([
+				'2020-03-01',
+				'2099-01-01',
+			])
+
+			// Per-artist chip counts are computed over the loaded (past-inclusive)
+			// set, not the narrowed one.
+			expect(sut.countedArtists).toEqual([
+				{ id: 'a1', name: 'One', count: 3 },
+				{ id: 'a2', name: 'Two', count: 1 },
+			])
 		})
 	})
 })

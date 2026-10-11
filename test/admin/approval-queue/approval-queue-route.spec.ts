@@ -5,19 +5,19 @@ import {
 	type PendingConcert,
 	PendingConcertSchema,
 	Resolution,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert/v1/concert_service_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/staged_concert/v1/staged_concert_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { type Timestamp, timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// The route resolves IConcertClient. Replace the real module (which would build
+// The route resolves IStagedConcertClient. Replace the real module (which would build
 // a Connect transport over the generated client) with a fresh interface token +
 // a no-op class so the fixture binds to the test double.
-const IConcertClient = DI.createInterface('IConcertClient')
+const IStagedConcertClient = DI.createInterface('IStagedConcertClient')
 
-vi.mock('../../../admin/services/concert-client', () => ({
-	IConcertClient,
+vi.mock('../../../admin/services/staged-concert-client', () => ({
+	IStagedConcertClient,
 }))
 
 const { ApprovalQueueRoute } = await import(
@@ -25,14 +25,14 @@ const { ApprovalQueueRoute } = await import(
 )
 
 interface MockClient {
-	listPending: ReturnType<typeof vi.fn>
+	list: ReturnType<typeof vi.fn>
 	approve: ReturnType<typeof vi.fn>
 	reject: ReturnType<typeof vi.fn>
 }
 
 function createMockClient(overrides: Partial<MockClient> = {}): MockClient {
 	return {
-		listPending: vi.fn().mockResolvedValue([]),
+		list: vi.fn().mockResolvedValue([]),
 		// approve resolves to an ApproveResponse; no conflict = published.
 		approve: vi.fn().mockResolvedValue(create(ApproveResponseSchema, {})),
 		reject: vi.fn().mockResolvedValue(undefined),
@@ -124,7 +124,10 @@ function unresolvedConcert(): PendingConcert {
 async function build(client: MockClient) {
 	const fixture = createFixture
 		.html('<approval-queue-route component.ref="route"></approval-queue-route>')
-		.deps(ApprovalQueueRoute, Registration.instance(IConcertClient, client))
+		.deps(
+			ApprovalQueueRoute,
+			Registration.instance(IStagedConcertClient, client),
+		)
 		.build()
 	await fixture.started
 	return fixture
@@ -144,9 +147,10 @@ describe('ApprovalQueueRoute', () => {
 	})
 
 	describe('grouping', () => {
+		// @spec components/infrastructure/admin/web/route/approval-queue "Reviewer sees pending concerts grouped by artist and series"
 		it('groups concerts by artist and then by title', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([
+				list: vi.fn().mockResolvedValue([
 					makeConcert({
 						stagedId: 's1',
 						artist: 'Band A',
@@ -205,7 +209,7 @@ describe('ApprovalQueueRoute', () => {
 
 		it('computes unresolvedCount for concerts without a resolved venue', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([
+				list: vi.fn().mockResolvedValue([
 					makeConcert({
 						stagedId: 's1',
 						artist: 'Band A',
@@ -243,9 +247,10 @@ describe('ApprovalQueueRoute', () => {
 	})
 
 	describe('rendering', () => {
+		// @spec components/infrastructure/admin/web/route/approval-queue "Expanding a series reveals per-concert review rows"
 		it('renders reviewable fields for resolved and unresolved rows', async () => {
 			const client = createMockClient({
-				listPending: vi
+				list: vi
 					.fn()
 					.mockResolvedValue([resolvedConcert(), unresolvedConcert()]),
 			})
@@ -273,7 +278,7 @@ describe('ApprovalQueueRoute', () => {
 
 		it('shows unresolved badge in series summary when unresolvedCount > 0', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([unresolvedConcert()]),
+				list: vi.fn().mockResolvedValue([unresolvedConcert()]),
 			})
 			const fixture = await build(client)
 
@@ -293,7 +298,7 @@ describe('ApprovalQueueRoute', () => {
 				sourceUrl: 'javascript:alert(document.cookie)',
 			})
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([malicious]),
+				list: vi.fn().mockResolvedValue([malicious]),
 			})
 			const fixture = await build(client)
 
@@ -307,7 +312,7 @@ describe('ApprovalQueueRoute', () => {
 
 		it('renders the empty state when no concerts are pending', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([]),
+				list: vi.fn().mockResolvedValue([]),
 			})
 			const fixture = await build(client)
 
@@ -318,7 +323,7 @@ describe('ApprovalQueueRoute', () => {
 
 		it('shows the error state when the initial list fails', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockRejectedValue(new Error('boom')),
+				list: vi.fn().mockRejectedValue(new Error('boom')),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -332,9 +337,10 @@ describe('ApprovalQueueRoute', () => {
 	})
 
 	describe('approve', () => {
+		// @spec components/infrastructure/admin/web/route/approval-queue "Reviewer approves an item"
 		it('calls approve(id) and removes the row, pruning empty series and artist groups', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([resolvedConcert()]),
+				list: vi.fn().mockResolvedValue([resolvedConcert()]),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -356,7 +362,7 @@ describe('ApprovalQueueRoute', () => {
 
 		it('decrements unresolvedCount when an unresolved row is approved', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([
+				list: vi.fn().mockResolvedValue([
 					makeConcert({
 						stagedId: 's1',
 						artist: 'Band A',
@@ -390,7 +396,7 @@ describe('ApprovalQueueRoute', () => {
 
 		it('surfaces a per-row error and keeps the row when approve fails', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([resolvedConcert()]),
+				list: vi.fn().mockResolvedValue([resolvedConcert()]),
 				approve: vi.fn().mockRejectedValue(new Error('approve failed')),
 			})
 			const fixture = await build(client)
@@ -408,7 +414,7 @@ describe('ApprovalQueueRoute', () => {
 
 		it('prunes only the empty series, not the artist group, when another series remains', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([
+				list: vi.fn().mockResolvedValue([
 					makeConcert({
 						stagedId: 's1',
 						artist: 'Band A',
@@ -447,7 +453,7 @@ describe('ApprovalQueueRoute', () => {
 		it('opens the conflict dialog without mutating when approve returns a conflict', async () => {
 			const staged = resolvedConcert()
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([staged]),
+				list: vi.fn().mockResolvedValue([staged]),
 				approve: vi.fn().mockResolvedValue(conflictResponse(staged)),
 			})
 			const fixture = await build(client)
@@ -474,7 +480,7 @@ describe('ApprovalQueueRoute', () => {
 		it('KEEP_EXISTING re-calls approve and removes the row', async () => {
 			const staged = resolvedConcert()
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([staged]),
+				list: vi.fn().mockResolvedValue([staged]),
 				approve: vi
 					.fn()
 					.mockResolvedValueOnce(conflictResponse(staged))
@@ -500,7 +506,7 @@ describe('ApprovalQueueRoute', () => {
 		it('ADOPT_STAGED re-calls approve and removes the row', async () => {
 			const staged = resolvedConcert()
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([staged]),
+				list: vi.fn().mockResolvedValue([staged]),
 				approve: vi
 					.fn()
 					.mockResolvedValueOnce(conflictResponse(staged))
@@ -526,7 +532,7 @@ describe('ApprovalQueueRoute', () => {
 		it('cancel keeps the row and closes the dialog', async () => {
 			const staged = resolvedConcert()
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([staged]),
+				list: vi.fn().mockResolvedValue([staged]),
 				approve: vi.fn().mockResolvedValue(conflictResponse(staged)),
 			})
 			const fixture = await build(client)
@@ -546,7 +552,7 @@ describe('ApprovalQueueRoute', () => {
 		it('keeps the dialog open and surfaces an error when reconciliation fails', async () => {
 			const staged = resolvedConcert()
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([staged]),
+				list: vi.fn().mockResolvedValue([staged]),
 				approve: vi
 					.fn()
 					.mockResolvedValueOnce(conflictResponse(staged))
@@ -569,7 +575,7 @@ describe('ApprovalQueueRoute', () => {
 	describe('reject', () => {
 		it('requires a reason before calling reject', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([resolvedConcert()]),
+				list: vi.fn().mockResolvedValue([resolvedConcert()]),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -586,9 +592,10 @@ describe('ApprovalQueueRoute', () => {
 			expect(series.rows).toHaveLength(1)
 		})
 
+		// @spec components/infrastructure/admin/web/route/approval-queue "Reviewer rejects an item with a reason"
 		it('calls reject(id, reason) and removes the row, pruning empty groups', async () => {
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([resolvedConcert()]),
+				list: vi.fn().mockResolvedValue([resolvedConcert()]),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -619,7 +626,7 @@ describe('ApprovalQueueRoute', () => {
 				openTime: openTs,
 			})
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([concert]),
+				list: vi.fn().mockResolvedValue([concert]),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -633,7 +640,7 @@ describe('ApprovalQueueRoute', () => {
 		it('returns dash placeholder when openTime is absent', async () => {
 			const concert = resolvedConcert()
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([concert]),
+				list: vi.fn().mockResolvedValue([concert]),
 			})
 			const fixture = await build(client)
 			const vm = routeOf(fixture)
@@ -657,7 +664,7 @@ describe('ApprovalQueueRoute', () => {
 				openTime: openTs,
 			})
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([concert]),
+				list: vi.fn().mockResolvedValue([concert]),
 				approve: vi.fn().mockResolvedValue(conflictResponse(concert)),
 			})
 			const fixture = await build(client)
@@ -673,10 +680,11 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.conflictView!.stagedOpenTime).not.toBe('—')
 		})
 
+		// @spec components/infrastructure/admin/web/route/approval-queue "Conflict dialog shows open time for both staged and existing"
 		it('sets stagedOpenTime to dash placeholder when openTime is absent', async () => {
 			const concert = resolvedConcert()
 			const client = createMockClient({
-				listPending: vi.fn().mockResolvedValue([concert]),
+				list: vi.fn().mockResolvedValue([concert]),
 				approve: vi.fn().mockResolvedValue(conflictResponse(concert)),
 			})
 			const fixture = await build(client)
@@ -689,6 +697,8 @@ describe('ApprovalQueueRoute', () => {
 
 			expect(vm.conflictView).not.toBeNull()
 			expect(vm.conflictView!.stagedOpenTime).toBe('—')
+			// The existing event in conflictResponse() has no open time either.
+			expect(vm.conflictView!.existingOpenTime).toBe('—')
 		})
 	})
 })

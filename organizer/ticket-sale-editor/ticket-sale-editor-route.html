@@ -49,12 +49,13 @@
     aria-labelledby="ticket-sale-counts-title"
   >
     <h2 id="ticket-sale-counts-title" class="ticket-sale-editor-subtitle">
-      販売状況 <span class="ticket-sale-editor-state">${stateLabel}</span>
+      ${sale.name.value} の販売状況
+      <span class="ticket-sale-editor-state">${stateLabel}</span>
     </h2>
     <dl class="ticket-sale-editor-counts">
       <div>
         <dt>販売数</dt>
-        <dd data-count="quantity">${sale.quantity ?? 0}枚</dd>
+        <dd data-count="quantity">${quantity}枚</dd>
       </div>
       <div>
         <dt>販売済み</dt>
@@ -96,8 +97,8 @@
           公演エディターを開く
         </a>
       </li>
-      <li if.bind="blocks.includes('no-seller-details')" data-block="no-seller-details">
-        販売者情報（特定商取引法に基づく表記）が揃っていません。販売者情報は審査の際に
+      <li if.bind="blocks.includes('no-business-details')" data-block="no-business-details">
+        事業者情報（特定商取引法に基づく表記）が揃っていません。事業者情報は審査の際に
         Liverty Music が入力します。
       </li>
     </ul>
@@ -109,6 +110,31 @@
     submit.trigger="save()"
     novalidate
   >
+    <fieldset if.bind="!sale" class="[ ticket-sale-editor-fieldset ] [ flow ]">
+      <legend>販売名</legend>
+      <label class="organizer-field">
+        販売名（ファンに表示されます）
+        <input
+          type="text"
+          name="name"
+          maxlength="100"
+          class="organizer-input"
+          value.bind="model.name"
+          input.trigger="revalidate()"
+          aria-invalid.bind="submitted && !!errors.name"
+          aria-describedby="ticket-sale-name-error"
+        />
+      </label>
+      <p
+        id="ticket-sale-name-error"
+        if.bind="submitted && errors.name"
+        class="organizer-error"
+        data-error="name"
+      >
+        ${errors.name}
+      </p>
+    </fieldset>
+
     <fieldset class="[ ticket-sale-editor-fieldset ] [ flow ]">
       <legend>販売期間（日本時間）</legend>
       <label class="organizer-field">

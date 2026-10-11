@@ -1,5 +1,5 @@
 import type { PushSubscription } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/push_subscription_pb.js'
-import { PushNotificationService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/push_notification/v1/push_notification_service_pb.js'
+import { PushSubscriptionService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/push_subscription/v1/push_subscription_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
@@ -15,7 +15,7 @@ export interface IPushRpcClient extends PushRpcClient {}
 
 export class PushRpcClient {
 	private readonly pushClient = createClient(
-		PushNotificationService,
+		PushSubscriptionService,
 		createTransport(
 			resolve(IAuthService),
 			resolve(ILogger).scopeTo('Transport'),
@@ -46,16 +46,12 @@ export class PushRpcClient {
 	}
 
 	/**
-	 * Retrieves the push subscription for (userId, endpoint). Throws
-	 * `ConnectError` with `Code.NotFound` when no row matches so callers can
-	 * branch on the error path for self-healing.
+	 * Retrieves the caller's push subscription for this browser's endpoint.
+	 * Throws `ConnectError` with `Code.NotFound` when the server does not have
+	 * it, so callers can branch on the error path for self-healing.
 	 */
-	public async get(
-		userId: string,
-		endpoint: string,
-	): Promise<PushSubscription> {
+	public async get(endpoint: string): Promise<PushSubscription> {
 		const resp = await this.pushClient.get({
-			userId: { value: userId },
 			endpoint: { value: endpoint },
 		})
 		if (!resp.subscription) {
@@ -65,13 +61,11 @@ export class PushRpcClient {
 	}
 
 	/**
-	 * Removes the push subscription for (userId, endpoint). Only the
-	 * specified browser's row is deleted; other browsers registered by
-	 * the same user remain active. Idempotent.
+	 * Removes the caller's push subscription for this browser's endpoint. Other
+	 * browsers registered by the same user remain active. Idempotent.
 	 */
-	public async delete(userId: string, endpoint: string): Promise<void> {
+	public async delete(endpoint: string): Promise<void> {
 		await this.pushClient.delete({
-			userId: { value: userId },
 			endpoint: { value: endpoint },
 		})
 	}

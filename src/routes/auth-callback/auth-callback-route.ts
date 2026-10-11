@@ -59,8 +59,9 @@ export class AuthCallbackRoute {
 			// unconditionally is safe (empty queue → nothing; already-migrated →
 			// not re-migrated).
 			//
-			// migrateGuestFollows needs the internal user_id; ensureUserProvisioned
-			// guarantees `userStore.current` is hydrated before we read it.
+			// migrateGuestFollows keys its receipt on the User's id;
+			// ensureUserProvisioned guarantees `userStore.current` is hydrated
+			// before we read it.
 			const userId = provisioned?.id ?? this.userStore.current?.id
 			if (userId) {
 				this.ea.publish(new GuestMigrationRequested(userId))
@@ -128,16 +129,12 @@ export class AuthCallbackRoute {
 			// Set the flag so the dashboard shows the PostSignupDialog only on a
 			// genuine first sign-up. Gate on the OIDC sign-up FLOW marker (which
 			// button the user actually pressed — round-tripped through OIDC state)
-			// AND-narrowed by the `created` cache-miss signal. The flow marker is
-			// the reliable half: the backend Create is idempotent and wire-identical
-			// for new vs. returning identities, and `created` alone is a cache-miss
-			// proxy that mis-fires for a returning user with an empty local cache
-			// (new browser/device, cleared storage, or guest-then-sign-in) — the
-			// bug this gate fixes. A sign-in carries no marker, so it never
-			// celebrates. A missing marker (older in-flight redirect, direct
-			// callback hit) fails closed to "not sign-up" per design D3. The
-			// `created` AND-condition additionally suppresses the residual
-			// same-device "returning user taps Sign up" case at zero extra cost.
+			// AND-narrowed by `created` (the server had no User for this identity
+			// before this callback). A sign-in carries no marker, so it never
+			// celebrates, whatever the local storage holds. A missing marker
+			// (older in-flight redirect, direct callback hit) fails closed to "not
+			// sign-up" per design D3. The `created` AND-condition suppresses the
+			// "returning user taps Sign up" case.
 			//
 			// A sign-up started on an Event page skips both surfaces: the fan
 			// returns to the event to buy, and the purchase flow owns the
@@ -175,21 +172,20 @@ export class AuthCallbackRoute {
 		}
 	}
 
-	// Resolve the caller's internal user_id and cache it.
+	// Resolve (or provision) the caller's User.
 	//
 	// When the guest selected a home during onboarding, we MUST take the
 	// explicit-Create path so the home is persisted atomically with the user
 	// record (idempotent Create on the backend ignores `home` for existing
 	// users, so this is also safe for sign-in-as-existing).
 	//
-	// Otherwise UserStore.ensureLoaded() handles everything: cache hit →
-	// Get, cache miss → idempotent Create using the JWT email.
+	// Otherwise UserStore.ensureLoaded() handles everything: Get, then the
+	// idempotent Create using the JWT email when Get answers NotFound.
 	//
-	// Returns the provisioned/loaded user (so the caller has the internal
-	// user_id for the migration trigger) plus `created`, a cache-miss proxy that
-	// the caller uses only to AND-narrow the post-signup dialog gate. The primary
-	// gate is the OIDC sign-up FLOW marker (see canLoad); `created` alone is
-	// unreliable because a returning user can arrive with an empty local cache.
+	// Returns the provisioned/loaded user (so the caller has the User's id for
+	// the migration trigger) plus `created`, which the caller uses only to
+	// AND-narrow the post-signup dialog gate. The primary gate is the OIDC
+	// sign-up FLOW marker (see canLoad).
 	private async ensureUserProvisioned(
 		email: string | undefined,
 	): Promise<ProvisionResult> {

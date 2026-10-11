@@ -90,17 +90,17 @@ describe('checkRouteLoading', () => {
 	it('lets an allowlisted route block, so exceptions are argued once and visible', () => {
 		const result = checkRouteLoading(
 			file(
-				'src/routes/lottery-apply/lottery-apply-route.ts',
-				`export class LotteryApplyRoute {
+				'src/routes/verify-callback/verify-callback-route.ts',
+				`export class VerifyCallbackRoute {
 					public async loading(): Promise<void> {
-						const status = await this.identity.getMyVerificationStatus()
+						const outcome = await this.identity.completeFromCallback()
 					}
 				}`,
 			),
 		)
 
 		expect(result.kind).toBe('ok')
-		expect(BLOCKING_ALLOWLIST['lottery-apply-route.ts']).toBeTruthy()
+		expect(BLOCKING_ALLOWLIST['verify-callback-route.ts']).toBeTruthy()
 	})
 
 	it('ignores a route with no loading hook at all', () => {

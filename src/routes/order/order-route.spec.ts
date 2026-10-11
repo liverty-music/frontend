@@ -1,10 +1,10 @@
 import {
-	OrderStatus,
 	OrderSchema,
+	OrderStatus,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/order_pb.js'
 import {
-	TicketStatus,
 	TicketSchema,
+	TicketStatus,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError } from '@connectrpc/connect'
@@ -21,9 +21,20 @@ const mockLogger = {
 	}),
 }
 
+const mockOrderClient = {
+	get: vi.fn(),
+}
+
 const mockTicketClient = {
-	getOrder: vi.fn(),
 	getMyTickets: vi.fn(async () => []),
+}
+
+const mockUserStore: { current: Record<string, string> | undefined } = {
+	current: {
+		id: 'user-1',
+		fullName: '山田 花子',
+		phoneNumber: '+819012345678',
+	},
 }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -33,7 +44,9 @@ vi.mock('aurelia', async (importOriginal) => {
 		resolve: vi.fn((token: unknown) => {
 			const map: Record<string, unknown> = {
 				ILogger: mockLogger,
+				IOrderRpcClient: mockOrderClient,
 				ITicketRpcClient: mockTicketClient,
+				IUserStore: mockUserStore,
 			}
 			const tokenAny = token as { friendlyName?: string }
 			return map[tokenAny.friendlyName ?? ''] ?? {}
@@ -80,14 +93,14 @@ describe('OrderRoute', () => {
 
 	describe('step transitions', () => {
 		it('shows loaded when getOrder returns a paid order', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(makeOrder())
+			mockOrderClient.get.mockResolvedValue(makeOrder())
 			const sut = await makeSut()
 			expect(sut.step).toBe('loaded')
 			expect(sut.order?.statusKind).toBe('paid')
 		})
 
 		it('shows loaded with refunded statusKind when ORDER_STATUS_REFUNDED', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ status: OrderStatus.REFUNDED }),
 			)
 			const sut = await makeSut()
@@ -96,7 +109,7 @@ describe('OrderRoute', () => {
 		})
 
 		it('shows loaded with failed statusKind when ORDER_STATUS_FAILED', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ status: OrderStatus.FAILED }),
 			)
 			const sut = await makeSut()
@@ -105,7 +118,7 @@ describe('OrderRoute', () => {
 		})
 
 		it('fails safe: UNSPECIFIED/unknown status is NOT rendered as paid', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ status: OrderStatus.UNSPECIFIED }),
 			)
 			const sut = await makeSut()
@@ -115,7 +128,7 @@ describe('OrderRoute', () => {
 		})
 
 		it('shows notfound when getOrder throws ConnectError NotFound', async () => {
-			mockTicketClient.getOrder.mockRejectedValue(
+			mockOrderClient.get.mockRejectedValue(
 				new ConnectError('not found', Code.NotFound),
 			)
 			const sut = await makeSut()
@@ -123,7 +136,7 @@ describe('OrderRoute', () => {
 		})
 
 		it('shows error state on unexpected failure', async () => {
-			mockTicketClient.getOrder.mockRejectedValue(new Error('network failure'))
+			mockOrderClient.get.mockRejectedValue(new Error('network failure'))
 			const sut = await makeSut()
 			expect(sut.step).toBe('error')
 			expect(sut.error).not.toBe('')
@@ -134,13 +147,12 @@ describe('OrderRoute', () => {
 
 	describe('ticket filtering', () => {
 		it('includes only tickets whose orderId matches the current orderId', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(makeOrder())
+			mockOrderClient.get.mockResolvedValue(makeOrder())
 			const rawTickets = [
 				create(TicketSchema, {
 					id: { value: 't-1' },
 					orderId: { value: 'order-1' },
 					eventId: { value: 'event-1' },
-					holderIdentity: { fullName: '山田太郎', phoneNumber: '09012345678' },
 					status: TicketStatus.ISSUED,
 					resaleWithoutConsentProhibited: true,
 				}),
@@ -148,7 +160,6 @@ describe('OrderRoute', () => {
 					id: { value: 't-2' },
 					orderId: { value: 'order-OTHER' },
 					eventId: { value: 'event-2' },
-					holderIdentity: { fullName: '鈴木花子', phoneNumber: '08011112222' },
 					status: TicketStatus.ISSUED,
 					resaleWithoutConsentProhibited: false,
 				}),
@@ -161,7 +172,7 @@ describe('OrderRoute', () => {
 		})
 
 		it('shows voided tickets for a refunded order (tickets.length > 0)', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ status: OrderStatus.REFUNDED }),
 			)
 			const rawTickets = [
@@ -169,7 +180,6 @@ describe('OrderRoute', () => {
 					id: { value: 't-voided' },
 					orderId: { value: 'order-1' },
 					eventId: { value: 'event-1' },
-					holderIdentity: { fullName: '山田太郎', phoneNumber: '09012345678' },
 					status: TicketStatus.VOIDED,
 					resaleWithoutConsentProhibited: true,
 				}),
@@ -182,8 +192,22 @@ describe('OrderRoute', () => {
 			expect(sut.tickets[0].isVoided).toBe(true)
 		})
 
+		it("shows the User's current full name and phone number on each ticket", async () => {
+			mockOrderClient.get.mockResolvedValue(makeOrder())
+			mockTicketClient.getMyTickets.mockResolvedValue([
+				create(TicketSchema, {
+					id: { value: 't-1' },
+					orderId: { value: 'order-1' },
+					status: TicketStatus.ISSUED,
+				}),
+			])
+			const sut = await makeSut('order-1')
+			expect(sut.tickets[0].holderName).toBe('山田 花子')
+			expect(sut.tickets[0].holderPhone).toBe('090-1234-5678')
+		})
+
 		it('has empty tickets array when no tickets belong to this order', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(makeOrder())
+			mockOrderClient.get.mockResolvedValue(makeOrder())
 			mockTicketClient.getMyTickets.mockResolvedValue([])
 			const sut = await makeSut()
 			expect(sut.tickets).toHaveLength(0)
@@ -194,7 +218,7 @@ describe('OrderRoute', () => {
 
 	describe('order view mapping', () => {
 		it('maps amount to formatted JPY string', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ amount: BigInt(15000) }),
 			)
 			const sut = await makeSut()
@@ -202,7 +226,7 @@ describe('OrderRoute', () => {
 		})
 
 		it('maps card brand and last4 when present', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ payment: { cardBrand: 'mastercard', cardLast4: '1234' } }),
 			)
 			const sut = await makeSut()
@@ -217,7 +241,7 @@ describe('OrderRoute', () => {
 				amount: BigInt(5000),
 				currency: 'JPY',
 			})
-			mockTicketClient.getOrder.mockResolvedValue(orderNoPayment)
+			mockOrderClient.get.mockResolvedValue(orderNoPayment)
 			const sut = await makeSut()
 			expect(sut.order?.cardLast4).toBe('')
 		})
@@ -227,13 +251,13 @@ describe('OrderRoute', () => {
 
 	describe('statusLabel', () => {
 		it('returns 支払済み for paid order', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(makeOrder())
+			mockOrderClient.get.mockResolvedValue(makeOrder())
 			const sut = await makeSut()
 			expect(sut.statusLabel).toBe('支払済み')
 		})
 
 		it('returns 返金済み for refunded order', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ status: OrderStatus.REFUNDED }),
 			)
 			const sut = await makeSut()
@@ -241,7 +265,7 @@ describe('OrderRoute', () => {
 		})
 
 		it('returns 失敗 for failed order', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ status: OrderStatus.FAILED }),
 			)
 			const sut = await makeSut()
@@ -249,7 +273,7 @@ describe('OrderRoute', () => {
 		})
 
 		it('returns 状態不明 for an unknown/UNSPECIFIED status (fail-safe, not 支払済み)', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ status: OrderStatus.UNSPECIFIED }),
 			)
 			const sut = await makeSut()
@@ -318,13 +342,13 @@ describe('OrderRoute', () => {
 
 	describe('loading() param handling', () => {
 		it('reads orderId from route params', async () => {
-			mockTicketClient.getOrder.mockResolvedValue(
+			mockOrderClient.get.mockResolvedValue(
 				makeOrder({ id: { value: 'order-abc' } }),
 			)
 			const sut = new OrderRoute()
 			sut.loading({ orderId: 'order-abc' })
 			await flush()
-			expect(mockTicketClient.getOrder).toHaveBeenCalledWith(
+			expect(mockOrderClient.get).toHaveBeenCalledWith(
 				'order-abc',
 				expect.anything(),
 			)
@@ -335,7 +359,7 @@ describe('OrderRoute', () => {
 
 	describe('detaching', () => {
 		it('aborts any in-flight request on detach', () => {
-			mockTicketClient.getOrder.mockResolvedValue(makeOrder())
+			mockOrderClient.get.mockResolvedValue(makeOrder())
 			const sut = new OrderRoute()
 			sut.loading({ orderId: 'order-1' })
 			const abortSpy = vi.spyOn(AbortController.prototype, 'abort')
@@ -348,11 +372,11 @@ describe('OrderRoute', () => {
 
 	describe('error retry', () => {
 		it('clears the error and reloads when load() is called again', async () => {
-			mockTicketClient.getOrder.mockRejectedValueOnce(new Error('boom'))
+			mockOrderClient.get.mockRejectedValueOnce(new Error('boom'))
 			const sut = await makeSut()
 			expect(sut.step).toBe('error')
 
-			mockTicketClient.getOrder.mockResolvedValue(makeOrder())
+			mockOrderClient.get.mockResolvedValue(makeOrder())
 			await sut.load()
 			expect(sut.step).toBe('loaded')
 			expect(sut.error).toBe('')

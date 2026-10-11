@@ -1,20 +1,20 @@
-import { SellerDetailsSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
+import { OrganizerSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { describe, expect, it } from 'vitest'
 import {
 	bpsToPercentText,
-	hasSellerDetailsErrors,
+	hasBusinessDetailsErrors,
 	parsePercentToBps,
-	toSellerDetailsInput,
-	trimSellerDetails,
-	validateSellerDetails,
+	toBusinessDetailsInput,
+	trimBusinessDetails,
+	validateBusinessDetails,
 } from '../../../admin/organizers/organizer-commercial-terms/commercial-terms-form'
 
 const VALID = {
 	legalName: 'Liverty Records Inc.',
 	representativeName: 'Taro Yamada',
-	address: '1-2-3 Shibuya, Shibuya-ku, Tokyo',
-	phoneNumber: '+81312345678',
+	businessAddress: '1-2-3 Shibuya, Shibuya-ku, Tokyo',
+	businessPhoneNumber: '+81312345678',
 	contactEmail: 'contact@liverty.example',
 }
 
@@ -80,64 +80,69 @@ describe('parsePercentToBps', () => {
 	})
 })
 
-describe('toSellerDetailsInput', () => {
-	it('copies stored details', () => {
-		expect(toSellerDetailsInput(create(SellerDetailsSchema, VALID))).toEqual(
-			VALID,
-		)
+describe('toBusinessDetailsInput', () => {
+	it("copies the Organizer's stored details", () => {
+		const organizer = create(OrganizerSchema, {
+			legalName: { value: VALID.legalName },
+			representativeName: { value: VALID.representativeName },
+			businessAddress: { value: VALID.businessAddress },
+			businessPhoneNumber: { value: VALID.businessPhoneNumber },
+			contactEmail: { value: VALID.contactEmail },
+		})
+		expect(toBusinessDetailsInput(organizer)).toEqual(VALID)
 	})
 
 	it('gives empty values when details are absent', () => {
-		expect(toSellerDetailsInput(undefined)).toEqual({
+		expect(toBusinessDetailsInput(undefined)).toEqual({
 			legalName: '',
 			representativeName: '',
-			address: '',
-			phoneNumber: '',
+			businessAddress: '',
+			businessPhoneNumber: '',
 			contactEmail: '',
 		})
 	})
 })
 
-describe('validateSellerDetails', () => {
+describe('validateBusinessDetails', () => {
 	it('accepts complete, valid details', () => {
-		expect(validateSellerDetails(VALID)).toEqual({})
+		expect(validateBusinessDetails(VALID)).toEqual({})
 	})
 
 	it('requires all five values', () => {
-		const errors = validateSellerDetails(
-			trimSellerDetails({
+		const errors = validateBusinessDetails(
+			trimBusinessDetails({
 				legalName: ' ',
 				representativeName: '',
-				address: '',
-				phoneNumber: '',
+				businessAddress: '',
+				businessPhoneNumber: '',
 				contactEmail: '',
 			}),
 		)
 		expect(Object.keys(errors).sort()).toEqual([
-			'address',
+			'businessAddress',
+			'businessPhoneNumber',
 			'contactEmail',
 			'legalName',
-			'phoneNumber',
 			'representativeName',
 		])
 	})
 
 	it('enforces the maximum lengths in characters', () => {
 		expect(
-			validateSellerDetails({ ...VALID, legalName: 'あ'.repeat(200) }),
+			validateBusinessDetails({ ...VALID, legalName: 'あ'.repeat(200) }),
 		).toEqual({})
 		expect(
-			validateSellerDetails({
+			validateBusinessDetails({
 				...VALID,
 				legalName: 'a'.repeat(201),
 				representativeName: 'a'.repeat(101),
-				address: 'a'.repeat(301),
+				businessAddress: 'a'.repeat(301),
 			}),
 		).toEqual({
 			legalName: 'The legal name must be 200 characters or fewer.',
 			representativeName:
 				'The representative name must be 100 characters or fewer.',
-			address: 'The address must be 300 characters or fewer.',
+			businessAddress: 'The business address must be 300 characters or fewer.',
 		})
 	})
 
@@ -147,9 +152,10 @@ describe('validateSellerDetails', () => {
 		'+0312345678',
 		'+8',
 		'+8131234567890123',
-	])('rejects the non-E.164 phone number %s', (phoneNumber) => {
+	])('rejects the non-E.164 phone number %s', (businessPhoneNumber) => {
 		expect(
-			validateSellerDetails({ ...VALID, phoneNumber }).phoneNumber,
+			validateBusinessDetails({ ...VALID, businessPhoneNumber })
+				.businessPhoneNumber,
 		).toContain('international form')
 	})
 
@@ -157,18 +163,25 @@ describe('validateSellerDetails', () => {
 		'rejects the email %s',
 		(contactEmail) => {
 			expect(
-				validateSellerDetails({ ...VALID, contactEmail }).contactEmail,
-			).toBe('Enter a valid email address.')
+				validateBusinessDetails({ ...VALID, contactEmail }).contactEmail,
+			).toBe('Enter a valid email businessAddress.')
 		},
 	)
 })
 
-describe('hasSellerDetailsErrors', () => {
+describe('hasBusinessDetailsErrors', () => {
 	it('ignores fields present with an undefined message', () => {
-		expect(hasSellerDetailsErrors({})).toBe(false)
+		expect(hasBusinessDetailsErrors({})).toBe(false)
 		expect(
-			hasSellerDetailsErrors({ legalName: undefined, address: undefined }),
+			hasBusinessDetailsErrors({
+				legalName: undefined,
+				businessAddress: undefined,
+			}),
 		).toBe(false)
-		expect(hasSellerDetailsErrors({ address: 'Enter the address.' })).toBe(true)
+		expect(
+			hasBusinessDetailsErrors({
+				businessAddress: 'Enter the business address.',
+			}),
+		).toBe(true)
 	})
 })

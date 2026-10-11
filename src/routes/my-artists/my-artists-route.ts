@@ -1,9 +1,9 @@
 import { I18N } from '@aurelia/i18n'
 import { IEventAggregator, ILogger, observable, resolve, watch } from 'aurelia'
+import { Snack, type SnackHandle } from '../../../shared/ui/snack-bar/snack'
 import { artistColor } from '../../adapter/view/artist-color'
 import { HYPE_TIERS } from '../../adapter/view/hype-display'
 import type { PageHelp } from '../../components/page-help/page-help'
-import { Snack, type SnackHandle } from '../../../shared/ui/snack-bar/snack'
 import type { FollowedArtist, Hype } from '../../entities/follow'
 import { IAuthService } from '../../services/auth-service'
 import {

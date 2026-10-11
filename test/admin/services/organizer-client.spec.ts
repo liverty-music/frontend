@@ -9,11 +9,12 @@ const mockRpc = {
 	create: vi.fn(),
 	list: vi.fn(),
 	get: vi.fn(),
-	listArtists: vi.fn(),
+	// Admin ArtistService.ListByOrganizer, behind the same stubbed createClient.
+	listByOrganizer: vi.fn(),
 	associateArtist: vi.fn(),
 	disassociateArtist: vi.fn(),
 	deactivate: vi.fn(),
-	updateSellerDetails: vi.fn(),
+	setBusinessDetails: vi.fn(),
 	setPlatformFeeRate: vi.fn(),
 }
 
@@ -80,14 +81,14 @@ describe('OrganizerClient', () => {
 	})
 
 	it('listArtists wraps the organizer id and returns artists', async () => {
-		mockRpc.listArtists.mockResolvedValue({
+		mockRpc.listByOrganizer.mockResolvedValue({
 			artists: [{ id: { value: 'a1' } }],
 		})
 		const client = resolveClient()
 
 		const artists = await client.listArtists('o1')
 
-		const [req] = mockRpc.listArtists.mock.calls.at(-1) ?? []
+		const [req] = mockRpc.listByOrganizer.mock.calls.at(-1) ?? []
 		expect(req.organizerId?.value).toBe('o1')
 		expect(artists).toHaveLength(1)
 	})
@@ -137,24 +138,27 @@ describe('OrganizerClient commercial terms', () => {
 		vi.clearAllMocks()
 	})
 
-	it('updateSellerDetails sends the whole seller details set', async () => {
-		mockRpc.updateSellerDetails.mockResolvedValue({
+	it('setBusinessDetails sends the five Organizer business details', async () => {
+		mockRpc.setBusinessDetails.mockResolvedValue({
 			organizer: { id: { value: 'o1' } },
 		})
 		const client = resolveClient()
-		const details = {
+
+		const result = await client.setBusinessDetails('o1', {
 			legalName: 'Liverty Records Inc.',
 			representativeName: 'Taro Yamada',
-			address: '1-2-3 Shibuya, Tokyo',
-			phoneNumber: '+81312345678',
+			businessAddress: '1-2-3 Shibuya, Tokyo',
+			businessPhoneNumber: '+81312345678',
 			contactEmail: 'contact@liverty.example',
-		}
+		})
 
-		const result = await client.updateSellerDetails('o1', details)
-
-		const [req] = mockRpc.updateSellerDetails.mock.calls.at(-1) ?? []
+		const [req] = mockRpc.setBusinessDetails.mock.calls.at(-1) ?? []
 		expect(req.organizerId?.value).toBe('o1')
-		expect(req.sellerDetails).toEqual(details)
+		expect(req.legalName?.value).toBe('Liverty Records Inc.')
+		expect(req.representativeName?.value).toBe('Taro Yamada')
+		expect(req.businessAddress?.value).toBe('1-2-3 Shibuya, Tokyo')
+		expect(req.businessPhoneNumber?.value).toBe('+81312345678')
+		expect(req.contactEmail?.value).toBe('contact@liverty.example')
 		expect(result?.id?.value).toBe('o1')
 	})
 

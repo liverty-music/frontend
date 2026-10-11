@@ -105,7 +105,7 @@ describe('AuthCallbackRoute', () => {
 	})
 
 	describe('canLoad', () => {
-		it('redirects to dashboard for returning user (cache hit → ensureLoaded resolves a user, Create not called)', async () => {
+		it('redirects to dashboard for returning user (ensureLoaded resolves the existing User, Create not called)', async () => {
 			mockAuth.handleCallback = vi
 				.fn()
 				.mockResolvedValue(authUser('existing@example.com'))
@@ -125,13 +125,13 @@ describe('AuthCallbackRoute', () => {
 			expect(result).toBe('/dashboard')
 		})
 
-		it('delegates cache-miss recovery to UserService.ensureLoaded — Create is NOT called from auth-callback when there is no guest home', async () => {
+		it('delegates Get-or-Create to UserStore.ensureLoaded — Create is NOT called from auth-callback when there is no guest home', async () => {
 			mockAuth.handleCallback = vi
 				.fn()
 				.mockResolvedValue(authUser('new@example.com'))
-			// ensureLoaded internally handles cache hit/miss (calls Get or Create
-			// depending on cache state). Auth-callback only invokes Create
-			// explicitly when there is a guestHome to persist atomically.
+			// ensureLoaded internally calls Get, then Create when Get answers
+			// NotFound. Auth-callback only invokes Create explicitly when there is
+			// a guestHome to persist atomically.
 			mockUserService.ensureLoaded = vi
 				.fn()
 				.mockResolvedValue({ user: undefined, created: false })
@@ -228,6 +228,7 @@ describe('AuthCallbackRoute', () => {
 			})
 		})
 
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Dialog shown after first signup"
 		it('a NEW no-home account still migrates and shows postSignup (sign-up flow; migration fires regardless of home; created=true)', async () => {
 			// New account where the visitor skipped home selection: guestHome is
 			// null so provisioning goes through ensureLoaded (not Create), which
@@ -254,6 +255,7 @@ describe('AuthCallbackRoute', () => {
 			expect(result).toBe('/dashboard')
 		})
 
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Dialog not shown on subsequent logins"
 		it('a RETURNING sign-in DOES migrate (guest follows heal in-session) but does NOT set postSignup', async () => {
 			// created=false → no postSignup flag, even though ensureLoaded hydrates
 			// a user. Migration STILL fires: a returning user who browsed
@@ -281,12 +283,12 @@ describe('AuthCallbackRoute', () => {
 			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
 		})
 
+		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Sign-in with an empty local cache does not trigger the dialog"
 		it('a RETURNING sign-in with an EMPTY local cache (created=true) does NOT set postSignup', async () => {
-			// The reported bug: a returning user on a new browser/device, with
-			// cleared storage, or after guest-then-sign-in has no cached user_id, so
-			// ensureLoaded reports created=true — indistinguishable from a brand-new
-			// account by the cache-miss proxy alone. Because the sign-in flow carries
-			// NO sign-up marker, the celebration MUST stay suppressed regardless.
+			// A returning user on a new browser/device, with cleared storage, or
+			// after guest-then-sign-in: whatever `created` reports (here true, as
+			// if the account had just been provisioned), the sign-in flow carries
+			// NO sign-up marker, so the celebration MUST stay suppressed.
 			mockAuth.handleCallback = vi
 				.fn()
 				.mockResolvedValue(authUser('returning@example.com'))

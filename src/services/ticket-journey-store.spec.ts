@@ -9,7 +9,7 @@ const mockLogger = {
 }
 const mockAuth = { isAuthenticated: true }
 const mockRpcClient = {
-	listByUser: vi.fn(async (): Promise<Map<string, JourneyStatus>> => new Map()),
+	list: vi.fn(async (): Promise<Map<string, JourneyStatus>> => new Map()),
 	setStatus: vi.fn(async () => undefined),
 	delete: vi.fn(async () => undefined),
 }
@@ -55,14 +55,14 @@ describe('TicketJourneyStore', () => {
 	})
 
 	describe('load', () => {
-		it('populates the observable map from listByUser (network-first)', async () => {
-			mockRpcClient.listByUser.mockResolvedValueOnce(
+		it('populates the observable map from list (network-first)', async () => {
+			mockRpcClient.list.mockResolvedValueOnce(
 				new Map<string, JourneyStatus>([['e1', 'applied']]),
 			)
 
 			const map = await sut.load()
 
-			expect(mockRpcClient.listByUser).toHaveBeenCalledTimes(1)
+			expect(mockRpcClient.list).toHaveBeenCalledTimes(1)
 			expect(map.get('e1')).toBe('applied')
 			expect(sut.statusFor('e1')).toBe('applied')
 		})
@@ -72,7 +72,7 @@ describe('TicketJourneyStore', () => {
 
 			const map = await sut.load()
 
-			expect(mockRpcClient.listByUser).not.toHaveBeenCalled()
+			expect(mockRpcClient.list).not.toHaveBeenCalled()
 			expect(map.size).toBe(0)
 		})
 	})
@@ -127,7 +127,7 @@ describe('TicketJourneyStore', () => {
 			const listPromise = new Promise<Map<string, JourneyStatus>>((r) => {
 				releaseList = r
 			})
-			mockRpcClient.listByUser.mockReturnValueOnce(listPromise)
+			mockRpcClient.list.mockReturnValueOnce(listPromise)
 
 			// load() captures the write generation, then blocks on the RPC.
 			const loadP = sut.load()

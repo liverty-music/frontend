@@ -1,34 +1,34 @@
-import { VerificationLevel as ProtoVerificationLevel } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import {
+	KycSchema,
 	DedupeStrength as ProtoDedupeStrength,
+	type Kyc as ProtoKyc,
 	VerificationMethod as ProtoVerificationMethod,
 	VerificationStatus as ProtoVerificationStatus,
-	type VerifiedIdentity as ProtoVerifiedIdentity,
-	VerifiedIdentitySchema,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/verified_identity_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/kyc_pb.js'
+import { VerificationLevel as ProtoVerificationLevel } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { TimestampSchema } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
+	kycFrom,
 	verificationLevelFrom,
 	verificationMethodTo,
-	verifiedIdentityFrom,
-} from './verified-identity-mapper'
+} from './kyc-mapper'
 
-function makeProtoIdentity(
+function makeProtoKyc(
 	overrides: Partial<{
 		method: ProtoVerificationMethod
 		dedupeStrength: ProtoDedupeStrength
 		status: ProtoVerificationStatus
 		id: string
-		accountRef: string
+		userId: string
 		pocketSignUserId: string
 		verifiedAtSeconds: bigint
 	}> = {},
-): ProtoVerifiedIdentity {
-	return create(VerifiedIdentitySchema, {
+): ProtoKyc {
+	return create(KycSchema, {
 		id: { value: overrides.id ?? 'vi-1' },
-		accountRef: { value: overrides.accountRef ?? 'user-1' },
+		userId: { value: overrides.userId ?? 'user-1' },
 		method: overrides.method ?? ProtoVerificationMethod.JPKI,
 		pocketSignUserId: {
 			value: overrides.pocketSignUserId ?? 'ps-user-1',
@@ -42,12 +42,12 @@ function makeProtoIdentity(
 	})
 }
 
-describe('verified-identity-mapper', () => {
+describe('kyc-mapper', () => {
 	describe('verificationLevelFrom', () => {
-		it('maps IDENTITY_VERIFIED', () => {
-			expect(
-				verificationLevelFrom(ProtoVerificationLevel.IDENTITY_VERIFIED),
-			).toBe('identityVerified')
+		it('maps KYC_VERIFIED', () => {
+			expect(verificationLevelFrom(ProtoVerificationLevel.KYC_VERIFIED)).toBe(
+				'kycVerified',
+			)
 		})
 
 		it('maps UNVERIFIED', () => {
@@ -81,18 +81,18 @@ describe('verified-identity-mapper', () => {
 		})
 	})
 
-	describe('verifiedIdentityFrom', () => {
+	describe('kycFrom', () => {
 		it('returns undefined for an absent message', () => {
-			expect(verifiedIdentityFrom(undefined)).toBeUndefined()
+			expect(kycFrom(undefined)).toBeUndefined()
 		})
 
 		it('maps a fully-populated JPKI identity', () => {
-			const result = verifiedIdentityFrom(
-				makeProtoIdentity({ verifiedAtSeconds: BigInt(1_700_000_000) }),
+			const result = kycFrom(
+				makeProtoKyc({ verifiedAtSeconds: BigInt(1_700_000_000) }),
 			)
 			expect(result).toEqual({
 				id: 'vi-1',
-				accountRef: 'user-1',
+				userId: 'user-1',
 				method: 'jpki',
 				pocketSignUserId: 'ps-user-1',
 				dedupeStrength: 'strong',
@@ -102,8 +102,8 @@ describe('verified-identity-mapper', () => {
 		})
 
 		it('maps a driver-licence weak-dedupe identity needing re-verification', () => {
-			const result = verifiedIdentityFrom(
-				makeProtoIdentity({
+			const result = kycFrom(
+				makeProtoKyc({
 					method: ProtoVerificationMethod.DRIVER_LICENCE,
 					dedupeStrength: ProtoDedupeStrength.WEAK,
 					status: ProtoVerificationStatus.NEEDS_REVERIFICATION,
@@ -115,22 +115,20 @@ describe('verified-identity-mapper', () => {
 		})
 
 		it('leaves verifiedAt undefined when the timestamp is absent', () => {
-			const result = verifiedIdentityFrom(makeProtoIdentity())
+			const result = kycFrom(makeProtoKyc())
 			expect(result?.verifiedAt).toBeUndefined()
 		})
 
 		it('returns undefined when the method is unspecified (half-populated record)', () => {
 			expect(
-				verifiedIdentityFrom(
-					makeProtoIdentity({ method: ProtoVerificationMethod.UNSPECIFIED }),
-				),
+				kycFrom(makeProtoKyc({ method: ProtoVerificationMethod.UNSPECIFIED })),
 			).toBeUndefined()
 		})
 
 		it('returns undefined when the dedupe strength is unspecified', () => {
 			expect(
-				verifiedIdentityFrom(
-					makeProtoIdentity({
+				kycFrom(
+					makeProtoKyc({
 						dedupeStrength: ProtoDedupeStrength.UNSPECIFIED,
 					}),
 				),
@@ -139,16 +137,12 @@ describe('verified-identity-mapper', () => {
 
 		it('returns undefined when the status is unspecified (never render an unknown lifecycle as active)', () => {
 			expect(
-				verifiedIdentityFrom(
-					makeProtoIdentity({ status: ProtoVerificationStatus.UNSPECIFIED }),
-				),
+				kycFrom(makeProtoKyc({ status: ProtoVerificationStatus.UNSPECIFIED })),
 			).toBeUndefined()
 		})
 
 		it('returns undefined when the pocket-sign user id is empty', () => {
-			expect(
-				verifiedIdentityFrom(makeProtoIdentity({ pocketSignUserId: '' })),
-			).toBeUndefined()
+			expect(kycFrom(makeProtoKyc({ pocketSignUserId: '' }))).toBeUndefined()
 		})
 	})
 })

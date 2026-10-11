@@ -151,6 +151,7 @@ describe('ArtistFilterBar', () => {
 	describe('date facet', () => {
 		const past = { year: 2020, month: 1, day: 1 }
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Expanding the date facet"
 		it('seeds the pending date from activeFrom and stays collapsed for the default', () => {
 			sut.activeFrom = todayCalendarDate()
 			sut.openSheet()
@@ -167,6 +168,7 @@ describe('ArtistFilterBar', () => {
 			expect(sut.isDateFacetExpanded).toBe(true)
 		})
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Choosing a past date and confirming"
 		it('dispatches date-changed with the parsed date on confirm when it changed', () => {
 			sut.activeFrom = todayCalendarDate()
 			sut.openSheet()
@@ -198,6 +200,7 @@ describe('ArtistFilterBar', () => {
 			expect(dispatched[0].detail).toEqual(todayCalendarDate())
 		})
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Collapsing back to today onward"
 		it('clearAll resets the pending date to today and collapses the facet', () => {
 			sut.activeFrom = past
 			sut.openSheet()

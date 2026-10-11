@@ -7,9 +7,17 @@ const mockLogger = {
 	scopeTo: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }
 const mockAuth = { isAuthenticated: true }
+// Captures the SignedOut handler the store subscribes in its constructor.
+let signedOutHandler: (() => void) | undefined
+const mockEa = {
+	subscribe: vi.fn((_event: unknown, handler: () => void) => {
+		signedOutHandler = handler
+		return { dispose: vi.fn() }
+	}),
+}
 const mockRpcClient = {
-	listByFollower: vi.fn(async (): Promise<ProximityGroup[]> => []),
-	listConcerts: vi.fn(),
+	listFollowed: vi.fn(async (): Promise<ProximityGroup[]> => []),
+	listByArtist: vi.fn(),
 	listByArtists: vi.fn(async (): Promise<ProximityGroup[]> => []),
 }
 
@@ -33,6 +41,7 @@ vi.mock('aurelia', async (importOriginal) => {
 				ILogger: mockLogger,
 				IAuthService: mockAuth,
 				IConcertRpcClient: mockRpcClient,
+				IEventAggregator: mockEa,
 			}
 			const tokenAny = token as { friendlyName?: string }
 			return map[tokenAny.friendlyName ?? ''] ?? {}
@@ -70,50 +79,53 @@ describe('ConcertStore', () => {
 		vi.restoreAllMocks()
 	})
 
-	describe('listByFollower — caching', () => {
+	describe('listFollowed — caching', () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Cache hit on Dashboard re-entry"
 		it('returns cached result on second call without issuing RPC', async () => {
 			const groups = makeGroups(2)
-			mockRpcClient.listByFollower.mockResolvedValueOnce(groups)
+			mockRpcClient.listFollowed.mockResolvedValueOnce(groups)
 
-			await sut.listByFollower()
-			const result = await sut.listByFollower()
+			await sut.listFollowed()
+			const result = await sut.listFollowed()
 
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(1)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
 			expect(result).toBe(groups)
 		})
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Cache miss on first load"
 		it('issues RPC on first call (cache miss) and stores result', async () => {
 			const groups = makeGroups(3)
-			mockRpcClient.listByFollower.mockResolvedValueOnce(groups)
+			mockRpcClient.listFollowed.mockResolvedValueOnce(groups)
 
-			const result = await sut.listByFollower()
+			const result = await sut.listFollowed()
 
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(1)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
 			expect(result).toEqual(groups)
 		})
 
+		// @spec components/infrastructure/fan/web/route/dashboard "Cache expiry after 24 hours"
 		it('serves the stale value then revalidates in the background after TTL expiry', async () => {
 			const first = makeGroups(1)
 			const second = makeGroups(2)
-			mockRpcClient.listByFollower
+			mockRpcClient.listFollowed
 				.mockResolvedValueOnce(first)
 				.mockResolvedValueOnce(second)
 
-			await sut.listByFollower()
+			await sut.listFollowed()
 
 			// Advance time past the 24h stale window.
 			vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 25 * 60 * 60 * 1000)
 
 			// Stale-while-revalidate: the stale value is served immediately while a
 			// background refresh is issued.
-			const served = await sut.listByFollower()
+			const served = await sut.listFollowed()
 			expect(served).toEqual(first)
 
 			// The background revalidation runs and stores the fresh value.
 			await vi.waitFor(() =>
-				expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2),
+				expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2),
 			)
-			const refreshed = await sut.listByFollower()
+			const refreshed = await sut.listFollowed()
 			expect(refreshed).toEqual(second)
 		})
 
@@ -122,40 +134,40 @@ describe('ConcertStore', () => {
 			const past = { year: 2026, month: 1, day: 1 }
 			const todayGroups = makeGroups(1)
 			const pastGroups = makeGroups(2)
-			mockRpcClient.listByFollower
+			mockRpcClient.listFollowed
 				.mockResolvedValueOnce(todayGroups)
 				.mockResolvedValueOnce(pastGroups)
 
 			// First window (today) caches; a repeat read hits the cache.
-			await sut.listByFollower(today)
-			await sut.listByFollower(today)
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(1)
+			await sut.listFollowed(today)
+			await sut.listFollowed(today)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
 
 			// A different window (past) is a distinct key → a fresh RPC.
-			const pastResult = await sut.listByFollower(past)
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			const pastResult = await sut.listFollowed(past)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 			expect(pastResult).toEqual(pastGroups)
 
 			// Switching back to the first window serves its cached value (no RPC).
-			const backToToday = await sut.listByFollower(today)
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			const backToToday = await sut.listFollowed(today)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 			expect(backToToday).toEqual(todayGroups)
 		})
 
 		it('invalidateFollowerCache clears every `from` window', async () => {
 			const today = { year: 2026, month: 8, day: 15 }
 			const past = { year: 2026, month: 1, day: 1 }
-			mockRpcClient.listByFollower.mockResolvedValue(makeGroups(1))
+			mockRpcClient.listFollowed.mockResolvedValue(makeGroups(1))
 
-			await sut.listByFollower(today)
-			await sut.listByFollower(past)
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			await sut.listFollowed(today)
+			await sut.listFollowed(past)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 
 			// A follow-set change invalidates all windows, so both re-fetch.
 			sut.invalidateFollowerCache()
-			await sut.listByFollower(today)
-			await sut.listByFollower(past)
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(4)
+			await sut.listFollowed(today)
+			await sut.listFollowed(past)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(4)
 		})
 	})
 
@@ -167,7 +179,7 @@ describe('ConcertStore', () => {
 				.mockResolvedValueOnce(makeGroups(2))
 
 			// Guest read caches the proximity list.
-			await sut.listByFollower()
+			await sut.listFollowed()
 			expect(mockRpcClient.listByArtists).toHaveBeenCalledTimes(1)
 
 			// Resume: revalidateFollower must FORCE a refresh (not serve the
@@ -190,14 +202,15 @@ describe('ConcertStore', () => {
 	})
 
 	describe('invalidateFollowerCache', () => {
-		it('causes next listByFollower() call to issue RPC', async () => {
-			mockRpcClient.listByFollower.mockResolvedValue(makeGroups(1))
+		// @spec components/infrastructure/fan/web/route/dashboard "Cache invalidated after follow"
+		it('causes next listFollowed() call to issue RPC', async () => {
+			mockRpcClient.listFollowed.mockResolvedValue(makeGroups(1))
 
-			await sut.listByFollower()
+			await sut.listFollowed()
 			sut.invalidateFollowerCache()
-			await sut.listByFollower()
+			await sut.listFollowed()
 
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 		})
 
 		it('discards in-flight RPC result if invalidated before it resolves', async () => {
@@ -211,50 +224,47 @@ describe('ConcertStore', () => {
 				releaseFirst = resolve
 			})
 			const second = makeGroups(2)
-			mockRpcClient.listByFollower
+			mockRpcClient.listFollowed
 				.mockReturnValueOnce(firstRpc)
 				.mockResolvedValueOnce(second)
 
-			const firstCallPromise = sut.listByFollower()
+			const firstCallPromise = sut.listFollowed()
 			sut.invalidateFollowerCache()
 			releaseFirst(makeGroups(1))
 			await firstCallPromise
 
 			// Next call MUST hit the RPC again — cache should be empty
 			// because invalidation fenced the stale write.
-			const result = await sut.listByFollower()
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			const result = await sut.listFollowed()
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 			expect(result).toEqual(second)
 		})
 	})
 
-	describe('listByFollower — concurrent-call dedup', () => {
+	describe('listFollowed — concurrent-call dedup', () => {
 		it('coalesces two simultaneous signal-less callers onto one RPC', async () => {
 			const groups = makeGroups(1)
-			mockRpcClient.listByFollower.mockResolvedValueOnce(groups)
+			mockRpcClient.listFollowed.mockResolvedValueOnce(groups)
 
-			const [a, b] = await Promise.all([
-				sut.listByFollower(),
-				sut.listByFollower(),
-			])
+			const [a, b] = await Promise.all([sut.listFollowed(), sut.listFollowed()])
 
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(1)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(1)
 			expect(a).toEqual(groups)
 			expect(b).toEqual(groups)
 		})
 
 		it('does NOT dedup when callers provide AbortSignal (per-caller cancellation must be honored)', async () => {
 			const groups = makeGroups(1)
-			mockRpcClient.listByFollower.mockResolvedValue(groups)
+			mockRpcClient.listFollowed.mockResolvedValue(groups)
 
 			const ctrlA = new AbortController()
 			const ctrlB = new AbortController()
 			await Promise.all([
-				sut.listByFollower(undefined, ctrlA.signal),
-				sut.listByFollower(undefined, ctrlB.signal),
+				sut.listFollowed(undefined, ctrlA.signal),
+				sut.listFollowed(undefined, ctrlB.signal),
 			])
 
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 		})
 
 		it('does not coalesce a post-invalidation caller onto the pre-invalidation in-flight', async () => {
@@ -268,18 +278,18 @@ describe('ConcertStore', () => {
 				releaseFirst = resolve
 			})
 			const fresh = makeGroups(2)
-			mockRpcClient.listByFollower
+			mockRpcClient.listFollowed
 				.mockReturnValueOnce(firstRpc)
 				.mockResolvedValueOnce(fresh)
 
-			const firstCall = sut.listByFollower()
+			const firstCall = sut.listFollowed()
 			sut.invalidateFollowerCache()
-			const secondCall = sut.listByFollower()
+			const secondCall = sut.listFollowed()
 			releaseFirst(makeGroups(1))
 
 			await firstCall
 			expect(await secondCall).toEqual(fresh)
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 		})
 
 		it('stale finally does not evict a newer post-invalidation in-flight (own-promise identity guard)', async () => {
@@ -300,15 +310,15 @@ describe('ConcertStore', () => {
 			const secondRpc = new Promise<ProximityGroup[]>((r) => {
 				releaseSecond = r
 			})
-			mockRpcClient.listByFollower
+			mockRpcClient.listFollowed
 				.mockReturnValueOnce(firstRpc)
 				.mockReturnValueOnce(secondRpc)
 				// A third mock would only fire if the bug is present.
 				.mockResolvedValueOnce(makeGroups(99))
 
-			const firstCall = sut.listByFollower()
+			const firstCall = sut.listFollowed()
 			sut.invalidateFollowerCache()
-			const secondCall = sut.listByFollower()
+			const secondCall = sut.listFollowed()
 
 			// Settle RPC-1 → its .finally() runs while RPC-2 is still pending.
 			// With the fix, slot stays = promise2 (own-promise guard).
@@ -317,14 +327,30 @@ describe('ConcertStore', () => {
 			await firstCall
 
 			// Caller-3 must coalesce onto RPC-2 (slot still occupied if guard works).
-			const thirdCall = sut.listByFollower()
+			const thirdCall = sut.listFollowed()
 
 			// Settle RPC-2 → both secondCall and thirdCall resolve to the same value.
 			releaseSecond(makeGroups(2))
 			const [b, c] = await Promise.all([secondCall, thirdCall])
 
-			expect(mockRpcClient.listByFollower).toHaveBeenCalledTimes(2)
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 			expect(c).toEqual(b)
+		})
+	})
+
+	describe('SignedOut', () => {
+		it('drops every cached list and the dashboard view state', async () => {
+			mockRpcClient.listFollowed.mockResolvedValue(makeGroups(1))
+			await sut.listFollowed()
+			sut.setDateGroups([])
+			sut.addArtistWithConcerts('a1')
+
+			signedOutHandler?.()
+
+			expect(sut.peekDateGroups()).toBeNull()
+			expect(sut.artistsWithConcertsCount).toBe(0)
+			await sut.listFollowed()
+			expect(mockRpcClient.listFollowed).toHaveBeenCalledTimes(2)
 		})
 	})
 

@@ -1,4 +1,4 @@
-import type { IRouteViewModel, Params } from '@aurelia/router'
+import { IRouter, type IRouteViewModel, type Params } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import type {
 	Stripe,
@@ -6,18 +6,23 @@ import type {
 	StripePaymentElement,
 } from '@stripe/stripe-js'
 import { ILogger, resolve } from 'aurelia'
+import { ICheckoutRpcClient } from '../../adapter/rpc/client/checkout-client'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
-import { IReservationRpcClient } from '../../adapter/rpc/client/reservation-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
 import {
-	clearCheckoutReservation,
-	loadCheckoutReservation,
-	saveCheckoutReservation,
+	clearCheckoutId,
+	loadCheckoutId,
+	saveCheckoutId,
 } from '../../adapter/storage/checkout-storage'
-import type { HolderIdentity } from '../../entities/holder-identity'
-import type { Reservation } from '../../entities/reservation'
-import { isBuyable, type TicketSale } from '../../entities/ticket-sale'
-import { toE164 } from '../../lib/to-e164'
+import type { Checkout } from '../../entities/checkout'
+import {
+	currentSale,
+	isBuyable,
+	type TicketSale,
+	type VerificationRequirement,
+} from '../../entities/ticket-sale'
+import { toDomesticDisplay, toE164 } from '../../lib/to-e164'
+import { IKycService } from '../../services/kyc-service'
 import { INotificationManager } from '../../services/notification-manager'
 import { IPushService } from '../../services/push-service'
 import { IPwaInstallService } from '../../services/pwa-install-service'
@@ -33,12 +38,17 @@ import {
 	formatEventTime,
 	formatSaleStart,
 } from '../event/event-page'
-import { type SellerDetails, sellerDetailsFromConcert } from './seller-details'
+import {
+	type BusinessDetails,
+	businessDetailsFromConcert,
+} from './business-details'
 
 /**
  * - `loading`: the event and its sale are read, and a held checkout resumed.
  * - `unavailable`: card payments are not configured in this environment.
- * - `not-found`: the event has no sale on offer (none, or cancelled).
+ * - `not-found`: the event has no first-come sale (none, or cancelled).
+ * - `verify-required`: the sale requires a verification the fan lacks; the
+ *   screen offers to verify instead of starting the checkout.
  * - `count` → `identity` → `payment` → `confirm`: the checkout's steps.
  * - `done`: the order was placed.
  * - `outcome`: placing the order failed; the screen says what happened.
@@ -47,6 +57,7 @@ export type CheckoutStep =
 	| 'loading'
 	| 'unavailable'
 	| 'not-found'
+	| 'verify-required'
 	| 'count'
 	| 'identity'
 	| 'payment'
@@ -69,7 +80,8 @@ export interface CheckoutMessage {
 }
 
 /**
- * The fan's checkout for a first-come TicketSale (`/events/:id/checkout`):
+ * The fan's checkout of the TicketType of an event's first-come sale
+ * (`/events/:id/checkout`):
  * choose the count and hold the tickets for 15 minutes, confirm the 本人確認
  * details, open the card hold, review the 特商法 final confirmation, and place
  * the order. Reopening the page during the hold resumes the same checkout.
@@ -78,18 +90,22 @@ export class CheckoutRoute implements IRouteViewModel {
 	private readonly logger = resolve(ILogger).scopeTo('CheckoutRoute')
 	private readonly concertClient = resolve(IConcertRpcClient)
 	private readonly saleClient = resolve(ITicketSaleRpcClient)
-	private readonly reservationClient = resolve(IReservationRpcClient)
+	private readonly checkoutClient = resolve(ICheckoutRpcClient)
 	private readonly stripe = resolve(IStripeService)
 	private readonly userStore = resolve(IUserStore)
 	private readonly pushService = resolve(IPushService)
 	private readonly notificationManager = resolve(INotificationManager)
 	private readonly pwaInstall = resolve(IPwaInstallService)
+	private readonly kyc = resolve(IKycService)
+	private readonly router = resolve(IRouter)
 
 	public step: CheckoutStep = 'loading'
 	public event: EventPageEvent | null = null
-	public seller: SellerDetails | null = null
+	/** The Organizer's 特商法 business details, for the final confirmation. */
+	public seller: BusinessDetails | null = null
+	/** The event's first-come sale, with its TicketType for the event. */
 	public sale: TicketSale | null = null
-	public reservation: Reservation | null = null
+	public checkout: Checkout | null = null
 
 	public ticketCount = 1
 	public fullName = ''
@@ -147,14 +163,14 @@ export class CheckoutRoute implements IRouteViewModel {
 			return
 		}
 		try {
-			const [concert, sale] = await Promise.all([
+			const [concert, sales] = await Promise.all([
 				this.concertClient.get(this.eventId, signal),
-				this.saleClient.get(this.eventId, signal),
+				this.saleClient.listByEvent(this.eventId, signal),
 			])
 			if (signal.aborted) return
 			this.event = eventFromConcert(concert)
-			this.seller = sellerDetailsFromConcert(concert)
-			this.sale = sale
+			this.seller = businessDetailsFromConcert(concert)
+			this.sale = firstComeSale(sales)
 		} catch (err) {
 			if (signal.aborted) return
 			if (ConnectError.from(err).code !== Code.NotFound) {
@@ -173,15 +189,46 @@ export class CheckoutRoute implements IRouteViewModel {
 		this.prefillIdentity()
 		if (await this.resume(signal)) return
 		if (signal.aborted) return
+		// A held checkout passed the server's verification check at Start, so
+		// only a new one is gated on the fan's Kyc.
+		if (await this.lacksVerification(signal)) {
+			if (!signal.aborted) this.step = 'verify-required'
+			return
+		}
+		if (signal.aborted) return
 		this.step = 'count'
 	}
 
-	/** Prefill the 本人確認 details saved on the fan's account. */
+	/**
+	 * True when the sale requires a verification the fan does not have: no
+	 * Active Kyc, or, on a JPKI-only sale, an Active Kyc by another method.
+	 * On a status-read failure the checkout proceeds: the server checks the
+	 * requirement at Start, so it is never bypassed, only surfaced later.
+	 */
+	private async lacksVerification(signal?: AbortSignal): Promise<boolean> {
+		const requirement = this.verificationRequirement
+		if (requirement === 'none') return false
+		try {
+			const status = await this.kyc.getStatus(signal)
+			if (status.level !== 'kycVerified') return true
+			return requirement === 'jpkiOnly' && status.kyc?.method !== 'jpki'
+		} catch (err) {
+			if (!signal?.aborted) {
+				this.logger.warn('Verification status read failed; proceeding', {
+					error: err,
+				})
+			}
+			return false
+		}
+	}
+
+	/** Prefill the full name and phone number saved on the fan's User. */
 	private prefillIdentity(): void {
-		const saved = this.userStore.current?.holderIdentity
-		if (!saved) return
-		this.fullName = saved.fullName
-		this.phoneNumber = saved.phoneNumber
+		const user = this.userStore.current
+		if (user?.fullName) this.fullName = user.fullName
+		if (user?.phoneNumber) {
+			this.phoneNumber = toDomesticDisplay(user.phoneNumber)
+		}
 	}
 
 	/**
@@ -189,16 +236,16 @@ export class CheckoutRoute implements IRouteViewModel {
 	 * and countdown. Returns false, forgetting it, when there is none to resume.
 	 */
 	private async resume(signal: AbortSignal): Promise<boolean> {
-		const id = loadCheckoutReservation(this.eventId)
+		const id = loadCheckoutId(this.eventId)
 		if (!id) return false
 		try {
-			const reservation = await this.reservationClient.get(id, signal)
+			const checkout = await this.checkoutClient.get(id, signal)
 			if (signal.aborted) return true
 			if (
-				reservation.status === 'held' &&
-				reservation.ticketSaleId === this.sale?.id
+				checkout.status === 'held' &&
+				checkout.ticketTypeId === this.sale?.ticketType.id
 			) {
-				this.holdWith(reservation)
+				this.holdWith(checkout)
 				this.step = 'identity'
 				return true
 			}
@@ -206,14 +253,34 @@ export class CheckoutRoute implements IRouteViewModel {
 			if (signal.aborted) return true
 			this.logger.warn('Checkout resume failed', { error: err })
 		}
-		clearCheckoutReservation(this.eventId)
+		clearCheckoutId(this.eventId)
 		return false
 	}
 
 	// ── Derived view ──────────────────────────────────────────────────────────
 
+	/** Which verification the sale requires before the fan checks out. */
+	public get verificationRequirement(): VerificationRequirement {
+		return this.sale?.verificationRequirement ?? 'none'
+	}
+
+	/**
+	 * The i18n key saying which verification the sale requires, or null
+	 * when it requires none.
+	 */
+	public get verificationNoteKey(): string | null {
+		switch (this.verificationRequirement) {
+			case 'jpkiOnly':
+				return 'checkout.verify.noteJpki'
+			case 'verifiedAny':
+				return 'checkout.verify.noteAny'
+			default:
+				return null
+		}
+	}
+
 	public get perAccountLimit(): number {
-		return this.sale?.perAccountLimit ?? 1
+		return this.sale?.ticketType.perAccountLimit ?? 1
 	}
 
 	/** The counts a fan may pick, 1 to the per-account limit. */
@@ -222,12 +289,12 @@ export class CheckoutRoute implements IRouteViewModel {
 	}
 
 	public get price(): number {
-		return this.sale?.price ?? 0
+		return this.sale?.ticketType.price ?? 0
 	}
 
 	/** The total to pay: the held amount once held, else price × count. */
 	public get total(): number {
-		return this.reservation?.amount ?? this.price * this.ticketCount
+		return this.checkout?.amount ?? this.price * this.ticketCount
 	}
 
 	/** A yen amount with thousands separators, e.g. "6,000". */
@@ -237,8 +304,8 @@ export class CheckoutRoute implements IRouteViewModel {
 
 	/** Seconds left on the hold, never below 0. */
 	public get secondsLeft(): number {
-		if (!this.reservation) return 0
-		const ms = this.reservation.holdExpireTime.getTime() - this.now
+		if (!this.checkout) return 0
+		const ms = this.checkout.holdExpireTime.getTime() - this.now
 		return Math.max(0, Math.ceil(ms / 1000))
 	}
 
@@ -260,8 +327,23 @@ export class CheckoutRoute implements IRouteViewModel {
 		return this.fullName.trim().length > 0 && this.phoneE164 !== null
 	}
 
-	private get identity(): HolderIdentity {
-		return { fullName: this.fullName.trim(), phoneNumber: this.phoneE164 ?? '' }
+	/**
+	 * Authorize the hold with the full name and phone number, which the
+	 * server saves on the fan's User; keep the User in step so the next
+	 * screen prefills them.
+	 */
+	private async authorizeHold(checkoutId: string): Promise<string> {
+		const fullName = this.fullName.trim()
+		const phoneNumber = this.phoneE164 ?? ''
+		const secret = await this.checkoutClient.authorize(
+			checkoutId,
+			fullName,
+			phoneNumber,
+			this.signal,
+		)
+		const user = this.userStore.current
+		if (user) this.userStore.current = { ...user, fullName, phoneNumber }
+		return secret
 	}
 
 	private get lang(): string {
@@ -307,16 +389,16 @@ export class CheckoutRoute implements IRouteViewModel {
 		this.busy = true
 		this.message = null
 		try {
-			const reservation = await this.reservationClient.start(
-				this.sale.id,
+			const checkout = await this.checkoutClient.start(
+				this.sale.ticketType.id,
 				this.ticketCount,
 				this.signal,
 			)
 			// A new count means a new hold and a new amount: the card is
 			// authorized again for it.
-			if (reservation.id !== this.reservation?.id) this.forgetCard()
-			this.holdWith(reservation)
-			saveCheckoutReservation(this.eventId, reservation.id)
+			if (checkout.id !== this.checkout?.id) this.forgetCard()
+			this.holdWith(checkout)
+			saveCheckoutId(this.eventId, checkout.id)
 			this.step = 'identity'
 		} catch (err) {
 			if (this.signal?.aborted) return
@@ -326,9 +408,9 @@ export class CheckoutRoute implements IRouteViewModel {
 		}
 	}
 
-	private holdWith(reservation: Reservation): void {
-		this.reservation = reservation
-		this.ticketCount = reservation.ticketCount
+	private holdWith(checkout: Checkout): void {
+		this.checkout = checkout
+		this.ticketCount = checkout.ticketCount
 		this.startCountdown()
 	}
 
@@ -339,32 +421,50 @@ export class CheckoutRoute implements IRouteViewModel {
 			this.message = { key: 'checkout.count.allHeld' }
 			return
 		}
+		if (
+			code === Code.FailedPrecondition &&
+			(await this.lacksVerification(this.signal))
+		) {
+			// The fan's Kyc does not meet the sale's requirement (none, or it
+			// is no longer Active): that, not a limit, is why Start failed.
+			if (this.signal?.aborted) return
+			this.message = null
+			this.step = 'verify-required'
+			return
+		}
 		if (code === Code.FailedPrecondition || code === Code.InvalidArgument) {
 			// The sale may have ended, sold out or been cancelled since the page
 			// opened; otherwise the per-account limit was reached.
+			const saleId = this.sale?.id
 			const sale = await this.saleClient
-				.get(this.eventId, this.signal)
+				.listByEvent(this.eventId, this.signal)
+				.then((sales) => sales.find((s) => s.id === saleId) ?? null)
 				.catch(() => this.sale)
 			if (!sale) {
 				this.message = { key: 'checkout.count.cancelled' }
-			} else if (!isBuyable(sale)) {
+			} else if (!isBuyable(sale.ticketType)) {
 				this.sale = sale
 				this.message = {
 					key:
-						sale.state === 'soldOut'
+						sale.ticketType.state === 'soldOut'
 							? 'checkout.count.soldOut'
 							: 'checkout.count.ended',
 				}
 			} else {
 				this.message = {
 					key: 'checkout.count.limit',
-					params: { limit: sale.perAccountLimit },
+					params: { limit: sale.ticketType.perAccountLimit },
 				}
 			}
 			return
 		}
 		this.logger.error('Start failed', { error: err })
 		this.message = { key: 'checkout.error.retry' }
+	}
+
+	/** From the verification gate: verification lives on the Settings screen. */
+	public async goToVerify(): Promise<void> {
+		await this.router.load('/settings')
 	}
 
 	// ── Step 2: 本人確認 ───────────────────────────────────────────────────────
@@ -376,7 +476,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	 * confirmation.
 	 */
 	public async toPayment(): Promise<void> {
-		if (!this.isIdentityValid || this.busy || !this.reservation) return
+		if (!this.isIdentityValid || this.busy || !this.checkout) return
 		this.message = null
 		if (this.card) {
 			await this.reauthorize()
@@ -398,14 +498,10 @@ export class CheckoutRoute implements IRouteViewModel {
 	}
 
 	private async reauthorize(): Promise<void> {
-		if (!this.reservation) return
+		if (!this.checkout) return
 		this.busy = true
 		try {
-			await this.reservationClient.authorize(
-				this.reservation.id,
-				this.identity,
-				this.signal,
-			)
+			await this.authorizeHold(this.checkout.id)
 			this.step = 'confirm'
 		} catch (err) {
 			if (this.signal?.aborted) return
@@ -442,7 +538,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	 * authentication in the page. Nothing is charged until the order is placed.
 	 */
 	public async authorize(): Promise<void> {
-		if (this.busy || !this.stripeHandles || !this.reservation) return
+		if (this.busy || !this.stripeHandles || !this.checkout) return
 		this.busy = true
 		this.message = null
 		this.cardError = ''
@@ -453,11 +549,7 @@ export class CheckoutRoute implements IRouteViewModel {
 				this.cardError = read.errorMessage ?? ''
 				return
 			}
-			this.clientSecret = await this.reservationClient.authorize(
-				this.reservation.id,
-				this.identity,
-				this.signal,
-			)
+			this.clientSecret = await this.authorizeHold(this.checkout.id)
 			const confirmed = await this.stripe.confirmCheckoutHold(
 				stripe,
 				this.clientSecret,
@@ -508,12 +600,12 @@ export class CheckoutRoute implements IRouteViewModel {
 
 	/** Place the order once; on failure, say what became of the checkout. */
 	public async placeOrder(): Promise<void> {
-		if (this.busy || !this.reservation) return
+		if (this.busy || !this.checkout) return
 		this.busy = true
 		this.message = null
 		try {
-			await this.reservationClient.confirm(this.reservation.id, this.signal)
-			clearCheckoutReservation(this.eventId)
+			await this.checkoutClient.confirm(this.checkout.id, this.signal)
+			clearCheckoutId(this.eventId)
 			this.stopCountdown()
 			this.step = 'done'
 		} catch (err) {
@@ -526,14 +618,11 @@ export class CheckoutRoute implements IRouteViewModel {
 	}
 
 	private async explainOrderFailure(): Promise<void> {
-		if (!this.reservation) return
+		if (!this.checkout) return
 		try {
-			const r = await this.reservationClient.get(
-				this.reservation.id,
-				this.signal,
-			)
-			this.reservation = r
-			this.outcome = outcomeOf(r)
+			const c = await this.checkoutClient.get(this.checkout.id, this.signal)
+			this.checkout = c
+			this.outcome = outcomeOf(c)
 		} catch (err) {
 			this.logger.warn('Reading the checkout failed', { error: err })
 			this.outcome = 'completing'
@@ -557,14 +646,14 @@ export class CheckoutRoute implements IRouteViewModel {
 	 * newer one, which the fan can still go to.
 	 */
 	private forgetStoredCheckout(): void {
-		if (loadCheckoutReservation(this.eventId) === this.reservation?.id) {
-			clearCheckoutReservation(this.eventId)
+		if (loadCheckoutId(this.eventId) === this.checkout?.id) {
+			clearCheckoutId(this.eventId)
 		}
 	}
 
 	/** Go to the newer checkout that replaced this one. */
 	public goToNewerCheckout(): void {
-		this.reservation = null
+		this.checkout = null
 		this.outcome = null
 		this.forgetCard()
 		void this.load()
@@ -573,7 +662,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	/** Start the checkout again from the count. */
 	public startAgain(): void {
 		this.forgetStoredCheckout()
-		this.reservation = null
+		this.checkout = null
 		this.outcome = null
 		this.message = null
 		this.forgetCard()
@@ -610,13 +699,27 @@ export class CheckoutRoute implements IRouteViewModel {
 	}
 }
 
+/**
+ * The event's first-come sale: of its first-come sales, the open one,
+ * otherwise the next to open, otherwise the last that ended.
+ */
+export function firstComeSale(
+	sales: readonly TicketSale[],
+	now: Date = new Date(),
+): TicketSale | null {
+	return currentSale(
+		sales.filter((s) => s.method === 'firstCome'),
+		now,
+	)
+}
+
 /** What became of a checkout whose order could not be placed. */
-export function outcomeOf(r: Reservation): CheckoutOutcome {
-	switch (r.status) {
+export function outcomeOf(c: Checkout): CheckoutOutcome {
+	switch (c.status) {
 		case 'expired':
 			return 'hold-ended'
 		case 'released':
-			return r.commitTime ? 'charge-failed' : 'replaced'
+			return c.commitTime ? 'charge-failed' : 'replaced'
 		case 'held':
 			return 'authentication-incomplete'
 		default:

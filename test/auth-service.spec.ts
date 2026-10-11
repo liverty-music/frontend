@@ -215,6 +215,65 @@ describe('AuthService', () => {
 		await expect(sut.handleCallback()).rejects.toThrow(/no user/)
 	})
 
+	// Account switch (unify-ticket-sales design D15): a sign-in for another
+	// account than the one stored on this device clears the previous account's
+	// client state, the same way a sign-out does.
+	const buildSutWithPublish = async () => {
+		const publish = vi.fn()
+		const container = createTestContainer(
+			Registration.instance(IEventAggregator, {
+				publish,
+				subscribe: vi.fn(),
+			}),
+		)
+		container.register(AuthService)
+		const s = container.get(IAuthService)
+		await s.ready
+		return { s, publish }
+	}
+
+	it('handleCallback publishes SignedOut when the signed-in account differs from the stored one', async () => {
+		const { s, publish } = await buildSutWithPublish()
+		userManagerMock.getUser.mockResolvedValueOnce({
+			expired: true,
+			profile: { sub: 'account-a' },
+		})
+		userManagerMock.signinCallback.mockResolvedValueOnce({
+			profile: { sub: 'account-b', preferred_username: 'b' },
+		})
+
+		await s.handleCallback()
+
+		expect(publish).toHaveBeenCalledTimes(1)
+		expect(publish.mock.calls[0][0].constructor.name).toBe('SignedOut')
+	})
+
+	it('handleCallback keeps the state when the same account signs in again', async () => {
+		const { s, publish } = await buildSutWithPublish()
+		userManagerMock.getUser.mockResolvedValueOnce({
+			expired: true,
+			profile: { sub: 'account-a' },
+		})
+		userManagerMock.signinCallback.mockResolvedValueOnce({
+			profile: { sub: 'account-a', preferred_username: 'a' },
+		})
+
+		await s.handleCallback()
+
+		expect(publish).not.toHaveBeenCalled()
+	})
+
+	it('handleCallback keeps the state on a first sign-in (no stored account)', async () => {
+		const { s, publish } = await buildSutWithPublish()
+		userManagerMock.signinCallback.mockResolvedValueOnce({
+			profile: { sub: 'account-a', preferred_username: 'a' },
+		})
+
+		await s.handleCallback()
+
+		expect(publish).not.toHaveBeenCalled()
+	})
+
 	// --- graceful-session-reauth additions ------------------------------------
 
 	afterEach(() => {

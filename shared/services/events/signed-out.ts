@@ -1,6 +1,8 @@
 /**
  * Published on the sign-out path, before the OIDC sign-out redirect, so every
- * store can self-clear while the app is still alive.
+ * store can self-clear while the app is still alive. Also published on an
+ * account switch (a sign-in callback for an account other than the one stored
+ * on this device), before the new account's state loads.
  *
  * Each store subscribes and clears its own state independently — clearing is
  * idempotent and order-independent, so there is no orchestrator and no

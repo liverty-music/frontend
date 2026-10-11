@@ -4,6 +4,7 @@ import { admissionQrDataUrl } from '../../../shared/lib/admission-code/qr-svg'
 import { IScreenWakeLock } from '../../adapter/browser/screen-wake-lock'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
 import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
+import { toDomesticDisplay } from '../../lib/to-e164'
 import {
 	type DeviceReadiness,
 	ITicketWallet,
@@ -21,6 +22,7 @@ import {
 	groupByEvent,
 	presentedTickets,
 	type WalletEventGroup,
+	type WalletHolder,
 	type WalletSnapshot,
 	type WalletTicket,
 	walletTicketFromProto,
@@ -79,6 +81,8 @@ export class TicketsRoute {
 	public offline = false
 	/** When the saved list was loaded, when `offline`. */
 	public savedAt: Date | null = null
+	/** The holder saved with the list last shown from the device. */
+	private savedHolder: WalletHolder | null = null
 
 	// ── Device state ─────────────────────────────────────────────────────────
 	public device: DeviceState = 'checking'
@@ -146,11 +150,9 @@ export class TicketsRoute {
 		this.groups = live
 		this.offline = false
 		this.savedAt = null
+		this.savedHolder = saved?.holder ?? null
 		this.step = live.length === 0 ? 'empty' : 'loaded'
-		void this.wallet.saveSnapshot<WalletSnapshot>({
-			savedAt: new Date(),
-			groups: live,
-		})
+		this.saveSnapshot()
 
 		const check = await this.wallet.checkDevice(true, signal)
 		if (signal.aborted) return
@@ -194,7 +196,31 @@ export class TicketsRoute {
 		this.groups = [...saved.groups]
 		this.offline = true
 		this.savedAt = saved.savedAt
+		this.savedHolder = saved.holder ?? null
 		this.step = saved.groups.length === 0 ? 'empty' : 'loaded'
+	}
+
+	/**
+	 * The eligible person on every ticket face: the fan's full name and phone
+	 * number as their User records them now, or, before the User is read
+	 * (offline), as they were saved with the list.
+	 */
+	public get holder(): WalletHolder | null {
+		const user = this.userStore.current
+		if (!user) return this.savedHolder
+		return {
+			fullName: user.fullName ?? '',
+			phoneNumber: user.phoneNumber ?? '',
+		}
+	}
+
+	private saveSnapshot(): void {
+		const holder = this.holder
+		void this.wallet.saveSnapshot<WalletSnapshot>({
+			savedAt: new Date(),
+			groups: this.groups,
+			...(holder ? { holder } : {}),
+		})
 	}
 
 	// ── Entry device ─────────────────────────────────────────────────────────
@@ -303,7 +329,7 @@ export class TicketsRoute {
 			return Promise.reject(new Error('no ticket to present'))
 		}
 		return this.wallet.signCode({
-			userId: holder.holderId,
+			userId: holder.userId,
 			eventId: group.eventId,
 			ticketIds,
 			signTime,
@@ -349,10 +375,7 @@ export class TicketsRoute {
 		}))
 		this.offline = false
 		this.savedAt = null
-		void this.wallet.saveSnapshot<WalletSnapshot>({
-			savedAt: new Date(),
-			groups: this.groups,
-		})
+		this.saveSnapshot()
 
 		if (this.codeGroup) {
 			const eventId = this.codeGroup.eventId
@@ -372,6 +395,13 @@ export class TicketsRoute {
 	/** The ticket's 1-based position within its event, as shown on its card. */
 	public ticketNumber(group: WalletEventGroup, ticket: WalletTicket): number {
 		return group.tickets.findIndex((t) => t.id === ticket.id) + 1
+	}
+
+	/** The holder's phone number as a fan in Japan writes it. */
+	public get holderPhone(): string {
+		return this.holder?.phoneNumber
+			? toDomesticDisplay(this.holder.phoneNumber)
+			: ''
 	}
 
 	public stateLabel(ticket: WalletTicket): string {

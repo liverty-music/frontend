@@ -16,7 +16,7 @@ import {
 } from '../../src/adapter/rpc/client/concert-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import type { Artist } from '../../src/entities/artist'
-import type { TicketSale } from '../../src/entities/ticket-sale'
+import type { TicketSale, TicketType } from '../../src/entities/ticket-sale'
 import { EventRoute } from '../../src/routes/event/event-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { IFollowStore } from '../../src/services/follow-store'
@@ -121,7 +121,7 @@ describe('EventRoute', () => {
 	let follow: ReturnType<typeof makeFollowStore>
 	let purchased: ReturnType<typeof makePurchasedStore>
 	let userStore: { currentLanguage: string }
-	let ticketSaleClient: { get: ReturnType<typeof vi.fn> }
+	let ticketSaleClient: { listByEvent: ReturnType<typeof vi.fn> }
 
 	function build(): EventRoute {
 		const container = createTestContainer(
@@ -154,7 +154,7 @@ describe('EventRoute', () => {
 		follow = makeFollowStore()
 		purchased = makePurchasedStore()
 		userStore = { currentLanguage: 'ja' }
-		ticketSaleClient = { get: vi.fn().mockResolvedValue(null) }
+		ticketSaleClient = { listByEvent: vi.fn().mockResolvedValue([]) }
 	})
 
 	afterEach(() => {
@@ -398,35 +398,73 @@ describe('EventRoute', () => {
 	})
 
 	describe('sale', () => {
-		function sale(o: Partial<TicketSale> = {}): TicketSale {
+		/** A first-come sale of the event, open from 1 to 20 November. */
+		function sale(
+			t: Partial<TicketType> = {},
+			o: Partial<TicketSale> = {},
+		): TicketSale {
 			return {
 				id: 'sale-1',
-				eventId: EVENT_ID,
+				name: '一般発売',
+				method: 'firstCome',
 				saleStart: jst(1, 10),
 				saleEnd: jst(20, 18),
-				price: 3000,
-				perAccountLimit: 4,
-				state: 'onSale',
-				lowStock: false,
+				verificationRequirement: 'none',
+				ticketType: {
+					id: 'type-1',
+					eventId: EVENT_ID,
+					price: 3000,
+					perAccountLimit: 4,
+					state: 'onSale',
+					lowStock: false,
+					...t,
+				},
 				...o,
 			}
 		}
 
-		it('shows the price and few left without a count, with an action to buy', async () => {
-			// @spec components/infrastructure/fan/web/route/event "On sale with few left"
-			ticketSaleClient.get.mockResolvedValue(sale({ lowStock: true }))
+		/** A lottery presale of the event, open from 1 to 10 November. */
+		function presale(o: Partial<TicketSale> = {}): TicketSale {
+			return sale(
+				{ id: 'presale-type', price: 8000, state: 'ended' },
+				{
+					id: 'presale',
+					name: 'ファンクラブ先行',
+					method: 'lottery',
+					saleStart: jst(1, 10),
+					saleEnd: jst(10, 23),
+					...o,
+				},
+			)
+		}
+
+		it('reads the sales of the event', async () => {
 			const sut = build()
 			await open(sut)
 
-			expect(sut.shownSale?.state).toBe('onSale')
-			expect(sut.shownSale?.lowStock).toBe(true)
+			expect(ticketSaleClient.listByEvent).toHaveBeenCalledWith(
+				EVENT_ID,
+				expect.anything(),
+			)
+		})
+
+		it('shows the price and few left without a count, with an action to buy', async () => {
+			// @spec components/infrastructure/fan/web/route/event "On sale with few left"
+			ticketSaleClient.listByEvent.mockResolvedValue([sale({ lowStock: true })])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale?.ticketType.state).toBe('onSale')
+			expect(sut.shownSale?.ticketType.lowStock).toBe(true)
 			expect(sut.salePrice).toBe('3,000')
-			expect(Object.keys(sut.shownSale ?? {})).not.toContain('quantity')
+			expect(Object.keys(sut.shownSale?.ticketType ?? {})).not.toContain(
+				'quantity',
+			)
 		})
 
 		it('starts sign-up from the action to buy and returns to the Event page', async () => {
 			// @spec components/infrastructure/fan/web/route/event "Guest buys"
-			ticketSaleClient.get.mockResolvedValue(sale())
+			ticketSaleClient.listByEvent.mockResolvedValue([sale()])
 			const sut = build()
 			await open(sut)
 			expect(sut.isGuest).toBe(true)
@@ -441,7 +479,7 @@ describe('EventRoute', () => {
 
 		it('leads a signed-in fan to the checkout', async () => {
 			auth = createMockAuth({ isAuthenticated: true })
-			ticketSaleClient.get.mockResolvedValue(sale())
+			ticketSaleClient.listByEvent.mockResolvedValue([sale()])
 			const sut = build()
 			await open(sut)
 
@@ -450,38 +488,107 @@ describe('EventRoute', () => {
 
 		it('shows the opening date and time in Japan time before the sale opens', async () => {
 			// @spec components/infrastructure/fan/web/route/event "Not yet on sale"
-			ticketSaleClient.get.mockResolvedValue(
-				sale({ state: 'notYetOnSale', saleStart: jst(1, 10) }),
-			)
+			ticketSaleClient.listByEvent.mockResolvedValue([
+				sale({ state: 'notYetOnSale' }, { saleStart: jst(1, 13) }),
+			])
 			const sut = build()
 			await open(sut)
 
-			expect(sut.shownSale?.state).toBe('notYetOnSale')
-			expect(sut.saleStartLabel).toBe('2026年11月1日(日) 10:00')
+			expect(sut.shownSale?.ticketType.state).toBe('notYetOnSale')
+			expect(sut.saleStartLabel).toBe('2026年11月1日(日) 13:00')
 		})
 
 		it('shows sold out with the note while every ticket is in a checkout', async () => {
 			// @spec components/infrastructure/fan/web/route/event "Temporarily all held"
-			ticketSaleClient.get.mockResolvedValue(sale({ state: 'allHeld' }))
+			ticketSaleClient.listByEvent.mockResolvedValue([
+				sale({ state: 'allHeld' }),
+			])
 			const sut = build()
 			await open(sut)
 
-			expect(sut.shownSale?.state).toBe('allHeld')
+			expect(sut.shownSale?.ticketType.state).toBe('allHeld')
 		})
 
-		it('offers nothing for sale on a cancelled concert', async () => {
-			concertClient.get.mockResolvedValue(
-				protoConcert({ state: PublishState.CANCELLED }),
+		it('shows the upcoming general sale once the presale has ended', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Presale over, general sale upcoming"
+			vi.setSystemTime(jst(15, 12))
+			ticketSaleClient.listByEvent.mockResolvedValue([
+				presale(),
+				sale(
+					{ state: 'notYetOnSale' },
+					{ saleStart: jst(20, 10), saleEnd: jst(20, 18) },
+				),
+			])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale?.name).toBe('一般発売')
+			expect(sut.saleStartLabel).toBe('2026年11月20日(金) 10:00')
+		})
+
+		it('shows an open lottery with its window, price and the action to enter', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Lottery open"
+			auth = createMockAuth({ isAuthenticated: true })
+			ticketSaleClient.listByEvent.mockResolvedValue([presale()])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale?.name).toBe('ファンクラブ先行')
+			expect(sut.saleStartLabel).toBe('2026年11月1日(日) 10:00')
+			expect(sut.saleEndLabel).toBe('2026年11月10日(火) 23:00')
+			expect(sut.salePrice).toBe('8,000')
+			expect(sut.isLotteryOpen).toBe(true)
+			expect(sut.lotteryEntryUrl).toBe(
+				`/events/${EVENT_ID}/lottery/presale-type`,
 			)
-			ticketSaleClient.get.mockResolvedValue(sale())
+		})
+
+		it('offers no action to enter outside the lottery window', async () => {
+			vi.setSystemTime(jst(11, 12))
+			ticketSaleClient.listByEvent.mockResolvedValue([presale()])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale?.method).toBe('lottery')
+			expect(sut.isLotteryOpen).toBe(false)
+			expect(sut.isLotteryEnded).toBe(true)
+		})
+
+		it('shows the general sale as ended once every sale has ended', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Every sale ended"
+			vi.setSystemTime(jst(20, 18, 30))
+			ticketSaleClient.listByEvent.mockResolvedValue([
+				presale(),
+				sale({ state: 'ended' }, { saleStart: jst(15, 10) }),
+			])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale?.name).toBe('一般発売')
+			expect(sut.shownSale?.ticketType.state).toBe('ended')
+		})
+
+		it('shows no sale when no sale offers the event', async () => {
+			// @spec components/infrastructure/fan/web/route/event "No sale"
 			const sut = build()
 			await open(sut)
 
 			expect(sut.shownSale).toBeNull()
 		})
 
-		it('falls back to the sign-up hint when the sale cannot be read', async () => {
-			ticketSaleClient.get.mockRejectedValue(new Error('unavailable'))
+		it('offers nothing for sale on a cancelled concert', async () => {
+			concertClient.get.mockResolvedValue(
+				protoConcert({ state: PublishState.CANCELLED }),
+			)
+			ticketSaleClient.listByEvent.mockResolvedValue([sale()])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale).toBeNull()
+		})
+
+		it('falls back to the sign-up hint when the sales cannot be read', async () => {
+			ticketSaleClient.listByEvent.mockRejectedValue(new Error('unavailable'))
 			const sut = build()
 			await open(sut)
 

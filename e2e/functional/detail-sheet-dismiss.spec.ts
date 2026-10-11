@@ -23,7 +23,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 	await page.route('**/liverty_music.rpc.**', (route) => {
 		const url = route.request().url()
 
-		// ListByArtists (check before ListByFollower/List)
+		// ListByArtists (check before ListFollowed/ListByArtist)
 		if (url.includes('ListByArtists')) {
 			return route.fulfill({
 				status: 200,
@@ -64,7 +64,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListByFollower')) {
+		if (url.includes('ConcertService/ListFollowed')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',
@@ -137,7 +137,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			})
 		}
 
-		if (url.includes('ListFollowed')) {
+		if (url.includes('FollowService/List')) {
 			return route.fulfill({
 				status: 200,
 				contentType: 'application/json',

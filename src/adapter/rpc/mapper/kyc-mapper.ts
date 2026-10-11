@@ -1,25 +1,26 @@
-import { VerificationLevel as ProtoVerificationLevel } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
 import {
 	DedupeStrength as ProtoDedupeStrength,
+	type Kyc as ProtoKyc,
 	VerificationMethod as ProtoVerificationMethod,
 	VerificationStatus as ProtoVerificationStatus,
-	type VerifiedIdentity as ProtoVerifiedIdentity,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/verified_identity_pb.js'
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/kyc_pb.js'
+import { VerificationLevel as ProtoVerificationLevel } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/user_pb.js'
+import { timestampMs } from '@bufbuild/protobuf/wkt'
 import type {
 	DedupeStrength,
+	Kyc,
 	VerificationLevel,
 	VerificationMethod,
 	VerificationStatus,
-	VerifiedIdentity,
-} from '../../../entities/verified-identity'
+} from '../../../entities/kyc'
 
 /**
- * Wire ⇄ domain mapping for the identity-ekyc verification result. Mirrors
- * `ticket-journey-mapper`: the RPC boundary is the only place the generated
- * numeric proto enums are touched; the domain layer sees string-literal unions.
+ * Wire ⇄ domain mapping for the fan's Kyc. Mirrors `ticket-journey-mapper`: the
+ * RPC boundary is the only place the generated numeric proto enums are
+ * touched; the domain layer sees string-literal unions.
  *
  * The `*To` direction (domain → proto) is provided for `VerificationMethod`
- * because `startVerify(method)` sends it up; the other enums are output-only
+ * because `KycService.Start` sends it up; the other enums are output-only
  * (server-owned) so they only need the `*From` direction.
  */
 
@@ -45,12 +46,12 @@ const statusFromProto: Record<number, VerificationStatus | undefined> = {
 
 const levelFromProto: Record<number, VerificationLevel> = {
 	[ProtoVerificationLevel.UNVERIFIED]: 'unverified',
-	[ProtoVerificationLevel.IDENTITY_VERIFIED]: 'identityVerified',
+	[ProtoVerificationLevel.KYC_VERIFIED]: 'kycVerified',
 }
 
 /**
  * Map the account verification level. Anything other than a concrete
- * `IDENTITY_VERIFIED` (UNSPECIFIED, UNVERIFIED, or an unknown future value)
+ * `KYC_VERIFIED` (UNSPECIFIED, UNVERIFIED, or an unknown future value)
  * degrades safely to `unverified` — the client must never render an
  * unrecognized level as verified.
  */
@@ -68,21 +69,19 @@ export function verificationMethodTo(
 }
 
 /**
- * Map a `VerifiedIdentity` proto to the domain shape. Returns `undefined` when
- * the message is absent or carries an unrecognized/unspecified method, dedupe
- * strength, or status — the caller then treats the account as unverified rather
- * than surfacing a half-populated record.
+ * Map a `Kyc` proto to the domain shape. Returns `undefined` when the message
+ * is absent or carries an unrecognized/unspecified method, dedupe strength, or
+ * status — the caller then treats the account as unverified rather than
+ * surfacing a half-populated record.
  */
-export function verifiedIdentityFrom(
-	proto: ProtoVerifiedIdentity | undefined,
-): VerifiedIdentity | undefined {
+export function kycFrom(proto: ProtoKyc | undefined): Kyc | undefined {
 	if (!proto) return undefined
 
 	const method = methodFromProto[proto.method]
 	const dedupeStrength = dedupeFromProto[proto.dedupeStrength]
 	const status = statusFromProto[proto.status]
 	const id = proto.id?.value
-	const accountRef = proto.accountRef?.value
+	const userId = proto.userId?.value
 	const pocketSignUserId = proto.pocketSignUserId?.value
 
 	if (
@@ -90,7 +89,7 @@ export function verifiedIdentityFrom(
 		!dedupeStrength ||
 		!status ||
 		!id ||
-		!accountRef ||
+		!userId ||
 		!pocketSignUserId
 	) {
 		return undefined
@@ -98,14 +97,11 @@ export function verifiedIdentityFrom(
 
 	return {
 		id,
-		accountRef,
+		userId,
 		method,
 		pocketSignUserId,
 		dedupeStrength,
 		status,
-		// Timestamp is seconds (bigint) + nanos; millis is enough for display.
-		verifiedAt: proto.verifyTime
-			? Number(proto.verifyTime.seconds) * 1000
-			: undefined,
+		verifiedAt: proto.verifyTime ? timestampMs(proto.verifyTime) : undefined,
 	}
 }

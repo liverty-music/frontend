@@ -2,8 +2,8 @@ import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import type { CompleteOutcome } from '../../services/identity-verification-service'
-import { IIdentityVerificationService } from '../../services/identity-verification-service'
+import type { CompleteOutcome } from '../../services/kyc-service'
+import { IKycService } from '../../services/kyc-service'
 
 /**
  * Callback route for the PocketSign Stamp redirect flow (identity-ekyc-jpki,
@@ -14,7 +14,7 @@ import { IIdentityVerificationService } from '../../services/identity-verificati
  * creates the session with callbackWithSessionId=false (per the official
  * PocketSign reference flow), so the session id is read from the service's own
  * persisted storage, not the URL. This route:
- *   1. Calls `identityService.completeFromCallback()` in the `loading()` hook,
+ *   1. Calls `kyc.completeFromCallback()` in the `loading()` hook,
  *      which reads the persisted session id and finalizes the Stamp session.
  *   2. Shows a brief success or failure message.
  *   3. Navigates back to `/settings` automatically (historyStrategy: 'replace'
@@ -24,14 +24,14 @@ import { IIdentityVerificationService } from '../../services/identity-verificati
  * Registered in `app-shell.ts` WITHOUT `data: { auth: false }` — the fan is
  * authenticated when they return from the PocketSign app.
  *
- * Error taxonomy (ConnectError codes from CompleteVerify):
+ * Error taxonomy (ConnectError codes from KycService.Create):
  * - UNAVAILABLE: backend PocketSign service not yet configured (Section 0 stub).
  * - FAILED_PRECONDITION: session not yet completed, expired, or signature mismatch.
- * - ALREADY_EXISTS: person already has an IDENTITY_VERIFIED account.
+ * - ALREADY_EXISTS: person already has a KYC_VERIFIED account.
  * - PERMISSION_DENIED: session/nonce mismatch (backend anti-replay check).
  */
 export class VerifyCallbackRoute {
-	private readonly identity = resolve(IIdentityVerificationService)
+	private readonly kyc = resolve(IKycService)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('VerifyCallbackRoute')
 
@@ -42,7 +42,7 @@ export class VerifyCallbackRoute {
 	private readonly _i18n = resolve(I18N)
 
 	/**
-	 * Whether the CompleteVerify RPC is in flight. Drives the progress indicator in
+	 * Whether the KycService.Create RPC is in flight. Drives the progress indicator in
 	 * the template. Named `isPending` (not `loading`) to avoid clashing with the
 	 * Aurelia router lifecycle hook of the same name.
 	 */
@@ -88,12 +88,12 @@ export class VerifyCallbackRoute {
 		this.outcome = undefined
 
 		this.logger.info('Verify callback: finalizing Stamp session')
-		const outcome = await this.identity.completeFromCallback()
+		const outcome = await this.kyc.completeFromCallback()
 		this.outcome = outcome
 		this.isPending = false
 
 		if (outcome.kind === 'verified') {
-			this.logger.info('Verify callback: identity verified successfully')
+			this.logger.info('Verify callback: KYC passed')
 		} else {
 			this.logger.warn('Verify callback: finalization failed', { outcome })
 		}
@@ -107,7 +107,7 @@ export class VerifyCallbackRoute {
 	}
 
 	/**
-	 * Map a ConnectError (or any unknown error) from CompleteVerify to an i18n
+	 * Map a ConnectError (or any unknown error) from KycService.Create to an i18n
 	 * key. Falls back to the generic key for unrecognized errors so the UI always
 	 * shows something actionable rather than a bare error object.
 	 */
@@ -121,7 +121,7 @@ export class VerifyCallbackRoute {
 					// Session not completed, expired, or verification result invalid.
 					return 'verifyCallback.error.notCompleted'
 				case Code.AlreadyExists:
-					// This person already has an IDENTITY_VERIFIED account.
+					// This person already has a KYC_VERIFIED account.
 					return 'verifyCallback.error.alreadyVerified'
 				case Code.PermissionDenied:
 					// Anti-redirect nonce mismatch validated by the backend.

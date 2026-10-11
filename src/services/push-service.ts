@@ -131,16 +131,13 @@ export class PushServiceClient {
 	}
 
 	/**
-	 * Checks whether the backend has the current browser's subscription on file.
-	 * Returns `true` when the `(userId, endpoint)` pair resolves to a row,
-	 * `false` when the backend returns `NOT_FOUND`. Any other error is rethrown.
+	 * Checks whether the backend has the current browser's subscription on file
+	 * for the signed-in caller. Returns `false` when the backend answers
+	 * `NOT_FOUND`. Any other error is rethrown.
 	 */
-	public async existsOnBackend(
-		userId: string,
-		endpoint: string,
-	): Promise<boolean> {
+	public async existsOnBackend(endpoint: string): Promise<boolean> {
 		try {
-			await this.rpcClient.get(userId, endpoint)
+			await this.rpcClient.get(endpoint)
 			return true
 		} catch (err) {
 			if (err instanceof ConnectError && err.code === Code.NotFound) {
@@ -178,8 +175,13 @@ export class PushServiceClient {
 	 * The auto re-subscribe is gated on the state check (`getSubscription()` null
 	 * AND permission granted) so it runs once per actual loss, not on every
 	 * navigation.
+	 *
+	 * `accountLoaded` is true for a signed-in fan whose User is loaded; only then
+	 * is the backend asked whether it still has the browser's subscription.
 	 */
-	public async resolvePushState(userId?: string): Promise<PushRecoveryState> {
+	public async resolvePushState(
+		accountLoaded: boolean,
+	): Promise<PushRecoveryState> {
 		if (this.notificationManager.permission !== 'granted') {
 			return 'needs-permission'
 		}
@@ -189,8 +191,8 @@ export class PushServiceClient {
 
 			if (browserSub) {
 				// Browser has a subscription. Ensure the backend has the row too.
-				if (userId) {
-					const exists = await this.existsOnBackend(userId, browserSub.endpoint)
+				if (accountLoaded) {
+					const exists = await this.existsOnBackend(browserSub.endpoint)
 					if (!exists) {
 						this.logger.info(
 							'Push subscription exists on browser but not on backend; self-healing via Create',
@@ -222,10 +224,11 @@ export class PushServiceClient {
 
 	/**
 	 * Removes the browser's push subscription and instructs the backend to
-	 * delete the matching `(userId, endpoint)` row. Only this browser is
-	 * affected; other browsers registered by the same user remain active.
+	 * delete the caller's subscription for this browser's endpoint. Only this
+	 * browser is affected; other browsers registered by the same user remain
+	 * active.
 	 */
-	public async delete(userId: string): Promise<void> {
+	public async delete(): Promise<void> {
 		const registration = await this.getRegistration()
 		const subscription = await registration.pushManager.getSubscription()
 
@@ -236,7 +239,7 @@ export class PushServiceClient {
 		const endpoint = subscription.toJSON().endpoint ?? ''
 
 		try {
-			await this.rpcClient.delete(userId, endpoint)
+			await this.rpcClient.delete(endpoint)
 			this.logger.info('Push subscription removed from backend successfully')
 		} catch (err) {
 			this.logger.error('Failed to remove push subscription from backend', err)

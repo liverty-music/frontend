@@ -1,14 +1,4 @@
-import type {
-	ApproveResponse,
-	DuplicateConflict,
-	ExistingEvent,
-	PendingConcert,
-	ResolvedVenue,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert/v1/concert_service_pb.js'
-import {
-	ConcertService,
-	Resolution,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert/v1/concert_service_pb.js'
+import { ConcertService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert/v1/concert_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
@@ -19,15 +9,7 @@ import {
 import { IAuthService } from '../../shared/services/auth-service'
 import { createAdminTransport } from './admin-transport'
 
-export type {
-	ApproveResponse,
-	DuplicateConflict,
-	ExistingEvent,
-	PendingConcert,
-	ResolvedConcert,
-	ResolvedVenue,
-}
-export { Resolution }
+export type { ResolvedConcert }
 
 export const IConcertClient = DI.createInterface<IConcertClient>(
 	'IConcertClient',
@@ -41,11 +23,10 @@ export interface IConcertClient extends ConcertClient {}
  *
  * Mirrors the shape of the consumer's `ConcertRpcClient` (DI-registered
  * interface, logger-scoped, error propagation) but is built entirely from
- * admin/shared modules — it never imports the consumer `src/`. It covers the
- * full admin concert surface: the pending-review queue (list/approve/reject)
- * plus published-catalog management (list/delete). Callers work with the
- * generated messages directly; the wrapper only owns transport construction,
- * request marshalling, logging, and error surfacing.
+ * admin/shared modules — it never imports the consumer `src/`. It covers
+ * published-catalog management (list/delete); the pending-review queue is on
+ * `StagedConcertClient`. The wrapper only owns transport construction, request
+ * marshalling, logging, and error surfacing.
  */
 export class ConcertClient {
 	private readonly logger = resolve(ILogger).scopeTo('ConcertClient')
@@ -81,59 +62,6 @@ export class ConcertClient {
 			await this.client.delete({ eventId: { value: eventId } }, { signal })
 		} catch (err) {
 			this.logger.warn('delete failed', { eventId, error: err })
-			throw err
-		}
-	}
-
-	/** Returns every concert currently awaiting review. */
-	public async listPending(signal?: AbortSignal): Promise<PendingConcert[]> {
-		this.logger.info('Listing pending concerts')
-		try {
-			const response = await this.client.listPending({}, { signal })
-			return response.pendingConcerts
-		} catch (err) {
-			this.logger.warn('listPending failed', { error: err })
-			throw err
-		}
-	}
-
-	/**
-	 * Publishes a pending concert to fans, or — when it duplicates an existing
-	 * event and `resolution` is `UNSPECIFIED` — returns a response carrying a
-	 * `conflict` without mutating state, so the caller can prompt the reviewer and
-	 * re-call with `KEEP_EXISTING` or `ADOPT_STAGED`. Idempotent server-side.
-	 */
-	public async approve(
-		stagedId: string,
-		resolution: Resolution = Resolution.UNSPECIFIED,
-		signal?: AbortSignal,
-	): Promise<ApproveResponse> {
-		this.logger.info('Approving concert', { stagedId, resolution })
-		try {
-			return await this.client.approve(
-				{ stagedId: { value: stagedId }, resolution },
-				{ signal },
-			)
-		} catch (err) {
-			this.logger.warn('approve failed', { stagedId, error: err })
-			throw err
-		}
-	}
-
-	/** Drops a pending concert, recording the reviewer's reason. */
-	public async reject(
-		stagedId: string,
-		reason: string,
-		signal?: AbortSignal,
-	): Promise<void> {
-		this.logger.info('Rejecting concert', { stagedId })
-		try {
-			await this.client.reject(
-				{ stagedId: { value: stagedId }, reason },
-				{ signal },
-			)
-		} catch (err) {
-			this.logger.warn('reject failed', { stagedId, error: err })
 			throw err
 		}
 	}

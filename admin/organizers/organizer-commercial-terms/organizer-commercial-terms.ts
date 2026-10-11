@@ -1,29 +1,32 @@
 import { bindable, ILogger, resolve } from 'aurelia'
 import {
+	type BusinessDetailsInput,
 	IOrganizerClient,
 	type Organizer,
-	type SellerDetailsInput,
 } from '../../services/organizer-client'
 import { toUserMessage } from '../organizer-error-message'
 import {
+	type BusinessDetailsErrors,
 	bpsToPercentText,
-	EMPTY_SELLER_DETAILS,
-	hasSellerDetailsErrors,
+	EMPTY_BUSINESS_DETAILS,
+	hasBusinessDetailsErrors,
+	hasStoredBusinessDetails,
 	parsePercentToBps,
-	type SellerDetailsErrors,
-	toSellerDetailsInput,
-	trimSellerDetails,
-	validateSellerDetails,
+	toBusinessDetailsInput,
+	trimBusinessDetails,
+	validateBusinessDetails,
 } from './commercial-terms-form'
 
 type LoadPhase = 'loading' | 'ready' | 'error'
 
-/** Two-way bound form values for the seller details. */
-type SellerDetailsForm = { -readonly [K in keyof SellerDetailsInput]: string }
+/** Two-way bound form values for the business details. */
+type BusinessDetailsForm = {
+	-readonly [K in keyof BusinessDetailsInput]: string
+}
 
 /**
  * The admin's editor for an Organizer's commercial terms, shown in the
- * Organizer detail pane: the 特商法 seller details (saved as a whole, all five
+ * Organizer detail pane: the 特商法 business details (saved as a whole, all five
  * values required) and the platform fee rate (entered as a percentage with up
  * to two decimals, sent as integer basis points).
  *
@@ -39,14 +42,14 @@ export class OrganizerCommercialTerms {
 	public phase: LoadPhase = 'loading'
 	public loadError = ''
 
-	/** Seller-details form. */
-	public seller: SellerDetailsForm = { ...EMPTY_SELLER_DETAILS }
-	public sellerErrors: SellerDetailsErrors = {}
-	/** Whether the Organizer has stored seller details (its events can go on sale). */
-	public hasSellerDetails = false
-	public savingSeller = false
-	public sellerSaveError = ''
-	public sellerSaved = false
+	/** Business-details form. */
+	public business: BusinessDetailsForm = { ...EMPTY_BUSINESS_DETAILS }
+	public businessErrors: BusinessDetailsErrors = {}
+	/** Whether the Organizer has all business details stored (its events can go on sale). */
+	public hasBusinessDetails = false
+	public savingBusiness = false
+	public businessSaveError = ''
+	public businessSaved = false
 
 	/** Platform-fee-rate form, as percentage text ("5.00"). */
 	public feeRateText = ''
@@ -79,7 +82,7 @@ export class OrganizerCommercialTerms {
 		try {
 			const organizer = await this.requireOrganizer(organizerId)
 			if (seq !== this.loadSeq) return
-			this.applySellerDetails(organizer)
+			this.applyBusinessDetails(organizer)
 			this.applyFeeRate(organizer)
 			this.phase = 'ready'
 		} catch (err) {
@@ -93,36 +96,36 @@ export class OrganizerCommercialTerms {
 		}
 	}
 
-	// --- Seller details -----------------------------------------------------
+	// --- Business details ---------------------------------------------------
 
-	public async saveSellerDetails(): Promise<void> {
-		if (this.savingSeller) return
+	public async saveBusinessDetails(): Promise<void> {
+		if (this.savingBusiness) return
 		const organizerId = this.organizerId
-		const details = trimSellerDetails(this.seller)
-		this.sellerSaved = false
-		this.sellerSaveError = ''
-		const errors = validateSellerDetails(details)
-		this.sellerErrors = errors
-		if (hasSellerDetailsErrors(errors)) return
+		const details = trimBusinessDetails(this.business)
+		this.businessSaved = false
+		this.businessSaveError = ''
+		const errors = validateBusinessDetails(details)
+		this.businessErrors = errors
+		if (hasBusinessDetailsErrors(errors)) return
 
-		this.savingSeller = true
+		this.savingBusiness = true
 		try {
-			const organizer = await this.client.updateSellerDetails(
+			const organizer = await this.client.setBusinessDetails(
 				organizerId,
 				details,
 			)
 			const stored = await this.requireOrganizer(organizerId, organizer)
 			if (organizerId !== this.organizerId) return
-			this.applySellerDetails(stored)
-			this.sellerSaved = true
+			this.applyBusinessDetails(stored)
+			this.businessSaved = true
 		} catch (err) {
-			this.sellerSaveError = toUserMessage(
+			this.businessSaveError = toUserMessage(
 				err,
-				'Failed to save the seller details.',
+				'Failed to save the business details.',
 			)
-			this.logger.error('Update seller details failed', { organizerId, err })
+			this.logger.error('Set business details failed', { organizerId, err })
 		} finally {
-			this.savingSeller = false
+			this.savingBusiness = false
 		}
 	}
 
@@ -181,10 +184,10 @@ export class OrganizerCommercialTerms {
 		return organizer
 	}
 
-	private applySellerDetails(organizer: Organizer): void {
-		this.seller = toSellerDetailsInput(organizer.sellerDetails)
-		this.hasSellerDetails = organizer.sellerDetails !== undefined
-		this.sellerErrors = {}
+	private applyBusinessDetails(organizer: Organizer): void {
+		this.business = toBusinessDetailsInput(organizer)
+		this.hasBusinessDetails = hasStoredBusinessDetails(organizer)
+		this.businessErrors = {}
 	}
 
 	private applyFeeRate(organizer: Organizer): void {
@@ -193,9 +196,9 @@ export class OrganizerCommercialTerms {
 	}
 
 	private resetFeedback(): void {
-		this.sellerErrors = {}
-		this.sellerSaveError = ''
-		this.sellerSaved = false
+		this.businessErrors = {}
+		this.businessSaveError = ''
+		this.businessSaved = false
 		this.feeRateError = ''
 		this.feeRateSaveError = ''
 		this.feeRateSaved = false

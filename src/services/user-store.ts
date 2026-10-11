@@ -3,12 +3,11 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import { IUserRpcClient } from '../adapter/rpc/client/user-client'
 import { loadHome, saveHome } from '../adapter/storage/guest-storage'
-import { ILocalStorage } from '../adapter/storage/local-storage'
 import { clearAllHelpSeen } from '../adapter/storage/onboarding-storage'
-import { userIdStorageKey } from '../constants/storage-keys'
 import type { User } from '../entities/user'
 import { normalizeToSupportedLanguage } from '../util/change-locale'
 import { IAuthService } from './auth-service'
+import { SignedOut } from './events/signed-out'
 
 export const IUserStore = DI.createInterface<IUserStore>('IUserStore', (x) =>
 	x.singleton(UserStore),
@@ -20,15 +19,12 @@ export interface IUserStore extends UserStore {}
  * Outcome of a provisioning call (`ensureLoaded` / `create`).
  *
  * `created` reports whether this call provisioned a GENUINELY NEW backend
- * account, as opposed to resolving a pre-existing one. The backend `Create`
- * RPC is idempotent — on a duplicate identity it returns the EXISTING user with
- * a wire-identical response — so the new-vs-existing distinction is not on the
- * response. The available frontend signal is the cache: a returning identity
- * already has a cached `user_id` (it signed in before on this device, or its id
- * was minted earlier this session), whereas a genuinely new account has none
- * and reaches the Create path with an empty cache. Callers key new-account-only
- * behavior (e.g. the post-signup dialog) on this flag rather than on the OIDC
- * sign-up FLOW, so a returning user who taps "Sign up" is not treated as new.
+ * account, as opposed to resolving a pre-existing one. The store first reads
+ * the caller's User (`UserService.Get`) and calls the idempotent `Create` only
+ * when the server answers NotFound, so `created` is the server's own answer,
+ * not a guess from local storage. The auth callback AND-narrows the
+ * post-signup dialog gate (keyed on the OIDC sign-up flow) with it, so a
+ * returning user who taps "Sign up" is not treated as new.
  */
 export interface ProvisionResult {
 	user: User | undefined
@@ -42,8 +38,8 @@ export interface ProvisionResult {
  * INTERNALLY so callers never branch on `auth.isAuthenticated`.
  *
  * Phase 5b of the entity-store layer: the authenticated `User` entity (with its
- * cache→Get→Create chain, write-through update methods, and per-external_id
- * user_id cache) used to live behind a separate `UserService`. UserStore now
+ * Get→Create chain and write-through update methods) used to live behind a
+ * separate `UserService`. UserStore now
  * OWNS that logic directly, making it the single owner of the User entity in
  * addition to the guest `home` slice it already owned (that still lives here as
  * an `@observable` field, hydrated from the low-level `guest-storage` adapter on
@@ -61,7 +57,6 @@ export class UserStore {
 	private readonly logger = resolve(ILogger).scopeTo('UserStore')
 	private readonly rpcClient = resolve(IUserRpcClient)
 	private readonly auth = resolve(IAuthService)
-	private readonly storage = resolve(ILocalStorage)
 	private readonly i18n = resolve(I18N)
 	private readonly ea = resolve(IEventAggregator)
 
@@ -113,6 +108,9 @@ export class UserStore {
 	)
 
 	constructor() {
+		// Sign-out and account switch: forget the previous account's User so no
+		// later read or write can act on it (design D15 of unify-ticket-sales).
+		this.ea.subscribe(SignedOut, () => this.clear())
 		// The i18n subsystem publishes `{ oldLocale, newLocale }` on this EA
 		// channel after every successful setLocale. Mirroring it into an
 		// @observable is what makes `currentLanguage` re-evaluate for the
@@ -171,96 +169,72 @@ export class UserStore {
 	}
 
 	// Resolves the authenticated user via:
-	//   1. in-memory cache (already hydrated this session)
-	//   2. localStorage cache → Get with cached user_id
-	//   3. recovery: idempotent Create using JWT email — covers fresh device,
-	//      cleared cache, AND any boot path (auth-callback, UserHydrationTask,
-	//      direct dashboard reload) that needs a guaranteed user.
-	//
-	// On stale cache (cached user_id no longer matches the JWT-derived userID,
-	// e.g. after manual tampering or cross-device sync), the backend returns
-	// PERMISSION_DENIED — caught here, cache cleared, and the recovery path
-	// runs so the app self-heals instead of locking the user out.
+	//   1. in-memory value (already hydrated this session)
+	//   2. UserService.Get for the signed-in caller
+	//   3. recovery: idempotent Create using the JWT email when Get answers
+	//      NotFound — covers the first sign-up and any boot path
+	//      (auth-callback, UserHydrationTask, direct dashboard reload) that needs
+	//      a guaranteed user.
+	// No request names the user: the backend takes the caller from the token.
 	public async ensureLoaded(
 		preferredLanguage: string,
 	): Promise<ProvisionResult> {
-		// An in-memory or persisted user_id means this identity was already
-		// resolved before — never a brand-new account, so `created` is false.
 		if (this.current) return { user: this.current, created: false }
-
-		const userId = this.readCachedUserId()
-		if (userId) {
-			try {
-				this.logger.info('Loading user profile from backend (cache hit)')
-				this.current = await this.rpcClient.get(userId)
-				if (this.current) this.writeCachedUserId(this.current.id)
-				return { user: this.current, created: false }
-			} catch (err) {
-				if (err instanceof ConnectError && err.code === Code.PermissionDenied) {
-					this.logger.warn(
-						'Cached user_id rejected by backend; clearing and recovering via Create',
-					)
-					this.removeCachedUserId()
-				} else {
-					throw err
-				}
-			}
-		}
-
-		// Cache miss (initial OR cleared by stale check above) — recover via
-		// idempotent Create using the email from JWT claims.
-		const email = this.auth.user?.profile.email
-		if (!email) {
-			this.logger.warn(
-				'No cached user_id and no email in auth claims; cannot bootstrap user',
-			)
-			return { user: undefined, created: false }
-		}
-
-		this.logger.info('Bootstrapping via idempotent Create (cache miss)')
-		// Create requires preferred_language; on the idempotent-return path the
-		// existing row's language is preserved, so passing the current effective
-		// locale is safe even for returning users.
-		//
-		// `created` is true here: we reached Create with no cached user_id, which
-		// is the new-account path (a returning identity would have hit the Get
-		// branch above). A cleared cache on an existing identity also lands here,
-		// but the cache is the only new-vs-existing signal the idempotent backend
-		// exposes, so this is the best available approximation and matches the
-		// post-signup-dialog contract (fresh-cache identity → treat as new).
-		this.current = await this.rpcClient.create(email, preferredLanguage)
-		if (this.current) this.writeCachedUserId(this.current.id)
-		return { user: this.current, created: true }
+		return this.getOrCreate(preferredLanguage)
 	}
 
+	/**
+	 * Forget the signed-in account's User. Runs on `SignedOut` (sign-out,
+	 * forced re-auth, account switch) and is idempotent.
+	 */
 	public clear(): void {
-		this.removeCachedUserId()
 		this.current = undefined
 		this.logger.info('User profile cleared')
 	}
 
+	/**
+	 * Resolve-or-provision with the guest's home: an existing User is returned
+	 * as stored (its home is not overwritten); a new one is created with `home`
+	 * so the onboarding choice is saved with the account.
+	 */
 	public async create(
 		email: string,
 		preferredLanguage: string,
 		home?: { countryCode: string; level1: string; level2?: string },
 	): Promise<ProvisionResult> {
-		// New-account signal: no user_id cached for this identity before the call.
-		// The backend Create is idempotent (a returning identity gets its existing
-		// row back, wire-identical), so the pre-call cache is the only available
-		// new-vs-existing signal — a returning user tapping "Sign up" already has a
-		// cached id and is therefore NOT treated as new.
-		const created = this.readCachedUserId() === undefined
-		const user = await this.rpcClient.create(email, preferredLanguage, home)
-		this.current = user
-		if (user) {
-			this.writeCachedUserId(user.id)
-		}
 		// NOTE: the guest-follow migration trigger (GuestMigrationRequested) is
 		// published by AuthCallbackRoute on every successful authenticated
-		// callback, NOT here. create() is also reached on the idempotent cache-miss
-		// recovery, so keeping the publish at the auth-callback boundary keeps the
-		// trigger at a single site with the resolved userId.
-		return { user, created }
+		// callback, NOT here, so the trigger stays at a single site.
+		return this.getOrCreate(preferredLanguage, home, email)
+	}
+
+	private async getOrCreate(
+		preferredLanguage: string,
+		home?: { countryCode: string; level1: string; level2?: string },
+		email: string | undefined = this.auth.user?.profile.email,
+	): Promise<ProvisionResult> {
+		try {
+			this.logger.info('Loading user profile from backend')
+			this.current = await this.rpcClient.get()
+			return { user: this.current, created: false }
+		} catch (err) {
+			if (!(err instanceof ConnectError && err.code === Code.NotFound)) {
+				throw err
+			}
+		}
+
+		if (!email) {
+			this.logger.warn(
+				'No user for this identity and no email in auth claims; cannot bootstrap user',
+			)
+			return { user: undefined, created: false }
+		}
+
+		// Create requires preferred_language; pass the current effective locale
+		// so the new row carries the language the visitor was experiencing.
+		this.logger.info('Bootstrapping via idempotent Create (no user yet)')
+		this.current = await this.rpcClient.create(email, preferredLanguage, home)
+		return { user: this.current, created: this.current !== undefined }
 	}
 
 	public async updateHome(home: {
@@ -268,15 +242,13 @@ export class UserStore {
 		level1: string
 		level2?: string
 	}): Promise<User | undefined> {
-		const userId = this.requireUserId('updateHome')
-		const updated = await this.rpcClient.updateHome(userId, home)
+		const updated = await this.rpcClient.setHome(home)
 		// Same write-through pattern as updatePreferredLanguage: on a
 		// populated response use the DB-authoritative entity; on an
 		// empty response patch the cached field locally rather than
 		// wiping `current` and losing the rest of the profile.
 		if (updated) {
 			this.current = updated
-			this.writeCachedUserId(updated.id)
 		} else if (this.current) {
 			this.current = { ...this.current, home }
 		}
@@ -286,15 +258,7 @@ export class UserStore {
 	public async updatePreferredLanguage(
 		preferredLanguage: string,
 	): Promise<User | undefined> {
-		// `requireUserId` guarantees the ID is cached before the RPC fires, and
-		// the backend returns the same user.id — only preferred_language changes.
-		// So no writeCachedUserId here (unlike ensureLoaded / create where the ID
-		// may have just been minted).
-		const userId = this.requireUserId('updatePreferredLanguage')
-		const updated = await this.rpcClient.updatePreferredLanguage(
-			userId,
-			preferredLanguage,
-		)
+		const updated = await this.rpcClient.setPreferredLanguage(preferredLanguage)
 		// Use the DB-authoritative entity when the server returned a populated
 		// user with a non-empty preferredLanguage. If the server omitted the
 		// user field entirely, OR returned a user whose preferredLanguage is
@@ -312,9 +276,26 @@ export class UserStore {
 		return this.current
 	}
 
+	/**
+	 * Change the full name, phone number or both shown on the fan's tickets
+	 * (`UserService.Update`). `phoneNumber` MUST be in E.164 form. The returned
+	 * User replaces `current`, so every binding shows the saved values.
+	 */
+	public async updatePersonalDetails(details: {
+		fullName?: string
+		phoneNumber?: string
+	}): Promise<User | undefined> {
+		const updated = await this.rpcClient.update(details)
+		if (updated) {
+			this.current = updated
+		} else if (this.current) {
+			this.current = { ...this.current, ...details }
+		}
+		return this.current
+	}
+
 	public async resendEmailVerification(): Promise<void> {
-		const userId = this.requireUserId('resendEmailVerification')
-		await this.rpcClient.resendEmailVerification(userId)
+		await this.rpcClient.resendEmailVerification()
 	}
 
 	/**
@@ -346,42 +327,5 @@ export class UserStore {
 	 */
 	public guestHomeChanged(newValue: string | null): void {
 		saveHome(newValue)
-	}
-
-	// requireUserId resolves the caller's internal user_id from the in-memory
-	// cache first (populated by Get/Create/UpdateHome) and falls back to the
-	// localStorage cache. Throws if neither is available — by the time
-	// authenticated business code runs, the boot flow MUST have hydrated one
-	// of them via Create or Get.
-	private requireUserId(op: string): string {
-		const id = this.current?.id ?? this.readCachedUserId()
-		if (!id) {
-			throw new Error(
-				`UserStore.${op}: user_id is not available; auth bootstrap did not complete`,
-			)
-		}
-		return id
-	}
-
-	private currentExternalId(): string | undefined {
-		return this.auth.user?.profile.sub
-	}
-
-	private readCachedUserId(): string | undefined {
-		const ext = this.currentExternalId()
-		if (!ext) return undefined
-		return this.storage.getItem(userIdStorageKey(ext)) ?? undefined
-	}
-
-	private writeCachedUserId(userId: string): void {
-		const ext = this.currentExternalId()
-		if (!ext) return
-		this.storage.setItem(userIdStorageKey(ext), userId)
-	}
-
-	private removeCachedUserId(): void {
-		const ext = this.currentExternalId()
-		if (!ext) return
-		this.storage.removeItem(userIdStorageKey(ext))
 	}
 }

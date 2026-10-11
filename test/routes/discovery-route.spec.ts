@@ -148,6 +148,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('refreshField', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Default Bubble UI display"
 		it('should load initial artists via artistClient.listTop', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[makeArtist('a1', 'Artist One')],
@@ -189,7 +190,8 @@ describe('DiscoveryRoute', () => {
 			resolveLoad([])
 		})
 
-		it('should call listConcerts (not searchNewConcerts) for pre-seeded guest follows during onboarding', async () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Concert check at page load uses List RPC"
+		it('should call listByArtist (not searchNewConcerts) for pre-seeded guest follows during onboarding', async () => {
 			mockOnboarding.isOnboarding = true
 			// The follow service facade now owns the persisted guest queue; the
 			// route reads it via `guestFollows` (no IGuestService).
@@ -199,7 +201,7 @@ describe('DiscoveryRoute', () => {
 
 			await sut.loading()
 
-			expect(mockConcert.listConcerts).toHaveBeenCalledWith('g1')
+			expect(mockConcert.listByArtist).toHaveBeenCalledWith('g1')
 		})
 	})
 
@@ -257,6 +259,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onGenreSelected', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Genre filtering"
 		it('should activate a genre tag', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[],
@@ -268,6 +271,7 @@ describe('DiscoveryRoute', () => {
 			expect(mockArtistClient.listTop).toHaveBeenCalledWith('', 'rock', 50)
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Genre deselection reverts to regional results"
 		it('should deactivate when selecting same tag', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[],
@@ -294,7 +298,8 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onFollowFromSearch', () => {
-		it('should follow artist and call listConcerts (not searchNewConcerts)', async () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Concert check after follow uses List RPC"
+		it('should follow artist and call listByArtist (not searchNewConcerts)', async () => {
 			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
 				cb(0)
 				return 0
@@ -305,7 +310,7 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
-			expect(mockConcert.listConcerts).toHaveBeenCalledWith('a1')
+			expect(mockConcert.listByArtist).toHaveBeenCalledWith('a1')
 		})
 
 		it('should not follow already-followed artist', async () => {
@@ -356,7 +361,8 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onArtistSelected', () => {
-		it('should follow artist and call listConcerts (not searchNewConcerts) via event detail', async () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Concert check after follow uses List RPC"
+		it('should follow artist and call listByArtist (not searchNewConcerts) via event detail', async () => {
 			const artist = makeArtist('a1', 'Artist One')
 			const event = new CustomEvent('artist-selected', {
 				detail: { artist, position: { x: 100, y: 200 } },
@@ -367,9 +373,10 @@ describe('DiscoveryRoute', () => {
 			expect(mockFollowClient.follow).toHaveBeenCalledWith(
 				expect.objectContaining({ id: 'a1' }),
 			)
-			expect(mockConcert.listConcerts).toHaveBeenCalledWith('a1')
+			expect(mockConcert.listByArtist).toHaveBeenCalledWith('a1')
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Already-followed artists"
 		it('should skip if artist already followed', async () => {
 			const artist = makeArtist('a1', 'Artist')
 			const event = new CustomEvent('artist-selected', {
@@ -393,7 +400,7 @@ describe('DiscoveryRoute', () => {
 			})
 			await sut.onArtistSelected(event)
 
-			expect(mockConcert.listConcerts).not.toHaveBeenCalled()
+			expect(mockConcert.listByArtist).not.toHaveBeenCalled()
 		})
 
 		it('should re-add the bubble to the field on follow failure', async () => {

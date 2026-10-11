@@ -31,8 +31,6 @@ export type RouteLoadingResult =
  * screen that freezes while the network answers.
  */
 export const BLOCKING_ALLOWLIST: Record<string, string> = {
-	'lottery-apply-route.ts':
-		'Parks an unverified fan on verify-required before any card hold — starting them in the payment flow and yanking them out is worse than the wait.',
 	'verify-callback-route.ts':
 		'An OIDC-style callback whose entire purpose is to resolve an outcome and redirect; there is no view to show in the meantime.',
 }

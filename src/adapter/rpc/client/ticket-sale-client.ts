@@ -1,5 +1,5 @@
 import { TicketSaleService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/ticket_sale/v1/ticket_sale_service_pb.js'
-import { Code, ConnectError, createClient } from '@connectrpc/connect'
+import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../config/app-config'
 import type { TicketSale } from '../../../entities/ticket-sale'
@@ -14,7 +14,7 @@ export const ITicketSaleRpcClient = DI.createInterface<ITicketSaleRpcClient>(
 
 export interface ITicketSaleRpcClient extends TicketSaleRpcClient {}
 
-/** Fan-facing reads of an event's first-come TicketSale. Needs no sign-in. */
+/** Fan-facing reads of an event's TicketSales. Needs no sign-in. */
 export class TicketSaleRpcClient {
 	private readonly logger = resolve(ILogger).scopeTo('TicketSaleRpcClient')
 	private readonly client = createClient(
@@ -27,22 +27,24 @@ export class TicketSaleRpcClient {
 	)
 
 	/**
-	 * The event's sale with its state now, or null when the event has no sale
-	 * or its concert is not published (both NotFound). Other errors reject.
+	 * The event's sales, each with its TicketType for the event, ordered by
+	 * start time. Empty when the event has none.
 	 */
-	public async get(
+	public async listByEvent(
 		eventId: string,
 		signal?: AbortSignal,
-	): Promise<TicketSale | null> {
+	): Promise<TicketSale[]> {
 		try {
-			const resp = await this.client.get(
+			const resp = await this.client.listByEvent(
 				{ eventId: { value: eventId } },
 				{ signal },
 			)
-			return resp.ticketSale ? ticketSaleFrom(resp.ticketSale) : null
+			return resp.ticketSales.flatMap((s) => {
+				const sale = ticketSaleFrom(s, eventId)
+				return sale ? [sale] : []
+			})
 		} catch (err) {
-			if (ConnectError.from(err).code === Code.NotFound) return null
-			this.logger.warn('Ticket sale get failed', { eventId, error: err })
+			this.logger.warn('Ticket sale list failed', { eventId, error: err })
 			throw err
 		}
 	}

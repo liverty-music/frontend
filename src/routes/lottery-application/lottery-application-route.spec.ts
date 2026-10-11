@@ -1,9 +1,6 @@
 import { Code, ConnectError } from '@connectrpc/connect'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type {
-	TicketApplication,
-	TicketApplicationState,
-} from '../../entities/lottery'
+import type { LotteryEntry } from '../../entities/lottery-entry'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -16,14 +13,9 @@ const mockLogger = {
 	}),
 }
 
-const mockLottery = {
-	createAuthorization: vi.fn(),
-	apply: vi.fn(),
-	withdrawApplication: vi.fn(async () => undefined),
-	getMyApplication: vi.fn(
-		async () => undefined as TicketApplication | undefined,
-	),
-	getResult: vi.fn(async () => undefined as TicketApplication | undefined),
+const mockEntry = {
+	listByTicketType: vi.fn(),
+	withdraw: vi.fn(),
 }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -33,195 +25,127 @@ vi.mock('aurelia', async (importOriginal) => {
 		resolve: vi.fn((token: unknown) => {
 			const map: Record<string, unknown> = {
 				ILogger: mockLogger,
-				ILotteryRpcClient: mockLottery,
+				ILotteryEntryRpcClient: mockEntry,
 			}
-			const tokenAny = token as { friendlyName?: string }
-			return map[tokenAny.friendlyName ?? ''] ?? {}
+			return map[(token as { friendlyName?: string }).friendlyName ?? ''] ?? {}
 		}),
 	}
 })
 
-import { LotteryApplicationRoute } from './lottery-application-route'
+import {
+	LotteryApplicationRoute,
+	shownEntry,
+} from './lottery-application-route'
 
-// Flush pending microtasks (loading() kicks off an async load()).
-const flush = () => new Promise((r) => setTimeout(r, 0))
-
-function appWith(state: TicketApplicationState): TicketApplication {
+function entry(o: Partial<LotteryEntry> = {}): LotteryEntry {
 	return {
+		id: 'entry-1',
+		ticketTypeId: 'type-1',
 		requestedTicketCount: 2,
-		identity: { fullName: '山田太郎', phoneNumber: '09012345678' },
-		state,
+		state: 'entered',
+		...o,
 	}
 }
 
-async function makeSut(): Promise<LotteryApplicationRoute> {
+async function open(): Promise<LotteryApplicationRoute> {
 	const sut = new LotteryApplicationRoute()
-	sut.loading({ phaseId: 'phase-1' })
-	await flush()
+	sut.loading({ id: 'event-1', ticketTypeId: 'type-1' })
+	await vi.waitFor(() => expect(sut.step).not.toBe('loading'))
 	return sut
 }
+
+describe('shownEntry', () => {
+	it('shows the newest entry that is not a Draft', () => {
+		expect(
+			shownEntry([
+				entry({ id: 'draft', state: 'draft' }),
+				entry({ id: 'newest' }),
+				entry({ id: 'older', state: 'withdrawn' }),
+			])?.id,
+		).toBe('newest')
+		expect(shownEntry([entry({ state: 'draft' })])).toBeNull()
+	})
+})
 
 describe('LotteryApplicationRoute', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
-		mockLottery.getMyApplication.mockResolvedValue(undefined)
-		mockLottery.getResult.mockResolvedValue(undefined)
-		mockLottery.withdrawApplication.mockResolvedValue(undefined)
+		mockEntry.listByTicketType.mockResolvedValue([entry()])
+		mockEntry.withdraw.mockResolvedValue(undefined)
 	})
 
-	describe('load states', () => {
-		it('shows empty when the caller has no application', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(undefined)
-			const sut = await makeSut()
-			expect(sut.step).toBe('empty')
-		})
+	it("reads the fan's entries for the TicketType", async () => {
+		const sut = await open()
 
-		it('surfaces a load failure as the error state', async () => {
-			mockLottery.getMyApplication.mockRejectedValueOnce(new Error('boom'))
-			const sut = await makeSut()
-			expect(sut.step).toBe('error')
-			expect(sut.error).not.toBe('')
-		})
-
-		it('loads the application and its 本人確認 summary', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
-			const sut = await makeSut()
-			expect(sut.step).toBe('loaded')
-			expect(sut.applicationCount).toBe(2)
-			expect(sut.applicantName).toBe('山田太郎')
-			expect(sut.applicantPhone).toBe('09012345678')
-		})
+		expect(mockEntry.listByTicketType).toHaveBeenCalledWith(
+			'type-1',
+			expect.anything(),
+		)
+		expect(sut.step).toBe('loaded')
+		expect(sut.entry?.requestedTicketCount).toBe(2)
+		expect(sut.resultKind).toBe('entered')
+		expect(sut.stateLabelKey).toBe('lotteryApplication.state.entered')
 	})
 
-	describe('state → UI mapping', () => {
-		it('maps APPLIED to the waiting (抽選待ち) state', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
-			const sut = await makeSut()
-			expect(sut.resultKind).toBe('waiting')
-			expect(sut.stateLabel).toBe('抽選待ち')
-		})
-
-		it('maps WON to 当選', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('won'))
-			const sut = await makeSut()
-			expect(sut.resultKind).toBe('won')
-			expect(sut.stateLabel).toBe('当選')
-		})
-
-		it('maps LOST to 落選', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('lost'))
-			const sut = await makeSut()
-			expect(sut.resultKind).toBe('lost')
-			expect(sut.stateLabel).toBe('落選')
-		})
-
-		it('maps WITHDRAWN to 取下げ済み', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('withdrawn'))
-			const sut = await makeSut()
-			expect(sut.resultKind).toBe('withdrawn')
-			expect(sut.stateLabel).toBe('取下げ済み')
-		})
+	it.each([
+		['won', 'won'],
+		['lost', 'lost'],
+		['withdrawn', 'withdrawn'],
+	] as const)('shows a %s entry as %s', async (state, kind) => {
+		mockEntry.listByTicketType.mockResolvedValue([entry({ state })])
+		const sut = await open()
+		expect(sut.resultKind).toBe(kind)
+		expect(sut.canWithdraw).toBe(false)
 	})
 
-	describe('withdraw availability', () => {
-		it('offers withdraw only while APPLIED', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
-			const sut = await makeSut()
-			expect(sut.canWithdraw).toBe(true)
-		})
-
-		it('hides withdraw once WON / LOST / WITHDRAWN', async () => {
-			const finalStates: TicketApplicationState[] = ['won', 'lost', 'withdrawn']
-			for (const state of finalStates) {
-				mockLottery.getMyApplication.mockResolvedValue(appWith(state))
-				const sut = await makeSut()
-				expect(sut.canWithdraw).toBe(false)
-			}
-		})
+	it('is empty when the fan made no entry', async () => {
+		mockEntry.listByTicketType.mockResolvedValue([entry({ state: 'draft' })])
+		const sut = await open()
+		expect(sut.step).toBe('empty')
 	})
 
-	describe('withdraw happy path (APPLIED → confirm → WITHDRAWN)', () => {
-		it('withdraws after confirm and reflects the withdrawn state', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
-			const sut = await makeSut()
-
-			sut.askWithdraw()
-			expect(sut.confirmingWithdraw).toBe(true)
-
-			await sut.confirmWithdraw()
-
-			expect(mockLottery.withdrawApplication).toHaveBeenCalledWith(
-				'phase-1',
-				expect.anything(),
-			)
-			expect(sut.resultKind).toBe('withdrawn')
-			expect(sut.stateLabel).toBe('取下げ済み')
-			expect(sut.confirmingWithdraw).toBe(false)
-			expect(sut.canWithdraw).toBe(false)
-		})
-
-		it('cancelWithdraw dismisses the confirm step without calling the RPC', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
-			const sut = await makeSut()
-			sut.askWithdraw()
-			sut.cancelWithdraw()
-			expect(sut.confirmingWithdraw).toBe(false)
-			expect(mockLottery.withdrawApplication).not.toHaveBeenCalled()
-		})
-
-		it('does not withdraw when not APPLIED', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('won'))
-			const sut = await makeSut()
-			sut.askWithdraw()
-			await sut.confirmWithdraw()
-			expect(mockLottery.withdrawApplication).not.toHaveBeenCalled()
-			expect(sut.resultKind).toBe('won')
-		})
+	it('offers a reload when the read fails', async () => {
+		mockEntry.listByTicketType.mockRejectedValue(new Error('offline'))
+		const sut = await open()
+		expect(sut.step).toBe('error')
+		expect(sut.messageKey).toBe('lotteryApplication.error')
 	})
 
-	describe('withdraw error surfacing', () => {
-		it('handles FAILED_PRECONDITION (draw already ran) by reloading', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
-			const sut = await makeSut()
+	it('withdraws the entry after the fan confirms', async () => {
+		const sut = await open()
+		sut.askWithdraw()
+		expect(sut.confirmingWithdraw).toBe(true)
 
-			mockLottery.withdrawApplication.mockRejectedValueOnce(
-				new ConnectError('draw ran', Code.FailedPrecondition),
-			)
-			// The reload after the precondition failure returns the final WON result.
-			mockLottery.getMyApplication.mockResolvedValue(appWith('won'))
+		await sut.confirmWithdraw()
 
-			sut.askWithdraw()
-			await sut.confirmWithdraw()
-
-			expect(sut.error).not.toBe('')
-			expect(sut.resultKind).toBe('won')
-			expect(sut.confirmingWithdraw).toBe(false)
-		})
-
-		it('surfaces a generic withdraw failure without changing state', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
-			const sut = await makeSut()
-
-			mockLottery.withdrawApplication.mockRejectedValueOnce(new Error('boom'))
-			sut.askWithdraw()
-			await sut.confirmWithdraw()
-
-			expect(sut.error).not.toBe('')
-			expect(sut.resultKind).toBe('waiting')
-			expect(sut.withdrawing).toBe(false)
-		})
+		expect(mockEntry.withdraw).toHaveBeenCalledWith(
+			'entry-1',
+			expect.anything(),
+		)
+		expect(sut.entry?.state).toBe('withdrawn')
+		expect(sut.confirmingWithdraw).toBe(false)
 	})
 
-	describe('pre-draw handling', () => {
-		it('renders the waiting state for an APPLIED application (抽選待ち)', async () => {
-			mockLottery.getMyApplication.mockResolvedValue(appWith('applied'))
-			const sut = await makeSut()
+	it('shows the result when the draw ran before the withdrawal', async () => {
+		mockEntry.withdraw.mockRejectedValue(
+			new ConnectError('drawn', Code.FailedPrecondition),
+		)
+		const sut = await open()
+		mockEntry.listByTicketType.mockResolvedValue([entry({ state: 'won' })])
 
-			// The view derives pre-draw purely from getMyApplication's state; no
-			// separate getResult round-trip.
-			expect(sut.resultKind).toBe('waiting')
-			expect(sut.stateLabel).toBe('抽選待ち')
-			expect(sut.step).toBe('loaded')
-		})
+		await sut.confirmWithdraw()
+
+		expect(sut.resultKind).toBe('won')
+		expect(sut.messageKey).toBe('lotteryApplication.withdraw.drawn')
+	})
+
+	it('says the withdrawal failed otherwise', async () => {
+		mockEntry.withdraw.mockRejectedValue(new Error('boom'))
+		const sut = await open()
+
+		await sut.confirmWithdraw()
+
+		expect(sut.entry?.state).toBe('entered')
+		expect(sut.messageKey).toBe('lotteryApplication.withdraw.failed')
 	})
 })

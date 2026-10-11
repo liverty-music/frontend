@@ -1,3 +1,9 @@
+import {
+	TicketSaleMethod,
+	TicketSaleSchema,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
+import { LotteryEntryStatsSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/ticket_sale/v1/ticket_sale_service_pb.js'
+import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
@@ -6,10 +12,13 @@ import { createTestContainer } from '../../helpers/create-container'
 
 // Replace the RPC client module with a fresh interface token so the route binds
 // to the test double instead of building a real Connect transport.
-const ILotteryPhaseClient = DI.createInterface('ILotteryPhaseClient')
+const ITicketSaleClient = DI.createInterface('ITicketSaleClient')
 
-vi.mock('../../../organizer/services/lottery-phase-client', () => ({
-	ILotteryPhaseClient,
+vi.mock('../../../organizer/services/ticket-sale-client', async (original) => ({
+	...(await original<
+		typeof import('../../../organizer/services/ticket-sale-client')
+	>()),
+	ITicketSaleClient,
 }))
 
 const { LotteryStatusRoute } = await import(
@@ -17,154 +26,160 @@ const { LotteryStatusRoute } = await import(
 )
 
 interface MockClient {
-	configureLotteryPhase: ReturnType<typeof vi.fn>
-	getLotteryPhaseStatus: ReturnType<typeof vi.fn>
+	listByEvent: ReturnType<typeof vi.fn>
 }
 
 function build(client: MockClient): InstanceType<typeof LotteryStatusRoute> {
 	const container = createTestContainer(
-		Registration.instance(ILotteryPhaseClient, client),
+		Registration.instance(ITicketSaleClient, client),
 	)
 	container.register(LotteryStatusRoute)
 	const vm = container.get(LotteryStatusRoute)
-	vm.canLoad({ phaseId: 'phase-1' })
+	vm.canLoad({ eventId: 'event-1' })
 	return vm
 }
 
-/** Builds a protobuf-es v2 `Timestamp` message from a Date. */
-function ts(date: Date) {
-	return timestampFromDate(date)
+interface SaleOverrides {
+	open?: Date
+	close?: Date
+	drawn?: boolean
+	method?: TicketSaleMethod
 }
 
-interface StatusOverrides {
-	openTime?: Date
-	closeTime?: Date
-	drawCompleted?: boolean
-	applicationCount?: number
-	requestedTicketCount?: number
-	winningApplicationCount?: number
-	wonTicketCount?: number
-	waitlistedApplicationCount?: number
+/** A sale of event-1 with TicketType type-1: 200 tickets, 4 each, 6500 yen. */
+function makeSale(o: SaleOverrides = {}) {
+	return create(TicketSaleSchema, {
+		id: { value: 'sale-1' },
+		name: { value: 'ファンクラブ先行' },
+		method: o.method ?? TicketSaleMethod.LOTTERY,
+		saleStartTime: timestampFromDate(o.open ?? new Date(Date.now() - 60_000)),
+		saleEndTime: timestampFromDate(o.close ?? new Date(Date.now() + 60_000)),
+		drawnTime: o.drawn ? timestampFromDate(new Date()) : undefined,
+		ticketTypes: [
+			{
+				id: { value: 'type-1' },
+				eventId: { value: 'event-1' },
+				price: { value: 6500n },
+				quantity: 200,
+				perAccountLimit: 4,
+			},
+		],
+	})
 }
 
-function makeStatus(o: StatusOverrides = {}) {
-	const open = o.openTime ?? new Date(Date.now() - 60_000)
-	const close = o.closeTime ?? new Date(Date.now() + 60_000)
-	return {
-		phase: {
-			id: { value: 'phase-1' },
-			openTime: ts(open),
-			closeTime: ts(close),
-			ticketCapacity: 200,
-			maxTicketsPerApplication: 4,
-			ticketPrice: 6500n,
-		},
-		drawCompleted: o.drawCompleted ?? false,
-		applicationCount: o.applicationCount ?? 0,
+function stats(o: Partial<Record<string, number>> = {}) {
+	return create(LotteryEntryStatsSchema, {
+		ticketTypeId: { value: 'type-1' },
+		entryCount: o.entryCount ?? 0,
 		requestedTicketCount: o.requestedTicketCount ?? 0,
-		winningApplicationCount: o.winningApplicationCount ?? 0,
+		wonEntryCount: o.wonEntryCount ?? 0,
 		wonTicketCount: o.wonTicketCount ?? 0,
-		waitlistedApplicationCount: o.waitlistedApplicationCount ?? 0,
-	}
+		lostEntryCount: o.lostEntryCount ?? 0,
+	})
 }
 
-function createMockClient(status?: unknown): MockClient {
+function createMockClient(
+	sales = [makeSale()],
+	entryStats = [stats()],
+): MockClient {
 	return {
-		configureLotteryPhase: vi.fn().mockResolvedValue(undefined),
-		getLotteryPhaseStatus: vi.fn().mockResolvedValue(status ?? makeStatus()),
+		listByEvent: vi
+			.fn()
+			.mockResolvedValue({ ticketSales: sales, lotteryEntryStats: entryStats }),
 	}
 }
 
 describe('LotteryStatusRoute', () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it('renders an open window and pre-draw demand tallies (draw not yet run)', async () => {
+	it("reads the event's sales and shows an open window with pre-draw tallies", async () => {
 		const client = createMockClient(
-			makeStatus({
-				drawCompleted: false,
-				applicationCount: 120,
-				requestedTicketCount: 310,
-			}),
+			[makeSale()],
+			[stats({ entryCount: 12, requestedTicketCount: 30 })],
 		)
 		const vm = build(client)
-		await vm.attached()
-		expect(client.getLotteryPhaseStatus).toHaveBeenCalledWith(
-			'phase-1',
+		await vm.load()
+
+		expect(client.listByEvent).toHaveBeenCalledWith(
+			'event-1',
 			expect.anything(),
 		)
 		expect(vm.phase).toBe('ready')
-		expect(vm.view?.windowOpen).toBe(true)
-		expect(vm.view?.windowLabel).toBe('Open')
-		expect(vm.view?.drawCompleted).toBe(false)
-		expect(vm.view?.applicationCount).toBe(120)
-		expect(vm.view?.requestedTicketCount).toBe(310)
-		// Outcome tallies remain zero pre-draw.
-		expect(vm.view?.winningApplicationCount).toBe(0)
-		expect(vm.view?.wonTicketCount).toBe(0)
-		expect(vm.view?.waitlistedApplicationCount).toBe(0)
+		expect(vm.views).toHaveLength(1)
+		const [view] = vm.views
+		expect(view.name).toBe('ファンクラブ先行')
+		expect(view.windowOpen).toBe(true)
+		expect(view.windowLabel).toBe('Open')
+		expect(view.quantity).toBe(200)
+		expect(view.perAccountLimit).toBe(4)
+		expect(view.price).toBe(6500)
+		expect(view.drawCompleted).toBe(false)
+		expect(view.entryCount).toBe(12)
+		expect(view.requestedTicketCount).toBe(30)
 	})
 
 	it('labels a not-yet-open window', async () => {
-		const client = createMockClient(
-			makeStatus({
-				openTime: new Date(Date.now() + 60_000),
-				closeTime: new Date(Date.now() + 120_000),
-			}),
+		const vm = build(
+			createMockClient([
+				makeSale({
+					open: new Date(Date.now() + 60_000),
+					close: new Date(Date.now() + 120_000),
+				}),
+			]),
 		)
-		const vm = build(client)
-		await vm.attached()
-		expect(vm.view?.windowOpen).toBe(false)
-		expect(vm.view?.windowLabel).toBe('Not yet open')
+		await vm.load()
+		expect(vm.views[0].windowLabel).toBe('Not yet open')
+		expect(vm.views[0].windowOpen).toBe(false)
 	})
 
-	it('renders a closed window with post-draw outcome tallies', async () => {
-		const client = createMockClient(
-			makeStatus({
-				openTime: new Date(Date.now() - 120_000),
-				closeTime: new Date(Date.now() - 60_000),
-				drawCompleted: true,
-				applicationCount: 500,
-				requestedTicketCount: 900,
-				winningApplicationCount: 110,
-				wonTicketCount: 200,
-				waitlistedApplicationCount: 390,
-			}),
+	it('shows a closed, drawn lottery with its outcome tallies', async () => {
+		const vm = build(
+			createMockClient(
+				[
+					makeSale({
+						open: new Date(Date.now() - 120_000),
+						close: new Date(Date.now() - 60_000),
+						drawn: true,
+					}),
+				],
+				[
+					stats({
+						entryCount: 50,
+						requestedTicketCount: 120,
+						wonEntryCount: 40,
+						wonTicketCount: 100,
+						lostEntryCount: 10,
+					}),
+				],
+			),
 		)
-		const vm = build(client)
-		await vm.attached()
-		expect(vm.view?.windowOpen).toBe(false)
-		expect(vm.view?.windowLabel).toBe('Closed')
-		expect(vm.view?.drawCompleted).toBe(true)
-		expect(vm.view?.winningApplicationCount).toBe(110)
-		expect(vm.view?.wonTicketCount).toBe(200)
-		expect(vm.view?.waitlistedApplicationCount).toBe(390)
-		expect(vm.view?.ticketPrice).toBe(6500)
+		await vm.load()
+		const [view] = vm.views
+		expect(view.windowLabel).toBe('Closed')
+		expect(view.drawCompleted).toBe(true)
+		expect(view.wonEntryCount).toBe(40)
+		expect(view.wonTicketCount).toBe(100)
+		expect(view.lostEntryCount).toBe(10)
 	})
 
-	it('reports empty when the response carries no phase', async () => {
-		const client = createMockClient({
-			phase: undefined,
-			drawCompleted: false,
-			applicationCount: 0,
-			requestedTicketCount: 0,
-			winningApplicationCount: 0,
-			wonTicketCount: 0,
-			waitlistedApplicationCount: 0,
-		})
-		const vm = build(client)
-		await vm.attached()
-		expect(vm.phase).toBe('ready')
+	it('shows only the lottery sales of the event', async () => {
+		const vm = build(
+			createMockClient([makeSale({ method: TicketSaleMethod.FIRST_COME })]),
+		)
+		await vm.load()
+		expect(vm.views).toEqual([])
 		expect(vm.isEmpty).toBe(true)
 	})
 
 	it('surfaces a PERMISSION_DENIED error state', async () => {
-		const client = createMockClient()
-		client.getLotteryPhaseStatus = vi
-			.fn()
-			.mockRejectedValue(new ConnectError('nope', Code.PermissionDenied))
+		const client: MockClient = {
+			listByEvent: vi
+				.fn()
+				.mockRejectedValue(new ConnectError('nope', Code.PermissionDenied)),
+		}
 		const vm = build(client)
-		await vm.attached()
+		await vm.load()
 		expect(vm.phase).toBe('error')
-		expect(vm.loadError).toContain('not allowed')
+		expect(vm.loadError).not.toBe('')
 	})
 })

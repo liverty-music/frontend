@@ -1,7 +1,7 @@
 /**
  * Persistence adapter for the in-flight PocketSign Stamp verify session.
  *
- * When the fan taps "verify identity" the service calls IdentityVerificationService.Start, receives a
+ * When the fan taps "verify identity" the service calls KycService.Start, receives a
  * session_id + redirect_url, stores the session_id here, and immediately
  * navigates the browser to the redirect_url to open the PocketSign app. Because
  * the browser navigates away (full-page redirect), the session_id must survive

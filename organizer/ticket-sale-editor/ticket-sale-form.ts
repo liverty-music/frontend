@@ -1,6 +1,10 @@
 import { formatJstDateTime } from '../../shared/lib/reception/jst-format'
-import type { ConfigureTicketSaleInput } from '../services/ticket-sale-client'
+import type { CreateTicketSaleInput } from '../services/ticket-sale-client'
 
+/** The name a new first-come sale starts with. */
+export const DEFAULT_SALE_NAME = '一般発売'
+/** Maximum length of the sale's name, in characters. */
+export const MAX_NAME_LENGTH = 100
 /** The per-account limit a new sale starts with (server default too). */
 export const DEFAULT_PER_ACCOUNT_LIMIT = 4
 /** Inclusive bounds of the per-account limit (one entry QR covers ≤ 10). */
@@ -19,6 +23,7 @@ const JST_OFFSET_HOURS = 9
  * numbers stay raw input strings so an empty control differs from `0`.
  */
 export interface TicketSaleFormModel {
+	name: string
 	saleStart: string
 	saleEnd: string
 	price: string
@@ -28,6 +33,7 @@ export interface TicketSaleFormModel {
 
 /** Per-field errors, shown next to each control. */
 export interface TicketSaleFormErrors {
+	name?: string
 	saleStart?: string
 	saleEnd?: string
 	price?: string
@@ -78,11 +84,13 @@ export function formatYen(value: number | bigint): string {
 }
 
 /**
- * The form for an event without a sale: the sale ends at the event's start
- * time and the limit is {@link DEFAULT_PER_ACCOUNT_LIMIT}.
+ * The form for an event without a first-come sale: the name is
+ * {@link DEFAULT_SALE_NAME}, the sale ends at the event's start time and the
+ * limit is {@link DEFAULT_PER_ACCOUNT_LIMIT}.
  */
 export function blankFormModel(eventStart: Date | null): TicketSaleFormModel {
 	return {
+		name: DEFAULT_SALE_NAME,
 		saleStart: '',
 		saleEnd: eventStart ? toJstDateTimeLocal(eventStart) : '',
 		price: '',
@@ -93,6 +101,7 @@ export function blankFormModel(eventStart: Date | null): TicketSaleFormModel {
 
 /** The form for an existing sale, from its stored values. */
 export function formModelOf(sale: {
+	readonly name: string
 	readonly saleStart: Date | null
 	readonly saleEnd: Date | null
 	readonly price: bigint
@@ -100,6 +109,7 @@ export function formModelOf(sale: {
 	readonly perAccountLimit: number
 }): TicketSaleFormModel {
 	return {
+		name: sale.name,
 		saleStart: sale.saleStart ? toJstDateTimeLocal(sale.saleStart) : '',
 		saleEnd: sale.saleEnd ? toJstDateTimeLocal(sale.saleEnd) : '',
 		price: sale.price.toString(),
@@ -110,16 +120,25 @@ export function formModelOf(sale: {
 
 /**
  * Checks the form the way the server will, so errors show next to the field
- * before a round trip: both times required, the end after the start and not
- * after the event's start time, the price {@link MIN_PRICE}–{@link MAX_PRICE}
- * yen, the quantity at least 1 and at least what is sold and held, and the
- * limit {@link MIN_PER_ACCOUNT_LIMIT}–{@link MAX_PER_ACCOUNT_LIMIT}.
+ * before a round trip: the name 1–{@link MAX_NAME_LENGTH} characters, both
+ * times required, the end after the start and not after the event's start
+ * time, the price {@link MIN_PRICE}–{@link MAX_PRICE} yen, the quantity at
+ * least 1 and at least what is sold and held, and the limit
+ * {@link MIN_PER_ACCOUNT_LIMIT}–{@link MAX_PER_ACCOUNT_LIMIT} and not above
+ * the quantity.
  */
 export function validateTicketSaleForm(
 	model: TicketSaleFormModel,
 	ctx: TicketSaleFormContext,
 ): TicketSaleFormErrors {
 	const errors: TicketSaleFormErrors = {}
+
+	const name = model.name.trim()
+	if (name === '') {
+		errors.name = '販売名を入力してください。'
+	} else if ([...name].length > MAX_NAME_LENGTH) {
+		errors.name = `販売名は${MAX_NAME_LENGTH}文字以内で入力してください。`
+	}
 
 	const start = parseJstDateTimeLocal(model.saleStart)
 	const end = parseJstDateTimeLocal(model.saleEnd)
@@ -154,6 +173,9 @@ export function validateTicketSaleForm(
 		limit > MAX_PER_ACCOUNT_LIMIT
 	) {
 		errors.perAccountLimit = `1アカウントあたりの上限は${MIN_PER_ACCOUNT_LIMIT}〜${MAX_PER_ACCOUNT_LIMIT}枚で入力してください。`
+	} else if (quantity !== null && quantity >= 1 && limit > quantity) {
+		errors.perAccountLimit =
+			'1アカウントあたりの上限は販売数以下にしてください。'
 	}
 
 	return errors
@@ -165,17 +187,22 @@ export function isFormValid(errors: TicketSaleFormErrors): boolean {
 }
 
 /**
- * Converts a validated model into the client input. The caller gates on
+ * Converts a validated model into the input of a FirstCome sale of the
+ * event's Series with one TicketType for the event. The caller gates on
  * {@link validateTicketSaleForm} first.
  */
-export function toConfigureInput(
+export function toCreateInput(
+	seriesId: string,
 	eventId: string,
 	model: TicketSaleFormModel,
-): ConfigureTicketSaleInput {
+): CreateTicketSaleInput {
 	return {
-		eventId,
+		seriesId,
+		name: model.name.trim(),
+		method: 'firstCome',
 		saleStartTime: parseJstDateTimeLocal(model.saleStart) ?? new Date(0),
 		saleEndTime: parseJstDateTimeLocal(model.saleEnd) ?? undefined,
+		eventId,
 		price: Number(model.price.trim()),
 		quantity: Number(model.quantity.trim()),
 		perAccountLimit: Number(model.perAccountLimit.trim()),

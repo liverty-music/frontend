@@ -1,69 +1,125 @@
 import type { Params } from '@aurelia/router'
 import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
+import { formatJstDateTime } from '../../shared/lib/reception/jst-format'
 import { toOrganizerErrorMessage } from '../services/connect-error-copy'
-import { ILotteryPhaseClient } from '../services/lottery-phase-client'
+import {
+	type EventTicketSales,
+	ITicketSaleClient,
+	TicketSaleMethod,
+} from '../services/ticket-sale-client'
 
 /** Coarse lifecycle phase for the status fetch. */
 type LoadPhase = 'loading' | 'ready' | 'error'
 
-/** A flattened view of a phase's status, free of proto optional-chaining noise. */
+/** A flattened view of one lottery sale of the event and its tallies. */
 export interface LotteryStatusView {
-	readonly phaseId: string
-	/** True while the application window is currently open. */
+	readonly ticketSaleId: string
+	readonly name: string
+	/** True while the entry window is currently open. */
 	readonly windowOpen: boolean
-	/** Human window state, one of "not yet open", "open", or "closed". */
+	/** Human window state, one of "Not yet open", "Open", or "Closed". */
 	readonly windowLabel: string
 	readonly openTimeLabel: string
 	readonly closeTimeLabel: string
-	readonly ticketCapacity: number
-	readonly maxTicketsPerApplication: number
-	readonly ticketPrice: number
+	readonly quantity: number
+	readonly perAccountLimit: number
+	readonly price: number
 	readonly drawCompleted: boolean
-	readonly applicationCount: number
+	readonly entryCount: number
 	readonly requestedTicketCount: number
-	readonly winningApplicationCount: number
+	readonly wonEntryCount: number
 	readonly wonTicketCount: number
-	readonly waitlistedApplicationCount: number
+	readonly lostEntryCount: number
 }
 
 const EMPTY = '—'
 
-/** Formats a proto Timestamp value into a local date-time label, or `—`. */
+/** Formats a proto Timestamp value as Japan time, or `—`. */
 function formatInstant(ts: Timestamp | undefined): string {
 	if (!ts) return EMPTY
-	return timestampDate(ts).toLocaleString()
+	return formatJstDateTime(timestampDate(ts))
 }
 
 /**
- * The lottery-phase status / draw-outcome screen (roadmap ④, task 5.2). Reads a
- * phase by its `phaseId` route parameter via
- * {@link ILotteryPhaseClient.getLotteryPhaseStatus} and renders whether the
- * window is open or closed, whether the draw has completed, and the outcome
- * tallies. Pre-draw the tally block is suppressed (the counts are not yet
- * meaningful); post-draw the full summary is shown.
+ * The event's lottery sales as status views: each Lottery sale's TicketType
+ * for the event with its entry tallies. `now` is injected for tests.
+ */
+export function lotteryViewsOf(
+	eventId: string,
+	sales: EventTicketSales,
+	now: number = Date.now(),
+): LotteryStatusView[] {
+	return sales.ticketSales.flatMap((sale) => {
+		if (sale.method !== TicketSaleMethod.LOTTERY) return []
+		const type = sale.ticketTypes.find((t) => t.eventId?.value === eventId)
+		if (!type) return []
+		const typeId = type.id?.value ?? ''
+		const stats = sales.lotteryEntryStats.find(
+			(s) => s.ticketTypeId?.value === typeId,
+		)
+		const open = sale.saleStartTime
+			? timestampDate(sale.saleStartTime).getTime()
+			: undefined
+		const close = sale.saleEndTime
+			? timestampDate(sale.saleEndTime).getTime()
+			: undefined
+		let windowLabel = EMPTY
+		if (open !== undefined && close !== undefined) {
+			if (now < open) windowLabel = 'Not yet open'
+			else if (now < close) windowLabel = 'Open'
+			else windowLabel = 'Closed'
+		}
+		return [
+			{
+				ticketSaleId: sale.id?.value ?? '',
+				name: sale.name?.value ?? '',
+				windowOpen: windowLabel === 'Open',
+				windowLabel,
+				openTimeLabel: formatInstant(sale.saleStartTime),
+				closeTimeLabel: formatInstant(sale.saleEndTime),
+				quantity: type.quantity ?? 0,
+				perAccountLimit: type.perAccountLimit,
+				price: Number(type.price?.value ?? 0),
+				drawCompleted: sale.drawnTime !== undefined,
+				entryCount: stats?.entryCount ?? 0,
+				requestedTicketCount: stats?.requestedTicketCount ?? 0,
+				wonEntryCount: stats?.wonEntryCount ?? 0,
+				wonTicketCount: stats?.wonTicketCount ?? 0,
+				lostEntryCount: stats?.lostEntryCount ?? 0,
+			},
+		]
+	})
+}
+
+/**
+ * The lottery status / draw-outcome screen of one event (`lottery/status/
+ * :eventId`). Reads the event's sales with {@link ITicketSaleClient.listByEvent}
+ * and renders, for each lottery sale, whether its window is open or closed,
+ * whether the draw has run, and the entry tallies. Before the draw the outcome
+ * tallies are suppressed (they are not yet meaningful).
  *
- * Loading, empty (`view` unset), and error states are all handled; errors are
- * translated from `ConnectError` codes via {@link toOrganizerErrorMessage}.
+ * Loading, empty (no lottery sale), and error states are all handled; errors
+ * are translated from `ConnectError` codes via {@link toOrganizerErrorMessage}.
  */
 export class LotteryStatusRoute {
 	public phase: LoadPhase = 'loading'
 	public loadError = ''
-	public phaseId = ''
-	public view: LotteryStatusView | undefined
+	public eventId = ''
+	public views: LotteryStatusView[] = []
 
 	private abort: AbortController | null = null
 
-	private readonly client = resolve(ILotteryPhaseClient)
+	private readonly client = resolve(ITicketSaleClient)
 	private readonly logger = resolve(ILogger).scopeTo('LotteryStatusRoute')
 
 	public canLoad(params: Params): boolean {
-		this.phaseId = params.phaseId ?? ''
+		this.eventId = params.eventId ?? ''
 		return true
 	}
 
-	public async attached(): Promise<void> {
-		await this.load()
+	public attached(): void {
+		void this.load()
 	}
 
 	public detaching(): void {
@@ -71,7 +127,7 @@ export class LotteryStatusRoute {
 	}
 
 	public get isEmpty(): boolean {
-		return this.phase === 'ready' && this.view === undefined
+		return this.phase === 'ready' && this.views.length === 0
 	}
 
 	public async load(): Promise<void> {
@@ -81,71 +137,21 @@ export class LotteryStatusRoute {
 		this.phase = 'loading'
 		this.loadError = ''
 		try {
-			const status = await this.client.getLotteryPhaseStatus(
-				this.phaseId,
-				abort.signal,
-			)
+			const sales = await this.client.listByEvent(this.eventId, abort.signal)
 			if (abort.signal.aborted) return
-			this.view = this.toView(status)
+			this.views = lotteryViewsOf(this.eventId, sales)
 			this.phase = 'ready'
 		} catch (err) {
 			if (abort.signal.aborted) return
 			this.loadError = toOrganizerErrorMessage(
 				err,
-				'Failed to load the lottery phase status.',
+				'Failed to load the lottery status.',
 			)
 			this.phase = 'error'
-			this.logger.error('Failed to load lottery phase status', {
-				phaseId: this.phaseId,
+			this.logger.error('Failed to load lottery status', {
+				eventId: this.eventId,
 				err,
 			})
-		}
-	}
-
-	private toView(status: {
-		phase?: {
-			id?: { value: string }
-			openTime?: { toDate(): Date }
-			closeTime?: { toDate(): Date }
-			ticketCapacity: number
-			maxTicketsPerApplication: number
-			ticketPrice: bigint
-		}
-		drawCompleted: boolean
-		applicationCount: number
-		requestedTicketCount: number
-		winningApplicationCount: number
-		wonTicketCount: number
-		waitlistedApplicationCount: number
-	}): LotteryStatusView | undefined {
-		const p = status.phase
-		if (!p) return undefined
-		const now = Date.now()
-		const open = p.openTime ? timestampDate(p.openTime).getTime() : undefined
-		const close = p.closeTime ? timestampDate(p.closeTime).getTime() : undefined
-		const windowOpen =
-			open !== undefined && close !== undefined && now >= open && now < close
-		let windowLabel = EMPTY
-		if (open !== undefined && close !== undefined) {
-			if (now < open) windowLabel = 'Not yet open'
-			else if (now < close) windowLabel = 'Open'
-			else windowLabel = 'Closed'
-		}
-		return {
-			phaseId: p.id?.value ?? '',
-			windowOpen,
-			windowLabel,
-			openTimeLabel: formatInstant(p.openTime),
-			closeTimeLabel: formatInstant(p.closeTime),
-			ticketCapacity: p.ticketCapacity,
-			maxTicketsPerApplication: p.maxTicketsPerApplication,
-			ticketPrice: Number(p.ticketPrice),
-			drawCompleted: status.drawCompleted,
-			applicationCount: status.applicationCount,
-			requestedTicketCount: status.requestedTicketCount,
-			winningApplicationCount: status.winningApplicationCount,
-			wonTicketCount: status.wonTicketCount,
-			waitlistedApplicationCount: status.waitlistedApplicationCount,
 		}
 	}
 }

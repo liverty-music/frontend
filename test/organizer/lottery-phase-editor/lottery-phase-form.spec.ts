@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+	DEFAULT_PER_ACCOUNT_LIMIT,
 	DEFAULT_WINDOW_DAYS,
 	emptyFormModel,
 	isFormValid,
 	type LotteryPhaseFormModel,
-	MAX_TICKETS_PER_APPLICATION,
+	MAX_PER_ACCOUNT_LIMIT,
 	MAX_WINDOW_DAYS,
 	MIN_WINDOW_DAYS,
 	parseDateTimeLocal,
-	toConfigureInput,
+	toCreateInput,
 	toDateTimeLocal,
 	validateLotteryPhaseForm,
 	windowDurationDays,
@@ -21,15 +22,25 @@ function validModel(windowDays = DEFAULT_WINDOW_DAYS): LotteryPhaseFormModel {
 	const open = new Date(NOW.getTime())
 	const close = new Date(NOW.getTime() + windowDays * 24 * 60 * 60 * 1000)
 	return {
+		name: 'ファンクラブ先行',
 		openTime: toDateTimeLocal(open),
 		closeTime: toDateTimeLocal(close),
-		ticketCapacity: '200',
-		maxTicketsPerApplication: '4',
-		ticketPrice: '6500',
+		quantity: '200',
+		perAccountLimit: '4',
+		price: '6500',
 	}
 }
 
 describe('emptyFormModel', () => {
+	it('opens the window now and closes it 10 days later', () => {
+		// @spec components/infrastructure/organizer/web/route/lottery-phase-editor "Blank form"
+		const model = emptyFormModel(new Date(2026, 9, 1, 12, 0, 0))
+		expect(model.openTime).toBe('2026-10-01T12:00')
+		expect(model.closeTime).toBe('2026-10-11T12:00')
+		expect(model.name).toBe('')
+		expect(model.perAccountLimit).toBe(String(DEFAULT_PER_ACCOUNT_LIMIT))
+	})
+
 	it('defaults the window to DEFAULT_WINDOW_DAYS (10 days) and passes window validation', () => {
 		const model = emptyFormModel(NOW)
 		const open = parseDateTimeLocal(model.openTime)
@@ -90,24 +101,38 @@ describe('validateLotteryPhaseForm — window bounds', () => {
 	})
 })
 
+describe('validateLotteryPhaseForm — name', () => {
+	it.each(['', '   '])('requires a name (%j)', (name) => {
+		const model = validModel()
+		model.name = name
+		expect(validateLotteryPhaseForm(model).name).toBeDefined()
+	})
+
+	it('accepts a name of 100 characters and rejects 101', () => {
+		const model = validModel()
+		model.name = 'あ'.repeat(100)
+		expect(validateLotteryPhaseForm(model).name).toBeUndefined()
+		model.name = 'あ'.repeat(101)
+		expect(validateLotteryPhaseForm(model).name).toBeDefined()
+	})
+})
+
 describe('validateLotteryPhaseForm — ticket fields', () => {
 	it.each(['', '0', '-5', '3.5', 'abc'])(
-		'rejects a non-positive-integer capacity (%s)',
+		'rejects a non-positive-integer quantity (%s)',
 		(value) => {
 			const model = validModel()
-			model.ticketCapacity = value
-			expect(validateLotteryPhaseForm(model).ticketCapacity).toBeDefined()
+			model.quantity = value
+			expect(validateLotteryPhaseForm(model).quantity).toBeDefined()
 		},
 	)
 
 	it.each(['', '0', '-1', '2.2', 'x'])(
-		'rejects a non-positive-integer max-per-application (%s)',
+		'rejects a non-positive-integer per-account limit (%s)',
 		(value) => {
 			const model = validModel()
-			model.maxTicketsPerApplication = value
-			expect(
-				validateLotteryPhaseForm(model).maxTicketsPerApplication,
-			).toBeDefined()
+			model.perAccountLimit = value
+			expect(validateLotteryPhaseForm(model).perAccountLimit).toBeDefined()
 		},
 	)
 
@@ -115,63 +140,70 @@ describe('validateLotteryPhaseForm — ticket fields', () => {
 		'rejects a non-positive-integer price (%s)',
 		(value) => {
 			const model = validModel()
-			model.ticketPrice = value
-			expect(validateLotteryPhaseForm(model).ticketPrice).toBeDefined()
+			model.price = value
+			expect(validateLotteryPhaseForm(model).price).toBeDefined()
 		},
 	)
 
-	it('rejects max-per-application exceeding capacity', () => {
+	it('rejects a per-account limit above the quantity', () => {
 		const model = validModel()
-		model.ticketCapacity = '3'
-		model.maxTicketsPerApplication = '4'
+		model.quantity = '3'
+		model.perAccountLimit = '4'
 		const errors = validateLotteryPhaseForm(model)
-		expect(errors.maxTicketsPerApplication).toBeDefined()
+		expect(errors.perAccountLimit).toBeDefined()
 		expect(isFormValid(errors)).toBe(false)
 	})
 
-	it('rejects max-per-application above one entry code (11)', () => {
-		// @spec components/entity/lottery-sales-phase "Group larger than one entry code"
+	it('rejects a per-account limit above one entry code (11)', () => {
+		// @spec components/entity/ticket-type "Limit larger than one admission code"
 		const model = validModel()
-		model.ticketCapacity = '100'
-		model.maxTicketsPerApplication = '11'
+		model.quantity = '100'
+		model.perAccountLimit = '11'
 		const errors = validateLotteryPhaseForm(model)
-		expect(errors.maxTicketsPerApplication).toContain(
-			String(MAX_TICKETS_PER_APPLICATION),
-		)
+		expect(errors.perAccountLimit).toContain(String(MAX_PER_ACCOUNT_LIMIT))
 		expect(isFormValid(errors)).toBe(false)
 	})
 
 	it.each(['1', '10'])(
-		'accepts max-per-application at the bound (%s)',
+		'accepts a per-account limit at the bound (%s)',
 		(value) => {
 			const model = validModel()
-			model.ticketCapacity = '100'
-			model.maxTicketsPerApplication = value
+			model.quantity = '100'
+			model.perAccountLimit = value
 			const errors = validateLotteryPhaseForm(model)
-			expect(errors.maxTicketsPerApplication).toBeUndefined()
+			expect(errors.perAccountLimit).toBeUndefined()
 			expect(isFormValid(errors)).toBe(true)
 		},
 	)
 
-	it('accepts max-per-application equal to capacity', () => {
+	it('accepts a per-account limit equal to the quantity', () => {
 		const model = validModel()
-		model.ticketCapacity = '4'
-		model.maxTicketsPerApplication = '4'
+		model.quantity = '4'
+		model.perAccountLimit = '4'
 		const errors = validateLotteryPhaseForm(model)
-		expect(errors.maxTicketsPerApplication).toBeUndefined()
+		expect(errors.perAccountLimit).toBeUndefined()
 		expect(isFormValid(errors)).toBe(true)
 	})
 })
 
-describe('toConfigureInput', () => {
-	it('marshals a validated model into the transport-agnostic input', () => {
-		const input = toConfigureInput('event-1', validModel(DEFAULT_WINDOW_DAYS))
-		expect(input.eventId).toBe('event-1')
-		expect(input.ticketCapacity).toBe(200)
-		expect(input.maxTicketsPerApplication).toBe(4)
-		expect(input.ticketPrice).toBe(6500)
-		expect(windowDurationDays(input.openTime, input.closeTime)).toBe(
-			DEFAULT_WINDOW_DAYS,
+describe('toCreateInput', () => {
+	it('marshals a validated model into a Lottery sale with one TicketType', () => {
+		const input = toCreateInput(
+			'series-1',
+			'event-1',
+			validModel(DEFAULT_WINDOW_DAYS),
 		)
+		expect(input).toMatchObject({
+			seriesId: 'series-1',
+			name: 'ファンクラブ先行',
+			method: 'lottery',
+			eventId: 'event-1',
+			quantity: 200,
+			perAccountLimit: 4,
+			price: 6500,
+		})
+		expect(
+			windowDurationDays(input.saleStartTime, input.saleEndTime ?? new Date(0)),
+		).toBe(DEFAULT_WINDOW_DAYS)
 	})
 })

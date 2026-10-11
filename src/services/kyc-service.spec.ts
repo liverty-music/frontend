@@ -4,7 +4,7 @@ import {
 	loadVerifySessionId,
 	saveVerifySessionId,
 } from '../adapter/storage/verify-session-storage'
-import type { MyVerificationStatus } from '../entities/verified-identity'
+import type { Kyc, KycStatus } from '../entities/kyc'
 
 // ── Storage adapter mocks ──────────────────────────────────────────────────
 
@@ -20,34 +20,34 @@ const mockLogger = {
 	scopeTo: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }
 const mockAuth = { isAuthenticated: true }
-const mockUserStore = {
-	current: { id: 'user-1' } as { id: string } | undefined,
+// Captures the SignedOut handler the service subscribes in its constructor.
+let signedOutHandler: (() => void) | undefined
+const mockEa = {
+	subscribe: vi.fn((_event: unknown, handler: () => void) => {
+		signedOutHandler = handler
+		return { dispose: vi.fn() }
+	}),
 }
 
-const unverified: MyVerificationStatus = { level: 'unverified' }
-const verified: MyVerificationStatus = {
-	level: 'identityVerified',
-	identity: {
-		id: 'vi-1',
-		accountRef: 'user-1',
-		method: 'jpki',
-		pocketSignUserId: 'ps-user-1',
-		dedupeStrength: 'strong',
-		status: 'active',
-	},
+const activeKyc: Kyc = {
+	id: 'kyc-1',
+	userId: 'user-1',
+	method: 'jpki',
+	pocketSignUserId: 'ps-user-1',
+	dedupeStrength: 'strong',
+	status: 'active',
 }
+const verified: KycStatus = { level: 'kycVerified', kyc: activeKyc }
 
 const mockRpcClient = {
-	getMyVerificationStatus: vi.fn(
-		async (): Promise<MyVerificationStatus> => unverified,
-	),
-	startVerify: vi.fn(
+	get: vi.fn(async (): Promise<Kyc | undefined> => undefined),
+	start: vi.fn(
 		async (): Promise<{ sessionId: string; redirectUrl: string }> => ({
 			sessionId: 'sess-1',
 			redirectUrl: 'https://pocketsign.example.com/stamp/sess-1',
 		}),
 	),
-	completeVerify: vi.fn(async (): Promise<MyVerificationStatus> => verified),
+	create: vi.fn(async (): Promise<KycStatus> => verified),
 }
 
 vi.mock('aurelia', async (importOriginal) => {
@@ -58,8 +58,8 @@ vi.mock('aurelia', async (importOriginal) => {
 			const map: Record<string, unknown> = {
 				ILogger: mockLogger,
 				IAuthService: mockAuth,
-				IUserStore: mockUserStore,
-				IIdentityVerificationRpcClient: mockRpcClient,
+				IEventAggregator: mockEa,
+				IKycRpcClient: mockRpcClient,
 			}
 			const tokenAny = token as { friendlyName?: string }
 			return map[tokenAny.friendlyName ?? ''] ?? {}
@@ -85,60 +85,79 @@ afterEach(() => {
 	})
 })
 
-import { IdentityVerificationService } from './identity-verification-service'
+import { KycService } from './kyc-service'
 
-describe('IdentityVerificationService', () => {
-	let sut: IdentityVerificationService
+describe('KycService', () => {
+	let sut: KycService
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockAuth.isAuthenticated = true
-		mockUserStore.current = { id: 'user-1' }
-		mockRpcClient.getMyVerificationStatus.mockResolvedValue(unverified)
-		mockRpcClient.startVerify.mockResolvedValue({
+		mockRpcClient.get.mockResolvedValue(undefined)
+		mockRpcClient.start.mockResolvedValue({
 			sessionId: 'sess-1',
 			redirectUrl: 'https://pocketsign.example.com/stamp/sess-1',
 		})
-		mockRpcClient.completeVerify.mockResolvedValue(verified)
+		mockRpcClient.create.mockResolvedValue(verified)
 		vi.mocked(loadVerifySessionId).mockReturnValue(null)
-		sut = new IdentityVerificationService()
+		sut = new KycService()
 	})
 
-	describe('getMyVerificationStatus', () => {
-		it('reads status over RPC and stores it on the observable for an authed user', async () => {
-			mockRpcClient.getMyVerificationStatus.mockResolvedValueOnce(verified)
+	describe('getStatus', () => {
+		it('reads the Kyc over RPC and derives the level for a signed-in fan', async () => {
+			mockRpcClient.get.mockResolvedValueOnce(activeKyc)
 
-			const result = await sut.getMyVerificationStatus()
+			const result = await sut.getStatus()
 
-			expect(mockRpcClient.getMyVerificationStatus).toHaveBeenCalledWith(
-				'user-1',
-				undefined,
-			)
-			expect(result).toBe(verified)
-			expect(sut.status).toBe(verified)
+			expect(mockRpcClient.get).toHaveBeenCalledWith(undefined)
+			expect(result).toEqual(verified)
+			expect(sut.status).toEqual(verified)
 			expect(sut.loaded).toBe(true)
+		})
+
+		it('is unverified when the fan never passed KYC', async () => {
+			const result = await sut.getStatus()
+
+			expect(result).toEqual({ level: 'unverified' })
+		})
+
+		it('is unverified, with the Kyc, when the Kyc needs re-verification', async () => {
+			const stale: Kyc = { ...activeKyc, status: 'needsReverification' }
+			mockRpcClient.get.mockResolvedValueOnce(stale)
+
+			const result = await sut.getStatus()
+
+			expect(result).toEqual({ level: 'unverified', kyc: stale })
 		})
 
 		it('returns an unverified snapshot without an RPC for a guest', async () => {
 			mockAuth.isAuthenticated = false
 
-			const result = await sut.getMyVerificationStatus()
+			const result = await sut.getStatus()
 
-			expect(mockRpcClient.getMyVerificationStatus).not.toHaveBeenCalled()
+			expect(mockRpcClient.get).not.toHaveBeenCalled()
 			expect(result.level).toBe('unverified')
 			expect(sut.loaded).toBe(true)
 		})
 	})
 
+	describe('SignedOut', () => {
+		it('forgets the previous account snapshot', async () => {
+			mockRpcClient.get.mockResolvedValueOnce(activeKyc)
+			await sut.getStatus()
+
+			signedOutHandler?.()
+
+			expect(sut.status).toBeUndefined()
+			expect(sut.loaded).toBe(false)
+		})
+	})
+
 	describe('verify (Stamp redirect — leg 1)', () => {
-		it('calls StartVerify, persists the session_id, and sets window.location.href', async () => {
+		it('calls KycService.Start, persists the session_id, and sets window.location.href', async () => {
 			const outcome = await sut.verify('jpki')
 
-			expect(mockRpcClient.startVerify).toHaveBeenCalledWith(
-				'user-1',
-				'jpki',
-				undefined,
-			)
+			expect(mockRpcClient.start).toHaveBeenCalledWith('jpki', undefined)
 			expect(saveVerifySessionId).toHaveBeenCalledWith('sess-1')
 			expect(window.location.href).toBe(
 				'https://pocketsign.example.com/stamp/sess-1',
@@ -146,32 +165,32 @@ describe('IdentityVerificationService', () => {
 			expect(outcome.kind).toBe('redirecting')
 		})
 
-		it('returns notAuthenticated for a guest without calling StartVerify', async () => {
+		it('returns notAuthenticated for a guest without calling Start', async () => {
 			mockAuth.isAuthenticated = false
 
 			const outcome = await sut.verify('jpki')
 
 			expect(outcome.kind).toBe('notAuthenticated')
-			expect(mockRpcClient.startVerify).not.toHaveBeenCalled()
+			expect(mockRpcClient.start).not.toHaveBeenCalled()
 			expect(saveVerifySessionId).not.toHaveBeenCalled()
 		})
 
-		it('propagates a ConnectError from StartVerify (UNAVAILABLE etc.) to the caller', async () => {
-			mockRpcClient.startVerify.mockRejectedValueOnce(
+		it('propagates a ConnectError from Start (UNAVAILABLE etc.) to the caller', async () => {
+			mockRpcClient.start.mockRejectedValueOnce(
 				new Error('UNAVAILABLE: PocketSign not configured'),
 			)
 
 			await expect(sut.verify('jpki')).rejects.toThrow('UNAVAILABLE')
 		})
 
-		it('does NOT persist a session id or navigate when StartVerify throws (no partial navigation)', async () => {
-			mockRpcClient.startVerify.mockRejectedValueOnce(
+		it('does NOT persist a session id or navigate when Start throws (no partial navigation)', async () => {
+			mockRpcClient.start.mockRejectedValueOnce(
 				new Error('UNAVAILABLE: PocketSign not configured'),
 			)
 
 			await expect(sut.verify('jpki')).rejects.toThrow('UNAVAILABLE')
 
-			// StartVerify is awaited BEFORE saveVerifySessionId / window.location.href,
+			// Start is awaited BEFORE saveVerifySessionId / window.location.href,
 			// so a throw must leave both untouched — the browser must not navigate to a
 			// half-built URL, and no stale session id may linger for the next attempt.
 			expect(saveVerifySessionId).not.toHaveBeenCalled()
@@ -179,7 +198,7 @@ describe('IdentityVerificationService', () => {
 		})
 
 		it('saveVerifySessionId is called BEFORE window.location.href is set (load-bearing order)', async () => {
-			// The code comment in identity-verification-service.ts states this is load-bearing:
+			// The code comment in kyc-service.ts states this is load-bearing:
 			// if window.location.href were set first the browser would navigate away and the
 			// session id would never be persisted, causing every callback to sessionMismatch.
 			const callOrder: string[] = []
@@ -218,11 +237,7 @@ describe('IdentityVerificationService', () => {
 			const outcome = await sut.completeFromCallback()
 
 			expect(clearVerifySessionId).toHaveBeenCalled()
-			expect(mockRpcClient.completeVerify).toHaveBeenCalledWith(
-				'user-1',
-				'sess-1',
-				undefined,
-			)
+			expect(mockRpcClient.create).toHaveBeenCalledWith('sess-1', undefined)
 			expect(outcome.kind).toBe('verified')
 			if (outcome.kind === 'verified') {
 				expect(outcome.status).toBe(verified)
@@ -231,19 +246,19 @@ describe('IdentityVerificationService', () => {
 			expect(sut.loaded).toBe(true)
 		})
 
-		it('returns sessionMismatch and does NOT call CompleteVerify when no session_id is persisted', async () => {
+		it('returns sessionMismatch and does NOT call Create when no session_id is persisted', async () => {
 			vi.mocked(loadVerifySessionId).mockReturnValue(null)
 
 			const outcome = await sut.completeFromCallback()
 
 			expect(clearVerifySessionId).toHaveBeenCalled()
-			expect(mockRpcClient.completeVerify).not.toHaveBeenCalled()
+			expect(mockRpcClient.create).not.toHaveBeenCalled()
 			expect(outcome.kind).toBe('sessionMismatch')
 		})
 
-		it('always clears the persisted session_id even on a CompleteVerify failure', async () => {
+		it('always clears the persisted session_id even on a Create failure', async () => {
 			vi.mocked(loadVerifySessionId).mockReturnValue('sess-1')
-			mockRpcClient.completeVerify.mockRejectedValueOnce(
+			mockRpcClient.create.mockRejectedValueOnce(
 				new Error('FAILED_PRECONDITION'),
 			)
 
@@ -253,10 +268,10 @@ describe('IdentityVerificationService', () => {
 			expect(outcome.kind).toBe('verificationFailed')
 		})
 
-		it('returns verificationFailed with the error when CompleteVerify throws', async () => {
+		it('returns verificationFailed with the error when Create throws', async () => {
 			vi.mocked(loadVerifySessionId).mockReturnValue('sess-9')
 			const rpcError = new Error('FAILED_PRECONDITION: session expired')
-			mockRpcClient.completeVerify.mockRejectedValueOnce(rpcError)
+			mockRpcClient.create.mockRejectedValueOnce(rpcError)
 
 			const outcome = await sut.completeFromCallback()
 
