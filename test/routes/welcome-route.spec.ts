@@ -43,6 +43,15 @@ vi.mock('../../src/constants/preview-artists', () => ({
 	__resetPreviewArtistsForTests: () => {},
 }))
 
+// The shared language-change utility, spied but kept real, so a test can tell
+// the route delegates to it.
+vi.mock('../../src/util/change-locale', async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import('../../src/util/change-locale')>()
+	return { ...actual, changeLocale: vi.fn(actual.changeLocale) }
+})
+const { changeLocale } = await import('../../src/util/change-locale')
+
 const { WelcomeRoute } = await import('../../src/routes/welcome/welcome-route')
 
 describe('WelcomeRoute', () => {
@@ -195,6 +204,23 @@ describe('WelcomeRoute', () => {
 			expect(mockI18n.setLocale).toHaveBeenCalledWith('en')
 			// The anonymous choice is persisted to the single `language` key (the
 			// i18next detector cache) — no separate guest.language key.
+			expect(localStorage.getItem('language')).toBe('en')
+			localStorage.removeItem('language')
+		})
+
+		// @spec components/infrastructure/fan/web/global/i18n "Used by both Welcome and Settings"
+		it('changes the language through the shared changeLocale utility, on its guest path', async () => {
+			localStorage.removeItem('language')
+			vi.mocked(changeLocale).mockClear()
+
+			await sut.selectLanguage('en')
+
+			// The same utility Settings calls (settings-language fixture); for a
+			// guest it persists to the language key and makes no RPC.
+			expect(changeLocale).toHaveBeenCalledExactlyOnceWith(
+				expect.objectContaining({ auth: mockAuth }),
+				'en',
+			)
 			expect(localStorage.getItem('language')).toBe('en')
 			localStorage.removeItem('language')
 		})

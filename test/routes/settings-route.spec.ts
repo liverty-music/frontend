@@ -323,6 +323,39 @@ describe('SettingsRoute', () => {
 		})
 	})
 
+	describe('home area persistence (the caller owns it)', () => {
+		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — authenticated home save"
+		it("saves a signed-in fan's home with UserService.SetHome", async () => {
+			mockAuth.isAuthenticated = true
+			const updateHome = vi.fn().mockResolvedValue(undefined)
+			Object.assign(mockUserStore, { updateHome })
+
+			await sut.onHomeSelected('JP-13')
+
+			expect(updateHome).toHaveBeenCalledExactlyOnceWith(
+				expect.objectContaining({ countryCode: 'JP', level1: 'JP-13' }),
+			)
+			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
+			expect(localStorage.getItem('guest.home')).toBeNull()
+		})
+
+		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — guest home save"
+		it("saves a guest's home as the guest home, without an RPC", async () => {
+			mockAuth.isAuthenticated = false
+			const updateHome = vi.fn()
+			Object.assign(mockUserStore, { updateHome })
+
+			await sut.onHomeSelected('JP-13')
+
+			// The user store writes it to localStorage under guest.home
+			// (user-store.spec "persists the guest home via the dedicated key").
+			expect(mockUserStore.setGuestHome).toHaveBeenCalledExactlyOnceWith(
+				'JP-13',
+			)
+			expect(updateHome).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('toggleNotifications', () => {
 		// @spec components/infrastructure/fan/web/route/settings "Toggling notifications ON"
 		it('creates and enables when toggling on with granted permission', async () => {

@@ -615,6 +615,50 @@ describe('DashboardRoute', () => {
 		})
 	})
 
+	describe('All Nearby area override', () => {
+		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — session-only override"
+		it('keeps the chosen area in route state only, persisting nothing', () => {
+			mockAuth.isAuthenticated = true
+			const updateHome = vi.fn()
+			Object.assign(mockUserStore, { updateHome })
+			sut = buildSut()
+
+			sut.onAreaSelected('JP-27')
+
+			expect(sut.selectedAreaCode).toBe('JP-27')
+			expect(sut.selectedAreaName).not.toBe('')
+			expect(updateHome).not.toHaveBeenCalled()
+			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
+			expect(mockStorage.setItem).not.toHaveBeenCalledWith(
+				'guest.home',
+				expect.anything(),
+			)
+			expect(localStorage.getItem('guest.home')).toBeNull()
+		})
+	})
+
+	describe('follow from the detail sheet', () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Follow button for unauthenticated user"
+		it('surfaces the sign-up prompt banner when a guest taps follow', () => {
+			mockAuth.isAuthenticated = false
+			expect(sut.showSignupBanner).toBe(false)
+
+			sut.onFollowSignupRequested()
+
+			// The sheet calls this instead of FollowService.Follow (covered by the
+			// event-detail-sheet follow fixture).
+			expect(sut.showSignupBanner).toBe(true)
+		})
+
+		it('shows no banner for a signed-in fan', () => {
+			mockAuth.isAuthenticated = true
+
+			sut.onFollowSignupRequested()
+
+			expect(sut.showSignupBanner).toBe(false)
+		})
+	})
+
 	describe('detaching', () => {
 		it('aborts active request', () => {
 			sut.loadData()
