@@ -61,7 +61,12 @@ const E2E_ENV = process.env.E2E_ENV === 'prod' ? 'prod' : 'dev'
 const TARGET = TARGETS[E2E_ENV]
 const APP_URL = process.env.APP_URL || TARGET.appUrl
 const OUTPUT_DIR = path.join(import.meta.dirname, '..', '.auth')
-const STORAGE_STATE_PATH = path.join(OUTPUT_DIR, TARGET.stateFile)
+// `E2E_STATE_FILE` names another file in `.auth/`, for a second test user
+// signed in with `E2E_USERNAME` / `E2E_PASSWORD`.
+const STORAGE_STATE_PATH = path.join(
+	OUTPUT_DIR,
+	path.basename(process.env.E2E_STATE_FILE || TARGET.stateFile),
+)
 const PASSWORD_PATH = path.join(OUTPUT_DIR, TARGET.passwordFile)
 const DEFAULT_USERNAME = TARGET.username
 
