@@ -12,7 +12,7 @@ import { SettingsRoute } from '../../src/routes/settings/settings-route'
 import { IAudioEngine } from '../../src/services/audio-engine'
 import { IAuthService } from '../../src/services/auth-service'
 import { IFabMenuService } from '../../src/services/fab-menu-service'
-import { IKycService } from '../../src/services/kyc-service'
+import { IIdentityVerificationService } from '../../src/services/identity-verification-service'
 import { IPushService } from '../../src/services/push-service'
 import { IUserStore } from '../../src/services/user-store'
 
@@ -71,7 +71,9 @@ async function render(store: ReturnType<typeof makeUserStore>) {
 			Registration.instance(IPushService, {
 				resolvePushState: vi.fn(async () => 'needs-permission'),
 			}),
-			Registration.instance(IKycService, { status: undefined }),
+			Registration.instance(IIdentityVerificationService, {
+				status: undefined,
+			}),
 			Registration.instance(IRouter, { load: vi.fn() }),
 			Registration.instance(IAudioEngine, { muted: false, volume: 0.5 }),
 			Registration.instance(IAppConfig, { vapidPublicKey: '' }),

@@ -5,8 +5,9 @@ import { SessionKeys, StorageKeys } from '../constants/storage-keys'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
+const mockWarn = vi.fn()
 const mockLogger = {
-	scopeTo: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+	scopeTo: () => ({ info: vi.fn(), warn: mockWarn, error: vi.fn() }),
 }
 
 interface MockUser {
@@ -236,6 +237,8 @@ describe('runUserHydration', () => {
 		expect(lsMap.get(StorageKeys.language)).toBe('en')
 	})
 
+	// @spec components/infrastructure/fan/web/global/i18n "Hydrated profile has no preferred language"
+	// @spec components/infrastructure/fan/web/global/i18n "NULL preferred_language surfaced and backfilled"
 	it('backfills preferred_language fire-and-forget when absent in hydrated profile', async () => {
 		mockUserStore.current = { id: 'user-1', preferredLanguage: undefined }
 		mockUserStore.ensureLoaded.mockImplementationOnce(async () => {
@@ -247,13 +250,17 @@ describe('runUserHydration', () => {
 		await flushMicrotasks()
 
 		expect(mockUserStore.updatePreferredLanguage).toHaveBeenCalledWith('ja')
+		// The User now carries the value sent, and the active locale stays.
+		expect(mockUserStore.current?.preferredLanguage).toBe('ja')
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
+		expect(i18nState.locale).toBe('ja')
 		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
 		expect(sessionStorage.getItem(SessionKeys.languageBackfillAttempted)).toBe(
 			'1',
 		)
 	})
 
+	// @spec components/infrastructure/fan/web/global/i18n "Backfill RPC failure is non-fatal"
 	it('preserves localStorage and clears the session flag when backfill RPC fails so next session retries', async () => {
 		mockUserStore.current = { id: 'user-1', preferredLanguage: undefined }
 		mockUserStore.ensureLoaded.mockImplementationOnce(async () => {
@@ -263,8 +270,14 @@ describe('runUserHydration', () => {
 			new Error('network'),
 		)
 
-		await runUserHydration(makeContainer())
+		// Non-fatal: hydration resolves and the current locale stays in place.
+		await expect(runUserHydration(makeContainer())).resolves.toBeUndefined()
 		await flushMicrotasks()
+		expect(mockWarn).toHaveBeenCalledWith(
+			expect.stringContaining('Failed to backfill preferred_language'),
+			expect.anything(),
+		)
+		expect(i18nState.locale).toBe('en')
 
 		// Backfill failed → KEEP localStorage['language'] so the next
 		// session can re-detect the user's explicit anonymous choice and

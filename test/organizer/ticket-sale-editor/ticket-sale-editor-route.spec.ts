@@ -19,18 +19,18 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AuthoredSeries } from '../../../organizer/services/concert-authoring-client'
+import type { AuthoredSeries } from '../../../organizer/services/series-client'
 import { authoredSeries } from '../authored-series'
 
 // Replace the RPC client modules with fresh interface tokens so the route
 // binds to test doubles instead of building real Connect transports.
-const IConcertAuthoringClient = DI.createInterface('IConcertAuthoringClient')
-vi.mock('../../../organizer/services/concert-authoring-client', () => ({
-	IConcertAuthoringClient,
+const ISeriesClient = DI.createInterface('ISeriesClient')
+vi.mock('../../../organizer/services/series-client', () => ({
+	ISeriesClient,
 }))
-const IOrganizerIdentityClient = DI.createInterface('IOrganizerIdentityClient')
-vi.mock('../../../organizer/services/organizer-identity-client', () => ({
-	IOrganizerIdentityClient,
+const IOrganizerClient = DI.createInterface('IOrganizerClient')
+vi.mock('../../../organizer/services/organizer-client', () => ({
+	IOrganizerClient,
 }))
 const ITicketSaleClient = DI.createInterface('ITicketSaleClient')
 vi.mock('../../../organizer/services/ticket-sale-client', () => ({
@@ -194,8 +194,8 @@ async function render(m: Mocks): Promise<{ vm: Route; host: HTMLElement }> {
 		)
 		.deps(
 			TicketSaleEditorRoute,
-			Registration.instance(IConcertAuthoringClient, m.concerts),
-			Registration.instance(IOrganizerIdentityClient, m.organizers),
+			Registration.instance(ISeriesClient, m.concerts),
+			Registration.instance(IOrganizerClient, m.organizers),
 			Registration.instance(ITicketSaleClient, m.ticketSales),
 			Registration.instance(ITicketTypeClient, m.ticketTypes),
 		)
@@ -213,8 +213,8 @@ function input(host: HTMLElement, name: string): HTMLInputElement | null {
 }
 
 function fillValid(vm: Route): void {
-	vm.model.saleStart = '2026-11-01T12:00'
-	vm.model.saleEnd = '2026-11-20T19:00'
+	vm.model.saleStartTime = '2026-11-01T12:00'
+	vm.model.saleEndTime = '2026-11-20T19:00'
 	vm.model.price = '3000'
 	vm.model.quantity = '150'
 	vm.model.perAccountLimit = '4'
@@ -228,10 +228,10 @@ describe('TicketSaleEditorRoute', () => {
 			// @spec components/infrastructure/organizer/web/route/ticket-sale-editor "Blank form"
 			const { vm, host } = await render(mocks())
 
-			expect(vm.model.saleEnd).toBe('2026-11-20T19:00')
+			expect(vm.model.saleEndTime).toBe('2026-11-20T19:00')
 			expect(vm.model.name).toBe('一般発売')
 			expect(vm.model.perAccountLimit).toBe('4')
-			expect(input(host, 'saleEnd')?.value).toBe('2026-11-20T19:00')
+			expect(input(host, 'saleEndTime')?.value).toBe('2026-11-20T19:00')
 			expect(input(host, 'name')?.value).toBe('一般発売')
 			expect(input(host, 'perAccountLimit')?.value).toBe('4')
 			expect(input(host, 'price')).not.toBeNull()
@@ -243,18 +243,22 @@ describe('TicketSaleEditorRoute', () => {
 			const m = mocks()
 			const { vm, host } = await render(m)
 			fillValid(vm)
-			vm.model.saleEnd = '2026-11-20T19:30'
+			vm.model.saleEndTime = '2026-11-20T19:30'
 
 			host.querySelector<HTMLButtonElement>('button[type="submit"]')?.click()
 			await tasksSettled()
 
 			expect(m.ticketSales.create).not.toHaveBeenCalled()
-			const error = host.querySelector('[data-error="saleEnd"]')
+			const error = host.querySelector('[data-error="saleEndTime"]')
 			expect(error?.textContent).toContain('開演時刻')
 			expect(
-				input(host, 'saleEnd')?.getAttribute('aria-describedby')?.split(' '),
+				input(host, 'saleEndTime')
+					?.getAttribute('aria-describedby')
+					?.split(' '),
 			).toContain(error?.id)
-			expect(input(host, 'saleEnd')?.getAttribute('aria-invalid')).toBe('true')
+			expect(input(host, 'saleEndTime')?.getAttribute('aria-invalid')).toBe(
+				'true',
+			)
 		})
 
 		it('says the window overlaps the presale and saves nothing', async () => {
@@ -262,13 +266,13 @@ describe('TicketSaleEditorRoute', () => {
 			const m = mocks({ sales: [presale()] })
 			const { vm, host } = await render(m)
 			fillValid(vm)
-			vm.model.saleStart = '2026-11-08T12:00'
+			vm.model.saleStartTime = '2026-11-08T12:00'
 
 			await vm.save()
 			await tasksSettled()
 
 			expect(m.ticketSales.create).not.toHaveBeenCalled()
-			const error = host.querySelector('[data-error="saleStart"]')
+			const error = host.querySelector('[data-error="saleStartTime"]')
 			expect(error?.textContent).toContain('ほかの販売「ファンクラブ先行」')
 			expect(error?.textContent).toContain('重なっています')
 		})
@@ -278,7 +282,7 @@ describe('TicketSaleEditorRoute', () => {
 			const { vm, host } = await render(m)
 			fillValid(vm)
 			vm.model.name = ' '
-			vm.model.saleEnd = '2026-11-01T12:00'
+			vm.model.saleEndTime = '2026-11-01T12:00'
 			vm.model.price = '1000001'
 			vm.model.quantity = '0'
 			vm.model.perAccountLimit = '11'
@@ -289,14 +293,14 @@ describe('TicketSaleEditorRoute', () => {
 			expect(m.ticketSales.create).not.toHaveBeenCalled()
 			for (const field of [
 				'name',
-				'saleEnd',
+				'saleEndTime',
 				'price',
 				'quantity',
 				'perAccountLimit',
 			]) {
 				expect(host.querySelector(`[data-error="${field}"]`)).not.toBeNull()
 			}
-			expect(vm.errors.saleEnd).toContain('販売開始より後')
+			expect(vm.errors.saleEndTime).toContain('販売開始より後')
 		})
 
 		it('rejects a limit above the quantity', async () => {
@@ -388,8 +392,8 @@ describe('TicketSaleEditorRoute', () => {
 			})
 			m.ticketSales.setWindow.mockResolvedValue(saleWith({ sold: 0, held: 0 }))
 			const { vm } = await render(m)
-			expect(vm.model.saleEnd).toBe('2026-11-19T19:00')
-			vm.model.saleEnd = '2026-11-20T19:00'
+			expect(vm.model.saleEndTime).toBe('2026-11-19T19:00')
+			vm.model.saleEndTime = '2026-11-20T19:00'
 
 			await vm.save()
 
@@ -399,7 +403,7 @@ describe('TicketSaleEditorRoute', () => {
 				EVENT_START,
 			)
 			expect(m.ticketTypes.update).not.toHaveBeenCalled()
-			expect(vm.model.saleEnd).toBe('2026-11-20T19:00')
+			expect(vm.model.saleEndTime).toBe('2026-11-20T19:00')
 			expect(vm.model.price).toBe('3000')
 			expect(vm.model.quantity).toBe('150')
 			expect(vm.model.perAccountLimit).toBe('4')

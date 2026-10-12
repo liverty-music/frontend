@@ -54,8 +54,8 @@ export interface TicketSale {
 	readonly id: string
 	readonly name: string
 	readonly method: TicketSaleMethod
-	readonly saleStart: Date
-	readonly saleEnd: Date
+	readonly saleStartTime: Date
+	readonly saleEndTime: Date
 	readonly verificationRequirement: VerificationRequirement
 	/** The sale's TicketType for the event it was read for. */
 	readonly ticketType: TicketType
@@ -64,7 +64,7 @@ export interface TicketSale {
 /** True while the sale's window is open at `now`. */
 export function isWindowOpen(sale: TicketSale, now: Date): boolean {
 	const t = now.getTime()
-	return sale.saleStart.getTime() <= t && t < sale.saleEnd.getTime()
+	return sale.saleStartTime.getTime() <= t && t < sale.saleEndTime.getTime()
 }
 
 /**
@@ -80,11 +80,11 @@ export function currentSale(
 	if (open) return open
 	const t = now.getTime()
 	const upcoming = sales
-		.filter((s) => s.saleStart.getTime() > t)
-		.sort((a, b) => a.saleStart.getTime() - b.saleStart.getTime())
+		.filter((s) => s.saleStartTime.getTime() > t)
+		.sort((a, b) => a.saleStartTime.getTime() - b.saleStartTime.getTime())
 	if (upcoming.length > 0) return upcoming[0]
 	const ended = [...sales].sort(
-		(a, b) => b.saleEnd.getTime() - a.saleEnd.getTime(),
+		(a, b) => b.saleEndTime.getTime() - a.saleEndTime.getTime(),
 	)
 	return ended[0] ?? null
 }

@@ -10,14 +10,14 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AuthoredSeries } from '../../../organizer/services/concert-authoring-client'
+import type { AuthoredSeries } from '../../../organizer/services/series-client'
 import { IAppConfig } from '../../../shared/config/app-config'
 import { authoredSeries } from '../authored-series'
 
-const IConcertAuthoringClient = DI.createInterface('IConcertAuthoringClient')
+const ISeriesClient = DI.createInterface('ISeriesClient')
 const IReceptionLinkClient = DI.createInterface('IReceptionLinkClient')
-vi.mock('../../../organizer/services/concert-authoring-client', () => ({
-	IConcertAuthoringClient,
+vi.mock('../../../organizer/services/series-client', () => ({
+	ISeriesClient,
 }))
 vi.mock('../../../organizer/services/reception-link-client', () => ({
 	IReceptionLinkClient,
@@ -106,7 +106,7 @@ async function build(m: Mocks) {
 		)
 		.deps(
 			ReceptionLinksRoute,
-			Registration.instance(IConcertAuthoringClient, m.concerts),
+			Registration.instance(ISeriesClient, m.concerts),
 			Registration.instance(IReceptionLinkClient, m.links),
 			Registration.instance(IAppConfig, { receptionBaseUrl: RECEPTION }),
 		)

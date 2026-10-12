@@ -17,9 +17,9 @@ import { Snack } from '../shared/ui/snack-bar/snack'
 import { IArtistRpcClient } from './adapter/rpc/client/artist-client'
 import { IConcertRpcClient } from './adapter/rpc/client/concert-client'
 import { IFollowRpcClient } from './adapter/rpc/client/follow-client'
-import { IKycRpcClient } from './adapter/rpc/client/kyc-client'
+import { IIdentityVerificationRpcClient } from './adapter/rpc/client/identity-verification-client'
 import { ILotteryEntryRpcClient } from './adapter/rpc/client/lottery-entry-client'
-import { IPushRpcClient } from './adapter/rpc/client/push-client'
+import { IPushSubscriptionRpcClient } from './adapter/rpc/client/push-subscription-client'
 import { ITicketJourneyRpcClient } from './adapter/rpc/client/ticket-journey-client'
 import { IUserRpcClient } from './adapter/rpc/client/user-client'
 import { AppShell } from './app-shell'
@@ -81,7 +81,7 @@ import { FollowReconcileTask } from './services/follow-reconcile-task'
 import { IFollowStore } from './services/follow-store'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
 import { IHapticService } from './services/haptic-service'
-import { IKycService } from './services/kyc-service'
+import { IIdentityVerificationService } from './services/identity-verification-service'
 import { INotificationManager } from './services/notification-manager'
 import { IOnboardingService } from './services/onboarding-service'
 import { initOtel } from './services/otel-init'
@@ -264,7 +264,7 @@ async function bootstrap(): Promise<void> {
 	au.register(IPwaInstallService)
 	au.register(ITicketJourneyService)
 	au.register(ITicketJourneyStore)
-	au.register(IKycService)
+	au.register(IIdentityVerificationService)
 	au.register(IResumeRevalidator)
 	au.register(IFabMenuService)
 	au.register(IArtistRpcClient)
@@ -272,8 +272,8 @@ async function bootstrap(): Promise<void> {
 	au.register(IFollowRpcClient)
 	au.register(ITicketJourneyRpcClient)
 	au.register(IUserRpcClient)
-	au.register(IPushRpcClient)
-	au.register(IKycRpcClient)
+	au.register(IPushSubscriptionRpcClient)
+	au.register(IIdentityVerificationRpcClient)
 	au.register(ILotteryEntryRpcClient)
 	au.register(IStripeService)
 	au.register(ArtistFilterBar)

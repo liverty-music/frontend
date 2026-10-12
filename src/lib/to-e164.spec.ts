@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { toDomesticDisplay, toE164 } from './to-e164'
 
 describe('toE164', () => {
-	// @spec components/infrastructure/fan/web/route/lottery-apply "Domestic number with hyphens"
+	// @spec components/infrastructure/fan/web/route/lottery-entry "Domestic number with hyphens"
 	it('converts a hyphenated domestic mobile number', () => {
 		expect(toE164('090-1234-5678')).toBe('+819012345678')
 	})
 
-	// @spec components/infrastructure/fan/web/route/lottery-apply "Landline number"
+	// @spec components/infrastructure/fan/web/route/lottery-entry "Landline number"
 	it('converts a 10-digit domestic landline number with spaces', () => {
 		expect(toE164('03 1234 5678')).toBe('+81312345678')
 	})
@@ -16,7 +16,7 @@ describe('toE164', () => {
 		expect(toE164('(03) 1234-5678')).toBe('+81312345678')
 	})
 
-	// @spec components/infrastructure/fan/web/route/lottery-apply "E.164 number with spaces"
+	// @spec components/infrastructure/fan/web/route/lottery-entry "E.164 number with spaces"
 	it('strips separators from an E.164 number', () => {
 		expect(toE164('+81 90 1234 5678')).toBe('+819012345678')
 	})
@@ -25,7 +25,7 @@ describe('toE164', () => {
 		expect(toE164('+819012345678')).toBe('+819012345678')
 	})
 
-	// @spec components/infrastructure/fan/web/route/lottery-apply "Number fits neither form"
+	// @spec components/infrastructure/fan/web/route/lottery-entry "Number fits neither form"
 	it.each([
 		'12345',
 		'9012345678',

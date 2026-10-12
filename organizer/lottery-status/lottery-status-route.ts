@@ -20,14 +20,14 @@ export interface LotteryStatusView {
 	readonly windowOpen: boolean
 	/** Human window state, one of "Not yet open", "Open", or "Closed". */
 	readonly windowLabel: string
-	readonly openTimeLabel: string
-	readonly closeTimeLabel: string
+	readonly saleStartTimeLabel: string
+	readonly saleEndTimeLabel: string
 	readonly quantity: number
 	readonly perAccountLimit: number
 	readonly price: number
 	readonly drawCompleted: boolean
 	readonly entryCount: number
-	readonly requestedTicketCount: number
+	readonly ticketCount: number
 	readonly wonEntryCount: number
 	readonly wonTicketCount: number
 	readonly lostEntryCount: number
@@ -76,14 +76,14 @@ export function lotteryViewsOf(
 				name: sale.name?.value ?? '',
 				windowOpen: windowLabel === 'Open',
 				windowLabel,
-				openTimeLabel: formatInstant(sale.saleStartTime),
-				closeTimeLabel: formatInstant(sale.saleEndTime),
+				saleStartTimeLabel: formatInstant(sale.saleStartTime),
+				saleEndTimeLabel: formatInstant(sale.saleEndTime),
 				quantity: type.quantity ?? 0,
 				perAccountLimit: type.perAccountLimit,
 				price: Number(type.price?.value ?? 0),
-				drawCompleted: sale.drawnTime !== undefined,
+				drawCompleted: sale.drawTime !== undefined,
 				entryCount: stats?.entryCount ?? 0,
-				requestedTicketCount: stats?.requestedTicketCount ?? 0,
+				ticketCount: stats?.ticketCount ?? 0,
 				wonEntryCount: stats?.wonEntryCount ?? 0,
 				wonTicketCount: stats?.wonTicketCount ?? 0,
 				lostEntryCount: stats?.lostEntryCount ?? 0,

@@ -1,4 +1,6 @@
 import { Signals } from '@aurelia/i18n'
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -158,6 +160,7 @@ describe('UserStore', () => {
 			expect(store.currentLanguage).toBe('en')
 		})
 
+		// @spec components/infrastructure/fan/web/global/i18n "NULL preferred_language surfaced and backfilled"
 		it('falls back to the i18n mirror and does NOT backfill when preferredLanguage is NULL', () => {
 			const { store, rpc } = build({ auth: makeAuth(true) })
 			store.current = { id: 'u' } as User // no preferredLanguage
@@ -181,6 +184,40 @@ describe('UserStore', () => {
 			// getLocale() read).
 			emitLocaleChange('en')
 			expect(store.currentLanguage).toBe('en')
+		})
+	})
+
+	describe('currentLanguage — one observable source', () => {
+		// @spec components/infrastructure/fan/web/global/i18n "Guest language exposed as observable"
+		it('notifies a binding when the guest language changes, without a getLocale() read', async () => {
+			const { store, emitLocaleChange } = build({ auth: makeAuth(false) })
+			const fixture = await createFixture(
+				'<span textcontent.bind="store.currentLanguage"></span>',
+				class Host {
+					public store = store
+				},
+			).started
+			expect(fixture.appHost.textContent).toBe('ja')
+
+			// i18n restores and changes the anonymous locale (the `language` key)
+			// and publishes the change; the bound text follows it with no manual
+			// mirror and no render-time getLocale() read.
+			emitLocaleChange('en')
+			await tasksSettled()
+
+			expect(fixture.appHost.textContent).toBe('en')
+			await fixture.stop(true)
+		})
+
+		// @spec components/infrastructure/fan/web/global/i18n "Unified resolution across auth states"
+		it("resolves the signed-in fan's preferredLanguage and the guest's active locale through the same getter", () => {
+			const authed = build({ auth: makeAuth(true) }).store
+			authed.current = { id: 'u', preferredLanguage: 'en' } as User
+			const guest = build({ auth: makeAuth(false) }).store
+
+			// Callers read `currentLanguage` alone; the store picks the source.
+			expect(authed.currentLanguage).toBe('en')
+			expect(guest.currentLanguage).toBe('ja')
 		})
 	})
 

@@ -16,7 +16,7 @@ export interface ILotteryEntryRpcClient extends LotteryEntryRpcClient {}
 
 /**
  * The signed-in fan's lottery entries (`LotteryEntryService`). An entry is
- * started as a Draft, its card hold is opened with Authorize, and Confirm
+ * started as a Draft, its card is authorized with AuthorizeCard, and Confirm
  * enters it into the draw. The fan is the caller; no request names them.
  * ConnectErrors propagate to the caller, which tells the fan what happened.
  */
@@ -52,17 +52,17 @@ export class LotteryEntryRpcClient {
 
 	/**
 	 * Saves the full name and phone number on the fan's account and opens the
-	 * Draft's card hold, returning the client secret the browser confirms with
-	 * Stripe.
+	 * Draft's card authorization, returning the card authorization secret the
+	 * browser confirms with the payment provider.
 	 */
-	public async authorize(
+	public async authorizeCard(
 		lotteryEntryId: string,
 		fullName: string,
 		phoneNumber: string,
 		signal?: AbortSignal,
 	): Promise<string> {
-		this.logger.info('Authorizing lottery entry', { lotteryEntryId })
-		const resp = await this.client.authorize(
+		this.logger.info('Authorizing card for lottery entry', { lotteryEntryId })
+		const resp = await this.client.authorizeCard(
 			{
 				lotteryEntryId: { value: lotteryEntryId },
 				fullName: { value: fullName },
@@ -70,10 +70,14 @@ export class LotteryEntryRpcClient {
 			},
 			{ signal },
 		)
-		return resp.clientSecret
+		const secret = resp.cardAuthorizationSecret?.value
+		if (!secret) {
+			throw new Error('AuthorizeCard returned no card authorization secret')
+		}
+		return secret
 	}
 
-	/** Enters the Draft into the draw once its card hold is confirmed. */
+	/** Enters the Draft into the draw once its card authorization is confirmed. */
 	public async confirm(
 		lotteryEntryId: string,
 		signal?: AbortSignal,
@@ -87,7 +91,7 @@ export class LotteryEntryRpcClient {
 		return lotteryEntryFrom(resp.lotteryEntry)
 	}
 
-	/** Withdraws the entry before the draw, releasing its card hold. */
+	/** Withdraws the entry before the draw, releasing its card authorization. */
 	public async withdraw(
 		lotteryEntryId: string,
 		signal?: AbortSignal,

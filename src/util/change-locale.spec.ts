@@ -56,6 +56,7 @@ describe('changeLocale', () => {
 	})
 
 	describe('unauthenticated path', () => {
+		// @spec components/infrastructure/fan/web/global/i18n "Anonymous caller path"
 		it('calls i18n.setLocale and persists to the single language key; no RPC', async () => {
 			const i18n = makeI18n()
 			const auth = makeAuth(false)
@@ -72,6 +73,7 @@ describe('changeLocale', () => {
 	})
 
 	describe('authenticated path', () => {
+		// @spec components/infrastructure/fan/web/global/i18n "Authenticated caller path"
 		it('calls RPC first, then setLocale; NEVER writes the anonymous language key', async () => {
 			const callOrder: string[] = []
 			const i18n = makeI18n({

@@ -3,11 +3,8 @@ import {
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { ILogger, resolve } from 'aurelia'
-import {
-	type AuthoredSeries,
-	IConcertAuthoringClient,
-} from '../services/concert-authoring-client'
 import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
+import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 
 /** Coarse lifecycle phase for the initial list fetch. */
 type LoadPhase = 'loading' | 'ready' | 'error'
@@ -32,8 +29,8 @@ export interface ConcertListRow {
 	readonly canPublish: boolean
 	readonly canCancel: boolean
 	/**
-	 * Per-event entry points to lottery-phase configuration. Non-empty only for
-	 * a `PUBLISHED` series — a lottery phase requires a published event. Each
+	 * Per-event entry points to lottery-sale configuration. Non-empty only for
+	 * a `PUBLISHED` series — a lottery sale requires a published event. Each
 	 * entry carries the `eventId` so the console deep-links to
 	 * `lottery/configure/:eventId` without the Organizer knowing the id.
 	 */
@@ -98,7 +95,7 @@ function formatDateRange(concert: AuthoredSeries): string {
 
 /**
  * Builds the per-event lottery entry points for a published series. Empty for
- * any non-published series (a lottery phase requires a published event) and for
+ * any non-published series (a lottery sale requires a published event) and for
  * events lacking an id. When a series has several events the label carries the
  * event date so each link is distinguishable.
  */
@@ -197,7 +194,7 @@ export class ConcertsRoute {
 
 	private abort: AbortController | null = null
 
-	private readonly client = resolve(IConcertAuthoringClient)
+	private readonly client = resolve(ISeriesClient)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertsRoute')
 
 	public async attached(): Promise<void> {

@@ -50,7 +50,7 @@ export function eventFromConcert(
 		seriesId: series?.id?.value ?? '',
 		title: series?.title?.value ?? '',
 		description: series?.description?.value ?? '',
-		coverUrl: series?.media?.attributes?.large?.value ?? '',
+		coverUrl: series?.coverImage?.large?.value ?? '',
 		performers: concert.artists.flatMap((p) => {
 			const id = p.id?.value
 			return id

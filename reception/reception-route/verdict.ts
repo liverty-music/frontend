@@ -42,12 +42,12 @@ interface ReasonCopy {
 }
 
 /**
- * The reasons the server returns. NOT_HOLDER is no longer returned: a code
- * presenting someone else's ticket is refused as a whole with FORGED.
+ * The reasons the server returns. A code presenting someone else's ticket is
+ * refused as a whole with FORGED; the value it once had is reserved.
  */
 type ReturnedReason = Exclude<
 	RejectedScanReason,
-	RejectedScanReason.UNSPECIFIED | RejectedScanReason.NOT_HOLDER
+	RejectedScanReason.UNSPECIFIED
 >
 
 const COPY: Record<ReturnedReason, ReasonCopy> = {
@@ -80,10 +80,10 @@ const UNKNOWN_COPY: ReasonCopy = {
 }
 
 function copyFor(reason: RejectedScanReason): ReasonCopy {
-	return reason === RejectedScanReason.UNSPECIFIED ||
-		reason === RejectedScanReason.NOT_HOLDER
-		? UNKNOWN_COPY
-		: COPY[reason]
+	// Unspecified, the reserved value and any value newer than this build read
+	// as unknown.
+	if (reason === RejectedScanReason.UNSPECIFIED) return UNKNOWN_COPY
+	return COPY[reason] ?? UNKNOWN_COPY
 }
 
 /** The verdict for one decided scan. */

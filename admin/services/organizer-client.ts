@@ -1,6 +1,5 @@
 import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
-import { ArtistService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/artist/v1/artist_service_pb.js'
 import { OrganizerService } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/organizer/v1/organizer_service_pb.js'
 import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
@@ -40,7 +39,7 @@ export interface IOrganizerClient extends OrganizerClient {}
  * imports the consumer `src/`. Callers pass plain strings; this wrapper owns
  * wrapping them into the generated `OrganizerId` / `ArtistId` / `OrganizerName`
  * / `UserEmail` / business-detail message shells the request fields require.
- * An Organizer's artists are read from the admin `ArtistService`.
+ * An Organizer's artists are read with `ArtistClient.listByOrganizer`.
  *
  * All RPCs are served by the admin Connect server, so it reuses the same
  * {@link createAdminTransport} host (`adminApiBaseUrl`) as the concert client.
@@ -54,7 +53,6 @@ export class OrganizerClient {
 		resolve(IAppConfig),
 	)
 	private readonly client = createClient(OrganizerService, this.transport)
-	private readonly artistClient = createClient(ArtistService, this.transport)
 
 	/** Registers a new organizer, seeding its initial operator as the owner. */
 	public async create(
@@ -104,27 +102,6 @@ export class OrganizerClient {
 			return response.organizer
 		} catch (err) {
 			this.logger.warn('get failed', { organizerId, error: err })
-			throw err
-		}
-	}
-
-	/**
-	 * Returns the artists the organizer currently represents, read with the
-	 * admin `ArtistService.ListByOrganizer`.
-	 */
-	public async listArtists(
-		organizerId: string,
-		signal?: AbortSignal,
-	): Promise<Artist[]> {
-		this.logger.info('Listing organizer artists', { organizerId })
-		try {
-			const response = await this.artistClient.listByOrganizer(
-				{ organizerId: { value: organizerId } },
-				{ signal },
-			)
-			return response.artists
-		} catch (err) {
-			this.logger.warn('listArtists failed', { organizerId, error: err })
 			throw err
 		}
 	}

@@ -43,13 +43,11 @@ vi.mock('../../../services/grpc-transport', () => ({
 import { createTransport } from '../../../services/grpc-transport'
 import { TicketRpcClient } from './ticket-client'
 
-function makeRouterTransport(handlers: { getMyTickets?: () => ListResponse }) {
+function makeRouterTransport(handlers: { list?: () => ListResponse }) {
 	return createRouterTransport((router) => {
 		router.service(TicketServiceDef, {
 			list: async (_req) =>
-				handlers.getMyTickets
-					? handlers.getMyTickets()
-					: create(ListResponseSchema),
+				handlers.list ? handlers.list() : create(ListResponseSchema),
 		})
 	})
 }
@@ -64,10 +62,10 @@ describe('TicketRpcClient', () => {
 		vi.clearAllMocks()
 	})
 
-	describe('getMyTickets', () => {
+	describe('list', () => {
 		it('returns the account issued covered tickets', async () => {
 			const transport = makeRouterTransport({
-				getMyTickets: () =>
+				list: () =>
 					create(ListResponseSchema, {
 						tickets: [
 							create(TicketSchema, {
@@ -87,7 +85,7 @@ describe('TicketRpcClient', () => {
 			})
 			const client = makeClient(transport)
 
-			const tickets = await client.getMyTickets()
+			const tickets = await client.list()
 
 			expect(tickets).toHaveLength(2)
 			expect(tickets[0].id?.value).toBe('t-1')
@@ -97,7 +95,7 @@ describe('TicketRpcClient', () => {
 
 		it('returns empty when the caller has no tickets', async () => {
 			const client = makeClient(makeRouterTransport({}))
-			const tickets = await client.getMyTickets()
+			const tickets = await client.list()
 			expect(tickets).toEqual([])
 		})
 	})

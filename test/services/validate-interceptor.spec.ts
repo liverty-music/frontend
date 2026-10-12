@@ -1,7 +1,7 @@
 import {
 	CreateRequestSchema,
-	KycService,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/kyc/v1/kyc_service_pb.js'
+	IdentityVerificationService,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/identity_verification/v1/identity_verification_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { createValidator, type Validator } from '@bufbuild/protovalidate'
 import { Code, ConnectError } from '@connectrpc/connect'
@@ -21,8 +21,8 @@ const mockLogger = {
 function makeRequest(init: Record<string, unknown>, stream = false) {
 	return {
 		stream,
-		service: KycService,
-		method: KycService.method.create,
+		service: IdentityVerificationService,
+		method: IdentityVerificationService.method.create,
 		header: new Headers(),
 		message: create(CreateRequestSchema, init),
 	} as any

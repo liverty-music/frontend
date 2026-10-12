@@ -9,7 +9,9 @@ const mockIAuthService = DI.createInterface('IAuthService')
 const mockIUserStore = DI.createInterface('IUserStore')
 const mockINotificationManager = DI.createInterface('INotificationManager')
 const mockIPushService = DI.createInterface('IPushService')
-const mockIKycService = DI.createInterface('IKycService')
+const mockIIdentityVerificationService = DI.createInterface(
+	'IIdentityVerificationService',
+)
 
 vi.mock('../../src/services/auth-service', () => ({
 	IAuthService: mockIAuthService,
@@ -23,8 +25,8 @@ vi.mock('../../src/services/notification-manager', () => ({
 vi.mock('../../src/services/push-service', () => ({
 	IPushService: mockIPushService,
 }))
-vi.mock('../../src/services/kyc-service', () => ({
-	IKycService: mockIKycService,
+vi.mock('../../src/services/identity-verification-service', () => ({
+	IIdentityVerificationService: mockIIdentityVerificationService,
 }))
 
 vi.mock('../../src/components/user-home-selector/user-home-selector', () => ({
@@ -85,10 +87,10 @@ describe('SettingsRoute', () => {
 		resolvePushState: ReturnType<typeof vi.fn>
 	}
 	let mockEa: { publish: ReturnType<typeof vi.fn> }
-	const mockKyc = {
-		status: undefined,
-		getStatus: vi.fn().mockResolvedValue({ level: 'unverified' }),
-		verify: vi.fn(),
+	const mockIdentityVerifications = {
+		current: undefined,
+		get: vi.fn().mockResolvedValue(undefined),
+		start: vi.fn(),
 	}
 
 	beforeEach(() => {
@@ -151,7 +153,10 @@ describe('SettingsRoute', () => {
 			Registration.instance(mockIPushService, mockPush),
 			Registration.instance(IEventAggregator, mockEa),
 			Registration.instance(IRouter, mockRouter),
-			Registration.instance(mockIKycService, mockKyc),
+			Registration.instance(
+				mockIIdentityVerificationService,
+				mockIdentityVerifications,
+			),
 		)
 		container.register(SettingsRoute)
 		sut = container.get(SettingsRoute)
@@ -318,6 +323,39 @@ describe('SettingsRoute', () => {
 		})
 	})
 
+	describe('home area persistence (the caller owns it)', () => {
+		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — authenticated home save"
+		it("saves a signed-in fan's home with UserService.SetHome", async () => {
+			mockAuth.isAuthenticated = true
+			const updateHome = vi.fn().mockResolvedValue(undefined)
+			Object.assign(mockUserStore, { updateHome })
+
+			await sut.onHomeSelected('JP-13')
+
+			expect(updateHome).toHaveBeenCalledExactlyOnceWith(
+				expect.objectContaining({ countryCode: 'JP', level1: 'JP-13' }),
+			)
+			expect(mockUserStore.setGuestHome).not.toHaveBeenCalled()
+			expect(localStorage.getItem('guest.home')).toBeNull()
+		})
+
+		// @spec components/infrastructure/fan/web/global/user-home-selector "Caller owns persistence — guest home save"
+		it("saves a guest's home as the guest home, without an RPC", async () => {
+			mockAuth.isAuthenticated = false
+			const updateHome = vi.fn()
+			Object.assign(mockUserStore, { updateHome })
+
+			await sut.onHomeSelected('JP-13')
+
+			// The user store writes it to localStorage under guest.home
+			// (user-store.spec "persists the guest home via the dedicated key").
+			expect(mockUserStore.setGuestHome).toHaveBeenCalledExactlyOnceWith(
+				'JP-13',
+			)
+			expect(updateHome).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('toggleNotifications', () => {
 		// @spec components/infrastructure/fan/web/route/settings "Toggling notifications ON"
 		it('creates and enables when toggling on with granted permission', async () => {
@@ -455,7 +493,10 @@ describe('SettingsRoute', () => {
 				Registration.instance(mockIPushService, mockPush),
 				Registration.instance(IEventAggregator, mockEa),
 				Registration.instance(IRouter, mockRouter),
-				Registration.instance(mockIKycService, mockKyc),
+				Registration.instance(
+					mockIIdentityVerificationService,
+					mockIdentityVerifications,
+				),
 			)
 			container.register(SettingsRoute)
 			return container.get(SettingsRoute)

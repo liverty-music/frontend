@@ -141,31 +141,31 @@
         販売開始
         <input
           type="datetime-local"
-          name="saleStart"
+          name="saleStartTime"
           class="organizer-input"
-          value.bind="model.saleStart"
+          value.bind="model.saleStartTime"
           input.trigger="revalidate()"
-          aria-invalid.bind="submitted && !!errors.saleStart"
+          aria-invalid.bind="submitted && !!errors.saleStartTime"
           aria-describedby="ticket-sale-start-error"
         />
       </label>
       <p
         id="ticket-sale-start-error"
-        if.bind="submitted && errors.saleStart"
+        if.bind="submitted && errors.saleStartTime"
         class="organizer-error"
-        data-error="saleStart"
+        data-error="saleStartTime"
       >
-        ${errors.saleStart}
+        ${errors.saleStartTime}
       </p>
       <label class="organizer-field">
         販売終了
         <input
           type="datetime-local"
-          name="saleEnd"
+          name="saleEndTime"
           class="organizer-input"
-          value.bind="model.saleEnd"
+          value.bind="model.saleEndTime"
           input.trigger="revalidate()"
-          aria-invalid.bind="submitted && !!errors.saleEnd"
+          aria-invalid.bind="submitted && !!errors.saleEndTime"
           aria-describedby="ticket-sale-end-hint ticket-sale-end-error"
         />
       </label>
@@ -174,11 +174,11 @@
       </p>
       <p
         id="ticket-sale-end-error"
-        if.bind="submitted && errors.saleEnd"
+        if.bind="submitted && errors.saleEndTime"
         class="organizer-error"
-        data-error="saleEnd"
+        data-error="saleEndTime"
       >
-        ${errors.saleEnd}
+        ${errors.saleEndTime}
       </p>
     </fieldset>
 

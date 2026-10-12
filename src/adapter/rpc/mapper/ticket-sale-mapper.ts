@@ -56,10 +56,12 @@ export function ticketSaleFrom(
 		name: proto.name?.value ?? '',
 		method:
 			proto.method === ProtoTicketSaleMethod.LOTTERY ? 'lottery' : 'firstCome',
-		saleStart: proto.saleStartTime
+		saleStartTime: proto.saleStartTime
 			? timestampDate(proto.saleStartTime)
 			: new Date(0),
-		saleEnd: proto.saleEndTime ? timestampDate(proto.saleEndTime) : new Date(0),
+		saleEndTime: proto.saleEndTime
+			? timestampDate(proto.saleEndTime)
+			: new Date(0),
 		verificationRequirement:
 			REQUIREMENTS[proto.verificationRequirement] ?? 'none',
 		ticketType: ticketTypeFrom(type),

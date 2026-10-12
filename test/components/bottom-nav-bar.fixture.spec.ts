@@ -30,12 +30,12 @@ vi.mock(
 	stub('VerifyCallbackRoute'),
 )
 vi.mock(
-	'../../src/routes/lottery-apply/lottery-apply-route',
-	stub('LotteryApplyRoute'),
+	'../../src/routes/lottery-entry/lottery-entry-route',
+	stub('LotteryEntryRoute'),
 )
 vi.mock(
-	'../../src/routes/lottery-application/lottery-application-route',
-	stub('LotteryApplicationRoute'),
+	'../../src/routes/lottery-entry-status/lottery-entry-status-route',
+	stub('LotteryEntryStatusRoute'),
 )
 vi.mock('../../src/routes/legal/terms-route', stub('TermsRoute'))
 vi.mock('../../src/routes/legal/privacy-route', stub('PrivacyRoute'))

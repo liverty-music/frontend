@@ -222,7 +222,7 @@ test.describe('buy tickets first come (signed in)', () => {
 		const total = yen((await salePrice(request)) * 2)
 		await openCheckout(page)
 		await holdTickets(page, 2)
-		await fillIdentity(page)
+		await fillPersonalDetails(page)
 		await authorizeCard(page)
 
 		const place = page.getByTestId('checkout-place-order')
@@ -253,8 +253,8 @@ test.describe('buy tickets first come (signed in)', () => {
 		const start = (await (await started).json()) as {
 			checkout: { id: { value: string } }
 		}
-		await expect(page.getByTestId('checkout-identity')).toBeVisible()
-		await fillIdentity(page)
+		await expect(page.getByTestId('checkout-personal-details')).toBeVisible()
+		await fillPersonalDetails(page)
 		await authorizeCard(page)
 
 		const confirmed = page.waitForResponse(/CheckoutService\/Confirm$/)
@@ -293,7 +293,7 @@ test.describe('buy tickets first come (signed in)', () => {
 		test.setTimeout(HOLD_MS + MARGIN_MS + 5 * 60 * 1000)
 		await openCheckout(page)
 		await holdTickets(page, 1)
-		await fillIdentity(page)
+		await fillPersonalDetails(page)
 		await authorizeCard(page)
 
 		await page.waitForTimeout(HOLD_MS + MARGIN_MS)
@@ -314,7 +314,7 @@ test.describe('buy tickets first come (signed in)', () => {
 		test.setTimeout(HOLD_MS + 4 * MARGIN_MS + 5 * 60 * 1000)
 		await openCheckout(page)
 		await holdTickets(page, 2)
-		await fillIdentity(page)
+		await fillPersonalDetails(page)
 		await authorizeCard(page)
 		await page.close()
 
@@ -381,10 +381,10 @@ test.describe('buy tickets first come (signed in)', () => {
 		await expect(loser.getByTestId('checkout-message')).toHaveText(
 			/現在売り切れです|Sold out for now/,
 		)
-		await expect(loser.getByTestId('checkout-identity')).toBeHidden()
+		await expect(loser.getByTestId('checkout-personal-details')).toBeHidden()
 
-		await expect(winner.getByTestId('checkout-identity')).toBeVisible()
-		await fillIdentity(winner)
+		await expect(winner.getByTestId('checkout-personal-details')).toBeVisible()
+		await fillPersonalDetails(winner)
 		await authorizeCard(winner)
 		await winner.getByTestId('checkout-place-order').click()
 		await expect(winner.getByTestId('checkout-done')).toBeVisible({
@@ -419,7 +419,7 @@ async function secondFan(
 async function buyOne(page: Page): Promise<void> {
 	await openCheckout(page)
 	await holdTickets(page, 1)
-	await fillIdentity(page)
+	await fillPersonalDetails(page)
 	await authorizeCard(page)
 	await page.getByTestId('checkout-place-order').click()
 	await expect(page.getByTestId('checkout-done')).toBeVisible({
@@ -449,12 +449,12 @@ async function openCheckout(page: Page): Promise<void> {
 async function holdTickets(page: Page, count: number): Promise<void> {
 	await page.getByTestId('checkout-count-select').selectOption(String(count))
 	await page.getByTestId('checkout-hold').click()
-	await expect(page.getByTestId('checkout-identity')).toBeVisible()
+	await expect(page.getByTestId('checkout-personal-details')).toBeVisible()
 	await expect(page.getByTestId('checkout-countdown')).toBeVisible()
 }
 
-/** Keep the prefilled identity, or fill it in on the first checkout. */
-async function fillIdentity(page: Page): Promise<void> {
+/** Keep the prefilled personal details, or fill it in on the first checkout. */
+async function fillPersonalDetails(page: Page): Promise<void> {
 	const name = page.getByTestId('checkout-name')
 	if (!(await name.inputValue())) await name.fill('テスト 太郎')
 	const phone = page.getByTestId('checkout-phone')
@@ -472,7 +472,7 @@ async function authorizeCard(page: Page): Promise<void> {
 	await card.locator('input[name="number"]').fill(TEST_CARD.number)
 	await card.locator('input[name="expiry"]').fill(TEST_CARD.expiry)
 	await card.locator('input[name="cvc"]').fill(TEST_CARD.cvc)
-	await page.getByTestId('checkout-authorize').click()
+	await page.getByTestId('checkout-authorize-card').click()
 	await expect(page.getByTestId('checkout-confirm')).toBeVisible({
 		timeout: 60_000,
 	})

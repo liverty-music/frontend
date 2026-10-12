@@ -26,7 +26,7 @@ const mockOrderClient = {
 }
 
 const mockTicketClient = {
-	getMyTickets: vi.fn(async () => []),
+	list: vi.fn(async () => []),
 }
 
 const mockUserStore: { current: Record<string, string> | undefined } = {
@@ -86,7 +86,7 @@ async function makeSut(orderId = 'order-1'): Promise<OrderRoute> {
 describe('OrderRoute', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
-		mockTicketClient.getMyTickets.mockResolvedValue([])
+		mockTicketClient.list.mockResolvedValue([])
 	})
 
 	// ── Step transitions ──────────────────────────────────────────────────────
@@ -164,7 +164,7 @@ describe('OrderRoute', () => {
 					resaleWithoutConsentProhibited: false,
 				}),
 			]
-			mockTicketClient.getMyTickets.mockResolvedValue(rawTickets)
+			mockTicketClient.list.mockResolvedValue(rawTickets)
 			const sut = await makeSut('order-1')
 			expect(sut.step).toBe('loaded')
 			expect(sut.tickets).toHaveLength(1)
@@ -184,7 +184,7 @@ describe('OrderRoute', () => {
 					resaleWithoutConsentProhibited: true,
 				}),
 			]
-			mockTicketClient.getMyTickets.mockResolvedValue(rawTickets)
+			mockTicketClient.list.mockResolvedValue(rawTickets)
 			const sut = await makeSut('order-1')
 			expect(sut.step).toBe('loaded')
 			expect(sut.order?.statusKind).toBe('refunded')
@@ -194,7 +194,7 @@ describe('OrderRoute', () => {
 
 		it("shows the User's current full name and phone number on each ticket", async () => {
 			mockOrderClient.get.mockResolvedValue(makeOrder())
-			mockTicketClient.getMyTickets.mockResolvedValue([
+			mockTicketClient.list.mockResolvedValue([
 				create(TicketSchema, {
 					id: { value: 't-1' },
 					orderId: { value: 'order-1' },
@@ -202,13 +202,13 @@ describe('OrderRoute', () => {
 				}),
 			])
 			const sut = await makeSut('order-1')
-			expect(sut.tickets[0].holderName).toBe('山田 花子')
-			expect(sut.tickets[0].holderPhone).toBe('090-1234-5678')
+			expect(sut.tickets[0].fullName).toBe('山田 花子')
+			expect(sut.tickets[0].phoneNumber).toBe('090-1234-5678')
 		})
 
 		it('has empty tickets array when no tickets belong to this order', async () => {
 			mockOrderClient.get.mockResolvedValue(makeOrder())
-			mockTicketClient.getMyTickets.mockResolvedValue([])
+			mockTicketClient.list.mockResolvedValue([])
 			const sut = await makeSut()
 			expect(sut.tickets).toHaveLength(0)
 		})
@@ -295,9 +295,9 @@ describe('OrderRoute', () => {
 				sut.ticketStatusLabel({
 					id: 't-1',
 					eventId: 'e-1',
-					holderName: '山田太郎',
-					holderPhone: '090',
-					issuedAt: null,
+					fullName: '山田太郎',
+					phoneNumber: '090',
+					issueTime: null,
 					isIssued: true,
 					isVoided: false,
 					resaleWithoutConsentProhibited: false,
@@ -311,9 +311,9 @@ describe('OrderRoute', () => {
 				sut.ticketStatusLabel({
 					id: 't-1',
 					eventId: 'e-1',
-					holderName: '山田太郎',
-					holderPhone: '090',
-					issuedAt: null,
+					fullName: '山田太郎',
+					phoneNumber: '090',
+					issueTime: null,
 					isIssued: false,
 					isVoided: true,
 					resaleWithoutConsentProhibited: false,

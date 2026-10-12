@@ -80,9 +80,9 @@
 				</div>
 
 				<!-- Paid date -->
-				<div class="order-summary-row" if.bind="order.paidAt">
-					<dt class="order-summary-key" t="order.payment.paidAt"></dt>
-					<dd class="order-summary-val">${formatDate(order.paidAt)}</dd>
+				<div class="order-summary-row" if.bind="order.payTime">
+					<dt class="order-summary-key" t="order.payment.payTime"></dt>
+					<dd class="order-summary-val">${formatDate(order.payTime)}</dd>
 				</div>
 
 				<!-- Card brand + last4 (shown when available) -->
@@ -126,12 +126,12 @@
 							<dd class="order-ticket-summary-val">${ticket.eventId}</dd>
 						</div>
 						<div class="order-ticket-summary-row">
-							<dt class="order-ticket-summary-key" t="order.tickets.field.holderName"></dt>
-							<dd class="order-ticket-summary-val">${ticket.holderName}</dd>
+							<dt class="order-ticket-summary-key" t="order.tickets.field.fullName"></dt>
+							<dd class="order-ticket-summary-val">${ticket.fullName}</dd>
 						</div>
 						<div class="order-ticket-summary-row">
-							<dt class="order-ticket-summary-key" t="order.tickets.field.issuedAt"></dt>
-							<dd class="order-ticket-summary-val">${formatDate(ticket.issuedAt)}</dd>
+							<dt class="order-ticket-summary-key" t="order.tickets.field.issueTime"></dt>
+							<dd class="order-ticket-summary-val">${formatDate(ticket.issueTime)}</dd>
 						</div>
 					</dl>
 

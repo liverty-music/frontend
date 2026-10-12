@@ -50,7 +50,7 @@ import { route } from '@aurelia/router'
 			// reachable only by deep link — wire a dashboard/edit-screen link once
 			// the console exposes event ids.
 			path: 'lottery/configure/:eventId',
-			component: import('../lottery-phase-editor/lottery-phase-editor-route'),
+			component: import('../lottery-sale-editor/lottery-sale-editor-route'),
 			title: 'Create lottery',
 		},
 		{

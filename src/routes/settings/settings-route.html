@@ -1,5 +1,5 @@
 <import from="./language-selector.css"></import>
-<import from="./kyc.css"></import>
+<import from="./identity-verification.css"></import>
 <import from="./personal-details.css"></import>
 
 <!-- The page title ("Settings") is owned by the shell-hosted <page-header>,
@@ -367,45 +367,46 @@
         </div>
       </li>
 
-      <!-- 本人確認 (KYC, identity-ekyc-jpki, PocketSign Stamp flow). Shows the
-           account's verification status (UNVERIFIED / KYC_VERIFIED, plus method
-           + dedupe strength when verified). The status badge is a polite live
-           region (<output>) carrying a non-colour status icon so state is not
-           conveyed by colour alone. Tapping "本人確認する" calls KycService.Start
-           and redirects the browser to the PocketSign app; the fan returns via
-           the /verify/callback route. -->
+      <!-- 本人確認 (identity verification, identity-ekyc-jpki, PocketSign Stamp
+           flow). Shows whether the fan is verified (an Active
+           IdentityVerification), plus method + dedupe strength when verified.
+           The status badge is a polite live region (<output>) carrying a
+           non-colour status icon so state is not conveyed by colour alone.
+           Tapping "本人確認する" calls IdentityVerificationService.Start and
+           redirects the browser to the PocketSign app; the fan returns via the
+           /verify/callback route. -->
       <li class="settings-list-item">
         <div class="[ settings-row ] [ settings-row-toggle ]">
           <svg-icon name="shield-check" class="settings-icon"></svg-icon>
-          <div class="[ settings-kyc ] [ stack ]">
-            <span id="kyc-label" t="settings.kyc.label" class="settings-row-label"></span>
+          <div class="[ settings-identity-verification ] [ stack ]">
+            <span id="identity-verification-label" t="settings.identityVerification.label" class="settings-row-label"></span>
             <output
-              id="kyc-status"
+              id="identity-verification-status"
               class="settings-verification-badge"
               aria-live="polite"
-              aria-describedby="kyc-label"
-              data-verified.bind="isKycVerified"
+              aria-describedby="identity-verification-label"
+              data-verified.bind="isVerified"
             >
-              <svg-icon if.bind="isKycVerified" name="check" class="settings-verification-icon"></svg-icon>
-              <svg-icon if.bind="!isKycVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
-              <span if.bind="isKycVerified" t="settings.kyc.levelVerified"></span>
-              <span if.bind="!isKycVerified" t="settings.kyc.levelUnverified"></span>
+              <svg-icon if.bind="isVerified" name="check" class="settings-verification-icon"></svg-icon>
+              <svg-icon if.bind="!isVerified" name="alert-triangle" class="settings-verification-icon"></svg-icon>
+              <span if.bind="isVerified" t="settings.identityVerification.verified"></span>
+              <span if.bind="!isVerified" t="settings.identityVerification.unverified"></span>
             </output>
             <!-- Method + dedupe strength, verified-only. -->
-            <span if.bind="isKycVerified && verificationMethodKey" class="settings-kyc-detail">
-              <span t="settings.kyc.methodPrefix"></span>
+            <span if.bind="isVerified && verificationMethodKey" class="settings-identity-verification-detail">
+              <span t="settings.identityVerification.methodPrefix"></span>
               <span t.bind="verificationMethodKey"></span>
-              <span t.bind="dedupeStrengthKey" class="settings-kyc-dedupe"></span>
+              <span t.bind="dedupeStrengthKey" class="settings-identity-verification-dedupe"></span>
             </span>
           </div>
           <!-- "本人確認する" button: redirects to PocketSign Stamp.
-               Hidden once the account is KYC_VERIFIED. -->
+               Hidden once the fan is verified. -->
           <button
-            if.bind="!isKycVerified"
-            busy-on-click.bind="() => verifyKyc()"
+            if.bind="!isVerified"
+            busy-on-click.bind="() => startIdentityVerification()"
             class="settings-resend-btn"
           >
-            <span t="settings.kyc.verifyCta"></span>
+            <span t="settings.identityVerification.verifyCta"></span>
           </button>
         </div>
       </li>

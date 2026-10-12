@@ -6,14 +6,14 @@ import { TicketTypeState } from '@buf/liverty-music_schema.bufbuild_es/liverty_m
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { formatJstDateTime } from '../../shared/lib/reception/jst-format'
-import { IConcertAuthoringClient } from '../services/concert-authoring-client'
 import {
 	Code,
 	ConnectError,
 	toOrganizerErrorMessage,
 } from '../services/connect-error-copy'
-import { IOrganizerIdentityClient } from '../services/organizer-identity-client'
+import { IOrganizerClient } from '../services/organizer-client'
 import { findOverlappingSale } from '../services/sale-window'
+import { ISeriesClient } from '../services/series-client'
 import {
 	ITicketSaleClient,
 	type TicketSale,
@@ -157,8 +157,8 @@ export class TicketSaleEditorRoute {
 
 	private abort: AbortController | null = null
 
-	private readonly concerts = resolve(IConcertAuthoringClient)
-	private readonly organizers = resolve(IOrganizerIdentityClient)
+	private readonly concerts = resolve(ISeriesClient)
+	private readonly organizers = resolve(IOrganizerClient)
 	private readonly ticketSales = resolve(ITicketSaleClient)
 	private readonly ticketTypes = resolve(ITicketTypeClient)
 	private readonly logger = resolve(ILogger).scopeTo('TicketSaleEditorRoute')
@@ -285,16 +285,16 @@ export class TicketSaleEditorRoute {
 			soldCount: this.soldCount,
 			heldCount: this.heldCount,
 		})
-		const start = parseJstDateTimeLocal(this.model.saleStart)
-		const end = parseJstDateTimeLocal(this.model.saleEnd)
-		if (!errors.saleStart && !errors.saleEnd && start && end) {
+		const start = parseJstDateTimeLocal(this.model.saleStartTime)
+		const end = parseJstDateTimeLocal(this.model.saleEndTime)
+		if (!errors.saleStartTime && !errors.saleEndTime && start && end) {
 			const other = findOverlappingSale(
 				this.sales,
 				start,
 				end,
 				this.sale?.id?.value,
 			)
-			if (other) errors.saleStart = overlapMessage(other)
+			if (other) errors.saleStartTime = overlapMessage(other)
 		}
 		this.errors = errors
 	}
@@ -355,12 +355,12 @@ export class TicketSaleEditorRoute {
 	 */
 	private async saveChanges(sale: TicketSale): Promise<void> {
 		const stored = this.storedModel()
-		const start = parseJstDateTimeLocal(this.model.saleStart) ?? new Date(0)
-		const end = parseJstDateTimeLocal(this.model.saleEnd) ?? new Date(0)
+		const start = parseJstDateTimeLocal(this.model.saleStartTime) ?? new Date(0)
+		const end = parseJstDateTimeLocal(this.model.saleEndTime) ?? new Date(0)
 		let updated = sale
 		if (
-			this.model.saleStart !== stored.saleStart ||
-			this.model.saleEnd !== stored.saleEnd
+			this.model.saleStartTime !== stored.saleStartTime ||
+			this.model.saleEndTime !== stored.saleEndTime
 		) {
 			updated =
 				(await this.ticketSales.setWindow(sale.id?.value ?? '', start, end)) ??
@@ -422,8 +422,10 @@ export class TicketSaleEditorRoute {
 		if (!sale || !type) return blankFormModel(this.eventStart)
 		return formModelOf({
 			name: sale.name?.value ?? '',
-			saleStart: sale.saleStartTime ? timestampDate(sale.saleStartTime) : null,
-			saleEnd: sale.saleEndTime ? timestampDate(sale.saleEndTime) : null,
+			saleStartTime: sale.saleStartTime
+				? timestampDate(sale.saleStartTime)
+				: null,
+			saleEndTime: sale.saleEndTime ? timestampDate(sale.saleEndTime) : null,
 			price: type.price?.value ?? BigInt(0),
 			quantity: type.quantity ?? 0,
 			perAccountLimit: type.perAccountLimit,

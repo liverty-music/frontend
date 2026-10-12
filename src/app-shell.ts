@@ -136,17 +136,19 @@ const routeTable = [
 	// sent through sign-up from the Event page.
 	{
 		path: 'events/:id/lottery/:ticketTypeId',
-		component: import('./routes/lottery-apply/lottery-apply-route'),
+		component: import('./routes/lottery-entry/lottery-entry-route'),
 		title: 'Lottery Entry',
-		data: { titleKey: 'lotteryApply.title', section: 'dashboard' },
+		data: { titleKey: 'lotteryEntry.title', section: 'dashboard' },
 	},
 	// The fan's entry for that TicketType: its state and the withdraw action.
 	// Reached from the entry screen once the entry is made.
 	{
 		path: 'events/:id/lottery/:ticketTypeId/entry',
-		component: import('./routes/lottery-application/lottery-application-route'),
+		component: import(
+			'./routes/lottery-entry-status/lottery-entry-status-route'
+		),
 		title: 'My Lottery Entry',
-		data: { titleKey: 'lotteryApplication.title', section: 'dashboard' },
+		data: { titleKey: 'lotteryEntryStatus.title', section: 'dashboard' },
 	},
 	// My Tickets (roadmap ⑤, task 5.1). Authenticated by default — tickets are
 	// account-bound covered tickets issued from captured lottery wins (④).

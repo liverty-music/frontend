@@ -8,11 +8,9 @@ import {
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { IArtistClient } from '../services/artist-client'
-import {
-	type AuthoredSeries,
-	IConcertAuthoringClient,
-} from '../services/concert-authoring-client'
 import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
+import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
+import { ISeriesImageClient } from '../services/series-image-client'
 import {
 	type ConcertFormErrors,
 	type ConcertFormModel,
@@ -93,7 +91,8 @@ export class ConcertEditorRoute {
 
 	private abort: AbortController | null = null
 
-	private readonly client = resolve(IConcertAuthoringClient)
+	private readonly client = resolve(ISeriesClient)
+	private readonly seriesImages = resolve(ISeriesImageClient)
 	private readonly artists = resolve(IArtistClient)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertEditorRoute')
@@ -208,7 +207,7 @@ export class ConcertEditorRoute {
 		this.publishState = series?.publishState ?? PublishState.UNSPECIFIED
 		// The editor renders the full-width `large` variant; a list would use
 		// `thumb`. Both 404 until async processing finishes (see renderedCover).
-		const nextCover = series?.media?.attributes?.large?.value ?? ''
+		const nextCover = series?.coverImage?.large?.value ?? ''
 		if (nextCover !== this.coverImageUrl) this.coverVariantBroken = false
 		this.coverImageUrl = nextCover
 		this.model = {
@@ -313,8 +312,8 @@ export class ConcertEditorRoute {
 
 	/**
 	 * Runs the async cover-image pipeline for the picked file:
-	 * `createMediaUploadUrl` → direct `PUT` to the signed GCS URL → `attachMedia`.
-	 * On a successful attach it shows an optimistic object-URL preview of the
+	 * `SeriesImageService.CreateUploadUrl` → direct `PUT` to the signed GCS URL →
+	 * `SeriesService.SetCoverImage`. Once the cover is set it shows an optimistic object-URL preview of the
 	 * picked file, since the served variant is not live until async processing
 	 * finishes (see {@link renderedCover}). The client-side type/size pre-check
 	 * still runs first so an invalid file never round-trips.
@@ -333,9 +332,13 @@ export class ConcertEditorRoute {
 		const signal = this.abort?.signal
 		this.uploadingCover = true
 		try {
-			const ticket = await this.client.createMediaUploadUrl(file.type, signal)
-			await this.client.uploadToSignedUrl(ticket, file, file.type, signal)
-			await this.client.attachMedia(this.seriesId, ticket.mediaId, signal)
+			const upload = await this.seriesImages.createUploadUrl(file.type, signal)
+			await this.seriesImages.uploadToSignedUrl(upload, file, file.type, signal)
+			await this.client.setCoverImage(
+				this.seriesId,
+				upload.seriesImageId,
+				signal,
+			)
 			// Processing is async: the served variant 404s until it completes, so
 			// show the local file optimistically and let it bridge to the variant.
 			this.revokeLocalPreview()

@@ -298,10 +298,10 @@
 			"saved": "Saved your ticket name.",
 			"saveError": "Couldn't save your ticket name. Please wait a moment and try again."
 		},
-		"kyc": {
+		"identityVerification": {
 			"label": "Identity verification",
-			"levelVerified": "Verified",
-			"levelUnverified": "Not verified",
+			"verified": "Verified",
+			"unverified": "Not verified",
 			"methodPrefix": "via",
 			"methodJpki": "My Number Card (JPKI)",
 			"methodDriverLicence": "Driver's licence",
@@ -393,8 +393,8 @@
 			"void": "Void"
 		},
 		"field": {
-			"holderName": "Name",
-			"holderPhone": "Phone number",
+			"fullName": "Name",
+			"phoneNumber": "Phone number",
 			"seat": "Seat",
 			"noSeat": "Not assigned"
 		},
@@ -439,7 +439,7 @@
 			"title": "Payment",
 			"amount": "Total",
 			"taxIncluded": "(tax incl.)",
-			"paidAt": "Paid on",
+			"payTime": "Paid on",
 			"card": "Card"
 		},
 		"status": {
@@ -450,8 +450,8 @@
 			"title": "Issued Tickets",
 			"field": {
 				"eventId": "Event",
-				"holderName": "Name",
-				"issuedAt": "Issued"
+				"fullName": "Name",
+				"issueTime": "Issued"
 			},
 			"resaleProhibited": "This is a designated live-entertainment ticket (特定興行入場券). Resale without the organizer's consent is prohibited by law."
 		}
@@ -738,7 +738,7 @@
 		"leftHanded": "Left-handed mode",
 		"leftHandedDesc": "Place the action button in the bottom-left corner"
 	},
-	"lotteryApply": {
+	"lotteryEntry": {
 		"title": "Enter the ticket lottery",
 		"loading": "Loading…",
 		"unavailable": "Payments are not available in this environment right now. Please try again later.",
@@ -761,7 +761,7 @@
 			"continue": "Continue to identity check",
 			"limit": "One account can hold up to {{limit}} tickets for this event, counting the tickets it already holds."
 		},
-		"identity": {
+		"personalDetails": {
 			"title": "Identity check",
 			"note": "Your name and phone number are saved on your account and shown on the face of your tickets.",
 			"name": "Full name",
@@ -770,7 +770,7 @@
 		},
 		"payment": {
 			"title": "Card authorization",
-			"hold": "When you enter, a hold of ¥{{total}} (¥{{price}} × {{count}}) is placed on your card.",
+			"cardAuthorization": "When you enter, a hold of ¥{{total}} (¥{{price}} × {{count}}) is placed on your card.",
 			"notCharged": "You are not charged now. The amount is only held on your card.",
 			"chargedOnWin": "You are charged the held amount only if you win.",
 			"releasedOnLoss": "If you do not win, the hold is released and you are not charged.",
@@ -791,7 +791,7 @@
 		},
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
 	},
-	"lotteryApplication": {
+	"lotteryEntryStatus": {
 		"title": "Your lottery entry",
 		"loading": "Loading…",
 		"empty": "No entry to this lottery was found.",
@@ -912,7 +912,7 @@
 			"ended": "The sale has ended.",
 			"cancelled": "This concert was cancelled, so its tickets are not on sale."
 		},
-		"identity": {
+		"personalDetails": {
 			"title": "Identity check",
 			"note": "Your name and phone number are saved on your account and shown on the face of your tickets.",
 			"name": "Full name",
@@ -938,7 +938,7 @@
 			"delivery": "Delivery",
 			"deliveryValue": "Your tickets are available in the app's Tickets screen right after purchase.",
 			"salePeriod": "Sale period",
-			"holder": "Ticket holder",
+			"nameOnTickets": "Ticket holder",
 			"resale": "Resale",
 			"resaleValue": "Reselling tickets without the organizer's consent is prohibited. Tickets are issued to your own account and name.",
 			"cancellation": "Cancellation and refunds",
@@ -946,7 +946,7 @@
 			"seller": "Seller",
 			"representative": "Representative:",
 			"changeCount": "Change the number of tickets",
-			"changeIdentity": "Change name or phone",
+			"changePersonalDetails": "Change name or phone",
 			"placeOrder": "Pay ¥{{total}} and buy"
 		},
 		"done": {

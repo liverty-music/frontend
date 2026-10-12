@@ -36,7 +36,7 @@ export interface WalletEventGroup {
  * The eligible person on every ticket's covered-ticket face: the fan's full
  * name and phone number as their User currently records them.
  */
-export interface WalletHolder {
+export interface WalletPersonalDetails {
 	readonly fullName: string
 	/** The phone number in E.164 form. */
 	readonly phoneNumber: string
@@ -46,8 +46,21 @@ export interface WalletHolder {
 export interface WalletSnapshot {
 	readonly savedAt: Date
 	readonly groups: readonly WalletEventGroup[]
-	/** The fan's details when the list was saved; absent in older saves. */
-	readonly holder?: WalletHolder
+	/** The fan's personal details when the list was saved; absent in older saves. */
+	readonly personalDetails?: WalletPersonalDetails
+	/**
+	 * The same details as saves made before the field was renamed to
+	 * `personalDetails` carry them (unify-ticket-sales D17); read only, so a
+	 * device opened offline after the update still shows the fan's name.
+	 */
+	readonly holder?: WalletPersonalDetails
+}
+
+/** The personal details a saved list carries, under either key. */
+export function savedPersonalDetailsOf(
+	saved: WalletSnapshot | undefined,
+): WalletPersonalDetails | null {
+	return saved?.personalDetails ?? saved?.holder ?? null
 }
 
 /** Map a proto Ticket to the screen's ticket. */
