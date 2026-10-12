@@ -16,7 +16,7 @@ import {
 	formatEventDate,
 	formatEventTime,
 } from '../event/event-page'
-import { EntryCodeSession } from './entry-code-session'
+import { AdmissionCodeSession } from './admission-code-session'
 import {
 	enterableTickets,
 	groupByEvent,
@@ -95,11 +95,11 @@ export class TicketsRoute {
 	/** Using this device failed; a retry is offered. */
 	public moveFailed = false
 
-	// ── Entry code state ─────────────────────────────────────────────────────
+	// ── Admission code state ─────────────────────────────────────────────────
 	public codeGroup: WalletEventGroup | null = null
 	/** The tickets the code presents: every enterable one, up to 10. */
 	public presented: WalletTicket[] = []
-	public readonly session = new EntryCodeSession((ticketIds, signTime) =>
+	public readonly session = new AdmissionCodeSession((ticketIds, signTime) =>
 		this.signFor(ticketIds, signTime),
 	)
 
@@ -264,9 +264,9 @@ export class TicketsRoute {
 		}
 	}
 
-	// ── Entry code ───────────────────────────────────────────────────────────
+	// ── Admission code ───────────────────────────────────────────────────────
 
-	/** Whether a group offers the entry code (it has a not-yet-entered ticket). */
+	/** Whether a group offers the admission code (it has a not-yet-entered ticket). */
 	public offersCode(group: WalletEventGroup): boolean {
 		return enterableTickets(group).length > 0
 	}

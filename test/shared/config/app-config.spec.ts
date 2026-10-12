@@ -65,7 +65,7 @@ describe('loadAppConfig — zitadelOrgId requirement', () => {
 
 /**
  * The `receptionBaseUrl` contract added by OpenSpec change
- * `isolate-venue-reception`: the organizer console builds reception link URLs
+ * `isolate-venue-reception`: the organizer console builds Scanner link URLs
  * on the reception origin, so it requires the field; the consumer and admin
  * configs omit it.
  */

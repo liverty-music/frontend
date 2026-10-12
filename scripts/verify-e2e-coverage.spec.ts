@@ -105,11 +105,7 @@ describe('checkE2eCoverage', () => {
 	it('reports an empty project and an uncovered spec together', () => {
 		// Both original defects at once: the project CI runs verifies nothing, and
 		// the spec it was meant to cover is orphaned.
-		const result = checkE2eCoverage(
-			['e2e/a.spec.ts'],
-			[run('pwa', [])],
-			[],
-		)
+		const result = checkE2eCoverage(['e2e/a.spec.ts'], [run('pwa', [])], [])
 
 		expect(result.kind).toBe('failed')
 		expect(result.kind === 'failed' && result.failures).toEqual([

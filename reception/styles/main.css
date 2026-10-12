@@ -1,7 +1,7 @@
 /*
  * Reception app stylesheet. Self-contained like the admin and organizer
  * entries' stylesheets: the reception app shares no bundle with the console,
- * so it declares only the design tokens and primitives the reception screen
+ * so it declares only the design tokens and primitives the scanner screen
  * uses. Token values are kept in sync with `src/styles/tokens.css` (the
  * organizer stylesheet carries the same values).
  */

@@ -103,12 +103,12 @@
           ${sale.label}
         </a>
         <a
-          repeat.for="reception of row.receptionEvents"
-          load="../reception-links/${reception.eventId}"
+          repeat.for="entry of row.scannerEvents"
+          load="../scanners/${entry.eventId}"
           class="concerts-btn"
           data-variant="secondary"
         >
-          ${reception.label}
+          ${entry.label}
         </a>
       </div>
 

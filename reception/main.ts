@@ -51,7 +51,7 @@ function showStaticErrorPage(err: unknown): void {
 }
 
 /**
- * Reception app bootstrap: venue staff open a reception link on their phone.
+ * Reception app bootstrap: venue staff open a Scanner's link on their phone.
  * It loads its own `/config.json` (environment, reception API base URL, log
  * level) and registers no OIDC client, no sign-in and no service worker, so it
  * cannot read or use console tokens even by mistake. It is served from its own

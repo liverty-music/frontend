@@ -12,8 +12,8 @@ import { route } from '@aurelia/router'
  * exchange can complete before a session exists, and `denied` opts out of the
  * role check via `data: { role: false }` so a signed-in non-owner sees an
  * explanation. The authoring routes deliberately DO NOT set `auth: false` — the
- * global hook guards them. The reception screen venue staff open from a
- * reception link is not a console route: it is its own app (`reception/`) on
+ * global hook guards them. The scanner screen venue staff open from a
+ * Scanner's link is not a console route: it is its own app (`reception/`) on
  * its own origin.
  *
  * The post-login landing is the concerts dashboard: an authenticated owner goes
@@ -67,11 +67,12 @@ import { route } from '@aurelia/router'
 			title: 'First-come sale',
 		},
 		{
-			// Reception links of one event (ticket-wallet-and-checkin, task 5.1),
-			// reached from the event's row on the concerts dashboard.
-			path: 'reception-links/:eventId',
-			component: import('../reception-links/reception-links-route'),
-			title: 'Reception links',
+			// Scanners of one event (ticket-wallet-and-checkin task 5.1, renamed by
+			// rename-reception-to-scanner), reached from the event's row on the
+			// concerts dashboard.
+			path: 'scanners/:eventId',
+			component: import('../scanners/scanners-route'),
+			title: 'Scanners',
 		},
 		{
 			path: 'welcome',

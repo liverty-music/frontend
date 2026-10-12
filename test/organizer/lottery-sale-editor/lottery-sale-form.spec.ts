@@ -154,7 +154,7 @@ describe('validateLotterySaleForm — ticket fields', () => {
 		expect(isFormValid(errors)).toBe(false)
 	})
 
-	it('rejects a per-account limit above one entry code (11)', () => {
+	it('rejects a per-account limit above one admission code (11)', () => {
 		// @spec components/entity/ticket-type "Limit larger than one admission code"
 		const model = validModel()
 		model.quantity = '100'

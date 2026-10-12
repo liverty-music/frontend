@@ -241,7 +241,7 @@ describe('ConcertsRoute', () => {
 		expect(vm.rows[0].lotteryEvents).toEqual([])
 	})
 
-	it('reaches the reception links of every event of a concert that is not cancelled', async () => {
+	it('reaches the scanners of every event of a concert that is not cancelled', async () => {
 		const client = createMockClient({
 			list: vi
 				.fn()
@@ -261,15 +261,15 @@ describe('ConcertsRoute', () => {
 		const vm = build(client)
 		await vm.attached()
 
-		expect(vm.rows[0].receptionEvents).toEqual([
-			{ eventId: 'e1', label: 'Reception links · 2026-09-10' },
-			{ eventId: 'e2', label: 'Reception links · 2026-09-11' },
+		expect(vm.rows[0].scannerEvents).toEqual([
+			{ eventId: 'e1', label: 'Scanners · 2026-09-10' },
+			{ eventId: 'e2', label: 'Scanners · 2026-09-11' },
 		])
 		// A draft reaches the screen, which says to publish first.
-		expect(vm.rows[1].receptionEvents).toEqual([
-			{ eventId: 'e3', label: 'Reception links' },
+		expect(vm.rows[1].scannerEvents).toEqual([
+			{ eventId: 'e3', label: 'Scanners' },
 		])
-		expect(vm.rows[2].receptionEvents).toEqual([])
+		expect(vm.rows[2].scannerEvents).toEqual([])
 	})
 
 	it('reaches the first-come sale editor from every event of a concert that is not cancelled', async () => {

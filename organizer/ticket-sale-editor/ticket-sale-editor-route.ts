@@ -5,7 +5,7 @@ import { TicketSaleMethod } from '@buf/liverty-music_schema.bufbuild_es/liverty_
 import { TicketTypeState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_type_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
-import { formatJstDateTime } from '../../shared/lib/reception/jst-format'
+import { formatJstDateTime } from '../../shared/lib/scanner/jst-format'
 import {
 	Code,
 	ConnectError,

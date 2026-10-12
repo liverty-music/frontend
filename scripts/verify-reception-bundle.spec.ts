@@ -19,8 +19,8 @@ const CLEAN = {
 	'reception.html':
 		'<script type="module" src="/assets/reception-A.js"></script><reception-shell></reception-shell>',
 	'assets/reception-A.js':
-		'const n="reception-shell";import("./reception-route-B.js")',
-	'assets/reception-route-B.js': 'const n="reception-route";',
+		'const n="reception-shell";import("./scanner-route-B.js")',
+	'assets/scanner-route-B.js': 'const n="scanner-route";',
 	'config.json': '{"environment":"prod"}',
 }
 
@@ -47,7 +47,7 @@ describe('checkReceptionBundle', () => {
 		assert(result.kind === 'ok')
 		expect(result.files.map((f) => f.path)).toEqual([
 			'assets/reception-A.js',
-			'assets/reception-route-B.js',
+			'assets/scanner-route-B.js',
 			'config.json',
 			'reception.html',
 		])

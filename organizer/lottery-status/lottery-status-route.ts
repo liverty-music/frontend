@@ -1,7 +1,7 @@
 import type { Params } from '@aurelia/router'
 import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
-import { formatJstDateTime } from '../../shared/lib/reception/jst-format'
+import { formatJstDateTime } from '../../shared/lib/scanner/jst-format'
 import { toOrganizerErrorMessage } from '../services/connect-error-copy'
 import {
 	type EventTicketSales,

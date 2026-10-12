@@ -28,7 +28,8 @@ export type IsolationResult =
 	| { kind: 'no-seeds'; entryHtml: string }
 	| { kind: 'leaked'; leaks: readonly string[] }
 
-const STATIC_IMPORT_RE = /(?:from|import)\s*\(?\s*["']\.\/([A-Za-z0-9_./-]+\.js)["']/g
+const STATIC_IMPORT_RE =
+	/(?:from|import)\s*\(?\s*["']\.\/([A-Za-z0-9_./-]+\.js)["']/g
 
 function isIsolatedEntryChunk(rel: string): boolean {
 	// `rel` is a path relative to dist/, e.g. "assets/admin/welcome-route-x.js"
@@ -66,7 +67,9 @@ export function checkBundleIsolation(distDir: string): IsolationResult {
 	const html = readFileSync(entryHtml, 'utf-8')
 	// Entry scripts referenced from index.html, e.g. assets/main-xxx.js.
 	const seeds = new Set<string>()
-	for (const m of html.matchAll(/(?:src|href)="\/?(assets\/[A-Za-z0-9_./-]+\.js)"/g)) {
+	for (const m of html.matchAll(
+		/(?:src|href)="\/?(assets\/[A-Za-z0-9_./-]+\.js)"/g,
+	)) {
 		seeds.add(m[1])
 	}
 

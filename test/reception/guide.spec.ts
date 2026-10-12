@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import guide from '../../reception/public/guide.html?raw'
-import routeTemplate from '../../reception/reception-route/reception-route.html?raw'
-import verdictSource from '../../reception/reception-route/verdict.ts?raw'
+import routeTemplate from '../../reception/scanner-route/scanner-route.html?raw'
+import verdictSource from '../../reception/scanner-route/verdict.ts?raw'
 
 /**
- * The reception guide (reception/public/guide.html) is a static page for venue
- * staff. It quotes the reception screen's words, so these checks fail when the
+ * The staff guide (reception/public/guide.html) is a static page for venue
+ * staff. It quotes the scanner screen's words, so these checks fail when the
  * screen's copy changes and the guide is not updated with it.
  */
-describe('reception guide', () => {
+describe('staff guide', () => {
 	it('is a static page with no script', () => {
 		expect(guide).toMatch(/^<!doctype html>/i)
 		expect(guide).not.toMatch(/<script/i)

@@ -40,7 +40,7 @@ export const CONSOLE_MARKERS: readonly string[] = [
 	'admin-shell',
 	'organizer-shell',
 	'concerts-route',
-	'reception-links-route',
+	'scanners-route',
 	'approval-queue-route',
 ]
 
