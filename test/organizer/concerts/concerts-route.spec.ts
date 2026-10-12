@@ -36,25 +36,42 @@ interface MockClient {
 }
 
 /**
- * Builds an event with an id and a calendar date. The month/day increment with
- * `dayOffset` so multi-event rows get distinguishable date labels.
+ * Builds an event with an id, a calendar date and its own publish state. The
+ * month/day increment with `dayOffset` so multi-event rows get
+ * distinguishable date labels. Without a state the event takes its concert's
+ * (see {@link makeConcert}).
  */
-function makeEvent(eventId: string, dayOffset = 0): Event {
+function makeEvent(
+	eventId: string,
+	dayOffset = 0,
+	publishState = PublishState.UNSPECIFIED,
+): Event {
 	return create(EventSchema, {
 		id: { value: eventId },
 		localDate: {
 			value: { year: 2026, month: 9, day: 10 + dayOffset },
 		},
+		publishState,
 	})
 }
 
+/**
+ * Builds an authored concert. `publishState` is the Series' derived state; an
+ * event without its own state takes it, and a concert given no events gets one
+ * event in that state, as the server never returns a Series without events.
+ */
 function makeConcert(
 	id: string,
 	title: string,
 	publishState: PublishState,
 	visibility: Visibility,
-	events: Event[] = [],
+	events: Event[] = [makeEvent(`${id}-e`)],
 ): AuthoredSeries {
+	for (const event of events) {
+		if (event.publishState === PublishState.UNSPECIFIED) {
+			event.publishState = publishState
+		}
+	}
 	return authoredSeries({
 		series: {
 			id: { value: id },
@@ -180,6 +197,7 @@ describe('ConcertsRoute', () => {
 	})
 
 	it('exposes a lottery entry point per event on a published concert', async () => {
+		// @spec components/infrastructure/organizer/web/route/concerts "Organizer reaches lottery configuration from a published event"
 		const client = createMockClient({
 			list: vi
 				.fn()
@@ -222,6 +240,7 @@ describe('ConcertsRoute', () => {
 	})
 
 	it('offers no lottery entry point on a draft concert', async () => {
+		// @spec components/infrastructure/organizer/web/route/concerts "No lottery entry point for a draft event"
 		const client = createMockClient({
 			list: vi
 				.fn()
@@ -301,6 +320,122 @@ describe('ConcertsRoute', () => {
 			{ eventId: 'e3', label: 'First-come sale' },
 		])
 		expect(vm.rows[2].ticketSaleEvents).toEqual([])
+	})
+
+	it('offers Publish on a published tour with a new draft date, and Publish publishes it', async () => {
+		// @spec components/infrastructure/organizer/web/route/concerts "Published tour with a new date"
+		const tour = makeConcert(
+			's1',
+			'Tour',
+			PublishState.PUBLISHED,
+			Visibility.PUBLIC,
+			[
+				makeEvent('e1', 0, PublishState.PUBLISHED),
+				makeEvent('e2', 1, PublishState.DRAFT),
+			],
+		)
+		const published = makeConcert(
+			's1',
+			'Tour',
+			PublishState.PUBLISHED,
+			Visibility.PUBLIC,
+			[
+				makeEvent('e1', 0, PublishState.PUBLISHED),
+				makeEvent('e2', 1, PublishState.PUBLISHED),
+			],
+		)
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValueOnce([tour])
+				.mockResolvedValueOnce([published]),
+		})
+		const vm = build(client)
+		await vm.attached()
+
+		expect(vm.rows[0].publishLabel).toBe('Published')
+		expect(vm.rows[0].canPublish).toBe(true)
+		expect(vm.rows[0].canCancel).toBe(true)
+
+		await vm.publish(vm.rows[0])
+
+		expect(client.publish).toHaveBeenCalledWith('s1')
+		expect(vm.rows[0].canPublish).toBe(false)
+	})
+
+	it('offers no Publish once every event is published or cancelled', async () => {
+		// @spec components/infrastructure/organizer/web/route/concerts "Nothing left to publish"
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeConcert('s1', 'Tour', PublishState.PUBLISHED, Visibility.PUBLIC, [
+						makeEvent('e1', 0, PublishState.PUBLISHED),
+						makeEvent('e2', 1, PublishState.CANCELLED),
+					]),
+					makeConcert('s2', 'Gone', PublishState.CANCELLED, Visibility.PUBLIC, [
+						makeEvent('e3', 0, PublishState.CANCELLED),
+					]),
+				]),
+		})
+		const vm = build(client)
+		await vm.attached()
+
+		expect(vm.rows[0].canPublish).toBe(false)
+		// A published date is left to cancel.
+		expect(vm.rows[0].canCancel).toBe(true)
+		expect(vm.rows[1].canPublish).toBe(false)
+		expect(vm.rows[1].canCancel).toBe(false)
+		expect(vm.rows[1].canEdit).toBe(false)
+	})
+
+	it('offers Cancel while a cancelled concert still has a draft date', async () => {
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeConcert('s1', 'Tour', PublishState.CANCELLED, Visibility.PUBLIC, [
+						makeEvent('e1', 0, PublishState.CANCELLED),
+						makeEvent('e2', 1, PublishState.DRAFT),
+					]),
+				]),
+		})
+		const vm = build(client)
+		await vm.attached()
+
+		expect(vm.rows[0].publishLabel).toBe('Cancelled')
+		expect(vm.rows[0].canPublish).toBe(true)
+		expect(vm.rows[0].canCancel).toBe(true)
+		expect(vm.rows[0].canEdit).toBe(true)
+	})
+
+	it("gates each entry point on the event's own state, not the concert's", async () => {
+		// @spec components/infrastructure/organizer/web/route/concerts "Organizer reaches lottery configuration from a published event"
+		// @spec components/infrastructure/organizer/web/route/concerts "No lottery entry point for a draft event"
+		const client = createMockClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([
+					makeConcert('s1', 'Tour', PublishState.PUBLISHED, Visibility.PUBLIC, [
+						makeEvent('e1', 0, PublishState.PUBLISHED),
+						makeEvent('e2', 1, PublishState.DRAFT),
+						makeEvent('e3', 2, PublishState.CANCELLED),
+					]),
+				]),
+		})
+		const vm = build(client)
+		await vm.attached()
+
+		expect(vm.rows[0].lotteryEvents).toEqual([
+			{ eventId: 'e1', label: 'Configure lottery · 2026-09-10' },
+		])
+		// The draft date reaches the screens, which say to publish first; the
+		// cancelled date reaches neither.
+		expect(vm.rows[0].ticketSaleEvents.map((e) => e.eventId)).toEqual([
+			'e1',
+			'e2',
+		])
+		expect(vm.rows[0].scannerEvents.map((e) => e.eventId)).toEqual(['e1', 'e2'])
 	})
 
 	it('confirms then cancels a concert', async () => {

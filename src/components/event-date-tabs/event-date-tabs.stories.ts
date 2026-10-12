@@ -13,17 +13,26 @@ const meta = {
 	tags: ['test', 'autodocs'],
 	argTypes: {
 		label: { control: 'text', description: 'Accessible name of the tabs.' },
+		cancelledLabel: {
+			control: 'text',
+			description: 'Mark of a cancelled date, e.g. 中止.',
+		},
 	},
 } satisfies Meta<typeof EventDateTabs>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-function tabs(labels: string[], selected: number): EventDateTab[] {
+function tabs(
+	labels: string[],
+	selected: number,
+	cancelled: number[] = [],
+): EventDateTab[] {
 	return labels.map((label, i) => ({
 		id: `ev-${i + 1}`,
 		label,
 		selected: i === selected,
+		cancelled: cancelled.includes(i),
 	}))
 }
 
@@ -31,7 +40,7 @@ function tabs(labels: string[], selected: number): EventDateTab[] {
 function story(items: EventDateTab[]) {
 	return defineAureliaStory({
 		template: `<div class="frame-360" style="inline-size: 360px">
-			<event-date-tabs tabs.bind="tabs" label="Dates"></event-date-tabs>
+			<event-date-tabs tabs.bind="tabs" label="Dates" cancelled-label="中止"></event-date-tabs>
 		</div>`,
 		props: { tabs: items },
 		register: [EventDateTabs],
@@ -72,5 +81,25 @@ export const FourDates = {
 				comparatorName: 'pixelmatch',
 				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
 			})
+	},
+} satisfies Story
+
+/** Four dates, one of them cancelled and marked 中止, at 360px. */
+export const WithCancelledDate = {
+	render: () =>
+		story(tabs(['11/20(金)', '11/21(土)', '11/27(金)', '11/28(土)'], 0, [1])),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		const links = canvas.getAllByRole('link')
+		await expect(links[1]).toHaveTextContent('11/21(土)中止')
+		await expect(links[0]).not.toHaveTextContent('中止')
+		// The mark stays inside the tap target and the 360px frame.
+		for (const link of links) {
+			await expect(link.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+				44,
+			)
+		}
+		const frame = canvasElement.querySelector('.frame-360') as HTMLElement
+		await expect(frame.scrollWidth).toBeLessThanOrEqual(360)
 	},
 } satisfies Story

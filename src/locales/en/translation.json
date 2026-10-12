@@ -859,7 +859,8 @@
 		},
 		"dates": {
 			"label": "Dates",
-			"others": "Other dates"
+			"others": "Other dates",
+			"cancelled": "Cancelled"
 		},
 		"tickets": {
 			"title": "Tickets",

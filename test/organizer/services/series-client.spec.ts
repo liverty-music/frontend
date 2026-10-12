@@ -62,6 +62,17 @@ describe('toSeriesDraft', () => {
 		).toBe(18)
 	})
 
+	it('marshals the id of a stored event and the source page', () => {
+		const draft = toSeriesDraft({
+			...BASE,
+			sourceUrl: 'https://example.com/tour',
+			events: [{ ...BASE.events[0], eventId: 'e1' }, BASE.events[0]],
+		})
+		expect(draft.sourceUrl?.value).toBe('https://example.com/tour')
+		expect(draft.events[0].eventId?.value).toBe('e1')
+		expect(draft.events[1].eventId).toBeUndefined()
+	})
+
 	it('omits description, place id, and times when absent', () => {
 		const input: SeriesDraftInput = {
 			title: 'Bare',

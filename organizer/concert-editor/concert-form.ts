@@ -1,4 +1,5 @@
 import {
+	PublishState,
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
@@ -15,6 +16,13 @@ import type {
  * onto the native `<input type="date">` / `<input type="time">` controls.
  */
 export interface EventFormRow {
+	/** The id of the stored Event this row edits; empty for a new date. */
+	eventId: string
+	/**
+	 * The row's publish state. A new row is DRAFT: the server stores a new date
+	 * as a DRAFT Event, published later on its own.
+	 */
+	publishState: PublishState
 	venueName: string
 	placeId: string
 	/** ISO `YYYY-MM-DD` from `<input type="date">`; empty when unset. */
@@ -31,6 +39,12 @@ export interface ConcertFormModel {
 	description: string
 	type: SeriesType
 	visibility: Visibility
+	/**
+	 * The Series' source page, kept as loaded. The editor offers no control for
+	 * it, but sends it back so a save never changes it (it is fixed once the
+	 * concert has a PUBLISHED or CANCELLED event).
+	 */
+	sourceUrl: string
 	artistIds: string[]
 	events: EventFormRow[]
 }
@@ -56,6 +70,8 @@ export interface EventRowErrors {
 /** Returns a blank event row. */
 export function emptyEventRow(): EventFormRow {
 	return {
+		eventId: '',
+		publishState: PublishState.DRAFT,
 		venueName: '',
 		placeId: '',
 		localDate: '',
@@ -71,6 +87,7 @@ export function emptyFormModel(): ConcertFormModel {
 		description: '',
 		type: SeriesType.SINGLE,
 		visibility: Visibility.PUBLIC,
+		sourceUrl: '',
 		artistIds: [],
 		events: [emptyEventRow()],
 	}
@@ -129,9 +146,10 @@ export function todayCalendarDate(now: Date = new Date()): CalendarDate {
  * non-past local date; and open time must not be after start time.
  *
  * `today` is injected (defaults to the caller's local today) so the past-date
- * rule is deterministic and unit-testable. When editing a PUBLISHED series the
- * past-date rule is relaxed via `allowPastDates` — an already-published series
- * legitimately carries past events being corrected.
+ * rule is deterministic and unit-testable. The past-date rule applies only to
+ * new and DRAFT rows: a PUBLISHED or CANCELLED event legitimately carries a
+ * past date while its concert is corrected. `allowPastDates` relaxes it for
+ * every row.
  */
 export function validateConcertForm(
 	model: ConcertFormModel,
@@ -165,7 +183,11 @@ export function validateConcertForm(
 		const date = parseIsoDate(row.localDate)
 		if (date === null) {
 			rowErrors.localDate = 'A valid date is required.'
-		} else if (!allowPastDates && compareToToday(date, today) < 0) {
+		} else if (
+			!allowPastDates &&
+			!hasFixedVenueAndDate(row) &&
+			compareToToday(date, today) < 0
+		) {
 			rowErrors.localDate = 'The date cannot be in the past.'
 		} else {
 			const start = composeInstant(date, row.startTime)
@@ -178,6 +200,14 @@ export function validateConcertForm(
 	}
 
 	return errors
+}
+
+/** True when the row's venue and date are fixed (a PUBLISHED or CANCELLED event). */
+export function hasFixedVenueAndDate(row: EventFormRow): boolean {
+	return (
+		row.publishState === PublishState.PUBLISHED ||
+		row.publishState === PublishState.CANCELLED
+	)
 }
 
 /** True when the validation result has no field- or row-level errors. */
@@ -206,6 +236,7 @@ export function toSeriesDraftInput(model: ConcertFormModel): SeriesDraftInput {
 		const start = composeInstant(date, row.startTime)
 		const open = composeInstant(date, row.openTime)
 		return {
+			...(row.eventId ? { eventId: row.eventId } : {}),
 			venueName: row.venueName.trim(),
 			...(row.placeId.trim() ? { placeId: row.placeId.trim() } : {}),
 			localDate: date,
@@ -220,6 +251,7 @@ export function toSeriesDraftInput(model: ConcertFormModel): SeriesDraftInput {
 		...(model.description.trim()
 			? { description: model.description.trim() }
 			: {}),
+		...(model.sourceUrl ? { sourceUrl: model.sourceUrl } : {}),
 		artistIds: [...model.artistIds],
 		events,
 	}

@@ -32,5 +32,11 @@
 				background: var(--color-brand-primary);
 			}
 		}
+
+		/* A cancelled date: its mark sits under the date, inside the 44px target. */
+		.date-tab-status {
+			font-size: var(--step--2);
+			line-height: var(--leading-none);
+		}
 	}
 }

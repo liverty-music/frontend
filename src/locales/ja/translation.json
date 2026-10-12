@@ -859,7 +859,8 @@
 		},
 		"dates": {
 			"label": "公演日",
-			"others": "ほかの公演日"
+			"others": "ほかの公演日",
+			"cancelled": "中止"
 		},
 		"tickets": {
 			"title": "チケット",

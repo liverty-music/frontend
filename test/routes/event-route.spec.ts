@@ -40,7 +40,10 @@ interface ConcertOpts {
 	open?: Date
 	start?: Date
 	cover?: boolean
+	/** The event's own publish state. */
 	state?: PublishState
+	/** The Series' derived publish state; defaults to PUBLISHED. */
+	seriesState?: PublishState
 	title?: string
 }
 
@@ -59,6 +62,7 @@ function protoConcert(o: ConcertOpts = {}): ResolvedConcert {
 			listedVenueName: { value: 'Shibuya WWW' },
 			venue: { name: { value: 'WWW' }, adminArea: { value: 'JP-13' } },
 			seriesId: { value: SERIES_ID },
+			publishState: o.state ?? PublishState.PUBLISHED,
 		},
 		artistIds: [{ value: ARTIST_ID }],
 	})
@@ -67,7 +71,7 @@ function protoConcert(o: ConcertOpts = {}): ResolvedConcert {
 		title: { value: o.title ?? 'ONE MAN LIVE' },
 		description: { value: '二夜連続公演' },
 		organizerId: { value: 'org-1' },
-		publishState: o.state ?? PublishState.PUBLISHED,
+		publishState: o.seriesState ?? PublishState.PUBLISHED,
 		coverImage: o.cover
 			? {
 					id: { value: 'series-image-1' },
@@ -324,8 +328,8 @@ describe('EventRoute', () => {
 
 			expect(sut.dateNav).toBe('tabs')
 			expect(sut.dateTabs).toEqual([
-				{ id: EVENT_ID, label: '11/20(金)', selected: true },
-				{ id: day2, label: '11/21(土)', selected: false },
+				{ id: EVENT_ID, label: '11/20(金)', selected: true, cancelled: false },
+				{ id: day2, label: '11/21(土)', selected: false, cancelled: false },
 			])
 		})
 
@@ -574,7 +578,8 @@ describe('EventRoute', () => {
 			expect(sut.shownSale).toBeNull()
 		})
 
-		it('offers nothing for sale on a cancelled concert', async () => {
+		it('offers nothing for sale on a cancelled date of a published tour', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Shared link after cancellation"
 			concertClient.get.mockResolvedValue(
 				protoConcert({ state: PublishState.CANCELLED }),
 			)
@@ -599,7 +604,10 @@ describe('EventRoute', () => {
 		it('shows the cancelled banner and offers nothing for sale', async () => {
 			// @spec components/infrastructure/fan/web/route/event "Shared link after cancellation"
 			concertClient.get.mockResolvedValue(
-				protoConcert({ state: PublishState.CANCELLED }),
+				protoConcert({
+					state: PublishState.CANCELLED,
+					seriesState: PublishState.CANCELLED,
+				}),
 			)
 			const sut = build()
 			await open(sut)
@@ -607,6 +615,57 @@ describe('EventRoute', () => {
 			expect(sut.state).toBe('ready')
 			expect(sut.isCancelled).toBe(true)
 			expect(sut.otherConcertsUrl).toBe(`/dashboard?artists=${ARTIST_ID}`)
+		})
+
+		it('shows the cancelled banner for one cancelled date of a published tour', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Shared link after cancellation"
+			concertClient.get.mockResolvedValue(
+				protoConcert({
+					state: PublishState.CANCELLED,
+					seriesState: PublishState.PUBLISHED,
+				}),
+			)
+			const sut = build()
+			await open(sut)
+
+			expect(sut.isCancelled).toBe(true)
+		})
+
+		it('shows no banner on a published date and marks the cancelled date among the tabs', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Other date of a partly cancelled tour"
+			const day2 = '019a0000-0000-7000-8000-0000000000e2'
+			concertClient.listBySeries.mockResolvedValue([
+				protoConcert({ day: 20 }),
+				protoConcert({ id: day2, day: 21, state: PublishState.CANCELLED }),
+			])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.isCancelled).toBe(false)
+			expect(sut.dateTabs).toEqual([
+				{ id: EVENT_ID, label: '11/20(金)', selected: true, cancelled: false },
+				{ id: day2, label: '11/21(土)', selected: false, cancelled: true },
+			])
+		})
+
+		it('marks a cancelled date in the list of other dates', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Other date of a partly cancelled tour"
+			concertClient.listBySeries.mockResolvedValue(
+				[20, 21, 22, 23, 24, 25].map((day, i) =>
+					protoConcert({
+						id: i === 0 ? EVENT_ID : `ev-${day}`,
+						day,
+						state: day === 22 ? PublishState.CANCELLED : PublishState.PUBLISHED,
+					}),
+				),
+			)
+			const sut = build()
+			await open(sut)
+
+			expect(sut.isCancelled).toBe(false)
+			expect(
+				sut.otherDates.filter((d) => d.cancelled).map((d) => d.id),
+			).toEqual(['ev-22'])
 		})
 
 		it('says the event has ended the day after the show, with no ticket section', async () => {

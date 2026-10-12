@@ -30,19 +30,24 @@ const { ScannersRoute, staffGuideUrl, scannerUrl } = await import(
 const EVENT_ID = '019a0000-0000-7000-8000-0000000000e1'
 const SERIES_ID = '019a0000-0000-7000-8000-0000000000s1'
 
+/**
+ * A concert with the one event of this screen. `publishState` is the event's
+ * own state; the Series' derived state is `seriesState`, which defaults to it.
+ */
 function concert(
 	publishState: PublishState,
-	opts: { startTime?: Date; openTime?: Date } = {},
+	opts: { startTime?: Date; openTime?: Date; seriesState?: PublishState } = {},
 ): AuthoredSeries {
 	return authoredSeries({
 		series: {
 			id: { value: SERIES_ID },
 			title: { value: 'Basement Night' },
-			publishState,
+			publishState: opts.seriesState ?? publishState,
 		},
 		events: [
 			{
 				id: { value: EVENT_ID },
+				publishState,
 				localDate: { value: { year: 2026, month: 11, day: 20 } },
 				...(opts.startTime
 					? { startTime: { value: timestampFromDate(opts.startTime) } }
@@ -266,6 +271,34 @@ describe('ScannersRoute', () => {
 		const { route, text, buttons } = await build(m)
 		expect(route.createBlock).toBe('draft')
 		expect(text()).toContain('先に公演を公開してください')
+		expect(buttons()).not.toContain('受付リンクを発行')
+		await route.create()
+		expect(m.scanners.create).not.toHaveBeenCalled()
+	})
+
+	it('reads the draft date of a published concert as a draft', async () => {
+		// @spec components/infrastructure/organizer/web/route/scanners "Unpublished event"
+		const m = mocks(
+			concert(PublishState.DRAFT, {
+				startTime: START,
+				seriesState: PublishState.PUBLISHED,
+			}),
+		)
+		const { route, text, buttons } = await build(m)
+		expect(route.createBlock).toBe('draft')
+		expect(text()).toContain('先に公演を公開してください')
+		expect(buttons()).not.toContain('受付リンクを発行')
+	})
+
+	it('reads the cancelled date of a published concert as cancelled', async () => {
+		const m = mocks(
+			concert(PublishState.CANCELLED, {
+				startTime: START,
+				seriesState: PublishState.PUBLISHED,
+			}),
+		)
+		const { route, buttons } = await build(m)
+		expect(route.createBlock).toBe('cancelled')
 		expect(buttons()).not.toContain('受付リンクを発行')
 		await route.create()
 		expect(m.scanners.create).not.toHaveBeenCalled()

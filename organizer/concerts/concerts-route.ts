@@ -1,3 +1,4 @@
+import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import {
 	PublishState,
 	Visibility,
@@ -21,27 +22,30 @@ export interface ConcertListRow {
 	readonly seriesId: string
 	readonly title: string
 	readonly dateRange: string
+	/** The Series' publish state, derived by the server from its events. */
 	readonly publishState: PublishState
 	readonly publishLabel: string
 	readonly visibility: Visibility
 	readonly visibilityLabel: string
 	readonly canEdit: boolean
+	/** True while the concert has a DRAFT event; Publish publishes all of them. */
 	readonly canPublish: boolean
+	/** True while the concert has a PUBLISHED or DRAFT event. */
 	readonly canCancel: boolean
 	/**
-	 * Per-event entry points to lottery-sale configuration. Non-empty only for
-	 * a `PUBLISHED` series — a lottery sale requires a published event. Each
-	 * entry carries the `eventId` so the console deep-links to
-	 * `lottery/configure/:eventId` without the Organizer knowing the id.
+	 * Per-event entry points to lottery-sale configuration, one per `PUBLISHED`
+	 * event — a lottery sale requires a published event. Each entry carries the
+	 * `eventId` so the console deep-links to `lottery/configure/:eventId`
+	 * without the Organizer knowing the id.
 	 */
 	readonly lotteryEvents: readonly {
 		readonly eventId: string
 		readonly label: string
 	}[]
 	/**
-	 * Per-event entry points to the scanners screen. Present for every
-	 * event of a series that is not cancelled; the screen itself explains why
-	 * a draft event or an event without a start time cannot have Scanners yet.
+	 * Per-event entry points to the scanners screen. Present for every event
+	 * that is not cancelled; the screen itself explains why a draft event or an
+	 * event without a start time cannot have Scanners yet.
 	 */
 	readonly scannerEvents: readonly {
 		readonly eventId: string
@@ -49,9 +53,9 @@ export interface ConcertListRow {
 	}[]
 	/**
 	 * Per-event entry points to the first-come ticket sale editor. Present for
-	 * every event of a series that is not cancelled; the editor itself explains
-	 * why a draft event, an event without a start time or an Organizer without
-	 * business details cannot go on sale yet.
+	 * every event that is not cancelled; the editor itself explains why a draft
+	 * event, an event without a start time or an Organizer without business
+	 * details cannot go on sale yet.
 	 */
 	readonly ticketSaleEvents: readonly {
 		readonly eventId: string
@@ -93,58 +97,28 @@ function formatDateRange(concert: AuthoredSeries): string {
 	return `${first} – ${last}`
 }
 
+/** True when the event has the given publish state. */
+function hasState(event: Event, ...states: PublishState[]): boolean {
+	return states.includes(event.publishState)
+}
+
 /**
- * Builds the per-event lottery entry points for a published series. Empty for
- * any non-published series (a lottery sale requires a published event) and for
- * events lacking an id. When a series has several events the label carries the
- * event date so each link is distinguishable.
+ * Builds one entry point per event that passes `include`, labelled with the
+ * event's date when the series has several events so each link is
+ * distinguishable. Events lacking an id are skipped.
  */
-function toLotteryEvents(
+function toEventEntries(
 	concert: AuthoredSeries,
-	publishState: PublishState,
-): ConcertListRow['lotteryEvents'] {
-	if (publishState !== PublishState.PUBLISHED) return []
+	label: string,
+	include: (event: Event) => boolean,
+): { readonly eventId: string; readonly label: string }[] {
 	const multi = concert.events.length > 1
 	return concert.events
-		.map((event, index) => ({
+		.map((event, index) => ({ event, index }))
+		.filter(({ event }) => include(event))
+		.map(({ event, index }) => ({
 			eventId: event.id?.value ?? '',
-			label: multi
-				? `Configure lottery · ${formatEventDate(concert, index)}`
-				: 'Configure lottery',
-		}))
-		.filter((entry) => entry.eventId !== '')
-}
-
-/** Builds the per-event scanners entry points of a series. */
-function toScannerEvents(
-	concert: AuthoredSeries,
-	publishState: PublishState,
-): ConcertListRow['scannerEvents'] {
-	if (publishState === PublishState.CANCELLED) return []
-	const multi = concert.events.length > 1
-	return concert.events
-		.map((event, index) => ({
-			eventId: event.id?.value ?? '',
-			label: multi
-				? `Scanners · ${formatEventDate(concert, index)}`
-				: 'Scanners',
-		}))
-		.filter((entry) => entry.eventId !== '')
-}
-
-/** Builds the per-event first-come sale entry points of a series. */
-function toTicketSaleEvents(
-	concert: AuthoredSeries,
-	publishState: PublishState,
-): ConcertListRow['ticketSaleEvents'] {
-	if (publishState === PublishState.CANCELLED) return []
-	const multi = concert.events.length > 1
-	return concert.events
-		.map((event, index) => ({
-			eventId: event.id?.value ?? '',
-			label: multi
-				? `First-come sale · ${formatEventDate(concert, index)}`
-				: 'First-come sale',
+			label: multi ? `${label} · ${formatEventDate(concert, index)}` : label,
 		}))
 		.filter((entry) => entry.eventId !== '')
 }
@@ -153,6 +127,10 @@ function toRow(concert: AuthoredSeries): ConcertListRow {
 	const series = concert.series
 	const publishState = series?.publishState ?? PublishState.UNSPECIFIED
 	const visibility = series?.visibility ?? Visibility.UNSPECIFIED
+	const notCancelled = (e: Event) => !hasState(e, PublishState.CANCELLED)
+	const canCancel = concert.events.some((e) =>
+		hasState(e, PublishState.PUBLISHED, PublishState.DRAFT),
+	)
 	return {
 		seriesId: series?.id?.value ?? '',
 		title: series?.title?.value || UNTITLED,
@@ -161,12 +139,15 @@ function toRow(concert: AuthoredSeries): ConcertListRow {
 		publishLabel: PUBLISH_LABELS[publishState],
 		visibility,
 		visibilityLabel: VISIBILITY_LABELS[visibility],
-		canEdit: publishState !== PublishState.CANCELLED,
-		canPublish: publishState === PublishState.DRAFT,
-		canCancel: publishState !== PublishState.CANCELLED,
-		lotteryEvents: toLotteryEvents(concert, publishState),
-		scannerEvents: toScannerEvents(concert, publishState),
-		ticketSaleEvents: toTicketSaleEvents(concert, publishState),
+		// A concert whose every event is cancelled has nothing left to edit.
+		canEdit: canCancel,
+		canPublish: concert.events.some((e) => hasState(e, PublishState.DRAFT)),
+		canCancel,
+		lotteryEvents: toEventEntries(concert, 'Configure lottery', (e) =>
+			hasState(e, PublishState.PUBLISHED),
+		),
+		scannerEvents: toEventEntries(concert, 'Scanners', notCancelled),
+		ticketSaleEvents: toEventEntries(concert, 'First-come sale', notCancelled),
 		busy: false,
 		actionError: '',
 	}
@@ -175,7 +156,9 @@ function toRow(concert: AuthoredSeries): ConcertListRow {
 /**
  * The organizer console dashboard: lists the caller's own authored concerts
  * (drafts and published) and offers per-row actions — edit (navigate to the
- * editor), publish (DRAFT → PUBLISHED), and cancel (terminal). The caller's
+ * editor), publish (every DRAFT event of the concert, including dates added
+ * after an earlier publish), and cancel (the whole concert: PUBLISHED events
+ * become CANCELLED, DRAFT events are removed). The caller's
  * Organizer is resolved from the token, so `List` takes no argument.
  *
  * Publish and Cancel are confirmed in the template (a two-step reveal) and run
@@ -241,7 +224,7 @@ export class ConcertsRoute {
 		} catch (err) {
 			row.actionError = toOrganizerErrorMessage(err, 'Failed to publish.', {
 				[Code.FailedPrecondition]:
-					'This concert can no longer be published — it may be cancelled, already published, or its slot is claimed by another organizer.',
+					"This concert can no longer be published — it may have no draft date left, or a date's slot is claimed by another organizer.",
 			})
 			row.busy = false
 			this.logger.error('Publish failed', { seriesId: row.seriesId, err })

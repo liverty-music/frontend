@@ -8,6 +8,8 @@ export interface EventDateTab {
 	readonly label: string
 	/** True for the displayed Event's tab. */
 	readonly selected: boolean
+	/** True when this date is cancelled; the tab is marked with `cancelledLabel`. */
+	readonly cancelled: boolean
 }
 
 /**
@@ -20,4 +22,6 @@ export class EventDateTabs {
 	@bindable public tabs: readonly EventDateTab[] = []
 	/** Accessible name of the tab list. */
 	@bindable public label = ''
+	/** The mark of a cancelled date in the display language, e.g. "中止". */
+	@bindable public cancelledLabel = ''
 }

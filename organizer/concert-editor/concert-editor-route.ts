@@ -16,6 +16,7 @@ import {
 	type ConcertFormModel,
 	emptyEventRow,
 	emptyFormModel,
+	hasFixedVenueAndDate,
 	isFormValid,
 	toSeriesDraftInput,
 	validateConcertForm,
@@ -26,6 +27,18 @@ import { MAX_IMAGE_BYTES, validateCoverImage } from './cover-image'
 type LoadPhase = 'loading' | 'ready' | 'error'
 
 const EMPTY = '—'
+
+/** Shown when a save is refused after the start time of a published event changed. */
+export const START_TIME_ON_SALE_MESSAGE =
+	'The start time of a published event is fixed once tickets are on sale, so nothing was saved. If no tickets are on sale yet, another concert already holds that venue and time.'
+
+/** The label of each event's publish state. */
+export const EVENT_STATE_LABELS: Record<PublishState, string> = {
+	[PublishState.UNSPECIFIED]: EMPTY,
+	[PublishState.DRAFT]: 'Draft',
+	[PublishState.PUBLISHED]: 'Published',
+	[PublishState.CANCELLED]: '中止 (Cancelled)',
+}
 
 /** A performer option for the multi-select, flattened from the roster. */
 export interface PerformerOption {
@@ -56,9 +69,14 @@ function toPerformerOption(artist: Artist, selected: boolean): PerformerOption {
  * runs on every input so inline errors appear before a round-trip. Save calls
  * Create or Update; on a successful Create it redirects into the edit route so
  * the now-persisted series id unlocks cover-image upload and the publish/token
- * affordances. A PUBLISHED series edit is a correction — the backend rejects
- * disallowed edits with FAILED_PRECONDITION, which is surfaced rather than
- * assumed to succeed.
+ * affordances.
+ *
+ * Each event row carries its own publish state. A PUBLISHED event keeps its
+ * venue and date and cannot be removed; a CANCELLED event is read-only; a date
+ * added to a published concert is saved as a DRAFT event. Once the concert has
+ * a PUBLISHED or CANCELLED event, the type is fixed too. Every stored event is
+ * sent back with its id. The backend still guards these rules with
+ * FAILED_PRECONDITION, which is surfaced rather than assumed to succeed.
  */
 export class ConcertEditorRoute {
 	public phase: LoadPhase = 'loading'
@@ -66,6 +84,7 @@ export class ConcertEditorRoute {
 
 	/** Edit mode when set; create mode when empty. */
 	public seriesId = ''
+	/** The Series' publish state, derived by the server from its events. */
 	public publishState: PublishState = PublishState.UNSPECIFIED
 
 	public model: ConcertFormModel = emptyFormModel()
@@ -102,6 +121,7 @@ export class ConcertEditorRoute {
 	// ships later as a complete vertical slice), so the form value stays PUBLIC.
 	public readonly SeriesType = SeriesType
 	public readonly PublishState = PublishState
+	public readonly eventStateLabels = EVENT_STATE_LABELS
 	public readonly maxImageMiB = MAX_IMAGE_BYTES / (1024 * 1024)
 
 	public canLoad(params: Params): boolean {
@@ -122,8 +142,15 @@ export class ConcertEditorRoute {
 		return this.seriesId !== ''
 	}
 
-	public get isPublished(): boolean {
-		return this.publishState === PublishState.PUBLISHED
+	/** Start times of the stored PUBLISHED events as loaded, keyed by event id. */
+	private publishedStartTimes = new Map<string, string>()
+
+	/**
+	 * True once the concert has a PUBLISHED or CANCELLED event: its type, source
+	 * page and visibility are then fixed, and a save is a correction.
+	 */
+	public get isCorrection(): boolean {
+		return this.model.events.some(hasFixedVenueAndDate)
 	}
 
 	/**
@@ -205,6 +232,7 @@ export class ConcertEditorRoute {
 	private hydrate(concert: AuthoredSeries): void {
 		const series = concert.series
 		this.publishState = series?.publishState ?? PublishState.UNSPECIFIED
+		this.publishedStartTimes = new Map()
 		// The editor renders the full-width `large` variant; a list would use
 		// `thumb`. Both 404 until async processing finishes (see renderedCover).
 		const nextCover = series?.coverImage?.large?.value ?? ''
@@ -215,11 +243,16 @@ export class ConcertEditorRoute {
 			description: series?.description?.value ?? '',
 			type: series?.type ?? SeriesType.SINGLE,
 			visibility: series?.visibility ?? Visibility.PUBLIC,
+			sourceUrl: series?.sourceUrl?.value ?? '',
 			artistIds: concert.performers
 				.map((p) => p.id?.value ?? '')
 				.filter(Boolean),
 			events: concert.events.map((e) => ({
-				venueName: e.venue?.name?.value ?? '',
+				eventId: e.id?.value ?? '',
+				publishState: e.publishState,
+				// The venue as the operator entered it: a PUBLISHED event's venue
+				// counts as unchanged when this equals its listed venue name.
+				venueName: e.listedVenueName?.value || e.venue?.name?.value || '',
 				placeId: '',
 				localDate: e.localDate?.value
 					? `${e.localDate.value.year}-${String(e.localDate.value.month).padStart(2, '0')}-${String(e.localDate.value.day).padStart(2, '0')}`
@@ -231,6 +264,11 @@ export class ConcertEditorRoute {
 					? this.hhmm(timestampDate(e.openTime.value))
 					: '',
 			})),
+		}
+		for (const row of this.model.events) {
+			if (row.eventId && row.publishState === PublishState.PUBLISHED) {
+				this.publishedStartTimes.set(row.eventId, row.startTime)
+			}
 		}
 		if (this.model.events.length === 0) {
 			this.model.events.push(emptyEventRow())
@@ -244,9 +282,7 @@ export class ConcertEditorRoute {
 	// --- Form editing -------------------------------------------------------
 
 	public revalidate(): void {
-		this.errors = validateConcertForm(this.model, {
-			allowPastDates: this.isPublished,
-		})
+		this.errors = validateConcertForm(this.model)
 	}
 
 	public togglePerformer(option: PerformerOption): void {
@@ -262,8 +298,10 @@ export class ConcertEditorRoute {
 		this.revalidate()
 	}
 
+	/** Removes a DRAFT row; a PUBLISHED or CANCELLED event is never removed. */
 	public removeEvent(index: number): void {
 		if (this.model.events.length <= 1) return
+		if (this.model.events[index]?.publishState !== PublishState.DRAFT) return
 		this.model.events.splice(index, 1)
 		this.revalidate()
 	}
@@ -298,14 +336,25 @@ export class ConcertEditorRoute {
 			}
 		} catch (err) {
 			this.saveError = toOrganizerErrorMessage(err, 'Failed to save.', {
-				[Code.FailedPrecondition]: this.isPublished
-					? 'Published concerts only allow correction edits; this change was rejected.'
-					: 'This concert can no longer be edited.',
+				[Code.FailedPrecondition]: this.publishedStartTimeChanged()
+					? START_TIME_ON_SALE_MESSAGE
+					: this.isCorrection
+						? 'This correction was rejected: the venue and date of a published event, its type, source page and visibility are fixed, and cancelled events cannot change. Nothing was saved.'
+						: 'This concert can no longer be edited.',
 			})
 			this.logger.error('Save failed', { seriesId: this.seriesId, err })
 		} finally {
 			this.saving = false
 		}
+	}
+
+	/** True when a stored PUBLISHED event's start time differs from the loaded one. */
+	private publishedStartTimeChanged(): boolean {
+		return this.model.events.some(
+			(row) =>
+				this.publishedStartTimes.has(row.eventId) &&
+				this.publishedStartTimes.get(row.eventId) !== row.startTime,
+		)
 	}
 
 	// --- Cover image --------------------------------------------------------
