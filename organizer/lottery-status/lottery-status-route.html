@@ -67,11 +67,11 @@
 
       <section class="[ lottery-status-panel ] [ flow ]">
         <h3 class="lottery-status-subtitle">Draw outcome</h3>
-        <p class="lottery-status-badge" data-drawn.bind="view.drawCompleted">
+        <p class="lottery-status-badge" data-draw-completed.bind="view.drawCompleted">
           ${view.drawCompleted ? 'Draw completed' : 'Draw not yet run'}
         </p>
 
-        <!-- Demand tallies are meaningful before and after the draw. -->
+        <!-- Demand stats are meaningful before and after the draw. -->
         <dl class="lottery-status-facts">
           <div>
             <dt>Entries</dt>
@@ -83,7 +83,7 @@
           </div>
         </dl>
 
-        <!-- Outcome tallies are only meaningful once the draw has run. -->
+        <!-- Outcome stats are only meaningful once the draw has run. -->
         <dl if.bind="view.drawCompleted" class="lottery-status-facts">
           <div>
             <dt>Winning entries</dt>
@@ -99,7 +99,7 @@
           </div>
         </dl>
         <p if.bind="!view.drawCompleted" class="lottery-status-hint">
-          Winner and won-ticket tallies appear once the window closes and the
+          Winner and won-ticket counts appear once the window closes and the
           draw runs.
         </p>
       </section>

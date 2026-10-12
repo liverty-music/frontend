@@ -42,7 +42,7 @@ function createMockOnboarding() {
 // ProvisionResult { user, created }; per-test overrides set `created` to drive
 // the post-signup-dialog assertions.
 function createMockUserStore(home: string | null = null) {
-	const stub = { id: 'u1', externalId: 'ext', email: 'u@test.com', name: 'U' }
+	const stub = { id: 'u1', email: 'u@test.com', name: 'U' }
 	return {
 		current: stub as unknown as
 			| import('../../src/entities/user').User

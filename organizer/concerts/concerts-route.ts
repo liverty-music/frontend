@@ -51,7 +51,7 @@ export interface ConcertListRow {
 	 * Per-event entry points to the first-come ticket sale editor. Present for
 	 * every event of a series that is not cancelled; the editor itself explains
 	 * why a draft event, an event without a start time or an Organizer without
-	 * seller details cannot go on sale yet.
+	 * business details cannot go on sale yet.
 	 */
 	readonly ticketSaleEvents: readonly {
 		readonly eventId: string

@@ -19,12 +19,12 @@ export interface IStripeService extends StripeService {}
 
 /**
  * Result of confirming a card authorization (manual-capture PaymentIntent)
- * with Stripe Elements. On success, `paymentIntentId` is the confirmed
- * `pi_…` reference of the card authorization. On failure, `errorMessage` holds the
- * localized (Stripe-provided) reason.
+ * with Stripe Elements. On success, `cardAuthorizationId` is the confirmed
+ * card authorization's id (Stripe's `pi_…`). On failure, `errorMessage` holds
+ * the localized (Stripe-provided) reason.
  */
 export interface ConfirmCardAuthorizationResult {
-	readonly paymentIntentId?: string
+	readonly cardAuthorizationId?: string
 	readonly errorMessage?: string
 }
 
@@ -218,8 +218,9 @@ export class StripeService {
 	 * Confirms the manual-capture PaymentIntent (the card authorization) with the
 	 * mounted Elements, completing 3DS in-place when required.
 	 * `redirect: 'if_required'` keeps the fan on-page for card payments; only a
-	 * redirect-based method (not offered here) would navigate away. Returns the confirmed PaymentIntent id
-	 * on success, or a localized error message on failure.
+	 * redirect-based method (not offered here) would navigate away. Returns the
+	 * confirmed card authorization's id on success, or a localized error message
+	 * on failure.
 	 */
 	public async confirmCardAuthorization(
 		stripe: Stripe,
@@ -244,7 +245,7 @@ export class StripeService {
 					'カード認証を確認できませんでした。もう一度お試しください。',
 			}
 		}
-		// A successfully-held manual-capture authorization is in `requires_capture`.
+		// A successfully confirmed manual-capture authorization is in `requires_capture`.
 		// Any other status (e.g. requires_action / requires_payment_method /
 		// processing) means the card is NOT authorized yet, so it must not be
 		// passed to Confirm as if it were a valid card authorization.
@@ -257,6 +258,6 @@ export class StripeService {
 					'カード認証が完了しませんでした。もう一度お試しください。',
 			}
 		}
-		return { paymentIntentId: paymentIntent.id }
+		return { cardAuthorizationId: paymentIntent.id }
 	}
 }

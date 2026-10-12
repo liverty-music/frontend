@@ -35,7 +35,7 @@ export interface CreateTicketSaleInput {
 	readonly perAccountLimit?: number
 }
 
-/** An event's sales, with each lottery TicketType's entry tallies. */
+/** An event's sales, with each lottery TicketType's entry stats. */
 export interface EventTicketSales {
 	readonly ticketSales: TicketSale[]
 	readonly lotteryEntryStats: LotteryEntryStats[]
@@ -51,7 +51,7 @@ export interface ITicketSaleClient extends TicketSaleClient {}
 /**
  * Organizer-local wrapper around the generated organizer `TicketSaleService`
  * client: {@link listByEvent} reads one event's sales with their TicketTypes
- * (quantity, sold and held counts) and lottery tallies, {@link create} opens a
+ * (quantity, sold and held counts) and lottery entry stats, {@link create} opens a
  * sale by lottery or first come with one TicketType for one event, and
  * {@link setWindow} moves a sale's start and end times. The caller's
  * Organizer is resolved from the token.
@@ -73,7 +73,7 @@ export class TicketSaleClient {
 		),
 	)
 
-	/** The event's sales, with the tallies of each lottery TicketType. */
+	/** The event's sales, with the entry stats of each lottery TicketType. */
 	public async listByEvent(
 		eventId: string,
 		signal?: AbortSignal,

@@ -44,8 +44,9 @@ import { getConcert } from './support'
  *
  * What a browser cannot see is checked separately against production:
  * one confirmation email per Order (`orders.confirmation_sent_at`), the card
- * hold released after an ended hold (`checkouts.authorization_released_at`
- * and the PaymentIntent canceled), and the ticket journey Paid.
+ * authorization released after an ended hold
+ * (`checkouts.authorization_released_at` and Stripe's PaymentIntent
+ * canceled), and the ticket journey Paid.
  */
 const SALE_EVENT_ID = process.env.E2E_SALE_EVENT_ID ?? ''
 const ORGANIZER_TOKEN = process.env.E2E_ORGANIZER_TOKEN ?? ''
@@ -372,7 +373,7 @@ test.describe('buy tickets first come (signed in)', () => {
 			starts.map(async (start) => (await start).status()),
 		)
 		// One hold is made; the other Start fails with RESOURCE_EXHAUSTED
-		// (HTTP 429), so that fan has no checkout and no card hold.
+		// (HTTP 429), so that fan has no checkout and no card authorization.
 		expect(statuses.filter((s) => s === 200)).toHaveLength(1)
 		expect(statuses.filter((s) => s === 429)).toHaveLength(1)
 		const winner = fans[statuses.indexOf(200)]
@@ -466,7 +467,7 @@ async function fillPersonalDetails(page: Page): Promise<void> {
 	})
 }
 
-/** Enter Stripe's test card in the Payment Element and open the hold. */
+/** Enter Stripe's test card in the Payment Element and authorize it. */
 async function authorizeCard(page: Page): Promise<void> {
 	const card = await cardFrame(page)
 	await card.locator('input[name="number"]').fill(TEST_CARD.number)

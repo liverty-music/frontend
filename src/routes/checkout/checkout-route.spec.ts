@@ -175,7 +175,7 @@ async function toCard(): Promise<CheckoutRoute> {
 	return sut
 }
 
-/** Reach the 特商法 final confirmation with a held card. */
+/** Reach the 特商法 final confirmation with an authorized card. */
 async function toConfirm(): Promise<CheckoutRoute> {
 	const sut = await toCard()
 	await sut.authorizeCard()
@@ -493,7 +493,7 @@ describe('CheckoutRoute', () => {
 			expect(sut.salePeriodLabel).toBe(
 				'2026年11月1日(日) 10:00 – 2026年11月20日(金) 18:00',
 			)
-			expect(sut.seller).toEqual({
+			expect(sut.businessDetails).toEqual({
 				legalName: '株式会社リバティ',
 				representativeName: '山田 太郎',
 				businessAddress: '東京都渋谷区1-2-3',

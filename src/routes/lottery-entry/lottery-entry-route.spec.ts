@@ -174,7 +174,7 @@ describe('LotteryEntryRoute', () => {
 			elements: fakeElements,
 		})
 		mockStripe.confirmCardAuthorization.mockResolvedValue({
-			paymentIntentId: 'pi_confirmed_999',
+			cardAuthorizationId: 'pi_confirmed_999',
 		} satisfies ConfirmCardAuthorizationResult)
 		mockIdentityVerifications.get.mockResolvedValue(undefined)
 	})

@@ -127,7 +127,7 @@ describe('StripeService', () => {
 	})
 
 	describe('confirmCardAuthorization', () => {
-		it('returns the PaymentIntent id when the card authorization is in requires_capture', async () => {
+		it('returns the card authorization id when it is in requires_capture', async () => {
 			const stripe = fakeStripe({
 				confirmPayment: vi.fn(async () => ({
 					paymentIntent: { id: 'pi_1', status: 'requires_capture' },
@@ -139,7 +139,7 @@ describe('StripeService', () => {
 				noopElements,
 			)
 
-			expect(result).toEqual({ paymentIntentId: 'pi_1' })
+			expect(result).toEqual({ cardAuthorizationId: 'pi_1' })
 			expect(
 				(stripe as unknown as { confirmPayment: ReturnType<typeof vi.fn> })
 					.confirmPayment,
@@ -149,7 +149,7 @@ describe('StripeService', () => {
 			})
 		})
 
-		it('rejects a confirmed intent that is NOT in requires_capture (not a valid hold)', async () => {
+		it('rejects a confirmed intent that is NOT in requires_capture (not a valid card authorization)', async () => {
 			const stripe = fakeStripe({
 				confirmPayment: vi.fn(async () => ({
 					paymentIntent: { id: 'pi_1', status: 'requires_action' },
@@ -161,7 +161,7 @@ describe('StripeService', () => {
 				noopElements,
 			)
 
-			expect(result.paymentIntentId).toBeUndefined()
+			expect(result.cardAuthorizationId).toBeUndefined()
 			expect(result.errorMessage).toBeTruthy()
 		})
 
@@ -197,7 +197,7 @@ describe('StripeService', () => {
 			)
 		})
 
-		it('returns a localized message when neither an error nor a PaymentIntent id is present', async () => {
+		it('returns a localized message when neither an error nor a card authorization id is present', async () => {
 			const stripe = fakeStripe({
 				confirmPayment: vi.fn(async () => ({})),
 			})
@@ -207,7 +207,7 @@ describe('StripeService', () => {
 				noopElements,
 			)
 
-			expect(result.paymentIntentId).toBeUndefined()
+			expect(result.cardAuthorizationId).toBeUndefined()
 			expect(result.errorMessage).toBeTruthy()
 		})
 	})

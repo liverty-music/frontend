@@ -54,7 +54,7 @@ import { route } from '@aurelia/router'
 			title: 'Create lottery',
 		},
 		{
-			// The event's lottery sales with their entry tallies and draw outcome.
+			// The event's lottery sales with their entry stats and draw outcome.
 			path: 'lottery/status/:eventId',
 			component: import('../lottery-status/lottery-status-route'),
 			title: 'Lottery status',

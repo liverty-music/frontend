@@ -684,7 +684,7 @@
 		},
 		"licenses": {
 			"title": "OSS Licenses",
-			"intro": "The Service uses the open-source software listed below. Copyright in each piece of software belongs to its respective rights holder. This list is generated automatically from the distributed dependency tree.",
+			"intro": "The Service uses the open-source software listed below. Copyright in each piece of software belongs to its respective rights owners. This list is generated automatically from the distributed dependency tree.",
 			"sourceLabel": "View source",
 			"viewLicenseText": "View full license text"
 		}
@@ -770,11 +770,11 @@
 		},
 		"payment": {
 			"title": "Card authorization",
-			"cardAuthorization": "When you enter, a hold of ¥{{total}} (¥{{price}} × {{count}}) is placed on your card.",
-			"notCharged": "You are not charged now. The amount is only held on your card.",
-			"chargedOnWin": "You are charged the held amount only if you win.",
-			"releasedOnLoss": "If you do not win, the hold is released and you are not charged.",
-			"withdraw": "You can withdraw your entry before the draw; the hold is then released too.",
+			"cardAuthorization": "When you enter, ¥{{total}} (¥{{price}} × {{count}}) is reserved on your card.",
+			"notCharged": "You are not charged now. The amount is only reserved on your card.",
+			"chargedOnWin": "You are charged the reserved amount only if you win.",
+			"releasedOnLoss": "If you do not win, the amount reserved on your card is released and you are not charged.",
+			"withdraw": "You can withdraw your entry before the draw; the reserved amount is then released too.",
 			"brands": "Accepted cards: Visa / Mastercard / JCB / Diners Club / Discover in Japanese yen. American Express is not accepted.",
 			"confirm": "Agree and enter",
 			"submitting": "Processing…"
@@ -787,7 +787,7 @@
 		"error": {
 			"retry": "Something went wrong. Please try again.",
 			"payment": "Could not prepare the payment. Please try again later.",
-			"confirm": "Your entry could not be made. Please try again (the hold on your card is kept)."
+			"confirm": "Your entry could not be made. Please try again (the amount stays reserved on your card)."
 		},
 		"phoneInvalid": "Enter a valid phone number (e.g. 090-1234-5678 or +81 90 1234 5678)."
 	},
@@ -808,14 +808,14 @@
 			"unknown": "—"
 		},
 		"note": {
-			"entered": "Please wait for the draw result. A hold is placed on your card (you are not charged now); you are charged only if you win.",
-			"won": "You won. The held amount is charged to your card. Your tickets appear on the Tickets screen.",
-			"lost": "You did not win this time. The hold on your card is released and you are not charged.",
-			"withdrawn": "This entry was withdrawn. The hold on your card is released and you are not charged."
+			"entered": "Please wait for the draw result. The amount is reserved on your card (you are not charged now); you are charged only if you win.",
+			"won": "You won. The reserved amount is charged to your card. Your tickets appear on the Tickets screen.",
+			"lost": "You did not win this time. The amount reserved on your card is released and you are not charged.",
+			"withdrawn": "This entry was withdrawn. The amount reserved on your card is released and you are not charged."
 		},
 		"withdraw": {
 			"action": "Withdraw my entry",
-			"confirm": "Withdraw your entry? The hold on your card is released and you will no longer take part in this lottery.",
+			"confirm": "Withdraw your entry? The amount reserved on your card is released and you will no longer take part in this lottery.",
 			"cancel": "Keep my entry",
 			"submit": "Withdraw",
 			"submitting": "Processing…",
@@ -938,12 +938,12 @@
 			"delivery": "Delivery",
 			"deliveryValue": "Your tickets are available in the app's Tickets screen right after purchase.",
 			"salePeriod": "Sale period",
-			"nameOnTickets": "Ticket holder",
+			"nameOnTickets": "Name on tickets",
 			"resale": "Resale",
 			"resaleValue": "Reselling tickets without the organizer's consent is prohibited. Tickets are issued to your own account and name.",
 			"cancellation": "Cancellation and refunds",
 			"cancellationValue": "Orders cannot be cancelled or refunded unless the concert is cancelled. Cooling-off does not apply. Official resale opens only if the concert sells out.",
-			"seller": "Seller",
+			"businessDetails": "Sold by",
 			"representative": "Representative:",
 			"changeCount": "Change the number of tickets",
 			"changePersonalDetails": "Change name or phone",
@@ -957,7 +957,7 @@
 			"installApp": "Add to home screen"
 		},
 		"outcome": {
-			"holdEnded": "The 15-minute hold ended, so the order was not placed. Your card was not charged. A temporary hold may show on your card statement for a few days.",
+			"holdEnded": "The 15-minute hold ended, so the order was not placed. Your card was not charged. A pending amount may show on your card statement for a few days.",
 			"chargeFailed": "Your card could not be charged. Please start again.",
 			"replaced": "This checkout was replaced by a newer one, for example in another tab.",
 			"goToNewer": "Go to the newer checkout",

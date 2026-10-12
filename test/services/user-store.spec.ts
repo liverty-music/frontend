@@ -20,13 +20,12 @@ const GUEST_HOME_KEY = 'guest.home'
 const DETECTOR_LANGUAGE_KEY = 'language'
 
 // Auth-bootstrap fixtures (absorbed from the former UserServiceClient suite).
-const externalID = 'ext-abc'
+const oidcSubject = 'oidc-sub-abc'
 const internalID = 'user-uuid-1'
 const userEmail = 'u@test.com'
 
 const stubUser: User = {
 	id: internalID,
-	externalId: externalID,
 	email: userEmail,
 	name: 'U',
 } as User
@@ -68,7 +67,7 @@ function makeAuth(isAuthenticated: boolean): IAuthService {
 // Auth stub carrying OIDC profile claims (sub/email) for the bootstrap tests
 // that exercise the Get → Create recovery.
 function makeAuthWithProfile(opts?: { email?: string | null }) {
-	const profile: { sub: string; email?: string } = { sub: externalID }
+	const profile: { sub: string; email?: string } = { sub: oidcSubject }
 	if (opts?.email !== null) {
 		profile.email = opts?.email ?? userEmail
 	}

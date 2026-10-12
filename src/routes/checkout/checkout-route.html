@@ -131,14 +131,14 @@
       <dt t="checkout.confirm.cancellation"></dt>
       <dd t="checkout.confirm.cancellationValue"></dd>
 
-      <dt t="checkout.confirm.seller"></dt>
-      <dd data-testid="checkout-confirm-seller">
-        <template if.bind="seller">
-          ${seller.legalName}<br />
-          <span t="checkout.confirm.representative"></span> ${seller.representativeName}<br />
-          ${seller.businessAddress}<br />
-          ${seller.businessPhoneNumber}<br />
-          ${seller.contactEmail}
+      <dt t="checkout.confirm.businessDetails"></dt>
+      <dd data-testid="checkout-confirm-business-details">
+        <template if.bind="businessDetails">
+          ${businessDetails.legalName}<br />
+          <span t="checkout.confirm.representative"></span> ${businessDetails.representativeName}<br />
+          ${businessDetails.businessAddress}<br />
+          ${businessDetails.businessPhoneNumber}<br />
+          ${businessDetails.contactEmail}
         </template>
       </dd>
     </dl>

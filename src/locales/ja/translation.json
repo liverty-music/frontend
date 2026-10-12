@@ -943,7 +943,7 @@
 			"resaleValue": "主催者の同意のないチケットの転売は禁止されています。チケットはご自身のアカウントとお名前で発行されます。",
 			"cancellation": "キャンセル・返金",
 			"cancellationValue": "公演が中止になった場合を除き、購入後のキャンセル・返金はできません。クーリングオフの対象外です。公式リセールは公演が完売した場合にのみ開始されます。",
-			"seller": "販売業者",
+			"businessDetails": "販売業者",
 			"representative": "代表者",
 			"changeCount": "枚数を変更",
 			"changePersonalDetails": "名義・電話番号を変更",

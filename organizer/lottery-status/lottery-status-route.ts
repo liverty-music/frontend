@@ -12,7 +12,7 @@ import {
 /** Coarse lifecycle phase for the status fetch. */
 type LoadPhase = 'loading' | 'ready' | 'error'
 
-/** A flattened view of one lottery sale of the event and its tallies. */
+/** A flattened view of one lottery sale of the event and its entry stats. */
 export interface LotteryStatusView {
 	readonly ticketSaleId: string
 	readonly name: string
@@ -43,7 +43,7 @@ function formatInstant(ts: Timestamp | undefined): string {
 
 /**
  * The event's lottery sales as status views: each Lottery sale's TicketType
- * for the event with its entry tallies. `now` is injected for tests.
+ * for the event with its entry stats. `now` is injected for tests.
  */
 export function lotteryViewsOf(
 	eventId: string,
@@ -96,8 +96,8 @@ export function lotteryViewsOf(
  * The lottery status / draw-outcome screen of one event (`lottery/status/
  * :eventId`). Reads the event's sales with {@link ITicketSaleClient.listByEvent}
  * and renders, for each lottery sale, whether its window is open or closed,
- * whether the draw has run, and the entry tallies. Before the draw the outcome
- * tallies are suppressed (they are not yet meaningful).
+ * whether the draw has run, and the entry stats. Before the draw the outcome
+ * stats are suppressed (they are not yet meaningful).
  *
  * Loading, empty (no lottery sale), and error states are all handled; errors
  * are translated from `ConnectError` codes via {@link toOrganizerErrorMessage}.

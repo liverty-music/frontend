@@ -52,7 +52,7 @@
 			background: var(--color-surface-base);
 
 			&[data-open="true"],
-			&[data-drawn="true"] {
+			&[data-draw-completed="true"] {
 				color: var(--color-brand-on);
 				background: var(--color-brand-primary);
 			}

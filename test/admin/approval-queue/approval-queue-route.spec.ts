@@ -503,7 +503,7 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.groups).toHaveLength(0)
 		})
 
-		it('ADOPT_STAGED re-calls approve and removes the row', async () => {
+		it('adopting the candidate re-calls approve and removes the row', async () => {
 			const candidate = resolvedConcert()
 			const client = createMockClient({
 				list: vi.fn().mockResolvedValue([candidate]),
@@ -518,12 +518,12 @@ describe('ApprovalQueueRoute', () => {
 			const group = vm.groups[0]
 			const series = group.series[0]
 			await vm.approve(group, series, series.rows[0])
-			await vm.adoptStaged()
+			await vm.adoptCandidate()
 
 			expect(client.approve).toHaveBeenNthCalledWith(
 				2,
 				'candidate-1',
-				Resolution.ADOPT_STAGED,
+				Resolution.ADOPT_CANDIDATE,
 			)
 			expect(vm.conflictView).toBeNull()
 			expect(vm.groups).toHaveLength(0)
@@ -564,7 +564,7 @@ describe('ApprovalQueueRoute', () => {
 			const group = vm.groups[0]
 			const series = group.series[0]
 			await vm.approve(group, series, series.rows[0])
-			await vm.adoptStaged()
+			await vm.adoptCandidate()
 
 			expect(vm.conflictView).not.toBeNull()
 			expect(vm.conflictError).toContain('reconcile boom')
@@ -680,7 +680,7 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.conflictView!.candidateOpenTime).not.toBe('—')
 		})
 
-		// @spec components/infrastructure/admin/web/route/approval-queue "Conflict dialog shows open time for both staged and existing"
+		// @spec components/infrastructure/admin/web/route/approval-queue "Conflict dialog shows open time for both the candidate and the existing event"
 		it('sets candidateOpenTime to dash placeholder when openTime is absent', async () => {
 			const concert = resolvedConcert()
 			const client = createMockClient({

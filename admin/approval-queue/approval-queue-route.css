@@ -278,7 +278,7 @@
 				font-size: var(--step-0);
 			}
 
-			&[data-side="staged"] {
+			&[data-side="candidate"] {
 				border-color: var(--color-brand-primary);
 			}
 		}
