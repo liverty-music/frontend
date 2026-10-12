@@ -523,7 +523,7 @@ describe('ApprovalQueueRoute', () => {
 			expect(client.approve).toHaveBeenNthCalledWith(
 				2,
 				'candidate-1',
-				Resolution.ADOPT_STAGED,
+				Resolution.ADOPT_CANDIDATE,
 			)
 			expect(vm.conflictView).toBeNull()
 			expect(vm.groups).toHaveLength(0)
@@ -680,7 +680,7 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.conflictView!.candidateOpenTime).not.toBe('—')
 		})
 
-		// @spec components/infrastructure/admin/web/route/approval-queue "Conflict dialog shows open time for both staged and existing"
+		// @spec components/infrastructure/admin/web/route/approval-queue "Conflict dialog shows open time for both the candidate and the existing event"
 		it('sets candidateOpenTime to dash placeholder when openTime is absent', async () => {
 			const concert = resolvedConcert()
 			const client = createMockClient({

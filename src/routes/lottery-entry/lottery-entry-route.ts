@@ -405,7 +405,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 				stripe,
 				elements,
 			)
-			if (confirmed.errorMessage || !confirmed.paymentIntentId) {
+			if (confirmed.errorMessage || !confirmed.cardAuthorizationId) {
 				this.cardError = confirmed.errorMessage ?? ''
 				this.step = 'payment'
 				return

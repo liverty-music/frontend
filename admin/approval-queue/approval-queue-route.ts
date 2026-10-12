@@ -307,10 +307,10 @@ export class ApprovalQueueRoute {
 
 	/**
 	 * Reviewer chose to adopt the concert candidate's display fields onto the
-	 * existing event (proto `Resolution.ADOPT_STAGED`).
+	 * existing event (`Resolution.ADOPT_CANDIDATE`).
 	 */
 	public async adoptCandidate(): Promise<void> {
-		await this.resolveConflict(Resolution.ADOPT_STAGED)
+		await this.resolveConflict(Resolution.ADOPT_CANDIDATE)
 	}
 
 	/** Dismisses the conflict dialog without resolving; the row stays in the queue. */
