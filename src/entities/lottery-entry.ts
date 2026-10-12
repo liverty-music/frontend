@@ -1,13 +1,13 @@
 /**
  * Lifecycle state of a fan's lottery entry.
  *
- * - `draft`     — started; the card hold is not confirmed yet, so it takes no
- *                 part in the draw.
- * - `entered`   — entered, awaiting the draw (card held, withdrawable).
- * - `won`       — drawn; the hold was captured (charged).
- * - `lost`      — not drawn; the hold was released.
- * - `withdrawn` — withdrawn, or a Draft abandoned at the draw; the hold was
- *                 released.
+ * - `draft`     — started; the card authorization is not confirmed yet, so
+ *                 it takes no part in the draw.
+ * - `entered`   — entered, awaiting the draw (card authorized, withdrawable).
+ * - `won`       — drawn; the card authorization was captured (charged).
+ * - `lost`      — not drawn; the card authorization was released.
+ * - `withdrawn` — withdrawn, or a Draft abandoned at the draw; the card
+ *                 authorization was released.
  * - `unknown`   — a state this app does not know.
  *
  * @source proto/liverty_music/entity/v1/lottery_entry.proto — LotteryEntryState

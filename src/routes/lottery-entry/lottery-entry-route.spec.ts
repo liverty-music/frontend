@@ -324,7 +324,7 @@ describe('LotteryEntryRoute', () => {
 			expect(sut.step).toBe('done')
 		})
 
-		it('opens the card hold anew after a new count replaces the Draft', async () => {
+		it('opens the card authorization anew after a new count replaces the Draft', async () => {
 			const sut = await toPayment()
 			sut.backToCount()
 			mockEntry.start.mockResolvedValue(

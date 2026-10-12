@@ -127,7 +127,7 @@ describe('StripeService', () => {
 	})
 
 	describe('confirmCardAuthorization', () => {
-		it('returns the PaymentIntent id when the hold is in requires_capture', async () => {
+		it('returns the PaymentIntent id when the card authorization is in requires_capture', async () => {
 			const stripe = fakeStripe({
 				confirmPayment: vi.fn(async () => ({
 					paymentIntent: { id: 'pi_1', status: 'requires_capture' },
