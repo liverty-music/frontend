@@ -1,4 +1,4 @@
-import { formatJstDateTime } from '../../shared/lib/reception/jst-format'
+import { formatJstDateTime } from '../../shared/lib/scanner/jst-format'
 import type { CreateTicketSaleInput } from '../services/ticket-sale-client'
 
 /** The name a new first-come sale starts with. */

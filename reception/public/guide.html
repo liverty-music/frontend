@@ -11,16 +11,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <!--
-  Static guide for venue reception staff (OpenSpec ticket-wallet-and-checkin,
+  Static guide for venue staff at the door (OpenSpec ticket-wallet-and-checkin,
   task 7.2). A plain page of the reception build: no script, no app bootstrap,
-  no sign-in. The reception screen and the console's reception-links screen
-  link here in a new tab.
+  no sign-in. The scanner screen and the console's scanners screen link here
+  in a new tab.
 
   Structure follows the staff's story map: staff at the door look up what the
   screen shows, so the verdicts and notices are drawn as they appear on the
-  reception screen (same colours as reception-verdict.css) and each leads
+  scanner screen (same colours as scanner-verdict.css) and each leads
   straight to "let in or not", what to tell the fan and what to do next.
-  Screen texts must match reception/reception-route/*.html and verdict.ts;
+  Screen texts must match reception/scanner-route/*.html and verdict.ts;
   test/reception/guide.spec.ts checks the key ones.
 -->
 <style>
@@ -42,7 +42,7 @@
   --line: oklch(98.5% 0 0deg / 12%);
   --line-strong: oklch(98.5% 0 0deg / 22%);
   --error: oklch(65% 0.2 25deg);
-  /* Verdict colours, as on the reception screen (reception-verdict.css). */
+  /* Verdict colours, as on the scanner screen (scanner-verdict.css). */
   --v-ok: oklch(45% 0.14 150deg);
   --v-partial: oklch(80% 0.15 85deg);
   --v-partial-on: oklch(18% 0.03 85deg);
@@ -635,7 +635,7 @@ details.t[open] > summary::after { content: "−"; }
     </div>
     <ol>
       <li>公演を公開し、<b>開始時刻を設定</b>する（開始時刻がないと受付リンクを発行できません）</li>
-      <li>主催者コンソールの公演一覧で <span class="key">Reception links</span> を開き、<b>受付用スマホ1台につき1つ</b> <span class="key">受付リンクを発行</span>（受付1、受付2…）</li>
+      <li>主催者コンソールの公演一覧で <span class="key">Scanners</span> を開き、<b>受付用スマホ1台につき1つ</b> <span class="key">受付リンクを発行</span>（受付1、受付2…）</li>
       <li><span class="key">URLをコピー</span> か <span class="key">共有</span> で、このガイドと一緒にスタッフへ渡す</li>
       <li>紛失・交換のときは <span class="key">取り消して再発行</span>。取り消したリンクはすぐ使えなくなります</li>
       <li>お客様には<b>公演前に電波のある場所でチケット画面を一度開いておく</b>よう案内する</li>

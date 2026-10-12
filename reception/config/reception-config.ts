@@ -6,7 +6,7 @@ import { DI } from 'aurelia'
  *
  * Deliberately NOT the console/consumer `AppConfig` (`shared/config/app-config`):
  * the reception app has no sign-in, so its config carries no Zitadel issuer,
- * client id or org id. It holds only where ReceptionService is served
+ * client id or org id. It holds only where rpc.scanner.v1.ScannerService is served
  * (`api.reception.<domain>`), the environment and the log level. See OpenSpec
  * change `isolate-venue-reception`, design D4.
  */

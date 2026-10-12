@@ -116,7 +116,7 @@ export function enterableTickets(group: WalletEventGroup): WalletTicket[] {
 }
 
 /**
- * The tickets the entry code presents: every enterable one, up to 10. The fan
+ * The tickets the admission code presents: every enterable one, up to 10. The fan
  * and their companions enter together, so none can be left out.
  */
 export function presentedTickets(group: WalletEventGroup): WalletTicket[] {

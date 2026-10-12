@@ -74,7 +74,7 @@ function showStaticErrorPage(err: unknown): void {
 async function bootstrap(): Promise<void> {
 	// The organizer config omits `zitadelOrgId` by contract; load without
 	// requiring it, then pin the org from the resolved handle below. It must
-	// carry `receptionBaseUrl`: reception link URLs are built on that origin.
+	// carry `receptionBaseUrl`: Scanner link URLs are built on that origin.
 	const config = await loadAppConfig({
 		requireOrgId: false,
 		requireReceptionBaseUrl: true,

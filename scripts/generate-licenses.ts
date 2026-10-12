@@ -50,11 +50,11 @@ const MAX_LICENSE_TEXT = 20_000
 function listProductionPackageDirs(): string[] {
 	let stdout = ''
 	try {
-		stdout = execFileSync(
-			'npm',
-			['ls', '--omit=dev', '--all', '--parseable'],
-			{ cwd: frontendRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
-		)
+		stdout = execFileSync('npm', ['ls', '--omit=dev', '--all', '--parseable'], {
+			cwd: frontendRoot,
+			encoding: 'utf8',
+			maxBuffer: 64 * 1024 * 1024,
+		})
 	} catch (err) {
 		// `npm ls` exits non-zero on peer-dependency warnings but still prints
 		// the tree to stdout; recover it rather than aborting the build.

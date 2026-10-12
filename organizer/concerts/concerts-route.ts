@@ -39,11 +39,11 @@ export interface ConcertListRow {
 		readonly label: string
 	}[]
 	/**
-	 * Per-event entry points to the reception-links screen. Present for every
+	 * Per-event entry points to the scanners screen. Present for every
 	 * event of a series that is not cancelled; the screen itself explains why
-	 * a draft event or an event without a start time cannot have links yet.
+	 * a draft event or an event without a start time cannot have Scanners yet.
 	 */
-	readonly receptionEvents: readonly {
+	readonly scannerEvents: readonly {
 		readonly eventId: string
 		readonly label: string
 	}[]
@@ -115,19 +115,19 @@ function toLotteryEvents(
 		.filter((entry) => entry.eventId !== '')
 }
 
-/** Builds the per-event reception-links entry points of a series. */
-function toReceptionEvents(
+/** Builds the per-event scanners entry points of a series. */
+function toScannerEvents(
 	concert: AuthoredSeries,
 	publishState: PublishState,
-): ConcertListRow['receptionEvents'] {
+): ConcertListRow['scannerEvents'] {
 	if (publishState === PublishState.CANCELLED) return []
 	const multi = concert.events.length > 1
 	return concert.events
 		.map((event, index) => ({
 			eventId: event.id?.value ?? '',
 			label: multi
-				? `Reception links · ${formatEventDate(concert, index)}`
-				: 'Reception links',
+				? `Scanners · ${formatEventDate(concert, index)}`
+				: 'Scanners',
 		}))
 		.filter((entry) => entry.eventId !== '')
 }
@@ -165,7 +165,7 @@ function toRow(concert: AuthoredSeries): ConcertListRow {
 		canPublish: publishState === PublishState.DRAFT,
 		canCancel: publishState !== PublishState.CANCELLED,
 		lotteryEvents: toLotteryEvents(concert, publishState),
-		receptionEvents: toReceptionEvents(concert, publishState),
+		scannerEvents: toScannerEvents(concert, publishState),
 		ticketSaleEvents: toTicketSaleEvents(concert, publishState),
 		busy: false,
 		actionError: '',

@@ -24,7 +24,7 @@ export interface AppConfig {
 	readonly adminApiBaseUrl?: string
 	/**
 	 * Origin of the reception app (`https://reception.{domain}`), on which the
-	 * organizer console builds reception link URLs (`<receptionBaseUrl>/#<token>`).
+	 * organizer console builds Scanner link URLs (`<receptionBaseUrl>/#<token>`).
 	 * Required by the organizer console (it loads config with
 	 * `requireReceptionBaseUrl: true`); absent from the consumer and admin
 	 * ConfigMaps, which ignore it. See OpenSpec change `isolate-venue-reception`.
@@ -142,7 +142,7 @@ export interface LoadAppConfigOptions {
 	readonly requireOrgId?: boolean
 	/**
 	 * Whether `receptionBaseUrl` is a required field. Defaults to `false`; the
-	 * organizer console passes `true` because it builds reception link URLs on
+	 * organizer console passes `true` because it builds Scanner link URLs on
 	 * that origin. See OpenSpec change `isolate-venue-reception`.
 	 */
 	readonly requireReceptionBaseUrl?: boolean
