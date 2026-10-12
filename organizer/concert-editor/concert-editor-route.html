@@ -4,9 +4,11 @@
     <h1 class="editor-title">
       ${isEdit ? 'Edit concert' : 'New concert'}
     </h1>
-    <p if.bind="isEdit && isPublished" class="editor-note">
-      This concert is published. Edits are corrections and do not re-notify
-      followers.
+    <p if.bind="isEdit && isCorrection" class="editor-note">
+      This concert has published or cancelled dates. Edits are corrections and do not
+      re-notify followers. The type is fixed, and the venue and date of a
+      published date cannot change. New dates are saved as drafts until you
+      publish them.
     </p>
   </header>
 
@@ -63,7 +65,12 @@
     <div class="[ editor-grid ] [ cluster ]">
       <label class="organizer-field">
         Type
-        <select class="organizer-select" value.bind="model.type" change.trigger="revalidate()">
+        <select
+          class="organizer-select"
+          value.bind="model.type"
+          change.trigger="revalidate()"
+          disabled.bind="isCorrection"
+        >
           <option model.bind="SeriesType.SINGLE">Single</option>
           <option model.bind="SeriesType.TOUR">Tour</option>
           <option model.bind="SeriesType.FESTIVAL">Festival</option>
@@ -109,8 +116,11 @@
       >
         <div class="editor-event-head">
           <span class="editor-event-index">Event ${$index + 1}</span>
+          <span class="editor-event-state" data-state.bind="row.publishState"
+            >${eventStateLabels[row.publishState]}</span
+          >
           <button
-            if.bind="model.events.length > 1"
+            if.bind="row.publishState === PublishState.DRAFT && model.events.length > 1"
             type="button"
             class="organizer-btn"
             data-variant="ghost"
@@ -120,12 +130,26 @@
           </button>
         </div>
 
+        <p
+          if.bind="row.publishState === PublishState.PUBLISHED"
+          class="editor-note"
+        >
+          Published: the venue and date are fixed. To move this date, cancel it
+          and add a new one.
+        </p>
+        <p
+          if.bind="row.publishState === PublishState.CANCELLED"
+          class="editor-note"
+        >
+          This date is cancelled (中止) and can no longer be edited.
+        </p>
         <label class="organizer-field">
           Venue name (required)
           <input
             type="text"
             class="organizer-input"
             value.bind="row.venueName"
+            disabled.bind="row.publishState !== PublishState.DRAFT"
             input.trigger="revalidate()"
             placeholder="e.g. Zepp Tokyo"
           />
@@ -136,6 +160,7 @@
             type="text"
             class="organizer-input"
             value.bind="row.placeId"
+            disabled.bind="row.publishState !== PublishState.DRAFT"
             placeholder="ChIJ…"
           />
         </label>
@@ -145,6 +170,7 @@
             type="date"
             class="organizer-input"
             value.bind="row.localDate"
+            disabled.bind="row.publishState !== PublishState.DRAFT"
             input.trigger="revalidate()"
           />
         </label>
@@ -155,6 +181,7 @@
               type="time"
               class="organizer-input"
               value.bind="row.openTime"
+              disabled.bind="row.publishState === PublishState.CANCELLED"
               input.trigger="revalidate()"
             />
           </label>
@@ -164,6 +191,7 @@
               type="time"
               class="organizer-input"
               value.bind="row.startTime"
+              disabled.bind="row.publishState === PublishState.CANCELLED"
               input.trigger="revalidate()"
             />
           </label>

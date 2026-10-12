@@ -315,14 +315,19 @@ export class EventRoute implements IRouteViewModel {
 			id: e.id,
 			label: formatTabDate(e, this.lang),
 			selected: e.id === this.event?.id,
+			cancelled: e.cancelled,
 		}))
 	}
 
 	/** The Series' other Events, for a Series with more dates than tabs. */
-	public get otherDates(): { id: string; label: string }[] {
+	public get otherDates(): { id: string; label: string; cancelled: boolean }[] {
 		return this.seriesEvents
 			.filter((e) => e.id !== this.event?.id)
-			.map((e) => ({ id: e.id, label: formatEventDate(e, this.lang) }))
+			.map((e) => ({
+				id: e.id,
+				label: formatEventDate(e, this.lang),
+				cancelled: e.cancelled,
+			}))
 	}
 
 	/** Where "the artist's other concerts" leads: the Home timetable for them. */

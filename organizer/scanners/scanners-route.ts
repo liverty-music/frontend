@@ -179,7 +179,9 @@ export class ScannersRoute {
 			this.eventDate = d
 				? `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
 				: ''
-			const state = concert.series?.publishState ?? PublishState.UNSPECIFIED
+			// The event's own state: a draft or cancelled date of a published
+			// concert cannot have Scanners.
+			const state = event.publishState
 			const win = admissionWindowOf(event)
 			this.windowOpen = win ? formatJstDateTime(win.open) : ''
 			this.windowClose = win ? formatJstDateTime(win.close) : ''

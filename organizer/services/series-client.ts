@@ -30,7 +30,8 @@ export type { ProtoEventDraft, ProtoSeriesDraft }
  * One authored Series as the console shows it: the Series, its dates and its
  * performers. The SeriesService returns the Series, its dates as Concerts and
  * each Artist once; {@link authoredSeriesFrom} groups the Concerts back by
- * `event.seriesId`. A DRAFT Series' dates are its draft dates.
+ * `event.seriesId`. Each date carries its own publish state
+ * (`event.publishState`): DRAFT, PUBLISHED or CANCELLED.
  */
 export interface AuthoredSeries {
 	readonly series: Series
@@ -90,6 +91,11 @@ export interface CalendarDate {
  * local date + a wall-clock time); omitted when not yet confirmed.
  */
 export interface EventDraftInput {
+	/**
+	 * The id of the existing Event this entry edits; omitted for a new date,
+	 * which the server adds as a DRAFT Event.
+	 */
+	readonly eventId?: string
 	readonly venueName: string
 	readonly placeId?: string
 	readonly localDate: CalendarDate
@@ -111,6 +117,7 @@ export interface SeriesDraftInput {
 /** Marshals a plain event input into the generated `EventDraft` message. */
 function toEventDraft(input: EventDraftInput): ProtoEventDraft {
 	return create(EventDraftSchema, {
+		...(input.eventId ? { eventId: { value: input.eventId } } : {}),
 		venueName: { value: input.venueName },
 		...(input.placeId ? { placeId: { value: input.placeId } } : {}),
 		// LocalDate wraps a google.type.Date (a plain Y/M/D triple). Pass the
@@ -139,6 +146,7 @@ export function toSeriesDraft(input: SeriesDraftInput): ProtoSeriesDraft {
 		type: input.type,
 		visibility: input.visibility,
 		...(input.description ? { description: { value: input.description } } : {}),
+		...(input.sourceUrl ? { sourceUrl: { value: input.sourceUrl } } : {}),
 		artistIds: input.artistIds.map((id) => ({ value: id })),
 		events: input.events.map(toEventDraft),
 	})
@@ -228,7 +236,7 @@ export class SeriesClient {
 		}
 	}
 
-	/** Transitions a DRAFT series to PUBLISHED. */
+	/** Publishes every DRAFT event of a series. */
 	public async publish(
 		seriesId: string,
 		signal?: AbortSignal,
@@ -246,7 +254,10 @@ export class SeriesClient {
 		}
 	}
 
-	/** Marks a series CANCELLED (terminal). */
+	/**
+	 * Cancels a whole series: its PUBLISHED events become CANCELLED and its
+	 * DRAFT events are removed.
+	 */
 	public async cancel(seriesId: string, signal?: AbortSignal): Promise<void> {
 		this.logger.info('Cancelling concert', { seriesId })
 		try {

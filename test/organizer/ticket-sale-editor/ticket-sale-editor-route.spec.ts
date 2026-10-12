@@ -50,8 +50,16 @@ type Route = InstanceType<typeof TicketSaleEditorRoute>
 /** 2026-11-20 19:00 in Japan time. */
 const EVENT_START = new Date(Date.UTC(2026, 10, 20, 10, 0))
 
+/**
+ * The concert of the event on sale. `publishState` is the event's own state;
+ * the Series' derived state is `seriesState`, which defaults to it.
+ */
 function concertWith(
-	opts: { startTime?: boolean; publishState?: PublishState } = {},
+	opts: {
+		startTime?: boolean
+		publishState?: PublishState
+		seriesState?: PublishState
+	} = {},
 ): AuthoredSeries[] {
 	const { startTime = true, publishState = PublishState.PUBLISHED } = opts
 	return [
@@ -59,11 +67,12 @@ function concertWith(
 			series: {
 				id: { value: 'series-1' },
 				title: { value: 'One-Man Live' },
-				publishState,
+				publishState: opts.seriesState ?? publishState,
 			},
 			events: [
 				{
 					id: { value: 'event-1' },
+					publishState,
 					localDate: { value: { year: 2026, month: 11, day: 20 } },
 					...(startTime
 						? { startTime: { value: timestampFromDate(EVENT_START) } }
@@ -493,6 +502,19 @@ describe('TicketSaleEditorRoute', () => {
 				'no-business-details',
 			])
 			expect(host.querySelector('[data-block="not-published"]')).not.toBeNull()
+			expect(host.querySelector('form')).toBeNull()
+		})
+
+		it('says a draft date of a published concert is not published', async () => {
+			const m = mocks({
+				concerts: concertWith({
+					publishState: PublishState.DRAFT,
+					seriesState: PublishState.PUBLISHED,
+				}),
+			})
+			const { vm, host } = await render(m)
+
+			expect(vm.blocks).toEqual(['not-published'])
 			expect(host.querySelector('form')).toBeNull()
 		})
 

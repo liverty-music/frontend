@@ -51,6 +51,7 @@
       if.bind="dateNav === 'tabs'"
       tabs.bind="dateTabs"
       label.bind="'eventPage.dates.label' | t"
+      cancelled-label.bind="'eventPage.dates.cancelled' | t"
       data-testid="event-date-tabs"
     ></event-date-tabs>
 
@@ -177,6 +178,7 @@
       <ul role="list">
         <li repeat.for="d of otherDates; key.bind: d.id">
           <a href="/events/${d.id}" class="event-link">${d.label}</a>
+          <span if.bind="d.cancelled" class="event-date-status" t="eventPage.dates.cancelled"></span>
         </li>
       </ul>
     </section>

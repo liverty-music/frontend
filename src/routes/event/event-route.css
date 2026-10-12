@@ -210,6 +210,12 @@
 			text-decoration: underline;
 		}
 
+		.event-date-status {
+			margin-inline-start: var(--space-2xs);
+			font-weight: 600;
+			color: var(--color-text-secondary);
+		}
+
 		.event-btn-primary,
 		.event-btn-secondary {
 			display: inline-flex;

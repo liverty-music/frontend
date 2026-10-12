@@ -68,7 +68,9 @@ export function eventFromConcert(
 		// The organizer typed the listed name; show it as entered.
 		venueName: proto.listedVenueName?.value || proto.venue?.name?.value || '',
 		adminArea: proto.venue?.adminArea?.value ?? '',
-		cancelled: series?.publishState === PublishState.CANCELLED,
+		// Each date keeps its own state: one date of a tour can be cancelled
+		// while the others stay on.
+		cancelled: proto.publishState === PublishState.CANCELLED,
 	}
 }
 

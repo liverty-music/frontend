@@ -8,6 +8,6 @@
       class="date-tab"
       data-selected.bind="tab.selected"
       aria-current.bind="tab.selected ? 'page' : null"
-    >${tab.label}</a>
+    >${tab.label}<span if.bind="tab.cancelled" class="date-tab-status">${cancelledLabel}</span></a>
   </nav>
 </template>

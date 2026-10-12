@@ -1,4 +1,5 @@
 import {
+	PublishState,
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
@@ -22,9 +23,12 @@ function validModel(): ConcertFormModel {
 		description: 'A tour',
 		type: SeriesType.TOUR,
 		visibility: Visibility.PUBLIC,
+		sourceUrl: '',
 		artistIds: ['a1'],
 		events: [
 			{
+				eventId: '',
+				publishState: PublishState.DRAFT,
 				venueName: 'Zepp Tokyo',
 				placeId: '',
 				localDate: '2026-06-16',
@@ -129,6 +133,29 @@ describe('validateConcertForm', () => {
 		expect(errors.rows[0].localDate).toBeUndefined()
 	})
 
+	it('allows the past date of a published or cancelled event, not of a draft', () => {
+		const model = validModel()
+		model.events = [
+			{
+				...model.events[0],
+				eventId: 'e1',
+				publishState: PublishState.PUBLISHED,
+				localDate: '2026-06-14',
+			},
+			{
+				...model.events[0],
+				eventId: 'e2',
+				publishState: PublishState.CANCELLED,
+				localDate: '2026-06-14',
+			},
+			{ ...model.events[0], localDate: '2026-06-14' },
+		]
+		const errors = validateConcertForm(model, { today: TODAY })
+		expect(errors.rows[0].localDate).toBeUndefined()
+		expect(errors.rows[1].localDate).toBeUndefined()
+		expect(errors.rows[2].localDate).toContain('past')
+	})
+
 	it('rejects an open time later than the start time', () => {
 		const model = validModel()
 		model.events[0].openTime = '20:00'
@@ -174,6 +201,28 @@ describe('toSeriesDraftInput', () => {
 		expect(input.events[0].localDate).toEqual({ year: 2026, month: 6, day: 16 })
 		expect(input.events[0].startTime).toBeInstanceOf(Date)
 		expect(input.events[0].openTime).toBeInstanceOf(Date)
+	})
+
+	it('sends the id of a stored event and none for a new date', () => {
+		const model = validModel()
+		model.events = [
+			{
+				...model.events[0],
+				eventId: 'e1',
+				publishState: PublishState.PUBLISHED,
+			},
+			{ ...model.events[0] },
+		]
+		const input = toSeriesDraftInput(model)
+		expect(input.events[0].eventId).toBe('e1')
+		expect(input.events[1].eventId).toBeUndefined()
+	})
+
+	it('sends the loaded source page back unchanged', () => {
+		const model = validModel()
+		model.sourceUrl = 'https://example.com/tour'
+		expect(toSeriesDraftInput(model).sourceUrl).toBe('https://example.com/tour')
+		expect(toSeriesDraftInput(validModel()).sourceUrl).toBeUndefined()
 	})
 
 	it('omits start/open when unset', () => {

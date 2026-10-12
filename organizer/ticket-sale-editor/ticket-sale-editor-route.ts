@@ -249,8 +249,9 @@ export class TicketSaleEditorRoute {
 			const start = event.startTime?.value
 			this.eventStart = start ? timestampDate(start) : null
 
-			const publishState =
-				concert.series?.publishState ?? PublishState.UNSPECIFIED
+			// The event's own state: a draft or cancelled date of a published
+			// concert cannot go on sale.
+			const publishState = event.publishState
 			const blocks: SaleBlock[] = []
 			if (publishState === PublishState.CANCELLED) blocks.push('cancelled')
 			else if (publishState !== PublishState.PUBLISHED) {
