@@ -21,7 +21,6 @@ import {
 	enterableTickets,
 	groupByEvent,
 	presentedTickets,
-	savedPersonalDetailsOf,
 	type WalletEventGroup,
 	type WalletPersonalDetails,
 	type WalletSnapshot,
@@ -151,7 +150,7 @@ export class TicketsRoute {
 		this.groups = live
 		this.offline = false
 		this.savedAt = null
-		this.savedPersonalDetails = savedPersonalDetailsOf(saved)
+		this.savedPersonalDetails = saved?.personalDetails ?? null
 		this.step = live.length === 0 ? 'empty' : 'loaded'
 		this.saveSnapshot()
 
@@ -197,7 +196,7 @@ export class TicketsRoute {
 		this.groups = [...saved.groups]
 		this.offline = true
 		this.savedAt = saved.savedAt
-		this.savedPersonalDetails = savedPersonalDetailsOf(saved)
+		this.savedPersonalDetails = saved?.personalDetails ?? null
 		this.step = saved.groups.length === 0 ? 'empty' : 'loaded'
 	}
 
