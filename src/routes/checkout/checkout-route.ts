@@ -103,7 +103,7 @@ export class CheckoutRoute implements IRouteViewModel {
 	public step: CheckoutStep = 'loading'
 	public event: EventPageEvent | null = null
 	/** The Organizer's 特商法 business details, for the final confirmation. */
-	public seller: BusinessDetails | null = null
+	public businessDetails: BusinessDetails | null = null
 	/** The event's first-come sale, with its TicketType for the event. */
 	public sale: TicketSale | null = null
 	public checkout: Checkout | null = null
@@ -170,7 +170,7 @@ export class CheckoutRoute implements IRouteViewModel {
 			])
 			if (signal.aborted) return
 			this.event = eventFromConcert(concert)
-			this.seller = businessDetailsFromConcert(concert)
+			this.businessDetails = businessDetailsFromConcert(concert)
 			this.sale = firstComeSale(sales)
 		} catch (err) {
 			if (signal.aborted) return

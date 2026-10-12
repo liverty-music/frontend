@@ -101,7 +101,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 	/**
 	 * True once the card issuer authorized the Draft's card. A retry after a
 	 * failed Confirm must not confirm the card again: Stripe rejects
-	 * re-confirming a PaymentIntent that already requires capture.
+	 * confirming a card authorization that already awaits capture.
 	 */
 	private cardConfirmed = false
 	private abortController: AbortController | null = null

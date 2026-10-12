@@ -42,7 +42,7 @@ function build(client: MockClient): InstanceType<typeof LotteryStatusRoute> {
 interface SaleOverrides {
 	open?: Date
 	close?: Date
-	drawn?: boolean
+	drawCompleted?: boolean
 	method?: TicketSaleMethod
 }
 
@@ -54,7 +54,7 @@ function makeSale(o: SaleOverrides = {}) {
 		method: o.method ?? TicketSaleMethod.LOTTERY,
 		saleStartTime: timestampFromDate(o.open ?? new Date(Date.now() - 60_000)),
 		saleEndTime: timestampFromDate(o.close ?? new Date(Date.now() + 60_000)),
-		drawTime: o.drawn ? timestampFromDate(new Date()) : undefined,
+		drawTime: o.drawCompleted ? timestampFromDate(new Date()) : undefined,
 		ticketTypes: [
 			{
 				id: { value: 'type-1' },
@@ -92,7 +92,7 @@ function createMockClient(
 describe('LotteryStatusRoute', () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it("reads the event's sales and shows an open window with pre-draw tallies", async () => {
+	it("reads the event's sales and shows an open window with pre-draw entry stats", async () => {
 		const client = createMockClient(
 			[makeSale()],
 			[stats({ entryCount: 12, ticketCount: 30 })],
@@ -132,14 +132,14 @@ describe('LotteryStatusRoute', () => {
 		expect(vm.views[0].windowOpen).toBe(false)
 	})
 
-	it('shows a closed, drawn lottery with its outcome tallies', async () => {
+	it('shows a closed, drawn lottery with its outcome stats', async () => {
 		const vm = build(
 			createMockClient(
 				[
 					makeSale({
 						open: new Date(Date.now() - 120_000),
 						close: new Date(Date.now() - 60_000),
-						drawn: true,
+						drawCompleted: true,
 					}),
 				],
 				[

@@ -6,7 +6,7 @@ export const DEFAULT_WINDOW_DAYS = 10
 export const MIN_WINDOW_DAYS = 1
 /**
  * Maximum accepted application-window duration in days (inclusive). The 14-day
- * ceiling keeps every applicant's card authorization within the JP 30-day hold
+ * ceiling keeps every fan's card authorization within the JP 30-day validity
  * window (mirrors the backend + schema constraint).
  */
 export const MAX_WINDOW_DAYS = 14

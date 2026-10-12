@@ -67,7 +67,8 @@ export class ConcertCandidateClient {
 	 * Publishes a pending concert to fans, or — when it duplicates an existing
 	 * event and `resolution` is `UNSPECIFIED` — returns a response carrying a
 	 * `conflict` without mutating state, so the caller can prompt the reviewer and
-	 * re-call with `KEEP_EXISTING` or `ADOPT_STAGED`. Idempotent server-side.
+	 * re-call with `KEEP_EXISTING` or `ADOPT_STAGED` (adopt the concert
+	 * candidate). Idempotent server-side.
 	 */
 	public async approve(
 		concertCandidateId: string,

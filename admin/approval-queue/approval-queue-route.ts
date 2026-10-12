@@ -307,9 +307,9 @@ export class ApprovalQueueRoute {
 
 	/**
 	 * Reviewer chose to adopt the concert candidate's display fields onto the
-	 * existing event (`Resolution.ADOPT_STAGED`).
+	 * existing event (proto `Resolution.ADOPT_STAGED`).
 	 */
-	public async adoptStaged(): Promise<void> {
+	public async adoptCandidate(): Promise<void> {
 		await this.resolveConflict(Resolution.ADOPT_STAGED)
 	}
 

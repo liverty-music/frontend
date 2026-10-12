@@ -503,7 +503,7 @@ describe('ApprovalQueueRoute', () => {
 			expect(vm.groups).toHaveLength(0)
 		})
 
-		it('ADOPT_STAGED re-calls approve and removes the row', async () => {
+		it('adopting the candidate re-calls approve and removes the row', async () => {
 			const candidate = resolvedConcert()
 			const client = createMockClient({
 				list: vi.fn().mockResolvedValue([candidate]),
@@ -518,7 +518,7 @@ describe('ApprovalQueueRoute', () => {
 			const group = vm.groups[0]
 			const series = group.series[0]
 			await vm.approve(group, series, series.rows[0])
-			await vm.adoptStaged()
+			await vm.adoptCandidate()
 
 			expect(client.approve).toHaveBeenNthCalledWith(
 				2,
@@ -564,7 +564,7 @@ describe('ApprovalQueueRoute', () => {
 			const group = vm.groups[0]
 			const series = group.series[0]
 			await vm.approve(group, series, series.rows[0])
-			await vm.adoptStaged()
+			await vm.adoptCandidate()
 
 			expect(vm.conflictView).not.toBeNull()
 			expect(vm.conflictError).toContain('reconcile boom')

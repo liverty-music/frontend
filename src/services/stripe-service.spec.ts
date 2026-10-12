@@ -149,7 +149,7 @@ describe('StripeService', () => {
 			})
 		})
 
-		it('rejects a confirmed intent that is NOT in requires_capture (not a valid hold)', async () => {
+		it('rejects a confirmed intent that is NOT in requires_capture (not a valid card authorization)', async () => {
 			const stripe = fakeStripe({
 				confirmPayment: vi.fn(async () => ({
 					paymentIntent: { id: 'pi_1', status: 'requires_action' },

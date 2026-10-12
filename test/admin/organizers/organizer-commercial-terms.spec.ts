@@ -131,7 +131,7 @@ describe('OrganizerCommercialTerms', () => {
 			expect(fixture.appHost.textContent).not.toContain('Not entered yet')
 		})
 
-		it('shows empty seller fields and the not-entered note when details are absent', async () => {
+		it('shows empty business detail fields and the not-entered note when details are absent', async () => {
 			const fixture = await build(createMockClient())
 			const vm = vmOf(fixture)
 
@@ -165,7 +165,7 @@ describe('OrganizerCommercialTerms', () => {
 		})
 	})
 
-	describe('seller details', () => {
+	describe('business details', () => {
 		it('shows field errors and does not save invalid details', async () => {
 			const client = createMockClient()
 			const fixture = await build(client)

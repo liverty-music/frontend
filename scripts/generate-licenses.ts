@@ -32,7 +32,7 @@ interface LicenseEntry {
 	readonly version: string
 	/** SPDX license identifier, or `UNKNOWN` if the package declared none. */
 	readonly license: string
-	/** Copyright holder / author, when declared. */
+	/** Copyright owner / author, when declared. */
 	readonly publisher: string | null
 	readonly repository: string | null
 	/** Verbatim LICENSE-file text for attribution, when present in the package. */
