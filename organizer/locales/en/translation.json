@@ -33,11 +33,12 @@
 	},
 	"venueField": {
 		"placeholder": "Search by venue name",
-		"search": "Search venues",
+		"hint": "Suggestions appear as you type (from 3 Japanese or 5 other characters)",
 		"searching": "Searching…",
 		"noMatch": "No venue found. Try another name.",
 		"unavailable": "Venue search is unavailable.",
-		"results": "Results",
+		"results": "Venue suggestions",
+		"attribution": "Google Maps",
 		"change": "Change"
 	},
 	"shell": {

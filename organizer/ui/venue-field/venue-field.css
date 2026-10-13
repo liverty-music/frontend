@@ -20,10 +20,11 @@
 
 	.control {
 		display: flex;
+		gap: var(--space-xs);
 		align-items: center;
 
 		min-block-size: 56px;
-		padding-inline-start: var(--space-s);
+		padding-inline: var(--space-s);
 		border: 1px solid var(--md-color-outline);
 		border-radius: var(--md-shape-extra-small);
 
@@ -33,6 +34,10 @@
 			border-color: var(--md-color-primary);
 			box-shadow: inset 0 0 0 1px var(--md-color-primary);
 		}
+	}
+
+	.leading-icon {
+		color: var(--md-color-on-surface-variant);
 	}
 
 	.control input {
@@ -48,9 +53,71 @@
 
 		background: transparent;
 
+		&::placeholder {
+			color: var(--md-color-on-surface-variant);
+		}
+
 		&:focus-visible {
 			outline: none;
 		}
+	}
+
+	/* The candidates follow the input in the flow (not an overlay), so the
+	   list is never clipped by the form and the page scrolls to it. */
+	.popup {
+		overflow: hidden;
+		border-radius: var(--md-shape-extra-small);
+		background: var(--md-color-surface-container);
+		box-shadow: var(--md-elevation-2);
+	}
+
+	.listbox {
+		margin: 0;
+		padding: var(--space-3xs) 0;
+		list-style: none;
+	}
+
+	.option {
+		cursor: pointer;
+
+		display: grid;
+		align-content: center;
+
+		min-block-size: 56px;
+		padding-block: var(--space-3xs);
+		padding-inline: var(--space-s);
+
+		color: var(--md-color-on-surface);
+
+		/* The option the arrow keys moved to: focus stays in the input
+		   (aria-activedescendant), so the option draws the focus state itself. */
+		&[aria-selected="true"] {
+			background: var(--md-color-surface-container-highest);
+			outline: var(--focus-ring-width) solid var(--md-color-primary);
+			outline-offset: calc(-1 * var(--focus-ring-width));
+		}
+	}
+
+	.option-name,
+	.picked-name {
+		font: var(--md-type-body-large);
+		color: var(--md-color-on-surface);
+	}
+
+	.option-address,
+	.picked-address {
+		font: var(--md-type-body-small);
+		color: var(--md-color-on-surface-variant);
+	}
+
+	.attribution {
+		padding-block: var(--space-2xs);
+		padding-inline: var(--space-s);
+		border-block-start: 1px solid var(--md-color-outline-variant);
+
+		font: var(--md-type-label-medium);
+		color: var(--md-color-on-surface-variant);
+		text-align: end;
 	}
 
 	.status {
@@ -62,58 +129,15 @@
 		}
 	}
 
-	.searching,
 	.unavailable {
 		display: inline-flex;
 		gap: var(--space-2xs);
 		align-items: center;
 	}
 
-	.results {
-		display: grid;
-		gap: var(--space-3xs);
-
-		margin: 0;
-		padding: 0;
-		border: none;
-	}
-
-	.candidate {
-		cursor: pointer;
-
-		display: flex;
-		gap: var(--space-xs);
-		align-items: center;
-
-		min-block-size: 56px;
-		padding-inline: var(--space-s);
-		border-radius: var(--md-shape-small);
-
-		background: var(--md-color-surface-container);
-
-		& input {
-			inline-size: 20px;
-			block-size: 20px;
-			accent-color: var(--md-color-primary);
-		}
-	}
-
-	.candidate-text,
 	.picked-text {
 		display: grid;
 		flex: 1;
-	}
-
-	.candidate-name,
-	.picked-name {
-		font: var(--md-type-body-large);
-		color: var(--md-color-on-surface);
-	}
-
-	.candidate-address,
-	.picked-address {
-		font: var(--md-type-body-small);
-		color: var(--md-color-on-surface-variant);
 	}
 
 	.picked {
@@ -132,9 +156,14 @@
 		color: var(--md-color-success);
 	}
 
+	.supporting,
 	.error {
 		padding-inline: var(--space-s);
 		font: var(--md-type-body-small);
+	}
+
+	.supporting {
+		color: var(--md-color-on-surface-variant);
 	}
 
 	.venue-field[data-invalid="true"] .control {

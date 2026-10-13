@@ -33,11 +33,12 @@
 	},
 	"venueField": {
 		"placeholder": "会場名で検索",
-		"search": "会場を検索",
+		"hint": "入力すると候補を表示します（日本語は3文字、英数字は5文字から）",
 		"searching": "検索中…",
 		"noMatch": "会場が見つかりませんでした。別の名前で検索してください。",
 		"unavailable": "会場を検索できません。",
-		"results": "検索結果",
+		"results": "会場の候補",
+		"attribution": "Google Maps",
 		"change": "変更"
 	},
 	"shell": {
