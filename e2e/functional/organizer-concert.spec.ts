@@ -16,8 +16,9 @@ import {
 import { expect, type Page, test } from '../support/test'
 
 /**
- * One concert: its summary, the share link of a published UNLISTED concert,
- * and its event dates, each opening its event page.
+ * One concert: its event dates, each one target opening its event page, with
+ * the summary beside them from 840 px and below them on narrower windows; the
+ * header's 公開する, 編集 and overflow menu (公演を中止).
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/concert'
@@ -67,28 +68,49 @@ test.describe('summary and event dates', () => {
 			page.getByRole('heading', { level: 1, name: 'XX Tour 2026' }),
 		).toBeVisible()
 
-		const table = page.getByRole('table', { name: '公演日' })
-		const rows = table.getByRole('rowgroup').nth(1).getByRole('row')
-		await expect(rows).toHaveCount(3)
-		await expect(rows.nth(0)).toContainText('11月3日(火) 18:00 JST')
-		await expect(rows.nth(0)).toContainText('Zepp Haneda')
-		await expect(rows.nth(0)).toContainText('受付中')
-		await expect(rows.nth(0)).toContainText('公開中')
-		await expect(rows.nth(1)).toContainText('11月10日(火) 18:00 JST')
-		await expect(rows.nth(1)).toContainText('Zepp Osaka Bayside')
-		await expect(rows.nth(1)).toContainText('販売なし')
-		await expect(rows.nth(1)).toContainText('公開中')
-		await expect(rows.nth(2)).toContainText('11月17日(火) 18:00 JST')
-		await expect(rows.nth(2)).toContainText('Zepp Nagoya')
-		await expect(rows.nth(2)).toContainText('公開中')
+		// The dates in date order, each one item that is one link.
+		const dates = page
+			.getByRole('list', { name: '公演日' })
+			.getByRole('listitem')
+		await expect(dates).toHaveCount(3)
+		await expect(dates.nth(0)).toContainText('11月3日(火) 18:00 JST')
+		await expect(dates.nth(0)).toContainText('Zepp Haneda')
+		await expect(dates.nth(0)).toContainText('受付中')
+		await expect(dates.nth(0)).toContainText('公開中')
+		await expect(dates.nth(1)).toContainText('11月10日(火) 18:00 JST')
+		await expect(dates.nth(1)).toContainText('Zepp Osaka Bayside')
+		await expect(dates.nth(1)).toContainText('販売なし')
+		await expect(dates.nth(1)).toContainText('公開中')
+		await expect(dates.nth(2)).toContainText('11月17日(火) 18:00 JST')
+		await expect(dates.nth(2)).toContainText('Zepp Nagoya')
+		await expect(dates.nth(2)).toContainText('公開中')
+		for (const date of await dates.all()) {
+			await expect(date.getByRole('link')).toHaveCount(1)
+			await expect(date.getByRole('button')).toHaveCount(0)
+		}
 
-		await rows
-			.nth(0)
-			.getByRole('link', { name: '11月3日(火) 18:00 JST' })
-			.click()
+		// The summary sits beside the dates on a 1280 px window.
+		const summary = page.getByRole('complementary', { name: '概要' })
+		await expect(summary).toContainText('ツアー')
+		await expect(summary).toContainText('Band A')
+		const list = await page.getByRole('list', { name: '公演日' }).boundingBox()
+		const aside = await summary.boundingBox()
+		expect(aside?.x).toBeGreaterThan((list?.x ?? 0) + (list?.width ?? 0) - 1)
+
+		await dates.nth(0).getByRole('link').click()
 		await expect(page).toHaveURL(
 			/\/series\/s-tour\/events\/e-1103(\/ticket-sales)?$/,
 		)
+	})
+
+	test('The summary goes below the dates on a phone', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 })
+		await openConcert(page, `${SERIES}/s-tour`)
+		const list = await page.getByRole('list', { name: '公演日' }).boundingBox()
+		const aside = await page
+			.getByRole('complementary', { name: '概要' })
+			.boundingBox()
+		expect(aside?.y).toBeGreaterThan((list?.y ?? 0) + (list?.height ?? 0) - 1)
 	})
 
 	test(`@spec ${SPEC} "Unknown concert"`, async ({ page }) => {
@@ -104,77 +126,6 @@ test.describe('summary and event dates', () => {
 		await expect(
 			page.getByRole('heading', { level: 1, name: '公演' }),
 		).toBeVisible()
-	})
-})
-
-test.describe('share link', () => {
-	const UNLISTED: ConcertSpec = {
-		...TOUR_OF_THREE,
-		visibility: 'UNLISTED',
-		state: 'PUBLISHED',
-	}
-	const NEW_LINK = 'https://liverty-music.app/s/new-share-token'
-
-	test(`@spec ${SPEC} "New share link"`, async ({ page }) => {
-		const log = await openConcert(page, `${SERIES}/s-tour`, {
-			...BASE,
-			'SeriesService/List': seriesList([UNLISTED]),
-			'SeriesService/RegenerateShareUrl': { shareUrl: { value: NEW_LINK } },
-		})
-		await expect(
-			page.getByText('限定公開の公演は、共有リンクからだけ開けます。', {
-				exact: false,
-			}),
-		).toBeVisible()
-
-		await page.getByRole('button', { name: '新しい共有リンクを発行' }).click()
-		const dialog = confirmDialog(page, {
-			name: '新しい共有リンクを発行しますか？',
-		})
-		await expect(dialog).toBeVisible()
-		await expect(dialog).toContainText(
-			'これまでの共有リンクは使えなくなります。',
-		)
-		// Nothing is rotated before the operator confirms.
-		expect(
-			log.calls.some((c) => c.method === 'SeriesService/RegenerateShareUrl'),
-		).toBe(false)
-
-		await dialog.getByRole('button', { name: '新しい共有リンクを発行' }).click()
-		await expect(dialog).toBeHidden()
-
-		await expect(page.getByText(NEW_LINK)).toBeVisible()
-		await expect(page.getByRole('button', { name: 'コピー' })).toBeVisible()
-		// The server rotates the token, so the previous link stops opening the
-		// concert; the console's part is asking it to.
-		const calls = log.calls.filter(
-			(c) => c.method === 'SeriesService/RegenerateShareUrl',
-		)
-		expect(calls).toHaveLength(1)
-		expect(calls[0].body).toEqual({ seriesId: { value: 's-tour' } })
-	})
-
-	test(`@spec ${SPEC} "Public concert"`, async ({ page }) => {
-		await openConcert(page, `${SERIES}/s-tour`, {
-			...BASE,
-			'SeriesService/List': seriesList([
-				{ ...TOUR_OF_THREE, visibility: 'PUBLIC', state: 'PUBLISHED' },
-			]),
-		})
-		await expect(
-			page.getByRole('heading', { level: 1, name: 'XX Tour 2026' }),
-		).toBeVisible()
-		await expect(
-			page
-				.getByRole('table', { name: '公演日' })
-				.or(page.getByRole('list', { name: '公演日' })),
-		).toBeAttached()
-		await expect(
-			page.getByRole('button', { name: '新しい共有リンクを発行' }),
-		).toHaveCount(0)
-		await expect(page.getByRole('heading', { name: '共有リンク' })).toHaveCount(
-			0,
-		)
 	})
 })
 
@@ -218,8 +169,20 @@ const DRAFT_TOUR: ConcertSpec = {
 const publishDialog = (page: Page) =>
 	confirmDialog(page, { name: 'XX Tour 2026 の公演日を公開しますか？' })
 
+/** The publish state at the trailing edge of each date. */
 const badges = (page: Page) =>
-	page.locator('data-list table tbody tr td:last-child status-badge')
+	page.getByRole('list', { name: '公演日' }).locator('status-badge')
+
+/** Opens the header's overflow menu and chooses an item. */
+async function chooseFromMenu(page: Page, name: string): Promise<void> {
+	await page
+		.locator('concert-route header')
+		.getByRole('button', { name: 'その他の操作' })
+		.click()
+	const menu = page.getByRole('menu', { name: 'その他の操作' })
+	await expect(menu).toBeVisible()
+	await menu.getByRole('menuitem', { name }).click()
+}
 
 test.describe('publish or cancel the dates together', () => {
 	test.beforeEach(async ({ page }) => {
@@ -310,7 +273,13 @@ test.describe('publish or cancel the dates together', () => {
 	test(`@spec ${SPEC} "Whole concert cancelled"`, async ({ page }) => {
 		const server = concertServer(XX_TOUR)
 		const log = await openConcert(page, `${SERIES}/s-tour`, server.rpc)
-		await page.getByRole('button', { name: '公演を中止' }).click()
+		// Out of the header's row of buttons: in its overflow menu.
+		await expect(
+			page.locator('concert-route header').getByRole('button', {
+				name: '公演を中止',
+			}),
+		).toHaveCount(0)
+		await chooseFromMenu(page, '公演を中止')
 		const dialog = confirmDialog(page, {
 			name: 'XX Tour 2026 を中止しますか？',
 		})
@@ -321,6 +290,16 @@ test.describe('publish or cancel the dates together', () => {
 		expect(cancels).toHaveLength(1)
 		expect(cancels[0].body.eventIds ?? []).toEqual([])
 		await expect(badges(page)).toHaveText(['中止', '中止', '中止', '中止'])
+		// Nothing left to cancel: the item stays in the menu, disabled.
+		await page
+			.locator('concert-route header')
+			.getByRole('button', { name: 'その他の操作' })
+			.click()
+		await expect(
+			page
+				.getByRole('menu', { name: 'その他の操作' })
+				.getByRole('menuitem', { name: '公演を中止' }),
+		).toHaveAttribute('aria-disabled', 'true')
 	})
 
 	test(`@spec ${SPEC} "Nothing to publish"`, async ({ page }) => {
@@ -331,5 +310,32 @@ test.describe('publish or cancel the dates together', () => {
 		await expect(
 			page.getByRole('button', { name: '公開する', exact: true }),
 		).toHaveCount(0)
+	})
+
+	test('Publish is the one filled action, edit outlined, cancel in the menu', async ({
+		page,
+	}) => {
+		await openConcert(page, `${SERIES}/s-tour`, concertServer(DRAFT_TOUR).rpc)
+		const header = page.locator('concert-route header')
+		const variant = (name: string) =>
+			header
+				.locator('console-button')
+				.filter({ has: page.locator(`[data-variant="${name}"]`) })
+		await expect(variant('filled')).toHaveText([/公開する/])
+		await expect(variant('outlined')).toHaveText([/編集/])
+		await expect(header.getByRole('link', { name: '編集' })).toHaveAttribute(
+			'href',
+			/\/series\/s-tour\/edit$/,
+		)
+
+		// The menu opens on its first item and Escape returns to its button.
+		const more = header.getByRole('button', { name: 'その他の操作' })
+		await more.click()
+		await expect(
+			page.getByRole('menuitem', { name: '公演を中止' }),
+		).toBeFocused()
+		await page.keyboard.press('Escape')
+		await expect(page.getByRole('menu', { name: 'その他の操作' })).toBeHidden()
+		await expect(more).toBeFocused()
 	})
 })
