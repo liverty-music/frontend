@@ -21,6 +21,7 @@
   </div>
   <prerequisite-callout
     if.bind="state === 'noStartTime'"
+    level.bind="2"
     heading.bind="'sale.prerequisite.noStartTime' & t"
     action-label.bind="'sale.prerequisite.editConcert' & t"
     action-href.bind="editConcertHref"
@@ -28,6 +29,7 @@
 
   <form if.bind="state === 'ready'" class="form" novalidate submit.trigger="false">
     <p class="note">${'lotteryEditor.explain' & t}</p>
+    <p class="note">${'common.requiredNote' & t}</p>
 
     <console-field
       if.bind="!isChange"
@@ -43,6 +45,7 @@
       <span>${model.name}</span>
     </div>
 
+    <h2 class="section-title">${'lotteryEditor.sections.window' & t}</h2>
     <div class="row">
       <console-field
         type="datetime-local"
@@ -63,6 +66,7 @@
       ></console-field>
     </div>
 
+    <h2 class="section-title">${'lotteryEditor.sections.tickets' & t}</h2>
     <div class="row">
       <console-field
         type="yen"
@@ -91,10 +95,10 @@
       ></console-field>
     </div>
 
-    <p if.bind="saveProblem" class="problem" role="alert">${saveProblem & t}</p>
+    <p if.bind="saveProblem" class="problem" role="alert"><console-icon name="error"></console-icon><span>${saveProblem & t}</span></p>
 
     <action-bar>
-      <console-button variant="text" href.bind="salesHref">${'common.cancel' & t}</console-button>
+      <console-button variant="text" href.bind="salesHref">${'common.cancelEdit' & t}</console-button>
       <console-button
         variant="filled"
         icon="check"

@@ -14,55 +14,59 @@
   </div>
 
   <form if.bind="state === 'ready'" class="form" novalidate submit.trigger="false">
+    <p class="note">${'common.requiredNote' & t}</p>
     <p if.bind="isCorrection" class="note">${'concertEditor.correctionNote' & t}</p>
 
-    <console-field
-      component.ref="titleField"
-      label.bind="'concertEditor.title' & t"
-      value.bind="model.title"
-      required.bind="true"
-      error.bind="error(errors.title, submitted)"
-    ></console-field>
-    <console-field
-      type="textarea"
-      label.bind="'concertEditor.description' & t"
-      value.bind="model.description"
-    ></console-field>
-    <fieldset class="series-type" disabled.bind="isCorrection">
-      <legend class="legend">${'concertEditor.type' & t}</legend>
-      <label repeat.for="option of typeChoices" class="series-type-option state-layer">
-        <input type="radio" name="series-type" model.bind="option.value" checked.bind="model.type">
-        <span>${option.labelKey & t}</span>
-      </label>
-    </fieldset>
+    <section class="part" aria-labelledby="concert-editor-about">
+      <h2 id="concert-editor-about" class="section-title">${'concertEditor.sections.about' & t}</h2>
+      <console-field
+        component.ref="titleField"
+        label.bind="'concertEditor.title' & t"
+        value.bind="model.title"
+        required.bind="true"
+        error.bind="error(errors.title, submitted)"
+      ></console-field>
+      <console-field
+        type="textarea"
+        label.bind="'concertEditor.description' & t"
+        value.bind="model.description"
+      ></console-field>
+      <fieldset class="series-type" disabled.bind="isCorrection">
+        <legend class="legend">${'concertEditor.type' & t}</legend>
+        <label repeat.for="option of typeChoices" class="series-type-option state-layer">
+          <input type="radio" name="series-type" model.bind="option.value" checked.bind="model.type">
+          <span>${option.labelKey & t}</span>
+        </label>
+      </fieldset>
 
-    <fieldset class="visibility" disabled.bind="isCorrection">
-      <legend class="legend">${'concertEditor.visibility' & t}</legend>
-      <label repeat.for="option of visibilityChoices" class="visibility-option state-layer">
-        <input type="radio" name="visibility" model.bind="option.value" checked.bind="model.visibility">
-        <span class="visibility-text">
-          <span class="visibility-label">${option.labelKey & t}</span>
-          <span class="visibility-effect">${option.effectKey & t}</span>
-        </span>
-      </label>
-      <p if.bind="isCorrection" class="note">${'concertEditor.visibilityFixed' & t}</p>
-    </fieldset>
+      <fieldset class="visibility" disabled.bind="isCorrection">
+        <legend class="legend">${'concertEditor.visibility' & t}</legend>
+        <label repeat.for="option of visibilityChoices" class="visibility-option state-layer">
+          <input type="radio" name="visibility" model.bind="option.value" checked.bind="model.visibility">
+          <span class="visibility-text">
+            <span class="visibility-label">${option.labelKey & t}</span>
+            <span class="visibility-effect">${option.effectKey & t}</span>
+          </span>
+        </label>
+        <p if.bind="isCorrection" class="note">${'concertEditor.visibilityFixed' & t}</p>
+      </fieldset>
+    </section>
 
     <fieldset ref="performersFieldset" class="performers" aria-describedby.bind="submitted && errors.artistIds ? 'performers-error' : null">
-      <legend class="legend">${'concertEditor.performers' & t} *</legend>
+      <legend class="section-legend"><h2 class="section-title">${'concertEditor.performers' & t} *</h2></legend>
       <p if.bind="performers.length === 0" class="note">${'concertEditor.noArtists' & t}</p>
       <label repeat.for="option of performers" class="performer state-layer">
         <input type="checkbox" checked.to-view="option.selected" change.trigger="togglePerformer(option)">
         <span>${option.name}</span>
       </label>
-      <p if.bind="submitted && errors.artistIds" id="performers-error" class="error">${errors.artistIds & t}</p>
+      <p if.bind="submitted && errors.artistIds" id="performers-error" class="error"><console-icon name="error"></console-icon><span>${errors.artistIds & t}</span></p>
     </fieldset>
 
     <fieldset class="events">
-      <legend class="legend">${'concertEditor.dates' & t}</legend>
+      <legend class="section-legend"><h2 class="section-title">${'concertEditor.dates' & t}</h2></legend>
       <section repeat.for="row of model.events" class="event" data-row.bind="$index">
         <header class="event-header">
-          <h2 class="event-title">${'concertEditor.dateN' & t:{ n: $index + 1 }}</h2>
+          <h3 class="event-title">${'concertEditor.dateN' & t:{ n: $index + 1 }}</h3>
           <status-badge
             tone.bind="row.publishState === PublishState.PUBLISHED ? 'success' : row.publishState === PublishState.CANCELLED ? 'error' : 'neutral'"
             label.bind="(row.publishState === PublishState.PUBLISHED ? 'publishState.published' : row.publishState === PublishState.CANCELLED ? 'publishState.cancelled' : 'publishState.draft') & t"
@@ -88,7 +92,7 @@
         <div else class="fixed-venue">
           <span class="label">${'concertEditor.venue' & t}</span>
           <span>${row.venue ? row.venue.name : ''}</span>
-          <p if.bind="error(errors.rows[$index].venueName, submitted)" class="error">${error(errors.rows[$index].venueName, submitted) & t}</p>
+          <p if.bind="error(errors.rows[$index].venueName, submitted)" class="error"><console-icon name="error"></console-icon><span>${error(errors.rows[$index].venueName, submitted) & t}</span></p>
         </div>
 
         <div class="row">
@@ -120,7 +124,7 @@
     </fieldset>
 
     <section if.bind="isEdit" class="cover" aria-labelledby="concert-editor-cover">
-      <h2 id="concert-editor-cover" class="legend">${'concertEditor.cover.title' & t}</h2>
+      <h2 id="concert-editor-cover" class="section-title">${'concertEditor.cover.title' & t}</h2>
       <img if.bind="renderedCover" src.bind="renderedCover" alt="" class="cover-image" data-testid="cover-preview">
       <p if.bind="coverNote" class="note" role="status">${`concertEditor.cover.${coverNote}` & t}</p>
       <label class="cover-input">
@@ -128,11 +132,11 @@
         <input type="file" accept="image/jpeg,image/png,image/webp" disabled.bind="uploadingCover" change.trigger="onCoverSelected($event)">
       </label>
       <circular-progress if.bind="uploadingCover" size="small" label.bind="'concertEditor.cover.uploading' & t"></circular-progress>
-      <p if.bind="coverImageError" class="error" role="alert">${coverImageError & t}</p>
+      <p if.bind="coverImageError" class="error" role="alert"><console-icon name="error"></console-icon><span>${coverImageError & t}</span></p>
     </section>
 
     <action-bar>
-      <console-button variant="text" href.bind="cancelHref">${'common.cancel' & t}</console-button>
+      <console-button variant="text" href.bind="cancelHref">${'common.cancelEdit' & t}</console-button>
       <console-button
         variant="filled"
         icon="check"
