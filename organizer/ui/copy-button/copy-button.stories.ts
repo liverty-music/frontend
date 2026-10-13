@@ -55,6 +55,12 @@ export const Copy = {
 				deepQuery(canvasElement, 'snack-bar [role="status"]'),
 			).toHaveTextContent('コピーしました'),
 		)
+		// Fully shown before the page is checked: mid fade, its colors blend.
+		await waitFor(() =>
+			expect(
+				getComputedStyle(deepQuery(canvasElement, '.snack-item')).opacity,
+			).toBe('1'),
+		)
 		write.mockRestore()
 	},
 } satisfies Story
