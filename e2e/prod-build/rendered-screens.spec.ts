@@ -265,6 +265,14 @@ const ORGANIZER: Screen[] = [
 
 ORGANIZER.push(
 	{
+		// The prerequisite callout sits directly under the page title.
+		name: 'organizer Event, Sales tab (draft date)',
+		path: `${SERIES}/s-solo/events/e-1220/ticket-sales`,
+		setup: consoleAs(),
+		ready: (page) => page.locator('sales-tab prerequisite-callout'),
+		probes: [],
+	},
+	{
 		name: 'organizer denied (no owner role)',
 		path: ORG,
 		setup: consoleAs(false),
@@ -398,14 +406,12 @@ const KNOWN_VIOLATIONS: Array<{
 		reason:
 			'White on the brand magenta #fd00a6 of `.welcome-btn-primary` is 3.66:1.',
 	},
-	...['organizer Event, Sales tab', 'organizer Event, Reception tab'].map(
-		(screen) => ({
-			screen,
-			rule: 'heading-order',
-			reason:
-				'Sale and scanner cards use <h3> under the <h1>. Redesigned by `redesign-organizer-console` D18.',
-		}),
-	),
+	{
+		screen: 'organizer Event, Reception tab',
+		rule: 'heading-order',
+		reason:
+			'Scanner cards use <h3> under the <h1>. Redesigned by `redesign-organizer-console` D18.',
+	},
 	{
 		screen: 'organizer Settings',
 		rule: 'scrollable-region-focusable',
