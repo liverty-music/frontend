@@ -35,7 +35,7 @@ const meta = {
 		},
 		label: { control: 'text' },
 		value: { control: 'text' },
-		error: { control: 'text' },
+		error: { control: 'text', description: 'Catalog key of the error.' },
 		hint: { control: 'text' },
 		required: { control: 'boolean' },
 		disabled: { control: 'boolean' },
@@ -76,7 +76,7 @@ export const Required = { render, args: { required: true } } satisfies Story
 
 export const FieldError = {
 	render,
-	args: { label: '販売名', required: true, error: '販売名を入力してください' },
+	args: { label: '販売名', required: true, error: 'lotteryEditor.error.name' },
 	play: async ({ canvasElement }) => {
 		const input = canvasOf(canvasElement)
 			.getByRole('textbox', { name: /販売名/ })
@@ -112,9 +112,14 @@ export const Yen = {
 } satisfies Story
 
 const VERIFICATION = [
-	{ value: '0', label: '本人確認なし' },
-	{ value: '1', label: '本人確認済み' },
-	{ value: '2', label: 'マイナンバーカードで本人確認済み' },
+	{ value: '0', labelKey: 'sale.verification.none' },
+	{ value: '1', labelKey: 'sale.verification.verifiedAny' },
+	{ value: '2', labelKey: 'sale.verification.jpkiOnly' },
+]
+const VERIFICATION_LABELS = [
+	'本人確認なし',
+	'本人確認済み',
+	'マイナンバーカードで本人確認済み',
 ]
 
 /** A select in a container whose color scheme is `scheme`. */
@@ -141,7 +146,7 @@ async function checkOpenPicker(canvasElement: HTMLElement): Promise<void> {
 
 	const options = deepQueryAll<HTMLOptionElement>(canvasElement, 'option')
 	await expect(options.map((o) => o.textContent?.trim())).toEqual(
-		VERIFICATION.map((o) => o.label),
+		VERIFICATION_LABELS,
 	)
 	await userEvent.hover(options[2])
 	for (const option of options) {

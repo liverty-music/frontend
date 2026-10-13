@@ -26,9 +26,9 @@ const render: Story['render'] = (args) =>
 export const Complete = {
 	args: {
 		items: [
-			{ term: '事業者名', value: '株式会社サンプル' },
-			{ term: '所在地', value: '東京都渋谷区神南1-1-1' },
-			{ term: '電話番号', value: '03-0000-0000' },
+			{ termKey: 'settings.business.legalName', value: '株式会社サンプル' },
+			{ termKey: 'settings.business.address', value: '東京都渋谷区神南1-1-1' },
+			{ termKey: 'settings.business.phone', value: '03-0000-0000' },
 		],
 	},
 	render,
@@ -37,8 +37,8 @@ export const Complete = {
 export const WithMissingValue = {
 	args: {
 		items: [
-			{ term: '事業者名', value: '株式会社サンプル' },
-			{ term: '所在地', value: '' },
+			{ termKey: 'settings.business.legalName', value: '株式会社サンプル' },
+			{ termKey: 'settings.business.address', value: '' },
 		],
 	},
 	render,

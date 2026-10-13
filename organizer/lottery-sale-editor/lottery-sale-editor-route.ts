@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { IRouteContext, IRouter } from '@aurelia/router'
 import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
@@ -70,7 +69,6 @@ export class LotterySaleEditorRoute {
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
-	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('LotterySaleEditorRoute')
 
 	public state:
@@ -87,7 +85,10 @@ export class LotterySaleEditorRoute {
 	public event: Event | undefined
 	public model: LotterySaleFormModel = emptyFormModel(new Date())
 	public submitted = false
-	/** A message about the whole save that is not about one field. */
+	/**
+	 * Catalog key of a message about the whole save that is not about one
+	 * field; the template translates it.
+	 */
 	public saveProblem = ''
 	public guard!: UnsavedChanges
 
@@ -165,14 +166,14 @@ export class LotterySaleEditorRoute {
 		return errors
 	}
 
-	/** The translated error of a field, once a save was attempted. */
+	/** The error of a field once a save was attempted; the field translates it. */
 	public error(
 		error: FieldError | undefined,
 		submitted = this.submitted,
-	): string {
+	): FieldError | null {
 		// The template passes `submitted` so the binding re-evaluates when it changes.
-		if (!submitted || !error) return ''
-		return this.i18n.tr(error.key, this.formatParams(error.params))
+		if (!submitted || !error) return null
+		return { key: error.key, params: this.formatParams(error.params) }
 	}
 
 	private formatParams(
@@ -280,9 +281,9 @@ export class LotterySaleEditorRoute {
 				this.abort.signal,
 			)
 			this.saved = JSON.stringify(this.model)
-			this.snackbar.show(
-				this.i18n.tr('lotteryEditor.created', { name: this.model.name.trim() }),
-			)
+			this.snackbar.show('lotteryEditor.created', {
+				name: this.model.name.trim(),
+			})
 			await this.router.load(this.salesHref)
 		} catch (err) {
 			this.logger.warn('Lottery not created', err)
@@ -298,7 +299,7 @@ export class LotterySaleEditorRoute {
 		)
 		if (!sale || !type) return
 		if (this.hasOpened(sale)) {
-			this.saveProblem = this.i18n.tr('lotteryEditor.openedWhileEditing')
+			this.saveProblem = 'lotteryEditor.openedWhileEditing'
 			return
 		}
 		const input = toCreateInput(this.seriesId, this.eventId, this.model)
@@ -348,27 +349,24 @@ export class LotterySaleEditorRoute {
 				this.logger.warn('Ticket type not saved', err)
 				if (windowChanged) {
 					// The window is saved; only the price, quantity and limit are not.
-					this.saveProblem = this.i18n.tr('lotteryEditor.partlySaved')
+					this.saveProblem = 'lotteryEditor.partlySaved'
 				}
 				this.failed(err, () => void this.save())
 				return
 			}
 		}
 		this.saved = JSON.stringify(this.model)
-		this.snackbar.show(this.i18n.tr('lotteryEditor.changed'))
+		this.snackbar.show('lotteryEditor.changed')
 		await this.router.load(this.salesHref)
 	}
 
 	private failed(err: unknown, retry: () => void): void {
 		if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
 			this.saveProblem = this.isChange
-				? this.i18n.tr('lotteryEditor.openedWhileEditing')
-				: this.i18n.tr('lotteryEditor.rejected')
+				? 'lotteryEditor.openedWhileEditing'
+				: 'lotteryEditor.rejected'
 			return
 		}
-		this.snackbar.showError(this.i18n.tr('lotteryEditor.saveFailed'), {
-			label: this.i18n.tr('common.retry'),
-			callback: retry,
-		})
+		this.snackbar.showError('lotteryEditor.saveFailed', { retry })
 	}
 }

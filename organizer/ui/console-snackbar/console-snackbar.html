@@ -4,4 +4,7 @@
 <import from="../../../shared/ui/snack-bar/snack-bar.css"></import>
 <use-shadow-dom></use-shadow-dom>
 
-<snack-bar replace.bind="true" dismissible.bind="true" icons.bind="false" close-label.bind="'common.close' & t"></snack-bar>
+<snack-bar replace.bind="true" dismissible.bind="true" icons.bind="false" close-label.bind="'common.close' & t">
+  <template au-slot="message">${$host.snack.message & t:$host.snack.params}</template>
+  <template au-slot="action">${$host.snack.action.label & t}</template>
+</snack-bar>

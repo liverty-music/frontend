@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { IRouter, type Params } from '@aurelia/router'
 import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import {
@@ -71,7 +70,6 @@ export class ConcertEditorRoute {
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
-	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertEditorRoute')
 
 	public state: 'loading' | 'ready' | 'notFound' | 'error' = 'loading'
@@ -89,6 +87,7 @@ export class ConcertEditorRoute {
 	public coverImageUrl = ''
 	public localPreviewUrl = ''
 	public coverNote: '' | 'processing' | 'slow' = ''
+	/** Catalog key of the cover's error, translated in the template. */
 	public coverImageError = ''
 	public uploadingCover = false
 	public readonly maxImageMiB = MAX_IMAGE_BYTES / (1024 * 1024)
@@ -173,11 +172,12 @@ export class ConcertEditorRoute {
 	}
 
 	/**
-	 * A field's translated error once a save was attempted. The template passes
-	 * `submitted` so the binding re-evaluates when it changes.
+	 * A field's error key once a save was attempted; the field translates it.
+	 * The template passes `submitted` so the binding re-evaluates when it
+	 * changes.
 	 */
 	public error(key: string | undefined, submitted = this.submitted): string {
-		return submitted && key ? this.i18n.tr(key) : ''
+		return submitted && key ? key : ''
 	}
 
 	private async bootstrap(): Promise<void> {
@@ -325,12 +325,12 @@ export class ConcertEditorRoute {
 				if (concert) this.hydrate(concert)
 				this.markSaved()
 				this.setBreadcrumb()
-				this.snackbar.show(this.i18n.tr('concertEditor.saved'))
+				this.snackbar.show('concertEditor.saved')
 			} else {
 				const concert = await this.series.create(draft)
 				const id = concert?.series.id?.value
 				this.markSaved()
-				this.snackbar.show(this.i18n.tr('concertEditor.created'))
+				this.snackbar.show('concertEditor.created')
 				if (id) await this.router.load(paths.concert(id))
 			}
 		} catch (err) {
@@ -338,19 +338,12 @@ export class ConcertEditorRoute {
 			const precondition =
 				err instanceof ConnectError && err.code === Code.FailedPrecondition
 			this.snackbar.showError(
-				this.i18n.tr(
-					!precondition
-						? 'concertEditor.saveFailed'
-						: this.publishedStartTimeChanged()
-							? 'concertEditor.startTimeOnSale'
-							: 'concertEditor.saveRejected',
-				),
-				precondition
-					? undefined
-					: {
-							label: this.i18n.tr('common.retry'),
-							callback: () => void this.save(),
-						},
+				!precondition
+					? 'concertEditor.saveFailed'
+					: this.publishedStartTimeChanged()
+						? 'concertEditor.startTimeOnSale'
+						: 'concertEditor.saveRejected',
+				precondition ? {} : { retry: () => void this.save() },
 			)
 		}
 	}
@@ -386,7 +379,7 @@ export class ConcertEditorRoute {
 		this.coverImageError = ''
 		const check = validateCoverImage(file)
 		if ('messageKey' in check) {
-			this.coverImageError = this.i18n.tr(check.messageKey)
+			this.coverImageError = check.messageKey
 			input.value = ''
 			return
 		}
@@ -414,7 +407,7 @@ export class ConcertEditorRoute {
 			this.startCoverPoll()
 		} catch (err) {
 			this.logger.warn('Cover upload failed', err)
-			this.coverImageError = this.i18n.tr('concertEditor.cover.failed')
+			this.coverImageError = 'concertEditor.cover.failed'
 		} finally {
 			this.uploadingCover = false
 			input.value = ''

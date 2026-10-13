@@ -88,7 +88,7 @@
         <div else class="fixed-venue">
           <span class="label">${'concertEditor.venue' & t}</span>
           <span>${row.venue ? row.venue.name : ''}</span>
-          <p if.bind="error(errors.rows[$index].venueName, submitted)" class="error">${error(errors.rows[$index].venueName, submitted)}</p>
+          <p if.bind="error(errors.rows[$index].venueName, submitted)" class="error">${error(errors.rows[$index].venueName, submitted) & t}</p>
         </div>
 
         <div class="row">
@@ -128,7 +128,7 @@
         <input type="file" accept="image/jpeg,image/png,image/webp" disabled.bind="uploadingCover" change.trigger="onCoverSelected($event)">
       </label>
       <circular-progress if.bind="uploadingCover" size="small" label.bind="'concertEditor.cover.uploading' & t"></circular-progress>
-      <p if.bind="coverImageError" class="error" role="alert">${coverImageError}</p>
+      <p if.bind="coverImageError" class="error" role="alert">${coverImageError & t}</p>
     </section>
 
     <action-bar>

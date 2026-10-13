@@ -65,5 +65,5 @@
     </fieldset>
   </template>
 
-  <p if.bind="error" id.bind="`${inputId}-error`" class="error">${error}</p>
+  <p if.bind="errorText" id.bind="`${inputId}-error`" class="error">${errorText.key & t:errorText.params}</p>
 </div>

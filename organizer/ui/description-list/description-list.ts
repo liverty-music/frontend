@@ -1,7 +1,8 @@
 import { bindable } from 'aurelia'
 
 export interface Description {
-	term: string
+	/** Catalog key of the term, translated in the list's template. */
+	termKey: string
 	/** Shown as is; an empty value shows `empty-label`. */
 	value: string
 }

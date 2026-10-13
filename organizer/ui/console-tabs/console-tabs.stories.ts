@@ -23,8 +23,8 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const TABS = [
-	{ id: 'sales', label: '販売', href: '#sales' },
-	{ id: 'reception', label: '受付', href: '#reception' },
+	{ id: 'sales', labelKey: 'event.tab.sales', href: '#sales' },
+	{ id: 'reception', labelKey: 'event.tab.reception', href: '#reception' },
 ]
 
 /** The host follows the clicked tab, as the router does in the console. */

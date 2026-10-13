@@ -19,7 +19,9 @@
 		"required": "Required"
 	},
 	"format": {
-		"yen": "¥{{amount}}"
+		"yen": "¥{{amount}}",
+		"day": "{{day, jstDay}}",
+		"dateTime": "{{at, jstDateTime}}"
 	},
 	"field": {
 		"yenPrefix": "¥",
@@ -88,7 +90,7 @@
 		"create": "Create a concert",
 		"loadFailed": "Could not load the concerts.",
 		"empty": "No concerts yet.",
-		"moreDates": "{{day}} and {{count}} more",
+		"moreDates": "{{day, jstDay}} and {{count}} more",
 		"moreVenues": "{{venue}} and others",
 		"column": {
 			"title": "Concert",
@@ -200,7 +202,8 @@
 		"cancelConfirmBody": "Every published date is cancelled and fans are told once. Draft dates are removed. This cannot be undone.",
 		"datesPublished": "{{count, number}} date(s) published",
 		"cancelled": "Concert cancelled",
-		"draftsRemoved": "Draft concert removed"
+		"draftsRemoved": "Draft concert removed",
+		"dayNoStartTime": "{{day, jstDay}} · $t(event.noStartTime)"
 	},
 	"event": {
 		"noStartTime": "No start time",
@@ -242,19 +245,19 @@
 		"guide": "Reception guide for staff",
 		"issue": "Issue a reception link",
 		"issuing": "Issuing…",
-		"issued": "{{label}} issued",
+		"issued": "$t(reception.label) issued",
 		"issueFailed": "Could not issue a reception link",
 		"loadFailed": "Could not load the reception links.",
 		"empty": "No reception links yet.",
 		"share": "Share",
-		"shareTitle": "{{label}} link",
+		"shareTitle": "$t(reception.label) link",
 		"revoke": "Revoke",
 		"revokeAndReissue": "Revoke and reissue",
-		"revokeConfirmTitle": "Revoke {{label}}?",
-		"reissueConfirmTitle": "Revoke and reissue {{label}}?",
-		"confirmBody": "The device using {{label}} will stop working.",
-		"revoked": "{{label}} revoked",
-		"reissued": "{{label}} revoked and {{next}} issued",
+		"revokeConfirmTitle": "Revoke $t(reception.label)?",
+		"reissueConfirmTitle": "Revoke and reissue $t(reception.label)?",
+		"confirmBody": "The device using $t(reception.label) will stop working.",
+		"revoked": "$t(reception.label) revoked",
+		"reissued": "$t(reception.label) revoked and $t(reception.label, {\"number\": {{next}}}) issued",
 		"revokeFailed": "Could not revoke",
 		"prerequisite": {
 			"notPublished": "Publish the date to issue reception links",

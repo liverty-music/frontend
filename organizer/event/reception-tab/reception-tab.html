@@ -49,8 +49,9 @@
 
   <confirm-dialog
     component.ref="confirmDialog"
-    heading.bind="confirmTitle & signal:'aurelia-translation-signal'"
-    confirm-label.bind="confirmLabel & signal:'aurelia-translation-signal'"
+    heading-key.bind="confirmTitleKey"
+    heading-params.bind="{ number: confirmNumber }"
+    confirm-key.bind="confirmKey"
     confirm-variant="danger"
-  >${confirmBody & signal:'aurelia-translation-signal'}</confirm-dialog>
+  >${'reception.confirmBody' & t:{ number: confirmNumber }}</confirm-dialog>
 </section>

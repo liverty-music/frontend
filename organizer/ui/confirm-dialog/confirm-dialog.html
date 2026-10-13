@@ -7,10 +7,10 @@
   aria-labelledby.bind="headingId"
   cancel.trigger="onCancel($event)"
 >
-  <h2 class="heading" id.bind="headingId">${heading}</h2>
+  <h2 class="heading" id.bind="headingId">${headingKey & t:headingParams}</h2>
   <div class="body"><slot></slot></div>
   <div class="actions">
-    <console-button component.ref="cancelButton" variant="text" click.trigger="cancel()">${cancelText & signal:'aurelia-translation-signal'}</console-button>
-    <console-button variant.bind="confirmVariant" disabled.bind="confirmDisabled" click.trigger="confirm()" data-role="confirm">${confirmLabel}</console-button>
+    <console-button component.ref="cancelButton" variant="text" click.trigger="cancel()">${cancelKey & t}</console-button>
+    <console-button variant.bind="confirmVariant" disabled.bind="confirmDisabled" click.trigger="confirm()" data-role="confirm">${confirmKey & t}</console-button>
   </div>
 </dialog>

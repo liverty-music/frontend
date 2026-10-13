@@ -91,7 +91,7 @@
       ></console-field>
     </div>
 
-    <p if.bind="saveProblem" class="problem" role="alert">${saveProblem}</p>
+    <p if.bind="saveProblem" class="problem" role="alert">${saveProblem & t}</p>
 
     <action-bar>
       <console-button variant="text" href.bind="salesHref">${'common.cancel' & t}</console-button>

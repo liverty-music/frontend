@@ -19,7 +19,9 @@
 		"required": "必須"
 	},
 	"format": {
-		"yen": "{{amount}}円"
+		"yen": "{{amount}}円",
+		"day": "{{day, jstDay}}",
+		"dateTime": "{{at, jstDateTime}}"
 	},
 	"field": {
 		"yenPrefix": "",
@@ -88,7 +90,7 @@
 		"create": "公演をつくる",
 		"loadFailed": "公演を読み込めませんでした。",
 		"empty": "まだ公演がありません。",
-		"moreDates": "{{day}} 他 {{count}}公演",
+		"moreDates": "{{day, jstDay}} 他 {{count}}公演",
 		"moreVenues": "{{venue}} 他",
 		"column": {
 			"title": "公演名",
@@ -200,7 +202,8 @@
 		"cancelConfirmBody": "公開中の公演日はすべて中止になり、ファンに1回知らされます。下書きの公演日は削除されます。元に戻せません。",
 		"datesPublished": "{{count, number}}件の公演日を公開しました",
 		"cancelled": "公演を中止しました",
-		"draftsRemoved": "下書きの公演を削除しました"
+		"draftsRemoved": "下書きの公演を削除しました",
+		"dayNoStartTime": "{{day, jstDay}} · $t(event.noStartTime)"
 	},
 	"event": {
 		"noStartTime": "開始時刻なし",
@@ -242,19 +245,19 @@
 		"guide": "受付の手順（スタッフ向け）",
 		"issue": "受付リンクを発行",
 		"issuing": "発行中…",
-		"issued": "{{label}}を発行しました",
+		"issued": "$t(reception.label)を発行しました",
 		"issueFailed": "受付リンクを発行できませんでした",
 		"loadFailed": "受付リンクを読み込めませんでした。",
 		"empty": "まだ受付リンクがありません。",
 		"share": "共有",
-		"shareTitle": "{{label}}の受付リンク",
+		"shareTitle": "$t(reception.label)の受付リンク",
 		"revoke": "取り消す",
 		"revokeAndReissue": "取り消して再発行",
-		"revokeConfirmTitle": "{{label}}を取り消しますか？",
-		"reissueConfirmTitle": "{{label}}を取り消して再発行しますか？",
-		"confirmBody": "{{label}}を使っている端末は使えなくなります。",
-		"revoked": "{{label}}を取り消しました",
-		"reissued": "{{label}}を取り消し、{{next}}を発行しました",
+		"revokeConfirmTitle": "$t(reception.label)を取り消しますか？",
+		"reissueConfirmTitle": "$t(reception.label)を取り消して再発行しますか？",
+		"confirmBody": "$t(reception.label)を使っている端末は使えなくなります。",
+		"revoked": "$t(reception.label)を取り消しました",
+		"reissued": "$t(reception.label)を取り消し、$t(reception.label, {\"number\": {{next}}})を発行しました",
 		"revokeFailed": "取り消せませんでした",
 		"prerequisite": {
 			"notPublished": "受付リンクを発行するには、公演を公開してください",

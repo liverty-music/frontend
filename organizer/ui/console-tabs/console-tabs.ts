@@ -2,7 +2,8 @@ import { bindable } from 'aurelia'
 
 export interface ConsoleTab {
 	id: string
-	label: string
+	/** Catalog key of the tab's label, translated in the tabs' template. */
+	labelKey: string
 	href: string
 }
 
@@ -32,6 +33,10 @@ export class ConsoleTabs {
 		this.measure()
 		this.observer = new ResizeObserver(() => this.measure())
 		this.observer.observe(this.list)
+		// A tab's width changes with its label, e.g. on a language switch.
+		for (const tab of this.list.querySelectorAll('[data-tab]')) {
+			this.observer.observe(tab)
+		}
 	}
 
 	public detaching(): void {

@@ -15,7 +15,7 @@ const meta = {
 	parameters: consoleStoryParameters,
 	argTypes: {
 		label: { control: 'text' },
-		error: { control: 'text' },
+		error: { control: 'text', description: 'Catalog key of the error.' },
 		required: { control: 'boolean' },
 	},
 	args: { label: '会場', error: '', required: true },
@@ -124,7 +124,7 @@ export const Picked = {
 } satisfies Story
 
 export const NotPicked = {
-	args: { error: '検索結果から会場を選んでください' },
+	args: { error: 'concertEditor.error.venueNotPicked' },
 	render: renderWith(async () => []),
 	play: async ({ canvasElement }) => {
 		await expect(
@@ -132,5 +132,11 @@ export const NotPicked = {
 				.getByRole('searchbox', { name: /会場/ })
 				.element(),
 		).toHaveAttribute('aria-invalid', 'true')
+		// The field translates its error key.
+		await expect(
+			canvasOf(canvasElement)
+				.getByRole('searchbox', { name: /会場/ })
+				.element(),
+		).toHaveAccessibleDescription(/検索結果から会場を選んでください/)
 	},
 } satisfies Story

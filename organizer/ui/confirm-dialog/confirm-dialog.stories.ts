@@ -18,8 +18,11 @@ const meta = {
 	tags: ['test', 'autodocs'],
 	parameters: consoleStoryParameters,
 	argTypes: {
-		heading: { control: 'text' },
-		confirmLabel: { control: 'text' },
+		headingKey: { control: 'text', description: 'Catalog key of the title.' },
+		confirmKey: {
+			control: 'text',
+			description: 'Catalog key of the confirming button.',
+		},
 		confirmVariant: {
 			control: 'select',
 			options: ['filled', 'danger'],
@@ -53,8 +56,8 @@ const host = (opener: string, dialog: string) => ({
 
 const publish = host(
 	`<console-button variant="filled" click.trigger="open('published')">公開する</console-button>`,
-	`<confirm-dialog component.ref="dialog" heading="XX Tour 2026 11月3日の公演を公開しますか？" confirm-label="公開する">
-		出演者のフォロワーに通知されます。公開すると下書きには戻せません。
+	`<confirm-dialog component.ref="dialog" heading-key="event.publishConfirmTitle" heading-params.bind="{ title: 'XX Tour 2026' }" confirm-key="event.publish">
+		この公演日だけを公開し、出演者のフォロワーに通知します。公開すると下書きには戻せません。
 	</confirm-dialog>`,
 )
 
@@ -66,12 +69,12 @@ export const PublishAsksFirst = {
 		await userEvent.click(canvas.getByRole('button', { name: '公開する' }))
 
 		const dialog = canvas.getByRole('dialog', {
-			name: 'XX Tour 2026 11月3日の公演を公開しますか？',
+			name: 'XX Tour 2026 のこの公演日を公開しますか？',
 		})
 		await waitFor(() => expect(dialog.element()).toBeVisible())
 		// The body is the page's own content, shown through the dialog's slot.
 		const body = canvasElement.querySelector('confirm-dialog')
-		await expect(body).toHaveTextContent('フォロワーに通知されます')
+		await expect(body).toHaveTextContent('フォロワーに通知します')
 		await expect(body).toHaveTextContent('下書きには戻せません')
 		await expect(canvas.getByTestId('result').element()).toHaveTextContent(
 			'none',
@@ -125,7 +128,7 @@ export const RevokeAScanner = {
 		defineAureliaStory(
 			host(
 				`<console-button variant="text" click.trigger="open('revoked')">受付1を取り消す</console-button>`,
-				`<confirm-dialog component.ref="dialog" heading="受付1を取り消しますか？" confirm-label="取り消す" confirm-variant="danger">
+				`<confirm-dialog component.ref="dialog" heading-key="reception.revokeConfirmTitle" heading-params.bind="{ number: 1 }" confirm-key="reception.revoke" confirm-variant="danger">
 					受付1を使っている端末は使えなくなります。
 				</confirm-dialog>`,
 			),

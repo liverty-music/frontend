@@ -31,7 +31,7 @@
         aria-describedby.bind="describedBy"
         change.trigger="changed($event)"
       >
-        <option repeat.for="option of options" value.bind="option.value">${option.label}</option>
+        <option repeat.for="option of options" value.bind="option.value">${option.labelKey & t}</option>
       </select>
       <input
         default-case
@@ -55,5 +55,5 @@
     <span if.bind="isTime" id.bind="`${inputId}-zone`" class="affix">${'common.jst' & t}</span>
   </div>
   <p if.bind="hint" id.bind="`${inputId}-hint`" class="supporting">${hint}</p>
-  <p if.bind="error" id.bind="`${inputId}-error`" class="error">${error}</p>
+  <p if.bind="errorText" id.bind="`${inputId}-error`" class="error">${errorText.key & t:errorText.params}</p>
 </div>

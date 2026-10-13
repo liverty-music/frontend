@@ -1,4 +1,9 @@
 import { BindingMode, bindable, ILogger, resolve } from 'aurelia'
+import type { FieldError } from '../../i18n/field-error'
+import {
+	type FieldErrorText,
+	fieldErrorOf,
+} from '../console-field/console-field'
 
 /** A place picked from the map catalog. */
 export interface VenuePick {
@@ -34,7 +39,8 @@ export class VenueField {
 	@bindable public label = ''
 	@bindable({ mode: BindingMode.twoWay }) public value: VenuePick | null = null
 	@bindable public search: VenueSearch | undefined
-	@bindable public error = ''
+	/** Catalog key of the error, or a key with its values; empty when valid. */
+	@bindable public error: FieldErrorText = ''
 	@bindable public required = false
 
 	public readonly inputId = `venue-field-${nextId++}`
@@ -50,6 +56,10 @@ export class VenueField {
 			length >= MIN_SEARCH_LENGTH &&
 			length <= MAX_SEARCH_LENGTH
 		)
+	}
+
+	public get errorText(): FieldError | null {
+		return fieldErrorOf(this.error)
 	}
 
 	public get describedBy(): string | null {

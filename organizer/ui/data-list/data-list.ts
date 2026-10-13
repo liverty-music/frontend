@@ -1,4 +1,5 @@
 import { bindable } from 'aurelia'
+import type { CatalogText } from '../../i18n/catalog-text'
 import type { StatusTone } from '../status-badge/status-badge'
 
 export type DataCellKind =
@@ -9,9 +10,13 @@ export type DataCellKind =
 	| 'date'
 	| 'status'
 
+/** Text of a cell: shown as is (a title, a venue) or from the catalog. */
+export type CellText = string | CatalogText
+
 export interface DataColumn {
 	key: string
-	label: string
+	/** Catalog key of the column title. */
+	labelKey: string
 	kind?: DataCellKind
 	/** The row's title: the card heading, and the link to the row's page. */
 	primary?: boolean
@@ -19,17 +24,26 @@ export interface DataColumn {
 
 export interface StatusCell {
 	tone: StatusTone
-	label: string
+	/** Catalog key of the status label. */
+	labelKey: string
 }
 
-export type DataCell = string | number | bigint | Date | StatusCell | undefined
+/** A text cell may hold several texts, shown joined by ` · `. */
+export type DataCell =
+	| CellText
+	| readonly CellText[]
+	| number
+	| bigint
+	| Date
+	| StatusCell
+	| undefined
 
 export interface DataRow {
 	id: string
 	/** The row's page; its primary cell links there. */
 	href?: string
 	/** A secondary line under the primary cell (type, performers). */
-	subtitle?: string
+	subtitle?: readonly CellText[]
 	cells: Record<string, DataCell>
 }
 
@@ -38,6 +52,7 @@ export interface DataRow {
  * least 840 px wide (a container query, so a list in a narrow pane stays
  * cards). Both forms come from the same data and are separate markup, so a
  * wide list is a real table to screen readers and a narrow one a real list.
+ * Column titles, statuses and catalog texts are translated in the template.
  */
 export class DataList {
 	@bindable public columns: DataColumn[] = []

@@ -8,7 +8,7 @@
     <span class="value">${value}</span>
     <icon-button
       icon.bind="copied ? 'check' : 'copy'"
-      label.bind="buttonLabel & signal:'aurelia-translation-signal'"
+      label.bind="(copied ? 'common.copied' : 'copyField.copy') & t:{ label: label }"
       data-copied.bind="copied"
       click.trigger="copy()"
     ></icon-button>

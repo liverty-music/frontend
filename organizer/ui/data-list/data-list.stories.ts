@@ -22,21 +22,30 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const columns: DataColumn[] = [
-	{ key: 'title', label: '公演', primary: true },
-	{ key: 'state', label: '状態', kind: 'status' },
-	{ key: 'startsAt', label: '開演', kind: 'datetime' },
-	{ key: 'entries', label: '応募数', kind: 'count' },
-	{ key: 'price', label: '価格', kind: 'yen' },
+	{ key: 'title', labelKey: 'concerts.column.title', primary: true },
+	{ key: 'state', labelKey: 'concert.column.state', kind: 'status' },
+	{ key: 'startsAt', labelKey: 'concertEditor.startTime', kind: 'datetime' },
+	{ key: 'schedule', labelKey: 'concerts.column.schedule' },
+	{ key: 'entries', labelKey: 'sale.stats.entries', kind: 'count' },
+	{ key: 'price', labelKey: 'lotteryEditor.price', kind: 'yen' },
 ]
 
 const rows: DataRow[] = [
 	{
 		id: 'e1',
 		href: '#e1',
+		subtitle: [{ key: 'seriesType.tour' }, 'Band A'],
 		cells: {
 			title: 'XX Tour 2026 東京',
-			state: { tone: 'success', label: '公開中' },
+			state: { tone: 'success', labelKey: 'publishState.published' },
 			startsAt: new Date('2026-11-03T09:00:00Z'),
+			schedule: [
+				{
+					key: 'concerts.moreDates',
+					params: { day: new Date('2026-11-03T09:00:00Z'), count: 2 },
+				},
+				'Zepp Haneda',
+			],
 			entries: 412,
 			price: 6500,
 		},
@@ -46,8 +55,9 @@ const rows: DataRow[] = [
 		href: '#e2',
 		cells: {
 			title: 'XX Tour 2026 大阪',
-			state: { tone: 'neutral', label: '下書き' },
+			state: { tone: 'neutral', labelKey: 'publishState.draft' },
 			startsAt: new Date('2026-11-10T09:00:00Z'),
+			schedule: 'Zepp Osaka Bayside',
 			entries: 1380,
 			price: 7000,
 		},
@@ -77,6 +87,13 @@ export const Cards = {
 			list.getByText('11月3日(火) 18:00 JST').element(),
 		).toBeVisible()
 		await expect(list.getByText('6,500円').element()).toBeVisible()
+		// Column titles, statuses and catalog texts are translated by the list.
+		await expect(list.getByText('公開中').element()).toBeVisible()
+		await expect(list.getByText('ツアー · Band A').element()).toBeVisible()
+		await expect(
+			list.getByText('11月3日(火) 他 2公演 · Zepp Haneda').element(),
+		).toBeVisible()
+		await expect(list.getByText('日程・会場').first().element()).toBeVisible()
 	},
 } satisfies Story
 
@@ -94,7 +111,7 @@ export const Table = {
 		).toBeVisible()
 
 		// @spec components/infrastructure/organizer/web/global/design-tokens "Counts line up"
-		const entries = deepQueryAll(canvasElement, 'tbody td:nth-child(4) data')
+		const entries = deepQueryAll(canvasElement, 'tbody td:nth-child(5) data')
 		await expect(entries.map((e) => e.textContent?.trim())).toEqual([
 			'412',
 			'1,380',

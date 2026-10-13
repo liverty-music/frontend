@@ -1,6 +1,7 @@
 import '../styles/main.css'
 import { I18nConfiguration } from '@aurelia/i18n'
 import { type Locator, page } from 'vitest/browser'
+import { ConsoleCatalogFormats } from '../i18n/console-language'
 import { ConsoleFormatters } from '../i18n/converters'
 import en from '../locales/en/translation.json'
 import ja from '../locales/ja/translation.json'
@@ -20,6 +21,7 @@ export const consoleStoryParameters = {
 		configure: (au: { register: (...items: unknown[]) => unknown }) => {
 			au.register(
 				ConsoleShadowStyles,
+				ConsoleCatalogFormats,
 				I18nConfiguration.customize((options) => {
 					options.initOptions = {
 						lng: 'ja',
