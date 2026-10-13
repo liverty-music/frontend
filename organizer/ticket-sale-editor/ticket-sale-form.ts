@@ -1,13 +1,15 @@
 import type { FieldError } from '../i18n/field-error'
 import {
-	parseJstDateTimeLocal as parseJst,
-	toJstDateTimeLocal as toJst,
+	emptyJstDateTime,
+	type JstDateTime,
+	parseJstDateTime,
+	toJstDateTime,
+	unsetPartOf,
 } from '../i18n/format'
 import type { CreateTicketSaleInput } from '../services/ticket-sale-client'
 
-export type { FieldError }
+export type { FieldError, JstDateTime }
 
-/** The name a new first-come sale starts with. */
 /** Maximum length of the sale's name, in characters. */
 export const MAX_NAME_LENGTH = 100
 /** The per-account limit a new sale starts with (server default too). */
@@ -19,17 +21,16 @@ export const MAX_PER_ACCOUNT_LIMIT = 10
 export const MIN_PRICE = 1
 export const MAX_PRICE = 1_000_000
 
-/** Japan has no daylight saving time: Japan time is always UTC+9. */
-
 /**
- * The editable model of the sale form. Times are `datetime-local` strings
- * (`YYYY-MM-DDTHH:mm`) read as Japan time whatever the browser's zone is;
- * numbers stay raw input strings so an empty control differs from `0`.
+ * The editable model of the sale form. The window's start and end are each a
+ * date and a 24-hour time read as Japan time whatever the browser's zone is
+ * (design D19); numbers stay raw input strings so an empty control differs
+ * from `0`.
  */
 export interface TicketSaleFormModel {
 	name: string
-	saleStartTime: string
-	saleEndTime: string
+	saleStart: JstDateTime
+	saleEnd: JstDateTime
 	price: string
 	quantity: string
 	perAccountLimit: string
@@ -38,7 +39,12 @@ export interface TicketSaleFormModel {
 /** Per-field errors, shown next to each control. */
 export interface TicketSaleFormErrors {
 	name?: FieldError
+	/** The start's date is unset, or the window overlaps another sale. */
+	saleStartDate?: FieldError
+	/** The start's time is unset. */
 	saleStartTime?: FieldError
+	/** The end's date is unset, or the end is out of order. */
+	saleEndDate?: FieldError
 	saleEndTime?: FieldError
 	price?: FieldError
 	quantity?: FieldError
@@ -54,13 +60,9 @@ export interface TicketSaleFormContext {
 	readonly heldCount: number
 }
 
-/** Formats an instant as a Japan-time `YYYY-MM-DDTHH:mm`. */
-export function toJstDateTimeLocal(date: Date): string {
-	return toJst(date)
-}
-
-export function parseJstDateTimeLocal(value: string): Date | null {
-	return parseJst(value.trim()) ?? null
+/** The instant of a date and time entered in Japan time, or null. */
+export function parseDateTime(value: JstDateTime): Date | null {
+	return parseJstDateTime(value) ?? null
 }
 
 function parseWholeNumber(value: string): number | null {
@@ -88,8 +90,8 @@ export function blankFormModel(
 ): TicketSaleFormModel {
 	return {
 		name: defaultName,
-		saleStartTime: '',
-		saleEndTime: eventStart ? toJstDateTimeLocal(eventStart) : '',
+		saleStart: emptyJstDateTime(),
+		saleEnd: eventStart ? toJstDateTime(eventStart) : emptyJstDateTime(),
 		price: '',
 		quantity: '',
 		perAccountLimit: String(DEFAULT_PER_ACCOUNT_LIMIT),
@@ -107,10 +109,12 @@ export function formModelOf(sale: {
 }): TicketSaleFormModel {
 	return {
 		name: sale.name,
-		saleStartTime: sale.saleStartTime
-			? toJstDateTimeLocal(sale.saleStartTime)
-			: '',
-		saleEndTime: sale.saleEndTime ? toJstDateTimeLocal(sale.saleEndTime) : '',
+		saleStart: sale.saleStartTime
+			? toJstDateTime(sale.saleStartTime)
+			: emptyJstDateTime(),
+		saleEnd: sale.saleEndTime
+			? toJstDateTime(sale.saleEndTime)
+			: emptyJstDateTime(),
 		price: sale.price.toString(),
 		quantity: String(sale.quantity),
 		perAccountLimit: String(sale.perAccountLimit),
@@ -142,20 +146,26 @@ export function validateTicketSaleForm(
 		}
 	}
 
-	const start = parseJstDateTimeLocal(model.saleStartTime)
-	const end = parseJstDateTimeLocal(model.saleEndTime)
-	if (start === null) {
+	const startUnset = unsetPartOf(model.saleStart)
+	if (startUnset === 'date') {
+		errors.saleStartDate = { key: 'firstComeEditor.error.start' }
+	} else if (startUnset === 'time') {
 		errors.saleStartTime = { key: 'firstComeEditor.error.start' }
 	}
-	if (end === null) {
+	const start = parseDateTime(model.saleStart)
+	const end = parseDateTime(model.saleEnd)
+	const endUnset = unsetPartOf(model.saleEnd)
+	if (endUnset === 'date') {
+		errors.saleEndDate = { key: 'firstComeEditor.error.end' }
+	} else if (endUnset === 'time' || end === null) {
 		errors.saleEndTime = { key: 'firstComeEditor.error.end' }
 	} else if (ctx.eventStart && end.getTime() > ctx.eventStart.getTime()) {
-		errors.saleEndTime = {
+		errors.saleEndDate = {
 			key: 'firstComeEditor.error.endAfterEvent',
 			params: { eventStart: ctx.eventStart },
 		}
 	} else if (start !== null && end.getTime() <= start.getTime()) {
-		errors.saleEndTime = { key: 'firstComeEditor.error.endBeforeStart' }
+		errors.saleEndDate = { key: 'firstComeEditor.error.endBeforeStart' }
 	}
 
 	const price = parseWholeNumber(model.price)
@@ -213,8 +223,8 @@ export function toCreateInput(
 		seriesId,
 		name: model.name.trim(),
 		method: 'firstCome',
-		saleStartTime: parseJstDateTimeLocal(model.saleStartTime) ?? new Date(0),
-		saleEndTime: parseJstDateTimeLocal(model.saleEndTime) ?? undefined,
+		saleStartTime: parseDateTime(model.saleStart) ?? new Date(0),
+		saleEndTime: parseDateTime(model.saleEnd) ?? undefined,
 		eventId,
 		price: Number(model.price.trim()),
 		quantity: Number(model.quantity.trim()),

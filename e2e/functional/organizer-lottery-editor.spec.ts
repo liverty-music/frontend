@@ -1,8 +1,10 @@
 import {
+	chooseTime,
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
 	SERIES,
+	shownTime,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -24,6 +26,7 @@ import { expect, type Page, test } from '../support/test'
 
 const SPEC = 'components/infrastructure/organizer/web/route/lottery-sale-editor'
 const SNACKBAR = 'components/infrastructure/organizer/web/global/snack-bar'
+const I18N = 'components/infrastructure/organizer/web/global/i18n'
 
 /** Thursday 1 October 2026, 12:00 JST. */
 const NOW = new Date('2026-10-01T12:00:00+09:00')
@@ -95,6 +98,24 @@ const calls = (log: RpcLog, method: string) =>
 const fieldBox = (page: Page, name: string) =>
 	page.locator(`[data-field="${name}"]`)
 
+/** Enters when the window opens (`start`) or closes (`end`), in JST. */
+async function enterWindow(
+	page: Page,
+	which: 'start' | 'end',
+	date: string,
+	time: string,
+) {
+	const label = which === 'start' ? '受付開始' : '受付終了'
+	await field(page, `${label}日`).fill(date)
+	await chooseTime(page, `${label}時刻`, time)
+}
+
+/** The window's opening or closing date and time as the form shows them. */
+async function shownWindow(page: Page, which: 'start' | 'end') {
+	const label = which === 'start' ? '受付開始' : '受付終了'
+	return `${await field(page, `${label}日`).inputValue()} ${await shownTime(page, `${label}時刻`)}`
+}
+
 async function fillPresale(page: Page, opts: { name?: string } = {}) {
 	if (opts.name !== '')
 		await field(page, '販売名').fill(opts.name ?? 'ファンクラブ先行')
@@ -121,15 +142,15 @@ test.describe('a new lottery', () => {
 		await expect(
 			page.getByRole('heading', { level: 1, name: '抽選で販売する' }),
 		).toBeVisible()
-		await expect(field(page, '受付開始')).toHaveValue('2026-10-01T12:00')
-		await expect(field(page, '受付終了')).toHaveValue('2026-10-11T12:00')
+		await expect.poll(() => shownWindow(page, 'start')).toBe('2026-10-01 12:00')
+		expect(await shownWindow(page, 'end')).toBe('2026-10-11 12:00')
 		await expect(field(page, '1人あたりの上限枚数')).toHaveValue('4')
 	})
 
 	test(`@spec ${SPEC} "Window too long"`, async ({ page }) => {
 		const log = await openEditor(page, NEW_LOTTERY)
 		await fillPresale(page)
-		await field(page, '受付終了').fill('2026-10-16T12:00')
+		await enterWindow(page, 'end', '2026-10-16', '12:00')
 		await page.getByRole('button', { name: '抽選販売を始める' }).click()
 
 		await expect(fieldBox(page, 'end')).toContainText(
@@ -219,8 +240,8 @@ test.describe('a new lottery', () => {
 			},
 		)
 		await fillPresale(page)
-		await field(page, '受付開始').fill('2026-11-08T12:00')
-		await field(page, '受付終了').fill('2026-11-18T12:00')
+		await enterWindow(page, 'start', '2026-11-08', '12:00')
+		await enterWindow(page, 'end', '2026-11-18', '12:00')
 		await page.getByRole('button', { name: '抽選販売を始める' }).click()
 
 		await expect(fieldBox(page, 'end')).toContainText('販売「最速先行」')
@@ -321,9 +342,15 @@ test.describe('times in another time zone', () => {
 			},
 		})
 		await fillPresale(page)
-		await field(page, '受付開始').fill('2026-10-10T12:00')
-		await field(page, '受付終了').fill('2026-10-17T12:00')
-		await expect(fieldBox(page, 'start')).toContainText('JST')
+		await enterWindow(page, 'start', '2026-10-10', '12:00')
+		await enterWindow(page, 'end', '2026-10-17', '12:00')
+		await expect(fieldBox(page, 'start-time')).toContainText('JST')
+		// Hours 00 to 23 on the 24-hour clock, whatever the device's clock.
+		await expect(
+			fieldBox(page, 'start-time')
+				.getByRole('combobox', { name: '時' })
+				.locator('option', { hasText: '23' }),
+		).toHaveCount(1)
 		await page.getByRole('button', { name: '抽選販売を始める' }).click()
 		await expect
 			.poll(() => calls(log, 'TicketSaleService/Create').length)
@@ -336,6 +363,42 @@ test.describe('times in another time zone', () => {
 		expect(new Date(body.saleEndTime).toISOString()).toBe(
 			jst('2026-10-17', '12:00'),
 		)
+	})
+})
+
+test.describe('times on a 12-hour device', () => {
+	// An English (United States) device writes 18:00 as 6:00 PM.
+	test.use({ locale: 'en-US' })
+
+	test(`@spec ${I18N} "Device on a 12-hour clock"`, async ({ page }) => {
+		await openEditor(page, NEW_LOTTERY)
+		expect(
+			await page.evaluate(() =>
+				new Date(2026, 9, 10, 18).toLocaleTimeString(undefined, {
+					hour: 'numeric',
+					minute: '2-digit',
+				}),
+			),
+		).toMatch(/PM/)
+
+		const start = fieldBox(page, 'start-time')
+		const texts = async (name: string) =>
+			(
+				await start
+					.getByRole('combobox', { name })
+					.locator('option')
+					.allTextContents()
+			)
+				.map((t) => t.trim())
+				.filter((t) => t !== '--')
+		const two = (n: number) => String(n).padStart(2, '0')
+		expect(await texts('時')).toEqual(
+			Array.from({ length: 24 }, (_, h) => two(h)),
+		)
+		expect(await texts('分')).toEqual(
+			Array.from({ length: 12 }, (_, i) => two(i * 5)),
+		)
+		await expect(start).not.toContainText(/AM|PM|午前|午後/)
 	})
 })
 
@@ -369,10 +432,10 @@ test.describe('changing a lottery before it opens', () => {
 			page.getByRole('main').getByText('ファンクラブ先行').first(),
 		).toBeVisible()
 		await expect(field(page, '販売名')).toHaveCount(0)
-		await expect(field(page, '受付開始')).toHaveValue('2026-10-10T12:00')
+		await expect.poll(() => shownWindow(page, 'start')).toBe('2026-10-10 12:00')
 
-		await field(page, '受付開始').fill('2026-10-12T12:00')
-		await field(page, '受付終了').fill('2026-10-19T12:00')
+		await enterWindow(page, 'start', '2026-10-12', '12:00')
+		await enterWindow(page, 'end', '2026-10-19', '12:00')
 		await page.getByRole('button', { name: '保存する' }).click()
 
 		await expect(page).toHaveURL(

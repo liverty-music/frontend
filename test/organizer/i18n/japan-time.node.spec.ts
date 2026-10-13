@@ -36,17 +36,43 @@ describe('Japan time on a device abroad', () => {
 	})
 
 	it('@spec components/infrastructure/organizer/web/global/i18n "Entering a sale window abroad"', () => {
+		// The sale editors take a date field and a 24-hour time field (D19).
 		const result = inLondon<{
 			entered: string
 			deviceLocal: string
-			back: string
+			back: { date: string; time: string }
 		}>(
-			`(() => { const d = f.parseJstDateTimeLocal('2026-10-10T12:00'); return { entered: d.toISOString(), deviceLocal: new Date(2026, 9, 10, 12, 0).toISOString(), back: f.toJstDateTimeLocal(d) } })()`,
+			`(() => { const d = f.parseJstDateTime({ date: '2026-10-10', time: '12:00' }); return { entered: d.toISOString(), deviceLocal: new Date(2026, 9, 10, 12, 0).toISOString(), back: f.toJstDateTime(d) } })()`,
 		)
 		// 12:00 Japan time (03:00 UTC), not 12:00 London time (11:00 UTC).
 		expect(result.entered).toBe('2026-10-10T03:00:00.000Z')
 		expect(result.deviceLocal).toBe('2026-10-10T11:00:00.000Z')
-		// The field shows the same wall clock back.
-		expect(result.back).toBe('2026-10-10T12:00')
+		// The fields show the same wall clock back.
+		expect(result.back).toEqual({ date: '2026-10-10', time: '12:00' })
+	})
+})
+
+describe('a date and time entered separately', () => {
+	it('names the part that is missing, the date first', async () => {
+		const { unsetPartOf, sameJstDateTime } = await import(
+			'../../../organizer/i18n/format'
+		)
+		expect(unsetPartOf({ date: '', time: '' })).toBe('date')
+		expect(unsetPartOf({ date: '2026-02-30', time: '10:00' })).toBe('date')
+		expect(unsetPartOf({ date: '2026-10-10', time: '' })).toBe('time')
+		expect(unsetPartOf({ date: '2026-10-10', time: '24:00' })).toBe('time')
+		expect(unsetPartOf({ date: '2026-10-10', time: '23:55' })).toBeNull()
+		expect(
+			sameJstDateTime(
+				{ date: '2026-10-10', time: '12:00' },
+				{ date: '2026-10-10', time: '12:00' },
+			),
+		).toBe(true)
+		expect(
+			sameJstDateTime(
+				{ date: '2026-10-10', time: '12:00' },
+				{ date: '2026-10-10', time: '12:05' },
+			),
+		).toBe(false)
 	})
 })

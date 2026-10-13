@@ -8,6 +8,7 @@ import { ILogger, resolve } from 'aurelia'
 import { businessDetailsComplete } from '../event/event-page'
 import { IConsoleLanguage } from '../i18n/console-language'
 import type { FieldError } from '../i18n/field-error'
+import { sameJstDateTime, toJstDateTime } from '../i18n/format'
 import {
 	concertTitle,
 	eventDay,
@@ -31,6 +32,7 @@ import {
 import { ITicketTypeClient } from '../services/ticket-type-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
 import { IConsoleContext } from '../shell/console-context'
+import { IPageProgress } from '../shell/page-progress'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { UnsavedChanges } from '../ui/unsaved-changes/unsaved-changes'
 import {
@@ -39,11 +41,10 @@ import {
 	isFormValid,
 	MAX_PER_ACCOUNT_LIMIT,
 	MIN_PER_ACCOUNT_LIMIT,
-	parseJstDateTimeLocal,
+	parseDateTime,
 	type TicketSaleFormErrors,
 	type TicketSaleFormModel,
 	toCreateInput,
-	toJstDateTimeLocal,
 	validateTicketSaleForm,
 } from './ticket-sale-form'
 
@@ -109,6 +110,7 @@ export class TicketSaleEditorRoute {
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
 	private readonly language = resolve(IConsoleLanguage)
+	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('TicketSaleEditorRoute')
 
 	public state: 'loading' | 'ready' | 'notFound' | 'error' = 'loading'
@@ -148,7 +150,7 @@ export class TicketSaleEditorRoute {
 	}
 
 	public attached(): void {
-		void this.load()
+		void this.progress.track(this.load())
 	}
 
 	public detaching(): void {
@@ -223,9 +225,16 @@ export class TicketSaleEditorRoute {
 			soldCount: this.soldCount,
 			heldCount: this.heldCount,
 		})
-		const start = parseJstDateTimeLocal(this.model.saleStartTime)
-		const end = parseJstDateTimeLocal(this.model.saleEndTime)
-		if (!errors.saleStartTime && !errors.saleEndTime && start && end) {
+		const start = parseDateTime(this.model.saleStart)
+		const end = parseDateTime(this.model.saleEnd)
+		if (
+			!errors.saleStartDate &&
+			!errors.saleStartTime &&
+			!errors.saleEndDate &&
+			!errors.saleEndTime &&
+			start &&
+			end
+		) {
 			const other = findOverlappingSale(
 				this.sales,
 				start,
@@ -233,7 +242,7 @@ export class TicketSaleEditorRoute {
 				this.sale?.id?.value,
 			)
 			if (other) {
-				errors.saleStartTime = {
+				errors.saleStartDate = {
 					key: 'firstComeEditor.error.overlap',
 					params: {
 						name: other.name?.value ?? '',
@@ -259,7 +268,10 @@ export class TicketSaleEditorRoute {
 		if (!submitted || !error) return null
 		const params: Record<string, unknown> = { ...error.params }
 		for (const [k, v] of Object.entries(params)) {
-			if (v instanceof Date) params[k] = toJstDateTimeLocal(v).replace('T', ' ')
+			if (v instanceof Date) {
+				const at = toJstDateTime(v)
+				params[k] = `${at.date} ${at.time}`
+			}
 		}
 		return { key: error.key, params }
 	}
@@ -347,14 +359,14 @@ export class TicketSaleEditorRoute {
 		const stored = this.storedModel()
 		let updated = sale
 		if (
-			this.model.saleStartTime !== stored.saleStartTime ||
-			this.model.saleEndTime !== stored.saleEndTime
+			!sameJstDateTime(this.model.saleStart, stored.saleStart) ||
+			!sameJstDateTime(this.model.saleEnd, stored.saleEnd)
 		) {
 			updated =
 				(await this.ticketSales.setWindow(
 					sale.id?.value ?? '',
-					parseJstDateTimeLocal(this.model.saleStartTime) ?? new Date(0),
-					parseJstDateTimeLocal(this.model.saleEndTime) ?? new Date(0),
+					parseDateTime(this.model.saleStart) ?? new Date(0),
+					parseDateTime(this.model.saleEnd) ?? new Date(0),
 					this.abort.signal,
 				)) ?? updated
 		}

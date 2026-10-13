@@ -6,7 +6,6 @@
     ${title} · <template if.bind="start">${start | jstDateTime}</template> · ${venue}
   </p>
 
-  <circular-progress if.bind="state === 'loading'"></circular-progress>
   <div if.bind="state === 'notFound'" class="message" role="alert">
     <p>${'lotteryEditor.notFound' & t}</p>
     <console-button variant="tonal" href.bind="salesHref">${'lotteryEditor.toSales' & t}</console-button>
@@ -48,22 +47,38 @@
     <h2 class="section-title">${'lotteryEditor.sections.window' & t}</h2>
     <div class="row">
       <console-field
-        type="datetime-local"
-        label.bind="'lotteryEditor.start' & t"
-        value.bind="model.saleStartTime"
+        type="date"
+        label.bind="'lotteryEditor.startDate' & t"
+        value.bind="model.saleStart.date"
         required.bind="true"
-        error.bind="error(errors.saleStartTime, submitted)"
+        error.bind="error(errors.saleStartDate, submitted)"
         data-field="start"
       ></console-field>
-      <console-field
-        type="datetime-local"
-        label.bind="'lotteryEditor.end' & t"
-        value.bind="model.saleEndTime"
+      <console-time-field
+        label.bind="'lotteryEditor.startTime' & t"
+        value.bind="model.saleStart.time"
         required.bind="true"
-        error.bind="error(errors.saleEndTime || errors.window, submitted)"
+        error.bind="error(errors.saleStartTime, submitted)"
+        data-field="start-time"
+      ></console-time-field>
+    </div>
+    <div class="row">
+      <console-field
+        type="date"
+        label.bind="'lotteryEditor.endDate' & t"
+        value.bind="model.saleEnd.date"
+        required.bind="true"
+        error.bind="error(errors.saleEndDate || errors.window, submitted)"
         hint.bind="'lotteryEditor.windowHint' & t:{ min: minWindowDays, max: maxWindowDays }"
         data-field="end"
       ></console-field>
+      <console-time-field
+        label.bind="'lotteryEditor.endTime' & t"
+        value.bind="model.saleEnd.time"
+        required.bind="true"
+        error.bind="error(errors.saleEndTime, submitted)"
+        data-field="end-time"
+      ></console-time-field>
     </div>
 
     <h2 class="section-title">${'lotteryEditor.sections.tickets' & t}</h2>

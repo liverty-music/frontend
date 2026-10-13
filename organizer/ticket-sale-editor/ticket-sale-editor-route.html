@@ -6,7 +6,6 @@
     ${title} · <template if.bind="start">${start | jstDateTime}</template> · ${venue}
   </p>
 
-  <circular-progress if.bind="state === 'loading'"></circular-progress>
   <div if.bind="state === 'notFound'" class="message" role="alert">
     <p>${'event.notFound' & t}</p>
     <console-button variant="tonal" href.bind="concertsHref">${'concert.toConcerts' & t}</console-button>
@@ -50,20 +49,38 @@
       <h2 class="section-title">${'firstComeEditor.sections.window' & t}</h2>
       <div class="row">
         <console-field
-          type="datetime-local"
-          label.bind="'firstComeEditor.start' & t"
-          value.bind="model.saleStartTime"
+          type="date"
+          label.bind="'firstComeEditor.startDate' & t"
+          value.bind="model.saleStart.date"
+          required.bind="true"
+          error.bind="error(errors.saleStartDate, submitted)"
+          data-field="start"
+        ></console-field>
+        <console-time-field
+          label.bind="'firstComeEditor.startTime' & t"
+          value.bind="model.saleStart.time"
           required.bind="true"
           error.bind="error(errors.saleStartTime, submitted)"
-        ></console-field>
+          data-field="start-time"
+        ></console-time-field>
+      </div>
+      <div class="row">
         <console-field
-          type="datetime-local"
-          label.bind="'firstComeEditor.end' & t"
-          value.bind="model.saleEndTime"
+          type="date"
+          label.bind="'firstComeEditor.endDate' & t"
+          value.bind="model.saleEnd.date"
           required.bind="true"
           hint.bind="'firstComeEditor.endHint' & t"
-          error.bind="error(errors.saleEndTime, submitted)"
+          error.bind="error(errors.saleEndDate, submitted)"
+          data-field="end"
         ></console-field>
+        <console-time-field
+          label.bind="'firstComeEditor.endTime' & t"
+          value.bind="model.saleEnd.time"
+          required.bind="true"
+          error.bind="error(errors.saleEndTime, submitted)"
+          data-field="end-time"
+        ></console-time-field>
       </div>
       <h2 class="section-title">${'firstComeEditor.sections.tickets' & t}</h2>
       <div class="row">

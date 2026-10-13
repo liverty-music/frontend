@@ -225,6 +225,14 @@ const filledButton: Probe = {
 	expect: { padding: true, background: true },
 }
 
+/** The frame of the first 24-hour time field (design D19). */
+const timeField: Probe = {
+	what: 'a time field',
+	locate: (page) =>
+		page.locator('console-time-field').locator('.control').first(),
+	expect: { padding: true },
+}
+
 /** A list item's link: the whole item is the target. */
 const listItem: Probe = {
 	what: 'a list item',
@@ -263,8 +271,8 @@ const ORGANIZER: Screen[] = [
 	['Concerts', SERIES, [fab]],
 	['Concert', `${SERIES}/s-tour`, [consoleButton, listItem]],
 	['Concert with draft dates', `${SERIES}/s-solo`, [filledButton]],
-	['Concert editor (new)', `${SERIES}/new`, [filledButton]],
-	['Concert editor (edit)', `${SERIES}/s-tour/edit`, [filledButton]],
+	['Concert editor (new)', `${SERIES}/new`, [filledButton, timeField]],
+	['Concert editor (edit)', `${SERIES}/s-tour/edit`, [filledButton, timeField]],
 	['Event, Sales tab', SALES, [consoleButton]],
 	[
 		'Event, draft (Reception tab)',
@@ -276,13 +284,21 @@ const ORGANIZER: Screen[] = [
 		`${SERIES}/s-tour/events/e-1103/scanners`,
 		[consoleButton],
 	],
-	['Lottery sale editor (new)', `${SALES}/new?method=lottery`, [filledButton]],
+	[
+		'Lottery sale editor (new)',
+		`${SALES}/new?method=lottery`,
+		[filledButton, timeField],
+	],
 	[
 		'Lottery sale editor (edit)',
 		`${SALES}/${LATER_LOTTERY.id}/edit`,
 		[filledButton],
 	],
-	['First-come sale editor', `${SALES}/${GENERAL.id}/edit`, [filledButton]],
+	[
+		'First-come sale editor',
+		`${SALES}/${GENERAL.id}/edit`,
+		[filledButton, timeField],
+	],
 	[
 		'Settings',
 		`${ORG}/settings`,

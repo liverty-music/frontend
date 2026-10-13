@@ -206,3 +206,39 @@ export function confirmDialog(
 		.locator('confirm-dialog')
 		.filter({ has: page.getByRole('dialog', options) })
 }
+
+/**
+ * The console time field labelled `label` within `scope`: a group of an hour
+ * and a minute select on a 24-hour clock, marked JST (design D19). A required
+ * field's name also carries its asterisk and 必須.
+ */
+export function timeField(scope: Page | Locator, label: string): Locator {
+	return scope.getByRole('group', { name: label })
+}
+
+/** Chooses `HH:mm` in the time field labelled `label` within `scope`. */
+export async function chooseTime(
+	scope: Page | Locator,
+	label: string,
+	hhmm: string,
+): Promise<void> {
+	const [hour, minute] = hhmm.split(':')
+	const field = timeField(scope, label)
+	await field.getByRole('combobox', { name: /時|Hour/ }).selectOption(hour)
+	await field.getByRole('combobox', { name: /分|Minute/ }).selectOption(minute)
+}
+
+/** The `HH:mm` the time field labelled `label` within `scope` shows. */
+export async function shownTime(
+	scope: Page | Locator,
+	label: string,
+): Promise<string> {
+	const field = timeField(scope, label)
+	const hour = await field
+		.getByRole('combobox', { name: /時|Hour/ })
+		.inputValue()
+	const minute = await field
+		.getByRole('combobox', { name: /分|Minute/ })
+		.inputValue()
+	return hour && minute ? `${hour}:${minute}` : ''
+}

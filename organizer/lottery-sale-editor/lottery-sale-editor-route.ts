@@ -3,6 +3,7 @@ import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
+import { emptyJstDateTime } from '../i18n/format'
 import {
 	concertTitle,
 	eventDay,
@@ -22,6 +23,7 @@ import {
 import { ITicketTypeClient } from '../services/ticket-type-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
 import { IConsoleContext } from '../shell/console-context'
+import { IPageProgress } from '../shell/page-progress'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { UnsavedChanges } from '../ui/unsaved-changes/unsaved-changes'
 import {
@@ -33,9 +35,9 @@ import {
 	MAX_PER_ACCOUNT_LIMIT,
 	MAX_WINDOW_DAYS,
 	MIN_WINDOW_DAYS,
-	parseDateTimeLocal,
+	parseDateTime,
 	toCreateInput,
-	toDateTimeLocal,
+	toDateTime,
 	validateLotterySaleForm,
 } from './lottery-sale-form'
 
@@ -72,6 +74,7 @@ export class LotterySaleEditorRoute {
 	private readonly consoleContext = resolve(IConsoleContext)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
+	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('LotterySaleEditorRoute')
 
 	public state:
@@ -123,7 +126,7 @@ export class LotterySaleEditorRoute {
 	}
 
 	public attached(): void {
-		void this.load()
+		void this.progress.track(this.load())
 	}
 
 	public detaching(): void {
@@ -162,8 +165,8 @@ export class LotterySaleEditorRoute {
 		const errors = validateLotterySaleForm(this.model, {
 			eventStart: this.start ?? null,
 		})
-		const open = parseDateTimeLocal(this.model.saleStartTime)
-		const close = parseDateTimeLocal(this.model.saleEndTime)
+		const open = parseDateTime(this.model.saleStart)
+		const close = parseDateTime(this.model.saleEnd)
 		if (!errors.window && open && close) {
 			const other = findOverlappingSale(
 				this.existingSales,
@@ -192,7 +195,10 @@ export class LotterySaleEditorRoute {
 		if (!params) return params
 		const out: Record<string, unknown> = { ...params }
 		for (const [k, v] of Object.entries(params)) {
-			if (v instanceof Date) out[k] = toDateTimeLocal(v).replace('T', ' ')
+			if (v instanceof Date) {
+				const at = toDateTime(v)
+				out[k] = `${at.date} ${at.time}`
+			}
 		}
 		return out
 	}
@@ -232,12 +238,12 @@ export class LotterySaleEditorRoute {
 				}
 				this.model = {
 					name: this.sale.name?.value ?? '',
-					saleStartTime: this.sale.saleStartTime
-						? toDateTimeLocal(timestampDate(this.sale.saleStartTime))
-						: '',
-					saleEndTime: this.sale.saleEndTime
-						? toDateTimeLocal(timestampDate(this.sale.saleEndTime))
-						: '',
+					saleStart: this.sale.saleStartTime
+						? toDateTime(timestampDate(this.sale.saleStartTime))
+						: emptyJstDateTime(),
+					saleEnd: this.sale.saleEndTime
+						? toDateTime(timestampDate(this.sale.saleEndTime))
+						: emptyJstDateTime(),
 					quantity: String(type.quantity ?? ''),
 					perAccountLimit: String(type.perAccountLimit),
 					price: String(type.price?.value ?? ''),

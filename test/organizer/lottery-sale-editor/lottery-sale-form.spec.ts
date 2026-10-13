@@ -8,9 +8,9 @@ import {
 	MAX_PER_ACCOUNT_LIMIT,
 	MAX_WINDOW_DAYS,
 	MIN_WINDOW_DAYS,
-	parseDateTimeLocal,
+	parseDateTime,
 	toCreateInput,
-	toDateTimeLocal,
+	toDateTime,
 	validateLotterySaleForm,
 	windowDurationDays,
 } from '../../../organizer/lottery-sale-editor/lottery-sale-form'
@@ -23,8 +23,8 @@ function validModel(windowDays = DEFAULT_WINDOW_DAYS): LotterySaleFormModel {
 	const close = new Date(NOW.getTime() + windowDays * 24 * 60 * 60 * 1000)
 	return {
 		name: 'ファンクラブ先行',
-		saleStartTime: toDateTimeLocal(open),
-		saleEndTime: toDateTimeLocal(close),
+		saleStart: toDateTime(open),
+		saleEnd: toDateTime(close),
 		quantity: '200',
 		perAccountLimit: '4',
 		price: '6500',
@@ -36,16 +36,25 @@ describe('emptyFormModel', () => {
 		// @spec components/infrastructure/organizer/web/route/lottery-sale-editor "Blank form"
 		// 12:00 in Japan time, whatever the device's time zone.
 		const model = emptyFormModel(new Date('2026-10-01T12:00:00+09:00'))
-		expect(model.saleStartTime).toBe('2026-10-01T12:00')
-		expect(model.saleEndTime).toBe('2026-10-11T12:00')
+		expect(model.saleStart).toEqual({ date: '2026-10-01', time: '12:00' })
+		expect(model.saleEnd).toEqual({ date: '2026-10-11', time: '12:00' })
 		expect(model.name).toBe('')
 		expect(model.perAccountLimit).toBe(String(DEFAULT_PER_ACCOUNT_LIMIT))
 	})
 
+	it('rounds "now" up to the time field\'s 5-minute steps', () => {
+		const model = emptyFormModel(new Date('2026-10-01T12:07:30+09:00'))
+		expect(model.saleStart).toEqual({ date: '2026-10-01', time: '12:10' })
+		expect(model.saleEnd).toEqual({ date: '2026-10-11', time: '12:10' })
+		// Just before midnight, the rounding moves to the next day.
+		const late = emptyFormModel(new Date('2026-10-01T23:58:00+09:00'))
+		expect(late.saleStart).toEqual({ date: '2026-10-02', time: '00:00' })
+	})
+
 	it('defaults the window to DEFAULT_WINDOW_DAYS (10 days) and passes window validation', () => {
 		const model = emptyFormModel(NOW)
-		const open = parseDateTimeLocal(model.saleStartTime)
-		const close = parseDateTimeLocal(model.saleEndTime)
+		const open = parseDateTime(model.saleStart)
+		const close = parseDateTime(model.saleEnd)
 		expect(open).not.toBeNull()
 		expect(close).not.toBeNull()
 		if (open && close) {
@@ -53,7 +62,9 @@ describe('emptyFormModel', () => {
 		}
 		const errors = validateLotterySaleForm(model)
 		expect(errors.window).toBeUndefined()
+		expect(errors.saleStartDate).toBeUndefined()
 		expect(errors.saleStartTime).toBeUndefined()
+		expect(errors.saleEndDate).toBeUndefined()
 		expect(errors.saleEndTime).toBeUndefined()
 	})
 })
@@ -88,17 +99,29 @@ describe('validateLotterySaleForm — window bounds', () => {
 
 	it('rejects a close time not after the open time', () => {
 		const model = validModel(DEFAULT_WINDOW_DAYS)
-		model.saleEndTime = model.saleStartTime
+		model.saleEnd = { ...model.saleStart }
 		expect(validateLotterySaleForm(model).window).toBeDefined()
 	})
 
-	it('flags a missing/malformed open or close time', () => {
+	it('flags a missing or malformed date on the date field', () => {
 		const model = validModel()
-		model.saleStartTime = ''
-		model.saleEndTime = 'not-a-date'
+		model.saleStart = { date: '', time: '12:00' }
+		model.saleEnd = { date: 'not-a-date', time: '12:00' }
 		const errors = validateLotterySaleForm(model)
-		expect(errors.saleStartTime).toBeDefined()
-		expect(errors.saleEndTime).toBeDefined()
+		expect(errors.saleStartDate).toEqual({ key: 'lotteryEditor.error.start' })
+		expect(errors.saleEndDate).toEqual({ key: 'lotteryEditor.error.end' })
+		expect(errors.saleStartTime).toBeUndefined()
+		expect(errors.window).toBeUndefined()
+	})
+
+	it('flags a missing time on the time field', () => {
+		const model = validModel()
+		model.saleStart = { ...model.saleStart, time: '' }
+		model.saleEnd = { ...model.saleEnd, time: '' }
+		const errors = validateLotterySaleForm(model)
+		expect(errors.saleStartDate).toBeUndefined()
+		expect(errors.saleStartTime).toEqual({ key: 'lotteryEditor.error.start' })
+		expect(errors.saleEndTime).toEqual({ key: 'lotteryEditor.error.end' })
 	})
 })
 
