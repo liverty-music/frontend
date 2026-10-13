@@ -136,7 +136,8 @@
 		color: var(--md-color-on-surface-variant);
 	}
 
-	.error {
+	.error,
+	.error-icon {
 		color: var(--md-color-error);
 	}
 
