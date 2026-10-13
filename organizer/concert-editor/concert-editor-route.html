@@ -28,15 +28,13 @@
       label.bind="'concertEditor.description' & t"
       value.bind="model.description"
     ></console-field>
-    <div class="row">
-      <console-field
-        type="select"
-        label.bind="'concertEditor.type' & t"
-        value.bind="typeValue"
-        options.bind="typeOptions"
-        disabled.bind="isCorrection"
-      ></console-field>
-    </div>
+    <fieldset class="series-type" disabled.bind="isCorrection">
+      <legend class="legend">${'concertEditor.type' & t}</legend>
+      <label repeat.for="option of typeChoices" class="series-type-option state-layer">
+        <input type="radio" name="series-type" model.bind="option.value" checked.bind="model.type">
+        <span>${option.labelKey & t}</span>
+      </label>
+    </fieldset>
 
     <fieldset class="visibility" disabled.bind="isCorrection">
       <legend class="legend">${'concertEditor.visibility' & t}</legend>

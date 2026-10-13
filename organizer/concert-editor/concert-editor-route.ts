@@ -138,30 +138,15 @@ export class ConcertEditorRoute {
 		return this.state === 'ready' && JSON.stringify(this.model) !== this.saved
 	}
 
-	public get typeValue(): string {
-		return String(this.model.type)
-	}
-
-	public set typeValue(value: string) {
-		this.model.type = Number(value) as SeriesType
-	}
-
-	public get typeOptions() {
-		return [
-			{
-				value: String(SeriesType.SINGLE),
-				label: this.i18n.tr('seriesType.single'),
-			},
-			{
-				value: String(SeriesType.TOUR),
-				label: this.i18n.tr('seriesType.tour'),
-			},
-			{
-				value: String(SeriesType.FESTIVAL),
-				label: this.i18n.tr('seriesType.festival'),
-			},
-		]
-	}
+	/**
+	 * The concert types, a radio group: M3 uses radio buttons for five or fewer
+	 * choices (design D16).
+	 */
+	public readonly typeChoices = [
+		{ value: SeriesType.SINGLE, labelKey: 'seriesType.single' },
+		{ value: SeriesType.TOUR, labelKey: 'seriesType.tour' },
+		{ value: SeriesType.FESTIVAL, labelKey: 'seriesType.festival' },
+	]
 
 	/** The two visibilities, each with its effect on fans (design D14). */
 	public readonly visibilityChoices = [
