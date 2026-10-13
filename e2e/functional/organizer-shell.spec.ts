@@ -399,4 +399,47 @@ test.describe('addresses name the Organizer and the Artist', () => {
 			0,
 		)
 	})
+
+	test(`@spec ${SPEC} "Change the Artist"`, async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 })
+		await open(page, `${ORG}/artists/a-1/series`, TWO_ARTISTS)
+		await expect(
+			concertLinks(page).filter({ hasText: 'XX Tour 2026' }),
+		).toHaveCount(1)
+
+		const menuButton = page.getByRole('button', { name: /Band A/ })
+		await menuButton.click()
+		const menu = page.getByRole('navigation', { name: '所属アーティスト' })
+		await expect(menu.getByRole('link', { name: 'Band A' })).toHaveAttribute(
+			'aria-current',
+			'true',
+		)
+		await menu.getByRole('link', { name: 'Band B' }).click()
+
+		await expect(page).toHaveURL(/\/artists\/a-2\/series$/)
+		await expect(menu).toBeHidden()
+		await expect(concertLinks(page).filter({ hasText: 'YY Live' })).toHaveCount(
+			1,
+		)
+		await expect(
+			concertLinks(page).filter({ hasText: 'XX Tour 2026' }),
+		).toHaveCount(0)
+		await expect(page.getByRole('button', { name: /Band B/ })).toBeVisible()
+
+		// 公演 opens Band B from now on, from Home and after a reload.
+		await nav(page).getByRole('link', { name: 'ホーム' }).click()
+		await expect(nav(page).getByRole('link', { name: '公演' })).toHaveAttribute(
+			'href',
+			/\/organizers\/org-1\/artists\/a-2\/series$/,
+		)
+		await page.reload()
+		await nav(page).getByRole('link', { name: '公演' }).click()
+		await expect(page).toHaveURL(/\/artists\/a-2\/series$/)
+	})
+
+	test('One represented Artist is named without a menu', async ({ page }) => {
+		await open(page, SERIES)
+		await expect(page.getByTestId('artist-name')).toHaveText('Band A')
+		await expect(page.getByTestId('artist-menu-button')).toHaveCount(0)
+	})
 })

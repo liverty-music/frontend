@@ -1,45 +1,56 @@
-import { ILogger, resolve } from 'aurelia'
+import { resolve } from 'aurelia'
 import { IAuthService } from '../../../shared/services/auth-service'
 import {
 	CONSOLE_LANGUAGES,
 	IConsoleLanguage,
 } from '../../i18n/console-language'
 import type { ConsoleLocale } from '../../i18n/format'
-import { IOrganizerClient } from '../../services/organizer-client'
+import { paths } from '../../model/concert-model'
 import { IConsoleContext } from '../console-context'
 
+/** One represented Artist in the Artist menu. */
+export interface ArtistChoice {
+	readonly id: string
+	readonly name: string
+	readonly href: string
+}
+
 /**
- * The console's top bar: the logo, the Organizer's name, and the account menu
- * holding the language switch and サインアウト.
+ * The console's top bar: the logo, the Organizer's name, the Artist being
+ * worked on — a menu listing the represented Artists when there are two or
+ * more (M3 menu), its name only with one — and the account menu holding the
+ * language switch and サインアウト.
  */
 export class TopAppBar {
-	private readonly organizers = resolve(IOrganizerClient)
 	private readonly auth = resolve(IAuthService)
-	private readonly logger = resolve(ILogger).scopeTo('TopAppBar')
 	public readonly context = resolve(IConsoleContext)
 	public readonly language = resolve(IConsoleLanguage)
 	public readonly languages = CONSOLE_LANGUAGES
 
-	public organizerName = ''
 	public menu!: HTMLElement
-	private readonly abort = new AbortController()
+	public artistMenu!: HTMLElement
 
-	public attached(): void {
-		void this.loadOrganizer()
+	/** The represented Artists, each linking to its concerts. */
+	public get artists(): ArtistChoice[] {
+		const organizer = this.context.organizerId
+		return this.context.artists.map((a) => {
+			const id = a.id?.value ?? ''
+			return {
+				id,
+				name: a.name?.value ?? '',
+				href: paths.concerts({ organizer, artist: id }),
+			}
+		})
 	}
 
-	public detaching(): void {
-		this.abort.abort()
+	public get artistName(): string {
+		return this.context.artist?.name?.value ?? ''
 	}
 
-	private async loadOrganizer(): Promise<void> {
-		try {
-			const organizer = await this.organizers.get(this.abort.signal)
-			this.organizerName = organizer?.name?.value ?? ''
-		} catch (err) {
-			// The name is a label only; the screens report their own failures.
-			this.logger.warn('Organizer name unavailable', err)
-		}
+	/** Closes the Artist menu; the chosen link navigates. */
+	public chooseArtist(): boolean {
+		this.artistMenu.hidePopover()
+		return true
 	}
 
 	public async setLanguage(language: ConsoleLocale): Promise<void> {

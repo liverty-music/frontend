@@ -38,16 +38,55 @@
 			color: var(--md-color-on-surface-variant);
 		}
 
-		.organizer-name {
-			overflow: hidden;
+		/* The Organizer and the Artist worked on take the room between the
+		   logo and the account button; the names shorten before they wrap. */
+		.context {
+			display: flex;
 			flex: 1;
+			gap: var(--space-2xs);
+			align-items: center;
 
 			min-inline-size: 0;
+		}
 
-			font: var(--md-type-title-medium);
-			color: var(--md-color-on-surface);
+		.organizer-name,
+		.artist-name {
+			overflow: hidden;
+			min-inline-size: 0;
 			text-overflow: ellipsis;
 			white-space: nowrap;
+		}
+
+		.organizer-name {
+			flex: 0 1 auto;
+			font: var(--md-type-title-medium);
+			color: var(--md-color-on-surface);
+		}
+
+		.context > .artist-name {
+			font: var(--md-type-label-large);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		/* M3 menu button: the current Artist and a drop-down arrow. */
+		.artist-button {
+			cursor: pointer;
+
+			display: inline-flex;
+			flex: 0 1 auto;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			min-inline-size: 0;
+			min-block-size: var(--md-target-size);
+			padding-inline: var(--space-xs) var(--space-3xs);
+			border: none;
+			border-radius: var(--md-shape-full);
+
+			font: var(--md-type-label-large);
+			color: var(--md-color-on-surface-variant);
+
+			background: transparent;
 		}
 
 		.account {
@@ -116,7 +155,26 @@
 			visibility: hidden;
 		}
 
-		.menu-item[aria-pressed="true"] .menu-check {
+		/* Below its button where anchor positioning is supported, else under
+		   the bar at the start edge. */
+		.artist-menu {
+			inset: 64px auto auto var(--space-s);
+		}
+
+		@supports (position-area: block-end) {
+			.artist-menu {
+				inset: auto;
+				position-area: block-end span-inline-end;
+				position-try-fallbacks: flip-inline;
+			}
+		}
+
+		a.menu-item {
+			text-decoration: none;
+		}
+
+		.menu-item[aria-pressed="true"] .menu-check,
+		.menu-item[aria-current="true"] .menu-check {
 			visibility: visible;
 		}
 
