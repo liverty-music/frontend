@@ -1,0 +1,19 @@
+<import from="./list-item.css"></import>
+<use-shadow-dom></use-shadow-dom>
+
+<a if.bind="href" href.bind="href" class="item state-layer">
+  <span class="content">
+    <slot name="overline"></slot>
+    <slot class="headline"></slot>
+    <slot name="supporting"></slot>
+  </span>
+  <slot name="trailing"></slot>
+</a>
+<div else class="item">
+  <span class="content">
+    <slot name="overline"></slot>
+    <slot class="headline"></slot>
+    <slot name="supporting"></slot>
+  </span>
+  <slot name="trailing"></slot>
+</div>

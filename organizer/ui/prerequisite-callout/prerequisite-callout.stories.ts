@@ -16,6 +16,7 @@ const meta = {
 		heading: { control: 'text' },
 		actionLabel: { control: 'text' },
 		actionHref: { control: 'text' },
+		level: { control: 'select', options: [2, 3] },
 	},
 	args: {
 		heading: '事業者情報が未登録です',
@@ -47,6 +48,30 @@ export const WithAction = {
 		await expect(
 			canvas.getByRole('link', { name: '設定を開く' }).element(),
 		).toHaveAttribute('href', '#settings')
+	},
+} satisfies Story
+
+/** Directly under a page's title (an event's tab): a level-2 heading. */
+export const UnderThePageTitle = {
+	render: () =>
+		defineAureliaStory({
+			template: `
+				<div style="inline-size:390px; padding:16px; background:var(--md-color-surface)">
+					<prerequisite-callout heading="受付リンクを発行するには、公演を公開してください" level="2">
+						公開していない公演日では受付リンクを発行できません。
+					</prerequisite-callout>
+				</div>
+			`,
+		}),
+	play: async ({ canvasElement }) => {
+		await expect(
+			canvasOf(canvasElement)
+				.getByRole('heading', {
+					level: 2,
+					name: '受付リンクを発行するには、公演を公開してください',
+				})
+				.element(),
+		).toBeVisible()
 	},
 } satisfies Story
 

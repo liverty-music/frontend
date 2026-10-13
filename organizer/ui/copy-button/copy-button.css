@@ -1,0 +1,9 @@
+@layer block {
+	:host {
+		display: inline-flex;
+	}
+
+	icon-button[data-copied="true"] {
+		color: var(--md-color-success);
+	}
+}

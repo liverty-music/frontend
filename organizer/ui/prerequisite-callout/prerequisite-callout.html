@@ -6,7 +6,8 @@
 <section class="callout" aria-labelledby.bind="headingId">
   <console-icon name="info" class="icon"></console-icon>
   <div class="content">
-    <h3 class="heading" id.bind="headingId">${heading}</h3>
+    <h2 if.bind="level == 2" class="heading" id.bind="headingId">${heading}</h2>
+    <h3 else class="heading" id.bind="headingId">${heading}</h3>
     <div class="body"><slot></slot></div>
     <console-button if.bind="actionHref" variant="text" href.bind="actionHref" class="action">${actionLabel}</console-button>
   </div>

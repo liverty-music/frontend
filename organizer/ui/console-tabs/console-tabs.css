@@ -21,8 +21,10 @@
 		color: var(--md-color-on-surface-variant);
 		text-decoration: none;
 
+		/* The selected tab in a neutral color: the brand color is kept for
+		   the page's primary action, focus and the logo. */
 		&[aria-current="page"] {
-			color: var(--md-color-primary);
+			color: var(--md-color-on-surface);
 		}
 	}
 
@@ -37,7 +39,7 @@
 		border-start-start-radius: 3px;
 		border-start-end-radius: 3px;
 
-		background: var(--md-color-primary);
+		background: var(--md-color-on-surface);
 
 		transition:
 			transform var(--md-sys-motion-duration-medium2)

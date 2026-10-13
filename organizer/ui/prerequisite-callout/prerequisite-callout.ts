@@ -10,6 +10,11 @@ export class PrerequisiteCallout {
 	public readonly headingId = `prerequisite-callout-${nextId++}`
 
 	@bindable public heading = ''
+	/**
+	 * The heading's level: 3 under a section heading (Settings), 2 directly
+	 * under the page's title (an event's tab), so heading levels never skip.
+	 */
+	@bindable public level: 2 | 3 = 3
 	@bindable public actionLabel = ''
 	@bindable public actionHref = ''
 }

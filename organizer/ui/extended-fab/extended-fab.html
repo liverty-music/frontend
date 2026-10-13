@@ -1,0 +1,12 @@
+<import from="./extended-fab.css"></import>
+<import from="../console-icon/console-icon"></import>
+<use-shadow-dom></use-shadow-dom>
+
+<a if.bind="href" href.bind="href" class="fab state-layer">
+  <console-icon name.bind="icon"></console-icon>
+  <span class="label"><slot></slot></span>
+</a>
+<button else type="button" class="fab state-layer">
+  <console-icon name.bind="icon"></console-icon>
+  <span class="label"><slot></slot></span>
+</button>

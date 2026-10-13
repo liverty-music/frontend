@@ -4,67 +4,10 @@
 		display: block;
 	}
 
-	.cards {
-		display: grid;
-		gap: var(--space-2xs);
-
+	.list {
 		margin: 0;
 		padding: 0;
-
 		list-style: none;
-	}
-
-	.card {
-		display: grid;
-		gap: var(--space-2xs);
-
-		padding: var(--space-s);
-		border-radius: var(--md-shape-medium);
-
-		background: var(--md-color-surface-container);
-	}
-
-	.card-title {
-		display: flex;
-		align-items: center;
-
-		min-block-size: var(--md-target-size);
-		margin: calc(-1 * var(--space-2xs));
-		padding-inline: var(--space-2xs);
-		border-radius: var(--md-shape-small);
-
-		font: var(--md-type-title-medium);
-		color: var(--md-color-on-surface);
-		text-decoration: none;
-	}
-
-	.subtitle {
-		display: block;
-		font: var(--md-type-body-small);
-		color: var(--md-color-on-surface-variant);
-	}
-
-	.card-details {
-		display: grid;
-		gap: var(--space-3xs);
-		margin: 0;
-	}
-
-	.card-detail {
-		display: flex;
-		gap: var(--space-s);
-		justify-content: space-between;
-
-		& dt {
-			font: var(--md-type-body-medium);
-			color: var(--md-color-on-surface-variant);
-		}
-
-		& dd {
-			margin: 0;
-			color: var(--md-color-on-surface);
-			text-align: end;
-		}
 	}
 
 	.table {
@@ -95,15 +38,49 @@
 		text-align: end;
 	}
 
-	.table a {
-		display: inline-flex;
-		align-items: center;
-		min-block-size: var(--md-target-size);
-		color: var(--md-color-primary);
+	.subtitle {
+		display: block;
+		font: var(--md-type-body-small);
+		color: var(--md-color-on-surface-variant);
+	}
+
+	/* A row that opens a page is one target: its row header's link covers the
+	   whole row, which shows the state layer. */
+	.table tr[data-link="true"] {
+		position: relative;
+
+		&:hover {
+			background: color-mix(
+				in oklch,
+				var(--md-color-on-surface)
+					calc(var(--md-sys-state-hover-opacity) * 100%),
+				transparent
+			);
+		}
+	}
+
+	.row-link {
+		color: inherit;
+		text-decoration: none;
+
+		&::after {
+			content: "";
+			position: absolute;
+			inset: 0;
+		}
+
+		&:focus-visible {
+			outline: none;
+		}
+
+		&:focus-visible::after {
+			outline: var(--focus-ring-width) solid var(--md-color-primary);
+			outline-offset: calc(-1 * var(--focus-ring-width));
+		}
 	}
 
 	@container data-list (width >= 840px) {
-		.cards {
+		.list {
 			display: none;
 		}
 

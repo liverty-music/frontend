@@ -1,0 +1,67 @@
+@layer block {
+	:host {
+		display: block;
+	}
+
+	/* M3 list item: 16 px inline padding, at least 56 px high; a link item
+	   shows the state layer over its whole area. */
+	.item {
+		display: flex;
+		gap: var(--space-s);
+		align-items: center;
+
+		min-block-size: 56px;
+		padding: var(--space-2xs) var(--space-xs) var(--space-2xs) var(--space-s);
+
+		color: var(--md-color-on-surface);
+		text-decoration: none;
+	}
+
+	a.item {
+		padding-inline-end: var(--space-s);
+
+		&:focus-visible {
+			outline-offset: -3px;
+		}
+	}
+
+	.content {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-inline-size: 0;
+	}
+
+	/* Slots are `display: contents`: what they hold inherits their type. */
+	slot[name="overline"] {
+		font: var(--md-type-label-medium);
+		color: var(--md-color-on-surface-variant);
+	}
+
+	.headline {
+		font: var(--md-type-body-large);
+		color: var(--md-color-on-surface);
+	}
+
+	slot[name="supporting"] {
+		font: var(--md-type-body-medium);
+		color: var(--md-color-on-surface-variant);
+	}
+
+	::slotted([slot="supporting"]),
+	::slotted([slot="overline"]) {
+		display: block;
+	}
+
+	slot[name="trailing"] {
+		font: var(--md-type-label-medium);
+		color: var(--md-color-on-surface-variant);
+	}
+
+	::slotted([slot="trailing"]) {
+		display: flex;
+		flex-shrink: 0;
+		gap: var(--space-3xs);
+		align-items: center;
+	}
+}

@@ -1,0 +1,50 @@
+@layer block {
+	:host {
+		display: block;
+	}
+
+	/* The indicator uses a neutral role: the brand color is kept for the
+	   page's primary action, focus and the logo. */
+	.track {
+		position: relative;
+
+		overflow: hidden;
+
+		block-size: 4px;
+		border-radius: var(--md-shape-full);
+
+		background: var(--md-color-secondary-container);
+	}
+
+	.indicator {
+		position: absolute;
+		inset-block: 0;
+		inset-inline-start: 0;
+
+		inline-size: 40%;
+		border-radius: inherit;
+
+		background: var(--md-color-on-surface-variant);
+
+		animation: linear-progress-slide 1.6s var(--md-sys-motion-easing-standard)
+			infinite;
+	}
+
+	@keyframes linear-progress-slide {
+		from {
+			translate: -100% 0;
+		}
+
+		to {
+			translate: 250% 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.indicator {
+			inline-size: 100%;
+			opacity: 0.6;
+			animation: none;
+		}
+	}
+}
