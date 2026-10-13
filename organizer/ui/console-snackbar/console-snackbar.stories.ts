@@ -6,7 +6,7 @@ import {
 import { CustomElement } from 'aurelia'
 import { expect, waitFor, within } from 'storybook/test'
 import { page, userEvent } from 'vitest/browser'
-import { consoleStoryParameters } from '../story-support'
+import { consoleStoryParameters, deepQueryAll } from '../story-support'
 import { ConsoleSnackbar } from './console-snackbar'
 import { ISnackbar } from './snackbar'
 
@@ -39,7 +39,7 @@ function snackbarOf(root: HTMLElement): ISnackbar {
 
 /** The snacks currently open (popovers shown). */
 function openSnacks(root: HTMLElement): HTMLElement[] {
-	return [...root.querySelectorAll<HTMLElement>('.snack-item')].filter((el) =>
+	return deepQueryAll(root, '.snack-item').filter((el) =>
 		el.matches(':popover-open'),
 	)
 }
@@ -78,6 +78,10 @@ export const PhoneLayout = {
 			expect(
 				openSnacks(canvasElement)[0].getBoundingClientRect().bottom,
 			).toBeLessThanOrEqual(nav.top),
+		)
+		// Fully shown before the page is checked: mid fade, its colors blend.
+		await waitFor(() =>
+			expect(getComputedStyle(openSnacks(canvasElement)[0]).opacity).toBe('1'),
 		)
 	},
 } satisfies Story

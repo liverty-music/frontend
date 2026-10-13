@@ -1,4 +1,8 @@
-import { installConsole, type RpcMocks } from '../support/organizer'
+import {
+	confirmDialog,
+	installConsole,
+	type RpcMocks,
+} from '../support/organizer'
 import {
 	type ConcertSpec,
 	jst,
@@ -124,7 +128,7 @@ test.describe('share link', () => {
 		).toBeVisible()
 
 		await page.getByRole('button', { name: '新しい共有リンクを発行' }).click()
-		const dialog = page.getByRole('dialog', {
+		const dialog = confirmDialog(page, {
 			name: '新しい共有リンクを発行しますか？',
 		})
 		await expect(dialog).toBeVisible()
@@ -212,7 +216,7 @@ const DRAFT_TOUR: ConcertSpec = {
 }
 
 const publishDialog = (page: Page) =>
-	page.getByRole('dialog', { name: 'XX Tour 2026 の公演日を公開しますか？' })
+	confirmDialog(page, { name: 'XX Tour 2026 の公演日を公開しますか？' })
 
 const badges = (page: Page) =>
 	page.locator('data-list table tbody tr td:last-child status-badge')
@@ -307,7 +311,7 @@ test.describe('publish or cancel the dates together', () => {
 		const server = concertServer(XX_TOUR)
 		const log = await openConcert(page, '/concerts/s-tour', server.rpc)
 		await page.getByRole('button', { name: '公演を中止' }).click()
-		const dialog = page.getByRole('dialog', {
+		const dialog = confirmDialog(page, {
 			name: 'XX Tour 2026 を中止しますか？',
 		})
 		await expect(dialog).toContainText('ファンに1回知らされます')

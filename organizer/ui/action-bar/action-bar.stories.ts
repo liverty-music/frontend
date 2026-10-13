@@ -3,8 +3,13 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
-import { consoleStoryParameters } from '../story-support'
+import { expect } from 'storybook/test'
+import {
+	canvasOf,
+	consoleStoryParameters,
+	contrastRatio,
+	deepQuery,
+} from '../story-support'
 import { ActionBar } from './action-bar'
 
 const meta = {
@@ -18,6 +23,13 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const StaysAtTheBottom = {
+	parameters: {
+		// axe-core misreads the background of a button slotted into a stuck
+		// sticky bar inside a scroll container across shadow roots (it reports
+		// the page surface behind the filled button). The play function checks
+		// the contrast of both buttons itself instead.
+		a11y: { options: { rules: { 'color-contrast': { enabled: false } } } },
+	},
 	render: () =>
 		defineAureliaStory({
 			template: `
@@ -31,8 +43,22 @@ export const StaysAtTheBottom = {
 			`,
 		}),
 	play: async ({ canvasElement }) => {
-		const scroller = within(canvasElement).getByTestId('scroller')
-		const bar = canvasElement.querySelector('action-bar') as HTMLElement
+		const canvas = canvasOf(canvasElement)
+		const scroller = canvas.getByTestId('scroller').element()
+		const bar = deepQuery(canvasElement, '.action-bar')
+		// The page's buttons show in the bar, readable on their containers.
+		for (const name of ['やめる', '保存する']) {
+			const button = canvas.getByRole('button', { name }).element()
+			await expect(button).toBeVisible()
+			const style = getComputedStyle(button)
+			const background =
+				style.backgroundColor === 'rgba(0, 0, 0, 0)'
+					? getComputedStyle(bar).backgroundColor
+					: style.backgroundColor
+			await expect(
+				contrastRatio(style.color, background),
+			).toBeGreaterThanOrEqual(4.5)
+		}
 		// Before scrolling, the bar is pinned to the bottom of the scroll area.
 		await expect(bar.getBoundingClientRect().bottom).toBeCloseTo(
 			scroller.getBoundingClientRect().bottom,

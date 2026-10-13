@@ -33,6 +33,14 @@ export class ConsoleButton {
 	/** True while `action` runs. A parent may bind it to disable related controls. */
 	@bindable public pending = false
 
+	/** The link or button inside the shadow root. */
+	public control: HTMLElement | null = null
+
+	/** Moves focus to the button, e.g. a dialog's safe choice. */
+	public focus(): void {
+		this.control?.focus()
+	}
+
 	public async press(event: Event): Promise<void> {
 		if (this.pending || this.disabled) {
 			event.preventDefault()

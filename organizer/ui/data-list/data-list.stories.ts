@@ -3,8 +3,12 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
-import { consoleStoryParameters } from '../story-support'
+import { expect } from 'storybook/test'
+import {
+	canvasOf,
+	consoleStoryParameters,
+	deepQueryAll,
+} from '../story-support'
 import { type DataColumn, DataList, type DataRow } from './data-list'
 
 const meta = {
@@ -61,37 +65,36 @@ const renderAt =
 export const Cards = {
 	render: renderAt(390),
 	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement)
+		const canvas = canvasOf(canvasElement)
 		const list = canvas.getByRole('list', { name: '公演' })
-		await expect(list).toBeVisible()
-		await expect(canvas.queryByRole('table')).toBeNull()
+		await expect(list.element()).toBeVisible()
+		await expect(canvas.getByRole('table').query()).toBeNull()
 		// The hidden table holds the same text; query the cards only.
-		const cards = within(list)
 		await expect(
-			cards.getByRole('link', { name: 'XX Tour 2026 東京' }),
+			list.getByRole('link', { name: 'XX Tour 2026 東京' }).element(),
 		).toBeVisible()
-		await expect(cards.getByText('11月3日(火) 18:00 JST')).toBeVisible()
-		await expect(cards.getByText('6,500円')).toBeVisible()
+		await expect(
+			list.getByText('11月3日(火) 18:00 JST').element(),
+		).toBeVisible()
+		await expect(list.getByText('6,500円').element()).toBeVisible()
 	},
 } satisfies Story
 
 export const Table = {
 	render: renderAt(1000),
 	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement)
-		await expect(canvas.getByRole('table', { name: '公演' })).toBeVisible()
-		await expect(canvas.queryByRole('list', { name: '公演' })).toBeNull()
-		await expect(canvas.getAllByRole('row')).toHaveLength(3)
+		const canvas = canvasOf(canvasElement)
 		await expect(
-			canvas.getByRole('rowheader', { name: 'XX Tour 2026 大阪' }),
+			canvas.getByRole('table', { name: '公演' }).element(),
+		).toBeVisible()
+		await expect(canvas.getByRole('list', { name: '公演' }).query()).toBeNull()
+		await expect(canvas.getByRole('row').elements()).toHaveLength(3)
+		await expect(
+			canvas.getByRole('rowheader', { name: 'XX Tour 2026 大阪' }).element(),
 		).toBeVisible()
 
 		// @spec components/infrastructure/organizer/web/global/design-tokens "Counts line up"
-		const entries = [
-			...canvasElement.querySelectorAll<HTMLElement>(
-				'tbody td:nth-child(4) data',
-			),
-		]
+		const entries = deepQueryAll(canvasElement, 'tbody td:nth-child(4) data')
 		await expect(entries.map((e) => e.textContent?.trim())).toEqual([
 			'412',
 			'1,380',
@@ -100,9 +103,7 @@ export const Table = {
 			entries[1].getBoundingClientRect().right,
 			0,
 		)
-		const cells = [
-			...canvasElement.querySelectorAll<HTMLElement>('td[data-numeric="true"]'),
-		]
+		const cells = deepQueryAll(canvasElement, 'td[data-numeric="true"]')
 		for (const cell of cells) {
 			await expect(getComputedStyle(cell).textAlign).toBe('end')
 			await expect(getComputedStyle(cell).fontVariantNumeric).toContain(

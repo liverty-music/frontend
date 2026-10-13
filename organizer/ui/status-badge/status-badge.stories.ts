@@ -3,8 +3,8 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
-import { consoleStoryParameters } from '../story-support'
+import { expect } from 'storybook/test'
+import { canvasOf, consoleStoryParameters } from '../story-support'
 import { StatusBadge } from './status-badge'
 
 const meta = {
@@ -41,7 +41,9 @@ export const Tones = {
 	play: async ({ canvasElement }) => {
 		// Every status carries its text: color is never the only signal.
 		for (const label of ['公開中', '下書き', '受付前', '中止', '抽選済み']) {
-			await expect(within(canvasElement).getByText(label)).toBeVisible()
+			await expect(
+				canvasOf(canvasElement).getByText(label).element(),
+			).toBeVisible()
 		}
 	},
 } satisfies Story
@@ -54,7 +56,7 @@ export const Published = {
 		}),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/design-tokens "Status with label"
-		const badge = within(canvasElement).getByText('公開中')
+		const badge = canvasOf(canvasElement).getByText('公開中').element()
 		const color = getComputedStyle(badge).backgroundColor
 		await expect(color).not.toBe('rgba(0, 0, 0, 0)')
 		await expect(badge).toBeVisible()

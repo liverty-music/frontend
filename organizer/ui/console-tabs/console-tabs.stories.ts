@@ -3,9 +3,9 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { userEvent } from 'vitest/browser'
-import { consoleStoryParameters } from '../story-support'
+import { canvasOf, consoleStoryParameters, deepQuery } from '../story-support'
 import { ConsoleTabs } from './console-tabs'
 
 const meta = {
@@ -39,7 +39,13 @@ const render: Story['render'] = (args) =>
 			...args,
 			tabs: TABS,
 			select(this: { active: string }, event: Event) {
-				const tab = (event.target as HTMLElement).closest('[data-tab]')
+				// The tab is inside the tabs' shadow root: read it from the path.
+				const tab = event
+					.composedPath()
+					.find(
+						(node): node is HTMLElement =>
+							node instanceof HTMLElement && node.hasAttribute('data-tab'),
+					)
 				if (!tab) return
 				event.preventDefault()
 				this.active = tab.getAttribute('data-tab') ?? this.active
@@ -48,9 +54,7 @@ const render: Story['render'] = (args) =>
 	})
 
 function indicatorOf(root: HTMLElement): HTMLElement {
-	const el = root.querySelector<HTMLElement>('.indicator')
-	if (!el) throw new Error('indicator not rendered')
-	return el
+	return deepQuery(root, '.indicator')
 }
 
 export const Sales = { render } satisfies Story
@@ -69,9 +73,9 @@ export const ReducedMotion = {
 			await expect(typeof globals.reducedMotion).toBe('boolean')
 			await expect(reduce).toBe(globals.reducedMotion)
 		}
-		const canvas = within(canvasElement)
-		const sales = canvas.getByRole('link', { name: '販売' })
-		const reception = canvas.getByRole('link', { name: '受付' })
+		const canvas = canvasOf(canvasElement)
+		const sales = canvas.getByRole('link', { name: '販売' }).element()
+		const reception = canvas.getByRole('link', { name: '受付' }).element()
 		const indicator = indicatorOf(canvasElement)
 		await waitFor(() =>
 			expect(indicator.getBoundingClientRect().width).toBeCloseTo(

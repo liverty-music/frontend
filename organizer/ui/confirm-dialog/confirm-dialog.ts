@@ -1,6 +1,23 @@
 import { I18N } from '@aurelia/i18n'
 import { bindable, resolve } from 'aurelia'
-import type { ConsoleButtonVariant } from '../console-button/console-button'
+import type {
+	ConsoleButton,
+	ConsoleButtonVariant,
+} from '../console-button/console-button'
+
+let nextId = 0
+
+/**
+ * The element that has focus, inside the shadow roots of console components
+ * (`document.activeElement` names only their outermost host).
+ */
+function focusedElement(): HTMLElement | null {
+	let active = document.activeElement
+	while (active?.shadowRoot?.activeElement) {
+		active = active.shadowRoot.activeElement
+	}
+	return active instanceof HTMLElement ? active : null
+}
 
 /**
  * M3 basic dialog that asks before an action that cannot be undone or that
@@ -13,8 +30,6 @@ import type { ConsoleButtonVariant } from '../console-button/console-button'
  *
  *     const confirmed = await this.publishDialog.ask()
  */
-let nextId = 0
-
 export class ConfirmDialog {
 	public readonly headingId = `confirm-dialog-${nextId++}`
 
@@ -28,7 +43,7 @@ export class ConfirmDialog {
 	private readonly i18n = resolve(I18N)
 
 	public dialog!: HTMLDialogElement
-	public cancelButton!: HTMLElement
+	public cancelButton!: ConsoleButton
 	private resolveAnswer: ((confirmed: boolean) => void) | null = null
 	private returnFocusTo: HTMLElement | null = null
 
@@ -38,13 +53,10 @@ export class ConfirmDialog {
 
 	/** Opens the dialog; resolves true when the operator confirms. */
 	public ask(): Promise<boolean> {
-		this.returnFocusTo =
-			document.activeElement instanceof HTMLElement
-				? document.activeElement
-				: null
+		this.returnFocusTo = focusedElement()
 		this.dialog.showModal()
 		// The safe choice takes focus first.
-		this.cancelButton.querySelector('button')?.focus()
+		this.cancelButton.focus()
 		return new Promise((resolve) => {
 			this.resolveAnswer = resolve
 		})

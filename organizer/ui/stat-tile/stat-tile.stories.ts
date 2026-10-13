@@ -4,7 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect } from 'storybook/test'
-import { consoleStoryParameters } from '../story-support'
+import { consoleStoryParameters, deepQueryAll } from '../story-support'
 import { StatTile } from './stat-tile'
 
 const meta = {
@@ -49,7 +49,7 @@ export const CountsLineUp = {
 			props: { count: 412, requested: 1380 },
 		}),
 	play: async ({ canvasElement }) => {
-		const values = [...canvasElement.querySelectorAll<HTMLElement>('.value')]
+		const values = deepQueryAll(canvasElement, '.value')
 		await expect(values.map((v) => v.textContent?.trim())).toEqual([
 			'412',
 			'1,380',

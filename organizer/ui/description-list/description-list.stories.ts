@@ -3,8 +3,8 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
-import { consoleStoryParameters } from '../story-support'
+import { expect } from 'storybook/test'
+import { canvasOf, consoleStoryParameters } from '../story-support'
 import { DescriptionList } from './description-list'
 
 const meta = {
@@ -43,6 +43,8 @@ export const WithMissingValue = {
 	},
 	render,
 	play: async ({ canvasElement }) => {
-		await expect(within(canvasElement).getByText('未登録')).toBeVisible()
+		await expect(
+			canvasOf(canvasElement).getByText('未登録').element(),
+		).toBeVisible()
 	},
 } satisfies Story

@@ -1,97 +1,154 @@
 @layer block {
-	@scope (console-field) {
-		:scope {
-			display: block;
-		}
+	:host {
+		display: block;
+	}
 
-		.field {
-			display: grid;
-			gap: var(--space-3xs);
-		}
+	.field {
+		display: grid;
+		gap: var(--space-3xs);
+	}
 
-		.label {
-			font: var(--md-type-label-large);
+	.label {
+		font: var(--md-type-label-large);
+		color: var(--md-color-on-surface-variant);
+	}
+
+	.required {
+		color: var(--md-color-error);
+	}
+
+	.control {
+		display: flex;
+		gap: var(--space-2xs);
+		align-items: center;
+
+		min-block-size: 56px;
+		padding-inline: var(--space-s);
+		border: 1px solid var(--md-color-outline);
+		border-radius: var(--md-shape-extra-small);
+
+		background: var(--md-color-surface);
+
+		&:focus-within {
+			border-color: var(--md-color-primary);
+			box-shadow: inset 0 0 0 1px var(--md-color-primary);
+		}
+	}
+
+	input,
+	select,
+	textarea {
+		flex: 1;
+
+		min-inline-size: 0;
+		min-block-size: var(--md-target-size);
+		padding: 0;
+		border: none;
+
+		font: var(--md-type-body-large);
+		color: var(--md-color-on-surface);
+
+		background: transparent;
+
+		/* The control's border shows focus; the field box carries the ring. */
+		&:focus-visible {
+			outline: none;
+		}
+	}
+
+	/*
+	 * Customizable select: the picker and its options take the console's
+	 * tokens (an M3 menu: surface container, the chosen option in the
+	 * secondary container), and the element stays a native select for the
+	 * keyboard, the form value and screen readers. A browser without
+	 * `base-select` shows its own picker, readable in dark because the control
+	 * inherits the page's `color-scheme`.
+	 */
+	select,
+	::picker(select) {
+		appearance: base-select;
+	}
+
+	select {
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+
+		&::picker-icon {
 			color: var(--md-color-on-surface-variant);
 		}
+	}
 
-		.required {
-			color: var(--md-color-error);
+	::picker(select) {
+		padding-block: var(--space-2xs);
+		border: none;
+		border-radius: var(--md-shape-extra-small);
+
+		color: var(--md-color-on-surface);
+
+		background: var(--md-color-surface-container);
+		box-shadow: var(--md-elevation-2);
+	}
+
+	option {
+		gap: var(--space-xs);
+
+		min-block-size: var(--md-target-size);
+		padding-inline: var(--space-s);
+
+		font: var(--md-type-body-large);
+		color: var(--md-color-on-surface);
+
+		background: var(--md-color-surface-container);
+
+		&:is(:hover, :focus-visible) {
+			background: color-mix(
+				in oklch,
+				var(--md-color-on-surface) 8%,
+				var(--md-color-surface-container)
+			);
 		}
 
-		.control {
-			display: flex;
-			gap: var(--space-2xs);
-			align-items: center;
-
-			min-block-size: 56px;
-			padding-inline: var(--space-s);
-			border: 1px solid var(--md-color-outline);
-			border-radius: var(--md-shape-extra-small);
-
-			background: var(--md-color-surface);
-
-			&:focus-within {
-				border-color: var(--md-color-primary);
-				box-shadow: inset 0 0 0 1px var(--md-color-primary);
-			}
+		&:checked {
+			color: var(--md-color-on-secondary-container);
+			background: var(--md-color-secondary-container);
 		}
+	}
 
-		input,
-		select,
-		textarea {
-			flex: 1;
+	textarea {
+		resize: vertical;
+		min-block-size: 96px;
+		padding-block: var(--space-xs);
+	}
 
-			min-inline-size: 0;
-			min-block-size: var(--md-target-size);
-			padding: 0;
-			border: none;
+	.affix {
+		font: var(--md-type-body-large);
+		color: var(--md-color-on-surface-variant);
+	}
 
-			font: var(--md-type-body-large);
-			color: var(--md-color-on-surface);
+	.supporting,
+	.error {
+		padding-inline: var(--space-s);
+		font: var(--md-type-body-small);
+	}
 
-			background: transparent;
+	.supporting {
+		color: var(--md-color-on-surface-variant);
+	}
 
-			/* The control's border shows focus; the field box carries the ring. */
-			&:focus-visible {
-				outline: none;
-			}
-		}
+	.error {
+		color: var(--md-color-error);
+	}
 
-		textarea {
-			resize: vertical;
-			min-block-size: 96px;
-			padding-block: var(--space-xs);
-		}
+	.field[data-invalid="true"] .control {
+		border-color: var(--md-color-error);
+	}
 
-		.affix {
-			font: var(--md-type-body-large);
-			color: var(--md-color-on-surface-variant);
-		}
+	.field[data-invalid="true"] .label {
+		color: var(--md-color-error);
+	}
 
-		.supporting,
-		.error {
-			padding-inline: var(--space-s);
-			font: var(--md-type-body-small);
-		}
-
-		.supporting {
-			color: var(--md-color-on-surface-variant);
-		}
-
-		.error {
-			color: var(--md-color-error);
-		}
-
-		.field[data-invalid="true"] .control {
-			border-color: var(--md-color-error);
-		}
-
-		.field[data-invalid="true"] .label {
-			color: var(--md-color-error);
-		}
-
-		.field[data-disabled="true"] {
-			opacity: 0.38;
-		}
+	.field[data-disabled="true"] {
+		opacity: 0.38;
 	}
 }

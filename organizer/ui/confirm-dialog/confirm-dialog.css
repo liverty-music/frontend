@@ -1,38 +1,41 @@
 @layer block {
-	@scope (confirm-dialog) {
-		dialog {
-			inline-size: min(100% - 2 * var(--space-m), 560px);
-			min-inline-size: 280px;
-			padding: var(--space-m);
-			border: none;
-			border-radius: var(--md-shape-extra-large);
+	/* The host adds no box: the dialog shows in the top layer. */
+	:host {
+		display: contents;
+	}
 
-			color: var(--md-color-on-surface-variant);
+	dialog {
+		inline-size: min(100% - 2 * var(--space-m), 560px);
+		min-inline-size: 280px;
+		padding: var(--space-m);
+		border: none;
+		border-radius: var(--md-shape-extra-large);
 
-			background: var(--md-color-surface-container-high);
+		color: var(--md-color-on-surface-variant);
 
-			&::backdrop {
-				background: var(--md-color-scrim);
-			}
+		background: var(--md-color-surface-container-high);
+
+		&::backdrop {
+			background: var(--md-color-scrim);
 		}
+	}
 
-		.heading {
-			margin-block-end: var(--space-s);
-			font: var(--md-type-headline-small);
-			color: var(--md-color-on-surface);
-		}
+	.heading {
+		margin-block-end: var(--space-s);
+		font: var(--md-type-headline-small);
+		color: var(--md-color-on-surface);
+	}
 
-		.body {
-			font: var(--md-type-body-medium);
-		}
+	.body {
+		font: var(--md-type-body-medium);
+	}
 
-		.actions {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-2xs);
-			justify-content: flex-end;
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2xs);
+		justify-content: flex-end;
 
-			margin-block-start: var(--space-m);
-		}
+		margin-block-start: var(--space-m);
 	}
 }

@@ -3,9 +3,9 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { userEvent } from 'vitest/browser'
-import { consoleStoryParameters } from '../story-support'
+import { canvasOf, consoleStoryParameters, deepQuery } from '../story-support'
 import { VenueField, type VenuePick } from './venue-field'
 
 const meta = {
@@ -47,7 +47,7 @@ const renderWith =
 		})
 
 async function searchFor(root: HTMLElement, text: string): Promise<void> {
-	const canvas = within(root)
+	const canvas = canvasOf(root)
 	await userEvent.fill(canvas.getByRole('searchbox', { name: /会場/ }), text)
 	await userEvent.click(canvas.getByRole('button', { name: '会場を検索' }))
 }
@@ -62,29 +62,39 @@ export const PickAVenue = {
 		},
 	]),
 	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement)
+		const canvas = canvasOf(canvasElement)
 		await searchFor(canvasElement, 'Zepp Haneda')
 		await userEvent.click(
-			await canvas.findByRole('radio', { name: /Zepp Haneda \(TOKYO\)/ }),
+			await waitFor(() =>
+				canvas.getByRole('radio', { name: /Zepp Haneda \(TOKYO\)/ }).element(),
+			),
 		)
 
-		await expect(canvas.getByTestId('value')).toHaveTextContent('ChIJ-haneda')
-		await expect(canvas.getByText('Zepp Haneda (TOKYO)')).toBeVisible()
-		await expect(canvas.getByText('東京都大田区羽田空港1-1-4')).toBeVisible()
+		await expect(canvas.getByTestId('value').element()).toHaveTextContent(
+			'ChIJ-haneda',
+		)
+		await expect(
+			canvas.getByText('Zepp Haneda (TOKYO)').element(),
+		).toBeVisible()
+		await expect(
+			canvas.getByText('東京都大田区羽田空港1-1-4').element(),
+		).toBeVisible()
 	},
 } satisfies Story
 
 export const NoMatch = {
 	render: renderWith(async () => []),
 	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement)
+		const canvas = canvasOf(canvasElement)
 		await searchFor(canvasElement, 'どこにもない会場')
 		await waitFor(() =>
-			expect(
-				canvasElement.querySelector('venue-field [role="status"]'),
-			).toHaveTextContent('会場が見つかりませんでした'),
+			expect(deepQuery(canvasElement, '[role="status"]')).toHaveTextContent(
+				'会場が見つかりませんでした',
+			),
 		)
-		await expect(canvas.getByTestId('value')).toHaveTextContent('none')
+		await expect(canvas.getByTestId('value').element()).toHaveTextContent(
+			'none',
+		)
 	},
 } satisfies Story
 
@@ -93,15 +103,19 @@ export const SearchUnavailable = {
 		throw new Error('Unavailable')
 	}),
 	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement)
+		const canvas = canvasOf(canvasElement)
 		await searchFor(canvasElement, 'Zepp Haneda')
 		await waitFor(() =>
-			expect(
-				canvasElement.querySelector('venue-field [role="status"]'),
-			).toHaveTextContent('会場を検索できません'),
+			expect(deepQuery(canvasElement, '[role="status"]')).toHaveTextContent(
+				'会場を検索できません',
+			),
 		)
-		await expect(canvas.getByRole('button', { name: '再試行' })).toBeVisible()
-		await expect(canvas.getByTestId('value')).toHaveTextContent('none')
+		await expect(
+			canvas.getByRole('button', { name: '再試行' }).element(),
+		).toBeVisible()
+		await expect(canvas.getByTestId('value').element()).toHaveTextContent(
+			'none',
+		)
 	},
 } satisfies Story
 
@@ -114,7 +128,9 @@ export const NotPicked = {
 	render: renderWith(async () => []),
 	play: async ({ canvasElement }) => {
 		await expect(
-			within(canvasElement).getByRole('searchbox', { name: /会場/ }),
+			canvasOf(canvasElement)
+				.getByRole('searchbox', { name: /会場/ })
+				.element(),
 		).toHaveAttribute('aria-invalid', 'true')
 	},
 } satisfies Story

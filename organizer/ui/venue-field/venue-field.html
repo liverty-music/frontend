@@ -3,6 +3,9 @@
 <import from="../console-button/console-button"></import>
 <import from="../icon-button/icon-button"></import>
 <import from="../../../shared/ui/circular-progress/circular-progress"></import>
+<!-- A light-DOM shared component inside this shadow root takes its styles from here. -->
+<import from="../../../shared/ui/circular-progress/circular-progress.css"></import>
+<use-shadow-dom></use-shadow-dom>
 
 <div class="venue-field" data-invalid.bind="!!error">
   <label for.bind="inputId" class="label">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></label>

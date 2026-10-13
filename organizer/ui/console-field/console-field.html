@@ -1,4 +1,5 @@
 <import from="./console-field.css"></import>
+<use-shadow-dom></use-shadow-dom>
 
 <div class="field" data-invalid.bind="!!error" data-disabled.bind="disabled">
   <label for.bind="inputId" class="label">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></label>
@@ -16,6 +17,7 @@
         placeholder.bind="placeholder"
         aria-invalid.bind="error ? 'true' : null"
         aria-describedby.bind="describedBy"
+        change.trigger="changed($event)"
       ></textarea>
       <select
         case="select"
@@ -27,6 +29,7 @@
         disabled.bind="disabled"
         aria-invalid.bind="error ? 'true' : null"
         aria-describedby.bind="describedBy"
+        change.trigger="changed($event)"
       >
         <option repeat.for="option of options" value.bind="option.value">${option.label}</option>
       </select>
@@ -45,6 +48,7 @@
         autocomplete.bind="autocomplete"
         aria-invalid.bind="error ? 'true' : null"
         aria-describedby.bind="describedBy"
+        change.trigger="changed($event)"
       >
     </template>
     <span if.bind="type === 'yen'" class="affix" aria-hidden="true">${'field.yenSuffix' & t}</span>

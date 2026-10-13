@@ -3,9 +3,13 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 import { userEvent } from 'vitest/browser'
-import { consoleStoryParameters } from '../story-support'
+import {
+	canvasOf,
+	consoleStoryParameters,
+	focusedElement,
+} from '../story-support'
 import { ConfirmDialog } from './confirm-dialog'
 
 const meta = {
@@ -58,24 +62,31 @@ export const PublishAsksFirst = {
 	render: () => defineAureliaStory(publish),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/action-feedback "Publish asks first"
-		const canvas = within(canvasElement)
+		const canvas = canvasOf(canvasElement)
 		await userEvent.click(canvas.getByRole('button', { name: '公開する' }))
 
-		const dialog = await canvas.findByRole('dialog', {
+		const dialog = canvas.getByRole('dialog', {
 			name: 'XX Tour 2026 11月3日の公演を公開しますか？',
 		})
-		await expect(dialog).toHaveTextContent('フォロワーに通知されます')
-		await expect(dialog).toHaveTextContent('下書きには戻せません')
-		await expect(canvas.getByTestId('result')).toHaveTextContent('none')
+		await waitFor(() => expect(dialog.element()).toBeVisible())
+		// The body is the page's own content, shown through the dialog's slot.
+		const body = canvasElement.querySelector('confirm-dialog')
+		await expect(body).toHaveTextContent('フォロワーに通知されます')
+		await expect(body).toHaveTextContent('下書きには戻せません')
+		await expect(canvas.getByTestId('result').element()).toHaveTextContent(
+			'none',
+		)
 		// The dialog takes focus, on its safe choice.
-		await expect(dialog.contains(document.activeElement)).toBe(true)
-
-		await userEvent.click(
-			within(dialog).getByRole('button', { name: '公開する' }),
+		await expect(focusedElement()).toBe(
+			dialog.getByRole('button', { name: 'やめる' }).element(),
 		)
 
-		await expect(canvas.getByTestId('result')).toHaveTextContent('published')
-		await expect(dialog).not.toHaveAttribute('open')
+		await userEvent.click(dialog.getByRole('button', { name: '公開する' }))
+
+		await expect(canvas.getByTestId('result').element()).toHaveTextContent(
+			'published',
+		)
+		await expect(dialog.query()).toBeNull()
 	},
 } satisfies Story
 
@@ -83,26 +94,29 @@ export const OperatorChangesTheirMind = {
 	render: () => defineAureliaStory(publish),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/action-feedback "Operator changes their mind"
-		const canvas = within(canvasElement)
-		const opener = canvas.getByRole('button', { name: '公開する' })
+		const canvas = canvasOf(canvasElement)
+		const opener = canvas.getByRole('button', { name: '公開する' }).element()
+		const dialog = canvas.getByRole('dialog')
 
 		// やめる
 		await userEvent.click(opener)
-		const dialog = await canvas.findByRole('dialog')
-		await userEvent.click(
-			within(dialog).getByRole('button', { name: 'やめる' }),
+		await waitFor(() => expect(dialog.element()).toBeVisible())
+		await userEvent.click(dialog.getByRole('button', { name: 'やめる' }))
+		await expect(dialog.query()).toBeNull()
+		await expect(canvas.getByTestId('result').element()).toHaveTextContent(
+			'kept',
 		)
-		await expect(dialog).not.toHaveAttribute('open')
-		await expect(canvas.getByTestId('result')).toHaveTextContent('kept')
-		await expect(document.activeElement).toBe(opener)
+		await expect(focusedElement()).toBe(opener)
 
 		// Escape
 		await userEvent.click(opener)
-		await waitFor(() => expect(dialog).toHaveAttribute('open'))
+		await waitFor(() => expect(dialog.element()).toBeVisible())
 		await userEvent.keyboard('{Escape}')
-		await expect(dialog).not.toHaveAttribute('open')
-		await expect(canvas.getByTestId('result')).toHaveTextContent('kept')
-		await expect(document.activeElement).toBe(opener)
+		await waitFor(() => expect(dialog.query()).toBeNull())
+		await expect(canvas.getByTestId('result').element()).toHaveTextContent(
+			'kept',
+		)
+		await expect(focusedElement()).toBe(opener)
 	},
 } satisfies Story
 
@@ -118,21 +132,24 @@ export const RevokeAScanner = {
 		),
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/action-feedback "Revoke a scanner"
-		const canvas = within(canvasElement)
+		const canvas = canvasOf(canvasElement)
 		await userEvent.click(
 			canvas.getByRole('button', { name: '受付1を取り消す' }),
 		)
-		const dialog = await canvas.findByRole('dialog', {
+		const dialog = canvas.getByRole('dialog', {
 			name: '受付1を取り消しますか？',
 		})
-		await expect(dialog).toHaveTextContent(
-			'受付1を使っている端末は使えなくなります',
+		await waitFor(() => expect(dialog.element()).toBeVisible())
+		await expect(
+			canvasElement.querySelector('confirm-dialog'),
+		).toHaveTextContent('受付1を使っている端末は使えなくなります')
+		await expect(canvas.getByTestId('result').element()).toHaveTextContent(
+			'none',
 		)
-		await expect(canvas.getByTestId('result')).toHaveTextContent('none')
 
-		await userEvent.click(
-			within(dialog).getByRole('button', { name: '取り消す' }),
+		await userEvent.click(dialog.getByRole('button', { name: '取り消す' }))
+		await expect(canvas.getByTestId('result').element()).toHaveTextContent(
+			'revoked',
 		)
-		await expect(canvas.getByTestId('result')).toHaveTextContent('revoked')
 	},
 } satisfies Story

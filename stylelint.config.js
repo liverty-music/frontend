@@ -92,4 +92,15 @@ export default {
 		'cube/require-container-name': true,
 		'cube/prefer-color-mix': true,
 	},
+	overrides: [
+		{
+			// Console components render in their own shadow root (organizer
+			// design D16): the shadow root bounds every rule, so a block needs no
+			// @scope there, and `:host` is the component's root.
+			files: ['organizer/ui/**/*.css'],
+			rules: {
+				'cube/block-require-scope': null,
+			},
+		},
+	],
 }

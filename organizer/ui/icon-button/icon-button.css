@@ -1,29 +1,27 @@
 @layer block {
-	@scope (icon-button) {
-		:scope {
-			display: inline-flex;
-		}
+	:host {
+		display: inline-flex;
+	}
 
-		button {
-			cursor: pointer;
+	button {
+		cursor: pointer;
 
-			display: inline-grid;
-			place-items: center;
+		display: inline-grid;
+		place-items: center;
 
-			inline-size: var(--md-target-size);
-			block-size: var(--md-target-size);
-			padding: 0;
-			border: none;
-			border-radius: var(--md-shape-full);
+		inline-size: var(--md-target-size);
+		block-size: var(--md-target-size);
+		padding: 0;
+		border: none;
+		border-radius: var(--md-shape-full);
 
-			color: var(--md-color-on-surface-variant);
+		color: var(--md-color-on-surface-variant);
 
-			background: transparent;
+		background: transparent;
 
-			&:disabled {
-				cursor: not-allowed;
-				color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
-			}
+		&:disabled {
+			cursor: not-allowed;
+			color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
 		}
 	}
 }
