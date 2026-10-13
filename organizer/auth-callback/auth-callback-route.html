@@ -1,8 +1,13 @@
+<import from="./auth-callback-route.css"></import>
+
 <main class="[ organizer-callback-layout ]">
-  <output if.bind="!error" class="organizer-callback-loading" role="status" aria-busy="true">
-    <div class="organizer-callback-spinner"></div>
-    <p class="organizer-callback-status">Verifying authentication…</p>
-  </output>
-  <section if.bind="error" class="organizer-callback-error">${error}</section>
-  <a if.bind="error" load="../welcome" class="organizer-callback-home-link">Return to console</a>
+  <div if.bind="!error" class="organizer-callback-loading" role="status">
+    <circular-progress label.bind="'authCallback.verifying' & t"></circular-progress>
+    <p class="organizer-callback-status">${'authCallback.verifying' & t}</p>
+  </div>
+  <section if.bind="error" class="organizer-callback-error" role="alert">
+    <p>${'authCallback.failed' & t}</p>
+    <p class="organizer-callback-detail">${error}</p>
+  </section>
+  <console-button if.bind="error" variant="tonal" href="/home">${'authCallback.retry' & t}</console-button>
 </main>

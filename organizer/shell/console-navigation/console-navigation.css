@@ -1,0 +1,78 @@
+@layer block {
+	@scope (console-navigation) {
+		/* Placed by the shell's grid: a bottom row on a compact window, a
+		   column on the inline-start edge from the medium window class. */
+		:scope {
+			display: block;
+			block-size: calc(
+				var(--nav-bar-height) +
+				env(safe-area-inset-bottom, 0px)
+			);
+			padding-block-end: var(--safe-area-block-end);
+			background: var(--md-color-surface-container);
+		}
+
+		.navigation {
+			display: flex;
+			justify-content: space-around;
+			block-size: 100%;
+		}
+
+		.item {
+			display: flex;
+			flex: 1;
+			flex-direction: column;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			min-inline-size: var(--md-target-size);
+
+			font: var(--md-type-label-medium);
+			color: var(--md-color-on-surface-variant);
+			text-decoration: none;
+		}
+
+		.indicator {
+			display: grid;
+			place-items: center;
+
+			inline-size: 64px;
+			block-size: 32px;
+			border-radius: var(--md-shape-full);
+
+			transition: background-color var(--md-sys-motion-duration-short4)
+				var(--md-sys-motion-easing-standard);
+		}
+
+		.item[aria-current="page"] {
+			font-weight: 700;
+			color: var(--md-color-on-surface);
+
+			& .indicator {
+				color: var(--md-color-on-secondary-container);
+				background: var(--md-color-secondary-container);
+			}
+		}
+
+		/* Rail: along the inline-start edge from the medium window class. */
+		@container shell (width >= 600px) {
+			:scope {
+				inline-size: var(--nav-rail-width);
+				block-size: auto;
+				padding-block: var(--space-m) 0;
+			}
+
+			.navigation {
+				flex-direction: column;
+				gap: var(--space-xs);
+				justify-content: flex-start;
+			}
+
+			.item {
+				flex: 0;
+				min-block-size: 56px;
+			}
+		}
+	}
+}

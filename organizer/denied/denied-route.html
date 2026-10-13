@@ -1,11 +1,8 @@
-<main class="[ organizer-denied-layout ]">
-  <section class="organizer-denied-card">
-    <p class="organizer-denied-brand">Liverty Music Organizer</p>
-    <h1 class="organizer-denied-title">Access denied</h1>
-    <p class="organizer-denied-subtitle">
-      Your account is signed in but is not authorized to use this organizer
-      console. Contact your Liverty Music representative if you believe this is
-      a mistake.
-    </p>
-  </section>
-</main>
+<import from="./denied-route.css"></import>
+
+<section class="denied">
+  <p class="brand">${'app.name' & t}</p>
+  <h1 class="page-title">${'denied.title' & t}</h1>
+  <p class="body">${'denied.body' & t}</p>
+  <console-button variant="filled" icon="logout" action.bind="() => signOut()" pending-label.bind="'denied.signingOut' & t">${'shell.signOut' & t}</console-button>
+</section>

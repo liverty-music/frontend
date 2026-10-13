@@ -1,36 +1,35 @@
-import { route } from '@aurelia/router'
+import { IRouterEvents, route } from '@aurelia/router'
+import { type IDisposable, resolve } from 'aurelia'
+import {
+	type Destination,
+	destinationOf,
+} from '../shell/console-navigation/console-navigation'
+
+/** Screens shown without the navigation frame (they come before a session). */
+const UNFRAMED = /^\/?(denied|auth\/callback)(\/|$)/
 
 /**
  * Root component of the organizer console entry. Mounts in `organizer.html` as
- * `<organizer-shell>` and owns the organizer route table.
+ * `<organizer-shell>`, owns the route table (design D1) and frames every screen
+ * but sign-in and access denied with the top bar, the navigation (bar below
+ * 600 px, rail from 600 px), the breadcrumb and the snackbar host.
  *
  * `OrganizerAuthHook` (registered globally in `organizer/main.ts`) runs as a
- * shared `canLoad` guard for every route. The default landing (`concerts`),
- * the authoring routes, and the lottery configure/status routes are therefore
- * authentication- AND owner-role-gated;
- * `auth/callback` opts out of both via `data: { auth: false }` so the OIDC code
- * exchange can complete before a session exists, and `denied` opts out of the
- * role check via `data: { role: false }` so a signed-in non-owner sees an
- * explanation. The authoring routes deliberately DO NOT set `auth: false` — the
- * global hook guards them. The scanner screen venue staff open from a
- * Scanner's link is not a console route: it is its own app (`reception/`) on
- * its own origin.
- *
- * The post-login landing is the concerts dashboard: an authenticated owner goes
- * straight to their own catalog. `welcome` is kept as a reachable route but is
- * no longer the default.
+ * shared `canLoad` guard for every route: authentication and the owner role.
+ * `auth/callback` opts out of both (`auth: false`) so the OIDC code exchange can
+ * complete before a session exists, and `denied` opts out of the role check
+ * (`role: false`). An address the console does not know opens Home.
  */
 @route({
 	title: 'Liverty Music Organizer',
+	fallback: 'home',
 	routes: [
-		{
-			path: '',
-			redirectTo: 'concerts',
-		},
+		{ path: '', redirectTo: 'home' },
+		{ path: 'home', component: import('../home/home-route'), title: 'Home' },
 		{
 			path: 'concerts',
 			component: import('../concerts/concerts-route'),
-			title: 'Your concerts',
+			title: 'Concerts',
 		},
 		{
 			path: 'concerts/new',
@@ -38,46 +37,29 @@ import { route } from '@aurelia/router'
 			title: 'New concert',
 		},
 		{
-			path: 'concerts/edit/:seriesId',
+			path: 'concerts/:seriesId',
+			component: import('../concert/concert-route'),
+			title: 'Concert',
+		},
+		{
+			path: 'concerts/:seriesId/edit',
 			component: import('../concert-editor/concert-editor-route'),
 			title: 'Edit concert',
 		},
 		{
-			// Create a lottery sale for a PUBLISHED event.
-			// Reached by the target event id. TODO(entry-point): the concerts
-			// dashboard has no per-event "put on sale" affordance yet (its rows are
-			// series-scoped and carry no event ids), so this route is currently
-			// reachable only by deep link — wire a dashboard/edit-screen link once
-			// the console exposes event ids.
-			path: 'lottery/configure/:eventId',
-			component: import('../lottery-sale-editor/lottery-sale-editor-route'),
-			title: 'Create lottery',
+			// The event page; its Sales and Reception tabs and the sale editors
+			// (`sales/lottery/new`, `sales/lottery/:saleId`, `sales/first-come`)
+			// are its child routes, so a tab is its own address. As sibling
+			// routes here, the editors' addresses would match this route plus a
+			// residue and never render.
+			path: 'concerts/:seriesId/events/:eventId',
+			component: import('../event/event-route'),
+			title: 'Event',
 		},
 		{
-			// The event's lottery sales with their entry stats and draw outcome.
-			path: 'lottery/status/:eventId',
-			component: import('../lottery-status/lottery-status-route'),
-			title: 'Lottery status',
-		},
-		{
-			// First-come ticket sale of one event, reached from the event's row on
-			// the concerts dashboard.
-			path: 'ticket-sale/:eventId',
-			component: import('../ticket-sale-editor/ticket-sale-editor-route'),
-			title: 'First-come sale',
-		},
-		{
-			// Scanners of one event (ticket-wallet-and-checkin task 5.1, renamed by
-			// rename-reception-to-scanner), reached from the event's row on the
-			// concerts dashboard.
-			path: 'scanners/:eventId',
-			component: import('../scanners/scanners-route'),
-			title: 'Scanners',
-		},
-		{
-			path: 'welcome',
-			component: import('../welcome/welcome-route'),
-			title: 'Welcome',
+			path: 'settings',
+			component: import('../settings/settings-route'),
+			title: 'Settings',
 		},
 		{
 			path: 'denied',
@@ -93,4 +75,63 @@ import { route } from '@aurelia/router'
 		},
 	],
 })
-export class OrganizerShell {}
+export class OrganizerShell {
+	private readonly events = resolve(IRouterEvents)
+	private readonly subscriptions: IDisposable[] = []
+	private finishTransition: (() => void) | null = null
+
+	public framed = false
+	public current: Destination = 'home'
+
+	public binding(): void {
+		this.subscriptions.push(
+			this.events.subscribe('au:router:navigation-start', () =>
+				this.startTransition(),
+			),
+			this.events.subscribe('au:router:navigation-end', () => {
+				const path = window.location.pathname
+				this.framed = !UNFRAMED.test(path)
+				this.current = destinationOf(path)
+				this.endTransition()
+			}),
+			this.events.subscribe('au:router:navigation-cancel', () =>
+				this.endTransition(),
+			),
+			this.events.subscribe('au:router:navigation-error', () =>
+				this.endTransition(),
+			),
+		)
+	}
+
+	public unbinding(): void {
+		for (const s of this.subscriptions) s.dispose()
+		this.subscriptions.length = 0
+		this.endTransition()
+	}
+
+	/**
+	 * Wraps a navigation between framed screens in a same-document View
+	 * Transition (shared-axis X, see organizer-shell.css). Skipped on the first
+	 * load, without the API, and under reduced motion.
+	 */
+	private startTransition(): void {
+		if (
+			!this.framed ||
+			this.finishTransition ||
+			typeof document.startViewTransition !== 'function' ||
+			matchMedia('(prefers-reduced-motion: reduce)').matches
+		) {
+			return
+		}
+		const done = new Promise<void>((resolve) => {
+			this.finishTransition = resolve
+		})
+		document.startViewTransition(() => done)
+	}
+
+	private endTransition(): void {
+		const finish = this.finishTransition
+		this.finishTransition = null
+		finish?.()
+	}
+}

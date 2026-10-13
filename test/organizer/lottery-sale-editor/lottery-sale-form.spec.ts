@@ -34,7 +34,8 @@ function validModel(windowDays = DEFAULT_WINDOW_DAYS): LotterySaleFormModel {
 describe('emptyFormModel', () => {
 	it('opens the window now and closes it 10 days later', () => {
 		// @spec components/infrastructure/organizer/web/route/lottery-sale-editor "Blank form"
-		const model = emptyFormModel(new Date(2026, 9, 1, 12, 0, 0))
+		// 12:00 in Japan time, whatever the device's time zone.
+		const model = emptyFormModel(new Date('2026-10-01T12:00:00+09:00'))
 		expect(model.saleStartTime).toBe('2026-10-01T12:00')
 		expect(model.saleEndTime).toBe('2026-10-11T12:00')
 		expect(model.name).toBe('')
@@ -160,7 +161,10 @@ describe('validateLotterySaleForm — ticket fields', () => {
 		model.quantity = '100'
 		model.perAccountLimit = '11'
 		const errors = validateLotterySaleForm(model)
-		expect(errors.perAccountLimit).toContain(String(MAX_PER_ACCOUNT_LIMIT))
+		expect(errors.perAccountLimit).toEqual({
+			key: 'lotteryEditor.error.limitMax',
+			params: { max: MAX_PER_ACCOUNT_LIMIT },
+		})
 		expect(isFormValid(errors)).toBe(false)
 	})
 

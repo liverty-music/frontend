@@ -236,15 +236,22 @@ export class SeriesClient {
 		}
 	}
 
-	/** Publishes every DRAFT event of a series. */
+	/**
+	 * Publishes the named DRAFT events of a series, or every DRAFT event when
+	 * none is named.
+	 */
 	public async publish(
 		seriesId: string,
+		eventIds: readonly string[] = [],
 		signal?: AbortSignal,
 	): Promise<AuthoredSeries | undefined> {
-		this.logger.info('Publishing concert', { seriesId })
+		this.logger.info('Publishing events', { seriesId, eventIds })
 		try {
 			const response = await this.client.publish(
-				{ seriesId: { value: seriesId } },
+				{
+					seriesId: { value: seriesId },
+					eventIds: eventIds.map((value) => ({ value })),
+				},
 				{ signal },
 			)
 			return oneAuthoredSeries(response)
@@ -255,13 +262,24 @@ export class SeriesClient {
 	}
 
 	/**
-	 * Cancels a whole series: its PUBLISHED events become CANCELLED and its
-	 * DRAFT events are removed.
+	 * Cancels the named events of a series, or every PUBLISHED and DRAFT event
+	 * when none is named: a PUBLISHED event becomes CANCELLED and a DRAFT event
+	 * is removed.
 	 */
-	public async cancel(seriesId: string, signal?: AbortSignal): Promise<void> {
-		this.logger.info('Cancelling concert', { seriesId })
+	public async cancel(
+		seriesId: string,
+		eventIds: readonly string[] = [],
+		signal?: AbortSignal,
+	): Promise<void> {
+		this.logger.info('Cancelling events', { seriesId, eventIds })
 		try {
-			await this.client.cancel({ seriesId: { value: seriesId } }, { signal })
+			await this.client.cancel(
+				{
+					seriesId: { value: seriesId },
+					eventIds: eventIds.map((value) => ({ value })),
+				},
+				{ signal },
+			)
 		} catch (err) {
 			this.logger.warn('cancel failed', { seriesId, error: err })
 			throw err

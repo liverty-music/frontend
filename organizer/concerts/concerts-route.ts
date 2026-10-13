@@ -1,258 +1,166 @@
-import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
+import { I18N, Signals } from '@aurelia/i18n'
+import { type IDisposable, IEventAggregator, ILogger, resolve } from 'aurelia'
+import { toConsoleLocale } from '../i18n/console-language'
+import { formatJstDay } from '../i18n/format'
 import {
-	PublishState,
-	Visibility,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { ILogger, resolve } from 'aurelia'
-import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
+	concertCancelled,
+	concertTitle,
+	eventDay,
+	eventId,
+	eventsByDate,
+	isPublished,
+	paths,
+	performerNames,
+	publishBadge,
+	seriesId,
+	seriesTypeKey,
+	venueName,
+} from '../model/concert-model'
+import { currentSale, type SaleView, saleViewsOf } from '../model/sale-model'
+import { IClock } from '../services/clock'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
+import { ITicketSaleClient } from '../services/ticket-sale-client'
+import type { DataColumn, DataRow, StatusCell } from '../ui/data-list/data-list'
 
-/** Coarse lifecycle phase for the initial list fetch. */
-type LoadPhase = 'loading' | 'ready' | 'error'
-
-const EMPTY = '—'
-const UNTITLED = 'Untitled'
+type LoadState = 'loading' | 'ready' | 'error'
 
 /**
- * A flattened dashboard row for one authored concert (one series). Display
- * strings flatten the proto wrapper types so the template stays free of
- * optional-chaining noise; raw state enums drive the action affordances.
- */
-export interface ConcertListRow {
-	readonly seriesId: string
-	readonly title: string
-	readonly dateRange: string
-	/** The Series' publish state, derived by the server from its events. */
-	readonly publishState: PublishState
-	readonly publishLabel: string
-	readonly visibility: Visibility
-	readonly visibilityLabel: string
-	readonly canEdit: boolean
-	/** True while the concert has a DRAFT event; Publish publishes all of them. */
-	readonly canPublish: boolean
-	/** True while the concert has a PUBLISHED or DRAFT event. */
-	readonly canCancel: boolean
-	/**
-	 * Per-event entry points to lottery-sale configuration, one per `PUBLISHED`
-	 * event — a lottery sale requires a published event. Each entry carries the
-	 * `eventId` so the console deep-links to `lottery/configure/:eventId`
-	 * without the Organizer knowing the id.
-	 */
-	readonly lotteryEvents: readonly {
-		readonly eventId: string
-		readonly label: string
-	}[]
-	/**
-	 * Per-event entry points to the scanners screen. Present for every event
-	 * that is not cancelled; the screen itself explains why a draft event or an
-	 * event without a start time cannot have Scanners yet.
-	 */
-	readonly scannerEvents: readonly {
-		readonly eventId: string
-		readonly label: string
-	}[]
-	/**
-	 * Per-event entry points to the first-come ticket sale editor. Present for
-	 * every event that is not cancelled; the editor itself explains why a draft
-	 * event, an event without a start time or an Organizer without business
-	 * details cannot go on sale yet.
-	 */
-	readonly ticketSaleEvents: readonly {
-		readonly eventId: string
-		readonly label: string
-	}[]
-	/** True while a publish/cancel action for this row is in flight. */
-	busy: boolean
-	actionError: string
-}
-
-const PUBLISH_LABELS: Record<PublishState, string> = {
-	[PublishState.UNSPECIFIED]: EMPTY,
-	[PublishState.DRAFT]: 'Draft',
-	[PublishState.PUBLISHED]: 'Published',
-	[PublishState.CANCELLED]: 'Cancelled',
-}
-
-const VISIBILITY_LABELS: Record<Visibility, string> = {
-	[Visibility.UNSPECIFIED]: EMPTY,
-	[Visibility.PUBLIC]: 'Public',
-	[Visibility.UNLISTED]: 'Unlisted',
-}
-
-/** Formats an event's local date triple as `YYYY-MM-DD`, or `—`. */
-function formatEventDate(concert: AuthoredSeries, index: number): string {
-	const d = concert.events[index]?.localDate?.value
-	if (!d) return EMPTY
-	const mm = String(d.month).padStart(2, '0')
-	const dd = String(d.day).padStart(2, '0')
-	return `${d.year}-${mm}-${dd}`
-}
-
-/** Summarises a series' events as a single date or a `first – last` range. */
-function formatDateRange(concert: AuthoredSeries): string {
-	if (concert.events.length === 0) return EMPTY
-	const first = formatEventDate(concert, 0)
-	if (concert.events.length === 1) return first
-	const last = formatEventDate(concert, concert.events.length - 1)
-	return `${first} – ${last}`
-}
-
-/** True when the event has the given publish state. */
-function hasState(event: Event, ...states: PublishState[]): boolean {
-	return states.includes(event.publishState)
-}
-
-/**
- * Builds one entry point per event that passes `include`, labelled with the
- * event's date when the series has several events so each link is
- * distinguishable. Events lacking an id are skipped.
- */
-function toEventEntries(
-	concert: AuthoredSeries,
-	label: string,
-	include: (event: Event) => boolean,
-): { readonly eventId: string; readonly label: string }[] {
-	const multi = concert.events.length > 1
-	return concert.events
-		.map((event, index) => ({ event, index }))
-		.filter(({ event }) => include(event))
-		.map(({ event, index }) => ({
-			eventId: event.id?.value ?? '',
-			label: multi ? `${label} · ${formatEventDate(concert, index)}` : label,
-		}))
-		.filter((entry) => entry.eventId !== '')
-}
-
-function toRow(concert: AuthoredSeries): ConcertListRow {
-	const series = concert.series
-	const publishState = series?.publishState ?? PublishState.UNSPECIFIED
-	const visibility = series?.visibility ?? Visibility.UNSPECIFIED
-	const notCancelled = (e: Event) => !hasState(e, PublishState.CANCELLED)
-	const canCancel = concert.events.some((e) =>
-		hasState(e, PublishState.PUBLISHED, PublishState.DRAFT),
-	)
-	return {
-		seriesId: series?.id?.value ?? '',
-		title: series?.title?.value || UNTITLED,
-		dateRange: formatDateRange(concert),
-		publishState,
-		publishLabel: PUBLISH_LABELS[publishState],
-		visibility,
-		visibilityLabel: VISIBILITY_LABELS[visibility],
-		// A concert whose every event is cancelled has nothing left to edit.
-		canEdit: canCancel,
-		canPublish: concert.events.some((e) => hasState(e, PublishState.DRAFT)),
-		canCancel,
-		lotteryEvents: toEventEntries(concert, 'Configure lottery', (e) =>
-			hasState(e, PublishState.PUBLISHED),
-		),
-		scannerEvents: toEventEntries(concert, 'Scanners', notCancelled),
-		ticketSaleEvents: toEventEntries(concert, 'First-come sale', notCancelled),
-		busy: false,
-		actionError: '',
-	}
-}
-
-/**
- * The organizer console dashboard: lists the caller's own authored concerts
- * (drafts and published) and offers per-row actions — edit (navigate to the
- * editor), publish (every DRAFT event of the concert, including dates added
- * after an earlier publish), and cancel (the whole concert: PUBLISHED events
- * become CANCELLED, DRAFT events are removed). The caller's
- * Organizer is resolved from the token, so `List` takes no argument.
- *
- * Publish and Cancel are confirmed in the template (a two-step reveal) and run
- * optimistically-guarded: the row is marked `busy` to disable its controls, and
- * on success the list is reloaded so the new state and any superseded discovered
- * slot are reflected. Errors are translated from `ConnectError` codes into
- * per-row copy via {@link toOrganizerErrorMessage}.
+ * Concerts: the Organizer's concerts as cards, or a table once the list is
+ * 840 px wide, cancelled ones last. Each opens its concert page; 公演をつくる
+ * opens the editor. The sale state of each concert comes from its published
+ * events' sales, read after the list shows (design D2).
  */
 export class ConcertsRoute {
-	public phase: LoadPhase = 'loading'
-	public loadError = ''
-	public rows: ConcertListRow[] = []
-
-	/** Series id whose Cancel confirmation is currently revealed (single-open). */
-	public confirmingCancelId = ''
-
-	private abort: AbortController | null = null
-
-	private readonly client = resolve(ISeriesClient)
+	private readonly series = resolve(ISeriesClient)
+	private readonly ticketSales = resolve(ITicketSaleClient)
+	private readonly i18n = resolve(I18N)
+	private readonly ea = resolve(IEventAggregator)
+	private readonly clock = resolve(IClock)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertsRoute')
 
-	public async attached(): Promise<void> {
-		await this.load()
+	public state: LoadState = 'loading'
+	public concerts: AuthoredSeries[] = []
+	public rows: DataRow[] = []
+	public columns: DataColumn[] = []
+	public readonly newConcertHref = paths.newConcert
+
+	/** The current or next sale of each concert, by series id. */
+	private sales = new Map<string, SaleView | null>()
+	private abort = new AbortController()
+	private subscription: IDisposable | null = null
+
+	public attached(): void {
+		this.subscription = this.ea.subscribe(Signals.I18N_EA_CHANNEL, () =>
+			this.render(),
+		)
+		void this.load()
 	}
 
 	public detaching(): void {
-		this.abort?.abort()
+		this.abort.abort()
+		this.subscription?.dispose()
 	}
 
 	public async load(): Promise<void> {
-		this.abort?.abort()
-		const abort = new AbortController()
-		this.abort = abort
-		this.phase = 'loading'
-		this.loadError = ''
+		this.state = 'loading'
 		try {
-			const concerts = await this.client.list(abort.signal)
-			if (abort.signal.aborted) return
-			this.rows = concerts.map(toRow)
-			this.phase = 'ready'
+			const concerts = await this.series.list(this.abort.signal)
+			this.concerts = [
+				...concerts.filter((c) => !concertCancelled(c)),
+				...concerts.filter(concertCancelled),
+			]
+			this.state = 'ready'
+			this.render()
+			void this.loadSales()
 		} catch (err) {
-			if (abort.signal.aborted) return
-			this.loadError = toOrganizerErrorMessage(
-				err,
-				'Failed to load your concerts.',
-			)
-			this.phase = 'error'
-			this.logger.error('Failed to load concerts', err)
+			if (this.abort.signal.aborted) return
+			this.logger.warn('Concerts unavailable', err)
+			this.state = 'error'
 		}
 	}
 
-	public get isEmpty(): boolean {
-		return this.phase === 'ready' && this.rows.length === 0
+	private async loadSales(): Promise<void> {
+		await Promise.all(
+			this.concerts.map(async (concert) => {
+				const published = concert.events.filter(isPublished)
+				if (published.length === 0) {
+					this.sales.set(seriesId(concert), null)
+					return
+				}
+				try {
+					const now = this.clock.now()
+					const views = (
+						await Promise.all(
+							published.map(async (event) =>
+								saleViewsOf(
+									eventId(event),
+									await this.ticketSales.listByEvent(
+										eventId(event),
+										this.abort.signal,
+									),
+									now,
+								),
+							),
+						)
+					).flat()
+					this.sales.set(seriesId(concert), currentSale(views) ?? null)
+				} catch (err) {
+					if (this.abort.signal.aborted) return
+					this.logger.warn('Sales unavailable', { err })
+				}
+			}),
+		)
+		this.render()
 	}
 
-	public async publish(row: ConcertListRow): Promise<void> {
-		if (row.busy || !row.canPublish) return
-		row.busy = true
-		row.actionError = ''
-		try {
-			await this.client.publish(row.seriesId)
-			await this.load()
-		} catch (err) {
-			row.actionError = toOrganizerErrorMessage(err, 'Failed to publish.', {
-				[Code.FailedPrecondition]:
-					"This concert can no longer be published — it may have no draft date left, or a date's slot is claimed by another organizer.",
-			})
-			row.busy = false
-			this.logger.error('Publish failed', { seriesId: row.seriesId, err })
-		}
-	}
-
-	public confirmCancel(row: ConcertListRow): void {
-		this.confirmingCancelId = row.seriesId
-	}
-
-	public dismissCancel(): void {
-		this.confirmingCancelId = ''
-	}
-
-	public async cancel(row: ConcertListRow): Promise<void> {
-		if (row.busy || !row.canCancel) return
-		row.busy = true
-		row.actionError = ''
-		this.confirmingCancelId = ''
-		try {
-			await this.client.cancel(row.seriesId)
-			await this.load()
-		} catch (err) {
-			row.actionError = toOrganizerErrorMessage(err, 'Failed to cancel.', {
-				[Code.FailedPrecondition]: 'This concert is already cancelled.',
-			})
-			row.busy = false
-			this.logger.error('Cancel failed', { seriesId: row.seriesId, err })
-		}
+	private render(): void {
+		const t = (key: string, options?: Record<string, unknown>) =>
+			this.i18n.tr(key, options)
+		const locale = toConsoleLocale(this.i18n.getLocale())
+		this.columns = [
+			{ key: 'title', label: t('concerts.column.title'), primary: true },
+			{ key: 'schedule', label: t('concerts.column.schedule') },
+			{ key: 'sale', label: t('concerts.column.sale'), kind: 'status' },
+			{ key: 'state', label: t('concerts.column.state'), kind: 'status' },
+		]
+		this.rows = this.concerts.map((concert) => {
+			const events = eventsByDate(concert)
+			const first = events[0]
+			const day = first ? eventDay(first) : undefined
+			const dates = day
+				? events.length > 1
+					? t('concerts.moreDates', {
+							day: formatJstDay(day, locale),
+							count: events.length - 1,
+						})
+					: formatJstDay(day, locale)
+				: ''
+			const venues = new Set(events.map(venueName).filter(Boolean))
+			const venue = first ? venueName(first) : ''
+			const venueText =
+				venues.size > 1 ? t('concerts.moreVenues', { venue }) : venue
+			const badge = publishBadge(concert.series.publishState)
+			const sale = this.sales.get(seriesId(concert))
+			const saleCell: StatusCell | undefined =
+				sale === undefined
+					? undefined
+					: sale === null
+						? { tone: 'neutral', label: t('sale.none') }
+						: { tone: sale.tone, label: t(sale.stateKey) }
+			return {
+				id: seriesId(concert),
+				href: paths.concert(seriesId(concert)),
+				subtitle: [
+					t(seriesTypeKey(concert.series.type)),
+					...performerNames(concert),
+				].join(' · '),
+				cells: {
+					title: concertTitle(concert),
+					schedule: [dates, venueText].filter(Boolean).join(' · '),
+					sale: saleCell,
+					state: { tone: badge.tone, label: t(badge.labelKey) },
+				},
+			}
+		})
 	}
 }

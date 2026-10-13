@@ -1,1 +1,16 @@
-<au-viewport></au-viewport>
+<import from="./organizer-shell.css"></import>
+<import from="../shell/top-app-bar/top-app-bar"></import>
+<import from="../shell/console-navigation/console-navigation"></import>
+<import from="../shell/console-breadcrumb/console-breadcrumb"></import>
+
+<div class="frame" data-framed.bind="framed">
+  <top-app-bar if.bind="framed" class="top"></top-app-bar>
+  <console-navigation if.bind="framed" current.bind="current" class="nav"></console-navigation>
+  <main class="main" tabindex="-1">
+    <div class="page">
+      <console-breadcrumb if.bind="framed"></console-breadcrumb>
+      <au-viewport></au-viewport>
+    </div>
+  </main>
+  <console-snackbar></console-snackbar>
+</div>

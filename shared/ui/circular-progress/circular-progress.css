@@ -1,13 +1,13 @@
 @layer block {
 	@scope (circular-progress) {
-		/* Zero specificity so a parent's `color` wins. Fan role names are
-		   `--md-color-*`; the console's are `--md-sys-color-*`. */
+		/* Zero specificity so a parent's `color` wins. Both apps name the role
+		   `--md-color-primary`, each with its own value. */
 		:where(:scope) {
 			/* One full turn; M3 indeterminate container rotation. */
 			--_turn-duration: 1568ms;
 
 			display: inline-flex;
-			color: var(--md-sys-color-primary, var(--md-color-primary));
+			color: var(--md-color-primary);
 		}
 
 		/* Inside a button the arc takes the button's content color. */

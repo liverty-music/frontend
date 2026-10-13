@@ -1,4 +1,8 @@
+import type { FieldError } from '../i18n/field-error'
+import { parseJstDateTimeLocal, toJstDateTimeLocal } from '../i18n/format'
 import type { CreateTicketSaleInput } from '../services/ticket-sale-client'
+
+export type { FieldError }
 
 /** Default application-window duration in days (server + console default). */
 export const DEFAULT_WINDOW_DAYS = 10
@@ -48,13 +52,13 @@ export interface LotterySaleFormModel {
 
 /** Per-field validation errors, keyed for inline display next to each control. */
 export interface LotterySaleFormErrors {
-	name?: string
-	saleStartTime?: string
-	saleEndTime?: string
-	window?: string
-	quantity?: string
-	perAccountLimit?: string
-	price?: string
+	name?: FieldError
+	saleStartTime?: FieldError
+	saleEndTime?: FieldError
+	window?: FieldError
+	quantity?: FieldError
+	perAccountLimit?: FieldError
+	price?: FieldError
 }
 
 /** What the form is checked against besides its own values. */
@@ -65,12 +69,7 @@ export interface LotterySaleFormContext {
 
 /** Formats a `Date` as a local `YYYY-MM-DDTHH:mm` for a datetime-local input. */
 export function toDateTimeLocal(date: Date): string {
-	const y = date.getFullYear()
-	const mo = String(date.getMonth() + 1).padStart(2, '0')
-	const d = String(date.getDate()).padStart(2, '0')
-	const h = String(date.getHours()).padStart(2, '0')
-	const mi = String(date.getMinutes()).padStart(2, '0')
-	return `${y}-${mo}-${d}T${h}:${mi}`
+	return toJstDateTimeLocal(date)
 }
 
 /**
@@ -92,20 +91,7 @@ export function emptyFormModel(now: Date = new Date()): LotterySaleFormModel {
 
 /** Parses a `datetime-local` string into a `Date`, or null when malformed. */
 export function parseDateTimeLocal(value: string): Date | null {
-	const trimmed = value.trim()
-	if (trimmed === '') return null
-	const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(trimmed)
-	if (!m) return null
-	const date = new Date(
-		Number(m[1]),
-		Number(m[2]) - 1,
-		Number(m[3]),
-		Number(m[4]),
-		Number(m[5]),
-		0,
-		0,
-	)
-	return Number.isNaN(date.getTime()) ? null : date
+	return parseJstDateTimeLocal(value.trim()) ?? null
 }
 
 /** Parses a raw input string into a positive integer, or null. */
@@ -139,50 +125,60 @@ export function validateLotterySaleForm(
 
 	const name = model.name.trim()
 	if (name === '') {
-		errors.name = 'Enter a name for the sale, e.g. ファンクラブ先行.'
+		errors.name = { key: 'lotteryEditor.error.name' }
 	} else if ([...name].length > MAX_NAME_LENGTH) {
-		errors.name = `The name must be ${MAX_NAME_LENGTH} characters or fewer.`
+		errors.name = {
+			key: 'lotteryEditor.error.nameLength',
+			params: { max: MAX_NAME_LENGTH },
+		}
 	}
 
 	const open = parseDateTimeLocal(model.saleStartTime)
 	const close = parseDateTimeLocal(model.saleEndTime)
 	if (open === null) {
-		errors.saleStartTime = 'A valid application-window open time is required.'
+		errors.saleStartTime = { key: 'lotteryEditor.error.start' }
 	}
 	if (close === null) {
-		errors.saleEndTime = 'A valid application-window close time is required.'
+		errors.saleEndTime = { key: 'lotteryEditor.error.end' }
 	}
 	if (open !== null && close !== null) {
 		const days = windowDurationDays(open, close)
 		if (days <= 0) {
-			errors.window = 'The close time must be after the open time.'
+			errors.window = { key: 'lotteryEditor.error.endBeforeStart' }
 		} else if (days < MIN_WINDOW_DAYS || days > MAX_WINDOW_DAYS) {
-			errors.window = `The application window must be ${MIN_WINDOW_DAYS}–${MAX_WINDOW_DAYS} days long (it is currently ${days.toFixed(1)} days).`
+			errors.window = {
+				key: 'lotteryEditor.error.windowLength',
+				params: {
+					min: MIN_WINDOW_DAYS,
+					max: MAX_WINDOW_DAYS,
+					days: days.toFixed(1),
+				},
+			}
 		} else if (ctx.eventStart && close.getTime() >= ctx.eventStart.getTime()) {
-			errors.window =
-				'The lottery must close before the event starts, so winners get their tickets before the doors open.'
+			errors.window = { key: 'lotteryEditor.error.closeAfterEvent' }
 		}
 	}
 
 	const quantity = parsePositiveInt(model.quantity)
 	if (quantity === null) {
-		errors.quantity = 'The number of tickets must be a positive whole number.'
+		errors.quantity = { key: 'lotteryEditor.error.quantity' }
 	}
 
 	const limit = parsePositiveInt(model.perAccountLimit)
 	if (limit === null) {
-		errors.perAccountLimit =
-			'The per-account limit must be a positive whole number.'
+		errors.perAccountLimit = { key: 'lotteryEditor.error.limit' }
 	} else if (limit > MAX_PER_ACCOUNT_LIMIT) {
-		errors.perAccountLimit = `The per-account limit cannot exceed ${MAX_PER_ACCOUNT_LIMIT} (one entry QR code covers at most ${MAX_PER_ACCOUNT_LIMIT} tickets).`
+		errors.perAccountLimit = {
+			key: 'lotteryEditor.error.limitMax',
+			params: { max: MAX_PER_ACCOUNT_LIMIT },
+		}
 	} else if (quantity !== null && limit > quantity) {
-		errors.perAccountLimit =
-			'The per-account limit cannot exceed the number of tickets.'
+		errors.perAccountLimit = { key: 'lotteryEditor.error.limitOverQuantity' }
 	}
 
 	const price = parsePositiveInt(model.price)
 	if (price === null) {
-		errors.price = 'Ticket price (JPY) must be a positive whole number.'
+		errors.price = { key: 'lotteryEditor.error.price' }
 	}
 
 	return errors

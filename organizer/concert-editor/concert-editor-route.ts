@@ -1,3 +1,4 @@
+import { I18N } from '@aurelia/i18n'
 import { IRouter, type Params } from '@aurelia/router'
 import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import {
@@ -6,11 +7,20 @@ import {
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
+import { toJstTimeInput } from '../i18n/format'
+import { concertTitle, findConcert, paths } from '../model/concert-model'
 import { IArtistClient } from '../services/artist-client'
-import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
+import { IClock } from '../services/clock'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ISeriesImageClient } from '../services/series-image-client'
+import { IVenueClient } from '../services/venue-client'
+import { type Crumb, IBreadcrumbs } from '../shell/breadcrumbs'
+import type { ConsoleField } from '../ui/console-field/console-field'
+import { ISnackbar } from '../ui/console-snackbar/snackbar'
+import type { UnsavedChanges } from '../ui/unsaved-changes/unsaved-changes'
+import type { VenueField, VenuePick } from '../ui/venue-field/venue-field'
 import {
 	type ConcertFormErrors,
 	type ConcertFormModel,
@@ -23,329 +33,267 @@ import {
 } from './concert-form'
 import { MAX_IMAGE_BYTES, validateCoverImage } from './cover-image'
 
-/** Coarse lifecycle phase for the initial editor bootstrap. */
-type LoadPhase = 'loading' | 'ready' | 'error'
+/** How often, and how long, the editor checks for the processed cover (D9a). */
+export const COVER_POLL_MS = 3000
+export const COVER_POLL_LIMIT_MS = 60_000
 
-const EMPTY = '—'
-
-/** Shown when a save is refused after the start time of a published event changed. */
-export const START_TIME_ON_SALE_MESSAGE =
-	'The start time of a published event is fixed once tickets are on sale, so nothing was saved. If no tickets are on sale yet, another concert already holds that venue and time.'
-
-/** The label of each event's publish state. */
-export const EVENT_STATE_LABELS: Record<PublishState, string> = {
-	[PublishState.UNSPECIFIED]: EMPTY,
-	[PublishState.DRAFT]: 'Draft',
-	[PublishState.PUBLISHED]: 'Published',
-	[PublishState.CANCELLED]: '中止 (Cancelled)',
-}
-
-/** A performer option for the multi-select, flattened from the roster. */
+/** A performer option for the checkboxes, from the represented artists. */
 export interface PerformerOption {
 	readonly id: string
 	readonly name: string
 	selected: boolean
 }
 
-function toPerformerOption(artist: Artist, selected: boolean): PerformerOption {
+function performerOption(artist: Artist, selected: boolean): PerformerOption {
 	return {
 		id: artist.id?.value ?? '',
-		name: artist.name?.value ?? EMPTY,
+		name: artist.name?.value ?? '',
 		selected,
 	}
 }
 
 /**
- * The create/edit editor for a first-party concert. One component serves both
- * modes: the `edit/:seriesId` route supplies a series id (edit), its absence is
- * the `new` route (create).
+ * Creates or edits a concert. The venue of each date is a place picked from
+ * the map catalog; dates and times are Japan time. Saving shows progress in
+ * the button, reports the result in the snackbar, moves focus to the first
+ * field in error, and the editor guards unsaved changes when left.
  *
- * On bootstrap it loads the represented-artists roster for the performer
- * picker via {@link IArtistClient} (the caller's Organizer comes from the
- * token). In edit mode it also loads the existing concert from `List` (the
- * organizer catalog is small and has no single-get RPC) and hydrates the form.
- *
- * Validation mirrors the backend boundary (see {@link validateConcertForm}) and
- * runs on every input so inline errors appear before a round-trip. Save calls
- * Create or Update; on a successful Create it redirects into the edit route so
- * the now-persisted series id unlocks cover-image upload and the publish/token
- * affordances.
- *
- * Each event row carries its own publish state. A PUBLISHED event keeps its
- * venue and date and cannot be removed; a CANCELLED event is read-only; a date
- * added to a published concert is saved as a DRAFT event. Once the concert has
- * a PUBLISHED or CANCELLED event, the type is fixed too. Every stored event is
- * sent back with its id. The backend still guards these rules with
- * FAILED_PRECONDITION, which is surfaced rather than assumed to succeed.
+ * Each date carries its own publish state: a PUBLISHED date keeps its venue
+ * and date and cannot be removed, a CANCELLED date is read only, and once the
+ * concert has one of those its type and visibility are fixed.
  */
 export class ConcertEditorRoute {
-	public phase: LoadPhase = 'loading'
-	public loadError = ''
-
-	/** Edit mode when set; create mode when empty. */
-	public seriesId = ''
-	/** The Series' publish state, derived by the server from its events. */
-	public publishState: PublishState = PublishState.UNSPECIFIED
-
-	public model: ConcertFormModel = emptyFormModel()
-	public errors: ConcertFormErrors = { rows: [{}] }
-	/** Set true after the first save attempt so errors are not shown pre-emptively. */
-	public submitted = false
-	public saving = false
-	public saveError = ''
-
-	public performers: PerformerOption[] = []
-
-	// Cover image (edit mode only — requires a persisted series id). The served
-	// `large` variant is 404 until async processing completes, so an optimistic
-	// object-URL preview of the just-picked file bridges the gap (and is the
-	// fallback if the variant never appears). See onCoverSelected / renderedCover.
-	public coverImageUrl = ''
-	/** Object URL of the locally picked file; shown until the variant is live. */
-	public localPreviewUrl = ''
-	/** Set when the served variant 404s (still processing or never produced). */
-	public coverVariantBroken = false
-	public coverImageError = ''
-	public uploadingCover = false
-
-	private abort: AbortController | null = null
-
-	private readonly client = resolve(ISeriesClient)
+	private readonly series = resolve(ISeriesClient)
 	private readonly seriesImages = resolve(ISeriesImageClient)
 	private readonly artists = resolve(IArtistClient)
+	private readonly venues = resolve(IVenueClient)
 	private readonly router = resolve(IRouter)
+	private readonly breadcrumbs = resolve(IBreadcrumbs)
+	private readonly snackbar = resolve(ISnackbar)
+	private readonly clock = resolve(IClock)
+	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertEditorRoute')
 
-	// Expose enums to the template for the type selector. Visibility is not
-	// selectable in the MVP: every authored concert is PUBLIC (unlisted viewing
-	// ships later as a complete vertical slice), so the form value stays PUBLIC.
-	public readonly SeriesType = SeriesType
-	public readonly PublishState = PublishState
-	public readonly eventStateLabels = EVENT_STATE_LABELS
+	public state: 'loading' | 'ready' | 'notFound' | 'error' = 'loading'
+	public seriesId = ''
+	public model: ConcertFormModel = emptyFormModel()
+	public submitted = false
+	public performers: PerformerOption[] = []
+	public guard!: UnsavedChanges
+	public titleField!: ConsoleField
+	public performersFieldset!: HTMLFieldSetElement
+	public venueFields: VenueField[] = []
+	public dateFields: ConsoleField[] = []
+
+	/** The served cover, the picked file's preview, and the upload in flight. */
+	public coverImageUrl = ''
+	public localPreviewUrl = ''
+	public coverNote: '' | 'processing' | 'slow' = ''
+	public coverImageError = ''
+	public uploadingCover = false
 	public readonly maxImageMiB = MAX_IMAGE_BYTES / (1024 * 1024)
 
-	public canLoad(params: Params): boolean {
+	public readonly SeriesType = SeriesType
+	public readonly PublishState = PublishState
+
+	/** The SeriesImage just set as the cover, until the processed one is served. */
+	private pendingCoverId = ''
+	private coverTimer: ReturnType<typeof setTimeout> | null = null
+	private saved = ''
+	/** Start times of the stored PUBLISHED events as loaded, by event id. */
+	private publishedStartTimes = new Map<string, string>()
+	private abort = new AbortController()
+
+	public readonly search = (text: string): Promise<VenuePick[]> =>
+		this.venues.search(text, this.abort.signal)
+
+	public loading(params: Params): void {
 		this.seriesId = params.seriesId ?? ''
-		return true
 	}
 
-	public async attached(): Promise<void> {
-		await this.bootstrap()
+	public attached(): void {
+		void this.bootstrap()
 	}
 
 	public detaching(): void {
-		this.abort?.abort()
+		this.abort.abort()
+		this.stopCoverPoll()
 		this.revokeLocalPreview()
+	}
+
+	public canUnload(): Promise<boolean> {
+		return this.guard?.confirmLeave() ?? Promise.resolve(true)
 	}
 
 	public get isEdit(): boolean {
 		return this.seriesId !== ''
 	}
 
-	/** Start times of the stored PUBLISHED events as loaded, keyed by event id. */
-	private publishedStartTimes = new Map<string, string>()
-
-	/**
-	 * True once the concert has a PUBLISHED or CANCELLED event: its type, source
-	 * page and visibility are then fixed, and a save is a correction.
-	 */
+	/** Once a date is published or cancelled, type and visibility are fixed. */
 	public get isCorrection(): boolean {
 		return this.model.events.some(hasFixedVenueAndDate)
 	}
 
-	/**
-	 * The cover source to render: the served `large` variant when it is live,
-	 * otherwise the optimistic local preview. Falls back to the preview when the
-	 * variant 404s (still processing, or never produced — the operator re-uploads).
-	 */
+	public get isDirty(): boolean {
+		return this.state === 'ready' && JSON.stringify(this.model) !== this.saved
+	}
+
+	public get typeValue(): string {
+		return String(this.model.type)
+	}
+
+	public set typeValue(value: string) {
+		this.model.type = Number(value) as SeriesType
+	}
+
+	public get typeOptions() {
+		return [
+			{
+				value: String(SeriesType.SINGLE),
+				label: this.i18n.tr('seriesType.single'),
+			},
+			{
+				value: String(SeriesType.TOUR),
+				label: this.i18n.tr('seriesType.tour'),
+			},
+			{
+				value: String(SeriesType.FESTIVAL),
+				label: this.i18n.tr('seriesType.festival'),
+			},
+		]
+	}
+
+	/** The two visibilities, each with its effect on fans (design D14). */
+	public readonly visibilityChoices = [
+		{
+			value: Visibility.PUBLIC,
+			labelKey: 'visibility.public',
+			effectKey: 'concertEditor.visibilityPublic',
+		},
+		{
+			value: Visibility.UNLISTED,
+			labelKey: 'visibility.unlisted',
+			effectKey: 'concertEditor.visibilityUnlisted',
+		},
+	]
+
+	/** The served cover, else the picked file while it is processed. */
 	public get renderedCover(): string {
-		if (this.coverImageUrl && !this.coverVariantBroken)
-			return this.coverImageUrl
-		return this.localPreviewUrl
+		return this.localPreviewUrl || this.coverImageUrl
 	}
 
-	/** True while the served variant is not yet available but a preview exists. */
-	public get coverProcessing(): boolean {
-		return (
-			this.localPreviewUrl !== '' && this.renderedCover === this.localPreviewUrl
-		)
+	/** Field errors, recomputed as the operator edits; shown after a save attempt. */
+	public get errors(): ConcertFormErrors {
+		return validateConcertForm(this.model)
 	}
 
-	/** The served variant 404'd (processing not finished, or failed): fall back. */
-	public onCoverError(): void {
-		this.coverVariantBroken = true
-	}
-
-	private revokeLocalPreview(): void {
-		if (this.localPreviewUrl) {
-			URL.revokeObjectURL(this.localPreviewUrl)
-			this.localPreviewUrl = ''
-		}
+	/**
+	 * A field's translated error once a save was attempted. The template passes
+	 * `submitted` so the binding re-evaluates when it changes.
+	 */
+	public error(key: string | undefined, submitted = this.submitted): string {
+		return submitted && key ? this.i18n.tr(key) : ''
 	}
 
 	private async bootstrap(): Promise<void> {
-		this.abort?.abort()
-		const abort = new AbortController()
-		this.abort = abort
-		this.phase = 'loading'
-		this.loadError = ''
+		this.state = 'loading'
 		try {
-			const roster = await this.artists.list(abort.signal)
-			if (abort.signal.aborted) return
-
+			const [roster, concerts] = await Promise.all([
+				this.artists.list(this.abort.signal),
+				this.isEdit ? this.series.list(this.abort.signal) : Promise.resolve([]),
+			])
 			if (this.isEdit) {
-				const concert = await this.loadConcert(this.seriesId, abort.signal)
-				if (abort.signal.aborted) return
+				const concert = findConcert(concerts, this.seriesId)
 				if (!concert) {
-					this.loadError = 'That concert no longer exists.'
-					this.phase = 'error'
+					this.state = 'notFound'
 					return
 				}
 				this.hydrate(concert)
 			}
-
-			const selectedIds = new Set(this.model.artistIds)
+			const selected = new Set(this.model.artistIds)
 			this.performers = roster.map((a) =>
-				toPerformerOption(a, selectedIds.has(a.id?.value ?? '')),
+				performerOption(a, selected.has(a.id?.value ?? '')),
 			)
-			this.revalidate()
-			this.phase = 'ready'
+			this.setBreadcrumb()
+			this.markSaved()
+			this.state = 'ready'
 		} catch (err) {
-			if (abort.signal.aborted) return
-			this.loadError = toOrganizerErrorMessage(
-				err,
-				'Failed to open the editor.',
-			)
-			this.phase = 'error'
-			this.logger.error('Editor bootstrap failed', err)
+			if (this.abort.signal.aborted) return
+			this.logger.warn('Editor bootstrap failed', err)
+			this.state = 'error'
 		}
 	}
 
-	private async loadConcert(
-		seriesId: string,
-		signal: AbortSignal,
-	): Promise<AuthoredSeries | undefined> {
-		const concerts = await this.client.list(signal)
-		return concerts.find((c) => c.series?.id?.value === seriesId)
+	private setBreadcrumb(): void {
+		const trail: Crumb[] = [
+			{ labelKey: 'shell.nav.concerts', href: paths.concerts },
+		]
+		if (this.isEdit) {
+			trail.push(
+				{ label: this.model.title, href: paths.concert(this.seriesId) },
+				{ labelKey: 'concertEditor.editCrumb' },
+			)
+		} else {
+			trail.push({ labelKey: 'concertEditor.newCrumb' })
+		}
+		this.breadcrumbs.set(trail)
 	}
 
 	private hydrate(concert: AuthoredSeries): void {
 		const series = concert.series
-		this.publishState = series?.publishState ?? PublishState.UNSPECIFIED
-		this.publishedStartTimes = new Map()
-		// The editor renders the full-width `large` variant; a list would use
-		// `thumb`. Both 404 until async processing finishes (see renderedCover).
-		const nextCover = series?.coverImage?.large?.value ?? ''
-		if (nextCover !== this.coverImageUrl) this.coverVariantBroken = false
-		this.coverImageUrl = nextCover
+		// While a newly set cover is processed, keep its preview (D9a).
+		if (!this.pendingCoverId) {
+			this.coverImageUrl = series.coverImage?.large?.value ?? ''
+		}
 		this.model = {
-			title: series?.title?.value ?? '',
-			description: series?.description?.value ?? '',
-			type: series?.type ?? SeriesType.SINGLE,
-			visibility: series?.visibility ?? Visibility.PUBLIC,
-			sourceUrl: series?.sourceUrl?.value ?? '',
+			title: concertTitle(concert),
+			description: series.description?.value ?? '',
+			type: series.type || SeriesType.SINGLE,
+			visibility: series.visibility || Visibility.PUBLIC,
+			sourceUrl: series.sourceUrl?.value ?? '',
 			artistIds: concert.performers
 				.map((p) => p.id?.value ?? '')
 				.filter(Boolean),
-			events: concert.events.map((e) => ({
-				eventId: e.id?.value ?? '',
-				publishState: e.publishState,
-				// The venue as the operator entered it: a PUBLISHED event's venue
-				// counts as unchanged when this equals its listed venue name.
-				venueName: e.listedVenueName?.value || e.venue?.name?.value || '',
-				placeId: '',
-				localDate: e.localDate?.value
-					? `${e.localDate.value.year}-${String(e.localDate.value.month).padStart(2, '0')}-${String(e.localDate.value.day).padStart(2, '0')}`
-					: '',
-				startTime: e.startTime?.value
-					? this.hhmm(timestampDate(e.startTime.value))
-					: '',
-				openTime: e.openTime?.value
-					? this.hhmm(timestampDate(e.openTime.value))
-					: '',
-			})),
-		}
-		for (const row of this.model.events) {
-			if (row.eventId && row.publishState === PublishState.PUBLISHED) {
-				this.publishedStartTimes.set(row.eventId, row.startTime)
-			}
-		}
-		if (this.model.events.length === 0) {
-			this.model.events.push(emptyEventRow())
-		}
-	}
-
-	private hhmm(date: Date): string {
-		return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-	}
-
-	// --- Form editing -------------------------------------------------------
-
-	public revalidate(): void {
-		this.errors = validateConcertForm(this.model)
-	}
-
-	public togglePerformer(option: PerformerOption): void {
-		option.selected = !option.selected
-		this.model.artistIds = this.performers
-			.filter((p) => p.selected)
-			.map((p) => p.id)
-		this.revalidate()
-	}
-
-	public addEvent(): void {
-		this.model.events.push(emptyEventRow())
-		this.revalidate()
-	}
-
-	/** Removes a DRAFT row; a PUBLISHED or CANCELLED event is never removed. */
-	public removeEvent(index: number): void {
-		if (this.model.events.length <= 1) return
-		if (this.model.events[index]?.publishState !== PublishState.DRAFT) return
-		this.model.events.splice(index, 1)
-		this.revalidate()
-	}
-
-	public get formValid(): boolean {
-		return isFormValid(this.errors)
-	}
-
-	// --- Save ---------------------------------------------------------------
-
-	public async save(): Promise<void> {
-		if (this.saving) return
-		this.submitted = true
-		this.revalidate()
-		if (!this.formValid) return
-		this.saving = true
-		this.saveError = ''
-		const draft = toSeriesDraftInput(this.model)
-		try {
-			if (this.isEdit) {
-				const concert = await this.client.update(this.seriesId, draft)
-				if (concert) this.hydrate(concert)
-			} else {
-				const concert = await this.client.create(draft)
-				const newId = concert?.series?.id?.value
-				if (newId) {
-					// Redirect into edit mode so the persisted id unlocks cover upload
-					// and the publish/token affordances.
-					await this.router.load(`../concerts/edit/${newId}`)
-					return
+			events: concert.events.map((e) => {
+				const d = e.localDate?.value
+				const placeId = e.venue?.placeId?.value ?? ''
+				return {
+					eventId: e.id?.value ?? '',
+					publishState: e.publishState,
+					// The place the date was matched to is kept on save.
+					// A published or cancelled date resends its listed venue name,
+					// which Update compares to keep its venue fixed, even when no
+					// place was matched; a draft needs a pick.
+					venue:
+						e.publishState !== PublishState.DRAFT
+							? {
+									placeId,
+									name: e.listedVenueName?.value || e.venue?.name?.value || '',
+									address: '',
+								}
+							: placeId
+								? { placeId, name: e.venue?.name?.value ?? '', address: '' }
+								: null,
+					localDate: d
+						? `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
+						: '',
+					startTime: e.startTime?.value
+						? toJstTimeInput(timestampDate(e.startTime.value))
+						: '',
+					openTime: e.openTime?.value
+						? toJstTimeInput(timestampDate(e.openTime.value))
+						: '',
 				}
-			}
-		} catch (err) {
-			this.saveError = toOrganizerErrorMessage(err, 'Failed to save.', {
-				[Code.FailedPrecondition]: this.publishedStartTimeChanged()
-					? START_TIME_ON_SALE_MESSAGE
-					: this.isCorrection
-						? 'This correction was rejected: the venue and date of a published event, its type, source page and visibility are fixed, and cancelled events cannot change. Nothing was saved.'
-						: 'This concert can no longer be edited.',
-			})
-			this.logger.error('Save failed', { seriesId: this.seriesId, err })
-		} finally {
-			this.saving = false
+			}),
 		}
+		if (this.model.events.length === 0) this.model.events.push(emptyEventRow())
+		this.publishedStartTimes = new Map(
+			this.model.events
+				.filter(
+					(row) => row.eventId && row.publishState === PublishState.PUBLISHED,
+				)
+				.map((row) => [row.eventId, row.startTime]),
+		)
 	}
 
 	/** True when a stored PUBLISHED event's start time differs from the loaded one. */
@@ -357,15 +305,94 @@ export class ConcertEditorRoute {
 		)
 	}
 
-	// --- Cover image --------------------------------------------------------
+	private markSaved(): void {
+		this.saved = JSON.stringify(this.model)
+	}
+
+	public togglePerformer(option: PerformerOption): void {
+		option.selected = !option.selected
+		this.model.artistIds = this.performers
+			.filter((p) => p.selected)
+			.map((p) => p.id)
+	}
+
+	public addEvent(): void {
+		this.model.events.push(emptyEventRow())
+	}
+
+	public removeEvent(index: number): void {
+		if (this.model.events.length <= 1) return
+		if (this.model.events[index]?.publishState !== PublishState.DRAFT) return
+		this.model.events.splice(index, 1)
+	}
+
+	/** Saves; a field error goes next to its field and takes focus. */
+	public async save(): Promise<void> {
+		this.submitted = true
+		if (!isFormValid(this.errors)) {
+			queueMicrotask(() => this.focusFirstError())
+			return
+		}
+		const draft = toSeriesDraftInput(this.model)
+		try {
+			if (this.isEdit) {
+				const concert = await this.series.update(this.seriesId, draft)
+				if (concert) this.hydrate(concert)
+				this.markSaved()
+				this.setBreadcrumb()
+				this.snackbar.show(this.i18n.tr('concertEditor.saved'))
+			} else {
+				const concert = await this.series.create(draft)
+				const id = concert?.series.id?.value
+				this.markSaved()
+				this.snackbar.show(this.i18n.tr('concertEditor.created'))
+				if (id) await this.router.load(paths.concert(id))
+			}
+		} catch (err) {
+			this.logger.warn('Save failed', err)
+			const precondition =
+				err instanceof ConnectError && err.code === Code.FailedPrecondition
+			this.snackbar.showError(
+				this.i18n.tr(
+					!precondition
+						? 'concertEditor.saveFailed'
+						: this.publishedStartTimeChanged()
+							? 'concertEditor.startTimeOnSale'
+							: 'concertEditor.saveRejected',
+				),
+				precondition
+					? undefined
+					: {
+							label: this.i18n.tr('common.retry'),
+							callback: () => void this.save(),
+						},
+			)
+		}
+	}
+
+	private focusFirstError(): void {
+		if (this.errors.title) {
+			this.titleField?.focus()
+			return
+		}
+		if (this.errors.artistIds) {
+			this.performersFieldset?.querySelector('input')?.focus()
+			return
+		}
+		const row = this.errors.rows.findIndex(
+			(r) => r.venueName || r.localDate || r.time,
+		)
+		if (row < 0) return
+		const errors = this.errors.rows[row]
+		if (errors.venueName) this.venueFields[row]?.focus()
+		else this.dateFields[row]?.focus()
+	}
 
 	/**
-	 * Runs the async cover-image pipeline for the picked file:
-	 * `SeriesImageService.CreateUploadUrl` → direct `PUT` to the signed GCS URL →
-	 * `SeriesService.SetCoverImage`. Once the cover is set it shows an optimistic object-URL preview of the
-	 * picked file, since the served variant is not live until async processing
-	 * finishes (see {@link renderedCover}). The client-side type/size pre-check
-	 * still runs first so an invalid file never round-trips.
+	 * Uploads the picked cover: CreateUploadUrl, PUT to the signed URL, then
+	 * SetCoverImage. The picked file shows at once; the editor then re-reads
+	 * the concert every 3 s for up to 60 s and swaps to the processed image once
+	 * the Series' cover is the uploaded one (D9a).
 	 */
 	public async onCoverSelected(event: Event): Promise<void> {
 		const input = event.target as HTMLInputElement
@@ -373,36 +400,81 @@ export class ConcertEditorRoute {
 		if (!file) return
 		this.coverImageError = ''
 		const check = validateCoverImage(file)
-		if (!check.ok) {
-			this.coverImageError = check.message
+		if ('messageKey' in check) {
+			this.coverImageError = this.i18n.tr(check.messageKey)
 			input.value = ''
 			return
 		}
-		const signal = this.abort?.signal
 		this.uploadingCover = true
 		try {
-			const upload = await this.seriesImages.createUploadUrl(file.type, signal)
-			await this.seriesImages.uploadToSignedUrl(upload, file, file.type, signal)
-			await this.client.setCoverImage(
+			const upload = await this.seriesImages.createUploadUrl(
+				file.type,
+				this.abort.signal,
+			)
+			await this.seriesImages.uploadToSignedUrl(
+				upload,
+				file,
+				file.type,
+				this.abort.signal,
+			)
+			await this.series.setCoverImage(
 				this.seriesId,
 				upload.seriesImageId,
-				signal,
+				this.abort.signal,
 			)
-			// Processing is async: the served variant 404s until it completes, so
-			// show the local file optimistically and let it bridge to the variant.
 			this.revokeLocalPreview()
 			this.localPreviewUrl = URL.createObjectURL(file)
-			this.coverVariantBroken = false
-			this.coverImageUrl = ''
+			this.coverNote = 'processing'
+			this.pendingCoverId = upload.seriesImageId
+			this.startCoverPoll()
 		} catch (err) {
-			this.coverImageError = toOrganizerErrorMessage(
-				err,
-				'Failed to upload the image.',
-			)
-			this.logger.error('Cover upload failed', { seriesId: this.seriesId, err })
+			this.logger.warn('Cover upload failed', err)
+			this.coverImageError = this.i18n.tr('concertEditor.cover.failed')
 		} finally {
 			this.uploadingCover = false
 			input.value = ''
+		}
+	}
+
+	private startCoverPoll(): void {
+		this.stopCoverPoll()
+		const startedAt = this.clock.now()
+		const tick = async () => {
+			try {
+				const concert = findConcert(
+					await this.series.list(this.abort.signal),
+					this.seriesId,
+				)
+				const cover = concert?.series.coverImage
+				if (cover?.id?.value === this.pendingCoverId && cover.large?.value) {
+					this.coverImageUrl = cover.large.value
+					this.pendingCoverId = ''
+					this.coverNote = ''
+					this.revokeLocalPreview()
+					return
+				}
+			} catch (err) {
+				if (this.abort.signal.aborted) return
+				this.logger.debug('Cover check failed', err)
+			}
+			if (this.clock.now() - startedAt >= COVER_POLL_LIMIT_MS) {
+				this.coverNote = 'slow'
+				return
+			}
+			this.coverTimer = setTimeout(tick, COVER_POLL_MS)
+		}
+		this.coverTimer = setTimeout(tick, COVER_POLL_MS)
+	}
+
+	private stopCoverPoll(): void {
+		if (this.coverTimer !== null) clearTimeout(this.coverTimer)
+		this.coverTimer = null
+	}
+
+	private revokeLocalPreview(): void {
+		if (this.localPreviewUrl) {
+			URL.revokeObjectURL(this.localPreviewUrl)
+			this.localPreviewUrl = ''
 		}
 	}
 }

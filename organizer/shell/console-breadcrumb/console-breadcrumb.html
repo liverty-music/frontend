@@ -1,0 +1,22 @@
+<import from="./console-breadcrumb.css"></import>
+
+<template as-custom-element="crumb-text">
+  <bindable name="crumb"></bindable>
+  <template if.bind="crumb.labelKey">${crumb.labelKey & t}</template>
+  <template if.bind="crumb.day">${crumb.day | jstDay}</template>
+  <template if.bind="crumb.label">${crumb.label}</template>
+</template>
+
+<nav if.bind="breadcrumbs.trail.length" aria-label.bind="'shell.breadcrumb' & t">
+  <ol class="full">
+    <li repeat.for="crumb of breadcrumbs.trail">
+      <a if.bind="crumb.href && !$last" href.bind="crumb.href"><crumb-text crumb.bind="crumb"></crumb-text></a>
+      <span else aria-current.bind="$last ? 'page' : null"><crumb-text crumb.bind="crumb"></crumb-text></span>
+      <console-icon if.bind="!$last" name="chevron-right" class="separator"></console-icon>
+    </li>
+  </ol>
+  <a if.bind="breadcrumbs.parent" href.bind="breadcrumbs.parent.href" class="compact state-layer">
+    <console-icon name="arrow-back"></console-icon>
+    <span><crumb-text crumb.bind="breadcrumbs.parent"></crumb-text></span>
+  </a>
+</nav>

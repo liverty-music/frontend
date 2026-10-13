@@ -3,11 +3,13 @@ import {
 	SeriesType,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { parseJstDateAndTime, toJstDateInput } from '../i18n/format'
 import type {
 	CalendarDate,
 	EventDraftInput,
 	SeriesDraftInput,
 } from '../services/series-client'
+import type { VenuePick } from '../ui/venue-field/venue-field'
 
 /**
  * The editable, transport-agnostic model of a single event row in the editor.
@@ -23,8 +25,8 @@ export interface EventFormRow {
 	 * as a DRAFT Event, published later on its own.
 	 */
 	publishState: PublishState
-	venueName: string
-	placeId: string
+	/** The place picked from the map catalog; null until one is picked. */
+	venue: VenuePick | null
 	/** ISO `YYYY-MM-DD` from `<input type="date">`; empty when unset. */
 	localDate: string
 	/** `HH:mm` from `<input type="time">`; empty when unset. */
@@ -72,8 +74,7 @@ export function emptyEventRow(): EventFormRow {
 	return {
 		eventId: '',
 		publishState: PublishState.DRAFT,
-		venueName: '',
-		placeId: '',
+		venue: null,
 		localDate: '',
 		startTime: '',
 		openTime: '',
@@ -119,7 +120,14 @@ export function composeInstant(date: CalendarDate, hhmm: string): Date | null {
 	const hours = Number(m[1])
 	const minutes = Number(m[2])
 	if (hours > 23 || minutes > 59) return null
-	return new Date(date.year, date.month - 1, date.day, hours, minutes, 0, 0)
+	const pad = (n: number) => String(n).padStart(2, '0')
+	// The wall clock is Japan time, whatever the device's time zone.
+	return (
+		parseJstDateAndTime(
+			`${date.year}-${pad(date.month)}-${pad(date.day)}`,
+			`${pad(hours)}:${pad(minutes)}`,
+		) ?? null
+	)
 }
 
 /** Compares a calendar date against a "today" triple. Negative when before. */
@@ -131,11 +139,8 @@ function compareToToday(date: CalendarDate, today: CalendarDate): number {
 
 /** Derives the caller's local-today calendar triple from a `Date`. */
 export function todayCalendarDate(now: Date = new Date()): CalendarDate {
-	return {
-		year: now.getFullYear(),
-		month: now.getMonth() + 1,
-		day: now.getDate(),
-	}
+	const [year, month, day] = toJstDateInput(now).split('-').map(Number)
+	return { year, month, day }
 }
 
 /**
@@ -160,40 +165,42 @@ export function validateConcertForm(
 	const errors: ConcertFormErrors = { rows: [] }
 
 	if (model.title.trim() === '') {
-		errors.title = 'A title is required.'
+		errors.title = 'concertEditor.error.title'
 	}
 	if (model.type === SeriesType.UNSPECIFIED) {
-		errors.type = 'Choose a series type.'
+		errors.type = 'concertEditor.error.type'
 	}
 	if (model.visibility === Visibility.UNSPECIFIED) {
-		errors.visibility = 'Choose a visibility.'
+		errors.visibility = 'concertEditor.error.visibility'
 	}
 	if (model.artistIds.length === 0) {
-		errors.artistIds = 'Select at least one performer.'
+		errors.artistIds = 'concertEditor.error.performers'
 	}
 	if (model.events.length === 0) {
-		errors.events = 'Add at least one event.'
+		errors.events = 'concertEditor.error.events'
 	}
 
 	for (const row of model.events) {
 		const rowErrors: EventRowErrors = {}
-		if (row.venueName.trim() === '') {
-			rowErrors.venueName = 'A venue name is required.'
+		// A venue is a place picked from the map catalog, never a typed name.
+		// A published or cancelled date keeps its venue, which is not sent.
+		if (!hasFixedVenueAndDate(row) && !row.venue?.placeId) {
+			rowErrors.venueName = 'concertEditor.error.venueNotPicked'
 		}
 		const date = parseIsoDate(row.localDate)
 		if (date === null) {
-			rowErrors.localDate = 'A valid date is required.'
+			rowErrors.localDate = 'concertEditor.error.date'
 		} else if (
 			!allowPastDates &&
 			!hasFixedVenueAndDate(row) &&
 			compareToToday(date, today) < 0
 		) {
-			rowErrors.localDate = 'The date cannot be in the past.'
+			rowErrors.localDate = 'concertEditor.error.pastDate'
 		} else {
 			const start = composeInstant(date, row.startTime)
 			const open = composeInstant(date, row.openTime)
 			if (start && open && open.getTime() > start.getTime()) {
-				rowErrors.time = 'Open time must not be after the start time.'
+				rowErrors.time = 'concertEditor.error.openAfterStart'
 			}
 		}
 		errors.rows.push(rowErrors)
@@ -237,8 +244,8 @@ export function toSeriesDraftInput(model: ConcertFormModel): SeriesDraftInput {
 		const open = composeInstant(date, row.openTime)
 		return {
 			...(row.eventId ? { eventId: row.eventId } : {}),
-			venueName: row.venueName.trim(),
-			...(row.placeId.trim() ? { placeId: row.placeId.trim() } : {}),
+			venueName: row.venue?.name ?? '',
+			...(row.venue?.placeId ? { placeId: row.venue.placeId } : {}),
 			localDate: date,
 			...(start ? { startTime: start } : {}),
 			...(open ? { openTime: open } : {}),

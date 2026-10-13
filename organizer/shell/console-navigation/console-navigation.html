@@ -1,0 +1,14 @@
+<import from="./console-navigation.css"></import>
+
+<nav aria-label.bind="'shell.nav.label' & t" class="navigation">
+  <a
+    repeat.for="item of destinations"
+    href.bind="item.href"
+    class="item"
+    data-destination.bind="item.id"
+    aria-current.bind="item.id === current ? 'page' : null"
+  >
+    <span class="indicator state-layer"><console-icon name.bind="item.icon"></console-icon></span>
+    <span class="label">${item.labelKey & t}</span>
+  </a>
+</nav>

@@ -1,8 +1,13 @@
-import { formatJstDateTime } from '../../shared/lib/scanner/jst-format'
+import type { FieldError } from '../i18n/field-error'
+import {
+	parseJstDateTimeLocal as parseJst,
+	toJstDateTimeLocal as toJst,
+} from '../i18n/format'
 import type { CreateTicketSaleInput } from '../services/ticket-sale-client'
 
+export type { FieldError }
+
 /** The name a new first-come sale starts with. */
-export const DEFAULT_SALE_NAME = '一般発売'
 /** Maximum length of the sale's name, in characters. */
 export const MAX_NAME_LENGTH = 100
 /** The per-account limit a new sale starts with (server default too). */
@@ -15,7 +20,6 @@ export const MIN_PRICE = 1
 export const MAX_PRICE = 1_000_000
 
 /** Japan has no daylight saving time: Japan time is always UTC+9. */
-const JST_OFFSET_HOURS = 9
 
 /**
  * The editable model of the sale form. Times are `datetime-local` strings
@@ -33,12 +37,12 @@ export interface TicketSaleFormModel {
 
 /** Per-field errors, shown next to each control. */
 export interface TicketSaleFormErrors {
-	name?: string
-	saleStartTime?: string
-	saleEndTime?: string
-	price?: string
-	quantity?: string
-	perAccountLimit?: string
+	name?: FieldError
+	saleStartTime?: FieldError
+	saleEndTime?: FieldError
+	price?: FieldError
+	quantity?: FieldError
+	perAccountLimit?: FieldError
 }
 
 /** What the form is checked against besides its own values. */
@@ -52,23 +56,13 @@ export interface TicketSaleFormContext {
 
 /** Formats an instant as a Japan-time `YYYY-MM-DDTHH:mm`. */
 export function toJstDateTimeLocal(date: Date): string {
-	return formatJstDateTime(date).replace(' ', 'T')
+	return toJst(date)
 }
 
-/**
- * Reads a `YYYY-MM-DDTHH:mm` string as Japan time, or null when it is blank
- * or not a real calendar time.
- */
 export function parseJstDateTimeLocal(value: string): Date | null {
-	const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value.trim())
-	if (!m) return null
-	const [y, mo, d, h, mi] = m.slice(1).map(Number)
-	const date = new Date(Date.UTC(y, mo - 1, d, h - JST_OFFSET_HOURS, mi))
-	// Reject rollovers such as 2026-02-30 or 25:00.
-	return toJstDateTimeLocal(date) === value.trim() ? date : null
+	return parseJst(value.trim()) ?? null
 }
 
-/** Parses a raw input string into a whole number, or null. */
 function parseWholeNumber(value: string): number | null {
 	const trimmed = value.trim()
 	if (!/^\d+$/.test(trimmed)) return null
@@ -85,12 +79,15 @@ export function formatYen(value: number | bigint): string {
 
 /**
  * The form for an event without a first-come sale: the name is
- * {@link DEFAULT_SALE_NAME}, the sale ends at the event's start time and the
+ * the given default name, the sale ends at the event's start time and the
  * limit is {@link DEFAULT_PER_ACCOUNT_LIMIT}.
  */
-export function blankFormModel(eventStart: Date | null): TicketSaleFormModel {
+export function blankFormModel(
+	eventStart: Date | null,
+	defaultName = '',
+): TicketSaleFormModel {
 	return {
-		name: DEFAULT_SALE_NAME,
+		name: defaultName,
 		saleStartTime: '',
 		saleEndTime: eventStart ? toJstDateTimeLocal(eventStart) : '',
 		price: '',
@@ -137,35 +134,47 @@ export function validateTicketSaleForm(
 
 	const name = model.name.trim()
 	if (name === '') {
-		errors.name = '販売名を入力してください。'
+		errors.name = { key: 'firstComeEditor.error.name' }
 	} else if ([...name].length > MAX_NAME_LENGTH) {
-		errors.name = `販売名は${MAX_NAME_LENGTH}文字以内で入力してください。`
+		errors.name = {
+			key: 'firstComeEditor.error.nameLength',
+			params: { max: MAX_NAME_LENGTH },
+		}
 	}
 
 	const start = parseJstDateTimeLocal(model.saleStartTime)
 	const end = parseJstDateTimeLocal(model.saleEndTime)
 	if (start === null) {
-		errors.saleStartTime = '販売開始日時を入力してください。'
+		errors.saleStartTime = { key: 'firstComeEditor.error.start' }
 	}
 	if (end === null) {
-		errors.saleEndTime = '販売終了日時を入力してください。'
+		errors.saleEndTime = { key: 'firstComeEditor.error.end' }
 	} else if (ctx.eventStart && end.getTime() > ctx.eventStart.getTime()) {
-		errors.saleEndTime = `販売終了は開演時刻（${formatJstDateTime(ctx.eventStart)}）以前にしてください。`
+		errors.saleEndTime = {
+			key: 'firstComeEditor.error.endAfterEvent',
+			params: { eventStart: ctx.eventStart },
+		}
 	} else if (start !== null && end.getTime() <= start.getTime()) {
-		errors.saleEndTime = '販売終了は販売開始より後にしてください。'
+		errors.saleEndTime = { key: 'firstComeEditor.error.endBeforeStart' }
 	}
 
 	const price = parseWholeNumber(model.price)
 	if (price === null || price < MIN_PRICE || price > MAX_PRICE) {
-		errors.price = `価格は${formatYen(MIN_PRICE)}円から${formatYen(MAX_PRICE)}円の整数で入力してください。`
+		errors.price = {
+			key: 'firstComeEditor.error.price',
+			params: { min: MIN_PRICE, max: MAX_PRICE },
+		}
 	}
 
 	const quantity = parseWholeNumber(model.quantity)
 	const floor = ctx.soldCount + ctx.heldCount
 	if (quantity === null || quantity < 1) {
-		errors.quantity = '販売数は1枚以上の整数で入力してください。'
+		errors.quantity = { key: 'firstComeEditor.error.quantity' }
 	} else if (quantity < floor) {
-		errors.quantity = `販売済み${ctx.soldCount}枚と確保中${ctx.heldCount}枚の合計（${floor}枚）を下回る販売数にはできません。`
+		errors.quantity = {
+			key: 'firstComeEditor.error.quantityFloor',
+			params: { sold: ctx.soldCount, held: ctx.heldCount, floor },
+		}
 	}
 
 	const limit = parseWholeNumber(model.perAccountLimit)
@@ -174,10 +183,12 @@ export function validateTicketSaleForm(
 		limit < MIN_PER_ACCOUNT_LIMIT ||
 		limit > MAX_PER_ACCOUNT_LIMIT
 	) {
-		errors.perAccountLimit = `1アカウントあたりの上限は${MIN_PER_ACCOUNT_LIMIT}〜${MAX_PER_ACCOUNT_LIMIT}枚で入力してください。`
+		errors.perAccountLimit = {
+			key: 'firstComeEditor.error.limit',
+			params: { min: MIN_PER_ACCOUNT_LIMIT, max: MAX_PER_ACCOUNT_LIMIT },
+		}
 	} else if (quantity !== null && quantity >= 1 && limit > quantity) {
-		errors.perAccountLimit =
-			'1アカウントあたりの上限は販売数以下にしてください。'
+		errors.perAccountLimit = { key: 'firstComeEditor.error.limitOverQuantity' }
 	}
 
 	return errors

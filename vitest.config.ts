@@ -8,6 +8,7 @@ import {
 	defineProject,
 	mergeConfig,
 } from 'vitest/config'
+import { pressAndHold, releasePointer } from './.storybook/pointer-commands'
 import viteConfig from './vite.config'
 
 // The `unit` project carries the previous single-config jsdom setup verbatim.
@@ -26,7 +27,12 @@ const unitProject = mergeConfig(
 			// scripts/ tests run via a dedicated `vitest.scripts.config.ts`
 			// because they import `node:fs` / `node:os` directly and need to
 			// bypass the SPA build's `nodePolyfills` plugin.
-			exclude: [...configDefaults.exclude, 'e2e/**', 'scripts/**'],
+			exclude: [
+				...configDefaults.exclude,
+				'e2e/**',
+				'scripts/**',
+				'test/**/*.node.spec.ts',
+			],
 			root: fileURLToPath(new URL('./', import.meta.url)),
 			setupFiles: ['./test/setup.ts'],
 			// Stylesheets stay stubbed, except when a test imports one with `?raw`
@@ -46,7 +52,9 @@ const scriptsProject = defineProject({
 	test: {
 		name: 'scripts',
 		environment: 'node',
-		include: ['scripts/**/*.spec.ts'],
+		// `*.node.spec.ts` under test/ need real Node APIs too (e.g. a child
+		// process with another time zone).
+		include: ['scripts/**/*.spec.ts', 'test/**/*.node.spec.ts'],
 		root: fileURLToPath(new URL('./', import.meta.url)),
 	},
 })
@@ -132,6 +140,7 @@ const storybookProjectFor = ({
 				reducedMotion ? { contextOptions: { reducedMotion: 'reduce' } } : {},
 			),
 			instances: [{ browser: 'chromium' }],
+			commands: { pressAndHold, releasePointer },
 		},
 	},
 })

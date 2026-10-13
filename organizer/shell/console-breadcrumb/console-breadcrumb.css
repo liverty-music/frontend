@@ -1,0 +1,63 @@
+@layer block {
+	@scope (console-breadcrumb) {
+		:scope {
+			display: block;
+		}
+
+		.full {
+			display: none;
+			flex-wrap: wrap;
+			align-items: center;
+
+			margin: 0;
+			padding: 0;
+
+			font: var(--md-type-body-medium);
+			color: var(--md-color-on-surface-variant);
+			list-style: none;
+
+			& li {
+				display: inline-flex;
+				align-items: center;
+			}
+
+			& a {
+				display: inline-flex;
+				align-items: center;
+				min-block-size: var(--md-target-size);
+				color: var(--md-color-primary);
+			}
+		}
+
+		.separator {
+			inline-size: 18px;
+			block-size: 18px;
+			margin-inline: var(--space-3xs);
+		}
+
+		.compact {
+			display: inline-flex;
+			gap: var(--space-2xs);
+			align-items: center;
+
+			min-block-size: var(--md-target-size);
+			padding-inline: var(--space-2xs) var(--space-s);
+			border-radius: var(--md-shape-full);
+
+			font: var(--md-type-label-large);
+			color: var(--md-color-primary);
+			text-decoration: none;
+		}
+
+		/* From the medium window class the whole trail fits. */
+		@container shell (width >= 600px) {
+			.full {
+				display: flex;
+			}
+
+			.compact {
+				display: none;
+			}
+		}
+	}
+}

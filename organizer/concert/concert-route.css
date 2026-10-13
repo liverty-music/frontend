@@ -1,0 +1,92 @@
+@layer block {
+	@scope (concert-route) {
+		.concert {
+			display: grid;
+			gap: var(--space-m);
+		}
+
+		.header {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-s);
+			align-items: flex-start;
+		}
+
+		.cover {
+			inline-size: 96px;
+			block-size: 96px;
+			border-radius: var(--md-shape-medium);
+			object-fit: cover;
+		}
+
+		.heading {
+			display: grid;
+			flex: 1;
+			gap: var(--space-3xs);
+			min-inline-size: 200px;
+		}
+
+		.meta,
+		.performers {
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+		}
+
+		.dates {
+			display: grid;
+			gap: var(--space-3xs);
+
+			margin: 0 0 var(--space-s);
+			padding: 0;
+			border: none;
+		}
+
+		.date {
+			cursor: pointer;
+
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+
+			min-block-size: var(--md-target-size);
+			padding-inline: var(--space-2xs);
+			border-radius: var(--md-shape-small);
+
+			color: var(--md-color-on-surface);
+
+			& input {
+				inline-size: 20px;
+				block-size: 20px;
+				accent-color: var(--md-color-primary);
+			}
+		}
+
+		.section-title {
+			font: var(--md-type-title-large);
+			color: var(--md-color-on-surface);
+		}
+
+		.share,
+		.events {
+			display: grid;
+			gap: var(--space-xs);
+			justify-items: start;
+		}
+
+		.events data-list,
+		.share copy-field {
+			justify-self: stretch;
+		}
+
+		.message {
+			display: grid;
+			gap: var(--space-xs);
+			justify-items: start;
+		}
+	}
+}

@@ -1,0 +1,8 @@
+<import from="./description-list.css"></import>
+
+<dl class="list">
+  <div repeat.for="item of items" class="row">
+    <dt>${item.term}</dt>
+    <dd data-empty.bind="!item.value">${item.value || emptyLabel}</dd>
+  </div>
+</dl>

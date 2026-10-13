@@ -1,0 +1,52 @@
+<import from="./settings-route.css"></import>
+
+<section class="settings">
+  <h1 class="page-title">${'settings.title' & t}</h1>
+
+  <section class="part" aria-labelledby="settings-organization">
+    <h2 id="settings-organization" class="section-title">${'settings.organization' & t}</h2>
+    <circular-progress if.bind="organizerState === 'loading'"></circular-progress>
+    <div if.bind="organizerState === 'error'" class="message" role="alert">
+      <p>${'settings.organizerFailed' & t}</p>
+      <console-button variant="tonal" click.trigger="loadOrganizer()">${'common.retry' & t}</console-button>
+    </div>
+    <template if.bind="organizerState === 'ready'">
+      <p class="organizer-name">${name}</p>
+      <h3 class="label">${'settings.artists' & t}</h3>
+      <ul class="artists">
+        <li repeat.for="artist of artistNames">${artist}</li>
+      </ul>
+      <p class="note">${'settings.changeOnRequest' & t}</p>
+    </template>
+  </section>
+
+  <section if.bind="organizerState === 'ready'" class="part" aria-labelledby="settings-business">
+    <h2 id="settings-business" class="section-title">${'settings.business.title' & t}</h2>
+    <p class="note">${'settings.business.explain' & t}</p>
+    <prerequisite-callout if.bind="!businessComplete" heading.bind="'settings.business.incomplete' & t">
+      ${'settings.business.incompleteBody' & t}
+    </prerequisite-callout>
+    <description-list items.bind="businessDetails" empty-label.bind="'settings.business.notRegistered' & t"></description-list>
+  </section>
+
+  <section id="payout" class="part" aria-labelledby="settings-payout">
+    <h2 id="settings-payout" class="section-title">${'settings.payout.title' & t}</h2>
+    <circular-progress if.bind="payoutState === 'loading'"></circular-progress>
+    <div if.bind="payoutState === 'error'" class="message" role="alert">
+      <p>${'settings.payout.failed' & t}</p>
+      <console-button variant="tonal" click.trigger="loadPayout()">${'common.retry' & t}</console-button>
+    </div>
+    <template if.bind="payoutState === 'ready'">
+      <status-badge tone.bind="payoutStatus.tone" label.bind="payoutStatus.key & t" data-testid="payout-status"></status-badge>
+      <template if.bind="!payoutActive">
+        <p class="note">${'settings.payout.notBlocking' & t}</p>
+        <console-button
+          if.bind="account.onboardingUrl"
+          variant="filled"
+          href.bind="account.onboardingUrl"
+          target="_blank"
+        >${'settings.payout.continue' & t}</console-button>
+      </template>
+    </template>
+  </section>
+</section>

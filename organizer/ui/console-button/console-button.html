@@ -1,0 +1,35 @@
+<import from="./console-button.css"></import>
+<import from="../console-icon/console-icon"></import>
+<import from="../../../shared/ui/circular-progress/circular-progress"></import>
+
+<template>
+  <a
+    if.bind="href"
+    href.bind="href"
+    target.bind="target || null"
+    rel.bind="target === '_blank' ? 'noopener' : null"
+    class="state-layer touch-target"
+    data-variant.bind="variant"
+  >
+    <console-icon if.bind="icon" name.bind="icon"></console-icon>
+    <span class="label"><au-slot></au-slot></span>
+  </a>
+  <button
+    else
+    type.bind="type"
+    class="state-layer touch-target"
+    data-variant.bind="variant"
+    data-pending.bind="pending"
+    disabled.bind="disabled"
+    aria-disabled.bind="pending ? 'true' : null"
+    aria-busy.bind="pending ? 'true' : null"
+    click.trigger="press($event)"
+  >
+    <circular-progress if.bind="pending" size="small" label.bind="pendingLabel"></circular-progress>
+    <console-icon else if.bind="icon" name.bind="icon"></console-icon>
+    <span class="labels">
+      <span class="label" aria-hidden.bind="pending && pendingLabel ? 'true' : null"><au-slot></au-slot></span>
+      <span if.bind="pendingLabel" class="label" data-role="pending" aria-hidden.bind="pending ? null : 'true'">${pendingLabel}</span>
+    </span>
+  </button>
+</template>

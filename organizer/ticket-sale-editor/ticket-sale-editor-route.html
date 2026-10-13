@@ -1,292 +1,103 @@
-<main class="[ ticket-sale-editor ] [ flow ]">
-  <header class="[ ticket-sale-editor-header ] [ flow ]">
-    <a load="../concerts" class="ticket-sale-editor-back-link">← 公演一覧に戻る</a>
-    <h1 class="ticket-sale-editor-title">先着販売の設定</h1>
-    <p if.bind="concertTitle" class="ticket-sale-editor-note">
-      ${concertTitle}<template if.bind="eventDate"> · ${eventDate}</template>
-      <template if.bind="eventStartLabel">
-        · 開演 ${eventStartLabel}（日本時間）</template
-      >
-    </p>
-  </header>
+<import from="./ticket-sale-editor-route.css"></import>
 
-  <output
-    if.bind="phase === 'loading'"
-    class="organizer-status"
-    role="status"
-    aria-busy="true"
-  >
-    <span class="organizer-spinner"></span>
-    <span>読み込み中…</span>
-  </output>
+<section class="first-come-editor">
+  <h1 class="page-title">${(sale ? 'firstComeEditor.changeTitle' : 'firstComeEditor.newTitle') & t}</h1>
+  <p if.bind="event" class="context">
+    ${title} · <template if.bind="start">${start | jstDateTime}</template> · ${venue}
+  </p>
 
-  <section
-    if.bind="phase === 'error'"
-    class="organizer-state"
-    role="alert"
-    data-state="error"
-  >
-    <p>${loadError}</p>
-    <button type="button" class="organizer-btn" click.trigger="load()">
-      再読み込み
-    </button>
-  </section>
+  <circular-progress if.bind="state === 'loading'"></circular-progress>
+  <div if.bind="state === 'notFound'" class="message" role="alert">
+    <p>${'event.notFound' & t}</p>
+    <console-button variant="tonal" href="/concerts">${'concert.toConcerts' & t}</console-button>
+  </div>
+  <div if.bind="state === 'error'" class="message" role="alert">
+    <p>${'firstComeEditor.loadFailed' & t}</p>
+    <console-button variant="tonal" href.bind="salesHref">${'lotteryEditor.toSales' & t}</console-button>
+  </div>
 
-  <section
-    if.bind="phase === 'not-found'"
-    class="organizer-state"
-    role="alert"
-    data-state="not-found"
-  >
-    <p>この公演は見つかりませんでした。</p>
-    <a load="../concerts" class="organizer-btn">公演一覧に戻る</a>
-  </section>
-
-  <section
-    if.bind="phase === 'ready' && sale"
-    class="[ ticket-sale-editor-panel ] [ flow ]"
-    data-state="sale"
-    aria-labelledby="ticket-sale-counts-title"
-  >
-    <h2 id="ticket-sale-counts-title" class="ticket-sale-editor-subtitle">
-      ${sale.name.value} の販売状況
-      <span class="ticket-sale-editor-state">${stateLabel}</span>
-    </h2>
-    <dl class="ticket-sale-editor-counts">
-      <div>
-        <dt>販売数</dt>
-        <dd data-count="quantity">${quantity}枚</dd>
-      </div>
-      <div>
-        <dt>販売済み</dt>
-        <dd data-count="sold">${soldCount}枚</dd>
-      </div>
-      <div>
-        <dt>確保中</dt>
-        <dd data-count="held">${heldCount}枚</dd>
-      </div>
-    </dl>
-  </section>
-
-  <section
-    if.bind="phase === 'ready' && blocks.length > 0"
-    class="[ ticket-sale-editor-panel ] [ flow ]"
-    role="alert"
-    data-state="blocked"
-  >
-    <h2 class="ticket-sale-editor-subtitle">まだ販売を設定できません</h2>
-    <ul class="[ ticket-sale-editor-blocks ] [ flow ]">
-      <li if.bind="blocks.includes('cancelled')" data-block="cancelled">
-        この公演は中止されています。中止された公演は販売できません。
-      </li>
-      <li if.bind="blocks.includes('not-published')" data-block="not-published">
-        公演が公開されていません。公演一覧から公開してください。
-      </li>
-      <li
-        if.bind="blocks.includes('no-start-time')"
-        class="flow"
-        data-block="no-start-time"
-      >
-        <p>開演時刻が設定されていません。先に公演エディターで開演時刻を設定してください。</p>
-        <a
-          if.bind="seriesId"
-          load="../concerts/edit/${seriesId}"
-          class="organizer-btn"
-          data-variant="primary"
-        >
-          公演エディターを開く
-        </a>
-      </li>
-      <li if.bind="blocks.includes('no-business-details')" data-block="no-business-details">
-        事業者情報（特定商取引法に基づく表記）が揃っていません。事業者情報は審査の際に
-        Liverty Music が入力します。
-      </li>
-    </ul>
-  </section>
-
-  <form
-    if.bind="canSave"
-    class="[ ticket-sale-editor-form ] [ flow ]"
-    submit.trigger="save()"
-    novalidate
-  >
-    <fieldset if.bind="!sale" class="[ ticket-sale-editor-fieldset ] [ flow ]">
-      <legend>販売名</legend>
-      <label class="organizer-field">
-        販売名（ファンに表示されます）
-        <input
-          type="text"
-          name="name"
-          maxlength="100"
-          class="organizer-input"
-          value.bind="model.name"
-          input.trigger="revalidate()"
-          aria-invalid.bind="submitted && !!errors.name"
-          aria-describedby="ticket-sale-name-error"
-        />
-      </label>
-      <p
-        id="ticket-sale-name-error"
-        if.bind="submitted && errors.name"
-        class="organizer-error"
-        data-error="name"
-      >
-        ${errors.name}
-      </p>
-    </fieldset>
-
-    <fieldset class="[ ticket-sale-editor-fieldset ] [ flow ]">
-      <legend>販売期間（日本時間）</legend>
-      <label class="organizer-field">
-        販売開始
-        <input
-          type="datetime-local"
-          name="saleStartTime"
-          class="organizer-input"
-          value.bind="model.saleStartTime"
-          input.trigger="revalidate()"
-          aria-invalid.bind="submitted && !!errors.saleStartTime"
-          aria-describedby="ticket-sale-start-error"
-        />
-      </label>
-      <p
-        id="ticket-sale-start-error"
-        if.bind="submitted && errors.saleStartTime"
-        class="organizer-error"
-        data-error="saleStartTime"
-      >
-        ${errors.saleStartTime}
-      </p>
-      <label class="organizer-field">
-        販売終了
-        <input
-          type="datetime-local"
-          name="saleEndTime"
-          class="organizer-input"
-          value.bind="model.saleEndTime"
-          input.trigger="revalidate()"
-          aria-invalid.bind="submitted && !!errors.saleEndTime"
-          aria-describedby="ticket-sale-end-hint ticket-sale-end-error"
-        />
-      </label>
-      <p id="ticket-sale-end-hint" class="ticket-sale-editor-hint">
-        開演時刻（${eventStartLabel}）までに終了してください。
-      </p>
-      <p
-        id="ticket-sale-end-error"
-        if.bind="submitted && errors.saleEndTime"
-        class="organizer-error"
-        data-error="saleEndTime"
-      >
-        ${errors.saleEndTime}
-      </p>
-    </fieldset>
-
-    <fieldset class="[ ticket-sale-editor-fieldset ] [ flow ]">
-      <legend>チケット</legend>
-      <div if.bind="priceLocked" class="flow" data-state="price-locked">
-        <p class="organizer-field">
-          価格（1枚あたり・税込）
-          <strong class="ticket-sale-editor-locked-price"
-            >¥${lockedPriceLabel}</strong
-          >
-        </p>
-        <p class="ticket-sale-editor-hint">
-          チケットが確保中または販売済みの間は、価格は固定され変更できません。
-        </p>
-      </div>
-      <template else>
-        <label class="organizer-field">
-          価格（1枚あたり・税込、${minPrice}〜${maxPrice}円）
-          <input
-            type="number"
-            name="price"
-            min="1"
-            max="1000000"
-            step="1"
-            inputmode="numeric"
-            class="organizer-input"
-            value.bind="model.price"
-            input.trigger="revalidate()"
-            aria-invalid.bind="submitted && !!errors.price"
-            aria-describedby="ticket-sale-price-error"
-            placeholder="例: 3000"
-          />
-        </label>
-        <p
-          id="ticket-sale-price-error"
-          if.bind="submitted && errors.price"
-          class="organizer-error"
-          data-error="price"
-        >
-          ${errors.price}
-        </p>
-      </template>
-
-      <label class="organizer-field">
-        販売数
-        <input
-          type="number"
-          name="quantity"
-          min="1"
-          step="1"
-          inputmode="numeric"
-          class="organizer-input"
-          value.bind="model.quantity"
-          input.trigger="revalidate()"
-          aria-invalid.bind="submitted && !!errors.quantity"
-          aria-describedby="ticket-sale-quantity-error"
-          placeholder="例: 150"
-        />
-      </label>
-      <p
-        id="ticket-sale-quantity-error"
-        if.bind="submitted && errors.quantity"
-        class="organizer-error"
-        data-error="quantity"
-      >
-        ${errors.quantity}
-      </p>
-
-      <label class="organizer-field">
-        1アカウントあたりの上限（${minLimit}〜${maxLimit}枚）
-        <input
-          type="number"
-          name="perAccountLimit"
-          min="1"
-          max="10"
-          step="1"
-          inputmode="numeric"
-          class="organizer-input"
-          value.bind="model.perAccountLimit"
-          input.trigger="revalidate()"
-          aria-invalid.bind="submitted && !!errors.perAccountLimit"
-          aria-describedby="ticket-sale-limit-error"
-        />
-      </label>
-      <p
-        id="ticket-sale-limit-error"
-        if.bind="submitted && errors.perAccountLimit"
-        class="organizer-error"
-        data-error="perAccountLimit"
-      >
-        ${errors.perAccountLimit}
-      </p>
-    </fieldset>
-
-    <div class="[ ticket-sale-editor-actions ] [ cluster ]">
-      <button
-        type="submit"
-        class="organizer-btn"
-        data-variant="primary"
-        disabled.bind="saving"
-      >
-        ${saving ? '保存中…' : sale ? '変更を保存' : '販売を設定'}
-      </button>
+  <template if.bind="state === 'ready'">
+    <div repeat.for="block of blocks" switch.bind="block">
+      <prerequisite-callout case="cancelled" heading.bind="'event.cancelledNote' & t"></prerequisite-callout>
+      <prerequisite-callout case="notPublished" heading.bind="'sale.prerequisite.notPublished' & t" action-label.bind="'lotteryEditor.toSales' & t" action-href.bind="salesHref">
+        ${'sale.prerequisite.notPublishedBody' & t}
+      </prerequisite-callout>
+      <prerequisite-callout case="noStartTime" heading.bind="'sale.prerequisite.noStartTime' & t" action-label.bind="'sale.prerequisite.editConcert' & t" action-href.bind="editConcertHref">
+        ${'sale.prerequisite.noStartTimeBody' & t}
+      </prerequisite-callout>
+      <prerequisite-callout case="businessDetails" heading.bind="'sale.prerequisite.businessDetails' & t">
+        ${'sale.prerequisite.businessDetailsBody' & t}
+      </prerequisite-callout>
     </div>
-    <p if.bind="saveError" class="organizer-error" role="alert">${saveError}</p>
-    <p if.bind="saved" class="ticket-sale-editor-saved" role="status">
-      保存しました。
-    </p>
-  </form>
-</main>
+
+    <div if.bind="sale" class="status">
+      <status-badge if.bind="stateKey" tone="info" label.bind="stateKey & t"></status-badge>
+      <div class="stats">
+        <stat-tile label.bind="'sale.stats.sold' & t" value.bind="soldCount | count"></stat-tile>
+        <stat-tile label.bind="'sale.stats.held' & t" value.bind="heldCount | count"></stat-tile>
+        <stat-tile label.bind="'sale.stats.quantity' & t" value.bind="quantity | count"></stat-tile>
+      </div>
+    </div>
+
+    <form if.bind="!blocks.length" class="form" novalidate submit.trigger="false">
+      <console-field
+        label.bind="'lotteryEditor.name' & t"
+        value.bind="model.name"
+        required.bind="true"
+        error.bind="error(errors.name, submitted)"
+      ></console-field>
+      <div class="row">
+        <console-field
+          type="datetime-local"
+          label.bind="'firstComeEditor.start' & t"
+          value.bind="model.saleStartTime"
+          required.bind="true"
+          error.bind="error(errors.saleStartTime, submitted)"
+        ></console-field>
+        <console-field
+          type="datetime-local"
+          label.bind="'firstComeEditor.end' & t"
+          value.bind="model.saleEndTime"
+          required.bind="true"
+          hint.bind="'firstComeEditor.endHint' & t"
+          error.bind="error(errors.saleEndTime, submitted)"
+        ></console-field>
+      </div>
+      <div class="row">
+        <console-field
+          type="yen"
+          label.bind="'lotteryEditor.price' & t"
+          value.bind="model.price"
+          required.bind="true"
+          disabled.bind="priceLocked"
+          hint.bind="priceHint & signal:'aurelia-translation-signal'"
+          error.bind="error(errors.price, submitted)"
+        ></console-field>
+        <console-field
+          type="number"
+          label.bind="'lotteryEditor.quantity' & t"
+          value.bind="model.quantity"
+          required.bind="true"
+          error.bind="error(errors.quantity, submitted)"
+        ></console-field>
+        <console-field
+          type="number"
+          label.bind="'lotteryEditor.limit' & t"
+          value.bind="model.perAccountLimit"
+          required.bind="true"
+          hint.bind="'firstComeEditor.limitHint' & t:{ min: minLimit, max: maxLimit }"
+          error.bind="error(errors.perAccountLimit, submitted)"
+        ></console-field>
+      </div>
+
+      <p if.bind="saveProblem" class="problem" role="alert">${saveProblem}</p>
+
+      <action-bar>
+        <console-button variant="text" href.bind="salesHref">${'common.cancel' & t}</console-button>
+        <console-button variant="filled" icon="check" action.bind="() => save()" pending-label.bind="'common.saving' & t">${(sale ? 'common.save' : 'firstComeEditor.create') & t}</console-button>
+      </action-bar>
+    </form>
+  </template>
+
+  <unsaved-changes component.ref="guard" dirty.bind="isDirty"></unsaved-changes>
+</section>

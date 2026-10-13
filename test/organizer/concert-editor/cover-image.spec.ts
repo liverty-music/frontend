@@ -20,7 +20,8 @@ describe('validateCoverImage', () => {
 	it('rejects an unsupported type', () => {
 		const result = validateCoverImage({ type: 'image/gif', size: 1 })
 		expect(result.ok).toBe(false)
-		if (!result.ok) expect(result.message).toContain('JPEG')
+		if (!result.ok)
+			expect(result.messageKey).toBe('concertEditor.cover.badType')
 	})
 
 	it('rejects a file over the size limit', () => {
@@ -29,7 +30,8 @@ describe('validateCoverImage', () => {
 			size: MAX_IMAGE_BYTES + 1,
 		})
 		expect(result.ok).toBe(false)
-		if (!result.ok) expect(result.message).toContain('10 MiB')
+		if (!result.ok)
+			expect(result.messageKey).toBe('concertEditor.cover.tooLarge')
 	})
 
 	it('accepts a file exactly at the size limit', () => {

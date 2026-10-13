@@ -1,0 +1,53 @@
+@layer block {
+	@scope (status-badge) {
+		:scope {
+			display: inline-flex;
+		}
+
+		.badge {
+			--_container: var(--md-color-neutral-container);
+			--_on-container: var(--md-color-on-neutral-container);
+
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: center;
+
+			min-block-size: 24px;
+			padding-inline: var(--space-2xs);
+			border-radius: var(--md-shape-small);
+
+			font: var(--md-type-label-medium);
+			color: var(--_on-container);
+			white-space: nowrap;
+
+			background: var(--_container);
+		}
+
+		.dot {
+			inline-size: 8px;
+			block-size: 8px;
+			border-radius: var(--md-shape-full);
+			background: currentcolor;
+		}
+
+		.badge[data-tone="success"] {
+			--_container: var(--md-color-success-container);
+			--_on-container: var(--md-color-on-success-container);
+		}
+
+		.badge[data-tone="warning"] {
+			--_container: var(--md-color-warning-container);
+			--_on-container: var(--md-color-on-warning-container);
+		}
+
+		.badge[data-tone="error"] {
+			--_container: var(--md-color-error-container);
+			--_on-container: var(--md-color-on-error-container);
+		}
+
+		.badge[data-tone="info"] {
+			--_container: var(--md-color-secondary-container);
+			--_on-container: var(--md-color-on-secondary-container);
+		}
+	}
+}

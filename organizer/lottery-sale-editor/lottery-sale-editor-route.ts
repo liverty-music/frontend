@@ -1,17 +1,32 @@
-import type { Params } from '@aurelia/router'
-import { IRouter } from '@aurelia/router'
+import { I18N } from '@aurelia/i18n'
+import { IRouteContext, IRouter } from '@aurelia/router'
+import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import { formatJstDateTime } from '../../shared/lib/scanner/jst-format'
-import { Code, toOrganizerErrorMessage } from '../services/connect-error-copy'
+import {
+	concertTitle,
+	eventDay,
+	eventStart,
+	findConcert,
+	findEvent,
+	paths,
+	venueName,
+} from '../model/concert-model'
+import { IClock } from '../services/clock'
 import { findOverlappingSale } from '../services/sale-window'
 import { ISeriesClient } from '../services/series-client'
 import {
 	ITicketSaleClient,
 	type TicketSale,
 } from '../services/ticket-sale-client'
+import { ITicketTypeClient } from '../services/ticket-type-client'
+import { IBreadcrumbs } from '../shell/breadcrumbs'
+import { ISnackbar } from '../ui/console-snackbar/snackbar'
+import type { UnsavedChanges } from '../ui/unsaved-changes/unsaved-changes'
 import {
 	emptyFormModel,
+	type FieldError,
 	isFormValid,
 	type LotterySaleFormErrors,
 	type LotterySaleFormModel,
@@ -20,206 +35,340 @@ import {
 	MIN_WINDOW_DAYS,
 	parseDateTimeLocal,
 	toCreateInput,
+	toDateTimeLocal,
 	validateLotterySaleForm,
 } from './lottery-sale-form'
 
-/** Coarse lifecycle phase for the screen. */
-type ScreenPhase = 'ready' | 'done'
+/** The overlap error, naming the other sale and its window. */
+export function overlapError(sale: TicketSale): FieldError {
+	return {
+		key: 'lotteryEditor.error.overlap',
+		params: {
+			name: sale.name?.value ?? '',
+			start: sale.saleStartTime ? timestampDate(sale.saleStartTime) : undefined,
+			end: sale.saleEndTime ? timestampDate(sale.saleEndTime) : undefined,
+		},
+	}
+}
 
 /**
- * Whether the event can go on sale: `checking` while the event is read,
- * `no-start-time` when it has no start time (no form, no save), `ok`
- * otherwise. When the event cannot be read the form stays available and the
- * server's own check decides.
- */
-export type EventCheck = 'checking' | 'ok' | 'no-start-time'
-
-/**
- * The lottery editor. Creates a named Lottery TicketSale of the event's Series
- * with one TicketType for the event it was opened from (the `eventId` route
- * parameter): the window, the quantity, the per-account limit (default 4,
- * 1–10) and the price.
+ * Starts a lottery sale for one event (`sales/lottery/new`) or changes one
+ * before it opens (`sales/lottery/:saleId`): the window in Japan time, the
+ * price, the quantity and the per-account limit. Opened from the event's Sales
+ * tab and back there after saving or leaving; unsaved changes are guarded.
  *
- * Validation mirrors the backend boundary (see {@link validateLotterySaleForm})
- * and runs on every input so inline errors — the required name, the 1–14 day
- * window defaulting to 10 days, and a window overlapping another sale of the
- * event — appear before a round-trip. On submit it calls
- * {@link ITicketSaleClient.create}; INVALID_ARGUMENT, FAILED_PRECONDITION and
- * PERMISSION_DENIED are translated via {@link toOrganizerErrorMessage}. On
- * success the created sale is shown with a link into the event's lottery
- * status.
- *
- * ENTRY POINT: the target event id arrives as the `:eventId` route param. The
- * console does not yet surface a per-event "put on sale" affordance from the
- * concerts dashboard (the authoring list is series-scoped and exposes no event
- * ids), so the route is currently reachable only by deep link — see the TODO in
- * `organizer-shell` routing.
+ * A change saves the window with SetWindow and the TicketType with Update,
+ * skipping a call whose values did not change. When the second call fails the
+ * editor stays open, says which part was not saved, and offers 再試行 (D13).
  */
 export class LotterySaleEditorRoute {
-	public phase: ScreenPhase = 'ready'
-
-	/** The PUBLISHED event this phase attaches to (from the route). */
-	public eventId = ''
-
-	public model: LotterySaleFormModel = emptyFormModel()
-	public errors: LotterySaleFormErrors = {}
-	/** Set true after the first save attempt so errors are not shown pre-emptively. */
-	public submitted = false
-	public saving = false
-	public saveError = ''
-
-	public eventCheck: EventCheck = 'checking'
-	/** The event's series: the sale's Series and the concert editor link. */
-	public seriesId = ''
-	/** The event's start time; the lottery must close before it. */
-	public eventStart: Date | null = null
-	/** The event's existing sales, checked for an overlapping window. */
-	public existingSales: TicketSale[] = []
-
-	/** The created sale, populated on a successful create. */
-	public createdSale: TicketSale | undefined
-
-	private abort: AbortController | null = null
-
-	private readonly client = resolve(ITicketSaleClient)
-	private readonly concerts = resolve(ISeriesClient)
+	private readonly ticketSales = resolve(ITicketSaleClient)
+	private readonly ticketTypes = resolve(ITicketTypeClient)
+	private readonly series = resolve(ISeriesClient)
 	private readonly router = resolve(IRouter)
+	private readonly context = resolve(IRouteContext)
+	private readonly breadcrumbs = resolve(IBreadcrumbs)
+	private readonly snackbar = resolve(ISnackbar)
+	private readonly clock = resolve(IClock)
+	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('LotterySaleEditorRoute')
 
-	// Expose the window bounds to the template for helper copy.
+	public state:
+		| 'loading'
+		| 'ready'
+		| 'notFound'
+		| 'noStartTime'
+		| 'opened'
+		| 'error' = 'loading'
+	public seriesId = ''
+	public eventId = ''
+	public saleId = ''
+	public title = ''
+	public event: Event | undefined
+	public model: LotterySaleFormModel = emptyFormModel(new Date())
+	public submitted = false
+	/** A message about the whole save that is not about one field. */
+	public saveProblem = ''
+	public guard!: UnsavedChanges
+
 	public readonly minWindowDays = MIN_WINDOW_DAYS
 	public readonly maxWindowDays = MAX_WINDOW_DAYS
 	public readonly maxLimit = MAX_PER_ACCOUNT_LIMIT
 
-	public canLoad(params: Params): boolean {
+	private existingSales: TicketSale[] = []
+	private sale: TicketSale | undefined
+	private saved = ''
+	private abort = new AbortController()
+
+	/** A child route of the event: the series and event ids are the parent's. */
+	public loading(): void {
+		const params = this.context.getRouteParameters<
+			{
+				seriesId?: string
+				eventId?: string
+				saleId?: string
+			},
+			'parent-first'
+		>({ mergeStrategy: 'parent-first' })
+		this.seriesId = params.seriesId ?? ''
 		this.eventId = params.eventId ?? ''
-		return true
+		this.saleId = params.saleId ?? ''
 	}
 
 	public attached(): void {
-		this.revalidate()
-		void this.checkEvent()
-	}
-
-	/**
-	 * Reads the event from the operator's concerts, and its existing sales: an
-	 * event without a start time cannot go on sale, so the screen says so,
-	 * links to the concert editor and offers no save. The open time stays
-	 * optional.
-	 */
-	public async checkEvent(): Promise<void> {
-		this.eventCheck = 'checking'
-		void this.loadExistingSales()
-		try {
-			const concerts = await this.concerts.list()
-			const concert = concerts.find((c) =>
-				c.events.some((e) => e.id?.value === this.eventId),
-			)
-			const event = concert?.events.find((e) => e.id?.value === this.eventId)
-			this.seriesId = concert?.series?.id?.value ?? ''
-			const start = event?.startTime?.value
-			this.eventStart = start ? timestampDate(start) : null
-			this.eventCheck = event && !start ? 'no-start-time' : 'ok'
-		} catch (err) {
-			this.logger.warn(
-				'Reading the event failed; the server will check it',
-				err,
-			)
-			this.eventCheck = 'ok'
-		}
-		this.revalidate()
-	}
-
-	/** The event's sales; on failure the server's own overlap check decides. */
-	private async loadExistingSales(): Promise<void> {
-		try {
-			const { ticketSales } = await this.client.listByEvent(this.eventId)
-			this.existingSales = ticketSales
-			this.revalidate()
-		} catch (err) {
-			this.logger.warn('Reading the event sales failed', err)
-		}
+		void this.load()
 	}
 
 	public detaching(): void {
-		this.abort?.abort()
+		this.abort.abort()
 	}
 
-	public get createdSaleId(): string {
-		return this.createdSale?.id?.value ?? ''
+	public canUnload(): Promise<boolean> {
+		return this.guard?.confirmLeave() ?? Promise.resolve(true)
 	}
 
-	public revalidate(): void {
+	public get isChange(): boolean {
+		return this.saleId !== ''
+	}
+
+	public get salesHref(): string {
+		return paths.sales(this.seriesId, this.eventId)
+	}
+
+	public get start(): Date | undefined {
+		return this.event ? eventStart(this.event) : undefined
+	}
+
+	public get venue(): string {
+		return this.event ? venueName(this.event) : ''
+	}
+
+	public get isDirty(): boolean {
+		return this.state === 'ready' && JSON.stringify(this.model) !== this.saved
+	}
+
+	public get errors(): LotterySaleFormErrors {
 		const errors = validateLotterySaleForm(this.model, {
-			eventStart: this.eventStart,
+			eventStart: this.start ?? null,
 		})
 		const open = parseDateTimeLocal(this.model.saleStartTime)
 		const close = parseDateTimeLocal(this.model.saleEndTime)
 		if (!errors.window && open && close) {
-			const other = findOverlappingSale(this.existingSales, open, close)
-			if (other) errors.window = overlapMessage(other)
+			const other = findOverlappingSale(
+				this.existingSales,
+				open,
+				close,
+				this.saleId || undefined,
+			)
+			if (other) errors.window = overlapError(other)
 		}
-		this.errors = errors
+		return errors
 	}
 
-	public get formValid(): boolean {
-		return isFormValid(this.errors)
+	/** The translated error of a field, once a save was attempted. */
+	public error(
+		error: FieldError | undefined,
+		submitted = this.submitted,
+	): string {
+		// The template passes `submitted` so the binding re-evaluates when it changes.
+		if (!submitted || !error) return ''
+		return this.i18n.tr(error.key, this.formatParams(error.params))
+	}
+
+	private formatParams(
+		params?: Record<string, unknown>,
+	): Record<string, unknown> | undefined {
+		if (!params) return params
+		const out: Record<string, unknown> = { ...params }
+		for (const [k, v] of Object.entries(params)) {
+			if (v instanceof Date) out[k] = toDateTimeLocal(v).replace('T', ' ')
+		}
+		return out
+	}
+
+	private async load(): Promise<void> {
+		this.state = 'loading'
+		try {
+			const [concerts, sales] = await Promise.all([
+				this.series.list(this.abort.signal),
+				this.ticketSales.listByEvent(this.eventId, this.abort.signal),
+			])
+			const concert = findConcert(concerts, this.seriesId)
+			this.event = findEvent(concert, this.eventId)
+			this.title = concert ? concertTitle(concert) : ''
+			this.existingSales = sales.ticketSales
+			if (!this.event) {
+				this.state = 'notFound'
+				return
+			}
+			this.setBreadcrumb()
+			if (!this.start) {
+				this.state = 'noStartTime'
+				return
+			}
+			if (this.isChange) {
+				this.sale = this.existingSales.find((s) => s.id?.value === this.saleId)
+				const type = this.sale?.ticketTypes.find(
+					(t) => t.eventId?.value === this.eventId,
+				)
+				if (!this.sale || !type) {
+					this.state = 'notFound'
+					return
+				}
+				if (this.hasOpened(this.sale)) {
+					this.state = 'opened'
+					return
+				}
+				this.model = {
+					name: this.sale.name?.value ?? '',
+					saleStartTime: this.sale.saleStartTime
+						? toDateTimeLocal(timestampDate(this.sale.saleStartTime))
+						: '',
+					saleEndTime: this.sale.saleEndTime
+						? toDateTimeLocal(timestampDate(this.sale.saleEndTime))
+						: '',
+					quantity: String(type.quantity ?? ''),
+					perAccountLimit: String(type.perAccountLimit),
+					price: String(type.price?.value ?? ''),
+				}
+			} else {
+				this.model = emptyFormModel(new Date(this.clock.now()))
+			}
+			this.saved = JSON.stringify(this.model)
+			this.state = 'ready'
+		} catch (err) {
+			if (this.abort.signal.aborted) return
+			this.logger.warn('Lottery editor failed to load', err)
+			this.state = 'error'
+		}
+	}
+
+	private setBreadcrumb(): void {
+		const saleName = this.isChange
+			? this.existingSales.find((s) => s.id?.value === this.saleId)?.name?.value
+			: undefined
+		this.breadcrumbs.set([
+			{ labelKey: 'shell.nav.concerts', href: paths.concerts },
+			{ label: this.title, href: paths.concert(this.seriesId) },
+			{
+				day: this.event ? eventDay(this.event) : undefined,
+				href: this.salesHref,
+			},
+			saleName ? { label: saleName } : { labelKey: 'lotteryEditor.crumb' },
+		])
+	}
+
+	private hasOpened(sale: TicketSale): boolean {
+		return (
+			!!sale.saleStartTime &&
+			timestampDate(sale.saleStartTime).getTime() <= this.clock.now()
+		)
 	}
 
 	public async save(): Promise<void> {
-		if (this.saving || this.eventCheck !== 'ok') return
 		this.submitted = true
-		this.revalidate()
-		if (!this.formValid) return
-		this.saving = true
-		this.saveError = ''
-		this.abort?.abort()
-		const abort = new AbortController()
-		this.abort = abort
+		this.saveProblem = ''
+		if (!isFormValid(this.errors)) return
+		if (this.isChange) await this.saveChange()
+		else await this.create()
+	}
+
+	private async create(): Promise<void> {
 		try {
-			const sale = await this.client.create(
+			await this.ticketSales.create(
 				toCreateInput(this.seriesId, this.eventId, this.model),
-				abort.signal,
+				this.abort.signal,
 			)
-			if (abort.signal.aborted) return
-			this.createdSale = sale
-			this.phase = 'done'
+			this.saved = JSON.stringify(this.model)
+			this.snackbar.show(
+				this.i18n.tr('lotteryEditor.created', { name: this.model.name.trim() }),
+			)
+			await this.router.load(this.salesHref)
 		} catch (err) {
-			if (abort.signal.aborted) return
-			this.saveError = toOrganizerErrorMessage(
-				err,
-				'Failed to create the lottery.',
-				{
-					[Code.FailedPrecondition]:
-						'This event cannot go on sale with this lottery: publish its concert, set its start time, make sure the window ends before the event starts and does not overlap another sale of the event, and check that your business details are complete.',
-					[Code.PermissionDenied]:
-						'You are not allowed to put this event on sale.',
-				},
-			)
-			this.logger.error('Create lottery failed', {
-				eventId: this.eventId,
-				err,
-			})
-		} finally {
-			this.saving = false
+			this.logger.warn('Lottery not created', err)
+			this.failed(err, () => void this.save())
 		}
 	}
 
-	/** Navigates to the lottery status of the event. */
-	public async viewStatus(): Promise<void> {
-		if (!this.createdSaleId) return
-		await this.router.load(`../lottery/status/${this.eventId}`)
-	}
-}
+	/** Window first, TicketType second; each only when it changed (D13). */
+	private async saveChange(): Promise<void> {
+		const sale = this.sale
+		const type = sale?.ticketTypes.find(
+			(t) => t.eventId?.value === this.eventId,
+		)
+		if (!sale || !type) return
+		if (this.hasOpened(sale)) {
+			this.saveProblem = this.i18n.tr('lotteryEditor.openedWhileEditing')
+			return
+		}
+		const input = toCreateInput(this.seriesId, this.eventId, this.model)
+		const windowChanged =
+			input.saleStartTime.getTime() !==
+				(sale.saleStartTime
+					? timestampDate(sale.saleStartTime).getTime()
+					: 0) ||
+			input.saleEndTime?.getTime() !==
+				(sale.saleEndTime ? timestampDate(sale.saleEndTime).getTime() : 0)
+		const typeChanged =
+			input.price !== Number(type.price?.value ?? 0) ||
+			input.quantity !== (type.quantity ?? 0) ||
+			input.perAccountLimit !== type.perAccountLimit
 
-/** Says which existing sale the entered window overlaps, in Japan time. */
-export function overlapMessage(sale: TicketSale): string {
-	const name = sale.name?.value ?? ''
-	const start = sale.saleStartTime
-		? formatJstDateTime(timestampDate(sale.saleStartTime))
-		: ''
-	const end = sale.saleEndTime
-		? formatJstDateTime(timestampDate(sale.saleEndTime))
-		: ''
-	return `The window overlaps the sale 「${name}」 (${start} – ${end}, Japan time). Sales of one event cannot overlap.`
+		if (windowChanged) {
+			try {
+				const updated = await this.ticketSales.setWindow(
+					this.saleId,
+					input.saleStartTime,
+					input.saleEndTime ?? input.saleStartTime,
+					this.abort.signal,
+				)
+				if (updated) {
+					sale.saleStartTime = updated.saleStartTime
+					sale.saleEndTime = updated.saleEndTime
+				}
+			} catch (err) {
+				this.logger.warn('Window not saved', err)
+				this.failed(err, () => void this.save())
+				return
+			}
+		}
+		if (typeChanged) {
+			try {
+				const updated = await this.ticketTypes.update(
+					{
+						ticketTypeId: type.id?.value ?? '',
+						price: input.price,
+						quantity: input.quantity,
+						perAccountLimit: input.perAccountLimit ?? 0,
+					},
+					this.abort.signal,
+				)
+				if (updated) Object.assign(type, updated)
+			} catch (err) {
+				this.logger.warn('Ticket type not saved', err)
+				if (windowChanged) {
+					// The window is saved; only the price, quantity and limit are not.
+					this.saveProblem = this.i18n.tr('lotteryEditor.partlySaved')
+				}
+				this.failed(err, () => void this.save())
+				return
+			}
+		}
+		this.saved = JSON.stringify(this.model)
+		this.snackbar.show(this.i18n.tr('lotteryEditor.changed'))
+		await this.router.load(this.salesHref)
+	}
+
+	private failed(err: unknown, retry: () => void): void {
+		if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
+			this.saveProblem = this.isChange
+				? this.i18n.tr('lotteryEditor.openedWhileEditing')
+				: this.i18n.tr('lotteryEditor.rejected')
+			return
+		}
+		this.snackbar.showError(this.i18n.tr('lotteryEditor.saveFailed'), {
+			label: this.i18n.tr('common.retry'),
+			callback: retry,
+		})
+	}
 }

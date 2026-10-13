@@ -1,0 +1,428 @@
+{
+	"app": {
+		"name": "Liverty Music 主催者コンソール",
+		"logoMark": "Liverty",
+		"logoSub": "Organizer"
+	},
+	"common": {
+		"loading": "読み込み中",
+		"close": "閉じる",
+		"cancel": "やめる",
+		"retry": "再試行",
+		"copy": "コピー",
+		"copied": "コピーしました",
+		"save": "保存する",
+		"saving": "保存中…",
+		"edit": "編集",
+		"open": "開く",
+		"jst": "JST",
+		"required": "必須"
+	},
+	"format": {
+		"yen": "{{amount}}円"
+	},
+	"field": {
+		"yenPrefix": "",
+		"yenSuffix": "円"
+	},
+	"copyField": {
+		"copy": "{{label}}をコピー",
+		"failed": "コピーできませんでした"
+	},
+	"venueField": {
+		"placeholder": "会場名で検索",
+		"search": "会場を検索",
+		"searching": "検索中…",
+		"noMatch": "会場が見つかりませんでした。別の名前で検索してください。",
+		"unavailable": "会場を検索できません。",
+		"results": "検索結果",
+		"change": "変更"
+	},
+	"shell": {
+		"breadcrumb": "パンくずリスト",
+		"account": "アカウント",
+		"language": "言語",
+		"languageName": {
+			"ja": "日本語",
+			"en": "English"
+		},
+		"signOut": "サインアウト",
+		"nav": {
+			"label": "メインナビゲーション",
+			"home": "ホーム",
+			"concerts": "公演",
+			"settings": "設定"
+		}
+	},
+	"unsavedChanges": {
+		"heading": "変更を破棄しますか？",
+		"body": "保存していない変更は失われます。",
+		"discard": "破棄する",
+		"keepEditing": "編集を続ける"
+	},
+	"home": {
+		"title": "ホーム",
+		"listLabel": "対応が必要なこと",
+		"payoutUnavailable": "入金口座の状況を読み込めませんでした。",
+		"concertsUnavailable": "公演を読み込めませんでした。",
+		"payout": "入金口座の登録が終わっていません",
+		"noScanner": "受付リンクなし",
+		"noStartTime": "開始時刻が未設定です",
+		"allClear": "いま対応が必要なことはありません。",
+		"toConcerts": "公演一覧へ",
+		"kind": {
+			"payout": "要対応",
+			"scanner": "7日以内",
+			"startTime": "開始時刻なし",
+			"draft": "下書き"
+		},
+		"action": {
+			"payout": "登録する",
+			"scanner": "発行する",
+			"startTime": "設定する",
+			"draft": "開く"
+		}
+	},
+	"concerts": {
+		"title": "公演",
+		"create": "公演をつくる",
+		"loadFailed": "公演を読み込めませんでした。",
+		"empty": "まだ公演がありません。",
+		"moreDates": "{{day}} 他 {{count}}公演",
+		"moreVenues": "{{venue}} 他",
+		"column": {
+			"title": "公演名",
+			"schedule": "日程・会場",
+			"sale": "販売状態",
+			"state": "状態"
+		}
+	},
+	"publishState": {
+		"draft": "下書き",
+		"published": "公開中",
+		"cancelled": "中止"
+	},
+	"seriesType": {
+		"single": "単独公演",
+		"tour": "ツアー",
+		"festival": "フェス"
+	},
+	"visibility": {
+		"public": "公開",
+		"unlisted": "限定公開"
+	},
+	"sale": {
+		"none": "販売なし",
+		"lotteryState": {
+			"scheduled": "受付開始前",
+			"open": "受付中",
+			"awaitingDraw": "抽選待ち",
+			"drawn": "抽選済み"
+		},
+		"firstComeState": {
+			"notYetOnSale": "受付開始前",
+			"onSale": "販売中",
+			"allHeld": "残りは購入手続き中",
+			"soldOut": "完売",
+			"ended": "販売終了"
+		},
+		"verification": {
+			"none": "本人確認なし",
+			"verifiedAny": "本人確認済み",
+			"jpkiOnly": "マイナンバーカードで本人確認済み",
+			"label": "本人確認",
+			"note": "変更しても、すでに受け付けた申込は確認し直しません。"
+		},
+		"loadFailed": "販売を読み込めませんでした。",
+		"empty": "この公演日の販売はまだありません。",
+		"startLottery": "抽選で販売する",
+		"startFirstCome": "先着で販売する",
+		"method": {
+			"lottery": "抽選",
+			"firstCome": "先着"
+		},
+		"countdown": {
+			"days": "あと {{days}}日 {{hours}}時間",
+			"hours": "あと {{hours}}時間 {{minutes}}分"
+		},
+		"quantity": "{{tickets, number}}枚",
+		"perAccount": "1人{{limit, number}}枚まで",
+		"oversubscribed": "申込枚数は販売枚数の{{percent, number}}%です。",
+		"stats": {
+			"entries": "応募数",
+			"requested": "申込枚数",
+			"quantity": "販売枚数",
+			"won": "当選",
+			"wonTickets": "当選枚数",
+			"lost": "落選",
+			"sold": "販売済み",
+			"held": "購入手続き中"
+		},
+		"lockedAfterOpen": "受付開始後は変更できません",
+		"verificationSaved": "本人確認の設定を変更しました",
+		"verificationFailed": "本人確認の設定を変更できませんでした",
+		"prerequisite": {
+			"notPublished": "販売を始めるには、公演を公開してください",
+			"notPublishedBody": "公開していない公演日では販売を始められません。",
+			"noStartTime": "開始時刻を設定してください",
+			"noStartTimeBody": "販売を始めるには、公演日の開始時刻が必要です。",
+			"editConcert": "公演を編集",
+			"businessDetails": "事業者情報が未登録です",
+			"businessDetailsBody": "事業者情報（特定商取引法に基づく表記）は、審査のときに Liverty Music が登録します。登録や変更は Liverty Music の担当者にご連絡ください。登録が終わるまで販売は始められません。"
+		}
+	},
+	"concert": {
+		"notFound": "公演が見つかりません",
+		"toConcerts": "公演一覧へ",
+		"loadFailed": "公演を読み込めませんでした。",
+		"events": "公演日",
+		"column": {
+			"date": "日時",
+			"venue": "会場",
+			"sale": "販売状態",
+			"state": "状態"
+		},
+		"shareTitle": "共有リンク",
+		"shareExplain": "限定公開の公演は、共有リンクからだけ開けます。発行済みのリンクは再表示できないため、必要なときは新しいリンクを発行してください。",
+		"shareLabel": "共有リンク",
+		"shareCreate": "新しい共有リンクを発行",
+		"shareCreating": "発行中…",
+		"shareConfirmTitle": "新しい共有リンクを発行しますか？",
+		"shareConfirmBody": "これまでの共有リンクは使えなくなります。",
+		"shareCreated": "新しい共有リンクを発行しました",
+		"shareFailed": "共有リンクを発行できませんでした",
+		"cancelConcert": "公演を中止",
+		"datesToPublish": "公開する公演日",
+		"publishConfirmTitle": "{{title}} の公演日を公開しますか？",
+		"publishConfirmPublic": "選んだ公演日をまとめて公開し、出演者のフォロワーに1回通知します。公開すると下書きには戻せません。",
+		"publishConfirmUnlisted": "選んだ公演日をまとめて公開します。フォロワーには通知せず、共有リンクを知っている人が見られるようになります。公開すると下書きには戻せません。",
+		"cancelConfirmTitle": "{{title}} を中止しますか？",
+		"cancelConfirmBody": "公開中の公演日はすべて中止になり、ファンに1回知らされます。下書きの公演日は削除されます。元に戻せません。",
+		"datesPublished": "{{count, number}}件の公演日を公開しました",
+		"cancelled": "公演を中止しました",
+		"draftsRemoved": "下書きの公演を削除しました"
+	},
+	"event": {
+		"noStartTime": "開始時刻なし",
+		"tab": {
+			"sales": "販売",
+			"reception": "受付"
+		},
+		"tabs": "公演日の管理",
+		"notFound": "公演日が見つかりません",
+		"toConcert": "公演へ戻る",
+		"loadFailed": "公演日を読み込めませんでした。",
+		"publish": "公開する",
+		"publishing": "公開中…",
+		"cancel": "中止する",
+		"cancelling": "中止中…",
+		"cancelledNote": "この公演日は中止されました。",
+		"published": "公開しました",
+		"publishFailed": "公開できませんでした",
+		"cancelled": "中止しました",
+		"draftRemoved": "下書きの公演日を削除しました",
+		"cancelFailed": "中止できませんでした",
+		"publishConfirmTitle": "{{title}} のこの公演日を公開しますか？",
+		"publishConfirmPublic": "この公演日だけを公開し、出演者のフォロワーに通知します。複数の公演日をまとめて1回で知らせるときは、公演ページから公開してください。公開すると下書きには戻せません。",
+		"publishConfirmUnlisted": "この公演日だけを公開します。フォロワーには通知せず、共有リンクを知っている人が見られるようになります。公開すると下書きには戻せません。",
+		"cancelConfirmTitle": "{{title}} のこの公演日を中止しますか？",
+		"cancelConfirmPublished": "公演日は中止になり、ファンに中止が知らされます。元に戻せません。",
+		"cancelConfirmDraft": "下書きの公演日は削除されます。元に戻せません。"
+	},
+	"reception": {
+		"label": "受付{{number}}",
+		"status": {
+			"unused": "未使用",
+			"inUse": "使用中",
+			"revoked": "取り消し済み"
+		},
+		"since": "開始",
+		"window": "受付時間：",
+		"oneDevice": "各リンクは、最初に開いた1台の端末でだけ使えます。",
+		"guide": "受付の手順（スタッフ向け）",
+		"issue": "受付リンクを発行",
+		"issuing": "発行中…",
+		"issued": "{{label}}を発行しました",
+		"issueFailed": "受付リンクを発行できませんでした",
+		"loadFailed": "受付リンクを読み込めませんでした。",
+		"empty": "まだ受付リンクがありません。",
+		"share": "共有",
+		"shareTitle": "{{label}}の受付リンク",
+		"revoke": "取り消す",
+		"revokeAndReissue": "取り消して再発行",
+		"revokeConfirmTitle": "{{label}}を取り消しますか？",
+		"reissueConfirmTitle": "{{label}}を取り消して再発行しますか？",
+		"confirmBody": "{{label}}を使っている端末は使えなくなります。",
+		"revoked": "{{label}}を取り消しました",
+		"reissued": "{{label}}を取り消し、{{next}}を発行しました",
+		"revokeFailed": "取り消せませんでした",
+		"prerequisite": {
+			"notPublished": "受付リンクを発行するには、公演を公開してください",
+			"notPublishedBody": "公開していない公演日では受付リンクを発行できません。",
+			"noStartTime": "開始時刻を設定してください",
+			"noStartTimeBody": "受付リンクを発行するには、公演日の開始時刻が必要です。"
+		}
+	},
+	"settings": {
+		"title": "設定",
+		"organization": "組織",
+		"organizerFailed": "組織の情報を読み込めませんでした。",
+		"artists": "所属アーティスト",
+		"changeOnRequest": "組織名と所属アーティストの変更は Liverty Music が承ります。担当者にご連絡ください。",
+		"business": {
+			"title": "事業者情報",
+			"explain": "審査のときに Liverty Music が登録した情報です。チケット販売で、特定商取引法に基づく表記としてファンに表示されます。変更は Liverty Music の担当者にご連絡ください。",
+			"incomplete": "未登録の事業者情報があります",
+			"incompleteBody": "すべての事業者情報が登録されるまで、販売は始められません。",
+			"notRegistered": "未登録",
+			"legalName": "事業者名",
+			"representative": "代表者名",
+			"address": "所在地",
+			"phone": "電話番号",
+			"email": "連絡先メールアドレス"
+		},
+		"payout": {
+			"title": "入金口座",
+			"failed": "入金口座の状況を読み込めませんでした。",
+			"pending": "確認中",
+			"active": "有効",
+			"restricted": "要対応",
+			"notBlocking": "登録が終わるまでも、ファンはチケットを購入できます。入金だけが登録の完了を待ちます。",
+			"continue": "登録を続ける"
+		}
+	},
+	"denied": {
+		"title": "このアカウントではコンソールを使えません",
+		"body": "サインインしていますが、このアカウントには主催者コンソールの権限がありません。別のアカウントでサインインし直すか、Liverty Music の担当者にご連絡ください。",
+		"signingOut": "サインアウト中…"
+	},
+	"authCallback": {
+		"verifying": "サインインを確認しています…",
+		"failed": "サインインできませんでした。",
+		"retry": "もう一度サインインする"
+	},
+	"concertEditor": {
+		"newTitle": "新しい公演",
+		"editTitle": "公演を編集",
+		"newCrumb": "新しい公演",
+		"editCrumb": "編集",
+		"loadFailed": "エディタを開けませんでした。",
+		"correctionNote": "公開または中止した公演日があるため、種類と公開範囲は変更できません。公開済みの公演日の会場と日付も変更できません。追加した公演日は、公開するまで下書きです。",
+		"title": "公演名",
+		"description": "説明",
+		"type": "種類",
+		"visibility": "公開範囲",
+		"performers": "出演者",
+		"noArtists": "所属アーティストがいないため、公演をつくれません。Liverty Music の担当者にご連絡ください。",
+		"dates": "公演日",
+		"dateN": "公演日 {{n}}",
+		"removeDate": "この公演日を削除",
+		"publishedNote": "公開済みのため、会場と日付は変更できません。日程を変えるときは、この公演日を中止して新しい公演日を追加してください。",
+		"cancelledNote": "中止した公演日は変更できません。",
+		"venue": "会場",
+		"date": "日付",
+		"openTime": "開場",
+		"startTime": "開演",
+		"addDate": "公演日を追加",
+		"create": "公演をつくる",
+		"saved": "変更を保存しました",
+		"created": "公演をつくりました",
+		"saveFailed": "保存できませんでした",
+		"saveRejected": "この変更は保存できませんでした。公開済みの公演日の会場・日付、種類、公開範囲は変更できません。",
+		"error": {
+			"title": "公演名を入力してください",
+			"type": "種類を選んでください",
+			"visibility": "公開範囲を選んでください",
+			"performers": "出演者を1組以上選んでください",
+			"events": "公演日を1つ以上追加してください",
+			"venueNotPicked": "検索結果から会場を選んでください",
+			"date": "日付を入力してください",
+			"pastDate": "過去の日付は選べません",
+			"openAfterStart": "開場は開演より前にしてください"
+		},
+		"cover": {
+			"title": "カバー画像",
+			"pick": "画像を選ぶ（JPEG・PNG・WebP、{{size}} MiBまで）",
+			"uploading": "アップロード中…",
+			"processing": "選んだ画像を表示しています。最適化した画像の準備ができると切り替わります。",
+			"slow": "最適化に時間がかかっています。次に開いたときに反映されます。",
+			"failed": "画像をアップロードできませんでした",
+			"badType": "JPEG・PNG・WebPの画像を選んでください",
+			"tooLarge": "10 MiB以下の画像を選んでください"
+		},
+		"startTimeOnSale": "チケットの販売が始まった公演日の開始時刻は変更できないため、保存していません。まだ販売していない場合は、同じ会場・時刻をほかの公演が使っています。",
+		"visibilityPublic": "ファン向けの一覧に表示し、公開したときに出演者のフォロワーへ通知します。",
+		"visibilityUnlisted": "共有リンクを知っている人だけが見られます。フォロワーには通知しません。",
+		"visibilityFixed": "公開または中止した公演日があるため、公開範囲は変更できません。"
+	},
+	"lotteryEditor": {
+		"newTitle": "抽選で販売する",
+		"changeTitle": "抽選販売を変更",
+		"crumb": "抽選で販売",
+		"explain": "受付期間中にファンが申し込み、締め切り後に自動で抽選します。受付開始後は変更できません。",
+		"name": "販売名",
+		"namePlaceholder": "例: ファンクラブ先行",
+		"start": "受付開始",
+		"end": "受付終了",
+		"windowHint": "受付期間は{{min}}〜{{max}}日です。公演の開始前に締め切ります。",
+		"price": "価格",
+		"quantity": "販売枚数",
+		"limit": "1人あたりの上限枚数",
+		"limitHint": "{{max}}枚まで",
+		"create": "抽選販売を始める",
+		"created": "「{{name}}」の抽選販売をつくりました",
+		"changed": "抽選販売を変更しました",
+		"saveFailed": "保存できませんでした",
+		"partlySaved": "受付期間は保存しました。価格・枚数・上限枚数は保存できませんでした。",
+		"openedWhileEditing": "受付が始まった抽選は変更できません。何も保存していません。",
+		"rejected": "この抽選販売はつくれませんでした。公演の公開状態、開始時刻、事業者情報、ほかの販売と期間が重ならないかを確認してください。",
+		"notFound": "販売が見つかりません",
+		"loadFailed": "エディタを開けませんでした。",
+		"toSales": "販売へ戻る",
+		"error": {
+			"name": "販売名を入力してください",
+			"nameLength": "販売名は{{max}}文字以内にしてください",
+			"start": "受付開始の日時を入力してください",
+			"end": "受付終了の日時を入力してください",
+			"endBeforeStart": "受付終了は受付開始より後にしてください",
+			"windowLength": "受付期間は{{min}}〜{{max}}日にしてください（いまは{{days}}日です）",
+			"closeAfterEvent": "公演の開始前に締め切ってください",
+			"quantity": "販売枚数は1以上の整数で入力してください",
+			"limit": "上限枚数は1以上の整数で入力してください",
+			"limitMax": "上限枚数は{{max}}枚までです",
+			"limitOverQuantity": "上限枚数は販売枚数以下にしてください",
+			"price": "価格は1円以上の整数で入力してください",
+			"overlap": "販売「{{name}}」（{{start}} 〜 {{end}}）と期間が重なっています"
+		}
+	},
+	"firstComeEditor": {
+		"newTitle": "先着で販売する",
+		"changeTitle": "先着販売を変更",
+		"crumb": "先着で販売",
+		"defaultName": "一般発売",
+		"start": "販売開始",
+		"end": "販売終了",
+		"endHint": "開演時刻までに終わるようにしてください。",
+		"priceLocked": "チケットが販売済みまたは購入手続き中のため、価格は変更できません。",
+		"limitHint": "{{min}}〜{{max}}枚",
+		"create": "先着販売を始める",
+		"saved": "先着販売を保存しました",
+		"saveFailed": "保存できませんでした",
+		"rejected": "保存できませんでした。公演の公開状態・開始時刻・事業者情報と、ほかの販売と期間が重ならないかを確認してください。購入手続き中または販売済みのチケットがある間は価格を変更できず、販売枚数はその合計を下回れません。",
+		"loadFailed": "販売設定を読み込めませんでした。",
+		"error": {
+			"name": "販売名を入力してください",
+			"nameLength": "販売名は{{max}}文字以内にしてください",
+			"start": "販売開始の日時を入力してください",
+			"end": "販売終了の日時を入力してください",
+			"endAfterEvent": "販売終了は開演時刻（{{eventStart}} JST）までにしてください",
+			"endBeforeStart": "販売終了は販売開始より後にしてください",
+			"price": "価格は{{min, number}}円から{{max, number}}円の整数で入力してください",
+			"quantity": "販売枚数は1以上の整数で入力してください",
+			"quantityFloor": "販売済み{{sold, number}}枚と購入手続き中{{held, number}}枚の合計（{{floor, number}}枚）を下回る枚数にはできません",
+			"limit": "上限枚数は{{min}}〜{{max}}枚で入力してください",
+			"limitOverQuantity": "上限枚数は販売枚数以下にしてください",
+			"overlap": "販売「{{name}}」（{{start}} 〜 {{end}}）と期間が重なっています"
+		}
+	}
+}

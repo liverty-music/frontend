@@ -1,0 +1,29 @@
+@layer block {
+	@scope (icon-button) {
+		:scope {
+			display: inline-flex;
+		}
+
+		button {
+			cursor: pointer;
+
+			display: inline-grid;
+			place-items: center;
+
+			inline-size: var(--md-target-size);
+			block-size: var(--md-target-size);
+			padding: 0;
+			border: none;
+			border-radius: var(--md-shape-full);
+
+			color: var(--md-color-on-surface-variant);
+
+			background: transparent;
+
+			&:disabled {
+				cursor: not-allowed;
+				color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
+			}
+		}
+	}
+}

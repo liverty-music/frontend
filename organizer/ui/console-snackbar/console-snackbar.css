@@ -1,0 +1,23 @@
+@layer block {
+	@scope (console-snackbar) {
+		:scope {
+			/* Clearance above the navigation bar on a phone; none beside the rail. */
+			--bottom-nav-height: var(--nav-bar-clearance);
+			--snack-bar-container: var(--md-color-inverse-surface);
+			--snack-bar-on-container: var(--md-color-inverse-on-surface);
+			--snack-bar-action: var(--md-color-inverse-primary);
+			--snack-bar-action-hover: color-mix(
+				in oklch,
+				var(--md-color-inverse-primary) 10%,
+				transparent
+			);
+			--snack-bar-shadow: 0 3px 8px oklch(0% 0 0deg / 20%);
+			--snack-bar-font-family: var(--font-body);
+			--snack-bar-font-weight: 400;
+			--snack-bar-action-font-size: 14px;
+
+			display: contents;
+			font: var(--md-type-body-medium);
+		}
+	}
+}

@@ -27,6 +27,15 @@ export class SnackBar {
 	 */
 	@bindable public replace = false
 
+	/** Shows a close button on every snack (the console's M3 snackbar). */
+	@bindable public dismissible = false
+
+	/** Accessible name of the close button. */
+	@bindable public closeLabel = '閉じる'
+
+	/** Shows the severity icon before the message (the fan app). */
+	@bindable public icons = true
+
 	public snacks: SnackItem[] = []
 	private containerElement!: HTMLElement
 	private nextId = 0
@@ -125,6 +134,10 @@ export class SnackBar {
 
 	public onAction(snack: SnackItem): void {
 		snack.action?.callback()
+		this.dismiss(snack)
+	}
+
+	public onClose(snack: SnackItem): void {
 		this.dismiss(snack)
 	}
 }

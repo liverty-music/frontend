@@ -1,0 +1,42 @@
+@layer block {
+	@scope (event-route) {
+		.event {
+			display: grid;
+			gap: var(--space-s);
+		}
+
+		.header {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-xs);
+			align-items: flex-start;
+			justify-content: space-between;
+		}
+
+		.heading {
+			display: grid;
+			gap: var(--space-3xs);
+		}
+
+		.concert-title,
+		.venue {
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+		}
+
+		.cancelled-note {
+			color: var(--md-color-error);
+		}
+
+		.message {
+			display: grid;
+			gap: var(--space-xs);
+			justify-items: start;
+		}
+	}
+}

@@ -1,0 +1,18 @@
+<import from="./console-tabs.css"></import>
+
+<nav aria-label.bind="label">
+  <div ref="list" class="tab-list">
+    <a
+      repeat.for="tab of tabs; key: id"
+      href.bind="tab.href"
+      class="tab state-layer"
+      aria-current.bind="tab.id === active ? 'page' : null"
+      data-tab.bind="tab.id"
+    >${tab.label}</a>
+    <span
+      class="indicator"
+      aria-hidden="true"
+      style.bind="indicatorStyle"
+    ></span>
+  </div>
+</nav>

@@ -1,0 +1,95 @@
+/* Shared-axis X page transition (design D5): the old page slides out to the
+   start while fading, the new one slides in from the end. */
+@layer global {
+	::view-transition-old(console-main) {
+		animation: var(--md-sys-motion-duration-medium2)
+			var(--md-sys-motion-easing-standard) both console-slide-out;
+	}
+
+	::view-transition-new(console-main) {
+		animation: var(--md-sys-motion-duration-medium2)
+			var(--md-sys-motion-easing-standard) both console-slide-in;
+	}
+
+	@keyframes console-slide-out {
+		to {
+			transform: translateX(-30px);
+			opacity: 0;
+		}
+	}
+
+	@keyframes console-slide-in {
+		from {
+			transform: translateX(30px);
+			opacity: 0;
+		}
+	}
+}
+
+@layer block {
+	@scope (organizer-shell) {
+		/* The shell is the window: its width is the M3 window size class. */
+		:scope {
+			container: shell / inline-size;
+			display: block;
+			block-size: 100dvh;
+		}
+
+		/* Compact: top bar, scrolling page, navigation bar at the bottom. */
+		.frame {
+			display: grid;
+			grid-template:
+				"top" auto
+				"main" 1fr
+				"nav" auto
+				/ 1fr;
+			block-size: 100%;
+		}
+
+		.frame[data-framed="false"] {
+			grid-template: "main" 1fr / 1fr;
+		}
+
+		.top {
+			grid-area: top;
+		}
+
+		.nav {
+			grid-area: nav;
+		}
+
+		/* Only the page scrolls, so the bar and the rail never cover content. */
+		.main {
+			overflow: auto;
+			grid-area: main;
+			outline: none;
+			view-transition-name: console-main;
+		}
+
+		.page {
+			display: grid;
+			gap: var(--space-s);
+
+			max-inline-size: var(--page-max-inline-size);
+			margin-inline: auto;
+			padding: var(--space-2xs) var(--space-s) var(--space-l);
+		}
+
+		/* Medium and up: the rail on the inline-start edge; the snackbar needs no
+		   clearance for a bottom bar. */
+		@container shell (width >= 600px) {
+			.frame {
+				--nav-bar-clearance: 0px;
+
+				grid-template:
+					"nav top" auto
+					"nav main" 1fr
+					/ var(--nav-rail-width) 1fr;
+			}
+
+			.page {
+				padding-inline: var(--space-m);
+			}
+		}
+	}
+}

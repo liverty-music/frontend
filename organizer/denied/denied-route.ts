@@ -1,7 +1,14 @@
+import { resolve } from 'aurelia'
+import { IAuthService } from '../../shared/services/auth-service'
+
 /**
- * Access-denied placeholder for the organizer console. Shown to an
- * authenticated account that lacks the `owner` role on the `organizer-console`
- * project (see {@link ../hooks/auth-hook}). It carries `data: { role: false }`
- * in the route table so the guard admits it without re-running the role check.
+ * Shown to a signed-in account without the owner role: no console screen
+ * opens, and the operator can sign out to try another account.
  */
-export class DeniedRoute {}
+export class DeniedRoute {
+	private readonly auth = resolve(IAuthService)
+
+	public async signOut(): Promise<void> {
+		await this.auth.signOut()
+	}
+}

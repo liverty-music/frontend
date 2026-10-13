@@ -313,8 +313,18 @@ export class AuthService {
 	public async signIn(options?: {
 		loginHint?: string
 		forceLogin?: boolean
+		/**
+		 * In-app path (starting with a single `/`) to show after the callback,
+		 * carried in the OIDC state. Read it back with {@link resolveAuthReturnTo}.
+		 */
+		returnTo?: string
 	}): Promise<void> {
 		this.logger.info('Starting sign-in flow')
+		// A sign-in carries no flow marker (see signUp); only the return path.
+		const returnTo = options?.returnTo
+		const state: AuthFlowState | undefined = isInAppPath(returnTo)
+			? { returnTo }
+			: undefined
 		// `prompt=login` forces Zitadel to re-authenticate instead of silently
 		// reusing an existing SSO session. In dev this eases test-user switching;
 		// callers also request it (forceLogin) to recover from a reused session
@@ -326,6 +336,7 @@ export class AuthService {
 				? { prompt: 'login' }
 				: {}),
 			...(options?.loginHint ? { login_hint: options.loginHint } : {}),
+			...(state ? { state } : {}),
 		})
 	}
 

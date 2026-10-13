@@ -1,5 +1,8 @@
 import type { TicketSale } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
-import { TicketSaleMethod } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
+import {
+	TicketSaleMethod,
+	VerificationRequirement,
+} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
 import type { TicketType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_type_pb.js'
 import {
 	type LotteryEntryStats,
@@ -13,7 +16,7 @@ import { IAuthService } from '../../shared/services/auth-service'
 import { createOrganizerTransport } from './organizer-transport'
 
 export type { LotteryEntryStats, TicketSale, TicketType }
-export { TicketSaleMethod }
+export { TicketSaleMethod, VerificationRequirement }
 
 /**
  * The plain, transport-agnostic input of a new sale with one TicketType for
@@ -160,6 +163,31 @@ export class TicketSaleClient {
 			return response.ticketSale
 		} catch (err) {
 			this.logger.warn('setWindow failed', { ticketSaleId, error: err })
+			throw err
+		}
+	}
+
+	/** Replaces the sale's verification requirement and returns the sale. */
+	public async setVerificationRequirement(
+		ticketSaleId: string,
+		requirement: VerificationRequirement,
+		signal?: AbortSignal,
+	): Promise<TicketSale | undefined> {
+		this.logger.info('Setting verification requirement', { ticketSaleId })
+		try {
+			const response = await this.client.setVerificationRequirement(
+				{
+					ticketSaleId: { value: ticketSaleId },
+					verificationRequirement: requirement,
+				},
+				{ signal },
+			)
+			return response.ticketSale
+		} catch (err) {
+			this.logger.warn('setVerificationRequirement failed', {
+				ticketSaleId,
+				error: err,
+			})
 			throw err
 		}
 	}

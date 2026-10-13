@@ -1,284 +1,148 @@
-<main class="[ editor ] [ flow ]">
-  <header class="editor-header">
-    <a load="../concerts" class="editor-back-link">← Back to your concerts</a>
-    <h1 class="editor-title">
-      ${isEdit ? 'Edit concert' : 'New concert'}
-    </h1>
-    <p if.bind="isEdit && isCorrection" class="editor-note">
-      This concert has published or cancelled dates. Edits are corrections and do not
-      re-notify followers. The type is fixed, and the venue and date of a
-      published date cannot change. New dates are saved as drafts until you
-      publish them.
-    </p>
-  </header>
+<import from="./concert-editor-route.css"></import>
 
-  <output
-    if.bind="phase === 'loading'"
-    class="organizer-status"
-    role="status"
-    aria-busy="true"
-  >
-    <span class="organizer-spinner"></span>
-    <span>Loading…</span>
-  </output>
+<section class="editor">
+  <h1 class="page-title">${(isEdit ? 'concertEditor.editTitle' : 'concertEditor.newTitle') & t}</h1>
 
-  <section
-    if.bind="phase === 'error'"
-    class="organizer-state"
-    role="alert"
-    data-state="error"
-  >
-    <p>Could not open the editor.</p>
-    <p class="organizer-error">${loadError}</p>
-    <a load="../concerts" class="organizer-btn">Back to your concerts</a>
-  </section>
+  <circular-progress if.bind="state === 'loading'"></circular-progress>
+  <div if.bind="state === 'notFound'" class="message" role="alert">
+    <p>${'concert.notFound' & t}</p>
+    <console-button variant="tonal" href="/concerts">${'concert.toConcerts' & t}</console-button>
+  </div>
+  <div if.bind="state === 'error'" class="message" role="alert">
+    <p>${'concertEditor.loadFailed' & t}</p>
+    <console-button variant="tonal" href="/concerts">${'concert.toConcerts' & t}</console-button>
+  </div>
 
-  <form
-    if.bind="phase === 'ready'"
-    class="[ editor-form ] [ flow ]"
-    submit.trigger="save()"
-  >
-    <!-- Series metadata -->
-    <label class="organizer-field">
-      Title (required)
-      <input
-        type="text"
-        class="organizer-input"
-        value.bind="model.title"
-        input.trigger="revalidate()"
-        placeholder="e.g. Spring One-Man Tour 2026"
-      />
-    </label>
-    <p if.bind="submitted && errors.title" class="organizer-error" role="alert">
-      ${errors.title}
-    </p>
+  <form if.bind="state === 'ready'" class="form" novalidate submit.trigger="false">
+    <p if.bind="isCorrection" class="note">${'concertEditor.correctionNote' & t}</p>
 
-    <label class="organizer-field">
-      Description (optional)
-      <textarea
-        class="organizer-textarea"
-        value.bind="model.description"
-        placeholder="Notes shown on the concert page"
-      ></textarea>
-    </label>
+    <console-field
+      component.ref="titleField"
+      label.bind="'concertEditor.title' & t"
+      value.bind="model.title"
+      required.bind="true"
+      error.bind="error(errors.title, submitted)"
+    ></console-field>
+    <console-field
+      type="textarea"
+      label.bind="'concertEditor.description' & t"
+      value.bind="model.description"
+    ></console-field>
+    <div class="row">
+      <console-field
+        type="select"
+        label.bind="'concertEditor.type' & t"
+        value.bind="typeValue"
+        options.bind="typeOptions"
+        disabled.bind="isCorrection"
+      ></console-field>
+    </div>
 
-    <div class="[ editor-grid ] [ cluster ]">
-      <label class="organizer-field">
-        Type
-        <select
-          class="organizer-select"
-          value.bind="model.type"
-          change.trigger="revalidate()"
-          disabled.bind="isCorrection"
-        >
-          <option model.bind="SeriesType.SINGLE">Single</option>
-          <option model.bind="SeriesType.TOUR">Tour</option>
-          <option model.bind="SeriesType.FESTIVAL">Festival</option>
-        </select>
+    <fieldset class="visibility" disabled.bind="isCorrection">
+      <legend class="legend">${'concertEditor.visibility' & t}</legend>
+      <label repeat.for="option of visibilityChoices" class="visibility-option state-layer">
+        <input type="radio" name="visibility" model.bind="option.value" checked.bind="model.visibility">
+        <span class="visibility-text">
+          <span class="visibility-label">${option.labelKey & t}</span>
+          <span class="visibility-effect">${option.effectKey & t}</span>
+        </span>
       </label>
-    </div>
-
-    <!-- Performers -->
-    <fieldset class="[ editor-fieldset ] [ flow ]">
-      <legend>Performers (represented artists)</legend>
-      <p if.bind="performers.length === 0" class="organizer-error">
-        You represent no artists yet, so a concert cannot be created.
-      </p>
-      <div class="[ editor-performers ] [ cluster ]">
-        <label
-          repeat.for="option of performers"
-          class="editor-performer"
-          data-selected.bind="option.selected"
-        >
-          <input
-            type="checkbox"
-            checked.to-view="option.selected"
-            change.trigger="togglePerformer(option)"
-          />
-          ${option.name}
-        </label>
-      </div>
-      <p
-        if.bind="submitted && errors.artistIds"
-        class="organizer-error"
-        role="alert"
-      >
-        ${errors.artistIds}
-      </p>
+      <p if.bind="isCorrection" class="note">${'concertEditor.visibilityFixed' & t}</p>
     </fieldset>
 
-    <!-- Events -->
-    <fieldset class="[ editor-fieldset ] [ flow ]">
-      <legend>Events</legend>
-      <div
-        repeat.for="row of model.events"
-        class="[ editor-event ] [ flow ]"
-      >
-        <div class="editor-event-head">
-          <span class="editor-event-index">Event ${$index + 1}</span>
-          <span class="editor-event-state" data-state.bind="row.publishState"
-            >${eventStateLabels[row.publishState]}</span
-          >
-          <button
+    <fieldset ref="performersFieldset" class="performers" aria-describedby.bind="submitted && errors.artistIds ? 'performers-error' : null">
+      <legend class="legend">${'concertEditor.performers' & t} *</legend>
+      <p if.bind="performers.length === 0" class="note">${'concertEditor.noArtists' & t}</p>
+      <label repeat.for="option of performers" class="performer state-layer">
+        <input type="checkbox" checked.to-view="option.selected" change.trigger="togglePerformer(option)">
+        <span>${option.name}</span>
+      </label>
+      <p if.bind="submitted && errors.artistIds" id="performers-error" class="error">${errors.artistIds & t}</p>
+    </fieldset>
+
+    <fieldset class="events">
+      <legend class="legend">${'concertEditor.dates' & t}</legend>
+      <section repeat.for="row of model.events" class="event" data-row.bind="$index">
+        <header class="event-header">
+          <h2 class="event-title">${'concertEditor.dateN' & t:{ n: $index + 1 }}</h2>
+          <status-badge
+            tone.bind="row.publishState === PublishState.PUBLISHED ? 'success' : row.publishState === PublishState.CANCELLED ? 'error' : 'neutral'"
+            label.bind="(row.publishState === PublishState.PUBLISHED ? 'publishState.published' : row.publishState === PublishState.CANCELLED ? 'publishState.cancelled' : 'publishState.draft') & t"
+          ></status-badge>
+          <console-button
             if.bind="row.publishState === PublishState.DRAFT && model.events.length > 1"
-            type="button"
-            class="organizer-btn"
-            data-variant="ghost"
+            variant="text"
             click.trigger="removeEvent($index)"
-          >
-            Remove
-          </button>
+          >${'concertEditor.removeDate' & t}</console-button>
+        </header>
+        <p if.bind="row.publishState === PublishState.PUBLISHED" class="note">${'concertEditor.publishedNote' & t}</p>
+        <p if.bind="row.publishState === PublishState.CANCELLED" class="note">${'concertEditor.cancelledNote' & t}</p>
+
+        <venue-field
+          if.bind="row.publishState === PublishState.DRAFT"
+          component.ref="venueFields[$index]"
+          label.bind="'concertEditor.venue' & t"
+          required.bind="true"
+          value.bind="row.venue"
+          search.bind="search"
+          error.bind="error(errors.rows[$index].venueName, submitted)"
+        ></venue-field>
+        <div else class="fixed-venue">
+          <span class="label">${'concertEditor.venue' & t}</span>
+          <span>${row.venue ? row.venue.name : ''}</span>
+          <p if.bind="error(errors.rows[$index].venueName, submitted)" class="error">${error(errors.rows[$index].venueName, submitted)}</p>
         </div>
 
-        <p
-          if.bind="row.publishState === PublishState.PUBLISHED"
-          class="editor-note"
-        >
-          Published: the venue and date are fixed. To move this date, cancel it
-          and add a new one.
-        </p>
-        <p
-          if.bind="row.publishState === PublishState.CANCELLED"
-          class="editor-note"
-        >
-          This date is cancelled (中止) and can no longer be edited.
-        </p>
-        <label class="organizer-field">
-          Venue name (required)
-          <input
-            type="text"
-            class="organizer-input"
-            value.bind="row.venueName"
-            disabled.bind="row.publishState !== PublishState.DRAFT"
-            input.trigger="revalidate()"
-            placeholder="e.g. Zepp Tokyo"
-          />
-        </label>
-        <label class="organizer-field">
-          Google place id (optional)
-          <input
-            type="text"
-            class="organizer-input"
-            value.bind="row.placeId"
-            disabled.bind="row.publishState !== PublishState.DRAFT"
-            placeholder="ChIJ…"
-          />
-        </label>
-        <label class="organizer-field">
-          Date (required)
-          <input
+        <div class="row">
+          <console-field
             type="date"
-            class="organizer-input"
+            component.ref="dateFields[$index]"
+            label.bind="'concertEditor.date' & t"
             value.bind="row.localDate"
+            required.bind="true"
             disabled.bind="row.publishState !== PublishState.DRAFT"
-            input.trigger="revalidate()"
-          />
-        </label>
-        <div class="[ editor-grid ] [ cluster ]">
-          <label class="organizer-field">
-            Open time (optional)
-            <input
-              type="time"
-              class="organizer-input"
-              value.bind="row.openTime"
-              disabled.bind="row.publishState === PublishState.CANCELLED"
-              input.trigger="revalidate()"
-            />
-          </label>
-          <label class="organizer-field">
-            Start time (optional)
-            <input
-              type="time"
-              class="organizer-input"
-              value.bind="row.startTime"
-              disabled.bind="row.publishState === PublishState.CANCELLED"
-              input.trigger="revalidate()"
-            />
-          </label>
+            error.bind="error(errors.rows[$index].localDate, submitted)"
+          ></console-field>
+          <console-field
+            type="time"
+            label.bind="'concertEditor.openTime' & t"
+            value.bind="row.openTime"
+            disabled.bind="row.publishState === PublishState.CANCELLED"
+          ></console-field>
+          <console-field
+            type="time"
+            label.bind="'concertEditor.startTime' & t"
+            value.bind="row.startTime"
+            disabled.bind="row.publishState === PublishState.CANCELLED"
+            error.bind="error(errors.rows[$index].time, submitted)"
+          ></console-field>
         </div>
-
-        <p
-          if.bind="submitted && errors.rows[$index].venueName"
-          class="organizer-error"
-          role="alert"
-        >
-          ${errors.rows[$index].venueName}
-        </p>
-        <p
-          if.bind="submitted && errors.rows[$index].localDate"
-          class="organizer-error"
-          role="alert"
-        >
-          ${errors.rows[$index].localDate}
-        </p>
-        <p
-          if.bind="submitted && errors.rows[$index].time"
-          class="organizer-error"
-          role="alert"
-        >
-          ${errors.rows[$index].time}
-        </p>
-      </div>
-
-      <button
-        type="button"
-        class="organizer-btn"
-        data-variant="ghost"
-        click.trigger="addEvent()"
-      >
-        + Add another event
-      </button>
-      <p if.bind="submitted && errors.events" class="organizer-error" role="alert">
-        ${errors.events}
-      </p>
+      </section>
+      <console-button variant="text" icon="add" click.trigger="addEvent()">${'concertEditor.addDate' & t}</console-button>
     </fieldset>
 
-    <div class="[ editor-actions ] [ cluster ]">
-      <button
-        type="submit"
-        class="organizer-btn"
-        data-variant="primary"
-        disabled.bind="saving"
-      >
-        ${saving ? 'Saving…' : (isEdit ? 'Save changes' : 'Create draft')}
-      </button>
-    </div>
-    <p if.bind="saveError" class="organizer-error" role="alert">${saveError}</p>
+    <section if.bind="isEdit" class="cover" aria-labelledby="concert-editor-cover">
+      <h2 id="concert-editor-cover" class="legend">${'concertEditor.cover.title' & t}</h2>
+      <img if.bind="renderedCover" src.bind="renderedCover" alt="" class="cover-image" data-testid="cover-preview">
+      <p if.bind="coverNote" class="note" role="status">${`concertEditor.cover.${coverNote}` & t}</p>
+      <label class="cover-input">
+        <span>${'concertEditor.cover.pick' & t:{ size: maxImageMiB }}</span>
+        <input type="file" accept="image/jpeg,image/png,image/webp" disabled.bind="uploadingCover" change.trigger="onCoverSelected($event)">
+      </label>
+      <circular-progress if.bind="uploadingCover" size="small" label.bind="'concertEditor.cover.uploading' & t"></circular-progress>
+      <p if.bind="coverImageError" class="error" role="alert">${coverImageError}</p>
+    </section>
+
+    <action-bar>
+      <console-button variant="text" href.bind="isEdit ? `/concerts/${seriesId}` : '/concerts'">${'common.cancel' & t}</console-button>
+      <console-button
+        variant="filled"
+        icon="check"
+        action.bind="() => save()"
+        pending-label.bind="'common.saving' & t"
+      >${(isEdit ? 'common.save' : 'concertEditor.create') & t}</console-button>
+    </action-bar>
   </form>
 
-  <!-- Cover image: edit mode only (needs a persisted id) -->
-  <section
-    if.bind="phase === 'ready' && isEdit"
-    class="[ editor-panel ] [ flow ]"
-  >
-    <h2 class="editor-subtitle">Cover image</h2>
-    <img
-      if.bind="renderedCover"
-      class="editor-cover-preview"
-      src.bind="renderedCover"
-      error.trigger="onCoverError()"
-      alt="Cover image"
-    />
-    <p if.bind="coverProcessing" class="editor-note" role="status">
-      Preview shown — the optimised image is still being processed and will
-      appear shortly. If it never does, upload again.
-    </p>
-    <label class="organizer-field">
-      Upload a cover image (JPEG, PNG, or WebP, ≤ ${maxImageMiB} MiB)
-      <input
-        type="file"
-        class="organizer-input"
-        accept="image/jpeg,image/png,image/webp"
-        disabled.bind="uploadingCover"
-        change.trigger="onCoverSelected($event)"
-      />
-    </label>
-    <output if.bind="uploadingCover" class="organizer-status" role="status">
-      <span class="organizer-spinner"></span>
-      <span>Uploading…</span>
-    </output>
-    <p if.bind="coverImageError" class="organizer-error" role="alert">
-      ${coverImageError}
-    </p>
-  </section>
-</main>
+  <unsaved-changes component.ref="guard" dirty.bind="isDirty"></unsaved-changes>
+</section>

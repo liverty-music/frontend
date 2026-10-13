@@ -1,0 +1,34 @@
+@layer block {
+	@scope (stat-tile) {
+		:scope {
+			display: block;
+		}
+
+		.tile {
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-3xs);
+
+			padding: var(--space-s);
+			border-radius: var(--md-shape-medium);
+
+			background: var(--md-color-surface-container);
+		}
+
+		.label {
+			font: var(--md-type-label-large);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.value {
+			font: var(--md-type-headline-small);
+			font-variant-numeric: tabular-nums;
+			color: var(--md-color-on-surface);
+		}
+
+		.supporting {
+			font: var(--md-type-body-small);
+			color: var(--md-color-on-surface-variant);
+		}
+	}
+}

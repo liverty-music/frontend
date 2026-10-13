@@ -1,6 +1,9 @@
 import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
-import { IAuthService } from '../../shared/services/auth-service'
+import {
+	IAuthService,
+	resolveAuthReturnTo,
+} from '../../shared/services/auth-service'
 import {
 	clearSessionFlag,
 	readSessionFlag,
@@ -56,13 +59,18 @@ export class AuthCallbackRoute {
 	): Promise<boolean | NavigationInstruction> {
 		this.logger.info('Processing organizer OIDC callback...')
 		try {
-			await this.authService.handleCallback()
+			const user = await this.authService.handleCallback()
 			this.logger.info('Organizer auth callback succeeded')
 			// Clear the one-shot self-heal marker; the guard enforces org + role.
 			clearSessionFlag(CALLBACK_RETRY_FLAG)
-			// After an involuntary re-auth, return the operator to where they were;
-			// otherwise land on the concerts dashboard (the guard re-checks org + role).
-			return this.authService.takeReturnTo() ?? '/concerts'
+			// Return the operator to where they were: after an involuntary
+			// re-auth (sessionStorage), or to the address they opened before
+			// signing in (OIDC state); otherwise Home. The guard re-checks org + role.
+			return (
+				this.authService.takeReturnTo() ??
+				(user ? resolveAuthReturnTo(user) : undefined) ??
+				'/home'
+			)
 		} catch (err) {
 			this.logger.error('Organizer auth callback error:', err)
 
@@ -71,7 +79,7 @@ export class AuthCallbackRoute {
 			if (this.authService.isAuthenticated) {
 				clearSessionFlag(CALLBACK_RETRY_FLAG)
 				// After an involuntary re-auth, return the operator to where they were.
-				return this.authService.takeReturnTo() ?? '/concerts'
+				return this.authService.takeReturnTo() ?? '/home'
 			}
 
 			// Self-heal a cross-context "No matching state" dead-end: restart the
@@ -95,7 +103,7 @@ export class AuthCallbackRoute {
 			// Hard failure: discard any stored return-to so it can't be replayed by
 			// a later, unrelated successful sign-in.
 			this.authService.takeReturnTo()
-			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
+			this.error = err instanceof Error ? err.message : String(err)
 			return true
 		}
 	}

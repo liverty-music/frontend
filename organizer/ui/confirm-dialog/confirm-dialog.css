@@ -1,0 +1,38 @@
+@layer block {
+	@scope (confirm-dialog) {
+		dialog {
+			inline-size: min(100% - 2 * var(--space-m), 560px);
+			min-inline-size: 280px;
+			padding: var(--space-m);
+			border: none;
+			border-radius: var(--md-shape-extra-large);
+
+			color: var(--md-color-on-surface-variant);
+
+			background: var(--md-color-surface-container-high);
+
+			&::backdrop {
+				background: var(--md-color-scrim);
+			}
+		}
+
+		.heading {
+			margin-block-end: var(--space-s);
+			font: var(--md-type-headline-small);
+			color: var(--md-color-on-surface);
+		}
+
+		.body {
+			font: var(--md-type-body-medium);
+		}
+
+		.actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+			justify-content: flex-end;
+
+			margin-block-start: var(--space-m);
+		}
+	}
+}

@@ -1,0 +1,129 @@
+@layer block {
+	@scope (top-app-bar) {
+		:scope {
+			display: block;
+		}
+
+		.top-app-bar {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+
+			min-block-size: 64px;
+			padding-inline: var(--space-s) var(--space-2xs);
+
+			background: var(--md-color-surface);
+		}
+
+		.logo {
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: baseline;
+
+			min-block-size: var(--md-target-size);
+			padding-block: var(--space-xs);
+
+			text-decoration: none;
+		}
+
+		/* The logo is one of the three places the brand color may appear. */
+		.logo-mark {
+			font: var(--md-type-title-large);
+			font-weight: 700;
+			color: var(--md-color-primary);
+		}
+
+		.logo-sub {
+			font: var(--md-type-label-large);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.organizer-name {
+			overflow: hidden;
+			flex: 1;
+
+			min-inline-size: 0;
+
+			font: var(--md-type-title-medium);
+			color: var(--md-color-on-surface);
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.account {
+			cursor: pointer;
+
+			display: grid;
+			place-items: center;
+
+			inline-size: var(--md-target-size);
+			block-size: var(--md-target-size);
+			padding: 0;
+			border: none;
+			border-radius: var(--md-shape-full);
+
+			color: var(--md-color-on-surface-variant);
+
+			background: transparent;
+		}
+
+		.menu {
+			position: fixed;
+			inset: 64px var(--space-2xs) auto auto;
+
+			min-inline-size: 200px;
+			margin: 0;
+			padding-block: var(--space-2xs);
+			border: none;
+			border-radius: var(--md-shape-extra-small);
+
+			color: var(--md-color-on-surface);
+
+			background: var(--md-color-surface-container);
+			box-shadow: var(--md-elevation-2);
+		}
+
+		.menu-heading {
+			padding: var(--space-2xs) var(--space-s) var(--space-3xs);
+			font: var(--md-type-label-medium);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.menu-group {
+			display: grid;
+		}
+
+		.menu-item {
+			cursor: pointer;
+
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+
+			inline-size: 100%;
+			min-block-size: var(--md-target-size);
+			padding-inline: var(--space-s);
+			border: none;
+
+			font: var(--md-type-label-large);
+			color: inherit;
+			text-align: start;
+
+			background: transparent;
+		}
+
+		.menu-check {
+			visibility: hidden;
+		}
+
+		.menu-item[aria-pressed="true"] .menu-check {
+			visibility: visible;
+		}
+
+		.menu-divider {
+			margin-block: var(--space-2xs);
+			border: none;
+			border-block-start: 1px solid var(--md-color-outline-variant);
+		}
+	}
+}
