@@ -1,5 +1,5 @@
-import * as a11yAddonAnnotations from '@storybook/addon-a11y/preview'
 import { setProjectAnnotations } from '@aurelia/storybook/portable-stories'
+import * as a11yAddonAnnotations from '@storybook/addon-a11y/preview'
 import { beforeAll } from 'vitest'
 import preview from './preview'
 import { sharedAnnotations } from './story-annotations'

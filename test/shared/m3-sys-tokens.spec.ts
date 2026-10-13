@@ -90,12 +90,18 @@ describe('shared M3 system tokens', () => {
 		expect(shared.length).toBeGreaterThan(0)
 		expect(shared.filter((d) => !SHARED_PREFIX.test(d.name))).toEqual([])
 
-		// Each app declares its own surface, so a console value never reaches
-		// the fan app's dark navy surface.
-		const surfaceIn = (file: string) =>
-			declarations(appCss[file]).find((d) => d.name === '--color-surface-base')
-				?.value
-		expect(surfaceIn('/src/styles/tokens.css')).toBe('oklch(18% 0.04 275deg)')
-		expect(surfaceIn('/organizer/styles/main.css')).toBeDefined()
+		// Each app gives the shared role name its own value: the fan app's dark
+		// navy surface, the console's light/dark pair. Neither reaches the other.
+		const roleIn = (file: string, name: string) =>
+			declarations(appCss[file]).find((d) => d.name === name)?.value
+		expect(roleIn('/src/styles/tokens.css', '--color-surface-base')).toBe(
+			'oklch(18% 0.04 275deg)',
+		)
+		expect(roleIn('/src/styles/tokens.css', '--md-color-surface')).toBe(
+			'var(--color-surface-base)',
+		)
+		expect(roleIn('/organizer/styles/tokens.css', '--md-color-surface')).toBe(
+			'light-dark(oklch(99% 0.003 285deg), oklch(18% 0.01 285deg))',
+		)
 	})
 })

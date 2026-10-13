@@ -1,9 +1,20 @@
+/*
+ * Styled for the fan app by default. An app can restyle it by setting these on
+ * an ancestor: --snack-bar-container, --snack-bar-on-container,
+ * --snack-bar-action, --snack-bar-action-hover, --snack-bar-shadow,
+ * --snack-bar-font-family, --snack-bar-font-weight,
+ * --snack-bar-action-font-size, and --bottom-nav-height for the clearance
+ * above a bottom navigation bar.
+ */
 @layer block {
 	@scope (snack-bar) {
 		:scope {
 			--_bg-from: var(--color-brand-primary);
 			--_bg-to: var(--color-brand-secondary);
-			--_action-bg-hover: oklch(100% 0 0deg / 18%);
+			--_action-bg-hover: var(
+				--snack-bar-action-hover,
+				oklch(100% 0 0deg / 18%)
+			);
 
 			/* Material 3 snackbar placement: bottom of screen, above the
 			   persistent bottom navigation, animating up from the bottom edge.
@@ -55,20 +66,24 @@
 			border: none;
 			border-radius: var(--md-shape-extra-small);
 
-			font-family: var(--font-display);
-			font-weight: 600;
-			color: var(--color-white);
+			font-family: var(--snack-bar-font-family, var(--font-display));
+			font-weight: var(--snack-bar-font-weight, 600);
+			color: var(--snack-bar-on-container, var(--color-white));
 
 			opacity: 0;
-			background: linear-gradient(to right, var(--_bg-from), var(--_bg-to));
-			box-shadow: var(--shadow-card-glow);
+			background: var(
+				--snack-bar-container,
+				linear-gradient(to right, var(--_bg-from), var(--_bg-to))
+			);
+			box-shadow: var(--snack-bar-shadow, var(--shadow-card-glow));
 
 			transition:
-				transform var(--md-duration-medium2)
-				var(--md-easing-emphasized-decelerate),
-				opacity var(--md-duration-medium2) var(--md-easing-standard),
-				display var(--md-duration-medium2) allow-discrete,
-				overlay var(--md-duration-medium2) allow-discrete;
+				transform var(--md-sys-motion-duration-medium2)
+				var(--md-sys-motion-easing-emphasized-decelerate),
+				opacity var(--md-sys-motion-duration-medium2)
+				var(--md-sys-motion-easing-standard),
+				display var(--md-sys-motion-duration-medium2) allow-discrete,
+				overlay var(--md-sys-motion-duration-medium2) allow-discrete;
 
 			&:popover-open {
 				transform: translateY(0);
@@ -109,13 +124,47 @@
 			border: none;
 			border-radius: var(--md-shape-full);
 
-			font-size: var(--step--1);
+			font-size: var(--snack-bar-action-font-size, var(--step--1));
 			font-weight: 600;
-			color: var(--color-white);
+			color: var(--snack-bar-action, var(--color-white));
 
 			background: transparent;
 
-			transition: background var(--transition-fast) ease-out;
+			transition: background var(--md-sys-motion-duration-short3) ease-out;
+
+			&:hover {
+				background: var(--_action-bg-hover);
+			}
+		}
+
+		.snack-message {
+			flex: 1;
+		}
+
+		/* M3 close affordance: a 24 px icon on a 48 px target. */
+		.snack-close-btn {
+			cursor: pointer;
+
+			display: inline-grid;
+			flex-shrink: 0;
+			place-items: center;
+
+			inline-size: 48px;
+			block-size: 48px;
+			margin-inline-end: calc(-1 * var(--space-2xs));
+			padding: 0;
+			border: none;
+			border-radius: var(--md-shape-full);
+
+			color: inherit;
+
+			background: transparent;
+
+			& svg {
+				inline-size: 24px;
+				block-size: 24px;
+				fill: currentcolor;
+			}
 
 			&:hover {
 				background: var(--_action-bg-hover);

@@ -13,8 +13,8 @@ import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import mainSource from '../../../reception/main.ts?raw'
-import type { QrCodeReaderFactory } from '../../../reception/scanner-route/scanner-route'
 import shellSource from '../../../reception/reception-shell/reception-shell.ts?raw'
+import type { QrCodeReaderFactory } from '../../../reception/scanner-route/scanner-route'
 import { signAdmissionCode } from '../../../shared/lib/admission-code/admission-code'
 
 // Replace the RPC client module with a fresh token so the route binds to the
