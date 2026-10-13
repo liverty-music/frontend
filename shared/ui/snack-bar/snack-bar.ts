@@ -4,6 +4,7 @@ import { Snack, type SnackAction, type SnackSeverity } from './snack'
 interface SnackItem {
 	id: number
 	message: string
+	params?: Readonly<Record<string, unknown>>
 	severity: SnackSeverity
 	action?: SnackAction
 	onDismiss?: () => void
@@ -16,6 +17,10 @@ interface SnackItem {
  * window. Shared by the fan app and the organizer console. Each snack carries
  * its own duration (`SnackOptions.duration`, 2500 ms by default, `Infinity`
  * to stay until dismissed).
+ *
+ * The message and the action label show as given. An app that publishes
+ * catalog keys instead projects `message` and `action` slots, which receive
+ * the shown snack (`$host.snack`), and translates them there.
  */
 export class SnackBar {
 	private readonly ea = resolve(IEventAggregator)
@@ -64,6 +69,7 @@ export class SnackBar {
 		const snack: SnackItem = {
 			id,
 			message: event.message,
+			params: event.options?.params,
 			severity: event.severity,
 			action: event.action,
 			onDismiss: event.options?.onDismiss,
