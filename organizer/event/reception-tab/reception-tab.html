@@ -2,10 +2,13 @@
 
 <section class="reception-tab">
   <template switch.bind="prerequisite">
-    <prerequisite-callout case="notPublished" level.bind="2" heading.bind="'reception.prerequisite.notPublished' & t">
-      <p>${'reception.prerequisite.notPublishedBody' & t}</p>
-      <console-button variant="text" click.trigger="requestPublish()">${'event.publish' & t}</console-button>
-    </prerequisite-callout>
+    <prerequisite-callout
+      case="notPublished"
+      level.bind="2"
+      heading.bind="'reception.prerequisite.notPublished' & t"
+      action-label.bind="'event.publish' & t"
+      action.trigger="requestPublish()"
+    >${'reception.prerequisite.notPublishedBody' & t}</prerequisite-callout>
     <prerequisite-callout
       case="noStartTime"
       level.bind="2"

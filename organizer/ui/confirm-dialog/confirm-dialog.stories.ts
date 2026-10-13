@@ -10,7 +10,9 @@ import { userEvent } from 'vitest/browser'
 import {
 	canvasOf,
 	consoleStoryParameters,
+	deepQuery,
 	focusedElement,
+	roleColor,
 } from '../story-support'
 import { ConfirmDialog } from './confirm-dialog'
 
@@ -56,6 +58,12 @@ const host = (opener: string, dialog: string) => ({
 	},
 })
 
+/** Text and background of the control inside the named dialog button. */
+function lookOf(button: Element): { color: string; background: string } {
+	const style = getComputedStyle(deepQuery(button, 'button'))
+	return { color: style.color, background: style.backgroundColor }
+}
+
 const publish = host(
 	`<console-button variant="filled" click.trigger="open('published')">公開する</console-button>`,
 	`<confirm-dialog component.ref="dialog" heading-key="event.publishConfirmTitle" heading-params.bind="{ title: 'XX Tour 2026' }" confirm-key="event.publish">
@@ -85,6 +93,20 @@ export const PublishAsksFirst = {
 		await expect(focusedElement()).toBe(
 			dialog.getByRole('button', { name: 'やめる' }).element(),
 		)
+		// やめる is a neutral text button; the confirming 公開する keeps its
+		// emphasis as the dialog's one filled button, in the brand color.
+		const page = canvasElement.querySelector<HTMLElement>('div')
+		if (!page) throw new Error('page not rendered')
+		const dismiss = lookOf(
+			deepQuery(dialog.element(), 'console-button:not([data-role])'),
+		)
+		await expect(dismiss.color).toBe(
+			roleColor(page, '--md-color-on-surface-variant'),
+		)
+		await expect(
+			lookOf(deepQuery(dialog.element(), 'console-button[data-role="confirm"]'))
+				.background,
+		).toBe(roleColor(page, '--md-color-primary'))
 
 		await userEvent.click(dialog.getByRole('button', { name: '公開する' }))
 
@@ -151,6 +173,20 @@ export const RevokeAScanner = {
 		await expect(canvas.getByTestId('result').element()).toHaveTextContent(
 			'none',
 		)
+		// The destructive confirm stands apart from the neutral やめる by the
+		// error container, not by the brand color.
+		const page = canvasElement.querySelector<HTMLElement>('div')
+		if (!page) throw new Error('page not rendered')
+		const brand = roleColor(page, '--md-color-primary')
+		const dismiss = lookOf(
+			deepQuery(dialog.element(), 'console-button:not([data-role])'),
+		)
+		const confirm = lookOf(
+			deepQuery(dialog.element(), 'console-button[data-role="confirm"]'),
+		)
+		await expect([dismiss.color, dismiss.background]).not.toContain(brand)
+		await expect([confirm.color, confirm.background]).not.toContain(brand)
+		await expect(confirm.background).toBe(roleColor(page, '--md-color-error'))
 
 		await userEvent.click(dialog.getByRole('button', { name: '取り消す' }))
 		await expect(canvas.getByTestId('result').element()).toHaveTextContent(

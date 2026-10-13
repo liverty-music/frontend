@@ -1,4 +1,5 @@
 import {
+	brandColoredControls,
 	connectError,
 	installConsole,
 	ORG,
@@ -274,55 +275,11 @@ test.describe('brand color', () => {
 		await expect(page.getByRole('table')).toBeVisible()
 		await expect(page.getByRole('table')).toContainText('受付中')
 
-		// The brand roles: the magenta and its container tint.
-		const brand = await page.evaluate(() =>
-			['--md-color-primary', '--md-color-primary-container'].map((role) => {
-				const probe = document.createElement('div')
-				probe.style.background = `var(${role})`
-				document.querySelector('organizer-shell main')?.append(probe)
-				const color = getComputedStyle(probe).backgroundColor
-				probe.remove()
-				return color
-			}),
-		)
-		expect(brand).not.toContain('rgba(0, 0, 0, 0)')
-
-		// Every visible control of the page, the navigation and top bar
-		// included, inside the console components' shadow roots too.
-		const controls = await page.evaluate(() => {
-			const all: Element[] = []
-			const walk = (root: ParentNode) => {
-				for (const el of root.querySelectorAll('*')) {
-					all.push(el)
-					if (el.shadowRoot) walk(el.shadowRoot)
-				}
-			}
-			walk(document)
-			return all
-				.filter((el) => el.matches('a, button'))
-				.filter((el) => (el as HTMLElement).offsetParent !== null)
-				.map((el) => {
-					const style = getComputedStyle(el)
-					return {
-						// A console control's label is slotted: its text is the host's.
-						text: (
-							el.textContent?.trim() ||
-							((el.getRootNode() as ShadowRoot).host?.textContent ?? '')
-						).trim(),
-						background: style.backgroundColor,
-						color: style.color,
-						logo: el.classList.contains('brand'),
-					}
-				})
-		})
-		const inBrand = controls.filter(
-			(c) => brand.includes(c.background) || brand.includes(c.color),
-		)
 		// The logo may use it too (design-tokens); nothing else but 公演をつくる.
-		expect(inBrand.filter((c) => !c.logo).map((c) => c.text)).toEqual([
-			'公演をつくる',
-		])
+		expect(await brandColoredControls(page)).toEqual(['公演をつくる'])
 		// Each concert row is a link too, and none of them is brand-colored.
-		expect(controls.some((c) => c.text.includes('XX Tour 2026'))).toBe(true)
+		await expect(
+			page.getByRole('link', { name: /XX Tour 2026/ }).first(),
+		).toBeVisible()
 	})
 })
