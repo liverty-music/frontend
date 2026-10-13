@@ -1,5 +1,6 @@
 <import from="./data-list.css"></import>
 <import from="../status-badge/status-badge"></import>
+<import from="../list-item/list-item"></import>
 <use-shadow-dom></use-shadow-dom>
 
 <template as-custom-element="cell-text">
@@ -20,17 +21,27 @@
   </template>
 </template>
 
-<ul class="cards" aria-label.bind="label">
-  <li repeat.for="row of rows; key: id" class="card">
-    <a if.bind="row.href" href.bind="row.href" class="card-title state-layer"><cell-text value.bind="row.cells[primary.key]"></cell-text></a>
-    <span else class="card-title"><cell-text value.bind="row.cells[primary.key]"></cell-text></span>
-    <span if.bind="row.subtitle" class="subtitle"><cell-text value.bind="row.subtitle"></cell-text></span>
-    <dl class="card-details">
-      <div repeat.for="column of details" class="card-detail" data-numeric.bind="isNumeric(column)">
-        <dt>${column.labelKey & t}</dt>
-        <dd><data-cell kind.bind="column.kind" value.bind="row.cells[column.key]"></data-cell></dd>
-      </div>
-    </dl>
+<ul class="list" aria-label.bind="label">
+  <li repeat.for="row of rows; key: id">
+    <list-item href.bind="row.href">
+      <span if.bind="row.subtitle" slot="overline"><cell-text value.bind="row.subtitle"></cell-text></span>
+      <cell-text value.bind="row.cells[primary.key]"></cell-text>
+      <span
+        repeat.for="column of supporting"
+        if.bind="row.cells[column.key] !== undefined"
+        slot="supporting"
+        data-column.bind="column.key"
+      >
+        <template if.bind="column.kind === 'status'">${row.cells[column.key].labelKey & t}</template>
+        <template else>
+          <template if.bind="isNumeric(column)">${column.labelKey & t} </template>
+          <data-cell kind.bind="column.kind" value.bind="row.cells[column.key]"></data-cell>
+        </template>
+      </span>
+      <span if.bind="trailing && row.cells[trailing.key] !== undefined" slot="trailing">
+        <data-cell kind.bind="trailing.kind" value.bind="row.cells[trailing.key]"></data-cell>
+      </span>
+    </list-item>
   </li>
 </ul>
 
@@ -42,10 +53,10 @@
     </tr>
   </thead>
   <tbody>
-    <tr repeat.for="row of rows; key: id">
+    <tr repeat.for="row of rows; key: id" data-link.bind="!!row.href">
       <template repeat.for="column of columns">
         <th if.bind="column === primary" scope="row">
-          <a if.bind="row.href" href.bind="row.href"><cell-text value.bind="row.cells[column.key]"></cell-text></a>
+          <a if.bind="row.href" href.bind="row.href" class="row-link"><cell-text value.bind="row.cells[column.key]"></cell-text></a>
           <cell-text else value.bind="row.cells[column.key]"></cell-text>
           <span if.bind="row.subtitle" class="subtitle"><cell-text value.bind="row.subtitle"></cell-text></span>
         </th>

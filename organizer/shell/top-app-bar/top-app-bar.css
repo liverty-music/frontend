@@ -1,3 +1,15 @@
+@layer global {
+	@keyframes top-app-bar-title {
+		from {
+			opacity: 0;
+		}
+
+		to {
+			opacity: 1;
+		}
+	}
+}
+
 @layer block {
 	@scope (top-app-bar) {
 		:scope {
@@ -6,66 +18,108 @@
 
 		.top-app-bar {
 			display: flex;
-			gap: var(--space-xs);
+			gap: var(--space-2xs);
 			align-items: center;
 
 			min-block-size: 64px;
-			padding-inline: var(--space-s) var(--space-2xs);
+			padding-inline: var(--space-3xs);
 
 			background: var(--md-color-surface);
 		}
 
-		.logo {
-			display: inline-flex;
-			gap: var(--space-3xs);
-			align-items: baseline;
+		/* Compact, below a destination: the back arrow and the page title take
+		   the brand's place. */
+		.back {
+			display: inline-grid;
+			flex-shrink: 0;
+			place-items: center;
+
+			inline-size: var(--md-target-size);
+			block-size: var(--md-target-size);
+			border-radius: var(--md-shape-full);
+
+			color: var(--md-color-on-surface);
+		}
+
+		.title {
+			overflow: hidden;
+			flex: 1 1 auto;
+
+			min-inline-size: 0;
+
+			font: var(--md-type-title-large);
+			color: var(--md-color-on-surface);
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		/* The page's own title heads the page; the bar's title fades in as
+		   the page scrolls it away (M3 top app bar, scroll-driven, off the
+		   main thread), and stays hidden on a page too short to scroll.
+		   Without scroll timelines the title stays shown. */
+		@supports (animation-timeline: scroll()) {
+			.title {
+				opacity: 0;
+				animation: top-app-bar-title linear both;
+				animation-timeline: --console-page;
+				animation-range: 0 64px;
+			}
+		}
+
+		/* The brand lockup: Liverty Music over Organizer Console. The logo is
+		   one of the three places the brand color may appear. */
+		.brand {
+			display: inline-grid;
+			flex-shrink: 0;
+			align-content: center;
 
 			min-block-size: var(--md-target-size);
-			padding-block: var(--space-xs);
+			padding-inline: var(--space-xs);
 
 			text-decoration: none;
 		}
 
-		/* The logo is one of the three places the brand color may appear. */
-		.logo-mark {
-			font: var(--md-type-title-large);
+		.brand-mark {
+			font: var(--md-type-title-small);
 			font-weight: 700;
 			color: var(--md-color-primary);
 		}
 
-		.logo-sub {
-			font: var(--md-type-label-large);
+		.brand-product {
+			font: var(--md-type-label-medium);
 			color: var(--md-color-on-surface-variant);
 		}
 
-		/* The Organizer and the Artist worked on take the room between the
-		   logo and the account button; the names shorten before they wrap. */
+		/* The Organizer and the Artist worked on, stacked on a compact window;
+		   the names shorten before they wrap. */
 		.context {
-			display: flex;
-			flex: 1;
-			gap: var(--space-2xs);
-			align-items: center;
-
+			display: grid;
+			flex: 1 1 0;
+			justify-items: end;
 			min-inline-size: 0;
 		}
 
 		.organizer-name,
 		.artist-name {
 			overflow: hidden;
+
 			min-inline-size: 0;
+			max-inline-size: 100%;
+
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
 
 		.organizer-name {
-			flex: 0 1 auto;
-			font: var(--md-type-title-medium);
-			color: var(--md-color-on-surface);
+			padding-inline: var(--space-xs) var(--space-3xs);
+			font: var(--md-type-label-medium);
+			color: var(--md-color-on-surface-variant);
 		}
 
 		.context > .artist-name {
+			padding-inline: var(--space-xs) var(--space-3xs);
 			font: var(--md-type-label-large);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-color-on-surface);
 		}
 
 		/* M3 menu button: the current Artist and a drop-down arrow. */
@@ -78,13 +132,14 @@
 			align-items: center;
 
 			min-inline-size: 0;
-			min-block-size: var(--md-target-size);
+			max-inline-size: 100%;
+			min-block-size: 32px;
 			padding-inline: var(--space-xs) var(--space-3xs);
 			border: none;
 			border-radius: var(--md-shape-full);
 
 			font: var(--md-type-label-large);
-			color: var(--md-color-on-surface-variant);
+			color: var(--md-color-on-surface);
 
 			background: transparent;
 		}
@@ -182,6 +237,65 @@
 			margin-block: var(--space-2xs);
 			border: none;
 			border-block-start: 1px solid var(--md-color-outline-variant);
+		}
+
+		/* Medium and wider: the brand lockup on one line above the rail, the
+		   Organizer and the Artist beside it; the breadcrumb in the page leads
+		   to the parents, so there is no back arrow. */
+		@container shell (width >= 600px) {
+			.top-app-bar {
+				gap: var(--space-s);
+				padding-inline: var(--space-2xs);
+			}
+
+			.back,
+			.title {
+				display: none;
+			}
+
+			.brand {
+				display: inline-flex;
+				gap: var(--space-2xs);
+				align-items: center;
+			}
+
+			.brand-mark {
+				font: var(--md-type-title-medium);
+				font-weight: 700;
+			}
+
+			.brand-product {
+				font: var(--md-type-title-medium);
+			}
+
+			.context {
+				display: flex;
+				gap: var(--space-2xs);
+				align-items: center;
+			}
+
+			.organizer-name {
+				flex: 0 1 auto;
+				font: var(--md-type-title-small);
+				color: var(--md-color-on-surface);
+			}
+
+			.artist-button {
+				min-block-size: var(--md-target-size);
+			}
+		}
+
+		/* Compact, below a destination: no brand, and the names keep to the
+		   trailing part of the bar so the page title has room. */
+		@container shell (width < 600px) {
+			.brand[data-deep="true"] {
+				display: none;
+			}
+
+			.context[data-deep="true"] {
+				flex: 0 1 auto;
+				max-inline-size: 45%;
+			}
 		}
 	}
 }

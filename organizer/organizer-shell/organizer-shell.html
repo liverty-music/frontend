@@ -6,11 +6,12 @@
 <div class="frame" data-framed.bind="framed">
   <top-app-bar if.bind="framed" class="top"></top-app-bar>
   <console-navigation if.bind="framed" current.bind="current" class="nav"></console-navigation>
-  <main class="main" tabindex="-1">
+  <main class="main" tabindex="0" aria-label.bind="'shell.page' & t">
     <div class="page">
       <console-breadcrumb if.bind="framed"></console-breadcrumb>
       <au-viewport></au-viewport>
     </div>
   </main>
+  <linear-progress if.bind="progress.busy" class="progress" label.bind="'common.loading' & t"></linear-progress>
   <console-snackbar></console-snackbar>
 </div>

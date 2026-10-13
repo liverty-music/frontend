@@ -2,6 +2,7 @@
 	@scope (home-route) {
 		.home {
 			display: grid;
+			grid-template-columns: minmax(0, 1fr);
 			gap: var(--space-s);
 		}
 
@@ -20,42 +21,28 @@
 			background: var(--md-color-error-container);
 		}
 
-		.items {
+		/* The list extends edge to edge on a compact window (M3 Lists). */
+		.groups {
 			display: grid;
 			gap: var(--space-2xs);
-
-			margin: 0;
-			padding: 0;
-
-			list-style: none;
+			margin-inline: calc(-1 * var(--page-inline-padding));
 		}
 
-		.item {
-			display: grid;
-			grid-template-columns: auto 1fr;
-			gap: var(--space-2xs) var(--space-xs);
-			align-items: center;
-
-			padding: var(--space-xs) var(--space-s);
-			border-radius: var(--md-shape-medium);
-
-			background: var(--md-color-surface-container);
-		}
-
-		.item-text {
-			display: grid;
-			gap: var(--space-3xs);
+		/* M3 list subheader. */
+		.subheader {
+			padding: var(--space-2xs) var(--space-s) 0;
+			font: var(--md-type-title-small);
 			color: var(--md-color-on-surface-variant);
 		}
 
-		.item-title {
-			font: var(--md-type-title-small);
-			color: var(--md-color-on-surface);
+		.list {
+			margin: 0;
+			padding: 0;
+			list-style: none;
 		}
 
-		.item-action {
-			grid-column: 1 / -1;
-			justify-self: end;
+		.trailing {
+			font: var(--md-type-label-large);
 		}
 
 		.all-clear {
@@ -67,6 +54,12 @@
 
 			color: var(--md-color-on-surface-variant);
 			text-align: center;
+		}
+
+		@container shell (width >= 600px) {
+			.groups {
+				margin-inline: 0;
+			}
 		}
 	}
 }

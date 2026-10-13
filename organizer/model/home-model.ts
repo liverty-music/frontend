@@ -32,6 +32,23 @@ export interface HomeItem {
 	actionHref: string
 }
 
+/** Items of one kind, under their subheader on Home. */
+export interface HomeGroup {
+	kind: HomeItemKind
+	items: HomeItem[]
+}
+
+/** Groups sorted items by kind, keeping their order (design D18). */
+export function groupHomeItems(items: readonly HomeItem[]): HomeGroup[] {
+	const groups: HomeGroup[] = []
+	for (const item of items) {
+		const last = groups.at(-1)
+		if (last?.kind === item.kind) last.items.push(item)
+		else groups.push({ kind: item.kind, items: [item] })
+	}
+	return groups
+}
+
 const KIND_ORDER: readonly HomeItemKind[] = [
 	'payout',
 	'scanner',

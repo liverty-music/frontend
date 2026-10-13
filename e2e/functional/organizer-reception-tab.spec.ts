@@ -20,7 +20,9 @@ import { expect, type Page, test } from '../support/test'
 
 /**
  * The event page's Reception (受付) tab: one Scanner per device, issued with
- * one action, revoked and reissued, and the prerequisites for issuing.
+ * one action, revoked and reissued, and the prerequisites for issuing. The
+ * Scanners are a multi-action list: name, state and link as each item's
+ * content, the copy button and an overflow menu at its trailing edge.
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/event'
@@ -52,6 +54,19 @@ const tab = (page: Page) => page.locator('reception-tab')
 const row = (page: Page, n: number) => page.locator(`[data-scanner="${n}"]`)
 const issueButton = (page: Page) =>
 	tab(page).getByRole('button', { name: '受付リンクを発行' })
+
+/** Opens a Scanner's overflow menu and chooses an item. */
+async function chooseFromMenu(
+	page: Page,
+	n: number,
+	name: string,
+): Promise<void> {
+	await row(page, n).getByRole('button', { name: 'その他の操作' }).click()
+	await page
+		.getByRole('menu', { name: 'その他の操作' })
+		.getByRole('menuitem', { name, exact: true })
+		.click()
+}
 
 /** Stubs the clipboard and returns what was written to it. */
 async function spyClipboard(page: Page): Promise<() => Promise<string[]>> {
@@ -101,6 +116,12 @@ test.describe('scanners', () => {
 			tab(page).getByRole('link', { name: '受付の手順（スタッフ向け）' }),
 		).toHaveAttribute('target', '_blank')
 
+		// 受付リンクを発行 is a tonal button.
+		await expect(
+			tab(page)
+				.locator('console-button')
+				.filter({ has: page.locator('[data-variant="tonal"]') }),
+		).toHaveText([/受付リンクを発行/])
 		await issueButton(page).click()
 		await expect(row(page, 1)).toBeVisible()
 		await issueButton(page).click()
@@ -114,9 +135,7 @@ test.describe('scanners', () => {
 			{ eventId: { value: 'e-1103' } },
 		])
 		for (const n of [1, 2]) {
-			await expect(
-				row(page, n).getByRole('heading', { name: `受付${n}` }),
-			).toBeVisible()
+			await expect(row(page, n)).toContainText(`受付${n}`)
 			await expect(row(page, n).locator('status-badge')).toHaveText('未使用')
 			// The token is in the fragment of a link on the reception origin.
 			await expect(row(page, n)).toContainText(`${ORIGIN}/#token-${n}`)
@@ -182,7 +201,11 @@ test.describe('scanners', () => {
 		}
 		const log = await open(page, mocks)
 
-		await row(page, 1).getByRole('button', { name: '取り消して再発行' }).click()
+		// The actions are in the item's overflow menu.
+		await expect(
+			row(page, 1).getByRole('button', { name: '取り消して再発行' }),
+		).toHaveCount(0)
+		await chooseFromMenu(page, 1, '取り消して再発行')
 		const dialog = confirmDialog(page, {
 			name: '受付1を取り消して再発行しますか？',
 		})
@@ -202,8 +225,11 @@ test.describe('scanners', () => {
 		).toBeVisible()
 		// A revoked Scanner offers no more actions.
 		await expect(
-			row(page, 1).getByRole('button', { name: '取り消す' }),
+			row(page, 1).getByRole('button', { name: 'その他の操作' }),
 		).toHaveCount(0)
+		await expect(
+			row(page, 3).getByRole('button', { name: 'その他の操作' }),
+		).toBeVisible()
 		expect(log.calls.map((c) => c.method)).toEqual(
 			expect.arrayContaining([
 				'ScannerService/Revoke',

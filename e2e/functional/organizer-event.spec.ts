@@ -15,12 +15,17 @@ import {
 import { expect, type Page, test } from '../support/test'
 
 /**
- * The event page header: date, venue and publish state with 公開する,
- * 中止する and 編集, and the tab addresses.
+ * The event page header: date, venue and publish state, 公開する for a draft
+ * and an overflow menu with 中止する and 公演を編集, the fan page address of
+ * a published date of a PUBLIC concert, and the tab addresses.
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/event'
 const TOKENS = 'components/infrastructure/organizer/web/global/design-tokens'
+const SNACK = 'components/infrastructure/organizer/web/global/snack-bar'
+
+/** The fan origin of the e2e config's environment (`dev`). */
+const FAN_PAGE = 'https://dev.liverty-music.app/events/e-1103'
 
 /** XX Tour 2026 with its 3 November date still a draft. */
 function tourWithDraft(state: 'DRAFT' | 'PUBLISHED'): ConcertSpec {
@@ -43,7 +48,33 @@ function rpc(concert: ConcertSpec): RpcMocks {
 }
 
 const header = (page: Page) => page.locator('event-route header.header')
-const actions = (page: Page) => page.locator('event-route .actions')
+const actions = (page: Page) =>
+	page.locator('event-route header.header .actions')
+const menuButton = (page: Page) =>
+	actions(page).getByRole('button', { name: 'その他の操作' })
+const menu = (page: Page) => page.getByRole('menu', { name: 'その他の操作' })
+const fanPage = (page: Page) =>
+	page.locator('event-route copy-field').filter({ hasText: 'ファンページ' })
+
+/** Stubs the clipboard and returns what was written to it. */
+async function spyClipboard(page: Page): Promise<() => Promise<string[]>> {
+	await page.addInitScript(() => {
+		const written: string[] = []
+		;(window as unknown as { __clipboard: string[] }).__clipboard = written
+		Object.defineProperty(navigator, 'clipboard', {
+			configurable: true,
+			value: {
+				writeText: async (text: string) => {
+					written.push(text)
+				},
+			},
+		})
+	})
+	return () =>
+		page.evaluate(
+			() => (window as unknown as { __clipboard: string[] }).__clipboard,
+		)
+}
 
 test.describe('the event header', () => {
 	test(`@spec ${SPEC} "Draft event"`, async ({ page }) => {
@@ -59,22 +90,36 @@ test.describe('the event header', () => {
 		await expect(header(page)).toContainText('XX Tour 2026')
 		await expect(header(page)).toContainText('Zepp Haneda')
 		await expect(header(page).locator('status-badge')).toHaveText('下書き')
+		// 公開する is the page's one filled action.
 		await expect(
-			actions(page).getByRole('button', { name: '公開する' }),
-		).toBeVisible()
+			actions(page)
+				.locator('console-button')
+				.filter({ has: page.locator('[data-variant="filled"]') }),
+		).toHaveText([/公開する/])
 		await expect(
 			actions(page).getByRole('button', { name: '中止する' }),
-		).toBeVisible()
+		).toHaveCount(0)
+		// 中止する and 公演を編集 are in the header's menu.
+		await menuButton(page).click()
+		await expect(menu(page).getByRole('menuitem')).toHaveText([
+			'中止する',
+			'公演を編集',
+		])
 		await expect(
-			actions(page).getByRole('link', { name: '編集' }),
+			menu(page).getByRole('menuitem', { name: '公演を編集' }),
 		).toHaveAttribute('href', /\/series\/s-tour\/edit$/)
 		// Cancelling a draft date removes it, and the dialog says so.
-		await actions(page).getByRole('button', { name: '中止する' }).click()
+		await menu(page).getByRole('menuitem', { name: '中止する' }).click()
+		await expect(menu(page)).toBeHidden()
 		const cancel = confirmDialog(page, {
 			name: 'XX Tour 2026 のこの公演日を中止しますか？',
 		})
 		await expect(cancel).toContainText('下書きの公演日は削除されます')
 		await cancel.getByRole('button', { name: 'やめる' }).click()
+		// Focus returns to the menu's button.
+		await expect(menuButton(page)).toBeFocused()
+		// A draft date has no fan page.
+		await expect(fanPage(page)).toHaveCount(0)
 		// The page opens on 販売.
 		await expect(page).toHaveURL(/\/events\/e-1103\/ticket-sales$/)
 		await expect(
@@ -136,6 +181,59 @@ test.describe('the event header', () => {
 		await expect(
 			page.getByRole('button', { name: '受付リンクを発行' }),
 		).toBeVisible()
+	})
+})
+
+test.describe('the fan page of a published date', () => {
+	test(`@spec ${SPEC} "Public date"`, async ({ page }) => {
+		const clipboard = await spyClipboard(page)
+		await installConsole(page, { rpc: rpc(XX_TOUR), language: 'ja' })
+		await page.goto(`${SERIES}/s-tour/events/e-1103/ticket-sales`)
+
+		await expect(fanPage(page)).toContainText(FAN_PAGE)
+		await fanPage(page)
+			.getByRole('button', { name: 'ファンページをコピー' })
+			.click()
+		expect(await clipboard()).toEqual([FAN_PAGE])
+		await expect(
+			page.getByRole('status').filter({ hasText: 'コピーしました' }),
+		).toBeVisible()
+	})
+
+	test(`@spec ${SPEC} "Unlisted concert"`, async ({ page }) => {
+		await installConsole(page, {
+			rpc: rpc({ ...XX_TOUR, visibility: 'UNLISTED', state: 'PUBLISHED' }),
+			language: 'ja',
+		})
+		await page.goto(`${SERIES}/s-tour/events/e-1103/ticket-sales`)
+		await expect(header(page).locator('status-badge')).toHaveText('公開中')
+		await expect(fanPage(page)).toHaveCount(0)
+		await expect(page.getByText('/events/e-1103')).toHaveCount(0)
+	})
+
+	test(`@spec ${SNACK} "Two results in a row"`, async ({ page }) => {
+		await spyClipboard(page)
+		const mocks = rpc(tourWithDraft('DRAFT'))
+		const published = seriesList([tourWithDraft('PUBLISHED')]) as {
+			series: unknown[]
+		}
+		mocks['SeriesService/Publish'] = {
+			...published,
+			series: published.series[0],
+		}
+		await installConsole(page, { rpc: mocks, language: 'ja' })
+		await page.goto(`${SERIES}/s-tour/events/e-1103/ticket-sales`)
+
+		await actions(page).getByRole('button', { name: '公開する' }).click()
+		await confirmDialog(page).getByRole('button', { name: '公開する' }).click()
+		const snacks = page.locator('.snack-item:popover-open')
+		await expect(snacks).toHaveText([/公開しました/])
+
+		// Copying the fan page address right after replaces the message.
+		await fanPage(page)
+			.getByRole('button', { name: 'ファンページをコピー' })
+			.click()
+		await expect(snacks).toHaveText([/コピーしました/])
 	})
 })
 

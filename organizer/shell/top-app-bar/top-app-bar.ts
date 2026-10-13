@@ -6,6 +6,7 @@ import {
 } from '../../i18n/console-language'
 import type { ConsoleLocale } from '../../i18n/format'
 import { paths } from '../../model/concert-model'
+import { IBreadcrumbs } from '../breadcrumbs'
 import { IConsoleContext } from '../console-context'
 
 /** One represented Artist in the Artist menu. */
@@ -16,14 +17,19 @@ export interface ArtistChoice {
 }
 
 /**
- * The console's top bar: the logo, the Organizer's name, the Artist being
- * worked on — a menu listing the represented Artists when there are two or
- * more (M3 menu), its name only with one — and the account menu holding the
- * language switch and サインアウト.
+ * The console's top app bar (M3 small top app bar). At its start, on a
+ * compact window below a destination, a back arrow to the parent page and the
+ * page's title (the breadcrumb's place there); otherwise the brand lockup
+ * Liverty Music / Organizer Console (design D20), which on a medium or wider
+ * window sits above the navigation rail. Then the Organizer's name and the
+ * Artist being worked on — a menu listing the represented Artists when there
+ * are two or more (M3 menu), its name only with one — and, at the trailing
+ * edge, the account menu holding the language switch and サインアウト.
  */
 export class TopAppBar {
 	private readonly auth = resolve(IAuthService)
 	public readonly context = resolve(IConsoleContext)
+	public readonly breadcrumbs = resolve(IBreadcrumbs)
 	public readonly language = resolve(IConsoleLanguage)
 	public readonly languages = CONSOLE_LANGUAGES
 

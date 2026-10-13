@@ -1,0 +1,10 @@
+<import from="./copy-button.css"></import>
+<import from="../icon-button/icon-button"></import>
+<use-shadow-dom></use-shadow-dom>
+
+<icon-button
+  icon.bind="copied ? 'check' : 'copy'"
+  label.bind="(copied ? 'common.copied' : 'copyField.copy') & t:{ label: label }"
+  data-copied.bind="copied"
+  click.trigger="copy()"
+></icon-button>

@@ -19,9 +19,10 @@ import {
 import { expect, type Locator, type Page, test } from '../support/test'
 
 /**
- * Concerts of a represented Artist: the concerts it performs in as cards on a
- * narrow list and as a table once the list is 840 px wide, with the empty and
- * failed states.
+ * Concerts of a represented Artist: the concerts it performs in as an M3 list
+ * on a narrow window and as a table once the list is 840 px wide, each one
+ * target opening its concert page; 公演をつくる as the extended FAB; the empty
+ * and failed states.
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/concerts'
@@ -65,35 +66,50 @@ async function openConcerts(page: Page, rpc: RpcMocks = RPC) {
 	return log
 }
 
-const cards = (page: Page) =>
+const items = (page: Page) =>
 	page.getByRole('list', { name: '公演', exact: true }).getByRole('listitem')
 
-function card(page: Page, title: string): Locator {
-	return cards(page).filter({ has: page.getByRole('link', { name: title }) })
+function item(page: Page, title: string): Locator {
+	return items(page).filter({ hasText: title })
 }
 
-test.describe('cards or a table', () => {
+/** 公演をつくる, the screen's extended FAB. */
+const fab = (page: Page) =>
+	page.locator('concerts-route extended-fab').getByRole('link')
+
+test.describe('a list or a table', () => {
 	test(`@spec ${SPEC} "Phone"`, async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 })
 		await openConcerts(page)
 
-		await expect(cards(page)).toHaveCount(2)
+		await expect(items(page)).toHaveCount(2)
 		await expect(page.getByRole('table')).toBeHidden()
 
-		const tour = card(page, 'XX Tour 2026')
-		await expect(
-			tour.getByRole('link', { name: 'XX Tour 2026' }),
-		).toHaveAttribute('href', /\/series\/s-tour$/)
-		await expect(tour).toContainText('11月3日(火) 他 3公演')
-		await expect(tour).toContainText('Zepp Haneda')
-		await expect(tour).toContainText('受付中')
-		await expect(tour).toContainText('公開中')
+		// Each concert is one link: the whole item, with nothing else inside.
+		const tour = item(page, 'XX Tour 2026')
+		await expect(tour.getByRole('link')).toHaveCount(1)
+		await expect(tour.getByRole('button')).toHaveCount(0)
+		const tourLink = tour.getByRole('link')
+		await expect(tourLink).toHaveAttribute('href', /\/series\/s-tour$/)
+		// Title; first date · venue; sale state; the status at the trailing edge.
+		await expect(tourLink).toHaveAccessibleName(
+			/XX Tour 2026.*11月3日\(火\) 他 3公演 · Zepp Haneda 他.*受付中.*公開中/,
+		)
+		// No duplicate 開く: the item itself opens the concert.
+		await expect(page.getByRole('link', { name: '開く' })).toHaveCount(0)
 
-		const solo = card(page, 'XX 単独公演')
+		const solo = item(page, 'XX 単独公演')
 		await expect(solo).toContainText('12月20日(日)')
 		await expect(solo).toContainText('Zepp Haneda')
 		await expect(solo).toContainText('販売なし')
 		await expect(solo).toContainText('下書き')
+
+		// Selecting anywhere on the item opens the concert page: here, the
+		// status at its trailing edge.
+		await tour.getByText('公開中').click()
+		await expect(
+			page.getByRole('heading', { level: 1, name: 'XX Tour 2026' }),
+		).toBeVisible()
 	})
 
 	test(`@spec ${SPEC} "PC"`, async ({ page }) => {
@@ -102,7 +118,7 @@ test.describe('cards or a table', () => {
 
 		const table = page.getByRole('table')
 		await expect(table).toBeVisible()
-		await expect(cards(page).first()).toBeHidden()
+		await expect(items(page).first()).toBeHidden()
 		await expect(table.getByRole('columnheader')).toHaveText([
 			'公演名',
 			'日程・会場',
@@ -116,16 +132,27 @@ test.describe('cards or a table', () => {
 		await expect(rows.nth(1)).toContainText('XX 単独公演')
 		await expect(rows.nth(1)).toContainText('下書き')
 
-		// Narrowing the window turns the rows back into cards.
+		// One link per row, and a click anywhere on the row opens the concert:
+		// here, on its sale state.
+		await expect(rows.nth(0).getByRole('link')).toHaveCount(1)
+		await rows.nth(0).click()
+		await expect(page).toHaveURL(/\/series\/s-tour$/)
+		await expect(
+			page.getByRole('heading', { level: 1, name: 'XX Tour 2026' }),
+		).toBeVisible()
+
+		// Narrowing the window turns the rows into list items.
+		await page.goBack()
+		await expect(table).toBeVisible()
 		await page.setViewportSize({ width: 390, height: 844 })
 		await expect(table).toBeHidden()
-		await expect(cards(page).first()).toBeVisible()
+		await expect(items(page).first()).toBeVisible()
 	})
 
 	test(`@spec ${SPEC} "Tour summary"`, async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 })
 		await openConcerts(page)
-		const tour = card(page, 'XX Tour 2026')
+		const tour = item(page, 'XX Tour 2026')
 		await expect(tour).toContainText('11月3日(火) 他 3公演 · Zepp Haneda 他')
 	})
 })
@@ -149,8 +176,8 @@ test.describe('concerts of an Artist', () => {
 	test(`@spec ${SPEC} "Another Artist's concert"`, async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 })
 		await openConcerts(page, TWO_ARTISTS)
-		await expect(cards(page)).toHaveCount(2)
-		await expect(card(page, 'XX Tour 2026')).toBeVisible()
+		await expect(items(page)).toHaveCount(2)
+		await expect(item(page, 'XX Tour 2026')).toBeVisible()
 		await expect(page.getByRole('link', { name: /YY Live/ })).toHaveCount(0)
 
 		// Under Band A the concert is not found, though the Organizer has it.
@@ -160,8 +187,8 @@ test.describe('concerts of an Artist', () => {
 		).toBeVisible()
 
 		await page.goto(`${ORG}/artists/a-2/series`)
-		await expect(cards(page)).toHaveCount(1)
-		await expect(card(page, 'YY Live')).toBeVisible()
+		await expect(items(page)).toHaveCount(1)
+		await expect(item(page, 'YY Live')).toBeVisible()
 	})
 
 	test(`@spec ${SPEC} "Create from an Artist"`, async ({ page }) => {
@@ -170,11 +197,7 @@ test.describe('concerts of an Artist', () => {
 		await installConsole(page, { rpc: TWO_ARTISTS, language: 'ja' })
 		// Band B, the second Artist by name, so the default is not what is tested.
 		await page.goto(`${ORG}/artists/a-2/series`)
-		await page
-			.getByRole('main')
-			.getByRole('link', { name: '公演をつくる' })
-			.first()
-			.click()
+		await fab(page).click()
 
 		await expect(page).toHaveURL(/\/artists\/a-2\/series\/new$/)
 		await expect(
@@ -193,14 +216,12 @@ test.describe('empty and failed lists', () => {
 	test(`@spec ${SPEC} "First visit"`, async ({ page }) => {
 		await openConcerts(page, { ...RPC, 'SeriesService/List': seriesList([]) })
 		await expect(page.getByText('まだ公演がありません。')).toBeVisible()
-		const create = page
-			.getByRole('main')
-			.getByRole('link', { name: '公演をつくる' })
-		// The header action and the empty-state action both open the editor.
-		await expect(create).toHaveCount(2)
-		for (const link of await create.all()) {
-			await expect(link).toHaveAttribute('href', /\/series\/new$/)
-		}
+		// The screen's one floating action opens the editor.
+		await expect(
+			page.getByRole('main').getByRole('link', { name: '公演をつくる' }),
+		).toHaveCount(1)
+		await expect(fab(page)).toBeVisible()
+		await expect(fab(page)).toHaveAttribute('href', /\/series\/new$/)
 	})
 
 	test(`@spec ${SPEC} "Load fails"`, async ({ page }) => {
@@ -222,6 +243,30 @@ test.describe('empty and failed lists', () => {
 	})
 })
 
+test.describe('公演をつくる', () => {
+	test('is an extended FAB at the bottom trailing corner, above the bar on a phone', async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 390, height: 844 })
+		await openConcerts(page)
+		const fabBox = await fab(page).boundingBox()
+		const bar = await page
+			.getByRole('navigation', { name: 'メインナビゲーション' })
+			.boundingBox()
+		expect(fabBox?.height).toBe(56)
+		// Trailing edge, 16 px in, just above the navigation bar.
+		expect(Math.round((fabBox?.x ?? 0) + (fabBox?.width ?? 0))).toBe(390 - 16)
+		expect((fabBox?.y ?? 0) + (fabBox?.height ?? 0)).toBeLessThanOrEqual(
+			bar?.y ?? 0,
+		)
+
+		await page.setViewportSize({ width: 1280, height: 800 })
+		const wide = await fab(page).boundingBox()
+		expect(Math.round((wide?.x ?? 0) + (wide?.width ?? 0))).toBe(1280 - 16)
+		expect(Math.round((wide?.y ?? 0) + (wide?.height ?? 0))).toBe(800 - 16)
+	})
+})
+
 test.describe('brand color', () => {
 	test(`@spec ${TOKENS} "One primary action"`, async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 })
@@ -229,32 +274,55 @@ test.describe('brand color', () => {
 		await expect(page.getByRole('table')).toBeVisible()
 		await expect(page.getByRole('table')).toContainText('受付中')
 
-		const primary = await page.evaluate(() => {
-			const probe = document.createElement('div')
-			probe.style.background = 'var(--md-color-primary)'
-			document.querySelector('organizer-shell main')?.append(probe)
-			const color = getComputedStyle(probe).backgroundColor
-			probe.remove()
-			return color
-		})
-		expect(primary).not.toBe('rgba(0, 0, 0, 0)')
-
-		// Every visible control of the page, the navigation and top bar included.
-		const backgrounds = await page.locator('a, button').evaluateAll((els) =>
-			els
-				.filter((el) => (el as HTMLElement).offsetParent !== null)
-				.map((el) => ({
-					// A console button's label is slotted: its text is the host's.
-					text: (
-						el.textContent?.trim() ||
-						((el.getRootNode() as ShadowRoot).host?.textContent ?? '')
-					).trim(),
-					background: getComputedStyle(el).backgroundColor,
-				})),
+		// The brand roles: the magenta and its container tint.
+		const brand = await page.evaluate(() =>
+			['--md-color-primary', '--md-color-primary-container'].map((role) => {
+				const probe = document.createElement('div')
+				probe.style.background = `var(${role})`
+				document.querySelector('organizer-shell main')?.append(probe)
+				const color = getComputedStyle(probe).backgroundColor
+				probe.remove()
+				return color
+			}),
 		)
-		const brand = backgrounds.filter((b) => b.background === primary)
-		expect(brand.map((b) => b.text)).toEqual(['公演をつくる'])
+		expect(brand).not.toContain('rgba(0, 0, 0, 0)')
+
+		// Every visible control of the page, the navigation and top bar
+		// included, inside the console components' shadow roots too.
+		const controls = await page.evaluate(() => {
+			const all: Element[] = []
+			const walk = (root: ParentNode) => {
+				for (const el of root.querySelectorAll('*')) {
+					all.push(el)
+					if (el.shadowRoot) walk(el.shadowRoot)
+				}
+			}
+			walk(document)
+			return all
+				.filter((el) => el.matches('a, button'))
+				.filter((el) => (el as HTMLElement).offsetParent !== null)
+				.map((el) => {
+					const style = getComputedStyle(el)
+					return {
+						// A console control's label is slotted: its text is the host's.
+						text: (
+							el.textContent?.trim() ||
+							((el.getRootNode() as ShadowRoot).host?.textContent ?? '')
+						).trim(),
+						background: style.backgroundColor,
+						color: style.color,
+						logo: el.classList.contains('brand'),
+					}
+				})
+		})
+		const inBrand = controls.filter(
+			(c) => brand.includes(c.background) || brand.includes(c.color),
+		)
+		// The logo may use it too (design-tokens); nothing else but 公演をつくる.
+		expect(inBrand.filter((c) => !c.logo).map((c) => c.text)).toEqual([
+			'公演をつくる',
+		])
 		// Each concert row is a link too, and none of them is brand-colored.
-		expect(backgrounds.some((b) => b.text.includes('XX Tour 2026'))).toBe(true)
+		expect(controls.some((c) => c.text.includes('XX Tour 2026'))).toBe(true)
 	})
 })

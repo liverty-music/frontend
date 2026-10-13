@@ -1,8 +1,5 @@
 import { IRouter, type Params } from '@aurelia/router'
-import {
-	PublishState,
-	Visibility,
-} from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { Visibility } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import {
 	concertTitle,
@@ -28,18 +25,25 @@ import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ITicketSaleClient } from '../services/ticket-sale-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
 import { IConsoleContext } from '../shell/console-context'
+import { IPageProgress } from '../shell/page-progress'
 import type { ConfirmDialog } from '../ui/confirm-dialog/confirm-dialog'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { DataColumn, DataRow } from '../ui/data-list/data-list'
+import type { MenuItem } from '../ui/overflow-menu/overflow-menu'
 
 type LoadState = 'loading' | 'ready' | 'notFound' | 'error'
 
 /**
- * One concert: its summary and performers with 編集, the share link of a
- * published UNLISTED concert, and its events in date order, each opening its
- * event page. It opens under each represented Artist who performs in it, and
- * is not found under any other; its links and breadcrumb keep the Artist of
- * the address (design D1).
+ * One concert, in the M3 supporting pane layout (design D18): its events in
+ * date order, each one target opening its event page (the focus pane), and
+ * its summary — cover, type, visibility, performers — beside them from 840 px
+ * and below them on narrower windows (the supporting pane). The header offers
+ * 公開する for the draft dates (filled, the page's main action), 編集 and, in
+ * its overflow menu, 公演を中止.
+ *
+ * It opens under each represented Artist who performs in it, and is not
+ * found under any other; its links and breadcrumb keep the Artist of the
+ * address (design D1).
  */
 export class ConcertRoute {
 	private readonly series = resolve(ISeriesClient)
@@ -49,6 +53,7 @@ export class ConcertRoute {
 	private readonly clock = resolve(IClock)
 	private readonly router = resolve(IRouter)
 	private readonly context = resolve(IConsoleContext)
+	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertRoute')
 
 	public state: LoadState = 'loading'
@@ -58,11 +63,14 @@ export class ConcertRoute {
 		{ key: 'date', labelKey: 'concert.column.date', primary: true },
 		{ key: 'venue', labelKey: 'concert.column.venue' },
 		{ key: 'sale', labelKey: 'concert.column.sale', kind: 'status' },
-		{ key: 'state', labelKey: 'concert.column.state', kind: 'status' },
+		{
+			key: 'state',
+			labelKey: 'concert.column.state',
+			kind: 'status',
+			trailing: true,
+		},
 	]
 	public rows: DataRow[] = []
-	public shareUrl = ''
-	public shareDialog!: ConfirmDialog
 	public publishDialog!: ConfirmDialog
 	public cancelDialog!: ConfirmDialog
 	/** Draft dates chosen in the publish dialog, by event id. */
@@ -113,14 +121,6 @@ export class ConcertRoute {
 		return this.concert?.series.coverImage?.large?.value ?? ''
 	}
 
-	/** A published UNLISTED concert is opened by fans only through its share link. */
-	public get offersShareLink(): boolean {
-		return (
-			this.concert?.series.visibility === Visibility.UNLISTED &&
-			this.concert.series.publishState === PublishState.PUBLISHED
-		)
-	}
-
 	/** The draft dates, in date order, that 公開する can publish together. */
 	public get draftDates(): Array<{
 		id: string
@@ -141,6 +141,21 @@ export class ConcertRoute {
 
 	public get canCancelConcert(): boolean {
 		return !!this.concert?.events.some((e) => !isCancelled(e))
+	}
+
+	/** The header's further actions: 公演を中止, disabled once every date is cancelled. */
+	public get menu(): MenuItem[] {
+		return [
+			{
+				id: 'cancel',
+				labelKey: 'concert.cancelConcert',
+				disabled: !this.canCancelConcert || this.publishing || this.cancelling,
+			},
+		]
+	}
+
+	public onMenu(id: string): void {
+		if (id === 'cancel') void this.cancelConcert()
 	}
 
 	public get unlisted(): boolean {
@@ -199,7 +214,11 @@ export class ConcertRoute {
 		}
 	}
 
-	public async load(): Promise<void> {
+	public load(): Promise<void> {
+		return this.progress.track(this.read())
+	}
+
+	private async read(): Promise<void> {
 		this.state = 'loading'
 		try {
 			const concerts = await this.series.list(this.abort.signal)
@@ -252,38 +271,6 @@ export class ConcertRoute {
 			}),
 		)
 		this.render()
-	}
-
-	public async createShareLink(): Promise<void> {
-		if (!(await this.shareDialog.ask())) return
-		try {
-			this.shareUrl =
-				(await this.series.regenerateShareUrl(
-					this.seriesId,
-					this.abort.signal,
-				)) ?? ''
-			this.snackbar.show('concert.shareCreated')
-		} catch (err) {
-			this.logger.warn('Share link not created', err)
-			this.snackbar.showError('concert.shareFailed', {
-				retry: () => void this.retryShareLink(),
-			})
-		}
-	}
-
-	/** Retry skips the question: the operator already confirmed. */
-	private async retryShareLink(): Promise<void> {
-		try {
-			this.shareUrl =
-				(await this.series.regenerateShareUrl(
-					this.seriesId,
-					this.abort.signal,
-				)) ?? ''
-			this.snackbar.show('concert.shareCreated')
-		} catch (err) {
-			this.logger.warn('Share link not created', err)
-			this.snackbar.showError('concert.shareFailed')
-		}
 	}
 
 	/** Rows of catalog keys and values: the list translates them. */

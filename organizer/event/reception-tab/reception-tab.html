@@ -2,12 +2,13 @@
 
 <section class="reception-tab">
   <template switch.bind="prerequisite">
-    <prerequisite-callout case="notPublished" heading.bind="'reception.prerequisite.notPublished' & t">
+    <prerequisite-callout case="notPublished" level.bind="2" heading.bind="'reception.prerequisite.notPublished' & t">
       <p>${'reception.prerequisite.notPublishedBody' & t}</p>
       <console-button variant="text" click.trigger="requestPublish()">${'event.publish' & t}</console-button>
     </prerequisite-callout>
     <prerequisite-callout
       case="noStartTime"
+      level.bind="2"
       heading.bind="'reception.prerequisite.noStartTime' & t"
       action-label.bind="'sale.prerequisite.editConcert' & t"
       action-href.bind="editConcertHref"
@@ -21,9 +22,8 @@
       <a href.bind="guideUrl" target="_blank" rel="noopener" class="guide">${'reception.guide' & t}</a>
     </div>
 
-    <console-button variant="filled" icon="add" pending.bind="issuing" pending-label.bind="'reception.issuing' & t" click.trigger="issue()">${'reception.issue' & t}</console-button>
+    <console-button variant="tonal" icon="add" pending.bind="issuing" pending-label.bind="'reception.issuing' & t" click.trigger="issue()">${'reception.issue' & t}</console-button>
 
-    <circular-progress if.bind="state === 'loading'"></circular-progress>
     <div if.bind="state === 'error'" class="message" role="alert">
       <p>${'reception.loadFailed' & t}</p>
       <console-button variant="tonal" click.trigger="load()">${'common.retry' & t}</console-button>
@@ -31,17 +31,18 @@
 
     <ul if.bind="state === 'ready' && rows.length" class="scanners" aria-label.bind="'event.tab.reception' & t">
       <li repeat.for="row of rows; key: id" class="scanner" data-scanner.bind="row.number" data-new.bind="row.isNew">
-        <div class="scanner-header">
-          <h3 class="scanner-name">${'reception.label' & t:{ number: row.number }}</h3>
-          <status-badge tone.bind="row.tone" label.bind="row.statusKey & t"></status-badge>
-          <span if.bind="row.boundSince" class="since">${'reception.since' & t} ${row.boundSince | jstDateTime}</span>
-        </div>
-        <copy-field if.bind="row.url" label.bind="'reception.label' & t:{ number: row.number }" value.bind="row.url"></copy-field>
-        <div class="scanner-actions">
-          <console-button if.bind="row.url && canShare" variant="text" click.trigger="share(row)">${'reception.share' & t}</console-button>
-          <console-button if.bind="row.canRevoke" variant="text" click.trigger="revoke(row, false)">${'reception.revoke' & t}</console-button>
-          <console-button if.bind="row.canRevoke" variant="text" click.trigger="revoke(row, true)">${'reception.revokeAndReissue' & t}</console-button>
-        </div>
+        <list-item>
+          ${'reception.label' & t:{ number: row.number }}
+          <span slot="supporting" class="state">
+            <status-badge tone.bind="row.tone" label.bind="row.statusKey & t"></status-badge>
+            <span if.bind="row.boundSince">${'reception.since' & t} ${row.boundSince | jstDateTime}</span>
+          </span>
+          <span if.bind="row.url" slot="supporting" class="url">${row.url}</span>
+          <span if.bind="row.url || row.canRevoke" slot="trailing">
+            <copy-button if.bind="row.url" label.bind="'reception.label' & t:{ number: row.number }" value.bind="row.url"></copy-button>
+            <overflow-menu if.bind="row.canRevoke" items.bind="menuOf(row)" select.trigger="onMenu(row, $event.detail)"></overflow-menu>
+          </span>
+        </list-item>
       </li>
     </ul>
     <p if.bind="state === 'ready' && !rows.length" class="message">${'reception.empty' & t}</p>

@@ -1,0 +1,49 @@
+<import from="./overflow-menu.css"></import>
+<import from="../console-icon/console-icon"></import>
+<use-shadow-dom></use-shadow-dom>
+
+<button
+  ref="button"
+  type="button"
+  class="button state-layer"
+  popovertarget="menu"
+  aria-haspopup="menu"
+  aria-expanded.bind="open ? 'true' : 'false'"
+  aria-label.bind="labelKey & t"
+  title.bind="labelKey & t"
+>
+  <console-icon name="more-vert"></console-icon>
+</button>
+<div
+  ref="menu"
+  id="menu"
+  popover
+  role="menu"
+  class="menu"
+  aria-label.bind="labelKey & t"
+  toggle.trigger="onToggle($event)"
+  keydown.trigger="onKeydown($event)"
+>
+  <template repeat.for="item of items; key: id">
+    <a
+      if.bind="item.href"
+      href.bind="item.href"
+      role="menuitem"
+      tabindex="-1"
+      class="item state-layer"
+      data-item.bind="item.id"
+      aria-disabled.bind="item.disabled ? 'true' : null"
+      click.trigger="choose(item, $event)"
+    >${item.labelKey & t:item.params}</a>
+    <button
+      else
+      type="button"
+      role="menuitem"
+      tabindex="-1"
+      class="item state-layer"
+      data-item.bind="item.id"
+      aria-disabled.bind="item.disabled ? 'true' : null"
+      click.trigger="choose(item, $event)"
+    >${item.labelKey & t:item.params}</button>
+  </template>
+</div>

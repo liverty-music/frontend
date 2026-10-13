@@ -1,7 +1,9 @@
 @layer block {
 	@scope (event-route) {
+		/* One column no wider than the page: a long address shortens. */
 		.event {
 			display: grid;
+			grid-template-columns: minmax(0, 1fr);
 			gap: var(--space-s);
 		}
 
@@ -18,7 +20,17 @@
 			gap: var(--space-3xs);
 		}
 
-		.concert-title,
+		.concert-title {
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.meta {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+			align-items: center;
+		}
+
 		.venue {
 			color: var(--md-color-on-surface-variant);
 		}
@@ -27,6 +39,11 @@
 			display: flex;
 			flex-wrap: wrap;
 			gap: var(--space-2xs);
+			align-items: center;
+		}
+
+		.fan-page {
+			max-inline-size: 640px;
 		}
 
 		.cancelled-note {

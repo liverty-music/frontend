@@ -1,8 +1,6 @@
 <import from="./concert-route.css"></import>
 
 <section class="concert">
-  <circular-progress if.bind="state === 'loading'"></circular-progress>
-
   <div if.bind="state === 'notFound'" class="message" role="alert">
     <h1 class="page-title">${'concert.notFound' & t}</h1>
     <console-button variant="tonal" href.bind="concertsHref">${'concert.toConcerts' & t}</console-button>
@@ -15,35 +13,47 @@
 
   <template if.bind="state === 'ready'">
     <header class="header">
-      <img if.bind="coverUrl" src.bind="coverUrl" alt="" class="cover">
-      <div class="heading">
-        <h1 class="page-title">${title}</h1>
-        <p class="meta">${typeKey & t} · ${visibilityKey & t}</p>
-        <p if.bind="performers.length" class="performers">${performers.join(' · ')}</p>
+      <h1 class="page-title">${title}</h1>
+      <div class="actions">
+        <console-button
+          if.bind="draftDates.length"
+          variant="filled"
+          icon="check"
+          pending.bind="publishing"
+          pending-label.bind="'event.publishing' & t"
+          disabled.bind="cancelling"
+          click.trigger="publish()"
+          data-action="publish"
+        >${'event.publish' & t}</console-button>
+        <console-button variant="outlined" icon="edit" href.bind="editHref">${'common.edit' & t}</console-button>
+        <overflow-menu items.bind="menu" select.trigger="onMenu($event.detail)"></overflow-menu>
       </div>
     </header>
 
-    <div class="actions">
-      <console-button
-        if.bind="draftDates.length"
-        variant="filled"
-        icon="check"
-        pending.bind="publishing"
-        pending-label.bind="'event.publishing' & t"
-        disabled.bind="cancelling"
-        click.trigger="publish()"
-        data-action="publish"
-      >${'event.publish' & t}</console-button>
-      <console-button
-        if.bind="canCancelConcert"
-        variant="outlined"
-        pending.bind="cancelling"
-        pending-label.bind="'event.cancelling' & t"
-        disabled.bind="publishing"
-        click.trigger="cancelConcert()"
-        data-action="cancel"
-      >${'concert.cancelConcert' & t}</console-button>
-      <console-button variant="text" icon="edit" href.bind="editHref">${'common.edit' & t}</console-button>
+    <div class="panes">
+      <section class="focus" aria-labelledby="concert-events-heading">
+        <h2 id="concert-events-heading" class="section-title">${'concert.events' & t}</h2>
+        <data-list columns.bind="columns" rows.bind="rows" label.bind="'concert.events' & t" class="dates"></data-list>
+      </section>
+
+      <aside class="supporting" aria-labelledby="concert-summary-heading">
+        <h2 id="concert-summary-heading" class="section-title">${'concert.summary' & t}</h2>
+        <img if.bind="coverUrl" src.bind="coverUrl" alt="" class="cover">
+        <dl class="summary">
+          <div class="summary-row">
+            <dt>${'concertEditor.type' & t}</dt>
+            <dd>${typeKey & t}</dd>
+          </div>
+          <div class="summary-row">
+            <dt>${'concertEditor.visibility' & t}</dt>
+            <dd>${visibilityKey & t}</dd>
+          </div>
+          <div if.bind="performers.length" class="summary-row">
+            <dt>${'concertEditor.performers' & t}</dt>
+            <dd>${performers.join(' · ')}</dd>
+          </div>
+        </dl>
+      </aside>
     </div>
 
     <confirm-dialog
@@ -52,9 +62,9 @@
       confirm-key="event.publish"
       confirm-disabled.bind="!chosenIds.length"
     >
-      <fieldset class="dates">
+      <fieldset class="choices">
         <legend class="visually-hidden">${'concert.datesToPublish' & t}</legend>
-        <label repeat.for="date of draftDates" class="date state-layer">
+        <label repeat.for="date of draftDates" class="choice state-layer">
           <input type="checkbox" checked.bind="chosen[date.id]">
           <span>
             <template if.bind="date.start">${date.start | jstDateTime}</template>
@@ -72,22 +82,5 @@
       confirm-key="concert.cancelConcert"
       confirm-variant="danger"
     >${'concert.cancelConfirmBody' & t}</confirm-dialog>
-
-    <section if.bind="offersShareLink" class="share" aria-labelledby="concert-share-heading">
-      <h2 id="concert-share-heading" class="section-title">${'concert.shareTitle' & t}</h2>
-      <p>${'concert.shareExplain' & t}</p>
-      <copy-field if.bind="shareUrl" label.bind="'concert.shareLabel' & t" value.bind="shareUrl"></copy-field>
-      <console-button variant="tonal" action.bind="() => createShareLink()" pending-label.bind="'concert.shareCreating' & t">${'concert.shareCreate' & t}</console-button>
-      <confirm-dialog
-        component.ref="shareDialog"
-        heading-key="concert.shareConfirmTitle"
-        confirm-key="concert.shareCreate"
-      >${'concert.shareConfirmBody' & t}</confirm-dialog>
-    </section>
-
-    <section class="events" aria-labelledby="concert-events-heading">
-      <h2 id="concert-events-heading" class="section-title">${'concert.events' & t}</h2>
-      <data-list columns.bind="columns" rows.bind="rows" label.bind="'concert.events' & t"></data-list>
-    </section>
   </template>
 </section>

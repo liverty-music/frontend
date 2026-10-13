@@ -112,10 +112,10 @@ const navigation = (page: Page) =>
 	page.getByRole('navigation', { name: 'メインナビゲーション' })
 
 async function walk(page: Page, api: Server, log: RpcLog): Promise<void> {
-	// Home lists the draft concert; its action opens the concert page.
+	// Home lists the draft concert; the item opens the concert page.
 	const draftItem = page.locator('[data-kind="draft"]')
 	await expect(draftItem).toContainText('XX 単独公演')
-	await draftItem.getByRole('link', { name: '開く' }).click()
+	await draftItem.getByRole('link').click()
 	await expect(
 		page.getByRole('heading', { level: 1, name: 'XX 単独公演' }),
 	).toBeVisible()
@@ -230,7 +230,11 @@ test.describe('run an event from the organizer console', () => {
 		const first = page.locator('[data-scanner="1"]')
 		await expect(first).toContainText('未使用')
 
-		await first.getByRole('button', { name: '取り消す', exact: true }).click()
+		await first.getByRole('button', { name: 'その他の操作' }).click()
+		await page
+			.getByRole('menu', { name: 'その他の操作' })
+			.getByRole('menuitem', { name: '取り消す', exact: true })
+			.click()
 		const dialog = confirmDialog(page, { name: '受付1を取り消しますか？' })
 		await expect(dialog).toContainText(
 			'受付1を使っている端末は使えなくなります',

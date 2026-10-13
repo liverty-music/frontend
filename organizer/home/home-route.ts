@@ -1,7 +1,13 @@
 import type { Scanner } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/scanner_pb.js'
 import { ILogger, resolve } from 'aurelia'
 import { eventId } from '../model/concert-model'
-import { eventsWithinWeek, type HomeItem, homeItems } from '../model/home-model'
+import {
+	eventsWithinWeek,
+	groupHomeItems,
+	type HomeGroup,
+	type HomeItem,
+	homeItems,
+} from '../model/home-model'
 import { IClock } from '../services/clock'
 import {
 	IPayoutAccountClient,
@@ -10,12 +16,14 @@ import {
 import { IScannerClient } from '../services/scanner-client'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { IConsoleContext } from '../shell/console-context'
+import { IPageProgress } from '../shell/page-progress'
 
 type PartState = 'loading' | 'ready' | 'error'
 
 /**
- * Home: what needs the operator now, most urgent first, each with the one
- * action that resolves it. Reads the concerts, the payout account and the
+ * Home: what needs the operator now, most urgent first, as one list grouped
+ * by kind under subheaders; each item is one link to where it is resolved
+ * (design D18). Reads the concerts, the payout account and the
  * scanners of the events starting within 7 days; a source that fails is
  * reported with 再試行 while the others still show their items.
  */
@@ -25,6 +33,7 @@ export class HomeRoute {
 	private readonly scanners = resolve(IScannerClient)
 	private readonly clock = resolve(IClock)
 	public readonly context = resolve(IConsoleContext)
+	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('HomeRoute')
 
 	public concertsState: PartState = 'loading'
@@ -38,6 +47,11 @@ export class HomeRoute {
 
 	public get isLoading(): boolean {
 		return this.concertsState === 'loading' && this.payoutState === 'loading'
+	}
+
+	/** The items by kind, in the order of the list. */
+	public get groups(): HomeGroup[] {
+		return groupHomeItems(this.items)
 	}
 
 	public get allClear(): boolean {
@@ -56,7 +70,15 @@ export class HomeRoute {
 		this.abort.abort()
 	}
 
-	public async loadConcerts(): Promise<void> {
+	public loadConcerts(): Promise<void> {
+		return this.progress.track(this.readConcerts())
+	}
+
+	public loadPayout(): Promise<void> {
+		return this.progress.track(this.readPayout())
+	}
+
+	private async readConcerts(): Promise<void> {
 		this.concertsState = 'loading'
 		try {
 			this.concerts = await this.series.list(this.abort.signal)
@@ -71,7 +93,7 @@ export class HomeRoute {
 		this.refresh()
 	}
 
-	public async loadPayout(): Promise<void> {
+	private async readPayout(): Promise<void> {
 		this.payoutState = 'loading'
 		try {
 			this.payoutStatus = (await this.payout.get(this.abort.signal)).status

@@ -1,0 +1,45 @@
+@layer block {
+	/* Bottom trailing corner of the window, above the navigation bar of a
+	   compact window (`--nav-bar-clearance` is 0 beside the rail). */
+	:host {
+		position: fixed;
+		inset-block-end: calc(
+			var(--nav-bar-clearance, 0px) +
+			var(--safe-area-block-end, 0px) +
+			var(--space-s)
+		);
+		inset-inline-end: var(--space-s);
+		display: inline-flex;
+	}
+
+	/* M3 extended FAB, primary color set: 56 px high, large corners, level-3
+	   elevation (level 4 on hover). */
+	.fab {
+		cursor: pointer;
+
+		display: inline-flex;
+		gap: var(--space-xs);
+		align-items: center;
+
+		min-inline-size: 80px;
+		block-size: 56px;
+		padding-inline: var(--space-s) 20px;
+		border: none;
+		border-radius: var(--md-shape-large);
+
+		font: var(--md-type-label-large);
+		color: var(--md-color-on-primary-container);
+		text-decoration: none;
+		white-space: nowrap;
+
+		background: var(--md-color-primary-container);
+		box-shadow: var(--md-elevation-3);
+
+		transition: box-shadow var(--md-sys-motion-duration-short4)
+			var(--md-sys-motion-easing-standard);
+
+		&:hover {
+			box-shadow: var(--md-elevation-4);
+		}
+	}
+}

@@ -5,6 +5,10 @@ import {
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
+import {
+	fanOriginOf,
+	type KnownEnvironment,
+} from '../../shared/config/known-hosts'
 import type { AuthoredSeries } from '../services/series-client'
 import type { StatusTone } from '../ui/status-badge/status-badge'
 
@@ -211,4 +215,16 @@ export const paths = {
 	) => `${eventPath(scope, series, event)}/ticket-sales/new?method=${method}`,
 	editSale: (scope: ArtistScope, series: string, event: string, sale: string) =>
 		`${eventPath(scope, series, event)}/ticket-sales/${segment(sale)}/edit`,
+}
+
+/**
+ * The address of an event's fan page, `https://<fan origin>/events/<id>`
+ * (design D21), or '' when the environment has no fan origin.
+ */
+export function fanPageUrlOf(
+	environment: KnownEnvironment,
+	eventId: string,
+): string {
+	const origin = fanOriginOf(environment)
+	return origin ? `${origin}/events/${eventId}` : ''
 }

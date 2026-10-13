@@ -365,7 +365,9 @@ test.describe('changing a lottery before it opens', () => {
 		await expect(
 			page.getByRole('heading', { level: 1, name: '抽選販売を変更' }),
 		).toBeVisible()
-		await expect(page.getByText('ファンクラブ先行').first()).toBeVisible()
+		await expect(
+			page.getByRole('main').getByText('ファンクラブ先行').first(),
+		).toBeVisible()
 		await expect(field(page, '販売名')).toHaveCount(0)
 		await expect(field(page, '受付開始')).toHaveValue('2026-10-10T12:00')
 

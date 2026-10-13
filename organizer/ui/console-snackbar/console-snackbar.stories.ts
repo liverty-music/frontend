@@ -1,9 +1,9 @@
+import { I18N } from '@aurelia/i18n'
 import {
 	defineAureliaStory,
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { I18N } from '@aurelia/i18n'
 import { CustomElement } from 'aurelia'
 import { expect, waitFor, within } from 'storybook/test'
 import { page, userEvent } from 'vitest/browser'
@@ -62,6 +62,10 @@ export const TwoResultsInARow = {
 		// Announced without taking focus.
 		await expect(openSnacks(canvasElement)[0]).toHaveAttribute('role', 'status')
 		await expect(canvasElement.contains(document.activeElement)).toBe(false)
+		// Fully shown before the page is checked: mid fade, its colors blend.
+		await waitFor(() =>
+			expect(getComputedStyle(openSnacks(canvasElement)[0]).opacity).toBe('1'),
+		)
 	},
 } satisfies Story
 

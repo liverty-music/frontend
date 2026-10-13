@@ -40,9 +40,17 @@ export class Breadcrumbs {
 		this.setIn = this.navigation
 	}
 
-	/** The nearest parent with a link (for the compact breadcrumb). */
+	/** The nearest parent with a link: the back arrow of a compact window. */
 	public get parent(): Crumb | undefined {
-		return [...this.trail].reverse().find((c) => c.href)
+		return [...this.trail]
+			.slice(0, -1)
+			.reverse()
+			.find((c) => c.href)
+	}
+
+	/** The page on show, the last part of the trail. */
+	public get current(): Crumb | undefined {
+		return this.trail.at(-1)
 	}
 }
 

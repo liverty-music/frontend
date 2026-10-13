@@ -23,7 +23,12 @@ type Story = StoryObj<typeof meta>
 
 const columns: DataColumn[] = [
 	{ key: 'title', labelKey: 'concerts.column.title', primary: true },
-	{ key: 'state', labelKey: 'concert.column.state', kind: 'status' },
+	{
+		key: 'state',
+		labelKey: 'concert.column.state',
+		kind: 'status',
+		trailing: true,
+	},
 	{ key: 'startsAt', labelKey: 'concertEditor.startTime', kind: 'datetime' },
 	{ key: 'schedule', labelKey: 'concerts.column.schedule' },
 	{ key: 'entries', labelKey: 'sale.stats.entries', kind: 'count' },
@@ -72,28 +77,36 @@ const renderAt =
 			props: { columns, rows },
 		})
 
-export const Cards = {
+/**
+ * Narrower than 840 px: an M3 list. Each row is one item that is one link:
+ * the title as headline, the subtitle above it, the other columns as
+ * supporting lines (counts and prices with their column title) and the
+ * status at the trailing edge.
+ */
+export const List = {
 	render: renderAt(390),
 	play: async ({ canvasElement }) => {
 		const canvas = canvasOf(canvasElement)
 		const list = canvas.getByRole('list', { name: '公演' })
 		await expect(list.element()).toBeVisible()
 		await expect(canvas.getByRole('table').query()).toBeNull()
-		// The hidden table holds the same text; query the cards only.
-		await expect(
-			list.getByRole('link', { name: 'XX Tour 2026 東京' }).element(),
-		).toBeVisible()
-		await expect(
-			list.getByText('11月3日(火) 18:00 JST').element(),
-		).toBeVisible()
-		await expect(list.getByText('6,500円').element()).toBeVisible()
+		const items = list.getByRole('listitem').elements()
+		await expect(items).toHaveLength(2)
+		const links = list.getByRole('link').elements()
+		await expect(links).toHaveLength(2)
+		await expect(links[0]).toHaveAttribute('href', '#e1')
 		// Column titles, statuses and catalog texts are translated by the list.
-		await expect(list.getByText('公開中').element()).toBeVisible()
-		await expect(list.getByText('ツアー · Band A').element()).toBeVisible()
+		await expect(items[0]).toHaveTextContent('ツアー · Band A')
+		await expect(items[0]).toHaveTextContent('XX Tour 2026 東京')
+		await expect(items[0]).toHaveTextContent('11月3日(火) 18:00 JST')
+		await expect(items[0]).toHaveTextContent(
+			'11月3日(火) 他 2公演 · Zepp Haneda',
+		)
+		await expect(items[0]).toHaveTextContent('6,500円')
+		// The trailing status is part of the one link.
 		await expect(
-			list.getByText('11月3日(火) 他 2公演 · Zepp Haneda').element(),
+			list.getByRole('link', { name: /XX Tour 2026 東京.*公開中/ }).element(),
 		).toBeVisible()
-		await expect(list.getByText('日程・会場').first().element()).toBeVisible()
 	},
 } satisfies Story
 
@@ -109,6 +122,18 @@ export const Table = {
 		await expect(
 			canvas.getByRole('rowheader', { name: 'XX Tour 2026 大阪' }).element(),
 		).toBeVisible()
+		// One link per row, stretched over the whole row.
+		const row = canvas.getByRole('row').elements()[1]
+		const link = canvas
+			.getByRole('link', { name: 'XX Tour 2026 東京' })
+			.element()
+		await expect(link).toHaveAttribute('href', '#e1')
+		const root = row.getRootNode() as ShadowRoot
+		const hit = root.elementFromPoint(
+			row.getBoundingClientRect().right - 8,
+			row.getBoundingClientRect().top + 8,
+		)
+		await expect(hit?.closest('a')).toBe(link)
 
 		// @spec components/infrastructure/organizer/web/global/design-tokens "Counts line up"
 		const entries = deepQueryAll(canvasElement, 'tbody td:nth-child(5) data')

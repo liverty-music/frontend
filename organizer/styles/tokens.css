@@ -197,8 +197,12 @@
 		--nav-bar-clearance: var(--nav-bar-height);
 		--safe-area-block-end: env(safe-area-inset-bottom, 0px);
 
-		/* M3 elevation level 2 (menus). */
+		/* M3 elevation levels 2 (menus), 3 (FAB) and 4 (hovered FAB). */
 		--md-elevation-2: 0 2px 6px oklch(0% 0 0deg / 20%);
+		--md-elevation-3:
+			0 1px 3px oklch(0% 0 0deg / 30%), 0 4px 8px 3px oklch(0% 0 0deg / 15%);
+		--md-elevation-4:
+			0 2px 3px oklch(0% 0 0deg / 30%), 0 6px 10px 4px oklch(0% 0 0deg / 15%);
 
 		/* Readable page width on expanded windows. */
 		--page-max-inline-size: 1200px;

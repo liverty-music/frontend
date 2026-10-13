@@ -1,16 +1,16 @@
 @layer block {
 	@scope (concerts-route) {
+		/* Room under the last concert for the floating 公演をつくる. */
 		.concerts {
 			display: grid;
+			grid-template-columns: minmax(0, 1fr);
 			gap: var(--space-s);
+			padding-block-end: calc(56px + var(--space-s));
 		}
 
-		.header {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-xs);
-			align-items: center;
-			justify-content: space-between;
+		/* The list extends edge to edge on a compact window (M3 Lists). */
+		.collection {
+			margin-inline: calc(-1 * var(--page-inline-padding));
 		}
 
 		.message {
@@ -29,6 +29,12 @@
 		.message-title {
 			font: var(--md-type-title-medium);
 			color: var(--md-color-on-surface);
+		}
+
+		@container shell (width >= 600px) {
+			.collection {
+				margin-inline: 0;
+			}
 		}
 	}
 }

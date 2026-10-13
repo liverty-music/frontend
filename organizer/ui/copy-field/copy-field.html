@@ -1,16 +1,11 @@
 <import from="./copy-field.css"></import>
-<import from="../icon-button/icon-button"></import>
+<import from="../copy-button/copy-button"></import>
 <use-shadow-dom></use-shadow-dom>
 
 <div class="copy-field">
   <span class="label">${label}</span>
   <div class="row">
     <span class="value">${value}</span>
-    <icon-button
-      icon.bind="copied ? 'check' : 'copy'"
-      label.bind="(copied ? 'common.copied' : 'copyField.copy') & t:{ label: label }"
-      data-copied.bind="copied"
-      click.trigger="copy()"
-    ></icon-button>
+    <copy-button label.bind="label" value.bind="value"></copy-button>
   </div>
 </div>

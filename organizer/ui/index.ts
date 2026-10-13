@@ -6,10 +6,15 @@ import { ConsoleField } from './console-field/console-field'
 import { ConsoleIcon } from './console-icon/console-icon'
 import { ConsoleSnackbar } from './console-snackbar/console-snackbar'
 import { ConsoleTabs } from './console-tabs/console-tabs'
+import { CopyButton } from './copy-button/copy-button'
 import { CopyField } from './copy-field/copy-field'
 import { DataList } from './data-list/data-list'
 import { DescriptionList } from './description-list/description-list'
+import { ExtendedFab } from './extended-fab/extended-fab'
 import { IconButton } from './icon-button/icon-button'
+import { LinearProgress } from './linear-progress/linear-progress'
+import { ListItem } from './list-item/list-item'
+import { OverflowMenu } from './overflow-menu/overflow-menu'
 import { PrerequisiteCallout } from './prerequisite-callout/prerequisite-callout'
 import { StatTile } from './stat-tile/stat-tile'
 import { StatusBadge } from './status-badge/status-badge'
@@ -26,10 +31,15 @@ export const ConsoleUi = [
 	ConsoleIcon,
 	ConsoleSnackbar,
 	ConsoleTabs,
+	CopyButton,
 	CopyField,
 	DataList,
 	DescriptionList,
+	ExtendedFab,
 	IconButton,
+	LinearProgress,
+	ListItem,
+	OverflowMenu,
 	PrerequisiteCallout,
 	StatTile,
 	StatusBadge,

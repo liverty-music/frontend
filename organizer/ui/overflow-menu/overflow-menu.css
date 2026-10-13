@@ -1,0 +1,85 @@
+@layer block {
+	:host {
+		display: inline-flex;
+	}
+
+	/* M3 standard icon button. */
+	.button {
+		cursor: pointer;
+
+		anchor-name: --overflow-menu;
+
+		display: inline-grid;
+		place-items: center;
+
+		inline-size: var(--md-target-size);
+		block-size: var(--md-target-size);
+		padding: 0;
+		border: none;
+		border-radius: var(--md-shape-full);
+
+		color: var(--md-color-on-surface-variant);
+
+		background: transparent;
+	}
+
+	/* M3 menu: surface container, extra-small corners, level-2 elevation,
+	   48 px items. Without anchor positioning the popover stays centered. */
+	.menu {
+		min-inline-size: 160px;
+		max-inline-size: 280px;
+		margin: 0;
+		padding-block: var(--space-2xs);
+		border: none;
+		border-radius: var(--md-shape-extra-small);
+
+		color: var(--md-color-on-surface);
+
+		background: var(--md-color-surface-container);
+		box-shadow: var(--md-elevation-2);
+	}
+
+	@supports (position-area: block-end) {
+		.menu {
+			position-anchor: --overflow-menu;
+			position-area: block-end span-inline-start;
+			position-try-fallbacks:
+				flip-block,
+				flip-inline,
+				flip-block flip-inline;
+		}
+	}
+
+	.menu:popover-open {
+		display: grid;
+	}
+
+	.item {
+		cursor: pointer;
+
+		display: flex;
+		align-items: center;
+
+		inline-size: 100%;
+		min-block-size: var(--md-target-size);
+		padding-inline: var(--space-xs);
+		border: none;
+
+		font: var(--md-type-label-large);
+		color: inherit;
+		text-align: start;
+		text-decoration: none;
+
+		background: transparent;
+
+		&:focus-visible {
+			outline-offset: -3px;
+		}
+
+		/* Unavailable items stay in the menu, dimmed (M3 Menus). */
+		&[aria-disabled="true"] {
+			cursor: not-allowed;
+			color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
+		}
+	}
+}
