@@ -2,17 +2,18 @@
 
 <section class="sales-tab">
   <template switch.bind="prerequisite">
-    <prerequisite-callout case="notPublished" heading.bind="'sale.prerequisite.notPublished' & t">
+    <prerequisite-callout case="notPublished" level.bind="2" heading.bind="'sale.prerequisite.notPublished' & t">
       <p>${'sale.prerequisite.notPublishedBody' & t}</p>
       <console-button variant="text" click.trigger="requestPublish()">${'event.publish' & t}</console-button>
     </prerequisite-callout>
     <prerequisite-callout
       case="noStartTime"
+      level.bind="2"
       heading.bind="'sale.prerequisite.noStartTime' & t"
       action-label.bind="'sale.prerequisite.editConcert' & t"
       action-href.bind="editConcertHref"
     >${'sale.prerequisite.noStartTimeBody' & t}</prerequisite-callout>
-    <prerequisite-callout case="businessDetails" heading.bind="'sale.prerequisite.businessDetails' & t">
+    <prerequisite-callout case="businessDetails" level.bind="2" heading.bind="'sale.prerequisite.businessDetails' & t">
       ${'sale.prerequisite.businessDetailsBody' & t}
     </prerequisite-callout>
   </template>
@@ -26,20 +27,27 @@
   <template if.bind="state === 'ready'">
     <p if.bind="!sales.length" class="message">${'sale.empty' & t}</p>
 
+    <div if.bind="!prerequisite" class="start-actions">
+      <console-button variant="outlined" icon="add" href.bind="newLotteryHref">${'sale.startLottery' & t}</console-button>
+      <console-button if.bind="!hasFirstCome" variant="outlined" icon="add" href.bind="firstComeHref">${'sale.startFirstCome' & t}</console-button>
+    </div>
+
+    <!-- One card per sale: it holds several different actions (M3 Cards). -->
     <ul if.bind="sales.length" class="sales" aria-label.bind="'event.tab.sales' & t">
       <li repeat.for="sale of sales; key: id" class="sale" data-sale.bind="sale.id" data-state.bind="sale.state">
-        <header class="sale-header">
-          <h3 class="sale-name">${sale.name}</h3>
-          <span class="method">${`sale.method.${sale.method}` & t}</span>
+        <div class="sale-heading">
+          <h2 class="sale-name">${sale.name}</h2>
           <status-badge tone.bind="sale.tone" label.bind="sale.stateKey & t"></status-badge>
-        </header>
+        </div>
+        <p class="window">
+          <span class="method">${`sale.method.${sale.method}` & t}</span> · ${sale | jstRange}
+        </p>
 
         <p if.bind="sale.countdown" class="countdown">
           <template if.bind="sale.countdown.days">${'sale.countdown.days' & t:{ days: sale.countdown.days, hours: sale.countdown.hours }}</template>
           <template else>${'sale.countdown.hours' & t:{ hours: sale.countdown.hours, minutes: sale.countdown.minutes }}</template>
         </p>
 
-        <p class="window">${sale | jstRange}</p>
         <p class="terms">
           ${sale.price | yen} · ${'sale.quantity' & t:{ tickets: sale.quantity }} · ${'sale.perAccount' & t:{ limit: sale.perAccountLimit }}
         </p>
@@ -66,30 +74,24 @@
           <stat-tile label.bind="'sale.stats.quantity' & t" value.bind="sale.quantity | count"></stat-tile>
         </div>
 
-        <div class="verification">
-          <console-field
-            type="select"
-            label.bind="'sale.verification.label' & t"
-            value.to-view="String(sale.verification)"
-            options.bind="verificationOptions"
-            hint.bind="'sale.verification.note' & t"
-            change.trigger="changeVerification(sale, $event.detail.value)"
-          ></console-field>
-        </div>
+        <console-field
+          class="verification"
+          type="select"
+          label.bind="'sale.verification.label' & t"
+          value.to-view="String(sale.verification)"
+          options.bind="verificationOptions"
+          hint.bind="'sale.verification.note' & t"
+          change.trigger="changeVerification(sale, $event.detail.value)"
+        ></console-field>
 
         <div class="sale-actions">
-          <console-button if.bind="sale.editable" variant="outlined" icon="edit" href.bind="editHref(sale)">${'common.edit' & t}</console-button>
+          <console-button if.bind="sale.editable" variant="text" icon="edit" href.bind="editHref(sale)">${'common.edit' & t}</console-button>
           <template else>
-            <console-button variant="outlined" icon="edit" disabled.bind="true">${'common.edit' & t}</console-button>
             <span class="locked">${'sale.lockedAfterOpen' & t}</span>
+            <console-button variant="text" icon="edit" disabled.bind="true">${'common.edit' & t}</console-button>
           </template>
         </div>
       </li>
     </ul>
-
-    <div if.bind="!prerequisite" class="start-actions">
-      <console-button variant="filled" icon="add" href.bind="newLotteryHref">${'sale.startLottery' & t}</console-button>
-      <console-button if.bind="!hasFirstCome" variant="tonal" icon="add" href.bind="firstComeHref">${'sale.startFirstCome' & t}</console-button>
-    </div>
   </template>
 </section>

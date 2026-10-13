@@ -73,6 +73,11 @@
 		background: transparent;
 	}
 
+	/* A disabled text button stays borderless (M3). */
+	[data-variant="text"]:disabled {
+		border-color: transparent;
+	}
+
 	/* While pending the button keeps its press affordance off but its look. */
 	[data-pending="true"] {
 		cursor: progress;

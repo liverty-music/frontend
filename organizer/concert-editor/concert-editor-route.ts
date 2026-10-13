@@ -60,8 +60,11 @@ function performerOption(artist: Artist, selected: boolean): PerformerOption {
 /**
  * Creates or edits a concert. The venue of each date is a place picked from
  * the map catalog; dates and times are Japan time. Saving shows progress in
- * the button, reports the result in the snackbar, moves focus to the first
- * field in error, and the editor guards unsaved changes when left.
+ * the button and moves focus to the first field in error. A successful save
+ * returns to the concert page (for a new concert, the new concert's page),
+ * which shows the saved values, and confirms in the snackbar; a failed save
+ * keeps the editor with what was entered and offers 再試行 (design D19). The
+ * editor guards unsaved changes when left.
  *
  * Each date carries its own publish state: a PUBLISHED date keeps its venue
  * and date and cannot be removed, a CANCELLED date is read only, and once the
@@ -354,17 +357,16 @@ export class ConcertEditorRoute {
 		const draft = toSeriesDraftInput(this.model)
 		try {
 			if (this.isEdit) {
-				const concert = await this.series.update(this.seriesId, draft)
-				if (concert) this.hydrate(concert)
+				await this.series.update(this.seriesId, draft)
 				this.markSaved()
-				this.setBreadcrumb()
 				this.snackbar.show('concertEditor.saved')
+				await this.router.load(this.savedHref(this.seriesId))
 			} else {
 				const concert = await this.series.create(draft)
 				const id = concert?.series.id?.value
 				this.markSaved()
 				this.snackbar.show('concertEditor.created')
-				if (id) await this.router.load(this.createdHref(id))
+				if (id) await this.router.load(this.savedHref(id))
 			}
 		} catch (err) {
 			this.logger.warn('Save failed', err)
@@ -382,10 +384,10 @@ export class ConcertEditorRoute {
 	}
 
 	/**
-	 * The new concert's page: under the Artist it was created from, or under
-	 * its first performer when the operator took that Artist off.
+	 * The saved concert's page: under the Artist the editor was opened from,
+	 * or under its first performer when the operator took that Artist off.
 	 */
-	private createdHref(id: string): string {
+	private savedHref(id: string): string {
 		const artist = this.model.artistIds.includes(this.context.artistId)
 			? this.context.artistId
 			: (this.model.artistIds[0] ?? this.context.artistId)

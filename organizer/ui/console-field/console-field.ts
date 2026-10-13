@@ -34,9 +34,10 @@ export interface FieldChange {
 }
 
 /**
- * M3 outlined text field (and select) with its label, a supporting line and an
- * error slot under the field. A field error is shown here and nowhere else: it
- * never goes to the snackbar. The error and the option labels are catalog
+ * M3 outlined text field (and select) with its label and a supporting line
+ * under the field; an error replaces the supporting line and puts the error
+ * icon at the field's trailing edge. A field error is shown here and nowhere else: it never goes to
+ * the snackbar. The error and the option labels are catalog
  * keys, translated in the field's template. Date and time fields say JST: their values are
  * read as Japan time by the screen (`parseJstDateTimeLocal`).
  *
@@ -80,9 +81,12 @@ export class ConsoleField {
 
 	public get describedBy(): string | null {
 		const ids = [
-			this.hint ? `${this.inputId}-hint` : '',
+			this.error
+				? `${this.inputId}-error`
+				: this.hint
+					? `${this.inputId}-hint`
+					: '',
 			this.isTime ? `${this.inputId}-zone` : '',
-			this.error ? `${this.inputId}-error` : '',
 		].filter(Boolean)
 		return ids.length ? ids.join(' ') : null
 	}

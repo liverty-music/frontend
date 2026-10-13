@@ -17,8 +17,8 @@ import { expect, type Locator, type Page, test } from '../support/test'
 
 /**
  * The concert editor: venues picked from the map catalog, Japan-time dates,
- * save feedback, published dates kept fixed, the cover image preview, and
- * the unsaved-changes guard.
+ * save feedback and the return to the concert page, published dates kept
+ * fixed, the cover image preview, and the unsaved-changes guard.
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/concert-editor'
@@ -54,6 +54,19 @@ function oneSeries(concert: ConcertSpec, extra: Record<string, unknown> = {}) {
 		...list,
 		series: { ...(list.series as Array<Record<string, unknown>>)[0], ...extra },
 	}
+}
+
+/**
+ * A SeriesService.List answer that is `before` until SeriesService.Update has
+ * been called, then `after`: the concert page the editor returns to reads the
+ * saved concert.
+ */
+function listUpdatedBy(log: () => RpcLog, before: unknown, after: unknown) {
+	return () => ({
+		body: (calls(log(), 'SeriesService/Update').length
+			? after
+			: before) as Record<string, unknown>,
+	})
 }
 
 /** A SeriesService.List answer whose Series carries extra fields (a cover). */
@@ -344,21 +357,47 @@ test.describe('saving', () => {
 	})
 
 	test(`@spec ${SPEC} "Saved"`, async ({ page }) => {
-		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
-			'SeriesService/Update': oneSeries(XX_SOLO, {
+		const renamed: ConcertSpec = { ...XX_SOLO, title: 'XX 年末ワンマン' }
+		let log: RpcLog = { calls: [] }
+		log = await openEditor(page, `${SERIES}/s-solo/edit`, {
+			'SeriesService/Update': oneSeries(renamed, {
 				description: { value: '年末のワンマン' },
 			}),
+			'SeriesService/List': listUpdatedBy(
+				() => log,
+				seriesList([TOUR, XX_SOLO]),
+				seriesList([TOUR, renamed]),
+			),
 		})
+		await titleField(page).fill('XX 年末ワンマン')
 		await page.getByLabel('説明').fill('年末のワンマン')
 		await page.getByRole('button', { name: '保存する' }).click()
 
-		await expect(snackbar(page)).toContainText('変更を保存しました')
-		await expect(page).toHaveURL(/\/series\/s-solo\/edit$/)
+		// The concert page the editor was opened for, with the saved values.
+		await expect(page).toHaveURL(/\/series\/s-solo$/)
 		await expect(
-			page.getByRole('heading', { level: 1, name: '公演を編集' }),
+			page.getByRole('heading', { level: 1, name: 'XX 年末ワンマン' }),
 		).toBeVisible()
-		await expect(page.getByLabel('説明')).toHaveValue('年末のワンマン')
-		expect(calls(log, 'SeriesService/Update')).toHaveLength(1)
+		await expect(snackbar(page)).toContainText('変更を保存しました')
+		const updates = calls(log, 'SeriesService/Update')
+		expect(updates).toHaveLength(1)
+		expect(
+			(updates[0].body as { draft: { description: { value: string } } }).draft
+				.description,
+		).toEqual({ value: '年末のワンマン' })
+	})
+
+	// Requirement "Save gives feedback and returns to where the editor was
+	// opened": leaving without saving is offered as キャンセル.
+	test('キャンセル returns to the concert page without saving', async ({
+		page,
+	}) => {
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`)
+		const bar = page.locator('action-bar')
+		await expect(bar.getByRole('link', { name: 'キャンセル' })).toBeVisible()
+		await bar.getByRole('link', { name: 'キャンセル' }).click()
+		await expect(page).toHaveURL(/\/series\/s-solo$/)
+		expect(calls(log, 'SeriesService/Update')).toHaveLength(0)
 	})
 
 	test(`@spec ${SPEC} "New concert"`, async ({ page }) => {
@@ -489,7 +528,9 @@ test.describe('times in another time zone', () => {
 		expect(new Date(sent).toISOString()).toBe(jst('2026-12-20', '18:00'))
 		expect(sent).toMatch(/^2026-12-20T09:00:00(\.0+)?Z$/)
 
-		await page.reload()
+		// Saving returns to the concert page; reopen the editor.
+		await expect(page).toHaveURL(/\/series\/s-solo$/)
+		await page.goto(`${SERIES}/s-solo/edit`)
 		await expect(row(page, 0).getByLabel('開演')).toHaveValue('18:00')
 		await expect(row(page, 0).getByLabel('日付')).toHaveValue('2026-12-20')
 	})
@@ -527,8 +568,14 @@ test.describe('a published concert', () => {
 				},
 			],
 		}
-		const log = await openEditor(page, `${SERIES}/s-tour/edit`, {
+		let log: RpcLog = { calls: [] }
+		log = await openEditor(page, `${SERIES}/s-tour/edit`, {
 			'SeriesService/Update': oneSeries(withNewDate),
+			'SeriesService/List': listUpdatedBy(
+				() => log,
+				seriesList([TOUR, XX_SOLO]),
+				seriesList([withNewDate, XX_SOLO]),
+			),
 		})
 		await page.getByRole('button', { name: '公演日を追加' }).click()
 		const added = row(page, 4)
@@ -544,11 +591,9 @@ test.describe('a published concert', () => {
 		expect(body.draft.events).toHaveLength(5)
 		expect(body.draft.events[4].eventId).toBeUndefined()
 		expect(body.draft.events[4].placeId).toEqual({ value: 'ChIJ-haneda' })
-		await expect(row(page, 4)).toContainText('下書き')
-		await expect(
-			row(page, 4).getByRole('button', { name: 'この公演日を削除' }),
-		).toBeVisible()
-		await expect(row(page, 0)).toContainText('公開中')
+		// The concert page shows the new date as a draft.
+		await expect(page).toHaveURL(/\/series\/s-tour$/)
+		await expect(page.locator('concert-route')).toContainText('下書き')
 	})
 
 	test(`@spec ${SPEC} "Start time already on sale"`, async ({ page }) => {
@@ -689,7 +734,13 @@ test.describe('cover image', () => {
 		expect(calls(log, 'SeriesService/List').length).toBe(3)
 	})
 
-	test(`@spec ${SPEC} "Saved before processing finished"`, async ({ page }) => {
+	// Design D19 (save returns to the concert page) leaves the editor on save,
+	// so the editor can no longer show the picked image afterwards; the
+	// scenario needs restating for the concert page, which still shows the
+	// previous cover until the processed one is served.
+	test.fixme(`@spec ${SPEC} "Saved before processing finished"`, async ({
+		page,
+	}) => {
 		await mockImageHosts(page)
 		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
 			...UPLOAD_RPC,

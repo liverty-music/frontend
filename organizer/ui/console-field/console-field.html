@@ -1,4 +1,5 @@
 <import from="./console-field.css"></import>
+<import from="../console-icon/console-icon"></import>
 <use-shadow-dom></use-shadow-dom>
 
 <div class="field" data-invalid.bind="!!error" data-disabled.bind="disabled" data-readonly.bind="readonly">
@@ -55,7 +56,9 @@
     </template>
     <span if.bind="type === 'yen'" class="affix" aria-hidden="true">${'field.yenSuffix' & t}</span>
     <span if.bind="isTime" id.bind="`${inputId}-zone`" class="affix">${'common.jst' & t}</span>
+    <console-icon if.bind="errorText" name="error" class="error-icon"></console-icon>
   </div>
-  <p if.bind="hint" id.bind="`${inputId}-hint`" class="supporting">${hint}</p>
+  <!-- The error replaces the supporting text (M3 text fields). -->
   <p if.bind="errorText" id.bind="`${inputId}-error`" class="error">${errorText.key & t:errorText.params}</p>
+  <p else if.bind="hint" id.bind="`${inputId}-hint`" class="supporting">${hint}</p>
 </div>

@@ -7,7 +7,7 @@
 	"common": {
 		"loading": "Loading",
 		"close": "Close",
-		"cancel": "Keep as is",
+		"cancel": "Cancel",
 		"retry": "Retry",
 		"copy": "Copy",
 		"copied": "Copied",
@@ -16,7 +16,9 @@
 		"edit": "Edit",
 		"open": "Open",
 		"jst": "JST",
-		"required": "Required"
+		"required": "Required",
+		"cancelEdit": "Cancel",
+		"requiredNote": "* marks a required field."
 	},
 	"format": {
 		"yen": "¥{{amount}}",
@@ -297,8 +299,15 @@
 			"active": "Active",
 			"restricted": "Action needed",
 			"notBlocking": "Fans can buy tickets before setup is finished; only the payout waits.",
-			"continue": "Continue setup"
-		}
+			"continue": "Continue setup on Stripe",
+			"status": "Status",
+			"stripe": "Payouts go through Stripe, the payment provider of Liverty Music. On Stripe’s page you enter your business, your representative’s identity and the bank account to be paid into.",
+			"newTab": "Stripe’s page opens in a new tab. When you are done, return to this tab; the status is read again when you do.",
+			"opensNewTab": " (opens in a new tab)"
+		},
+		"artistsTitle": "Artists",
+		"organizationName": "Name",
+		"noArtists": "No represented artists yet."
 	},
 	"denied": {
 		"title": "This account cannot use the console",
@@ -362,7 +371,10 @@
 		"startTimeOnSale": "The start time of a date is fixed once its tickets are on sale, so nothing was saved. If no tickets are on sale yet, another concert already holds that venue and time.",
 		"visibilityPublic": "Shown in fan lists; followers are notified when it is published.",
 		"visibilityUnlisted": "Only people with the share link can see it; no follower is notified.",
-		"visibilityFixed": "This concert has published or cancelled dates, so its visibility is fixed."
+		"visibilityFixed": "This concert has published or cancelled dates, so its visibility is fixed.",
+		"sections": {
+			"about": "About the concert"
+		}
 	},
 	"lotteryEditor": {
 		"newTitle": "Sell by lottery",
@@ -402,6 +414,10 @@
 			"limitOverQuantity": "The limit cannot exceed the tickets",
 			"price": "Enter a whole-yen price of at least 1",
 			"overlap": "The window overlaps the sale “{{name}}” ({{start}} – {{end}})"
+		},
+		"sections": {
+			"window": "Entry window",
+			"tickets": "Tickets"
 		}
 	},
 	"firstComeEditor": {
@@ -432,6 +448,10 @@
 			"limit": "Enter a limit from {{min}} to {{max}}",
 			"limitOverQuantity": "The limit cannot exceed the tickets",
 			"overlap": "The window overlaps the sale “{{name}}” ({{start}} – {{end}})"
+		},
+		"sections": {
+			"window": "Sale window",
+			"tickets": "Tickets"
 		}
 	},
 	"otherOrganizer": {

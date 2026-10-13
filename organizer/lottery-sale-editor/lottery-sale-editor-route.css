@@ -10,15 +10,23 @@
 			color: var(--md-color-on-surface-variant);
 		}
 
+		/* One column of fields, capped at 600 px (M3 forms); sections are set
+		   apart by their headings and spacing, not dividers. */
 		.form {
 			display: grid;
 			gap: var(--space-s);
+			max-inline-size: 600px;
 		}
 
 		.row {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 			gap: var(--space-s);
+		}
+
+		.section-title {
+			margin-block-start: var(--space-m);
+			font: var(--md-type-title-large);
+			color: var(--md-color-on-surface);
 		}
 
 		.fixed {
@@ -32,9 +40,15 @@
 		}
 
 		.problem {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: flex-start;
+
 			padding: var(--space-xs) var(--space-s);
 			border-radius: var(--md-shape-medium);
+
 			color: var(--md-color-on-error-container);
+
 			background: var(--md-color-error-container);
 		}
 

@@ -18,14 +18,14 @@
 
   <template if.bind="state === 'ready'">
     <div repeat.for="block of blocks" switch.bind="block">
-      <prerequisite-callout case="cancelled" heading.bind="'event.cancelledNote' & t"></prerequisite-callout>
-      <prerequisite-callout case="notPublished" heading.bind="'sale.prerequisite.notPublished' & t" action-label.bind="'lotteryEditor.toSales' & t" action-href.bind="salesHref">
+      <prerequisite-callout case="cancelled" level.bind="2" heading.bind="'event.cancelledNote' & t"></prerequisite-callout>
+      <prerequisite-callout case="notPublished" level.bind="2" heading.bind="'sale.prerequisite.notPublished' & t" action-label.bind="'lotteryEditor.toSales' & t" action-href.bind="salesHref">
         ${'sale.prerequisite.notPublishedBody' & t}
       </prerequisite-callout>
-      <prerequisite-callout case="noStartTime" heading.bind="'sale.prerequisite.noStartTime' & t" action-label.bind="'sale.prerequisite.editConcert' & t" action-href.bind="editConcertHref">
+      <prerequisite-callout case="noStartTime" level.bind="2" heading.bind="'sale.prerequisite.noStartTime' & t" action-label.bind="'sale.prerequisite.editConcert' & t" action-href.bind="editConcertHref">
         ${'sale.prerequisite.noStartTimeBody' & t}
       </prerequisite-callout>
-      <prerequisite-callout case="businessDetails" heading.bind="'sale.prerequisite.businessDetails' & t">
+      <prerequisite-callout case="businessDetails" level.bind="2" heading.bind="'sale.prerequisite.businessDetails' & t">
         ${'sale.prerequisite.businessDetailsBody' & t}
       </prerequisite-callout>
     </div>
@@ -40,12 +40,14 @@
     </div>
 
     <form if.bind="!blocks.length" class="form" novalidate submit.trigger="false">
+      <p class="note">${'common.requiredNote' & t}</p>
       <console-field
         label.bind="'lotteryEditor.name' & t"
         value.bind="model.name"
         required.bind="true"
         error.bind="error(errors.name, submitted)"
       ></console-field>
+      <h2 class="section-title">${'firstComeEditor.sections.window' & t}</h2>
       <div class="row">
         <console-field
           type="datetime-local"
@@ -63,6 +65,7 @@
           error.bind="error(errors.saleEndTime, submitted)"
         ></console-field>
       </div>
+      <h2 class="section-title">${'firstComeEditor.sections.tickets' & t}</h2>
       <div class="row">
         <console-field
           type="yen"
@@ -90,10 +93,10 @@
         ></console-field>
       </div>
 
-      <p if.bind="saveProblem" class="problem" role="alert">${saveProblem & t}</p>
+      <p if.bind="saveProblem" class="problem" role="alert"><console-icon name="error"></console-icon><span>${saveProblem & t}</span></p>
 
       <action-bar>
-        <console-button variant="text" href.bind="salesHref">${'common.cancel' & t}</console-button>
+        <console-button variant="text" href.bind="salesHref">${'common.cancelEdit' & t}</console-button>
         <console-button variant="filled" icon="check" action.bind="() => save()" pending-label.bind="'common.saving' & t">${(sale ? 'common.save' : 'firstComeEditor.create') & t}</console-button>
       </action-bar>
     </form>
