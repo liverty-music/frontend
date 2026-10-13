@@ -64,6 +64,10 @@ jobs:
       # vars.SERVICE_ACCOUNT scoped to the prod project (managed by Pulumi's
       # GitHubRepositoryComponent — see cloud-provisioning/src/github/).
       name: ${{ github.event_name == 'release' && 'prod' || 'dev' }}
+    outputs:
+      # Release path only: the entry chunk the promoted image serves, read
+      # by post-deploy-smoke to know when production serves this release.
+      entry_chunk: ${{ steps.entry_chunk.outputs.name }}
     permissions:
       contents: read
       id-token: write
@@ -339,6 +343,32 @@ jobs:
           echo "::error::dev AR tag :${GITHUB_SHA} not found after 6 attempts (~5 min total wait). Given the every-main-commit-has-an-image invariant (guarantee-dev-image-per-main-commit), the push-path build/inherit for this commit is still in-flight or failed — do NOT re-target an earlier commit; re-run the push-path 'Deploy Frontend' run for this SHA. See docs/runbooks/prod-image-tag-pinning.md#retag-failure-recovery in cloud-provisioning."
           exit 1
 
+      # post-deploy-smoke waits until production serves this release, which it
+      # recognises by the entry chunk name in the served HTML. Read that name
+      # from the exact image being promoted, not from a rebuild of the tag:
+      # the image may be inherited from an earlier commit (see "Decide build
+      # vs inherit"), so a rebuild of the tag can name a different chunk
+      # (v1.91.0 rebuilt to main-s83IaJTY.js while prod served the inherited
+      # main-CIjctUsU.js). The Dockerfile copies dist/ to /srv, and image
+      # tarballs carry paths without the leading slash.
+      - name: Read the entry chunk name from the promoted image
+        if: github.event_name == 'release'
+        id: entry_chunk
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          DIGEST: ${{ steps.resolve_digest.outputs.digest }}
+        run: |
+          set -euo pipefail
+          name=$(crane export "${DEV_AR_IMAGE}@${DIGEST}" - \
+            | tar -xOf - srv/index.html \
+            | grep -oE 'assets/main-[A-Za-z0-9_-]+\.js' | head -1 || true)
+          if [ -z "$name" ]; then
+            echo "::error::No assets/main-*.js entry script in srv/index.html of ${DEV_AR_IMAGE}@${DIGEST}"
+            exit 1
+          fi
+          echo "Fan image serves $name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
       - name: Promote dev AR digest to prod AR (semver tag)
         if: github.event_name == 'release'
         env:
@@ -587,6 +617,9 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ github.event_name == 'release' && 'prod' || 'dev' }}
+    outputs:
+      # Release path only: see build-and-push's entry_chunk.
+      entry_chunk: ${{ steps.entry_chunk.outputs.name }}
     permissions:
       contents: read
       id-token: write
@@ -746,6 +779,26 @@ jobs:
           done
           echo "::error::organizer dev AR tag :${GITHUB_SHA} not found after 6 attempts (~5 min). Re-run the push-path run for this SHA."
           exit 1
+
+      # See the same step in build-and-push. Dockerfile.organizer serves
+      # /srv/organizer.html.
+      - name: Read the entry chunk name from the promoted image
+        if: github.event_name == 'release'
+        id: entry_chunk
+        env:
+          DEV_AR_IMAGE: ${{ env.REGION }}-docker.pkg.dev/liverty-music-dev/${{ env.REPOSITORY }}/${{ env.IMAGE }}
+          DIGEST: ${{ steps.resolve_digest.outputs.digest }}
+        run: |
+          set -euo pipefail
+          name=$(crane export "${DEV_AR_IMAGE}@${DIGEST}" - \
+            | tar -xOf - srv/organizer.html \
+            | grep -oE 'assets/organizer-[A-Za-z0-9_-]+\.js' | head -1 || true)
+          if [ -z "$name" ]; then
+            echo "::error::No assets/organizer-*.js entry script in srv/organizer.html of ${DEV_AR_IMAGE}@${DIGEST}"
+            exit 1
+          fi
+          echo "Organizer image serves $name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Promote organizer dev AR digest to prod AR (semver tag)
         if: github.event_name == 'release'
@@ -1052,15 +1105,16 @@ jobs:
   #                          dispatch-prod-pin asks cloud-provisioning
   #                          `bump-prod-pin.yml` to push the new pin to its
   #                          main, and ArgoCD auto-sync rolls it out some
-  #                          minutes later. The job therefore builds the
-  #                          release to learn its entry chunk names and polls
-  #                          the live fan and organizer HTML until both serve
-  #                          them, then smokes.
+  #                          minutes later. The job therefore takes the
+  #                          entry chunk names that build-and-push and
+  #                          build-and-push-organizer read from the promoted
+  #                          images, polls the live fan and organizer HTML
+  #                          until both serve them, then smokes.
   #   - workflow_dispatch -> smoke whatever `smoke_url` is provided
   #                          (no build, no wait)
   post-deploy-smoke:
-    needs: [build-and-push, dispatch-prod-pin]
-    # always() is required because build-and-push / dispatch-prod-pin are
+    needs: [build-and-push, build-and-push-organizer, dispatch-prod-pin]
+    # always() is required because the needed jobs are
     # skipped on workflow_dispatch and a skipped dependency would otherwise
     # skip this job. On a release, smoke only when the pin was dispatched
     # (a failed retag dispatches nothing, so nothing new would be served).
@@ -1120,32 +1174,27 @@ jobs:
           echo "url=$candidate" >> "$GITHUB_OUTPUT"
           echo "organizer_url=https://organizer.${candidate#https://}" >> "$GITHUB_OUTPUT"
 
-      # The release checkout is the tag, the same commit the prod image was
-      # built from, and the build is reproducible (a local build of v1.89.1
-      # emitted the entry chunk names prod serves), so its entry chunk names
-      # identify the release.
-      - name: Build to learn the release's entry chunk names
-        if: github.event_name == 'release'
-        run: npm run build
-
       - name: Wait until production serves the release
         if: github.event_name == 'release'
         timeout-minutes: 20
         env:
           FAN_URL: ${{ steps.target.outputs.url }}
           ORGANIZER_URL: ${{ steps.target.outputs.organizer_url }}
+          # Read from the promoted images, not rebuilt: a release may promote
+          # an image inherited from an earlier commit, whose chunk names a
+          # rebuild of the tag does not reproduce.
+          EXPECTED_FAN: ${{ needs.build-and-push.outputs.entry_chunk }}
+          EXPECTED_ORGANIZER: ${{ needs.build-and-push-organizer.outputs.entry_chunk }}
         run: |
           set -uo pipefail
           # Vite names each entry chunk after its input key: index.html ->
           # `main`, organizer.html -> `organizer`. Both are checked, so a
           # release that changes only one entry still waits for its rollout.
-          expected_fan=$(grep -oE 'assets/main-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
-          expected_organizer=$(grep -oE 'assets/organizer-[A-Za-z0-9_-]+\.js' dist/organizer.html | head -1)
-          if [ -z "$expected_fan" ] || [ -z "$expected_organizer" ]; then
-            echo "::error::Could not read the entry chunk names from the local dist/ HTML"
+          if [ -z "$EXPECTED_FAN" ] || [ -z "$EXPECTED_ORGANIZER" ]; then
+            echo "::error::Missing entry chunk name from the image jobs (fan '$EXPECTED_FAN', organizer '$EXPECTED_ORGANIZER')"
             exit 1
           fi
-          echo "Expecting $expected_fan at $FAN_URL and $expected_organizer at $ORGANIZER_URL"
+          echo "Expecting $EXPECTED_FAN at $FAN_URL and $EXPECTED_ORGANIZER at $ORGANIZER_URL"
           served() {
             # -f: an HTTP error (503 during rollout) counts as not served yet.
             curl -sSf --max-time 20 "$1/" 2>/dev/null | grep -oE "$2" | head -1
@@ -1153,14 +1202,14 @@ jobs:
           for attempt in $(seq 1 60); do
             live_fan=$(served "$FAN_URL" 'assets/main-[A-Za-z0-9_-]+\.js')
             live_organizer=$(served "$ORGANIZER_URL" 'assets/organizer-[A-Za-z0-9_-]+\.js')
-            if [ "$live_fan" = "$expected_fan" ] && [ "$live_organizer" = "$expected_organizer" ]; then
+            if [ "$live_fan" = "$EXPECTED_FAN" ] && [ "$live_organizer" = "$EXPECTED_ORGANIZER" ]; then
               echo "Release served after about $((attempt * 20))s"
               exit 0
             fi
             echo "Attempt $attempt/60: fan '$live_fan', organizer '$live_organizer'; waiting..."
             sleep 20
           done
-          echo "::error::Timed out waiting for $expected_fan and $expected_organizer to be served"
+          echo "::error::Timed out waiting for $EXPECTED_FAN and $EXPECTED_ORGANIZER to be served"
           exit 1
 
       - name: Run smoke against deployed URL
