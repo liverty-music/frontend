@@ -48,8 +48,8 @@
 
     <confirm-dialog
       component.ref="publishDialog"
-      heading.bind="'concert.publishConfirmTitle' & t:{ title: title }"
-      confirm-label.bind="'event.publish' & t"
+      heading-key="concert.publishConfirmTitle" heading-params.bind="{ title: title }"
+      confirm-key="event.publish"
       confirm-disabled.bind="!chosenIds.length"
     >
       <fieldset class="dates">
@@ -68,8 +68,8 @@
     </confirm-dialog>
     <confirm-dialog
       component.ref="cancelDialog"
-      heading.bind="'concert.cancelConfirmTitle' & t:{ title: title }"
-      confirm-label.bind="'concert.cancelConcert' & t"
+      heading-key="concert.cancelConfirmTitle" heading-params.bind="{ title: title }"
+      confirm-key="concert.cancelConcert"
       confirm-variant="danger"
     >${'concert.cancelConfirmBody' & t}</confirm-dialog>
 
@@ -80,8 +80,8 @@
       <console-button variant="tonal" action.bind="() => createShareLink()" pending-label.bind="'concert.shareCreating' & t">${'concert.shareCreate' & t}</console-button>
       <confirm-dialog
         component.ref="shareDialog"
-        heading.bind="'concert.shareConfirmTitle' & t"
-        confirm-label.bind="'concert.shareCreate' & t"
+        heading-key="concert.shareConfirmTitle"
+        confirm-key="concert.shareCreate"
       >${'concert.shareConfirmBody' & t}</confirm-dialog>
     </section>
 

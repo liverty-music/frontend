@@ -1,6 +1,22 @@
-import { I18N } from '@aurelia/i18n'
-import { bindable, resolve } from 'aurelia'
-import type { ConsoleButtonVariant } from '../console-button/console-button'
+import { bindable } from 'aurelia'
+import type {
+	ConsoleButton,
+	ConsoleButtonVariant,
+} from '../console-button/console-button'
+
+let nextId = 0
+
+/**
+ * The element that has focus, inside the shadow roots of console components
+ * (`document.activeElement` names only their outermost host).
+ */
+function focusedElement(): HTMLElement | null {
+	let active = document.activeElement
+	while (active?.shadowRoot?.activeElement) {
+		active = active.shadowRoot.activeElement
+	}
+	return active instanceof HTMLElement ? active : null
+}
 
 /**
  * M3 basic dialog that asks before an action that cannot be undone or that
@@ -8,43 +24,39 @@ import type { ConsoleButtonVariant } from '../console-button/console-button'
  * object, the body states the effect, the confirming button names the action
  * and the other button is やめる.
  *
+ * The title and the buttons are catalog keys (with the title's values),
+ * translated in the dialog's template; the body is the page's own content.
+ *
  * Built on the native `<dialog>` with `showModal()`: the platform traps focus
  * and closes on Escape (as やめる). Focus returns to the control that opened it.
  *
  *     const confirmed = await this.publishDialog.ask()
  */
-let nextId = 0
-
 export class ConfirmDialog {
 	public readonly headingId = `confirm-dialog-${nextId++}`
 
-	@bindable public heading = ''
-	@bindable public confirmLabel = ''
-	@bindable public cancelLabel = ''
+	/** Catalog key of the title, and its values. */
+	@bindable public headingKey = ''
+	@bindable public headingParams: Record<string, unknown> | undefined
+	/** Catalog key of the confirming button. */
+	@bindable public confirmKey = ''
+	/** Catalog key of the other button. */
+	@bindable public cancelKey = 'common.cancel'
 	@bindable public confirmVariant: ConsoleButtonVariant = 'filled'
 	/** Disables the confirming button, e.g. while nothing is chosen. */
 	@bindable public confirmDisabled = false
 
-	private readonly i18n = resolve(I18N)
-
 	public dialog!: HTMLDialogElement
-	public cancelButton!: HTMLElement
+	public cancelButton!: ConsoleButton
 	private resolveAnswer: ((confirmed: boolean) => void) | null = null
 	private returnFocusTo: HTMLElement | null = null
 
-	public get cancelText(): string {
-		return this.cancelLabel || this.i18n.tr('common.cancel')
-	}
-
 	/** Opens the dialog; resolves true when the operator confirms. */
 	public ask(): Promise<boolean> {
-		this.returnFocusTo =
-			document.activeElement instanceof HTMLElement
-				? document.activeElement
-				: null
+		this.returnFocusTo = focusedElement()
 		this.dialog.showModal()
 		// The safe choice takes focus first.
-		this.cancelButton.querySelector('button')?.focus()
+		this.cancelButton.focus()
 		return new Promise((resolve) => {
 			this.resolveAnswer = resolve
 		})

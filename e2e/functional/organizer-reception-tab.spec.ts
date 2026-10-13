@@ -1,4 +1,8 @@
-import { installConsole, type RpcMocks } from '../support/organizer'
+import {
+	confirmDialog,
+	installConsole,
+	type RpcMocks,
+} from '../support/organizer'
 import {
 	type ConcertSpec,
 	jst,
@@ -179,7 +183,7 @@ test.describe('scanners', () => {
 		const log = await open(page, mocks)
 
 		await row(page, 1).getByRole('button', { name: '取り消して再発行' }).click()
-		const dialog = page.getByRole('dialog', {
+		const dialog = confirmDialog(page, {
 			name: '受付1を取り消して再発行しますか？',
 		})
 		await expect(dialog).toBeVisible()

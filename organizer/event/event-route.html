@@ -51,16 +51,16 @@
 
       <confirm-dialog
         component.ref="publishDialog"
-        heading.bind="'event.publishConfirmTitle' & t:{ title: title }"
-        confirm-label.bind="'event.publish' & t"
+        heading-key="event.publishConfirmTitle" heading-params.bind="{ title: title }"
+        confirm-key="event.publish"
       >
         <p if.bind="unlisted">${'event.publishConfirmUnlisted' & t}</p>
         <p else>${'event.publishConfirmPublic' & t}</p>
       </confirm-dialog>
       <confirm-dialog
         component.ref="cancelDialog"
-        heading.bind="'event.cancelConfirmTitle' & t:{ title: title }"
-        confirm-label.bind="'event.cancel' & t"
+        heading-key="event.cancelConfirmTitle" heading-params.bind="{ title: title }"
+        confirm-key="event.cancel"
         confirm-variant="danger"
       >
         <p if.bind="draft">${'event.cancelConfirmDraft' & t}</p>

@@ -1,4 +1,5 @@
 import {
+	confirmDialog,
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
@@ -129,7 +130,7 @@ async function walk(page: Page, api: Server, log: RpcLog): Promise<void> {
 		.getByRole('button', { name: '公開する', exact: true })
 		.first()
 		.click()
-	const dialog = page.getByRole('dialog')
+	const dialog = confirmDialog(page)
 	await expect(dialog).toContainText('フォロワーに通知します')
 	await dialog.getByRole('button', { name: '公開する' }).click()
 	await expect(page.locator('event-route status-badge').first()).toHaveText(
@@ -202,10 +203,7 @@ test.describe('run an event from the organizer console', () => {
 			.getByRole('button', { name: '公開する', exact: true })
 			.first()
 			.click()
-		await page
-			.getByRole('dialog')
-			.getByRole('button', { name: 'やめる' })
-			.click()
+		await confirmDialog(page).getByRole('button', { name: 'やめる' }).click()
 
 		await expect(page.locator('event-route status-badge').first()).toHaveText(
 			/下書き/,
@@ -224,17 +222,14 @@ test.describe('run an event from the organizer console', () => {
 			.getByRole('button', { name: '公開する', exact: true })
 			.first()
 			.click()
-		await page
-			.getByRole('dialog')
-			.getByRole('button', { name: '公開する' })
-			.click()
+		await confirmDialog(page).getByRole('button', { name: '公開する' }).click()
 		await page.getByRole('link', { name: '受付', exact: true }).click()
 		await page.getByRole('button', { name: '受付リンクを発行' }).click()
 		const first = page.locator('[data-scanner="1"]')
 		await expect(first).toContainText('未使用')
 
 		await first.getByRole('button', { name: '取り消す', exact: true }).click()
-		const dialog = page.getByRole('dialog', { name: '受付1を取り消しますか？' })
+		const dialog = confirmDialog(page, { name: '受付1を取り消しますか？' })
 		await expect(dialog).toContainText(
 			'受付1を使っている端末は使えなくなります',
 		)

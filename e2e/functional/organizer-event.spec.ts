@@ -1,4 +1,8 @@
-import { installConsole, type RpcMocks } from '../support/organizer'
+import {
+	confirmDialog,
+	installConsole,
+	type RpcMocks,
+} from '../support/organizer'
 import {
 	type ConcertSpec,
 	organizer,
@@ -66,7 +70,7 @@ test.describe('the event header', () => {
 		).toHaveAttribute('href', /\/concerts\/s-tour\/edit$/)
 		// Cancelling a draft date removes it, and the dialog says so.
 		await actions(page).getByRole('button', { name: '中止する' }).click()
-		const cancel = page.getByRole('dialog', {
+		const cancel = confirmDialog(page, {
 			name: 'XX Tour 2026 のこの公演日を中止しますか？',
 		})
 		await expect(cancel).toContainText('下書きの公演日は削除されます')
@@ -92,7 +96,7 @@ test.describe('the event header', () => {
 		await page.goto('/concerts/s-tour/events/e-1103/sales')
 
 		await actions(page).getByRole('button', { name: '公開する' }).click()
-		const dialog = page.getByRole('dialog', {
+		const dialog = confirmDialog(page, {
 			name: 'XX Tour 2026 のこの公演日を公開しますか？',
 		})
 		await expect(dialog).toBeVisible()

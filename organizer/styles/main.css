@@ -12,15 +12,11 @@
 /* The console's color roles, type scale, shape and space. */
 @import "./tokens.css";
 
+/* Reset, focus ring, state layer, touch target and visually hidden: shared
+   with the shadow root of every console component. */
+@import "./shared.css";
+
 @layer reset {
-	:where(*, *::before, *::after) {
-		box-sizing: border-box;
-	}
-
-	:where(*) {
-		margin: 0;
-	}
-
 	:where(html, body) {
 		block-size: 100%;
 	}
@@ -33,95 +29,10 @@
 		background: var(--md-color-surface);
 	}
 
-	:where(h1, h2, h3) {
-		font-weight: 400;
-	}
-
-	/* Counts, prices, dates and times line up in columns: every digit in the
-	   console is tabular. `!important` because the `font` shorthand each
-	   component uses for its type role resets `font-variant-numeric`; an
-	   important declaration in this layer outranks those normal ones. */
-	:where(*) {
-		/* stylelint-disable declaration-no-important -- the `font` shorthand of every type role resets it; only an important declaration keeps digits tabular everywhere */
-
-		/* biome-ignore lint/complexity/noImportantStyles: the `font` shorthand of every type role resets it */
-		font-variant-numeric: tabular-nums !important;
-		/* stylelint-enable declaration-no-important */
-	}
-
-	/* Keyboard focus shows a ring in the brand color; a pointer click does not
-	   (`:focus-visible`). */
-	:where(:focus-visible) {
-		outline: var(--focus-ring-width) solid var(--md-color-primary);
-		outline-offset: var(--focus-ring-offset);
-	}
-
-	/* M3 state layer: an overlay of the control's content color at the shared
-	   opacities (hover 8 %, keyboard focus 10 %, pressed 10 %). A disabled
-	   control shows none. */
-	:where(.state-layer) {
-		position: relative;
-	}
-
-	:where(.state-layer)::before {
-		pointer-events: none;
-		content: "";
-
-		position: absolute;
-		inset: 0;
-
-		border-radius: inherit;
-
-		opacity: 0;
-		background: currentcolor;
-
-		transition: opacity var(--md-sys-motion-duration-short2)
-			var(--md-sys-motion-easing-standard);
-	}
-
-	:where(.state-layer:hover:not(:disabled, [aria-disabled="true"]))::before {
-		opacity: var(--md-sys-state-hover-opacity);
-	}
-
-	:where(.state-layer:focus-visible)::before {
-		opacity: var(--md-sys-state-focus-opacity);
-	}
-
-	:where(.state-layer:active:not(:disabled, [aria-disabled="true"]))::before {
-		opacity: var(--md-sys-state-pressed-opacity);
-	}
-
-	/* A control whose visible shape is under 48 px still answers taps on a
-	   48 × 48 px area centered on it. */
-	:where(.touch-target)::after {
-		content: "";
-
-		position: absolute;
-		inset-block-start: 50%;
-		inset-inline-start: 50%;
-		translate: -50% -50%;
-
-		inline-size: max(100%, var(--md-target-size));
-		block-size: max(100%, var(--md-target-size));
-	}
-
 	/* Each screen's title. */
 	:where(.page-title) {
 		font: var(--md-type-headline-small);
 		color: var(--md-color-on-surface);
-	}
-
-	:where(.visually-hidden) {
-		position: absolute;
-
-		overflow: hidden;
-
-		inline-size: 1px;
-		block-size: 1px;
-
-		white-space: nowrap;
-
-		clip-path: inset(50%);
 	}
 
 	@keyframes spin {

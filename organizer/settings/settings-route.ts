@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import type { Artist } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/artist_pb.js'
 import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
 import { ILogger, resolve } from 'aurelia'
@@ -40,7 +39,6 @@ export class SettingsRoute {
 	private readonly organizers = resolve(IOrganizerClient)
 	private readonly artists = resolve(IArtistClient)
 	private readonly payout = resolve(IPayoutAccountClient)
-	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
 
 	public organizerState: PartState = 'loading'
@@ -77,28 +75,28 @@ export class SettingsRoute {
 		return this.represented.map((a) => a.name?.value ?? '').filter(Boolean)
 	}
 
+	/** The business details with their terms as catalog keys. */
 	public get businessDetails(): Description[] {
 		const o = this.organizer
-		const tr = (key: string) => this.i18n.tr(key)
 		return [
 			{
-				term: tr('settings.business.legalName'),
+				termKey: 'settings.business.legalName',
 				value: o?.legalName?.value ?? '',
 			},
 			{
-				term: tr('settings.business.representative'),
+				termKey: 'settings.business.representative',
 				value: o?.representativeName?.value ?? '',
 			},
 			{
-				term: tr('settings.business.address'),
+				termKey: 'settings.business.address',
 				value: o?.businessAddress?.value ?? '',
 			},
 			{
-				term: tr('settings.business.phone'),
+				termKey: 'settings.business.phone',
 				value: o?.businessPhoneNumber?.value ?? '',
 			},
 			{
-				term: tr('settings.business.email'),
+				termKey: 'settings.business.email',
 				value: o?.contactEmail?.value ?? '',
 			},
 		]

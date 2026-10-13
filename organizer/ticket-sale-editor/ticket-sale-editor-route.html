@@ -70,7 +70,7 @@
           value.bind="model.price"
           required.bind="true"
           disabled.bind="priceLocked"
-          hint.bind="priceHint & signal:'aurelia-translation-signal'"
+          hint.bind="priceHintKey & t"
           error.bind="error(errors.price, submitted)"
         ></console-field>
         <console-field
@@ -90,7 +90,7 @@
         ></console-field>
       </div>
 
-      <p if.bind="saveProblem" class="problem" role="alert">${saveProblem}</p>
+      <p if.bind="saveProblem" class="problem" role="alert">${saveProblem & t}</p>
 
       <action-bar>
         <console-button variant="text" href.bind="salesHref">${'common.cancel' & t}</console-button>

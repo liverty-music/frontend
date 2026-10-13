@@ -181,7 +181,11 @@ test.describe('brand color', () => {
 			els
 				.filter((el) => (el as HTMLElement).offsetParent !== null)
 				.map((el) => ({
-					text: (el.textContent ?? '').trim(),
+					// A console button's label is slotted: its text is the host's.
+					text: (
+						el.textContent?.trim() ||
+						((el.getRootNode() as ShadowRoot).host?.textContent ?? '')
+					).trim(),
 					background: getComputedStyle(el).backgroundColor,
 				})),
 		)

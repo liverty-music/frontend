@@ -1,7 +1,4 @@
-import { I18N, Signals } from '@aurelia/i18n'
-import { type IDisposable, IEventAggregator, ILogger, resolve } from 'aurelia'
-import { toConsoleLocale } from '../i18n/console-language'
-import { formatJstDay } from '../i18n/format'
+import { ILogger, resolve } from 'aurelia'
 import {
 	concertCancelled,
 	concertTitle,
@@ -20,7 +17,12 @@ import { currentSale, type SaleView, saleViewsOf } from '../model/sale-model'
 import { IClock } from '../services/clock'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ITicketSaleClient } from '../services/ticket-sale-client'
-import type { DataColumn, DataRow, StatusCell } from '../ui/data-list/data-list'
+import type {
+	CellText,
+	DataColumn,
+	DataRow,
+	StatusCell,
+} from '../ui/data-list/data-list'
 
 type LoadState = 'loading' | 'ready' | 'error'
 
@@ -33,32 +35,30 @@ type LoadState = 'loading' | 'ready' | 'error'
 export class ConcertsRoute {
 	private readonly series = resolve(ISeriesClient)
 	private readonly ticketSales = resolve(ITicketSaleClient)
-	private readonly i18n = resolve(I18N)
-	private readonly ea = resolve(IEventAggregator)
 	private readonly clock = resolve(IClock)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertsRoute')
 
 	public state: LoadState = 'loading'
 	public concerts: AuthoredSeries[] = []
 	public rows: DataRow[] = []
-	public columns: DataColumn[] = []
+	public readonly columns: DataColumn[] = [
+		{ key: 'title', labelKey: 'concerts.column.title', primary: true },
+		{ key: 'schedule', labelKey: 'concerts.column.schedule' },
+		{ key: 'sale', labelKey: 'concerts.column.sale', kind: 'status' },
+		{ key: 'state', labelKey: 'concerts.column.state', kind: 'status' },
+	]
 	public readonly newConcertHref = paths.newConcert
 
 	/** The current or next sale of each concert, by series id. */
 	private sales = new Map<string, SaleView | null>()
 	private abort = new AbortController()
-	private subscription: IDisposable | null = null
 
 	public attached(): void {
-		this.subscription = this.ea.subscribe(Signals.I18N_EA_CHANNEL, () =>
-			this.render(),
-		)
 		void this.load()
 	}
 
 	public detaching(): void {
 		this.abort.abort()
-		this.subscription?.dispose()
 	}
 
 	public async load(): Promise<void> {
@@ -113,52 +113,48 @@ export class ConcertsRoute {
 		this.render()
 	}
 
+	/** Rows of catalog keys and values: the list translates them. */
 	private render(): void {
-		const t = (key: string, options?: Record<string, unknown>) =>
-			this.i18n.tr(key, options)
-		const locale = toConsoleLocale(this.i18n.getLocale())
-		this.columns = [
-			{ key: 'title', label: t('concerts.column.title'), primary: true },
-			{ key: 'schedule', label: t('concerts.column.schedule') },
-			{ key: 'sale', label: t('concerts.column.sale'), kind: 'status' },
-			{ key: 'state', label: t('concerts.column.state'), kind: 'status' },
-		]
 		this.rows = this.concerts.map((concert) => {
 			const events = eventsByDate(concert)
 			const first = events[0]
 			const day = first ? eventDay(first) : undefined
-			const dates = day
+			const dates: CellText | undefined = day
 				? events.length > 1
-					? t('concerts.moreDates', {
-							day: formatJstDay(day, locale),
-							count: events.length - 1,
-						})
-					: formatJstDay(day, locale)
-				: ''
+					? {
+							key: 'concerts.moreDates',
+							params: { day, count: events.length - 1 },
+						}
+					: { key: 'format.day', params: { day } }
+				: undefined
 			const venues = new Set(events.map(venueName).filter(Boolean))
 			const venue = first ? venueName(first) : ''
-			const venueText =
-				venues.size > 1 ? t('concerts.moreVenues', { venue }) : venue
+			const venueText: CellText =
+				venues.size > 1
+					? { key: 'concerts.moreVenues', params: { venue } }
+					: venue
 			const badge = publishBadge(concert.series.publishState)
 			const sale = this.sales.get(seriesId(concert))
 			const saleCell: StatusCell | undefined =
 				sale === undefined
 					? undefined
 					: sale === null
-						? { tone: 'neutral', label: t('sale.none') }
-						: { tone: sale.tone, label: t(sale.stateKey) }
+						? { tone: 'neutral', labelKey: 'sale.none' }
+						: { tone: sale.tone, labelKey: sale.stateKey }
 			return {
 				id: seriesId(concert),
 				href: paths.concert(seriesId(concert)),
 				subtitle: [
-					t(seriesTypeKey(concert.series.type)),
+					{ key: seriesTypeKey(concert.series.type) },
 					...performerNames(concert),
-				].join(' · '),
+				],
 				cells: {
 					title: concertTitle(concert),
-					schedule: [dates, venueText].filter(Boolean).join(' · '),
+					schedule: [dates, venueText].filter(
+						(part): part is CellText => !!part,
+					),
 					sale: saleCell,
-					state: { tone: badge.tone, label: t(badge.labelKey) },
+					state: { tone: badge.tone, labelKey: badge.labelKey },
 				},
 			}
 		})

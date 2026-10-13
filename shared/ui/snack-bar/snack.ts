@@ -9,6 +9,12 @@ export interface SnackOptions {
 	duration?: number
 	action?: SnackAction
 	onDismiss?: () => void
+	/**
+	 * Values for a message an app translates where it is shown: the organizer
+	 * console publishes catalog keys as `message` and `action.label`, and its
+	 * host translates them with these values.
+	 */
+	params?: Readonly<Record<string, unknown>>
 }
 
 export interface SnackHandle {

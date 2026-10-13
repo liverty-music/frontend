@@ -5,41 +5,56 @@ import { Snack } from '../../../shared/ui/snack-bar/snack'
 export const SNACK_SHORT_MS = 4000
 export const SNACK_LONG_MS = 10_000
 
+/** Values of a catalog message. */
+export type MessageParams = Record<string, unknown>
+
 /**
- * The console's one way to report the result of an action. The host
- * (`<console-snackbar>`) shows one message at a time; a new one replaces it.
+ * The console's one way to report the result of an action. Messages are
+ * catalog keys with their values; the host (`<console-snackbar>`) translates
+ * them in its template, so a message shown while the language changes follows
+ * the switch (design D17). The host shows one message at a time; a new one
+ * replaces it, and none carries an icon (design D18).
  *
  * - `show`: a message without an action, gone after 4 s.
  * - `showWithAction`: a message with an action other than Retry, gone after 10 s.
  * - `showError` with `retry`: stays until the operator retries or closes it;
- *   Retry runs `retry` once and closes the message.
+ *   再試行 runs `retry` once and closes the message.
  *
  * A field error never comes here: it is shown under its field.
  */
 export class Snackbar {
 	private readonly ea = resolve(IEventAggregator)
 
-	public show(message: string): void {
-		this.ea.publish(new Snack(message, 'info', { duration: SNACK_SHORT_MS }))
+	public show(key: string, params?: MessageParams): void {
+		this.ea.publish(
+			new Snack(key, 'info', { duration: SNACK_SHORT_MS, params }),
+		)
 	}
 
 	public showWithAction(
-		message: string,
-		action: { label: string; callback: () => void },
+		key: string,
+		action: { labelKey: string; callback: () => void },
+		params?: MessageParams,
 	): void {
 		this.ea.publish(
-			new Snack(message, 'info', { duration: SNACK_LONG_MS, action }),
+			new Snack(key, 'info', {
+				duration: SNACK_LONG_MS,
+				action: { label: action.labelKey, callback: action.callback },
+				params,
+			}),
 		)
 	}
 
 	public showError(
-		message: string,
-		retry?: { label: string; callback: () => void },
+		key: string,
+		options: { params?: MessageParams; retry?: () => void } = {},
 	): void {
+		const { params, retry } = options
 		this.ea.publish(
-			new Snack(message, 'error', {
+			new Snack(key, 'error', {
 				duration: retry ? Number.POSITIVE_INFINITY : SNACK_SHORT_MS,
-				action: retry,
+				action: retry ? { label: 'common.retry', callback: retry } : undefined,
+				params,
 			}),
 		)
 	}

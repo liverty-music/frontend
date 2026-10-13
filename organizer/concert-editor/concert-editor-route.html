@@ -28,15 +28,13 @@
       label.bind="'concertEditor.description' & t"
       value.bind="model.description"
     ></console-field>
-    <div class="row">
-      <console-field
-        type="select"
-        label.bind="'concertEditor.type' & t"
-        value.bind="typeValue"
-        options.bind="typeOptions"
-        disabled.bind="isCorrection"
-      ></console-field>
-    </div>
+    <fieldset class="series-type" disabled.bind="isCorrection">
+      <legend class="legend">${'concertEditor.type' & t}</legend>
+      <label repeat.for="option of typeChoices" class="series-type-option state-layer">
+        <input type="radio" name="series-type" model.bind="option.value" checked.bind="model.type">
+        <span>${option.labelKey & t}</span>
+      </label>
+    </fieldset>
 
     <fieldset class="visibility" disabled.bind="isCorrection">
       <legend class="legend">${'concertEditor.visibility' & t}</legend>
@@ -90,7 +88,7 @@
         <div else class="fixed-venue">
           <span class="label">${'concertEditor.venue' & t}</span>
           <span>${row.venue ? row.venue.name : ''}</span>
-          <p if.bind="error(errors.rows[$index].venueName, submitted)" class="error">${error(errors.rows[$index].venueName, submitted)}</p>
+          <p if.bind="error(errors.rows[$index].venueName, submitted)" class="error">${error(errors.rows[$index].venueName, submitted) & t}</p>
         </div>
 
         <div class="row">
@@ -100,20 +98,20 @@
             label.bind="'concertEditor.date' & t"
             value.bind="row.localDate"
             required.bind="true"
-            disabled.bind="row.publishState !== PublishState.DRAFT"
+            readonly.bind="row.publishState !== PublishState.DRAFT"
             error.bind="error(errors.rows[$index].localDate, submitted)"
           ></console-field>
           <console-field
             type="time"
             label.bind="'concertEditor.openTime' & t"
             value.bind="row.openTime"
-            disabled.bind="row.publishState === PublishState.CANCELLED"
+            readonly.bind="row.publishState === PublishState.CANCELLED"
           ></console-field>
           <console-field
             type="time"
             label.bind="'concertEditor.startTime' & t"
             value.bind="row.startTime"
-            disabled.bind="row.publishState === PublishState.CANCELLED"
+            readonly.bind="row.publishState === PublishState.CANCELLED"
             error.bind="error(errors.rows[$index].time, submitted)"
           ></console-field>
         </div>
@@ -130,7 +128,7 @@
         <input type="file" accept="image/jpeg,image/png,image/webp" disabled.bind="uploadingCover" change.trigger="onCoverSelected($event)">
       </label>
       <circular-progress if.bind="uploadingCover" size="small" label.bind="'concertEditor.cover.uploading' & t"></circular-progress>
-      <p if.bind="coverImageError" class="error" role="alert">${coverImageError}</p>
+      <p if.bind="coverImageError" class="error" role="alert">${coverImageError & t}</p>
     </section>
 
     <action-bar>

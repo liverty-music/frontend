@@ -30,6 +30,23 @@ const plainDateEnginePath = fileURLToPath(
 	new URL(`./src/lib/plain-date/${plainDateEngine}.ts`, import.meta.url),
 )
 
+/** The Aurelia packages the apps load, kept to one copy (see `optimizeDeps`). */
+const aureliaRuntimePackages = [
+	'aurelia',
+	'@aurelia/expression-parser',
+	'@aurelia/fetch-client',
+	'@aurelia/i18n',
+	'@aurelia/kernel',
+	'@aurelia/metadata',
+	'@aurelia/platform',
+	'@aurelia/platform-browser',
+	'@aurelia/route-recognizer',
+	'@aurelia/router',
+	'@aurelia/runtime',
+	'@aurelia/runtime-html',
+	'@aurelia/template-compiler',
+]
+
 export default defineConfig({
 	server: {
 		// Default-open targets the consumer entry (index.html). The admin entry
@@ -105,6 +122,18 @@ export default defineConfig({
 		alias: {
 			'plain-date-engine': plainDateEnginePath,
 		},
+		dedupe: aureliaRuntimePackages,
+	},
+	// One copy of the Aurelia runtime on the dev server. The dependency
+	// pre-bundler resolves `aurelia`'s own `@aurelia/runtime-html` import to the
+	// production build, while compiled templates import the development build
+	// (`useDev` below), so the dev server ran two copies with two sets of DI
+	// keys: a shadow-DOM component's `shadowCSS` styles were registered under
+	// one copy's key and looked up under the other's, and never applied.
+	// Serving the runtime unbundled sends every import through the Aurelia
+	// plugin, as `@aurelia/storybook` does for Storybook.
+	optimizeDeps: {
+		exclude: aureliaRuntimePackages,
 	},
 	plugins: [
 		aurelia({

@@ -1,10 +1,14 @@
 <import from="./console-button.css"></import>
 <import from="../console-icon/console-icon"></import>
 <import from="../../../shared/ui/circular-progress/circular-progress"></import>
+<!-- A light-DOM shared component inside this shadow root takes its styles from here. -->
+<import from="../../../shared/ui/circular-progress/circular-progress.css"></import>
+<use-shadow-dom></use-shadow-dom>
 
 <template>
   <a
     if.bind="href"
+    ref="control"
     href.bind="href"
     target.bind="target || null"
     rel.bind="target === '_blank' ? 'noopener' : null"
@@ -12,10 +16,11 @@
     data-variant.bind="variant"
   >
     <console-icon if.bind="icon" name.bind="icon"></console-icon>
-    <span class="label"><au-slot></au-slot></span>
+    <span class="label"><slot></slot></span>
   </a>
   <button
     else
+    ref="control"
     type.bind="type"
     class="state-layer touch-target"
     data-variant.bind="variant"
@@ -28,7 +33,7 @@
     <circular-progress if.bind="pending" size="small" label.bind="pendingLabel"></circular-progress>
     <console-icon else if.bind="icon" name.bind="icon"></console-icon>
     <span class="labels">
-      <span class="label" aria-hidden.bind="pending && pendingLabel ? 'true' : null"><au-slot></au-slot></span>
+      <span class="label" aria-hidden.bind="pending && pendingLabel ? 'true' : null"><slot></slot></span>
       <span if.bind="pendingLabel" class="label" data-role="pending" aria-hidden.bind="pending ? null : 'true'">${pendingLabel}</span>
     </span>
   </button>

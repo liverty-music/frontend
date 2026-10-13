@@ -387,7 +387,7 @@ test.describe('a published concert', () => {
 		await expect(first).toContainText('Zepp Haneda')
 		await expect(venueSearch(first)).toHaveCount(0)
 		await expect(first.getByRole('button', { name: '変更' })).toHaveCount(0)
-		await expect(first.getByLabel('日付')).toBeDisabled()
+		await expect(first.getByLabel('日付')).not.toBeEditable()
 		await expect(
 			page.getByRole('button', { name: 'この公演日を削除' }),
 		).toHaveCount(0)

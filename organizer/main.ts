@@ -20,6 +20,7 @@ import { OrganizerShell } from './organizer-shell/organizer-shell'
 import { ILoginHint, readLoginHintFromSearch } from './services/login-hint'
 import { resolveOrgId } from './services/org-handle'
 import { ConsoleUi } from './ui'
+import { ConsoleShadowStyles } from './ui/shadow-styles'
 
 function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
 	const map: Record<AppConfig['logLevel'], LogLevel> = {
@@ -117,7 +118,12 @@ async function bootstrap(): Promise<void> {
 	// AppConfig first so AuthService (constructed during start) can resolve it.
 	au.register(Registration.instance(IAppConfig, effectiveConfig))
 	au.register(Registration.instance(ILoginHint, loginHint))
-	au.register(ConsoleI18nConfiguration, ...ConsoleFormatters, ...ConsoleUi)
+	au.register(
+		ConsoleI18nConfiguration,
+		ConsoleShadowStyles,
+		...ConsoleFormatters,
+		...ConsoleUi,
+	)
 	au.register(RouterConfiguration)
 	au.register(
 		LoggerConfiguration.create({

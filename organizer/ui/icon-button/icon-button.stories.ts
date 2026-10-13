@@ -3,8 +3,8 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
-import { consoleStoryParameters } from '../story-support'
+import { expect } from 'storybook/test'
+import { canvasOf, consoleStoryParameters } from '../story-support'
 import { IconButton } from './icon-button'
 
 const meta = {
@@ -30,9 +30,9 @@ export const Default = {
 			props: args,
 		}),
 	play: async ({ canvasElement }) => {
-		const button = within(canvasElement).getByRole('button', {
-			name: 'メニュー',
-		})
+		const button = canvasOf(canvasElement)
+			.getByRole('button', { name: 'メニュー' })
+			.element()
 		const box = button.getBoundingClientRect()
 		await expect(box.width).toBe(48)
 		await expect(box.height).toBe(48)

@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { IRouteContext, IRouter } from '@aurelia/router'
 import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { TicketSaleMethod } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
@@ -7,6 +6,7 @@ import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { businessDetailsComplete } from '../event/event-page'
+import { IConsoleLanguage } from '../i18n/console-language'
 import type { FieldError } from '../i18n/field-error'
 import {
 	concertTitle,
@@ -106,7 +106,7 @@ export class TicketSaleEditorRoute {
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
-	private readonly i18n = resolve(I18N)
+	private readonly language = resolve(IConsoleLanguage)
 	private readonly logger = resolve(ILogger).scopeTo('TicketSaleEditorRoute')
 
 	public state: 'loading' | 'ready' | 'notFound' | 'error' = 'loading'
@@ -118,6 +118,7 @@ export class TicketSaleEditorRoute {
 	public sale: TicketSale | undefined
 	public model: TicketSaleFormModel = blankFormModel(null)
 	public submitted = false
+	/** Catalog key of a message about the whole save; the template translates it. */
 	public saveProblem = ''
 	public guard!: UnsavedChanges
 
@@ -190,8 +191,9 @@ export class TicketSaleEditorRoute {
 		return this.soldCount + this.heldCount > 0
 	}
 
-	public get priceHint(): string {
-		return this.priceLocked ? this.i18n.tr('firstComeEditor.priceLocked') : ''
+	/** Catalog key of the price field's supporting text. */
+	public get priceHintKey(): string {
+		return this.priceLocked ? 'firstComeEditor.priceLocked' : ''
 	}
 
 	public get stateKey(): string {
@@ -239,17 +241,18 @@ export class TicketSaleEditorRoute {
 		return errors
 	}
 
+	/** The error of a field once a save was attempted; the field translates it. */
 	public error(
 		error: FieldError | undefined,
 		submitted = this.submitted,
-	): string {
+	): FieldError | null {
 		// The template passes `submitted` so the binding re-evaluates when it changes.
-		if (!submitted || !error) return ''
+		if (!submitted || !error) return null
 		const params: Record<string, unknown> = { ...error.params }
 		for (const [k, v] of Object.entries(params)) {
 			if (v instanceof Date) params[k] = toJstDateTimeLocal(v).replace('T', ' ')
 		}
-		return this.i18n.tr(error.key, params)
+		return { key: error.key, params }
 	}
 
 	private async load(): Promise<void> {
@@ -300,18 +303,17 @@ export class TicketSaleEditorRoute {
 			if (this.sale) await this.saveChanges(this.sale)
 			else await this.create()
 			this.saved = JSON.stringify(this.model)
-			this.snackbar.show(this.i18n.tr('firstComeEditor.saved'))
+			this.snackbar.show('firstComeEditor.saved')
 			await this.router.load(this.salesHref)
 		} catch (err) {
 			this.logger.warn('First-come sale not saved', err)
 			if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
-				this.saveProblem = this.i18n.tr('firstComeEditor.rejected')
+				this.saveProblem = 'firstComeEditor.rejected'
 				await this.refreshCounts()
 				return
 			}
-			this.snackbar.showError(this.i18n.tr('firstComeEditor.saveFailed'), {
-				label: this.i18n.tr('common.retry'),
-				callback: () => void this.save(),
+			this.snackbar.showError('firstComeEditor.saveFailed', {
+				retry: () => void this.save(),
 			})
 		}
 	}
@@ -396,9 +398,10 @@ export class TicketSaleEditorRoute {
 		const sale = this.sale
 		const type = this.ticketType
 		if (!sale || !type) {
+			// A value the operator saves, in the language of the moment.
 			return blankFormModel(
 				this.start ?? null,
-				this.i18n.tr('firstComeEditor.defaultName'),
+				this.language.text('firstComeEditor.defaultName'),
 			)
 		}
 		return formModelOf({

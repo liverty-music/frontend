@@ -1,6 +1,7 @@
 <import from="./console-field.css"></import>
+<use-shadow-dom></use-shadow-dom>
 
-<div class="field" data-invalid.bind="!!error" data-disabled.bind="disabled">
+<div class="field" data-invalid.bind="!!error" data-disabled.bind="disabled" data-readonly.bind="readonly">
   <label for.bind="inputId" class="label">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></label>
   <div class="control">
     <span if.bind="type === 'yen'" class="affix" aria-hidden="true">${'field.yenPrefix' & t}</span>
@@ -13,9 +14,11 @@
         value.bind="value"
         required.bind="required"
         disabled.bind="disabled"
+        readonly.bind="readonly"
         placeholder.bind="placeholder"
         aria-invalid.bind="error ? 'true' : null"
         aria-describedby.bind="describedBy"
+        change.trigger="changed($event)"
       ></textarea>
       <select
         case="select"
@@ -27,8 +30,9 @@
         disabled.bind="disabled"
         aria-invalid.bind="error ? 'true' : null"
         aria-describedby.bind="describedBy"
+        change.trigger="changed($event)"
       >
-        <option repeat.for="option of options" value.bind="option.value">${option.label}</option>
+        <option repeat.for="option of options" value.bind="option.value">${option.labelKey & t}</option>
       </select>
       <input
         default-case
@@ -41,15 +45,17 @@
         value.bind="value"
         required.bind="required"
         disabled.bind="disabled"
+        readonly.bind="readonly"
         placeholder.bind="placeholder"
         autocomplete.bind="autocomplete"
         aria-invalid.bind="error ? 'true' : null"
         aria-describedby.bind="describedBy"
+        change.trigger="changed($event)"
       >
     </template>
     <span if.bind="type === 'yen'" class="affix" aria-hidden="true">${'field.yenSuffix' & t}</span>
     <span if.bind="isTime" id.bind="`${inputId}-zone`" class="affix">${'common.jst' & t}</span>
   </div>
   <p if.bind="hint" id.bind="`${inputId}-hint`" class="supporting">${hint}</p>
-  <p if.bind="error" id.bind="`${inputId}-error`" class="error">${error}</p>
+  <p if.bind="errorText" id.bind="`${inputId}-error`" class="error">${errorText.key & t:errorText.params}</p>
 </div>

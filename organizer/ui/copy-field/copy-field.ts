@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { bindable, ILogger, resolve } from 'aurelia'
 import { ISnackbar } from '../console-snackbar/snackbar'
 
@@ -12,7 +11,6 @@ export const COPIED_MS = 2000
  */
 export class CopyField {
 	private readonly snackbar = resolve(ISnackbar)
-	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('CopyField')
 
 	@bindable public label = ''
@@ -21,18 +19,12 @@ export class CopyField {
 	public copied = false
 	private timer: ReturnType<typeof setTimeout> | null = null
 
-	public get buttonLabel(): string {
-		return this.copied
-			? this.i18n.tr('common.copied')
-			: this.i18n.tr('copyField.copy', { label: this.label })
-	}
-
 	public async copy(): Promise<void> {
 		try {
 			await navigator.clipboard.writeText(this.value)
 		} catch (err) {
 			this.logger.warn('Clipboard write failed', err)
-			this.snackbar.showError(this.i18n.tr('copyField.failed'))
+			this.snackbar.showError('copyField.failed')
 			return
 		}
 		this.copied = true
@@ -41,7 +33,7 @@ export class CopyField {
 			this.copied = false
 			this.timer = null
 		}, COPIED_MS)
-		this.snackbar.show(this.i18n.tr('common.copied'))
+		this.snackbar.show('common.copied')
 	}
 
 	public detaching(): void {

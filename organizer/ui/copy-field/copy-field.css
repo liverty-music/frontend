@@ -1,45 +1,43 @@
 @layer block {
-	@scope (copy-field) {
-		:scope {
-			display: block;
-		}
+	:host {
+		display: block;
+	}
 
-		.copy-field {
-			display: grid;
-			gap: var(--space-3xs);
-		}
+	.copy-field {
+		display: grid;
+		gap: var(--space-3xs);
+	}
 
-		.label {
-			font: var(--md-type-label-large);
-			color: var(--md-color-on-surface-variant);
-		}
+	.label {
+		font: var(--md-type-label-large);
+		color: var(--md-color-on-surface-variant);
+	}
 
-		.row {
-			display: flex;
-			gap: var(--space-3xs);
-			align-items: center;
+	.row {
+		display: flex;
+		gap: var(--space-3xs);
+		align-items: center;
 
-			padding-inline-start: var(--space-s);
-			border-radius: var(--md-shape-extra-small);
+		padding-inline-start: var(--space-s);
+		border-radius: var(--md-shape-extra-small);
 
-			background: var(--md-color-surface-container-highest);
-		}
+		background: var(--md-color-surface-container-highest);
+	}
 
-		.value {
-			overflow: hidden;
-			flex: 1;
+	.value {
+		overflow: hidden;
+		flex: 1;
 
-			min-inline-size: 0;
+		min-inline-size: 0;
 
-			font: var(--md-type-body-medium);
-			font-family: var(--font-mono);
-			color: var(--md-color-on-surface);
-			text-overflow: ellipsis;
-			white-space: nowrap;
-		}
+		font: var(--md-type-body-medium);
+		font-family: var(--font-mono);
+		color: var(--md-color-on-surface);
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 
-		icon-button[data-copied="true"] {
-			color: var(--md-color-success);
-		}
+	icon-button[data-copied="true"] {
+		color: var(--md-color-success);
 	}
 }

@@ -10,7 +10,7 @@ import {
 import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import en from '../locales/en/translation.json'
 import ja from '../locales/ja/translation.json'
-import type { ConsoleLocale } from './format'
+import { type ConsoleLocale, formatJstDateTime, formatJstDay } from './format'
 
 /**
  * localStorage key of the language chosen on this device. The console origin
@@ -37,13 +37,33 @@ export function saveLanguage(language: ConsoleLocale): void {
 export class ConsoleLanguage {
 	private readonly i18n = resolve(I18N)
 
-	public get current(): ConsoleLocale {
-		return toConsoleLocale(this.i18n.getLocale())
+	/**
+	 * The language shown, as an observed property. A getter reading i18n
+	 * would be cached by Aurelia's observation (i18next is not observed), so
+	 * the account menu's mark kept the first language after a switch.
+	 */
+	public current: ConsoleLocale = 'ja'
+
+	public constructor() {
+		void this.i18n.initPromise.then(() => {
+			this.current = toConsoleLocale(this.i18n.getLocale())
+		})
+	}
+
+	/**
+	 * A catalog text in the language being shown, for text that leaves the
+	 * page: the title handed to the share sheet, a default name the operator
+	 * saves. Text the page shows is translated in its template, so that it
+	 * follows a language switch (design D17).
+	 */
+	public text(key: string, params?: Record<string, unknown>): string {
+		return this.i18n.tr(key, params)
 	}
 
 	/** Changes every text on the page at once and saves the choice. */
 	public async set(language: ConsoleLocale): Promise<void> {
 		await this.i18n.setLocale(language)
+		this.current = toConsoleLocale(this.i18n.getLocale())
 		saveLanguage(language)
 	}
 }
@@ -70,6 +90,32 @@ async function syncDocumentLanguage(container: IContainer): Promise<void> {
 	apply()
 	ea.subscribe(Signals.I18N_EA_CHANNEL, apply)
 }
+
+/**
+ * Catalog formats for Date values, in Japan time and the language being
+ * shown: `{{day, jstDay}}` → `11月3日(火)`, `{{at, jstDateTime}}` →
+ * `11月3日(火) 18:00 JST`. A view-model passes the Date itself, so a language
+ * switch re-formats it with the text around it.
+ */
+async function addCatalogFormats(container: IContainer): Promise<void> {
+	const i18n = container.get(I18N)
+	await i18n.initPromise
+	const formats: Record<string, (date: Date, locale: ConsoleLocale) => string> =
+		{ jstDay: formatJstDay, jstDateTime: formatJstDateTime }
+	for (const [name, format] of Object.entries(formats)) {
+		i18n.i18next.services.formatter?.add(name, (value, lng) =>
+			value instanceof Date
+				? format(value, toConsoleLocale(lng))
+				: String(value ?? ''),
+		)
+	}
+}
+
+/** The catalog formats, for an app that configures i18n itself (stories). */
+export const ConsoleCatalogFormats = AppTask.activating(
+	IContainer,
+	addCatalogFormats,
+)
 
 /**
  * The console's i18n: Japanese and English catalogs; the language saved on
@@ -104,6 +150,7 @@ export const ConsoleI18nConfiguration: IRegistry = {
 				}
 			}),
 			AppTask.activating(IContainer, syncDocumentLanguage),
+			ConsoleCatalogFormats,
 		)
 	},
 }

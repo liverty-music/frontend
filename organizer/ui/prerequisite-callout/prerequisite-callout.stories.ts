@@ -3,8 +3,8 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, within } from 'storybook/test'
-import { consoleStoryParameters } from '../story-support'
+import { expect } from 'storybook/test'
+import { canvasOf, consoleStoryParameters } from '../story-support'
 import { PrerequisiteCallout } from './prerequisite-callout'
 
 const meta = {
@@ -40,12 +40,12 @@ export const WithAction = {
 			props: args,
 		}),
 	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement)
+		const canvas = canvasOf(canvasElement)
 		await expect(
-			canvas.getByRole('region', { name: '事業者情報が未登録です' }),
+			canvas.getByRole('region', { name: '事業者情報が未登録です' }).element(),
 		).toBeVisible()
 		await expect(
-			canvas.getByRole('link', { name: '設定を開く' }),
+			canvas.getByRole('link', { name: '設定を開く' }).element(),
 		).toHaveAttribute('href', '#settings')
 	},
 } satisfies Story

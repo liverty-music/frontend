@@ -3,9 +3,9 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { expect, spyOn, waitFor, within } from 'storybook/test'
+import { expect, spyOn, waitFor } from 'storybook/test'
 import { page, userEvent } from 'vitest/browser'
-import { consoleStoryParameters } from '../story-support'
+import { canvasOf, consoleStoryParameters, deepQuery } from '../story-support'
 import { CopyField } from './copy-field'
 
 const meta = {
@@ -42,11 +42,10 @@ export const CopyIconOnAPhone = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/action-feedback "Copy icon on a phone"
 		await page.viewport(390, 844)
-		const button = within(canvasElement).getByRole('button', {
-			name: '受付1をコピー',
-		})
-		const icon = button.querySelector('svg')
-		if (!icon) throw new Error('icon not rendered')
+		const button = canvasOf(canvasElement)
+			.getByRole('button', { name: '受付1をコピー' })
+			.element()
+		const icon = deepQuery(button, 'svg')
 		await expect(icon.getBoundingClientRect().width).toBe(24)
 		const target = button.getBoundingClientRect()
 		await expect(target.width).toBeGreaterThanOrEqual(48)
@@ -58,24 +57,26 @@ export const CopyALink = {
 	render,
 	play: async ({ canvasElement, args }) => {
 		// @spec components/infrastructure/organizer/web/global/action-feedback "Copy a link"
-		const canvas = within(canvasElement)
+		const canvas = canvasOf(canvasElement)
 		const write = spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
 		const icon = () =>
-			canvasElement.querySelector('icon-button')?.getAttribute('data-copied')
+			deepQuery(canvasElement, 'icon-button').getAttribute('data-copied')
 
-		const button = canvas.getByRole('button', { name: '受付1をコピー' })
+		const button = canvas
+			.getByRole('button', { name: '受付1をコピー' })
+			.element()
 		const clickedAt = performance.now()
 		await userEvent.click(button)
 
 		await expect(write).toHaveBeenCalledWith(args.value)
 		await waitFor(() => expect(icon()).toBe('true'))
 		await expect(
-			canvas.getByRole('button', { name: 'コピーしました' }),
+			canvas.getByRole('button', { name: 'コピーしました' }).element(),
 		).toBeVisible()
 		// Announced to screen readers through the snackbar.
 		await waitFor(() =>
 			expect(
-				canvasElement.querySelector('snack-bar [role="status"]'),
+				deepQuery(canvasElement, 'snack-bar [role="status"]'),
 			).toHaveTextContent('コピーしました'),
 		)
 

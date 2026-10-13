@@ -1,100 +1,98 @@
 @layer block {
-	@scope (console-button) {
-		:scope {
-			display: inline-flex;
+	:host {
+		display: inline-flex;
+	}
+
+	a,
+	button {
+		cursor: pointer;
+
+		display: inline-flex;
+		gap: var(--space-2xs);
+		align-items: center;
+		justify-content: center;
+
+		min-block-size: 40px;
+		padding-inline: var(--space-m);
+		border: 1px solid transparent;
+		border-radius: var(--md-shape-full);
+
+		font: var(--md-type-label-large);
+		color: var(--md-color-primary);
+		text-decoration: none;
+		white-space: nowrap;
+
+		background: transparent;
+
+		&:disabled {
+			cursor: not-allowed;
+			color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
 		}
+	}
 
-		a,
-		button {
-			cursor: pointer;
+	a:has(console-icon),
+	button:has(console-icon, circular-progress) {
+		padding-inline-start: var(--space-s);
+	}
 
-			display: inline-flex;
-			gap: var(--space-2xs);
-			align-items: center;
-			justify-content: center;
+	[data-variant="filled"] {
+		color: var(--md-color-on-primary);
+		background: var(--md-color-primary);
+	}
 
-			min-block-size: 40px;
-			padding-inline: var(--space-m);
-			border: 1px solid transparent;
-			border-radius: var(--md-shape-full);
+	[data-variant="tonal"] {
+		color: var(--md-color-on-secondary-container);
+		background: var(--md-color-secondary-container);
+	}
 
-			font: var(--md-type-label-large);
-			color: var(--md-color-primary);
-			text-decoration: none;
-			white-space: nowrap;
+	[data-variant="outlined"] {
+		border-color: var(--md-color-outline);
+		color: var(--md-color-on-surface);
+	}
 
-			background: transparent;
+	[data-variant="danger"] {
+		color: var(--md-color-on-error);
+		background: var(--md-color-error);
+	}
 
-			&:disabled {
-				cursor: not-allowed;
-				color: color-mix(in oklch, var(--md-color-on-surface) 38%, transparent);
-			}
-		}
+	[data-variant]:is(:disabled) {
+		border-color: color-mix(
+			in oklch,
+			var(--md-color-on-surface) 12%,
+			transparent
+		);
+		background: color-mix(
+			in oklch,
+			var(--md-color-on-surface) 12%,
+			transparent
+		);
+	}
 
-		a:has(console-icon),
-		button:has(console-icon, circular-progress) {
-			padding-inline-start: var(--space-s);
-		}
+	[data-variant="text"]:disabled,
+	[data-variant="outlined"]:disabled {
+		background: transparent;
+	}
 
-		[data-variant="filled"] {
-			color: var(--md-color-on-primary);
-			background: var(--md-color-primary);
-		}
+	/* While pending the button keeps its press affordance off but its look. */
+	[data-pending="true"] {
+		cursor: progress;
+	}
 
-		[data-variant="tonal"] {
-			color: var(--md-color-on-secondary-container);
-			background: var(--md-color-secondary-container);
-		}
+	/* Both labels share one grid cell, so the button is as wide as the longer
+	   one and does not change size when the pending label shows. */
+	.labels {
+		display: inline-grid;
+	}
 
-		[data-variant="outlined"] {
-			border-color: var(--md-color-outline);
-			color: var(--md-color-on-surface);
-		}
+	.labels > .label {
+		grid-area: 1 / 1;
+	}
 
-		[data-variant="danger"] {
-			color: var(--md-color-on-error);
-			background: var(--md-color-error);
-		}
+	.labels > [aria-hidden="true"] {
+		visibility: hidden;
+	}
 
-		[data-variant]:is(:disabled) {
-			border-color: color-mix(
-				in oklch,
-				var(--md-color-on-surface) 12%,
-				transparent
-			);
-			background: color-mix(
-				in oklch,
-				var(--md-color-on-surface) 12%,
-				transparent
-			);
-		}
-
-		[data-variant="text"]:disabled,
-		[data-variant="outlined"]:disabled {
-			background: transparent;
-		}
-
-		/* While pending the button keeps its press affordance off but its look. */
-		[data-pending="true"] {
-			cursor: progress;
-		}
-
-		/* Both labels share one grid cell, so the button is as wide as the longer
-		   one and does not change size when the pending label shows. */
-		.labels {
-			display: inline-grid;
-		}
-
-		.labels > .label {
-			grid-area: 1 / 1;
-		}
-
-		.labels > [aria-hidden="true"] {
-			visibility: hidden;
-		}
-
-		circular-progress {
-			color: inherit;
-		}
+	circular-progress {
+		color: inherit;
 	}
 }

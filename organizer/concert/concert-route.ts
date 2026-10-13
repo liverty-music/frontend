@@ -1,12 +1,9 @@
-import { I18N, Signals } from '@aurelia/i18n'
 import { IRouter, type Params } from '@aurelia/router'
 import {
 	PublishState,
 	Visibility,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
-import { type IDisposable, IEventAggregator, ILogger, resolve } from 'aurelia'
-import { toConsoleLocale } from '../i18n/console-language'
-import { formatJstDateTime, formatJstDay } from '../i18n/format'
+import { ILogger, resolve } from 'aurelia'
 import {
 	concertTitle,
 	eventDay,
@@ -45,8 +42,6 @@ export class ConcertRoute {
 	private readonly ticketSales = resolve(ITicketSaleClient)
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
 	private readonly snackbar = resolve(ISnackbar)
-	private readonly i18n = resolve(I18N)
-	private readonly ea = resolve(IEventAggregator)
 	private readonly clock = resolve(IClock)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertRoute')
@@ -54,7 +49,12 @@ export class ConcertRoute {
 	public state: LoadState = 'loading'
 	public seriesId = ''
 	public concert: AuthoredSeries | undefined
-	public columns: DataColumn[] = []
+	public readonly columns: DataColumn[] = [
+		{ key: 'date', labelKey: 'concert.column.date', primary: true },
+		{ key: 'venue', labelKey: 'concert.column.venue' },
+		{ key: 'sale', labelKey: 'concert.column.sale', kind: 'status' },
+		{ key: 'state', labelKey: 'concert.column.state', kind: 'status' },
+	]
 	public rows: DataRow[] = []
 	public shareUrl = ''
 	public shareDialog!: ConfirmDialog
@@ -68,22 +68,17 @@ export class ConcertRoute {
 
 	private sales = new Map<string, SaleView | null>()
 	private abort = new AbortController()
-	private subscription: IDisposable | null = null
 
 	public loading(params: Params): void {
 		this.seriesId = params.seriesId ?? ''
 	}
 
 	public attached(): void {
-		this.subscription = this.ea.subscribe(Signals.I18N_EA_CHANNEL, () =>
-			this.render(),
-		)
 		void this.load()
 	}
 
 	public detaching(): void {
 		this.abort.abort()
-		this.subscription?.dispose()
 	}
 
 	public get title(): string {
@@ -162,12 +157,10 @@ export class ConcertRoute {
 			else await this.load()
 			this.render()
 			void this.loadSales()
-			this.snackbar.show(
-				this.i18n.tr('concert.datesPublished', { count: ids.length }),
-			)
+			this.snackbar.show('concert.datesPublished', { count: ids.length })
 		} catch (err) {
 			this.logger.warn('Publish failed', err)
-			this.snackbar.showError(this.i18n.tr('event.publishFailed'))
+			this.snackbar.showError('event.publishFailed')
 		} finally {
 			this.publishing = false
 		}
@@ -182,9 +175,7 @@ export class ConcertRoute {
 		try {
 			await this.series.cancel(this.seriesId)
 			this.snackbar.show(
-				this.i18n.tr(
-					onlyDrafts ? 'concert.draftsRemoved' : 'concert.cancelled',
-				),
+				onlyDrafts ? 'concert.draftsRemoved' : 'concert.cancelled',
 			)
 			if (onlyDrafts) {
 				// A concert of drafts only is removed with its dates.
@@ -194,7 +185,7 @@ export class ConcertRoute {
 			await this.load()
 		} catch (err) {
 			this.logger.warn('Cancel failed', err)
-			this.snackbar.showError(this.i18n.tr('event.cancelFailed'))
+			this.snackbar.showError('event.cancelFailed')
 		} finally {
 			this.cancelling = false
 		}
@@ -258,12 +249,11 @@ export class ConcertRoute {
 					this.seriesId,
 					this.abort.signal,
 				)) ?? ''
-			this.snackbar.show(this.i18n.tr('concert.shareCreated'))
+			this.snackbar.show('concert.shareCreated')
 		} catch (err) {
 			this.logger.warn('Share link not created', err)
-			this.snackbar.showError(this.i18n.tr('concert.shareFailed'), {
-				label: this.i18n.tr('common.retry'),
-				callback: () => void this.retryShareLink(),
+			this.snackbar.showError('concert.shareFailed', {
+				retry: () => void this.retryShareLink(),
 			})
 		}
 	}
@@ -276,24 +266,17 @@ export class ConcertRoute {
 					this.seriesId,
 					this.abort.signal,
 				)) ?? ''
-			this.snackbar.show(this.i18n.tr('concert.shareCreated'))
+			this.snackbar.show('concert.shareCreated')
 		} catch (err) {
 			this.logger.warn('Share link not created', err)
-			this.snackbar.showError(this.i18n.tr('concert.shareFailed'))
+			this.snackbar.showError('concert.shareFailed')
 		}
 	}
 
+	/** Rows of catalog keys and values: the list translates them. */
 	private render(): void {
 		const concert = this.concert
 		if (!concert) return
-		const t = (key: string) => this.i18n.tr(key)
-		const locale = toConsoleLocale(this.i18n.getLocale())
-		this.columns = [
-			{ key: 'date', label: t('concert.column.date'), primary: true },
-			{ key: 'venue', label: t('concert.column.venue') },
-			{ key: 'sale', label: t('concert.column.sale'), kind: 'status' },
-			{ key: 'state', label: t('concert.column.state'), kind: 'status' },
-		]
 		this.rows = eventsByDate(concert).map((event) => {
 			const start = eventStart(event)
 			const day = eventDay(event)
@@ -304,20 +287,20 @@ export class ConcertRoute {
 				href: paths.event(this.seriesId, eventId(event)),
 				cells: {
 					date: start
-						? formatJstDateTime(start, locale)
+						? { key: 'format.dateTime', params: { at: start } }
 						: day
-							? `${formatJstDay(day, locale)} · ${t('event.noStartTime')}`
+							? { key: 'concert.dayNoStartTime', params: { day } }
 							: '',
 					venue: venueName(event),
 					sale:
 						sale === undefined
 							? isPublished(event)
 								? undefined
-								: { tone: 'neutral', label: t('sale.none') }
+								: { tone: 'neutral', labelKey: 'sale.none' }
 							: sale === null
-								? { tone: 'neutral', label: t('sale.none') }
-								: { tone: sale.tone, label: t(sale.stateKey) },
-					state: { tone: badge.tone, label: t(badge.labelKey) },
+								? { tone: 'neutral', labelKey: 'sale.none' }
+								: { tone: sale.tone, labelKey: sale.stateKey },
+					state: { tone: badge.tone, labelKey: badge.labelKey },
 				},
 			}
 		})

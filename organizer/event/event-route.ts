@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { IRouter, IRouterEvents, type Params, route } from '@aurelia/router'
 import { Visibility } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
@@ -68,7 +67,6 @@ export class EventRoute {
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
-	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('EventRoute')
 
 	public publishDialog!: ConfirmDialog
@@ -102,12 +100,12 @@ export class EventRoute {
 		return [
 			{
 				id: 'sales',
-				label: this.i18n.tr('event.tab.sales'),
+				labelKey: 'event.tab.sales',
 				href: paths.sales(this.page.seriesId, this.page.eventId),
 			},
 			{
 				id: 'reception',
-				label: this.i18n.tr('event.tab.reception'),
+				labelKey: 'event.tab.reception',
 				href: paths.reception(this.page.seriesId, this.page.eventId),
 			},
 		]
@@ -163,12 +161,11 @@ export class EventRoute {
 			])
 			if (concert) this.page.update(concert)
 			else await this.page.reload()
-			this.snackbar.show(this.i18n.tr('event.published'))
+			this.snackbar.show('event.published')
 		} catch (err) {
 			this.logger.warn('Publish failed', err)
-			this.snackbar.showError(this.i18n.tr('event.publishFailed'), {
-				label: this.i18n.tr('common.retry'),
-				callback: () => void this.publishConfirmed(),
+			this.snackbar.showError('event.publishFailed', {
+				retry: () => void this.publishConfirmed(),
 			})
 		} finally {
 			this.publishing = false
@@ -182,10 +179,10 @@ export class EventRoute {
 				this.page.eventId,
 			])
 			if (concert) this.page.update(concert)
-			this.snackbar.show(this.i18n.tr('event.published'))
+			this.snackbar.show('event.published')
 		} catch (err) {
 			this.logger.warn('Publish failed', err)
-			this.snackbar.showError(this.i18n.tr('event.publishFailed'))
+			this.snackbar.showError('event.publishFailed')
 		}
 	}
 
@@ -196,9 +193,7 @@ export class EventRoute {
 		this.cancelling = true
 		try {
 			await this.series.cancel(this.page.seriesId, [this.page.eventId])
-			this.snackbar.show(
-				this.i18n.tr(wasDraft ? 'event.draftRemoved' : 'event.cancelled'),
-			)
+			this.snackbar.show(wasDraft ? 'event.draftRemoved' : 'event.cancelled')
 			if (wasDraft) {
 				// A cancelled draft is removed: its page no longer exists.
 				await this.router.load(this.concertHref)
@@ -207,7 +202,7 @@ export class EventRoute {
 			await this.page.reload()
 		} catch (err) {
 			this.logger.warn('Cancel failed', err)
-			this.snackbar.showError(this.i18n.tr('event.cancelFailed'))
+			this.snackbar.showError('event.cancelFailed')
 		} finally {
 			this.cancelling = false
 		}

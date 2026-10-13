@@ -3,10 +3,11 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
+import { I18N } from '@aurelia/i18n'
 import { CustomElement } from 'aurelia'
 import { expect, waitFor, within } from 'storybook/test'
 import { page, userEvent } from 'vitest/browser'
-import { consoleStoryParameters } from '../story-support'
+import { consoleStoryParameters, deepQueryAll } from '../story-support'
 import { ConsoleSnackbar } from './console-snackbar'
 import { ISnackbar } from './snackbar'
 
@@ -39,7 +40,7 @@ function snackbarOf(root: HTMLElement): ISnackbar {
 
 /** The snacks currently open (popovers shown). */
 function openSnacks(root: HTMLElement): HTMLElement[] {
-	return [...root.querySelectorAll<HTMLElement>('.snack-item')].filter((el) =>
+	return deepQueryAll(root, '.snack-item').filter((el) =>
 		el.matches(':popover-open'),
 	)
 }
@@ -49,9 +50,9 @@ export const TwoResultsInARow = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/snack-bar "Two results in a row"
 		const snackbar = snackbarOf(canvasElement)
-		snackbar.show('変更を保存しました')
+		snackbar.show('concertEditor.saved')
 		await waitFor(() => expect(openSnacks(canvasElement)).toHaveLength(1))
-		snackbar.show('コピーしました')
+		snackbar.show('common.copied')
 
 		await waitFor(() => {
 			const open = openSnacks(canvasElement)
@@ -69,7 +70,7 @@ export const PhoneLayout = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/snack-bar "Phone layout"
 		await page.viewport(390, 844)
-		snackbarOf(canvasElement).show('変更を保存しました')
+		snackbarOf(canvasElement).show('concertEditor.saved')
 		await waitFor(() => expect(openSnacks(canvasElement)).toHaveLength(1))
 		const nav = within(canvasElement)
 			.getByTestId('nav-bar')
@@ -79,6 +80,10 @@ export const PhoneLayout = {
 				openSnacks(canvasElement)[0].getBoundingClientRect().bottom,
 			).toBeLessThanOrEqual(nav.top),
 		)
+		// Fully shown before the page is checked: mid fade, its colors blend.
+		await waitFor(() =>
+			expect(getComputedStyle(openSnacks(canvasElement)[0]).opacity).toBe('1'),
+		)
 	},
 } satisfies Story
 
@@ -87,7 +92,7 @@ export const SaveSucceeded = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/snack-bar "Save succeeded"
 		const shownAt = performance.now()
-		snackbarOf(canvasElement).show('変更を保存しました')
+		snackbarOf(canvasElement).show('concertEditor.saved')
 		await waitFor(() =>
 			expect(openSnacks(canvasElement)[0]).toHaveTextContent(
 				'変更を保存しました',
@@ -114,9 +119,8 @@ export const SaveFailed = {
 	render,
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/snack-bar "Save failed"
-		snackbarOf(canvasElement).showError('保存できませんでした', {
-			label: '再試行',
-			callback: () => {},
+		snackbarOf(canvasElement).showError('concertEditor.saveFailed', {
+			retry: () => {},
 		})
 		await waitFor(() => expect(openSnacks(canvasElement)).toHaveLength(1))
 		const snack = openSnacks(canvasElement)[0]
@@ -142,9 +146,8 @@ export const OperatorRetries = {
 	play: async ({ canvasElement }) => {
 		// @spec components/infrastructure/organizer/web/global/snack-bar "Operator retries"
 		let retries = 0
-		snackbarOf(canvasElement).showError('保存できませんでした', {
-			label: '再試行',
-			callback: () => {
+		snackbarOf(canvasElement).showError('concertEditor.saveFailed', {
+			retry: () => {
 				retries++
 			},
 		})
@@ -158,5 +161,44 @@ export const OperatorRetries = {
 
 		await expect(retries).toBe(1)
 		await waitFor(() => expect(openSnacks(canvasElement)).toHaveLength(0))
+	},
+} satisfies Story
+
+/**
+ * A message shown while the language changes follows the switch (snack-bar
+ * requirement; the requirement has no scenario of its own).
+ */
+export const FollowsALanguageSwitch = {
+	render,
+	play: async ({ canvasElement }) => {
+		const host = canvasElement.querySelector('console-snackbar')
+		if (!host) throw new Error('host not rendered')
+		const i18n = CustomElement.for(host).container.get(I18N)
+		snackbarOf(canvasElement).showError('concertEditor.saveFailed', {
+			retry: () => {},
+		})
+		await waitFor(() =>
+			expect(openSnacks(canvasElement)[0]).toHaveTextContent(
+				'保存できませんでした',
+			),
+		)
+		// No icon: the message is text.
+		await expect(
+			openSnacks(canvasElement)[0].querySelector('svg-icon'),
+		).toBeNull()
+
+		await i18n.setLocale('en')
+		try {
+			await waitFor(() => {
+				expect(openSnacks(canvasElement)[0]).toHaveTextContent('Could not save')
+				expect(openSnacks(canvasElement)[0]).toHaveTextContent('Retry')
+			})
+		} finally {
+			await i18n.setLocale('ja')
+		}
+		// Fully shown before the page is checked: mid fade, its colors blend.
+		await waitFor(() =>
+			expect(getComputedStyle(openSnacks(canvasElement)[0]).opacity).toBe('1'),
+		)
 	},
 } satisfies Story

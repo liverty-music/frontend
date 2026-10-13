@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test'
+import type { Locator, Page, Route } from '@playwright/test'
 import { OIDC_AUTHORITY } from './auth-mocks'
 
 /**
@@ -174,4 +174,20 @@ export function connectError(
 	status = 400,
 ): RpcResult {
 	return { status, body: { code, message } }
+}
+
+/**
+ * A console confirmation dialog with its body. The `<dialog>` is in the
+ * shadow root of `<confirm-dialog>`, and the body is the page's own content
+ * shown through the dialog's slot. A locator scopes by the DOM tree, where the
+ * body is a child of the host, not of the `<dialog>`; scoping to the host
+ * finds both the dialog's buttons and the body's text and checkboxes.
+ */
+export function confirmDialog(
+	page: Page,
+	options: { name?: string | RegExp } = {},
+): Locator {
+	return page
+		.locator('confirm-dialog')
+		.filter({ has: page.getByRole('dialog', options) })
 }

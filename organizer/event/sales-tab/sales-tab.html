@@ -73,7 +73,7 @@
             value.to-view="String(sale.verification)"
             options.bind="verificationOptions"
             hint.bind="'sale.verification.note' & t"
-            change.trigger="changeVerification(sale, $event.target.value)"
+            change.trigger="changeVerification(sale, $event.detail.value)"
           ></console-field>
         </div>
 

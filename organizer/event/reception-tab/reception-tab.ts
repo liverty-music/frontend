@@ -1,8 +1,8 @@
-import { I18N } from '@aurelia/i18n'
 import { ScannerStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/scanner_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../../shared/config/app-config'
+import { IConsoleLanguage } from '../../i18n/console-language'
 import { eventStart, isPublished, paths } from '../../model/concert-model'
 import { IScannerClient, type Scanner } from '../../services/scanner-client'
 import type { ConfirmDialog } from '../../ui/confirm-dialog/confirm-dialog'
@@ -78,7 +78,7 @@ export class ReceptionTab {
 	public readonly page = resolve(IEventPage)
 	private readonly scanners = resolve(IScannerClient)
 	private readonly snackbar = resolve(ISnackbar)
-	private readonly i18n = resolve(I18N)
+	private readonly language = resolve(IConsoleLanguage)
 	private readonly logger = resolve(ILogger).scopeTo('ReceptionTab')
 	private readonly receptionBaseUrl = resolve(IAppConfig).receptionBaseUrl ?? ''
 
@@ -121,33 +121,22 @@ export class ReceptionTab {
 		return paths.editConcert(this.page.seriesId)
 	}
 
-	public get confirmTitle(): string {
-		if (!this.confirming) return ''
-		return this.i18n.tr(
-			this.confirming.reissue
-				? 'reception.reissueConfirmTitle'
-				: 'reception.revokeConfirmTitle',
-			{ label: this.label(this.confirming.row) },
-		)
+	/** Catalog key of the confirmation's title; its value is `confirmNumber`. */
+	public get confirmTitleKey(): string {
+		return this.confirming?.reissue
+			? 'reception.reissueConfirmTitle'
+			: 'reception.revokeConfirmTitle'
 	}
 
-	public get confirmBody(): string {
-		if (!this.confirming) return ''
-		return this.i18n.tr('reception.confirmBody', {
-			label: this.label(this.confirming.row),
-		})
+	public get confirmKey(): string {
+		return this.confirming?.reissue
+			? 'reception.revokeAndReissue'
+			: 'reception.revoke'
 	}
 
-	public get confirmLabel(): string {
-		return this.i18n.tr(
-			this.confirming?.reissue
-				? 'reception.revokeAndReissue'
-				: 'reception.revoke',
-		)
-	}
-
-	public label(row: ScannerRow): string {
-		return this.i18n.tr('reception.label', { number: row.number })
+	/** The number of the Scanner being revoked (受付1). */
+	public get confirmNumber(): number {
+		return this.confirming?.row.number ?? 0
 	}
 
 	public async load(): Promise<void> {
@@ -178,18 +167,13 @@ export class ReceptionTab {
 		try {
 			const scanner = await this.scanners.create(this.page.eventId)
 			this.upsert(scanner, true)
-			this.snackbar.show(
-				this.i18n.tr('reception.issued', {
-					label: this.i18n.tr('reception.label', {
-						number: scanner.number?.value ?? 0,
-					}),
-				}),
-			)
+			this.snackbar.show('reception.issued', {
+				number: scanner.number?.value ?? 0,
+			})
 		} catch (err) {
 			this.logger.warn('Scanner not issued', err)
-			this.snackbar.showError(this.i18n.tr('reception.issueFailed'), {
-				label: this.i18n.tr('common.retry'),
-				callback: () => void this.issue(),
+			this.snackbar.showError('reception.issueFailed', {
+				retry: () => void this.issue(),
 			})
 		} finally {
 			this.issuing = false
@@ -201,23 +185,19 @@ export class ReceptionTab {
 		if (!(await this.confirmDialog.ask())) return
 		try {
 			this.upsert(await this.scanners.revoke(row.id))
-			let message = this.i18n.tr('reception.revoked', {
-				label: this.label(row),
-			})
-			if (reissue) {
-				const scanner = await this.scanners.create(this.page.eventId)
-				this.upsert(scanner, true)
-				message = this.i18n.tr('reception.reissued', {
-					label: this.label(row),
-					next: this.i18n.tr('reception.label', {
-						number: scanner.number?.value ?? 0,
-					}),
-				})
+			if (!reissue) {
+				this.snackbar.show('reception.revoked', { number: row.number })
+				return
 			}
-			this.snackbar.show(message)
+			const scanner = await this.scanners.create(this.page.eventId)
+			this.upsert(scanner, true)
+			this.snackbar.show('reception.reissued', {
+				number: row.number,
+				next: scanner.number?.value ?? 0,
+			})
 		} catch (err) {
 			this.logger.warn('Scanner not revoked', err)
-			this.snackbar.showError(this.i18n.tr('reception.revokeFailed'))
+			this.snackbar.showError('reception.revokeFailed')
 			await this.load()
 		}
 	}
@@ -226,7 +206,10 @@ export class ReceptionTab {
 		if (!row.url || !this.canShare) return
 		try {
 			await navigator.share({
-				title: this.i18n.tr('reception.shareTitle', { label: this.label(row) }),
+				// The share sheet is outside the page: its title is passed as text.
+				title: this.language.text('reception.shareTitle', {
+					number: row.number,
+				}),
 				url: row.url,
 			})
 		} catch (err) {

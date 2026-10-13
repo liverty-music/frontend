@@ -15,13 +15,13 @@
       <svg-icon if.bind="snack.severity === 'warning'" name="warning" class="snack-icon"></svg-icon>
       <svg-icon if.bind="snack.severity === 'error'" name="x-circle" class="snack-icon"></svg-icon>
     </template>
-    <span class="snack-message">${snack.message}</span>
+    <span class="snack-message"><au-slot name="message" expose.bind="{ snack }">${snack.message}</au-slot></span>
     <button
       if.bind="snack.action"
       type="button"
       click.trigger="onAction(snack)"
       class="snack-action-btn"
-    >${snack.action.label}</button>
+    ><au-slot name="action" expose.bind="{ snack }">${snack.action.label}</au-slot></button>
     <button
       if.bind="dismissible"
       type="button"

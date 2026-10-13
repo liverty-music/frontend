@@ -1,7 +1,8 @@
+<use-shadow-dom></use-shadow-dom>
 <confirm-dialog
   component.ref="dialog"
-  heading.bind="'unsavedChanges.heading' & t"
-  confirm-label.bind="'unsavedChanges.discard' & t"
-  cancel-label.bind="'unsavedChanges.keepEditing' & t"
+  heading-key="unsavedChanges.heading"
+  confirm-key="unsavedChanges.discard"
+  cancel-key="unsavedChanges.keepEditing"
   confirm-variant="danger"
 >${'unsavedChanges.body' & t}</confirm-dialog>

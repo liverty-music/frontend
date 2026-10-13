@@ -1,27 +1,33 @@
 <import from="./data-list.css"></import>
 <import from="../status-badge/status-badge"></import>
+<use-shadow-dom></use-shadow-dom>
+
+<template as-custom-element="cell-text">
+  <bindable name="value"></bindable>
+  <template repeat.for="part of value?.map ? value : [value]">${$index ? ' · ' : ''}<template if.bind="part?.key">${part.key & t:part.params}</template><template else>${part}</template></template>
+</template>
 
 <template as-custom-element="data-cell">
   <bindable name="kind"></bindable>
   <bindable name="value"></bindable>
   <template switch.bind="kind">
-    <status-badge case="status" tone.bind="value?.tone" label.bind="value?.label"></status-badge>
+    <status-badge case="status" tone.bind="value?.tone" label.bind="value?.labelKey & t"></status-badge>
     <data case="count" value.bind="value">${value | count}</data>
     <data case="yen" value.bind="value">${value | yen}</data>
     <time case="datetime" datetime.bind="value ? value.toISOString() : null">${value | jstDateTime}</time>
     <time case="date" datetime.bind="value ? value.toISOString() : null">${value | jstDate}</time>
-    <template default-case>${value}</template>
+    <cell-text default-case value.bind="value"></cell-text>
   </template>
 </template>
 
 <ul class="cards" aria-label.bind="label">
   <li repeat.for="row of rows; key: id" class="card">
-    <a if.bind="row.href" href.bind="row.href" class="card-title state-layer">${row.cells[primary.key]}</a>
-    <span else class="card-title">${row.cells[primary.key]}</span>
-    <span if.bind="row.subtitle" class="subtitle">${row.subtitle}</span>
+    <a if.bind="row.href" href.bind="row.href" class="card-title state-layer"><cell-text value.bind="row.cells[primary.key]"></cell-text></a>
+    <span else class="card-title"><cell-text value.bind="row.cells[primary.key]"></cell-text></span>
+    <span if.bind="row.subtitle" class="subtitle"><cell-text value.bind="row.subtitle"></cell-text></span>
     <dl class="card-details">
       <div repeat.for="column of details" class="card-detail" data-numeric.bind="isNumeric(column)">
-        <dt>${column.label}</dt>
+        <dt>${column.labelKey & t}</dt>
         <dd><data-cell kind.bind="column.kind" value.bind="row.cells[column.key]"></data-cell></dd>
       </div>
     </dl>
@@ -32,16 +38,16 @@
   <caption class="visually-hidden">${label}</caption>
   <thead>
     <tr>
-      <th repeat.for="column of columns" scope="col" data-numeric.bind="isNumeric(column)">${column.label}</th>
+      <th repeat.for="column of columns" scope="col" data-numeric.bind="isNumeric(column)">${column.labelKey & t}</th>
     </tr>
   </thead>
   <tbody>
     <tr repeat.for="row of rows; key: id">
       <template repeat.for="column of columns">
         <th if.bind="column === primary" scope="row">
-          <a if.bind="row.href" href.bind="row.href">${row.cells[column.key]}</a>
-          <template else>${row.cells[column.key]}</template>
-          <span if.bind="row.subtitle" class="subtitle">${row.subtitle}</span>
+          <a if.bind="row.href" href.bind="row.href"><cell-text value.bind="row.cells[column.key]"></cell-text></a>
+          <cell-text else value.bind="row.cells[column.key]"></cell-text>
+          <span if.bind="row.subtitle" class="subtitle"><cell-text value.bind="row.subtitle"></cell-text></span>
         </th>
         <td else data-numeric.bind="isNumeric(column)"><data-cell kind.bind="column.kind" value.bind="row.cells[column.key]"></data-cell></td>
       </template>

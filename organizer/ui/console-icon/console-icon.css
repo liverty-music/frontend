@@ -1,16 +1,14 @@
 @layer block {
-	@scope (console-icon) {
-		:scope {
-			display: inline-flex;
-			flex-shrink: 0;
-			inline-size: 24px;
-			block-size: 24px;
-		}
+	:host {
+		display: inline-flex;
+		flex-shrink: 0;
+		inline-size: 24px;
+		block-size: 24px;
+	}
 
-		.console-icon {
-			inline-size: 100%;
-			block-size: 100%;
-			fill: currentcolor;
-		}
+	.console-icon {
+		inline-size: 100%;
+		block-size: 100%;
+		fill: currentcolor;
 	}
 }

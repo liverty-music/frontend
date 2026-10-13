@@ -1,12 +1,13 @@
 <import from="./prerequisite-callout.css"></import>
 <import from="../console-icon/console-icon"></import>
 <import from="../console-button/console-button"></import>
+<use-shadow-dom></use-shadow-dom>
 
 <section class="callout" aria-labelledby.bind="headingId">
   <console-icon name="info" class="icon"></console-icon>
   <div class="content">
     <h3 class="heading" id.bind="headingId">${heading}</h3>
-    <div class="body"><au-slot></au-slot></div>
+    <div class="body"><slot></slot></div>
     <console-button if.bind="actionHref" variant="text" href.bind="actionHref" class="action">${actionLabel}</console-button>
   </div>
 </section>

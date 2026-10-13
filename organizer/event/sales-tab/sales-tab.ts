@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import { ILogger, resolve } from 'aurelia'
 import { eventStart, isPublished, paths } from '../../model/concert-model'
 import {
@@ -33,7 +32,6 @@ export class SalesTab {
 	public readonly page = resolve(IEventPage)
 	private readonly ticketSales = resolve(ITicketSaleClient)
 	private readonly snackbar = resolve(ISnackbar)
-	private readonly i18n = resolve(I18N)
 	private readonly clock = resolve(IClock)
 	private readonly logger = resolve(ILogger).scopeTo('SalesTab')
 
@@ -70,12 +68,9 @@ export class SalesTab {
 		return this.sales.some((s) => s.method === 'firstCome')
 	}
 
-	public get verificationOptions(): FieldOption[] {
-		return VERIFICATION_OPTIONS.map((o) => ({
-			value: String(o.value),
-			label: this.i18n.tr(o.labelKey),
-		}))
-	}
+	public readonly verificationOptions: FieldOption[] = VERIFICATION_OPTIONS.map(
+		(o) => ({ value: String(o.value), labelKey: o.labelKey }),
+	)
 
 	public get newLotteryHref(): string {
 		return paths.newLottery(this.page.seriesId, this.page.eventId)
@@ -127,13 +122,12 @@ export class SalesTab {
 		try {
 			await this.ticketSales.setVerificationRequirement(sale.id, next)
 			this.setSavedVerification(sale.id, next)
-			this.snackbar.show(this.i18n.tr('sale.verificationSaved'))
+			this.snackbar.show('sale.verificationSaved')
 		} catch (err) {
 			this.logger.warn('Verification requirement not saved', err)
 			sale.verification = saved
-			this.snackbar.showError(this.i18n.tr('sale.verificationFailed'), {
-				label: this.i18n.tr('common.retry'),
-				callback: () => void this.changeVerification(sale, value),
+			this.snackbar.showError('sale.verificationFailed', {
+				retry: () => void this.changeVerification(sale, value),
 			})
 		}
 	}
