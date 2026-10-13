@@ -11,7 +11,11 @@ lint: lint-brand-vocabulary lint-boundaries lint-route-loading lint-e2e-coverage
 	# `node_modules/.bin/tsc` symlink, so the typecheck would silently run on a
 	# different compiler than the one pinned in package.json. Pin to the
 	# installed `typescript` package.
+	# tsconfig.json covers the apps (src, admin, organizer, reception, shared);
+	# e2e/tsconfig.json covers the Playwright specs, which use BigInt literals
+	# (ES2020) and so need a later target than the apps' ES2017.
 	node ./node_modules/typescript/bin/tsc --noEmit
+	node ./node_modules/typescript/bin/tsc --noEmit -p e2e
 
 ## lint-boundaries: enforce src/ <-> admin/ <-> organizer/ <-> reception/ isolation (only shared/ crosses)
 lint-boundaries:

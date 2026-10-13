@@ -3,7 +3,15 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "skipLibCheck": true,
+    // Vite passes `target` to esbuild, which derives useDefineForClassFields
+    // from it; ES2022 or later would switch class fields (Aurelia's @bindable /
+    // @observable) to define semantics. Keep it.
     "target": "ES2017",
+    // The built-ins the code may use. Vite 7's default build target
+    // (baseline-widely-available: Chrome/Edge 107, Firefox 104, Safari 16)
+    // ships every ES2022 built-in (Array.prototype.at, Object.hasOwn), and
+    // Vite adds no polyfills, so the library matches the browsers served.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "importHelpers": true,
@@ -17,6 +25,7 @@
   "include": [
     "src",
     "admin",
+    "organizer",
     "reception",
     "shared"
   ],
