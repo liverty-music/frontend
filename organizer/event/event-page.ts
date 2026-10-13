@@ -1,7 +1,7 @@
 import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
-import { findConcert, findEvent } from '../model/concert-model'
+import { findConcert, findEvent, performs } from '../model/concert-model'
 import { IOrganizerClient } from '../services/organizer-client'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 
@@ -24,7 +24,8 @@ export function businessDetailsComplete(
 /**
  * The event page's data, shared by its header and its tabs: the concert, the
  * event and the Organizer (for the business details a sale needs). The event
- * route loads it; the tabs wait for {@link ready}.
+ * route loads it; the tabs wait for {@link ready}. Under an Artist who does
+ * not perform in the concert, the event is not found (design D1).
  */
 export class EventPage {
 	private readonly series = resolve(ISeriesClient)
@@ -32,6 +33,7 @@ export class EventPage {
 	private readonly logger = resolve(ILogger).scopeTo('EventPage')
 
 	public state: EventPageState = 'loading'
+	public artistId = ''
 	public seriesId = ''
 	public eventId = ''
 	public concert: AuthoredSeries | undefined
@@ -42,7 +44,12 @@ export class EventPage {
 	/** Set by the event route: opens the publish confirmation in the header. */
 	public publishHandler: (() => Promise<void>) | null = null
 
-	public load(seriesId: string, eventId: string): Promise<void> {
+	public load(
+		artistId: string,
+		seriesId: string,
+		eventId: string,
+	): Promise<void> {
+		this.artistId = artistId
 		this.seriesId = seriesId
 		this.eventId = eventId
 		this.ready = this.read()
@@ -50,7 +57,7 @@ export class EventPage {
 	}
 
 	public async reload(): Promise<void> {
-		await this.load(this.seriesId, this.eventId)
+		await this.load(this.artistId, this.seriesId, this.eventId)
 	}
 
 	/** Replaces the concert after a publish, which returns it. */
@@ -79,7 +86,9 @@ export class EventPage {
 				}),
 			])
 			this.organizer = organizer
-			this.concert = findConcert(concerts, this.seriesId)
+			const concert = findConcert(concerts, this.seriesId)
+			this.concert =
+				concert && performs(concert, this.artistId) ? concert : undefined
 			this.event = findEvent(this.concert, this.eventId)
 			this.state = this.event ? 'ready' : 'notFound'
 		} catch (err) {

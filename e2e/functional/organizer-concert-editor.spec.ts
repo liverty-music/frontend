@@ -3,6 +3,7 @@ import {
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
+	SERIES,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -110,8 +111,10 @@ async function pickVenue(scope: Locator, name = 'Zepp Haneda') {
 /** Title, performer and the first date of a new concert, all but the venue. */
 async function fillNewConcert(page: Page, opts: { performer?: boolean } = {}) {
 	await titleField(page).fill('XX 冬の単独公演')
-	if (opts.performer ?? true)
-		await page.getByRole('checkbox', { name: 'Band A' }).check()
+	// A new concert starts with the Artist it is created from (Band A) chosen.
+	const band = page.getByRole('checkbox', { name: 'Band A' })
+	await expect(band).toBeChecked()
+	if (!(opts.performer ?? true)) await band.uncheck()
 	await row(page, 0).getByLabel('日付').fill('2026-12-01')
 }
 
@@ -129,7 +132,7 @@ interface DraftBody {
 
 test.describe('venue search', () => {
 	test(`@spec ${SPEC} "Pick a venue"`, async ({ page }) => {
-		const log = await openEditor(page, '/concerts/new')
+		const log = await openEditor(page, `${SERIES}/new`)
 		await pickVenue(row(page, 0))
 
 		await expect(row(page, 0)).toContainText('Zepp Haneda (TOKYO)')
@@ -154,7 +157,7 @@ test.describe('venue search', () => {
 	})
 
 	test(`@spec ${SPEC} "No match"`, async ({ page }) => {
-		await openEditor(page, '/concerts/new', {
+		await openEditor(page, `${SERIES}/new`, {
 			'VenueService/Search': { candidates: [] },
 		})
 		await venueSearch(row(page, 0)).fill('存在しない会場')
@@ -171,7 +174,7 @@ test.describe('venue search', () => {
 
 	test(`@spec ${SPEC} "Search unavailable"`, async ({ page }) => {
 		let attempts = 0
-		const log = await openEditor(page, '/concerts/new', {
+		const log = await openEditor(page, `${SERIES}/new`, {
 			'VenueService/Search': () => {
 				attempts++
 				return attempts === 1
@@ -194,7 +197,7 @@ test.describe('venue search', () => {
 	})
 
 	test(`@spec ${SPEC} "Typed name not picked"`, async ({ page }) => {
-		const log = await openEditor(page, '/concerts/new')
+		const log = await openEditor(page, `${SERIES}/new`)
 		await fillNewConcert(page)
 		await venueSearch(row(page, 0)).fill('Zepp Haneda')
 		await page.getByRole('button', { name: '公演をつくる' }).click()
@@ -208,7 +211,7 @@ test.describe('venue search', () => {
 test.describe('saving', () => {
 	test(`@spec ${SPEC} "Title change only"`, async ({ page }) => {
 		const renamed: ConcertSpec = { ...XX_SOLO, title: 'XX 単独公演 2026' }
-		const log = await openEditor(page, '/concerts/s-solo/edit', {
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
 			'SeriesService/Update': oneSeries(renamed),
 		})
 		await titleField(page).fill('XX 単独公演 2026')
@@ -225,7 +228,7 @@ test.describe('saving', () => {
 	})
 
 	test(`@spec ${SPEC} "Saved"`, async ({ page }) => {
-		const log = await openEditor(page, '/concerts/s-solo/edit', {
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
 			'SeriesService/Update': oneSeries(XX_SOLO, {
 				description: { value: '年末のワンマン' },
 			}),
@@ -234,7 +237,7 @@ test.describe('saving', () => {
 		await page.getByRole('button', { name: '保存する' }).click()
 
 		await expect(snackbar(page)).toContainText('変更を保存しました')
-		await expect(page).toHaveURL(/\/concerts\/s-solo\/edit$/)
+		await expect(page).toHaveURL(/\/series\/s-solo\/edit$/)
 		await expect(
 			page.getByRole('heading', { level: 1, name: '公演を編集' }),
 		).toBeVisible()
@@ -256,7 +259,7 @@ test.describe('saving', () => {
 				},
 			],
 		}
-		const log = await openEditor(page, '/concerts/new', {
+		const log = await openEditor(page, `${SERIES}/new`, {
 			'SeriesService/Create': oneSeries(created),
 			'SeriesService/List': seriesList([TOUR, XX_SOLO, created]),
 		})
@@ -264,7 +267,7 @@ test.describe('saving', () => {
 		await pickVenue(row(page, 0))
 		await page.getByRole('button', { name: '公演をつくる' }).click()
 
-		await expect(page).toHaveURL(/\/concerts\/s-new$/)
+		await expect(page).toHaveURL(/\/series\/s-new$/)
 		await expect(snackbar(page)).toContainText('公演をつくりました')
 		await expect(
 			page.getByRole('heading', { level: 1, name: 'XX 冬の単独公演' }),
@@ -273,7 +276,7 @@ test.describe('saving', () => {
 	})
 
 	test(`@spec ${SPEC} "Missing performer"`, async ({ page }) => {
-		const log = await openEditor(page, '/concerts/new')
+		const log = await openEditor(page, `${SERIES}/new`)
 		await fillNewConcert(page, { performer: false })
 		await pickVenue(row(page, 0))
 		await page.getByRole('button', { name: '公演をつくる' }).click()
@@ -301,7 +304,7 @@ test.describe('visibility', () => {
 				},
 			],
 		}
-		const log = await openEditor(page, '/concerts/new', {
+		const log = await openEditor(page, `${SERIES}/new`, {
 			'SeriesService/Create': oneSeries(created),
 			'SeriesService/List': seriesList([TOUR, XX_SOLO, created]),
 		})
@@ -318,13 +321,13 @@ test.describe('visibility', () => {
 		await visibility.getByRole('radio', { name: /^限定公開/ }).check()
 		await page.getByRole('button', { name: '公演をつくる' }).click()
 
-		await expect(page).toHaveURL(/\/concerts\/s-new$/)
+		await expect(page).toHaveURL(/\/series\/s-new$/)
 		const [create] = calls(log, 'SeriesService/Create')
 		expect(JSON.stringify(create.body)).toContain('VISIBILITY_UNLISTED')
 	})
 
 	test(`@spec ${SPEC} "Visibility fixed after publish"`, async ({ page }) => {
-		await openEditor(page, '/concerts/s-tour/edit')
+		await openEditor(page, `${SERIES}/s-tour/edit`)
 		const visibility = page.getByRole('group', { name: '公開範囲' })
 		await expect(visibility.getByRole('radio', { name: /^公開/ })).toBeChecked()
 		await expect(
@@ -347,7 +350,7 @@ test.describe('times in another time zone', () => {
 		}
 		const timed: ConcertSpec = XX_SOLO
 		let saved = false
-		const log = await openEditor(page, '/concerts/s-solo/edit', {
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
 			'SeriesService/List': () => ({
 				body: seriesList([saved ? timed : untimed]),
 			}),
@@ -378,7 +381,7 @@ test.describe('times in another time zone', () => {
 
 test.describe('a published concert', () => {
 	test(`@spec ${SPEC} "Published event's venue is fixed"`, async ({ page }) => {
-		await openEditor(page, '/concerts/s-tour/edit')
+		await openEditor(page, `${SERIES}/s-tour/edit`)
 		const first = row(page, 0)
 		await expect(first).toContainText('公開中')
 		await expect(first).toContainText(
@@ -408,7 +411,7 @@ test.describe('a published concert', () => {
 				},
 			],
 		}
-		const log = await openEditor(page, '/concerts/s-tour/edit', {
+		const log = await openEditor(page, `${SERIES}/s-tour/edit`, {
 			'SeriesService/Update': oneSeries(withNewDate),
 		})
 		await page.getByRole('button', { name: '公演日を追加' }).click()
@@ -433,7 +436,7 @@ test.describe('a published concert', () => {
 	})
 
 	test(`@spec ${SPEC} "Start time already on sale"`, async ({ page }) => {
-		const log = await openEditor(page, '/concerts/s-tour/edit', {
+		const log = await openEditor(page, `${SERIES}/s-tour/edit`, {
 			'SeriesService/Update': () =>
 				connectError('failed_precondition', 'tickets on sale', 400),
 		})
@@ -518,7 +521,7 @@ const PROCESSING =
 test.describe('cover image', () => {
 	test(`@spec ${SPEC} "Image just uploaded"`, async ({ page }) => {
 		const puts = await mockImageHosts(page)
-		const log = await openEditor(page, '/concerts/s-solo/edit', UPLOAD_RPC)
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`, UPLOAD_RPC)
 		await pickCover(page)
 
 		await expect(preview(page)).toHaveAttribute('src', /^blob:/)
@@ -539,7 +542,7 @@ test.describe('cover image', () => {
 		await mockImageHosts(page)
 		let coverSet = false
 		let listsAfterSet = 0
-		const log = await openEditor(page, '/concerts/s-solo/edit', {
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
 			...UPLOAD_RPC,
 			'SeriesService/SetCoverImage': () => {
 				coverSet = true
@@ -572,7 +575,7 @@ test.describe('cover image', () => {
 
 	test(`@spec ${SPEC} "Saved before processing finished"`, async ({ page }) => {
 		await mockImageHosts(page)
-		const log = await openEditor(page, '/concerts/s-solo/edit', {
+		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
 			...UPLOAD_RPC,
 			'SeriesService/List': listWith(XX_SOLO, cover('img-old', OLD_COVER)),
 			'SeriesService/Update': oneSeries(XX_SOLO, {
@@ -598,7 +601,7 @@ test.describe('unsaved changes', () => {
 	test(`@spec ${FEEDBACK} "Leaving the editor with changes"`, async ({
 		page,
 	}) => {
-		await openEditor(page, '/concerts/s-solo/edit')
+		await openEditor(page, `${SERIES}/s-solo/edit`)
 		await titleField(page).fill('XX 単独公演 改')
 		await nav(page).getByRole('link', { name: '公演' }).click()
 
@@ -606,13 +609,13 @@ test.describe('unsaved changes', () => {
 		await expect(dialog).toBeVisible()
 		await dialog.getByRole('button', { name: '編集を続ける' }).click()
 		await expect(dialog).toBeHidden()
-		await expect(page).toHaveURL(/\/concerts\/s-solo\/edit$/)
+		await expect(page).toHaveURL(/\/series\/s-solo\/edit$/)
 		await expect(titleField(page)).toHaveValue('XX 単独公演 改')
 	})
 
 	test(`@spec ${FEEDBACK} "Leaving after saving"`, async ({ page }) => {
 		const renamed: ConcertSpec = { ...XX_SOLO, title: 'XX 単独公演 改' }
-		await openEditor(page, '/concerts/s-solo/edit', {
+		await openEditor(page, `${SERIES}/s-solo/edit`, {
 			'SeriesService/Update': oneSeries(renamed),
 		})
 		await titleField(page).fill('XX 単独公演 改')
@@ -620,7 +623,7 @@ test.describe('unsaved changes', () => {
 		await expect(snackbar(page)).toContainText('変更を保存しました')
 
 		await nav(page).getByRole('link', { name: '公演' }).click()
-		await expect(page).toHaveURL(/\/concerts$/)
+		await expect(page).toHaveURL(/\/series$/)
 		await expect(
 			page.getByRole('heading', { level: 1, name: '公演' }),
 		).toBeVisible()

@@ -9,5 +9,5 @@
     <p>${'authCallback.failed' & t}</p>
     <p class="organizer-callback-detail">${error}</p>
   </section>
-  <console-button if.bind="error" variant="tonal" href="/home">${'authCallback.retry' & t}</console-button>
+  <console-button if.bind="error" variant="tonal" href.bind="landingHref">${'authCallback.retry' & t}</console-button>
 </main>

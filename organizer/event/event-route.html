@@ -4,7 +4,7 @@
   <div if.bind="page.state === 'notFound'" class="message" role="alert">
     <h1 class="page-title">${'event.notFound' & t}</h1>
     <console-button if.bind="page.concert" variant="tonal" href.bind="concertHref">${'event.toConcert' & t}</console-button>
-    <console-button else variant="tonal" href="/concerts">${'concert.toConcerts' & t}</console-button>
+    <console-button else variant="tonal" href.bind="concertsHref">${'concert.toConcerts' & t}</console-button>
   </div>
 
   <div if.bind="page.state === 'error'" class="message" role="alert">

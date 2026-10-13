@@ -19,6 +19,7 @@ import { ConsoleFormatters } from './i18n/converters'
 import { OrganizerShell } from './organizer-shell/organizer-shell'
 import { ILoginHint, readLoginHintFromSearch } from './services/login-hint'
 import { resolveOrgId } from './services/org-handle'
+import { ConsoleContextHook } from './shell/console-context-hook'
 import { ConsoleUi } from './ui'
 import { ConsoleShadowStyles } from './ui/shadow-styles'
 
@@ -132,8 +133,10 @@ async function bootstrap(): Promise<void> {
 		}),
 	)
 	au.register(IAuthService)
-	// Registered globally so it runs as a shared `canLoad` guard on every route.
-	au.register(OrganizerAuthHook)
+	// Registered globally so they run on every route, in this order: the auth
+	// hook admits an owner, then the context hook checks the address's
+	// Organizer and follows its Artist (design D1).
+	au.register(OrganizerAuthHook, ConsoleContextHook)
 
 	au.app(OrganizerShell)
 	await au.start()

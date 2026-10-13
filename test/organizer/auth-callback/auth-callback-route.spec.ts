@@ -41,22 +41,22 @@ describe('Organizer AuthCallbackRoute', () => {
 		build({})
 	})
 
-	it('completes the code exchange and lands on Home', async () => {
+	it('completes the code exchange and lands on /, which opens Home', async () => {
 		build({})
 		const result = await sut.canLoad({} as never, {} as never)
 
-		expect(result).toBe('/home')
+		expect(result).toBe('/')
 		expect(mockAuth.handleCallback).toHaveBeenCalledTimes(1)
 	})
 
 	it('returns to the address opened before sign-in', async () => {
 		build({})
 		mockAuth.handleCallback.mockResolvedValue({
-			state: { returnTo: '/concerts/s-tour' },
+			state: { returnTo: '/organizers/org-1/artists/a-1/series/s-tour' },
 		} as never)
 		const result = await sut.canLoad({} as never, {} as never)
 
-		expect(result).toBe('/concerts/s-tour')
+		expect(result).toBe('/organizers/org-1/artists/a-1/series/s-tour')
 	})
 
 	it('clears a stale retry flag on a successful callback', async () => {
@@ -104,13 +104,13 @@ describe('Organizer AuthCallbackRoute', () => {
 		expect(sut.error).toContain('token endpoint 500')
 	})
 
-	it('recovers to Home when a prior callback already established the session', async () => {
+	it('recovers to / (Home) when a prior callback already established the session', async () => {
 		build({ isAuthenticated: true })
 		mockAuth.handleCallback = vi.fn().mockRejectedValue(STATE_MISS)
 
 		const result = await sut.canLoad({} as never, {} as never)
 
-		expect(result).toBe('/home')
+		expect(result).toBe('/')
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
 	})
 })

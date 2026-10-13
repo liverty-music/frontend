@@ -9,13 +9,19 @@ import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { toJstTimeInput } from '../i18n/format'
-import { concertTitle, findConcert, paths } from '../model/concert-model'
+import {
+	concertTitle,
+	findConcert,
+	paths,
+	performs,
+} from '../model/concert-model'
 import { IArtistClient } from '../services/artist-client'
 import { IClock } from '../services/clock'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ISeriesImageClient } from '../services/series-image-client'
 import { IVenueClient } from '../services/venue-client'
 import { type Crumb, IBreadcrumbs } from '../shell/breadcrumbs'
+import { IConsoleContext } from '../shell/console-context'
 import type { ConsoleField } from '../ui/console-field/console-field'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { UnsavedChanges } from '../ui/unsaved-changes/unsaved-changes'
@@ -60,6 +66,10 @@ function performerOption(artist: Artist, selected: boolean): PerformerOption {
  * Each date carries its own publish state: a PUBLISHED date keeps its venue
  * and date and cannot be removed, a CANCELLED date is read only, and once the
  * concert has one of those its type and visibility are fixed.
+ *
+ * Opened under an Artist (design D1): a new concert starts with that Artist as
+ * its first performer, and a concert the Artist does not perform in is not
+ * found.
  */
 export class ConcertEditorRoute {
 	private readonly series = resolve(ISeriesClient)
@@ -70,6 +80,7 @@ export class ConcertEditorRoute {
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
+	private readonly context = resolve(IConsoleContext)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertEditorRoute')
 
 	public state: 'loading' | 'ready' | 'notFound' | 'error' = 'loading'
@@ -126,6 +137,19 @@ export class ConcertEditorRoute {
 
 	public get isEdit(): boolean {
 		return this.seriesId !== ''
+	}
+
+	public get concertsHref(): string {
+		return paths.concerts(this.context.scope)
+	}
+
+	public get concertHref(): string {
+		return paths.concert(this.context.scope, this.seriesId)
+	}
+
+	/** Where キャンセル leads: the concert being edited, else Concerts. */
+	public get cancelHref(): string {
+		return this.isEdit ? this.concertHref : this.concertsHref
 	}
 
 	/** Once a date is published or cancelled, type and visibility are fixed. */
@@ -187,13 +211,22 @@ export class ConcertEditorRoute {
 				this.artists.list(this.abort.signal),
 				this.isEdit ? this.series.list(this.abort.signal) : Promise.resolve([]),
 			])
+			const artistId = this.context.artistId
 			if (this.isEdit) {
 				const concert = findConcert(concerts, this.seriesId)
-				if (!concert) {
+				if (!concert || !performs(concert, artistId)) {
 					this.state = 'notFound'
 					return
 				}
 				this.hydrate(concert)
+			} else if (roster.some((a) => a.id?.value === artistId)) {
+				// A new concert starts with the Artist it is created from, listed
+				// first so it stays the first performer.
+				this.model.artistIds = [artistId]
+				roster.sort(
+					(a, b) =>
+						Number(b.id?.value === artistId) - Number(a.id?.value === artistId),
+				)
 			}
 			const selected = new Set(this.model.artistIds)
 			this.performers = roster.map((a) =>
@@ -211,11 +244,11 @@ export class ConcertEditorRoute {
 
 	private setBreadcrumb(): void {
 		const trail: Crumb[] = [
-			{ labelKey: 'shell.nav.concerts', href: paths.concerts },
+			{ labelKey: 'shell.nav.concerts', href: this.concertsHref },
 		]
 		if (this.isEdit) {
 			trail.push(
-				{ label: this.model.title, href: paths.concert(this.seriesId) },
+				{ label: this.model.title, href: this.concertHref },
 				{ labelKey: 'concertEditor.editCrumb' },
 			)
 		} else {
@@ -331,7 +364,7 @@ export class ConcertEditorRoute {
 				const id = concert?.series.id?.value
 				this.markSaved()
 				this.snackbar.show('concertEditor.created')
-				if (id) await this.router.load(paths.concert(id))
+				if (id) await this.router.load(this.createdHref(id))
 			}
 		} catch (err) {
 			this.logger.warn('Save failed', err)
@@ -346,6 +379,17 @@ export class ConcertEditorRoute {
 				precondition ? {} : { retry: () => void this.save() },
 			)
 		}
+	}
+
+	/**
+	 * The new concert's page: under the Artist it was created from, or under
+	 * its first performer when the operator took that Artist off.
+	 */
+	private createdHref(id: string): string {
+		const artist = this.model.artistIds.includes(this.context.artistId)
+			? this.context.artistId
+			: (this.model.artistIds[0] ?? this.context.artistId)
+		return paths.concert(this.context.scopeOf(artist), id)
 	}
 
 	private focusFirstError(): void {

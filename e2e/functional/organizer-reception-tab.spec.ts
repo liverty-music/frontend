@@ -2,6 +2,7 @@ import {
 	confirmDialog,
 	installConsole,
 	type RpcMocks,
+	SERIES,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -23,7 +24,7 @@ import { expect, type Page, test } from '../support/test'
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/event'
-const RECEPTION = '/concerts/s-tour/events/e-1103/reception'
+const RECEPTION = `${SERIES}/s-tour/events/e-1103/scanners`
 const ORIGIN = 'https://reception.e2e.liverty-music.app'
 
 function rpc(
@@ -38,7 +39,6 @@ function rpc(
 		'ScannerService/ListByEvent': {
 			scanners: scanners.map((s) => scanner('e-1103', s)),
 		},
-		'ArtistService/List': { artists: [] },
 	}
 }
 
@@ -225,7 +225,7 @@ test.describe('prerequisites', () => {
 		const log = await open(
 			page,
 			rpc([], [XX_SOLO]),
-			'/concerts/s-solo/events/e-1220/reception',
+			`${SERIES}/s-solo/events/e-1220/scanners`,
 		)
 
 		const callout = tab(page).locator('prerequisite-callout')
@@ -259,7 +259,7 @@ test.describe('prerequisites', () => {
 		)
 		await expect(
 			callout.getByRole('link', { name: '公演を編集' }),
-		).toHaveAttribute('href', /\/concerts\/s-tour\/edit$/)
+		).toHaveAttribute('href', /\/series\/s-tour\/edit$/)
 		await expect(issueButton(page)).toHaveCount(0)
 	})
 })

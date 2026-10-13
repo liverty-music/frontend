@@ -3,11 +3,14 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
 import {
 	concertCancelled,
+	concertsOf,
 	eventDay,
 	eventStart,
 	eventsByDate,
 	findEvent,
+	homeArtistOf,
 	paths,
+	performs,
 	publishBadge,
 	venueName,
 } from '../../../organizer/model/concert-model'
@@ -81,13 +84,63 @@ describe('concert model', () => {
 	})
 
 	it('builds the console addresses of design D1', () => {
-		expect(paths.event('s1', 'e1')).toBe('/concerts/s1/events/e1/sales')
-		expect(paths.reception('s1', 'e1')).toBe('/concerts/s1/events/e1/reception')
-		expect(paths.lottery('s1', 'e1', 't1')).toBe(
-			'/concerts/s1/events/e1/sales/lottery/t1',
+		const scope = { organizer: 'o1', artist: 'a1' }
+		const series = '/organizers/o1/artists/a1/series'
+		expect(paths.home('o1')).toBe('/organizers/o1')
+		expect(paths.settings('o1')).toBe('/organizers/o1/settings')
+		expect(paths.payout('o1')).toBe('/organizers/o1/settings#payout')
+		expect(paths.artists('o1')).toBe('/organizers/o1/artists')
+		expect(paths.concerts(scope)).toBe(series)
+		expect(paths.newConcert(scope)).toBe(`${series}/new`)
+		expect(paths.concert(scope, 's1')).toBe(`${series}/s1`)
+		expect(paths.editConcert(scope, 's1')).toBe(`${series}/s1/edit`)
+		expect(paths.event(scope, 's1', 'e1')).toBe(
+			`${series}/s1/events/e1/ticket-sales`,
 		)
-		expect(paths.firstCome('s1', 'e1')).toBe(
-			'/concerts/s1/events/e1/sales/first-come',
+		expect(paths.scanners(scope, 's1', 'e1')).toBe(
+			`${series}/s1/events/e1/scanners`,
 		)
+		expect(paths.newSale(scope, 's1', 'e1', 'lottery')).toBe(
+			`${series}/s1/events/e1/ticket-sales/new?method=lottery`,
+		)
+		expect(paths.newSale(scope, 's1', 'e1', 'first-come')).toBe(
+			`${series}/s1/events/e1/ticket-sales/new?method=first-come`,
+		)
+		expect(paths.editSale(scope, 's1', 'e1', 't1')).toBe(
+			`${series}/s1/events/e1/ticket-sales/t1/edit`,
+		)
+	})
+
+	it('escapes an id so it stays one address segment', () => {
+		expect(paths.home('a/b')).toBe('/organizers/a%2Fb')
+	})
+
+	describe('concerts of an Artist', () => {
+		const coHeadlined = authoredSeries({
+			series: { id: { value: 'xy' }, title: { value: 'XX × YY 2026' } },
+			performers: [
+				{ id: { value: 'guest' }, name: { value: 'Guest' } },
+				{ id: { value: 'a1' }, name: { value: 'Band A' } },
+				{ id: { value: 'a2' }, name: { value: 'Band B' } },
+			],
+		})
+		const onlyB = authoredSeries({
+			series: { id: { value: 'yy' }, title: { value: 'YY Live' } },
+			performers: [{ id: { value: 'a2' }, name: { value: 'Band B' } }],
+		})
+
+		it('lists the concerts each performer is in', () => {
+			expect(concertsOf([coHeadlined, onlyB], 'a1')).toEqual([coHeadlined])
+			expect(concertsOf([coHeadlined, onlyB], 'a2')).toEqual([
+				coHeadlined,
+				onlyB,
+			])
+			expect(performs(onlyB, 'a1')).toBe(false)
+		})
+
+		it('opens a concert from Home under its first represented performer', () => {
+			expect(homeArtistOf(coHeadlined, new Set(['a2', 'a1']))).toBe('a1')
+			expect(homeArtistOf(onlyB, new Set())).toBe('a2')
+		})
 	})
 })

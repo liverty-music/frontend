@@ -2,6 +2,7 @@ import {
 	connectError,
 	installConsole,
 	type RpcMocks,
+	SERIES,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -24,7 +25,7 @@ import { expect, type Page, test } from '../support/test'
 
 const SPEC = 'components/infrastructure/organizer/web/route/event'
 const NOW = new Date('2026-10-08T09:00:00+09:00')
-const SALES = '/concerts/s-tour/events/e-1103/sales'
+const SALES = `${SERIES}/s-tour/events/e-1103/ticket-sales`
 
 function rpc(
 	sales: SaleSpec[],
@@ -39,7 +40,6 @@ function rpc(
 		'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 		'TicketSaleService/ListByEvent': salesOf('e-1103', sales),
 		'ScannerService/ListByEvent': { scanners: [] },
-		'ArtistService/List': { artists: [] },
 	}
 }
 
@@ -108,7 +108,7 @@ test.describe('prerequisites', () => {
 		await open(
 			page,
 			rpc([], { concerts: [XX_SOLO] }),
-			'/concerts/s-solo/events/e-1220/sales',
+			`${SERIES}/s-solo/events/e-1220/ticket-sales`,
 		)
 
 		const callout = tab(page).locator('prerequisite-callout')
@@ -143,7 +143,7 @@ test.describe('prerequisites', () => {
 		).toBeVisible()
 		await expect(
 			callout.getByRole('link', { name: '公演を編集' }),
-		).toHaveAttribute('href', /\/concerts\/s-tour\/edit$/)
+		).toHaveAttribute('href', /\/series\/s-tour\/edit$/)
 		await expect(startLottery(page)).toHaveCount(0)
 		await expect(startFirstCome(page)).toHaveCount(0)
 	})
@@ -320,13 +320,13 @@ test.describe('starting and editing a sale', () => {
 		const log = await open(page, mocks)
 
 		await startLottery(page).click()
-		await expect(page).toHaveURL(/\/sales\/lottery\/new$/)
+		await expect(page).toHaveURL(/\/ticket-sales\/new\?method=lottery$/)
 		await page.getByLabel('販売名').fill('ファンクラブ先行')
 		await page.getByLabel('価格').fill('6500')
 		await page.getByLabel('販売枚数').fill('1200')
 		await page.getByRole('button', { name: '抽選販売を始める' }).click()
 
-		await expect(page).toHaveURL(/\/events\/e-1103\/sales$/)
+		await expect(page).toHaveURL(/\/events\/e-1103\/ticket-sales$/)
 		const row = sale(page, 'sale-new')
 		await expect(row.locator('.sale-name')).toHaveText('ファンクラブ先行')
 		await expect(row.locator('status-badge')).toHaveText(
@@ -359,7 +359,9 @@ test.describe('starting and editing a sale', () => {
 		await open(page, rpc([firstCome()]))
 
 		await sale(page, 'sale-general').getByRole('link', { name: '編集' }).click()
-		await expect(page).toHaveURL(/\/events\/e-1103\/sales\/first-come$/)
+		await expect(page).toHaveURL(
+			/\/events\/e-1103\/ticket-sales\/sale-general\/edit$/,
+		)
 		await expect(
 			page.getByRole('heading', { level: 1, name: '先着販売を変更' }),
 		).toBeVisible()
@@ -384,7 +386,7 @@ test.describe('starting and editing a sale', () => {
 		await sale(page, 'sale-tomorrow')
 			.getByRole('link', { name: '編集' })
 			.click()
-		await expect(page).toHaveURL(/\/sales\/lottery\/sale-tomorrow$/)
+		await expect(page).toHaveURL(/\/ticket-sales\/sale-tomorrow\/edit$/)
 		await expect(
 			page.getByRole('heading', { level: 1, name: '抽選販売を変更' }),
 		).toBeVisible()

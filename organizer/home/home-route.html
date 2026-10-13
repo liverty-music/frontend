@@ -39,7 +39,7 @@
     <div if.bind="allClear" class="all-clear">
       <console-icon name="check-circle"></console-icon>
       <p>${'home.allClear' & t}</p>
-      <console-button variant="text" href="/concerts">${'home.toConcerts' & t}</console-button>
+      <console-button variant="text" href.bind="context.concertsHref">${'home.toConcerts' & t}</console-button>
     </div>
   </template>
 </section>

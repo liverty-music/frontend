@@ -1,10 +1,37 @@
 <import from="./top-app-bar.css"></import>
 
 <header class="top-app-bar">
-  <a href="/home" class="logo" aria-label.bind="'app.name' & t">
+  <a href.bind="context.homeHref" class="logo" aria-label.bind="'app.name' & t">
     <span class="logo-mark">${'app.logoMark' & t}</span><span class="logo-sub">${'app.logoSub' & t}</span>
   </a>
-  <span class="organizer-name" data-testid="organizer-name">${organizerName}</span>
+  <div class="context">
+    <span class="organizer-name" data-testid="organizer-name">${context.organizerName}</span>
+    <template if.bind="artists.length > 1">
+      <button
+        type="button"
+        class="artist-button state-layer"
+        popovertarget="artist-menu"
+        aria-label.bind="'shell.artistMenu' & t:{ name: artistName }"
+        data-testid="artist-menu-button"
+      >
+        <span class="artist-name">${artistName}</span>
+        <console-icon name="arrow-drop-down"></console-icon>
+      </button>
+      <nav ref="artistMenu" id="artist-menu" popover class="menu artist-menu" aria-label.bind="'shell.artists' & t">
+        <a
+          repeat.for="artist of artists; key: id"
+          href.bind="artist.href"
+          class="menu-item state-layer"
+          aria-current.bind="artist.id === context.artistId ? 'true' : null"
+          click.trigger="chooseArtist()"
+        >
+          <console-icon name="check" class="menu-check"></console-icon>
+          <span>${artist.name}</span>
+        </a>
+      </nav>
+    </template>
+    <span else class="artist-name" data-testid="artist-name">${artistName}</span>
+  </div>
   <button
     type="button"
     class="account state-layer"

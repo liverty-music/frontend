@@ -2,6 +2,7 @@ import {
 	confirmDialog,
 	installConsole,
 	type RpcMocks,
+	SERIES,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -38,7 +39,6 @@ function rpc(concert: ConcertSpec): RpcMocks {
 		'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 		'TicketSaleService/ListByEvent': salesOf('e-1103', []),
 		'ScannerService/ListByEvent': { scanners: [] },
-		'ArtistService/List': { artists: [] },
 	}
 }
 
@@ -51,7 +51,7 @@ test.describe('the event header', () => {
 			rpc: rpc(tourWithDraft('DRAFT')),
 			language: 'ja',
 		})
-		await page.goto('/concerts/s-tour/events/e-1103')
+		await page.goto(`${SERIES}/s-tour/events/e-1103`)
 
 		await expect(
 			page.getByRole('heading', { level: 1, name: '11月3日(火) 18:00 JST' }),
@@ -67,7 +67,7 @@ test.describe('the event header', () => {
 		).toBeVisible()
 		await expect(
 			actions(page).getByRole('link', { name: '編集' }),
-		).toHaveAttribute('href', /\/concerts\/s-tour\/edit$/)
+		).toHaveAttribute('href', /\/series\/s-tour\/edit$/)
 		// Cancelling a draft date removes it, and the dialog says so.
 		await actions(page).getByRole('button', { name: '中止する' }).click()
 		const cancel = confirmDialog(page, {
@@ -76,7 +76,7 @@ test.describe('the event header', () => {
 		await expect(cancel).toContainText('下書きの公演日は削除されます')
 		await cancel.getByRole('button', { name: 'やめる' }).click()
 		// The page opens on 販売.
-		await expect(page).toHaveURL(/\/events\/e-1103\/sales$/)
+		await expect(page).toHaveURL(/\/events\/e-1103\/ticket-sales$/)
 		await expect(
 			page.getByRole('link', { name: '販売', exact: true }),
 		).toHaveAttribute('aria-current', 'page')
@@ -93,7 +93,7 @@ test.describe('the event header', () => {
 			series: published.series[0],
 		}
 		const log = await installConsole(page, { rpc: mocks, language: 'ja' })
-		await page.goto('/concerts/s-tour/events/e-1103/sales')
+		await page.goto(`${SERIES}/s-tour/events/e-1103/ticket-sales`)
 
 		await actions(page).getByRole('button', { name: '公開する' }).click()
 		const dialog = confirmDialog(page, {
@@ -122,7 +122,7 @@ test.describe('the event header', () => {
 
 	test(`@spec ${SPEC} "Reception tab address"`, async ({ page }) => {
 		await installConsole(page, { rpc: rpc(XX_TOUR), language: 'ja' })
-		await page.goto('/concerts/s-tour/events/e-1103/reception')
+		await page.goto(`${SERIES}/s-tour/events/e-1103/scanners`)
 
 		await expect(
 			page.getByRole('heading', { level: 1, name: '11月3日(火) 18:00 JST' }),
@@ -144,7 +144,7 @@ test.describe('type scale', () => {
 		await installConsole(page, { rpc: rpc(XX_TOUR), language: 'ja' })
 		for (const width of [1440, 390]) {
 			await page.setViewportSize({ width, height: 900 })
-			await page.goto('/concerts/s-tour/events/e-1103/sales')
+			await page.goto(`${SERIES}/s-tour/events/e-1103/ticket-sales`)
 
 			const title = page.getByRole('heading', { level: 1 })
 			await expect(title).toHaveText('11月3日(火) 18:00 JST')

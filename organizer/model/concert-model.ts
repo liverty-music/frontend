@@ -123,25 +123,92 @@ export function performerNames(concert: AuthoredSeries): string[] {
 	return concert.performers.map((a) => a.name?.value ?? '').filter(Boolean)
 }
 
-/** Console paths of a concert and its event pages. */
+/** The ids of the concert's performers, in first-listed order. */
+export function performerIds(concert: AuthoredSeries): string[] {
+	return concert.performers.map((a) => a.id?.value ?? '').filter(Boolean)
+}
+
+/** True when the Artist performs in the concert (`Concert.artist_ids`). */
+export function performs(concert: AuthoredSeries, artistId: string): boolean {
+	return performerIds(concert).includes(artistId)
+}
+
+/** The concerts the Artist performs in. */
+export function concertsOf(
+	concerts: readonly AuthoredSeries[],
+	artistId: string,
+): AuthoredSeries[] {
+	return concerts.filter((c) => performs(c, artistId))
+}
+
+/**
+ * The Artist a concert is opened under when the address names none (Home):
+ * the first of its performers the Organizer represents, else its first
+ * performer.
+ */
+export function homeArtistOf(
+	concert: AuthoredSeries,
+	represented: ReadonlySet<string>,
+): string {
+	const ids = performerIds(concert)
+	return ids.find((id) => represented.has(id)) ?? ids[0] ?? ''
+}
+
+/** The Organizer and the represented Artist a 公演 address is under. */
+export interface ArtistScope {
+	readonly organizer: string
+	readonly artist: string
+}
+
+/** How a new sale is sold: the `method` of `ticket-sales/new?method=`. */
+export type SaleMethodParam = 'lottery' | 'first-come'
+
+const segment = (id: string) => encodeURIComponent(id)
+
+const organizerPath = (organizer: string) => `/organizers/${segment(organizer)}`
+
+const concertsPath = (scope: ArtistScope) =>
+	`${organizerPath(scope.organizer)}/artists/${segment(scope.artist)}/series`
+
+const concertPath = (scope: ArtistScope, series: string) =>
+	`${concertsPath(scope)}/${segment(series)}`
+
+const eventPath = (scope: ArtistScope, series: string, event: string) =>
+	`${concertPath(scope, series)}/events/${segment(event)}`
+
+/**
+ * Every console address (design D1), built from the Organizer and, below 公演,
+ * the represented Artist. Templates and view-models take their links from
+ * here; no other module writes a console path.
+ */
 export const paths = {
-	concerts: '/concerts',
-	newConcert: '/concerts/new',
-	concert: (series: string) => `/concerts/${series}`,
-	editConcert: (series: string) => `/concerts/${series}/edit`,
-	event: (series: string, event: string) =>
-		`/concerts/${series}/events/${event}/sales`,
-	sales: (series: string, event: string) =>
-		`/concerts/${series}/events/${event}/sales`,
-	reception: (series: string, event: string) =>
-		`/concerts/${series}/events/${event}/reception`,
-	newLottery: (series: string, event: string) =>
-		`/concerts/${series}/events/${event}/sales/lottery/new`,
-	lottery: (series: string, event: string, sale: string) =>
-		`/concerts/${series}/events/${event}/sales/lottery/${sale}`,
-	firstCome: (series: string, event: string) =>
-		`/concerts/${series}/events/${event}/sales/first-come`,
-	settings: '/settings',
-	payout: '/settings#payout',
-	home: '/home',
+	/** `/` and unknown addresses: forwards to the caller's Home. */
+	landing: '/',
+	/** Said for an address that names another Organizer. */
+	otherOrganizer: '/other-organizer',
+	home: (organizer: string) => organizerPath(organizer),
+	settings: (organizer: string) => `${organizerPath(organizer)}/settings`,
+	payout: (organizer: string) => `${organizerPath(organizer)}/settings#payout`,
+	/** 公演 of an Organizer before an Artist is chosen (none represented yet). */
+	artists: (organizer: string) => `${organizerPath(organizer)}/artists`,
+	concerts: (scope: ArtistScope) => concertsPath(scope),
+	newConcert: (scope: ArtistScope) => `${concertsPath(scope)}/new`,
+	concert: (scope: ArtistScope, series: string) => concertPath(scope, series),
+	editConcert: (scope: ArtistScope, series: string) =>
+		`${concertPath(scope, series)}/edit`,
+	/** The event page: it opens on its Sales tab. */
+	event: (scope: ArtistScope, series: string, event: string) =>
+		`${eventPath(scope, series, event)}/ticket-sales`,
+	sales: (scope: ArtistScope, series: string, event: string) =>
+		`${eventPath(scope, series, event)}/ticket-sales`,
+	scanners: (scope: ArtistScope, series: string, event: string) =>
+		`${eventPath(scope, series, event)}/scanners`,
+	newSale: (
+		scope: ArtistScope,
+		series: string,
+		event: string,
+		method: SaleMethodParam,
+	) => `${eventPath(scope, series, event)}/ticket-sales/new?method=${method}`,
+	editSale: (scope: ArtistScope, series: string, event: string, sale: string) =>
+		`${eventPath(scope, series, event)}/ticket-sales/${segment(sale)}/edit`,
 }

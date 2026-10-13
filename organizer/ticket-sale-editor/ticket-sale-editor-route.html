@@ -9,7 +9,7 @@
   <circular-progress if.bind="state === 'loading'"></circular-progress>
   <div if.bind="state === 'notFound'" class="message" role="alert">
     <p>${'event.notFound' & t}</p>
-    <console-button variant="tonal" href="/concerts">${'concert.toConcerts' & t}</console-button>
+    <console-button variant="tonal" href.bind="concertsHref">${'concert.toConcerts' & t}</console-button>
   </div>
   <div if.bind="state === 'error'" class="message" role="alert">
     <p>${'firstComeEditor.loadFailed' & t}</p>

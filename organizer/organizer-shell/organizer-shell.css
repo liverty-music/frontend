@@ -35,19 +35,21 @@
 			block-size: 100dvh;
 		}
 
-		/* Compact: top bar, scrolling page, navigation bar at the bottom. */
+		/* Compact: top bar, scrolling page, navigation bar at the bottom. The
+		   column never grows past the window: a long Organizer or Artist name
+		   shortens in the top bar instead of widening the frame. */
 		.frame {
 			display: grid;
 			grid-template:
 				"top" auto
 				"main" 1fr
 				"nav" auto
-				/ 1fr;
+				/ minmax(0, 1fr);
 			block-size: 100%;
 		}
 
 		.frame[data-framed="false"] {
-			grid-template: "main" 1fr / 1fr;
+			grid-template: "main" 1fr / minmax(0, 1fr);
 		}
 
 		.top {
@@ -84,7 +86,7 @@
 				grid-template:
 					"nav top" auto
 					"nav main" 1fr
-					/ var(--nav-rail-width) 1fr;
+					/ var(--nav-rail-width) minmax(0, 1fr);
 			}
 
 			.page {

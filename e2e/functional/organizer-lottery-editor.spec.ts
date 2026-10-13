@@ -2,6 +2,7 @@ import {
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
+	SERIES,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -27,8 +28,8 @@ const SNACKBAR = 'components/infrastructure/organizer/web/global/snack-bar'
 /** Thursday 1 October 2026, 12:00 JST. */
 const NOW = new Date('2026-10-01T12:00:00+09:00')
 
-const SALES = '/concerts/s-tour/events/e-1103/sales'
-const NEW_LOTTERY = `${SALES}/lottery/new`
+const SALES = `${SERIES}/s-tour/events/e-1103/ticket-sales`
+const NEW_LOTTERY = `${SALES}/new?method=lottery`
 
 /** An unopened lottery for 3 November: 10 to 17 October, 100 tickets at 8000 yen. */
 const PRESALE: SaleSpec = {
@@ -48,7 +49,6 @@ const BASE: RpcMocks = {
 	'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 	'TicketSaleService/ListByEvent': salesOf('e-1103', []),
 	'ScannerService/ListByEvent': { scanners: [] },
-	'ArtistService/List': { artists: [] },
 }
 
 async function boot(
@@ -205,7 +205,7 @@ test.describe('a new lottery', () => {
 	test(`@spec ${SPEC} "Overlapping window"`, async ({ page }) => {
 		const log = await openEditor(
 			page,
-			'/concerts/s-tour/events/e-1124/sales/lottery/new',
+			`${SERIES}/s-tour/events/e-1124/ticket-sales/new?method=lottery`,
 			{
 				'TicketSaleService/ListByEvent': salesOf('e-1124', [
 					{
@@ -244,7 +244,7 @@ test.describe('a new lottery', () => {
 		).toBeVisible()
 		await expect(
 			page.getByRole('link', { name: '公演を編集' }),
-		).toHaveAttribute('href', /\/concerts\/s-tour\/edit$/)
+		).toHaveAttribute('href', /\/series\/s-tour\/edit$/)
 		await expect(
 			page.getByRole('button', { name: '抽選販売を始める' }),
 		).toHaveCount(0)
@@ -273,13 +273,15 @@ test.describe('a new lottery', () => {
 		})
 		await page.goto(SALES)
 		await page.getByRole('link', { name: '抽選で販売する' }).click()
-		await expect(page).toHaveURL(/\/sales\/lottery\/new$/)
+		await expect(page).toHaveURL(/\/ticket-sales\/new\?method=lottery$/)
 		await expect(field(page, '販売名')).toBeVisible()
 
 		await fillPresale(page)
 		await page.getByRole('button', { name: '抽選販売を始める' }).click()
 
-		await expect(page).toHaveURL(/\/concerts\/s-tour\/events\/e-1103\/sales$/)
+		await expect(page).toHaveURL(
+			/\/series\/s-tour\/events\/e-1103\/ticket-sales$/,
+		)
 		await expect(
 			page.getByRole('heading', { level: 3, name: 'ファンクラブ先行' }),
 		).toBeVisible()
@@ -305,7 +307,7 @@ test.describe('a new lottery', () => {
 			page
 				.getByRole('navigation', { name: 'パンくずリスト' })
 				.getByRole('link', { name: '11月3日(火)' }),
-		).toHaveAttribute('href', /\/concerts\/s-tour\/events\/e-1103\/sales$/)
+		).toHaveAttribute('href', /\/series\/s-tour\/events\/e-1103\/ticket-sales$/)
 	})
 })
 
@@ -338,7 +340,7 @@ test.describe('times in another time zone', () => {
 })
 
 test.describe('changing a lottery before it opens', () => {
-	const EDIT = `${SALES}/lottery/l-1`
+	const EDIT = `${SALES}/l-1/edit`
 
 	test(`@spec ${SPEC} "Move the window before it opens"`, async ({ page }) => {
 		const store = salesStore('e-1103', [PRESALE])
@@ -371,7 +373,9 @@ test.describe('changing a lottery before it opens', () => {
 		await field(page, '受付終了').fill('2026-10-19T12:00')
 		await page.getByRole('button', { name: '保存する' }).click()
 
-		await expect(page).toHaveURL(/\/concerts\/s-tour\/events\/e-1103\/sales$/)
+		await expect(page).toHaveURL(
+			/\/series\/s-tour\/events\/e-1103\/ticket-sales$/,
+		)
 		const sale = page
 			.getByRole('listitem')
 			.filter({ hasText: 'ファンクラブ先行' })
@@ -411,7 +415,9 @@ test.describe('changing a lottery before it opens', () => {
 		await field(page, '価格').fill('7500')
 		await page.getByRole('button', { name: '保存する' }).click()
 
-		await expect(page).toHaveURL(/\/concerts\/s-tour\/events\/e-1103\/sales$/)
+		await expect(page).toHaveURL(
+			/\/series\/s-tour\/events\/e-1103\/ticket-sales$/,
+		)
 		await expect(
 			page.getByRole('listitem').filter({ hasText: 'ファンクラブ先行' }),
 		).toContainText('7,500円')
@@ -436,7 +442,7 @@ test.describe('changing a lottery before it opens', () => {
 		await expect(page.getByRole('alert')).toContainText(
 			'受付が始まった抽選は変更できません。何も保存していません。',
 		)
-		await expect(page).toHaveURL(/\/sales\/lottery\/l-1$/)
+		await expect(page).toHaveURL(/\/ticket-sales\/l-1\/edit$/)
 		expect(calls(log, 'TicketSaleService/SetWindow')).toHaveLength(0)
 		expect(calls(log, 'TicketTypeService/Update')).toHaveLength(0)
 	})

@@ -1,0 +1,24 @@
+@layer block {
+	@scope (landing-route) {
+		.landing {
+			display: grid;
+			justify-items: center;
+			margin: var(--space-xl) auto;
+			padding: var(--space-m);
+		}
+
+		.message {
+			display: grid;
+			gap: var(--space-xs);
+			justify-items: start;
+
+			max-inline-size: 560px;
+			padding: var(--space-m);
+			border-radius: var(--md-shape-large);
+
+			color: var(--md-color-on-surface-variant);
+
+			background: var(--md-color-surface-container);
+		}
+	}
+}

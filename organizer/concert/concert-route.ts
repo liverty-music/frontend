@@ -16,6 +16,7 @@ import {
 	isPublished,
 	paths,
 	performerNames,
+	performs,
 	publishBadge,
 	seriesTypeKey,
 	venueName,
@@ -26,6 +27,7 @@ import { IClock } from '../services/clock'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ITicketSaleClient } from '../services/ticket-sale-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
+import { IConsoleContext } from '../shell/console-context'
 import type { ConfirmDialog } from '../ui/confirm-dialog/confirm-dialog'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { DataColumn, DataRow } from '../ui/data-list/data-list'
@@ -35,7 +37,9 @@ type LoadState = 'loading' | 'ready' | 'notFound' | 'error'
 /**
  * One concert: its summary and performers with 編集, the share link of a
  * published UNLISTED concert, and its events in date order, each opening its
- * event page.
+ * event page. It opens under each represented Artist who performs in it, and
+ * is not found under any other; its links and breadcrumb keep the Artist of
+ * the address (design D1).
  */
 export class ConcertRoute {
 	private readonly series = resolve(ISeriesClient)
@@ -44,6 +48,7 @@ export class ConcertRoute {
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
 	private readonly router = resolve(IRouter)
+	private readonly context = resolve(IConsoleContext)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertRoute')
 
 	public state: LoadState = 'loading'
@@ -64,7 +69,6 @@ export class ConcertRoute {
 	public chosen: Record<string, boolean> = {}
 	public publishing = false
 	public cancelling = false
-	public readonly concertsHref = paths.concerts
 
 	private sales = new Map<string, SaleView | null>()
 	private abort = new AbortController()
@@ -85,8 +89,12 @@ export class ConcertRoute {
 		return this.concert ? concertTitle(this.concert) : ''
 	}
 
+	public get concertsHref(): string {
+		return paths.concerts(this.context.scope)
+	}
+
 	public get editHref(): string {
-		return paths.editConcert(this.seriesId)
+		return paths.editConcert(this.context.scope, this.seriesId)
 	}
 
 	public get typeKey(): string {
@@ -179,7 +187,7 @@ export class ConcertRoute {
 			)
 			if (onlyDrafts) {
 				// A concert of drafts only is removed with its dates.
-				await this.router.load(paths.concerts)
+				await this.router.load(this.concertsHref)
 				return
 			}
 			await this.load()
@@ -195,16 +203,21 @@ export class ConcertRoute {
 		this.state = 'loading'
 		try {
 			const concerts = await this.series.list(this.abort.signal)
-			this.concert = findConcert(concerts, this.seriesId)
+			const concert = findConcert(concerts, this.seriesId)
+			// Under an Artist who does not perform in it, the concert is not found.
+			this.concert =
+				concert && performs(concert, this.context.artistId)
+					? concert
+					: undefined
 			if (!this.concert) {
 				this.state = 'notFound'
 				this.breadcrumbs.set([
-					{ labelKey: 'shell.nav.concerts', href: paths.concerts },
+					{ labelKey: 'shell.nav.concerts', href: this.concertsHref },
 				])
 				return
 			}
 			this.breadcrumbs.set([
-				{ labelKey: 'shell.nav.concerts', href: paths.concerts },
+				{ labelKey: 'shell.nav.concerts', href: this.concertsHref },
 				{ label: this.title },
 			])
 			this.state = 'ready'
@@ -284,7 +297,7 @@ export class ConcertRoute {
 			const sale = this.sales.get(eventId(event))
 			return {
 				id: eventId(event),
-				href: paths.event(this.seriesId, eventId(event)),
+				href: paths.event(this.context.scope, this.seriesId, eventId(event)),
 				cells: {
 					date: start
 						? { key: 'format.dateTime', params: { at: start } }

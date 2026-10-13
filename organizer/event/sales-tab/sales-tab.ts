@@ -11,6 +11,7 @@ import {
 	type EventTicketSales,
 	ITicketSaleClient,
 } from '../../services/ticket-sale-client'
+import { IConsoleContext } from '../../shell/console-context'
 import type { FieldOption } from '../../ui/console-field/console-field'
 import { ISnackbar } from '../../ui/console-snackbar/snackbar'
 import { IEventPage } from '../event-page'
@@ -33,6 +34,7 @@ export class SalesTab {
 	private readonly ticketSales = resolve(ITicketSaleClient)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
+	private readonly context = resolve(IConsoleContext)
 	private readonly logger = resolve(ILogger).scopeTo('SalesTab')
 
 	public state: 'loading' | 'ready' | 'error' = 'loading'
@@ -73,21 +75,35 @@ export class SalesTab {
 	)
 
 	public get newLotteryHref(): string {
-		return paths.newLottery(this.page.seriesId, this.page.eventId)
+		return paths.newSale(
+			this.context.scope,
+			this.page.seriesId,
+			this.page.eventId,
+			'lottery',
+		)
 	}
 
 	public get firstComeHref(): string {
-		return paths.firstCome(this.page.seriesId, this.page.eventId)
+		return paths.newSale(
+			this.context.scope,
+			this.page.seriesId,
+			this.page.eventId,
+			'first-come',
+		)
 	}
 
 	public get editConcertHref(): string {
-		return paths.editConcert(this.page.seriesId)
+		return paths.editConcert(this.context.scope, this.page.seriesId)
 	}
 
+	/** The sale's editor: the lottery before it opens, or the first-come sale. */
 	public editHref(sale: SaleView): string {
-		return sale.method === 'firstCome'
-			? this.firstComeHref
-			: paths.lottery(this.page.seriesId, this.page.eventId, sale.id)
+		return paths.editSale(
+			this.context.scope,
+			this.page.seriesId,
+			this.page.eventId,
+			sale.id,
+		)
 	}
 
 	public async load(): Promise<void> {

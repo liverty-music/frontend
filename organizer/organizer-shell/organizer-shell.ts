@@ -5,61 +5,93 @@ import {
 	destinationOf,
 } from '../shell/console-navigation/console-navigation'
 
-/** Screens shown without the navigation frame (they come before a session). */
-const UNFRAMED = /^\/?(denied|auth\/callback)(\/|$)/
+/**
+ * A console screen's address starts with its Organizer; every other address
+ * (sign-in, access denied, another Organizer's, the landing) is unframed.
+ */
+const FRAMED = /^\/organizers\/[^/]+(\/|$)/
+
+const ARTIST = 'organizers/:organizerId/artists/:artistId/series'
 
 /**
  * Root component of the organizer console entry. Mounts in `organizer.html` as
- * `<organizer-shell>`, owns the route table (design D1) and frames every screen
- * but sign-in and access denied with the top bar, the navigation (bar below
+ * `<organizer-shell>`, owns the route table (design D1) and frames every
+ * screen under `/organizers/{id}` with the top bar, the navigation (bar below
  * 600 px, rail from 600 px), the breadcrumb and the snackbar host.
  *
- * `OrganizerAuthHook` (registered globally in `organizer/main.ts`) runs as a
- * shared `canLoad` guard for every route: authentication and the owner role.
- * `auth/callback` opts out of both (`auth: false`) so the OIDC code exchange can
- * complete before a session exists, and `denied` opts out of the role check
- * (`role: false`). An address the console does not know opens Home.
+ * Every console address names the caller's Organizer and, below 公演, a
+ * represented Artist; `paths` in `model/concert-model.ts` builds them all.
+ * `/` and any address the console does not know open the landing, which
+ * forwards to the caller's Home.
+ *
+ * `OrganizerAuthHook` and `ConsoleContextHook` (registered globally in
+ * `organizer/main.ts`) run on every route: authentication and the owner role,
+ * then the address's Organizer. `auth/callback` opts out of both
+ * (`auth: false`) so the OIDC code exchange can complete before a session
+ * exists, and `denied` opts out of the role check (`role: false`).
  */
 @route({
 	title: 'Liverty Music Organizer',
-	fallback: 'home',
+	fallback: 'landing',
 	routes: [
-		{ path: '', redirectTo: 'home' },
-		{ path: 'home', component: import('../home/home-route'), title: 'Home' },
 		{
-			path: 'concerts',
+			id: 'landing',
+			path: '',
+			component: import('../landing/landing-route'),
+			title: 'Liverty Music Organizer',
+		},
+		{
+			path: 'organizers/:organizerId',
+			component: import('../home/home-route'),
+			title: 'Home',
+		},
+		{
+			path: 'organizers/:organizerId/settings',
+			component: import('../settings/settings-route'),
+			title: 'Settings',
+		},
+		{
+			// 公演 before an Artist is chosen: forwards to the Artist worked on,
+			// or says that no Artist is represented yet.
+			path: 'organizers/:organizerId/artists',
 			component: import('../concerts/concerts-route'),
 			title: 'Concerts',
 		},
 		{
-			path: 'concerts/new',
+			path: ARTIST,
+			component: import('../concerts/concerts-route'),
+			title: 'Concerts',
+		},
+		{
+			path: `${ARTIST}/new`,
 			component: import('../concert-editor/concert-editor-route'),
 			title: 'New concert',
 		},
 		{
-			path: 'concerts/:seriesId',
+			path: `${ARTIST}/:seriesId`,
 			component: import('../concert/concert-route'),
 			title: 'Concert',
 		},
 		{
-			path: 'concerts/:seriesId/edit',
+			path: `${ARTIST}/:seriesId/edit`,
 			component: import('../concert-editor/concert-editor-route'),
 			title: 'Edit concert',
 		},
 		{
 			// The event page; its Sales and Reception tabs and the sale editors
-			// (`sales/lottery/new`, `sales/lottery/:saleId`, `sales/first-come`)
-			// are its child routes, so a tab is its own address. As sibling
-			// routes here, the editors' addresses would match this route plus a
-			// residue and never render.
-			path: 'concerts/:seriesId/events/:eventId',
+			// (`ticket-sales/new`, `ticket-sales/:saleId/edit`) are its child
+			// routes, so a tab is its own address. As sibling routes here, the
+			// editors' addresses would match this route plus a residue and never
+			// render.
+			path: `${ARTIST}/:seriesId/events/:eventId`,
 			component: import('../event/event-route'),
 			title: 'Event',
 		},
 		{
-			path: 'settings',
-			component: import('../settings/settings-route'),
-			title: 'Settings',
+			path: 'other-organizer',
+			component: import('../denied/denied-route'),
+			title: 'Another organizer',
+			data: { reason: 'otherOrganizer' },
 		},
 		{
 			path: 'denied',
@@ -90,7 +122,7 @@ export class OrganizerShell {
 			),
 			this.events.subscribe('au:router:navigation-end', () => {
 				const path = window.location.pathname
-				this.framed = !UNFRAMED.test(path)
+				this.framed = FRAMED.test(path)
 				this.current = destinationOf(path)
 				this.endTransition()
 			}),

@@ -2,7 +2,7 @@
 
 <section class="denied">
   <p class="brand">${'app.name' & t}</p>
-  <h1 class="page-title">${'denied.title' & t}</h1>
-  <p class="body">${'denied.body' & t}</p>
+  <h1 class="page-title">${titleKey & t}</h1>
+  <p class="body">${bodyKey & t}</p>
   <console-button variant="filled" icon="logout" action.bind="() => signOut()" pending-label.bind="'denied.signingOut' & t">${'shell.signOut' & t}</console-button>
 </section>

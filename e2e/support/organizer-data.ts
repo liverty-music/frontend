@@ -105,6 +105,19 @@ export function organizer(
 	}
 }
 
+/**
+ * An `ArtistService.List` response: the represented Artists, `a-1` for the
+ * first name, `a-2` for the second, and so on.
+ */
+export function artistList(...names: string[]): Json {
+	return {
+		artists: names.map((name, i) => ({
+			id: { value: `a-${i + 1}` },
+			name: { value: name },
+		})),
+	}
+}
+
 /** A `PayoutAccountService.Get` response. */
 export function payoutAccount(
 	status: 'PENDING' | 'ACTIVE' | 'RESTRICTED',

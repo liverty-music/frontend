@@ -1,4 +1,4 @@
-import { installConsole, type RpcMocks } from '../support/organizer'
+import { installConsole, ORG, type RpcMocks } from '../support/organizer'
 import { organizer, payoutAccount, seriesList } from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
 
@@ -28,7 +28,7 @@ async function openSettings(page: Page, rpc: RpcMocks = {}) {
 		rpc: { ...BASE, ...rpc },
 		language: 'ja',
 	})
-	await page.goto('/settings')
+	await page.goto(`${ORG}/settings`)
 	await expect(
 		page.getByRole('heading', { level: 1, name: '設定' }),
 	).toBeVisible()
@@ -150,7 +150,7 @@ const I18N = 'components/infrastructure/organizer/web/global/i18n'
 test.describe('language', () => {
 	test(`@spec ${I18N} "Every text follows a switch"`, async ({ page }) => {
 		await installConsole(page, { rpc: BASE, language: 'en' })
-		await page.goto('/settings')
+		await page.goto(`${ORG}/settings`)
 		await expect(
 			page.getByRole('heading', { level: 1, name: 'Settings' }),
 		).toBeVisible()

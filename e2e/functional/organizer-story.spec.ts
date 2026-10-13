@@ -1,8 +1,10 @@
 import {
 	confirmDialog,
 	installConsole,
+	ORG,
 	type RpcLog,
 	type RpcMocks,
+	SERIES,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -123,7 +125,7 @@ async function walk(page: Page, api: Server, log: RpcLog): Promise<void> {
 		.getByRole('link', { name: /12月20日\(日\) 18:00 JST/ })
 		.first()
 		.click()
-	await expect(page).toHaveURL(/\/events\/e-1220\/sales$/)
+	await expect(page).toHaveURL(/\/events\/e-1220\/ticket-sales$/)
 
 	// Publish after confirming.
 	await page
@@ -144,7 +146,7 @@ async function walk(page: Page, api: Server, log: RpcLog): Promise<void> {
 	await page.getByLabel(/^価格/).fill('8000')
 	await page.getByLabel(/^販売枚数/).fill('100')
 	await page.getByRole('button', { name: '抽選販売を始める' }).click()
-	await expect(page).toHaveURL(/\/events\/e-1220\/sales$/)
+	await expect(page).toHaveURL(/\/events\/e-1220\/ticket-sales$/)
 	const sale = page.locator('sales-tab .sale').first()
 	await expect(sale).toContainText('ファンクラブ先行')
 	await expect(sale).toContainText('100枚')
@@ -180,7 +182,7 @@ test.describe('run an event from the organizer console', () => {
 		await page.setViewportSize({ width: 1280, height: 800 })
 		const api = server()
 		const log = await installConsole(page, { rpc: api.rpc, language: 'ja' })
-		await page.goto('/home')
+		await page.goto(ORG)
 		await walk(page, api, log)
 	})
 
@@ -188,7 +190,7 @@ test.describe('run an event from the organizer console', () => {
 		await page.setViewportSize({ width: 390, height: 844 })
 		const api = server()
 		const log = await installConsole(page, { rpc: api.rpc, language: 'ja' })
-		await page.goto('/home')
+		await page.goto(ORG)
 		// On a phone the destinations are in the bottom bar.
 		const bar = await navigation(page).boundingBox()
 		expect(Math.round((bar?.y ?? 0) + (bar?.height ?? 0))).toBe(844)
@@ -198,7 +200,7 @@ test.describe('run an event from the organizer console', () => {
 	test(`@spec ${STORY} "Publish declined"`, async ({ page }) => {
 		const api = server()
 		const log = await installConsole(page, { rpc: api.rpc, language: 'ja' })
-		await page.goto(`/concerts/s-solo/events/${EVENT}/sales`)
+		await page.goto(`${SERIES}/s-solo/events/${EVENT}/ticket-sales`)
 		await page
 			.getByRole('button', { name: '公開する', exact: true })
 			.first()
@@ -217,7 +219,7 @@ test.describe('run an event from the organizer console', () => {
 	test(`@spec ${STORY} "Scanner revoked"`, async ({ page }) => {
 		const api = server()
 		const log = await installConsole(page, { rpc: api.rpc, language: 'ja' })
-		await page.goto(`/concerts/s-solo/events/${EVENT}/sales`)
+		await page.goto(`${SERIES}/s-solo/events/${EVENT}/ticket-sales`)
 		await page
 			.getByRole('button', { name: '公開する', exact: true })
 			.first()
