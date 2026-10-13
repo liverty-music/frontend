@@ -31,9 +31,11 @@ const PAYOUT: Record<number, { tone: StatusTone; key: string }> = {
 
 /**
  * Settings: who the Organizer is to Liverty Music and to fans, read only — its
- * name and represented Artists, its business details, and its payout account
- * status with the link to finish onboarding. Returning to the tab re-reads
- * the payout status.
+ * name, its represented Artists, its business details, and its payout account
+ * status. While the account is not active, the page explains the hand-off to
+ * Stripe (what is entered there, that it opens in a new tab and that the
+ * operator comes back here) before the link that opens it. Returning to the
+ * tab re-reads the payout status.
  */
 export class SettingsRoute {
 	private readonly organizers = resolve(IOrganizerClient)
@@ -73,6 +75,11 @@ export class SettingsRoute {
 
 	public get artistNames(): string[] {
 		return this.represented.map((a) => a.name?.value ?? '').filter(Boolean)
+	}
+
+	/** The organization's name as a read-only description. */
+	public get organization(): Description[] {
+		return [{ termKey: 'settings.organizationName', value: this.name }]
 	}
 
 	/** The business details with their terms as catalog keys. */

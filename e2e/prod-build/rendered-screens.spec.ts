@@ -273,6 +273,24 @@ ORGANIZER.push(
 		probes: [],
 	},
 	{
+		// The explanation of the Stripe hand-off and its outlined link.
+		name: 'organizer Settings (payout pending)',
+		path: `${ORG}/settings`,
+		setup: consoleAs(true, {
+			'PayoutAccountService/Get': payoutAccount('PENDING'),
+		}),
+		ready: (page) =>
+			page.locator('console-button').locator('[data-variant="outlined"]'),
+		probes: [
+			{
+				what: 'the outlined link to Stripe',
+				locate: (page: Page) =>
+					page.locator('console-button').locator('[data-variant="outlined"]'),
+				expect: { padding: true },
+			},
+		],
+	},
+	{
 		name: 'organizer denied (no owner role)',
 		path: ORG,
 		setup: consoleAs(false),
@@ -413,11 +431,12 @@ const KNOWN_VIOLATIONS: Array<{
 			'Scanner cards use <h3> under the <h1>. Redesigned by `redesign-organizer-console` D18.',
 	},
 	{
+		// Settings with an active payout account has no link or control, and
+		// since its sections are spaced per D18 it overflows at 1280 × 800 too.
 		screen: 'organizer Settings',
 		rule: 'scrollable-region-focusable',
-		only: 'phone',
 		reason:
-			'The console <main> scrolls on a phone without being focusable. Redesigned by `redesign-organizer-console` D18.',
+			'The console <main> (organizer-shell, `tabindex="-1"`) is the scroller and is not keyboard focusable; a page without focusable content then fails. Fixed in the shell by `redesign-organizer-console` D18.',
 	},
 ]
 

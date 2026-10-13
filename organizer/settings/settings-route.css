@@ -1,8 +1,10 @@
 @layer block {
 	@scope (settings-route) {
+		/* Sections are set apart by their headings and spacing, not dividers. */
 		.settings {
 			display: grid;
 			gap: var(--space-l);
+			max-inline-size: 840px;
 		}
 
 		.part {
@@ -21,22 +23,40 @@
 			color: var(--md-color-on-surface);
 		}
 
-		.organizer-name {
-			font: var(--md-type-title-medium);
+		.artists {
+			display: grid;
+			justify-self: stretch;
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
 		}
 
-		.label {
+		.artist {
+			padding-block: var(--space-xs);
+			font: var(--md-type-body-large);
+			color: var(--md-color-on-surface);
+		}
+
+		.status {
+			display: flex;
+			gap: var(--space-xs);
+			align-items: center;
+		}
+
+		.status-term {
 			font: var(--md-type-label-large);
 			color: var(--md-color-on-surface-variant);
 		}
 
-		.artists {
-			margin: 0;
-			padding-inline-start: var(--space-m);
-		}
-
 		.note {
 			color: var(--md-color-on-surface-variant);
+		}
+
+		.explain {
+			max-inline-size: 65ch;
+			color: var(--md-color-on-surface);
 		}
 
 		.message {

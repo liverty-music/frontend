@@ -3,31 +3,36 @@
 <section class="settings">
   <h1 class="page-title">${'settings.title' & t}</h1>
 
-  <section class="part" aria-labelledby="settings-organization">
-    <h2 id="settings-organization" class="section-title">${'settings.organization' & t}</h2>
-    <circular-progress if.bind="organizerState === 'loading'"></circular-progress>
-    <div if.bind="organizerState === 'error'" class="message" role="alert">
-      <p>${'settings.organizerFailed' & t}</p>
-      <console-button variant="tonal" click.trigger="loadOrganizer()">${'common.retry' & t}</console-button>
-    </div>
-    <template if.bind="organizerState === 'ready'">
-      <p class="organizer-name">${name}</p>
-      <h3 class="label">${'settings.artists' & t}</h3>
-      <ul class="artists">
-        <li repeat.for="artist of artistNames">${artist}</li>
-      </ul>
-      <p class="note">${'settings.changeOnRequest' & t}</p>
-    </template>
-  </section>
+  <circular-progress if.bind="organizerState === 'loading'"></circular-progress>
+  <div if.bind="organizerState === 'error'" class="message" role="alert">
+    <p>${'settings.organizerFailed' & t}</p>
+    <console-button variant="tonal" click.trigger="loadOrganizer()">${'common.retry' & t}</console-button>
+  </div>
 
-  <section if.bind="organizerState === 'ready'" class="part" aria-labelledby="settings-business">
-    <h2 id="settings-business" class="section-title">${'settings.business.title' & t}</h2>
-    <p class="note">${'settings.business.explain' & t}</p>
-    <prerequisite-callout if.bind="!businessComplete" heading.bind="'settings.business.incomplete' & t">
-      ${'settings.business.incompleteBody' & t}
-    </prerequisite-callout>
-    <description-list items.bind="businessDetails" empty-label.bind="'settings.business.notRegistered' & t"></description-list>
-  </section>
+  <template if.bind="organizerState === 'ready'">
+    <section class="part" aria-labelledby="settings-organization">
+      <h2 id="settings-organization" class="section-title">${'settings.organization' & t}</h2>
+      <description-list items.bind="organization"></description-list>
+      <p class="note">${'settings.changeOnRequest' & t}</p>
+    </section>
+
+    <section class="part" aria-labelledby="settings-artists">
+      <h2 id="settings-artists" class="section-title">${'settings.artistsTitle' & t}</h2>
+      <ul if.bind="artistNames.length" class="artists">
+        <li repeat.for="artist of artistNames" class="artist">${artist}</li>
+      </ul>
+      <p else class="note">${'settings.noArtists' & t}</p>
+    </section>
+
+    <section class="part" aria-labelledby="settings-business">
+      <h2 id="settings-business" class="section-title">${'settings.business.title' & t}</h2>
+      <p class="note">${'settings.business.explain' & t}</p>
+      <prerequisite-callout if.bind="!businessComplete" heading.bind="'settings.business.incomplete' & t">
+        ${'settings.business.incompleteBody' & t}
+      </prerequisite-callout>
+      <description-list items.bind="businessDetails" empty-label.bind="'settings.business.notRegistered' & t"></description-list>
+    </section>
+  </template>
 
   <section id="payout" class="part" aria-labelledby="settings-payout">
     <h2 id="settings-payout" class="section-title">${'settings.payout.title' & t}</h2>
@@ -37,15 +42,23 @@
       <console-button variant="tonal" click.trigger="loadPayout()">${'common.retry' & t}</console-button>
     </div>
     <template if.bind="payoutState === 'ready'">
-      <status-badge tone.bind="payoutStatus.tone" label.bind="payoutStatus.key & t" data-testid="payout-status"></status-badge>
+      <p class="status">
+        <span class="status-term">${'settings.payout.status' & t}</span>
+        <status-badge tone.bind="payoutStatus.tone" label.bind="payoutStatus.key & t" data-testid="payout-status"></status-badge>
+      </p>
       <template if.bind="!payoutActive">
         <p class="note">${'settings.payout.notBlocking' & t}</p>
-        <console-button
-          if.bind="account.onboardingUrl"
-          variant="filled"
-          href.bind="account.onboardingUrl"
-          target="_blank"
-        >${'settings.payout.continue' & t}</console-button>
+        <!-- The hand-off to Stripe is explained before the operator leaves the console. -->
+        <template if.bind="account.onboardingUrl">
+          <p class="explain">${'settings.payout.stripe' & t}</p>
+          <p class="explain">${'settings.payout.newTab' & t}</p>
+          <console-button
+            variant="outlined"
+            icon="open-in-new"
+            href.bind="account.onboardingUrl"
+            target="_blank"
+          >${'settings.payout.continue' & t}<span class="visually-hidden">${'settings.payout.opensNewTab' & t}</span></console-button>
+        </template>
       </template>
     </template>
   </section>

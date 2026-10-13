@@ -4,7 +4,9 @@ import { expect, type Page, test } from '../support/test'
 
 /**
  * Settings: the Organizer's name and represented Artists, its business
- * details and its payout account status, all read only.
+ * details and its payout account status, all read only, in sections headed
+ * 組織, アーティスト, 事業者情報 and 入金口座; the hand-off to Stripe is
+ * explained before the link that opens it.
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/settings'
@@ -48,15 +50,23 @@ const detail = (page: Page, term: string) =>
 test.describe('organization', () => {
 	test(`@spec ${SPEC} "Two represented Artists"`, async ({ page }) => {
 		await openSettings(page)
+		await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+			'組織',
+			'アーティスト',
+			'事業者情報',
+			'入金口座',
+		])
 		const organization = part(page, '組織')
-		await expect(organization).toContainText('XX Records')
-		await expect(organization.getByRole('listitem')).toHaveText([
+		await expect(organization.getByRole('definition')).toHaveText('XX Records')
+		await expect(organization).toContainText('Liverty Music が承ります')
+		await expect(part(page, 'アーティスト').getByRole('listitem')).toHaveText([
 			'Band A',
 			'Band B',
 		])
-		await expect(organization).toContainText('Liverty Music が承ります')
 		// Read only: nothing to edit.
-		await expect(organization.getByRole('textbox')).toHaveCount(0)
+		await expect(
+			page.locator('settings-route').getByRole('textbox'),
+		).toHaveCount(0)
 	})
 })
 
@@ -96,12 +106,35 @@ test.describe('payout account', () => {
 		const payout = part(page, '入金口座')
 		await expect(payout.getByTestId('payout-status')).toHaveText('確認中')
 		await expect(payout).toContainText('ファンはチケットを購入できます')
-		const proceed = payout.getByRole('link', { name: '登録を続ける' })
+		// What the hand-off is, before the operator leaves the console.
+		const explanation = [
+			'Liverty Music の決済代行会社 Stripe',
+			'事業者の情報、代表者の本人確認、入金先の銀行口座',
+			'新しいタブで開きます',
+			'このタブに戻ってください',
+		]
+		for (const text of explanation) await expect(payout).toContainText(text)
+
+		// Marked as opening a new tab, for screen readers too.
+		const proceed = payout.getByRole('link', {
+			name: /^Stripe で登録を続ける\s*（新しいタブで開きます）$/,
+		})
 		await expect(proceed).toHaveAttribute(
 			'href',
 			'https://connect.example.com/onboarding',
 		)
 		await expect(proceed).toHaveAttribute('target', '_blank')
+		await expect(proceed).toHaveAttribute('rel', 'noopener')
+		await expect(proceed).toHaveAttribute('data-variant', 'outlined')
+		// The explanation comes before the link.
+		const order = await payout.evaluate((section) => {
+			const text = section.textContent ?? ''
+			return (
+				text.indexOf('このタブに戻ってください') <
+				text.indexOf('Stripe で登録を続ける')
+			)
+		})
+		expect(order).toBe(true)
 	})
 
 	test(`@spec ${SPEC} "Back from onboarding"`, async ({ page }) => {
@@ -130,7 +163,7 @@ test.describe('payout account', () => {
 			log.calls.filter((c) => c.method === 'PayoutAccountService/Get').length,
 		).toBeGreaterThan(readsBefore)
 		await expect(
-			payout.getByRole('link', { name: '登録を続ける' }),
+			payout.getByRole('link', { name: /Stripe で登録を続ける/ }),
 		).toHaveCount(0)
 	})
 
@@ -139,9 +172,10 @@ test.describe('payout account', () => {
 		const payout = part(page, '入金口座')
 		await expect(payout.getByTestId('payout-status')).toHaveText('有効')
 		await expect(
-			payout.getByRole('link', { name: '登録を続ける' }),
+			payout.getByRole('link', { name: /Stripe で登録を続ける/ }),
 		).toHaveCount(0)
 		await expect(payout).not.toContainText('ファンはチケットを購入できます')
+		await expect(payout).not.toContainText('Stripe')
 	})
 })
 
