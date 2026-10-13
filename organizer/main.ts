@@ -14,9 +14,12 @@ import {
 } from '../shared/config/app-config'
 import { IAuthService } from '../shared/services/auth-service'
 import { OrganizerAuthHook } from './hooks/auth-hook'
+import { ConsoleI18nConfiguration } from './i18n/console-language'
+import { ConsoleFormatters } from './i18n/converters'
 import { OrganizerShell } from './organizer-shell/organizer-shell'
 import { ILoginHint, readLoginHintFromSearch } from './services/login-hint'
 import { resolveOrgId } from './services/org-handle'
+import { ConsoleUi } from './ui'
 
 function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
 	const map: Record<AppConfig['logLevel'], LogLevel> = {
@@ -46,9 +49,10 @@ function showStaticErrorPage(err: unknown): void {
 	const message = err instanceof Error ? err.message : String(err)
 	const detail = import.meta.env.DEV ? `<pre>${escapeHtml(message)}</pre>` : ''
 	document.body.innerHTML = `
-		<main style="font-family:system-ui;max-width:42rem;margin:4rem auto;padding:0 1rem;color:#222">
-			<h1 style="font-size:1.5rem;margin:0 0 1rem">Organizer console failed to start</h1>
-			<p>The console could not initialize. Please try reloading the page.</p>
+		<main style="font-family:system-ui;max-width:42rem;margin:4rem auto;padding:0 1rem">
+			<h1 style="font-size:1.5rem;margin:0 0 1rem">コンソールを開けませんでした</h1>
+			<p>ページを再読み込みしてください。</p>
+			<p lang="en">The console could not start. Please reload the page.</p>
 			${detail}
 		</main>
 	`.trim()
@@ -58,7 +62,8 @@ function showStaticErrorPage(err: unknown): void {
 /**
  * Organizer console bootstrap. Reuses the SAME runtime `/config.json` contract
  * and the SAME OIDC `AuthService` as the consumer/admin entries (all in
- * `shared/`), but registers NO consumer-only services and NO i18n machinery.
+ * `shared/`), but registers NO consumer-only services. The console has its own
+ * Japanese and English catalogs (`organizer/locales`).
  *
  * Unlike the admin entry, the organizer `/config.json` carries NO fixed org id
  * (one client serves all tenants — design D1). The tenant org is pinned per
@@ -112,6 +117,7 @@ async function bootstrap(): Promise<void> {
 	// AppConfig first so AuthService (constructed during start) can resolve it.
 	au.register(Registration.instance(IAppConfig, effectiveConfig))
 	au.register(Registration.instance(ILoginHint, loginHint))
+	au.register(ConsoleI18nConfiguration, ...ConsoleFormatters, ...ConsoleUi)
 	au.register(RouterConfiguration)
 	au.register(
 		LoggerConfiguration.create({

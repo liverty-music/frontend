@@ -7,7 +7,10 @@ import { createMockAuth } from '../../helpers/mock-auth'
 // constructing a real UserManager (oidc-client-ts).
 const mockIAuthService = DI.createInterface('IAuthService')
 
-vi.mock('../../../shared/services/auth-service', () => ({
+vi.mock('../../../shared/services/auth-service', async (importOriginal) => ({
+	...(await importOriginal<
+		typeof import('../../../shared/services/auth-service')
+	>()),
 	IAuthService: mockIAuthService,
 }))
 
@@ -19,7 +22,7 @@ const STATE_MISS = new Error('No matching state found in storage')
 
 // The callback only completes the code exchange + the cross-context state-miss
 // self-heal. The intended-org enforcement + owner-role check live in the guard
-// (OrganizerAuthHook), which runs when the callback routes to /concerts.
+// (OrganizerAuthHook), which runs when the callback routes on.
 describe('Organizer AuthCallbackRoute', () => {
 	let sut: InstanceType<typeof AuthCallbackRoute>
 	let mockAuth: ReturnType<typeof createMockAuth>
@@ -38,12 +41,22 @@ describe('Organizer AuthCallbackRoute', () => {
 		build({})
 	})
 
-	it('completes the code exchange and routes to the concerts dashboard', async () => {
+	it('completes the code exchange and lands on Home', async () => {
 		build({})
 		const result = await sut.canLoad({} as never, {} as never)
 
-		expect(result).toBe('/concerts')
+		expect(result).toBe('/home')
 		expect(mockAuth.handleCallback).toHaveBeenCalledTimes(1)
+	})
+
+	it('returns to the address opened before sign-in', async () => {
+		build({})
+		mockAuth.handleCallback.mockResolvedValue({
+			state: { returnTo: '/concerts/s-tour' },
+		} as never)
+		const result = await sut.canLoad({} as never, {} as never)
+
+		expect(result).toBe('/concerts/s-tour')
 	})
 
 	it('clears a stale retry flag on a successful callback', async () => {
@@ -91,13 +104,13 @@ describe('Organizer AuthCallbackRoute', () => {
 		expect(sut.error).toContain('token endpoint 500')
 	})
 
-	it('recovers to the dashboard when a prior callback already established the session', async () => {
+	it('recovers to Home when a prior callback already established the session', async () => {
 		build({ isAuthenticated: true })
 		mockAuth.handleCallback = vi.fn().mockRejectedValue(STATE_MISS)
 
 		const result = await sut.canLoad({} as never, {} as never)
 
-		expect(result).toBe('/concerts')
+		expect(result).toBe('/home')
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
 	})
 })

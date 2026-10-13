@@ -18,7 +18,7 @@ export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 /** A failed validation carries user-facing copy; a pass carries nothing. */
 export type CoverImageValidation =
 	| { readonly ok: true }
-	| { readonly ok: false; readonly message: string }
+	| { readonly ok: false; readonly messageKey: string }
 
 /** Validates a picked file's content type and size against the accepted bounds. */
 export function validateCoverImage(file: {
@@ -26,16 +26,10 @@ export function validateCoverImage(file: {
 	size: number
 }): CoverImageValidation {
 	if (!(ACCEPTED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
-		return {
-			ok: false,
-			message: 'Choose a JPEG, PNG, or WebP image.',
-		}
+		return { ok: false, messageKey: 'concertEditor.cover.badType' }
 	}
 	if (file.size > MAX_IMAGE_BYTES) {
-		return {
-			ok: false,
-			message: 'The image must be 10 MiB or smaller.',
-		}
+		return { ok: false, messageKey: 'concertEditor.cover.tooLarge' }
 	}
 	return { ok: true }
 }

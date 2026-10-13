@@ -29,8 +29,11 @@ function validModel(): ConcertFormModel {
 			{
 				eventId: '',
 				publishState: PublishState.DRAFT,
-				venueName: 'Zepp Tokyo',
-				placeId: '',
+				venue: {
+					placeId: 'ChIJ-zepp-tokyo',
+					name: 'Zepp Tokyo',
+					address: '東京都江東区青海1-3-11',
+				},
 				localDate: '2026-06-16',
 				startTime: '19:00',
 				openTime: '18:00',
@@ -56,13 +59,10 @@ describe('parseIsoDate', () => {
 })
 
 describe('composeInstant', () => {
-	it('composes a local Date from a calendar date and HH:mm', () => {
+	it('reads a calendar date and HH:mm as Japan time', () => {
 		const d = composeInstant({ year: 2026, month: 6, day: 16 }, '19:30')
-		expect(d?.getFullYear()).toBe(2026)
-		expect(d?.getMonth()).toBe(5) // 0-based June
-		expect(d?.getDate()).toBe(16)
-		expect(d?.getHours()).toBe(19)
-		expect(d?.getMinutes()).toBe(30)
+		// 19:30 JST is 10:30 UTC, whatever the device's time zone.
+		expect(d?.toISOString()).toBe('2026-06-16T10:30:00.000Z')
 	})
 
 	it('returns null for empty or malformed times', () => {
@@ -102,11 +102,20 @@ describe('validateConcertForm', () => {
 		expect(errors.artistIds).toBeDefined()
 	})
 
-	it('requires a venue name per event', () => {
+	it('needs no picked place for a published date, which keeps its venue', () => {
 		const model = validModel()
-		model.events[0].venueName = ''
+		model.events[0].publishState = PublishState.PUBLISHED
+		model.events[0].venue = { placeId: '', name: 'Zepp Tokyo', address: '' }
 		const errors = validateConcertForm(model, { today: TODAY })
-		expect(errors.rows[0].venueName).toBeDefined()
+		expect(errors.rows[0].venueName).toBeUndefined()
+		expect(toSeriesDraftInput(model).events[0].placeId).toBeUndefined()
+	})
+
+	it('requires a venue picked from the map catalog per event', () => {
+		const model = validModel()
+		model.events[0].venue = null
+		const errors = validateConcertForm(model, { today: TODAY })
+		expect(errors.rows[0].venueName).toBe('concertEditor.error.venueNotPicked')
 	})
 
 	it('requires a valid date per event', () => {
@@ -188,7 +197,6 @@ describe('toSeriesDraftInput', () => {
 	it('maps the model into the transport input, trimming and omitting empties', () => {
 		const model = validModel()
 		model.title = '  Summer Tour  '
-		model.events[0].placeId = ''
 		const input = toSeriesDraftInput(model)
 
 		expect(input.title).toBe('Summer Tour')
@@ -197,7 +205,8 @@ describe('toSeriesDraftInput', () => {
 		expect(input.artistIds).toEqual(['a1'])
 		expect(input.events).toHaveLength(1)
 		expect(input.events[0].venueName).toBe('Zepp Tokyo')
-		expect(input.events[0].placeId).toBeUndefined()
+		// The picked place goes with the venue name: never a typed name alone.
+		expect(input.events[0].placeId).toBe('ChIJ-zepp-tokyo')
 		expect(input.events[0].localDate).toEqual({ year: 2026, month: 6, day: 16 })
 		expect(input.events[0].startTime).toBeInstanceOf(Date)
 		expect(input.events[0].openTime).toBeInstanceOf(Date)

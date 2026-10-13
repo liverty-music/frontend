@@ -1,92 +1,60 @@
 @layer block {
 	@scope (ticket-sale-editor-route) {
-		.ticket-sale-editor {
-			--flow-space: var(--space-m);
-
-			max-inline-size: 48rem;
-			margin-inline: auto;
-			padding: var(--space-l) var(--space-m);
+		.first-come-editor {
+			display: grid;
+			gap: var(--space-s);
 		}
 
-		.ticket-sale-editor-header {
-			--flow-space: var(--space-2xs);
+		.context,
+		.note {
+			color: var(--md-color-on-surface-variant);
 		}
 
-		.ticket-sale-editor-back-link {
-			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+		.form {
+			display: grid;
+			gap: var(--space-s);
 		}
 
-		.ticket-sale-editor-title {
-			font-size: var(--step-3);
+		.row {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+			gap: var(--space-s);
 		}
 
-		.ticket-sale-editor-note,
-		.ticket-sale-editor-hint {
-			font-size: var(--step--1);
-			color: var(--color-text-secondary);
-		}
-
-		.ticket-sale-editor-subtitle {
-			font-size: var(--step-2);
-		}
-
-		.ticket-sale-editor-state {
-			font-size: var(--step--1);
-			font-weight: 400;
-			color: var(--color-text-secondary);
-		}
-
-		.ticket-sale-editor-fieldset {
-			--flow-space: var(--space-xs);
-
-			padding: var(--space-s);
-			border: 1px solid var(--color-border);
-			border-radius: var(--radius-m);
-		}
-
-		.ticket-sale-editor-panel {
-			--flow-space: var(--space-s);
-
-			padding: var(--space-s);
-			border: 1px solid var(--color-border);
-			border-radius: var(--radius-m);
-			background: var(--color-surface-raised);
-		}
-
-		.ticket-sale-editor-blocks {
-			--flow-space: var(--space-xs);
-
-			padding-inline-start: var(--space-m);
-		}
-
-		.ticket-sale-editor-counts {
+		.status {
 			display: grid;
 			gap: var(--space-2xs);
-
-			& div {
-				display: flex;
-				gap: var(--space-s);
-				justify-content: space-between;
-			}
-
-			& dt {
-				color: var(--color-text-secondary);
-			}
-
-			& dd {
-				font-weight: 600;
-			}
+			justify-items: start;
 		}
 
-		.ticket-sale-editor-locked-price {
-			font-size: var(--step-1);
-			color: var(--color-text-primary);
+		.stats {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+			gap: var(--space-2xs);
+			justify-self: stretch;
 		}
 
-		.ticket-sale-editor-saved {
-			font-size: var(--step--1);
-			color: var(--color-text-secondary);
+		.fixed {
+			display: grid;
+			gap: var(--space-3xs);
+		}
+
+		.label {
+			font: var(--md-type-label-large);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.problem {
+			padding: var(--space-xs) var(--space-s);
+			border-radius: var(--md-shape-medium);
+			color: var(--md-color-on-error-container);
+			background: var(--md-color-error-container);
+		}
+
+		.message {
+			display: grid;
+			gap: var(--space-xs);
+			justify-items: start;
 		}
 	}
 }

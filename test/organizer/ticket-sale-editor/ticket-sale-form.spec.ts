@@ -57,7 +57,7 @@ describe('Japan-time inputs', () => {
 
 describe('blankFormModel', () => {
 	it('ends the sale at the event start and allows 4 per account', () => {
-		const model = blankFormModel(EVENT_START)
+		const model = blankFormModel(EVENT_START, '一般発売')
 		expect(model.saleEndTime).toBe('2026-11-20T19:00')
 		expect(model.perAccountLimit).toBe('4')
 		expect(model.name).toBe('一般発売')
@@ -75,7 +75,10 @@ describe('validateTicketSaleForm', () => {
 			{ ...valid(), saleEndTime: '2026-11-20T19:30' },
 			CTX,
 		)
-		expect(errors.saleEndTime).toContain('2026-11-20 19:00')
+		expect(errors.saleEndTime).toEqual({
+			key: 'firstComeEditor.error.endAfterEvent',
+			params: { eventStart: EVENT_START },
+		})
 	})
 
 	it('rejects an end that is not after the start', () => {
@@ -83,7 +86,9 @@ describe('validateTicketSaleForm', () => {
 			{ ...valid(), saleStartTime: '2026-11-20T19:00' },
 			CTX,
 		)
-		expect(errors.saleEndTime).toContain('販売開始より後')
+		expect(errors.saleEndTime).toEqual({
+			key: 'firstComeEditor.error.endBeforeStart',
+		})
 	})
 
 	it('requires both times', () => {
@@ -130,7 +135,10 @@ describe('validateTicketSaleForm', () => {
 		const ctx = { ...CTX, soldCount: 100, heldCount: 6 }
 		expect(
 			validateTicketSaleForm({ ...valid(), quantity: '105' }, ctx).quantity,
-		).toContain('106枚')
+		).toEqual({
+			key: 'firstComeEditor.error.quantityFloor',
+			params: { sold: 100, held: 6, floor: 106 },
+		})
 		expect(
 			validateTicketSaleForm({ ...valid(), quantity: '106' }, ctx).quantity,
 		).toBeUndefined()
@@ -155,7 +163,7 @@ describe('validateTicketSaleForm — name and limit', () => {
 				{ ...valid(), quantity: '3', perAccountLimit: '4' },
 				CTX,
 			).perAccountLimit,
-		).toContain('販売数以下')
+		).toEqual({ key: 'firstComeEditor.error.limitOverQuantity' })
 	})
 })
 

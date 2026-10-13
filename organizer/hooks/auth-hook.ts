@@ -58,9 +58,11 @@ export class OrganizerAuthHook
 			// Pass login_hint when present (invitation link, first sign-in) so
 			// Zitadel pre-fills the operator's email address (design D5).
 			this.logger.info('Unauthenticated organizer access; starting sign-in')
-			await this.authService.signIn(
-				this.loginHint ? { loginHint: this.loginHint } : undefined,
-			)
+			// After sign-in the operator returns to the address they opened.
+			await this.authService.signIn({
+				...(this.loginHint ? { loginHint: this.loginHint } : {}),
+				returnTo: `${window.location.pathname}${window.location.search}`,
+			})
 			return false
 		}
 

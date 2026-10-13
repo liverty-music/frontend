@@ -1,0 +1,87 @@
+@layer block {
+	@scope (reception-tab) {
+		.reception-tab {
+			display: grid;
+			gap: var(--space-s);
+			justify-items: start;
+			padding-block: var(--space-s);
+		}
+
+		.about {
+			display: grid;
+			gap: var(--space-3xs);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.guide {
+			display: inline-flex;
+			align-items: center;
+			min-block-size: var(--md-target-size);
+			color: var(--md-color-primary);
+		}
+
+		.scanners {
+			display: grid;
+			gap: var(--space-2xs);
+			justify-self: stretch;
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+		}
+
+		.scanner {
+			display: grid;
+			gap: var(--space-2xs);
+
+			padding: var(--space-s);
+			border-radius: var(--md-shape-medium);
+
+			background: var(--md-color-surface-container-low);
+
+			/* A new link enters by fading in and sliding into place (D5). */
+			transition:
+				opacity var(--md-sys-motion-duration-medium4)
+				var(--md-sys-motion-easing-emphasized-decelerate),
+				translate var(--md-sys-motion-duration-medium4)
+				var(--md-sys-motion-easing-emphasized-decelerate);
+
+			&[data-new="true"] {
+				@starting-style {
+					translate: 0 16px;
+					opacity: 0;
+				}
+			}
+		}
+
+		.scanner-header {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+			align-items: center;
+		}
+
+		.scanner-name {
+			font: var(--md-type-title-medium);
+			color: var(--md-color-on-surface);
+		}
+
+		.since {
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.scanner-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-3xs);
+		}
+
+		.message {
+			display: grid;
+			gap: var(--space-xs);
+			justify-items: start;
+			color: var(--md-color-on-surface-variant);
+		}
+	}
+}

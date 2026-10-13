@@ -1,0 +1,45 @@
+<import from="./home-route.css"></import>
+
+<section class="home">
+  <h1 class="page-title">${'home.title' & t}</h1>
+
+  <circular-progress if.bind="isLoading"></circular-progress>
+
+  <template else>
+    <div if.bind="payoutState === 'error'" class="part-error" role="alert">
+      <span>${'home.payoutUnavailable' & t}</span>
+      <console-button variant="text" click.trigger="loadPayout()">${'common.retry' & t}</console-button>
+    </div>
+    <div if.bind="concertsState === 'error'" class="part-error" role="alert">
+      <span>${'home.concertsUnavailable' & t}</span>
+      <console-button variant="text" click.trigger="loadConcerts()">${'common.retry' & t}</console-button>
+    </div>
+
+    <ul if.bind="items.length" class="items" aria-label.bind="'home.listLabel' & t">
+      <li repeat.for="item of items; key: key" class="item" data-kind.bind="item.kind">
+        <status-badge tone.bind="item.kind === 'draft' ? 'neutral' : 'warning'" label.bind="`home.kind.${item.kind}` & t"></status-badge>
+        <div class="item-text" switch.bind="item.kind">
+          <template case="payout">${'home.payout' & t}</template>
+          <template case="scanner">
+            <span class="item-title">${item.concertTitle}</span>
+            <span>${item.when | jstDateTime} · ${'home.noScanner' & t}</span>
+          </template>
+          <template case="startTime">
+            <span class="item-title">${item.concertTitle}</span>
+            <span>${item.when | jstDay} · ${'home.noStartTime' & t}</span>
+          </template>
+          <template case="draft">
+            <span class="item-title">${'home.kind.draft' & t} ${item.concertTitle} · ${item.when | jstDay}</span>
+          </template>
+        </div>
+        <console-button variant="text" href.bind="item.actionHref" class="item-action">${`home.action.${item.kind}` & t}</console-button>
+      </li>
+    </ul>
+
+    <div if.bind="allClear" class="all-clear">
+      <console-icon name="check-circle"></console-icon>
+      <p>${'home.allClear' & t}</p>
+      <console-button variant="text" href="/concerts">${'home.toConcerts' & t}</console-button>
+    </div>
+  </template>
+</section>

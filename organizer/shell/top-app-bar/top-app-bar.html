@@ -1,0 +1,37 @@
+<import from="./top-app-bar.css"></import>
+
+<header class="top-app-bar">
+  <a href="/home" class="logo" aria-label.bind="'app.name' & t">
+    <span class="logo-mark">${'app.logoMark' & t}</span><span class="logo-sub">${'app.logoSub' & t}</span>
+  </a>
+  <span class="organizer-name" data-testid="organizer-name">${organizerName}</span>
+  <button
+    type="button"
+    class="account state-layer"
+    popovertarget="account-menu"
+    aria-label.bind="'shell.account' & t"
+  >
+    <console-icon name="account-circle"></console-icon>
+  </button>
+  <div ref="menu" id="account-menu" popover class="menu">
+    <p class="menu-heading" id="account-menu-language">${'shell.language' & t}</p>
+    <div role="group" aria-labelledby="account-menu-language" class="menu-group">
+      <button
+        repeat.for="code of languages"
+        type="button"
+        class="menu-item state-layer"
+        lang.bind="code"
+        aria-pressed.bind="language.current === code ? 'true' : 'false'"
+        click.trigger="setLanguage(code)"
+      >
+        <console-icon name="check" class="menu-check"></console-icon>
+        <span>${`shell.languageName.${code}` & t}</span>
+      </button>
+    </div>
+    <hr class="menu-divider">
+    <button type="button" class="menu-item state-layer" click.trigger="signOut()">
+      <console-icon name="logout"></console-icon>
+      <span>${'shell.signOut' & t}</span>
+    </button>
+  </div>
+</header>

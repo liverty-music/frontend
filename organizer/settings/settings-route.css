@@ -1,0 +1,48 @@
+@layer block {
+	@scope (settings-route) {
+		.settings {
+			display: grid;
+			gap: var(--space-l);
+		}
+
+		.part {
+			display: grid;
+			gap: var(--space-xs);
+			justify-items: start;
+		}
+
+		.part description-list,
+		.part prerequisite-callout {
+			justify-self: stretch;
+		}
+
+		.section-title {
+			font: var(--md-type-title-large);
+			color: var(--md-color-on-surface);
+		}
+
+		.organizer-name {
+			font: var(--md-type-title-medium);
+		}
+
+		.label {
+			font: var(--md-type-label-large);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.artists {
+			margin: 0;
+			padding-inline-start: var(--space-m);
+		}
+
+		.note {
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.message {
+			display: grid;
+			gap: var(--space-xs);
+			justify-items: start;
+		}
+	}
+}

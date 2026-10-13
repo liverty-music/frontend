@@ -1,0 +1,74 @@
+<import from="./event-route.css"></import>
+
+<section class="event">
+  <div if.bind="page.state === 'notFound'" class="message" role="alert">
+    <h1 class="page-title">${'event.notFound' & t}</h1>
+    <console-button if.bind="page.concert" variant="tonal" href.bind="concertHref">${'event.toConcert' & t}</console-button>
+    <console-button else variant="tonal" href="/concerts">${'concert.toConcerts' & t}</console-button>
+  </div>
+
+  <div if.bind="page.state === 'error'" class="message" role="alert">
+    <p>${'event.loadFailed' & t}</p>
+    <console-button variant="tonal" click.trigger="page.reload()">${'common.retry' & t}</console-button>
+  </div>
+
+  <template if.bind="page.state === 'ready'">
+    <template if.bind="!editing">
+      <header class="header">
+        <div class="heading">
+          <p class="concert-title">${title}</p>
+          <h1 class="page-title">
+            <template if.bind="start">${start | jstDateTime}</template>
+            <template else>${day | jstDay} · ${'event.noStartTime' & t}</template>
+          </h1>
+          <p class="venue">${venue}</p>
+        </div>
+        <status-badge tone.bind="badge.tone" label.bind="badge.labelKey & t"></status-badge>
+      </header>
+
+      <p if.bind="cancelled" class="cancelled-note">${'event.cancelledNote' & t}</p>
+      <div else class="actions">
+        <console-button
+          if.bind="draft"
+          variant="filled"
+          icon="check"
+          pending.bind="publishing"
+          pending-label.bind="'event.publishing' & t"
+          disabled.bind="cancelling"
+          click.trigger="publish()"
+          data-action="publish"
+        >${'event.publish' & t}</console-button>
+        <console-button
+          variant="outlined"
+          pending.bind="cancelling"
+          pending-label.bind="'event.cancelling' & t"
+          disabled.bind="publishing"
+          click.trigger="cancel()"
+          data-action="cancel"
+        >${'event.cancel' & t}</console-button>
+        <console-button variant="text" icon="edit" href.bind="editHref">${'common.edit' & t}</console-button>
+      </div>
+
+      <confirm-dialog
+        component.ref="publishDialog"
+        heading.bind="'event.publishConfirmTitle' & t:{ title: title }"
+        confirm-label.bind="'event.publish' & t"
+      >
+        <p if.bind="unlisted">${'event.publishConfirmUnlisted' & t}</p>
+        <p else>${'event.publishConfirmPublic' & t}</p>
+      </confirm-dialog>
+      <confirm-dialog
+        component.ref="cancelDialog"
+        heading.bind="'event.cancelConfirmTitle' & t:{ title: title }"
+        confirm-label.bind="'event.cancel' & t"
+        confirm-variant="danger"
+      >
+        <p if.bind="draft">${'event.cancelConfirmDraft' & t}</p>
+        <p else>${'event.cancelConfirmPublished' & t}</p>
+      </confirm-dialog>
+
+      <console-tabs tabs.bind="tabs" active.bind="activeTab" label.bind="'event.tabs' & t"></console-tabs>
+    </template>
+    <au-viewport></au-viewport>
+  </template>
+</section>

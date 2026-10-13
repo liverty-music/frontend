@@ -160,7 +160,10 @@ describe('validateLotterySaleForm — ticket fields', () => {
 		model.quantity = '100'
 		model.perAccountLimit = '11'
 		const errors = validateLotterySaleForm(model)
-		expect(errors.perAccountLimit).toContain(String(MAX_PER_ACCOUNT_LIMIT))
+		expect(errors.perAccountLimit).toEqual({
+			key: 'lotteryEditor.error.limitMax',
+			params: { max: MAX_PER_ACCOUNT_LIMIT },
+		})
 		expect(isFormValid(errors)).toBe(false)
 	})
 

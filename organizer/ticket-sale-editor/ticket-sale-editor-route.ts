@@ -1,16 +1,25 @@
-import type { Params } from '@aurelia/router'
-import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
-import { PublishState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
+import { I18N } from '@aurelia/i18n'
+import { IRouteContext, IRouter } from '@aurelia/router'
+import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import { TicketSaleMethod } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
 import { TicketTypeState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_type_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import { formatJstDateTime } from '../../shared/lib/scanner/jst-format'
+import { businessDetailsComplete } from '../event/event-page'
+import type { FieldError } from '../i18n/field-error'
 import {
-	Code,
-	ConnectError,
-	toOrganizerErrorMessage,
-} from '../services/connect-error-copy'
+	concertTitle,
+	eventDay,
+	eventStart,
+	findConcert,
+	findEvent,
+	isCancelled,
+	isPublished,
+	paths,
+	venueName,
+} from '../model/concert-model'
+import { IClock } from '../services/clock'
 import { IOrganizerClient } from '../services/organizer-client'
 import { findOverlappingSale } from '../services/sale-window'
 import { ISeriesClient } from '../services/series-client'
@@ -20,66 +29,45 @@ import {
 	type TicketType,
 } from '../services/ticket-sale-client'
 import { ITicketTypeClient } from '../services/ticket-type-client'
+import { IBreadcrumbs } from '../shell/breadcrumbs'
+import { ISnackbar } from '../ui/console-snackbar/snackbar'
+import type { UnsavedChanges } from '../ui/unsaved-changes/unsaved-changes'
 import {
 	blankFormModel,
-	formatYen,
 	formModelOf,
 	isFormValid,
 	MAX_PER_ACCOUNT_LIMIT,
-	MAX_PRICE,
 	MIN_PER_ACCOUNT_LIMIT,
-	MIN_PRICE,
 	parseJstDateTimeLocal,
 	type TicketSaleFormErrors,
 	type TicketSaleFormModel,
 	toCreateInput,
+	toJstDateTimeLocal,
 	validateTicketSaleForm,
 } from './ticket-sale-form'
 
-type LoadPhase = 'loading' | 'ready' | 'not-found' | 'error'
-
-/**
- * A reason the event cannot be put on sale. `cancelled` and `not-published`
- * come from the event's series, `no-start-time` from the event, and
- * `no-business-details` from the caller's Organizer.
- */
 export type SaleBlock =
 	| 'cancelled'
-	| 'not-published'
-	| 'no-start-time'
-	| 'no-business-details'
+	| 'notPublished'
+	| 'noStartTime'
+	| 'businessDetails'
 
-const STATE_LABELS: Record<TicketTypeState, string> = {
-	[TicketTypeState.UNSPECIFIED]: '—',
-	[TicketTypeState.NOT_YET_ON_SALE]: '販売開始前',
-	[TicketTypeState.ON_SALE]: '販売中',
-	[TicketTypeState.ALL_HELD]: '残りはすべて確保中',
-	[TicketTypeState.SOLD_OUT]: '完売',
-	[TicketTypeState.ENDED]: '販売終了',
-}
-
-/** True when the Organizer has all five business details entered. */
-export function hasCompleteBusinessDetails(
-	organizer: Organizer | undefined,
-): boolean {
-	return Boolean(
-		organizer?.legalName?.value.trim() &&
-			organizer.representativeName?.value.trim() &&
-			organizer.businessAddress?.value.trim() &&
-			organizer.businessPhoneNumber?.value.trim() &&
-			organizer.contactEmail?.value.trim(),
-	)
+const STATE_KEYS: Record<number, string> = {
+	[TicketTypeState.NOT_YET_ON_SALE]: 'sale.firstComeState.notYetOnSale',
+	[TicketTypeState.ON_SALE]: 'sale.firstComeState.onSale',
+	[TicketTypeState.ALL_HELD]: 'sale.firstComeState.allHeld',
+	[TicketTypeState.SOLD_OUT]: 'sale.firstComeState.soldOut',
+	[TicketTypeState.ENDED]: 'sale.firstComeState.ended',
 }
 
 /**
- * The event's first-come sale the editor works on: of the first-come sales
- * offering the event, the open one, otherwise the next to open, otherwise
- * the last that ended.
+ * The event's first-come sale: the open one, else the next, else the most
+ * recent. One event has at most one first-come sale at a time.
  */
 export function firstComeSaleOf(
 	sales: readonly TicketSale[],
 	eventId: string,
-	now: number = Date.now(),
+	now: number,
 ): TicketSale | undefined {
 	const timed = sales.flatMap((s) => {
 		if (s.method !== TicketSaleMethod.FIRST_COME) return []
@@ -103,69 +91,54 @@ export function firstComeSaleOf(
 }
 
 /**
- * The console screen where an operator puts one published event on sale first
- * come, first served, or changes that sale, and sees how many tickets have
- * sold. Reached from the event's row in the concert list (`ticket-sale/:eventId`).
- *
- * The event's sales are read with TicketSaleService.ListByEvent. For an event
- * without a first-come sale, saving creates a FirstCome sale of the event's
- * Series with one TicketType for the event (TicketSaleService.Create), named
- * 一般発売 by default, ending at the event's start time and allowing 4 tickets
- * per account by default. For an event with one, a changed window is saved
- * with TicketSaleService.SetWindow and a changed price, quantity or limit with
- * TicketTypeService.Update. A window overlapping another sale of the event is
- * refused next to the window.
- *
- * Times are entered and shown in Japan time whatever the browser's zone is.
- * Field errors mirror the server's rules and show next to the field without
- * saving. While any ticket is sold or held, the price is shown as fixed and
- * the quantity cannot go below sold + held.
- *
- * When the event is not published, has no start time, or the Organizer does
- * not have complete business details, the screen says which is missing and
- * offers no save. RPC errors are translated via {@link toOrganizerErrorMessage}.
+ * Starts the event's first-come sale, or changes it at any time: the window
+ * in Japan time, the price (fixed once a ticket is sold or held), the quantity
+ * (never below sold plus held) and the per-account limit. Opened from the
+ * Sales tab and back there after saving or leaving.
  */
 export class TicketSaleEditorRoute {
-	public phase: LoadPhase = 'loading'
-	public loadError = ''
-
-	public eventId = ''
-	public seriesId = ''
-	public concertTitle = ''
-	public eventDate = ''
-	/** The event's start time; null when it has none. */
-	public eventStart: Date | null = null
-	public blocks: SaleBlock[] = []
-
-	/** The event's first-come sale; undefined until one is created. */
-	public sale: TicketSale | undefined
-	/** Every sale of the event, checked for an overlapping window. */
-	public sales: TicketSale[] = []
-
-	public model: TicketSaleFormModel = blankFormModel(null)
-	public errors: TicketSaleFormErrors = {}
-	/** Errors show only after the first save attempt. */
-	public submitted = false
-	public saving = false
-	public saveError = ''
-	public saved = false
-
-	public readonly minPrice = formatYen(MIN_PRICE)
-	public readonly maxPrice = formatYen(MAX_PRICE)
-	public readonly minLimit = MIN_PER_ACCOUNT_LIMIT
-	public readonly maxLimit = MAX_PER_ACCOUNT_LIMIT
-
-	private abort: AbortController | null = null
-
-	private readonly concerts = resolve(ISeriesClient)
+	private readonly series = resolve(ISeriesClient)
 	private readonly organizers = resolve(IOrganizerClient)
 	private readonly ticketSales = resolve(ITicketSaleClient)
 	private readonly ticketTypes = resolve(ITicketTypeClient)
+	private readonly router = resolve(IRouter)
+	private readonly context = resolve(IRouteContext)
+	private readonly breadcrumbs = resolve(IBreadcrumbs)
+	private readonly snackbar = resolve(ISnackbar)
+	private readonly clock = resolve(IClock)
+	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('TicketSaleEditorRoute')
 
-	public canLoad(params: Params): boolean {
+	public state: 'loading' | 'ready' | 'notFound' | 'error' = 'loading'
+	public seriesId = ''
+	public eventId = ''
+	public title = ''
+	public event: Event | undefined
+	public blocks: SaleBlock[] = []
+	public sale: TicketSale | undefined
+	public model: TicketSaleFormModel = blankFormModel(null)
+	public submitted = false
+	public saveProblem = ''
+	public guard!: UnsavedChanges
+
+	public readonly minLimit = MIN_PER_ACCOUNT_LIMIT
+	public readonly maxLimit = MAX_PER_ACCOUNT_LIMIT
+
+	private sales: TicketSale[] = []
+	private saved = ''
+	private abort = new AbortController()
+
+	/** A child route of the event: the series and event ids are the parent's. */
+	public loading(): void {
+		const params = this.context.getRouteParameters<
+			{
+				seriesId?: string
+				eventId?: string
+			},
+			'parent-first'
+		>({ mergeStrategy: 'parent-first' })
+		this.seriesId = params.seriesId ?? ''
 		this.eventId = params.eventId ?? ''
-		return true
 	}
 
 	public attached(): void {
@@ -173,10 +146,29 @@ export class TicketSaleEditorRoute {
 	}
 
 	public detaching(): void {
-		this.abort?.abort()
+		this.abort.abort()
 	}
 
-	/** The sale's TicketType for this event. */
+	public canUnload(): Promise<boolean> {
+		return this.guard?.confirmLeave() ?? Promise.resolve(true)
+	}
+
+	public get salesHref(): string {
+		return paths.sales(this.seriesId, this.eventId)
+	}
+
+	public get editConcertHref(): string {
+		return paths.editConcert(this.seriesId)
+	}
+
+	public get start(): Date | undefined {
+		return this.event ? eventStart(this.event) : undefined
+	}
+
+	public get venue(): string {
+		return this.event ? venueName(this.event) : ''
+	}
+
 	public get ticketType(): TicketType | undefined {
 		return this.sale?.ticketTypes.find((t) => t.eventId?.value === this.eventId)
 	}
@@ -193,96 +185,30 @@ export class TicketSaleEditorRoute {
 		return this.ticketType?.quantity ?? 0
 	}
 
-	/** The price may change only while no ticket is sold or held. */
+	/** The price is fixed once a ticket is sold or held. */
 	public get priceLocked(): boolean {
 		return this.soldCount + this.heldCount > 0
 	}
 
-	public get canSave(): boolean {
-		return this.phase === 'ready' && this.blocks.length === 0
+	public get priceHint(): string {
+		return this.priceLocked ? this.i18n.tr('firstComeEditor.priceLocked') : ''
 	}
 
-	public get eventStartLabel(): string {
-		return this.eventStart ? formatJstDateTime(this.eventStart) : ''
+	public get stateKey(): string {
+		return this.ticketType ? (STATE_KEYS[this.ticketType.state] ?? '') : ''
 	}
 
-	public get stateLabel(): string {
-		return this.ticketType ? STATE_LABELS[this.ticketType.state] : ''
+	public get isDirty(): boolean {
+		return (
+			this.state === 'ready' &&
+			this.blocks.length === 0 &&
+			JSON.stringify(this.model) !== this.saved
+		)
 	}
 
-	public get lockedPriceLabel(): string {
-		return formatYen(this.ticketType?.price?.value ?? BigInt(0))
-	}
-
-	/**
-	 * Reads the event (from the operator's concerts), the caller's Organizer
-	 * and the event's sales, then fills the form from its first-come sale or
-	 * the defaults.
-	 */
-	public async load(): Promise<void> {
-		this.abort?.abort()
-		const abort = new AbortController()
-		this.abort = abort
-		this.phase = 'loading'
-		this.loadError = ''
-		try {
-			const [concerts, organizer, sales] = await Promise.all([
-				this.concerts.list(abort.signal),
-				this.organizers.get(abort.signal),
-				this.ticketSales.listByEvent(this.eventId, abort.signal),
-			])
-			if (abort.signal.aborted) return
-			const concert = concerts.find((c) =>
-				c.events.some((e) => e.id?.value === this.eventId),
-			)
-			const event = concert?.events.find((e) => e.id?.value === this.eventId)
-			if (!concert || !event) {
-				this.phase = 'not-found'
-				return
-			}
-			this.seriesId = concert.series?.id?.value ?? ''
-			this.concertTitle = concert.series?.title?.value ?? ''
-			const d = event.localDate?.value
-			this.eventDate = d
-				? `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
-				: ''
-			const start = event.startTime?.value
-			this.eventStart = start ? timestampDate(start) : null
-
-			// The event's own state: a draft or cancelled date of a published
-			// concert cannot go on sale.
-			const publishState = event.publishState
-			const blocks: SaleBlock[] = []
-			if (publishState === PublishState.CANCELLED) blocks.push('cancelled')
-			else if (publishState !== PublishState.PUBLISHED) {
-				blocks.push('not-published')
-			}
-			if (!this.eventStart) blocks.push('no-start-time')
-			if (!hasCompleteBusinessDetails(organizer)) {
-				blocks.push('no-business-details')
-			}
-			this.blocks = blocks
-
-			this.sales = sales.ticketSales
-			this.applySale(firstComeSaleOf(this.sales, this.eventId))
-			this.phase = 'ready'
-		} catch (err) {
-			if (abort.signal.aborted) return
-			this.loadError = toOrganizerErrorMessage(
-				err,
-				'販売設定を読み込めませんでした。',
-				{
-					[Code.PermissionDenied]: 'この公演の販売設定は表示できません。',
-				},
-			)
-			this.phase = 'error'
-			this.logger.error('Loading the ticket sale failed', err)
-		}
-	}
-
-	public revalidate(): void {
+	public get errors(): TicketSaleFormErrors {
 		const errors = validateTicketSaleForm(this.model, {
-			eventStart: this.eventStart,
+			eventStart: this.start ?? null,
 			soldCount: this.soldCount,
 			heldCount: this.heldCount,
 		})
@@ -295,77 +221,125 @@ export class TicketSaleEditorRoute {
 				end,
 				this.sale?.id?.value,
 			)
-			if (other) errors.saleStartTime = overlapMessage(other)
+			if (other) {
+				errors.saleStartTime = {
+					key: 'firstComeEditor.error.overlap',
+					params: {
+						name: other.name?.value ?? '',
+						start: other.saleStartTime
+							? timestampDate(other.saleStartTime)
+							: undefined,
+						end: other.saleEndTime
+							? timestampDate(other.saleEndTime)
+							: undefined,
+					},
+				}
+			}
 		}
-		this.errors = errors
+		return errors
 	}
 
-	public get formValid(): boolean {
-		return isFormValid(this.errors)
+	public error(
+		error: FieldError | undefined,
+		submitted = this.submitted,
+	): string {
+		// The template passes `submitted` so the binding re-evaluates when it changes.
+		if (!submitted || !error) return ''
+		const params: Record<string, unknown> = { ...error.params }
+		for (const [k, v] of Object.entries(params)) {
+			if (v instanceof Date) params[k] = toJstDateTimeLocal(v).replace('T', ' ')
+		}
+		return this.i18n.tr(error.key, params)
+	}
+
+	private async load(): Promise<void> {
+		this.state = 'loading'
+		try {
+			const [concerts, organizer, sales] = await Promise.all([
+				this.series.list(this.abort.signal),
+				this.organizers.get(this.abort.signal),
+				this.ticketSales.listByEvent(this.eventId, this.abort.signal),
+			])
+			const concert = findConcert(concerts, this.seriesId)
+			this.event = findEvent(concert, this.eventId)
+			if (!concert || !this.event) {
+				this.state = 'notFound'
+				return
+			}
+			this.title = concertTitle(concert)
+			this.breadcrumbs.set([
+				{ labelKey: 'shell.nav.concerts', href: paths.concerts },
+				{ label: this.title, href: paths.concert(this.seriesId) },
+				{ day: eventDay(this.event), href: this.salesHref },
+				{ labelKey: 'firstComeEditor.crumb' },
+			])
+			const blocks: SaleBlock[] = []
+			if (isCancelled(this.event)) blocks.push('cancelled')
+			else if (!isPublished(this.event)) blocks.push('notPublished')
+			if (!this.start) blocks.push('noStartTime')
+			if (!businessDetailsComplete(organizer)) blocks.push('businessDetails')
+			this.blocks = blocks
+			this.sales = sales.ticketSales
+			this.applySale(
+				firstComeSaleOf(this.sales, this.eventId, this.clock.now()),
+			)
+			this.state = 'ready'
+		} catch (err) {
+			if (this.abort.signal.aborted) return
+			this.logger.warn('First-come editor failed to load', err)
+			this.state = 'error'
+		}
 	}
 
 	public async save(): Promise<void> {
-		if (this.saving || !this.canSave) return
+		if (this.blocks.length > 0) return
 		this.submitted = true
-		this.saved = false
-		this.revalidate()
-		if (!this.formValid) return
-		this.saving = true
-		this.saveError = ''
+		this.saveProblem = ''
+		if (!isFormValid(this.errors)) return
 		try {
 			if (this.sale) await this.saveChanges(this.sale)
 			else await this.create()
-			this.submitted = false
-			this.saved = true
+			this.saved = JSON.stringify(this.model)
+			this.snackbar.show(this.i18n.tr('firstComeEditor.saved'))
+			await this.router.load(this.salesHref)
 		} catch (err) {
-			this.saveError = toOrganizerErrorMessage(
-				err,
-				'販売設定を保存できませんでした。',
-				{
-					[Code.FailedPrecondition]:
-						'保存できませんでした。公演の公開・開始時刻・事業者情報と、ほかの販売と期間が重なっていないかを確認してください。チケットが確保中または販売済みの間は価格を変更できず、販売数はその合計を下回れません。',
-					[Code.InvalidArgument]: `入力内容が受け付けられませんでした。${err instanceof ConnectError ? err.rawMessage : ''}`,
-					[Code.PermissionDenied]: 'この公演の販売設定は変更できません。',
-				},
-			)
-			this.logger.error('Saving the ticket sale failed', {
-				eventId: this.eventId,
-				err,
-			})
-			// A checkout may have held tickets meanwhile: refresh the counts so the
-			// price lock and quantity floor reflect them.
+			this.logger.warn('First-come sale not saved', err)
 			if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
+				this.saveProblem = this.i18n.tr('firstComeEditor.rejected')
 				await this.refreshCounts()
+				return
 			}
-		} finally {
-			this.saving = false
+			this.snackbar.showError(this.i18n.tr('firstComeEditor.saveFailed'), {
+				label: this.i18n.tr('common.retry'),
+				callback: () => void this.save(),
+			})
 		}
 	}
 
 	private async create(): Promise<void> {
 		const sale = await this.ticketSales.create(
 			toCreateInput(this.seriesId, this.eventId, this.model),
+			this.abort.signal,
 		)
 		if (sale) this.sales = [...this.sales, sale]
 		this.applySale(sale)
 	}
 
-	/**
-	 * Saves what changed: the window with SetWindow, the price, quantity or
-	 * limit with TicketTypeService.Update.
-	 */
+	/** Window first, then the TicketType; each only when it changed. */
 	private async saveChanges(sale: TicketSale): Promise<void> {
 		const stored = this.storedModel()
-		const start = parseJstDateTimeLocal(this.model.saleStartTime) ?? new Date(0)
-		const end = parseJstDateTimeLocal(this.model.saleEndTime) ?? new Date(0)
 		let updated = sale
 		if (
 			this.model.saleStartTime !== stored.saleStartTime ||
 			this.model.saleEndTime !== stored.saleEndTime
 		) {
 			updated =
-				(await this.ticketSales.setWindow(sale.id?.value ?? '', start, end)) ??
-				updated
+				(await this.ticketSales.setWindow(
+					sale.id?.value ?? '',
+					parseJstDateTimeLocal(this.model.saleStartTime) ?? new Date(0),
+					parseJstDateTimeLocal(this.model.saleEndTime) ?? new Date(0),
+					this.abort.signal,
+				)) ?? updated
 		}
 		const type = this.ticketType
 		if (
@@ -374,12 +348,15 @@ export class TicketSaleEditorRoute {
 				this.model.quantity.trim() !== stored.quantity ||
 				this.model.perAccountLimit.trim() !== stored.perAccountLimit)
 		) {
-			const changed = await this.ticketTypes.update({
-				ticketTypeId: type.id?.value ?? '',
-				price: Number(this.model.price.trim()),
-				quantity: Number(this.model.quantity.trim()),
-				perAccountLimit: Number(this.model.perAccountLimit.trim()),
-			})
+			const changed = await this.ticketTypes.update(
+				{
+					ticketTypeId: type.id?.value ?? '',
+					price: Number(this.model.price.trim()),
+					quantity: Number(this.model.quantity.trim()),
+					perAccountLimit: Number(this.model.perAccountLimit.trim()),
+				},
+				this.abort.signal,
+			)
 			if (changed) {
 				updated = {
 					...updated,
@@ -395,7 +372,7 @@ export class TicketSaleEditorRoute {
 		this.applySale(updated)
 	}
 
-	/** Re-reads the sale's counts without discarding the operator's input. */
+	/** After a refusal, re-read the counts: the price lock and quantity floor may have moved. */
 	private async refreshCounts(): Promise<void> {
 		try {
 			const { ticketSales } = await this.ticketSales.listByEvent(this.eventId)
@@ -410,17 +387,20 @@ export class TicketSaleEditorRoute {
 					this.ticketType?.price?.value ?? BigInt(0)
 				).toString()
 			}
-			this.revalidate()
 		} catch (err) {
-			this.logger.warn('Refreshing the ticket sale failed', err)
+			this.logger.warn('Refreshing the sale failed', err)
 		}
 	}
 
-	/** The form as the stored sale fills it. */
 	private storedModel(): TicketSaleFormModel {
 		const sale = this.sale
 		const type = this.ticketType
-		if (!sale || !type) return blankFormModel(this.eventStart)
+		if (!sale || !type) {
+			return blankFormModel(
+				this.start ?? null,
+				this.i18n.tr('firstComeEditor.defaultName'),
+			)
+		}
 		return formModelOf({
 			name: sale.name?.value ?? '',
 			saleStartTime: sale.saleStartTime
@@ -433,21 +413,9 @@ export class TicketSaleEditorRoute {
 		})
 	}
 
-	/** Shows the sale and fills the form from it, or from the defaults. */
 	private applySale(sale: TicketSale | undefined): void {
 		this.sale = sale
 		this.model = this.storedModel()
-		this.revalidate()
+		this.saved = JSON.stringify(this.model)
 	}
-}
-
-/** Says which existing sale the entered window overlaps, in Japan time. */
-export function overlapMessage(sale: TicketSale): string {
-	const start = sale.saleStartTime
-		? formatJstDateTime(timestampDate(sale.saleStartTime))
-		: ''
-	const end = sale.saleEndTime
-		? formatJstDateTime(timestampDate(sale.saleEndTime))
-		: ''
-	return `販売期間がほかの販売「${sale.name?.value ?? ''}」（${start}〜${end}）と重なっています。同じ公演の販売期間は重ねられません。`
 }

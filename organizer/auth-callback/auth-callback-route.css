@@ -1,11 +1,9 @@
 @layer block {
 	@scope (auth-callback-route) {
-		:scope {
-			--_spinner-radius: 50%;
-		}
-
 		.organizer-callback-layout {
 			display: flex;
+			flex-direction: column;
+			gap: var(--space-s);
 			align-items: center;
 			justify-content: center;
 
@@ -22,32 +20,21 @@
 			align-items: center;
 		}
 
-		.organizer-callback-spinner {
-			inline-size: 2rem;
-			block-size: 2rem;
-			border: 2px solid var(--color-brand-primary);
-			border-block-start-color: transparent;
-			border-radius: var(--_spinner-radius);
-
-			animation: spin 1s linear infinite;
-		}
-
 		.organizer-callback-status {
-			font-size: var(--step-0);
-			color: var(--color-text-primary);
+			font: var(--md-type-body-large);
+			color: var(--md-color-on-surface);
 		}
 
 		.organizer-callback-error {
-			font-weight: 700;
-			color: var(--color-error);
-			white-space: pre-wrap;
+			display: grid;
+			gap: var(--space-2xs);
+			color: var(--md-color-error);
 		}
 
-		.organizer-callback-home-link {
-			display: block;
-			margin-block-start: var(--space-s);
-			color: var(--color-brand-primary);
-			text-decoration: underline;
+		.organizer-callback-detail {
+			font: var(--md-type-body-small);
+			color: var(--md-color-on-surface-variant);
+			overflow-wrap: anywhere;
 		}
 	}
 }

@@ -2,7 +2,7 @@ import { EventSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { describe, expect, it } from 'vitest'
-import { admissionWindowOf } from '../../../organizer/scanners/admission-window'
+import { admissionWindowOf } from '../../../organizer/event/reception-tab/admission-window'
 
 function event(start?: string, doors?: string) {
 	return create(EventSchema, {
