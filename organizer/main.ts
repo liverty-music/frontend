@@ -125,7 +125,9 @@ async function bootstrap(): Promise<void> {
 		...ConsoleFormatters,
 		...ConsoleUi,
 	)
-	au.register(RouterConfiguration)
+	// The shell sets the document title itself (`<page> — Organizer Console`,
+	// design D20), from the page's breadcrumb in the language shown.
+	au.register(RouterConfiguration.customize({ buildTitle: () => null }))
 	au.register(
 		LoggerConfiguration.create({
 			level: resolveLogLevel(effectiveConfig.logLevel),

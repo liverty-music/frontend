@@ -38,7 +38,11 @@
 		/* Compact: top bar, scrolling page, navigation bar at the bottom. The
 		   column never grows past the window: a long Organizer or Artist name
 		   shortens in the top bar instead of widening the frame. */
+
+		/* The page's scroll position is a timeline the top bar reads. */
 		.frame {
+			--page-inline-padding: var(--space-s);
+
 			display: grid;
 			grid-template:
 				"top" auto
@@ -46,6 +50,7 @@
 				"nav" auto
 				/ minmax(0, 1fr);
 			block-size: 100%;
+			timeline-scope: --console-page;
 		}
 
 		.frame[data-framed="false"] {
@@ -60,12 +65,34 @@
 			grid-area: nav;
 		}
 
+		/* The page's one loading indicator, along the top of the page area;
+		   after the page in the document, so it paints over it. */
+		.progress {
+			grid-area: main;
+			align-self: start;
+		}
+
+		/* An extended FAB floats at the bottom of the window: the snackbar
+		   rises above it (M3 Snackbar). */
+		.frame:has(extended-fab) {
+			--bottom-banner-clearance: calc(56px + var(--space-s));
+		}
+
 		/* Only the page scrolls, so the bar and the rail never cover content. */
 		.main {
 			overflow: auto;
 			grid-area: main;
+
 			outline: none;
+
+			scroll-timeline: --console-page block;
 			view-transition-name: console-main;
+		}
+
+		/* The scrolling page is reachable from the keyboard (to scroll it with
+		   the arrow keys); its focus ring sits inside the window edge. */
+		.main:focus-visible {
+			outline-offset: calc(-1 * var(--focus-ring-width));
 		}
 
 		.page {
@@ -74,23 +101,21 @@
 
 			max-inline-size: var(--page-max-inline-size);
 			margin-inline: auto;
-			padding: var(--space-2xs) var(--space-s) var(--space-l);
+			padding: var(--space-2xs) var(--page-inline-padding) var(--space-l);
 		}
 
-		/* Medium and up: the rail on the inline-start edge; the snackbar needs no
-		   clearance for a bottom bar. */
+		/* Medium and up: the top bar across the window, its brand lockup above
+		   the rail on the inline-start edge; the snackbar needs no clearance for
+		   a bottom bar. */
 		@container shell (width >= 600px) {
 			.frame {
 				--nav-bar-clearance: 0px;
+				--page-inline-padding: var(--space-m);
 
 				grid-template:
-					"nav top" auto
+					"top top" auto
 					"nav main" 1fr
 					/ var(--nav-rail-width) minmax(0, 1fr);
-			}
-
-			.page {
-				padding-inline: var(--space-m);
 			}
 		}
 	}

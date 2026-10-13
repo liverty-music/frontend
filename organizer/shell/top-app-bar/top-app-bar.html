@@ -1,15 +1,24 @@
 <import from="./top-app-bar.css"></import>
+<import from="../crumb-text/crumb-text"></import>
 
 <header class="top-app-bar">
-  <a href.bind="context.homeHref" class="logo" aria-label.bind="'app.name' & t">
-    <span class="logo-mark">${'app.logoMark' & t}</span><span class="logo-sub">${'app.logoSub' & t}</span>
+  <template if.bind="breadcrumbs.parent">
+    <a href.bind="breadcrumbs.parent.href" class="back state-layer" data-testid="back">
+      <console-icon name="arrow-back"></console-icon>
+      <span class="visually-hidden">${'shell.back' & t}: <crumb-text crumb.bind="breadcrumbs.parent"></crumb-text></span>
+    </a>
+    <span class="title"><crumb-text crumb.bind="breadcrumbs.current"></crumb-text></span>
+  </template>
+  <a href.bind="context.homeHref" class="brand" data-deep.bind="!!breadcrumbs.parent" aria-label.bind="'app.name' & t">
+    <span class="brand-mark">${'app.logoMark' & t}</span>
+    <span class="brand-product">${'app.logoSub' & t}</span>
   </a>
-  <div class="context">
+  <div class="context" data-deep.bind="!!breadcrumbs.parent">
     <span class="organizer-name" data-testid="organizer-name">${context.organizerName}</span>
     <template if.bind="artists.length > 1">
       <button
         type="button"
-        class="artist-button state-layer"
+        class="artist-button state-layer touch-target"
         popovertarget="artist-menu"
         aria-label.bind="'shell.artistMenu' & t:{ name: artistName }"
         data-testid="artist-menu-button"
@@ -40,7 +49,7 @@
   >
     <console-icon name="account-circle"></console-icon>
   </button>
-  <div ref="menu" id="account-menu" popover class="menu">
+  <div ref="menu" id="account-menu" popover class="menu account-menu">
     <p class="menu-heading" id="account-menu-language">${'shell.language' & t}</p>
     <div role="group" aria-labelledby="account-menu-language" class="menu-group">
       <button

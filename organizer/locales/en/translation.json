@@ -1,13 +1,14 @@
 {
 	"app": {
 		"name": "Liverty Music Organizer Console",
-		"logoMark": "Liverty",
-		"logoSub": "Organizer"
+		"logoMark": "Liverty Music",
+		"logoSub": "Organizer Console",
+		"pageTitle": "{{page}} — Organizer Console"
 	},
 	"common": {
 		"loading": "Loading",
 		"close": "Close",
-		"cancel": "Keep as is",
+		"cancel": "Cancel",
 		"retry": "Retry",
 		"copy": "Copy",
 		"copied": "Copied",
@@ -16,7 +17,8 @@
 		"edit": "Edit",
 		"open": "Open",
 		"jst": "JST",
-		"required": "Required"
+		"required": "Required",
+		"moreActions": "More actions"
 	},
 	"format": {
 		"yen": "¥{{amount}}",
@@ -56,7 +58,9 @@
 			"settings": "Settings"
 		},
 		"artistMenu": "Represented artist: {{name}}",
-		"artists": "Represented artists"
+		"artists": "Represented artists",
+		"back": "Back",
+		"page": "Page content"
 	},
 	"unsavedChanges": {
 		"heading": "Discard your changes?",
@@ -189,26 +193,18 @@
 			"sale": "Sale",
 			"state": "State"
 		},
-		"shareTitle": "Share link",
-		"shareExplain": "Fans can open an unlisted concert only through its share link. An issued link is not shown again; create a new one when you need it.",
-		"shareLabel": "Share link",
-		"shareCreate": "Create a new share link",
-		"shareCreating": "Creating…",
-		"shareConfirmTitle": "Create a new share link?",
-		"shareConfirmBody": "The previous share link will stop working.",
-		"shareCreated": "New share link created",
-		"shareFailed": "Could not create the share link",
 		"cancelConcert": "Cancel concert",
 		"datesToPublish": "Dates to publish",
 		"publishConfirmTitle": "Publish dates of {{title}}?",
 		"publishConfirmPublic": "The chosen dates are published together and the performers’ followers are notified once. A published date cannot return to draft.",
-		"publishConfirmUnlisted": "The chosen dates are published together. No follower is notified; people with the share link can see them. A published date cannot return to draft.",
+		"publishConfirmUnlisted": "The chosen dates are published together. No follower is notified. A published date cannot return to draft.",
 		"cancelConfirmTitle": "Cancel {{title}}?",
 		"cancelConfirmBody": "Every published date is cancelled and fans are told once. Draft dates are removed. This cannot be undone.",
 		"datesPublished": "{{count, number}} date(s) published",
 		"cancelled": "Concert cancelled",
 		"draftsRemoved": "Draft concert removed",
-		"dayNoStartTime": "{{day, jstDay}} · $t(event.noStartTime)"
+		"dayNoStartTime": "{{day, jstDay}} · $t(event.noStartTime)",
+		"summary": "Summary"
 	},
 	"event": {
 		"noStartTime": "No start time",
@@ -232,10 +228,12 @@
 		"cancelFailed": "Could not cancel",
 		"publishConfirmTitle": "Publish this date of {{title}}?",
 		"publishConfirmPublic": "This publishes this date alone and notifies the performers’ followers. To announce several dates with one notification, publish them from the concert page. A published date cannot return to draft.",
-		"publishConfirmUnlisted": "This publishes this date alone. No follower is notified; people with the share link can see it. A published date cannot return to draft.",
+		"publishConfirmUnlisted": "This publishes this date alone. No follower is notified. A published date cannot return to draft.",
 		"cancelConfirmTitle": "Cancel this date of {{title}}?",
 		"cancelConfirmPublished": "The date will be cancelled and fans will be told. This cannot be undone.",
-		"cancelConfirmDraft": "The draft date will be removed. This cannot be undone."
+		"cancelConfirmDraft": "The draft date will be removed. This cannot be undone.",
+		"fanPage": "Fan page",
+		"editConcert": "Edit concert"
 	},
 	"reception": {
 		"label": "Reception {{number}}",

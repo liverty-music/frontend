@@ -1,11 +1,13 @@
 @layer block {
 	@scope (console-breadcrumb) {
+		/* A compact window has no breadcrumb: the top bar's back arrow leads
+		   to the parent instead. */
 		:scope {
-			display: block;
+			display: none;
 		}
 
-		.full {
-			display: none;
+		.trail {
+			display: flex;
 			flex-wrap: wrap;
 			align-items: center;
 
@@ -21,11 +23,16 @@
 				align-items: center;
 			}
 
+			/* Links in a neutral color: the brand color is kept for the
+			   primary action, focus and the logo. */
 			& a {
 				display: inline-flex;
 				align-items: center;
+
 				min-block-size: var(--md-target-size);
-				color: var(--md-color-primary);
+
+				color: var(--md-color-on-surface);
+				text-underline-offset: 3px;
 			}
 		}
 
@@ -35,28 +42,9 @@
 			margin-inline: var(--space-3xs);
 		}
 
-		.compact {
-			display: inline-flex;
-			gap: var(--space-2xs);
-			align-items: center;
-
-			min-block-size: var(--md-target-size);
-			padding-inline: var(--space-2xs) var(--space-s);
-			border-radius: var(--md-shape-full);
-
-			font: var(--md-type-label-large);
-			color: var(--md-color-primary);
-			text-decoration: none;
-		}
-
-		/* From the medium window class the whole trail fits. */
 		@container shell (width >= 600px) {
-			.full {
-				display: flex;
-			}
-
-			.compact {
-				display: none;
+			:scope {
+				display: block;
 			}
 		}
 	}

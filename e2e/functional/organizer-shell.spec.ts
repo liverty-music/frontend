@@ -149,6 +149,32 @@ test.describe('navigation', () => {
 		).not.toHaveAttribute('aria-current', 'page')
 	})
 
+	test(`@spec ${SPEC} "Product name in Japanese"`, async ({ page }) => {
+		for (const width of [1280, 390]) {
+			await page.setViewportSize({ width, height: 800 })
+			await open(page, ORG)
+			await expect(
+				page.getByRole('heading', { level: 1, name: 'ホーム' }),
+			).toBeVisible()
+			const brand = page
+				.getByRole('banner')
+				.getByRole('link', { name: 'Liverty Music Organizer Console' })
+			await expect(brand).toBeVisible()
+			await expect(brand).toContainText('Liverty Music')
+			await expect(brand).toContainText('Organizer Console')
+			await expect(page).toHaveTitle('ホーム — Organizer Console')
+			// No other or shortened product name anywhere on the page.
+			const text = await page.locator('body').innerText()
+			for (const other of ['Liverty Organizer', '主催者コンソール']) {
+				expect(text, `at ${width} px`).not.toContain(other)
+			}
+			expect(text.replaceAll('Liverty Music', '')).not.toContain('Liverty')
+		}
+		// A deep page names itself first.
+		await page.goto(`${SERIES}/s-tour/events/e-1103/ticket-sales`)
+		await expect(page).toHaveTitle('11月3日(火) — Organizer Console')
+	})
+
 	test(`@spec ${SPEC} "Phone"`, async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 })
 		await open(page, ORG)
@@ -222,10 +248,26 @@ test.describe('breadcrumb', () => {
 	test(`@spec ${SPEC} "Breadcrumb on a phone"`, async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 })
 		await open(page, `${SERIES}/s-tour/events/e-1103/ticket-sales`)
-		const links = breadcrumb(page).getByRole('link')
-		await expect(links).toHaveCount(1)
-		await expect(links).toHaveText('XX Tour 2026')
-		await expect(links).toHaveAttribute('href', /\/series\/s-tour$/)
+		await expect(
+			page.getByRole('heading', { level: 1, name: /11月3日\(火\)/ }),
+		).toBeVisible()
+		// The back arrow in the top bar replaces the breadcrumb.
+		await expect(breadcrumb(page)).toBeHidden()
+		const back = page.getByRole('banner').getByTestId('back')
+		await expect(back).toBeVisible()
+		await expect(back).toHaveAccessibleName('戻る: XX Tour 2026')
+		await expect(back).toHaveAttribute('href', /\/series\/s-tour$/)
+		await back.click()
+		await expect(
+			page.getByRole('heading', { level: 1, name: 'XX Tour 2026' }),
+		).toBeVisible()
+		// A destination has no parent: the brand is in the bar instead.
+		await page.getByRole('banner').getByTestId('back').click()
+		await expect(
+			page.getByRole('heading', { level: 1, name: '公演' }),
+		).toBeVisible()
+		await expect(page.getByRole('banner').getByTestId('back')).toHaveCount(0)
+		await expect(page.getByRole('banner')).toContainText('Liverty Music')
 	})
 
 	test(`@spec ${SPEC} "Every screen reached by navigation"`, async ({

@@ -1,8 +1,9 @@
 {
 	"app": {
-		"name": "Liverty Music 主催者コンソール",
-		"logoMark": "Liverty",
-		"logoSub": "Organizer"
+		"name": "Liverty Music Organizer Console",
+		"logoMark": "Liverty Music",
+		"logoSub": "Organizer Console",
+		"pageTitle": "{{page}} — Organizer Console"
 	},
 	"common": {
 		"loading": "読み込み中",
@@ -16,7 +17,8 @@
 		"edit": "編集",
 		"open": "開く",
 		"jst": "JST",
-		"required": "必須"
+		"required": "必須",
+		"moreActions": "その他の操作"
 	},
 	"format": {
 		"yen": "{{amount}}円",
@@ -56,7 +58,9 @@
 			"settings": "設定"
 		},
 		"artistMenu": "所属アーティスト: {{name}}",
-		"artists": "所属アーティスト"
+		"artists": "所属アーティスト",
+		"back": "戻る",
+		"page": "ページの内容"
 	},
 	"unsavedChanges": {
 		"heading": "変更を破棄しますか？",
@@ -189,26 +193,18 @@
 			"sale": "販売状態",
 			"state": "状態"
 		},
-		"shareTitle": "共有リンク",
-		"shareExplain": "限定公開の公演は、共有リンクからだけ開けます。発行済みのリンクは再表示できないため、必要なときは新しいリンクを発行してください。",
-		"shareLabel": "共有リンク",
-		"shareCreate": "新しい共有リンクを発行",
-		"shareCreating": "発行中…",
-		"shareConfirmTitle": "新しい共有リンクを発行しますか？",
-		"shareConfirmBody": "これまでの共有リンクは使えなくなります。",
-		"shareCreated": "新しい共有リンクを発行しました",
-		"shareFailed": "共有リンクを発行できませんでした",
 		"cancelConcert": "公演を中止",
 		"datesToPublish": "公開する公演日",
 		"publishConfirmTitle": "{{title}} の公演日を公開しますか？",
 		"publishConfirmPublic": "選んだ公演日をまとめて公開し、出演者のフォロワーに1回通知します。公開すると下書きには戻せません。",
-		"publishConfirmUnlisted": "選んだ公演日をまとめて公開します。フォロワーには通知せず、共有リンクを知っている人が見られるようになります。公開すると下書きには戻せません。",
+		"publishConfirmUnlisted": "選んだ公演日をまとめて公開します。フォロワーには通知しません。公開すると下書きには戻せません。",
 		"cancelConfirmTitle": "{{title}} を中止しますか？",
 		"cancelConfirmBody": "公開中の公演日はすべて中止になり、ファンに1回知らされます。下書きの公演日は削除されます。元に戻せません。",
 		"datesPublished": "{{count, number}}件の公演日を公開しました",
 		"cancelled": "公演を中止しました",
 		"draftsRemoved": "下書きの公演を削除しました",
-		"dayNoStartTime": "{{day, jstDay}} · $t(event.noStartTime)"
+		"dayNoStartTime": "{{day, jstDay}} · $t(event.noStartTime)",
+		"summary": "概要"
 	},
 	"event": {
 		"noStartTime": "開始時刻なし",
@@ -232,10 +228,12 @@
 		"cancelFailed": "中止できませんでした",
 		"publishConfirmTitle": "{{title}} のこの公演日を公開しますか？",
 		"publishConfirmPublic": "この公演日だけを公開し、出演者のフォロワーに通知します。複数の公演日をまとめて1回で知らせるときは、公演ページから公開してください。公開すると下書きには戻せません。",
-		"publishConfirmUnlisted": "この公演日だけを公開します。フォロワーには通知せず、共有リンクを知っている人が見られるようになります。公開すると下書きには戻せません。",
+		"publishConfirmUnlisted": "この公演日だけを公開します。フォロワーには通知しません。公開すると下書きには戻せません。",
 		"cancelConfirmTitle": "{{title}} のこの公演日を中止しますか？",
 		"cancelConfirmPublished": "公演日は中止になり、ファンに中止が知らされます。元に戻せません。",
-		"cancelConfirmDraft": "下書きの公演日は削除されます。元に戻せません。"
+		"cancelConfirmDraft": "下書きの公演日は削除されます。元に戻せません。",
+		"fanPage": "ファンページ",
+		"editConcert": "公演を編集"
 	},
 	"reception": {
 		"label": "受付{{number}}",
