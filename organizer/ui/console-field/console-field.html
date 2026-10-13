@@ -1,7 +1,7 @@
 <import from="./console-field.css"></import>
 <use-shadow-dom></use-shadow-dom>
 
-<div class="field" data-invalid.bind="!!error" data-disabled.bind="disabled">
+<div class="field" data-invalid.bind="!!error" data-disabled.bind="disabled" data-readonly.bind="readonly">
   <label for.bind="inputId" class="label">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></label>
   <div class="control">
     <span if.bind="type === 'yen'" class="affix" aria-hidden="true">${'field.yenPrefix' & t}</span>
@@ -14,6 +14,7 @@
         value.bind="value"
         required.bind="required"
         disabled.bind="disabled"
+        readonly.bind="readonly"
         placeholder.bind="placeholder"
         aria-invalid.bind="error ? 'true' : null"
         aria-describedby.bind="describedBy"
@@ -44,6 +45,7 @@
         value.bind="value"
         required.bind="required"
         disabled.bind="disabled"
+        readonly.bind="readonly"
         placeholder.bind="placeholder"
         autocomplete.bind="autocomplete"
         aria-invalid.bind="error ? 'true' : null"

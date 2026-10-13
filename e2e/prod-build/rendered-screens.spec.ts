@@ -377,18 +377,6 @@ const KNOWN_VIOLATIONS: Array<{
 		reason:
 			'White on the brand magenta #fd00a6 of `.welcome-btn-primary` is 3.66:1.',
 	},
-	...[
-		'organizer Concert editor (new)',
-		'organizer Concert editor (edit)',
-		'organizer Lottery sale editor (new)',
-		'organizer Lottery sale editor (edit)',
-		'organizer First-come sale editor',
-	].map((screen) => ({
-		screen,
-		rule: 'color-contrast',
-		reason:
-			"The label of the filled button (1.16:1 light, 1.03:1 dark) and the text of the console fields' zones (1.86:1 light, 2.46:1 dark). Redesigned by `redesign-organizer-console` D18.",
-	})),
 	...['organizer Event, Sales tab', 'organizer Event, Reception tab'].map(
 		(screen) => ({
 			screen,

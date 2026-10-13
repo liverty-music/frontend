@@ -56,6 +56,8 @@ export class ConsoleField {
 	@bindable public hint = ''
 	@bindable public required = false
 	@bindable public disabled = false
+	/** Shown at full contrast but not editable, for a value that is fixed (a published date). */
+	@bindable public readonly = false
 	@bindable public options: FieldOption[] = []
 	@bindable public placeholder = ''
 	@bindable public name = ''

@@ -39,6 +39,7 @@ const meta = {
 		hint: { control: 'text' },
 		required: { control: 'boolean' },
 		disabled: { control: 'boolean' },
+		readonly: { control: 'boolean' },
 	},
 	args: {
 		type: 'text',
@@ -48,6 +49,7 @@ const meta = {
 		hint: '',
 		required: false,
 		disabled: false,
+		readonly: false,
 	},
 } satisfies Meta<typeof ConsoleField>
 
@@ -60,7 +62,7 @@ const render: Story['render'] = (args) =>
 			<div style="inline-size:360px; padding:16px; background:var(--md-color-surface)">
 				<console-field
 					type.bind="type" label.bind="label" value.bind="value" error.bind="error"
-					hint.bind="hint" required.bind="required" disabled.bind="disabled" options.bind="options"
+					hint.bind="hint" required.bind="required" disabled.bind="disabled" readonly.bind="readonly" options.bind="options"
 				></console-field>
 			</div>
 		`,
@@ -214,4 +216,18 @@ export const Textarea = {
 export const Disabled = {
 	render,
 	args: { disabled: true, value: '変更できません' },
+} satisfies Story
+
+/** A fixed value (a published date): readable at full contrast, not editable. */
+export const ReadOnlyDate = {
+	render,
+	args: { type: 'date', label: '日付', value: '2026-11-03', readonly: true },
+	play: async ({ canvasElement }) => {
+		const input = canvasOf(canvasElement).getByLabelText('日付').element()
+		await expect(input).toHaveAttribute('readonly')
+		await expect(input).not.toBeDisabled()
+		await expect(
+			canvasOf(canvasElement).getByText('JST').element(),
+		).toBeVisible()
+	},
 } satisfies Story

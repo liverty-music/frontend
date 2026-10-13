@@ -151,4 +151,15 @@
 	.field[data-disabled="true"] {
 		opacity: 0.38;
 	}
+
+	/* A fixed value stays readable: no editable border and no focus emphasis. */
+	.field[data-readonly="true"] .control {
+		border-color: var(--md-color-outline-variant);
+		background: var(--md-color-surface-container-low);
+
+		&:focus-within {
+			border-color: var(--md-color-outline-variant);
+			box-shadow: none;
+		}
+	}
 }

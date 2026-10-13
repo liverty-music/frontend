@@ -98,20 +98,20 @@
             label.bind="'concertEditor.date' & t"
             value.bind="row.localDate"
             required.bind="true"
-            disabled.bind="row.publishState !== PublishState.DRAFT"
+            readonly.bind="row.publishState !== PublishState.DRAFT"
             error.bind="error(errors.rows[$index].localDate, submitted)"
           ></console-field>
           <console-field
             type="time"
             label.bind="'concertEditor.openTime' & t"
             value.bind="row.openTime"
-            disabled.bind="row.publishState === PublishState.CANCELLED"
+            readonly.bind="row.publishState === PublishState.CANCELLED"
           ></console-field>
           <console-field
             type="time"
             label.bind="'concertEditor.startTime' & t"
             value.bind="row.startTime"
-            disabled.bind="row.publishState === PublishState.CANCELLED"
+            readonly.bind="row.publishState === PublishState.CANCELLED"
             error.bind="error(errors.rows[$index].time, submitted)"
           ></console-field>
         </div>
