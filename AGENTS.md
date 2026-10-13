@@ -137,35 +137,37 @@ Authenticated E2E setup (test user, `npm run auth:capture:password`, expired sto
 
 ## npm `overrides` — exit conditions, not neglect
 
-`package.json` carries three `overrides`. The first two are live security pins,
-and both are resolved by REMOVAL rather than by upgrade — so neither is a stale
-entry somebody forgot, and neither should be "fixed" by bumping it. The third,
-`playwright`, is a version binding and is the one entry that moves on upgrade.
+`package.json` carries two `overrides`. The first is a live security pin,
+resolved by REMOVAL rather than by upgrade — so it is not a stale entry somebody
+forgot, and it should not be "fixed" by bumping it. The second, `playwright`, is
+a version binding and is the one entry that moves on upgrade.
 
 | entry | why | exit condition |
 |---|---|---|
-| `fflate: "0.4.9"` | `posthog-js` caps `fflate` at `^0.4.8`; `0.4.9` is the last release of that line | `posthog-js` widens its range → delete the override |
-| `dompurify: "^3.4.13"` | same driver: forces the advisory-free version under `posthog-js` | `posthog-js` widens its range → delete the override |
+| `dompurify: "^3.4.13"` | forces the advisory-free version under `posthog-js` | `posthog-js` widens its range → delete the override |
 | `playwright: "1.63.0"` | `@vitest/browser-playwright` peers `playwright: *`, so a lock regeneration resolves the newest release while the CI container ships only the browsers of `@playwright/test`'s version | none — it always equals `@playwright/test`; Renovate moves both in the `playwright` group |
 
-The exact pin on `fflate` is not a mistake. There is nothing newer in the `0.4.x`
-line to move to, and moving off it would break the `posthog-js` constraint.
-
-**Keeping `posthog-js` itself current is the root-cause remedy for both.** When
-it widens its ranges, delete the override and let normal resolution take over;
-do not replace it with a newer pin.
+**Keeping `posthog-js` itself current is the root-cause remedy.** When it widens
+its ranges, delete the override and let normal resolution take over; do not
+replace it with a newer pin.
 
 Renovate can raise the version *inside* an override but cannot decide that an
 override should cease to exist, which is why `overrides` are excluded from
 automerge in `renovate.json`. A pull request touching one is a request for that
 judgement, not a routine bump.
 
-Two earlier entries are gone for the same reason and are worth knowing about as
+Three earlier entries are gone for the same reason and are worth knowing about as
 precedent: `bfj` was dead (its origin, snarkjs, left with the ZKP feature) and
 was deleted with zero lockfile change; `minimatch` had an equally dead origin
 but was NOT inert — it forced `filelist`'s transitive resolution five majors
 above what `filelist` asked for — so removing it needed a lockfile regeneration
-and a verification run rather than a deletion.
+and a verification run rather than a deletion. `fflate: "0.4.9"` was the third:
+once the advisory fix shipped as `0.4.9`, the newest release inside
+`posthog-js`'s `^0.4.8`, normal resolution picked it without help, and a global
+override was no longer protecting anything — it was forcing `@vitest/ui`, which
+asks for `^0.8.2`, down onto the `0.4` line. Renovate's proposal to raise the
+pin to `0.8.3` would have inverted that and pushed `posthog-js` out of its range
+instead; deleting the override let each consumer resolve inside its own.
 
 ## Key Technical Decisions
 

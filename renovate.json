@@ -69,7 +69,7 @@
       "automerge": false
     },
     {
-      "description": "NEVER automerge an npm `overrides` entry. These encode a human judgement about a transitive advisory, and their correct resolution is often REMOVAL rather than upgrade — `fflate` and `dompurify` are both pinned because posthog-js caps them, and they go away when posthog-js widens its ranges. Renovate can raise the version inside an override but cannot decide the override should cease to exist.",
+      "description": "NEVER automerge an npm `overrides` entry. These encode a human judgement about a transitive advisory, and their correct resolution is often REMOVAL rather than upgrade — `dompurify` is pinned because posthog-js caps it, and goes away when posthog-js widens its range; `fflate` was removed rather than raised when Renovate proposed moving it to a line outside posthog-js's range (frontend#687). Renovate can raise the version inside an override but cannot decide the override should cease to exist.",
       "matchDepTypes": [
         "overrides"
       ],
