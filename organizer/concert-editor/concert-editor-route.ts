@@ -261,16 +261,19 @@ export class ConcertEditorRoute {
 					eventId: e.id?.value ?? '',
 					publishState: e.publishState,
 					// The place the date was matched to is kept on save.
-					// A published or cancelled date keeps its venue name on screen
-					// even when no place was matched; a draft needs a pick.
+					// A published or cancelled date resends its listed venue name,
+					// which Update compares to keep its venue fixed, even when no
+					// place was matched; a draft needs a pick.
 					venue:
-						placeId || e.publishState !== PublishState.DRAFT
+						e.publishState !== PublishState.DRAFT
 							? {
 									placeId,
-									name: e.venue?.name?.value || e.listedVenueName?.value || '',
+									name: e.listedVenueName?.value || e.venue?.name?.value || '',
 									address: '',
 								}
-							: null,
+							: placeId
+								? { placeId, name: e.venue?.name?.value ?? '', address: '' }
+								: null,
 					localDate: d
 						? `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
 						: '',
