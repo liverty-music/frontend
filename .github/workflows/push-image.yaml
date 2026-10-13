@@ -1036,38 +1036,41 @@ jobs:
           echo "Dispatching: $payload"
           echo "$payload" | gh api "repos/${OWNER}/cloud-provisioning/dispatches" --input -
 
-  # Post-deploy smoke: hits the live URL and asserts the SPA renders
-  # plus /config.json reports the expected environment. Closes the
-  # gap left by section 5.5 of OpenSpec archive
-  # `2026-05-16-adopt-runtime-config-for-frontend`: the smoke spec
-  # existed but ran only on demand.
+  # Post-deploy smoke: hits the live URL and asserts the SPA renders with its
+  # component styles (fan welcome page and organizer entry) plus /config.json
+  # reports the expected environment. A defect only the production bundle
+  # shows (v1.89.0 lost every component style) is caught within minutes.
+  # OpenSpec change `redesign-organizer-console`, design D22.
   #
   # Path matrix:
   #   - push to main      -> SKIP. The dev environment is intentionally
   #                          stopped to save cost, so there is no live dev
-  #                          URL to smoke: the poll below would proxy a
-  #                          dead host and fail the run on every push (a
-  #                          persistent SSL_ERROR_SYSCALL, not a rollout
-  #                          lag). Verify in prod via workflow_dispatch
-  #                          after the pin-bump instead. Re-enable this
-  #                          branch if dev is ever brought back up.
-  #   - release published -> SKIP (prod does not auto-deploy; the
-  #                          pin-bump PR in cloud-provisioning is the
-  #                          gate. Re-run this workflow via
-  #                          workflow_dispatch after that PR merges to
-  #                          smoke prod)
+  #                          URL to smoke. Re-enable this branch if dev is
+  #                          ever brought back up.
+  #   - release published -> smoke prod once the release is served. The
+  #                          release does not deploy by itself:
+  #                          dispatch-prod-pin asks cloud-provisioning
+  #                          `bump-prod-pin.yml` to push the new pin to its
+  #                          main, and ArgoCD auto-sync rolls it out some
+  #                          minutes later. The job therefore builds the
+  #                          release to learn its entry chunk names and polls
+  #                          the live fan and organizer HTML until both serve
+  #                          them, then smokes.
   #   - workflow_dispatch -> smoke whatever `smoke_url` is provided
   #                          (no build, no wait)
   post-deploy-smoke:
-    needs: build-and-push
-    # Only the operator-driven path runs: workflow_dispatch smokes prod
-    # after the pin-bump merges. push-to-main is skipped while the dev
-    # environment is intentionally stopped (see path matrix above);
-    # release defers prod smoke to that same manual dispatch. always() is
-    # required because build-and-push is skipped on workflow_dispatch and
-    # a skipped dependency would otherwise skip this job.
-    if: always() && github.event_name == 'workflow_dispatch'
+    needs: [build-and-push, dispatch-prod-pin]
+    # always() is required because build-and-push / dispatch-prod-pin are
+    # skipped on workflow_dispatch and a skipped dependency would otherwise
+    # skip this job. On a release, smoke only when the pin was dispatched
+    # (a failed retag dispatches nothing, so nothing new would be served).
+    if: |
+      always() && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'release' && needs.dispatch-prod-pin.result == 'success')
+      )
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -1084,11 +1087,12 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      # Pick the target URL up-front and validate that it points at a
+      # Pick the target URLs up-front and validate that they point at a
       # known production-tier hostname. The workflow_dispatch input
       # MUST NOT be interpolated directly into a `run:` shell — instead
       # we route it through the env block (single env var, no shell
       # parsing of the value) and then through a regex allowlist.
+      # The organizer console of a fan host `<host>` is `organizer.<host>`.
       - name: Pick smoke target URL
         id: target
         env:
@@ -1098,7 +1102,7 @@ jobs:
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             candidate="$SMOKE_URL_INPUT"
           else
-            candidate="https://dev.liverty-music.app"
+            candidate="https://liverty-music.app"
           fi
           # Allowlist: only the three known liverty-music hostnames.
           # Same map the SPA's KNOWN_HOSTS enforces at bootstrap.
@@ -1114,56 +1118,55 @@ jobs:
           # Strip trailing slash for a canonical form.
           candidate="${candidate%/}"
           echo "url=$candidate" >> "$GITHUB_OUTPUT"
+          echo "organizer_url=https://organizer.${candidate#https://}" >> "$GITHUB_OUTPUT"
 
-      # For the push-to-main path, the deploy is gated by ArgoCD Image
-      # Updater scanning the AR `:latest` tag (typical poll interval
-      # 60-180s). Build locally to learn the new bundle hash, then poll
-      # the live URL until that hash surfaces. Confirms the deployed
-      # image actually carries this PR's code (not the previous one).
-      # workflow_dispatch skips this — the operator chose when to run.
-      - name: Build to learn expected bundle hash
-        if: github.event_name == 'push'
+      # The release checkout is the tag, the same commit the prod image was
+      # built from, and the build is reproducible (a local build of v1.89.1
+      # emitted the entry chunk names prod serves), so its entry chunk names
+      # identify the release.
+      - name: Build to learn the release's entry chunk names
+        if: github.event_name == 'release'
         run: npm run build
 
-      - name: Wait for new bundle to surface at dev URL
-        if: github.event_name == 'push'
-        timeout-minutes: 8
+      - name: Wait until production serves the release
+        if: github.event_name == 'release'
+        timeout-minutes: 20
         env:
-          TARGET_URL: ${{ steps.target.outputs.url }}
+          FAN_URL: ${{ steps.target.outputs.url }}
+          ORGANIZER_URL: ${{ steps.target.outputs.organizer_url }}
         run: |
-          # The consumer entry chunk is `assets/main-<hash>.js`: Vite names it
-          # after the multi-entry input key `main` (index.html), NOT `index`
-          # (organizer.html→`organizer`, admin.html→`admin`). Matching the stale
-          # `index-` name made this smoke step fail on every push-to-main deploy.
-          expected_bundle=$(grep -oE 'assets/main-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
-          if [ -z "$expected_bundle" ]; then
-            echo "::error::Could not parse expected bundle hash from local dist/index.html"
+          set -uo pipefail
+          # Vite names each entry chunk after its input key: index.html ->
+          # `main`, organizer.html -> `organizer`. Both are checked, so a
+          # release that changes only one entry still waits for its rollout.
+          expected_fan=$(grep -oE 'assets/main-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
+          expected_organizer=$(grep -oE 'assets/organizer-[A-Za-z0-9_-]+\.js' dist/organizer.html | head -1)
+          if [ -z "$expected_fan" ] || [ -z "$expected_organizer" ]; then
+            echo "::error::Could not read the entry chunk names from the local dist/ HTML"
             exit 1
           fi
-          echo "Expected bundle: $expected_bundle"
-          for attempt in $(seq 1 24); do
-            # -f: fail on HTTP errors (503 during rollout, etc.) so we
-            # log the actual problem instead of treating empty output
-            # as "bundle not yet updated" for the full 8-minute window.
-            http_body=$(curl -sSf "$TARGET_URL/" 2>&1) || {
-              echo "Attempt $attempt/24: curl failed (${http_body:0:200}); retrying..."
-              sleep 20
-              continue
-            }
-            live_bundle=$(echo "$http_body" | grep -oE 'assets/main-[A-Za-z0-9_-]+\.js' | head -1)
-            if [ "$live_bundle" = "$expected_bundle" ]; then
-              echo "ArgoCD rollout complete after $((attempt * 20))s"
+          echo "Expecting $expected_fan at $FAN_URL and $expected_organizer at $ORGANIZER_URL"
+          served() {
+            # -f: an HTTP error (503 during rollout) counts as not served yet.
+            curl -sSf --max-time 20 "$1/" 2>/dev/null | grep -oE "$2" | head -1
+          }
+          for attempt in $(seq 1 60); do
+            live_fan=$(served "$FAN_URL" 'assets/main-[A-Za-z0-9_-]+\.js')
+            live_organizer=$(served "$ORGANIZER_URL" 'assets/organizer-[A-Za-z0-9_-]+\.js')
+            if [ "$live_fan" = "$expected_fan" ] && [ "$live_organizer" = "$expected_organizer" ]; then
+              echo "Release served after about $((attempt * 20))s"
               exit 0
             fi
-            echo "Attempt $attempt/24: live bundle is '$live_bundle', waiting..."
+            echo "Attempt $attempt/60: fan '$live_fan', organizer '$live_organizer'; waiting..."
             sleep 20
           done
-          echo "::error::Timed out waiting for $expected_bundle to surface at $TARGET_URL"
+          echo "::error::Timed out waiting for $expected_fan and $expected_organizer to be served"
           exit 1
 
       - name: Run smoke against deployed URL
         env:
           SMOKE_BASE_URL: ${{ steps.target.outputs.url }}
+          SMOKE_ORGANIZER_URL: ${{ steps.target.outputs.organizer_url }}
         run: npm run test:smoke
 
       - name: Upload Playwright report on failure
