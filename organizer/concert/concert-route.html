@@ -38,7 +38,8 @@
 
       <aside class="supporting" aria-labelledby="concert-summary-heading">
         <h2 id="concert-summary-heading" class="section-title">${'concert.summary' & t}</h2>
-        <img if.bind="coverUrl" src.bind="coverUrl" alt="" class="cover">
+        <img if.bind="coverUrl" src.bind="coverUrl" alt="" class="cover" data-testid="concert-cover">
+        <p if.bind="coverNote" class="cover-note" role="status">${`concertEditor.cover.${coverNote}` & t}</p>
         <dl class="summary">
           <div class="summary-row">
             <dt>${'concertEditor.type' & t}</dt>

@@ -9,6 +9,7 @@ import {
 	composeInstant,
 	emptyFormModel,
 	isFormValid,
+	nextEventRow,
 	parseIsoDate,
 	toSeriesDraftInput,
 	validateConcertForm,
@@ -41,6 +42,59 @@ function validModel(): ConcertFormModel {
 		],
 	}
 }
+
+describe('a new concert and an added date (design D19)', () => {
+	it('starts the first date of a new concert with doors 17:00 and start 19:00', () => {
+		// @spec components/infrastructure/organizer/web/route/concert-editor "Defaults of a new concert"
+		const [first] = emptyFormModel().events
+		expect(first.openTime).toBe('17:00')
+		expect(first.startTime).toBe('19:00')
+		expect(first.publishState).toBe(PublishState.DRAFT)
+		expect(first.venue).toBeNull()
+		expect(first.localDate).toBe('')
+	})
+
+	it('copies the previous date into a new draft date', () => {
+		// @spec components/infrastructure/organizer/web/route/concert-editor "Another night at the same venue"
+		const previous = {
+			eventId: 'e-1103',
+			publishState: PublishState.PUBLISHED,
+			venue: {
+				placeId: 'ChIJ-haneda',
+				name: 'Zepp Haneda (TOKYO)',
+				address: '大田区羽田空港',
+			},
+			localDate: '2026-11-03',
+			openTime: '17:00',
+			startTime: '18:00',
+		}
+		const next = nextEventRow(previous)
+		expect(next).toEqual({
+			eventId: '',
+			publishState: PublishState.DRAFT,
+			venue: previous.venue,
+			localDate: '2026-11-03',
+			openTime: '17:00',
+			startTime: '18:00',
+		})
+		// The new date has its own venue, so a new pick changes only it.
+		expect(next.venue).not.toBe(previous.venue)
+	})
+
+	it('does not copy a venue that was never matched to a map place', () => {
+		const next = nextEventRow({
+			eventId: 'e-old',
+			publishState: PublishState.PUBLISHED,
+			venue: { placeId: '', name: '渋谷のライブハウス', address: '' },
+			localDate: '2026-11-03',
+			openTime: '',
+			startTime: '18:00',
+		})
+		expect(next.venue).toBeNull()
+		expect(next.localDate).toBe('2026-11-03')
+		expect(next.startTime).toBe('18:00')
+	})
+})
 
 describe('parseIsoDate', () => {
 	it('parses a valid ISO date into a calendar triple', () => {

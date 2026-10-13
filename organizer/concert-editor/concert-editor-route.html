@@ -3,7 +3,6 @@
 <section class="editor">
   <h1 class="page-title">${(isEdit ? 'concertEditor.editTitle' : 'concertEditor.newTitle') & t}</h1>
 
-  <circular-progress if.bind="state === 'loading'"></circular-progress>
   <div if.bind="state === 'notFound'" class="message" role="alert">
     <p>${'concert.notFound' & t}</p>
     <console-button variant="tonal" href.bind="concertsHref">${'concert.toConcerts' & t}</console-button>
@@ -105,19 +104,18 @@
             readonly.bind="row.publishState !== PublishState.DRAFT"
             error.bind="error(errors.rows[$index].localDate, submitted)"
           ></console-field>
-          <console-field
-            type="time"
+          <console-time-field
             label.bind="'concertEditor.openTime' & t"
             value.bind="row.openTime"
             readonly.bind="row.publishState === PublishState.CANCELLED"
-          ></console-field>
-          <console-field
-            type="time"
+          ></console-time-field>
+          <console-time-field
+            component.ref="startTimeFields[$index]"
             label.bind="'concertEditor.startTime' & t"
             value.bind="row.startTime"
             readonly.bind="row.publishState === PublishState.CANCELLED"
             error.bind="error(errors.rows[$index].time, submitted)"
-          ></console-field>
+          ></console-time-field>
         </div>
       </section>
       <console-button variant="text" icon="add" click.trigger="addEvent()">${'concertEditor.addDate' & t}</console-button>

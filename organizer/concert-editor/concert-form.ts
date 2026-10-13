@@ -13,9 +13,9 @@ import type { VenuePick } from '../ui/venue-field/venue-field'
 
 /**
  * The editable, transport-agnostic model of a single event row in the editor.
- * Times are wall-clock `HH:mm` strings scoped to the event's local date; empty
- * strings mean "not set". Kept as plain strings so `value.bind` maps directly
- * onto the native `<input type="date">` / `<input type="time">` controls.
+ * Times are 24-hour Japan-time `HH:mm` strings scoped to the event's local
+ * date; empty strings mean "not set". Kept as plain strings so `value.bind`
+ * maps directly onto `<input type="date">` and the console time field.
  */
 export interface EventFormRow {
 	/** The id of the stored Event this row edits; empty for a new date. */
@@ -29,9 +29,9 @@ export interface EventFormRow {
 	venue: VenuePick | null
 	/** ISO `YYYY-MM-DD` from `<input type="date">`; empty when unset. */
 	localDate: string
-	/** `HH:mm` from `<input type="time">`; empty when unset. */
+	/** `HH:mm` from the console time field; empty when unset. */
 	startTime: string
-	/** `HH:mm` from `<input type="time">`; empty when unset. */
+	/** `HH:mm` from the console time field; empty when unset. */
 	openTime: string
 }
 
@@ -81,7 +81,38 @@ export function emptyEventRow(): EventFormRow {
 	}
 }
 
-/** Returns a blank form model (a SINGLE, PUBLIC draft with one empty event). */
+/** The doors and start times a new concert's first date starts with (design D19). */
+export const DEFAULT_OPEN_TIME = '17:00'
+export const DEFAULT_START_TIME = '19:00'
+
+/** The first date of a new concert: no venue or date, 開場 17:00, 開演 19:00. */
+export function firstEventRow(): EventFormRow {
+	return {
+		...emptyEventRow(),
+		openTime: DEFAULT_OPEN_TIME,
+		startTime: DEFAULT_START_TIME,
+	}
+}
+
+/**
+ * The date 日程を追加 adds after `previous`: a new DRAFT with the previous
+ * date's venue (and the place it was picked as), date, open and start time,
+ * so a run of nights at one venue needs only the date changed (design D19).
+ * A venue that was never matched to a map place (an older published date) is
+ * not copied: a new date's venue is always a picked place.
+ */
+export function nextEventRow(previous: EventFormRow | undefined): EventFormRow {
+	if (!previous) return firstEventRow()
+	return {
+		...emptyEventRow(),
+		venue: previous.venue?.placeId ? { ...previous.venue } : null,
+		localDate: previous.localDate,
+		openTime: previous.openTime,
+		startTime: previous.startTime,
+	}
+}
+
+/** Returns a blank form model (a SINGLE, PUBLIC draft with its first date). */
 export function emptyFormModel(): ConcertFormModel {
 	return {
 		title: '',
@@ -90,7 +121,7 @@ export function emptyFormModel(): ConcertFormModel {
 		visibility: Visibility.PUBLIC,
 		sourceUrl: '',
 		artistIds: [],
-		events: [emptyEventRow()],
+		events: [firstEventRow()],
 	}
 }
 

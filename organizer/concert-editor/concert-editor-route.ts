@@ -17,13 +17,20 @@ import {
 } from '../model/concert-model'
 import { IArtistClient } from '../services/artist-client'
 import { IClock } from '../services/clock'
+import {
+	ICoverPreviews,
+	type PendingCover,
+	watchCover,
+} from '../services/cover-previews'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ISeriesImageClient } from '../services/series-image-client'
 import { IVenueClient } from '../services/venue-client'
 import { type Crumb, IBreadcrumbs } from '../shell/breadcrumbs'
 import { IConsoleContext } from '../shell/console-context'
+import { IPageProgress } from '../shell/page-progress'
 import type { ConsoleField } from '../ui/console-field/console-field'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
+import type { ConsoleTimeField } from '../ui/console-time-field/console-time-field'
 import type { UnsavedChanges } from '../ui/unsaved-changes/unsaved-changes'
 import type { VenueField, VenuePick } from '../ui/venue-field/venue-field'
 import {
@@ -33,14 +40,11 @@ import {
 	emptyFormModel,
 	hasFixedVenueAndDate,
 	isFormValid,
+	nextEventRow,
 	toSeriesDraftInput,
 	validateConcertForm,
 } from './concert-form'
 import { MAX_IMAGE_BYTES, validateCoverImage } from './cover-image'
-
-/** How often, and how long, the editor checks for the processed cover (D9a). */
-export const COVER_POLL_MS = 3000
-export const COVER_POLL_LIMIT_MS = 60_000
 
 /** A performer option for the checkboxes, from the represented artists. */
 export interface PerformerOption {
@@ -70,6 +74,10 @@ function performerOption(artist: Artist, selected: boolean): PerformerOption {
  * and date and cannot be removed, a CANCELLED date is read only, and once the
  * concert has one of those its type and visibility are fixed.
  *
+ * Times are entered on a 24-hour clock (design D19): a new concert's first
+ * date starts with 開場 17:00 and 開演 19:00, and 日程を追加 copies the
+ * previous date's venue, date and times.
+ *
  * Opened under an Artist (design D1): a new concert starts with that Artist as
  * its first performer, and a concert the Artist does not perform in is not
  * found.
@@ -84,6 +92,8 @@ export class ConcertEditorRoute {
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
 	private readonly context = resolve(IConsoleContext)
+	private readonly progress = resolve(IPageProgress)
+	private readonly covers = resolve(ICoverPreviews)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertEditorRoute')
 
 	public state: 'loading' | 'ready' | 'notFound' | 'error' = 'loading'
@@ -96,10 +106,11 @@ export class ConcertEditorRoute {
 	public performersFieldset!: HTMLFieldSetElement
 	public venueFields: VenueField[] = []
 	public dateFields: ConsoleField[] = []
+	public startTimeFields: ConsoleTimeField[] = []
 
-	/** The served cover, the picked file's preview, and the upload in flight. */
+	/** The served cover, the picked image while it is processed, and the upload in flight. */
 	public coverImageUrl = ''
-	public localPreviewUrl = ''
+	public pendingCover: PendingCover | undefined
 	public coverNote: '' | 'processing' | 'slow' = ''
 	/** Catalog key of the cover's error, translated in the template. */
 	public coverImageError = ''
@@ -109,9 +120,7 @@ export class ConcertEditorRoute {
 	public readonly SeriesType = SeriesType
 	public readonly PublishState = PublishState
 
-	/** The SeriesImage just set as the cover, until the processed one is served. */
-	private pendingCoverId = ''
-	private coverTimer: ReturnType<typeof setTimeout> | null = null
+	private stopCoverWatch: (() => void) | null = null
 	private saved = ''
 	/** Start times of the stored PUBLISHED events as loaded, by event id. */
 	private publishedStartTimes = new Map<string, string>()
@@ -125,13 +134,13 @@ export class ConcertEditorRoute {
 	}
 
 	public attached(): void {
-		void this.bootstrap()
+		void this.progress.track(this.bootstrap())
 	}
 
 	public detaching(): void {
 		this.abort.abort()
-		this.stopCoverPoll()
-		this.revokeLocalPreview()
+		this.stopCoverWatch?.()
+		this.stopCoverWatch = null
 	}
 
 	public canUnload(): Promise<boolean> {
@@ -188,9 +197,9 @@ export class ConcertEditorRoute {
 		},
 	]
 
-	/** The served cover, else the picked file while it is processed. */
+	/** The picked image while it is processed, else the served cover. */
 	public get renderedCover(): string {
-		return this.localPreviewUrl || this.coverImageUrl
+		return this.pendingCover?.previewUrl || this.coverImageUrl
 	}
 
 	/** Field errors, recomputed as the operator edits; shown after a save attempt. */
@@ -222,6 +231,7 @@ export class ConcertEditorRoute {
 					return
 				}
 				this.hydrate(concert)
+				this.showPendingCover(concert)
 			} else if (roster.some((a) => a.id?.value === artistId)) {
 				// A new concert starts with the Artist it is created from, listed
 				// first so it stays the first performer.
@@ -262,10 +272,7 @@ export class ConcertEditorRoute {
 
 	private hydrate(concert: AuthoredSeries): void {
 		const series = concert.series
-		// While a newly set cover is processed, keep its preview (D9a).
-		if (!this.pendingCoverId) {
-			this.coverImageUrl = series.coverImage?.large?.value ?? ''
-		}
+		this.coverImageUrl = series.coverImage?.large?.value ?? ''
 		this.model = {
 			title: concertTitle(concert),
 			description: series.description?.value ?? '',
@@ -337,8 +344,9 @@ export class ConcertEditorRoute {
 			.map((p) => p.id)
 	}
 
+	/** 日程を追加: a new draft date copying the previous one (design D19). */
 	public addEvent(): void {
-		this.model.events.push(emptyEventRow())
+		this.model.events.push(nextEventRow(this.model.events.at(-1)))
 	}
 
 	public removeEvent(index: number): void {
@@ -409,14 +417,16 @@ export class ConcertEditorRoute {
 		if (row < 0) return
 		const errors = this.errors.rows[row]
 		if (errors.venueName) this.venueFields[row]?.focus()
-		else this.dateFields[row]?.focus()
+		else if (errors.localDate) this.dateFields[row]?.focus()
+		else this.startTimeFields[row]?.focus()
 	}
 
 	/**
 	 * Uploads the picked cover: CreateUploadUrl, PUT to the signed URL, then
-	 * SetCoverImage. The picked file shows at once; the editor then re-reads
-	 * the concert every 3 s for up to 60 s and swaps to the processed image once
-	 * the Series' cover is the uploaded one (D9a).
+	 * SetCoverImage. The picked file shows at once and is handed to the cover
+	 * store, so the concert page a save returns to shows it too (design D19);
+	 * the editor then re-reads the concert every 3 s for up to 60 s and swaps
+	 * to the processed image once the Series' cover is the uploaded one (D9a).
 	 */
 	public async onCoverSelected(event: Event): Promise<void> {
 		const input = event.target as HTMLInputElement
@@ -446,11 +456,13 @@ export class ConcertEditorRoute {
 				upload.seriesImageId,
 				this.abort.signal,
 			)
-			this.revokeLocalPreview()
-			this.localPreviewUrl = URL.createObjectURL(file)
+			this.pendingCover = this.covers.hold(
+				this.seriesId,
+				upload.seriesImageId,
+				file,
+			)
 			this.coverNote = 'processing'
-			this.pendingCoverId = upload.seriesImageId
-			this.startCoverPoll()
+			this.startCoverWatch()
 		} catch (err) {
 			this.logger.warn('Cover upload failed', err)
 			this.coverImageError = 'concertEditor.cover.failed'
@@ -460,45 +472,40 @@ export class ConcertEditorRoute {
 		}
 	}
 
-	private startCoverPoll(): void {
-		this.stopCoverPoll()
-		const startedAt = this.clock.now()
-		const tick = async () => {
-			try {
+	/** Reopened while a picked cover is still processed: show it and wait (D9a). */
+	private showPendingCover(concert: AuthoredSeries): void {
+		this.pendingCover = this.covers.settle(
+			this.seriesId,
+			concert.series.coverImage?.id?.value,
+		)
+		if (!this.pendingCover) return
+		this.coverNote = 'processing'
+		this.startCoverWatch()
+	}
+
+	private startCoverWatch(): void {
+		this.stopCoverWatch?.()
+		this.stopCoverWatch = watchCover({
+			read: async () => {
 				const concert = findConcert(
 					await this.series.list(this.abort.signal),
 					this.seriesId,
 				)
 				const cover = concert?.series.coverImage
-				if (cover?.id?.value === this.pendingCoverId && cover.large?.value) {
-					this.coverImageUrl = cover.large.value
-					this.pendingCoverId = ''
-					this.coverNote = ''
-					this.revokeLocalPreview()
-					return
-				}
-			} catch (err) {
-				if (this.abort.signal.aborted) return
-				this.logger.debug('Cover check failed', err)
-			}
-			if (this.clock.now() - startedAt >= COVER_POLL_LIMIT_MS) {
+				if (!cover?.large?.value) return undefined
+				this.coverImageUrl = cover.large.value
+				return cover.id?.value
+			},
+			served: (coverId) => {
+				this.pendingCover = this.covers.settle(this.seriesId, coverId)
+				if (this.pendingCover) return false
+				this.coverNote = ''
+				return true
+			},
+			slow: () => {
 				this.coverNote = 'slow'
-				return
-			}
-			this.coverTimer = setTimeout(tick, COVER_POLL_MS)
-		}
-		this.coverTimer = setTimeout(tick, COVER_POLL_MS)
-	}
-
-	private stopCoverPoll(): void {
-		if (this.coverTimer !== null) clearTimeout(this.coverTimer)
-		this.coverTimer = null
-	}
-
-	private revokeLocalPreview(): void {
-		if (this.localPreviewUrl) {
-			URL.revokeObjectURL(this.localPreviewUrl)
-			this.localPreviewUrl = ''
-		}
+			},
+			now: () => this.clock.now(),
+		})
 	}
 }

@@ -54,6 +54,13 @@
 			object-fit: cover;
 		}
 
+		/* The processing note under a picked cover (design D9a). */
+		.cover-note {
+			max-inline-size: 360px;
+			font: var(--md-type-body-medium);
+			color: var(--md-color-on-surface-variant);
+		}
+
 		.summary {
 			display: grid;
 			gap: var(--space-2xs);
