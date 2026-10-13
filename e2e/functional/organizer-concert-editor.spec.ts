@@ -199,7 +199,7 @@ test.describe('venue search', () => {
 	})
 
 	test(`@spec ${SPEC} "Short Japanese name"`, async ({ page }) => {
-		const log = await openEditor(page, '/concerts/new', {
+		const log = await openEditor(page, `${SERIES}/new`, {
 			'VenueService/Search': {
 				candidates: [
 					{
@@ -220,7 +220,7 @@ test.describe('venue search', () => {
 	})
 
 	test(`@spec ${SPEC} "Short Latin text"`, async ({ page }) => {
-		const log = await openEditor(page, '/concerts/new')
+		const log = await openEditor(page, `${SERIES}/new`)
 		await venueSearch(row(page, 0)).fill('Zepp')
 		await page.waitForTimeout(SEARCH_PAUSE_MS)
 		expect(calls(log, 'VenueService/Search')).toHaveLength(0)
@@ -243,7 +243,7 @@ test.describe('venue search', () => {
 		const firstHeld = new Promise<void>((resolve) => {
 			releaseFirst = resolve
 		})
-		const log = await openEditor(page, '/concerts/new', {
+		const log = await openEditor(page, `${SERIES}/new`, {
 			'VenueService/Search': async (request) => {
 				if (request.text === 'LIQUID') {
 					// The answer for LIQUID arrives after the one for LIQUIDROOM.
@@ -284,7 +284,7 @@ test.describe('venue search', () => {
 	})
 
 	test(`@spec ${SPEC} "Keyboard pick"`, async ({ page }) => {
-		await openEditor(page, '/concerts/new', {
+		await openEditor(page, `${SERIES}/new`, {
 			'VenueService/Search': {
 				candidates: [
 					HANEDA,
