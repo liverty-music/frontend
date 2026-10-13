@@ -52,6 +52,8 @@ interface Screen {
 	setup: (page: Page) => Promise<void>
 	/** Visible once the screen has rendered its content. */
 	ready: (page: Page) => Locator
+	/** Brings the screen into the state checked, e.g. opens a menu. */
+	act?: (page: Page) => Promise<void>
 	probes: Probe[]
 }
 
@@ -223,15 +225,52 @@ const filledButton: Probe = {
 	expect: { padding: true, background: true },
 }
 
+/** A list item's link: the whole item is the target. */
+const listItem: Probe = {
+	what: 'a list item',
+	locate: (page) => page.locator('list-item').locator('a').first(),
+	expect: { padding: true },
+}
+
+/** 公演をつくる, the extended FAB. */
+const fab: Probe = {
+	what: 'the extended FAB',
+	locate: (page) => page.locator('extended-fab').locator('a'),
+	expect: { padding: true, background: true },
+}
+
+/** An open overflow menu's container. */
+const openMenu: Probe = {
+	what: 'the open overflow menu',
+	locate: (page) => page.getByRole('menu', { name: 'その他の操作' }),
+	expect: { padding: true, background: true },
+}
+
+/** Opens the first overflow menu of the screen. */
+async function openFirstMenu(page: Page): Promise<void> {
+	await page
+		.locator('overflow-menu')
+		.first()
+		.getByRole('button', { name: 'その他の操作' })
+		.click()
+	await expect(page.getByRole('menu')).toBeVisible()
+}
+
 const SALES = `${SERIES}/s-tour/events/e-1103/ticket-sales`
 
 const ORGANIZER: Screen[] = [
-	['Home', ORG, [consoleButton]],
-	['Concerts', SERIES, [consoleButton]],
-	['Concert', `${SERIES}/s-tour`, [consoleButton]],
+	['Home', ORG, [listItem]],
+	['Concerts', SERIES, [fab]],
+	['Concert', `${SERIES}/s-tour`, [consoleButton, listItem]],
+	['Concert with draft dates', `${SERIES}/s-solo`, [filledButton]],
 	['Concert editor (new)', `${SERIES}/new`, [filledButton]],
 	['Concert editor (edit)', `${SERIES}/s-tour/edit`, [filledButton]],
 	['Event, Sales tab', SALES, [consoleButton]],
+	[
+		'Event, draft (Reception tab)',
+		`${SERIES}/s-solo/events/e-1220/scanners`,
+		[filledButton],
+	],
 	[
 		'Event, Reception tab',
 		`${SERIES}/s-tour/events/e-1103/scanners`,
@@ -277,6 +316,14 @@ ORGANIZER.push(
 		setup: consoleAs(),
 		ready: pageTitle,
 		probes: [filledButton],
+	},
+	{
+		name: 'organizer Event, menu open',
+		path: `${SERIES}/s-tour/events/e-1103/scanners`,
+		setup: consoleAs(),
+		ready: pageTitle,
+		act: openFirstMenu,
+		probes: [openMenu],
 	},
 	{
 		name: 'organizer Concerts (no represented Artist)',
@@ -398,20 +445,11 @@ const KNOWN_VIOLATIONS: Array<{
 		reason:
 			'White on the brand magenta #fd00a6 of `.welcome-btn-primary` is 3.66:1.',
 	},
-	...['organizer Event, Sales tab', 'organizer Event, Reception tab'].map(
-		(screen) => ({
-			screen,
-			rule: 'heading-order',
-			reason:
-				'Sale and scanner cards use <h3> under the <h1>. Redesigned by `redesign-organizer-console` D18.',
-		}),
-	),
 	{
-		screen: 'organizer Settings',
-		rule: 'scrollable-region-focusable',
-		only: 'phone',
+		screen: 'organizer Event, Sales tab',
+		rule: 'heading-order',
 		reason:
-			'The console <main> scrolls on a phone without being focusable. Redesigned by `redesign-organizer-console` D18.',
+			'Sale cards use <h3> under the <h1>. Redesigned by `redesign-organizer-console` D18.',
 	},
 ]
 
@@ -459,6 +497,7 @@ for (const screen of [...FAN, ...ORGANIZER, ...ADMIN]) {
 		await screen.setup(page)
 		await page.goto(screen.path)
 		await expect(screen.ready(page).first()).toBeVisible()
+		await screen.act?.(page)
 		await settle(page)
 
 		await expectLayerOrderDeclaredFirst(page)
