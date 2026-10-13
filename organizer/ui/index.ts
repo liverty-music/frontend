@@ -6,6 +6,7 @@ import { ConsoleField } from './console-field/console-field'
 import { ConsoleIcon } from './console-icon/console-icon'
 import { ConsoleSnackbar } from './console-snackbar/console-snackbar'
 import { ConsoleTabs } from './console-tabs/console-tabs'
+import { ConsoleTimeField } from './console-time-field/console-time-field'
 import { CopyButton } from './copy-button/copy-button'
 import { CopyField } from './copy-field/copy-field'
 import { DataList } from './data-list/data-list'
@@ -31,6 +32,7 @@ export const ConsoleUi = [
 	ConsoleIcon,
 	ConsoleSnackbar,
 	ConsoleTabs,
+	ConsoleTimeField,
 	CopyButton,
 	CopyField,
 	DataList,
