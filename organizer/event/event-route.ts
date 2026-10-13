@@ -1,12 +1,15 @@
 import { IRouter, IRouterEvents, type Params, route } from '@aurelia/router'
 import { Visibility } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
+import { IAppConfig } from '../../shared/config/app-config'
 import {
 	concertTitle,
 	eventDay,
 	eventStart,
+	fanPageUrlOf,
 	isCancelled,
 	isDraft,
+	isPublished,
 	paths,
 	publishBadge,
 	venueName,
@@ -14,15 +17,20 @@ import {
 import { ISeriesClient } from '../services/series-client'
 import { type Crumb, IBreadcrumbs } from '../shell/breadcrumbs'
 import { IConsoleContext } from '../shell/console-context'
+import { IPageProgress } from '../shell/page-progress'
 import type { ConfirmDialog } from '../ui/confirm-dialog/confirm-dialog'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { ConsoleTab } from '../ui/console-tabs/console-tabs'
+import type { MenuItem } from '../ui/overflow-menu/overflow-menu'
 import { IEventPage } from './event-page'
 
 /**
- * One event (one date of a concert): its date, venue and publish state with
- * 公開する, 中止する and 編集, and its Sales (`ticket-sales`) and Reception
- * (`scanners`) tabs, each a child route so a tab is its own address. The page
+ * One event (one date of a concert): its date, venue and publish state, the
+ * fan page address of a published date of a PUBLIC concert (design D21), and
+ * its actions — 公開する for a draft (filled, the page's main action) and an
+ * overflow menu with 中止する and 公演を編集 (design D18) — then its primary
+ * tabs Sales (`ticket-sales`) and Reception (`scanners`), each a child route
+ * so a tab is its own address. The page
  * opens on 販売. The sale editors are child routes too
  * (`ticket-sales/new?method=…`, `ticket-sales/{sale}/edit`, design D1); while
  * one is open the header and tabs are hidden and the editor owns the
@@ -34,12 +42,10 @@ import { IEventPage } from './event-page'
 		{
 			path: 'ticket-sales',
 			component: import('./sales-tab/sales-tab'),
-			title: 'Sales',
 		},
 		{
 			path: 'scanners',
 			component: import('./reception-tab/reception-tab'),
-			title: 'Reception',
 		},
 		// The sale editors replace the event's header and tabs; each sets its
 		// own title and breadcrumb. One route opens either editor: the method
@@ -47,12 +53,10 @@ import { IEventPage } from './event-page'
 		{
 			path: 'ticket-sales/new',
 			component: import('../sale-editor/sale-editor-route'),
-			title: 'New sale',
 		},
 		{
 			path: 'ticket-sales/:saleId/edit',
 			component: import('../sale-editor/sale-editor-route'),
-			title: 'Sale',
 		},
 	],
 })
@@ -64,6 +68,8 @@ export class EventRoute {
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
 	private readonly context = resolve(IConsoleContext)
+	private readonly progress = resolve(IPageProgress)
+	private readonly environment = resolve(IAppConfig).environment
 	private readonly logger = resolve(ILogger).scopeTo('EventRoute')
 
 	public publishDialog!: ConfirmDialog
@@ -76,10 +82,12 @@ export class EventRoute {
 	private subscription: IDisposable | null = null
 
 	public async loading(params: Params): Promise<void> {
-		await this.page.load(
-			params.artistId ?? '',
-			params.seriesId ?? '',
-			params.eventId ?? '',
+		await this.progress.track(
+			this.page.load(
+				params.artistId ?? '',
+				params.seriesId ?? '',
+				params.eventId ?? '',
+			),
 		)
 	}
 
@@ -150,6 +158,39 @@ export class EventRoute {
 
 	public get unlisted(): boolean {
 		return this.page.concert?.series.visibility === Visibility.UNLISTED
+	}
+
+	/** The fan page of a published date of a PUBLIC concert; '' otherwise. */
+	public get fanPageUrl(): string {
+		const event = this.page.event
+		if (
+			!event ||
+			!isPublished(event) ||
+			this.page.concert?.series.visibility !== Visibility.PUBLIC
+		) {
+			return ''
+		}
+		return fanPageUrlOf(this.environment, this.page.eventId)
+	}
+
+	/** The header's further actions: 中止する and 公演を編集. */
+	public get menu(): MenuItem[] {
+		return [
+			{
+				id: 'cancel',
+				labelKey: 'event.cancel',
+				disabled: this.cancelled || this.publishing || this.cancelling,
+			},
+			{
+				id: 'edit',
+				labelKey: 'event.editConcert',
+				href: this.editHref,
+			},
+		]
+	}
+
+	public onMenu(id: string): void {
+		if (id === 'cancel') void this.cancel()
 	}
 
 	public get editHref(): string {

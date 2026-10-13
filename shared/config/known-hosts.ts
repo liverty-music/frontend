@@ -18,3 +18,15 @@ export const KNOWN_HOSTS: Readonly<Record<string, KnownEnvironment>> = {
 	'dev.liverty-music.app': 'dev',
 	'staging.liverty-music.app': 'staging',
 }
+
+/**
+ * The fan app's origin in an environment (`https://liverty-music.app` in
+ * prod): the hostname this map assigns to it. The organizer console builds a
+ * published event's fan page address from it.
+ */
+export function fanOriginOf(environment: KnownEnvironment): string | undefined {
+	const host = Object.keys(KNOWN_HOSTS).find(
+		(name) => KNOWN_HOSTS[name] === environment,
+	)
+	return host ? `https://${host}` : undefined
+}
