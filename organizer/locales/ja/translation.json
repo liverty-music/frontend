@@ -31,6 +31,11 @@
 		"yenPrefix": "",
 		"yenSuffix": "円"
 	},
+	"timeField": {
+		"hour": "時",
+		"minute": "分",
+		"unset": "--"
+	},
 	"copyField": {
 		"copy": "{{label}}をコピー",
 		"failed": "コピーできませんでした"
@@ -368,7 +373,7 @@
 		},
 		"startTimeOnSale": "チケットの販売が始まった公演日の開始時刻は変更できないため、保存していません。まだ販売していない場合は、同じ会場・時刻をほかの公演が使っています。",
 		"visibilityPublic": "ファン向けの一覧に表示し、公開したときに出演者のフォロワーへ通知します。",
-		"visibilityUnlisted": "共有リンクを知っている人だけが見られます。フォロワーには通知しません。",
+		"visibilityUnlisted": "ファン向けの一覧に表示しません。公開してもフォロワーには通知しません。",
 		"visibilityFixed": "公開または中止した公演日があるため、公開範囲は変更できません。",
 		"sections": {
 			"about": "公演の情報"
@@ -381,8 +386,10 @@
 		"explain": "受付期間中にファンが申し込み、締め切り後に自動で抽選します。受付開始後は変更できません。",
 		"name": "販売名",
 		"namePlaceholder": "例: ファンクラブ先行",
-		"start": "受付開始",
-		"end": "受付終了",
+		"startDate": "受付開始日",
+		"startTime": "受付開始時刻",
+		"endDate": "受付終了日",
+		"endTime": "受付終了時刻",
 		"windowHint": "受付期間は{{min}}〜{{max}}日です。公演の開始前に締め切ります。",
 		"price": "価格",
 		"quantity": "販売枚数",
@@ -423,8 +430,10 @@
 		"changeTitle": "先着販売を変更",
 		"crumb": "先着で販売",
 		"defaultName": "一般発売",
-		"start": "販売開始",
-		"end": "販売終了",
+		"startDate": "販売開始日",
+		"startTime": "販売開始時刻",
+		"endDate": "販売終了日",
+		"endTime": "販売終了時刻",
 		"endHint": "開演時刻までに終わるようにしてください。",
 		"priceLocked": "チケットが販売済みまたは購入手続き中のため、価格は変更できません。",
 		"limitHint": "{{min}}〜{{max}}枚",

@@ -1,9 +1,12 @@
 import {
+	chooseTime,
 	connectError,
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
 	SERIES,
+	shownTime,
+	timeField,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -16,8 +19,8 @@ import {
 import { expect, type Locator, type Page, test } from '../support/test'
 
 /**
- * The concert editor: venues picked from the map catalog, Japan-time dates,
- * save feedback and the return to the concert page, published dates kept
+ * The concert editor: venues picked from the map catalog, Japan-time dates
+ * and 24-hour times with the defaults of a new concert, save feedback and the return to the concert page, published dates kept
  * fixed, the cover image preview, and the unsaved-changes guard.
  */
 
@@ -110,6 +113,8 @@ const row = (page: Page, index: number) => page.locator(`[data-row="${index}"]`)
 const titleField = (page: Page) => page.getByLabel('公演名')
 const venueSearch = (scope: Locator) =>
 	scope.getByRole('combobox', { name: /会場/ })
+/** The venue field of a date row (its list of places, not the time selects). */
+const venue = (scope: Locator) => scope.locator('venue-field')
 const snackbar = (page: Page) => page.locator('.snack-item')
 const nav = (page: Page) =>
 	page.getByRole('navigation', { name: 'メインナビゲーション' })
@@ -119,7 +124,9 @@ const calls = (log: RpcLog, method: string) =>
 /** Types the name, waits for the field's search, and picks Zepp Haneda. */
 async function pickVenue(scope: Locator, name = 'Zepp Haneda') {
 	await venueSearch(scope).fill(name)
-	await scope.getByRole('option', { name: /Zepp Haneda \(TOKYO\)/ }).click()
+	await venue(scope)
+		.getByRole('option', { name: /Zepp Haneda \(TOKYO\)/ })
+		.click()
 }
 
 /** Longer than the venue field waits after the last keystroke (500 ms). */
@@ -181,7 +188,7 @@ test.describe('venue search', () => {
 		await expect(row(page, 0)).toContainText(
 			'会場が見つかりませんでした。別の名前で検索してください。',
 		)
-		await expect(row(page, 0).getByRole('option')).toHaveCount(0)
+		await expect(venue(row(page, 0)).getByRole('option')).toHaveCount(0)
 		await expect(
 			row(page, 0).getByRole('button', { name: '変更' }),
 		).toHaveCount(0)
@@ -206,7 +213,7 @@ test.describe('venue search', () => {
 
 		await row(page, 0).getByRole('button', { name: '再試行' }).click()
 		await expect(
-			row(page, 0).getByRole('option', { name: /Zepp Haneda/ }),
+			venue(row(page, 0)).getByRole('option', { name: /Zepp Haneda/ }),
 		).toBeVisible()
 		expect(calls(log, 'VenueService/Search')).toHaveLength(2)
 	})
@@ -225,7 +232,7 @@ test.describe('venue search', () => {
 		})
 		await venueSearch(row(page, 0)).fill('武道館')
 		await expect(
-			row(page, 0).getByRole('option', { name: /日本武道館/ }),
+			venue(row(page, 0)).getByRole('option', { name: /日本武道館/ }),
 		).toBeVisible()
 		expect(calls(log, 'VenueService/Search').map((c) => c.body)).toEqual([
 			{ text: '武道館' },
@@ -244,7 +251,7 @@ test.describe('venue search', () => {
 
 		await venueSearch(row(page, 0)).fill('Zepp H')
 		await expect(
-			row(page, 0).getByRole('option', { name: /Zepp Haneda/ }),
+			venue(row(page, 0)).getByRole('option', { name: /Zepp Haneda/ }),
 		).toBeVisible()
 		expect(calls(log, 'VenueService/Search').map((c) => c.body)).toEqual([
 			{ text: 'Zepp H' },
@@ -281,14 +288,14 @@ test.describe('venue search', () => {
 		await expect.poll(() => calls(log, 'VenueService/Search').length).toBe(1)
 		await venueSearch(field).fill('LIQUIDROOM')
 		await expect(
-			field.getByRole('option', { name: /LIQUIDROOM/ }),
+			venue(field).getByRole('option', { name: /LIQUIDROOM/ }),
 		).toBeVisible()
 
 		releaseFirst()
 		await page.waitForTimeout(SEARCH_PAUSE_MS)
-		await expect(field.getByRole('option')).toHaveCount(1)
+		await expect(venue(field).getByRole('option')).toHaveCount(1)
 		await expect(
-			field.getByRole('option', { name: /Zepp Haneda/ }),
+			venue(field).getByRole('option', { name: /Zepp Haneda/ }),
 		).toHaveCount(0)
 		expect(calls(log, 'VenueService/Search').map((c) => c.body)).toEqual([
 			{ text: 'LIQUID' },
@@ -311,7 +318,7 @@ test.describe('venue search', () => {
 		})
 		const field = row(page, 0)
 		await venueSearch(field).fill('Zepp Haneda')
-		await expect(field.getByRole('option')).toHaveCount(2)
+		await expect(venue(field).getByRole('option')).toHaveCount(2)
 		// The list credits Google Maps as its source.
 		await expect(field.getByText('Google Maps')).toBeVisible()
 
@@ -321,7 +328,7 @@ test.describe('venue search', () => {
 
 		await expect(field).toContainText('Zepp DiverCity (TOKYO)')
 		await expect(field).toContainText('江東区青海')
-		await expect(field.getByRole('option')).toHaveCount(0)
+		await expect(venue(field).getByRole('option')).toHaveCount(0)
 		await expect(field.getByRole('button', { name: '変更' })).toBeVisible()
 	})
 
@@ -468,8 +475,10 @@ test.describe('visibility', () => {
 		await expect(visibility.getByRole('radio', { name: /^公開/ })).toBeChecked()
 		await expect(visibility).toContainText('フォロワーへ通知します')
 		await expect(visibility).toContainText(
-			'共有リンクを知っている人だけが見られます',
+			'ファン向けの一覧に表示しません。公開してもフォロワーには通知しません。',
 		)
+		// No share link is promised: UNLISTED concerts have no fan entry yet (D21).
+		await expect(visibility).not.toContainText('共有リンク')
 
 		await fillNewConcert(page)
 		await pickVenue(row(page, 0))
@@ -514,10 +523,10 @@ test.describe('times in another time zone', () => {
 				return { body: oneSeries(timed) }
 			},
 		})
-		const start = row(page, 0).getByLabel('開演')
-		await expect(start).toHaveValue('')
-		await expect(row(page, 0)).toContainText('JST')
-		await start.fill('18:00')
+		const start = timeField(row(page, 0), '開演')
+		expect(await shownTime(row(page, 0), '開演')).toBe('')
+		await expect(start).toContainText('JST')
+		await chooseTime(row(page, 0), '開演', '18:00')
 		await page.getByRole('button', { name: '保存する' }).click()
 		await expect(snackbar(page)).toContainText('変更を保存しました')
 
@@ -531,8 +540,83 @@ test.describe('times in another time zone', () => {
 		// Saving returns to the concert page; reopen the editor.
 		await expect(page).toHaveURL(/\/series\/s-solo$/)
 		await page.goto(`${SERIES}/s-solo/edit`)
-		await expect(row(page, 0).getByLabel('開演')).toHaveValue('18:00')
+		await expect.poll(() => shownTime(row(page, 0), '開演')).toBe('18:00')
 		await expect(row(page, 0).getByLabel('日付')).toHaveValue('2026-12-20')
+	})
+})
+
+test.describe('times on a 12-hour device', () => {
+	// An English (United States) device writes 18:00 as 6:00 PM.
+	test.use({ locale: 'en-US' })
+
+	test(`@spec ${SPEC} "Device using a 12-hour clock"`, async ({ page }) => {
+		await openEditor(page, `${SERIES}/s-solo/edit`)
+		expect(
+			await page.evaluate(() =>
+				new Date(2026, 11, 20, 18).toLocaleTimeString(undefined, {
+					hour: 'numeric',
+					minute: '2-digit',
+				}),
+			),
+		).toMatch(/PM/)
+
+		for (const label of ['開場', '開演']) {
+			const hours = timeField(row(page, 0), label).getByRole('combobox', {
+				name: '時',
+			})
+			const texts = (await hours.locator('option').allTextContents()).map((t) =>
+				t.trim(),
+			)
+			expect(texts.filter((t) => t !== '--')).toEqual(
+				Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0')),
+			)
+		}
+		expect(await shownTime(row(page, 0), '開演')).toBe('18:00')
+		await expect(row(page, 0)).not.toContainText(/AM|PM|午前|午後/)
+	})
+})
+
+test.describe('dates and times of a new concert', () => {
+	test(`@spec ${SPEC} "Defaults of a new concert"`, async ({ page }) => {
+		await openEditor(page, `${SERIES}/new`)
+		await expect.poll(() => shownTime(row(page, 0), '開場')).toBe('17:00')
+		expect(await shownTime(row(page, 0), '開演')).toBe('19:00')
+		await expect(timeField(row(page, 0), '開演')).toContainText('JST')
+	})
+
+	test(`@spec ${SPEC} "Another night at the same venue"`, async ({ page }) => {
+		const log = await openEditor(page, `${SERIES}/new`, {
+			'SeriesService/Create': oneSeries(XX_SOLO),
+		})
+		await fillNewConcert(page)
+		await pickVenue(row(page, 0))
+		await row(page, 0).getByLabel('日付').fill('2026-11-03')
+		await chooseTime(row(page, 0), '開演', '18:00')
+
+		await page.getByRole('button', { name: '公演日を追加' }).click()
+		const added = row(page, 1)
+		await expect(added).toContainText('Zepp Haneda (TOKYO)')
+		await expect(added).toContainText('大田区羽田空港')
+		await expect(added.getByLabel('日付')).toHaveValue('2026-11-03')
+		expect(await shownTime(added, '開場')).toBe('17:00')
+		expect(await shownTime(added, '開演')).toBe('18:00')
+
+		// Only the date changes for the next night.
+		await added.getByLabel('日付').fill('2026-11-04')
+		await page.getByRole('button', { name: '公演をつくる' }).click()
+		await expect.poll(() => calls(log, 'SeriesService/Create').length).toBe(1)
+		const body = calls(log, 'SeriesService/Create')[0]
+			.body as unknown as DraftBody
+		expect(body.draft.events).toHaveLength(2)
+		for (const [i, day] of [
+			[0, '2026-11-03'],
+			[1, '2026-11-04'],
+		] as const) {
+			expect(body.draft.events[i].placeId).toEqual({ value: 'ChIJ-haneda' })
+			expect(
+				new Date(body.draft.events[i].startTime?.value ?? '').toISOString(),
+			).toBe(jst(day, '18:00'))
+		}
 	})
 })
 
@@ -580,9 +664,12 @@ test.describe('a published concert', () => {
 		await page.getByRole('button', { name: '公演日を追加' }).click()
 		const added = row(page, 4)
 		await expect(added).toContainText('下書き')
+		// The new date starts as a copy of the last one (Zepp Fukuoka).
+		await expect(added).toContainText('Zepp Fukuoka')
+		await added.getByRole('button', { name: '変更' }).click()
 		await pickVenue(added)
 		await added.getByLabel('日付').fill('2026-12-01')
-		await added.getByLabel('開演').fill('18:00')
+		await chooseTime(added, '開演', '18:00')
 		await page.getByRole('button', { name: '保存する' }).click()
 
 		await expect(snackbar(page)).toContainText('変更を保存しました')
@@ -601,7 +688,7 @@ test.describe('a published concert', () => {
 			'SeriesService/Update': () =>
 				connectError('failed_precondition', 'tickets on sale', 400),
 		})
-		await row(page, 0).getByLabel('開演').fill('19:00')
+		await chooseTime(row(page, 0), '開演', '19:00')
 		await page.getByRole('button', { name: '保存する' }).click()
 
 		await expect(snackbar(page)).toContainText(
@@ -612,7 +699,7 @@ test.describe('a published concert', () => {
 		).toHaveCount(0)
 		expect(calls(log, 'SeriesService/Update')).toHaveLength(1)
 		// Nothing was saved: the change is still unsaved in the editor.
-		await expect(row(page, 0).getByLabel('開演')).toHaveValue('19:00')
+		expect(await shownTime(row(page, 0), '開演')).toBe('19:00')
 		await nav(page).getByRole('link', { name: '公演' }).click()
 		await expect(
 			page.getByRole('dialog', { name: '変更を破棄しますか？' }),
@@ -734,17 +821,29 @@ test.describe('cover image', () => {
 		expect(calls(log, 'SeriesService/List').length).toBe(3)
 	})
 
-	// Design D19 (save returns to the concert page) leaves the editor on save,
-	// so the editor can no longer show the picked image afterwards; the
-	// scenario needs restating for the concert page, which still shows the
-	// previous cover until the processed one is served.
-	test.fixme(`@spec ${SPEC} "Saved before processing finished"`, async ({
-		page,
-	}) => {
+	test(`@spec ${SPEC} "Saved before processing finished"`, async ({ page }) => {
 		await mockImageHosts(page)
-		const log = await openEditor(page, `${SERIES}/s-solo/edit`, {
+		let log: RpcLog = { calls: [] }
+		// The new cover is processed only after the concert page has read the
+		// concert twice following the save.
+		const listsAfterSave = () => {
+			const saved = log.calls.findIndex(
+				(c) => c.method === 'SeriesService/Update',
+			)
+			return saved < 0
+				? 0
+				: log.calls
+						.slice(saved)
+						.filter((c) => c.method === 'SeriesService/List').length
+		}
+		log = await openEditor(page, `${SERIES}/s-solo/edit`, {
 			...UPLOAD_RPC,
-			'SeriesService/List': listWith(XX_SOLO, cover('img-old', OLD_COVER)),
+			'SeriesService/List': () => ({
+				body:
+					listsAfterSave() >= 3
+						? listWith(XX_SOLO, cover('img-new', NEW_COVER))
+						: listWith(XX_SOLO, cover('img-old', OLD_COVER)),
+			}),
 			'SeriesService/Update': oneSeries(XX_SOLO, {
 				...cover('img-old', OLD_COVER),
 				description: { value: '年末のワンマン' },
@@ -759,8 +858,20 @@ test.describe('cover image', () => {
 		await expect(snackbar(page)).toContainText('変更を保存しました')
 		expect(calls(log, 'SeriesService/Update')).toHaveLength(1)
 
-		await expect(preview(page)).toHaveAttribute('src', /^blob:/)
-		await expect(page.getByText(PROCESSING)).toBeVisible()
+		// The concert page shows the picked image and the note, not the
+		// previous cover, though the Series still serves the previous one.
+		await expect(page).toHaveURL(/\/series\/s-solo$/)
+		const concertCover = page.getByTestId('concert-cover')
+		await expect(concertCover).toHaveAttribute('src', /^blob:/)
+		await expect(
+			page.getByRole('status').filter({ hasText: PROCESSING }),
+		).toBeVisible()
+
+		// It re-reads every 3 s and shows the processed image once served.
+		await expect(concertCover).toHaveAttribute('src', NEW_COVER, {
+			timeout: 15_000,
+		})
+		await expect(page.getByText(PROCESSING)).toHaveCount(0)
 	})
 })
 

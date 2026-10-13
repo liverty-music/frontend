@@ -3,7 +3,6 @@
 <section class="settings">
   <h1 class="page-title">${'settings.title' & t}</h1>
 
-  <circular-progress if.bind="organizerState === 'loading'"></circular-progress>
   <div if.bind="organizerState === 'error'" class="message" role="alert">
     <p>${'settings.organizerFailed' & t}</p>
     <console-button variant="tonal" click.trigger="loadOrganizer()">${'common.retry' & t}</console-button>
@@ -36,7 +35,6 @@
 
   <section id="payout" class="part" aria-labelledby="settings-payout">
     <h2 id="settings-payout" class="section-title">${'settings.payout.title' & t}</h2>
-    <circular-progress if.bind="payoutState === 'loading'"></circular-progress>
     <div if.bind="payoutState === 'error'" class="message" role="alert">
       <p>${'settings.payout.failed' & t}</p>
       <console-button variant="tonal" click.trigger="loadPayout()">${'common.retry' & t}</console-button>

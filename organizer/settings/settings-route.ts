@@ -9,6 +9,7 @@ import {
 	type PayoutAccountView,
 	PayoutOnboardingStatus,
 } from '../services/payout-account-client'
+import { IPageProgress } from '../shell/page-progress'
 import type { Description } from '../ui/description-list/description-list'
 import type { StatusTone } from '../ui/status-badge/status-badge'
 
@@ -41,6 +42,7 @@ export class SettingsRoute {
 	private readonly organizers = resolve(IOrganizerClient)
 	private readonly artists = resolve(IArtistClient)
 	private readonly payout = resolve(IPayoutAccountClient)
+	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
 
 	public organizerState: PartState = 'loading'
@@ -124,7 +126,16 @@ export class SettingsRoute {
 		return this.account?.status === PayoutOnboardingStatus.ACTIVE
 	}
 
-	public async loadOrganizer(): Promise<void> {
+	/** Reads the organizer; the shell's progress indicator shows meanwhile. */
+	public loadOrganizer(): Promise<void> {
+		return this.progress.track(this.readOrganizer())
+	}
+
+	public loadPayout(): Promise<void> {
+		return this.progress.track(this.readPayout())
+	}
+
+	private async readOrganizer(): Promise<void> {
 		this.organizerState = 'loading'
 		try {
 			const [organizer, artists] = await Promise.all([
@@ -141,7 +152,7 @@ export class SettingsRoute {
 		}
 	}
 
-	public async loadPayout(): Promise<void> {
+	private async readPayout(): Promise<void> {
 		try {
 			this.account = await this.payout.get(this.abort.signal)
 			this.payoutState = 'ready'

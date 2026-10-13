@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
 	blankFormModel,
+	formModelOf,
 	isFormValid,
-	parseJstDateTimeLocal,
+	parseDateTime,
 	type TicketSaleFormContext,
 	type TicketSaleFormModel,
 	toCreateInput,
-	toJstDateTimeLocal,
 	validateTicketSaleForm,
 } from '../../../organizer/ticket-sale-editor/ticket-sale-form'
 
@@ -21,8 +21,8 @@ const CTX: TicketSaleFormContext = {
 function valid(): TicketSaleFormModel {
 	return {
 		name: '一般発売',
-		saleStartTime: '2026-11-01T12:00',
-		saleEndTime: '2026-11-20T19:00',
+		saleStart: { date: '2026-11-01', time: '12:00' },
+		saleEnd: { date: '2026-11-20', time: '19:00' },
 		price: '3000',
 		quantity: '150',
 		perAccountLimit: '4',
@@ -30,38 +30,44 @@ function valid(): TicketSaleFormModel {
 }
 
 describe('Japan-time inputs', () => {
-	it('reads a datetime-local value as Japan time whatever the browser zone', () => {
-		expect(parseJstDateTimeLocal('2026-11-20T19:00')?.toISOString()).toBe(
-			'2026-11-20T10:00:00.000Z',
-		)
+	it('reads a date and a 24-hour time as Japan time whatever the browser zone', () => {
+		expect(
+			parseDateTime({ date: '2026-11-20', time: '19:00' })?.toISOString(),
+		).toBe('2026-11-20T10:00:00.000Z')
 		// Crossing midnight in UTC.
-		expect(parseJstDateTimeLocal('2026-11-21T08:30')?.toISOString()).toBe(
-			'2026-11-20T23:30:00.000Z',
-		)
+		expect(
+			parseDateTime({ date: '2026-11-21', time: '08:30' })?.toISOString(),
+		).toBe('2026-11-20T23:30:00.000Z')
 	})
 
-	it('formats an instant as a Japan-time datetime-local value', () => {
-		expect(toJstDateTimeLocal(EVENT_START)).toBe('2026-11-20T19:00')
-		expect(toJstDateTimeLocal(new Date('2026-11-20T23:30:00Z'))).toBe(
-			'2026-11-21T08:30',
-		)
+	it('shows a stored window as Japan-time dates and times', () => {
+		const model = formModelOf({
+			name: '一般発売',
+			saleStartTime: new Date('2026-11-20T23:30:00Z'),
+			saleEndTime: EVENT_START,
+			price: BigInt(3000),
+			quantity: 150,
+			perAccountLimit: 4,
+		})
+		expect(model.saleStart).toEqual({ date: '2026-11-21', time: '08:30' })
+		expect(model.saleEnd).toEqual({ date: '2026-11-20', time: '19:00' })
 	})
 
 	it('rejects blank, malformed and non-existent times', () => {
-		expect(parseJstDateTimeLocal('')).toBeNull()
-		expect(parseJstDateTimeLocal('2026-11-20 19:00')).toBeNull()
-		expect(parseJstDateTimeLocal('2026-02-30T10:00')).toBeNull()
-		expect(parseJstDateTimeLocal('2026-11-20T24:00')).toBeNull()
+		expect(parseDateTime({ date: '', time: '' })).toBeNull()
+		expect(parseDateTime({ date: '2026-11-20', time: '' })).toBeNull()
+		expect(parseDateTime({ date: '2026-02-30', time: '10:00' })).toBeNull()
+		expect(parseDateTime({ date: '2026-11-20', time: '24:00' })).toBeNull()
 	})
 })
 
 describe('blankFormModel', () => {
 	it('ends the sale at the event start and allows 4 per account', () => {
 		const model = blankFormModel(EVENT_START, '一般発売')
-		expect(model.saleEndTime).toBe('2026-11-20T19:00')
+		expect(model.saleEnd).toEqual({ date: '2026-11-20', time: '19:00' })
 		expect(model.perAccountLimit).toBe('4')
 		expect(model.name).toBe('一般発売')
-		expect(model.saleStartTime).toBe('')
+		expect(model.saleStart).toEqual({ date: '', time: '' })
 	})
 })
 
@@ -72,10 +78,10 @@ describe('validateTicketSaleForm', () => {
 
 	it('rejects a sale end after the event start', () => {
 		const errors = validateTicketSaleForm(
-			{ ...valid(), saleEndTime: '2026-11-20T19:30' },
+			{ ...valid(), saleEnd: { date: '2026-11-20', time: '19:30' } },
 			CTX,
 		)
-		expect(errors.saleEndTime).toEqual({
+		expect(errors.saleEndDate).toEqual({
 			key: 'firstComeEditor.error.endAfterEvent',
 			params: { eventStart: EVENT_START },
 		})
@@ -83,21 +89,43 @@ describe('validateTicketSaleForm', () => {
 
 	it('rejects an end that is not after the start', () => {
 		const errors = validateTicketSaleForm(
-			{ ...valid(), saleStartTime: '2026-11-20T19:00' },
+			{ ...valid(), saleStart: { date: '2026-11-20', time: '19:00' } },
 			CTX,
 		)
-		expect(errors.saleEndTime).toEqual({
+		expect(errors.saleEndDate).toEqual({
 			key: 'firstComeEditor.error.endBeforeStart',
 		})
 	})
 
-	it('requires both times', () => {
-		const errors = validateTicketSaleForm(
-			{ ...valid(), saleStartTime: '', saleEndTime: '' },
+	it('requires both dates, then both times, each on its own field', () => {
+		const noDates = validateTicketSaleForm(
+			{
+				...valid(),
+				saleStart: { date: '', time: '12:00' },
+				saleEnd: { date: '', time: '' },
+			},
 			CTX,
 		)
-		expect(errors.saleStartTime).toBeDefined()
-		expect(errors.saleEndTime).toBeDefined()
+		expect(noDates.saleStartDate).toEqual({
+			key: 'firstComeEditor.error.start',
+		})
+		expect(noDates.saleEndDate).toEqual({ key: 'firstComeEditor.error.end' })
+		expect(noDates.saleStartTime).toBeUndefined()
+		expect(noDates.saleEndTime).toBeUndefined()
+
+		const noTimes = validateTicketSaleForm(
+			{
+				...valid(),
+				saleStart: { date: '2026-11-01', time: '' },
+				saleEnd: { date: '2026-11-20', time: '' },
+			},
+			CTX,
+		)
+		expect(noTimes.saleStartDate).toBeUndefined()
+		expect(noTimes.saleStartTime).toEqual({
+			key: 'firstComeEditor.error.start',
+		})
+		expect(noTimes.saleEndTime).toEqual({ key: 'firstComeEditor.error.end' })
 	})
 
 	it.each([

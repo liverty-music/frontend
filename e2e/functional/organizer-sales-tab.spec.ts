@@ -3,6 +3,7 @@ import {
 	installConsole,
 	type RpcMocks,
 	SERIES,
+	shownTime,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -122,6 +123,22 @@ test.describe('prerequisites', () => {
 		).toBeVisible()
 		await expect(startLottery(page)).toHaveCount(0)
 		await expect(startFirstCome(page)).toHaveCount(0)
+		// The fix is in the callout's own text color, not the brand color,
+		// which marks only the page's primary action (design-tokens).
+		const colorOf = (el: Element) => getComputedStyle(el).color
+		const fixColor = await callout
+			.getByRole('button', { name: '公開する' })
+			.evaluate(colorOf)
+		expect(fixColor).toBe(await callout.getByRole('heading').evaluate(colorOf))
+		expect(fixColor).not.toBe(
+			await page
+				.locator('event-route console-button[data-action="publish"]')
+				.evaluate(
+					(el) =>
+						getComputedStyle(el.shadowRoot?.querySelector('button') ?? el)
+							.backgroundColor,
+				),
+		)
 
 		// The link opens the event's publish confirmation.
 		await callout.getByRole('button', { name: '公開する' }).click()
@@ -383,7 +400,8 @@ test.describe('starting and editing a sale', () => {
 			page.getByRole('heading', { level: 1, name: '先着販売を変更' }),
 		).toBeVisible()
 		await expect(page.getByLabel('販売名')).toHaveValue('一般発売')
-		await expect(page.getByLabel('販売開始')).toHaveValue('2026-10-20T10:00')
+		await expect(page.getByLabel('販売開始日')).toHaveValue('2026-10-20')
+		await expect.poll(() => shownTime(page, '販売開始時刻')).toBe('10:00')
 		await expect(page.getByLabel('価格')).toHaveValue('7000')
 		await expect(page.getByLabel('販売枚数')).toHaveValue('150')
 	})
@@ -407,8 +425,11 @@ test.describe('starting and editing a sale', () => {
 		await expect(
 			page.getByRole('heading', { level: 1, name: '抽選販売を変更' }),
 		).toBeVisible()
-		await expect(page.getByLabel('受付開始')).toHaveValue('2026-10-09T12:00')
-		await expect(page.getByLabel('受付終了')).toHaveValue('2026-10-16T23:59')
+		await expect(page.getByLabel('受付開始日')).toHaveValue('2026-10-09')
+		await expect.poll(() => shownTime(page, '受付開始時刻')).toBe('12:00')
+		await expect(page.getByLabel('受付終了日')).toHaveValue('2026-10-16')
+		// A minute off the 5-minute steps is shown as saved.
+		expect(await shownTime(page, '受付終了時刻')).toBe('23:59')
 		await expect(page.getByLabel('価格')).toHaveValue('6500')
 		await expect(page.getByLabel('販売枚数')).toHaveValue('1200')
 		await expect(page.getByLabel('1人あたりの上限枚数')).toHaveValue('4')

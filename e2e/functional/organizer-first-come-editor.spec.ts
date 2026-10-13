@@ -1,8 +1,11 @@
 import {
+	chooseTime,
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
 	SERIES,
+	shownTime,
+	timeField,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -114,6 +117,23 @@ const field = (page: Page, label: string) => page.getByLabel(label)
 /** The whole field (label, control, hint and error) around a control. */
 const fieldBox = (page: Page, label: string) =>
 	page.locator('console-field').filter({ has: page.getByLabel(label) })
+/** Enters when the sale opens (`start`) or closes (`end`), in JST. */
+async function enterWindow(
+	page: Page,
+	which: 'start' | 'end',
+	date: string,
+	time: string,
+) {
+	const label = which === 'start' ? '販売開始' : '販売終了'
+	await field(page, `${label}日`).fill(date)
+	await chooseTime(page, `${label}時刻`, time)
+}
+
+/** The sale's opening or closing date and time as the form shows them. */
+async function shownWindow(page: Page, which: 'start' | 'end') {
+	const label = which === 'start' ? '販売開始' : '販売終了'
+	return `${await field(page, `${label}日`).inputValue()} ${await shownTime(page, `${label}時刻`)}`
+}
 const snackbar = (page: Page) => page.locator('.snack-item')
 const calls = (log: RpcLog, method: string) =>
 	log.calls.filter((c) => c.method === method)
@@ -126,22 +146,25 @@ test.describe('a new first-come sale', () => {
 		await expect(
 			page.getByRole('heading', { level: 1, name: '先着で販売する' }),
 		).toBeVisible()
-		await expect(field(page, '販売終了')).toHaveValue('2026-11-20T19:00')
+		await expect.poll(() => shownWindow(page, 'end')).toBe('2026-11-20 19:00')
 		await expect(field(page, '販売名')).toHaveValue('一般発売')
 		await expect(field(page, '1人あたりの上限枚数')).toHaveValue('4')
-		await expect(fieldBox(page, '販売終了')).toContainText('JST')
+		await expect(fieldBox(page, '販売終了日')).toContainText('JST')
+		await expect(timeField(page, '販売終了時刻')).toContainText('JST')
 	})
 
 	test(`@spec ${SPEC} "End after the show starts"`, async ({ page }) => {
 		const log = await openEditor(page)
-		await field(page, '販売開始').fill('2026-11-11T12:00')
-		await field(page, '販売終了').fill('2026-11-20T19:30')
+		await enterWindow(page, 'start', '2026-11-11', '12:00')
+		await enterWindow(page, 'end', '2026-11-20', '19:30')
 		await field(page, '価格').fill('6500')
 		await field(page, '販売枚数').fill('150')
 		await save(page)
 
-		await expect(fieldBox(page, '販売終了')).toContainText('販売終了は開演時刻')
-		await expect(field(page, '販売終了')).toHaveAttribute(
+		await expect(fieldBox(page, '販売終了日')).toContainText(
+			'販売終了は開演時刻',
+		)
+		await expect(field(page, '販売終了日')).toHaveAttribute(
 			'aria-invalid',
 			'true',
 		)
@@ -152,7 +175,7 @@ test.describe('a new first-come sale', () => {
 		const log = await openEditor(page, EDITOR, {
 			'TicketSaleService/ListByEvent': salesOf('e-1120', [PRESALE]),
 		})
-		await field(page, '販売開始').fill('2026-11-08T12:00')
+		await enterWindow(page, 'start', '2026-11-08', '12:00')
 		await field(page, '価格').fill('6500')
 		await field(page, '販売枚数').fill('150')
 		await save(page)
@@ -178,7 +201,7 @@ test.describe('a new first-come sale', () => {
 		await expect(page).toHaveURL(/\/ticket-sales\/new\?method=first-come$/)
 		await expect(field(page, '販売名')).toHaveValue('一般発売')
 
-		await field(page, '販売開始').fill('2026-11-11T12:00')
+		await enterWindow(page, 'start', '2026-11-11', '12:00')
 		await field(page, '価格').fill('6500')
 		await field(page, '販売枚数').fill('150')
 		await save(page)
@@ -279,8 +302,8 @@ test.describe('a sale that has started', () => {
 				return { body: { ticketSale: oneSale('e-1120', longer) } }
 			},
 		})
-		await expect(field(page, '販売終了')).toHaveValue('2026-11-20T18:00')
-		await field(page, '販売終了').fill('2026-11-20T19:00')
+		await expect.poll(() => shownWindow(page, 'end')).toBe('2026-11-20 18:00')
+		await chooseTime(page, '販売終了時刻', '19:00')
 		await save(page)
 
 		await expect(page).toHaveURL(/\/ticket-sales$/)

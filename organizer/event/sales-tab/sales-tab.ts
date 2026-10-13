@@ -12,6 +12,7 @@ import {
 	ITicketSaleClient,
 } from '../../services/ticket-sale-client'
 import { IConsoleContext } from '../../shell/console-context'
+import { IPageProgress } from '../../shell/page-progress'
 import type { FieldOption } from '../../ui/console-field/console-field'
 import { ISnackbar } from '../../ui/console-snackbar/snackbar'
 import { IEventPage } from '../event-page'
@@ -35,6 +36,7 @@ export class SalesTab {
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
 	private readonly context = resolve(IConsoleContext)
+	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('SalesTab')
 
 	public state: 'loading' | 'ready' | 'error' = 'loading'
@@ -106,7 +108,12 @@ export class SalesTab {
 		)
 	}
 
-	public async load(): Promise<void> {
+	/** Reads the sales; the shell's progress indicator shows meanwhile. */
+	public load(): Promise<void> {
+		return this.progress.track(this.read())
+	}
+
+	private async read(): Promise<void> {
 		this.state = 'loading'
 		try {
 			this.data = await this.ticketSales.listByEvent(

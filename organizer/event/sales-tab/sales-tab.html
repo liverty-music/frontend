@@ -2,10 +2,13 @@
 
 <section class="sales-tab">
   <template switch.bind="prerequisite">
-    <prerequisite-callout case="notPublished" level.bind="2" heading.bind="'sale.prerequisite.notPublished' & t">
-      <p>${'sale.prerequisite.notPublishedBody' & t}</p>
-      <console-button variant="text" click.trigger="requestPublish()">${'event.publish' & t}</console-button>
-    </prerequisite-callout>
+    <prerequisite-callout
+      case="notPublished"
+      level.bind="2"
+      heading.bind="'sale.prerequisite.notPublished' & t"
+      action-label.bind="'event.publish' & t"
+      action.trigger="requestPublish()"
+    >${'sale.prerequisite.notPublishedBody' & t}</prerequisite-callout>
     <prerequisite-callout
       case="noStartTime"
       level.bind="2"
@@ -18,7 +21,6 @@
     </prerequisite-callout>
   </template>
 
-  <circular-progress if.bind="state === 'loading'"></circular-progress>
   <div if.bind="state === 'error'" class="message" role="alert">
     <p>${'sale.loadFailed' & t}</p>
     <console-button variant="tonal" click.trigger="load()">${'common.retry' & t}</console-button>

@@ -170,3 +170,46 @@ export function toJstDateInput(date: Date): string {
 export function toJstTimeInput(date: Date): string {
 	return toJstDateTimeLocal(date).slice(11)
 }
+
+/**
+ * A Japan-time instant as the console enters it (design D19): a date field
+ * (`YYYY-MM-DD`) and a 24-hour time field (`HH:mm`), each '' while unset.
+ */
+export interface JstDateTime {
+	date: string
+	time: string
+}
+
+/** An unset date and time. */
+export function emptyJstDateTime(): JstDateTime {
+	return { date: '', time: '' }
+}
+
+/** The date and time fields showing `date` in Japan time. */
+export function toJstDateTime(date: Date): JstDateTime {
+	const local = toJstDateTimeLocal(date)
+	return { date: local.slice(0, 10), time: local.slice(11) }
+}
+
+/** The instant of a date and a time entered in Japan time, or undefined. */
+export function parseJstDateTime(value: JstDateTime): Date | undefined {
+	return parseJstDateAndTime(value.date.trim(), value.time.trim())
+}
+
+/**
+ * The part of `value` that keeps it from being an instant, the date first:
+ * 'date' while the date is unset or not a calendar day, 'time' while the
+ * time is unset or malformed, null once it reads as an instant.
+ */
+export function unsetPartOf(value: JstDateTime): 'date' | 'time' | null {
+	const date = value.date.trim()
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return 'date'
+	if (!parseJstDateAndTime(date, '00:00')) return 'date'
+	if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value.time.trim())) return 'time'
+	return null
+}
+
+/** True when both parts are the same. */
+export function sameJstDateTime(a: JstDateTime, b: JstDateTime): boolean {
+	return a.date === b.date && a.time === b.time
+}

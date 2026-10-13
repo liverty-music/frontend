@@ -21,6 +21,11 @@ import {
 } from '../model/concert-model'
 import { currentSale, type SaleView, saleViewsOf } from '../model/sale-model'
 import { IClock } from '../services/clock'
+import {
+	ICoverPreviews,
+	type PendingCover,
+	watchCover,
+} from '../services/cover-previews'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ITicketSaleClient } from '../services/ticket-sale-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
@@ -44,6 +49,10 @@ type LoadState = 'loading' | 'ready' | 'notFound' | 'error'
  * It opens under each represented Artist who performs in it, and is not
  * found under any other; its links and breadcrumb keep the Artist of the
  * address (design D1).
+ *
+ * A cover image picked in the editor and still processed shows here with the
+ * processing note, instead of the previous cover, until the processed image
+ * is served (design D19).
  */
 export class ConcertRoute {
 	private readonly series = resolve(ISeriesClient)
@@ -54,6 +63,7 @@ export class ConcertRoute {
 	private readonly router = resolve(IRouter)
 	private readonly context = resolve(IConsoleContext)
 	private readonly progress = resolve(IPageProgress)
+	private readonly covers = resolve(ICoverPreviews)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertRoute')
 
 	public state: LoadState = 'loading'
@@ -77,7 +87,11 @@ export class ConcertRoute {
 	public chosen: Record<string, boolean> = {}
 	public publishing = false
 	public cancelling = false
+	/** The picked cover image while it is processed. */
+	public pendingCover: PendingCover | undefined
+	public coverNote: '' | 'processing' | 'slow' = ''
 
+	private stopCoverWatch: (() => void) | null = null
 	private sales = new Map<string, SaleView | null>()
 	private abort = new AbortController()
 
@@ -91,6 +105,8 @@ export class ConcertRoute {
 
 	public detaching(): void {
 		this.abort.abort()
+		this.stopCoverWatch?.()
+		this.stopCoverWatch = null
 	}
 
 	public get title(): string {
@@ -117,8 +133,13 @@ export class ConcertRoute {
 		return this.concert ? performerNames(this.concert) : []
 	}
 
+	/** The picked image while it is processed, else the served cover. */
 	public get coverUrl(): string {
-		return this.concert?.series.coverImage?.large?.value ?? ''
+		return (
+			this.pendingCover?.previewUrl ??
+			this.concert?.series.coverImage?.large?.value ??
+			''
+		)
 	}
 
 	/** The draft dates, in date order, that 公開する can publish together. */
@@ -241,12 +262,50 @@ export class ConcertRoute {
 			])
 			this.state = 'ready'
 			this.render()
+			this.showPendingCover()
 			void this.loadSales()
 		} catch (err) {
 			if (this.abort.signal.aborted) return
 			this.logger.warn('Concert unavailable', err)
 			this.state = 'error'
 		}
+	}
+
+	/** Shows a cover still processed and re-reads until it is served (D9a). */
+	private showPendingCover(): void {
+		this.pendingCover = this.covers.settle(
+			this.seriesId,
+			this.concert?.series.coverImage?.id?.value,
+		)
+		if (!this.pendingCover) {
+			this.coverNote = ''
+			return
+		}
+		if (this.stopCoverWatch) return
+		this.coverNote = 'processing'
+		this.stopCoverWatch = watchCover({
+			read: async () => {
+				const concert = findConcert(
+					await this.series.list(this.abort.signal),
+					this.seriesId,
+				)
+				const cover = concert?.series.coverImage
+				if (!cover?.large?.value) return undefined
+				if (this.concert) this.concert.series.coverImage = cover
+				return cover.id?.value
+			},
+			served: (coverId) => {
+				this.pendingCover = this.covers.settle(this.seriesId, coverId)
+				if (this.pendingCover) return false
+				this.coverNote = ''
+				this.stopCoverWatch = null
+				return true
+			},
+			slow: () => {
+				this.coverNote = 'slow'
+			},
+			now: () => this.clock.now(),
+		})
 	}
 
 	private async loadSales(): Promise<void> {

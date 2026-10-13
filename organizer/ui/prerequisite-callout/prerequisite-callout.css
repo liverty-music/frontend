@@ -29,7 +29,26 @@
 		font: var(--md-type-body-medium);
 	}
 
+	/* The fix reads as a link in the callout's text color, not the brand
+	   color (design-tokens "The brand color marks only the primary action,
+	   focus and the logo"). */
 	.action {
-		margin-inline-start: calc(-1 * var(--space-s));
+		cursor: pointer;
+
+		display: inline-flex;
+		align-items: center;
+
+		min-block-size: var(--md-target-size);
+		margin-inline: calc(-1 * var(--space-2xs));
+		padding: 0 var(--space-2xs);
+		border: none;
+		border-radius: var(--md-shape-small);
+
+		font: var(--md-type-label-large);
+		color: inherit;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+
+		background: transparent;
 	}
 }

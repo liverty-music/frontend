@@ -6,6 +6,7 @@ import {
 	TicketSaleMethod,
 } from '../services/ticket-sale-client'
 import { IConsoleContext } from '../shell/console-context'
+import { IPageProgress } from '../shell/page-progress'
 
 /** The editor a sale opens in. */
 export type SaleEditor = 'lottery' | 'firstCome'
@@ -35,6 +36,7 @@ export class SaleEditorRoute {
 	private readonly ticketSales = resolve(ITicketSaleClient)
 	private readonly routeContext = resolve(IRouteContext)
 	private readonly consoleContext = resolve(IConsoleContext)
+	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('SaleEditorRoute')
 
 	public state: 'loading' | 'ready' | 'notFound' | 'error' = 'loading'
@@ -66,7 +68,12 @@ export class SaleEditorRoute {
 		return paths.sales(this.consoleContext.scope, seriesId, eventId)
 	}
 
-	public async pick(): Promise<void> {
+	/** Picks the editor; the shell's progress indicator shows while it reads. */
+	public pick(): Promise<void> {
+		return this.progress.track(this.read())
+	}
+
+	private async read(): Promise<void> {
 		if (!this.saleId) {
 			this.editor = editorOfMethod(this.method)
 			this.state = this.editor ? 'ready' : 'notFound'

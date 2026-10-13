@@ -1,0 +1,47 @@
+<import from="../console-field/console-field.css"></import>
+<import from="./console-time-field.css"></import>
+<use-shadow-dom></use-shadow-dom>
+
+<fieldset class="field" disabled.bind="disabled" data-invalid.bind="!!error" data-disabled.bind="disabled" data-readonly.bind="readonly">
+  <legend id.bind="`${fieldId}-label`" class="label">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></legend>
+  <div class="control">
+    <input
+      if.bind="readonly"
+      ref="readonlyInput"
+      class="readonly-time"
+      readonly
+      value.bind="value"
+      aria-labelledby.bind="`${fieldId}-label`"
+      aria-describedby.bind="describedBy"
+    >
+    <template else>
+      <select
+        ref="hourSelect"
+        value.bind="hour"
+        required.bind="required"
+        aria-label.bind="'timeField.hour' & t"
+        aria-invalid.bind="error ? 'true' : null"
+        aria-describedby.bind="describedBy"
+        change.trigger="hourChosen($event)"
+      >
+        <option if.bind="!required || !hour" value="">${'timeField.unset' & t}</option>
+        <option repeat.for="h of hours" value.bind="h">${h}</option>
+      </select>
+      <span class="separator" aria-hidden="true">:</span>
+      <select
+        value.bind="minute"
+        required.bind="required"
+        aria-label.bind="'timeField.minute' & t"
+        aria-invalid.bind="error ? 'true' : null"
+        aria-describedby.bind="describedBy"
+        change.trigger="minuteChosen($event)"
+      >
+        <option if.bind="!required || !minute" value="">${'timeField.unset' & t}</option>
+        <option repeat.for="m of minutes" value.bind="m">${m}</option>
+      </select>
+    </template>
+    <span id.bind="`${fieldId}-zone`" class="affix">${'common.jst' & t}</span>
+  </div>
+  <p if.bind="hint" id.bind="`${fieldId}-hint`" class="supporting">${hint}</p>
+  <p if.bind="errorText" id.bind="`${fieldId}-error`" class="error">${errorText.key & t:errorText.params}</p>
+</fieldset>
