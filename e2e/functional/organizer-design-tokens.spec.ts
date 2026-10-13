@@ -1,4 +1,4 @@
-import { installConsole } from '../support/organizer'
+import { installConsole, SERIES } from '../support/organizer'
 import type { Page } from '../support/test'
 import { expect, test } from '../support/test'
 
@@ -35,7 +35,7 @@ async function luminanceOf(
 
 async function openConcerts(page: Page): Promise<void> {
 	await installConsole(page)
-	await page.goto('/concerts')
+	await page.goto(SERIES)
 	await expect(page.locator('organizer-shell h1').first()).toBeVisible()
 }
 

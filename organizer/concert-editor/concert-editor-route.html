@@ -6,11 +6,11 @@
   <circular-progress if.bind="state === 'loading'"></circular-progress>
   <div if.bind="state === 'notFound'" class="message" role="alert">
     <p>${'concert.notFound' & t}</p>
-    <console-button variant="tonal" href="/concerts">${'concert.toConcerts' & t}</console-button>
+    <console-button variant="tonal" href.bind="concertsHref">${'concert.toConcerts' & t}</console-button>
   </div>
   <div if.bind="state === 'error'" class="message" role="alert">
     <p>${'concertEditor.loadFailed' & t}</p>
-    <console-button variant="tonal" href="/concerts">${'concert.toConcerts' & t}</console-button>
+    <console-button variant="tonal" href.bind="concertsHref">${'concert.toConcerts' & t}</console-button>
   </div>
 
   <form if.bind="state === 'ready'" class="form" novalidate submit.trigger="false">
@@ -132,7 +132,7 @@
     </section>
 
     <action-bar>
-      <console-button variant="text" href.bind="isEdit ? `/concerts/${seriesId}` : '/concerts'">${'common.cancel' & t}</console-button>
+      <console-button variant="text" href.bind="cancelHref">${'common.cancel' & t}</console-button>
       <console-button
         variant="filled"
         icon="check"

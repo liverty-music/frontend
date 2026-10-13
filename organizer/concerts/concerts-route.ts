@@ -1,6 +1,8 @@
+import type { NavigationInstruction, Params } from '@aurelia/router'
 import { ILogger, resolve } from 'aurelia'
 import {
 	concertCancelled,
+	concertsOf,
 	concertTitle,
 	eventDay,
 	eventId,
@@ -17,6 +19,7 @@ import { currentSale, type SaleView, saleViewsOf } from '../model/sale-model'
 import { IClock } from '../services/clock'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ITicketSaleClient } from '../services/ticket-sale-client'
+import { IConsoleContext } from '../shell/console-context'
 import type {
 	CellText,
 	DataColumn,
@@ -24,18 +27,24 @@ import type {
 	StatusCell,
 } from '../ui/data-list/data-list'
 
-type LoadState = 'loading' | 'ready' | 'error'
+type LoadState = 'loading' | 'ready' | 'error' | 'noArtist' | 'notRepresented'
 
 /**
- * Concerts: the Organizer's concerts as cards, or a table once the list is
- * 840 px wide, cancelled ones last. Each opens its concert page; 公演をつくる
- * opens the editor. The sale state of each concert comes from its published
- * events' sales, read after the list shows (design D2).
+ * Concerts of the Artist in the address: the concerts it performs in
+ * (`Concert.artist_ids`, filtered here from `SeriesService.List`) as cards,
+ * or a table once the list is 840 px wide, cancelled ones last. Each opens its
+ * concert page under that Artist; 公演をつくる opens the editor with the
+ * Artist as the first performer. The sale state of each concert comes from its
+ * published events' sales, read after the list shows (design D2).
+ *
+ * Without an Artist in the address (`/organizers/{o}/artists`) the page
+ * forwards to the Artist worked on, or says that no Artist is represented yet.
  */
 export class ConcertsRoute {
 	private readonly series = resolve(ISeriesClient)
 	private readonly ticketSales = resolve(ITicketSaleClient)
 	private readonly clock = resolve(IClock)
+	public readonly context = resolve(IConsoleContext)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertsRoute')
 
 	public state: LoadState = 'loading'
@@ -47,14 +56,36 @@ export class ConcertsRoute {
 		{ key: 'sale', labelKey: 'concerts.column.sale', kind: 'status' },
 		{ key: 'state', labelKey: 'concerts.column.state', kind: 'status' },
 	]
-	public readonly newConcertHref = paths.newConcert
+	public artistId = ''
 
 	/** The current or next sale of each concert, by series id. */
 	private sales = new Map<string, SaleView | null>()
 	private abort = new AbortController()
 
+	/** Without an Artist in the address, opens the Artist worked on. */
+	public async canLoad(
+		params: Params,
+	): Promise<boolean | NavigationInstruction> {
+		if (params.artistId) return true
+		try {
+			await this.context.load()
+		} catch (err) {
+			this.logger.warn('Represented artists unavailable', err)
+			return true
+		}
+		return this.context.artistId ? paths.concerts(this.context.scope) : true
+	}
+
+	public loading(params: Params): void {
+		this.artistId = params.artistId ?? ''
+	}
+
 	public attached(): void {
 		void this.load()
+	}
+
+	public get newConcertHref(): string {
+		return paths.newConcert(this.context.scope)
 	}
 
 	public detaching(): void {
@@ -64,7 +95,19 @@ export class ConcertsRoute {
 	public async load(): Promise<void> {
 		this.state = 'loading'
 		try {
-			const concerts = await this.series.list(this.abort.signal)
+			await this.context.load()
+			if (!this.artistId) {
+				this.state = this.context.artistsKnown ? 'noArtist' : 'error'
+				return
+			}
+			if (!this.context.represents(this.artistId)) {
+				this.state = 'notRepresented'
+				return
+			}
+			const concerts = concertsOf(
+				await this.series.list(this.abort.signal),
+				this.artistId,
+			)
 			this.concerts = [
 				...concerts.filter((c) => !concertCancelled(c)),
 				...concerts.filter(concertCancelled),
@@ -143,7 +186,7 @@ export class ConcertsRoute {
 						: { tone: sale.tone, labelKey: sale.stateKey }
 			return {
 				id: seriesId(concert),
-				href: paths.concert(seriesId(concert)),
+				href: paths.concert(this.context.scope, seriesId(concert)),
 				subtitle: [
 					{ key: seriesTypeKey(concert.series.type) },
 					...performerNames(concert),

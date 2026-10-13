@@ -1,5 +1,6 @@
 import type { Locator, Page, Route } from '@playwright/test'
 import { OIDC_AUTHORITY } from './auth-mocks'
+import { artistList, organizer } from './organizer-data'
 
 /**
  * Boots the organizer console on the dev server with a signed-in owner and
@@ -7,13 +8,27 @@ import { OIDC_AUTHORITY } from './auth-mocks'
  * nor a backend.
  *
  * - Every document request is answered with `organizer.html`, so a deep
- *   address such as `/concerts/s1` opens the console (the dev server would
+ *   address such as `/organizers/org-1/artists/a-1/series` opens the console (the dev server would
  *   otherwise serve the fan app's `index.html`).
  * - `/config.json` is the organizer's runtime config.
  * - The OIDC user is seeded in localStorage with the `owner` project role.
  * - Organizer RPCs (Connect JSON) are answered from `rpc`; an RPC without an
- *   entry answers `{}` (an empty message).
+ *   entry answers `{}` (an empty message), except the shell's two reads: the
+ *   Organizer is XX Records (`org-1`) and it represents Band A (`a-1`) unless
+ *   the spec answers `OrganizerService/Get` or `ArtistService/List` itself.
  */
+
+/** The e2e Organizer (`organizer()`, id `org-1`) as console addresses name it. */
+export const ORG = '/organizers/org-1'
+
+/** Concerts of Band A (`a-1`), the Artist the e2e Organizer represents. */
+export const SERIES = `${ORG}/artists/a-1/series`
+
+/** The shell's reads every console screen makes. */
+const SHELL_RPC: RpcMocks = {
+	'OrganizerService/Get': organizer(),
+	'ArtistService/List': artistList('Band A'),
+}
 
 const DEV_ORIGIN = 'http://localhost:9000'
 
@@ -104,7 +119,7 @@ export async function installConsole(
 		>
 		log.calls.push({ method: key, body })
 
-		const answer = options.rpc?.[key]
+		const answer = options.rpc?.[key] ?? SHELL_RPC[key]
 		const result: RpcResult =
 			typeof answer === 'function' ? await answer(body) : { body: answer ?? {} }
 		return route.fulfill({

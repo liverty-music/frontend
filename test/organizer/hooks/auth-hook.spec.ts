@@ -94,14 +94,18 @@ describe('OrganizerAuthHook', () => {
 	})
 
 	it('returns the operator to the address they opened after sign-in', async () => {
-		window.history.replaceState(null, '', '/concerts/s-tour?tab=1')
+		window.history.replaceState(
+			null,
+			'',
+			'/organizers/org-1/artists/a-1/series/s-tour?tab=1',
+		)
 		build({ isAuthenticated: false }, null)
 		const next = makeRouteNode({})
 
 		await sut.canLoad({} as never, {}, next, null)
 
 		expect(mockAuth.signIn).toHaveBeenCalledWith({
-			returnTo: '/concerts/s-tour?tab=1',
+			returnTo: '/organizers/org-1/artists/a-1/series/s-tour?tab=1',
 		})
 		window.history.replaceState(null, '', '/')
 	})

@@ -1,0 +1,17 @@
+<import from="./sale-editor-route.css"></import>
+<import from="../lottery-sale-editor/lottery-sale-editor-route"></import>
+<import from="../ticket-sale-editor/ticket-sale-editor-route"></import>
+
+<circular-progress if.bind="state === 'loading'"></circular-progress>
+<div if.bind="state === 'notFound'" class="message" role="alert">
+  <p>${'lotteryEditor.notFound' & t}</p>
+  <console-button variant="tonal" href.bind="salesHref">${'lotteryEditor.toSales' & t}</console-button>
+</div>
+<div if.bind="state === 'error'" class="message" role="alert">
+  <p>${'lotteryEditor.loadFailed' & t}</p>
+  <console-button variant="tonal" click.trigger="pick()">${'common.retry' & t}</console-button>
+</div>
+<template if.bind="state === 'ready'">
+  <lottery-sale-editor-route if.bind="editor === 'lottery'" component.ref="view"></lottery-sale-editor-route>
+  <ticket-sale-editor-route else component.ref="view"></ticket-sale-editor-route>
+</template>

@@ -1,7 +1,7 @@
 <import from="./top-app-bar.css"></import>
 
 <header class="top-app-bar">
-  <a href="/home" class="logo" aria-label.bind="'app.name' & t">
+  <a href.bind="context.homeHref" class="logo" aria-label.bind="'app.name' & t">
     <span class="logo-mark">${'app.logoMark' & t}</span><span class="logo-sub">${'app.logoSub' & t}</span>
   </a>
   <span class="organizer-name" data-testid="organizer-name">${organizerName}</span>

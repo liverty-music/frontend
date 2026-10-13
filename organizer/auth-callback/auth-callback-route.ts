@@ -9,6 +9,7 @@ import {
 	readSessionFlag,
 	setSessionFlag,
 } from '../hooks/org-enforcement'
+import { paths } from '../model/concert-model'
 
 /**
  * sessionStorage flag recording that we already restarted sign-in once from the
@@ -35,9 +36,10 @@ function isRecoverableStateMiss(err: unknown): boolean {
 
 /**
  * Organizer OIDC callback handler. Completes the authorization-code exchange and
- * routes to the concerts dashboard (the post-login landing). It does NOT enforce
- * the intended org or the owner role itself — the route guard
- * (`OrganizerAuthHook`) does that when routing to `/concerts`, which also covers
+ * routes to the address the operator opened, else to the landing (`/`), which
+ * opens the Home of the operator's Organizer. It does NOT enforce the intended
+ * org or the owner role itself — the route guard (`OrganizerAuthHook`) does
+ * that when routing onwards, which also covers
  * the path where a pre-existing session is admitted without a callback. The
  * callback keeps only the cross-context state-miss self-heal.
  *
@@ -47,6 +49,7 @@ function isRecoverableStateMiss(err: unknown): boolean {
  */
 export class AuthCallbackRoute {
 	public error = ''
+	public readonly landingHref = paths.landing
 
 	private readonly authService = resolve(IAuthService)
 	private readonly logger = resolve(ILogger).scopeTo(
@@ -65,21 +68,22 @@ export class AuthCallbackRoute {
 			clearSessionFlag(CALLBACK_RETRY_FLAG)
 			// Return the operator to where they were: after an involuntary
 			// re-auth (sessionStorage), or to the address they opened before
-			// signing in (OIDC state); otherwise Home. The guard re-checks org + role.
+			// signing in (OIDC state); otherwise the landing, which opens the
+			// Organizer's Home. The guard re-checks org + role.
 			return (
 				this.authService.takeReturnTo() ??
 				(user ? resolveAuthReturnTo(user) : undefined) ??
-				'/home'
+				paths.landing
 			)
 		} catch (err) {
 			this.logger.error('Organizer auth callback error:', err)
 
 			// If a prior callback already established the session, route to the
-			// dashboard (the guard re-checks the intended org and the owner role).
+			// landing (the guard re-checks the intended org and the owner role).
 			if (this.authService.isAuthenticated) {
 				clearSessionFlag(CALLBACK_RETRY_FLAG)
 				// After an involuntary re-auth, return the operator to where they were.
-				return this.authService.takeReturnTo() ?? '/home'
+				return this.authService.takeReturnTo() ?? paths.landing
 			}
 
 			// Self-heal a cross-context "No matching state" dead-end: restart the

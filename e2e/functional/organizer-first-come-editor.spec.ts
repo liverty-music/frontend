@@ -2,6 +2,7 @@ import {
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
+	SERIES,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -43,8 +44,8 @@ const SHOW: ConcertSpec = {
 	],
 }
 
-const SALES = '/concerts/s-show/events/e-1120/sales'
-const EDITOR = `${SALES}/first-come`
+const SALES = `${SERIES}/s-show/events/e-1120/ticket-sales`
+const EDITOR = `${SALES}/new?method=first-come`
 
 /** The first-come sale of the show: 11 November 12:00 to 20 November 18:00. */
 const GENERAL: SaleSpec = {
@@ -76,7 +77,6 @@ const BASE: RpcMocks = {
 	'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 	'TicketSaleService/ListByEvent': salesOf('e-1120', []),
 	'ScannerService/ListByEvent': { scanners: [] },
-	'ArtistService/List': { artists: [] },
 }
 
 async function boot(page: Page, rpc: RpcMocks = {}): Promise<RpcLog> {
@@ -175,7 +175,7 @@ test.describe('a new first-come sale', () => {
 		})
 		await page.goto(SALES)
 		await page.getByRole('link', { name: '先着で販売する' }).click()
-		await expect(page).toHaveURL(/\/sales\/first-come$/)
+		await expect(page).toHaveURL(/\/ticket-sales\/new\?method=first-come$/)
 		await expect(field(page, '販売名')).toHaveValue('一般発売')
 
 		await field(page, '販売開始').fill('2026-11-11T12:00')
@@ -183,7 +183,9 @@ test.describe('a new first-come sale', () => {
 		await field(page, '販売枚数').fill('150')
 		await save(page)
 
-		await expect(page).toHaveURL(/\/concerts\/s-show\/events\/e-1120\/sales$/)
+		await expect(page).toHaveURL(
+			/\/series\/s-show\/events\/e-1120\/ticket-sales$/,
+		)
 		await expect(
 			page.getByRole('heading', { level: 3, name: '一般発売' }),
 		).toBeVisible()
@@ -204,9 +206,13 @@ test.describe('a new first-come sale', () => {
 
 	test(`@spec ${SPEC} "Breadcrumb"`, async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 })
-		await openEditor(page, '/concerts/s-tour/events/e-1103/sales/first-come', {
-			'TicketSaleService/ListByEvent': salesOf('e-1103', []),
-		})
+		await openEditor(
+			page,
+			`${SERIES}/s-tour/events/e-1103/ticket-sales/new?method=first-come`,
+			{
+				'TicketSaleService/ListByEvent': salesOf('e-1103', []),
+			},
+		)
 		const crumbs = page.getByRole('navigation', { name: 'パンくずリスト' })
 		await expect(crumbs.getByRole('listitem')).toHaveText([
 			'公演',
@@ -216,7 +222,7 @@ test.describe('a new first-come sale', () => {
 		])
 		await expect(
 			crumbs.getByRole('link', { name: '11月3日(火)' }),
-		).toHaveAttribute('href', /\/concerts\/s-tour\/events\/e-1103\/sales$/)
+		).toHaveAttribute('href', /\/series\/s-tour\/events\/e-1103\/ticket-sales$/)
 	})
 })
 
@@ -250,7 +256,7 @@ test.describe('a sale that has started', () => {
 		await field(page, '販売枚数').fill('180')
 		await save(page)
 
-		await expect(page).toHaveURL(/\/sales$/)
+		await expect(page).toHaveURL(/\/ticket-sales$/)
 		await expect(
 			page.getByRole('listitem').filter({ hasText: '一般発売' }),
 		).toContainText('180枚')
@@ -277,7 +283,7 @@ test.describe('a sale that has started', () => {
 		await field(page, '販売終了').fill('2026-11-20T19:00')
 		await save(page)
 
-		await expect(page).toHaveURL(/\/sales$/)
+		await expect(page).toHaveURL(/\/ticket-sales$/)
 		const body = calls(log, 'TicketSaleService/SetWindow')[0].body as {
 			ticketSaleId: { value: string }
 			saleStartTime: string
@@ -312,7 +318,7 @@ test.describe('prerequisites', () => {
 		).toBeVisible()
 		await expect(
 			page.getByRole('link', { name: '公演を編集' }),
-		).toHaveAttribute('href', /\/concerts\/s-show\/edit$/)
+		).toHaveAttribute('href', /\/series\/s-show\/edit$/)
 		await expect(
 			page.getByRole('button', { name: /先着販売を始める|保存する/ }),
 		).toHaveCount(0)

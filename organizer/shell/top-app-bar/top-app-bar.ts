@@ -6,6 +6,7 @@ import {
 } from '../../i18n/console-language'
 import type { ConsoleLocale } from '../../i18n/format'
 import { IOrganizerClient } from '../../services/organizer-client'
+import { IConsoleContext } from '../console-context'
 
 /**
  * The console's top bar: the logo, the Organizer's name, and the account menu
@@ -15,6 +16,7 @@ export class TopAppBar {
 	private readonly organizers = resolve(IOrganizerClient)
 	private readonly auth = resolve(IAuthService)
 	private readonly logger = resolve(ILogger).scopeTo('TopAppBar')
+	public readonly context = resolve(IConsoleContext)
 	public readonly language = resolve(IConsoleLanguage)
 	public readonly languages = CONSOLE_LANGUAGES
 

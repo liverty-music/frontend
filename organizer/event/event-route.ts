@@ -13,6 +13,7 @@ import {
 } from '../model/concert-model'
 import { ISeriesClient } from '../services/series-client'
 import { type Crumb, IBreadcrumbs } from '../shell/breadcrumbs'
+import { IConsoleContext } from '../shell/console-context'
 import type { ConfirmDialog } from '../ui/confirm-dialog/confirm-dialog'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { ConsoleTab } from '../ui/console-tabs/console-tabs'
@@ -20,43 +21,38 @@ import { IEventPage } from './event-page'
 
 /**
  * One event (one date of a concert): its date, venue and publish state with
- * 公開する, 中止する and 編集, and its Sales and Reception tabs, each a child
- * route so a tab is its own address. The page opens on 販売. The sale
- * editors are child routes too; while one is open the header and tabs are
- * hidden and the editor owns the breadcrumb.
+ * 公開する, 中止する and 編集, and its Sales (`ticket-sales`) and Reception
+ * (`scanners`) tabs, each a child route so a tab is its own address. The page
+ * opens on 販売. The sale editors are child routes too
+ * (`ticket-sales/new?method=…`, `ticket-sales/{sale}/edit`, design D1); while
+ * one is open the header and tabs are hidden and the editor owns the
+ * breadcrumb.
  */
 @route({
 	routes: [
-		{ path: '', redirectTo: 'sales' },
+		{ path: '', redirectTo: 'ticket-sales' },
 		{
-			path: 'sales',
+			path: 'ticket-sales',
 			component: import('./sales-tab/sales-tab'),
 			title: 'Sales',
 		},
 		{
-			path: 'reception',
+			path: 'scanners',
 			component: import('./reception-tab/reception-tab'),
 			title: 'Reception',
 		},
 		// The sale editors replace the event's header and tabs; each sets its
-		// own title and breadcrumb.
+		// own title and breadcrumb. One route opens either editor: the method
+		// of a new sale is in the query, an existing sale's is read.
 		{
-			path: 'sales/lottery/new',
-			component: import('../lottery-sale-editor/lottery-sale-editor-route'),
-			title: 'New lottery',
-			data: { editor: true },
+			path: 'ticket-sales/new',
+			component: import('../sale-editor/sale-editor-route'),
+			title: 'New sale',
 		},
 		{
-			path: 'sales/lottery/:saleId',
-			component: import('../lottery-sale-editor/lottery-sale-editor-route'),
-			title: 'Lottery',
-			data: { editor: true },
-		},
-		{
-			path: 'sales/first-come',
-			component: import('../ticket-sale-editor/ticket-sale-editor-route'),
-			title: 'First-come sale',
-			data: { editor: true },
+			path: 'ticket-sales/:saleId/edit',
+			component: import('../sale-editor/sale-editor-route'),
+			title: 'Sale',
 		},
 	],
 })
@@ -67,6 +63,7 @@ export class EventRoute {
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
+	private readonly context = resolve(IConsoleContext)
 	private readonly logger = resolve(ILogger).scopeTo('EventRoute')
 
 	public publishDialog!: ConfirmDialog
@@ -79,7 +76,11 @@ export class EventRoute {
 	private subscription: IDisposable | null = null
 
 	public async loading(params: Params): Promise<void> {
-		await this.page.load(params.seriesId ?? '', params.eventId ?? '')
+		await this.page.load(
+			params.artistId ?? '',
+			params.seriesId ?? '',
+			params.eventId ?? '',
+		)
 	}
 
 	public binding(): void {
@@ -101,12 +102,20 @@ export class EventRoute {
 			{
 				id: 'sales',
 				labelKey: 'event.tab.sales',
-				href: paths.sales(this.page.seriesId, this.page.eventId),
+				href: paths.sales(
+					this.context.scope,
+					this.page.seriesId,
+					this.page.eventId,
+				),
 			},
 			{
 				id: 'reception',
 				labelKey: 'event.tab.reception',
-				href: paths.reception(this.page.seriesId, this.page.eventId),
+				href: paths.scanners(
+					this.context.scope,
+					this.page.seriesId,
+					this.page.eventId,
+				),
 			},
 		]
 	}
@@ -144,11 +153,15 @@ export class EventRoute {
 	}
 
 	public get editHref(): string {
-		return paths.editConcert(this.page.seriesId)
+		return paths.editConcert(this.context.scope, this.page.seriesId)
 	}
 
 	public get concertHref(): string {
-		return paths.concert(this.page.seriesId)
+		return paths.concert(this.context.scope, this.page.seriesId)
+	}
+
+	public get concertsHref(): string {
+		return paths.concerts(this.context.scope)
 	}
 
 	public async publish(): Promise<void> {
@@ -214,14 +227,14 @@ export class EventRoute {
 	 */
 	private syncTab(): void {
 		const path = window.location.pathname
-		this.editing = /\/sales\/(lottery|first-come)(\/|$)/.test(path)
-		this.activeTab = path.endsWith('/reception') ? 'reception' : 'sales'
+		this.editing = /\/ticket-sales\/(new|[^/]+\/edit)$/.test(path)
+		this.activeTab = path.endsWith('/scanners') ? 'reception' : 'sales'
 		if (!this.editing) this.setBreadcrumb()
 	}
 
 	private setBreadcrumb(): void {
 		const trail: Crumb[] = [
-			{ labelKey: 'shell.nav.concerts', href: paths.concerts },
+			{ labelKey: 'shell.nav.concerts', href: this.concertsHref },
 		]
 		if (this.page.concert) {
 			trail.push({ label: this.title, href: this.concertHref })

@@ -1,0 +1,9 @@
+<import from="./landing-route.css"></import>
+
+<section class="landing">
+  <div if.bind="failed" class="message" role="alert">
+    <p>${'landing.failed' & t}</p>
+    <console-button variant="tonal" action.bind="() => retry()" pending-label.bind="'landing.retrying' & t">${'common.retry' & t}</console-button>
+  </div>
+  <circular-progress else></circular-progress>
+</section>

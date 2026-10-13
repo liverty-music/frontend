@@ -54,7 +54,9 @@
 			"home": "Home",
 			"concerts": "Concerts",
 			"settings": "Settings"
-		}
+		},
+		"artistMenu": "Represented artist: {{name}}",
+		"artists": "Represented artists"
 	},
 	"unsavedChanges": {
 		"heading": "Discard your changes?",
@@ -97,7 +99,10 @@
 			"schedule": "Dates and venues",
 			"sale": "Sale",
 			"state": "State"
-		}
+		},
+		"noArtist": "No represented artist yet",
+		"noArtistBody": "Concerts are created per represented artist. Liverty Music adds represented artists on request. Contact your representative.",
+		"artistNotFound": "The concerts of this artist cannot be opened: it is not a represented artist."
 	},
 	"publishState": {
 		"draft": "Draft",
@@ -427,5 +432,13 @@
 			"limitOverQuantity": "The limit cannot exceed the tickets",
 			"overlap": "The window overlaps the sale “{{name}}” ({{start}} – {{end}})"
 		}
+	},
+	"otherOrganizer": {
+		"title": "This address belongs to another organizer",
+		"body": "The address is of an organizer other than the one of the account you are signed in with. To open it, sign out and sign in again with an account of that organizer."
+	},
+	"landing": {
+		"failed": "The console could not be opened.",
+		"retrying": "Retrying…"
 	}
 }

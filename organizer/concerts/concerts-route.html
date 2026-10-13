@@ -3,7 +3,7 @@
 <section class="concerts">
   <header class="header">
     <h1 class="page-title">${'concerts.title' & t}</h1>
-    <console-button variant="filled" icon="add" href.bind="newConcertHref">${'concerts.create' & t}</console-button>
+    <console-button if.bind="state === 'ready'" variant="filled" icon="add" href.bind="newConcertHref">${'concerts.create' & t}</console-button>
   </header>
 
   <circular-progress if.bind="state === 'loading'"></circular-progress>
@@ -11,6 +11,16 @@
   <div if.bind="state === 'error'" class="message" role="alert">
     <p>${'concerts.loadFailed' & t}</p>
     <console-button variant="tonal" click.trigger="load()">${'common.retry' & t}</console-button>
+  </div>
+
+  <div if.bind="state === 'noArtist'" class="message" data-testid="no-artist">
+    <p class="message-title">${'concerts.noArtist' & t}</p>
+    <p>${'concerts.noArtistBody' & t}</p>
+  </div>
+
+  <div if.bind="state === 'notRepresented'" class="message" role="alert">
+    <p>${'concerts.artistNotFound' & t}</p>
+    <console-button variant="tonal" href.bind="context.homeHref">${'home.title' & t}</console-button>
   </div>
 
   <template if.bind="state === 'ready'">

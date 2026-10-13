@@ -30,6 +30,7 @@ import {
 } from '../services/ticket-sale-client'
 import { ITicketTypeClient } from '../services/ticket-type-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
+import { IConsoleContext } from '../shell/console-context'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { UnsavedChanges } from '../ui/unsaved-changes/unsaved-changes'
 import {
@@ -104,6 +105,7 @@ export class TicketSaleEditorRoute {
 	private readonly router = resolve(IRouter)
 	private readonly context = resolve(IRouteContext)
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
+	private readonly consoleContext = resolve(IConsoleContext)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
 	private readonly language = resolve(IConsoleLanguage)
@@ -129,8 +131,11 @@ export class TicketSaleEditorRoute {
 	private saved = ''
 	private abort = new AbortController()
 
-	/** A child route of the event: the series and event ids are the parent's. */
-	public loading(): void {
+	/**
+	 * Opened by the sale editor route under the event: the series, event and
+	 * sale ids are in the address of its routes.
+	 */
+	public binding(): void {
 		const params = this.context.getRouteParameters<
 			{
 				seriesId?: string
@@ -155,11 +160,15 @@ export class TicketSaleEditorRoute {
 	}
 
 	public get salesHref(): string {
-		return paths.sales(this.seriesId, this.eventId)
+		return paths.sales(this.consoleContext.scope, this.seriesId, this.eventId)
+	}
+
+	public get concertsHref(): string {
+		return paths.concerts(this.consoleContext.scope)
 	}
 
 	public get editConcertHref(): string {
-		return paths.editConcert(this.seriesId)
+		return paths.editConcert(this.consoleContext.scope, this.seriesId)
 	}
 
 	public get start(): Date | undefined {
@@ -271,8 +280,14 @@ export class TicketSaleEditorRoute {
 			}
 			this.title = concertTitle(concert)
 			this.breadcrumbs.set([
-				{ labelKey: 'shell.nav.concerts', href: paths.concerts },
-				{ label: this.title, href: paths.concert(this.seriesId) },
+				{
+					labelKey: 'shell.nav.concerts',
+					href: paths.concerts(this.consoleContext.scope),
+				},
+				{
+					label: this.title,
+					href: paths.concert(this.consoleContext.scope, this.seriesId),
+				},
 				{ day: eventDay(this.event), href: this.salesHref },
 				{ labelKey: 'firstComeEditor.crumb' },
 			])

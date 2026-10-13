@@ -5,6 +5,7 @@ import { IAppConfig } from '../../../shared/config/app-config'
 import { IConsoleLanguage } from '../../i18n/console-language'
 import { eventStart, isPublished, paths } from '../../model/concert-model'
 import { IScannerClient, type Scanner } from '../../services/scanner-client'
+import { IConsoleContext } from '../../shell/console-context'
 import type { ConfirmDialog } from '../../ui/confirm-dialog/confirm-dialog'
 import { ISnackbar } from '../../ui/console-snackbar/snackbar'
 import type { StatusTone } from '../../ui/status-badge/status-badge'
@@ -79,6 +80,7 @@ export class ReceptionTab {
 	private readonly scanners = resolve(IScannerClient)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly language = resolve(IConsoleLanguage)
+	private readonly context = resolve(IConsoleContext)
 	private readonly logger = resolve(ILogger).scopeTo('ReceptionTab')
 	private readonly receptionBaseUrl = resolve(IAppConfig).receptionBaseUrl ?? ''
 
@@ -118,7 +120,7 @@ export class ReceptionTab {
 	}
 
 	public get editConcertHref(): string {
-		return paths.editConcert(this.page.seriesId)
+		return paths.editConcert(this.context.scope, this.page.seriesId)
 	}
 
 	/** Catalog key of the confirmation's title; its value is `confirmNumber`. */

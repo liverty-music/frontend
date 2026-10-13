@@ -9,6 +9,7 @@ import {
 } from '../services/payout-account-client'
 import { IScannerClient } from '../services/scanner-client'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
+import { IConsoleContext } from '../shell/console-context'
 
 type PartState = 'loading' | 'ready' | 'error'
 
@@ -23,6 +24,7 @@ export class HomeRoute {
 	private readonly payout = resolve(IPayoutAccountClient)
 	private readonly scanners = resolve(IScannerClient)
 	private readonly clock = resolve(IClock)
+	public readonly context = resolve(IConsoleContext)
 	private readonly logger = resolve(ILogger).scopeTo('HomeRoute')
 
 	public concertsState: PartState = 'loading'
@@ -102,6 +104,10 @@ export class HomeRoute {
 	private refresh(): void {
 		this.items = homeItems(
 			{
+				organizerId: this.context.organizerId,
+				represented: new Set(
+					this.context.artists.map((a) => a.id?.value ?? ''),
+				),
 				concerts: this.concerts,
 				payoutStatus: this.payoutStatus,
 				scanners: this.scannersByEvent,

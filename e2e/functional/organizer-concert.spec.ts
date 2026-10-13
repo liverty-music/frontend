@@ -2,6 +2,7 @@ import {
 	confirmDialog,
 	installConsole,
 	type RpcMocks,
+	SERIES,
 } from '../support/organizer'
 import {
 	type ConcertSpec,
@@ -34,7 +35,6 @@ const BASE: RpcMocks = {
 	'OrganizerService/Get': organizer(),
 	'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 	'ScannerService/ListByEvent': { scanners: [] },
-	'ArtistService/List': { artists: [] },
 	'TicketSaleService/ListByEvent': (body) => ({
 		body: JSON.stringify(body).includes('e-1103')
 			? salesOf('e-1103', [
@@ -62,7 +62,7 @@ async function openConcert(page: Page, path: string, rpc: RpcMocks = BASE) {
 test.describe('summary and event dates', () => {
 	test(`@spec ${SPEC} "Tour with three dates"`, async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 })
-		await openConcert(page, '/concerts/s-tour')
+		await openConcert(page, `${SERIES}/s-tour`)
 		await expect(
 			page.getByRole('heading', { level: 1, name: 'XX Tour 2026' }),
 		).toBeVisible()
@@ -87,19 +87,19 @@ test.describe('summary and event dates', () => {
 			.getByRole('link', { name: '11月3日(火) 18:00 JST' })
 			.click()
 		await expect(page).toHaveURL(
-			/\/concerts\/s-tour\/events\/e-1103(\/sales)?$/,
+			/\/series\/s-tour\/events\/e-1103(\/ticket-sales)?$/,
 		)
 	})
 
 	test(`@spec ${SPEC} "Unknown concert"`, async ({ page }) => {
-		await openConcert(page, '/concerts/s-other')
+		await openConcert(page, `${SERIES}/s-other`)
 		await expect(
 			page.getByRole('heading', { level: 1, name: '公演が見つかりません' }),
 		).toBeVisible()
 		const back = page
 			.getByRole('main')
 			.getByRole('link', { name: '公演一覧へ' })
-		await expect(back).toHaveAttribute('href', /\/concerts$/)
+		await expect(back).toHaveAttribute('href', /\/series$/)
 		await back.click()
 		await expect(
 			page.getByRole('heading', { level: 1, name: '公演' }),
@@ -116,7 +116,7 @@ test.describe('share link', () => {
 	const NEW_LINK = 'https://liverty-music.app/s/new-share-token'
 
 	test(`@spec ${SPEC} "New share link"`, async ({ page }) => {
-		const log = await openConcert(page, '/concerts/s-tour', {
+		const log = await openConcert(page, `${SERIES}/s-tour`, {
 			...BASE,
 			'SeriesService/List': seriesList([UNLISTED]),
 			'SeriesService/RegenerateShareUrl': { shareUrl: { value: NEW_LINK } },
@@ -155,7 +155,7 @@ test.describe('share link', () => {
 	})
 
 	test(`@spec ${SPEC} "Public concert"`, async ({ page }) => {
-		await openConcert(page, '/concerts/s-tour', {
+		await openConcert(page, `${SERIES}/s-tour`, {
 			...BASE,
 			'SeriesService/List': seriesList([
 				{ ...TOUR_OF_THREE, visibility: 'PUBLIC', state: 'PUBLISHED' },
@@ -228,7 +228,7 @@ test.describe('publish or cancel the dates together', () => {
 
 	test(`@spec ${SPEC} "New tour published at once"`, async ({ page }) => {
 		const server = concertServer(DRAFT_TOUR)
-		const log = await openConcert(page, '/concerts/s-tour', server.rpc)
+		const log = await openConcert(page, `${SERIES}/s-tour`, server.rpc)
 		await page.getByRole('button', { name: '公開する', exact: true }).click()
 
 		const dialog = publishDialog(page)
@@ -267,7 +267,7 @@ test.describe('publish or cancel the dates together', () => {
 			),
 		}
 		const server = concertServer(withAddition)
-		const log = await openConcert(page, '/concerts/s-tour', server.rpc)
+		const log = await openConcert(page, `${SERIES}/s-tour`, server.rpc)
 		await page.getByRole('button', { name: '公開する', exact: true }).click()
 		const dialog = publishDialog(page)
 		await expect(dialog.getByRole('checkbox')).toHaveCount(1)
@@ -287,7 +287,7 @@ test.describe('publish or cancel the dates together', () => {
 
 	test(`@spec ${SPEC} "One date left out"`, async ({ page }) => {
 		const server = concertServer(DRAFT_TOUR)
-		const log = await openConcert(page, '/concerts/s-tour', server.rpc)
+		const log = await openConcert(page, `${SERIES}/s-tour`, server.rpc)
 		await page.getByRole('button', { name: '公開する', exact: true }).click()
 		const dialog = publishDialog(page)
 		await dialog.getByRole('checkbox', { name: /11月24日/ }).uncheck()
@@ -309,7 +309,7 @@ test.describe('publish or cancel the dates together', () => {
 
 	test(`@spec ${SPEC} "Whole concert cancelled"`, async ({ page }) => {
 		const server = concertServer(XX_TOUR)
-		const log = await openConcert(page, '/concerts/s-tour', server.rpc)
+		const log = await openConcert(page, `${SERIES}/s-tour`, server.rpc)
 		await page.getByRole('button', { name: '公演を中止' }).click()
 		const dialog = confirmDialog(page, {
 			name: 'XX Tour 2026 を中止しますか？',
@@ -324,7 +324,7 @@ test.describe('publish or cancel the dates together', () => {
 	})
 
 	test(`@spec ${SPEC} "Nothing to publish"`, async ({ page }) => {
-		await openConcert(page, '/concerts/s-tour', concertServer(XX_TOUR).rpc)
+		await openConcert(page, `${SERIES}/s-tour`, concertServer(XX_TOUR).rpc)
 		await expect(
 			page.getByRole('heading', { level: 1, name: 'XX Tour 2026' }),
 		).toBeVisible()

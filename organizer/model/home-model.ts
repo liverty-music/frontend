@@ -12,6 +12,7 @@ import {
 	eventId,
 	eventStart,
 	eventsByDate,
+	homeArtistOf,
 	isDraft,
 	isPublished,
 	paths,
@@ -63,6 +64,10 @@ export function eventsWithinWeek(
 }
 
 export interface HomeSources {
+	/** The caller's Organizer, which every item's address names. */
+	organizerId: string
+	/** The Artists the Organizer represents, by id. */
+	represented: ReadonlySet<string>
 	concerts: readonly AuthoredSeries[]
 	/** Undefined when the payout account could not be read. */
 	payoutStatus?: PayoutOnboardingStatus
@@ -70,15 +75,27 @@ export interface HomeSources {
 	scanners: ReadonlyMap<string, readonly Scanner[]>
 }
 
-/** What needs the operator now, most urgent kind first, then by date. */
+/**
+ * What needs the operator now, most urgent kind first, then by date. An item
+ * about a concert opens it under the first of its performers the Organizer
+ * represents.
+ */
 export function homeItems(sources: HomeSources, now: number): HomeItem[] {
 	const items: HomeItem[] = []
+	const scopeOf = (concert: AuthoredSeries) => ({
+		organizer: sources.organizerId,
+		artist: homeArtistOf(concert, sources.represented),
+	})
 
 	if (
 		sources.payoutStatus !== undefined &&
 		sources.payoutStatus !== PayoutOnboardingStatus.ACTIVE
 	) {
-		items.push({ kind: 'payout', key: 'payout', actionHref: paths.payout })
+		items.push({
+			kind: 'payout',
+			key: 'payout',
+			actionHref: paths.payout(sources.organizerId),
+		})
 	}
 
 	const live = sources.concerts.filter((c) => !concertCancelled(c))
@@ -92,7 +109,11 @@ export function homeItems(sources: HomeSources, now: number): HomeItem[] {
 			key: `scanner:${eventId(event)}`,
 			concertTitle: concertTitle(concert),
 			when: start,
-			actionHref: paths.reception(seriesId(concert), eventId(event)),
+			actionHref: paths.scanners(
+				scopeOf(concert),
+				seriesId(concert),
+				eventId(event),
+			),
 		})
 	}
 
@@ -104,7 +125,7 @@ export function homeItems(sources: HomeSources, now: number): HomeItem[] {
 					key: `startTime:${eventId(event)}`,
 					concertTitle: concertTitle(concert),
 					when: eventDay(event),
-					actionHref: paths.editConcert(seriesId(concert)),
+					actionHref: paths.editConcert(scopeOf(concert), seriesId(concert)),
 				})
 			}
 		}
@@ -115,7 +136,7 @@ export function homeItems(sources: HomeSources, now: number): HomeItem[] {
 				key: `draft:${seriesId(concert)}`,
 				concertTitle: concertTitle(concert),
 				when: eventDay(firstDraft),
-				actionHref: paths.concert(seriesId(concert)),
+				actionHref: paths.concert(scopeOf(concert), seriesId(concert)),
 			})
 		}
 	}

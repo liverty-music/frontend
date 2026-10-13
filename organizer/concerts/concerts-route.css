@@ -25,5 +25,10 @@
 
 			background: var(--md-color-surface-container-low);
 		}
+
+		.message-title {
+			font: var(--md-type-title-medium);
+			color: var(--md-color-on-surface);
+		}
 	}
 }

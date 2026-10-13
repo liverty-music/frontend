@@ -1,6 +1,11 @@
 import AxeBuilder from '@axe-core/playwright'
 import { OIDC_AUTHORITY } from '../support/auth-mocks'
-import { installConsole, type RpcMocks } from '../support/organizer'
+import {
+	installConsole,
+	ORG,
+	type RpcMocks,
+	SERIES,
+} from '../support/organizer'
 import {
 	jst,
 	organizer,
@@ -190,11 +195,11 @@ const CONSOLE_RPC: RpcMocks = {
 	'VenueService/Search': { candidates: [] },
 }
 
-function consoleAs(owner = true) {
+function consoleAs(owner = true, rpc: RpcMocks = {}) {
 	return async (page: Page) => {
 		await page.clock.setFixedTime(NOW)
 		await installConsole(page, {
-			rpc: CONSOLE_RPC,
+			rpc: { ...CONSOLE_RPC, ...rpc },
 			language: 'ja',
 			owner,
 			origin: ORIGIN,
@@ -218,30 +223,30 @@ const filledButton: Probe = {
 	expect: { padding: true, background: true },
 }
 
-const SALES = '/concerts/s-tour/events/e-1103/sales'
+const SALES = `${SERIES}/s-tour/events/e-1103/ticket-sales`
 
 const ORGANIZER: Screen[] = [
-	['Home', '/home', [consoleButton]],
-	['Concerts', '/concerts', [consoleButton]],
-	['Concert', '/concerts/s-tour', [consoleButton]],
-	['Concert editor (new)', '/concerts/new', [filledButton]],
-	['Concert editor (edit)', '/concerts/s-tour/edit', [filledButton]],
+	['Home', ORG, [consoleButton]],
+	['Concerts', SERIES, [consoleButton]],
+	['Concert', `${SERIES}/s-tour`, [consoleButton]],
+	['Concert editor (new)', `${SERIES}/new`, [filledButton]],
+	['Concert editor (edit)', `${SERIES}/s-tour/edit`, [filledButton]],
 	['Event, Sales tab', SALES, [consoleButton]],
 	[
 		'Event, Reception tab',
-		'/concerts/s-tour/events/e-1103/reception',
+		`${SERIES}/s-tour/events/e-1103/scanners`,
 		[consoleButton],
 	],
-	['Lottery sale editor (new)', `${SALES}/lottery/new`, [filledButton]],
+	['Lottery sale editor (new)', `${SALES}/new?method=lottery`, [filledButton]],
 	[
 		'Lottery sale editor (edit)',
-		`${SALES}/lottery/${LATER_LOTTERY.id}`,
+		`${SALES}/${LATER_LOTTERY.id}/edit`,
 		[filledButton],
 	],
-	['First-come sale editor', `${SALES}/first-come`, [filledButton]],
+	['First-come sale editor', `${SALES}/${GENERAL.id}/edit`, [filledButton]],
 	[
 		'Settings',
-		'/settings',
+		`${ORG}/settings`,
 		[
 			{
 				what: "the payout account's status badge",
@@ -258,13 +263,29 @@ const ORGANIZER: Screen[] = [
 	probes: probes as Probe[],
 }))
 
-ORGANIZER.push({
-	name: 'organizer denied (no owner role)',
-	path: '/home',
-	setup: consoleAs(false),
-	ready: pageTitle,
-	probes: [filledButton],
-})
+ORGANIZER.push(
+	{
+		name: 'organizer denied (no owner role)',
+		path: ORG,
+		setup: consoleAs(false),
+		ready: pageTitle,
+		probes: [filledButton],
+	},
+	{
+		name: 'organizer another Organizer’s address',
+		path: '/organizers/org-other',
+		setup: consoleAs(),
+		ready: pageTitle,
+		probes: [filledButton],
+	},
+	{
+		name: 'organizer Concerts (no represented Artist)',
+		path: `${ORG}/artists`,
+		setup: consoleAs(true, { 'ArtistService/List': { artists: [] } }),
+		ready: pageTitle,
+		probes: [],
+	},
+)
 
 // -------------------------------------------------------------- admin entry
 
@@ -478,7 +499,7 @@ for (const entry of ['organizer', 'admin'] as const) {
 			r.url().startsWith(`${OIDC_AUTHORITY}/oauth/v2/authorize`),
 		)
 		// Each entry's signed-in landing route.
-		await page.goto(entry === 'organizer' ? '/home' : '/welcome')
+		await page.goto(entry === 'organizer' ? ORG : '/welcome')
 		await authorize
 	})
 }

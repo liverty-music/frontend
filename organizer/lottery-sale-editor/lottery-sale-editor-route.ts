@@ -21,6 +21,7 @@ import {
 } from '../services/ticket-sale-client'
 import { ITicketTypeClient } from '../services/ticket-type-client'
 import { IBreadcrumbs } from '../shell/breadcrumbs'
+import { IConsoleContext } from '../shell/console-context'
 import { ISnackbar } from '../ui/console-snackbar/snackbar'
 import type { UnsavedChanges } from '../ui/unsaved-changes/unsaved-changes'
 import {
@@ -51,8 +52,9 @@ export function overlapError(sale: TicketSale): FieldError {
 }
 
 /**
- * Starts a lottery sale for one event (`sales/lottery/new`) or changes one
- * before it opens (`sales/lottery/:saleId`): the window in Japan time, the
+ * Starts a lottery sale for one event (`ticket-sales/new?method=lottery`) or
+ * changes one before it opens (`ticket-sales/:saleId/edit`), opened by the
+ * sale editor route: the window in Japan time, the
  * price, the quantity and the per-account limit. Opened from the event's Sales
  * tab and back there after saving or leaving; unsaved changes are guarded.
  *
@@ -67,6 +69,7 @@ export class LotterySaleEditorRoute {
 	private readonly router = resolve(IRouter)
 	private readonly context = resolve(IRouteContext)
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
+	private readonly consoleContext = resolve(IConsoleContext)
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly clock = resolve(IClock)
 	private readonly logger = resolve(ILogger).scopeTo('LotterySaleEditorRoute')
@@ -101,8 +104,11 @@ export class LotterySaleEditorRoute {
 	private saved = ''
 	private abort = new AbortController()
 
-	/** A child route of the event: the series and event ids are the parent's. */
-	public loading(): void {
+	/**
+	 * Opened by the sale editor route under the event: the series, event and
+	 * sale ids are in the address of its routes.
+	 */
+	public binding(): void {
 		const params = this.context.getRouteParameters<
 			{
 				seriesId?: string
@@ -132,8 +138,12 @@ export class LotterySaleEditorRoute {
 		return this.saleId !== ''
 	}
 
+	public get editConcertHref(): string {
+		return paths.editConcert(this.consoleContext.scope, this.seriesId)
+	}
+
 	public get salesHref(): string {
-		return paths.sales(this.seriesId, this.eventId)
+		return paths.sales(this.consoleContext.scope, this.seriesId, this.eventId)
 	}
 
 	public get start(): Date | undefined {
@@ -249,8 +259,14 @@ export class LotterySaleEditorRoute {
 			? this.existingSales.find((s) => s.id?.value === this.saleId)?.name?.value
 			: undefined
 		this.breadcrumbs.set([
-			{ labelKey: 'shell.nav.concerts', href: paths.concerts },
-			{ label: this.title, href: paths.concert(this.seriesId) },
+			{
+				labelKey: 'shell.nav.concerts',
+				href: paths.concerts(this.consoleContext.scope),
+			},
+			{
+				label: this.title,
+				href: paths.concert(this.consoleContext.scope, this.seriesId),
+			},
 			{
 				day: this.event ? eventDay(this.event) : undefined,
 				href: this.salesHref,

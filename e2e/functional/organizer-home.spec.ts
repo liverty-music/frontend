@@ -1,6 +1,7 @@
 import {
 	connectError,
 	installConsole,
+	ORG,
 	type RpcMocks,
 } from '../support/organizer'
 import {
@@ -29,7 +30,6 @@ const BASE: RpcMocks = {
 	'OrganizerService/Get': organizer(),
 	'PayoutAccountService/Get': payoutAccount('ACTIVE'),
 	'ScannerService/ListByEvent': { scanners: [] },
-	'ArtistService/List': { artists: [] },
 }
 
 async function openHome(page: Page, rpc: RpcMocks, now = NOW) {
@@ -38,7 +38,7 @@ async function openHome(page: Page, rpc: RpcMocks, now = NOW) {
 		rpc: { ...BASE, ...rpc },
 		language: 'ja',
 	})
-	await page.goto('/home')
+	await page.goto(ORG)
 	await expect(
 		page.getByRole('heading', { level: 1, name: 'ホーム' }),
 	).toBeVisible()
@@ -85,9 +85,7 @@ test.describe('what needs the operator', () => {
 		).toBe(true)
 
 		await item.getByRole('link', { name: '発行する' }).click()
-		await expect(page).toHaveURL(
-			/\/concerts\/s-tour\/events\/e-1103\/reception$/,
-		)
+		await expect(page).toHaveURL(/\/series\/s-tour\/events\/e-1103\/scanners$/)
 	})
 
 	test(`@spec ${SPEC} "Revoked scanners only"`, async ({ page }) => {
@@ -103,7 +101,7 @@ test.describe('what needs the operator', () => {
 		await expect(item).toContainText('11月3日(火) 18:00 JST · 受付リンクなし')
 		await expect(item.getByRole('link', { name: '発行する' })).toHaveAttribute(
 			'href',
-			/\/concerts\/s-tour\/events\/e-1103\/reception$/,
+			/\/series\/s-tour\/events\/e-1103\/scanners$/,
 		)
 	})
 
@@ -141,7 +139,7 @@ test.describe('what needs the operator', () => {
 		// address: the editor screen itself is covered by its own spec).
 		await expect(item.getByRole('link', { name: '設定する' })).toHaveAttribute(
 			'href',
-			/\/concerts\/s-tour\/edit$/,
+			/\/series\/s-tour\/edit$/,
 		)
 	})
 
@@ -153,7 +151,7 @@ test.describe('what needs the operator', () => {
 		const item = items(page).first()
 		await expect(item).toContainText('下書き XX 単独公演 · 12月20日(日)')
 		const open = item.getByRole('link', { name: '開く' })
-		await expect(open).toHaveAttribute('href', /\/concerts\/s-solo$/)
+		await expect(open).toHaveAttribute('href', /\/series\/s-solo$/)
 	})
 })
 
@@ -172,7 +170,7 @@ test.describe('nothing to do and failures', () => {
 			page.getByRole('list', { name: '対応が必要なこと' }),
 		).toHaveCount(0)
 		const link = page.getByRole('link', { name: '公演一覧へ' })
-		await expect(link).toHaveAttribute('href', /\/concerts$/)
+		await expect(link).toHaveAttribute('href', /\/series$/)
 		await link.click()
 		await expect(
 			page.getByRole('heading', { level: 1, name: '公演' }),
