@@ -112,3 +112,13 @@ export function contrastRatio(foreground: string, background: string): number {
 	)
 	return (a + 0.05) / (b + 0.05)
 }
+
+/** The computed color of a color role (`--md-color-…`) in the theme of `within`. */
+export function roleColor(within: HTMLElement, role: string): string {
+	const probe = document.createElement('span')
+	probe.style.color = `var(${role})`
+	within.append(probe)
+	const color = getComputedStyle(probe).color
+	probe.remove()
+	return color
+}

@@ -18,7 +18,13 @@
 		border-radius: var(--md-shape-full);
 
 		font: var(--md-type-label-large);
-		color: var(--md-color-primary);
+
+		/* The text variant (and the base every variant overrides) is neutral: the
+		   brand color marks only the primary action, focus and the logo
+		   (design-tokens). on-surface-variant keeps 4.5:1 on every surface in both
+		   themes and reads one step below the outlined variant's on-surface. The
+		   state layer follows currentColor. */
+		color: var(--md-color-on-surface-variant);
 		text-decoration: none;
 		white-space: nowrap;
 

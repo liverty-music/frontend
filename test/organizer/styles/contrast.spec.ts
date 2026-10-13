@@ -87,8 +87,9 @@ const TEXT_PAIRS: Array<[string, string]> = [
 	...SURFACES.flatMap(
 		(bg): Array<[string, string]> => [
 			['on-surface', bg],
+			// Secondary text and text buttons (console-button `text`).
 			['on-surface-variant', bg],
-			// Text buttons and links.
+			// The logo's brand mark.
 			['primary', bg],
 			// Field errors and error text.
 			['error', bg],

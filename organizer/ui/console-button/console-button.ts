@@ -10,7 +10,9 @@ export type ConsoleButtonVariant =
 
 /**
  * M3 common button. `filled` is the page's one primary action and the only
- * variant in the brand color.
+ * variant in the brand color; `text` is the lowest-emphasis action, in the
+ * neutral on-surface-variant (not M3's default primary label, since the
+ * console keeps the brand color for the primary action, focus and the logo).
  *
  * With `action`, the button runs it on press and, while the returned promise
  * is pending, shows a progress indicator in place of its icon with

@@ -12,6 +12,7 @@ import {
 	deepQuery,
 	deepQueryAll,
 	focusedElement,
+	roleColor,
 } from '../story-support'
 import { ConsoleButton } from './console-button'
 
@@ -91,6 +92,18 @@ export const Variants = {
 		await expect(getComputedStyle(lockedText).borderTopColor).toBe(
 			'rgba(0, 0, 0, 0)',
 		)
+		// @spec components/infrastructure/organizer/web/global/design-tokens "One primary action"
+		// Only the filled button is in the brand color; the text buttons are not.
+		const row = canvasElement.querySelector<HTMLElement>('div')
+		if (!row) throw new Error('row not rendered')
+		const brand = roleColor(row, '--md-color-primary')
+		const inBrand = deepQueryAll(canvasElement, 'console-button')
+			.filter((host) => {
+				const style = getComputedStyle(controlOf(host))
+				return style.color === brand || style.backgroundColor === brand
+			})
+			.map((host) => host.textContent?.trim())
+		await expect(inBrand).toEqual(['公開する', '公演をつくる'])
 		// Every control answers taps on at least 48 × 48 px.
 		for (const control of deepQueryAll(canvasElement, 'button, a')) {
 			const box = control.getBoundingClientRect()
@@ -101,6 +114,60 @@ export const Variants = {
 			await expect(
 				Math.max(box.width, Number.parseFloat(target.inlineSize)),
 			).toBeGreaterThanOrEqual(48)
+		}
+	},
+} satisfies Story
+
+/**
+ * Text buttons in light and in dark, on the page surface and on a dialog's
+ * surface: a neutral label (on-surface-variant), never the brand color, at
+ * 4.5:1 or more.
+ */
+export const TextInBothThemes = {
+	render: () =>
+		defineAureliaStory({
+			template: `
+				<div style="display:grid; gap:16px">
+					<div data-testid="light" style="color-scheme:light; ${surface}">
+						<console-button data-text variant="text">キャンセル</console-button>
+						<console-button data-text variant="text" icon="add">公演日を追加</console-button>
+						<console-button variant="filled">保存する</console-button>
+					</div>
+					<div data-testid="dark" style="color-scheme:dark; ${surface}">
+						<console-button data-text variant="text">キャンセル</console-button>
+						<console-button data-text variant="text" icon="add">公演日を追加</console-button>
+						<console-button variant="filled">保存する</console-button>
+					</div>
+					<div data-testid="dark-dialog" style="color-scheme:dark; ${surface}; background:var(--md-color-surface-container-high)">
+						<console-button data-text variant="text">やめる</console-button>
+						<console-button variant="danger">取り消す</console-button>
+					</div>
+				</div>
+			`,
+		}),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/organizer/web/global/design-tokens "One primary action"
+		for (const id of ['light', 'dark', 'dark-dialog']) {
+			const panel = canvasElement.querySelector<HTMLElement>(
+				`[data-testid="${id}"]`,
+			)
+			if (!panel) throw new Error(`${id} not rendered`)
+			const brand = roleColor(panel, '--md-color-primary')
+			const neutral = roleColor(panel, '--md-color-on-surface-variant')
+			const background = getComputedStyle(panel).backgroundColor
+			// `variant` is a bindable, so the host keeps no attribute to select by.
+			const texts = [
+				...panel.querySelectorAll<HTMLElement>('console-button[data-text]'),
+			]
+			await expect(texts.length).toBeGreaterThan(0)
+			for (const host of texts) {
+				const color = getComputedStyle(controlOf(host)).color
+				await expect(color).not.toBe(brand)
+				await expect(color).toBe(neutral)
+				await expect(contrastRatio(color, background)).toBeGreaterThanOrEqual(
+					4.5,
+				)
+			}
 		}
 	},
 } satisfies Story

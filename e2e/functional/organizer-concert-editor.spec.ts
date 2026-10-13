@@ -1,4 +1,5 @@
 import {
+	brandColoredControls,
 	chooseTime,
 	connectError,
 	installConsole,
@@ -25,6 +26,7 @@ import { expect, type Locator, type Page, test } from '../support/test'
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/concert-editor'
+const TOKENS = 'components/infrastructure/organizer/web/global/design-tokens'
 const FEEDBACK =
 	'components/infrastructure/organizer/web/global/action-feedback'
 
@@ -405,6 +407,27 @@ test.describe('saving', () => {
 		await bar.getByRole('link', { name: 'キャンセル' }).click()
 		await expect(page).toHaveURL(/\/series\/s-solo$/)
 		expect(calls(log, 'SeriesService/Update')).toHaveLength(0)
+	})
+
+	// The editor's キャンセル, 公演日を追加 and 変更 are text buttons: they are
+	// neutral, so the brand color stays on 保存する alone.
+	test(`@spec ${TOKENS} "One primary action"`, async ({ page }) => {
+		await page.emulateMedia({ colorScheme: 'light' })
+		await openEditor(page, `${SERIES}/s-solo/edit`)
+		const bar = page.locator('action-bar')
+		await expect(bar.getByRole('link', { name: 'キャンセル' })).toBeVisible()
+		await expect(
+			page.getByRole('button', { name: '公演日を追加' }),
+		).toBeVisible()
+		expect(await brandColoredControls(page)).toEqual(['保存する'])
+
+		// The console follows the system into dark without a reload.
+		const background = () =>
+			page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+		const light = await background()
+		await page.emulateMedia({ colorScheme: 'dark' })
+		await expect.poll(background).not.toBe(light)
+		expect(await brandColoredControls(page)).toEqual(['保存する'])
 	})
 
 	test(`@spec ${SPEC} "New concert"`, async ({ page }) => {

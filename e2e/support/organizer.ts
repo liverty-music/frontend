@@ -242,3 +242,57 @@ export async function shownTime(
 		.inputValue()
 	return hour && minute ? `${hour}:${minute}` : ''
 }
+
+/**
+ * The labels of the visible controls (links and buttons, inside the console
+ * components' shadow roots too) whose text or background is in a brand role
+ * (`--md-color-primary` or `--md-color-primary-container`), the logo
+ * excluded. Design-tokens "The brand color marks only the primary action,
+ * focus and the logo": a page lists its one primary action here and nothing
+ * else, so a brand-colored text button shows up as an extra label.
+ */
+export async function brandColoredControls(page: Page): Promise<string[]> {
+	return page.evaluate(() => {
+		const main = document.querySelector('organizer-shell main')
+		if (!main) throw new Error('organizer-shell main not rendered')
+		const brand = ['--md-color-primary', '--md-color-primary-container'].map(
+			(role) => {
+				const probe = document.createElement('div')
+				probe.style.background = `var(${role})`
+				main.append(probe)
+				const color = getComputedStyle(probe).backgroundColor
+				probe.remove()
+				return color
+			},
+		)
+		if (brand.includes('rgba(0, 0, 0, 0)')) {
+			throw new Error('a brand role is not defined')
+		}
+		const all: Element[] = []
+		const walk = (root: ParentNode) => {
+			for (const el of root.querySelectorAll('*')) {
+				all.push(el)
+				if (el.shadowRoot) walk(el.shadowRoot)
+			}
+		}
+		walk(document)
+		return all
+			.filter((el) => el.matches('a, button'))
+			.filter((el) => (el as HTMLElement).offsetParent !== null)
+			.filter((el) => !el.classList.contains('brand'))
+			.filter((el) => {
+				const style = getComputedStyle(el)
+				return (
+					brand.includes(style.backgroundColor) || brand.includes(style.color)
+				)
+			})
+			.map((el) =>
+				// A console control's label is slotted: its text is the host's
+				// (its own text holds only a hidden pending label, if any).
+				(el.querySelector('slot')
+					? ((el.getRootNode() as ShadowRoot).host?.textContent ?? '')
+					: (el.textContent ?? '')
+				).trim(),
+			)
+	})
+}
