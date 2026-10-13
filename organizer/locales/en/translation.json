@@ -1,0 +1,428 @@
+{
+	"app": {
+		"name": "Liverty Music Organizer Console",
+		"logoMark": "Liverty",
+		"logoSub": "Organizer"
+	},
+	"common": {
+		"loading": "Loading",
+		"close": "Close",
+		"cancel": "Keep as is",
+		"retry": "Retry",
+		"copy": "Copy",
+		"copied": "Copied",
+		"save": "Save",
+		"saving": "Saving…",
+		"edit": "Edit",
+		"open": "Open",
+		"jst": "JST",
+		"required": "Required"
+	},
+	"format": {
+		"yen": "¥{{amount}}"
+	},
+	"field": {
+		"yenPrefix": "¥",
+		"yenSuffix": ""
+	},
+	"copyField": {
+		"copy": "Copy {{label}}",
+		"failed": "Could not copy"
+	},
+	"venueField": {
+		"placeholder": "Search by venue name",
+		"search": "Search venues",
+		"searching": "Searching…",
+		"noMatch": "No venue found. Try another name.",
+		"unavailable": "Venue search is unavailable.",
+		"results": "Results",
+		"change": "Change"
+	},
+	"shell": {
+		"breadcrumb": "Breadcrumb",
+		"account": "Account",
+		"language": "Language",
+		"languageName": {
+			"ja": "日本語",
+			"en": "English"
+		},
+		"signOut": "Sign out",
+		"nav": {
+			"label": "Main navigation",
+			"home": "Home",
+			"concerts": "Concerts",
+			"settings": "Settings"
+		}
+	},
+	"unsavedChanges": {
+		"heading": "Discard your changes?",
+		"body": "Changes you have not saved will be lost.",
+		"discard": "Discard",
+		"keepEditing": "Keep editing"
+	},
+	"home": {
+		"title": "Home",
+		"listLabel": "Needs attention",
+		"payoutUnavailable": "Could not load the payout account status.",
+		"concertsUnavailable": "Could not load the concerts.",
+		"payout": "Payout account setup is not finished",
+		"noScanner": "No reception links",
+		"noStartTime": "Start time not set",
+		"allClear": "Nothing needs your attention right now.",
+		"toConcerts": "Go to concerts",
+		"kind": {
+			"payout": "Action needed",
+			"scanner": "Within 7 days",
+			"startTime": "No start time",
+			"draft": "Draft"
+		},
+		"action": {
+			"payout": "Set up",
+			"scanner": "Issue",
+			"startTime": "Set",
+			"draft": "Open"
+		}
+	},
+	"concerts": {
+		"title": "Concerts",
+		"create": "Create a concert",
+		"loadFailed": "Could not load the concerts.",
+		"empty": "No concerts yet.",
+		"moreDates": "{{day}} and {{count}} more",
+		"moreVenues": "{{venue}} and others",
+		"column": {
+			"title": "Concert",
+			"schedule": "Dates and venues",
+			"sale": "Sale",
+			"state": "State"
+		}
+	},
+	"publishState": {
+		"draft": "Draft",
+		"published": "Published",
+		"cancelled": "Cancelled"
+	},
+	"seriesType": {
+		"single": "Single show",
+		"tour": "Tour",
+		"festival": "Festival"
+	},
+	"visibility": {
+		"public": "Public",
+		"unlisted": "Unlisted"
+	},
+	"sale": {
+		"none": "No sale",
+		"lotteryState": {
+			"scheduled": "Not open yet",
+			"open": "Open",
+			"awaitingDraw": "Awaiting draw",
+			"drawn": "Drawn"
+		},
+		"firstComeState": {
+			"notYetOnSale": "Not on sale yet",
+			"onSale": "On sale",
+			"allHeld": "Rest held in checkout",
+			"soldOut": "Sold out",
+			"ended": "Ended"
+		},
+		"verification": {
+			"none": "No verification",
+			"verifiedAny": "Verified identity",
+			"jpkiOnly": "Verified with My Number Card",
+			"label": "Identity verification",
+			"note": "Entries already made are not checked again."
+		},
+		"loadFailed": "Could not load the sales.",
+		"empty": "This date has no sale yet.",
+		"startLottery": "Sell by lottery",
+		"startFirstCome": "Sell first come",
+		"method": {
+			"lottery": "Lottery",
+			"firstCome": "First come"
+		},
+		"countdown": {
+			"days": "Opens in {{days}} d {{hours}} h",
+			"hours": "Opens in {{hours}} h {{minutes}} min"
+		},
+		"quantity": "{{tickets, number}} tickets",
+		"perAccount": "up to {{limit, number}} per account",
+		"oversubscribed": "Requests are {{percent, number}}% of the tickets.",
+		"stats": {
+			"entries": "Entries",
+			"requested": "Requested tickets",
+			"quantity": "Tickets",
+			"won": "Winners",
+			"wonTickets": "Tickets won",
+			"lost": "Lost",
+			"sold": "Sold",
+			"held": "In checkout"
+		},
+		"lockedAfterOpen": "Cannot change after it opens",
+		"verificationSaved": "Verification requirement changed",
+		"verificationFailed": "Could not change the verification requirement",
+		"prerequisite": {
+			"notPublished": "Publish the date to start selling",
+			"notPublishedBody": "A sale cannot start for an unpublished date.",
+			"noStartTime": "Set the start time",
+			"noStartTimeBody": "A sale needs the date’s start time.",
+			"editConcert": "Edit the concert",
+			"businessDetails": "Business details are missing",
+			"businessDetailsBody": "Liverty Music enters your business details (the commercial transactions disclosure) during vetting. Contact your Liverty Music representative to add or change them. Sales cannot start until they are complete."
+		}
+	},
+	"concert": {
+		"notFound": "Concert not found",
+		"toConcerts": "Go to concerts",
+		"loadFailed": "Could not load the concert.",
+		"events": "Dates",
+		"column": {
+			"date": "Date",
+			"venue": "Venue",
+			"sale": "Sale",
+			"state": "State"
+		},
+		"shareTitle": "Share link",
+		"shareExplain": "Fans can open an unlisted concert only through its share link. An issued link is not shown again; create a new one when you need it.",
+		"shareLabel": "Share link",
+		"shareCreate": "Create a new share link",
+		"shareCreating": "Creating…",
+		"shareConfirmTitle": "Create a new share link?",
+		"shareConfirmBody": "The previous share link will stop working.",
+		"shareCreated": "New share link created",
+		"shareFailed": "Could not create the share link",
+		"cancelConcert": "Cancel concert",
+		"datesToPublish": "Dates to publish",
+		"publishConfirmTitle": "Publish dates of {{title}}?",
+		"publishConfirmPublic": "The chosen dates are published together and the performers’ followers are notified once. A published date cannot return to draft.",
+		"publishConfirmUnlisted": "The chosen dates are published together. No follower is notified; people with the share link can see them. A published date cannot return to draft.",
+		"cancelConfirmTitle": "Cancel {{title}}?",
+		"cancelConfirmBody": "Every published date is cancelled and fans are told once. Draft dates are removed. This cannot be undone.",
+		"datesPublished": "{{count, number}} date(s) published",
+		"cancelled": "Concert cancelled",
+		"draftsRemoved": "Draft concert removed"
+	},
+	"event": {
+		"noStartTime": "No start time",
+		"tab": {
+			"sales": "Sales",
+			"reception": "Reception"
+		},
+		"tabs": "Manage this date",
+		"notFound": "Date not found",
+		"toConcert": "Back to the concert",
+		"loadFailed": "Could not load this date.",
+		"publish": "Publish",
+		"publishing": "Publishing…",
+		"cancel": "Cancel date",
+		"cancelling": "Cancelling…",
+		"cancelledNote": "This date is cancelled.",
+		"published": "Published",
+		"publishFailed": "Could not publish",
+		"cancelled": "Cancelled",
+		"draftRemoved": "Draft date removed",
+		"cancelFailed": "Could not cancel",
+		"publishConfirmTitle": "Publish this date of {{title}}?",
+		"publishConfirmPublic": "This publishes this date alone and notifies the performers’ followers. To announce several dates with one notification, publish them from the concert page. A published date cannot return to draft.",
+		"publishConfirmUnlisted": "This publishes this date alone. No follower is notified; people with the share link can see it. A published date cannot return to draft.",
+		"cancelConfirmTitle": "Cancel this date of {{title}}?",
+		"cancelConfirmPublished": "The date will be cancelled and fans will be told. This cannot be undone.",
+		"cancelConfirmDraft": "The draft date will be removed. This cannot be undone."
+	},
+	"reception": {
+		"label": "Reception {{number}}",
+		"status": {
+			"unused": "Unused",
+			"inUse": "In use",
+			"revoked": "Revoked"
+		},
+		"since": "Since",
+		"window": "Reception hours:",
+		"oneDevice": "Each link works only on the first device that opens it.",
+		"guide": "Reception guide for staff",
+		"issue": "Issue a reception link",
+		"issuing": "Issuing…",
+		"issued": "{{label}} issued",
+		"issueFailed": "Could not issue a reception link",
+		"loadFailed": "Could not load the reception links.",
+		"empty": "No reception links yet.",
+		"share": "Share",
+		"shareTitle": "{{label}} link",
+		"revoke": "Revoke",
+		"revokeAndReissue": "Revoke and reissue",
+		"revokeConfirmTitle": "Revoke {{label}}?",
+		"reissueConfirmTitle": "Revoke and reissue {{label}}?",
+		"confirmBody": "The device using {{label}} will stop working.",
+		"revoked": "{{label}} revoked",
+		"reissued": "{{label}} revoked and {{next}} issued",
+		"revokeFailed": "Could not revoke",
+		"prerequisite": {
+			"notPublished": "Publish the date to issue reception links",
+			"notPublishedBody": "Reception links cannot be issued for an unpublished date.",
+			"noStartTime": "Set the start time",
+			"noStartTimeBody": "Reception links need the date’s start time."
+		}
+	},
+	"settings": {
+		"title": "Settings",
+		"organization": "Organization",
+		"organizerFailed": "Could not load the organization.",
+		"artists": "Represented artists",
+		"changeOnRequest": "Liverty Music changes the name and the represented artists on request. Contact your representative.",
+		"business": {
+			"title": "Business details",
+			"explain": "Liverty Music entered these during vetting. Fans see them on ticket sales as the commercial transactions disclosure. Contact your Liverty Music representative to change them.",
+			"incomplete": "Some business details are missing",
+			"incompleteBody": "Sales cannot start until every business detail is registered.",
+			"notRegistered": "Not registered",
+			"legalName": "Legal name",
+			"representative": "Representative",
+			"address": "Business address",
+			"phone": "Phone number",
+			"email": "Contact email"
+		},
+		"payout": {
+			"title": "Payout account",
+			"failed": "Could not load the payout account status.",
+			"pending": "Being verified",
+			"active": "Active",
+			"restricted": "Action needed",
+			"notBlocking": "Fans can buy tickets before setup is finished; only the payout waits.",
+			"continue": "Continue setup"
+		}
+	},
+	"denied": {
+		"title": "This account cannot use the console",
+		"body": "You are signed in, but this account has no access to the organizer console. Sign in with another account or contact your Liverty Music representative.",
+		"signingOut": "Signing out…"
+	},
+	"authCallback": {
+		"verifying": "Checking your sign-in…",
+		"failed": "Could not sign in.",
+		"retry": "Sign in again"
+	},
+	"concertEditor": {
+		"newTitle": "New concert",
+		"editTitle": "Edit concert",
+		"newCrumb": "New concert",
+		"editCrumb": "Edit",
+		"loadFailed": "Could not open the editor.",
+		"correctionNote": "This concert has published or cancelled dates, so its type and visibility are fixed, and a published date keeps its venue and date. New dates stay drafts until you publish them.",
+		"title": "Title",
+		"description": "Description",
+		"type": "Type",
+		"visibility": "Visibility",
+		"performers": "Performers",
+		"noArtists": "You represent no artists yet, so a concert cannot be created. Contact your Liverty Music representative.",
+		"dates": "Dates",
+		"dateN": "Date {{n}}",
+		"removeDate": "Remove this date",
+		"publishedNote": "Published: the venue and date are fixed. To move it, cancel this date and add a new one.",
+		"cancelledNote": "A cancelled date cannot change.",
+		"venue": "Venue",
+		"date": "Date",
+		"openTime": "Doors",
+		"startTime": "Start",
+		"addDate": "Add a date",
+		"create": "Create concert",
+		"saved": "Changes saved",
+		"created": "Concert created",
+		"saveFailed": "Could not save",
+		"saveRejected": "This change could not be saved: a published date’s venue and date, the type and the visibility are fixed.",
+		"error": {
+			"title": "Enter a title",
+			"type": "Choose a type",
+			"visibility": "Choose a visibility",
+			"performers": "Choose at least one performer",
+			"events": "Add at least one date",
+			"venueNotPicked": "Pick a venue from the search results",
+			"date": "Enter a date",
+			"pastDate": "The date cannot be in the past",
+			"openAfterStart": "Doors must open before the start"
+		},
+		"cover": {
+			"title": "Cover image",
+			"pick": "Choose an image (JPEG, PNG or WebP, up to {{size}} MiB)",
+			"uploading": "Uploading…",
+			"processing": "Showing the image you picked. It switches to the optimised image once it is ready.",
+			"slow": "Optimising takes longer than usual. It will show the next time you open the editor.",
+			"failed": "Could not upload the image",
+			"badType": "Choose a JPEG, PNG or WebP image",
+			"tooLarge": "Choose an image of 10 MiB or less"
+		},
+		"startTimeOnSale": "The start time of a date is fixed once its tickets are on sale, so nothing was saved. If no tickets are on sale yet, another concert already holds that venue and time.",
+		"visibilityPublic": "Shown in fan lists; followers are notified when it is published.",
+		"visibilityUnlisted": "Only people with the share link can see it; no follower is notified.",
+		"visibilityFixed": "This concert has published or cancelled dates, so its visibility is fixed."
+	},
+	"lotteryEditor": {
+		"newTitle": "Sell by lottery",
+		"changeTitle": "Change lottery",
+		"crumb": "Sell by lottery",
+		"explain": "Fans enter during the window; the draw runs automatically after it closes. A lottery cannot change once it opens.",
+		"name": "Sale name",
+		"namePlaceholder": "e.g. Fan club presale",
+		"start": "Window opens",
+		"end": "Window closes",
+		"windowHint": "The window lasts {{min}}–{{max}} days and closes before the event starts.",
+		"price": "Price",
+		"quantity": "Tickets",
+		"limit": "Limit per account",
+		"limitHint": "Up to {{max}}",
+		"create": "Start the lottery",
+		"created": "Lottery “{{name}}” created",
+		"changed": "Lottery changed",
+		"saveFailed": "Could not save",
+		"partlySaved": "The window is saved. The price, tickets and limit are not.",
+		"openedWhileEditing": "A lottery cannot change once its window has opened. Nothing was saved.",
+		"rejected": "This lottery could not be created. Check that the date is published and timed, your business details are complete, and the window does not overlap another sale.",
+		"notFound": "Sale not found",
+		"loadFailed": "Could not open the editor.",
+		"toSales": "Back to sales",
+		"error": {
+			"name": "Enter a sale name",
+			"nameLength": "Use {{max}} characters or fewer",
+			"start": "Enter when the window opens",
+			"end": "Enter when the window closes",
+			"endBeforeStart": "The window must close after it opens",
+			"windowLength": "The window must last {{min}}–{{max}} days (now {{days}} days)",
+			"closeAfterEvent": "Close the window before the event starts",
+			"quantity": "Enter a whole number of tickets",
+			"limit": "Enter a whole-number limit",
+			"limitMax": "The limit is at most {{max}}",
+			"limitOverQuantity": "The limit cannot exceed the tickets",
+			"price": "Enter a whole-yen price of at least 1",
+			"overlap": "The window overlaps the sale “{{name}}” ({{start}} – {{end}})"
+		}
+	},
+	"firstComeEditor": {
+		"newTitle": "Sell first come",
+		"changeTitle": "Change first-come sale",
+		"crumb": "Sell first come",
+		"defaultName": "General sale",
+		"start": "Sale opens",
+		"end": "Sale closes",
+		"endHint": "Close by the event’s start time.",
+		"priceLocked": "Tickets are sold or in checkout, so the price is fixed.",
+		"limitHint": "{{min}}–{{max}}",
+		"create": "Start the sale",
+		"saved": "First-come sale saved",
+		"saveFailed": "Could not save",
+		"rejected": "Could not save. Check that the date is published and timed, your business details are complete and the window does not overlap another sale. While tickets are sold or in checkout the price is fixed and the quantity cannot go below them.",
+		"loadFailed": "Could not load the sale.",
+		"error": {
+			"name": "Enter a sale name",
+			"nameLength": "Use {{max}} characters or fewer",
+			"start": "Enter when the sale opens",
+			"end": "Enter when the sale closes",
+			"endAfterEvent": "Close the sale by the start time ({{eventStart}} JST)",
+			"endBeforeStart": "The sale must close after it opens",
+			"price": "Enter a whole-yen price from {{min, number}} to {{max, number}}",
+			"quantity": "Enter a whole number of tickets",
+			"quantityFloor": "The quantity cannot go below the {{floor, number}} tickets sold ({{sold, number}}) or in checkout ({{held, number}})",
+			"limit": "Enter a limit from {{min}} to {{max}}",
+			"limitOverQuantity": "The limit cannot exceed the tickets",
+			"overlap": "The window overlaps the sale “{{name}}” ({{start}} – {{end}})"
+		}
+	}
+}

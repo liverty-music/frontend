@@ -4,6 +4,7 @@ export default defineMain({
 	stories: [
 		'../src/**/*.stories.@(ts|tsx|js|jsx|mdx)',
 		'../shared/**/*.stories.@(ts|tsx|js|jsx|mdx)',
+		'../organizer/**/*.stories.@(ts|tsx|js|jsx|mdx)',
 	],
 	addons: [
 		'@storybook/addon-a11y',

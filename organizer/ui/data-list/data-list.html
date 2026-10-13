@@ -1,0 +1,50 @@
+<import from="./data-list.css"></import>
+<import from="../status-badge/status-badge"></import>
+
+<template as-custom-element="data-cell">
+  <bindable name="kind"></bindable>
+  <bindable name="value"></bindable>
+  <template switch.bind="kind">
+    <status-badge case="status" tone.bind="value?.tone" label.bind="value?.label"></status-badge>
+    <data case="count" value.bind="value">${value | count}</data>
+    <data case="yen" value.bind="value">${value | yen}</data>
+    <time case="datetime" datetime.bind="value ? value.toISOString() : null">${value | jstDateTime}</time>
+    <time case="date" datetime.bind="value ? value.toISOString() : null">${value | jstDate}</time>
+    <template default-case>${value}</template>
+  </template>
+</template>
+
+<ul class="cards" aria-label.bind="label">
+  <li repeat.for="row of rows; key: id" class="card">
+    <a if.bind="row.href" href.bind="row.href" class="card-title state-layer">${row.cells[primary.key]}</a>
+    <span else class="card-title">${row.cells[primary.key]}</span>
+    <span if.bind="row.subtitle" class="subtitle">${row.subtitle}</span>
+    <dl class="card-details">
+      <div repeat.for="column of details" class="card-detail" data-numeric.bind="isNumeric(column)">
+        <dt>${column.label}</dt>
+        <dd><data-cell kind.bind="column.kind" value.bind="row.cells[column.key]"></data-cell></dd>
+      </div>
+    </dl>
+  </li>
+</ul>
+
+<table class="table">
+  <caption class="visually-hidden">${label}</caption>
+  <thead>
+    <tr>
+      <th repeat.for="column of columns" scope="col" data-numeric.bind="isNumeric(column)">${column.label}</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr repeat.for="row of rows; key: id">
+      <template repeat.for="column of columns">
+        <th if.bind="column === primary" scope="row">
+          <a if.bind="row.href" href.bind="row.href">${row.cells[column.key]}</a>
+          <template else>${row.cells[column.key]}</template>
+          <span if.bind="row.subtitle" class="subtitle">${row.subtitle}</span>
+        </th>
+        <td else data-numeric.bind="isNumeric(column)"><data-cell kind.bind="column.kind" value.bind="row.cells[column.key]"></data-cell></td>
+      </template>
+    </tr>
+  </tbody>
+</table>

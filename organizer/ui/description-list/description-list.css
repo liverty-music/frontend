@@ -1,0 +1,38 @@
+@layer block {
+	@scope (description-list) {
+		:scope {
+			container: description-list / inline-size;
+			display: block;
+		}
+
+		.row {
+			display: grid;
+			gap: var(--space-3xs);
+			padding-block: var(--space-xs);
+			border-block-end: 1px solid var(--md-color-outline-variant);
+		}
+
+		dt {
+			font: var(--md-type-label-large);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		dd {
+			margin: 0;
+			font: var(--md-type-body-large);
+			color: var(--md-color-on-surface);
+			overflow-wrap: anywhere;
+
+			&[data-empty="true"] {
+				color: var(--md-color-on-surface-variant);
+			}
+		}
+
+		@container description-list (width >= 600px) {
+			.row {
+				grid-template-columns: 200px 1fr;
+				gap: var(--space-m);
+			}
+		}
+	}
+}

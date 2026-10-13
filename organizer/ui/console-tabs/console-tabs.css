@@ -1,0 +1,50 @@
+@layer block {
+	@scope (console-tabs) {
+		:scope {
+			display: block;
+			border-block-end: 1px solid var(--md-color-outline-variant);
+		}
+
+		.tab-list {
+			position: relative;
+			display: flex;
+		}
+
+		.tab {
+			display: inline-grid;
+			place-items: center;
+
+			min-inline-size: 90px;
+			min-block-size: var(--md-target-size);
+			padding-inline: var(--space-s);
+
+			font: var(--md-type-title-small);
+			color: var(--md-color-on-surface-variant);
+			text-decoration: none;
+
+			&[aria-current="page"] {
+				color: var(--md-color-primary);
+			}
+		}
+
+		.indicator {
+			position: absolute;
+			inset-block-end: 0;
+			inset-inline-start: 0;
+			transform: translateX(var(--indicator-start, 0));
+
+			inline-size: var(--indicator-size, 0);
+			block-size: 3px;
+			border-start-start-radius: 3px;
+			border-start-end-radius: 3px;
+
+			background: var(--md-color-primary);
+
+			transition:
+				transform var(--md-sys-motion-duration-medium2)
+				var(--md-sys-motion-easing-standard),
+				inline-size var(--md-sys-motion-duration-medium2)
+				var(--md-sys-motion-easing-standard);
+		}
+	}
+}

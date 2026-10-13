@@ -1,0 +1,15 @@
+<import from="./copy-field.css"></import>
+<import from="../icon-button/icon-button"></import>
+
+<div class="copy-field">
+  <span class="label">${label}</span>
+  <div class="row">
+    <span class="value">${value}</span>
+    <icon-button
+      icon.bind="copied ? 'check' : 'copy'"
+      label.bind="buttonLabel & signal:'aurelia-translation-signal'"
+      data-copied.bind="copied"
+      click.trigger="copy()"
+    ></icon-button>
+  </div>
+</div>

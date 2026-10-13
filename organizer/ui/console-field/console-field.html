@@ -1,0 +1,55 @@
+<import from="./console-field.css"></import>
+
+<div class="field" data-invalid.bind="!!error" data-disabled.bind="disabled">
+  <label for.bind="inputId" class="label">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></label>
+  <div class="control">
+    <span if.bind="type === 'yen'" class="affix" aria-hidden="true">${'field.yenPrefix' & t}</span>
+    <template switch.bind="type">
+      <textarea
+        case="textarea"
+        ref="input"
+        id.bind="inputId"
+        name.bind="name"
+        value.bind="value"
+        required.bind="required"
+        disabled.bind="disabled"
+        placeholder.bind="placeholder"
+        aria-invalid.bind="error ? 'true' : null"
+        aria-describedby.bind="describedBy"
+      ></textarea>
+      <select
+        case="select"
+        ref="input"
+        id.bind="inputId"
+        name.bind="name"
+        value.bind="value"
+        required.bind="required"
+        disabled.bind="disabled"
+        aria-invalid.bind="error ? 'true' : null"
+        aria-describedby.bind="describedBy"
+      >
+        <option repeat.for="option of options" value.bind="option.value">${option.label}</option>
+      </select>
+      <input
+        default-case
+        ref="input"
+        id.bind="inputId"
+        name.bind="name"
+        type.bind="type === 'yen' ? 'number' : type"
+        inputmode.bind="type === 'yen' || type === 'number' ? 'numeric' : null"
+        min.bind="type === 'yen' || type === 'number' ? 0 : null"
+        value.bind="value"
+        required.bind="required"
+        disabled.bind="disabled"
+        placeholder.bind="placeholder"
+        autocomplete.bind="autocomplete"
+        aria-invalid.bind="error ? 'true' : null"
+        aria-describedby.bind="describedBy"
+      >
+    </template>
+    <span if.bind="type === 'yen'" class="affix" aria-hidden="true">${'field.yenSuffix' & t}</span>
+    <span if.bind="isTime" id.bind="`${inputId}-zone`" class="affix">${'common.jst' & t}</span>
+  </div>
+  <p if.bind="hint" id.bind="`${inputId}-hint`" class="supporting">${hint}</p>
+  <p if.bind="error" id.bind="`${inputId}-error`" class="error">${error}</p>
+</div>

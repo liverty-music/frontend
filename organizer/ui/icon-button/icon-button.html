@@ -1,0 +1,13 @@
+<import from="./icon-button.css"></import>
+<import from="../console-icon/console-icon"></import>
+
+<button
+  type="button"
+  class="state-layer"
+  aria-label.bind="label"
+  title.bind="label"
+  aria-pressed.bind="pressed === undefined ? null : String(pressed)"
+  disabled.bind="disabled"
+>
+  <console-icon name.bind="icon"></console-icon>
+</button>

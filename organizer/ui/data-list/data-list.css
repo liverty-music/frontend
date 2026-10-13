@@ -1,0 +1,116 @@
+@layer block {
+	@scope (data-list) {
+		:scope {
+			container: data-list / inline-size;
+			display: block;
+		}
+
+		.cards {
+			display: grid;
+			gap: var(--space-2xs);
+
+			margin: 0;
+			padding: 0;
+
+			list-style: none;
+		}
+
+		.card {
+			display: grid;
+			gap: var(--space-2xs);
+
+			padding: var(--space-s);
+			border-radius: var(--md-shape-medium);
+
+			background: var(--md-color-surface-container);
+		}
+
+		.card-title {
+			display: flex;
+			align-items: center;
+
+			min-block-size: var(--md-target-size);
+			margin: calc(-1 * var(--space-2xs));
+			padding-inline: var(--space-2xs);
+			border-radius: var(--md-shape-small);
+
+			font: var(--md-type-title-medium);
+			color: var(--md-color-on-surface);
+			text-decoration: none;
+		}
+
+		.subtitle {
+			display: block;
+			font: var(--md-type-body-small);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.card-details {
+			display: grid;
+			gap: var(--space-3xs);
+			margin: 0;
+		}
+
+		.card-detail {
+			display: flex;
+			gap: var(--space-s);
+			justify-content: space-between;
+
+			& dt {
+				font: var(--md-type-body-medium);
+				color: var(--md-color-on-surface-variant);
+			}
+
+			& dd {
+				margin: 0;
+				color: var(--md-color-on-surface);
+				text-align: end;
+			}
+		}
+
+		.table {
+			display: none;
+			border-collapse: collapse;
+			inline-size: 100%;
+			font: var(--md-type-body-medium);
+		}
+
+		.table th,
+		.table td {
+			padding: var(--space-xs) var(--space-s);
+			border-block-end: 1px solid var(--md-color-outline-variant);
+			text-align: start;
+		}
+
+		.table thead th {
+			font: var(--md-type-label-large);
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.table tbody th {
+			font-weight: 500;
+			color: var(--md-color-on-surface);
+		}
+
+		.table [data-numeric="true"] {
+			text-align: end;
+		}
+
+		.table a {
+			display: inline-flex;
+			align-items: center;
+			min-block-size: var(--md-target-size);
+			color: var(--md-color-primary);
+		}
+
+		@container data-list (width >= 840px) {
+			.cards {
+				display: none;
+			}
+
+			.table {
+				display: table;
+			}
+		}
+	}
+}

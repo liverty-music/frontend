@@ -1,0 +1,212 @@
+/*
+ * Organizer console design tokens.
+ *
+ * Color roles use the fan app's role names (`--md-color-surface`,
+ * `--md-color-on-surface`, `--md-color-primary`, ...) with the console's own
+ * values. Each role carries a light and a dark value through `light-dark()`,
+ * and `color-scheme: light dark` lets the operating system pick: light by
+ * default, dark when the system is dark, switching without a reload.
+ *
+ * Every value is a literal `oklch()` so test/organizer/styles/contrast.spec.ts
+ * can compute the contrast of each role pair in both themes. Keep it that way:
+ * a relative color or a `var()` inside a role breaks that check.
+ *
+ * State-layer opacities, durations and easings come from
+ * shared/styles/m3-sys.css and are not redefined here.
+ */
+@layer tokens {
+	:root {
+		/* ── Color roles ── */
+
+		/* Brand magenta: only the page's primary action, the focus indicator and
+		   the logo use it. */
+		--md-color-primary: light-dark(
+			oklch(50% 0.21 350deg),
+			oklch(80% 0.14 350deg)
+		);
+		--md-color-on-primary: light-dark(
+			oklch(100% 0 0deg),
+			oklch(26% 0.09 350deg)
+		);
+		--md-color-primary-container: light-dark(
+			oklch(93% 0.045 350deg),
+			oklch(36% 0.12 350deg)
+		);
+		--md-color-on-primary-container: light-dark(
+			oklch(32% 0.12 350deg),
+			oklch(93% 0.04 350deg)
+		);
+
+		/* Neutral accent: tonal buttons, the selected navigation item and tab. */
+		--md-color-secondary-container: light-dark(
+			oklch(91% 0.02 285deg),
+			oklch(34% 0.025 285deg)
+		);
+		--md-color-on-secondary-container: light-dark(
+			oklch(26% 0.025 285deg),
+			oklch(92% 0.012 285deg)
+		);
+
+		/* Surfaces, lowest to highest tonal tier. */
+		--md-color-surface: light-dark(
+			oklch(99% 0.003 285deg),
+			oklch(18% 0.01 285deg)
+		);
+		--md-color-surface-container-low: light-dark(
+			oklch(97% 0.004 285deg),
+			oklch(21% 0.011 285deg)
+		);
+		--md-color-surface-container: light-dark(
+			oklch(95.5% 0.005 285deg),
+			oklch(23.5% 0.012 285deg)
+		);
+		--md-color-surface-container-high: light-dark(
+			oklch(93.5% 0.006 285deg),
+			oklch(26.5% 0.013 285deg)
+		);
+		--md-color-surface-container-highest: light-dark(
+			oklch(91.5% 0.007 285deg),
+			oklch(29.5% 0.014 285deg)
+		);
+
+		/* Text on surfaces: body and secondary. */
+		--md-color-on-surface: light-dark(
+			oklch(22% 0.012 285deg),
+			oklch(93% 0.006 285deg)
+		);
+		--md-color-on-surface-variant: light-dark(
+			oklch(44% 0.016 285deg),
+			oklch(79% 0.012 285deg)
+		);
+
+		/* Control boundaries (3:1) and dividers. */
+		--md-color-outline: light-dark(
+			oklch(56% 0.014 285deg),
+			oklch(64% 0.014 285deg)
+		);
+		--md-color-outline-variant: light-dark(
+			oklch(86% 0.008 285deg),
+			oklch(36% 0.012 285deg)
+		);
+
+		/* Snackbar. */
+		--md-color-inverse-surface: light-dark(
+			oklch(30% 0.012 285deg),
+			oklch(91% 0.006 285deg)
+		);
+		--md-color-inverse-on-surface: light-dark(
+			oklch(95% 0.005 285deg),
+			oklch(26% 0.012 285deg)
+		);
+		--md-color-inverse-primary: light-dark(
+			oklch(83% 0.11 350deg),
+			oklch(48% 0.2 350deg)
+		);
+		--md-color-scrim: oklch(0% 0 0deg / 40%);
+
+		/* ── Status roles ──
+		   Always shown beside their text label, never alone. The fill role marks
+		   an icon or a dot; the container pair is a badge. */
+		--md-color-error: light-dark(oklch(50% 0.19 27deg), oklch(76% 0.13 27deg));
+		--md-color-on-error: light-dark(oklch(100% 0 0deg), oklch(26% 0.08 27deg));
+		--md-color-error-container: light-dark(
+			oklch(93% 0.04 27deg),
+			oklch(36% 0.1 27deg)
+		);
+		--md-color-on-error-container: light-dark(
+			oklch(33% 0.12 27deg),
+			oklch(93% 0.03 27deg)
+		);
+		--md-color-success: light-dark(
+			oklch(48% 0.12 150deg),
+			oklch(79% 0.13 150deg)
+		);
+		--md-color-success-container: light-dark(
+			oklch(93% 0.05 150deg),
+			oklch(33% 0.07 150deg)
+		);
+		--md-color-on-success-container: light-dark(
+			oklch(31% 0.08 150deg),
+			oklch(93% 0.04 150deg)
+		);
+		--md-color-warning: light-dark(
+			oklch(53% 0.12 70deg),
+			oklch(81% 0.13 75deg)
+		);
+		--md-color-warning-container: light-dark(
+			oklch(94% 0.06 85deg),
+			oklch(35% 0.07 75deg)
+		);
+		--md-color-on-warning-container: light-dark(
+			oklch(33% 0.08 65deg),
+			oklch(93% 0.05 85deg)
+		);
+		--md-color-neutral-container: light-dark(
+			oklch(91.5% 0.007 285deg),
+			oklch(31% 0.014 285deg)
+		);
+		--md-color-on-neutral-container: light-dark(
+			oklch(36% 0.016 285deg),
+			oklch(86% 0.01 285deg)
+		);
+
+		/* ── Type ──
+		   A fixed M3 scale (TypeScaleTokens.kt) that does not follow the window:
+		   operators compare numbers across windows, and M3 adapts the layout,
+		   not the text size, across window classes. */
+		--font-body:
+			"Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+		--font-mono: ui-monospace, "SFMono-Regular", monospace;
+		--md-type-body-small: 400 12px / 16px var(--font-body);
+		--md-type-body-medium: 400 14px / 20px var(--font-body);
+		--md-type-body-large: 400 16px / 24px var(--font-body);
+		--md-type-label-medium: 500 12px / 16px var(--font-body);
+		--md-type-label-large: 500 14px / 20px var(--font-body);
+		--md-type-title-small: 500 14px / 20px var(--font-body);
+		--md-type-title-medium: 500 16px / 24px var(--font-body);
+		--md-type-title-large: 400 22px / 28px var(--font-body);
+		--md-type-headline-small: 400 24px / 32px var(--font-body);
+
+		/* ── Shape (M3 corner roles) ── */
+		--md-shape-extra-small: 4px;
+		--md-shape-small: 8px;
+		--md-shape-medium: 12px;
+		--md-shape-large: 16px;
+		--md-shape-extra-large: 28px;
+		--md-shape-full: 9999px;
+
+		/* ── Space (4 px grid) ── */
+		--space-3xs: 4px;
+		--space-2xs: 8px;
+		--space-xs: 12px;
+		--space-s: 16px;
+		--space-m: 24px;
+		--space-l: 32px;
+		--space-xl: 48px;
+
+		/* ── Layout ── */
+
+		/* Minimum touch target of every control (M3: 48 dp). */
+		--md-target-size: 48px;
+
+		/* Navigation bar (compact windows) and rail (from 600 px). The snackbar
+		   clears the bar by --nav-bar-clearance; the shell sets it to 0 beside
+		   the rail. */
+		--nav-bar-height: 80px;
+		--nav-rail-width: 80px;
+		--nav-bar-clearance: var(--nav-bar-height);
+		--safe-area-block-end: env(safe-area-inset-bottom, 0px);
+
+		/* M3 elevation level 2 (menus). */
+		--md-elevation-2: 0 2px 6px oklch(0% 0 0deg / 20%);
+
+		/* Readable page width on expanded windows. */
+		--page-max-inline-size: 1200px;
+
+		/* Focus ring. */
+		--focus-ring-width: 3px;
+		--focus-ring-offset: 2px;
+
+		color-scheme: light dark;
+	}
+}

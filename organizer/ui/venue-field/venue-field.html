@@ -1,0 +1,66 @@
+<import from="./venue-field.css"></import>
+<import from="../console-icon/console-icon"></import>
+<import from="../console-button/console-button"></import>
+<import from="../icon-button/icon-button"></import>
+<import from="../../../shared/ui/circular-progress/circular-progress"></import>
+
+<div class="venue-field" data-invalid.bind="!!error">
+  <label for.bind="inputId" class="label">${label}<span if.bind="required" class="required"> *<span class="visually-hidden">${'common.required' & t}</span></span></label>
+
+  <div if.bind="value" class="picked" data-role="picked">
+    <console-icon name="check-circle" class="picked-icon"></console-icon>
+    <div class="picked-text">
+      <span class="picked-name">${value.name}</span>
+      <span class="picked-address">${value.address}</span>
+    </div>
+    <console-button variant="text" click.trigger="change()">${'venueField.change' & t}</console-button>
+  </div>
+
+  <template else>
+    <div class="control">
+      <input
+        ref="input"
+        id.bind="inputId"
+        type="search"
+        value.bind="query"
+        maxlength.bind="100"
+        autocomplete="off"
+        placeholder.bind="'venueField.placeholder' & t"
+        aria-invalid.bind="error ? 'true' : null"
+        aria-describedby.bind="describedBy"
+        keydown.trigger="onKeydown($event)"
+      >
+      <icon-button
+        icon="search"
+        label.bind="'venueField.search' & t"
+        disabled.bind="!canSearch"
+        click.trigger="runSearch()"
+      ></icon-button>
+    </div>
+
+    <div id.bind="`${inputId}-status`" class="status" role="status">
+      <span if.bind="state === 'searching'" class="searching">
+        <circular-progress size="small" label.bind="'venueField.searching' & t"></circular-progress>
+        ${'venueField.searching' & t}
+      </span>
+      <template if.bind="state === 'none'">${'venueField.noMatch' & t}</template>
+      <span if.bind="state === 'unavailable'" class="unavailable">
+        ${'venueField.unavailable' & t}
+        <console-button variant="text" click.trigger="runSearch()">${'common.retry' & t}</console-button>
+      </span>
+    </div>
+
+    <fieldset if.bind="state === 'results'" class="results">
+      <legend class="visually-hidden">${'venueField.results' & t}</legend>
+      <label repeat.for="candidate of candidates; key: placeId" class="candidate state-layer">
+        <input type="radio" name.bind="inputId" change.trigger="pick(candidate)">
+        <span class="candidate-text">
+          <span class="candidate-name">${candidate.name}</span>
+          <span class="candidate-address">${candidate.address}</span>
+        </span>
+      </label>
+    </fieldset>
+  </template>
+
+  <p if.bind="error" id.bind="`${inputId}-error`" class="error">${error}</p>
+</div>
