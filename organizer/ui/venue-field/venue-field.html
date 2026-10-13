@@ -1,7 +1,6 @@
 <import from="./venue-field.css"></import>
 <import from="../console-icon/console-icon"></import>
 <import from="../console-button/console-button"></import>
-<import from="../icon-button/icon-button"></import>
 <import from="../../../shared/ui/circular-progress/circular-progress"></import>
 <!-- A light-DOM shared component inside this shadow root takes its styles from here. -->
 <import from="../../../shared/ui/circular-progress/circular-progress.css"></import>
@@ -14,56 +13,68 @@
     <console-icon name="check-circle" class="picked-icon"></console-icon>
     <div class="picked-text">
       <span class="picked-name">${value.name}</span>
-      <span class="picked-address">${value.address}</span>
+      <span if.bind="value.address" class="picked-address">${value.address}</span>
     </div>
-    <console-button variant="text" click.trigger="change()">${'venueField.change' & t}</console-button>
+    <console-button component.ref="changeButton" variant="text" click.trigger="change()">${'venueField.change' & t}</console-button>
   </div>
 
   <template else>
     <div class="control">
+      <console-icon name="search" class="leading-icon"></console-icon>
       <input
         ref="input"
         id.bind="inputId"
-        type="search"
+        type="text"
+        role="combobox"
         value.bind="query"
-        maxlength.bind="100"
+        maxlength.bind="maxLength"
         autocomplete="off"
+        spellcheck="false"
+        enterkeyhint="search"
         placeholder.bind="'venueField.placeholder' & t"
+        aria-autocomplete="list"
+        aria-expanded.bind="expanded ? 'true' : 'false'"
+        aria-controls.bind="listboxId"
+        aria-activedescendant.bind="activeId"
         aria-invalid.bind="error ? 'true' : null"
         aria-describedby.bind="describedBy"
+        input.trigger="onInput($event)"
+        compositionend.trigger="onInput($event)"
         keydown.trigger="onKeydown($event)"
+        blur.trigger="onBlur()"
       >
-      <icon-button
-        icon="search"
-        label.bind="'venueField.search' & t"
-        disabled.bind="!canSearch"
-        click.trigger="runSearch()"
-      ></icon-button>
+      <circular-progress if.bind="state === 'searching'" size="small" label.bind="'venueField.searching' & t" class="progress"></circular-progress>
+    </div>
+
+    <!-- A press on the list keeps focus in the input, so the list stays open until the pick. -->
+    <div show.bind="expanded" class="popup" mousedown.trigger="keepFocus($event)">
+      <ul id.bind="listboxId" role="listbox" class="listbox" aria-label.bind="'venueField.results' & t">
+        <li
+          repeat.for="candidate of candidates; key: placeId"
+          id.bind="optionId($index)"
+          role="option"
+          class="option state-layer"
+          aria-selected.bind="$index === activeIndex ? 'true' : 'false'"
+          click.trigger="pick(candidate)"
+        >
+          <span class="option-name">${candidate.name}</span>
+          <span if.bind="candidate.address" class="option-address">${candidate.address}</span>
+        </li>
+      </ul>
+      <!-- Places API policies: the source is credited within the list's own container. -->
+      <p class="attribution" translate="no">${'venueField.attribution' & t}</p>
     </div>
 
     <div id.bind="`${inputId}-status`" class="status" role="status">
-      <span if.bind="state === 'searching'" class="searching">
-        <circular-progress size="small" label.bind="'venueField.searching' & t"></circular-progress>
-        ${'venueField.searching' & t}
-      </span>
+      <template if.bind="state === 'searching'">${'venueField.searching' & t}</template>
       <template if.bind="state === 'none'">${'venueField.noMatch' & t}</template>
       <span if.bind="state === 'unavailable'" class="unavailable">
         ${'venueField.unavailable' & t}
-        <console-button variant="text" click.trigger="runSearch()">${'common.retry' & t}</console-button>
+        <console-button variant="text" click.trigger="retry()">${'common.retry' & t}</console-button>
       </span>
     </div>
-
-    <fieldset if.bind="state === 'results'" class="results">
-      <legend class="visually-hidden">${'venueField.results' & t}</legend>
-      <label repeat.for="candidate of candidates; key: placeId" class="candidate state-layer">
-        <input type="radio" name.bind="inputId" change.trigger="pick(candidate)">
-        <span class="candidate-text">
-          <span class="candidate-name">${candidate.name}</span>
-          <span class="candidate-address">${candidate.address}</span>
-        </span>
-      </label>
-    </fieldset>
   </template>
 
   <p if.bind="errorText" id.bind="`${inputId}-error`" class="error">${errorText.key & t:errorText.params}</p>
+  <p if.bind="showHint" id.bind="`${inputId}-hint`" class="supporting">${'venueField.hint' & t}</p>
 </div>

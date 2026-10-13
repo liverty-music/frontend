@@ -95,18 +95,22 @@ async function openEditor(
 
 const row = (page: Page, index: number) => page.locator(`[data-row="${index}"]`)
 const titleField = (page: Page) => page.getByLabel('公演名')
-const venueSearch = (scope: Locator) => scope.getByRole('searchbox')
+const venueSearch = (scope: Locator) =>
+	scope.getByRole('combobox', { name: /会場/ })
 const snackbar = (page: Page) => page.locator('.snack-item')
 const nav = (page: Page) =>
 	page.getByRole('navigation', { name: 'メインナビゲーション' })
 const calls = (log: RpcLog, method: string) =>
 	log.calls.filter((c) => c.method === method)
 
+/** Types the name, waits for the field's search, and picks Zepp Haneda. */
 async function pickVenue(scope: Locator, name = 'Zepp Haneda') {
 	await venueSearch(scope).fill(name)
-	await scope.getByRole('button', { name: '会場を検索' }).click()
-	await scope.getByRole('radio', { name: /Zepp Haneda \(TOKYO\)/ }).click()
+	await scope.getByRole('option', { name: /Zepp Haneda \(TOKYO\)/ }).click()
 }
+
+/** Longer than the venue field waits after the last keystroke (500 ms). */
+const SEARCH_PAUSE_MS = 1000
 
 /** Title, performer and the first date of a new concert, all but the venue. */
 async function fillNewConcert(page: Page, opts: { performer?: boolean } = {}) {
@@ -161,11 +165,10 @@ test.describe('venue search', () => {
 			'VenueService/Search': { candidates: [] },
 		})
 		await venueSearch(row(page, 0)).fill('存在しない会場')
-		await venueSearch(row(page, 0)).press('Enter')
 		await expect(row(page, 0)).toContainText(
 			'会場が見つかりませんでした。別の名前で検索してください。',
 		)
-		await expect(row(page, 0).getByRole('radio')).toHaveCount(0)
+		await expect(row(page, 0).getByRole('option')).toHaveCount(0)
 		await expect(
 			row(page, 0).getByRole('button', { name: '変更' }),
 		).toHaveCount(0)
@@ -183,7 +186,6 @@ test.describe('venue search', () => {
 			},
 		})
 		await venueSearch(row(page, 0)).fill('Zepp Haneda')
-		await row(page, 0).getByRole('button', { name: '会場を検索' }).click()
 		await expect(row(page, 0)).toContainText('会場を検索できません。')
 		await expect(
 			row(page, 0).getByRole('button', { name: '変更' }),
@@ -191,9 +193,123 @@ test.describe('venue search', () => {
 
 		await row(page, 0).getByRole('button', { name: '再試行' }).click()
 		await expect(
-			row(page, 0).getByRole('radio', { name: /Zepp Haneda/ }),
+			row(page, 0).getByRole('option', { name: /Zepp Haneda/ }),
 		).toBeVisible()
 		expect(calls(log, 'VenueService/Search')).toHaveLength(2)
+	})
+
+	test(`@spec ${SPEC} "Short Japanese name"`, async ({ page }) => {
+		const log = await openEditor(page, `${SERIES}/new`, {
+			'VenueService/Search': {
+				candidates: [
+					{
+						placeId: { value: 'ChIJ-budokan' },
+						name: { value: '日本武道館' },
+						address: '千代田区北の丸公園',
+					},
+				],
+			},
+		})
+		await venueSearch(row(page, 0)).fill('武道館')
+		await expect(
+			row(page, 0).getByRole('option', { name: /日本武道館/ }),
+		).toBeVisible()
+		expect(calls(log, 'VenueService/Search').map((c) => c.body)).toEqual([
+			{ text: '武道館' },
+		])
+	})
+
+	test(`@spec ${SPEC} "Short Latin text"`, async ({ page }) => {
+		const log = await openEditor(page, `${SERIES}/new`)
+		await venueSearch(row(page, 0)).fill('Zepp')
+		await page.waitForTimeout(SEARCH_PAUSE_MS)
+		expect(calls(log, 'VenueService/Search')).toHaveLength(0)
+		await expect(venueSearch(row(page, 0))).toHaveAttribute(
+			'aria-expanded',
+			'false',
+		)
+
+		await venueSearch(row(page, 0)).fill('Zepp H')
+		await expect(
+			row(page, 0).getByRole('option', { name: /Zepp Haneda/ }),
+		).toBeVisible()
+		expect(calls(log, 'VenueService/Search').map((c) => c.body)).toEqual([
+			{ text: 'Zepp H' },
+		])
+	})
+
+	test(`@spec ${SPEC} "Typing on"`, async ({ page }) => {
+		let releaseFirst: () => void = () => {}
+		const firstHeld = new Promise<void>((resolve) => {
+			releaseFirst = resolve
+		})
+		const log = await openEditor(page, `${SERIES}/new`, {
+			'VenueService/Search': async (request) => {
+				if (request.text === 'LIQUID') {
+					// The answer for LIQUID arrives after the one for LIQUIDROOM.
+					await firstHeld
+					return { body: { candidates: [HANEDA] } }
+				}
+				return {
+					body: {
+						candidates: [
+							{
+								placeId: { value: 'ChIJ-liquidroom' },
+								name: { value: 'LIQUIDROOM' },
+								address: '渋谷区東',
+							},
+						],
+					},
+				}
+			},
+		})
+		const field = row(page, 0)
+		await venueSearch(field).fill('LIQUID')
+		await expect.poll(() => calls(log, 'VenueService/Search').length).toBe(1)
+		await venueSearch(field).fill('LIQUIDROOM')
+		await expect(
+			field.getByRole('option', { name: /LIQUIDROOM/ }),
+		).toBeVisible()
+
+		releaseFirst()
+		await page.waitForTimeout(SEARCH_PAUSE_MS)
+		await expect(field.getByRole('option')).toHaveCount(1)
+		await expect(
+			field.getByRole('option', { name: /Zepp Haneda/ }),
+		).toHaveCount(0)
+		expect(calls(log, 'VenueService/Search').map((c) => c.body)).toEqual([
+			{ text: 'LIQUID' },
+			{ text: 'LIQUIDROOM' },
+		])
+	})
+
+	test(`@spec ${SPEC} "Keyboard pick"`, async ({ page }) => {
+		await openEditor(page, `${SERIES}/new`, {
+			'VenueService/Search': {
+				candidates: [
+					HANEDA,
+					{
+						placeId: { value: 'ChIJ-divercity' },
+						name: { value: 'Zepp DiverCity (TOKYO)' },
+						address: '江東区青海',
+					},
+				],
+			},
+		})
+		const field = row(page, 0)
+		await venueSearch(field).fill('Zepp Haneda')
+		await expect(field.getByRole('option')).toHaveCount(2)
+		// The list credits Google Maps as its source.
+		await expect(field.getByText('Google Maps')).toBeVisible()
+
+		await venueSearch(field).press('ArrowDown')
+		await venueSearch(field).press('ArrowDown')
+		await venueSearch(field).press('Enter')
+
+		await expect(field).toContainText('Zepp DiverCity (TOKYO)')
+		await expect(field).toContainText('江東区青海')
+		await expect(field.getByRole('option')).toHaveCount(0)
+		await expect(field.getByRole('button', { name: '変更' })).toBeVisible()
 	})
 
 	test(`@spec ${SPEC} "Typed name not picked"`, async ({ page }) => {
