@@ -20,6 +20,7 @@ import { IClock } from '../services/clock'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 import { ITicketSaleClient } from '../services/ticket-sale-client'
 import { IConsoleContext } from '../shell/console-context'
+import { IPageProgress } from '../shell/page-progress'
 import type {
 	CellText,
 	DataColumn,
@@ -31,10 +32,11 @@ type LoadState = 'loading' | 'ready' | 'error' | 'noArtist' | 'notRepresented'
 
 /**
  * Concerts of the Artist in the address: the concerts it performs in
- * (`Concert.artist_ids`, filtered here from `SeriesService.List`) as cards,
- * or a table once the list is 840 px wide, cancelled ones last. Each opens its
- * concert page under that Artist; 公演をつくる opens the editor with the
- * Artist as the first performer. The sale state of each concert comes from its
+ * (`Concert.artist_ids`, filtered here from `SeriesService.List`) as an M3
+ * list, or a table once the list is 840 px wide, cancelled ones last. Each is
+ * one target opening its concert page under that Artist; 公演をつくる, the
+ * screen's extended FAB, opens the editor with the Artist as the first
+ * performer (design D18). The sale state of each concert comes from its
  * published events' sales, read after the list shows (design D2).
  *
  * Without an Artist in the address (`/organizers/{o}/artists`) the page
@@ -45,6 +47,7 @@ export class ConcertsRoute {
 	private readonly ticketSales = resolve(ITicketSaleClient)
 	private readonly clock = resolve(IClock)
 	public readonly context = resolve(IConsoleContext)
+	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('ConcertsRoute')
 
 	public state: LoadState = 'loading'
@@ -54,7 +57,12 @@ export class ConcertsRoute {
 		{ key: 'title', labelKey: 'concerts.column.title', primary: true },
 		{ key: 'schedule', labelKey: 'concerts.column.schedule' },
 		{ key: 'sale', labelKey: 'concerts.column.sale', kind: 'status' },
-		{ key: 'state', labelKey: 'concerts.column.state', kind: 'status' },
+		{
+			key: 'state',
+			labelKey: 'concerts.column.state',
+			kind: 'status',
+			trailing: true,
+		},
 	]
 	public artistId = ''
 
@@ -92,7 +100,11 @@ export class ConcertsRoute {
 		this.abort.abort()
 	}
 
-	public async load(): Promise<void> {
+	public load(): Promise<void> {
+		return this.progress.track(this.read())
+	}
+
+	private async read(): Promise<void> {
 		this.state = 'loading'
 		try {
 			await this.context.load()
