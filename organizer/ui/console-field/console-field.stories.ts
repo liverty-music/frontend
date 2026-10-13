@@ -78,13 +78,22 @@ export const Required = { render, args: { required: true } } satisfies Story
 
 export const FieldError = {
 	render,
-	args: { label: '販売名', required: true, error: 'lotteryEditor.error.name' },
+	args: {
+		label: '販売名',
+		required: true,
+		hint: '例: ファンクラブ先行',
+		error: 'lotteryEditor.error.name',
+	},
 	play: async ({ canvasElement }) => {
-		const input = canvasOf(canvasElement)
-			.getByRole('textbox', { name: /販売名/ })
-			.element()
+		const canvas = canvasOf(canvasElement)
+		const input = canvas.getByRole('textbox', { name: /販売名/ }).element()
 		await expect(input).toHaveAttribute('aria-invalid', 'true')
+		// The error replaces the supporting text (M3 text fields) and the
+		// error icon marks the field.
 		await expect(input).toHaveAccessibleDescription('販売名を入力してください')
+		await expect(canvas.getByText('例: ファンクラブ先行').query()).toBeNull()
+		const field = deepQuery(canvasElement, '.control')
+		await expect(field.querySelector('console-icon')).not.toBeNull()
 	},
 } satisfies Story
 

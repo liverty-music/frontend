@@ -281,7 +281,8 @@ test.describe('the sales list', () => {
 			]),
 		)
 
-		await expect(tab(page).locator('.sale-name')).toHaveText([
+		// One card per sale, each headed by its name right under the page title.
+		await expect(tab(page).getByRole('heading', { level: 2 })).toHaveText([
 			'ファンクラブ先行',
 			'一般発売',
 		])
@@ -294,6 +295,18 @@ test.describe('the sales list', () => {
 		await expect(startLottery(page)).toBeVisible()
 		// The event already has its first-come sale.
 		await expect(startFirstCome(page)).toHaveCount(0)
+		// Starting a sale is an outlined button above the cards.
+		await expect(startLottery(page)).toHaveAttribute('data-variant', 'outlined')
+		const above = await tab(page).evaluate((host) => {
+			const start = host.querySelector('.start-actions')
+			const list = host.querySelector('.sales')
+			return !!(
+				start &&
+				list &&
+				start.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING
+			)
+		})
+		expect(above).toBe(true)
 	})
 })
 
@@ -358,6 +371,10 @@ test.describe('starting and editing a sale', () => {
 	test(`@spec ${SPEC} "Edit a first-come sale"`, async ({ page }) => {
 		await open(page, rpc([firstCome()]))
 
+		// 編集 is a text button on the sale's card.
+		await expect(
+			sale(page, 'sale-general').getByRole('link', { name: '編集' }),
+		).toHaveAttribute('data-variant', 'text')
 		await sale(page, 'sale-general').getByRole('link', { name: '編集' }).click()
 		await expect(page).toHaveURL(
 			/\/events\/e-1103\/ticket-sales\/sale-general\/edit$/,

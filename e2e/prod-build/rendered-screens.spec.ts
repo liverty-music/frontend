@@ -304,6 +304,32 @@ const ORGANIZER: Screen[] = [
 
 ORGANIZER.push(
 	{
+		// The prerequisite callout sits directly under the page title.
+		name: 'organizer Event, Sales tab (draft date)',
+		path: `${SERIES}/s-solo/events/e-1220/ticket-sales`,
+		setup: consoleAs(),
+		ready: (page) => page.locator('sales-tab prerequisite-callout'),
+		probes: [],
+	},
+	{
+		// The explanation of the Stripe hand-off and its outlined link.
+		name: 'organizer Settings (payout pending)',
+		path: `${ORG}/settings`,
+		setup: consoleAs(true, {
+			'PayoutAccountService/Get': payoutAccount('PENDING'),
+		}),
+		ready: (page) =>
+			page.locator('console-button').locator('[data-variant="outlined"]'),
+		probes: [
+			{
+				what: 'the outlined link to Stripe',
+				locate: (page: Page) =>
+					page.locator('console-button').locator('[data-variant="outlined"]'),
+				expect: { padding: true },
+			},
+		],
+	},
+	{
 		name: 'organizer denied (no owner role)',
 		path: ORG,
 		setup: consoleAs(false),
@@ -444,12 +470,6 @@ const KNOWN_VIOLATIONS: Array<{
 		rule: 'color-contrast',
 		reason:
 			'White on the brand magenta #fd00a6 of `.welcome-btn-primary` is 3.66:1.',
-	},
-	{
-		screen: 'organizer Event, Sales tab',
-		rule: 'heading-order',
-		reason:
-			'Sale cards use <h3> under the <h1>. Redesigned by `redesign-organizer-console` D18.',
 	},
 ]
 

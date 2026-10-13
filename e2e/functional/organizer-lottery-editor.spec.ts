@@ -283,7 +283,7 @@ test.describe('a new lottery', () => {
 			/\/series\/s-tour\/events\/e-1103\/ticket-sales$/,
 		)
 		await expect(
-			page.getByRole('heading', { level: 3, name: 'ファンクラブ先行' }),
+			page.getByRole('heading', { level: 2, name: 'ファンクラブ先行' }),
 		).toBeVisible()
 		await expect(snackbar(page)).toContainText(
 			'「ファンクラブ先行」の抽選販売をつくりました',

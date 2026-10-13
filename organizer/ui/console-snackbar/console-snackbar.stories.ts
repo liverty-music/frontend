@@ -1,9 +1,9 @@
+import { I18N } from '@aurelia/i18n'
 import {
 	defineAureliaStory,
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
-import { I18N } from '@aurelia/i18n'
 import { CustomElement } from 'aurelia'
 import { expect, waitFor, within } from 'storybook/test'
 import { page, userEvent } from 'vitest/browser'

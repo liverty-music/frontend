@@ -3,8 +3,15 @@ import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
-import type { VenuePick } from '../ui/venue-field/venue-field'
 import { createOrganizerTransport } from './organizer-transport'
+
+/** A place picked from the map catalog. */
+export interface VenuePick {
+	placeId: string
+	name: string
+	/** The place's short address (the catalog's secondary text), or '' when unknown. */
+	address: string
+}
 
 export const IVenueClient = DI.createInterface<IVenueClient>(
 	'IVenueClient',
@@ -15,8 +22,10 @@ export interface IVenueClient extends VenueClient {}
 
 /**
  * Organizer-local wrapper around the generated `VenueService` client: finds up
- * to 5 places in the map catalog for a venue name the operator typed. Errors
- * propagate to callers (the venue field shows Unavailable with 再試行).
+ * to 5 places in the map catalog for the text the operator is typing. Errors
+ * propagate to callers (the venue field shows Unavailable with 再試行); an
+ * aborted request (`signal`, when the text changed) rejects too, and the venue
+ * field drops it.
  */
 export class VenueClient {
 	private readonly logger = resolve(ILogger).scopeTo('VenueClient')
@@ -41,7 +50,8 @@ export class VenueClient {
 				address: c.address,
 			}))
 		} catch (err) {
-			this.logger.warn('search failed', { error: err })
+			// An aborted request is the caller's choice, not a failure.
+			if (!signal?.aborted) this.logger.warn('search failed', { error: err })
 			throw err
 		}
 	}

@@ -11,8 +11,8 @@ export class PrerequisiteCallout {
 
 	@bindable public heading = ''
 	/**
-	 * The heading's level: 3 under a section heading (Settings), 2 directly
-	 * under the page's title (an event's tab), so heading levels never skip.
+	 * The heading's level in the page outline: 2 directly under the page title,
+	 * 3 inside a section headed by an h2 (Settings).
 	 */
 	@bindable public level: 2 | 3 = 3
 	@bindable public actionLabel = ''

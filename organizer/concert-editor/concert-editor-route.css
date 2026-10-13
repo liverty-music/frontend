@@ -5,15 +5,32 @@
 			gap: var(--space-s);
 		}
 
+		/* One column of fields, capped at 600 px (M3 forms); sections are set
+		   apart by their headings and spacing, not dividers. */
 		.form {
 			display: grid;
-			gap: var(--space-m);
+			gap: var(--space-l);
+			max-inline-size: 600px;
+		}
+
+		.part {
+			display: grid;
+			gap: var(--space-s);
 		}
 
 		.row {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 			gap: var(--space-s);
+		}
+
+		.section-legend {
+			margin-block-end: var(--space-xs);
+			padding: 0;
+		}
+
+		.section-title {
+			font: var(--md-type-title-large);
+			color: var(--md-color-on-surface);
 		}
 
 		.note {
@@ -142,11 +159,7 @@
 		.event {
 			display: grid;
 			gap: var(--space-s);
-
-			padding: var(--space-s);
-			border-radius: var(--md-shape-medium);
-
-			background: var(--md-color-surface-container-low);
+			margin-block-end: var(--space-m);
 		}
 
 		.event-header {
@@ -157,7 +170,8 @@
 		}
 
 		.event-title {
-			font: var(--md-type-title-small);
+			font: var(--md-type-title-medium);
+			color: var(--md-color-on-surface);
 		}
 
 		.fixed-venue {
@@ -171,6 +185,10 @@
 		}
 
 		.error {
+			display: flex;
+			gap: var(--space-2xs);
+			align-items: center;
+
 			font: var(--md-type-body-small);
 			color: var(--md-color-error);
 		}

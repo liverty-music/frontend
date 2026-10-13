@@ -18,7 +18,9 @@
 		"open": "開く",
 		"jst": "JST",
 		"required": "必須",
-		"moreActions": "その他の操作"
+		"moreActions": "その他の操作",
+		"cancelEdit": "キャンセル",
+		"requiredNote": "* は必須項目です。"
 	},
 	"format": {
 		"yen": "{{amount}}円",
@@ -35,11 +37,12 @@
 	},
 	"venueField": {
 		"placeholder": "会場名で検索",
-		"search": "会場を検索",
+		"hint": "入力すると候補を表示します（日本語は3文字、英数字は5文字から）",
 		"searching": "検索中…",
 		"noMatch": "会場が見つかりませんでした。別の名前で検索してください。",
 		"unavailable": "会場を検索できません。",
-		"results": "検索結果",
+		"results": "会場の候補",
+		"attribution": "Google Maps",
 		"change": "変更"
 	},
 	"shell": {
@@ -294,8 +297,15 @@
 			"active": "有効",
 			"restricted": "要対応",
 			"notBlocking": "登録が終わるまでも、ファンはチケットを購入できます。入金だけが登録の完了を待ちます。",
-			"continue": "登録を続ける"
-		}
+			"continue": "Stripe で登録を続ける",
+			"status": "状態",
+			"stripe": "入金は、Liverty Music の決済代行会社 Stripe を通して行います。Stripe のページで、事業者の情報、代表者の本人確認、入金先の銀行口座を入力してください。",
+			"newTab": "Stripe のページは新しいタブで開きます。入力が終わったら、このタブに戻ってください。戻ると状態を読み込み直します。",
+			"opensNewTab": "（新しいタブで開きます）"
+		},
+		"artistsTitle": "アーティスト",
+		"organizationName": "組織名",
+		"noArtists": "所属アーティストはまだいません。"
 	},
 	"denied": {
 		"title": "このアカウントではコンソールを使えません",
@@ -359,7 +369,10 @@
 		"startTimeOnSale": "チケットの販売が始まった公演日の開始時刻は変更できないため、保存していません。まだ販売していない場合は、同じ会場・時刻をほかの公演が使っています。",
 		"visibilityPublic": "ファン向けの一覧に表示し、公開したときに出演者のフォロワーへ通知します。",
 		"visibilityUnlisted": "共有リンクを知っている人だけが見られます。フォロワーには通知しません。",
-		"visibilityFixed": "公開または中止した公演日があるため、公開範囲は変更できません。"
+		"visibilityFixed": "公開または中止した公演日があるため、公開範囲は変更できません。",
+		"sections": {
+			"about": "公演の情報"
+		}
 	},
 	"lotteryEditor": {
 		"newTitle": "抽選で販売する",
@@ -399,6 +412,10 @@
 			"limitOverQuantity": "上限枚数は販売枚数以下にしてください",
 			"price": "価格は1円以上の整数で入力してください",
 			"overlap": "販売「{{name}}」（{{start}} 〜 {{end}}）と期間が重なっています"
+		},
+		"sections": {
+			"window": "受付期間",
+			"tickets": "チケット"
 		}
 	},
 	"firstComeEditor": {
@@ -429,6 +446,10 @@
 			"limit": "上限枚数は{{min}}〜{{max}}枚で入力してください",
 			"limitOverQuantity": "上限枚数は販売枚数以下にしてください",
 			"overlap": "販売「{{name}}」（{{start}} 〜 {{end}}）と期間が重なっています"
+		},
+		"sections": {
+			"window": "販売期間",
+			"tickets": "チケット"
 		}
 	},
 	"otherOrganizer": {

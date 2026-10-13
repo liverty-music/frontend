@@ -187,7 +187,7 @@ test.describe('a new first-come sale', () => {
 			/\/series\/s-show\/events\/e-1120\/ticket-sales$/,
 		)
 		await expect(
-			page.getByRole('heading', { level: 3, name: '一般発売' }),
+			page.getByRole('heading', { level: 2, name: '一般発売' }),
 		).toBeVisible()
 		await expect(snackbar(page)).toContainText('先着販売を保存しました')
 		const body = calls(log, 'TicketSaleService/Create')[0].body as {

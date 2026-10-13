@@ -2,8 +2,16 @@
 	@scope (sales-tab) {
 		.sales-tab {
 			display: grid;
-			gap: var(--space-s);
+			gap: var(--space-m);
 			padding-block: var(--space-s);
+		}
+
+		.start-actions,
+		.sale-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-2xs);
+			align-items: center;
 		}
 
 		.sales {
@@ -16,21 +24,24 @@
 			list-style: none;
 		}
 
+		/* M3 outlined card: a sale holds several different actions. */
 		.sale {
 			display: grid;
-			gap: var(--space-2xs);
+			gap: var(--space-xs);
 
 			padding: var(--space-s);
+			border: 1px solid var(--md-color-outline-variant);
 			border-radius: var(--md-shape-medium);
 
-			background: var(--md-color-surface-container-low);
+			background: var(--md-color-surface);
 		}
 
-		.sale-header {
+		.sale-heading {
 			display: flex;
 			flex-wrap: wrap;
-			gap: var(--space-2xs);
+			gap: var(--space-2xs) var(--space-xs);
 			align-items: center;
+			justify-content: space-between;
 		}
 
 		.sale-name {
@@ -38,11 +49,16 @@
 			color: var(--md-color-on-surface);
 		}
 
-		.method,
 		.window,
 		.terms,
 		.locked {
+			font-variant-numeric: tabular-nums;
 			color: var(--md-color-on-surface-variant);
+		}
+
+		.method {
+			font: var(--md-type-label-large);
+			color: var(--md-color-on-surface);
 		}
 
 		.countdown {
@@ -51,8 +67,9 @@
 		}
 
 		.stats {
+			/* Always three tiles: one row, also on a phone. */
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+			grid-template-columns: repeat(3, minmax(0, 1fr));
 			gap: var(--space-2xs);
 		}
 
@@ -62,14 +79,12 @@
 
 		.verification {
 			max-inline-size: 420px;
+			margin-block-start: var(--space-2xs);
 		}
 
-		.sale-actions,
-		.start-actions {
-			display: flex;
-			flex-wrap: wrap;
-			gap: var(--space-2xs);
-			align-items: center;
+		/* The card's actions sit at its trailing edge. */
+		.sale-actions {
+			justify-content: flex-end;
 		}
 
 		.message {

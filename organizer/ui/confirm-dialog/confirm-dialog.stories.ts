@@ -1,8 +1,10 @@
+import { I18N } from '@aurelia/i18n'
 import {
 	defineAureliaStory,
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
+import { CustomElement } from 'aurelia'
 import { expect, waitFor } from 'storybook/test'
 import { userEvent } from 'vitest/browser'
 import {
@@ -154,5 +156,36 @@ export const RevokeAScanner = {
 		await expect(canvas.getByTestId('result').element()).toHaveTextContent(
 			'revoked',
 		)
+	},
+} satisfies Story
+
+/** The dismissive button reads Cancel in English, not "Keep as is". */
+export const DismissInEnglish = {
+	render: () => defineAureliaStory(publish),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/organizer/web/global/action-feedback "Operator changes their mind"
+		const host = canvasElement.querySelector('confirm-dialog')
+		if (!host) throw new Error('confirm-dialog not rendered')
+		const i18n = CustomElement.for(host).container.get(I18N)
+		await i18n.setLocale('en')
+		try {
+			const canvas = canvasOf(canvasElement)
+			await userEvent.click(canvas.getByRole('button', { name: '公開する' }))
+			const dialog = canvas.getByRole('dialog')
+			await waitFor(() => expect(dialog.element()).toBeVisible())
+			await expect(
+				dialog.getByRole('button', { name: 'Cancel', exact: true }).element(),
+			).toBeVisible()
+			await expect(
+				dialog.getByRole('button', { name: /Keep as is/ }).query(),
+			).toBeNull()
+			await userEvent.click(dialog.getByRole('button', { name: 'Cancel' }))
+			await expect(canvas.getByTestId('result').element()).toHaveTextContent(
+				'kept',
+			)
+		} finally {
+			// The catalog instance may outlive this story.
+			await i18n.setLocale('ja')
+		}
 	},
 } satisfies Story
