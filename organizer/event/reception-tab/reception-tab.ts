@@ -6,8 +6,10 @@ import { IConsoleLanguage } from '../../i18n/console-language'
 import { eventStart, isPublished, paths } from '../../model/concert-model'
 import { IScannerClient, type Scanner } from '../../services/scanner-client'
 import { IConsoleContext } from '../../shell/console-context'
+import { IPageProgress } from '../../shell/page-progress'
 import type { ConfirmDialog } from '../../ui/confirm-dialog/confirm-dialog'
 import { ISnackbar } from '../../ui/console-snackbar/snackbar'
+import type { MenuItem } from '../../ui/overflow-menu/overflow-menu'
 import type { StatusTone } from '../../ui/status-badge/status-badge'
 import { IEventPage } from '../event-page'
 import { admissionWindowOf } from './admission-window'
@@ -73,7 +75,10 @@ export function scannerRow(
 /**
  * The event's Reception (受付) tab: one Scanner per device, issued with one
  * action and handed to staff by its link; revoke, or revoke and reissue, after
- * confirming that the device using it stops working.
+ * confirming that the device using it stops working. The Scanners are an M3
+ * multi-action list (design D18): each item's name, state and link as its
+ * content, with the copy button and an overflow menu (共有, 取り消す,
+ * 取り消して再発行) at its trailing edge.
  */
 export class ReceptionTab {
 	public readonly page = resolve(IEventPage)
@@ -81,6 +86,7 @@ export class ReceptionTab {
 	private readonly snackbar = resolve(ISnackbar)
 	private readonly language = resolve(IConsoleLanguage)
 	private readonly context = resolve(IConsoleContext)
+	private readonly progress = resolve(IPageProgress)
 	private readonly logger = resolve(ILogger).scopeTo('ReceptionTab')
 	private readonly receptionBaseUrl = resolve(IAppConfig).receptionBaseUrl ?? ''
 
@@ -141,7 +147,30 @@ export class ReceptionTab {
 		return this.confirming?.row.number ?? 0
 	}
 
-	public async load(): Promise<void> {
+	/** The further actions of a Scanner that is not revoked. */
+	public menuOf(row: ScannerRow): MenuItem[] {
+		const items: MenuItem[] = []
+		if (row.url && this.canShare) {
+			items.push({ id: 'share', labelKey: 'reception.share' })
+		}
+		items.push(
+			{ id: 'revoke', labelKey: 'reception.revoke' },
+			{ id: 'reissue', labelKey: 'reception.revokeAndReissue' },
+		)
+		return items
+	}
+
+	public onMenu(row: ScannerRow, id: string): void {
+		if (id === 'share') void this.share(row)
+		else if (id === 'revoke') void this.revoke(row, false)
+		else if (id === 'reissue') void this.revoke(row, true)
+	}
+
+	public load(): Promise<void> {
+		return this.progress.track(this.read())
+	}
+
+	private async read(): Promise<void> {
 		this.state = 'loading'
 		try {
 			const scanners = await this.scanners.listByEvent(
