@@ -442,4 +442,20 @@ test.describe('addresses name the Organizer and the Artist', () => {
 		await expect(page.getByTestId('artist-name')).toHaveText('Band A')
 		await expect(page.getByTestId('artist-menu-button')).toHaveCount(0)
 	})
+
+	test('Long names shorten in the top bar on a phone', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 })
+		await open(page, SERIES, {
+			...RPC,
+			'OrganizerService/Get': organizer('とても長い名前のレコード会社株式会社'),
+			'ArtistService/List': artistList('とても長い名前のアーティスト'),
+		})
+		await expect(page.getByTestId('artist-name')).toBeVisible()
+		const box = await nav(page).boundingBox()
+		expect(box?.width).toBe(390)
+		const overflow = await page
+			.locator('organizer-shell main')
+			.evaluate((el) => el.scrollWidth - el.clientWidth)
+		expect(overflow).toBe(0)
+	})
 })
