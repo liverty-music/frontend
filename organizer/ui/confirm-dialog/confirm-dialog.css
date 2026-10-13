@@ -7,6 +7,10 @@
 	dialog {
 		inline-size: min(100% - 2 * var(--space-m), 560px);
 		min-inline-size: 280px;
+
+		/* The shared reset zeroes every margin; a modal dialog centres itself
+		   in the viewport with `margin: auto`. */
+		margin: auto;
 		padding: var(--space-m);
 		border: none;
 		border-radius: var(--md-shape-extra-large);

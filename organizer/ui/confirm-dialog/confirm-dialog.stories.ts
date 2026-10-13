@@ -82,6 +82,15 @@ export const PublishAsksFirst = {
 			name: 'XX Tour 2026 のこの公演日を公開しますか？',
 		})
 		await waitFor(() => expect(dialog.element()).toBeVisible())
+		// The dialog sits in the middle of the viewport, not stuck to its top
+		// (the shared reset zeroes the margin a modal dialog centres with).
+		const box = dialog.element().getBoundingClientRect()
+		await expect(
+			Math.abs(box.top - (window.innerHeight - box.bottom)),
+		).toBeLessThanOrEqual(2)
+		await expect(
+			Math.abs(box.left - (window.innerWidth - box.right)),
+		).toBeLessThanOrEqual(2)
 		// The body is the page's own content, shown through the dialog's slot.
 		const body = canvasElement.querySelector('confirm-dialog')
 		await expect(body).toHaveTextContent('フォロワーに通知します')
