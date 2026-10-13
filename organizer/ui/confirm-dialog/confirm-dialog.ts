@@ -22,7 +22,7 @@ function focusedElement(): HTMLElement | null {
  * M3 basic dialog that asks before an action that cannot be undone or that
  * reaches people outside the console. The title names the action and its
  * object, the body states the effect, the confirming button names the action
- * and the other button is やめる.
+ * and the other button is やめる (Cancel in English; `common.cancel`).
  *
  * The title and the buttons are catalog keys (with the title's values),
  * translated in the dialog's template; the body is the page's own content.

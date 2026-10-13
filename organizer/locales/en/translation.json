@@ -7,7 +7,7 @@
 	"common": {
 		"loading": "Loading",
 		"close": "Close",
-		"cancel": "Keep as is",
+		"cancel": "Cancel",
 		"retry": "Retry",
 		"copy": "Copy",
 		"copied": "Copied",
