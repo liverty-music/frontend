@@ -70,6 +70,7 @@ export const Variants = {
 					<console-button variant="danger">取り消す</console-button>
 					<console-button variant="filled" icon="add">公演をつくる</console-button>
 					<console-button variant="outlined" disabled.bind="true">保存する</console-button>
+					<console-button variant="text" icon="edit" disabled.bind="true">変更不可</console-button>
 					<console-button variant="text" href="#concerts">公演一覧へ</console-button>
 				</div>
 			`,
@@ -83,6 +84,13 @@ export const Variants = {
 		await expect(
 			canvas.getByRole('button', { name: '保存する' }).element(),
 		).toBeDisabled()
+		// A disabled text button stays borderless.
+		const lockedText = canvas
+			.getByRole('button', { name: '変更不可' })
+			.element() as HTMLElement
+		await expect(getComputedStyle(lockedText).borderTopColor).toBe(
+			'rgba(0, 0, 0, 0)',
+		)
 		// Every control answers taps on at least 48 × 48 px.
 		for (const control of deepQueryAll(canvasElement, 'button, a')) {
 			const box = control.getBoundingClientRect()
