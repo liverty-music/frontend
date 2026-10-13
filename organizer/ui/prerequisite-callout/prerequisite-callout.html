@@ -1,6 +1,5 @@
 <import from="./prerequisite-callout.css"></import>
 <import from="../console-icon/console-icon"></import>
-<import from="../console-button/console-button"></import>
 <use-shadow-dom></use-shadow-dom>
 
 <section class="callout" aria-labelledby.bind="headingId">
@@ -9,6 +8,7 @@
     <h2 if.bind="level === 2" class="heading" id.bind="headingId">${heading}</h2>
     <h3 else class="heading" id.bind="headingId">${heading}</h3>
     <div class="body"><slot></slot></div>
-    <console-button if.bind="actionHref" variant="text" href.bind="actionHref" class="action">${actionLabel}</console-button>
+    <a if.bind="actionHref" href.bind="actionHref" class="action state-layer">${actionLabel}</a>
+    <button if.bind="actionLabel && !actionHref" type="button" class="action state-layer" click.trigger="act()">${actionLabel}</button>
   </div>
 </section>

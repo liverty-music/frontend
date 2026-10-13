@@ -4,6 +4,7 @@ import {
 	type StoryObj,
 } from '@aurelia/storybook'
 import { expect } from 'storybook/test'
+import { userEvent } from 'vitest/browser'
 import { canvasOf, consoleStoryParameters } from '../story-support'
 import { PrerequisiteCallout } from './prerequisite-callout'
 
@@ -55,9 +56,13 @@ export const WithAction = {
 				.getByRole('heading', { level: 3, name: '事業者情報が未登録です' })
 				.element(),
 		).toBeVisible()
-		await expect(
-			canvas.getByRole('link', { name: '設定を開く' }).element(),
-		).toHaveAttribute('href', '#settings')
+		const link = canvas.getByRole('link', { name: '設定を開く' }).element()
+		await expect(link).toHaveAttribute('href', '#settings')
+		// The fix reads in the callout's text color, not the brand color.
+		await expect(getComputedStyle(link).color).toBe(
+			getComputedStyle(canvas.getByRole('heading', { level: 3 }).element())
+				.color,
+		)
 	},
 } satisfies Story
 
@@ -83,5 +88,43 @@ export const UnderThePageTitle = {
 				})
 				.element(),
 		).toBeVisible()
+	},
+} satisfies Story
+
+/**
+ * A fix that is an action, not a page (公開する on the Sales tab): a button
+ * whose press the screen hears as the callout's `action` event. Like the
+ * link, it reads in the callout's text color, not the brand color.
+ */
+export const ButtonAction = {
+	args: {
+		heading: '販売を始めるには、公演を公開してください',
+		actionLabel: '公開する',
+		actionHref: '',
+		level: 2,
+	},
+	render: (args) =>
+		defineAureliaStory({
+			template: `
+				<div style="inline-size:390px; padding:16px; background:var(--md-color-surface)">
+					<prerequisite-callout heading.bind="heading" action-label.bind="actionLabel" action-href.bind="actionHref" level.bind="level" action.trigger="pressed = pressed + 1">
+						公開すると、チケットの販売を始められます。
+					</prerequisite-callout>
+					<output data-testid="pressed">\${pressed}</output>
+				</div>
+			`,
+			props: { ...args, pressed: 0 },
+		}),
+	play: async ({ canvasElement }) => {
+		const canvas = canvasOf(canvasElement)
+		const button = canvas.getByRole('button', { name: '公開する' })
+		await expect(canvas.getByRole('link').elements()).toHaveLength(0)
+		const element = button.element()
+		const heading = canvas.getByRole('heading', { level: 2 }).element()
+		await expect(getComputedStyle(element).color).toBe(
+			getComputedStyle(heading).color,
+		)
+		await userEvent.click(button)
+		await expect(canvas.getByTestId('pressed').element()).toHaveTextContent('1')
 	},
 } satisfies Story
