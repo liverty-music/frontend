@@ -1196,8 +1196,13 @@ jobs:
           fi
           echo "Expecting $EXPECTED_FAN at $FAN_URL and $EXPECTED_ORGANIZER at $ORGANIZER_URL"
           served() {
+            local page
             # -f: an HTTP error (503 during rollout) counts as not served yet.
-            curl -sSf --max-time 20 "$1/" 2>/dev/null | grep -oE "$2" | head -1
+            page=$(curl -sSf --max-time 20 "$1/" 2>/dev/null) || return 0
+            # The step runs under `bash -e -o pipefail`: head closing the pipe
+            # after the first match must not end the step (it did for v1.94.0,
+            # on the attempt where the new release was first served).
+            grep -oE "$2" <<<"$page" | head -1 || true
           }
           for attempt in $(seq 1 60); do
             live_fan=$(served "$FAN_URL" 'assets/main-[A-Za-z0-9_-]+\.js')
