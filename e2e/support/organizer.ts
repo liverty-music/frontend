@@ -15,6 +15,8 @@ import { OIDC_AUTHORITY } from './auth-mocks'
  *   entry answers `{}` (an empty message).
  */
 
+const DEV_ORIGIN = 'http://localhost:9000'
+
 export const ORGANIZER_API = 'https://api.organizer.e2e.liverty-music.app'
 const CLIENT_ID = 'organizer-e2e'
 const ORG_ID = 'org-e2e'
@@ -39,6 +41,11 @@ export interface ConsoleOptions {
 	language?: 'ja' | 'en'
 	/** False seeds a signed-in account without the owner role. */
 	owner?: boolean
+	/**
+	 * Origin the console is served from: the dev server by default, the
+	 * production preview server for the `prod-build` checks.
+	 */
+	origin?: string
 }
 
 /** Requests received by the mocked RPCs, in order, for assertions. */
@@ -51,21 +58,22 @@ export async function installConsole(
 	options: ConsoleOptions = {},
 ): Promise<RpcLog> {
 	const log: RpcLog = { calls: [] }
+	const origin = options.origin ?? DEV_ORIGIN
 
 	await page.route(
-		(url) => url.origin === 'http://localhost:9000',
+		(url) => url.origin === origin,
 		async (route: Route) => {
 			if (route.request().resourceType() !== 'document') {
 				return route.fallback()
 			}
 			const response = await route.fetch({
-				url: 'http://localhost:9000/organizer.html',
+				url: `${origin}/organizer.html`,
 			})
 			return route.fulfill({ response })
 		},
 	)
 
-	await page.route('http://localhost:9000/config.json', (route) =>
+	await page.route(`${origin}/config.json`, (route) =>
 		route.fulfill({
 			status: 200,
 			contentType: 'application/json',
@@ -153,7 +161,7 @@ export async function consoleStorage(
 	page: Page,
 ): Promise<Record<string, string>> {
 	const state = await page.context().storageState()
-	const origin = state.origins.find((o) => o.origin === 'http://localhost:9000')
+	const origin = state.origins.find((o) => o.origin === DEV_ORIGIN)
 	return Object.fromEntries(
 		(origin?.localStorage ?? []).map((e) => [e.name, e.value]),
 	)
