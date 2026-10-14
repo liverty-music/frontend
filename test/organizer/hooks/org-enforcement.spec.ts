@@ -56,6 +56,7 @@ describe('enforceIntendedOrg', () => {
 		expect(a.signIn).not.toHaveBeenCalled()
 	})
 
+	// @spec stories/sign-in-as-organizer "A reused or mismatched session does not silently onboard the wrong operator"
 	it('re-auths once when the token belongs to a different org', async () => {
 		const a = auth()
 		const gate = await enforceIntendedOrg(
@@ -69,6 +70,7 @@ describe('enforceIntendedOrg', () => {
 		expect(window.sessionStorage.getItem(ORG_MISMATCH_FLAG)).toBe('1')
 	})
 
+	// @spec stories/sign-in-as-organizer "A hint for another org grants nothing"
 	it('denies without a second re-auth once the one-shot flag is set', async () => {
 		window.sessionStorage.setItem(ORG_MISMATCH_FLAG, '1')
 		const a = auth()

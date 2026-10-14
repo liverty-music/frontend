@@ -67,6 +67,20 @@ describe('AuthService org-pinned sign-in (organizer)', () => {
 		expect(lastSettings.scope).toContain('openid profile email offline_access')
 	})
 
+	// @spec stories/sign-in-as-organizer "One OIDC client serves all tenants"
+	it('uses the same OIDC client for every tenant org', () => {
+		buildWith('tenant-org-a')
+		const tenantA = lastSettings
+		buildWith('tenant-org-b')
+		const tenantB = lastSettings
+
+		expect(tenantA.client_id).toBe(createMockAppConfig().zitadelClientId)
+		expect(tenantB.client_id).toBe(tenantA.client_id)
+		// Only the org scope differs between tenants.
+		expect(tenantA.scope).toContain('urn:zitadel:iam:org:id:tenant-org-a')
+		expect(tenantB.scope).toContain('urn:zitadel:iam:org:id:tenant-org-b')
+	})
+
 	it('omits the org scope entirely when no org id is resolved (unpinned)', () => {
 		buildWith(undefined)
 

@@ -49,6 +49,7 @@ describe('loadAppConfig — zitadelOrgId requirement', () => {
 		await expect(loadAppConfig()).rejects.toThrow(/zitadelOrgId/)
 	})
 
+	// @spec stories/sign-in-as-organizer "One OIDC client serves all tenants"
 	it('accepts a config missing zitadelOrgId when requireOrgId is false (organizer)', async () => {
 		mockConfigFetch(BASE_CONFIG)
 		const config = await loadAppConfig({ requireOrgId: false })
