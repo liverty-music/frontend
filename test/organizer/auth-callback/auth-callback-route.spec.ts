@@ -41,6 +41,7 @@ describe('Organizer AuthCallbackRoute', () => {
 		build({})
 	})
 
+	// @spec stories/sign-in-as-organizer "Invited operator lands on the console after accepting the invite"
 	it('completes the code exchange and lands on /, which opens Home', async () => {
 		build({})
 		const result = await sut.canLoad({} as never, {} as never)

@@ -39,6 +39,9 @@ describe('readOrgHandleFromSearch', () => {
 })
 
 describe('resolveOrgId', () => {
+	// The invite's default redirect returns to /?org_id=<tenant>; the console
+	// pins sign-in to that tenant's login policy.
+	// @spec stories/sign-in-as-organizer "Invited operator lands on the console after accepting the invite"
 	it('returns the URL handle and remembers it', () => {
 		const storage = createMockLocalStorage()
 		const result = resolveOrgId('?org_id=org-abc', storage)

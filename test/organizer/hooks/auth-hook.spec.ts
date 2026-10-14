@@ -120,6 +120,7 @@ describe('OrganizerAuthHook', () => {
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
 	})
 
+	// @spec stories/sign-in-as-organizer "Operator signs in and is routed to their org by org-pinned entry"
 	it('admits when the authenticated session belongs to the intended org', async () => {
 		build({ isAuthenticated: true, user: userOwnerInOrg(INTENDED_ORG) })
 		const next = makeRouteNode({})
@@ -130,6 +131,9 @@ describe('OrganizerAuthHook', () => {
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
 	})
 
+	// @spec stories/sign-in-as-organizer "Operator signs in and is routed to their org by org-pinned entry"
+	// @spec stories/sign-in-as-organizer "A reused or mismatched session does not silently onboard the wrong operator"
+	// @spec components/infrastructure/organizer/web/global/hosted-login "Org is resolved by org-pinned entry for every operator"
 	it('forces re-auth once when the session belongs to a DIFFERENT org', async () => {
 		// Reproduces the org-test-40 → org-test-21 mix: a pre-existing session for
 		// another org is admitted without a fresh OIDC exchange; the guard must
@@ -146,6 +150,8 @@ describe('OrganizerAuthHook', () => {
 		).toBe('1')
 	})
 
+	// @spec stories/sign-in-as-organizer "A hint for another org grants nothing"
+	// @spec components/infrastructure/organizer/web/global/hosted-login "Org is resolved by org-pinned entry for every operator"
 	it('denies (no second re-auth) if still the wrong org after a retry', async () => {
 		window.sessionStorage.setItem('liverty:organizer:org-mismatch-retry', '1')
 		build({ isAuthenticated: true, user: userOwnerInOrg('some-other-org') })
