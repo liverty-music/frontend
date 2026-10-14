@@ -24,7 +24,7 @@ import { expect, type Page, test } from '../support/test'
  * Sales tab.
  */
 
-const SPEC = 'components/infrastructure/organizer/web/route/lottery-sale-editor'
+const SPEC = 'components/infrastructure/organizer/web/route/ticket-sale-editor'
 const SNACKBAR = 'components/infrastructure/organizer/web/global/snack-bar'
 const I18N = 'components/infrastructure/organizer/web/global/i18n'
 
@@ -137,7 +137,7 @@ interface CreateBody {
 }
 
 test.describe('a new lottery', () => {
-	test(`@spec ${SPEC} "Blank form"`, async ({ page }) => {
+	test(`@spec ${SPEC} "Blank lottery form"`, async ({ page }) => {
 		await openEditor(page, NEW_LOTTERY)
 		await expect(
 			page.getByRole('heading', { level: 1, name: '抽選で販売する' }),
