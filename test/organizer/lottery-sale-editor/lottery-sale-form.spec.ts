@@ -33,7 +33,7 @@ function validModel(windowDays = DEFAULT_WINDOW_DAYS): LotterySaleFormModel {
 
 describe('emptyFormModel', () => {
 	it('opens the window now and closes it 10 days later', () => {
-		// @spec components/infrastructure/organizer/web/route/lottery-sale-editor "Blank form"
+		// @spec components/infrastructure/organizer/web/route/ticket-sale-editor "Blank lottery form"
 		// 12:00 in Japan time, whatever the device's time zone.
 		const model = emptyFormModel(new Date('2026-10-01T12:00:00+09:00'))
 		expect(model.saleStart).toEqual({ date: '2026-10-01', time: '12:00' })
