@@ -100,7 +100,9 @@ test.describe('who enters and where they land', () => {
 	test(`@spec ${SPEC} "Unauthenticated visitor goes to sign-in"`, async ({
 		page,
 	}) => {
-		await installConsole(page, { rpc: RPC })
+		// A device that remembers its Organizer's Organization (as after any
+		// earlier sign-in): the sign-in names that Organization.
+		await installConsole(page, { rpc: RPC, remembersOrganization: true })
 		await page.addInitScript(() => {
 			for (const key of Object.keys(localStorage)) {
 				if (key.startsWith('oidc.user:')) localStorage.removeItem(key)
@@ -115,7 +117,9 @@ test.describe('who enters and where they land', () => {
 		await page.goto(`${SERIES}/s-tour`)
 
 		const request = await authorize
-		const state = new URL(request.url()).searchParams.get('state')
+		const params = new URL(request.url()).searchParams
+		expect(params.get('scope')).toContain('urn:zitadel:iam:org:id:org-e2e')
+		const state = params.get('state')
 		expect(state).toBeTruthy()
 		// The address opened is carried through sign-in in the OIDC state.
 		const stored = (await consoleStorage(page))[`oidc.${state}`]

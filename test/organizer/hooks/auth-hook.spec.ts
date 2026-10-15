@@ -256,6 +256,7 @@ describe('OrganizerAuthHook', () => {
 			expect(mockAuth.signIn).not.toHaveBeenCalled()
 		})
 
+		// @spec components/infrastructure/organizer/web/global/organizer-shell "Return after a link sign-in"
 		it('returns the visitor to the address they opened once they sign in through a link', async () => {
 			// A new device opens a deep address: find-organizer, address kept.
 			window.history.replaceState(null, '', '/organizers/o-1/settings')
