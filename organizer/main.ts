@@ -18,7 +18,7 @@ import { ConsoleI18nConfiguration } from './i18n/console-language'
 import { ConsoleFormatters } from './i18n/converters'
 import { OrganizerShell } from './organizer-shell/organizer-shell'
 import { ILoginHint, readLoginHintFromSearch } from './services/login-hint'
-import { resolveOrgId } from './services/org-handle'
+import { applyOrgPin, resolveOrgPin } from './services/org-handle'
 import { ConsoleContextHook } from './shell/console-context-hook'
 import { ConsoleUi } from './ui'
 import { ConsoleShadowStyles } from './ui/shadow-styles'
@@ -68,12 +68,13 @@ function showStaticErrorPage(err: unknown): void {
  * Japanese and English catalogs (`organizer/locales`).
  *
  * Unlike the admin entry, the organizer `/config.json` carries NO fixed org id
- * (one client serves all tenants — design D1). The tenant org is pinned per
- * session by an **org handle** resolved here (URL `org_id`/`org`, or a
- * remembered id) and injected into the config as `zitadelOrgId`, so the shared
- * `AuthService` scopes sign-in to that tenant via `urn:zitadel:iam:org:id:<id>`.
- * A fresh device with no handle signs in unpinned; the owner-role route guard
- * still gates access.
+ * (one client serves all tenants — design D1). The Organizer's Organization is
+ * named per session by an **org pin** resolved here (`?org_id=<id>`,
+ * `?org=<short name>`, or the pin remembered on the device) and folded into
+ * the config, so the shared `AuthService` scopes sign-in to that Organization
+ * (`services/org-handle.ts`). A device with no pin never signs in: the route
+ * guard opens the find-organizer screen instead (design D4 of
+ * `reuse-fan-email-for-organizer-sign-in`).
  *
  * No service worker is registered here: the organizer entry ships no SW and is
  * excluded from the PWA precache manifest (mirrors the admin entry).
@@ -100,13 +101,13 @@ async function bootstrap(): Promise<void> {
 		)
 	}
 
-	// Org-pinned entry: resolve the tenant org from the URL handle or a
-	// remembered id and fold it into the config the shared AuthService reads.
-	// When no handle is present the org stays unset — sign-in proceeds unpinned.
-	const orgId = resolveOrgId(window.location.search, window.localStorage)
-	const effectiveConfig: AppConfig = orgId
-		? { ...config, zitadelOrgId: orgId }
-		: config
+	// Org-pinned entry: resolve the Organization from the address or the device
+	// and fold it into the config the shared AuthService reads. Without one the
+	// Organization stays unset and the route guard opens find-organizer.
+	const effectiveConfig: AppConfig = applyOrgPin(
+		config,
+		resolveOrgPin(window.location.search, window.localStorage),
+	)
 
 	// login_hint pre-fill (design D5): present on first sign-in only, embedded
 	// in the invitation link as ?login_hint=<email> by the provisioning backend.

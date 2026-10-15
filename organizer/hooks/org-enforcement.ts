@@ -1,6 +1,6 @@
 import type { ILogger } from 'aurelia'
 import type { IAuthService } from '../../shared/services/auth-service'
-import { tokenOrgIds } from './roles'
+import { tokenOrgDomains, tokenOrgIds } from './roles'
 
 /**
  * sessionStorage flag recording that we already forced one re-authentication
@@ -41,8 +41,8 @@ export type OrgGate = 'ok' | 'reauth' | 'denied'
 
 /**
  * Enforces that the authenticated session belongs to the INTENDED tenant org
- * (`intendedOrg` — resolved from the `?org_id` the tenant login policy's default
- * redirect carries). This runs in the route guard so it covers BOTH the
+ * (`intendedOrg` — the Organization id from `?org_id`, or the Organization's
+ * primary domain from `?org=<short name>`, or the one remembered on the device). This runs in the route guard so it covers BOTH the
  * fresh-callback path and the path where a pre-existing console session is
  * admitted WITHOUT a new OIDC exchange — a reused SSO session for a different
  * org would otherwise be silently accepted (the reproduced org-test-40 →
@@ -62,9 +62,15 @@ export async function enforceIntendedOrg(
 	logger: ILogger,
 ): Promise<OrgGate> {
 	const orgs = tokenOrgIds(profile)
-	// Acceptable: nothing to enforce, the token is in the intended org, or the
-	// token has no org grant (the owner-role gate denies that, not a re-auth).
-	if (!intendedOrg || orgs.length === 0 || orgs.includes(intendedOrg)) {
+	// Acceptable: nothing to enforce, the token is in the intended org (named by
+	// id, or by primary domain for a `?org=<short name>` entry), or the token
+	// has no org grant (the owner-role gate denies that, not a re-auth).
+	if (
+		!intendedOrg ||
+		orgs.length === 0 ||
+		orgs.includes(intendedOrg) ||
+		tokenOrgDomains(profile).includes(intendedOrg)
+	) {
 		clearSessionFlag(ORG_MISMATCH_FLAG)
 		return 'ok'
 	}

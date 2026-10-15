@@ -5,6 +5,26 @@ import type { AppConfig } from '../../shared/config/app-config'
 import type { IAuthService } from '../../shared/services/auth-service'
 import { createOrganizerAuthRetryInterceptor } from './organizer-auth-retry-interceptor'
 
+/** Logs each Connect-RPC request/response with its wall-clock duration. */
+const createLoggingInterceptor =
+	(logger: ILogger): Interceptor =>
+	(next) =>
+	async (req) => {
+		const method = `${req.service.typeName}/${req.method.name}`
+		const start = performance.now()
+		logger.debug('RPC request', method)
+		try {
+			const response = await next(req)
+			const durationMs = Math.round(performance.now() - start)
+			logger.debug('RPC response', method, `${durationMs}ms`)
+			return response
+		} catch (err) {
+			const durationMs = Math.round(performance.now() - start)
+			logger.error('RPC error', method, `${durationMs}ms`, err)
+			throw err
+		}
+	}
+
 /**
  * Creates a Connect transport for the organizer console with authentication,
  * token-refresh-on-401, and logging interceptors.
@@ -52,22 +72,7 @@ export const createOrganizerTransport = (
 		return await next(req)
 	}
 
-	/** Logs each Connect-RPC request/response with its wall-clock duration. */
-	const loggingInterceptor: Interceptor = (next) => async (req) => {
-		const method = `${req.service.typeName}/${req.method.name}`
-		const start = performance.now()
-		logger.debug('RPC request', method)
-		try {
-			const response = await next(req)
-			const durationMs = Math.round(performance.now() - start)
-			logger.debug('RPC response', method, `${durationMs}ms`)
-			return response
-		} catch (err) {
-			const durationMs = Math.round(performance.now() - start)
-			logger.error('RPC error', method, `${durationMs}ms`, err)
-			throw err
-		}
-	}
+	const loggingInterceptor = createLoggingInterceptor(logger)
 
 	// Order (outer → inner): logging wraps everything; authInterceptor injects
 	// the current token; the auth-retry interceptor (innermost, closest to the
@@ -85,3 +90,23 @@ export const createOrganizerTransport = (
 		],
 	})
 }
+
+/**
+ * Creates a Connect transport for the organizer procedures callable without a
+ * sign-in (`OrganizerService.SendSignInLinks`). It sends no token and never
+ * starts a re-authentication: the caller has no session yet, and a token left
+ * on the device from an earlier session must not be sent along.
+ *
+ * @param logger - Logger scoped to the organizer transport
+ * @param config - Resolved runtime AppConfig providing `apiBaseUrl`
+ * @returns A configured Connect transport with the logging interceptor only
+ */
+export const createOrganizerPublicTransport = (
+	logger: ILogger,
+	config: AppConfig,
+) =>
+	createConnectTransport({
+		baseUrl: config.apiBaseUrl,
+		defaultTimeoutMs: config.rpcTimeoutMs,
+		interceptors: [createLoggingInterceptor(logger)],
+	})

@@ -64,3 +64,29 @@ export function tokenOrgIds(
 	}
 	return [...ids]
 }
+
+/**
+ * Returns the primary domain of every org the token carries a project-role
+ * grant in - the values of the project-roles claim. Lets the guard match an
+ * Organization named by primary domain (`?org=<short name>`, design D4) when it
+ * does not know the Organization id. Empty when the claim is missing or
+ * malformed.
+ */
+export function tokenOrgDomains(
+	profile: Record<string, unknown> | undefined | null,
+): string[] {
+	if (!profile) return []
+	const roles = profile[PROJECT_ROLES_CLAIM]
+	if (roles === null || typeof roles !== 'object' || Array.isArray(roles)) {
+		return []
+	}
+	const domains = new Set<string>()
+	for (const grant of Object.values(roles as Record<string, unknown>)) {
+		if (grant !== null && typeof grant === 'object' && !Array.isArray(grant)) {
+			for (const domain of Object.values(grant as Record<string, unknown>)) {
+				if (typeof domain === 'string' && domain) domains.add(domain)
+			}
+		}
+	}
+	return [...domains]
+}

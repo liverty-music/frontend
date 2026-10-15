@@ -1,0 +1,30 @@
+@layer block {
+	@scope (find-organizer-route) {
+		.find-organizer {
+			display: grid;
+			gap: var(--space-s);
+
+			max-inline-size: 560px;
+			margin: var(--space-xl) auto;
+			padding: var(--space-m);
+			border-radius: var(--md-shape-large);
+
+			background: var(--md-color-surface-container);
+		}
+
+		.brand,
+		.body {
+			color: var(--md-color-on-surface-variant);
+		}
+
+		.form {
+			display: grid;
+			gap: var(--space-s);
+			justify-items: start;
+
+			& console-field {
+				justify-self: stretch;
+			}
+		}
+	}
+}

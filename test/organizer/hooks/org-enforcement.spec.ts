@@ -33,6 +33,22 @@ describe('enforceIntendedOrg', () => {
 		expect(a.signIn).not.toHaveBeenCalled()
 	})
 
+	it('returns ok when the token is in the org named by primary domain', async () => {
+		const a = auth()
+		const gate = await enforceIntendedOrg(
+			a,
+			'xx-records.auth.liverty-music.app',
+			{
+				[ROLES_CLAIM]: {
+					owner: { '394': 'xx-records.auth.liverty-music.app' },
+				},
+			},
+			logger,
+		)
+		expect(gate).toBe('ok')
+		expect(a.signIn).not.toHaveBeenCalled()
+	})
+
 	it('returns ok when there is no intended org to enforce', async () => {
 		const a = auth()
 		const gate = await enforceIntendedOrg(

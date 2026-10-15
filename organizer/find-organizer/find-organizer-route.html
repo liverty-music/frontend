@@ -1,0 +1,29 @@
+<import from="./find-organizer-route.css"></import>
+
+<section class="find-organizer">
+  <p class="brand">${'app.name' & t}</p>
+  <h1 class="page-title">${'findOrganizer.title' & t}</h1>
+  <p class="body">${'findOrganizer.intro' & t}</p>
+  <form class="form" novalidate submit.trigger="false">
+    <console-field
+      type="email"
+      name="email"
+      autocomplete="email"
+      label.bind="'findOrganizer.email' & t"
+      value.bind="email"
+      required.bind="true"
+      error.bind="emailError"
+    ></console-field>
+    <console-button
+      variant="filled"
+      action.bind="() => send()"
+      pending-label.bind="'findOrganizer.sending' & t"
+    >${'findOrganizer.send' & t}</console-button>
+  </form>
+  <!-- Present from the start so the outcome is announced when it appears. -->
+  <div class="outcome" role="status">
+    <p if.bind="outcome === 'sent'">${'findOrganizer.sent' & t}</p>
+    <p if.bind="outcome === 'tooMany'">${'findOrganizer.tooMany' & t}</p>
+    <p if.bind="outcome === 'failed'">${'findOrganizer.failed' & t}</p>
+  </div>
+</section>
