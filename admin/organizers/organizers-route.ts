@@ -1,9 +1,11 @@
 import { ILogger, resolve } from 'aurelia'
+import { EMAIL_MAX_LENGTH, emailProblem } from '../../shared/utils/email'
+import { isOrganizerShortName } from '../../shared/utils/organizer-short-name'
 import { type Artist, IArtistClient } from '../services/artist-client'
 import { IOrganizerClient, type Organizer } from '../services/organizer-client'
 import {
 	ARTIST_ALREADY_REPRESENTED,
-	OPERATOR_EMAIL_IN_USE,
+	SHORT_NAME_IN_USE,
 	toUserMessage,
 } from './organizer-error-message'
 
@@ -24,6 +26,8 @@ export interface OrganizerRow {
 	readonly organizer: Organizer
 	readonly id: string
 	readonly name: string
+	/** The short name that names the Organizer in console addresses. */
+	readonly shortName: string
 }
 
 /** Flattened artist view for the represented-artists roster and search results. */
@@ -37,6 +41,7 @@ function toOrganizerRow(organizer: Organizer): OrganizerRow {
 		organizer,
 		id: organizer.id?.value ?? '',
 		name: organizer.name?.value ?? EMPTY,
+		shortName: organizer.shortName?.value ?? EMPTY,
 	}
 }
 
@@ -47,9 +52,41 @@ function toArtistRow(artist: Artist): ArtistRow {
 	}
 }
 
+/** Maximum length of an Organizer name (`OrganizerName` in the proto). */
+const MAX_NAME_LENGTH = 200
+
+/**
+ * Checks the trimmed create-form values against the proto rules, so the admin
+ * sees the problem before any request is sent. Returns null when valid.
+ */
+export function createFormError(
+	name: string,
+	shortName: string,
+	ownerEmail: string,
+): string | null {
+	if (name.length === 0 || shortName.length === 0 || ownerEmail.length === 0) {
+		return 'A name, a short name and an owner email are required.'
+	}
+	if ([...name].length > MAX_NAME_LENGTH) {
+		return `The name must be ${MAX_NAME_LENGTH} characters or fewer.`
+	}
+	if (!isOrganizerShortName(shortName)) {
+		return 'The short name must be 3 to 32 lowercase letters, digits or hyphens, start with a letter, and not be "admin" or "liverty-music".'
+	}
+	switch (emailProblem(ownerEmail)) {
+		case 'tooLong':
+			return `The owner email must be ${EMAIL_MAX_LENGTH} characters or fewer.`
+		case 'invalid':
+			return 'Enter a valid owner email address.'
+		default:
+			return null
+	}
+}
+
 /**
  * Organizer-management screen for the admin console. It is the single surface
- * for the Organizer lifecycle: create an organizer (name + operator email),
+ * for the Organizer lifecycle: create an organizer (name, short name and owner
+ * email),
  * list organizers, inspect a selected organizer and the artists it represents,
  * associate/disassociate artists (reusing the public consumer artist search),
  * and deactivate an organizer.
@@ -67,7 +104,8 @@ export class OrganizersRoute {
 
 	/** Create-form model + state. */
 	public newName = ''
-	public newOperatorEmail = ''
+	public newShortName = ''
+	public newOwnerEmail = ''
 	public creating = false
 	public createError = ''
 
@@ -130,17 +168,20 @@ export class OrganizersRoute {
 	public async createOrganizer(): Promise<void> {
 		if (this.creating) return
 		const name = this.newName.trim()
-		const email = this.newOperatorEmail.trim()
-		if (name.length === 0 || email.length === 0) {
-			this.createError = 'Both a name and an operator email are required.'
+		const shortName = this.newShortName.trim()
+		const email = this.newOwnerEmail.trim()
+		const invalid = createFormError(name, shortName, email)
+		if (invalid) {
+			this.createError = invalid
 			return
 		}
 		this.creating = true
 		this.createError = ''
 		try {
-			const created = await this.client.create(name, email)
+			const created = await this.client.create(name, shortName, email)
 			this.newName = ''
-			this.newOperatorEmail = ''
+			this.newShortName = ''
+			this.newOwnerEmail = ''
 			if (created) {
 				const row = toOrganizerRow(created)
 				this.organizers.push(row)
@@ -154,7 +195,7 @@ export class OrganizersRoute {
 			this.createError = toUserMessage(
 				err,
 				'Failed to create the organizer.',
-				OPERATOR_EMAIL_IN_USE,
+				SHORT_NAME_IN_USE,
 			)
 			this.logger.error('Create organizer failed', err)
 		} finally {
