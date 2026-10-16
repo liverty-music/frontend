@@ -6,16 +6,18 @@ import {
 	test,
 } from '@playwright/test'
 import { authorizeCard, fillPersonalDetails, holdTickets } from './checkout'
+import { openFreshSale } from './sale'
 
 /**
  * Story `attribute-a-purchase-to-a-referral-link` on PRODUCTION in Stripe test
  * mode, signed in as the prod E2E test user (`.auth/storageState.prod.json`).
  *
- * Needs a published Event of the test Organizer with an open first-come sale
- * on which the test user can still buy 2 tickets, by id in
+ * Needs a published Event of the test Organizer on which the test user can
+ * still buy 2 tickets under the per-account limit, by id in
  * `E2E_SALE_EVENT_ID`, and an organizer access token of the test Organizer in
- * `E2E_ORGANIZER_TOKEN` to read the purchases per referral code from the
- * organizer `TicketSaleService.ListByEvent`. Each test buys one ticket after
+ * `E2E_ORGANIZER_TOKEN`. The run opens its own first-come sale on the event
+ * (as the buy-tickets spec does) and reads the purchases per referral code
+ * from the organizer `TicketSaleService.ListByEvent`. Each test buys one ticket after
  * opening the Event page from a link with `?ref=`, and checks that the code's
  * row on the Sales read grew by that Order.
  *
@@ -88,11 +90,16 @@ async function buyOneFromLink(page: Page, code: string): Promise<void> {
 test.describe.configure({ mode: 'serial' })
 
 test.describe('attribute a purchase to a referral link (signed in)', () => {
-	test.beforeAll(() => {
+	test.beforeAll(async ({ request }) => {
 		if (!existsSync('.auth/storageState.prod.json')) {
 			throw new Error(
 				'.auth/storageState.prod.json is missing: run npm run auth:capture:password:prod',
 			)
+		}
+		// Start from an open sale with stock, whatever an earlier run of this or
+		// the buy-tickets spec left behind.
+		if (SALE_EVENT_ID && ORGANIZER_TOKEN) {
+			await openFreshSale(request, SALE_EVENT_ID, ORGANIZER_TOKEN)
 		}
 	})
 
