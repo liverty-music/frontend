@@ -9,7 +9,7 @@ import {
 	test,
 } from '@playwright/test'
 import { authorizeCard, fillPersonalDetails, holdTickets } from './checkout'
-import { getConcert } from './support'
+import { listByEvent, openFirstCome, openFreshSale } from './sale'
 
 /**
  * Story `buy-tickets-first-come` on PRODUCTION in Stripe test mode, signed in
@@ -58,123 +58,10 @@ const MARGIN_MS = 60 * 1000
 
 const API_BASE =
 	process.env.PROD_API_BASE_URL ?? 'https://api.liverty-music.app'
-const ORGANIZER_API_BASE =
-	process.env.PROD_ORGANIZER_API_BASE_URL ??
-	'https://api.organizer.liverty-music.app'
-
-/** The fields of a TicketSale in Connect JSON that the tests read. */
-interface WireTicketSale {
-	id: { value: string }
-	method: string
-	saleStartTime: string
-	saleEndTime: string
-	ticketTypes: {
-		id: { value: string }
-		price: { value: string }
-		quantity?: number
-		soldCount?: number
-		heldCount?: number
-		state: string
-	}[]
-}
-
-const FIRST_COME = 'TICKET_SALE_METHOD_FIRST_COME'
-
-/** The event's first-come sale whose window is open now, if any. */
-function openFirstCome(sales: WireTicketSale[]): WireTicketSale | undefined {
-	const now = Date.now()
-	return sales.find(
-		(s) =>
-			s.method === FIRST_COME &&
-			Date.parse(s.saleStartTime) <= now &&
-			now < Date.parse(s.saleEndTime),
-	)
-}
-
-async function rpc<T>(
-	request: APIRequestContext,
-	url: string,
-	body: unknown,
-	token?: string,
-): Promise<T> {
-	const res = await request.post(url, {
-		data: body,
-		headers: {
-			'content-type': 'application/json',
-			...(token ? { authorization: `Bearer ${token}` } : {}),
-		},
-	})
-	if (!res.ok()) {
-		throw new Error(`${url} failed: ${res.status()} ${await res.text()}`)
-	}
-	return (await res.json()) as T
-}
-
-/** The event's sales, through the fan or the organizer TicketSaleService. */
-async function listByEvent(
-	request: APIRequestContext,
-	as: 'fan' | 'organizer',
-): Promise<WireTicketSale[]> {
-	const url =
-		as === 'fan'
-			? `${API_BASE}/liverty_music.rpc.ticket_sale.v1.TicketSaleService/ListByEvent`
-			: `${ORGANIZER_API_BASE}/liverty_music.rpc.organizer.ticket_sale.v1.TicketSaleService/ListByEvent`
-	const res = await rpc<{ ticketSales?: WireTicketSale[] }>(
-		request,
-		url,
-		{ eventId: { value: SALE_EVENT_ID } },
-		as === 'organizer' ? ORGANIZER_TOKEN : undefined,
-	)
-	return res.ticketSales ?? []
-}
-
-/**
- * Open a fresh first-come sale on the event as the test Organizer: end the
- * event's open first-come sale now, then create one that starts now and ends
- * at the event's start.
- */
-async function openFreshSale(request: APIRequestContext): Promise<void> {
-	const organizerUrl = (method: string) =>
-		`${ORGANIZER_API_BASE}/liverty_music.rpc.organizer.ticket_sale.v1.TicketSaleService/${method}`
-	const now = new Date()
-	const open = openFirstCome(await listByEvent(request, 'organizer'))
-	if (open) {
-		await rpc(
-			request,
-			organizerUrl('SetWindow'),
-			{
-				ticketSaleId: open.id,
-				saleStartTime: open.saleStartTime,
-				saleEndTime: now.toISOString(),
-			},
-			ORGANIZER_TOKEN,
-		)
-	}
-	const concert = await getConcert(request, SALE_EVENT_ID)
-	await rpc(
-		request,
-		organizerUrl('Create'),
-		{
-			seriesId: concert.series.id,
-			name: { value: `E2E 先着 ${now.toISOString()}` },
-			method: FIRST_COME,
-			saleStartTime: now.toISOString(),
-			ticketTypes: [
-				{
-					eventId: { value: SALE_EVENT_ID },
-					price: { value: '3000' },
-					quantity: 5,
-					perAccountLimit: 10,
-				},
-			],
-		},
-		ORGANIZER_TOKEN,
-	)
-}
 
 /** The sale's price of one ticket in yen, read as a guest. */
 async function salePrice(request: APIRequestContext): Promise<number> {
-	const sale = openFirstCome(await listByEvent(request, 'fan'))
+	const sale = openFirstCome(await listByEvent(request, SALE_EVENT_ID, 'fan'))
 	expect(sale, 'the event has an open first-come sale').toBeDefined()
 	return Number(sale?.ticketTypes[0].price.value)
 }
@@ -187,8 +74,9 @@ async function remaining(
 	request: APIRequestContext,
 ): Promise<number | undefined> {
 	if (!ORGANIZER_TOKEN) return undefined
-	const type = openFirstCome(await listByEvent(request, 'organizer'))
-		?.ticketTypes[0]
+	const type = openFirstCome(
+		await listByEvent(request, SALE_EVENT_ID, 'organizer', ORGANIZER_TOKEN),
+	)?.ticketTypes[0]
 	if (!type) throw new Error('the event has no open first-come sale')
 	return (type.quantity ?? 0) - (type.soldCount ?? 0) - (type.heldCount ?? 0)
 }
@@ -205,7 +93,8 @@ test.describe('buy tickets first come (signed in)', () => {
 				'.auth/storageState.prod.json is missing: run npm run auth:capture:password:prod',
 			)
 		}
-		if (SALE_EVENT_ID && ORGANIZER_TOKEN) await openFreshSale(request)
+		if (SALE_EVENT_ID && ORGANIZER_TOKEN)
+			await openFreshSale(request, SALE_EVENT_ID, ORGANIZER_TOKEN)
 	})
 
 	test.beforeEach(() => {
@@ -396,7 +285,7 @@ test.describe('buy tickets first come (signed in)', () => {
 		await second.close()
 
 		// The last ticket is sold: the sale is sold out, not held.
-		const sale = openFirstCome(await listByEvent(request, 'fan'))
+		const sale = openFirstCome(await listByEvent(request, SALE_EVENT_ID, 'fan'))
 		expect(sale?.ticketTypes[0].state).toBe('TICKET_TYPE_STATE_SOLD_OUT')
 	})
 })
