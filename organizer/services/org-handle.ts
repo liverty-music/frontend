@@ -34,7 +34,7 @@ import { isOrganizerShortName } from '../../shared/utils/organizer-short-name'
 export const ORG_ID_STORAGE_KEY = 'organizer.orgId'
 
 /** localStorage key under which a remembered Organizer short name is kept. */
-export const ORG_SHORT_NAME_STORAGE_KEY = 'liverty:organizer:org'
+export const ORG_SHORT_NAME_STORAGE_KEY = 'organizer.orgShortName'
 
 /** The Organization a sign-in names: by id, or by the Organizer's short name. */
 export type OrgPin =

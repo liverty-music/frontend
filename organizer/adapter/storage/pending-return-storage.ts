@@ -9,7 +9,7 @@
  * hijack a later, unrelated sign-in.
  */
 
-const KEY = 'liverty:organizer:pending-return'
+const KEY = 'organizer.pendingReturn'
 
 /** A remembered address older than this is ignored (one day, in milliseconds). */
 export const PENDING_RETURN_TTL_MS = 24 * 60 * 60 * 1000

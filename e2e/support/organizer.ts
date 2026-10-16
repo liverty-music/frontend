@@ -172,7 +172,7 @@ export async function installConsole(
 			)
 			if (language) localStorage.setItem('organizer.language', language)
 			if (remembersOrganization) {
-				localStorage.setItem('liverty:organizer:org_id', orgId)
+				localStorage.setItem('organizer.orgId', orgId)
 			}
 		},
 		{

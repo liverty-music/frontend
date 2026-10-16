@@ -22,10 +22,10 @@ describe('pending return storage', () => {
 	})
 
 	it('ignores a malformed entry', () => {
-		localStorage.setItem('liverty:organizer:pending-return', '{oops')
+		localStorage.setItem('organizer.pendingReturn', '{oops')
 		expect(takePendingReturn()).toBeNull()
 		localStorage.setItem(
-			'liverty:organizer:pending-return',
+			'organizer.pendingReturn',
 			JSON.stringify({ path: 7, exp: 1 }),
 		)
 		expect(takePendingReturn(0)).toBeNull()
