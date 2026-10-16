@@ -57,6 +57,12 @@ export interface ConsoleOptions {
 	/** False seeds a signed-in account without the owner role. */
 	owner?: boolean
 	/**
+	 * False seeds a device that remembers no Organization, which the console
+	 * sends to the find-organizer screen instead of sign-in. By default the
+	 * device remembers the account's Organization, as after any sign-in.
+	 */
+	remembersOrganization?: boolean
+	/**
 	 * Origin the console is served from: the dev server by default, the
 	 * production preview server for the `prod-build` checks.
 	 */
@@ -131,7 +137,14 @@ export async function installConsole(
 	})
 
 	await page.addInitScript(
-		({ authority, clientId, orgId, language, owner }) => {
+		({
+			authority,
+			clientId,
+			orgId,
+			language,
+			owner,
+			remembersOrganization,
+		}) => {
 			// Seed once per tab: a later load (reload, back after sign-out) sees
 			// whatever the console left in storage.
 			if (sessionStorage.getItem('e2e:seeded')) return
@@ -158,6 +171,9 @@ export async function installConsole(
 				}),
 			)
 			if (language) localStorage.setItem('organizer.language', language)
+			if (remembersOrganization) {
+				localStorage.setItem('organizer.orgId', orgId)
+			}
 		},
 		{
 			authority: OIDC_AUTHORITY,
@@ -165,6 +181,7 @@ export async function installConsole(
 			orgId: ORG_ID,
 			language: options.language,
 			owner: options.owner ?? true,
+			remembersOrganization: options.remembersOrganization ?? true,
 		},
 	)
 

@@ -45,6 +45,15 @@ export interface AppConfig {
 	 * `organizer-console`.
 	 */
 	readonly zitadelOrgId?: string
+	/**
+	 * Primary domain of the Zitadel organization sign-in is scoped to (via the
+	 * `urn:zitadel:iam:org:domain:primary:<domain>` scope), as an alternative to
+	 * `zitadelOrgId`. Never read from `config.json`: the organizer console sets
+	 * it at runtime when its address or the device names the Organizer by short
+	 * name (`organizer/services/org-handle.ts`). See OpenSpec change
+	 * `reuse-fan-email-for-organizer-sign-in`, design D4.
+	 */
+	readonly zitadelOrgPrimaryDomain?: string
 	readonly vapidPublicKey: string
 	/**
 	 * Stripe publishable key (`pk_live_…` / `pk_test_…`) used to initialize

@@ -4,7 +4,10 @@ import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
-import { createOrganizerTransport } from './organizer-transport'
+import {
+	createOrganizerPublicTransport,
+	createOrganizerTransport,
+} from './organizer-transport'
 
 export type { Organizer }
 
@@ -17,7 +20,7 @@ export interface IOrganizerClient extends OrganizerClient {}
 
 /**
  * Organizer-local wrapper around the generated organizer `OrganizerService`
- * client (Get). It is the console's bootstrap: the console holds no
+ * client (Get, SendSignInLinks). It is the console's bootstrap: the console holds no
  * `OrganizerId` before {@link get} (before the call it knows only the Zitadel
  * org the token is scoped to), so `get` yields the caller's Organizer. The
  * represented artists are read from `ArtistService.List` (see
@@ -40,6 +43,37 @@ export class OrganizerClient {
 			resolve(IAppConfig),
 		),
 	)
+
+	/** SendSignInLinks needs no sign-in: it goes out without a token. */
+	private readonly publicClient = createClient(
+		OrganizerService,
+		createOrganizerPublicTransport(
+			resolve(ILogger).scopeTo('OrganizerTransport'),
+			resolve(IAppConfig),
+		),
+	)
+
+	/**
+	 * Asks for a sign-in link for each Organizer `email` owns. The answer is
+	 * the same whether or not the address owns any; it fails with
+	 * InvalidArgument for a malformed address and ResourceExhausted when this
+	 * client asked too often.
+	 */
+	public async sendSignInLinks(
+		email: string,
+		signal?: AbortSignal,
+	): Promise<void> {
+		this.logger.info('Sending sign-in links')
+		try {
+			await this.publicClient.sendSignInLinks(
+				{ email: { value: email } },
+				{ signal },
+			)
+		} catch (err) {
+			this.logger.warn('sendSignInLinks failed', { error: err })
+			throw err
+		}
+	}
 
 	/**
 	 * Returns the caller's own Organizer, resolved from the token. The

@@ -8,6 +8,20 @@ import {
 import { type AppConfig, IAppConfig } from '../config/app-config'
 import { SignedOut } from './events/signed-out'
 
+/**
+ * The scope naming the organization whose login policy applies: by id when the
+ * config pins one, otherwise by primary domain (the organizer console's
+ * short-name entry), otherwise none.
+ */
+function orgScope(config: AppConfig): string {
+	if (config.zitadelOrgId)
+		return `urn:zitadel:iam:org:id:${config.zitadelOrgId}`
+	if (config.zitadelOrgPrimaryDomain) {
+		return `urn:zitadel:iam:org:domain:primary:${config.zitadelOrgPrimaryDomain}`
+	}
+	return ''
+}
+
 function createSettings(config: AppConfig): UserManagerSettings {
 	return {
 		authority: config.zitadelIssuer,
@@ -18,9 +32,7 @@ function createSettings(config: AppConfig): UserManagerSettings {
 		scope: [
 			'openid profile email offline_access',
 			// Include org scope so Zitadel applies the Org-level login policy (passkey only)
-			config.zitadelOrgId
-				? `urn:zitadel:iam:org:id:${config.zitadelOrgId}`
-				: '',
+			orgScope(config),
 		]
 			.filter(Boolean)
 			.join(' '),

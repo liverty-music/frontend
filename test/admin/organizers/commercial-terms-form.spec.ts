@@ -164,9 +164,20 @@ describe('validateBusinessDetails', () => {
 		(contactEmail) => {
 			expect(
 				validateBusinessDetails({ ...VALID, contactEmail }).contactEmail,
-			).toBe('Enter a valid email businessAddress.')
+			).toBe('Enter a valid email address.')
 		},
 	)
+
+	it('accepts a 165-character contact email and rejects 166', () => {
+		const at165 = `${'a'.repeat(153)}@example.com`
+		expect(
+			validateBusinessDetails({ ...VALID, contactEmail: at165 }).contactEmail,
+		).toBeUndefined()
+		expect(
+			validateBusinessDetails({ ...VALID, contactEmail: `a${at165}` })
+				.contactEmail,
+		).toBe('The contact email must be 165 characters or fewer.')
+	})
 })
 
 describe('hasBusinessDetailsErrors', () => {

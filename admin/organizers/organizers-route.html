@@ -30,12 +30,35 @@
           />
         </label>
         <label class="organizers-field">
-          Operator email
+          Short name
+          <input
+            type="text"
+            class="organizers-input"
+            value.bind="newShortName"
+            placeholder="xx-records"
+            pattern="[a-z][a-z0-9\-]{2,31}"
+            maxlength="32"
+            autocapitalize="none"
+            spellcheck="false"
+            aria-describedby="organizers-short-name-hint"
+            disabled.bind="creating"
+            required
+          />
+        </label>
+        <p id="organizers-short-name-hint" class="organizers-muted">
+          Names the organizer in its console address
+          (organizer.liverty-music.app/?org=short-name) and at the identity
+          provider. It cannot be changed later.
+        </p>
+        <label class="organizers-field">
+          Owner email
           <input
             type="email"
             class="organizers-input"
-            value.bind="newOperatorEmail"
+            value.bind="newOwnerEmail"
             placeholder="owner@example.com"
+            maxlength="165"
+            autocomplete="off"
             disabled.bind="creating"
             required
           />
@@ -89,6 +112,7 @@
             click.trigger="select(row)"
           >
             <span class="organizers-list-name">${row.name}</span>
+            <span class="organizers-list-short-name">${row.shortName}</span>
           </button>
         </li>
       </ul>
@@ -113,6 +137,7 @@
             ${deactivating ? 'Deactivating…' : 'Deactivate'}
           </button>
         </div>
+        <p class="organizers-detail-id">Short name: ${selected.shortName}</p>
         <p class="organizers-detail-id">ID: ${selected.id}</p>
         <p if.bind="deactivateError" class="organizers-error" role="alert">
           ${deactivateError}

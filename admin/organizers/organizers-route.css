@@ -197,6 +197,12 @@
 			font-weight: 600;
 		}
 
+		.organizers-list-short-name {
+			display: block;
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+		}
+
 		.organizers-detail-empty {
 			color: var(--color-text-secondary);
 		}

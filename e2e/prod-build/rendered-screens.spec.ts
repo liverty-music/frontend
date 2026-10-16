@@ -368,6 +368,14 @@ ORGANIZER.push(
 		probes: [openMenu],
 	},
 	{
+		// Opened on a device that knows no Organization; needs no sign-in.
+		name: 'organizer find-organizer',
+		path: '/find-organizer',
+		setup: consoleAs(),
+		ready: pageTitle,
+		probes: [filledButton],
+	},
+	{
 		name: 'organizer Concerts (no represented Artist)',
 		path: `${ORG}/artists`,
 		setup: consoleAs(true, { 'ArtistService/List': { artists: [] } }),

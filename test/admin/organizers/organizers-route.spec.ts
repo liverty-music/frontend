@@ -47,10 +47,11 @@ interface MockSearchClient {
 	search: ReturnType<typeof vi.fn>
 }
 
-function makeOrganizer(id: string, name: string): Organizer {
+function makeOrganizer(id: string, name: string, shortName = ''): Organizer {
 	return create(OrganizerSchema, {
 		id: { value: id },
 		name: { value: name },
+		...(shortName ? { shortName: { value: shortName } } : {}),
 	})
 }
 
@@ -123,8 +124,8 @@ describe('OrganizersRoute', () => {
 				list: vi
 					.fn()
 					.mockResolvedValue([
-						makeOrganizer('o1', 'Org One'),
-						makeOrganizer('o2', 'Org Two'),
+						makeOrganizer('o1', 'Org One', 'org-one'),
+						makeOrganizer('o2', 'Org Two', 'org-two'),
 					]),
 			})
 			const fixture = await build(client, createMockSearchClient())
@@ -133,8 +134,10 @@ describe('OrganizersRoute', () => {
 			expect(vm.phase).toBe('ready')
 			expect(vm.organizers).toHaveLength(2)
 			expect(vm.organizers[0].name).toBe('Org One')
+			expect(vm.organizers[0].shortName).toBe('org-one')
 			expect(fixture.appHost.textContent).toContain('Org One')
 			expect(fixture.appHost.textContent).toContain('Org Two')
+			expect(fixture.appHost.textContent).toContain('org-two')
 		})
 
 		it('renders the empty state when there are no organizers', async () => {
@@ -160,21 +163,54 @@ describe('OrganizersRoute', () => {
 	})
 
 	describe('create', () => {
-		it('requires a name and operator email', async () => {
+		it('requires a name, a short name and an owner email', async () => {
 			const client = createMockOrganizerClient()
 			const fixture = await build(client, createMockSearchClient())
 			const vm = routeOf(fixture)
 
 			vm.newName = '  '
-			vm.newOperatorEmail = ''
+			vm.newShortName = ''
+			vm.newOwnerEmail = ''
 			await vm.createOrganizer()
 
 			expect(client.create).not.toHaveBeenCalled()
 			expect(vm.createError).toContain('required')
 		})
 
+		it.each([
+			[
+				'a short name with a space',
+				'XX Records',
+				'owner@example.com',
+				'short name',
+			],
+			['a reserved short name', 'admin', 'owner@example.com', 'short name'],
+			['a malformed owner email', 'xx-records', 'band@', 'valid owner email'],
+			[
+				'an owner email over 165 characters',
+				'xx-records',
+				`${'a'.repeat(154)}@example.com`,
+				'165 characters',
+			],
+		])(
+			'refuses %s before sending',
+			async (_label, shortName, email, message) => {
+				const client = createMockOrganizerClient()
+				const fixture = await build(client, createMockSearchClient())
+				const vm = routeOf(fixture)
+
+				vm.newName = 'XX Records'
+				vm.newShortName = shortName
+				vm.newOwnerEmail = email
+				await vm.createOrganizer()
+
+				expect(client.create).not.toHaveBeenCalled()
+				expect(vm.createError).toContain(message)
+			},
+		)
+
 		it('creates, clears the form, appends the row, and selects it', async () => {
-			const created = makeOrganizer('o-new', 'New Org')
+			const created = makeOrganizer('o-new', 'XX Records', 'xx-records')
 			const client = createMockOrganizerClient({
 				create: vi.fn().mockResolvedValue(created),
 				listByOrganizer: vi.fn().mockResolvedValue([]),
@@ -182,17 +218,26 @@ describe('OrganizersRoute', () => {
 			const fixture = await build(client, createMockSearchClient())
 			const vm = routeOf(fixture)
 
-			vm.newName = 'New Org'
-			vm.newOperatorEmail = 'owner@example.com'
+			vm.newName = 'XX Records'
+			vm.newShortName = ' xx-records '
+			vm.newOwnerEmail = 'owner@example.com'
 			await vm.createOrganizer()
 
-			expect(client.create).toHaveBeenCalledWith('New Org', 'owner@example.com')
+			expect(client.create).toHaveBeenCalledWith(
+				'XX Records',
+				'xx-records',
+				'owner@example.com',
+			)
 			expect(vm.newName).toBe('')
-			expect(vm.newOperatorEmail).toBe('')
+			expect(vm.newShortName).toBe('')
+			expect(vm.newOwnerEmail).toBe('')
 			expect(vm.organizers.map((o) => o.id)).toContain('o-new')
 			// Freshly created organizer becomes the selection + its roster loads.
 			expect(vm.selected?.id).toBe('o-new')
+			expect(vm.selected?.shortName).toBe('xx-records')
 			expect(client.listByOrganizer).toHaveBeenCalledWith('o-new')
+			await fixture.tasksSettled
+			expect(fixture.appHost.textContent).toContain('Short name: xx-records')
 		})
 
 		it('maps INVALID_ARGUMENT to a user-facing create error', async () => {
@@ -207,33 +252,32 @@ describe('OrganizersRoute', () => {
 			const vm = routeOf(fixture)
 
 			vm.newName = 'x'
-			vm.newOperatorEmail = 'a@b.co'
+			vm.newShortName = 'xx-records'
+			vm.newOwnerEmail = 'a@b.co'
 			await vm.createOrganizer()
 
 			expect(vm.createError).toContain('name too long')
 			expect(vm.creating).toBe(false)
 		})
 
-		it('maps ALREADY_EXISTS on create to the operator-email-in-use message', async () => {
+		it('maps ALREADY_EXISTS on create to the short-name-in-use message', async () => {
 			const client = createMockOrganizerClient({
 				create: vi
 					.fn()
 					.mockRejectedValue(
-						new ConnectError(
-							'operator email is already used by another account',
-							Code.AlreadyExists,
-						),
+						new ConnectError('short name is already used', Code.AlreadyExists),
 					),
 			})
 			const fixture = await build(client, createMockSearchClient())
 			const vm = routeOf(fixture)
 
 			vm.newName = 'Org'
-			vm.newOperatorEmail = 'taken@example.com'
+			vm.newShortName = 'taken-name'
+			vm.newOwnerEmail = 'fan@example.com'
 			await vm.createOrganizer()
 
 			expect(vm.createError).toBe(
-				'That operator email is already used by another account. Use a different email.',
+				'That short name is already used by another organizer. Choose a different one.',
 			)
 			expect(vm.createError).not.toContain('artist')
 			expect(vm.creating).toBe(false)

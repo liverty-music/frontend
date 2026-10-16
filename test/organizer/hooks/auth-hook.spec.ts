@@ -1,9 +1,13 @@
 import type { RouteNode } from '@aurelia/router'
-import { DI, Registration } from 'aurelia'
+import { DI, ILogger, Registration } from 'aurelia'
 import type { User } from 'oidc-client-ts'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AppConfig } from '../../../shared/config/app-config'
+import { IAppConfig } from '../../../shared/config/app-config'
 import { createTestContainer } from '../../helpers/create-container'
+import { createMockAppConfig } from '../../helpers/mock-app-config'
 import { createMockAuth } from '../../helpers/mock-auth'
+import { createMockLogger } from '../../helpers/mock-logger'
 
 // Mock IAuthService and ILoginHint so the guard binds to test doubles rather
 // than constructing a real UserManager (oidc-client-ts) or reading window.location.
@@ -19,6 +23,9 @@ vi.mock('../../../organizer/services/login-hint', () => ({
 }))
 
 const { OrganizerAuthHook } = await import('../../../organizer/hooks/auth-hook')
+const { savePendingReturn } = await import(
+	'../../../organizer/adapter/storage/pending-return-storage'
+)
 
 const ROLES_CLAIM = 'urn:zitadel:iam:org:project:roles'
 
@@ -205,5 +212,129 @@ describe('OrganizerAuthHook', () => {
 		resolveReady()
 		const result = await canLoadPromise
 		expect(result).toBe(true)
+	})
+
+	describe('the Organization a sign-in names (design D4)', () => {
+		const PRIMARY_DOMAIN = 'xx-records.auth.liverty-music.app'
+
+		/** Builds the guard over a config pinned as `organizer/main.ts` would. */
+		function buildPinned(
+			pin: Pick<AppConfig, 'zitadelOrgId' | 'zitadelOrgPrimaryDomain'>,
+			authOverrides: Parameters<typeof createMockAuth>[0],
+		) {
+			mockAuth = createMockAuth(authOverrides)
+			const container = DI.createContainer()
+			container.register(
+				Registration.instance(ILogger, createMockLogger()),
+				Registration.instance(
+					IAppConfig,
+					createMockAppConfig({ zitadelOrgId: undefined, ...pin }),
+				),
+				Registration.instance(mockIAuthService, mockAuth),
+				Registration.instance(mockILoginHint, null),
+				OrganizerAuthHook,
+			)
+			sut = container.get(OrganizerAuthHook)
+		}
+
+		beforeEach(() => {
+			localStorage.clear()
+		})
+
+		afterEach(() => {
+			window.history.replaceState(null, '', '/')
+		})
+
+		// @spec components/infrastructure/organizer/web/global/organizer-shell "New device"
+		// @spec components/infrastructure/organizer/web/global/hosted-login "Device that remembers no Organization"
+		it('opens find-organizer and starts no sign-in when no Organization is known', async () => {
+			buildPinned({}, { isAuthenticated: false })
+
+			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(result).toBe('/find-organizer')
+			expect(mockAuth.signIn).not.toHaveBeenCalled()
+		})
+
+		// @spec components/infrastructure/organizer/web/global/organizer-shell "Return after a link sign-in"
+		it('returns the visitor to the address they opened once they sign in through a link', async () => {
+			// A new device opens a deep address: find-organizer, address kept.
+			window.history.replaceState(null, '', '/organizers/o-1/settings')
+			buildPinned({}, { isAuthenticated: false })
+			await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			// The emailed link opens /?org=xx-records (pinned by main.ts).
+			window.history.replaceState(null, '', '/?org=xx-records')
+			buildPinned(
+				{ zitadelOrgPrimaryDomain: PRIMARY_DOMAIN },
+				{ isAuthenticated: false },
+			)
+			await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(mockAuth.signIn).toHaveBeenCalledWith({
+				returnTo: '/organizers/o-1/settings',
+			})
+		})
+
+		it('ignores an expired remembered address', async () => {
+			savePendingReturn('/organizers/o-1/settings', Date.now() - 2 * 86_400_000)
+			window.history.replaceState(null, '', '/?org=xx-records')
+			buildPinned(
+				{ zitadelOrgPrimaryDomain: PRIMARY_DOMAIN },
+				{ isAuthenticated: false },
+			)
+
+			await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(mockAuth.signIn).toHaveBeenCalledWith({
+				returnTo: '/?org=xx-records',
+			})
+		})
+
+		// @spec components/infrastructure/organizer/web/global/organizer-shell "Remembered Organization"
+		it('starts the sign-in when the device remembers the Organization', async () => {
+			buildPinned(
+				{ zitadelOrgPrimaryDomain: PRIMARY_DOMAIN },
+				{ isAuthenticated: false },
+			)
+
+			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(result).toBe(false)
+			expect(mockAuth.signIn).toHaveBeenCalledTimes(1)
+		})
+
+		// @spec components/infrastructure/organizer/web/global/hosted-login "Owner whose email is also a fan account"
+		it('admits the session of the Organization named by short name', async () => {
+			buildPinned(
+				{ zitadelOrgPrimaryDomain: PRIMARY_DOMAIN },
+				{
+					isAuthenticated: true,
+					user: userWithRoles({ owner: { '394': PRIMARY_DOMAIN } }),
+				},
+			)
+
+			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(result).toBe(true)
+			expect(mockAuth.signIn).not.toHaveBeenCalled()
+		})
+
+		it('re-authenticates a session of another Organization than the short name names', async () => {
+			buildPinned(
+				{ zitadelOrgPrimaryDomain: PRIMARY_DOMAIN },
+				{
+					isAuthenticated: true,
+					user: userWithRoles({
+						owner: { '777': 'other-label.auth.liverty-music.app' },
+					}),
+				},
+			)
+
+			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+			expect(result).toBe(false)
+			expect(mockAuth.signIn).toHaveBeenCalledWith({ forceLogin: true })
+		})
 	})
 })

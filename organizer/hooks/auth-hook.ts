@@ -7,6 +7,10 @@ import type {
 import { type ILifecycleHooks, ILogger, lifecycleHooks, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
+import {
+	savePendingReturn,
+	takePendingReturn,
+} from '../adapter/storage/pending-return-storage'
 import { ILoginHint } from '../services/login-hint'
 import { enforceIntendedOrg } from './org-enforcement'
 import { hasOwnerRole } from './roles'
@@ -16,9 +20,13 @@ import { hasOwnerRole } from './roles'
  *
  *   1. **Authentication** — unauthenticated visitors are sent into the Zitadel
  *      sign-in flow (`authService.signIn()`), which redirects the whole
- *      document away, so the guard returns `false` to abort the in-app nav. The
- *      OIDC callback route opts out via `data: { auth: false }` so the code
- *      exchange can run before a session exists.
+ *      document away, so the guard returns `false` to abort the in-app nav.
+ *      A sign-in always names the Organizer's Organization (design D4 of
+ *      `reuse-fan-email-for-organizer-sign-in`): when neither the address nor
+ *      the device names one, no sign-in starts and the visitor is sent to the
+ *      find-organizer screen, with the address they opened remembered so the
+ *      sign-in link from the email returns them to it. The OIDC callback and
+ *      find-organizer routes opt out via `data: { auth: false }`.
  *   2. **Authorization** — unlike the admin console (where org-scoped login is
  *      itself the wall), any tenant-org account authenticates successfully, so
  *      the guard inspects the `organizer-console` project roles claim and
@@ -57,11 +65,23 @@ export class OrganizerAuthHook
 			// browser navigates away to Zitadel, so no organizer content renders.
 			// Pass login_hint when present (invitation link, first sign-in) so
 			// Zitadel pre-fills the operator's email address (design D5).
+			const opened = `${window.location.pathname}${window.location.search}`
+			if (!this.namesOrganization) {
+				// A sign-in naming no Organization resolves to the person's fan
+				// account, so none starts: the visitor asks for sign-in links.
+				this.logger.info('No Organization known; opening find-organizer')
+				if (window.location.pathname !== '/') savePendingReturn(opened)
+				return '/find-organizer'
+			}
 			this.logger.info('Unauthenticated organizer access; starting sign-in')
-			// After sign-in the operator returns to the address they opened.
+			// After sign-in the operator returns to the address they opened, or,
+			// arriving on `/` through a sign-in link, to the address they opened
+			// before asking for the link.
+			const pending =
+				window.location.pathname === '/' ? takePendingReturn() : null
 			await this.authService.signIn({
 				...(this.loginHint ? { loginHint: this.loginHint } : {}),
-				returnTo: `${window.location.pathname}${window.location.search}`,
+				returnTo: pending ?? opened,
 			})
 			return false
 		}
@@ -80,7 +100,7 @@ export class OrganizerAuthHook
 		// silently onboard the wrong operator.
 		const gate = await enforceIntendedOrg(
 			this.authService,
-			this.config.zitadelOrgId,
+			this.config.zitadelOrgId ?? this.config.zitadelOrgPrimaryDomain,
 			this.authService.user?.profile as Record<string, unknown> | undefined,
 			this.logger,
 		)
@@ -103,5 +123,10 @@ export class OrganizerAuthHook
 			'Authenticated without owner role; denying organizer access',
 		)
 		return '/denied'
+	}
+
+	/** Whether the address or the device names the Organization to sign in to. */
+	private get namesOrganization(): boolean {
+		return !!(this.config.zitadelOrgId || this.config.zitadelOrgPrimaryDomain)
 	}
 }

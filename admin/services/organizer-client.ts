@@ -38,7 +38,7 @@ export interface IOrganizerClient extends OrganizerClient {}
  * user-facing copy). It is built entirely from admin/shared modules and never
  * imports the consumer `src/`. Callers pass plain strings; this wrapper owns
  * wrapping them into the generated `OrganizerId` / `ArtistId` / `OrganizerName`
- * / `Email` / business-detail message shells the request fields require.
+ * / `OrganizerShortName` / `Email` / business-detail message shells the request fields require.
  * An Organizer's artists are read with `ArtistClient.listByOrganizer`.
  *
  * All RPCs are served by the admin Connect server, so it reuses the same
@@ -54,17 +54,22 @@ export class OrganizerClient {
 	)
 	private readonly client = createClient(OrganizerService, this.transport)
 
-	/** Registers a new organizer, seeding its initial operator as the owner. */
+	/**
+	 * Registers a new organizer under its short name, inviting the owner email
+	 * as its owner. The owner email may also be a fan account's.
+	 */
 	public async create(
 		name: string,
+		shortName: string,
 		ownerEmail: string,
 		signal?: AbortSignal,
 	): Promise<Organizer | undefined> {
-		this.logger.info('Creating organizer', { name })
+		this.logger.info('Creating organizer', { name, shortName })
 		try {
 			const response = await this.client.create(
 				{
 					name: { value: name },
+					shortName: { value: shortName },
 					ownerEmail: { value: ownerEmail },
 				},
 				{ signal },

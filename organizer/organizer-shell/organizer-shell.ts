@@ -42,7 +42,9 @@ const ARTIST = 'organizers/:organizerId/artists/:artistId/series'
  * `organizer/main.ts`) run on every route: authentication and the owner role,
  * then the address's Organizer. `auth/callback` opts out of both
  * (`auth: false`) so the OIDC code exchange can complete before a session
- * exists, and `denied` opts out of the role check (`role: false`).
+ * exists, `find-organizer` opts out because a device that knows no
+ * Organization cannot sign in, and `denied` opts out of the role check
+ * (`role: false`).
  */
 @route({
 	fallback: 'landing',
@@ -100,6 +102,13 @@ const ARTIST = 'organizers/:organizerId/artists/:artistId/series'
 			path: 'denied',
 			component: import('../denied/denied-route'),
 			data: { role: false },
+		},
+		{
+			// A device that knows no Organization asks for sign-in links here
+			// instead of signing in (design D4); it needs no sign-in.
+			path: 'find-organizer',
+			component: import('../find-organizer/find-organizer-route'),
+			data: { auth: false },
 		},
 		{
 			path: 'auth/callback',

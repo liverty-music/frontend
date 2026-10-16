@@ -3,9 +3,9 @@ import { Code, ConnectError } from '@connectrpc/connect'
 /** ALREADY_EXISTS copy for AssociateArtist: the artist is already claimed. */
 export const ARTIST_ALREADY_REPRESENTED =
 	'That artist is already represented by an organizer.'
-/** ALREADY_EXISTS copy for Create: the operator email belongs to another account. */
-export const OPERATOR_EMAIL_IN_USE =
-	'That operator email is already used by another account. Use a different email.'
+/** ALREADY_EXISTS copy for Create: another Organizer already has the short name. */
+export const SHORT_NAME_IN_USE =
+	'That short name is already used by another organizer. Choose a different one.'
 
 /**
  * Maps a caller error to user-facing copy. Connect error codes documented on

@@ -480,5 +480,18 @@
 	"landing": {
 		"failed": "The console could not be opened.",
 		"retrying": "Retrying…"
+	},
+	"findOrganizer": {
+		"title": "Sign in to the Organizer Console",
+		"intro": "This device does not know which organizer's console to open. Enter the email you use for your organizer, and we will email you a sign-in link.",
+		"email": "Email",
+		"send": "Send link",
+		"sending": "Sending…",
+		"sent": "If this address runs an organizer on Liverty Music, we have emailed a sign-in link. The link opens the console for that organizer. If you do not run an organizer, contact Liverty Music.",
+		"tooMany": "Too many requests. Please try again later.",
+		"failed": "The link could not be sent. Please try again.",
+		"emailRequired": "Enter your email address.",
+		"emailInvalid": "The email address is not valid.",
+		"emailTooLong": "The email address must be {{max}} characters or fewer."
 	}
 }

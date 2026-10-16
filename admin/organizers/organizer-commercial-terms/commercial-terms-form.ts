@@ -1,3 +1,4 @@
+import { EMAIL_MAX_LENGTH, emailProblem } from '../../../shared/utils/email'
 import type {
 	BusinessDetailsInput,
 	Organizer,
@@ -25,13 +26,6 @@ export const BUSINESS_DETAILS_MAX_LENGTH = {
 
 /** E.164, as in the proto: "+", a non-zero digit, then 1 to 14 digits. */
 const E164_PATTERN = /^\+[1-9][0-9]{1,14}$/
-
-/**
- * The WHATWG HTML "valid email businessAddress" grammar, which protovalidate's
- * `string.email` rule follows.
- */
-const EMAIL_PATTERN =
-	/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
 /** A percentage with up to two decimals, e.g. "5", "5.5" or "5.00". */
 const PERCENT_PATTERN = /^(\d{1,3})(?:\.(\d{1,2}))?$/
@@ -134,10 +128,13 @@ export function validateBusinessDetails(
 			'Enter the business phone number in international form, e.g. +81312345678 (not 03-1234-5678).'
 	}
 
-	if (input.contactEmail.length === 0) {
+	const contactEmail = emailProblem(input.contactEmail)
+	if (contactEmail === 'empty') {
 		errors.contactEmail = 'Enter the contact email.'
-	} else if (!EMAIL_PATTERN.test(input.contactEmail)) {
-		errors.contactEmail = 'Enter a valid email businessAddress.'
+	} else if (contactEmail === 'tooLong') {
+		errors.contactEmail = `The contact email must be ${EMAIL_MAX_LENGTH} characters or fewer.`
+	} else if (contactEmail === 'invalid') {
+		errors.contactEmail = 'Enter a valid email address.'
 	}
 	return errors
 }

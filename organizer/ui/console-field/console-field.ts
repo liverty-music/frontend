@@ -3,6 +3,7 @@ import type { FieldError } from '../../i18n/field-error'
 
 export type ConsoleFieldType =
 	| 'text'
+	| 'email'
 	| 'textarea'
 	| 'number'
 	| 'select'

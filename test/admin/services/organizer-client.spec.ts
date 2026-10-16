@@ -47,14 +47,15 @@ describe('OrganizerClient', () => {
 		vi.clearAllMocks()
 	})
 
-	it('create wraps name + owner email and returns the organizer', async () => {
+	it('create wraps name, short name and owner email and returns the organizer', async () => {
 		mockRpc.create.mockResolvedValue({ organizer: { id: { value: 'o1' } } })
 		const client = resolveClient()
 
-		const result = await client.create('Acme', 'owner@acme.test')
+		const result = await client.create('Acme', 'acme', 'owner@acme.test')
 
 		const [req] = mockRpc.create.mock.calls.at(-1) ?? []
 		expect(req.name?.value).toBe('Acme')
+		expect(req.shortName?.value).toBe('acme')
 		expect(req.ownerEmail?.value).toBe('owner@acme.test')
 		expect(result?.id?.value).toBe('o1')
 	})
