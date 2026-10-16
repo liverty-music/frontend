@@ -5,6 +5,10 @@ import { IEventAggregator, ILogger, resolve } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
+import {
+	normalizeReferralCode,
+	saveReferral,
+} from '../../adapter/storage/referral-storage'
 import type { EventDateTab } from '../../components/event-date-tabs/event-date-tabs'
 import type { Artist } from '../../entities/artist'
 import {
@@ -74,10 +78,16 @@ export class EventRoute implements IRouteViewModel {
 	public followsLoaded = false
 
 	private eventId = ''
+	/** The `ref` value of the address the page was opened with, if any. */
+	private referralParam: string | null = null
+	/** When the page was opened; the kept code expires 7 days after it. */
+	private openedAt = 0
 	private abortController: AbortController | null = null
 
 	public loading(params: Params): void {
 		this.eventId = params.id ?? ''
+		this.referralParam = new URLSearchParams(window.location.search).get('ref')
+		this.openedAt = Date.now()
 		// Never hold the view swap on data: start the read and return.
 		void this.load()
 	}
@@ -107,6 +117,7 @@ export class EventRoute implements IRouteViewModel {
 			}
 			this.event = event
 			this.state = 'ready'
+			this.keepReferralCode(event.seriesId)
 		} catch (err) {
 			if (signal.aborted) return
 			if (ConnectError.from(err).code === Code.NotFound) {
@@ -127,6 +138,18 @@ export class EventRoute implements IRouteViewModel {
 		void this.loadSale(signal)
 		void this.loadFollowed(signal)
 		void this.loadPurchasedTickets(signal)
+	}
+
+	/**
+	 * Keep a referral link's code on the device with the event's Series for 7
+	 * days, replacing any code kept before (OpenSpec `referral-attribution`,
+	 * design D7). The address bar keeps `?ref=`, and nothing on the page
+	 * changes; the checkout and the lottery entry read the kept code.
+	 */
+	private keepReferralCode(seriesId: string): void {
+		const code = normalizeReferralCode(this.referralParam)
+		if (code === null || !seriesId) return
+		saveReferral(code, seriesId, this.openedAt)
 	}
 
 	private async loadSeriesEvents(

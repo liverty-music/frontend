@@ -490,5 +490,22 @@ describe('UserStore', () => {
 
 			expect(store.current).toBeUndefined()
 		})
+
+		it('leaves the kept referral code on the device', () => {
+			// A referral link's code is not account data: it stays across
+			// sign-out until it expires (OpenSpec `referral-attribution`, D7).
+			const kept = JSON.stringify({
+				code: 'member-a',
+				seriesId: 's1',
+				expiresAt: Date.now() + 1000,
+			})
+			localStorage.setItem('referral', kept)
+			const { emitSignedOut } = build({ auth: makeAuthWithProfile() })
+
+			emitSignedOut()
+
+			expect(localStorage.getItem('referral')).toBe(kept)
+			localStorage.removeItem('referral')
+		})
 	})
 })

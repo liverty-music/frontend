@@ -17,7 +17,7 @@ import { paths } from '../model/concert-model'
  * self-heal to a single attempt so a genuinely broken state store cannot loop
  * the operator between the console and Zitadel forever. Tab-scoped.
  */
-export const CALLBACK_RETRY_FLAG = 'liverty:organizer:callback-retry'
+export const CALLBACK_RETRY_FLAG = 'organizer.callbackRetry'
 
 /**
  * oidc-client-ts throws this message from `signinCallback` when the callback URL

@@ -188,6 +188,18 @@
 			"editConcert": "公演を編集",
 			"businessDetails": "事業者情報が未登録です",
 			"businessDetailsBody": "事業者情報（特定商取引法に基づく表記）は、審査のときに Liverty Music が登録します。登録や変更は Liverty Music の担当者にご連絡ください。登録が終わるまで販売は始められません。"
+		},
+		"referral": {
+			"title": "紹介コード別の購入",
+			"note": "支払い済みの購入だけを数えます。返金された購入は数えません。抽選は、当選して決済されたときに数えます。",
+			"empty": "まだ購入はありません",
+			"code": "紹介コード",
+			"orders": "件数",
+			"tickets": "枚数",
+			"amount": "金額（税込）",
+			"direct": "直接（コードなし）",
+			"orderCount": "{{count, number}}件",
+			"ticketCount": "{{count, number}}枚"
 		}
 	},
 	"concert": {

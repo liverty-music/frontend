@@ -3,23 +3,22 @@ export const StorageKeys = {
 	uiSessionCount: 'ui.sessionCount',
 	uiOnboardingCompletedSessionCount: 'ui.onboardingCompletedSessionCount',
 	pwaInstalled: 'pwa.installed',
-	postSignupShown: 'liverty:postSignup:shown',
+	postSignupShown: 'postSignup.shown',
 	// Celebration shown-once flag (guest light tier on first dashboard arrival).
 	// Shared with the E2E suite, which seeds/removes this key to control the
 	// celebration overlay's visibility.
 	celebrationShown: 'onboarding.celebrationShown',
 	// Collapsed onboarding-complete flag (single-flag onboarding state). Absent
-	// key means the user is still onboarding. Migrated once from the legacy
-	// `onboardingStep` key in onboarding-storage.
+	// key means the user is still onboarding.
 	onboardingComplete: 'onboardingComplete',
 	// Discovery bubble sound-effect preferences. '1'/'0' for mute, '0'..'1' for volume.
-	soundMuted: 'liverty:sound:muted',
-	soundVolume: 'liverty:sound:volume',
+	soundMuted: 'sound.muted',
+	soundVolume: 'sound.volume',
 	// Laser beam spotlight effect on dashboard. 'true'/'false', defaults to off.
-	beamsEnabled: 'liverty:beams:enabled',
+	beamsEnabled: 'beams.enabled',
 	// FAB action-launcher placement (left-handed mode). 'left'/'right',
 	// defaults to 'right' (bottom-right corner). Mirrors the beam preference.
-	fabHanded: 'liverty:fab:handed',
+	fabHanded: 'fab.handed',
 	// Anonymous-period UI language. See UserHydrationTask for cleanup.
 	language: 'language',
 } as const
@@ -38,18 +37,18 @@ export const SessionKeys = {
 	// tab opened in the same session will re-attempt once per its own
 	// lifetime — acceptable since the RPC is idempotent on a non-NULL row
 	// (server returns the existing value unchanged).
-	languageBackfillAttempted: 'liverty:lang:backfillAttempted',
+	languageBackfillAttempted: 'lang.backfillAttempted',
 	// Set after the follow-reconcile task runs in the current tab so the
 	// receipt-keyed reconcile fires at most once per tab. Cleared again if the
 	// reconcile defers (no user id yet) so the next start retries. Per-tab
 	// scoping is acceptable because the backend Follow/SetHype calls are
 	// idempotent and the receipt makes queue-level migration exactly-once.
-	followReconcileAttempted: 'liverty:follow:reconcileAttempted',
+	followReconcileAttempted: 'follow.reconcileAttempted',
 	// Set when the user dismisses the pwa-install-banner via its close button.
 	// Session-scoped on purpose: the banner re-surfaces next session so a
 	// close-on-impulse does not permanently suppress the install CTA, while
 	// still relieving in-session pressure. Never mirrored to localStorage.
-	pwaBannerDismissed: 'liverty:pwaBanner:dismissed',
+	pwaBannerDismissed: 'pwaBanner.dismissed',
 } as const
 
 // Per-account guest-merge receipt. Written once a follow migration completes
@@ -66,58 +65,7 @@ export function guestMergedReceiptKey(userId: string): string {
 // state WITHIN a session, but on sign-out every receipt is removed (by prefix,
 // since the signed-out user's id is already cleared from in-memory + cached
 // state by then) so a fresh post-sign-out guest session can migrate again.
-export const GUEST_MERGED_RECEIPT_PREFIX = 'liverty:guestMerged:'
-
-/**
- * Migrate legacy localStorage keys from the old admin area format.
- * Removes `user.adminArea` (now stored server-side via User.home)
- * and renames `guest.adminArea` to `guest.home`.
- * Safe to call multiple times.
- */
-export function migrateStorageKeys(): void {
-	// Remove legacy guest.adminArea — old values were Japanese text (e.g. "東京")
-	// which cannot be reverse-mapped to ISO 3166-2 codes. Users must re-select.
-	localStorage.removeItem('guest.adminArea')
-	// Remove deprecated user.adminArea (now managed server-side)
-	localStorage.removeItem('user.adminArea')
-	// Remove deprecated PWA session-count keys (replaced by ui.sessionCount)
-	localStorage.removeItem('pwa.sessionCount')
-	localStorage.removeItem('pwa.installPromptDismissed')
-	// Migrate pwa.completedSessionCount to ui.onboardingCompletedSessionCount
-	// before deleting — returning users have no other path to set the new key
-	// (persistOnboardingCompletedSessionCount only fires on isCompleted transitions).
-	const oldCompleted = localStorage.getItem('pwa.completedSessionCount')
-	if (
-		oldCompleted !== null &&
-		localStorage.getItem('ui.onboardingCompletedSessionCount') === null
-	) {
-		localStorage.setItem('ui.onboardingCompletedSessionCount', oldCompleted)
-	}
-	localStorage.removeItem('pwa.completedSessionCount')
-
-	// Remove the per-account user id cache (`liverty:userId:<sub>`). Requests no
-	// longer name the calling user, so nothing reads it.
-	for (let i = localStorage.length - 1; i >= 0; i--) {
-		const key = localStorage.key(i)
-		if (key?.startsWith('liverty:userId:')) localStorage.removeItem(key)
-	}
-
-	// Migrate the legacy `guest.language` key into the single-source `language`
-	// key (the i18next detector cache). `guest.language` was only ever written on
-	// an explicit user language choice, so it represents higher intent than the
-	// auto-detected detector cache: when the two differ — including when
-	// `language` is absent (e.g. cleared by a prior authenticated session) — the
-	// explicit guest choice wins and is promoted. Then the redundant key is
-	// removed. Because this runs before i18next detection reads `language`
-	// (see main.ts ordering), a promoted value takes effect in the same session.
-	const legacyGuestLanguage = localStorage.getItem('guest.language')
-	if (legacyGuestLanguage !== null) {
-		if (localStorage.getItem(StorageKeys.language) !== legacyGuestLanguage) {
-			localStorage.setItem(StorageKeys.language, legacyGuestLanguage)
-		}
-		localStorage.removeItem('guest.language')
-	}
-}
+export const GUEST_MERGED_RECEIPT_PREFIX = 'guestMerged:'
 
 /**
  * Increment the per-session UI counter.

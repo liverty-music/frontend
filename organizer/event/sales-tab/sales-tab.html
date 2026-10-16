@@ -95,5 +95,18 @@
         </div>
       </li>
     </ul>
+
+    <!-- Purchases per referral code: only once the event has a sale. Read-only. -->
+    <section if.bind="sales.length" class="[ referrals ] [ flow ]" aria-labelledby="referrals-title" data-testid="referrals">
+      <h2 id="referrals-title" class="referrals-title">${'sale.referral.title' & t}</h2>
+      <p class="referrals-note">${'sale.referral.note' & t}</p>
+      <data-list
+        if.bind="referralRows.length"
+        columns.bind="referralColumns"
+        rows.bind="referralRows"
+        label.bind="'sale.referral.title' & t"
+      ></data-list>
+      <p else class="message">${'sale.referral.empty' & t}</p>
+    </section>
   </template>
 </section>

@@ -8,7 +8,6 @@ import {
 } from '../../../src/adapter/storage/onboarding-storage'
 
 const KEY_COMPLETE = 'onboardingComplete'
-const KEY_LEGACY_STEP = 'onboardingStep'
 
 describe('onboarding-storage', () => {
 	beforeEach(() => {
@@ -28,20 +27,6 @@ describe('onboarding-storage', () => {
 			saveOnboardingComplete(false)
 			expect(loadOnboardingComplete()).toBe(false)
 		})
-
-		it('migrates a completed legacy step and deletes the legacy key', () => {
-			localStorage.setItem(KEY_LEGACY_STEP, 'completed')
-			expect(loadOnboardingComplete()).toBe(true)
-			expect(localStorage.getItem(KEY_LEGACY_STEP)).toBeNull()
-			expect(localStorage.getItem(KEY_COMPLETE)).toBe('true')
-		})
-
-		it('migrates a non-completed legacy step to false', () => {
-			localStorage.setItem(KEY_LEGACY_STEP, 'discovery')
-			expect(loadOnboardingComplete()).toBe(false)
-			expect(localStorage.getItem(KEY_LEGACY_STEP)).toBeNull()
-			expect(localStorage.getItem(KEY_COMPLETE)).toBe('false')
-		})
 	})
 
 	describe('help-seen helpers', () => {
@@ -49,6 +34,23 @@ describe('onboarding-storage', () => {
 			expect(loadHelpSeen('dashboard')).toBe(false)
 			saveHelpSeen('dashboard')
 			expect(loadHelpSeen('dashboard')).toBe(true)
+		})
+
+		it('clears every onboarding.helpSeen:* key and nothing else', () => {
+			localStorage.setItem('onboarding.helpSeen:tickets', '1')
+			localStorage.setItem('onboarding.celebrationShown', '1')
+			saveHelpSeen('discovery')
+
+			clearAllHelpSeen()
+
+			expect(localStorage.getItem('onboarding.helpSeen:tickets')).toBeNull()
+			expect(localStorage.getItem('onboarding.helpSeen:discovery')).toBeNull()
+			expect(localStorage.getItem('onboarding.celebrationShown')).toBe('1')
+		})
+
+		it('keeps each flag under onboarding.helpSeen:<page>', () => {
+			saveHelpSeen('discovery')
+			expect(localStorage.getItem('onboarding.helpSeen:discovery')).toBe('1')
 		})
 
 		it('clears all known per-page help-seen flags', () => {

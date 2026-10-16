@@ -192,6 +192,7 @@ describe('CheckoutRoute verified sale (fixture)', () => {
 		expect(checkoutClient.start).toHaveBeenCalledWith(
 			'type-1',
 			1,
+			undefined,
 			expect.anything(),
 		)
 		await fixture.stop(true)

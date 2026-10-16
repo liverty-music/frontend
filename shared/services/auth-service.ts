@@ -131,7 +131,7 @@ const EXPIRY_SKEW_SEC = 60
 /** sessionStorage key holding the in-app location to return to after an
  *  involuntary re-authentication. Value is JSON `{ loc, exp }`. Exported so
  *  tests assert against a single source of truth rather than a copied string. */
-export const RETURN_TO_KEY = 'liverty:auth:returnTo'
+export const RETURN_TO_KEY = 'auth.returnTo'
 /** A stored return-to older than this is treated as stale and ignored. It was
  *  most likely left by a re-auth the user abandoned; without a bound it would
  *  survive in sessionStorage for the whole tab session and hijack a later,

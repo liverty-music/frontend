@@ -18,8 +18,7 @@ export interface IOnboardingService extends OnboardingService {}
  * step machine. The backing `onboardingComplete` field is `@observable` so the
  * derived `isOnboarding` / `isCompleted` getters notify dependent bindings and
  * watchers (`pwa-install-service` `@watch(isCompleted)`, the `app-shell.html`
- * `if.bind`, dashboard/my-artists `isOnboarding` template bindings). The legacy
- * `onboardingStep` key is migrated once on construction (see onboarding-storage).
+ * `if.bind`, dashboard/my-artists `isOnboarding` template bindings).
  */
 export class OnboardingService {
 	private readonly logger = resolve(ILogger).scopeTo('OnboardingService')

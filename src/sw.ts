@@ -117,7 +117,7 @@ self.addEventListener('push', (event) => {
 		body: payload.body,
 		icon: '/icons/icon-192x192.png',
 		badge: '/favicon-96x96.png',
-		tag: payload.tag || 'liverty-default',
+		tag: payload.tag || 'default',
 		// Map the passthrough metadata straight into options.data so
 		// notificationclick/close read event.notification.data.{url,notification_id}.
 		data: { url, notification_id: notificationId },

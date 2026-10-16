@@ -8,8 +8,7 @@
  * console ignores an Artist that is no longer represented.
  */
 
-const keyFor = (organizerId: string) =>
-	`liverty:organizer:last-artist:${organizerId}`
+const keyFor = (organizerId: string) => `organizer.lastArtist:${organizerId}`
 
 /** Remember the Artist last opened under the Organizer. */
 export function saveLastArtistId(organizerId: string, artistId: string): void {

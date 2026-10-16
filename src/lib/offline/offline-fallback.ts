@@ -6,7 +6,7 @@
  */
 
 /** Cache Storage bucket holding the last `/config.json` read online. */
-export const OFFLINE_CONFIG_CACHE = 'liverty-config-offline'
+export const OFFLINE_CONFIG_CACHE = 'config-offline'
 
 export interface FallbackDeps {
 	fetchImpl?: typeof fetch

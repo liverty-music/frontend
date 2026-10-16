@@ -30,8 +30,8 @@ export default defineConfig({
 		// This reason replaces a wrong one ("Playwright exposes no way to
 		// synthesise `beforeinstallprompt`") — the spec dispatches the event
 		// itself, and headless Chromium exposes `BeforeInstallPromptEvent`
-		// anyway. The spec is also stale: it seeds `pwa.sessionCount`, a key
-		// `src/constants/storage-keys.ts` now DELETES as deprecated. Do not
+		// anyway. The spec is also stale: it seeds `pwa.sessionCount` and reads
+		// `pwa.installPromptDismissed`, keys no code uses any more. Do not
 		// re-enable it without repairing it first; see
 		// docs/ci-coverage-gaps.md.
 		//

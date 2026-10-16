@@ -590,7 +590,7 @@
 		},
 		"privacy": {
 			"title": "Privacy Policy",
-			"lastUpdated": "June 26, 2026",
+			"lastUpdated": "October 16, 2026",
 			"intro": "pannpers.dev (\"we\" or \"us\") establishes this Privacy Policy (the \"Policy\") regarding the handling of users' personal information in the application \"Liverty Music\" (the \"Service\"), as set out below. We comply with Japan's Act on the Protection of Personal Information (the \"APPI\") and other applicable laws.",
 			"sections": [
 				{
@@ -611,7 +611,9 @@
 						"- Artists you follow",
 						"- Language preference",
 						"- Push notification subscription information and device token",
-						"- Usage analytics data (interaction events; we use cookies and localStorage)"
+						"- Usage analytics data (interaction events; we use cookies and localStorage)",
+						"- Purchase information (orders, tickets, the full name and phone number given for identity verification, and payment reference numbers)",
+						"- Purchase route (the referral code in the referral link you came from)"
 					]
 				},
 				{
@@ -622,7 +624,9 @@
 						"- Improving the Service through usage analysis",
 						"- Measuring advertising effectiveness",
 						"- Delivering push notifications",
-						"- Identifying the account and providing related features (including the generation and management of the wallet address)"
+						"- Identifying the account and providing related features (including the generation and management of the wallet address)",
+						"- Issuing tickets, checking the buyer's identity at entry, and handling refunds, using the purchase information",
+						"- Measuring which referral links led to purchases, and reporting the number of purchases per referral code to the organizer of the event"
 					]
 				},
 				{

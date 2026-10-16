@@ -48,11 +48,7 @@ import {
 	loadAppConfig,
 	validateEnvironmentMatchesHost,
 } from './config/app-config'
-import {
-	migrateStorageKeys,
-	StorageKeys,
-	trackSessionForPrompts,
-} from './constants/storage-keys'
+import { StorageKeys, trackSessionForPrompts } from './constants/storage-keys'
 import { AmbientGlowCustomAttribute } from './custom-attributes/ambient-glow'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
@@ -150,9 +146,6 @@ async function bootstrap(): Promise<void> {
 
 	// Initialize OpenTelemetry with the runtime-resolved API base URL.
 	initOtel(config.apiBaseUrl)
-
-	// Migrate legacy localStorage keys (safe to call multiple times)
-	migrateStorageKeys()
 
 	// Track session count for notification prompt deferral logic
 	trackSessionForPrompts()

@@ -87,6 +87,15 @@
 			justify-content: flex-end;
 		}
 
+		.referrals-title {
+			font: var(--md-type-title-medium);
+			color: var(--md-color-on-surface);
+		}
+
+		.referrals-note {
+			color: var(--md-color-on-surface-variant);
+		}
+
 		.message {
 			display: grid;
 			gap: var(--space-xs);

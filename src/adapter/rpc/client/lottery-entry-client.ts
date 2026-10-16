@@ -34,16 +34,23 @@ export class LotteryEntryRpcClient {
 	/**
 	 * Starts a Draft entry for `count` tickets of the TicketType, or returns the
 	 * fan's Draft when the count is the same. A Draft with another count is
-	 * withdrawn and replaced.
+	 * withdrawn and replaced. `referralCode` is the code of the referral link
+	 * the fan came from, if any; the server records it while the entry is a
+	 * Draft.
 	 */
 	public async start(
 		ticketTypeId: string,
 		count: number,
+		referralCode?: string,
 		signal?: AbortSignal,
 	): Promise<LotteryEntry> {
 		this.logger.info('Starting lottery entry', { ticketTypeId, count })
 		const resp = await this.client.start(
-			{ ticketTypeId: { value: ticketTypeId }, ticketCount: count },
+			{
+				ticketTypeId: { value: ticketTypeId },
+				ticketCount: count,
+				referralCode: referralCode ? { value: referralCode } : undefined,
+			},
 			{ signal },
 		)
 		if (!resp.lotteryEntry) throw new Error('Start returned no lottery entry')

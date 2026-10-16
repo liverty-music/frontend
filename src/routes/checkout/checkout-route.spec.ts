@@ -233,6 +233,7 @@ describe('CheckoutRoute', () => {
 			expect(mockCheckout.start).toHaveBeenCalledWith(
 				'type-1',
 				2,
+				undefined,
 				expect.anything(),
 			)
 			expect(sut.step).toBe('personal-details')
@@ -243,7 +244,7 @@ describe('CheckoutRoute', () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Fan reloads mid-checkout"
 			vi.useFakeTimers({ toFake: ['Date'] })
 			vi.setSystemTime(jst(5, 18, 5))
-			localStorage.setItem(`liverty:checkout:${EVENT_ID}`, 'res-1')
+			localStorage.setItem(`checkout:${EVENT_ID}`, 'res-1')
 			mockCheckout.get.mockResolvedValue(
 				held({ holdExpireTime: jst(5, 18, 15) }),
 			)
@@ -565,7 +566,7 @@ describe('CheckoutRoute', () => {
 				}),
 			).toContain('2枚')
 			expect(sut.yen(sut.total)).toBe('6,000')
-			expect(localStorage.getItem(`liverty:checkout:${EVENT_ID}`)).toBeNull()
+			expect(localStorage.getItem(`checkout:${EVENT_ID}`)).toBeNull()
 			expect(sut.canAllowNotifications).toBe(true)
 		})
 
@@ -617,12 +618,12 @@ describe('CheckoutRoute', () => {
 			)
 			mockCheckout.get.mockResolvedValue(held({ status: 'released' }))
 			const sut = await toConfirm()
-			localStorage.setItem(`liverty:checkout:${EVENT_ID}`, 'res-9')
+			localStorage.setItem(`checkout:${EVENT_ID}`, 'res-9')
 
 			await sut.placeOrder()
 
 			expect(sut.outcome).toBe('replaced')
-			expect(localStorage.getItem(`liverty:checkout:${EVENT_ID}`)).toBe('res-9')
+			expect(localStorage.getItem(`checkout:${EVENT_ID}`)).toBe('res-9')
 		})
 
 		it('asks to finish the card authentication while the checkout is still held', async () => {
@@ -669,6 +670,7 @@ describe('CheckoutRoute', () => {
 			expect(mockCheckout.start).toHaveBeenCalledWith(
 				'type-1',
 				1,
+				undefined,
 				expect.anything(),
 			)
 		})
@@ -682,6 +684,82 @@ describe('CheckoutRoute', () => {
 				fullName: '山田 花子',
 				phoneNumber: '+819012345678',
 			})
+		})
+	})
+
+	describe('referral code', () => {
+		const DAY = 24 * 60 * 60 * 1000
+
+		/** Keep a code the way the Event page does, `daysAgo` days before now. */
+		function keptCode(code: string, seriesId: string, daysAgo: number): void {
+			localStorage.setItem(
+				'referral',
+				JSON.stringify({
+					code,
+					seriesId,
+					expiresAt: Date.now() - daysAgo * DAY + 7 * DAY,
+				}),
+			)
+		}
+
+		it('sends the code kept for the same Series three days ago', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Purchase three days after the link"
+			keptCode('member-a', 's1', 3)
+			await holdTwo()
+
+			expect(mockCheckout.start).toHaveBeenCalledWith(
+				'type-1',
+				2,
+				'member-a',
+				expect.anything(),
+			)
+		})
+
+		it('sends no code once it has expired', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Code expired"
+			keptCode('member-a', 's1', 8)
+			await holdTwo()
+
+			expect(mockCheckout.start).toHaveBeenCalledWith(
+				'type-1',
+				2,
+				undefined,
+				expect.anything(),
+			)
+		})
+
+		it('sends no code kept for another Series', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Another Series"
+			keptCode('member-a', 's-other', 1)
+			await holdTwo()
+
+			expect(mockCheckout.start).toHaveBeenCalledWith(
+				'type-1',
+				2,
+				undefined,
+				expect.anything(),
+			)
+		})
+
+		it('sends no code when none is kept', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Direct visit"
+			await holdTwo()
+
+			expect(mockCheckout.start).toHaveBeenCalledWith(
+				'type-1',
+				2,
+				undefined,
+				expect.anything(),
+			)
+		})
+
+		it('leaves the kept code on the device after the order is placed', async () => {
+			keptCode('member-a', 's1', 1)
+			const sut = await toConfirm()
+			await sut.placeOrder()
+
+			expect(mockCheckout.confirm).toHaveBeenCalled()
+			expect(localStorage.getItem('referral')).toContain('"member-a"')
 		})
 	})
 })

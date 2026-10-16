@@ -22,11 +22,10 @@
  * Message type posted to window clients when the SW has renewed the browser
  * subscription, asking the client to re-register it with the backend.
  */
-export const PUSH_SUBSCRIPTION_CHANGED_MESSAGE =
-	'liverty:push:subscription-changed'
+export const PUSH_SUBSCRIPTION_CHANGED_MESSAGE = 'push.subscriptionChanged'
 
 /** Named Cache Storage bucket holding the cache-first `/config.json` copy. */
-const CONFIG_CACHE_NAME = 'liverty-runtime-config'
+const CONFIG_CACHE_NAME = 'runtime-config'
 const CONFIG_URL = '/config.json'
 
 /**

@@ -23,6 +23,7 @@ import {
 	type SanitizedProps,
 	sanitizeEventProps,
 } from './sensitive-property-filter'
+import { stripOwnUrlQuery } from './strip-own-url-query'
 
 /**
  * Public surface for the typed PostHog wrapper. Every consumer (route VMs,
@@ -360,6 +361,11 @@ export class AnalyticsService implements IAnalyticsService {
 				// `sessionReplay` consent value is still tracked so the toggle
 				// reflects the user's intent for when replay ships.
 				disable_session_recording: true,
+				// No address on the app's own origin leaves the device with its
+				// query or fragment: a referral code (`?ref=`) or a later link
+				// value stays on the platform (OpenSpec `referral-attribution`,
+				// design D11).
+				before_send: (event) => stripOwnUrlQuery(event, window.location.origin),
 				loaded: () => {
 					this.logger.debug('PostHog SDK loaded')
 				},

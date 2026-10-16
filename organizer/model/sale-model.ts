@@ -4,7 +4,11 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_sale_pb.js'
 import { TicketTypeState } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_type_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
-import type { EventTicketSales } from '../services/ticket-sale-client'
+import type {
+	EventTicketSales,
+	ReferralCodeStats,
+} from '../services/ticket-sale-client'
+import type { DataColumn, DataRow } from '../ui/data-list/data-list'
 import type { StatusTone } from '../ui/status-badge/status-badge'
 
 export { VerificationRequirement }
@@ -191,3 +195,40 @@ export const VERIFICATION_OPTIONS: ReadonlyArray<{
 		labelKey: 'sale.verification.jpkiOnly',
 	},
 ]
+
+/** The columns of the Sales tab's purchases per referral code. */
+export const REFERRAL_COLUMNS: DataColumn[] = [
+	{ key: 'code', labelKey: 'sale.referral.code', primary: true },
+	{ key: 'orders', labelKey: 'sale.referral.orders' },
+	{ key: 'tickets', labelKey: 'sale.referral.tickets' },
+	{ key: 'amount', labelKey: 'sale.referral.amount', kind: 'yen' },
+]
+
+/**
+ * The event's Paid Orders per referral code as the Sales tab lists them: the
+ * code as given, the number of Orders (件), their tickets (枚) and the amount
+ * paid in yen 税込, in the order returned (most Orders first), with the
+ * direct group (no code) moved last.
+ */
+export function referralRowsOf(stats: readonly ReferralCodeStats[]): DataRow[] {
+	const coded = stats.filter((s) => s.code?.value)
+	const direct = stats.filter((s) => !s.code?.value)
+	return [...coded, ...direct].map((s) => {
+		const code = s.code?.value
+		return {
+			id: code ?? '',
+			cells: {
+				code: code ?? { key: 'sale.referral.direct' },
+				orders: {
+					key: 'sale.referral.orderCount',
+					params: { count: s.orderCount },
+				},
+				tickets: {
+					key: 'sale.referral.ticketCount',
+					params: { count: s.ticketCount },
+				},
+				amount: s.amount,
+			},
+		}
+	})
+}

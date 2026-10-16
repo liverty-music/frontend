@@ -77,9 +77,10 @@ with and without `--enable-features=WebAppInstallation`, `true` in all three
 configurations.
 
 **The spec had also rotted while unrun.** It seeds `pwa.sessionCount` and
-asserts on `pwa.installPromptDismissed`. Both keys are *deleted* by
-`src/constants/storage-keys.ts` as deprecated — session counting moved to
-`ui.sessionCount` — and the session-count gate the spec is written around no
+asserts on `pwa.installPromptDismissed`. No code reads or writes either key
+any more (session counting moved to `ui.sessionCount`; the one-time cleanup
+that deleted them was itself removed with the storage-name change of OpenSpec
+`referral-attribution`), and the session-count gate the spec is written around no
 longer exists in `PwaInstallService` at all. Run today it is 3 passed, 3
 failed, and the three failures are the spec describing a version of the app
 that has not existed for some time.

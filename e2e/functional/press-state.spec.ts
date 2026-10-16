@@ -73,7 +73,7 @@ async function mockRpc(page: Page, withConcert: boolean): Promise<void> {
 
 async function seedGuest(page: Page, followed: boolean): Promise<void> {
 	await page.addInitScript((f) => {
-		localStorage.setItem('onboardingStep', 'completed')
+		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(

@@ -290,7 +290,7 @@ test.describe('Timetable tab (guest)', () => {
 			}),
 		)
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'completed')
+			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(

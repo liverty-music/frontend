@@ -14,9 +14,7 @@ import { expect, type Page, test } from '../support/test'
  *   NOT by an onboarding step value. The auth hook is a soft gate (auth-only),
  *   so every application route is reachable at any time.
  * - "Still onboarding" = `onboardingComplete` absent/false. "Completed" =
- *   `onboardingComplete === 'true'`. The legacy `onboardingStep` key is migrated
- *   once on load (`'completed'`/`'7'` → complete; anything else → still
- *   onboarding) but new tests seed the new key directly.
+ *   `onboardingComplete === 'true'`.
  * - The discovery → dashboard coach mark has no auto-fade: tapping the target
  *   navigates (delegates to the target's native click), while tapping the dimmed
  *   area outside the target light-dismisses it (tap-outside-to-dismiss). It also
@@ -308,7 +306,6 @@ test.describe('Onboarding flow (single-flag model)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(() => {
 			localStorage.removeItem('onboardingComplete')
-			localStorage.removeItem('onboardingStep')
 			localStorage.removeItem('onboarding.celebrationShown')
 			localStorage.removeItem('guest.home')
 			localStorage.removeItem('guest.followedArtists')
@@ -766,7 +763,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 			localStorage.setItem('guest.home', 'JP-13')
 			// Suppress the my-artists help sheet's first-visit auto-open so it
 			// doesn't sit over the hype table (this test is about hype, not help).
-			localStorage.setItem('liverty:onboarding:helpSeen:my-artists', '1')
+			localStorage.setItem('onboarding.helpSeen:my-artists', '1')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([
@@ -859,9 +856,9 @@ test.describe('Soft-gate roam (Discovery → Dashboard → My Artists)', () => {
 			// Suppress the discovery / my-artists help-sheet auto-open so it never
 			// intercepts the nav-tab clicks this roam test performs (page-help is
 			// covered by its own unit/visual tests).
-			localStorage.setItem('liverty:onboarding:helpSeen:discovery', '1')
-			localStorage.setItem('liverty:onboarding:helpSeen:dashboard', '1')
-			localStorage.setItem('liverty:onboarding:helpSeen:my-artists', '1')
+			localStorage.setItem('onboarding.helpSeen:discovery', '1')
+			localStorage.setItem('onboarding.helpSeen:dashboard', '1')
+			localStorage.setItem('onboarding.helpSeen:my-artists', '1')
 			localStorage.setItem(
 				'guest.followedArtists',
 				JSON.stringify([

@@ -337,16 +337,15 @@ test.describe
 	.skip('Analytics opt-out model (guest, mocked PostHog)', () => {
 		test.beforeEach(async ({ page }) => {
 			// Start every test from a clean opt-out posture + unseen notice.
-			// Clear any persisted opt-out blob (v2 + legacy v1) and the notice flag
+			// Clear any persisted opt-out blob and the notice flag
 			// ONCE, so each test starts from the default-on posture with an unseen
 			// notice. Guarded by a session flag so it runs only on the FIRST page
 			// load of the test — a per-load wipe would erase an opt-out the test
 			// itself just made and is meant to survive a reload.
 			await page.addInitScript(() => {
 				if (!sessionStorage.getItem('__e2e_consent_reset')) {
-					localStorage.removeItem('liverty:consent:state:v2')
-					localStorage.removeItem('liverty:consent:state:v1')
-					localStorage.removeItem('liverty:analytics:noticeSeen')
+					localStorage.removeItem('consent.state')
+					localStorage.removeItem('analytics.noticeSeen')
 					localStorage.removeItem('onboardingComplete')
 					sessionStorage.setItem('__e2e_consent_reset', '1')
 				}
@@ -376,7 +375,7 @@ test.describe
 			// still works (assertion 2 covers the positive capture; here we assert the
 			// notice itself did not flip analytics off).
 			const consentBlob = await page.evaluate(() =>
-				localStorage.getItem('liverty:consent:state:v2'),
+				localStorage.getItem('consent.state'),
 			)
 			expect(consentBlob).toBeNull()
 

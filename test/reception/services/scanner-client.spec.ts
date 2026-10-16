@@ -4,7 +4,7 @@ import {
 	ScannerService,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/scanner/v1/scanner_service_pb.js'
 import { toBinary } from '@bufbuild/protobuf'
-import { createRouterTransport } from '@connectrpc/connect'
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect'
 import { DI, ILogger, Registration } from 'aurelia'
 import { IDBFactory } from 'fake-indexeddb'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -216,5 +216,42 @@ describe('ScannerClient', () => {
 		await build(store).open(TOKEN)
 		expect(put).not.toHaveBeenCalled()
 		expect(sent).toHaveLength(1)
+	})
+
+	it('opens a bound Scanner as in use on another device when its key database is missing', async () => {
+		// The key database is named `scanner` (OpenSpec `referral-attribution`,
+		// design D9). A device that held its key under an earlier name finds this
+		// database empty, makes a new key, and the Scanner bound to the old key
+		// refuses it; the reception page shows that as in use on another device.
+		let bound: Uint8Array | null = null
+		vi.mocked(createScannerTransport).mockReturnValue(
+			createRouterTransport(({ service }) => {
+				service(ScannerService, {
+					open: (req) => {
+						const key = req.publicKey?.value ?? new Uint8Array()
+						if (bound === null) bound = key
+						else if (base64urlNoPad(bound) !== base64urlNoPad(key)) {
+							throw new ConnectError('bound', Code.FailedPrecondition)
+						}
+						return { scanner: { number: { value: 1 } } }
+					},
+					admit: () => ({ admittedTicketCount: 1 }),
+				})
+			}),
+		)
+		const before = new IDBFactory()
+		await build(new IndexedDbScannerKeyStore(before)).open(TOKEN)
+		expect((await before.databases()).map((d) => d.name)).toEqual(['scanner'])
+
+		const renamed = new IDBFactory()
+		const err = await build(new IndexedDbScannerKeyStore(renamed))
+			.open(TOKEN)
+			.then(
+				() => null,
+				(e: unknown) => e,
+			)
+
+		expect(err).toBeInstanceOf(ConnectError)
+		expect((err as ConnectError).code).toBe(Code.FailedPrecondition)
 	})
 })

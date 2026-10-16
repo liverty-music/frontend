@@ -1,6 +1,8 @@
 import { ILogger, resolve } from 'aurelia'
 import { eventStart, isPublished, paths } from '../../model/concert-model'
 import {
+	REFERRAL_COLUMNS,
+	referralRowsOf,
 	type SaleView,
 	saleViewsOf,
 	VERIFICATION_OPTIONS,
@@ -15,6 +17,7 @@ import { IConsoleContext } from '../../shell/console-context'
 import { IPageProgress } from '../../shell/page-progress'
 import type { FieldOption } from '../../ui/console-field/console-field'
 import { ISnackbar } from '../../ui/console-snackbar/snackbar'
+import type { DataRow } from '../../ui/data-list/data-list'
 import { IEventPage } from '../event-page'
 
 export type SalesPrerequisite =
@@ -29,6 +32,7 @@ export const REFRESH_MS = 60_000
  * The event's Sales tab: why no sale can start yet, or the event's sales in
  * start order with their state, and the actions to start a lottery or a
  * first-come sale, edit a sale and change its verification requirement.
+ * Below the sales, the event's purchases per referral code (read-only).
  */
 export class SalesTab {
 	public readonly page = resolve(IEventPage)
@@ -41,6 +45,9 @@ export class SalesTab {
 
 	public state: 'loading' | 'ready' | 'error' = 'loading'
 	public sales: SaleView[] = []
+	/** The event's Paid Orders per referral code, the direct group last. */
+	public referralRows: DataRow[] = []
+	public readonly referralColumns = REFERRAL_COLUMNS
 	private data: EventTicketSales | null = null
 	private timer: ReturnType<typeof setInterval> | null = null
 	private abort = new AbortController()
@@ -166,5 +173,6 @@ export class SalesTab {
 	private recompute(): void {
 		if (!this.data) return
 		this.sales = saleViewsOf(this.page.eventId, this.data, this.clock.now())
+		this.referralRows = referralRowsOf(this.data.referralCodeStats)
 	}
 }

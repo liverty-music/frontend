@@ -8,7 +8,7 @@ import { tokenOrgIds } from './roles'
  * intended tenant (design D-D). Bounds the org-mismatch recovery to a single
  * attempt so a persistent mismatch fails closed instead of looping. Tab-scoped.
  */
-export const ORG_MISMATCH_FLAG = 'liverty:organizer:org-mismatch-retry'
+export const ORG_MISMATCH_FLAG = 'organizer.orgMismatchRetry'
 
 export function readSessionFlag(key: string): boolean {
 	try {

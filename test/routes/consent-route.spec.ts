@@ -6,7 +6,7 @@ import { createMockRouter } from '../helpers/mock-router'
 
 const { ConsentRoute } = await import('../../src/routes/consent/consent-route')
 
-const NOTICE_SEEN_KEY = 'liverty:analytics:noticeSeen'
+const NOTICE_SEEN_KEY = 'analytics.noticeSeen'
 
 describe('ConsentRoute (transparency notice)', () => {
 	let sut: InstanceType<typeof ConsentRoute>

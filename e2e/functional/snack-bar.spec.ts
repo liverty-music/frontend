@@ -142,7 +142,7 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'completed')
+			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
@@ -228,7 +228,7 @@ test.describe('Toast notification: undo toast on My Artists (5.2)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'completed')
+			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',
@@ -324,7 +324,7 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('onboardingStep', 'completed')
+			localStorage.setItem('onboardingComplete', 'true')
 			localStorage.setItem('guest.home', 'JP-13')
 			localStorage.setItem(
 				'guest.followedArtists',

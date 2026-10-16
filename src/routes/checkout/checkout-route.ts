@@ -14,6 +14,7 @@ import {
 	loadCheckoutId,
 	saveCheckoutId,
 } from '../../adapter/storage/checkout-storage'
+import { referralCodeForSeries } from '../../adapter/storage/referral-storage'
 import type { Checkout } from '../../entities/checkout'
 import { isVerified } from '../../entities/identity-verification'
 import {
@@ -397,6 +398,9 @@ export class CheckoutRoute implements IRouteViewModel {
 			const checkout = await this.checkoutClient.start(
 				this.sale.ticketType.id,
 				this.ticketCount,
+				// The referral link's code counts only for the Series it was
+				// kept for (OpenSpec `referral-attribution`, design D7).
+				referralCodeForSeries(this.event?.seriesId),
 				this.signal,
 			)
 			// A new count means a new hold and a new amount: the card is
