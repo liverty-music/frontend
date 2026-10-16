@@ -5,10 +5,10 @@ import {
 	type BrowserContext,
 	devices,
 	expect,
-	type Frame,
 	type Page,
 	test,
 } from '@playwright/test'
+import { authorizeCard, fillPersonalDetails, holdTickets } from './checkout'
 import { getConcert } from './support'
 
 /**
@@ -51,9 +51,6 @@ import { getConcert } from './support'
 const SALE_EVENT_ID = process.env.E2E_SALE_EVENT_ID ?? ''
 const ORGANIZER_TOKEN = process.env.E2E_ORGANIZER_TOKEN ?? ''
 const SECOND_FAN_STATE = '.auth/storageState.prod.fan2.json'
-
-/** Stripe's test card that authorizes without 3D Secure. */
-const TEST_CARD = { number: '4242424242424242', expiry: '12 / 34', cvc: '123' }
 
 /** The checkout's 15-minute hold, plus a margin for the server's clock. */
 const HOLD_MS = 15 * 60 * 1000
@@ -239,7 +236,9 @@ test.describe('buy tickets first come (signed in)', () => {
 		await expect(summary).toContainText(total)
 		await page.getByTestId('checkout-to-tickets').click()
 		await expect(page).toHaveURL(/\/tickets$/)
-		await expect(page.locator('.tickets-list')).toBeVisible({ timeout: 30_000 })
+		await expect(page.locator('.tickets-list')).toBeVisible({
+			timeout: 30_000,
+		})
 	})
 
 	test('holds, charges and orders once on double taps', async ({
@@ -445,65 +444,4 @@ async function openCheckout(page: Page): Promise<void> {
 	await page.getByTestId('event-buy').click()
 	await expect(page).toHaveURL(new RegExp(`/events/${SALE_EVENT_ID}/checkout$`))
 	await expect(page.getByTestId('checkout-count')).toBeVisible()
-}
-
-async function holdTickets(page: Page, count: number): Promise<void> {
-	await page.getByTestId('checkout-count-select').selectOption(String(count))
-	await page.getByTestId('checkout-hold').click()
-	await expect(page.getByTestId('checkout-personal-details')).toBeVisible()
-	await expect(page.getByTestId('checkout-countdown')).toBeVisible()
-}
-
-/** Keep the prefilled personal details, or fill it in on the first checkout. */
-async function fillPersonalDetails(page: Page): Promise<void> {
-	const name = page.getByTestId('checkout-name')
-	if (!(await name.inputValue())) await name.fill('テスト 太郎')
-	const phone = page.getByTestId('checkout-phone')
-	if (!(await phone.inputValue())) await phone.fill('090-0000-0000')
-	await page.getByTestId('checkout-to-payment').click()
-	// Stripe.js loads on the first card step, which can take a while.
-	await expect(page.getByTestId('checkout-payment')).toBeVisible({
-		timeout: 60_000,
-	})
-}
-
-/** Enter Stripe's test card in the Payment Element and authorize it. */
-async function authorizeCard(page: Page): Promise<void> {
-	const card = await cardFrame(page)
-	await card.locator('input[name="number"]').fill(TEST_CARD.number)
-	await card.locator('input[name="expiry"]').fill(TEST_CARD.expiry)
-	await card.locator('input[name="cvc"]').fill(TEST_CARD.cvc)
-	await page.getByTestId('checkout-authorize-card').click()
-	await expect(page.getByTestId('checkout-confirm')).toBeVisible({
-		timeout: 60_000,
-	})
-}
-
-/**
- * The Payment Element's card frame. Its title is localized, so it is found
- * by the card number input it holds. On a phone the element opens on tabs
- * (card, Google Pay), and the card fields appear once the card tab is chosen.
- */
-async function cardFrame(page: Page): Promise<Frame> {
-	let found: Frame | undefined
-	await expect
-		.poll(
-			async () => {
-				for (const frame of page.frames()) {
-					if ((await frame.locator('input[name="number"]').count()) > 0) {
-						found = frame
-						return true
-					}
-					const cardTab = frame.getByRole('button', { name: /^(カード|Card)$/ })
-					if (await cardTab.isVisible().catch(() => false)) {
-						await cardTab.click()
-					}
-				}
-				return false
-			},
-			{ timeout: 30_000 },
-		)
-		.toBe(true)
-	if (!found) throw new Error('the card frame did not load')
-	return found
 }
