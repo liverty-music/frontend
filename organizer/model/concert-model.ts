@@ -181,6 +181,20 @@ const eventPath = (scope: ArtistScope, series: string, event: string) =>
 	`${concertPath(scope, series)}/events/${segment(event)}`
 
 /**
+ * The router instruction for an in-app path. The router cannot read the root
+ * path `/` as an instruction (AUR3500: it expects a component name after the
+ * slash), so `/`, `/?…` and `/#…` become the empty path, which is the landing,
+ * keeping any query or fragment. Every other path is returned unchanged. Use it
+ * wherever a path is handed to the router (a guard's or `canLoad`'s return
+ * value, `router.load`); an `href` keeps the path itself.
+ */
+export function instructionOf(path: string): string {
+	return path === '/' || path.startsWith('/?') || path.startsWith('/#')
+		? path.slice(1)
+		: path
+}
+
+/**
  * Every console address (design D1), built from the Organizer and, below 公演,
  * the represented Artist. Templates and view-models take their links from
  * here; no other module writes a console path.
