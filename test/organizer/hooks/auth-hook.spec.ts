@@ -145,15 +145,15 @@ describe('OrganizerAuthHook', () => {
 
 		expect(result).toBe(false)
 		expect(mockAuth.signIn).toHaveBeenCalledWith({ forceLogin: true })
-		expect(
-			window.sessionStorage.getItem('liverty:organizer:org-mismatch-retry'),
-		).toBe('1')
+		expect(window.sessionStorage.getItem('organizer.orgMismatchRetry')).toBe(
+			'1',
+		)
 	})
 
 	// @spec stories/sign-in-as-organizer "A hint for another org grants nothing"
 	// @spec components/infrastructure/organizer/web/global/hosted-login "Org is resolved by org-pinned entry for every operator"
 	it('denies (no second re-auth) if still the wrong org after a retry', async () => {
-		window.sessionStorage.setItem('liverty:organizer:org-mismatch-retry', '1')
+		window.sessionStorage.setItem('organizer.orgMismatchRetry', '1')
 		build({ isAuthenticated: true, user: userOwnerInOrg('some-other-org') })
 		const next = makeRouteNode({})
 

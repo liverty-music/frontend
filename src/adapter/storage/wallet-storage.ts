@@ -35,7 +35,7 @@ export interface IWalletStorage {
 	clear(): Promise<void>
 }
 
-const DB_NAME = 'liverty-wallet'
+const DB_NAME = 'wallet'
 const DB_VERSION = 1
 const KEY_STORE = 'device-key'
 const SNAPSHOT_STORE = 'ticket-snapshot'

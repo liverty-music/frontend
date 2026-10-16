@@ -16,10 +16,12 @@ export interface IScannerKeyStore {
 }
 
 /**
- * Kept from before the Scanner rename (rename-reception-to-scanner, design
- * D5): renaming the database would orphan the key of every bound Scanner.
+ * Renamed when storage names lost their product prefix (OpenSpec
+ * `referral-attribution`, design D9). A device that held a key under the old
+ * name starts empty: its bound Scanner reads as in use on another device until
+ * it is reissued from the event's Reception tab.
  */
-const DB_NAME = 'liverty-reception'
+const DB_NAME = 'scanner'
 const DB_VERSION = 1
 const KEY_STORE = 'device-key'
 

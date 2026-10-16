@@ -17,7 +17,7 @@ import { ILogger, resolve } from 'aurelia'
  * onboarding flow. The dismiss action simply records that the notice was
  * seen (so it is not re-surfaced) and navigates to the dashboard.
  */
-const NOTICE_SEEN_KEY = 'liverty:analytics:noticeSeen'
+const NOTICE_SEEN_KEY = 'analytics.noticeSeen'
 
 export class ConsentRoute implements IRouteViewModel {
 	private readonly router = resolve(IRouter)

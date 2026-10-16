@@ -62,12 +62,12 @@ export interface NotificationInteraction {
 }
 
 /** Cache name holding the single identity-snapshot entry. */
-const IDENTITY_CACHE = 'liverty-analytics-identity-v1'
+const IDENTITY_CACHE = 'analytics-identity'
 /**
  * Synthetic request URL under which the snapshot Response is stored. The
- * `__liverty__` prefix keeps it clear this is an internal, non-navigable key.
+ * `__analytics__` prefix keeps it clear this is an internal, non-navigable key.
  */
-const IDENTITY_KEY = '/__liverty__/analytics-identity'
+const IDENTITY_KEY = '/__analytics__/identity'
 
 /** Background Sync tag used to retry a failed interaction send when offline. */
 export const NOTIFICATION_SYNC_TAG = 'flush-notification-analytics'
@@ -110,7 +110,7 @@ export function resolvePushMetadata(payload: PushPayload): {
 
 // -- IndexedDB offline stash --------------------------------------------------
 
-const STASH_DB = 'liverty-analytics'
+const STASH_DB = 'analytics'
 const STASH_STORE = 'notification-interactions'
 /**
  * Upper bound on stashed interactions. When full, the oldest entry is dropped

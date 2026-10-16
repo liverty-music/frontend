@@ -20,7 +20,7 @@
  * without completing) is harmless — the backend session expires independently.
  */
 
-const LS_KEY = 'liverty:verify:sessionId'
+const LS_KEY = 'verify.sessionId'
 
 /**
  * Persist the Stamp session id before redirecting to the PocketSign app.

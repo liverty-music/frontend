@@ -9,6 +9,7 @@ import { ILogger, resolve } from 'aurelia'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
 import { ILotteryEntryRpcClient } from '../../adapter/rpc/client/lottery-entry-client'
 import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
+import { referralCodeForSeries } from '../../adapter/storage/referral-storage'
 import { isVerified } from '../../entities/identity-verification'
 import type { LotteryEntry } from '../../entities/lottery-entry'
 import { isWindowOpen, type TicketSale } from '../../entities/ticket-sale'
@@ -282,6 +283,9 @@ export class LotteryEntryRoute implements IRouteViewModel {
 			const entry = await this.entryClient.start(
 				this.sale.ticketType.id,
 				this.ticketCount,
+				// The referral link's code counts only for the Series it was
+				// kept for (OpenSpec `referral-attribution`, design D7).
+				referralCodeForSeries(this.event?.seriesId),
 				this.signal,
 			)
 			// Another count replaces the Draft: its card is authorized anew.

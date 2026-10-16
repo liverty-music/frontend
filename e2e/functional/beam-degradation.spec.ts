@@ -99,10 +99,10 @@ test('beams are absent without typed attr(), and nothing else changes', async ({
 	page,
 }) => {
 	await page.addInitScript(() => {
-		localStorage.setItem('onboardingStep', 'completed')
+		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
-		localStorage.setItem('liverty:beams:enabled', 'false')
+		localStorage.setItem('beams.enabled', 'false')
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([
@@ -137,9 +137,7 @@ test('beams are absent without typed attr(), and nothing else changes', async ({
 	await expect(beamItem).toBeVisible()
 	await beamItem.click()
 	await expect
-		.poll(() =>
-			page.evaluate(() => localStorage.getItem('liverty:beams:enabled')),
-		)
+		.poll(() => page.evaluate(() => localStorage.getItem('beams.enabled')))
 		.toBe('true')
 
 	// No beam is drawn: no card declares a timeline, so every beam stays at its

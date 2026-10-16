@@ -103,7 +103,7 @@ describe('ConsoleContext', () => {
 	})
 
 	it('ignores a remembered Artist the Organizer no longer represents', async () => {
-		localStorage.setItem('liverty:organizer:last-artist:org-1', 'gone')
+		localStorage.setItem('organizer.lastArtist:org-1', 'gone')
 		const { context } = build()
 		await context.load()
 		expect(context.artistId).toBe('a-1')

@@ -32,16 +32,23 @@ export class CheckoutRpcClient {
 
 	/**
 	 * Holds `count` tickets of the TicketType for 15 minutes, or resumes the
-	 * fan's holding checkout when the count is the same.
+	 * fan's holding checkout when the count is the same. `referralCode` is the
+	 * code of the referral link the fan came from, if any; the server records
+	 * it while the checkout is Held.
 	 */
 	public async start(
 		ticketTypeId: string,
 		count: number,
+		referralCode?: string,
 		signal?: AbortSignal,
 	): Promise<Checkout> {
 		this.logger.info('Starting checkout', { ticketTypeId, count })
 		const resp = await this.client.start(
-			{ ticketTypeId: { value: ticketTypeId }, ticketCount: count },
+			{
+				ticketTypeId: { value: ticketTypeId },
+				ticketCount: count,
+				referralCode: referralCode ? { value: referralCode } : undefined,
+			},
 			{ signal },
 		)
 		if (!resp.checkout) throw new Error('Start returned no checkout')

@@ -156,7 +156,7 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: true })
 
-			localStorage.removeItem('liverty:postSignup:shown')
+			localStorage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			// Assert email + locale + home are forwarded. Passing the
@@ -171,7 +171,7 @@ describe('AuthCallbackRoute', () => {
 			)
 			expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
-			expect(localStorage.getItem('liverty:postSignup:shown')).toBe('pending')
+			expect(localStorage.getItem('postSignup.shown')).toBe('pending')
 		})
 
 		describe('sign-up started on an Event page', () => {
@@ -193,7 +193,7 @@ describe('AuthCallbackRoute', () => {
 					.fn()
 					.mockResolvedValue({ user: mockUserService.current, created: true })
 
-				localStorage.removeItem('liverty:postSignup:shown')
+				localStorage.removeItem('postSignup.shown')
 				const result = await sut.canLoad({}, {} as RouteNode)
 
 				expect(result).toBe('/events/ev-1')
@@ -203,7 +203,7 @@ describe('AuthCallbackRoute', () => {
 				)
 				// Without the flag the Dashboard shows neither the celebration
 				// overlay nor the PostSignupDialog later.
-				expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
+				expect(localStorage.getItem('postSignup.shown')).toBeNull()
 			})
 
 			it('ignores a return path that leaves the app', async () => {
@@ -242,7 +242,7 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: true })
 
-			localStorage.removeItem('liverty:postSignup:shown')
+			localStorage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
@@ -251,7 +251,7 @@ describe('AuthCallbackRoute', () => {
 			expect(mockEa.publish).toHaveBeenCalledWith(
 				new GuestMigrationRequested('u1'),
 			)
-			expect(localStorage.getItem('liverty:postSignup:shown')).toBe('pending')
+			expect(localStorage.getItem('postSignup.shown')).toBe('pending')
 			expect(result).toBe('/dashboard')
 		})
 
@@ -269,7 +269,7 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: false })
 
-			localStorage.removeItem('liverty:postSignup:shown')
+			localStorage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
@@ -280,7 +280,7 @@ describe('AuthCallbackRoute', () => {
 			)
 			// But no new-account dialog (Correction 2).
 			expect(result).toBe('/dashboard')
-			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
+			expect(localStorage.getItem('postSignup.shown')).toBeNull()
 		})
 
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Sign-in with an empty local cache does not trigger the dialog"
@@ -297,11 +297,11 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: true })
 
-			localStorage.removeItem('liverty:postSignup:shown')
+			localStorage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
-			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
+			expect(localStorage.getItem('postSignup.shown')).toBeNull()
 			expect(result).toBe('/dashboard')
 		})
 
@@ -318,10 +318,10 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: true })
 
-			localStorage.removeItem('liverty:postSignup:shown')
+			localStorage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(localStorage.getItem('liverty:postSignup:shown')).toBeNull()
+			expect(localStorage.getItem('postSignup.shown')).toBeNull()
 			expect(result).toBe('/dashboard')
 		})
 

@@ -6,7 +6,7 @@ import {
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResolvedConcert } from '../../adapter/rpc/client/concert-client'
 import type { LotteryEntry } from '../../entities/lottery-entry'
 import type { TicketSale } from '../../entities/ticket-sale'
@@ -245,6 +245,7 @@ describe('LotteryEntryRoute', () => {
 			expect(mockEntry.start).toHaveBeenCalledWith(
 				TYPE_ID,
 				2,
+				undefined,
 				expect.anything(),
 			)
 			expect(sut.step).toBe('personal-details')
@@ -461,6 +462,56 @@ describe('LotteryEntryRoute', () => {
 			mockIdentityVerifications.get.mockRejectedValue(new Error('UNAVAILABLE'))
 			const sut = await open()
 			expect(sut.step).toBe('count')
+		})
+	})
+
+	describe('referral code', () => {
+		const DAY = 24 * 60 * 60 * 1000
+
+		/** Keep a code the way the Event page does, `daysAgo` days before now. */
+		function keptCode(code: string, seriesId: string, daysAgo: number): void {
+			localStorage.setItem(
+				'referral',
+				JSON.stringify({
+					code,
+					seriesId,
+					expiresAt: Date.now() - daysAgo * DAY + 7 * DAY,
+				}),
+			)
+		}
+
+		afterEach(() => {
+			localStorage.removeItem('referral')
+		})
+
+		function startedWith(): unknown {
+			return mockEntry.start.mock.calls.at(-1)?.[2]
+		}
+
+		it('sends the code kept for the same Series yesterday', async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-entry "Entry from a referral link"
+			keptCode('member-a', 's1', 1)
+			await toPersonalDetails()
+
+			expect(startedWith()).toBe('member-a')
+		})
+
+		it('sends no code kept for another Series', async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-entry "Another Series"
+			keptCode('member-a', 's-other', 1)
+			await toPersonalDetails()
+
+			expect(mockEntry.start).toHaveBeenCalledOnce()
+			expect(startedWith()).toBeUndefined()
+		})
+
+		it('sends no code once it has expired', async () => {
+			// @spec components/infrastructure/fan/web/route/lottery-entry "Code expired"
+			keptCode('member-a', 's1', 8)
+			await toPersonalDetails()
+
+			expect(mockEntry.start).toHaveBeenCalledOnce()
+			expect(startedWith()).toBeUndefined()
 		})
 	})
 })

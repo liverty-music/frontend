@@ -259,6 +259,26 @@ describe('TicketWallet', () => {
 		await expect(wallet.signCode(content)).rejects.toThrow()
 	})
 
+	it('offers this device for entry without registering when its wallet database is missing', async () => {
+		// The key database is named `wallet` (OpenSpec `referral-attribution`,
+		// design D9). A phone that held its key under an earlier name finds this
+		// database empty while the server keeps the old key: the tickets screen
+		// offers この端末で入場する and registers nothing until the fan confirms.
+		serverKey = new Uint8Array(65).fill(7)
+		const factory = new IDBFactory()
+		const { wallet } = build(new IndexedDbWalletStorage(factory))
+
+		expect(await wallet.checkDevice(true)).toEqual({
+			readiness: 'other-device',
+			replacedOtherKey: false,
+		})
+		expect(registerCalls).toBe(0)
+		expect((await factory.databases()).map((d) => d.name)).toEqual(['wallet'])
+
+		expect((await wallet.useThisDevice()).readiness).toBe('ready')
+		expect(registerCalls).toBe(1)
+	})
+
 	it('stops offering the code offline once another device took over', async () => {
 		const storage = new IndexedDbWalletStorage(new IDBFactory())
 		const { wallet } = build(storage)

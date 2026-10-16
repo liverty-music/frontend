@@ -1056,7 +1056,7 @@ describe('DashboardRoute', () => {
 		it('shows the post-signup full celebration (confetti) then the dialog', async () => {
 			mockAuth.isAuthenticated = true
 			mockStorage.getItem.mockImplementation((k: string) =>
-				k === 'liverty:postSignup:shown' ? 'pending' : null,
+				k === 'postSignup.shown' ? 'pending' : null,
 			)
 			sut = new DashboardRoute()
 			sut.needsRegion = false
@@ -1065,9 +1065,7 @@ describe('DashboardRoute', () => {
 
 			expect(sut.showCelebration).toBe(true)
 			expect(sut.celebrationConfetti).toBe(true)
-			expect(mockStorage.removeItem).toHaveBeenCalledWith(
-				'liverty:postSignup:shown',
-			)
+			expect(mockStorage.removeItem).toHaveBeenCalledWith('postSignup.shown')
 			expect(sut.showPostSignupDialog).toBe(false)
 
 			sut.onCelebrationDismissed()
@@ -1089,7 +1087,7 @@ describe('DashboardRoute', () => {
 		it('does not celebrate over a still-loading timetable (data not yet arrived)', () => {
 			mockAuth.isAuthenticated = true
 			mockStorage.getItem.mockImplementation((k: string) =>
-				k === 'liverty:postSignup:shown' ? 'pending' : null,
+				k === 'postSignup.shown' ? 'pending' : null,
 			)
 			// Fetch never resolves → timetableLoaded never flips.
 			mockConcertService.listFollowed.mockReturnValueOnce(new Promise(() => {}))

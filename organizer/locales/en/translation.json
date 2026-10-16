@@ -188,6 +188,18 @@
 			"editConcert": "Edit the concert",
 			"businessDetails": "Business details are missing",
 			"businessDetailsBody": "Liverty Music enters your business details (the commercial transactions disclosure) during vetting. Contact your Liverty Music representative to add or change them. Sales cannot start until they are complete."
+		},
+		"referral": {
+			"title": "Purchases per referral code",
+			"note": "Only paid purchases are counted. Refunded purchases are not counted. A lottery entry is counted once it won and was charged.",
+			"empty": "No purchases yet",
+			"code": "Referral code",
+			"orders": "Orders",
+			"tickets": "Tickets",
+			"amount": "Amount (incl. tax)",
+			"direct": "Direct (no code)",
+			"orderCount": "{{count, number}} orders",
+			"ticketCount": "{{count, number}} tickets"
 		}
 	},
 	"concert": {

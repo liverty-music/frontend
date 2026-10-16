@@ -299,10 +299,9 @@ test.describe('the sales list', () => {
 		)
 
 		// One card per sale, each headed by its name right under the page title.
-		await expect(tab(page).getByRole('heading', { level: 2 })).toHaveText([
-			'ファンクラブ先行',
-			'一般発売',
-		])
+		await expect(
+			tab(page).locator('.sales').getByRole('heading', { level: 2 }),
+		).toHaveText(['ファンクラブ先行', '一般発売'])
 		await expect(sale(page, 'sale-fc').locator('status-badge')).toHaveText(
 			'抽選済み',
 		)
@@ -324,6 +323,88 @@ test.describe('the sales list', () => {
 			)
 		})
 		expect(above).toBe(true)
+	})
+})
+
+test.describe('purchases per referral code', () => {
+	const referrals = (page: Page) => tab(page).getByTestId('referrals')
+	const ON_SALE = firstCome({
+		start: jst('2026-10-01', '10:00'),
+		typeState: 'ON_SALE',
+		sold: 57,
+		held: 0,
+	})
+
+	function withReferrals(stats: Record<string, unknown>[]): RpcMocks {
+		const mocks = rpc([ON_SALE])
+		mocks['TicketSaleService/ListByEvent'] = {
+			...(salesOf('e-1103', [ON_SALE]) as Record<string, unknown>),
+			referralCodeStats: stats,
+		}
+		return mocks
+	}
+
+	test(`@spec ${SPEC} "Two codes and direct purchases"`, async ({ page }) => {
+		// The server lists the direct group among the codes by Order count;
+		// the tab moves it last.
+		await open(
+			page,
+			withReferrals([
+				{ orderCount: 40, ticketCount: 71, amount: '461500' },
+				{
+					code: { value: 'member-a' },
+					orderCount: 12,
+					ticketCount: 21,
+					amount: '136500',
+				},
+				{
+					code: { value: 'member-b' },
+					orderCount: 5,
+					ticketCount: 8,
+					amount: '52000',
+				},
+			]),
+		)
+
+		const section = referrals(page)
+		await expect(
+			section.getByRole('heading', { level: 2, name: '紹介コード別の購入' }),
+		).toBeVisible()
+		await expect(section).toContainText('支払い済みの購入だけを数えます。')
+		await expect(section).toContainText('返金された購入は数えません。')
+		await expect(section).toContainText(
+			'抽選は、当選して決済されたときに数えます。',
+		)
+		const table = section.getByRole('table', { name: '紹介コード別の購入' })
+		const rows = table.getByRole('row')
+		await expect(rows).toHaveCount(4)
+		const expected = [
+			['member-a', '12件', '21枚', '136,500円'],
+			['member-b', '5件', '8枚', '52,000円'],
+			['直接（コードなし）', '40件', '71枚', '461,500円'],
+		]
+		for (const [i, cells] of expected.entries()) {
+			await expect(rows.nth(i + 1).getByRole('cell')).toHaveText(cells.slice(1))
+			await expect(rows.nth(i + 1).getByRole('rowheader')).toHaveText(cells[0])
+		}
+		// Read-only: codes are not registered, edited or removed here.
+		await expect(section.getByRole('button')).toHaveCount(0)
+		await expect(section.getByRole('link')).toHaveCount(0)
+	})
+
+	test(`@spec ${SPEC} "Sale with no purchase yet"`, async ({ page }) => {
+		await open(page, withReferrals([]))
+
+		await expect(referrals(page)).toContainText('まだ購入はありません')
+		await expect(referrals(page).getByRole('table')).toHaveCount(0)
+	})
+
+	test(`@spec ${SPEC} "Event without a sale"`, async ({ page }) => {
+		await open(page, rpc([]))
+
+		await expect(tab(page)).toContainText('この公演日の販売はまだありません')
+		await expect(referrals(page)).toHaveCount(0)
+		await expect(tab(page)).not.toContainText('紹介コード別の購入')
 	})
 })
 

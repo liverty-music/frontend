@@ -66,10 +66,10 @@ async function mockRpc(page: Page): Promise<void> {
 
 async function openDashboard(page: Page, beams: boolean): Promise<void> {
 	await page.addInitScript((on) => {
-		localStorage.setItem('onboardingStep', 'completed')
+		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
-		localStorage.setItem('liverty:beams:enabled', on ? 'true' : 'false')
+		localStorage.setItem('beams.enabled', on ? 'true' : 'false')
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([

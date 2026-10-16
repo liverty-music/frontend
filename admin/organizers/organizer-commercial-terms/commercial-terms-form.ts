@@ -8,7 +8,7 @@ import type {
  * and the platform fee rate. The limits mirror the protovalidate rules on
  * the `liverty_music.entity.v1.Organizer` business-detail value messages
  * (`LegalName`, `RepresentativeName`, `BusinessAddress`, `PhoneNumber`,
- * `ContactEmail`) and
+ * `Email`) and
  * `SetPlatformFeeRateRequest.platform_fee_rate_bps`, so an invalid value is
  * caught next to its field before any request is sent.
  */

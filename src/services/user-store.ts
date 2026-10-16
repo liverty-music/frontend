@@ -310,7 +310,9 @@ export class UserStore {
 
 	/**
 	 * Reset the guest home slice plus the per-page help-seen flags. Used by the
-	 * welcome route's fresh-tutorial reset and the sign-up onboarding hand-off.
+	 * welcome route's guest reset before sign-in and by the auth callback's
+	 * onboarding hand-off once sign-up (or sign-in) completes. Tapping
+	 * [Get Started] does not call it.
 	 * Does NOT touch the follow queue (owned by FollowStore) and does NOT touch
 	 * the locale: the anonymous locale lives solely in the i18next detector's
 	 * `language` key, which persists across this reset, preserving the

@@ -6,6 +6,7 @@ import {
 import type { TicketType } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_type_pb.js'
 import {
 	type LotteryEntryStats,
+	type ReferralCodeStats,
 	TicketSaleService,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/organizer/ticket_sale/v1/ticket_sale_service_pb.js'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
@@ -15,7 +16,7 @@ import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
 import { createOrganizerTransport } from './organizer-transport'
 
-export type { LotteryEntryStats, TicketSale, TicketType }
+export type { LotteryEntryStats, ReferralCodeStats, TicketSale, TicketType }
 export { TicketSaleMethod, VerificationRequirement }
 
 /**
@@ -38,10 +39,15 @@ export interface CreateTicketSaleInput {
 	readonly perAccountLimit?: number
 }
 
-/** An event's sales, with each lottery TicketType's entry stats. */
+/**
+ * An event's sales, with each lottery TicketType's entry stats and the event's
+ * Paid Orders per referral code (most Orders first; the direct group, without
+ * a code, among them).
+ */
 export interface EventTicketSales {
 	readonly ticketSales: TicketSale[]
 	readonly lotteryEntryStats: LotteryEntryStats[]
+	readonly referralCodeStats: ReferralCodeStats[]
 }
 
 export const ITicketSaleClient = DI.createInterface<ITicketSaleClient>(
@@ -76,7 +82,10 @@ export class TicketSaleClient {
 		),
 	)
 
-	/** The event's sales, with the entry stats of each lottery TicketType. */
+	/**
+	 * The event's sales, with the entry stats of each lottery TicketType and
+	 * the purchases per referral code.
+	 */
 	public async listByEvent(
 		eventId: string,
 		signal?: AbortSignal,
@@ -90,6 +99,7 @@ export class TicketSaleClient {
 			return {
 				ticketSales: response.ticketSales,
 				lotteryEntryStats: response.lotteryEntryStats,
+				referralCodeStats: response.referralCodeStats,
 			}
 		} catch (err) {
 			this.logger.warn('listByEvent failed', { eventId, error: err })

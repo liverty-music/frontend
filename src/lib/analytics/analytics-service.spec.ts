@@ -240,6 +240,28 @@ describe('AnalyticsService', () => {
 			expect(posthogStub.capture.mock.calls[1][0]).toBe(Events.ArtistSearch)
 		})
 
+		it('removes the query of the current address before an event leaves the device', async () => {
+			// @spec components/infrastructure/fan/web/global/analytics "Event on a referral link"
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+
+			const [, config] = posthogStub.init.mock.calls[0]
+			const beforeSend = (config as { before_send?: unknown }).before_send
+			expect(beforeSend).toBeTypeOf('function')
+			const origin = window.location.origin
+			const sent = (
+				beforeSend as (e: unknown) => {
+					properties: Record<string, unknown>
+				} | null
+			)({
+				event: 'concert_detail_viewed',
+				properties: {
+					$current_url: `${origin}/events/e-1?ref=member-a`,
+				},
+			})
+			expect(sent?.properties.$current_url).toBe(`${origin}/events/e-1`)
+		})
+
 		it('keeps session recording hard-disabled at boot even when sessionReplay is on (Decision 12)', async () => {
 			mockConsent.sessionReplay = true
 			const sut = new AnalyticsService()
@@ -260,6 +282,7 @@ describe('AnalyticsService', () => {
 		})
 
 		it('initialises opted-out (memory-only, no capture) when analytics is opted out at boot', async () => {
+			// @spec components/infrastructure/fan/web/global/analytics "Analytics off"
 			mockConsent.analytics = false
 			const sut = new AnalyticsService()
 			await sut._waitForInitForTests()

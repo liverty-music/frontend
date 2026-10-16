@@ -768,4 +768,125 @@ describe('EventRoute', () => {
 			expect(ics).toContain(`URL:${window.location.origin}/events/${EVENT_ID}`)
 		})
 	})
+
+	describe('referral link', () => {
+		const OTHER_SERIES_ID = '019a0000-0000-7000-8000-0000000000a2'
+
+		function openedWith(search: string): void {
+			window.history.replaceState({}, '', `/events/${EVENT_ID}${search}`)
+		}
+
+		function kept(): unknown {
+			return JSON.parse(localStorage.getItem('referral') ?? 'null')
+		}
+
+		beforeEach(() => {
+			localStorage.clear()
+		})
+
+		afterEach(() => {
+			localStorage.clear()
+			window.history.replaceState({}, '', '/')
+		})
+
+		it('keeps the code for the Series until 7 days after the page was opened', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Guest opens a referral link"
+			openedWith('?ref=member-a')
+			const sut = build()
+			await open(sut)
+
+			expect(sut.state).toBe('ready')
+			expect(sut.event?.title).toBe('ONE MAN LIVE')
+			expect(kept()).toEqual({
+				code: 'member-a',
+				seriesId: SERIES_ID,
+				expiresAt: jst(8, 12).getTime(),
+			})
+			// Nothing the page links to carries the code.
+			expect(sut.checkoutUrl).toBe(`/events/${EVENT_ID}/checkout`)
+			expect(sut.shareUrl).toBe(`${window.location.origin}/events/${EVENT_ID}`)
+		})
+
+		it('keeps an uppercase code lowercased', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Uppercase code"
+			// @spec components/entity/referral "One code whatever the case in links"
+			openedWith('?ref=Member-A')
+			const sut = build()
+			await open(sut)
+
+			expect(kept()).toMatchObject({ code: 'member-a', seriesId: SERIES_ID })
+		})
+
+		it('replaces the kept code with a newer link and a new 7-day expiry', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Newer link replaces the code"
+			localStorage.setItem(
+				'referral',
+				JSON.stringify({
+					code: 'member-a',
+					seriesId: OTHER_SERIES_ID,
+					expiresAt: jst(5, 12).getTime(),
+				}),
+			)
+			openedWith('?ref=member-b')
+			const sut = build()
+			await open(sut)
+
+			expect(kept()).toEqual({
+				code: 'member-b',
+				seriesId: SERIES_ID,
+				expiresAt: jst(8, 12).getTime(),
+			})
+		})
+
+		it('ignores a malformed code and keeps the code it had', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Malformed code ignored"
+			const before = {
+				code: 'member-a',
+				seriesId: SERIES_ID,
+				expiresAt: jst(5, 12).getTime(),
+			}
+			localStorage.setItem('referral', JSON.stringify(before))
+			openedWith('?ref=member_b')
+			const sut = build()
+			await open(sut)
+
+			expect(sut.state).toBe('ready')
+			expect(kept()).toEqual(before)
+		})
+
+		it('keeps nothing when opened without ref', async () => {
+			openedWith('')
+			const sut = build()
+			await open(sut)
+
+			expect(kept()).toBeNull()
+		})
+
+		it('keeps no code for an event that is not found', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Unknown event"
+			concertClient.get.mockRejectedValue(
+				new ConnectError('event page not found', Code.NotFound),
+			)
+			openedWith('?ref=member-a')
+			const sut = build()
+			await open(sut)
+
+			expect(sut.state).toBe('not-found')
+			expect(kept()).toBeNull()
+		})
+
+		it('starts sign-up with the return path without the query', async () => {
+			openedWith('?ref=member-a')
+			const sut = build()
+			await open(sut)
+
+			await sut.signUp()
+
+			expect(auth.signUp).toHaveBeenCalledWith({
+				origin: 'event-page',
+				returnTo: `/events/${EVENT_ID}`,
+			})
+			expect(kept()).toMatchObject({ code: 'member-a' })
+		})
+	})
 })

@@ -40,9 +40,7 @@ vi.mock('aurelia', async (importOriginal) => {
 import { ConsentChanged } from './consent-changed'
 import { ConsentService } from './consent-service'
 
-const LS_KEY_STATE_V2 = 'liverty:consent:state:v2'
-const LS_KEY_STATE_V1 = 'liverty:consent:state:v1'
-const LS_KEY_DEFERRED_V1 = 'liverty:consent:deferred:v1'
+const LS_KEY_STATE = 'consent.state'
 
 describe('ConsentService', () => {
 	beforeEach(() => {
@@ -67,7 +65,7 @@ describe('ConsentService', () => {
 
 		it('hydrates from a valid stored v2 payload', () => {
 			localStorage.setItem(
-				LS_KEY_STATE_V2,
+				LS_KEY_STATE,
 				JSON.stringify({
 					version: 2,
 					analytics: false,
@@ -84,41 +82,8 @@ describe('ConsentService', () => {
 			expect(sut.sessionReplay).toBe(true)
 		})
 
-		it('migrates a legacy v1 payload to default-on v2 and removes the v1 keys', () => {
-			localStorage.setItem(
-				LS_KEY_STATE_V1,
-				JSON.stringify({
-					version: 1,
-					analytics: false,
-					marketingMeasurement: false,
-					decidedAt: '2025-04-12T10:00:00.000Z',
-				}),
-			)
-			localStorage.setItem(LS_KEY_DEFERRED_V1, '1')
-
-			const sut = new ConsentService()
-
-			// Pre-launch: no opt-in/decline state to preserve → re-default to
-			// on. This is a clean version migration, not a silent wipe.
-			expect(sut.analytics).toBe(true)
-			expect(sut.sessionReplay).toBe(true)
-			// Legacy keys removed; a v2 payload is written in their place.
-			expect(localStorage.getItem(LS_KEY_STATE_V1)).toBeNull()
-			expect(localStorage.getItem(LS_KEY_DEFERRED_V1)).toBeNull()
-			const raw = localStorage.getItem(LS_KEY_STATE_V2)
-			expect(raw).not.toBeNull()
-			const stored = JSON.parse(raw ?? '{}') as Record<string, unknown>
-			expect(stored).toEqual({
-				version: 2,
-				analytics: true,
-				sessionReplay: true,
-			})
-			// Migration during hydration MUST NOT publish ConsentChanged.
-			expect(mockEa.publish).not.toHaveBeenCalled()
-		})
-
 		it('recovers from a corrupt JSON blob and removes it (default-on)', () => {
-			localStorage.setItem(LS_KEY_STATE_V2, 'not-json{{{')
+			localStorage.setItem(LS_KEY_STATE, 'not-json{{{')
 
 			const sut = new ConsentService()
 
@@ -126,12 +91,12 @@ describe('ConsentService', () => {
 			// and the bad blob is removed so the warn does not repeat.
 			expect(sut.analytics).toBe(true)
 			expect(sut.sessionReplay).toBe(true)
-			expect(localStorage.getItem(LS_KEY_STATE_V2)).toBeNull()
+			expect(localStorage.getItem(LS_KEY_STATE)).toBeNull()
 		})
 
 		it('recovers from a schema-mismatch payload (wrong types)', () => {
 			localStorage.setItem(
-				LS_KEY_STATE_V2,
+				LS_KEY_STATE,
 				JSON.stringify({
 					version: 2,
 					analytics: 'yes',
@@ -155,7 +120,7 @@ describe('ConsentService', () => {
 			expect(sut.analytics).toBe(false)
 			expect(sut.sessionReplay).toBe(true)
 
-			const raw = localStorage.getItem(LS_KEY_STATE_V2)
+			const raw = localStorage.getItem(LS_KEY_STATE)
 			expect(raw).not.toBeNull()
 			const stored = JSON.parse(raw ?? '{}') as Record<string, unknown>
 			expect(stored).toEqual({
@@ -200,7 +165,7 @@ describe('ConsentService', () => {
 	describe('grant() — opting back in', () => {
 		it('re-enables a previously opted-out purpose, persists, and publishes', () => {
 			localStorage.setItem(
-				LS_KEY_STATE_V2,
+				LS_KEY_STATE,
 				JSON.stringify({
 					version: 2,
 					analytics: false,

@@ -48,7 +48,7 @@ const groups = Array.from({ length: 12 }, (_, i) => ({
 
 async function prepare(page: Page): Promise<void> {
 	await page.addInitScript((followed) => {
-		localStorage.setItem('onboardingStep', 'completed')
+		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
 		localStorage.setItem(

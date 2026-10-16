@@ -439,6 +439,22 @@ describe('FollowStore', () => {
 			expect(sut.hasReceipt('user-2')).toBe(false)
 		})
 
+		it('leaves the kept referral code on the device', () => {
+			// A referral link's code is not account data: it stays across
+			// sign-out until it expires (OpenSpec `referral-attribution`, D7).
+			const kept = JSON.stringify({
+				code: 'member-a',
+				seriesId: 's1',
+				expiresAt: Date.now() + 1000,
+			})
+			lsMap.set('referral', kept)
+
+			const handler = subscriptions.get(SignedOut)
+			handler?.(new SignedOut())
+
+			expect(lsMap.get('referral')).toBe(kept)
+		})
+
 		it('clear() is idempotent and evicts the projection', () => {
 			sut.followedArtists = [makeArtist('a1', 'Artist a1')]
 			sut.clear()

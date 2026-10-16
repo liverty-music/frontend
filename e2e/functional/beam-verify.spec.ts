@@ -80,10 +80,10 @@ async function mockRpc(
 
 async function seedGuest(page: Page, hype: string): Promise<void> {
 	await page.addInitScript((h) => {
-		localStorage.setItem('onboardingStep', 'completed')
+		localStorage.setItem('onboardingComplete', 'true')
 		localStorage.setItem('onboarding.celebrationShown', '1')
 		localStorage.setItem('guest.home', 'JP-13')
-		localStorage.setItem('liverty:beams:enabled', 'true')
+		localStorage.setItem('beams.enabled', 'true')
 		localStorage.setItem(
 			'guest.followedArtists',
 			JSON.stringify([

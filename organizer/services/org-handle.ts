@@ -20,7 +20,7 @@
  */
 
 /** localStorage key under which a resolved org handle is remembered. */
-export const ORG_ID_STORAGE_KEY = 'liverty:organizer:org_id'
+export const ORG_ID_STORAGE_KEY = 'organizer.orgId'
 
 /**
  * Query parameter names carrying the org handle, in priority order. `org_id`

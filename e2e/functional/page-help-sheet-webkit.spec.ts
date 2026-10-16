@@ -32,7 +32,7 @@ test('page-help sheet opens and stays open (not auto-dismissed)', async ({
 	// page with the sheet closed. (Key: `saveHelpSeen()` in
 	// `src/adapter/storage/onboarding-storage.ts`.)
 	await page.addInitScript(() => {
-		localStorage.setItem('liverty:onboarding:helpSeen:my-artists', '1')
+		localStorage.setItem('onboarding.helpSeen:my-artists', '1')
 	})
 
 	await page.goto('/my-artists')

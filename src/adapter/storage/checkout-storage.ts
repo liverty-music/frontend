@@ -8,7 +8,7 @@
  * Checkout and starts over when it no longer holds tickets.
  */
 
-const keyFor = (eventId: string) => `liverty:checkout:${eventId}`
+const keyFor = (eventId: string) => `checkout:${eventId}`
 
 /** Remember the Checkout the fan is checking out with for the event. */
 export function saveCheckoutId(eventId: string, checkoutId: string): void {
