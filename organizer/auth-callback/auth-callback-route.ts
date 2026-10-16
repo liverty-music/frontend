@@ -9,7 +9,7 @@ import {
 	readSessionFlag,
 	setSessionFlag,
 } from '../hooks/org-enforcement'
-import { paths } from '../model/concert-model'
+import { instructionOf, paths } from '../model/concert-model'
 
 /**
  * sessionStorage flag recording that we already restarted sign-in once from the
@@ -70,10 +70,12 @@ export class AuthCallbackRoute {
 			// re-auth (sessionStorage), or to the address they opened before
 			// signing in (OIDC state); otherwise the landing, which opens the
 			// Organizer's Home. The guard re-checks org + role.
-			return (
+			// Every return value is a path; the router needs it as an instruction
+			// (the root path `/` is not one, liverty-music/frontend#752).
+			return instructionOf(
 				this.authService.takeReturnTo() ??
-				(user ? resolveAuthReturnTo(user) : undefined) ??
-				paths.landing
+					(user ? resolveAuthReturnTo(user) : undefined) ??
+					paths.landing,
 			)
 		} catch (err) {
 			this.logger.error('Organizer auth callback error:', err)
@@ -83,7 +85,7 @@ export class AuthCallbackRoute {
 			if (this.authService.isAuthenticated) {
 				clearSessionFlag(CALLBACK_RETRY_FLAG)
 				// After an involuntary re-auth, return the operator to where they were.
-				return this.authService.takeReturnTo() ?? paths.landing
+				return instructionOf(this.authService.takeReturnTo() ?? paths.landing)
 			}
 
 			// Self-heal a cross-context "No matching state" dead-end: restart the

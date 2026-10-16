@@ -42,11 +42,11 @@ describe('Organizer AuthCallbackRoute', () => {
 	})
 
 	// @spec stories/sign-in-as-organizer "Invited operator lands on the console after accepting the invite"
-	it('completes the code exchange and lands on /, which opens Home', async () => {
+	it('completes the code exchange and opens the landing, which opens Home', async () => {
 		build({})
 		const result = await sut.canLoad({} as never, {} as never)
 
-		expect(result).toBe('/')
+		expect(result).toBe('')
 		expect(mockAuth.handleCallback).toHaveBeenCalledTimes(1)
 	})
 
@@ -105,13 +105,13 @@ describe('Organizer AuthCallbackRoute', () => {
 		expect(sut.error).toContain('token endpoint 500')
 	})
 
-	it('recovers to / (Home) when a prior callback already established the session', async () => {
+	it('recovers to the landing (Home) when a prior callback already established the session', async () => {
 		build({ isAuthenticated: true })
 		mockAuth.handleCallback = vi.fn().mockRejectedValue(STATE_MISS)
 
 		const result = await sut.canLoad({} as never, {} as never)
 
-		expect(result).toBe('/')
+		expect(result).toBe('')
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
 	})
 })

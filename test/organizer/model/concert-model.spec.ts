@@ -9,6 +9,7 @@ import {
 	eventsByDate,
 	findEvent,
 	homeArtistOf,
+	instructionOf,
 	paths,
 	performs,
 	publishBadge,
@@ -142,5 +143,20 @@ describe('concert model', () => {
 			expect(homeArtistOf(coHeadlined, new Set(['a2', 'a1']))).toBe('a1')
 			expect(homeArtistOf(onlyB, new Set())).toBe('a2')
 		})
+	})
+})
+
+describe('instructionOf', () => {
+	it('reads the root path as the empty instruction, keeping its query', () => {
+		expect(instructionOf(paths.landing)).toBe('')
+		expect(instructionOf('/?org=e2e-test')).toBe('?org=e2e-test')
+		expect(instructionOf('/#top')).toBe('#top')
+	})
+
+	it('leaves every other path unchanged', () => {
+		expect(instructionOf('/organizers/o-1/settings?tab=1')).toBe(
+			'/organizers/o-1/settings?tab=1',
+		)
+		expect(instructionOf(paths.otherOrganizer)).toBe('/other-organizer')
 	})
 })
