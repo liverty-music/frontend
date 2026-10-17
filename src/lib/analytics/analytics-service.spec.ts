@@ -294,6 +294,34 @@ describe('AnalyticsService', () => {
 			expect(posthogStub.opt_in_capturing).not.toHaveBeenCalled()
 		})
 
+		it('hands the reveal-timing event only to an SDK that is opted out when analytics is off', async () => {
+			// @spec components/infrastructure/fan/web/route/discovery "Analytics off"
+			mockConsent.analytics = false
+			const sut = new AnalyticsService()
+
+			sut.capture(Events.DiscoveryReveal, {
+				entry: 'page_load',
+				path: 'top',
+				seed_count: 0,
+				ghosts_ms: 100,
+				first_name_ms: 400,
+				all_names_ms: 800,
+			})
+			await sut._waitForInitForTests()
+
+			// The opted-out SDK drops every capture; opt-out is applied before the
+			// buffered reveal event is replayed into it.
+			expect(posthogStub.opt_out_capturing).toHaveBeenCalled()
+			expect(posthogStub.opt_in_capturing).not.toHaveBeenCalled()
+			const revealCall = posthogStub.capture.mock.calls.findIndex(
+				(c) => c[0] === Events.DiscoveryReveal,
+			)
+			expect(revealCall).toBeGreaterThanOrEqual(0)
+			expect(
+				posthogStub.opt_out_capturing.mock.invocationCallOrder[0],
+			).toBeLessThan(posthogStub.capture.mock.invocationCallOrder[revealCall])
+		})
+
 		it('warns and drops excess events when the pre-init queue overflows 100 entries', async () => {
 			const warn = vi.fn()
 			const scopedLogger = {

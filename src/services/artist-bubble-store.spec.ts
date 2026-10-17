@@ -116,6 +116,31 @@ describe('ArtistBubbleStore', () => {
 		})
 	})
 
+	describe('loadInitial — path reported for the reveal timing', () => {
+		it('records the top path with no seeds when nothing is followed', async () => {
+			await sut.loadInitial()
+			expect(sut.lastInitialLoad).toEqual({ path: 'top', seedCount: 0 })
+		})
+
+		it('records the seed-similar path and seed count before any seed answers', () => {
+			followedArtists = ids('f', 7)
+			mockArtistStore.listSimilar.mockReturnValue(new Promise(() => {}))
+
+			void sut.loadInitial()
+
+			expect(sut.lastInitialLoad).toEqual({
+				path: 'seed_similar',
+				seedCount: 5,
+			})
+		})
+
+		it('forgets the path on sign-out', async () => {
+			await sut.loadInitial()
+			subscriptions.get(SignedOut)?.(new SignedOut())
+			expect(sut.lastInitialLoad).toBeNull()
+		})
+	})
+
 	describe('loadInitial — seed-similar path', () => {
 		it('tops up sparse seed-similar with top artists, similar first, deduped', async () => {
 			followedArtists = [artist('seed')]
@@ -188,9 +213,14 @@ describe('ArtistBubbleStore', () => {
 		})
 
 		it('paints ghost placeholders on a cold visit (empty field)', () => {
-			sut.prepareEntry()
+			expect(sut.prepareEntry()).toBe(true)
 			expect(sut.field).toHaveLength(50)
 			expect(sut.field.every((a) => a.isGhost === true)).toBe(true)
+		})
+
+		it('reports no cold visit when it repaints a cached field', async () => {
+			await seed(sut, [artist('a')])
+			expect(sut.prepareEntry()).toBe(false)
 		})
 	})
 

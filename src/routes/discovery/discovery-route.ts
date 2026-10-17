@@ -2,6 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
+import type { RevealMark } from '../../components/dna-orb/reveal-marks'
 import type { PageHelp } from '../../components/page-help/page-help'
 import {
 	DASHBOARD_CONCERT_TARGET,
@@ -21,6 +22,7 @@ import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { GenreFilterController } from './genre-filter-controller'
+import { detectRevealEntry, RevealTiming } from './reveal-timing'
 import { SearchController } from './search-controller'
 
 export class DiscoveryRoute {
@@ -46,6 +48,9 @@ export class DiscoveryRoute {
 
 	private abortController = new AbortController()
 	private dashboardCoachMarkShown = false
+	// Cold-load reveal timing of this visit; null on a re-entry, once sent, and
+	// after leaving the route.
+	private revealTiming: RevealTiming | null = null
 
 	// Controllers
 	public readonly search = new SearchController(
@@ -135,6 +140,8 @@ export class DiscoveryRoute {
 
 	public loading(): void {
 		this.logger.info('Loading discovery page')
+		const openedAt = performance.now()
+		const entry = detectRevealEntry()
 
 		// Synchronous onboarding hydrate prelude runs before the fetch so seeded
 		// follows are present when the bubble field loads.
@@ -155,7 +162,12 @@ export class DiscoveryRoute {
 		// and a cold visit shows ghost placeholders. The background refresh then
 		// preserves the in-session field (non-destructive delta) rather than
 		// re-rolling it, unless it has gone stale.
-		this.bubbleStore.prepareEntry()
+		const cold = this.bubbleStore.prepareEntry()
+		// A page load is measured from the document's start, an in-app entry from
+		// this hook. Only a cold visit (ghosts painted) reports its reveal.
+		this.revealTiming = cold
+			? new RevealTiming(entry, entry === 'page_load' ? 0 : openedAt)
+			: null
 		void this.refreshField()
 
 		// Resume concert search for pre-seeded follows (fire concurrently)
@@ -192,6 +204,7 @@ export class DiscoveryRoute {
 	}
 
 	public detaching(): void {
+		this.revealTiming = null
 		this.abortController.abort()
 		document.removeEventListener('visibilitychange', this.onVisibilityChange)
 		this.resumeRevalidator.unregister(this.revalidate)
@@ -286,6 +299,28 @@ export class DiscoveryRoute {
 		if (this.abortController.signal.aborted) return
 
 		void this.searchConcertsForArtist(artistId, artist.name)
+	}
+
+	/**
+	 * A cold-load reveal milestone drawn by the canvas. Once all three have
+	 * fired, send one reveal-timing event for this visit.
+	 */
+	public onRevealMark(
+		event: CustomEvent<{ mark: RevealMark; time: number }>,
+	): void {
+		const timings = this.revealTiming?.record(
+			event.detail.mark,
+			event.detail.time,
+		)
+		if (!timings) return
+		this.revealTiming = null
+		const load = this.bubbleStore.lastInitialLoad
+		if (!load) return
+		this.analytics.capture(Events.DiscoveryReveal, {
+			...timings,
+			path: load.path,
+			seed_count: load.seedCount,
+		})
 	}
 
 	public async onNeedMoreBubbles(
