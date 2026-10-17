@@ -1,6 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import type { NavigationInstruction, Params, RouteNode } from '@aurelia/router'
 import { IEventAggregator, ILogger, resolve } from 'aurelia'
+import { ILocalStorage } from '../../adapter/storage/local-storage'
 import { codeToHome } from '../../constants/iso3166'
 import { StorageKeys } from '../../constants/storage-keys'
 import {
@@ -34,6 +35,7 @@ export class AuthCallbackRoute {
 	private readonly onboarding = resolve(IOnboardingService)
 	private readonly i18n = resolve(I18N)
 	private readonly ea = resolve(IEventAggregator)
+	private readonly storage = resolve(ILocalStorage)
 	private readonly logger = resolve(ILogger).scopeTo('AuthCallbackRoute')
 
 	public async canLoad(
@@ -101,7 +103,7 @@ export class AuthCallbackRoute {
 			) {
 				try {
 					await this.i18n.setLocale(preferred)
-					localStorage.setItem(StorageKeys.language, preferred)
+					this.storage.setItem(StorageKeys.language, preferred)
 				} catch (err) {
 					this.logger.warn(
 						'Failed to apply DB-preferred language to i18n after sign-in',
@@ -143,7 +145,7 @@ export class AuthCallbackRoute {
 			const isSignUpFlow = resolveAuthFlow(user) === 'signup'
 			const fromEventPage = resolveAuthOrigin(user) === 'event-page'
 			if (isSignUpFlow && created && !fromEventPage) {
-				localStorage.setItem(StorageKeys.postSignupShown, 'pending')
+				this.storage.setItem(StorageKeys.postSignupShown, 'pending')
 			}
 
 			// After an involuntary re-auth, return to where the user was;
