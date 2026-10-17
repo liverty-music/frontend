@@ -179,6 +179,28 @@ export class OrganizerClient {
 	}
 
 	/**
+	 * Permanently deletes a deactivated organizer. The server refuses with
+	 * FAILED_PRECONDITION, naming the blocker in the message, while the
+	 * organizer is not deactivated or still has an unrefunded order, an
+	 * unreversed settlement or a payout account.
+	 */
+	public async delete(
+		organizerId: string,
+		signal?: AbortSignal,
+	): Promise<void> {
+		this.logger.info('Deleting organizer', { organizerId })
+		try {
+			await this.client.delete(
+				{ organizerId: { value: organizerId } },
+				{ signal },
+			)
+		} catch (err) {
+			this.logger.warn('delete failed', { organizerId, error: err })
+			throw err
+		}
+	}
+
+	/**
 	 * Records the organizer's 特商法 business details, replacing any previous
 	 * set, and returns the organizer with the stored details.
 	 */

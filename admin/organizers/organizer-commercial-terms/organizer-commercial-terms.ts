@@ -35,9 +35,14 @@ type BusinessDetailsForm = {
  * a save shows the values the server returns. Each form saves independently,
  * so saving one never discards unsaved edits in the other. RPC errors are
  * translated with the shared organizer error copy and logged.
+ *
+ * A deactivated Organizer refuses both saves, so with `deactivated` set
+ * neither form is shown.
  */
 export class OrganizerCommercialTerms {
 	@bindable public organizerId = ''
+	/** Hides both forms: the server refuses every save for a deactivated Organizer. */
+	@bindable public deactivated = false
 
 	public phase: LoadPhase = 'loading'
 	public loadError = ''

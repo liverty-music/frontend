@@ -6,11 +6,12 @@ import {
 import {
 	type Organizer,
 	OrganizerSchema,
+	OrganizerStatus,
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The route resolves IOrganizerClient + IArtistClient. Replace the real
 // modules (which would build Connect transports over the generated clients) with
@@ -41,17 +42,24 @@ interface MockOrganizerClient {
 	associateArtist: ReturnType<typeof vi.fn>
 	disassociateArtist: ReturnType<typeof vi.fn>
 	deactivate: ReturnType<typeof vi.fn>
+	delete: ReturnType<typeof vi.fn>
 }
 
 interface MockSearchClient {
 	search: ReturnType<typeof vi.fn>
 }
 
-function makeOrganizer(id: string, name: string, shortName = ''): Organizer {
+function makeOrganizer(
+	id: string,
+	name: string,
+	shortName = '',
+	status = OrganizerStatus.UNSPECIFIED,
+): Organizer {
 	return create(OrganizerSchema, {
 		id: { value: id },
 		name: { value: name },
 		...(shortName ? { shortName: { value: shortName } } : {}),
+		status,
 	})
 }
 
@@ -73,6 +81,7 @@ function createMockOrganizerClient(
 		associateArtist: vi.fn().mockResolvedValue(undefined),
 		disassociateArtist: vi.fn().mockResolvedValue(undefined),
 		deactivate: vi.fn().mockResolvedValue(undefined),
+		delete: vi.fn().mockResolvedValue(undefined),
 		...overrides,
 	}
 }
@@ -491,6 +500,432 @@ describe('OrganizersRoute', () => {
 
 			expect(vm.searchError).toContain('search boom')
 			expect(vm.searching).toBe(false)
+		})
+	})
+})
+
+const ROUTE_SPEC = 'components/infrastructure/admin/web/route/organizers'
+
+type Fixture = Awaited<ReturnType<typeof build>>
+
+/** Visible buttons whose text is exactly `label`, outside the delete dialog. */
+function detailButtons(fixture: Fixture, label: string): HTMLButtonElement[] {
+	return [
+		...fixture.appHost.querySelectorAll<HTMLButtonElement>(
+			'.organizers-detail button',
+		),
+	].filter((b) => b.textContent?.trim() === label)
+}
+
+function listStatusLabels(fixture: Fixture): string[] {
+	return [
+		...fixture.appHost.querySelectorAll(
+			'.organizers-list .organizers-status-label',
+		),
+	].map((el) => el.textContent?.trim() ?? '')
+}
+
+function detailStatusLabel(fixture: Fixture): string {
+	return (
+		fixture.appHost
+			.querySelector('.organizers-detail .organizers-status-label')
+			?.textContent?.trim() ?? ''
+	)
+}
+
+function dialogOf(fixture: Fixture): HTMLDialogElement {
+	const dialog = fixture.appHost.querySelector('dialog')
+	if (!dialog) throw new Error('delete dialog not rendered')
+	return dialog
+}
+
+function dialogButton(fixture: Fixture, label: string): HTMLButtonElement {
+	const button = [
+		...dialogOf(fixture).querySelectorAll<HTMLButtonElement>('button'),
+	].find((b) => b.textContent?.trim() === label)
+	if (!button) throw new Error(`dialog button ${label} not rendered`)
+	return button
+}
+
+/** The controls a deactivated Organizer refuses, as rendered in the detail. */
+function refusedControls(fixture: Fixture) {
+	const host = fixture.appHost
+	return {
+		remove: detailButtons(fixture, 'Remove').length,
+		search: host.querySelectorAll('input[type="search"]').length,
+		businessDetails: host.querySelectorAll('input[name="legalName"]').length,
+		feeRate: host.querySelectorAll('input[name="platformFeeRate"]').length,
+	}
+}
+
+async function selectFirst(fixture: Fixture, index = 0) {
+	const vm = routeOf(fixture)
+	await vm.select(vm.organizers[index])
+	await fixture.tasksSettled
+	return vm
+}
+
+describe('OrganizersRoute status and lifecycle', () => {
+	// jsdom implements neither showModal nor close; model them so the dialog's
+	// open state and its close event (Escape included) can be asserted.
+	const proto = HTMLDialogElement.prototype as Partial<HTMLDialogElement>
+	const original = { showModal: proto.showModal, close: proto.close }
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+		vi.useRealTimers()
+		proto.showModal = function (this: HTMLDialogElement) {
+			this.setAttribute('open', '')
+		}
+		proto.close = function (this: HTMLDialogElement) {
+			if (!this.hasAttribute('open')) return
+			this.removeAttribute('open')
+			this.dispatchEvent(new Event('close'))
+		}
+	})
+
+	afterEach(() => {
+		proto.showModal = original.showModal
+		proto.close = original.close
+	})
+
+	const everyStatus = () => [
+		makeOrganizer(
+			'o1',
+			'Pending Org',
+			'pending-org',
+			OrganizerStatus.PROVISIONING,
+		),
+		makeOrganizer('o2', 'Live Org', 'live-org', OrganizerStatus.ACTIVE),
+		makeOrganizer('o3', 'Old Org', 'old-org', OrganizerStatus.DEACTIVATED),
+	]
+
+	it(`@spec ${ROUTE_SPEC} "Organizers in every status"`, async () => {
+		const client = createMockOrganizerClient({
+			list: vi.fn().mockResolvedValue(everyStatus()),
+		})
+		const fixture = await build(client, createMockSearchClient())
+		await fixture.tasksSettled
+
+		expect(routeOf(fixture).organizers.map((o) => o.name)).toEqual([
+			'Pending Org',
+			'Live Org',
+			'Old Org',
+		])
+		expect(listStatusLabels(fixture)).toEqual([
+			'Provisioning',
+			'Active',
+			'Deactivated',
+		])
+	})
+
+	async function expectDeactivateOffered(index: number, label: string) {
+		const client = createMockOrganizerClient({
+			list: vi.fn().mockResolvedValue(everyStatus()),
+		})
+		const fixture = await build(client, createMockSearchClient())
+		await selectFirst(fixture, index)
+
+		expect(detailStatusLabel(fixture)).toBe(label)
+		expect(detailButtons(fixture, 'Deactivate')).toHaveLength(1)
+		expect(detailButtons(fixture, 'Delete')).toHaveLength(0)
+	}
+
+	it(`@spec ${ROUTE_SPEC} "Active Organizer"`, async () => {
+		await expectDeactivateOffered(1, 'Active')
+	})
+
+	it(`@spec ${ROUTE_SPEC} "Provisioning Organizer"`, async () => {
+		await expectDeactivateOffered(0, 'Provisioning')
+	})
+
+	it(`@spec ${ROUTE_SPEC} "Deactivated Organizer"`, async () => {
+		const client = createMockOrganizerClient({
+			list: vi.fn().mockResolvedValue(everyStatus()),
+		})
+		const fixture = await build(client, createMockSearchClient())
+		await selectFirst(fixture, 2)
+
+		expect(detailStatusLabel(fixture)).toBe('Deactivated')
+		expect(detailButtons(fixture, 'Delete')).toHaveLength(1)
+		expect(detailButtons(fixture, 'Deactivate')).toHaveLength(0)
+	})
+
+	it('an unset status (older backend) shows no label and offers Deactivate as before', async () => {
+		const client = createMockOrganizerClient({
+			list: vi
+				.fn()
+				.mockResolvedValue([makeOrganizer('o1', 'Org One', 'org-one')]),
+			listByOrganizer: vi
+				.fn()
+				.mockResolvedValue([makeArtist('a1', 'Artist One')]),
+		})
+		const fixture = await build(client, createMockSearchClient())
+		await selectFirst(fixture)
+
+		expect(listStatusLabels(fixture)).toEqual([])
+		expect(detailStatusLabel(fixture)).toBe('')
+		expect(detailButtons(fixture, 'Deactivate')).toHaveLength(1)
+		expect(detailButtons(fixture, 'Delete')).toHaveLength(0)
+		expect(refusedControls(fixture)).toEqual({
+			remove: 1,
+			search: 1,
+			businessDetails: 1,
+			feeRate: 1,
+		})
+	})
+
+	it(`@spec ${ROUTE_SPEC} "Deactivated Organizer hides refused controls"`, async () => {
+		const client = createMockOrganizerClient({
+			list: vi.fn().mockResolvedValue(everyStatus()),
+			listByOrganizer: vi
+				.fn()
+				.mockResolvedValue([makeArtist('a1', 'Artist One')]),
+		})
+		const fixture = await build(client, createMockSearchClient())
+		await selectFirst(fixture, 2)
+
+		// The represented Artists stay listed, without a Remove control.
+		expect(fixture.appHost.textContent).toContain('Artist One')
+		expect(refusedControls(fixture)).toEqual({
+			remove: 0,
+			search: 0,
+			businessDetails: 0,
+			feeRate: 0,
+		})
+		expect(detailButtons(fixture, 'Associate')).toHaveLength(0)
+	})
+
+	it(`@spec ${ROUTE_SPEC} "Active Organizer keeps every control"`, async () => {
+		const client = createMockOrganizerClient({
+			list: vi.fn().mockResolvedValue(everyStatus()),
+			listByOrganizer: vi
+				.fn()
+				.mockResolvedValue([
+					makeArtist('a1', 'Artist One'),
+					makeArtist('a2', 'Artist Two'),
+				]),
+		})
+		const fixture = await build(client, createMockSearchClient())
+		const vm = await selectFirst(fixture, 1)
+		vm.searchResults = [{ id: 'a9', name: 'Found Act' }]
+		await fixture.tasksSettled
+
+		expect(refusedControls(fixture)).toEqual({
+			remove: 2,
+			search: 1,
+			businessDetails: 1,
+			feeRate: 1,
+		})
+		expect(detailButtons(fixture, 'Associate')).toHaveLength(1)
+	})
+
+	describe('Deactivate', () => {
+		it(`@spec ${ROUTE_SPEC} "Deactivate succeeds"`, async () => {
+			const client = createMockOrganizerClient({
+				list: vi.fn().mockResolvedValue(everyStatus()),
+				listByOrganizer: vi
+					.fn()
+					.mockResolvedValueOnce([makeArtist('a1', 'Artist One')])
+					.mockResolvedValue([]),
+			})
+			const fixture = await build(client, createMockSearchClient())
+			const vm = await selectFirst(fixture, 1)
+			expect(detailStatusLabel(fixture)).toBe('Active')
+
+			detailButtons(fixture, 'Deactivate')[0].click()
+			await vi.waitFor(() => expect(vm.deactivating).toBe(false))
+			await fixture.tasksSettled
+
+			expect(client.deactivate).toHaveBeenCalledWith('o2')
+			expect(listStatusLabels(fixture)[1]).toBe('Deactivated')
+			expect(detailStatusLabel(fixture)).toBe('Deactivated')
+			expect(detailButtons(fixture, 'Delete')).toHaveLength(1)
+			expect(detailButtons(fixture, 'Deactivate')).toHaveLength(0)
+			expect(refusedControls(fixture)).toMatchObject({
+				search: 0,
+				businessDetails: 0,
+				feeRate: 0,
+			})
+			expect(vm.artists).toEqual([])
+			expect(fixture.appHost.textContent).not.toContain('Artist One')
+			expect(fixture.appHost.textContent).toContain(
+				'This organizer represents no artists yet.',
+			)
+		})
+
+		it(`@spec ${ROUTE_SPEC} "Deactivate fails"`, async () => {
+			const client = createMockOrganizerClient({
+				list: vi.fn().mockResolvedValue(everyStatus()),
+				deactivate: vi
+					.fn()
+					.mockRejectedValue(new ConnectError('try later', Code.Unavailable)),
+			})
+			const fixture = await build(client, createMockSearchClient())
+			const vm = await selectFirst(fixture, 1)
+
+			await vm.deactivate()
+			await fixture.tasksSettled
+
+			expect(vm.deactivateError).not.toBe('')
+			expect(
+				fixture.appHost.querySelector('.organizers-detail [role="alert"]')
+					?.textContent,
+			).toContain(vm.deactivateError)
+			expect(detailStatusLabel(fixture)).toBe('Active')
+			expect(detailButtons(fixture, 'Deactivate')).toHaveLength(1)
+			expect(detailButtons(fixture, 'Delete')).toHaveLength(0)
+		})
+	})
+
+	describe('Delete', () => {
+		const fanTest = () => [
+			makeOrganizer('o1', 'Live Org', 'live-org', OrganizerStatus.ACTIVE),
+			makeOrganizer('o2', 'Fan Test', 'fan-test', OrganizerStatus.DEACTIVATED),
+		]
+
+		async function openDialog(client: MockOrganizerClient) {
+			const fixture = await build(client, createMockSearchClient())
+			const vm = await selectFirst(fixture, 1)
+			detailButtons(fixture, 'Delete')[0].click()
+			await fixture.tasksSettled
+			return { fixture, vm }
+		}
+
+		it(`@spec ${ROUTE_SPEC} "Confirm deletes"`, async () => {
+			let resolveDelete: () => void = () => {}
+			const client = createMockOrganizerClient({
+				list: vi.fn().mockResolvedValue(fanTest()),
+				delete: vi.fn().mockImplementation(
+					() =>
+						new Promise<void>((resolve) => {
+							resolveDelete = resolve
+						}),
+				),
+			})
+			const { fixture, vm } = await openDialog(client)
+			expect(client.delete).not.toHaveBeenCalled()
+
+			const confirm = dialogButton(fixture, 'Delete')
+			confirm.click()
+			await fixture.tasksSettled
+			// In flight: the control is disabled and a second activation sends nothing.
+			expect(dialogButton(fixture, 'Deleting…').disabled).toBe(true)
+			confirm.click()
+			resolveDelete()
+			await vi.waitFor(() => expect(vm.deleting).toBe(false))
+
+			expect(client.delete).toHaveBeenCalledTimes(1)
+			expect(client.delete).toHaveBeenCalledWith('o2')
+		})
+
+		it.each([
+			['Escape', (dialog: HTMLDialogElement) => dialog.close()],
+			[
+				'Cancel',
+				(_dialog: HTMLDialogElement, fixture: Fixture) =>
+					dialogButton(fixture, 'Cancel').click(),
+			],
+		])(
+			`@spec ${ROUTE_SPEC} "Dismiss keeps the Organizer" (%s)`,
+			async (_how, dismiss) => {
+				const client = createMockOrganizerClient({
+					list: vi.fn().mockResolvedValue(fanTest()),
+				})
+				const { fixture, vm } = await openDialog(client)
+				const dialog = dialogOf(fixture)
+				expect(dialog.hasAttribute('open')).toBe(true)
+
+				// A browser closes a modal dialog on Escape and fires `close`;
+				// the stubbed close() does the same.
+				dismiss(dialog, fixture)
+				await fixture.tasksSettled
+
+				expect(dialog.hasAttribute('open')).toBe(false)
+				expect(vm.pendingDelete).toBeNull()
+				expect(client.delete).not.toHaveBeenCalled()
+				expect(vm.organizers.map((o) => o.shortName)).toContain('fan-test')
+			},
+		)
+
+		it(`@spec ${ROUTE_SPEC} "Dialog names the Organizer"`, async () => {
+			const client = createMockOrganizerClient({
+				list: vi.fn().mockResolvedValue(fanTest()),
+			})
+			const { fixture } = await openDialog(client)
+			const dialog = dialogOf(fixture)
+
+			expect(dialog.textContent).toContain('Fan Test')
+			expect(dialog.textContent).toContain('fan-test')
+			expect(dialog.textContent).toContain('permanently')
+			expect(document.activeElement).toBe(dialogButton(fixture, 'Cancel'))
+		})
+
+		it(`@spec ${ROUTE_SPEC} "Delete succeeds"`, async () => {
+			const client = createMockOrganizerClient({
+				list: vi.fn().mockResolvedValue(fanTest()),
+			})
+			const { fixture, vm } = await openDialog(client)
+
+			await vm.confirmDelete()
+			await fixture.tasksSettled
+
+			expect(dialogOf(fixture).hasAttribute('open')).toBe(false)
+			expect(vm.organizers.map((o) => o.id)).toEqual(['o1'])
+			expect(vm.selected).toBeNull()
+			expect(
+				fixture.appHost.querySelector('.organizers-list')?.textContent,
+			).not.toContain('Fan Test')
+			expect(fixture.appHost.textContent).toContain(
+				'Select an organizer to inspect its represented artists.',
+			)
+		})
+
+		it(`@spec ${ROUTE_SPEC} "Delete blocked by an order"`, async () => {
+			const client = createMockOrganizerClient({
+				list: vi.fn().mockResolvedValue(fanTest()),
+				delete: vi
+					.fn()
+					.mockRejectedValue(
+						new ConnectError(
+							'an event of the organizer has an order that is not refunded',
+							Code.FailedPrecondition,
+						),
+					),
+			})
+			const { fixture, vm } = await openDialog(client)
+
+			await vm.confirmDelete()
+			await fixture.tasksSettled
+
+			expect(dialogOf(fixture).hasAttribute('open')).toBe(false)
+			expect(vm.organizers.map((o) => o.id)).toContain('o2')
+			expect(vm.selected?.id).toBe('o2')
+			const detail = fixture.appHost.querySelector('.organizers-detail')
+			expect(detail?.textContent).toContain('This organizer cannot be deleted:')
+			expect(detail?.textContent).toContain('an order that is not refunded')
+		})
+
+		it(`@spec ${ROUTE_SPEC} "Delete fails otherwise"`, async () => {
+			const client = createMockOrganizerClient({
+				list: vi.fn().mockResolvedValue(fanTest()),
+				delete: vi
+					.fn()
+					.mockRejectedValue(new ConnectError('try later', Code.Unavailable)),
+			})
+			const { fixture, vm } = await openDialog(client)
+
+			await vm.confirmDelete()
+			await fixture.tasksSettled
+
+			expect(vm.organizers.map((o) => o.id)).toContain('o2')
+			expect(vm.selected?.id).toBe('o2')
+			expect(vm.deleteError).toContain('try later')
+			expect(vm.deleteError).not.toContain('cannot be deleted')
+			expect(
+				fixture.appHost.querySelector('.organizers-detail [role="alert"]')
+					?.textContent,
+			).toContain('try later')
 		})
 	})
 })

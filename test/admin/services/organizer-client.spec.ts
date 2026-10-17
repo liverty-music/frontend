@@ -12,6 +12,7 @@ const mockRpc = {
 	associateArtist: vi.fn(),
 	disassociateArtist: vi.fn(),
 	deactivate: vi.fn(),
+	delete: vi.fn(),
 	setBusinessDetails: vi.fn(),
 	setPlatformFeeRate: vi.fn(),
 }
@@ -26,6 +27,7 @@ vi.mock('../../../admin/services/admin-transport', () => ({
 	createAdminTransport: vi.fn().mockReturnValue({}),
 }))
 
+const { Code, ConnectError } = await import('@connectrpc/connect')
 const { IAppConfig } = await import('../../../shared/config/app-config')
 const { IAuthService } = await import('../../../shared/services/auth-service')
 const { IOrganizerClient } = await import(
@@ -109,6 +111,30 @@ describe('OrganizerClient', () => {
 
 		const [req] = mockRpc.deactivate.mock.calls.at(-1) ?? []
 		expect(req.organizerId?.value).toBe('o1')
+	})
+
+	it('delete wraps the organizer id', async () => {
+		mockRpc.delete.mockResolvedValue({})
+		const client = resolveClient()
+
+		await client.delete('o1')
+
+		const [req] = mockRpc.delete.mock.calls.at(-1) ?? []
+		expect(req.organizerId?.value).toBe('o1')
+	})
+
+	it('delete propagates the server refusal', async () => {
+		mockRpc.delete.mockRejectedValue(
+			new ConnectError(
+				'the organizer has a payout account',
+				Code.FailedPrecondition,
+			),
+		)
+		const client = resolveClient()
+
+		await expect(client.delete('o1')).rejects.toMatchObject({
+			code: Code.FailedPrecondition,
+		})
 	})
 
 	it('propagates errors from the underlying client', async () => {
