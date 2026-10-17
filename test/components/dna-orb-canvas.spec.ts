@@ -260,7 +260,23 @@ describe('DnaOrbCanvas', () => {
 
 			expect(reconcileSpy).toHaveBeenCalledWith(expect.any(Array), {
 				placements,
+				keepGhosts: false,
 			})
+		})
+
+		it('reconciles the real members of a mixed field and keeps the ghosts', async () => {
+			await sut.attached()
+			const reconcileSpy = vi.spyOn((sut as any).physics, 'reconcile')
+			const ghost = { id: '__ghost__1', name: '', mbid: '', isGhost: true }
+
+			sut.artistsChanged([makeArtist('a', 'A'), ghost])
+
+			const [target, opts] = reconcileSpy.mock.calls[0] as [
+				{ artist: { id: string } }[],
+				{ keepGhosts: boolean },
+			]
+			expect(target.map((p) => p.artist.id)).toEqual(['a'])
+			expect(opts.keepGhosts).toBe(true)
 		})
 	})
 

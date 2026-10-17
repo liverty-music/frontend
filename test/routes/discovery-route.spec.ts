@@ -57,6 +57,11 @@ vi.mock('../../src/routes/discovery/discovery-route.$au.ts', () => ({
 	default: { name: 'discovery-route', template: '<template></template>' },
 }))
 
+const preloadPhysics = vi.fn(() => Promise.resolve())
+vi.mock('../../src/components/dna-orb/bubble-physics', () => ({
+	preloadPhysics,
+}))
+
 vi.mock('../../src/util/detect-country', () => ({
 	detectCountryFromTimezone: () => 'Japan',
 }))
@@ -224,6 +229,12 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('loading', () => {
+		it('starts downloading the physics engine while the route loads', () => {
+			preloadPhysics.mockClear()
+			sut.loading()
+			expect(preloadPhysics).toHaveBeenCalledTimes(1)
+		})
+
 		it('is non-blocking: returns before the initial bubble fetch settles', async () => {
 			let resolveLoad: (v: Artist[]) => void = () => {}
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockReturnValue(
@@ -481,6 +492,51 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('onNeedMoreBubbles', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Tap on a revealed artist while other bubbles are still ghosts"
+		it('adds similar artists after the initial load for a tap during the reveal, with no unavailable snack', async () => {
+			simulateFollow(mockFollowClient, makeArtist('f1', 'Followed'))
+			let answerSeed: (v: Artist[]) => void = () => {}
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockImplementation((id: string) =>
+				id === 'f1'
+					? new Promise<Artist[]>((r) => {
+							answerSeed = r
+						})
+					: Promise.resolve([makeArtist('tapSim', 'Tap Similar')]),
+			)
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[],
+			)
+			sut.loading()
+			// Let the follows load so the initial load is in flight.
+			await vi.advanceTimersByTimeAsync(0)
+			expect(mockArtistClient.listSimilar).toHaveBeenCalledWith('f1', 50)
+			answerSeed([makeArtist('r1', 'Revealed')])
+
+			// The fan taps the revealed artist before the initial load finished.
+			const tapped = makeArtist('r1', 'Revealed')
+			const selected = sut.onArtistSelected(
+				new CustomEvent('artist-selected', {
+					detail: { artist: tapped, position: { x: 5, y: 5 } },
+				}),
+			)
+			await sut.onNeedMoreBubbles(
+				new CustomEvent('need-more-bubbles', {
+					detail: {
+						artistId: 'r1',
+						artistName: 'Revealed',
+						position: { x: 5, y: 5 },
+					},
+				}),
+			)
+			await selected
+
+			expect(mockFollowClient.follow).toHaveBeenCalledWith(tapped)
+			expect(sut.bubbleStore.field.some((a) => a.id === 'tapSim')).toBe(true)
+			expect(mockEa.publish).not.toHaveBeenCalledWith(expect.any(Snack))
+		})
+
 		it('should fetch similar artists and add them at the tap position', async () => {
 			const similar = [makeArtist('s1', 'Similar 1')]
 			;(

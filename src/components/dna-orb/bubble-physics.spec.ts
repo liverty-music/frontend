@@ -255,3 +255,130 @@ describe('BubblePhysics init guard (regression #526)', () => {
 		expect(physics.getBubbles().every((b) => b.body?.position)).toBe(true)
 	})
 })
+
+function ghostParams(n: number): BubbleArtistParams[] {
+	return Array.from({ length: n }, (_, i) => ({
+		artist: { id: `__ghost__${i}`, name: '', mbid: '', isGhost: true },
+		radius: 30,
+	}))
+}
+
+function liveGhostCount(physics: BubblePhysics): number {
+	return physics.getBubbles().filter((b) => b.artist.isGhost && !b.isFadingOut)
+		.length
+}
+
+describe('ghost placeholders ignore taps', () => {
+	// @spec components/infrastructure/fan/web/route/discovery "Tap on a ghost"
+	it('finds no bubble under a tap on a ghost, so nothing is followed or requested', () => {
+		const g = mockBubble('__ghost__0', 100, 100, 40)
+		g.artist = { id: '__ghost__0', name: '', mbid: '', isGhost: true }
+		expect(findClosestBubble([g], 100, 100)).toBeUndefined()
+	})
+
+	// @spec components/infrastructure/fan/web/route/discovery "Tap on a revealed artist while other bubbles are still ghosts"
+	it('finds a revealed artist under a tap even when a ghost overlaps it', () => {
+		const g = mockBubble('__ghost__0', 100, 100, 40)
+		g.artist = { id: '__ghost__0', name: '', mbid: '', isGhost: true }
+		const a = mockBubble('A', 120, 100, 40)
+		// The ghost's center is closer to the tap, but only the artist responds.
+		expect(findClosestBubble([g, a], 102, 100)?.artist.id).toBe('A')
+	})
+})
+
+describe('BubblePhysics.reconcile keepGhosts (progressive reveal)', () => {
+	it('spawns real members in ghost slots and keeps the remaining ghosts', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles(ghostParams(10))
+		const slot = physics.getBubbles()[0]
+
+		physics.reconcile(params(['a', 'b']), { keepGhosts: true })
+
+		expect(physics.bubbleCount).toBe(10)
+		expect(liveGhostCount(physics)).toBe(8)
+		const a = physics.getBubbles().find((b) => b.artist.id === 'a')
+		// The artist took a ghost body in place, with the spawn animation.
+		expect(a).toBe(slot)
+		expect(a?.isSpawning).toBe(true)
+
+		// A later partial field keeps the earlier artists' bodies and fills more
+		// ghost slots.
+		physics.reconcile(params(['a', 'b', 'c']), { keepGhosts: true })
+		expect(physics.getBubbles().find((b) => b.artist.id === 'a')).toBe(slot)
+		expect(physics.bubbleCount).toBe(10)
+		expect(liveGhostCount(physics)).toBe(7)
+	})
+
+	it('fades out the leftover ghosts once the field is all real', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles(ghostParams(10))
+		physics.reconcile(params(['a', 'b']), { keepGhosts: true })
+
+		physics.reconcile(params(['a', 'b', 'c']))
+
+		expect(liveGhostCount(physics)).toBe(0)
+		physics.update(1000)
+		expect(liveIds(physics)).toEqual(['a', 'b', 'c'])
+		expect(physics.bubbleCount).toBe(3)
+	})
+
+	it('adds real members beyond the ghost slots as new bodies', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles(ghostParams(2))
+
+		physics.reconcile(params(['a', 'b', 'c']), { keepGhosts: true })
+
+		expect(liveIds(physics)).toEqual(['a', 'b', 'c'])
+		expect(liveGhostCount(physics)).toBe(0)
+	})
+})
+
+describe('revealed names fade in on real time', () => {
+	const LABEL_THRESHOLD = 0.55
+	const PHYSICS_CAP = 32
+
+	// Elapsed real time until a ghost switched to a real artist has its name
+	// drawn, with frames arriving every `frameMs` and the canvas' capped delta.
+	async function msUntilNameDrawn(frameMs: number): Promise<number> {
+		const physics = await mkPhysics()
+		physics.addBubbles(ghostParams(1))
+		physics.reconcile(params(['a']))
+		const bubble = physics.getBubbles().find((b) => b.artist.id === 'a')
+		let elapsed = 0
+		while ((bubble?.opacity ?? 0) <= LABEL_THRESHOLD && elapsed < 5000) {
+			physics.update(Math.min(frameMs, PHYSICS_CAP), frameMs)
+			elapsed += frameMs
+		}
+		return elapsed
+	}
+
+	// @spec components/infrastructure/fan/web/route/discovery "Normal frame rate"
+	it('draws the name within 300 ms at 16 ms frames', async () => {
+		expect(await msUntilNameDrawn(16)).toBeLessThanOrEqual(300)
+	})
+
+	// @spec components/infrastructure/fan/web/route/discovery "Slow frames"
+	it('draws the name within 300 ms at 100 ms frames, not after the capped time', async () => {
+		expect(await msUntilNameDrawn(100)).toBeLessThanOrEqual(300)
+	})
+
+	// @spec components/infrastructure/fan/web/route/discovery "Reduced motion"
+	it('reveals on the same real-time bound with reduced motion', async () => {
+		// Reduced motion only changes the tap and absorption effects
+		// (DnaOrbCanvas.applyReducedMotion); BubblePhysics takes no reduced-motion
+		// input, so the reveal runs this same update at both settings.
+		expect(await msUntilNameDrawn(16)).toBeLessThanOrEqual(300)
+		expect(await msUntilNameDrawn(100)).toBeLessThanOrEqual(300)
+	})
+
+	it('keeps the physics step capped while the fade uses real time', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles(ghostParams(1))
+		physics.reconcile(params(['a']))
+		const bubble = physics.getBubbles().find((b) => b.artist.id === 'a')
+
+		physics.update(32, 100)
+
+		expect(bubble?.spawnProgress).toBeCloseTo(0.3)
+	})
+})

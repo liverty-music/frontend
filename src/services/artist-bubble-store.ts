@@ -103,6 +103,8 @@ export class ArtistBubbleStore {
 	private readonly seen = new SeenTracker()
 	private country = detectCountryFromTimezone()
 	private isLoading = false
+	// The in-flight `loadInitial`, so a tap during the reveal can wait for it.
+	private initialLoad: Promise<void> | null = null
 	// Wall-clock (ms) of the last full field FETCH (loadInitial/loadTop) — NOT
 	// bumped by a cache repaint or a re-entry delta, so freshness reflects when the
 	// data was last fetched. Drives the re-entry reuse-vs-reload decision.
@@ -159,50 +161,83 @@ export class ArtistBubbleStore {
 	 * seed-similar from the followed artists topped up with top artists so the
 	 * field stays full regardless of follow count. The result lives in `field`
 	 * (this singleton is the cache). Guarded against concurrent loads.
+	 *
+	 * On a cold visit (the field holds ghosts) the seed-similar path reveals each
+	 * seed's artists as it answers, in place of ghosts; the final field is the
+	 * same as an all-at-once load.
 	 */
 	public async loadInitial(): Promise<void> {
 		if (this.isLoading) return
 		this.isLoading = true
+		const run = this.runInitialLoad()
+		this.initialLoad = run
 		try {
-			const followedArtists = this.followStore.followedArtists
-			this.logger.info('Loading initial field', {
-				country: this.country,
-				followed: followedArtists.length,
-			})
-			this.seen.resetWith(followedArtists)
-
-			const seeds = this.pickRandomSeeds(followedArtists)
-			this.lastInitialLoad = {
-				path: seeds.length === 0 ? 'top' : 'seed_similar',
-				seedCount: seeds.length,
-			}
-			const raw =
-				seeds.length === 0
-					? await this.artists.listTop(this.country, '', MAX_BUBBLES)
-					: await this.fetchSeedSimilar(seeds)
-
-			let next = this.freshFrom(raw)
-
-			// Top up sparse seed-similar results with global top artists so the
-			// field stays full (more follows → narrower similar lists → heavier
-			// dedup). Similar artists keep priority; popular artists fill the rest.
-			if (
-				followedArtists.length > 0 &&
-				next.length < ArtistBubbleStore.SEED_SIMILAR_TARGET
-			) {
-				this.logger.info('Seed-similar sparse, topping up with top artists', {
-					similarCount: next.length,
-				})
-				this.seen.trackAll(next)
-				const top = await this.artists.listTop(this.country, '', MAX_BUBBLES)
-				next = capTo([...next, ...this.freshFrom(top)], MAX_BUBBLES)
-			}
-
-			this.setField(next)
-			this.fieldBuiltAt = Date.now()
+			await run
 		} finally {
+			this.initialLoad = null
 			this.isLoading = false
 		}
+	}
+
+	private async runInitialLoad(): Promise<void> {
+		const followedArtists = this.followStore.followedArtists
+		this.logger.info('Loading initial field', {
+			country: this.country,
+			followed: followedArtists.length,
+		})
+		this.seen.resetWith(followedArtists)
+
+		const seeds = this.pickRandomSeeds(followedArtists)
+		this.lastInitialLoad = {
+			path: seeds.length === 0 ? 'top' : 'seed_similar',
+			seedCount: seeds.length,
+		}
+		if (seeds.length === 0) {
+			const raw = await this.artists.listTop(this.country, '', MAX_BUBBLES)
+			this.setField(this.freshFrom(raw))
+			this.fieldBuiltAt = Date.now()
+			return
+		}
+
+		const cold = this.field.some((a) => a.isGhost)
+		const similar = this.fetchSeedSimilar(
+			seeds,
+			cold ? (partial) => this.revealPartial(partial) : undefined,
+		)
+		// Request the top-up together with the seeds; it is used only if the
+		// similar results turn out sparse. Mark it handled so an unused failure
+		// is not reported as unhandled.
+		const topUp = this.artists.listTop(this.country, '', MAX_BUBBLES)
+		topUp.catch(() => undefined)
+
+		let next = this.freshFrom(await similar)
+
+		// Top up sparse seed-similar results with global top artists so the
+		// field stays full (more follows → narrower similar lists → heavier
+		// dedup). Similar artists keep priority; popular artists fill the rest.
+		if (next.length < ArtistBubbleStore.SEED_SIMILAR_TARGET) {
+			this.logger.info('Seed-similar sparse, topping up with top artists', {
+				similarCount: next.length,
+			})
+			this.seen.trackAll(next)
+			const top = await topUp
+			next = capTo([...next, ...this.freshFrom(top)], MAX_BUBBLES)
+		}
+
+		this.setField(next)
+		this.fieldBuiltAt = Date.now()
+	}
+
+	/**
+	 * Show the seed results answered so far in place of ghost placeholders.
+	 * Applies the field invariants but leaves the seen-tracker untouched, so the
+	 * final `setField` produces the same field as an all-at-once load.
+	 */
+	private revealPartial(answered: readonly Artist[]): void {
+		const real = capTo(this.freshFrom(answered), MAX_BUBBLES)
+		if (real.length === 0) return
+		const ghosts = makeGhostArtists(MAX_BUBBLES).slice(real.length)
+		this.commitField([...real, ...ghosts], new Map())
 	}
 
 	/**
@@ -272,10 +307,14 @@ export class ArtistBubbleStore {
 	 * Fetch similar artists for a tapped bubble and top up the field, animating
 	 * the additions outward from the tap position. Falls back to top artists when
 	 * similar is exhausted so the field refills instead of firing the
-	 * "unavailable" snack. Guarded against concurrent loads (rapid taps). Returns
-	 * whether any bubble was added.
+	 * "unavailable" snack. A tap during the initial load waits for it first.
+	 * Otherwise guarded against concurrent loads (rapid taps). Returns whether
+	 * any bubble was added.
 	 */
 	public async loadSimilar(artistId: string, pos: Placement): Promise<boolean> {
+		while (this.initialLoad) {
+			await this.initialLoad.catch(() => undefined)
+		}
 		if (this.isLoading) return false
 		this.isLoading = true
 		try {
@@ -384,24 +423,39 @@ export class ArtistBubbleStore {
 		)
 	}
 
-	private async fetchSeedSimilar(seeds: Artist[]): Promise<Artist[]> {
+	/**
+	 * Similar artists of every seed, in seed order. `onPartial`, when given,
+	 * receives the results answered so far (in seed order) each time a seed
+	 * answers. A failed seed contributes nothing.
+	 */
+	private async fetchSeedSimilar(
+		seeds: Artist[],
+		onPartial?: (answered: Artist[]) => void,
+	): Promise<Artist[]> {
 		const limitPerSeed = Math.floor(MAX_BUBBLES / seeds.length)
 		this.logger.info('Fetching seed-similar artists', {
 			seedCount: seeds.length,
 			limitPerSeed,
 		})
-		const results = await Promise.all(
-			seeds.map((seed) =>
-				this.artists.listSimilar(seed.id, limitPerSeed).catch((err) => {
-					this.logger.warn('Seed similar fetch failed', {
-						seed: seed.name,
-						error: err,
+		const results: (Artist[] | undefined)[] = seeds.map(() => undefined)
+		await Promise.all(
+			seeds.map((seed, i) =>
+				this.artists
+					.listSimilar(seed.id, limitPerSeed)
+					.catch((err) => {
+						this.logger.warn('Seed similar fetch failed', {
+							seed: seed.name,
+							error: err,
+						})
+						return [] as Artist[]
 					})
-					return [] as Artist[]
-				}),
+					.then((list) => {
+						results[i] = list
+						onPartial?.(results.flatMap((r) => r ?? []))
+					}),
 			),
 		)
-		return results.flat()
+		return results.flatMap((r) => r ?? [])
 	}
 
 	private pickRandomSeeds(followedArtists: Artist[]): Artist[] {

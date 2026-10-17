@@ -1,6 +1,7 @@
 import { I18N } from '@aurelia/i18n'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
+import { preloadPhysics } from '../../components/dna-orb/bubble-physics'
 import type { DnaOrbCanvas } from '../../components/dna-orb/dna-orb-canvas'
 import type { RevealMark } from '../../components/dna-orb/reveal-marks'
 import type { PageHelp } from '../../components/page-help/page-help'
@@ -142,6 +143,9 @@ export class DiscoveryRoute {
 		this.logger.info('Loading discovery page')
 		const openedAt = performance.now()
 		const entry = detectRevealEntry()
+		// Fetch the physics engine while the route is composed; the canvas cannot
+		// draw even ghost bubbles before it loads. A failure surfaces at init.
+		preloadPhysics().catch(() => undefined)
 
 		// Synchronous onboarding hydrate prelude runs before the fetch so seeded
 		// follows are present when the bubble field loads.
