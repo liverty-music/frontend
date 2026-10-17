@@ -4,6 +4,7 @@ import { createFixture } from '@aurelia/testing'
 import { Registration } from 'aurelia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { IUserRpcClient } from '../../src/adapter/rpc/client/user-client'
+import { ILocalStorage } from '../../src/adapter/storage/local-storage'
 import { StorageKeys } from '../../src/constants/storage-keys'
 import type { User } from '../../src/entities/user'
 import en from '../../src/locales/en/translation.json'
@@ -70,7 +71,12 @@ describe('changing the language mid-session (fixture)', () => {
 		expect(longDate()).toContain('11月')
 
 		await changeLocale(
-			{ i18n, auth: { isAuthenticated: false }, userStore },
+			{
+				i18n,
+				auth: { isAuthenticated: false },
+				userStore,
+				storage: fixture.container.get(ILocalStorage),
+			},
 			'en',
 		)
 		await tasksSettled()
@@ -91,7 +97,12 @@ describe('changing the language mid-session (fixture)', () => {
 		const setItem = vi.spyOn(Storage.prototype, 'setItem')
 
 		await changeLocale(
-			{ i18n, auth: { isAuthenticated: true }, userStore },
+			{
+				i18n,
+				auth: { isAuthenticated: true },
+				userStore,
+				storage: fixture.container.get(ILocalStorage),
+			},
 			'en',
 		)
 		await tasksSettled()

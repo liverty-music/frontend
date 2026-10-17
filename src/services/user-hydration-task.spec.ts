@@ -190,6 +190,7 @@ describe('runUserHydration', () => {
 		expect(mockAnalyticsService.identify).not.toHaveBeenCalled()
 	})
 
+	// @spec components/infrastructure/fan/web/global/i18n "i18n locale aligns with backend value on every authenticated render"
 	// @spec components/infrastructure/fan/web/global/i18n "Saved language differs from the account's language"
 	it('applies preferred_language to i18n when present and differs from clientLocale, and saves it', async () => {
 		mockUserStore.current = { id: 'user-1', preferredLanguage: 'ja' }

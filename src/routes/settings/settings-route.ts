@@ -3,6 +3,7 @@ import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { IEventAggregator, ILogger, resolve, watch } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
+import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { UserHomeSelector } from '../../components/user-home-selector/user-home-selector'
 import { IAppConfig } from '../../config/app-config'
 import { codeToHome, translationKey } from '../../constants/iso3166'
@@ -33,6 +34,7 @@ import {
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
+	private readonly storage = resolve(ILocalStorage)
 	private readonly pushService = resolve(IPushService)
 	private readonly logger = resolve(ILogger).scopeTo('SettingsRoute')
 	private readonly ea = resolve(IEventAggregator)
@@ -436,6 +438,7 @@ export class SettingsRoute {
 					i18n: this.i18n,
 					auth: this.auth,
 					userStore: this.userStore,
+					storage: this.storage,
 				},
 				lang,
 			)

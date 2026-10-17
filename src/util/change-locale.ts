@@ -1,4 +1,5 @@
 import type { I18N } from '@aurelia/i18n'
+import type { ILocalStorage } from '../adapter/storage/local-storage'
 import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserStore } from '../services/user-store'
@@ -54,6 +55,8 @@ export interface ChangeLocaleDeps {
 	readonly i18n: I18N
 	readonly auth: IAuthService
 	readonly userStore: IUserStore
+	/** Where the applied language is saved on this device. */
+	readonly storage: Pick<ILocalStorage, 'setItem'>
 }
 
 /**
@@ -62,8 +65,8 @@ export interface ChangeLocaleDeps {
  * Routes persistence based on the caller's auth state:
  *
  * - **Unauthenticated** (Welcome / guest Settings): call `i18n.setLocale` then
- *   persist the choice explicitly to the single `localStorage['language']` key
- *   (the i18next detector cache). `UserStore.currentLanguage` derives the guest
+ *   persist the choice explicitly to the single `language` key through
+ *   `deps.storage` (the i18next detector cache). `UserStore.currentLanguage` derives the guest
  *   highlight from the reactive `i18nLocale` mirror that `setLocale` updates, so
  *   the selector follows the active locale with no separate guest key. The
  *   explicit write makes persistence ordering-independent rather than relying on
@@ -83,7 +86,7 @@ export async function changeLocale(
 	deps: ChangeLocaleDeps,
 	lang: string,
 ): Promise<void> {
-	const { i18n, auth, userStore } = deps
+	const { i18n, auth, userStore, storage } = deps
 
 	if (!isSupportedLanguage(lang)) {
 		throw new TypeError(
@@ -93,11 +96,11 @@ export async function changeLocale(
 
 	if (!auth.isAuthenticated) {
 		await i18n.setLocale(lang)
-		localStorage.setItem(StorageKeys.language, lang)
+		storage.setItem(StorageKeys.language, lang)
 		return
 	}
 
 	await userStore.updatePreferredLanguage(lang)
 	await i18n.setLocale(lang)
-	localStorage.setItem(StorageKeys.language, lang)
+	storage.setItem(StorageKeys.language, lang)
 }
