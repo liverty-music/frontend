@@ -4,6 +4,7 @@ import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
+import { IConsoleLanguage } from '../i18n/console-language'
 import { createOrganizerTransport } from './organizer-transport'
 
 export type { Scanner }
@@ -30,6 +31,7 @@ export class ScannerClient {
 			this.authService,
 			resolve(ILogger).scopeTo('OrganizerTransport'),
 			resolve(IAppConfig),
+			resolve(IConsoleLanguage),
 		),
 	)
 

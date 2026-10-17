@@ -11,6 +11,7 @@ import {
 	savePendingReturn,
 	takePendingReturn,
 } from '../adapter/storage/pending-return-storage'
+import { IConsoleLanguage } from '../i18n/console-language'
 import { ILoginHint } from '../services/login-hint'
 import { enforceIntendedOrg } from './org-enforcement'
 import { hasOwnerRole } from './roles'
@@ -44,6 +45,7 @@ export class OrganizerAuthHook
 	private readonly authService = resolve(IAuthService)
 	private readonly config = resolve(IAppConfig)
 	private readonly loginHint = resolve(ILoginHint)
+	private readonly language = resolve(IConsoleLanguage)
 	private readonly logger = resolve(ILogger).scopeTo('OrganizerAuthHook')
 
 	async canLoad(
@@ -82,6 +84,8 @@ export class OrganizerAuthHook
 			await this.authService.signIn({
 				...(this.loginHint ? { loginHint: this.loginHint } : {}),
 				returnTo: pending ?? opened,
+				// The hosted login opens in the language the console shows.
+				uiLocales: this.language.current,
 			})
 			return false
 		}
@@ -103,6 +107,7 @@ export class OrganizerAuthHook
 			this.config.zitadelOrgId ?? this.config.zitadelOrgPrimaryDomain,
 			this.authService.user?.profile as Record<string, unknown> | undefined,
 			this.logger,
+			this.language.current,
 		)
 		if (gate === 'reauth') {
 			// Re-auth started; the browser navigates to Zitadel — abort in-app nav.

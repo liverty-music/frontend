@@ -34,6 +34,9 @@ vi.mock('../../../shared/services/auth-service', async (importOriginal) => ({
 const { AuthCallbackRoute } = await import(
 	'../../../organizer/auth-callback/auth-callback-route'
 )
+const { IConsoleLanguage } = await import(
+	'../../../organizer/i18n/console-language'
+)
 
 const routes = [
 	{ id: 'landing', path: '', component: screen('landing-route') },
@@ -59,6 +62,7 @@ describe('organizer callback navigation (real router)', () => {
 		const f = createFixture('<au-viewport></au-viewport>', Root, [
 			RouterConfiguration,
 			Registration.instance(mockIAuthService, auth),
+			Registration.instance(IConsoleLanguage, { current: 'ja' }),
 		])
 		await f.started
 		return f

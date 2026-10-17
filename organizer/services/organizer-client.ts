@@ -8,6 +8,7 @@ import {
 	createOrganizerPublicTransport,
 	createOrganizerTransport,
 } from './organizer-transport'
+import { IConsoleLanguage } from '../i18n/console-language'
 
 export type { Organizer }
 
@@ -41,6 +42,7 @@ export class OrganizerClient {
 			this.authService,
 			resolve(ILogger).scopeTo('OrganizerTransport'),
 			resolve(IAppConfig),
+			resolve(IConsoleLanguage),
 		),
 	)
 

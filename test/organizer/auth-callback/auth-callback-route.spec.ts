@@ -17,6 +17,9 @@ vi.mock('../../../shared/services/auth-service', async (importOriginal) => ({
 const { AuthCallbackRoute, CALLBACK_RETRY_FLAG } = await import(
 	'../../../organizer/auth-callback/auth-callback-route'
 )
+const { IConsoleLanguage } = await import(
+	'../../../organizer/i18n/console-language'
+)
 
 const STATE_MISS = new Error('No matching state found in storage')
 
@@ -31,6 +34,7 @@ describe('Organizer AuthCallbackRoute', () => {
 		mockAuth = createMockAuth(authOverrides)
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
+			Registration.instance(IConsoleLanguage, { current: 'en' }),
 		)
 		container.register(AuthCallbackRoute)
 		sut = container.get(AuthCallbackRoute)
@@ -76,7 +80,8 @@ describe('Organizer AuthCallbackRoute', () => {
 		const result = await sut.canLoad({} as never, {} as never)
 
 		expect(result).toBe(false)
-		expect(mockAuth.signIn).toHaveBeenCalledTimes(1)
+		// The restarted sign-in opens the hosted login in the console's language.
+		expect(mockAuth.signIn).toHaveBeenCalledExactlyOnceWith({ uiLocales: 'en' })
 		expect(window.sessionStorage.getItem(CALLBACK_RETRY_FLAG)).toBe('1')
 	})
 

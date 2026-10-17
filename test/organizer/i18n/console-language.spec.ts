@@ -53,8 +53,8 @@ describe('console language', () => {
 	it('@spec components/infrastructure/organizer/web/global/i18n "Browser in another language"', async () => {
 		browserLanguages(['fr-FR', 'fr'])
 		const { assertText, tearDown } = await mount(`<p>\${'common.save' & t}</p>`)
-		assertText('保存する')
-		expect(document.documentElement.lang).toBe('ja')
+		assertText('Save')
+		expect(document.documentElement.lang).toBe('en')
 		await tearDown()
 	})
 

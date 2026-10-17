@@ -59,6 +59,7 @@ import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
 import { IResumeRevalidator } from '../../services/resume-revalidator'
 import { ITicketJourneyStore } from '../../services/ticket-journey-store'
 import { IUserStore } from '../../services/user-store'
+import { currentLanguage } from '../../util/change-locale'
 
 /** Dashboard concert view mode. Session-only — never persisted. */
 export type ViewMode = 'timetable' | 'allNearby'
@@ -1123,7 +1124,7 @@ export class DashboardRoute {
 	}
 
 	public onSignupRequested(): void {
-		this.authService.signUp()
+		this.authService.signUp({ uiLocales: currentLanguage(this.i18n) })
 	}
 
 	/**

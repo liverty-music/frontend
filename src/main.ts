@@ -1,6 +1,6 @@
 import './styles/main.css'
 import { registerSW } from 'virtual:pwa-register'
-import { I18N, I18nConfiguration } from '@aurelia/i18n'
+import { I18N } from '@aurelia/i18n'
 import { RouterConfiguration } from '@aurelia/router'
 import Aurelia, {
 	AppTask,
@@ -10,7 +10,6 @@ import Aurelia, {
 	LogLevel,
 	Registration,
 } from 'aurelia'
-import i18nextBrowserLanguageDetector from 'i18next-browser-languagedetector'
 import { onCLS, onINP, onLCP } from 'web-vitals/attribution'
 import type { SnackHandle } from '../shared/ui/snack-bar/snack'
 import { Snack } from '../shared/ui/snack-bar/snack'
@@ -48,7 +47,7 @@ import {
 	loadAppConfig,
 	validateEnvironmentMatchesHost,
 } from './config/app-config'
-import { StorageKeys, trackSessionForPrompts } from './constants/storage-keys'
+import { trackSessionForPrompts } from './constants/storage-keys'
 import { AmbientGlowCustomAttribute } from './custom-attributes/ambient-glow'
 import { BeamVarsCustomAttribute } from './custom-attributes/beam-vars'
 import { BusyOnClickCustomAttribute } from './custom-attributes/busy-on-click'
@@ -60,10 +59,9 @@ import {
 	IAnalyticsService,
 	type IAnalyticsService as IAnalyticsServiceType,
 } from './lib/analytics/analytics-service'
+import { FanI18nConfiguration } from './lib/i18n/fan-i18n-configuration'
 import { IConsentService } from './lib/consent/consent-service'
 import { PUSH_SUBSCRIPTION_CHANGED_MESSAGE } from './lib/push/push-renewal'
-import en from './locales/en/translation.json'
-import ja from './locales/ja/translation.json'
 import { Events } from './services/analytics-events'
 import { IArtistBubbleStore } from './services/artist-bubble-store'
 import { IArtistStore } from './services/artist-store'
@@ -156,39 +154,7 @@ async function bootstrap(): Promise<void> {
 	// (services constructed during Aurelia.start) can resolve it.
 	au.register(Registration.instance(IAppConfig, config))
 
-	au.register(
-		I18nConfiguration.customize((options) => {
-			options.initOptions = {
-				// Load-bearing: `@aurelia/i18n` injects a default `lng: 'en'` into the
-				// i18next init options, and i18next treats an explicit `lng` as an
-				// override that BYPASSES the language detector entirely. Setting it
-				// back to `undefined` re-enables the `detection` chain below, so the
-				// boot locale is resolved from querystring → localStorage → navigator
-				// (honoring the migrated `language` key) instead of being hard-pinned
-				// to English. Do NOT delete this as a no-op — its absence silently
-				// disables detection and the app always boots English.
-				lng: undefined,
-				resources: {
-					ja: { translation: ja },
-					en: { translation: en },
-				},
-				fallbackLng: 'ja',
-				supportedLngs: ['ja', 'en'],
-				interpolation: { escapeValue: false },
-				detection: {
-					order: ['querystring', 'localStorage', 'navigator'],
-					lookupQuerystring: 'lang',
-					lookupLocalStorage: StorageKeys.language,
-					// Persist the detected locale to localStorage so anonymous reloads
-					// see a stable language without re-detecting from navigator each
-					// time. After signup, the DB becomes the source of truth and
-					// hydration removes this key (see UserHydrationTask).
-					caches: ['localStorage'],
-				},
-				plugins: [i18nextBrowserLanguageDetector],
-			}
-		}),
-	)
+	au.register(FanI18nConfiguration)
 	au.register(
 		RouterConfiguration.customize({
 			restorePreviousRouteTreeOnError: !import.meta.env.DEV,

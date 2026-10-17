@@ -227,10 +227,9 @@ describe('Settings language and home area (fixture)', () => {
 			en.settings.preferences,
 		)
 		expect(r.userStore.currentLanguage).toBe('en')
-		expect(setItem).not.toHaveBeenCalledWith(
-			StorageKeys.language,
-			expect.anything(),
-		)
+		// Saved on this device too, so the Welcome page after a sign-out opens
+		// in it (i18n "Language switched while signed in survives sign-out").
+		expect(setItem).toHaveBeenCalledWith(StorageKeys.language, 'en')
 		expect(r.vm.languageSelectorOpen).toBe(false)
 		await r.fixture.stop(true)
 	})

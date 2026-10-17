@@ -28,7 +28,11 @@ import { IAuthService } from '../../services/auth-service'
 import { IConcertStore } from '../../services/concert-store'
 import { IFollowStore } from '../../services/follow-store'
 import { IUserStore } from '../../services/user-store'
-import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
+import {
+	changeLocale,
+	currentLanguage,
+	SUPPORTED_LANGUAGES,
+} from '../../util/change-locale'
 import { prefersReducedMotion } from '../../util/prefers-reduced-motion'
 
 /** Phase of the guided product demo below the hero. */
@@ -462,7 +466,9 @@ export class WelcomeRoute implements IRouteViewModel {
 		// the reset (the cancelled-login behavior).
 		this.resetGuestState()
 		try {
-			await this.authService.signIn()
+			await this.authService.signIn({
+				uiLocales: currentLanguage(this.i18n),
+			})
 		} catch (err) {
 			this.logger.error('Failed to start sign-in flow', { error: err })
 			this.ea.publish(new Snack(this.i18n.tr('welcome.error.login')))

@@ -24,7 +24,11 @@ import { IFabMenuService } from '../../services/fab-menu-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
-import { changeLocale, SUPPORTED_LANGUAGES } from '../../util/change-locale'
+import {
+	changeLocale,
+	currentLanguage,
+	SUPPORTED_LANGUAGES,
+} from '../../util/change-locale'
 
 export class SettingsRoute {
 	public readonly auth = resolve(IAuthService)
@@ -580,12 +584,12 @@ export class SettingsRoute {
 
 	/** Guest auth entry — start the OIDC sign-in flow from Settings. */
 	public async signIn(): Promise<void> {
-		await this.auth.signIn()
+		await this.auth.signIn({ uiLocales: currentLanguage(this.i18n) })
 	}
 
 	/** Guest auth entry — start the OIDC sign-up flow from Settings. */
 	public async signUp(): Promise<void> {
-		await this.auth.signUp()
+		await this.auth.signUp({ uiLocales: currentLanguage(this.i18n) })
 	}
 
 	public async signOut(): Promise<void> {

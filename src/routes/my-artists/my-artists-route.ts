@@ -13,6 +13,7 @@ import {
 } from '../../services/fab-menu-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IOnboardingService } from '../../services/onboarding-service'
+import { currentLanguage } from '../../util/change-locale'
 
 export interface MyArtist extends FollowedArtist {
 	color: string
@@ -382,7 +383,7 @@ export class MyArtistsRoute {
 	}
 
 	public onSignupRequested(): void {
-		this.authService.signUp()
+		this.authService.signUp({ uiLocales: currentLanguage(this.i18n) })
 	}
 
 	public hypeIcon(artist: MyArtist): string {

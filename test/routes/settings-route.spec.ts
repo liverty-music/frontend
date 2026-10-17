@@ -1,3 +1,4 @@
+import type { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, IEventAggregator, Registration } from 'aurelia'
@@ -512,6 +513,22 @@ describe('SettingsRoute', () => {
 			const guestSut = buildGuestSut()
 			await guestSut.signUp()
 			expect(mockAuth.signUp).toHaveBeenCalledOnce()
+		})
+
+		it('signIn() asks the hosted login for the language the page shows', async () => {
+			const guestSut = buildGuestSut()
+			await guestSut.signIn()
+			expect(mockAuth.signIn).toHaveBeenCalledWith({ uiLocales: 'ja' })
+		})
+
+		// @spec components/infrastructure/fan/web/global/i18n "Sign up in English"
+		it('signUp() asks the hosted sign-up for English when the page shows English', async () => {
+			const guestSut = buildGuestSut()
+			// The page now shows English (the same I18N the route reads).
+			const { i18n } = guestSut as unknown as { i18n: I18N }
+			await i18n.setLocale('en')
+			await guestSut.signUp()
+			expect(mockAuth.signUp).toHaveBeenCalledWith({ uiLocales: 'en' })
 		})
 
 		it('language change does not call the backend RPC for a guest', async () => {

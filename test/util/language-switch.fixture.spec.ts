@@ -101,10 +101,9 @@ describe('changing the language mid-session (fixture)', () => {
 		expect(label()).toBe('Language')
 		expect(userStore.currentLanguage).toBe('en')
 		expect(getItem).not.toHaveBeenCalledWith(StorageKeys.language)
-		expect(setItem).not.toHaveBeenCalledWith(
-			StorageKeys.language,
-			expect.anything(),
-		)
+		// The applied language is also saved on this device, so it survives a
+		// sign-out.
+		expect(setItem).toHaveBeenCalledWith(StorageKeys.language, 'en')
 		expect(longDate()).toContain('November')
 		await fixture.stop(true)
 	})
