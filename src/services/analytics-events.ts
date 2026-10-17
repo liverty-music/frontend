@@ -170,6 +170,30 @@ export type RpcCallTelemetryProps = {
 	methods: Record<string, [number, number]>
 }
 
+/**
+ * Cold-visit Discovery reveal timings: one event per visit that painted ghost
+ * placeholder bubbles, sent once every bubble shows an artist name. Each
+ * timing is measured from the moment Discovery was opened (see `entry`).
+ */
+export type DiscoveryRevealProps = {
+	/**
+	 * `page_load` when Discovery was the document's first route (timings from
+	 * `performance.timeOrigin`); `in_app` for an in-app navigation (timings
+	 * from the route's `loading()`).
+	 */
+	entry: 'page_load' | 'in_app'
+	/** Initial-load path: global top artists, or similar artists of seeds. */
+	path: 'top' | 'seed_similar'
+	/** Followed artists used as seeds (0 on the `top` path). */
+	seed_count: number
+	/** Until the first ghost placeholder bubble was drawn. */
+	ghosts_ms: number
+	/** Until the first artist name was drawn. */
+	first_name_ms: number
+	/** Until every bubble showed an artist name. */
+	all_names_ms: number
+}
+
 // -- Name catalogue and type-level wiring --------------------------------------
 
 /**
@@ -197,6 +221,7 @@ export const Events = {
 	LongAnimationFrame: 'perf.long_animation_frame',
 	SlowInteraction: 'perf.slow_interaction',
 	RpcCallTelemetry: 'perf.rpc_call_telemetry',
+	DiscoveryReveal: 'perf.discovery_reveal',
 } as const satisfies Record<string, string>
 
 /** The union of every valid event-name literal. */
@@ -220,6 +245,7 @@ export type EventPropsMap = {
 	'perf.long_animation_frame': LongAnimationFrameProps
 	'perf.slow_interaction': SlowInteractionProps
 	'perf.rpc_call_telemetry': RpcCallTelemetryProps
+	'perf.discovery_reveal': DiscoveryRevealProps
 }
 
 /**

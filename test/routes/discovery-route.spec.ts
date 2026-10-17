@@ -2,6 +2,8 @@ import { DI, IEventAggregator, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Snack } from '../../shared/ui/snack-bar/snack'
 import type { Artist } from '../../src/entities/artist'
+import { IAnalyticsService } from '../../src/lib/analytics/analytics-service'
+import { resetRevealEntryForTests } from '../../src/routes/discovery/reveal-timing'
 import { createTestContainer } from '../helpers/create-container'
 import { createMockRouter } from '../helpers/mock-router'
 import {
@@ -94,8 +96,15 @@ describe('DiscoveryRoute', () => {
 		activate: ReturnType<typeof vi.fn>
 		deactivate: ReturnType<typeof vi.fn>
 	}
+	let mockAnalytics: {
+		capture: ReturnType<typeof vi.fn>
+		identify: ReturnType<typeof vi.fn>
+		reset: ReturnType<typeof vi.fn>
+		getFeatureFlag: ReturnType<typeof vi.fn>
+	}
 	beforeEach(() => {
 		vi.useFakeTimers()
+		resetRevealEntryForTests()
 
 		mockArtistClient = createMockArtistServiceClient()
 		mockFollowClient = createMockFollowStore()
@@ -112,6 +121,12 @@ describe('DiscoveryRoute', () => {
 			activate: vi.fn(),
 			deactivate: vi.fn(),
 		}
+		mockAnalytics = {
+			capture: vi.fn(),
+			identify: vi.fn(),
+			reset: vi.fn(),
+			getFeatureFlag: vi.fn(),
+		}
 		// Default: follow succeeds and updates mock state
 		;(mockFollowClient.follow as ReturnType<typeof vi.fn>).mockImplementation(
 			async (artist: Artist) => {
@@ -127,6 +142,7 @@ describe('DiscoveryRoute', () => {
 			Registration.instance(mockIRouter, mockRouter),
 			Registration.instance(mockIOnboardingService, mockOnboarding),
 			Registration.instance(mockICoachMarkService, mockCoachMark),
+			Registration.instance(IAnalyticsService, mockAnalytics),
 		)
 		container.register(DiscoveryRoute)
 		sut = container.get(DiscoveryRoute)
@@ -805,6 +821,104 @@ describe('DiscoveryRoute', () => {
 			await sut.refreshField()
 
 			expect(sut.bubbleStore.field.map((a) => a.id)).toEqual(['a1'])
+		})
+	})
+
+	describe('cold-load reveal timing', () => {
+		function revealMark(
+			mark: 'ghosts' | 'first-name' | 'all-names',
+			time: number,
+		): CustomEvent<{ mark: typeof mark; time: number }> {
+			return new CustomEvent('reveal-mark', { detail: { mark, time } })
+		}
+
+		function navigationAt(url: string): void {
+			vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
+				{ name: url } as PerformanceEntry,
+			])
+		}
+
+		function revealAll(times: [number, number, number]): void {
+			sut.onRevealMark(revealMark('ghosts', times[0]))
+			sut.onRevealMark(revealMark('first-name', times[1]))
+			sut.onRevealMark(revealMark('all-names', times[2]))
+		}
+
+		// @spec components/infrastructure/fan/web/route/discovery "Cold visit with followed artists"
+		it('sends one event with the seed-similar path, seed count, entry and timings', async () => {
+			navigationAt(window.location.href)
+			simulateFollow(mockFollowClient, makeArtist('f1', 'One'))
+			simulateFollow(mockFollowClient, makeArtist('f2', 'Two'))
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockResolvedValue([makeArtist('s1', 'Similar')])
+
+			sut.loading()
+			await vi.runAllTimersAsync()
+			revealAll([120.4, 900, 1500.6])
+			// Marks after the reveal completed do not send a second event.
+			sut.onRevealMark(revealMark('all-names', 2000))
+
+			expect(mockAnalytics.capture).toHaveBeenCalledTimes(1)
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				'perf.discovery_reveal',
+				{
+					entry: 'page_load',
+					path: 'seed_similar',
+					seed_count: 2,
+					ghosts_ms: 120,
+					first_name_ms: 900,
+					all_names_ms: 1501,
+				},
+			)
+		})
+
+		it('measures an in-app entry from the route loading, on the top path', async () => {
+			navigationAt(`${window.location.origin}/some-other-page`)
+			vi.spyOn(performance, 'now').mockReturnValue(1000)
+
+			sut.loading()
+			await vi.runAllTimersAsync()
+			revealAll([1100, 1400, 1800])
+
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				'perf.discovery_reveal',
+				{
+					entry: 'in_app',
+					path: 'top',
+					seed_count: 0,
+					ghosts_ms: 100,
+					first_name_ms: 400,
+					all_names_ms: 800,
+				},
+			)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Re-entry"
+		it('sends nothing when a re-entry paints the cached field', async () => {
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[makeArtist('a1', 'YOASOBI')],
+			)
+			await sut.refreshField()
+
+			sut.loading()
+			await vi.runAllTimersAsync()
+			revealAll([100, 200, 300])
+
+			expect(mockAnalytics.capture).not.toHaveBeenCalled()
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Leaving before the reveal completes"
+		it('sends nothing when the fan leaves before every bubble shows a name', async () => {
+			sut.loading()
+			await vi.runAllTimersAsync()
+			sut.onRevealMark(revealMark('ghosts', 100))
+			sut.onRevealMark(revealMark('first-name', 200))
+
+			sut.detaching()
+			sut.onRevealMark(revealMark('all-names', 300))
+
+			expect(mockAnalytics.capture).not.toHaveBeenCalled()
 		})
 	})
 

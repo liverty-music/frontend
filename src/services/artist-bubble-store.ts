@@ -25,6 +25,12 @@ export interface Placement {
 	y: number
 }
 
+/** Which initial-load path the last `loadInitial` took, and with how many seeds. */
+export interface InitialLoadInfo {
+	path: 'top' | 'seed_similar'
+	seedCount: number
+}
+
 /**
  * The single owner of the Discovery display FIELD — the authoritative
  * `Artist[]` set of artists currently on the canvas, and the SINGLE bubble-field
@@ -86,6 +92,12 @@ export class ArtistBubbleStore {
 	@observable public pendingPlacements: ReadonlyMap<string, Placement> =
 		new Map()
 
+	/**
+	 * The path of the most recent `loadInitial`, set when it starts (before any
+	 * artist is shown) so the cold-load reveal timing can report it.
+	 */
+	public lastInitialLoad: InitialLoadInfo | null = null
+
 	// Cross-fetch dedup memory (shown/retired ids) — prevents a later top-up from
 	// re-surfacing artists already displayed this session.
 	private readonly seen = new SeenTracker()
@@ -120,15 +132,17 @@ export class ArtistBubbleStore {
 	 * blank while `loadInitial` fetches. Re-entry → re-apply the invariants to the
 	 * persisted field so artists followed while away are dropped from the instant
 	 * paint before the canvas re-attaches; the background `reenter` then applies
-	 * the full non-destructive delta.
+	 * the full non-destructive delta. Returns whether ghosts were painted (a cold
+	 * visit).
 	 */
-	public prepareEntry(): void {
+	public prepareEntry(): boolean {
 		const real = this.realField()
 		if (real.length === 0) {
 			this.paintGhosts()
-		} else {
-			this.setField(real)
+			return true
 		}
+		this.setField(real)
+		return false
 	}
 
 	/**
@@ -157,10 +171,15 @@ export class ArtistBubbleStore {
 			})
 			this.seen.resetWith(followedArtists)
 
+			const seeds = this.pickRandomSeeds(followedArtists)
+			this.lastInitialLoad = {
+				path: seeds.length === 0 ? 'top' : 'seed_similar',
+				seedCount: seeds.length,
+			}
 			const raw =
-				followedArtists.length === 0
+				seeds.length === 0
 					? await this.artists.listTop(this.country, '', MAX_BUBBLES)
-					: await this.fetchSeedSimilar(followedArtists)
+					: await this.fetchSeedSimilar(seeds)
 
 			let next = this.freshFrom(raw)
 
@@ -365,8 +384,7 @@ export class ArtistBubbleStore {
 		)
 	}
 
-	private async fetchSeedSimilar(followedArtists: Artist[]): Promise<Artist[]> {
-		const seeds = this.pickRandomSeeds(followedArtists)
+	private async fetchSeedSimilar(seeds: Artist[]): Promise<Artist[]> {
 		const limitPerSeed = Math.floor(MAX_BUBBLES / seeds.length)
 		this.logger.info('Fetching seed-similar artists', {
 			seedCount: seeds.length,
@@ -402,6 +420,7 @@ export class ArtistBubbleStore {
 		this.seen.clear()
 		this.country = detectCountryFromTimezone()
 		this.fieldBuiltAt = 0
+		this.lastInitialLoad = null
 		this.commitField([], new Map())
 		this.logger.info('Bubble field cleared')
 	}

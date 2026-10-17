@@ -21,6 +21,7 @@ import {
 	type PhysicsBubble,
 } from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'
+import { LABEL_OPACITY_THRESHOLD, RevealMarks } from './reveal-marks'
 import { TapEffects } from './tap-effects'
 
 @useShadowDOM()
@@ -67,6 +68,8 @@ export class DnaOrbCanvas {
 	private orbRenderer = new OrbRenderer()
 	private absorptionAnimator = new AbsorptionAnimator()
 	private tapEffects = new TapEffects()
+	// Cold-load reveal milestones; a fresh component per mount starts a fresh set.
+	private revealMarks = new RevealMarks()
 
 	private readonly audio = resolve(IAudioEngine)
 	private readonly haptic = resolve(IHapticService)
@@ -549,6 +552,7 @@ export class DnaOrbCanvas {
 		for (let i = 0; i < bubbles.length; i++) {
 			this.renderBubble(bubbles[i], i === this.focusedBubbleIndex)
 		}
+		this.reportRevealMarks(bubbles)
 
 		// Layer 2.5: Tap ripples + squash-and-stretch press ghosts
 		this.tapEffects.render(this.ctx)
@@ -567,6 +571,23 @@ export class DnaOrbCanvas {
 
 		// Layer 8: Strobe flash (single-frame overlay, self-clearing)
 		this.orbRenderer.renderStrobeFlash(this.ctx)
+	}
+
+	/**
+	 * Record each cold-load reveal milestone reached this frame as a
+	 * `discovery:<mark>` performance mark and report it to the route through a
+	 * `reveal-mark` event carrying the mark's time (ms since `timeOrigin`).
+	 */
+	private reportRevealMarks(bubbles: readonly PhysicsBubble[]): void {
+		for (const mark of this.revealMarks.observe(bubbles)) {
+			const time = performance.mark(`discovery:${mark}`).startTime
+			this.element.dispatchEvent(
+				new CustomEvent('reveal-mark', {
+					bubbles: true,
+					detail: { mark, time },
+				}),
+			)
+		}
 	}
 
 	/** Memoized per-artist hue (keyed by id, falling back to name). */
@@ -654,8 +675,11 @@ export class DnaOrbCanvas {
 
 		// Artist name fades in during the second half of the spawn so color
 		// fills the bubble before text bleeds through.
-		if (opacity > 0.55) {
-			this.ctx.globalAlpha = Math.min(1, (opacity - 0.55) / 0.45)
+		if (opacity > LABEL_OPACITY_THRESHOLD) {
+			this.ctx.globalAlpha = Math.min(
+				1,
+				(opacity - LABEL_OPACITY_THRESHOLD) / 0.45,
+			)
 			this.renderBubbleText(artistName, x, y, r)
 			this.ctx.globalAlpha = opacity
 		}
