@@ -6,14 +6,14 @@ const CLAIM = 'urn:zitadel:iam:org:project:roles'
 describe('hasOwnerRole', () => {
 	it('returns true when the roles claim carries the owner key', () => {
 		const profile = {
-			[CLAIM]: { owner: { 'org-1': 'tenant.example' } },
+			[CLAIM]: { owner: { 'org-1': 'organization.example' } },
 		}
 		expect(hasOwnerRole(profile)).toBe(true)
 	})
 
 	it('returns false when the claim carries only non-owner roles', () => {
 		const profile = {
-			[CLAIM]: { editor: { 'org-1': 'tenant.example' } },
+			[CLAIM]: { editor: { 'org-1': 'organization.example' } },
 		}
 		expect(hasOwnerRole(profile)).toBe(false)
 	})

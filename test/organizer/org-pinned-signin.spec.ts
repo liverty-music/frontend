@@ -23,7 +23,7 @@ vi.mock('oidc-client-ts')
 /**
  * The organizer console reuses the SAME shared AuthService as the consumer and
  * admin entries (design D1), but — unlike them — its `/config.json` carries NO
- * fixed org id. `organizer/main.ts` pins the tenant per session by folding a
+ * fixed org id. `organizer/main.ts` pins the Organization per session by folding a
  * resolved org handle into `config.zitadelOrgId` before AuthService reads it.
  * These tests pin that org-pinned-entry contract at the OIDC-settings seam:
  *   - `?org_id=<id>` → `urn:zitadel:iam:org:id:<id>` scope;
@@ -78,26 +78,30 @@ describe('AuthService org-pinned sign-in (organizer)', () => {
 	}
 
 	it('pins the resolved org handle into the OIDC scope', () => {
-		buildWith('tenant-org-999')
+		buildWith('organization-999')
 
 		expect(lastSettings.scope).toContain(
-			'urn:zitadel:iam:org:id:tenant-org-999',
+			'urn:zitadel:iam:org:id:organization-999',
 		)
 		expect(lastSettings.scope).toContain('openid profile email offline_access')
 	})
 
-	// @spec stories/sign-in-as-organizer "One OIDC client serves all tenants"
-	it('uses the same OIDC client for every tenant org', () => {
-		buildWith('tenant-org-a')
-		const tenantA = lastSettings
-		buildWith('tenant-org-b')
-		const tenantB = lastSettings
+	// @spec stories/sign-in-as-organizer "One OIDC client serves all Organizations"
+	it('uses the same OIDC client for every Organization', () => {
+		buildWith('organization-a')
+		const organizationA = lastSettings
+		buildWith('organization-b')
+		const organizationB = lastSettings
 
-		expect(tenantA.client_id).toBe(createMockAppConfig().zitadelClientId)
-		expect(tenantB.client_id).toBe(tenantA.client_id)
-		// Only the org scope differs between tenants.
-		expect(tenantA.scope).toContain('urn:zitadel:iam:org:id:tenant-org-a')
-		expect(tenantB.scope).toContain('urn:zitadel:iam:org:id:tenant-org-b')
+		expect(organizationA.client_id).toBe(createMockAppConfig().zitadelClientId)
+		expect(organizationB.client_id).toBe(organizationA.client_id)
+		// Only the org scope differs between Organizations.
+		expect(organizationA.scope).toContain(
+			'urn:zitadel:iam:org:id:organization-a',
+		)
+		expect(organizationB.scope).toContain(
+			'urn:zitadel:iam:org:id:organization-b',
+		)
 	})
 
 	it('omits the org scope entirely when no org id is resolved (unpinned)', () => {

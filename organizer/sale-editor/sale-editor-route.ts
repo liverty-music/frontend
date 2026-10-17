@@ -18,7 +18,7 @@ export function editorOfMethod(method: string | null): SaleEditor | null {
 	return null
 }
 
-/** What an editor shown here must answer before the operator leaves. */
+/** What an editor shown here must answer before the member leaves. */
 interface GuardedEditor {
 	canUnload(): Promise<boolean>
 }

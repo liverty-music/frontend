@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 /**
  * Runs `organizer/i18n/format.ts` in a Node process whose time zone is London,
- * the device of an operator abroad: a test worker cannot change its own time
+ * the device of a member abroad: a test worker cannot change its own time
  * zone once started. Returns what `body` evaluates to, through JSON.
  */
 function inLondon<T>(body: string): T {
@@ -24,7 +24,7 @@ function inLondon<T>(body: string): T {
 }
 
 describe('Japan time on a device abroad', () => {
-	it('@spec components/infrastructure/organizer/web/global/i18n "Operator abroad"', () => {
+	it('@spec components/infrastructure/organizer/web/global/i18n "Member abroad"', () => {
 		// An event starting at 18:00 in Tokyo on 2026-11-03 (09:00 UTC).
 		const result = inLondon<{ deviceHour: number; ja: string; en: string }>(
 			`(() => { const d = new Date('2026-11-03T09:00:00Z'); return { deviceHour: d.getHours(), ja: f.formatJstDateTime(d, 'ja'), en: f.formatJstDateTime(d, 'en') } })()`,

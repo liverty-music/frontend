@@ -1,12 +1,12 @@
 /**
  * Reads the `organizer-console` project roles claim from an OIDC token profile
- * and answers whether the operator holds the tenant `owner` role.
+ * and answers whether the member holds the `owner` role.
  *
  * Zitadel asserts project roles (the OIDC app sets `idTokenRoleAssertion`) into
  * the `urn:zitadel:iam:org:project:roles` claim as an object keyed by role,
  * each value mapping `orgId → domain`:
  *
- *     { "owner": { "<tenantOrgId>": "<tenantDomain>" } }
+ *     { "owner": { "<organizationId>": "<organizationDomain>" } }
  *
  * The client guard treats presence of the `owner` key as "admitted". The
  * backend remains the source of truth for authorization (design D2); this is a
@@ -17,7 +17,7 @@
 const PROJECT_ROLES_CLAIM = 'urn:zitadel:iam:org:project:roles'
 
 /**
- * The single tenant role admitted by the console guard. MUST match the
+ * The single role admitted by the console guard. MUST match the
  * `organizer-console` project role key provisioned in cloud-provisioning
  * (`ORGANIZER_CONSOLE_ROLE_OWNER`).
  */
@@ -40,7 +40,7 @@ export function hasOwnerRole(
 }
 
 /**
- * Returns every tenant org id the token carries ANY project-role grant in — the
+ * Returns every Organization id the token carries ANY project-role grant in — the
  * union of the org-id keys across all roles in the project-roles claim. Used as
  * the org membership signal (independent of which role), so the guard can tell a
  * "different-org session" apart from a "no-grants" session. Empty when the claim

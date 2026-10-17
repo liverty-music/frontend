@@ -135,7 +135,7 @@ export const TypingShortLatin = {
 			'aria-expanded',
 			'false',
 		)
-		// Typed but not picked: the screen can tell the operator to pick.
+		// Typed but not picked: the screen can tell the member to pick.
 		await expect(
 			canvasOf(canvasElement).getByTestId('typed').element(),
 		).toHaveTextContent('typed')
@@ -289,7 +289,7 @@ export const UnavailableWithRetry = {
 		const options = await openList(canvasElement)
 		await expect(options[0]).toHaveTextContent('Zepp Haneda (TOKYO)')
 		await expect(unavailable.client.search).toHaveBeenCalledTimes(2)
-		// 再試行 leaves the operator in the input.
+		// 再試行 leaves the member in the input.
 		await expect(focusedElement()).toBe(combobox(canvasElement).element())
 	},
 } satisfies Story

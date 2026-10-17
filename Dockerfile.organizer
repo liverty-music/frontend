@@ -17,7 +17,7 @@ COPY . .
 
 # Env-agnostic build: the bundle fetches /config.json at runtime from a per-env
 # K8s ConfigMap (the organizer pod mounts its OWN config.json carrying the
-# organizer client id at the canonical path; the tenant org is pinned per
+# organizer client id at the canonical path; the Organizer's Organization is pinned per
 # session by org-pinned entry, so no org id is baked in). See OpenSpec change
 # `organizer-console`.
 RUN npm run build

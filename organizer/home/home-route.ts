@@ -21,7 +21,7 @@ import { IPageProgress } from '../shell/page-progress'
 type PartState = 'loading' | 'ready' | 'error'
 
 /**
- * Home: what needs the operator now, most urgent first, as one list grouped
+ * Home: what needs the member now, most urgent first, as one list grouped
  * by kind under subheaders; each item is one link to where it is resolved
  * (design D18). Reads the concerts, the payout account and the
  * scanners of the events starting within 7 days; a source that fails is

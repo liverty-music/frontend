@@ -20,7 +20,7 @@ import {
 import { expect, type Page, test } from '../support/test'
 
 /**
- * Story: an operator takes one event from draft to the door in the console,
+ * Story: a member takes one event from draft to the door in the console,
  * reaching every step by navigation (stories/run-an-event-from-the-organizer-console).
  * The organizer API is a small in-memory server that publishes, creates the
  * sale and issues scanners, so each screen reads what the previous step did.

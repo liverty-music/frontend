@@ -2,7 +2,7 @@
  * Japan-time and yen formatting for the organizer console.
  *
  * Every date and time is shown in Japan time with "JST", whatever the device's
- * time zone, and every date and time an operator enters is read as Japan time.
+ * time zone, and every date and time a member enters is read as Japan time.
  * Japan has no daylight saving time, so Japan time is always UTC+09:00.
  */
 

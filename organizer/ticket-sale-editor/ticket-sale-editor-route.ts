@@ -425,7 +425,7 @@ export class TicketSaleEditorRoute {
 		const sale = this.sale
 		const type = this.ticketType
 		if (!sale || !type) {
-			// A value the operator saves, in the language of the moment.
+			// A value the member saves, in the language of the moment.
 			return blankFormModel(
 				this.start ?? null,
 				this.language.text('firstComeEditor.defaultName'),

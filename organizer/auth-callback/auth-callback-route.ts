@@ -16,7 +16,7 @@ import { instructionOf, paths } from '../model/concert-model'
  * sessionStorage flag recording that we already restarted sign-in once from the
  * callback to recover a cross-context state miss (see `canLoad`). It bounds the
  * self-heal to a single attempt so a genuinely broken state store cannot loop
- * the operator between the console and Zitadel forever. Tab-scoped.
+ * the member between the console and Zitadel forever. Tab-scoped.
  */
 export const CALLBACK_RETRY_FLAG = 'organizer.callbackRetry'
 
@@ -37,8 +37,8 @@ function isRecoverableStateMiss(err: unknown): boolean {
 
 /**
  * Organizer OIDC callback handler. Completes the authorization-code exchange and
- * routes to the address the operator opened, else to the landing (`/`), which
- * opens the Home of the operator's Organizer. It does NOT enforce the intended
+ * routes to the address the member opened, else to the landing (`/`), which
+ * opens the Home of the member's Organizer. It does NOT enforce the intended
  * org or the owner role itself — the route guard (`OrganizerAuthHook`) does
  * that when routing onwards, which also covers
  * the path where a pre-existing session is admitted without a callback. The
@@ -68,7 +68,7 @@ export class AuthCallbackRoute {
 			this.logger.info('Organizer auth callback succeeded')
 			// Clear the one-shot self-heal marker; the guard enforces org + role.
 			clearSessionFlag(CALLBACK_RETRY_FLAG)
-			// Return the operator to where they were: after an involuntary
+			// Return the member to where they were: after an involuntary
 			// re-auth (sessionStorage), or to the address they opened before
 			// signing in (OIDC state); otherwise the landing, which opens the
 			// Organizer's Home. The guard re-checks org + role.
@@ -86,13 +86,13 @@ export class AuthCallbackRoute {
 			// landing (the guard re-checks the intended org and the owner role).
 			if (this.authService.isAuthenticated) {
 				clearSessionFlag(CALLBACK_RETRY_FLAG)
-				// After an involuntary re-auth, return the operator to where they were.
+				// After an involuntary re-auth, return the member to where they were.
 				return instructionOf(this.authService.takeReturnTo() ?? paths.landing)
 			}
 
 			// Self-heal a cross-context "No matching state" dead-end: restart the
 			// OIDC flow ONCE from this context so `signinRedirect` writes a fresh
-			// state here. The operator typically still holds a Zitadel session
+			// state here. The member typically still holds a Zitadel session
 			// (they just authenticated), so this round-trips back without another
 			// credential prompt and lands a callback whose state IS in this
 			// context's storage. Bounded to one attempt via the sessionStorage flag.

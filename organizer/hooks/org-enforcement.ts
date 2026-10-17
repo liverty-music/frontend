@@ -5,7 +5,7 @@ import { tokenOrgDomains, tokenOrgIds } from './roles'
 /**
  * sessionStorage flag recording that we already forced one re-authentication
  * because the authenticated session resolved to a different org than the
- * intended tenant (design D-D). Bounds the org-mismatch recovery to a single
+ * intended Organization (design D-D). Bounds the org-mismatch recovery to a single
  * attempt so a persistent mismatch fails closed instead of looping. Tab-scoped.
  */
 export const ORG_MISMATCH_FLAG = 'organizer.orgMismatchRetry'
@@ -40,7 +40,7 @@ export function clearSessionFlag(key: string): void {
 export type OrgGate = 'ok' | 'reauth' | 'denied'
 
 /**
- * Enforces that the authenticated session belongs to the INTENDED tenant org
+ * Enforces that the authenticated session belongs to the INTENDED Organization
  * (`intendedOrg` — the Organization id from `?org_id`, or the Organization's
  * primary domain from `?org=<short name>`, or the one remembered on the device). This runs in the route guard so it covers BOTH the
  * fresh-callback path and the path where a pre-existing console session is
@@ -83,7 +83,7 @@ export async function enforceIntendedOrg(
 	if (!readSessionFlag(ORG_MISMATCH_FLAG)) {
 		setSessionFlag(ORG_MISMATCH_FLAG)
 		logger.info(
-			'Authenticated org is not the intended tenant; forcing re-authentication',
+			'Authenticated org is not the intended Organization; forcing re-authentication',
 		)
 		await authService.signIn({ forceLogin: true, uiLocales })
 		return 'reauth'

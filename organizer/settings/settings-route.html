@@ -46,7 +46,7 @@
       </p>
       <template if.bind="!payoutActive">
         <p class="note">${'settings.payout.notBlocking' & t}</p>
-        <!-- The hand-off to Stripe is explained before the operator leaves the console. -->
+        <!-- The hand-off to Stripe is explained before the member leaves the console. -->
         <template if.bind="account.onboardingUrl">
           <p class="explain">${'settings.payout.stripe' & t}</p>
           <p class="explain">${'settings.payout.newTab' & t}</p>

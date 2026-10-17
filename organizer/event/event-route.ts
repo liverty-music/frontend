@@ -226,7 +226,7 @@ export class EventRoute {
 		}
 	}
 
-	/** Retry of a confirmed publish: the operator already said yes. */
+	/** Retry of a confirmed publish: the member already said yes. */
 	private async publishConfirmed(): Promise<void> {
 		try {
 			const concert = await this.series.publish(this.page.seriesId, [

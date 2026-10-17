@@ -43,7 +43,7 @@ export interface FieldChange {
  * read as Japan time by the screen (`parseJstDateTimeLocal`).
  *
  * The control and its label live in the field's shadow root. A screen reads
- * the value through `value` or, when the operator commits a change, through
+ * the value through `value` or, when the member commits a change, through
  * the field's own `change` event (`$event.detail.value`): the control's native
  * `change` does not leave the shadow root.
  */

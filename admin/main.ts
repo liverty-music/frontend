@@ -75,7 +75,7 @@ async function bootstrap(): Promise<void> {
 	// filled from `pulumi stack output adminConsoleClientId`. The shared
 	// validator only rejects empty strings, so without this guard the SPA would
 	// boot and only fail opaquely at the Zitadel redirect with `invalid_client`.
-	// Surfacing it here points the operator at the ConfigMap, not the IdP.
+	// Surfacing it here points the deployer at the ConfigMap, not the IdP.
 	if (config.zitadelClientId.startsWith('PENDING_')) {
 		throw new Error(
 			`Admin OIDC client id is not provisioned (got "${config.zitadelClientId}"). ` +

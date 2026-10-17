@@ -38,7 +38,7 @@ export interface AppConfig {
 	 * SPA and admin console — both pin a single org at build/deploy time.
 	 *
 	 * Optional because the organizer console omits it by contract: one client
-	 * serves every Organizer tenant and the org is pinned per session by
+	 * serves every Organizer's Organization and the org is pinned per session by
 	 * org-pinned entry (an org handle), not baked into config. The organizer
 	 * entry loads config with `requireOrgId: false` and folds the
 	 * runtime-resolved org id in before registering it. See OpenSpec change
@@ -145,7 +145,7 @@ export interface LoadAppConfigOptions {
 	/**
 	 * Whether `zitadelOrgId` is a required field. Defaults to `true` (the
 	 * consumer SPA and admin console both pin a fixed org). The organizer
-	 * console passes `false`: it omits a fixed org id and pins the tenant per
+	 * console passes `false`: it omits a fixed org id and pins the Organization per
 	 * session by org-pinned entry. See OpenSpec change `organizer-console`.
 	 */
 	readonly requireOrgId?: boolean
@@ -354,7 +354,7 @@ function validateAppConfig(
 
 	// `zitadelOrgId` is required by default (consumer SPA + admin console pin a
 	// fixed org). The organizer console passes `requireOrgId: false` — it omits
-	// a fixed org id and pins the tenant per session by org-pinned entry. When
+	// a fixed org id and pins the Organization per session by org-pinned entry. When
 	// not required, a present value is still validated as a string.
 	const requireOrgId = options?.requireOrgId ?? true
 	const zitadelOrgId = requireOrgId

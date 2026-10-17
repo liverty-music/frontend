@@ -21,7 +21,7 @@ import {
 
 export type HomeItemKind = 'payout' | 'scanner' | 'startTime' | 'draft'
 
-/** One thing that needs the operator, with the one action that resolves it. */
+/** One thing that needs the member, with the one action that resolves it. */
 export interface HomeItem {
 	kind: HomeItemKind
 	/** Stable key for the list. */
@@ -93,7 +93,7 @@ export interface HomeSources {
 }
 
 /**
- * What needs the operator now, most urgent kind first, then by date. An item
+ * What needs the member now, most urgent kind first, then by date. An item
  * about a concert opens it under the first of its performers the Organizer
  * represents.
  */

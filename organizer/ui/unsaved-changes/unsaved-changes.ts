@@ -29,7 +29,7 @@ export class UnsavedChanges {
 		window.removeEventListener('beforeunload', this.onBeforeUnload)
 	}
 
-	/** True when the editor may be left: nothing unsaved, or the operator discards it. */
+	/** True when the editor may be left: nothing unsaved, or the member discards it. */
 	public async confirmLeave(): Promise<boolean> {
 		if (!this.dirty) return true
 		return this.dialog.ask()

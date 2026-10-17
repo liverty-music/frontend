@@ -34,7 +34,7 @@ export async function navigateOrShell(
 
 /**
  * `/config.json`: always read from the network and keep the last good copy;
- * serve that copy only when the network fails, so an operator change still
+ * serve that copy only when the network fails, so a deployer's change still
  * reaches every online boot.
  */
 export async function configNetworkFirst(

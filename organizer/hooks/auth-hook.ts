@@ -29,9 +29,9 @@ import { hasOwnerRole } from './roles'
  *      sign-in link from the email returns them to it. The OIDC callback and
  *      find-organizer routes opt out via `data: { auth: false }`.
  *   2. **Authorization** — unlike the admin console (where org-scoped login is
- *      itself the wall), any tenant-org account authenticates successfully, so
+ *      itself the wall), any identity in the Organization authenticates successfully, so
  *      the guard inspects the `organizer-console` project roles claim and
- *      admits only operators holding `owner`. A signed-in account without the
+ *      admits only identities holding `owner`. A signed-in account without the
  *      role is routed to the `denied` placeholder. The backend remains the
  *      source of truth for authorization; this guard is a UX gate.
  *
@@ -66,7 +66,7 @@ export class OrganizerAuthHook
 			// Not signed in — start the OIDC redirect and abort the in-app nav. The
 			// browser navigates away to Zitadel, so no organizer content renders.
 			// Pass login_hint when present (invitation link, first sign-in) so
-			// Zitadel pre-fills the operator's email address (design D5).
+			// Zitadel pre-fills the member's email address (design D5).
 			const opened = `${window.location.pathname}${window.location.search}`
 			if (!this.namesOrganization) {
 				// A sign-in naming no Organization resolves to the person's fan
@@ -76,7 +76,7 @@ export class OrganizerAuthHook
 				return '/find-organizer'
 			}
 			this.logger.info('Unauthenticated organizer access; starting sign-in')
-			// After sign-in the operator returns to the address they opened, or,
+			// After sign-in the member returns to the address they opened, or,
 			// arriving on `/` through a sign-in link, to the address they opened
 			// before asking for the link.
 			const pending =
@@ -97,11 +97,11 @@ export class OrganizerAuthHook
 			return true
 		}
 
-		// Enforce the authenticated session is the INTENDED tenant (design D-D).
+		// Enforce the authenticated session is in the INTENDED Organization (design D-D).
 		// This must be in the guard, not only the callback: a pre-existing console
 		// session for a different org is admitted here WITHOUT a fresh OIDC
 		// exchange (no callback), so a callback-only check would miss it and
-		// silently onboard the wrong operator.
+		// silently onboard the wrong member.
 		const gate = await enforceIntendedOrg(
 			this.authService,
 			this.config.zitadelOrgId ?? this.config.zitadelOrgPrimaryDomain,

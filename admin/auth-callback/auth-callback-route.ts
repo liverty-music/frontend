@@ -26,7 +26,7 @@ export class AuthCallbackRoute {
 		try {
 			await this.authService.handleCallback()
 			this.logger.info('Admin auth callback succeeded')
-			// After an involuntary re-auth, return the operator to where they were.
+			// After an involuntary re-auth, return the admin to where they were.
 			return this.authService.takeReturnTo() ?? '/welcome'
 		} catch (err) {
 			this.logger.error('Admin auth callback error:', err)

@@ -7,7 +7,7 @@ import {
 /**
  * Focused coverage for the `requireOrgId` contract added by OpenSpec change
  * `organizer-console`: the consumer SPA and admin console require a fixed
- * `zitadelOrgId`, while the organizer console (which pins the tenant per
+ * `zitadelOrgId`, while the organizer console (which pins the Organization per
  * session by org-pinned entry) loads with `requireOrgId: false` and tolerates
  * its absence.
  */
@@ -49,7 +49,7 @@ describe('loadAppConfig — zitadelOrgId requirement', () => {
 		await expect(loadAppConfig()).rejects.toThrow(/zitadelOrgId/)
 	})
 
-	// @spec stories/sign-in-as-organizer "One OIDC client serves all tenants"
+	// @spec stories/sign-in-as-organizer "One OIDC client serves all Organizations"
 	it('accepts a config missing zitadelOrgId when requireOrgId is false (organizer)', async () => {
 		mockConfigFetch(BASE_CONFIG)
 		const config = await loadAppConfig({ requireOrgId: false })

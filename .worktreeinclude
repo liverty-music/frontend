@@ -5,7 +5,7 @@
 # session by re-running the capture in the main checkout and recreating the
 # worktree (see .auth/README.md).
 
-# Playwright authenticated session for the dev Zitadel tenant, consumed by the
+# Playwright authenticated session for the dev Zitadel instance, consumed by the
 # playwright-auth MCP server and the authenticated Playwright projects.
 .auth/storageState.json
 # Test-user password used to re-capture the session above.

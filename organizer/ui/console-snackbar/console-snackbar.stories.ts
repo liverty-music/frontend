@@ -139,16 +139,16 @@ export const SaveFailed = {
 		await new Promise((resolve) => setTimeout(resolve, 5000))
 		await expect(openSnacks(canvasElement)).toHaveLength(1)
 
-		// Closed only by the operator.
+		// Closed only by the member.
 		await userEvent.click(within(snack).getByRole('button', { name: '閉じる' }))
 		await waitFor(() => expect(openSnacks(canvasElement)).toHaveLength(0))
 	},
 } satisfies Story
 
-export const OperatorRetries = {
+export const MemberRetries = {
 	render,
 	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/organizer/web/global/snack-bar "Operator retries"
+		// @spec components/infrastructure/organizer/web/global/snack-bar "Member retries"
 		let retries = 0
 		snackbarOf(canvasElement).showError('concertEditor.saveFailed', {
 			retry: () => {

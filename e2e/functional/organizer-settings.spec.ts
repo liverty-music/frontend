@@ -106,7 +106,7 @@ test.describe('payout account', () => {
 		const payout = part(page, '入金口座')
 		await expect(payout.getByTestId('payout-status')).toHaveText('確認中')
 		await expect(payout).toContainText('ファンはチケットを購入できます')
-		// What the hand-off is, before the operator leaves the console.
+		// What the hand-off is, before the member leaves the console.
 		const explanation = [
 			'Liverty Music の決済代行会社 Stripe',
 			'事業者の情報、代表者の本人確認、入金先の銀行口座',
@@ -148,7 +148,7 @@ test.describe('payout account', () => {
 			(c) => c.method === 'PayoutAccountService/Get',
 		).length
 
-		// Onboarding finishes in the other tab; the operator returns to this one.
+		// Onboarding finishes in the other tab; the member returns to this one.
 		status = 'ACTIVE'
 		await page.evaluate(() => {
 			Object.defineProperty(document, 'visibilityState', {

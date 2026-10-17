@@ -90,7 +90,7 @@ export function checkBuildTemplates(distDir: string): CheckResult {
 			// than a silent first-match) — duplicate chunk emission
 			// usually means a tree-shaking regression or two competing
 			// route definitions. The CLI prints all entries so the
-			// operator can diagnose.
+			// deployer can diagnose.
 			failures.push(
 				`route '${route}': multiple chunks emitted in ${assetsDir} (${lookup.entries.join(', ')}). Expected exactly one '<route>-route-*.js'.`,
 			)

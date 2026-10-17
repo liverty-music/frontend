@@ -35,10 +35,10 @@ export const MAX_CANDIDATES = 5
 let nextId = 0
 
 /**
- * Finds an event's venue in the map catalog as the operator types (design D9):
+ * Finds an event's venue in the map catalog as the member types (design D9):
  * 500 ms after the last keystroke, once the text is long enough
  * (`searchableText`), the field lists up to 5 places in an ARIA combobox and
- * the operator picks one with the pointer or the keyboard (arrows move, Enter
+ * the member picks one with the pointer or the keyboard (arrows move, Enter
  * picks, Escape closes). Only the answer to the latest text is shown: a newer
  * keystroke aborts the request in flight and drops its late answer.
  *
@@ -167,7 +167,7 @@ export class VenueField {
 		}
 	}
 
-	/** 再試行: searches again and keeps the operator in the input. */
+	/** 再試行: searches again and keeps the member in the input. */
 	public retry(): void {
 		this.input?.focus()
 		void this.runSearch()

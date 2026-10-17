@@ -64,7 +64,7 @@ describe('readOrgPinFromSearch', () => {
 describe('resolveOrgPin', () => {
 	// The invite's default redirect returns to /?org_id=<id>; the console pins
 	// sign-in to that Organization's login policy.
-	// @spec stories/sign-in-as-organizer "Invited operator lands on the console after accepting the invite"
+	// @spec stories/sign-in-as-organizer "Invited owner lands on the console after accepting the invite"
 	it('returns an id from the address and remembers it', () => {
 		const storage = createMockLocalStorage({
 			[ORG_SHORT_NAME_STORAGE_KEY]: 'old-label',

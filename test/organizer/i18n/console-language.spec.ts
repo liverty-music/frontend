@@ -66,7 +66,7 @@ describe('console language', () => {
 		await tearDown()
 	})
 
-	it('@spec components/infrastructure/organizer/web/global/i18n "Operator switches to English"', async () => {
+	it('@spec components/infrastructure/organizer/web/global/i18n "Member switches to English"', async () => {
 		browserLanguages(['ja-JP'])
 		const first = await mount(
 			`<p>\${'common.save' & t}</p><p>\${price | yen}</p>`,

@@ -47,7 +47,7 @@ describe('createOrganizerAuthRetryInterceptor', () => {
 			mockAuth as unknown as IAuthService,
 			language,
 		)(next)
-		// The operator switched the language after the client was created.
+		// The member switched the language after the client was created.
 		language.current = 'en'
 
 		await expect(handler(makeRequest())).rejects.toThrow()
