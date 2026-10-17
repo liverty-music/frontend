@@ -395,6 +395,7 @@ describe('EventRoute', () => {
 			expect(auth.signUp).toHaveBeenCalledWith({
 				origin: 'event-page',
 				returnTo: `/events/${EVENT_ID}`,
+				uiLocales: 'ja',
 			})
 		})
 	})
@@ -476,6 +477,7 @@ describe('EventRoute', () => {
 			expect(auth.signUp).toHaveBeenCalledWith({
 				origin: 'event-page',
 				returnTo: `/events/${EVENT_ID}`,
+				uiLocales: 'ja',
 			})
 		})
 
@@ -885,6 +887,7 @@ describe('EventRoute', () => {
 			expect(auth.signUp).toHaveBeenCalledWith({
 				origin: 'event-page',
 				returnTo: `/events/${EVENT_ID}`,
+				uiLocales: 'ja',
 			})
 			expect(kept()).toMatchObject({ code: 'member-a' })
 		})

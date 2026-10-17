@@ -196,6 +196,27 @@ describe('AuthService', () => {
 		})
 	})
 
+	it('signIn forwards uiLocales as ui_locales', async () => {
+		await sut.signIn({ uiLocales: 'ja' })
+		const arg = userManagerMock.signinRedirect.mock.calls[0]?.[0] ?? {}
+		expect(arg.ui_locales).toBe('ja')
+	})
+
+	it('signIn sends no ui_locales when none is given', async () => {
+		await sut.signIn()
+		const arg = userManagerMock.signinRedirect.mock.calls[0]?.[0] ?? {}
+		expect(arg).not.toHaveProperty('ui_locales')
+	})
+
+	it('signUp forwards uiLocales as ui_locales', async () => {
+		await sut.signUp({ uiLocales: 'en' })
+		expect(userManagerMock.signinRedirect).toHaveBeenCalledWith({
+			prompt: 'create',
+			state: { flow: 'signup' },
+			ui_locales: 'en',
+		})
+	})
+
 	it('signOut calls signoutRedirect', async () => {
 		await sut.signOut()
 		expect(userManagerMock.signoutRedirect).toHaveBeenCalled()

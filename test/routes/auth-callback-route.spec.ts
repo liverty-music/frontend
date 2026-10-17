@@ -2,6 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import type { RouteNode } from '@aurelia/router'
 import { IEventAggregator, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { StorageKeys } from '../../src/constants/storage-keys'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { GuestMigrationRequested } from '../../src/services/events/guest-migration-requested'
@@ -95,6 +96,7 @@ describe('AuthCallbackRoute', () => {
 	}
 
 	beforeEach(() => {
+		localStorage.removeItem(StorageKeys.language)
 		mockAuth = createMockAuth({
 			isAuthenticated: false,
 			ready: Promise.resolve(),
@@ -416,6 +418,8 @@ describe('AuthCallbackRoute', () => {
 				const result = await sut.canLoad({}, {} as RouteNode)
 
 				expect(mockI18n.setLocale).toHaveBeenCalledWith('en')
+				// Saved on this device, so a later sign-out opens in it.
+				expect(localStorage.getItem(StorageKeys.language)).toBe('en')
 				expect(result).toBe('/dashboard')
 			})
 

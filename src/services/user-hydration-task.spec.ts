@@ -41,8 +41,7 @@ const mockI18n = {
 }
 
 // In-memory ILocalStorage stub. Independent of the global `localStorage`
-// (which the project's prod code does NOT touch in these hydration paths
-// after this refactor — it goes through the ILocalStorage adapter).
+// (the hydration paths go through the ILocalStorage adapter).
 const lsMap = new Map<string, string>()
 const mockLocalStorage: ILocalStorage = {
 	getItem: vi.fn((k: string) => lsMap.get(k) ?? null),
@@ -191,7 +190,8 @@ describe('runUserHydration', () => {
 		expect(mockAnalyticsService.identify).not.toHaveBeenCalled()
 	})
 
-	it('applies preferred_language to i18n when present and differs from clientLocale', async () => {
+	// @spec components/infrastructure/fan/web/global/i18n "Saved language differs from the account's language"
+	it('applies preferred_language to i18n when present and differs from clientLocale, and saves it', async () => {
 		mockUserStore.current = { id: 'user-1', preferredLanguage: 'ja' }
 		mockUserStore.ensureLoaded.mockImplementationOnce(async () => {
 			return mockUserStore.current
@@ -203,7 +203,8 @@ describe('runUserHydration', () => {
 
 		expect(mockI18n.setLocale).toHaveBeenCalledWith('ja')
 		expect(mockUserStore.updatePreferredLanguage).not.toHaveBeenCalled()
-		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
+		// The saved `en` now follows the account's language.
+		expect(lsMap.get(StorageKeys.language)).toBe('ja')
 	})
 
 	it('skips setLocale when preferred_language equals clientLocale', async () => {
@@ -217,7 +218,7 @@ describe('runUserHydration', () => {
 
 		// Steady state: no churn from a redundant setLocale.
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
-		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
+		expect(lsMap.get(StorageKeys.language)).toBe('en')
 	})
 
 	it('skips setLocale, warns, and KEEPS localStorage on unsupported preferred_language', async () => {
@@ -230,10 +231,7 @@ describe('runUserHydration', () => {
 		await flushMicrotasks()
 
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
-		// Cleanup MUST NOT run when the DB-authoritative locale could not
-		// be applied — the user's anonymous-period localStorage value is
-		// the only fallback the next boot has until backend / client
-		// drift is resolved.
+		// The saved language follows only a locale actually applied.
 		expect(lsMap.get(StorageKeys.language)).toBe('en')
 	})
 
@@ -245,6 +243,7 @@ describe('runUserHydration', () => {
 			return mockUserStore.current
 		})
 		i18nState.locale = 'ja'
+		lsMap.set(StorageKeys.language, 'ja')
 
 		await runUserHydration(makeContainer())
 		await flushMicrotasks()
@@ -254,7 +253,8 @@ describe('runUserHydration', () => {
 		expect(mockUserStore.current?.preferredLanguage).toBe('ja')
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
 		expect(i18nState.locale).toBe('ja')
-		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
+		// The saved language is kept after a successful backfill.
+		expect(lsMap.get(StorageKeys.language)).toBe('ja')
 		expect(sessionStorage.getItem(SessionKeys.languageBackfillAttempted)).toBe(
 			'1',
 		)
@@ -279,10 +279,6 @@ describe('runUserHydration', () => {
 		)
 		expect(i18nState.locale).toBe('en')
 
-		// Backfill failed → KEEP localStorage['language'] so the next
-		// session can re-detect the user's explicit anonymous choice and
-		// retry the backfill. Removing it on failure would lose the
-		// user's preference if both DB and localStorage are now empty.
 		expect(lsMap.get(StorageKeys.language)).toBe('en')
 		// Optimistic flag was rolled back on failure.
 		expect(
@@ -290,16 +286,22 @@ describe('runUserHydration', () => {
 		).toBeNull()
 	})
 
-	it('removes localStorage["language"] after hydration even when language was already set', async () => {
+	// @spec components/infrastructure/fan/web/global/i18n "Sign-out after a reload keeps the language"
+	it('keeps localStorage["language"] after hydration so a later sign-out opens in it', async () => {
+		// A reload of a signed-in session: the key already holds the account's
+		// language and hydration finds nothing to change.
 		mockUserStore.current = { id: 'user-1', preferredLanguage: 'ja' }
 		mockUserStore.ensureLoaded.mockImplementationOnce(async () => {
 			return mockUserStore.current
 		})
+		i18nState.locale = 'ja'
+		lsMap.set(StorageKeys.language, 'ja')
 
 		await runUserHydration(makeContainer())
 		await flushMicrotasks()
 
-		expect(lsMap.get(StorageKeys.language)).toBeUndefined()
+		expect(mockLocalStorage.removeItem).not.toHaveBeenCalled()
+		expect(lsMap.get(StorageKeys.language)).toBe('ja')
 	})
 
 	it('does NOT re-fire backfill on a second call when the session flag is set', async () => {
@@ -373,8 +375,6 @@ describe('runUserHydration', () => {
 
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
 		expect(mockUserStore.updatePreferredLanguage).not.toHaveBeenCalled()
-		// localStorage cleanup is gated on a successful hydration; the legacy
-		// key stays in place so the next boot can re-attempt.
 		expect(lsMap.get(StorageKeys.language)).toBe('en')
 	})
 })

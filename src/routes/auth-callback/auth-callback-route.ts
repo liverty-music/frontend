@@ -90,10 +90,10 @@ export class AuthCallbackRoute {
 			// is region-tagged AND no prior setLocale call has cached a
 			// 2-letter code. Without normalize, 'en' !== 'en-US' is always
 			// true and setLocale fires on every sign-in for English-browser
-			// users, triggering the i18next-browser-languagedetector
-			// `languageChanged` listener to write localStorage['language']
-			// — contradicting the PR's invariant of no implicit localStorage
-			// writes during the authed path.
+			// users.
+			//
+			// The applied language is saved on this device as well, so the
+			// first screen after a sign-out opens in it.
 			if (
 				preferred &&
 				isSupportedLanguage(preferred) &&
@@ -101,6 +101,7 @@ export class AuthCallbackRoute {
 			) {
 				try {
 					await this.i18n.setLocale(preferred)
+					localStorage.setItem(StorageKeys.language, preferred)
 				} catch (err) {
 					this.logger.warn(
 						'Failed to apply DB-preferred language to i18n after sign-in',
@@ -193,29 +194,6 @@ export class AuthCallbackRoute {
 		if (guestHome && email) {
 			// Capture the effective locale at signup so the new user row carries
 			// the language the visitor was experiencing pre-account.
-			//
-			// localStorage['language'] cleanup is owned by UserHydrationTask
-			// (single owner for the legacy-key migration). The task is
-			// registered as an AppTask.activating which is a ONE-TIME boot
-			// hook: it fires once when Aurelia transitions to active state,
-			// before any routing — it does NOT re-run on subsequent
-			// navigations.
-			//
-			// Concretely:
-			//   - For both sign-in and sign-up flows arriving here via the
-			//     OIDC callback, AppTask.activating already fired earlier in
-			//     the same browser session, while the user was still
-			//     unauthenticated. runUserHydration returned early in that
-			//     pre-auth tick (auth.ready resolved with isAuthenticated =
-			//     false), so cleanup did NOT run on the current session.
-			//   - The cleanup therefore runs on the NEXT cold-boot tick
-			//     once the user is authenticated. The legacy key may
-			//     survive the current session, which is harmless because
-			//     no authenticated code path reads it.
-			//
-			// If "cleanup before first authenticated read" ever becomes a
-			// hard requirement, the right fix is to call the cleanup
-			// imperatively here, not to rely on AppTask.activating.
 			return this.userStore.create(
 				email,
 				normalizeToSupportedLanguage(this.i18n.getLocale()),

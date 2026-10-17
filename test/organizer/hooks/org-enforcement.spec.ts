@@ -80,9 +80,11 @@ describe('enforceIntendedOrg', () => {
 			'org-1',
 			profileInOrg('org-2'),
 			logger,
+			'ja',
 		)
 		expect(gate).toBe('reauth')
-		expect(a.signIn).toHaveBeenCalledWith({ forceLogin: true })
+		// The re-auth opens the hosted login in the console's language.
+		expect(a.signIn).toHaveBeenCalledWith({ forceLogin: true, uiLocales: 'ja' })
 		expect(window.sessionStorage.getItem(ORG_MISMATCH_FLAG)).toBe('1')
 	})
 

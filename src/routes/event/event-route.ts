@@ -20,6 +20,7 @@ import { IAuthService } from '../../services/auth-service'
 import { IFollowStore } from '../../services/follow-store'
 import { IPurchasedTicketStore } from '../../services/purchased-ticket-store'
 import { IUserStore } from '../../services/user-store'
+import { currentLanguage } from '../../util/change-locale'
 import {
 	buildIcs,
 	canonicalEventUrl,
@@ -457,6 +458,7 @@ export class EventRoute implements IRouteViewModel {
 		await this.authService.signUp({
 			origin: 'event-page',
 			returnTo: `/events/${this.event.id}`,
+			uiLocales: currentLanguage(this.i18n),
 		})
 	}
 }

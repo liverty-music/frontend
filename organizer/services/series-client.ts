@@ -22,6 +22,7 @@ import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
 import { concertResolver } from '../../shared/lib/concert/resolve-concert'
 import { IAuthService } from '../../shared/services/auth-service'
+import { IConsoleLanguage } from '../i18n/console-language'
 import { createOrganizerTransport } from './organizer-transport'
 
 export type { ProtoEventDraft, ProtoSeriesDraft }
@@ -181,6 +182,7 @@ export class SeriesClient {
 			this.authService,
 			resolve(ILogger).scopeTo('OrganizerTransport'),
 			resolve(IAppConfig),
+			resolve(IConsoleLanguage),
 		),
 	)
 

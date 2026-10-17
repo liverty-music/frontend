@@ -1,12 +1,14 @@
 import type { Interceptor } from '@connectrpc/connect'
 import { createTokenRefreshInterceptor } from '../../shared/services/auth-retry-interceptor'
 import type { IAuthService } from '../../shared/services/auth-service'
+import type { IConsoleLanguage } from '../i18n/console-language'
 
 /**
  * Organizer auth-retry interceptor. Delegates the shared refresh/retry mechanics
  * to {@link createTokenRefreshInterceptor}; the organizer specific is its
  * unrecoverable-expiry action — restart the OIDC flow via `auth.signIn()`
- * (matching `OrganizerAuthHook`). Organizer has no guest mode, so an
+ * (matching `OrganizerAuthHook`), with the hosted login in the language the
+ * console shows at that moment. Organizer has no guest mode, so an
  * authenticated-only 401 always attempts recovery.
  *
  * Using the shared core (rather than a private module-level refresh guard) is
@@ -18,7 +20,8 @@ import type { IAuthService } from '../../shared/services/auth-service'
  */
 export const createOrganizerAuthRetryInterceptor = (
 	auth: IAuthService,
+	language: Pick<IConsoleLanguage, 'current'>,
 ): Interceptor =>
 	createTokenRefreshInterceptor(auth, {
-		onUnrecoverable: () => auth.signIn(),
+		onUnrecoverable: () => auth.signIn({ uiLocales: language.current }),
 	})

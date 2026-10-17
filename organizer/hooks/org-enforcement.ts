@@ -54,12 +54,16 @@ export type OrgGate = 'ok' | 'reauth' | 'denied'
  * - `'reauth'`: the token belongs to a DIFFERENT org (reused session), first
  *   attempt — re-auth started with `prompt=login`; the caller aborts nav.
  * - `'denied'`: still the wrong org after a prior re-auth — fail closed.
+ *
+ * `uiLocales` is the language the console shows, for the hosted login of the
+ * re-auth.
  */
 export async function enforceIntendedOrg(
 	authService: Pick<IAuthService, 'signIn'>,
 	intendedOrg: string | undefined,
 	profile: Record<string, unknown> | undefined,
 	logger: ILogger,
+	uiLocales?: string,
 ): Promise<OrgGate> {
 	const orgs = tokenOrgIds(profile)
 	// Acceptable: nothing to enforce, the token is in the intended org (named by
@@ -81,7 +85,7 @@ export async function enforceIntendedOrg(
 		logger.info(
 			'Authenticated org is not the intended tenant; forcing re-authentication',
 		)
-		await authService.signIn({ forceLogin: true })
+		await authService.signIn({ forceLogin: true, uiLocales })
 		return 'reauth'
 	}
 

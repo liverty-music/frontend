@@ -88,6 +88,26 @@ export interface SignUpOptions {
 	/** In-app path (starting with a single `/`) to return to after sign-up. */
 	returnTo?: string
 	origin?: AuthFlowOrigin
+	/** Language the hosted login should show; see {@link SignInOptions.uiLocales}. */
+	uiLocales?: string
+}
+
+/** Options of {@link AuthService.signIn}. */
+export interface SignInOptions {
+	loginHint?: string
+	forceLogin?: boolean
+	/**
+	 * In-app path (starting with a single `/`) to show after the callback,
+	 * carried in the OIDC state. Read it back with {@link resolveAuthReturnTo}.
+	 */
+	returnTo?: string
+	/**
+	 * Language the hosted login should show (OIDC `ui_locales`), i.e. the
+	 * language the calling app is showing. Each app resolves it itself: the
+	 * admin app has no i18n and sends none, so the hosted login falls back to
+	 * the browser language.
+	 */
+	uiLocales?: string
 }
 
 /**
@@ -322,15 +342,7 @@ export class AuthService {
 		})
 	}
 
-	public async signIn(options?: {
-		loginHint?: string
-		forceLogin?: boolean
-		/**
-		 * In-app path (starting with a single `/`) to show after the callback,
-		 * carried in the OIDC state. Read it back with {@link resolveAuthReturnTo}.
-		 */
-		returnTo?: string
-	}): Promise<void> {
+	public async signIn(options?: SignInOptions): Promise<void> {
 		this.logger.info('Starting sign-in flow')
 		// A sign-in carries no flow marker (see signUp); only the return path.
 		const returnTo = options?.returnTo
@@ -348,6 +360,7 @@ export class AuthService {
 				? { prompt: 'login' }
 				: {}),
 			...(options?.loginHint ? { login_hint: options.loginHint } : {}),
+			...(options?.uiLocales ? { ui_locales: options.uiLocales } : {}),
 			...(state ? { state } : {}),
 		})
 	}
@@ -365,7 +378,11 @@ export class AuthService {
 		const state: AuthFlowState = { flow: 'signup' }
 		if (options.origin) state.origin = options.origin
 		if (isInAppPath(options.returnTo)) state.returnTo = options.returnTo
-		await this.userManager.signinRedirect({ prompt: 'create', state })
+		await this.userManager.signinRedirect({
+			prompt: 'create',
+			state,
+			...(options.uiLocales ? { ui_locales: options.uiLocales } : {}),
+		})
 	}
 
 	public async signOut(): Promise<void> {

@@ -3,6 +3,7 @@ import { createConnectTransport } from '@connectrpc/connect-web'
 import type { ILogger } from 'aurelia'
 import type { AppConfig } from '../../shared/config/app-config'
 import type { IAuthService } from '../../shared/services/auth-service'
+import type { IConsoleLanguage } from '../i18n/console-language'
 import { createOrganizerAuthRetryInterceptor } from './organizer-auth-retry-interceptor'
 
 /** Logs each Connect-RPC request/response with its wall-clock duration. */
@@ -52,12 +53,15 @@ const createLoggingInterceptor =
  * @param auth - Shared AuthService used to read the OIDC access token
  * @param logger - Logger scoped to the organizer transport
  * @param config - Resolved runtime AppConfig providing `apiBaseUrl`
+ * @param language - The console language, read when a forced re-auth starts
+ *   so the hosted login opens in it
  * @returns A configured Connect transport with logging, auth, and auth-retry interceptors
  */
 export const createOrganizerTransport = (
 	auth: IAuthService,
 	logger: ILogger,
 	config: AppConfig,
+	language: Pick<IConsoleLanguage, 'current'>,
 ) => {
 	/** Injects the OIDC access token as a bearer token on every request. */
 	const authInterceptor: Interceptor = (next) => async (req) => {
@@ -86,7 +90,7 @@ export const createOrganizerTransport = (
 		interceptors: [
 			loggingInterceptor,
 			authInterceptor,
-			createOrganizerAuthRetryInterceptor(auth),
+			createOrganizerAuthRetryInterceptor(auth, language),
 		],
 	})
 }

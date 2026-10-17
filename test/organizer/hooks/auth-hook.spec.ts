@@ -23,6 +23,9 @@ vi.mock('../../../organizer/services/login-hint', () => ({
 }))
 
 const { OrganizerAuthHook } = await import('../../../organizer/hooks/auth-hook')
+const { IConsoleLanguage } = await import(
+	'../../../organizer/i18n/console-language'
+)
 const { savePendingReturn } = await import(
 	'../../../organizer/adapter/storage/pending-return-storage'
 )
@@ -49,6 +52,8 @@ function userOwnerInOrg(orgId: string): User {
 describe('OrganizerAuthHook', () => {
 	let sut: InstanceType<typeof OrganizerAuthHook>
 	let mockAuth: ReturnType<typeof createMockAuth>
+	/** The language the console shows; `ja` unless a test switches it. */
+	let language: { current: 'ja' | 'en' }
 
 	function build(
 		authOverrides: Parameters<typeof createMockAuth>[0],
@@ -58,6 +63,7 @@ describe('OrganizerAuthHook', () => {
 		const container = createTestContainer(
 			Registration.instance(mockIAuthService, mockAuth),
 			Registration.instance(mockILoginHint, loginHint),
+			Registration.instance(IConsoleLanguage, language),
 		)
 		container.register(OrganizerAuthHook)
 		sut = container.get(OrganizerAuthHook)
@@ -65,6 +71,7 @@ describe('OrganizerAuthHook', () => {
 
 	beforeEach(() => {
 		window.sessionStorage.clear()
+		language = { current: 'ja' }
 		build({ isAuthenticated: true, user: userWithRoles({ owner: {} }) })
 	})
 
@@ -97,7 +104,33 @@ describe('OrganizerAuthHook', () => {
 		expect(mockAuth.signIn).toHaveBeenCalledWith({
 			loginHint: 'operator@example.com',
 			returnTo: `${window.location.pathname}${window.location.search}`,
+			uiLocales: 'ja',
 		})
+	})
+
+	// @spec components/infrastructure/organizer/web/global/i18n "Operator who chose Japanese on an English browser"
+	it('asks the hosted login for the language the console shows', async () => {
+		// The console shows Japanese, whatever the browser prefers: the device's
+		// saved choice decided it.
+		language.current = 'ja'
+		build({ isAuthenticated: false })
+
+		await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+		expect(mockAuth.signIn).toHaveBeenCalledWith(
+			expect.objectContaining({ uiLocales: 'ja' }),
+		)
+	})
+
+	it('asks the hosted login for English when the console shows English', async () => {
+		language.current = 'en'
+		build({ isAuthenticated: false })
+
+		await sut.canLoad({} as never, {}, makeRouteNode({}), null)
+
+		expect(mockAuth.signIn).toHaveBeenCalledWith(
+			expect.objectContaining({ uiLocales: 'en' }),
+		)
 	})
 
 	it('returns the operator to the address they opened after sign-in', async () => {
@@ -113,6 +146,7 @@ describe('OrganizerAuthHook', () => {
 
 		expect(mockAuth.signIn).toHaveBeenCalledWith({
 			returnTo: '/organizers/org-1/artists/a-1/series/s-tour?tab=1',
+			uiLocales: 'ja',
 		})
 		window.history.replaceState(null, '', '/')
 	})
@@ -151,7 +185,10 @@ describe('OrganizerAuthHook', () => {
 		const result = await sut.canLoad({} as never, {}, next, null)
 
 		expect(result).toBe(false)
-		expect(mockAuth.signIn).toHaveBeenCalledWith({ forceLogin: true })
+		expect(mockAuth.signIn).toHaveBeenCalledWith({
+			forceLogin: true,
+			uiLocales: 'ja',
+		})
 		expect(window.sessionStorage.getItem('organizer.orgMismatchRetry')).toBe(
 			'1',
 		)
@@ -232,6 +269,7 @@ describe('OrganizerAuthHook', () => {
 				),
 				Registration.instance(mockIAuthService, mockAuth),
 				Registration.instance(mockILoginHint, null),
+				Registration.instance(IConsoleLanguage, language),
 				OrganizerAuthHook,
 			)
 			sut = container.get(OrganizerAuthHook)
@@ -273,6 +311,7 @@ describe('OrganizerAuthHook', () => {
 
 			expect(mockAuth.signIn).toHaveBeenCalledWith({
 				returnTo: '/organizers/o-1/settings',
+				uiLocales: 'ja',
 			})
 		})
 
@@ -288,6 +327,7 @@ describe('OrganizerAuthHook', () => {
 
 			expect(mockAuth.signIn).toHaveBeenCalledWith({
 				returnTo: '/?org=xx-records',
+				uiLocales: 'ja',
 			})
 		})
 
@@ -334,7 +374,10 @@ describe('OrganizerAuthHook', () => {
 			const result = await sut.canLoad({} as never, {}, makeRouteNode({}), null)
 
 			expect(result).toBe(false)
-			expect(mockAuth.signIn).toHaveBeenCalledWith({ forceLogin: true })
+			expect(mockAuth.signIn).toHaveBeenCalledWith({
+				forceLogin: true,
+				uiLocales: 'ja',
+			})
 		})
 	})
 })

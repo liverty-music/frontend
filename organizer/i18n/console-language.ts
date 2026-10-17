@@ -42,7 +42,7 @@ export class ConsoleLanguage {
 	 * would be cached by Aurelia's observation (i18next is not observed), so
 	 * the account menu's mark kept the first language after a switch.
 	 */
-	public current: ConsoleLocale = 'ja'
+	public current: ConsoleLocale = 'en'
 
 	public constructor() {
 		void this.i18n.initPromise.then(() => {
@@ -74,9 +74,13 @@ export const IConsoleLanguage = DI.createInterface<IConsoleLanguage>(
 )
 export interface IConsoleLanguage extends ConsoleLanguage {}
 
-/** Maps an i18next language (`en-US`, `ja`) to a console language. */
+/**
+ * Maps an i18next language (`ja-JP`, `en`) to a console language: Japanese
+ * for Japanese, English for anything else, matching the hosted login's
+ * default language.
+ */
 export function toConsoleLocale(language: string | undefined): ConsoleLocale {
-	return language?.toLowerCase().startsWith('en') ? 'en' : 'ja'
+	return language?.toLowerCase().startsWith('ja') ? 'ja' : 'en'
 }
 
 /** Keeps `<html lang>` equal to the language shown. */
@@ -119,8 +123,8 @@ export const ConsoleCatalogFormats = AppTask.activating(
 
 /**
  * The console's i18n: Japanese and English catalogs; the language saved on
- * this device first, then the browser's language (English when it is English,
- * Japanese otherwise).
+ * this device first, then the browser's language (Japanese when it is
+ * Japanese, English otherwise).
  */
 export const ConsoleI18nConfiguration: IRegistry = {
 	register(container: IContainer): IContainer {
@@ -134,9 +138,9 @@ export const ConsoleI18nConfiguration: IRegistry = {
 						ja: { translation: ja },
 						en: { translation: en },
 					},
-					fallbackLng: 'ja',
+					fallbackLng: 'en',
 					supportedLngs: [...CONSOLE_LANGUAGES],
-					// `en-US` counts as `en`; an unsupported language falls back to ja.
+					// `en-US` counts as `en`; an unsupported language falls back to en.
 					nonExplicitSupportedLngs: true,
 					load: 'languageOnly',
 					interpolation: { escapeValue: false },

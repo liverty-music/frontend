@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserStore } from '../services/user-store'
-import { changeLocale } from './change-locale'
+import { changeLocale, normalizeToSupportedLanguage } from './change-locale'
 
 function makeI18n(behavior?: {
 	setLocale?: (lang: string) => Promise<void>
@@ -74,7 +74,10 @@ describe('changeLocale', () => {
 
 	describe('authenticated path', () => {
 		// @spec components/infrastructure/fan/web/global/i18n "Authenticated caller path"
-		it('calls RPC first, then setLocale; NEVER writes the anonymous language key', async () => {
+		// @spec components/infrastructure/fan/web/global/i18n "Switching language mid-session as an authenticated user"
+		// @spec components/infrastructure/fan/web/global/i18n "Language switched while signed in survives sign-out"
+		it('calls RPC first, then setLocale, then saves the language on this device', async () => {
+			localStorage.setItem(StorageKeys.language, 'ja')
 			const callOrder: string[] = []
 			const i18n = makeI18n({
 				setLocale: async () => {
@@ -94,12 +97,14 @@ describe('changeLocale', () => {
 			expect(userStore.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			expect(callOrder).toEqual(['rpc', 'setLocale'])
-			// The authenticated path leaves the anonymous detector cache untouched;
-			// the DB row is the source of truth.
-			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
+			// The saved language follows the switch, so the Welcome page after a
+			// sign-out opens in it.
+			expect(localStorage.getItem(StorageKeys.language)).toBe('en')
 		})
 
-		it('rethrows when RPC fails so the caller can surface a Snack', async () => {
+		// @spec components/infrastructure/fan/web/global/i18n "Authenticated language switch RPC failure"
+		it('rethrows when RPC fails, leaving the locale and the saved language unchanged', async () => {
+			localStorage.setItem(StorageKeys.language, 'ja')
 			const i18n = makeI18n()
 			const auth = makeAuth(true)
 			const userStore = makeUserStore({
@@ -112,7 +117,28 @@ describe('changeLocale', () => {
 				changeLocale({ i18n, auth, userStore }, 'en'),
 			).rejects.toThrow('network')
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(localStorage.getItem(StorageKeys.language)).toBeNull()
+			expect(localStorage.getItem(StorageKeys.language)).toBe('ja')
 		})
 	})
+})
+
+describe('normalizeToSupportedLanguage', () => {
+	it.each([
+		['ja', 'ja'],
+		['en', 'en'],
+		['ja-JP', 'ja'],
+		['en-US', 'en'],
+	])('keeps a supported language: %s → %s', (input, expected) => {
+		expect(normalizeToSupportedLanguage(input)).toBe(expected)
+	})
+
+	// @spec components/infrastructure/fan/web/global/i18n "Fallback to English"
+	// @spec components/infrastructure/fan/web/global/i18n "New account from an unsupported browser language"
+	it.each(['fr', 'zh-Hant-TW', ''])(
+		'falls back to English for an unsupported language: %j',
+		(input) => {
+			// This value is also what UserService.Create receives for a new account.
+			expect(normalizeToSupportedLanguage(input)).toBe('en')
+		},
+	)
 })

@@ -9,6 +9,7 @@ import {
 	readSessionFlag,
 	setSessionFlag,
 } from '../hooks/org-enforcement'
+import { IConsoleLanguage } from '../i18n/console-language'
 import { instructionOf, paths } from '../model/concert-model'
 
 /**
@@ -52,6 +53,7 @@ export class AuthCallbackRoute {
 	public readonly landingHref = paths.landing
 
 	private readonly authService = resolve(IAuthService)
+	private readonly language = resolve(IConsoleLanguage)
 	private readonly logger = resolve(ILogger).scopeTo(
 		'OrganizerAuthCallbackRoute',
 	)
@@ -102,7 +104,7 @@ export class AuthCallbackRoute {
 				this.logger.info(
 					'Callback state missing in this context; restarting sign-in once',
 				)
-				await this.authService.signIn()
+				await this.authService.signIn({ uiLocales: this.language.current })
 				return false
 			}
 

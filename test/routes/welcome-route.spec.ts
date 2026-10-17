@@ -169,6 +169,16 @@ describe('WelcomeRoute', () => {
 			expect(mockAuth.signIn).toHaveBeenCalledOnce()
 		})
 
+		// @spec components/infrastructure/fan/web/global/i18n "Login from the Welcome page in Japanese"
+		it('asks the hosted login for the language the page shows', async () => {
+			await mockI18n.setLocale('en')
+			await mockI18n.setLocale('ja')
+
+			await sut.handleLogin()
+
+			expect(mockAuth.signIn).toHaveBeenCalledWith({ uiLocales: 'ja' })
+		})
+
 		it('clears guest data before initiating sign-in to prevent stale guest.home from leaking into the auth-callback signup heuristic', async () => {
 			await sut.handleLogin()
 

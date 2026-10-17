@@ -27,18 +27,27 @@ export function isSupportedLanguage(lang: string): lang is SupportedLanguage {
  *   - already in `SUPPORTED_LANGUAGES` (`'ja'`, `'en'`) → returned as-is.
  *   - BCP 47 region tag (`'en-US'`, `'ja-JP'`, `'zh-Hant-TW'`) → strip the
  *     subtags and lowercase. `'en-US'` becomes `'en'` and is then checked.
- *   - everything else (`'fr'`, `'zh'`, `''`) → fall through to the
- *     fallbackLng from main.ts (`'ja'`).
+ *   - everything else (`'fr'`, `'zh'`, `''`) → `'en'`, the fallbackLng from
+ *     main.ts and the hosted login's default language, so a browser in an
+ *     unsupported language sees one language end to end.
  *
- * Without the region-tag stripping, English-browser users (whose
- * navigator typically returns `'en-US'`) would have accounts created
- * and backfilled with `'ja'`, contradicting their browser preference.
+ * The result is also what `UserService.Create` and the backfill receive, so
+ * an account created from such a browser gets `'en'`.
  */
 export function normalizeToSupportedLanguage(detected: string): string {
 	if (isSupportedLanguage(detected)) return detected
 	const base = detected.split('-')[0]?.toLowerCase() ?? ''
 	if (isSupportedLanguage(base)) return base
-	return 'ja'
+	return 'en'
+}
+
+/**
+ * The language the app is showing, as one of `SUPPORTED_LANGUAGES`. This is
+ * what the page declares (`<html lang>`) and what a sign-in or sign-up asks
+ * the hosted login to show (OIDC `ui_locales`).
+ */
+export function currentLanguage(i18n: Pick<I18N, 'getLocale'>): string {
+	return normalizeToSupportedLanguage(i18n.getLocale())
 }
 
 export interface ChangeLocaleDeps {
@@ -61,9 +70,11 @@ export interface ChangeLocaleDeps {
  *   the detector's implicit cache side-effect. No backend call.
  *
  * - **Authenticated** (Settings page): call `UserStore.updatePreferredLanguage`
- *   first, apply `i18n.setLocale` after success. The backend row is the source
- *   of truth; the hydration task clears the legacy localStorage key on
- *   next boot.
+ *   first, apply `i18n.setLocale` after success, then save it to the same
+ *   `language` key. The backend row is the source of truth while signed in;
+ *   the key carries the language across sign-out, so the Welcome page after
+ *   it opens in the language shown before. When the RPC fails, neither the
+ *   locale nor the key changes.
  *
  * Throws `TypeError` for unsupported `lang`. Other errors propagate so
  * the caller can surface them.
@@ -88,4 +99,5 @@ export async function changeLocale(
 
 	await userStore.updatePreferredLanguage(lang)
 	await i18n.setLocale(lang)
+	localStorage.setItem(StorageKeys.language, lang)
 }
