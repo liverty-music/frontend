@@ -101,6 +101,10 @@ export class DnaOrbCanvas {
 	// every render frame per bubble. Survives the ghost→real reference swap.
 	private readonly hueByArtist = new Map<string, number>()
 
+	// Label layout per `${name}|${radius}`: the shrink-and-wrap loop measures
+	// text many times, so it runs once per name and drawn radius, not per frame.
+	private readonly labelLayouts = new Map<string, LabelLayout>()
+
 	// Performance monitoring
 	private frameTimes: number[] = []
 	private qualityScale = 1.0 // 1.0 = full, 0.5 = reduced
@@ -135,28 +139,31 @@ export class DnaOrbCanvas {
 
 	public artistsChanged(newVal: Artist[]): void {
 		if (!this.ctx) return // not yet attached
-		// If there are ghost placeholder bodies, swap them in-place for real artists
-		// so bubbles stay at their current physics positions.
-		const hasGhosts = newVal.some((a) => a.isGhost)
-		if (!hasGhosts) {
-			// Real-artist field: reconcile the rendered bodies to exactly this set.
-			// The physics layer keeps matching bodies, fades out stale ones, and
-			// adds new ones — capping only against live bodies so members are not
-			// dropped while stale bodies are still fading out.
-			const dropped = this.physics.reconcile(
-				newVal.slice(0, this.displayLimit).map((a) => toBubbleParams(a)),
-				{ placements: this.placements },
-			)
-			if (dropped > 0) {
-				this.logger.warn(
-					'Bubble reconcile hit the hard capacity ceiling; some artists were not rendered',
-					{ dropped },
-				)
-			}
+		const shown = newVal.slice(0, this.displayLimit)
+		const real = shown.filter((a) => !a.isGhost)
+		// An all-ghost field is the cold-visit placeholder: paint it as is.
+		if (real.length === 0 && shown.length > 0) {
+			this.physics.addBubbles(shown.map((a) => toBubbleParams(a)))
 			return
 		}
-		const params = newVal.map((a) => toBubbleParams(a))
-		this.physics.addBubbles(params.slice(0, this.displayLimit))
+		// Reconcile the rendered bodies to the field's real members: the physics
+		// layer keeps matching bodies, fades out stale ones, and adds new ones in
+		// ghost slots first (so bubbles stay where they are), capping only against
+		// live bodies. While the field still holds ghosts (a progressive reveal),
+		// leftover ghost bodies are kept for the artists still to come.
+		const dropped = this.physics.reconcile(
+			real.map((a) => toBubbleParams(a)),
+			{
+				placements: this.placements,
+				keepGhosts: real.length < shown.length,
+			},
+		)
+		if (dropped > 0) {
+			this.logger.warn(
+				'Bubble reconcile hit the hard capacity ceiling; some artists were not rendered',
+				{ dropped },
+			)
+		}
 	}
 
 	public async attached(): Promise<void> {
@@ -386,16 +393,21 @@ export class DnaOrbCanvas {
 			case 'ArrowRight':
 			case 'ArrowDown': {
 				e.preventDefault()
-				this.focusedBubbleIndex = (this.focusedBubbleIndex + 1) % bubbles.length
+				this.focusedBubbleIndex = nextFocusableIndex(
+					bubbles,
+					this.focusedBubbleIndex,
+					1,
+				)
 				break
 			}
 			case 'ArrowLeft':
 			case 'ArrowUp': {
 				e.preventDefault()
-				this.focusedBubbleIndex =
-					this.focusedBubbleIndex <= 0
-						? bubbles.length - 1
-						: this.focusedBubbleIndex - 1
+				this.focusedBubbleIndex = nextFocusableIndex(
+					bubbles,
+					this.focusedBubbleIndex,
+					-1,
+				)
 				break
 			}
 			case 'Enter':
@@ -498,12 +510,15 @@ export class DnaOrbCanvas {
 	}
 
 	private readonly loop = (time: number): void => {
-		const delta = Math.min(time - this.lastTime, 32) // Cap at ~30fps min to prevent physics explosions on tab-switch/GC pauses
+		const elapsed = time - this.lastTime
+		const delta = Math.min(elapsed, 32) // Cap at ~30fps min to prevent physics explosions on tab-switch/GC pauses
 		this.lastTime = time
 
 		this.monitorPerformance(delta)
 
-		this.physics.update(delta)
+		// Physics steps by the capped delta; the spawn and fade progress follow
+		// real elapsed time, so a name fades in on time even when frames are slow.
+		this.physics.update(delta, elapsed)
 		this.orbRenderer.update(delta)
 		this.absorptionAnimator.update(delta)
 		this.tapEffects.update(delta)
@@ -705,45 +720,105 @@ export class DnaOrbCanvas {
 		cy: number,
 		radius: number,
 	): void {
-		const usableWidth = radius * 1.6
-		const minFont = 10
-		let fontSize = Math.max(minFont, radius * 0.38)
+		const layout = this.labelLayout(name, radius)
 
 		this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
 		this.ctx.textAlign = 'center'
 		this.ctx.textBaseline = 'middle'
+		this.ctx.font = layout.font
 
-		const maxLines = 3
-
-		// Word-wrap and adaptive sizing loop
-		let lines: string[]
-		for (;;) {
-			this.ctx.font = `bold ${fontSize}px system-ui, sans-serif`
-			lines = this.wrapTextLocal(name, usableWidth)
-
-			// Shrink font if lines overflow width or exceed max line count
-			const allFit = lines.every(
-				(line) => this.ctx.measureText(line).width <= usableWidth,
-			)
-			if ((allFit && lines.length <= maxLines) || fontSize <= minFont) break
-			fontSize -= 0.5
-		}
-
-		// Truncate to maxLines if still exceeded after font floor
-		if (lines.length > maxLines) {
-			lines = lines.slice(0, maxLines)
-		}
-
-		const lineHeight = fontSize * 1.25
+		const { lines, lineHeight } = layout
+		const usableWidth = radius * 1.6
 		for (let i = 0; i < lines.length; i++) {
 			const offsetY = lineHeight * (i - (lines.length - 1) / 2)
 			this.ctx.fillText(lines[i], cx, cy + offsetY, usableWidth)
 		}
 	}
 
-	private wrapTextLocal(text: string, maxWidth: number): string[] {
-		return wrapText(text, maxWidth, (t) => this.ctx.measureText(t).width)
+	/** Cached `computeLabelLayout`, keyed by name and exact drawn radius. */
+	private labelLayout(name: string, radius: number): LabelLayout {
+		const key = `${name}|${radius}`
+		const cached = this.labelLayouts.get(key)
+		if (cached) return cached
+		if (this.labelLayouts.size >= LABEL_LAYOUT_CACHE_LIMIT) {
+			this.labelLayouts.clear()
+		}
+		const layout = computeLabelLayout(name, radius, (text, font) => {
+			this.ctx.font = font
+			return this.ctx.measureText(text).width
+		})
+		this.labelLayouts.set(key, layout)
+		return layout
 	}
+}
+
+// Bound on cached label layouts over a long session of taps.
+const LABEL_LAYOUT_CACHE_LIMIT = 1000
+
+/** How a bubble label is drawn: its font, its wrapped lines and line spacing. */
+export interface LabelLayout {
+	font: string
+	lines: string[]
+	lineHeight: number
+}
+
+/**
+ * Lay out a bubble's artist name: wrap it to 1.6× the radius, shrinking the
+ * font by 0.5 px from `radius * 0.38` (min 10 px) until every line fits and
+ * there are at most 3 lines; then truncate to 3 lines.
+ *
+ * @param measure - rendered width of `text` in `font` (e.g. ctx.measureText)
+ */
+export function computeLabelLayout(
+	name: string,
+	radius: number,
+	measure: (text: string, font: string) => number,
+): LabelLayout {
+	const usableWidth = radius * 1.6
+	const minFont = 10
+	const maxLines = 3
+	let fontSize = Math.max(minFont, radius * 0.38)
+
+	// Word-wrap and adaptive sizing loop
+	let font: string
+	let lines: string[]
+	for (;;) {
+		font = `bold ${fontSize}px system-ui, sans-serif`
+		const f = font
+		lines = wrapText(name, usableWidth, (t) => measure(t, f))
+
+		// Shrink font if lines overflow width or exceed max line count
+		const allFit = lines.every((line) => measure(line, f) <= usableWidth)
+		if ((allFit && lines.length <= maxLines) || fontSize <= minFont) break
+		fontSize -= 0.5
+	}
+
+	// Truncate to maxLines if still exceeded after font floor
+	if (lines.length > maxLines) {
+		lines = lines.slice(0, maxLines)
+	}
+
+	return { font, lines, lineHeight: fontSize * 1.25 }
+}
+
+/**
+ * The index the keyboard focus moves to from `from` in direction `step`,
+ * skipping ghost placeholders (they ignore input). Returns -1 when no bubble
+ * can take focus.
+ */
+export function nextFocusableIndex(
+	bubbles: readonly PhysicsBubble[],
+	from: number,
+	step: 1 | -1,
+): number {
+	const n = bubbles.length
+	let i = from < 0 && step === -1 ? n : from
+	for (let tries = 0; tries < n; tries++) {
+		i = (((i + step) % n) + n) % n
+		const b = bubbles[i]
+		if (!b.artist.isGhost && !b.isFadingOut) return i
+	}
+	return -1
 }
 
 /** Convert an Artist to physics bubble parameters with a random radius. */

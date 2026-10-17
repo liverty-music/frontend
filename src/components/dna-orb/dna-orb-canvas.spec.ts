@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { wrapText } from './dna-orb-canvas'
+import type { PhysicsBubble } from './bubble-physics'
+import {
+	computeLabelLayout,
+	nextFocusableIndex,
+	wrapText,
+} from './dna-orb-canvas'
 
 /**
  * Mock measureFn that approximates character width.
@@ -119,5 +124,105 @@ describe('renderBubbleText minFont', () => {
 		const tinyRadius = 20
 		const tinyFont = Math.max(minFont, tinyRadius * 0.38)
 		expect(tinyFont).toBe(minFont)
+	})
+})
+
+/**
+ * Width measure that depends on the font size, like a real canvas: Latin
+ * ~0.6em, CJK ~1em, space ~0.3em.
+ */
+function fontMeasure(text: string, font: string): number {
+	const size = Number(/bold ([\d.]+)px/.exec(font)?.[1] ?? 10)
+	let em = 0
+	for (const ch of text) {
+		if (ch.charCodeAt(0) > 0x2fff) em += 1
+		else if (ch === ' ') em += 0.3
+		else em += 0.6
+	}
+	return em * size
+}
+
+/**
+ * The per-frame label code before the layout was cached, transcribed with a
+ * fake context: returns the font left on the context and the drawn lines.
+ */
+function oldRenderBubbleText(
+	name: string,
+	radius: number,
+): { font: string; lines: string[]; lineHeight: number } {
+	const ctx = {
+		font: '',
+		measureText: (t: string) => ({ width: fontMeasure(t, ctx.font) }),
+	}
+	const usableWidth = radius * 1.6
+	const minFont = 10
+	let fontSize = Math.max(minFont, radius * 0.38)
+	const maxLines = 3
+	let lines: string[]
+	for (;;) {
+		ctx.font = `bold ${fontSize}px system-ui, sans-serif`
+		lines = wrapText(name, usableWidth, (t) => ctx.measureText(t).width)
+		const allFit = lines.every(
+			(line) => ctx.measureText(line).width <= usableWidth,
+		)
+		if ((allFit && lines.length <= maxLines) || fontSize <= minFont) break
+		fontSize -= 0.5
+	}
+	if (lines.length > maxLines) lines = lines.slice(0, maxLines)
+	return { font: ctx.font, lines, lineHeight: fontSize * 1.25 }
+}
+
+describe('computeLabelLayout parity with the per-frame label code', () => {
+	const names = [
+		'Milet',
+		'Little Glee Monster',
+		'go!go!vanillas',
+		'The Pretty Reckless Of Many Words',
+		'米津玄師',
+		'ポルカドットスティングレイ',
+		'あいみょん',
+		'凛として時雨 TK',
+		'King Gnu',
+		'ずっと真夜中でいいのに。',
+		'Mrs. GREEN APPLE',
+		'',
+	]
+	const radii = [20, 26.4, 30, 33.33, 38.7, 45, 47.9]
+
+	it('yields the same font, lines and line height for Latin, CJK and mixed names', () => {
+		for (const name of names) {
+			for (const r of radii) {
+				expect(computeLabelLayout(name, r, fontMeasure)).toEqual(
+					oldRenderBubbleText(name, r),
+				)
+			}
+		}
+	})
+})
+
+describe('nextFocusableIndex', () => {
+	function b(id: string, ghost = false): PhysicsBubble {
+		return {
+			artist: { id, name: id, mbid: '', isGhost: ghost || undefined },
+			isFadingOut: false,
+		} as PhysicsBubble
+	}
+
+	it('cycles forward and backward like before when no bubble is a ghost', () => {
+		const bubbles = [b('a'), b('b'), b('c')]
+		expect(nextFocusableIndex(bubbles, -1, 1)).toBe(0)
+		expect(nextFocusableIndex(bubbles, 2, 1)).toBe(0)
+		expect(nextFocusableIndex(bubbles, -1, -1)).toBe(2)
+		expect(nextFocusableIndex(bubbles, 0, -1)).toBe(2)
+	})
+
+	it('skips ghost placeholders in the keyboard focus cycle', () => {
+		const bubbles = [b('a'), b('g0', true), b('g1', true), b('c')]
+		expect(nextFocusableIndex(bubbles, 0, 1)).toBe(3)
+		expect(nextFocusableIndex(bubbles, 3, -1)).toBe(0)
+	})
+
+	it('returns -1 when only ghosts are on the field', () => {
+		expect(nextFocusableIndex([b('g0', true)], -1, 1)).toBe(-1)
 	})
 })

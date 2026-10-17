@@ -22,6 +22,26 @@ export interface BubbleArtistParams {
 	radius: number
 }
 
+// The physics engine module, imported once per page and shared by every
+// BubblePhysics instance. Reset on failure so a later call can retry.
+let matterImport: Promise<typeof Matter> | null = null
+
+/**
+ * Start downloading the physics engine (memoized). Called from the Discovery
+ * route's `loading()` so the chunk loads while the route is composed, before
+ * the canvas is attached and sized.
+ */
+export function preloadPhysics(): Promise<typeof Matter> {
+	matterImport ??= import('matter-js').then(
+		(m) => m.default,
+		(err: unknown) => {
+			matterImport = null
+			throw err
+		},
+	)
+	return matterImport
+}
+
 export class BubblePhysics {
 	private Matter: typeof Matter | null = null
 	private engine: Matter.Engine | null = null
@@ -50,7 +70,7 @@ export class BubblePhysics {
 		const promise = (async () => {
 			// Lazy-load Matter.js on first init call
 			if (!this.Matter) {
-				this.Matter = (await import('matter-js')).default
+				this.Matter = await preloadPhysics()
 				this.engine = this.Matter?.Engine.create({
 					gravity: { x: 0, y: 0.15, scale: 0.001 },
 				})
@@ -213,10 +233,18 @@ export class BubblePhysics {
 	 * into physics (reconcile) with no ordering contract — the field owner sets
 	 * the placements alongside the field, so the tap-origin animation is preserved
 	 * without a separate `spawnBubblesAt` call racing the field reassignment.
+	 *
+	 * `opts.keepGhosts` is for a field that still holds ghost placeholders (a
+	 * progressive cold-visit reveal): `target` lists only its real members, the
+	 * new ones take ghost slots in place, and ghost bodies left without an artist
+	 * are kept instead of faded out. Without it, leftover ghosts fade out.
 	 */
 	public reconcile(
 		target: BubbleArtistParams[],
-		opts?: { placements?: ReadonlyMap<string, { x: number; y: number }> },
+		opts?: {
+			placements?: ReadonlyMap<string, { x: number; y: number }>
+			keepGhosts?: boolean
+		},
 	): number {
 		const paramsById = new Map<string, BubbleArtistParams>()
 		for (const p of target) {
@@ -238,7 +266,10 @@ export class BubblePhysics {
 
 		// Reuse ghost placeholders in-place (smooth cold-visit reveal); returns
 		// target artists that had no ghost slot and are not already rendered.
-		const overflow = this.revealGhostBubbles(target.map((p) => p.artist))
+		const overflow = this.revealGhostBubbles(
+			target.map((p) => p.artist),
+			{ keepLeftover: opts?.keepGhosts ?? false },
+		)
 
 		const placements = opts?.placements
 		const instantParams: BubbleArtistParams[] = []
@@ -353,7 +384,13 @@ export class BubblePhysics {
 		return findClosestBubble(Array.from(this.bubbleMap.values()), x, y)
 	}
 
-	public update(delta: number): void {
+	/**
+	 * Advance one frame. `delta` steps the physics engine and should be capped
+	 * by the caller so a long frame cannot make bodies explode. `animDelta` is
+	 * the real elapsed time and drives the spawn and fade-out progress, so a
+	 * revealed name becomes readable on real time at any frame rate.
+	 */
+	public update(delta: number, animDelta = delta): void {
 		this.Matter?.Engine.update(this.engine, delta)
 
 		const FADE_OUT_SPEED = 0.0033 // ~300ms to complete
@@ -361,7 +398,10 @@ export class BubblePhysics {
 		for (const bubble of this.bubbleMap.values()) {
 			const id = bubble.artist.id
 			if (bubble.isSpawning) {
-				bubble.spawnProgress = Math.min(1, bubble.spawnProgress + delta * 0.003)
+				bubble.spawnProgress = Math.min(
+					1,
+					bubble.spawnProgress + animDelta * 0.003,
+				)
 				bubble.scale = easeOutBack(bubble.spawnProgress)
 				// Quadratic ease-in so color/text bleeds in gently during the second
 				// half of the spawn rather than appearing abruptly with the circle.
@@ -374,7 +414,7 @@ export class BubblePhysics {
 			} else if (bubble.isFadingOut) {
 				bubble.fadeOutProgress = Math.min(
 					1,
-					bubble.fadeOutProgress + delta * FADE_OUT_SPEED,
+					bubble.fadeOutProgress + animDelta * FADE_OUT_SPEED,
 				)
 				bubble.opacity = 1 - bubble.fadeOutProgress
 				if (bubble.fadeOutProgress >= 1) {
@@ -405,15 +445,21 @@ export class BubblePhysics {
 	/**
 	 * Swap ghost placeholder bodies in-place for real artist data.
 	 * The physics body (position, velocity, radius) is preserved so the bubble
-	 * stays exactly where it is. Returns real artists that had no ghost to occupy.
+	 * stays exactly where it is. Artists already rendered keep their own body.
+	 * Returns new real artists that had no ghost to occupy. Ghost bodies left
+	 * over fade out, unless `opts.keepLeftover` keeps them for later artists.
 	 */
-	public revealGhostBubbles(realArtists: Artist[]): Artist[] {
-		const ghostIds = Array.from(this.bubbleMap.keys()).filter((id) =>
-			id.startsWith('__ghost__'),
-		)
+	public revealGhostBubbles(
+		realArtists: Artist[],
+		opts?: { keepLeftover?: boolean },
+	): Artist[] {
+		const ghostIds = Array.from(this.bubbleMap.entries())
+			.filter(([id, b]) => id.startsWith('__ghost__') && !b.isFadingOut)
+			.map(([id]) => id)
+		const newArtists = realArtists.filter((a) => !this.bubbleMap.has(a.id))
 		const overflow: Artist[] = []
-		for (let i = 0; i < realArtists.length; i++) {
-			const artist = realArtists[i]
+		for (let i = 0; i < newArtists.length; i++) {
+			const artist = newArtists[i]
 			const ghostId = ghostIds[i]
 			if (!ghostId) {
 				overflow.push(artist)
@@ -433,8 +479,10 @@ export class BubblePhysics {
 			this.bubbleMap.set(artist.id, bubble)
 		}
 		// Fade out any ghost bodies left over (more ghosts than real artists).
-		for (let i = realArtists.length; i < ghostIds.length; i++) {
-			this.fadeOutBubble(ghostIds[i])
+		if (!opts?.keepLeftover) {
+			for (let i = newArtists.length; i < ghostIds.length; i++) {
+				this.fadeOutBubble(ghostIds[i])
+			}
 		}
 		return overflow
 	}
@@ -463,7 +511,7 @@ export class BubblePhysics {
 /**
  * Find the bubble whose center is closest to the given point,
  * among those whose hit radius contains the point.
- * Excludes fading-out bubbles and zero-scale bubbles.
+ * Excludes ghost placeholders, fading-out bubbles and zero-scale bubbles.
  */
 export function findClosestBubble(
 	bubbles: readonly PhysicsBubble[],
@@ -474,7 +522,7 @@ export function findClosestBubble(
 	let closestDist = Number.POSITIVE_INFINITY
 
 	for (const bubble of bubbles) {
-		if (bubble.isFadingOut) continue
+		if (bubble.isFadingOut || bubble.artist.isGhost) continue
 		const hitRadius = bubble.radius * bubble.scale
 		if (hitRadius <= 0) continue
 

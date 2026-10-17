@@ -33,6 +33,14 @@
 	}
 
 	handle {
+		# Compress text responses. encode runs before templates, so the
+		# /events/* link-preview HTML is compressed after templating.
+		encode zstd gzip
+
+		# Vite emits only content-hashed files under /assets/.
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+
 		# try_files rewrites the path to /index.html before templates runs, so
 		# the matcher tests the original request path.
 		@event expression {http.request.orig_uri.path}.startsWith("/events/")

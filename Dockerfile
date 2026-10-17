@@ -39,6 +39,7 @@ COPY --from=builder /app/dist /srv
 
 # Copy Caddyfile
 COPY Caddyfile /etc/caddy/Caddyfile
+RUN caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
 # Expose port 80
 EXPOSE 80

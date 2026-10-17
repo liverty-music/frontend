@@ -15,7 +15,9 @@ const mockLogger = {
 
 const mockArtistStore = {
 	listTop: vi.fn(async (): Promise<Artist[]> => []),
-	listSimilar: vi.fn(async (): Promise<Artist[]> => []),
+	listSimilar: vi.fn(
+		async (_id: string, _limit: number): Promise<Artist[]> => [],
+	),
 }
 
 let followedArtists: Artist[] = []
@@ -64,6 +66,24 @@ import { ArtistBubbleStore } from './artist-bubble-store'
 
 function artist(id: string, name = id): Artist {
 	return { id, name, mbid: '' } as Artist
+}
+
+function deferred<T>(): {
+	promise: Promise<T>
+	resolve: (v: T) => void
+	reject: (e: unknown) => void
+} {
+	let resolve!: (v: T) => void
+	let reject!: (e: unknown) => void
+	const promise = new Promise<T>((res, rej) => {
+		resolve = res
+		reject = rej
+	})
+	return { promise, resolve, reject }
+}
+
+async function flush(): Promise<void> {
+	for (let i = 0; i < 10; i++) await Promise.resolve()
 }
 
 function ids(prefix: string, n: number): Artist[] {
@@ -142,6 +162,7 @@ describe('ArtistBubbleStore', () => {
 	})
 
 	describe('loadInitial — seed-similar path', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Sparse seed-similar results are topped up"
 		it('tops up sparse seed-similar with top artists, similar first, deduped', async () => {
 			followedArtists = [artist('seed')]
 			mockArtistStore.listSimilar.mockResolvedValue([
@@ -162,15 +183,205 @@ describe('ArtistBubbleStore', () => {
 			expect(sut.field.map((a) => a.id)).toEqual(['s1', 's2', 's3', 't1', 't2'])
 		})
 
-		it('does not top up when seed-similar already meets the target', async () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Sufficient seed-similar results are not diluted"
+		it('does not top up when seed-similar already meets the target, even though top was fetched', async () => {
 			followedArtists = [artist('seed')]
 			mockArtistStore.listSimilar.mockResolvedValue(ids('s', 35))
 			mockArtistStore.listTop.mockResolvedValue([artist('t1')])
 
 			await sut.loadInitial()
 
-			expect(mockArtistStore.listTop).not.toHaveBeenCalled()
 			expect(sut.field).toHaveLength(35)
+			expect(sut.field.some((a) => a.id === 't1')).toBe(false)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Empty seed-similar still fills the field"
+		it('fills the field with top artists when every seed fails', async () => {
+			followedArtists = [artist('f1'), artist('f2')]
+			mockArtistStore.listSimilar.mockRejectedValue(new Error('unavailable'))
+			mockArtistStore.listTop.mockResolvedValue([artist('t1'), artist('t2')])
+
+			await sut.loadInitial()
+
+			expect(sut.field.map((a) => a.id)).toEqual(['t1', 't2'])
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Top-up does not wait for a second round trip"
+		it('requests the top-up together with the seeds, not after them', async () => {
+			followedArtists = [artist('f1')]
+			const seed = deferred<Artist[]>()
+			mockArtistStore.listSimilar.mockReturnValue(seed.promise)
+			mockArtistStore.listTop.mockResolvedValue([artist('t1')])
+
+			const load = sut.loadInitial()
+			// The top-up is already in flight while the seed is still pending.
+			expect(mockArtistStore.listTop).toHaveBeenCalledTimes(1)
+
+			seed.resolve([artist('s1')])
+			await load
+
+			expect(mockArtistStore.listTop).toHaveBeenCalledTimes(1)
+			expect(sut.field.map((a) => a.id)).toEqual(['s1', 't1'])
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "User has followed artists (Step 1-b)"
+		it('asks for similar artists of each seed with the limit spread over 50', async () => {
+			followedArtists = [artist('f1'), artist('f2')]
+
+			await sut.loadInitial()
+
+			expect(mockArtistStore.listSimilar).toHaveBeenCalledTimes(2)
+			expect(mockArtistStore.listSimilar).toHaveBeenCalledWith('f1', 25)
+			expect(mockArtistStore.listSimilar).toHaveBeenCalledWith('f2', 25)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Seed selection with fewer than 5 followed artists"
+		it('uses every followed artist as a seed when fewer than 5 are followed', async () => {
+			followedArtists = [artist('f1'), artist('f2'), artist('f3')]
+
+			await sut.loadInitial()
+
+			const seeds = mockArtistStore.listSimilar.mock.calls.map((c) => c[0])
+			expect(seeds.sort()).toEqual(['f1', 'f2', 'f3'])
+			for (const call of mockArtistStore.listSimilar.mock.calls) {
+				expect(call[1]).toBe(16)
+			}
+		})
+
+		it('picks 5 seeds at 10 each when more than 5 are followed', async () => {
+			followedArtists = ids('f', 8)
+
+			await sut.loadInitial()
+
+			expect(mockArtistStore.listSimilar).toHaveBeenCalledTimes(5)
+			for (const call of mockArtistStore.listSimilar.mock.calls) {
+				expect(call[1]).toBe(10)
+			}
+		})
+	})
+
+	describe('loadInitial — progressive reveal on a cold visit', () => {
+		function realIds(field: readonly Artist[]): string[] {
+			return field.filter((a) => !a.isGhost).map((a) => a.id)
+		}
+		function ghostCount(field: readonly Artist[]): number {
+			return field.filter((a) => a.isGhost).length
+		}
+
+		// @spec components/infrastructure/fan/web/route/discovery "Seed results are revealed as each seed answers"
+		// @spec components/infrastructure/fan/web/route/discovery "Cold visit uses ghost bubbles"
+		it('replaces ghosts with each seed result as it arrives, deduped and without follows', async () => {
+			followedArtists = [artist('f1'), artist('f2')]
+			const s1 = deferred<Artist[]>()
+			const s2 = deferred<Artist[]>()
+			mockArtistStore.listSimilar.mockImplementation(async (id: string) =>
+				id === 'f1' ? s1.promise : s2.promise,
+			)
+			mockArtistStore.listTop.mockResolvedValue([])
+			expect(sut.prepareEntry()).toBe(true)
+
+			const load = sut.loadInitial()
+			// The second seed answers first: its artists show at once, minus the
+			// followed artist and the duplicate, and ghosts fill the rest.
+			s2.resolve([artist('b1'), artist('f1'), artist('b1'), artist('b2')])
+			await flush()
+			expect(realIds(sut.field)).toEqual(['b1', 'b2'])
+			expect(ghostCount(sut.field)).toBe(48)
+
+			s1.resolve([artist('a1'), artist('b2')])
+			await load
+			expect(ghostCount(sut.field)).toBe(0)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Progressive reveal converges to the all-at-once field"
+		it('ends with the same field as an all-at-once load, with no ghost left', async () => {
+			followedArtists = [artist('f1'), artist('f2'), artist('f3')]
+			const results: Record<string, Artist[]> = {
+				f1: [artist('a1'), artist('x'), artist('f2')],
+				f2: [artist('b1'), artist('x')],
+				f3: ids('c', 12),
+			}
+			mockArtistStore.listTop.mockResolvedValue([artist('t1'), artist('a1')])
+
+			// All at once: no ghosts on the field, so no partial commits.
+			mockArtistStore.listSimilar.mockImplementation(
+				async (id: string) => results[id],
+			)
+			const once = new ArtistBubbleStore()
+			await once.loadInitial()
+
+			// Progressive: seeds answer one by one in reverse order.
+			const pending = new Map<string, ReturnType<typeof deferred<Artist[]>>>()
+			mockArtistStore.listSimilar.mockImplementation((id: string) => {
+				const d = deferred<Artist[]>()
+				pending.set(id, d)
+				return d.promise
+			})
+			sut.prepareEntry()
+			const load = sut.loadInitial()
+			for (const id of ['f3', 'f2', 'f1']) {
+				pending.get(id)?.resolve(results[id])
+				await flush()
+			}
+			await load
+
+			expect(new Set(sut.field.map((a) => a.id))).toEqual(
+				new Set(once.field.map((a) => a.id)),
+			)
+			expect(ghostCount(sut.field)).toBe(0)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "A failed seed does not hold back the others"
+		it('reveals the answering seeds while another seed fails', async () => {
+			followedArtists = [artist('f1'), artist('f2')]
+			const s1 = deferred<Artist[]>()
+			mockArtistStore.listSimilar.mockImplementation(async (id: string) =>
+				id === 'f1' ? s1.promise : [artist('b1')],
+			)
+			mockArtistStore.listTop.mockResolvedValue([])
+			sut.prepareEntry()
+
+			const load = sut.loadInitial()
+			await flush()
+			expect(realIds(sut.field)).toEqual(['b1'])
+
+			s1.reject(new Error('unavailable'))
+			await load
+			expect(sut.field.map((a) => a.id)).toEqual(['b1'])
+		})
+
+		it('does not mix ghosts into a real field on a stale re-entry reload', async () => {
+			await seed(sut, [artist('old')])
+			followedArtists = [artist('f1')]
+			const s1 = deferred<Artist[]>()
+			mockArtistStore.listSimilar.mockReturnValue(s1.promise)
+
+			const load = sut.loadInitial()
+			s1.resolve([artist('s1')])
+			await flush()
+			expect(ghostCount(sut.field)).toBe(0)
+			await load
+		})
+	})
+
+	describe('loadSimilar during the initial load', () => {
+		it('waits for the initial load, then adds similar artists instead of reporting none', async () => {
+			followedArtists = [artist('f1')]
+			const s1 = deferred<Artist[]>()
+			mockArtistStore.listSimilar.mockImplementation(
+				async (id: string, limit: number) =>
+					limit === 30 ? [artist('tapSim')] : s1.promise,
+			)
+			mockArtistStore.listTop.mockResolvedValue([])
+			sut.prepareEntry()
+
+			const load = sut.loadInitial()
+			const tap = sut.loadSimilar('b1', { x: 1, y: 2 })
+			s1.resolve([artist('b1'), artist('b2')])
+
+			await load
+			expect(await tap).toBe(true)
+			expect(sut.field.some((a) => a.id === 'tapSim')).toBe(true)
 		})
 	})
 
