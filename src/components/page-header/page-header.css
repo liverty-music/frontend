@@ -31,6 +31,20 @@
 			}
 		}
 
+		/* Icon-only link to Settings: a 48px target with the icon centred. */
+		.page-header-settings {
+			display: inline-grid;
+			flex-shrink: 0;
+			place-items: center;
+
+			inline-size: 3rem;
+			block-size: 3rem;
+			margin-block: calc(-1 * var(--space-2xs));
+			border-radius: var(--md-shape-full);
+
+			color: var(--color-text-secondary);
+		}
+
 		/* stylelint-disable-next-line media-feature-name-disallowed-list -- viewport width needed alongside height to isolate SE-class devices (375px) from wider phones; container queries cannot combine with @media height */
 		@media (height <= 700px) and (width < 390px) {
 			header {

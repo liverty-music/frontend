@@ -338,7 +338,7 @@
 		"version": "Version",
 		"copyVersionSuccess": "Version copied",
 		"leftHanded": "Left-handed mode",
-		"leftHandedDesc": "Place the action button in the bottom-left corner"
+		"leftHandedDesc": "Open the action menu toward your left hand"
 	},
 	"onboarding": {
 		"consent": {
@@ -740,7 +740,7 @@
 		"filter": "Filter concerts",
 		"help": "Help",
 		"leftHanded": "Left-handed mode",
-		"leftHandedDesc": "Place the action button in the bottom-left corner"
+		"leftHandedDesc": "Open the action menu toward your left hand"
 	},
 	"lotteryEntry": {
 		"title": "Enter the ticket lottery",

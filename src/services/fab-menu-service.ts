@@ -78,7 +78,7 @@ export class FabMenuService {
 	 */
 	@observable public actions: FabAction[] = []
 
-	/** Persisted launcher placement; mirrors the beam-preference pattern (D6). */
+	/** Persisted side the action arc opens to; mirrors the beam-preference pattern (D6). */
 	@observable public handed: Handedness = loadHanded()
 
 	/**
@@ -106,17 +106,17 @@ export class FabMenuService {
 		}
 	}
 
-	/** Whether the launcher is placed on the left (left-handed mode). */
+	/** Whether the action arc opens to the left (left-handed mode). */
 	public get isLeftHanded(): boolean {
 		return this.handed === 'left'
 	}
 
-	/** Flip the placement between right- and left-handed and persist it. */
+	/** Flip the arc between right- and left-handed and persist it. */
 	public toggleHanded(): void {
 		this.setHanded(this.handed === 'left' ? 'right' : 'left')
 	}
 
-	/** Set the placement explicitly and persist it via the storage adapter. */
+	/** Set the handedness explicitly and persist it via the storage adapter. */
 	public setHanded(handed: Handedness): void {
 		this.handed = handed
 		saveHanded(handed)

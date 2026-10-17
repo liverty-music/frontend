@@ -33,9 +33,9 @@ export interface ShellRouteData {
 }
 
 // Route table. The router's `nav` defaults to true, so `withNavDefault` below
-// flips it: only the five tab routes opt in with `nav: true`, and the bottom
-// nav shows them in their order here (Home, Discovery, My Artists, Tickets,
-// Settings).
+// flips it: only the four tab routes opt in with `nav: true`, and the bottom
+// nav shows them in their order here (Home, Discovery, My Artists, Tickets),
+// two on each side of the FAB's centre slot.
 const routeTable = [
 	{
 		path: '',
@@ -161,16 +161,13 @@ const routeTable = [
 		// Uses the existing 'ticket' icon (svg-icon.html case="ticket").
 		data: { titleKey: 'nav.tickets', icon: 'ticket', labelKey: 'nav.tickets' },
 	},
+	// Settings is not a tab: it opens from the gear in the page header of the
+	// four tab pages (`isTabRoute`), and highlights no tab.
 	{
 		path: 'settings',
 		component: import('./routes/settings/settings-route'),
 		title: 'Settings',
-		nav: true,
-		data: {
-			titleKey: 'nav.settings',
-			icon: 'settings',
-			labelKey: 'nav.settings',
-		},
+		data: { titleKey: 'nav.settings' },
 	},
 	// Order detail (roadmap ⑤, §5.1/§5.2). Authenticated by default — the order
 	// must belong to the caller (non-revealing NotFound otherwise). Reached by
@@ -270,6 +267,14 @@ export class AppShell {
 			| ShellRouteData
 			| undefined
 		return data?.titleKey ?? ''
+	}
+
+	/**
+	 * Whether the displayed route is one of the bottom-nav tabs (`nav: true`).
+	 * The header shows the Settings gear only there.
+	 */
+	public get isTabRoute(): boolean {
+		return this.currentRoute.parameterInformation[0]?.config?.nav === true
 	}
 
 	// Updated on every navigation-end via route data `chrome: false`.

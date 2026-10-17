@@ -175,6 +175,7 @@ describe('app-shell', () => {
 	})
 
 	describe('chrome', () => {
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Navigation hidden on Landing Page and auth callback only"
 		it.each(['welcome', 'auth/callback'])(
 			'hides the header and nav bar on %s (data.chrome: false)',
 			async (path) => {
@@ -195,9 +196,13 @@ describe('app-shell', () => {
 	describe('page identity', () => {
 		// @spec components/infrastructure/fan/web/global/page-header "Header title and active tab match the route shown"
 		it('shows the displayed tab route’s title and highlights its tab', async () => {
+			// Settings is not a tab: its header still reads the invariant tab
+			// label `nav.settings`, and no tab is highlighted.
+			// @spec components/infrastructure/fan/web/route/settings "Header shares the navigation tab label source"
+			// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Route outside every tab"
 			await go('settings')
 			expect(headerTitle()).toBe('nav.settings')
-			expect(activeTabs()).toEqual(['settings'])
+			expect(activeTabs()).toEqual([])
 
 			await go('my-artists')
 			expect(headerTitle()).toBe('nav.myArtists')
@@ -234,7 +239,7 @@ describe('app-shell', () => {
 
 				expect(displayedRoute()).toBe('settings-route')
 				expect(headerTitle()).toBe('nav.settings')
-				expect(activeTabs()).toEqual(['settings'])
+				expect(activeTabs()).toEqual([])
 
 				// Control: the same observation does see a navigation that succeeds.
 				myArtistsGuard.allow = true

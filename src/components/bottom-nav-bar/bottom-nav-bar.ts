@@ -6,6 +6,7 @@ import {
 } from '@aurelia/router'
 import { type IDisposable, resolve } from 'aurelia'
 import type { ShellRouteData } from '../../app-shell'
+import { IFabMenuService } from '../../services/fab-menu-service'
 
 /**
  * The bottom navigation bar. Its tabs are the shell routes marked `nav: true`,
@@ -14,6 +15,10 @@ import type { ShellRouteData } from '../../app-shell'
  * highlight is the router's own `isActive` for that route (so a second path of a
  * tab route, e.g. `concerts/:id` on Home, highlights it too), or the displayed
  * route's `data.section` naming the tab's route id (the Event page on Home).
+ *
+ * The bar keeps a centre slot for the FAB between the second and third tabs on
+ * every route, so the tabs never move; it cuts a notch around the FAB while the
+ * FAB is shown (the shell shows it when the route contributes actions).
  */
 export class BottomNavBar {
 	// The bar sits beside the shell's <au-viewport>, so this is the root route
@@ -22,6 +27,7 @@ export class BottomNavBar {
 
 	private readonly router = resolve(IRouter)
 	private readonly routerEvents = resolve(IRouterEvents)
+	public readonly fabMenu = resolve(IFabMenuService)
 	private subscription: IDisposable | null = null
 
 	/**

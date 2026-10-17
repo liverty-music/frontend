@@ -338,7 +338,7 @@
 		"version": "バージョン",
 		"copyVersionSuccess": "バージョン情報をコピーしました",
 		"leftHanded": "左利きモード",
-		"leftHandedDesc": "アクションボタンを左下に配置します"
+		"leftHandedDesc": "アクションメニューを左手側に開きます"
 	},
 	"onboarding": {
 		"consent": {
@@ -740,7 +740,7 @@
 		"filter": "コンサート一覧の絞り込み",
 		"help": "ヘルプ",
 		"leftHanded": "左利きモード",
-		"leftHandedDesc": "アクションボタンを左下に配置します"
+		"leftHandedDesc": "アクションメニューを左手側に開きます"
 	},
 	"lotteryEntry": {
 		"title": "チケット抽選に申し込む",

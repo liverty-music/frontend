@@ -1,4 +1,5 @@
 import { concertWire } from '../support/concert-wire'
+import { FAN_EMAIL, FAN_SUB, mockFanRpc } from '../support/fan-auth'
 import { expect, type Page, test } from '../support/test'
 
 /**
@@ -200,6 +201,7 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		await expect(remaining).toHaveCount(0, { timeout: 5000 })
 	})
 
+	// @spec components/infrastructure/fan/web/global/snack-bar "Multiple simultaneous snacks"
 	test('multiple toasts are rendered inside the snack-stack container', async ({
 		page,
 	}) => {
@@ -216,6 +218,12 @@ test.describe('Toast notification: multiple rapid toasts (5.1)', () => {
 		// Toasts are children of the .snack-stack container
 		const stackCount = await page.locator('.snack-stack .snack-item').count()
 		expect(stackCount).toBe(2)
+		// Stacked in a flex-column container.
+		const stack = await page
+			.locator('.snack-stack')
+			.evaluate((el) => getComputedStyle(el))
+		expect(stack.display).toBe('flex')
+		expect(stack.flexDirection).toContain('column')
 	})
 })
 
@@ -353,6 +361,7 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 		await mockRpcRoutes(page)
 	})
 
+	// @spec components/infrastructure/fan/web/global/snack-bar "Top Layer stacking with dialogs"
 	test('toast popover renders above an open dialog element', async ({
 		page,
 	}) => {
@@ -401,5 +410,265 @@ test.describe('Toast notification: appears above dialog (5.3)', () => {
 
 		// Verify the dialog is still open (toast didn't close it)
 		await expect(dialog).toBeVisible()
+	})
+})
+
+// =========================================================================
+// Placement above the bottom navigation and a visible bottom banner
+// =========================================================================
+
+const SNACK_CAPABILITY = 'components/infrastructure/fan/web/global/snack-bar'
+
+/**
+ * Boot a signed-in fan (backend mocked). The install banner is the persistent
+ * bottom banner a signed-in fan sees; `banner` decides whether it is visible,
+ * dismissed this session, or never offered (the app is installed).
+ */
+async function bootSignedIn(
+	page: Page,
+	banner: 'visible' | 'dismissed' | 'none',
+): Promise<void> {
+	await page.addInitScript(
+		({ sub, email, banner }) => {
+			localStorage.setItem('onboardingComplete', 'true')
+			localStorage.setItem('onboarding.celebrationShown', '1')
+			localStorage.setItem('ui.notificationPromptDismissed', 'true')
+			if (banner === 'none') localStorage.setItem('pwa.installed', 'true')
+			if (banner === 'dismissed')
+				sessionStorage.setItem('pwaBanner.dismissed', 'true')
+			localStorage.setItem(
+				'oidc.user:https://auth.dev.liverty-music.app:371355407710421859',
+				JSON.stringify({
+					id_token: 'fake-id-token',
+					access_token: 'fake-access-token',
+					token_type: 'Bearer',
+					scope: 'openid profile email',
+					profile: { sub, email },
+					expires_at: 9999999999,
+				}),
+			)
+		},
+		{ sub: FAN_SUB, email: FAN_EMAIL, banner },
+	)
+	await mockFanRpc(page)
+	await page.goto('http://localhost:9000/tickets')
+	await expect(page.locator('bottom-nav-bar nav')).toBeVisible({
+		timeout: 30_000,
+	})
+}
+
+/**
+ * Wait until every finite animation/transition on `selector` has finished
+ * (an infinite one, such as the install banner's CTA pulse, never moves the
+ * element's box).
+ */
+async function waitSettled(page: Page, selector: string): Promise<void> {
+	await page.waitForFunction((sel) => {
+		const el = document.querySelector(sel)
+		return (
+			el !== null &&
+			el
+				.getAnimations({ subtree: true })
+				.filter((a) => a.effect?.getTiming().iterations !== Infinity)
+				.every((a) => a.playState !== 'running')
+		)
+	}, selector)
+}
+
+/** Bottom edge of the open snack, once it has risen into place. */
+async function openSnackBottom(page: Page): Promise<number> {
+	const snack = page.locator('.snack-item:popover-open')
+	await expect(snack).toHaveCount(1)
+	await waitSettled(page, '.snack-item:popover-open')
+	const box = await snack.boundingBox()
+	if (!box) throw new Error('snack has no box')
+	return box.y + box.height
+}
+
+async function topOf(page: Page, selector: string): Promise<number> {
+	const box = await page.locator(selector).boundingBox()
+	if (!box) throw new Error(`${selector} has no box`)
+	return box.y
+}
+
+/** The `space-s` step at this viewport, in px. */
+async function spaceS(page: Page): Promise<number> {
+	return page.evaluate(() => {
+		const probe = document.createElement('div')
+		probe.style.blockSize = 'var(--space-s)'
+		document.body.append(probe)
+		const px = probe.getBoundingClientRect().height
+		probe.remove()
+		return px
+	})
+}
+
+test.describe('Snack placement above the navigation', () => {
+	test.use({ viewport: { width: 412, height: 915 } })
+	test.describe.configure({ timeout: 60_000 })
+
+	test(`@spec ${SNACK_CAPABILITY} "No banner is visible"`, async ({ page }) => {
+		await bootSignedIn(page, 'none')
+		await publishToastDirect(page, 'Saved', 'info', 10_000)
+
+		const gap =
+			(await topOf(page, 'bottom-nav-bar nav')) - (await openSnackBottom(page))
+		expect(gap).toBeCloseTo(await spaceS(page), 0)
+		expect(gap).toBeGreaterThanOrEqual(16)
+		expect(gap).toBeLessThanOrEqual(20)
+	})
+
+	test(`@spec ${SNACK_CAPABILITY} "Install banner dismissed"`, async ({
+		page,
+	}) => {
+		await bootSignedIn(page, 'dismissed')
+		// The banner's host stays mounted for a signed-in fan; only its content
+		// is gone, and it must add no height.
+		await expect(page.locator('pwa-install-banner')).toBeAttached()
+		await expect(page.locator('.pwa-banner')).toHaveCount(0)
+		await publishToastDirect(page, 'Saved', 'info', 10_000)
+
+		const gap =
+			(await topOf(page, 'bottom-nav-bar nav')) - (await openSnackBottom(page))
+		expect(gap).toBeCloseTo(await spaceS(page), 0)
+	})
+
+	test(`@spec ${SNACK_CAPABILITY} "A banner is visible"`, async ({ page }) => {
+		await bootSignedIn(page, 'visible')
+		await expect(page.locator('.pwa-banner')).toBeVisible()
+		await waitSettled(page, 'pwa-install-banner')
+		await publishToastDirect(page, 'Saved', 'info', 10_000)
+
+		const bannerTop = await topOf(page, '.pwa-banner')
+		const gap = bannerTop - (await openSnackBottom(page))
+		expect(gap).toBeCloseTo(await spaceS(page), 0)
+		// A positive gap means the snack covers no part of the banner.
+		expect(gap).toBeGreaterThan(0)
+		await expect(page.locator('.snack-item')).toHaveCount(0, {
+			timeout: 15_000,
+		})
+
+		// My Artists also mounts the (hidden) signup prompt next to the install
+		// banner; the hidden one must not cancel the visible one's height, or
+		// the snack would cover the banner.
+		await page.locator('.nav-tab[data-nav="my-artists"]').click()
+		await page.waitForURL('**/my-artists')
+		await expect(page.locator('signup-prompt-banner')).toBeAttached()
+		await waitSettled(page, 'pwa-install-banner')
+		await publishToastDirect(page, 'Saved', 'info', 10_000)
+		const onMyArtists =
+			(await topOf(page, '.pwa-banner')) - (await openSnackBottom(page))
+		expect(onMyArtists).toBeGreaterThan(0)
+	})
+
+	test(`@spec ${SNACK_CAPABILITY} "Same placement for every severity"`, async ({
+		page,
+	}) => {
+		await bootSignedIn(page, 'none')
+		const bottoms: number[] = []
+		for (const severity of ['info', 'warning', 'error'] as const) {
+			await publishToastDirect(page, `A ${severity} snack`, severity, 1500)
+			bottoms.push(await openSnackBottom(page))
+			await expect(page.locator('.snack-item')).toHaveCount(0, {
+				timeout: 5000,
+			})
+		}
+		expect(bottoms[1]).toBeCloseTo(bottoms[0], 0)
+		expect(bottoms[2]).toBeCloseTo(bottoms[0], 0)
+	})
+})
+
+test.describe('Snack motion from the bottom edge', () => {
+	test.use({ viewport: { width: 412, height: 915 } })
+	test.describe.configure({ timeout: 60_000 })
+
+	/**
+	 * The vertical offset and opacity at both ends of a snack's transform and
+	 * opacity transitions, read the moment `phase` starts: on `enter` as soon as
+	 * the snack opens, on `exit` right after `hidePopover()` (what a dismiss
+	 * calls).
+	 */
+	async function transitionEnds(
+		page: Page,
+		phase: 'enter' | 'exit',
+	): Promise<{
+		fromY: number
+		toY: number
+		fromOpacity: number
+		toOpacity: number
+	}> {
+		await page.waitForFunction(
+			() =>
+				typeof (window as unknown as Record<string, unknown>)
+					.__lm_publishSnack === 'function',
+		)
+		return page.evaluate(
+			(phase) =>
+				new Promise((resolve) => {
+					const ends = (el: Element, property: string) => {
+						const t = el
+							.getAnimations()
+							.find((a) => (a as CSSTransition).transitionProperty === property)
+						const frames =
+							(t?.effect as KeyframeEffect | null)?.getKeyframes() ?? []
+						return frames.length >= 2
+							? [frames[0][property], frames[frames.length - 1][property]]
+							: null
+					}
+					const read = (el: Element) => {
+						const transform = ends(el, 'transform')
+						const opacity = ends(el, 'opacity')
+						if (!transform || !opacity) return false
+						resolve({
+							fromY: new DOMMatrix(String(transform[0])).m42,
+							toY: new DOMMatrix(String(transform[1])).m42,
+							fromOpacity: Number(opacity[0]),
+							toOpacity: Number(opacity[1]),
+						})
+						return true
+					}
+					const publish = (window as unknown as Record<string, unknown>)
+						.__lm_publishSnack as (m: string, s: string, d: number) => void
+					publish('Motion', 'info', 10_000)
+					const poll = () => {
+						const el = document.querySelector('.snack-item:popover-open')
+						if (el === null) {
+							requestAnimationFrame(poll)
+						} else if (phase === 'enter') {
+							if (!read(el)) requestAnimationFrame(poll)
+						} else if (el.getAnimations().length > 0) {
+							// Let the entry finish before starting the exit.
+							requestAnimationFrame(poll)
+						} else {
+							;(el as HTMLElement).hidePopover()
+							read(el)
+						}
+					}
+					poll()
+				}),
+			phase,
+		)
+	}
+
+	test.beforeEach(async ({ page }) => {
+		await bootSignedIn(page, 'none')
+	})
+
+	test(`@spec ${SNACK_CAPABILITY} "CSS entry animation"`, async ({ page }) => {
+		const ends = await transitionEnds(page, 'enter')
+		// Rises from 1rem below its place into place, fading in.
+		expect(ends.fromY).toBeCloseTo(16, 0)
+		expect(ends.toY).toBeCloseTo(0, 0)
+		expect(ends.fromOpacity).toBe(0)
+		expect(ends.toOpacity).toBe(1)
+	})
+
+	test(`@spec ${SNACK_CAPABILITY} "CSS exit animation"`, async ({ page }) => {
+		const ends = await transitionEnds(page, 'exit')
+		// Sinks from its place to 1rem below, fading out.
+		expect(ends.fromY).toBeCloseTo(0, 0)
+		expect(ends.toY).toBeCloseTo(16, 0)
+		expect(ends.fromOpacity).toBe(1)
+		expect(ends.toOpacity).toBe(0)
 	})
 })

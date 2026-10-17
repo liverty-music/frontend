@@ -69,6 +69,23 @@ describe('FabMenu', () => {
 		})
 	})
 
+	describe('detaching', () => {
+		// @spec components/infrastructure/fan/web/global/fab-menu "Leaving with the arc open and coming back"
+		it('comes back collapsed after being detached while open', () => {
+			Object.assign(panel, { hidePopover: vi.fn() })
+			Object.assign(fabButton, { hidePopover: vi.fn(), showPopover: vi.fn() })
+			sut.onPanelToggle({ newState: 'open' } as ToggleEvent)
+			expect(sut.isOpen).toBe(true)
+
+			// Navigating away: the toggle event that would report "closed" never
+			// reaches the view model, because its binding is already gone.
+			sut.detaching()
+			sut.attached()
+
+			expect(sut.isOpen).toBe(false)
+		})
+	})
+
 	describe('onAction', () => {
 		it('closes the panel for a command (only one overlay active)', () => {
 			const invoke = vi.fn()

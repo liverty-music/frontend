@@ -7,7 +7,9 @@ import {
 
 /**
  * Global thumb-zone action launcher. A single instance is mounted by the app
- * shell and binds to `IFabMenuService.actions` (contributed per route). The
+ * shell and binds to `IFabMenuService.actions` (contributed per route). The FAB
+ * sits in the bottom navigation bar's centre notch, and its actions unfold
+ * along an arc that follows the dominant thumb's sweep. The
  * collapsed FAB is a disclosure control (`aria-expanded` + `aria-controls`),
  * NOT an ARIA menu (design D5); the expanded panel is a top-layer
  * `popover="auto"` so Escape + light-dismiss come for free.
@@ -41,6 +43,11 @@ export class FabMenu {
 	}
 
 	public detaching(): void {
+		// The panel's `toggle` event is dispatched asynchronously, after the
+		// `toggle.trigger` binding is gone, and the shell's `if.bind` reuses this
+		// view model on the next route with actions. Collapse the state here so
+		// the FAB always comes back collapsed.
+		this.isOpen = false
 		// Close both popovers before teardown so an open panel is not torn out of
 		// the top layer with focus stranded (e.g. a programmatic navigation while
 		// the panel is expanded).

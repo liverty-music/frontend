@@ -16,8 +16,12 @@ const meta = {
 			control: 'text',
 			description: 'i18n key resolved into the H1 via the `t` binding.',
 		},
+		showSettings: {
+			control: 'boolean',
+			description: 'Shows the Settings gear (the shell sets it on tab pages).',
+		},
 	},
-	args: { titleKey: 'entity.artist.label' },
+	args: { titleKey: 'entity.artist.label', showSettings: false },
 } satisfies Meta<typeof PageHeader>
 
 export default meta
@@ -60,5 +64,36 @@ export const WithSlottedAction = {
 		await expect(
 			canvas.getByRole('button', { name: 'Filter' }),
 		).toBeInTheDocument()
+	},
+} satisfies Story
+
+// The Settings gear the shell shows on the four tab pages, after any projected
+// trailing content.
+export const WithSettings = {
+	render: (args) =>
+		defineAureliaStory({
+			template: `
+				<page-header title-key.bind="titleKey" show-settings.bind="true">
+					<button type="button">Filter</button>
+				</page-header>
+			`,
+			props: args,
+			register: [PageHeader],
+		}),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement)
+		const gear = canvas.getByRole('link', { name: 'Settings' })
+		await expect(gear.getAttribute('href')).toBe('settings')
+		// @spec components/infrastructure/fan/web/global/page-header "Gear after a route's own trailing content"
+		const trailing = canvas.getByRole('button', { name: 'Filter' })
+		await expect(
+			trailing.compareDocumentPosition(gear) & Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy()
+		await vitestExpect
+			.element(canvasElement)
+			.toMatchScreenshot('page-header-with-settings', {
+				comparatorName: 'pixelmatch',
+				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
+			})
 	},
 } satisfies Story

@@ -145,7 +145,8 @@ export class MyArtistsRoute {
 	 */
 	private buildFabActions(): FabAction[] {
 		if (this.editing) return []
-		const actions: FabAction[] = [helpAction(() => this.pageHelp?.open())]
+		// The first action sits closest to the FAB on the thumb arc.
+		const actions: FabAction[] = []
 		if (this.canEdit) {
 			actions.push({
 				id: 'edit',
@@ -155,6 +156,7 @@ export class MyArtistsRoute {
 				invoke: () => this.toggleEditing(),
 			})
 		}
+		actions.push(helpAction(() => this.pageHelp?.open()))
 		return actions
 	}
 

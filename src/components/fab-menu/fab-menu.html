@@ -16,8 +16,17 @@
   aria-expanded.bind="isOpen"
   t="[aria-label]fabMenu.toggleAriaLabel"
 >
+  <!-- Equalizer (collapsed) and close (expanded) glyphs, cross-faded on
+       data-open. Inline so each equalizer bar can bounce on its own. -->
   <span class="fab-glyph" data-open.bind="isOpen" aria-hidden="true">
-    <svg-icon name="plus" size="md"></svg-icon>
+    <svg class="fab-equalizer" viewBox="0 0 24 24" focusable="false">
+      <rect class="fab-bar" x="3.5" y="9" width="4" height="12" rx="2"></rect>
+      <rect class="fab-bar" x="10" y="3" width="4" height="18" rx="2"></rect>
+      <rect class="fab-bar" x="16.5" y="12" width="4" height="9" rx="2"></rect>
+    </svg>
+    <svg class="fab-close" viewBox="0 0 24 24" focusable="false">
+      <path d="M6 6 18 18M18 6 6 18"></path>
+    </svg>
   </span>
 </button>
 
@@ -25,7 +34,8 @@
      (disclosure, not menu). Uses a dialog element (project lint requires popovers
      to be dialogs, not divs); the popover="auto" attribute governs behavior
      (light-dismiss + Esc), not modal dialog semantics, and role="group" keeps the
-     disclosure contract. Each item is icon + text label (labels mandatory);
+     disclosure contract. Each item is icon + text label (labels mandatory),
+     placed along the thumb arc by its index (--i) out of the count (--n);
      toggle items carry aria-pressed, command/active items carry data-active. -->
 <dialog
   ref="panel"
@@ -38,7 +48,12 @@
   toggle.trigger="onPanelToggle($event)"
 >
   <ul class="fab-list">
-    <li repeat.for="action of fabMenu.actions" key.bind="action.id" class="fab-list-item">
+    <li
+      repeat.for="action of fabMenu.actions"
+      key.bind="action.id"
+      class="fab-list-item"
+      style="--i: ${$index}; --n: ${fabMenu.actions.length}"
+    >
       <button
         type="button"
         class="fab-item"

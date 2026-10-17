@@ -247,8 +247,9 @@
 			from var(--color-surface-overlay) 30% c h
 		);
 
-		/* Raised, strong-contrast surface for the expanded menu panel. */
-		--md-color-menu-surface: oklch(30% 0.035 275deg);
+		/* Raised surface of the FAB's action items: 3:1 or more against the page
+		   dimmed by the scrim (WCAG 1.4.11), white ink on it 4.5:1 or more. */
+		--md-color-menu-surface: oklch(50% 0.035 275deg);
 
 		/* Modal backdrop scrim (dims the page behind the open panel). */
 		--md-color-scrim: oklch(0% 0 0deg / 45%);
@@ -286,6 +287,15 @@
 		/* ── FAB launcher layout + interaction tokens ── */
 		--fab-size: 3.5rem; /* 56px M3 FAB */
 		--fab-inset: var(--space-s);
+
+		/* The FAB sits in a notch at the centre of the bottom navigation bar.
+		   The notch leaves --fab-notch-gap around the FAB, and the bar keeps a
+		   --fab-slot wide centre column for it on every route. */
+		--fab-notch-gap: 0.5rem;
+		--fab-notch-radius: calc(var(--fab-size) / 2 + var(--fab-notch-gap));
+		--fab-slot: calc(var(--fab-size) + 2 * var(--fab-notch-gap));
+		--fab-icon-size: 2rem; /* the equalizer / close glyph */
+		--fab-sunk-scale: calc(40 / 56); /* 56px → 40px while a snack bar is open */
 		--fab-radius-collapsed: var(--radius-full); /* round FAB */
 		--fab-radius-expanded: var(--radius-card); /* rounded-rect panel */
 

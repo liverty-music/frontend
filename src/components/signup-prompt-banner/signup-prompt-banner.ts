@@ -9,6 +9,8 @@ export class SignupPromptBanner {
 
 	private readonly element = resolve(INode) as HTMLElement
 	private resizeObserver: ResizeObserver | null = null
+	/** Whether this banner wrote the shared height variable last. */
+	private publishing = false
 
 	public attached(): void {
 		// Publish the banner's rendered height so the FAB launcher can offset
@@ -23,16 +25,33 @@ export class SignupPromptBanner {
 	public detaching(): void {
 		this.resizeObserver?.disconnect()
 		this.resizeObserver = null
-		document.documentElement.style.removeProperty(BANNER_HEIGHT_VAR)
+		this.unpublish()
 	}
 
+	/**
+	 * Publish the rendered height while the banner shows. The signup prompt and
+	 * the install banner share the variable and never show together, but both
+	 * hosts can be mounted at once (a signed-in fan's dashboard mounts the
+	 * hidden signup prompt), so a hidden banner leaves the variable to the
+	 * visible one instead of writing 0px over it.
+	 */
 	private publishHeight(): void {
-		// offsetHeight is 0 while hidden (the inner <aside> is `if.bind`-removed),
-		// so the FAB's `var(--bottom-banner-height, 0px)` term naturally collapses.
-		document.documentElement.style.setProperty(
-			BANNER_HEIGHT_VAR,
-			`${this.element.offsetHeight}px`,
-		)
+		const height = this.element.offsetHeight
+		if (height > 0) {
+			document.documentElement.style.setProperty(
+				BANNER_HEIGHT_VAR,
+				`${height}px`,
+			)
+			this.publishing = true
+		} else {
+			this.unpublish()
+		}
+	}
+
+	private unpublish(): void {
+		if (!this.publishing) return
+		document.documentElement.style.removeProperty(BANNER_HEIGHT_VAR)
+		this.publishing = false
 	}
 
 	public onSignup(): void {

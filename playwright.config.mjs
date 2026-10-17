@@ -84,6 +84,22 @@ export default defineConfig({
         baseURL: 'http://localhost:9000',
       },
     },
+    // The shell chrome (bottom navigation, page header, FAB) on the real WebKit
+    // engine, iPhone 14 viewport: the notch mask, offset-path arc and top-layer
+    // FAB must hold on Safari as well as on Chromium (`functional`).
+    {
+      name: 'webkit-shell',
+      testMatch: [
+        'e2e/functional/fan-shell-navigation.spec.ts',
+        'e2e/functional/fab-menu-arc.spec.ts',
+        'e2e/functional/fab-menu-top-layer.spec.ts',
+      ],
+      use: {
+        ...devices['iPhone 14'],
+        browserName: 'webkit',
+        baseURL: 'http://localhost:9000',
+      },
+    },
     // Layer 3: E2E Functional — onboarding flows (Pixel 7 mobile)
     {
       name: 'onboarding',

@@ -5,10 +5,17 @@
 			--_safe-area-bottom: env(safe-area-inset-bottom);
 		}
 
+		/* Four tabs, two on each side of a centre slot kept for the FAB on every
+		   route, so the tabs never move. Each tab is capped at 7.5rem, so on wide
+		   viewports the tabs form a centred cluster instead of reaching the
+		   screen corners; the bar background stays full-width. */
 		.nav-bar {
 			position: relative;
 
-			display: flex;
+			display: grid;
+			grid-template-columns:
+				repeat(2, minmax(0, 7.5rem)) var(--fab-slot)
+				repeat(2, minmax(0, 7.5rem));
 			align-items: center;
 			justify-content: center;
 
@@ -42,18 +49,11 @@
 			position: relative;
 
 			display: flex;
-
-			/* Grow to fill the bar on phones, but cap per-tab width so on wide
-			   viewports the four tabs form a centered ~30rem cluster instead of
-			   being flung to the screen corners. The bar background stays
-			   full-width; only the tab group is constrained. */
-			flex: 1;
 			flex-direction: column;
 			gap: var(--_tab-gap);
 			align-items: center;
 			justify-content: center;
 
-			max-inline-size: 7.5rem;
 			block-size: 100%;
 
 			/* Selection spring-morph (design 2.6): the corner radius rounds with a
@@ -66,6 +66,25 @@
 				box-shadow var(--md-duration-medium1) var(--md-spring-effects),
 				border-radius var(--md-spring-spatial-duration) var(--md-spring-spatial),
 				transform var(--md-duration-medium1) var(--md-easing-standard);
+		}
+
+		/* While the FAB is shown, cut a notch around it in the bar's top edge.
+		   Masking the whole bar also cuts its gradient top line, so the edge
+		   stays one shape. Only alpha matters in a mask. While the FAB floats
+		   above a bottom banner (--fab-floating, set by global.css), the notch
+		   closes to a zero radius. */
+		.nav-bar[data-notch="true"] {
+			mask: radial-gradient(
+				circle calc(var(--fab-notch-radius) * (1 - var(--fab-floating, 0))) at
+					50% 0,
+				transparent 98%,
+				var(--color-white)
+			);
+		}
+
+		/* Tabs 3 and 4 sit after the FAB's centre slot. */
+		.nav-tab:nth-child(3) {
+			grid-column-start: 4;
 		}
 
 		/* Press cue at the moment of tap. The nav tabs are <a> elements the global

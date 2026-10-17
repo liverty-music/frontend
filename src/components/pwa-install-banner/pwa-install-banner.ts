@@ -12,6 +12,8 @@ export class PwaInstallBanner {
 	private readonly pwaInstall = resolve(IPwaInstallService)
 	private readonly element = resolve(INode) as HTMLElement
 	private resizeObserver: ResizeObserver | null = null
+	/** Whether this banner wrote the shared height variable last. */
+	private publishing = false
 
 	// isIos is immutable after boot — evaluated once and stored.
 	public readonly isIos: boolean = this.pwaInstall.isIos
@@ -49,14 +51,33 @@ export class PwaInstallBanner {
 	public detaching(): void {
 		this.resizeObserver?.disconnect()
 		this.resizeObserver = null
-		document.documentElement.style.removeProperty(BANNER_HEIGHT_VAR)
+		this.unpublish()
 	}
 
+	/**
+	 * Publish the rendered height while the banner shows. The signup prompt and
+	 * the install banner share the variable and never show together, but both
+	 * hosts can be mounted at once (a signed-in fan's dashboard mounts the
+	 * hidden signup prompt), so a hidden banner leaves the variable to the
+	 * visible one instead of writing 0px over it.
+	 */
 	private publishHeight(): void {
-		document.documentElement.style.setProperty(
-			BANNER_HEIGHT_VAR,
-			`${this.element.offsetHeight}px`,
-		)
+		const height = this.element.offsetHeight
+		if (height > 0) {
+			document.documentElement.style.setProperty(
+				BANNER_HEIGHT_VAR,
+				`${height}px`,
+			)
+			this.publishing = true
+		} else {
+			this.unpublish()
+		}
+	}
+
+	private unpublish(): void {
+		if (!this.publishing) return
+		document.documentElement.style.removeProperty(BANNER_HEIGHT_VAR)
+		this.publishing = false
 	}
 
 	private syncInstallMode(): void {
