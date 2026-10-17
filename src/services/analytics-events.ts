@@ -186,7 +186,10 @@ export type DiscoveryRevealProps = {
 	path: 'top' | 'seed_similar'
 	/** Followed artists used as seeds (0 on the `top` path). */
 	seed_count: number
-	/** Until the first ghost placeholder bubble was drawn. */
+	/**
+	 * Until the first bubble was drawn: a ghost placeholder, or an artist when
+	 * the artists arrived before any ghost could be drawn.
+	 */
 	ghosts_ms: number
 	/** Until the first artist name was drawn. */
 	first_name_ms: number

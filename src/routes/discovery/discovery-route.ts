@@ -164,7 +164,8 @@ export class DiscoveryRoute {
 		// re-rolling it, unless it has gone stale.
 		const cold = this.bubbleStore.prepareEntry()
 		// A page load is measured from the document's start, an in-app entry from
-		// this hook. Only a cold visit (ghosts painted) reports its reveal.
+		// this hook. Only a cold visit (no cached field, so ghosts were prepared)
+		// reports its reveal, even when the artists arrive before a ghost is drawn.
 		this.revealTiming = cold
 			? new RevealTiming(entry, entry === 'page_load' ? 0 : openedAt)
 			: null
@@ -181,11 +182,22 @@ export class DiscoveryRoute {
 	/**
 	 * Kick off the background field refresh on route entry. Returns a Promise so
 	 * production fires it non-blocking (`void`) while tests await it
-	 * deterministically. Delegates to the field owner, which reuses the fresh
+	 * deterministically. Loads the fan's follows first, so a signed-in fan who
+	 * opens Discovery directly gets seed-similar bubbles without their followed
+	 * artists. Then delegates to the field owner, which reuses the fresh
 	 * in-session field with a non-destructive delta (or reloads when stale). A
 	 * failure surfaces a Snack and is swallowed.
 	 */
 	public async refreshField(): Promise<void> {
+		try {
+			await this.followStore.listFollowed(this.abortController.signal)
+		} catch (err) {
+			// Without follows the field falls back to top artists; still load it.
+			this.logger.warn('Failed to load follows for the discovery field', {
+				error: err,
+			})
+		}
+		if (this.abortController.signal.aborted) return
 		try {
 			await this.bubbleStore.reenter()
 		} catch (err) {

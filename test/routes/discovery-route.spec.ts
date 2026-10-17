@@ -175,6 +175,42 @@ describe('DiscoveryRoute', () => {
 			expect(mockArtistClient.listTop).toHaveBeenCalledWith('Japan', '', 50)
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "User has followed artists (Step 1-b)"
+		it('loads the follows before the field, so a fan opening Discovery directly gets seed-similar bubbles', async () => {
+			const followed = makeArtist('f1', 'Followed')
+			;(
+				mockFollowClient.listFollowed as ReturnType<typeof vi.fn>
+			).mockImplementation(async () => {
+				simulateFollow(mockFollowClient, followed)
+				return [{ artist: followed, hype: 'watch' }]
+			})
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockResolvedValue(
+				Array.from({ length: 30 }, (_, i) => makeArtist(`s${i}`, `S${i}`)),
+			)
+
+			await sut.refreshField()
+
+			expect(mockFollowClient.listFollowed).toHaveBeenCalled()
+			expect(mockArtistClient.listSimilar).toHaveBeenCalledWith('f1', 50)
+			expect(sut.bubbleStore.lastInitialLoad?.path).toBe('seed_similar')
+		})
+
+		it('still loads the field from top artists when the follows cannot be loaded', async () => {
+			;(
+				mockFollowClient.listFollowed as ReturnType<typeof vi.fn>
+			).mockRejectedValue(new Error('unavailable'))
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
+				[makeArtist('a1', 'Artist One')],
+			)
+
+			await sut.refreshField()
+
+			expect(sut.bubbleStore.field.map((a) => a.id)).toEqual(['a1'])
+			expect(mockEa.publish).not.toHaveBeenCalled()
+		})
+
 		it('should show toast on load failure', async () => {
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockRejectedValue(
 				new Error('fail'),
@@ -188,7 +224,7 @@ describe('DiscoveryRoute', () => {
 	})
 
 	describe('loading', () => {
-		it('is non-blocking: returns before the initial bubble fetch settles', () => {
+		it('is non-blocking: returns before the initial bubble fetch settles', async () => {
 			let resolveLoad: (v: Artist[]) => void = () => {}
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockReturnValue(
 				new Promise((r) => {
@@ -201,6 +237,8 @@ describe('DiscoveryRoute', () => {
 			const result = sut.loading()
 
 			expect(result).toBeUndefined()
+			// The fetch starts once the follows have loaded, without blocking loading().
+			await vi.runAllTimersAsync()
 			expect(mockArtistClient.listTop).toHaveBeenCalled()
 
 			resolveLoad([])
@@ -891,6 +929,24 @@ describe('DiscoveryRoute', () => {
 					first_name_ms: 400,
 					all_names_ms: 800,
 				},
+			)
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Artists arrive before a ghost is drawn"
+		it('sends the event when the first frame already shows every name', async () => {
+			navigationAt(window.location.href)
+
+			sut.loading()
+			await vi.runAllTimersAsync()
+			revealAll([7000, 7000, 7000])
+
+			expect(mockAnalytics.capture).toHaveBeenCalledWith(
+				'perf.discovery_reveal',
+				expect.objectContaining({
+					ghosts_ms: 7000,
+					first_name_ms: 7000,
+					all_names_ms: 7000,
+				}),
 			)
 		})
 

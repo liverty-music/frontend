@@ -10,11 +10,12 @@ export const LABEL_OPACITY_THRESHOLD = 0.55
 export type RevealMark = 'ghosts' | 'first-name' | 'all-names'
 
 /**
- * Decides, frame by frame, when the cold-load reveal milestones are reached:
- * the first ghost placeholder drawn, the first artist name drawn, and the
- * first frame where every live bubble is a real artist showing its name.
- * Each milestone fires once. Nothing fires unless a ghost was drawn first, so
- * a re-entry that paints a cached field reports nothing.
+ * Decides, frame by frame, when the reveal milestones are reached: `ghosts`
+ * on the first frame that draws a bubble (a ghost placeholder, or an artist
+ * when the artists arrived before any ghost could be drawn), `first-name` on
+ * the first artist name drawn, and `all-names` on the first frame where every
+ * live bubble is a real artist showing its name. Each milestone fires once.
+ * The route decides whether the visit was cold and the timings are reported.
  */
 export class RevealMarks {
 	private readonly fired = new Set<RevealMark>()
@@ -23,13 +24,13 @@ export class RevealMarks {
 	public observe(bubbles: readonly PhysicsBubble[]): RevealMark[] {
 		if (this.fired.has('all-names')) return []
 
-		let ghostDrawn = false
+		let bubbleDrawn = false
 		let nameDrawn = false
 		let live = 0
 		let liveNamed = 0
 		for (const b of bubbles) {
 			const named = !b.artist.isGhost && b.opacity > LABEL_OPACITY_THRESHOLD
-			if (b.artist.isGhost && b.opacity >= 0.01) ghostDrawn = true
+			if (b.opacity >= 0.01) bubbleDrawn = true
 			if (named) nameDrawn = true
 			if (b.isFadingOut) continue
 			live++
@@ -38,7 +39,7 @@ export class RevealMarks {
 
 		const reached: RevealMark[] = []
 		if (!this.fired.has('ghosts')) {
-			if (!ghostDrawn) return reached
+			if (!bubbleDrawn) return reached
 			reached.push('ghosts')
 		}
 		if (!this.fired.has('first-name') && nameDrawn) reached.push('first-name')

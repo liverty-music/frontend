@@ -50,11 +50,21 @@ describe('RevealMarks', () => {
 		])
 	})
 
-	it('fires nothing for a field that never drew a ghost (re-entry)', () => {
+	it('fires every milestone on the first frame when artists arrive before any ghost is drawn', () => {
 		const sut = new RevealMarks()
 
-		expect(sut.observe([bubble('a'), bubble('b')])).toEqual([])
-		expect(sut.observe([ghost(0)])).toEqual(['ghosts'])
+		expect(sut.observe([bubble('a'), bubble('b')])).toEqual([
+			'ghosts',
+			'first-name',
+			'all-names',
+		])
+	})
+
+	it('fires nothing before any bubble is drawn', () => {
+		const sut = new RevealMarks()
+
+		expect(sut.observe([])).toEqual([])
+		expect(sut.observe([bubble('a', { opacity: 0 })])).toEqual([])
 	})
 
 	it('does not fire all-names for an empty field', () => {
