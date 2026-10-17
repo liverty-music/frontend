@@ -1,5 +1,13 @@
 import type { I18N } from '@aurelia/i18n'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	type Mock,
+	vi,
+} from 'vitest'
 import { StorageKeys } from '../constants/storage-keys'
 import type { IAuthService } from '../services/auth-service'
 import type { IUserStore } from '../services/user-store'
@@ -30,12 +38,20 @@ function makeUserStore(behavior?: {
 }
 
 describe('changeLocale', () => {
+	/** The language saved on this device, as changeLocale's storage sees it. */
+	let saved: Map<string, string>
+	let storage: { setItem: Mock<(key: string, value: string) => void> }
+
 	beforeEach(() => {
-		localStorage.clear()
+		saved = new Map()
+		storage = {
+			setItem: vi.fn((k: string, v: string) => {
+				saved.set(k, v)
+			}),
+		}
 	})
 
 	afterEach(() => {
-		localStorage.clear()
 		vi.restoreAllMocks()
 	})
 
@@ -44,13 +60,12 @@ describe('changeLocale', () => {
 			const i18n = makeI18n()
 			const auth = makeAuth(false)
 			const userStore = makeUserStore()
-			const setItem = vi.spyOn(Storage.prototype, 'setItem')
 
 			await expect(
-				changeLocale({ i18n, auth, userStore }, 'fr'),
+				changeLocale({ i18n, auth, userStore, storage }, 'fr'),
 			).rejects.toBeInstanceOf(TypeError)
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(setItem).not.toHaveBeenCalled()
+			expect(storage.setItem).not.toHaveBeenCalled()
 			expect(userStore.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
@@ -62,12 +77,12 @@ describe('changeLocale', () => {
 			const auth = makeAuth(false)
 			const userStore = makeUserStore()
 
-			await changeLocale({ i18n, auth, userStore }, 'en')
+			await changeLocale({ i18n, auth, userStore, storage }, 'en')
 
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			// The anonymous choice is persisted explicitly to the single
 			// `language` key (the i18next detector cache) — no separate guest key.
-			expect(localStorage.getItem(StorageKeys.language)).toBe('en')
+			expect(saved.get(StorageKeys.language)).toBe('en')
 			expect(userStore.updatePreferredLanguage).not.toHaveBeenCalled()
 		})
 	})
@@ -77,7 +92,7 @@ describe('changeLocale', () => {
 		// @spec components/infrastructure/fan/web/global/i18n "Switching language mid-session as an authenticated user"
 		// @spec components/infrastructure/fan/web/global/i18n "Language switched while signed in survives sign-out"
 		it('calls RPC first, then setLocale, then saves the language on this device', async () => {
-			localStorage.setItem(StorageKeys.language, 'ja')
+			saved.set(StorageKeys.language, 'ja')
 			const callOrder: string[] = []
 			const i18n = makeI18n({
 				setLocale: async () => {
@@ -92,19 +107,19 @@ describe('changeLocale', () => {
 				},
 			})
 
-			await changeLocale({ i18n, auth, userStore }, 'en')
+			await changeLocale({ i18n, auth, userStore, storage }, 'en')
 
 			expect(userStore.updatePreferredLanguage).toHaveBeenCalledWith('en')
 			expect(i18n.setLocale).toHaveBeenCalledWith('en')
 			expect(callOrder).toEqual(['rpc', 'setLocale'])
 			// The saved language follows the switch, so the Welcome page after a
 			// sign-out opens in it.
-			expect(localStorage.getItem(StorageKeys.language)).toBe('en')
+			expect(saved.get(StorageKeys.language)).toBe('en')
 		})
 
 		// @spec components/infrastructure/fan/web/global/i18n "Authenticated language switch RPC failure"
 		it('rethrows when RPC fails, leaving the locale and the saved language unchanged', async () => {
-			localStorage.setItem(StorageKeys.language, 'ja')
+			saved.set(StorageKeys.language, 'ja')
 			const i18n = makeI18n()
 			const auth = makeAuth(true)
 			const userStore = makeUserStore({
@@ -114,10 +129,10 @@ describe('changeLocale', () => {
 			})
 
 			await expect(
-				changeLocale({ i18n, auth, userStore }, 'en'),
+				changeLocale({ i18n, auth, userStore, storage }, 'en'),
 			).rejects.toThrow('network')
 			expect(i18n.setLocale).not.toHaveBeenCalled()
-			expect(localStorage.getItem(StorageKeys.language)).toBe('ja')
+			expect(saved.get(StorageKeys.language)).toBe('ja')
 		})
 	})
 })

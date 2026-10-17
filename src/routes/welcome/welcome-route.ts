@@ -14,6 +14,7 @@ import {
 } from 'aurelia'
 import { Snack } from '../../../shared/ui/snack-bar/snack'
 import { artistHue } from '../../adapter/view/artist-color'
+import { ILocalStorage } from '../../adapter/storage/local-storage'
 import type { EventDetailSheet } from '../../components/live-highway/event-detail-sheet'
 import type { LiveEvent } from '../../components/live-highway/live-event'
 import {
@@ -57,6 +58,7 @@ const COACH_DELAY_MS = 5000
 export class WelcomeRoute implements IRouteViewModel {
 	private readonly authService = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
+	private readonly storage = resolve(ILocalStorage)
 	private readonly followStore = resolve(IFollowStore)
 	private readonly router = resolve(IRouter)
 	private readonly logger = resolve(ILogger).scopeTo('WelcomeRoute')
@@ -389,6 +391,7 @@ export class WelcomeRoute implements IRouteViewModel {
 				i18n: this.i18n,
 				auth: this.authService,
 				userStore: this.userStore,
+				storage: this.storage,
 			},
 			newLocale,
 		)
