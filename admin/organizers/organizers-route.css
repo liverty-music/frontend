@@ -22,6 +22,7 @@
 				var(--color-brand-primary) 18%,
 				transparent
 			);
+			--_backdrop-bg: oklch(0% 0 0deg / 50%);
 		}
 
 		.organizers {
@@ -197,10 +198,39 @@
 			font-weight: 600;
 		}
 
+		.organizers-list-meta {
+			display: flex;
+			flex-wrap: wrap;
+			gap: var(--space-s);
+			align-items: center;
+		}
+
 		.organizers-list-short-name {
-			display: block;
 			font-size: var(--step--1);
 			color: var(--color-text-secondary);
+		}
+
+		/* Status pill: the text carries the status; the color only reinforces it. */
+		.organizers-status-label {
+			--_status-color: var(--color-text-secondary);
+
+			display: inline-block;
+
+			padding-inline: var(--_space-xs);
+			border: 1px solid var(--_status-color);
+			border-radius: var(--_radius);
+
+			font-size: var(--step--1);
+			font-weight: 600;
+			color: var(--_status-color);
+
+			&[data-status="active"] {
+				--_status-color: var(--color-brand-primary);
+			}
+
+			&[data-status="deactivated"] {
+				--_status-color: var(--color-error);
+			}
 		}
 
 		.organizers-detail-empty {
@@ -299,6 +329,35 @@
 		.organizers-error {
 			font-size: var(--step--1);
 			color: var(--color-error);
+		}
+
+		.organizers-dialog {
+			max-inline-size: min(28rem, 92vi);
+			margin: auto;
+			padding: var(--space-l);
+			border: 1px solid var(--_border);
+			border-radius: var(--_radius);
+
+			color: var(--color-text-primary);
+
+			background: var(--color-surface-base);
+
+			&::backdrop {
+				background: var(--_backdrop-bg);
+			}
+		}
+
+		.organizers-dialog-body {
+			--flow-space: var(--space-s);
+		}
+
+		.organizers-dialog-target {
+			color: var(--color-text-secondary);
+			overflow-wrap: anywhere;
+		}
+
+		.organizers-dialog-actions {
+			justify-content: flex-end;
 		}
 	}
 }

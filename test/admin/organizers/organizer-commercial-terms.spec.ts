@@ -360,3 +360,47 @@ describe('OrganizerCommercialTerms', () => {
 		})
 	})
 })
+
+const ROUTE_SPEC = 'components/infrastructure/admin/web/route/organizers'
+
+describe('OrganizerCommercialTerms for a deactivated Organizer', () => {
+	async function buildWith(deactivated: boolean) {
+		const fixture = createFixture
+			.html(
+				`<organizer-commercial-terms organizer-id="o1" deactivated.bind="${deactivated}"></organizer-commercial-terms>`,
+			)
+			.deps(
+				OrganizerCommercialTerms,
+				Registration.instance(IOrganizerClient, createMockClient()),
+			)
+			.build()
+		await fixture.started
+		await fixture.tasksSettled
+		return fixture
+	}
+
+	function forms(fixture: Awaited<ReturnType<typeof buildWith>>) {
+		const host = fixture.appHost
+		return {
+			businessDetails: host.querySelectorAll('input[name="legalName"]').length,
+			feeRate: host.querySelectorAll('input[name="platformFeeRate"]').length,
+		}
+	}
+
+	it(`@spec ${ROUTE_SPEC} "Deactivated Organizer hides refused controls"`, async () => {
+		const fixture = await buildWith(true)
+
+		expect(forms(fixture)).toEqual({ businessDetails: 0, feeRate: 0 })
+		expect(fixture.appHost.querySelectorAll('form')).toHaveLength(0)
+		expect(fixture.appHost.textContent).toContain('can no longer be changed')
+	})
+
+	it(`@spec ${ROUTE_SPEC} "Active Organizer keeps every control"`, async () => {
+		const fixture = await buildWith(false)
+
+		expect(forms(fixture)).toEqual({ businessDetails: 1, feeRate: 1 })
+		expect(fixture.appHost.textContent).not.toContain(
+			'can no longer be changed',
+		)
+	})
+})

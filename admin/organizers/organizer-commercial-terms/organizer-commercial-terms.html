@@ -3,8 +3,13 @@
     Commercial terms
   </h3>
 
+  <p if.bind="deactivated" class="commercial-terms-hint">
+    This organizer is deactivated: its business details and platform fee rate
+    can no longer be changed.
+  </p>
+
   <output
-    if.bind="phase === 'loading'"
+    if.bind="phase === 'loading' && !deactivated"
     class="commercial-terms-status"
     role="status"
     aria-busy="true"
@@ -12,14 +17,14 @@
     Loading commercial terms…
   </output>
 
-  <div if.bind="phase === 'error'" class="[ cluster ]" role="alert">
+  <div if.bind="phase === 'error' && !deactivated" class="[ cluster ]" role="alert">
     <p class="commercial-terms-error">${loadError}</p>
     <button type="button" class="commercial-terms-btn" click.trigger="load()">
       Retry
     </button>
   </div>
 
-  <template if.bind="phase === 'ready'">
+  <template if.bind="phase === 'ready' && !deactivated">
     <form
       class="[ commercial-terms-form ] [ flow ]"
       novalidate

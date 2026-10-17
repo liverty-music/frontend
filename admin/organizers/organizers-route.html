@@ -112,7 +112,16 @@
             click.trigger="select(row)"
           >
             <span class="organizers-list-name">${row.name}</span>
-            <span class="organizers-list-short-name">${row.shortName}</span>
+            <span class="organizers-list-meta">
+              <span class="organizers-list-short-name">${row.shortName}</span>
+              <span
+                if.bind="statusLabel(row.status)"
+                class="organizers-status-label"
+                data-status.bind="statusKey(row.status)"
+              >
+                ${statusLabel(row.status)}
+              </span>
+            </span>
           </button>
         </li>
       </ul>
@@ -128,6 +137,7 @@
         <div class="organizers-detail-head">
           <h2 class="organizers-section-title">${selected.name}</h2>
           <button
+            if.bind="!isDeactivated(selected.status)"
             type="button"
             class="organizers-btn"
             data-variant="danger"
@@ -136,15 +146,38 @@
           >
             ${deactivating ? 'Deactivating…' : 'Deactivate'}
           </button>
+          <button
+            else
+            type="button"
+            class="organizers-btn"
+            data-variant="danger"
+            aria-haspopup="dialog"
+            disabled.bind="deleting"
+            click.trigger="requestDelete()"
+          >
+            ${deleting ? 'Deleting…' : 'Delete'}
+          </button>
         </div>
+        <p if.bind="statusLabel(selected.status)">
+          <span
+            class="organizers-status-label"
+            data-status.bind="statusKey(selected.status)"
+          >
+            ${statusLabel(selected.status)}
+          </span>
+        </p>
         <p class="organizers-detail-id">Short name: ${selected.shortName}</p>
         <p class="organizers-detail-id">ID: ${selected.id}</p>
         <p if.bind="deactivateError" class="organizers-error" role="alert">
           ${deactivateError}
         </p>
+        <p if.bind="deleteError" class="organizers-error" role="alert">
+          ${deleteError}
+        </p>
 
         <organizer-commercial-terms
           organizer-id.bind="selected.id"
+          deactivated.bind="isDeactivated(selected.status)"
         ></organizer-commercial-terms>
 
         <section class="[ organizers-roster ] [ flow ]">
@@ -182,6 +215,7 @@
             <li repeat.for="artist of artists" class="organizers-roster-item">
               <span>${artist.name}</span>
               <button
+                if.bind="!isDeactivated(selected.status)"
                 type="button"
                 class="organizers-btn"
                 data-variant="ghost"
@@ -193,7 +227,10 @@
           </ul>
         </section>
 
-        <section class="[ organizers-associate ] [ flow ]">
+        <section
+          if.bind="!isDeactivated(selected.status)"
+          class="[ organizers-associate ] [ flow ]"
+        >
           <h3 class="organizers-subsection-title">Associate an artist</h3>
           <label class="organizers-field">
             Search artists
@@ -242,4 +279,44 @@
       </div>
     </section>
   </div>
+
+  <dialog
+    ref="deleteDialog"
+    class="organizers-dialog"
+    aria-labelledby="organizers-delete-title"
+    close.trigger="onDeleteDialogClose()"
+  >
+    <div class="[ organizers-dialog-body ] [ flow ]">
+      <h2 id="organizers-delete-title" class="organizers-section-title">
+        Delete organizer?
+      </h2>
+      <p class="organizers-dialog-target">
+        ${pendingDelete.name} (short name: ${pendingDelete.shortName})
+      </p>
+      <p class="organizers-error">
+        This permanently removes the organizer and everything recorded for it.
+        It cannot be undone.
+      </p>
+      <div class="[ organizers-dialog-actions ] [ cluster ]">
+        <button
+          ref="deleteCancelButton"
+          type="button"
+          class="organizers-btn"
+          autofocus
+          click.trigger="cancelDelete()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="organizers-btn"
+          data-variant="danger"
+          disabled.bind="deleting"
+          click.trigger="confirmDelete()"
+        >
+          ${deleting ? 'Deleting…' : 'Delete'}
+        </button>
+      </div>
+    </div>
+  </dialog>
 </main>

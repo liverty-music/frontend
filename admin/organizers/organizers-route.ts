@@ -6,8 +6,16 @@ import { IOrganizerClient, type Organizer } from '../services/organizer-client'
 import {
 	ARTIST_ALREADY_REPRESENTED,
 	SHORT_NAME_IN_USE,
+	toDeleteMessage,
 	toUserMessage,
 } from './organizer-error-message'
+import {
+	isOrganizerDeactivated,
+	OrganizerStatus,
+	type OrganizerStatusKey,
+	organizerStatusKey,
+	organizerStatusLabel,
+} from './organizer-status'
 
 /** Coarse lifecycle phase for the initial organizer-list fetch. */
 type LoadPhase = 'loading' | 'ready' | 'error'
@@ -28,6 +36,11 @@ export interface OrganizerRow {
 	readonly name: string
 	/** The short name that names the Organizer in console addresses. */
 	readonly shortName: string
+	/**
+	 * Lifecycle status. Mutable: a successful Deactivate sets it locally, and
+	 * the list entry and the selection are the same object, so both update.
+	 */
+	status: OrganizerStatus
 }
 
 /** Flattened artist view for the represented-artists roster and search results. */
@@ -42,6 +55,7 @@ function toOrganizerRow(organizer: Organizer): OrganizerRow {
 		id: organizer.id?.value ?? '',
 		name: organizer.name?.value ?? EMPTY,
 		shortName: organizer.shortName?.value ?? EMPTY,
+		status: organizer.status,
 	}
 }
 
@@ -89,7 +103,13 @@ export function createFormError(
  * email),
  * list organizers, inspect a selected organizer and the artists it represents,
  * associate/disassociate artists (reusing the public consumer artist search),
- * and deactivate an organizer.
+ * deactivate an organizer, and permanently delete a deactivated one after a
+ * confirmation dialog.
+ *
+ * Each organizer shows its status. A deactivated organizer offers Delete in
+ * place of Deactivate and hides the controls the server refuses for it (the
+ * roster's Remove, the artist search and Associate, the commercial-terms
+ * forms). An unset status (a backend older than the field) behaves as active.
  *
  * A master-detail layout: the list + create form on the left, the selected
  * organizer's detail + roster on the right. The Organizer RPCs run against the
@@ -118,6 +138,14 @@ export class OrganizersRoute {
 	/** Deactivate state for the selected organizer. */
 	public deactivating = false
 	public deactivateError = ''
+
+	/** Delete state: the organizer the confirmation dialog names, if open. */
+	public pendingDelete: OrganizerRow | null = null
+	public deleting = false
+	public deleteError = ''
+	/** Bound via `ref` to the native confirmation dialog and its Cancel control. */
+	public deleteDialog?: HTMLDialogElement
+	public deleteCancelButton?: HTMLButtonElement
 
 	/** Artist-search state for the associate flow. */
 	public searchQuery = ''
@@ -208,6 +236,7 @@ export class OrganizersRoute {
 	public async select(row: OrganizerRow): Promise<void> {
 		this.selected = row
 		this.deactivateError = ''
+		this.deleteError = ''
 		this.associateError = ''
 		this.resetSearch()
 		await this.loadArtists()
@@ -215,6 +244,18 @@ export class OrganizersRoute {
 
 	public isSelected(row: OrganizerRow): boolean {
 		return this.selected?.id === row.id
+	}
+
+	public statusLabel(status: OrganizerStatus): string {
+		return organizerStatusLabel(status)
+	}
+
+	public statusKey(status: OrganizerStatus): OrganizerStatusKey {
+		return organizerStatusKey(status)
+	}
+
+	public isDeactivated(status: OrganizerStatus): boolean {
+		return isOrganizerDeactivated(status)
 	}
 
 	private async loadArtists(): Promise<void> {
@@ -242,6 +283,11 @@ export class OrganizersRoute {
 		this.deactivateError = ''
 		try {
 			await this.client.deactivate(organizer.id)
+			// OK means the organizer is deactivated (the call is idempotent), so no
+			// Get is needed. The list entry and the selection are the same row.
+			organizer.status = OrganizerStatus.DEACTIVATED
+			this.associateError = ''
+			this.resetSearch()
 			// Deactivation frees associations server-side; refresh the roster so the
 			// now-empty roster is reflected.
 			await this.loadArtists()
@@ -253,6 +299,68 @@ export class OrganizersRoute {
 			this.logger.error('Deactivate organizer failed', err)
 		} finally {
 			this.deactivating = false
+		}
+	}
+
+	// --- Delete -------------------------------------------------------------
+
+	/** Opens the confirmation dialog for the selected organizer; deletes nothing. */
+	public requestDelete(): void {
+		const organizer = this.selected
+		if (!organizer || this.deleting) return
+		this.pendingDelete = organizer
+		this.deleteError = ''
+		// Guarded: jsdom does not implement showModal.
+		try {
+			this.deleteDialog?.showModal()
+		} catch {
+			/* non-interactive environment: VM state still drives the flow */
+		}
+		// The action is permanent, so the least destructive control takes focus
+		// (WAI-ARIA APG dialog pattern).
+		this.deleteCancelButton?.focus()
+	}
+
+	public cancelDelete(): void {
+		this.closeDeleteDialog()
+	}
+
+	/** Runs on every close of the dialog, Escape included. */
+	public onDeleteDialogClose(): void {
+		if (!this.deleting) this.pendingDelete = null
+	}
+
+	public async confirmDelete(): Promise<void> {
+		const organizer = this.pendingDelete
+		if (!organizer || this.deleting) return
+		this.deleting = true
+		try {
+			await this.client.delete(organizer.id)
+			const idx = this.organizers.findIndex((o) => o.id === organizer.id)
+			if (idx !== -1) this.organizers.splice(idx, 1)
+			if (this.selected?.id === organizer.id) {
+				this.resetSearch()
+				this.selected = null
+				this.artists = []
+			}
+		} catch (err) {
+			this.deleteError = toDeleteMessage(err)
+			this.logger.error('Delete organizer failed', {
+				organizerId: organizer.id,
+				err,
+			})
+		} finally {
+			this.deleting = false
+			this.closeDeleteDialog()
+		}
+	}
+
+	private closeDeleteDialog(): void {
+		this.pendingDelete = null
+		try {
+			this.deleteDialog?.close()
+		} catch {
+			/* non-interactive environment */
 		}
 	}
 

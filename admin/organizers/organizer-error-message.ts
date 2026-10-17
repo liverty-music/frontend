@@ -40,3 +40,20 @@ export function toUserMessage(
 	}
 	return err instanceof Error ? err.message : fallback
 }
+
+/**
+ * Maps a Delete error to user-facing copy. FAILED_PRECONDITION on Delete names
+ * the blocker (the organizer is not deactivated, an order that is not refunded,
+ * a settlement that is not reversed, a payout account), so the server's
+ * message is shown after a fixed prefix; every other code goes through
+ * {@link toUserMessage}.
+ */
+export function toDeleteMessage(err: unknown): string {
+	if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
+		const reason = err.rawMessage.trim().replace(/\.+$/, '')
+		return reason
+			? `This organizer cannot be deleted: ${reason}.`
+			: 'This organizer cannot be deleted yet.'
+	}
+	return toUserMessage(err, 'Failed to delete the organizer.')
+}
