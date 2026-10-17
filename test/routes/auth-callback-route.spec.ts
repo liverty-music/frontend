@@ -2,6 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import type { RouteNode } from '@aurelia/router'
 import { IEventAggregator, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ILocalStorage } from '../../src/adapter/storage/local-storage'
 import { StorageKeys } from '../../src/constants/storage-keys'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
 import { IAuthService } from '../../src/services/auth-service'
@@ -71,11 +72,31 @@ describe('AuthCallbackRoute', () => {
 		publish: ReturnType<typeof vi.fn>
 		subscribe: ReturnType<typeof vi.fn>
 	}
+	/** The ILocalStorage the route writes to; fresh for every setup(). */
+	let storage: ILocalStorage
+
+	function createMemoryStorage(): ILocalStorage {
+		const map = new Map<string, string>()
+		return {
+			getItem: (k) => map.get(k) ?? null,
+			setItem: (k, v) => {
+				map.set(k, v)
+			},
+			removeItem: (k) => {
+				map.delete(k)
+			},
+			removeByPrefix: (prefix) => {
+				for (const k of [...map.keys()]) if (k.startsWith(prefix)) map.delete(k)
+			},
+		}
+	}
 
 	function setup(guestHome: string | null = null) {
 		mockUserStore = createMockUserStore(guestHome)
 		mockUserService = mockUserStore
+		storage = createMemoryStorage()
 		const container = createTestContainer(
+			Registration.instance(ILocalStorage, storage),
 			Registration.instance(IAuthService, mockAuth as IAuthService),
 			Registration.instance(
 				IOnboardingService,
@@ -96,7 +117,6 @@ describe('AuthCallbackRoute', () => {
 	}
 
 	beforeEach(() => {
-		localStorage.removeItem(StorageKeys.language)
 		mockAuth = createMockAuth({
 			isAuthenticated: false,
 			ready: Promise.resolve(),
@@ -158,7 +178,7 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: true })
 
-			localStorage.removeItem('postSignup.shown')
+			storage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			// Assert email + locale + home are forwarded. Passing the
@@ -173,7 +193,7 @@ describe('AuthCallbackRoute', () => {
 			)
 			expect(mockUserService.ensureLoaded).not.toHaveBeenCalled()
 			expect(result).toBe('/dashboard')
-			expect(localStorage.getItem('postSignup.shown')).toBe('pending')
+			expect(storage.getItem('postSignup.shown')).toBe('pending')
 		})
 
 		describe('sign-up started on an Event page', () => {
@@ -195,7 +215,7 @@ describe('AuthCallbackRoute', () => {
 					.fn()
 					.mockResolvedValue({ user: mockUserService.current, created: true })
 
-				localStorage.removeItem('postSignup.shown')
+				storage.removeItem('postSignup.shown')
 				const result = await sut.canLoad({}, {} as RouteNode)
 
 				expect(result).toBe('/events/ev-1')
@@ -205,7 +225,7 @@ describe('AuthCallbackRoute', () => {
 				)
 				// Without the flag the Dashboard shows neither the celebration
 				// overlay nor the PostSignupDialog later.
-				expect(localStorage.getItem('postSignup.shown')).toBeNull()
+				expect(storage.getItem('postSignup.shown')).toBeNull()
 			})
 
 			it('ignores a return path that leaves the app', async () => {
@@ -244,7 +264,7 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: true })
 
-			localStorage.removeItem('postSignup.shown')
+			storage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
@@ -253,7 +273,7 @@ describe('AuthCallbackRoute', () => {
 			expect(mockEa.publish).toHaveBeenCalledWith(
 				new GuestMigrationRequested('u1'),
 			)
-			expect(localStorage.getItem('postSignup.shown')).toBe('pending')
+			expect(storage.getItem('postSignup.shown')).toBe('pending')
 			expect(result).toBe('/dashboard')
 		})
 
@@ -271,7 +291,7 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: false })
 
-			localStorage.removeItem('postSignup.shown')
+			storage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
@@ -282,7 +302,7 @@ describe('AuthCallbackRoute', () => {
 			)
 			// But no new-account dialog (Correction 2).
 			expect(result).toBe('/dashboard')
-			expect(localStorage.getItem('postSignup.shown')).toBeNull()
+			expect(storage.getItem('postSignup.shown')).toBeNull()
 		})
 
 		// @spec components/infrastructure/fan/web/global/post-signup-dialog "Sign-in with an empty local cache does not trigger the dialog"
@@ -299,11 +319,11 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: true })
 
-			localStorage.removeItem('postSignup.shown')
+			storage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(mockUserService.ensureLoaded).toHaveBeenCalled()
-			expect(localStorage.getItem('postSignup.shown')).toBeNull()
+			expect(storage.getItem('postSignup.shown')).toBeNull()
 			expect(result).toBe('/dashboard')
 		})
 
@@ -320,10 +340,10 @@ describe('AuthCallbackRoute', () => {
 				.fn()
 				.mockResolvedValue({ user: mockUserService.current, created: true })
 
-			localStorage.removeItem('postSignup.shown')
+			storage.removeItem('postSignup.shown')
 			const result = await sut.canLoad({}, {} as RouteNode)
 
-			expect(localStorage.getItem('postSignup.shown')).toBeNull()
+			expect(storage.getItem('postSignup.shown')).toBeNull()
 			expect(result).toBe('/dashboard')
 		})
 
@@ -419,7 +439,7 @@ describe('AuthCallbackRoute', () => {
 
 				expect(mockI18n.setLocale).toHaveBeenCalledWith('en')
 				// Saved on this device, so a later sign-out opens in it.
-				expect(localStorage.getItem(StorageKeys.language)).toBe('en')
+				expect(storage.getItem(StorageKeys.language)).toBe('en')
 				expect(result).toBe('/dashboard')
 			})
 
