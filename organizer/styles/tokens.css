@@ -152,7 +152,7 @@
 
 		/* ── Type ──
 		   A fixed M3 scale (TypeScaleTokens.kt) that does not follow the window:
-		   operators compare numbers across windows, and M3 adapts the layout,
+		   members compare numbers across windows, and M3 adapts the layout,
 		   not the text size, across window classes. */
 		--font-body:
 			"Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;

@@ -41,12 +41,12 @@ function userWithRoles(roles: Record<string, unknown>): User {
 }
 
 // createMockAppConfig (via createTestContainer) defaults zitadelOrgId to
-// 'test-org-id' — the intended tenant the guard enforces.
+// 'test-org-id' — the intended Organization the guard enforces.
 const INTENDED_ORG = 'test-org-id'
 
-/** A token holding the owner role in a specific tenant org. */
+/** A token holding the owner role in a specific Organization. */
 function userOwnerInOrg(orgId: string): User {
-	return userWithRoles({ owner: { [orgId]: 'tenant.example' } })
+	return userWithRoles({ owner: { [orgId]: 'organization.example' } })
 }
 
 describe('OrganizerAuthHook', () => {
@@ -96,13 +96,13 @@ describe('OrganizerAuthHook', () => {
 	})
 
 	it('passes loginHint to signIn when an invitation link is followed', async () => {
-		build({ isAuthenticated: false }, 'operator@example.com')
+		build({ isAuthenticated: false }, 'member@example.com')
 		const next = makeRouteNode({})
 
 		await sut.canLoad({} as never, {}, next, null)
 
 		expect(mockAuth.signIn).toHaveBeenCalledWith({
-			loginHint: 'operator@example.com',
+			loginHint: 'member@example.com',
 			returnTo: `${window.location.pathname}${window.location.search}`,
 			uiLocales: 'ja',
 		})
@@ -133,7 +133,7 @@ describe('OrganizerAuthHook', () => {
 		)
 	})
 
-	it('returns the operator to the address they opened after sign-in', async () => {
+	it('returns the member to the address they opened after sign-in', async () => {
 		window.history.replaceState(
 			null,
 			'',
@@ -151,7 +151,7 @@ describe('OrganizerAuthHook', () => {
 		window.history.replaceState(null, '', '/')
 	})
 
-	it('admits an authenticated operator holding the owner role', async () => {
+	it('admits an authenticated member holding the owner role', async () => {
 		build({ isAuthenticated: true, user: userWithRoles({ owner: {} }) })
 		const next = makeRouteNode({})
 
@@ -161,7 +161,7 @@ describe('OrganizerAuthHook', () => {
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
 	})
 
-	// @spec stories/sign-in-as-organizer "Operator signs in and is routed to their org by org-pinned entry"
+	// @spec stories/sign-in-as-organizer "Member signs in and is routed to their Organization by org-pinned entry"
 	it('admits when the authenticated session belongs to the intended org', async () => {
 		build({ isAuthenticated: true, user: userOwnerInOrg(INTENDED_ORG) })
 		const next = makeRouteNode({})
@@ -172,13 +172,13 @@ describe('OrganizerAuthHook', () => {
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
 	})
 
-	// @spec stories/sign-in-as-organizer "Operator signs in and is routed to their org by org-pinned entry"
-	// @spec stories/sign-in-as-organizer "A reused or mismatched session does not silently onboard the wrong operator"
-	// @spec components/infrastructure/organizer/web/global/hosted-login "Org is resolved by org-pinned entry for every operator"
+	// @spec stories/sign-in-as-organizer "Member signs in and is routed to their Organization by org-pinned entry"
+	// @spec stories/sign-in-as-organizer "A reused or mismatched session does not silently onboard the wrong member"
+	// @spec components/infrastructure/organizer/web/global/hosted-login "Organization is resolved by org-pinned entry for every member"
 	it('forces re-auth once when the session belongs to a DIFFERENT org', async () => {
 		// Reproduces the org-test-40 → org-test-21 mix: a pre-existing session for
 		// another org is admitted without a fresh OIDC exchange; the guard must
-		// re-authenticate as the intended tenant instead of admitting it.
+		// re-authenticate in the intended Organization instead of admitting it.
 		build({ isAuthenticated: true, user: userOwnerInOrg('some-other-org') })
 		const next = makeRouteNode({})
 
@@ -195,7 +195,7 @@ describe('OrganizerAuthHook', () => {
 	})
 
 	// @spec stories/sign-in-as-organizer "A hint for another org grants nothing"
-	// @spec components/infrastructure/organizer/web/global/hosted-login "Org is resolved by org-pinned entry for every operator"
+	// @spec components/infrastructure/organizer/web/global/hosted-login "Organization is resolved by org-pinned entry for every member"
 	it('denies (no second re-auth) if still the wrong org after a retry', async () => {
 		window.sessionStorage.setItem('organizer.orgMismatchRetry', '1')
 		build({ isAuthenticated: true, user: userOwnerInOrg('some-other-org') })

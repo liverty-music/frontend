@@ -202,7 +202,7 @@ export class ConcertEditorRoute {
 		return this.pendingCover?.previewUrl || this.coverImageUrl
 	}
 
-	/** Field errors, recomputed as the operator edits; shown after a save attempt. */
+	/** Field errors, recomputed as the member edits; shown after a save attempt. */
 	public get errors(): ConcertFormErrors {
 		return validateConcertForm(this.model)
 	}
@@ -393,7 +393,7 @@ export class ConcertEditorRoute {
 
 	/**
 	 * The saved concert's page: under the Artist the editor was opened from,
-	 * or under its first performer when the operator took that Artist off.
+	 * or under its first performer when the member took that Artist off.
 	 */
 	private savedHref(id: string): string {
 		const artist = this.model.artistIds.includes(this.context.artistId)

@@ -51,7 +51,7 @@ export class ConfirmDialog {
 	private resolveAnswer: ((confirmed: boolean) => void) | null = null
 	private returnFocusTo: HTMLElement | null = null
 
-	/** Opens the dialog; resolves true when the operator confirms. */
+	/** Opens the dialog; resolves true when the member confirms. */
 	public ask(): Promise<boolean> {
 		this.returnFocusTo = focusedElement()
 		this.dialog.showModal()

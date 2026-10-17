@@ -18,7 +18,7 @@ export interface IScannerClient extends ScannerClient {}
 
 /**
  * Organizer-local wrapper around the generated organizer `ScannerService`:
- * the signed-in operator creates, lists and revokes the Scanners of their own
+ * the signed-in member creates, lists and revokes the Scanners of their own
  * events. The caller's Organizer is resolved from the token. Errors propagate
  * to the screen, which translates `ConnectError` codes.
  */

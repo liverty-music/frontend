@@ -200,7 +200,7 @@ export const Pending = {
 /** Resolves the save started by the story below; set while it is pending. */
 let finishSave: (() => void) | null = null
 
-/** The operator presses 保存する twice while the first save is still running. */
+/** The member presses 保存する twice while the first save is still running. */
 export const DoublePressOnSave = {
 	render: () =>
 		defineAureliaStory({

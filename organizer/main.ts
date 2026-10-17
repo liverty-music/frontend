@@ -68,7 +68,7 @@ function showStaticErrorPage(err: unknown): void {
  * Japanese and English catalogs (`organizer/locales`).
  *
  * Unlike the admin entry, the organizer `/config.json` carries NO fixed org id
- * (one client serves all tenants — design D1). The Organizer's Organization is
+ * (one client serves all Organizations — design D1). The Organizer's Organization is
  * named per session by an **org pin** resolved here (`?org_id=<id>`,
  * `?org=<short name>`, or the pin remembered on the device) and folded into
  * the config, so the shared `AuthService` scopes sign-in to that Organization
@@ -93,7 +93,7 @@ async function bootstrap(): Promise<void> {
 	// cloud-provisioning organizer ConfigMap ships a `PENDING_PULUMI_UP_…`
 	// placeholder until `pulumi up` creates the organizer app and the value is
 	// filled from `pulumi stack output organizerConsoleClientId`. Surfacing it
-	// here points the operator at the ConfigMap, not the IdP `invalid_client`.
+	// here points the deployer at the ConfigMap, not the IdP `invalid_client`.
 	if (config.zitadelClientId.startsWith('PENDING_')) {
 		throw new Error(
 			`Organizer OIDC client id is not provisioned (got "${config.zitadelClientId}"). ` +
@@ -112,7 +112,7 @@ async function bootstrap(): Promise<void> {
 	// login_hint pre-fill (design D5): present on first sign-in only, embedded
 	// in the invitation link as ?login_hint=<email> by the provisioning backend.
 	// Passed to AuthService.signIn() via the auth hook so Zitadel pre-fills the
-	// email field, skipping one manual input step for the operator.
+	// email field, skipping one manual input step for the member.
 	const loginHint = readLoginHintFromSearch(window.location.search)
 
 	const au = new Aurelia()

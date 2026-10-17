@@ -16,7 +16,7 @@ import {
 import { expect, type Locator, type Page, test } from '../support/test'
 
 /**
- * Home: what needs the operator now, most urgent first, as one list grouped
+ * Home: what needs the member now, most urgent first, as one list grouped
  * by kind under subheaders; each item is one link to where it is resolved,
  * labelled with what to do there, and holds no other control.
  */
@@ -62,7 +62,7 @@ async function expectSingleAction(item: Locator): Promise<Locator> {
 	return item.getByRole('link')
 }
 
-test.describe('what needs the operator', () => {
+test.describe('what needs the member', () => {
 	test(`@spec ${SPEC} "Payout account not finished"`, async ({ page }) => {
 		await openHome(page, {
 			'PayoutAccountService/Get': payoutAccount('PENDING'),

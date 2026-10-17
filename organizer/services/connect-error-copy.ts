@@ -7,7 +7,7 @@ import { Code, ConnectError } from '@connectrpc/connect'
  * (INVALID_ARGUMENT, PERMISSION_DENIED, FAILED_PRECONDITION, UNAUTHENTICATED);
  * each gets purpose-written copy, and anything else falls back to the raw
  * message or a caller-supplied fallback. Kept organizer-local (not shared with
- * admin) so its wording can speak to an organizer operator, and `FAILED_
+ * admin) so its wording can speak to a member of an Organizer, and `FAILED_
  * PRECONDITION` in particular can be overridden per call site — Publish, Cancel,
  * Update-published, RegenerateShareUrl, and deactivated-organizer all surface that
  * code but mean different things.
@@ -35,7 +35,7 @@ export function toOrganizerErrorMessage(
 				// Never surface the raw transport-level token error (e.g.
 				// `... "exp" not satisfied`). The auth-retry interceptor is already
 				// re-authenticating; show a neutral, human-readable state that
-				// matches the admin console rather than telling the operator to act.
+				// matches the admin console rather than telling the member to act.
 				return 'Your session expired — signing you back in…'
 			default:
 				return err.rawMessage || fallback

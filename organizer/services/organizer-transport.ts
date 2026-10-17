@@ -47,7 +47,7 @@ const createLoggingInterceptor =
  *
  * The organizer Connect server is served by the dedicated organizer API host.
  * The runtime `config.json` points `apiBaseUrl` at that host for the organizer
- * entry (one client serves every tenant — the org is resolved from the token),
+ * entry (one client serves every Organization — the org is resolved from the token),
  * so this transport targets `apiBaseUrl` directly.
  *
  * @param auth - Shared AuthService used to read the OIDC access token

@@ -9,7 +9,7 @@ const ROLES_CLAIM = 'urn:zitadel:iam:org:project:roles'
 const logger = createMockLogger()
 
 function profileInOrg(orgId: string): Record<string, unknown> {
-	return { [ROLES_CLAIM]: { owner: { [orgId]: 'tenant.example' } } }
+	return { [ROLES_CLAIM]: { owner: { [orgId]: 'organization.example' } } }
 }
 
 function auth() {
@@ -72,7 +72,7 @@ describe('enforceIntendedOrg', () => {
 		expect(a.signIn).not.toHaveBeenCalled()
 	})
 
-	// @spec stories/sign-in-as-organizer "A reused or mismatched session does not silently onboard the wrong operator"
+	// @spec stories/sign-in-as-organizer "A reused or mismatched session does not silently onboard the wrong member"
 	it('re-auths once when the token belongs to a different org', async () => {
 		const a = auth()
 		const gate = await enforceIntendedOrg(

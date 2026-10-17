@@ -23,7 +23,7 @@ export interface IVenueClient extends VenueClient {}
 
 /**
  * Organizer-local wrapper around the generated `VenueService` client: finds up
- * to 5 places in the map catalog for the text the operator is typing. Errors
+ * to 5 places in the map catalog for the text the member is typing. Errors
  * propagate to callers (the venue field shows Unavailable with 再試行); an
  * aborted request (`signal`, when the text changed) rejects too, and the venue
  * field drops it.

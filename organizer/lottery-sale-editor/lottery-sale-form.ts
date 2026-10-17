@@ -126,7 +126,7 @@ export function windowDurationDays(open: Date, close: Date): number {
 }
 
 /**
- * Validates the form model, mirroring the backend boundary so an operator sees
+ * Validates the form model, mirroring the backend boundary so a member sees
  * inline errors before a round-trip: the name required and at most
  * {@link MAX_NAME_LENGTH} characters; open/close required and parseable; the
  * window {@link MIN_WINDOW_DAYS}–{@link MAX_WINDOW_DAYS} days long with close

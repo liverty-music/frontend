@@ -97,7 +97,7 @@ ConfigMap edits land via the normal cloud-provisioning GitOps flow. The `reloade
 registerRoute(({ url }) => url.pathname === '/config.json', new NetworkOnly())
 ```
 
-- **Why NetworkOnly**: ConfigMap updates (followed by pod rollout via Reloader) MUST propagate on the next page load without depending on URL cache-busting. A cached `/config.json` would let the SPA boot against stale config after an operator change.
+- **Why NetworkOnly**: ConfigMap updates (followed by pod rollout via Reloader) MUST propagate on the next page load without depending on URL cache-busting. A cached `/config.json` would let the SPA boot against stale config after a deployer's change.
 - **Trade-off**: a user offline after a previous successful load will see `showStaticErrorPage`, not a partial cached experience. Auth and gRPC already require network, so offline support was always limited. **Explicit non-goal for this iteration** — see the archived change's design D6.
 - **`/config.json` is intentionally NOT in `__WB_MANIFEST`** (Workbox precache). It's mounted at deploy time, not shipped in `dist/` beyond the public fallback.
 

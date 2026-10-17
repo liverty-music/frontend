@@ -1,6 +1,6 @@
 /**
  * Client-side cover-image validation, mirroring the backend's accepted types
- * and size bound so an operator gets immediate feedback before the upload
+ * and size bound so a member gets immediate feedback before the upload
  * round-trips. The server remains the source of truth (it re-validates); this
  * is a UX pre-check.
  */

@@ -39,7 +39,7 @@ export function timeOf(parts: TimeParts): string {
 /**
  * The minute choices: the 5-minute steps, plus `current` in its place when it
  * is off them (a time saved before the steps existed), so the field shows the
- * saved minute and keeps it until the operator picks another.
+ * saved minute and keeps it until the member picks another.
  */
 export function minuteChoices(current: string): readonly string[] {
 	if (!current || MINUTES.includes(current)) return MINUTES

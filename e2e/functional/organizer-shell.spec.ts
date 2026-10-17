@@ -392,7 +392,7 @@ test.describe('addresses name the Organizer and the Artist', () => {
 			`${SERIES}/s-tour/events/e-1103/ticket-sales`,
 		)
 
-		// Another operator of the same Organizer, on another device.
+		// Another member of the same Organizer, on another device.
 		const other = await browser.newContext({
 			viewport: { width: 1280, height: 800 },
 		})

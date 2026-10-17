@@ -20,11 +20,11 @@ let nextId = 0
  * the minute is unset sets the minute to 00; choosing the empty choice of
  * either select unsets the time. A saved minute off the 5-minute steps (data
  * from before the steps) is shown as an extra choice and kept until the
- * operator picks another: the field never changes a value by itself.
+ * member picks another: the field never changes a value by itself.
  *
  * Like `console-field`, the selects live in the shadow root; a screen reads
  * the value through `value` or the field's own `change` event
- * (`$event.detail.value`), dispatched when the operator changes the time.
+ * (`$event.detail.value`), dispatched when the member changes the time.
  */
 export class ConsoleTimeField {
 	private readonly host = resolve(INode) as HTMLElement
@@ -72,7 +72,7 @@ export class ConsoleTimeField {
 		this.show(value)
 	}
 
-	/** The operator chose an hour, or the empty choice. */
+	/** The member chose an hour, or the empty choice. */
 	public hourChosen(event: Event): void {
 		const hour = (event.target as HTMLSelectElement).value
 		if (!hour) {
@@ -84,7 +84,7 @@ export class ConsoleTimeField {
 		this.commit()
 	}
 
-	/** The operator chose a minute, or the empty choice. */
+	/** The member chose a minute, or the empty choice. */
 	public minuteChosen(event: Event): void {
 		const minute = (event.target as HTMLSelectElement).value
 		if (!minute) {

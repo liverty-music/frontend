@@ -244,7 +244,7 @@ export class ReceptionTab {
 				url: row.url,
 			})
 		} catch (err) {
-			// The operator closed the share sheet.
+			// The member closed the share sheet.
 			this.logger.debug('Share ended', err)
 		}
 	}

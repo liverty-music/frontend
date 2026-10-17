@@ -175,7 +175,7 @@ export function todayCalendarDate(now: Date = new Date()): CalendarDate {
 }
 
 /**
- * Validates the form model, mirroring the backend boundary rules so an operator
+ * Validates the form model, mirroring the backend boundary rules so a member
  * sees inline errors before a round-trip: title required; a valid series type
  * and visibility (the UNSPECIFIED zero value is rejected); at least one
  * performer; at least one event; each event needs a venue name and a valid,

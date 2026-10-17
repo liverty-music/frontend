@@ -35,7 +35,7 @@ const PAYOUT: Record<number, { tone: StatusTone; key: string }> = {
  * name, its represented Artists, its business details, and its payout account
  * status. While the account is not active, the page explains the hand-off to
  * Stripe (what is entered there, that it opens in a new tab and that the
- * operator comes back here) before the link that opens it. Returning to the
+ * member comes back here) before the link that opens it. Returning to the
  * tab re-reads the payout status.
  */
 export class SettingsRoute {

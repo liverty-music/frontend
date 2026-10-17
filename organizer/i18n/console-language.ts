@@ -14,7 +14,7 @@ import { type ConsoleLocale, formatJstDateTime, formatJstDay } from './format'
 
 /**
  * localStorage key of the language chosen on this device. The console origin
- * has its own storage, and operators have no User row to hold a preference,
+ * has its own storage, and members have no User row to hold a preference,
  * so the choice is per device.
  */
 export const LANGUAGE_STORAGE_KEY = 'organizer.language'
@@ -52,7 +52,7 @@ export class ConsoleLanguage {
 
 	/**
 	 * A catalog text in the language being shown, for text that leaves the
-	 * page: the title handed to the share sheet, a default name the operator
+	 * page: the title handed to the share sheet, a default name the member
 	 * saves. Text the page shows is translated in its template, so that it
 	 * follows a language switch (design D17).
 	 */

@@ -17,7 +17,7 @@ export type MessageParams = Record<string, unknown>
  *
  * - `show`: a message without an action, gone after 4 s.
  * - `showWithAction`: a message with an action other than Retry, gone after 10 s.
- * - `showError` with `retry`: stays until the operator retries or closes it;
+ * - `showError` with `retry`: stays until the member retries or closes it;
  *   再試行 runs `retry` once and closes the message.
  *
  * A field error never comes here: it is shown under its field.

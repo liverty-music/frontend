@@ -500,7 +500,7 @@ test.describe('changing a lottery before it opens', () => {
 			'TicketSaleService/ListByEvent': salesOf('e-1103', [PRESALE]),
 		})
 		await field(page, '価格').fill('7500')
-		// The window opens while the operator is still editing.
+		// The window opens while the member is still editing.
 		await page.clock.setFixedTime(new Date('2026-10-10T12:30:00+09:00'))
 		await page.getByRole('button', { name: '保存する' }).click()
 

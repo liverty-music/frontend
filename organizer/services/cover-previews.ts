@@ -9,7 +9,7 @@ export interface PendingCover {
 	readonly seriesId: string
 	/** The SeriesImage set as the cover with SetCoverImage. */
 	readonly seriesImageId: string
-	/** An object URL of the image the operator picked, shown until then. */
+	/** An object URL of the image the member picked, shown until then. */
 	readonly previewUrl: string
 }
 

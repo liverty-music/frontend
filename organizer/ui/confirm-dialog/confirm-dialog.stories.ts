@@ -126,10 +126,10 @@ export const PublishAsksFirst = {
 	},
 } satisfies Story
 
-export const OperatorChangesTheirMind = {
+export const MemberChangesTheirMind = {
 	render: () => defineAureliaStory(publish),
 	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/organizer/web/global/action-feedback "Operator changes their mind"
+		// @spec components/infrastructure/organizer/web/global/action-feedback "Member changes their mind"
 		const canvas = canvasOf(canvasElement)
 		const opener = canvas.getByRole('button', { name: '公開する' }).element()
 		const dialog = canvas.getByRole('dialog')
@@ -208,7 +208,7 @@ export const RevokeAScanner = {
 export const DismissInEnglish = {
 	render: () => defineAureliaStory(publish),
 	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/organizer/web/global/action-feedback "Operator changes their mind"
+		// @spec components/infrastructure/organizer/web/global/action-feedback "Member changes their mind"
 		const host = canvasElement.querySelector('confirm-dialog')
 		if (!host) throw new Error('confirm-dialog not rendered')
 		const i18n = CustomElement.for(host).container.get(I18N)
