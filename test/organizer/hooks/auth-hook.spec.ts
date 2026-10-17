@@ -108,7 +108,7 @@ describe('OrganizerAuthHook', () => {
 		})
 	})
 
-	// @spec components/infrastructure/organizer/web/global/i18n "Operator who chose Japanese on an English browser"
+	// @spec components/infrastructure/organizer/web/global/i18n "Member who chose Japanese on an English browser"
 	it('asks the hosted login for the language the console shows', async () => {
 		// The console shows Japanese, whatever the browser prefers: the device's
 		// saved choice decided it.
