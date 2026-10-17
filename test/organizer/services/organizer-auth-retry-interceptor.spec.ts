@@ -21,7 +21,7 @@ describe('createOrganizerAuthRetryInterceptor', () => {
 		mockAuth.ensureFreshToken = vi.fn().mockResolvedValue(null)
 	})
 
-	// @spec components/infrastructure/organizer/web/global/i18n "Operator who chose English on a Japanese browser"
+	// @spec components/infrastructure/organizer/web/global/i18n "Member who chose English on a Japanese browser"
 	it('signs in again with the hosted login in the language the console shows', async () => {
 		const language = { current: 'en' as const }
 		const error = new ConnectError('exp not satisfied', Code.Unauthenticated)
