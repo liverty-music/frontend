@@ -12,7 +12,7 @@
         <p class="post-signup-row-label" t="postSignup.notificationLabel"></p>
         <button
           type="button"
-          class="post-signup-btn"
+          class="[ button post-signup-action ] [ pressable ]"
           busy-on-click.bind="() => onEnableNotifications()"
           disabled.bind="notificationDone"
         >
@@ -40,13 +40,13 @@
         <button
           if.bind="canInstallNatively"
           type="button"
-          class="post-signup-btn"
+          class="[ button post-signup-action ] [ pressable ]"
           busy-on-click.bind="() => onInstallPwa()"
           t="postSignup.pwaInstall"
         ></button>
         <!-- Fallback: native disclosure of manual install steps (no JS state) -->
         <details if.bind="!canInstallNatively" class="post-signup-install-guide">
-          <summary class="post-signup-btn" t="postSignup.pwaInstallGuide"></summary>
+          <summary class="[ button ] [ pressable ]" t="postSignup.pwaInstallGuide"></summary>
           <ol class="post-signup-install-steps">
             <li t="postSignup.pwaGuideStep1"></li>
             <li t="postSignup.pwaGuideStep2"></li>
@@ -59,7 +59,8 @@
     <footer class="post-signup-footer">
       <button
         type="button"
-        class="post-signup-btn-ghost"
+        class="[ button ] [ pressable ]"
+        data-variant="outlined"
         click.trigger="onDefer()"
         t.bind="isAllDone ? 'postSignup.close' : 'postSignup.defer'"
       ></button>

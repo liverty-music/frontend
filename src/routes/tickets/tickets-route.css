@@ -273,53 +273,11 @@
 			color: var(--color-danger, oklch(62% 0.2 25deg));
 		}
 
-		.tickets-btn-primary {
-			cursor: pointer;
-
+		/* Every text button on this page spans its panel; the `button` block owns
+		   its look. Inside the move-confirmation `cluster` the two buttons wrap
+		   onto their own rows. */
+		.tickets-action {
 			inline-size: 100%;
-			min-block-size: 48px;
-			padding-block: var(--space-xs);
-			padding-inline: var(--space-m);
-			border-radius: var(--radius-button);
-
-			font-weight: 600;
-			color: var(--color-white);
-
-			background: var(--color-brand-primary);
-			box-shadow: var(--shadow-button);
-
-			transition:
-				background 200ms,
-				transform 200ms;
-
-			&:hover {
-				background: var(--color-brand-secondary);
-			}
-
-			&:active {
-				transform: scale(0.98);
-			}
-
-			&:disabled {
-				cursor: not-allowed;
-				opacity: 0.5;
-			}
-		}
-
-		.tickets-btn-secondary {
-			cursor: pointer;
-
-			inline-size: 100%;
-			min-block-size: 48px;
-			padding-block: var(--space-xs);
-			padding-inline: var(--space-m);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-button);
-
-			font-weight: 600;
-			color: var(--color-text-primary);
-
-			background: transparent;
 		}
 	}
 }

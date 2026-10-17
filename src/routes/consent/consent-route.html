@@ -42,12 +42,14 @@
   <footer class="[ consent-actions ]">
     <button
       busy-on-click.bind="() => acknowledge()"
-      class="consent-btn-primary"
+      class="[ button ] [ pressable ]"
+      data-testid="consent-acknowledge"
       t="onboarding.consent.actions.acknowledge"
     ></button>
     <button
       busy-on-click.bind="() => openSettings()"
-      class="consent-btn-text"
+      class="[ button ] [ pressable ]"
+      data-variant="outlined"
       t="onboarding.consent.actions.manage"
     ></button>
   </footer>

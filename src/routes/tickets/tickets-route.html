@@ -37,7 +37,8 @@
 		<p id="tickets-other-device" t="tickets.device.otherDevice"></p>
 		<button
 			type="button"
-			class="tickets-btn-secondary"
+			class="[ button tickets-action ] [ pressable ]"
+			data-variant="outlined"
 			if.bind="canOfferMove && !confirmingMove"
 			click.trigger="askToUseThisDevice()"
 			t="tickets.device.useThisDevice"
@@ -48,14 +49,15 @@
 			<div class="cluster">
 				<button
 					type="button"
-					class="tickets-btn-primary"
+					class="[ button tickets-action ] [ pressable ]"
 					disabled.bind="moving"
 					click.trigger="confirmUseThisDevice()"
 					t="tickets.device.confirm"
 				></button>
 				<button
 					type="button"
-					class="tickets-btn-secondary"
+					class="[ button tickets-action ] [ pressable ]"
+					data-variant="outlined"
 					disabled.bind="moving"
 					click.trigger="cancelMove()"
 					t="tickets.device.cancel"
@@ -81,7 +83,7 @@
 		<p class="tickets-error" t="tickets.error.message"></p>
 		<button
 			type="button"
-			class="tickets-btn-primary"
+			class="[ button tickets-action ] [ pressable ]"
 			click.trigger="load()"
 			t="tickets.error.retry"
 		></button>
@@ -166,7 +168,7 @@
 
 			<button
 				type="button"
-				class="tickets-btn-primary"
+				class="[ button tickets-action ] [ pressable ]"
 				if.bind="canShowCode && offersCode(group)"
 				click.trigger="openCode(group)"
 				t="tickets.code.show"
@@ -221,7 +223,8 @@
 
 			<button
 				type="button"
-				class="tickets-btn-secondary"
+				class="[ button tickets-action ] [ pressable ]"
+				data-variant="outlined"
 				click.trigger="closeCode()"
 				t="tickets.code.close"
 			></button>

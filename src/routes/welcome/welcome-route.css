@@ -68,7 +68,7 @@
 			margin-block-start: var(--space-l);
 		}
 
-		.welcome-hero-fallback-cta-group {
+		.welcome-hero-fallback-action-group {
 			max-inline-size: 28rem;
 		}
 
@@ -137,46 +137,15 @@
 				0 0 14px oklch(from var(--color-brand-accent) l c h / 35%);
 		}
 
-		.welcome-scroll-cta {
-			cursor: pointer;
-
-			display: inline-flex;
-			gap: var(--space-2xs);
-			align-items: center;
-			justify-content: center;
-
-			min-inline-size: 44px;
-			min-block-size: 44px;
+		/* Outlined shared button; it owns only its spacing and the bobbing
+		   arrow. */
+		.welcome-scroll-action {
 			margin-block-start: var(--space-l);
-			padding: var(--space-xs) var(--space-m);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-button);
+		}
 
-			font-size: var(--step-0);
-			font-weight: 500;
-			color: var(--color-text-secondary);
-
-			background: transparent;
-
-			transition:
-				color 200ms,
-				border-color 200ms,
-				background 200ms;
-
-			&::after {
-				content: "↓";
-				display: inline-block;
-				animation: arrow-bob 1.5s ease-in-out infinite alternate;
-			}
-
-			&:active {
-				scale: 0.98;
-			}
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
+		.welcome-scroll-arrow {
+			display: inline-block;
+			animation: arrow-bob 1.5s ease-in-out infinite alternate;
 		}
 
 		/* ── Guided demo section ── */
@@ -350,61 +319,13 @@
 			color: var(--color-text-muted);
 		}
 
-		.welcome-cta-group {
+		.welcome-action-group {
 			display: flex;
 			flex-direction: column;
 			gap: var(--space-2xs);
 
 			inline-size: 100%;
 			max-inline-size: 28rem;
-		}
-
-		.welcome-btn-primary {
-			cursor: pointer;
-
-			inline-size: 100%;
-			min-block-size: 48px;
-			padding: var(--space-xs) var(--space-m);
-			border-radius: var(--radius-button);
-
-			font-weight: 600;
-			color: var(--color-white);
-
-			background: var(--color-brand-primary);
-			box-shadow: var(--shadow-button);
-
-			transition:
-				background 200ms,
-				box-shadow 200ms,
-				transform 200ms;
-
-			&:active {
-				transform: scale(0.98);
-			}
-		}
-
-		.welcome-btn-secondary {
-			cursor: pointer;
-
-			inline-size: 100%;
-			min-block-size: 48px;
-			padding: var(--space-xs) var(--space-m);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-button);
-
-			font-weight: 600;
-			color: var(--color-text-primary);
-
-			background: transparent;
-
-			transition:
-				background 200ms,
-				border-color 200ms,
-				transform 200ms;
-
-			&:active {
-				transform: scale(0.98);
-			}
 		}
 
 		.welcome-lang {
@@ -497,7 +418,7 @@
 
 			.welcome-hero,
 			.welcome-brand,
-			.welcome-scroll-cta::after,
+			.welcome-scroll-arrow,
 			.welcome-demo[data-entered] .welcome-notification-trigger,
 			.welcome-demo-notification[data-exiting],
 			.welcome-demo-timetable,

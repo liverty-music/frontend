@@ -184,7 +184,7 @@
 
         <button
           if.bind="status"
-          class="journey-remove-btn" data-testid="journey-remove-btn"
+          class="[ button journey-remove ] [ pressable ]" data-variant="outlined" data-testid="journey-remove-btn"
           disabled.bind="journeyUpdating"
           click.trigger="removeJourney()"
           t="eventDetail.stopTracking"
@@ -198,7 +198,7 @@
         <button
           if.bind="!isFollowed"
           type="button"
-          class="follow-btn"
+          class="[ button follow-action ] [ pressable ]"
           disabled.bind="followUpdating"
           click.trigger="follow()"
           t="allNearby.follow.action"
@@ -225,7 +225,7 @@
           href.bind="event.sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="sheet-btn-primary"
+          class="[ button ] [ pressable ]"
         >
           <svg-icon name="link"></svg-icon>
           <span t="eventDetail.viewOfficialInfo"></span>
@@ -234,7 +234,8 @@
           href.bind="calendarUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="sheet-btn-secondary"
+          class="[ button ] [ pressable ]"
+          data-variant="outlined"
         >
           <svg-icon name="calendar"></svg-icon>
           <span t="eventDetail.addToCalendar"></span>

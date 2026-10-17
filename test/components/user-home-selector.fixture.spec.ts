@@ -43,10 +43,12 @@ async function render(currentCode: string | null = null) {
 	await tasksSettled()
 	const host = fixture.appHost
 	const buttons = () =>
-		[...host.querySelectorAll<HTMLButtonElement>('.selector-btn')].map((b) => ({
-			el: b,
-			label: b.textContent?.trim() ?? '',
-		}))
+		[...host.querySelectorAll<HTMLButtonElement>('.selector-option')].map(
+			(b) => ({
+				el: b,
+				label: b.textContent?.trim() ?? '',
+			}),
+		)
 	const button = (label: string) =>
 		buttons().find((b) => b.label === label)?.el ?? null
 	return { fixture, host, onHomeSelected, buttons, button }
@@ -89,7 +91,7 @@ describe('UserHomeSelector (fixture)', () => {
 
 		expect(onHomeSelected).toHaveBeenCalledExactlyOnceWith('JP-13')
 		expect(fixture.component.selector.selectedRegion).toBeNull()
-		expect(host.querySelector('.selector-back-btn')).toBeNull()
+		expect(host.querySelector('.selector-back')).toBeNull()
 		await fixture.stop(true)
 	})
 
@@ -106,7 +108,7 @@ describe('UserHomeSelector (fixture)', () => {
 		expect(labels).not.toContain('Osaka')
 		expect(onHomeSelected).not.toHaveBeenCalled()
 
-		const back = host.querySelector<HTMLButtonElement>('.selector-back-btn')
+		const back = host.querySelector<HTMLButtonElement>('.selector-back')
 		expect(back?.querySelector('svg')).not.toBeNull()
 		// The visible label is the localized key's text and is the only name.
 		expect(back?.textContent?.trim()).toBe(en.userHome.backToRegions)

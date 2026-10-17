@@ -29,23 +29,5 @@
 			font-size: var(--step--1);
 			color: var(--color-text-muted);
 		}
-
-		.inline-error-retry {
-			padding: var(--space-2xs) var(--space-s);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-sm);
-
-			font-size: var(--step--1);
-			color: var(--color-text-secondary);
-
-			transition:
-				border-color 200ms,
-				color 200ms;
-		}
-
-		.inline-error-retry:hover {
-			border-color: var(--color-border-muted);
-			color: var(--color-text-primary);
-		}
 	}
 }

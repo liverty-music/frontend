@@ -215,31 +215,5 @@
 			font-weight: 600;
 			color: var(--color-text-secondary);
 		}
-
-		.event-btn-primary,
-		.event-btn-secondary {
-			display: inline-flex;
-			gap: var(--space-3xs);
-			align-items: center;
-			justify-content: center;
-
-			min-block-size: 44px;
-			padding-inline: var(--space-m);
-			border-radius: var(--radius-button);
-
-			font-weight: 600;
-			text-decoration: none;
-		}
-
-		.event-btn-primary {
-			color: var(--md-color-on-primary);
-			background: var(--color-brand-primary);
-		}
-
-		.event-btn-secondary {
-			border: 1px solid var(--color-border-subtle);
-			color: var(--color-text-primary);
-			background: transparent;
-		}
 	}
 }

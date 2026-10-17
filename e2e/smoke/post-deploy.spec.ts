@@ -53,7 +53,11 @@ test.describe('post-deploy smoke', () => {
 		// With preview data the hero offers the scroll button, without it the
 		// sign-up button; either carries padding from its own block styles.
 		await expectOwnStyles(
-			page.locator('.welcome-scroll-cta, .welcome-btn-primary').first(),
+			page
+				.locator(
+					'[data-testid="welcome-see-preview"], [data-testid="welcome-get-started"]',
+				)
+				.first(),
 			"the welcome page's call to action",
 			{ padding: true },
 		)

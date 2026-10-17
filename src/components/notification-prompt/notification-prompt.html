@@ -10,10 +10,11 @@
         <footer class="prompt-actions">
           <button click.trigger="dismiss()"
             t="notification.notNow"
-            class="prompt-btn-secondary">
+            class="[ button ] [ pressable ]"
+            data-variant="outlined">
           </button>
           <button busy-on-click.bind="() => enable()"
-            class="prompt-btn-primary"
+            class="[ button ] [ pressable ]"
             t="notification.enable">
           </button>
         </footer>
@@ -26,10 +27,13 @@
       <div class="prompt-body">
         <p t="notification.blocked.title" class="prompt-title"></p>
         <p t="notification.blocked.description" class="prompt-desc"></p>
-        <button click.trigger="dismiss()"
-          t="notification.blocked.dismiss"
-          class="prompt-btn-secondary">
-        </button>
+        <footer class="prompt-actions">
+          <button click.trigger="dismiss()"
+            t="notification.blocked.dismiss"
+            class="[ button ] [ pressable ]"
+            data-variant="outlined">
+          </button>
+        </footer>
       </div>
     </div>
   </toast>

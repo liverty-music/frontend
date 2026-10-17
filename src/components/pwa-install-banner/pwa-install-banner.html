@@ -4,7 +4,7 @@
 <!--
   if.bind (not show.bind): removes both buttons from the tab order when
   hidden, avoiding per-child aria-hidden/tabindex management (D2).
-  Grid layout: [icon auto] [label 1fr] [cta auto] [close auto] — single row.
+  Grid layout: [icon auto] [label 1fr] [action auto] [close auto] — single row.
 -->
 <aside
   if.bind="isVisible"
@@ -17,7 +17,8 @@
 
   <button
     type="button"
-    class="pwa-banner-cta"
+    class="[ button pwa-banner-action ] [ pressable ]"
+    data-variant="on-container"
     busy-on-click.bind="() => onCta()"
     t="pwaInstallBanner.cta"
     data-testid="pwa-install-banner-cta"
@@ -77,7 +78,7 @@
 
       <button
         type="button"
-        class="pwa-banner-sheet-confirm"
+        class="[ button pwa-banner-sheet-action ] [ pressable ]"
         click.trigger="onConfirmInstalled()"
         t="pwaInstallBanner.guideConfirm"
         data-testid="pwa-install-banner-confirm"

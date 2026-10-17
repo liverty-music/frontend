@@ -38,9 +38,13 @@
   <button
     if.bind="dateGroups.length > 0"
     click.trigger="scrollToPreview()"
-    class="welcome-scroll-cta"
-    t="welcome.hero.seePreview"
-  ></button>
+    class="[ button welcome-scroll-action ] [ pressable ]"
+    data-variant="outlined"
+    data-testid="welcome-see-preview"
+  >
+    <span t="welcome.hero.seePreview"></span>
+    <span class="welcome-scroll-arrow" aria-hidden="true">↓</span>
+  </button>
 
   <!-- Without preview data: no demo exists, so fall back to inline CTAs so
        unauthenticated users can still start onboarding or sign in. The
@@ -48,15 +52,18 @@
        so the no-account-required message stays visible without scrolling. -->
   <div else class="[ welcome-hero-fallback ]">
     <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
-    <div class="[ welcome-cta-group welcome-hero-fallback-cta-group ]">
+    <div class="[ welcome-action-group welcome-hero-fallback-action-group ]">
       <button
         busy-on-click.bind="() => handleGetStarted()"
-        class="welcome-btn-primary"
+        class="[ button ] [ pressable ]"
+        data-testid="welcome-get-started"
         t="welcome.cta.getStarted"
       ></button>
       <button
         busy-on-click.bind="() => handleLogin()"
-        class="welcome-btn-secondary"
+        class="[ button ] [ pressable ]"
+        data-variant="outlined"
+        data-testid="welcome-login"
         t="welcome.cta.login"
       ></button>
     </div>
@@ -118,15 +125,18 @@
     </div>
     <footer class="[ welcome-actions ]">
       <p t="welcome.guestFriendly" class="welcome-guest-friendly"></p>
-      <div class="welcome-cta-group">
+      <div class="welcome-action-group">
         <button
           busy-on-click.bind="() => handleGetStarted()"
-          class="welcome-btn-primary"
+          class="[ button ] [ pressable ]"
+          data-testid="welcome-get-started"
           t="welcome.cta.getStarted"
         ></button>
         <button
           busy-on-click.bind="() => handleLogin()"
-          class="welcome-btn-secondary"
+          class="[ button ] [ pressable ]"
+          data-variant="outlined"
+          data-testid="welcome-login"
           t="welcome.cta.login"
         ></button>
       </div>

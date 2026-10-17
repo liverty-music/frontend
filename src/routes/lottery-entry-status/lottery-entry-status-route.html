@@ -13,7 +13,7 @@
 
 	<section class="[ lottery-entry-status-panel ] [ flow ]" if.bind="step === 'error'" data-testid="lottery-entry-status-error">
 		<p class="lottery-entry-status-error" t.bind="messageKey"></p>
-		<button type="button" class="lottery-entry-status-btn-primary" click.trigger="load()" t="lotteryEntryStatus.reload"></button>
+		<button type="button" class="[ button lottery-entry-status-action ] [ pressable ]" click.trigger="load()" t="lotteryEntryStatus.reload"></button>
 	</section>
 
 	<section class="[ lottery-entry-status-panel ] [ flow ]" if.bind="step === 'loaded'" data-testid="lottery-entry-status-entry">
@@ -39,7 +39,8 @@
 		<div class="[ lottery-entry-status-actions ] [ flow ]" if.bind="canWithdraw">
 			<button
 				type="button"
-				class="lottery-entry-status-btn-secondary"
+				class="[ button ] [ pressable ]"
+				data-variant="outlined"
 				click.trigger="askWithdraw()"
 				if.bind="!confirmingWithdraw"
 				t="lotteryEntryStatus.withdraw.action"
@@ -50,14 +51,16 @@
 				<div class="[ lottery-entry-status-confirm-actions ] [ cluster ]">
 					<button
 						type="button"
-						class="lottery-entry-status-btn-secondary"
+						class="[ button ] [ pressable ]"
+						data-variant="outlined"
 						click.trigger="cancelWithdraw()"
 						disabled.bind="withdrawing"
 						t="lotteryEntryStatus.withdraw.cancel"
 					></button>
 					<button
 						type="button"
-						class="lottery-entry-status-btn-danger"
+						class="[ button ] [ pressable ]"
+						data-variant="danger"
 						click.trigger="confirmWithdraw()"
 						disabled.bind="withdrawing"
 						t.bind="withdrawing ? 'lotteryEntryStatus.withdraw.submitting' : 'lotteryEntryStatus.withdraw.submit'"

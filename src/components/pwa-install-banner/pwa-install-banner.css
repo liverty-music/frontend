@@ -102,39 +102,10 @@
 			opacity: 0.88;
 		}
 
-		.pwa-banner-cta {
-			cursor: pointer;
-
-			flex-shrink: 0;
-
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-s);
-			border: none;
-			border-radius: var(--radius-full);
-
-			font-family: var(--font-display);
-			font-size: var(--step--1);
-			font-weight: 700;
-			color: var(--color-white);
-			letter-spacing: 0.04em;
+		/* The shared `button` (on-container) owns the look; the label must not
+		   wrap inside its auto-sized grid column. */
+		.pwa-banner-action {
 			white-space: nowrap;
-
-			background: linear-gradient(135deg, var(--_a), var(--_b));
-
-			transition:
-				transform 120ms ease,
-				box-shadow 200ms ease;
-
-			&:hover,
-			&:focus-visible {
-				transform: scale(1.04);
-				box-shadow: 0 0 22px oklch(from var(--_a) l c h / 60%);
-			}
-
-			&:active {
-				transform: scale(0.95);
-				transition: transform 60ms ease;
-			}
 		}
 
 		.pwa-banner-close {
@@ -224,33 +195,8 @@
 			background: linear-gradient(135deg, var(--_a), var(--_b));
 		}
 
-		.pwa-banner-sheet-confirm {
-			cursor: pointer;
-
+		.pwa-banner-sheet-action {
 			align-self: center;
-
-			padding-block: var(--space-xs);
-			padding-inline: var(--space-xl);
-			border: none;
-			border-radius: var(--radius-full);
-
-			font-family: var(--font-display);
-			font-size: var(--step-0);
-			font-weight: 700;
-			color: var(--color-white);
-			letter-spacing: 0.03em;
-
-			background: linear-gradient(135deg, var(--_a), var(--_b));
-
-			transition:
-				transform 120ms ease,
-				box-shadow 200ms ease;
-
-			&:hover,
-			&:focus-visible {
-				transform: scale(1.03);
-				box-shadow: 0 0 20px oklch(from var(--_a) l c h / 50%);
-			}
 		}
 
 		@media (prefers-reduced-motion: no-preference) {
@@ -259,8 +205,23 @@
 					var(--md-easing-emphasized-decelerate);
 			}
 
-			.pwa-banner-cta {
-				animation: pwa-cta-pulse 3s ease-in-out infinite;
+			.pwa-banner-action {
+				animation: pwa-cta-pulse 2.5s ease-in-out infinite;
+			}
+		}
+
+		/* The CTA's continuous glow pulse (brand-primary, every 2.5s), over the
+		   shared on-container button. */
+		@keyframes pwa-cta-pulse {
+			0%,
+			100% {
+				box-shadow: 0 0 8px
+					color-mix(in oklch, var(--color-brand-primary) 30%, transparent);
+			}
+
+			50% {
+				box-shadow: 0 0 18px
+					color-mix(in oklch, var(--color-brand-primary) 55%, transparent);
 			}
 		}
 
@@ -271,19 +232,6 @@
 
 			to {
 				transform: translateY(0);
-			}
-		}
-
-		@keyframes pwa-cta-pulse {
-			0%,
-			100% {
-				box-shadow: 0 2px 10px oklch(from var(--_a) l c h / 35%);
-			}
-
-			50% {
-				box-shadow:
-					0 2px 28px oklch(from var(--_a) l c h / 65%),
-					0 0 10px oklch(from var(--_b) l c h / 30%);
 			}
 		}
 	}

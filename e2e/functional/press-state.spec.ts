@@ -148,7 +148,7 @@ test.describe('press acknowledgement', () => {
 		await seedGuest(page, false)
 		await mockRpc(page, false)
 		await page.goto(`${APP}/my-artists`)
-		const cta = page.locator('a.discover-cta').first()
+		const cta = page.getByTestId('discover-link').first()
 		await cta.waitFor({ timeout: 10000 })
 		const layer = () =>
 			cta.evaluate((el) => Number(getComputedStyle(el, '::after').opacity))

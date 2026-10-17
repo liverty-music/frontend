@@ -23,7 +23,8 @@
     <a
       href="/discovery"
       t="myArtists.empty.discoverButton"
-      class="[ discover-cta ] [ pressable ]"
+      class="[ button ] [ pressable ]"
+      data-testid="discover-link"
     ></a>
   </state-placeholder>
 
@@ -100,7 +101,7 @@
      FAB is hidden while editing, so this is the sole (and unambiguous) exit.
      Shown only in edit mode. -->
 <div if.bind="editing" class="edit-action-bar" role="toolbar" aria-label="編集">
-  <button type="button" class="edit-done-btn" click.trigger="toggleEditing()">
+  <button type="button" class="[ button ] [ pressable ]" click.trigger="toggleEditing()">
     <svg-icon name="check" size="sm" aria-hidden="true"></svg-icon>
     <span t="myArtists.done"></span>
   </button>

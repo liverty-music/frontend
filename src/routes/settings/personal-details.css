@@ -62,22 +62,10 @@
 			color: var(--color-error);
 		}
 
+		/* The submit button sits at the end of the form; the `button` block owns
+		   its look. */
 		.settings-personal-details-save {
 			align-self: end;
-
-			min-block-size: 44px;
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-m);
-			border: 1px solid color-mix(in oklch, var(--color-white) 15%, transparent);
-			border-radius: var(--radius-button);
-
-			font-size: var(--step--1);
-			font-weight: 600;
-			color: var(--color-text-primary);
-
-			&:disabled {
-				opacity: 0.5;
-			}
 		}
 	}
 }

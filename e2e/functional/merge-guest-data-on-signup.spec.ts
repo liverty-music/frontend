@@ -110,7 +110,7 @@ function followFailingFor(ids: string[]): FanRpcAnswer {
 async function signUpFromMyArtists(page: Page): Promise<void> {
 	await mockIdentityProvider(page)
 	await page.goto('/my-artists')
-	await page.locator('.signup-banner-btn').click({ timeout: 20_000 })
+	await page.locator('.signup-banner-action').click({ timeout: 20_000 })
 	await expect(page).toHaveURL(/\/dashboard/, { timeout: 20_000 })
 }
 
@@ -121,7 +121,7 @@ async function signUpFromMyArtists(page: Page): Promise<void> {
 async function signInFromSettings(page: Page): Promise<void> {
 	await mockIdentityProvider(page)
 	await page.goto('/settings')
-	await page.locator('.settings-guest-hero-primary').click({ timeout: 20_000 })
+	await page.getByTestId('settings-sign-in').click({ timeout: 20_000 })
 	await expect(page).not.toHaveURL(/\/(settings|auth\/callback)/, {
 		timeout: 20_000,
 	})
@@ -324,7 +324,7 @@ test.describe('guest data storage', () => {
 		await page.goto('/dashboard')
 		const sheet = page.locator('user-home-selector bottom-sheet')
 		await expect(sheet).toBeVisible({ timeout: 20_000 })
-		await sheet.locator('.selector-btn').first().click()
+		await sheet.locator('.selector-option').first().click()
 
 		await expect.poll(() => storage(page, 'guest.home')).toMatch(/^JP-\d{2}$/)
 	})
@@ -594,7 +594,7 @@ test.describe('data merge on authentication', () => {
 		})
 		await mockIdentityProvider(page)
 		await page.goto('/my-artists')
-		await page.locator('.signup-banner-btn').click({ timeout: 20_000 })
+		await page.locator('.signup-banner-action').click({ timeout: 20_000 })
 
 		// Until Create completes the sign-in callback screen shows the loading
 		// indicator and does not navigate.

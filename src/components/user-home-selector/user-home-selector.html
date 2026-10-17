@@ -17,7 +17,7 @@
           <button
             repeat.for="city of quickCities; key.bind: city.code"
             busy-on-click.bind="() => selectQuickCity(city.code)"
-            class="selector-btn"
+            class="selector-option"
             data-selected.bind="city.code === currentCode"
             aria-current.bind="city.code === currentCode"
           >
@@ -33,7 +33,7 @@
           <button
             repeat.for="region of regions; key.bind: region.key"
             click.trigger="selectRegion(region)"
-            class="selector-btn"
+            class="selector-option"
           >
             <span t.bind="'userHome.regions.' + region.key"></span>
           </button>
@@ -46,7 +46,8 @@
       <div class="selector-header-row">
         <button
           click.trigger="backToRegions()"
-          class="selector-back-btn"
+          class="[ button selector-back ] [ pressable ]"
+          data-variant="outlined"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6"></path>
@@ -63,7 +64,7 @@
         <button
           repeat.for="pref of selectedRegion.prefectures; key.bind: pref.code"
           busy-on-click.bind="() => selectPrefecture(pref.code)"
-          class="selector-btn"
+          class="selector-option"
           data-selected.bind="pref.code === currentCode"
           aria-current.bind="pref.code === currentCode"
         >
