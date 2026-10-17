@@ -63,6 +63,7 @@ describe('SnackBar', () => {
 	})
 
 	describe('show', () => {
+		// @spec components/infrastructure/fan/web/global/snack-bar "Snack display on event publish"
 		it('adds snack to the list on event', () => {
 			sut.attaching()
 			subscribeHandler?.(new Snack('Hello', 'info', { duration: 3000 }))
@@ -80,6 +81,38 @@ describe('SnackBar', () => {
 
 			expect(sut.snacks[0].id).toBe(0)
 			expect(sut.snacks[1].id).toBe(1)
+		})
+	})
+
+	describe('icon', () => {
+		it('shows the severity icon by default', () => {
+			sut.attaching()
+			subscribeHandler?.(new Snack('Saved', 'warning', { duration: 3000 }))
+
+			expect(sut.snacks[0].icon).toBe('warning')
+		})
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Leading icon depicts a refresh"
+		it('shows a custom icon instead of the severity icon', () => {
+			sut.attaching()
+			subscribeHandler?.(
+				new Snack('Update available', 'info', {
+					duration: 3000,
+					icon: 'rotate-ccw',
+				}),
+			)
+
+			expect(sut.snacks[0].icon).toBe('rotate-ccw')
+		})
+
+		it('carries the attention flag to the shown snack', () => {
+			sut.attaching()
+			subscribeHandler?.(new Snack('Plain', 'info', { duration: 3000 }))
+			subscribeHandler?.(
+				new Snack('Update', 'info', { duration: 3000, attention: true }),
+			)
+
+			expect(sut.snacks.map((s) => s.attention)).toEqual([false, true])
 		})
 	})
 
@@ -106,6 +139,7 @@ describe('SnackBar', () => {
 	})
 
 	describe('duration', () => {
+		// @spec components/infrastructure/fan/web/global/snack-bar "Auto-dismiss after duration"
 		it('dismisses after 2500 ms by default', () => {
 			sut.attaching()
 			subscribeHandler?.(new Snack('saved'))
@@ -134,6 +168,7 @@ describe('SnackBar', () => {
 	})
 
 	describe('onAction', () => {
+		// @spec components/infrastructure/fan/web/global/snack-bar "Snack action button"
 		it('calls action callback and dismisses', () => {
 			const actionCallback = vi.fn()
 			sut.attaching()
@@ -148,6 +183,47 @@ describe('SnackBar', () => {
 
 			expect(actionCallback).toHaveBeenCalledOnce()
 			expect(sut.snacks[0].dismissed).toBe(true)
+		})
+	})
+
+	describe('handle', () => {
+		// @spec components/infrastructure/fan/web/global/snack-bar "Programmatic dismiss via handle"
+		it('dismisses at once, clears the timer and calls onDismiss once', () => {
+			const onDismiss = vi.fn()
+			const hidePopover = vi.fn()
+			Object.defineProperty(sut, 'containerElement', {
+				value: {
+					querySelector: vi.fn(() => ({ showPopover: vi.fn(), hidePopover })),
+				},
+				writable: true,
+			})
+			sut.attaching()
+			const event = new Snack('Saved', 'info', { duration: 5000, onDismiss })
+			subscribeHandler?.(event)
+
+			event.handle?.dismiss()
+			event.handle?.dismiss()
+			vi.advanceTimersByTime(5000)
+
+			expect(hidePopover).toHaveBeenCalledOnce()
+			expect(sut.snacks[0].dismissTimer).toBeNull()
+			expect(onDismiss).toHaveBeenCalledOnce()
+		})
+	})
+
+	describe('onToggle', () => {
+		// @spec components/infrastructure/fan/web/global/snack-bar "DOM cleanup after exit transition"
+		it('removes the snack when its popover reports closed', () => {
+			sut.attaching()
+			subscribeHandler?.(new Snack('first', 'info', { duration: 3000 }))
+			subscribeHandler?.(new Snack('second', 'info', { duration: 3000 }))
+			const [first] = sut.snacks
+
+			sut.onToggle({ newState: 'open' } as ToggleEvent, first)
+			expect(sut.snacks).toHaveLength(2)
+			sut.onToggle({ newState: 'closed' } as ToggleEvent, first)
+
+			expect(sut.snacks.map((s) => s.message)).toEqual(['second'])
 		})
 	})
 })

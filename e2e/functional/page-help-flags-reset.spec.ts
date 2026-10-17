@@ -59,7 +59,7 @@ test('@spec components/infrastructure/fan/web/global/page-help "Help-seen flags 
 	const getStarted = await freshGuest(browser)
 	await getStarted.goto('/')
 	await getStarted
-		.locator('.welcome-btn-primary')
+		.getByTestId('welcome-get-started')
 		.first()
 		.click({ timeout: 30_000 })
 	await expect(getStarted).toHaveURL(/\/discovery/, { timeout: 20_000 })
@@ -69,10 +69,7 @@ test('@spec components/infrastructure/fan/web/global/page-help "Help-seen flags 
 	// Sign-in from Welcome resets the guest's local data, flags included.
 	const signIn = await freshGuest(browser)
 	await signIn.goto('/')
-	await signIn
-		.locator('.welcome-btn-secondary')
-		.first()
-		.click({ timeout: 30_000 })
+	await signIn.getByTestId('welcome-login').first().click({ timeout: 30_000 })
 	await expect(signIn).toHaveURL(/\/dashboard/, { timeout: 30_000 })
 	expect(await helpSeen(signIn)).toEqual([null, null, null])
 	await signIn.context().close()
@@ -80,7 +77,7 @@ test('@spec components/infrastructure/fan/web/global/page-help "Help-seen flags 
 	// Completing sign-up clears them.
 	const signUp = await freshGuest(browser)
 	await signUp.goto('/my-artists')
-	await signUp.locator('.signup-banner-btn').click({ timeout: 30_000 })
+	await signUp.locator('.signup-banner-action').click({ timeout: 30_000 })
 	await expect(signUp).toHaveURL(/\/dashboard/, { timeout: 30_000 })
 	expect(await helpSeen(signUp)).toEqual([null, null, null])
 	await signUp.context().close()

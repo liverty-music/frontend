@@ -367,7 +367,7 @@ test.describe
 			await page.waitForSelector('.consent-route', { timeout: 10_000 })
 
 			// Acknowledge → router.load('/dashboard'). Progression is never blocked.
-			await page.locator('.consent-btn-primary').click()
+			await page.getByTestId('consent-acknowledge').click()
 			await expect(page).toHaveURL(/dashboard/, { timeout: 10_000 })
 
 			// Acknowledging records only the "seen" flag and does NOT write a consent

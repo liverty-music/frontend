@@ -114,9 +114,18 @@ function stateLayer(card: Locator): Promise<number> {
 }
 
 async function pressCentre(page: Page, target: Locator): Promise<void> {
+	await pressAt(page, target, 0.5)
+}
+
+/** Hold the mouse down at `fraction` of the target's width, mid-height. */
+async function pressAt(
+	page: Page,
+	target: Locator,
+	fraction: number,
+): Promise<void> {
 	const box = await target.boundingBox()
 	if (!box) throw new Error('target not laid out')
-	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+	await page.mouse.move(box.x + box.width * fraction, box.y + box.height / 2)
 	await page.mouse.down()
 }
 
@@ -148,7 +157,7 @@ test.describe('press acknowledgement', () => {
 		await seedGuest(page, false)
 		await mockRpc(page, false)
 		await page.goto(`${APP}/my-artists`)
-		const cta = page.locator('a.discover-cta').first()
+		const cta = page.getByTestId('discover-link').first()
 		await cta.waitFor({ timeout: 10000 })
 		const layer = () =>
 			cta.evaluate((el) => Number(getComputedStyle(el, '::after').opacity))
@@ -157,7 +166,9 @@ test.describe('press acknowledgement', () => {
 		const before = await radius()
 		expect(await layer()).toBe(0)
 
-		await pressCentre(page, cta)
+		// Press its leading quarter: on a short desktop viewport the centred FAB,
+		// floating above the guest's signup banner, covers the CTA's centre.
+		await pressAt(page, cta, 0.15)
 		await expect.poll(layer).toBeGreaterThan(0)
 		await expect.poll(radius).not.toBe(before)
 

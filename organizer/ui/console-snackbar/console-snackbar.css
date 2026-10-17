@@ -4,7 +4,6 @@
 		--bottom-nav-height: var(--nav-bar-clearance);
 		--snack-bar-container: var(--md-color-inverse-surface);
 		--snack-bar-on-container: var(--md-color-inverse-on-surface);
-		--snack-bar-action: var(--md-color-inverse-primary);
 		--snack-bar-action-hover: color-mix(
 			in oklch,
 			var(--md-color-inverse-primary) 10%,
@@ -13,9 +12,31 @@
 		--snack-bar-shadow: 0 3px 8px oklch(0% 0 0deg / 20%);
 		--snack-bar-font-family: var(--font-body);
 		--snack-bar-font-weight: 400;
-		--snack-bar-action-font-size: 14px;
 
 		display: contents;
 		font: var(--md-type-body-medium);
+	}
+
+	/* The M3 text-button action: the console has no shared button, so it
+	   styles the shared snack bar's action itself. */
+	@scope (snack-bar) {
+		.snack-action-btn {
+			padding-block: var(--space-3xs);
+			padding-inline: var(--space-2xs);
+			border: none;
+			border-radius: var(--md-shape-full);
+
+			font: var(--md-type-label-large);
+			font-weight: 600;
+			color: var(--md-color-inverse-primary);
+
+			background: transparent;
+
+			transition: background var(--md-sys-motion-duration-short3) ease-out;
+
+			&:hover {
+				background: var(--snack-bar-action-hover);
+			}
+		}
 	}
 }

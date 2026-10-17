@@ -301,19 +301,8 @@
 			--_node-faint: oklch(58% 0.09 var(--journey-hue-lost) / 45%);
 		}
 
-		.journey-remove-btn {
+		.journey-remove {
 			margin-block-start: var(--space-2xs);
-			font-size: var(--step--1);
-			color: var(--color-text-muted);
-			text-decoration: underline;
-
-			&:disabled {
-				opacity: 0.5;
-			}
-
-			&:hover:not(:disabled) {
-				color: var(--color-text-secondary);
-			}
 		}
 
 		/* Follow CTA (All Nearby context) */
@@ -323,42 +312,8 @@
 			margin-block-start: var(--space-m);
 		}
 
-		.follow-btn {
-			cursor: pointer;
-
-			display: flex;
-			gap: var(--space-3xs);
-			align-items: center;
-			justify-content: center;
-
+		.follow-action {
 			inline-size: 100%;
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-m);
-			border: none;
-			border-radius: var(--radius-button);
-
-			font-size: var(--step--1);
-			font-weight: 600;
-			color: var(--color-white);
-
-			background: var(--color-brand-primary);
-			box-shadow: var(--shadow-button);
-
-			transition: background-color 150ms ease-out;
-
-			&:disabled {
-				cursor: default;
-				opacity: 0.6;
-			}
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
-
-			&:hover:not(:disabled) {
-				background: var(--color-brand-secondary);
-			}
 		}
 
 		.follow-state {
@@ -408,51 +363,8 @@
 			margin-block-start: var(--space-s);
 		}
 
-		.sheet-btn-primary,
-		.sheet-btn-secondary {
-			display: flex;
-			gap: var(--space-3xs);
-			align-items: center;
-			justify-content: center;
-
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-xs);
-			border-radius: var(--radius-button);
-
-			font-size: var(--step--1);
-			font-weight: 500;
-		}
-
-		.sheet-btn-primary {
-			color: var(--color-white);
-			background: var(--color-brand-primary);
-			box-shadow: var(--shadow-button);
-			transition: background-color 150ms ease-out;
-
-			&:hover {
-				background: var(--color-brand-secondary);
-			}
-		}
-
-		.sheet-btn-secondary {
-			border: 1px solid var(--_border-light);
-			color: var(--color-text-secondary);
-			transition:
-				border-color 150ms ease-out,
-				color 150ms ease-out,
-				background-color 150ms ease-out;
-
-			&:hover {
-				border-color: var(--_border-light-hover);
-				color: var(--color-text-primary);
-				background: var(--_bg-hover);
-			}
-		}
-
 		@media (prefers-reduced-motion: reduce) {
-			.journey-node,
-			.sheet-btn-primary,
-			.sheet-btn-secondary {
+			.journey-node {
 				transition: none;
 			}
 		}

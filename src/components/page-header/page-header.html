@@ -3,4 +3,13 @@
 <header>
   <h1 t.bind="titleKey"></h1>
   <au-slot></au-slot>
+  <a
+    if.bind="showSettings"
+    href="settings"
+    class="[ page-header-settings ] [ pressable ]"
+    t="[aria-label]nav.settings"
+    data-testid="page-header-settings"
+  >
+    <svg-icon name="settings" size="md"></svg-icon>
+  </a>
 </header>

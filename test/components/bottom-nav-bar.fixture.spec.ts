@@ -88,20 +88,20 @@ describe('BottomNavBar (fixture, app route table)', () => {
 		router = fixture.container.get(IRouter)
 		await go('discovery')
 		// The tabs appear once the lazily-imported route configs resolve.
-		await vi.waitFor(() => expect(tabs()).toHaveLength(5))
+		await vi.waitFor(() => expect(tabs()).toHaveLength(4))
 	})
 
 	afterEach(async () => {
 		await fixture.stop(true)
 	})
 
-	it('renders the five tab routes in route-table order', () => {
+	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Navigation shown on post-onboarding routes"
+	it('renders the four tab routes in route-table order, without Settings', () => {
 		expect(tabs().map((t) => t.getAttribute('data-nav'))).toEqual([
 			'home',
 			'discovery',
 			'my-artists',
 			'ticket',
-			'settings',
 		])
 	})
 
@@ -111,7 +111,6 @@ describe('BottomNavBar (fixture, app route table)', () => {
 		['discovery', 'discovery'],
 		['my-artists', 'my-artists'],
 		['tickets', 'ticket'],
-		['settings', 'settings'],
 	])('highlights only the tab of %s', async (path, icon) => {
 		await go(path)
 		expect(activeTabs()).toEqual([icon])
@@ -131,12 +130,12 @@ describe('BottomNavBar (fixture, app route table)', () => {
 	})
 
 	// @spec components/infrastructure/fan/web/global/bottom-nav-bar "Route outside every tab"
-	it.each(['orders/ord-1', 'legal/terms', 'about'])(
+	it.each(['settings', 'orders/ord-1', 'legal/terms', 'about'])(
 		'highlights no tab on %s',
 		async (path) => {
-			await go('settings')
+			await go('dashboard')
 			await go(path)
-			expect(tabs()).toHaveLength(5)
+			expect(tabs()).toHaveLength(4)
 			expect(activeTabs()).toEqual([])
 		},
 	)

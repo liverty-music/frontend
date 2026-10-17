@@ -37,7 +37,7 @@
 	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'verify-required'" data-testid="lottery-entry-verify">
 		<h2 class="lottery-entry-step-title" t="lotteryEntry.verify.title"></h2>
 		<p class="lottery-entry-lead" t="lotteryEntry.verify.body"></p>
-		<button type="button" class="lottery-entry-btn-primary" click.trigger="goToVerify()" t="lotteryEntry.verify.action"></button>
+		<button type="button" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="goToVerify()" t="lotteryEntry.verify.action"></button>
 	</section>
 
 	<!-- Step 1: ticket count -->
@@ -51,7 +51,7 @@
 		</label>
 		<p class="lottery-entry-total" data-testid="lottery-entry-total" t="lotteryEntry.total" t-params.bind="{ total: yen(total) }"></p>
 		<p class="lottery-entry-error" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
-		<button type="button" class="lottery-entry-btn-primary" click.trigger="toPersonalDetails()" disabled.bind="busy" data-testid="lottery-entry-to-personal-details" t="lotteryEntry.count.continue"></button>
+		<button type="button" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="toPersonalDetails()" disabled.bind="busy" data-testid="lottery-entry-to-personal-details" t="lotteryEntry.count.continue"></button>
 	</section>
 
 	<!-- Step 2: 本人確認 -->
@@ -78,8 +78,8 @@
 		<p id="lottery-entry-phone-error" class="lottery-entry-error" if.bind="isPhoneInvalid" t="lotteryEntry.phoneInvalid"></p>
 		<p class="lottery-entry-error" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<div class="[ lottery-entry-actions ] [ cluster ]">
-			<button type="button" class="lottery-entry-btn-secondary" click.trigger="backToCount()" t="lotteryEntry.back"></button>
-			<button type="button" class="lottery-entry-btn-primary" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="lottery-entry-to-payment" t="lotteryEntry.personalDetails.continue"></button>
+			<button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="backToCount()" t="lotteryEntry.back"></button>
+			<button type="button" class="[ button lottery-entry-action ] [ pressable ]" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="lottery-entry-to-payment" t="lotteryEntry.personalDetails.continue"></button>
 		</div>
 	</section>
 
@@ -104,7 +104,7 @@
 		<p class="lottery-entry-error" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<button
 			type="button"
-			class="lottery-entry-btn-primary"
+			class="[ button lottery-entry-action ] [ pressable ]"
 			click.trigger="confirmEntry()"
 			disabled.bind="step === 'submitting'"
 			data-testid="lottery-entry-confirm"
@@ -116,6 +116,6 @@
 	<section class="[ lottery-entry-panel ] [ flow ]" if.bind="step === 'done'" data-testid="lottery-entry-done">
 		<h2 class="lottery-entry-step-title" t="lotteryEntry.done.title"></h2>
 		<p class="lottery-entry-lead" t="lotteryEntry.done.body" t-params.bind="{ sale: sale.name, count: entry.ticketCount }"></p>
-		<a href.bind="entryStatusUrl" class="lottery-entry-btn-primary" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>
+		<a href.bind="entryStatusUrl" class="[ button lottery-entry-action ] [ pressable ]" data-testid="lottery-entry-to-status" t="lotteryEntry.done.toStatus"></a>
 	</section>
 </template>

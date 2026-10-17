@@ -81,16 +81,16 @@ const FAN: Screen[] = [
 		name: 'fan /welcome',
 		path: '/welcome',
 		setup: fanGuest,
-		ready: (page) => page.locator('.welcome-btn-primary'),
+		ready: (page) => page.getByTestId('welcome-get-started'),
 		probes: [
 			{
 				what: "the welcome page's primary button",
-				locate: (page) => page.locator('.welcome-btn-primary'),
+				locate: (page) => page.getByTestId('welcome-get-started'),
 				expect: { padding: true, background: true },
 			},
 			{
 				what: "the welcome page's secondary button",
-				locate: (page) => page.locator('.welcome-btn-secondary'),
+				locate: (page) => page.getByTestId('welcome-login'),
 				expect: { padding: true },
 			},
 		],
@@ -488,12 +488,6 @@ const KNOWN_VIOLATIONS: Array<{
 		screen: 'fan /welcome',
 		rule: 'landmark-one-main',
 		reason: 'The welcome route (no chrome) has no <main>.',
-	},
-	{
-		screen: 'fan /welcome',
-		rule: 'color-contrast',
-		reason:
-			'White on the brand magenta #fd00a6 of `.welcome-btn-primary` is 3.66:1.',
 	},
 ]
 

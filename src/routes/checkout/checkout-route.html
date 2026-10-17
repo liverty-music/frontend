@@ -31,7 +31,7 @@
   <section if.bind="step === 'verify-required'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-verify">
     <h2 class="checkout-step-title" t="checkout.verify.title"></h2>
     <p data-testid="checkout-verify-body" t.bind="verificationRequirement === 'jpkiOnly' ? 'checkout.verify.bodyJpki' : 'checkout.verify.bodyAny'"></p>
-    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="goToVerify()" data-testid="checkout-verify-action" t="checkout.verify.action"></button>
+    <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="goToVerify()" data-testid="checkout-verify-action" t="checkout.verify.action"></button>
   </section>
 
   <!-- Step 1: count -->
@@ -47,7 +47,7 @@
     <p class="checkout-price" t="checkout.count.price" t-params.bind="{ price: yen(price) }"></p>
     <p class="checkout-total" data-testid="checkout-total" t="checkout.total" t-params.bind="{ total: yen(price * ticketCount) }"></p>
     <p if.bind="message" class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
-    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="hold()" disabled.bind="busy" data-testid="checkout-hold" t="checkout.count.continue"></button>
+    <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="hold()" disabled.bind="busy" data-testid="checkout-hold" t="checkout.count.continue"></button>
   </section>
 
   <!-- Step 2: 本人確認 -->
@@ -74,8 +74,8 @@
     <p id="checkout-phone-error" if.bind="isPhoneInvalid" class="checkout-error" t="checkout.personalDetails.phoneInvalid"></p>
     <p if.bind="message" class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
     <div class="[ checkout-actions ] [ cluster ]">
-      <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="backToCount()" t="checkout.back"></button>
-      <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="checkout-to-payment" t="checkout.personalDetails.continue"></button>
+      <button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="backToCount()" t="checkout.back"></button>
+      <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="toPayment()" disabled.bind="!isPersonalDetailsValid || busy" data-testid="checkout-to-payment" t="checkout.personalDetails.continue"></button>
     </div>
   </section>
 
@@ -89,9 +89,9 @@
     </p>
     <template if.bind="message">
       <p class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
-      <button if.bind="message.key === 'checkout.payment.holdEnded'" type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
+      <button if.bind="message.key === 'checkout.payment.holdEnded'" type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="startAgain()" t="checkout.startAgain"></button>
     </template>
-    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="authorizeCard()" disabled.bind="busy" data-testid="checkout-authorize-card" t="checkout.payment.continue"></button>
+    <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="authorizeCard()" disabled.bind="busy" data-testid="checkout-authorize-card" t="checkout.payment.continue"></button>
   </section>
 
   <!-- Step 4: 特商法 final confirmation -->
@@ -144,19 +144,19 @@
     </dl>
     <p if.bind="message" class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>
     <div class="[ checkout-actions ] [ cluster ]">
-      <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="changeCount()" t="checkout.confirm.changeCount"></button>
-      <button type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="changePersonalDetails()" t="checkout.confirm.changePersonalDetails"></button>
+      <button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="changeCount()" t="checkout.confirm.changeCount"></button>
+      <button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="changePersonalDetails()" t="checkout.confirm.changePersonalDetails"></button>
     </div>
-    <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="placeOrder()" disabled.bind="busy" data-testid="checkout-place-order" t="checkout.confirm.placeOrder" t-params.bind="{ total: yen(total) }"></button>
+    <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="placeOrder()" disabled.bind="busy" data-testid="checkout-place-order" t="checkout.confirm.placeOrder" t-params.bind="{ total: yen(total) }"></button>
   </section>
 
   <!-- Completion -->
   <section if.bind="step === 'done'" class="[ checkout-panel ] [ flow ]" data-testid="checkout-done">
     <h2 class="checkout-step-title" t="checkout.done.title"></h2>
     <p data-testid="checkout-done-summary" t="checkout.done.summary" t-params.bind="{ event: event.title, count: ticketCount, total: yen(total) }"></p>
-    <a href="/tickets" class="[ checkout-btn-primary ] [ pressable ]" data-testid="checkout-to-tickets" t="checkout.done.toTickets"></a>
-    <button if.bind="canAllowNotifications" type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="allowNotifications()" data-testid="checkout-notifications" t="checkout.done.allowNotifications"></button>
-    <button if.bind="canInstallApp" type="button" class="[ checkout-btn-secondary ] [ pressable ]" click.trigger="installApp()" data-testid="checkout-install" t="checkout.done.installApp"></button>
+    <a href="/tickets" class="[ button checkout-action ] [ pressable ]" data-testid="checkout-to-tickets" t="checkout.done.toTickets"></a>
+    <button if.bind="canAllowNotifications" type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="allowNotifications()" data-testid="checkout-notifications" t="checkout.done.allowNotifications"></button>
+    <button if.bind="canInstallApp" type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="installApp()" data-testid="checkout-install" t="checkout.done.installApp"></button>
   </section>
 
   <!-- Placing the order failed -->
@@ -164,19 +164,19 @@
     <template switch.bind="outcome">
       <template case="hold-ended">
         <p t="checkout.outcome.holdEnded"></p>
-        <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
+        <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
       </template>
       <template case="charge-failed">
         <p t="checkout.outcome.chargeFailed"></p>
-        <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
+        <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="startAgain()" t="checkout.startAgain"></button>
       </template>
       <template case="replaced">
         <p t="checkout.outcome.replaced"></p>
-        <button type="button" class="[ checkout-btn-primary ] [ pressable ]" click.trigger="goToNewerCheckout()" t="checkout.outcome.goToNewer"></button>
+        <button type="button" class="[ button checkout-action ] [ pressable ]" click.trigger="goToNewerCheckout()" t="checkout.outcome.goToNewer"></button>
       </template>
       <template default-case>
         <p t="checkout.outcome.completing"></p>
-        <a href="/tickets" class="[ checkout-btn-primary ] [ pressable ]" t="checkout.done.toTickets"></a>
+        <a href="/tickets" class="[ button checkout-action ] [ pressable ]" t="checkout.done.toTickets"></a>
       </template>
     </template>
   </section>

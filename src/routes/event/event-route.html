@@ -9,13 +9,13 @@
   <section if.bind="state === 'not-found'" class="event-empty" data-testid="event-not-found">
     <h1 class="event-empty-title" t="eventPage.notFound.title"></h1>
     <p t="eventPage.notFound.body"></p>
-    <a href="/dashboard" class="[ event-btn-primary ] [ pressable ]" t="eventPage.notFound.toDashboard"></a>
+    <a href="/dashboard" class="[ button ] [ pressable ]" t="eventPage.notFound.toDashboard"></a>
   </section>
 
   <!-- Any other failure: retry -->
   <div if.bind="state === 'error'" class="event-empty" data-testid="event-error">
     <p t="eventPage.error.body"></p>
-    <button type="button" class="[ event-btn-primary ] [ pressable ]" click.trigger="retry()" t="eventPage.error.retry"></button>
+    <button type="button" class="[ button ] [ pressable ]" click.trigger="retry()" t="eventPage.error.retry"></button>
   </div>
 
   <template if.bind="state === 'ready' && event">
@@ -112,11 +112,11 @@
 
     <!-- Share and add-to-calendar -->
     <div class="[ event-actions ] [ cluster ]">
-      <button type="button" class="[ event-btn-secondary ] [ pressable ]" click.trigger="share()" data-testid="event-share">
+      <button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="share()" data-testid="event-share">
         <svg-icon name="link"></svg-icon>
         <span t="eventPage.share.action"></span>
       </button>
-      <button type="button" class="[ event-btn-secondary ] [ pressable ]" click.trigger="addToCalendar()" data-testid="event-calendar">
+      <button type="button" class="[ button ] [ pressable ]" data-variant="outlined" click.trigger="addToCalendar()" data-testid="event-calendar">
         <svg-icon name="calendar"></svg-icon>
         <span t="eventPage.addToCalendar"></span>
       </button>
@@ -141,8 +141,8 @@
             <template case="onSale">
               <p class="event-sale-price" data-testid="event-sale-price" t="eventPage.tickets.sale.price" t-params.bind="{ price: salePrice }"></p>
               <p if.bind="shownSale.ticketType.lowStock" class="event-sale-low" data-testid="event-sale-low" t="eventPage.tickets.sale.lowStock"></p>
-              <a if.bind="!isGuest" href.bind="checkoutUrl" class="[ event-btn-primary ] [ pressable ]" data-testid="event-buy" t="eventPage.tickets.sale.buy"></a>
-              <button else type="button" class="[ event-btn-primary ] [ pressable ]" click.trigger="signUp()" data-testid="event-buy" t="eventPage.tickets.sale.buy"></button>
+              <a if.bind="!isGuest" href.bind="checkoutUrl" class="[ button ] [ pressable ]" data-testid="event-buy" t="eventPage.tickets.sale.buy"></a>
+              <button else type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-buy" t="eventPage.tickets.sale.buy"></button>
             </template>
             <template case="allHeld">
               <p class="event-sale-status" data-testid="event-sale-sold-out" t="eventPage.tickets.sale.soldOut"></p>
@@ -161,14 +161,14 @@
           <p class="event-sale-price" data-testid="event-sale-price" t="eventPage.tickets.sale.price" t-params.bind="{ price: salePrice }"></p>
           <p if.bind="isLotteryEnded" class="event-sale-status" data-testid="event-sale-ended" t="eventPage.tickets.lottery.ended"></p>
           <template if.bind="isLotteryOpen">
-            <a if.bind="!isGuest" href.bind="lotteryEntryUrl" class="[ event-btn-primary ] [ pressable ]" data-testid="event-enter" t="eventPage.tickets.lottery.enter"></a>
-            <button else type="button" class="[ event-btn-primary ] [ pressable ]" click.trigger="signUp()" data-testid="event-enter" t="eventPage.tickets.lottery.enter"></button>
+            <a if.bind="!isGuest" href.bind="lotteryEntryUrl" class="[ button ] [ pressable ]" data-testid="event-enter" t="eventPage.tickets.lottery.enter"></a>
+            <button else type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-enter" t="eventPage.tickets.lottery.enter"></button>
           </template>
         </template>
       </div>
       <template if.bind="!shownSale && isGuest && !isCancelled">
         <p t="eventPage.tickets.signUpHint"></p>
-        <button type="button" class="[ event-btn-primary ] [ pressable ]" click.trigger="signUp()" data-testid="event-signup" t="eventPage.tickets.signUp"></button>
+        <button type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-signup" t="eventPage.tickets.signUp"></button>
       </template>
     </section>
 

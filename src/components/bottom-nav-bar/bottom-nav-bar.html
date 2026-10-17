@@ -1,4 +1,4 @@
-<nav class="[ nav-bar ]">
+<nav class="[ nav-bar ]" data-notch.bind="fabMenu.actions.length > 0">
   <a
     repeat.for="tab of tabs; key.bind: tab.id"
     href.bind="tab.path[0]"

@@ -262,7 +262,10 @@ test.describe('Artist filter bar bottom sheet', () => {
 		await yoasobiChip.click()
 
 		// Confirm
-		await page.click('button.btn-confirm')
+		await page
+			.locator('artist-filter-bar')
+			.getByRole('button', { name: '完了', exact: true })
+			.click()
 
 		// The launcher's filter item shows active state; no chips in the header
 		await expectFilterActive(page)
@@ -314,7 +317,10 @@ test.describe('Artist filter bar bottom sheet', () => {
 
 		// Add the second artist and confirm — the URL reflects both, written once.
 		await page.locator('label.artist-chip', { hasText: 'Vaundy' }).click()
-		await page.click('button.btn-confirm')
+		await page
+			.locator('artist-filter-bar')
+			.getByRole('button', { name: '完了', exact: true })
+			.click()
 
 		await expect(page).toHaveURL(
 			/\/dashboard\?artists=00000000-0000-4000-8000-a00000000001,00000000-0000-4000-8000-a00000000002$/,

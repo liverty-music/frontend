@@ -135,14 +135,14 @@ async function captureAuthStatePassword(): Promise<void> {
 		// The welcome page does NOT auto-redirect to Zitadel — OIDC sign-in
 		// is only initiated by clicking the Login button wired to
 		// `handleLogin()` in `src/routes/welcome/welcome-route.ts`. The
-		// button has class `welcome-btn-secondary` (the welcome HTML
+		// button carries `data-testid="welcome-login"` (the welcome HTML
 		// renders one of two button groups depending on `dateGroups.length`;
 		// `.first()` picks whichever is visible).
 		//
 		// When the welcome page has preview data, the CTA group sits in the
 		// footer below the sample timetable and is only built once scrolled
 		// toward, so scroll until it exists.
-		const loginButton = page.locator('button.welcome-btn-secondary').first()
+		const loginButton = page.getByTestId('welcome-login').first()
 		for (let i = 0; i < 20 && (await loginButton.count()) === 0; i++) {
 			await page.mouse.wheel(0, 1500)
 			await page.waitForTimeout(500)

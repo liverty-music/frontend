@@ -133,7 +133,7 @@
 		.settings-chevron,
 		.settings-toggle-track,
 		.settings-switch,
-		.settings-resend-btn {
+		.settings-row-action {
 			grid-column: 3;
 			justify-self: end;
 		}
@@ -327,27 +327,10 @@
 			block-size: 0.875rem;
 		}
 
-		.settings-resend-btn {
-			padding: var(--space-3xs) var(--space-xs);
-			border: 1px solid color-mix(in oklch, var(--color-white) 15%, transparent);
-			border-radius: var(--radius-button);
-
-			font-size: var(--step--1);
-			color: var(--color-text-primary);
+		/* A text button trailing a row (resend verification, start identity
+		   verification); the `button` block owns its look. */
+		.settings-row-action {
 			white-space: nowrap;
-
-			background: transparent;
-
-			transition: background 200ms;
-
-			&:disabled {
-				cursor: not-allowed;
-				opacity: 0.5;
-			}
-
-			&:hover:not(:disabled) {
-				background: color-mix(in oklch, var(--color-white) 5%, transparent);
-			}
 		}
 
 		/* Full-width, centred — overrides the subgrid column tracks. */
@@ -395,59 +378,6 @@
 			flex-direction: column;
 			gap: var(--space-2xs);
 			margin-block-start: var(--space-2xs);
-		}
-
-		/* Filled primary — mirrors the consent screen's primary button. */
-		.settings-guest-hero-primary {
-			cursor: pointer;
-
-			min-block-size: 2.75rem;
-			padding: var(--space-xs) var(--space-m);
-			border: 0;
-			border-radius: var(--radius-button);
-
-			font-weight: 600;
-			color: var(--color-white);
-
-			background: var(--color-brand-primary);
-			box-shadow: var(--shadow-button);
-
-			transition:
-				background 200ms,
-				transform 200ms;
-
-			&:hover {
-				background: var(--color-brand-secondary);
-			}
-
-			&:active {
-				transform: scale(0.98);
-			}
-		}
-
-		/* Ghost secondary — subordinate to the filled primary. */
-		.settings-guest-hero-secondary {
-			cursor: pointer;
-
-			min-block-size: 2.75rem;
-			padding: var(--space-2xs) var(--space-m);
-			border: 0;
-			border-radius: var(--radius-button);
-
-			font-weight: 600;
-			color: var(--color-brand-primary);
-
-			background: transparent;
-
-			transition: background 200ms;
-
-			&:hover {
-				background: color-mix(
-					in oklch,
-					var(--color-brand-primary) 12%,
-					transparent
-				);
-			}
 		}
 
 		/* Discrete visual-state hooks (each mirrors a `data-*.bind` in the

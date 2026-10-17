@@ -14,8 +14,8 @@
     <h2 t="settings.guestHero.heading" class="settings-guest-hero-heading"></h2>
     <p t="settings.guestHero.body" class="settings-guest-hero-body"></p>
     <div class="settings-guest-hero-actions">
-      <button click.trigger="signIn()" t="settings.signIn" class="settings-guest-hero-primary"></button>
-      <button click.trigger="signUp()" t="settings.signUp" class="settings-guest-hero-secondary"></button>
+      <button click.trigger="signIn()" t="settings.signIn" class="[ button ] [ pressable ]" data-testid="settings-sign-in"></button>
+      <button click.trigger="signUp()" t="settings.signUp" class="[ button ] [ pressable ]" data-variant="outlined" data-testid="settings-sign-up"></button>
     </div>
   </section>
 
@@ -119,8 +119,8 @@
         </div>
       </li>
 
-      <!-- Left-handed mode: mirrors the FAB action launcher to the bottom-left
-           corner. Persisted via the storage adapter (fab-action-launcher spec). -->
+      <!-- Left-handed mode: mirrors the FAB's action arc to open toward the left
+           hand. Persisted via the storage adapter (fab-menu spec). -->
       <li class="settings-list-item">
         <button
           click.trigger="fabMenu.toggleHanded()"
@@ -321,7 +321,7 @@
         type="submit"
         disabled.bind="!personalDetailsChanged"
         t="settings.personalDetails.save"
-        class="settings-personal-details-save"
+        class="[ button settings-personal-details-save ] [ pressable ]"
         data-testid="settings-personal-details-save"
       ></button>
     </form>
@@ -359,7 +359,8 @@
             busy-on-click.bind="() => resendVerification()"
             disabled.bind="resendSuccess"
             aria-live="polite"
-            class="settings-resend-btn"
+            class="[ button settings-row-action ] [ pressable ]"
+            data-variant="outlined"
           >
             <span if.bind="resendSuccess" t="settings.resendSent"></span>
             <span if.bind="!resendSuccess" t="settings.resendVerification"></span>
@@ -404,7 +405,8 @@
           <button
             if.bind="!isVerified"
             busy-on-click.bind="() => startIdentityVerification()"
-            class="settings-resend-btn"
+            class="[ button settings-row-action ] [ pressable ]"
+            data-variant="outlined"
           >
             <span t="settings.identityVerification.verifyCta"></span>
           </button>

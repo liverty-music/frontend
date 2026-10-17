@@ -1,10 +1,11 @@
 /*
  * Styled for the fan app by default. An app can restyle it by setting these on
  * an ancestor: --snack-bar-container, --snack-bar-on-container,
- * --snack-bar-action, --snack-bar-action-hover, --snack-bar-shadow,
- * --snack-bar-font-family, --snack-bar-font-weight,
- * --snack-bar-action-font-size, and --bottom-nav-height for the clearance
- * above a bottom navigation bar.
+ * --snack-bar-action-hover (the close button's hover layer),
+ * --snack-bar-shadow, --snack-bar-font-family, --snack-bar-font-weight, and
+ * --bottom-nav-height for the clearance above a bottom navigation bar. The
+ * action button takes the fan app's shared button (`button` block); an app
+ * without it styles `.snack-action-btn` itself.
  */
 @layer block {
 	@scope (snack-bar) {
@@ -18,14 +19,19 @@
 
 			/* Material 3 snackbar placement: bottom of screen, above the
 			   persistent bottom navigation, animating up from the bottom edge.
-			   --bottom-banner-clearance (set on :root by global.css when a
-			   persistent bottom banner is showing) lifts the toast above that
-			   banner so it never covers its CTA; 0 otherwise. */
+			   --bottom-banner-height (published on :root by a visible persistent
+			   bottom banner from its measured height, the same value the FAB
+			   uses) lifts the snack above that banner so it never covers its CTA;
+			   a hidden banner publishes 0px and an unmounted one removes it.
+			   --fab-floating (fan app, 1 while the FAB floats above a visible
+			   banner) lifts it above that FAB too. */
 			--_inset-end: calc(
 				var(--bottom-nav-height) +
 				env(safe-area-inset-bottom, 0px) +
-				var(--bottom-banner-clearance, 0px) +
-				var(--space-s)
+				var(--bottom-banner-height, 0px) +
+				var(--space-s) +
+				var(--fab-floating, 0) *
+				(var(--fab-size, 0px) + var(--space-s))
 			);
 		}
 
@@ -113,28 +119,12 @@
 			block-size: 1.25rem;
 		}
 
-		/* M3 text-button action (no pill / border / pulse), white on the brand
-		   container. */
+		/* The action's look comes from the app: the fan app's shared button
+		   (on-container), or the organizer console's own rule. Only its place
+		   in the row is set here. */
 		.snack-action-btn {
 			flex-shrink: 0;
-
 			margin-inline-start: auto;
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-2xs);
-			border: none;
-			border-radius: var(--md-shape-full);
-
-			font-size: var(--snack-bar-action-font-size, var(--step--1));
-			font-weight: 600;
-			color: var(--snack-bar-action, var(--color-white));
-
-			background: transparent;
-
-			transition: background var(--md-sys-motion-duration-short3) ease-out;
-
-			&:hover {
-				background: var(--_action-bg-hover);
-			}
 		}
 
 		.snack-message {
@@ -168,6 +158,27 @@
 
 			&:hover {
 				background: var(--_action-bg-hover);
+			}
+		}
+
+		/* An attention action (the fan app's update snack) glows three times
+		   when the snack appears, then stays still. */
+		@media (prefers-reduced-motion: no-preference) {
+			.snack-action-btn[data-attention] {
+				animation: snack-action-glow 1.2s ease-in-out 3;
+			}
+		}
+
+		@keyframes snack-action-glow {
+			0%,
+			100% {
+				box-shadow: 0 0 0 0
+					color-mix(in oklch, var(--color-white) 0%, transparent);
+			}
+
+			50% {
+				box-shadow: 0 0 14px 2px
+					color-mix(in oklch, var(--color-white) 55%, transparent);
 			}
 		}
 

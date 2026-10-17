@@ -6,7 +6,9 @@ interface SnackItem {
 	message: string
 	params?: Readonly<Record<string, unknown>>
 	severity: SnackSeverity
+	icon: string
 	action?: SnackAction
+	attention: boolean
 	onDismiss?: () => void
 	dismissed: boolean
 	dismissTimer: ReturnType<typeof setTimeout> | null
@@ -71,7 +73,9 @@ export class SnackBar {
 			message: event.message,
 			params: event.options?.params,
 			severity: event.severity,
+			icon: event.icon,
 			action: event.action,
+			attention: event.options?.attention ?? false,
 			onDismiss: event.options?.onDismiss,
 			dismissed: false,
 			dismissTimer: null,

@@ -9,8 +9,12 @@
      area (the CE sets its own `grid-area: header`). Its title is the displayed
      route's `data.titleKey`. Gated on `showNav` (same visibility as the nav bar)
      AND a non-empty title, so header-less routes (legal, about, not-found)
-     render no header row. -->
-<page-header if.bind="showNav && titleKey" title-key.bind="titleKey"></page-header>
+     render no header row. The four tab pages also get the Settings gear. -->
+<page-header
+  if.bind="showNav && titleKey"
+  title-key.bind="titleKey"
+  show-settings.bind="isTabRoute"
+></page-header>
 
 <au-viewport></au-viewport>
 

@@ -120,7 +120,7 @@ describe('EventDetailSheet (fixture)', () => {
 		// @spec components/infrastructure/fan/web/route/dashboard "Ticket / official info link"
 		const fixture = await render(event())
 		const link = fixture.appHost.querySelector(
-			'a.sheet-btn-primary',
+			'.sheet-actions a:not([data-variant])',
 		) as HTMLAnchorElement
 		expect(link.href).toBe('https://example.com/live')
 		expect(link.target).toBe('_blank')

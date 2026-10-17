@@ -2,10 +2,7 @@
 	@scope (error-banner) {
 		:scope {
 			--_border-light: oklch(100% 0 0deg / 10%);
-			--_border-hover: oklch(100% 0 0deg / 20%);
 			--_bg-subtle: oklch(100% 0 0deg / 5%);
-			--_primary-accent: oklch(from var(--color-brand-primary) l c h / 30%);
-			--_primary-bg: oklch(from var(--color-brand-primary) l c h / 20%);
 		}
 
 		.error-content {
@@ -56,43 +53,6 @@
 			display: grid;
 			grid-template-columns: 1fr 1fr;
 			gap: var(--space-3xs);
-		}
-
-		.error-btn {
-			padding: var(--space-3xs) var(--space-2xs);
-			border: 1px solid var(--_border-light);
-			border-radius: var(--radius-button);
-
-			font-size: var(--step--1);
-			color: var(--color-text-secondary);
-
-			transition:
-				border-color 150ms ease-out,
-				color 150ms ease-out,
-				background-color 150ms ease-out;
-
-			&:hover {
-				border-color: var(--_border-hover);
-				color: var(--color-text-primary);
-			}
-
-			&[data-variant="muted"] {
-				color: var(--color-text-muted);
-			}
-
-			&[data-variant="muted"]:hover {
-				color: var(--color-text-secondary);
-			}
-
-			&[data-variant="primary"] {
-				border-color: var(--_primary-accent);
-				color: var(--color-text-primary);
-				background: var(--_primary-bg);
-			}
-
-			&[data-variant="primary"]:hover {
-				background: var(--_primary-accent);
-			}
 		}
 	}
 }

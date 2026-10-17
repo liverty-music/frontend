@@ -119,37 +119,5 @@
 			display: flex;
 			justify-content: flex-end;
 		}
-
-		.btn-apply {
-			cursor: pointer;
-
-			min-block-size: 2.75rem;
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-m);
-			border: none;
-			border-radius: var(--radius-button);
-
-			font-size: var(--step--1);
-			font-weight: 600;
-			color: var(--color-white);
-
-			background: var(--color-brand-primary);
-
-			transition: opacity var(--transition-fast);
-
-			&:disabled {
-				cursor: default;
-				opacity: 0.4;
-			}
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
-
-			&:hover:not(:disabled) {
-				opacity: 0.85;
-			}
-		}
 	}
 }

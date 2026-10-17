@@ -366,16 +366,38 @@ export class DashboardRoute {
 	}
 
 	/**
-	 * Build this route's FAB launcher action set for the current context. Order
-	 * is DOM top→bottom (the panel expands upward, so the last item sits closest
-	 * to the thumb): help, mode-swap, filter, beam (design D3). The beam toggle
-	 * and the filter/mode commands are only present in My Timetable and outside
-	 * onboarding — mirroring the header gating they replace.
+	 * Build this route's FAB launcher action set for the current context. The
+	 * first action sits closest to the FAB on the thumb arc: beam, filter,
+	 * mode-swap, help. The beam toggle and the filter are only present in My
+	 * Timetable, and the filter only outside onboarding — mirroring the header
+	 * gating they replace.
 	 */
 	private buildFabActions(): FabAction[] {
-		// Order is DOM top→bottom (the panel expands upward, so the last item sits
-		// closest to the thumb): help, mode-swap, filter, beam (design D3).
-		const actions: FabAction[] = [helpAction(() => this.pageHelp?.open())]
+		const actions: FabAction[] = []
+
+		// Filter + beam are My Timetable-only (per the beam/filter specs). Only the
+		// FILTER is additionally suppressed during onboarding (dashboard-artist-filter
+		// spec: "Filter still suppressed during onboarding"); beam is not.
+		if (!this.isAllNearby) {
+			actions.push({
+				id: 'beam',
+				labelKey: 'fabMenu.beam',
+				icon: 'spotlight',
+				kind: 'toggle',
+				isOn: () => this.showBeams,
+				invoke: () => this.toggleBeams(),
+			})
+			if (!this.isOnboarding) {
+				actions.push({
+					id: 'filter',
+					labelKey: 'fabMenu.filter',
+					icon: 'filter',
+					kind: 'command',
+					isOn: () => this.filterBar?.isFilterActive ?? false,
+					invoke: () => this.filterBar?.openSheet(),
+				})
+			}
+		}
 
 		// Mode swap: available in both views (names the destination).
 		actions.push({
@@ -389,29 +411,7 @@ export class DashboardRoute {
 			invoke: () => this.toggleMode(),
 		})
 
-		// Filter + beam are My Timetable-only (per the beam/filter specs). Only the
-		// FILTER is additionally suppressed during onboarding (dashboard-artist-filter
-		// spec: "Filter still suppressed during onboarding"); beam is not.
-		if (!this.isAllNearby) {
-			if (!this.isOnboarding) {
-				actions.push({
-					id: 'filter',
-					labelKey: 'fabMenu.filter',
-					icon: 'filter',
-					kind: 'command',
-					isOn: () => this.filterBar?.isFilterActive ?? false,
-					invoke: () => this.filterBar?.openSheet(),
-				})
-			}
-			actions.push({
-				id: 'beam',
-				labelKey: 'fabMenu.beam',
-				icon: 'spotlight',
-				kind: 'toggle',
-				isOn: () => this.showBeams,
-				invoke: () => this.toggleBeams(),
-			})
-		}
+		actions.push(helpAction(() => this.pageHelp?.open()))
 		return actions
 	}
 

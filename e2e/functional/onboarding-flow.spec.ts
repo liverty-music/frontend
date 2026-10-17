@@ -108,7 +108,7 @@ async function mockRpcRoutes(page: Page): Promise<void> {
 			// won't find them in the artistMap (built from preview UUIDs),
 			// produces `resolved=0`, drops the group, leaves `dateGroups`
 			// empty, and the welcome page falls back to the inline-CTA
-			// path (no `.welcome-scroll-cta` element).
+			// path (no see-preview button).
 			const artists = [
 				'019c8655-7a05-71ef-82b4-a4ac2494e29f',
 				'019c8655-7a05-721d-b0a8-4c11724d5c90',
@@ -341,7 +341,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await page.goto('http://localhost:9000/')
 
 		// Screen 1 shows the scroll-affordance (message-first), not a commit CTA.
-		await expect(page.locator('.welcome-scroll-cta')).toBeVisible({
+		await expect(page.getByTestId('welcome-see-preview')).toBeVisible({
 			timeout: 10_000,
 		})
 		await expect(
@@ -365,7 +365,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		await page.goto('http://localhost:9000/')
 
 		// Tap the scroll affordance to reveal the guided demo below the hero.
-		await page.locator('.welcome-scroll-cta').click()
+		await page.getByTestId('welcome-see-preview').click()
 		await advanceDemoToTimetable(page)
 
 		// The timetable's primary CTA is visible and navigates to Discovery.
@@ -455,7 +455,7 @@ test.describe('Onboarding flow (single-flag model)', () => {
 		).not.toBeAttached()
 
 		// Scroll-affordance button is also absent when there's no Screen 2 to scroll to
-		await expect(page.locator('.welcome-scroll-cta')).not.toBeAttached()
+		await expect(page.getByTestId('welcome-see-preview')).not.toBeAttached()
 	})
 
 	// -------------------------------------------------------------------------

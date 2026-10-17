@@ -1,0 +1,87 @@
+/* The fan app's one text button: `class="[ button ] [ pressable ]"` on a
+   <button> or an <a>, with an optional `data-variant`.
+   - (none)        filled: brand-primary fill, white label — the main action
+   - outlined      transparent with a visible border — secondary and
+                   dismissive actions (cancel, later, back)
+   - danger        red fill — destructive actions
+   - on-container  translucent white fill and white border — a button placed
+                   on a coloured surface (snack bar, banner)
+   Every variant shares the shape, padding and label weight below. The press
+   morph and pressed state layer come from the `pressable` utility, the pending
+   state from the `busy-on-click` attribute. A page keeps its own block class
+   only for layout the button does not own (e.g. `inline-size: 100%`).
+   Icon-only buttons are not text buttons and do not use this block. */
+@layer block {
+	@scope (.button) {
+		:scope {
+			cursor: pointer;
+
+			display: inline-flex;
+			gap: var(--space-3xs);
+			align-items: center;
+			justify-content: center;
+
+			min-block-size: 2.75rem;
+			padding-block: var(--space-2xs);
+			padding-inline: var(--space-m);
+			border: 2px solid transparent;
+			border-radius: var(--radius-button);
+
+			/* White on brand-primary is 3.66:1, so the label is WCAG "large
+			   text" (at least 14pt bold), whose minimum is 3:1. Outfit, the
+			   display fallback, because Righteous has no bold weight. */
+			font-family: Outfit, var(--font-display);
+			font-size: max(var(--step-0), 1.1875rem);
+			font-weight: 700;
+			line-height: var(--leading-tight);
+			color: var(--color-white);
+			text-align: center;
+			text-decoration: none;
+
+			background: var(--color-brand-primary);
+			box-shadow: var(--shadow-button);
+		}
+
+		/* The `pressable` morph, restated here: this block's own radius would
+		   otherwise outrank the utility layer. */
+		:scope:active:not(:disabled) {
+			border-radius: var(--press-morph-radius, var(--md-shape-large-increased));
+		}
+
+		/* Hover and keyboard focus raise the `pressable` state layer. */
+		:scope:focus-visible::after {
+			opacity: var(--md-state-focus);
+		}
+
+		:scope:hover:not(:disabled)::after {
+			opacity: var(--md-state-hover);
+		}
+
+		:scope:disabled {
+			cursor: not-allowed;
+			opacity: 0.5;
+			box-shadow: none;
+		}
+	}
+}
+
+@layer exception {
+	.button[data-variant="outlined"] {
+		border-color: var(--color-border-subtle);
+		color: var(--color-text-primary);
+		background: transparent;
+		box-shadow: none;
+	}
+
+	.button[data-variant="danger"] {
+		background: var(--md-color-error-container);
+		box-shadow: none;
+	}
+
+	.button[data-variant="on-container"] {
+		border-color: color-mix(in oklch, var(--color-white) 62%, transparent);
+		color: var(--color-white);
+		background: color-mix(in oklch, var(--color-white) 18%, transparent);
+		box-shadow: none;
+	}
+}

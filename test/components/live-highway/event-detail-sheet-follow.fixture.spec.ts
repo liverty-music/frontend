@@ -105,7 +105,7 @@ async function render(ev: LiveEvent, isAllNearby: boolean, o: Options = {}) {
 	fixture.component.sheet.open(ev, 'dashboard', isAllNearby)
 	await tasksSettled()
 	const button = () =>
-		fixture.appHost.querySelector<HTMLButtonElement>('.follow-btn')
+		fixture.appHost.querySelector<HTMLButtonElement>('.follow-action')
 	const following = () =>
 		fixture.appHost.querySelector('[data-testid="all-nearby-following"]')
 	return { fixture, followStore, onSignupRequested, button, following }

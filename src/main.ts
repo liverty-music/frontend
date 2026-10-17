@@ -342,6 +342,8 @@ if (!import.meta.env.DEV) {
 		}
 		const snack = new Snack(_pwaI18n.tr('pwa.updateAvailable'), 'info', {
 			duration: Infinity,
+			icon: 'rotate-ccw',
+			attention: true,
 			action: {
 				label: _pwaI18n.tr('pwa.updateAction'),
 				callback: () => updateSW(true),

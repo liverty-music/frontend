@@ -34,31 +34,10 @@
 			color: var(--color-text-secondary);
 		}
 
-		.signup-banner-btn {
+		/* The shared `button` (on-container) owns the look; the banner only
+		   centres it in its column. */
+		.signup-banner-action {
 			align-self: center;
-
-			padding-block: var(--space-3xs);
-			padding-inline: var(--space-xl);
-			border: none;
-			border-radius: var(--radius-button);
-
-			font-family: var(--font-display);
-			font-size: var(--step--1);
-			font-weight: 600;
-			color: var(--color-white);
-
-			background: var(--color-brand-primary);
-
-			transition: opacity 150ms ease-out;
-
-			&:hover,
-			&:focus-visible {
-				opacity: 0.85;
-			}
-
-			&:active {
-				transform: scale(0.98);
-			}
 		}
 
 		@media (prefers-reduced-motion: no-preference) {
@@ -66,8 +45,23 @@
 				animation: banner-enter 400ms ease-out;
 			}
 
-			.signup-banner-btn {
+			.signup-banner-action {
 				animation: cta-glow 2.5s ease-in-out infinite;
+			}
+		}
+
+		/* The CTA's continuous glow pulse (brand-primary, every 2.5s), over the
+		   shared on-container button. */
+		@keyframes cta-glow {
+			0%,
+			100% {
+				box-shadow: 0 0 8px
+					color-mix(in oklch, var(--color-brand-primary) 30%, transparent);
+			}
+
+			50% {
+				box-shadow: 0 0 18px
+					color-mix(in oklch, var(--color-brand-primary) 55%, transparent);
 			}
 		}
 
@@ -80,17 +74,6 @@
 			to {
 				transform: translateY(0);
 				opacity: 1;
-			}
-		}
-
-		@keyframes cta-glow {
-			0%,
-			100% {
-				box-shadow: 0 0 8px oklch(from var(--color-brand-primary) l c h / 30%);
-			}
-
-			50% {
-				box-shadow: 0 0 18px oklch(from var(--color-brand-primary) l c h / 55%);
 			}
 		}
 	}

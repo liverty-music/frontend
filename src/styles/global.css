@@ -132,17 +132,22 @@
 	}
 	/* stylelint-enable cube/prefer-where-in-reset */
 
-	/* Persistent bottom banners (signup / install) sit above the nav. When one
-	   is showing, lift bottom-anchored transient surfaces (the M3 snackbar)
-	   above it via --bottom-banner-clearance so a toast never covers the
-	   banner's CTA. Clearance is banner-specific (signup wraps to ~2 lines +
-	   button, so it is the tallest); 0 when no banner is present. */
-	:root:has(.signup-banner) {
-		--bottom-banner-clearance: 8.5rem;
+	/* While a snack bar is open, the FAB sinks into the navigation bar's notch
+	   so the snack can sit directly above the bar. A flag on :root, because a
+	   rule inside @scope (fab-menu) cannot match :root. */
+	:where(:root:has(.snack-item:popover-open)) {
+		--fab-sunk: 1;
 	}
 
-	:root:has(pwa-install-banner) {
-		--bottom-banner-clearance: 4.5rem;
+	/* While a persistent bottom banner (signup prompt or install banner) is
+	   visible and the FAB is shown, the FAB floats above the banner instead of
+	   sitting in the navigation bar's notch: the bar drops the notch and the
+	   snack bar sits above the FAB. A stopgap until the banners become snack
+	   bars. */
+	:where(
+		:root:has(:is(.signup-banner, .pwa-banner)):has(fab-menu .fab-toggle)
+	) {
+		--fab-floating: 1;
 	}
 
 	/* High contrast: ensure borders and focus rings are visible */

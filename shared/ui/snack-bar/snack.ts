@@ -15,6 +15,19 @@ export interface SnackOptions {
 	 * host translates them with these values.
 	 */
 	params?: Readonly<Record<string, unknown>>
+	/** An `svg-icon` name shown instead of the severity's icon. */
+	icon?: string
+	/**
+	 * Makes the action button glow three times when the snack appears (the
+	 * fan app's update snack). No glow under reduced motion.
+	 */
+	attention?: boolean
+}
+
+const SEVERITY_ICONS: Readonly<Record<SnackSeverity, string>> = {
+	info: 'ticket',
+	warning: 'warning',
+	error: 'x-circle',
 }
 
 export interface SnackHandle {
@@ -37,5 +50,10 @@ export class Snack {
 
 	public get action(): SnackAction | undefined {
 		return this.options?.action
+	}
+
+	/** The leading icon: the snack's own, or the severity's. */
+	public get icon(): string {
+		return this.options?.icon ?? SEVERITY_ICONS[this.severity]
 	}
 }

@@ -165,8 +165,8 @@ test.describe('Page identity follows the displayed route (guest)', () => {
 		await expect(page.locator('settings-route')).toBeVisible()
 		await expect(page.locator('my-artists-route')).toHaveCount(0)
 		await expect(title(page)).toHaveText('Settings')
-		await expect(tab(page, 'settings')).toHaveAttribute('data-active', 'true')
-		await expect(activeTabs(page)).toHaveCount(1)
+		// Settings is not a tab, so no tab is highlighted on it.
+		await expect(activeTabs(page)).toHaveCount(0)
 		// At no point did the header or the tab highlight change.
 		expect(
 			await page.evaluate(

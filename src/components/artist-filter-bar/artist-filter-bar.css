@@ -32,44 +32,6 @@
 			color: var(--color-text-primary);
 		}
 
-		/* ── Clear all button (ghost, beside title) ── */
-		.btn-clear-all {
-			cursor: pointer;
-
-			padding: var(--space-3xs) var(--space-xs);
-			border: 1px solid var(--color-border-subtle);
-			border-radius: var(--radius-full);
-
-			font-size: var(--step--1);
-			color: var(--color-text-muted);
-
-			background: transparent;
-
-			transition:
-				color var(--transition-fast),
-				border-color var(--transition-fast),
-				opacity var(--transition-fast);
-
-			&:disabled {
-				cursor: default;
-				opacity: 0.35;
-			}
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
-
-			&:hover:not(:disabled) {
-				border-color: color-mix(
-					in oklch,
-					var(--color-brand-primary) 40%,
-					transparent
-				);
-				color: var(--color-brand-primary);
-			}
-		}
-
 		/* ── Facet section: heading + chip group ── */
 		.filter-facet {
 			display: flex;
@@ -316,31 +278,6 @@
 		.confirm-row {
 			display: flex;
 			justify-content: flex-end;
-		}
-
-		.btn-confirm {
-			cursor: pointer;
-
-			padding: var(--space-2xs) var(--space-m);
-			border: none;
-			border-radius: var(--radius-button);
-
-			font-size: var(--step--1);
-			font-weight: 600;
-			color: var(--color-white);
-
-			background: var(--color-brand-primary);
-
-			transition: opacity var(--transition-fast);
-
-			&:hover {
-				opacity: 0.85;
-			}
-
-			&:focus-visible {
-				outline: 2px solid var(--color-brand-primary);
-				outline-offset: 2px;
-			}
 		}
 	}
 }
