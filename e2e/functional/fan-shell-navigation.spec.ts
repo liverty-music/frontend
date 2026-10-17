@@ -4,6 +4,7 @@ import {
 	nav,
 	openShell,
 	seedSignedInFan,
+	settle,
 	tabs,
 	tapTab,
 } from '../support/fan-shell'
@@ -97,6 +98,9 @@ test.describe('bottom navigation', () => {
 		await tapTab(page, 'ticket')
 		await page.waitForURL('**/tickets')
 		await expect(page.locator('fab-menu')).toHaveCount(0)
+		// Read the boxes at rest, after the tapped tab's press scale.
+		await page.mouse.move(0, 0)
+		await settle(page, 'bottom-nav-bar')
 		const onTickets = await tabs(page).evaluateAll((els) =>
 			els.map((el) => el.getBoundingClientRect().x),
 		)
