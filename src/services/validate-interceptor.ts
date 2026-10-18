@@ -25,9 +25,19 @@ export const loadSharedValidator: ValidatorLoader = () => {
 /** Runs a callback when the main thread is idle. */
 export type IdleScheduler = (callback: () => void) => void
 
+/**
+ * Upper bound before a scheduled compilation runs even if the page never goes
+ * idle. Without one, `requestIdleCallback` may never fire on a page that keeps
+ * the main thread busy (Discovery's animation loop), leaving the type
+ * unvalidated for the session. Long enough to stay clear of a cold load's
+ * first reveal (seconds on a slow phone); a compilation that has to wait this
+ * long costs one long frame once per request type.
+ */
+const IDLE_COMPILE_TIMEOUT_MS = 10_000
+
 const scheduleIdle: IdleScheduler = (callback) => {
 	if (typeof requestIdleCallback === 'function') {
-		requestIdleCallback(() => callback())
+		requestIdleCallback(() => callback(), { timeout: IDLE_COMPILE_TIMEOUT_MS })
 	} else {
 		setTimeout(callback, 0)
 	}
@@ -44,8 +54,9 @@ const scheduleIdle: IdleScheduler = (callback) => {
  * unvalidated. Compiling a request type's rules (its CEL expressions) costs
  * seconds of main-thread time on a slow phone, so it does not run on the
  * request's path either: the first request of a type passes through and
- * schedules the compilation for an idle moment; later requests of that type
- * are validated. The backend validates every request with the same rules, so
+ * schedules the compilation for an idle moment (at the latest
+ * `IDLE_COMPILE_TIMEOUT_MS` later); requests of that type sent before it
+ * runs pass through too, and later ones are validated. The backend validates every request with the same rules, so
  * a request that slips through early is still rejected authoritatively.
  */
 export const createValidateInterceptor = (
