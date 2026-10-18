@@ -28,7 +28,11 @@ import {
  * during the _swap phase when _isNavigating is still true.
  */
 export class AuthCallbackRoute {
-	public error = ''
+	/**
+	 * Completing sign-in failed and the fan has no session. The page shows
+	 * fixed catalog copy; the error itself goes only to the console log.
+	 */
+	public failed = false
 
 	private readonly authService = resolve(IAuthService)
 	private readonly userStore = resolve(IUserStore)
@@ -169,8 +173,8 @@ export class AuthCallbackRoute {
 			// Hard failure: discard any stored return-to so it can't be replayed by
 			// a later, unrelated successful sign-in.
 			this.authService.takeReturnTo()
-			// Let the component render with the error message
-			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
+			// Let the component render the fixed failure copy.
+			this.failed = true
 			return true
 		}
 	}

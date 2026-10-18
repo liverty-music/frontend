@@ -2,7 +2,8 @@
 	"common": {
 		"dismiss": "閉じる",
 		"loading": "読み込み中",
-		"createAccount": "アカウント作成"
+		"createAccount": "アカウント作成",
+		"retry": "再試行"
 	},
 	"entity": {
 		"concert": {
@@ -265,7 +266,14 @@
 	},
 	"errorBanner": {
 		"copied": "エラー詳細をコピーしました",
-		"reportCooldown": "しばらくお待ちください"
+		"reportCooldown": "しばらくお待ちください",
+		"label": "エラーの詳細",
+		"title": "問題が発生しました",
+		"message": "予期しないエラーが発生しました。ページを再読み込みしてください。",
+		"copy": "詳細をコピー",
+		"report": "GitHub で報告",
+		"dismiss": "閉じる",
+		"reload": "ページを再読み込み"
 	},
 	"auth": {
 		"loginRequired": "ログインが必要です",
@@ -989,6 +997,18 @@
 			"alreadyVerified": "このマイナンバーカードはすでに別のアカウントの本人確認に使われています。",
 			"permissionDenied": "確認情報が一致しませんでした。設定画面からもう一度お試しください。",
 			"generic": "本人確認中にエラーが発生しました。もう一度お試しください。"
+		}
+	},
+	"authCallback": {
+		"verifying": "認証を確認しています…",
+		"failed": "サインインできませんでした。ホームに戻って、もう一度お試しください。",
+		"home": "ホームに戻る"
+	},
+	"payment": {
+		"error": {
+			"cardDetails": "カード情報を確認してください。",
+			"declined": "カードを利用できませんでした。",
+			"failed": "カードを確認できませんでした。もう一度お試しください。"
 		}
 	}
 }

@@ -4,6 +4,7 @@ import { EventSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music
 import { SeriesSchema } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/series_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { timestampFromDate } from '@bufbuild/protobuf/wkt'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResolvedConcert } from '../../../shared/lib/concert/resolve-concert'
@@ -79,6 +80,9 @@ function concert(opts: {
 		artists: [create(ArtistSchema, { name: { value: opts.artist } })],
 	}
 }
+
+const ERROR_MESSAGES_SPEC =
+	'components/infrastructure/admin/web/global/error-messages'
 
 async function build(client: MockClient) {
 	const fixture = createFixture
@@ -204,9 +208,10 @@ describe('ApprovedConcertsRoute', () => {
 		expect(fixture.appHost.textContent).toContain('No published concerts')
 	})
 
-	it('shows the error state when the initial list fails', async () => {
+	it(`@spec ${ERROR_MESSAGES_SPEC} "Failure without an error code"`, async () => {
+		// A fetch that never reaches the server rejects with a TypeError.
 		const client = createMockClient({
-			list: vi.fn().mockRejectedValue(new Error('boom')),
+			list: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
 		})
 		const fixture = await build(client)
 		const vm = routeOf(fixture)
@@ -215,7 +220,10 @@ describe('ApprovedConcertsRoute', () => {
 		expect(fixture.appHost.textContent).toContain(
 			'Could not load published concerts',
 		)
-		expect(fixture.appHost.textContent).toContain('boom')
+		expect(fixture.appHost.textContent).toContain(
+			'Failed to load published concerts.',
+		)
+		expect(fixture.appHost.textContent).not.toContain('Failed to fetch')
 	})
 
 	it('delete is gated behind the confirmation dialog', async () => {
@@ -248,7 +256,7 @@ describe('ApprovedConcertsRoute', () => {
 		expect(vm.groups).toHaveLength(0)
 	})
 
-	it('surfaces a per-row error and keeps the row when delete fails', async () => {
+	it(`@spec ${ERROR_MESSAGES_SPEC} "Code without copy of its own"`, async () => {
 		const client = createMockClient({
 			list: vi.fn().mockResolvedValue([
 				concert({
@@ -260,7 +268,14 @@ describe('ApprovedConcertsRoute', () => {
 					day: 4,
 				}),
 			]),
-			delete: vi.fn().mockRejectedValue(new Error('delete failed')),
+			delete: vi
+				.fn()
+				.mockRejectedValue(
+					new ConnectError(
+						'event_id: value must be a valid UUID',
+						Code.InvalidArgument,
+					),
+				),
 		})
 		const fixture = await build(client)
 		const vm = routeOf(fixture)
@@ -270,8 +285,11 @@ describe('ApprovedConcertsRoute', () => {
 
 		vm.requestDelete(group, series, row)
 		await vm.confirmDelete()
+		await fixture.tasksSettled
 
-		expect(row.actionError).toContain('delete failed')
+		expect(row.actionError).toBe('Delete failed. Try again.')
+		expect(fixture.appHost.textContent).toContain('Delete failed. Try again.')
+		expect(fixture.appHost.textContent).not.toContain('valid UUID')
 		expect(row.busy).toBe(false)
 		expect(series.rows).toHaveLength(1)
 		expect(vm.groups).toHaveLength(1)

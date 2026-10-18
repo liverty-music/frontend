@@ -100,7 +100,7 @@
 		<!-- Stripe Payment Element mounts here (Amex excluded server-side). -->
 		<div class="lottery-entry-payment-element" ref="paymentElementHost"></div>
 
-		<p class="lottery-entry-error" if.bind="cardError" role="alert" data-testid="lottery-entry-card-error">${cardError}</p>
+		<p class="lottery-entry-error" if.bind="cardError" role="alert" data-testid="lottery-entry-card-error" t.bind="cardError"></p>
 		<p class="lottery-entry-error" if.bind="message" role="alert" data-testid="lottery-entry-message" t.bind="message.key" t-params.bind="message.params"></p>
 		<button
 			type="button"

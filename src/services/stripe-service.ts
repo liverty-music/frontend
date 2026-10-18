@@ -5,7 +5,7 @@
 // lottery apply flow), so home and other routes stay Stripe-free. The types are
 // a type-only import (erased at build time — no runtime side effect).
 
-import type { Stripe, StripeElements } from '@stripe/stripe-js'
+import type { Stripe, StripeElements, StripeError } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../config/app-config'
@@ -18,14 +18,44 @@ export const IStripeService = DI.createInterface<IStripeService>(
 export interface IStripeService extends StripeService {}
 
 /**
+ * Catalog key of the copy for a card payment failure, by its kind only: the
+ * card details are incomplete or invalid, the card was declined or could not
+ * be authenticated, anything else. The payment form's own message is never
+ * shown: it follows the browser's language rather than the fan's and is text
+ * the app does not own (the card form shows its field errors in its frame).
+ */
+export type PaymentErrorKey =
+	| 'payment.error.cardDetails'
+	| 'payment.error.declined'
+	| 'payment.error.failed'
+
+/**
+ * Maps a Stripe.js error to its {@link PaymentErrorKey} by its `type`:
+ * `validation_error` (the card details), `card_error` (declines and failed
+ * issuer authentication), anything else or no error.
+ */
+export function paymentErrorKey(
+	error: Pick<StripeError, 'type'> | undefined,
+): PaymentErrorKey {
+	switch (error?.type) {
+		case 'validation_error':
+			return 'payment.error.cardDetails'
+		case 'card_error':
+			return 'payment.error.declined'
+		default:
+			return 'payment.error.failed'
+	}
+}
+
+/**
  * Result of confirming a card authorization (manual-capture PaymentIntent)
  * with Stripe Elements. On success, `cardAuthorizationId` is the confirmed
- * card authorization's id (Stripe's `pi_…`). On failure, `errorMessage` holds
- * the localized (Stripe-provided) reason.
+ * card authorization's id (Stripe's `pi_…`). On failure, `errorKey` is the
+ * catalog key of the copy to show.
  */
 export interface ConfirmCardAuthorizationResult {
 	readonly cardAuthorizationId?: string
-	readonly errorMessage?: string
+	readonly errorKey?: PaymentErrorKey
 }
 
 /**
@@ -144,26 +174,24 @@ export class StripeService {
 	public async createCheckoutCard(
 		stripe: Stripe,
 		elements: StripeElements,
-	): Promise<{ card?: CheckoutCard; errorMessage?: string }> {
+	): Promise<{ card?: CheckoutCard; errorKey?: PaymentErrorKey }> {
 		const submitted = await elements.submit()
 		if (submitted.error) {
-			return {
-				errorMessage:
-					submitted.error.message ?? 'カード情報を確認してください。',
-			}
+			this.logger.warn('Card form submit failed', {
+				type: submitted.error.type,
+				code: submitted.error.code,
+			})
+			return { errorKey: paymentErrorKey(submitted.error) }
 		}
 		const { confirmationToken, error } = await stripe.createConfirmationToken({
 			elements,
 		})
 		if (error || !confirmationToken) {
 			this.logger.warn('Confirmation token creation failed', {
+				type: error?.type,
 				code: error?.code,
 			})
-			return {
-				errorMessage:
-					error?.message ??
-					'カード情報を確認できませんでした。もう一度お試しください。',
-			}
+			return { errorKey: paymentErrorKey(error) }
 		}
 		const card = confirmationToken.payment_method_preview.card
 		return {
@@ -185,7 +213,7 @@ export class StripeService {
 		stripe: Stripe,
 		clientSecret: string,
 		tokenId: string,
-	): Promise<{ errorMessage?: string }> {
+	): Promise<{ errorKey?: PaymentErrorKey }> {
 		const { paymentIntent, error } = await stripe.confirmPayment({
 			clientSecret,
 			confirmParams: { confirmation_token: tokenId },
@@ -193,23 +221,18 @@ export class StripeService {
 		})
 		if (error) {
 			this.logger.warn('Checkout card authorization confirmation failed', {
+				type: error.type,
 				code: error.code,
+				declineCode: error.decline_code,
 			})
-			return {
-				errorMessage:
-					error.message ??
-					'カードを利用できませんでした。別のカードをお試しください。',
-			}
+			return { errorKey: paymentErrorKey(error) }
 		}
 		if (paymentIntent?.status !== 'requires_capture') {
 			this.logger.warn(
 				'Checkout card authorization not in requires_capture after confirm',
 				{ status: paymentIntent?.status },
 			)
-			return {
-				errorMessage:
-					'カードの認証が完了しませんでした。もう一度お試しください。',
-			}
+			return { errorKey: 'payment.error.failed' }
 		}
 		return {}
 	}
@@ -219,8 +242,8 @@ export class StripeService {
 	 * mounted Elements, completing 3DS in-place when required.
 	 * `redirect: 'if_required'` keeps the fan on-page for card payments; only a
 	 * redirect-based method (not offered here) would navigate away. Returns the
-	 * confirmed card authorization's id on success, or a localized error message
-	 * on failure.
+	 * confirmed card authorization's id on success, or the catalog key of the
+	 * failure copy.
 	 */
 	public async confirmCardAuthorization(
 		stripe: Stripe,
@@ -232,18 +255,15 @@ export class StripeService {
 		})
 		if (error) {
 			this.logger.warn('Card authorization confirmation failed', {
+				type: error.type,
 				code: error.code,
+				declineCode: error.decline_code,
 			})
-			return {
-				errorMessage:
-					error.message ?? 'カード認証に失敗しました。もう一度お試しください。',
-			}
+			return { errorKey: paymentErrorKey(error) }
 		}
 		if (!paymentIntent?.id) {
-			return {
-				errorMessage:
-					'カード認証を確認できませんでした。もう一度お試しください。',
-			}
+			this.logger.warn('Card authorization confirmed without a PaymentIntent')
+			return { errorKey: 'payment.error.failed' }
 		}
 		// A successfully confirmed manual-capture authorization is in `requires_capture`.
 		// Any other status (e.g. requires_action / requires_payment_method /
@@ -253,10 +273,7 @@ export class StripeService {
 			this.logger.warn('PaymentIntent not in requires_capture after confirm', {
 				status: paymentIntent.status,
 			})
-			return {
-				errorMessage:
-					'カード認証が完了しませんでした。もう一度お試しください。',
-			}
+			return { errorKey: 'payment.error.failed' }
 		}
 		return { cardAuthorizationId: paymentIntent.id }
 	}

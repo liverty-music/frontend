@@ -1,9 +1,13 @@
-import { I18N } from '@aurelia/i18n'
+import { I18N, I18nConfiguration } from '@aurelia/i18n'
 import type { RouteNode } from '@aurelia/router'
-import { IEventAggregator, Registration } from 'aurelia'
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
+import { CustomElement, IEventAggregator, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ILocalStorage } from '../../src/adapter/storage/local-storage'
 import { StorageKeys } from '../../src/constants/storage-keys'
+import en from '../../src/locales/en/translation.json'
+import ja from '../../src/locales/ja/translation.json'
 import { AuthCallbackRoute } from '../../src/routes/auth-callback/auth-callback-route'
 import { IAuthService } from '../../src/services/auth-service'
 import { GuestMigrationRequested } from '../../src/services/events/guest-migration-requested'
@@ -356,7 +360,7 @@ describe('AuthCallbackRoute', () => {
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(result).toBe('/dashboard')
-			expect(sut.error).toBe('')
+			expect(sut.failed).toBe(false)
 		})
 
 		it('shows error when callback fails and not authenticated', async () => {
@@ -368,7 +372,7 @@ describe('AuthCallbackRoute', () => {
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(result).toBe(true)
-			expect(sut.error).toBe('Login failed: auth failed')
+			expect(sut.failed).toBe(true)
 		})
 
 		it('does not invoke explicit Create when email is missing even with guest home', async () => {
@@ -396,7 +400,7 @@ describe('AuthCallbackRoute', () => {
 			const result = await sut.canLoad({}, {} as RouteNode)
 
 			expect(result).toBe(true)
-			expect(sut.error).toBe('Login failed: server error')
+			expect(sut.failed).toBe(true)
 		})
 
 		it('delegates onboarding completion to merge service (not call complete directly)', async () => {
@@ -486,5 +490,64 @@ describe('AuthCallbackRoute', () => {
 				expect(result).toBe('/dashboard')
 			})
 		})
+	})
+})
+
+describe('AuthCallbackRoute page', () => {
+	async function render(lng: 'ja' | 'en', error: Error) {
+		const auth = createMockAuth({ isAuthenticated: false })
+		auth.handleCallback = vi.fn().mockRejectedValue(error)
+		const fixture = await createFixture
+			.html('<auth-callback-route></auth-callback-route>')
+			.deps(
+				I18nConfiguration.customize((options) => {
+					options.initOptions = {
+						lng,
+						fallbackLng: 'ja',
+						resources: { ja: { translation: ja }, en: { translation: en } },
+					}
+				}),
+				Registration.instance(IAuthService, auth),
+				Registration.instance(IUserStore, createMockUserStore()),
+				Registration.instance(IOnboardingService, createMockOnboarding()),
+				AuthCallbackRoute,
+			)
+			.build().started
+		const host = fixture.appHost.querySelector('auth-callback-route')
+		if (!host) throw new Error('auth-callback-route did not render')
+		const vm = CustomElement.for<AuthCallbackRoute>(host).viewModel
+		await vm.canLoad({}, {} as RouteNode)
+		await tasksSettled()
+		return { fixture, host }
+	}
+
+	// @spec components/infrastructure/fan/web/global/error-messages "Sign-in callback fails"
+	it('shows the fixed failure copy and the link home, not the error text', async () => {
+		const { fixture, host } = await render(
+			'ja',
+			new Error('No matching state found in storage'),
+		)
+
+		expect(host.querySelector('.callback-error')?.textContent).toBe(
+			'サインインできませんでした。ホームに戻って、もう一度お試しください。',
+		)
+		expect(host.querySelector('a.callback-home-link')?.textContent).toBe(
+			'ホームに戻る',
+		)
+		expect(host.textContent).not.toContain('No matching state')
+		await fixture.stop(true)
+	})
+
+	it('shows the copy in English for a fan using English', async () => {
+		const { fixture, host } = await render('en', new Error('invalid_grant'))
+
+		expect(host.querySelector('.callback-error')?.textContent).toBe(
+			'Could not sign in. Return home and try again.',
+		)
+		expect(host.querySelector('a.callback-home-link')?.textContent).toBe(
+			'Return home',
+		)
+		expect(host.textContent).not.toContain('invalid_grant')
+		await fixture.stop(true)
 	})
 })

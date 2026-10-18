@@ -59,8 +59,8 @@ import {
 	IAnalyticsService,
 	type IAnalyticsService as IAnalyticsServiceType,
 } from './lib/analytics/analytics-service'
-import { FanI18nConfiguration } from './lib/i18n/fan-i18n-configuration'
 import { IConsentService } from './lib/consent/consent-service'
+import { FanI18nConfiguration } from './lib/i18n/fan-i18n-configuration'
 import { PUSH_SUBSCRIPTION_CHANGED_MESSAGE } from './lib/push/push-renewal'
 import { Events } from './services/analytics-events'
 import { IArtistBubbleStore } from './services/artist-bubble-store'

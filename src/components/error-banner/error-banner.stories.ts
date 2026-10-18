@@ -1,4 +1,3 @@
-import { I18N } from '@aurelia/i18n'
 import {
 	defineAureliaStory,
 	type Meta,
@@ -12,17 +11,15 @@ import {
 } from '../../services/error-boundary-service'
 import { ErrorBanner } from './error-banner'
 
-// Minimal I18N stand-in: ErrorBanner only calls `i18n.tr(key)`. Registering it
-// directly avoids pulling the full I18nConfiguration into the story container
-// (the component resolves I18N at construction time via `resolve(I18N)`).
-const i18nMock = { tr: (key: string) => key } as unknown as I18N
+// The banner's text comes from the real catalog (ja), which the shared story
+// annotations register, so the stories render what a fan sees.
 
 // A stand-in error the banner renders. ErrorBanner reads `currentError`
 // (drives the bottom-sheet open) plus report/URL helpers on the service.
 function makeError(overrides: Partial<AppError> = {}): AppError {
 	return {
 		id: 'ERR-12ab34cd',
-		message: '予期しないエラーが発生しました',
+		message: "Cannot read properties of undefined (reading 'id')",
 		...overrides,
 	} as AppError
 }
@@ -49,7 +46,8 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// An active error opens the sheet and shows the message + error id.
+// An active error opens the sheet and shows the fixed copy + error id, never
+// the captured error's message.
 export const WithError = {
 	render: () =>
 		defineAureliaStory({
@@ -59,16 +57,21 @@ export const WithError = {
 					IErrorBoundaryService,
 					mockErrorBoundary(makeError()),
 				),
-				Registration.instance(I18N, i18nMock),
 			],
 			register: [ErrorBanner],
 		}),
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
+		await expect(canvas.getByText('問題が発生しました')).toBeInTheDocument()
 		await expect(
-			canvas.getByText('予期しないエラーが発生しました'),
+			canvas.getByText(
+				'予期しないエラーが発生しました。ページを再読み込みしてください。',
+			),
 		).toBeInTheDocument()
 		await expect(canvas.getByText('ERR-12ab34cd')).toBeInTheDocument()
+		await expect(
+			canvas.queryByText(/Cannot read properties/),
+		).not.toBeInTheDocument()
 	},
 } satisfies Story
 
@@ -80,10 +83,7 @@ export const DismissInvokesService = {
 	render: () =>
 		defineAureliaStory({
 			Component: ErrorBanner,
-			items: [
-				Registration.instance(IErrorBoundaryService, dismissService),
-				Registration.instance(I18N, i18nMock),
-			],
+			items: [Registration.instance(IErrorBoundaryService, dismissService)],
 			register: [ErrorBanner],
 		}),
 	play: async ({ canvasElement }) => {
@@ -92,7 +92,7 @@ export const DismissInvokesService = {
 		// and break `toHaveBeenCalledOnce`.
 		dismissService.dismiss.mockClear()
 		const canvas = within(canvasElement)
-		await userEvent.click(canvas.getByRole('button', { name: 'Dismiss' }))
+		await userEvent.click(canvas.getByRole('button', { name: '閉じる' }))
 		await expect(dismissService.dismiss).toHaveBeenCalledOnce()
 	},
 } satisfies Story

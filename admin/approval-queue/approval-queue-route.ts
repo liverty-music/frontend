@@ -10,6 +10,7 @@ import { type Timestamp, timestampDate } from '@bufbuild/protobuf/wkt'
 import { ILogger, resolve } from 'aurelia'
 import { sanitizeUrl } from '../../shared/utils/sanitize-url'
 import { IConcertCandidateClient } from '../services/concert-candidate-client'
+import { toUserMessage } from '../services/error-message'
 
 /** Coarse lifecycle phase for the initial list fetch. */
 type LoadPhase = 'loading' | 'ready' | 'error'
@@ -253,10 +254,7 @@ export class ApprovalQueueRoute {
 			this.groups = groupQueueByArtistAndSeries(pending)
 			this.phase = 'ready'
 		} catch (err) {
-			this.loadError =
-				err instanceof Error
-					? err.message
-					: 'Failed to load the approval queue.'
+			this.loadError = toUserMessage(err, 'Failed to load the approval queue.')
 			this.phase = 'error'
 			this.logger.error('Failed to load pending concerts', err)
 		}
@@ -290,8 +288,7 @@ export class ApprovalQueueRoute {
 			}
 			this.removeRow(group, series, row)
 		} catch (err) {
-			row.actionError =
-				err instanceof Error ? err.message : 'Approval failed. Try again.'
+			row.actionError = toUserMessage(err, 'Approval failed. Try again.')
 			row.busy = false
 			this.logger.error('Approve failed', {
 				concertCandidateId: row.concertCandidateId,
@@ -330,8 +327,10 @@ export class ApprovalQueueRoute {
 			this.removeRow(active.group, active.series, active.row)
 			this.closeConflict()
 		} catch (err) {
-			this.conflictError =
-				err instanceof Error ? err.message : 'Reconciliation failed. Try again.'
+			this.conflictError = toUserMessage(
+				err,
+				'Reconciliation failed. Try again.',
+			)
 			this.logger.error('Conflict resolution failed', {
 				concertCandidateId: active.row.concertCandidateId,
 				resolution,
@@ -378,8 +377,7 @@ export class ApprovalQueueRoute {
 			await this.client.reject(row.concertCandidateId, reason)
 			this.removeRow(group, series, row)
 		} catch (err) {
-			row.actionError =
-				err instanceof Error ? err.message : 'Rejection failed. Try again.'
+			row.actionError = toUserMessage(err, 'Rejection failed. Try again.')
 			row.busy = false
 			this.logger.error('Reject failed', {
 				concertCandidateId: row.concertCandidateId,

@@ -166,7 +166,8 @@ describe('OrganizersRoute', () => {
 			const vm = routeOf(fixture)
 
 			expect(vm.phase).toBe('error')
-			expect(vm.loadError).toContain('boom')
+			expect(vm.loadError).toBe('Failed to load organizers.')
+			expect(fixture.appHost.textContent).not.toContain('boom')
 			expect(fixture.appHost.textContent).toContain('Could not load organizers')
 		})
 	})
@@ -249,12 +250,15 @@ describe('OrganizersRoute', () => {
 			expect(fixture.appHost.textContent).toContain('Short name: xx-records')
 		})
 
-		it('maps INVALID_ARGUMENT to a user-facing create error', async () => {
+		it(`@spec ${ROUTE_SPEC} "Owner email not accepted"`, async () => {
 			const client = createMockOrganizerClient({
 				create: vi
 					.fn()
 					.mockRejectedValue(
-						new ConnectError('name too long', Code.InvalidArgument),
+						new ConnectError(
+							'owner email was rejected by the identity provider (invalid_argument)',
+							Code.InvalidArgument,
+						),
 					),
 			})
 			const fixture = await build(client, createMockSearchClient())
@@ -264,12 +268,42 @@ describe('OrganizersRoute', () => {
 			vm.newShortName = 'xx-records'
 			vm.newOwnerEmail = 'a@b.co'
 			await vm.createOrganizer()
+			await fixture.tasksSettled
 
-			expect(vm.createError).toContain('name too long')
+			expect(vm.createError).toBe(
+				'The sign-in service did not accept this owner email. Check it or use a different address.',
+			)
+			expect(fixture.appHost.textContent).toContain(vm.createError)
+			expect(fixture.appHost.textContent).not.toContain('identity provider')
+			// The form keeps its values so the admin can correct the email.
+			expect(vm.newOwnerEmail).toBe('a@b.co')
 			expect(vm.creating).toBe(false)
 		})
 
-		it('maps ALREADY_EXISTS on create to the short-name-in-use message', async () => {
+		it(`@spec ${ROUTE_SPEC} "Create fails otherwise"`, async () => {
+			const client = createMockOrganizerClient({
+				create: vi
+					.fn()
+					.mockRejectedValue(
+						new ConnectError(
+							'provisioning is not finished (failed_precondition)',
+							Code.FailedPrecondition,
+						),
+					),
+			})
+			const fixture = await build(client, createMockSearchClient())
+			const vm = routeOf(fixture)
+
+			vm.newName = 'XX Records'
+			vm.newShortName = 'xx-records'
+			vm.newOwnerEmail = 'owner@example.com'
+			await vm.createOrganizer()
+
+			expect(vm.createError).toBe('Failed to create the organizer.')
+			expect(vm.createError).not.toContain('deactivated')
+		})
+
+		it(`@spec ${ROUTE_SPEC} "Short name already used"`, async () => {
 			const client = createMockOrganizerClient({
 				create: vi
 					.fn()
@@ -323,7 +357,7 @@ describe('OrganizersRoute', () => {
 			await vm.select(vm.organizers[0])
 
 			expect(vm.detailPhase).toBe('error')
-			expect(vm.detailError).toContain('roster boom')
+			expect(vm.detailError).toBe('Failed to load the roster.')
 		})
 	})
 
@@ -396,7 +430,7 @@ describe('OrganizersRoute', () => {
 
 			await vm.disassociate(vm.artists[0])
 
-			expect(vm.associateError).toContain('remove boom')
+			expect(vm.associateError).toBe('Failed to remove the artist.')
 			expect(vm.artists).toHaveLength(1)
 		})
 	})
@@ -498,7 +532,7 @@ describe('OrganizersRoute', () => {
 			vm.onSearchInput()
 			await vi.advanceTimersByTimeAsync(300)
 
-			expect(vm.searchError).toContain('search boom')
+			expect(vm.searchError).toBe('Artist search failed.')
 			expect(vm.searching).toBe(false)
 		})
 	})
@@ -902,8 +936,11 @@ describe('OrganizersRoute status and lifecycle', () => {
 			expect(vm.organizers.map((o) => o.id)).toContain('o2')
 			expect(vm.selected?.id).toBe('o2')
 			const detail = fixture.appHost.querySelector('.organizers-detail')
-			expect(detail?.textContent).toContain('This organizer cannot be deleted:')
-			expect(detail?.textContent).toContain('an order that is not refunded')
+			expect(vm.deleteError).toBe(
+				'This organizer cannot be deleted while it has an order that is not refunded, a settlement that is not reversed, or a payout account.',
+			)
+			expect(detail?.textContent).toContain(vm.deleteError)
+			expect(detail?.textContent).not.toContain('an event of the organizer')
 		})
 
 		it(`@spec ${ROUTE_SPEC} "Delete fails otherwise"`, async () => {
@@ -920,12 +957,12 @@ describe('OrganizersRoute status and lifecycle', () => {
 
 			expect(vm.organizers.map((o) => o.id)).toContain('o2')
 			expect(vm.selected?.id).toBe('o2')
-			expect(vm.deleteError).toContain('try later')
-			expect(vm.deleteError).not.toContain('cannot be deleted')
-			expect(
-				fixture.appHost.querySelector('.organizers-detail [role="alert"]')
-					?.textContent,
-			).toContain('try later')
+			expect(vm.deleteError).toBe('Failed to delete the organizer.')
+			const alert = fixture.appHost.querySelector(
+				'.organizers-detail [role="alert"]',
+			)?.textContent
+			expect(alert).toContain('Failed to delete the organizer.')
+			expect(alert).not.toContain('try later')
 		})
 	})
 })

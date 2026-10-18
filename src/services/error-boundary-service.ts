@@ -154,7 +154,7 @@ ${breadcrumbLines || '_No breadcrumbs recorded_'}
 			new URLSearchParams({ title, labels: 'bug', body: '' }).toString().length
 
 		if (body.length > maxBodyLength) {
-			body = `${body.slice(0, maxBodyLength - 40)}\n\n_(truncated — use "Copy Details" for full report)_`
+			body = `${body.slice(0, maxBodyLength - 40)}\n\n_(truncated — use "Copy details" for full report)_`
 		}
 
 		const params = new URLSearchParams({

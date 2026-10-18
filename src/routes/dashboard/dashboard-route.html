@@ -50,7 +50,6 @@
   <inline-error
     if.bind="loadError"
     message.bind="i18n.tr('dashboard.error.load')"
-    error.bind="loadError"
     retry-action.bind="() => loadData()"
   ></inline-error>
 
@@ -92,7 +91,6 @@
   <inline-error
     if.bind="allNearbyError"
     message.bind="i18n.tr('dashboard.error.load')"
-    error.bind="allNearbyError"
     retry-action.bind="() => loadAllNearby()"
   ></inline-error>
 

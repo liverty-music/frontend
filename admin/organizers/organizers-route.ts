@@ -2,12 +2,13 @@ import { ILogger, resolve } from 'aurelia'
 import { EMAIL_MAX_LENGTH, emailProblem } from '../../shared/utils/email'
 import { isOrganizerShortName } from '../../shared/utils/organizer-short-name'
 import { type Artist, IArtistClient } from '../services/artist-client'
+import { toUserMessage } from '../services/error-message'
 import { IOrganizerClient, type Organizer } from '../services/organizer-client'
 import {
-	ARTIST_ALREADY_REPRESENTED,
-	SHORT_NAME_IN_USE,
+	CREATE_OVERRIDES,
+	ROSTER_OVERRIDES,
 	toDeleteMessage,
-	toUserMessage,
+	toOrganizerMessage,
 } from './organizer-error-message'
 import {
 	isOrganizerDeactivated,
@@ -223,7 +224,7 @@ export class OrganizersRoute {
 			this.createError = toUserMessage(
 				err,
 				'Failed to create the organizer.',
-				SHORT_NAME_IN_USE,
+				CREATE_OVERRIDES,
 			)
 			this.logger.error('Create organizer failed', err)
 		} finally {
@@ -292,7 +293,7 @@ export class OrganizersRoute {
 			// now-empty roster is reflected.
 			await this.loadArtists()
 		} catch (err) {
-			this.deactivateError = toUserMessage(
+			this.deactivateError = toOrganizerMessage(
 				err,
 				'Failed to deactivate the organizer.',
 			)
@@ -375,7 +376,11 @@ export class OrganizersRoute {
 			const idx = this.artists.findIndex((a) => a.id === artist.id)
 			if (idx !== -1) this.artists.splice(idx, 1)
 		} catch (err) {
-			this.associateError = toUserMessage(err, 'Failed to remove the artist.')
+			this.associateError = toOrganizerMessage(
+				err,
+				'Failed to remove the artist.',
+				ROSTER_OVERRIDES,
+			)
 			this.logger.error('Disassociate artist failed', {
 				artistId: artist.id,
 				err,
@@ -437,10 +442,10 @@ export class OrganizersRoute {
 			const idx = this.searchResults.findIndex((a) => a.id === artist.id)
 			if (idx !== -1) this.searchResults.splice(idx, 1)
 		} catch (err) {
-			this.associateError = toUserMessage(
+			this.associateError = toOrganizerMessage(
 				err,
 				'Failed to associate the artist.',
-				ARTIST_ALREADY_REPRESENTED,
+				ROSTER_OVERRIDES,
 			)
 			this.logger.error('Associate artist failed', {
 				artistId: artist.id,

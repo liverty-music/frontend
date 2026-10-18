@@ -1,9 +1,11 @@
 <import from="./error-banner.css"></import>
 
-<bottom-sheet open.to-view="errorBoundary.currentError" dismissable.bind="false" aria-label="Error details">
+<bottom-sheet open.to-view="errorBoundary.currentError" dismissable.bind="false" t="[aria-label]errorBanner.label">
   <section class="error-content">
-    <h2 class="error-title">Something went wrong</h2>
-    <p class="error-message">${errorBoundary.currentError?.message}</p>
+    <h2 class="error-title" t="errorBanner.title"></h2>
+    <!-- Fixed copy: the captured error's message stays in the copied details,
+         the report and the console log (spec global/error-banner). -->
+    <p class="error-message" t="errorBanner.message"></p>
 
     <div class="error-id-box">
       <span class="error-id">${errorBoundary.currentError?.id}</span>
@@ -14,29 +16,25 @@
         click.trigger="copyErrorDetails()"
         class="[ button ] [ pressable ]"
         data-variant="outlined"
-      >
-        Copy Details
-      </button>
+        t="errorBanner.copy"
+      ></button>
       <button
         click.trigger="reportToGitHub()"
         class="[ button ] [ pressable ]"
         data-variant="outlined"
-      >
-        Report to GitHub
-      </button>
+        t="errorBanner.report"
+      ></button>
       <button
         click.trigger="dismiss()"
         class="[ button ] [ pressable ]"
         data-variant="outlined"
-      >
-        Dismiss
-      </button>
+        t="errorBanner.dismiss"
+      ></button>
       <button
         click.trigger="reload()"
         class="[ button ] [ pressable ]"
-      >
-        Reload Page
-      </button>
+        t="errorBanner.reload"
+      ></button>
     </footer>
   </section>
 </bottom-sheet>

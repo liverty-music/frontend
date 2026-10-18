@@ -1,13 +1,12 @@
 <import from="./auth-callback-route.css"></import>
 
 <main class="[ organizer-callback-layout ]">
-  <div if.bind="!error" class="organizer-callback-loading" role="status">
+  <div if.bind="!failed" class="organizer-callback-loading" role="status">
     <circular-progress label.bind="'authCallback.verifying' & t"></circular-progress>
     <p class="organizer-callback-status">${'authCallback.verifying' & t}</p>
   </div>
-  <section if.bind="error" class="organizer-callback-error" role="alert">
+  <section if.bind="failed" class="organizer-callback-error" role="alert">
     <p>${'authCallback.failed' & t}</p>
-    <p class="organizer-callback-detail">${error}</p>
   </section>
-  <console-button if.bind="error" variant="tonal" href.bind="landingHref">${'authCallback.retry' & t}</console-button>
+  <console-button if.bind="failed" variant="tonal" href.bind="landingHref">${'authCallback.retry' & t}</console-button>
 </main>
