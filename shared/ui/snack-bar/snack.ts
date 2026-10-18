@@ -15,8 +15,11 @@ export interface SnackOptions {
 	 * host translates them with these values.
 	 */
 	params?: Readonly<Record<string, unknown>>
-	/** An `svg-icon` name shown instead of the severity's icon. */
-	icon?: string
+	/**
+	 * An `svg-icon` name shown instead of the severity's icon, or `null` for
+	 * no leading icon (the fan app's update snack).
+	 */
+	icon?: string | null
 	/**
 	 * Makes the action button glow three times when the snack appears (the
 	 * fan app's update snack). No glow under reduced motion.
@@ -52,8 +55,10 @@ export class Snack {
 		return this.options?.action
 	}
 
-	/** The leading icon: the snack's own, or the severity's. */
+	/** The leading icon: the snack's own, the severity's, or '' for none. */
 	public get icon(): string {
-		return this.options?.icon ?? SEVERITY_ICONS[this.severity]
+		const icon = this.options?.icon
+		if (icon === null) return ''
+		return icon ?? SEVERITY_ICONS[this.severity]
 	}
 }

@@ -92,7 +92,6 @@ describe('SnackBar', () => {
 			expect(sut.snacks[0].icon).toBe('warning')
 		})
 
-		// @spec components/infrastructure/fan/web/global/snack-bar "Leading icon depicts a refresh"
 		it('shows a custom icon instead of the severity icon', () => {
 			sut.attaching()
 			subscribeHandler?.(
@@ -103,6 +102,16 @@ describe('SnackBar', () => {
 			)
 
 			expect(sut.snacks[0].icon).toBe('rotate-ccw')
+		})
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "No leading icon"
+		it('shows no icon when the snack asks for none', () => {
+			sut.attaching()
+			subscribeHandler?.(
+				new Snack('Update available', 'info', { duration: 3000, icon: null }),
+			)
+
+			expect(sut.snacks[0].icon).toBe('')
 		})
 
 		it('carries the attention flag to the shown snack', () => {

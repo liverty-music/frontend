@@ -672,3 +672,43 @@ test.describe('Snack motion from the bottom edge', () => {
 		expect(ends.toOpacity).toBe(0)
 	})
 })
+
+test.describe('The update snack at a narrow width', () => {
+	test.use({ viewport: { width: 360, height: 780 }, locale: 'ja-JP' })
+	test.describe.configure({ timeout: 60_000 })
+
+	test('keeps its message on one line next to the compact action', async ({
+		page,
+	}) => {
+		await bootSignedIn(page, 'none')
+		await page.waitForFunction(
+			() =>
+				typeof (window as unknown as Record<string, unknown>)
+					.__lm_publishSnack === 'function',
+		)
+		await page.evaluate(() => {
+			const publish = (window as unknown as Record<string, unknown>)
+				.__lm_publishSnack as (
+				m: string,
+				s: string,
+				d: number,
+				o: object,
+			) => void
+			publish('新しいバージョンがあります', 'info', 60_000, {
+				icon: null,
+				attention: true,
+				actionLabel: '更新',
+			})
+		})
+		await openSnackBottom(page)
+
+		await expect(page.locator('.snack-item .snack-icon')).toHaveCount(0)
+		const lines = await page.locator('.snack-message').evaluate((el) => {
+			const range = document.createRange()
+			range.selectNodeContents(el)
+			return new Set([...range.getClientRects()].map((r) => Math.round(r.top)))
+				.size
+		})
+		expect(lines).toBe(1)
+	})
+})

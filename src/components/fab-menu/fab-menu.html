@@ -47,6 +47,11 @@
   t="[aria-label]fabMenu.panelAriaLabel"
   toggle.trigger="onPanelToggle($event)"
 >
+  <!-- Full-screen scrim inside the panel: a tap outside the arc lands here and
+       only closes the arc. (A popover's own ::backdrop lets that tap through to
+       the page underneath.) Hidden from assistive technology; Escape and the
+       FAB close the arc for them. -->
+  <div class="fab-scrim" aria-hidden="true" click.trigger="dismiss()"></div>
   <ul class="fab-list">
     <li
       repeat.for="action of fabMenu.actions"

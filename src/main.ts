@@ -313,10 +313,20 @@ async function bootstrap(): Promise<void> {
 			message: string,
 			severity: string,
 			durationMs: number,
+			options?: {
+				icon?: string | null
+				attention?: boolean
+				actionLabel?: string
+			},
 		) => {
 			ea.publish(
 				new Snack(message, severity as 'info' | 'warning' | 'error', {
 					duration: durationMs,
+					icon: options?.icon,
+					attention: options?.attention,
+					action: options?.actionLabel
+						? { label: options.actionLabel, callback: () => {} }
+						: undefined,
 				}),
 			)
 		}
@@ -342,7 +352,7 @@ if (!import.meta.env.DEV) {
 		}
 		const snack = new Snack(_pwaI18n.tr('pwa.updateAvailable'), 'info', {
 			duration: Infinity,
-			icon: 'rotate-ccw',
+			icon: null,
 			attention: true,
 			action: {
 				label: _pwaI18n.tr('pwa.updateAction'),

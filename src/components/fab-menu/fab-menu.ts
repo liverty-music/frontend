@@ -68,6 +68,15 @@ export class FabMenu {
 		const open = event.newState === 'open'
 		this.isOpen = open
 		if (open) {
+			// The panel entered the top layer above the FAB; re-show the FAB so it
+			// sits above the panel's scrim and stays the visible, tappable close
+			// control. Hiding a manual popover leaves the auto panel open.
+			try {
+				this.fabButton.hidePopover()
+				this.fabButton.showPopover()
+			} catch {
+				// Not shown (detached).
+			}
 			// Re-read every item's isOn() (e.g. the filter's active state may have
 			// changed while the panel was closed).
 			this.signaler.dispatchSignal(FAB_MENU_SIGNAL)
@@ -78,6 +87,15 @@ export class FabMenu {
 		} else {
 			// Esc / light-dismiss / FAB re-tap → return focus to the FAB.
 			this.fabButton.focus()
+		}
+	}
+
+	/** A tap on the scrim closes the arc and nothing else. */
+	public dismiss(): void {
+		try {
+			this.panel.hidePopover()
+		} catch {
+			// Already hidden.
 		}
 	}
 

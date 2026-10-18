@@ -6,7 +6,10 @@
    - danger        red fill — destructive actions
    - on-container  translucent white fill and white border — a button placed
                    on a coloured surface (snack bar, banner)
-   Every variant shares the shape, padding and label weight below. The press
+   Every variant shares the shape, padding and label weight below. A surface
+   that needs a compact button (the snack bar's action) sets the size hooks
+   --button-min-size, --button-padding-block, --button-padding-inline and
+   --button-font-size on it; the radius and weight stay shared. The press
    morph and pressed state layer come from the `pressable` utility, the pending
    state from the `busy-on-click` attribute. A page keeps its own block class
    only for layout the button does not own (e.g. `inline-size: 100%`).
@@ -21,9 +24,9 @@
 			align-items: center;
 			justify-content: center;
 
-			min-block-size: 2.75rem;
-			padding-block: var(--space-2xs);
-			padding-inline: var(--space-m);
+			min-block-size: var(--button-min-size, 2.75rem);
+			padding-block: var(--button-padding-block, var(--space-2xs));
+			padding-inline: var(--button-padding-inline, var(--space-m));
 			border: 2px solid transparent;
 			border-radius: var(--radius-button);
 
@@ -31,7 +34,7 @@
 			   text" (at least 14pt bold), whose minimum is 3:1. Outfit, the
 			   display fallback, because Righteous has no bold weight. */
 			font-family: Outfit, var(--font-display);
-			font-size: max(var(--step-0), 1.1875rem);
+			font-size: var(--button-font-size, max(var(--step-0), 1.1875rem));
 			font-weight: 700;
 			line-height: var(--leading-tight);
 			color: var(--color-white);
