@@ -101,8 +101,9 @@ export class DnaOrbCanvas {
 	// every render frame per bubble. Survives the ghost→real reference swap.
 	private readonly hueByArtist = new Map<string, number>()
 
-	// Label layout per `${name}|${radius}`: the shrink-and-wrap loop measures
-	// text many times, so it runs once per name and drawn radius, not per frame.
+	// Label layout per `${name}|${radius}` (the bubble's full radius): the
+	// shrink-and-wrap loop measures text many times, so it runs once per bubble,
+	// not per frame. Keying on the drawn radius missed on every spawn frame.
 	private readonly labelLayouts = new Map<string, LabelLayout>()
 
 	// Performance monitoring
@@ -695,7 +696,7 @@ export class DnaOrbCanvas {
 				1,
 				(opacity - LABEL_OPACITY_THRESHOLD) / 0.45,
 			)
-			this.renderBubbleText(artistName, x, y, r)
+			this.renderBubbleText(artistName, x, y, radius, scale)
 			this.ctx.globalAlpha = opacity
 		}
 
@@ -714,11 +715,18 @@ export class DnaOrbCanvas {
 		this.ctx.restore()
 	}
 
+	/**
+	 * Draw a bubble's label laid out for its full `radius`. While the bubble
+	 * spawns (`scale` ≠ 1) the same layout is drawn scaled about the center, so
+	 * the label is laid out once per bubble instead of once per spawn frame;
+	 * at full size it is drawn unscaled, pixel for pixel as laid out.
+	 */
 	private renderBubbleText(
 		name: string,
 		cx: number,
 		cy: number,
 		radius: number,
+		scale: number,
 	): void {
 		const layout = this.labelLayout(name, radius)
 
@@ -727,15 +735,24 @@ export class DnaOrbCanvas {
 		this.ctx.textBaseline = 'middle'
 		this.ctx.font = layout.font
 
+		const scaled = scale !== 1
+		if (scaled) {
+			this.ctx.save()
+			this.ctx.translate(cx, cy)
+			this.ctx.scale(scale, scale)
+		}
+		const ox = scaled ? 0 : cx
+		const oy = scaled ? 0 : cy
 		const { lines, lineHeight } = layout
 		const usableWidth = radius * 1.6
 		for (let i = 0; i < lines.length; i++) {
 			const offsetY = lineHeight * (i - (lines.length - 1) / 2)
-			this.ctx.fillText(lines[i], cx, cy + offsetY, usableWidth)
+			this.ctx.fillText(lines[i], ox, oy + offsetY, usableWidth)
 		}
+		if (scaled) this.ctx.restore()
 	}
 
-	/** Cached `computeLabelLayout`, keyed by name and exact drawn radius. */
+	/** Cached `computeLabelLayout`, keyed by name and full radius. */
 	private labelLayout(name: string, radius: number): LabelLayout {
 		const key = `${name}|${radius}`
 		const cached = this.labelLayouts.get(key)
