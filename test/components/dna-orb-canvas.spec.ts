@@ -56,6 +56,9 @@ function createMockCanvasContext(): CanvasRenderingContext2D {
 		lineTo: vi.fn(),
 		setTransform: vi.fn(),
 		setLineDash: vi.fn(),
+		translate: vi.fn(),
+		scale: vi.fn(),
+		measureText: vi.fn((t: string) => ({ width: [...t].length * 8 })),
 		createRadialGradient: vi.fn(() => ({
 			addColorStop: vi.fn(),
 		})),
@@ -277,6 +280,53 @@ describe('DnaOrbCanvas', () => {
 			]
 			expect(target.map((p) => p.artist.id)).toEqual(['a'])
 			expect(opts.keepGhosts).toBe(true)
+		})
+	})
+
+	describe('bubble label layout', () => {
+		function spawningBubble(scale: number) {
+			return {
+				body: { position: { x: 120, y: 80 } },
+				artist: makeArtist('a1', 'Little Glee Monster'),
+				radius: 40,
+				scale,
+				opacity: 0.9,
+				isSpawning: scale !== 1,
+				spawnProgress: 0.9,
+				isFadingOut: false,
+				fadeOutProgress: 0,
+			}
+		}
+
+		it('lays a label out once per bubble, not on every spawn frame', () => {
+			;(sut as any).ctx = mockCtx
+			const measure = mockCtx.measureText as ReturnType<typeof vi.fn>
+
+			;(sut as any).renderBubble(spawningBubble(0.82), false)
+			const afterFirst = measure.mock.calls.length
+			for (const scale of [0.9, 1.04, 1.08, 1.02, 1]) {
+				;(sut as any).renderBubble(spawningBubble(scale), false)
+			}
+
+			expect(afterFirst).toBeGreaterThan(0)
+			expect(measure.mock.calls.length).toBe(afterFirst)
+			expect((sut as any).labelLayouts.size).toBe(1)
+		})
+
+		it('draws the label scaled about the center while spawning and unscaled at full size', () => {
+			;(sut as any).ctx = mockCtx
+			const fillText = mockCtx.fillText as ReturnType<typeof vi.fn>
+
+			;(sut as any).renderBubble(spawningBubble(0.9), false)
+			expect(mockCtx.translate).toHaveBeenCalledWith(120, 80)
+			expect(mockCtx.scale).toHaveBeenCalledWith(0.9, 0.9)
+			expect(fillText.mock.calls.every((c) => c[1] === 0)).toBe(true)
+
+			fillText.mockClear()
+			;(mockCtx.translate as ReturnType<typeof vi.fn>).mockClear()
+			;(sut as any).renderBubble(spawningBubble(1), false)
+			expect(mockCtx.translate).not.toHaveBeenCalled()
+			expect(fillText.mock.calls.every((c) => c[1] === 120)).toBe(true)
 		})
 	})
 

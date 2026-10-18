@@ -34,9 +34,12 @@ const validRequest = () => makeRequest({ sessionId: 'sess-1' })
 const invalidRequest = () => makeRequest({ sessionId: '' })
 
 /** Resolves the loader and lets the interceptor's `.then` run. */
-async function loaded(validator: Validator = createValidator()) {
+async function loaded(
+	validator: Validator = createValidator(),
+	idle: (callback: () => void) => void = (callback) => callback(),
+) {
 	const load: ValidatorLoader = () => Promise.resolve(validator)
-	const interceptor = createValidateInterceptor(load, mockLogger)
+	const interceptor = createValidateInterceptor(load, mockLogger, idle)
 	await Promise.resolve()
 	await Promise.resolve()
 	return interceptor
@@ -98,6 +101,29 @@ describe('createValidateInterceptor', () => {
 
 		expect(validator.validate).not.toHaveBeenCalled()
 		expect(next).toHaveBeenCalledOnce()
+	})
+
+	it('passes the first request of a type through and validates once its rules compiled when idle', async () => {
+		const idleCallbacks: (() => void)[] = []
+		const validator = createValidator()
+		const validate = vi.spyOn(validator, 'validate')
+		const next = vi.fn().mockResolvedValue({ message: 'ok' })
+		const handler = (await loaded(validator, (cb) => idleCallbacks.push(cb)))(
+			next,
+		)
+
+		// Not compiled yet: forwarded unvalidated, compilation only scheduled.
+		await handler(invalidRequest())
+		expect(next).toHaveBeenCalledOnce()
+		expect(validate).not.toHaveBeenCalled()
+		await handler(invalidRequest())
+		expect(idleCallbacks).toHaveLength(1)
+
+		idleCallbacks[0]()
+		const err = await handler(invalidRequest()).catch((e: unknown) => e)
+
+		expect((err as ConnectError).code).toBe(Code.InvalidArgument)
+		expect(next).toHaveBeenCalledTimes(2)
 	})
 
 	it('forwards the request when the validator reports a rule error', async () => {
