@@ -1,5 +1,7 @@
-import { DI, Registration } from 'aurelia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { tasksSettled } from '@aurelia/runtime'
+import { createFixture } from '@aurelia/testing'
+import { CustomElement, DI, Registration } from 'aurelia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestContainer } from '../../helpers/create-container'
 import { createMockAuth } from '../../helpers/mock-auth'
 
@@ -94,7 +96,7 @@ describe('Organizer AuthCallbackRoute', () => {
 
 		expect(result).toBe(true)
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
-		expect(sut.error).toContain('No matching state found in storage')
+		expect(sut.failed).toBe(true)
 	})
 
 	it('does not restart sign-in for a non-recoverable callback error', async () => {
@@ -107,7 +109,7 @@ describe('Organizer AuthCallbackRoute', () => {
 
 		expect(result).toBe(true)
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
-		expect(sut.error).toContain('token endpoint 500')
+		expect(sut.failed).toBe(true)
 	})
 
 	it('recovers to the landing (Home) when a prior callback already established the session', async () => {
@@ -118,5 +120,56 @@ describe('Organizer AuthCallbackRoute', () => {
 
 		expect(result).toBe('')
 		expect(mockAuth.signIn).not.toHaveBeenCalled()
+	})
+})
+
+describe('Organizer AuthCallbackRoute page', () => {
+	beforeEach(() => {
+		window.sessionStorage.clear()
+		localStorage.clear()
+		vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['ja-JP', 'ja'])
+		vi.spyOn(navigator, 'language', 'get').mockReturnValue('ja-JP')
+	})
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
+	// @spec components/infrastructure/organizer/web/global/error-messages "Sign-in callback fails"
+	it('shows fixed copy and the sign-in link, not the error text', async () => {
+		const { ConsoleI18nConfiguration } = await import(
+			'../../../organizer/i18n/console-language'
+		)
+		const { ConsoleButton } = await import(
+			'../../../organizer/ui/console-button/console-button'
+		)
+		const mockAuth = createMockAuth({ isAuthenticated: false })
+		mockAuth.handleCallback = vi
+			.fn()
+			.mockRejectedValue(new Error('invalid_grant: code expired'))
+		const fixture = createFixture(
+			'<auth-callback-route></auth-callback-route>',
+			class {},
+			[
+				ConsoleI18nConfiguration,
+				ConsoleButton,
+				AuthCallbackRoute,
+				Registration.instance(mockIAuthService, mockAuth),
+			],
+		)
+		await fixture.startPromise
+		const host = fixture.appHost.querySelector('auth-callback-route')
+		if (!host) throw new Error('auth-callback-route did not render')
+		const vm =
+			CustomElement.for<InstanceType<typeof AuthCallbackRoute>>(host).viewModel
+
+		await vm.canLoad({} as never, {} as never)
+		await tasksSettled()
+
+		expect(host.querySelector('[role="alert"]')?.textContent?.trim()).toBe(
+			'サインインできませんでした。',
+		)
+		expect(host.textContent).toContain('もう一度サインインする')
+		expect(host.textContent).not.toContain('invalid_grant')
+		await fixture.tearDown()
 	})
 })

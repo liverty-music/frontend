@@ -85,7 +85,7 @@
     <p class="checkout-note" t="checkout.payment.notCharged"></p>
     <div class="checkout-payment-element" ref="paymentElementHost"></div>
     <p if.bind="cardError" class="checkout-error" role="alert" data-testid="checkout-card-error">
-      ${cardError} <span t="checkout.payment.tryAnother"></span>
+      <span t.bind="cardError"></span> <span t="checkout.payment.tryAnother"></span>
     </p>
     <template if.bind="message">
       <p class="checkout-error" role="alert" data-testid="checkout-message" t.bind="message.key" t-params.bind="message.params"></p>

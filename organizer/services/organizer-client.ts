@@ -4,11 +4,11 @@ import { createClient } from '@connectrpc/connect'
 import { DI, ILogger, resolve } from 'aurelia'
 import { IAppConfig } from '../../shared/config/app-config'
 import { IAuthService } from '../../shared/services/auth-service'
+import { IConsoleLanguage } from '../i18n/console-language'
 import {
 	createOrganizerPublicTransport,
 	createOrganizerTransport,
 } from './organizer-transport'
-import { IConsoleLanguage } from '../i18n/console-language'
 
 export type { Organizer }
 
@@ -30,8 +30,8 @@ export interface IOrganizerClient extends OrganizerClient {}
  * Built entirely from organizer/shared modules via {@link createOrganizerTransport};
  * it never imports the consumer `src/` nor the sibling `admin/` bundle. Callers
  * pass plain strings; this wrapper owns wrapping them into the generated
- * message shells. Errors propagate to callers (screens translate `ConnectError`
- * codes into user-facing copy via {@link ./connect-error-copy}).
+ * message shells. Errors propagate to callers (screens choose catalog copy from the
+ * `ConnectError` code and log the error).
  */
 export class OrganizerClient {
 	private readonly logger = resolve(ILogger).scopeTo('OrganizerClient')

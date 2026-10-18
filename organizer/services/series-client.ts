@@ -171,7 +171,7 @@ export interface ISeriesClient extends SeriesClient {}
  * never imports the consumer `src/` nor the sibling `admin/` bundle. Callers
  * pass plain inputs ({@link SeriesDraftInput}); this wrapper owns marshalling
  * them into the generated message shells. Errors propagate to callers (screens
- * translate `ConnectError` codes via {@link ./connect-error-copy}).
+ * choose catalog copy from the `ConnectError` code and log the error).
  */
 export class SeriesClient {
 	private readonly logger = resolve(ILogger).scopeTo('SeriesClient')

@@ -386,14 +386,14 @@ describe('LotteryEntryRoute', () => {
 
 		it('surfaces a card error and does not Confirm', async () => {
 			mockStripe.confirmCardAuthorization.mockResolvedValueOnce({
-				errorMessage: 'カードが拒否されました',
+				errorKey: 'payment.error.declined',
 			})
 			const sut = await toPayment()
 
 			await sut.confirmEntry()
 
 			expect(mockEntry.confirm).not.toHaveBeenCalled()
-			expect(sut.cardError).toBe('カードが拒否されました')
+			expect(sut.cardError).toBe('payment.error.declined')
 			expect(sut.step).toBe('payment')
 		})
 

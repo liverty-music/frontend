@@ -12,6 +12,10 @@ import { IAuthService } from '../../shared/services/auth-service'
  * inside the router transition pipeline (the same pattern the consumer uses to
  * avoid a hang when routing from `attached()`).
  */
+/** Copy shown when completing sign-in fails and the admin has no session. */
+export const SIGN_IN_FAILED =
+	'Sign-in failed. Return to the console and sign in again.'
+
 export class AuthCallbackRoute {
 	public error = ''
 
@@ -40,7 +44,9 @@ export class AuthCallbackRoute {
 			// Hard failure: discard any stored return-to so it can't be replayed by
 			// a later, unrelated successful sign-in.
 			this.authService.takeReturnTo()
-			this.error = `Login failed: ${err instanceof Error ? err.message : String(err)}`
+			// Fixed copy: the identity library's text is for developers and is
+			// already in the console log above.
+			this.error = SIGN_IN_FAILED
 			return true
 		}
 	}

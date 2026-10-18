@@ -90,7 +90,7 @@ export class LotteryEntryRoute implements IRouteViewModel {
 
 	/** The current step's message, or null. */
 	public message: LotteryEntryMessage | null = null
-	/** A message from the card issuer or Stripe, shown as given. */
+	/** Catalog key of the card failure copy (`payment.error.*`), or empty. */
 	public cardError = ''
 	/** True while a request of the current step is in flight. */
 	public busy = false
@@ -409,8 +409,8 @@ export class LotteryEntryRoute implements IRouteViewModel {
 				stripe,
 				elements,
 			)
-			if (confirmed.errorMessage || !confirmed.cardAuthorizationId) {
-				this.cardError = confirmed.errorMessage ?? ''
+			if (confirmed.errorKey || !confirmed.cardAuthorizationId) {
+				this.cardError = confirmed.errorKey ?? 'payment.error.failed'
 				this.step = 'payment'
 				return
 			}

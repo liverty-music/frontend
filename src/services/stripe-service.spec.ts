@@ -34,7 +34,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
-import { StripeService } from './stripe-service'
+import { paymentErrorKey, StripeService } from './stripe-service'
 
 // A fake Stripe whose confirmPayment returns the given result, cast to the SDK
 // type (the test only touches confirmPayment / elements).
@@ -162,13 +162,18 @@ describe('StripeService', () => {
 			)
 
 			expect(result.cardAuthorizationId).toBeUndefined()
-			expect(result.errorMessage).toBeTruthy()
+			expect(result.errorKey).toBe('payment.error.failed')
 		})
 
-		it('surfaces the Stripe error message on a decline', async () => {
+		it('gives the declined key on a card_error, never the Stripe message, and logs type and code', async () => {
 			const stripe = fakeStripe({
 				confirmPayment: vi.fn(async () => ({
-					error: { message: 'Your card was declined.', code: 'card_declined' },
+					error: {
+						type: 'card_error',
+						code: 'card_declined',
+						decline_code: 'insufficient_funds',
+						message: 'Your card has insufficient funds.',
+					},
 				})),
 			})
 
@@ -177,13 +182,21 @@ describe('StripeService', () => {
 				noopElements,
 			)
 
-			expect(result).toEqual({ errorMessage: 'Your card was declined.' })
+			expect(result).toEqual({ errorKey: 'payment.error.declined' })
+			expect(scopedLogger.warn).toHaveBeenCalledWith(
+				'Card authorization confirmation failed',
+				{
+					type: 'card_error',
+					code: 'card_declined',
+					declineCode: 'insufficient_funds',
+				},
+			)
 		})
 
-		it('falls back to a localized message when the Stripe error carries none', async () => {
+		it('gives the failed key for any other error type', async () => {
 			const stripe = fakeStripe({
 				confirmPayment: vi.fn(async () => ({
-					error: { code: 'processing_error' },
+					error: { type: 'api_error', code: 'processing_error' },
 				})),
 			})
 
@@ -192,9 +205,7 @@ describe('StripeService', () => {
 				noopElements,
 			)
 
-			expect(result.errorMessage).toBe(
-				'カード認証に失敗しました。もう一度お試しください。',
-			)
+			expect(result).toEqual({ errorKey: 'payment.error.failed' })
 		})
 
 		it('returns a localized message when neither an error nor a card authorization id is present', async () => {
@@ -208,7 +219,99 @@ describe('StripeService', () => {
 			)
 
 			expect(result.cardAuthorizationId).toBeUndefined()
-			expect(result.errorMessage).toBeTruthy()
+			expect(result.errorKey).toBe('payment.error.failed')
+		})
+	})
+
+	describe('createCheckoutCard', () => {
+		it('gives the card details key when the card form refuses to submit', async () => {
+			const elements = {
+				submit: vi.fn(async () => ({
+					error: {
+						type: 'validation_error',
+						code: 'incomplete_number',
+						message: 'Your card number is incomplete.',
+					},
+				})),
+			} as unknown as StripeElements
+
+			const result = await new StripeService().createCheckoutCard(
+				fakeStripe({}),
+				elements,
+			)
+
+			expect(result).toEqual({ errorKey: 'payment.error.cardDetails' })
+		})
+
+		it('gives the failed key when the ConfirmationToken cannot be created', async () => {
+			const elements = {
+				submit: vi.fn(async () => ({})),
+			} as unknown as StripeElements
+			const stripe = fakeStripe({
+				createConfirmationToken: vi.fn(async () => ({
+					error: { type: 'api_connection_error', message: 'Network error' },
+				})),
+			})
+
+			const result = await new StripeService().createCheckoutCard(
+				stripe,
+				elements,
+			)
+
+			expect(result).toEqual({ errorKey: 'payment.error.failed' })
+		})
+	})
+
+	describe('confirmCheckoutCardAuthorization', () => {
+		it('gives the declined key when the issuer declines', async () => {
+			const stripe = fakeStripe({
+				confirmPayment: vi.fn(async () => ({
+					error: {
+						type: 'card_error',
+						code: 'card_declined',
+						message: 'Your card has insufficient funds.',
+					},
+				})),
+			})
+
+			const result = await new StripeService().confirmCheckoutCardAuthorization(
+				stripe,
+				'cs_1',
+				'ctoken_1',
+			)
+
+			expect(result).toEqual({ errorKey: 'payment.error.declined' })
+		})
+
+		it('gives the failed key when the authorization is not in requires_capture', async () => {
+			const stripe = fakeStripe({
+				confirmPayment: vi.fn(async () => ({
+					paymentIntent: { id: 'pi_1', status: 'requires_action' },
+				})),
+			})
+
+			const result = await new StripeService().confirmCheckoutCardAuthorization(
+				stripe,
+				'cs_1',
+				'ctoken_1',
+			)
+
+			expect(result).toEqual({ errorKey: 'payment.error.failed' })
+		})
+	})
+
+	describe('paymentErrorKey', () => {
+		it('chooses the key by the error type only', () => {
+			expect(paymentErrorKey({ type: 'validation_error' })).toBe(
+				'payment.error.cardDetails',
+			)
+			expect(paymentErrorKey({ type: 'card_error' })).toBe(
+				'payment.error.declined',
+			)
+			expect(paymentErrorKey({ type: 'invalid_request_error' })).toBe(
+				'payment.error.failed',
+			)
+			expect(paymentErrorKey(undefined)).toBe('payment.error.failed')
 		})
 	})
 })

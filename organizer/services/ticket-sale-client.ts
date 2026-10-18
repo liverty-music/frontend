@@ -68,8 +68,8 @@ export interface ITicketSaleClient extends TicketSaleClient {}
  *
  * Built from organizer/shared modules via {@link createOrganizerTransport}; it
  * never imports the consumer `src/` nor the sibling `admin/` bundle. Errors
- * propagate to callers (screens translate `ConnectError` codes via
- * {@link ./connect-error-copy}).
+ * propagate to callers (screens choose catalog copy from the `ConnectError`
+ * code and log the error).
  */
 export class TicketSaleClient {
 	private readonly logger = resolve(ILogger).scopeTo('TicketSaleClient')

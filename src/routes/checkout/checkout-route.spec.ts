@@ -448,14 +448,14 @@ describe('CheckoutRoute', () => {
 		it('lets the fan try another card without losing the hold', async () => {
 			// @spec components/infrastructure/fan/web/route/checkout "Card declined"
 			mockStripe.confirmCheckoutCardAuthorization.mockResolvedValueOnce({
-				errorMessage: 'カードが拒否されました。',
+				errorKey: 'payment.error.declined',
 			})
 			const sut = await toCard()
 
 			await sut.authorizeCard()
 
 			expect(sut.step).toBe('payment')
-			expect(sut.cardError).toBe('カードが拒否されました。')
+			expect(sut.cardError).toBe('payment.error.declined')
 			expect(sut.checkout?.id).toBe('res-1')
 
 			await sut.authorizeCard()

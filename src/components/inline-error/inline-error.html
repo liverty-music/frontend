@@ -5,12 +5,10 @@
     <line x1="12" y1="16" x2="12.01" y2="16"></line>
   </svg>
   <p class="inline-error-message">${message}</p>
-  <p class="inline-error-detail">${errorMessage}</p>
   <button
     if.bind="retryAction"
     click.trigger="retry()"
     class="[ button ] [ pressable ]"
-  >
-    Retry
-  </button>
+    t="common.retry"
+  ></button>
 </section>

@@ -2,7 +2,8 @@
 	"common": {
 		"dismiss": "Dismiss",
 		"loading": "Loading",
-		"createAccount": "Create Account"
+		"createAccount": "Create Account",
+		"retry": "Retry"
 	},
 	"entity": {
 		"concert": {
@@ -265,7 +266,14 @@
 	},
 	"errorBanner": {
 		"copied": "Error details copied",
-		"reportCooldown": "Please wait before reporting another issue"
+		"reportCooldown": "Please wait before reporting another issue",
+		"label": "Error details",
+		"title": "Something went wrong",
+		"message": "An unexpected error occurred. Reload the page.",
+		"copy": "Copy details",
+		"report": "Report to GitHub",
+		"dismiss": "Dismiss",
+		"reload": "Reload page"
 	},
 	"auth": {
 		"loginRequired": "Login required",
@@ -989,6 +997,18 @@
 			"alreadyVerified": "This My Number Card has already been used to verify another account.",
 			"permissionDenied": "The verification details did not match. Please try again from Settings.",
 			"generic": "Something went wrong during identity verification. Please try again."
+		}
+	},
+	"authCallback": {
+		"verifying": "Verifying sign-in…",
+		"failed": "Could not sign in. Return home and try again.",
+		"home": "Return home"
+	},
+	"payment": {
+		"error": {
+			"cardDetails": "Check the card details.",
+			"declined": "The card could not be used.",
+			"failed": "The card could not be checked. Try again."
 		}
 	}
 }

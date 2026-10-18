@@ -4,7 +4,7 @@ import {
 	IOrganizerClient,
 	type Organizer,
 } from '../../services/organizer-client'
-import { toUserMessage } from '../organizer-error-message'
+import { toOrganizerMessage } from '../organizer-error-message'
 import {
 	type BusinessDetailsErrors,
 	bpsToPercentText,
@@ -92,7 +92,7 @@ export class OrganizerCommercialTerms {
 			this.phase = 'ready'
 		} catch (err) {
 			if (seq !== this.loadSeq) return
-			this.loadError = toUserMessage(err, 'Failed to load the organizer.')
+			this.loadError = toOrganizerMessage(err, 'Failed to load the organizer.')
 			this.phase = 'error'
 			this.logger.error('Failed to load organizer commercial terms', {
 				organizerId,
@@ -124,7 +124,7 @@ export class OrganizerCommercialTerms {
 			this.applyBusinessDetails(stored)
 			this.businessSaved = true
 		} catch (err) {
-			this.businessSaveError = toUserMessage(
+			this.businessSaveError = toOrganizerMessage(
 				err,
 				'Failed to save the business details.',
 			)
@@ -159,7 +159,7 @@ export class OrganizerCommercialTerms {
 			this.applyFeeRate(stored)
 			this.feeRateSaved = true
 		} catch (err) {
-			this.feeRateSaveError = toUserMessage(
+			this.feeRateSaveError = toOrganizerMessage(
 				err,
 				'Failed to save the platform fee rate.',
 			)

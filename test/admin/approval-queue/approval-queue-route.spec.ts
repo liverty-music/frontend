@@ -8,6 +8,7 @@ import {
 } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/rpc/admin/concert_candidate/v1/concert_candidate_service_pb.js'
 import { create } from '@bufbuild/protobuf'
 import { type Timestamp, timestampFromDate } from '@bufbuild/protobuf/wkt'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { DI, Registration } from 'aurelia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -120,6 +121,9 @@ function unresolvedConcert(): ConcertCandidate {
 		sourceUrl: 'https://example.com/show/2',
 	})
 }
+
+const ERROR_MESSAGES_SPEC =
+	'components/infrastructure/admin/web/global/error-messages'
 
 async function build(client: MockClient) {
 	const fixture = createFixture
@@ -332,7 +336,30 @@ describe('ApprovalQueueRoute', () => {
 			expect(fixture.appHost.textContent).toContain(
 				'Could not load the approval queue',
 			)
-			expect(fixture.appHost.textContent).toContain('boom')
+			expect(fixture.appHost.textContent).toContain(
+				'Failed to load the approval queue.',
+			)
+			expect(fixture.appHost.textContent).not.toContain('boom')
+		})
+
+		it(`@spec ${ERROR_MESSAGES_SPEC} "Session expired during a call"`, async () => {
+			const client = createMockClient({
+				list: vi
+					.fn()
+					.mockRejectedValue(
+						new ConnectError('token "exp" not satisfied', Code.Unauthenticated),
+					),
+			})
+			const fixture = await build(client)
+			await fixture.tasksSettled
+
+			expect(routeOf(fixture).loadError).toBe(
+				'Your session expired — signing you back in…',
+			)
+			expect(fixture.appHost.textContent).toContain(
+				'Your session expired — signing you back in…',
+			)
+			expect(fixture.appHost.textContent).not.toContain('not satisfied')
 		})
 	})
 
@@ -407,9 +434,41 @@ describe('ApprovalQueueRoute', () => {
 			const row = series.rows[0]
 			await vm.approve(group, series, row)
 
-			expect(row.actionError).toContain('approve failed')
+			expect(row.actionError).toBe('Approval failed. Try again.')
 			expect(row.busy).toBe(false)
 			expect(series.rows).toHaveLength(1)
+		})
+
+		it(`@spec ${ERROR_MESSAGES_SPEC} "Server message stays off the screen"`, async () => {
+			const err = new ConnectError(
+				'begin transaction: connection reset (internal)',
+				Code.Internal,
+			)
+			const client = createMockClient({
+				list: vi.fn().mockResolvedValue([resolvedConcert()]),
+				approve: vi.fn().mockRejectedValue(err),
+			})
+			const fixture = await build(client)
+			const vm = routeOf(fixture)
+			// The route's scoped logger writes to the browser console.
+			const logError = vi.spyOn(vm['logger'], 'error')
+			await fixture.tasksSettled
+
+			const group = vm.groups[0]
+			const series = group.series[0]
+			const row = series.rows[0]
+			await vm.approve(group, series, row)
+			await fixture.tasksSettled
+
+			expect(row.actionError).toBe('Approval failed. Try again.')
+			expect(fixture.appHost.textContent).toContain(
+				'Approval failed. Try again.',
+			)
+			expect(fixture.appHost.textContent).not.toContain('connection reset')
+			expect(logError).toHaveBeenCalledWith(
+				'Approve failed',
+				expect.objectContaining({ err }),
+			)
 		})
 
 		it('prunes only the empty series, not the artist group, when another series remains', async () => {
@@ -567,7 +626,7 @@ describe('ApprovalQueueRoute', () => {
 			await vm.adoptCandidate()
 
 			expect(vm.conflictView).not.toBeNull()
-			expect(vm.conflictError).toContain('reconcile boom')
+			expect(vm.conflictError).toBe('Reconciliation failed. Try again.')
 			expect(vm.groups).toHaveLength(1)
 		})
 	})

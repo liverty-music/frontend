@@ -19,15 +19,9 @@
 		}
 
 		.inline-error-message {
-			margin-block-end: var(--space-3xs);
-			font-size: var(--step--1);
-			color: var(--color-text-secondary);
-		}
-
-		.inline-error-detail {
 			margin-block-end: var(--space-s);
 			font-size: var(--step--1);
-			color: var(--color-text-muted);
+			color: var(--color-text-secondary);
 		}
 	}
 }

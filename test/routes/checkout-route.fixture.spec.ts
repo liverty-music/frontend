@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ICheckoutRpcClient } from '../../src/adapter/rpc/client/checkout-client'
 import { IConcertRpcClient } from '../../src/adapter/rpc/client/concert-client'
 import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
+import { IAppConfig } from '../../src/config/app-config'
 import type { Checkout } from '../../src/entities/checkout'
 import type { IdentityVerification } from '../../src/entities/identity-verification'
 import type { TicketSale } from '../../src/entities/ticket-sale'
@@ -20,7 +21,10 @@ import { IIdentityVerificationService } from '../../src/services/identity-verifi
 import { INotificationManager } from '../../src/services/notification-manager'
 import { IPushService } from '../../src/services/push-service'
 import { IPwaInstallService } from '../../src/services/pwa-install-service'
-import { IStripeService } from '../../src/services/stripe-service'
+import {
+	IStripeService,
+	StripeService,
+} from '../../src/services/stripe-service'
 import { IUserStore } from '../../src/services/user-store'
 
 const EVENT_ID = 'event-1'
@@ -83,6 +87,11 @@ const activeJpki: IdentityVerification = {
 async function render(
 	lng: 'ja' | 'en',
 	identityVerification: IdentityVerification | undefined,
+	options: {
+		sale?: TicketSale
+		stripe?: Parameters<typeof Registration.instance>[1]
+		extra?: unknown[]
+	} = {},
 ) {
 	const checkoutClient = {
 		start: vi.fn().mockResolvedValue(held),
@@ -106,10 +115,12 @@ async function render(
 				get: vi.fn().mockResolvedValue(concert),
 			}),
 			Registration.instance(ITicketSaleRpcClient, {
-				listByEvent: vi.fn().mockResolvedValue([jpkiOnlySale]),
+				listByEvent: vi.fn().mockResolvedValue([options.sale ?? jpkiOnlySale]),
 			}),
 			Registration.instance(ICheckoutRpcClient, checkoutClient),
-			Registration.instance(IStripeService, { isConfigured: true }),
+			options.stripe ??
+				Registration.instance(IStripeService, { isConfigured: true }),
+			...(options.extra ?? []),
 			Registration.instance(IIdentityVerificationService, {
 				get: vi.fn().mockResolvedValue(identityVerification),
 			}),
@@ -195,6 +206,123 @@ describe('CheckoutRoute verified sale (fixture)', () => {
 			undefined,
 			expect.anything(),
 		)
+		await fixture.stop(true)
+	})
+})
+
+const ERROR_MESSAGES_SPEC =
+	'components/infrastructure/fan/web/global/error-messages'
+
+/** The same sale, open to every fan. */
+const openSale: TicketSale = {
+	...jpkiOnlySale,
+	verificationRequirement: 'none',
+}
+
+/**
+ * The real StripeService over a fake Stripe.js: the card form and the payment
+ * confirmation answer what the test gives, as the Payment Element would.
+ */
+function stripeWith(answers: {
+	submit?: () => Promise<unknown>
+	confirmPayment?: () => Promise<unknown>
+}) {
+	const elements = {
+		submit: vi.fn(answers.submit ?? (async () => ({}))),
+		create: vi.fn(() => ({ mount: vi.fn(), destroy: vi.fn() })),
+	}
+	const stripe = {
+		elements: vi.fn(() => elements),
+		createConfirmationToken: vi.fn(async () => ({
+			confirmationToken: {
+				id: 'ctoken_1',
+				payment_method_preview: { card: { brand: 'visa', last4: '4242' } },
+			},
+		})),
+		confirmPayment: vi.fn(
+			answers.confirmPayment ??
+				(async () => ({
+					paymentIntent: { id: 'pi_1', status: 'requires_capture' },
+				})),
+		),
+	}
+	class FakeStripeService extends StripeService {
+		public override async getStripe() {
+			return stripe as never
+		}
+	}
+	return Registration.singleton(IStripeService, FakeStripeService)
+}
+
+/** Opens the card step of an open sale and continues with the card entered. */
+async function continueWithCard(stripe: ReturnType<typeof stripeWith>) {
+	const rendered = await render('ja', undefined, {
+		sale: openSale,
+		stripe,
+		extra: [
+			Registration.instance(IAppConfig, { stripePublishableKey: 'pk_test_x' }),
+		],
+	})
+	const { fixture, vm, checkoutClient } = rendered
+	checkoutClient.authorizeCard.mockResolvedValue('cs_1')
+	await vm.hold()
+	vm.fullName = '山田 花子'
+	vm.phoneNumber = '090-1234-5678'
+	await vm.toPayment()
+	await tasksSettled()
+	expect(vm.step).toBe('payment')
+	byTestId(fixture.appHost, 'checkout-authorize-card')?.click()
+	await vi.waitFor(() => expect(vm.busy).toBe(false))
+	await tasksSettled()
+	return rendered
+}
+
+describe('CheckoutRoute card failures (fixture)', () => {
+	it(`@spec ${ERROR_MESSAGES_SPEC} "Card declined at checkout"`, async () => {
+		const { fixture, vm } = await continueWithCard(
+			stripeWith({
+				confirmPayment: async () => ({
+					error: {
+						type: 'card_error',
+						code: 'card_declined',
+						decline_code: 'insufficient_funds',
+						message: 'Your card has insufficient funds.',
+					},
+				}),
+			}),
+		)
+		const host = fixture.appHost
+
+		expect(vm.step).toBe('payment')
+		const error = byTestId(host, 'checkout-card-error')?.textContent ?? ''
+		expect(error.replace(/\s+/g, ' ').trim()).toBe(
+			`カードを利用できませんでした。 ${ja.checkout.payment.tryAnother}`,
+		)
+		expect(host.textContent).not.toContain('insufficient funds')
+		await fixture.stop(true)
+	})
+
+	it(`@spec ${ERROR_MESSAGES_SPEC} "Card details incomplete"`, async () => {
+		const { fixture, vm, checkoutClient } = await continueWithCard(
+			stripeWith({
+				submit: async () => ({
+					error: {
+						type: 'validation_error',
+						code: 'incomplete_number',
+						message: 'Your card number is incomplete.',
+					},
+				}),
+			}),
+		)
+		const host = fixture.appHost
+
+		expect(vm.step).toBe('payment')
+		expect(byTestId(host, 'checkout-card-error')?.textContent).toContain(
+			'カード情報を確認してください。',
+		)
+		expect(host.textContent).not.toContain('Your card number is incomplete')
+		// Nothing is authorized for a card the form refused.
+		expect(checkoutClient.authorizeCard).not.toHaveBeenCalled()
 		await fixture.stop(true)
 	})
 })

@@ -103,6 +103,9 @@ function inputValue(
 	return input.value
 }
 
+const ERROR_MESSAGES_SPEC =
+	'components/infrastructure/admin/web/global/error-messages'
+
 describe('OrganizerCommercialTerms', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
@@ -273,6 +276,36 @@ describe('OrganizerCommercialTerms', () => {
 			)
 			expect(fixture.appHost.textContent).toContain('deactivated')
 		})
+
+		it(`@spec ${ERROR_MESSAGES_SPEC} "Business details refused by the server"`, async () => {
+			const client = createMockClient({
+				setBusinessDetails: vi
+					.fn()
+					.mockRejectedValue(
+						new ConnectError(
+							'business phone number is invalid (invalid_argument)',
+							Code.InvalidArgument,
+						),
+					),
+			})
+			const fixture = await build(client)
+			const vm = vmOf(fixture)
+
+			Object.assign(vm.business, DETAILS)
+			await vm.saveBusinessDetails()
+			await fixture.tasksSettled
+
+			expect(vm.businessSaved).toBe(false)
+			expect(vm.businessSaveError).toBe(
+				'The request was invalid. Check the fields.',
+			)
+			expect(fixture.appHost.textContent).toContain(
+				'The request was invalid. Check the fields.',
+			)
+			expect(fixture.appHost.textContent).not.toContain(
+				'business phone number is invalid',
+			)
+		})
 	})
 
 	describe('platform fee rate', () => {
@@ -355,8 +388,11 @@ describe('OrganizerCommercialTerms', () => {
 			await fixture.tasksSettled
 
 			expect(vm.feeRateSaved).toBe(false)
-			expect(vm.feeRateSaveError).toBe('rate out of range')
-			expect(fixture.appHost.textContent).toContain('rate out of range')
+			expect(vm.feeRateSaveError).toBe(
+				'The request was invalid. Check the fields.',
+			)
+			expect(fixture.appHost.textContent).toContain(vm.feeRateSaveError)
+			expect(fixture.appHost.textContent).not.toContain('rate out of range')
 		})
 	})
 })

@@ -49,7 +49,11 @@ function isRecoverableStateMiss(err: unknown): boolean {
  * entries use to avoid a hang when routing from `attached()`).
  */
 export class AuthCallbackRoute {
-	public error = ''
+	/**
+	 * Completing sign-in failed for good. The page shows fixed catalog copy;
+	 * the error itself goes only to the console log.
+	 */
+	public failed = false
 	public readonly landingHref = paths.landing
 
 	private readonly authService = resolve(IAuthService)
@@ -111,7 +115,7 @@ export class AuthCallbackRoute {
 			// Hard failure: discard any stored return-to so it can't be replayed by
 			// a later, unrelated successful sign-in.
 			this.authService.takeReturnTo()
-			this.error = err instanceof Error ? err.message : String(err)
+			this.failed = true
 			return true
 		}
 	}

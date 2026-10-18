@@ -10,12 +10,12 @@ const meta = {
 	argTypes: {
 		message: {
 			control: 'text',
-			description: 'Human-readable heading shown above the error detail.',
+			description:
+				"The caller's message, already translated from the catalog. The error's own text is never shown.",
 		},
 	},
 	args: {
-		message: 'Failed to load data',
-		error: 'Network request timed out',
+		message: 'ライブの読み込みに失敗しました',
 	},
 } satisfies Meta<typeof InlineError>
 
@@ -26,9 +26,11 @@ type Story = StoryObj<typeof meta>
 export const Default = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement)
-		await expect(canvas.getByText('Failed to load data')).toBeInTheDocument()
 		await expect(
-			canvas.queryByRole('button', { name: 'Retry' }),
+			canvas.getByText('ライブの読み込みに失敗しました'),
+		).toBeInTheDocument()
+		await expect(
+			canvas.queryByRole('button', { name: '再試行' }),
 		).not.toBeInTheDocument()
 		// Component-level visual regression against a committed baseline (D4/OQ2).
 		await vitestExpect
@@ -40,30 +42,15 @@ export const Default = {
 	},
 } satisfies Story
 
-// An Error instance surfaces its `message` as the detail line.
-export const FromErrorObject = {
-	args: {
-		message: 'Could not load your artists',
-		error: new Error('HTTP 503 Service Unavailable'),
-	},
-	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement)
-		await expect(
-			canvas.getByText('HTTP 503 Service Unavailable'),
-		).toBeInTheDocument()
-	},
-} satisfies Story
-
-// With a retry callback the button renders and invokes the action on click.
+// With a retry callback the button renders, labelled from the catalog, and
+// invokes the action on click.
 export const WithRetry = {
 	args: {
-		message: 'Could not load concerts',
-		error: 'Temporary failure',
 		retryAction: fn(),
 	},
 	play: async ({ args, canvasElement }) => {
 		const canvas = within(canvasElement)
-		const retry = canvas.getByRole('button', { name: 'Retry' })
+		const retry = canvas.getByRole('button', { name: '再試行' })
 		await userEvent.click(retry)
 		await expect(args.retryAction).toHaveBeenCalledOnce()
 	},

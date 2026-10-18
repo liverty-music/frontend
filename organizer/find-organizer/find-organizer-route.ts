@@ -1,6 +1,6 @@
+import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { EMAIL_MAX_LENGTH, emailProblem } from '../../shared/utils/email'
-import { Code, ConnectError } from '../services/connect-error-copy'
 import { IOrganizerClient } from '../services/organizer-client'
 import type { FieldErrorText } from '../ui/console-field/console-field'
 

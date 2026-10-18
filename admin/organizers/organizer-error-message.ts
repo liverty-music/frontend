@@ -1,59 +1,54 @@
-import { Code, ConnectError } from '@connectrpc/connect'
+import { Code } from '@connectrpc/connect'
+import { toUserMessage } from '../services/error-message'
 
-/** ALREADY_EXISTS copy for AssociateArtist: the artist is already claimed. */
-export const ARTIST_ALREADY_REPRESENTED =
-	'That artist is already represented by an organizer.'
-/** ALREADY_EXISTS copy for Create: another Organizer already has the short name. */
-export const SHORT_NAME_IN_USE =
-	'That short name is already used by another organizer. Choose a different one.'
+/** Overrides for associating and removing an artist: AlreadyExists means the artist is already claimed. */
+export const ROSTER_OVERRIDES: Partial<Record<Code, string>> = {
+	[Code.AlreadyExists]: 'That artist is already represented by an organizer.',
+}
 
-/**
- * Maps a caller error to user-facing copy. Connect error codes documented on
- * the RPCs (NOT_FOUND, ALREADY_EXISTS, FAILED_PRECONDITION, INVALID_ARGUMENT)
- * get purpose-written messages; anything else falls back to the raw message.
- * ALREADY_EXISTS means something different per RPC, so callers pass the copy
- * for their RPC in `alreadyExists`.
- */
-export function toUserMessage(
-	err: unknown,
-	fallback: string,
-	alreadyExists = ARTIST_ALREADY_REPRESENTED,
-): string {
-	if (err instanceof ConnectError) {
-		switch (err.code) {
-			case Code.AlreadyExists:
-				return alreadyExists
-			case Code.NotFound:
-				return 'The organizer or artist no longer exists.'
-			case Code.FailedPrecondition:
-				return 'This organizer is deactivated and can no longer be changed.'
-			case Code.InvalidArgument:
-				return err.rawMessage || 'The request was invalid. Check the fields.'
-			case Code.Unauthenticated:
-				// Never surface the raw transport-level token error (e.g.
-				// `... "exp" not satisfied`). The auth-retry interceptor is
-				// re-authenticating; show a neutral, human-readable state.
-				return 'Your session expired — signing you back in…'
-			default:
-				return err.rawMessage || fallback
-		}
-	}
-	return err instanceof Error ? err.message : fallback
+/** Overrides for Create (spec route/organizers "A refused Create says what to change"). */
+export const CREATE_OVERRIDES: Partial<Record<Code, string>> = {
+	[Code.AlreadyExists]:
+		'That short name is already used by another organizer. Choose a different one.',
+	// After the screen's own checks of the name, short name and owner email,
+	// the only InvalidArgument left is the sign-in service refusing the email.
+	[Code.InvalidArgument]:
+		'The sign-in service did not accept this owner email. Check it or use a different address.',
+	// Provisioning can refuse a Create with FailedPrecondition; the Organizers
+	// default ("deactivated") would be wrong for an Organizer that does not exist.
+	[Code.FailedPrecondition]: 'Failed to create the organizer.',
 }
 
 /**
- * Maps a Delete error to user-facing copy. FAILED_PRECONDITION on Delete names
- * the blocker (the organizer is not deactivated, an order that is not refunded,
- * a settlement that is not reversed, a payout account), so the server's
- * message is shown after a fixed prefix; every other code goes through
- * {@link toUserMessage}.
+ * Delete FailedPrecondition copy: one fixed sentence naming every blocker the
+ * server can report for a deactivated Organizer, whatever reason it sends.
  */
+export const DELETE_REFUSED =
+	'This organizer cannot be deleted while it has an order that is not refunded, a settlement that is not reversed, or a payout account.'
+
+const ORGANIZER_DEFAULTS: Partial<Record<Code, string>> = {
+	[Code.NotFound]: 'The organizer or artist no longer exists.',
+	[Code.FailedPrecondition]:
+		'This organizer is deactivated and can no longer be changed.',
+	[Code.InvalidArgument]: 'The request was invalid. Check the fields.',
+}
+
+/**
+ * Maps a failed call that changes an existing Organizer (Deactivate, Delete,
+ * the artist roster, commercial terms) to copy: the Organizers screen's
+ * defaults per code, then `overrides`, then {@link toUserMessage}.
+ */
+export function toOrganizerMessage(
+	err: unknown,
+	fallback: string,
+	overrides: Partial<Record<Code, string>> = {},
+): string {
+	return toUserMessage(err, fallback, { ...ORGANIZER_DEFAULTS, ...overrides })
+}
+
+/** Maps a Delete failure to copy; FailedPrecondition gives {@link DELETE_REFUSED}. */
 export function toDeleteMessage(err: unknown): string {
-	if (err instanceof ConnectError && err.code === Code.FailedPrecondition) {
-		const reason = err.rawMessage.trim().replace(/\.+$/, '')
-		return reason
-			? `This organizer cannot be deleted: ${reason}.`
-			: 'This organizer cannot be deleted yet.'
-	}
-	return toUserMessage(err, 'Failed to delete the organizer.')
+	return toOrganizerMessage(err, 'Failed to delete the organizer.', {
+		[Code.FailedPrecondition]: DELETE_REFUSED,
+	})
 }

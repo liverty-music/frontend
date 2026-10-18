@@ -117,7 +117,7 @@ export class CheckoutRoute implements IRouteViewModel {
 
 	/** The current step's message, or null. */
 	public message: CheckoutMessage | null = null
-	/** A message from the card issuer or Stripe, shown as given. */
+	/** Catalog key of the card failure copy (`payment.error.*`), or empty. */
 	public cardError = ''
 	public outcome: CheckoutOutcome | null = null
 
@@ -555,7 +555,7 @@ export class CheckoutRoute implements IRouteViewModel {
 			const { stripe, elements } = this.stripeHandles
 			const read = await this.stripe.createCheckoutCard(stripe, elements)
 			if (!read.card) {
-				this.cardError = read.errorMessage ?? ''
+				this.cardError = read.errorKey ?? 'payment.error.failed'
 				return
 			}
 			this.cardAuthorizationSecret = await this.requestCardAuthorization(
@@ -566,9 +566,9 @@ export class CheckoutRoute implements IRouteViewModel {
 				this.cardAuthorizationSecret,
 				read.card.tokenId,
 			)
-			if (confirmed.errorMessage) {
+			if (confirmed.errorKey) {
 				// The fan may try another card on the same checkout.
-				this.cardError = confirmed.errorMessage
+				this.cardError = confirmed.errorKey
 				return
 			}
 			this.card = read.card
