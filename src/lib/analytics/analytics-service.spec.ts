@@ -348,6 +348,47 @@ describe('AnalyticsService', () => {
 			sut.dispose()
 		})
 
+		it('replays the pre-init queue in idle slices, keeping the order', async () => {
+			const sut = new AnalyticsService()
+			sut.capture(Events.ArtistSearch, { query_length: 1, result_count: 1 })
+			sut.capture(Events.ArtistSearch, { query_length: 2, result_count: 1 })
+			sut.capture(Events.ArtistSearch, { query_length: 3, result_count: 1 })
+			await sut._waitForInitForTests()
+
+			// Install the idle scheduler only for the replay: one event per slice.
+			const slices: ((d: { timeRemaining(): number }) => void)[] = []
+			vi.stubGlobal('requestIdleCallback', (cb: (typeof slices)[number]) => {
+				slices.push(cb)
+			})
+			try {
+				posthogStub.capture.mockClear()
+				;(sut as unknown as { queue: unknown[] }).queue.push(
+					...[4, 5].map((n) => ({
+						name: Events.ArtistSearch,
+						props: { query_length: n, result_count: 1 },
+					})),
+				)
+				;(sut as unknown as { flushQueue(): void }).flushQueue()
+				// A capture during the replay queues behind it.
+				sut.capture(Events.ArtistSearch, { query_length: 6, result_count: 1 })
+				expect(posthogStub.capture).not.toHaveBeenCalled()
+
+				const noTime = { timeRemaining: () => 0 }
+				while (slices.length > 0) slices.shift()?.(noTime)
+
+				const lengths = posthogStub.capture.mock.calls.map(
+					(c) => (c[1] as { query_length: number }).query_length,
+				)
+				expect(lengths).toEqual([4, 5, 6])
+				// Drained: the next capture goes straight to the SDK.
+				sut.capture(Events.ArtistSearch, { query_length: 7, result_count: 1 })
+				expect(posthogStub.capture).toHaveBeenCalledTimes(4)
+			} finally {
+				vi.unstubAllGlobals()
+				sut.dispose()
+			}
+		})
+
 		it('warns and drops excess events when the pre-init queue overflows 100 entries', async () => {
 			const warn = vi.fn()
 			const scopedLogger = {

@@ -135,6 +135,9 @@ export class AnalyticsService implements IAnalyticsService {
 	private initStarted = false
 	private readonly queue: QueuedCapture[] = []
 	private queueOverflowed = false
+	// True while the pre-init queue drains in idle slices; new captures queue
+	// behind it so events keep their order.
+	private flushing = false
 
 	/**
 	 * Last distinct_id we identified, so the service-worker identity snapshot
@@ -195,7 +198,7 @@ export class AnalyticsService implements IAnalyticsService {
 			this.logger.debug('capture suppressed (nil-config mode)', { name })
 			return
 		}
-		if (this.posthog === null) {
+		if (this.posthog === null || this.flushing) {
 			this.enqueue({ name, props } as QueuedCapture)
 			return
 		}
@@ -427,12 +430,44 @@ export class AnalyticsService implements IAnalyticsService {
 		this.queue.push(entry)
 	}
 
+	/**
+	 * Replays the pre-init queue. Each capture costs the SDK cookie, storage
+	 * and property work, and a cold load can queue dozens (long-frame events
+	 * pile up while the app boots), so replaying them in one task held the main
+	 * thread for over a second at 4x CPU throttling right while Discovery's
+	 * first data arrived. Where `requestIdleCallback` exists, the queue drains
+	 * in idle slices, at least one event per slice; elsewhere it drains at
+	 * once.
+	 */
 	private flushQueue(): void {
 		if (this.queue.length === 0) return
-		const pending = this.queue.splice(0, this.queue.length)
-		for (const entry of pending) {
-			this.dispatch(entry.name, entry.props)
+		const win = globalThis as typeof globalThis & {
+			requestIdleCallback?: (
+				cb: (deadline: { timeRemaining(): number }) => void,
+				opts?: { timeout: number },
+			) => unknown
 		}
+		const idle = win.requestIdleCallback
+		if (typeof idle !== 'function') {
+			for (const entry of this.queue.splice(0, this.queue.length)) {
+				this.dispatch(entry.name, entry.props)
+			}
+			return
+		}
+		this.flushing = true
+		const slice = (deadline: { timeRemaining(): number }): void => {
+			do {
+				const entry = this.queue.shift()
+				if (entry === undefined) break
+				this.dispatch(entry.name, entry.props)
+			} while (this.queue.length > 0 && deadline.timeRemaining() > 1)
+			if (this.queue.length > 0) {
+				idle(slice, { timeout: INIT_IDLE_TIMEOUT_MS })
+			} else {
+				this.flushing = false
+			}
+		}
+		idle(slice, { timeout: INIT_IDLE_TIMEOUT_MS })
 	}
 
 	/**
@@ -672,6 +707,11 @@ export class AnalyticsService implements IAnalyticsService {
 		if (this.posthog === null && this.isEnabled()) {
 			await this.init()
 		}
+		// Finish an idle-sliced replay of the pre-init queue synchronously.
+		for (const entry of this.queue.splice(0, this.queue.length)) {
+			this.dispatch(entry.name, entry.props)
+		}
+		this.flushing = false
 	}
 }
 
