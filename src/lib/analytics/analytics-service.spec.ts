@@ -123,6 +123,7 @@ vi.mock('aurelia', async (importOriginal) => {
 	}
 })
 
+import { SignedOut } from '../../services/events/signed-out'
 import { ConsentChanged } from '../consent/consent-changed'
 import { AnalyticsService } from './analytics-service'
 
@@ -320,6 +321,31 @@ describe('AnalyticsService', () => {
 			expect(
 				posthogStub.opt_out_capturing.mock.invocationCallOrder[0],
 			).toBeLessThan(posthogStub.capture.mock.invocationCallOrder[revealCall])
+		})
+
+		it('severs the identity link when the user signs out', async () => {
+			const sut = new AnalyticsService()
+			await sut._waitForInitForTests()
+			sut.identify('user-1')
+
+			mockEa.publish(new SignedOut())
+
+			expect(posthogStub.reset).toHaveBeenCalledOnce()
+			sut.dispose()
+		})
+
+		it('drops events buffered before init when the user signs out', async () => {
+			const sut = new AnalyticsService()
+			sut.capture(Events.ArtistSearch, { query_length: 3, result_count: 1 })
+
+			mockEa.publish(new SignedOut())
+			await sut._waitForInitForTests()
+
+			expect(posthogStub.capture).not.toHaveBeenCalledWith(
+				Events.ArtistSearch,
+				expect.anything(),
+			)
+			sut.dispose()
 		})
 
 		it('warns and drops excess events when the pre-init queue overflows 100 entries', async () => {
