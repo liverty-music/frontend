@@ -1,3 +1,4 @@
+import { create, type DescMessage } from '@bufbuild/protobuf'
 import type { Validator } from '@bufbuild/protovalidate'
 import type { Interceptor } from '@connectrpc/connect'
 import { Code, ConnectError } from '@connectrpc/connect'
@@ -21,22 +22,50 @@ export const loadSharedValidator: ValidatorLoader = () => {
 	return sharedValidator
 }
 
+/** Runs a callback when the main thread is idle. */
+export type IdleScheduler = (callback: () => void) => void
+
+const scheduleIdle: IdleScheduler = (callback) => {
+	if (typeof requestIdleCallback === 'function') {
+		requestIdleCallback(() => callback())
+	} else {
+		setTimeout(callback, 0)
+	}
+}
+
 /**
  * Creates an interceptor that validates outgoing unary requests against the
  * `buf.validate` rules declared in the proto schema, failing locally with
  * `InvalidArgument` (the violations are carried as the error's `cause`)
  * instead of sending a request the backend would reject.
  *
- * Loading starts when the interceptor is created and never blocks a request:
- * until the validator module resolves, requests pass through unvalidated.
- * The backend validates every request with the same rules, so a request
- * that slips through early is still rejected authoritatively.
+ * Validation never blocks a request. Loading starts when the interceptor is
+ * created, and until the validator module resolves, requests pass through
+ * unvalidated. Compiling a request type's rules (its CEL expressions) costs
+ * seconds of main-thread time on a slow phone, so it does not run on the
+ * request's path either: the first request of a type passes through and
+ * schedules the compilation for an idle moment; later requests of that type
+ * are validated. The backend validates every request with the same rules, so
+ * a request that slips through early is still rejected authoritatively.
  */
 export const createValidateInterceptor = (
 	load: ValidatorLoader,
 	logger: ILogger,
+	idle: IdleScheduler = scheduleIdle,
 ): Interceptor => {
 	let validator: Validator | null = null
+	// Request types whose rules are compiled, and those scheduled to compile.
+	const compiled = new Set<string>()
+	const scheduled = new Set<string>()
+	const compileWhenIdle = (v: Validator, type: DescMessage): void => {
+		if (scheduled.has(type.typeName)) return
+		scheduled.add(type.typeName)
+		idle(() => {
+			// Validating a default message compiles and caches the type's rules.
+			v.validate(type, create(type))
+			compiled.add(type.typeName)
+		})
+	}
 	load().then(
 		(v) => {
 			validator = v
@@ -50,6 +79,13 @@ export const createValidateInterceptor = (
 
 	return (next) => async (req) => {
 		if (req.stream === false && validator) {
+			compileWhenIdle(validator, req.method.input)
+		}
+		if (
+			req.stream === false &&
+			validator &&
+			compiled.has(req.method.input.typeName)
+		) {
 			const result = validator.validate(req.method.input, req.message)
 			if (result.kind === 'invalid') {
 				throw new ConnectError(
