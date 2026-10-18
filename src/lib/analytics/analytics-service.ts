@@ -13,6 +13,7 @@ import {
 	type EventProps,
 	Events,
 } from '../../services/analytics-events'
+import { SignedOut } from '../../services/events/signed-out'
 import { ConsentChanged } from '../consent/consent-changed'
 import { IConsentService } from '../consent/consent-service'
 import {
@@ -170,6 +171,7 @@ export class AnalyticsService implements IAnalyticsService {
 	// that.
 
 	private readonly consentSubscription: IDisposable
+	private readonly signedOutSubscription: IDisposable
 
 	public constructor() {
 		// Subscribe BEFORE scheduling init so an opt-out emitted in the same
@@ -179,6 +181,11 @@ export class AnalyticsService implements IAnalyticsService {
 		this.consentSubscription = this.ea.subscribe(
 			ConsentChanged,
 			(event: ConsentChanged) => this.handleConsentChanged(event),
+		)
+		// A sign-out ends the identified session: later events must not be
+		// attributed to the user who signed out.
+		this.signedOutSubscription = this.ea.subscribe(SignedOut, () =>
+			this.reset(),
 		)
 		this.scheduleInit()
 	}
@@ -252,11 +259,14 @@ export class AnalyticsService implements IAnalyticsService {
 		this.queue.length = 0
 		this.queueOverflowed = false
 		this.pendingIdentify = null
+		this.lastDistinctId = null
 		if (this.posthog === null) {
 			this.logger.debug('reset queue-only (pre-init)')
 			return
 		}
 		this.posthog.reset()
+		// Point the service-worker snapshot at the new anonymous id.
+		this.syncIdentitySnapshot()
 	}
 
 	public getFeatureFlag(key: string, defaultValue: unknown): unknown {
@@ -644,12 +654,13 @@ export class AnalyticsService implements IAnalyticsService {
 	}
 
 	/**
-	 * Disposes the consent subscription. AnalyticsService is a singleton and
+	 * Disposes the event subscriptions. AnalyticsService is a singleton and
 	 * lives for the full page lifetime, so production code never calls this;
-	 * tests use it to release the IEventAggregator subscription.
+	 * tests use it to release the IEventAggregator subscriptions.
 	 */
 	public dispose(): void {
 		this.consentSubscription.dispose()
+		this.signedOutSubscription.dispose()
 	}
 
 	/**
