@@ -96,7 +96,13 @@ const mockAnalyticsService = {
 	identify: vi.fn<(userId: string) => void>(),
 }
 
-import { runUserHydration } from './user-hydration-task'
+import {
+	opensOnDiscovery,
+	runUserHydration,
+	startUserHydration,
+} from './user-hydration-task'
+
+const hydrationHolder: { ready: Promise<void> } = { ready: Promise.resolve() }
 
 // Container stub: routes container.get(token) to our mocks via friendlyName.
 function makeContainer(): IContainer {
@@ -116,6 +122,8 @@ function makeContainer(): IContainer {
 					return mockLocalStorage
 				case 'IAnalyticsService':
 					return mockAnalyticsService
+				case 'IUserHydration':
+					return hydrationHolder
 				default:
 					throw new Error(`unmocked token: ${fn ?? String(token)}`)
 			}
@@ -377,5 +385,33 @@ describe('runUserHydration', () => {
 		expect(mockI18n.setLocale).not.toHaveBeenCalled()
 		expect(mockUserStore.updatePreferredLanguage).not.toHaveBeenCalled()
 		expect(lsMap.get(StorageKeys.language)).toBe('en')
+	})
+})
+
+describe('startUserHydration', () => {
+	it('makes the first render wait for the user on a route that reads it', async () => {
+		mockAuth.isAuthenticated = false
+
+		const waitFor = startUserHydration(makeContainer(), '/dashboard')
+
+		expect(waitFor).toBeInstanceOf(Promise)
+		await waitFor
+		await expect(hydrationHolder.ready).resolves.toBeUndefined()
+	})
+
+	it('lets the first render go ahead when the app opens on Discovery', async () => {
+		mockAuth.isAuthenticated = false
+
+		const waitFor = startUserHydration(makeContainer(), '/discovery')
+
+		expect(waitFor).toBeUndefined()
+		await expect(hydrationHolder.ready).resolves.toBeUndefined()
+	})
+
+	it('recognizes the Discovery route', () => {
+		expect(opensOnDiscovery('/discovery')).toBe(true)
+		expect(opensOnDiscovery('/discovery/')).toBe(true)
+		expect(opensOnDiscovery('/discoveryx')).toBe(false)
+		expect(opensOnDiscovery('/')).toBe(false)
 	})
 })

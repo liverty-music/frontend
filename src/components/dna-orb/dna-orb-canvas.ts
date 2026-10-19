@@ -113,6 +113,9 @@ export class DnaOrbCanvas {
 	// shrink-and-wrap loop measures text many times, so it runs once per bubble,
 	// not per frame. Keying on the drawn radius missed on every spawn frame.
 	private readonly labelLayouts = new Map<string, LabelLayout>()
+	// The font last set for measuring, so it is set only when it changes;
+	// cleared at the start of each frame and whenever a label is drawn.
+	private measureFont = ''
 
 	// Performance monitoring
 	private frameTimes: number[] = []
@@ -595,6 +598,8 @@ export class DnaOrbCanvas {
 	}
 
 	private render(): void {
+		// Other layers (absorption labels) set their own fonts while drawing.
+		this.measureFont = ''
 		const rect = this.element.getBoundingClientRect()
 		if (!rect || rect.width === 0 || rect.height === 0) return
 
@@ -782,6 +787,7 @@ export class DnaOrbCanvas {
 		this.ctx.textAlign = 'center'
 		this.ctx.textBaseline = 'middle'
 		this.ctx.font = layout.font
+		this.measureFont = ''
 
 		const scaled = scale !== 1
 		if (scaled) {
@@ -809,7 +815,10 @@ export class DnaOrbCanvas {
 			this.labelLayouts.clear()
 		}
 		const layout = computeLabelLayout(name, radius, (text, font) => {
-			this.ctx.font = font
+			if (this.measureFont !== font) {
+				this.ctx.font = font
+				this.measureFont = font
+			}
 			return this.ctx.measureText(text).width
 		})
 		this.labelLayouts.set(key, layout)
@@ -822,6 +831,14 @@ const MAX_CANVAS_DPR = 2
 
 // Bound on cached label layouts over a long session of taps.
 const LABEL_LAYOUT_CACHE_LIMIT = 1000
+
+// Font size labels are measured at before scaling to the size tried.
+const LABEL_REF_SIZE = 100
+
+/** The canvas font of a bubble label at `size` px. */
+function labelFont(size: number): string {
+	return `bold ${size}px system-ui, sans-serif`
+}
 
 /** How a bubble label is drawn: its font, its wrapped lines and line spacing. */
 export interface LabelLayout {
@@ -856,25 +873,27 @@ export function computeLabelLayout(
 		if (size <= minFont) break
 	}
 
-	// Each measured width once per layout: wrapping and the fit check measure
-	// the same strings again and again.
-	const widths = new Map<string, number>()
-	const width = (text: string, font: string): number => {
-		const key = `${font}\n${text}`
-		let w = widths.get(key)
+	// Every string is measured once, at one reference size, and scaled to the
+	// size being tried: text width grows in proportion to the font size, and
+	// switching the canvas font for each size was the costly part (561 ms of
+	// measureText for a guest's 30 labels at 4x CPU throttling).
+	const refWidths = new Map<string, number>()
+	const refWidth = (text: string): number => {
+		let w = refWidths.get(text)
 		if (w === undefined) {
-			w = measure(text, font)
-			widths.set(key, w)
+			w = measure(text, labelFont(LABEL_REF_SIZE))
+			refWidths.set(text, w)
 		}
 		return w
 	}
 	const layoutAt = (fontSize: number) => {
-		const font = `bold ${fontSize}px system-ui, sans-serif`
-		const lines = wrapText(name, usableWidth, (t) => width(t, font))
+		const scale = fontSize / LABEL_REF_SIZE
+		const width = (t: string) => refWidth(t) * scale
+		const lines = wrapText(name, usableWidth, width)
 		const fits =
 			lines.length <= maxLines &&
-			lines.every((line) => width(line, font) <= usableWidth)
-		return { font, lines, fits }
+			lines.every((line) => width(line) <= usableWidth)
+		return { font: labelFont(fontSize), lines, fits }
 	}
 
 	// The largest size that fits, by binary search over the steps instead of

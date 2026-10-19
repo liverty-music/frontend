@@ -11,14 +11,21 @@ vi.mock('../../src/services/auth-service', () => ({
 }))
 
 const { AuthHook } = await import('../../src/hooks/auth-hook')
+const { IUserHydration } = await import(
+	'../../src/services/user-hydration-task'
+)
 
 function makeRouteNode(data?: Record<string, unknown>): RouteNode {
 	return { data } as unknown as RouteNode
 }
 
-function makeHook(mockAuth: ReturnType<typeof createMockAuth>) {
+function makeHook(
+	mockAuth: ReturnType<typeof createMockAuth>,
+	hydration: { ready: Promise<void> } = { ready: Promise.resolve() },
+) {
 	const container = createTestContainer(
 		Registration.instance(mockIAuthService, mockAuth),
+		Registration.instance(IUserHydration, hydration),
 	)
 	container.register(AuthHook)
 	return container.get(AuthHook)
@@ -41,6 +48,35 @@ describe('AuthHook', () => {
 				null,
 			)
 			expect(result).toBe(true)
+		})
+
+		it('waits for the user hydration before loading a protected route', async () => {
+			let hydrated: () => void = () => {}
+			const sut = makeHook(mockAuth, {
+				ready: new Promise<void>((r) => {
+					hydrated = r
+				}),
+			})
+			let loaded = false
+
+			const loading = sut.canLoad({}, {}, makeRouteNode({}), null).then(() => {
+				loaded = true
+			})
+			await Promise.resolve()
+			await Promise.resolve()
+			expect(loaded).toBe(false)
+
+			hydrated()
+			await loading
+			expect(loaded).toBe(true)
+		})
+
+		it('does not wait for the user hydration on a public route', async () => {
+			const sut = makeHook(mockAuth, { ready: new Promise<void>(() => {}) })
+
+			await expect(
+				sut.canLoad({}, {}, makeRouteNode({ auth: false }), null),
+			).resolves.toBe(true)
 		})
 
 		it('allows authenticated users on protected routes', async () => {

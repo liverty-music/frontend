@@ -453,6 +453,7 @@ describe('ArtistBubbleStore', () => {
 
 		// @spec components/infrastructure/fan/web/route/discovery "Re-entry with all cached artists already followed"
 		it('shows no ghosts when every cached artist was followed, then refills on the refresh', async () => {
+			sut.prepareEntry() // the first visit
 			await seed(sut, [artist('a'), artist('b')])
 			followedArtists = [artist('a'), artist('b')]
 
@@ -467,6 +468,45 @@ describe('ArtistBubbleStore', () => {
 			expect(sut.field.some((x) => x.isGhost)).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Initial load starts during start-up when the app opens on Discovery"
+		it('treats the first display of a field built during start-up as a cold visit, without ghosts', async () => {
+			mockArtistStore.listTop.mockResolvedValue([artist('a'), artist('b')])
+			sut.prefetchInitial(400)
+			await flush()
+
+			expect(sut.prepareEntry()).toBe(true)
+			expect(sut.field.map((x) => x.id)).toEqual(['a', 'b'])
+			expect(sut.prepareEntry()).toBe(false)
+		})
+
+		it('does not start a start-up load once the field has been shown', () => {
+			sut.prepareEntry()
+			sut.prefetchInitial(400)
+			expect(mockArtistStore.listTop).not.toHaveBeenCalled()
+		})
+
+		it('reveals the seeds of a start-up load into the ghosts once the route shows them', async () => {
+			followedArtists = [artist('f1'), artist('f2')]
+			const s1 = deferred<Artist[]>()
+			const s2 = deferred<Artist[]>()
+			mockArtistStore.listSimilar.mockImplementation(async (id: string) =>
+				id === 'f1' ? s1.promise : s2.promise,
+			)
+			sut.prefetchInitial(400)
+
+			// The route shows the field before any seed answered: ghosts.
+			expect(sut.prepareEntry()).toBe(true)
+			s1.resolve([artist('a1')])
+			await flush()
+			expect(sut.field.filter((x) => !x.isGhost).map((x) => x.id)).toEqual([
+				'a1',
+			])
+
+			s2.resolve([artist('b1')])
+			await flush()
+			await flush()
+		})
+
 		it('paints ghost placeholders on a cold visit (empty field)', () => {
 			expect(sut.prepareEntry()).toBe(true)
 			expect(sut.field).toHaveLength(50)
@@ -474,6 +514,7 @@ describe('ArtistBubbleStore', () => {
 		})
 
 		it('reports no cold visit when it repaints a cached field', async () => {
+			expect(sut.prepareEntry()).toBe(true) // the first visit
 			await seed(sut, [artist('a')])
 			expect(sut.prepareEntry()).toBe(false)
 		})

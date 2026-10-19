@@ -174,13 +174,26 @@ export function loadAppConfig(
 	return _inflight
 }
 
+/**
+ * The `/config.json` request the fan app's `index.html` starts while it is
+ * parsed (`public/config-prefetch.js`), handed over once; null where no page
+ * started one (the admin and organizer consoles, tests).
+ */
+function takeStartedConfigRequest(): Promise<Response> | null {
+	const holder = globalThis as { __configRequest?: Promise<Response> }
+	const request = holder.__configRequest ?? null
+	delete holder.__configRequest
+	return request
+}
+
 async function doLoadAppConfig(
 	options?: LoadAppConfigOptions,
 ): Promise<AppConfig> {
-	const res = await fetch('/config.json', {
-		cache: 'no-store',
-		signal: AbortSignal.timeout(CONFIG_FETCH_TIMEOUT_MS),
-	})
+	const res = await (takeStartedConfigRequest() ??
+		fetch('/config.json', {
+			cache: 'no-store',
+			signal: AbortSignal.timeout(CONFIG_FETCH_TIMEOUT_MS),
+		}))
 	if (!res.ok) {
 		throw new Error(
 			`config.json fetch failed: HTTP ${res.status} ${res.statusText}`,

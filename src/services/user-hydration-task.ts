@@ -1,5 +1,5 @@
 import { I18N } from '@aurelia/i18n'
-import { AppTask, IContainer, ILogger } from 'aurelia'
+import { AppTask, DI, IContainer, ILogger } from 'aurelia'
 import { ILocalStorage } from '../adapter/storage/local-storage'
 import { SessionKeys, StorageKeys } from '../constants/storage-keys'
 import { IAnalyticsService } from '../lib/analytics/analytics-service'
@@ -163,7 +163,53 @@ async function applyPreferredLanguageToI18n(deps: {
 	}
 }
 
+/**
+ * Settles once the boot-time user hydration has finished (or failed, or there
+ * is no signed-in user). Code that reads `UserStore.current` at start-up or
+ * on a route load waits for it, because the first render does not always.
+ */
+export const IUserHydration = DI.createInterface<IUserHydration>(
+	'IUserHydration',
+	(x) => x.singleton(UserHydration),
+)
+export interface IUserHydration extends UserHydration {}
+export class UserHydration {
+	public ready: Promise<void> = Promise.resolve()
+}
+
+/** Whether the document was opened on the Discovery route. */
+export function opensOnDiscovery(pathname: string): boolean {
+	return pathname === '/discovery' || pathname.startsWith('/discovery/')
+}
+
+/**
+ * Hydrates the user at boot and returns what the first render waits for:
+ * the hydration, except when the app opens on Discovery. Discovery reads
+ * nothing of the user, and waiting held its first bubbles back by a
+ * `UserService.Get` round trip. Routes that do read the user wait for
+ * `IUserHydration.ready` in the auth hook.
+ */
+export function startUserHydration(
+	container: IContainer,
+	pathname: string,
+): Promise<void> | undefined {
+	const run = runUserHydration(container)
+	container.get(IUserHydration).ready = run.then(
+		() => undefined,
+		() => undefined,
+	)
+	if (!opensOnDiscovery(pathname)) return run
+	run.catch((err: unknown) => {
+		container
+			.get(ILogger)
+			.scopeTo('UserHydrationTask')
+			.warn('User hydration failed', { error: err })
+	})
+	return undefined
+}
+
 export const UserHydrationTask = AppTask.activating(
 	IContainer,
-	runUserHydration,
+	(container: IContainer) =>
+		startUserHydration(container, window.location.pathname),
 )

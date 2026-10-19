@@ -73,6 +73,7 @@ import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
 import { IConcertStore } from './services/concert-store'
+import { DiscoveryPrefetchTask } from './services/discovery-prefetch-task'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFabMenuService } from './services/fab-menu-service'
 import { FollowPrefetchTask } from './services/follow-prefetch-task'
@@ -94,7 +95,10 @@ import { IStripeService } from './services/stripe-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
 import { ITicketJourneyStore } from './services/ticket-journey-store'
 import { ITicketWallet } from './services/ticket-wallet'
-import { UserHydrationTask } from './services/user-hydration-task'
+import {
+	IUserHydration,
+	UserHydrationTask,
+} from './services/user-hydration-task'
 import { IUserStore } from './services/user-store'
 import { DateValueConverter } from './value-converters/date'
 
@@ -224,6 +228,9 @@ async function bootstrap(): Promise<void> {
 	// known (does not block start-up), so Discovery can pick its seeds without
 	// waiting a round trip.
 	au.register(FollowPrefetchTask)
+	// For an app opened on Discovery, starts building the bubble field during
+	// start-up (after the follow list for a signed-in fan); does not block.
+	au.register(DiscoveryPrefetchTask)
 	au.register(IAudioEngine)
 	au.register(IHapticService)
 	au.register(INotificationManager)
@@ -304,7 +311,9 @@ async function bootstrap(): Promise<void> {
 		const recoverPush = (): void => {
 			void pushService.resolvePushState(userStore.current !== undefined)
 		}
-		recoverPush()
+		// Wait for the user: the first render does not when the app opens on
+		// Discovery, and recovery needs to know whether someone is signed in.
+		void au.container.get(IUserHydration).ready.then(recoverPush)
 		navigator.serviceWorker?.addEventListener('message', (event) => {
 			if (event.data?.type === PUSH_SUBSCRIPTION_CHANGED_MESSAGE) {
 				recoverPush()

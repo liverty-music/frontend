@@ -232,6 +232,22 @@ describe('computeLabelLayout cost', () => {
 	})
 })
 
+describe('computeLabelLayout measurement', () => {
+	it('measures each string once, at one reference font', () => {
+		const calls: [string, string][] = []
+		computeLabelLayout('The Pretty Reckless Of Many Words', 45, (t, f) => {
+			calls.push([t, f])
+			return fontMeasure(t, f)
+		})
+
+		expect(new Set(calls.map(([, f]) => f))).toEqual(
+			new Set(['bold 100px system-ui, sans-serif']),
+		)
+		const texts = calls.map(([t]) => t)
+		expect(new Set(texts).size).toBe(texts.length)
+	})
+})
+
 describe('nextFocusableIndex', () => {
 	function b(id: string, ghost = false): PhysicsBubble {
 		return {
