@@ -50,9 +50,39 @@
   <script src="/config-prefetch.js"></script>
   <script type="module" src="/src/main.ts"></script>
   <base href="/">
+  <style>
+    #callback-loading {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+    }
+
+    #callback-loading[hidden] { display: none; }
+
+    #callback-loading::before {
+      content: "";
+      inline-size: 2rem;
+      block-size: 2rem;
+      border: 2px solid currentColor;
+      border-block-start-color: transparent;
+      border-radius: 50%;
+      animation: callback-spin 1s linear infinite;
+    }
+
+    @keyframes callback-spin { to { rotate: 1turn; } }
+  </style>
 </head>
 
 <body class="bg-surface-base text-text-primary">
+  <!-- Sign-in callback indicator. The callback route finishes the sign-in
+       (token exchange, user provisioning: 1 to 4.5 s in prod) inside canLoad,
+       before anything renders, so this static spinner is the only feedback in
+       that wait. Hidden by default; main.ts shows it on /auth/callback only and
+       removes it once Aurelia has started. Other screens render their own
+       loading state (Discovery's ghost bubbles), so they show nothing here. -->
+  <div id="callback-loading" role="status" aria-label="Loading" hidden></div>
   <app-shell></app-shell>
 </body>
 
