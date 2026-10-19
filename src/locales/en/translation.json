@@ -194,10 +194,6 @@
 		}
 	},
 	"pwa": {
-		"title": "Add to Home Screen",
-		"description": "Install Liverty Music for faster access and offline browsing.",
-		"install": "Install",
-		"notNow": "Not now",
 		"updateAvailable": "A new version is available",
 		"updateAction": "Update"
 	},
