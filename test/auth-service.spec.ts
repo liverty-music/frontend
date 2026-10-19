@@ -74,6 +74,19 @@ describe('AuthService', () => {
 		expect(UserManager).toHaveBeenCalled()
 	})
 
+	it('gives oidc-client-ts the Zitadel endpoints and reads the profile from the ID token only', () => {
+		const settings = vi.mocked(UserManager).mock.lastCall?.[0]
+		const issuer = String(settings?.authority).replace(/\/+$/, '')
+		// No discovery document fetch, no userinfo round trip.
+		expect(settings?.metadata).toMatchObject({
+			issuer,
+			authorization_endpoint: `${issuer}/oauth/v2/authorize`,
+			token_endpoint: `${issuer}/oauth/v2/token`,
+			end_session_endpoint: `${issuer}/oidc/v1/end_session`,
+		})
+		expect(settings?.loadUserInfo).toBe(false)
+	})
+
 	it('isAuthenticated should reflect user state via events', async () => {
 		expect(sut.isAuthenticated).toBe(false)
 
