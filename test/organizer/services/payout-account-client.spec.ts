@@ -81,6 +81,14 @@ describe('PayoutAccountClient', () => {
 		)
 	})
 
+	it('startOnboarding fails when the answer carries no URL', async () => {
+		mockRpc.startOnboarding.mockResolvedValue({})
+
+		await expect(resolveClient().startOnboarding()).rejects.toBeInstanceOf(
+			ConnectError,
+		)
+	})
+
 	it('startOnboarding rethrows a failure', async () => {
 		const err = new ConnectError('provider down', Code.Unavailable)
 		mockRpc.startOnboarding.mockRejectedValue(err)

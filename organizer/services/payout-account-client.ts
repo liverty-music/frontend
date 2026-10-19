@@ -61,7 +61,12 @@ export class PayoutAccountClient {
 	public async startOnboarding(signal?: AbortSignal): Promise<string> {
 		try {
 			const response = await this.client.startOnboarding({}, { signal })
-			return response.onboardingUrl?.value ?? ''
+			const url = response.onboardingUrl?.value
+			// Opening an empty URL would only reload the page, with no failure shown.
+			if (!url) {
+				throw new ConnectError('no onboarding URL in the answer', Code.Internal)
+			}
+			return url
 		} catch (err) {
 			this.logger.warn('startOnboarding failed', { error: err })
 			throw err
