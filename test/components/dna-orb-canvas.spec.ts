@@ -283,6 +283,93 @@ describe('DnaOrbCanvas', () => {
 		})
 	})
 
+	describe('ghosts before the physics engine', () => {
+		const ghosts = (n: number) =>
+			Array.from({ length: n }, (_, i) => ({
+				id: `__ghost__${i}`,
+				name: '',
+				mbid: '',
+				isGhost: true as const,
+			}))
+
+		it('draws the cold visit ghosts and starts the frame loop before the engine loads', async () => {
+			let loadEngine: () => void = () => {}
+			vi.spyOn((sut as any).physics, 'init').mockReturnValue(
+				new Promise<void>((r) => {
+					loadEngine = r
+				}),
+			)
+			let frame: FrameRequestCallback | undefined
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+				frame = cb
+				return 1
+			})
+			sut.artists = ghosts(5)
+
+			const attaching = sut.attached()
+			await Promise.resolve()
+			await Promise.resolve()
+
+			// The engine is still loading, yet a frame is scheduled and draws ghosts.
+			expect(frame).toBeDefined()
+			;(mockCtx.arc as ReturnType<typeof vi.fn>).mockClear()
+			frame?.(performance.now() + 16)
+			expect(
+				(mockCtx.arc as ReturnType<typeof vi.fn>).mock.calls.length,
+			).toBeGreaterThanOrEqual(5)
+			expect(
+				dispatchedEvents.some(
+					(e) => e.type === 'reveal-mark' && e.detail.mark === 'ghosts',
+				),
+			).toBe(true)
+
+			loadEngine()
+			await attaching
+		})
+
+		it('hands the placeholders to the engine where they are drawn, then reveals real artists into them', async () => {
+			let loadEngine: () => void = () => {}
+			const physics = (sut as any).physics
+			const init = physics.init.bind(physics)
+			vi.spyOn(physics, 'init').mockImplementation(
+				(w: number, h: number) =>
+					new Promise<void>((r) => {
+						loadEngine = () => void init(w, h).then(r)
+					}),
+			)
+			vi.spyOn(globalThis, 'requestAnimationFrame').mockReturnValue(1)
+			const addBubbles = vi.spyOn(physics, 'addBubbles')
+			const reconcile = vi.spyOn(physics, 'reconcile')
+			sut.artists = ghosts(3)
+
+			const attaching = sut.attached()
+			await Promise.resolve()
+			await Promise.resolve()
+			const drawn = (sut as any).placeholders.map(
+				(b: { body: { position: { x: number; y: number } } }) =>
+					b.body.position,
+			)
+			// Real artists arrive while the engine is still loading.
+			sut.artists = [makeArtist('a1', 'One'), ...ghosts(3).slice(1)]
+			sut.artistsChanged(sut.artists)
+			expect(reconcile).not.toHaveBeenCalled()
+
+			loadEngine()
+			await attaching
+
+			const seeded = addBubbles.mock.calls[0][0] as {
+				position: { x: number; y: number }
+			}[]
+			expect(seeded.map((p) => p.position)).toEqual(drawn)
+			expect(reconcile).toHaveBeenCalledOnce()
+			expect(
+				(reconcile.mock.calls[0][0] as { artist: { id: string } }[]).map(
+					(p) => p.artist.id,
+				),
+			).toEqual(['a1'])
+		})
+	})
+
 	describe('device pixel ratio', () => {
 		it('renders at most at 2x on a 3x screen', async () => {
 			vi.stubGlobal('devicePixelRatio', 3)
