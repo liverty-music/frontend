@@ -123,6 +123,13 @@
 		   (on-container), or the organizer console's own rule. Only its place
 		   in the row is set here. */
 		.snack-action-btn {
+			/* Compact size of the fan app's shared button (button.css hooks),
+			   so the message keeps the width of the row. */
+			--button-min-size: 2.25rem;
+			--button-padding-block: var(--space-3xs);
+			--button-padding-inline: var(--space-s);
+			--button-font-size: var(--step--1);
+
 			flex-shrink: 0;
 			margin-inline-start: auto;
 		}

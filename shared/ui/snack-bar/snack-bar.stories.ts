@@ -33,7 +33,7 @@ class SnackDemo {
 			new Snack(this.message, this.severity, {
 				duration: Number.POSITIVE_INFINITY,
 				...(this.update && {
-					icon: 'rotate-ccw',
+					icon: null,
 					attention: true,
 					action: { label: '更新', callback: () => {} },
 				}),
@@ -147,9 +147,15 @@ export const UpdateAction = {
 			await expect(glow.playState).toBe('finished')
 		}
 
-		// @spec components/infrastructure/fan/web/global/snack-bar "Leading icon depicts a refresh"
-		const icon = canvasElement.querySelector('.snack-icon')
-		await expect(icon?.getAttribute('data-icon')).toBe('rotate-ccw')
+		// @spec components/infrastructure/fan/web/global/snack-bar "No leading icon"
+		await expect(canvasElement.querySelector('.snack-icon')).toBeNull()
+
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Compact button on a snack bar"
+		// Smaller than the default button, with the same radius and weight, so
+		// the message keeps the row (the e2e checks one line at 360px).
+		await expect(Number.parseFloat(style.minHeight)).toBe(36)
+		await expect(Number.parseFloat(style.fontSize)).toBeLessThan(19)
+		await expect(style.fontWeight).toBe('700')
 
 		// After the glow (or with none), both projects render the same still
 		// frame.

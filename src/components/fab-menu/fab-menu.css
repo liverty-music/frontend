@@ -219,16 +219,18 @@
 				overlay var(--md-spring-spatial-duration) allow-discrete;
 		}
 
-		/* Animated scrim behind the open arc (communicates the dismiss region). */
-		.fab-panel::backdrop {
+		/* Animated scrim behind the open arc. It covers the viewport and takes
+		   every tap outside the items, so such a tap only closes the arc
+		   (fab-menu.ts dismiss()) instead of reaching the page. */
+		.fab-scrim {
+			position: fixed;
+			inset: 0;
 			background: transparent;
-			transition:
-				background var(--md-spring-effects-duration) var(--md-spring-effects),
-				display var(--md-spring-effects-duration) allow-discrete,
-				overlay var(--md-spring-effects-duration) allow-discrete;
+			transition: background var(--md-spring-effects-duration)
+				var(--md-spring-effects);
 		}
 
-		.fab-panel:popover-open::backdrop {
+		.fab-panel:popover-open .fab-scrim {
 			background: var(--md-color-scrim);
 
 			@starting-style {
@@ -389,7 +391,7 @@
 			.fab-equalizer,
 			.fab-close,
 			.fab-panel,
-			.fab-panel::backdrop,
+			.fab-scrim,
 			.fab-list-item,
 			.fab-item::after,
 			.fab-toggle::after {

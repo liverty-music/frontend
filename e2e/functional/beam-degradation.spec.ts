@@ -152,8 +152,15 @@ test('beams are absent without typed attr(), and nothing else changes', async ({
 	}))
 	expect(beams).toEqual({ declared: 0, lit: 0 })
 
-	// The timetable renders and behaves as with the effect off.
+	// The timetable renders and behaves as with the effect off. The beam toggle
+	// keeps the arc open, and a tap outside it only closes it, so close it
+	// first.
 	expect(await snapshot()).toEqual(off)
+	await page.keyboard.press('Escape')
+	await expect(page.locator('fab-menu .fab-toggle')).toHaveAttribute(
+		'aria-expanded',
+		'false',
+	)
 	await page.locator('[data-live-card]').first().click()
 	await expect(
 		page

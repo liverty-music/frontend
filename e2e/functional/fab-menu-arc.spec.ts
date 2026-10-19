@@ -155,6 +155,29 @@ test.describe('the action arc', () => {
 		expect(await opacity(page, 'fab-menu .fab-close')).toBe(0)
 	})
 
+	test(`@spec ${CAPABILITY} "Tapping outside the arc only closes it"`, async ({
+		page,
+	}) => {
+		await openShell(page, '/dashboard')
+		await openArc(page)
+
+		// A real tap on a tab, and one on the page's own link, reach neither.
+		await page.locator('.nav-tab[data-nav="ticket"]').click({ force: true })
+		await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
+		expect(new URL(page.url()).pathname).toBe('/dashboard')
+
+		await openArc(page)
+		const link = page.getByTestId('discover-link').first()
+		const target = await box(link)
+		await page.mouse.click(target.x + 8, target.y + target.height / 2)
+		await expect(fab(page)).toHaveAttribute('aria-expanded', 'false')
+		expect(new URL(page.url()).pathname).toBe('/dashboard')
+
+		// With the arc closed, the same tab tap navigates.
+		await tapTab(page, 'ticket')
+		await page.waitForURL('**/tickets')
+	})
+
 	test(`@spec ${CAPABILITY} "Idle glyph is still"`, async ({ page }) => {
 		await openShell(page, '/dashboard')
 		await page.waitForTimeout(1000)
@@ -367,15 +390,15 @@ test.describe('the action arc', () => {
 			const item = document.querySelector(
 				'fab-menu .fab-item:not([data-active="true"]):not([aria-pressed="true"])',
 			)
-			const panel = document.querySelector('#fab-menu-panel')
-			if (!label || !item || !panel) throw new Error('arc not open')
+			const scrim = document.querySelector('fab-menu .fab-scrim')
+			if (!label || !item || !scrim) throw new Error('arc not open')
 			const labelStyle = getComputedStyle(label)
 			// The page behind: the app background under the scrim.
 			const ctx = new OffscreenCanvas(1, 1).getContext('2d')
 			if (!ctx) throw new Error('no 2d context')
 			ctx.fillStyle = getComputedStyle(document.body).backgroundColor
 			ctx.fillRect(0, 0, 1, 1)
-			ctx.fillStyle = getComputedStyle(panel, '::backdrop').backgroundColor
+			ctx.fillStyle = getComputedStyle(scrim).backgroundColor
 			ctx.fillRect(0, 0, 1, 1)
 			const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
 			const dimmed = luminance(`rgb(${r}, ${g}, ${b})`)
@@ -517,9 +540,9 @@ test.describe('sinking while a snack bar is open', () => {
 
 test.describe('collapsed after navigation', () => {
 	/**
-	 * Navigate while the arc is open. A real tap on a tab first meets the
-	 * arc's scrim, so the tab is clicked programmatically, the way a route
-	 * change from code (or a fast second tap) reaches the router.
+	 * Navigate while the arc is open. A real tap on a tab only closes the
+	 * arc (it lands on the scrim), so the tab is clicked programmatically, the
+	 * way a route change from code reaches the router.
 	 */
 	async function clickTabBehindScrim(page: Page, icon: string) {
 		await page

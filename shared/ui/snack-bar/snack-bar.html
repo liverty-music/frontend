@@ -10,7 +10,7 @@
     data-severity.bind="snack.severity"
     toggle.trigger="onToggle($event, snack)"
   >
-    <svg-icon if.bind="icons" name.bind="snack.icon" class="snack-icon" data-icon.bind="snack.icon"></svg-icon>
+    <svg-icon if.bind="icons && snack.icon" name.bind="snack.icon" class="snack-icon" data-icon.bind="snack.icon"></svg-icon>
     <span class="snack-message"><au-slot name="message" expose.bind="{ snack }">${snack.message}</au-slot></span>
     <!-- The fan app styles the action with its shared button (on-container,
          on the coloured snack); the organizer console, which has no shared
