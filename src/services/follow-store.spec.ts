@@ -21,7 +21,10 @@ const mockLogger = {
 	}),
 }
 
-const mockAuth = { isAuthenticated: true }
+const mockAuth = {
+	isAuthenticated: true,
+	user: { profile: { sub: 'sub-1' } } as { profile: { sub: string } } | null,
+}
 
 const mockRpcClient = {
 	list: vi.fn(async (): Promise<FollowedArtist[]> => []),
@@ -272,6 +275,20 @@ describe('FollowStore', () => {
 			])
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Seeds come from the follows kept on the device"
+		it('keeps the signed-in list on the device for the next start, per account', async () => {
+			mockRpcClient.list.mockResolvedValueOnce([
+				makeFollowedArtist('a1', 'Artist One'),
+			])
+
+			await sut.listFollowed()
+
+			expect(sut.keptFollowedArtists().map((a) => a.id)).toEqual(['a1'])
+			mockAuth.user = { profile: { sub: 'sub-2' } }
+			expect(sut.keptFollowedArtists()).toEqual([])
+			mockAuth.user = { profile: { sub: 'sub-1' } }
+		})
+
 		it('sets followedArtists from guest storage follows when not authenticated', async () => {
 			mockAuth.isAuthenticated = false
 			guestSeed = [makeFollowedArtist('g1', 'Guest Artist')]
@@ -461,6 +478,18 @@ describe('FollowStore', () => {
 
 			expect(sut.guestFollows).toHaveLength(0)
 			expect(sut.followedArtists).toEqual([])
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Seeds come from the follows kept on the device"
+		it('forgets the kept follow list', async () => {
+			mockRpcClient.list.mockResolvedValueOnce([
+				makeFollowedArtist('a1', 'Artist One'),
+			])
+			await sut.listFollowed()
+
+			subscriptions.get(SignedOut)?.(new SignedOut())
+
+			expect(sut.keptFollowedArtists()).toEqual([])
 		})
 
 		it('clears the guest-merge receipts so a fresh post-sign-out guest session can migrate again', () => {

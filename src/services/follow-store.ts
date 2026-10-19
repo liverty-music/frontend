@@ -1,5 +1,10 @@
 import { DI, IEventAggregator, ILogger, observable, resolve } from 'aurelia'
 import { IFollowRpcClient } from '../adapter/rpc/client/follow-client'
+import {
+	clearKeptFollows,
+	loadKeptFollows,
+	saveKeptFollows,
+} from '../adapter/storage/followed-artists-storage'
 import { loadFollows, saveFollows } from '../adapter/storage/guest-storage'
 import { ILocalStorage } from '../adapter/storage/local-storage'
 import {
@@ -101,6 +106,7 @@ export class FollowStore {
 		this.ea.subscribe(SignedOut, () => {
 			this.clear()
 			this.clearReceipts()
+			clearKeptFollows()
 		})
 	}
 
@@ -224,9 +230,28 @@ export class FollowStore {
 			result = [...this.guestFollowsState]
 		} else {
 			result = await this.rpcClient.list(signal)
+			const sub = this.authService.user?.profile.sub
+			if (sub)
+				saveKeptFollows(
+					sub,
+					result.map((f) => f.artist),
+				)
 		}
 		this.followedArtists = result.map((f) => f.artist)
 		return result
+	}
+
+	/**
+	 * The signed-in fan's followed artists as of the last follow-list load,
+	 * kept on this device; empty for a guest or when nothing is kept. A hint for
+	 * choosing Discovery's seeds before this session's list arrives — the
+	 * follow state itself is `followedArtists`.
+	 */
+	public keptFollowedArtists(): Artist[] {
+		const sub = this.authService.isAuthenticated
+			? this.authService.user?.profile.sub
+			: undefined
+		return sub ? loadKeptFollows(sub) : []
 	}
 
 	/**

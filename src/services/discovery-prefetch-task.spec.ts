@@ -5,6 +5,7 @@ const mockLogger = { scopeTo: () => mockLogger, warn: vi.fn() }
 const mockAuth = { ready: Promise.resolve(), isAuthenticated: true }
 const mockFollows = {
 	ensureLoaded: vi.fn(async () => []),
+	keptFollowedArtists: vi.fn((): { id: string }[] => []),
 	hydrate: vi.fn(),
 	guestFollows: [] as { artist: { id: string } }[],
 }
@@ -62,6 +63,7 @@ describe('runDiscoveryPrefetch', () => {
 		mockOnboarding.isOnboarding = false
 		mockFollows.guestFollows = []
 		mockFollows.ensureLoaded.mockImplementation(async () => [])
+		mockFollows.keptFollowedArtists.mockImplementation(() => [])
 	})
 
 	// @spec components/infrastructure/fan/web/route/discovery "Initial load starts during start-up when the app opens on Discovery"
@@ -74,6 +76,20 @@ describe('runDiscoveryPrefetch', () => {
 		expect(mockFollows.ensureLoaded.mock.invocationCallOrder[0]).toBeLessThan(
 			mockBubbles.prefetchInitial.mock.invocationCallOrder[0],
 		)
+	})
+
+	// @spec components/infrastructure/fan/web/route/discovery "Initial load starts during start-up when the app opens on Discovery"
+	// @spec components/infrastructure/fan/web/route/discovery "Seeds come from the follows kept on the device"
+	it('starts the field load from the follows kept from the last start, without waiting for the follow list', async () => {
+		const kept = [{ id: 'k1' }, { id: 'k2' }]
+		mockFollows.keptFollowedArtists.mockImplementation(() => kept)
+		mockFollows.ensureLoaded.mockImplementation(() => new Promise(() => {}))
+
+		runDiscoveryPrefetch(container, '/discovery', 375)
+		await flush()
+
+		expect(mockBubbles.prefetchInitial).toHaveBeenCalledWith(375, kept)
+		expect(mockFollows.ensureLoaded).not.toHaveBeenCalled()
 	})
 
 	it('restores an onboarding guest’s follows before the field load', async () => {
