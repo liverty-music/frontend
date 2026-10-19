@@ -315,10 +315,12 @@
 			"restricted": "Action needed",
 			"notBlocking": "Fans can buy tickets before setup is finished; only the payout waits.",
 			"continue": "Continue setup on Stripe",
+			"start": "Set up on Stripe",
+			"sameTab": "You will move to Stripe’s page. When you are done, Stripe brings you back to the console’s Home.",
+			"externalSite": " (goes to an external site)",
+			"startFailed": "Stripe’s page could not be opened. Please try again.",
 			"status": "Status",
-			"stripe": "Payouts go through Stripe, the payment provider of Liverty Music. On Stripe’s page you enter your business, your representative’s identity and the bank account to be paid into.",
-			"newTab": "Stripe’s page opens in a new tab. When you are done, return to this tab; the status is read again when you do.",
-			"opensNewTab": " (opens in a new tab)"
+			"stripe": "Payouts go through Stripe, the payment provider of Liverty Music. On Stripe’s page you enter your business, your representative’s identity and the bank account to be paid into."
 		},
 		"artistsTitle": "Artists",
 		"organizationName": "Name",

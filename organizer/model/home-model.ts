@@ -86,8 +86,11 @@ export interface HomeSources {
 	/** The Artists the Organizer represents, by id. */
 	represented: ReadonlySet<string>
 	concerts: readonly AuthoredSeries[]
-	/** Undefined when the payout account could not be read. */
-	payoutStatus?: PayoutOnboardingStatus
+	/**
+	 * The payout account's status, `'none'` when the Organizer has no payout
+	 * account yet, undefined when it could not be read.
+	 */
+	payoutStatus?: PayoutOnboardingStatus | 'none'
 	/** Scanners of each event starting within the week, by event id. */
 	scanners: ReadonlyMap<string, readonly Scanner[]>
 }
@@ -104,6 +107,7 @@ export function homeItems(sources: HomeSources, now: number): HomeItem[] {
 		artist: homeArtistOf(concert, sources.represented),
 	})
 
+	// No payout account yet needs the same setup as one not finished.
 	if (
 		sources.payoutStatus !== undefined &&
 		sources.payoutStatus !== PayoutOnboardingStatus.ACTIVE

@@ -328,7 +328,7 @@ ORGANIZER.push(
 		probes: [],
 	},
 	{
-		// The explanation of the Stripe hand-off and its outlined link.
+		// The explanation of the Stripe hand-off and its outlined button.
 		name: 'organizer Settings (payout pending)',
 		path: `${ORG}/settings`,
 		setup: consoleAs(true, {
@@ -338,7 +338,7 @@ ORGANIZER.push(
 			page.locator('console-button').locator('[data-variant="outlined"]'),
 		probes: [
 			{
-				what: 'the outlined link to Stripe',
+				what: 'the outlined button to Stripe',
 				locate: (page: Page) =>
 					page.locator('console-button').locator('[data-variant="outlined"]'),
 				expect: { padding: true },

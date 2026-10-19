@@ -88,6 +88,24 @@ test.describe('what needs the member', () => {
 		await expect(group(page, '下書き')).toContainText('XX 単独公演')
 	})
 
+	test(`@spec ${SPEC} "No payout account yet"`, async ({ page }) => {
+		await openHome(page, {
+			'PayoutAccountService/Get': () =>
+				connectError('not_found', 'no payout account', 404),
+			'SeriesService/List': seriesList([XX_SOLO]),
+		})
+		const first = items(page).first()
+		await expect(first).toContainText('入金口座の登録が終わっていません')
+		const action = await expectSingleAction(first)
+		await expect(action).toHaveAccessibleName(
+			/^入金口座の登録が終わっていません\s*登録する$/,
+		)
+		await expect(action).toHaveAttribute('href', /\/settings#payout$/)
+		await expect(
+			page.getByText('入金口座の状況を読み込めませんでした。'),
+		).toHaveCount(0)
+	})
+
 	test(`@spec ${SPEC} "Event next week without a scanner"`, async ({
 		page,
 	}) => {

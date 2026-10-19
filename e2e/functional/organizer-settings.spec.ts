@@ -1,12 +1,23 @@
-import { installConsole, ORG, type RpcMocks } from '../support/organizer'
-import { organizer, payoutAccount, seriesList } from '../support/organizer-data'
+import {
+	connectError,
+	installConsole,
+	ORG,
+	type RpcMocks,
+} from '../support/organizer'
+import {
+	ONBOARDING_URL,
+	onboardingLink,
+	organizer,
+	payoutAccount,
+	seriesList,
+} from '../support/organizer-data'
 import { expect, type Page, test } from '../support/test'
 
 /**
  * Settings: the Organizer's name and represented Artists, its business
  * details and its payout account status, all read only, in sections headed
  * 組織, アーティスト, 事業者情報 and 入金口座; the hand-off to Stripe is
- * explained before the link that opens it.
+ * explained before the action that opens Stripe's page in the same tab.
  */
 
 const SPEC = 'components/infrastructure/organizer/web/route/settings'
@@ -99,81 +110,168 @@ test.describe('business details', () => {
 })
 
 test.describe('payout account', () => {
+	/** What the hand-off is, said before the member leaves the console. */
+	const HAND_OFF = [
+		'ファンはチケットを購入できます',
+		'Liverty Music の決済代行会社 Stripe',
+		'事業者の情報、代表者の本人確認、入金先の銀行口座',
+		'Stripe からコンソールのホームに戻ります',
+	]
+
+	/** The onboarding action, marked as going to an external site. */
+	const onboardingAction = (page: Page, label: string) =>
+		part(page, '入金口座').getByRole('button', {
+			name: new RegExp(`^${label}\\s*（外部サイトに移動します）$`),
+		})
+
+	/** Serves Stripe's page, so the hand-off can be followed. */
+	async function serveStripe(page: Page) {
+		await page.route(`${ONBOARDING_URL}**`, (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'text/html',
+				body: '<title>Stripe</title>',
+			}),
+		)
+	}
+
+	test(`@spec ${SPEC} "No payout account yet"`, async ({ page }) => {
+		await openSettings(page, {
+			'PayoutAccountService/Get': () =>
+				connectError('not_found', 'no payout account', 404),
+		})
+		const payout = part(page, '入金口座')
+		for (const text of HAND_OFF) await expect(payout).toContainText(text)
+		await expect(onboardingAction(page, 'Stripe で登録する')).toBeVisible()
+		await expect(payout.getByTestId('payout-status')).toHaveCount(0)
+		await expect(payout).not.toContainText('状態')
+		await expect(payout).not.toContainText('読み込めませんでした')
+	})
+
 	test(`@spec ${SPEC} "Onboarding not finished"`, async ({ page }) => {
 		await openSettings(page, {
 			'PayoutAccountService/Get': payoutAccount('PENDING'),
 		})
 		const payout = part(page, '入金口座')
 		await expect(payout.getByTestId('payout-status')).toHaveText('確認中')
-		await expect(payout).toContainText('ファンはチケットを購入できます')
-		// What the hand-off is, before the member leaves the console.
-		const explanation = [
-			'Liverty Music の決済代行会社 Stripe',
-			'事業者の情報、代表者の本人確認、入金先の銀行口座',
-			'新しいタブで開きます',
-			'このタブに戻ってください',
-		]
-		for (const text of explanation) await expect(payout).toContainText(text)
-
-		// Marked as opening a new tab, for screen readers too.
-		const proceed = payout.getByRole('link', {
-			name: /^Stripe で登録を続ける\s*（新しいタブで開きます）$/,
-		})
-		await expect(proceed).toHaveAttribute(
-			'href',
-			'https://connect.example.com/onboarding',
-		)
-		await expect(proceed).toHaveAttribute('target', '_blank')
-		await expect(proceed).toHaveAttribute('rel', 'noopener')
+		for (const text of HAND_OFF) await expect(payout).toContainText(text)
+		const proceed = onboardingAction(page, 'Stripe で登録を続ける')
 		await expect(proceed).toHaveAttribute('data-variant', 'outlined')
-		// The explanation comes before the link.
+		// The explanation comes before the action.
 		const order = await payout.evaluate((section) => {
 			const text = section.textContent ?? ''
 			return (
-				text.indexOf('このタブに戻ってください') <
+				text.indexOf('Stripe からコンソールのホームに戻ります') <
 				text.indexOf('Stripe で登録を続ける')
 			)
 		})
 		expect(order).toBe(true)
 	})
 
-	test(`@spec ${SPEC} "Back from onboarding"`, async ({ page }) => {
-		let status: 'PENDING' | 'ACTIVE' = 'PENDING'
+	test(`@spec ${SPEC} "Member goes to Stripe"`, async ({ page }) => {
+		let answer: () => void = () => {}
+		const answered = new Promise<void>((resolve) => {
+			answer = resolve
+		})
 		const log = await openSettings(page, {
-			'PayoutAccountService/Get': () => ({ body: payoutAccount(status) }),
+			'PayoutAccountService/Get': payoutAccount('PENDING'),
+			'PayoutAccountService/StartOnboarding': async () => {
+				await answered
+				return { body: onboardingLink() }
+			},
 		})
-		const payout = part(page, '入金口座')
-		await expect(payout.getByTestId('payout-status')).toHaveText('確認中')
-		const readsBefore = log.calls.filter(
-			(c) => c.method === 'PayoutAccountService/Get',
-		).length
+		await serveStripe(page)
+		const proceed = onboardingAction(page, 'Stripe で登録を続ける')
+		await proceed.click()
 
-		// Onboarding finishes in the other tab; the member returns to this one.
-		status = 'ACTIVE'
-		await page.evaluate(() => {
-			Object.defineProperty(document, 'visibilityState', {
-				value: 'visible',
-				configurable: true,
-			})
-			document.dispatchEvent(new Event('visibilitychange'))
-		})
+		// Unavailable while the onboarding page is prepared.
+		await expect(proceed).toHaveAttribute('aria-disabled', 'true')
+		await proceed.click({ force: true })
+		answer()
 
-		await expect(payout.getByTestId('payout-status')).toHaveText('有効')
+		// Stripe's page opens in this tab.
+		await expect(page).toHaveURL(ONBOARDING_URL)
+		expect(page.context().pages()).toHaveLength(1)
 		expect(
-			log.calls.filter((c) => c.method === 'PayoutAccountService/Get').length,
-		).toBeGreaterThan(readsBefore)
-		await expect(
-			payout.getByRole('link', { name: /Stripe で登録を続ける/ }),
-		).toHaveCount(0)
+			log.calls.filter(
+				(c) => c.method === 'PayoutAccountService/StartOnboarding',
+			),
+		).toHaveLength(1)
+	})
+
+	test(`@spec ${SPEC} "Stripe's page cannot be prepared"`, async ({ page }) => {
+		const log = await openSettings(page, {
+			'PayoutAccountService/Get': payoutAccount('PENDING'),
+			'PayoutAccountService/StartOnboarding': () =>
+				connectError('unavailable', 'stripe: connection refused', 503),
+		})
+		const proceed = onboardingAction(page, 'Stripe で登録を続ける')
+		await proceed.click()
+
+		const payout = part(page, '入金口座')
+		await expect(payout.getByRole('alert')).toHaveText(
+			'Stripe のページを開けませんでした。もう一度お試しください。',
+		)
+		await expect(page.locator('body')).not.toContainText('connection refused')
+		await expect(page).toHaveURL(new RegExp(`${ORG}/settings`))
+
+		// The action is available again.
+		await expect(proceed).not.toHaveAttribute('aria-disabled', 'true')
+		await proceed.click()
+		await expect
+			.poll(
+				() =>
+					log.calls.filter(
+						(c) => c.method === 'PayoutAccountService/StartOnboarding',
+					).length,
+			)
+			.toBe(2)
+	})
+
+	test(`@spec ${SPEC} "Back from onboarding"`, async ({ page }) => {
+		// Stripe brings the member back to the console's address, which opens Home.
+		for (const [status, payoutItems] of [
+			['ACTIVE', 0],
+			['PENDING', 1],
+		] as const) {
+			const log = await installConsole(page, {
+				rpc: { ...BASE, 'PayoutAccountService/Get': payoutAccount(status) },
+				language: 'ja',
+			})
+			await page.goto('/')
+			await expect(
+				page.getByRole('heading', { level: 1, name: 'ホーム' }),
+			).toBeVisible()
+			await expect
+				.poll(() =>
+					log.calls.some((c) => c.method === 'PayoutAccountService/Get'),
+				)
+				.toBe(true)
+			await expect(
+				page.getByRole('link', { name: /入金口座の登録が終わっていません/ }),
+			).toHaveCount(payoutItems)
+		}
+	})
+
+	test(`@spec ${SPEC} "Onboarding page expired"`, async ({ page }) => {
+		await installConsole(page, {
+			rpc: { ...BASE, 'PayoutAccountService/Get': payoutAccount('PENDING') },
+			language: 'ja',
+		})
+		await page.goto('/')
+		await page
+			.getByRole('link', { name: /入金口座の登録が終わっていません/ })
+			.click()
+
+		await expect(page).toHaveURL(new RegExp(`${ORG}/settings#payout$`))
+		await expect(onboardingAction(page, 'Stripe で登録を続ける')).toBeVisible()
 	})
 
 	test(`@spec ${SPEC} "Active account"`, async ({ page }) => {
 		await openSettings(page)
 		const payout = part(page, '入金口座')
 		await expect(payout.getByTestId('payout-status')).toHaveText('有効')
-		await expect(
-			payout.getByRole('link', { name: /Stripe で登録を続ける/ }),
-		).toHaveCount(0)
+		await expect(payout.getByRole('button')).toHaveCount(0)
 		await expect(payout).not.toContainText('ファンはチケットを購入できます')
 		await expect(payout).not.toContainText('Stripe')
 	})

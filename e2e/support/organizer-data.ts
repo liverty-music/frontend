@@ -122,12 +122,15 @@ export function artistList(...names: string[]): Json {
 export function payoutAccount(
 	status: 'PENDING' | 'ACTIVE' | 'RESTRICTED',
 ): Json {
-	return {
-		payoutAccount: { status: `PAYOUT_ONBOARDING_STATUS_${status}` },
-		...(status === 'ACTIVE'
-			? {}
-			: { onboardingUrl: 'https://connect.example.com/onboarding' }),
-	}
+	return { payoutAccount: { status: `PAYOUT_ONBOARDING_STATUS_${status}` } }
+}
+
+/** The provider's onboarding page that StartOnboarding answers with. */
+export const ONBOARDING_URL = 'https://connect.example.com/setup/s_1'
+
+/** A StartOnboarding answer. */
+export function onboardingLink(): Json {
+	return { onboardingUrl: { value: ONBOARDING_URL } }
 }
 
 export interface ScannerSpec {

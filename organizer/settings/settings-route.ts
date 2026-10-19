@@ -33,10 +33,10 @@ const PAYOUT: Record<number, { tone: StatusTone; key: string }> = {
 /**
  * Settings: who the Organizer is to Liverty Music and to fans, read only — its
  * name, its represented Artists, its business details, and its payout account
- * status. While the account is not active, the page explains the hand-off to
- * Stripe (what is entered there, that it opens in a new tab and that the
- * member comes back here) before the link that opens it. Returning to the
- * tab re-reads the payout status.
+ * status. While the Organizer has no payout account or it is not active, the
+ * page explains the hand-off to Stripe (what is entered there, and that Stripe
+ * brings the member back to Home) before the action that asks for a fresh
+ * onboarding page and opens it in this tab.
  */
 export class SettingsRoute {
 	private readonly organizers = resolve(IOrganizerClient)
@@ -49,15 +49,13 @@ export class SettingsRoute {
 	public payoutState: PartState = 'loading'
 	public organizer: Organizer | undefined
 	public represented: Artist[] = []
-	public account: PayoutAccountView | undefined
+	/** The payout account; null when the Organizer has none yet. */
+	public account: PayoutAccountView | null = null
+	/** True when the last request for Stripe's onboarding page failed. */
+	public startFailed = false
 	private abort = new AbortController()
 
-	private readonly onVisibility = (): void => {
-		if (document.visibilityState === 'visible') void this.loadPayout()
-	}
-
 	public attached(): void {
-		document.addEventListener('visibilitychange', this.onVisibility)
 		void this.loadOrganizer()
 		void this.loadPayout().then(() => {
 			if (window.location.hash === '#payout') {
@@ -67,7 +65,6 @@ export class SettingsRoute {
 	}
 
 	public detaching(): void {
-		document.removeEventListener('visibilitychange', this.onVisibility)
 		this.abort.abort()
 	}
 
@@ -124,6 +121,27 @@ export class SettingsRoute {
 
 	public get payoutActive(): boolean {
 		return this.account?.status === PayoutOnboardingStatus.ACTIVE
+	}
+
+	/** Set up when there is no account yet, continue setup otherwise. */
+	public get onboardingKey(): string {
+		return this.account ? 'settings.payout.continue' : 'settings.payout.start'
+	}
+
+	/**
+	 * Asks for a fresh onboarding page and opens it in this tab. On failure the
+	 * page stays and shows fixed copy, never the server's message.
+	 */
+	public async startOnboarding(): Promise<void> {
+		this.startFailed = false
+		try {
+			const url = await this.payout.startOnboarding(this.abort.signal)
+			window.location.assign(url)
+		} catch (err) {
+			if (this.abort.signal.aborted) return
+			this.logger.warn('Onboarding page unavailable', err)
+			this.startFailed = true
+		}
 	}
 
 	/** Reads the organizer; the shell's progress indicator shows meanwhile. */
