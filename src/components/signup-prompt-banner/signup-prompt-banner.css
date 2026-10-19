@@ -1,12 +1,19 @@
 @layer block {
 	@scope (signup-prompt-banner) {
 		:scope {
-			--_surface-bg: oklch(18% 0.04 275deg / 85%);
+			/* The persistent-banner surface, shared with pwa-install-banner: the
+			   base surface at 85% with a 2px brand line. A banner stays on screen,
+			   so it is not filled with the brand gradient of the transient snack
+			   bar. */
+			--_surface-bg: oklch(from var(--color-surface-base) l c h / 85%);
 			--_gradient-from: var(--color-brand-primary);
 			--_gradient-to: var(--color-brand-secondary);
 
 			position: fixed;
-			inset-block-end: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+			inset-block-end: calc(
+				var(--bottom-nav-height) +
+				env(safe-area-inset-bottom, 0px)
+			);
 			inset-inline: 0;
 		}
 
@@ -31,7 +38,8 @@
 
 		.signup-banner-message {
 			font-size: var(--step-0);
-			color: var(--color-text-secondary);
+			font-weight: 500;
+			color: var(--color-text-primary);
 		}
 
 		/* The shared `button` (on-container) owns the look; the banner only
@@ -41,17 +49,21 @@
 		}
 
 		@media (prefers-reduced-motion: no-preference) {
-			:scope {
-				animation: banner-enter 400ms ease-out;
+			/* On the banner, not the host: the host stays mounted while the
+			   banner is hidden, and the entrance plays when the banner appears. */
+			.signup-banner {
+				animation: banner-enter var(--md-duration-medium3)
+					var(--md-easing-emphasized-decelerate);
 			}
 
 			.signup-banner-action {
-				animation: cta-glow 2.5s ease-in-out infinite;
+				animation: cta-glow 1.2s ease-in-out 3;
 			}
 		}
 
-		/* The CTA's continuous glow pulse (brand-primary, every 2.5s), over the
-		   shared on-container button. */
+		/* The CTA glows three times when the banner appears, with the snack
+		   bar's attention timing (brand-primary on the dark surface), then stays
+		   still. */
 		@keyframes cta-glow {
 			0%,
 			100% {

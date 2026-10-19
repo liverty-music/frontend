@@ -1,12 +1,14 @@
 @layer block {
 	@scope (pwa-install-banner) {
 		:scope {
-			--_bg: oklch(11% 0.06 270deg / 95%);
 			--_a: var(--color-brand-primary);
 			--_b: var(--color-brand-secondary);
 
 			position: fixed;
-			inset-block-end: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+			inset-block-end: calc(
+				var(--bottom-nav-height) +
+				env(safe-area-inset-bottom, 0px)
+			);
 			inset-inline: 0;
 		}
 
@@ -25,45 +27,15 @@
 			/* End padding reserves space for the absolute-positioned close button. */
 			padding-inline: var(--space-s) 2.75rem;
 
-			background:
-				linear-gradient(
-					100deg,
-					oklch(from var(--_a) l c h / 14%) 0%,
-					transparent 55%,
-					oklch(from var(--_b) l c h / 7%) 100%
-				),
-				var(--_bg);
-			backdrop-filter: blur(24px) saturate(180%);
+			/* The persistent-banner surface, shared with signup-prompt-banner:
+			   the base surface at 85% with a 2px brand line. A banner stays on
+			   screen, so it is not filled with the brand gradient of the
+			   transient snack bar. */
+			border-block-start: 2px solid;
+			border-image: linear-gradient(to right, var(--_a), var(--_b)) 1;
 
-			/* Sharp gradient line at the top */
-			&::before {
-				content: "";
-
-				position: absolute;
-				inset-block-start: 0;
-				inset-inline: 0;
-
-				block-size: 1.5px;
-
-				opacity: 0.95;
-				background: linear-gradient(to right, var(--_a), var(--_b));
-			}
-
-			/* Soft bloom glow above the line */
-			&::after {
-				pointer-events: none;
-				content: "";
-
-				position: absolute;
-				inset-block-start: 0;
-				inset-inline: 8%;
-
-				block-size: 1px;
-
-				opacity: 0.55;
-				background: var(--_a);
-				filter: blur(8px);
-			}
+			background: oklch(from var(--color-surface-base) l c h / 85%);
+			backdrop-filter: blur(12px);
 		}
 
 		/* Span bottom-sheet across all columns; its <dialog> uses top-layer. */
@@ -98,8 +70,6 @@
 			text-overflow: ellipsis;
 			letter-spacing: 0.01em;
 			white-space: nowrap;
-
-			opacity: 0.88;
 		}
 
 		/* The shared `button` (on-container) owns the look; the label must not
@@ -200,18 +170,21 @@
 		}
 
 		@media (prefers-reduced-motion: no-preference) {
-			:scope {
+			/* On the banner, not the host: the host stays mounted while the
+			   banner is hidden, and the entrance plays when the banner appears. */
+			.pwa-banner {
 				animation: pwa-banner-enter var(--md-duration-medium3)
 					var(--md-easing-emphasized-decelerate);
 			}
 
 			.pwa-banner-action {
-				animation: pwa-cta-pulse 2.5s ease-in-out infinite;
+				animation: pwa-cta-pulse 1.2s ease-in-out 3;
 			}
 		}
 
-		/* The CTA's continuous glow pulse (brand-primary, every 2.5s), over the
-		   shared on-container button. */
+		/* The CTA glows three times when the banner appears, with the snack
+		   bar's attention timing (brand-primary on the dark surface), then stays
+		   still. */
 		@keyframes pwa-cta-pulse {
 			0%,
 			100% {
@@ -227,11 +200,13 @@
 
 		@keyframes pwa-banner-enter {
 			from {
-				transform: translateY(110%);
+				transform: translateY(100%);
+				opacity: 0;
 			}
 
 			to {
 				transform: translateY(0);
+				opacity: 1;
 			}
 		}
 	}
