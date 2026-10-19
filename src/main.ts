@@ -121,10 +121,6 @@ function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
 	return map[configLogLevel]
 }
 
-function removeBootstrapLoadingIndicator(): void {
-	document.getElementById('bootstrap-loading')?.remove()
-}
-
 function showStaticErrorPage(err: unknown): void {
 	const message = err instanceof Error ? err.message : String(err)
 	const detail = import.meta.env.DEV ? `<pre>${escapeHtml(message)}</pre>` : ''
@@ -148,6 +144,12 @@ function escapeHtml(s: string): string {
 }
 
 async function bootstrap(): Promise<void> {
+	// The sign-in callback renders nothing until canLoad finishes the sign-in;
+	// show the static indicator from index.html for that wait.
+	const callbackLoading = document.getElementById('callback-loading')
+	if (window.location.pathname === '/auth/callback') {
+		callbackLoading?.removeAttribute('hidden')
+	}
 	const config = await loadAppConfig()
 	validateEnvironmentMatchesHost(config)
 
@@ -280,6 +282,7 @@ async function bootstrap(): Promise<void> {
 	au.register(DateValueConverter)
 	au.app(AppShell)
 	await au.start()
+	callbackLoading?.remove()
 
 	// Store EA + I18N so the PWA onNeedRefresh callback can publish the update toast.
 	_pwaEa = au.container.get(IEventAggregator)
@@ -293,9 +296,6 @@ async function bootstrap(): Promise<void> {
 		_showUpdateToast?.()
 		_pendingRefresh = false
 	}
-
-	// Remove the inline loading indicator now that Aurelia has rendered.
-	removeBootstrapLoadingIndicator()
 
 	// Push subscription recovery. On app open, reconcile the browser⇄backend
 	// push subscription so a permission-granted user whose subscription lapsed
