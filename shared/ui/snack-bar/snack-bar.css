@@ -12,10 +12,11 @@
 		:scope {
 			/* The brand hues and chroma, darkened to the highest lightness at
 			   which the white message, and the on-container action on its
-			   translucent white fill, both keep 4.5:1 (WCAG AA) at each end. The
+			   translucent white fill, both keep 4.5:1 (WCAG AA) at every point
+			   of the gradient; its oklab blend dips below the ends mid-way. The
 			   brand tokens stay bright for the other brand surfaces. */
-			--_bg-from: oklch(from var(--color-brand-primary) 51.5% c h);
-			--_bg-to: oklch(from var(--color-brand-secondary) 49% c h);
+			--_bg-from: oklch(from var(--color-brand-primary) 50.5% c h);
+			--_bg-to: oklch(from var(--color-brand-secondary) 48% c h);
 			--_action-bg-hover: var(
 				--snack-bar-action-hover,
 				oklch(100% 0 0deg / 18%)
