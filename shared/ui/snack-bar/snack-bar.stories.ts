@@ -97,22 +97,28 @@ function contrast(a: [number, number, number], b: [number, number, number]) {
 }
 
 /**
- * The colours at both ends of the snack's container gradient. axe reports text
- * over a gradient as incomplete, so contrast is measured here instead.
+ * Colours along the snack's container gradient, both ends included. A CSS
+ * gradient interpolates in oklab by default, so `color-mix(in oklab, …)` gives
+ * the colour painted at each point. axe reports text over a gradient as
+ * incomplete, so contrast is measured here instead.
  */
-function gradientStops(snack: HTMLElement): string[] {
+function gradientSamples(snack: HTMLElement): string[] {
 	const style = getComputedStyle(snack)
-	return ['--_bg-from', '--_bg-to'].map((name) =>
-		resolveColor(snack, style.getPropertyValue(name).trim()),
+	const from = style.getPropertyValue('--_bg-from').trim()
+	const to = style.getPropertyValue('--_bg-to').trim()
+	// Every 5%: between two hues the oklab blend loses chroma and can dip
+	// below both ends, so the ends alone do not bound the ratio.
+	return Array.from({ length: 21 }, (_, i) =>
+		resolveColor(snack, `color-mix(in oklab, ${from}, ${to} ${i * 5}%)`),
 	)
 }
 
-/** Asserts the snack's message reaches 4.5:1 against both gradient stops. */
+/** Asserts the snack's message reaches 4.5:1 along the whole gradient. */
 async function expectMessageContrast(snack: HTMLElement): Promise<void> {
 	const message = snack.querySelector<HTMLElement>('.snack-message')
 	if (!message) throw new Error('no message')
 	const text = getComputedStyle(message).color
-	for (const stop of gradientStops(snack)) {
+	for (const stop of gradientSamples(snack)) {
 		await expect(
 			contrast(composite(stop, text), composite(stop)),
 		).toBeGreaterThanOrEqual(WCAG_AA)
@@ -121,13 +127,13 @@ async function expectMessageContrast(snack: HTMLElement): Promise<void> {
 
 /**
  * Asserts the action's label reaches 4.5:1 against its translucent fill laid
- * over both gradient stops.
+ * over every point of the gradient.
  */
 async function expectActionContrast(action: HTMLElement): Promise<void> {
 	const snack = action.closest<HTMLElement>('.snack-item')
 	if (!snack) throw new Error('no snack')
 	const { color, backgroundColor } = getComputedStyle(action)
-	for (const stop of gradientStops(snack)) {
+	for (const stop of gradientSamples(snack)) {
 		const fill = composite(stop, backgroundColor)
 		const label = composite(stop, backgroundColor, color)
 		await expect(contrast(label, fill)).toBeGreaterThanOrEqual(WCAG_AA)
