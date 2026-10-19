@@ -6,6 +6,7 @@ import type {
 } from '@aurelia/router'
 import { type ILifecycleHooks, lifecycleHooks, resolve } from 'aurelia'
 import { IAuthService } from '../services/auth-service'
+import { IUserHydration } from '../services/user-hydration-task'
 
 /**
  * Global authentication lifecycle hook. Gates route loads on authentication
@@ -23,6 +24,7 @@ import { IAuthService } from '../services/auth-service'
 @lifecycleHooks()
 export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 	private readonly authService = resolve(IAuthService)
+	private readonly userHydration = resolve(IUserHydration)
 
 	async canLoad(
 		_vm: IRouteViewModel,
@@ -41,6 +43,9 @@ export class AuthHook implements ILifecycleHooks<IRouteViewModel, 'canLoad'> {
 		// (account-only features are hidden at point of use per guest-mode-access);
 		// there is no onboarding-ordinal gating.
 		await this.authService.ready
+		// The first render may not wait for the user's profile (an app opened
+		// on Discovery); routes behind auth read it, so they wait here.
+		await this.userHydration.ready
 		return true
 	}
 }

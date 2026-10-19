@@ -94,7 +94,10 @@ import { IStripeService } from './services/stripe-service'
 import { ITicketJourneyService } from './services/ticket-journey-service'
 import { ITicketJourneyStore } from './services/ticket-journey-store'
 import { ITicketWallet } from './services/ticket-wallet'
-import { UserHydrationTask } from './services/user-hydration-task'
+import {
+	IUserHydration,
+	UserHydrationTask,
+} from './services/user-hydration-task'
 import { IUserStore } from './services/user-store'
 import { DateValueConverter } from './value-converters/date'
 
@@ -304,7 +307,9 @@ async function bootstrap(): Promise<void> {
 		const recoverPush = (): void => {
 			void pushService.resolvePushState(userStore.current !== undefined)
 		}
-		recoverPush()
+		// Wait for the user: the first render does not when the app opens on
+		// Discovery, and recovery needs to know whether someone is signed in.
+		void au.container.get(IUserHydration).ready.then(recoverPush)
 		navigator.serviceWorker?.addEventListener('message', (event) => {
 			if (event.data?.type === PUSH_SUBSCRIPTION_CHANGED_MESSAGE) {
 				recoverPush()
