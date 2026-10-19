@@ -114,6 +114,7 @@ describe('ArtistBubbleStore', () => {
 	})
 
 	describe('loadInitial — global top path', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "No followed artists (Step 1-a)"
 		it('sets the field to the top artists when nothing is followed', async () => {
 			mockArtistStore.listTop.mockResolvedValue([
 				artist('a'),
@@ -128,6 +129,7 @@ describe('ArtistBubbleStore', () => {
 			expect(sut.field.map((a) => a.id)).toEqual(['a', 'b', 'c'])
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Cache is updated after each successful load"
 		it('holds the loaded field as the single in-session cache', async () => {
 			mockArtistStore.listTop.mockResolvedValue([artist('a')])
 			await sut.loadInitial()
@@ -369,7 +371,7 @@ describe('ArtistBubbleStore', () => {
 			followedArtists = [artist('f1')]
 			const s1 = deferred<Artist[]>()
 			mockArtistStore.listSimilar.mockImplementation(
-				async (id: string, limit: number) =>
+				async (_id: string, limit: number) =>
 					limit === 30 ? [artist('tapSim')] : s1.promise,
 			)
 			mockArtistStore.listTop.mockResolvedValue([])
@@ -416,11 +418,28 @@ describe('ArtistBubbleStore', () => {
 	})
 
 	describe('prepareEntry', () => {
+		// @spec components/infrastructure/fan/web/route/discovery "Cache excludes followed artists on re-entry"
 		it('re-applies invariants on entry, dropping artists followed while away', async () => {
 			await seed(sut, [artist('a'), artist('b'), artist('c')])
 			followedArtists = [artist('b')] // followed b on another route while away
 			sut.prepareEntry()
 			expect(sut.field.map((a) => a.id)).toEqual(['a', 'c'])
+		})
+
+		// @spec components/infrastructure/fan/web/route/discovery "Re-entry with all cached artists already followed"
+		it('shows no ghosts when every cached artist was followed, then refills on the refresh', async () => {
+			await seed(sut, [artist('a'), artist('b')])
+			followedArtists = [artist('a'), artist('b')]
+
+			expect(sut.prepareEntry()).toBe(false)
+			expect(sut.field).toHaveLength(0)
+
+			mockArtistStore.listSimilar.mockResolvedValue([])
+			mockArtistStore.listTop.mockResolvedValue([artist('t1'), artist('t2')])
+			await sut.reenter()
+
+			expect(sut.field.map((x) => x.id)).toEqual(['t1', 't2'])
+			expect(sut.field.some((x) => x.isGhost)).toBe(false)
 		})
 
 		it('paints ghost placeholders on a cold visit (empty field)', () => {
