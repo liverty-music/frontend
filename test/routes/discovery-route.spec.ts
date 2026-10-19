@@ -255,6 +255,30 @@ describe('DiscoveryRoute', () => {
 			resolveLoad([])
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Follow state hydration on page reload"
+		it('restores persisted guest follows before the field loads and excludes them from it', async () => {
+			mockOnboarding.isOnboarding = true
+			const restored = makeArtist('g1', 'Guest Artist')
+			;(mockFollowClient as { guestFollows: unknown[] }).guestFollows = [
+				{ artist: restored, hype: 'nearby' },
+			]
+			;(
+				mockFollowClient.hydrate as ReturnType<typeof vi.fn>
+			).mockImplementation((artists: Artist[]) => {
+				for (const a of artists) simulateFollow(mockFollowClient, a)
+			})
+			;(
+				mockArtistClient.listSimilar as ReturnType<typeof vi.fn>
+			).mockResolvedValue([restored, makeArtist('s1', 'Similar')])
+
+			sut.loading()
+			await vi.runAllTimersAsync()
+
+			expect(mockFollowClient.hydrate).toHaveBeenCalledWith([restored])
+			expect(mockArtistClient.listSimilar).toHaveBeenCalledWith('g1', 50)
+			expect(sut.bubbleStore.field.map((a) => a.id)).not.toContain('g1')
+		})
+
 		// @spec components/infrastructure/fan/web/route/discovery "Concert check at page load uses List RPC"
 		it('should call listByArtist (not searchNewConcerts) for pre-seeded guest follows during onboarding', async () => {
 			mockOnboarding.isOnboarding = true
@@ -889,6 +913,7 @@ describe('DiscoveryRoute', () => {
 			expect(field.every((a) => a.isGhost === true)).toBe(true)
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Re-entry paints cached artists instantly"
 		it('re-uses the persisted field on re-entry (no ghosts) and re-applies invariants', async () => {
 			// Warm the field owner (the singleton IS the cache).
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
