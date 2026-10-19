@@ -25,6 +25,8 @@ class SnackDemo {
 	@bindable public message = 'チケットを保存しました'
 	/** Publish the fan app's update snack (main.ts) instead of a plain one. */
 	@bindable public update = false
+	/** Give a plain snack an action with this label. */
+	@bindable public actionLabel = ''
 	private readonly ea = resolve(IEventAggregator)
 
 	public fire(): void {
@@ -32,6 +34,9 @@ class SnackDemo {
 		this.ea.publish(
 			new Snack(this.message, this.severity, {
 				duration: Number.POSITIVE_INFINITY,
+				...(this.actionLabel && {
+					action: { label: this.actionLabel, callback: () => {} },
+				}),
 				...(this.update && {
 					icon: null,
 					attention: true,
@@ -51,11 +56,93 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-function snackStory(props: { severity: SnackSeverity; message: string }) {
+const WCAG_AA = 4.5
+
+/** Resolves any CSS colour (relative syntax included) to what the page paints. */
+function resolveColor(host: HTMLElement, value: string): string {
+	const probe = document.createElement('span')
+	probe.style.color = value
+	host.append(probe)
+	const resolved = getComputedStyle(probe).color
+	probe.remove()
+	return resolved
+}
+
+/** Paints `layers` bottom-up on one sRGB pixel and reads the result back. */
+function composite(...layers: string[]): [number, number, number] {
+	const ctx = document.createElement('canvas').getContext('2d', {
+		willReadFrequently: true,
+	})
+	if (!ctx) throw new Error('no 2d context')
+	for (const color of layers) {
+		ctx.fillStyle = color
+		ctx.fillRect(0, 0, 1, 1)
+	}
+	const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
+	return [r, g, b]
+}
+
+/** WCAG 2.x relative luminance of an 8-bit sRGB colour. */
+function luminance([r, g, b]: [number, number, number]): number {
+	const [lr, lg, lb] = [r, g, b].map((v) => {
+		const c = v / 255
+		return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+	})
+	return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb
+}
+
+function contrast(a: [number, number, number], b: [number, number, number]) {
+	const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+	return (hi + 0.05) / (lo + 0.05)
+}
+
+/**
+ * The colours at both ends of the snack's container gradient. axe reports text
+ * over a gradient as incomplete, so contrast is measured here instead.
+ */
+function gradientStops(snack: HTMLElement): string[] {
+	const style = getComputedStyle(snack)
+	return ['--_bg-from', '--_bg-to'].map((name) =>
+		resolveColor(snack, style.getPropertyValue(name).trim()),
+	)
+}
+
+/** Asserts the snack's message reaches 4.5:1 against both gradient stops. */
+async function expectMessageContrast(snack: HTMLElement): Promise<void> {
+	const message = snack.querySelector<HTMLElement>('.snack-message')
+	if (!message) throw new Error('no message')
+	const text = getComputedStyle(message).color
+	for (const stop of gradientStops(snack)) {
+		await expect(
+			contrast(composite(stop, text), composite(stop)),
+		).toBeGreaterThanOrEqual(WCAG_AA)
+	}
+}
+
+/**
+ * Asserts the action's label reaches 4.5:1 against its translucent fill laid
+ * over both gradient stops.
+ */
+async function expectActionContrast(action: HTMLElement): Promise<void> {
+	const snack = action.closest<HTMLElement>('.snack-item')
+	if (!snack) throw new Error('no snack')
+	const { color, backgroundColor } = getComputedStyle(action)
+	for (const stop of gradientStops(snack)) {
+		const fill = composite(stop, backgroundColor)
+		const label = composite(stop, backgroundColor, color)
+		await expect(contrast(label, fill)).toBeGreaterThanOrEqual(WCAG_AA)
+	}
+}
+
+function snackStory(props: {
+	severity: SnackSeverity
+	message: string
+	actionLabel: string
+}) {
 	return {
 		render: () =>
 			defineAureliaStory({
-				template: `<snack-demo severity.bind="severity" message.bind="message"></snack-demo>`,
+				template: `<snack-demo severity.bind="severity" message.bind="message" action-label.bind="actionLabel"></snack-demo>`,
 				props,
 				register: [SnackDemo, SnackBar],
 			}),
@@ -72,6 +159,12 @@ function snackStory(props: { severity: SnackSeverity; message: string }) {
 			await expect(getComputedStyle(snack).backgroundImage).toContain(
 				'linear-gradient',
 			)
+			// @spec components/infrastructure/fan/web/global/snack-bar "Message contrast on every severity"
+			await expectMessageContrast(snack)
+			// @spec components/infrastructure/fan/web/global/snack-bar "Action contrast on every severity"
+			await expectActionContrast(
+				canvas.getByRole('button', { name: props.actionLabel }),
+			)
 			// @spec components/infrastructure/fan/web/global/snack-bar "Accessibility"
 			await expect(snack.getAttribute('role')).toBe('status')
 			await expect(snack.matches(':popover-open')).toBe(true)
@@ -83,16 +176,19 @@ function snackStory(props: { severity: SnackSeverity; message: string }) {
 export const Info = snackStory({
 	severity: 'info',
 	message: 'チケットを保存しました',
+	actionLabel: '元に戻す',
 })
 
 export const Warning = snackStory({
 	severity: 'warning',
 	message: 'ネットワークが不安定です',
+	actionLabel: '再試行',
 })
 
 export const ErrorSeverity = snackStory({
 	severity: 'error',
 	message: '保存に失敗しました',
+	actionLabel: '再試行',
 })
 
 /**
@@ -146,6 +242,13 @@ export const UpdateAction = {
 			await glow.finished
 			await expect(glow.playState).toBe('finished')
 		}
+
+		// @spec components/infrastructure/fan/web/global/snack-bar "Message contrast on every severity"
+		// @spec components/infrastructure/fan/web/global/snack-bar "Action contrast on every severity"
+		const updateSnack = action.closest<HTMLElement>('.snack-item')
+		if (!updateSnack) throw new Error('no snack')
+		await expectMessageContrast(updateSnack)
+		await expectActionContrast(action)
 
 		// @spec components/infrastructure/fan/web/global/snack-bar "No leading icon"
 		await expect(canvasElement.querySelector('.snack-icon')).toBeNull()
