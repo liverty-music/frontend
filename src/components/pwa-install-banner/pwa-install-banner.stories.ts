@@ -1,0 +1,101 @@
+import {
+	defineAureliaStory,
+	type Meta,
+	type StoryObj,
+} from '@aurelia/storybook'
+import { Registration } from 'aurelia'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
+import {
+	expectBannerMessage,
+	expectBannerMotion,
+	expectBannerOffset,
+	expectBannerSurface,
+} from '../../../.storybook/bottom-banner'
+import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
+import ja from '../../locales/ja/translation.json'
+import { IPwaInstallService } from '../../services/pwa-install-service'
+import { PwaInstallBanner } from './pwa-install-banner'
+
+// The banner reads whether to show and which CTA to offer from the install
+// service; a stand-in shows it in guide mode (no captured install prompt).
+function mockPwaInstall() {
+	return {
+		isIos: false,
+		canShowFab: false,
+		shouldShowInstallBanner: true,
+		install: fn(async () => {}),
+		confirmInstalled: fn(),
+	}
+}
+
+const meta = {
+	title: 'Components/PwaInstallBanner',
+	component: PwaInstallBanner,
+	tags: ['test', 'autodocs'],
+} satisfies Meta<typeof PwaInstallBanner>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+/**
+ * A signed-in fan's banner after onboarding. Tagged `reduced-motion`, so it
+ * also runs with motion reduced and asserts the motion that matches the
+ * preference.
+ */
+export const Visible = {
+	tags: ['reduced-motion'],
+	render: () =>
+		defineAureliaStory({
+			template: '<pwa-install-banner></pwa-install-banner>',
+			register: [PwaInstallBanner, BusyOnClickCustomAttribute],
+			items: [Registration.instance(IPwaInstallService, mockPwaInstall())],
+		}),
+	play: async ({ canvasElement }) => {
+		sessionStorage.clear()
+		const canvas = within(canvasElement)
+		const host = canvasElement.querySelector<HTMLElement>('pwa-install-banner')
+		const surface = canvasElement.querySelector<HTMLElement>('.pwa-banner')
+		const label = canvasElement.querySelector<HTMLElement>('.pwa-banner-label')
+		if (!host || !surface || !label) throw new Error('no banner')
+		const t = ja.pwaInstallBanner
+		const action = canvas.getByRole('button', { name: t.cta })
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "PWA install prompt displays localized text"
+		await expect(surface.getAttribute('aria-label')).toBe(t.ariaLabel)
+		await expect(label.textContent).toBe(t.label)
+		await expect(
+			canvas.getByRole('button', { name: t.close }),
+		).toBeInTheDocument()
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is fixed at the bottom above the nav bar"
+		await expect(getComputedStyle(host).position).toBe('fixed')
+		await expectBannerOffset(host)
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner frosted glass and gradient border"
+		await expectBannerSurface(surface)
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner message text"
+		await expectBannerMessage(label, surface)
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "CTA button glow pulse animation"
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Reduced motion — no animation"
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner slides in on appearance"
+		await expectBannerMotion(surface, action)
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "PWA install prompt displays localized text"
+		// In guide mode the CTA opens the guide sheet, whose text is localized too.
+		await userEvent.click(action)
+		const sheet = within(document.body)
+		await waitFor(() =>
+			expect(
+				sheet.getByRole('heading', { name: t.guideTitle }),
+			).toBeInTheDocument(),
+		)
+		for (const step of [t.chromeStep1, t.chromeStep2, t.chromeStep3]) {
+			await expect(sheet.getByText(step)).toBeInTheDocument()
+		}
+		await expect(
+			sheet.getByRole('button', { name: t.guideConfirm }),
+		).toBeInTheDocument()
+	},
+} satisfies Story
