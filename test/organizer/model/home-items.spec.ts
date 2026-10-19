@@ -106,6 +106,15 @@ describe('homeItems', () => {
 		expect(items[3].concertTitle).toBe('XX 単独公演')
 	})
 
+	// @spec components/infrastructure/organizer/web/route/home "No payout account yet"
+	it('lists the payout item first when the Organizer has no payout account', () => {
+		const items = homeItems(sources({ payoutStatus: 'none' }), NOW)
+		expect(items[0]).toMatchObject({
+			kind: 'payout',
+			actionHref: '/organizers/org-1/settings#payout',
+		})
+	})
+
 	it('leaves out what is done or unknown', () => {
 		const items = homeItems(
 			sources({

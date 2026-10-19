@@ -315,10 +315,12 @@
 			"restricted": "要対応",
 			"notBlocking": "登録が終わるまでも、ファンはチケットを購入できます。入金だけが登録の完了を待ちます。",
 			"continue": "Stripe で登録を続ける",
+			"start": "Stripe で登録する",
+			"sameTab": "Stripe のページに移動します。入力が終わると、Stripe からコンソールのホームに戻ります。",
+			"externalSite": "（外部サイトに移動します）",
+			"startFailed": "Stripe のページを開けませんでした。もう一度お試しください。",
 			"status": "状態",
-			"stripe": "入金は、Liverty Music の決済代行会社 Stripe を通して行います。Stripe のページで、事業者の情報、代表者の本人確認、入金先の銀行口座を入力してください。",
-			"newTab": "Stripe のページは新しいタブで開きます。入力が終わったら、このタブに戻ってください。戻ると状態を読み込み直します。",
-			"opensNewTab": "（新しいタブで開きます）"
+			"stripe": "入金は、Liverty Music の決済代行会社 Stripe を通して行います。Stripe のページで、事業者の情報、代表者の本人確認、入金先の銀行口座を入力してください。"
 		},
 		"artistsTitle": "アーティスト",
 		"organizationName": "組織名",

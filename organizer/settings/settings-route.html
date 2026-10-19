@@ -40,23 +40,21 @@
       <console-button variant="tonal" click.trigger="loadPayout()">${'common.retry' & t}</console-button>
     </div>
     <template if.bind="payoutState === 'ready'">
-      <p class="status">
+      <p if.bind="account" class="status">
         <span class="status-term">${'settings.payout.status' & t}</span>
         <status-badge tone.bind="payoutStatus.tone" label.bind="payoutStatus.key & t" data-testid="payout-status"></status-badge>
       </p>
       <template if.bind="!payoutActive">
         <p class="note">${'settings.payout.notBlocking' & t}</p>
         <!-- The hand-off to Stripe is explained before the member leaves the console. -->
-        <template if.bind="account.onboardingUrl">
-          <p class="explain">${'settings.payout.stripe' & t}</p>
-          <p class="explain">${'settings.payout.newTab' & t}</p>
-          <console-button
-            variant="outlined"
-            icon="open-in-new"
-            href.bind="account.onboardingUrl"
-            target="_blank"
-          >${'settings.payout.continue' & t}<span class="visually-hidden">${'settings.payout.opensNewTab' & t}</span></console-button>
-        </template>
+        <p class="explain">${'settings.payout.stripe' & t}</p>
+        <p class="explain">${'settings.payout.sameTab' & t}</p>
+        <p if.bind="startFailed" class="message" role="alert">${'settings.payout.startFailed' & t}</p>
+        <console-button
+          variant="outlined"
+          icon="open-in-new"
+          action.bind="() => startOnboarding()"
+        >${onboardingKey & t}<span class="visually-hidden">${'settings.payout.externalSite' & t}</span></console-button>
       </template>
     </template>
   </section>

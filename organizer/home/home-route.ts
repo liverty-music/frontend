@@ -41,7 +41,7 @@ export class HomeRoute {
 	public items: HomeItem[] = []
 
 	private concerts: AuthoredSeries[] = []
-	private payoutStatus: PayoutOnboardingStatus | undefined
+	private payoutStatus: PayoutOnboardingStatus | 'none' | undefined
 	private scannersByEvent = new Map<string, readonly Scanner[]>()
 	private abort = new AbortController()
 
@@ -96,7 +96,8 @@ export class HomeRoute {
 	private async readPayout(): Promise<void> {
 		this.payoutState = 'loading'
 		try {
-			this.payoutStatus = (await this.payout.get(this.abort.signal)).status
+			const account = await this.payout.get(this.abort.signal)
+			this.payoutStatus = account?.status ?? 'none'
 			this.payoutState = 'ready'
 		} catch (err) {
 			if (this.abort.signal.aborted) return
