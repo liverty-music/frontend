@@ -115,3 +115,36 @@ describe('loadAppConfig — receptionBaseUrl', () => {
 		).rejects.toThrow(/absolute URL/)
 	})
 })
+
+describe('loadAppConfig — request started by the entry', () => {
+	beforeEach(() => {
+		__resetAppConfigForTests()
+	})
+
+	afterEach(() => {
+		vi.unstubAllGlobals()
+	})
+
+	it('takes over the request the entry started instead of fetching again', async () => {
+		mockConfigFetch({ ...BASE_CONFIG, zitadelOrgId: 'org-1' })
+		const started = fetch('/config.json')
+		;(globalThis as { __configRequest?: Promise<Response> }).__configRequest =
+			started
+
+		const config = await loadAppConfig()
+
+		expect(fetch).toHaveBeenCalledOnce()
+		expect(config.apiBaseUrl).toBe('https://api.test.local')
+		expect(
+			(globalThis as { __configRequest?: unknown }).__configRequest,
+		).toBeUndefined()
+	})
+
+	it('fetches by itself when no request was started', async () => {
+		mockConfigFetch({ ...BASE_CONFIG, zitadelOrgId: 'org-1' })
+
+		await loadAppConfig()
+
+		expect(fetch).toHaveBeenCalledOnce()
+	})
+})
