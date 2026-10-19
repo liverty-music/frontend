@@ -361,6 +361,31 @@ describe('AuthService', () => {
 		await expect(freshSut.ensureFreshToken()).resolves.toBeNull()
 	})
 
+	it('ensureFreshToken removes the stored session when the refresh token is rejected', async () => {
+		userManagerMock.getUser.mockResolvedValue({ expired: false, profile: {} })
+		const freshSut = buildSut()
+		await freshSut.ready
+		userManagerMock.signinSilent.mockRejectedValue(
+			Object.assign(new Error('invalid_grant'), { error: 'invalid_grant' }),
+		)
+
+		await expect(freshSut.ensureFreshToken()).resolves.toBeNull()
+		expect(userManagerMock.removeUser).toHaveBeenCalledTimes(1)
+		expect(freshSut.isAuthenticated).toBe(false)
+	})
+
+	it('ensureFreshToken keeps the stored session when the refresh fails on the network', async () => {
+		userManagerMock.getUser.mockResolvedValue({ expired: false, profile: {} })
+		const freshSut = buildSut()
+		await freshSut.ready
+		userManagerMock.signinSilent.mockRejectedValue(
+			new TypeError('Failed to fetch'),
+		)
+
+		await expect(freshSut.ensureFreshToken()).resolves.toBeNull()
+		expect(userManagerMock.removeUser).not.toHaveBeenCalled()
+	})
+
 	it('resume refreshes a stale token on visibilitychange', async () => {
 		userManagerMock.getUser.mockResolvedValue(null) // guest boot, no refresh
 		const { s, fire } = buildSutWithResumeHandler()
