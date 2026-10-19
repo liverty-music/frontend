@@ -171,7 +171,7 @@ test.describe('Settings entry in the page header', () => {
 test.describe('Settings header in Japanese', () => {
 	test.use({ locale: 'ja-JP' })
 
-	test(`@spec ${SETTINGS} "Header reads "Settings" regardless of active locale"`, async ({
+	test(`@spec ${SETTINGS} "Header reads \"Settings\" regardless of active locale"`, async ({
 		page,
 	}) => {
 		await seedSignedInFan(page, { language: 'ja' })
