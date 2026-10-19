@@ -943,6 +943,24 @@ describe('DiscoveryRoute', () => {
 		})
 	})
 
+	describe('screen reader status', () => {
+		it('does not count ghost placeholders as available artists', async () => {
+			let answer: (v: Artist[]) => void = () => {}
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockReturnValue(
+				new Promise<Artist[]>((r) => {
+					answer = r
+				}),
+			)
+
+			sut.loading()
+			expect(sut.srStatusText).toContain('discovery.srArtistsAvailable count=0')
+
+			answer([makeArtist('a1', 'One'), makeArtist('a2', 'Two')])
+			await vi.runAllTimersAsync()
+			expect(sut.srStatusText).toContain('discovery.srArtistsAvailable count=2')
+		})
+	})
+
 	describe('cold-load reveal timing', () => {
 		function revealMark(
 			mark: 'ghosts' | 'first-name' | 'all-names',

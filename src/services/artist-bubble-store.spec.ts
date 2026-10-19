@@ -250,6 +250,19 @@ describe('ArtistBubbleStore', () => {
 			}
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "User has followed artists (Step 1-b)"
+		it('asks only for the bubbles a narrow screen shows', async () => {
+			followedArtists = ids('f', 8)
+			sut.enterRoute(375)
+
+			await sut.loadInitial()
+
+			expect(mockArtistStore.listSimilar).toHaveBeenCalledTimes(5)
+			for (const call of mockArtistStore.listSimilar.mock.calls) {
+				expect(call[1]).toBe(6)
+			}
+		})
+
 		it('picks 5 seeds at 10 each when more than 5 are followed', async () => {
 			followedArtists = ids('f', 8)
 
@@ -414,6 +427,18 @@ describe('ArtistBubbleStore', () => {
 			await sut.loadTop('US', '')
 			expect(sut.field).not.toBe(before)
 			expect(Object.isFrozen(sut.field)).toBe(true)
+		})
+	})
+
+	describe('shownArtistCount', () => {
+		it('counts real artists only, up to the display capacity', async () => {
+			expect(sut.prepareEntry()).toBe(true)
+			expect(sut.shownArtistCount).toBe(0)
+
+			await seed(sut, ids('a', 40))
+			expect(sut.shownArtistCount).toBe(40)
+			sut.enterRoute(375)
+			expect(sut.shownArtistCount).toBe(30)
 		})
 	})
 

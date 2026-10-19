@@ -116,7 +116,7 @@ export class DiscoveryRoute {
 		} else {
 			parts.push(
 				this.i18n.tr('discovery.srArtistsAvailable', {
-					count: this.dnaOrbCanvas?.bubbleCount ?? 0,
+					count: this.bubbleStore.shownArtistCount,
 				}),
 			)
 		}
@@ -158,7 +158,7 @@ export class DiscoveryRoute {
 
 		// Per-visit reset (re-detect country); the field owner keeps its cached
 		// field across the route churn.
-		this.bubbleStore.enterRoute()
+		this.bubbleStore.enterRoute(window.innerWidth)
 
 		// Prepare the instant paint: the field owner is an app-singleton that holds
 		// the in-session field across route churn, so a re-entry re-applies

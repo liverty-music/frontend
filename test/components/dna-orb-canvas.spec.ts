@@ -283,6 +283,21 @@ describe('DnaOrbCanvas', () => {
 		})
 	})
 
+	describe('device pixel ratio', () => {
+		it('renders at most at 2x on a 3x screen', async () => {
+			vi.stubGlobal('devicePixelRatio', 3)
+			try {
+				await sut.attached()
+				expect(mockCanvas.width).toBe(800)
+				expect(mockCanvas.height).toBe(1200)
+				expect(mockCtx.setTransform).toHaveBeenCalledWith(2, 0, 0, 2, 0, 0)
+			} finally {
+				vi.unstubAllGlobals()
+				sut.detaching()
+			}
+		})
+	})
+
 	describe('bubble label layout', () => {
 		function spawningBubble(scale: number) {
 			return {
