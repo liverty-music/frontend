@@ -10,8 +10,12 @@
 @layer block {
 	@scope (snack-bar) {
 		:scope {
-			--_bg-from: var(--color-brand-primary);
-			--_bg-to: var(--color-brand-secondary);
+			/* The brand hues and chroma, darkened to the highest lightness at
+			   which the white message, and the on-container action on its
+			   translucent white fill, both keep 4.5:1 (WCAG AA) at each end. The
+			   brand tokens stay bright for the other brand surfaces. */
+			--_bg-from: oklch(from var(--color-brand-primary) 51.5% c h);
+			--_bg-to: oklch(from var(--color-brand-secondary) 49% c h);
 			--_action-bg-hover: var(
 				--snack-bar-action-hover,
 				oklch(100% 0 0deg / 18%)
@@ -102,10 +106,12 @@
 			}
 		}
 
-		/* Severity recolors the container gradient (info keeps the brand hues). */
+		/* Severity recolors the container gradient (info keeps the brand hues).
+		   Warning's amber sits at the highest lightness that keeps the message
+		   and the action at 4.5:1, as info's stops do. */
 		.snack-item[data-severity="warning"] {
-			--_bg-from: oklch(55% 0.16 75deg);
-			--_bg-to: oklch(60% 0.16 75deg);
+			--_bg-from: oklch(47.5% 0.16 75deg);
+			--_bg-to: oklch(47.5% 0.16 75deg);
 		}
 
 		.snack-item[data-severity="error"] {
