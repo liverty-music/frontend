@@ -18,8 +18,9 @@ export class SignupPromptBanner {
 		// than hard-coding — the banner is the one bottom surface whose height is
 		// not a constant, which is why a ResizeObserver is warranted here.
 		this.resizeObserver = new ResizeObserver(() => this.publishHeight())
+		// The observer reports the first size at the next rendering step, so no
+		// synchronous read here (it forced a layout while the page attached).
 		this.resizeObserver.observe(this.element)
-		this.publishHeight()
 	}
 
 	public detaching(): void {

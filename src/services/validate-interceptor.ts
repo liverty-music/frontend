@@ -49,9 +49,9 @@ const scheduleIdle: IdleScheduler = (callback) => {
  * `InvalidArgument` (the violations are carried as the error's `cause`)
  * instead of sending a request the backend would reject.
  *
- * Validation never blocks a request. Loading starts when the interceptor is
- * created, and until the validator module resolves, requests pass through
- * unvalidated. Compiling a request type's rules (its CEL expressions) costs
+ * Validation never blocks a request. Loading starts at the first idle moment
+ * after the interceptor is created, and until the validator module resolves,
+ * requests pass through unvalidated. Compiling a request type's rules (its CEL expressions) costs
  * seconds of main-thread time on a slow phone, so it does not run on the
  * request's path either: the first request of a type passes through and
  * schedules the compilation for an idle moment (at the latest
@@ -77,16 +77,20 @@ export const createValidateInterceptor = (
 			compiled.add(type.typeName)
 		})
 	}
-	load().then(
-		(v) => {
-			validator = v
-		},
-		(err) => {
-			// Without the chunk the client simply stops pre-validating; the
-			// backend remains authoritative.
-			logger.warn('Failed to load request validator', err)
-		},
-	)
+	// The validator module (CEL and RE2 runtime) is large; fetch and evaluate
+	// it when the page is idle rather than while the app starts.
+	idle(() => {
+		load().then(
+			(v) => {
+				validator = v
+			},
+			(err) => {
+				// Without the chunk the client simply stops pre-validating; the
+				// backend remains authoritative.
+				logger.warn('Failed to load request validator', err)
+			},
+		)
+	})
 
 	return (next) => async (req) => {
 		if (req.stream === false && validator) {
