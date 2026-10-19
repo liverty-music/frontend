@@ -333,8 +333,9 @@ describe('BubblePhysics.reconcile keepGhosts (progressive reveal)', () => {
 	})
 })
 
+const LABEL_THRESHOLD = 0.55
+
 describe('revealed names fade in on real time', () => {
-	const LABEL_THRESHOLD = 0.55
 	const PHYSICS_CAP = 32
 
 	// Elapsed real time until a ghost switched to a real artist has its name
@@ -371,14 +372,43 @@ describe('revealed names fade in on real time', () => {
 		expect(await msUntilNameDrawn(100)).toBeLessThanOrEqual(300)
 	})
 
-	it('keeps the physics step capped while the fade uses real time', async () => {
+	it('keeps the physics step capped while the spawn uses real time', async () => {
 		const physics = await mkPhysics()
-		physics.addBubbles(ghostParams(1))
-		physics.reconcile(params(['a']))
+		physics.spawnBubblesAt(params(['a']), 100, 100)
 		const bubble = physics.getBubbles().find((b) => b.artist.id === 'a')
 
 		physics.update(32, 100)
 
 		expect(bubble?.spawnProgress).toBeCloseTo(0.3)
+	})
+
+	it('reveals a ghost in place: full size, fading up from the ghost opacity', async () => {
+		const physics = await mkPhysics()
+		physics.addBubbles(ghostParams(1))
+		physics.reconcile(params(['a']))
+		const bubble = physics.getBubbles().find((b) => b.artist.id === 'a')
+
+		expect(bubble?.scale).toBe(1)
+		expect(bubble?.opacity).toBeCloseTo(0.35)
+		let elapsed = 0
+		while ((bubble?.opacity ?? 0) <= LABEL_THRESHOLD) {
+			physics.update(16, 16)
+			elapsed += 16
+			expect(bubble?.scale).toBe(1)
+		}
+		// The name is drawn within a few frames of the swap.
+		expect(elapsed).toBeLessThanOrEqual(64)
+		physics.update(16, 200)
+		expect(bubble?.isSpawning).toBe(false)
+		expect(bubble?.opacity).toBe(1)
+	})
+
+	it('keeps the pop-in spawn for a bubble added from a tap', async () => {
+		const physics = await mkPhysics()
+		physics.spawnBubblesAt(params(['a']), 100, 100)
+		const bubble = physics.getBubbles().find((b) => b.artist.id === 'a')
+
+		expect(bubble?.scale).toBe(0)
+		expect(bubble?.revealInPlace).toBeFalsy()
 	})
 })
