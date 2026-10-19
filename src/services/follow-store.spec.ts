@@ -220,6 +220,43 @@ describe('FollowStore', () => {
 		})
 	})
 
+	describe('ensureLoaded', () => {
+		it('loads the signed-in follow list once and shares it between callers', async () => {
+			mockRpcClient.list.mockResolvedValue([makeFollowedArtist('a1', 'One')])
+
+			const [first, second] = await Promise.all([
+				sut.ensureLoaded(),
+				sut.ensureLoaded(),
+			])
+			await sut.ensureLoaded()
+
+			expect(mockRpcClient.list).toHaveBeenCalledOnce()
+			expect(first).toBe(second)
+			expect(sut.followedArtists).toEqual([makeArtist('a1', 'One')])
+		})
+
+		it('retries on the next call after a failed load', async () => {
+			mockRpcClient.list
+				.mockRejectedValueOnce(new Error('unavailable'))
+				.mockResolvedValueOnce([makeFollowedArtist('a1', 'One')])
+
+			await expect(sut.ensureLoaded()).rejects.toThrow('unavailable')
+			await sut.ensureLoaded()
+
+			expect(mockRpcClient.list).toHaveBeenCalledTimes(2)
+		})
+
+		it('loads again after the session is cleared', async () => {
+			mockRpcClient.list.mockResolvedValue([])
+			await sut.ensureLoaded()
+
+			sut.clear()
+			await sut.ensureLoaded()
+
+			expect(mockRpcClient.list).toHaveBeenCalledTimes(2)
+		})
+	})
+
 	describe('listFollowed', () => {
 		it('sets followedArtists to the mapped Artist array when authenticated', async () => {
 			mockRpcClient.list.mockResolvedValueOnce([

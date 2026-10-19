@@ -186,15 +186,16 @@ export class DiscoveryRoute {
 	/**
 	 * Kick off the background field refresh on route entry. Returns a Promise so
 	 * production fires it non-blocking (`void`) while tests await it
-	 * deterministically. Loads the fan's follows first, so a signed-in fan who
-	 * opens Discovery directly gets seed-similar bubbles without their followed
+	 * deterministically. Waits for the fan's follows first (usually already
+	 * loaded at boot by `FollowPrefetchTask`), so a signed-in fan who opens
+	 * Discovery directly gets seed-similar bubbles without their followed
 	 * artists. Then delegates to the field owner, which reuses the fresh
 	 * in-session field with a non-destructive delta (or reloads when stale). A
 	 * failure surfaces a Snack and is swallowed.
 	 */
 	public async refreshField(): Promise<void> {
 		try {
-			await this.followStore.listFollowed(this.abortController.signal)
+			await this.followStore.ensureLoaded()
 		} catch (err) {
 			// Without follows the field falls back to top artists; still load it.
 			this.logger.warn('Failed to load follows for the discovery field', {

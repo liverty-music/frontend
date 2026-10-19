@@ -71,6 +71,7 @@ import { ICoachMarkService } from './services/coach-mark-service'
 import { IConcertStore } from './services/concert-store'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFabMenuService } from './services/fab-menu-service'
+import { FollowPrefetchTask } from './services/follow-prefetch-task'
 import { FollowReconcileTask } from './services/follow-reconcile-task'
 import { IFollowStore } from './services/follow-store'
 import { GlobalErrorHandlingTask } from './services/global-error-handler'
@@ -215,6 +216,10 @@ async function bootstrap(): Promise<void> {
 	// eagerly resolves IFollowStore so its event subscriptions are live before
 	// any sign-up / sign-out fires.
 	au.register(FollowReconcileTask)
+	// Loads the signed-in follow list in the background once the session is
+	// known (does not block start-up), so Discovery can pick its seeds without
+	// waiting a round trip.
+	au.register(FollowPrefetchTask)
 	au.register(IAudioEngine)
 	au.register(IHapticService)
 	au.register(INotificationManager)
