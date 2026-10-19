@@ -21,6 +21,7 @@ import {
 	BubblePhysics,
 	GHOST_OPACITY,
 	type PhysicsBubble,
+	randomSpawnPoint,
 } from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'
 import { LABEL_OPACITY_THRESHOLD, RevealMarks } from './reveal-marks'
@@ -67,6 +68,11 @@ export class DnaOrbCanvas {
 	private paused = false
 
 	private physics = new BubblePhysics()
+	// False until the physics engine is loaded and initialized. Until then the
+	// canvas draws the cold visit's ghosts as static placeholders, so the first
+	// bubbles do not wait for the engine.
+	private physicsReady = false
+	private placeholders: PhysicsBubble[] = []
 	private orbRenderer = new OrbRenderer()
 	private absorptionAnimator = new AbsorptionAnimator()
 	private tapEffects = new TapEffects()
@@ -141,7 +147,9 @@ export class DnaOrbCanvas {
 	}
 
 	public artistsChanged(newVal: Artist[]): void {
-		if (!this.ctx) return // not yet attached
+		// Not attached, or physics not ready yet: attached() syncs the field once
+		// the engine is up.
+		if (!this.ctx || !this.physicsReady) return
 		const shown = newVal.slice(0, this.displayLimit)
 		const real = shown.filter((a) => !a.isGhost)
 		// An all-ghost field is the cold-visit placeholder: paint it as is.
@@ -194,28 +202,50 @@ export class DnaOrbCanvas {
 		// would then skip `physics.init()`, and painting into an uninitialized
 		// physics layer produced bodyless bubbles (render crash, empty canvas).
 		// Wait for a real layout size before initializing + the first paint.
-		await this.initWhenSized()
+		await this.waitForSize()
 		if (this.detached) return // detached while waiting for layout
+		const { width, height } = this.sizeCanvas()
+
+		// A cold visit's ghosts are drawn at once as static placeholders, and the
+		// frame loop starts now: the first bubbles need no physics engine.
+		this.placeholders = this.artists
+			.slice(0, this.displayLimit)
+			.filter((a) => a.isGhost)
+			.map((a) => placeholderBubble(a, width, height))
+		this.lastTime = performance.now()
+		this.animFrameId = requestAnimationFrame(this.loop)
+
+		await this.initPhysics(width, height)
+		if (this.detached) return
 		// Seed the orb DORMANT on entry (stage 0) regardless of the user's total
 		// follow count — the orb must not read as "activated" before a genuine follow
 		// this session. It grows only via `onAbsorbComplete` (a real follow gesture).
 		this.applyLevel(this.activationLevel)
-		const displayLimit = Math.min(this.artists.length, this.displayLimit)
+		// Physics takes over: the placeholders become ghost bodies where they are
+		// drawn, then the field is synced (real artists reveal into ghost slots).
 		this.physics.addBubbles(
-			this.artists.slice(0, displayLimit).map((a) => toBubbleParams(a)),
+			this.placeholders.map((b) => ({
+				artist: b.artist,
+				radius: b.radius,
+				position: b.body.position,
+			})),
 		)
-
-		this.lastTime = performance.now()
-		this.animFrameId = requestAnimationFrame(this.loop)
+		this.placeholders = []
+		this.physicsReady = true
+		const shown = this.artists.slice(0, this.displayLimit)
+		if (shown.some((a) => !a.isGhost)) {
+			this.artistsChanged(this.artists)
+		} else {
+			this.physics.addBubbles(shown.map((a) => toBubbleParams(a)))
+		}
 	}
 
 	/**
-	 * Resolve once the host element has a non-zero layout size, then run the
-	 * initial `resize()` (which initializes the physics engine). Immediate when
+	 * Resolve once the host element has a non-zero layout size. Immediate when
 	 * already laid out; otherwise a one-shot `ResizeObserver` waits for the first
 	 * non-zero size (SPA route-enter before layout).
 	 */
-	private async initWhenSized(): Promise<void> {
+	private async waitForSize(): Promise<void> {
 		const rect = this.element.getBoundingClientRect()
 		if (rect.width === 0 || rect.height === 0) {
 			await new Promise<void>((resolve) => {
@@ -230,9 +260,7 @@ export class DnaOrbCanvas {
 				})
 				this.sizeObserver.observe(this.element)
 			})
-			if (this.detached) return
 		}
-		await this.resize()
 	}
 
 	/** Stop the size wait: disconnect the observer and resolve the pending promise. */
@@ -347,12 +375,21 @@ export class DnaOrbCanvas {
 	}
 
 	private async resize(): Promise<void> {
+		const rect = this.element.getBoundingClientRect()
+		if (!rect || rect.width === 0 || rect.height === 0) return
+		const { width, height } = this.sizeCanvas()
+		await this.initPhysics(width, height)
+	}
+
+	/**
+	 * Size the canvas backing store and the orb to the element (synchronous; no
+	 * physics), so the first frame can be drawn before the engine loads.
+	 */
+	private sizeCanvas(): { width: number; height: number } {
 		// Capped at 2: a 3x screen would raster 2.25x the pixels of 2x every
 		// frame for bubbles whose edges are soft anyway.
 		const dpr = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_DPR)
 		const rect = this.element.getBoundingClientRect()
-		if (!rect || rect.width === 0 || rect.height === 0) return
-
 		this.displayLimit = displayCapacityFor(rect.width)
 
 		this.canvas.width = rect.width * dpr
@@ -361,18 +398,23 @@ export class DnaOrbCanvas {
 		this.canvas.style.height = `${rect.height}px`
 		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-		await this.physics.init(rect.width, rect.height)
 		this.orbRenderer.init(rect.width, rect.height)
 		// Re-apply the current session activation level for the now-known canvas
 		// width. `init()` alone leaves the orb at its width-agnostic default (radius
 		// 60); this keeps the orb at whatever stage the session's follows have
 		// reached (dormant stage 0 until the first follow).
 		this.orbRenderer.applyLevel(this.activationLevel)
+		return { width: rect.width, height: rect.height }
+	}
+
+	/** Load and size the physics engine for a `width` × `height` canvas. */
+	private async initPhysics(width: number, height: number): Promise<void> {
+		await this.physics.init(width, height)
 		// On narrow canvases the orb is smaller and bottom-anchored, so align the
 		// physics floor with its top here; init() resets the bottom wall to a
 		// width-agnostic default. Left untouched on wide canvases to preserve the
-		// established layout (and the iPhone-14 visual-regression baseline).
-		if (rect.width < 390) {
+		// established layout.
+		if (width < 390) {
 			this.physics.updateOrbZone(this.orbRenderer.getStageParams().orbRadius)
 		}
 	}
@@ -567,8 +609,10 @@ export class DnaOrbCanvas {
 		// Layer 1: Light rays (additive blend, behind bubbles)
 		this.orbRenderer.renderLightRays(this.ctx)
 
-		// Layer 2: Bubbles
-		const bubbles = this.physics.getBubbles()
+		// Layer 2: Bubbles (static placeholders until the physics engine is up)
+		const bubbles = this.physicsReady
+			? this.physics.getBubbles()
+			: this.placeholders
 		for (let i = 0; i < bubbles.length; i++) {
 			this.renderBubble(bubbles[i], i === this.focusedBubbleIndex)
 		}
@@ -874,6 +918,30 @@ export function nextFocusableIndex(
 		if (!b.artist.isGhost && !b.isFadingOut) return i
 	}
 	return -1
+}
+
+/**
+ * A ghost drawn before the physics engine is up: a static bubble at a random
+ * spawn point, handed to the engine at the same place once it loads.
+ */
+function placeholderBubble(
+	artist: Artist,
+	width: number,
+	height: number,
+): PhysicsBubble {
+	return {
+		body: {
+			position: randomSpawnPoint(width, height),
+		} as PhysicsBubble['body'],
+		artist,
+		radius: 30 + Math.random() * 15,
+		scale: 1,
+		opacity: 1,
+		isSpawning: false,
+		spawnProgress: 1,
+		isFadingOut: false,
+		fadeOutProgress: 0,
+	}
 }
 
 /** Convert an Artist to physics bubble parameters with a random radius. */
