@@ -19,6 +19,11 @@ import {
 	configNetworkFirst,
 	navigateOrShell,
 } from './lib/offline/offline-fallback'
+import {
+	ARTIST_WRITES,
+	FOLLOW_WRITES,
+	isRpcMethod,
+} from './lib/offline/rpc-write-route'
 import { handlePushSubscriptionChange } from './lib/push/push-renewal'
 import { Events } from './services/analytics-events'
 
@@ -63,12 +68,20 @@ registerRoute(
 )
 
 // ---------------------------------------------------------------------------
-// Background Sync for artist operations (listTop / listSimilar / search).
+// Background Sync for writes only: creating an artist and follow / unfollow /
+// hype. A write the fan made offline is worth replaying. Reads (artist List,
+// Search, ListSimilar, ListTop; follow List) are not routed here: a replayed
+// read has no one waiting for its answer, and routing them through the
+// Service Worker added a hop to every Discovery request.
 // NetworkOnly avoids cache.put() on POST responses (Cache API is GET-only).
 // ---------------------------------------------------------------------------
 registerRoute(
 	({ url }) =>
-		url.pathname.includes('liverty_music.rpc.artist.v1.ArtistService'),
+		isRpcMethod(
+			url.pathname,
+			'liverty_music.rpc.artist.v1.ArtistService',
+			ARTIST_WRITES,
+		),
 	new NetworkOnly({
 		plugins: [
 			new BackgroundSyncPlugin('artist-ops-queue', {
@@ -79,13 +92,13 @@ registerRoute(
 	'POST',
 )
 
-// ---------------------------------------------------------------------------
-// Background Sync for follow operations (follow / unfollow / hype).
-// NetworkOnly avoids cache.put() on POST responses (Cache API is GET-only).
-// ---------------------------------------------------------------------------
 registerRoute(
 	({ url }) =>
-		url.pathname.includes('liverty_music.rpc.follow.v1.FollowService'),
+		isRpcMethod(
+			url.pathname,
+			'liverty_music.rpc.follow.v1.FollowService',
+			FOLLOW_WRITES,
+		),
 	new NetworkOnly({
 		plugins: [
 			new BackgroundSyncPlugin('follow-ops-queue', {

@@ -5,6 +5,7 @@ import { IArtistStore } from './artist-store'
 import {
 	capTo,
 	dedupById,
+	displayCapacityFor,
 	excludeFollowed,
 	MAX_BUBBLES,
 	SeenTracker,
@@ -102,6 +103,9 @@ export class ArtistBubbleStore {
 	// re-surfacing artists already displayed this session.
 	private readonly seen = new SeenTracker()
 	private country = detectCountryFromTimezone()
+	// Bubbles the canvas shows (30 on narrow screens); the seed lookups ask for
+	// no more than this, since the rest would never be shown.
+	private displayCapacity = MAX_BUBBLES
 	private isLoading = false
 	// The in-flight `loadInitial`, so a tap during the reveal can wait for it.
 	private initialLoad: Promise<void> | null = null
@@ -124,8 +128,21 @@ export class ArtistBubbleStore {
 	 * component churn and backs the instant re-entry paint. It is refreshed via a
 	 * background `reenter` (non-destructive delta when fresh, full reload stale).
 	 */
-	public enterRoute(): void {
+	public enterRoute(viewportWidth?: number): void {
 		this.country = detectCountryFromTimezone()
+		if (viewportWidth !== undefined) {
+			this.displayCapacity = displayCapacityFor(viewportWidth)
+		}
+	}
+
+	/**
+	 * Real artists the canvas shows: the field's artists up to the display
+	 * capacity, ghosts not counted. Changes only when the field does.
+	 */
+	public get shownArtistCount(): number {
+		let real = 0
+		for (const a of this.field) if (!a.isGhost) real++
+		return Math.min(real, this.displayCapacity)
 	}
 
 	/**
@@ -432,7 +449,7 @@ export class ArtistBubbleStore {
 		seeds: Artist[],
 		onPartial?: (answered: Artist[]) => void,
 	): Promise<Artist[]> {
-		const limitPerSeed = Math.floor(MAX_BUBBLES / seeds.length)
+		const limitPerSeed = Math.floor(this.displayCapacity / seeds.length)
 		this.logger.info('Fetching seed-similar artists', {
 			seedCount: seeds.length,
 			limitPerSeed,

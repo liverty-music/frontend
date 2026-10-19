@@ -44,8 +44,9 @@ export class PwaInstallBanner {
 		// it (same mechanism as signup-prompt-banner; the two are mutually exclusive
 		// — guest vs authenticated — so they share one variable safely).
 		this.resizeObserver = new ResizeObserver(() => this.publishHeight())
+		// The observer reports the first size at the next rendering step, so no
+		// synchronous read here (it forced a layout while the page attached).
 		this.resizeObserver.observe(this.element)
-		this.publishHeight()
 	}
 
 	public detaching(): void {

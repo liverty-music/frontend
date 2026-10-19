@@ -92,6 +92,16 @@ describe('createValidateInterceptor', () => {
 		expect(next).toHaveBeenCalledOnce()
 	})
 
+	it('loads the validator module only when the page is idle', async () => {
+		const load = vi.fn(() => Promise.resolve(createValidator()))
+		const idleCallbacks: (() => void)[] = []
+		createValidateInterceptor(load, mockLogger, (cb) => idleCallbacks.push(cb))
+
+		expect(load).not.toHaveBeenCalled()
+		idleCallbacks[0]()
+		expect(load).toHaveBeenCalledOnce()
+	})
+
 	it('does not validate streaming requests', async () => {
 		const validator = { validate: vi.fn() } as unknown as Validator
 		const next = vi.fn().mockResolvedValue({ message: 'ok' })
@@ -111,6 +121,10 @@ describe('createValidateInterceptor', () => {
 		const handler = (await loaded(validator, (cb) => idleCallbacks.push(cb)))(
 			next,
 		)
+		// The first idle callback loads the validator module.
+		idleCallbacks.shift()?.()
+		await Promise.resolve()
+		await Promise.resolve()
 
 		// Not compiled yet: forwarded unvalidated, compilation only scheduled.
 		await handler(invalidRequest())

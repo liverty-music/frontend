@@ -75,6 +75,9 @@ export class FollowStore {
 	 * still sees the change.
 	 */
 	private readonly guestFollowsState: FollowedArtist[] = loadFollows()
+	// The signed-in follow list loaded once for this session, shared by the
+	// boot prefetch and Discovery so the list is not fetched twice.
+	private sessionLoad: Promise<FollowedArtist[]> | null = null
 
 	constructor() {
 		// GuestMigrationRequested fires on every successful authenticated callback
@@ -198,6 +201,23 @@ export class FollowStore {
 	 * List followed artists. Unauthenticated users read from guest storage.
 	 * Authenticated users call the backend FollowService.List RPC.
 	 */
+	/**
+	 * The follow list, loaded once per signed-in session: later calls reuse the
+	 * load in flight or done (follow, unfollow and `listFollowed` keep the
+	 * projection current after it). Started at boot by `FollowPrefetchTask`, so
+	 * Discovery usually finds it ready instead of waiting a round trip before
+	 * choosing seeds. A failed load is retried by the next call. Guests read
+	 * their persisted queue directly.
+	 */
+	public ensureLoaded(): Promise<FollowedArtist[]> {
+		if (!this.authService.isAuthenticated) return this.listFollowed()
+		this.sessionLoad ??= this.listFollowed().catch((err: unknown) => {
+			this.sessionLoad = null
+			throw err
+		})
+		return this.sessionLoad
+	}
+
 	public async listFollowed(signal?: AbortSignal): Promise<FollowedArtist[]> {
 		let result: FollowedArtist[]
 		if (!this.authService.isAuthenticated) {
@@ -347,6 +367,7 @@ export class FollowStore {
 	 */
 	public clear(): void {
 		this.clearGuestFollows()
+		this.sessionLoad = null
 		this.followedArtists = []
 		this.logger.info('Follow state cleared')
 	}

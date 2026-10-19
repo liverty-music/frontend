@@ -9,6 +9,7 @@ import {
 import { artistHue as hashArtistHue } from '../../adapter/view/artist-color'
 import type { Artist } from '../../entities/artist'
 import { IAudioEngine } from '../../services/audio-engine'
+import { displayCapacityFor } from '../../services/bubble-invariants'
 import { IHapticService } from '../../services/haptic-service'
 import {
 	onReducedMotionChange,
@@ -346,11 +347,13 @@ export class DnaOrbCanvas {
 	}
 
 	private async resize(): Promise<void> {
-		const dpr = window.devicePixelRatio || 1
+		// Capped at 2: a 3x screen would raster 2.25x the pixels of 2x every
+		// frame for bubbles whose edges are soft anyway.
+		const dpr = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_DPR)
 		const rect = this.element.getBoundingClientRect()
 		if (!rect || rect.width === 0 || rect.height === 0) return
 
-		this.displayLimit = rect.width < 390 ? 30 : 50
+		this.displayLimit = displayCapacityFor(rect.width)
 
 		this.canvas.width = rect.width * dpr
 		this.canvas.height = rect.height * dpr
@@ -769,6 +772,9 @@ export class DnaOrbCanvas {
 		return layout
 	}
 }
+
+// Device pixel ratio the canvas renders at, at most.
+const MAX_CANVAS_DPR = 2
 
 // Bound on cached label layouts over a long session of taps.
 const LABEL_LAYOUT_CACHE_LIMIT = 1000

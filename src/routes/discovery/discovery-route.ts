@@ -116,7 +116,7 @@ export class DiscoveryRoute {
 		} else {
 			parts.push(
 				this.i18n.tr('discovery.srArtistsAvailable', {
-					count: this.dnaOrbCanvas?.bubbleCount ?? 0,
+					count: this.bubbleStore.shownArtistCount,
 				}),
 			)
 		}
@@ -158,7 +158,7 @@ export class DiscoveryRoute {
 
 		// Per-visit reset (re-detect country); the field owner keeps its cached
 		// field across the route churn.
-		this.bubbleStore.enterRoute()
+		this.bubbleStore.enterRoute(window.innerWidth)
 
 		// Prepare the instant paint: the field owner is an app-singleton that holds
 		// the in-session field across route churn, so a re-entry re-applies
@@ -186,15 +186,16 @@ export class DiscoveryRoute {
 	/**
 	 * Kick off the background field refresh on route entry. Returns a Promise so
 	 * production fires it non-blocking (`void`) while tests await it
-	 * deterministically. Loads the fan's follows first, so a signed-in fan who
-	 * opens Discovery directly gets seed-similar bubbles without their followed
+	 * deterministically. Waits for the fan's follows first (usually already
+	 * loaded at boot by `FollowPrefetchTask`), so a signed-in fan who opens
+	 * Discovery directly gets seed-similar bubbles without their followed
 	 * artists. Then delegates to the field owner, which reuses the fresh
 	 * in-session field with a non-destructive delta (or reloads when stale). A
 	 * failure surfaces a Snack and is swallowed.
 	 */
 	public async refreshField(): Promise<void> {
 		try {
-			await this.followStore.listFollowed(this.abortController.signal)
+			await this.followStore.ensureLoaded()
 		} catch (err) {
 			// Without follows the field falls back to top artists; still load it.
 			this.logger.warn('Failed to load follows for the discovery field', {

@@ -14,6 +14,15 @@ import type { Artist } from '../entities/artist'
 /** Maximum number of bubbles on the discovery field at once. */
 export const MAX_BUBBLES = 50
 
+/** Below this canvas width only {@link NARROW_DISPLAY_BUBBLES} bubbles are shown. */
+export const NARROW_DISPLAY_WIDTH = 390
+export const NARROW_DISPLAY_BUBBLES = 30
+
+/** How many bubbles a canvas of `width` CSS pixels shows. */
+export function displayCapacityFor(width: number): number {
+	return width < NARROW_DISPLAY_WIDTH ? NARROW_DISPLAY_BUBBLES : MAX_BUBBLES
+}
+
 /** Normalize an artist name for case/whitespace-insensitive comparison. */
 export function normalizeName(name: string): string {
 	return name.trim().replace(/\s+/g, ' ').toLowerCase()

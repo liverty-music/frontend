@@ -184,7 +184,7 @@ describe('DiscoveryRoute', () => {
 		it('loads the follows before the field, so a fan opening Discovery directly gets seed-similar bubbles', async () => {
 			const followed = makeArtist('f1', 'Followed')
 			;(
-				mockFollowClient.listFollowed as ReturnType<typeof vi.fn>
+				mockFollowClient.ensureLoaded as ReturnType<typeof vi.fn>
 			).mockImplementation(async () => {
 				simulateFollow(mockFollowClient, followed)
 				return [{ artist: followed, hype: 'watch' }]
@@ -197,14 +197,14 @@ describe('DiscoveryRoute', () => {
 
 			await sut.refreshField()
 
-			expect(mockFollowClient.listFollowed).toHaveBeenCalled()
+			expect(mockFollowClient.ensureLoaded).toHaveBeenCalled()
 			expect(mockArtistClient.listSimilar).toHaveBeenCalledWith('f1', 50)
 			expect(sut.bubbleStore.lastInitialLoad?.path).toBe('seed_similar')
 		})
 
 		it('still loads the field from top artists when the follows cannot be loaded', async () => {
 			;(
-				mockFollowClient.listFollowed as ReturnType<typeof vi.fn>
+				mockFollowClient.ensureLoaded as ReturnType<typeof vi.fn>
 			).mockRejectedValue(new Error('unavailable'))
 			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockResolvedValue(
 				[makeArtist('a1', 'Artist One')],
@@ -940,6 +940,24 @@ describe('DiscoveryRoute', () => {
 			await sut.refreshField()
 
 			expect(sut.bubbleStore.field.map((a) => a.id)).toEqual(['a1'])
+		})
+	})
+
+	describe('screen reader status', () => {
+		it('does not count ghost placeholders as available artists', async () => {
+			let answer: (v: Artist[]) => void = () => {}
+			;(mockArtistClient.listTop as ReturnType<typeof vi.fn>).mockReturnValue(
+				new Promise<Artist[]>((r) => {
+					answer = r
+				}),
+			)
+
+			sut.loading()
+			expect(sut.srStatusText).toContain('discovery.srArtistsAvailable count=0')
+
+			answer([makeArtist('a1', 'One'), makeArtist('a2', 'Two')])
+			await vi.runAllTimersAsync()
+			expect(sut.srStatusText).toContain('discovery.srArtistsAvailable count=2')
 		})
 	})
 

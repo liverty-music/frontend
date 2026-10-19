@@ -47,6 +47,7 @@ export function createMockFollowStore(): Partial<IFollowStore> {
 		guestFollows: [],
 		hydrate: vi.fn(),
 		listFollowed: vi.fn().mockResolvedValue([]),
+		ensureLoaded: vi.fn().mockResolvedValue([]),
 		follow: vi.fn().mockResolvedValue(undefined),
 		unfollow: vi.fn().mockResolvedValue(undefined),
 		setHype: vi.fn().mockResolvedValue(undefined),
