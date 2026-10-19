@@ -34,9 +34,30 @@ function orgScope(config: AppConfig): string {
 	return ''
 }
 
+/**
+ * Zitadel's OIDC endpoints, which sit at fixed paths under the issuer (its
+ * `/.well-known/openid-configuration` lists the same URLs). Given up front,
+ * oidc-client-ts skips fetching that document, which Zitadel serves with
+ * `Cache-Control: no-store`: one round trip saved on every sign-in redirect,
+ * sign-in callback and token refresh. The JWKS is not used by the client.
+ */
+function zitadelMetadata(issuer: string): UserManagerSettings['metadata'] {
+	const base = issuer.replace(/\/+$/, '')
+	return {
+		issuer: base,
+		authorization_endpoint: `${base}/oauth/v2/authorize`,
+		token_endpoint: `${base}/oauth/v2/token`,
+		userinfo_endpoint: `${base}/oidc/v1/userinfo`,
+		end_session_endpoint: `${base}/oidc/v1/end_session`,
+		revocation_endpoint: `${base}/oauth/v2/revoke`,
+		jwks_uri: `${base}/oauth/v2/keys`,
+	}
+}
+
 function createSettings(config: AppConfig): UserManagerSettings {
 	return {
 		authority: config.zitadelIssuer,
+		metadata: zitadelMetadata(config.zitadelIssuer),
 		client_id: config.zitadelClientId,
 		redirect_uri: `${window.location.origin}/auth/callback`,
 		post_logout_redirect_uri: `${window.location.origin}/`,
@@ -48,8 +69,13 @@ function createSettings(config: AppConfig): UserManagerSettings {
 		]
 			.filter(Boolean)
 			.join(' '),
-		// PKCE is standard/default for 'code' flow in newer oidc-client-ts versions
-		loadUserInfo: true,
+		// PKCE is standard/default for 'code' flow in newer oidc-client-ts versions.
+		// The profile comes from the ID token alone: every Zitadel app of this
+		// project sets `idTokenUserinfoAssertion` and `idTokenRoleAssertion`
+		// (cloud-provisioning `src/zitadel/components`), so the claims the apps
+		// read (email, name, preferred_username, project roles) are in it.
+		// Calling userinfo cost a CORS preflight and a GET on every sign-in.
+		loadUserInfo: false,
 		// Use localStorage instead of sessionStorage for better compatibility with Playwright storageState
 		userStore: new WebStorageStateStore({ store: window.localStorage }),
 		// Disable session monitor in all environments: the self-hosted Zitadel
