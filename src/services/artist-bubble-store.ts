@@ -176,13 +176,19 @@ export class ArtistBubbleStore {
 	 * Discovery, so the field is built (or well under way) by the time the
 	 * route shows it. Does nothing once the field has been shown or a load is
 	 * running. `viewportWidth` sets the display capacity, as `enterRoute` does.
+	 * `seedsFrom`, when given, replaces the follow list for choosing seeds (the
+	 * list kept from the last start, before this session's list arrives); the
+	 * field still drops the artists in the follow list when it is set.
 	 */
-	public prefetchInitial(viewportWidth: number): void {
+	public prefetchInitial(
+		viewportWidth: number,
+		seedsFrom?: readonly Artist[],
+	): void {
 		if (this.fieldShown || this.isLoading || this.realField().length > 0) {
 			return
 		}
 		this.enterRoute(viewportWidth)
-		this.loadInitial().catch((err: unknown) => {
+		this.loadInitial(seedsFrom).catch((err: unknown) => {
 			// The route's own load retries and reports a failure.
 			this.logger.warn('Start-up field load failed', { error: err })
 		})
@@ -207,10 +213,10 @@ export class ArtistBubbleStore {
 	 * seed's artists as it answers, in place of ghosts; the final field is the
 	 * same as an all-at-once load.
 	 */
-	public async loadInitial(): Promise<void> {
+	public async loadInitial(seedsFrom?: readonly Artist[]): Promise<void> {
 		if (this.isLoading) return
 		this.isLoading = true
-		const run = this.runInitialLoad()
+		const run = this.runInitialLoad(seedsFrom)
 		this.initialLoad = run
 		try {
 			await run
@@ -220,8 +226,8 @@ export class ArtistBubbleStore {
 		}
 	}
 
-	private async runInitialLoad(): Promise<void> {
-		const followedArtists = this.followStore.followedArtists
+	private async runInitialLoad(seedsFrom?: readonly Artist[]): Promise<void> {
+		const followedArtists = [...(seedsFrom ?? this.followStore.followedArtists)]
 		this.logger.info('Loading initial field', {
 			country: this.country,
 			followed: followedArtists.length,

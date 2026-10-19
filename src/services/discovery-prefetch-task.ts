@@ -27,6 +27,15 @@ export function runDiscoveryPrefetch(
 	void (async () => {
 		await auth.ready
 		if (auth.isAuthenticated) {
+			// The list kept from the last start lets the seeds go out now, in
+			// parallel with this session's follow list (which waits behind the
+			// app's start-up on the main thread). The field still drops what the
+			// fresh list follows when it is set.
+			const kept = follows.keptFollowedArtists()
+			if (kept.length > 0) {
+				bubbles.prefetchInitial(viewportWidth, kept)
+				return
+			}
 			await follows.ensureLoaded()
 		} else if (onboarding.isOnboarding && follows.guestFollows.length > 0) {
 			// The route's loading() prelude does the same for onboarding guests.

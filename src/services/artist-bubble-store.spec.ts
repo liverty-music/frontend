@@ -479,6 +479,24 @@ describe('ArtistBubbleStore', () => {
 			expect(sut.prepareEntry()).toBe(false)
 		})
 
+		// @spec components/infrastructure/fan/web/route/discovery "Seeds come from the follows kept on the device"
+		it('chooses the seeds of a start-up load from the given follows and drops what the fresh follow list holds', async () => {
+			// The kept list names k1/k2; this session's list (arrived since)
+			// also follows `b1`, which a seed suggests.
+			followedArtists = [artist('k1'), artist('k2'), artist('b1')]
+			mockArtistStore.listSimilar.mockImplementation(async (id: string) =>
+				id === 'k1' ? [artist('a1'), artist('b1')] : [artist('a2')],
+			)
+
+			sut.prefetchInitial(400, [artist('k1'), artist('k2')])
+			await flush()
+			await flush()
+
+			const seeds = mockArtistStore.listSimilar.mock.calls.map((c) => c[0])
+			expect(seeds.sort()).toEqual(['k1', 'k2'])
+			expect(sut.field.map((x) => x.id).sort()).toEqual(['a1', 'a2'])
+		})
+
 		it('does not start a start-up load once the field has been shown', () => {
 			sut.prepareEntry()
 			sut.prefetchInitial(400)
