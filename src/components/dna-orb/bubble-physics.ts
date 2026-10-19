@@ -12,9 +12,21 @@ export interface PhysicsBubble {
 	opacity: number
 	isSpawning: boolean
 	spawnProgress: number
+	/**
+	 * The spawn is a ghost turning into its artist in place: full size from
+	 * the start, fading up from the ghost's opacity, instead of the
+	 * scale-from-zero pop of a new bubble.
+	 */
+	revealInPlace?: boolean
 	isFadingOut: boolean
 	fadeOutProgress: number
 }
+
+/** A ghost placeholder is drawn at this share of its opacity. */
+export const GHOST_OPACITY = 0.35
+// An in-place reveal fades from the ghost's opacity to 1 in about 150 ms, so
+// the name (drawn above opacity 0.55) shows about 46 ms after the swap.
+const REVEAL_IN_PLACE_SPEED = 1 / 150
 
 /** Parameters for adding an artist to the physics simulation. */
 export interface BubbleArtistParams {
@@ -398,16 +410,27 @@ export class BubblePhysics {
 		for (const bubble of this.bubbleMap.values()) {
 			const id = bubble.artist.id
 			if (bubble.isSpawning) {
-				bubble.spawnProgress = Math.min(
-					1,
-					bubble.spawnProgress + animDelta * 0.003,
-				)
-				bubble.scale = easeOutBack(bubble.spawnProgress)
-				// Quadratic ease-in so color/text bleeds in gently during the second
-				// half of the spawn rather than appearing abruptly with the circle.
-				bubble.opacity = bubble.spawnProgress * bubble.spawnProgress
+				if (bubble.revealInPlace) {
+					bubble.spawnProgress = Math.min(
+						1,
+						bubble.spawnProgress + animDelta * REVEAL_IN_PLACE_SPEED,
+					)
+					bubble.scale = 1
+					bubble.opacity =
+						GHOST_OPACITY + (1 - GHOST_OPACITY) * bubble.spawnProgress
+				} else {
+					bubble.spawnProgress = Math.min(
+						1,
+						bubble.spawnProgress + animDelta * 0.003,
+					)
+					bubble.scale = easeOutBack(bubble.spawnProgress)
+					// Quadratic ease-in so color/text bleeds in gently during the second
+					// half of the spawn rather than appearing abruptly with the circle.
+					bubble.opacity = bubble.spawnProgress * bubble.spawnProgress
+				}
 				if (bubble.spawnProgress >= 1) {
 					bubble.isSpawning = false
+					bubble.revealInPlace = false
 					bubble.scale = 1
 					bubble.opacity = 1
 				}
@@ -469,13 +492,15 @@ export class BubblePhysics {
 			if (!bubble) continue
 			this.bubbleMap.delete(ghostId)
 			// Swap artist reference in place — physics position/velocity unchanged.
-			// Restart the spawn animation so the real artist appears with the same
-			// scale-from-zero + easeOutBack bounce as any other new bubble.
+			// The bubble is already on screen, so it stays full size and fades up
+			// from the ghost's opacity: the name shows within a few frames instead
+			// of after a scale-from-zero pop.
 			bubble.artist = artist
 			bubble.isSpawning = true
+			bubble.revealInPlace = true
 			bubble.spawnProgress = 0
-			bubble.scale = 0
-			bubble.opacity = 0
+			bubble.scale = 1
+			bubble.opacity = GHOST_OPACITY
 			this.bubbleMap.set(artist.id, bubble)
 		}
 		// Fade out any ghost bodies left over (more ghosts than real artists).

@@ -200,6 +200,38 @@ describe('computeLabelLayout parity with the per-frame label code', () => {
 	})
 })
 
+describe('computeLabelLayout cost', () => {
+	it('measures far less text than the per-step shrink loop for a long name', () => {
+		const name = 'The Pretty Reckless Of Many Words'
+		let calls = 0
+		const counted = (text: string, font: string) => {
+			calls++
+			return fontMeasure(text, font)
+		}
+		computeLabelLayout(name, 45, counted)
+		const newCalls = calls
+
+		// The old loop: wrap and re-measure at every 0.5 px step.
+		let oldCalls = 0
+		const usableWidth = 45 * 1.6
+		for (let size = Math.max(10, 45 * 0.38); ; size -= 0.5) {
+			const font = `bold ${size}px system-ui, sans-serif`
+			const lines = wrapText(name, usableWidth, (t) => {
+				oldCalls++
+				return fontMeasure(t, font)
+			})
+			const fits =
+				lines.every((l) => {
+					oldCalls++
+					return fontMeasure(l, font) <= usableWidth
+				}) && lines.length <= 3
+			if (fits || size <= 10) break
+		}
+
+		expect(newCalls).toBeLessThan(oldCalls / 2)
+	})
+})
+
 describe('nextFocusableIndex', () => {
 	function b(id: string, ghost = false): PhysicsBubble {
 		return {

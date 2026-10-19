@@ -18,6 +18,7 @@ import { AbsorptionAnimator } from './absorption-animator'
 import {
 	type BubbleArtistParams,
 	BubblePhysics,
+	GHOST_OPACITY,
 	type PhysicsBubble,
 } from './bubble-physics'
 import { OrbRenderer } from './orb-renderer'
@@ -629,7 +630,7 @@ export class DnaOrbCanvas {
 
 		// Ghost bubbles: translucent placeholder shown during loading — no label.
 		if (artist.isGhost) {
-			this.ctx.globalAlpha = opacity * 0.35
+			this.ctx.globalAlpha = opacity * GHOST_OPACITY
 			const ghostGrad = this.ctx.createRadialGradient(
 				x - r * 0.25,
 				y - r * 0.25,
@@ -794,21 +795,52 @@ export function computeLabelLayout(
 	const usableWidth = radius * 1.6
 	const minFont = 10
 	const maxLines = 3
-	let fontSize = Math.max(minFont, radius * 0.38)
 
-	// Word-wrap and adaptive sizing loop
-	let font: string
-	let lines: string[]
-	for (;;) {
-		font = `bold ${fontSize}px system-ui, sans-serif`
-		const f = font
-		lines = wrapText(name, usableWidth, (t) => measure(t, f))
-
-		// Shrink font if lines overflow width or exceed max line count
-		const allFit = lines.every((line) => measure(line, f) <= usableWidth)
-		if ((allFit && lines.length <= maxLines) || fontSize <= minFont) break
-		fontSize -= 0.5
+	// The sizes the shrink loop steps through: from `radius * 0.38` (at least
+	// the floor) down by 0.5 px, ending at the first size at or below the
+	// floor, which is used whether or not the label fits. Built by repeated
+	// subtraction so every size is the exact float the loop would try.
+	const sizes: number[] = []
+	for (let size = Math.max(minFont, radius * 0.38); ; size -= 0.5) {
+		sizes.push(size)
+		if (size <= minFont) break
 	}
+
+	// Each measured width once per layout: wrapping and the fit check measure
+	// the same strings again and again.
+	const widths = new Map<string, number>()
+	const width = (text: string, font: string): number => {
+		const key = `${font}\n${text}`
+		let w = widths.get(key)
+		if (w === undefined) {
+			w = measure(text, font)
+			widths.set(key, w)
+		}
+		return w
+	}
+	const layoutAt = (fontSize: number) => {
+		const font = `bold ${fontSize}px system-ui, sans-serif`
+		const lines = wrapText(name, usableWidth, (t) => width(t, font))
+		const fits =
+			lines.length <= maxLines &&
+			lines.every((line) => width(line, font) <= usableWidth)
+		return { font, lines, fits }
+	}
+
+	// The largest size that fits, by binary search over the steps instead of
+	// trying them one by one. Text width grows with the font size, so "fits"
+	// holds from some step on and the search lands on the step the one-by-one
+	// loop would stop at (checked by the parity test). The last step is the
+	// floor.
+	let lo = 0
+	let hi = sizes.length - 1
+	while (lo < hi) {
+		const mid = (lo + hi) >> 1
+		if (layoutAt(sizes[mid]).fits) hi = mid
+		else lo = mid + 1
+	}
+	const fontSize = sizes[lo]
+	let { font, lines } = layoutAt(fontSize)
 
 	// Truncate to maxLines if still exceeded after font floor
 	if (lines.length > maxLines) {
