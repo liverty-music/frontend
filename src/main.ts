@@ -73,6 +73,7 @@ import { IAudioEngine } from './services/audio-engine'
 import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
 import { IConcertStore } from './services/concert-store'
+import { DiscoveryPrefetchTask } from './services/discovery-prefetch-task'
 import { IErrorBoundaryService } from './services/error-boundary-service'
 import { IFabMenuService } from './services/fab-menu-service'
 import { FollowPrefetchTask } from './services/follow-prefetch-task'
@@ -227,6 +228,9 @@ async function bootstrap(): Promise<void> {
 	// known (does not block start-up), so Discovery can pick its seeds without
 	// waiting a round trip.
 	au.register(FollowPrefetchTask)
+	// For an app opened on Discovery, starts building the bubble field during
+	// start-up (after the follow list for a signed-in fan); does not block.
+	au.register(DiscoveryPrefetchTask)
 	au.register(IAudioEngine)
 	au.register(IHapticService)
 	au.register(INotificationManager)

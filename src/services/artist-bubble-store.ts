@@ -113,6 +113,9 @@ export class ArtistBubbleStore {
 	// bumped by a cache repaint or a re-entry delta, so freshness reflects when the
 	// data was last fetched. Drives the re-entry reuse-vs-reload decision.
 	private fieldBuiltAt = 0
+	// Whether the route has shown the field in this document: its first display
+	// is a cold visit (reveal timings), later ones are re-entries.
+	private fieldShown = false
 
 	constructor() {
 		// A shared singleton must not leak one user's field/dedup memory to the
@@ -151,17 +154,38 @@ export class ArtistBubbleStore {
 	 * blank while `loadInitial` fetches. Re-entry → re-apply the invariants to the
 	 * persisted field so artists followed while away are dropped from the instant
 	 * paint before the canvas re-attaches; the background `reenter` then applies
-	 * the full non-destructive delta. Returns whether ghosts were painted (a cold
-	 * visit).
+	 * the full non-destructive delta. Returns whether this is the field's first
+	 * display in this document (a cold visit), including a field the start-up
+	 * load (`prefetchInitial`) already built, which shows without ghosts.
 	 */
 	public prepareEntry(): boolean {
+		const first = !this.fieldShown
+		this.fieldShown = true
 		const real = this.realField()
 		if (real.length === 0) {
-			this.paintGhosts()
-			return true
+			if (first) this.paintGhosts()
+			else this.setField(real)
+			return first
 		}
 		this.setField(real)
-		return false
+		return first
+	}
+
+	/**
+	 * Start the initial load during app start-up, for an app opened on
+	 * Discovery, so the field is built (or well under way) by the time the
+	 * route shows it. Does nothing once the field has been shown or a load is
+	 * running. `viewportWidth` sets the display capacity, as `enterRoute` does.
+	 */
+	public prefetchInitial(viewportWidth: number): void {
+		if (this.fieldShown || this.isLoading || this.realField().length > 0) {
+			return
+		}
+		this.enterRoute(viewportWidth)
+		this.loadInitial().catch((err: unknown) => {
+			// The route's own load retries and reports a failure.
+			this.logger.warn('Start-up field load failed', { error: err })
+		})
 	}
 
 	/**
@@ -216,10 +240,8 @@ export class ArtistBubbleStore {
 			return
 		}
 
-		const cold = this.field.some((a) => a.isGhost)
-		const similar = this.fetchSeedSimilar(
-			seeds,
-			cold ? (partial) => this.revealPartial(partial) : undefined,
+		const similar = this.fetchSeedSimilar(seeds, (partial) =>
+			this.revealPartial(partial),
 		)
 		// Request the top-up together with the seeds; it is used only if the
 		// similar results turn out sparse. Mark it handled so an unused failure
@@ -251,6 +273,9 @@ export class ArtistBubbleStore {
 	 * final `setField` produces the same field as an all-at-once load.
 	 */
 	private revealPartial(answered: readonly Artist[]): void {
+		// Only a cold visit's ghosts are replaced as seeds answer; a shown real
+		// field (stale re-entry) or a field not shown yet waits for the result.
+		if (!this.field.some((a) => a.isGhost)) return
 		const real = capTo(this.freshFrom(answered), MAX_BUBBLES)
 		if (real.length === 0) return
 		const ghosts = makeGhostArtists(MAX_BUBBLES).slice(real.length)
@@ -491,6 +516,7 @@ export class ArtistBubbleStore {
 		this.seen.clear()
 		this.country = detectCountryFromTimezone()
 		this.fieldBuiltAt = 0
+		this.fieldShown = false
 		this.lastInitialLoad = null
 		this.commitField([], new Map())
 		this.logger.info('Bubble field cleared')

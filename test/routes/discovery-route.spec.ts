@@ -1055,8 +1055,11 @@ describe('DiscoveryRoute', () => {
 				[makeArtist('a1', 'YOASOBI')],
 			)
 			await sut.refreshField()
+			sut.loading() // the first visit
+			await vi.runAllTimersAsync()
+			sut.detaching()
 
-			sut.loading()
+			sut.loading() // the re-entry
 			await vi.runAllTimersAsync()
 			revealAll([100, 200, 300])
 
