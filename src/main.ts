@@ -121,10 +121,6 @@ function resolveLogLevel(configLogLevel: AppConfig['logLevel']): LogLevel {
 	return map[configLogLevel]
 }
 
-function removeBootstrapLoadingIndicator(): void {
-	document.getElementById('bootstrap-loading')?.remove()
-}
-
 function showStaticErrorPage(err: unknown): void {
 	const message = err instanceof Error ? err.message : String(err)
 	const detail = import.meta.env.DEV ? `<pre>${escapeHtml(message)}</pre>` : ''
@@ -293,9 +289,6 @@ async function bootstrap(): Promise<void> {
 		_showUpdateToast?.()
 		_pendingRefresh = false
 	}
-
-	// Remove the inline loading indicator now that Aurelia has rendered.
-	removeBootstrapLoadingIndicator()
 
 	// Push subscription recovery. On app open, reconcile the browser⇄backend
 	// push subscription so a permission-granted user whose subscription lapsed

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-	configNetworkFirst,
+	configStaleWhileRevalidate,
 	navigateOrShell,
 	OFFLINE_CONFIG_CACHE,
 } from '../../../src/lib/offline/offline-fallback'
@@ -29,39 +29,80 @@ function fakeCaches() {
 
 const CONFIG = 'https://liverty-music.app/config.json'
 
-describe('configNetworkFirst', () => {
-	it('reads the network online and keeps the copy', async () => {
+describe('configStaleWhileRevalidate', () => {
+	const ok = (body: string) => async () => new Response(body)
+	const offline = async () => {
+		throw new TypeError('Failed to fetch')
+	}
+
+	it('reads the network on the first start and keeps the copy', async () => {
 		const { storage, buckets } = fakeCaches()
-		const fetchImpl = vi.fn(async () => new Response('{"v":2}'))
-		const res = await configNetworkFirst(new Request(CONFIG), {
-			fetchImpl,
-			cacheStorage: storage,
-		})
-		expect(await res.text()).toBe('{"v":2}')
+		const fetchImpl = vi.fn(ok('{"v":1}'))
+		const waitUntil = vi.fn()
+		const res = await configStaleWhileRevalidate(
+			new Request(CONFIG),
+			waitUntil,
+			{ fetchImpl, cacheStorage: storage },
+		)
+		expect(await res.text()).toBe('{"v":1}')
 		expect(fetchImpl).toHaveBeenCalledWith(expect.any(Request), {
 			cache: 'no-store',
 		})
+		expect(waitUntil).not.toHaveBeenCalled()
 		expect(buckets.get(OFFLINE_CONFIG_CACHE)?.has(CONFIG)).toBe(true)
 	})
 
-	it('serves the kept copy only when the network fails', async () => {
+	it('serves the kept copy at once and keeps the refreshed copy for the next start', async () => {
 		const { storage } = fakeCaches()
-		await configNetworkFirst(new Request(CONFIG), {
-			fetchImpl: async () => new Response('{"v":1}'),
+		await configStaleWhileRevalidate(new Request(CONFIG), vi.fn(), {
+			fetchImpl: ok('{"v":1}'),
 			cacheStorage: storage,
 		})
-		const res = await configNetworkFirst(new Request(CONFIG), {
-			fetchImpl: async () => {
-				throw new TypeError('Failed to fetch')
-			},
-			cacheStorage: storage,
-		})
+		const work: Promise<unknown>[] = []
+		const res = await configStaleWhileRevalidate(
+			new Request(CONFIG),
+			(p) => work.push(p),
+			{ fetchImpl: ok('{"v":2}'), cacheStorage: storage },
+		)
 		expect(await res.text()).toBe('{"v":1}')
+		expect(work).toHaveLength(1)
+		await Promise.all(work)
+		const next = await configStaleWhileRevalidate(
+			new Request(CONFIG),
+			vi.fn(),
+			{ fetchImpl: offline, cacheStorage: storage },
+		)
+		expect(await next.text()).toBe('{"v":2}')
+	})
+
+	it('keeps the old copy when the refresh fails', async () => {
+		const { storage } = fakeCaches()
+		await configStaleWhileRevalidate(new Request(CONFIG), vi.fn(), {
+			fetchImpl: ok('{"v":1}'),
+			cacheStorage: storage,
+		})
+		const work: Promise<unknown>[] = []
+		const res = await configStaleWhileRevalidate(
+			new Request(CONFIG),
+			(p) => work.push(p),
+			{
+				fetchImpl: async () => new Response('', { status: 503 }),
+				cacheStorage: storage,
+			},
+		)
+		await Promise.all(work)
+		expect(await res.text()).toBe('{"v":1}')
+		const next = await configStaleWhileRevalidate(
+			new Request(CONFIG),
+			vi.fn(),
+			{ fetchImpl: offline, cacheStorage: storage },
+		)
+		expect(await next.text()).toBe('{"v":1}')
 	})
 
 	it('does not keep an error response', async () => {
 		const { storage, buckets } = fakeCaches()
-		const res = await configNetworkFirst(new Request(CONFIG), {
+		const res = await configStaleWhileRevalidate(new Request(CONFIG), vi.fn(), {
 			fetchImpl: async () => new Response('', { status: 503 }),
 			cacheStorage: storage,
 		})
@@ -72,10 +113,8 @@ describe('configNetworkFirst', () => {
 	it('fails like the network when nothing was kept', async () => {
 		const { storage } = fakeCaches()
 		await expect(
-			configNetworkFirst(new Request(CONFIG), {
-				fetchImpl: async () => {
-					throw new TypeError('Failed to fetch')
-				},
+			configStaleWhileRevalidate(new Request(CONFIG), vi.fn(), {
+				fetchImpl: offline,
 				cacheStorage: storage,
 			}),
 		).rejects.toThrow('Failed to fetch')

@@ -1,8 +1,8 @@
 /**
  * Service-worker fallbacks that let a fan reopen the app without a connection
  * (the tickets screen shows the last loaded list and makes entry QR codes
- * offline). Both are network-first: online behavior is unchanged, and the
- * fallback is used only when the network request fails.
+ * offline). Navigation is network-first; `/config.json` is served from the
+ * kept copy and refreshed in the background.
  */
 
 /** Cache Storage bucket holding the last `/config.json` read online. */
@@ -33,27 +33,31 @@ export async function navigateOrShell(
 }
 
 /**
- * `/config.json`: always read from the network and keep the last good copy;
- * serve that copy only when the network fails, so a deployer's change still
- * reaches every online boot.
+ * `/config.json`: serve the kept copy at once and refresh it from the network
+ * for the next start (stale-while-revalidate), so start-up does not wait a
+ * round trip (1.4 s on Slow 4G). With no kept copy, wait for the network and
+ * keep its answer; a failed network then fails like the network. A config
+ * change made without an app release reaches a device one start later; a
+ * release drops the kept copy (see `sw.ts` activate), so new code never starts
+ * with an old config. `waitUntil` keeps the worker alive for the refresh.
  */
-export async function configNetworkFirst(
+export async function configStaleWhileRevalidate(
 	request: Request,
+	waitUntil: (work: Promise<unknown>) => void,
 	deps: FallbackDeps = {},
 ): Promise<Response> {
 	const fetchImpl = deps.fetchImpl ?? fetch
-	const cacheStorage = deps.cacheStorage ?? caches
-	try {
-		const response = await fetchImpl(request, { cache: 'no-store' })
-		if (response.ok) {
-			const cache = await cacheStorage.open(OFFLINE_CONFIG_CACHE)
-			await cache.put(request.url, response.clone())
-		}
-		return response
-	} catch (err) {
-		const cache = await cacheStorage.open(OFFLINE_CONFIG_CACHE)
-		const cached = await cache.match(request.url)
-		if (cached) return cached
-		throw err
+	const cache = await (deps.cacheStorage ?? caches).open(OFFLINE_CONFIG_CACHE)
+	const fromNetwork = fetchImpl(request, { cache: 'no-store' }).then(
+		async (response) => {
+			if (response.ok) await cache.put(request.url, response.clone())
+			return response
+		},
+	)
+	const kept = await cache.match(request.url)
+	if (kept) {
+		waitUntil(fromNetwork.catch(() => undefined))
+		return kept
 	}
+	return fromNetwork
 }

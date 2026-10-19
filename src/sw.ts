@@ -16,8 +16,9 @@ import {
 	resolvePushMetadata,
 } from './lib/analytics/notification-interaction'
 import {
-	configNetworkFirst,
+	configStaleWhileRevalidate,
 	navigateOrShell,
+	OFFLINE_CONFIG_CACHE,
 } from './lib/offline/offline-fallback'
 import {
 	ARTIST_WRITES,
@@ -33,16 +34,18 @@ import { Events } from './services/analytics-events'
 precacheAndRoute(self.__WB_MANIFEST)
 
 // ---------------------------------------------------------------------------
-// Runtime config endpoint — network-first, last good copy offline.
+// Runtime config endpoint — the kept copy first, refreshed in the background.
 //
-// Online, every boot reads `/config.json` from the network (never a cached
-// copy), so ConfigMap updates (followed by a Reloader-triggered pod rollout)
-// still propagate on the next page load without cache busting. The response
-// is also kept, and served ONLY when the network request fails, so a fan can
-// reopen the app without a connection: the tickets screen shows the last
-// loaded tickets and makes entry QR codes offline (OpenSpec change
-// `ticket-wallet-and-checkin`). This is the additive change anticipated by
-// `adopt-runtime-config-for-frontend` design D6.
+// Start-up reads `/config.json` before Aurelia starts, so a network round trip
+// here delayed every boot (1.4 s on Slow 4G). The worker serves the copy kept
+// from the last start and refreshes it from the network for the next one, so a
+// ConfigMap change (followed by a Reloader-triggered pod rollout) reaches a
+// device one start later. An app release drops the kept copy on activate, so
+// new code always starts with the config read from the network. With no kept
+// copy the worker waits for the network; offline it fails like the network.
+// The kept copy also lets a fan reopen the app without a connection: the
+// tickets screen shows the last loaded tickets and makes entry QR codes
+// offline (OpenSpec change `ticket-wallet-and-checkin`).
 //
 // `/config.json` is intentionally NOT in `__WB_MANIFEST` — it is
 // mounted from a K8s ConfigMap at deploy time, not shipped in the
@@ -50,7 +53,8 @@ precacheAndRoute(self.__WB_MANIFEST)
 // ---------------------------------------------------------------------------
 registerRoute(
 	({ url }) => url.pathname === '/config.json',
-	({ request }) => configNetworkFirst(request),
+	({ request, event }) =>
+		configStaleWhileRevalidate(request, (work) => event.waitUntil(work)),
 )
 
 // ---------------------------------------------------------------------------
@@ -245,7 +249,15 @@ type SyncEventLike = ExtendableEvent & { tag: string }
 )
 
 self.addEventListener('activate', (event) => {
-	event.waitUntil(Promise.all([self.clients.claim(), flushInteractionStash()]))
+	event.waitUntil(
+		Promise.all([
+			self.clients.claim(),
+			flushInteractionStash(),
+			// A release: the next start reads the config from the network, so
+			// new code never starts with a config kept for the old code.
+			caches.delete(OFFLINE_CONFIG_CACHE),
+		]),
+	)
 })
 
 self.addEventListener('message', (event) => {
