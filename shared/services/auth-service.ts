@@ -9,6 +9,18 @@ import { type AppConfig, IAppConfig } from '../config/app-config'
 import { SignedOut } from './events/signed-out'
 
 /**
+ * The token endpoint rejected the refresh token itself (RFC 6749 §5.2). Read
+ * from the error's `error` field (oidc-client-ts `ErrorResponse`).
+ */
+function isInvalidGrant(err: unknown): boolean {
+	return (
+		typeof err === 'object' &&
+		err !== null &&
+		(err as { error?: unknown }).error === 'invalid_grant'
+	)
+}
+
+/**
  * The scope naming the organization whose login policy applies: by id when the
  * config pins one, otherwise by primary domain (the organizer console's
  * short-name entry), otherwise none.
@@ -242,13 +254,27 @@ export class AuthService {
 	 * hook, reactive interceptors) share ONE `signinSilent()` call and all
 	 * observe its result. Returns the refreshed user, or `null` if the refresh
 	 * failed (e.g. the refresh token itself is expired/invalid). Never throws.
+	 *
+	 * When the provider rejects the refresh token itself (`invalid_grant`: it
+	 * was revoked, expired, or already used — Zitadel rotates it on every use,
+	 * so a refresh cut off by a reload leaves the stored one spent), the stored
+	 * session is removed. Kept, it would be retried, and fail, on every start
+	 * (two round trips before the app knows it is signed out). A network error
+	 * keeps the session, so an offline start still has the stored tickets.
 	 */
 	public async ensureFreshToken(): Promise<User | null> {
 		if (this.refreshInFlight) return this.refreshInFlight
 		this.refreshInFlight = this.userManager
 			.signinSilent()
-			.catch((err) => {
+			.catch(async (err: unknown) => {
 				this.logger.info('Silent refresh failed', err)
+				if (isInvalidGrant(err)) {
+					this.logger.warn(
+						'Refresh token rejected; removing the stored session',
+					)
+					await this.userManager.removeUser().catch(() => undefined)
+					this.updateState(null)
+				}
 				return null
 			})
 			.finally(() => {
