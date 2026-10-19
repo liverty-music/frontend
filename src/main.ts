@@ -59,6 +59,10 @@ import {
 	IAnalyticsService,
 	type IAnalyticsService as IAnalyticsServiceType,
 } from './lib/analytics/analytics-service'
+import {
+	createLongFrameReporter,
+	type LongFrameEntry,
+} from './lib/analytics/long-frame-reporter'
 import { IConsentService } from './lib/consent/consent-service'
 import { FanI18nConfiguration } from './lib/i18n/fan-i18n-configuration'
 import { PUSH_SUBSCRIPTION_CHANGED_MESSAGE } from './lib/push/push-renewal'
@@ -390,6 +394,9 @@ if (!import.meta.env.DEV) {
 	})
 }
 
+/** Cap on `perf.long_animation_frame` events per page load. */
+const LONG_FRAME_EVENTS_PER_PAGE = 20
+
 /**
  * Register performance observers that send real-user metrics to PostHog.
  * Registered once after Aurelia bootstraps; active for the whole session.
@@ -422,20 +429,15 @@ function registerPerfObservers(analytics: IAnalyticsServiceType): void {
 
 	if (!('PerformanceObserver' in window)) return
 
-	// Long Animation Frames — frames ≥ 100ms (50–99ms intentionally excluded to limit volume)
+	// Long Animation Frames — at most LONG_FRAME_EVENTS_PER_PAGE per page load.
+	const reportLongFrames = createLongFrameReporter(
+		(props) => analytics.capture(Events.LongAnimationFrame, props),
+		route,
+		LONG_FRAME_EVENTS_PER_PAGE,
+	)
 	try {
 		new PerformanceObserver((list) => {
-			for (const entry of list.getEntries()) {
-				if (entry.duration < 100) continue
-				const loaf = entry as PerformanceLongAnimationFrameTiming
-				const topScript = loaf.scripts?.[0]
-				analytics.capture(Events.LongAnimationFrame, {
-					duration_ms: Math.round(entry.duration),
-					top_function: topScript?.sourceFunctionName ?? '',
-					top_script: topScript?.sourceURL ?? '',
-					route: route(),
-				})
-			}
+			reportLongFrames(list.getEntries() as unknown as LongFrameEntry[])
 		}).observe({ type: 'long-animation-frame', buffered: true })
 	} catch {
 		// long-animation-frame not supported in this browser
