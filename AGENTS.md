@@ -129,6 +129,17 @@ or PR CI, so they surface at deploy time if missed:
   run `npm run build && npm run verify:build-templates` locally and update `ROUTE_MARKERS` if needed** — do
   not discover it at deploy. (A dashboard `loading-text` removal once broke the prod image build this way.)
 
+## Organizer console guide (keep it in step)
+
+The members' guide `organizer/guide/guide.html` (served at `/guide.html` on the
+organizer origin) quotes the console's words and follows its flow, and
+`specification/docs/organizer-console-story-map.md` is its source. **A change to
+the organizer console's words or flow updates the matching chapter of the guide
+and the developer document in the same change.** `test/organizer/guide.spec.ts`
+catches a changed quoted word or a missing chapter id; reviewers check the rest
+(order of steps, defaults, what the screens do not say) in the chapter of the
+screen they change. A new screen gets its chapter in `organizer/guide/guide-link.ts`.
+
 ## Playwright MCP (Authenticated E2E Testing)
 
 All routes require authentication by default (`AuthHook` in `src/hooks/auth-hook.ts`). Public routes explicitly set `data: { auth: false }` in route config.
