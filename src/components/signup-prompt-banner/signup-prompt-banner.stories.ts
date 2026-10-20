@@ -9,7 +9,10 @@ import {
 	expectBannerMotion,
 	expectBannerOffset,
 	expectBannerSurface,
+	expectCompactFilledButton,
+	expectOneRow,
 } from '../../../.storybook/bottom-banner'
+import ja from '../../locales/ja/translation.json'
 import { SignupPromptBanner } from './signup-prompt-banner'
 
 const meta = {
@@ -33,7 +36,7 @@ export const Visible = {
 	tags: ['reduced-motion'],
 	args: {
 		visible: true,
-		message: 'フォロー情報を保存してコンサート通知を受け取ろう！',
+		message: ja.myArtists.signupBanner.message,
 	},
 	render: (args) =>
 		defineAureliaStory({
@@ -51,22 +54,28 @@ export const Visible = {
 			'.signup-banner-message',
 		)
 		if (!host || !surface || !message) throw new Error('no banner')
-		const action = canvas.getByRole('button', { name: 'アカウント作成' })
+		const action = canvas.getByRole('button', { name: ja.signupBanner.cta })
 
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Component renders consistently"
 		await expect(message.textContent).toBe(args.message)
+		await expect(getComputedStyle(host).position).toBe('fixed')
 		await expectBannerOffset(host)
 
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "No dismiss control"
 		await expect(canvas.getAllByRole('button')).toEqual([action])
+		await expectOneRow(surface, message, action)
 
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner has frosted glass background"
 		await expectBannerSurface(surface)
 
+		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Sign Up button is the filled compact button"
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Compact filled button on a bottom banner"
+		await expectCompactFilledButton(action, message)
+
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner message text"
 		await expectBannerMessage(message, surface)
 
-		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "CTA button has glow pulse animation"
+		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "CTA attention cue"
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "CTA button has no animation for reduced motion"
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner slides in on appearance"
 		// @spec components/infrastructure/fan/web/global/signup-prompt-banner "Banner appears instantly for reduced motion"

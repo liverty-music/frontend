@@ -23,7 +23,6 @@ describe('storage names', () => {
 		expect(SessionKeys).toEqual({
 			languageBackfillAttempted: 'lang.backfillAttempted',
 			followReconcileAttempted: 'follow.reconcileAttempted',
-			pwaBannerDismissed: 'pwaBanner.dismissed',
 		})
 	})
 })

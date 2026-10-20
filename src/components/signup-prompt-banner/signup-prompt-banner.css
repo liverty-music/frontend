@@ -15,14 +15,28 @@
 				env(safe-area-inset-bottom, 0px)
 			);
 			inset-inline: 0;
+
+			/* The banner's width sizes its text (cqi), so the host is the query
+			   container; it spans the screen like the banner. */
+			container: bottom-banner / inline-size;
 		}
 
 		.signup-banner {
-			display: flex;
-			flex-direction: column;
-			gap: var(--space-xs);
+			/* One text size for the message and the button label, from the
+			   banner's width: 4.4cqi keeps the longest message and the button on
+			   one line at 320px, with about 5% to spare. Shared with
+			   pwa-install-banner. */
+			--_banner-text: clamp(12px, 4.4cqi, 16px);
 
-			padding-block: var(--space-xs) var(--space-s);
+			position: relative;
+
+			/* One row: the message takes the rest, the button its own width. */
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			gap: var(--space-xs);
+			align-items: center;
+
+			padding-block: var(--space-xs);
 			padding-inline: var(--space-s);
 			border-block-start: 2px solid;
 			border-image: linear-gradient(
@@ -36,16 +50,28 @@
 			backdrop-filter: blur(12px);
 		}
 
+		/* No ellipsis: a copy that no longer fits shows as clipped text, which
+		   the fit check catches. */
 		.signup-banner-message {
-			font-size: var(--step-0);
+			overflow: hidden;
+
+			min-inline-size: 0;
+
+			font-size: var(--_banner-text);
 			font-weight: 500;
 			color: var(--color-text-primary);
+			white-space: nowrap;
 		}
 
-		/* The shared `button` (on-container) owns the look; the banner only
-		   centres it in its column. */
+		/* The shared `button` (filled) owns the look; the snack's compact size
+		   hooks, with the banner's text size, keep the message its width. */
 		.signup-banner-action {
-			align-self: center;
+			--button-min-size: 2.25rem;
+			--button-padding-block: var(--space-3xs);
+			--button-padding-inline: var(--space-s);
+			--button-font-size: var(--_banner-text);
+
+			white-space: nowrap;
 		}
 
 		@media (prefers-reduced-motion: no-preference) {
@@ -56,24 +82,54 @@
 					var(--md-easing-emphasized-decelerate);
 			}
 
-			.signup-banner-action {
-				animation: cta-glow 1.2s ease-in-out 3;
+			/* The attention cue: a light runs along the brand line, then across
+			   the button, every 12s, five times. The banner is mounted by each
+			   route, so the cue starts again on every route by itself. Both
+			   layers only paint a moving background over their own box, so
+			   nothing moves or resizes. The button's ::after is the pressable
+			   state layer, so the cue takes its ::before. */
+			.signup-banner::before,
+			.signup-banner-action::before {
+				pointer-events: none;
+				content: "";
+
+				position: absolute;
+
+				background:
+					linear-gradient(
+						to right,
+						transparent,
+						color-mix(in oklch, var(--color-white) 70%, transparent),
+						transparent
+					)
+					-100% 0 / 50% 100% no-repeat;
+
+				animation: banner-cue 12s ease-in-out 5;
+			}
+
+			.signup-banner::before {
+				inset-block-start: -2px;
+				inset-inline: 0;
+				block-size: 2px;
+			}
+
+			.signup-banner-action::before {
+				inset: 0;
+				border-radius: inherit;
+				animation-delay: 1s;
 			}
 		}
 
-		/* The CTA glows three times when the banner appears, with the snack
-		   bar's attention timing (brand-primary on the dark surface), then stays
-		   still. */
-		@keyframes cta-glow {
-			0%,
-			100% {
-				box-shadow: 0 0 8px
-					color-mix(in oklch, var(--color-brand-primary) 30%, transparent);
+		/* The light crosses in the first ~9% of each 12s cycle, then rests out
+		   of view. Shared with pwa-install-banner. */
+		@keyframes banner-cue {
+			0% {
+				background-position-x: -100%;
 			}
 
-			50% {
-				box-shadow: 0 0 18px
-					color-mix(in oklch, var(--color-brand-primary) 55%, transparent);
+			9%,
+			100% {
+				background-position-x: 200%;
 			}
 		}
 

@@ -245,12 +245,49 @@ describe('PwaInstallService', () => {
 			})
 		})
 
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "App already installed — banner not shown"
 		it('is false when already installed via localStorage flag', () => {
 			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
 				value: class {},
 				configurable: true,
 			})
 			localStorage.setItem(StorageKeys.pwaInstalled, 'true')
+			const sut = new PwaInstallService()
+
+			expect(sut.shouldShowInstallBanner).toBe(false)
+
+			delete (window as unknown as Record<string, unknown>)
+				.BeforeInstallPromptEvent
+		})
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "App already installed — banner not shown"
+		it('is false when launched from the home screen on iOS', () => {
+			Object.defineProperty(navigator, 'standalone', {
+				value: true,
+				configurable: true,
+			})
+			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
+				value: class {},
+				configurable: true,
+			})
+			const sut = new PwaInstallService()
+
+			expect(sut.shouldShowInstallBanner).toBe(false)
+
+			delete (navigator as unknown as Record<string, unknown>).standalone
+			delete (window as unknown as Record<string, unknown>)
+				.BeforeInstallPromptEvent
+		})
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "App already installed — banner not shown"
+		it('is false in standalone display mode', () => {
+			vi.spyOn(window, 'matchMedia').mockReturnValue({
+				matches: true,
+			} as MediaQueryList)
+			Object.defineProperty(window, 'BeforeInstallPromptEvent', {
+				value: class {},
+				configurable: true,
+			})
 			const sut = new PwaInstallService()
 
 			expect(sut.shouldShowInstallBanner).toBe(false)

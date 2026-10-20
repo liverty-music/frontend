@@ -108,14 +108,19 @@ export const centre = (b: Box) => ({
 
 /**
  * Wait until every finite animation and transition under `selector` has
- * finished, so boxes are read at rest.
+ * finished, so boxes are read at rest. A bottom banner's attention cue
+ * (`banner-cue`) only paints and runs for a minute, so it is not waited for.
  */
 export async function settle(page: Page, selector: string): Promise<void> {
 	await page.waitForFunction((sel) => {
 		return [...document.querySelectorAll(sel)].every((el) =>
 			el
 				.getAnimations({ subtree: true })
-				.filter((a) => a.effect?.getTiming().iterations !== Infinity)
+				.filter(
+					(a) =>
+						a.effect?.getTiming().iterations !== Infinity &&
+						(a as CSSAnimation).animationName !== 'banner-cue',
+				)
 				.every((a) => a.playState !== 'running'),
 		)
 	}, selector)

@@ -70,13 +70,12 @@
 
 		/* While the FAB is shown, cut a notch around it in the bar's top edge.
 		   Masking the whole bar also cuts its gradient top line, so the edge
-		   stays one shape. Only alpha matters in a mask. While the FAB floats
-		   above a bottom banner (--fab-floating, set by global.css), the notch
-		   closes to a zero radius. */
+		   stays one shape. Only alpha matters in a mask. The notch stays cut
+		   while the FAB is sunk under a snack bar or a bottom banner, so the
+		   sunk FAB rests in its socket. */
 		.nav-bar[data-notch="true"] {
 			mask: radial-gradient(
-				circle calc(var(--fab-notch-radius) * (1 - var(--fab-floating, 0))) at
-					50% 0,
+				circle var(--fab-notch-radius) at 50% 0,
 				transparent 98%,
 				var(--color-white)
 			);

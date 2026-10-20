@@ -1,6 +1,9 @@
 import { bindable, INode, resolve } from 'aurelia'
 
-/** Global CSS variable other bottom-anchored surfaces (the FAB launcher) offset above. */
+/**
+ * Global CSS variable the route area, the snack bar and the FAB's sink read
+ * (shared with pwa-install-banner).
+ */
 const BANNER_HEIGHT_VAR = '--bottom-banner-height'
 
 export class SignupPromptBanner {
@@ -13,10 +16,10 @@ export class SignupPromptBanner {
 	private publishing = false
 
 	public attached(): void {
-		// Publish the banner's rendered height so the FAB launcher can offset
-		// clear of it. The height is dynamic (message wrap), so observe it rather
-		// than hard-coding — the banner is the one bottom surface whose height is
-		// not a constant, which is why a ResizeObserver is warranted here.
+		// Publish the banner's rendered height so the route area and the snack
+		// bar end above it. The height follows the banner's text size (from its
+		// width) and the user's font size, so observe it rather than hard-coding
+		// it.
 		this.resizeObserver = new ResizeObserver(() => this.publishHeight())
 		// The observer reports the first size at the next rendering step, so no
 		// synchronous read here (it forced a layout while the page attached).

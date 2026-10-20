@@ -1,32 +1,37 @@
-import { INode, observable, resolve, watch } from 'aurelia'
-import { SessionKeys } from '../../constants/storage-keys'
+import { IRouterEvents } from '@aurelia/router'
+import { type IDisposable, INode, observable, resolve, watch } from 'aurelia'
 import { IPwaInstallService } from '../../services/pwa-install-service'
 
 /** Which CTA the banner offers, driven reactively by the deferred prompt. */
 type InstallMode = 'native' | 'guide'
 
-/** Global CSS variable the FAB launcher offsets above (shared with signup-prompt-banner). */
+/**
+ * Global CSS variable the route area, the snack bar and the FAB's sink read
+ * (shared with signup-prompt-banner).
+ */
 const BANNER_HEIGHT_VAR = '--bottom-banner-height'
+
+/** The attention cue's keyframes (pwa-install-banner.css). */
+const CUE = 'banner-cue'
 
 export class PwaInstallBanner {
 	private readonly pwaInstall = resolve(IPwaInstallService)
 	private readonly element = resolve(INode) as HTMLElement
+	private readonly routerEvents = resolve(IRouterEvents)
 	private resizeObserver: ResizeObserver | null = null
+	private navigation: IDisposable | null = null
 	/** Whether this banner wrote the shared height variable last. */
 	private publishing = false
 
 	// isIos is immutable after boot — evaluated once and stored.
 	public readonly isIos: boolean = this.pwaInstall.isIos
 
-	@observable public dismissed = false
 	// 'native' one-tap install (deferred prompt captured, non-iOS) vs 'guide'
 	// manual instructions (iOS Safari or prompt not yet captured).
 	@observable public installMode: InstallMode = 'guide'
 	public isGuideSheetOpen = false
 
 	public binding(): void {
-		this.dismissed =
-			sessionStorage.getItem(SessionKeys.pwaBannerDismissed) === 'true'
 		// @watch does not fire on initial bind, so seed installMode explicitly.
 		this.syncInstallMode()
 	}
@@ -47,12 +52,29 @@ export class PwaInstallBanner {
 		// The observer reports the first size at the next rendering step, so no
 		// synchronous read here (it forced a layout while the page attached).
 		this.resizeObserver.observe(this.element)
+		// The banner stays mounted in the shell across routes, so its counted
+		// cue would play only once per page load; start it again on every route.
+		this.navigation = this.routerEvents.subscribe(
+			'au:router:navigation-end',
+			() => this.restartCue(),
+		)
 	}
 
 	public detaching(): void {
 		this.resizeObserver?.disconnect()
 		this.resizeObserver = null
+		this.navigation?.dispose()
+		this.navigation = null
 		this.unpublish()
+	}
+
+	/** Play the attention cue from its start, its five plays included. */
+	private restartCue(): void {
+		for (const animation of this.element.getAnimations({ subtree: true })) {
+			if ((animation as CSSAnimation).animationName !== CUE) continue
+			animation.currentTime = 0
+			animation.play()
+		}
 	}
 
 	/**
@@ -89,10 +111,10 @@ export class PwaInstallBanner {
 	}
 
 	// Read directly from the service `@observable` so the host `if.bind`
-	// re-evaluates when the app is installed (D1). `dismissed` is a local
-	// `@observable`, so both dependencies are reactively tracked.
+	// re-evaluates when the app is installed (D1). The banner has no dismiss:
+	// it stays until the app is installed or the install is confirmed.
 	public get isVisible(): boolean {
-		return this.pwaInstall.shouldShowInstallBanner && !this.dismissed
+		return this.pwaInstall.shouldShowInstallBanner
 	}
 
 	public onCta(): void | Promise<void> {
@@ -111,10 +133,5 @@ export class PwaInstallBanner {
 	public onConfirmInstalled(): void {
 		this.pwaInstall.confirmInstalled()
 		this.isGuideSheetOpen = false
-	}
-
-	public dismiss(): void {
-		this.dismissed = true
-		sessionStorage.setItem(SessionKeys.pwaBannerDismissed, 'true')
 	}
 }

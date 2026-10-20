@@ -10,6 +10,8 @@ import {
 	expectBannerMotion,
 	expectBannerOffset,
 	expectBannerSurface,
+	expectCompactFilledButton,
+	expectOneRow,
 } from '../../../.storybook/bottom-banner'
 import { BusyOnClickCustomAttribute } from '../../custom-attributes/busy-on-click'
 import ja from '../../locales/ja/translation.json'
@@ -18,11 +20,11 @@ import { PwaInstallBanner } from './pwa-install-banner'
 
 // The banner reads whether to show and which CTA to offer from the install
 // service; a stand-in shows it in guide mode (no captured install prompt).
-function mockPwaInstall() {
+function mockPwaInstall(shouldShowInstallBanner = true) {
 	return {
 		isIos: false,
 		canShowFab: false,
-		shouldShowInstallBanner: true,
+		shouldShowInstallBanner,
 		install: fn(async () => {}),
 		confirmInstalled: fn(),
 	}
@@ -51,7 +53,6 @@ export const Visible = {
 			items: [Registration.instance(IPwaInstallService, mockPwaInstall())],
 		}),
 	play: async ({ canvasElement }) => {
-		sessionStorage.clear()
 		const canvas = within(canvasElement)
 		const host = canvasElement.querySelector<HTMLElement>('pwa-install-banner')
 		const surface = canvasElement.querySelector<HTMLElement>('.pwa-banner')
@@ -61,23 +62,33 @@ export const Visible = {
 		const action = canvas.getByRole('button', { name: t.cta })
 
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "PWA install prompt displays localized text"
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner element has an accessible label"
+		await expect(surface.tagName).toBe('ASIDE')
 		await expect(surface.getAttribute('aria-label')).toBe(t.ariaLabel)
 		await expect(label.textContent).toBe(t.label)
-		await expect(
-			canvas.getByRole('button', { name: t.close }),
-		).toBeInTheDocument()
 
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is fixed at the bottom above the nav bar"
 		await expect(getComputedStyle(host).position).toBe('fixed')
 		await expectBannerOffset(host)
+		await expect(host.getBoundingClientRect().left).toBe(0)
+		await expect(host.getBoundingClientRect().width).toBe(
+			document.documentElement.clientWidth,
+		)
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "One row with no icon or close control"
+		await expectOneRow(surface, label, action)
 
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner frosted glass and gradient border"
 		await expectBannerSurface(surface)
 
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Install button is the filled compact button"
+		// @spec components/infrastructure/fan/web/global/ui-primitives "Compact filled button on a bottom banner"
+		await expectCompactFilledButton(action, label)
+
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner message text"
 		await expectBannerMessage(label, surface)
 
-		// @spec components/infrastructure/fan/web/global/pwa-install-banner "CTA button glow pulse animation"
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "CTA attention cue"
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Reduced motion — no animation"
 		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner slides in on appearance"
 		await expectBannerMotion(surface, action)
@@ -97,5 +108,23 @@ export const Visible = {
 		await expect(
 			sheet.getByRole('button', { name: t.guideConfirm }),
 		).toBeInTheDocument()
+	},
+} satisfies Story
+
+/** The app is installed: the banner leaves the DOM and the tab order. */
+export const Hidden = {
+	render: () =>
+		defineAureliaStory({
+			template: '<pwa-install-banner></pwa-install-banner>',
+			register: [PwaInstallBanner, BusyOnClickCustomAttribute],
+			items: [Registration.instance(IPwaInstallService, mockPwaInstall(false))],
+		}),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is removed from DOM when hidden"
+		await expect(canvasElement.querySelector('pwa-install-banner')).not.toBe(
+			null,
+		)
+		await expect(canvasElement.querySelector('.pwa-banner')).toBe(null)
+		await expect(within(canvasElement).queryAllByRole('button')).toHaveLength(0)
 	},
 } satisfies Story
