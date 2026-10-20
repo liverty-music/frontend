@@ -18,10 +18,11 @@
 
 		.pwa-banner {
 			/* One text size for the message and the button label, from the
-			   banner's width: 4.4cqi keeps the longest message and the button on
-			   one line at 320px, with about 5% to spare. Shared with
+			   banner's width: 4.2cqi keeps the longest message and the button on
+			   one line at 320px, with room for the button's fallback font
+			   before the web font loads. Shared with
 			   signup-prompt-banner. */
-			--_banner-text: clamp(12px, 4.4cqi, 16px);
+			--_banner-text: clamp(12px, 4.2cqi, 16px);
 
 			position: relative;
 
