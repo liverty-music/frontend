@@ -35,10 +35,7 @@ export const Default = {
 		// Component-level visual regression against a committed baseline (D4/OQ2).
 		await vitestExpect
 			.element(canvasElement)
-			.toMatchScreenshot('page-header-default', {
-				comparatorName: 'pixelmatch',
-				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
-			})
+			.toMatchScreenshot('page-header-default')
 	},
 } satisfies Story
 
@@ -91,9 +88,6 @@ export const WithSettings = {
 		).toBeTruthy()
 		await vitestExpect
 			.element(canvasElement)
-			.toMatchScreenshot('page-header-with-settings', {
-				comparatorName: 'pixelmatch',
-				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
-			})
+			.toMatchScreenshot('page-header-with-settings')
 	},
 } satisfies Story

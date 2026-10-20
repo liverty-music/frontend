@@ -53,10 +53,7 @@ export const Default = {
 		// (design D4 / OQ2: 2% pixel tolerance absorbs sub-pixel AA jitter).
 		await vitestExpect
 			.element(canvasElement)
-			.toMatchScreenshot('svg-icon-default', {
-				comparatorName: 'pixelmatch',
-				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
-			})
+			.toMatchScreenshot('svg-icon-default')
 	},
 } satisfies Story
 

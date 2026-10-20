@@ -127,9 +127,6 @@ export const Catalog = {
 		// @spec components/infrastructure/fan/web/global/ui-primitives "Catalog matches the specification"
 		await vitestExpect
 			.element(canvasElement)
-			.toMatchScreenshot('button-catalog', {
-				comparatorName: 'pixelmatch',
-				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
-			})
+			.toMatchScreenshot('button-catalog')
 	},
 } satisfies Story

@@ -61,10 +61,7 @@ export const Empty = {
 		// Component-level visual regression against a committed baseline (D4/OQ2).
 		await vitestExpect
 			.element(canvasElement)
-			.toMatchScreenshot('state-placeholder-empty', {
-				comparatorName: 'pixelmatch',
-				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
-			})
+			.toMatchScreenshot('state-placeholder-empty')
 	},
 } satisfies Story
 

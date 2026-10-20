@@ -77,10 +77,7 @@ export const FourDates = {
 		await expect(frame.scrollWidth).toBeLessThanOrEqual(360)
 		await vitestExpect
 			.element(frame)
-			.toMatchScreenshot('event-date-tabs-four-360', {
-				comparatorName: 'pixelmatch',
-				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
-			})
+			.toMatchScreenshot('event-date-tabs-four-360')
 	},
 } satisfies Story
 

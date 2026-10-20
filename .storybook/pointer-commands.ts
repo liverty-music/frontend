@@ -46,9 +46,21 @@ export const releasePointer: BrowserCommand<[]> = async (context) => {
 	await page.mouse.up()
 }
 
+/**
+ * Moves the real pointer to the page's top-left corner. The browser keeps the
+ * pointer where the previous story left it, so a control that happens to lie
+ * under it renders hovered; parking it before each story keeps screenshots
+ * deterministic.
+ */
+export const parkPointer: BrowserCommand<[]> = async (context) => {
+	const { page } = context as unknown as PlaywrightContext
+	await page.mouse.move(0, 0)
+}
+
 declare module 'vitest/browser' {
 	interface BrowserCommands {
 		pressAndHold: (selector: string) => Promise<void>
 		releasePointer: () => Promise<void>
+		parkPointer: () => Promise<void>
 	}
 }
