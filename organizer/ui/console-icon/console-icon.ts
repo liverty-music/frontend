@@ -22,6 +22,8 @@ const PATHS = {
 		'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z',
 	event:
 		'M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z',
+	/** Outlined, like the account icon it sits next to in the top bar. */
+	help: 'M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z',
 	home: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
 	info: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z',
 	language:
@@ -42,6 +44,9 @@ const PATHS = {
 } as const
 
 export type ConsoleIconName = keyof typeof PATHS
+
+/** Every icon name, for the icon's story. */
+export const CONSOLE_ICON_NAMES = Object.keys(PATHS) as ConsoleIconName[]
 
 /**
  * A 24 px Material icon in the current text color. Decorative: the control

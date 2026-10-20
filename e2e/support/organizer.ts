@@ -1,4 +1,4 @@
-import type { Locator, Page, Route } from '@playwright/test'
+import { expect, type Locator, type Page, type Route } from '@playwright/test'
 import { OIDC_AUTHORITY } from './auth-mocks'
 import { artistList, organizer } from './organizer-data'
 
@@ -312,4 +312,18 @@ export async function brandColoredControls(page: Page): Promise<string[]> {
 				).trim(),
 			)
 	})
+}
+
+/**
+ * A prerequisite notice's 詳しく見る: the members' guide at `chapter`, in a new
+ * tab (OpenSpec organizer-console-guide, design D5).
+ */
+export async function expectGuideLink(
+	notice: Locator,
+	chapter: string,
+): Promise<void> {
+	const link = notice.getByRole('link', { name: '詳しく見る' })
+	await expect(link).toHaveAttribute('href', `/guide.html#${chapter}`)
+	await expect(link).toHaveAttribute('target', '_blank')
+	await expect(link).toHaveAttribute('rel', 'noopener')
 }

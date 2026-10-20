@@ -51,4 +51,21 @@
 
 		background: transparent;
 	}
+
+	/* 詳しく見る: the guide, below the fix and quieter than it, so the fix
+	   stays the notice's main action. */
+	.guide {
+		display: inline-flex;
+		align-items: center;
+
+		min-block-size: var(--md-target-size);
+		margin-inline: calc(-1 * var(--space-2xs));
+		padding: 0 var(--space-2xs);
+		border-radius: var(--md-shape-small);
+
+		font: var(--md-type-body-medium);
+		color: inherit;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
 }

@@ -17,6 +17,12 @@ const meta = {
 		heading: { control: 'text' },
 		actionLabel: { control: 'text' },
 		actionHref: { control: 'text' },
+		guideChapter: {
+			control: 'select',
+			options: ['', 'publish', 'business-and-payout'],
+			description:
+				"The members' guide chapter 詳しく見る opens; none shows no link.",
+		},
 		level: {
 			control: 'inline-radio',
 			options: [2, 3],
@@ -126,5 +132,72 @@ export const ButtonAction = {
 		)
 		await userEvent.click(button)
 		await expect(canvas.getByTestId('pressed').element()).toHaveTextContent('1')
+	},
+} satisfies Story
+
+/**
+ * A fix and the guide (開始時刻がない Sales tab): 詳しく見る sits below the fix,
+ * quieter than it, and opens the guide's chapter in a new tab.
+ */
+export const WithFixAndGuide = {
+	args: {
+		heading: '開始時刻を設定してください',
+		actionLabel: '公演を編集',
+		actionHref: '#edit',
+		guideChapter: 'publish',
+		level: 2,
+	},
+	render: (args) =>
+		defineAureliaStory({
+			template: `
+				<div style="inline-size:390px; padding:16px; background:var(--md-color-surface)">
+					<prerequisite-callout heading.bind="heading" action-label.bind="actionLabel" action-href.bind="actionHref" guide-chapter.bind="guideChapter" level.bind="level">
+						販売を始めるには、公演日の開始時刻が必要です。
+					</prerequisite-callout>
+				</div>
+			`,
+			props: args,
+		}),
+	play: async ({ canvasElement }) => {
+		const canvas = canvasOf(canvasElement)
+		const fix = canvas.getByRole('link', { name: '公演を編集' }).element()
+		const guide = canvas.getByRole('link', { name: '詳しく見る' }).element()
+		await expect(guide).toHaveAttribute('href', '/guide.html#publish')
+		await expect(guide).toHaveAttribute('target', '_blank')
+		await expect(guide).toHaveAttribute('rel', 'noopener')
+		// Below the fix, which stays the main action.
+		await expect(guide.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+			fix.getBoundingClientRect().bottom,
+		)
+		await expect(getComputedStyle(guide).fontWeight).not.toBe(
+			getComputedStyle(fix).fontWeight,
+		)
+		// Both read in the callout's text color, not the brand color.
+		await expect(getComputedStyle(guide).color).toBe(
+			getComputedStyle(fix).color,
+		)
+	},
+} satisfies Story
+
+/** No fix in the console (事業者情報が未登録です): only the guide. */
+export const GuideOnly = {
+	args: {
+		heading: '事業者情報が未登録です',
+		actionLabel: '',
+		actionHref: '',
+		guideChapter: 'business-and-payout',
+		level: 2,
+	},
+	render: WithFixAndGuide.render,
+	play: async ({ canvasElement }) => {
+		const canvas = canvasOf(canvasElement)
+		await expect(canvas.getByRole('button').elements()).toHaveLength(0)
+		const links = canvas.getByRole('link').elements()
+		await expect(links).toHaveLength(1)
+		await expect(links[0]).toHaveTextContent('詳しく見る')
+		await expect(links[0]).toHaveAttribute(
+			'href',
+			'/guide.html#business-and-payout',
+		)
 	},
 } satisfies Story

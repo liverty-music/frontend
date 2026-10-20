@@ -8,11 +8,17 @@ import ja from '../../../organizer/locales/ja/translation.json'
  * no words of its own.
  */
 
-const templates = import.meta.glob<string>('/organizer/**/*.html', {
-	query: '?raw',
-	import: 'default',
-	eager: true,
-})
+const templates = import.meta.glob<string>(
+	// The members' guide is a static Japanese page, not a console template
+	// (OpenSpec organizer-console-guide, design D6); test/organizer/guide.spec.ts
+	// checks its words against this catalog instead.
+	['/organizer/**/*.html', '!/organizer/guide/guide.html'],
+	{
+		query: '?raw',
+		import: 'default',
+		eager: true,
+	},
+)
 
 /** Attributes whose value a person reads. */
 const READABLE_ATTRIBUTES = [

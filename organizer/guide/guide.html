@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<title>主催者コンソールの使い方 | Liverty Music</title>
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+<link rel="shortcut icon" href="/favicon.ico">
+<!--
+  Static guide for the members of an Organizer (OpenSpec organizer-console-guide,
+  spec components/infrastructure/organizer/web/route/guide). A plain page served
+  at /guide.html on the organizer console's origin (Dockerfile.organizer copies
+  it next to organizer.html): no script, no app bootstrap, no sign-in. The
+  console's 使い方 in the top bar and the 詳しく見る links of its prerequisite
+  notices open it in a new tab at a chapter (organizer/guide/guide-link.ts).
+
+  Source: specification/docs/organizer-console-story-map.md. The chapters are
+  the member stories of that story map, the screen map is its information
+  architecture drawn with HTML and CSS, and the "画面に出ないこと" boxes are the
+  things the screens do not say. Each chapter id is fixed: the console links to
+  it. Console words are quoted exactly as organizer/locales/ja/translation.json
+  has them; test/organizer/guide.spec.ts checks the key ones and the ids.
+-->
+<style>
+/* Palette mirrored by hand from organizer/styles/tokens.css (a static page cannot import it). */
+:root {
+  color-scheme: light dark;
+  --primary: light-dark(oklch(50% 0.21 350deg), oklch(80% 0.14 350deg));
+  --on-primary: light-dark(oklch(100% 0 0deg), oklch(26% 0.09 350deg));
+  --primary-container: light-dark(oklch(93% 0.045 350deg), oklch(36% 0.12 350deg));
+  --on-primary-container: light-dark(oklch(32% 0.12 350deg), oklch(93% 0.04 350deg));
+  --secondary-container: light-dark(oklch(91% 0.02 285deg), oklch(34% 0.025 285deg));
+  --on-secondary-container: light-dark(oklch(26% 0.025 285deg), oklch(92% 0.012 285deg));
+  --surface: light-dark(oklch(99% 0.003 285deg), oklch(18% 0.01 285deg));
+  --surface-low: light-dark(oklch(97% 0.004 285deg), oklch(21% 0.011 285deg));
+  --surface-container: light-dark(oklch(95.5% 0.005 285deg), oklch(23.5% 0.012 285deg));
+  --surface-high: light-dark(oklch(93.5% 0.006 285deg), oklch(26.5% 0.013 285deg));
+  --on-surface: light-dark(oklch(22% 0.012 285deg), oklch(93% 0.006 285deg));
+  --on-surface-variant: light-dark(oklch(44% 0.016 285deg), oklch(79% 0.012 285deg));
+  --outline: light-dark(oklch(56% 0.014 285deg), oklch(64% 0.014 285deg));
+  --outline-variant: light-dark(oklch(86% 0.008 285deg), oklch(36% 0.012 285deg));
+  --warning-container: light-dark(oklch(94% 0.06 85deg), oklch(35% 0.07 75deg));
+  --on-warning-container: light-dark(oklch(33% 0.08 65deg), oklch(93% 0.05 85deg));
+  --success-container: light-dark(oklch(93% 0.05 150deg), oklch(33% 0.07 150deg));
+  --on-success-container: light-dark(oklch(31% 0.08 150deg), oklch(93% 0.04 150deg));
+  --error-container: light-dark(oklch(93% 0.04 27deg), oklch(36% 0.1 27deg));
+  --on-error-container: light-dark(oklch(33% 0.12 27deg), oklch(93% 0.03 27deg));
+  --neutral-container: light-dark(oklch(91.5% 0.007 285deg), oklch(31% 0.014 285deg));
+  --on-neutral-container: light-dark(oklch(36% 0.016 285deg), oklch(86% 0.01 285deg));
+
+  --font-body: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", monospace;
+
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-s: 1rem;
+  --space-m: 1.5rem;
+  --space-l: 2rem;
+  --space-xl: 3rem;
+
+  --radius-s: 0.5rem;
+  --radius-m: 0.75rem;
+  --radius-l: 1rem;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: var(--space-s); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--on-surface);
+  background: var(--surface);
+}
+h1, h2, h3 { line-height: 1.35; text-wrap: balance; }
+a { color: inherit; text-underline-offset: 3px; }
+a:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-s); }
+strong { font-weight: 700; }
+code { font-family: var(--font-mono); font-size: 0.92em; overflow-wrap: anywhere; }
+
+.page {
+  max-inline-size: 46rem;
+  margin-inline: auto;
+  padding-inline: 16px;
+  padding-block: calc(var(--space-m) + env(safe-area-inset-top, 0px)) var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* ---------- Header ---------- */
+.hero { display: flex; flex-direction: column; gap: var(--space-s); }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2xs); }
+.brand .mark { font-weight: 700; color: var(--primary); }
+.brand .product { color: var(--on-surface-variant); font-size: 0.9rem; }
+.brand .tag { margin-inline-start: auto; font-size: 0.8rem; color: var(--on-surface-variant); border: 1px solid var(--outline-variant); border-radius: 999px; padding: 0 0.6rem; }
+.hero h1 { font-size: clamp(1.6rem, 1.3rem + 1.5vi, 2.1rem); font-weight: 700; }
+.hero p { color: var(--on-surface-variant); }
+
+/* ---------- Contents ---------- */
+.toc { padding: var(--space-s); border-radius: var(--radius-l); background: var(--surface-container); }
+.toc h2 { font-size: 1rem; margin-bottom: var(--space-2xs); }
+.toc ol { padding: 0; list-style: none; display: grid; gap: var(--space-3xs); counter-reset: ch; }
+@media (min-width: 40rem) { .toc ol { grid-template-columns: 1fr 1fr; column-gap: var(--space-m); } }
+.toc li { counter-increment: ch; }
+.toc a { display: flex; gap: var(--space-2xs); align-items: center; min-block-size: 44px; text-decoration: none; padding-inline: var(--space-2xs); border-radius: var(--radius-s); }
+.toc a::before { content: counter(ch); flex: none; inline-size: 1.6rem; block-size: 1.6rem; display: grid; place-items: center; border-radius: 50%; background: var(--secondary-container); color: var(--on-secondary-container); font-size: 0.8rem; font-weight: 700; }
+.toc a:hover { background: var(--surface-high); }
+
+/* ---------- Chapters ---------- */
+section { display: flex; flex-direction: column; gap: var(--space-s); }
+section > h2 { font-size: 1.45rem; font-weight: 700; padding-block-start: var(--space-s); border-block-start: 1px solid var(--outline-variant); }
+section h3 { font-size: 1.1rem; font-weight: 700; margin-block-start: var(--space-2xs); }
+.lead { color: var(--on-surface-variant); }
+.steps { padding-inline-start: 1.4rem; display: grid; gap: var(--space-2xs); }
+.steps li::marker { font-weight: 700; color: var(--primary); }
+ul.plain { padding-inline-start: 1.2rem; display: grid; gap: var(--space-3xs); }
+
+/* A console word, as it reads on the screen. */
+.key { display: inline-block; font-weight: 700; padding: 0 0.4rem; border-radius: 0.35rem; border: 1px solid var(--outline-variant); background: var(--surface-container); white-space: nowrap; line-height: 1.5; }
+.key.primary { background: var(--primary); color: var(--on-primary); border-color: transparent; }
+/* A state, drawn like the console's status badges. */
+.badge { display: inline-block; font-size: 0.85rem; font-weight: 700; padding: 0 0.55rem; border-radius: 999px; white-space: nowrap; line-height: 1.6; }
+.badge.neutral { background: var(--neutral-container); color: var(--on-neutral-container); }
+.badge.info { background: var(--secondary-container); color: var(--on-secondary-container); }
+.badge.ok { background: var(--success-container); color: var(--on-success-container); }
+.badge.warn { background: var(--warning-container); color: var(--on-warning-container); }
+.badge.err { background: var(--error-container); color: var(--on-error-container); }
+
+/* "What the screens do not say". */
+.unsaid { padding: var(--space-s); border-radius: var(--radius-m); border-inline-start: 4px solid var(--primary); background: var(--primary-container); color: var(--on-primary-container); display: grid; gap: var(--space-2xs); }
+.unsaid > b { font-size: 0.85rem; letter-spacing: 0.04em; }
+.unsaid ul { padding-inline-start: 1.2rem; display: grid; gap: var(--space-3xs); }
+
+/* A prerequisite notice, drawn like the console's. */
+.notice { padding: var(--space-s); border-radius: var(--radius-m); background: var(--warning-container); color: var(--on-warning-container); display: grid; gap: var(--space-3xs); }
+.notice b { font-size: 0.95rem; }
+.notice p { font-size: 0.9rem; }
+
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; inline-size: 100%; font-size: 0.92rem; }
+th, td { text-align: start; vertical-align: top; padding: var(--space-2xs); border-block-end: 1px solid var(--outline-variant); }
+th { font-weight: 700; color: var(--on-surface-variant); font-size: 0.85rem; }
+
+.url { display: block; padding: var(--space-xs) var(--space-s); border-radius: var(--radius-m); background: var(--surface-container); font-family: var(--font-mono); font-size: 0.9rem; overflow-wrap: anywhere; }
+.url mark { background: var(--warning-container); color: var(--on-warning-container); border-radius: 0.2rem; padding: 0 0.15rem; }
+
+/* ---------- Screen map ---------- */
+.map { display: grid; gap: var(--space-s); }
+@media (min-width: 40rem) { .map { grid-template-columns: 1fr 1.6fr 1fr; align-items: start; } }
+.dest { border-radius: var(--radius-l); border: 1px solid var(--outline-variant); background: var(--surface-low); padding: var(--space-s); display: grid; gap: var(--space-2xs); }
+.dest > h3 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: var(--space-2xs); }
+.dest > h3 span { display: inline-block; padding: 0 0.6rem; border-radius: 999px; background: var(--secondary-container); color: var(--on-secondary-container); }
+.dest p { font-size: 0.85rem; color: var(--on-surface-variant); }
+.tree, .tree ul { list-style: none; padding: 0; display: grid; gap: var(--space-3xs); }
+.tree ul { padding-inline-start: 1rem; margin-block-start: var(--space-3xs); border-inline-start: 2px solid var(--outline-variant); }
+.tree li > .screen { display: inline-block; padding: 0.1rem 0.55rem; border-radius: var(--radius-s); background: var(--surface-high); font-size: 0.9rem; font-weight: 700; }
+.tree li > .screen + small { color: var(--on-surface-variant); margin-inline-start: 0.3rem; font-size: 0.8rem; }
+.leads { list-style: none; padding: 0; display: grid; gap: var(--space-2xs); }
+.leads li { display: grid; gap: 0.1rem; font-size: 0.9rem; }
+.leads .to { color: var(--on-surface-variant); font-size: 0.85rem; }
+.leads .to::before { content: "→ "; color: var(--primary); font-weight: 700; }
+.map-note { font-size: 0.85rem; color: var(--on-surface-variant); }
+
+.foot { font-size: 0.85rem; color: var(--on-surface-variant); text-align: center; }
+.back-to-top { font-size: 0.85rem; justify-self: end; align-self: flex-end; }
+</style>
+</head>
+<body>
+<main class="page">
+
+  <header class="hero" id="top">
+    <div class="brand"><span class="mark">Liverty Music</span><span class="product">Organizer Console</span><span class="tag">メンバー向け</span></div>
+    <h1>主催者コンソールの使い方</h1>
+    <p>公演をつくって公開し、チケットを販売し、当日の受付を準備するまでを、やりたいことの順に説明します。ボタンや表示は、コンソールの画面に出る言葉のまま <span class="key">このように</span> 書いています。</p>
+  </header>
+
+  <!-- Contents: the chapters in the order of the guide spec. -->
+  <nav class="toc" aria-labelledby="toc-h">
+    <h2 id="toc-h">目次</h2>
+    <ol>
+      <li><a href="#home">ホームの見かた</a></li>
+      <li><a href="#sign-in">サインインする</a></li>
+      <li><a href="#business-and-payout">事業者情報と受取口座</a></li>
+      <li><a href="#publish">公演をつくって公開する</a></li>
+      <li><a href="#change-published">公開した公演を変える</a></li>
+      <li><a href="#sell">チケットを販売する</a></li>
+      <li><a href="#sales-and-referral">売れ行きと紹介コード</a></li>
+      <li><a href="#reception">受付リンクを発行する</a></li>
+    </ol>
+  </nav>
+
+  <!-- Screen map: the information architecture of the story map, as HTML. -->
+  <section id="map" aria-labelledby="map-h">
+    <h2 id="map-h">コンソールの画面マップ</h2>
+    <p class="lead">コンソールは <span class="key">ホーム</span>・<span class="key">公演</span>・<span class="key">設定</span> の3つに分かれています。スマホでは画面の下、パソコンでは左端から選びます。</p>
+    <div class="map">
+      <div class="dest">
+        <h3><span>ホーム</span></h3>
+        <p>いま対応が必要なことの一覧。選ぶと、対応する画面が開きます。</p>
+        <ul class="leads" aria-label="ホームの項目と開く画面">
+          <li><span><span class="badge warn">要対応</span> 入金口座の登録が終わっていません</span><span class="to">設定の「入金口座」</span></li>
+          <li><span><span class="badge warn">7日以内</span> 受付リンクなし</span><span class="to">公演日の「受付」タブ</span></li>
+          <li><span><span class="badge warn">開始時刻なし</span> 開始時刻が未設定です</span><span class="to">公演の編集画面</span></li>
+          <li><span><span class="badge neutral">下書き</span> 公演名 · 日付</span><span class="to">公演のページ</span></li>
+        </ul>
+      </div>
+      <div class="dest">
+        <h3><span>公演</span></h3>
+        <ul class="tree" aria-label="公演の画面">
+          <li><span class="screen">公演一覧</span><small>公演をつくる</small>
+            <ul>
+              <li><span class="screen">公演のページ</span><small>公開する・公演を中止</small>
+                <ul>
+                  <li><span class="screen">公演の編集画面</span><small>公演日を追加</small></li>
+                  <li><span class="screen">公演日のページ</span><small>公開する・中止する</small>
+                    <ul>
+                      <li><span class="screen">「販売」タブ</span><small>売れ行き・紹介コード</small>
+                        <ul>
+                          <li><span class="screen">抽選で販売する</span></li>
+                          <li><span class="screen">先着で販売する</span></li>
+                        </ul>
+                      </li>
+                      <li><span class="screen">「受付」タブ</span><small>受付リンク</small></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="dest">
+        <h3><span>設定</span></h3>
+        <ul class="tree" aria-label="設定の内容">
+          <li><span class="screen">組織・所属アーティスト</span></li>
+          <li><span class="screen">事業者情報</span></li>
+          <li><span class="screen">入金口座</span><small>Stripe で登録する</small></li>
+        </ul>
+      </div>
+    </div>
+    <p class="map-note">深い画面では、上のパンくずリスト（スマホでは左上の戻る矢印）で親の画面に戻れます。右上の <span class="key">使い方</span> を押すと、いま見ている画面の章でこのガイドが開きます。</p>
+  </section>
+
+  <!-- 1. Home -->
+  <section id="home" aria-labelledby="home-h">
+    <h2 id="home-h">ホームの見かた</h2>
+    <p class="lead">サインインすると最初に開く画面です。いま対応が必要なことが、急ぐ順に並びます。項目を選ぶと、その対応をする画面が開きます。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>見出し</th><th>意味</th><th>選ぶと開く画面</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge warn">要対応</span></td><td>入金口座の登録が終わっていません。<span class="key">登録する</span></td><td>設定の入金口座（<a href="#business-and-payout">事業者情報と受取口座</a>）</td></tr>
+          <tr><td><span class="badge warn">7日以内</span></td><td>7日以内に始まる公開中の公演日に、使える受付リンクがありません。<span class="key">発行する</span></td><td>その公演日の「受付」タブ（<a href="#reception">受付リンクを発行する</a>）</td></tr>
+          <tr><td><span class="badge warn">開始時刻なし</span></td><td>公開中の公演日に開演時刻がありません。<span class="key">設定する</span></td><td>公演の編集画面</td></tr>
+          <tr><td><span class="badge neutral">下書き</span></td><td>まだ公開していない公演日があります。<span class="key">開く</span></td><td>公演のページ（<a href="#publish">公演をつくって公開する</a>）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>対応が終わった項目は、ホームから消えます。何もなければ「いま対応が必要なことはありません。」と出ます。</p>
+    <div class="unsaid">
+      <b>画面に出ないこと</b>
+      <ul>
+        <li>はじめて使うときも「いま対応が必要なことはありません。」と出ます。最初の一歩は、<span class="key">公演</span> から <span class="key">公演をつくる</span> です。</li>
+        <li>事業者情報が未登録でも、ホームには出ません。販売を始める前に <a href="#business-and-payout">事業者情報と受取口座</a> を確認してください。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 2. Sign in -->
+  <section id="sign-in" aria-labelledby="sign-in-h">
+    <h2 id="sign-in-h">サインインする</h2>
+    <p class="lead">コンソールのアドレスは <code>https://organizer.liverty-music.app/</code> です。パスワードはありません。メールアドレスを入力し、パスキー（指紋・顔認証・端末のロック解除）でサインインします。</p>
+    <h3>はじめて</h3>
+    <ol class="steps">
+      <li>Liverty Music から届く招待メールを開きます。</li>
+      <li>画面の案内に従って、パスキーを登録します。</li>
+      <li>登録が終わると、コンソールのホームが開きます。</li>
+    </ol>
+    <h3>いつもの端末で</h3>
+    <ol class="steps">
+      <li>コンソールのアドレスを開くと、あなたの主催者のサインイン画面が開きます。</li>
+      <li>メールアドレスを入力し、パスキーでサインインします。</li>
+    </ol>
+    <h3>新しい端末で</h3>
+    <p>はじめて使う端末では、コンソールはどの主催者を開くかを知りません。次のどちらかで入ります。</p>
+    <ol class="steps">
+      <li>コンソールのアドレスを開くと「主催者コンソールにサインイン」の画面が出ます。主催者として使っているメールアドレスを入力して <span class="key">リンクを送る</span> を押し、届いたメールのリンクを開きます。</li>
+      <li>または、主催者の短い名前を付けたアドレスを開きます。<span class="url">https://organizer.liverty-music.app/?org=<mark>短い名前</mark></span></li>
+    </ol>
+    <div class="unsaid">
+      <b>画面に出ないこと</b>
+      <ul>
+        <li>主催者の短い名前（<code>?org=</code> の後ろ）はコンソールに表示されません。分からないときは、メールのリンクで入るか、Liverty Music の担当者に確認してください。</li>
+        <li>ファン用アプリと同じメールアドレスでも大丈夫です。コンソールでは、主催者用に登録したパスキーを使います。</li>
+        <li>パスキーをなくしたときは、Liverty Music の担当者に連絡してください。招待をもう一度送ります。</li>
+      </ul>
+    </div>
+    <p>サインアウトや言語の切り替えは、右上のアカウントのアイコンから行います（<span class="key">サインアウト</span>）。</p>
+  </section>
+
+  <!-- 3. Business details and payout account -->
+  <section id="business-and-payout" aria-labelledby="business-and-payout-h">
+    <h2 id="business-and-payout-h">事業者情報と受取口座</h2>
+    <p class="lead">チケットを売るには事業者情報が、売上を受け取るには入金口座が必要です。どちらも <span class="key">設定</span> で確認できます。</p>
+    <h3>事業者情報</h3>
+    <p>事業者名・代表者名・所在地・電話番号・連絡先メールアドレスの5つです。チケット販売の画面で、特定商取引法に基づく表記としてファンに表示されます。</p>
+    <div class="unsaid">
+      <b>画面に出ないこと</b>
+      <ul>
+        <li>事業者情報は、審査のときに <strong>Liverty Music が登録します</strong>。コンソールでは入力も変更もできません。変更は Liverty Music の担当者に依頼してください。</li>
+        <li><strong>5つすべてが登録されるまで、販売は始められません。</strong>設定で <span class="badge neutral">未登録</span> と出ている項目があれば、担当者に連絡してください。</li>
+      </ul>
+    </div>
+    <p>販売を始めようとしたときに次の表示が出たら、この状態です。</p>
+    <div class="notice"><b>事業者情報が未登録です</b><p>登録が終わるまで販売は始められません。</p></div>
+    <h3>入金口座</h3>
+    <ol class="steps">
+      <li>ホームの <span class="badge warn">要対応</span>「入金口座の登録が終わっていません」を選ぶか、<span class="key">設定</span> を開きます。</li>
+      <li><span class="key">Stripe で登録する</span>（途中なら <span class="key">Stripe で登録を続ける</span>）を押すと、同じタブで決済代行会社 Stripe のページに移ります。</li>
+      <li>事業者の情報、代表者の本人確認、入金先の銀行口座を入力します。</li>
+      <li>入力が終わると、Stripe からコンソールのホームに戻ります。</li>
+    </ol>
+    <p>入金口座の状態は <span class="badge info">確認中</span>、<span class="badge ok">有効</span>、<span class="badge warn">要対応</span> のどれかです。<span class="badge ok">有効</span> になるまでもファンはチケットを購入でき、入金だけが登録の完了を待ちます。</p>
+  </section>
+
+  <!-- 4. Create and publish -->
+  <section id="publish" aria-labelledby="publish-h">
+    <h2 id="publish-h">公演をつくって公開する</h2>
+    <p class="lead">公演は、所属アーティストごとにつくります。公開するまでは <span class="badge neutral">下書き</span> で、ファンには見えません。</p>
+    <h3>つくる</h3>
+    <ol class="steps">
+      <li><span class="key">公演</span> を開き、<span class="key primary">公演をつくる</span> を押します。</li>
+      <li>公演名・種類（単独公演・ツアー・フェス）・公開範囲・出演者を入力します。</li>
+      <li>公演日ごとに会場・日付・開場・開演を入力します。会場は名前で検索し、<strong>候補から選びます</strong>（入力しただけでは保存できません）。時刻は日本時間（JST）の24時間表記です。</li>
+      <li>日程を増やすときは <span class="key">公演日を追加</span>。前の公演日の会場と時刻が写されます。</li>
+      <li>保存すると、公演のページが開きます。</li>
+    </ol>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>公開範囲</th><th>ファンへの見え方</th></tr></thead>
+        <tbody>
+          <tr><td><span class="key">公開</span></td><td>ファン向けの一覧に表示し、公開したときに出演者のフォロワーへ通知します。</td></tr>
+          <tr><td><span class="key">限定公開</span></td><td>ファン向けの一覧に表示せず、フォロワーにも通知しません。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>公開する</h3>
+    <ol class="steps">
+      <li>公演のページで <span class="key primary">公開する</span> を押します。</li>
+      <li>公開する公演日を選び、確認画面で公開します。選んだ公演日をまとめて公開し、フォロワーへの通知は1回です。</li>
+      <li>公演日は <span class="badge ok">公開中</span> になります。</li>
+    </ol>
+    <p>公演日のページの <span class="key">公開する</span> は、その公演日だけを公開します。複数の公演日をまとめて知らせるときは、公演のページから公開してください。</p>
+    <div class="unsaid">
+      <b>画面に出ないこと</b>
+      <ul>
+        <li>公開すると <span class="badge neutral">下書き</span> には戻せません。公開範囲もその後は変えられません。</li>
+        <li>チケットの販売と受付リンクには、<strong>公開中で、開演時刻がある</strong>公演日が必要です。</li>
+        <li>やめるときは、公演のページのメニューの <span class="key">公演を中止</span> です。すべての公演日が <span class="badge err">中止</span> になります（<a href="#change-published">公開した公演を変える</a>）。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5. Change a published concert -->
+  <section id="change-published" aria-labelledby="change-published-h">
+    <h2 id="change-published-h">公開した公演を変える</h2>
+    <p class="lead">公開した公演は、直すことはできても、作り直すことはできません。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>やりたいこと</th><th>やり方</th></tr></thead>
+        <tbody>
+          <tr><td>公演名・説明・開場時刻・出演者を直す</td><td>公演のページの <span class="key">編集</span> で直して保存します。</td></tr>
+          <tr><td>公演日を追加する</td><td>編集画面で <span class="key">公演日を追加</span> して保存します。追加した公演日は <span class="badge neutral">下書き</span> なので、公演のページで <span class="key">公開する</span> と、その公演日だけがフォロワーに知らされます。</td></tr>
+          <tr><td>会場や日付を変える</td><td>公開済みの公演日の会場と日付は変えられません。その公演日を中止して、新しい公演日を追加してください。</td></tr>
+          <tr><td>1つの公演日をやめる</td><td>公演日のページのメニューから <span class="key">中止する</span>。</td></tr>
+          <tr><td>公演をまるごとやめる</td><td>公演のページのメニューから <span class="key">公演を中止</span>。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="unsaid">
+      <b>画面に出ないこと</b>
+      <ul>
+        <li>中止は元に戻せません。公開中の公演日はファンに1回知らされ、下書きの公演日は削除されます。</li>
+        <li>チケットの販売が始まった公演日の開始時刻は変更できません。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6. Sell -->
+  <section id="sell" aria-labelledby="sell-h">
+    <h2 id="sell-h">チケットを販売する</h2>
+    <p class="lead">販売は公演日ごとです。公演日のページの <span class="key">販売</span> タブから始めます。売り方は抽選と先着の2つです。</p>
+    <h3>販売を始める前に</h3>
+    <p>次の表示が出ているあいだは、販売を始められません。表示の中のリンクから直せます。</p>
+    <div class="notice"><b>販売を始めるには、公演を公開してください</b><p>→ <span class="key">公開する</span>（<a href="#publish">公演をつくって公開する</a>）</p></div>
+    <div class="notice"><b>開始時刻を設定してください</b><p>→ <span class="key">公演を編集</span> で開演時刻を入れます。</p></div>
+    <div class="notice"><b>事業者情報が未登録です</b><p>→ Liverty Music の担当者に連絡します（<a href="#business-and-payout">事業者情報と受取口座</a>）。</p></div>
+    <h3>抽選で売る</h3>
+    <ol class="steps">
+      <li><span class="key">抽選で販売する</span> を押します。</li>
+      <li>販売名（例: ファンクラブ先行）、受付期間、価格（税込）、販売枚数、1人あたりの上限枚数を入れます。受付期間は1〜14日（はじめは10日）で、公演の開始前に締め切ります。</li>
+      <li><span class="key primary">抽選販売を始める</span> を押すと、販売タブに戻ります。</li>
+    </ol>
+    <h3>先着で売る</h3>
+    <ol class="steps">
+      <li><span class="key">先着で販売する</span> を押します。</li>
+      <li>販売名（はじめは 一般発売）、販売期間、価格、販売枚数、上限枚数（はじめは4枚）を入れます。販売期間は開演時刻までに終わるようにします。</li>
+      <li><span class="key primary">先着販売を始める</span> を押します。</li>
+    </ol>
+    <p>1つの公演日の販売どうしは、期間を重ねられません。抽選のあとにもう一度抽選や先着を足せます（先着は1つの公演日に1つまで）。</p>
+    <h3>販売の状態</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>抽選</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge info">受付開始前</span></td><td>受付が始まるまでの残り時間が出ます。<span class="key">編集</span> で変えられるのはこのあいだだけです。</td></tr>
+          <tr><td><span class="badge ok">受付中</span></td><td>応募数・申込枚数・販売枚数が出ます。</td></tr>
+          <tr><td><span class="badge warn">抽選待ち</span></td><td>受付が終わり、抽選を待っています。</td></tr>
+          <tr><td><span class="badge neutral">抽選済み</span></td><td>当選・当選枚数・落選が出ます。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>先着の販売は <span class="badge info">受付開始前</span>、<span class="badge ok">販売中</span>、<span class="badge warn">残りは購入手続き中</span>、<span class="badge neutral">完売</span>、<span class="badge neutral">販売終了</span> のどれかです。</p>
+    <div class="unsaid">
+      <b>画面に出ないこと</b>
+      <ul>
+        <li>抽選は、受付期間が終わると<strong>すぐに自動で行われます</strong>。抽選のボタンはありません。当選した人だけに決済され、落選した人には請求されません。</li>
+        <li>抽選は、受付が始まると何も変えられません（受付開始後は変更できません）。始まる前に確認してください。</li>
+        <li>先着は、チケットが販売済みまたは購入手続き中になると価格を変えられません。枚数は増やせます。</li>
+        <li>本人確認（本人確認なし・本人確認済み・マイナンバーカードで本人確認済み）はいつでも変えられますが、すでに受け付けた申込は確認し直しません。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7. Sales and referral codes -->
+  <section id="sales-and-referral" aria-labelledby="sales-and-referral-h">
+    <h2 id="sales-and-referral-h">売れ行きと紹介コード</h2>
+    <p class="lead">売れ行きは公演日の <span class="key">販売</span> タブで見ます。販売ごとの数字の下に「紹介コード別の購入」があり、どのリンクから買われたかが分かります。</p>
+    <h3>紹介リンクをつくる</h3>
+    <ol class="steps">
+      <li>公開中の公演日のページにある「ファンページ」のアドレスをコピーします（限定公開の公演には出ません）。</li>
+      <li>アドレスの最後に <code>?ref=</code> と、好きな紹介コードを付けます。コードは英数字で、メンバーごと・媒体ごとなど自由に決めてください。<span class="url">https://liverty-music.app/events/<mark>公演日のID</mark>?ref=<mark>member-a</mark></span></li>
+      <li>そのアドレスを SNS などで共有します。</li>
+    </ol>
+    <div class="unsaid">
+      <b>画面に出ないこと</b>
+      <ul>
+        <li>紹介コードは<strong>コンソールに登録しません</strong>。アドレスに付けたコードが、そのまま集計に出ます。</li>
+        <li>ファンがそのアドレスを開いてから<strong>7日以内</strong>に、同じ公演のチケットを買うと、そのコードに数えられます。</li>
+        <li>ファンが別のコードのアドレスも開いていたときは、<strong>最後に開いたコード</strong>に数えます。</li>
+        <li>コードなしで買われたもの、7日を過ぎたものは「直接（コードなし）」に数えます。</li>
+      </ul>
+    </div>
+    <p>数えるのは支払い済みの購入だけで、返金された購入は数えません。抽選は、当選して決済されたときに数えます。購入がなければ「まだ購入はありません」と出ます。</p>
+  </section>
+
+  <!-- 8. Reception -->
+  <section id="reception" aria-labelledby="reception-h">
+    <h2 id="reception-h">受付リンクを発行する</h2>
+    <p class="lead">当日の入口では、スタッフが自分のスマホで受付リンクを開き、ファンの入場QRコードを読み取ります。受付リンクは公演日のページの <span class="key">受付</span> タブで発行します。公演が7日以内に近づくと、ホームの <span class="badge warn">7日以内</span> からも開けます。</p>
+    <h3>当日までに</h3>
+    <ol class="steps">
+      <li>受付に使うスマホ1台につき1回、<span class="key primary">受付リンクを発行</span> を押します。受付1、受付2…と番号が付きます。</li>
+      <li><span class="key">コピー</span> か <span class="key">共有</span> で、各リンクをスタッフに渡します。タブにある「受付の手順（スタッフ向け）」も一緒に渡してください。</li>
+      <li>スタッフがリンクを開くと、状態が <span class="badge info">未使用</span> から <span class="badge ok">使用中</span> に変わり、リンクは表示されなくなります。</li>
+    </ol>
+    <p>受付リンクを発行するにも、公演日が公開中で開演時刻があることが必要です。受付できるのは開場の3時間前（開場時刻がなければ開演の3時間前）から、公演日の翌朝4時までです。</p>
+    <h3>困ったとき</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>起きたこと</th><th>すること</th></tr></thead>
+        <tbody>
+          <tr><td>受付用のスマホをなくした・壊れた・替えたい</td><td>そのリンクの <span class="key">取り消して再発行</span> を押し、新しいリンクを渡します。取り消したリンクはすぐ使えなくなり、<span class="badge neutral">取り消し済み</span> と出ます。</td></tr>
+          <tr><td>スタッフの画面に「この受付リンクは別の端末で使用中です」</td><td>リンクは最初に開いたスマホでしか使えません。<span class="key">取り消して再発行</span> して、使うスマホで開き直してもらいます。</td></tr>
+          <tr><td>スタッフの画面に「この受付リンクはもう使えません」</td><td>スマホの日付と時刻を自動設定にして開き直してもらいます。直らなければ再発行します。</td></tr>
+          <tr><td>スタッフの画面に「受付時間が決まっていません」</td><td>公演日の開演時刻を設定します。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="unsaid">
+      <b>画面に出ないこと</b>
+      <ul>
+        <li>1つのリンクを複数のスマホで使い回すことはできません。受付の台数だけ発行してください。</li>
+        <li>リハーサルは、本番とは別のテスト用の公演で行ってください。本番の受付リンクを試しに開くと、そのスマホに固定されます。</li>
+      </ul>
+    </div>
+  </section>
+
+  <a class="back-to-top" href="#top">目次に戻る</a>
+  <p class="foot">Liverty Music 主催者コンソールの使い方 ・ 2026年10月のコンソールに合わせています</p>
+</main>
+</body>
+</html>

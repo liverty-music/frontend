@@ -144,10 +144,14 @@
 			background: transparent;
 		}
 
+		/* 使い方 and the account menu keep their 48 px targets; the names and
+		   the title shrink first. */
+		.help,
 		.account {
 			cursor: pointer;
 
 			display: grid;
+			flex-shrink: 0;
 			place-items: center;
 
 			inline-size: var(--md-target-size);

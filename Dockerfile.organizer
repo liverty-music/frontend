@@ -30,12 +30,15 @@ RUN npm run verify:bundle-isolation
 
 # Assemble the organizer-only serving root. Copy the shared `assets/` (content-
 # hashed chunks; the organizer entry references shared chunks that live here)
-# and the organizer entry HTML + runtime config + icons, but deliberately
+# and the organizer entry HTML + runtime config + icons, and the members' guide
+# (a static page outside the Vite build, served at /guide.html before the SPA
+# fallback; OpenSpec organizer-console-guide, design D2), but deliberately
 # EXCLUDE the consumer index.html, the admin entry, the service worker, and the
 # PWA manifest.
 RUN mkdir -p /organizer-srv/assets \
 	&& cp -r /app/dist/assets/. /organizer-srv/assets/ \
 	&& cp /app/dist/organizer.html /organizer-srv/organizer.html \
+	&& cp /app/organizer/guide/guide.html /organizer-srv/guide.html \
 	&& cp /app/dist/config.json /organizer-srv/config.json \
 	&& cp /app/dist/favicon.ico /organizer-srv/favicon.ico \
 	&& cp /app/dist/favicon-96x96.png /organizer-srv/favicon-96x96.png \

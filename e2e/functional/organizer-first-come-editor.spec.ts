@@ -1,5 +1,6 @@
 import {
 	chooseTime,
+	expectGuideLink,
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
@@ -342,6 +343,31 @@ test.describe('prerequisites', () => {
 		await expect(
 			page.getByRole('link', { name: '公演を編集' }),
 		).toHaveAttribute('href', /\/series\/s-show\/edit$/)
+		await expectGuideLink(
+			page.locator('prerequisite-callout').filter({
+				hasText: '開始時刻を設定してください',
+			}),
+			'publish',
+		)
+		await expect(
+			page.getByRole('button', { name: /先着販売を始める|保存する/ }),
+		).toHaveCount(0)
+	})
+
+	test(`@spec ${SPEC} "Business details incomplete"`, async ({ page }) => {
+		await boot(page, {
+			'OrganizerService/Get': organizer('XX Records', ['businessPhoneNumber']),
+		})
+		await page.goto(EDITOR)
+
+		const callout = page.locator('prerequisite-callout')
+		await expect(
+			callout.getByRole('heading', { name: '事業者情報が未登録です' }),
+		).toBeVisible()
+		await expect(callout).toContainText(
+			'審査のときに Liverty Music が登録します',
+		)
+		await expectGuideLink(callout, 'business-and-payout')
 		await expect(
 			page.getByRole('button', { name: /先着販売を始める|保存する/ }),
 		).toHaveCount(0)

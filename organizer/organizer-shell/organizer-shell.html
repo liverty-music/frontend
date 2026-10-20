@@ -4,7 +4,7 @@
 <import from="../shell/console-breadcrumb/console-breadcrumb"></import>
 
 <div class="frame" data-framed.bind="framed">
-  <top-app-bar if.bind="framed" class="top"></top-app-bar>
+  <top-app-bar if.bind="framed" help-href.bind="helpHref" class="top"></top-app-bar>
   <console-navigation if.bind="framed" current.bind="current" class="nav"></console-navigation>
   <main class="main" tabindex="0" aria-label.bind="'shell.page' & t">
     <div class="page">
