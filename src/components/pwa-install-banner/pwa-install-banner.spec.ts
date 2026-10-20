@@ -57,18 +57,10 @@ describe('PwaInstallBanner', () => {
 		fakeShouldShowInstallBanner = false
 		navigationEnd = null
 		vi.clearAllMocks()
-		vi.stubGlobal(
-			'ResizeObserver',
-			class {
-				observe() {}
-				disconnect() {}
-			},
-		)
 	})
 
 	afterEach(() => {
 		vi.restoreAllMocks()
-		vi.unstubAllGlobals()
 	})
 
 	describe('binding() — install mode initialisation', () => {

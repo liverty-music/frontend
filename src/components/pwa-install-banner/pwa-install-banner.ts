@@ -5,12 +5,6 @@ import { IPwaInstallService } from '../../services/pwa-install-service'
 /** Which CTA the banner offers, driven reactively by the deferred prompt. */
 type InstallMode = 'native' | 'guide'
 
-/**
- * Global CSS variable the route area, the snack bar and the FAB's sink read
- * (shared with signup-prompt-banner).
- */
-const BANNER_HEIGHT_VAR = '--bottom-banner-height'
-
 /** The attention cue's keyframes (pwa-install-banner.css). */
 const CUE = 'banner-cue'
 
@@ -18,10 +12,7 @@ export class PwaInstallBanner {
 	private readonly pwaInstall = resolve(IPwaInstallService)
 	private readonly element = resolve(INode) as HTMLElement
 	private readonly routerEvents = resolve(IRouterEvents)
-	private resizeObserver: ResizeObserver | null = null
 	private navigation: IDisposable | null = null
-	/** Whether this banner wrote the shared height variable last. */
-	private publishing = false
 
 	// isIos is immutable after boot — evaluated once and stored.
 	public readonly isIos: boolean = this.pwaInstall.isIos
@@ -45,13 +36,6 @@ export class PwaInstallBanner {
 	}
 
 	public attached(): void {
-		// Publish the banner's rendered height so the FAB launcher offsets clear of
-		// it (same mechanism as signup-prompt-banner; the two are mutually exclusive
-		// — guest vs authenticated — so they share one variable safely).
-		this.resizeObserver = new ResizeObserver(() => this.publishHeight())
-		// The observer reports the first size at the next rendering step, so no
-		// synchronous read here (it forced a layout while the page attached).
-		this.resizeObserver.observe(this.element)
 		// The banner stays mounted in the shell across routes, so its counted
 		// cue would play only once per page load; start it again on every route.
 		this.navigation = this.routerEvents.subscribe(
@@ -61,11 +45,8 @@ export class PwaInstallBanner {
 	}
 
 	public detaching(): void {
-		this.resizeObserver?.disconnect()
-		this.resizeObserver = null
 		this.navigation?.dispose()
 		this.navigation = null
-		this.unpublish()
 	}
 
 	/** Play the attention cue from its start, its five plays included. */
@@ -75,32 +56,6 @@ export class PwaInstallBanner {
 			animation.currentTime = 0
 			animation.play()
 		}
-	}
-
-	/**
-	 * Publish the rendered height while the banner shows. The signup prompt and
-	 * the install banner share the variable and never show together, but both
-	 * hosts can be mounted at once (a signed-in fan's dashboard mounts the
-	 * hidden signup prompt), so a hidden banner leaves the variable to the
-	 * visible one instead of writing 0px over it.
-	 */
-	private publishHeight(): void {
-		const height = this.element.offsetHeight
-		if (height > 0) {
-			document.documentElement.style.setProperty(
-				BANNER_HEIGHT_VAR,
-				`${height}px`,
-			)
-			this.publishing = true
-		} else {
-			this.unpublish()
-		}
-	}
-
-	private unpublish(): void {
-		if (!this.publishing) return
-		document.documentElement.style.removeProperty(BANNER_HEIGHT_VAR)
-		this.publishing = false
 	}
 
 	private syncInstallMode(): void {

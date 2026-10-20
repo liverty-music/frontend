@@ -27,7 +27,7 @@
 		   zero block-size (breaks height-dependent routes, e.g. the discovery
 		   canvas). Placement, plus the banner clearance below — no other layout; its
 		   block-size still comes from the `1fr` row's grid stretch.
-		   While a bottom banner shows, it publishes its height as
+		   While a bottom banner shows, global.css publishes its height as
 		   --bottom-banner-height; the viewport's content box then ends at the
 		   banner's top edge, so routes (block-size: 100%) end above it and need
 		   no offset of their own. */

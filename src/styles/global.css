@@ -141,6 +141,13 @@
 		--fab-sunk: 1;
 	}
 
+	/* While a bottom banner shows, its height is published for the route area
+	   (app-shell) and the snack bar. The banners are exactly this tall, so
+	   layout knows it in the frame the banner appears. */
+	:where(:root:has(.signup-banner, .pwa-banner)) {
+		--bottom-banner-height: var(--bottom-banner-block-size);
+	}
+
 	/* High contrast: ensure borders and focus rings are visible */
 	@media (prefers-contrast: more) {
 		:where(button, input, textarea, select) {

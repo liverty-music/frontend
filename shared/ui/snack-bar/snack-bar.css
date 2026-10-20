@@ -23,10 +23,9 @@
 
 			/* Material 3 snackbar placement: bottom of screen, above the
 			   persistent bottom navigation, animating up from the bottom edge.
-			   --bottom-banner-height (published on :root by a visible persistent
-			   bottom banner from its measured height, the same value the FAB
-			   uses) lifts the snack above that banner so it never covers its CTA;
-			   a hidden banner publishes no height. The fan app's FAB stays sunk
+			   --bottom-banner-height (published on :root by the fan app while a
+			   persistent bottom banner shows) lifts the snack above that banner
+			   so it never covers its CTA; a hidden banner publishes no height. The fan app's FAB stays sunk
 			   in the navigation bar meanwhile, so the snack clears it too. */
 			--_inset-end: calc(
 				var(--bottom-nav-height) +

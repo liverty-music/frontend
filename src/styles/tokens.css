@@ -314,6 +314,13 @@
 		--fab-slot: calc(var(--fab-size) + 2 * var(--fab-notch-gap));
 		--fab-icon-size: 2rem; /* the equalizer / close glyph */
 		--fab-sunk-scale: calc(40 / 56); /* 56px → 40px while sunk */
+
+		/* A persistent bottom banner's height: the compact button (2.25rem),
+		   the banner's block padding and its 2px brand line. The banners take
+		   it as their block size, and global.css publishes it while one shows,
+		   so the route area, the snack bar and the FAB know it from the first
+		   frame, with no measuring script. */
+		--bottom-banner-block-size: calc(2.25rem + 2 * var(--space-xs) + 2px);
 		--fab-radius-collapsed: var(--radius-full); /* round FAB */
 		--fab-radius-expanded: var(--radius-card); /* rounded-rect panel */
 

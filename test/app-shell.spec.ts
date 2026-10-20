@@ -376,21 +376,13 @@ describe('app-shell', () => {
 		const getAnimations = Element.prototype.getAnimations
 
 		beforeEach(() => {
-			// The banner publishes its height from a ResizeObserver and restarts
-			// its cue through getAnimations(), both of which jsdom lacks.
+			// The banner restarts its cue through getAnimations(), which jsdom
+			// lacks.
 			Element.prototype.getAnimations = () => []
-			vi.stubGlobal(
-				'ResizeObserver',
-				class {
-					observe() {}
-					disconnect() {}
-				},
-			)
 		})
 
 		afterEach(() => {
 			Element.prototype.getAnimations = getAnimations
-			vi.unstubAllGlobals()
 		})
 
 		const signedIn = {

@@ -33,9 +33,12 @@
 			/* One row: the message takes the rest, the button its own width. */
 			display: grid;
 			grid-template-columns: minmax(0, 1fr) auto;
-			gap: var(--space-xs);
+			column-gap: var(--space-xs);
 			align-items: center;
 
+			/* Exactly the published banner height (tokens.css), which the
+			   route area and the snack bar clear. */
+			block-size: var(--bottom-banner-block-size);
 			padding-block: var(--space-xs);
 			padding-inline: var(--space-s);
 			border-block-start: 2px solid;
