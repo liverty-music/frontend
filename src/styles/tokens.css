@@ -185,9 +185,13 @@
 		   lightness is pushed to the opposite end of the same hue so the pair
 		   clears the M3 contrast target (4.5:1 body / 3:1 large & UI). */
 
-		/* Accent — primary (festival magenta). */
-		--md-color-primary: var(--color-brand-primary);
-		--md-color-on-primary: oklch(from var(--color-brand-primary) 18% 0.06 h);
+		/* Accent — primary (festival magenta). The role keeps brand-primary's
+		   hue and chroma at 57% lightness, the highest tone at which its white
+		   on-primary label measures 4.5:1 (4.64:1), so text on a primary fill
+		   passes at every size. --color-brand-primary stays at 65% for surfaces
+		   that carry no text (the FAB, brand lines, gradients and glows). */
+		--md-color-primary: oklch(from var(--color-brand-primary) 57% c h);
+		--md-color-on-primary: var(--color-white);
 		--md-color-primary-container: oklch(
 			from var(--color-brand-primary) 48% 0.19 h
 		);
@@ -223,6 +227,20 @@
 		--md-color-on-error: oklch(from var(--color-error) 18% 0.05 h);
 		--md-color-error-container: oklch(from var(--color-error) 42% 0.14 h);
 		--md-color-on-error-container: oklch(from var(--color-error) 95% 0.03 h);
+
+		/* Snack bar containers, one gradient per severity. Each stop sits at the
+		   highest lightness at which the white message, and the on-container
+		   action on its translucent white fill, keep 4.5:1 at every point of the
+		   gradient (its oklab blend dips below the ends mid-way). Info keeps the
+		   brand hues, darker than the primary role because the action needs it
+		   mid-gradient; warning is a flat amber; error a deep red. */
+		--md-color-snack-info-from: oklch(
+			from var(--color-brand-primary) 50.5% c h
+		);
+		--md-color-snack-info-to: oklch(from var(--color-brand-secondary) 48% c h);
+		--md-color-snack-warning: oklch(47.5% 0.16 75deg);
+		--md-color-snack-error-from: oklch(40% 0.2 25deg);
+		--md-color-snack-error-to: oklch(45% 0.18 25deg);
 
 		/* Neutral / surface roles (aliases over the physical surface + text
 		   tokens). on-surface = body text; on-surface-variant = secondary text. */
@@ -295,7 +313,7 @@
 		--fab-notch-radius: calc(var(--fab-size) / 2 + var(--fab-notch-gap));
 		--fab-slot: calc(var(--fab-size) + 2 * var(--fab-notch-gap));
 		--fab-icon-size: 2rem; /* the equalizer / close glyph */
-		--fab-sunk-scale: calc(40 / 56); /* 56px → 40px while a snack bar is open */
+		--fab-sunk-scale: calc(40 / 56); /* 56px → 40px while sunk */
 		--fab-radius-collapsed: var(--radius-full); /* round FAB */
 		--fab-radius-expanded: var(--radius-card); /* rounded-rect panel */
 

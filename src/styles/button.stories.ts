@@ -7,6 +7,7 @@ import { expect } from 'storybook/test'
 // `expect.element(...).toMatchScreenshot()` is a @vitest/browser matcher, only
 // present on Vitest's own `expect` (not the one re-exported by `storybook/test`).
 import { expect as vitestExpect } from 'vitest'
+import { composite, contrast, WCAG_AA } from '../../.storybook/contrast'
 
 /**
  * Foundations story for the shared text button (`src/styles/button.css`), a
@@ -71,16 +72,21 @@ export const Catalog = {
 		}
 
 		// @spec components/infrastructure/fan/web/global/ui-primitives "Default variant"
-		const brand = resolved(
+		// The primary role pair: its fill with the white on-primary label at
+		// 4.5:1 or more, so a label of any size passes.
+		const primary = resolved(
 			canvasElement,
 			'backgroundColor',
-			'var(--color-brand-primary)',
+			'var(--md-color-primary)',
 		)
 		const white = resolved(canvasElement, 'color', 'var(--color-white)')
 		for (const el of buttons('filled')) {
 			const style = getComputedStyle(el)
-			await expect(style.backgroundColor).toBe(brand)
+			await expect(style.backgroundColor).toBe(primary)
 			await expect(style.color).toBe(white)
+			await expect(
+				contrast(composite(style.backgroundColor), composite(style.color)),
+			).toBeGreaterThanOrEqual(WCAG_AA)
 		}
 
 		// Outlined: transparent with a visible border.
