@@ -18,13 +18,13 @@
   <template if.bind="state === 'ready'">
     <div repeat.for="block of blocks" switch.bind="block">
       <prerequisite-callout case="cancelled" level.bind="2" heading.bind="'event.cancelledNote' & t"></prerequisite-callout>
-      <prerequisite-callout case="notPublished" level.bind="2" heading.bind="'sale.prerequisite.notPublished' & t" action-label.bind="'lotteryEditor.toSales' & t" action-href.bind="salesHref">
+      <prerequisite-callout case="notPublished" level.bind="2" guide-chapter="publish" heading.bind="'sale.prerequisite.notPublished' & t" action-label.bind="'lotteryEditor.toSales' & t" action-href.bind="salesHref">
         ${'sale.prerequisite.notPublishedBody' & t}
       </prerequisite-callout>
-      <prerequisite-callout case="noStartTime" level.bind="2" heading.bind="'sale.prerequisite.noStartTime' & t" action-label.bind="'sale.prerequisite.editConcert' & t" action-href.bind="editConcertHref">
+      <prerequisite-callout case="noStartTime" level.bind="2" guide-chapter="publish" heading.bind="'sale.prerequisite.noStartTime' & t" action-label.bind="'sale.prerequisite.editConcert' & t" action-href.bind="editConcertHref">
         ${'sale.prerequisite.noStartTimeBody' & t}
       </prerequisite-callout>
-      <prerequisite-callout case="businessDetails" level.bind="2" heading.bind="'sale.prerequisite.businessDetails' & t">
+      <prerequisite-callout case="businessDetails" level.bind="2" guide-chapter="business-and-payout" heading.bind="'sale.prerequisite.businessDetails' & t">
         ${'sale.prerequisite.businessDetailsBody' & t}
       </prerequisite-callout>
     </div>

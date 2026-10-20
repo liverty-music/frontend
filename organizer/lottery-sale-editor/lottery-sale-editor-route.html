@@ -24,6 +24,7 @@
     heading.bind="'sale.prerequisite.noStartTime' & t"
     action-label.bind="'sale.prerequisite.editConcert' & t"
     action-href.bind="editConcertHref"
+    guide-chapter="publish"
   >${'sale.prerequisite.noStartTimeBody' & t}</prerequisite-callout>
 
   <form if.bind="state === 'ready'" class="form" novalidate submit.trigger="false">

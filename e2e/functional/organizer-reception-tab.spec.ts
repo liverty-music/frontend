@@ -1,5 +1,6 @@
 import {
 	confirmDialog,
+	expectGuideLink,
 	installConsole,
 	type RpcMocks,
 	SERIES,
@@ -263,6 +264,7 @@ test.describe('prerequisites', () => {
 		await expect(
 			callout.getByRole('button', { name: '公開する' }),
 		).toBeVisible()
+		await expectGuideLink(callout, 'publish')
 		await expect(issueButton(page)).toHaveCount(0)
 		expect(
 			log.calls.some((c) => c.method === 'ScannerService/ListByEvent'),
@@ -286,6 +288,7 @@ test.describe('prerequisites', () => {
 		await expect(
 			callout.getByRole('link', { name: '公演を編集' }),
 		).toHaveAttribute('href', /\/series\/s-tour\/edit$/)
+		await expectGuideLink(callout, 'publish')
 		await expect(issueButton(page)).toHaveCount(0)
 	})
 })

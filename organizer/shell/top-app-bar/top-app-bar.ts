@@ -1,5 +1,6 @@
-import { resolve } from 'aurelia'
+import { bindable, resolve } from 'aurelia'
 import { IAuthService } from '../../../shared/services/auth-service'
+import { guideHref } from '../../guide/guide-link'
 import {
 	CONSOLE_LANGUAGES,
 	IConsoleLanguage,
@@ -24,7 +25,9 @@ export interface ArtistChoice {
  * window sits above the navigation rail. Then the Organizer's name and the
  * Artist being worked on — a menu listing the represented Artists when there
  * are two or more (M3 menu), its name only with one — and, at the trailing
- * edge, the account menu holding the language switch and サインアウト.
+ * edge, 使い方 and the account menu holding the language switch and
+ * サインアウト. 使い方 opens the members' guide at the current screen's chapter
+ * in a new tab, so an editor's unsaved input stays (design D4).
  */
 export class TopAppBar {
 	private readonly auth = resolve(IAuthService)
@@ -32,6 +35,9 @@ export class TopAppBar {
 	public readonly breadcrumbs = resolve(IBreadcrumbs)
 	public readonly language = resolve(IConsoleLanguage)
 	public readonly languages = CONSOLE_LANGUAGES
+
+	/** The guide at the current screen's chapter; the shell sets it per page. */
+	@bindable public helpHref = guideHref('home')
 
 	public menu!: HTMLElement
 	public artistMenu!: HTMLElement

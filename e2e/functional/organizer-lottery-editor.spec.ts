@@ -1,5 +1,6 @@
 import {
 	chooseTime,
+	expectGuideLink,
 	installConsole,
 	type RpcLog,
 	type RpcMocks,
@@ -266,6 +267,7 @@ test.describe('a new lottery', () => {
 		await expect(
 			page.getByRole('link', { name: '公演を編集' }),
 		).toHaveAttribute('href', /\/series\/s-tour\/edit$/)
+		await expectGuideLink(page.locator('prerequisite-callout'), 'publish')
 		await expect(
 			page.getByRole('button', { name: '抽選販売を始める' }),
 		).toHaveCount(0)

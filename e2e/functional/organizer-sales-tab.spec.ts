@@ -1,5 +1,6 @@
 import {
 	connectError,
+	expectGuideLink,
 	installConsole,
 	type RpcMocks,
 	SERIES,
@@ -121,6 +122,7 @@ test.describe('prerequisites', () => {
 		await expect(
 			callout.getByRole('button', { name: '公開する' }),
 		).toBeVisible()
+		await expectGuideLink(callout, 'publish')
 		await expect(startLottery(page)).toHaveCount(0)
 		await expect(startFirstCome(page)).toHaveCount(0)
 		// The fix is in the callout's own text color, not the brand color,
@@ -161,6 +163,7 @@ test.describe('prerequisites', () => {
 		await expect(
 			callout.getByRole('link', { name: '公演を編集' }),
 		).toHaveAttribute('href', /\/series\/s-tour\/edit$/)
+		await expectGuideLink(callout, 'publish')
 		await expect(startLottery(page)).toHaveCount(0)
 		await expect(startFirstCome(page)).toHaveCount(0)
 	})
@@ -181,7 +184,9 @@ test.describe('prerequisites', () => {
 		await expect(callout).toContainText(
 			'Liverty Music の担当者にご連絡ください',
 		)
-		await expect(callout.getByRole('link')).toHaveCount(0)
+		// No fix in the console: the only link is the guide's chapter.
+		await expect(callout.getByRole('link')).toHaveCount(1)
+		await expectGuideLink(callout, 'business-and-payout')
 		await expect(startLottery(page)).toHaveCount(0)
 		await expect(startFirstCome(page)).toHaveCount(0)
 	})

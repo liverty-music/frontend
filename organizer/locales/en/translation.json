@@ -20,7 +20,8 @@
 		"required": "Required",
 		"moreActions": "More actions",
 		"cancelEdit": "Cancel",
-		"requiredNote": "* marks a required field."
+		"requiredNote": "* marks a required field.",
+		"learnMore": "Learn more"
 	},
 	"format": {
 		"yen": "¥{{amount}}",
@@ -68,6 +69,7 @@
 		"artistMenu": "Represented artist: {{name}}",
 		"artists": "Represented artists",
 		"back": "Back",
+		"help": "Help",
 		"page": "Page content"
 	},
 	"unsavedChanges": {

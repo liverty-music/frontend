@@ -1,4 +1,5 @@
 import { bindable, INode, resolve } from 'aurelia'
+import { type GuideChapter, guideHref } from '../../guide/guide-link'
 
 let nextId = 0
 
@@ -8,7 +9,8 @@ let nextId = 0
  * only `action-label` a button whose press the screen hears as the callout's
  * `action` event. The fix reads as a link in the callout's own text color:
  * the brand color marks only the page's primary action, focus and the logo
- * (design-tokens).
+ * (design-tokens). With `guide-chapter`, a secondary 詳しく見る link below the
+ * fix opens the members' guide at that chapter in a new tab.
  */
 
 export class PrerequisiteCallout {
@@ -23,6 +25,12 @@ export class PrerequisiteCallout {
 	@bindable public level: 2 | 3 = 3
 	@bindable public actionLabel = ''
 	@bindable public actionHref = ''
+	/** The guide's chapter that explains this notice; none shows no link. */
+	@bindable public guideChapter: GuideChapter | '' = ''
+
+	public get guideHref(): string {
+		return this.guideChapter ? guideHref(this.guideChapter) : ''
+	}
 
 	/** The fix was pressed: the screen runs it (`action.trigger`). */
 	public act(): void {

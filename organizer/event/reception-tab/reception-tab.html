@@ -4,6 +4,7 @@
   <template switch.bind="prerequisite">
     <prerequisite-callout
       case="notPublished"
+      guide-chapter="publish"
       level.bind="2"
       heading.bind="'reception.prerequisite.notPublished' & t"
       action-label.bind="'event.publish' & t"
@@ -11,6 +12,7 @@
     >${'reception.prerequisite.notPublishedBody' & t}</prerequisite-callout>
     <prerequisite-callout
       case="noStartTime"
+      guide-chapter="publish"
       level.bind="2"
       heading.bind="'reception.prerequisite.noStartTime' & t"
       action-label.bind="'sale.prerequisite.editConcert' & t"

@@ -20,7 +20,8 @@
 		"required": "必須",
 		"moreActions": "その他の操作",
 		"cancelEdit": "キャンセル",
-		"requiredNote": "* は必須項目です。"
+		"requiredNote": "* は必須項目です。",
+		"learnMore": "詳しく見る"
 	},
 	"format": {
 		"yen": "{{amount}}円",
@@ -68,6 +69,7 @@
 		"artistMenu": "所属アーティスト: {{name}}",
 		"artists": "所属アーティスト",
 		"back": "戻る",
+		"help": "使い方",
 		"page": "ページの内容"
 	},
 	"unsavedChanges": {

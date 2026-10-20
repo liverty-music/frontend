@@ -10,5 +10,6 @@
     <div class="body"><slot></slot></div>
     <a if.bind="actionHref" href.bind="actionHref" class="action state-layer">${actionLabel}</a>
     <button if.bind="actionLabel && !actionHref" type="button" class="action state-layer" click.trigger="act()">${actionLabel}</button>
+    <a if.bind="guideChapter" href.bind="guideHref" external target="_blank" rel="noopener" class="guide state-layer">${'common.learnMore' & t}</a>
   </div>
 </section>

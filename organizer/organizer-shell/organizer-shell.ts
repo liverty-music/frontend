@@ -1,5 +1,6 @@
 import { IRouterEvents, route } from '@aurelia/router'
 import { type IDisposable, resolve, watch } from 'aurelia'
+import { chapterOf, guideHref } from '../guide/guide-link'
 import { IConsoleLanguage } from '../i18n/console-language'
 import { formatJstDay } from '../i18n/format'
 import { type Crumb, IBreadcrumbs } from '../shell/breadcrumbs'
@@ -127,6 +128,8 @@ export class OrganizerShell {
 
 	public framed = false
 	public current: Destination = 'home'
+	/** 使い方 in the top bar: the guide at the chapter of the screen on show. */
+	public helpHref = guideHref('home')
 
 	public binding(): void {
 		this.subscriptions.push(
@@ -137,6 +140,7 @@ export class OrganizerShell {
 				const path = window.location.pathname
 				this.framed = FRAMED.test(path)
 				this.current = destinationOf(path)
+				this.helpHref = guideHref(chapterOf(path))
 				this.endTransition()
 				this.updateTitle()
 			}),

@@ -41,6 +41,18 @@
     </template>
     <span else class="artist-name" data-testid="artist-name">${artistName}</span>
   </div>
+  <a
+    href.bind="helpHref"
+    external
+    target="_blank"
+    rel="noopener"
+    class="help state-layer"
+    title.bind="'shell.help' & t"
+    data-testid="help"
+  >
+    <console-icon name="help"></console-icon>
+    <span class="visually-hidden">${'shell.help' & t}</span>
+  </a>
   <button
     type="button"
     class="account state-layer"
