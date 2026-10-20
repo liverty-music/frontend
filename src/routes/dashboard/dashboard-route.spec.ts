@@ -391,7 +391,8 @@ describe('DashboardRoute', () => {
 			expect(sut.dateGroups).toEqual([])
 		})
 
-		it('still fires the background refresh on the fast path', async () => {
+		// @spec components/infrastructure/fan/web/route/dashboard "Cache hit on Dashboard re-entry"
+		it('reads the concert list through the cached read on warm re-entry, without forcing a refetch', async () => {
 			mockConcertService.peekDateGroups.mockReturnValue(makeCachedGroups())
 			sut.needsRegion = false
 
@@ -400,6 +401,9 @@ describe('DashboardRoute', () => {
 			// refreshInBackground() bails on `isLoading`, so driving the skeleton from
 			// isLoading instead of hasSettled would silently stop re-entry refreshing.
 			expect(mockConcertService.listFollowed).toHaveBeenCalled()
+			// Re-entry within the stale window is served from the store's cache; only
+			// PWA resume forces a ListFollowed refetch.
+			expect(mockConcertService.revalidateFollower).not.toHaveBeenCalled()
 		})
 
 		it('does not clobber fresher groups that landed before the cache was reflected', async () => {

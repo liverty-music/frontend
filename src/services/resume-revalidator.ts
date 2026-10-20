@@ -19,9 +19,9 @@ export type RevalidateFn = () => void
  * register in `attached()` and unregister in `detaching()`), so the resume
  * signal never fans out to stores whose route is not currently active. Revalidation
  * is non-destructive: the registered callback swaps fresh data into the store's
- * observable in place; it never reloads the document. This does not double-fire
- * with route-entry revalidation — that is a separate trigger, and both paths
- * coalesce at the cache primitive, so a concurrent entry + resume share one RPC.
+ * observable in place; it never reloads the document. Resume is the only
+ * trigger that forces a refetch of a still-fresh cache; route entry reads the
+ * cache as-is.
  */
 export class ResumeRevalidator {
 	private readonly logger = resolve(ILogger).scopeTo('ResumeRevalidator')
