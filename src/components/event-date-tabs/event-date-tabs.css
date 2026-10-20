@@ -29,7 +29,7 @@
 
 			&[data-selected="true"] {
 				color: var(--md-color-on-primary);
-				background: var(--color-brand-primary);
+				background: var(--md-color-primary);
 			}
 		}
 

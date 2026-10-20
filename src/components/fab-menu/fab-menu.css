@@ -1,25 +1,16 @@
 @layer block {
 	@scope (fab-menu) {
 		:scope {
-			/* Both flags are set on :root by global.css. --fab-floating is 1
-			   while a persistent bottom banner (signup / install) is visible: the
-			   FAB then floats a space-s step above the banner instead of sitting
-			   in the notch, and does not sink (the snack bar sits above it).
-			   --fab-sunk is 1 while a snack bar is open. */
-			--_floating: var(--fab-floating, 0);
-			--_sunk: calc(var(--fab-sunk, 0) * (1 - var(--_floating)));
+			/* --fab-sunk is set on :root by global.css: 1 while a snack bar is
+			   open or a persistent bottom banner (signup / install) is visible. */
+			--_sunk: var(--fab-sunk, 0);
 
 			/* The FAB's centre: on the bottom navigation bar's top edge, lowered
 			   half the bar's height while sunk so the smaller FAB lies inside the
-			   bar; above a visible banner (which publishes its rendered height as
-			   --bottom-banner-height, 0 when hidden) while floating. No hard-coded
-			   pixel constant. */
+			   bar. No hard-coded pixel constant. */
 			--_fab-centre: calc(
 				var(--bottom-nav-height, 3.5rem) +
-				env(safe-area-inset-bottom) +
-				var(--bottom-banner-height, 0px) +
-				var(--_floating) *
-				(var(--space-s) + var(--fab-size) / 2) -
+				env(safe-area-inset-bottom) -
 				var(--_sunk) *
 				var(--bottom-nav-height, 3.5rem) /
 				2

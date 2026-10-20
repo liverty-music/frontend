@@ -3,6 +3,13 @@ import {
 	type Meta,
 	type StoryObj,
 } from '@aurelia/storybook'
+import { expect } from 'storybook/test'
+import {
+	composite,
+	contrast,
+	resolveColor,
+	WCAG_AA,
+} from '../../.storybook/contrast'
 
 /**
  * Foundations story for the GLOBAL M3 primitives + color roles that live in the
@@ -101,6 +108,13 @@ const ROLE_PAIRS: ReadonlyArray<{ label: string; fill: string; on: string }> = [
 	},
 ]
 
+/** The [l, c, h] of a computed `oklch(l c h)` colour. */
+function oklch(color: string): number[] {
+	const match = /^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/.exec(color)
+	if (!match) throw new Error(`not an oklch colour: ${color}`)
+	return match.slice(1).map(Number)
+}
+
 export const ColorRoles = {
 	render: () =>
 		defineAureliaStory({
@@ -113,4 +127,30 @@ export const ColorRoles = {
 				</div>
 			`,
 		}),
+	play: async ({ canvasElement }) => {
+		const pair = canvasElement.querySelector<HTMLElement>(
+			'[data-role-pair="primary"]',
+		)
+		if (!pair) throw new Error('no primary pair')
+		const style = getComputedStyle(pair)
+		const brand = resolveColor(pair, 'var(--color-brand-primary)')
+
+		// @spec components/infrastructure/fan/web/global/design-tokens "Primary role takes a white label at every size"
+		await expect(style.color).toBe(resolveColor(pair, 'var(--color-white)'))
+		await expect(
+			contrast(composite(style.backgroundColor), composite(style.color)),
+		).toBeGreaterThanOrEqual(WCAG_AA)
+		// The fill keeps brand-primary's hue and chroma; only the tone differs.
+		const [, brandC, brandH] = oklch(brand)
+		const [fillL, fillC, fillH] = oklch(
+			resolveColor(pair, 'var(--md-color-primary)'),
+		)
+		await expect(fillC).toBeCloseTo(brandC, 3)
+		await expect(fillH).toBeCloseTo(brandH, 1)
+		await expect(fillL).toBeCloseTo(0.57, 3)
+
+		// @spec components/infrastructure/fan/web/global/design-tokens "The brand colour stays for surfaces without text"
+		// The brand token itself stays bright for the FAB, lines and glows.
+		await expect(oklch(brand)).toEqual([0.65, 0.28, 350])
+	},
 } satisfies Story

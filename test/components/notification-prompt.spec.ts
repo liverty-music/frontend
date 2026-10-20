@@ -110,6 +110,7 @@ describe('NotificationPrompt', () => {
 		expect(sut.isVisible).toBe(false)
 	})
 
+	// @spec components/infrastructure/fan/web/global/notification-prompt "User dismisses notification prompt"
 	it('should remain not visible when already dismissed', () => {
 		sut = create({ dismissed: true })
 		sut.attached()
@@ -163,6 +164,7 @@ describe('NotificationPrompt', () => {
 	})
 
 	describe('dismiss', () => {
+		// @spec components/infrastructure/fan/web/global/notification-prompt "User dismisses notification prompt"
 		it('should set isVisible to false and persist dismissal', () => {
 			localStorage.setItem('ui.onboardingCompletedSessionCount', '3')
 			localStorage.setItem('ui.sessionCount', '4')

@@ -2,7 +2,6 @@
 	"common": {
 		"dismiss": "Dismiss",
 		"loading": "Loading",
-		"createAccount": "Create Account",
 		"retry": "Retry"
 	},
 	"entity": {
@@ -199,9 +198,8 @@
 	},
 	"pwaInstallBanner": {
 		"ariaLabel": "Install the app",
-		"label": "Get new concert alerts",
+		"label": "Get new show alerts!",
 		"cta": "Install",
-		"close": "Close",
 		"guideTitle": "Add to Home Screen",
 		"guideConfirm": "I've added it",
 		"iosStep1": "Tap the Share button (□↑) in Safari",
@@ -210,6 +208,9 @@
 		"chromeStep1": "Tap the browser menu (⋮)",
 		"chromeStep2": "Select \"Add to Home Screen\"",
 		"chromeStep3": "Tap \"Add\" to finish"
+	},
+	"signupBanner": {
+		"cta": "Sign Up"
 	},
 	"myArtists": {
 		"empty": {
@@ -221,7 +222,7 @@
 			"artistCol": "Artist"
 		},
 		"signupBanner": {
-			"message": "Save your followed artists and get live show notifications."
+			"message": "Save your follows!"
 		},
 		"edit": "Edit",
 		"done": "Done",

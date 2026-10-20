@@ -132,22 +132,20 @@
 	}
 	/* stylelint-enable cube/prefer-where-in-reset */
 
-	/* While a snack bar is open, the FAB sinks into the navigation bar's notch
-	   so the snack can sit directly above the bar. A flag on :root, because a
-	   rule inside @scope (fab-menu) cannot match :root. */
-	:where(:root:has(.snack-item:popover-open)) {
+	/* While a snack bar is open or a persistent bottom banner (signup prompt or
+	   install banner) is visible, the FAB sinks into the navigation bar's notch
+	   so the snack or the banner can sit directly above the bar. Both banners
+	   render their surface only while visible (if.bind). A flag on :root,
+	   because a rule inside @scope (fab-menu) cannot match :root. */
+	:where(:root:has(.snack-item:popover-open, .signup-banner, .pwa-banner)) {
 		--fab-sunk: 1;
 	}
 
-	/* While a persistent bottom banner (signup prompt or install banner) is
-	   visible and the FAB is shown, the FAB floats above the banner instead of
-	   sitting in the navigation bar's notch: the bar drops the notch and the
-	   snack bar sits above the FAB. A stopgap until the banners become snack
-	   bars. */
-	:where(
-		:root:has(:is(.signup-banner, .pwa-banner)):has(fab-menu .fab-toggle)
-	) {
-		--fab-floating: 1;
+	/* While a bottom banner shows, its height is published for the route area
+	   (app-shell) and the snack bar. The banners are exactly this tall, so
+	   layout knows it in the frame the banner appears. */
+	:where(:root:has(.signup-banner, .pwa-banner)) {
+		--bottom-banner-height: var(--bottom-banner-block-size);
 	}
 
 	/* High contrast: ensure borders and focus rings are visible */

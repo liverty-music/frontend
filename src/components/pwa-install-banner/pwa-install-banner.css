@@ -10,22 +10,32 @@
 				env(safe-area-inset-bottom, 0px)
 			);
 			inset-inline: 0;
+
+			/* The banner's width sizes its text (cqi), so the host is the query
+			   container; it spans the screen like the banner. */
+			container: bottom-banner / inline-size;
 		}
 
 		.pwa-banner {
+			/* One text size for the message and the button label, from the
+			   banner's width: 4.4cqi keeps the longest message and the button on
+			   one line at 320px, with about 5% to spare. Shared with
+			   signup-prompt-banner. */
+			--_banner-text: clamp(12px, 4.4cqi, 16px);
+
 			position: relative;
 
-			/* Label takes 1fr so Install sits at the right edge.
-			   Close is absolute in the top-right corner (not a grid item). */
+			/* One row: the message takes the rest, the button its own width. */
 			display: grid;
-			grid-template-columns: auto 1fr auto;
-			gap: var(--space-xs);
+			grid-template-columns: minmax(0, 1fr) auto;
+			column-gap: var(--space-xs);
 			align-items: center;
 
+			/* Exactly the published banner height (tokens.css), which the
+			   route area and the snack bar clear. */
+			block-size: var(--bottom-banner-block-size);
 			padding-block: var(--space-xs);
-
-			/* End padding reserves space for the absolute-positioned close button. */
-			padding-inline: var(--space-s) 2.75rem;
+			padding-inline: var(--space-s);
 
 			/* The persistent-banner surface, shared with signup-prompt-banner:
 			   the base surface at 85% with a 2px brand line. A banner stays on
@@ -45,72 +55,28 @@
 			block-size: 0;
 		}
 
-		.pwa-banner-icon {
-			display: block;
-			flex-shrink: 0;
-
-			inline-size: 2rem;
-			block-size: 2rem;
-			border-radius: var(--radius-button);
-
-			object-fit: cover;
-			box-shadow: var(--shadow-s, 0 1px 6px oklch(0% 0 0deg / 35%));
-		}
-
+		/* No ellipsis: a copy that no longer fits shows as clipped text, which
+		   the fit check catches. */
 		.pwa-banner-label {
-			/* Shrinks to content; truncates only when the banner is truly narrow. */
 			overflow: hidden;
-			flex-shrink: 1;
 
 			min-inline-size: 0;
 
-			font-size: var(--step--1);
+			font-size: var(--_banner-text);
 			font-weight: 500;
 			color: var(--color-text-primary);
-			text-overflow: ellipsis;
-			letter-spacing: 0.01em;
 			white-space: nowrap;
 		}
 
-		/* The shared `button` (on-container) owns the look; the label must not
-		   wrap inside its auto-sized grid column. */
+		/* The shared `button` (filled) owns the look; the snack's compact size
+		   hooks, with the banner's text size, keep the message its width. */
 		.pwa-banner-action {
+			--button-min-size: 2.25rem;
+			--button-padding-block: var(--space-3xs);
+			--button-padding-inline: var(--space-s);
+			--button-font-size: var(--_banner-text);
+
 			white-space: nowrap;
-		}
-
-		.pwa-banner-close {
-			cursor: pointer;
-
-			/* Absolute — top-right corner so it doesn't consume grid space. */
-			position: absolute;
-			inset-block-start: 0;
-			inset-inline-end: 0;
-
-			display: flex;
-			align-items: center;
-			justify-content: center;
-
-			/* 44px minimum touch target. */
-			inline-size: 2.75rem;
-			block-size: 100%;
-			padding: 0;
-			border: none;
-
-			color: oklch(from var(--color-text-primary) l c h / 35%);
-
-			background: none;
-
-			transition: color 150ms ease;
-
-			&:hover,
-			&:focus-visible {
-				color: var(--color-text-primary);
-			}
-		}
-
-		.pwa-banner-close-icon {
-			inline-size: 1rem;
-			block-size: 1rem;
 		}
 
 		/* Guide sheet — manual install instructions */
@@ -177,24 +143,54 @@
 					var(--md-easing-emphasized-decelerate);
 			}
 
-			.pwa-banner-action {
-				animation: pwa-cta-pulse 1.2s ease-in-out 3;
+			/* The attention cue: a light runs along the brand line, then across
+			   the button, every 12s, five times per route (the view model
+			   restarts it after each navigation). Both layers only paint a
+			   moving background over their own box, so nothing moves or resizes.
+			   The button's ::after is the pressable state layer, so the cue takes
+			   its ::before. */
+			.pwa-banner::before,
+			.pwa-banner-action::before {
+				pointer-events: none;
+				content: "";
+
+				position: absolute;
+
+				background:
+					linear-gradient(
+						to right,
+						transparent,
+						color-mix(in oklch, var(--color-white) 70%, transparent),
+						transparent
+					)
+					-100% 0 / 50% 100% no-repeat;
+
+				animation: banner-cue 12s ease-in-out 5;
+			}
+
+			.pwa-banner::before {
+				inset-block-start: -2px;
+				inset-inline: 0;
+				block-size: 2px;
+			}
+
+			.pwa-banner-action::before {
+				inset: 0;
+				border-radius: inherit;
+				animation-delay: 1s;
 			}
 		}
 
-		/* The CTA glows three times when the banner appears, with the snack
-		   bar's attention timing (brand-primary on the dark surface), then stays
-		   still. */
-		@keyframes pwa-cta-pulse {
-			0%,
-			100% {
-				box-shadow: 0 0 8px
-					color-mix(in oklch, var(--color-brand-primary) 30%, transparent);
+		/* The light crosses in the first ~9% of each 12s cycle, then rests out
+		   of view. Shared with signup-prompt-banner. */
+		@keyframes banner-cue {
+			0% {
+				background-position-x: -100%;
 			}
 
-			50% {
-				box-shadow: 0 0 18px
-					color-mix(in oklch, var(--color-brand-primary) 55%, transparent);
+			9%,
+			100% {
+				background-position-x: 200%;
 			}
 		}
 

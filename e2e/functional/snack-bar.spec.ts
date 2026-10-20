@@ -421,12 +421,12 @@ const SNACK_CAPABILITY = 'components/infrastructure/fan/web/global/snack-bar'
 
 /**
  * Boot a signed-in fan (backend mocked). The install banner is the persistent
- * bottom banner a signed-in fan sees; `banner` decides whether it is visible,
- * dismissed this session, or never offered (the app is installed).
+ * bottom banner a signed-in fan sees; `banner` decides whether it is visible
+ * or never offered (the app is installed).
  */
 async function bootSignedIn(
 	page: Page,
-	banner: 'visible' | 'dismissed' | 'none',
+	banner: 'visible' | 'none',
 ): Promise<void> {
 	await page.addInitScript(
 		({ sub, email, banner }) => {
@@ -434,8 +434,6 @@ async function bootSignedIn(
 			localStorage.setItem('onboarding.celebrationShown', '1')
 			localStorage.setItem('ui.notificationPromptDismissed', 'true')
 			if (banner === 'none') localStorage.setItem('pwa.installed', 'true')
-			if (banner === 'dismissed')
-				sessionStorage.setItem('pwaBanner.dismissed', 'true')
 			localStorage.setItem(
 				'oidc.user:https://auth.dev.liverty-music.app:371355407710421859',
 				JSON.stringify({
@@ -458,9 +456,9 @@ async function bootSignedIn(
 }
 
 /**
- * Wait until every finite animation/transition on `selector` has finished
- * (an infinite one, such as the install banner's CTA pulse, never moves the
- * element's box).
+ * Wait until every finite animation/transition on `selector` has finished.
+ * A bottom banner's attention cue (`banner-cue`) only paints and runs for a
+ * minute, so it is not waited for.
  */
 async function waitSettled(page: Page, selector: string): Promise<void> {
 	await page.waitForFunction((sel) => {
@@ -469,7 +467,11 @@ async function waitSettled(page: Page, selector: string): Promise<void> {
 			el !== null &&
 			el
 				.getAnimations({ subtree: true })
-				.filter((a) => a.effect?.getTiming().iterations !== Infinity)
+				.filter(
+					(a) =>
+						a.effect?.getTiming().iterations !== Infinity &&
+						(a as CSSAnimation).animationName !== 'banner-cue',
+				)
 				.every((a) => a.playState !== 'running')
 		)
 	}, selector)
@@ -518,14 +520,17 @@ test.describe('Snack placement above the navigation', () => {
 		expect(gap).toBeLessThanOrEqual(20)
 	})
 
-	test(`@spec ${SNACK_CAPABILITY} "Install banner dismissed"`, async ({
+	test(`@spec ${SNACK_CAPABILITY} "A hidden banner adds no height"`, async ({
 		page,
 	}) => {
-		await bootSignedIn(page, 'dismissed')
-		// The banner's host stays mounted for a signed-in fan; only its content
-		// is gone, and it must add no height.
+		await bootSignedIn(page, 'none')
+		// My Artists mounts both hosts for an installed, signed-in fan: the
+		// install banner's (in the shell) and the signup prompt's, both hidden.
+		await page.locator('.nav-tab[data-nav="my-artists"]').click()
+		await page.waitForURL('**/my-artists')
 		await expect(page.locator('pwa-install-banner')).toBeAttached()
-		await expect(page.locator('.pwa-banner')).toHaveCount(0)
+		await expect(page.locator('signup-prompt-banner')).toBeAttached()
+		await expect(page.locator('.pwa-banner, .signup-banner')).toHaveCount(0)
 		await publishToastDirect(page, 'Saved', 'info', 10_000)
 
 		const gap =

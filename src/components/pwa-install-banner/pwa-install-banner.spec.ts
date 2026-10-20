@@ -17,24 +17,45 @@ const fakePwaInstall = {
 	confirmInstalled: vi.fn(),
 }
 
+// The host element and the router events, by DI key; every other key
+// resolves to the install service stand-in.
+const fakeElement = document.createElement('pwa-install-banner')
+let navigationEnd: (() => void) | null = null
+const fakeRouterEvents = {
+	subscribe: vi.fn((event: string, handler: () => void) => {
+		if (event === 'au:router:navigation-end') navigationEnd = handler
+		return { dispose: vi.fn(() => (navigationEnd = null)) }
+	}),
+}
+const byKey = new Map<unknown, unknown>()
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
 		...actual,
-		resolve: vi.fn(() => fakePwaInstall),
+		resolve: vi.fn((key: unknown) => byKey.get(key) ?? fakePwaInstall),
 		watch: () => () => {},
 	}
 })
 
-import { SessionKeys } from '../../constants/storage-keys'
+import { IRouterEvents } from '@aurelia/router'
+import { INode } from 'aurelia'
 import { PwaInstallBanner } from './pwa-install-banner'
+
+byKey.set(INode, fakeElement)
+byKey.set(IRouterEvents, fakeRouterEvents)
+
+/** A stand-in for one of the element's running CSS animations. */
+function fakeAnimation(animationName: string) {
+	return { animationName, currentTime: 9_000 as number | null, play: vi.fn() }
+}
 
 describe('PwaInstallBanner', () => {
 	beforeEach(() => {
 		fakeCanShowFab = false
 		fakeIsIos = false
 		fakeShouldShowInstallBanner = false
-		sessionStorage.clear()
+		navigationEnd = null
 		vi.clearAllMocks()
 	})
 
@@ -42,22 +63,7 @@ describe('PwaInstallBanner', () => {
 		vi.restoreAllMocks()
 	})
 
-	describe('binding() — session dismiss initialisation', () => {
-		it('starts not dismissed when no sessionStorage flag is set', () => {
-			const sut = new PwaInstallBanner()
-			sut.binding()
-
-			expect(sut.dismissed).toBe(false)
-		})
-
-		it('restores dismissed state from sessionStorage', () => {
-			sessionStorage.setItem(SessionKeys.pwaBannerDismissed, 'true')
-			const sut = new PwaInstallBanner()
-			sut.binding()
-
-			expect(sut.dismissed).toBe(true)
-		})
-
+	describe('binding() — install mode initialisation', () => {
 		it('seeds installMode to native when canShowFab and not iOS', () => {
 			fakeCanShowFab = true
 			fakeIsIos = false
@@ -102,22 +108,12 @@ describe('PwaInstallBanner', () => {
 	})
 
 	describe('isVisible', () => {
-		it('is true when the service allows the banner and not dismissed', () => {
+		it('is true when the service allows the banner', () => {
 			fakeShouldShowInstallBanner = true
 			const sut = new PwaInstallBanner()
 			sut.binding()
 
 			expect(sut.isVisible).toBe(true)
-		})
-
-		it('is false once dismissed', () => {
-			fakeShouldShowInstallBanner = true
-			const sut = new PwaInstallBanner()
-			sut.binding()
-
-			sut.dismiss()
-
-			expect(sut.isVisible).toBe(false)
 		})
 
 		it('is false when the service disallows the banner', () => {
@@ -127,19 +123,46 @@ describe('PwaInstallBanner', () => {
 
 			expect(sut.isVisible).toBe(false)
 		})
+
+		it('offers no dismiss', () => {
+			expect('dismiss' in PwaInstallBanner.prototype).toBe(false)
+		})
 	})
 
-	describe('dismiss', () => {
-		it('sets dismissed and persists to sessionStorage', () => {
+	// @spec components/infrastructure/fan/web/global/pwa-install-banner "CTA attention cue"
+	// The banner stays mounted across routes, so it restarts its counted cue
+	// after every completed navigation.
+	describe('attention cue on each route', () => {
+		it('restarts the cue animations after a navigation completes', () => {
+			const cue = [fakeAnimation('banner-cue'), fakeAnimation('banner-cue')]
+			const entrance = fakeAnimation('pwa-banner-enter')
+			fakeElement.getAnimations = vi.fn(() => [
+				...cue,
+				entrance,
+			]) as unknown as typeof fakeElement.getAnimations
 			const sut = new PwaInstallBanner()
-			sut.binding()
+			sut.attached()
 
-			sut.dismiss()
+			navigationEnd?.()
 
-			expect(sut.dismissed).toBe(true)
-			expect(sessionStorage.getItem(SessionKeys.pwaBannerDismissed)).toBe(
-				'true',
-			)
+			expect(fakeElement.getAnimations).toHaveBeenCalledWith({ subtree: true })
+			for (const animation of cue) {
+				expect(animation.currentTime).toBe(0)
+				expect(animation.play).toHaveBeenCalledOnce()
+			}
+			expect(entrance.currentTime).toBe(9_000)
+			expect(entrance.play).not.toHaveBeenCalled()
+		})
+
+		it('stops listening for navigations once detached', () => {
+			const sut = new PwaInstallBanner()
+			sut.attached()
+			const subscription = fakeRouterEvents.subscribe.mock.results[0].value
+
+			sut.detaching()
+
+			expect(subscription.dispose).toHaveBeenCalledOnce()
+			expect(navigationEnd).toBeNull()
 		})
 	})
 

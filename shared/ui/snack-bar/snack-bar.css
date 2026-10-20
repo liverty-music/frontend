@@ -10,13 +10,12 @@
 @layer block {
 	@scope (snack-bar) {
 		:scope {
-			/* The brand hues and chroma, darkened to the highest lightness at
-			   which the white message, and the on-container action on its
-			   translucent white fill, both keep 4.5:1 (WCAG AA) at every point
-			   of the gradient; its oklab blend dips below the ends mid-way. The
-			   brand tokens stay bright for the other brand surfaces. */
-			--_bg-from: oklch(from var(--color-brand-primary) 50.5% c h);
-			--_bg-to: oklch(from var(--color-brand-secondary) 48% c h);
+			/* The fan app's severity gradients come from the token layer
+			   (--md-color-snack-*, each at 4.5:1 for the white message and the
+			   on-container action); an app without them sets
+			   --snack-bar-container instead. */
+			--_bg-from: var(--md-color-snack-info-from);
+			--_bg-to: var(--md-color-snack-info-to);
 			--_action-bg-hover: var(
 				--snack-bar-action-hover,
 				oklch(100% 0 0deg / 18%)
@@ -24,19 +23,15 @@
 
 			/* Material 3 snackbar placement: bottom of screen, above the
 			   persistent bottom navigation, animating up from the bottom edge.
-			   --bottom-banner-height (published on :root by a visible persistent
-			   bottom banner from its measured height, the same value the FAB
-			   uses) lifts the snack above that banner so it never covers its CTA;
-			   a hidden banner publishes 0px and an unmounted one removes it.
-			   --fab-floating (fan app, 1 while the FAB floats above a visible
-			   banner) lifts it above that FAB too. */
+			   --bottom-banner-height (published on :root by the fan app while a
+			   persistent bottom banner shows) lifts the snack above that banner
+			   so it never covers its CTA; a hidden banner publishes no height. The fan app's FAB stays sunk
+			   in the navigation bar meanwhile, so the snack clears it too. */
 			--_inset-end: calc(
 				var(--bottom-nav-height) +
 				env(safe-area-inset-bottom, 0px) +
 				var(--bottom-banner-height, 0px) +
-				var(--space-s) +
-				var(--fab-floating, 0) *
-				(var(--fab-size, 0px) + var(--space-s))
+				var(--space-s)
 			);
 		}
 
@@ -107,17 +102,15 @@
 			}
 		}
 
-		/* Severity recolors the container gradient (info keeps the brand hues).
-		   Warning's amber sits at the highest lightness that keeps the message
-		   and the action at 4.5:1, as info's stops do. */
+		/* Severity recolors the container gradient (info keeps the brand hues). */
 		.snack-item[data-severity="warning"] {
-			--_bg-from: oklch(47.5% 0.16 75deg);
-			--_bg-to: oklch(47.5% 0.16 75deg);
+			--_bg-from: var(--md-color-snack-warning);
+			--_bg-to: var(--md-color-snack-warning);
 		}
 
 		.snack-item[data-severity="error"] {
-			--_bg-from: oklch(40% 0.2 25deg);
-			--_bg-to: oklch(45% 0.18 25deg);
+			--_bg-from: var(--md-color-snack-error-from);
+			--_bg-to: var(--md-color-snack-error-to);
 		}
 
 		.snack-icon {

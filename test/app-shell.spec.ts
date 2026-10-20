@@ -8,9 +8,13 @@ import { AppShell } from '../src/app-shell'
 import { BottomNavBar } from '../src/components/bottom-nav-bar/bottom-nav-bar'
 import { PageHeader } from '../src/components/page-header/page-header'
 import { SvgIcon } from '../src/components/svg-icon/svg-icon'
+import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
 import { IAuthService } from '../src/services/auth-service'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
+import { INotificationManager } from '../src/services/notification-manager'
 import { IOnboardingService } from '../src/services/onboarding-service'
+import { IPromptCoordinator } from '../src/services/prompt-coordinator'
+import { IPushService } from '../src/services/push-service'
 import { IPwaInstallService } from '../src/services/pwa-install-service'
 import { myArtistsGuard } from './helpers/route-stubs'
 
@@ -67,7 +71,12 @@ describe('app-shell', () => {
 	let router: IRouter
 	let captureError: ReturnType<typeof vi.fn>
 
-	async function renderShell() {
+	interface ShellState {
+		isAuthenticated?: boolean
+		onboarding?: { isOnboarding: boolean; isCompleted: boolean }
+	}
+
+	async function renderShell(state: ShellState = {}) {
 		captureError = vi.fn()
 		const shell = createFixture(
 			CustomElement.getDefinition(AppShell).template as string,
@@ -92,10 +101,13 @@ describe('app-shell', () => {
 					captureError,
 					addBreadcrumb: vi.fn(),
 				}),
-				Registration.instance(IAuthService, { isAuthenticated: false }),
+				Registration.instance(IAuthService, {
+					isAuthenticated: state.isAuthenticated ?? false,
+				}),
 				Registration.instance(IOnboardingService, {
 					isOnboarding: false,
 					isCompleted: false,
+					...state.onboarding,
 					currentStep: 'lp',
 					spotlightActive: false,
 					spotlightTarget: '',
@@ -103,8 +115,19 @@ describe('app-shell', () => {
 					spotlightRadius: '12px',
 				}),
 				// AppShell eagerly resolves IPwaInstallService; a stub keeps DI from
-				// constructing the real one, which reads `window.matchMedia`.
-				Registration.instance(IPwaInstallService, { canShowFab: false }),
+				// constructing the real one, which reads `window.matchMedia`. The
+				// app is not installed, so the banner shows wherever it is mounted.
+				// A signed-in, onboarded fan also mounts the notification prompt;
+				// its push dependencies are stubbed (permission granted, so it
+				// stays hidden).
+				Registration.instance(IPushService, {}),
+				Registration.instance(IAnalyticsService, { capture: vi.fn() }),
+				Registration.instance(INotificationManager, { permission: 'granted' }),
+				Registration.instance(IPwaInstallService, {
+					canShowFab: false,
+					isIos: false,
+					shouldShowInstallBanner: true,
+				}),
 			],
 		)
 		await shell.started
@@ -335,5 +358,75 @@ describe('app-shell', () => {
 			expect.anything(),
 			'router:navigation-error',
 		)
+	})
+
+	// The shell decides whether the install banner is mounted; the banner then
+	// shows while the app is not installed (pwa-install-service.spec.ts).
+	describe('install banner', () => {
+		const banner = () => host().querySelector('pwa-install-banner .pwa-banner')
+
+		async function renderAt(state: ShellState): Promise<void> {
+			await fixture.stop(true)
+			window.history.replaceState(null, '', '/')
+			fixture = await renderShell(state)
+			router = fixture.container.get(IRouter)
+			await go('discovery')
+		}
+
+		const getAnimations = Element.prototype.getAnimations
+
+		beforeEach(() => {
+			// The banner restarts its cue through getAnimations(), which jsdom
+			// lacks.
+			Element.prototype.getAnimations = () => []
+		})
+
+		afterEach(() => {
+			Element.prototype.getAnimations = getAnimations
+		})
+
+		const signedIn = {
+			isAuthenticated: true,
+			onboarding: { isOnboarding: false, isCompleted: true },
+		}
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Authenticated user has not installed the PWA"
+		it('shows for a signed-in fan after onboarding', async () => {
+			await renderAt(signedIn)
+			expect(banner()).not.toBeNull()
+		})
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Guest user is not shown the banner"
+		it('is not shown to a guest', async () => {
+			await renderAt({
+				isAuthenticated: false,
+				onboarding: { isOnboarding: false, isCompleted: true },
+			})
+			expect(host().querySelector('pwa-install-banner')).toBeNull()
+		})
+
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner not shown during onboarding"
+		it('is not shown during onboarding', async () => {
+			await renderAt({
+				isAuthenticated: true,
+				onboarding: { isOnboarding: true, isCompleted: false },
+			})
+			expect(host().querySelector('pwa-install-banner')).toBeNull()
+		})
+
+		it('is hidden while a post-signup surface is open and returns after', async () => {
+			await renderAt(signedIn)
+			const coordinator = fixture.container.get(IPromptCoordinator)
+
+			// @spec components/infrastructure/fan/web/global/pwa-install-banner "Post-signup dialog open — banner hidden"
+			coordinator.isPostSignupSurfaceOpen = true
+			await tasksSettled()
+			expect(host().querySelector('pwa-install-banner')).toBeNull()
+
+			// @spec components/infrastructure/fan/web/global/pwa-install-banner "Post-signup dialog closed — banner visible"
+			coordinator.isPostSignupSurfaceOpen = false
+			await tasksSettled()
+			expect(banner()).not.toBeNull()
+		})
 	})
 })

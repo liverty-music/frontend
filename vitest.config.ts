@@ -126,6 +126,9 @@ const storybookProjectFor = ({
 			'@aurelia/storybook/development',
 			'@aurelia/i18n',
 			'@aurelia/i18n/development',
+			// The install banner restarts its cue on router events.
+			'@aurelia/router',
+			'@aurelia/router/development',
 			'storybook/internal/csf',
 			'storybook/test',
 		],

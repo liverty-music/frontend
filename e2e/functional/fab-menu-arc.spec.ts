@@ -587,7 +587,7 @@ test.describe('collapsed after navigation', () => {
 	})
 })
 
-test.describe('while a bottom banner is visible', () => {
+test.describe('sinking while a bottom banner is visible', () => {
 	test.beforeEach(async ({ page }) => {
 		await seedSignedInFan(page, { installBanner: true })
 	})
@@ -595,49 +595,99 @@ test.describe('while a bottom banner is visible', () => {
 	/** The `space-s` step at this viewport, in px. */
 	const spaceS = (page: Page) => px(page, 'var(--space-s)')
 
-	test(`@spec ${CAPABILITY} "A bottom banner is visible"`, async ({ page }) => {
-		await openShell(page, '/dashboard')
-		const banner = page.locator('.pwa-banner')
-		await expect(banner).toBeVisible()
-		await settle(page, 'pwa-install-banner')
-		await settle(page, 'fab-menu')
-
+	/** Sunk: 40px across, centred, entirely within the bar's height. */
+	async function expectSunk(page: Page): Promise<Box> {
 		const f = await box(fab(page))
-		const b = await box(banner)
 		const viewport = page.viewportSize()
 		if (!viewport) throw new Error('no viewport')
-		// Centred, floating one space-s step above the banner, full size.
+		expect(f.width).toBeCloseTo(40, 0)
 		expect(centre(f).x).toBeCloseTo(viewport.width / 2, 0)
-		expect(b.y - (f.y + f.height)).toBeCloseTo(await spaceS(page), 0)
-		expect(f.width).toBeCloseTo(56, 0)
-		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "FAB floating above a banner"
-		// The bar shows no notch: its top edge is solid at the centre.
 		const bar = await box(nav(page))
-		const hit = await page.evaluate(
-			({ x, y }) =>
-				document.elementFromPoint(x, y)?.closest('bottom-nav-bar') != null,
-			{ x: viewport.width / 2, y: bar.y + 2 },
+		expect(f.y).toBeGreaterThanOrEqual(bar.y - 0.5)
+		expect(f.y + f.height).toBeLessThanOrEqual(bar.y + bar.height + 0.5)
+		return f
+	}
+
+	async function openWithBanner(page: Page): Promise<void> {
+		await openShell(page, '/dashboard')
+		await expect(page.locator('.pwa-banner')).toBeVisible()
+		await settle(page, 'pwa-install-banner')
+		await settle(page, 'fab-menu')
+	}
+
+	test(`@spec ${CAPABILITY} "A bottom banner is visible"`, async ({ page }) => {
+		// Both fab-menu requirements carry this scenario name; this test covers
+		// both: the FAB is sunk, 40px, centred and within the bar.
+		await openWithBanner(page)
+
+		const f = await expectSunk(page)
+		const b = await box(page.locator('.pwa-banner'))
+		expect(intersects(f, b)).toBe(false)
+		// Within the bar, the FAB covers nothing above the banner.
+		expect(f.y).toBeGreaterThanOrEqual(b.y + b.height - 0.5)
+
+		// @spec components/infrastructure/fan/web/global/bottom-nav-bar "FAB sunk under a banner"
+		// The bar keeps its notch around the sunk FAB.
+		await expect(nav(page)).toHaveAttribute('data-notch', 'true')
+		const notch = await nav(page).evaluate(
+			(el) => getComputedStyle(el).maskImage,
 		)
-		expect(hit).toBe(true)
+		const radius = await px(page, 'var(--fab-notch-radius)')
+		expect(notch).toContain(`${radius}px at`)
+	})
+
+	test(`@spec ${CAPABILITY} "The sunk FAB still opens the actions" (bottom banner)`, async ({
+		page,
+	}) => {
+		await openWithBanner(page)
+		await expectSunk(page)
+
+		await openArc(page)
+
+		await expect(fabItems(page)).toHaveCount(DASHBOARD_ACTIONS.length)
+		const f = centre(await box(fab(page)))
+		for (const item of await itemBoxes(page)) {
+			expect(centre(item.icon).y).toBeLessThan(f.y)
+		}
 	})
 
 	test(`@spec ${CAPABILITY} "A snack bar opens above a bottom banner"`, async ({
 		page,
 	}) => {
-		await openShell(page, '/dashboard')
-		await expect(page.locator('.pwa-banner')).toBeVisible()
+		await openWithBanner(page)
 		await publishSnack(page, 'Saved', 10_000)
 		await expect(page.locator('.snack-item:popover-open')).toHaveCount(1)
 		await settle(page, 'snack-bar')
 		await settle(page, 'fab-menu')
 
-		const f = await box(fab(page))
+		// @spec components/infrastructure/fan/web/global/snack-bar "The FAB stays sunk under a banner and a snack bar"
+		const f = await expectSunk(page)
 		const snack = await box(page.locator('.snack-item'))
-		// @spec components/infrastructure/fan/web/global/snack-bar "The FAB floats above a visible banner"
-		// The FAB keeps its size; the snack bar sits a space-s step above it.
-		expect(f.width).toBeCloseTo(56, 0)
-		expect(f.y - (snack.y + snack.height)).toBeCloseTo(await spaceS(page), 0)
+		const banner = await box(page.locator('.pwa-banner'))
+		// The snack sits a space-s step above the banner, covering neither.
+		expect(banner.y - (snack.y + snack.height)).toBeCloseTo(
+			await spaceS(page),
+			0,
+		)
 		expect(intersects(f, snack)).toBe(false)
-		expect(intersects(f, await box(page.locator('.pwa-banner')))).toBe(false)
+		expect(intersects(snack, banner)).toBe(false)
+	})
+
+	test(`@spec ${CAPABILITY} "The bottom banner goes away"`, async ({
+		page,
+	}) => {
+		await openWithBanner(page)
+		await expectSunk(page)
+
+		// Confirming the install in the guide sheet removes the banner.
+		await page.getByTestId('pwa-install-banner-cta').click()
+		await page.getByTestId('pwa-install-banner-confirm').click()
+		await expect(page.locator('.pwa-banner')).toHaveCount(0)
+		await settle(page, 'fab-menu')
+
+		const f = await box(fab(page))
+		expect(f.width).toBeCloseTo(56, 0)
+		// Protruding from the notch again.
+		expect(centre(f).y).toBeCloseTo((await box(nav(page))).y, 0)
 	})
 })

@@ -25,10 +25,16 @@
 		   `<au-viewport>` auto-places into the first row — which, when the header is
 		   hidden (showNav=false), is the `auto` header row, collapsing the route to
 		   zero block-size (breaks height-dependent routes, e.g. the discovery
-		   canvas). Placement only — no other layout is imposed on the viewport; its
-		   block-size still comes from the `1fr` row's grid stretch. */
+		   canvas). Placement, plus the banner clearance below — no other layout; its
+		   block-size still comes from the `1fr` row's grid stretch.
+		   While a bottom banner shows, global.css publishes its height as
+		   --bottom-banner-height; the viewport's content box then ends at the
+		   banner's top edge, so routes (block-size: 100%) end above it and need
+		   no offset of their own. */
 		au-viewport {
 			grid-area: viewport;
+			box-sizing: border-box;
+			padding-block-end: var(--bottom-banner-height, 0);
 		}
 
 		bottom-nav-bar {
