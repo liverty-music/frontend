@@ -395,7 +395,9 @@
 		"state": {
 			"not-entered": "Not entered",
 			"entered": "Entered",
-			"void": "Void"
+			"void": "Void",
+			"listed": "Listed for resale",
+			"resold": "Resold"
 		},
 		"field": {
 			"fullName": "Name",
@@ -404,6 +406,30 @@
 			"noSeat": "Not assigned"
 		},
 		"resaleProhibited": "This is a designated live-entertainment ticket (特定興行入場券). Resale without the organizer's consent is prohibited by law.",
+		"resale": {
+			"list": "List for official resale",
+			"onlyWhenSoldOut": "Official resale opens only if the concert sells out.",
+			"confirmTitle": "List for official resale",
+			"price": "Price (face value)",
+			"fee": "Resale fee (10%)",
+			"refundAmount": "Refund",
+			"yen": "¥{{amount}} (tax included)",
+			"termRefund": "When another fan buys it, the refund goes to the card you paid with.",
+			"termDeadline": "Listing closes when admission opens ({{deadline}}).",
+			"termNotGuaranteed": "A sale is not guaranteed. An unsold ticket stays valid for entry.",
+			"termWithdraw": "You can withdraw the listing until another fan starts buying it.",
+			"termInvalid": "A ticket that sells is no longer valid for entry.",
+			"confirm": "List 1 ticket",
+			"cancel": "Cancel",
+			"listedNote": "Listed for official resale until admission opens ({{deadline}}).",
+			"withdraw": "Withdraw the listing",
+			"beingBought": "Another fan is buying this ticket right now, so it cannot be withdrawn unless that purchase lapses.",
+			"cannotList": "This ticket cannot be listed: official resale has closed or the ticket is no longer valid.",
+			"failed": "Something went wrong. Please try again later.",
+			"refund": "Refund",
+			"refunded": "Refunded on {{date}}",
+			"refunding": "Refund in progress"
+		},
 		"viewOrder": "View order details",
 		"device": {
 			"needsConnection": "To show your entry QR code, open this screen once while connected to the internet.",
@@ -523,7 +549,7 @@
 		"lastUpdatedLabel": "Last updated",
 		"terms": {
 			"title": "Terms of Service",
-			"lastUpdated": "June 5, 2026",
+			"lastUpdated": "October 20, 2026",
 			"intro": "These Terms of Service (the \"Terms\") govern your use of the application \"Liverty Music\" (the \"Service\") provided by pannpers.dev (\"we\" or \"us\"). By using the Service, you are deemed to have agreed to these Terms.",
 			"sections": [
 				{
@@ -567,19 +593,30 @@
 					]
 				},
 				{
-					"heading": "7. Suspension and Termination of Accounts",
+					"heading": "7. Official Resale",
+					"body": [
+						"The organizer consents to the transfer of tickets only through official resale on the Service at face value. Resale by any other means is prohibited.",
+						"Official resale opens only when tickets sold first come, first served sell out. A concert that does not sell out has no official resale, and if you can no longer attend there is no refund unless the concert is cancelled.",
+						"Listing closes when admission to the concert opens, 3 hours before the start time. A ticket that has not been bought by then stays yours and remains valid for entry.",
+						"You can withdraw a listing until another user starts buying it. A sale of a listed ticket is not guaranteed.",
+						"When a listed ticket is bought, it becomes invalid and a new ticket is issued to the user who bought it. You are refunded the face value minus a resale fee of 10% to the card you paid with.",
+						"If the concert is cancelled after an official resale is completed, the resale fee is not refunded."
+					]
+				},
+				{
+					"heading": "8. Suspension and Termination of Accounts",
 					"body": [
 						"If you breach these Terms, or where we determine that there is a reasonable and unavoidable operational ground, we may suspend or delete your account without prior notice."
 					]
 				},
 				{
-					"heading": "8. Changes to These Terms",
+					"heading": "9. Changes to These Terms",
 					"body": [
 						"We may change these Terms pursuant to Article 548-4 of the Civil Code. When we change these Terms, we will notify users in advance of the content of the revised Terms and their effective date, by posting within the Service or by other appropriate means."
 					]
 				},
 				{
-					"heading": "9. Governing Law and Jurisdiction",
+					"heading": "10. Governing Law and Jurisdiction",
 					"body": [
 						"The interpretation and application of these Terms are governed by the laws of Japan.",
 						"In the event of a dispute between us and a user concerning the Service, the Fukuoka District Court or the Fukuoka Summary Court shall be the court of exclusive agreed jurisdiction for the first instance."
@@ -890,6 +927,12 @@
 				"window": "Entries {{start}} – {{end}}",
 				"enter": "Enter the lottery",
 				"ended": "Entries have closed"
+			},
+			"resale": {
+				"title": "Official resale",
+				"faceValue": "Official resale tickets are sold at face value.",
+				"buy": "Buy a resale ticket",
+				"waiting": "Tickets listed by fans who can no longer attend can be bought here."
 			}
 		}
 	},
@@ -941,6 +984,9 @@
 			"title": "Review your order",
 			"event": "Concert",
 			"tickets": "Tickets and amount",
+			"officialResale": "Official resale",
+			"officialResaleValue": "These are official resale tickets: tickets listed by fans who can no longer attend, sold at face value and newly issued to your own account and name.",
+			"resaleSalePeriod": "Official resale closes when admission opens ({{deadline}})",
 			"ticketsValue": "{{count}} × ¥{{price}} = ¥{{total}} total (tax included)",
 			"payment": "Payment",
 			"creditCard": "Credit card",

@@ -25,9 +25,13 @@ import {
 	concertResolver,
 	IConcertRpcClient,
 } from '../../src/adapter/rpc/client/concert-client'
+import { IResaleListingRpcClient } from '../../src/adapter/rpc/client/resale-listing-client'
 import { ITicketRpcClient } from '../../src/adapter/rpc/client/ticket-client'
+import { ITicketSaleRpcClient } from '../../src/adapter/rpc/client/ticket-sale-client'
 import { IWalletPublicKeyRpcClient } from '../../src/adapter/rpc/client/wallet-public-key-client'
 import { IWalletStorage } from '../../src/adapter/storage/wallet-storage'
+import type { ResaleListing } from '../../src/entities/resale-listing'
+import type { TicketSale, TicketType } from '../../src/entities/ticket-sale'
 import ja from '../../src/locales/ja/translation.json'
 import { TicketsRoute } from '../../src/routes/tickets/tickets-route'
 import { ITicketWallet, TicketWallet } from '../../src/services/ticket-wallet'
@@ -155,6 +159,12 @@ describe('TicketsRoute', () => {
 		acquire: ReturnType<typeof vi.fn>
 		release: ReturnType<typeof vi.fn>
 	}
+	let resaleClient: {
+		list: ReturnType<typeof vi.fn>
+		create: ReturnType<typeof vi.fn>
+		withdraw: ReturnType<typeof vi.fn>
+	}
+	let saleClient: { listByEvent: ReturnType<typeof vi.fn> }
 
 	/** A fresh screen on the same device (same storage). */
 	function build(): TicketsRoute {
@@ -166,6 +176,8 @@ describe('TicketsRoute', () => {
 			Registration.singleton(ITicketWallet, TicketWallet),
 			Registration.instance(IScreenWakeLock, wakeLock),
 			Registration.instance(IUserStore, userStore),
+			Registration.instance(IResaleListingRpcClient, resaleClient),
+			Registration.instance(ITicketSaleRpcClient, saleClient),
 		)
 		container.register(TicketsRoute)
 		return container.get(TicketsRoute)
@@ -226,6 +238,12 @@ describe('TicketsRoute', () => {
 			acquire: vi.fn().mockResolvedValue(undefined),
 			release: vi.fn().mockResolvedValue(undefined),
 		}
+		resaleClient = {
+			list: vi.fn().mockResolvedValue([]),
+			create: vi.fn(),
+			withdraw: vi.fn(),
+		}
+		saleClient = { listByEvent: vi.fn().mockResolvedValue([]) }
 		vi.useFakeTimers({
 			toFake: [
 				'Date',
@@ -657,6 +675,8 @@ describe('TicketsRoute', () => {
 					Registration.singleton(ITicketWallet, TicketWallet),
 					Registration.instance(IScreenWakeLock, wakeLock),
 					Registration.instance(IUserStore, userStore),
+					Registration.instance(IResaleListingRpcClient, resaleClient),
+					Registration.instance(ITicketSaleRpcClient, saleClient),
 				],
 			).started
 			const sut = fixture.component.route
@@ -776,6 +796,212 @@ describe('TicketsRoute', () => {
 			expect(sut.isCodeOpen).toBe(false)
 			expect(sut.session.text).toBeNull()
 			expect(wakeLock.release).toHaveBeenCalled()
+		})
+	})
+
+	describe('official resale', () => {
+		/** event-1's first-come sale at 5000 yen. */
+		function firstCome(t: Partial<TicketType> = {}): TicketSale {
+			return {
+				id: 'sale-1',
+				name: '一般発売',
+				method: 'firstCome',
+				saleStartTime: jst(1, 10),
+				saleEndTime: jst(19, 23),
+				verificationRequirement: 'none',
+				ticketType: {
+					id: 'type-1',
+					eventId: EVENT,
+					price: 5000,
+					perAccountLimit: 4,
+					state: 'soldOut',
+					lowStock: false,
+					resaleOpen: true,
+					resaleAvailable: false,
+					...t,
+				},
+			}
+		}
+
+		/** fan's listing of ticket i, priced 5000 yen. */
+		function listing(i: number, o: Partial<ResaleListing> = {}): ResaleListing {
+			return {
+				id: `listing-${i}`,
+				ticketId: ticketId(i),
+				price: 5000,
+				fee: 500,
+				refundAmount: 4500,
+				status: 'listed',
+				createTime: jst(9, 12),
+				deadlineTime: jst(20, 15, 30),
+				...o,
+			}
+		}
+
+		it('lists a ticket after showing the price, fee and refund', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Fan lists a ticket"
+			ticketClient.list.mockResolvedValue([protoTicket(1), protoTicket(2)])
+			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			resaleClient.create.mockResolvedValue(listing(1))
+			const sut = await open()
+			const group = sut.groups[0]
+			const [first, second] = group.tickets
+
+			expect(sut.offersListing(group, first)).toBe(true)
+			sut.askToList(group, first)
+			expect(sut.isListingOpen).toBe(true)
+			const price = sut.listingPrice(sut.listingGroup)
+			expect(sut.yen(price)).toBe('5,000')
+			expect(sut.yen(sut.listingFee(price))).toBe('500')
+			expect(sut.yen(price - sut.listingFee(price))).toBe('4,500')
+			// The event starts at 18:30, so listing closes at 15:30 that day.
+			expect(sut.listingDeadlineLabel(sut.listingGroup)).toBe(
+				'2026年11月20日(金) 15:30',
+			)
+			expect(ja.tickets.resale.termRefund).toContain('購入時のカード')
+			expect(ja.tickets.resale.termNotGuaranteed).toContain('保証はありません')
+			expect(ja.tickets.resale.termWithdraw).toContain('取り消せます')
+			expect(ja.tickets.resale.termInvalid).toContain('入場に使えなくなります')
+
+			await sut.confirmListing()
+
+			expect(resaleClient.create).toHaveBeenCalledWith(
+				ticketId(1),
+				expect.anything(),
+			)
+			expect(sut.isListingOpen).toBe(false)
+			expect(sut.shownState(first)).toBe('listed')
+			expect(sut.stateLabel(first)).toBe('tickets.state.listed')
+			expect(ja.tickets.state.listed).toBe('出品中')
+			expect(sut.shownState(second)).toBe('not-entered')
+		})
+
+		it('offers no listing for an event that never sold out and says why', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Event not sold out"
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue([
+				firstCome({ state: 'onSale', resaleOpen: false }),
+			])
+			const sut = await open()
+			const group = sut.groups[0]
+
+			expect(sut.offersListing(group, group.tickets[0])).toBe(false)
+			expect(sut.explainsNoResale(group)).toBe(true)
+			expect(ja.tickets.resale.onlyWhenSoldOut).toContain('完売した場合にのみ')
+		})
+
+		it('offers no listing once admission opened', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Admission opened"
+			vi.setSystemTime(jst(20, 16))
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue([
+				firstCome({ resaleOpen: false }),
+			])
+			const sut = await open()
+			const group = sut.groups[0]
+
+			expect(sut.offersListing(group, group.tickets[0])).toBe(false)
+			expect(sut.explainsNoResale(group)).toBe(false)
+		})
+
+		it('shows a withdrawn ticket as 未入場 again', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Fan withdraws"
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			resaleClient.list.mockResolvedValue([listing(1)])
+			resaleClient.withdraw.mockResolvedValue(
+				listing(1, { status: 'withdrawn' }),
+			)
+			const sut = await open()
+			const ticket = sut.groups[0].tickets[0]
+			expect(sut.shownState(ticket)).toBe('listed')
+
+			await sut.withdraw(ticket)
+
+			expect(resaleClient.withdraw).toHaveBeenCalledWith(
+				'listing-1',
+				expect.anything(),
+			)
+			expect(sut.shownState(ticket)).toBe('not-entered')
+		})
+
+		it('says another fan is buying it when withdrawing fails', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Someone is buying it"
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			resaleClient.list.mockResolvedValue([listing(1)])
+			resaleClient.withdraw.mockRejectedValue(
+				new ConnectError('held', Code.FailedPrecondition),
+			)
+			const sut = await open()
+			const ticket = sut.groups[0].tickets[0]
+
+			await sut.withdraw(ticket)
+
+			expect(sut.resaleMessageFor(ticket)).toBe('tickets.resale.beingBought')
+			expect(ja.tickets.resale.beingBought).toContain('購入手続き中')
+			expect(sut.shownState(ticket)).toBe('listed')
+		})
+
+		it('shows a resold ticket with its refund and no QR code', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Resold ticket"
+			// @spec components/infrastructure/fan/web/route/tickets "Refund made"
+			ticketClient.list.mockResolvedValue([
+				protoTicket(1, { status: TicketStatus.VOIDED }),
+			])
+			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			resaleClient.list.mockResolvedValue([
+				listing(1, {
+					status: 'sold',
+					soldTime: jst(12, 20),
+					refundTime: jst(12, 20, 1),
+				}),
+			])
+			const sut = await open()
+			const group = sut.groups[0]
+			const ticket = group.tickets[0]
+
+			expect(sut.shownState(ticket)).toBe('resold')
+			expect(ja.tickets.state.resold).toBe('リセール済み')
+			expect(sut.offersCode(group)).toBe(false)
+			expect(sut.offersListing(group, ticket)).toBe(false)
+			expect(sut.yen(sut.listingOf(ticket)?.refundAmount ?? 0)).toBe('4,500')
+			expect(sut.day(sut.listingOf(ticket)?.refundTime)).toBe('11/12')
+		})
+
+		it('shows the ticket of an expired listing as 未入場 with its QR code', async () => {
+			// @spec components/infrastructure/fan/web/route/tickets "Listing expired"
+			vi.setSystemTime(jst(20, 16))
+			await prepareOnline([protoTicket(1)])
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue([
+				firstCome({ resaleOpen: false }),
+			])
+			resaleClient.list.mockResolvedValue([listing(1, { status: 'expired' })])
+			const sut = await open()
+			const group = sut.groups[0]
+
+			expect(sut.shownState(group.tickets[0])).toBe('not-entered')
+			expect(sut.offersCode(group)).toBe(true)
+			expect(sut.canShowCode).toBe(true)
+		})
+
+		it('keeps the listings for the offline list', async () => {
+			ticketClient.list.mockResolvedValueOnce([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			resaleClient.list.mockResolvedValueOnce([listing(1)])
+			const online = await open()
+			online.detaching()
+
+			ticketClient.list.mockRejectedValue(offlineError())
+			resaleClient.list.mockRejectedValue(offlineError())
+			const sut = await open()
+
+			expect(sut.offline).toBe(true)
+			expect(sut.shownState(sut.groups[0].tickets[0])).toBe('listed')
+			expect(sut.offersListing(sut.groups[0], sut.groups[0].tickets[0])).toBe(
+				false,
+			)
 		})
 	})
 })

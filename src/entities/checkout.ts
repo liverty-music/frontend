@@ -30,4 +30,9 @@ export interface Checkout {
 	readonly commitTime?: Date
 	/** Set when the card was charged. */
 	readonly captureTime?: Date
+	/**
+	 * True for a resale checkout: it holds official resale (公式リセール)
+	 * tickets other fans listed, at face value.
+	 */
+	readonly resale: boolean
 }

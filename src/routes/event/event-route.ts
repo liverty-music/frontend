@@ -14,6 +14,7 @@ import type { Artist } from '../../entities/artist'
 import {
 	currentSale,
 	isWindowOpen,
+	showsResale,
 	type TicketSale,
 } from '../../entities/ticket-sale'
 import { IAuthService } from '../../services/auth-service'
@@ -282,6 +283,12 @@ export class EventRoute implements IRouteViewModel {
 	 */
 	public get shownSale(): TicketSale | null {
 		return this.isCancelled ? null : currentSale(this.sales, this.now)
+	}
+
+	/** True when the shown first-come sale offers 公式リセール (official resale). */
+	public get showsResale(): boolean {
+		const sale = this.shownSale
+		return sale?.method === 'firstCome' && showsResale(sale.ticketType)
 	}
 
 	/** True while the shown lottery sale takes entries. */

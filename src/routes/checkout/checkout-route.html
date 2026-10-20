@@ -110,6 +110,11 @@
       <dt t="checkout.confirm.tickets"></dt>
       <dd data-testid="checkout-confirm-tickets" t="checkout.confirm.ticketsValue" t-params.bind="{ count: ticketCount, price: yen(price), total: yen(total) }"></dd>
 
+      <template if.bind="isResale">
+        <dt t="checkout.confirm.officialResale"></dt>
+        <dd data-testid="checkout-confirm-official-resale" t="checkout.confirm.officialResaleValue"></dd>
+      </template>
+
       <dt t="checkout.confirm.payment"></dt>
       <dd data-testid="checkout-confirm-payment">
         <span t="checkout.confirm.creditCard"></span> ${cardLabel}<br />
@@ -120,7 +125,8 @@
       <dd t="checkout.confirm.deliveryValue"></dd>
 
       <dt t="checkout.confirm.salePeriod"></dt>
-      <dd data-testid="checkout-confirm-period">${salePeriodLabel}</dd>
+      <dd if.bind="isResale" data-testid="checkout-confirm-period" t="checkout.confirm.resaleSalePeriod" t-params.bind="{ deadline: resaleDeadlineLabel }"></dd>
+      <dd else data-testid="checkout-confirm-period">${salePeriodLabel}</dd>
 
       <dt t="checkout.confirm.nameOnTickets"></dt>
       <dd data-testid="checkout-confirm-full-name">${fullName}</dd>

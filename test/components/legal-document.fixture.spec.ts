@@ -221,3 +221,40 @@ describe('OSS licenses page renders in ja and en', () => {
 		})
 	}
 })
+
+// What the Terms of Service say about official resale, per language.
+const TERMS_RESALE = {
+	ja: [
+		'第7条（公式リセール）',
+		'完売した場合にのみ開始されます',
+		'完売しなかった公演には公式リセールはなく',
+		'入場開始時（開演の3時間前）に締め切られます',
+		'10%のリセール手数料',
+		'購入時に利用したカードへ返金されます',
+	],
+	en: [
+		'7. Official Resale',
+		'opens only when tickets sold first come, first served sell out',
+		'A concert that does not sell out has no official resale',
+		'Listing closes when admission to the concert opens, 3 hours before the start time',
+		'a resale fee of 10%',
+		'to the card you paid with',
+	],
+} as const
+
+describe('Terms of Service state the official resale rules', () => {
+	for (const lng of ['ja', 'en'] as const) {
+		it(`has the official resale article in ${lng}`, async () => {
+			// @spec components/infrastructure/fan/web/global/legal-document "Resale article present"
+			const fixture = await createFixture
+				.html('<legal-document doc-key="terms"></legal-document>')
+				.deps(i18nFor(lng), LegalDocument)
+				.build().started
+
+			const text = fixture.appHost.textContent ?? ''
+			for (const phrase of TERMS_RESALE[lng]) {
+				expect(text).toContain(phrase)
+			}
+		})
+	}
+})

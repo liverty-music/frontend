@@ -420,6 +420,8 @@ describe('EventRoute', () => {
 					perAccountLimit: 4,
 					state: 'onSale',
 					lowStock: false,
+					resaleOpen: false,
+					resaleAvailable: false,
 					...t,
 				},
 				...o,
@@ -511,6 +513,51 @@ describe('EventRoute', () => {
 			await open(sut)
 
 			expect(sut.shownSale?.ticketType.state).toBe('allHeld')
+		})
+
+		it('offers a resale ticket below 売り切れ when resale is available', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Sold out with a resale ticket"
+			ticketSaleClient.listByEvent.mockResolvedValue([
+				sale({
+					price: 5000,
+					state: 'soldOut',
+					resaleOpen: true,
+					resaleAvailable: true,
+				}),
+			])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.shownSale?.ticketType.state).toBe('soldOut')
+			expect(sut.showsResale).toBe(true)
+			expect(sut.shownSale?.ticketType.resaleAvailable).toBe(true)
+			expect(sut.salePrice).toBe('5,000')
+			expect(sut.checkoutUrl).toBe(`/events/${EVENT_ID}/checkout`)
+			expect(Object.keys(sut.shownSale?.ticketType ?? {})).not.toContain(
+				'freeResaleCount',
+			)
+		})
+
+		it('shows 公式リセール without an action when nothing is listed', async () => {
+			// @spec components/infrastructure/fan/web/route/event "Sold out, nothing listed"
+			ticketSaleClient.listByEvent.mockResolvedValue([
+				sale({ state: 'soldOut', resaleOpen: true, resaleAvailable: false }),
+			])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.showsResale).toBe(true)
+			expect(sut.shownSale?.ticketType.resaleAvailable).toBe(false)
+		})
+
+		it('offers no resale when the sale ended without selling out', async () => {
+			ticketSaleClient.listByEvent.mockResolvedValue([
+				sale({ state: 'ended', resaleOpen: false }),
+			])
+			const sut = build()
+			await open(sut)
+
+			expect(sut.showsResale).toBe(false)
 		})
 
 		it('shows the upcoming general sale once the presale has ended', async () => {

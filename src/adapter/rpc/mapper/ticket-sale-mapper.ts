@@ -38,6 +38,8 @@ export function ticketTypeFrom(proto: ProtoTicketType): TicketType {
 		// sold.
 		state: STATES[proto.state] ?? 'ended',
 		lowStock: proto.lowStock,
+		resaleOpen: proto.resaleOpen,
+		resaleAvailable: proto.resaleAvailable,
 	}
 }
 

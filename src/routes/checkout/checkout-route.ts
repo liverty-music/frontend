@@ -17,6 +17,7 @@ import {
 import { referralCodeForSeries } from '../../adapter/storage/referral-storage'
 import type { Checkout } from '../../entities/checkout'
 import { isVerified } from '../../entities/identity-verification'
+import { resaleDeadline } from '../../entities/resale-listing'
 import {
 	currentSale,
 	isBuyable,
@@ -373,6 +374,21 @@ export class CheckoutRoute implements IRouteViewModel {
 		return `${formatSaleStart(this.sale.saleStartTime, this.lang)} – ${formatSaleStart(this.sale.saleEndTime, this.lang)}`
 	}
 
+	/** True when the held checkout sells 公式リセール (official resale) tickets. */
+	public get isResale(): boolean {
+		return this.checkout?.resale ?? false
+	}
+
+	/**
+	 * When official resale closes: when admission opens, 3 hours before the
+	 * event's start time, in Japan time.
+	 */
+	public get resaleDeadlineLabel(): string {
+		const start = this.event?.startTime
+		if (!start) return ''
+		return formatSaleStart(resaleDeadline(start), this.lang)
+	}
+
 	/** The card as the final confirmation names it, e.g. "VISA •••• 4242". */
 	public get cardLabel(): string {
 		if (!this.card) return ''
@@ -442,8 +458,9 @@ export class CheckoutRoute implements IRouteViewModel {
 			return
 		}
 		if (code === Code.FailedPrecondition || code === Code.InvalidArgument) {
-			// The sale may have ended, sold out or been cancelled since the page
-			// opened; otherwise the per-account limit was reached.
+			// The sale may have ended, sold out (with no resale open) or been
+			// cancelled since the page opened; otherwise the per-account limit
+			// was reached.
 			const saleId = this.sale?.id
 			const sale = await this.saleClient
 				.listByEvent(this.eventId, this.signal)
@@ -451,7 +468,7 @@ export class CheckoutRoute implements IRouteViewModel {
 				.catch(() => this.sale)
 			if (!sale) {
 				this.message = { key: 'checkout.count.cancelled' }
-			} else if (!isBuyable(sale.ticketType)) {
+			} else if (!isBuyable(sale.ticketType) && !sale.ticketType.resaleOpen) {
 				this.sale = sale
 				this.message = {
 					key:

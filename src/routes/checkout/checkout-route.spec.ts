@@ -76,6 +76,8 @@ function sale(
 			perAccountLimit: 4,
 			state: 'onSale',
 			lowStock: false,
+			resaleOpen: false,
+			resaleAvailable: false,
 			...t,
 		},
 		...o,
@@ -90,6 +92,7 @@ function held(o: Partial<Checkout> = {}): Checkout {
 		amount: 6000,
 		status: 'held',
 		holdExpireTime: new Date(Date.now() + 15 * 60 * 1000),
+		resale: false,
 		...o,
 	}
 }
@@ -504,6 +507,40 @@ describe('CheckoutRoute', () => {
 			expect(
 				ja_('checkout.confirm.placeOrder', { total: sut.yen(sut.total) }),
 			).toBe('6,000円を支払って購入する')
+		})
+
+		it('says a resale checkout sells official resale tickets until admission opens', async () => {
+			// @spec components/infrastructure/fan/web/route/checkout "Resale final confirmation"
+			mockSale.listByEvent.mockResolvedValue([
+				sale({
+					price: 5000,
+					state: 'soldOut',
+					resaleOpen: true,
+					resaleAvailable: true,
+				}),
+			])
+			mockCheckout.start.mockResolvedValue(
+				held({ ticketCount: 1, amount: 5000, resale: true }),
+			)
+			const sut = await toConfirm()
+
+			expect(sut.isResale).toBe(true)
+			expect(sut.total).toBe(5000)
+			// The event starts at 19:00, so resale closes at 16:00 that day.
+			expect(
+				ja_('checkout.confirm.resaleSalePeriod', {
+					deadline: sut.resaleDeadlineLabel,
+				}),
+			).toBe('公式リセールの受付は入場開始時（2026年11月20日(金) 16:00）まで')
+			expect(ja_('checkout.confirm.officialResaleValue', {})).toContain(
+				'券面価格',
+			)
+			expect(ja_('checkout.confirm.officialResaleValue', {})).toContain(
+				'あなたのアカウントとお名前で新しく発行',
+			)
+			expect(
+				ja_('checkout.confirm.placeOrder', { total: sut.yen(sut.total) }),
+			).toBe('5,000円を支払って購入する')
 		})
 
 		it('keeps the hold when the fan goes back to correct the name', async () => {
