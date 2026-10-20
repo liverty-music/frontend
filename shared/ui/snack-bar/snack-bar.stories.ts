@@ -243,9 +243,6 @@ export const UpdateAction = {
 		)
 		await vitestExpect
 			.element(snack)
-			.toMatchScreenshot('snack-bar-update-action', {
-				comparatorName: 'pixelmatch',
-				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
-			})
+			.toMatchScreenshot('snack-bar-update-action')
 	},
 } satisfies Story

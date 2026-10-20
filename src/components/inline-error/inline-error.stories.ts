@@ -35,10 +35,7 @@ export const Default = {
 		// Component-level visual regression against a committed baseline (D4/OQ2).
 		await vitestExpect
 			.element(canvasElement)
-			.toMatchScreenshot('inline-error-default', {
-				comparatorName: 'pixelmatch',
-				comparatorOptions: { allowedMismatchedPixelRatio: 0.001 },
-			})
+			.toMatchScreenshot('inline-error-default')
 	},
 } satisfies Story
 

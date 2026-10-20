@@ -40,6 +40,28 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
+ * The app is installed: the banner leaves the DOM and the tab order. Kept
+ * before Visible, which ends with the guide sheet's modal <dialog> open:
+ * Chromium intermittently crashes when another story renders after it.
+ */
+export const Hidden = {
+	render: () =>
+		defineAureliaStory({
+			template: '<pwa-install-banner></pwa-install-banner>',
+			register: [PwaInstallBanner, BusyOnClickCustomAttribute],
+			items: [Registration.instance(IPwaInstallService, mockPwaInstall(false))],
+		}),
+	play: async ({ canvasElement }) => {
+		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is removed from DOM when hidden"
+		await expect(canvasElement.querySelector('pwa-install-banner')).not.toBe(
+			null,
+		)
+		await expect(canvasElement.querySelector('.pwa-banner')).toBe(null)
+		await expect(within(canvasElement).queryAllByRole('button')).toHaveLength(0)
+	},
+} satisfies Story
+
+/**
  * A signed-in fan's banner after onboarding. Tagged `reduced-motion`, so it
  * also runs with motion reduced and asserts the motion that matches the
  * preference.
@@ -108,23 +130,5 @@ export const Visible = {
 		await expect(
 			sheet.getByRole('button', { name: t.guideConfirm }),
 		).toBeInTheDocument()
-	},
-} satisfies Story
-
-/** The app is installed: the banner leaves the DOM and the tab order. */
-export const Hidden = {
-	render: () =>
-		defineAureliaStory({
-			template: '<pwa-install-banner></pwa-install-banner>',
-			register: [PwaInstallBanner, BusyOnClickCustomAttribute],
-			items: [Registration.instance(IPwaInstallService, mockPwaInstall(false))],
-		}),
-	play: async ({ canvasElement }) => {
-		// @spec components/infrastructure/fan/web/global/pwa-install-banner "Banner is removed from DOM when hidden"
-		await expect(canvasElement.querySelector('pwa-install-banner')).not.toBe(
-			null,
-		)
-		await expect(canvasElement.querySelector('.pwa-banner')).toBe(null)
-		await expect(within(canvasElement).queryAllByRole('button')).toHaveLength(0)
 	},
 } satisfies Story

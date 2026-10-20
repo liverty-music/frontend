@@ -1,6 +1,7 @@
 import { setProjectAnnotations } from '@aurelia/storybook/portable-stories'
 import * as a11yAddonAnnotations from '@storybook/addon-a11y/preview'
-import { beforeAll } from 'vitest'
+import { beforeAll, beforeEach } from 'vitest'
+import { commands } from 'vitest/browser'
 import preview from './preview'
 import { sharedAnnotations } from './story-annotations'
 
@@ -21,3 +22,6 @@ const project = setProjectAnnotations([
 ])
 
 beforeAll(project.beforeAll)
+
+// Start every story with the pointer off its controls (see parkPointer).
+beforeEach(() => commands.parkPointer())

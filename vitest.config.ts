@@ -8,7 +8,11 @@ import {
 	defineProject,
 	mergeConfig,
 } from 'vitest/config'
-import { pressAndHold, releasePointer } from './.storybook/pointer-commands'
+import {
+	parkPointer,
+	pressAndHold,
+	releasePointer,
+} from './.storybook/pointer-commands'
 import viteConfig from './vite.config'
 
 // The `unit` project carries the previous single-config jsdom setup verbatim.
@@ -143,7 +147,21 @@ const storybookProjectFor = ({
 				reducedMotion ? { contextOptions: { reducedMotion: 'reduce' } } : {},
 			),
 			instances: [{ browser: 'chromium' }],
-			commands: { pressAndHold, releasePointer },
+			commands: { parkPointer, pressAndHold, releasePointer },
+			// One comparison for every visual baseline. pixelmatch's default
+			// per-pixel colour threshold (0.1) let the filled button's change
+			// from 65% to 57% lightness pass unnoticed; 0.05 catches it and
+			// still renders every baseline in the pinned container without a
+			// false mismatch.
+			expect: {
+				toMatchScreenshot: {
+					comparatorName: 'pixelmatch',
+					comparatorOptions: {
+						allowedMismatchedPixelRatio: 0.001,
+						threshold: 0.05,
+					},
+				},
+			},
 		},
 	},
 })
