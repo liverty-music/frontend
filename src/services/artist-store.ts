@@ -55,7 +55,7 @@ export class ArtistStore {
 
 	/**
 	 * Force a background refresh of the most recently requested top-artists pool
-	 * (route entry / PWA resume). No-op when nothing has been requested yet.
+	 * (PWA resume). No-op when nothing has been requested yet.
 	 */
 	public async revalidateLastTop(): Promise<Artist[] | undefined> {
 		if (!this.lastTopInput) return undefined

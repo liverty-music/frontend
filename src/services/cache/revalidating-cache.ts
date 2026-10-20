@@ -14,7 +14,7 @@
  *             hit returns the cached value immediately AND revalidates in the
  *             background; a miss fetches, stores, and returns.
  *  - `revalidate` → force a background refetch regardless of staleness (used by
- *             route-entry and PWA-resume triggers), update the cache, return fresh.
+ *             the PWA-resume trigger), update the cache, return fresh.
  *  - `invalidate` → drop the entry and fence any in-flight fetch so the next read
  *             refetches (used by mutations).
  *
@@ -25,7 +25,8 @@
  */
 /**
  * Default stale window shared by every cached read resource (24h). Long is safe
- * precisely because route entry and PWA resume force a background revalidation;
+ * precisely because PWA resume forces a background revalidation and mutations
+ * invalidate what they change;
  * kept in one place so the freshness policy is tuned once, not per store.
  */
 export const DEFAULT_STALE_TIME_MS = 24 * 60 * 60 * 1000
@@ -90,10 +91,10 @@ export class RevalidatingCache<T> {
 
 	/**
 	 * Force a background refetch for `key` regardless of staleness, update the
-	 * cache, and return the fresh value. Used by route-entry and PWA-resume
-	 * revalidation: the store paints the cached value first, then calls this to
-	 * refresh in place. Coalesced (signal-less) so a route-entry + resume in the
-	 * same tick share one RPC.
+	 * cache, and return the fresh value. Used by PWA-resume revalidation: the
+	 * store has already painted the cached value and calls this to refresh in
+	 * place. Coalesced (signal-less) so concurrent forced refreshes for the same
+	 * key share one RPC.
 	 */
 	public async revalidate(
 		key: string,

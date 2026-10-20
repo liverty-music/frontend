@@ -48,7 +48,9 @@ export class ConcertStore {
 
 	// The follower-concert list caching (was a bespoke in-store 24h TTL).
 	// listFollowed serves the cached value; route follow/unfollow/setHype
-	// invalidate through it; route entry + resume force a background revalidation.
+	// invalidate through it; PWA resume forces a background revalidation. Route
+	// entry reads the cache without forcing a refetch: concert data changes only a
+	// few times a day, so the 24h stale window plus resume keeps it fresh enough.
 	// Keyed by the `from` lower bound so switching between the today-onward default
 	// and a past date does not serve a stale set (each date window caches
 	// independently). A follow-set change clears every date-window key at once via
@@ -122,8 +124,7 @@ export class ConcertStore {
 	 * The follower-scoped concert list (authenticated) or the guest proximity
 	 * list. Authenticated reads are served stale-while-revalidate from the shared
 	 * primitive (24h stale window). A stale hit paints instantly and refreshes in
-	 * the background; route entry / PWA resume force a refresh via
-	 * {@link revalidateFollower}.
+	 * the background; PWA resume forces a refresh via {@link revalidateFollower}.
 	 */
 	public async listFollowed(
 		from?: CalendarDate,
@@ -138,9 +139,9 @@ export class ConcertStore {
 	/**
 	 * Force a background refresh of the follower-concert list (authenticated) or
 	 * the guest proximity list, regardless of staleness, and return the fresh
-	 * value. Called on Dashboard route entry and PWA resume so a long-lived
-	 * session refreshes without a manual reload. Runs as a forced background
-	 * refresh, so it takes no `AbortSignal`.
+	 * value. Called on PWA resume so a long-lived session refreshes without a
+	 * manual reload. Runs as a forced background refresh, so it takes no
+	 * `AbortSignal`.
 	 */
 	public async revalidateFollower(
 		from?: CalendarDate,

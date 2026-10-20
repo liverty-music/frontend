@@ -29,7 +29,7 @@ export class CachedResource<I, T> {
 		})
 	}
 
-	/** Force a background refresh for `input` (route entry / PWA resume). */
+	/** Force a background refresh for `input` (PWA resume). */
 	public revalidate(input: I): Promise<T> {
 		return this.cache.revalidate(this.keyOf(input), (s) => this.fetch(input, s))
 	}
