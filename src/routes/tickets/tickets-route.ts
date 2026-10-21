@@ -472,22 +472,39 @@ export class TicketsRoute {
 
 	// ── Official resale (公式リセール) ────────────────────────────────────────
 
+	// The template passes the state these read (listings, resaleByEvent,
+	// offline, resaleMessage) as arguments: a binding to a method call is
+	// re-evaluated only when its arguments change, not when the method reads
+	// another property.
+
 	/** The ticket's state as shown, with its listing taken into account. */
-	public shownState(ticket: WalletTicket): ShownTicketState {
-		return shownState(ticket, this.listings)
+	public shownState(
+		ticket: WalletTicket,
+		listings: readonly ResaleListing[] = this.listings,
+	): ShownTicketState {
+		return shownState(ticket, listings)
 	}
 
 	/** The ticket's Listed or Sold listing, if any. */
-	public listingOf(ticket: WalletTicket): ResaleListing | null {
-		return listingOf(ticket, this.listings)
+	public listingOf(
+		ticket: WalletTicket,
+		listings: readonly ResaleListing[] = this.listings,
+	): ResaleListing | null {
+		return listingOf(ticket, listings)
 	}
 
 	/** Whether the ticket can be listed: 未入場, online, and its event's resale open. */
-	public offersListing(group: WalletEventGroup, ticket: WalletTicket): boolean {
+	public offersListing(
+		group: WalletEventGroup,
+		ticket: WalletTicket,
+		listings: readonly ResaleListing[] = this.listings,
+		resaleByEvent: ReadonlyMap<string, EventResale> = this.resaleByEvent,
+		offline: boolean = this.offline,
+	): boolean {
 		return (
-			!this.offline &&
-			this.shownState(ticket) === 'not-entered' &&
-			this.resaleByEvent.get(group.eventId)?.open === true
+			!offline &&
+			shownState(ticket, listings) === 'not-entered' &&
+			resaleByEvent.get(group.eventId)?.open === true
 		)
 	}
 
@@ -496,16 +513,21 @@ export class TicketsRoute {
 	 * online, a first-come event that has not sold out, before admission opens,
 	 * with a ticket that could otherwise be listed.
 	 */
-	public explainsNoResale(group: WalletEventGroup): boolean {
-		const resale = this.resaleByEvent.get(group.eventId)
+	public explainsNoResale(
+		group: WalletEventGroup,
+		listings: readonly ResaleListing[] = this.listings,
+		resaleByEvent: ReadonlyMap<string, EventResale> = this.resaleByEvent,
+		offline: boolean = this.offline,
+	): boolean {
+		const resale = resaleByEvent.get(group.eventId)
 		const start = group.event?.startTime
 		return (
-			!this.offline &&
+			!offline &&
 			resale !== undefined &&
 			!resale.open &&
 			start !== undefined &&
 			Date.now() < resaleDeadline(start).getTime() &&
-			group.tickets.some((t) => this.shownState(t) === 'not-entered')
+			group.tickets.some((t) => shownState(t, listings) === 'not-entered')
 		)
 	}
 
@@ -602,10 +624,11 @@ export class TicketsRoute {
 	}
 
 	/** The message of the last listing call for this ticket, if any. */
-	public resaleMessageFor(ticket: WalletTicket): string | null {
-		return this.resaleMessage?.ticketId === ticket.id
-			? this.resaleMessage.key
-			: null
+	public resaleMessageFor(
+		ticket: WalletTicket,
+		message: { ticketId: string; key: string } | null = this.resaleMessage,
+	): string | null {
+		return message?.ticketId === ticket.id ? message.key : null
 	}
 
 	/** A yen amount with thousands separators, e.g. "4,500". */
@@ -637,8 +660,11 @@ export class TicketsRoute {
 			: ''
 	}
 
-	public stateLabel(ticket: WalletTicket): string {
-		return this.i18n.tr(`tickets.state.${this.shownState(ticket)}`)
+	public stateLabel(
+		ticket: WalletTicket,
+		listings: readonly ResaleListing[] = this.listings,
+	): string {
+		return this.i18n.tr(`tickets.state.${shownState(ticket, listings)}`)
 	}
 
 	public eventDate(group: WalletEventGroup): string {

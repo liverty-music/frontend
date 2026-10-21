@@ -986,6 +986,64 @@ describe('TicketsRoute', () => {
 			expect(sut.canShowCode).toBe(true)
 		})
 
+		it('renders 出品中 once a ticket is listed and 未入場 once withdrawn', async () => {
+			ticketClient.list.mockResolvedValue([protoTicket(1)])
+			saleClient.listByEvent.mockResolvedValue([firstCome()])
+			resaleClient.create.mockResolvedValue(listing(1))
+			resaleClient.withdraw.mockResolvedValue(
+				listing(1, { status: 'withdrawn' }),
+			)
+			const fixture = await createFixture(
+				'<tickets-route component.ref="route"></tickets-route>',
+				class Host {
+					public route!: TicketsRoute
+				},
+				[
+					I18nConfiguration.customize((o) => {
+						o.initOptions = {
+							lng: 'ja',
+							resources: { ja: { translation: ja } },
+						}
+					}),
+					TicketsRoute,
+					BottomSheetStub,
+					Registration.instance(ITicketRpcClient, ticketClient),
+					Registration.instance(IWalletPublicKeyRpcClient, keyClient),
+					Registration.instance(IConcertRpcClient, concertClient),
+					Registration.instance(IWalletStorage, storage),
+					Registration.singleton(ITicketWallet, TicketWallet),
+					Registration.instance(IScreenWakeLock, wakeLock),
+					Registration.instance(IUserStore, userStore),
+					Registration.instance(IResaleListingRpcClient, resaleClient),
+					Registration.instance(ITicketSaleRpcClient, saleClient),
+				],
+			).started
+			const sut = fixture.component.route
+			sut.loading()
+			await vi.waitFor(() => expect(sut.step).toBe('loaded'))
+			await tasksSettled()
+			const state = () =>
+				fixture.appHost
+					.querySelector('[data-testid="tickets-state"]')
+					?.textContent?.trim()
+			const listButton = () =>
+				fixture.appHost.querySelector('[data-testid="tickets-list-for-resale"]')
+			expect(state()).toBe('未入場')
+			expect(listButton()).not.toBeNull()
+
+			const group = sut.groups[0]
+			sut.askToList(group, group.tickets[0])
+			await sut.confirmListing()
+			await tasksSettled()
+			expect(state()).toBe('出品中')
+			expect(listButton()).toBeNull()
+
+			await sut.withdraw(group.tickets[0])
+			await tasksSettled()
+			expect(state()).toBe('未入場')
+			await fixture.stop(true)
+		})
+
 		it('keeps the listings for the offline list', async () => {
 			ticketClient.list.mockResolvedValueOnce([protoTicket(1)])
 			saleClient.listByEvent.mockResolvedValue([firstCome()])
