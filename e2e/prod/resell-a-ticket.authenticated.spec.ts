@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import {
+	type APIRequestContext,
 	type Browser,
 	type BrowserContext,
 	devices,
@@ -63,6 +64,8 @@ test.describe.configure({ mode: 'serial' })
 
 test.describe('resell a ticket (signed in)', () => {
 	let second: BrowserContext
+	/** True when an earlier run already sold the sale out to the listing fan. */
+	let reused = false
 
 	test.beforeAll(async ({ request, browser, baseURL }) => {
 		for (const state of ['.auth/storageState.prod.json', SECOND_FAN_STATE]) {
@@ -70,7 +73,9 @@ test.describe('resell a ticket (signed in)', () => {
 				throw new Error(`${state} is missing: see the spec's header`)
 			}
 		}
-		if (EVENT_ID && ORGANIZER_TOKEN) {
+		// A rerun reuses the sale an earlier run sold out to the listing fan.
+		reused = await soldOutForResale(request)
+		if (EVENT_ID && ORGANIZER_TOKEN && !reused) {
 			await openFreshSale(request, EVENT_ID, ORGANIZER_TOKEN, {
 				price: 5000,
 				quantity: 2,
@@ -96,16 +101,18 @@ test.describe('resell a ticket (signed in)', () => {
 		request,
 	}) => {
 		test.setTimeout(5 * 60 * 1000)
-		await page.goto(`/events/${EVENT_ID}`)
-		await page.getByTestId('event-buy').click()
-		await expect(page.getByTestId('checkout-count')).toBeVisible()
-		await holdTickets(page, 2)
-		await fillPersonalDetails(page)
-		await authorizeCard(page)
-		await page.getByTestId('checkout-place-order').click()
-		await expect(page.getByTestId('checkout-done')).toBeVisible({
-			timeout: 60_000,
-		})
+		if (!reused) {
+			await page.goto(`/events/${EVENT_ID}`)
+			await page.getByTestId('event-buy').click()
+			await expect(page.getByTestId('checkout-count')).toBeVisible()
+			await holdTickets(page, 2)
+			await fillPersonalDetails(page)
+			await authorizeCard(page)
+			await page.getByTestId('checkout-place-order').click()
+			await expect(page.getByTestId('checkout-done')).toBeVisible({
+				timeout: 60_000,
+			})
+		}
 
 		const type = openFirstCome(await listByEvent(request, EVENT_ID, 'fan'))
 			?.ticketTypes[0]
@@ -282,6 +289,19 @@ test.describe('resell a ticket (signed in)', () => {
 		await third.close()
 	})
 })
+
+/**
+ * True when the event's open first-come sale is already sold out with its
+ * resale open, as an earlier run of this spec leaves it.
+ */
+async function soldOutForResale(request: APIRequestContext): Promise<boolean> {
+	if (!EVENT_ID) return false
+	const type = openFirstCome(await listByEvent(request, EVENT_ID, 'fan'))
+		?.ticketTypes[0]
+	return (
+		type?.state === 'TICKET_TYPE_STATE_SOLD_OUT' && type.resaleOpen === true
+	)
+}
 
 /** A signed-in context for another fan, on the project's device. */
 async function fanContext(
