@@ -15,7 +15,10 @@ export class AppError {
 		const uuid =
 			typeof crypto?.randomUUID === 'function'
 				? crypto.randomUUID()
-				: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+				: // randomUUID needs a secure context; getRandomValues does not.
+					Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) =>
+						b.toString(16).padStart(2, '0'),
+					).join('')
 		this.id = `ERR-${uuid.slice(0, 8)}`
 		this.timestamp = new Date()
 		this.context = context

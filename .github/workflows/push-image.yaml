@@ -1057,6 +1057,8 @@ jobs:
       ]
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
+    # The dispatch uses the GitHub App token minted below, not GITHUB_TOKEN.
+    permissions: {}
     # `prod` environment so the dispatch-credential secrets resolve. On a
     # release event the ref is the `vX.Y.Z` tag, which matches the prod
     # environment's `v*` deployment-tag policy.
@@ -1125,6 +1127,9 @@ jobs:
       )
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # GITHUB_TOKEN is used only by the checkout.
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

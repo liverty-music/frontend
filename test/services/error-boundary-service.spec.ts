@@ -25,6 +25,18 @@ describe('AppError', () => {
 		expect(appError.stack).toBe('')
 		expect(appError.context).toBe('unknown')
 	})
+
+	it('should build the id from getRandomValues outside a secure context', () => {
+		// randomUUID is absent outside a secure context (plain-HTTP origins).
+		vi.stubGlobal('crypto', {
+			getRandomValues: (bytes: Uint8Array) => bytes.fill(0xab),
+		})
+		try {
+			expect(new AppError('x').id).toBe('ERR-abababab')
+		} finally {
+			vi.unstubAllGlobals()
+		}
+	})
 })
 
 describe('ErrorBoundaryService', () => {
