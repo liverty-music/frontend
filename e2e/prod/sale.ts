@@ -25,6 +25,8 @@ export interface WireTicketSale {
 		soldCount?: number
 		heldCount?: number
 		state: string
+		resaleOpen?: boolean
+		resaleAvailable?: boolean
 	}[]
 }
 
@@ -82,6 +84,16 @@ export async function listByEvent(
 	return res.ticketSales ?? []
 }
 
+/** What a fresh first-come sale offers. */
+export interface FreshSaleOptions {
+	/** Price of one ticket in yen. 3000 when not given. */
+	price?: number
+	/** Tickets offered. 5 when not given. */
+	quantity?: number
+	/** Most tickets one account may hold. 10 when not given. */
+	perAccountLimit?: number
+}
+
 /**
  * Open a fresh first-come sale on the event as the test Organizer: end the
  * event's open first-come sale now, then create one that starts now and ends
@@ -91,6 +103,7 @@ export async function openFreshSale(
 	request: APIRequestContext,
 	eventId: string,
 	organizerToken: string,
+	options: FreshSaleOptions = {},
 ): Promise<void> {
 	const organizerUrl = (method: string) =>
 		`${ORGANIZER_API_BASE}/liverty_music.rpc.organizer.ticket_sale.v1.TicketSaleService/${method}`
@@ -122,9 +135,9 @@ export async function openFreshSale(
 			ticketTypes: [
 				{
 					eventId: { value: eventId },
-					price: { value: '3000' },
-					quantity: 5,
-					perAccountLimit: 10,
+					price: { value: String(options.price ?? 3000) },
+					quantity: options.quantity ?? 5,
+					perAccountLimit: options.perAccountLimit ?? 10,
 				},
 			],
 		},
