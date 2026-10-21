@@ -148,15 +148,17 @@ Authenticated E2E setup (test user, `npm run auth:capture:password`, expired sto
 
 ## npm `overrides` — exit conditions, not neglect
 
-`package.json` carries two `overrides`. The first is a live security pin,
+`package.json` carries three `overrides`. The first is a live security pin,
 resolved by REMOVAL rather than by upgrade — so it is not a stale entry somebody
-forgot, and it should not be "fixed" by bumping it. The second, `playwright`, is
-a version binding and is the one entry that moves on upgrade.
+forgot, and it should not be "fixed" by bumping it. The other two, `playwright`
+and `playwright-core`, are version bindings and are the entries that move on
+upgrade.
 
 | entry | why | exit condition |
 |---|---|---|
 | `dompurify: "^3.4.13"` | forces the advisory-free version under `posthog-js` | `posthog-js` widens its range → delete the override |
 | `playwright: "1.63.0"` | `@vitest/browser-playwright` peers `playwright: *`, so a lock regeneration resolves the newest release while the CI container ships only the browsers of `@playwright/test`'s version | none — it always equals `@playwright/test`; Renovate moves both in the `playwright` group |
+| `playwright-core: "1.63.0"` | `@axe-core/playwright` asks for `playwright-core >= 1.0.0`, so a lock refresh hoists the newest core while `playwright` keeps its pinned one nested; the two `Page` types then differ and `tsc -p e2e` fails (frontend#779) | none — it always equals `@playwright/test`; it is in the same Renovate `playwright` group |
 
 **Keeping `posthog-js` itself current is the root-cause remedy.** When it widens
 its ranges, delete the override and let normal resolution take over; do not

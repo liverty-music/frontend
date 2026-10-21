@@ -43,10 +43,11 @@
       "enabled": false
     },
     {
-      "description": "NEVER automerge @playwright/test. A version bump changes Chromium's rendering and therefore invalidates every committed toMatchScreenshot baseline, which Renovate cannot regenerate — CI goes red and stays red until a human regenerates them inside the pinned container. The package version, the CI container tag and the tag in the documented regeneration command must also move together; see the custom manager binding them.",
+      "description": "NEVER automerge @playwright/test. A version bump changes Chromium's rendering and therefore invalidates every committed toMatchScreenshot baseline, which Renovate cannot regenerate — CI goes red and stays red until a human regenerates them inside the pinned container. The package version, the CI container tag and the tag in the documented regeneration command must also move together; see the custom manager binding them. `playwright-core` is in the group because it is pinned by an npm override of its own: `@axe-core/playwright` asks for `playwright-core >= 1.0.0`, so without that pin a lock refresh hoists the newest core while `playwright` keeps its own nested copy, and the two `Page` types stop matching (frontend#779 failed typecheck that way).",
       "matchPackageNames": [
         "@playwright/test",
-        "playwright"
+        "playwright",
+        "playwright-core"
       ],
       "automerge": false,
       "groupName": "playwright"
