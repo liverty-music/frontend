@@ -74,7 +74,7 @@ test.describe('resell a ticket (signed in)', () => {
 			await openFreshSale(request, EVENT_ID, ORGANIZER_TOKEN, {
 				price: 5000,
 				quantity: 2,
-				perAccountLimit: 4,
+				perAccountLimit: 2,
 			})
 		}
 		second = await fanContext(browser, baseURL, SECOND_FAN_STATE)
