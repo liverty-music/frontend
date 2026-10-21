@@ -1,10 +1,17 @@
 name: CI
 
+# Pull requests are the gate. `main` is not re-checked on every push: from
+# 2026-08-21 to 2026-10-21 those runs found no merge that broke `main`, and
+# nobody was told when one failed (cloud-provisioning#666). A daily run checks
+# `main` with every job and opens or updates an Issue labelled `ci` when it
+# fails. Path-filtered jobs are skipped rather than replaced by `*-skip`
+# placeholders: only `CI Success` is required, and `alls-green` treats the
+# jobs in `allowed-skips` as passing when skipped.
 on:
-  push:
-    branches:
-      - main
   pull_request:
+  schedule:
+    - cron: "0 19 * * *" # 04:00 JST
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -17,12 +24,16 @@ concurrency:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    # Path filters apply to pull requests only. A scheduled or manual run checks
+    # the whole of `main`, so every output is true for it.
     outputs:
-      src: ${{ steps.filter.outputs.src }}
-      storybook: ${{ steps.filter.outputs.storybook }}
+      src: ${{ github.event_name != 'pull_request' || steps.filter.outputs.src == 'true' }}
+      storybook: ${{ github.event_name != 'pull_request' || steps.filter.outputs.storybook == 'true' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: github.event_name == 'pull_request'
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        if: github.event_name == 'pull_request'
         id: filter
         with:
           filters: |
@@ -103,14 +114,6 @@ jobs:
       - name: Build and check the reception app
         run: make verify-reception-bundle
 
-  lint-skip:
-    needs: changes
-    if: needs.changes.outputs.src == 'false'
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No relevant changes, skipping lint"
-
   test:
     needs: changes
     if: needs.changes.outputs.src == 'true'
@@ -150,14 +153,6 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  test-skip:
-    needs: changes
-    if: needs.changes.outputs.src == 'false'
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No relevant changes, skipping tests"
-
   security:
     needs: changes
     if: needs.changes.outputs.src == 'true'
@@ -179,14 +174,6 @@ jobs:
 
       - name: Run security audit
         run: npm audit --omit=dev --audit-level=moderate
-
-  security-skip:
-    needs: changes
-    if: needs.changes.outputs.src == 'false'
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No relevant changes, skipping security audit"
 
   smoke:
     needs: changes
@@ -223,14 +210,6 @@ jobs:
 
       - name: Run onboarding tests
         run: npx playwright test --project=onboarding
-
-  smoke-skip:
-    needs: changes
-    if: needs.changes.outputs.src == 'false'
-    name: Smoke
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No relevant changes, skipping smoke tests"
 
   e2e:
     needs: changes
@@ -290,14 +269,6 @@ jobs:
           path: test-results/
           retention-days: 7
 
-  e2e-skip:
-    needs: changes
-    if: needs.changes.outputs.src == 'false'
-    name: E2E
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No relevant changes, skipping E2E tests"
-
   prod-build:
     needs: changes
     if: needs.changes.outputs.src == 'true'
@@ -346,14 +317,6 @@ jobs:
           path: test-results/prod-build/
           retention-days: 7
 
-  prod-build-skip:
-    needs: changes
-    if: needs.changes.outputs.src == 'false'
-    name: Production Build Checks
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No relevant changes, skipping production-build checks"
-
   storybook-test:
     needs: changes
     if: needs.changes.outputs.storybook == 'true'
@@ -396,21 +359,36 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  storybook-test-skip:
-    needs: changes
-    if: needs.changes.outputs.storybook == 'false'
-    name: Storybook Component Tests
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No component/story/config changes, skipping component tests"
-
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [changes, lint, lint-skip, test, test-skip, security, security-skip, smoke, smoke-skip, e2e, e2e-skip, prod-build, prod-build-skip, storybook-test, storybook-test-skip]
+    needs: [changes, lint, test, security, smoke, e2e, prod-build, storybook-test]
     if: always()
     steps:
       - uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # release/v1
         with:
-          allowed-skips: lint, lint-skip, test, test-skip, security, security-skip, smoke, smoke-skip, e2e, e2e-skip, prod-build, prod-build-skip, storybook-test, storybook-test-skip
+          allowed-skips: lint, test, security, smoke, e2e, prod-build, storybook-test
           jobs: ${{ toJSON(needs) }}
+
+  report-main-failure:
+    name: Report main failure
+    needs: ci-success
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the main CI failure Issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="CI failing on main"
+          body="The daily CI run on \`main\` (${GITHUB_SHA::8}) failed: ${RUN_URL}"
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --label ci --state open \
+            --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --label ci --label bug --title "$title" --body "$body"
+          fi
