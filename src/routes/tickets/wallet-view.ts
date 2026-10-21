@@ -2,6 +2,7 @@ import type { Ticket } from '@buf/liverty-music_schema.bufbuild_es/liverty_music
 import { TicketStatus } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/ticket_pb.js'
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { MAX_TICKETS_PER_CODE } from '../../../shared/lib/admission-code/admission-code'
+import type { ResaleListing } from '../../entities/resale-listing'
 import { type EventPageEvent, todayInJapan } from '../event/event-page'
 
 /**
@@ -42,10 +43,59 @@ export interface WalletPersonalDetails {
 	readonly phoneNumber: string
 }
 
+/**
+ * A ticket's state as the screen shows it, with its official resale listing
+ * taken into account:
+ * - `listed` (出品中): not yet entered and offered for resale;
+ * - `resold` (リセール済み): voided because its listing sold.
+ * A listing that expired unsold leaves its ticket `not-entered`.
+ */
+export type ShownTicketState = TicketState | 'listed' | 'resold'
+
+/** An event's first-come official resale, as the tickets screen reads it. */
+export interface EventResale {
+	/** True while resale is open: the TicketType sold out, admission not open yet. */
+	readonly open: boolean
+	/** The face value a listing would have, in yen. */
+	readonly price: number
+}
+
+/**
+ * The ticket's Listed or Sold listing among the fan's listings (newest
+ * first), or null. Withdrawn, cancelled and expired listings do not count.
+ */
+export function listingOf(
+	ticket: WalletTicket,
+	listings: readonly ResaleListing[],
+): ResaleListing | null {
+	return (
+		listings.find(
+			(l) =>
+				l.ticketId === ticket.id &&
+				(l.status === 'listed' || l.status === 'sold'),
+		) ?? null
+	)
+}
+
+/** The ticket's state as shown, given the fan's listings. */
+export function shownState(
+	ticket: WalletTicket,
+	listings: readonly ResaleListing[],
+): ShownTicketState {
+	const listing = listingOf(ticket, listings)
+	if (ticket.state === 'void' && listing?.status === 'sold') return 'resold'
+	if (ticket.state === 'not-entered' && listing?.status === 'listed') {
+		return 'listed'
+	}
+	return ticket.state
+}
+
 /** The tickets list as last loaded, kept on the device for offline use. */
 export interface WalletSnapshot {
 	readonly savedAt: Date
 	readonly groups: readonly WalletEventGroup[]
+	/** The fan's resale listings when the list was saved; absent in older saves. */
+	readonly listings?: readonly ResaleListing[]
 	/** The fan's personal details when the list was saved; absent in older saves. */
 	readonly personalDetails?: WalletPersonalDetails
 }

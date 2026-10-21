@@ -1,9 +1,17 @@
 import { I18N } from '@aurelia/i18n'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
 import { admissionQrDataUrl } from '../../../shared/lib/admission-code/qr-svg'
 import { IScreenWakeLock } from '../../adapter/browser/screen-wake-lock'
 import { IConcertRpcClient } from '../../adapter/rpc/client/concert-client'
+import { IResaleListingRpcClient } from '../../adapter/rpc/client/resale-listing-client'
 import { ITicketRpcClient } from '../../adapter/rpc/client/ticket-client'
+import { ITicketSaleRpcClient } from '../../adapter/rpc/client/ticket-sale-client'
+import {
+	RESALE_FEE_PERCENT,
+	type ResaleListing,
+	resaleDeadline,
+} from '../../entities/resale-listing'
 import { toDomesticDisplay } from '../../lib/to-e164'
 import {
 	type DeviceReadiness,
@@ -15,12 +23,17 @@ import {
 	eventFromConcert,
 	formatEventDate,
 	formatEventTime,
+	formatSaleStart,
 } from '../event/event-page'
 import { AdmissionCodeSession } from './admission-code-session'
 import {
+	type EventResale,
 	enterableTickets,
 	groupByEvent,
+	listingOf,
 	presentedTickets,
+	type ShownTicketState,
+	shownState,
 	type WalletEventGroup,
 	type WalletPersonalDetails,
 	type WalletSnapshot,
@@ -73,6 +86,8 @@ export class TicketsRoute {
 	private readonly wallet = resolve(ITicketWallet)
 	private readonly wakeLock = resolve(IScreenWakeLock)
 	private readonly userStore = resolve(IUserStore)
+	private readonly resaleClient = resolve(IResaleListingRpcClient)
+	private readonly saleClient = resolve(ITicketSaleRpcClient)
 
 	// ── List state ───────────────────────────────────────────────────────────
 	public step: TicketsViewStep = 'loading'
@@ -83,6 +98,19 @@ export class TicketsRoute {
 	public savedAt: Date | null = null
 	/** The personal details saved with the list last shown from the device. */
 	private savedPersonalDetails: WalletPersonalDetails | null = null
+
+	// ── Official resale (公式リセール) ────────────────────────────────────────
+	/** The fan's listings, newest first (saved with the list for offline use). */
+	public listings: ResaleListing[] = []
+	/** Each event's first-come resale, read online; absent offline. */
+	public resaleByEvent = new Map<string, EventResale>()
+	/** The ticket whose listing is being confirmed. */
+	public listingTicket: WalletTicket | null = null
+	public listingGroup: WalletEventGroup | null = null
+	/** A listing call is in flight. */
+	public resaleBusy = false
+	/** What the last listing call said, keyed to its ticket. */
+	public resaleMessage: { ticketId: string; key: string } | null = null
 
 	// ── Device state ─────────────────────────────────────────────────────────
 	public device: DeviceState = 'checking'
@@ -132,7 +160,11 @@ export class TicketsRoute {
 
 		let live: WalletEventGroup[]
 		try {
-			live = await this.readLive(saved, signal)
+			const [groups] = await Promise.all([
+				this.readLive(saved, signal),
+				this.readListings(signal),
+			])
+			live = groups
 		} catch (err) {
 			if (signal.aborted) return
 			this.logger.warn('Tickets read failed', { error: err })
@@ -148,6 +180,8 @@ export class TicketsRoute {
 		}
 		if (signal.aborted) return
 		this.groups = live
+		await this.readResale(live, signal)
+		if (signal.aborted) return
 		this.offline = false
 		this.savedAt = null
 		this.savedPersonalDetails = saved?.personalDetails ?? null
@@ -192,8 +226,53 @@ export class TicketsRoute {
 		return groupByEvent(tickets, events)
 	}
 
+	/** The fan's listings; on a failed read the last ones are kept. */
+	private async readListings(signal: AbortSignal): Promise<void> {
+		try {
+			this.listings = await this.resaleClient.list(signal)
+		} catch (err) {
+			if (!signal.aborted) {
+				this.logger.warn('Resale listings read failed', { error: err })
+			}
+		}
+	}
+
+	/**
+	 * Each event's first-come resale: whether it is open and the price a
+	 * listing would have. An event whose sales cannot be read offers nothing.
+	 */
+	private async readResale(
+		groups: readonly WalletEventGroup[],
+		signal: AbortSignal,
+	): Promise<void> {
+		const byEvent = new Map<string, EventResale>()
+		await Promise.all(
+			groups.map(async (g) => {
+				try {
+					const sales = await this.saleClient.listByEvent(g.eventId, signal)
+					const firstCome = sales.filter((s) => s.method === 'firstCome')
+					if (firstCome.length === 0) return
+					const open = firstCome.find((s) => s.ticketType.resaleOpen)
+					byEvent.set(g.eventId, {
+						open: open !== undefined,
+						price: (open ?? firstCome[0]).ticketType.price,
+					})
+				} catch (err) {
+					if (!signal.aborted) {
+						this.logger.warn('Sales read failed', {
+							eventId: g.eventId,
+							error: err,
+						})
+					}
+				}
+			}),
+		)
+		this.resaleByEvent = byEvent
+	}
+
 	private showSnapshot(saved: WalletSnapshot): void {
 		this.groups = [...saved.groups]
+		this.listings = [...(saved.listings ?? [])]
 		this.offline = true
 		this.savedAt = saved.savedAt
 		this.savedPersonalDetails = saved?.personalDetails ?? null
@@ -219,6 +298,7 @@ export class TicketsRoute {
 		void this.wallet.saveSnapshot<WalletSnapshot>({
 			savedAt: new Date(),
 			groups: this.groups,
+			listings: this.listings,
 			...(personalDetails ? { personalDetails } : {}),
 		})
 	}
@@ -390,6 +470,159 @@ export class TicketsRoute {
 		}
 	}
 
+	// ── Official resale (公式リセール) ────────────────────────────────────────
+
+	/** The ticket's state as shown, with its listing taken into account. */
+	public shownState(ticket: WalletTicket): ShownTicketState {
+		return shownState(ticket, this.listings)
+	}
+
+	/** The ticket's Listed or Sold listing, if any. */
+	public listingOf(ticket: WalletTicket): ResaleListing | null {
+		return listingOf(ticket, this.listings)
+	}
+
+	/** Whether the ticket can be listed: 未入場, online, and its event's resale open. */
+	public offersListing(group: WalletEventGroup, ticket: WalletTicket): boolean {
+		return (
+			!this.offline &&
+			this.shownState(ticket) === 'not-entered' &&
+			this.resaleByEvent.get(group.eventId)?.open === true
+		)
+	}
+
+	/**
+	 * Whether to say that official resale opens only when the event sells out:
+	 * online, a first-come event that has not sold out, before admission opens,
+	 * with a ticket that could otherwise be listed.
+	 */
+	public explainsNoResale(group: WalletEventGroup): boolean {
+		const resale = this.resaleByEvent.get(group.eventId)
+		const start = group.event?.startTime
+		return (
+			!this.offline &&
+			resale !== undefined &&
+			!resale.open &&
+			start !== undefined &&
+			Date.now() < resaleDeadline(start).getTime() &&
+			group.tickets.some((t) => this.shownState(t) === 'not-entered')
+		)
+	}
+
+	/** The price a listing of the group's ticket would have, in yen. */
+	public listingPrice(group: WalletEventGroup | null): number {
+		return group ? (this.resaleByEvent.get(group.eventId)?.price ?? 0) : 0
+	}
+
+	/** The resale fee of a price: 10%, rounded down to the yen. */
+	public listingFee(price: number): number {
+		return Math.floor((price * RESALE_FEE_PERCENT) / 100)
+	}
+
+	/** When listing closes for the group's event: when admission opens. */
+	public listingDeadlineLabel(group: WalletEventGroup | null): string {
+		const start = group?.event?.startTime
+		return start
+			? formatSaleStart(resaleDeadline(start), this.userStore.currentLanguage)
+			: ''
+	}
+
+	/** Open the confirmation before listing one ticket. */
+	public askToList(group: WalletEventGroup, ticket: WalletTicket): void {
+		if (!this.offersListing(group, ticket)) return
+		this.resaleMessage = null
+		this.listingGroup = group
+		this.listingTicket = ticket
+	}
+
+	public cancelListing(): void {
+		this.listingGroup = null
+		this.listingTicket = null
+	}
+
+	public get isListingOpen(): boolean {
+		return this.listingTicket !== null
+	}
+
+	/** The fan confirmed: list that one ticket. */
+	public async confirmListing(): Promise<void> {
+		const ticket = this.listingTicket
+		if (!ticket || this.resaleBusy) return
+		this.resaleBusy = true
+		try {
+			const listing = await this.resaleClient.create(
+				ticket.id,
+				this.abortController?.signal,
+			)
+			this.listings = [listing, ...this.listings]
+			this.saveSnapshot()
+			this.cancelListing()
+		} catch (err) {
+			this.logger.warn('Listing failed', { ticketId: ticket.id, error: err })
+			this.resaleMessage = {
+				ticketId: ticket.id,
+				key:
+					ConnectError.from(err).code === Code.FailedPrecondition
+						? 'tickets.resale.cannotList'
+						: 'tickets.resale.failed',
+			}
+			this.cancelListing()
+		} finally {
+			this.resaleBusy = false
+		}
+	}
+
+	/** Take back the ticket's listing. */
+	public async withdraw(ticket: WalletTicket): Promise<void> {
+		const listing = this.listingOf(ticket)
+		if (!listing || listing.status !== 'listed' || this.resaleBusy) return
+		this.resaleBusy = true
+		this.resaleMessage = null
+		try {
+			const withdrawn = await this.resaleClient.withdraw(
+				listing.id,
+				this.abortController?.signal,
+			)
+			this.listings = this.listings.map((l) =>
+				l.id === withdrawn.id ? withdrawn : l,
+			)
+			this.saveSnapshot()
+		} catch (err) {
+			this.logger.warn('Withdraw failed', { listingId: listing.id, error: err })
+			this.resaleMessage = {
+				ticketId: ticket.id,
+				key:
+					ConnectError.from(err).code === Code.FailedPrecondition
+						? 'tickets.resale.beingBought'
+						: 'tickets.resale.failed',
+			}
+		} finally {
+			this.resaleBusy = false
+		}
+	}
+
+	/** The message of the last listing call for this ticket, if any. */
+	public resaleMessageFor(ticket: WalletTicket): string | null {
+		return this.resaleMessage?.ticketId === ticket.id
+			? this.resaleMessage.key
+			: null
+	}
+
+	/** A yen amount with thousands separators, e.g. "4,500". */
+	public yen(amount: number): string {
+		return amount.toLocaleString('ja-JP')
+	}
+
+	/** A date as month/day in Japan time, e.g. "11/14". */
+	public day(value: Date | undefined): string {
+		if (!value) return ''
+		return new Intl.DateTimeFormat(this.userStore.currentLanguage, {
+			timeZone: 'Asia/Tokyo',
+			month: 'numeric',
+			day: 'numeric',
+		}).format(value)
+	}
+
 	// ── Labels ───────────────────────────────────────────────────────────────
 
 	/** The ticket's 1-based position within its event, as shown on its card. */
@@ -405,7 +638,7 @@ export class TicketsRoute {
 	}
 
 	public stateLabel(ticket: WalletTicket): string {
-		return this.i18n.tr(`tickets.state.${ticket.state}`)
+		return this.i18n.tr(`tickets.state.${this.shownState(ticket)}`)
 	}
 
 	public eventDate(group: WalletEventGroup): string {

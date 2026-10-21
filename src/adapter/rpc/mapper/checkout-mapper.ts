@@ -27,5 +27,6 @@ export function checkoutFrom(proto: ProtoCheckout): Checkout {
 		captureTime: proto.captureTime
 			? timestampDate(proto.captureTime)
 			: undefined,
+		resale: proto.resale,
 	}
 }

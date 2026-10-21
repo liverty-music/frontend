@@ -155,6 +155,17 @@
               <p class="event-sale-status" data-testid="event-sale-ended" t="eventPage.tickets.sale.ended"></p>
             </template>
           </template>
+          <!-- Official resale below a sold-out or ended state; never a count -->
+          <div if.bind="showsResale" class="[ event-resale ] [ flow ]" data-testid="event-resale">
+            <p class="event-sale-name" t="eventPage.tickets.resale.title"></p>
+            <template if.bind="shownSale.ticketType.resaleAvailable">
+              <p class="event-sale-price" data-testid="event-resale-price" t="eventPage.tickets.sale.price" t-params.bind="{ price: salePrice }"></p>
+              <p data-testid="event-resale-face-value" t="eventPage.tickets.resale.faceValue"></p>
+              <a if.bind="!isGuest" href.bind="checkoutUrl" class="[ button ] [ pressable ]" data-testid="event-resale-buy" t="eventPage.tickets.resale.buy"></a>
+              <button else type="button" class="[ button ] [ pressable ]" click.trigger="signUp()" data-testid="event-resale-buy" t="eventPage.tickets.resale.buy"></button>
+            </template>
+            <p else data-testid="event-resale-waiting" t="eventPage.tickets.resale.waiting"></p>
+          </div>
         </template>
         <template else>
           <p class="event-sale-status" data-testid="event-sale-window" t="eventPage.tickets.lottery.window" t-params.bind="{ start: saleStartLabel, end: saleEndLabel }"></p>

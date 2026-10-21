@@ -184,8 +184,15 @@
 			background: var(--color-surface-raised);
 		}
 
-		.event-sale {
+		.event-sale,
+		.event-resale {
 			--flow-space: var(--space-2xs);
+		}
+
+		.event-resale {
+			margin-block-start: var(--space-s);
+			padding-block-start: var(--space-s);
+			border-block-start: 1px solid var(--color-border-subtle);
 		}
 
 		.event-sale-name {

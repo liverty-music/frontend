@@ -63,6 +63,8 @@ function presale(o: Partial<TicketSale> = {}): TicketSale {
 			perAccountLimit: 4,
 			state: 'ended',
 			lowStock: false,
+			resaleOpen: false,
+			resaleAvailable: false,
 		},
 		...o,
 	}

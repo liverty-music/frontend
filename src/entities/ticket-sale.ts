@@ -42,6 +42,13 @@ export interface TicketType {
 	readonly state: TicketTypeState
 	/** True when a first-come TicketType is on sale with few tickets left (残りわずか). */
 	readonly lowStock: boolean
+	/**
+	 * True when official resale (公式リセール) of a first-come TicketType is
+	 * open: it sold out and admission has not opened yet.
+	 */
+	readonly resaleOpen: boolean
+	/** True when resale is open and a listed ticket is free to buy. Never a count. */
+	readonly resaleAvailable: boolean
 }
 
 /**
@@ -89,7 +96,18 @@ export function currentSale(
 	return ended[0] ?? null
 }
 
-/** True while a fan can start a checkout on the first-come TicketType. */
+/** True while a fan can start a checkout on the first-come TicketType's stock. */
 export function isBuyable(ticketType: TicketType): boolean {
 	return ticketType.state === 'onSale' || ticketType.state === 'allHeld'
+}
+
+/**
+ * True when the event page shows the 公式リセール block: the first-come
+ * TicketType is sold out or its sale ended, and its resale is open.
+ */
+export function showsResale(ticketType: TicketType): boolean {
+	return (
+		(ticketType.state === 'soldOut' || ticketType.state === 'ended') &&
+		ticketType.resaleOpen
+	)
 }
