@@ -100,6 +100,20 @@ export default defineConfig({
         baseURL: 'http://localhost:9000',
       },
     },
+    // The organizer members' guide and the console's 使い方 on the real WebKit
+    // engine, iPhone 14 viewport: the guide spec asks for the browsers the
+    // console supports, Safari on iOS among them, and `functional` runs only
+    // Chromium. Only the phone checks run here.
+    {
+      name: 'webkit-organizer-guide',
+      testMatch: 'e2e/functional/organizer-guide.spec.ts',
+      grep: /"Opened on a phone"|"Help on a phone"/,
+      use: {
+        ...devices['iPhone 14'],
+        browserName: 'webkit',
+        baseURL: 'http://localhost:9000',
+      },
+    },
     // Layer 3: E2E Functional — onboarding flows (Pixel 7 mobile)
     {
       name: 'onboarding',
