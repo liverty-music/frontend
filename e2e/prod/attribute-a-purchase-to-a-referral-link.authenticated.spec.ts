@@ -29,7 +29,7 @@ import { openFreshSale } from './sale'
  * Run it in the pinned Playwright container with the host network:
  *   docker run --rm --network host -e E2E_SALE_EVENT_ID=… \
  *     -e E2E_ORGANIZER_TOKEN -v "$PWD":/work -w /work \
- *     mcr.microsoft.com/playwright:v1.63.0-noble \
+ *     mcr.microsoft.com/playwright:v1.64.1-noble \
  *     npx playwright test -c playwright.prod.config.mjs attribute-a-purchase
  */
 const SALE_EVENT_ID = process.env.E2E_SALE_EVENT_ID ?? ''

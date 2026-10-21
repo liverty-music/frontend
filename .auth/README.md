@@ -131,6 +131,6 @@ E2E_EVENT_PUBLIC_ID=… E2E_EVENT_UPCOMING_ID=… E2E_EVENT_UNLISTED_ID=… E2E_
   npm run test:e2e:prod               # playwright.prod.config.mjs: prod-guest + prod-authenticated
 ```
 
-No dev server is needed. On a host without Chromium's system libraries, run either command inside the pinned image: `docker run --rm --user $(id -u):$(id -g) -v "$PWD":/work -w /work -e HOME=/tmp mcr.microsoft.com/playwright:v1.63.0-noble <command>`.
+No dev server is needed. On a host without Chromium's system libraries, run either command inside the pinned image: `docker run --rm --user $(id -u):$(id -g) -v "$PWD":/work -w /work -e HOME=/tmp mcr.microsoft.com/playwright:v1.64.1-noble <command>`.
 
 **Do not rotate or reset the prod test user's password casually.** A `user.human.password.changed` event is what exposed the Zitadel trigger-worker deadlock on 2026-10-08 (cloud-provisioning `docs/runbooks/zitadel-hang.md`).

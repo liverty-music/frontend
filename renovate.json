@@ -79,11 +79,13 @@
   ],
   "customManagers": [
     {
-      "description": "Bind the two mcr.microsoft.com/playwright image tags to @playwright/test. This is the ONLY custom manager in this project, and it exists because the third location is prose: frontend/AGENTS.md documents the baseline-regeneration command with the same tag, and no tool derives a version from a contributor document. Go and Node duplication was removed by deriving from go.mod / .nvmrc instead — see design D4. If a way to derive this one appears, delete this manager rather than maintaining it. A mismatch here is not cosmetic: a human following AGENTS.md would regenerate committed visual baselines against a different renderer than the one CI validates them with, silently poisoning the PNGs.",
+      "description": "Bind every mcr.microsoft.com/playwright image tag to @playwright/test. This is the ONLY custom manager in this project, and it exists because the other locations are prose: the `visual-baselines` skill (.claude/skills/visual-baselines/SKILL.md) documents the baseline-regeneration command with the same tag, the e2e/prod specs document their `docker run` command in a header comment, and .auth/README.md documents it for capturing a signed-in storageState; no tool derives a version from a contributor document. Go and Node duplication was removed by deriving from go.mod / .nvmrc instead — see design D4. If a way to derive this one appears, delete this manager rather than maintaining it. A mismatch here is not cosmetic: a human following the skill would regenerate committed visual baselines against a different renderer than the one CI validates them with, silently poisoning the PNGs.",
       "customType": "regex",
       "managerFilePatterns": [
         "/^\\.github/workflows/ci\\.yaml$/",
-        "/^AGENTS\\.md$/"
+        "/^\\.claude/skills/visual-baselines/SKILL\\.md$/",
+        "/^e2e/prod/.+\\.spec\\.ts$/",
+        "/^\\.auth/README\\.md$/"
       ],
       "matchStrings": [
         "mcr\\.microsoft\\.com/playwright:v(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)-noble"
