@@ -5,7 +5,7 @@ import { TicketTypeState } from '@buf/liverty-music_schema.bufbuild_es/liverty_m
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
-import { businessDetailsComplete } from '../event/event-page'
+import { type SaleBlock, saleBlocksOf } from '../event/event-page'
 import { IConsoleLanguage } from '../i18n/console-language'
 import type { FieldError } from '../i18n/field-error'
 import { sameJstDateTime, toJstDateTime } from '../i18n/format'
@@ -15,8 +15,6 @@ import {
 	eventStart,
 	findConcert,
 	findEvent,
-	isCancelled,
-	isPublished,
 	paths,
 	venueName,
 } from '../model/concert-model'
@@ -47,12 +45,6 @@ import {
 	toCreateInput,
 	validateTicketSaleForm,
 } from './ticket-sale-form'
-
-export type SaleBlock =
-	| 'cancelled'
-	| 'notPublished'
-	| 'noStartTime'
-	| 'businessDetails'
 
 const STATE_KEYS: Record<number, string> = {
 	[TicketTypeState.NOT_YET_ON_SALE]: 'sale.firstComeState.notYetOnSale',
@@ -303,12 +295,7 @@ export class TicketSaleEditorRoute {
 				{ day: eventDay(this.event), href: this.salesHref },
 				{ labelKey: 'firstComeEditor.crumb' },
 			])
-			const blocks: SaleBlock[] = []
-			if (isCancelled(this.event)) blocks.push('cancelled')
-			else if (!isPublished(this.event)) blocks.push('notPublished')
-			if (!this.start) blocks.push('noStartTime')
-			if (!businessDetailsComplete(organizer)) blocks.push('businessDetails')
-			this.blocks = blocks
+			this.blocks = saleBlocksOf(this.event, organizer)
 			this.sales = sales.ticketSales
 			this.applySale(
 				firstComeSaleOf(this.sales, this.eventId, this.clock.now()),

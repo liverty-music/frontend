@@ -271,7 +271,7 @@ jobs:
       # on the grounds that they cover it. They must therefore run here, or
       # that spec has no CI coverage at all.
       - name: Run E2E tests
-        run: npx playwright test --project=functional --project=webkit-repro --project=chromium-control --project=webkit-shell
+        run: npx playwright test --project=functional --project=webkit-repro --project=chromium-control --project=webkit-shell --project=webkit-organizer-guide
 
       # PWA / service-worker specs run from their own config against a
       # production build (`vite preview`). vite-plugin-pwa disables the service
