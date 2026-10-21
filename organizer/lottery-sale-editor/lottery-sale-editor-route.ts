@@ -3,6 +3,7 @@ import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/
 import { timestampDate } from '@bufbuild/protobuf/wkt'
 import { Code, ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
+import { type SaleBlock, saleBlocksOf } from '../event/event-page'
 import { emptyJstDateTime } from '../i18n/format'
 import {
 	concertTitle,
@@ -14,6 +15,7 @@ import {
 	venueName,
 } from '../model/concert-model'
 import { IClock } from '../services/clock'
+import { IOrganizerClient } from '../services/organizer-client'
 import { findOverlappingSale } from '../services/sale-window'
 import { ISeriesClient } from '../services/series-client'
 import {
@@ -59,6 +61,9 @@ export function overlapError(sale: TicketSale): FieldError {
  * sale editor route: the window in Japan time, the
  * price, the quantity and the per-account limit. Opened from the event's Sales
  * tab and back there after saving or leaving; unsaved changes are guarded.
+ * While the event is cancelled or unpublished, has no start time, or the
+ * Organizer's business details are incomplete, it shows why instead of the
+ * form, as the first-come editor does.
  *
  * A change saves the window with SetWindow and the TicketType with Update,
  * skipping a call whose values did not change. When the second call fails the
@@ -68,6 +73,7 @@ export class LotterySaleEditorRoute {
 	private readonly ticketSales = resolve(ITicketSaleClient)
 	private readonly ticketTypes = resolve(ITicketTypeClient)
 	private readonly series = resolve(ISeriesClient)
+	private readonly organizers = resolve(IOrganizerClient)
 	private readonly router = resolve(IRouter)
 	private readonly context = resolve(IRouteContext)
 	private readonly breadcrumbs = resolve(IBreadcrumbs)
@@ -81,7 +87,7 @@ export class LotterySaleEditorRoute {
 		| 'loading'
 		| 'ready'
 		| 'notFound'
-		| 'noStartTime'
+		| 'blocked'
 		| 'opened'
 		| 'error' = 'loading'
 	public seriesId = ''
@@ -89,6 +95,8 @@ export class LotterySaleEditorRoute {
 	public saleId = ''
 	public title = ''
 	public event: Event | undefined
+	/** Why no sale can be saved yet, shown instead of the form. */
+	public blocks: SaleBlock[] = []
 	public model: LotterySaleFormModel = emptyFormModel(new Date())
 	public submitted = false
 	/**
@@ -206,8 +214,9 @@ export class LotterySaleEditorRoute {
 	private async load(): Promise<void> {
 		this.state = 'loading'
 		try {
-			const [concerts, sales] = await Promise.all([
+			const [concerts, organizer, sales] = await Promise.all([
 				this.series.list(this.abort.signal),
+				this.organizers.get(this.abort.signal),
 				this.ticketSales.listByEvent(this.eventId, this.abort.signal),
 			])
 			const concert = findConcert(concerts, this.seriesId)
@@ -219,8 +228,9 @@ export class LotterySaleEditorRoute {
 				return
 			}
 			this.setBreadcrumb()
-			if (!this.start) {
-				this.state = 'noStartTime'
+			this.blocks = saleBlocksOf(this.event, organizer)
+			if (this.blocks.length > 0) {
+				this.state = 'blocked'
 				return
 			}
 			if (this.isChange) {

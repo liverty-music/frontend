@@ -1,7 +1,14 @@
 import type { Event } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/event_pb.js'
 import type { Organizer } from '@buf/liverty-music_schema.bufbuild_es/liverty_music/entity/v1/organizer_pb.js'
 import { DI, ILogger, resolve } from 'aurelia'
-import { findConcert, findEvent, performs } from '../model/concert-model'
+import {
+	eventStart,
+	findConcert,
+	findEvent,
+	isCancelled,
+	isPublished,
+	performs,
+} from '../model/concert-model'
 import { IOrganizerClient } from '../services/organizer-client'
 import { type AuthoredSeries, ISeriesClient } from '../services/series-client'
 
@@ -19,6 +26,30 @@ export function businessDetailsComplete(
 		organizer.businessPhoneNumber?.value,
 		organizer.contactEmail?.value,
 	].every((v) => (v ?? '').trim() !== '')
+}
+
+/** Why no sale of an event can be saved yet; each is one notice. */
+export type SaleBlock =
+	| 'cancelled'
+	| 'notPublished'
+	| 'noStartTime'
+	| 'businessDetails'
+
+/**
+ * The reasons, in the order the sale editors show them, that a sale of the
+ * event cannot be saved (ticket-sale-editor "Prerequisites explained"): a
+ * cancelled or unpublished event, no start time, incomplete business details.
+ */
+export function saleBlocksOf(
+	event: Event,
+	organizer: Organizer | undefined,
+): SaleBlock[] {
+	const blocks: SaleBlock[] = []
+	if (isCancelled(event)) blocks.push('cancelled')
+	else if (!isPublished(event)) blocks.push('notPublished')
+	if (!eventStart(event)) blocks.push('noStartTime')
+	if (!businessDetailsComplete(organizer)) blocks.push('businessDetails')
+	return blocks
 }
 
 /**

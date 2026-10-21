@@ -274,6 +274,51 @@ test.describe('a new lottery', () => {
 		await expect(field(page, '販売名')).toHaveCount(0)
 	})
 
+	test(`@spec ${SPEC} "Business details incomplete"`, async ({ page }) => {
+		await boot(page, {
+			'OrganizerService/Get': organizer('XX Records', ['businessPhoneNumber']),
+		})
+		await page.goto(NEW_LOTTERY)
+
+		const callout = page.locator('prerequisite-callout')
+		await expect(
+			callout.getByRole('heading', { name: '事業者情報が未登録です' }),
+		).toBeVisible()
+		await expect(callout).toContainText(
+			'審査のときに Liverty Music が登録します',
+		)
+		await expectGuideLink(callout, 'business-and-payout')
+		await expect(
+			page.getByRole('button', { name: '抽選販売を始める' }),
+		).toHaveCount(0)
+		await expect(field(page, '販売名')).toHaveCount(0)
+	})
+
+	test('says the event must be published first, with the guide', async ({
+		page,
+	}) => {
+		const draft: ConcertSpec = {
+			...XX_TOUR,
+			events: [{ ...XX_TOUR.events[0], state: 'DRAFT' }],
+		}
+		await boot(page, { 'SeriesService/List': seriesList([draft]) })
+		await page.goto(NEW_LOTTERY)
+
+		const callout = page.locator('prerequisite-callout')
+		await expect(
+			callout.getByRole('heading', {
+				name: '販売を始めるには、公演を公開してください',
+			}),
+		).toBeVisible()
+		await expect(
+			callout.getByRole('link', { name: '販売へ戻る' }),
+		).toHaveAttribute('href', /\/events\/e-1103\/ticket-sales$/)
+		await expectGuideLink(callout, 'publish')
+		await expect(
+			page.getByRole('button', { name: '抽選販売を始める' }),
+		).toHaveCount(0)
+	})
+
 	test(`@spec ${SPEC} "Back after creating"`, async ({ page }) => {
 		const store = salesStore('e-1103', [])
 		const log = await boot(page, {
