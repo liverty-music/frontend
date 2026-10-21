@@ -56,6 +56,11 @@ const ORGANIZER_TOKEN = process.env.E2E_ORGANIZER_TOKEN ?? ''
 const SECOND_FAN_STATE = '.auth/storageState.prod.fan2.json'
 const THIRD_FAN_STATE = '.auth/storageState.prod.fan3.json'
 
+/** Ticket states as shown in either display language (a fan's own setting). */
+const LISTED = /出品中|Listed for resale/
+const NOT_ENTERED = /未入場|Not entered/
+const RESOLD = /リセール済み|Resold/
+
 /** The checkout's 15-minute hold, plus a margin for the sweeper. */
 const HOLD_MS = 15 * 60 * 1000
 const MARGIN_MS = 60 * 1000
@@ -137,13 +142,15 @@ test.describe('resell a ticket (signed in)', () => {
 		await cards.nth(0).getByTestId('tickets-list-for-resale').click()
 
 		const confirm = page.getByTestId('tickets-resale-confirm')
-		await expect(confirm).toContainText('5,000円')
-		await expect(confirm).toContainText('500円')
-		await expect(confirm).toContainText('4,500円')
+		await expect(confirm).toContainText('5,000')
+		await expect(confirm).toContainText(/[^,\d]500/)
+		await expect(confirm).toContainText('4,500')
 		await confirm.getByTestId('tickets-resale-confirm-list').click()
 
-		await expect(cards.nth(0).getByTestId('tickets-state')).toHaveText('出品中')
-		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText('未入場')
+		await expect(cards.nth(0).getByTestId('tickets-state')).toHaveText(LISTED)
+		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText(
+			NOT_ENTERED,
+		)
 	})
 
 	test('another fan buys the resale ticket at face value', async () => {
@@ -153,9 +160,7 @@ test.describe('resell a ticket (signed in)', () => {
 		test.setTimeout(5 * 60 * 1000)
 		const buyer = await second.newPage()
 		await buyer.goto(`/events/${EVENT_ID}`)
-		await expect(buyer.getByTestId('event-resale-price')).toHaveText(
-			'5,000円（税込）',
-		)
+		await expect(buyer.getByTestId('event-resale-price')).toContainText('5,000')
 		await buyer.getByTestId('event-resale-buy').click()
 		await expect(buyer.getByTestId('checkout-count')).toBeVisible()
 		await holdTickets(buyer, 1)
@@ -164,9 +169,9 @@ test.describe('resell a ticket (signed in)', () => {
 
 		await expect(
 			buyer.getByTestId('checkout-confirm-official-resale'),
-		).toContainText('券面価格')
+		).toContainText(/券面価格|face value/)
 		await expect(buyer.getByTestId('checkout-confirm-period')).toContainText(
-			'入場開始時',
+			/入場開始時|admission opens/,
 		)
 		const place = buyer.getByTestId('checkout-place-order')
 		await expect(place).toContainText('5,000')
@@ -179,7 +184,7 @@ test.describe('resell a ticket (signed in)', () => {
 		const bought = await eventCards(buyer)
 		await expect(bought).toHaveCount(1)
 		await expect(bought.nth(0).getByTestId('tickets-state')).toHaveText(
-			'未入場',
+			NOT_ENTERED,
 		)
 		await buyer.close()
 	})
@@ -192,22 +197,22 @@ test.describe('resell a ticket (signed in)', () => {
 		test.setTimeout(5 * 60 * 1000)
 		const deadline = Date.now() + 2 * 60 * 1000 + 30 * 1000
 		let cards = await eventCards(page)
-		await expect(cards.nth(0).getByTestId('tickets-state')).toHaveText(
-			'リセール済み',
-		)
+		await expect(cards.nth(0).getByTestId('tickets-state')).toHaveText(RESOLD)
 		while (
-			!(
-				await cards.nth(0).getByTestId('tickets-resold').textContent()
-			)?.includes('返金済み') &&
+			!(await cards.nth(0).getByTestId('tickets-resold').textContent())?.match(
+				/返金済み|Refunded on/,
+			) &&
 			Date.now() < deadline
 		) {
 			await page.waitForTimeout(15_000)
 			cards = await eventCards(page)
 		}
 		const resold = cards.nth(0).getByTestId('tickets-resold')
-		await expect(resold).toContainText('4,500円')
-		await expect(resold).toContainText('返金済み')
-		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText('未入場')
+		await expect(resold).toContainText('4,500')
+		await expect(resold).toContainText(/返金済み|Refunded on/)
+		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText(
+			NOT_ENTERED,
+		)
 	})
 
 	test('withdraws a listing nobody is buying', async ({ page }) => {
@@ -216,7 +221,9 @@ test.describe('resell a ticket (signed in)', () => {
 		const cards = await eventCards(page)
 		await listTicket(page, cards.nth(1))
 		await cards.nth(1).getByTestId('tickets-withdraw').click()
-		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText('未入場')
+		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText(
+			NOT_ENTERED,
+		)
 
 		const other = await second.newPage()
 		await other.goto(`/events/${EVENT_ID}`)
@@ -246,8 +253,8 @@ test.describe('resell a ticket (signed in)', () => {
 		// The listing fan cannot withdraw it while it is held.
 		// @spec components/infrastructure/fan/web/route/tickets "Someone is buying it"
 		await cards.nth(1).getByTestId('tickets-withdraw').click()
-		await expect(cards.nth(1)).toContainText('購入手続き中')
-		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText('出品中')
+		await expect(cards.nth(1)).toContainText(/購入手続き中|buying this ticket/)
+		await expect(cards.nth(1).getByTestId('tickets-state')).toHaveText(LISTED)
 
 		await view.waitForTimeout(HOLD_MS + MARGIN_MS)
 		await view.reload()
@@ -335,5 +342,5 @@ async function listTicket(page: Page, card: Locator): Promise<void> {
 		.getByTestId('tickets-resale-confirm')
 		.getByTestId('tickets-resale-confirm-list')
 		.click()
-	await expect(card.getByTestId('tickets-state')).toHaveText('出品中')
+	await expect(card.getByTestId('tickets-state')).toHaveText(LISTED)
 }
