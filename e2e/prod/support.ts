@@ -110,15 +110,18 @@ export async function listBySeries(
 /** The first `<meta property|name="key" content="…">` in served HTML. */
 export function firstMeta(html: string, key: string): string | undefined {
 	const re = new RegExp(
-		`<meta\\s+(?:property|name)="${key.replace(/[:.]/g, '\\$&')}"\\s+content="([^"]*)"`,
+		`<meta\\s+(?:property|name)="${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"\\s+content="([^"]*)"`,
 	)
-	return html
-		.match(re)?.[1]
-		?.replace(/&amp;/g, '&')
-		.replace(/&#34;|&quot;/g, '"')
-		.replace(/&#39;/g, "'")
-		.replace(/&lt;/g, '<')
-		.replace(/&gt;/g, '>')
+	return (
+		html
+			.match(re)?.[1]
+			?.replace(/&#34;|&quot;/g, '"')
+			.replace(/&#39;/g, "'")
+			.replace(/&lt;/g, '<')
+			.replace(/&gt;/g, '>')
+			// Last, so an escaped entity such as `&amp;lt;` decodes to `&lt;`.
+			.replace(/&amp;/g, '&')
+	)
 }
 
 /** The prod E2E test user's credentials. */
