@@ -11,7 +11,9 @@ import { SvgIcon } from '../src/components/svg-icon/svg-icon'
 import { IAnalyticsService } from '../src/lib/analytics/analytics-service'
 import { IAddPasskeyPromptService } from '../src/services/add-passkey-prompt-service'
 import { IAuthService } from '../src/services/auth-service'
+import { IBottomSheetTracker } from '../src/services/bottom-sheet-tracker'
 import { IErrorBoundaryService } from '../src/services/error-boundary-service'
+import { IFabMenuService } from '../src/services/fab-menu-service'
 import { INotificationManager } from '../src/services/notification-manager'
 import { IOnboardingService } from '../src/services/onboarding-service'
 import { IPromptCoordinator } from '../src/services/prompt-coordinator'
@@ -375,6 +377,45 @@ describe('app-shell', () => {
 			expect.anything(),
 			'router:navigation-error',
 		)
+	})
+
+	describe('FAB', () => {
+		const fab = () => host().querySelector('fab-menu')
+
+		// @spec components/infrastructure/fan/web/global/fab-menu "FAB hidden while a bottom sheet is open"
+		it('is not shown while any bottom sheet is open and returns when it closes', async () => {
+			await go('discovery')
+			const dispose = fixture.container.get(IFabMenuService).register({}, [
+				{
+					id: 'search',
+					icon: 'search',
+					labelKey: 'nav.discovery',
+					kind: 'command',
+					invoke: vi.fn(),
+				},
+			])
+			await tasksSettled()
+			expect(fab()).not.toBeNull()
+
+			// The add-passkey prompt (or any other sheet) opens.
+			const sheets = fixture.container.get(IBottomSheetTracker)
+			const prompt = {}
+			sheets.opened(prompt)
+			await tasksSettled()
+			expect(fab()).toBeNull()
+
+			// A second sheet over it; closing one keeps the FAB hidden.
+			const other = {}
+			sheets.opened(other)
+			sheets.closed(prompt)
+			await tasksSettled()
+			expect(fab()).toBeNull()
+
+			sheets.closed(other)
+			await tasksSettled()
+			expect(fab()).not.toBeNull()
+			dispose()
+		})
 	})
 
 	// The shell decides whether the install banner is mounted; the banner then

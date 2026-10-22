@@ -1,4 +1,5 @@
 import { bindable, INode, resolve } from 'aurelia'
+import { IBottomSheetTracker } from '../../services/bottom-sheet-tracker'
 
 /**
  * Bottom-sheet primitive built on the web.dev `navigation-drawer` pattern
@@ -18,6 +19,8 @@ export class BottomSheet {
 	@bindable public ariaLabel = ''
 
 	private readonly host = resolve(INode) as HTMLElement
+	// App-wide record of open sheets; the shell hides the FAB while any is open.
+	private readonly tracker = resolve(IBottomSheetTracker)
 	private popoverEl!: HTMLElement
 	private scrollArea!: HTMLElement
 	private sheetBody!: HTMLElement
@@ -102,6 +105,7 @@ export class BottomSheet {
 		this.removeInert()
 		this.hide()
 		this.showing = false
+		this.tracker.closed(this)
 	}
 
 	/** Tap on the dimmed area above the sheet body closes a dismissable sheet. */
@@ -162,6 +166,7 @@ export class BottomSheet {
 			this.programmaticClose = false
 			this.popoverEl.showPopover()
 			this.showing = true
+			this.tracker.opened(this)
 			this.previouslyFocused =
 				(document.activeElement as HTMLElement | null) ?? null
 			this.applyInert()
@@ -232,6 +237,7 @@ export class BottomSheet {
 		const emit = !this.programmaticClose
 		this.programmaticClose = false
 		this.hide()
+		this.tracker.closed(this)
 		this.restoreFocus()
 		if (this.open) {
 			this.open = false

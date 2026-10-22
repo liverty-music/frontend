@@ -89,14 +89,14 @@ describe('Add-passkey prompt', () => {
 		sessionStorage.clear()
 	})
 
-	it('shows the three choices after a Log In on a device without the record', async () => {
+	it('shows the two choices after a Log In on a device without the record', async () => {
 		const { shown } = await logInOn(memoryStorage())
+		expect(ja.addPasskeyPrompt.later).toBe('あとで設定画面から')
 		expect(shown()?.textContent).toContain(ja.addPasskeyPrompt.create)
-		expect(shown()?.textContent).toContain(ja.addPasskeyPrompt.alreadyHasOne)
 		expect(shown()?.textContent).toContain(ja.addPasskeyPrompt.later)
 	})
 
-	it('stays hidden after "Later" chosen 10 days ago', async () => {
+	it('stays hidden after "Later, in Settings" chosen 10 days ago', async () => {
 		// @spec components/infrastructure/fan/web/global/add-passkey-prompt "Later chosen recently"
 		const storage = memoryStorage({
 			[StorageKeys.passkeyPromptLater]: String(Date.now() - 10 * DAY_MS),
@@ -105,7 +105,7 @@ describe('Add-passkey prompt', () => {
 		expect(shown()).toBeNull()
 	})
 
-	it('shows again after "Later" chosen 31 days ago', async () => {
+	it('shows again after "Later, in Settings" chosen 31 days ago', async () => {
 		// @spec components/infrastructure/fan/web/global/add-passkey-prompt "Later chosen long ago"
 		const storage = memoryStorage({
 			[StorageKeys.passkeyPromptLater]: String(Date.now() - 31 * DAY_MS),
@@ -138,19 +138,7 @@ describe('Add-passkey prompt', () => {
 		window.history.replaceState(null, '', '/')
 	})
 
-	it('closes on "This device already has one" and never shows on the device again', async () => {
-		// @spec components/infrastructure/fan/web/global/add-passkey-prompt "Already has one"
-		const storage = memoryStorage()
-		const first = await logInOn(storage)
-		await first.click('add-passkey-already')
-		expect(first.shown()).toBeNull()
-		expect(first.location.assign).not.toHaveBeenCalled()
-
-		const next = await logInOn(storage)
-		expect(next.shown()).toBeNull()
-	})
-
-	it('treats a dismissal as "Later": hidden on the device for 30 days', async () => {
+	it('treats a dismissal as "Later, in Settings": hidden on the device for 30 days', async () => {
 		// @spec components/infrastructure/fan/web/global/add-passkey-prompt "Dismissed"
 		const storage = memoryStorage()
 		const first = await logInOn(storage)

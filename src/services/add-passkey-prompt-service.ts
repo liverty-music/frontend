@@ -10,7 +10,7 @@ import { StorageKeys } from '../constants/storage-keys'
 import { IAuthService } from './auth-service'
 import { IPromptCoordinator } from './prompt-coordinator'
 
-/** How long "Later" keeps the prompt hidden on a device. */
+/** How long "Later, in Settings" keeps the prompt hidden on a device. */
 export const ADD_PASSKEY_LATER_MS = 30 * 24 * 60 * 60 * 1000
 
 export const IAddPasskeyPromptService =
@@ -28,9 +28,12 @@ export interface IAddPasskeyPromptService extends AddPasskeyPromptService {}
  *
  * The app cannot tell whether the Log In used a passkey of this device (the
  * assertion runs in the hosted login, and its tokens carry no authenticator
- * attachment), so each device keeps its own record: set on sign-up, after a
- * passkey was created here, and on "This device already has one". Storage that
- * cannot be read counts as no record, and "Later" then is not remembered.
+ * attachment), so each device keeps its own record: set on sign-up and after
+ * a passkey was created here. There is no "this device already has one"
+ * choice: a fan cannot reliably tell whether a synced passkey lives on the
+ * device, and creating one where one exists is harmless (the hosted login
+ * excludes existing credentials). Storage that cannot be read counts as no
+ * record, and "Later, in Settings" then is not remembered.
  */
 export class AddPasskeyPromptService {
 	private readonly storage = resolve(ILocalStorage)
@@ -55,7 +58,7 @@ export class AddPasskeyPromptService {
 
 	/**
 	 * Called by the auth callback after a Log In (never after a sign-up).
-	 * Shows the prompt unless the device has the record, "Later" was chosen
+	 * Shows the prompt unless the device has the record, "Later, in Settings" was chosen
 	 * here within 30 days, or another prompt already showed.
 	 */
 	public offerAfterLogIn(): void {
@@ -67,15 +70,9 @@ export class AddPasskeyPromptService {
 		this.open = true
 	}
 
-	/** "Later", or a dismissal: hidden on this device for 30 days. */
+	/** "Later, in Settings", or a dismissal: hidden on this device for 30 days. */
 	public later(): void {
 		this.write(StorageKeys.passkeyPromptLater, String(Date.now()))
-		this.open = false
-	}
-
-	/** "This device already has one". */
-	public alreadyHasOne(): void {
-		this.markDevice()
 		this.open = false
 	}
 

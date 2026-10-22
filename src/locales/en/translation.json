@@ -1102,7 +1102,6 @@
 		"title": "Create a passkey on this device?",
 		"body": "With a passkey on this device, you can sign in here on its own next time.",
 		"create": "Create a passkey on this device",
-		"alreadyHasOne": "This device already has one",
-		"later": "Later"
+		"later": "Later, in Settings"
 	}
 }

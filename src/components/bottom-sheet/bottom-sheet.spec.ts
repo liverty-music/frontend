@@ -5,11 +5,16 @@ const mockHost = {
 	dispatchEvent: vi.fn(() => true),
 }
 
+const mockTracker = { opened: vi.fn(), closed: vi.fn() }
+
 vi.mock('aurelia', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('aurelia')>()
 	return {
 		...actual,
-		resolve: vi.fn(() => mockHost),
+		// The host for INode; an open-sheet tracker stand-in for anything else.
+		resolve: vi.fn((key: unknown) =>
+			key === actual.INode ? mockHost : mockTracker,
+		),
 		bindable: actual.bindable,
 	}
 })

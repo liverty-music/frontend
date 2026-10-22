@@ -3,9 +3,9 @@ import { IAddPasskeyPromptService } from '../../services/add-passkey-prompt-serv
 
 /**
  * The add-passkey prompt shown after a Log In on a device without a passkey
- * record (design D10). The state and the three choices live in
+ * record (design D10). The state and the two choices live in
  * AddPasskeyPromptService; this element only presents them. Dismissing the
- * sheet counts as "Later".
+ * sheet counts as "Later, in Settings".
  */
 export class AddPasskeyPrompt {
 	public readonly prompt = resolve(IAddPasskeyPromptService)
@@ -14,10 +14,6 @@ export class AddPasskeyPrompt {
 	public create(): void {
 		const { pathname, search } = window.location
 		this.prompt.createOnThisDevice(`${pathname}${search}`)
-	}
-
-	public alreadyHasOne(): void {
-		this.prompt.alreadyHasOne()
 	}
 
 	public later(): void {
