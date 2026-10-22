@@ -189,3 +189,20 @@ describe('SettingsRoute name and phone number (fixture)', () => {
 		await fixture.stop(true)
 	})
 })
+
+describe('SettingsRoute Passkeys row (fixture)', () => {
+	it('shows a Passkeys row in ACCOUNT that opens passkey management', async () => {
+		const { fixture, host } = await render(
+			makeUserStore({ id: 'user-1', fullName: '', phoneNumber: '' }),
+		)
+		const row = host.querySelector<HTMLButtonElement>(
+			'[data-testid="settings-passkeys"]',
+		)
+		expect(row?.textContent).toContain(ja.settings.passkeys)
+		row?.click()
+		await tasksSettled()
+		expect(fixture.container.get(IRouter).load).toHaveBeenCalledWith(
+			'/settings/passkeys',
+		)
+	})
+})

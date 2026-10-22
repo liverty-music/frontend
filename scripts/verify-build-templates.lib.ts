@@ -33,6 +33,9 @@ export const ROUTE_MARKERS: readonly RouteMarker[] = [
 	{ route: 'order', marker: 'order-ticket-card' },
 	{ route: 'event', marker: 'event-performer-name' },
 	{ route: 'checkout', marker: 'checkout-terms' },
+	{ route: 'passkey-recovery', marker: 'passkey-recovery-lead' },
+	{ route: 'passkeys', marker: 'passkeys-lead' },
+	{ route: 'passkeys-callback', marker: 'passkeys-callback-loading' },
 ]
 
 /**

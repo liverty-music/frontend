@@ -1,0 +1,10 @@
+<main class="[ passkeys-callback ]">
+  <output if.bind="!failure" class="passkeys-callback-loading" role="status" aria-busy="true">
+    <p t="passkeys.callback.verifying"></p>
+  </output>
+  <section if.bind="failure" class="[ passkeys-callback-error ] [ stack ]" role="alert" data-testid="passkeys-callback-error">
+    <p if.bind="failure === 'otherAccount'" t="passkeys.callback.otherAccount"></p>
+    <p else t="passkeys.callback.failed"></p>
+    <a href="/settings" class="passkeys-callback-link" t="passkeys.backToSettings"></a>
+  </section>
+</main>

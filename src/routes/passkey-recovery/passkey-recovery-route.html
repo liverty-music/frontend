@@ -1,0 +1,61 @@
+<!-- The page title is owned by the shell-hosted <page-header> (data.titleKey). -->
+<main class="[ passkey-recovery ] [ stack ]">
+  <p t="passkeyRecovery.lead" class="passkey-recovery-lead"></p>
+  <ul class="[ passkey-recovery-notes ] [ stack ]" role="list">
+    <li t="passkeyRecovery.noteValidity"></li>
+    <li t="passkeyRecovery.noteDevice"></li>
+  </ul>
+
+  <!-- `novalidate`: the VM checks the address on submit and shows the error
+       below the field, tied to it with aria-describedby. -->
+  <form
+    if.bind="!sent"
+    class="[ passkey-recovery-form ] [ stack ]"
+    submit.trigger="send()"
+    novalidate
+    data-testid="passkey-recovery-form"
+  >
+    <label class="passkey-recovery-field">
+      <span t="passkeyRecovery.emailLabel" class="passkey-recovery-label"></span>
+      <input
+        type="email"
+        inputmode="email"
+        autocomplete="email"
+        value.bind="email"
+        aria-invalid.bind="emailInvalid"
+        aria-describedby="passkey-recovery-email-error"
+        class="passkey-recovery-input"
+        data-testid="passkey-recovery-email"
+      />
+    </label>
+    <p id="passkey-recovery-email-error" if.bind="emailInvalid" t="passkeyRecovery.emailInvalid" class="passkey-recovery-error"></p>
+    <p if.bind="error === 'tooMany'" role="alert" t="passkeyRecovery.tooMany" class="passkey-recovery-error" data-testid="passkey-recovery-too-many"></p>
+    <p if.bind="error === 'failed'" role="alert" t="passkeyRecovery.failed" class="passkey-recovery-error" data-testid="passkey-recovery-failed"></p>
+    <button
+      type="submit"
+      aria-busy.bind="sending"
+      disabled.bind="sending"
+      class="[ button ] [ pressable ]"
+      data-testid="passkey-recovery-send"
+    >
+      <span if.bind="error === 'failed'" t="passkeyRecovery.retry"></span>
+      <span else t="passkeyRecovery.send"></span>
+    </button>
+  </form>
+
+  <section if.bind="sent" class="[ passkey-recovery-sent ] [ stack ]" aria-live="polite" data-testid="passkey-recovery-sent">
+    <svg-icon name="check" class="passkey-recovery-icon"></svg-icon>
+    <p t="passkeyRecovery.sent" class="passkey-recovery-sent-message"></p>
+    <button
+      type="button"
+      busy-on-click.bind="() => send()"
+      disabled.bind="resendIn > 0"
+      class="[ button ] [ pressable ]"
+      data-variant="outlined"
+      data-testid="passkey-recovery-resend"
+    >
+      <span if.bind="resendIn > 0" t="passkeyRecovery.resendIn" t-params.bind="{ seconds: resendIn }"></span>
+      <span else t="passkeyRecovery.resend"></span>
+    </button>
+  </section>
+</main>

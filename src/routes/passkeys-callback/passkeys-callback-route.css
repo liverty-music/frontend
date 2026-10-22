@@ -1,0 +1,39 @@
+/* Return leg of the passkey-management sign-in: a centered transient screen,
+   like the main auth callback. */
+@layer block {
+	@scope (passkeys-callback-route) {
+		.passkeys-callback {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+
+			block-size: 100%;
+			padding-inline: var(--space-m);
+
+			text-align: center;
+
+			background: var(--color-surface-base);
+		}
+
+		.passkeys-callback-loading {
+			font-size: var(--step-0);
+			color: var(--color-text-secondary);
+		}
+
+		.passkeys-callback-error {
+			--stack-gap: var(--space-s);
+
+			align-items: center;
+			max-inline-size: 32ch;
+			color: var(--color-text-primary);
+		}
+
+		.passkeys-callback-link {
+			display: inline-flex;
+			align-items: center;
+			min-block-size: 44px;
+			color: var(--color-brand-primary);
+			text-decoration: underline;
+		}
+	}
+}

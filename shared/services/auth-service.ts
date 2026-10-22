@@ -25,7 +25,7 @@ function isInvalidGrant(err: unknown): boolean {
  * config pins one, otherwise by primary domain (the organizer console's
  * short-name entry), otherwise none.
  */
-function orgScope(config: AppConfig): string {
+export function orgScope(config: AppConfig): string {
 	if (config.zitadelOrgId)
 		return `urn:zitadel:iam:org:id:${config.zitadelOrgId}`
 	if (config.zitadelOrgPrimaryDomain) {
@@ -41,7 +41,9 @@ function orgScope(config: AppConfig): string {
  * `Cache-Control: no-store`: one round trip saved on every sign-in redirect,
  * sign-in callback and token refresh. The JWKS is not used by the client.
  */
-function zitadelMetadata(issuer: string): UserManagerSettings['metadata'] {
+export function zitadelMetadata(
+	issuer: string,
+): UserManagerSettings['metadata'] {
 	const base = issuer.replace(/\/+$/, '')
 	return {
 		issuer: base,

@@ -23,6 +23,7 @@ import { IAudioEngine } from '../../services/audio-engine'
 import { IAuthService } from '../../services/auth-service'
 import { IFabMenuService } from '../../services/fab-menu-service'
 import { IIdentityVerificationService } from '../../services/identity-verification-service'
+import { PASSKEY_MANAGEMENT_PATH } from '../../services/passkey-auth-service'
 import { IPushService } from '../../services/push-service'
 import { IUserStore } from '../../services/user-store'
 import {
@@ -568,6 +569,14 @@ export class SettingsRoute {
 	 */
 	public async openLegal(path: string): Promise<void> {
 		await this.router.load(path)
+	}
+
+	/**
+	 * Open passkey management. Its route asks the hosted login for a fresh
+	 * sign-in when the passkey-management token is missing.
+	 */
+	public async openPasskeys(): Promise<void> {
+		await this.router.load(PASSKEY_MANAGEMENT_PATH)
 	}
 
 	public get releaseVersion(): string {

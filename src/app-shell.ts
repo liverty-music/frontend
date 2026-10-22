@@ -6,6 +6,7 @@ import {
 	route,
 } from '@aurelia/router'
 import { type IDisposable, ILogger, resolve } from 'aurelia'
+import { IAddPasskeyPromptService } from './services/add-passkey-prompt-service'
 import { IAuthService } from './services/auth-service'
 import { ICoachMarkService } from './services/coach-mark-service'
 import { IErrorBoundaryService } from './services/error-boundary-service'
@@ -58,6 +59,23 @@ const routeTable = [
 		component: import('./routes/auth-callback/auth-callback-route'),
 		title: 'Signing In',
 		data: { auth: false, chrome: false },
+	},
+	{
+		// Return leg of the passkey-management sign-in (a second OIDC client with
+		// a short-lived, in-memory token; OpenSpec change
+		// `fan-passkey-recovery-and-management`, design D3).
+		path: 'auth/passkeys-callback',
+		component: import('./routes/passkeys-callback/passkeys-callback-route'),
+		title: 'Passkeys',
+		data: { auth: false, chrome: false },
+	},
+	{
+		// The "can't sign in" screen: guests and signed-in fans ask for an email
+		// link that registers a new passkey.
+		path: 'passkey-recovery',
+		component: import('./routes/passkey-recovery/passkey-recovery-route'),
+		title: "Can't Sign In",
+		data: { auth: false, titleKey: 'passkeyRecovery.title' },
 	},
 	{
 		// `concerts/:id` is a deep-link into the same dashboard (it opens the
@@ -169,6 +187,14 @@ const routeTable = [
 		title: 'Settings',
 		data: { titleKey: 'nav.settings' },
 	},
+	// Passkey management, opened from the Settings Passkeys row. Signed-in
+	// fans only; its canLoad requires the passkey-management token.
+	{
+		path: 'settings/passkeys',
+		component: import('./routes/passkeys/passkeys-route'),
+		title: 'Passkeys',
+		data: { titleKey: 'passkeys.title' },
+	},
 	// Order detail (roadmap ⑤, §5.1/§5.2). Authenticated by default — the order
 	// must belong to the caller (non-revealing NotFound otherwise). Reached by
 	// link from My Tickets; NOT wired into the bottom nav.
@@ -230,6 +256,7 @@ export class AppShell {
 	private readonly routerEvents = resolve(IRouterEvents)
 	public readonly auth = resolve(IAuthService)
 	public readonly onboarding = resolve(IOnboardingService)
+	public readonly addPasskeyPrompt = resolve(IAddPasskeyPromptService)
 	public readonly coachMark = resolve(ICoachMarkService)
 	// Global FAB action launcher registry. The shell owns the single launcher
 	// instance and gates its visibility on `showNav && actions.length`.

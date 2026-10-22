@@ -2,6 +2,7 @@ import { I18N } from '@aurelia/i18n'
 import { IRouter } from '@aurelia/router'
 import { DI, IEventAggregator, INode, Registration } from 'aurelia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { savePasskeyReturn } from '../../src/adapter/storage/passkey-return-storage'
 import { createTestContainer } from '../helpers/create-container'
 import type { createMockI18n } from '../helpers/mock-i18n'
 import { createMockRouter } from '../helpers/mock-router'
@@ -137,6 +138,23 @@ describe('WelcomeRoute', () => {
 		it('allows unauthenticated user', async () => {
 			const result = await sut.canLoad()
 			expect(result).toBe(true)
+		})
+
+		it('returns a signed-in fan to passkey management after adding a passkey', async () => {
+			// The hosted login lands on the app root after a passkey registration;
+			// the marker passkey management left sends the fan back (design D4).
+			mockAuth.isAuthenticated = true
+			savePasskeyReturn('/settings/passkeys')
+			expect(await sut.canLoad()).toBe('/settings/passkeys')
+			// Single-shot: the next visit to the root goes to the dashboard.
+			expect(await sut.canLoad()).toBe('dashboard')
+		})
+
+		it('drops the passkey marker for a guest', async () => {
+			savePasskeyReturn('/settings/passkeys')
+			expect(await sut.canLoad()).toBe(true)
+			mockAuth.isAuthenticated = true
+			expect(await sut.canLoad()).toBe('dashboard')
 		})
 
 		it('allows an onboarding user to view Welcome (no forced resume)', async () => {

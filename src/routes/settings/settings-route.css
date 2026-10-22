@@ -380,6 +380,19 @@
 			margin-block-start: var(--space-2xs);
 		}
 
+		/* Native text link, centred under the actions, with a 44px tap target. */
+		.settings-guest-hero-help {
+			display: inline-flex;
+			align-items: center;
+			align-self: center;
+
+			min-block-size: 44px;
+
+			font-size: var(--step--1);
+			color: var(--color-text-secondary);
+			text-decoration: underline;
+		}
+
 		/* Discrete visual-state hooks (each mirrors a `data-*.bind` in the
 		   template). Kept as `data-*` flat rules in the block layer rather than
 		   moved to @layer exception: cube/data-attr-naming permits only

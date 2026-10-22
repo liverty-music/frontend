@@ -147,7 +147,10 @@ async function bootstrap(): Promise<void> {
 	// The sign-in callback renders nothing until canLoad finishes the sign-in;
 	// show the static indicator from index.html for that wait.
 	const callbackLoading = document.getElementById('callback-loading')
-	if (window.location.pathname === '/auth/callback') {
+	if (
+		window.location.pathname === '/auth/callback' ||
+		window.location.pathname === '/auth/passkeys-callback'
+	) {
 		callbackLoading?.removeAttribute('hidden')
 	}
 	const config = await loadAppConfig()

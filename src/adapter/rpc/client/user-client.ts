@@ -84,4 +84,14 @@ export class UserRpcClient {
 	public async resendEmailVerification(): Promise<void> {
 		await this.userClient.resendEmailVerification({})
 	}
+
+	/**
+	 * Asks for a passkey registration link for `email`
+	 * (`UserService.RequestPasskeyRecovery`, no sign-in needed). The answer is
+	 * the same for every address; it rejects only with InvalidArgument,
+	 * ResourceExhausted or a transport failure.
+	 */
+	public async requestPasskeyRecovery(email: string): Promise<void> {
+		await this.userClient.requestPasskeyRecovery({ email: { value: email } })
+	}
 }
