@@ -1,11 +1,14 @@
 import { I18N } from '@aurelia/i18n'
 import type { NavigationInstruction } from '@aurelia/router'
+import { ConnectError } from '@connectrpc/connect'
 import { ILogger, resolve } from 'aurelia'
+import { IPasskeyRpcClient } from '../../adapter/rpc/client/passkey-client'
 import {
 	IPasskeyClient,
 	type Passkey,
 	PasskeyRequestError,
 } from '../../adapter/zitadel/passkey-client'
+import type { PasskeyRecord } from '../../entities/passkey'
 import { IAddPasskeyPromptService } from '../../services/add-passkey-prompt-service'
 import { IAuthService } from '../../services/auth-service'
 import {
@@ -13,6 +16,22 @@ import {
 	PASSKEY_MANAGEMENT_PATH,
 } from '../../services/passkey-auth-service'
 import { currentLanguage } from '../../util/change-locale'
+
+/**
+ * A passkey as listed: the identity provider's passkey joined by id with the
+ * platform's record of it, when there is one (design D7).
+ */
+export interface ListedPasskey extends Passkey {
+	/** The passkey provider, from the record. */
+	readonly providerName?: string
+	/** The day it was added (Japan time, `YYYY-MM-DD`), from the record. */
+	readonly addedDate?: string
+	/** That day, written for the fan's language. */
+	readonly addedLabel?: string
+}
+
+/** Passkey dates are the day in Japan, where the product runs. */
+const DATE_TIME_ZONE = 'Asia/Tokyo'
 
 /** Where the passkey list stands. */
 export type PasskeyListState = 'loading' | 'ready' | 'error'
@@ -31,14 +50,15 @@ export class PasskeysRoute {
 	private readonly auth = resolve(IAuthService)
 	private readonly passkeyAuth = resolve(IPasskeyAuthService)
 	private readonly client = resolve(IPasskeyClient)
+	private readonly records = resolve(IPasskeyRpcClient)
 	private readonly addPasskey = resolve(IAddPasskeyPromptService)
 	private readonly i18n = resolve(I18N)
 	private readonly logger = resolve(ILogger).scopeTo('PasskeysRoute')
 
-	public passkeys: Passkey[] = []
+	public passkeys: ListedPasskey[] = []
 	public listState: PasskeyListState = 'loading'
 	/** The passkey whose removal awaits confirmation; null when none. */
-	public pendingRemoval: Passkey | null = null
+	public pendingRemoval: ListedPasskey | null = null
 	public removalFailed = false
 	public removing = false
 
@@ -75,7 +95,11 @@ export class PasskeysRoute {
 	public async load(): Promise<void> {
 		this.listState = 'loading'
 		try {
-			this.passkeys = await this.client.list()
+			const [passkeys, records] = await Promise.all([
+				this.client.list(),
+				this.loadRecords(),
+			])
+			this.passkeys = this.join(passkeys, records)
 			this.listState = 'ready'
 		} catch (err) {
 			if (!(err instanceof PasskeyRequestError)) throw err
@@ -88,7 +112,47 @@ export class PasskeysRoute {
 		}
 	}
 
-	public askRemoval(passkey: Passkey): void {
+	/**
+	 * The platform's records. They only add detail, so a failure leaves the
+	 * identity provider's list shown with names only.
+	 */
+	private async loadRecords(): Promise<PasskeyRecord[]> {
+		try {
+			return await this.records.list()
+		} catch (err) {
+			if (!(err instanceof ConnectError)) throw err
+			this.logger.warn('Failed to read passkey records', { code: err.code })
+			return []
+		}
+	}
+
+	private join(passkeys: Passkey[], records: PasskeyRecord[]): ListedPasskey[] {
+		const byId = new Map(records.map((r) => [r.id, r]))
+		const locale = this.i18n.getLocale()
+		return passkeys.map((passkey) => {
+			const record = byId.get(passkey.id)
+			if (!record) return passkey
+			const created = record.createTime
+			return {
+				...passkey,
+				...(record.providerName ? { providerName: record.providerName } : {}),
+				...(created
+					? {
+							// en-CA writes the ISO calendar date.
+							addedDate: new Intl.DateTimeFormat('en-CA', {
+								timeZone: DATE_TIME_ZONE,
+							}).format(created),
+							addedLabel: new Intl.DateTimeFormat(locale, {
+								dateStyle: 'medium',
+								timeZone: DATE_TIME_ZONE,
+							}).format(created),
+						}
+					: {}),
+			}
+		})
+	}
+
+	public askRemoval(passkey: ListedPasskey): void {
 		if (!this.canRemove) return
 		this.removalFailed = false
 		this.pendingRemoval = passkey

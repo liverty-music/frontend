@@ -11,11 +11,24 @@
 
   <template if.bind="listState === 'ready'">
     <ul class="passkeys-card" role="list" data-testid="passkeys-list">
-      <li repeat.for="passkey of passkeys" class="passkeys-item">
+      <li repeat.for="passkey of passkeys" class="passkeys-item" data-testid="passkeys-item">
         <svg-icon name="lock" class="passkeys-icon"></svg-icon>
-        <span class="passkeys-name" data-testid="passkeys-name">
-          <template if.bind="passkey.name">${passkey.name}</template>
-          <template else>${'passkeys.unnamed' | t}</template>
+        <span class="[ passkeys-label ] [ stack ]">
+          <span class="passkeys-name" data-testid="passkeys-name">
+            <template if.bind="passkey.providerName">${passkey.providerName}</template>
+            <template else>
+              <template if.bind="passkey.name">${passkey.name}</template>
+              <template else>${'passkeys.unnamed' | t}</template>
+            </template>
+          </span>
+          <time
+            if.bind="passkey.addedDate"
+            datetime.attr="passkey.addedDate"
+            class="passkeys-added"
+            data-testid="passkeys-added"
+            t="passkeys.addedOn"
+            t-params.bind="{ date: passkey.addedLabel }"
+          ></time>
         </span>
         <button
           type="button"
@@ -47,8 +60,11 @@
   <div class="[ passkeys-confirm ] [ stack ]" data-testid="passkeys-confirm">
     <h2 t="passkeys.confirm.title" class="passkeys-confirm-title"></h2>
     <p class="passkeys-confirm-name">
-      <template if.bind="pendingRemoval.name">${pendingRemoval.name}</template>
-      <template else>${'passkeys.unnamed' | t}</template>
+      <template if.bind="pendingRemoval.providerName">${pendingRemoval.providerName}</template>
+      <template else>
+        <template if.bind="pendingRemoval.name">${pendingRemoval.name}</template>
+        <template else>${'passkeys.unnamed' | t}</template>
+      </template>
     </p>
     <p t="passkeys.confirm.managerNote" class="passkeys-note"></p>
     <p if.bind="removalFailed" role="alert" t="passkeys.confirm.failed" class="passkeys-confirm-error" data-testid="passkeys-removal-error"></p>

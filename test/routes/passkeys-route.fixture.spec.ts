@@ -1,10 +1,12 @@
 import { I18nConfiguration } from '@aurelia/i18n'
 import { tasksSettled } from '@aurelia/runtime'
 import { createFixture } from '@aurelia/testing'
+import { Code, ConnectError } from '@connectrpc/connect'
 import { CustomElement, Registration } from 'aurelia'
 import { UserManager } from 'oidc-client-ts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IDocumentLocation } from '../../src/adapter/browser/document-location'
+import { IPasskeyRpcClient } from '../../src/adapter/rpc/client/passkey-client'
 import {
 	IPasskeyClient,
 	type Passkey,
@@ -13,6 +15,7 @@ import {
 import { IAppConfig } from '../../src/config/app-config'
 import { StorageKeys } from '../../src/constants/storage-keys'
 import { BusyOnClickCustomAttribute } from '../../src/custom-attributes/busy-on-click'
+import type { PasskeyRecord } from '../../src/entities/passkey'
 import ja from '../../src/locales/ja/translation.json'
 import { PasskeysRoute } from '../../src/routes/passkeys/passkeys-route'
 import { PasskeysCallbackRoute } from '../../src/routes/passkeys-callback/passkeys-callback-route'
@@ -64,6 +67,7 @@ describe('Passkey management requires a recent sign-in', () => {
 				list: vi.fn(async () => [IPHONE]),
 			}),
 			Registration.instance(IDocumentLocation, { assign: vi.fn() }),
+			Registration.instance(IPasskeyRpcClient, { list: vi.fn(async () => []) }),
 		)
 		container.register(PasskeyAuthService)
 	})
@@ -159,7 +163,11 @@ const BottomSheetStub = CustomElement.define(
 	class {},
 )
 
-async function renderManagement(passkeys: Passkey[]) {
+async function renderManagement(
+	passkeys: Passkey[],
+	listRecords: () => Promise<PasskeyRecord[]> = async () => [],
+) {
+	const records = { list: vi.fn(listRecords) }
 	let stored = [...passkeys]
 	const client = {
 		list: vi.fn(async () => [...stored]),
@@ -186,6 +194,7 @@ async function renderManagement(passkeys: Passkey[]) {
 			Registration.instance(IAuthService, mainAuth()),
 			Registration.instance(IPasskeyAuthService, passkeyAuth),
 			Registration.instance(IPasskeyClient, client),
+			Registration.instance(IPasskeyRpcClient, records),
 			Registration.instance(IDocumentLocation, location),
 			Registration.instance(IAppConfig, createMockAppConfig()),
 			BottomSheetStub,
@@ -217,8 +226,15 @@ async function renderManagement(passkeys: Passkey[]) {
 	]
 	const q = <T extends Element>(testId: string) =>
 		host.querySelector<T>(`[data-testid="${testId}"]`)
+	const added = () =>
+		[...host.querySelectorAll('[data-testid="passkeys-item"]')].map(
+			(item) =>
+				item.querySelector('time')?.getAttribute('datetime') ?? undefined,
+		)
 
 	return {
+		added,
+		records,
 		vm,
 		container: fixture.container,
 		client,
@@ -242,6 +258,56 @@ describe('Passkey management lists, adds and removes passkeys (fixture)', () => 
 			'Windows, Chrome',
 		])
 		expect(removeButtons().map((b) => b.disabled)).toEqual([false, false])
+	})
+
+	it('shows a recorded passkey by its provider name with the date it was added', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Recorded passkey"
+		const pixel: Passkey = {
+			id: 'pk-9',
+			name: 'Google Pixel 9, Android, Chrome',
+		}
+		const { names, added, q } = await renderManagement([pixel], async () => [
+			{
+				id: 'pk-9',
+				providerName: 'Google Password Manager',
+				// 2026-10-20 10:00 JST
+				createTime: new Date('2026-10-20T01:00:00Z'),
+			},
+		])
+		expect(names()).toEqual(['Google Password Manager'])
+		expect(added()).toEqual(['2026-10-20'])
+		expect(q('passkeys-added')?.textContent).toContain('2026')
+	})
+
+	it('shows a passkey without a record by its name and no date', async () => {
+		// @spec components/infrastructure/fan/web/route/settings "Passkey without a record"
+		const { names, added } = await renderManagement(
+			[IPHONE, WINDOWS],
+			async () => [
+				{
+					id: 'pk-1',
+					providerName: 'iCloud Keychain',
+					createTime: new Date('2026-10-01T00:00:00Z'),
+				},
+			],
+		)
+		expect(names()).toEqual(['iCloud Keychain', 'Windows, Chrome'])
+		expect(added()).toEqual(['2026-10-01', undefined])
+	})
+
+	it('still lists the passkeys by name when the records cannot be read', async () => {
+		const { names, added, q } = await renderManagement(
+			[IPHONE, WINDOWS],
+			async () => {
+				throw new ConnectError('down', Code.Unavailable)
+			},
+		)
+		expect(q('passkeys-list-error')).toBeNull()
+		expect(names()).toEqual([
+			'Apple iPhone, iOS, Mobile Safari',
+			'Windows, Chrome',
+		])
+		expect(added()).toEqual([undefined, undefined])
 	})
 
 	it('names a passkey without a name "Passkey"', async () => {

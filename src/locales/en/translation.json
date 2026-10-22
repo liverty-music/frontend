@@ -1095,7 +1095,8 @@
 			"verifying": "Checking…",
 			"failed": "We couldn't open passkey management.",
 			"otherAccount": "You confirmed with a different account from the one signed in to this app. Try again with that account."
-		}
+		},
+		"addedOn": "Added {{date}}"
 	},
 	"addPasskeyPrompt": {
 		"title": "Create a passkey on this device?",
